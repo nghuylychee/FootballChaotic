@@ -131,13 +131,13 @@ SFC_CONFIG.game = {
   },
 
   kick: {
-    shotMinSpeed: 250,
-    shotMaxSpeed: 450,
+    shotMinSpeed: 300,       // tốc độ bóng ứng với thanh lực 0% (đủ nhanh để chạm nhẹ vẫn có cú sút)
+    shotMaxSpeed: 460,
     chargeTime: 0.8,         // giây để đầy lực
-    // Lực mặc định (chạm nhẹ D) tính theo khoảng cách tới khung thành, giống chuyền:
-    // gần -> shotBaseNear, xa -> shotBaseFar. Giữ D chỉ nạp thêm phần còn lại của thanh lực.
-    shotBaseNear: 0.45,
-    shotBaseFar: 0.8,
+    // Thanh lực bắt đầu từ mức nhỏ theo khoảng cách tới khung thành (gần -> shotBaseNear, xa -> shotBaseFar),
+    // giữ D để nạp dần lên. Để 0 thì thanh luôn bắt đầu từ rỗng.
+    shotBaseNear: 0.1,
+    shotBaseFar: 0.25,
     shotBaseNearDist: 60,    // px tới khung thành
     shotBaseFarDist: 240,
     maxOvercharge: 1.25,     // giữ quá lâu -> bóng bay cao, lệch

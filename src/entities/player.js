@@ -50,7 +50,7 @@ window.SFC = window.SFC || {};
     }
 
     get hasBall() { return this.game.ball.owner === this; }
-    get isControlled() { return this.game.controlled === this; }
+    get isControlled() { return this.game.ctrl[this.team] === this; }
     get teamRef() { return this.game.teams[this.team]; }
 
     maxSpeed() {
@@ -63,7 +63,7 @@ window.SFC = window.SFC || {};
       for (const b of this.buffs) s *= b.speed || 1;
       if (g.finalPush) s *= C.match.finalPushSpeedMult;
       if (this.role === 'GK' && !this.isControlled) s *= C.player.gkSpeedMult;
-      if (this.team !== g.humanTeam || !this.isControlled) s *= g.aiProfile(this.team).speedMult;
+      if (!g.isHuman(this.team) || !this.isControlled) s *= g.aiProfile(this.team).speedMult;
       return s;
     }
 

@@ -53,6 +53,7 @@ window.SFC = window.SFC || {};
     decoy(src, x, y, vx, vy, dur) {
       const d = {
         x, y, vx, vy, t: dur, max: dur,
+        srcId: src ? src.id : -1,
         runner: src ? { team: src.team, role: src.role, look: src.look, facing: Math.atan2(vy, vx), anim: src.anim } : null,
         alive: true,
       };
@@ -62,8 +63,12 @@ window.SFC = window.SFC || {};
 
     /* ---------- update ---------- */
     update(dt) {
-      const g = this.g, f = g.field;
+      this.updateCosmetic(dt);
+      this.updateHazards(dt);
+    }
 
+    // particle, chữ, rung, chớp — chỉ để nhìn (máy khách online chỉ chạy phần này)
+    updateCosmetic(dt) {
       for (const p of this.particles) {
         p.t -= dt; p.x += p.vx * dt; p.y += p.vy * dt;
         p.vz -= 300 * dt; p.z += p.vz * dt;
@@ -79,6 +84,11 @@ window.SFC = window.SFC || {};
       this.shakeT -= dt;
       if (this.shakeT <= 0) this.shakeA = 0;
       this.flashA = Math.max(0, this.flashA - dt * 2);
+    }
+
+    // hazard ảnh hưởng gameplay: lửa, chém, mìn, phân thân
+    updateHazards(dt) {
+      const g = this.g, f = g.field;
 
       // lửa
       for (const fi of this.fires) {

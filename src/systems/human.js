@@ -6,9 +6,9 @@ window.SFC = window.SFC || {};
   const PASS_KEYS = [['pass', 'ground'], ['through', 'through'], ['lob', 'lob']];
 
   SFC.Human = {
-    update(dt, g, input) {
-      g.passPreview = null;
-      const p = g.controlled;
+    // team: đội do bộ phím này điều khiển (PvP: mỗi đội một input)
+    update(dt, g, input, team = g.humanTeam) {
+      const p = g.ctrl[team];
       if (!p) return;
       const Act = SFC.Actions;
       const K = SFC_CONFIG.game.kick;
@@ -25,11 +25,11 @@ window.SFC = window.SFC || {};
       const b = g.ball;
       const has = b.owner === p;
       const teamHas = !!b.owner && b.owner.team === p.team;
-      g.pressureCall = !teamHas && input.isDown('through');
+      g.pressureCall[team] = !teamHas && input.isDown('through');
 
       // thủ môn chỉ do người chơi điều khiển khi đang ôm bóng
-      if ((input.wasPressed('switch') || p.role === 'GK') && !has) g.switchPlayer();
-      if (g.controlled !== p) return;
+      if ((input.wasPressed('switch') || p.role === 'GK') && !has) g.switchPlayer(team);
+      if (g.ctrl[team] !== p) return;
 
       if (has) {
         if (!wasSprint && p.intent.sprint) g.cores.dispatch(p.team, 'onSprintStart', p);
@@ -46,7 +46,7 @@ window.SFC = window.SFC || {};
             // chỉ khóa đồng đội nằm trong vùng hướng mũi tên; không có ai -> null (chuyền theo hướng)
             p.passLock = Act.findPassTarget(g, p, mx, my, Act.targetBias(p.passCharge), p.passMode, p.passLock, P.coneAngle);
             p.passBase = Act.passBasePower(g, p, p.passLock, p.passMode);
-            g.passPreview = { from: p, target: p.passLock, mode: p.passMode };
+            if (team === g.humanTeam) g.passPreview = { from: p, target: p.passLock, mode: p.passMode };
           } else {
             Act.pass(g, p, p.passMode, mx, my, p.passCharge);
           }
@@ -74,8 +74,8 @@ window.SFC = window.SFC || {};
       // Mũi tên đang giữ lúc chuyền bị bỏ qua (receiveLock) cho tới khi thả ra; bấm hướng mới -> người chơi tự điều khiển.
       const receiving = b.passTarget === p && !b.owner;
       if (receiving) {
-        if (g.receiveLock && !mx && !my) g.receiveLock = false;
-        const manual = !g.receiveLock && (mx || my);
+        if (g.receiveLock[team] && !mx && !my) g.receiveLock[team] = false;
+        const manual = !g.receiveLock[team] && (mx || my);
         if (P.receiveAssist && !manual && p.state === 'normal') {
           const userSprint = p.intent.sprint;
           Act.receiveMove(g, p);
@@ -84,7 +84,7 @@ window.SFC = window.SFC || {};
         if (input.wasPressed('skill')) Act.skill(g, p, mx, my);
         return; // đang đón bóng: không kích hoạt tắc/xoạc
       }
-      g.receiveLock = false;
+      g.receiveLock[team] = false;
 
       if (teamHas) {
         // đòi bóng từ đồng đội AI

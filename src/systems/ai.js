@@ -31,7 +31,7 @@ window.SFC = window.SFC || {};
   const AI = {
     update(dt, g) {
       for (const p of g.players) {
-        if (p === g.controlled) continue;
+        if (p.isControlled && g.isHuman(p.team)) continue;
         p.ai.t -= dt;
         if (p.state !== 'normal') { stop(p); continue; }
         const own = g.ball.owner;
@@ -149,12 +149,13 @@ window.SFC = window.SFC || {};
       const D = g.aiProfile(p.team), cfg = A(), C = SFC_CONFIG.game.combat;
       const c = g.ball.owner, tm = g.teams[p.team];
       const ownGoal = g.ownGoal(p.team);
-      const humanTeam = p.team === g.humanTeam;
-      const outfield = (o) => o.role !== 'GK' && o.state !== 'stun' && o !== g.controlled;
+      const humanTeam = g.isHuman(p.team);
+      const ctl = g.ctrl[p.team];
+      const outfield = (o) => o.role !== 'GK' && o.state !== 'stun' && o !== ctl;
 
       let presser = null;
       if (!humanTeam) presser = nearest(tm.players, c, (o) => o.role !== 'GK').p;
-      else if (g.pressureCall || U.dist(g.controlled, c) > 110) presser = nearest(tm.players, c, outfield).p;
+      else if (g.pressureCall[p.team] || !ctl || U.dist(ctl, c) > 110) presser = nearest(tm.players, c, outfield).p;
 
       if (p === presser) {
         let target = c;
@@ -196,8 +197,9 @@ window.SFC = window.SFC || {};
       // bóng đang được chuyền cho đồng đội -> không đuổi theo, giữ vị trí
       const passToMate = b.passTarget && b.passTarget.team === p.team && b.passTarget.state !== 'stun';
 
-      let chaser = nearest(tm.players, pred, (o) => o.role !== 'GK' && o.state === 'normal' && o !== g.controlled);
-      if (p.team === g.humanTeam && g.controlled && U.dist(g.controlled, pred) < chaser.d) chaser = { p: null };
+      const ctl = g.isHuman(p.team) ? g.ctrl[p.team] : null;
+      let chaser = nearest(tm.players, pred, (o) => o.role !== 'GK' && o.state === 'normal' && o !== ctl);
+      if (ctl && U.dist(ctl, pred) < chaser.d) chaser = { p: null };
       if (p === chaser.p && !passToMate) return moveTo(p, pred.x, pred.y, true, 1);
 
       const home = g.formationPos(p);

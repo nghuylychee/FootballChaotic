@@ -5,7 +5,12 @@ window.SFC = window.SFC || {};
   const U = SFC.U;
 
   class Game {
-    /** opts: { home, away, difficulty, humanTeam (0 | -1 cho demo), silent } */
+    /**
+     * opts: { home, away, difficulty, silent,
+     *         humanTeam: đội của người chơi tại máy này (góc nhìn UI; -1 = demo),
+     *         humans: các đội do người điều khiển (mặc định [humanTeam]; PvP = [0, 1]),
+     *         draftTimeLimit: giây tối đa để chọn Core (0 = không giới hạn) }
+     */
     constructor(opts) {
       const C = SFC_CONFIG.game;
       this.opts = opts;
@@ -18,6 +23,7 @@ window.SFC = window.SFC || {};
         gBot: f.y + f.h / 2 + f.goalWidth / 2,
       });
       this.humanTeam = opts.humanTeam != null ? opts.humanTeam : 0;
+      this.humans = opts.humans || (this.humanTeam >= 0 ? [this.humanTeam] : []);
       this.difficulty = C.ai.difficulty[opts.difficulty] || C.ai.difficulty[C.ai.defaultDifficulty || 'normal'];
       this.teammateProfile = C.ai.difficulty[C.ai.teammate] || this.difficulty;
 
@@ -35,8 +41,11 @@ window.SFC = window.SFC || {};
           this.players.push(p);
         });
       }
-      this.controlled = null;
-      this.pressureCall = false;
+      // trạng thái điều khiển theo từng đội người chơi
+      this.ctrl = [null, null];
+      this.receiveLock = [false, false];
+      this.pressureCall = [false, false];
+      this.passPreview = null;
       this.lastPossessionTeam = -1;
       this.time = 0;
       this.elapsed = 0;
@@ -52,7 +61,11 @@ window.SFC = window.SFC || {};
     /* ---------- helpers ---------- */
     sfx(name, arg) { if (!this.silent && SFC.Audio[name]) SFC.Audio[name](arg); }
     emit(type, data) { this.events.push(Object.assign({ type }, data)); }
-    aiProfile(team) { return team === this.humanTeam ? this.teammateProfile : this.difficulty; }
+    aiProfile(team) { return this.isHuman(team) ? this.teammateProfile : this.difficulty; }
+    isHuman(team) { return this.humans.includes(team); }
+    // cầu thủ người chơi tại máy này đang điều khiển
+    get controlled() { return this.humanTeam >= 0 ? this.ctrl[this.humanTeam] : null; }
+    inputFor(team, input) { return Array.isArray(input) ? input[team] : input; }
     chargeTime(p) { return this.cfg.kick.chargeTime * this.cores.mod(p.team, 'chargeTime'); }
     attackGoal(team) {
       const f = this.field;
@@ -70,19 +83,20 @@ window.SFC = window.SFC || {};
     }
 
     setControlled(p) {
-      if (this.controlled && this.controlled !== p) {
-        this.controlled.charging = false;
-        this.controlled.intent.mx = this.controlled.intent.my = 0;
+      const prev = this.ctrl[p.team];
+      if (prev && prev !== p) {
+        prev.charging = false;
+        prev.intent.mx = prev.intent.my = 0;
       }
-      this.controlled = p;
+      this.ctrl[p.team] = p;
     }
 
-    switchPlayer() {
-      if (this.humanTeam < 0) return;
-      const b = this.ball;
+    switchPlayer(team = this.humanTeam) {
+      if (!this.isHuman(team)) return;
+      const b = this.ball, cur = this.ctrl[team];
       let best = null, bd = Infinity;
-      for (const p of this.teams[this.humanTeam].players) {
-        if (p === this.controlled || p.role === 'GK') continue;
+      for (const p of this.teams[team].players) {
+        if (p === cur || p.role === 'GK') continue;
         const d = U.dist(p, b);
         if (d < bd) { bd = d; best = p; }
       }
@@ -121,9 +135,12 @@ window.SFC = window.SFC || {};
         this.cores.dispatch(p.team, 'onPossessionGained', p);
       }
       this.lastPossessionTeam = p.team;
-      if (p.team === this.humanTeam) this.setControlled(p);
-      else if (this.humanTeam >= 0 && this.cfg.match.autoSwitchOnDefense && this.controlled &&
-               (this.controlled.role === 'GK' || U.dist(this.controlled, p) > this.cfg.match.autoSwitchDistance)) this.switchPlayer();
+      for (const t of this.humans) {
+        const cur = this.ctrl[t];
+        if (p.team === t) this.setControlled(p);
+        else if (this.cfg.match.autoSwitchOnDefense && cur &&
+                 (cur.role === 'GK' || U.dist(cur, p) > this.cfg.match.autoSwitchDistance)) this.switchPlayer(t);
+      }
       this.sfx('touch');
     }
 
@@ -150,8 +167,8 @@ window.SFC = window.SFC || {};
       this.lastPossessionTeam = -1;
       this.gainPossession(fwd);
       this.lastPossessionTeam = teamIdx;
-      if (this.humanTeam >= 0) {
-        this.setControlled(teamIdx === this.humanTeam ? fwd : this.teams[this.humanTeam].players.find((p) => p.role === 'FWD'));
+      for (const t of this.humans) {
+        this.setControlled(teamIdx === t ? fwd : this.teams[t].players.find((p) => p.role === 'FWD'));
       }
     }
 
@@ -175,13 +192,24 @@ window.SFC = window.SFC || {};
           this.effects.update(dt);
           if (this.stateT <= 0) this.afterGoal();
           break;
-        default: // draft / ended: đứng hình
+        case 'draft':
+          // PvP: hết giờ chọn -> tự chọn thẻ đầu cho ai chưa chọn
+          if (this.draft && this.draft.limit > 0) {
+            this.draft.t -= dt;
+            if (this.draft.t <= 0) for (const t of this.humans) this.pickCore(0, t);
+          }
+          break;
+        default: // ended: đứng hình
           break;
       }
     }
 
     simulate(dt, input) {
-      if (this.humanTeam >= 0 && input) SFC.Human.update(dt, this, input);
+      this.passPreview = null;
+      for (const t of this.humans) {
+        const inp = input && this.inputFor(t, input);
+        if (inp) SFC.Human.update(dt, this, inp, t);
+      }
       SFC.AI.update(dt, this);
       for (const p of this.players) p.update(dt);
       this.separate();
@@ -218,27 +246,37 @@ window.SFC = window.SFC || {};
     startDraft() {
       const n = this.cfg.match.upgradeChoices;
       this.upgradeIdx++;
-      const aiTeams = [0, 1].filter((t) => t !== this.humanTeam);
+      const aiTeams = [0, 1].filter((t) => !this.isHuman(t));
       const aiPicks = aiTeams.map((t) => ({ team: t, id: this.cores.aiPick(t) })).filter((x) => x.id);
-      if (this.humanTeam < 0) {
-        this.emit('corePicked', { picks: aiPicks });
+      // mỗi đội người chơi có bộ thẻ riêng
+      const options = {};
+      for (const t of this.humans) options[t] = this.cores.rollOptions(t, n);
+      if (!this.humans.some((t) => options[t].length)) {
+        if (aiPicks.length) this.emit('corePicked', { picks: aiPicks });
         return;
       }
-      const options = this.cores.rollOptions(this.humanTeam, n);
-      if (!options.length) return;
+      const limit = this.opts.draftTimeLimit || 0;
       this.state = 'draft';
-      this.draft = { options, aiPicks, round: this.upgradeIdx };
+      this.draft = { options, picked: {}, aiPicks, round: this.upgradeIdx, limit, t: limit };
       this.releaseInputs();
-      this.emit('draft', { draft: this.draft });
+      this.emit('draft', { round: this.upgradeIdx });
       this.sfx('upgrade');
     }
 
-    pickCore(i) {
-      if (this.state !== 'draft' || !this.draft) return;
-      const id = this.draft.options[i];
+    // team chọn thẻ thứ i; Core chỉ được thêm khi mọi người chơi đã chọn xong
+    pickCore(i, team = this.humanTeam) {
+      const d = this.draft;
+      if (this.state !== 'draft' || !d || !d.options[team] || d.picked[team]) return;
+      const id = d.options[team][i];
       if (!id) return;
-      this.cores.add(this.humanTeam, id);
-      this.emit('corePicked', { picks: [{ team: this.humanTeam, id }].concat(this.draft.aiPicks) });
+      d.picked[team] = id;
+      if (this.humans.some((t) => d.options[t].length && !d.picked[t])) {
+        this.emit('draftWait', { team });
+        return;
+      }
+      const picks = this.humans.filter((t) => d.picked[t]).map((t) => ({ team: t, id: d.picked[t] }));
+      for (const pk of picks) this.cores.add(pk.team, pk.id);
+      this.emit('corePicked', { picks: picks.concat(d.aiPicks) });
       this.draft = null;
       // chọn xong -> đếm ngược giao bóng lại từ đầu
       this.state = 'kickoff';

@@ -220,10 +220,10 @@ window.SFC = window.SFC || {};
       p.cancelPass();
       p.facing = Math.atan2(plan.vy, plan.vx);
       g.cores.dispatch(p.team, 'onPass', p, target, mode);
-      if (target && p.team === g.humanTeam && g.controlled === p) {
+      if (target && g.isHuman(p.team) && p.isControlled) {
         g.setControlled(target);
         // mũi tên người chơi đang giữ là hướng chuyền, không phải lệnh cho người nhận -> khóa tới khi thả phím
-        g.receiveLock = true;
+        g.receiveLock[p.team] = true;
       }
       g.sfx('pass');
     },

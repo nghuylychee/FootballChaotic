@@ -58,9 +58,13 @@ window.SFC = window.SFC || {};
       }
       ctx.globalCompositeOperation = 'source-over';
 
-      // vòng chân người đang điều khiển
+      // vòng chân người đang điều khiển (PvP: người chơi tại máy = vàng, đối thủ = đỏ)
       const cp = g.controlled;
-      if (cp) ringPx(ctx, cp.x, cp.y + 1, 8, '#ffe14f');
+      const ctrlColor = (p) => (g.isHuman(p.team) && p.isControlled ? (p.team === g.humanTeam ? '#ffe14f' : '#ff5a6e') : null);
+      for (const t of g.humans) {
+        const c = g.ctrl[t];
+        if (c) ringPx(ctx, c.x, c.y + 1, 8, ctrlColor(c));
+      }
 
       // assisted passing chạy ngầm; chỉ hiện gợi ý người nhận khi bật showTargetHint (debug)
       const pv = g.state === 'play' && SFC_CONFIG.game.pass.showTargetHint ? g.passPreview : null;
@@ -86,9 +90,12 @@ window.SFC = window.SFC || {};
             const ay = hy - 13 + Math.round(Math.sin(t * 10));
             px(ctx, p.x - 3, ay, 7, 1, pvCol); px(ctx, p.x - 2, ay + 1, 5, 1, pvCol); px(ctx, p.x - 1, ay + 2, 3, 1, pvCol);
           }
-          if (p === cp) {
+          const cc = ctrlColor(p);
+          if (cc) {
             const ay = hy - 13 + Math.round(Math.sin(t * 8));
-            px(ctx, p.x - 3, ay, 7, 1, '#ffe14f'); px(ctx, p.x - 2, ay + 1, 5, 1, '#ffe14f'); px(ctx, p.x - 1, ay + 2, 3, 1, '#ffe14f');
+            px(ctx, p.x - 3, ay, 7, 1, cc); px(ctx, p.x - 2, ay + 1, 5, 1, cc); px(ctx, p.x - 1, ay + 2, 3, 1, cc);
+          }
+          if (p === cp) {
             if (p.stamina < SFC_CONFIG.game.player.staminaMax - 1) {
               px(ctx, p.x - 7, p.y + 4, 14, 2, SP().OUT);
               px(ctx, p.x - 6, p.y + 4, Math.round(12 * p.stamina / SFC_CONFIG.game.player.staminaMax), 1, p.stamina > 25 ? '#6bff7a' : '#ff5a4f');
