@@ -107,11 +107,13 @@ window.SFC = window.SFC || {};
       b.clearFx();
       b.noPickup.set(p.id, this.cfg.ball.looseNoPickup);
       p.charging = false; p.charge = 0;
+      p.cancelPass();
     }
 
     gainPossession(p) {
       const b = this.ball;
       b.setOwner(p);
+      p.cancelPass();
       p.ai.holdT = 0;
       p.ai.t = 0;
       p.ai.runT = 0;
@@ -131,6 +133,7 @@ window.SFC = window.SFC || {};
       this.state = 'kickoff';
       this.stateT = this.cfg.match.kickoffDelay;
       this.effects.clearHazards();
+      this.passPreview = null;
       this.ball.reset(f.cx, f.cy);
       for (const p of this.players) {
         const pos = this.formationPos(p);
@@ -197,11 +200,6 @@ window.SFC = window.SFC || {};
         return;
       }
       this.elapsed += dt;
-      if (this.upgradeIdx < M.upgradeTimes.length && this.elapsed >= M.upgradeTimes[this.upgradeIdx]) {
-        this.upgradeIdx++;
-        this.startDraft();
-        return;
-      }
       if (!this.finalPush && this.remaining <= M.finalPushTime) {
         this.finalPush = true;
         this.emit('banner', { text: 'FINAL PUSH', sub: 'Bàn thắng x' + M.finalPushGoalValue, color: '#ff3d5a' });
@@ -216,8 +214,10 @@ window.SFC = window.SFC || {};
       }
     }
 
+    // Mở Core Upgrade lúc bóng chết (gọi khi chuẩn bị giao bóng lại sau bàn thắng)
     startDraft() {
       const n = this.cfg.match.upgradeChoices;
+      this.upgradeIdx++;
       const aiTeams = [0, 1].filter((t) => t !== this.humanTeam);
       const aiPicks = aiTeams.map((t) => ({ team: t, id: this.cores.aiPick(t) })).filter((x) => x.id);
       if (this.humanTeam < 0) {
@@ -240,7 +240,9 @@ window.SFC = window.SFC || {};
       this.cores.add(this.humanTeam, id);
       this.emit('corePicked', { picks: [{ team: this.humanTeam, id }].concat(this.draft.aiPicks) });
       this.draft = null;
-      this.state = 'play';
+      // chọn xong -> đếm ngược giao bóng lại từ đầu
+      this.state = 'kickoff';
+      this.stateT = this.cfg.match.kickoffDelay;
       this.sfx('pick');
     }
 
@@ -276,8 +278,10 @@ window.SFC = window.SFC || {};
     }
 
     afterGoal() {
-      if (this.golden || this.elapsed >= this.cfg.match.duration) this.end();
-      else this.kickoff(1 - this.scoredBy);
+      if (this.golden || this.elapsed >= this.cfg.match.duration) return this.end();
+      this.kickoff(1 - this.scoredBy);
+      // bóng chết: xếp đội hình giao bóng xong thì mở Core Upgrade (nếu còn lượt)
+      if (this.upgradeIdx < this.cfg.match.maxUpgrades) this.startDraft();
     }
 
     end() {
@@ -310,10 +314,15 @@ window.SFC = window.SFC || {};
         return;
       }
       let best = null, bd = Infinity;
+      // đường chuyền còn sống -> đồng đội khác của người nhận không chặn bóng
+      const pt = b.passTarget;
+      const passAlive = pt && pt.state !== 'stun' && b.speed > 40;
       for (const p of this.players) {
         if (p.state === 'stun' || p.state === 'slide' || b.noPickup.has(p.id)) continue;
+        if (passAlive && p !== pt && p.team === pt.team) continue;
         const gk = p.role === 'GK' && Math.abs(p.x - this.ownGoal(p.team).x) < f.boxDepth;
-        const reach = p.radius + b.r + (gk ? C.player.gkReach + (p.state === 'dash' ? 5 : 0) : C.ball.pickupRange);
+        const reach = p.radius + b.r + (gk ? C.player.gkReach + (p.state === 'dash' ? 5 : 0) : C.ball.pickupRange)
+          + (b.passTarget === p ? C.pass.receiveRangeBonus : 0);
         const maxZ = gk ? C.player.gkCatchHeight : C.ball.pickupHeight;
         const d = U.dist(p, b);
         if (d < reach && b.z < maxZ && d < bd) { bd = d; best = p; }
@@ -347,7 +356,7 @@ window.SFC = window.SFC || {};
         // khoảng cách vuông góc từ thủ môn tới đường bay của bóng
         const perp = Math.abs((p.x - b.x) * dir.y - (p.y - b.y) * dir.x);
         const stretch = U.clamp(perp / reach, 0, 1);
-        let chance = C.player.gkSaveBase - Math.max(0, spd - 260) / C.player.gkSpeedPenalty - stretch * C.player.gkStretchPenalty;
+        let chance = C.player.gkSaveBase - Math.max(0, spd - C.player.gkSpeedFree) / C.player.gkSpeedPenalty - stretch * C.player.gkStretchPenalty;
         if (b.fx.thunder) chance -= b.fx.thunder.gkPenalty;
         if (b.fx.fire) chance -= 0.1;
         chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35), 0.15, 0.95);
@@ -385,6 +394,8 @@ window.SFC = window.SFC || {};
       b.lastTouch = p;
       b.lastKickTeam = -1;
       b.kind = null;
+      b.passTarget = null;
+      b.passPoint = null;
       b.clearFx();
       this.effects.burst(b.x, b.y, b.z, '#ffffff', 5, 60);
     }

@@ -59,7 +59,7 @@ window.SFC = window.SFC || {};
       if (p.charging) {
         p.charge += dt / g.chargeTime(p);
         moveTo(p, goal.x, goal.y, false);
-        if (p.charge >= p.ai.chargeTarget) Act().shoot(g, p, p.charge, p.ai.aimY);
+        if (Act().shotPower(g, p, p.charge) >= p.ai.chargeTarget) Act().shoot(g, p, p.charge, p.ai.aimY);
         return;
       }
 
@@ -191,12 +191,14 @@ window.SFC = window.SFC || {};
         x: U.clamp(b.x + b.vx * 0.3, f.x + 6, f.x + f.w - 6),
         y: U.clamp(b.y + b.vy * 0.3, f.y + 6, f.y + f.h - 6),
       };
-      // người nhận đường chuyền luôn chạy đón bóng
-      if (b.passTarget === p) return moveTo(p, pred.x, pred.y, true, 1);
+      // người nhận đường chuyền: chủ động chạy tới điểm đón bóng sớm nhất
+      if (b.passTarget === p) { Act().receiveMove(g, p); return; }
+      // bóng đang được chuyền cho đồng đội -> không đuổi theo, giữ vị trí
+      const passToMate = b.passTarget && b.passTarget.team === p.team && b.passTarget.state !== 'stun';
 
       let chaser = nearest(tm.players, pred, (o) => o.role !== 'GK' && o.state === 'normal' && o !== g.controlled);
       if (p.team === g.humanTeam && g.controlled && U.dist(g.controlled, pred) < chaser.d) chaser = { p: null };
-      if (p === chaser.p) return moveTo(p, pred.x, pred.y, true, 1);
+      if (p === chaser.p && !passToMate) return moveTo(p, pred.x, pred.y, true, 1);
 
       const home = g.formationPos(p);
       moveTo(p, home.x + (b.x - f.cx) * 0.35, home.y + (b.y - f.cy) * 0.25, false, 6);

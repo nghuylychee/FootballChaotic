@@ -33,6 +33,10 @@ window.SFC = window.SFC || {};
       this.sprinting = false;
       this.charging = false;
       this.charge = 0;
+      this.passMode = null;   // đang nạp lực chuyền: ground | through | lob
+      this.passCharge = 0;
+      this.passKey = null;
+      this.passLock = null;   // người nhận đang được chọn
       this.tackleImmune = 0;
       this.hitImmune = 0;
       this.ironCd = 0;
@@ -143,6 +147,14 @@ window.SFC = window.SFC || {};
       if (moving) this.turnTo(Math.atan2(my, mx), dt);
     }
 
+    cancelPass() {
+      this.passMode = null;
+      this.passCharge = 0;
+      this.passBase = 0;
+      this.passKey = null;
+      this.passLock = null;
+    }
+
     turnTo(angle, dt) {
       const d = U.angleDiff(this.facing, angle);
       const step = SFC_CONFIG.game.player.turnRate * dt;
@@ -170,6 +182,7 @@ window.SFC = window.SFC || {};
       this.stateT = stun;
       this.charging = false;
       this.charge = 0;
+      this.cancelPass();
       this.flash = 0.12;
       this.hitImmune = stun;
       g.effects.burst(this.x, this.y, 14, '#fff6a0', 6, 60);

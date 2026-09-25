@@ -36,10 +36,10 @@ SFC_CONFIG.controls = {
     attack: [
       ['← ↑ ↓ →', 'Di chuyển'],
       ['E (giữ)', 'Chạy nước rút'],
-      ['S', 'Chuyền ngắn'],
-      ['W', 'Chọc khe'],
-      ['A', 'Chuyền bổng'],
-      ['D (giữ/thả)', 'Sút — ↑/↓ chỉnh góc'],
+      ['S (giữ)', 'Chuyền sệt'],
+      ['W (giữ)', 'Chọc khe'],
+      ['A (giữ)', 'Chuyền bổng'],
+      ['D (giữ)', 'Sút · ↑↓ chỉnh góc'],
       ['Z', 'Skill move (né tắc)'],
     ],
     defense: [
@@ -58,12 +58,5 @@ SFC_CONFIG.controls = {
       ['Esc / P', 'Tạm dừng'],
       ['M', 'Tắt/bật âm'],
     ],
-  },
-
-  // Dòng gợi ý phía dưới màn hình trong trận
-  hints: {
-    attack:  'S Chuyền · W Chọc khe · A Bổng · D Sút · Z Skill · E Chạy',
-    defense: 'S Tắc · D Xoạc · A Va vai · W Gọi áp sát · Q Đổi người',
-    support: 'S/W/A Đòi bóng · Z Lướt · E Chạy · Q Đổi người',
   },
 };

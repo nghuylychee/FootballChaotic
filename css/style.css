@@ -107,11 +107,6 @@ kbd {
 .hud-time.hot { color: #ff5a6e; animation: pulse 0.5s steps(2) infinite; }
 .hud-phase { font-family: var(--px); font-size: 5px; color: var(--gold); margin-top: 2px; }
 
-#hint {
-  position: absolute; left: 50%; bottom: 3px; transform: translateX(-50%);
-  font-size: 11px; color: #cfc6b4; background: rgba(20,12,22,0.7); padding: 0 6px; white-space: nowrap; pointer-events: none;
-}
-
 /* ---------- BANNER / TOAST ---------- */
 #banner {
   position: absolute; left: 0; right: 0; top: 118px; text-align: center; pointer-events: none;

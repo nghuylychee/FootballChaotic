@@ -23,7 +23,7 @@ window.SFC = window.SFC || {};
       this.app = app;
       this.el = {
         menu: $('menu'), draft: $('draft'), pause: $('pause'), end: $('end'),
-        hud: $('hud'), hint: $('hint'), banner: $('banner'), toasts: $('toasts'),
+        hud: $('hud'), banner: $('banner'), toasts: $('toasts'),
       };
       this.menuRow = 0;
       this.draftSel = 0;
@@ -38,7 +38,6 @@ window.SFC = window.SFC || {};
       ['menu', 'draft', 'pause', 'end'].forEach((k) => this.el[k].classList.toggle('hidden', k !== name));
       const inGame = name !== 'menu';
       this.el.hud.classList.toggle('hidden', !inGame);
-      this.el.hint.classList.toggle('hidden', !inGame);
     },
 
     /* ================= MENU ================= */
@@ -121,7 +120,7 @@ window.SFC = window.SFC || {};
     renderDraft(game) {
       const d = game.draft;
       if (!d) return;
-      const total = SFC_CONFIG.game.match.upgradeTimes.length;
+      const total = SFC_CONFIG.game.match.maxUpgrades;
       const cards = d.options.map((id, i) => {
         const c = CORES().list[id];
         const cat = CORES().categories[c.category];
@@ -250,11 +249,6 @@ window.SFC = window.SFC || {};
             <div class="hud-cores">${game.cores.owned[1].map((id) => coreChip(id)).join('')}</div>
           </div>`;
       }
-      // hint theo ngữ cảnh
-      const b = game.ball, p = game.controlled;
-      const H = SFC_CONFIG.controls.hints;
-      const mode = !p ? '' : b.owner === p ? 'attack' : b.owner && b.owner.team === p.team ? 'support' : 'defense';
-      if (c.mode !== mode) { c.mode = mode; this.el.hint.textContent = H[mode] || ''; }
     },
 
     /* ================= THÔNG BÁO ================= */

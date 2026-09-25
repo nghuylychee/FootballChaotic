@@ -8,27 +8,117 @@ window.SFC = window.SFC || {};
   function facingVec(p) { return { x: Math.cos(p.facing), y: Math.sin(p.facing) }; }
 
   const Actions = {
-    // Chọn đồng đội phù hợp nhất theo hướng (dx, dy)
-    findPassTarget(g, p, dx, dy) {
+    /**
+     * Chọn người nhận: ưu tiên hướng phím, khoảng cách khớp với lực (nếu có), độ trống.
+     * power = null -> không xét lực (AI). prev = mục tiêu đang khóa (chống nhảy mục tiêu).
+     * cone (độ) -> chỉ xét đồng đội nằm trong vùng quanh hướng; không có ai -> null.
+     */
+    findPassTarget(g, p, dx, dy, power = null, mode = 'ground', prev = null, cone = null) {
+      const P = G().pass;
       const dir = Math.hypot(dx, dy) > 0.2 ? U.norm(dx, dy) : facingVec(p);
+      const maxAng = cone == null ? Infinity : (cone * Math.PI) / 180;
+      const pref = power == null ? null : U.lerp(P.minDist, P.maxDist, power);
       const opps = g.teams[1 - p.team].players;
       let best = null, bestS = -Infinity;
       for (const m of g.teams[p.team].players) {
         if (m === p || m.state === 'stun') continue;
         const tx = m.x - p.x, ty = m.y - p.y;
         const d = Math.hypot(tx, ty) || 1;
-        const dot = (tx * dir.x + ty * dir.y) / d;
-        let s = dot * 2.2 - d / 260;
+        const ang = Math.acos(U.clamp((tx * dir.x + ty * dir.y) / d, -1, 1));
+        if (ang > maxAng) continue;
+        let s = -ang * P.angleWeight;
+        s -= pref == null ? d / 300 : (Math.abs(d - pref) / 200) * P.distWeight;
         let oppD = Infinity;
         for (const o of opps) {
           oppD = Math.min(oppD, U.dist(o, m));
-          if (U.segDist(o.x, o.y, p.x, p.y, m.x, m.y) < 10) s -= 0.7;
+          if (mode !== 'lob' && o.role !== 'GK' && U.segDist(o.x, o.y, p.x, p.y, m.x, m.y) < 10) s -= 0.5;
         }
-        s += Math.min(oppD, 60) / 60 * 0.6;
-        if (m.role === 'GK') s -= 0.8;
+        s += (Math.min(oppD, 60) / 60) * 0.4;
+        if (m.role === 'GK') s -= 1.6;
+        if (m === prev) s += P.switchMargin;
         if (s > bestS) { bestS = s; best = m; }
       }
       return best;
+    },
+
+    /**
+     * Tính đường chuyền tới người nhận: điểm nhận bóng + vận tốc bóng.
+     * power = null -> lực lý tưởng (AI). exact = true -> bỏ sai số (dùng cho preview).
+     */
+    passPlan(g, p, target, mode, power, dx = 0, dy = 0, exact = false) {
+      const P = G().pass, B = G().ball, f = g.field, b = g.ball;
+      const mult = p.stats.pass * g.cores.mod(p.team, 'passSpeed');
+      const clampPt = (pt) => ({ x: U.clamp(pt.x, f.x + 10, f.x + f.w - 10), y: U.clamp(pt.y, f.y + 10, f.y + f.h - 10) });
+      const idealOf = (d) => U.clamp((d - P.minDist) / (P.maxDist - P.minDist), 0, 1);
+      // lực mặc định = lực lý tưởng theo khoảng cách; giữ vượt mức đó -> bóng căng hơn
+      const powerFactor = (ideal) => {
+        if (power == null || power <= ideal) return 1;
+        return 1 + (power - ideal) * (1 - P.powerAssist) * P.powerSensitivity;
+      };
+
+      // không có người nhận trong vùng hướng -> chuyền thẳng theo hướng mũi tên, lực = quãng đường
+      if (!target) {
+        const dir = Math.hypot(dx, dy) > 0.2 ? U.norm(dx, dy) : facingVec(p);
+        let pw = power == null ? 0.5 : power;
+        if (mode === 'through') pw = Math.max(P.throughBase, pw);
+        const D = U.lerp(P.freeMinDist, P.freeMaxDist, pw) * mult;
+        const point = clampPt({ x: b.x + dir.x * D, y: b.y + dir.y * D });
+        if (mode === 'lob') {
+          const T = U.lerp(P.lobTimeMin, P.lobTimeMax, pw);
+          const vh = (B.airDrag * D) / (1 - Math.exp(-B.airDrag * T));
+          return { point, vx: dir.x * vh, vy: dir.y * vh, vz: (B.gravity * T) / 2, T };
+        }
+        const arrive = mode === 'through' ? P.freeThroughArrive * mult : 30;
+        const spd = U.clamp(B.groundFriction * D + arrive, P.minSpeed, P.maxSpeed * mult);
+        return { point, vx: dir.x * spd, vy: dir.y * spd, vz: 0, T: 1 };
+      }
+
+      let point, spd, vz = 0, T = 0.5;
+      const k = B.groundFriction;
+      if (mode === 'through') {
+        // bóng vào khoảng trống phía trước người nhận; lực quyết định độ sâu
+        const goal = g.attackGoal(p.team);
+        const run = U.norm(g.teams[p.team].dir, U.clamp((goal.y - target.y) / 250, -0.6, 0.6));
+        const depth = U.lerp(P.throughLeadMin, P.throughLeadMax, power == null ? 0.5 : Math.max(P.throughBase, power));
+        point = clampPt({ x: target.x + run.x * depth, y: target.y + run.y * depth });
+        const d = U.dist(b, point) || 1;
+        // lực mặc định cao như chuyền sệt: bóng tới điểm nhận vẫn còn throughArriveSpeed,
+        // người nhận chủ động băng lên đón (receiveMove) thay vì bóng lăn chậm chờ người
+        spd = U.clamp(P.throughArriveSpeed * mult + k * d, P.minSpeed, P.maxSpeed * mult);
+        T = -Math.log(Math.max(0.02, 1 - (k * d) / spd)) / k;
+      } else if (mode === 'lob') {
+        let d = 1;
+        for (let i = 0; i < 4; i++) {
+          point = clampPt({ x: target.x + target.vx * P.receiverLead * T, y: target.y + target.vy * P.receiverLead * T });
+          d = U.dist(b, point) || 1;
+          T = U.lerp(P.lobTimeMin, P.lobTimeMax, idealOf(d));
+        }
+        const ka = B.airDrag;
+        spd = ((ka * d) / (1 - Math.exp(-ka * T))) * powerFactor(idealOf(d));
+        vz = (B.gravity * T) / 2;
+      } else {
+        // chuyền sệt: v(x) = v0 - k*x  ->  v0 = tốc độ tới chân + k*d
+        for (let i = 0; i < 4; i++) {
+          point = clampPt({ x: target.x + target.vx * P.receiverLead * T, y: target.y + target.vy * P.receiverLead * T });
+          const d = U.dist(b, point) || 1;
+          spd = (P.arriveSpeed * mult + k * d) * powerFactor(idealOf(d));
+          spd = U.clamp(spd, P.minSpeed, P.maxSpeed * mult);
+          T = k * d < spd * 0.98 ? -Math.log(1 - (k * d) / spd) / k : 1.5;
+        }
+      }
+
+      // hỗ trợ hướng: 1 = căn chuẩn vào điểm nhận
+      let dir = U.norm(point.x - b.x, point.y - b.y);
+      if (P.aimAssist < 1 && Math.hypot(dx, dy) > 0.2) {
+        const inp = U.norm(dx, dy);
+        dir = U.norm(U.lerp(inp.x, dir.x, P.aimAssist), U.lerp(inp.y, dir.y, P.aimAssist));
+      }
+      if (!exact) {
+        const e = U.rand(-1, 1) * P.spread / p.stats.pass;
+        const c = Math.cos(e), s = Math.sin(e);
+        dir = { x: dir.x * c - dir.y * s, y: dir.x * s + dir.y * c };
+      }
+      return { point, vx: dir.x * spd, vy: dir.y * spd, vz, T };
     },
 
     laneClear(g, p, x, y, width) {
@@ -39,52 +129,116 @@ window.SFC = window.SFC || {};
       return true;
     },
 
-    pass(g, p, mode, dx, dy) {
-      if (g.ball.owner !== p) return;
-      const target = this.findPassTarget(g, p, dx, dy);
-      this.passTo(g, p, target, mode, dx, dy);
+    // Chỉ khi giữ lực có chủ đích mới ưu tiên người ở xa; chạm nhẹ -> chọn thuần theo hướng
+    targetBias(power) {
+      return power != null && power > G().pass.farTargetCharge ? power : null;
     },
 
-    passTo(g, p, target, mode, dx = 0, dy = 0) {
-      const b = g.ball, K = G().kick, f = g.field;
-      if (b.owner !== p) return;
-      let aimX, aimY;
-      if (!target) {
-        const dir = Math.hypot(dx, dy) > 0.2 ? U.norm(dx, dy) : facingVec(p);
-        aimX = p.x + dir.x * 120; aimY = p.y + dir.y * 120;
-      } else if (mode === 'through') {
-        const ad = g.teams[p.team].dir;
-        const tv = U.norm(target.vx * 0.5 + ad * 60, target.vy * 0.5);
-        aimX = U.clamp(target.x + tv.x * K.throughLead, f.x + 12, f.x + f.w - 12);
-        aimY = U.clamp(target.y + tv.y * K.throughLead, f.y + 12, f.y + f.h - 12);
-        target.ai.runTo = { x: aimX, y: aimY };
-        target.ai.runT = 1.2;
+    // Lực mặc định (0..1) cho người nhận hiện tại — hiển thị làm mốc trên thanh lực
+    passBasePower(g, p, target, mode) {
+      const P = G().pass;
+      if (!target) return 0;
+      if (mode === 'through') return P.throughBase;
+      return U.clamp((U.dist(g.ball, target) - P.minDist) / (P.maxDist - P.minDist), 0, 1);
+    },
+
+    // Người chơi: chỉ khóa người nhận nằm trong vùng hướng mũi tên; không có ai -> chuyền theo hướng
+    pass(g, p, mode, dx, dy, power = null) {
+      if (g.ball.owner !== p) return;
+      const lock = p.passLock && p.passLock.state !== 'stun' ? p.passLock : null;
+      const target = lock || this.findPassTarget(g, p, dx, dy, this.targetBias(power), mode, null, G().pass.coneAngle);
+      this.passTo(g, p, target, mode, dx, dy, power);
+    },
+
+    // Người nhận chủ động đón bóng: chạy tới điểm đón sớm nhất trên quỹ đạo, đứng chờ thì quay mặt về bóng
+    receiveMove(g, p) {
+      const b = g.ball;
+      const ip = this.interceptPoint(g, p);
+      const dx = ip.x - p.x, dy = ip.y - p.y, d = Math.hypot(dx, dy);
+      if (d > 1.5) {
+        const s = Math.min(1, d / 14);
+        p.intent.mx = (dx / d) * s;
+        p.intent.my = (dy / d) * s;
       } else {
-        const t = U.dist(p, target) / 260;
-        aimX = target.x + target.vx * t * 0.8;
-        aimY = target.y + target.vy * t * 0.8;
+        p.intent.mx = 0;
+        p.intent.my = 0;
+        const want = Math.atan2(b.y - p.y, b.x - p.x);
+        p.facing += U.angleDiff(p.facing, want) * 0.25;
       }
+      p.intent.sprint = d > 24;
+      return ip;
+    },
 
-      const ddx = aimX - b.x, ddy = aimY - b.y;
-      const d = Math.hypot(ddx, ddy) || 1;
-      const mult = p.stats.pass * g.cores.mod(p.team, 'passSpeed');
+    /**
+     * Mô phỏng trước quỹ đạo bóng, trả về điểm sớm nhất cầu thủ p có thể chạm bóng.
+     * { x, y, t } — t = thời điểm (s) bóng tới điểm đó.
+     */
+    interceptPoint(g, p, maxT = 2) {
+      const b = g.ball, B = G().ball, f = g.field, r = b.r;
+      let x = b.x, y = b.y, z = b.z, vx = b.vx, vy = b.vy, vz = b.vz;
+      const dt = 1 / 30;
+      const speed = G().player.speed * p.stats.speed * G().player.sprintMult * 0.9;
+      const reach = p.radius + r + B.pickupRange;
+      for (let t = dt; t <= maxT; t += dt) {
+        x += vx * dt; y += vy * dt;
+        vz -= B.gravity * dt; z += vz * dt;
+        if (z <= 0) {
+          z = 0;
+          if (vz < -50) { vz = -vz * B.bounce; vx *= 0.78; vy *= 0.78; } else vz = 0;
+        }
+        const damp = Math.exp(-(z > 0.5 ? B.airDrag : B.groundFriction) * b.frictionMult * dt);
+        vx *= damp; vy *= damp;
+        if (y < f.y + r || y > f.y + f.h - r) { vy = -vy * B.wallBounce; y = U.clamp(y, f.y + r, f.y + f.h - r); }
+        if (x < f.x + r || x > f.x + f.w - r) { vx = -vx * B.wallBounce; x = U.clamp(x, f.x + r, f.x + f.w - r); }
+        if (z > B.pickupHeight) continue;
+        const need = Math.max(0, Math.hypot(x - p.x, y - p.y) - reach) / speed + 0.08;
+        if (need <= t) return { x, y, t };
+        if (z === 0 && Math.hypot(vx, vy) < 5) return { x, y, t: need };
+      }
+      return { x, y, t: maxT };
+    },
 
-      if (mode === 'lob') {
-        const T = U.clamp(d / K.lobSpeed, 0.45, 1.4);
-        const vh = (d / T) * 0.92;
-        b.kick(p, (ddx / d) * vh, (ddy / d) * vh, (G().ball.gravity * T) / 2);
-      } else {
-        let spd = U.clamp(60 + d * G().ball.groundFriction * 1.35, K.passMinSpeed, K.passMaxSpeed) * mult;
-        if (mode === 'through') spd *= K.throughSpeedMult;
-        b.kick(p, (ddx / d) * spd, (ddy / d) * spd, 0);
+    passTo(g, p, target, mode, dx = 0, dy = 0, power = null) {
+      const b = g.ball;
+      if (b.owner !== p) return;
+      const plan = this.passPlan(g, p, target, mode, power, dx, dy);
+      b.kick(p, plan.vx, plan.vy, plan.vz);
+      // chuyền vào khoảng trống: đồng đội đón được bóng sớm nhất trở thành người nhận
+      if (!target) {
+        let best = null, bestT = G().pass.freeReceiverMaxTime;
+        for (const m of g.teams[p.team].players) {
+          if (m === p || m.role === 'GK' || m.state === 'stun') continue;
+          const ip = this.interceptPoint(g, m, bestT);
+          if (ip.t < bestT) { bestT = ip.t; best = m; }
+        }
+        target = best;
       }
       b.passTarget = target;
+      b.passPoint = plan.point;
       b.kind = 'pass';
       p.charging = false; p.charge = 0;
-      p.facing = Math.atan2(ddy, ddx);
+      p.cancelPass();
+      p.facing = Math.atan2(plan.vy, plan.vx);
       g.cores.dispatch(p.team, 'onPass', p, target, mode);
-      if (target && p.team === g.humanTeam && g.controlled === p) g.setControlled(target);
+      if (target && p.team === g.humanTeam && g.controlled === p) {
+        g.setControlled(target);
+        // mũi tên người chơi đang giữ là hướng chuyền, không phải lệnh cho người nhận -> khóa tới khi thả phím
+        g.receiveLock = true;
+      }
       g.sfx('pass');
+    },
+
+    // Lực sút mặc định (0..1) theo khoảng cách tới khung thành — mốc trên thanh lực sút
+    shotBasePower(g, p) {
+      const K = G().kick, goal = g.attackGoal(p.team);
+      const k = U.clamp((U.dist(p, goal) - K.shotBaseNearDist) / (K.shotBaseFarDist - K.shotBaseNearDist), 0, 1);
+      return U.lerp(K.shotBaseNear, K.shotBaseFar, k);
+    },
+
+    // Lực sút thực tế: lực mặc định + phần giữ thêm lấp đầy phần còn lại của thanh
+    shotPower(g, p, charge) {
+      const base = this.shotBasePower(g, p);
+      return base + (1 - base) * Math.min(charge, 1);
     },
 
     shoot(g, p, charge, aimY) {
@@ -94,7 +248,8 @@ window.SFC = window.SFC || {};
       const gx = tm.dir > 0 ? f.x + f.w + 6 : f.x - 6;
       const ay = U.clamp(aimY || 0, -1, 1);
       const gy = f.cy + ay * (f.goalWidth / 2 - 6);
-      const c = Math.min(charge, 1);
+      const held = Math.min(charge, 1);   // phần người chơi thực sự giữ (Core Fire/Thunder dựa vào mức này)
+      const c = this.shotPower(g, p, charge);
       const over = Math.max(0, charge - 1);
 
       const acc = p.stats.accuracy * g.cores.mod(p.team, 'accuracy');
@@ -108,7 +263,7 @@ window.SFC = window.SFC || {};
       b.kind = 'shot';
       p.facing = ang;
       p.charging = false; p.charge = 0;
-      g.cores.dispatch(p.team, 'onShoot', p, b, c);
+      g.cores.dispatch(p.team, 'onShoot', p, b, held);
       g.effects.burst(b.x, b.y, 2, '#ffffff', 5 + Math.round(c * 6), 80);
       g.effects.shake(G().fx.shakeShot * c);
       g.sfx('kick', c);

@@ -17,7 +17,7 @@ window.SFC = window.SFC || {};
       Object.assign(this, {
         x, y, z: 0, vx: 0, vy: 0, vz: 0,
         owner: null, lastTouch: null, lastKickTeam: -1,
-        passTarget: null, kind: null, roll: 0, trailT: 0,
+        passTarget: null, passPoint: null, kind: null, roll: 0, trailT: 0,
         netSide: 0, shieldChecked: false,
       });
       this.noPickup.clear();
@@ -41,6 +41,7 @@ window.SFC = window.SFC || {};
       this.vx = this.vy = this.vz = 0;
       this.z = 0;
       this.passTarget = null;
+      this.passPoint = null;
       this.kind = null;
       this.clearFx();
     }
@@ -53,6 +54,7 @@ window.SFC = window.SFC || {};
       this.lastKickTeam = p ? p.team : -1;
       if (p) this.noPickup.set(p.id, SFC_CONFIG.game.ball.selfPickupDelay);
       this.passTarget = null;
+      this.passPoint = null;
       this.kind = null;
       this.shieldChecked = false;
       this.clearFx();

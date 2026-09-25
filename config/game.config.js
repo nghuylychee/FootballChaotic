@@ -29,7 +29,8 @@ SFC_CONFIG.game = {
 
   match: {
     duration: 150,               // giây
-    upgradeTimes: [15, 55, 95],  // mốc thời gian (giây đã trôi) mở Core Upgrade
+    // Core Upgrade chỉ mở khi bóng chết: sau mỗi bàn thắng, trước khi giao bóng lại
+    maxUpgrades: 4,              // số lần chọn Core tối đa mỗi trận
     upgradeChoices: 3,
     finalPushTime: 30,           // 30s cuối = FINAL PUSH
     finalPushGoalValue: 2,       // bàn thắng trong Final Push được x2
@@ -67,7 +68,8 @@ SFC_CONFIG.game = {
     gkCatchHeight: 30,
     gkSaveBase: 0.95,
     gkStretchPenalty: 0.6,    // phạt tỉ lệ bắt bóng khi phải vươn người (bóng góc)
-    gkSpeedPenalty: 700,      // mỗi (N px/s) vượt 260 -> giảm 100% tỉ lệ bắt
+    gkSpeedFree: 340,         // bóng chậm hơn mức này: thủ môn bắt không bị phạt tốc độ (khớp với lực sút mặc định)
+    gkSpeedPenalty: 700,      // mỗi (N px/s) vượt gkSpeedFree -> giảm 100% tỉ lệ bắt
     gkParryShare: 0.6,        // khi bắt hụt: tỉ lệ đẩy được bóng ra, còn lại bóng lọt lưới
     gkSpeedMult: 1.1,         // thủ môn di chuyển nhanh hơn trong vòng cấm
     gkDiveSpeed: 250,
@@ -91,15 +93,53 @@ SFC_CONFIG.game = {
     trailLength: 7,
   },
 
+  // Chuyền bóng: giữ S/W/A để nạp thanh lực, thả để chuyền.
+  // Lực + hướng phím -> chọn người nhận; hướng bóng được tự căn vào người nhận.
+  pass: {
+    chargeTime: 0.7,          // giây giữ phím để đầy thanh lực
+    // Lực mặc định = lực lý tưởng theo khoảng cách tới người nhận (chạm nhẹ là bóng tới chân).
+    // Giữ phím vượt mức mặc định -> bóng căng hơn.
+    minDist: 30,              // khoảng cách ứng với lực 0%  (px)
+    maxDist: 320,             // khoảng cách ứng với lực 100% (px)
+    farTargetCharge: 0.35,    // giữ quá mức này -> ưu tiên đồng đội ở xa hơn khi chọn người nhận
+    coneAngle: 35,            // (độ) nửa góc vùng quanh hướng mũi tên; có đồng đội trong vùng mới khóa làm người nhận,
+                              //      không có ai -> bóng đi thẳng theo hướng mũi tên
+    freeMinDist: 70,          // chuyền vào khoảng trống: quãng đường bóng lăn khi chạm nhẹ (px)
+    freeMaxDist: 300,         //                          quãng đường khi đầy lực (px)
+    freeReceiverMaxTime: 1.6, // chuyền vào khoảng trống: đồng đội đón được bóng trong thời gian này -> thành người nhận
+    aimAssist: 1.0,           // 1 = hướng bóng căn chuẩn vào người nhận; 0 = đi theo hướng phím
+    powerAssist: 0.3,         // phần lực thừa (vượt mặc định) bị giảm bớt: 0 = giữ nguyên, 1 = bỏ hẳn
+    powerSensitivity: 0.7,    // lực thừa làm bóng nhanh thêm bao nhiêu
+    arriveSpeed: 150,         // tốc độ bóng khi tới chân người nhận (cao = luân chuyển nhanh, căng)
+    minSpeed: 140,
+    maxSpeed: 480,
+    showTargetHint: false,    // true = hiện vòng/mũi tên trên người nhận khi nạp lực (debug)
+    spread: 0.015,            // sai số hướng (rad), chia cho chỉ số pass
+    receiverLead: 0.7,        // mức đón đầu theo vận tốc hiện tại của người nhận
+    throughLeadMin: 24,       // chọc khe: lực thấp -> bóng vào khoảng trống gần
+    throughLeadMax: 95,       //           lực cao  -> bóng vào sâu
+    throughBase: 0.35,        // độ sâu mặc định khi chỉ chạm nhẹ
+    throughArriveSpeed: 130,  // tốc độ bóng chọc khe khi tới điểm nhận (lực mặc định = tốc độ này + ma sát theo khoảng cách)
+    freeThroughArrive: 80,    // chọc khe vào khoảng trống (không có người nhận): bóng vẫn còn lực khi qua điểm rơi
+    lobTimeMin: 0.45,         // chuyền bổng: thời gian bay (s) theo khoảng cách
+    lobTimeMax: 1.0,
+    angleWeight: 2.6,         // độ ưu tiên hướng phím khi chọn người nhận
+    distWeight: 1.2,          // độ ưu tiên khoảng cách theo lực
+    switchMargin: 0.35,       // chống nhảy mục tiêu liên tục khi đang nạp lực
+    receiveRangeBonus: 5,     // người nhận đích danh khống chế bóng dễ hơn (px)
+    receiveAssist: true,      // người nhận tự chủ động chạy tới điểm đón bóng (người chơi bấm hướng mới thì được giành quyền)
+  },
+
   kick: {
-    passMinSpeed: 150,
-    passMaxSpeed: 340,
-    throughLead: 48,
-    throughSpeedMult: 0.95,
-    lobSpeed: 175,
     shotMinSpeed: 250,
     shotMaxSpeed: 450,
     chargeTime: 0.8,         // giây để đầy lực
+    // Lực mặc định (chạm nhẹ D) tính theo khoảng cách tới khung thành, giống chuyền:
+    // gần -> shotBaseNear, xa -> shotBaseFar. Giữ D chỉ nạp thêm phần còn lại của thanh lực.
+    shotBaseNear: 0.45,
+    shotBaseFar: 0.8,
+    shotBaseNearDist: 60,    // px tới khung thành
+    shotBaseFarDist: 240,
     maxOvercharge: 1.25,     // giữ quá lâu -> bóng bay cao, lệch
     shotLiftMin: 10,
     shotLiftMax: 105,

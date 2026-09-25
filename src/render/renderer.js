@@ -3,6 +3,8 @@ window.SFC = window.SFC || {};
 
 (function () {
   const SP = () => SFC.Sprites;
+  const U = SFC.U;
+  const PASS_COLORS = { ground: '#7fe7ff', through: '#9dff3d', lob: '#ffb13d' };
 
   const R = {
     init(canvas) {
@@ -60,6 +62,11 @@ window.SFC = window.SFC || {};
       const cp = g.controlled;
       if (cp) ringPx(ctx, cp.x, cp.y + 1, 8, '#ffe14f');
 
+      // assisted passing chạy ngầm; chỉ hiện gợi ý người nhận khi bật showTargetHint (debug)
+      const pv = g.state === 'play' && SFC_CONFIG.game.pass.showTargetHint ? g.passPreview : null;
+      const pvCol = pv ? PASS_COLORS[pv.mode] : null;
+      if (pv && pv.target) ringPx(ctx, pv.target.x, pv.target.y + 1, 9 + Math.round(Math.sin(t * 10)), pvCol);
+
       /* --- entity y-sort --- */
       const list = [];
       for (const p of g.players) list.push({ y: p.y, k: 'p', o: p });
@@ -74,6 +81,11 @@ window.SFC = window.SFC || {};
           const hy = drawPlayer(ctx, p, g);
           if (p.ironCd <= 0 && g.cores.has(p.team, 'iron_body')) px(ctx, p.x - 1, hy - 10, 3, 2, '#ffd23f');
           if (p.charging) this.chargeBar(ctx, p, hy, g);
+          if (p.passMode) this.passBar(ctx, p, hy);
+          if (pv && pv.target === p) {
+            const ay = hy - 13 + Math.round(Math.sin(t * 10));
+            px(ctx, p.x - 3, ay, 7, 1, pvCol); px(ctx, p.x - 2, ay + 1, 5, 1, pvCol); px(ctx, p.x - 1, ay + 2, 3, 1, pvCol);
+          }
           if (p === cp) {
             const ay = hy - 13 + Math.round(Math.sin(t * 8));
             px(ctx, p.x - 3, ay, 7, 1, '#ffe14f'); px(ctx, p.x - 2, ay + 1, 5, 1, '#ffe14f'); px(ctx, p.x - 1, ay + 2, 3, 1, '#ffe14f');
@@ -152,10 +164,31 @@ window.SFC = window.SFC || {};
       const { px, OUT } = SP();
       const K = SFC_CONFIG.game.kick;
       const w = 18, x = Math.round(p.x - w / 2), y = hy - 16;
-      const c = Math.min(p.charge, 1), over = Math.max(0, p.charge - 1) / (K.maxOvercharge - 1);
+      const base = SFC.Actions.shotBasePower(g, p);
+      const c = SFC.Actions.shotPower(g, p, p.charge), over = Math.max(0, p.charge - 1) / (K.maxOvercharge - 1);
+      const col = over > 0 ? '#ff3d3d' : c > 0.85 ? '#ffb13d' : '#ffe14f';
       px(ctx, x - 1, y - 1, w + 2, 5, OUT);
-      px(ctx, x, y, Math.round(w * c), 3, over > 0 ? '#ff3d3d' : c > 0.66 ? '#ffb13d' : '#ffe14f');
+      // lực mặc định theo khoảng cách — mờ; phần giữ thêm — đậm
+      ctx.globalAlpha = 0.45;
+      px(ctx, x, y, Math.round(w * base), 3, col);
+      ctx.globalAlpha = 1;
+      if (c > base + 0.01) px(ctx, x, y, Math.round(w * c), 3, col);
+      px(ctx, x + Math.round(w * base), y - 1, 1, 5, '#ffffff');
       if (over > 0) px(ctx, x, y, Math.round(w * over), 1, '#ffffff');
+    },
+
+    passBar(ctx, p, hy) {
+      const { px, OUT } = SP();
+      const w = 18, x = Math.round(p.x - w / 2), y = hy - 16;
+      const col = PASS_COLORS[p.passMode];
+      const base = p.passBase || 0;
+      px(ctx, x - 1, y - 1, w + 2, 5, OUT);
+      // phần lực mặc định (tự tính theo khoảng cách) — mờ; phần giữ thêm vượt mức đó — đậm
+      ctx.globalAlpha = 0.45;
+      px(ctx, x, y, Math.round(w * base), 3, col);
+      ctx.globalAlpha = 1;
+      if (p.passCharge > base) px(ctx, x, y, Math.round(w * p.passCharge), 3, col);
+      px(ctx, x + Math.round(w * base), y - 1, 1, 5, '#ffffff');
     },
 
     ballTrail(ctx, b) {
