@@ -269,6 +269,22 @@ window.SFC = window.SFC || {};
       g.sfx('kick', c);
     },
 
+    // Phá bóng: bóng bổng, mạnh, luôn về phía trước — ↑/↓ chỉ chỉnh góc (không phá ngược về khung thành nhà)
+    clearance(g, p, dy) {
+      const b = g.ball, K = G().kick;
+      if (b.owner !== p) return;
+      const ang = Math.atan2(U.clamp(dy || 0, -1, 1) * K.clearAngle, g.teams[p.team].dir) + U.rand(-K.clearSpread, K.clearSpread);
+      const spd = K.clearSpeed * p.stats.power;
+      b.kick(p, Math.cos(ang) * spd, Math.sin(ang) * spd, K.clearLift);
+      b.kind = 'clear';
+      p.facing = ang;
+      p.charging = false; p.charge = 0;
+      p.cancelPass();
+      g.effects.burst(b.x, b.y, 2, '#ffffff', 8, 80);
+      g.effects.shake(G().fx.shakeShot);
+      g.sfx('kick', 0.8);
+    },
+
     tackle(g, p) {
       const C = G().combat;
       if (p.cd.tackle > 0 || p.state !== 'normal') return;

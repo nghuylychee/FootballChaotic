@@ -146,6 +146,11 @@ SFC_CONFIG.game = {
     overchargeLift: 420,
     shotSpread: 0.08,        // rad
     overchargeSpread: 0.5,
+    // Phá bóng: nhấn D khi cầm bóng ở phần sân nhà (kiểu FC Online) — bóng bổng, luôn đi về phía trước
+    clearSpeed: 380,         // px/s theo phương ngang (nhân chỉ số power)
+    clearLift: 150,          // vz ban đầu -> bay ~0.7s, đi ~250px trước khi chạm đất
+    clearAngle: 0.8,         // ↑/↓ lệch góc phá bóng tối đa (~39°)
+    clearSpread: 0.2,        // rad sai số ngẫu nhiên
   },
 
   combat: {

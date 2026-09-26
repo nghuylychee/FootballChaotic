@@ -16,8 +16,8 @@ SFC_CONFIG.controls = {
     // Tấn công            | Phòng ngự
     pass:    ['KeyS'],    // Chuyền ngắn        | Tắc bóng (standing tackle)
     through: ['KeyW'],    // Chọc khe           | Gọi đồng đội áp sát (giữ)
-    lob:     ['KeyA'],    // Chuyền bổng        | Va chạm vai (body check)
-    shoot:   ['KeyD'],    // Sút (giữ để nạp)   | Xoạc bóng (slide tackle)
+    lob:     ['KeyA'],    // Chuyền bổng        | Xoạc bóng (slide tackle)
+    shoot:   ['KeyD'],    // Sút (giữ để nạp) · phần sân nhà: phá bóng | Va chạm vai (body check)
     skill:   ['KeyZ'],    // Skill move / lướt né
     switch:  ['KeyQ'],    // Đổi cầu thủ
 
@@ -40,12 +40,13 @@ SFC_CONFIG.controls = {
       ['W (giữ)', 'Chọc khe'],
       ['A (giữ)', 'Chuyền bổng'],
       ['D (giữ)', 'Sút · ↑↓ chỉnh góc'],
+      ['D (sân nhà)', 'Phá bóng'],
       ['Z', 'Skill move (né tắc)'],
     ],
     defense: [
       ['S', 'Tắc bóng'],
-      ['D', 'Xoạc bóng'],
-      ['A', 'Va chạm vai'],
+      ['A', 'Xoạc bóng'],
+      ['D', 'Va chạm vai'],
       ['W (giữ)', 'Gọi đồng đội áp sát'],
       ['Q', 'Đổi cầu thủ'],
       ['Z', 'Lướt nhanh'],

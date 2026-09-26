@@ -53,8 +53,11 @@ window.SFC = window.SFC || {};
           return;
         }
 
-        // Sút: giữ D để nạp lực, thả để sút. Giữ quá lâu -> tự sút (overcharge)
-        if (input.isDown('shoot')) {
+        // D ở phần sân nhà: phá bóng ngay khi nhấn (kiểu FC Online)
+        // D ở sân đối phương: giữ để nạp lực, thả để sút. Giữ quá lâu -> tự sút (overcharge)
+        if (!p.charging && g.inOwnHalf(p)) {
+          if (input.wasPressed('shoot')) { Act.clearance(g, p, my); return; }
+        } else if (input.isDown('shoot')) {
           if (p.state === 'normal') {
             if (!p.charging) { p.charging = true; p.charge = 0; }
             p.charge += dt / g.chargeTime(p);
@@ -94,8 +97,8 @@ window.SFC = window.SFC || {};
         }
       } else {
         if (input.wasPressed('pass')) Act.tackle(g, p);
-        else if (input.wasPressed('shoot')) Act.slide(g, p);
-        else if (input.wasPressed('lob')) Act.bodyCheck(g, p);
+        else if (input.wasPressed('lob')) Act.slide(g, p);
+        else if (input.wasPressed('shoot')) Act.bodyCheck(g, p);
       }
       if (input.wasPressed('skill')) Act.skill(g, p, mx, my);
     },

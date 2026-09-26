@@ -26,14 +26,16 @@ SFC_CONFIG.tutorial = {
         '# Sút',
         'Giữ D để nạp, thả để sút. ↑ / ↓ chỉnh góc. Thanh lực bắt đầu từ mức nhỏ, giữ càng lâu bóng càng mạnh.',
         'Giữ quá lâu (thanh đỏ) → tự sút, bóng bay cao và dễ chệch.',
+        '# Phá bóng',
+        'Cầm bóng ở phần sân nhà: nhấn D để phá bóng bổng lên phía trước. ↑ / ↓ chỉnh góc.',
       ],
     },
     {
       title: 'PHÒNG NGỰ',
       lines: [
         '# Đòn phòng ngự',
-        'S: tắc bóng khi đứng sát. D: xoạc — trúng thì đối thủ choáng lâu, trượt thì bạn mất nhịp.',
-        'A: va vai — đẩy lùi, có thể cướp bóng.',
+        'S: tắc bóng khi đứng sát. A: xoạc — trúng thì đối thủ choáng lâu, trượt thì bạn mất nhịp.',
+        'D: va vai — đẩy lùi, có thể cướp bóng.',
         'Giữ W: gọi đồng đội AI lên áp sát người cầm bóng.',
         'Q: đổi sang cầu thủ gần bóng nhất.',
         '# Thủ môn',

@@ -72,6 +72,7 @@ window.SFC = window.SFC || {};
       return { x: this.teams[team].dir > 0 ? f.x + f.w : f.x, y: f.cy };
     }
     ownGoal(team) { return this.attackGoal(1 - team); }
+    inOwnHalf(p) { return (p.x - this.field.cx) * this.teams[p.team].dir < 0; }
     get remaining() { return Math.max(0, this.cfg.match.duration - this.elapsed); }
 
     formationPos(p) {

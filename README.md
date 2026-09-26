@@ -20,8 +20,8 @@ Không cần build, không cần thư viện, không cần file ảnh/âm thanh 
 | E (giữ) | Chạy nước rút | Chạy nước rút |
 | S (giữ/thả) | Chuyền sệt | Tắc bóng |
 | W (giữ/thả) | Chọc khe (lực = độ sâu khoảng trống) | Gọi đồng đội áp sát (giữ) |
-| A (giữ/thả) | Chuyền bổng | Va chạm vai |
-| D (giữ/thả) | Sút, ↑/↓ chỉnh góc; giữ quá lâu thì bóng bay cao | Xoạc bóng |
+| A (giữ/thả) | Chuyền bổng | Xoạc bóng |
+| D (giữ/thả) | Sút, ↑/↓ chỉnh góc; giữ quá lâu thì bóng bay cao. Ở phần sân nhà: phá bóng | Va chạm vai |
 | Z | Skill move (né tắc) | Lướt |
 | Q | — | Đổi cầu thủ |
 
