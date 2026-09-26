@@ -73,6 +73,12 @@ window.SFC = window.SFC || {};
     }
     ownGoal(team) { return this.attackGoal(1 - team); }
     inOwnHalf(p) { return (p.x - this.field.cx) * this.teams[p.team].dir < 0; }
+    // D ở phần sân nhà = phá bóng, trừ khi phía trước (theo trục x) không còn cầu thủ đối phương nào (bỏ qua GK) -> được sút
+    shouldClear(p) {
+      if (!this.inOwnHalf(p)) return false;
+      const dir = this.teams[p.team].dir;
+      return this.teams[1 - p.team].players.some((o) => o.role !== 'GK' && (o.x - p.x) * dir > 0);
+    }
     get remaining() { return Math.max(0, this.cfg.match.duration - this.elapsed); }
 
     formationPos(p) {

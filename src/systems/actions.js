@@ -241,21 +241,48 @@ window.SFC = window.SFC || {};
       return base + (1 - base) * Math.min(charge, 1);
     },
 
-    shoot(g, p, charge, aimY) {
+    /**
+     * Hướng sút theo hướng phím (dx, dy) người chơi giữ lúc thả:
+     * tia từ bóng theo hướng phím, giới hạn trong "cửa sổ góc" giữa hai cột dọc.
+     * Trả về { angle: góc sút (thế giới), off: góc (rad) hướng phím lệch ra ngoài khung thành }
+     */
+    shotAim(g, p, dx, dy) {
+      const b = g.ball, f = g.field, dir = g.teams[p.team].dir;
+      const m = f.goalWidth / 2 - 6;
+      // quy về khung "tấn công sang phải": lật trục x theo dir
+      const depth = Math.max(1, ((dir > 0 ? f.x + f.w : f.x) - b.x) * dir);
+      const top = Math.atan2(f.cy - m - b.y, depth), bot = Math.atan2(f.cy + m - b.y, depth);
+      const want = Math.atan2(dy, dx * dir);
+      const a = U.clamp(want, top, bot);
+      return { angle: dir > 0 ? a : Math.PI - a, off: Math.abs(want - a) };
+    },
+
+    // aim = hướng phím người chơi giữ lúc thả ({x, y}) hoặc null -> nhắm theo aimY (-1..1, 0 = giữa khung; AI dùng)
+    shoot(g, p, charge, aimY, aim = null) {
       const b = g.ball, K = G().kick, f = g.field;
       if (b.owner !== p) return;
       const tm = g.teams[p.team];
-      const gx = tm.dir > 0 ? f.x + f.w + 6 : f.x - 6;
-      const ay = U.clamp(aimY || 0, -1, 1);
-      const gy = f.cy + ay * (f.goalWidth / 2 - 6);
       const held = Math.min(charge, 1);   // phần người chơi thực sự giữ (Core Fire/Thunder dựa vào mức này)
       const c = this.shotPower(g, p, charge);
       const over = Math.max(0, charge - 1);
 
+      let base, awk = 0;
+      if (aim) {
+        // hướng phím chỉ ra ngoài khung thành -> tư thế gượng, lệch càng nhiều sai số càng lớn
+        const s = this.shotAim(g, p, aim.x, aim.y);
+        base = s.angle;
+        const a0 = (K.awkwardMinAngle * Math.PI) / 180, a1 = (K.awkwardMaxAngle * Math.PI) / 180;
+        awk = K.awkwardSpread * U.clamp((s.off - a0) / (a1 - a0), 0, 1);
+      } else {
+        const gx = tm.dir > 0 ? f.x + f.w + 6 : f.x - 6;
+        const gy = f.cy + U.clamp(aimY || 0, -1, 1) * (f.goalWidth / 2 - 6);
+        base = Math.atan2(gy - b.y, gx - b.x);
+      }
+
       const acc = p.stats.accuracy * g.cores.mod(p.team, 'accuracy');
-      let spread = K.shotSpread / acc + over * K.overchargeSpread;
+      let spread = (K.shotSpread + awk) / acc + over * K.overchargeSpread;
       if (!p.isControlled) spread *= 2 - g.aiProfile(p.team).shotAccuracy;
-      const ang = Math.atan2(gy - b.y, gx - b.x) + U.rand(-spread, spread);
+      const ang = base + U.rand(-spread, spread);
 
       const spd = U.lerp(K.shotMinSpeed, K.shotMaxSpeed, c) * p.stats.power * g.cores.mod(p.team, 'shotPower');
       const vz = U.lerp(K.shotLiftMin, K.shotLiftMax, c * c) + over * K.overchargeLift;

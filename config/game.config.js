@@ -145,10 +145,15 @@ SFC_CONFIG.game = {
     shotLiftMax: 105,
     overchargeLift: 420,
     shotSpread: 0.08,        // rad
+    // Hướng sút = hướng phím giữ lúc thả, giới hạn trong khung thành (không giữ phím -> sút vào giữa khung).
+    // Hướng phím chỉ ra ngoài khung thành -> tư thế gượng: sai số thêm tăng dần theo góc lệch ra ngoài cột dọc
+    awkwardSpread: 0.15,     // rad sai số thêm tối đa (cũng chia cho accuracy)
+    awkwardMinAngle: 15,     // (độ) lệch ra ngoài cột dọc dưới mức này: không bị phạt
+    awkwardMaxAngle: 90,     // (độ) lệch từ mức này trở lên (vd. sút song song vạch vôi / quay lưng): phạt tối đa
     overchargeSpread: 0.5,
     // Phá bóng: nhấn D khi cầm bóng ở phần sân nhà (kiểu FC Online) — bóng bổng, luôn đi về phía trước
-    clearSpeed: 380,         // px/s theo phương ngang (nhân chỉ số power)
-    clearLift: 150,          // vz ban đầu -> bay ~0.7s, đi ~250px trước khi chạm đất
+    clearSpeed: 290,         // px/s theo phương ngang (nhân chỉ số power)
+    clearLift: 120,          // vz ban đầu -> bay ~0.57s, chạm đất ở ~155px, lăn tổng ~340px
     clearAngle: 0.8,         // ↑/↓ lệch góc phá bóng tối đa (~39°)
     clearSpread: 0.2,        // rad sai số ngẫu nhiên
   },
