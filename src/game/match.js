@@ -13,7 +13,9 @@ window.SFC = window.SFC || {};
      *         solo: [idx đội 0, idx đội 1] — khóa người chơi vào 1 cầu thủ (chỉ số trong đội; null = điều khiển cả đội),
      *         avatars: [{name, look, role?} | null, ...] — character của người chơi, thay cầu thủ ở vị trí role
      *                  (DEF / FWD, mặc định FWD) của đội đó,
-     *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả) }
+     *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
+     *         training: true = luyện tập (không giờ trận, không chọn Core, không kết thúc / không thưởng),
+     *         teamSize: [n đội 0, n đội 1] — số cầu thủ mỗi đội (mặc định đủ đội hình; 0 = đội trống) }
      */
     constructor(opts) {
       const C = SFC_CONFIG.game;
@@ -41,9 +43,11 @@ window.SFC = window.SFC || {};
       this.effects = new SFC.Effects(this);
       this.cores = new SFC.CoreSystem(this);
       this.players = [];
+      // teamSize (luyện tập): số cầu thủ mỗi đội; bớt người thì bỏ từ vị trí đầu (1 người = ĐÁ CAO, 0 = đội trống)
       for (const t of this.teams) {
-        C.roles.forEach((role, idx) => {
-          const p = new SFC.Player(this, t, role, idx);
+        const n = opts.teamSize ? opts.teamSize[t.index] : C.roles.length;
+        C.roles.slice(C.roles.length - n).forEach((role) => {
+          const p = new SFC.Player(this, t, role, C.roles.indexOf(role));
           t.players.push(p);
           this.players.push(p);
         });
@@ -205,6 +209,7 @@ window.SFC = window.SFC || {};
     // mỗi lần giao bóng (đầu trận + sau bàn thắng) đội hình lệch ngẫu nhiên (match.kickoffVary)
     kickoff(teamIdx) {
       const f = this.field, V = this.cfg.match.kickoffVary;
+      if (!this.teams[teamIdx].players.length) teamIdx = 1 - teamIdx; // luyện tập không đối thủ: luôn giao bóng cho đội còn người
       this.state = 'kickoff';
       this.stateT = this.cfg.match.kickoffDelay;
       this.effects.clearHazards();
@@ -221,14 +226,15 @@ window.SFC = window.SFC || {};
         p.stamina = this.cfg.player.staminaMax;
       }
       // tiền đạo đội giao bóng đứng giữa sân
-      const fwd = this.teams[teamIdx].players.find((p) => p.role === 'FWD');
+      const fwd = this.teams[teamIdx].players.find((p) => p.role === 'FWD') || this.teams[teamIdx].players[0];
       fwd.x = f.cx - this.teams[teamIdx].dir * 8;
       fwd.y = f.cy;
       this.lastPossessionTeam = -1;
       this.gainPossession(fwd);
       this.lastPossessionTeam = teamIdx;
       for (const t of this.humans) {
-        this.setControlled(teamIdx === t ? fwd : this.teams[t].players.find((p) => p.role === 'FWD'));
+        const tp = this.teams[t].players;
+        if (tp.length) this.setControlled(teamIdx === t ? fwd : tp.find((p) => p.role === 'FWD') || tp[0]);
       }
     }
 
@@ -282,6 +288,7 @@ window.SFC = window.SFC || {};
 
     tickClock(dt) {
       const M = this.cfg.match;
+      if (this.opts.training) return; // luyện tập: không giờ trận, không Final Push / Golden Goal, không kết thúc
       if (this.golden) {
         this.goldenT = (this.goldenT || 0) + dt;
         if (this.goldenT >= M.goldenGoalMaxTime) this.end();
@@ -357,7 +364,7 @@ window.SFC = window.SFC || {};
       if (scorer < 0) return false;
 
       const value = this.finalPush && !this.golden ? this.cfg.match.finalPushGoalValue : 1;
-      this.teams[scorer].score += value;
+      if (!this.opts.training) this.teams[scorer].score += value; // luyện tập: không tính tỉ số
       const by = b.lastTouch;
       const own = by && by.team !== scorer;
       this.lastScorer = by;
@@ -379,7 +386,7 @@ window.SFC = window.SFC || {};
       if (this.golden || this.elapsed >= this.cfg.match.duration) return this.end();
       this.kickoff(1 - this.scoredBy);
       // bóng chết: xếp đội hình giao bóng xong thì mở Core Upgrade (nếu còn lượt)
-      if (this.upgradeIdx < this.cfg.match.maxUpgrades) this.startDraft();
+      if (!this.opts.training && this.upgradeIdx < this.cfg.match.maxUpgrades) this.startDraft();
     }
 
     end() {

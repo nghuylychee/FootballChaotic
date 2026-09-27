@@ -64,6 +64,8 @@ SFC_CONFIG.tutorial = {
         'CẢ ĐỘI: Q đổi người, chuyền bóng thì điều khiển luôn người nhận.',
         '1 CẦU THỦ: chỉ điều khiển đúng cầu thủ đã chọn cả trận, đồng đội do AI chơi. Đòi bóng bằng S / W / A. Đồng đội AI ưu tiên rê bóng, dứt điểm và áp sát đoạt bóng.',
         'Bóng nảy tường như futsal đường phố — không có biên.',
+        '# Luyện tập',
+        'Đội bạn 1 hoặc 2 người, đối thủ 0 hoặc 2 người. Không giới hạn thời gian, không tính tỉ số, không chọn Core, không nhận thưởng.',
         '# Final Push',
         '30 giây cuối: mọi bàn thắng được tính x2, cầu thủ chạy nhanh hơn.',
         '# Golden Goal',

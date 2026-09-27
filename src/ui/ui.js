@@ -250,6 +250,7 @@ window.SFC = window.SFC || {};
       if (!game) return;
       const c = this.hudCache;
       const t0 = game.teams[0], t1 = game.teams[1];
+      const training = !!(game.opts && game.opts.training);
       const time = game.golden ? 'GOLDEN' : SFC.U.fmtTime(game.remaining);
       const phase = game.golden ? 'GOLDEN GOAL' : game.finalPush ? 'FINAL PUSH x' + SFC_CONFIG.game.match.finalPushGoalValue : '';
       const cores = game.cores.owned[0].join() + '|' + game.cores.owned[1].join();
@@ -267,10 +268,10 @@ window.SFC = window.SFC || {};
             <div class="hud-name">${esc(t0.cfg.short)}${tag(0)}</div>
             <div class="hud-cores">${game.humanTeam === 0 ? '' : game.cores.owned[0].map((id) => coreChip(id)).join('')}</div>
           </div>
-          <div class="hud-mid">
+          <div class="hud-mid">${training ? '<div class="hud-time">TRAINING</div>' : `
             <div class="hud-score"><b style="color:${t0.cfg.kit.shirt}">${t0.score}</b><span>-</span><b style="color:${t1.cfg.kit.shirt}">${t1.score}</b></div>
             <div class="hud-time ${game.finalPush || game.golden ? 'hot' : ''}">${time}</div>
-            ${phase ? `<div class="hud-phase">${phase}</div>` : ''}
+            ${phase ? `<div class="hud-phase">${phase}</div>` : ''}`}
           </div>
           <div class="hud-team r" style="--c:${t1.cfg.kit.shirt}">
             <div class="hud-name">${tag(1)} ${esc(t1.cfg.short)}</div>

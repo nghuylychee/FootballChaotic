@@ -83,6 +83,7 @@ window.SFC = window.SFC || {};
         case 'home':
           return [
             { kind: 'btn', label: 'CHƠI ĐƠN', sub: 'Đấu với máy', act: () => this.go('single') },
+            { kind: 'btn', label: 'LUYỆN TẬP', sub: 'Không giới hạn thời gian · chọn số người', act: () => this.go('training') },
             { kind: 'btn', label: 'ĐỐI KHÁNG ONLINE', sub: '1 vs 1 · tạo phòng', act: () => this.go('online') },
             { kind: 'btn', label: 'SHOP', sub: 'Hộp gacha · costume & Core', act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'NHÂN VẬT', sub: 'Túi đồ · đổi tên', act: () => this.go('char') },
@@ -108,6 +109,22 @@ window.SFC = window.SFC || {};
             { kind: 'pick', label: 'ĐIỀU KHIỂN', value: this.ctrlLabel(o.order[s.team], s.ctrl), change: (d) => { s.ctrl = wrap(s.ctrl + d, SFC_CONFIG.game.roles.length + 1); } },
             { kind: 'btn', label: 'BẮT ĐẦU', main: true, act: () => app.startMatch() },
           ];
+        }
+        case 'training': {
+          // luyện tập: số người đội bạn (1 / 2) · đối thủ (0 / 2). Đội / đối thủ / độ khó / điều khiển dùng chung với Chơi đơn
+          const t = app.train, opp = o.opp[s.opp];
+          const list = [
+            { kind: 'pick', label: 'ĐỘI CỦA BẠN', value: TEAMS().list[o.order[s.team]].name, change: (d) => { s.team = wrap(s.team + d, o.order.length); } },
+            { kind: 'pick', label: 'SỐ NGƯỜI', value: t.mine + ' NGƯỜI', change: () => { t.mine = t.mine === 1 ? 2 : 1; } },
+          ];
+          if (t.mine === 2) list.push({ kind: 'pick', label: 'ĐIỀU KHIỂN', value: this.ctrlLabel(o.order[s.team], s.ctrl), change: (d) => { s.ctrl = wrap(s.ctrl + d, SFC_CONFIG.game.roles.length + 1); } });
+          list.push({ kind: 'pick', label: 'ĐỐI THỦ', value: t.opp ? t.opp + ' NGƯỜI' : 'KHÔNG CÓ', change: () => { t.opp = t.opp ? 0 : 2; } });
+          if (t.opp) {
+            list.push({ kind: 'pick', label: 'ĐỘI ĐỐI THỦ', value: opp === 'random' ? '??? NGẪU NHIÊN' : TEAMS().list[opp].name, change: (d) => { s.opp = wrap(s.opp + d, o.opp.length); } });
+            list.push({ kind: 'pick', label: 'ĐỘ KHÓ', value: SFC_CONFIG.game.ai.difficulty[o.diffs[s.diff]].label, change: (d) => { s.diff = wrap(s.diff + d, o.diffs.length); } });
+          }
+          list.push({ kind: 'btn', label: 'BẮT ĐẦU', main: true, act: () => app.startTraining() });
+          return list;
         }
         case 'online':
           return [
@@ -142,7 +159,7 @@ window.SFC = window.SFC || {};
       if (Online().status === 'busy') return;
       if (this.page === 'name') { if (PF().hasName) this.go(this.nameBack); return; } // lần đầu: bắt buộc đặt tên
       if (G().pages.includes(this.page)) return G().back(this);
-      if (['single', 'online', 'tutorial', 'char'].includes(this.page)) this.go('home');
+      if (['single', 'training', 'online', 'tutorial', 'char'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
       else if (this.page === 'lobby') Online().leave();
     },
@@ -156,7 +173,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); this.bindAvatars(); return; }
       if (G().pages.includes(this.page)) { G().render(this); this.bindAvatars(); return; }
       const list = items.map((it, i) => this.renderItem(it, i)).join('');
-      const titles = { single: 'CHƠI ĐƠN', online: 'ĐỐI KHÁNG ONLINE', join: 'VÀO PHÒNG', lobby: 'PHÒNG CHỜ', name: 'TÊN CỦA BẠN', char: 'NHÂN VẬT' };
+      const titles = { single: 'CHƠI ĐƠN', training: 'LUYỆN TẬP', online: 'ĐỐI KHÁNG ONLINE', join: 'VÀO PHÒNG', lobby: 'PHÒNG CHỜ', name: 'TÊN CỦA BẠN', char: 'NHÂN VẬT' };
       const small = this.page !== 'home';
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       this.el.innerHTML = `
@@ -200,7 +217,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'home') return this.profileCard();
       if (this.page === 'name') return `<div class="char-stage"><canvas class="avatar big" data-avatar="spin"></canvas><div class="char-name">${esc(this.nameBuf || '???')}</div></div>`;
       if (this.page === 'char') return this.charPanel();
-      if (this.page === 'single') return teamCard(o.order[s.team], '');
+      if (this.page === 'single' || this.page === 'training') return teamCard(o.order[s.team], '');
       if (this.page === 'lobby') {
         const O = Online(), L = O.lobby;
         const me = O.isHost ? 'P1 · CHỦ PHÒNG' : 'P2 · KHÁCH';

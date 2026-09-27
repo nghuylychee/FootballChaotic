@@ -10,6 +10,7 @@
     game: null,
     demo: null,
     sel: { team: 0, opp: 0, diff: 1, ctrl: 0 },   // ctrl: 0 = cả đội, i > 0 = chỉ cầu thủ thứ i - 1
+    train: { mine: 1, opp: 0 },                  // luyện tập: số người đội bạn (1 / 2) · đội đối thủ (0 / 2)
     lastOpts: null,
 
     newDemo() {
@@ -39,6 +40,23 @@
       this.beginMatch(opts);
     },
 
+    // Luyện tập: không giờ trận, không chọn Core, không thưởng. Đội bạn 1 người (character đá ĐÁ CAO) hoặc 2 người
+    // (điều khiển như Chơi đơn); đối thủ 0 hoặc 2 người (đội + độ khó như Chơi đơn)
+    startTraining() {
+      const o = SFC.Menu.options(), s = this.sel, t = this.train;
+      const home = o.order[s.team];
+      let away = o.opp[s.opp];
+      if (away === 'random') away = SFC.U.pick(o.order.filter((id) => id !== home));
+      const two = t.mine === 2;
+      const soloIdx = !two ? 0 : s.ctrl ? s.ctrl - 1 : null;
+      const role = !two || soloIdx == null ? 'FWD' : C.roles[soloIdx];
+      this.startMatch({
+        home, away, difficulty: o.diffs[s.diff], humanTeam: 0, training: true, teamSize: [t.mine, t.opp],
+        solo: [soloIdx, null], avatars: [Object.assign(SFC.Profile.avatar(), { role }), null],
+        coreUnlocks: [SFC.Profile.unlockedCores(), null],
+      });
+    },
+
     // trận online: host truyền trận thật, khách truyền trận "gương"
     enterOnline(game) {
       this.mode = 'online';
@@ -53,7 +71,10 @@
       SFC.UI.pauseItems = this.mode === 'online' ? [['resume', 'VỀ TRẬN'], ['leave', 'RỜI PHÒNG']] : [['resume', 'TIẾP TỤC'], ['restart', 'ĐÁ LẠI'], ['menu', 'VỀ MENU']];
       SFC.UI.clearToasts();
       SFC.UI.show(null);
-      SFC.UI.banner('KICK OFF', `${SFC_CONFIG.teams.list[opts.home].name} vs ${SFC_CONFIG.teams.list[opts.away].name}`, '#ffe14f', 1.4);
+      const vs = opts.training && opts.teamSize && !opts.teamSize[1]
+        ? `${SFC_CONFIG.teams.list[opts.home].name} · không đối thủ`
+        : `${SFC_CONFIG.teams.list[opts.home].name} vs ${SFC_CONFIG.teams.list[opts.away].name}`;
+      SFC.UI.banner(opts.training ? 'LUYỆN TẬP' : 'KICK OFF', vs, '#ffe14f', 1.4);
       SFC.Audio.upgrade();
     },
 

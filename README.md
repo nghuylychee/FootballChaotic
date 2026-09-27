@@ -41,10 +41,15 @@ Chỉnh trong `SFC_CONFIG.game.pass.intercept`. Sút / phá bóng / bóng lỏng
 Khi đồng đội AI giữ bóng: S / W / A để đòi bóng. `1/2/3` chọn Core, `Esc/P` tạm dừng (online: mở menu), `M` tắt âm.
 
 ## Menu
-Trang chủ: **CHƠI ĐƠN** (chọn đội / đối thủ / độ khó / điều khiển) · **ĐỐI KHÁNG ONLINE** · **SHOP** (hộp gacha) · **NHÂN VẬT** (túi đồ),
+Trang chủ: **CHƠI ĐƠN** (chọn đội / đối thủ / độ khó / điều khiển) · **LUYỆN TẬP** · **ĐỐI KHÁNG ONLINE** · **SHOP** (hộp gacha) · **NHÂN VẬT** (túi đồ),
 góc phải là thẻ hồ sơ (character, tên, level, thanh XP, gold, thống kê).
 Màn Hướng dẫn (`config/tutorial.config.js`) đã được gỡ khỏi trang chủ — code trang vẫn còn trong `src/ui/menu.js` nếu cần gắn lại chỗ khác.
 ↑↓ chọn · ←→ đổi · Enter · Esc/Backspace quay lại.
+
+## Luyện tập
+Chọn **SỐ NGƯỜI** đội bạn (1 = chỉ character của bạn đá ĐÁ CAO · 2 = đủ đội, chọn ĐIỀU KHIỂN như Chơi đơn) và **ĐỐI THỦ** (không có · 2 người,
+chọn đội + độ khó). Không giờ trận, không Final Push / Golden Goal, không chọn Core, không thưởng XP / gold, không tính tỉ số (HUD chỉ hiện TRAINING);
+vào lưới vẫn ăn mừng rồi giao bóng lại (không có đối thủ thì luôn giao bóng cho bạn). Esc → ĐÁ LẠI / VỀ MENU. Engine: `SFC.Game` opts `training` + `teamSize`.
 
 ## Meta progression (level · XP · gold · gacha · túi đồ)
 - Hồ sơ lưu ở `localStorage` của trình duyệt (`src/core/profile.js`, key `sfc_profile_v1`). Lần đầu mở game phải đặt tên.
