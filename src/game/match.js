@@ -27,8 +27,11 @@ window.SFC = window.SFC || {};
       });
       this.humanTeam = opts.humanTeam != null ? opts.humanTeam : 0;
       this.humans = opts.humans || (this.humanTeam >= 0 ? [this.humanTeam] : []);
-      this.difficulty = C.ai.difficulty[opts.difficulty] || C.ai.difficulty[C.ai.defaultDifficulty || 'normal'];
-      this.teammateProfile = C.ai.difficulty[C.ai.teammate] || this.difficulty;
+      const diffKey = C.ai.difficulty[opts.difficulty] ? opts.difficulty : 'normal';
+      this.difficulty = C.ai.difficulty[diffKey];
+      // đồng đội AI của người chơi: theo ai.teammate nhưng không bao giờ giỏi hơn độ khó đã chọn
+      const order = C.ai.difficultyOrder, mi = order.indexOf(C.ai.teammate);
+      this.teammateProfile = C.ai.difficulty[mi >= 0 && mi < order.indexOf(diffKey) ? C.ai.teammate : diffKey];
 
       this.teams = [opts.home, opts.away].map((id, i) => ({
         index: i, id, cfg: SFC_CONFIG.teams.list[id], score: 0, dir: i === 0 ? 1 : -1, players: [],
@@ -56,7 +59,6 @@ window.SFC = window.SFC || {};
       this.ctrl = [null, null];
       this.solo = (opts.solo || [null, null]).map((idx, t) => (idx == null ? null : this.teams[t].players[idx] || null));
       this.receiveLock = [false, false];
-      this.pressureCall = [false, false];
       this.passPreview = null;
       this.lastPossessionTeam = -1;
       this.time = 0;
@@ -183,6 +185,7 @@ window.SFC = window.SFC || {};
       p.ai.holdT = 0;
       p.ai.t = 0;
       p.ai.runT = 0;
+      p.ai.openSeen = false;
       if (this.lastPossessionTeam !== -1 && this.lastPossessionTeam !== p.team) {
         this.cores.dispatch(p.team, 'onPossessionGained', p);
       }

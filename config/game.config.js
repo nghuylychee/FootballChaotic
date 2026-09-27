@@ -250,7 +250,7 @@ SFC_CONFIG.game = {
       hard:   { label: 'KHÓ',  reaction: 0.1,  tackleMult: 1.2, shotAccuracy: 0.92, aggression: 1.3, speedMult: 1.06 },
     },
     difficultyOrder: ['easy', 'normal', 'hard'],
-    teammate: 'normal',       // độ khó của AI đồng đội người chơi
+    teammate: 'normal',       // độ khó tối đa của AI đồng đội người chơi (không bao giờ giỏi hơn độ khó đã chọn)
     shootRange: 170,
     shootRangeGood: 105,
     passPressure: 34,
@@ -260,9 +260,36 @@ SFC_CONFIG.game = {
     restDefenseFrom: 0.5,     // đồng đội cầm bóng vượt mốc này (tỉ lệ sân, 0.5 = giữa sân) -> người còn lại lùi chốt phía sau
     restDefenseDist: 110,     //   đứng sau người cầm bóng bao xa (px)
     markDistance: 26,
-    keeperCoverDist: 420,     // người cầm bóng đối phương cách khung thành nhà dưới mức này -> AI không áp sát lùi về trông khung
+    keeperCoverDist: 420,     // đội máy: người cầm bóng đối phương cách khung thành nhà dưới mức này -> AI không áp sát lùi về trông khung
     hardDistMin: 16,          // AI dùng Hard attack khi người cầm bóng cách trong khoảng này (px)
     hardDistMax: 44,
+
+    // Đồng đội AI của người chơi (vd. chế độ 1 cầu thủ: người còn lại do AI đá). Đội máy không dùng phần này.
+    mate: {
+      // Phòng ngự: luôn áp sát người cầm bóng để đoạt lại bóng. Chỉ về trông khung khi nguy hiểm rõ ràng:
+      // người cầm bóng đã vào gần khung nhà, không ai đứng trong vòng cấm nhà, và mình không đang áp sát.
+      dangerDist: 130,          // (px) người cầm bóng cách tâm khung thành nhà dưới mức này = nguy hiểm
+      stickDist: 40,            // (px) đang áp sát trong khoảng này thì cứ tiếp tục áp sát
+      lightChance: 0.45,        // trong tầm đấm: tỉ lệ ra đòn mỗi lần quyết định (đội máy: 0.6 x aggression x aiStyle.light, tối đa 0.9)
+      // hồi chiêu riêng, dài hơn người chơi (người chơi: light 1s, hard 4s, lướt 1s) -> không ra đòn / lướt liên tục
+      cooldownMult: { light: 1.8, hard: 1.5, skill: 2.2 },
+      // Tấn công: ưu tiên rê bóng + dứt điểm
+      passChance: 0.25,         // bị áp sát / giữ bóng lâu: tỉ lệ chuyền (đội máy: 0.75)
+      holdTime: 5,              // (s) giữ bóng lâu hơn mức này mới cân nhắc chuyền (đội máy: 2.8)
+      skillChance: 0.5,         // mỗi lần bị áp sát (đối thủ vào trong 26px): tỉ lệ dùng skill move né, quyết định 1 lần (đội máy: 0.35 mỗi lần quyết định)
+      // Sút ở bất kỳ đâu trên phần sân đối phương (phần sân nhà: không sút). Tỉ lệ cho mỗi lần AI ra quyết định (~5 lần/giây):
+      shootNear: 90,            // (px tới khung) gần hơn mức này: shootNearChance
+      shootNearChance: 0.8,
+      shootFarChance: 0.015,    // ở vạch giữa sân; từ shootNear tới đó giảm dần theo bình phương khoảng cách
+      blockedMult: 0.35,        // có đối phương chắn đường sút
+      // Cơ hội mười mươi: ở phần sân đối phương, cách khung < quickShotRange, đường sút thoáng và không ai trông khung
+      // (không đối phương nào đứng trong vòng cấm của họ) -> quyết định 1 lần: sút nhanh lực nhẹ thay vì nạp lực
+      quickShotChance: 0.3,
+      quickShotRange: 220,      // (px tới khung)
+      quickShotPower: [0.2, 0.45], // lực sút nhanh (thanh lực 0..1): sát khung -> ở quickShotRange (vừa đủ tới khung)
+      // Nhận đường chuyền: chuyền lỗi (S không nhắm) -> luôn chạy nước rút tới bóng; chuyền chuẩn -> chạy nước rút, thỉnh thoảng đi bộ
+      receiveWalkChance: 0.15,
+    },
   },
 
   fx: { shakeGoal: 5, shakeHit: 2, shakeShot: 1.5 },

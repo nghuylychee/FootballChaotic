@@ -25,7 +25,6 @@ window.SFC = window.SFC || {};
       const b = g.ball;
       const has = b.owner === p;
       const teamHas = !!b.owner && b.owner.team === p.team;
-      g.pressureCall[team] = !teamHas && input.isDown('through');
 
       if (input.wasPressed('switch') && !has) g.switchPlayer(team);
       if (g.ctrl[team] !== p) return;

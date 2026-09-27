@@ -60,6 +60,8 @@ window.SFC = window.SFC || {};
       const D = g.aiProfile(p.team), cfg = A(), f = g.field;
       const goal = g.attackGoal(p.team);
       const opps = g.teams[1 - p.team].players;
+      // đồng đội AI của người chơi: ưu tiên rê bóng + dứt điểm, ít chuyền (ai.mate)
+      const M = g.isHuman(p.team) ? cfg.mate : null;
       p.ai.holdT += dt;
 
       if (p.ai.requestedPass) {
@@ -90,10 +92,26 @@ window.SFC = window.SFC || {};
 
       if (p.ai.t <= 0) {
         p.ai.t = D.reaction * U.rand(0.7, 1.3);
-        const range = cfg.shootRange * (g.cores.has(p.team, 'sniper_foot') ? g.cores.params('sniper_foot').aiRangeMult : 1);
+        const range = M ? f.w / 2 : cfg.shootRange * (g.cores.has(p.team, 'sniper_foot') ? g.cores.params('sniper_foot').aiRangeMult : 1);
         const clear = Act().laneClear(g, p, goal.x, goal.y, 12);
+        // đồng đội AI: cơ hội mười mươi (khung trống) -> quyết định 1 lần có sút nhanh lực nhẹ hay không
+        if (M) {
+          const open = this.mateOpenGoal(g, p, dG, clear);
+          if (!open) p.ai.openSeen = false;
+          else if (!p.ai.openSeen) {
+            p.ai.openSeen = true;
+            if (Math.random() < M.quickShotChance) {
+              p.charging = true; p.charge = 0;
+              const [lo, hi] = M.quickShotPower;
+              p.ai.chargeTarget = Math.max(Act().shotBasePower(g, p) + 0.02, U.lerp(lo, hi, U.clamp(dG / M.quickShotRange, 0, 1)));
+              p.ai.aimY = U.rand(-0.4, 0.4);
+              return;
+            }
+          }
+        }
+        const shoot = M ? this.mateShoots(g, p, dG, clear) : dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25);
 
-        if (dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25)) {
+        if (shoot) {
           p.charging = true; p.charge = 0;
           p.ai.chargeTarget = U.clamp(0.4 + (dG / range) * 0.55 + U.rand(-0.1, 0.1), 0.35, 1.0);
           const gk = nearest(opps, goal, (o) => g.inKeeperZone(o)).p;
@@ -101,9 +119,9 @@ window.SFC = window.SFC || {};
           return;
         }
 
-        if (near.d < cfg.passPressure || p.ai.holdT > 2.8) {
+        if (near.d < cfg.passPressure || p.ai.holdT > (M ? M.holdTime : 2.8)) {
           const t = Act().findPassTarget(g, p, goal.x - p.x, goal.y - p.y);
-          if (t && Math.random() < 0.75) {
+          if (t && Math.random() < (M ? M.passChance : 0.75)) {
             const ahead = (t.x - p.x) * g.teams[p.team].dir > 20;
             const mode = !Act().laneClear(g, p, t.x, t.y, 10) ? 'lob' : ahead && Math.random() < 0.4 ? 'through' : 'ground';
             Act().passTo(g, p, t, mode);
@@ -111,7 +129,14 @@ window.SFC = window.SFC || {};
           }
         }
 
-        if (near.d < 26 && p.cd.skill <= 0 && Math.random() < 0.35 * D.aggression) {
+        // đồng đội AI: quyết định né 1 lần cho mỗi lần bị áp sát (đối thủ vào trong 26px, rời xa quá 40px thì tính lần mới)
+        if (M) {
+          if (!near.p || near.d > 40) p.ai.dodgeFor = null;
+          else if (near.d < 26 && p.ai.dodgeFor !== near.p) { p.ai.dodgeFor = near.p; p.ai.dodgeYes = Math.random() < M.skillChance * D.aggression; }
+        }
+        const dodge = near.d < 26 && p.cd.skill <= 0 && (M ? p.ai.dodgeFor === near.p && p.ai.dodgeYes : Math.random() < 0.35 * D.aggression);
+        if (dodge) {
+          if (M) p.ai.dodgeYes = false;
           const dx = p.x - near.p.x, dy = p.y - near.p.y;
           const side = U.norm(-dy, dx);
           const s = Math.random() < 0.5 ? 1 : -1;
@@ -165,16 +190,14 @@ window.SFC = window.SFC || {};
       const c = g.ball.owner, tm = g.teams[p.team];
       const ownGoal = g.ownGoal(p.team);
       const humanTeam = g.isHuman(p.team);
-      const ctl = g.ctrl[p.team];
-      const outfield = (o) => o.state !== 'stun' && o !== ctl;
-      // đối phương cầm bóng đã tới gần -> người gần khung nhất trông khung, người còn lại áp sát
-      const danger = Math.abs(c.x - ownGoal.x) < cfg.keeperCoverDist;
-      const keeper = danger ? keeperOf(g, p.team) : null;
+      // đội máy: đối phương cầm bóng đã tới gần -> người gần khung nhất trông khung, người còn lại áp sát
+      // đồng đội AI của người chơi: luôn áp sát, chỉ về trông khung khi nguy hiểm rõ ràng (ai.mate)
+      const danger = humanTeam ? this.mateDanger(g, p, c) : Math.abs(c.x - ownGoal.x) < cfg.keeperCoverDist;
+      const keeper = danger && !humanTeam ? keeperOf(g, p.team) : null;
 
       let presser = null;
       if (!humanTeam) presser = nearest(tm.players, c, (o) => o !== keeper).p;
-      // đội người chơi: đồng đội AI lên áp sát khi được gọi (giữ W), hoặc khi người chơi ở xa và bóng chưa tới gần khung nhà
-      else if (g.pressureCall[p.team] || !ctl || (!danger && U.dist(ctl, c) > 110)) presser = nearest(tm.players, c, outfield).p;
+      else if (!danger) presser = p;
 
       if (p === presser) {
         let target = c;
@@ -189,7 +212,9 @@ window.SFC = window.SFC || {};
         const dc = U.dist(p, c);
         p.facing = Math.atan2(c.y - p.y, c.x - p.x);
         const style = tm.cfg.aiStyle || { light: 1, hard: 1 };
-        if (dc < C.light.range + p.radius * 2 && Math.random() < Math.min(0.9, 0.6 * D.aggression * style.light)) Act().lightAttack(g, p);
+        // đồng đội AI của người chơi: tỉ lệ đấm riêng (ai.mate.lightChance), không theo aiStyle của đội
+        const lightP = humanTeam ? cfg.mate.lightChance * D.aggression : Math.min(0.9, 0.6 * D.aggression * style.light);
+        if (dc < C.light.range + p.radius * 2 && Math.random() < lightP) Act().lightAttack(g, p);
         else if (dc > cfg.hardDistMin && dc < cfg.hardDistMax && Math.random() < 0.1 * D.aggression * style.hard) Act().hardAttack(g, p);
         return;
       }
@@ -205,6 +230,34 @@ window.SFC = window.SFC || {};
       moveTo(p, t.x + gd.x * cfg.markDistance, t.y + gd.y * cfg.markDistance, U.dist(p, t) > 80, 5);
     },
 
+    // Đồng đội AI: nguy hiểm rõ ràng = người cầm bóng đã vào gần khung nhà và người chơi không đứng trong vòng cấm nhà -> về trông khung.
+    // Lúc nguy hiểm bắt đầu mà đang áp sát sát người (stickDist) thì cứ áp sát; đã quyết định về trông khung thì giữ tới khi hết nguy hiểm
+    // (không đổi ý khi chạy ngang qua người cầm bóng trên đường về)
+    mateDanger(g, p, c) {
+      const M = A().mate, ctl = g.ctrl[p.team];
+      const near = U.dist(c, g.ownGoal(p.team)) < M.dangerDist && !(ctl && ctl !== p && g.inKeeperZone(ctl));
+      const covering = p.ai.coverT != null && g.time - p.ai.coverT < 0.2;
+      if (!near || (!covering && U.dist(p, c) <= M.stickDist)) return false;
+      p.ai.coverT = g.time;
+      return true;
+    },
+
+    // Đồng đội AI: cơ hội mười mươi = phần sân đối phương, gần khung, đường sút thoáng, không đối phương nào trông khung
+    mateOpenGoal(g, p, dG, clear) {
+      if (g.inOwnHalf(p) || !clear || dG > A().mate.quickShotRange) return false;
+      return !g.teams[1 - p.team].players.some((o) => o.state !== 'stun' && g.inKeeperZone(o));
+    },
+
+    // Đồng đội AI sút ở bất kỳ đâu trên phần sân đối phương; càng xa khung càng ít sút
+    mateShoots(g, p, dG, clear) {
+      const M = A().mate;
+      if (g.inOwnHalf(p)) return false;
+      const k = U.clamp((dG - M.shootNear) / (g.field.w / 2 - M.shootNear), 0, 1);
+      let chance = U.lerp(M.shootFarChance, M.shootNearChance, (1 - k) * (1 - k));
+      if (!clear) chance *= M.blockedMult;
+      return Math.random() < chance;
+    },
+
     /* ---------- bóng lỏng ---------- */
     loose(dt, g, p) {
       const b = g.ball, f = g.field, tm = g.teams[p.team];
@@ -212,26 +265,33 @@ window.SFC = window.SFC || {};
         x: U.clamp(b.x + b.vx * 0.3, f.x + 6, f.x + f.w - 6),
         y: U.clamp(b.y + b.vy * 0.3, f.y + 6, f.y + f.h - 6),
       };
+      const mate = g.isHuman(p.team);
       // người nhận đường chuyền: chủ động chạy tới điểm đón bóng sớm nhất
       if (b.passTarget === p) {
-        // chuyền lỗi: đi tới điểm lẽ ra nhận bóng, bóng chậm lại rồi mới đuổi theo
-        if (b.sloppy && b.speed > 70 && b.passPoint) { moveTo(p, b.passPoint.x, b.passPoint.y, false, 3); return; }
-        Act().receiveMove(g, p); return;
+        const ip = Act().receiveMove(g, p);
+        // đồng đội AI của người chơi: chạy nước rút tới bóng (chuyền lỗi: luôn chạy; chuyền chuẩn: thỉnh thoảng đi bộ)
+        if (mate) p.intent.sprint = U.dist(p, ip) > 6 && (b.sloppy || !p.ai.recvWalk);
+        return;
       }
-      // bóng đang bay về khung thành nhà (cú sút / phá bóng của đối phương) -> người gần khung nhất chặn trên đường bay
+      // bóng đang bay về khung thành nhà -> người gần khung nhất chặn trên đường bay
+      // (đội máy: cú sút / phá bóng của đối phương; đồng đội AI của người chơi: chỉ khi là cú sút)
       const dir = tm.dir;
-      const threat = b.lastKickTeam === 1 - p.team && b.vx * dir < -150;
+      const threat = b.lastKickTeam === 1 - p.team && b.vx * dir < -150 && (!mate || b.kind === 'shot');
       if (threat && p === keeperOf(g, p.team)) return this.goalkeeper(dt, g, p);
       // bóng đang được chuyền cho đồng đội -> không đuổi theo, giữ vị trí
       const passToMate = b.passTarget && b.passTarget.team === p.team && b.passTarget.state !== 'stun';
 
-      const ctl = g.isHuman(p.team) ? g.ctrl[p.team] : null;
+      const ctl = mate ? g.ctrl[p.team] : null;
       let chaser = nearest(tm.players, pred, (o) => o.state === 'normal' && o !== ctl);
       if (ctl && U.dist(ctl, pred) < chaser.d) chaser = { p: null };
       if (p === chaser.p && !passToMate) return moveTo(p, pred.x, pred.y, true, 1);
 
-      // bóng lỏng ở phần sân nhà (hoặc đang bay về khung thành nhà) -> người không đuổi bóng lùi về trông khung
-      if (!passToMate && ((b.x - f.cx) * dir < 0 || b.vx * dir < -120)) return this.goalkeeper(dt, g, p);
+      // người không đuổi bóng lùi về trông khung. Đội máy: bóng lỏng ở phần sân nhà (hoặc đang bay về khung thành nhà).
+      // Đồng đội AI của người chơi: chỉ khi bóng đã sát khung nhà và người chơi không đứng trong vòng cấm nhà
+      const cover = mate
+        ? U.dist(b, g.ownGoal(p.team)) < A().mate.dangerDist && !(ctl && g.inKeeperZone(ctl))
+        : (b.x - f.cx) * dir < 0 || b.vx * dir < -120;
+      if (!passToMate && cover) return this.goalkeeper(dt, g, p);
 
       const home = g.formationPos(p);
       moveTo(p, home.x + (b.x - f.cx) * 0.35, home.y + (b.y - f.cy) * 0.25, false, 6);

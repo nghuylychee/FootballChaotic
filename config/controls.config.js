@@ -15,7 +15,7 @@ SFC_CONFIG.controls = {
 
     // Tấn công            | Phòng ngự
     pass:    ['KeyS'],    // Chuyền sệt tự động | —
-    through: ['KeyW'],    // Chọc khe           | Gọi đồng đội áp sát (giữ)
+    through: ['KeyW'],    // Chọc khe           | —
     lob:     ['KeyA'],    // Chuyền bổng        | HARD ATTACK (gồng rồi vung chân đá bay đối thủ)
     shoot:   ['KeyD'],    // Sút (giữ để nạp) · sân nhà + còn đối phương phía trước: phá bóng | LIGHT ATTACK (đấm)
     skill:   ['KeyZ'],    // Skill move / lướt né
@@ -47,7 +47,6 @@ SFC_CONFIG.controls = {
     defense: [
       ['D', 'Light attack (đấm)'],
       ['A', 'Hard attack (đá bay)'],
-      ['W (giữ)', 'Gọi đồng đội áp sát'],
       ['Q', 'Đổi cầu thủ'],
       ['Z', 'Lướt nhanh'],
     ],

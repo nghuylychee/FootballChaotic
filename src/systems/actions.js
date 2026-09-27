@@ -241,6 +241,8 @@ window.SFC = window.SFC || {};
       b.passTarget = target;
       b.passPoint = plan.point;
       b.kind = 'pass';
+      // đồng đội AI của người chơi đón đường chuyền chuẩn: thỉnh thoảng đi bộ thay vì chạy nước rút (ai.mate)
+      if (target) target.ai.recvWalk = Math.random() < G().ai.mate.receiveWalkChance;
       p.charging = false; p.charge = 0;
       p.cancelPass();
       p.facing = Math.atan2(plan.vy, plan.vx);
@@ -356,11 +358,18 @@ window.SFC = window.SFC || {};
 
     startAttack(p, type) { p.atkType = type; p.atkT = 0; },
 
+    // hồi chiêu: đồng đội AI của người chơi hồi lâu hơn người chơi (ai.mate.cooldownMult)
+    cooldown(g, p, key, base) {
+      if (p.isControlled || !g.isHuman(p.team)) return base;
+      const m = G().ai.mate.cooldownMult;
+      return base * ((m && m[key]) || 1);
+    },
+
     /* ---------- D — LIGHT ATTACK: cú đấm thẳng ---------- */
     lightAttack(g, p) {
       const L = G().combat.light;
       if (p.cd.light > 0 || p.state !== 'normal') return false;
-      p.cd.light = L.cooldown;
+      p.cd.light = this.cooldown(g, p, 'light', L.cooldown);
       const fv = facingVec(p);
       p.state = 'jab'; p.stateT = L.startup;
       this.startAttack(p, 'light');
@@ -408,7 +417,7 @@ window.SFC = window.SFC || {};
     hardAttack(g, p) {
       const H = G().combat.hard;
       if (p.cd.hard > 0 || p.state !== 'normal') return false;
-      p.cd.hard = H.cooldown;
+      p.cd.hard = this.cooldown(g, p, 'hard', H.cooldown);
       p.state = 'windup'; p.stateT = H.windup;
       this.startAttack(p, 'hard');
       p.charging = false;
@@ -484,7 +493,7 @@ window.SFC = window.SFC || {};
         const s = U.randSign();
         d = p.hasBall ? U.norm(fv.x - fv.y * s, fv.y + fv.x * s) : fv;
       }
-      p.cd.skill = S.cooldown;
+      p.cd.skill = this.cooldown(g, p, 'skill', S.cooldown);
       p.state = 'dash'; p.stateT = S.dashTime;
       p.dashX = d.x * S.dashSpeed; p.dashY = d.y * S.dashSpeed;
       p.tackleImmune = S.tackleImmune;

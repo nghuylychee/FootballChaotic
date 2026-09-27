@@ -19,7 +19,7 @@ Không cần build, không cần thư viện, không cần file ảnh/âm thanh 
 | ← ↑ ↓ → | Di chuyển | Di chuyển |
 | E (giữ) | Chạy nước rút | Chạy nước rút |
 | S | Chuyền sệt tự động (mũi tên chỉ vào đồng đội = chuẩn) | — |
-| W (giữ/thả) | Chọc khe (lực = độ sâu khoảng trống) | Gọi đồng đội áp sát (giữ) |
+| W (giữ/thả) | Chọc khe (lực = độ sâu khoảng trống) | — |
 | A (giữ/thả) | Chuyền bổng | **Hard attack**: gồng rồi vung chân đá bay đối thủ |
 | D (giữ/thả) | Sút theo hướng phím giữ lúc thả; giữ quá lâu thì bóng bay cao. Ở phần sân nhà mà còn đối phương (trừ người đang trông khung) phía trước: phá bóng | **Light attack**: đấm |
 | Z | Skill move (né tắc) | Lướt |
@@ -87,7 +87,14 @@ Cơ chế nằm ở `opts.solo` của `SFC.Game` (khóa theo từng đội, dùn
 
 **Trông khung thành (2v2):** mỗi đội 2 cầu thủ sân, vai trò chỉ là vị trí xuất phát. Ai đứng trong vòng cấm nhà thì có cơ chế thủ môn
 (tầm bắt `gkReach`, bắt bóng bổng `gkCatchHeight`, tỉ lệ cứu thua / PARRY, đeo găng). Bắt được bóng trong vòng cấm → miễn tắc `gkHoldProtect` giây;
-tự rê bóng vào vòng cấm thì không. AI không áp sát sẽ lùi về trông khung khi đối phương cầm bóng cách khung thành dưới `ai.keeperCoverDist`.
+tự rê bóng vào vòng cấm thì không. Đội máy: AI không áp sát sẽ lùi về trông khung khi đối phương cầm bóng cách khung thành dưới `ai.keeperCoverDist`.
+
+**Đồng đội AI của người chơi** (`ai.mate`, vd. người còn lại ở chế độ 1 CẦU THỦ): phòng ngự luôn áp sát người cầm bóng, chỉ về trông khung khi nguy hiểm rõ ràng
+(người cầm bóng cách khung nhà < `dangerDist`, bạn không đứng trong vòng cấm nhà, và nó không đang áp sát); tấn công ưu tiên rê bóng + dứt điểm, ít chuyền
+(`passChance`), sút ở bất kỳ đâu trên phần sân đối phương nhưng càng xa càng ít sút; đón đường chuyền bằng chạy nước rút (chuyền lỗi: luôn chạy).
+Hồi chiêu riêng dài hơn người chơi (`cooldownMult`: đấm x1.8, Hard x1.5, lướt x2.2), đấm với tỉ lệ `lightChance`, né (lướt) quyết định 1 lần mỗi lần bị áp sát
+(`skillChance`). Cơ hội mười mươi (khung trống, đường sút thoáng, cách khung < `quickShotRange`): `quickShotChance` sút nhanh lực nhẹ thay vì nạp lực.
+Độ khó của nó = `ai.teammate` nhưng không bao giờ cao hơn độ khó đã chọn.
 
 ## Luồng trận
 Kick Off → chơi → bàn thắng → **Core Upgrade** lúc bóng chết, trước khi giao bóng lại (tối đa `maxUpgrades` lần, cả hai đội cùng chọn) →
