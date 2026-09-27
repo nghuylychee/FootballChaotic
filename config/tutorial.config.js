@@ -83,7 +83,7 @@ SFC_CONFIG.tutorial = {
       title: 'SHOP',
       lines: [
         '# Nhân vật của bạn',
-        'Character mang tên bạn vào sân thay cầu thủ ĐÁ CAO (cả chơi đơn lẫn online), vẫn mặc áo đội đã chọn.',
+        'Character mang tên bạn vào sân, vẫn mặc áo đội đã chọn. Chơi đơn 1 CẦU THỦ: chọn đá ĐÁ LÙI hay ĐÁ CAO (đồng đội AI đá vị trí còn lại). CẢ ĐỘI / online: đá ĐÁ CAO.',
         'NHÂN VẬT: đổi tên, màu da, màu tóc (miễn phí), mở TÚI ĐỒ để phối costume.',
         '# XP & Gold',
         'Đá hết trận (chơi đơn / online) để nhận XP + gold: thắng > hòa > thua, cộng thêm theo số bàn ghi được.',

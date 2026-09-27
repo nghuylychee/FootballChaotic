@@ -11,7 +11,8 @@ window.SFC = window.SFC || {};
      *         humans: các đội do người điều khiển (mặc định [humanTeam]; PvP = [0, 1]),
      *         draftTimeLimit: giây tối đa để chọn Core (0 = không giới hạn),
      *         solo: [idx đội 0, idx đội 1] — khóa người chơi vào 1 cầu thủ (chỉ số trong đội; null = điều khiển cả đội),
-     *         avatars: [{name, look} | null, ...] — character của người chơi, thay cầu thủ ĐÁ CAO của đội đó,
+     *         avatars: [{name, look, role?} | null, ...] — character của người chơi, thay cầu thủ ở vị trí role
+     *                  (DEF / FWD, mặc định FWD) của đội đó,
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả) }
      */
     constructor(opts) {
@@ -47,10 +48,11 @@ window.SFC = window.SFC || {};
           this.players.push(p);
         });
       }
-      // character đại diện của người chơi (Profile): thay cầu thủ ĐÁ CAO, vẫn mặc áo đội
+      // character đại diện của người chơi (Profile): thay cầu thủ ở vị trí đã chọn (mặc định ĐÁ CAO), vẫn mặc áo đội
       (opts.avatars || []).forEach((av, t) => {
         if (!av || !this.teams[t]) return;
-        const p = this.teams[t].players.find((q) => q.role === 'FWD') || this.teams[t].players[0];
+        const role = av.role || 'FWD';
+        const p = this.teams[t].players.find((q) => q.role === role) || this.teams[t].players[0];
         p.name = av.name;
         p.look = Object.assign({}, av.look);
         p.avatar = true;

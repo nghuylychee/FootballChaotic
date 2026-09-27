@@ -222,7 +222,7 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------- vào trận ---------- */
-    // character đại diện: thay cầu thủ ĐÁ CAO của đội mình
+    // character đại diện: thay 1 cầu thủ của đội mình (Game opts.avatars; thêm role để chọn vị trí, mặc định ĐÁ CAO)
     avatar() { return { name: this.data.name || 'PLAYER', level: this.data.level, look: this.lookOf() }; },
 
     // gửi cho đối thủ online (phòng chờ)

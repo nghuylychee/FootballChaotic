@@ -48,7 +48,8 @@ Màn Hướng dẫn (`config/tutorial.config.js`) đã được gỡ khỏi tran
 
 ## Meta progression (level · XP · gold · gacha · túi đồ)
 - Hồ sơ lưu ở `localStorage` của trình duyệt (`src/core/profile.js`, key `sfc_profile_v1`). Lần đầu mở game phải đặt tên.
-- **Character**: mang tên + costume của bạn, vào sân thay cầu thủ ĐÁ CAO của đội mình (chơi đơn và online — đối thủ thấy được).
+- **Character**: mang tên + costume của bạn, vào sân thay 1 cầu thủ của đội mình (đối thủ online thấy được). Chơi đơn `1 CẦU THỦ`: chọn
+  character đá ĐÁ LÙI hay ĐÁ CAO, cầu thủ AI của đội đá vị trí còn lại; `CẢ ĐỘI` và online: character đá ĐÁ CAO.
 - **Thưởng sau trận** (chỉ khi đá hết trận): thắng / hòa / thua + theo số bàn, nhân độ khó ở chơi đơn; online thưởng cao hơn.
   Màn kết quả diễn hoạt từng dòng thưởng, gold đếm lên, thanh XP chạy qua từng level, báo hộp / Core vừa mở khoá theo level.
 - **Shop = hộp gacha** (kiểu CSGO): trả gold, dải item quay chậm dần rồi dừng ở món trúng (có tiếng tách, nhạc lộ đồ theo độ hiếm).

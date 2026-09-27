@@ -25,9 +25,12 @@
         const home = o.order[this.sel.team];
         let away = o.opp[this.sel.opp];
         if (away === 'random') away = SFC.U.pick(o.order.filter((t) => t !== home));
+        // 1 CẦU THỦ: character của bạn đá đúng vị trí đã chọn (cầu thủ AI của đội đá vị trí còn lại); CẢ ĐỘI: character đá ĐÁ CAO
+        const soloIdx = this.sel.ctrl ? this.sel.ctrl - 1 : null;
+        const avatar = Object.assign(SFC.Profile.avatar(), { role: soloIdx == null ? 'FWD' : C.roles[soloIdx] });
         opts = {
-          home, away, difficulty: o.diffs[this.sel.diff], humanTeam: 0, solo: [this.sel.ctrl ? this.sel.ctrl - 1 : null, null],
-          avatars: [SFC.Profile.avatar(), null], coreUnlocks: [SFC.Profile.unlockedCores(), null],
+          home, away, difficulty: o.diffs[this.sel.diff], humanTeam: 0, solo: [soloIdx, null],
+          avatars: [avatar, null], coreUnlocks: [SFC.Profile.unlockedCores(), null],
         };
       }
       this.mode = 'single';

@@ -133,10 +133,9 @@ window.SFC = window.SFC || {};
     // CẢ ĐỘI (đổi người bằng Q) hoặc chỉ 1 cầu thủ: tên + vị trí xuất phát
     ctrlLabel(teamId, ctrl) {
       if (!ctrl) return 'CẢ ĐỘI';
+      // 1 CẦU THỦ: character của bạn đá vị trí này
       const role = SFC_CONFIG.game.roles[ctrl - 1];
-      // cầu thủ ĐÁ CAO là character của bạn
-      const name = role === 'FWD' ? PF().data.name : TEAMS().list[teamId].players[ctrl - 1] || role;
-      return `${name} · ${ROLE_LABELS[role] || role}`;
+      return `${PF().data.name || 'PLAYER'} · ${ROLE_LABELS[role] || role}`;
     },
 
     back() {
