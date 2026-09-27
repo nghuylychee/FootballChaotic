@@ -22,7 +22,7 @@ SFC_CONFIG.game = {
     goalWidth: 78,     // độ rộng khung thành (trục y)
     goalDepth: 18,     // độ sâu lưới
     goalHeight: 26,    // chiều cao xà ngang (trục z)
-    boxDepth: 66,      // vòng cấm (thủ môn AI không ra khỏi vùng này)
+    boxDepth: 66,      // vòng cấm: cầu thủ đứng trong vòng cấm nhà được cơ chế thủ môn
     boxWidth: 140,
     centerCircle: 34,
   },
@@ -43,12 +43,13 @@ SFC_CONFIG.game = {
     autoSwitchDistance: 150,
   },
 
+  // Street 2v2: không có thủ môn cố định. Ai đứng trong vòng cấm nhà (boxDepth x boxWidth)
+  // thì được cơ chế thủ môn (gk* bên dưới). Vai trò chỉ là vị trí xuất phát, chia việc tùy người chơi.
   // Vị trí đội hình (tỉ lệ sân, tính cho đội tấn công sang PHẢI)
-  roles: ['GK', 'DEF', 'FWD'],
+  roles: ['DEF', 'FWD'],
   formation: {
-    GK:  { x: 0.03, y: 0.50 },
-    DEF: { x: 0.25, y: 0.62 },
-    FWD: { x: 0.40, y: 0.36 },
+    DEF: { x: 0.20, y: 0.58 },
+    FWD: { x: 0.40, y: 0.40 },
   },
 
   player: {
@@ -64,6 +65,7 @@ SFC_CONFIG.game = {
     staminaDrain: 30,
     staminaRegen: 20,
     staminaMinToSprint: 12,
+    // Cơ chế thủ môn — áp dụng cho cầu thủ đang đứng trong vòng cấm nhà
     gkReach: 9,
     gkCatchHeight: 30,
     gkSaveBase: 0.95,
@@ -71,7 +73,8 @@ SFC_CONFIG.game = {
     gkSpeedFree: 340,         // bóng chậm hơn mức này: thủ môn bắt không bị phạt tốc độ (khớp với lực sút mặc định)
     gkSpeedPenalty: 700,      // mỗi (N px/s) vượt gkSpeedFree -> giảm 100% tỉ lệ bắt
     gkParryShare: 0.6,        // khi bắt hụt: tỉ lệ đẩy được bóng ra, còn lại bóng lọt lưới
-    gkSpeedMult: 1.1,         // thủ môn di chuyển nhanh hơn trong vòng cấm
+    gkSpeedMult: 1.1,         // AI đứng trong vòng cấm nhà di chuyển nhanh hơn
+    gkHoldProtect: 2.5,       // (s) bắt được bóng trong vòng cấm nhà -> miễn tắc/xoạc/va vai trong thời gian này (khi còn ở trong vòng cấm)
     gkDiveSpeed: 250,
     gkDiveTime: 0.24,
   },
@@ -158,28 +161,41 @@ SFC_CONFIG.game = {
     clearSpread: 0.2,        // rad sai số ngẫu nhiên
   },
 
+  // Phòng ngự (đội mình không có bóng): D = LIGHT ATTACK (đấm), A = HARD ATTACK (vung chân đá).
+  // Mỗi đòn có cooldown riêng, hiển thị trên thanh kỹ năng ở giữa đáy màn hình.
   combat: {
-    tackleRange: 15,
-    tackleLunge: 110,
-    tackleCooldown: 0.55,
-    tackleChance: 0.6,
-    tackleFailRecover: 0.3,
-    tackleVictimStagger: 0.25,
+    // D — LIGHT ATTACK: cú đấm thẳng, ra đòn gần như tức thì, tầm ngắn, choáng ngắn, cooldown ngắn
+    light: {
+      cooldown: 1.0,
+      startup: 0.07,          // (s) kéo tay lấy đà trước khi nắm đấm chạm (anim: tay lùi về)
+      recover: 0.2,           // (s) khựng sau cú đấm (anim: tay duỗi thẳng rồi thu về)
+      lunge: 90,              // nhoài người về trước khi đấm (px/s)
+      range: 17,              // tầm đấm tính từ mép người (px) — Core: tackleRange
+      arc: 70,                // (độ) nửa góc vùng đấm phía trước mặt
+      stun: 0.35,
+      knockback: 150,
+      stealChance: 0.6,       // tỉ lệ làm người cầm bóng rơi bóng (x chỉ số tackle / dribble đối thủ, Core: tackleChance); trượt -> chỉ đẩy lùi
+    },
+    // A — HARD ATTACK: gồng co chân (đối thủ nhìn thấy được) rồi bước tới vung chân đá.
+    // Trúng: đối thủ bị hất tung bay rất xa + choáng lâu + chắc chắn rơi bóng. Trượt: khựng lâu. Z (lướt) đúng lúc thì né được.
+    hard: {
+      cooldown: 4.0,
+      windup: 0.3,            // (s) gồng — trong lúc này vẫn xoay hướng được theo phím
+      kickTime: 0.16,         // (s) vung chân (vùng đá có hiệu lực suốt thời gian này)
+      step: 230,              // bước tới khi vung chân (px/s)
+      range: 18,              // tầm chân tính từ mép người (px)
+      arc: 80,                // (độ) nửa góc vùng vung chân
+      stun: 1.2,
+      knockback: 380,         // lực hất văng (px/s) — bay xa nhờ ma sát trên không thấp (airDamp)
+      launch: 190,            // vận tốc hất lên cao (px/s)
+      ballKick: 230,          // chân trúng bóng lỏng -> sút bóng đi
+      recover: 0.3,           // khựng sau khi đá trúng
+      whiffRecover: 0.6,      // khựng sau khi đá trượt
+    },
 
-    slideSpeed: 235,
-    slideTime: 0.34,
-    slideRecover: 0.38,
-    slideCooldown: 1.1,
-    slideStun: 0.85,
-    slideHitRange: 11,
-    slideBallKick: 150,
-
-    bodyCheckRange: 16,
-    bodyCheckKnockback: 170,
-    bodyCheckStun: 0.45,
-    bodyCheckCooldown: 0.9,
-    bodyCheckStealChance: 0.5,
-
+    airGravity: 620,         // người bị hất tung: trọng lực
+    airDamp: 1.4,            //   ma sát ngang khi còn trên không (thấp -> bay xa)
+    wallBounce: 0.35,        // bị hất văng vào tường: bật ngược lại theo tỉ lệ này
     knockbackDamp: 7,
     hitImmuneBonus: 0.25,    // miễn nhiễm thêm sau khi hết choáng (chống khóa choáng)
   },
@@ -193,6 +209,7 @@ SFC_CONFIG.game = {
 
   ai: {
     difficulty: {
+      // tackleMult: nhân tỉ lệ Light attack làm rơi bóng của AI
       easy:   { label: 'DỄ',   reaction: 0.34, tackleMult: 0.7, shotAccuracy: 0.55, aggression: 0.6, speedMult: 0.92 },
       normal: { label: 'VỪA',  reaction: 0.2,  tackleMult: 1.0, shotAccuracy: 0.8,  aggression: 1.0, speedMult: 1.0 },
       hard:   { label: 'KHÓ',  reaction: 0.1,  tackleMult: 1.2, shotAccuracy: 0.92, aggression: 1.3, speedMult: 1.06 },
@@ -205,9 +222,12 @@ SFC_CONFIG.game = {
     dribbleAvoid: 42,
     gkHoldTime: 0.6,
     supportAhead: 70,
+    restDefenseFrom: 0.5,     // đồng đội cầm bóng vượt mốc này (tỉ lệ sân, 0.5 = giữa sân) -> người còn lại lùi chốt phía sau
+    restDefenseDist: 110,     //   đứng sau người cầm bóng bao xa (px)
     markDistance: 26,
-    slideDistMin: 20,
-    slideDistMax: 42,
+    keeperCoverDist: 420,     // người cầm bóng đối phương cách khung thành nhà dưới mức này -> AI không áp sát lùi về trông khung
+    hardDistMin: 16,          // AI dùng Hard attack khi người cầm bóng cách trong khoảng này (px)
+    hardDistMax: 44,
   },
 
   fx: { shakeGoal: 5, shakeHit: 2, shakeShot: 1.5 },

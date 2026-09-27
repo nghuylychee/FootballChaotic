@@ -1,6 +1,6 @@
 # Street Football Chaos — MVP (web)
 
-Bóng đá đường phố 3v3, top-down 2.5D kiểu *Binding of Isaac*, điều khiển full bàn phím kiểu *FC Online*,
+Bóng đá đường phố 2v2 (không có thủ môn cố định), top-down 2.5D kiểu *Binding of Isaac*, điều khiển full bàn phím kiểu *FC Online*,
 với hệ thống **Core Upgrade** (kiểu Augment LoL Arena) thay đổi lối chơi giữa trận.
 
 ## Chạy game
@@ -18,10 +18,10 @@ Không cần build, không cần thư viện, không cần file ảnh/âm thanh 
 |---|---|---|
 | ← ↑ ↓ → | Di chuyển | Di chuyển |
 | E (giữ) | Chạy nước rút | Chạy nước rút |
-| S (giữ/thả) | Chuyền sệt | Tắc bóng |
+| S (giữ/thả) | Chuyền sệt | — |
 | W (giữ/thả) | Chọc khe (lực = độ sâu khoảng trống) | Gọi đồng đội áp sát (giữ) |
-| A (giữ/thả) | Chuyền bổng | Xoạc bóng |
-| D (giữ/thả) | Sút theo hướng phím giữ lúc thả; giữ quá lâu thì bóng bay cao. Ở phần sân nhà mà còn đối phương (trừ thủ môn) phía trước: phá bóng | Va chạm vai |
+| A (giữ/thả) | Chuyền bổng | **Hard attack**: gồng rồi vung chân đá bay đối thủ |
+| D (giữ/thả) | Sút theo hướng phím giữ lúc thả; giữ quá lâu thì bóng bay cao. Ở phần sân nhà mà còn đối phương (trừ người đang trông khung) phía trước: phá bóng | **Light attack**: đấm |
 | Z | Skill move (né tắc) | Lướt |
 | Q | — | Đổi cầu thủ |
 
@@ -50,6 +50,15 @@ Trang chủ tối giản: **CHƠI ĐƠN** (chọn đội / đối thủ / độ 
 - Thông số ở `config/net.config.js` (tần suất gửi, độ trễ nội suy, thời gian chọn Core, PeerServer riêng).
 - Debug trên 1 máy: mở 2 tab, tab này tạo phòng, tab kia vào phòng.
 
+**Light / Hard attack (phòng ngự):** không có tắc bóng — chỉ dùng đòn khi đội mình không có bóng, mỗi đòn có cooldown riêng hiển thị trên thanh kỹ năng
+ở giữa đáy màn hình (kiểu LoL: chân dung · ô D / A / Z với cooldown quét · thanh thể lực · Core như ô item).
+Light (D): cú đấm thẳng — kéo tay lấy đà rồi đấm, tầm ngắn, choáng ngắn + đẩy lùi, người cầm bóng có tỉ lệ rơi bóng. Hard (A): gồng co chân (hào quang đỏ, xoay hướng được)
+rồi vung chân đá — trúng thì đối thủ bị hất tung bay rất xa (văng vào tường thì bật lại), choáng lâu và chắc chắn rơi bóng; trượt thì khựng lâu. Z (lướt) đúng lúc thì né được cả hai. Chỉnh trong `SFC_CONFIG.game.combat.light / hard`.
+
+**Trông khung thành (2v2):** mỗi đội 2 cầu thủ sân, vai trò chỉ là vị trí xuất phát. Ai đứng trong vòng cấm nhà thì có cơ chế thủ môn
+(tầm bắt `gkReach`, bắt bóng bổng `gkCatchHeight`, tỉ lệ cứu thua / PARRY, đeo găng). Bắt được bóng trong vòng cấm → miễn tắc `gkHoldProtect` giây;
+tự rê bóng vào vòng cấm thì không. AI không áp sát sẽ lùi về trông khung khi đối phương cầm bóng cách khung thành dưới `ai.keeperCoverDist`.
+
 ## Luồng trận
 Kick Off → chơi → bàn thắng → **Core Upgrade** lúc bóng chết, trước khi giao bóng lại (tối đa `maxUpgrades` lần, cả hai đội cùng chọn) →
 **Final Push** (30s cuối, mỗi bàn được tính x2) → hết giờ mà hòa thì **Golden Goal**.
@@ -57,7 +66,7 @@ Kick Off → chơi → bàn thắng → **Core Upgrade** lúc bóng chết, trư
 ## Cấu trúc
 ```
 config/                 ← MỌI THÔNG SỐ CÂN BẰNG (tách riêng)
-  game.config.js        luật trận, vật lý, chỉ số, thủ môn, AI, độ khó
+  game.config.js        luật trận, vật lý, chỉ số, cơ chế trông khung, AI, độ khó
   controls.config.js    gán phím + bảng hướng dẫn
   teams.config.js       4 đội: màu áo, chỉ số, thiên hướng Core, phong cách AI
   cores.config.js       16 Core: mô tả, mods thụ động, params hành vi
@@ -66,8 +75,8 @@ config/                 ← MỌI THÔNG SỐ CÂN BẰNG (tách riêng)
 src/
   core/        utils, input (map phím → action), audio (WebAudio chiptune)
   entities/    ball (vật lý 2.5D x/y/z, khung thành, lưới), player
-  systems/     actions (chuyền/sút/tắc/xoạc...), cores (hook hành vi), effects,
-               ai (thủ môn/giữ bóng/hỗ trợ/phòng ngự), human (controller)
+  systems/     actions (chuyền/sút/tắc/Light & Hard attack...), cores (hook hành vi), effects,
+               ai (trông khung/giữ bóng/hỗ trợ/phòng ngự), human (controller)
   game/        match.js — state machine trận đấu
   render/      sprites (pixel-art procedural), background (sân + tường), renderer
   net/         transport (PeerJS), sync (snapshot / nội suy / phím từ xa), online (phòng chờ + vòng lặp host/khách)
@@ -77,9 +86,9 @@ src/
 ### Thêm Core mới
 1. Thêm entry vào `config/cores.config.js`.
 2. Nếu chỉ cần chỉ số thụ động: dùng `mods` (speed, offBallSpeed, shotPower, passSpeed,
-   tackleRange, tackleChance, knockback, chargeTime, accuracy, sprintRegen...). Không cần code.
+   tackleRange / tackleChance (tầm / tỉ lệ cướp bóng của Light attack), knockback, chargeTime, accuracy, sprintRegen...). Không cần code.
 3. Nếu cần hành vi riêng: thêm object cùng `id` vào `Behaviors` trong `src/systems/cores.js`
-   với các hook: `onShoot`, `onPass`, `onSkillMove`, `onSprintStart`, `onSlideStart`, `onTackle`,
+   với các hook: `onShoot`, `onPass`, `onSkillMove`, `onSprintStart`, `onHardAttack`, `onTackle`,
    `onTackleWin`, `onPossessionGained`, `onHit`, `onGoalLine`, `onWallHit`, `update`.
 
 ### Debug

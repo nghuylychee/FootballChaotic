@@ -8,7 +8,7 @@ window.SFC = window.SFC || {};
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const TEAMS = () => SFC_CONFIG.teams;
-  const STAT_LABELS = { speed: 'TỐC ĐỘ', power: 'LỰC SÚT', pass: 'CHUYỀN', tackle: 'TẮC BÓNG', dribble: 'RÊ DẮT', accuracy: 'CHÍNH XÁC' };
+  const STAT_LABELS = { speed: 'TỐC ĐỘ', power: 'LỰC SÚT', pass: 'CHUYỀN', tackle: 'ĐỐI KHÁNG', dribble: 'RÊ DẮT', accuracy: 'CHÍNH XÁC' };
   const Online = () => SFC.Online;
 
   function helpTable(list) {

@@ -73,11 +73,17 @@ window.SFC = window.SFC || {};
     }
     ownGoal(team) { return this.attackGoal(1 - team); }
     inOwnHalf(p) { return (p.x - this.field.cx) * this.teams[p.team].dir < 0; }
-    // D ở phần sân nhà = phá bóng, trừ khi phía trước (theo trục x) không còn cầu thủ đối phương nào (bỏ qua GK) -> được sút
+    // "vai thủ môn": cầu thủ đứng trong vòng cấm nhà -> được bắt bóng / cứu thua / đổ người
+    inKeeperZone(p) {
+      const f = this.field;
+      return Math.abs(p.x - this.ownGoal(p.team).x) < f.boxDepth && Math.abs(p.y - f.cy) < f.boxWidth / 2;
+    }
+    // D ở phần sân nhà = phá bóng, trừ khi phía trước (theo trục x) không còn cầu thủ đối phương nào
+    // (bỏ qua người đang trông khung thành của họ) -> được sút
     shouldClear(p) {
       if (!this.inOwnHalf(p)) return false;
       const dir = this.teams[p.team].dir;
-      return this.teams[1 - p.team].players.some((o) => o.role !== 'GK' && (o.x - p.x) * dir > 0);
+      return this.teams[1 - p.team].players.some((o) => !this.inKeeperZone(o) && (o.x - p.x) * dir > 0);
     }
     get remaining() { return Math.max(0, this.cfg.match.duration - this.elapsed); }
 
@@ -103,16 +109,16 @@ window.SFC = window.SFC || {};
       const b = this.ball, cur = this.ctrl[team];
       let best = null, bd = Infinity;
       for (const p of this.teams[team].players) {
-        if (p === cur || p.role === 'GK') continue;
+        if (p === cur) continue;
         const d = U.dist(p, b);
         if (d < bd) { bd = d; best = p; }
       }
       if (best) { this.setControlled(best); this.effects.ring(best.x, best.y, '#ffe14f'); }
     }
 
-    // thủ môn ôm bóng trong vòng cấm -> không thể bị tắc/xoạc/va vai
+    // bắt được bóng trong vòng cấm nhà -> không thể bị tắc/xoạc/va vai (trong gkHoldProtect giây, khi còn ở trong vòng cấm)
     isProtected(p) {
-      return p.role === 'GK' && p.hasBall && Math.abs(p.x - this.ownGoal(p.team).x) < this.field.boxDepth;
+      return p.hasBall && p.keeperHold > 0 && this.inKeeperZone(p);
     }
 
     looseBall(p, dx, dy, speed = 110) {
@@ -134,6 +140,7 @@ window.SFC = window.SFC || {};
     gainPossession(p) {
       const b = this.ball;
       b.setOwner(p);
+      p.keeperHold = 0;
       p.cancelPass();
       p.ai.holdT = 0;
       p.ai.t = 0;
@@ -146,7 +153,7 @@ window.SFC = window.SFC || {};
         const cur = this.ctrl[t];
         if (p.team === t) this.setControlled(p);
         else if (this.cfg.match.autoSwitchOnDefense && cur &&
-                 (cur.role === 'GK' || U.dist(cur, p) > this.cfg.match.autoSwitchDistance)) this.switchPlayer(t);
+                 U.dist(cur, p) > this.cfg.match.autoSwitchDistance) this.switchPlayer(t);
       }
       this.sfx('touch');
     }
@@ -161,7 +168,7 @@ window.SFC = window.SFC || {};
       this.ball.reset(f.cx, f.cy);
       for (const p of this.players) {
         const pos = this.formationPos(p);
-        Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null });
+        Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null });
         p.facing = this.teams[p.team].dir > 0 ? 0 : Math.PI;
         p.intent.mx = p.intent.my = 0;
         p.ai.runT = 0; p.ai.requestedPass = null;
@@ -341,6 +348,7 @@ window.SFC = window.SFC || {};
       for (let i = 0; i < ps.length; i++) {
         for (let j = i + 1; j < ps.length; j++) {
           const a = ps[i], b = ps[j];
+          if (a.airZ > 4 || b.airZ > 4) continue; // người đang bay qua đầu
           const dx = b.x - a.x, dy = b.y - a.y;
           const d = Math.hypot(dx, dy), min = a.radius + b.radius;
           if (d > 0.01 && d < min) {
@@ -363,9 +371,9 @@ window.SFC = window.SFC || {};
       const pt = b.passTarget;
       const passAlive = pt && pt.state !== 'stun' && b.speed > 40;
       for (const p of this.players) {
-        if (p.state === 'stun' || p.state === 'slide' || b.noPickup.has(p.id)) continue;
+        if (p.state === 'stun' || p.state === 'kick' || b.noPickup.has(p.id)) continue;
         if (passAlive && p !== pt && p.team === pt.team) continue;
-        const gk = p.role === 'GK' && Math.abs(p.x - this.ownGoal(p.team).x) < f.boxDepth;
+        const gk = this.inKeeperZone(p);
         const reach = p.radius + b.r + (gk ? C.player.gkReach + (p.state === 'dash' ? 5 : 0) : C.ball.pickupRange)
           + (b.passTarget === p ? C.pass.receiveRangeBonus : 0);
         const maxZ = gk ? C.player.gkCatchHeight : C.ball.pickupHeight;
@@ -378,7 +386,7 @@ window.SFC = window.SFC || {};
     tryControl(p) {
       const b = this.ball, C = this.cfg, spd = b.speed;
       const opp = b.lastKickTeam >= 0 && b.lastKickTeam !== p.team;
-      const isGK = p.role === 'GK';
+      const isGK = this.inKeeperZone(p);
       const dir = U.norm(b.vx, b.vy);
 
       if (opp && !isGK && b.fx.thunder && b.pierce > 0 && spd > 150) {
@@ -424,12 +432,14 @@ window.SFC = window.SFC || {};
         if (Math.random() > 0.35 * p.stats.dribble) { this.deflect(p, 0.4); return; }
       }
       this.gainPossession(p);
+      // bắt bóng trong vòng cấm nhà (không phải đường chuyền của đồng đội) -> ôm bóng như thủ môn
+      if (isGK && b.lastKickTeam !== p.team) p.keeperHold = C.player.gkHoldProtect;
     }
 
     deflect(p, keep) {
       const b = this.ball;
-      // thủ môn luôn đẩy bóng ra xa khung thành; cầu thủ thường thì bật theo hướng va chạm
-      const n = p.role === 'GK'
+      // người trông khung (trong vòng cấm nhà) luôn đẩy bóng ra xa khung thành; ngoài vòng cấm thì bật theo hướng va chạm
+      const n = this.inKeeperZone(p)
         ? { x: this.teams[p.team].dir, y: U.randSign() * U.rand(0.5, 1.2) }
         : U.norm(b.x - p.x, b.y - p.y);
       const spd = Math.max(80, b.speed * keep);

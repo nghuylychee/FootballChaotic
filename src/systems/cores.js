@@ -3,7 +3,7 @@
  * - hành vi đặc biệt: object Behaviors, key = id core, value = các hook:
  *   onShoot(sys, team, params, player, ball, charge)
  *   onPass(sys, team, params, player, target, mode)
- *   onSkillMove / onSprintStart / onSlideStart / onTackle / onTackleWin
+ *   onSkillMove / onSprintStart / onHardAttack (bắt đầu lao) / onTackle (mỗi lần ra đòn Light / Hard) / onTackleWin
  *   onPossessionGained(sys, team, params, player)
  *   onHit(sys, team, params, victim, opts)        -> true = chặn đòn
  *   onGoalLine(sys, team, params, ball)           -> true = chặn bóng vào lưới
@@ -29,7 +29,7 @@ window.SFC = window.SFC || {};
     const spd = Math.max(90, Math.hypot(player.vx, player.vy));
     const decoy = g.effects.decoy(player, b.x, b.y, Math.cos(a) * spd, Math.sin(a) * spd, params.duration || 1.6);
     for (const o of g.teams[1 - team].players) {
-      if (o.role !== 'GK' && U.dist(o, player) < (params.confuseRadius || 90) && !o.isControlled) {
+      if (!g.inKeeperZone(o) && U.dist(o, player) < (params.confuseRadius || 90) && !o.isControlled) {
         o.confused = { decoy, t: params.confuseTime || 1.2 };
       }
     }
@@ -104,7 +104,7 @@ window.SFC = window.SFC || {};
       },
     },
     blade_runner: {
-      onSlideStart(sys, team, p, pl) {
+      onHardAttack(sys, team, p, pl) {
         sys.g.effects.slash(pl, p);
         sys.g.sfx('zap');
       },

@@ -27,8 +27,7 @@ window.SFC = window.SFC || {};
       const teamHas = !!b.owner && b.owner.team === p.team;
       g.pressureCall[team] = !teamHas && input.isDown('through');
 
-      // thủ môn chỉ do người chơi điều khiển khi đang ôm bóng
-      if ((input.wasPressed('switch') || p.role === 'GK') && !has) g.switchPlayer(team);
+      if (input.wasPressed('switch') && !has) g.switchPlayer(team);
       if (g.ctrl[team] !== p) return;
 
       if (has) {
@@ -96,9 +95,8 @@ window.SFC = window.SFC || {};
           if (input.wasPressed(key)) { carrier.ai.requestedPass = { target: p, mode }; break; }
         }
       } else {
-        if (input.wasPressed('pass')) Act.tackle(g, p);
-        else if (input.wasPressed('lob')) Act.slide(g, p);
-        else if (input.wasPressed('shoot')) Act.bodyCheck(g, p);
+        if (input.wasPressed('shoot')) Act.lightAttack(g, p);
+        else if (input.wasPressed('lob')) Act.hardAttack(g, p);
       }
       if (input.wasPressed('skill')) Act.skill(g, p, mx, my);
     },

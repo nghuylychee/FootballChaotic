@@ -4,7 +4,9 @@
  *
  *  mods   : hệ số nhân thụ động, áp dụng tự động. Các key hỗ trợ:
  *           speed, offBallSpeed, sprintRegen, shotPower, passSpeed,
- *           tackleRange, tackleChance, slideSpeed, knockback,
+ *           tackleRange (tầm Light attack), tackleChance (tỉ lệ Light làm rơi bóng),
+ *           slideSpeed (bước tới khi Hard attack),
+ *           knockback (Light + Hard attack),
  *           chargeTime, accuracy
  *  params : tham số cho hành vi đặc biệt (code ở src/systems/cores.js,
  *           map theo id). Thêm Core mới chỉ với `mods` thì không cần code.
@@ -72,7 +74,7 @@ SFC_CONFIG.cores = {
     /* ---------- COMBAT ---------- */
     street_fighter: {
       name: 'Street Fighter', icon: '🥊', category: 'combat', tier: 'common',
-      desc: 'Tắc bóng tầm xa hơn, dễ thành công hơn. Tắc thành công gây đẩy lùi + phá combo đối thủ.',
+      desc: 'Light attack tầm xa hơn, dễ làm rơi bóng hơn. Đòn cướp được bóng gây thêm đẩy lùi + choáng.',
       mods: { tackleRange: 1.3, tackleChance: 1.35, knockback: 1.6 },
       params: { stun: 0.7, knockback: 160 },
     },
@@ -83,7 +85,7 @@ SFC_CONFIG.cores = {
     },
     blade_runner: {
       name: 'Blade Runner', icon: '🔪', category: 'combat', tier: 'epic',
-      desc: 'Xoạc bóng phóng ra một đường chém năng lượng, gây choáng và đánh rơi bóng.',
+      desc: 'Cú đá Hard attack (A) phóng ra một đường chém năng lượng, gây choáng và đánh rơi bóng.',
       params: { speed: 300, life: 0.45, length: 18, stun: 0.9 },
     },
 
@@ -100,7 +102,7 @@ SFC_CONFIG.cores = {
     },
     emp_trap: {
       name: 'EMP Trap', icon: '📡', category: 'tactical', tier: 'rare',
-      desc: 'Mỗi lần tắc/xoạc để lại một quả mìn EMP. Đối thủ dẫm phải bị choáng và mất bóng.',
+      desc: 'Mỗi lần ra đòn (Light / Hard) để lại một quả mìn EMP. Đối thủ dẫm phải bị choáng và mất bóng.',
       params: { cooldown: 2.5, max: 3, life: 14, radius: 9, arm: 0.5, stun: 1.0 },
     },
     maestro: {

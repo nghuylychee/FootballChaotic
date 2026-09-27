@@ -82,7 +82,7 @@ window.SFC = window.SFC || {};
       for (const e of list) {
         if (e.k === 'p') {
           const p = e.o;
-          const hy = drawPlayer(ctx, p, g);
+          const hy = p.airZ > 0 ? this.airborne(ctx, p, g) : drawPlayer(ctx, p, g);
           if (p.ironCd <= 0 && g.cores.has(p.team, 'iron_body')) px(ctx, p.x - 1, hy - 10, 3, 2, '#ffd23f');
           if (p.charging) this.chargeBar(ctx, p, hy, g);
           if (p.passMode) this.passBar(ctx, p, hy);
@@ -165,6 +165,31 @@ window.SFC = window.SFC || {};
         ctx.fillStyle = `rgba(255,255,255,${fx.flashA * 0.5})`;
         ctx.fillRect(0, 0, C.width, C.height);
       }
+    },
+
+    // bị Hard attack đá bay: bóng đổ dưới đất, người lộn vòng trên không + vệt gió
+    airborne(ctx, p, g) {
+      const { px, ellipse, drawPlayer } = SP();
+      const k = Math.max(0.35, 1 - p.airZ / 70);
+      ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, 6 * k, 2.5 * k, 'rgba(0,0,0,0.38)');
+      const cy = p.y - p.airZ - 8;
+      const dir = (p.kbx || 0) >= 0 ? 1 : -1;
+      const sp = Math.hypot(p.kbx || 0, p.kby || 0);
+      if (sp > 80) {
+        const n = U.norm(p.kbx, p.kby);
+        ctx.globalAlpha = Math.min(0.8, sp / 400);
+        for (let i = 0; i < 3; i++) {
+          const o = (i - 1) * 5;
+          px(ctx, Math.round(p.x - n.x * (12 + i * 3) - n.y * o), Math.round(cy - n.y * (12 + i * 3) + n.x * o), 6 - i, 1, '#ffffff');
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctx.save();
+      ctx.translate(Math.round(p.x), Math.round(cy));
+      ctx.rotate(dir * p.anim * 13);
+      drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, keeper: false }), g, 0.999);
+      ctx.restore();
+      return Math.round(cy) - 8;
     },
 
     chargeBar(ctx, p, hy, g) {

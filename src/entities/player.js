@@ -1,8 +1,12 @@
-/* Player — di chuyển, trạng thái (normal/stun/slide/dash/tackle/recover), nhận đòn */
+/* Player — di chuyển, trạng thái (normal/stun/jab/windup/kick/dash/recover), nhận đòn
+ * jab = Light attack (đấm) đang lấy đà · windup = Hard attack đang gồng co chân · kick = đang vung chân
+ * airZ = độ cao khi bị Hard attack hất tung */
 window.SFC = window.SFC || {};
 
 (function () {
   const U = SFC.U;
+
+  const ATTACK_STATES = { jab: 1, windup: 1, kick: 1, recover: 1 };
 
   class Player {
     constructor(game, team, role, idx) {
@@ -28,7 +32,12 @@ window.SFC = window.SFC || {};
       this.facing = team.dir > 0 ? 0 : Math.PI;
       this.state = 'normal';
       this.stateT = 0;
-      this.cd = { tackle: 0, slide: 0, skill: 0, body: 0 };
+      this.cd = { light: 0, hard: 0, skill: 0 };
+      this.hardLanded = false;
+      this.atkType = null;    // anim đòn đang ra: light | hard
+      this.atkT = 0;          // thời gian từ lúc bắt đầu ra đòn (s)
+      this.airZ = 0;          // bị hất tung: độ cao + vận tốc lên
+      this.airVz = 0;
       this.stamina = SFC_CONFIG.game.player.staminaMax;
       this.sprinting = false;
       this.charging = false;
@@ -38,6 +47,7 @@ window.SFC = window.SFC || {};
       this.passKey = null;
       this.passLock = null;   // người nhận đang được chọn
       this.tackleImmune = 0;
+      this.keeperHold = 0;    // còn bao lâu được bảo vệ khi ôm bóng trong vòng cấm nhà
       this.hitImmune = 0;
       this.ironCd = 0;
       this.flash = 0;
@@ -46,12 +56,14 @@ window.SFC = window.SFC || {};
       this.anim = Math.random() * 10;
       this.intent = { mx: 0, my: 0, sprint: false };
       this.ai = { t: 0, runTo: null, runT: 0, requestedPass: null, holdT: 0, chargeTarget: 0.6, aimY: 0, dir: { x: 0, y: 0 }, sprint: false };
-      this.slideHits = new Set();
+      this.kickHits = new Set();
     }
 
     get hasBall() { return this.game.ball.owner === this; }
     get isControlled() { return this.game.ctrl[this.team] === this; }
     get teamRef() { return this.game.teams[this.team]; }
+    // đang đứng trong vòng cấm nhà -> có cơ chế thủ môn
+    get keeper() { return this.game.inKeeperZone(this); }
 
     maxSpeed() {
       const C = SFC_CONFIG.game, g = this.game, cores = g.cores;
@@ -62,7 +74,7 @@ window.SFC = window.SFC || {};
       if (this.charging) s *= C.player.chargeMoveMult;
       for (const b of this.buffs) s *= b.speed || 1;
       if (g.finalPush) s *= C.match.finalPushSpeedMult;
-      if (this.role === 'GK' && !this.isControlled) s *= C.player.gkSpeedMult;
+      if (!this.isControlled && this.keeper) s *= C.player.gkSpeedMult;
       if (!g.isHuman(this.team) || !this.isControlled) s *= g.aiProfile(this.team).speedMult;
       return s;
     }
@@ -71,6 +83,7 @@ window.SFC = window.SFC || {};
       const C = SFC_CONFIG.game, g = this.game, f = g.field;
       for (const k in this.cd) this.cd[k] = Math.max(0, this.cd[k] - dt);
       this.tackleImmune = Math.max(0, this.tackleImmune - dt);
+      this.keeperHold = Math.max(0, this.keeperHold - dt);
       this.hitImmune = Math.max(0, this.hitImmune - dt);
       this.ironCd = Math.max(0, this.ironCd - dt);
       this.flash = Math.max(0, this.flash - dt);
@@ -80,27 +93,45 @@ window.SFC = window.SFC || {};
       }
       if (this.confused) { this.confused.t -= dt; if (this.confused.t <= 0) this.confused = null; }
       this.anim += dt;
-      this.kbx = U.damp(this.kbx, C.combat.knockbackDamp, dt);
-      this.kby = U.damp(this.kby, C.combat.knockbackDamp, dt);
+      if (this.atkType) this.atkT += dt;
+      const air = this.airZ > 0;
+      const kd = air ? C.combat.airDamp : C.combat.knockbackDamp;
+      this.kbx = U.damp(this.kbx, kd, dt);
+      this.kby = U.damp(this.kby, kd, dt);
+      if (air) this.updateAir(dt);
 
       switch (this.state) {
         case 'stun':
           this.stateT -= dt;
           this.vx = U.damp(this.vx, 8, dt); this.vy = U.damp(this.vy, 8, dt);
-          if (this.stateT <= 0) { this.state = 'normal'; this.hitImmune = Math.max(this.hitImmune, C.combat.hitImmuneBonus); }
+          // bị hất tung: còn trên không thì chưa hết choáng
+          if (this.stateT <= 0 && this.airZ <= 0) { this.state = 'normal'; this.hitImmune = Math.max(this.hitImmune, C.combat.hitImmuneBonus); }
           break;
-        case 'slide':
+        case 'jab':
+          this.stateT -= dt;
+          this.vx = U.damp(this.vx, 6, dt); this.vy = U.damp(this.vy, 6, dt);
+          if (this.stateT <= 0) SFC.Actions.lightHit(g, this);
+          break;
+        case 'windup': {
+          // gồng Hard attack: đứng lại, vẫn xoay được theo hướng phím để nhắm
+          this.stateT -= dt;
+          this.vx = U.damp(this.vx, 10, dt); this.vy = U.damp(this.vy, 10, dt);
+          const { mx, my } = this.intent;
+          if (Math.hypot(mx, my) > 0.1) this.turnTo(Math.atan2(my, mx), dt);
+          if (this.stateT <= 0) SFC.Actions.hardRelease(g, this);
+          break;
+        }
+        case 'kick':
           this.stateT -= dt;
           this.vx = this.dashX; this.vy = this.dashY;
-          SFC.Actions.slideUpdate(g, this);
-          if (this.stateT <= 0) { this.state = 'recover'; this.stateT = C.combat.slideRecover; }
+          SFC.Actions.hardUpdate(g, this);
+          if (this.stateT <= 0) SFC.Actions.hardEnd(g, this);
           break;
         case 'dash':
           this.stateT -= dt;
           this.vx = this.dashX; this.vy = this.dashY;
           if (this.stateT <= 0) { this.state = 'normal'; this.vx *= 0.5; this.vy *= 0.5; }
           break;
-        case 'tackle':
         case 'recover':
           this.stateT -= dt;
           this.vx = U.damp(this.vx, 9, dt); this.vy = U.damp(this.vy, 9, dt);
@@ -109,18 +140,45 @@ window.SFC = window.SFC || {};
         default:
           this.moveNormal(dt);
       }
+      // hết đòn (hoặc bị ngắt) -> dừng anim ra đòn
+      if (this.atkType && !ATTACK_STATES[this.state]) this.atkType = null;
 
       this.x += (this.vx + this.kbx) * dt;
       this.y += (this.vy + this.kby) * dt;
 
-      // giữ trong sân
+      // giữ trong sân; bị hất văng mạnh vào tường -> bật ngược lại
       const r = this.radius;
-      let minX = f.x + r, maxX = f.x + f.w - r;
-      if (this.role === 'GK' && !this.isControlled) {
-        if (this.teamRef.dir > 0) maxX = f.x + f.boxDepth; else minX = f.x + f.w - f.boxDepth;
+      const nx = U.clamp(this.x, f.x + r, f.x + f.w - r);
+      const ny = U.clamp(this.y, f.y + r, f.y + f.h - r);
+      if ((nx !== this.x && Math.abs(this.kbx) > 120) || (ny !== this.y && Math.abs(this.kby) > 120)) {
+        if (nx !== this.x) this.kbx = -this.kbx * C.combat.wallBounce;
+        if (ny !== this.y) this.kby = -this.kby * C.combat.wallBounce;
+        g.effects.burst(nx, ny, this.airZ + 6, '#d9cbb0', 10, 80);
+        g.effects.text(nx, ny - 26, 'BONK!', '#ffffff');
+        g.effects.shake(SFC_CONFIG.game.fx.shakeHit * 1.5);
+        g.sfx('hit');
       }
-      this.x = U.clamp(this.x, minX, maxX);
-      this.y = U.clamp(this.y, f.y + r, f.y + f.h - r);
+      this.x = nx;
+      this.y = ny;
+    }
+
+    // đang bay sau cú đá: rơi theo trọng lực, chạm đất nảy nhẹ + tung bụi
+    updateAir(dt) {
+      const C = SFC_CONFIG.game.combat, g = this.game;
+      this.airVz -= C.airGravity * dt;
+      this.airZ += this.airVz * dt;
+      if (this.airZ > 0) return;
+      this.airZ = 0;
+      if (this.airVz < -140) {
+        this.airVz = -this.airVz * 0.3;
+        this.airZ = 0.01;
+        g.effects.burst(this.x, this.y, 0, '#8a7f70', 10, 70);
+        g.effects.shake(SFC_CONFIG.game.fx.shakeHit);
+        g.sfx('hit');
+      } else {
+        this.airVz = 0;
+        g.effects.burst(this.x, this.y, 0, '#6d6457', 6, 40);
+      }
     }
 
     moveNormal(dt) {
@@ -178,6 +236,7 @@ window.SFC = window.SFC || {};
       if (stun <= 0) return true;
 
       if (this.hasBall) g.looseBall(this, opts.kbx || U.rand(-1, 1), opts.kby || U.rand(-1, 1));
+      if (opts.launch) { this.airVz = opts.launch; this.airZ = Math.max(this.airZ, 0.5); }
       this.state = 'stun';
       this.stateT = stun;
       this.charging = false;

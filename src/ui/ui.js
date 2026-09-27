@@ -14,6 +14,14 @@ window.SFC = window.SFC || {};
     return `<span class="chip" style="--c:${cat.color}" title="${esc(c.name)} — ${esc(c.desc)}">${c.icon}</span>`;
   }
 
+  // Ô trên thanh kỹ năng (giữa đáy màn hình, kiểu LoL). atk = đòn phòng ngự: chỉ dùng được khi đội mình không có bóng
+  const SLOTS = [
+    { k: 'light', action: 'shoot', icon: '👊', name: 'LIGHT', atk: true, max: () => SFC_CONFIG.game.combat.light.cooldown, act: ['jab'] },
+    { k: 'hard', action: 'lob', icon: '💥', name: 'HARD', atk: true, max: () => SFC_CONFIG.game.combat.hard.cooldown, act: ['windup', 'kick'] },
+    { k: 'skill', action: 'skill', icon: '💨', name: 'LƯỚT', max: () => SFC_CONFIG.game.skill.cooldown, act: ['dash'] },
+  ];
+  const keyLabel = (action) => (SFC_CONFIG.controls.bindings[action] || ['?'])[0].replace(/^(Key|Digit)/, '');
+
   function helpTable(list) {
     return list.map(([k, v]) => `<div class="hk"><kbd>${esc(k)}</kbd><span>${esc(v)}</span></div>`).join('');
   }
@@ -26,7 +34,7 @@ window.SFC = window.SFC || {};
       this.app = app;
       this.el = {
         menu: $('menu'), draft: $('draft'), pause: $('pause'), end: $('end'),
-        hud: $('hud'), banner: $('banner'), toasts: $('toasts'),
+        hud: $('hud'), abar: $('abar'), banner: $('banner'), toasts: $('toasts'),
       };
       this.draftSel = 0;
       this.pauseSel = 0;
@@ -39,6 +47,7 @@ window.SFC = window.SFC || {};
     show(name) {
       ['menu', 'draft', 'pause', 'end'].forEach((k) => this.el[k].classList.toggle('hidden', k !== name));
       this.el.hud.classList.toggle('hidden', name === 'menu');
+      if (name === 'menu') this.el.abar.classList.add('hidden');
       this.current = name;
     },
 
@@ -191,7 +200,7 @@ window.SFC = window.SFC || {};
         this.el.hud.innerHTML = `
           <div class="hud-team l" style="--c:${t0.cfg.kit.shirt}">
             <div class="hud-name">${esc(t0.cfg.short)}${tag(0)}</div>
-            <div class="hud-cores">${game.cores.owned[0].map((id) => coreChip(id)).join('')}</div>
+            <div class="hud-cores">${game.humanTeam === 0 ? '' : game.cores.owned[0].map((id) => coreChip(id)).join('')}</div>
           </div>
           <div class="hud-mid">
             <div class="hud-score"><b style="color:${t0.cfg.kit.shirt}">${t0.score}</b><span>-</span><b style="color:${t1.cfg.kit.shirt}">${t1.score}</b></div>
@@ -200,15 +209,87 @@ window.SFC = window.SFC || {};
           </div>
           <div class="hud-team r" style="--c:${t1.cfg.kit.shirt}">
             <div class="hud-name">${tag(1)} ${esc(t1.cfg.short)}</div>
-            <div class="hud-cores">${game.cores.owned[1].map((id) => coreChip(id)).join('')}</div>
+            <div class="hud-cores">${game.humanTeam === 1 ? '' : game.cores.owned[1].map((id) => coreChip(id)).join('')}</div>
           </div>`;
       }
+      this.updateBar(game);
       // đồng hồ chọn Core (online)
       if (game.state === 'draft' && game.draft && game.draft.limit > 0) {
         const el = document.getElementById('draft-timer');
         const s = Math.ceil(Math.max(0, game.draft.t)) + 's';
         if (el && el.textContent !== s) el.textContent = s;
       }
+    },
+
+    /* ================= THANH KỸ NĂNG (giữa đáy, kiểu LoL) ================= */
+    updateBar(game) {
+      const el = this.el.abar, p = game.controlled;
+      el.classList.toggle('hidden', !p || this.current === 'menu');
+      if (!p) return;
+      const c = this.hudCache.bar || (this.hudCache.bar = {});
+      const owned = game.cores.owned[p.team];
+      const key = p.id + '|' + owned.join();
+      if (c.key !== key) {
+        c.key = key;
+        const kit = game.teams[p.team].cfg.kit;
+        const nItems = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
+        const items = [];
+        for (let i = 0; i < nItems; i++) items.push(owned[i] ? coreChip(owned[i]) : '<span class="chip empty"></span>');
+        el.style.setProperty('--c', kit.shirt);
+        el.innerHTML = `
+          <div class="ab-por"><canvas width="22" height="22"></canvas><div class="ab-name">${esc(p.name)}</div><kbd>${esc(keyLabel('switch'))}</kbd></div>
+          <div class="ab-mid">
+            <div class="ab-slots">${SLOTS.map((s) => `
+              <div class="ab-slot" data-k="${s.k}" title="${s.name}">
+                <i>${s.icon}</i><div class="sw"></div><b></b><kbd>${esc(keyLabel(s.action))}</kbd>
+              </div>`).join('')}
+            </div>
+            <div class="ab-stam"><i></i></div>
+          </div>
+          <div class="ab-items">${items.join('')}</div>`;
+        this.drawPortrait(el.querySelector('canvas'), p, game);
+        c.slots = SLOTS.map((s) => {
+          const node = el.querySelector(`[data-k="${s.k}"]`);
+          return { s, node, sw: node.querySelector('.sw'), txt: node.querySelector('b'), last: -1, lastTxt: null, cls: '' };
+        });
+        c.stam = el.querySelector('.ab-stam i');
+        c.lastStam = -1;
+      }
+
+      const teamHas = !!game.ball.owner && game.ball.owner.team === p.team;
+      for (const sl of c.slots) {
+        const rem = Math.max(0, p.cd[sl.s.k] || 0);
+        const frac = Math.min(1, rem / sl.s.max());
+        if (Math.abs(frac - sl.last) > 0.005) sl.sw.style.setProperty('--p', frac.toFixed(3));
+        const txt = rem <= 0 ? '' : rem < 1 ? rem.toFixed(1) : String(Math.ceil(rem));
+        if (txt !== sl.lastTxt) sl.txt.textContent = txt;
+        // hồi xong -> lóe sáng
+        if (sl.last > 0 && frac <= 0) { sl.node.classList.remove('ready'); void sl.node.offsetWidth; sl.node.classList.add('ready'); }
+        sl.last = frac; sl.lastTxt = txt;
+        const cls = (rem > 0 ? ' cd' : '') + (sl.s.atk && teamHas ? ' off' : '') + (sl.s.act.includes(p.state) ? ' act' : '');
+        if (cls !== sl.cls) {
+          sl.cls = cls;
+          sl.node.classList.toggle('cd', rem > 0);
+          sl.node.classList.toggle('off', !!(sl.s.atk && teamHas));
+          sl.node.classList.toggle('act', sl.s.act.includes(p.state));
+        }
+      }
+      const st = Math.round((p.stamina / SFC_CONFIG.game.player.staminaMax) * 100);
+      if (st !== c.lastStam) {
+        c.lastStam = st;
+        c.stam.style.width = st + '%';
+        c.stam.classList.toggle('low', p.stamina <= SFC_CONFIG.game.player.staminaMinToSprint * 2);
+      }
+    },
+
+    // chân dung pixel: vẽ lại sprite cầu thủ (đầu + vai) vào canvas nhỏ
+    drawPortrait(cv, p, game) {
+      const ctx = cv.getContext('2d');
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      SFC.Sprites.drawPlayer(ctx, {
+        x: 11, y: 28, vx: 0, vy: 0, facing: Math.PI / 2, anim: 0, flash: 0, state: 'normal',
+        team: p.team, role: p.role, look: p.look,
+      }, game);
     },
 
     /* ================= THÔNG BÁO ================= */

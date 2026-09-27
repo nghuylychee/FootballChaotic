@@ -28,15 +28,27 @@ window.SFC = window.SFC || {};
     return { p: best, d: bd };
   }
 
+  // người trông khung của đội: cầu thủ AI (không phải người đang được điều khiển) gần khung thành nhà nhất
+  function keeperOf(g, team) {
+    const ctl = g.isHuman(team) ? g.ctrl[team] : null;
+    return nearest(g.teams[team].players, g.ownGoal(team), (o) => o !== ctl && o.state !== 'stun').p;
+  }
+
   const AI = {
     update(dt, g) {
       for (const p of g.players) {
         if (p.isControlled && g.isHuman(p.team)) continue;
         p.ai.t -= dt;
+        if (p.state === 'windup' && g.ball.owner && g.ball.owner.team !== p.team) {
+          // đang gồng Hard attack: xoay theo người cầm bóng
+          const c = g.ball.owner;
+          const d = U.norm(c.x - p.x, c.y - p.y);
+          p.intent.mx = d.x; p.intent.my = d.y; p.intent.sprint = false;
+          continue;
+        }
         if (p.state !== 'normal') { stop(p); continue; }
         const own = g.ball.owner;
         if (own === p) this.carrier(dt, g, p);
-        else if (p.role === 'GK') this.goalkeeper(dt, g, p);
         else if (own && own.team === p.team) this.support(dt, g, p);
         else if (own) this.defend(dt, g, p);
         else this.loose(dt, g, p);
@@ -63,8 +75,8 @@ window.SFC = window.SFC || {};
         return;
       }
 
-      // thủ môn cầm bóng -> phát bóng
-      if (p.role === 'GK') {
+      // bắt được bóng trong vòng cấm nhà -> đứng ôm bóng rồi phát bóng như thủ môn
+      if (g.isProtected(p)) {
         stop(p);
         if (p.ai.holdT > cfg.gkHoldTime) {
           const t = Act().findPassTarget(g, p, g.teams[p.team].dir, 0);
@@ -84,7 +96,7 @@ window.SFC = window.SFC || {};
         if (dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25)) {
           p.charging = true; p.charge = 0;
           p.ai.chargeTarget = U.clamp(0.4 + (dG / range) * 0.55 + U.rand(-0.1, 0.1), 0.35, 1.0);
-          const gk = nearest(opps, goal, (o) => o.role === 'GK').p;
+          const gk = nearest(opps, goal, (o) => g.inKeeperZone(o)).p;
           p.ai.aimY = (gk && gk.y > f.cy ? -1 : 1) * U.rand(0.35, 0.95);
           return;
         }
@@ -133,11 +145,14 @@ window.SFC = window.SFC || {};
       }
       const wob = Math.sin(g.time * 0.9 + p.id) * 14;
       let tx, ty;
-      if (p.role === 'FWD' || c.role === 'DEF') {
+      // người cầm bóng còn ở phần sân nhà -> băng lên làm phương án;
+      // đã qua phần sân đối phương -> lùi lại chốt phía sau (chống phản công, sẵn sàng về trông khung)
+      const progress = ((c.x - f.x) / f.w - 0.5) * dir + 0.5;
+      if (progress < A().restDefenseFrom) {
         tx = c.x + dir * A().supportAhead;
         ty = (c.y < f.cy ? f.cy + f.h * 0.24 : f.cy - f.h * 0.24) + wob;
       } else {
-        tx = c.x - dir * 45;
+        tx = c.x - dir * A().restDefenseDist;
         ty = f.cy + (c.y - f.cy) * 0.3 + wob;
       }
       tx = U.clamp(tx, f.x + 40, f.x + f.w - 40);
@@ -151,11 +166,15 @@ window.SFC = window.SFC || {};
       const ownGoal = g.ownGoal(p.team);
       const humanTeam = g.isHuman(p.team);
       const ctl = g.ctrl[p.team];
-      const outfield = (o) => o.role !== 'GK' && o.state !== 'stun' && o !== ctl;
+      const outfield = (o) => o.state !== 'stun' && o !== ctl;
+      // đối phương cầm bóng đã tới gần -> người gần khung nhất trông khung, người còn lại áp sát
+      const danger = Math.abs(c.x - ownGoal.x) < cfg.keeperCoverDist;
+      const keeper = danger ? keeperOf(g, p.team) : null;
 
       let presser = null;
-      if (!humanTeam) presser = nearest(tm.players, c, (o) => o.role !== 'GK').p;
-      else if (g.pressureCall[p.team] || !ctl || U.dist(ctl, c) > 110) presser = nearest(tm.players, c, outfield).p;
+      if (!humanTeam) presser = nearest(tm.players, c, (o) => o !== keeper).p;
+      // đội người chơi: đồng đội AI lên áp sát khi được gọi (giữ W), hoặc khi người chơi ở xa và bóng chưa tới gần khung nhà
+      else if (g.pressureCall[p.team] || !ctl || (!danger && U.dist(ctl, c) > 110)) presser = nearest(tm.players, c, outfield).p;
 
       if (p === presser) {
         let target = c;
@@ -169,15 +188,16 @@ window.SFC = window.SFC || {};
         p.ai.t = D.reaction * U.rand(0.8, 1.4);
         const dc = U.dist(p, c);
         p.facing = Math.atan2(c.y - p.y, c.x - p.x);
-        const style = tm.cfg.aiStyle || { slide: 1, body: 1 };
-        if (dc < C.tackleRange + p.radius * 2 + 2 && Math.random() < 0.55 * D.aggression) Act().tackle(g, p);
-        else if (dc < C.bodyCheckRange + p.radius * 2 && Math.random() < 0.18 * D.aggression * style.body) Act().bodyCheck(g, p);
-        else if (dc > cfg.slideDistMin && dc < cfg.slideDistMax && Math.random() < 0.1 * D.aggression * style.slide) Act().slide(g, p);
+        const style = tm.cfg.aiStyle || { light: 1, hard: 1 };
+        if (dc < C.light.range + p.radius * 2 && Math.random() < Math.min(0.9, 0.6 * D.aggression * style.light)) Act().lightAttack(g, p);
+        else if (dc > cfg.hardDistMin && dc < cfg.hardDistMax && Math.random() < 0.1 * D.aggression * style.hard) Act().hardAttack(g, p);
         return;
       }
 
+      if (danger) return this.goalkeeper(dt, g, p);
+
       // kèm người: đứng giữa cầu thủ nguy hiểm nhất và khung thành
-      const threats = g.teams[1 - p.team].players.filter((o) => o !== c && o.role !== 'GK');
+      const threats = g.teams[1 - p.team].players.filter((o) => o !== c);
       let t = threats[0];
       for (const o of threats) if (Math.abs(o.x - ownGoal.x) < Math.abs(t.x - ownGoal.x)) t = o;
       if (!t) return stop(p);
@@ -194,19 +214,26 @@ window.SFC = window.SFC || {};
       };
       // người nhận đường chuyền: chủ động chạy tới điểm đón bóng sớm nhất
       if (b.passTarget === p) { Act().receiveMove(g, p); return; }
+      // bóng đang bay về khung thành nhà (cú sút / phá bóng của đối phương) -> người gần khung nhất chặn trên đường bay
+      const dir = tm.dir;
+      const threat = b.lastKickTeam === 1 - p.team && b.vx * dir < -150;
+      if (threat && p === keeperOf(g, p.team)) return this.goalkeeper(dt, g, p);
       // bóng đang được chuyền cho đồng đội -> không đuổi theo, giữ vị trí
       const passToMate = b.passTarget && b.passTarget.team === p.team && b.passTarget.state !== 'stun';
 
       const ctl = g.isHuman(p.team) ? g.ctrl[p.team] : null;
-      let chaser = nearest(tm.players, pred, (o) => o.role !== 'GK' && o.state === 'normal' && o !== ctl);
+      let chaser = nearest(tm.players, pred, (o) => o.state === 'normal' && o !== ctl);
       if (ctl && U.dist(ctl, pred) < chaser.d) chaser = { p: null };
       if (p === chaser.p && !passToMate) return moveTo(p, pred.x, pred.y, true, 1);
+
+      // bóng lỏng ở phần sân nhà (hoặc đang bay về khung thành nhà) -> người không đuổi bóng lùi về trông khung
+      if (!passToMate && ((b.x - f.cx) * dir < 0 || b.vx * dir < -120)) return this.goalkeeper(dt, g, p);
 
       const home = g.formationPos(p);
       moveTo(p, home.x + (b.x - f.cx) * 0.35, home.y + (b.y - f.cy) * 0.25, false, 6);
     },
 
-    /* ---------- thủ môn ---------- */
+    /* ---------- trông khung thành (vòng cấm nhà) ---------- */
     goalkeeper(dt, g, p) {
       const f = g.field, b = g.ball, dir = g.teams[p.team].dir;
       const own = g.ownGoal(p.team);
@@ -235,9 +262,13 @@ window.SFC = window.SFC || {};
       } else if (b.owner.team !== p.team && Math.abs(b.owner.x - own.x) < 100) {
         tx = own.x + dir * 22;
         ty = U.clamp(b.owner.y, f.gTop - 4, f.gBot + 4);
-        if (U.dist(p, b.owner) < 18 && p.ai.t <= 0) { p.ai.t = 0.5; Act().tackle(g, p); }
+        if (U.dist(p, b.owner) < 18 && p.ai.t <= 0) {
+          p.ai.t = 0.5;
+          p.facing = Math.atan2(b.owner.y - p.y, b.owner.x - p.x);
+          Act().lightAttack(g, p);
+        }
       }
-      moveTo(p, tx, ty, sprint, 2);
+      moveTo(p, tx, ty, sprint || U.dist(p, { x: tx, y: ty }) > 40, 2);
       if (Math.hypot(p.intent.mx, p.intent.my) < 0.1) p.facing = dir > 0 ? 0 : Math.PI;
     },
   };

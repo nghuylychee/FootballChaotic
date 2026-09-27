@@ -17,8 +17,10 @@ window.SFC = window.SFC || {};
 
   // các trường cầu thủ cần để vẽ (sprites + renderer)
   const PF = ['x', 'y', 'vx', 'vy', 'facing', 'state', 'stamina', 'charging', 'charge',
-    'passMode', 'passCharge', 'passBase', 'flash', 'anim', 'ironCd'];
+    'passMode', 'passCharge', 'passBase', 'flash', 'anim', 'ironCd', 'atkType', 'atkT', 'airZ'];
   const P_BOOL = { charging: true };
+  // cooldown kỹ năng (thanh kỹ năng HUD của người chơi tại máy khách)
+  const CD = ['light', 'hard', 'skill'];
 
   /** Phím của người chơi ở máy khách, được host dùng thay cho SFC.Input */
   class RemoteInput {
@@ -79,7 +81,7 @@ window.SFC = window.SFC || {};
         fp: g.finalPush ? 1 : 0, gg: g.golden ? 1 : 0,
         sc: [g.teams[0].score, g.teams[1].score],
         ct: g.ctrl.map((p) => (p ? p.id : -1)),
-        p: g.players.map((p) => PF.map((k) => pk(p[k]))),
+        p: g.players.map((p) => PF.map((k) => pk(p[k])).concat(CD.map((k) => r2(p.cd[k])))),
         b: [r1(b.x), r1(b.y), r1(b.z), r1(b.vx), r1(b.vy), r1(b.vz), r1(b.roll), b.owner ? b.owner.id : -1,
           b.fx.fire ? 1 : 0, b.fx.thunder ? 1 : 0],
         co: g.cores.owned,
@@ -109,6 +111,7 @@ window.SFC = window.SFC || {};
       s.p.forEach((row, i) => {
         const p = g.players[i];
         PF.forEach((k, j) => { p[k] = P_BOOL[k] ? !!row[j] : row[j]; });
+        CD.forEach((k, j) => { p.cd[k] = row[PF.length + j]; });
       });
 
       const b = g.ball, bb = s.b;
