@@ -102,7 +102,7 @@ window.SFC = window.SFC || {};
         } else this.vz = 0;
       }
 
-      const k = (this.z > 0.5 ? C.airDrag : C.groundFriction) * this.frictionMult;
+      const k = (this.z > C.airDragMinZ ? C.airDrag : C.groundFriction) * this.frictionMult;
       this.vx = U.damp(this.vx, k, dt);
       this.vy = U.damp(this.vy, k, dt);
       if (this.z === 0 && this.speed < 4) { this.vx = this.vy = 0; }

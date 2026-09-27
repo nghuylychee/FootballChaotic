@@ -97,6 +97,7 @@ SFC_CONFIG.game = {
     gravity: 420,
     groundFriction: 1.05,
     airDrag: 0.2,
+    airDragMinZ: 4,          // (px) bóng cao hơn mức này mới tính airDrag; nảy lẹt xẹt sát sân vẫn chịu groundFriction
     bounce: 0.5,
     wallBounce: 0.72,
     netDamp: 0.25,
@@ -171,7 +172,9 @@ SFC_CONFIG.game = {
       failSlow: 0.8,          // trượt: bóng còn 80% tốc độ
       failDeflect: 0.25,      // trượt: bóng lệch ngẫu nhiên tối đa (rad, ~14°)
       retry: 0.4,             // trượt: giây người đó không chạm lại được bóng
-      aiDelay: [0.45, 1.3],   // (s) AI (đội máy + đồng đội AI) cắt được đường chuyền: vẫn rê bóng nhưng chưa chuyền / sút trong khoảng này
+      aiDelay: [0.45, 1.3],   // (s) AI (đội máy + đồng đội AI) cắt được đường chuyền / chặn được cú sút ngoài vòng cấm nhà:
+                              //     vẫn rê bóng nhưng chưa chuyền / sút trong khoảng này (kèm chữ INTERCEPT)
+      aiDelayMinSpeed: 100,   // (px/s) bóng chậm hơn mức này lúc cắt -> không tính (không khựng, không chữ INTERCEPT)
     },
   },
 

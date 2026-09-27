@@ -212,7 +212,7 @@ window.SFC = window.SFC || {};
           z = 0;
           if (vz < -50) { vz = -vz * B.bounce; vx *= 0.78; vy *= 0.78; } else vz = 0;
         }
-        const damp = Math.exp(-(z > 0.5 ? B.airDrag : B.groundFriction) * b.frictionMult * dt);
+        const damp = Math.exp(-(z > B.airDragMinZ ? B.airDrag : B.groundFriction) * b.frictionMult * dt);
         vx *= damp; vy *= damp;
         if (y < f.y + r || y > f.y + f.h - r) { vy = -vy * B.wallBounce; y = U.clamp(y, f.y + r, f.y + f.h - r); }
         if (x < f.x + r || x > f.x + f.w - r) { vx = -vx * B.wallBounce; x = U.clamp(x, f.x + r, f.x + f.w - r); }

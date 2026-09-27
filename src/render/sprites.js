@@ -15,6 +15,16 @@ window.SFC = window.SFC || {};
       ctx.fillRect(cx - w, cy + dy, w * 2 + 1, 1);
     }
   }
+  // hình tròn pixel đối xứng cả 4 phía (dx² + dy² <= r² + r/2): cạnh trên/dưới giống hệt cạnh trái/phải
+  function roundDisc(ctx, cx, cy, r, c) {
+    ctx.fillStyle = c;
+    cx |= 0; cy |= 0;
+    const r2 = r * r + r / 2;
+    for (let dy = -r; dy <= r; dy++) {
+      const w = Math.floor(Math.sqrt(r2 - dy * dy));
+      ctx.fillRect(cx - w, cy + dy, w * 2 + 1, 1);
+    }
+  }
   function ellipse(ctx, cx, cy, rx, ry, c) {
     ctx.fillStyle = c;
     ctx.beginPath();
@@ -774,11 +784,11 @@ window.SFC = window.SFC || {};
     }
     if (fx.fire || fx.thunder) {
       ctx.globalCompositeOperation = 'lighter';
-      disc(ctx, x, by, 6, fx.fire ? 'rgba(255,120,30,0.45)' : 'rgba(80,220,255,0.45)');
+      roundDisc(ctx, x, by, 6, fx.fire ? 'rgba(255,120,30,0.45)' : 'rgba(80,220,255,0.45)');
       ctx.globalCompositeOperation = 'source-over';
     }
-    disc(ctx, x, by, 4, OUT);
-    disc(ctx, x, by, 3, fx.fire ? '#ffd9a0' : fx.thunder ? '#d8fbff' : '#f4f4f4');
+    roundDisc(ctx, x, by, 4, OUT);
+    roundDisc(ctx, x, by, 3, fx.fire ? '#ffd9a0' : fx.thunder ? '#d8fbff' : '#f4f4f4');
     px(ctx, x + 1, by + 1, 2, 2, '#c7c7d2');
     const a = (b.roll || 0) * 0.3;
     px(ctx, x + Math.round(Math.cos(a) * 1.6), by + Math.round(Math.sin(a) * 1.6), 1, 1, '#222');
