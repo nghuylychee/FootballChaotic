@@ -58,6 +58,9 @@ window.SFC = window.SFC || {};
       }
       ctx.globalCompositeOperation = 'source-over';
 
+      // hiệu ứng trang phục khi chạy (bụi / neon / lửa) — chỉ để trang trí, tính ở máy vẽ
+      this.cosmetics(ctx, g);
+
       // vòng chân người đang điều khiển (PvP: người chơi tại máy = vàng, đối thủ = đỏ)
       const cp = g.controlled;
       const ctrlColor = (p) => (g.isHuman(p.team) && p.isControlled ? (p.team === g.humanTeam ? '#ffe14f' : '#ff5a6e') : null);
@@ -190,6 +193,32 @@ window.SFC = window.SFC || {};
       drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, keeper: false }), g, 0.999);
       ctx.restore();
       return Math.round(cy) - 8;
+    },
+
+    cosmetics(ctx, g) {
+      const S = SP();
+      const now = performance.now();
+      const dt = Math.min(0.05, this.cosT ? (now - this.cosT) / 1000 : 0);
+      this.cosT = now;
+      this.cosClock = (this.cosClock || 0) + dt;
+      const list = this.cos || (this.cos = []);
+      if (this.cosFor !== g) { list.length = 0; this.cosFor = g; }
+      for (const p of g.players) {
+        const kind = p.look.fx, d = S.FX[kind];
+        if (!d || p.airZ > 0) continue;
+        const sp = Math.hypot(p.vx || 0, p.vy || 0);
+        if (sp < 40) continue;
+        p.cosAcc = (p.cosAcc || 0) + d.rate * dt * (sp > 110 ? 1.6 : 1);
+        while (p.cosAcc >= 1) {
+          p.cosAcc--;
+          const q = S.spawnFx(kind, p, this.cosClock);
+          if (q) list.push(q);
+        }
+      }
+      for (const q of list) S.stepFx(q, dt);
+      for (let i = list.length - 1; i >= 0; i--) if (list[i].t <= 0) list.splice(i, 1);
+      if (list.length > 500) list.splice(0, list.length - 500);
+      for (const q of list) S.drawFxParticle(ctx, q, g);
     },
 
     chargeBar(ctx, p, hy, g) {

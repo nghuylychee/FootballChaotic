@@ -148,8 +148,6 @@ window.SFC = window.SFC || {};
         const ids = game.cores.owned[t.index];
         return ids.length ? ids.map((id) => `<div class="b-item">${coreChip(id)} ${esc(CORES().list[id].name)}</div>`).join('') : '<em>Không có core</em>';
       };
-      const list = this.endItems();
-      const items = list.map(([k, l], i) => `<button class="${i === this.endSel ? 'sel' : ''}" data-act="${k}">${l}</button>`).join('');
       const note = this.online && !SFC.Online.isHost ? 'Chờ chủ phòng quay lại phòng chờ...' : 'Lần sau thử một kiểu đá khác?';
       // sân luôn vẽ đội 0 bên trái -> tỉ số giữ đúng thứ tự trái / phải
       const t0 = game.teams[0], t1 = game.teams[1];
@@ -158,16 +156,83 @@ window.SFC = window.SFC || {};
         <div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>
         <div class="builds">
           <div class="build"><h4>BUILD CỦA BẠN</h4>${build(me)}</div>
+          ${game.reward ? this.rewardPanel(game.reward) : ''}
           <div class="build"><h4>BUILD ĐỐI THỦ</h4>${build(op)}</div>
         </div>
         <div class="end-note">${note}</div>
-        <div class="pause-items row-items">${items}</div>`;
+        <div class="pause-items row-items" id="end-items"></div>`;
+      this.renderEndItems();
+      if (game.reward) this.playReward(game.reward);
+    },
+
+    renderEndItems() {
+      const el = document.getElementById('end-items');
+      if (el) el.innerHTML = this.endItems().map(([k, l], i) => `<button class="${i === this.endSel ? 'sel' : ''}" data-act="${k}">${l}</button>`).join('');
+    },
+
+    /* ---------- thưởng sau trận: các dòng hiện lần lượt, gold đếm lên, thanh XP chạy qua từng level ---------- */
+    rewardPanel(r) {
+      const lines = r.lines.map((l, i) => `<div class="rw-line" data-rw="${i}"><span>${esc(l.label)}</span>${
+        l.mult || l.note ? '' : `<b class="x">+${l.xp} XP</b><b class="g"><i class="coin"></i>+${l.gold}</b>`}</div>`).join('');
+      return `<div class="build reward">
+        <h4>PHẦN THƯỞNG</h4>
+        <div class="rw-lines">${lines}</div>
+        <div class="rw-total"><span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
+        <div class="lvrow"><span class="lv" id="rw-lv">LV ${r.before.level}</span><div class="xpbar"><i id="rw-bar"></i></div></div>
+        <div class="rw-up" id="rw-up"></div>
+      </div>`;
+    },
+
+    playReward(r) {
+      cancelAnimationFrame(this.rwRaf);
+      const $$ = (id) => document.getElementById(id);
+      const t0 = performance.now();
+      const nLines = r.lines.length;
+      const LINE = 0.28, COUNT = 1.1;
+      const startCount = 0.3 + nLines * LINE;
+      // quãng XP phải chạy: tính theo "level thập phân" để thanh chạy qua từng level
+      const need = (lv) => SFC.Profile.xpToNext(lv);
+      const from = r.before.level + (r.before.need === Infinity ? 0 : r.before.xp / r.before.need);
+      const to = r.after.level + (r.after.need === Infinity ? 0 : r.after.xp / r.after.need);
+      let shownLv = r.before.level;
+      const step = (now) => {
+        const t = (now - t0) / 1000;
+        for (let i = 0; i < nLines; i++) {
+          const el = document.querySelector(`[data-rw="${i}"]`);
+          if (el && t > 0.3 + i * LINE && !el.classList.contains('in')) { el.classList.add('in'); SFC.Audio.menu(); }
+        }
+        const k = Math.max(0, Math.min(1, (t - startCount) / COUNT));
+        const e = 1 - (1 - k) * (1 - k);
+        const gold = $$('rw-gold'), xp = $$('rw-xp'), bar = $$('rw-bar'), lv = $$('rw-lv'), up = $$('rw-up');
+        if (!gold) return; // đã rời màn kết quả
+        gold.textContent = '+' + Math.round((r.gold + (k >= 1 ? r.levelGold : 0)) * e);
+        xp.textContent = '+' + Math.round(r.xp * e) + ' XP';
+        const cur = from + (to - from) * e;
+        const level = Math.min(Math.floor(cur), r.after.level);
+        bar.style.width = (need(level) === Infinity ? 100 : (cur - level) * 100) + '%';
+        if (level > shownLv) {
+          shownLv = level;
+          lv.textContent = 'LV ' + level;
+          up.innerHTML = `<b class="lvup">LEVEL UP! LV ${level}</b><span class="gold"><i class="coin"></i>+${SFC_CONFIG.progression.levelUpGold}</span>`;
+          up.classList.remove('pop'); void up.offsetWidth; up.classList.add('pop');
+          SFC.Audio.upgrade();
+        }
+        if (k >= 1) {
+          if (r.eligible.length && !up.dataset.done) {
+            up.dataset.done = 1;
+            up.insertAdjacentHTML('beforeend', `<div class="rw-new">Mới mở khoá: ${r.eligible.map(esc).join(', ')}</div>`);
+          }
+          return;
+        }
+        this.rwRaf = requestAnimationFrame(step);
+      };
+      this.rwRaf = requestAnimationFrame(step);
     },
 
     endInput(input) {
       const n = this.endItems().length;
-      if (input.wasPressed('left') || input.wasPressed('up')) { this.endSel = (this.endSel + n - 1) % n; this.renderEnd(this.app.game); }
-      if (input.wasPressed('right') || input.wasPressed('down')) { this.endSel = (this.endSel + 1) % n; this.renderEnd(this.app.game); }
+      if (input.wasPressed('left') || input.wasPressed('up')) { this.endSel = (this.endSel + n - 1) % n; this.renderEndItems(); }
+      if (input.wasPressed('right') || input.wasPressed('down')) { this.endSel = (this.endSel + 1) % n; this.renderEndItems(); }
       if (input.wasPressed('confirm')) this.doAct(this.endItems()[this.endSel][0]);
     },
 
@@ -336,7 +401,12 @@ window.SFC = window.SFC || {};
             this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${esc(t.cfg.short)} nhận ${coreChip(pk.id)} <b>${esc(c.name)}</b>`);
           }
         }
-        if (e.type === 'end') { this.endSel = 0; this.renderEnd(game); setTimeout(() => this.app.game === game && this.show('end'), 900); }
+        if (e.type === 'end') {
+          // thưởng XP / gold: tính 1 lần cho người chơi tại máy này (chơi đơn + online)
+          if (!game.reward && game.humanTeam >= 0 && SFC.Profile.data) game.reward = SFC.Profile.awardMatch(game);
+          this.endSel = 0;
+          setTimeout(() => { if (this.app.game === game) { this.renderEnd(game); this.show('end'); } }, 900);
+        }
       }
     },
 

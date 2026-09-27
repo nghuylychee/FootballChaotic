@@ -247,7 +247,9 @@ window.SFC = window.SFC || {};
     rollOptions(team, n) {
       const cfg = DEF();
       const weights = this.g.teams[team].cfg.coreWeights || {};
-      let pool = Object.keys(cfg.list).filter((id) => !this.has(team, id));
+      // người chơi chỉ bốc được Core đã mở khoá trong Shop (opts.coreUnlocks); AI được bốc tất cả
+      const allow = this.g.opts && this.g.opts.coreUnlocks && this.g.opts.coreUnlocks[team];
+      let pool = Object.keys(cfg.list).filter((id) => !this.has(team, id) && (!allow || allow.includes(id)));
       const out = [];
       while (out.length < n && pool.length) {
         const id = U.weightedPick(pool, (id) => {

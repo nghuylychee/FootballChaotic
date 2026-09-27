@@ -1,4 +1,5 @@
-/* Menu — các màn ngoài trận: Trang chủ · Chơi đơn · Online (tạo / vào phòng / phòng chờ) · Hướng dẫn
+/* Menu — các màn ngoài trận: Trang chủ (thẻ hồ sơ) · Chơi đơn · Online (tạo / vào phòng / phòng chờ) ·
+ *        Shop (trang phục + mở khoá Core) · Nhân vật (tủ đồ, đổi tên) · Đặt tên · Hướng dẫn
  * Mỗi trang khai báo danh sách mục (items): nút (btn) hoặc bộ chọn ←→ (pick).
  * ↑↓ chọn mục · ←→ đổi giá trị · Enter xác nhận · Esc / Backspace quay lại
  */
@@ -11,6 +12,12 @@ window.SFC = window.SFC || {};
   const STAT_LABELS = { speed: 'TỐC ĐỘ', power: 'LỰC SÚT', pass: 'CHUYỀN', tackle: 'ĐỐI KHÁNG', dribble: 'RÊ DẮT', accuracy: 'CHÍNH XÁC' };
   const Online = () => SFC.Online;
   const ROLE_LABELS = { DEF: 'ĐÁ LÙI', FWD: 'ĐÁ CAO' }; // vị trí xuất phát
+  const PF = () => SFC.Profile;
+  const PROG = () => SFC_CONFIG.progression;
+  // Shop (hộp gacha) · mở hộp · túi đồ nằm ở ui/gacha.js
+  const G = () => SFC.Gacha;
+  const coin = (n) => G().coin(n);
+  const xpBar = (d) => G().xpBar(d);
 
   function helpTable(list) {
     return list.map(([k, v]) => `<div class="hk"><kbd>${esc(k)}</kbd><span>${esc(v)}</span></div>`).join('');
@@ -40,6 +47,9 @@ window.SFC = window.SFC || {};
     msgErr: false,
     code: '',
     tutPage: 0,
+    nameBuf: '',
+    nameBack: 'home',   // đặt tên xong quay về trang nào
+    avatars: [],        // canvas character đang hiện (vẽ lại mỗi khung hình để có chuyển động)
 
     init(app) {
       this.app = app;
@@ -54,7 +64,8 @@ window.SFC = window.SFC || {};
       this.msg = msg;
       this.msgErr = err;
       if (page === 'join' && !msg) this.code = '';
-      this.setTextMode(page === 'join');
+      if (page === 'name') this.nameBuf = PF().data.name;
+      this.setTextMode(page === 'join' || page === 'name' ? page : null);
       this.render();
     },
 
@@ -73,8 +84,21 @@ window.SFC = window.SFC || {};
           return [
             { kind: 'btn', label: 'CHƠI ĐƠN', sub: 'Đấu với máy', act: () => this.go('single') },
             { kind: 'btn', label: 'ĐỐI KHÁNG ONLINE', sub: '1 vs 1 · tạo phòng', act: () => this.go('online') },
-            { kind: 'btn', label: 'HƯỚNG DẪN', sub: 'Điều khiển · luật · Core', act: () => { this.tutPage = 0; this.go('tutorial'); } },
+            { kind: 'btn', label: 'SHOP', sub: 'Hộp gacha · costume & Core', act: () => { G().shopBack = 'home'; this.go('shop'); } },
+            { kind: 'btn', label: 'NHÂN VẬT', sub: 'Túi đồ · đổi tên', act: () => this.go('char') },
           ];
+        case 'name':
+          return [{ kind: 'btn', label: 'XÁC NHẬN', main: true, act: () => this.submitName() }];
+        case 'char': {
+          const d = PF().data, look = d.look, P = PROG();
+          const nItems = Object.values(d.items).reduce((a, b) => a + b, 0) + Object.values(d.cores).reduce((a, b) => a + b, 0);
+          return [
+            { kind: 'btn', label: 'ĐỔI TÊN', sub: d.name, act: () => { this.nameBack = 'char'; this.go('name'); } },
+            { kind: 'pick', label: 'MÀU DA', swatch: SFC_CONFIG.teams.skins[look.skin], change: (dd) => PF().setColor('skin', dd) },
+            { kind: 'pick', label: 'MÀU TÓC', swatch: P.hairColors[look.hairColor], change: (dd) => PF().setColor('hairColor', dd) },
+            { kind: 'btn', label: 'TÚI ĐỒ', sub: `${nItems} món · trang bị · phân rã`, act: () => { G().invBack = 'char'; this.go('inv'); } },
+          ];
+        }
         case 'single': {
           const opp = o.opp[s.opp];
           return [
@@ -110,13 +134,16 @@ window.SFC = window.SFC || {};
     ctrlLabel(teamId, ctrl) {
       if (!ctrl) return 'CẢ ĐỘI';
       const role = SFC_CONFIG.game.roles[ctrl - 1];
-      const name = TEAMS().list[teamId].players[ctrl - 1] || role;
+      // cầu thủ ĐÁ CAO là character của bạn
+      const name = role === 'FWD' ? PF().data.name : TEAMS().list[teamId].players[ctrl - 1] || role;
       return `${name} · ${ROLE_LABELS[role] || role}`;
     },
 
     back() {
       if (Online().status === 'busy') return;
-      if (this.page === 'single' || this.page === 'online' || this.page === 'tutorial') this.go('home');
+      if (this.page === 'name') { if (PF().hasName) this.go(this.nameBack); return; } // lần đầu: bắt buộc đặt tên
+      if (G().pages.includes(this.page)) return G().back(this);
+      if (['single', 'online', 'tutorial', 'char'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
       else if (this.page === 'lobby') Online().leave();
     },
@@ -126,10 +153,11 @@ window.SFC = window.SFC || {};
       if (!this.el) return;
       const items = this.items();
       if (this.sel >= items.length) this.sel = Math.max(0, items.length - 1);
-      this.el.classList.toggle('tut', this.page === 'tutorial');
-      if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); return; }
+      this.el.classList.toggle('tut', this.page === 'tutorial' || G().pages.includes(this.page));
+      if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); this.bindAvatars(); return; }
+      if (G().pages.includes(this.page)) { G().render(this); this.bindAvatars(); return; }
       const list = items.map((it, i) => this.renderItem(it, i)).join('');
-      const titles = { single: 'CHƠI ĐƠN', online: 'ĐỐI KHÁNG ONLINE', join: 'VÀO PHÒNG', lobby: 'PHÒNG CHỜ' };
+      const titles = { single: 'CHƠI ĐƠN', online: 'ĐỐI KHÁNG ONLINE', join: 'VÀO PHÒNG', lobby: 'PHÒNG CHỜ', name: 'TÊN CỦA BẠN', char: 'NHÂN VẬT' };
       const small = this.page !== 'home';
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       this.el.innerHTML = `
@@ -140,19 +168,22 @@ window.SFC = window.SFC || {};
           </div>
           ${titles[this.page] ? `<div class="m-title">${titles[this.page]}</div>` : ''}
           ${this.page === 'join' ? this.renderCode() : ''}
+          ${this.page === 'name' ? this.renderNameInput() : ''}
           ${this.page === 'lobby' ? this.renderRoomCode() : ''}
           <div class="m-items">${list}</div>
           ${msg}
           <div class="m-hint">${this.hint()}</div>
         </div>
         <div class="m-right">${this.renderRight()}</div>`;
+      this.bindAvatars();
     },
 
     renderItem(it, i) {
       const cls = ['mi', it.kind, i === this.sel ? 'sel' : '', it.main ? 'main' : '', it.disabled ? 'dis' : ''].join(' ');
       if (it.kind === 'pick') {
+        const val = it.swatch ? `<i class="swatch" style="background:${it.swatch}"></i>` : esc(it.value);
         return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label>
-          <div class="picker"><button data-i="${i}" data-d="-1">◀</button><span>${esc(it.value)}</span><button data-i="${i}" data-d="1">▶</button></div></div>`;
+          <div class="picker"><button data-i="${i}" data-d="-1">◀</button><span>${val}</span><button data-i="${i}" data-d="1">▶</button></div></div>`;
       }
       return `<button class="${cls}" data-i="${i}"><span class="mi-label">${esc(it.label)}</span>${it.sub ? `<span class="mi-sub">${esc(it.sub)}</span>` : ''}</button>`;
     },
@@ -160,12 +191,16 @@ window.SFC = window.SFC || {};
     hint() {
       if (this.page === 'home') return '↑↓ chọn · Enter · M tắt âm';
       if (this.page === 'join') return 'Gõ mã · Enter kết nối · Esc quay lại';
+      if (this.page === 'name') return PF().hasName ? 'Gõ tên (A-Z, 0-9) · Enter xác nhận · Esc quay lại' : 'Gõ tên (A-Z, 0-9) · Enter xác nhận';
       if (this.page === 'lobby') return Online().isHost ? '←→ đổi đội · Enter bắt đầu · Esc rời phòng' : '←→ đổi đội · Esc rời phòng';
       return '↑↓ chọn · ←→ đổi · Enter · Esc quay lại';
     },
 
     renderRight() {
       const s = this.app.sel, o = this.options();
+      if (this.page === 'home') return this.profileCard();
+      if (this.page === 'name') return `<div class="char-stage"><canvas class="avatar big" data-avatar="spin"></canvas><div class="char-name">${esc(this.nameBuf || '???')}</div></div>`;
+      if (this.page === 'char') return this.charPanel();
       if (this.page === 'single') return teamCard(o.order[s.team], '');
       if (this.page === 'lobby') {
         const O = Online(), L = O.lobby;
@@ -173,10 +208,11 @@ window.SFC = window.SFC || {};
         const status = O.isHost
           ? (L.guestIn ? '<div class="lb-note ok">Sẵn sàng — Enter để bắt đầu</div>' : '<div class="lb-note">Gửi mã phòng cho bạn bè để cùng chơi</div>')
           : '<div class="lb-note">Chờ chủ phòng bắt đầu trận...</div>';
+        const who = (pf) => (pf ? ` · ${pf.name} LV${pf.level}` : '');
         return `<div class="lobby">
-          ${teamCard(L.host, O.isHost ? me + ' (BẠN)' : 'P1 · CHỦ PHÒNG')}
+          ${teamCard(L.host, (O.isHost ? me + ' (BẠN)' : 'P1 · CHỦ PHÒNG') + who(L.hostPf))}
           <div class="vs">VS</div>
-          ${teamCard(L.guestIn ? L.guest : null, O.isHost ? 'P2 · KHÁCH' : me + ' (BẠN)')}
+          ${teamCard(L.guestIn ? L.guest : null, (O.isHost ? 'P2 · KHÁCH' : me + ' (BẠN)') + who(L.guestPf))}
           ${status}
         </div>`;
       }
@@ -231,10 +267,81 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------------- nhập liệu ---------------- */
+    /* ---------------- hồ sơ / nhân vật ---------------- */
+    // kit dùng để vẽ character ngoài trận: áo đội đang chọn ở Chơi đơn
+    kit() { return TEAMS().list[this.options().order[this.app.sel.team]].kit; },
+
+    profileCard() {
+      const d = PF().data, st = d.stats;
+      return `<div class="pcard">
+        <canvas class="avatar" data-avatar="spin"></canvas>
+        <div class="pc-info">
+          <div class="pc-name">${esc(d.name)}</div>
+          ${xpBar(d)}
+          <div class="pc-gold">${coin(d.gold)}</div>
+          <div class="pc-stats">${st.matches} trận · ${st.wins} thắng · ${st.goals} bàn</div>
+        </div>
+      </div>`;
+    },
+
+    charPanel() {
+      const d = PF().data, st = d.stats;
+      return `<div class="char-stage">
+        <canvas class="avatar big" data-avatar="spin"></canvas>
+        <div class="char-name">${esc(d.name)}</div>
+        <div class="char-info">${xpBar(d)}<div class="pc-gold">${coin(d.gold)}</div>
+          <div class="eq-list">${G().equippedHtml()}</div>
+          <div class="pc-stats">${st.matches} trận · ${st.wins} thắng · ${st.draws} hòa · ${st.losses} thua · ${st.goals} bàn · ${st.boxes || 0} hộp</div></div>
+      </div>`;
+    },
+
+    renderNameInput() {
+      const n = PROG().nameMaxLength;
+      const txt = esc(this.nameBuf);
+      return `<div class="name-in"><span>${txt}</span><i class="caret"></i><em>${this.nameBuf.length}/${n}</em></div>`;
+    },
+
+    submitName() {
+      if (!PF().setName(this.nameBuf)) { this.setMsg('Tên cần ít nhất 1 ký tự (A-Z, 0-9).', true); return; }
+      SFC.Audio.pick();
+      const back = this.nameBack;
+      this.nameBack = 'home';
+      this.go(back);
+    },
+
+    // gắn canvas character: look = hồ sơ hiện tại, hoặc bản "mặc thử" trong Shop (data-try)
+    bindAvatars() {
+      this.avatars = [...this.el.querySelectorAll('canvas[data-avatar]')].map((cv) => {
+        const big = cv.classList.contains('big');
+        cv.width = 40; cv.height = 44;
+        const tryOn = cv.dataset.try;
+        let look = PF().data.look;
+        if (tryOn) { const it = PROG().items[tryOn]; look = Object.assign({}, look, { [it.slot]: tryOn }); }
+        return { cv, look: PF().lookOf(look), big };
+      });
+      this.animate(0);
+    },
+
+    // vẽ lại character mỗi khung hình: xoay người khoe trang phục
+    animate(dt) {
+      this.animT = (this.animT || 0) + dt;
+      G().tick(this); // dải quay hộp gacha
+      if (!this.avatars.length) return;
+      const dirs = [Math.PI / 2, 0, -Math.PI / 2, Math.PI];
+      const facing = dirs[Math.floor(this.animT / 1.6) % 4];
+      const kit = this.kit();
+      for (const a of this.avatars) {
+        if (!a.cv.isConnected) continue;
+        SFC.Sprites.drawAvatar(a.cv, a.look, kit, this.animT, facing);
+      }
+    },
+
     input(input) {
       // phòng chờ: chỉ Esc mới rời phòng (tránh bấm nhầm Backspace)
       const back = input.wasPressed('pause') || (this.page !== 'lobby' && input.wasPressed('back'));
       if (back) { SFC.Audio.menu(); return this.back(); }
+      if (G().pages.includes(this.page)) return G().input(this, input);
+      if (this.page === 'name' && input.wasPressed('confirm')) return this.submitName();
       if (this.page === 'tutorial') {
         const n = SFC_CONFIG.tutorial.pages.length;
         if (input.wasPressed('left')) { this.tutPage = wrap(this.tutPage - 1, n); SFC.Audio.menu(); this.render(); }
@@ -282,10 +389,20 @@ window.SFC = window.SFC || {};
       Online().joinRoom(this.code);
     },
 
-    // trang Vào phòng: gõ chữ/số trực tiếp
-    setTextMode(on) {
+    // trang Vào phòng / Đặt tên: gõ chữ/số trực tiếp
+    setTextMode(kind) {
       const I = SFC.Input;
-      if (!on) { I.textHandler = null; I.pasteHandler = null; return; }
+      if (!kind) { I.textHandler = null; I.pasteHandler = null; return; }
+      if (kind === 'name') {
+        const upd = (v) => { this.nameBuf = PF().cleanName(v); this.msg = ''; this.render(); return true; };
+        I.textHandler = (e) => {
+          if (e.key === 'Backspace') return upd(this.nameBuf.slice(0, -1));
+          if (e.key.length === 1 && /[a-z0-9 _-]/i.test(e.key)) return upd(this.nameBuf + e.key);
+          return false;
+        };
+        I.pasteHandler = (text) => upd(this.nameBuf + text);
+        return;
+      }
       const n = SFC_CONFIG.net.codeLength;
       const add = (str) => {
         const clean = str.toUpperCase().split('').filter((c) => SFC_CONFIG.net.codeChars.includes(c)).join('');
@@ -314,6 +431,7 @@ window.SFC = window.SFC || {};
           if (navigator.clipboard) navigator.clipboard.writeText(code).then(() => this.setMsg('Đã sao chép mã phòng ' + code), () => {});
           return;
         }
+        if (G().pages.includes(this.page) && G().click(this, e)) return;
         const tab = e.target.closest('[data-tab]');
         if (tab) { this.tutPage = +tab.dataset.tab; SFC.Audio.menu(); this.render(); return; }
         const el = e.target.closest('[data-i]');

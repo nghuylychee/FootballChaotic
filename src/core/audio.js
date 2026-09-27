@@ -86,5 +86,12 @@ window.SFC = window.SFC || {};
     },
     upgrade() { [392, 523, 659].forEach((f, i) => tone({ freq: f, dur: 0.12, type: 'triangle', vol: 0.2, delay: i * 0.07 })); },
     menu()    { tone({ freq: 660, dur: 0.04, vol: 0.12 }); },
+    // gacha: tiếng "tách" khi dải quay chạy qua mỗi ô · nhạc lộ đồ (r = bậc hiếm 0..4) · phân rã
+    tick()    { tone({ freq: 1900, dur: 0.018, type: 'square', vol: 0.05 }); },
+    reveal(r = 0) {
+      [523, 659, 784, 1046, 1318, 1568].slice(0, 2 + r).forEach((f, i) => tone({ freq: f, dur: 0.14, type: 'triangle', vol: 0.18, delay: i * 0.08 }));
+      if (r >= 3) noise({ dur: 0.9, vol: 0.1, freq: 2400, q: 0.4, delay: 0.1 });
+    },
+    dismantle() { noise({ dur: 0.12, vol: 0.2, freq: 1200 }); tone({ freq: 880, to: 1760, dur: 0.12, type: 'square', vol: 0.1, delay: 0.05 }); },
   };
 })();

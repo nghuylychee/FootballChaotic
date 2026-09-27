@@ -25,7 +25,10 @@
         const home = o.order[this.sel.team];
         let away = o.opp[this.sel.opp];
         if (away === 'random') away = SFC.U.pick(o.order.filter((t) => t !== home));
-        opts = { home, away, difficulty: o.diffs[this.sel.diff], humanTeam: 0, solo: [this.sel.ctrl ? this.sel.ctrl - 1 : null, null] };
+        opts = {
+          home, away, difficulty: o.diffs[this.sel.diff], humanTeam: 0, solo: [this.sel.ctrl ? this.sel.ctrl - 1 : null, null],
+          avatars: [SFC.Profile.avatar(), null], coreUnlocks: [SFC.Profile.unlockedCores(), null],
+        };
       }
       this.mode = 'single';
       this.lastOpts = opts;
@@ -94,6 +97,7 @@
       app.demo.update(dt, null);
       app.demo.events.length = 0;
       if (app.demo.state === 'ended') app.newDemo();
+      SFC.Menu.animate(dt);
       SFC.Menu.input(Input);
       return;
     }
@@ -123,12 +127,15 @@
   }
 
   function boot() {
+    SFC.Profile.load();
     Input.init(SFC_CONFIG.controls.bindings);
     SFC.Renderer.init(document.getElementById('game'));
     app.newDemo();
     SFC.UI.init(app);
     SFC.Menu.init(app);
     SFC.UI.show('menu');
+    // lần đầu chơi: đặt tên cho character trước khi vào trang chủ
+    if (!SFC.Profile.hasName) SFC.Menu.go('name');
     fit();
     window.addEventListener('resize', fit);
 

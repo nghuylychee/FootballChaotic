@@ -114,8 +114,447 @@ window.SFC = window.SFC || {};
     const footX = Math.round(f.x), footY = Math.round(f.y - atk.lift);
     limb(ctx, hx, hy, footX, footY, p.look.skin);
     // giày
+    const { s: sh, main, sole } = shoeColors(p.look, p.anim, side > 0 ? 1 : 0);
     px(ctx, footX - 2, footY - 2, 6, 5, OUT);
-    px(ctx, footX - 1, footY - 1, 4, 3, '#e8e8e8');
+    px(ctx, footX - 1, footY - 1, 4, 2, main);
+    px(ctx, footX - 1, footY + 1, 4, 1, sole);
+    if (sh.glow) { ctx.globalCompositeOperation = 'lighter'; px(ctx, footX - 2, footY - 2, 6, 5, sh.glow); ctx.globalCompositeOperation = 'source-over'; }
+  }
+
+  /* ---------- giày (slot shoes) ---------- */
+  // main = thân giày, sole = đế, sock = tất (1 hàng, hoặc 2 màu sọc), skin = để lộ da (dép), glow = phát sáng
+  const SHOES = {
+    kicks:    { main: '#e8e8e8', sole: '#b9c2d0' },
+    slides:   { main: '#3b82f6', sole: '#2d5bd1', sock: 'skin' },
+    reds:     { main: '#d7263d', sole: '#e8e8e8' },
+    canvas:   { main: '#2f6fd1', sole: '#e8e8e8' },
+    boots:    { main: '#6b4423', sole: '#3b2415', sock: '#6b4423' },
+    barefoot: { main: 'skin', sole: 'skin', sock: 'skin', toes: true },
+    rainboot: { main: '#ffd23f', sole: '#c98a14', sock: '#ffd23f' },
+    socks:    { main: '#1a1216', sole: '#4a4f63', sock: ['#e8e8e8', '#d7263d'] },
+    hightop:  { main: '#262a36', sole: '#ff8a3f', sock: '#262a36' },
+    clogs:    { main: '#c7a26a', sole: '#8a6a3a', clog: true },
+    rollers:  { main: '#e8ecf5', sole: '#ff3d5a', wheels: true },
+    cleats:   { main: '#6bff4f', sole: '#1a1216', studs: true },
+    neonkick: { main: '#3ff6ff', sole: '#9d7bff', glow: 'rgba(63,246,255,0.25)' },
+    camo:     { main: '#4a5a2a', sole: '#262a36', sock: '#6b7a3a', camo: '#2e3a1a' },
+    rainbowkick: { main: '#ff3d5a', sole: '#e8e8e8', rainbow: true },
+    mismatch: { main: '#d7263d', sole: '#e8e8e8', right: '#2f6fd1' },
+    goldboot: { main: '#ffd23f', sole: '#c98a14', sparkle: true },
+    iceboot:  { main: '#bdf4ff', sole: '#7fe7ff', glow: 'rgba(127,231,255,0.2)', sparkle: true },
+    rocket:   { main: '#9aa3b5', sole: '#4a4f63', thrust: true },
+    flame:    { main: '#ff6a1f', sole: '#ffd23f', flame: true },
+  };
+  const RAINBOW = ['#ff3d5a', '#ff8a3f', '#ffe14f', '#6bff4f', '#3ff6ff', '#9d7bff'];
+
+  // màu thật của giày (đổi theo chân / thời gian): which = 0 chân trái, 1 chân phải
+  function shoeColors(look, anim = 0, which = 0) {
+    const s = SHOES[look.shoes] || SHOES.kicks;
+    const skin = look.skin;
+    let main = s.main === 'skin' ? skin : s.main;
+    if (s.rainbow) main = RAINBOW[(Math.floor(anim * 8) + which * 3) % RAINBOW.length];
+    if (s.right && which === 1) main = s.right;
+    return { s, main, sole: s.sole === 'skin' ? skin : s.sole };
+  }
+
+  // 1 chân: lx = mép trái, fy = đáy bàn chân. Hàng: bắp chân (da) · tất · giày · đế (+ phụ kiện dưới đế)
+  function drawLeg(ctx, lx, fy, look, anim = 0, which = 0) {
+    const { s, main, sole } = shoeColors(look, anim, which);
+    px(ctx, lx, fy - 5, 4, 6, OUT);
+    const sock = s.sock === 'skin' ? look.skin : s.sock;
+    if (Array.isArray(sock)) { px(ctx, lx + 1, fy - 4, 2, 1, sock[0]); px(ctx, lx + 1, fy - 3, 2, 1, sock[1]); }
+    else { px(ctx, lx + 1, fy - 4, 2, 1, look.skin); px(ctx, lx + 1, fy - 3, 2, 1, sock || '#e8e8e8'); }
+    const slide = s.sock === 'skin' && !s.toes;
+    px(ctx, lx + 1, fy - 2, 2, 1, slide ? look.skin : main);  // dép: lộ ngón chân
+    px(ctx, lx + 1, fy - 1, 2, 1, slide ? main : sole);
+    if (s.toes) { px(ctx, lx + 1, fy - 1, 1, 1, 'rgba(0,0,0,0.25)'); }
+    if (s.camo) { px(ctx, lx + 1 + (which & 1), fy - 2, 1, 1, s.camo); px(ctx, lx + 2 - (which & 1), fy - 3, 1, 1, s.camo); }
+    if (s.clog) { px(ctx, lx, fy, 4, 1, OUT); px(ctx, lx + 1, fy, 2, 1, sole); px(ctx, lx, fy + 1, 4, 1, OUT); }
+    if (s.wheels) { px(ctx, lx, fy + 1, 1, 1, '#1a1216'); px(ctx, lx + 3, fy + 1, 1, 1, '#1a1216'); px(ctx, lx, fy, 4, 1, '#9aa3b5'); }
+    if (s.studs) { px(ctx, lx, fy + 1, 1, 1, '#e8e8e8'); px(ctx, lx + 2, fy + 1, 1, 1, '#e8e8e8'); }
+    if (s.glow) { ctx.globalCompositeOperation = 'lighter'; px(ctx, lx, fy - 3, 4, 4, s.glow); ctx.globalCompositeOperation = 'source-over'; }
+    if (s.sparkle && Math.sin(anim * 6 + lx) > 0.8) px(ctx, lx + 2, fy - 2, 1, 1, '#ffffff');
+    if (s.thrust) {
+      const f = Math.floor(anim * 16 + which) % 2;
+      ctx.globalCompositeOperation = 'lighter';
+      px(ctx, lx + 1, fy + 1, 2, 1 + f, 'rgba(90,180,255,0.9)'); px(ctx, lx + 1, fy + 2 + f, 1, 1, 'rgba(200,240,255,0.8)');
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    if (s.flame) {
+      const f = Math.floor(anim * 14 + lx) % 3;
+      ctx.globalCompositeOperation = 'lighter';
+      px(ctx, lx + 1 + (f === 1 ? 1 : 0), fy - 3 - f, 1, 1, '#ffd23f');
+      px(ctx, lx + 1, fy - 3, 2, 1, 'rgba(255,106,31,0.6)');
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  }
+
+
+  /* ---------- hiệu ứng khi chạy (slot fx) ----------
+   * rate = hạt / giây khi chạy · life = thời gian sống · z = độ cao sinh ra [min, max] · vz = bay lên (âm = rơi xuống)
+   * g = trọng lực · spread = toả ngang · still = đứng yên tại chỗ (vệt) · drift = lắc ngang · add = hoà sáng (lighter)
+   * shape: px (ô vuông) · star · heart · note · ring (bong bóng) · coin · bolt · ghost (bóng người) */
+  const FX = {
+    sparkle:   { rate: 16, life: 0.45, colors: ['#ffffff', '#fff6a0'], shape: 'star', z: [3, 16], still: true, add: true },
+    bubbles:   { rate: 8, life: 0.9, colors: ['#9fe8ff', '#d8f6ff'], shape: 'ring', z: [4, 10], vz: [10, 18], drift: 6 },
+    leaves:    { rate: 9, life: 0.9, colors: ['#6bff4f', '#2f8f2a', '#b4ff3f'], size: 2, z: [10, 16], vz: [-12, -6], drift: 10 },
+    hearts:    { rate: 8, life: 0.8, colors: ['#ff5a9e', '#ff3d5a'], shape: 'heart', z: [6, 12], vz: [12, 20] },
+    snow:      { rate: 16, life: 0.9, colors: ['#ffffff', '#e8ecf5'], size: 1, z: [12, 20], vz: [-14, -8], drift: 5, spread: 8 },
+    smoke:     { rate: 14, life: 0.7, colors: ['#6a6470', '#8a8490', '#524c58'], size: [2, 3], z: [0, 3], vz: [6, 12] },
+    dust:      { rate: 14, life: 0.45, colors: ['#8a7f70'], size: 2, vz: [10, 14], back: 0.1 },
+    notes:     { rate: 7, life: 0.9, colors: ['#ffe14f', '#7fe7ff', '#ff8ac0'], shape: 'note', z: [8, 12], vz: [12, 18], drift: 4 },
+    confetti:  { rate: 26, life: 0.7, colors: ['#ff3d5a', '#ffe14f', '#3ff6ff', '#9dff3d', '#c63dff'], size: [1, 2], z: [6, 12], vz: [18, 34], g: 70, spread: 5 },
+    petals:    { rate: 11, life: 1.0, colors: ['#ffb7d5', '#ff8ac0', '#ffe0ee'], size: 2, z: [12, 18], vz: [-10, -5], drift: 9 },
+    coins:     { rate: 7, life: 0.7, colors: ['#ffd23f'], shape: 'coin', z: [4, 8], vz: [30, 40], g: 130, spread: 4 },
+    neon:      { rate: 45, life: 0.35, colors: ['#3ff6ff', '#9d7bff'], size: 2, z: [2, 12], still: true, add: true },
+    frost:     { rate: 30, life: 0.9, colors: ['#bdf4ff', '#7fe7ff', '#ffffff'], shape: 'star', z: [0, 1], still: true, add: true, spread: 5 },
+    lightning: { rate: 16, life: 0.16, colors: ['#fff6a0', '#7fe7ff'], shape: 'bolt', z: [2, 14], still: true, add: true, spread: 7 },
+    rainbow:   { rate: 45, life: 0.45, colors: RAINBOW_FX(), size: 2, z: [3, 6], still: true, add: true, cycle: true },
+    fire:      { rate: 35, life: 0.4, colors: ['#ff6a1f', '#ffd23f'], size: [1, 2], vz: [20, 40], add: true },
+    shadow:    { rate: 9, life: 0.35, colors: ['#9d7bff'], shape: 'ghost', still: true, spread: 0 },
+    galaxy:    { rate: 32, life: 0.8, colors: ['#9d7bff', '#3ff6ff', '#ffffff', '#ff8ac0'], shape: 'star', z: [0, 16], still: true, add: true, spread: 7 },
+  };
+  function RAINBOW_FX() { return ['#ff3d5a', '#ff8a3f', '#ffe14f', '#6bff4f', '#3ff6ff', '#9d7bff']; }
+  const rnd = (a) => (Array.isArray(a) ? a[0] + Math.random() * (a[1] - a[0]) : a || 0);
+
+  // sinh 1 hạt cho người p (đang chạy). t = đồng hồ để hạt cầu vồng đổi màu theo thứ tự
+  function spawnFx(kind, p, t = 0) {
+    const d = FX[kind];
+    if (!d) return null;
+    const c = d.cycle ? d.colors[Math.floor(t * 10) % d.colors.length] : d.colors[Math.floor(Math.random() * d.colors.length)];
+    const sp = d.spread != null ? d.spread : 3;
+    const q = {
+      k: kind, shape: d.shape || 'px', add: !!d.add, c,
+      x: p.x + (Math.random() - 0.5) * 2 * sp, y: p.y + (Math.random() - 0.5) * 2, z: rnd(d.z),
+      vx: d.still ? 0 : -(p.vx || 0) * (d.back || 0.15) + (Math.random() - 0.5) * (d.drift || 0) * 2,
+      vy: 0, vz: d.still ? 0 : rnd(d.vz), g: d.g || 0, drift: d.drift || 0, phase: Math.random() * 6,
+      t: d.life, max: d.life, s: Math.round(rnd(d.size || 1)),
+    };
+    if (d.shape === 'ghost') Object.assign(q, { ghost: { team: p.team, look: p.look, facing: p.facing, anim: p.anim, role: p.role }, x: p.x, y: p.y });
+    return q;
+  }
+
+  function stepFx(q, dt) {
+    q.t -= dt;
+    q.vz -= q.g * dt;
+    q.x += q.vx * dt + (q.drift ? Math.sin(q.t * 7 + q.phase) * q.drift * dt : 0);
+    q.y += q.vy * dt;
+    q.z = Math.max(0, q.z + q.vz * dt);
+  }
+
+  // vẽ 1 hạt (g cần cho shape ghost)
+  function drawFxParticle(ctx, q, g, alpha = 1) {
+    const k = Math.max(0, q.t / q.max);
+    const x = Math.round(q.x), y = Math.round(q.y - q.z), c = q.c;
+    ctx.globalCompositeOperation = q.add ? 'lighter' : 'source-over';
+    ctx.globalAlpha = alpha * (q.shape === 'ghost' ? k * 0.45 : Math.min(1, k * 1.6));
+    switch (q.shape) {
+      case 'star': px(ctx, x, y - 1, 1, 3, c); px(ctx, x - 1, y, 3, 1, c); break;
+      case 'heart': px(ctx, x - 1, y - 1, 1, 1, c); px(ctx, x + 1, y - 1, 1, 1, c); px(ctx, x - 1, y, 3, 1, c); px(ctx, x, y + 1, 1, 1, c); break;
+      case 'note': px(ctx, x + 1, y - 3, 1, 3, c); px(ctx, x + 2, y - 3, 1, 1, c); px(ctx, x, y, 2, 1, c); break;
+      case 'ring': px(ctx, x, y - 1, 1, 1, c); px(ctx, x - 1, y, 1, 1, c); px(ctx, x + 1, y, 1, 1, c); px(ctx, x, y + 1, 1, 1, c); break;
+      case 'coin': px(ctx, x, y, 2, 2, c); px(ctx, x, y, 1, 1, '#fff6a0'); break;
+      case 'bolt': px(ctx, x, y - 2, 1, 2, c); px(ctx, x + 1, y, 1, 1, c); px(ctx, x, y + 1, 1, 2, c); break;
+      case 'ghost':
+        if (g && q.ghost) drawPlayer(ctx, Object.assign({ x: q.x, y: q.y, vx: 0, vy: 0, state: 'normal', flash: 0 }, q.ghost), g, ctx.globalAlpha, c);
+        break;
+      default: px(ctx, x, y, q.s, q.s, c);
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // xem trước hiệu ứng quanh character đứng yên (menu / shop / túi đồ): hạt lặp theo chu kỳ, không cần mô phỏng
+  function drawFxPreview(ctx, kind, cx, fy, t, g) {
+    const d = FX[kind];
+    if (!d) return;
+    const n = 9;
+    for (let i = 0; i < n; i++) {
+      const ph = (t / (d.life * 2.2) + i / n) % 1;
+      const ang = i * 2.39;
+      const q = {
+        shape: d.shape || 'px', add: !!d.add, c: d.colors[i % d.colors.length], s: Math.round(rnd(d.size || 1)),
+        x: cx + Math.sin(ang) * (8 + (i % 3) * 3), y: fy - 1,
+        z: d.still ? rnd(d.z || 0) + (i % 4) * 3 : Math.max(0, (d.z ? d.z[0] : 0) + (d.vz ? (rnd(d.vz)) * ph : 0) + (d.vz && d.vz[0] < 0 ? 16 : 0)),
+        t: (1 - ph) * d.life, max: d.life,
+      };
+      if (d.shape === 'ghost') {
+        if (i > 1) break;
+        Object.assign(q, { x: cx - 7 - i * 6, y: fy, ghost: { team: 0, look: g.previewLook, facing: 0, anim: t, role: 'FWD' }, t: d.life * (0.8 - i * 0.3) });
+      }
+      drawFxParticle(ctx, q, g);
+    }
+  }
+
+  /* ---------- trang phục ---------- */
+  // tóc phủ đỉnh đầu (trong vòng tròn bán kính 6) từ hàng dy0 tới dy1
+  function capRows(ctx, hx, hy, color, dy0, dy1) {
+    ctx.fillStyle = color;
+    for (let dy = dy0; dy <= dy1; dy++) {
+      const w = Math.floor(Math.sqrt(36 - dy * dy) + 0.35);
+      ctx.fillRect(hx - w, hy + dy, w * 2 + 1, 1);
+    }
+  }
+
+  // vòng tròn pixel rỗng dẹt (vòng thánh, bong bóng...)
+  function ringFlat(ctx, cx, cy, rx, ry, c) {
+    ctx.fillStyle = c;
+    const n = Math.max(12, rx * 6);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      ctx.fillRect(Math.round(cx + Math.cos(a) * rx), Math.round(cy + Math.sin(a) * ry), 1, 1);
+    }
+  }
+
+  // tô phần dưới / trên của mặt (hàng dy0..dy1 trong vòng tròn bán kính 6) — khăn che mặt, mặt nạ
+  const faceRows = capRows;
+
+  function drawHair(ctx, cut, hair, kit, hx, hy, fx, fy, back, anim = 0) {
+    const side = Math.abs(fx) > 0.5 ? Math.sign(fx) : 0; // nhìn sang trái / phải
+    switch (cut) {
+      case 'buzz':
+        capRows(ctx, hx, hy, hair, -6, back ? 2 : -4);
+        break;
+      case 'spiky':
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
+        for (const sx of [-5, -2, 1, 4]) {
+          px(ctx, sx < 0 ? hx + sx - 1 : hx + sx, hy - 10, 3, 4, OUT);
+          px(ctx, hx + sx, hy - 9, 1, 3, hair); px(ctx, hx + sx + (sx < 0 ? 0 : 0), hy - 7, 2, 1, hair);
+        }
+        break;
+      case 'mohawk':
+        capRows(ctx, hx, hy, 'rgba(20,12,22,0.28)', -6, back ? 2 : -4); // hai bên cạo sát
+        if (side) { px(ctx, hx - 6, hy - 11, 13, 5, OUT); px(ctx, hx - 5, hy - 10, 11, 4, hair); }
+        else { px(ctx, hx - 2, hy - 12, 5, 9, OUT); px(ctx, hx - 1, hy - 11, 3, 8, hair); }
+        break;
+      case 'afro':
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
+        break;
+      case 'cap': {
+        const cap = '#262a36', brim = '#161923';
+        capRows(ctx, hx, hy, cap, -6, -2);
+        if (back) px(ctx, hx - 2, hy - 3, 5, 1, kit.accent); // quai sau
+        else if (side) { px(ctx, side > 0 ? hx + 3 : hx - 10, hy - 4, 8, 3, OUT); px(ctx, side > 0 ? hx + 4 : hx - 9, hy - 3, 6, 1, brim); }
+        else { px(ctx, hx - 7, hy - 3, 15, 3, OUT); px(ctx, hx - 6, hy - 2, 13, 1, brim); }
+        if (!back) px(ctx, hx - 1 + side * 2, hy - 5, 2, 2, kit.accent); // logo
+        break;
+      }
+      case 'beanie':
+        capRows(ctx, hx, hy, '#d7263d', -6, -2);
+        px(ctx, hx - 6, hy - 3, 13, 2, '#ff5a6e');
+        disc(ctx, hx, hy - 8, 3, OUT); disc(ctx, hx, hy - 8, 2, '#f3ead7');
+        break;
+      case 'bandana':
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
+        px(ctx, hx - 6, hy - 4, 13, 2, '#d7263d');
+        px(ctx, hx - 4, hy - 4, 1, 1, '#ffffff'); px(ctx, hx + 2, hy - 3, 1, 1, '#ffffff');
+        if (side) { px(ctx, hx - side * 9, hy - 4, 3, 1, '#d7263d'); px(ctx, hx - side * 10, hy - 3, 2, 1, '#a81d30'); }
+        else if (back) px(ctx, hx - 1, hy - 5, 3, 3, '#a81d30'); // nút buộc
+        break;
+      case 'crown':
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
+        px(ctx, hx - 5, hy - 8, 11, 4, OUT);
+        for (const sx of [-4, 0, 4]) { px(ctx, hx + sx - 1, hy - 11, 3, 4, OUT); px(ctx, hx + sx, hy - 10, 1, 3, '#ffd23f'); }
+        px(ctx, hx - 4, hy - 7, 9, 2, '#ffd23f');
+        px(ctx, hx, hy - 7, 1, 1, '#ff3d5a');
+        break;
+      case 'bowl': // mái bằng
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -2);
+        if (!back) px(ctx, hx - 6, hy - 2, 13, 1, 'rgba(0,0,0,0.25)');
+        break;
+      case 'bun':
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
+        disc(ctx, hx, hy - 8, 3, OUT); disc(ctx, hx, hy - 8, 2, hair);
+        px(ctx, hx - 2, hy - 6, 5, 1, kit.accent);
+        break;
+      case 'longhair': // tóc dài buộc đuôi ngựa
+        capRows(ctx, hx, hy, hair, -6, back ? 4 : -3);
+        if (side) { px(ctx, hx - side * 9 - 1, hy - 4, 4, 8, OUT); px(ctx, hx - side * 9, hy - 3, 2, 6, hair); }
+        else if (back) { px(ctx, hx - 2, hy + 2, 5, 7, OUT); px(ctx, hx - 1, hy + 3, 3, 5, hair); }
+        else { px(ctx, hx - 8, hy - 4, 3, 8, OUT); px(ctx, hx + 6, hy - 4, 3, 8, OUT); px(ctx, hx - 7, hy - 3, 1, 6, hair); px(ctx, hx + 7, hy - 3, 1, 6, hair); }
+        break;
+      case 'bucket': {
+        const hat = '#c7b27a';
+        capRows(ctx, hx, hy, hat, -6, -3);
+        px(ctx, hx - 8, hy - 4, 17, 3, OUT); px(ctx, hx - 7, hy - 3, 15, 1, '#a8935c');
+        px(ctx, hx - 5, hy - 5, 11, 1, '#8a7a4a');
+        break;
+      }
+      case 'headphones':
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
+        // vòng đeo ôm sát đỉnh đầu, hai đầu nối xuống tai
+        px(ctx, hx - 5, hy - 9, 11, 3, OUT); px(ctx, hx - 4, hy - 8, 9, 1, '#4a4f63');
+        px(ctx, hx - 8, hy - 7, 3, 4, OUT); px(ctx, hx + 6, hy - 7, 3, 4, OUT);
+        px(ctx, hx - 7, hy - 7, 2, 1, '#4a4f63'); px(ctx, hx + 6, hy - 7, 2, 1, '#4a4f63');
+        px(ctx, hx - 7, hy - 6, 1, 2, '#4a4f63'); px(ctx, hx + 7, hy - 6, 1, 2, '#4a4f63');
+        if (side) { px(ctx, hx - 3, hy - 4, 6, 6, OUT); px(ctx, hx - 2, hy - 3, 4, 4, '#ff3d5a'); }
+        else { px(ctx, hx - 9, hy - 4, 4, 6, OUT); px(ctx, hx + 6, hy - 4, 4, 6, OUT); px(ctx, hx - 8, hy - 3, 2, 4, '#ff3d5a'); px(ctx, hx + 7, hy - 3, 2, 4, '#ff3d5a'); }
+        break;
+      case 'helmet': // mũ bảo hiểm nửa đầu
+        capRows(ctx, hx, hy, '#e8ecf5', -6, back ? 3 : -2);
+        px(ctx, hx, hy - 6, 1, 4, '#d7263d');
+        if (!back) { px(ctx, hx - 7, hy - 2, 2, 5, OUT); px(ctx, hx + 6, hy - 2, 2, 5, OUT); px(ctx, hx - 6, hy - 1, 1, 3, '#e8ecf5'); px(ctx, hx + 6, hy - 1, 1, 3, '#e8ecf5'); }
+        px(ctx, hx - 4, hy - 5, 2, 1, '#ffffff');
+        break;
+      case 'cowboy': {
+        const hat = '#8a5a2b';
+        capRows(ctx, hx, hy, hair, -5, back ? 3 : -3);
+        px(ctx, hx - 5, hy - 12, 11, 7, OUT); px(ctx, hx - 4, hy - 11, 9, 5, hat); px(ctx, hx, hy - 11, 1, 2, '#5e3b1a');
+        px(ctx, hx - 4, hy - 7, 9, 1, '#3b2415');
+        px(ctx, hx - 11, hy - 6, 23, 3, OUT); px(ctx, hx - 10, hy - 5, 21, 1, hat);
+        px(ctx, hx - 11, hy - 7, 2, 1, OUT); px(ctx, hx + 10, hy - 7, 2, 1, OUT);
+        break;
+      }
+      case 'santa':
+        // mũ nhọn đổ nghiêng sang phải, quả bông ở chóp
+        px(ctx, hx - 6, hy - 9, 12, 4, OUT); px(ctx, hx - 3, hy - 11, 9, 3, OUT); px(ctx, hx + 2, hy - 12, 6, 2, OUT);
+        capRows(ctx, hx, hy, '#d7263d', -6, -3);
+        px(ctx, hx - 5, hy - 8, 10, 3, '#d7263d'); px(ctx, hx - 2, hy - 10, 7, 2, '#d7263d'); px(ctx, hx + 3, hy - 11, 4, 1, '#d7263d');
+        px(ctx, hx - 4, hy - 8, 3, 1, '#ff5a6e');
+        disc(ctx, hx + 7, hy - 11, 2, OUT); disc(ctx, hx + 7, hy - 11, 1, '#f3ead7');
+        px(ctx, hx - 7, hy - 4, 15, 3, OUT); px(ctx, hx - 6, hy - 3, 13, 1, '#f3ead7');
+        break;
+      case 'viking': {
+        const metal = '#9aa3b5', bone = '#f3ead7';
+        capRows(ctx, hx, hy, metal, -6, -2);
+        px(ctx, hx - 6, hy - 3, 13, 1, '#6a7385'); px(ctx, hx, hy - 6, 1, 3, '#6a7385');
+        // sừng cong: mọc từ hai bên mũ, vươn ra ngoài rồi chĩa lên
+        const horn = [[6, -4], [7, -4], [7, -5], [8, -5], [8, -6], [9, -6], [9, -7], [9, -8], [9, -9]];
+        for (const s of [-1, 1]) for (const [dx, dy] of horn) px(ctx, hx + s * dx - 1, hy + dy - 1, 3, 3, OUT);
+        for (const s of [-1, 1]) for (const [dx, dy] of horn) px(ctx, hx + s * dx, hy + dy, 1, 1, bone);
+        for (const s of [-1, 1]) px(ctx, hx + s * 6, hy - 4, 1, 1, '#c7bca8');
+        px(ctx, hx - 3, hy - 5, 2, 1, '#ffffff');
+        break;
+      }
+      case 'halo': {
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
+        const y = hy - 11 + Math.round(Math.sin(anim * 3) * 1);
+        ctx.globalCompositeOperation = 'lighter';
+        ringFlat(ctx, hx, y, 6, 2, 'rgba(255,233,138,0.35)');
+        ctx.globalCompositeOperation = 'source-over';
+        ringFlat(ctx, hx, y, 5, 1.5, '#ffe98a');
+        break;
+      }
+      case 'flamehair': {
+        capRows(ctx, hx, hy, '#ff6a1f', -6, back ? 3 : -3);
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = -5; i <= 4; i += 2) {
+          const h = 3 + ((i * 7 + Math.floor(anim * 12)) % 3 + 3) % 3;
+          px(ctx, hx + i, hy - 6 - h, 2, h, 'rgba(255,106,31,0.9)');
+          px(ctx, hx + i, hy - 6 - h, 1, 2, '#ffd23f');
+        }
+        disc(ctx, hx, hy - 7, 6, 'rgba(255,140,40,0.18)');
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      }
+      default: // classic: tóc ngắn + băng đô màu đội
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
+        px(ctx, hx - 6, hy - 3, 13, 1, kit.accent);
+    }
+  }
+
+  // phụ kiện mặt (chỉ vẽ khi nhìn về phía trước / ngang). cx, cy = tâm đầu đã lệch theo hướng nhìn
+  function drawFace(ctx, face, hair, cx, cy, look = {}, fx = 0, fy = 1, anim = 0) {
+    switch (face) {
+      case 'blush':
+        px(ctx, cx - 5, cy + 2, 2, 1, 'rgba(255,90,120,0.7)'); px(ctx, cx + 4, cy + 2, 2, 1, 'rgba(255,90,120,0.7)');
+        break;
+      case 'freckles':
+        for (const [dx, dy] of [[-4, 2], [-3, 3], [-2, 2], [2, 2], [3, 3], [4, 2]]) px(ctx, cx + dx, cy + dy, 1, 1, '#a0643c');
+        break;
+      case 'beard':
+        px(ctx, cx - 6, cy, 2, 3, hair); px(ctx, cx + 5, cy, 2, 3, hair);
+        px(ctx, cx - 5, cy + 2, 11, 3, hair); px(ctx, cx - 3, cy + 5, 7, 1, hair);
+        px(ctx, cx - 1, cy + 3, 2, 1, OUT);
+        break;
+      case 'nerd':
+        px(ctx, cx - 5, cy - 2, 5, 5, OUT); px(ctx, cx + 1, cy - 2, 5, 5, OUT);
+        px(ctx, cx - 4, cy - 1, 3, 3, 'rgba(210,235,255,0.55)'); px(ctx, cx + 2, cy - 1, 3, 3, 'rgba(210,235,255,0.55)');
+        px(ctx, cx - 4, cy - 1, 1, 1, OUT); px(ctx, cx + 2, cy - 1, 1, 1, OUT);
+        px(ctx, cx, cy - 1, 1, 1, OUT);
+        break;
+      case 'scar':
+        for (let i = 0; i < 5; i++) px(ctx, cx + 1 + (i & 1), cy - 3 + i, 1, 1, '#b8323f');
+        px(ctx, cx, cy - 1, 3, 1, '#b8323f');
+        break;
+      case 'clown':
+        disc(ctx, cx, cy + 1, 2, OUT); disc(ctx, cx, cy + 1, 1, '#ff3d3d'); px(ctx, cx - 1, cy, 1, 1, '#ffffff');
+        break;
+      case 'goldtooth':
+        px(ctx, cx - 2, cy + 3, 5, 2, OUT); px(ctx, cx - 1, cy + 3, 3, 1, '#f3ead7'); px(ctx, cx, cy + 3, 1, 1, '#ffd23f');
+        break;
+      case 'warpaint':
+        for (const s of [-1, 1]) { px(ctx, cx + s * 4 - 1, cy + 1, 3, 1, '#ff3d5a'); px(ctx, cx + s * 4 - 1, cy + 3, 3, 1, '#f3ead7'); }
+        break;
+      case 'monocle':
+        px(ctx, cx, cy - 2, 5, 5, '#ffd23f'); px(ctx, cx + 1, cy - 1, 3, 3, 'rgba(210,235,255,0.5)');
+        px(ctx, cx + 2, cy, 1, 1, OUT);
+        px(ctx, cx + 4, cy + 3, 1, 1, '#ffd23f'); px(ctx, cx + 5, cy + 4, 1, 2, '#ffd23f');
+        break;
+      case 'ninja':
+        faceRows(ctx, cx, cy, '#262a36', 1, 6);
+        px(ctx, cx - 6, cy - 4, 13, 2, '#262a36'); px(ctx, cx - 6, cy - 4, 13, 1, '#d7263d');
+        break;
+      case 'cyborg':
+        px(ctx, cx, cy - 3, 6, 6, OUT); px(ctx, cx + 1, cy - 2, 4, 4, '#4a4f63');
+        px(ctx, cx + 2, cy - 1, 2, 2, '#ff3d3d');
+        ctx.globalCompositeOperation = 'lighter'; px(ctx, cx + 1, cy - 2, 4, 4, `rgba(255,60,60,${0.25 + 0.2 * Math.sin(anim * 8)})`); ctx.globalCompositeOperation = 'source-over';
+        break;
+      case 'skull':
+        faceRows(ctx, cx, cy, '#e8ecf5', -4, 6);
+        px(ctx, cx - 4, cy - 1, 3, 3, OUT); px(ctx, cx + 1, cy - 1, 3, 3, OUT);
+        px(ctx, cx - 1, cy + 2, 2, 1, OUT);
+        px(ctx, cx - 3, cy + 4, 7, 1, OUT); px(ctx, cx - 2, cy + 4, 1, 1, '#e8ecf5'); px(ctx, cx + 1, cy + 4, 1, 1, '#e8ecf5');
+        break;
+      case 'lasereyes': {
+        px(ctx, cx - 4, cy - 1, 3, 3, '#ff2a2a'); px(ctx, cx + 1, cy - 1, 3, 3, '#ff2a2a');
+        px(ctx, cx - 3, cy, 1, 1, '#ffffff'); px(ctx, cx + 2, cy, 1, 1, '#ffffff');
+        ctx.globalCompositeOperation = 'lighter';
+        const len = 10 + Math.round(Math.sin(anim * 20) * 2);
+        for (const ex of [cx - 3, cx + 2]) for (let i = 2; i < len; i++) px(ctx, Math.round(ex + fx * i), Math.round(cy + fy * i * 0.6), 1, 1, `rgba(255,50,50,${0.9 - i / len * 0.7})`);
+        px(ctx, cx - 5, cy - 2, 11, 5, 'rgba(255,40,40,0.18)');
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      }
+      case 'shades':
+        px(ctx, cx - 5, cy - 1, 11, 3, OUT);
+        px(ctx, cx - 4, cy - 1, 3, 2, '#2a3350'); px(ctx, cx + 1, cy - 1, 3, 2, '#2a3350');
+        px(ctx, cx - 4, cy - 1, 1, 1, '#ffffff');
+        break;
+      case 'visor':
+        px(ctx, cx - 5, cy - 2, 11, 4, OUT);
+        px(ctx, cx - 4, cy - 1, 9, 2, '#3ff6ff');
+        px(ctx, cx - 4, cy - 1, 9, 1, '#c8fdff');
+        break;
+      case 'mask':
+        px(ctx, cx - 4, cy + 1, 9, 4, '#e8ecf5');
+        px(ctx, cx - 3, cy + 2, 7, 1, '#c7cbd6');
+        px(ctx, cx - 6, cy, 2, 1, '#e8ecf5'); px(ctx, cx + 5, cy, 2, 1, '#e8ecf5');
+        break;
+      case 'eyepatch':
+        px(ctx, cx - 5, cy - 2, 5, 4, OUT);
+        px(ctx, cx - 6, cy - 3, 13, 1, OUT);
+        break;
+      case 'mustache':
+        px(ctx, cx - 3, cy + 2, 7, 1, hair);
+        px(ctx, cx - 4, cy + 3, 1, 1, hair); px(ctx, cx + 4, cy + 3, 1, 1, hair);
+        break;
+      case 'bandaid':
+        px(ctx, cx + 2, cy + 2, 3, 1, '#f0c080'); px(ctx, cx + 3, cy + 1, 1, 3, '#f0c080');
+        break;
+    }
+  }
+
+  // vẽ character đứng một mình (menu / shop / hồ sơ) — canvas nhỏ, CSS phóng to kiểu pixel
+  function drawAvatar(canvas, look, kit, t = 0, facing = Math.PI / 2) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const g = { teams: [{ cfg: { kit } }], previewLook: look };
+    const x = canvas.width / 2, y = canvas.height - 4;
+    const behind = look.fx === 'shadow';
+    if (behind) drawFxPreview(ctx, look.fx, x, y, t, g);
+    drawPlayer(ctx, { x, y, vx: 0, vy: 0, facing, anim: t, flash: 0, state: 'normal', team: 0, look }, g);
+    if (!behind && look.fx && FX[look.fx]) drawFxPreview(ctx, look.fx, x, y, t, g);
   }
 
   /* ---------- cầu thủ ---------- */
@@ -139,18 +578,19 @@ window.SFC = window.SFC || {};
 
     ctx.globalAlpha = alpha;
     if (alpha >= 1) ellipse(ctx, x, y0 + 1, 6, 2.5, 'rgba(0,0,0,0.38)');
+    // hiệu ứng Hào quang vàng: vầng sáng dưới chân
+    if (!tint && p.look.fx === 'aura') {
+      ctx.globalCompositeOperation = 'lighter';
+      ellipse(ctx, x, y0, 9, 4, `rgba(255,200,60,${0.25 + 0.12 * Math.sin((p.anim || 0) * 5)})`);
+      ellipse(ctx, x, y0, 5, 2, 'rgba(255,240,150,0.3)');
+      ctx.globalCompositeOperation = 'source-over';
+    }
 
     // chân (đang đá: chỉ vẽ chân trụ, chân đá vẽ riêng)
     const l = step ? -1 : 0, r = step ? 0 : -1;
-    const kickLeg = atk && atk.leg;
-    if (!(kickLeg && side < 0)) {
-      px(ctx, x - 4, y - 5 + l, 4, 5, OUT);
-      px(ctx, x - 3, y - 4 + l, 2, 3, p.look.skin); px(ctx, x - 3, y - 2 + l, 2, 1, '#e8e8e8');
-    }
-    if (!(kickLeg && side > 0)) {
-      px(ctx, x, y - 5 + r, 4, 5, OUT);
-      px(ctx, x + 1, y - 4 + r, 2, 3, p.look.skin); px(ctx, x + 1, y - 2 + r, 2, 1, '#e8e8e8');
-    }
+    const kickLeg = atk && atk.leg != null;
+    if (!(kickLeg && side < 0)) drawLeg(ctx, x - 4, y + l, p.look, p.anim, 0);
+    if (!(kickLeg && side > 0)) drawLeg(ctx, x, y + r, p.look, p.anim, 1);
     if (kickLeg) drawKick(ctx, p, x, y, fx, fy, side, atk);
 
     // thân
@@ -177,16 +617,13 @@ window.SFC = window.SFC || {};
     // đầu to kiểu Isaac
     const hx = x;
     const hy = by - 6 + (stunned ? Math.round(Math.sin(p.anim * 20)) : 0);
+    const back = fy < -0.35;
+    const cut = p.look.cut || 'classic';
+    if (cut === 'afro') { disc(ctx, hx, hy - 3, 10, OUT); disc(ctx, hx, hy - 3, 9, p.look.hair); }
     disc(ctx, hx, hy, 7, OUT);
     disc(ctx, hx, hy, 6, p.look.skin);
-    // tóc + băng đô
-    const back = fy < -0.35;
-    ctx.fillStyle = p.look.hair;
-    for (let dy = -6; dy <= (back ? 3 : -3); dy++) {
-      const w = Math.floor(Math.sqrt(36 - dy * dy) + 0.35);
-      ctx.fillRect(hx - w, hy + dy, w * 2 + 1, 1);
-    }
-    px(ctx, hx - 6, hy - 3, 13, 1, kit.accent);
+    // tóc / mũ (trang phục mua ở Shop)
+    drawHair(ctx, cut, p.look.hair, kit, hx, hy, fx, fy, back, p.anim || 0);
     // má hồng / bóng đổ đầu
     px(ctx, hx - 5, hy + 3, 11, 1, 'rgba(0,0,0,0.12)');
 
@@ -200,6 +637,7 @@ window.SFC = window.SFC || {};
         px(ctx, hx - 4 + ex, hy - 1 + ey, 1, 1, '#ffffff'); px(ctx, hx + 1 + ex, hy - 1 + ey, 1, 1, '#ffffff');
       }
       px(ctx, hx - 1 + ex, hy + 3 + ey, 2, 1, stunned ? OUT : 'rgba(20,12,22,0.6)');
+      if (p.look.face) drawFace(ctx, p.look.face, p.look.hair, hx + ex, hy + ey, p.look, fx, fy, p.anim || 0);
     }
 
     if (p.flash > 0) {
@@ -240,5 +678,34 @@ window.SFC = window.SFC || {};
     ctx.globalAlpha = 1;
   }
 
-  SFC.Sprites = { OUT, px, disc, ellipse, ringPx, drawPlayer, drawBall };
+  // icon costume trên ô item (hộp gacha / túi đồ): vẽ character mặc món đó rồi phóng to vùng liên quan
+  // (tóc & mặt -> cái đầu, giày -> bàn chân, hiệu ứng -> cả người). Vùng cắt tính trên avatar 40x44.
+  const ICON_CROP = { hair: [5, 6, 30, 30], face: [9, 13, 22, 22], shoes: [11, 33, 18, 9], fx: [4, 2, 32, 42] };
+  let iconBuf = null;
+  function drawItemIcon(canvas, look, kit, slot) {
+    if (slot === 'shoes') {
+      // giày: vẽ riêng đôi chân phóng to x3 cho dễ nhìn (bánh xe, đinh, lửa phụt dưới đế...)
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(Math.round((canvas.width - 39) / 2), Math.round((canvas.height - 39) / 2));
+      ctx.scale(3, 3);
+      drawLeg(ctx, 1, 9, look, 0.3, 0);
+      drawLeg(ctx, 7, 9, look, 0.3, 1);
+      ctx.restore();
+      return;
+    }
+    iconBuf = iconBuf || document.createElement('canvas');
+    iconBuf.width = 40; iconBuf.height = 44;
+    drawAvatar(iconBuf, look, kit, 0.3, slot === 'shoes' ? 0 : Math.PI / 2);
+    const [sx, sy, sw, sh] = ICON_CROP[slot] || ICON_CROP.fx;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const k = Math.max(1, Math.floor(Math.min(canvas.width / sw, canvas.height / sh) * 2) / 2);
+    const w = sw * k, h = sh * k;
+    ctx.drawImage(iconBuf, sx, sy, sw, sh, Math.round((canvas.width - w) / 2), Math.round((canvas.height - h) / 2), w, h);
+  }
+
+  SFC.Sprites = { OUT, px, disc, ellipse, ringPx, drawPlayer, drawBall, drawAvatar, drawItemIcon, FX, spawnFx, stepFx, drawFxParticle };
 })();

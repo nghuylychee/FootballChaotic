@@ -28,7 +28,8 @@ SFC_CONFIG.controls = {
     pick2:   ['Digit2', 'Numpad2'],
     pick3:   ['Digit3', 'Numpad3'],
     mute:    ['KeyM'],
-    restart: ['KeyR'],
+    restart: ['KeyR'],     // túi đồ: phân rã toàn bộ đồ trùng (giữ 1)
+    dismantle: ['KeyX', 'Delete'], // túi đồ / mở hộp: phân rã món đang chọn
   },
 
   // Bảng hướng dẫn hiển thị trong menu / pause

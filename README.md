@@ -41,9 +41,26 @@ Chỉnh trong `SFC_CONFIG.game.pass.intercept`. Sút / phá bóng / bóng lỏng
 Khi đồng đội AI giữ bóng: S / W / A để đòi bóng. `1/2/3` chọn Core, `Esc/P` tạm dừng (online: mở menu), `M` tắt âm.
 
 ## Menu
-Trang chủ tối giản: **CHƠI ĐƠN** (chọn đội / đối thủ / độ khó / điều khiển) · **ĐỐI KHÁNG ONLINE** · **HƯỚNG DẪN**
-(điều khiển, chuyền & sút, phòng ngự, luật trận, danh sách Core, online — nội dung ở `config/tutorial.config.js`).
+Trang chủ: **CHƠI ĐƠN** (chọn đội / đối thủ / độ khó / điều khiển) · **ĐỐI KHÁNG ONLINE** · **SHOP** (hộp gacha) · **NHÂN VẬT** (túi đồ),
+góc phải là thẻ hồ sơ (character, tên, level, thanh XP, gold, thống kê).
+Màn Hướng dẫn (`config/tutorial.config.js`) đã được gỡ khỏi trang chủ — code trang vẫn còn trong `src/ui/menu.js` nếu cần gắn lại chỗ khác.
 ↑↓ chọn · ←→ đổi · Enter · Esc/Backspace quay lại.
+
+## Meta progression (level · XP · gold · gacha · túi đồ)
+- Hồ sơ lưu ở `localStorage` của trình duyệt (`src/core/profile.js`, key `sfc_profile_v1`). Lần đầu mở game phải đặt tên.
+- **Character**: mang tên + costume của bạn, vào sân thay cầu thủ ĐÁ CAO của đội mình (chơi đơn và online — đối thủ thấy được).
+- **Thưởng sau trận** (chỉ khi đá hết trận): thắng / hòa / thua + theo số bàn, nhân độ khó ở chơi đơn; online thưởng cao hơn.
+  Màn kết quả diễn hoạt từng dòng thưởng, gold đếm lên, thanh XP chạy qua từng level, báo hộp / Core vừa mở khoá theo level.
+- **Shop = hộp gacha** (kiểu CSGO): trả gold, dải item quay chậm dần rồi dừng ở món trúng (có tiếng tách, nhạc lộ đồ theo độ hiếm).
+  Hộp Đường Phố (costume, LV1) · Hộp Huyền Thoại (costume từ HIẾM, LV6) · Hộp Core (Core Upgrade, LV2). Xem tỉ lệ + toàn bộ món trong hộp trước khi mở.
+  Độ hiếm: THƯỜNG · HIẾM · SỬ THI · HUYỀN THOẠI · THẦN THOẠI (màu xám / xanh / tím / đỏ / vàng).
+- **Costume** 4 slot phối tự do, mỗi slot 20 món (tính cả đồ mặc định): tóc & mũ · mặt · giày · hiệu ứng khi chạy. Core quay được chỉ vào pool chọn Core giữa trận khi đủ level của Core đó.
+- **Túi đồ** (từ NHÂN VẬT hoặc SHOP): trùng thì cộng số lượng. Enter trang bị · X phân rã ra gold (món SỬ THI trở lên / món cuối đang mặc
+  phải bấm 2 lần) · R phân rã toàn bộ đồ trùng (giữ 1) · Q / E đổi mục. Phân rã hoàn lại ~40–60% giá hộp (gold sink).
+- Mọi con số (đường XP, thưởng, độ hiếm, giá trị phân rã, hộp + tỉ lệ, level Core) ở `config/progression.config.js`.
+  Trang gacha ở `src/ui/gacha.js`; hình vẽ costume ở `src/render/sprites.js` (`drawHair`, `drawFace`, `SHOES` / `drawLeg`, `FX` + `spawnFx` / `drawFxParticle`,
+  `drawItemIcon`); renderer (`cosmetics`) sinh hạt hiệu ứng khi chạy, menu xem trước bằng `drawAvatar`.
+- Debug: `SFC.Profile.data` trong console (vd. `SFC.Profile.data.gold = 5000; SFC.Profile.save()`).
 
 ## Online PvP (1 vs 1)
 - **Tạo phòng**: nhận mã 5 ký tự (bấm vào mã để sao chép), gửi cho bạn bè.
@@ -87,15 +104,16 @@ config/                 ← MỌI THÔNG SỐ CÂN BẰNG (tách riêng)
   cores.config.js       16 Core: mô tả, mods thụ động, params hành vi
   net.config.js         online PvP: PeerJS, mã phòng, tần suất snapshot, nội suy
   tutorial.config.js    nội dung màn Hướng dẫn
+  progression.config.js level / XP / gold, thưởng sau trận, costume, độ hiếm, hộp gacha, level Core
 src/
-  core/        utils, input (map phím → action), audio (WebAudio chiptune)
+  core/        utils, input (map phím → action), audio (WebAudio chiptune), profile (hồ sơ + tiến trình, localStorage)
   entities/    ball (vật lý 2.5D x/y/z, khung thành, lưới), player
   systems/     actions (chuyền/sút/tắc/Light & Hard attack...), cores (hook hành vi), effects,
                ai (trông khung/giữ bóng/hỗ trợ/phòng ngự), human (controller)
   game/        match.js — state machine trận đấu
   render/      sprites (pixel-art procedural), background (sân + tường), renderer
   net/         transport (PeerJS), sync (snapshot / nội suy / phím từ xa), online (phòng chờ + vòng lặp host/khách)
-  ui/          menu (trang chủ, chơi đơn, online, hướng dẫn), ui (HUD, chọn Core, pause, kết quả)
+  ui/          menu (trang chủ + hồ sơ, chơi đơn, online, nhân vật, hướng dẫn), gacha (shop hộp, quay hộp, túi đồ), ui (HUD, chọn Core, pause, kết quả + thưởng)
 ```
 
 ### Thêm Core mới

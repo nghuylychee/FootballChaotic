@@ -71,11 +71,29 @@ SFC_CONFIG.tutorial = {
       ],
     },
     {
-      title: 'CORE UPGRADE',
+      title: 'CORE',
       type: 'cores',
       lines: [
         'Sau mỗi bàn thắng, trong lúc bóng chết, cả 2 đội chọn 1 trong 3 Core (tối đa 4 lần mỗi trận).',
         'Core thay đổi cách chơi: sút lửa, lướt ảo ảnh, khiên khung thành, bóng hỗn loạn...',
+        'Bạn chỉ bốc được Core đã mở khoá. Ban đầu có 6 Core cơ bản, Core khác lấy từ Hộp Core trong SHOP (mỗi Core cần đủ level mới dùng được).',
+      ],
+    },
+    {
+      title: 'SHOP',
+      lines: [
+        '# Nhân vật của bạn',
+        'Character mang tên bạn vào sân thay cầu thủ ĐÁ CAO (cả chơi đơn lẫn online), vẫn mặc áo đội đã chọn.',
+        'NHÂN VẬT: đổi tên, màu da, màu tóc (miễn phí), mở TÚI ĐỒ để phối costume.',
+        '# XP & Gold',
+        'Đá hết trận (chơi đơn / online) để nhận XP + gold: thắng > hòa > thua, cộng thêm theo số bàn ghi được.',
+        'Chơi đơn độ khó KHÓ được x1.5 phần thưởng, DỄ x0.6. Online thưởng nhiều hơn chơi đơn.',
+        'Mỗi lần lên level được thêm gold. Bỏ trận giữa chừng không có thưởng.',
+        '# Shop — hộp gacha',
+        'Dùng gold mở hộp: dải item quay rồi dừng ở món bạn nhận. Độ hiếm: THƯỜNG · HIẾM · SỬ THI · HUYỀN THOẠI · THẦN THOẠI.',
+        'Hộp Đường Phố / Hộp Huyền Thoại ra costume (tóc & mũ, mặt, giày, hiệu ứng). Hộp Core ra Core Upgrade.',
+        '# Túi đồ',
+        'Enter: trang bị · X: phân rã món ra gold (món hiếm phải bấm 2 lần) · R: phân rã hết đồ trùng · Q / E: đổi mục.',
       ],
     },
     {

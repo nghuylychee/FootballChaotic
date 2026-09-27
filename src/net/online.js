@@ -2,8 +2,9 @@
  * Host luôn là đội 0 (bên trái), khách là đội 1 (bên phải).
  *
  * Gói tin:
- *   khách -> host : hello{v} · team{id} · i{d,p} (phím) · pick{i} · bye
- *   host  -> khách: lobby{host,guest} · start{home,away} · s{f,s,fx,sfx,ev} (snapshot) · toLobby · full · bye
+ *   khách -> host : hello{v,pf} · team{id} · i{d,p} (phím) · pick{i} · bye
+ *   host  -> khách: lobby{host,guest,hp} · start{opts} · s{f,s,fx,sfx,ev} (snapshot) · toLobby · full · bye
+ *   pf / hp = hồ sơ công khai (tên, level, ngoại hình, Core đã mở) — xem SFC.Profile.public()
  */
 window.SFC = window.SFC || {};
 
@@ -17,7 +18,7 @@ window.SFC = window.SFC || {};
     role: null,          // 'host' | 'guest'
     status: 'idle',      // idle | busy | lobby | playing
     code: null,
-    lobby: { host: null, guest: null, guestIn: false },
+    lobby: { host: null, guest: null, guestIn: false, hostPf: null, guestPf: null },
     game: null,          // host: trận thật · khách: trận "gương"
     overlay: false,      // đang mở menu trong trận (không tạm dừng)
 
@@ -34,7 +35,7 @@ window.SFC = window.SFC || {};
         this.role = 'host';
         this.code = code;
         const first = TEAMS()[SFC.Menu.app.sel.team] || TEAMS()[0];
-        this.lobby = { host: first, guest: null, guestIn: false };
+        this.lobby = { host: first, guest: null, guestIn: false, hostPf: SFC.Profile.public(), guestPf: null };
         this.status = 'lobby';
         SFC.Menu.go('lobby');
       }).catch((e) => this.fail(e));
@@ -48,9 +49,9 @@ window.SFC = window.SFC || {};
       Net().join(code).then(() => {
         this.role = 'guest';
         this.code = code;
-        this.lobby = { host: null, guest: null, guestIn: true };
+        this.lobby = { host: null, guest: null, guestIn: true, hostPf: null, guestPf: SFC.Profile.public() };
         this.status = 'lobby';
-        Net().send({ t: 'hello', v: N().protocol });
+        Net().send({ t: 'hello', v: N().protocol, pf: SFC.Profile.public() });
         SFC.Menu.go('lobby', 'Đang chờ thông tin phòng...');
       }).catch((e) => this.fail(e, 'join'));
     },
@@ -70,7 +71,7 @@ window.SFC = window.SFC || {};
 
     reset() {
       this.role = null; this.status = 'idle'; this.code = null; this.game = null; this.overlay = false;
-      this.lobby = { host: null, guest: null, guestIn: false };
+      this.lobby = { host: null, guest: null, guestIn: false, hostPf: null, guestPf: null };
       this.buf = []; this.remote = null;
     },
 
@@ -88,7 +89,7 @@ window.SFC = window.SFC || {};
       if (this.isHost) {
         // khách rời: host về phòng chờ, phòng vẫn mở cho người khác vào
         const wasPlaying = this.status === 'playing';
-        this.lobby.guest = null; this.lobby.guestIn = false;
+        this.lobby.guest = null; this.lobby.guestIn = false; this.lobby.guestPf = null;
         this.status = 'lobby'; this.game = null; this.overlay = false;
         if (wasPlaying) SFC.Menu.app.toMenu('lobby');
         SFC.Menu.go('lobby', 'Đối thủ đã rời phòng.', true);
@@ -113,7 +114,7 @@ window.SFC = window.SFC || {};
     },
 
     sendLobby() {
-      Net().send({ t: 'lobby', host: this.lobby.host, guest: this.lobby.guest });
+      Net().send({ t: 'lobby', host: this.lobby.host, guest: this.lobby.guest, hp: this.lobby.hostPf });
     },
 
     onData(m) {
@@ -128,6 +129,8 @@ window.SFC = window.SFC || {};
         case 'hello':
           if (m.v !== N().protocol) { Net().send({ t: 'version' }); setTimeout(() => Net().dropConn(), 300); return; }
           L.guestIn = true;
+          L.guestPf = SFC.Profile.sanitizePublic(m.pf);
+          L.hostPf = SFC.Profile.public();
           L.guest = TEAMS().find((t) => t !== L.host);
           this.sendLobby();
           SFC.Menu.go('lobby', 'Đối thủ đã vào phòng!');
@@ -156,6 +159,7 @@ window.SFC = window.SFC || {};
       switch (m.t) {
         case 'lobby':
           this.lobby.host = m.host; this.lobby.guest = m.guest; this.lobby.guestIn = true;
+          this.lobby.hostPf = SFC.Profile.sanitizePublic(m.hp);
           if (this.status === 'playing') { this.status = 'lobby'; this.game = null; SFC.Menu.app.toMenu('lobby'); }
           if (SFC.Menu.page === 'lobby') SFC.Menu.go('lobby');
           break;
@@ -174,18 +178,26 @@ window.SFC = window.SFC || {};
       const opts = {
         home: L.host, away: L.guest, difficulty: N().difficulty,
         humanTeam: 0, humans: [0, 1], draftTimeLimit: N().draftTimeLimit,
+        // character + Core đã mở khoá của mỗi người (khách gửi lúc vào phòng)
+        avatars: [SFC.Profile.avatar(), L.guestPf],
+        coreUnlocks: [SFC.Profile.unlockedCores(), L.guestPf ? L.guestPf.cores : null],
       };
       this.game = new SFC.Game(opts);
       Sync().capture(this.game);
       this.remote = new (Sync().RemoteInput)();
       this.frame = 0;
       this.status = 'playing';
-      Net().send({ t: 'start', home: L.host, away: L.guest });
+      Net().send({ t: 'start', opts });
       SFC.Menu.app.enterOnline(this.game);
     },
 
     guestStart(m) {
-      this.game = new SFC.Game({ home: m.home, away: m.away, humanTeam: 1, humans: [0, 1], difficulty: N().difficulty });
+      const o = m.opts || {};
+      // trận "gương": cùng đội hình / character như host, nhưng góc nhìn đội 1
+      this.game = new SFC.Game({
+        home: o.home, away: o.away, humanTeam: 1, humans: [0, 1], difficulty: N().difficulty, draftTimeLimit: o.draftTimeLimit,
+        avatars: (o.avatars || []).map((a) => SFC.Profile.sanitizePublic(a)), coreUnlocks: o.coreUnlocks,
+      });
       this.game.events.length = 0;
       this.buf = [];
       this.renderF = null;
