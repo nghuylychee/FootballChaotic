@@ -15,8 +15,12 @@ SFC_CONFIG.tutorial = {
     {
       title: 'CHUYỀN & SÚT',
       lines: [
-        '# Chuyền có hỗ trợ',
-        'Giữ S / W / A để nạp lực, thả ra để chuyền. Bóng đi theo hướng mũi tên đang giữ.',
+        '# Chuyền sệt (S)',
+        'Nhấn S là chuyền ngay, không cần nạp lực — game tự chọn người nhận và lực.',
+        'Giữ mũi tên chỉ vào đồng đội khi nhấn S → đường chuyền chuẩn, người nhận tự chạy đón.',
+        'Không bấm hướng hoặc chỉ lệch → bóng đi về phía đồng đội gần nhất nhưng luôn lệch hướng và sai lực, người nhận không tự đón — phải tự chạy theo bóng.',
+        '# Chuyền có hỗ trợ (W / A)',
+        'Giữ W / A để nạp lực, thả ra để chuyền. Bóng đi theo hướng mũi tên đang giữ.',
         'Có đồng đội trong vùng hướng đó → bóng tự căn vào họ. Không có ai → bóng lăn thẳng theo hướng.',
         'Chạm nhẹ đã đủ lực tới chân. Vạch trắng trên thanh = lực mặc định, giữ vượt vạch → bóng căng hơn.',
         'Người nhận tự chạy tới đón bóng. Bấm hướng mới để tự điều khiển.',
@@ -41,6 +45,7 @@ SFC_CONFIG.tutorial = {
         'A — HARD ATTACK: gồng co chân (hào quang đỏ, xoay được hướng) rồi vung chân đá. Trúng: đối thủ bay rất xa, choáng lâu, chắc chắn rơi bóng. Trượt: khựng lâu. Hồi chiêu dài.',
         'Hồi chiêu hiện trên thanh kỹ năng ở giữa đáy màn hình. Ô mờ = đội mình đang giữ bóng (không đánh được).',
         'Z (lướt) đúng lúc đối thủ ra đòn → né được (DODGE).',
+        'Chặn đường chuyền: bóng chuyền đi qua tầm với → có cơ hội cắt. Bóng càng chậm, càng đi thẳng vào người càng dễ cắt. Cắt hụt → bóng chạm người rồi đi tiếp.',
         'Giữ W: gọi đồng đội AI lên áp sát người cầm bóng.',
         'Q: đổi sang cầu thủ gần bóng nhất.',
         '# Trông khung thành',

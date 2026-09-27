@@ -43,8 +43,10 @@ window.SFC = window.SFC || {};
     /**
      * Tính đường chuyền tới người nhận: điểm nhận bóng + vận tốc bóng.
      * power = null -> lực lý tưởng (AI). exact = true -> bỏ sai số (dùng cho preview).
+     * err = { miss: [min, max], pace: [min, max] } -> thay sai số mặc định bằng sai số luôn có
+     *       (chuyền tự động không nhắm, pass.quick.sloppy): lệch ngang = miss x quãng chuyền, lực sai ±pace
      */
-    passPlan(g, p, target, mode, power, dx = 0, dy = 0, exact = false) {
+    passPlan(g, p, target, mode, power, dx = 0, dy = 0, exact = false, err = null) {
       const P = G().pass, B = G().ball, f = g.field, b = g.ball;
       const mult = p.stats.pass * g.cores.mod(p.team, 'passSpeed');
       const clampPt = (pt) => ({ x: U.clamp(pt.x, f.x + 10, f.x + f.w - 10), y: U.clamp(pt.y, f.y + 10, f.y + f.h - 10) });
@@ -113,9 +115,12 @@ window.SFC = window.SFC || {};
         dir = U.norm(U.lerp(inp.x, dir.x, P.aimAssist), U.lerp(inp.y, dir.y, P.aimAssist));
       }
       if (!exact) {
-        const e = U.rand(-1, 1) * P.spread / p.stats.pass;
+        const e = err
+          ? U.randSign() * Math.atan(U.rand(err.miss[0], err.miss[1]) / p.stats.pass)
+          : U.rand(-1, 1) * P.spread / p.stats.pass;
         const c = Math.cos(e), s = Math.sin(e);
         dir = { x: dir.x * c - dir.y * s, y: dir.x * s + dir.y * c };
+        if (err) spd *= 1 + U.randSign() * U.rand(err.pace[0], err.pace[1]) / p.stats.pass;
       }
       return { point, vx: dir.x * spd, vy: dir.y * spd, vz, T };
     },
@@ -147,6 +152,27 @@ window.SFC = window.SFC || {};
       const lock = p.passLock && p.passLock.state !== 'stun' ? p.passLock : null;
       const target = lock || this.findPassTarget(g, p, dx, dy, this.targetBias(power), mode, null, G().pass.coneAngle);
       this.passTo(g, p, target, mode, dx, dy, power);
+    },
+
+    // S (pass.quick): chuyền sệt tự động, lực lý tưởng. Mũi tên chỉ vào đồng đội -> chuyền chuẩn cho người đó;
+    // không bấm hướng / chỉ lệch khỏi đồng đội -> chuyền cho người gần nhất, cộng sai số hướng + lực
+    quickPass(g, p, dx, dy) {
+      if (g.ball.owner !== p) return;
+      const Q = G().pass.quick;
+      let target = Math.hypot(dx, dy) > 0.2 ? this.findPassTarget(g, p, dx, dy, null, 'ground', null, Q.aimCone) : null;
+      const aimed = !!target;
+      if (!target) {
+        let bd = Infinity;
+        for (const m of g.teams[p.team].players) {
+          if (m === p || m.state === 'stun') continue;
+          const d = U.dist(p, m);
+          if (d < bd) { bd = d; target = m; }
+        }
+      }
+      // không còn đồng đội nào nhận được (đều bị choáng) -> chuyền theo hướng như cũ
+      this.passTo(g, p, target, 'ground', dx, dy, null, aimed ? null : Q.sloppy);
+      // chuyền lỗi: người nhận không tự chạy đón bóng -> sai số giữ nguyên kể cả khi không có ai áp sát
+      if (!aimed && target) g.ball.sloppy = true;
     },
 
     // Người nhận chủ động đón bóng: chạy tới điểm đón sớm nhất trên quỹ đạo, đứng chờ thì quay mặt về bóng
@@ -197,10 +223,10 @@ window.SFC = window.SFC || {};
       return { x, y, t: maxT };
     },
 
-    passTo(g, p, target, mode, dx = 0, dy = 0, power = null) {
+    passTo(g, p, target, mode, dx = 0, dy = 0, power = null, err = null) {
       const b = g.ball;
       if (b.owner !== p) return;
-      const plan = this.passPlan(g, p, target, mode, power, dx, dy);
+      const plan = this.passPlan(g, p, target, mode, power, dx, dy, false, err);
       b.kick(p, plan.vx, plan.vy, plan.vz);
       // chuyền vào khoảng trống: đồng đội đón được bóng sớm nhất trở thành người nhận
       if (!target) {

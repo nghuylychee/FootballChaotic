@@ -106,6 +106,19 @@ SFC_CONFIG.game = {
   // Chuyền bóng: giữ S/W/A để nạp thanh lực, thả để chuyền.
   // Lực + hướng phím -> chọn người nhận; hướng bóng được tự căn vào người nhận.
   pass: {
+    // S — chuyền sệt tự động: nhấn là chuyền ngay, tự chọn người nhận + lực (không cần giữ nạp lực).
+    // Mũi tên chỉ vào một đồng đội (trong vùng aimCone) -> chuyền cho người đó, chuẩn (sai số spread thường).
+    // Không bấm hướng / mũi tên không chỉ vào ai -> chuyền cho đồng đội gần nhất nhưng kém chuẩn (sloppy):
+    // luôn lệch một khoảng rõ rệt, và người nhận KHÔNG tự chạy đón bóng -> phải tự đuổi theo, kể cả khi không có ai áp sát.
+    quick: {
+      enabled: true,          // false = S giữ nạp lực như W / A
+      aimCone: 30,            // (độ) nửa góc quanh mũi tên để tính là "đang nhắm" vào đồng đội
+      sloppy: {
+        miss: [0.05, 0.15],   // lệch ngang = tỉ lệ quãng chuyền (trung bình 10% ~ "chính xác 90%"; ~3°–8.5°), ngẫu nhiên trái/phải
+        pace: [0.05, 0.15],   // lực sai 5–15%, ngẫu nhiên mạnh hơn / yếu hơn
+      },                      // cả hai chia cho chỉ số pass
+    },
+
     chargeTime: 0.7,          // giây giữ phím để đầy thanh lực
     // Lực mặc định = lực lý tưởng theo khoảng cách tới người nhận (chạm nhẹ là bóng tới chân).
     // Giữ phím vượt mức mặc định -> bóng căng hơn.
@@ -138,6 +151,21 @@ SFC_CONFIG.game = {
     switchMargin: 0.35,       // chống nhảy mục tiêu liên tục khi đang nạp lực
     receiveRangeBonus: 5,     // người nhận đích danh khống chế bóng dễ hơn (px)
     receiveAssist: true,      // người nhận tự chủ động chạy tới điểm đón bóng (người chơi bấm hướng mới thì được giành quyền)
+
+    // Cắt đường chuyền: bóng chuyền (S/W/A) đi qua tầm với của đối phương -> đối phương có 1 lần thử cắt.
+    // tỉ lệ = base x hệ số tốc độ x hệ số lệch x chỉ số tackle (AI: x tackleMult theo độ khó), giới hạn 5–95%.
+    // Trượt -> bóng chạm người, chậm lại + lệch nhẹ rồi đi tiếp; người đó không chạm lại được trong retry giây.
+    intercept: {
+      base: 0.9,              // bóng chậm, đi thẳng vào người
+      slowSpeed: 150,         // tốc độ bóng <= mức này: không giảm tỉ lệ
+      fastSpeed: 450,         // tốc độ bóng >= mức này: tỉ lệ x speedMin
+      speedMin: 0.35,
+      edgeMin: 0.35,          // bóng sượt mép tầm với: tỉ lệ x edgeMin (đi thẳng vào người: x1)
+      minSpeed: 60,           // bóng chậm hơn mức này coi như bóng lỏng -> nhặt bình thường
+      failSlow: 0.8,          // trượt: bóng còn 80% tốc độ
+      failDeflect: 0.25,      // trượt: bóng lệch ngẫu nhiên tối đa (rad, ~14°)
+      retry: 0.4,             // trượt: giây người đó không chạm lại được bóng
+    },
   },
 
   kick: {

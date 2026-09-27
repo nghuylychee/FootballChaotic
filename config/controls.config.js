@@ -14,7 +14,7 @@ SFC_CONFIG.controls = {
     sprint:  ['KeyE'],
 
     // Tấn công            | Phòng ngự
-    pass:    ['KeyS'],    // Chuyền ngắn        | —
+    pass:    ['KeyS'],    // Chuyền sệt tự động | —
     through: ['KeyW'],    // Chọc khe           | Gọi đồng đội áp sát (giữ)
     lob:     ['KeyA'],    // Chuyền bổng        | HARD ATTACK (gồng rồi vung chân đá bay đối thủ)
     shoot:   ['KeyD'],    // Sút (giữ để nạp) · sân nhà + còn đối phương phía trước: phá bóng | LIGHT ATTACK (đấm)
@@ -36,7 +36,7 @@ SFC_CONFIG.controls = {
     attack: [
       ['← ↑ ↓ →', 'Di chuyển'],
       ['E (giữ)', 'Chạy nước rút'],
-      ['S (giữ)', 'Chuyền sệt'],
+      ['S', 'Chuyền sệt · mũi tên chỉ vào đồng đội = chuẩn'],
       ['W (giữ)', 'Chọc khe'],
       ['A (giữ)', 'Chuyền bổng'],
       ['D (giữ)', 'Sút · hướng phím = hướng sút'],

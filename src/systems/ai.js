@@ -213,7 +213,11 @@ window.SFC = window.SFC || {};
         y: U.clamp(b.y + b.vy * 0.3, f.y + 6, f.y + f.h - 6),
       };
       // người nhận đường chuyền: chủ động chạy tới điểm đón bóng sớm nhất
-      if (b.passTarget === p) { Act().receiveMove(g, p); return; }
+      if (b.passTarget === p) {
+        // chuyền lỗi: đi tới điểm lẽ ra nhận bóng, bóng chậm lại rồi mới đuổi theo
+        if (b.sloppy && b.speed > 70 && b.passPoint) { moveTo(p, b.passPoint.x, b.passPoint.y, false, 3); return; }
+        Act().receiveMove(g, p); return;
+      }
       // bóng đang bay về khung thành nhà (cú sút / phá bóng của đối phương) -> người gần khung nhất chặn trên đường bay
       const dir = tm.dir;
       const threat = b.lastKickTeam === 1 - p.team && b.vx * dir < -150;

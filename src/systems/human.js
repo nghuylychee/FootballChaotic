@@ -33,8 +33,10 @@ window.SFC = window.SFC || {};
       if (has) {
         if (!wasSprint && p.intent.sprint) g.cores.dispatch(p.team, 'onSprintStart', p);
 
-        // Chuyền: nhấn S/W/A bắt đầu nạp lực, giữ để tăng lực, thả để chuyền
+        // Chuyền: S (pass.quick) = chuyền ngay khi nhấn, tự chọn người nhận + lực.
+        // W/A: nhấn bắt đầu nạp lực, giữ để tăng lực, thả để chuyền
         if (!p.passMode && !p.charging) {
+          if (P.quick && P.quick.enabled && input.wasPressed('pass')) { Act.quickPass(g, p, mx, my); return; }
           for (const [key, mode] of PASS_KEYS) {
             if (input.wasPressed(key)) { p.cancelPass(); p.passMode = mode; p.passKey = key; break; }
           }
@@ -78,7 +80,9 @@ window.SFC = window.SFC || {};
       if (receiving) {
         if (g.receiveLock[team] && !mx && !my) g.receiveLock[team] = false;
         const manual = !g.receiveLock[team] && (mx || my);
-        if (P.receiveAssist && !manual && p.state === 'normal') {
+        // chuyền lỗi (S không nhắm): không tự chạy đón, mũi tên còn giữ từ lúc chuyền cũng không kéo người nhận đi
+        if (b.sloppy) { if (!manual) { p.intent.mx = 0; p.intent.my = 0; } }
+        else if (P.receiveAssist && !manual && p.state === 'normal') {
           const userSprint = p.intent.sprint;
           Act.receiveMove(g, p);
           p.intent.sprint = p.intent.sprint || userSprint;

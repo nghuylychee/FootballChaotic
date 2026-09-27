@@ -18,14 +18,23 @@ Không cần build, không cần thư viện, không cần file ảnh/âm thanh 
 |---|---|---|
 | ← ↑ ↓ → | Di chuyển | Di chuyển |
 | E (giữ) | Chạy nước rút | Chạy nước rút |
-| S (giữ/thả) | Chuyền sệt | — |
+| S | Chuyền sệt tự động (mũi tên chỉ vào đồng đội = chuẩn) | — |
 | W (giữ/thả) | Chọc khe (lực = độ sâu khoảng trống) | Gọi đồng đội áp sát (giữ) |
 | A (giữ/thả) | Chuyền bổng | **Hard attack**: gồng rồi vung chân đá bay đối thủ |
 | D (giữ/thả) | Sút theo hướng phím giữ lúc thả; giữ quá lâu thì bóng bay cao. Ở phần sân nhà mà còn đối phương (trừ người đang trông khung) phía trước: phá bóng | **Light attack**: đấm |
 | Z | Skill move (né tắc) | Lướt |
 | Q | — | Đổi cầu thủ |
 
-**Chuyền bóng (assisted passing):** giữ S/W/A để nạp lực, thả để chuyền. Bóng đi theo hướng mũi tên (không bấm hướng = hướng mặt). Nếu trong vùng ±35° quanh hướng đó có đồng đội thì người đó được khóa làm người nhận: hướng bóng tự căn vào họ, lực mặc định = lực lý tưởng theo khoảng cách (vạch trắng trên thanh lực), giữ vượt vạch thì bóng căng hơn. Nếu hướng đó không có ai, bóng đi thẳng theo mũi tên, lực = quãng đường. Người nhận chủ động chạy tới điểm đón bóng sớm nhất; mũi tên đang giữ lúc chuyền không ảnh hưởng người nhận cho tới khi thả ra (bấm hướng mới thì tự điều khiển). Chỉnh trong `SFC_CONFIG.game.pass`.
+**Chuyền sệt (S):** nhấn là chuyền ngay, không nạp lực — tự chọn người nhận và lực lý tưởng. Mũi tên chỉ vào một đồng đội (±`quick.aimCone`°) thì
+chuyền chuẩn cho người đó; không bấm hướng hoặc mũi tên không chỉ vào ai thì bóng đi về phía đồng đội gần nhất nhưng **luôn** lệch ngang 5–15% quãng chuyền
+(trung bình ~10%) và sai lực 5–15% (`quick.sloppy`, chia cho chỉ số pass), đồng thời người nhận không tự chạy đón — sai số còn nguyên kể cả khi không ai áp sát.
+Chỉnh trong `SFC_CONFIG.game.pass.quick` (`enabled: false` = S giữ nạp lực như cũ).
+
+**Cắt đường chuyền:** bóng chuyền (S/W/A) đi qua tầm với của đối phương thì người đó có **1 lần** thử cắt — tỉ lệ = `base` x tốc độ bóng (chậm dễ cắt)
+x độ lệch (đi thẳng vào người dễ cắt, sượt mép khó) x chỉ số tackle (AI: x `tackleMult` theo độ khó). Cắt hụt → bóng chạm người, chậm lại, lệch nhẹ rồi đi tiếp.
+Chỉnh trong `SFC_CONFIG.game.pass.intercept`. Sút / phá bóng / bóng lỏng giữ luật cũ.
+
+**Chuyền bóng (assisted passing, W / A):** giữ W/A để nạp lực, thả để chuyền. Bóng đi theo hướng mũi tên (không bấm hướng = hướng mặt). Nếu trong vùng ±35° quanh hướng đó có đồng đội thì người đó được khóa làm người nhận: hướng bóng tự căn vào họ, lực mặc định = lực lý tưởng theo khoảng cách (vạch trắng trên thanh lực), giữ vượt vạch thì bóng căng hơn. Nếu hướng đó không có ai, bóng đi thẳng theo mũi tên, lực = quãng đường. Người nhận chủ động chạy tới điểm đón bóng sớm nhất; mũi tên đang giữ lúc chuyền không ảnh hưởng người nhận cho tới khi thả ra (bấm hướng mới thì tự điều khiển). Chỉnh trong `SFC_CONFIG.game.pass`.
 
 **Sút & chọc khe:** thanh lực sút bắt đầu từ mức nhỏ (gần ~10%, xa ~25% theo khoảng cách tới khung thành), giữ D để nạp dần; tốc độ tối thiểu (`shotMinSpeed`) đủ cao để chạm nhẹ vẫn là cú sút có lực. Core Fire/Thunder vẫn tính theo phần giữ thêm. Hướng sút = hướng phím giữ lúc thả, giới hạn trong khung thành (không giữ phím = sút vào giữa khung); hướng phím chỉ ra ngoài cột dọc thì bóng vào góc gần nhất nhưng bị cộng sai số "tư thế gượng" tăng theo góc lệch (`kick.awkward*`). Chọc khe (W) mặc định đi căng như chuyền sệt (`throughArriveSpeed`), người nhận chủ động băng lên đón; chọc khe vào khoảng trống cũng còn lực khi qua điểm rơi (`freeThroughArrive`). Chỉnh trong `SFC_CONFIG.game.kick` (`shotBase*`) và `SFC_CONFIG.game.pass`; thủ môn cân lại theo `player.gkSpeedFree`.
 

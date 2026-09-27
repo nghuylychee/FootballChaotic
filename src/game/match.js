@@ -459,12 +459,35 @@ window.SFC = window.SFC || {};
         }
         this.effects.text(p.x, p.y - 26, 'SAVE!', '#9dff3d');
         this.sfx('save');
+      } else if (opp && b.kind === 'pass' && spd > C.pass.intercept.minSpeed) {
+        if (!this.intercepts(p)) return;
       } else if (opp && spd > C.ball.controlSpeed) {
         if (Math.random() > 0.35 * p.stats.dribble) { this.deflect(p, 0.4); return; }
       }
       this.gainPossession(p);
       // bắt bóng trong vòng cấm nhà (không phải đường chuyền của đồng đội) -> ôm bóng như thủ môn
       if (isGK && b.lastKickTeam !== p.team) p.keeperHold = C.player.gkHoldProtect;
+    }
+
+    // Cắt đường chuyền (pass.intercept): 1 lần thử, tỉ lệ theo tốc độ bóng + độ lệch khỏi người.
+    // Trượt -> bóng chạm người, chậm lại, lệch nhẹ rồi đi tiếp tới người nhận
+    intercepts(p) {
+      const b = this.ball, C = this.cfg, I = C.pass.intercept;
+      const dir = U.norm(b.vx, b.vy);
+      const reach = p.radius + b.r + (this.inKeeperZone(p) ? C.player.gkReach : C.ball.pickupRange);
+      // khoảng cách vuông góc từ người tới đường bóng: 0 = đi thẳng vào người, 1 = sượt mép tầm với
+      const edge = U.clamp(Math.abs((p.x - b.x) * dir.y - (p.y - b.y) * dir.x) / reach, 0, 1);
+      const fast = U.clamp((b.speed - I.slowSpeed) / (I.fastSpeed - I.slowSpeed), 0, 1);
+      let chance = I.base * U.lerp(1, I.speedMin, fast) * U.lerp(1, I.edgeMin, edge) * p.stats.tackle;
+      if (!this.isHuman(p.team) || !p.isControlled) chance *= this.aiProfile(p.team).tackleMult;
+      if (Math.random() < U.clamp(chance, 0.05, 0.95)) return true;
+      b.noPickup.set(p.id, I.retry);
+      b.vx *= I.failSlow; b.vy *= I.failSlow;
+      b.rotate(U.rand(-I.failDeflect, I.failDeflect));
+      b.lastTouch = p;
+      this.effects.burst(b.x, b.y, b.z, '#ffffff', 4, 50);
+      this.sfx('touch');
+      return false;
     }
 
     deflect(p, keep) {
@@ -482,6 +505,7 @@ window.SFC = window.SFC || {};
       b.kind = null;
       b.passTarget = null;
       b.passPoint = null;
+      b.sloppy = false;
       b.clearFx();
       this.effects.burst(b.x, b.y, b.z, '#ffffff', 5, 60);
     }
