@@ -66,6 +66,8 @@ tự rê bóng vào vòng cấm thì không. AI không áp sát sẽ lùi về t
 ## Luồng trận
 Kick Off → chơi → bàn thắng → **Core Upgrade** lúc bóng chết, trước khi giao bóng lại (tối đa `maxUpgrades` lần, cả hai đội cùng chọn) →
 **Final Push** (30s cuối, mỗi bàn được tính x2) → hết giờ mà hòa thì **Golden Goal**.
+Mỗi lần giao bóng (đầu trận và sau bàn thắng): đội hình lệch ngẫu nhiên quanh vị trí gốc và có thể lật trên/dưới
+(vẫn ở phần sân nhà, ngoài vòng tròn giữa sân) để không có thế trận cố định. Chỉnh ở `SFC_CONFIG.game.match.kickoffVary`.
 
 ## Cấu trúc
 ```

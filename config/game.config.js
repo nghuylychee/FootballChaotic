@@ -38,6 +38,13 @@ SFC_CONFIG.game = {
     goldenGoal: true,            // hòa khi hết giờ -> bàn thắng vàng
     goldenGoalMaxTime: 60,       // quá thời gian này mà chưa có bàn -> hòa
     kickoffDelay: 1.3,
+    // Mỗi lần giao bóng (đầu trận + sau bàn thắng): đội hình lệch ngẫu nhiên quanh vị trí gốc
+    // để không lặp lại một thế trận cố định. Để null = luôn đứng đúng đội hình gốc.
+    kickoffVary: {
+      x: 0.07,         // lệch tối đa theo chiều dọc sân (tỉ lệ chiều dài sân, ~37px); luôn ở phần sân nhà
+      y: 0.16,         // lệch tối đa theo chiều ngang sân (tỉ lệ chiều rộng sân, ~39px)
+      mirrorY: 0.5,    // xác suất lật đội hình trên <-> dưới (tính riêng từng đội)
+    },
     goalCelebration: 2.4,
     autoSwitchOnDefense: true,   // tự đổi người khi mất bóng và đang ở xa
     autoSwitchDistance: 150,

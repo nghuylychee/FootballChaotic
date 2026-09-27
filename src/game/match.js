@@ -97,6 +97,27 @@ window.SFC = window.SFC || {};
       return { x: f.x + fx * f.w, y: f.y + fy * f.h };
     }
 
+    // Vị trí xếp hàng lúc giao bóng. vary = true: lệch ngẫu nhiên quanh đội hình gốc (mirror = lật trên <-> dưới),
+    // vẫn ở phần sân nhà và ngoài vòng tròn giữa sân
+    kickoffPos(p, vary, mirror) {
+      if (!vary) return this.formationPos(p);
+      const f = this.field, V = this.cfg.match.kickoffVary, fm = this.cfg.formation[p.role];
+      const dir = this.teams[p.team].dir;
+      // tính trong khung "tấn công sang phải" như formationPos
+      const nx = U.clamp(fm.x + U.rand(-1, 1) * V.x, 0.08, 0.5 - 12 / f.w);
+      const ny = U.clamp((mirror ? 1 - fm.y : fm.y) + U.rand(-1, 1) * V.y, 0.12, 0.88);
+      let x = f.x + (dir > 0 ? nx : 1 - nx) * f.w;
+      let y = f.y + (dir > 0 ? ny : 1 - ny) * f.h;
+      // vòng tròn giữa sân chỉ dành cho người giao bóng -> đẩy ra mép vòng (vẫn cùng phía sân)
+      const min = f.centerCircle + p.radius + 4;
+      const d = Math.hypot(x - f.cx, y - f.cy);
+      if (d < min) {
+        const n = d > 0.01 ? U.norm(x - f.cx, y - f.cy) : { x: -dir, y: 0 };
+        x = f.cx + n.x * min; y = f.cy + n.y * min;
+      }
+      return { x, y };
+    }
+
     // chế độ 1 cầu thủ: đội này chỉ điều khiển đúng 1 người (không đổi người, không tự chuyển)
     lockedPlayer(team) { return this.solo[team]; }
 
@@ -166,15 +187,18 @@ window.SFC = window.SFC || {};
     }
 
     /* ---------- luồng trận ---------- */
+    // mỗi lần giao bóng (đầu trận + sau bàn thắng) đội hình lệch ngẫu nhiên (match.kickoffVary)
     kickoff(teamIdx) {
-      const f = this.field;
+      const f = this.field, V = this.cfg.match.kickoffVary;
       this.state = 'kickoff';
       this.stateT = this.cfg.match.kickoffDelay;
       this.effects.clearHazards();
       this.passPreview = null;
       this.ball.reset(f.cx, f.cy);
+      const vary = !!V;
+      const mirror = [0, 1].map(() => vary && Math.random() < (V.mirrorY || 0));
       for (const p of this.players) {
-        const pos = this.formationPos(p);
+        const pos = this.kickoffPos(p, vary, mirror[p.team]);
         Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null });
         p.facing = this.teams[p.team].dir > 0 ? 0 : Math.PI;
         p.intent.mx = p.intent.my = 0;
