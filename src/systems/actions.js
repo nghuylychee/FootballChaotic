@@ -499,7 +499,10 @@ window.SFC = window.SFC || {};
       p.tackleImmune = S.tackleImmune;
       p.charging = false;
       p.facing = Math.atan2(d.y, d.x);
+      // bóng mờ đầu tiên ở điểm xuất phát, các bóng còn lại rải đều dọc đường lướt (Player.update, state dash)
       g.effects.afterimage(p);
+      p.trailLeft = Math.max(0, (S.afterimages || 1) - 1);
+      p.trailT = S.dashTime / (S.afterimages || 1);
       g.sfx('whoosh');
       g.cores.dispatch(p.team, 'onSkillMove', p, d);
     },
@@ -510,6 +513,7 @@ window.SFC = window.SFC || {};
       if (p.state !== 'normal') return;
       // thời gian đổ người tỉ lệ với khoảng cách cần bay (không bay quá đà)
       p.state = 'dash';
+      p.trailLeft = 0; // đổ người: chỉ 1 bóng mờ
       p.stateT = U.clamp(Math.abs(dy) / P.gkDiveSpeed, 0.05, P.gkDiveTime);
       p.dashX = 0; p.dashY = Math.sign(dy) * P.gkDiveSpeed;
       g.effects.afterimage(p);

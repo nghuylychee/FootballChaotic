@@ -130,7 +130,13 @@ window.SFC = window.SFC || {};
         case 'dash':
           this.stateT -= dt;
           this.vx = this.dashX; this.vy = this.dashY;
-          if (this.stateT <= 0) { this.state = 'normal'; this.vx *= 0.5; this.vy *= 0.5; }
+          // lướt (Z): để lại bóng mờ dọc đường (skill.afterimages)
+          if (this.trailLeft > 0 && (this.trailT -= dt) <= 0) {
+            this.trailLeft--;
+            this.trailT += C.skill.dashTime / C.skill.afterimages;
+            g.effects.afterimage(this);
+          }
+          if (this.stateT <= 0) { this.state = 'normal'; this.trailLeft = 0; this.vx *= 0.5; this.vy *= 0.5; }
           break;
         case 'recover':
           this.stateT -= dt;

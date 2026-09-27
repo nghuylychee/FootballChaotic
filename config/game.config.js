@@ -238,6 +238,7 @@ SFC_CONFIG.game = {
   skill: {
     dashSpeed: 230,
     dashTime: 0.16,
+    afterimages: 4,          // số bóng mờ để lại, rải đều dọc đường lướt (Z)
     cooldown: 1.0,
     tackleImmune: 0.35,
   },

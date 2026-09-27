@@ -113,7 +113,8 @@ window.SFC = window.SFC || {};
           drawBall(ctx, { x: d.x, y: d.y, z: 0, roll: t * 20, fx: {} }, a);
         } else if (e.k === 'a') {
           const a = e.o;
-          drawPlayer(ctx, a, g, (a.t / a.max) * 0.5, '#9d7bff');
+          // bóng mờ khi lướt: mặc áo đội của chính cầu thủ đó, mờ dần
+          drawPlayer(ctx, a, g, (a.t / a.max) * 0.5, null, true);
         }
       }
 

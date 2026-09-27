@@ -559,12 +559,13 @@ window.SFC = window.SFC || {};
 
   /* ---------- cầu thủ ---------- */
   // p cần: x, y, vx, vy, facing, anim, team, role, look, state
-  function drawPlayer(ctx, p, g, alpha = 1, tint = null) {
+  // tint = tô 1 màu thay áo đấu · ghost = bóng mờ (không găng / tư thế ra đòn / hào quang), mặc định bật khi có tint
+  function drawPlayer(ctx, p, g, alpha = 1, tint = null, ghost = !!tint) {
     const team = g.teams[p.team];
     const kit = team.cfg.kit;
     const shirt = tint || kit.shirt;
     const shirtDark = tint || kit.shirtDark;
-    const gloves = !tint && p.keeper; // đứng trong vòng cấm nhà -> đeo găng thủ môn
+    const gloves = !ghost && p.keeper; // đứng trong vòng cấm nhà -> đeo găng thủ môn
     const x = Math.round(p.x), y0 = Math.round(p.y);
     const moving = Math.hypot(p.vx || 0, p.vy || 0) > 12;
     const step = moving ? Math.floor(p.anim * 12) % 2 : 0;
@@ -574,12 +575,12 @@ window.SFC = window.SFC || {};
     const fx = Math.cos(p.facing), fy = Math.sin(p.facing);
     // tay / chân ra đòn nằm ở phía hướng mặt (nhìn sang phải -> tay/chân phải)
     const side = fx >= 0 ? 1 : -1;
-    const atk = !tint && p.atkType ? attackPose(p) : null;
+    const atk = !ghost && p.atkType ? attackPose(p) : null;
 
     ctx.globalAlpha = alpha;
     if (alpha >= 1) ellipse(ctx, x, y0 + 1, 6, 2.5, 'rgba(0,0,0,0.38)');
     // hiệu ứng Hào quang vàng: vầng sáng dưới chân
-    if (!tint && p.look.fx === 'aura') {
+    if (!ghost && p.look.fx === 'aura') {
       ctx.globalCompositeOperation = 'lighter';
       ellipse(ctx, x, y0, 9, 4, `rgba(255,200,60,${0.25 + 0.12 * Math.sin((p.anim || 0) * 5)})`);
       ellipse(ctx, x, y0, 5, 2, 'rgba(255,240,150,0.3)');
