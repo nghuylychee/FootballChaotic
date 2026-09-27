@@ -38,6 +38,8 @@ Chỉnh trong `SFC_CONFIG.game.pass.intercept`. Sút / phá bóng / bóng lỏng
 
 **Sút & chọc khe:** thanh lực sút bắt đầu từ mức nhỏ (gần ~10%, xa ~25% theo khoảng cách tới khung thành), giữ D để nạp dần; tốc độ tối thiểu (`shotMinSpeed`) đủ cao để chạm nhẹ vẫn là cú sút có lực. Core Fire/Thunder vẫn tính theo phần giữ thêm. Hướng sút = hướng phím giữ lúc thả, giới hạn trong khung thành (không giữ phím = sút vào giữa khung); hướng phím chỉ ra ngoài cột dọc thì bóng vào góc gần nhất nhưng bị cộng sai số "tư thế gượng" tăng theo góc lệch (`kick.awkward*`). Chọc khe (W) mặc định đi căng như chuyền sệt (`throughArriveSpeed`), người nhận chủ động băng lên đón; chọc khe vào khoảng trống cũng còn lực khi qua điểm rơi (`freeThroughArrive`). Chỉnh trong `SFC_CONFIG.game.kick` (`shotBase*`) và `SFC_CONFIG.game.pass`; thủ môn cân lại theo `player.gkSpeedFree`.
 
+Bóng chạm cột dọc / xà ngang (trong 1 bán kính bóng) → chữ **WOODWORK** + tiếng "keng" (`Ball.checkWoodwork`, chỉ hiển thị, đường bóng không đổi).
+
 Khi đồng đội AI giữ bóng: S / W / A để đòi bóng. `1/2/3` chọn Core, `Esc/P` tạm dừng (online: mở menu), `M` tắt âm.
 
 ## Menu

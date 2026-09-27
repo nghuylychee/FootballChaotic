@@ -68,6 +68,13 @@ window.SFC = window.SFC || {};
     pass()    { noise({ dur: 0.06, vol: 0.25, freq: 900 }); tone({ freq: 330, to: 250, dur: 0.06, type: 'triangle', vol: 0.15 }); },
     kick(p)   { noise({ dur: 0.12, vol: 0.35 + p * 0.2, freq: 600 }); tone({ freq: 160, to: 60, dur: 0.15, type: 'square', vol: 0.2 }); },
     wall()    { tone({ freq: 120, to: 80, dur: 0.06, type: 'square', vol: 0.12 }); },
+    // bóng chạm cột dọc / xà ngang: tiếng kim loại "keng" (các tần số lệch nhau ngân ngắn + tiếng gõ)
+    clang()   {
+      noise({ dur: 0.05, vol: 0.22, freq: 3200, q: 2 });
+      tone({ freq: 1320, to: 1260, dur: 0.45, type: 'triangle', vol: 0.2 });
+      tone({ freq: 1985, to: 1940, dur: 0.32, type: 'triangle', vol: 0.12 });
+      tone({ freq: 2790, dur: 0.22, type: 'square', vol: 0.04 });
+    },
     hit()     { noise({ dur: 0.15, vol: 0.35, freq: 300 }); tone({ freq: 90, to: 40, dur: 0.18, type: 'sawtooth', vol: 0.18 }); },
     whoosh()  { noise({ dur: 0.18, vol: 0.18, freq: 2200, q: 0.6 }); },
     tackle()  { noise({ dur: 0.08, vol: 0.3, freq: 500 }); },

@@ -18,7 +18,7 @@ window.SFC = window.SFC || {};
         x, y, z: 0, vx: 0, vy: 0, vz: 0,
         owner: null, lastTouch: null, lastKickTeam: -1,
         passTarget: null, passPoint: null, sloppy: false, kind: null, roll: 0, trailT: 0,
-        netSide: 0, shieldChecked: false,
+        netSide: 0, shieldChecked: false, woodT: 0,
       });
       this.noPickup.clear();
       this.trail.length = 0;
@@ -74,6 +74,7 @@ window.SFC = window.SFC || {};
       for (const [k, v] of this.noPickup) {
         if (v - dt <= 0) this.noPickup.delete(k); else this.noPickup.set(k, v - dt);
       }
+      this.woodT = Math.max(0, this.woodT - dt);
 
       if (this.owner) { this.follow(dt); this.trail.length = 0; return; }
 
@@ -165,6 +166,7 @@ window.SFC = window.SFC || {};
           continue;
         }
         if (!touching) continue;
+        this.checkWoodwork(side);
 
         if (!inMouth) { this.bounceSide(lineX, side); continue; }
 
@@ -175,6 +177,18 @@ window.SFC = window.SFC || {};
         }
         if (centerIn) { this.netSide = side; this.constrainNet(side, lineX); }
       }
+    }
+
+    // bóng chạm cột dọc / xà ngang khi tới vạch vôi -> chữ WOODWORK (chỉ hiển thị, đường bóng giữ nguyên)
+    checkWoodwork(side) {
+      const f = this.g.field, r = this.r;
+      if (this.woodT > 0 || this.vx * side <= 0 || this.speed < 60) return;
+      const post = Math.min(Math.abs(this.y - f.gTop), Math.abs(this.y - f.gBot)) <= r + 1 && this.z < f.goalHeight + r;
+      const bar = this.y > f.gTop && this.y < f.gBot && Math.abs(this.z - f.goalHeight) <= r;
+      if (!post && !bar) return;
+      this.woodT = 0.6;
+      this.g.effects.text(this.x - side * 28, this.y - this.z - 12, 'WOODWORK', '#ffe14f');
+      this.g.sfx('clang');
     }
 
     constrainNet(side, lineX) {
