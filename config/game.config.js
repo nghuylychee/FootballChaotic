@@ -171,6 +171,7 @@ SFC_CONFIG.game = {
       failSlow: 0.8,          // trượt: bóng còn 80% tốc độ
       failDeflect: 0.25,      // trượt: bóng lệch ngẫu nhiên tối đa (rad, ~14°)
       retry: 0.4,             // trượt: giây người đó không chạm lại được bóng
+      aiDelay: [0.45, 1.3],   // (s) AI (đội máy + đồng đội AI) cắt được đường chuyền: vẫn rê bóng nhưng chưa chuyền / sút trong khoảng này
     },
   },
 

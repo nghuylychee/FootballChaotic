@@ -205,6 +205,7 @@ window.SFC = window.SFC || {};
       p.ai.t = 0;
       p.ai.runT = 0;
       p.ai.openSeen = false;
+      p.ai.interceptT = 0;
       if (this.lastPossessionTeam !== -1 && this.lastPossessionTeam !== p.team) {
         this.cores.dispatch(p.team, 'onPossessionGained', p);
       }
@@ -527,6 +528,7 @@ window.SFC = window.SFC || {};
       const opp = b.lastKickTeam >= 0 && b.lastKickTeam !== p.team;
       const isGK = this.inKeeperZone(p);
       const dir = U.norm(b.vx, b.vy);
+      const cut = opp && b.kind === 'pass'; // đoạt được đường chuyền của đối phương
 
       // bóng xuyên người: Lôi Cước (sét), Song Phi (gió)
       const pierceFx = b.fx.thunder || b.fx.scissor;
@@ -592,6 +594,12 @@ window.SFC = window.SFC || {};
       this.gainPossession(p);
       // bắt bóng trong vòng cấm nhà (không phải đường chuyền của đồng đội) -> ôm bóng như thủ môn
       if (isGK && b.lastKickTeam !== p.team) p.keeperHold = C.player.gkHoldProtect;
+      if (cut) {
+        // AI vừa cắt được đường chuyền: khựng một nhịp mới chuyền / sút (pass.intercept.aiDelay)
+        p.ai.interceptT = U.rand(C.pass.intercept.aiDelay[0], C.pass.intercept.aiDelay[1]);
+        // đoạt bóng luôn là đổi quyền kiểm soát -> Core Counter Attack hiện COUNTER! cùng chỗ: ưu tiên chữ đó
+        if (!this.cores.has(p.team, 'counter_attack')) this.effects.text(p.x, p.y - 26, 'INTERCEPT', '#9aa3b5');
+      }
     }
 
     // Cắt đường chuyền (pass.intercept): 1 lần thử, tỉ lệ theo tốc độ bóng + độ lệch khỏi người.

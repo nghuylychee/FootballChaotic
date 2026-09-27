@@ -68,7 +68,7 @@ window.SFC = window.SFC || {};
       this.confused = null;  // {decoy, t}
       this.anim = Math.random() * 10;
       this.intent = { mx: 0, my: 0, sprint: false };
-      this.ai = { t: 0, runTo: null, runT: 0, requestedPass: null, holdT: 0, chargeTarget: 0.6, aimY: 0, dir: { x: 0, y: 0 }, sprint: false };
+      this.ai = { t: 0, runTo: null, runT: 0, requestedPass: null, holdT: 0, interceptT: 0, chargeTarget: 0.6, aimY: 0, dir: { x: 0, y: 0 }, sprint: false };
       this.kickHits = new Set();
     }
 

@@ -70,8 +70,11 @@ window.SFC = window.SFC || {};
       // đồng đội AI ĐÁ CAO của người chơi: ưu tiên rê bóng + dứt điểm, ít chuyền (ai.mate)
       const M = mateStyle(g, p);
       p.ai.holdT += dt;
+      // vừa cắt được đường chuyền: khựng một nhịp — vẫn rê bóng / né, chưa chuyền / sút (kể cả khi người chơi đòi bóng)
+      p.ai.interceptT = Math.max(0, p.ai.interceptT - dt);
+      const settling = p.ai.interceptT > 0;
 
-      if (p.ai.requestedPass) {
+      if (p.ai.requestedPass && !settling) {
         const r = p.ai.requestedPass; p.ai.requestedPass = null;
         Act().passTo(g, p, r.target, r.mode);
         return;
@@ -87,7 +90,7 @@ window.SFC = window.SFC || {};
       // bắt được bóng trong vòng cấm nhà -> đứng ôm bóng rồi phát bóng như thủ môn
       if (g.isProtected(p)) {
         stop(p);
-        if (p.ai.holdT > cfg.gkHoldTime) {
+        if (p.ai.holdT > cfg.gkHoldTime && !settling) {
           const t = Act().findPassTarget(g, p, g.teams[p.team].dir, 0);
           Act().passTo(g, p, t, t && !Act().laneClear(g, p, t.x, t.y, 12) ? 'lob' : 'ground');
         }
@@ -103,7 +106,7 @@ window.SFC = window.SFC || {};
         const range = M ? f.w / 2 : cfg.shootRange * (g.cores.has(p.team, 'sniper_foot') ? g.cores.params('sniper_foot').aiRangeMult : 1) * (1 + g.cores.tagCount(p.team, 'striker') * 0.12);
         const clear = Act().laneClear(g, p, goal.x, goal.y, 12);
         // đồng đội AI: cơ hội mười mươi (khung trống) -> quyết định 1 lần có sút nhanh lực nhẹ hay không
-        if (M) {
+        if (M && !settling) {
           const open = this.mateOpenGoal(g, p, dG, clear);
           if (!open) p.ai.openSeen = false;
           else if (!p.ai.openSeen) {
@@ -117,7 +120,7 @@ window.SFC = window.SFC || {};
             }
           }
         }
-        const shoot = M ? this.mateShoots(g, p, dG, clear) : dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25);
+        const shoot = settling ? false : M ? this.mateShoots(g, p, dG, clear) : dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25);
 
         if (shoot) {
           p.charging = true; p.charge = 0;
@@ -130,7 +133,7 @@ window.SFC = window.SFC || {};
           return;
         }
 
-        if (near.d < cfg.passPressure || p.ai.holdT > (M ? M.holdTime : 2.8)) {
+        if (!settling && (near.d < cfg.passPressure || p.ai.holdT > (M ? M.holdTime : 2.8))) {
           const t = Act().findPassTarget(g, p, goal.x - p.x, goal.y - p.y);
           if (t && Math.random() < (M ? M.passChance : 0.75)) {
             const ahead = (t.x - p.x) * g.teams[p.team].dir > 20;

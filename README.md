@@ -32,6 +32,7 @@ Chỉnh trong `SFC_CONFIG.game.pass.quick` (`enabled: false` = S giữ nạp l�
 
 **Cắt đường chuyền:** bóng chuyền (S/W/A) đi qua tầm với của đối phương thì người đó có **1 lần** thử cắt — tỉ lệ = `base` x tốc độ bóng (chậm dễ cắt)
 x độ lệch (đi thẳng vào người dễ cắt, sượt mép khó) x chỉ số tackle (AI: x `tackleMult` theo độ khó). Cắt hụt → bóng chạm người, chậm lại, lệch nhẹ rồi đi tiếp.
+Cắt được → hiện chữ INTERCEPT (đội có Core Counter Attack: hiện COUNTER! thay vào); AI cắt được thì khựng `aiDelay` giây (vẫn rê bóng) mới chuyền / sút.
 Chỉnh trong `SFC_CONFIG.game.pass.intercept`. Sút / phá bóng / bóng lỏng giữ luật cũ.
 
 **Chuyền bóng (assisted passing, W / A):** giữ W/A để nạp lực, thả để chuyền. Bóng đi theo hướng mũi tên (không bấm hướng = hướng mặt). Nếu trong vùng ±35° quanh hướng đó có đồng đội thì người đó được khóa làm người nhận: hướng bóng tự căn vào họ, lực mặc định = lực lý tưởng theo khoảng cách (vạch trắng trên thanh lực), giữ vượt vạch thì bóng căng hơn. Nếu hướng đó không có ai, bóng đi thẳng theo mũi tên, lực = quãng đường. Người nhận chủ động chạy tới điểm đón bóng sớm nhất; mũi tên đang giữ lúc chuyền không ảnh hưởng người nhận cho tới khi thả ra (bấm hướng mới thì tự điều khiển). Chỉnh trong `SFC_CONFIG.game.pass`.
