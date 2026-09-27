@@ -34,7 +34,7 @@ window.SFC = window.SFC || {};
       this.stateT = 0;
       this.cd = { light: 0, hard: 0, skill: 0 };
       this.hardLanded = false;
-      this.atkType = null;    // anim đòn đang ra: light | hard
+      this.atkType = null;    // anim đòn đang ra: light | hard | shoot (tư thế vung chân sút, kick.poseTime)
       this.atkT = 0;          // thời gian từ lúc bắt đầu ra đòn (s)
       this.airZ = 0;          // bị hất tung: độ cao + vận tốc lên
       this.airVz = 0;
@@ -147,7 +147,9 @@ window.SFC = window.SFC || {};
           this.moveNormal(dt);
       }
       // hết đòn (hoặc bị ngắt) -> dừng anim ra đòn
-      if (this.atkType && !ATTACK_STATES[this.state]) this.atkType = null;
+      // tư thế sút: giữ kick.poseTime giây khi còn đứng bình thường
+      const keep = this.atkType === 'shoot' ? this.state === 'normal' && this.atkT < C.kick.poseTime : ATTACK_STATES[this.state];
+      if (this.atkType && !keep) this.atkType = null;
 
       this.x += (this.vx + this.kbx) * dt;
       this.y += (this.vy + this.kby) * dt;

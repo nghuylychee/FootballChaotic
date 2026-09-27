@@ -58,6 +58,8 @@ window.SFC = window.SFC || {};
       const back = clamp01((t - W - H.kickTime) / 0.15);
       return back < 1 ? { leg: -0.45 * (1 - back), lift: 3 * (1 - back), sweep: null } : {};
     }
+    // sút / phá bóng: chân sút đưa ra trước (nhấc nhẹ), chân trụ lùi về sau — vẽ trong drawPlayer
+    if (p.atkType === 'shoot') return { shoot: true };
     return {};
   }
 
@@ -119,6 +121,26 @@ window.SFC = window.SFC || {};
     px(ctx, footX - 1, footY - 1, 4, 2, main);
     px(ctx, footX - 1, footY + 1, 4, 1, sole);
     if (sh.glow) { ctx.globalCompositeOperation = 'lighter'; px(ctx, footX - 2, footY - 2, 6, 5, sh.glow); ctx.globalCompositeOperation = 'source-over'; }
+  }
+
+  // Chân vẽ chéo từ hông (tư thế sút): deg = góc so với hướng mặt (0 = ra trước, âm = chúc xuống), side = 1 nhìn phải / -1 nhìn trái.
+  // Từ hông xuống: quần -> da -> tất, giày ở cuối
+  function drawDiagLeg(ctx, hx, hy, deg, len, side, look, kit, anim, which) {
+    const a = (deg * Math.PI) / 180;
+    const ex = Math.round(hx + Math.cos(a) * len * side), ey = Math.round(hy - Math.sin(a) * len);
+    const n = Math.max(1, Math.max(Math.abs(ex - hx), Math.abs(ey - hy)));
+    const pts = [];
+    for (let i = 0; i <= n; i++) pts.push([Math.round(hx + ((ex - hx) * i) / n), Math.round(hy + ((ey - hy) * i) / n)]);
+    const { s, main, sole } = shoeColors(look, anim, which);
+    const sock = s.sock === 'skin' ? look.skin : Array.isArray(s.sock) ? s.sock[0] : s.sock || '#e8e8e8';
+    // giày 3x2 (thân + đế), mũi giày về phía hướng mặt
+    const sx = side > 0 ? ex : ex - 1;
+    for (const [cx, cy] of pts) px(ctx, cx - 1, cy - 1, 4, 4, OUT);
+    px(ctx, sx - 1, ey - 1, 5, 4, OUT);
+    pts.forEach(([cx, cy], i) => { const t = i / n; px(ctx, cx, cy, 2, 2, t < 0.3 ? kit.shorts : t < 0.8 ? look.skin : sock); });
+    px(ctx, sx, ey, 3, 1, main);
+    px(ctx, sx, ey + 1, 3, 1, sole);
+    if (s.glow) { ctx.globalCompositeOperation = 'lighter'; px(ctx, sx - 1, ey - 1, 5, 4, s.glow); ctx.globalCompositeOperation = 'source-over'; }
   }
 
   /* ---------- giày (slot shoes) ---------- */
@@ -590,9 +612,23 @@ window.SFC = window.SFC || {};
     // chân (đang đá: chỉ vẽ chân trụ, chân đá vẽ riêng)
     const l = step ? -1 : 0, r = step ? 0 : -1;
     const kickLeg = atk && atk.leg != null;
-    if (!(kickLeg && side < 0)) drawLeg(ctx, x - 4, y + l, p.look, p.anim, 0);
-    if (!(kickLeg && side > 0)) drawLeg(ctx, x, y + r, p.look, p.anim, 1);
-    if (kickLeg) drawKick(ctx, p, x, y, fx, fy, side, atk);
+    if (atk && atk.shoot && Math.abs(fx) >= 0.5) {
+      // tư thế sút (nhìn ngang): 2 chân chéo từ hông — chân sút -15° (ra trước, hơi chúc xuống), chân trụ -120° (chéo xuống ra sau)
+      const kickH = side > 0 ? x + 1 : x - 3, supH = side > 0 ? x - 3 : x + 1;
+      drawDiagLeg(ctx, supH, y - 5, -120, 6, side, p.look, kit, p.anim, side > 0 ? 0 : 1);
+      drawDiagLeg(ctx, kickH, y - 5, -15, 7, side, p.look, kit, p.anim, side > 0 ? 1 : 0);
+    } else if (atk && atk.shoot) {
+      // tư thế sút (nhìn lên / xuống): chân trụ lùi 1px về sau đứng vững, chân sút (phía hướng mặt) đưa ra trước ~3px và nhấc khỏi đất
+      // (quay lưng lên trên: đưa ra ít hơn + nhấc ít hơn để chân không bị thân che mất)
+      const kickL = side > 0 ? x : x - 4, supL = side > 0 ? x - 4 : x;
+      const lift = Math.abs(fy) > 0.7 ? 1 : 2;
+      drawLeg(ctx, supL - Math.round(fx), y - Math.round(fy), p.look, p.anim, side > 0 ? 0 : 1);
+      drawLeg(ctx, kickL + Math.round(fx * 3), y + Math.round(fy * (fy > 0 ? 2 : 1)) - lift, p.look, p.anim, side > 0 ? 1 : 0);
+    } else {
+      if (!(kickLeg && side < 0)) drawLeg(ctx, x - 4, y + l, p.look, p.anim, 0);
+      if (!(kickLeg && side > 0)) drawLeg(ctx, x, y + r, p.look, p.anim, 1);
+      if (kickLeg) drawKick(ctx, p, x, y, fx, fy, side, atk);
+    }
 
     // thân
     const by = y - 10 + bob;

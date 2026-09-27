@@ -318,6 +318,7 @@ window.SFC = window.SFC || {};
       b.kind = 'shot';
       p.facing = ang;
       p.charging = false; p.charge = 0;
+      this.startAttack(p, 'shoot'); // tư thế vung chân sút (kick.poseTime)
       g.cores.dispatch(p.team, 'onShoot', p, b, held);
       g.effects.burst(b.x, b.y, 2, '#ffffff', 5 + Math.round(c * 6), 80);
       g.effects.shake(G().fx.shakeShot * c);
@@ -335,6 +336,7 @@ window.SFC = window.SFC || {};
       p.facing = ang;
       p.charging = false; p.charge = 0;
       p.cancelPass();
+      this.startAttack(p, 'shoot');
       g.effects.burst(b.x, b.y, 2, '#ffffff', 8, 80);
       g.effects.shake(G().fx.shakeShot);
       g.sfx('kick', 0.8);

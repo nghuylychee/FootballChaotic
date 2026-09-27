@@ -169,6 +169,7 @@ SFC_CONFIG.game = {
   },
 
   kick: {
+    poseTime: 0.12,          // (s) giữ tư thế vung chân sút sau khi bóng rời chân (sút + phá bóng)
     shotMinSpeed: 300,       // tốc độ bóng ứng với thanh lực 0% (đủ nhanh để chạm nhẹ vẫn có cú sút)
     shotMaxSpeed: 460,
     chargeTime: 0.8,         // giây để đầy lực
