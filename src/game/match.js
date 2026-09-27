@@ -15,7 +15,8 @@ window.SFC = window.SFC || {};
      *                  (DEF / FWD, mặc định FWD) của đội đó,
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
      *         training: true = luyện tập (không giờ trận, không chọn Core, không kết thúc / không thưởng),
-     *         teamSize: [n đội 0, n đội 1] — số cầu thủ mỗi đội (mặc định đủ đội hình; 0 = đội trống) }
+     *         teamSize: [n đội 0, n đội 1] — số cầu thủ mỗi đội (mặc định đủ đội hình; 0 = đội trống),
+     *         noDraft / noAI: tắt chọn Core / AI (ảnh xem trước Core) }
      */
     constructor(opts) {
       const C = SFC_CONFIG.game;
@@ -75,7 +76,16 @@ window.SFC = window.SFC || {};
       this.draft = null;
       this.events = [];
       this.lastScorer = null;
+      this.ult = [0, 0];        // năng lượng Tuyệt kỹ mỗi đội (0..1) — nạp khi ghi bàn / cướp bóng
+      this.rhythm = [0, 0];     // Nhịp (TIKI-TAKA) của mỗi đội
+      this.rhythmT = [0, 0];
+      this.timers = [];         // later(): hẹn giờ theo thời gian thật (chạy cả lúc hit-stop)
+      this.freezeT = 0;     // VFX Kit hit-stop: còn bao lâu đứng hình (giây thật)
+      this.slowT = 0;       // VFX Kit slow-mo: còn bao lâu chạy chậm (giây thật)
+      this.slowScale = 1;
       this.kickoff(0);
+      // lượt chọn Core khởi đầu (trước khi giao bóng đầu trận)
+      if (!opts.noDraft && !opts.training && this.cfg.match.preKickoffDraft && this.cfg.match.maxUpgrades > 0) this.startDraft(true);
     }
 
     /* ---------- helpers ---------- */
@@ -185,6 +195,9 @@ window.SFC = window.SFC || {};
 
     gainPossession(p) {
       const b = this.ball;
+      // đường chuyền tới chân đồng đội (trước khi setOwner xoá thông tin bóng)
+      const passer = b.kind === 'pass' && b.lastKickTeam === p.team && b.lastTouch && b.lastTouch !== p && b.lastTouch.team === p.team ? b.lastTouch : null;
+      const prevTeam = this.lastPossessionTeam;
       b.setOwner(p);
       p.keeperHold = 0;
       p.cancelPass();
@@ -196,6 +209,8 @@ window.SFC = window.SFC || {};
         this.cores.dispatch(p.team, 'onPossessionGained', p);
       }
       this.lastPossessionTeam = p.team;
+      if (passer) this.cores.passReceived(p, passer);
+      if (prevTeam !== -1 && prevTeam !== p.team) this.cores.possessionLost(prevTeam);
       for (const t of this.humans) {
         const cur = this.ctrl[t];
         if (p.team === t) this.setControlled(p);
@@ -220,6 +235,7 @@ window.SFC = window.SFC || {};
       for (const p of this.players) {
         const pos = this.kickoffPos(p, vary, mirror[p.team]);
         Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null });
+        p.res.momentum = 0; p.res.rage = 0;
         p.facing = this.teams[p.team].dir > 0 ? 0 : Math.PI;
         p.intent.mx = p.intent.my = 0;
         p.ai.runT = 0; p.ai.requestedPass = null;
@@ -236,9 +252,26 @@ window.SFC = window.SFC || {};
         const tp = this.teams[t].players;
         if (tp.length) this.setControlled(teamIdx === t ? fwd : tp.find((p) => p.role === 'FWD') || tp[0]);
       }
+      this.rhythm = [0, 0];
+      this.cores.kickoff();
     }
 
+    /* ---------- VFX Kit: hit-stop / slow-mo (ảnh hưởng mô phỏng) ---------- */
+    // đứng hình t giây (đòn nặng trúng); không cộng dồn, lấy mức dài hơn
+    hitStop(t) { this.freezeT = Math.max(this.freezeT, t); }
+    // chạy fn sau t giây thật (chỉ máy chạy mô phỏng — host / chơi đơn)
+    later(t, fn) { this.timers.push({ t, fn }); }
+    // chạy chậm còn scale (0.1–1) trong t giây thật
+    slowMo(scale, t) { this.slowScale = scale; this.slowT = Math.max(this.slowT, t); }
+
     update(dt, input) {
+      // lớp phủ màn hình (callout, cut-in, zoom...) luôn chạy theo thời gian thật
+      this.effects.updateOverlay(dt);
+      if (this.timers.length) {
+        for (const tm of this.timers.slice()) if ((tm.t -= dt) <= 0) { this.timers.splice(this.timers.indexOf(tm), 1); tm.fn(); }
+      }
+      if (this.freezeT > 0) { this.freezeT -= dt; return; }
+      if (this.slowT > 0) { this.slowT -= dt; dt *= this.slowScale; }
       this.time += dt;
       switch (this.state) {
         case 'kickoff':
@@ -276,7 +309,7 @@ window.SFC = window.SFC || {};
         const inp = input && this.inputFor(t, input);
         if (inp) SFC.Human.update(dt, this, inp, t);
       }
-      SFC.AI.update(dt, this);
+      if (!this.opts.noAI) SFC.AI.update(dt, this);   // noAI: ảnh xem trước Core (ui/corepreview.js) tự điều khiển
       for (const p of this.players) p.update(dt);
       this.separate();
       this.ball.update(dt);
@@ -295,6 +328,14 @@ window.SFC = window.SFC || {};
         return;
       }
       this.elapsed += dt;
+      // tới FINAL PUSH mà còn lượt chọn Core -> tạm dừng trận, chọn nốt rồi giao bóng lại (bàn x2 tính sau khi chọn xong)
+      if (!this.finalPush && this.remaining <= M.finalPushTime && this.draftPending() > 0) {
+        const t = this.lastPossessionTeam >= 0 ? this.lastPossessionTeam : 0;
+        this.emit('banner', { text: 'CHỌN CORE CUỐI', sub: 'Trước FINAL PUSH', color: '#ffe14f' });
+        this.kickoff(t);
+        this.runPendingDrafts();
+        return;
+      }
       if (!this.finalPush && this.remaining <= M.finalPushTime) {
         this.finalPush = true;
         this.emit('banner', { text: 'FINAL PUSH', sub: 'Bàn thắng x' + M.finalPushGoalValue, color: '#ff3d5a' });
@@ -309,8 +350,33 @@ window.SFC = window.SFC || {};
       }
     }
 
-    // Mở Core Upgrade lúc bóng chết (gọi khi chuẩn bị giao bóng lại sau bàn thắng)
-    startDraft() {
+    /* ---------- lượt chọn Core theo thời gian (match.draftEvery) ---------- */
+    draftEvery() {
+      const M = this.cfg.match;
+      return M.draftEvery || (M.duration - M.finalPushTime) / Math.max(1, M.maxUpgrades);
+    }
+    // số lượt đã tích được tới giờ (gồm lượt khởi đầu); tới FINAL PUSH là đủ mọi lượt
+    draftEarned() {
+      const M = this.cfg.match;
+      if (this.opts.noDraft || this.opts.training) return 0; // luyện tập: không chọn Core
+      if (this.remaining <= M.finalPushTime) return M.maxUpgrades;
+      return Math.min(M.maxUpgrades, (M.preKickoffDraft ? 1 : 0) + Math.floor(this.elapsed / this.draftEvery() + 1e-6));
+    }
+    draftPending() { return Math.max(0, this.draftEarned() - this.upgradeIdx); }
+    // giây tới lượt kế tiếp (null = đã đủ lượt)
+    draftNextIn() {
+      const M = this.cfg.match;
+      if (this.opts.noDraft || this.opts.training || this.draftEarned() >= M.maxUpgrades) return null;
+      const every = this.draftEvery(), n = this.draftEarned() - (M.preKickoffDraft ? 1 : 0);
+      return Math.max(0, Math.min((n + 1) * every, M.duration - M.finalPushTime) - this.elapsed);
+    }
+    // mở các lượt đang chờ (đội máy chọn ngay; có người chơi -> vào màn chọn, chọn xong mở lượt kế)
+    runPendingDrafts() {
+      while (this.draftPending() > 0 && this.state !== 'draft') this.startDraft();
+    }
+
+    // Mở Core Upgrade lúc bóng chết: trước khi giao bóng đầu trận (pre) + sau bàn thắng (nếu có lượt đang chờ)
+    startDraft(pre = false) {
       const n = this.cfg.match.upgradeChoices;
       this.upgradeIdx++;
       const aiTeams = [0, 1].filter((t) => !this.isHuman(t));
@@ -324,7 +390,9 @@ window.SFC = window.SFC || {};
       }
       const limit = this.opts.draftTimeLimit || 0;
       this.state = 'draft';
-      this.draft = { options, picked: {}, aiPicks, round: this.upgradeIdx, limit, t: limit };
+      const rerolls = {};
+      for (const t of this.humans) rerolls[t] = SFC_CONFIG.cores.draft.rerollsPerRound;
+      this.draft = { options, picked: {}, aiPicks, round: this.upgradeIdx, limit, t: limit, pre, rerolls };
       this.releaseInputs();
       this.emit('draft', { round: this.upgradeIdx });
       this.sfx('upgrade');
@@ -345,10 +413,25 @@ window.SFC = window.SFC || {};
       for (const pk of picks) this.cores.add(pk.team, pk.id);
       this.emit('corePicked', { picks: picks.concat(d.aiPicks) });
       this.draft = null;
+      // còn lượt đang chờ (tích nhiều lượt / trước FINAL PUSH) -> chọn tiếp luôn
+      this.state = 'kickoff';
+      this.runPendingDrafts();
+      if (this.state === 'draft') return;
       // chọn xong -> đếm ngược giao bóng lại từ đầu
       this.state = 'kickoff';
       this.stateT = this.cfg.match.kickoffDelay;
       this.sfx('pick');
+    }
+
+    // đổi cả 3 lá (mỗi lượt chọn được đổi rerollsPerRound lần)
+    rerollDraft(team = this.humanTeam) {
+      const d = this.draft;
+      if (this.state !== 'draft' || !d || !d.options[team] || d.picked[team] || !(d.rerolls[team] > 0)) return false;
+      d.rerolls[team]--;
+      d.options[team] = this.cores.rollOptions(team, this.cfg.match.upgradeChoices, d.options[team]);
+      this.emit('draftWait', { team });
+      this.sfx('whoosh');
+      return true;
     }
 
     releaseInputs() {
@@ -378,6 +461,8 @@ window.SFC = window.SFC || {};
       this.effects.burst(gx, f.cy, 10, col, 40, 160, 1.2);
       this.effects.burst(gx, f.cy, 10, '#ffffff', 20, 120, 1.0);
       this.emit('goal', { team: scorer, value, scorer: by ? by.name : '', own });
+      if (b.kind === 'shot') this.cores.shotOnTarget(scorer);
+      this.cores.goalScored(scorer, by);
       this.sfx('goal');
       return true;
     }
@@ -385,8 +470,8 @@ window.SFC = window.SFC || {};
     afterGoal() {
       if (this.golden || this.elapsed >= this.cfg.match.duration) return this.end();
       this.kickoff(1 - this.scoredBy);
-      // bóng chết: xếp đội hình giao bóng xong thì mở Core Upgrade (nếu còn lượt)
-      if (!this.opts.training && this.upgradeIdx < this.cfg.match.maxUpgrades) this.startDraft();
+      // bóng chết: xếp đội hình giao bóng xong thì mở các lượt chọn Core đã tích được (luyện tập: không chọn Core)
+      if (!this.opts.training) this.runPendingDrafts();
     }
 
     end() {
@@ -424,10 +509,11 @@ window.SFC = window.SFC || {};
       const pt = b.passTarget;
       const passAlive = pt && pt.state !== 'stun' && b.speed > 40;
       for (const p of this.players) {
-        if (p.state === 'stun' || p.state === 'kick' || b.noPickup.has(p.id)) continue;
+        if (p.state === 'stun' || p.state === 'kick' || p.airZ > 4 || b.noPickup.has(p.id)) continue;
         if (passAlive && p !== pt && p.team === pt.team) continue;
         const gk = this.inKeeperZone(p);
-        const reach = p.radius + b.r + (gk ? C.player.gkReach + (p.state === 'dash' ? 5 : 0) : C.ball.pickupRange)
+        // Thủ Môn Khổng Lồ: tầm với theo kích thước
+        const reach = p.radius + b.r + (gk ? (C.player.gkReach + (p.state === 'dash' ? 5 : 0)) * p.sizeMul : C.ball.pickupRange)
           + (b.passTarget === p ? C.pass.receiveRangeBonus : 0);
         const maxZ = gk ? C.player.gkCatchHeight : C.ball.pickupHeight;
         const d = U.dist(p, b);
@@ -442,11 +528,16 @@ window.SFC = window.SFC || {};
       const isGK = this.inKeeperZone(p);
       const dir = U.norm(b.vx, b.vy);
 
-      if (opp && !isGK && b.fx.thunder && b.pierce > 0 && spd > 150) {
+      // bóng xuyên người: Lôi Cước (sét), Song Phi (gió)
+      const pierceFx = b.fx.thunder || b.fx.scissor;
+      if (opp && !isGK && pierceFx && b.pierce > 0 && spd > 150) {
         b.pierce--;
         b.noPickup.set(p.id, 0.5);
-        p.hit({ stun: b.fx.thunder.stun, kbx: dir.x * 70, kby: dir.y * 70, type: 'thunder' });
+        p.hit({ stun: pierceFx.stun || 0.6, kbx: dir.x * 70, kby: dir.y * 70, type: 'thunder' });
         this.effects.burst(p.x, p.y, 8, '#7fe7ff', 10, 90);
+        this.effects.bolt(b.x, b.y - b.z - 4, p.x, p.y - 22, '#bdf4ff', 0.35);
+        this.effects.bolt(p.x - 6, p.y - 24, p.x + 5, p.y - 2, '#7fe7ff', 0.3);
+        this.effects.comic(p.x, p.y - 30, 'ZZT!', '#7fe7ff', 0.7, 0.5);
         this.sfx('zap');
         return;
       }
@@ -458,14 +549,16 @@ window.SFC = window.SFC || {};
       }
       if (isGK && opp && b.kind === 'shot') {
         // càng phải vươn xa (bóng góc) và bóng càng mạnh -> càng khó bắt
-        const reach = p.radius + b.r + C.player.gkReach + (p.state === 'dash' ? 5 : 0);
+        const reach = p.radius + b.r + (C.player.gkReach + (p.state === 'dash' ? 5 : 0)) * p.sizeMul;
         // khoảng cách vuông góc từ thủ môn tới đường bay của bóng
         const perp = Math.abs((p.x - b.x) * dir.y - (p.y - b.y) * dir.x);
         const stretch = U.clamp(perp / reach, 0, 1);
         let chance = C.player.gkSaveBase - Math.max(0, spd - C.player.gkSpeedFree) / C.player.gkSpeedPenalty - stretch * C.player.gkStretchPenalty;
         if (b.fx.thunder) chance -= b.fx.thunder.gkPenalty;
-        if (b.fx.fire) chance -= 0.1;
-        chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35), 0.15, 0.95);
+        if (b.fx.fire) chance -= 0.15;
+        chance -= this.cores.keeperPenalty(b);
+        chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35) * this.cores.pmod(p, 'keeperSave'), 0.15, 0.95);
+        this.cores.shotOnTarget(b.lastKickTeam);
         const r = Math.random();
         if (r > chance) {
           if (r < chance + (1 - chance) * C.player.gkParryShare) {
@@ -479,10 +572,20 @@ window.SFC = window.SFC || {};
           }
           return;
         }
+        // Cú Sút Sao Băng: bắt được vẫn bị hất văng
+        if (this.cores.dispatch(b.lastKickTeam, 'onKeeperSave', p, b)) return;
         this.effects.text(p.x, p.y - 26, 'SAVE!', '#9dff3d');
         this.sfx('save');
       } else if (opp && b.kind === 'pass' && spd > C.pass.intercept.minSpeed) {
+        // TIKI-TAKA 4: đủ Nhịp thì đường chuyền không thể bị cắt
+        // Chạm Một / Đường Chuyền Xuyên Không: bóng xuyên qua như ma
+        if (this.cores.passShielded(b.lastKickTeam) || b.fx.ghost) {
+          b.noPickup.set(p.id, 0.3);
+          if (b.fx.ghost) this.effects.burst(b.x, b.y, b.z, '#fff6c0', 4, 40, 0.3);
+          return;
+        }
         if (!this.intercepts(p)) return;
+        this.cores.steal(p);
       } else if (opp && spd > C.ball.controlSpeed) {
         if (Math.random() > 0.35 * p.stats.dribble) { this.deflect(p, 0.4); return; }
       }
@@ -500,7 +603,8 @@ window.SFC = window.SFC || {};
       // khoảng cách vuông góc từ người tới đường bóng: 0 = đi thẳng vào người, 1 = sượt mép tầm với
       const edge = U.clamp(Math.abs((p.x - b.x) * dir.y - (p.y - b.y) * dir.x) / reach, 0, 1);
       const fast = U.clamp((b.speed - I.slowSpeed) / (I.fastSpeed - I.slowSpeed), 0, 1);
-      let chance = I.base * U.lerp(1, I.speedMin, fast) * U.lerp(1, I.edgeMin, edge) * p.stats.tackle;
+      let chance = I.base * U.lerp(1, I.speedMin, fast) * U.lerp(1, I.edgeMin, edge) * p.stats.tackle
+        * this.cores.mod(b.lastKickTeam, 'interceptTaken');   // Mắt Đại Bàng: khó bị cắt
       if (!this.isHuman(p.team) || !p.isControlled) chance *= this.aiProfile(p.team).tackleMult;
       if (Math.random() < U.clamp(chance, 0.05, 0.95)) return true;
       b.noPickup.set(p.id, I.retry);

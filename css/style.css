@@ -483,3 +483,128 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .eq-row { display: flex; justify-content: space-between; gap: 4px; font-size: 12px; border-left: 2px solid var(--rc); padding-left: 3px; }
 .eq-row span { color: var(--muted); }
 .eq-row b { font-weight: normal; color: #e6dccb; white-space: nowrap; }
+
+/* ---------- CORE: trường phái · Cộng hưởng · Tuyệt kỹ (Giai đoạn 1) ---------- */
+.chip { border-color: var(--c); border-right-color: var(--c2, var(--c)); border-bottom-color: var(--c2, var(--c)); }
+.chip.ult { box-shadow: 0 0 0 1px var(--gold), 1px 1px 0 var(--ink); }
+.hud-traits { display: flex; gap: 2px; margin-top: 1px; }
+.hud-team.r .hud-traits { justify-content: flex-end; }
+.trait { font-family: var(--px); font-size: 5px; line-height: 1; padding: 1px 2px; color: var(--muted); background: rgba(20,12,22,0.7); border: 1px solid #3b2a36; }
+.trait.on { color: #fff; border-color: var(--c); box-shadow: 0 0 3px var(--c); }
+
+/* lá Core */
+.card { height: auto; min-height: 196px; display: flex; flex-direction: column; align-items: center; }
+.card::before { background: linear-gradient(90deg, var(--c), var(--c2, var(--c))); }
+.card-tags { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; margin-top: 2px; }
+.card-tags span { font-size: 12px; line-height: 1; padding: 1px 3px; color: var(--c); border: 1px solid var(--c); background: rgba(20,12,22,0.6); }
+.card-icon { margin: 8px 0 5px; }
+.card-match { position: absolute; right: 5px; top: 7px; font-family: var(--px); font-size: 5px; color: var(--ink); background: #9dff3d; padding: 2px 3px; box-shadow: 1px 1px 0 var(--ink); animation: pulse 0.8s steps(2) infinite; }
+.card-set { margin-top: auto; padding-top: 5px; width: 100%; display: flex; flex-direction: column; gap: 2px; }
+.cs-row { font-size: 11px; line-height: 1.05; text-align: left; color: var(--muted); border-left: 2px solid var(--c); padding-left: 4px; }
+.cs-row b { display: block; font-weight: normal; color: var(--c); }
+.cs-row.up b { color: #fff; }
+.cs-row.up span { color: var(--gold); }
+.card.ult { background: linear-gradient(180deg, #2b1d10, #1c1320 60%); border-color: #8a6d3b; }
+.card.ult .card-name { color: var(--gold); }
+.draft-reroll { margin-left: 10px; font-size: 13px; color: var(--gold); border: 1px solid var(--edge); padding: 0 6px; background: rgba(20,12,22,0.7); }
+.draft-reroll:hover { border-color: var(--gold); }
+.draft-reroll.off { color: var(--muted); opacity: 0.6; pointer-events: none; }
+.draft-opp .sep { margin: 0 4px; }
+
+/* HUD: tài nguyên + ô Tuyệt kỹ */
+.ab-res { display: flex; gap: 5px; justify-content: center; margin: -1px 0 1px; }
+.ab-res.hidden { display: none; }
+.res { font-family: var(--px); font-size: 5px; line-height: 1; color: var(--c); text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; }
+.res i { font-style: normal; color: #4a3f4f; }
+.ab-slot.ult { border-color: #8a6d3b; background: #1f1810; overflow: hidden; }
+.ab-slot.ult .ult-fill { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--u, 0) * 100%); background: linear-gradient(0deg, rgba(255,210,63,0.55), rgba(255,210,63,0.15)); }
+.ab-slot.ult i { position: relative; z-index: 1; filter: grayscale(0.8); opacity: 0.6; }
+.ab-slot.ult.ready { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--ink), 0 0 6px var(--gold); animation: pulse 0.6s steps(2) infinite; }
+.ab-slot.ult.ready i { filter: none; opacity: 1; }
+.ab-slot.ult kbd { z-index: 2; }
+.card-tier { font-family: var(--vt); font-size: 13px; letter-spacing: 1px; }
+/* tên Core tiếng Việt có dấu -> VT323 (Press Start 2P không có dấu) */
+.card-name { font-family: var(--vt); font-size: 17px; line-height: 1; letter-spacing: 0.5px; }
+
+/* ---------- Giai đoạn 4: UI Core ---------- */
+/* ảnh động xem trước Core (ui/corepreview.js) */
+.cpv { display: block; image-rendering: pixelated; background: #120c16; }
+.card-art { position: relative; margin: 6px -2px 5px; border: 1px solid var(--c); border-right-color: var(--c2, var(--c)); border-bottom-color: var(--c2, var(--c)); box-shadow: 2px 2px 0 var(--ink); line-height: 0; }
+.card-emoji { position: absolute; left: -5px; top: -6px; font-size: 13px; line-height: 1; filter: drop-shadow(1px 1px 0 var(--ink)); }
+.card { padding-top: 7px; }
+.card-desc { font-size: 12px; line-height: 1.05; }
+/* lá Tuyệt kỹ: nền tối kiểu poster + viền vàng chạy */
+.card.ult { background: radial-gradient(circle at 50% 30%, #3a2710, #140c10 70%); border-color: var(--gold); animation: ultEdge 1.2s steps(6) infinite; }
+.card.ult .card-art { border-color: var(--gold); }
+@keyframes ultEdge {
+  0%, 100% { box-shadow: 4px 4px 0 var(--ink), 0 0 0 1px #8a6d3b, 0 0 6px rgba(255,210,63,0.25); }
+  50% { box-shadow: 4px 4px 0 var(--ink), 0 0 0 1px var(--gold), 0 0 12px rgba(255,210,63,0.6); }
+}
+.card.ult.sel, .card.ult:hover { transform: translateY(-4px); }
+/* ô Tuyệt kỹ đầy: rung nhẹ */
+.ab-slot.ult.ready { animation: ultShake 0.5s steps(4) infinite; }
+@keyframes ultShake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-1px, 0); } 50% { transform: translate(0, -1px); } 75% { transform: translate(1px, 0); } }
+/* build nổi bật + khoảnh khắc của trận */
+.build-tag { display: inline-block; font-size: 13px; line-height: 1; color: var(--muted); border: 1px solid #3b2a36; padding: 1px 4px; margin-bottom: 4px; }
+.build-tag.on { color: var(--c); border-color: var(--c); box-shadow: 0 0 4px var(--c); }
+.moment { display: flex; gap: 10px; align-items: center; background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--c); padding: 5px 8px; margin: -2px 0 8px; }
+.moment .cpv { border: 1px solid var(--c); box-shadow: 2px 2px 0 var(--ink); }
+.mo-info h4 { font-size: 12px; color: var(--gold); letter-spacing: 1px; font-weight: normal; }
+.mo-name { font-size: 17px; color: #fff; line-height: 1.1; }
+.mo-sub { font-size: 12px; color: var(--muted); line-height: 1.15; }
+.mo-sub .sep { margin: 0 3px; }
+/* túi đồ: lọc trường phái + "Thường đi cùng" · mở hộp ra Core */
+.arch-filter { display: flex; gap: 2px; margin-left: 6px; }
+.af { font-size: 11px; line-height: 1; padding: 1px 2px; border: 1px solid #3b2a36; background: rgba(20,12,22,0.7); opacity: 0.55; }
+.af.sel { opacity: 1; border-color: var(--c); box-shadow: 0 0 3px var(--c); }
+.af:hover { opacity: 1; }
+.sd-side { gap: 4px; }
+.sug-h { font-size: 11px; color: var(--gold); letter-spacing: 1px; margin-top: 2px; }
+.sug { font-size: 12px; line-height: 1.1; color: #e6dccb; border-left: 2px solid var(--c); padding-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sug.have { color: #9dff3d; }
+.card.static .card-art { margin: 5px -2px 4px; }
+.rv-art:has(.rv-core-art) { width: auto; padding: 0 6px; }
+.rv-core-art { position: relative; line-height: 0; border: 1px solid var(--rc); box-shadow: 2px 2px 0 var(--ink); }
+/* lá Core có ảnh động: thu gọn để vừa khung 360 */
+#draft .draft-sub { margin: 3px 0 8px; }
+#draft .draft-opp { margin-top: 8px; }
+.card .card-tier { font-size: 12px; margin: 2px 0 4px; line-height: 1; }
+.card-art { margin: 5px -2px 3px; }
+.card-x { position: absolute; right: 2px; top: 2px; line-height: 1; color: var(--ink); background: var(--gold); border-color: var(--ink); }
+/* màn kết quả có "Khoảnh khắc của trận": thu gọn để vừa khung 360 */
+#end.has-moment { padding-top: 14px; }
+#end.has-moment .end-title { margin-bottom: 2px; }
+#end.has-moment .builds { margin: 8px 0 8px; }
+#end.has-moment .end-note { margin-bottom: 4px; }
+.inv-left { display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+.inv-left .arch-filter { margin-left: 2px; }
+.inv-left .af { font-size: 12px; padding: 1px 3px; }
+
+/* ---------- lượt chọn Core theo thời gian + năng lượng Tuyệt kỹ ---------- */
+.hud-core { font-size: 11px; line-height: 1; color: var(--muted); margin-top: 2px; white-space: nowrap; text-shadow: 1px 1px 0 var(--ink); }
+.hud-core.on { color: var(--gold); animation: pulse 0.8s steps(2) infinite; }
+.hud-ult { position: relative; display: flex; align-items: center; gap: 2px; margin-top: 2px; height: 7px; }
+.hud-team.r .hud-ult { flex-direction: row-reverse; }
+.hud-ult b { font-size: 7px; line-height: 1; font-weight: normal; filter: grayscale(1); opacity: 0.6; }
+.hud-ult.has b { filter: none; opacity: 1; }
+.hud-ult i { position: relative; width: 34px; height: 4px; background: #140e17; border: 1px solid #3b2a36; }
+.hud-ult i::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--u, 0) * 100%); background: #8a6d3b; }
+.hud-team.r .hud-ult i::after { left: auto; right: 0; }
+.hud-ult.has i::after { background: var(--gold); }
+.hud-ult.full.has i { box-shadow: 0 0 4px var(--gold); animation: pulse 0.6s steps(2) infinite; }
+.hud-ult em { font-style: normal; font-size: 9px; line-height: 1; color: var(--muted); }
+.hud-ult.has em { color: var(--gold); }
+/* ô Tuyệt kỹ luôn hiện: % năng lượng, "+20%" bay lên khi nạp, rút cạn khi dùng */
+.ab-slot.ult .ult-fill { transition: height 0.25s steps(4); }
+.ab-slot.ult.none { border-style: dashed; }
+.ab-slot.ult.none .ult-fill { background: linear-gradient(0deg, rgba(154,163,181,0.45), rgba(154,163,181,0.1)); }
+.ab-slot.ult.none i { filter: grayscale(1); opacity: 0.45; }
+.ab-slot.ult .ult-pct { position: absolute; left: 0; right: 0; bottom: 1px; z-index: 2; font-family: var(--vt); font-size: 9px; line-height: 1; font-weight: normal; text-align: center; color: #fff; text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; }
+.ab-slot.ult.ready .ult-pct { color: var(--gold); }
+.ab-slot.ult.gain { animation: ultGain 0.5s steps(3); }
+@keyframes ultGain { 0% { box-shadow: 0 0 0 1px var(--gold), 0 0 10px var(--gold); } 100% { box-shadow: none; } }
+.ab-slot.ult.drain .ult-fill { animation: ultDrain 0.6s steps(6); }
+@keyframes ultDrain { 0% { height: 100%; background: #fff; } 100% { height: 0; } }
+.ult-gain { position: absolute; left: 50%; top: -2px; z-index: 3; font-family: var(--vt); font-size: 11px; line-height: 1; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); transform: translateX(-50%); animation: ultFloat 1.1s steps(8) forwards; pointer-events: none; }
+@keyframes ultFloat { 0% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -14px); } }
+.ab-slot.ult { overflow: visible; }

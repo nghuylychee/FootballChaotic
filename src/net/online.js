@@ -2,7 +2,7 @@
  * Host luôn là đội 0 (bên trái), khách là đội 1 (bên phải).
  *
  * Gói tin:
- *   khách -> host : hello{v,pf} · team{id} · i{d,p} (phím) · pick{i} · bye
+ *   khách -> host : hello{v,pf} · team{id} · i{d,p} (phím) · pick{i} · reroll · bye
  *   host  -> khách: lobby{host,guest,hp} · start{opts} · s{f,s,fx,sfx,ev} (snapshot) · toLobby · full · bye
  *   pf / hp = hồ sơ công khai (tên, level, ngoại hình, Core đã mở) — xem SFC.Profile.public()
  */
@@ -148,6 +148,9 @@ window.SFC = window.SFC || {};
         case 'pick':
           if (this.game) this.game.pickCore(m.i | 0, 1);
           break;
+        case 'reroll':
+          if (this.game) this.game.rerollDraft(1);
+          break;
         case 'bye':
           Net().dropConn();
           this.onPeerGone();
@@ -180,7 +183,8 @@ window.SFC = window.SFC || {};
         humanTeam: 0, humans: [0, 1], draftTimeLimit: N().draftTimeLimit,
         // character + Core đã mở khoá của mỗi người (khách gửi lúc vào phòng)
         avatars: [SFC.Profile.avatar(), L.guestPf],
-        coreUnlocks: [SFC.Profile.unlockedCores(), L.guestPf ? L.guestPf.cores : null],
+        // gacha Core tắt (progression.coreGacha): cả 2 người bốc được mọi Core
+        coreUnlocks: SFC_CONFIG.progression.coreGacha ? [SFC.Profile.unlockedCores(), L.guestPf ? L.guestPf.cores : null] : null,
       };
       this.game = new SFC.Game(opts);
       Sync().capture(this.game);
@@ -266,6 +270,7 @@ window.SFC = window.SFC || {};
       const dt = this.lastTick == null ? 0 : Math.min(0.1, (now - this.lastTick) / 1000);
       this.lastTick = now;
       g.effects.updateCosmetic(dt);
+      g.effects.updateOverlay(dt);
       if (!buf.length) return g;
 
       // đồng hồ vẽ chạy sau snapshot mới nhất một khoảng interpDelay
@@ -302,6 +307,15 @@ window.SFC = window.SFC || {};
       g.draft.localPick = i;
       g.draft.picked[g.humanTeam] = 1;
       Net().send({ t: 'pick', i });
+    },
+
+    // người chơi tại máy này đổi 3 lá Core
+    reroll() {
+      const g = this.game;
+      if (!g || !g.draft) return;
+      if (this.isHost) { g.rerollDraft(0); return; }
+      if (g.draft.localPick != null) return;
+      Net().send({ t: 'reroll' });
     },
   };
 

@@ -143,20 +143,37 @@ SFC_CONFIG.progression = {
   },
   defaultLook: { hair: 'classic', face: 'none', shoes: 'kicks', fx: 'nofx', skin: 0, hairColor: 0 },
 
-  // Core Upgrade: user mới chỉ có bộ Core cơ bản; Core khác lấy từ Hộp Core.
-  // level = level tối thiểu để Core quay được xuất hiện khi chọn Core giữa trận (chưa đủ thì nằm chờ trong túi đồ)
+  // TẠM TẮT gacha Core: mọi Core dùng được ngay cho mọi người chơi (không cần quay / level), Hộp Core ẩn khỏi SHOP.
+  // Core đã quay được trước đó vẫn giữ trong hồ sơ. Bật lại = true.
+  coreGacha: false,
+
+  // Core Upgrade (khi coreGacha bật): user mới chỉ có bộ Core cơ bản; Core khác lấy từ Hộp Core.
+  // level = level tối thiểu để Core quay được xuất hiện khi chọn Core giữa trận (chưa đủ thì nằm chờ trong túi đồ).
+  // Độ hiếm của Core lấy từ config/cores.config.js (rarity) — dùng chung cho gacha và tần suất khi chọn Core.
   starterCores: ['sniper_foot', 'banana_kick', 'speed_demon', 'street_fighter', 'counter_attack', 'maestro'],
   cores: {
-    warp_walls:   { rarity: 'rare', level: 2 },
-    fire_shot:    { rarity: 'rare', level: 3 },
-    phantom_step: { rarity: 'rare', level: 4 },
-    iron_body:    { rarity: 'epic', level: 5 },
-    fake_run:     { rarity: 'epic', level: 6 },
-    emp_trap:     { rarity: 'epic', level: 7 },
-    chaos_ball:   { rarity: 'epic', level: 8 },
-    thunder_kick: { rarity: 'legendary', level: 10 },
-    blade_runner: { rarity: 'legendary', level: 12 },
-    aegis_wall:   { rarity: 'mythic', level: 14 },
+    warp_walls:     { level: 2 },
+    fire_shot:      { level: 3 },
+    phantom_step:   { level: 4 },
+    iron_body:      { level: 5 },
+    fake_run:       { level: 6 },
+    emp_trap:       { level: 7 },
+    chaos_ball:     { level: 8 },
+    thunder_kick:   { level: 10 },
+    blade_runner:   { level: 12 },
+    aegis_wall:     { level: 14 },
+    lightning_dash: { level: 14 },
+    // Giai đoạn 3 — THƯỜNG LV1 · HIẾM LV2–4 · SỬ THI LV5–8 · HUYỀN THOẠI LV10–12 · Tuyệt kỹ LV14+
+    eagle_eye: { level: 1 }, heavy_boot: { level: 1 }, quick_feet: { level: 1 },
+    burst_start: { level: 2 }, one_touch: { level: 2 }, fist_storm: { level: 3 }, juggle: { level: 3 },
+    uppercut: { level: 3 }, iron_fist: { level: 4 }, wall_slam: { level: 4 },
+    sonic_boom: { level: 5 }, symphony: { level: 5 }, giant_fist: { level: 5 }, captain: { level: 5 },
+    freight_train: { level: 6 }, energy_wave: { level: 6 }, ground_slam: { level: 6 }, one_two: { level: 6 },
+    phantom_pass: { level: 7 }, witch_time: { level: 7 }, bulldozer: { level: 7 }, counter_strike: { level: 7 },
+    shadow_clone: { level: 8 }, giant_keeper: { level: 8 }, rubber_arm: { level: 8 }, flying_kick: { level: 8 }, ghost_ball: { level: 8 },
+    black_hole: { level: 10 }, bomb_ball: { level: 11 }, scissor_kick: { level: 12 },
+    hundred_fists: { level: 15 }, meteor_strike: { level: 15 }, titan: { level: 16 }, meteor_drop: { level: 16 },
+    clone_army: { level: 17 }, endless_tiki: { level: 18 },
   },
 
   // Hộp gacha (quay kiểu CSGO). kind: costume | core. odds = % theo độ hiếm (chuẩn hoá theo các độ hiếm có trong hộp),
@@ -183,3 +200,9 @@ SFC_CONFIG.progression = {
   reelWinIndex: 40,            // ô trúng thưởng
   reelTime: 4.8,               // giây quay
 };
+
+// tắt gacha Core -> ẩn Hộp Core khỏi SHOP
+if (!SFC_CONFIG.progression.coreGacha) {
+  const PG = SFC_CONFIG.progression;
+  PG.boxOrder = PG.boxOrder.filter((id) => PG.boxes[id].kind !== 'core');
+}

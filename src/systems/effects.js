@@ -35,20 +35,20 @@ window.SFC = window.SFC || {};
     ring(x, y, color) { this.rings.push({ x, y, color, t: 0.4, max: 0.4 }); }
     shake(a, t = 0.25) { this.shakeA = Math.max(this.shakeA, a); this.shakeT = Math.max(this.shakeT, t); }
     flash(a = 0.6) { this.flashA = Math.max(this.flashA, a); }
-    afterimage(p) {
-      this.afterimages.push({ x: p.x, y: p.y, facing: p.facing, team: p.team, role: p.role, look: p.look, anim: p.anim, vx: 0, vy: 0, t: 0.3, max: 0.3 });
+    afterimage(p, t = 0.3) {
+      this.afterimages.push({ x: p.x, y: p.y, facing: p.facing, team: p.team, role: p.role, look: p.look, anim: p.anim, vx: 0, vy: 0, t, max: t });
     }
     fire(x, y, fx) {
       this.fires.push({ x: x + U.rand(-2, 2), y: y + U.rand(-2, 2), team: fx.team, t: fx.duration, max: fx.duration, r: fx.radius, stun: fx.stun, kb: fx.knockback, seed: Math.random() * 10 });
     }
     slash(p, params) {
       const d = { x: Math.cos(p.facing), y: Math.sin(p.facing) };
-      this.slashes.push({ x: p.x + d.x * 8, y: p.y + d.y * 8, dx: d.x, dy: d.y, team: p.team, t: params.life, max: params.life, speed: params.speed, len: params.length, stun: params.stun, hits: new Set() });
+      this.slashes.push({ x: p.x + d.x * 8, y: p.y + d.y * 8, dx: d.x, dy: d.y, team: p.team, src: p, t: params.life, max: params.life, speed: params.speed, len: params.length, stun: params.stun, hits: new Set() });
     }
-    mine(x, y, team, params) {
+    mine(x, y, team, params, src = null) {
       const own = this.mines.filter((m) => m.team === team);
       if (own.length >= params.max) this.mines.splice(this.mines.indexOf(own[0]), 1);
-      this.mines.push({ x, y, team, t: params.life, arm: params.arm, r: params.radius, stun: params.stun });
+      this.mines.push({ x, y, team, src, t: params.life, arm: params.arm, r: params.radius, stun: params.stun });
     }
     decoy(src, x, y, vx, vy, dur) {
       const d = {
@@ -113,8 +113,12 @@ window.SFC = window.SFC || {};
           if (s.hits.has(pl.id)) continue;
           if (U.segDist(pl.x, pl.y - 4, s.x, s.y, s.x - s.dx * s.len, s.y - s.dy * s.len) < pl.radius + 3) {
             s.hits.add(pl.id);
-            if (pl.hasBall) g.looseBall(pl, s.dx, s.dy, 120);
-            pl.hit({ stun: s.stun, kbx: s.dx * 80, kby: s.dy * 80, type: 'slash' });
+            // làm rơi bóng = cướp bóng (năng lượng Tuyệt kỹ, Phản Công...)
+            if (pl.hasBall) { g.looseBall(pl, s.dx, s.dy, 120); if (s.src) g.cores.steal(s.src); }
+            if (pl.hit({ stun: s.stun, kbx: s.dx * 80, kby: s.dy * 80, type: 'slash' })) {
+              this.comic(pl.x, pl.y - 26, 'SLASH!', '#dffbff', 0.7, 0.5);
+              g.hitStop(0.05);
+            }
             this.burst(pl.x, pl.y, 8, '#7fe7ff', 8, 70);
           }
         }
@@ -127,11 +131,14 @@ window.SFC = window.SFC || {};
         if (m.arm > 0) continue;
         for (const pl of g.teams[1 - m.team].players) {
           if (Math.hypot(pl.x - m.x, pl.y - m.y) < m.r + pl.radius) {
-            if (pl.hasBall) g.looseBall(pl, U.rand(-1, 1), U.rand(-1, 1), 90);
+            if (pl.hasBall) { g.looseBall(pl, U.rand(-1, 1), U.rand(-1, 1), 90); if (m.src) g.cores.steal(m.src); }
             pl.hitImmune = 0;
             pl.hit({ stun: m.stun, kbx: 0, kby: 0, type: 'emp' });
-            this.burst(m.x, m.y, 4, '#c6ff3f', 14, 90);
-            this.ring(m.x, m.y, '#c6ff3f');
+            // nổ vòng điện + tia sét giật người dẫm phải
+            this.burst(m.x, m.y, 4, '#7fe7ff', 14, 90);
+            this.wave(m.x, m.y, 26, '#7fe7ff', 0.4, 2);
+            for (let i = 0; i < 2; i++) this.bolt(m.x, m.y - 2, pl.x + U.rand(-4, 4), pl.y - 16 - i * 4, i ? '#ffffff' : '#7fe7ff', 0.35);
+            this.comic(pl.x, pl.y - 28, 'ZAP!', '#7fe7ff', 0.7, 0.5);
             g.sfx('zap');
             m.t = 0;
             break;

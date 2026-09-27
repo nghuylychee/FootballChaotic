@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VFX Sandbox — Street Football Chaos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap&subset=vietnamese" rel="stylesheet" />
+  <style>
+    :root { --ink: #140c16; --paper: #f3ead7; --muted: #9aa3b5; --gold: #ffe14f; --panel: #1c1320; --edge: #3b2a36; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #07050a; color: var(--paper); font-family: "VT323", monospace; min-height: 100%; }
+    body { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 12px; padding: 12px; align-items: start; }
+    @media (max-width: 900px) { body { grid-template-columns: 1fr; } }
+    header { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+    h1 { font-family: "Press Start 2P", monospace; font-size: 14px; color: var(--gold); text-shadow: 2px 2px 0 var(--ink); }
+    header p { font-size: 16px; color: var(--muted); }
+    .view { position: relative; }
+    canvas { display: block; width: 100%; aspect-ratio: 16 / 9; image-rendering: pixelated; border: 1px solid var(--edge); background: #000; }
+    .hint { font-size: 15px; color: var(--muted); margin-top: 6px; }
+    .hint kbd, .btn kbd { font-family: "VT323", monospace; font-size: 13px; padding: 0 4px; background: #2a1f2c; border: 1px solid #5a4658; border-bottom-width: 2px; color: var(--gold); }
+    aside { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 60px); overflow-y: auto; padding-right: 4px; }
+    section { background: var(--panel); border: 1px solid var(--edge); padding: 8px; }
+    h2 { font-size: 18px; letter-spacing: 1px; color: var(--gold); margin-bottom: 6px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .btn { font: inherit; font-size: 16px; text-align: left; color: var(--paper); background: #120c16; border: 1px solid var(--edge); border-left: 3px solid var(--c, #5a4658); padding: 3px 6px; cursor: pointer; line-height: 1.05; }
+    .btn:hover { border-color: var(--gold); color: var(--gold); }
+    .btn small { display: block; font-size: 12px; color: var(--muted); }
+    .btn.big { grid-column: 1 / -1; }
+    .btn.on { background: #2b2410; border-color: var(--gold); }
+    .row { display: flex; gap: 4px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>VFX SANDBOX</h1>
+    <p>Bộ công cụ hiệu ứng + thử Core thật (docs/CORE_DESIGN.md). Bấm nút hoặc phím số để xem.</p>
+  </header>
+  <div class="view">
+    <canvas id="game" width="640" height="360"></canvas>
+    <p class="hint">Điều khiển cầu thủ vàng: <kbd>← ↑ ↓ →</kbd> di chuyển · <kbd>E</kbd> chạy · <kbd>D</kbd> sút / đấm · <kbd>A</kbd> chuyền bổng / đá bay · <kbd>Z</kbd> lướt.
+      Khoảnh khắc: <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>. Bấm vào khung game trước để nhận phím.</p>
+  </div>
+  <aside>
+    <section>
+      <h2>ĐIỀU KHIỂN CẢNH</h2>
+      <div class="row" id="scene"></div>
+    </section>
+    <section>
+      <h2>CORE THẬT (ĐỘI VÀNG)</h2>
+      <div class="row" id="coretools"></div>
+      <div class="grid" id="cores" style="margin-top:4px"></div>
+    </section>
+    <section>
+      <h2>KHOẢNH KHẮC (DEMO CORE)</h2>
+      <div class="grid" id="moments"></div>
+    </section>
+    <section>
+      <h2>VIÊN GẠCH</h2>
+      <div class="grid" id="bricks"></div>
+    </section>
+  </aside>
+
+  <script src="config/game.config.js"></script>
+  <script src="config/controls.config.js"></script>
+  <script src="config/teams.config.js"></script>
+  <script src="config/cores.config.js"></script>
+  <script src="config/net.config.js"></script>
+  <script src="config/progression.config.js"></script>
+  <script src="src/core/utils.js"></script>
+  <script src="src/core/input.js"></script>
+  <script src="src/core/audio.js"></script>
+  <script src="src/core/profile.js"></script>
+  <script src="src/entities/ball.js"></script>
+  <script src="src/entities/player.js"></script>
+  <script src="src/systems/actions.js"></script>
+  <script src="src/systems/cores.js"></script>
+  <script src="src/systems/cores-new.js"></script>
+  <script src="src/systems/effects.js"></script>
+  <script src="src/systems/vfxkit.js"></script>
+  <script src="src/systems/ai.js"></script>
+  <script src="src/systems/human.js"></script>
+  <script src="src/game/match.js"></script>
+  <script src="src/render/sprites.js"></script>
+  <script src="src/render/background.js"></script>
+  <script src="src/render/vfx.js"></script>
+  <script src="src/render/renderer.js"></script>
+  <script src="src/dev/sandbox.js"></script>
+</body>
+</html>

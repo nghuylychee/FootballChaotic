@@ -6,7 +6,7 @@
 window.SFC = window.SFC || {};
 
 (function () {
-  const ACTIONS = ['up', 'down', 'left', 'right', 'sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'switch'];
+  const ACTIONS = ['up', 'down', 'left', 'right', 'sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'switch', 'ultimate'];
   const BIT = {};
   ACTIONS.forEach((a, i) => (BIT[a] = 1 << i));
 
@@ -17,10 +17,14 @@ window.SFC = window.SFC || {};
 
   // các trường cầu thủ cần để vẽ (sprites + renderer)
   const PF = ['x', 'y', 'vx', 'vy', 'facing', 'state', 'stamina', 'charging', 'charge',
-    'passMode', 'passCharge', 'passBase', 'flash', 'anim', 'ironCd', 'atkType', 'atkT', 'airZ'];
+    'passMode', 'passCharge', 'passBase', 'flash', 'anim', 'auraC', 'auraT', 'atkType', 'atkT', 'airZ', 'sizeMul'];
   const P_BOOL = { charging: true };
   // cooldown kỹ năng (thanh kỹ năng HUD của người chơi tại máy khách)
   const CD = ['light', 'hard', 'skill'];
+  // tài nguyên Core của từng cầu thủ (HUD máy khách)
+  const RS = ['momentum', 'rage', 'guard'];
+  // cờ hiệu ứng của bóng (bitmask) — lửa / sét có tác dụng gameplay, còn lại chỉ để vẽ
+  const BFX = ['fire', 'thunder', 'string', 'spiral', 'laser', 'duo', 'ghost', 'meteor'];
 
   /** Phím của người chơi ở máy khách, được host dùng thay cho SFC.Input */
   class RemoteInput {
@@ -52,13 +56,21 @@ window.SFC = window.SFC || {};
     // Ghi lại mọi hiệu ứng / âm thanh phát sinh để gửi kèm snapshot
     capture(g) {
       const out = (g.netOut = { fx: [], sfx: [], ev: [] });
+      let depth = 0;
       const E = g.effects;
-      for (const m of ['burst', 'text', 'ring', 'shake', 'flash']) {
+      // hiệu ứng cơ bản + VFX Kit (systems/vfxkit.js) — tham số đều là giá trị nguyên thuỷ nên gửi thẳng được
+      for (const m of ['burst', 'text', 'ring', 'shake', 'flash', 'wave', 'decal', 'stretch', 'clone', 'projectile', 'beam', 'vortex', 'bolt',
+        'comic', 'combo', 'shield', 'portal', 'netFire', 'popClone', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint']) {
         const orig = E[m];
-        E[m] = function (...a) { out.fx.push([m].concat(a.map(pk))); return orig.apply(this, a); };
+        // chỉ ghi lệnh ngoài cùng (combo -> comic, clone -> burst...) để máy khách không phát lại 2 lần
+        E[m] = function (...a) {
+          if (!depth) out.fx.push([m].concat(a.map(pk)));
+          depth++;
+          try { return orig.apply(this, a); } finally { depth--; }
+        };
       }
       const oa = E.afterimage;
-      E.afterimage = function (p) { out.fx.push(['afterimage', p.id, r1(p.x), r1(p.y), r2(p.facing), r2(p.anim)]); return oa.call(this, p); };
+      E.afterimage = function (p, t) { out.fx.push(['afterimage', p.id, r1(p.x), r1(p.y), r2(p.facing), r2(p.anim), t || 0.3]); return oa.call(this, p, t); };
       const os = g.sfx;
       g.sfx = function (n, a) { out.sfx.push(a === undefined ? [n] : [n, pk(a)]); return os.call(this, n, a); };
     },
@@ -81,9 +93,10 @@ window.SFC = window.SFC || {};
         fp: g.finalPush ? 1 : 0, gg: g.golden ? 1 : 0,
         sc: [g.teams[0].score, g.teams[1].score],
         ct: g.ctrl.map((p) => (p ? p.id : -1)),
-        p: g.players.map((p) => PF.map((k) => pk(p[k])).concat(CD.map((k) => r2(p.cd[k])))),
+        p: g.players.map((p) => PF.map((k) => pk(p[k])).concat(CD.map((k) => r2(p.cd[k])), RS.map((k) => p.res[k]))),
+        ul: g.ult.map(r2), rh: g.rhythm, ux: g.upgradeIdx,
         b: [r1(b.x), r1(b.y), r1(b.z), r1(b.vx), r1(b.vy), r1(b.vz), r1(b.roll), b.owner ? b.owner.id : -1,
-          b.fx.fire ? 1 : 0, b.fx.thunder ? 1 : 0],
+          BFX.reduce((m, k, i) => (b.fx[k] ? m | (1 << i) : m), 0), b.skin || 0],
         co: g.cores.owned,
         ae: [0, 1].map((t) => (g.cores.shieldReady(t) ? 1 : 0)),
         hz: {
@@ -96,7 +109,7 @@ window.SFC = window.SFC || {};
       if (d) {
         const picked = {};
         for (const t in d.options) picked[t] = d.picked[t] ? 1 : 0;
-        s.dr = { o: d.options, pk: picked, r: d.round, l: d.limit, t: r1(d.t) };
+        s.dr = { o: d.options, pk: picked, r: d.round, l: d.limit, t: r1(d.t), pre: d.pre ? 1 : 0, rr: d.rerolls };
       }
       return s;
     },
@@ -106,20 +119,24 @@ window.SFC = window.SFC || {};
       g.state = s.st; g.stateT = s.sT; g.time = s.tm; g.elapsed = s.el; g.goldenT = s.gT;
       g.finalPush = !!s.fp; g.golden = !!s.gg;
       g.teams[0].score = s.sc[0]; g.teams[1].score = s.sc[1];
+      if (s.ul) g.ult = s.ul;
+      if (s.rh) g.rhythm = s.rh;
+      if (s.ux != null) g.upgradeIdx = s.ux;
       g.ctrl = s.ct.map((id) => g.players.find((p) => p.id === id) || null);
 
       s.p.forEach((row, i) => {
         const p = g.players[i];
         PF.forEach((k, j) => { p[k] = P_BOOL[k] ? !!row[j] : row[j]; });
         CD.forEach((k, j) => { p.cd[k] = row[PF.length + j]; });
+        RS.forEach((k, j) => { p.res[k] = row[PF.length + CD.length + j]; });
       });
 
       const b = g.ball, bb = s.b;
       [b.x, b.y, b.z, b.vx, b.vy, b.vz, b.roll] = bb;
       b.owner = bb[7] >= 0 ? g.players.find((p) => p.id === bb[7]) : null;
       b.fx = {};
-      if (bb[8]) b.fx.fire = {};
-      if (bb[9]) b.fx.thunder = {};
+      BFX.forEach((k, i) => { if (bb[8] & (1 << i)) b.fx[k] = {}; });
+      b.skin = bb[9] || null;
 
       // Core: chỉ thêm id mới (giữ nguyên thứ tự sở hữu)
       for (let t = 0; t < 2; t++) {
@@ -142,7 +159,7 @@ window.SFC = window.SFC || {};
 
       if (s.dr) {
         const prev = g.draft;
-        g.draft = { options: s.dr.o, picked: Object.assign({}, s.dr.pk), round: s.dr.r, limit: s.dr.l, t: s.dr.t, aiPicks: [] };
+        g.draft = { options: s.dr.o, picked: Object.assign({}, s.dr.pk), round: s.dr.r, limit: s.dr.l, t: s.dr.t, aiPicks: [], pre: !!s.dr.pre, rerolls: s.dr.rr || {} };
         // khách vừa chọn nhưng host chưa xác nhận -> giữ trạng thái đã chọn
         if (prev && prev.round === s.dr.r && prev.localPick != null) {
           g.draft.localPick = prev.localPick;
@@ -184,7 +201,7 @@ window.SFC = window.SFC || {};
         const [m, ...a] = f;
         if (m === 'afterimage') {
           const p = g.players.find((q) => q.id === a[0]);
-          if (p) g.effects.afterimage({ x: a[1], y: a[2], facing: a[3], team: p.team, role: p.role, look: p.look, anim: a[4] });
+          if (p) g.effects.afterimage({ x: a[1], y: a[2], facing: a[3], team: p.team, role: p.role, look: p.look, anim: a[4] }, a[5] || 0.3);
         } else if (g.effects[m]) g.effects[m](...a);
       }
       for (const [n, a] of pack.sfx) if (SFC.Audio[n]) SFC.Audio[n](a);

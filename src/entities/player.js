@@ -19,6 +19,13 @@ window.SFC = window.SFC || {};
       this.name = tcfg.players[idx] || role;
       this.stats = Object.assign({ speed: 1, power: 1, pass: 1, tackle: 1, dribble: 1, accuracy: 1 }, tcfg.stats);
       this.radius = SFC_CONFIG.game.player.radius;
+      this.res = { momentum: 0, rage: 0, guard: 0 };   // tài nguyên Core (Đà, Nộ, Giáp) — Nhịp là của cả đội (g.rhythm)
+      this.resT = { sprint: 0, idle: 0, rage: 0, frenzy: 0, guard: 0, iron: 0 };
+      this.extraDash = 0;     // ẢO ẢNH 4: thêm 1 lần Z
+      this.lastHitBy = null;  // người vừa đánh trúng (tính BONK cho đúng đội)
+      this.sizeMul = 1;       // VFX Kit khổng lồ: tỉ lệ vẽ + va chạm hiện tại
+      this.sizeTarget = 1;
+      this.sizeT = 0;
 
       const skins = SFC_CONFIG.teams.skins;
       this.look = {
@@ -49,7 +56,13 @@ window.SFC = window.SFC || {};
       this.tackleImmune = 0;
       this.keeperHold = 0;    // còn bao lâu được bảo vệ khi ôm bóng trong vòng cấm nhà
       this.hitImmune = 0;
-      this.ironCd = 0;
+      this.recvT = -1;        // lúc nhận đường chuyền (Một-Hai, Chạm Một)
+      this.counterT = 0;      // Phản Đòn: hạn cú đấm miễn phí
+      this.titanT = 0;        // Hoá Khổng Lồ: còn bao lâu
+      this.juggleN = 0;       // Tâng Người: số lần bị tâng trong 1 lần bay
+      this.slamKind = null;   // đang nhảy: ground (Dậm Đất) | meteor (Thiên Thạch Giáng)
+      this.auraC = '';      // hào quang Core (màu) — vẽ ở render/vfx.js, đồng bộ online
+      this.auraT = 0;
       this.flash = 0;
       this.buffs = [];       // {speed, t}
       this.confused = null;  // {decoy, t}
@@ -67,7 +80,7 @@ window.SFC = window.SFC || {};
 
     maxSpeed() {
       const C = SFC_CONFIG.game, g = this.game, cores = g.cores;
-      let s = C.player.speed * this.stats.speed * cores.mod(this.team, 'speed');
+      let s = C.player.speed * this.stats.speed * cores.pmod(this, 'speed');   // gồm Đà
       if (this.hasBall) s *= C.player.dribbleSpeedMult * (0.85 + this.stats.dribble * 0.15);
       else s *= cores.mod(this.team, 'offBallSpeed');
       if (this.sprinting) s *= C.player.sprintMult;
@@ -85,7 +98,8 @@ window.SFC = window.SFC || {};
       this.tackleImmune = Math.max(0, this.tackleImmune - dt);
       this.keeperHold = Math.max(0, this.keeperHold - dt);
       this.hitImmune = Math.max(0, this.hitImmune - dt);
-      this.ironCd = Math.max(0, this.ironCd - dt);
+      if (this.auraT > 0 && (this.auraT -= dt) <= 0) { this.auraT = 0; this.auraC = ''; }
+      if (this.titanT > 0) this.titanT = Math.max(0, this.titanT - dt);
       this.flash = Math.max(0, this.flash - dt);
       if (this.buffs.length) {
         this.buffs.forEach((b) => (b.t -= dt));
@@ -98,7 +112,14 @@ window.SFC = window.SFC || {};
       const kd = air ? C.combat.airDamp : C.combat.knockbackDamp;
       this.kbx = U.damp(this.kbx, kd, dt);
       this.kby = U.damp(this.kby, kd, dt);
-      if (air) this.updateAir(dt);
+      if (air && this.state !== 'meteor') this.updateAir(dt);
+      // khổng lồ: phình / co lại mượt, bán kính va chạm theo tỉ lệ
+      if (this.sizeT > 0 && (this.sizeT -= dt) <= 0) this.sizeTarget = 1;
+      if (this.sizeMul !== this.sizeTarget) {
+        this.sizeMul += (this.sizeTarget - this.sizeMul) * Math.min(1, dt * 10);
+        if (Math.abs(this.sizeMul - this.sizeTarget) < 0.01) this.sizeMul = this.sizeTarget;
+        this.radius = SFC_CONFIG.game.player.radius * this.sizeMul;
+      }
 
       switch (this.state) {
         case 'stun':
@@ -134,9 +155,20 @@ window.SFC = window.SFC || {};
           if (this.trailLeft > 0 && (this.trailT -= dt) <= 0) {
             this.trailLeft--;
             this.trailT += C.skill.dashTime / C.skill.afterimages;
-            g.effects.afterimage(this);
+            g.effects.afterimage(this, this.trailLife || 0.3);
           }
           if (this.stateT <= 0) { this.state = 'normal'; this.trailLeft = 0; this.vx *= 0.5; this.vy *= 0.5; }
+          break;
+        case 'slam':
+          // đang bật nhảy (Dậm Đất / Thiên Thạch Giáng) — tiếp đất xử lý ở updateAir
+          this.stateT -= dt;
+          this.vx = U.damp(this.vx, 3, dt); this.vy = U.damp(this.vy, 3, dt);
+          if (this.stateT <= 0) this.state = 'normal';
+          break;
+        case 'meteor':
+          // Thiên Thạch Giáng: lơ lửng ngoài màn hình, bóng đổ (tâm ngắm) do Core điều khiển
+          this.stateT -= dt;
+          this.vx = 0; this.vy = 0;
           break;
         case 'recover':
           this.stateT -= dt;
@@ -165,6 +197,7 @@ window.SFC = window.SFC || {};
         g.effects.text(nx, ny - 26, 'BONK!', '#ffffff');
         g.effects.shake(SFC_CONFIG.game.fx.shakeHit * 1.5);
         g.sfx('hit');
+        if (this.state === 'stun') g.cores.wallBonk(this, this.lastHitBy);
       }
       this.x = nx;
       this.y = ny;
@@ -177,6 +210,8 @@ window.SFC = window.SFC || {};
       this.airZ += this.airVz * dt;
       if (this.airZ > 0) return;
       this.airZ = 0;
+      this.juggleN = 0;
+      if (this.state === 'slam') { this.airVz = 0; g.cores.slamLand(this); return; }
       if (this.airVz < -140) {
         this.airVz = -this.airVz * 0.3;
         this.airZ = 0.01;
@@ -197,8 +232,10 @@ window.SFC = window.SFC || {};
       const moving = len > 0.1;
 
       const wantSprint = this.intent.sprint && moving;
+      const was = this.sprinting;
       this.sprinting = wantSprint && this.stamina > (this.sprinting ? 0 : C.staminaMinToSprint);
-      if (this.sprinting) this.stamina -= C.staminaDrain * dt;
+      if (this.sprinting && !was) this.game.cores.dispatch(this.team, 'onSprintStart', this);
+      if (this.sprinting) this.stamina -= C.staminaDrain * this.game.cores.sprintDrain(this) * dt;
       else this.stamina += C.staminaRegen * this.game.cores.mod(this.team, 'sprintRegen') * dt;
       this.stamina = U.clamp(this.stamina, 0, C.staminaMax);
 
@@ -211,6 +248,16 @@ window.SFC = window.SFC || {};
       else { this.vx += (dvx / dl) * a; this.vy += (dvy / dl) * a; }
 
       if (moving) this.turnTo(Math.atan2(my, mx), dt);
+    }
+
+    // hào quang Core (Phản Công, Nhạc Trưởng...): màu + thời gian
+    glow(color, t) { this.auraC = color; this.auraT = Math.max(this.auraT, t); }
+
+    // VFX Kit GI: phóng to scale lần trong t giây (0 = tới khi gọi lại với scale 1)
+    giant(scale, t) {
+      this.sizeTarget = scale;
+      this.sizeT = t;
+      this.game.effects.burst(this.x, this.y, 8, '#ffffff', 14, 90);
     }
 
     cancelPass() {
@@ -233,7 +280,8 @@ window.SFC = window.SFC || {};
      */
     hit(opts) {
       const g = this.game;
-      const stun = opts.stun || 0;
+      const stun = (opts.stun || 0) * (opts.stun > 0 ? g.cores.stunTaken(this) : 1);   // Nắm Đấm Sắt
+      if (this.state === 'meteor') return false;   // đang ở ngoài màn hình (Thiên Thạch Giáng)
       if (stun > 0 && (this.hitImmune > 0 || this.state === 'stun')) return false;
       if (stun > 0 && g.cores.blockHit(this, opts)) {
         this.kbx += (opts.kbx || 0) * 0.3; this.kby += (opts.kby || 0) * 0.3;
@@ -244,6 +292,7 @@ window.SFC = window.SFC || {};
       if (stun <= 0) return true;
 
       if (this.hasBall) g.looseBall(this, opts.kbx || U.rand(-1, 1), opts.kby || U.rand(-1, 1));
+      this.lastHitBy = opts.source || null;
       if (opts.launch) { this.airVz = opts.launch; this.airZ = Math.max(this.airZ, 0.5); }
       this.state = 'stun';
       this.stateT = stun;

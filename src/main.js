@@ -31,7 +31,7 @@
         const avatar = Object.assign(SFC.Profile.avatar(), { role: soloIdx == null ? 'FWD' : C.roles[soloIdx] });
         opts = {
           home, away, difficulty: o.diffs[this.sel.diff], humanTeam: 0, solo: [soloIdx, null],
-          avatars: [avatar, null], coreUnlocks: [SFC.Profile.unlockedCores(), null],
+          avatars: [avatar, null], coreUnlocks: SFC_CONFIG.progression.coreGacha ? [SFC.Profile.unlockedCores(), null] : null,
         };
       }
       this.mode = 'single';
@@ -83,6 +83,11 @@
     pickCore(i) {
       if (this.mode === 'online') SFC.Online.pick(i);
       else if (this.game) this.game.pickCore(i);
+    },
+
+    rerollCore() {
+      if (this.mode === 'online') SFC.Online.reroll();
+      else if (this.game) this.game.rerollDraft();
     },
 
     resume() {

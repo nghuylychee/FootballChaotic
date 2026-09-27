@@ -692,6 +692,65 @@ window.SFC = window.SFC || {};
     return hy;
   }
 
+  /* ---------- bóng: skin (VFX Kit BL) ---------- */
+  function drawBallSkin(ctx, b, x, by) {
+    const t = (b.roll || 0) * 0.3, now = performance.now() / 1000;
+    switch (b.skin) {
+      case 'blackhole':
+        ctx.globalCompositeOperation = 'lighter';
+        disc(ctx, x, by, 7, 'rgba(157,123,255,0.35)');
+        ctx.globalCompositeOperation = 'source-over';
+        disc(ctx, x, by, 5, '#9d7bff'); disc(ctx, x, by, 4, '#07040c');
+        px(ctx, x + Math.round(Math.cos(now * 8) * 5), by + Math.round(Math.sin(now * 8) * 3), 1, 1, '#ffffff');
+        return true;
+      case 'bomb': {
+        disc(ctx, x, by, 4, OUT); disc(ctx, x, by, 3, '#262a36'); px(ctx, x - 2, by - 2, 1, 1, '#9aa3b5');
+        px(ctx, x + 1, by - 5, 1, 2, '#c7a26a'); px(ctx, x + 2, by - 6, 1, 1, '#c7a26a');
+        if (Math.floor(now * 12) % 2) { ctx.globalCompositeOperation = 'lighter'; px(ctx, x + 2, by - 8, 2, 2, '#ffd23f'); px(ctx, x + 3, by - 9, 1, 1, '#ff6a1f'); ctx.globalCompositeOperation = 'source-over'; }
+        return true;
+      }
+      case 'fireball':
+        ctx.globalCompositeOperation = 'lighter';
+        disc(ctx, x, by, 8, 'rgba(255,90,20,0.35)'); disc(ctx, x, by, 6, 'rgba(255,160,40,0.55)');
+        ctx.globalCompositeOperation = 'source-over';
+        disc(ctx, x, by, 4, '#ffd9a0'); px(ctx, x - 1, by - 2, 2, 1, '#ffffff');
+        return true;
+      case 'light':
+        ctx.globalCompositeOperation = 'lighter';
+        disc(ctx, x, by, 7, 'rgba(255,225,120,0.3)');
+        ctx.globalCompositeOperation = 'source-over';
+        disc(ctx, x, by, 4, OUT); disc(ctx, x, by, 3, '#fff6c0'); px(ctx, x - 1, by - 2, 1, 1, '#ffffff');
+        return true;
+      case 'melon':
+        disc(ctx, x, by, 5, OUT); disc(ctx, x, by, 4, '#2f8f2a');
+        for (let i = -3; i <= 3; i += 2) px(ctx, x + i, by - 3 + Math.abs(i) / 2, 1, 6 - Math.abs(i), '#6bff4f');
+        return true;
+      case 'bowling':
+        disc(ctx, x, by, 5, OUT); disc(ctx, x, by, 4, '#3b1a5a');
+        px(ctx, x + Math.round(Math.cos(t) * 1.5), by - 1, 1, 1, '#07040c'); px(ctx, x + 2, by, 1, 1, '#07040c'); px(ctx, x, by + 1, 1, 1, '#07040c');
+        px(ctx, x - 2, by - 3, 2, 1, '#9d7bff');
+        return true;
+      case 'wheel': {
+        disc(ctx, x, by, 5, OUT); disc(ctx, x, by, 4, '#2a2630'); disc(ctx, x, by, 2, '#9aa3b5');
+        for (let i = 0; i < 4; i++) { const a = t + (i * Math.PI) / 2; px(ctx, x + Math.round(Math.cos(a) * 3), by + Math.round(Math.sin(a) * 3), 1, 1, '#c7ccd6'); }
+        px(ctx, x, by, 1, 1, '#ffffff');
+        return true;
+      }
+      case 'cube': {
+        const f = Math.floor(t) % 2;
+        px(ctx, x - 4, by - 4, 8, 8, OUT); px(ctx, x - 3, by - 3, 6, 6, f ? '#ff3d5a' : '#3f8cff');
+        px(ctx, x - 3, by - 3, 6, 1, 'rgba(255,255,255,0.5)'); px(ctx, x - 1, by - 1, 2, 2, f ? '#ffd23f' : '#9dff3d');
+        return true;
+      }
+      case 'chicken':
+        px(ctx, x - 4, by - 3, 8, 6, OUT); px(ctx, x - 3, by - 2, 6, 4, '#f3ead7');
+        px(ctx, x + 3, by - 5, 3, 3, OUT); px(ctx, x + 3, by - 4, 2, 2, '#f3ead7'); px(ctx, x + 3, by - 6, 2, 1, '#d7263d');
+        px(ctx, x + 5, by - 4, 2, 1, '#ff8a3f'); px(ctx, x + 4, by - 4, 1, 1, OUT);
+        return true;
+    }
+    return false;
+  }
+
   /* ---------- bóng ---------- */
   function drawBall(ctx, b, alpha = 1) {
     const x = Math.round(b.x), y = Math.round(b.y);
@@ -700,6 +759,19 @@ window.SFC = window.SFC || {};
     ellipse(ctx, x, y + 1, s + 0.5, s * 0.5 + 0.3, 'rgba(0,0,0,0.4)');
     const by = Math.round(y - b.z - 3);
     const fx = b.fx || {};
+    // VFX Kit BL: bóng đổi hình (lỗ đen, bom, cầu lửa, dưa hấu...)
+    if (b.skin && drawBallSkin(ctx, b, x, by)) { ctx.globalAlpha = 1; return; }
+    // Hoả Cầu: quả cầu lửa to gấp đôi, lửa bập bùng
+    if (fx.fire) {
+      const fl = Math.sin(performance.now() / 45) > 0 ? 1 : 0;
+      ctx.globalCompositeOperation = 'lighter';
+      disc(ctx, x, by, 10 + fl, 'rgba(255,70,20,0.3)'); disc(ctx, x, by, 8, 'rgba(255,140,40,0.5)'); disc(ctx, x, by - 1, 6, 'rgba(255,210,80,0.6)');
+      for (let i = 0; i < 3; i++) px(ctx, x - 4 + Math.round(Math.random() * 8), by - 7 - Math.round(Math.random() * 4), 1, 2, Math.random() < 0.5 ? '#ffd23f' : '#ff6a1f');
+      ctx.globalCompositeOperation = 'source-over';
+      disc(ctx, x, by, 5, '#ffd9a0'); px(ctx, x - 2, by - 3, 2, 1, '#ffffff');
+      ctx.globalAlpha = 1;
+      return;
+    }
     if (fx.fire || fx.thunder) {
       ctx.globalCompositeOperation = 'lighter';
       disc(ctx, x, by, 6, fx.fire ? 'rgba(255,120,30,0.45)' : 'rgba(80,220,255,0.45)');

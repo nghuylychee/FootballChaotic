@@ -30,7 +30,13 @@ SFC_CONFIG.game = {
   match: {
     duration: 150,               // giây
     // Core Upgrade chỉ mở khi bóng chết: sau mỗi bàn thắng, trước khi giao bóng lại
-    maxUpgrades: 4,              // số lần chọn Core tối đa mỗi trận
+    maxUpgrades: 5,              // số lần chọn Core tối đa mỗi trận (gồm lượt khởi đầu)
+    preKickoffDraft: true,       // chọn 1 Core trước khi giao bóng đầu trận
+    // lượt chọn Core tích theo thời gian: cứ draftEvery giây được +1 lượt, nhưng chỉ mở khi có bàn thắng (chọn liền các lượt đang chờ).
+    // Lượt cuối luôn có trước FINAL PUSH: tới FINAL PUSH mà còn lượt thì tạm dừng trận để chọn nốt.
+    // 0 = tự chia: (duration - finalPushTime) / maxUpgrades -> 150s, 30s cuối, 5 lượt: +1 lượt mỗi 24s (lượt cuối ở giây 96,
+    //     còn 24s để có bàn thắng trước FINAL PUSH; không có bàn thì tạm dừng trận để chọn)
+    draftEvery: 0,
     upgradeChoices: 3,
     finalPushTime: 30,           // 30s cuối = FINAL PUSH
     finalPushGoalValue: 2,       // bàn thắng trong Final Push được x2

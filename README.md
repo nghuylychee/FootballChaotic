@@ -61,6 +61,8 @@ vào lưới vẫn ăn mừng rồi giao bóng lại (không có đối thủ th
   Màn kết quả diễn hoạt từng dòng thưởng, gold đếm lên, thanh XP chạy qua từng level, báo hộp / Core vừa mở khoá theo level.
 - **Shop = hộp gacha** (kiểu CSGO): trả gold, dải item quay chậm dần rồi dừng ở món trúng (có tiếng tách, nhạc lộ đồ theo độ hiếm).
   Hộp Đường Phố (costume, LV1) · Hộp Huyền Thoại (costume từ HIẾM, LV6) · Hộp Core (Core Upgrade, LV2). Xem tỉ lệ + toàn bộ món trong hộp trước khi mở.
+- **Gacha Core đang TẠM TẮT** (`config/progression.config.js` → `coreGacha: false`): mọi Core dùng được ngay cho mọi người chơi
+  (chơi đơn + online), Hộp Core ẩn khỏi SHOP, mục CORE trong túi đồ thành bộ sưu tập đủ 53 lá. Core đã quay trước đó vẫn giữ trong hồ sơ; bật lại = `true`.
   Độ hiếm: THƯỜNG · HIẾM · SỬ THI · HUYỀN THOẠI · THẦN THOẠI (màu xám / xanh / tím / đỏ / vàng).
 - **Costume** 4 slot phối tự do, mỗi slot 20 món (tính cả đồ mặc định): tóc & mũ · mặt · giày · hiệu ứng khi chạy. Core quay được chỉ vào pool chọn Core giữa trận khi đủ level của Core đó.
 - **Túi đồ** (từ NHÂN VẬT hoặc SHOP): trùng thì cộng số lượng. Enter trang bị · X phân rã ra gold (món SỬ THI trở lên / món cuối đang mặc
@@ -137,10 +139,34 @@ src/
 ### Thêm Core mới
 1. Thêm entry vào `config/cores.config.js`.
 2. Nếu chỉ cần chỉ số thụ động: dùng `mods` (speed, offBallSpeed, shotPower, passSpeed,
-   tackleRange / tackleChance (tầm / tỉ lệ cướp bóng của Light attack), knockback, chargeTime, accuracy, sprintRegen...). Không cần code.
-3. Nếu cần hành vi riêng: thêm object cùng `id` vào `Behaviors` trong `src/systems/cores.js`
-   với các hook: `onShoot`, `onPass`, `onSkillMove`, `onSprintStart`, `onHardAttack`, `onTackle`,
-   `onTackleWin`, `onPossessionGained`, `onHit`, `onGoalLine`, `onWallHit`, `update`.
+   tackleRange / tackleChance (tầm / tỉ lệ cướp bóng của Light attack), knockback, chargeTime, accuracy, sprintRegen, momentumGain...).
+   Theo luật "không Core vô hình" (docs/CORE_DESIGN.md), Core chỉ số vẫn nên có hình ở `src/render/vfx.js`.
+3. Nếu cần hành vi riêng: thêm object cùng `id` vào `Behaviors` trong `src/systems/cores.js` (Core cũ) hoặc `src/systems/cores-new.js` (Core Giai đoạn 3)
+   với các hook: `onShoot`, `onChargedShot`, `onPass`, `onPassReceived`, `onSkillMove`, `onSprintStart`, `onHardAttack`, `onTackle`,
+   `onTackleWin`, `onLightHit`, `onHardHit`, `onWallBonk`, `onDodge`, `onSteal`, `onGoalScored`, `onKickoff`, `onPossessionGained`,
+   `onHit`, `onGoalLine`, `onWallHit`, `update`; Tuyệt kỹ: `onUltimate` + `aiUse` (danh sách đầy đủ ở đầu file).
+
+### Core Upgrade (docs/CORE_DESIGN.md)
+- Mỗi Core có **trường phái** (`tags`: runner / playmaker / striker / brawler / launcher / trickster / iron / chaos), **vai trò** (`role`) và **độ hiếm** (`rarity`) trong `config/cores.config.js`.
+- **Cộng hưởng**: gom 2 / 3 / 4 Core cùng trường phái (Core cầu nối tính cho cả hai) → mở bonus (`sets`); bậc 4 đổi **hình thái** cả đội. Hiện trên HUD dạng `🏃3`.
+- **Tài nguyên**: Đà (chạy nước rút), Nhịp (chuyền tới chân, của cả đội), Nộ (đấm trúng), Giáp (chặn 1 lần choáng) — chỉ chạy khi đội có Core của trường phái đó; bộ đếm ở thanh kỹ năng.
+- **Tuyệt kỹ** (`role: 'ult'`, phím **X**): năng lượng nạp khi ghi bàn / cướp bóng; cut-in rồi mới ra chiêu; AI tự dùng. Chỉ xuất hiện khi đã có ≥ 2 Core cùng trường phái, mỗi đội tối đa 1.
+- **Chọn Core**: 5 lượt — 1 trước khi giao bóng, sau đó cứ `match.draftEvery` giây (mặc định 24s) tích +1 lượt, **chỉ mở khi có bàn thắng**
+  (tích nhiều thì chọn liền); tới FINAL PUSH mà còn lượt thì tạm dừng trận để chọn nốt. Mỗi lượt được **đổi 3 lá 1 lần (phím R)**; trọng số theo build, từ lượt 2 luôn có ít nhất 1 lá cùng trường phái. Logic ở `src/systems/cores.js` (`CoreSystem`).
+- **Không Core vô hình**: tài nguyên hiện trên người cầu thủ (tia điện dưới chân = Đà, nắm tay bốc lửa = Nộ, ánh bạc + khiên nhỏ = Giáp,
+  nốt nhạc quanh đội = Nhịp), bóng mang vệt theo Core (`ball.fx`: dây đàn vàng, xoắn rồng, laser, sét), hào quang cầu thủ (`player.glow`).
+  Vẽ ở `src/render/vfx.js` (`under` / `look` / `ballFx`).
+- **53 Core**, mỗi trường phái 1 **Tuyệt kỹ**: Tia Chớp Xuyên Sân 🏃, Tiki-taka Vô Tận 🎼, Cú Sút Sao Băng 🎯, Bách Quyền 🥊, Thiên Thạch Giáng 🦵 (điều khiển tâm ngắm bằng mũi tên), Đại Phân Thân 🌀, Hoá Khổng Lồ 🛡.
+- **Ảnh động xem trước Core** (`src/ui/corepreview.js`): trận mini thật chạy kịch bản của từng Core (bảng `SCENES`), vẽ bằng Renderer vào `<canvas data-preview="id">` rồi `SFC.CorePreview.scan(el)`. Core mới cần thêm 1 kịch bản (mặc định: chạy nước rút).
+- Màn kết quả: **Khoảnh khắc của trận** (sự kiện `ultimate` / `moment`) + build nổi bật mỗi đội.
+- Debug: `SFC.app.game.cores.add(0, 'lightning_dash')`, `SFC.app.game.ult[0] = 1` rồi bấm X.
+
+### VFX Sandbox
+Mở `http://localhost:8080/sandbox.html` — trang thử **VFX Kit** (Giai đoạn 0 của `docs/CORE_DESIGN.md`): nút cho từng viên gạch
+(hit-stop, slow-mo, zoom, impact frame, callout, cut-in, sóng chấn, vết nứt / hố, tay co giãn, phân thân, lưỡi gió, luồng tia, lỗ đen,
+khổng lồ, skin bóng, khiên lục giác, cổng xoáy, lưới cháy...) và 12 "khoảnh khắc" ghép sẵn (phím 1–9, 0).
+Mục **CORE THẬT** bật / tắt từng Core của `cores.config.js` cho đội vàng (kèm nút đầy tài nguyên / đầy Tuyệt kỹ) để xem hành vi thật trong trận. Viên gạch ở `src/systems/vfxkit.js` (gắn vào `Effects`, tự đồng bộ online),
+hình vẽ ở `src/render/vfx.js`, hit-stop / slow-mo ở `Game.hitStop / slowMo`. Tuỳ chọn *Giảm nháy* lưu ở `localStorage` (`sfc_fx`).
 
 ### Debug
 `SFC.app` trong console: truy cập `SFC.app.game` (trạng thái trận), ví dụ

@@ -107,14 +107,16 @@ window.SFC = window.SFC || {};
     /* ---------- túi đồ ---------- */
     // kind: 'item' (costume) | 'core'
     def(kind, id) { return kind === 'core' ? CORES()[id] : ITEMS()[id]; },
+    // độ hiếm: costume ở progression.items, Core ở cores.config (dùng chung cho chọn Core trong trận)
     rarityOf(kind, id) {
       if (kind === 'item' && ITEMS()[id] && ITEMS()[id].default) return null;
+      if (kind === 'core') return CORES()[id] && SFC_CONFIG.cores.list[id] ? SFC_CONFIG.cores.list[id].rarity : null;
       const d = this.def(kind, id);
       return d ? d.rarity : null;
     },
     count(kind, id) {
       if (kind === 'item' && ITEMS()[id] && ITEMS()[id].default) return Infinity;
-      if (kind === 'core' && P().starterCores.includes(id)) return Infinity;
+      if (kind === 'core' && (!P().coreGacha || P().starterCores.includes(id))) return Infinity;
       return (kind === 'core' ? this.data.cores : this.data.items)[id] || 0;
     },
     owns(id) { return this.count('item', id) > 0; },
@@ -169,7 +171,10 @@ window.SFC = window.SFC || {};
     boxPool(boxId) {
       const b = P().boxes[boxId];
       if (!b) return [];
-      if (b.kind === 'core') return Object.keys(CORES()).filter((id) => b.odds[CORES()[id].rarity] != null).map((id) => ({ kind: 'core', id, rarity: CORES()[id].rarity }));
+      if (b.kind === 'core') {
+        return Object.keys(CORES()).filter((id) => SFC_CONFIG.cores.list[id] && b.odds[this.rarityOf('core', id)] != null)
+          .map((id) => ({ kind: 'core', id, rarity: this.rarityOf('core', id) }));
+      }
       return Object.keys(ITEMS()).filter((id) => !ITEMS()[id].default && b.odds[ITEMS()[id].rarity] != null).map((id) => ({ kind: 'item', id, rarity: ITEMS()[id].rarity }));
     },
 
@@ -218,6 +223,7 @@ window.SFC = window.SFC || {};
     coreLevel(id) { return CORES()[id] ? CORES()[id].level : 1; },
     // Core được bốc khi chọn Core giữa trận: bộ cơ bản + Core trong túi đồ đã đủ level
     unlockedCores() {
+      if (!P().coreGacha) return Object.keys(SFC_CONFIG.cores.list);   // gacha Core tắt: mọi Core đều dùng được
       return P().starterCores.concat(Object.keys(this.data.cores).filter((id) => this.data.cores[id] > 0 && this.coreLevel(id) <= this.data.level));
     },
 
@@ -282,7 +288,7 @@ window.SFC = window.SFC || {};
       // hộp vừa mở được + Core trong túi đồ vừa đủ level để dùng
       const reached = (lv) => lv > before.level && lv <= d.level;
       const eligible = P().boxOrder.filter((id) => reached(P().boxes[id].level)).map((id) => P().boxes[id].name)
-        .concat(Object.keys(d.cores).filter((id) => reached(this.coreLevel(id))).map((id) => 'Core ' + SFC_CONFIG.cores.list[id].name));
+        .concat(P().coreGacha ? Object.keys(d.cores).filter((id) => reached(this.coreLevel(id))).map((id) => 'Core ' + SFC_CONFIG.cores.list[id].name) : []);
 
       return {
         result, lines, xp, gold, levelGold, levelUps: ups, eligible,

@@ -24,6 +24,35 @@ window.SFC = window.SFC || {};
   const REEL_STEP = 56, REEL_CARD = 52, REEL_W = 560; // khớp CSS .rcard / .reel
   const REASON = { gold: 'Không đủ gold.', level: 'Chưa đủ level để mở hộp này.' };
   const wrap = (v, n) => ((v % n) + n) % n;
+  const ARCH = () => SFC_CONFIG.cores.archetypes;
+  const ARCH_KEYS = () => ['all'].concat(Object.keys(ARCH()));
+
+  // "Thường đi cùng": 2–3 Core hợp build với Core id (cùng trường phái; ưu tiên TẠO <-> DÙNG, Tuyệt kỹ, cầu nối)
+  function suggest(id) {
+    const L = CORE_LIST(), c = L[id];
+    if (c.tags.includes('chaos')) return [];
+    const pair = { gen: 'use', use: 'gen' };
+    return Object.keys(L).filter((k) => k !== id && L[k].tags.some((t) => c.tags.includes(t)))
+      .map((k) => {
+        const o = L[k];
+        let s = o.tags.filter((t) => c.tags.includes(t)).length;
+        if (pair[c.role] === o.role) s += 3;
+        if (o.role === 'ult' && c.role !== 'ult') s += 2;
+        if (o.tags.length > 1) s += 1;
+        s += Math.max(0, rank(o.rarity)) * 0.1;
+        return { k, s };
+      })
+      .sort((a, b) => b.s - a.s).slice(0, 3).map((x) => x.k);
+  }
+
+  function roleText(c) {
+    const L = SFC_CONFIG.cores.roleLabels;
+    if (c.role === 'gen' || c.role === 'use') {
+      const mech = c.tags.map((t) => ARCH()[t] && ARCH()[t].mech).filter(Boolean).join(' / ');
+      return mech ? `${L[c.role]}: ${mech}` : L[c.role];
+    }
+    return L[c.role] || '';
+  }
 
   function coin(n) { return `<span class="gold"><i class="coin"></i>${Number(n).toLocaleString('en-US')}</span>`; }
 
@@ -52,8 +81,9 @@ window.SFC = window.SFC || {};
 
   // món trong túi đồ / trong hộp: { kind: item | core, id, rarity, count, def }
   function entry(kind, id) {
-    const def = kind === 'core' ? PROG().starterCores.includes(id) : !!PROG().items[id].default;
-    return { kind, id, rarity: def ? null : PF().rarityOf(kind, id), count: PF().count(kind, id), def };
+    // gacha Core tắt: mọi Core là "có sẵn" (không đếm số lượng, không phân rã)
+    const def = kind === 'core' ? !PROG().coreGacha || PROG().starterCores.includes(id) : !!PROG().items[id].default;
+    return { kind, id, rarity: def && kind !== 'core' ? null : PF().rarityOf(kind, id), count: PF().count(kind, id), def };
   }
 
   const Gacha = {
@@ -62,6 +92,7 @@ window.SFC = window.SFC || {};
     boxSel: 0,        // 0..số hộp-1 = hộp, cuối cùng = nút TÚI ĐỒ
     invTab: 0,
     invSel: 0,
+    invArch: 0,       // mục CORE: lọc theo trường phái (0 = tất cả)
     opening: null,    // lượt quay hiện tại
     confirm: null,    // { key, t } — phân rã món hiếm cần bấm 2 lần
     shopBack: 'home',
@@ -74,6 +105,7 @@ window.SFC = window.SFC || {};
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
       menu.el.innerHTML = body.replace('<!--msg-->', msg);
       this.bindIcons(menu);
+      SFC.CorePreview.scan(menu.el);
       if (page === 'inv') this.keepVisible(menu.el.querySelector('.inv-grid'), menu.el.querySelector('.icard.sel'));
     },
 
@@ -181,7 +213,8 @@ window.SFC = window.SFC || {};
       let art, note = '';
       if (isCore) {
         const c = CORE_LIST()[w.id];
-        art = `<div class="rv-core">${c.icon}</div>`;
+        // mở hộp ra Core: phát luôn khoảnh khắc của Core đó
+        art = `<div class="rv-core-art">${SFC.CorePreview.html(w.id, 150, 66)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? '<kbd class="card-x">X</kbd>' : ''}</div>`;
         const lv = PF().coreLevel(w.id);
         note = lv > PF().data.level ? `<span class="bad">Cần LV ${lv} để dùng trong trận</span>` : 'Đã vào pool chọn Core giữa trận';
       } else {
@@ -236,8 +269,15 @@ window.SFC = window.SFC || {};
         }
       }
       if (tab === 'core' || tab === 'all') {
-        for (const id of Object.keys(d.cores)) if (d.cores[id] > 0) out.push(entry('core', id));
-        if (tab === 'core') P.starterCores.forEach((id) => out.push(entry('core', id)));
+        const arch = tab === 'core' ? ARCH_KEYS()[this.invArch] : 'all';
+        const ok = (id) => arch === 'all' || CORE_LIST()[id].tags.includes(arch);
+        if (!P.coreGacha) {
+          // gacha Core tắt: mục CORE là bộ sưu tập đủ mọi Core (xem ảnh động, gợi ý build); mục TẤT CẢ chỉ còn costume
+          if (tab === 'core') Object.keys(CORE_LIST()).filter(ok).forEach((id) => out.push(entry('core', id)));
+        } else {
+          for (const id of Object.keys(d.cores)) if (d.cores[id] > 0 && ok(id)) out.push(entry('core', id));
+          if (tab === 'core') P.starterCores.filter(ok).forEach((id) => out.push(entry('core', id)));
+        }
       }
       // hiếm nhất lên đầu, đồ mặc định xuống cuối
       return out.sort((a, b) => rank(b.rarity) - rank(a.rarity) || (a.kind === b.kind ? 0 : a.kind === 'item' ? -1 : 1));
@@ -252,6 +292,14 @@ window.SFC = window.SFC || {};
       const list = this.invEntries();
       this.invSel = Math.max(0, Math.min(this.invSel, list.length - 1));
       const tabs = `<div class="tabs">${INV_TABS.map(([, l], i) => `<button class="tab ${i === this.invTab ? 'sel' : ''}" data-itab="${i}">${l}</button>`).join('')}</div>`;
+      const coreTab = INV_TABS[this.invTab][0] === 'core';
+      let filter = '';
+      if (coreTab) {
+        filter = `<div class="arch-filter">${ARCH_KEYS().map((k, i) => {
+          const a = ARCH()[k];
+          return `<button class="af ${i === this.invArch ? 'sel' : ''}" data-iarch="${i}" style="--c:${a ? a.color : '#e6dccb'}" title="${a ? a.label : 'Tất cả'}">${a ? a.icon : '★'}</button>`;
+        }).join('')}</div>`;
+      }
       const dupes = this.dupes(list);
       const cards = list.map((e, i) => {
         const cls = [i === this.invSel ? 'sel' : '', this.isEquipped(e) && e.kind === 'item' ? 'eq' : '', e.def ? 'def' : ''].join(' ');
@@ -260,24 +308,31 @@ window.SFC = window.SFC || {};
       }).join('') || '<div class="inv-empty">Chưa có món nào — mở hộp trong SHOP nhé!</div>';
       return `${this.header('TÚI ĐỒ', tabs)}
         <div class="gacha-body inv-g">
-          <div class="inv-grid">${cards}</div>
+          <div class="inv-left">${filter}<div class="inv-grid">${cards}</div></div>
           <div class="inv-detail">${list[this.invSel] ? this.invDetail(list[this.invSel]) : ''}</div>
         </div>
-        <!--msg--><div class="m-hint">Q / E đổi mục · ←↑↓→ chọn · Enter trang bị · X phân rã${dupes.count ? ` · R phân rã ${dupes.count} đồ trùng (+${dupes.gold})` : ''} · Esc quay lại</div>`;
+        <!--msg--><div class="m-hint">Q / E đổi mục${coreTab ? ' · Z lọc trường phái' : ''} · ←↑↓→ chọn${coreTab && !PROG().coreGacha ? '' : ' · Enter trang bị · X phân rã'}${dupes.count ? ` · R phân rã ${dupes.count} đồ trùng (+${dupes.gold})` : ''} · Esc quay lại</div>`;
     },
 
     invDetail(e) {
       const r = RAR(e.rarity), val = PF().dismantleValue(e.kind, e.id);
       const count = e.def ? 'Có sẵn' : `Số lượng ×${e.count}`;
       if (e.kind === 'core') {
-        const c = CORE_LIST()[e.id], cat = SFC_CONFIG.cores.categories[c.category];
+        const c = CORE_LIST()[e.id], cat = ARCH()[c.tags[0]], cat2 = ARCH()[c.tags[1] || c.tags[0]];
         const lv = PF().coreLevel(e.id), ok = lv <= PF().data.level;
-        const status = e.def ? 'Core cơ bản — luôn trong pool' : ok ? 'Đang trong pool chọn Core' : `<span class="bad">Cần LV ${lv} để dùng</span>`;
-        return `<div class="card static" style="--c:${cat.color};--t:${r.color}">
-            <div class="card-cat">${cat.label}</div><div class="card-icon">${c.icon}</div>
-            <div class="card-name">${esc(c.name)}</div><div class="card-tier">${r.label}</div>
+        const status = !PROG().coreGacha ? 'Có sẵn cho mọi người chơi' : e.def ? 'Core cơ bản — luôn trong pool' : ok ? 'Đang trong pool chọn Core' : `<span class="bad">Cần LV ${lv} để dùng</span>`;
+        const tags = c.tags.map((t) => `<span style="--c:${ARCH()[t].color}">${ARCH()[t].icon} ${ARCH()[t].label}</span>`).join('');
+        const sug = suggest(e.id).map((k) => {
+          const o = CORE_LIST()[k], have = PROG().coreGacha && PF().count('core', k) > 0;
+          return `<div class="sug ${have ? 'have' : ''}" style="--c:${ARCH()[o.tags[0]].color}" title="${esc(o.desc)}">${o.icon} ${esc(o.name)}${have ? ' ✓' : ''}</div>`;
+        }).join('');
+        return `<div class="card static ${c.role === 'ult' ? 'ult' : ''}" style="--c:${cat.color};--c2:${cat2.color};--t:${r.color}">
+            <div class="card-tags">${tags}</div>
+            <div class="card-art">${SFC.CorePreview.html(e.id, 132, 56)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? '<kbd class="card-x">X</kbd>' : ''}</div>
+            <div class="card-name">${esc(c.name)}</div><div class="card-tier">${r.label} · ${esc(roleText(c))}</div>
             <div class="card-desc">${esc(c.desc)}</div></div>
           <div class="sd-side"><div class="sd-req">${count}</div><div class="sd-note">${status}</div>
+            ${sug ? `<div class="sug-h">THƯỜNG ĐI CÙNG</div>${sug}` : ''}
             <div class="sd-act">${e.def ? '' : `<kbd>X</kbd> PHÂN RÃ ${coin('+' + val)}`}</div></div>`;
       }
       const it = PROG().items[e.id], eq = this.isEquipped(e);
@@ -369,6 +424,7 @@ window.SFC = window.SFC || {};
       let moved = false;
       if (input.wasPressed('switch')) { this.invTab = wrap(this.invTab - 1, INV_TABS.length); this.invSel = 0; moved = true; }
       if (input.wasPressed('sprint')) { this.invTab = wrap(this.invTab + 1, INV_TABS.length); this.invSel = 0; moved = true; }
+      if (input.wasPressed('skill') && INV_TABS[this.invTab][0] === 'core') { this.invArch = wrap(this.invArch + 1, ARCH_KEYS().length); this.invSel = 0; moved = true; }
       if (n) {
         if (input.wasPressed('left')) { this.invSel = Math.max(0, this.invSel - 1); moved = true; }
         if (input.wasPressed('right')) { this.invSel = Math.min(n - 1, this.invSel + 1); moved = true; }
@@ -411,6 +467,8 @@ window.SFC = window.SFC || {};
         else { this.boxSel = i; menu.msg = ''; SFC.Audio.menu(); menu.render(); }
         return true;
       }
+      const af = e.target.closest('[data-iarch]');
+      if (af) { this.invArch = +af.dataset.iarch; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
       const tab = e.target.closest('[data-itab]');
       if (tab) { this.invTab = +tab.dataset.itab; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
       const ic = e.target.closest('[data-ic]');

@@ -85,7 +85,7 @@ window.SFC = window.SFC || {};
             { kind: 'btn', label: 'CHƠI ĐƠN', sub: 'Đấu với máy', act: () => this.go('single') },
             { kind: 'btn', label: 'LUYỆN TẬP', sub: 'Không giới hạn thời gian · chọn số người', act: () => this.go('training') },
             { kind: 'btn', label: 'ĐỐI KHÁNG ONLINE', sub: '1 vs 1 · tạo phòng', act: () => this.go('online') },
-            { kind: 'btn', label: 'SHOP', sub: 'Hộp gacha · costume & Core', act: () => { G().shopBack = 'home'; this.go('shop'); } },
+            { kind: 'btn', label: 'SHOP', sub: SFC_CONFIG.progression.coreGacha ? 'Hộp gacha · costume & Core' : 'Hộp gacha · costume', act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'NHÂN VẬT', sub: 'Túi đồ · đổi tên', act: () => this.go('char') },
           ];
         case 'name':
@@ -268,9 +268,9 @@ window.SFC = window.SFC || {};
       }
       if (p.type === 'cores') {
         const C = SFC_CONFIG.cores;
-        const groups = Object.keys(C.categories).map((cat) => {
-          const c = C.categories[cat];
-          const list = Object.keys(C.list).filter((id) => C.list[id].category === cat)
+        const groups = Object.keys(C.archetypes).map((cat) => {
+          const c = C.archetypes[cat];
+          const list = Object.keys(C.list).filter((id) => C.list[id].tags[0] === cat)
             .map((id) => `<div class="core-row" title="${esc(C.list[id].desc)}"><span class="chip" style="--c:${c.color}">${C.list[id].icon}</span>${esc(C.list[id].name)}</div>`).join('');
           return `<div class="core-group"><h4 style="color:${c.color}">${esc(c.label)}</h4>${list}</div>`;
         }).join('');

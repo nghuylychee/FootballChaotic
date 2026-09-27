@@ -17,7 +17,7 @@ window.SFC = window.SFC || {};
       Object.assign(this, {
         x, y, z: 0, vx: 0, vy: 0, vz: 0,
         owner: null, lastTouch: null, lastKickTeam: -1,
-        passTarget: null, passPoint: null, sloppy: false, kind: null, roll: 0, trailT: 0,
+        passTarget: null, passPoint: null, sloppy: false, kind: null, roll: 0, trailT: 0, skin: null,
         netSide: 0, shieldChecked: false, woodT: 0,
       });
       this.noPickup.clear();
@@ -26,11 +26,12 @@ window.SFC = window.SFC || {};
     }
 
     clearFx() {
-      this.fx = {};          // fire / thunder
+      this.fx = {};          // fire / thunder + cờ hình của Core: string (Nhạc Trưởng), spiral (Xoáy Rồng), laser (Mắt Thiện Xạ)
       this.curve = 0;        // rad/s
       this.pierce = 0;
       this.homing = null;    // {x, y, strength}
       this.frictionMult = 1;
+      this.gkMod = 0;        // trừ tỉ lệ bắt bóng của thủ môn (Giao Hưởng, Bóng Ma, Sao Băng...)
     }
 
     get speed() { return Math.hypot(this.vx, this.vy); }
@@ -44,6 +45,7 @@ window.SFC = window.SFC || {};
       this.passPoint = null;
       this.sloppy = false;
       this.kind = null;
+      this.skin = null;
       this.clearFx();
     }
 
@@ -120,6 +122,7 @@ window.SFC = window.SFC || {};
         }
       }
       if (this.z === 0 && this.speed < 60 && (this.fx.fire || this.fx.thunder)) this.clearFx();
+      else if (this.speed < 40) { delete this.fx.string; delete this.fx.spiral; delete this.fx.laser; delete this.fx.duo; delete this.fx.ghost; }
     }
 
     // bóng dính chân người giữ bóng

@@ -30,6 +30,8 @@ SFC_CONFIG.controls = {
     mute:    ['KeyM'],
     restart: ['KeyR'],     // túi đồ: phân rã toàn bộ đồ trùng (giữ 1)
     dismantle: ['KeyX', 'Delete'], // túi đồ / mở hộp: phân rã món đang chọn
+    ultimate: ['KeyX'],    // trong trận: TUYỆT KỸ (khi thanh năng lượng đầy)
+    reroll:  ['KeyR'],     // màn chọn Core: đổi cả 3 lá (mỗi lượt 1 lần)
   },
 
   // Bảng hướng dẫn hiển thị trong menu / pause
@@ -43,6 +45,7 @@ SFC_CONFIG.controls = {
       ['D (giữ)', 'Sút · hướng phím = hướng sút'],
       ['D (sân nhà, có người chắn)', 'Phá bóng'],
       ['Z', 'Skill move (né tắc)'],
+      ['X', 'Tuyệt kỹ (khi đầy năng lượng)'],
     ],
     defense: [
       ['D', 'Light attack (đấm)'],
@@ -55,6 +58,7 @@ SFC_CONFIG.controls = {
     ],
     system: [
       ['1 / 2 / 3', 'Chọn Core'],
+      ['R', 'Đổi 3 lá Core (mỗi lượt 1 lần)'],
       ['Esc / P', 'Tạm dừng'],
       ['M', 'Tắt/bật âm'],
     ],

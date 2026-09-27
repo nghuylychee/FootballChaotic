@@ -17,7 +17,6 @@ window.SFC = window.SFC || {};
       let mx = (input.isDown('right') ? 1 : 0) - (input.isDown('left') ? 1 : 0);
       let my = (input.isDown('down') ? 1 : 0) - (input.isDown('up') ? 1 : 0);
       if (mx && my) { mx *= Math.SQRT1_2; my *= Math.SQRT1_2; }
-      const wasSprint = p.intent.sprint;
       p.intent.mx = mx;
       p.intent.my = my;
       p.intent.sprint = input.isDown('sprint');
@@ -28,10 +27,10 @@ window.SFC = window.SFC || {};
 
       if (input.wasPressed('switch') && !has) g.switchPlayer(team);
       if (g.ctrl[team] !== p) return;
+      // TUYỆT KỸ: phím X khi thanh năng lượng đầy
+      if (input.wasPressed('ultimate') && g.cores.activateUltimate(team, p)) return;
 
       if (has) {
-        if (!wasSprint && p.intent.sprint) g.cores.dispatch(p.team, 'onSprintStart', p);
-
         // Chuyền: S (pass.quick) = chuyền ngay khi nhấn, tự chọn người nhận + lực.
         // W/A: nhấn bắt đầu nạp lực, giữ để tăng lực, thả để chuyền
         if (!p.passMode && !p.charging) {

@@ -99,7 +99,8 @@ window.SFC = window.SFC || {};
 
       if (p.ai.t <= 0) {
         p.ai.t = D.reaction * U.rand(0.7, 1.3);
-        const range = M ? f.w / 2 : cfg.shootRange * (g.cores.has(p.team, 'sniper_foot') ? g.cores.params('sniper_foot').aiRangeMult : 1);
+        // đội có Core SÁT THỦ: dám sút từ xa hơn (mỗi Core +12% tầm)
+        const range = M ? f.w / 2 : cfg.shootRange * (g.cores.has(p.team, 'sniper_foot') ? g.cores.params('sniper_foot').aiRangeMult : 1) * (1 + g.cores.tagCount(p.team, 'striker') * 0.12);
         const clear = Act().laneClear(g, p, goal.x, goal.y, 12);
         // đồng đội AI: cơ hội mười mươi (khung trống) -> quyết định 1 lần có sút nhanh lực nhẹ hay không
         if (M) {
@@ -121,6 +122,9 @@ window.SFC = window.SFC || {};
         if (shoot) {
           p.charging = true; p.charge = 0;
           p.ai.chargeTarget = U.clamp(0.4 + (dG / range) * 0.55 + U.rand(-0.1, 0.1), 0.35, 1.0);
+          // đội có Core sút (Hoả Cầu, Lôi Cước, Lỗ Đen...): thường giữ đủ lực để kích hoạt
+          const cc = g.cores.aiShotCharge(p.team);
+          if (cc && near.d > 45 && Math.random() < 0.75) p.ai.chargeTarget = Math.max(p.ai.chargeTarget, Act().shotPower(g, p, cc) + 0.01);
           const gk = nearest(opps, goal, (o) => g.inKeeperZone(o)).p;
           p.ai.aimY = (gk && gk.y > f.cy ? -1 : 1) * U.rand(0.35, 0.95);
           return;
@@ -141,7 +145,7 @@ window.SFC = window.SFC || {};
           if (!near.p || near.d > 40) p.ai.dodgeFor = null;
           else if (near.d < 26 && p.ai.dodgeFor !== near.p) { p.ai.dodgeFor = near.p; p.ai.dodgeYes = Math.random() < M.skillChance * D.aggression; }
         }
-        const dodge = near.d < 26 && p.cd.skill <= 0 && (M ? p.ai.dodgeFor === near.p && p.ai.dodgeYes : Math.random() < 0.35 * D.aggression);
+        const dodge = near.d < 26 && p.cd.skill <= 0 && (M ? p.ai.dodgeFor === near.p && p.ai.dodgeYes : Math.random() < 0.35 * D.aggression * g.cores.aiDodgeMult(p.team));
         if (dodge) {
           if (M) p.ai.dodgeYes = false;
           const dx = p.x - near.p.x, dy = p.y - near.p.y;
@@ -225,8 +229,10 @@ window.SFC = window.SFC || {};
         const style = tm.cfg.aiStyle || { light: 1, hard: 1 };
         // đồng đội AI của người chơi: tỉ lệ đấm riêng (ai.mate.lightChance), không theo aiStyle của đội
         const lightP = humanTeam ? cfg.mate.lightChance * D.aggression : Math.min(0.9, 0.6 * D.aggression * style.light);
-        if (dc < C.light.range + p.radius * 2 && Math.random() < lightP) Act().lightAttack(g, p);
-        else if (dc > cfg.hardDistMin && dc < cfg.hardDistMax && Math.random() < 0.1 * D.aggression * style.hard) Act().hardAttack(g, p);
+        // Tay Cao Su: đấm được từ xa
+        const reach = Math.max(C.light.range, g.cores.lightReach(p) * 0.8);
+        if (dc < reach + p.radius * 2 && Math.random() < lightP) Act().lightAttack(g, p);
+        else if (dc > cfg.hardDistMin && dc < cfg.hardDistMax && Math.random() < 0.1 * D.aggression * style.hard * g.cores.aiHardMult(p.team)) Act().hardAttack(g, p);
         return;
       }
 

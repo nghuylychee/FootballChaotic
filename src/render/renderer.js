@@ -27,16 +27,33 @@ window.SFC = window.SFC || {};
 
       ctx.save();
       if (fx.shakeA > 0) ctx.translate(Math.round((Math.random() - 0.5) * fx.shakeA * 2), Math.round((Math.random() - 0.5) * fx.shakeA * 2));
+      SFC.VFX.applyZoom(ctx, g);
       ctx.drawImage(this.bg, 0, 0);
+      // VFX Kit: vết nứt / hố / cháy xém + vòng sóng chấn trên mặt sân
+      SFC.VFX.floor(ctx, g);
 
       /* --- lớp sàn --- */
       // khiên Aegis trên vạch vôi
       [0, 1].forEach((team) => {
         if (!g.cores.shieldReady(team)) return;
+        // khiên lục giác năng lượng dựng trên vạch vôi
         const lx = team === 0 ? f.x : f.x + f.w;
-        ctx.globalAlpha = 0.45 + Math.sin(t * 6) * 0.2;
-        px(ctx, lx - 1, f.gTop - f.goalHeight, 3, f.goalWidth + f.goalHeight, '#7fe7ff');
+        ctx.globalCompositeOperation = 'lighter';
+        const pulse = 0.35 + Math.sin(t * 6) * 0.12;
+        ctx.globalAlpha = pulse * 0.5;
+        px(ctx, lx - 2, f.gTop - f.goalHeight, 5, f.goalWidth + f.goalHeight, '#7fe7ff');
+        ctx.globalAlpha = pulse + 0.25;
+        ctx.strokeStyle = '#7fe7ff'; ctx.lineWidth = 1;
+        for (let yy = f.gTop - f.goalHeight + 4, i = 0; yy < f.gBot; yy += 7, i++) {
+          const ox = i % 2 ? 1 : -1;
+          ctx.beginPath();
+          ctx.moveTo(lx + ox, yy - 3); ctx.lineTo(lx + ox + 2, yy - 1); ctx.lineTo(lx + ox + 2, yy + 2);
+          ctx.lineTo(lx + ox, yy + 4); ctx.lineTo(lx + ox - 2, yy + 2); ctx.lineTo(lx + ox - 2, yy - 1); ctx.closePath(); ctx.stroke();
+        }
+        const sy = f.gTop - f.goalHeight + ((t * 40) % (f.goalWidth + f.goalHeight));
+        px(ctx, lx - 2, Math.round(sy), 5, 2, '#ffffff');
         ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
       });
       // mìn EMP
       for (const m of fx.mines) {
@@ -44,10 +61,18 @@ window.SFC = window.SFC || {};
         disc(ctx, m.x, m.y, 4, SP().OUT);
         disc(ctx, m.x, m.y, 3, '#3a4250');
         const blink = armed && Math.floor(t * 4) % 2 === 0;
-        px(ctx, m.x - 1, m.y - 1, 2, 2, blink ? '#c6ff3f' : g.teams[m.team].cfg.kit.accent);
-        if (armed) ringPx(ctx, m.x, m.y + 1, m.r, 'rgba(198,255,63,0.35)');
+        px(ctx, m.x - 1, m.y - 1, 2, 2, blink ? '#7fe7ff' : g.teams[m.team].cfg.kit.accent);
+        if (armed) {
+          ringPx(ctx, m.x, m.y + 1, m.r, 'rgba(127,231,255,0.35)');
+          if (blink && Math.random() < 0.3) px(ctx, m.x - 3 + Math.round(Math.random() * 6), m.y - 3 - Math.round(Math.random() * 3), 1, 2, '#bdf4ff');
+        }
       }
-      // lửa
+      // lửa (vết cháy xém bên dưới + ngọn lửa)
+      for (const fi of fx.fires) {
+        ctx.globalAlpha = Math.min(1, (fi.t / fi.max) * 2) * 0.5;
+        disc(ctx, fi.x, fi.y + 1, fi.r, 'rgba(30,18,12,0.7)');
+      }
+      ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'lighter';
       for (const fi of fx.fires) {
         const k = fi.t / fi.max;
@@ -63,8 +88,9 @@ window.SFC = window.SFC || {};
 
       // vòng chân người đang điều khiển (PvP: người chơi tại máy = vàng, đối thủ = đỏ)
       const cp = g.controlled;
-      const ctrlColor = (p) => (g.isHuman(p.team) && p.isControlled ? (p.team === g.humanTeam ? '#ffe14f' : '#ff5a6e') : null);
-      for (const t of g.humans) {
+      // ảnh xem trước Core (g.preview): không vẽ vòng / mũi tên điều khiển
+      const ctrlColor = (p) => (!g.preview && g.isHuman(p.team) && p.isControlled ? (p.team === g.humanTeam ? '#ffe14f' : '#ff5a6e') : null);
+      for (const t of (g.preview ? [] : g.humans)) {
         const c = g.ctrl[t];
         if (c) ringPx(ctx, c.x, c.y + 1, 8, ctrlColor(c));
       }
@@ -80,13 +106,21 @@ window.SFC = window.SFC || {};
       list.push({ y: g.ball.y + 0.5, k: 'b', o: g.ball });
       for (const d of fx.decoys) list.push({ y: d.y, k: 'd', o: d });
       for (const a of fx.afterimages) list.push({ y: a.y - 0.1, k: 'a', o: a });
+      for (const c of SFC.VFX.clones(g)) list.push({ y: c.y, k: 'cl', o: c });
       list.sort((a, b) => a.y - b.y);
 
       for (const e of list) {
         if (e.k === 'p') {
           const p = e.o;
-          const hy = p.airZ > 0 ? this.airborne(ctx, p, g) : drawPlayer(ctx, p, g);
-          if (p.ironCd <= 0 && g.cores.has(p.team, 'iron_body')) px(ctx, p.x - 1, hy - 10, 3, 2, '#ffd23f');
+          // khổng lồ (VFX Kit GI): phóng to quanh bàn chân
+          const s = p.sizeMul || 1;
+          SFC.VFX.under(ctx, g, p);
+          if (s !== 1) { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(s, s); ctx.translate(-p.x, -p.y); }
+          let hy = p.airZ > 0 ? this.airborne(ctx, p, g) : drawPlayer(ctx, p, g);
+          if (s !== 1) { ctx.restore(); hy = p.y + (hy - p.y) * s; }
+          SFC.VFX.form(ctx, g, p);
+          SFC.VFX.arm(ctx, g, p);
+          SFC.VFX.look(ctx, g, p, hy);
           if (p.charging) this.chargeBar(ctx, p, hy, g);
           if (p.passMode) this.passBar(ctx, p, hy);
           if (pv && pv.target === p) {
@@ -98,7 +132,7 @@ window.SFC = window.SFC || {};
             const ay = hy - 13 + Math.round(Math.sin(t * 8));
             px(ctx, p.x - 3, ay, 7, 1, cc); px(ctx, p.x - 2, ay + 1, 5, 1, cc); px(ctx, p.x - 1, ay + 2, 3, 1, cc);
           }
-          if (p === cp) {
+          if (p === cp && !g.preview) {
             if (p.stamina < SFC_CONFIG.game.player.staminaMax - 1) {
               px(ctx, p.x - 7, p.y + 4, 14, 2, SP().OUT);
               px(ctx, p.x - 6, p.y + 4, Math.round(12 * p.stamina / SFC_CONFIG.game.player.staminaMax), 1, p.stamina > 25 ? '#6bff7a' : '#ff5a4f');
@@ -106,15 +140,19 @@ window.SFC = window.SFC || {};
           }
         } else if (e.k === 'b') {
           this.ballTrail(ctx, g.ball);
+          SFC.VFX.ballFx(ctx, g.ball);
           drawBall(ctx, g.ball);
         } else if (e.k === 'd') {
           const d = e.o, a = 0.5 + 0.3 * Math.sin(t * 20);
-          if (d.runner) drawPlayer(ctx, Object.assign({ x: d.x - Math.cos(d.runner.facing) * 9, y: d.y - Math.sin(d.runner.facing) * 8, vx: d.vx, vy: d.vy, state: 'normal', flash: 0 }, d.runner), g, a * 0.8);
+          // ảo ảnh Chạy Giả: áo tím, nhấp nháy
+          if (d.runner) drawPlayer(ctx, Object.assign({ x: d.x - Math.cos(d.runner.facing) * 9, y: d.y - Math.sin(d.runner.facing) * 8, vx: d.vx, vy: d.vy, state: 'normal', flash: 0 }, d.runner), g, a * 0.8, '#9d7bff');
           drawBall(ctx, { x: d.x, y: d.y, z: 0, roll: t * 20, fx: {} }, a);
         } else if (e.k === 'a') {
           const a = e.o;
           // bóng mờ khi lướt: mặc áo đội của chính cầu thủ đó, mờ dần
           drawPlayer(ctx, a, g, (a.t / a.max) * 0.5, null, true);
+        } else if (e.k === 'cl') {
+          SFC.VFX.drawClone(ctx, g, e.o);
         }
       }
 
@@ -123,17 +161,21 @@ window.SFC = window.SFC || {};
       this.goal(ctx, g, 1);
 
       /* --- FX trên cao --- */
+      // Cước Phong: lưỡi gió trăng khuyết + bụi bị thổi tung dọc đường
       for (const s of fx.slashes) {
-        const k = s.t / s.max;
+        const k = s.t / s.max, a = Math.atan2(s.dy, s.dx);
         ctx.globalCompositeOperation = 'lighter';
-        ctx.strokeStyle = `rgba(127,231,255,${0.5 + k * 0.5})`;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y - 5);
-        ctx.lineTo(s.x - s.dx * s.len, s.y - 5 - s.dy * s.len);
-        ctx.stroke();
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.globalAlpha = Math.min(1, k * 3);
+        for (let i = -8; i <= 8; i++) {
+          const u = i / 8, ang = a + u * 1.2, r = 12 - Math.abs(u) * 4;
+          const x = s.x + Math.cos(ang) * r, y = s.y - 6 + Math.sin(ang) * r * 0.75;
+          px(ctx, Math.round(x), Math.round(y), 2, 2, Math.abs(u) < 0.5 ? '#ffffff' : '#dffbff');
+          px(ctx, Math.round(x - s.dx * 4), Math.round(y - s.dy * 4), 1, 1, 'rgba(127,231,255,0.7)');
+        }
+        for (let i = 1; i <= 3; i++) px(ctx, Math.round(s.x - s.dx * (8 + i * 7)), Math.round(s.y - 6 - s.dy * (8 + i * 7)), 4 - i, 1, 'rgba(223,251,255,0.6)');
+        ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = 'source-over';
+        if (Math.random() < 0.6) px(ctx, Math.round(s.x - s.dx * 10 + (Math.random() - 0.5) * 16), Math.round(s.y + (Math.random() - 0.5) * 6), 1, 1, 'rgba(217,203,176,0.9)');
       }
       for (const p of fx.particles) {
         ctx.globalAlpha = Math.min(1, (p.t / p.max) * 1.5);
@@ -156,6 +198,8 @@ window.SFC = window.SFC || {};
         ctx.fillText(tx.str, Math.round(tx.x), Math.round(tx.y));
       }
       ctx.globalAlpha = 1;
+      // VFX Kit: lỗ đen, luồng tia, tia sét, chiêu bay, chữ comic
+      SFC.VFX.top(ctx, g);
       ctx.restore();
 
       ctx.drawImage(this.vig, 0, 0);
@@ -166,9 +210,11 @@ window.SFC = window.SFC || {};
         ctx.globalAlpha = 1;
       }
       if (fx.flashA > 0) {
-        ctx.fillStyle = `rgba(255,255,255,${fx.flashA * 0.5})`;
+        ctx.fillStyle = `rgba(255,255,255,${fx.flashA * (SFC.FXSettings.reduceFlash ? 0.12 : 0.5)})`;
         ctx.fillRect(0, 0, C.width, C.height);
       }
+      // VFX Kit: phủ màu, tia tốc độ, cut-in, callout, impact frame (toạ độ màn hình)
+      SFC.VFX.overlay(ctx, g);
     },
 
     // bị Hard attack đá bay: bóng đổ dưới đất, người lộn vòng trên không + vệt gió
@@ -190,7 +236,8 @@ window.SFC = window.SFC || {};
       }
       ctx.save();
       ctx.translate(Math.round(p.x), Math.round(cy));
-      ctx.rotate(dir * p.anim * 13);
+      // bị đá bay (choáng) thì lộn vòng; tự nhảy (Dậm Đất, Thiên Thạch...) thì bay thẳng người
+      if (p.state === 'stun') ctx.rotate(dir * p.anim * 13);
       drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, keeper: false }), g, 0.999);
       ctx.restore();
       return Math.round(cy) - 8;
