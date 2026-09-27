@@ -262,12 +262,17 @@ SFC_CONFIG.game = {
     restDefenseFrom: 0.5,     // đồng đội cầm bóng vượt mốc này (tỉ lệ sân, 0.5 = giữa sân) -> người còn lại lùi chốt phía sau
     restDefenseDist: 110,     //   đứng sau người cầm bóng bao xa (px)
     markDistance: 26,
-    keeperCoverDist: 420,     // đội máy: người cầm bóng đối phương cách khung thành nhà dưới mức này -> AI không áp sát lùi về trông khung
+    keeperCoverDist: 420,     // đội máy / đồng đội AI ĐÁ LÙI: người cầm bóng đối phương cách khung thành nhà dưới mức này -> AI không áp sát lùi về trông khung
+    keeperPressDist: 110,     // đồng đội AI ĐÁ LÙI: chưa tới keeperCoverDist mà người chơi cách người cầm bóng xa hơn mức này -> lên áp sát (không thì kèm người)
     hardDistMin: 16,          // AI dùng Hard attack khi người cầm bóng cách trong khoảng này (px)
     hardDistMax: 44,
 
     // Đồng đội AI của người chơi (vd. chế độ 1 cầu thủ: người còn lại do AI đá). Đội máy không dùng phần này.
     mate: {
+      // Vị trí dùng lối chơi bên dưới (áp sát / dứt điểm / ít chuyền). Vị trí khác (ĐÁ LÙI) chơi như đội máy: trông khung
+      // (keeperCoverDist), kèm người, chuyền nhiều; chỉ lên áp sát khi người chơi ở xa người cầm bóng (keeperPressDist).
+      // Các phần còn lại (cooldownMult, lightChance, chạy đón đường chuyền, độ khó) áp dụng cho mọi vị trí.
+      roles: ['FWD'],
       // Phòng ngự: luôn áp sát người cầm bóng để đoạt lại bóng. Chỉ về trông khung khi nguy hiểm rõ ràng:
       // người cầm bóng đã vào gần khung nhà, không ai đứng trong vòng cấm nhà, và mình không đang áp sát.
       dangerDist: 130,          // (px) người cầm bóng cách tâm khung thành nhà dưới mức này = nguy hiểm

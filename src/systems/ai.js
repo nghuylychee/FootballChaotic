@@ -34,6 +34,13 @@ window.SFC = window.SFC || {};
     return nearest(g.teams[team].players, g.ownGoal(team), (o) => o !== ctl && o.state !== 'stun').p;
   }
 
+  // lối chơi ai.mate: đồng đội AI của người chơi ở vị trí thuộc mate.roles (mặc định ĐÁ CAO) -> cấu hình mate; còn lại null.
+  // Đồng đội AI ĐÁ LÙI giữ lối chơi thủ: trông khung, kèm người, chuyền nhiều (như đội máy)
+  function mateStyle(g, p) {
+    const M = A().mate;
+    return g.isHuman(p.team) && (!M.roles || M.roles.includes(p.role)) ? M : null;
+  }
+
   const AI = {
     update(dt, g) {
       for (const p of g.players) {
@@ -60,8 +67,8 @@ window.SFC = window.SFC || {};
       const D = g.aiProfile(p.team), cfg = A(), f = g.field;
       const goal = g.attackGoal(p.team);
       const opps = g.teams[1 - p.team].players;
-      // đồng đội AI của người chơi: ưu tiên rê bóng + dứt điểm, ít chuyền (ai.mate)
-      const M = g.isHuman(p.team) ? cfg.mate : null;
+      // đồng đội AI ĐÁ CAO của người chơi: ưu tiên rê bóng + dứt điểm, ít chuyền (ai.mate)
+      const M = mateStyle(g, p);
       p.ai.holdT += dt;
 
       if (p.ai.requestedPass) {
@@ -190,14 +197,18 @@ window.SFC = window.SFC || {};
       const c = g.ball.owner, tm = g.teams[p.team];
       const ownGoal = g.ownGoal(p.team);
       const humanTeam = g.isHuman(p.team);
-      // đội máy: đối phương cầm bóng đã tới gần -> người gần khung nhất trông khung, người còn lại áp sát
-      // đồng đội AI của người chơi: luôn áp sát, chỉ về trông khung khi nguy hiểm rõ ràng (ai.mate)
-      const danger = humanTeam ? this.mateDanger(g, p, c) : Math.abs(c.x - ownGoal.x) < cfg.keeperCoverDist;
-      const keeper = danger && !humanTeam ? keeperOf(g, p.team) : null;
+      const M = mateStyle(g, p);
+      const ctl = humanTeam ? g.ctrl[p.team] : null;
+      // đội máy / đồng đội AI ĐÁ LÙI: đối phương cầm bóng đã tới gần -> người gần khung nhất trông khung, người còn lại áp sát
+      // đồng đội AI ĐÁ CAO: luôn áp sát, chỉ về trông khung khi nguy hiểm rõ ràng (ai.mate)
+      const danger = M ? this.mateDanger(g, p, c) : Math.abs(c.x - ownGoal.x) < cfg.keeperCoverDist;
+      const keeper = danger && !M ? keeperOf(g, p.team) : null;
 
       let presser = null;
       if (!humanTeam) presser = nearest(tm.players, c, (o) => o !== keeper).p;
-      else if (!danger) presser = p;
+      else if (M) { if (!danger) presser = p; }
+      // đồng đội AI ĐÁ LÙI: chỉ lên áp sát khi bóng chưa tới gần khung nhà và người chơi ở xa người cầm bóng
+      else if (!ctl || (!danger && U.dist(ctl, c) > cfg.keeperPressDist)) presser = nearest(tm.players, c, (o) => o.state !== 'stun' && o !== ctl).p;
 
       if (p === presser) {
         let target = c;
@@ -265,7 +276,7 @@ window.SFC = window.SFC || {};
         x: U.clamp(b.x + b.vx * 0.3, f.x + 6, f.x + f.w - 6),
         y: U.clamp(b.y + b.vy * 0.3, f.y + 6, f.y + f.h - 6),
       };
-      const mate = g.isHuman(p.team);
+      const mate = g.isHuman(p.team), M = mateStyle(g, p);
       // người nhận đường chuyền: chủ động chạy tới điểm đón bóng sớm nhất
       if (b.passTarget === p) {
         const ip = Act().receiveMove(g, p);
@@ -274,9 +285,9 @@ window.SFC = window.SFC || {};
         return;
       }
       // bóng đang bay về khung thành nhà -> người gần khung nhất chặn trên đường bay
-      // (đội máy: cú sút / phá bóng của đối phương; đồng đội AI của người chơi: chỉ khi là cú sút)
+      // (đội máy / đồng đội AI ĐÁ LÙI: cú sút / phá bóng của đối phương; đồng đội AI ĐÁ CAO: chỉ khi là cú sút)
       const dir = tm.dir;
-      const threat = b.lastKickTeam === 1 - p.team && b.vx * dir < -150 && (!mate || b.kind === 'shot');
+      const threat = b.lastKickTeam === 1 - p.team && b.vx * dir < -150 && (!M || b.kind === 'shot');
       if (threat && p === keeperOf(g, p.team)) return this.goalkeeper(dt, g, p);
       // bóng đang được chuyền cho đồng đội -> không đuổi theo, giữ vị trí
       const passToMate = b.passTarget && b.passTarget.team === p.team && b.passTarget.state !== 'stun';
@@ -286,9 +297,9 @@ window.SFC = window.SFC || {};
       if (ctl && U.dist(ctl, pred) < chaser.d) chaser = { p: null };
       if (p === chaser.p && !passToMate) return moveTo(p, pred.x, pred.y, true, 1);
 
-      // người không đuổi bóng lùi về trông khung. Đội máy: bóng lỏng ở phần sân nhà (hoặc đang bay về khung thành nhà).
-      // Đồng đội AI của người chơi: chỉ khi bóng đã sát khung nhà và người chơi không đứng trong vòng cấm nhà
-      const cover = mate
+      // người không đuổi bóng lùi về trông khung. Đội máy / đồng đội AI ĐÁ LÙI: bóng lỏng ở phần sân nhà (hoặc đang bay về khung thành nhà).
+      // Đồng đội AI ĐÁ CAO: chỉ khi bóng đã sát khung nhà và người chơi không đứng trong vòng cấm nhà
+      const cover = M
         ? U.dist(b, g.ownGoal(p.team)) < A().mate.dangerDist && !(ctl && g.inKeeperZone(ctl))
         : (b.x - f.cx) * dir < 0 || b.vx * dir < -120;
       if (!passToMate && cover) return this.goalkeeper(dt, g, p);

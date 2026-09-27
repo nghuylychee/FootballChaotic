@@ -97,12 +97,15 @@ Cơ chế nằm ở `opts.solo` của `SFC.Game` (khóa theo từng đội, dùn
 (tầm bắt `gkReach`, bắt bóng bổng `gkCatchHeight`, tỉ lệ cứu thua / PARRY, đeo găng). Bắt được bóng trong vòng cấm → miễn tắc `gkHoldProtect` giây;
 tự rê bóng vào vòng cấm thì không. Đội máy: AI không áp sát sẽ lùi về trông khung khi đối phương cầm bóng cách khung thành dưới `ai.keeperCoverDist`.
 
-**Đồng đội AI của người chơi** (`ai.mate`, vd. người còn lại ở chế độ 1 CẦU THỦ): phòng ngự luôn áp sát người cầm bóng, chỉ về trông khung khi nguy hiểm rõ ràng
-(người cầm bóng cách khung nhà < `dangerDist`, bạn không đứng trong vòng cấm nhà, và nó không đang áp sát); tấn công ưu tiên rê bóng + dứt điểm, ít chuyền
-(`passChance`), sút ở bất kỳ đâu trên phần sân đối phương nhưng càng xa càng ít sút; đón đường chuyền bằng chạy nước rút (chuyền lỗi: luôn chạy).
-Hồi chiêu riêng dài hơn người chơi (`cooldownMult`: đấm x1.8, Hard x1.5, lướt x2.2), đấm với tỉ lệ `lightChance`, né (lướt) quyết định 1 lần mỗi lần bị áp sát
-(`skillChance`). Cơ hội mười mươi (khung trống, đường sút thoáng, cách khung < `quickShotRange`): `quickShotChance` sút nhanh lực nhẹ thay vì nạp lực.
-Độ khó của nó = `ai.teammate` nhưng không bao giờ cao hơn độ khó đã chọn.
+**Đồng đội AI của người chơi** (`ai.mate`, vd. người còn lại ở chế độ 1 CẦU THỦ) — lối chơi theo vị trí (`mate.roles`):
+- **ĐÁ CAO** (bạn đá ĐÁ LÙI): phòng ngự luôn áp sát người cầm bóng, chỉ về trông khung khi nguy hiểm rõ ràng
+  (người cầm bóng cách khung nhà < `dangerDist`, bạn không đứng trong vòng cấm nhà, và nó không đang áp sát); tấn công ưu tiên rê bóng + dứt điểm, ít chuyền
+  (`passChance`), sút ở bất kỳ đâu trên phần sân đối phương nhưng càng xa càng ít sút; né (lướt) quyết định 1 lần mỗi lần bị áp sát (`skillChance`).
+  Cơ hội mười mươi (khung trống, đường sút thoáng, cách khung < `quickShotRange`): `quickShotChance` sút nhanh lực nhẹ thay vì nạp lực.
+- **ĐÁ LÙI** (bạn đá ĐÁ CAO): chơi thủ như đội máy — lùi về trông khung khi người cầm bóng cách khung nhà < `ai.keeperCoverDist`, kèm người còn lại
+  khi bạn đang áp sát, chỉ lên áp sát khi bạn ở xa người cầm bóng (> `ai.keeperPressDist`); bóng lỏng ở phần sân nhà mà bạn đuổi bóng → về trông khung; chuyền nhiều.
+- Mọi vị trí: đón đường chuyền bằng chạy nước rút (chuyền lỗi: luôn chạy); hồi chiêu riêng dài hơn người chơi (`cooldownMult`: đấm x1.8, Hard x1.5, lướt x2.2),
+  đấm với tỉ lệ `lightChance`. Độ khó của nó = `ai.teammate` nhưng không bao giờ cao hơn độ khó đã chọn.
 
 ## Luồng trận
 Kick Off → chơi → bàn thắng → **Core Upgrade** lúc bóng chết, trước khi giao bóng lại (tối đa `maxUpgrades` lần, cả hai đội cùng chọn) →
