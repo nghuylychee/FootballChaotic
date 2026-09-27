@@ -55,6 +55,9 @@ SFC_CONFIG.tutorial = {
       lines: [
         '# Street 2v2',
         'Mỗi đội 2 người, tự chia vị trí công / thủ theo chiến thuật. Trận đấu dài 2:30.',
+        '# Chế độ điều khiển (Chơi đơn)',
+        'CẢ ĐỘI: Q đổi người, chuyền bóng thì điều khiển luôn người nhận.',
+        '1 CẦU THỦ: chỉ điều khiển đúng cầu thủ đã chọn cả trận, đồng đội do AI chơi. Đòi bóng bằng S / W / A, giữ W gọi đồng đội áp sát.',
         'Bóng nảy tường như futsal đường phố — không có biên.',
         '# Final Push',
         '30 giây cuối: mọi bàn thắng được tính x2, cầu thủ chạy nhanh hơn.',

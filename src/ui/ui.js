@@ -237,7 +237,7 @@ window.SFC = window.SFC || {};
         for (let i = 0; i < nItems; i++) items.push(owned[i] ? coreChip(owned[i]) : '<span class="chip empty"></span>');
         el.style.setProperty('--c', kit.shirt);
         el.innerHTML = `
-          <div class="ab-por"><canvas width="22" height="22"></canvas><div class="ab-name">${esc(p.name)}</div><kbd>${esc(keyLabel('switch'))}</kbd></div>
+          <div class="ab-por"><canvas width="22" height="22"></canvas><div class="ab-name">${esc(p.name)}</div>${game.lockedPlayer(p.team) ? '' : `<kbd>${esc(keyLabel('switch'))}</kbd>`}</div>
           <div class="ab-mid">
             <div class="ab-slots">${SLOTS.map((s) => `
               <div class="ab-slot" data-k="${s.k}" title="${s.name}">

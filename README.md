@@ -32,7 +32,7 @@ Không cần build, không cần thư viện, không cần file ảnh/âm thanh 
 Khi đồng đội AI giữ bóng: S / W / A để đòi bóng. `1/2/3` chọn Core, `Esc/P` tạm dừng (online: mở menu), `M` tắt âm.
 
 ## Menu
-Trang chủ tối giản: **CHƠI ĐƠN** (chọn đội / đối thủ / độ khó) · **ĐỐI KHÁNG ONLINE** · **HƯỚNG DẪN**
+Trang chủ tối giản: **CHƠI ĐƠN** (chọn đội / đối thủ / độ khó / điều khiển) · **ĐỐI KHÁNG ONLINE** · **HƯỚNG DẪN**
 (điều khiển, chuyền & sút, phòng ngự, luật trận, danh sách Core, online — nội dung ở `config/tutorial.config.js`).
 ↑↓ chọn · ←→ đổi · Enter · Esc/Backspace quay lại.
 
@@ -54,6 +54,10 @@ Trang chủ tối giản: **CHƠI ĐƠN** (chọn đội / đối thủ / độ 
 ở giữa đáy màn hình (kiểu LoL: chân dung · ô D / A / Z với cooldown quét · thanh thể lực · Core như ô item).
 Light (D): cú đấm thẳng — kéo tay lấy đà rồi đấm, tầm ngắn, choáng ngắn + đẩy lùi, người cầm bóng có tỉ lệ rơi bóng. Hard (A): gồng co chân (hào quang đỏ, xoay hướng được)
 rồi vung chân đá — trúng thì đối thủ bị hất tung bay rất xa (văng vào tường thì bật lại), choáng lâu và chắc chắn rơi bóng; trượt thì khựng lâu. Z (lướt) đúng lúc thì né được cả hai. Chỉnh trong `SFC_CONFIG.game.combat.light / hard`.
+
+**Chế độ điều khiển (Chơi đơn):** `CẢ ĐỘI` (Q đổi người, chuyền bóng thì điều khiển luôn người nhận) hoặc `1 CẦU THỦ`
+— chỉ điều khiển đúng cầu thủ đã chọn cả trận (không đổi người, không tự chuyển), đồng đội do AI chơi; đòi bóng bằng S / W / A.
+Cơ chế nằm ở `opts.solo` của `SFC.Game` (khóa theo từng đội, dùng lại được cho online).
 
 **Trông khung thành (2v2):** mỗi đội 2 cầu thủ sân, vai trò chỉ là vị trí xuất phát. Ai đứng trong vòng cấm nhà thì có cơ chế thủ môn
 (tầm bắt `gkReach`, bắt bóng bổng `gkCatchHeight`, tỉ lệ cứu thua / PARRY, đeo găng). Bắt được bóng trong vòng cấm → miễn tắc `gkHoldProtect` giây;

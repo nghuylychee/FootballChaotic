@@ -10,6 +10,7 @@ window.SFC = window.SFC || {};
   const TEAMS = () => SFC_CONFIG.teams;
   const STAT_LABELS = { speed: 'TỐC ĐỘ', power: 'LỰC SÚT', pass: 'CHUYỀN', tackle: 'ĐỐI KHÁNG', dribble: 'RÊ DẮT', accuracy: 'CHÍNH XÁC' };
   const Online = () => SFC.Online;
+  const ROLE_LABELS = { DEF: 'ĐÁ LÙI', FWD: 'ĐÁ CAO' }; // vị trí xuất phát
 
   function helpTable(list) {
     return list.map(([k, v]) => `<div class="hk"><kbd>${esc(k)}</kbd><span>${esc(v)}</span></div>`).join('');
@@ -80,6 +81,7 @@ window.SFC = window.SFC || {};
             { kind: 'pick', label: 'ĐỘI CỦA BẠN', value: TEAMS().list[o.order[s.team]].name, change: (d) => { s.team = wrap(s.team + d, o.order.length); } },
             { kind: 'pick', label: 'ĐỐI THỦ', value: opp === 'random' ? '??? NGẪU NHIÊN' : TEAMS().list[opp].name, change: (d) => { s.opp = wrap(s.opp + d, o.opp.length); } },
             { kind: 'pick', label: 'ĐỘ KHÓ', value: SFC_CONFIG.game.ai.difficulty[o.diffs[s.diff]].label, change: (d) => { s.diff = wrap(s.diff + d, o.diffs.length); } },
+            { kind: 'pick', label: 'ĐIỀU KHIỂN', value: this.ctrlLabel(o.order[s.team], s.ctrl), change: (d) => { s.ctrl = wrap(s.ctrl + d, SFC_CONFIG.game.roles.length + 1); } },
             { kind: 'btn', label: 'BẮT ĐẦU', main: true, act: () => app.startMatch() },
           ];
         }
@@ -102,6 +104,14 @@ window.SFC = window.SFC || {};
         default:
           return [];
       }
+    },
+
+    // CẢ ĐỘI (đổi người bằng Q) hoặc chỉ 1 cầu thủ: tên + vị trí xuất phát
+    ctrlLabel(teamId, ctrl) {
+      if (!ctrl) return 'CẢ ĐỘI';
+      const role = SFC_CONFIG.game.roles[ctrl - 1];
+      const name = TEAMS().list[teamId].players[ctrl - 1] || role;
+      return `${name} · ${ROLE_LABELS[role] || role}`;
     },
 
     back() {

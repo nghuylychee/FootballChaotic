@@ -222,7 +222,8 @@ window.SFC = window.SFC || {};
       if (target && g.isHuman(p.team) && p.isControlled) {
         g.setControlled(target);
         // mũi tên người chơi đang giữ là hướng chuyền, không phải lệnh cho người nhận -> khóa tới khi thả phím
-        g.receiveLock[p.team] = true;
+        // (chế độ 1 cầu thủ: quyền điều khiển không chuyển sang người nhận)
+        if (g.ctrl[p.team] === target) g.receiveLock[p.team] = true;
       }
       g.sfx('pass');
     },

@@ -9,7 +9,8 @@ window.SFC = window.SFC || {};
      * opts: { home, away, difficulty, silent,
      *         humanTeam: đội của người chơi tại máy này (góc nhìn UI; -1 = demo),
      *         humans: các đội do người điều khiển (mặc định [humanTeam]; PvP = [0, 1]),
-     *         draftTimeLimit: giây tối đa để chọn Core (0 = không giới hạn) }
+     *         draftTimeLimit: giây tối đa để chọn Core (0 = không giới hạn),
+     *         solo: [idx đội 0, idx đội 1] — khóa người chơi vào 1 cầu thủ (chỉ số trong đội; null = điều khiển cả đội) }
      */
     constructor(opts) {
       const C = SFC_CONFIG.game;
@@ -43,6 +44,7 @@ window.SFC = window.SFC || {};
       }
       // trạng thái điều khiển theo từng đội người chơi
       this.ctrl = [null, null];
+      this.solo = (opts.solo || [null, null]).map((idx, t) => (idx == null ? null : this.teams[t].players[idx] || null));
       this.receiveLock = [false, false];
       this.pressureCall = [false, false];
       this.passPreview = null;
@@ -95,7 +97,12 @@ window.SFC = window.SFC || {};
       return { x: f.x + fx * f.w, y: f.y + fy * f.h };
     }
 
+    // chế độ 1 cầu thủ: đội này chỉ điều khiển đúng 1 người (không đổi người, không tự chuyển)
+    lockedPlayer(team) { return this.solo[team]; }
+
     setControlled(p) {
+      const lock = this.solo[p.team];
+      if (lock) p = lock;
       const prev = this.ctrl[p.team];
       if (prev && prev !== p) {
         prev.charging = false;
@@ -105,7 +112,7 @@ window.SFC = window.SFC || {};
     }
 
     switchPlayer(team = this.humanTeam) {
-      if (!this.isHuman(team)) return;
+      if (!this.isHuman(team) || this.solo[team]) return;
       const b = this.ball, cur = this.ctrl[team];
       let best = null, bd = Infinity;
       for (const p of this.teams[team].players) {

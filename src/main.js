@@ -9,7 +9,7 @@
     mode: 'single',     // single | online
     game: null,
     demo: null,
-    sel: { team: 0, opp: 0, diff: 1 },
+    sel: { team: 0, opp: 0, diff: 1, ctrl: 0 },   // ctrl: 0 = cả đội, i > 0 = chỉ cầu thủ thứ i - 1
     lastOpts: null,
 
     newDemo() {
@@ -25,7 +25,7 @@
         const home = o.order[this.sel.team];
         let away = o.opp[this.sel.opp];
         if (away === 'random') away = SFC.U.pick(o.order.filter((t) => t !== home));
-        opts = { home, away, difficulty: o.diffs[this.sel.diff], humanTeam: 0 };
+        opts = { home, away, difficulty: o.diffs[this.sel.diff], humanTeam: 0, solo: [this.sel.ctrl ? this.sel.ctrl - 1 : null, null] };
       }
       this.mode = 'single';
       this.lastOpts = opts;
