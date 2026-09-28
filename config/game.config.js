@@ -14,7 +14,21 @@ SFC_CONFIG.game = {
     showDebug: false,
   },
 
-  audio: { enabled: true, volume: 0.3 },
+  audio: {
+    enabled: true,
+    volume: 0.3,
+    // Âm thanh khán giả (src/core/audio.js + src/render/crowd.js). Độ ồn mỗi sân: arenas.config.js -> crowd.sound (0..1)
+    crowd: {
+      enabled: true,
+      volume: 0.35,        // tiếng rì rầm nền ở sân ồn nhất (sound = 1)
+      murmur: 0.4,         // độ to nhỏ lên xuống của tiếng rì rầm (0 = đều đều)
+      finalPush: 1.35,     // FINAL PUSH: ồn hơn
+      paused: 0.35,        // tạm dừng / menu trong trận: nhỏ lại
+      goal: 1.1,           // hò reo khi có bàn thắng
+      ooh: 0.6,            // "ồồ" khi cứu thua / bóng dội cột
+      applause: 0.8,       // vỗ tay khi hết trận
+    },
+  },
 
   // Sân: hình chữ nhật trong "phòng" có tường bao quanh
   field: {
@@ -225,6 +239,7 @@ SFC_CONFIG.game = {
     awkwardMaxAngle: 90,     // (độ) lệch từ mức này trở lên (vd. sút song song vạch vôi / quay lưng): phạt tối đa
     overchargeSpread: 0.5,
     // Phá bóng: nhấn D khi cầm bóng ở phần sân nhà (kiểu FC Online) — bóng bổng, luôn đi về phía trước
+    clearance: false,        // TẮT: D ở sân nhà vẫn là sút bình thường (bật = true để dùng lại phá bóng)
     clearSpeed: 290,         // px/s theo phương ngang (nhân chỉ số power)
     clearLift: 120,          // vz ban đầu -> bay ~0.57s, chạm đất ở ~155px, lăn tổng ~340px
     clearAngle: 0.8,         // ↑/↓ lệch góc phá bóng tối đa (~39°)

@@ -22,20 +22,37 @@
       this.demo = new SFC.Game({ home: a, away: b, difficulty: 'normal', humanTeam: -1, silent: true });
     },
 
-    startMatch(opts) {
-      if (!opts) {
-        const o = SFC.Menu.options();
-        const home = o.order[this.sel.team];
-        let away = o.opp[this.sel.opp];
-        if (away === 'random') away = SFC.U.pick(o.order.filter((t) => t !== home));
-        // 1 CẦU THỦ: character của bạn đá đúng vị trí đã chọn (cầu thủ AI của đội đá vị trí còn lại); CẢ ĐỘI: character đá ĐÁ CAO
-        const soloIdx = this.sel.ctrl ? this.sel.ctrl - 1 : null;
-        const avatar = Object.assign(SFC.Profile.avatar(), { role: soloIdx == null ? 'FWD' : C.roles[soloIdx] });
-        opts = {
-          home, away, difficulty: o.diffs[this.sel.diff], humanTeam: 0, solo: [soloIdx, null],
-          avatars: [avatar, null], coreUnlocks: SFC_CONFIG.progression.coreGacha ? [SFC.Profile.unlockedCores(), null] : null,
-        };
+    // Main Path: trận kế tiếp theo tiến trình (đối thủ / độ khó / sân do Area + hạng quyết định).
+    // Người chơi đá cho đội riêng (mainPath.playerTeam), character đá đúng vị trí đã chọn, đồng đội AI đá vị trí còn lại
+    startMainPath() {
+      const MP = SFC_CONFIG.mainPath, m = SFC.MainPath.nextMatch();
+      const soloIdx = this.sel.ctrl ? this.sel.ctrl - 1 : C.roles.indexOf('FWD');
+      const avatar = Object.assign(SFC.Profile.avatar(), { role: C.roles[soloIdx] });
+      SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
+      this.startMatch({
+        home: MP.playerTeam.id, away: m.away, difficulty: 'normal', aiProfile: m.aiProfile, mateDifficulty: MP.teammate,
+        humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: m.arena,
+        coreUnlocks: SFC_CONFIG.progression.coreGacha ? [SFC.Profile.unlockedCores(), null] : null,
+        mainPath: { area: m.area, div: m.div, promo: m.promo, final: m.final, reward: m.reward },
+      });
+    },
+
+    // bỏ trận Main Path giữa chừng (Pause > FORFEIT): tính là thua
+    forfeit() {
+      const g = this.game, mp = g && g.opts.mainPath;
+      let msg = '';
+      if (mp && g.state !== 'ended' && SFC_CONFIG.mainPath.forfeitCountsAsLoss) {
+        const r = SFC.MainPath.record('lose', mp);
+        const st = SFC.Profile.data.stats;
+        st.matches++; st.losses++;
+        SFC.Profile.save();
+        msg = `Forfeit counts as a loss${r.delta ? ` (${r.delta} ★)` : ''}.`;
       }
+      this.toMenu('path');
+      if (msg) SFC.Menu.setMsg(msg, true);
+    },
+
+    startMatch(opts) {
       this.mode = 'single';
       this.lastOpts = opts;
       this.game = new SFC.Game(opts);
@@ -70,17 +87,36 @@
       this.screen = 'game';
       SFC.Input.textHandler = null;
       SFC.UI.hudCache = {};
-      SFC.UI.pauseItems = this.mode === 'online' ? [['resume', 'BACK TO MATCH'], ['leave', 'LEAVE ROOM']] : [['resume', 'RESUME'], ['restart', 'RESTART'], ['menu', 'MAIN MENU']];
+      // Main Path: không cho đá lại trận đang thua — chỉ tiếp tục hoặc bỏ trận (tính thua)
+      SFC.UI.pauseItems = this.mode === 'online' ? [['resume', 'BACK TO MATCH'], ['leave', 'LEAVE ROOM']]
+        : opts.mainPath ? [['resume', 'RESUME'], ['forfeit', 'FORFEIT (LOSS)']]
+        : [['resume', 'RESUME'], ['restart', 'RESTART'], ['menu', 'MAIN MENU']];
       SFC.UI.clearToasts();
       SFC.UI.show(null);
-      const vs = opts.training && opts.teamSize && !opts.teamSize[1]
-        ? `${SFC_CONFIG.teams.list[opts.home].name} · no opponent`
-        : `${SFC_CONFIG.teams.list[opts.home].name} vs ${SFC_CONFIG.teams.list[opts.away].name}`;
-      SFC.UI.banner(opts.training ? 'TRAINING' : 'KICK OFF', vs, '#ffe14f', 1.4);
-      SFC.Audio.upgrade();
+      const L = SFC_CONFIG.teams.list, mp = opts.mainPath;
+      const kickoff = () => {
+        const vs = opts.training && opts.teamSize && !opts.teamSize[1]
+          ? `${L[opts.home].name} · no opponent`
+          : `${L[opts.home].name} vs ${L[opts.away].name}`;
+        if (mp && mp.promo) SFC.UI.banner(mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH', `vs ${L[opts.away].name}`, '#ffd23f', 2.2);
+        else if (mp) SFC.UI.banner('KICK OFF', `${SFC.MainPath.divName(mp.area, mp.div)} · vs ${L[opts.away].name}`, '#ffe14f', 1.6);
+        else SFC.UI.banner(opts.training ? 'TRAINING' : 'KICK OFF', vs, '#ffe14f', 1.4);
+        SFC.Audio.upgrade();
+      };
+      // màn giới thiệu lực lượng 2 đội (config/intro.config.js): trận đứng yên tới khi xong, rồi mới chọn Core / giao bóng
+      SFC.Intro.abort();
+      if (this.mode !== 'online' && SFC.Intro.wants(opts)) {
+        this.screen = 'intro';
+        SFC.Intro.start(this.game, () => { this.screen = 'game'; kickoff(); });
+      } else kickoff();
     },
 
-    restart() { if (this.mode === 'single') this.startMatch(this.lastOpts); },
+    // Main Path: "đá lại" = sang trận kế tiếp theo tiến trình mới
+    restart() {
+      if (this.mode !== 'single') return;
+      if (this.lastOpts && this.lastOpts.mainPath) this.startMainPath();
+      else this.startMatch(this.lastOpts);
+    },
 
     pickCore(i) {
       if (this.mode === 'online') SFC.Online.pick(i);
@@ -109,6 +145,7 @@
 
     // về menu; page = trang menu muốn mở (home / online / lobby)
     toMenu(page = 'home') {
+      SFC.Intro.abort();
       this.game = null;
       this.screen = 'menu';
       if (page !== 'lobby') this.mode = 'single';
@@ -144,6 +181,9 @@
     }
 
     if (app.mode === 'online') { SFC.Online.tick(dt, Input); return; }
+
+    // màn giới thiệu đội hình: trận chưa chạy, sự kiện (lượt chọn Core đầu trận) chờ tới khi xong
+    if (app.screen === 'intro') { SFC.Intro.update(dt, Input); return; }
 
     const g = app.game;
     if (app.screen === 'pause') { SFC.UI.pauseInput(Input); return; }
@@ -198,6 +238,8 @@
         SFC.Renderer.render(g);
         if (app.screen !== 'menu') SFC.UI.updateHud(g);
       }
+      // âm thanh khán giả của trận đang hiện (menu: im lặng; tạm dừng / menu online: nhỏ lại)
+      if (draw) SFC.Crowd.sound(app.screen === 'menu' ? null : g, app.screen === 'pause' || (app.mode === 'online' && SFC.Online.overlay));
     }
     let lastRaf = performance.now();
     function frame(now) {

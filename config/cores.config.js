@@ -52,7 +52,9 @@ SFC_CONFIG.cores = {
   },
 
   // Tuyệt kỹ: năng lượng chỉ nạp khi ghi bàn hoặc cướp được bóng
-  ultimate: { gainGoal: 0.5, gainSteal: 0.12, stealCooldown: 3, lockout: 10, cutIn: 0.6, aiDelay: [0.5, 2.5] },   // lockout: dùng xong bao lâu không nạp
+  // Năng lượng Tuyệt kỹ (X), 0..1: ghi bàn · bị thủng lưới · cướp bóng (tối đa 1 lần / stealCooldown giây) ·
+  // đấm trúng đối thủ bằng Light attack (tối đa 1 lần / lightHitCooldown giây). lockout: dùng xong bao lâu không nạp
+  ultimate: { gainGoal: 0.5, gainConceded: 0.3, gainSteal: 0.12, stealCooldown: 3, gainLightHit: 0.05, lightHitCooldown: 1, lockout: 10, cutIn: 0.6, aiDelay: [0.5, 2.5] },
 
   // Chọn Core: trọng số = độ hiếm x (1 + buildWeight x số Core cùng trường phái đang có) x thiên hướng đội
   draft: {

@@ -16,6 +16,8 @@ window.SFC = window.SFC || {};
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
      *         training: true = luyện tập (không giờ trận, không chọn Core, không kết thúc / không thưởng),
      *         teamSize: [n đội 0, n đội 1] — số cầu thủ mỗi đội (mặc định đủ đội hình; 0 = đội trống),
+     *         aiProfile / mateDifficulty: độ khó AI đối thủ (object) / đồng đội (key) — Main Path,
+     *         arena: id giao diện sân (arenas.config.js), mainPath: { area, div, promo, final, reward } — trận Main Path,
      *         noDraft / noAI: tắt chọn Core / AI (ảnh xem trước Core) }
      */
     constructor(opts) {
@@ -32,10 +34,13 @@ window.SFC = window.SFC || {};
       this.humanTeam = opts.humanTeam != null ? opts.humanTeam : 0;
       this.humans = opts.humans || (this.humanTeam >= 0 ? [this.humanTeam] : []);
       const diffKey = C.ai.difficulty[opts.difficulty] ? opts.difficulty : 'normal';
-      this.difficulty = C.ai.difficulty[diffKey];
+      // aiProfile: độ khó AI đối thủ tự do (Main Path) thay cho mức EASY / NORMAL / HARD
+      this.difficulty = opts.aiProfile ? Object.assign({ label: 'PATH' }, opts.aiProfile) : C.ai.difficulty[diffKey];
       // đồng đội AI của người chơi: theo ai.teammate nhưng không bao giờ giỏi hơn độ khó đã chọn
+      // (mateDifficulty: chỉ định thẳng mức độ khó của đồng đội — Main Path)
       const order = C.ai.difficultyOrder, mi = order.indexOf(C.ai.teammate);
-      this.teammateProfile = C.ai.difficulty[mi >= 0 && mi < order.indexOf(diffKey) ? C.ai.teammate : diffKey];
+      this.teammateProfile = C.ai.difficulty[opts.mateDifficulty]
+        || C.ai.difficulty[mi >= 0 && mi < order.indexOf(diffKey) ? C.ai.teammate : diffKey];
 
       this.teams = [opts.home, opts.away].map((id, i) => ({
         index: i, id, cfg: SFC_CONFIG.teams.list[id], score: 0, dir: i === 0 ? 1 : -1, players: [],

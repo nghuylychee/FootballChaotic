@@ -46,6 +46,7 @@ window.SFC = window.SFC || {};
     // dữ liệu hỏng / phiên bản cũ -> ghép với hồ sơ trống, bỏ id không còn tồn tại
     sanitize(raw) {
       const d = blank();
+      d.path = SFC.MainPath.sanitize(raw && raw.path);   // tiến trình Main Path (src/core/mainpath.js)
       if (!raw || typeof raw !== 'object') return d;
       d.name = this.cleanName(raw.name || '');
       d.level = clampInt(raw.level, 1, P().maxLevel);
@@ -266,8 +267,20 @@ window.SFC = window.SFC || {};
 
       const lines = [{ label: labels[result], xp: cfg[result].xp, gold: cfg[result].gold }];
       if (goals > 0) lines.push({ label: `Goals ×${goals}`, xp: cfg.goal.xp * goals, gold: cfg.goal.gold * goals });
+      // Main Path: cộng / trừ sao, lên / tụt hạng; thắng trận thăng hạng có thưởng thêm; thưởng nhân theo Area
+      const mp = !pvp && game.opts.mainPath;
+      const path = mp ? SFC.MainPath.record(result, mp) : null;
+      if (path && (path.event === 'area' || path.event === 'title')) {
+        const B = SFC_CONFIG.mainPath.promoBonus;
+        lines.push({ label: path.event === 'title' ? 'Champion bonus' : 'Promotion bonus', xp: B.xp, gold: B.gold });
+      }
       let xp = lines.reduce((s, l) => s + l.xp, 0), gold = lines.reduce((s, l) => s + l.gold, 0);
-      if (!pvp) {
+      if (mp) {
+        if (mp.reward !== 1) {
+          lines.push({ label: `${SFC.MainPath.area(mp.area).name} ×${mp.reward}`, mult: mp.reward });
+          xp = Math.round(xp * mp.reward); gold = Math.round(gold * mp.reward);
+        }
+      } else if (!pvp) {
         const key = game.opts.difficulty, mult = (cfg.difficulty && cfg.difficulty[key]) || 1;
         if (mult !== 1) {
           const label = (SFC_CONFIG.game.ai.difficulty[key] || {}).label || key;
@@ -291,7 +304,7 @@ window.SFC = window.SFC || {};
         .concat(P().coreGacha ? Object.keys(d.cores).filter((id) => reached(this.coreLevel(id))).map((id) => 'Core ' + SFC_CONFIG.cores.list[id].name) : []);
 
       return {
-        result, lines, xp, gold, levelGold, levelUps: ups, eligible,
+        result, lines, xp, gold, levelGold, levelUps: ups, eligible, path,
         before, after: { level: d.level, xp: d.xp, need: this.xpToNext(d.level) },
       };
     },

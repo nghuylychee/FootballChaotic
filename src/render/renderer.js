@@ -29,6 +29,8 @@ window.SFC = window.SFC || {};
       if (fx.shakeA > 0) ctx.translate(Math.round((Math.random() - 0.5) * fx.shakeA * 2), Math.round((Math.random() - 0.5) * fx.shakeA * 2));
       SFC.VFX.applyZoom(ctx, g);
       ctx.drawImage(this.bg, 0, 0);
+      // khán giả chuyển động (arena.crowd) — đè lên ảnh nền, dưới mọi thứ trên sân
+      SFC.Crowd.draw(ctx, g);
       // VFX Kit: vết nứt / hố / cháy xém + vòng sóng chấn trên mặt sân
       SFC.VFX.floor(ctx, g);
 

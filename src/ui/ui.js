@@ -120,7 +120,8 @@ window.SFC = window.SFC || {};
       const opp = game.teams[1 - me];
       const left = (d.rerolls && d.rerolls[me]) || 0;
       const reroll = picked ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> REROLL 3 (${left} left)</button>`;
-      const sub = picked ? 'Picked · waiting for opponent...' : SFC.Input.device === 'pad' ? `Pick 1 Core for your whole team · ←→ + ${esc(keyLabel('confirm'))}` : 'Pick 1 Core for your whole team · keys 1 / 2 / 3 or ←→ + Enter';
+      // bàn phím: không cần chú thích (bỏ dòng "Pick 1 Core..."); tay cầm không có phím số -> gợi ý nút ngắn
+      const sub = picked ? 'Picked · waiting for opponent...' : SFC.Input.device === 'pad' ? `←→ + ${esc(keyLabel('confirm'))}` : '';
       this.el.draft.classList.toggle('waiting', picked);
       this.el.draft.innerHTML = `
         <div class="draft-title">${d.pre ? 'STARTING CORE' : 'CORE UPGRADE'} <span>${d.round}/${total}</span>${timer}</div>
@@ -188,7 +189,10 @@ window.SFC = window.SFC || {};
 
     /* ================= END ================= */
     endItems() {
-      if (!this.online) return [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']];
+      if (!this.online) {
+        const mp = this.app.game && this.app.game.opts.mainPath;
+        return mp ? [['restart', 'NEXT MATCH'], ['menu', 'MAIN PATH']] : [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']];
+      }
       return SFC.Online.isHost ? [['lobby', 'BACK TO LOBBY'], ['leave', 'LEAVE ROOM']] : [['leave', 'LEAVE ROOM']];
     },
 
@@ -252,11 +256,40 @@ window.SFC = window.SFC || {};
       const lines = r.lines.map((l, i) => `<div class="rw-line" data-rw="${i}"><span>${esc(l.label)}</span>${
         l.mult || l.note ? '' : `<b class="x">+${l.xp} XP</b><b class="g"><i class="coin"></i>+${l.gold}</b>`}</div>`).join('');
       return `<div class="build reward">
+        ${r.path ? this.pathResult(r.path) : ''}
         <h4>REWARDS</h4>
         <div class="rw-lines">${lines}</div>
         <div class="rw-total"><span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
         <div class="lvrow"><span class="lv" id="rw-lv">LV ${r.before.level}</span><div class="xpbar"><i id="rw-bar"></i></div></div>
         <div class="rw-up" id="rw-up"></div>
+      </div>`;
+    },
+
+    // Main Path sau trận: hạng hiện tại + dãy sao (sao vừa được / vừa mất nhấp nháy) + thông báo lên / tụt hạng
+    pathResult(p) {
+      const MP = SFC.MainPath, a = p.after, A = MP.area(a.area);
+      const need = MP.need(a.area, a.div);
+      const gained = p.delta > 0 && (p.event == null || p.event === 'ready') ? p.delta : 0;
+      const lost = p.delta < 0 && p.event !== 'down' ? -p.delta : 0;
+      let pips = '';
+      for (let i = 0; i < need + lost; i++) {
+        const cls = i < a.stars ? (i >= a.stars - gained ? 'on new' : 'on') : i < a.stars + lost ? 'lost' : '';
+        pips += `<i class="${cls}">★</i>`;
+      }
+      const name = MP.divName(a.area, a.div);
+      const msg = {
+        up: `PROMOTED TO ${name}`,
+        down: `DEMOTED TO ${name}`,
+        ready: MP.isFinal() ? 'CHAMPIONSHIP FINAL NEXT!' : 'PROMOTION MATCH NEXT!',
+        area: `NEW AREA UNLOCKED: ${A.name}`,
+        title: `CHAMPION OF THE STREET ×${MP.state.titles}`,
+        promoFail: 'PROMOTION FAILED · win again to retry',
+      }[p.event] || (p.delta > 0 ? `+${p.delta} ★` : p.delta < 0 ? `${p.delta} ★` : 'No stars changed');
+      const big = p.event === 'area' || p.event === 'title';
+      return `<div class="rw-path ${big ? 'big' : ''} ${p.event === 'down' || p.event === 'promoFail' || p.delta < 0 ? 'bad' : ''}" style="--ac:${A.color}">
+        <div class="rp-div">${A.icon} ${esc(name)}</div>
+        <div class="rp-stars">${pips}</div>
+        <div class="rp-msg">${esc(msg)}</div>
       </div>`;
     },
 
@@ -317,7 +350,9 @@ window.SFC = window.SFC || {};
       SFC.Audio.menu();
       if (act === 'resume') this.app.resume();
       if (act === 'restart') this.app.restart();
-      if (act === 'menu') this.app.toMenu();
+      if (act === 'forfeit') this.app.forfeit();
+      // trận Main Path xong -> về trang Main Path
+      if (act === 'menu') this.app.toMenu(this.app.game && this.app.game.opts.mainPath ? 'path' : 'home');
       if (act === 'leave') SFC.Online.leave();
       if (act === 'lobby') SFC.Online.backToLobby();
       if (act === 'reroll') this.app.rerollCore();
@@ -336,7 +371,11 @@ window.SFC = window.SFC || {};
       const pend = game.draftPending(), next = game.draftNextIn();
       const coreLine = pend > 0 ? `<div class="hud-core on">✦ CORE +${pend} · waiting for a goal</div>`
         : next != null ? `<div class="hud-core">✦ Next Core in ${SFC.U.fmtTime(next)}</div>` : '';
-      const key = [t0.score, t1.score, time, phase, cores, coreLine].join('#');
+      // Main Path: hạng đang đá (trận thăng hạng / chung kết nổi bật)
+      const mp = game.opts && game.opts.mainPath;
+      const pathLine = !mp ? '' : mp.promo ? `<div class="hud-path promo">👑 ${mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH'}</div>`
+        : `<div class="hud-path">${esc(SFC.MainPath.divName(mp.area, mp.div))}</div>`;
+      const key = [t0.score, t1.score, time, phase, cores, coreLine, pathLine].join('#');
       if (c.key !== key) {
         c.key = key;
         // nhãn người chơi: P1 / P2; người ở máy này tô vàng
@@ -352,7 +391,7 @@ window.SFC = window.SFC || {};
             <div class="hud-traits">${traitChips(game, 0)}</div>
             ${this.ultMeter(game, 0)}
           </div>
-          <div class="hud-mid">${training ? '<div class="hud-time">TRAINING</div>' : `
+          <div class="hud-mid">${pathLine}${training ? '<div class="hud-time">TRAINING</div>' : `
             <div class="hud-score"><b style="color:${t0.cfg.kit.shirt}">${t0.score}</b><span>-</span><b style="color:${t1.cfg.kit.shirt}">${t1.score}</b></div>
             <div class="hud-time ${game.finalPush || game.golden ? 'hot' : ''}">${time}</div>
             ${phase ? `<div class="hud-phase">${phase}</div>` : ''}`}
@@ -418,7 +457,7 @@ window.SFC = window.SFC || {};
               <div class="ab-slot" data-k="${s.k}" title="${s.name}">
                 <i>${s.icon}</i><div class="sw"></div><b></b><kbd>${esc(keyLabel(s.action))}</kbd>
               </div>`).join('')}${ult ? `
-              <div class="ab-slot ult" data-k="ult" title="${esc(`ULTIMATE: ${CORES().list[ult].name}. Charge it by scoring and stealing the ball`)}">
+              <div class="ab-slot ult" data-k="ult" title="${esc(`ULTIMATE: ${CORES().list[ult].name}. Charge it by scoring, conceding, stealing the ball and landing punches`)}">
                 <div class="ult-fill"></div><i>${CORES().list[ult].icon}</i><b class="ult-pct"></b><kbd>${esc(keyLabel('ultimate'))}</kbd>
               </div>` : ''}
             </div>

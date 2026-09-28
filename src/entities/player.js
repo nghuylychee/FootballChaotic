@@ -32,6 +32,12 @@ window.SFC = window.SFC || {};
         skin: skins[(team.index * 3 + idx * 2) % skins.length],
         hair: tcfg.kit.hair[idx % tcfg.kit.hair.length],
       };
+      // costume riêng của đội (đội Main Path: looks theo vị trí)
+      const L = tcfg.looks && tcfg.looks[idx];
+      if (L) {
+        Object.assign(this.look, { cut: L.cut, face: L.face, shoes: L.shoes, fx: L.fx });
+        if (L.skin != null) this.look.skin = skins[L.skin % skins.length];
+      }
 
       this.x = 0; this.y = 0; this.vx = 0; this.vy = 0;
       this.kbx = 0; this.kby = 0;

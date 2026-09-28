@@ -72,9 +72,9 @@ window.SFC = window.SFC || {};
           return;
         }
 
-        // D ở phần sân nhà và còn đối phương phía trước: phá bóng ngay khi nhấn (kiểu FC Online)
-        // Còn lại: giữ để nạp lực, thả để sút. Giữ quá lâu -> tự sút (overcharge)
-        if (!p.charging && g.shouldClear(p)) {
+        // kick.clearance bật: D ở phần sân nhà và còn đối phương phía trước = phá bóng ngay khi nhấn (kiểu FC Online)
+        // Còn lại (mặc định): giữ để nạp lực, thả để sút. Giữ quá lâu -> tự sút (overcharge)
+        if (K.clearance && !p.charging && g.shouldClear(p)) {
           if (input.wasPressed('shoot')) { Act.clearance(g, p, my); return; }
         } else if (input.isDown('shoot')) {
           if (p.state === 'normal') {

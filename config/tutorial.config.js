@@ -31,9 +31,6 @@ SFC_CONFIG.tutorial = {
         'Hold D to charge, release to shoot. The ball goes where your arrow points when you release (no arrow → dead center). The power bar starts low; the longer you hold, the harder the shot.',
         'Hold too long (red bar) → you shoot automatically, high and likely off target.',
         'Arrow pointing at the goal → accurate shot. Pointing wide of the post → it still goes to the nearest corner, but from an awkward stance: the wider you aim, the more likely it misses.',
-        '# Clearance',
-        'On the ball in your own half with an opponent still ahead of you (not counting their keeper): press D to boot a clearance up the pitch. ↑ / ↓ adjusts the angle.',
-        'Nobody ahead of you → D is a normal shot, even from your own half.',
       ],
     },
     {
@@ -76,6 +73,23 @@ SFC_CONFIG.tutorial = {
       ],
     },
     {
+      title: 'MAIN PATH',
+      lines: [
+        '# Climb the street',
+        'MAIN PATH is the single-player journey. You play for your own club, from a muddy VILLAGE GREEN all the way to the WORLD STAGE: 10 areas, each one bigger, brighter and louder.',
+        'Each AREA has its own pitch, its own rival teams and a BOSS team. Every area is harder than the last.',
+        '# Divisions & stars',
+        'Each area has 3 divisions: III → II → I. Win = +1 ★, loss = -1 ★, draw = no change.',
+        'Collect enough stars to move up a division. Lose at 0 stars → drop one division (you never drop out of an area).',
+        '# Promotion match',
+        'Fill up the stars of division I → your next match is the PROMOTION MATCH against the area\'s boss.',
+        'Win it to unlock the next area (plus a bonus reward). Lose it → -1 ★, win again to get another shot.',
+        'The last area ends with the CHAMPIONSHIP FINAL.',
+        '# Rules',
+        'Forfeiting a match from the pause menu counts as a loss. Higher areas pay bigger rewards.',
+      ],
+    },
+    {
       title: 'CORES',
       type: 'cores',
       lines: [
@@ -88,11 +102,11 @@ SFC_CONFIG.tutorial = {
       title: 'SHOP',
       lines: [
         '# Your character',
-        'Your character takes the pitch with your name, wearing the team kit you picked. Solo / Training: choose to play DEFENDER or FORWARD (the AI teammate takes the other spot). Online: you play FORWARD.',
+        'Your character takes the pitch with your name, wearing the team kit you picked. Main Path / Training: choose to play DEFENDER or FORWARD (the AI teammate takes the other spot). Online: you play FORWARD.',
         'CHARACTER: change your name, skin color and hair color (free), open the INVENTORY to mix and match costumes.',
         '# XP & Gold',
-        'Finish a match (solo / online) to earn XP + gold: win > draw > loss, plus a bonus per goal scored.',
-        'Solo on HARD gives x1.5 rewards, EASY x0.6. Online pays more than solo.',
+        'Finish a match (Main Path / online) to earn XP + gold: win > draw > loss, plus a bonus per goal scored.',
+        'Higher Main Path areas multiply your rewards. Online pays more than the first areas.',
         'Every level up gives bonus gold. Quitting mid-match gives nothing.',
         '# Shop: gacha boxes',
         'Spend gold to open boxes: the item reel spins and stops on your prize. Rarities: COMMON · RARE · EPIC · LEGENDARY · MYTHIC.',

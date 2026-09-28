@@ -573,6 +573,9 @@ window.SFC = window.SFC || {};
       }
       // ĐẤU SĨ 4: đấm trúng hồi thể lực
       if (this.tier(t, 'brawler') >= 4) attacker.stamina = Math.min(SFC_CONFIG.game.player.staminaMax, attacker.stamina + 5);
+      // năng lượng Tuyệt kỹ từ đấm trúng: tối đa 1 lần mỗi lightHitCooldown giây (Bão Đấm / Tâng Người đánh nhiều nhịp không nạp dồn)
+      const ul = this.st(t, '_ultLight'), U2 = DEF().ultimate;
+      if (!(ul.cd > 0)) { ul.cd = U2.lightHitCooldown || 0; this.gainUlt(t, U2.gainLightHit || 0); }
       this.dispatch(t, 'onLightHit', attacker, victim);
     }
     hardHit(attacker, victim) { this.dispatch(attacker.team, 'onHardHit', attacker, victim); }
@@ -617,6 +620,7 @@ window.SFC = window.SFC || {};
     }
     goalScored(team, scorer) {
       this.gainUlt(team, DEF().ultimate.gainGoal);
+      this.gainUlt(1 - team, DEF().ultimate.gainConceded || 0);   // đội bị thủng lưới cũng được nạp (gỡ lại bằng Tuyệt kỹ)
       this.dispatch(team, 'onGoalScored', scorer);
     }
     kickoff() {

@@ -578,14 +578,15 @@ window.SFC = window.SFC || {};
   }
 
   // vẽ character đứng một mình (menu / shop / hồ sơ) — canvas nhỏ, CSS phóng to kiểu pixel
-  function drawAvatar(canvas, look, kit, t = 0, facing = Math.PI / 2) {
+  // extra: ghi đè trạng thái vẽ (vd. { vx: 40 } = chạy, { atkType: 'shoot' | 'light', atkT } = tư thế ra đòn) — màn giới thiệu đội hình
+  function drawAvatar(canvas, look, kit, t = 0, facing = Math.PI / 2, extra = null) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const g = { teams: [{ cfg: { kit } }], previewLook: look };
     const x = canvas.width / 2, y = canvas.height - 4;
     const behind = look.fx === 'shadow';
     if (behind) drawFxPreview(ctx, look.fx, x, y, t, g);
-    drawPlayer(ctx, { x, y, vx: 0, vy: 0, facing, anim: t, flash: 0, state: 'normal', team: 0, look }, g);
+    drawPlayer(ctx, Object.assign({ x, y, vx: 0, vy: 0, facing, anim: t, flash: 0, state: 'normal', team: 0, look }, extra), g);
     if (!behind && look.fx && FX[look.fx]) drawFxPreview(ctx, look.fx, x, y, t, g);
   }
 
