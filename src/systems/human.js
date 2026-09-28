@@ -14,12 +14,20 @@ window.SFC = window.SFC || {};
       const K = SFC_CONFIG.game.kick;
       const P = SFC_CONFIG.game.pass;
 
-      let mx = (input.isDown('right') ? 1 : 0) - (input.isDown('left') ? 1 : 0);
-      let my = (input.isDown('down') ? 1 : 0) - (input.isDown('up') ? 1 : 0);
-      if (mx && my) { mx *= Math.SQRT1_2; my *= Math.SQRT1_2; }
+      // cần analog (máy này): di chuyển 360°, đẩy nhẹ = đi chậm; không có -> 8 hướng từ phím / D-pad
+      const st = input.stick && input.stick();
+      let mx, my;
+      if (st) { mx = st.x; my = st.y; }
+      else {
+        mx = (input.isDown('right') ? 1 : 0) - (input.isDown('left') ? 1 : 0);
+        my = (input.isDown('down') ? 1 : 0) - (input.isDown('up') ? 1 : 0);
+        if (mx && my) { mx *= Math.SQRT1_2; my *= Math.SQRT1_2; }
+      }
       p.intent.mx = mx;
       p.intent.my = my;
       p.intent.sprint = input.isDown('sprint');
+      // hướng nhắm (chuyền / sút / lướt) luôn là vector đơn vị như phím mũi tên
+      if (st) { const l = Math.hypot(mx, my); mx /= l; my /= l; }
 
       const b = g.ball;
       const has = b.owner === p;

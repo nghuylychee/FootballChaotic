@@ -50,7 +50,7 @@ window.SFC = window.SFC || {};
     { k: 'hard', action: 'lob', icon: '💥', name: 'HARD', atk: true, max: () => SFC_CONFIG.game.combat.hard.cooldown, act: ['windup', 'kick'] },
     { k: 'skill', action: 'skill', icon: '💨', name: 'DASH', max: () => SFC_CONFIG.game.skill.cooldown, act: ['dash'] },
   ];
-  const keyLabel = (action) => (SFC_CONFIG.controls.bindings[action] || ['?'])[0].replace(/^(Key|Digit)/, '');
+  const keyLabel = (action) => SFC.Input.label(action);
 
   function helpTable(list) {
     return list.map(([k, v]) => `<div class="hk"><kbd>${esc(k)}</kbd><span>${esc(v)}</span></div>`).join('');
@@ -110,7 +110,7 @@ window.SFC = window.SFC || {};
           <div class="card-key">${i + 1}</div>
           ${match && !picked ? '<div class="card-match">MATCH</div>' : ''}
           <div class="card-tags">${tags}</div>
-          <div class="card-art">${SFC.CorePreview.html(id, 132, 56)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? '<kbd class="card-x">X</kbd>' : ''}</div>
+          <div class="card-art">${SFC.CorePreview.html(id, 132, 56)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(keyLabel('ultimate'))}</kbd>` : ''}</div>
           <div class="card-name">${esc(c.name)}</div>
           <div class="card-tier">${rar.label} · ${roleText(c)}</div>
           <div class="card-desc">${esc(c.desc)}</div>
@@ -120,7 +120,7 @@ window.SFC = window.SFC || {};
       const opp = game.teams[1 - me];
       const left = (d.rerolls && d.rerolls[me]) || 0;
       const reroll = picked ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> REROLL 3 (${left} left)</button>`;
-      const sub = picked ? 'Picked · waiting for opponent...' : 'Pick 1 Core for your whole team · keys 1 / 2 / 3 or ←→ + Enter';
+      const sub = picked ? 'Picked · waiting for opponent...' : SFC.Input.device === 'pad' ? `Pick 1 Core for your whole team · ←→ + ${esc(keyLabel('confirm'))}` : 'Pick 1 Core for your whole team · keys 1 / 2 / 3 or ←→ + Enter';
       this.el.draft.classList.toggle('waiting', picked);
       this.el.draft.innerHTML = `
         <div class="draft-title">${d.pre ? 'STARTING CORE' : 'CORE UPGRADE'} <span>${d.round}/${total}</span>${timer}</div>
@@ -165,7 +165,7 @@ window.SFC = window.SFC || {};
 
     /* ================= PAUSE / MENU TRONG TRẬN ================= */
     renderPause() {
-      const ctr = SFC_CONFIG.controls.help;
+      const ctr = SFC.Input.helpSet();
       const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${l}</button>`).join('');
       this.el.pause.innerHTML = `
         <div class="pause-title">${this.online ? 'MENU' : 'PAUSED'}</div>
@@ -182,7 +182,7 @@ window.SFC = window.SFC || {};
       const n = this.pauseItems.length;
       if (input.wasPressed('up')) { this.pauseSel = (this.pauseSel + n - 1) % n; this.renderPause(); }
       if (input.wasPressed('down')) { this.pauseSel = (this.pauseSel + 1) % n; this.renderPause(); }
-      if (input.wasPressed('pause')) return this.app.resume();
+      if (input.wasPressed('pause') || input.wasPressed('back')) return this.app.resume();
       if (input.wasPressed('confirm')) this.doAct(this.pauseItems[this.pauseSel][0]);
     },
 
@@ -400,7 +400,8 @@ window.SFC = window.SFC || {};
       if (!p) return;
       const c = this.hudCache.bar || (this.hudCache.bar = {});
       const owned = game.cores.owned[p.team];
-      const key = p.id + '|' + owned.join();
+      // đổi bàn phím <-> tay cầm: vẽ lại nhãn phím trên thanh kỹ năng
+      const key = p.id + '|' + owned.join() + '|' + SFC.Input.device + SFC.Pad.style;
       if (c.key !== key) {
         c.key = key;
         const kit = game.teams[p.team].cfg.kit;

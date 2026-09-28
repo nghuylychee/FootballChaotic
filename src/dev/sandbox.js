@@ -525,6 +525,7 @@
         tickScript(STEP);
         g.elapsed = 0;
         if (g.state === 'ended' || g.state === 'draft') arrange();
+        SFC.Input.poll();
         g.update(STEP, SFC.Input);
         g.events.length = 0;
         SFC.Input.endFrame();

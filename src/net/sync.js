@@ -204,7 +204,10 @@ window.SFC = window.SFC || {};
           if (p) g.effects.afterimage({ x: a[1], y: a[2], facing: a[3], team: p.team, role: p.role, look: p.look, anim: a[4] }, a[5] || 0.3);
         } else if (g.effects[m]) g.effects[m](...a);
       }
-      for (const [n, a] of pack.sfx) if (SFC.Audio[n]) SFC.Audio[n](a);
+      for (const [n, a] of pack.sfx) {
+        if (SFC.Audio[n]) SFC.Audio[n](a);
+        SFC.Pad && SFC.Pad.rumble(n, a);
+      }
       for (const e of pack.ev) g.events.push(e);
     },
   };

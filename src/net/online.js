@@ -232,10 +232,11 @@ window.SFC = window.SFC || {};
         this.overlay ? SFC.Menu.app.resume() : SFC.Menu.app.pause();
         return;
       }
+      // xét trước khi menu xử lý phím: nút đóng menu (B) không lọt vào trận thành chuyền bổng / đá bay
+      const play = this.overlay || g.state === 'draft' || g.state === 'ended' ? Sync().NULL_INPUT : input;
       if (this.overlay) SFC.UI.pauseInput(input);
       else if (g.state === 'draft') SFC.UI.draftInput(input, g);
       else if (g.state === 'ended') SFC.UI.endInput(input);
-      const play = this.overlay || g.state === 'draft' || g.state === 'ended' ? Sync().NULL_INPUT : input;
       if (this.isHost) this.hostTick(dt, g, play);
       else this.guestTick(play);
     },

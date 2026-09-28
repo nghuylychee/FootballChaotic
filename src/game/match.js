@@ -89,7 +89,11 @@ window.SFC = window.SFC || {};
     }
 
     /* ---------- helpers ---------- */
-    sfx(name, arg) { if (!this.silent && SFC.Audio[name]) SFC.Audio[name](arg); }
+    sfx(name, arg) {
+      if (this.silent) return;
+      if (SFC.Audio[name]) SFC.Audio[name](arg);
+      SFC.Pad && SFC.Pad.rumble(name, arg);
+    }
     emit(type, data) { this.events.push(Object.assign({ type }, data)); }
     aiProfile(team) { return this.isHuman(team) ? this.teammateProfile : this.difficulty; }
     isHuman(team) { return this.humans.includes(team); }

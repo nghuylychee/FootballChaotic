@@ -1,37 +1,39 @@
 /* =========================================================
- * CONTROLS CONFIG — phím điều khiển (tham chiếu FC Online, full bàn phím).
+ * CONTROLS CONFIG — phím điều khiển (tham chiếu FC Online, full bàn phím + tay cầm).
  * Dùng KeyboardEvent.code: https://developer.mozilla.org/docs/Web/API/KeyboardEvent/code
+ * Tay cầm: 'Pad.<nút>' theo vị trí nút trên tay Xbox (PlayStation: A=✕ B=○ X=□ Y=△ LB=L1 RB=R1 LT=L2 RT=R2):
+ *   A B X Y LB RB LT RT Back Start LS RS · Up Down Left Right (D-pad) · StickUp/Down/Left/Right (analog trái)
  * Mỗi action có thể gán nhiều phím.
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.controls = {
   bindings: {
-    up:      ['ArrowUp'],
-    down:    ['ArrowDown'],
-    left:    ['ArrowLeft'],
-    right:   ['ArrowRight'],
-    sprint:  ['KeyE'],
+    up:      ['ArrowUp', 'Pad.Up', 'Pad.StickUp'],
+    down:    ['ArrowDown', 'Pad.Down', 'Pad.StickDown'],
+    left:    ['ArrowLeft', 'Pad.Left', 'Pad.StickLeft'],
+    right:   ['ArrowRight', 'Pad.Right', 'Pad.StickRight'],
+    sprint:  ['KeyE', 'Pad.RB'],
 
     // Tấn công            | Phòng ngự
-    pass:    ['KeyS'],    // Chuyền sệt tự động | —
-    through: ['KeyW'],    // Chọc khe           | —
-    lob:     ['KeyA'],    // Chuyền bổng        | HARD ATTACK (gồng rồi vung chân đá bay đối thủ)
-    shoot:   ['KeyD'],    // Sút (giữ để nạp) · sân nhà + còn đối phương phía trước: phá bóng | LIGHT ATTACK (đấm)
-    skill:   ['KeyZ'],    // Skill move / lướt né
-    switch:  ['KeyQ'],    // Đổi cầu thủ
+    pass:    ['KeyS', 'Pad.A'],    // Chuyền sệt tự động | —
+    through: ['KeyW', 'Pad.Y'],    // Chọc khe           | —
+    lob:     ['KeyA', 'Pad.B'],    // Chuyền bổng        | HARD ATTACK (gồng rồi vung chân đá bay đối thủ)
+    shoot:   ['KeyD', 'Pad.X'],    // Sút (giữ để nạp) · sân nhà + còn đối phương phía trước: phá bóng | LIGHT ATTACK (đấm)
+    skill:   ['KeyZ', 'Pad.RT'],   // Skill move / lướt né
+    switch:  ['KeyQ', 'Pad.LB'],   // Đổi cầu thủ
 
-    pause:   ['Escape', 'KeyP'],
-    confirm: ['Enter', 'Space'],
-    back:    ['Backspace'],
+    pause:   ['Escape', 'KeyP', 'Pad.Start'],
+    confirm: ['Enter', 'Space', 'Pad.A'],
+    back:    ['Backspace', 'Pad.B'],
     pick1:   ['Digit1', 'Numpad1'],
     pick2:   ['Digit2', 'Numpad2'],
     pick3:   ['Digit3', 'Numpad3'],
-    mute:    ['KeyM'],
-    restart: ['KeyR'],     // túi đồ: phân rã toàn bộ đồ trùng (giữ 1)
-    dismantle: ['KeyX', 'Delete'], // túi đồ / mở hộp: phân rã món đang chọn
-    ultimate: ['KeyX'],    // trong trận: TUYỆT KỸ (khi thanh năng lượng đầy)
-    reroll:  ['KeyR'],     // màn chọn Core: đổi cả 3 lá (mỗi lượt 1 lần)
+    mute:    ['KeyM', 'Pad.Back'],
+    restart: ['KeyR', 'Pad.Y'],     // túi đồ: phân rã toàn bộ đồ trùng (giữ 1)
+    dismantle: ['KeyX', 'Delete', 'Pad.X'], // túi đồ / mở hộp: phân rã món đang chọn
+    ultimate: ['KeyX', 'Pad.LT'],    // trong trận: TUYỆT KỸ (khi thanh năng lượng đầy)
+    reroll:  ['KeyR', 'Pad.Y'],     // màn chọn Core: đổi cả 3 lá (mỗi lượt 1 lần)
   },
 
   // Bảng hướng dẫn hiển thị trong menu / pause
@@ -61,5 +63,65 @@ SFC_CONFIG.controls = {
       ['Esc / P', 'Pause'],
       ['M', 'Mute/unmute'],
     ],
+  },
+
+  // Bảng hướng dẫn khi đang dùng tay cầm: {action} = nhãn nút của action đó, {move} = cần analog / D-pad
+  padHelp: {
+    attack: [
+      ['{move}', 'Move'],
+      ['{sprint} (hold)', 'Sprint'],
+      ['{pass}', 'Ground pass · stick at a teammate = accurate'],
+      ['{through} (hold)', 'Through ball'],
+      ['{lob} (hold)', 'Lob pass'],
+      ['{shoot} (hold)', 'Shoot · stick = shot direction'],
+      ['{shoot} (own half, opponent ahead)', 'Clearance'],
+      ['{skill}', 'Skill move (dodge)'],
+      ['{ultimate}', 'Ultimate (when fully charged)'],
+    ],
+    defense: [
+      ['{shoot}', 'Light attack (punch)'],
+      ['{lob}', 'Hard attack (dropkick)'],
+      ['{switch}', 'Switch player'],
+      ['{skill}', 'Dash'],
+    ],
+    teammateHasBall: [
+      ['{pass} / {through} / {lob}', 'Call for the ball (short/through/lob)'],
+    ],
+    system: [
+      ['{move} + {confirm}', 'Pick Core'],
+      ['{reroll}', 'Reroll 3 Core cards (once per round)'],
+      ['{pause}', 'Pause'],
+      ['{mute}', 'Mute/unmute'],
+    ],
+  },
+
+  // Settings > Controls: chú thích từng nút trên hình tay cầm / bàn phím.
+  // atk = khi đội mình giữ bóng / đang tấn công · def = khi phòng ngự (bỏ trống nếu giống atk hoặc không có)
+  legend: {
+    move:     { atk: 'Move' },
+    sprint:   { atk: 'Sprint (hold)' },
+    pass:     { atk: 'Ground pass' },
+    through:  { atk: 'Through ball (hold)' },
+    lob:      { atk: 'Lob pass (hold)', def: 'Hard attack · dropkick' },
+    shoot:    { atk: 'Shoot (hold) · clearance', def: 'Light attack · punch' },
+    skill:    { atk: 'Skill move', def: 'Dash' },
+    switch:   { def: 'Switch player' },
+    ultimate: { atk: 'Ultimate (full bar)' },
+    pause:    { atk: 'Pause' },
+    mute:     { atk: 'Mute / unmute' },
+  },
+
+  // Cần analog trái: deadzone (bỏ qua rung tay), ngưỡng bật / tắt hướng số (menu, gửi online)
+  stick: { deadzone: 0.2, digitalOn: 0.5, digitalOff: 0.35 },
+
+  // Rung tay cầm theo âm thanh trận đấu: [rung nhẹ 0..1, rung mạnh 0..1, ms]. Xóa dòng để tắt từng loại.
+  // Lưu ý: rung với mọi cầu thủ (cả đối thủ sút / trúng đòn), không chỉ cầu thủ của bạn.
+  rumble: {
+    enabled: true,
+    kick:   [0.35, 0.6, 110],   // sút (mạnh theo lực)
+    hit:    [0.5, 0.9, 160],    // trúng đòn
+    tackle: [0.3, 0.4, 80],
+    clang:  [0.6, 0.3, 120],    // chạm cột / xà
+    goal:   [0.7, 1.0, 450],
   },
 };

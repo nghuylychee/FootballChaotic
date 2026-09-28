@@ -118,7 +118,17 @@
     },
   };
 
+  // đổi bàn phím <-> tay cầm: vẽ lại màn đang mở để nhãn phím khớp thiết bị (thanh kỹ năng tự vẽ lại qua hudCache)
+  let deviceRev = 0;
+  function refreshLabels() {
+    const UI = SFC.UI, g = app.game;
+    if (app.screen === 'menu') return SFC.Menu.render();
+    if (UI.current === 'pause') UI.renderPause();
+    else if (UI.current === 'draft' && g) UI.renderDraft(g);
+  }
+
   function tick(dt) {
+    if (Input.deviceRev !== deviceRev) { deviceRev = Input.deviceRev; refreshLabels(); }
     if (Input.wasPressed('mute') && !Input.textHandler) {
       const m = SFC.Audio.toggleMute();
       if (app.screen !== 'menu') SFC.UI.banner(m ? 'MUTED' : 'SOUND ON', '', '#9aa3b5', 0.8);
@@ -175,6 +185,7 @@
       acc += Math.min(0.1, (now - last) / 1000);
       last = now;
       while (acc >= STEP) {
+        Input.poll();
         tick(STEP);
         Input.endFrame();
         acc -= STEP;

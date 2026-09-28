@@ -1,5 +1,5 @@
 /* Menu — các màn ngoài trận: Trang chủ (thẻ hồ sơ) · Chơi đơn · Online (tạo / vào phòng / phòng chờ) ·
- *        Shop (trang phục + mở khoá Core) · Nhân vật (tủ đồ, đổi tên) · Đặt tên · Hướng dẫn
+ *        Nhân vật (tủ đồ, đổi tên) · Shop (trang phục + mở khoá Core) · Cài đặt (Luyện tập, Điều khiển) · Đặt tên · Hướng dẫn
  * Mỗi trang khai báo danh sách mục (items): nút (btn) hoặc bộ chọn ←→ (pick).
  * ↑↓ chọn mục · ←→ đổi giá trị · Enter xác nhận · Esc / Backspace quay lại
  */
@@ -18,6 +18,7 @@ window.SFC = window.SFC || {};
   const G = () => SFC.Gacha;
   const coin = (n) => G().coin(n);
   const xpBar = (d) => G().xpBar(d);
+  const CV = () => SFC.ControlsView;   // Settings > Controls (ui/controls.js)
 
   function helpTable(list) {
     return list.map(([k, v]) => `<div class="hk"><kbd>${esc(k)}</kbd><span>${esc(v)}</span></div>`).join('');
@@ -43,6 +44,7 @@ window.SFC = window.SFC || {};
   const Menu = {
     page: 'home',
     sel: 0,
+    selMemo: {},        // page -> mục đang chọn lúc rời trang
     msg: '',
     msgErr: false,
     code: '',
@@ -59,7 +61,11 @@ window.SFC = window.SFC || {};
     },
 
     go(page, msg = '', err = false) {
-      if (page !== this.page) this.sel = 0;
+      // nhớ mục đang chọn của từng trang: quay lại trang cũ (Esc, hết trận...) con trỏ nằm đúng mục vừa rời đi
+      if (page !== this.page) {
+        this.selMemo[this.page] = this.sel;
+        this.sel = this.selMemo[page] || 0;
+      }
       this.page = page;
       this.msg = msg;
       this.msgErr = err;
@@ -83,10 +89,15 @@ window.SFC = window.SFC || {};
         case 'home':
           return [
             { kind: 'btn', label: 'SOLO', sub: 'Play vs the CPU', act: () => this.go('single') },
-            { kind: 'btn', label: 'TRAINING', sub: 'No clock · pick team sizes', act: () => this.go('training') },
             { kind: 'btn', label: 'ONLINE VERSUS', sub: '1 vs 1 · create a room', act: () => this.go('online') },
-            { kind: 'btn', label: 'SHOP', sub: SFC_CONFIG.progression.coreGacha ? 'Gacha boxes · costumes & Cores' : 'Gacha boxes · costumes', act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'CHARACTER', sub: 'Inventory · rename', act: () => this.go('char') },
+            { kind: 'btn', label: 'SHOP', sub: SFC_CONFIG.progression.coreGacha ? 'Gacha boxes · costumes & Cores' : 'Gacha boxes · costumes', act: () => { G().shopBack = 'home'; this.go('shop'); } },
+            { kind: 'btn', label: 'SETTINGS', sub: 'Training · controls', act: () => this.go('settings') },
+          ];
+        case 'settings':
+          return [
+            { kind: 'btn', label: 'TRAINING', sub: 'No clock · pick team sizes', act: () => this.go('training') },
+            { kind: 'btn', label: 'CONTROLS', sub: 'Keyboard & controller layout', act: () => { CV().open(); this.go('controls'); } },
           ];
         case 'name':
           return [{ kind: 'btn', label: 'CONFIRM', main: true, act: () => this.submitName() }];
@@ -165,7 +176,8 @@ window.SFC = window.SFC || {};
       if (Online().status === 'busy') return;
       if (this.page === 'name') { if (PF().hasName) this.go(this.nameBack); return; } // lần đầu: bắt buộc đặt tên
       if (G().pages.includes(this.page)) return G().back(this);
-      if (['single', 'training', 'online', 'tutorial', 'char'].includes(this.page)) this.go('home');
+      if (['training', 'controls'].includes(this.page)) this.go('settings');
+      else if (['single', 'online', 'tutorial', 'char', 'settings'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
       else if (this.page === 'lobby') Online().leave();
     },
@@ -175,11 +187,12 @@ window.SFC = window.SFC || {};
       if (!this.el) return;
       const items = this.items();
       if (this.sel >= items.length) this.sel = Math.max(0, items.length - 1);
-      this.el.classList.toggle('tut', this.page === 'tutorial' || G().pages.includes(this.page));
+      this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || G().pages.includes(this.page));
       if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); this.bindAvatars(); return; }
+      if (this.page === 'controls') { this.el.innerHTML = CV().render(); this.bindAvatars(); return; }
       if (G().pages.includes(this.page)) { G().render(this); this.bindAvatars(); return; }
       const list = items.map((it, i) => this.renderItem(it, i)).join('');
-      const titles = { single: 'SOLO', training: 'TRAINING', online: 'ONLINE VERSUS', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER' };
+      const titles = { single: 'SOLO', training: 'TRAINING', settings: 'SETTINGS', online: 'ONLINE VERSUS', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER' };
       const small = this.page !== 'home';
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       this.el.innerHTML = `
@@ -211,11 +224,12 @@ window.SFC = window.SFC || {};
     },
 
     hint() {
-      if (this.page === 'home') return '↑↓ select · Enter · M mute';
-      if (this.page === 'join') return 'Type the code · Enter connect · Esc back';
-      if (this.page === 'name') return PF().hasName ? 'Type a name (A-Z, 0-9) · Enter confirm · Esc back' : 'Type a name (A-Z, 0-9) · Enter confirm';
-      if (this.page === 'lobby') return Online().isHost ? '←→ change team · Enter start · Esc leave room' : '←→ change team · Esc leave room';
-      return '↑↓ select · ←→ change · Enter · Esc back';
+      const K = (a, kb) => SFC.Input.key(a, kb), ok = K('confirm', 'Enter'), back = K('back', 'Esc');
+      if (this.page === 'home') return `↑↓ select · ${ok} · ${K('mute', 'M')} mute`;
+      if (this.page === 'join') return `Type the code · Enter connect · ${back} back`;
+      if (this.page === 'name') return PF().hasName ? `Type a name (A-Z, 0-9) · Enter confirm · ${back} back` : 'Type a name (A-Z, 0-9) · Enter confirm';
+      if (this.page === 'lobby') return Online().isHost ? `←→ change team · ${ok} start · ${K('pause', 'Esc')} leave room` : `←→ change team · ${K('pause', 'Esc')} leave room`;
+      return `↑↓ select · ←→ change · ${ok} · ${back} back`;
     },
 
     renderRight() {
@@ -265,7 +279,7 @@ window.SFC = window.SFC || {};
         body += p.lines.map((l) => (l[0] === '#' ? `<h4>${esc(l.slice(1).trim())}</h4>` : `<p>${esc(l)}</p>`)).join('');
       }
       if (p.type === 'controls') {
-        const h = SFC_CONFIG.controls.help;
+        const h = SFC.Input.helpSet();
         body += `<div class="help">
           <div class="help-col"><h4>ATTACK</h4>${helpTable(h.attack)}</div>
           <div class="help-col"><h4>DEFENSE</h4>${helpTable(h.defense)}<h4>TEAMMATE ON THE BALL</h4>${helpTable(h.teammateHasBall)}</div>
@@ -285,7 +299,7 @@ window.SFC = window.SFC || {};
       return `
         <div class="tut-head"><div class="m-title">HOW TO PLAY</div><div class="tabs">${tabs}</div></div>
         <div class="tut-body">${body}</div>
-        <div class="m-hint">←→ change page · Esc back</div>`;
+        <div class="m-hint">←→ change page · ${SFC.Input.key('back', 'Esc')} back</div>`;
     },
 
     /* ---------------- nhập liệu ---------------- */
@@ -364,6 +378,7 @@ window.SFC = window.SFC || {};
       if (back) { SFC.Audio.menu(); return this.back(); }
       if (G().pages.includes(this.page)) return G().input(this, input);
       if (this.page === 'name' && input.wasPressed('confirm')) return this.submitName();
+      if (this.page === 'controls') return CV().input(this, input);
       if (this.page === 'tutorial') {
         const n = SFC_CONFIG.tutorial.pages.length;
         if (input.wasPressed('left')) { this.tutPage = wrap(this.tutPage - 1, n); SFC.Audio.menu(); this.render(); }
@@ -454,6 +469,7 @@ window.SFC = window.SFC || {};
           return;
         }
         if (G().pages.includes(this.page) && G().click(this, e)) return;
+        if (this.page === 'controls' && CV().click(this, e)) return;
         const tab = e.target.closest('[data-tab]');
         if (tab) { this.tutPage = +tab.dataset.tab; SFC.Audio.menu(); this.render(); return; }
         const el = e.target.closest('[data-i]');

@@ -24,6 +24,7 @@ window.SFC = window.SFC || {};
   const REEL_STEP = 56, REEL_CARD = 52, REEL_W = 560; // khớp CSS .rcard / .reel
   const REASON = { gold: 'Not enough gold.', level: 'Your level is too low for this box.' };
   const wrap = (v, n) => ((v % n) + n) % n;
+  const K = (action, kb) => SFC.Input.key(action, kb);   // nhãn phím gợi ý theo thiết bị
   const ARCH = () => SFC_CONFIG.cores.archetypes;
   const ARCH_KEYS = () => ['all'].concat(Object.keys(ARCH()));
 
@@ -151,8 +152,8 @@ window.SFC = window.SFC || {};
         return `${this.header('SHOP')}
           <div class="gacha-body shop-g"><div class="box-list">${rows}</div>
             <div class="box-detail center"><div class="sd-name">INVENTORY</div><div class="sd-desc">See everything you have pulled, equip it on your character, or dismantle what you don't need into gold for more spins.</div>
-            <div class="sd-act"><kbd>Enter</kbd> OPEN INVENTORY</div></div></div>
-          <!--msg--><div class="m-hint">↑↓ select · Enter open · Esc back</div>`;
+            <div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> OPEN INVENTORY</div></div></div>
+          <!--msg--><div class="m-hint">↑↓ select · ${K('confirm', 'Enter')} open · ${K('back', 'Esc')} back</div>`;
       }
       const id = P.boxOrder[this.boxSel], b = P.boxes[id], c = PF().canOpen(id);
       const odds = PF().boxOdds(id).map((o) => {
@@ -163,7 +164,7 @@ window.SFC = window.SFC || {};
         const e = entry(x.kind, x.id), own = e.count > 0;
         return `<div class="icard mini ${own ? 'owned' : ''}" style="--rc:${RAR(x.rarity).color}" title="${esc(nameOf(e))}">${iconHtml(e)}${own ? `<b class="ic-count">×${e.count}</b>` : ''}</div>`;
       }).join('');
-      const act = c.ok ? `<kbd>Enter</kbd> OPEN BOX · ${coin(b.price)}` : c.reason === 'level' ? `<span class="bad">🔒 Requires LV ${b.level}</span>` : `<span class="bad">Not enough gold (${coin(b.price)})</span>`;
+      const act = c.ok ? `<kbd>${K('confirm', 'Enter')}</kbd> OPEN BOX · ${coin(b.price)}` : c.reason === 'level' ? `<span class="bad">🔒 Requires LV ${b.level}</span>` : `<span class="bad">Not enough gold (${coin(b.price)})</span>`;
       return `${this.header('SHOP')}
         <div class="gacha-body shop-g">
           <div class="box-list">${rows}</div>
@@ -175,7 +176,7 @@ window.SFC = window.SFC || {};
             <div class="bd-pool">${pool}</div>
           </div>
         </div>
-        <!--msg--><div class="m-hint">↑↓ select box · Enter open box · Esc back</div>`;
+        <!--msg--><div class="m-hint">↑↓ select box · ${K('confirm', 'Enter')} open box · ${K('back', 'Esc')} back</div>`;
     },
 
     openBox(menu, boxId) {
@@ -196,14 +197,14 @@ window.SFC = window.SFC || {};
     pageOpen() {
       const o = this.opening, b = PROG().boxes[o.boxId];
       const cards = o.reel.map((x) => `<div class="rcard" style="--rc:${RAR(x.rarity).color}">${iconHtml(entry(x.kind, x.id))}</div>`).join('');
-      const reveal = o.done ? this.revealHtml(o) : '<div class="reveal wait"><span>Spinning...</span><span><kbd>Enter</kbd> skip</span></div>';
+      const reveal = o.done ? this.revealHtml(o) : `<div class="reveal wait"><span>Spinning...</span><span><kbd>${K('confirm', 'Enter')}</kbd> skip</span></div>`;
       return `${this.header('OPEN BOX', `<div class="open-box">${boxArt(b.color)}<span>${esc(b.name)}</span></div>`)}
         <div class="reel-wrap ${o.done ? 'done' : ''}" style="--rc:${RAR(o.win.rarity).color}">
           <div class="reel"><div class="reel-strip" style="transform:translateX(${-(o.done ? o.dist : o.pos)}px)">${cards}</div></div>
           <i class="reel-mark"></i>
         </div>
         ${reveal}
-        <!--msg--><div class="m-hint">${o.done ? 'Enter open another · E equip · X dismantle · Esc back to Shop' : 'Enter skip'}</div>`;
+        <!--msg--><div class="m-hint">${o.done ? `${K('confirm', 'Enter')} open another · ${K('sprint', 'E')} equip · ${K('dismantle', 'X')} dismantle · ${K('back', 'Esc')} back to Shop` : `${K('confirm', 'Enter')} skip`}</div>`;
     },
 
     revealHtml(o) {
@@ -214,7 +215,7 @@ window.SFC = window.SFC || {};
       if (isCore) {
         const c = CORE_LIST()[w.id];
         // mở hộp ra Core: phát luôn khoảnh khắc của Core đó
-        art = `<div class="rv-core-art">${SFC.CorePreview.html(w.id, 150, 66)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? '<kbd class="card-x">X</kbd>' : ''}</div>`;
+        art = `<div class="rv-core-art">${SFC.CorePreview.html(w.id, 150, 66)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>`;
         const lv = PF().coreLevel(w.id);
         note = lv > PF().data.level ? `<span class="bad">Requires LV ${lv} to use in matches</span>` : 'Added to your mid-match Core pool';
       } else {
@@ -223,9 +224,9 @@ window.SFC = window.SFC || {};
       }
       const equipped = !isCore && PF().data.look[PROG().items[w.id].slot] === w.id;
       const acts = [
-        `<span class="rv-act"><kbd>Enter</kbd> OPEN ANOTHER ${coin(b.price)}</span>`,
-        !isCore && e.count > 0 ? `<span class="rv-act ${equipped ? 'on' : ''}"><kbd>E</kbd> ${equipped ? 'EQUIPPED' : 'EQUIP'}</span>` : '',
-        e.count > 0 && !o.dismantled ? `<span class="rv-act"><kbd>X</kbd> DISMANTLE +${PF().dismantleValue(w.kind, w.id)}</span>` : '',
+        `<span class="rv-act"><kbd>${K('confirm', 'Enter')}</kbd> OPEN ANOTHER ${coin(b.price)}</span>`,
+        !isCore && e.count > 0 ? `<span class="rv-act ${equipped ? 'on' : ''}"><kbd>${K('sprint', 'E')}</kbd> ${equipped ? 'EQUIPPED' : 'EQUIP'}</span>` : '',
+        e.count > 0 && !o.dismantled ? `<span class="rv-act"><kbd>${K('dismantle', 'X')}</kbd> DISMANTLE +${PF().dismantleValue(w.kind, w.id)}</span>` : '',
         o.dismantled ? `<span class="rv-act ok">Dismantled ${coin('+' + o.dismantled)}</span>` : '',
       ].join('');
       return `<div class="reveal r-${w.rarity}" style="--rc:${r.color}">
@@ -311,7 +312,7 @@ window.SFC = window.SFC || {};
           <div class="inv-left">${filter}<div class="inv-grid">${cards}</div></div>
           <div class="inv-detail">${list[this.invSel] ? this.invDetail(list[this.invSel]) : ''}</div>
         </div>
-        <!--msg--><div class="m-hint">Q / E switch tab${coreTab ? ' · Z filter by archetype' : ''} · ←↑↓→ select${coreTab && !PROG().coreGacha ? '' : ' · Enter equip · X dismantle'}${dupes.count ? ` · R dismantle ${dupes.count} duplicates (+${dupes.gold})` : ''} · Esc back</div>`;
+        <!--msg--><div class="m-hint">${K('switch', 'Q')} / ${K('sprint', 'E')} switch tab${coreTab ? ` · ${K('skill', 'Z')} filter by archetype` : ''} · ←↑↓→ select${coreTab && !PROG().coreGacha ? '' : ` · ${K('confirm', 'Enter')} equip · ${K('dismantle', 'X')} dismantle`}${dupes.count ? ` · ${K('restart', 'R')} dismantle ${dupes.count} duplicates (+${dupes.gold})` : ''} · ${K('back', 'Esc')} back</div>`;
     },
 
     invDetail(e) {
@@ -328,12 +329,12 @@ window.SFC = window.SFC || {};
         }).join('');
         return `<div class="card static ${c.role === 'ult' ? 'ult' : ''}" style="--c:${cat.color};--c2:${cat2.color};--t:${r.color}">
             <div class="card-tags">${tags}</div>
-            <div class="card-art">${SFC.CorePreview.html(e.id, 132, 56)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? '<kbd class="card-x">X</kbd>' : ''}</div>
+            <div class="card-art">${SFC.CorePreview.html(e.id, 132, 56)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>
             <div class="card-name">${esc(c.name)}</div><div class="card-tier">${r.label} · ${esc(roleText(c))}</div>
             <div class="card-desc">${esc(c.desc)}</div></div>
           <div class="sd-side"><div class="sd-req">${count}</div><div class="sd-note">${status}</div>
             ${sug ? `<div class="sug-h">OFTEN PAIRED WITH</div>${sug}` : ''}
-            <div class="sd-act">${e.def ? '' : `<kbd>X</kbd> DISMANTLE ${coin('+' + val)}`}</div></div>`;
+            <div class="sd-act">${e.def ? '' : `<kbd>${K('dismantle', 'X')}</kbd> DISMANTLE ${coin('+' + val)}`}</div></div>`;
       }
       const it = PROG().items[e.id], eq = this.isEquipped(e);
       return `<div class="sd-preview"><canvas class="avatar big" data-avatar="spin" data-try="${e.id}"></canvas></div>
@@ -342,8 +343,8 @@ window.SFC = window.SFC || {};
           <div class="sd-name">${esc(it.name)}</div>
           <div class="sd-desc">${esc(it.desc)}</div>
           <div class="sd-req">${PROG().slots[it.slot].label} · ${count}</div>
-          <div class="sd-act">${eq ? '<span class="on">EQUIPPED</span>' : '<kbd>Enter</kbd> EQUIP'}</div>
-          ${e.def ? '' : `<div class="sd-act"><kbd>X</kbd> DISMANTLE ${coin('+' + val)}</div>`}
+          <div class="sd-act">${eq ? '<span class="on">EQUIPPED</span>' : `<kbd>${K('confirm', 'Enter')}</kbd> EQUIP`}</div>
+          ${e.def ? '' : `<div class="sd-act"><kbd>${K('dismantle', 'X')}</kbd> DISMANTLE ${coin('+' + val)}</div>`}
         </div>`;
     },
 
