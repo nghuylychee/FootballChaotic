@@ -100,6 +100,9 @@ window.SFC = window.SFC || {};
       const pvCol = pv ? PASS_COLORS[pv.mode] : null;
       if (pv && pv.target) ringPx(ctx, pv.target.x, pv.target.y + 1, 9 + Math.round(Math.sin(t * 10)), pvCol);
 
+      // điểm rơi bóng bổng (nằm trên mặt sân, dưới cầu thủ)
+      this.landingMarker(ctx, g);
+
       /* --- entity y-sort --- */
       const list = [];
       for (const p of g.players) list.push({ y: p.y, k: 'p', o: p });
@@ -298,6 +301,25 @@ window.SFC = window.SFC || {};
       ctx.globalAlpha = 1;
       if (p.passCharge > base) px(ctx, x, y, Math.round(w * p.passCharge), 3, col);
       px(ctx, x + Math.round(w * base), y - 1, 1, 5, '#ffffff');
+    },
+
+    // vòng điểm rơi: vòng sáng (dễ thấy trên sân tối) + tâm màu áo đội vừa đá (bóng lỏng: trắng);
+    // to khi bóng còn cao, nhỏ dần khi rơi xuống
+    landingMarker(ctx, g) {
+      const b = g.ball, B = SFC_CONFIG.game.ball, { ringPx, px, OUT } = SP();
+      if (!B.landingMarker || g.preview || b.owner || b.z <= B.pickupHeight) return;
+      const lp = SFC.Actions.landingPoint(g);
+      if (!lp) return;
+      const col = b.lastKickTeam >= 0 ? g.teams[b.lastKickTeam].cfg.kit.shirt : '#ffffff';
+      const x = Math.round(lp.x), y = Math.round(lp.y);
+      const r = Math.round(4 + Math.min(7, b.z / 6));
+      ctx.globalAlpha = 0.6;
+      ringPx(ctx, x, y + 1, r, OUT);
+      ctx.globalAlpha = 0.7 + 0.25 * Math.sin(g.time * 12);
+      ringPx(ctx, x, y, r, '#fff6d8');
+      ctx.globalAlpha = 1;
+      px(ctx, x - 2, y - 1, 5, 3, OUT);
+      px(ctx, x - 1, y, 3, 1, col); px(ctx, x, y - 1, 1, 3, col);
     },
 
     ballTrail(ctx, b) {

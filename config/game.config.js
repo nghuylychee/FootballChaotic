@@ -106,6 +106,7 @@ SFC_CONFIG.game = {
     pickupHeight: 12,
     selfPickupDelay: 0.3,
     looseNoPickup: 0.4,
+    landingMarker: true,     // bóng bổng (cao hơn pickupHeight): vẽ vòng điểm rơi trên sân
     controlSpeed: 310,       // bóng nhanh hơn -> khó khống chế (đối phương)
     trailLength: 7,
   },
@@ -221,6 +222,11 @@ SFC_CONFIG.game = {
       stun: 0.35,
       knockback: 150,
       stealChance: 0.6,       // tỉ lệ làm người cầm bóng rơi bóng (x chỉ số tackle / dribble đối thủ, Core: tackleChance); trượt -> chỉ đẩy lùi
+      // Đấm rơi bóng: người bị đấm choáng lâu hơn (đấm người không có bóng vẫn là stun ở trên) để người đấm kịp lấy bóng
+      stealStun: 0.7,
+      instantSteal: 0.3,      // tỉ lệ bóng về thẳng chân người đấm; còn lại bóng bật về phía người đấm (lệch sang bên), người bị đấm văng hướng ngược lại
+      stealBallSpeed: 70,     // (px/s) tốc độ bóng bật ra
+      stealBallAngle: [20, 50], // (độ) bóng lệch sang trái / phải so với hướng về người đấm
     },
     // A — HARD ATTACK: gồng co chân (đối thủ nhìn thấy được) rồi bước tới vung chân đá.
     // Trúng: đối thủ bị hất tung bay rất xa + choáng lâu + chắc chắn rơi bóng. Trượt: khựng lâu. Z (lướt) đúng lúc thì né được.
@@ -272,15 +278,27 @@ SFC_CONFIG.game = {
     restDefenseFrom: 0.5,     // đồng đội cầm bóng vượt mốc này (tỉ lệ sân, 0.5 = giữa sân) -> người còn lại lùi chốt phía sau
     restDefenseDist: 110,     //   đứng sau người cầm bóng bao xa (px)
     markDistance: 26,
-    keeperCoverDist: 420,     // đội máy / đồng đội AI ĐÁ LÙI: người cầm bóng đối phương cách khung thành nhà dưới mức này -> AI không áp sát lùi về trông khung
-    keeperPressDist: 110,     // đồng đội AI ĐÁ LÙI: chưa tới keeperCoverDist mà người chơi cách người cầm bóng xa hơn mức này -> lên áp sát (không thì kèm người)
+    keeperCoverDist: 420,     // đội máy: người cầm bóng đối phương cách khung thành nhà dưới mức này -> người gần khung nhất lùi về trông khung
+    mateKeeperCoverDist: 300, // như trên, cho đồng đội AI ĐÁ LÙI của người chơi (sân rộng 528px: 420 -> trông khung ~64% thời gian phòng ngự, 220 -> ~17%)
+    keeperPressDist: 110,     // đồng đội AI ĐÁ LÙI: chưa tới mateKeeperCoverDist mà người chơi cách người cầm bóng xa hơn mức này -> lên áp sát (không thì kèm người)
+    // đồng đội AI ĐÁ LÙI cùng người chơi kẹp người cầm bóng (thay vì chỉ kèm người / trông khung):
+    helpPress: {
+      near: 40,               // (px) mình cách người cầm bóng dưới mức này và người chơi đang áp sát (ctlNear) -> cùng áp sát + đấm (kể cả gần khung nhà)
+      ctlNear: 45,            // (px) người chơi cách người cầm bóng dưới mức này = đang áp sát
+      ownHalf: false,         // true = người cầm bóng đã vào phần sân nhà (chưa tới mateKeeperCoverDist) -> luôn lên áp sát
+    },
+    // đồng đội AI ĐÁ LÙI vừa giành được bóng (không phải nhận đường chuyền của đồng đội) -> chuyền nhanh cho người chơi
+    outletPass: {
+      delay: 0.4,             // (s) giữ bóng tối thiểu trước khi chuyền (khựng sau khi cắt bóng vẫn áp dụng)
+      ahead: 20,              // (px) người chơi phải đứng phía trên mình (về hướng khung đối phương) ít nhất chừng này
+    },
     hardDistMin: 16,          // AI dùng Hard attack khi người cầm bóng cách trong khoảng này (px)
     hardDistMax: 44,
 
     // Đồng đội AI của người chơi (vd. chế độ 1 cầu thủ: người còn lại do AI đá). Đội máy không dùng phần này.
     mate: {
       // Vị trí dùng lối chơi bên dưới (áp sát / dứt điểm / ít chuyền). Vị trí khác (ĐÁ LÙI) chơi như đội máy: trông khung
-      // (keeperCoverDist), kèm người, chuyền nhiều; chỉ lên áp sát khi người chơi ở xa người cầm bóng (keeperPressDist).
+      // (mateKeeperCoverDist), kèm người, chuyền nhiều; chỉ lên áp sát khi người chơi ở xa người cầm bóng (keeperPressDist).
       // Các phần còn lại (cooldownMult, lightChance, chạy đón đường chuyền, độ khó) áp dụng cho mọi vị trí.
       roles: ['FWD'],
       // Phòng ngự: luôn áp sát người cầm bóng để đoạt lại bóng. Chỉ về trông khung khi nguy hiểm rõ ràng:

@@ -97,6 +97,17 @@ window.SFC = window.SFC || {};
         return;
       }
 
+      // đồng đội AI ĐÁ LÙI vừa giành được bóng: chuyền nhanh cho người chơi nếu người chơi đứng phía trên (1 lần mỗi lần giành bóng)
+      const O = cfg.outletPass;
+      if (O && !M && g.isHuman(p.team) && !settling && !p.ai.outletDone && p.ai.holdT >= O.delay) {
+        p.ai.outletDone = true;
+        const fwd = g.ctrl[p.team];
+        if (fwd && fwd !== p && fwd.state === 'normal' && (fwd.x - p.x) * g.teams[p.team].dir > O.ahead) {
+          Act().passTo(g, p, fwd, Act().laneClear(g, p, fwd.x, fwd.y, 10) ? 'ground' : 'lob');
+          return;
+        }
+      }
+
       const near = nearest(opps, p, (o) => o.state !== 'stun');
       const dG = Math.hypot(goal.x - p.x, goal.y - p.y);
 
@@ -208,13 +219,15 @@ window.SFC = window.SFC || {};
       const ctl = humanTeam ? g.ctrl[p.team] : null;
       // đội máy / đồng đội AI ĐÁ LÙI: đối phương cầm bóng đã tới gần -> người gần khung nhất trông khung, người còn lại áp sát
       // đồng đội AI ĐÁ CAO: luôn áp sát, chỉ về trông khung khi nguy hiểm rõ ràng (ai.mate)
-      const danger = M ? this.mateDanger(g, p, c) : Math.abs(c.x - ownGoal.x) < cfg.keeperCoverDist;
+      const danger = M ? this.mateDanger(g, p, c) : Math.abs(c.x - ownGoal.x) < (humanTeam ? cfg.mateKeeperCoverDist : cfg.keeperCoverDist);
       const keeper = danger && !M ? keeperOf(g, p.team) : null;
 
       let presser = null;
       if (!humanTeam) presser = nearest(tm.players, c, (o) => o !== keeper).p;
       else if (M) { if (!danger) presser = p; }
-      // đồng đội AI ĐÁ LÙI: chỉ lên áp sát khi bóng chưa tới gần khung nhà và người chơi ở xa người cầm bóng
+      // đồng đội AI ĐÁ LÙI: lên áp sát khi bóng chưa tới gần khung nhà và người chơi ở xa người cầm bóng,
+      // hoặc cùng người chơi kẹp người cầm bóng (helpPress)
+      else if (ctl && this.helpPress(g, p, c, ctl, danger)) presser = p;
       else if (!ctl || (!danger && U.dist(ctl, c) > cfg.keeperPressDist)) presser = nearest(tm.players, c, (o) => o.state !== 'stun' && o !== ctl).p;
 
       if (p === presser) {
@@ -250,7 +263,16 @@ window.SFC = window.SFC || {};
       moveTo(p, t.x + gd.x * cfg.markDistance, t.y + gd.y * cfg.markDistance, U.dist(p, t) > 80, 5);
     },
 
-    // Đồng đội AI: nguy hiểm rõ ràng = người cầm bóng đã vào gần khung nhà và người chơi không đứng trong vòng cấm nhà -> về trông khung.
+    // Đồng đội AI ĐÁ LÙI kẹp người cầm bóng cùng người chơi: mình ở gần + người chơi đang áp sát (cả khi gần khung nhà),
+    // hoặc người cầm bóng đã vào phần sân nhà nhưng chưa tới mức nguy hiểm
+    helpPress(g, p, c, ctl, danger) {
+      const H = A().helpPress;
+      if (!H || p.state === 'stun') return false;
+      if (U.dist(p, c) < H.near && U.dist(ctl, c) < H.ctlNear) return true;
+      return H.ownHalf && !danger && (c.x - g.field.cx) * g.teams[p.team].dir < 0;
+    },
+
+    // Đồng đội AI: nguy hiểm rõ ràng =người cầm bóng đã vào gần khung nhà và người chơi không đứng trong vòng cấm nhà -> về trông khung.
     // Lúc nguy hiểm bắt đầu mà đang áp sát sát người (stickDist) thì cứ áp sát; đã quyết định về trông khung thì giữ tới khi hết nguy hiểm
     // (không đổi ý khi chạy ngang qua người cầm bóng trên đường về)
     mateDanger(g, p, c) {

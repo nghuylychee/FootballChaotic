@@ -7,6 +7,26 @@ window.SFC = window.SFC || {};
 
   function facingVec(p) { return { x: Math.cos(p.facing), y: Math.sin(p.facing) }; }
 
+  // mô phỏng trước quỹ đạo bóng (trọng lực, nảy, ma sát, dội tường) — dùng cho điểm đón bóng + điểm rơi
+  function flightState(b) { return { x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, fm: b.frictionMult }; }
+  // 1 bước; trả về true nếu bước này bóng rơi chạm sân
+  function flightStep(g, s, dt) {
+    const B = G().ball, f = g.field, r = g.ball.r;
+    const wasAir = s.z > 0;
+    s.x += s.vx * dt; s.y += s.vy * dt;
+    s.vz -= B.gravity * dt; s.z += s.vz * dt;
+    const landed = wasAir && s.z <= 0;
+    if (s.z <= 0) {
+      s.z = 0;
+      if (s.vz < -50) { s.vz = -s.vz * B.bounce; s.vx *= 0.78; s.vy *= 0.78; } else s.vz = 0;
+    }
+    const damp = Math.exp(-(s.z > B.airDragMinZ ? B.airDrag : B.groundFriction) * s.fm * dt);
+    s.vx *= damp; s.vy *= damp;
+    if (s.y < f.y + r || s.y > f.y + f.h - r) { s.vy = -s.vy * B.wallBounce; s.y = U.clamp(s.y, f.y + r, f.y + f.h - r); }
+    if (s.x < f.x + r || s.x > f.x + f.w - r) { s.vx = -s.vx * B.wallBounce; s.x = U.clamp(s.x, f.x + r, f.x + f.w - r); }
+    return landed;
+  }
+
   const Actions = {
     /**
      * Chọn người nhận: ưu tiên hướng phím, khoảng cách khớp với lực (nếu có), độ trống.
@@ -200,28 +220,25 @@ window.SFC = window.SFC || {};
      * { x, y, t } — t = thời điểm (s) bóng tới điểm đó.
      */
     interceptPoint(g, p, maxT = 2) {
-      const b = g.ball, B = G().ball, f = g.field, r = b.r;
-      let x = b.x, y = b.y, z = b.z, vx = b.vx, vy = b.vy, vz = b.vz;
+      const B = G().ball, s = flightState(g.ball);
       const dt = 1 / 30;
       const speed = G().player.speed * p.stats.speed * G().player.sprintMult * 0.9;
-      const reach = p.radius + r + B.pickupRange;
+      const reach = p.radius + g.ball.r + B.pickupRange;
       for (let t = dt; t <= maxT; t += dt) {
-        x += vx * dt; y += vy * dt;
-        vz -= B.gravity * dt; z += vz * dt;
-        if (z <= 0) {
-          z = 0;
-          if (vz < -50) { vz = -vz * B.bounce; vx *= 0.78; vy *= 0.78; } else vz = 0;
-        }
-        const damp = Math.exp(-(z > B.airDragMinZ ? B.airDrag : B.groundFriction) * b.frictionMult * dt);
-        vx *= damp; vy *= damp;
-        if (y < f.y + r || y > f.y + f.h - r) { vy = -vy * B.wallBounce; y = U.clamp(y, f.y + r, f.y + f.h - r); }
-        if (x < f.x + r || x > f.x + f.w - r) { vx = -vx * B.wallBounce; x = U.clamp(x, f.x + r, f.x + f.w - r); }
-        if (z > B.pickupHeight) continue;
-        const need = Math.max(0, Math.hypot(x - p.x, y - p.y) - reach) / speed + 0.08;
-        if (need <= t) return { x, y, t };
-        if (z === 0 && Math.hypot(vx, vy) < 5) return { x, y, t: need };
+        flightStep(g, s, dt);
+        if (s.z > B.pickupHeight) continue;
+        const need = Math.max(0, Math.hypot(s.x - p.x, s.y - p.y) - reach) / speed + 0.08;
+        if (need <= t) return { x: s.x, y: s.y, t };
+        if (s.z === 0 && Math.hypot(s.vx, s.vy) < 5) return { x: s.x, y: s.y, t: need };
       }
-      return { x, y, t: maxT };
+      return { x: s.x, y: s.y, t: maxT };
+    },
+
+    /** Điểm bóng bổng chạm sân lần đầu (vòng điểm rơi) — { x, y, t } hoặc null nếu không chạm trong maxT */
+    landingPoint(g, maxT = 3) {
+      const s = flightState(g.ball), dt = 1 / 60;
+      for (let t = dt; t <= maxT; t += dt) if (flightStep(g, s, dt)) return { x: s.x, y: s.y, t };
+      return null;
     },
 
     passTo(g, p, target, mode, dx = 0, dy = 0, power = null, err = null) {
@@ -429,8 +446,18 @@ window.SFC = window.SFC || {};
           }
           // Xe Ủi / Hoá Khổng Lồ: không rời bóng (đòn vẫn tiêu Giáp)
           const keep = C.unstealable(o);
-          // Long Quyền: bóng rơi xuống chân người đấm
-          if (!keep) g.looseBall(o, upper ? p.x - o.x : fv.x, upper ? p.y - o.y : fv.y, upper ? 40 : 80);
+          if (!keep) {
+            // đấm rơi bóng: người bị đấm choáng lâu hơn (stealStun) để người đấm kịp lấy bóng
+            hopts.stun *= L.stealStun / L.stun;
+            if (upper) g.looseBall(o, p.x - o.x, p.y - o.y, 40);   // Long Quyền: bóng rơi xuống chân người đấm
+            else if (Math.random() < L.instantSteal) { g.looseBall(o, p.x - o.x, p.y - o.y, 0); g.gainPossession(p); }
+            else {
+              // bóng bật về phía người đấm, lệch sang một bên; người bị đấm văng hướng ngược lại (kbx / kby)
+              const [a0, a1] = L.stealBallAngle;
+              const ang = Math.atan2(p.y - o.y, p.x - o.x) + (Math.random() < 0.5 ? -1 : 1) * U.rand(a0, a1) * Math.PI / 180;
+              g.looseBall(o, Math.cos(ang), Math.sin(ang), L.stealBallSpeed);
+            }
+          }
           o.hit(hopts);
           if (!keep) { C.dispatch(p.team, 'onTackleWin', p, o); C.steal(p); }
         } else {

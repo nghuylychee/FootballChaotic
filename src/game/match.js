@@ -210,6 +210,7 @@ window.SFC = window.SFC || {};
       p.ai.runT = 0;
       p.ai.openSeen = false;
       p.ai.interceptT = 0;
+      p.ai.outletDone = !!passer;   // nhận đường chuyền của đồng đội: không chuyền trả ngay (ai.outletPass)
       if (this.lastPossessionTeam !== -1 && this.lastPossessionTeam !== p.team) {
         this.cores.dispatch(p.team, 'onPossessionGained', p);
       }
