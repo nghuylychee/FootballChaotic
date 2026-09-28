@@ -112,7 +112,7 @@ window.SFC = window.SFC || {};
       update(sys, team, prm) {
         const g = sys.g, E = g.effects, max = sys.resMax(team, 'momentum');
         for (const pl of g.teams[team].players) {
-          if (!pl.sprinting || pl.state !== 'normal' || pl.res.momentum < max || g.time < (pl.sonicT || 0)) continue;
+          if (!pl.hasBall || !pl.sprinting || pl.state !== 'normal' || pl.res.momentum < max || g.time < (pl.sonicT || 0)) continue;
           const sp = Math.hypot(pl.vx, pl.vy);
           if (sp < 60) continue;
           for (const o of g.teams[1 - team].players) {
@@ -778,7 +778,8 @@ window.SFC = window.SFC || {};
         const ballT = !b.owner && b.z < 14 && inCone(b) ? b : null;
         const opp = ballT ? null : nearestOpp(g, team, pl, (o) => o.airZ <= 0 && inCone(o) && targetable(g)(o));
         const tgt = ballT || opp;
-        if (!tgt) return;
+        if (!tgt || g.time < (pl.rubberT || 0)) return;
+        pl.rubberT = g.time + prm.cooldown;
         E.stretch(pl.id, tgt.x, tgt.y, 0.4);
         g.later(0.16, () => {
           if (g.state !== 'play' || pl.state === 'stun') return;

@@ -429,7 +429,8 @@ window.SFC = window.SFC || {};
           }
           // Xe Ủi / Hoá Khổng Lồ: không rời bóng (đòn vẫn tiêu Giáp)
           const keep = C.unstealable(o);
-          if (!keep) g.looseBall(o, fv.x, fv.y, 80);
+          // Long Quyền: bóng rơi xuống chân người đấm
+          if (!keep) g.looseBall(o, upper ? p.x - o.x : fv.x, upper ? p.y - o.y : fv.y, upper ? 40 : 80);
           o.hit(hopts);
           if (!keep) { C.dispatch(p.team, 'onTackleWin', p, o); C.steal(p); }
         } else {
@@ -464,7 +465,22 @@ window.SFC = window.SFC || {};
       const fv = facingVec(p);
       // Dậm Đất: Hard attack thành cú bật nhảy rồi dậm xuống
       if (C.has(p.team, 'ground_slam')) {
-        this.jumpSlam(p, 'ground', C.params('ground_slam').jump);
+        // lao về đối thủ gần nhất trước mặt (tới đúng lúc tiếp đất), không có ai thì nhảy tới trước
+        const P = C.params('ground_slam'), air = (2 * P.jump) / G().combat.airGravity;
+        let best = null, bd = P.leap + 60;
+        for (const o of g.teams[1 - p.team].players) {
+          const dx = o.x - p.x, dy = o.y - p.y, dd = Math.hypot(dx, dy);
+          if (dd < bd && o.airZ <= 0 && (dx * fv.x + dy * fv.y) / (dd || 1) > 0.3) { bd = dd; best = o; }
+        }
+        let vx = fv.x * (P.leap * 0.5) / air, vy = fv.y * (P.leap * 0.5) / air;
+        if (best) {
+          const tx = best.x + best.vx * air * 0.5 - p.x, ty = best.y + best.vy * air * 0.5 - p.y;
+          const sp = Math.min(P.maxSpeed, Math.hypot(tx, ty) / air), n = U.norm(tx, ty);
+          vx = n.x * sp; vy = n.y * sp;
+          p.facing = Math.atan2(ty, tx);
+        }
+        this.jumpSlam(p, 'ground', P.jump);
+        p.vx = vx; p.vy = vy;
         g.sfx('whoosh');
         C.dispatch(p.team, 'onHardAttack', p);
         C.dispatch(p.team, 'onTackle', p);

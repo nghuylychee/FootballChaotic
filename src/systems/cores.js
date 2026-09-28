@@ -105,6 +105,18 @@ window.SFC = window.SFC || {};
         const g = sys.g, f = g.field, E = g.effects;
         const ox = pl.x, oy = pl.y;
         E.clone(pl.id, ox, oy, 0, 0, p.illusion + (sys.tier(team, 'trickster') >= 2 ? 1 : 0));
+        // đang cầm bóng: đối thủ (máy) gần đó lao vào ảo ảnh
+        const st = sys.st(team, 'phantom_step');
+        if (pl.hasBall && !(st.cd > 0)) {
+          st.cd = p.lureCooldown;
+          const lure = { x: ox, y: oy, alive: true };
+          g.later(p.lure, () => { lure.alive = false; });
+          let near = null, nd = p.lureRadius;   // chỉ lừa được 1 người gần nhất
+          for (const o of g.teams[1 - team].players) {
+            if (!o.isControlled && !g.inKeeperZone(o) && U.dist(o, pl) < nd) { nd = U.dist(o, pl); near = o; }
+          }
+          if (near) near.confused = { decoy: lure, t: p.lure };
+        }
         E.burst(ox, oy, 8, '#d8d0e0', 14, 80, 0.5);
         pl.x = U.clamp(pl.x + d.x * p.distance, f.x + 8, f.x + f.w - 8);
         pl.y = U.clamp(pl.y + d.y * p.distance, f.y + 8, f.y + f.h - 8);
@@ -387,7 +399,10 @@ window.SFC = window.SFC || {};
       if (t < 0) return m;
       const R = RES(), mo = p.res.momentum, runner4 = this.tier(t, 'runner') >= 4;
       switch (key) {
-        case 'speed': m *= 1 + mo * R.momentum.speedPer; break;
+        case 'speed':
+          m *= 1 + mo * R.momentum.speedPer + p.res.rage * R.rage.speedPer;
+          if (p.hasBall && p.res.guard > 0 && this.has(t, 'bulldozer')) m *= this.params('bulldozer').slow;   // Xe Ủi: nặng nề
+          break;
         case 'shotPower':
           if (this.tier(t, 'striker') >= 2) m *= 1.15;
           if (p.titanT > 0) m *= this.params('titan').shot;

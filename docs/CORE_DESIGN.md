@@ -30,7 +30,7 @@
 | 3 · Core mới | ✅ Xong | Đủ **53 Core** (37 mới, gồm 6 Tuyệt kỹ còn lại) — hành vi ở `src/systems/cores-new.js`. Hạ tầng thêm: `CoreSystem.task` (việc chạy mỗi bước, huỷ khi giao bóng), trạng thái cầu thủ `slam` (nhảy dậm) / `meteor` (lơ lửng ngoài màn hình), tâng người đang bay, nắm đấm khổng lồ (tay co giãn có cỡ), phân thân chặn đường chuyền (`popClone`), trừ tỉ lệ bắt bóng theo cú sút (`ball.gkMod`), bóng xuyên người dùng chung (sét / Song Phi). **Đổi so với bảng:** Xe Ủi / Thủ Môn Khổng Lồ / Nắm Đấm Sắt tự có tối thiểu 1 Giáp mỗi lần giao bóng (tránh lá chết khi chưa có Core tạo Giáp); Húc Xe Tải cần 4 Đà, tiêu 3, hồi 4s; năng lượng Tuyệt kỹ từ cướp bóng +20% và tối đa 1 lần / 2s mỗi đội. Mở khoá theo level đã điền cho Core mới (THƯỜNG LV1 … Tuyệt kỹ LV15–18). **Cần cân bằng ở giai đoạn 6:** build 4 lá TỐC ĐỘ (Quỷ Tốc Độ + Phóng Như Tên + Húc Xe Tải + Tia Chớp) vẫn ~18 bàn/trận khi đá với đội không Core. |
 | 4 · UI hoàn chỉnh | ✅ Xong | **Ảnh động xem trước Core** (`src/ui/corepreview.js`): mỗi lá chạy một trận mini thật (`noAI` / `noDraft`, `g.preview`) theo kịch bản riêng của 53 Core, vẽ bằng chính Renderer + VFX Kit, cắt khung 1:1 theo "máy quay", 30 khung/giây, tự dừng khi lá bị gỡ khỏi màn hình — dùng ở lá chọn Core, túi đồ, màn mở hộp, màn kết quả · lá Core: viền 2 màu cho cầu nối, dòng `TẠO: Đà` / `DÙNG: Nộ` (trường phái có `mech`), lá Tuyệt kỹ nền poster + viền vàng chạy + nhãn phím X · ô Tuyệt kỹ đầy thì rung · màn kết quả: **Khoảnh khắc của trận** (Tuyệt kỹ / combo HIT cao nhất, có ảnh động) + nhãn build ("🏃 TỐC ĐỘ IV") · túi đồ: lọc Core theo trường phái (Z / chuột) + **Thường đi cùng** (2–3 Core hợp build) · đổi lá đang chọn không vẽ lại (ảnh động không bị giật). |
 | 5 · Meta | ⏸ Tạm hoãn | **Gacha Core đang tắt** (`progression.coreGacha = false`): mọi Core có sẵn cho mọi người chơi, Hộp Core ẩn khỏi SHOP. Bộ Core có sẵn / hộp theo trường phái / bảo hiểm làm khi bật lại gacha. |
-| 6 · Cân bằng | ⏳ | |
+| 6 · Cân bằng | ✅ Vòng 1 | Giả lập đấu vòng tròn 9 build mẫu + đội không Core (AI vs AI, Core thêm dần mỗi 24s, Tuyệt kỹ lượt cuối) và đo **bỏ từng Core** khỏi build để tìm lá gánh / lá phá build. Kết quả (8 vòng, 144 trận / build): TỐC ĐỘ 65% · TIKI-TAKA 58% · SÁT THỦ 46% · ĐẤU SĨ 46% · VÕ SĨ ĐÁ 42% · ẢO ẢNH 45% · THÉP 60% · lai cao su 63% · lai ninja-sát thủ 64% · không Core 10%. Tuyệt kỹ ~0.7–1 lần / trận. Chỉnh chính: Dậm Đất lao về đối thủ (trước đó nhảy tại chỗ → phá build Võ Sĩ Đá), Long Quyền bóng rơi về chân, Phá Âm Chướng chỉ khi cầm bóng, Húc Xe Tải ≥5 Đà / hồi 15s, Xe Ủi chậm 12% + hất nhẹ hơn, Da Thép hồi 7s, Aegis 60s, Tay Cao Su hồi 2s, Nộ +2% tốc độ mỗi nấc, Thuấn Bộ lừa 1 hậu vệ. Số liệu chỉ là AI vs AI — cảm giác khi người chơi điều khiển cần chơi thử. |
 
 ---
 
@@ -96,10 +96,10 @@ Mọi chiêu lớn theo 3 nhịp: **BÁO TRƯỚC → VA CHẠM → DƯ ÂM**.
 
 | Trường phái | Hành động gốc | Tài nguyên | Chữ ký hình ảnh |
 |---|---|---|---|
-| 🏃 **TỐC ĐỘ** | Chạy nước rút | **Đà** — +1 mỗi 0.4s chạy nước rút, tối đa 5; ngừng chạy 2.5s thì mỗi 0.7s mất 1, bị choáng mất 1 | Tia sét xanh cyan, tàn ảnh, vòng siêu âm |
+| 🏃 **TỐC ĐỘ** | Chạy nước rút | **Đà** — +1 mỗi 0.4s chạy nước rút, tối đa 5; mỗi Đà +1% tốc độ; ngừng chạy 2.5s thì mỗi 0.7s mất 1, bị choáng mất 1 | Tia sét xanh cyan, tàn ảnh, vòng siêu âm |
 | 🎼 **TIKI-TAKA** | Chuyền | **Nhịp** — +1 mỗi đường chuyền tới chân, tối đa 5; 6s không chuyền thì mỗi 2.5s mất 1, mất bóng mất 2 | Dải sáng vàng như dây đàn, nốt nhạc, nét phấn bảng chiến thuật |
 | 🎯 **SÁT THỦ** | Sút | **Sút tụ lực** (giữ ≥ 60% thanh) · **Bóng nguyên tố** (lửa, sét, xoáy...) | Bóng biến hình nguyên tố, lưới nổ tung |
-| 🥊 **ĐẤU SĨ** | Light attack | **Nộ** — +1 mỗi cú đấm trúng, tối đa 5; 4s không đấm trúng thì mỗi 2s mất 1 | Chữ comic POW, tàn ảnh nắm đấm, tay bốc lửa |
+| 🥊 **ĐẤU SĨ** | Light attack | **Nộ** — +1 mỗi cú đấm trúng, tối đa 5; mỗi Nộ +6% tỉ lệ đấm rơi bóng, +2% tốc độ; 4s không đấm trúng thì mỗi 2s mất 1 | Chữ comic POW, tàn ảnh nắm đấm, tay bốc lửa |
 | 🦵 **VÕ SĨ ĐÁ** | Hard attack | **Hất tung** (đối thủ đang bay) · **BONK** (va tường) | Nứt đất, sóng chấn, thiên thạch |
 | 🌀 **ẢO ẢNH** | Dash Z | **Ảo ảnh** (để lại sau Z) · **Né** (Z xuyên qua đòn) | Khói ninja, tàn ảnh tím, phân thân |
 | 🛡 **THÉP** | Thể lực, sức mạnh, trông khung | **Giáp** — chặn 1 lần bị choáng / đẩy, tối đa 2 | Ánh kim loại, khiên lục giác, hoá khổng lồ |
@@ -151,12 +151,12 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 
 | Trường phái | 2 Core | 3 Core | 4 Core + hình thái |
 |---|---|---|---|
-| 🏃 TỐC ĐỘ | Đà tối đa +2 | Ở Đà tối đa không tốn thể lực | Giữ Đà thêm 2s · **cả đội viền tia sét xanh, chân lách tách điện** |
+| 🏃 TỐC ĐỘ | Đà tối đa +1 | Ở Đà tối đa chạy nước rút tốn ít hơn 25% thể lực | Giữ Đà thêm 2s · mỗi Đà +1% lực sút & chuyền · **cả đội viền tia sét xanh, chân lách tách điện** |
 | 🎼 TIKI-TAKA | Nhận bóng +1 Nhịp | Bị cắt 1 lần không mất Nhịp | 5 Nhịp: chuyền không thể bị cắt · **nốt nhạc xoay quanh cả đội, đường chuyền vẽ dây vàng** |
-| 🎯 SÁT THỦ | +10% lực sút | Ngưỡng tụ lực 60% → 40% | Sút trúng khung: −30% hồi chiêu · **chân bốc lửa thường trực** |
+| 🎯 SÁT THỦ | +15% lực sút · sút tụ lực: thủ môn −12% bắt | Ngưỡng tụ lực 60% → 40% | Sút trúng khung: −30% hồi chiêu · **chân bốc lửa thường trực** |
 | 🥊 ĐẤU SĨ | Nộ giảm chậm | Đủ 5 Nộ: đấm không hồi chiêu 2s | Đấm trúng hồi thể lực, choáng +50% · **hai nắm tay rực lửa đỏ** |
-| 🦵 VÕ SĨ ĐÁ | Hất cao / xa +25% | BONK gây choáng lan | Hồi chiêu Hard −40% · **mỗi bước chân để lại vết nứt nhỏ** |
-| 🌀 ẢO ẢNH | Ảo ảnh +1s | Né thành công hồi Z | Z có 2 lần dùng · **tàn ảnh tím bám theo thường trực** |
+| 🦵 VÕ SĨ ĐÁ | Hất xa +25% · hồi chiêu Hard −15% · đá trúng người cầm bóng: bóng rơi về chân | BONK gây choáng lan | Hồi chiêu Hard −40% · **mỗi bước chân để lại vết nứt nhỏ** |
+| 🌀 ẢO ẢNH | Ảo ảnh +1s · hồi chiêu Z −20% | Né thành công hồi Z | Z có 2 lần dùng · **tàn ảnh tím bám theo thường trực** |
 | 🛡 THÉP | +1 Giáp mỗi lần giao bóng | Tự hồi 1 Giáp mỗi 8s | Thủ môn +20% bắt · **cả đội ánh kim loại, bước đi nặng (rung nhẹ)** |
 
 ---
@@ -173,9 +173,9 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 |---|---|---|---|---|---|---|
 | `speed_demon` ♻️ | Quỷ Tốc Độ | THƯỜNG · có sẵn | TẠO | Nhận Đà gấp đôi; +12% tốc khi không giữ bóng. | Vệt tàn ảnh xanh sau lưng; mỗi Đà thêm một tia sét lách tách dưới chân; đầy Đà thì cả người viền xanh. | TR PT |
 | `burst_start` 🆕 | Phóng Như Tên | HIẾM | TẠO | Bấm chạy: +2 Đà ngay, bứt tốc 0.3s. | Nổ vòng siêu âm trắng tại chỗ xuất phát, bụi tung, tia tốc độ quét qua người. | SW SL PT |
-| `sonic_boom` 🆕 | Phá Âm Chướng | SỬ THI | DÙNG | Ở Đà tối đa: lướt sát qua đối thủ (≤ 14px) hất họ văng sang bên + choáng ngắn. | Hình nón sóng âm trắng trước mặt, chữ **BOOM** khi xuyên qua, nạn nhân xoay vòng bay sang bên. | SW CO SH |
-| `freight_train` 🆕 | Húc Xe Tải | SỬ THI | DÙNG | Va trực diện khi ≥ 3 Đà: húc đối thủ bay xa (hất tung), tiêu 2 Đà. | Hit-stop lúc va, chữ **BAM!** to, nạn nhân lộn vòng như bị xe tông, vết trượt dài trên sân. | HS CO DC |
-| `lightning_dash` 🆕 | **Tia Chớp Xuyên Sân** | THẦN THOẠI | TUYỆT KỸ | Hoá tia sét lao thẳng ~220px trong 0.25s (mang bóng theo nếu đang giữ); mọi đối thủ trên đường bị giật choáng 1s. | Slow-mo + callout **TIA CHỚP!**; màn hình tối lại chỉ còn đường sét zigzag; impact frame lúc xuyên qua; vệt sét cháy trên sân; mọi nạn nhân giật điện cùng lúc. | SM CO IF TR DC |
+| `sonic_boom` 🆕 | Phá Âm Chướng | SỬ THI | DÙNG | Cầm bóng ở Đà tối đa: lướt sát qua đối thủ (≤ 14px) hất họ văng sang bên + choáng ngắn, tiêu hết Đà (hồi 10s). | Hình nón sóng âm trắng trước mặt, chữ **BOOM** khi xuyên qua, nạn nhân xoay vòng bay sang bên. | SW CO SH |
+| `freight_train` 🆕 | Húc Xe Tải | SỬ THI | DÙNG | Va trực diện khi ≥ 5 Đà: húc đối thủ bay xa (hất tung), tiêu 5 Đà (hồi 15s). | Hit-stop lúc va, chữ **BAM!** to, nạn nhân lộn vòng như bị xe tông, vết trượt dài trên sân. | HS CO DC |
+| `lightning_dash` 🆕 | **Tia Chớp Xuyên Sân** | THẦN THOẠI | TUYỆT KỸ | Hoá tia sét lao thẳng ~190px trong 0.25s (mang bóng theo nếu đang giữ); mọi đối thủ trên đường bị giật choáng 0.8s. | Slow-mo + callout **TIA CHỚP!**; màn hình tối lại chỉ còn đường sét zigzag; impact frame lúc xuyên qua; vệt sét cháy trên sân; mọi nạn nhân giật điện cùng lúc. | SM CO IF TR DC |
 
 ### 🎼 TIKI-TAKA — Nhịp
 
@@ -216,7 +216,7 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 | `heavy_boot` 🆕 | Giày Sắt | THƯỜNG · có sẵn | NỀN | Hất xa +30%, hồi chiêu Hard −15%. | Mỗi cú đá làm nứt mặt sân tại chỗ (vết nứt 3s), tia lửa kim loại. | DC PT |
 | `juggle` 🆕 | Tâng Người | HIẾM | DÙNG | Đấm trúng người đang bay: tâng lên tiếp, kéo dài thời gian bay. | Bộ đếm combo kiểu game đối kháng **2 HIT! 3 HIT!** to dần; mỗi lần tâng có vòng sáng. | CO SW |
 | `wall_slam` 🆕 | Đập Tường | HIẾM | DÙNG | BONK: choáng +1s, bóng người đó đang giữ nảy về phía bạn. | Tường nứt toác (vết nứt trên tường), gạch vụn rơi, bụi, rung màn hình. | DC PT SH |
-| `ground_slam` 🆕 | Dậm Đất | SỬ THI | TẠO | Hard attack đổi thành: bật nhảy rồi dậm xuống — sóng chấn bán kính 45px **hất tung tất cả** đối thủ trong vùng + choáng. | Nhân vật nhảy cao (bóng đổ co lại); dậm xuống: vòng sóng chấn trắng lan rộng, mặt sân nứt hình mạng nhện, mọi người trong vùng bay lên cùng lúc. | SW DC SH HS |
+| `ground_slam` 🆕 | Dậm Đất | SỬ THI | TẠO | Hard attack đổi thành: bật nhảy **lao về đối thủ trước mặt** rồi dậm xuống — sóng chấn bán kính 52px **hất tung tất cả** đối thủ trong vùng + choáng; bóng rơi về chân người dậm. | Nhân vật nhảy cao (bóng đổ co lại); dậm xuống: vòng sóng chấn trắng lan rộng, mặt sân nứt hình mạng nhện, mọi người trong vùng bay lên cùng lúc. | SW DC SH HS |
 | `blade_runner` ♻️ | Cước Phong | HUYỀN THOẠI | TẠO | Cú đá phóng lưỡi gió trăng khuyết bay xa 150px; trúng ai thì choáng + rơi bóng. | Lưỡi gió trắng xanh hình trăng khuyết xé ngang sân; bụi bị thổi tung dọc đường. | PJ TR |
 | `meteor_drop` 🆕 | **Thiên Thạch Giáng** | THẦN THOẠI | TUYỆT KỸ | Nhảy vọt khỏi màn hình; 1s điều khiển tâm ngắm trên sân; rơi xuống tạo hố nổ bán kính 60px, hất tung mọi đối thủ, choáng 1.5s. | Nhân vật biến khỏi khung; vòng tâm ngắm đỏ co lại; rơi xuống kéo đuôi lửa; impact frame + rung cực mạnh; hố sâu bốc khói 4s. | IF SH DC SW CO |
 
@@ -225,7 +225,7 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 | ID | Tên | Độ hiếm | Vai trò | Cơ chế | Khoảnh khắc trên màn hình | Kit |
 |---|---|---|---|---|---|---|
 | `quick_feet` 🆕 | Bộ Pháp Ninja | THƯỜNG · có sẵn | NỀN | Hồi chiêu Z −30%, thời gian né +0.15s. | Mỗi lần Z nổ khói **POOF** + tàn ảnh tím. | PT TR |
-| `phantom_step` ♻️ | Thuấn Bộ | HIẾM | TẠO | Z dịch chuyển xa hơn, để lại ảo ảnh tại chỗ cũ. | Biến mất trong khói, hiện ra ở điểm mới với vòng khói; ảo ảnh đứng yên nơi cũ. | PT CL |
+| `phantom_step` ♻️ | Thuấn Bộ | HIẾM | TẠO | Z dịch chuyển xa hơn, để lại ảo ảnh tại chỗ cũ; đang cầm bóng thì hậu vệ gần nhất lao vào ảo ảnh 0.4s (hồi 4s). | Biến mất trong khói, hiện ra ở điểm mới với vòng khói; ảo ảnh đứng yên nơi cũ. | PT CL |
 | `witch_time` 🆕 | Né Hoàn Hảo | SỬ THI | DÙNG | Né thành công: mọi người khác chậm lại 0.8s; bạn hồi Z + tăng tốc. | Viền tím quanh màn hình, sân ngả tím, mọi người khác chuyển động chậm, chữ **NÉ!**. | SM FL CO |
 | `shadow_clone` 🆕 | Ảnh Phân Thân | SỬ THI | TẠO | Z tạo 2 phân thân chạy lệch hướng 2s; phân thân cản đường, chặn được đường chuyền; bị đánh thì nổ khói. | Hai bản sao y hệt (hơi mờ) chạy cùng; nổ khói khi biến mất. | CL PT |
 | `clone_army` 🆕 | **Đại Phân Thân** | THẦN THOẠI | TUYỆT KỸ | 4 phân thân trong 3s. Không có bóng: bao vây người cầm bóng đối phương, cùng lao vào đấm → chắc chắn cướp bóng + choáng. Có bóng: 4 phân thân toả ra, mỗi cái dắt 1 bóng giả (AI và thủ môn không phân biệt được). | Khói nổ lớn + callout **PHÂN THÂN!**; 5 nhân vật giống hệt trên sân; đòn đánh từ 4 phía có impact frame. | CL CO IF PT |
@@ -234,11 +234,11 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 
 | ID | Tên | Độ hiếm | Vai trò | Cơ chế | Khoảnh khắc trên màn hình | Kit |
 |---|---|---|---|---|---|---|
-| `iron_body` ♻️ | Da Thép | THƯỜNG · có sẵn | TẠO | 1 Giáp chặn 1 đòn choáng, hồi sau 5s. | Có Giáp: người ánh bạc kim loại; chặn đòn: tia lửa + chữ **CLANG!** + khiên lục giác loé lên. | FL CO PT |
-| `bulldozer` 🆕 | Xe Ủi | SỬ THI | DÙNG | Có Giáp + cầm bóng: to 1.3×, đi xuyên, hất văng người va phải, không thể bị cướp (mất Giáp khi trúng đòn). | Nhân vật phình to, bước đi rung nhẹ, người va phải bay ra như ki bowling. | GI SH |
-| `giant_keeper` 🆕 | Thủ Môn Khổng Lồ | SỬ THI | DÙNG | Người trông khung có Giáp: phóng to 1.6× khi bóng tới gần khung (tầm bắt +60%). | Thủ môn phình to đột ngột kèm **POOF**, che kín khung thành. | GI CO |
+| `iron_body` ♻️ | Da Thép | THƯỜNG · có sẵn | TẠO | 1 Giáp chặn 1 đòn choáng, hồi sau 7s. | Có Giáp: người ánh bạc kim loại; chặn đòn: tia lửa + chữ **CLANG!** + khiên lục giác loé lên. | FL CO PT |
+| `bulldozer` 🆕 | Xe Ủi | SỬ THI | DÙNG | Có Giáp + cầm bóng: to 1.3× (chậm hơn 12%), đi xuyên, hất văng người va phải (mỗi lần tiêu 1 Giáp), không thể bị cướp (mất Giáp khi trúng đòn). | Nhân vật phình to, bước đi rung nhẹ, người va phải bay ra như ki bowling. | GI SH |
+| `giant_keeper` 🆕 | Thủ Môn Khổng Lồ | SỬ THI | DÙNG | Người trông khung có Giáp: phóng to 1.4× khi bóng tới gần khung (tầm bắt +40%). | Thủ môn phình to đột ngột kèm **POOF**, che kín khung thành. | GI CO |
 | `emp_trap` ♻️ | Mìn EMP | SỬ THI | TẠO | Mỗi lần ra đòn đặt mìn EMP; đối thủ dẫm phải giật choáng, mất bóng. | Mìn nhấp nháy xanh; nổ ra vòng điện + tia sét giật người. | SW PT FL |
-| `aegis_wall` ♻️ | Khiên Aegis | HUYỀN THOẠI | NỀN | Khiên chặn 1 cú sút vào lưới, hồi sau 28s. | Khiên lục giác năng lượng trên vạch vôi; chặn bóng thì vỡ vụn như kính + hit-stop. | HS PT SH |
+| `aegis_wall` ♻️ | Khiên Aegis | HUYỀN THOẠI | NỀN | Khiên chặn 1 cú sút vào lưới, hồi sau 60s. | Khiên lục giác năng lượng trên vạch vôi; chặn bóng thì vỡ vụn như kính + hit-stop. | HS PT SH |
 | `titan` 🆕 | **Hoá Khổng Lồ** | THẦN THOẠI | TUYỆT KỸ | 5s: to gấp 2, miễn choáng, va chạm hất văng mọi người, sút cực mạnh; vẫn chuyền / rê bóng bình thường. | Callout **KHỔNG LỒ!**; mỗi bước rung màn hình + vết chân nứt; người va phải bay tứ tung; quả bóng dưới chân nhỏ như hạt đậu. | GI SH DC CO |
 
 ### 🔗 Cầu nối (tính cho cả 2 trường phái)
@@ -247,14 +247,14 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 |---|---|---|---|---|---|---|
 | `counter_attack` ♻️ | Phản Công | 🥊 🏃 | HIẾM | Cướp được bóng: cả đội +3 Đà và +20% tốc 3s. | Tiếng còi, cả đội bùng hào quang xanh + tia tốc độ, callout **PHẢN CÔNG!**. | FL SL CO |
 | `fake_run` ♻️ | Chạy Giả | 🏃 🌀 | HIẾM | Cầm bóng bắt đầu chạy: ảo ảnh tách ra chạy hướng khác (lừa AI) + 2 Đà. | Ảo ảnh tím tách khỏi người, chạy lệch hướng rồi tan khói. | CL TR |
-| `rubber_arm` 🆕 | Tay Cao Su | 🥊 🎼 | SỬ THI | Đấm vươn tay dài 70px: trúng người → đấm từ xa + kéo họ lại gần; trúng bóng lỏng / đường chuyền → giật bóng về chân. | Cánh tay kéo dài co giãn như dây thun, rung khi căng, bật trở về kèm **BOING**. | LB CO |
-| `uppercut` 🆕 | Long Quyền | 🥊 🦵 | HIẾM | Đấm khi đủ 5 Nộ: bay lên cùng cú móc hàm, hất đối thủ thẳng lên cao. Biến Nộ thành Hất tung. | Nhân vật vút lên theo vệt lửa xoắn hình rồng; đối thủ bay thẳng lên trời. | TR PT CO |
+| `rubber_arm` 🆕 | Tay Cao Su | 🥊 🎼 | SỬ THI | Đấm vươn tay dài 50px (mỗi người hồi 2s): trúng người → đấm từ xa + kéo họ lại gần; trúng bóng lỏng / đường chuyền → giật bóng về chân. | Cánh tay kéo dài co giãn như dây thun, rung khi căng, bật trở về kèm **BOING**. | LB CO |
+| `uppercut` 🆕 | Long Quyền | 🥊 🦵 | HIẾM | Đấm khi đủ 5 Nộ: bay lên cùng cú móc hàm, hất đối thủ thẳng lên cao, bóng rơi xuống chân. Biến Nộ thành Hất tung. | Nhân vật vút lên theo vệt lửa xoắn hình rồng; đối thủ bay thẳng lên trời. | TR PT CO |
 | `iron_fist` 🆕 | Nắm Đấm Sắt | 🥊 🛡 | HIẾM | Có Giáp: cú đấm thành nắm đấm thép (+2 Nộ, người cầm bóng không trụ được); mỗi Nộ giảm 8% thời gian bị choáng. | Tay ánh kim loại, cú đấm **CLANG** tia lửa bắn tung. | FL CO PT |
 | `one_two` 🆕 | Một-Hai | 🎼 🎯 | SỬ THI | Sút trong 1.2s sau khi nhận bóng: tính là sút tụ lực tối đa (vô-lê). | Chân để lại vệt vòng cung vàng-cam; bóng kéo vệt đôi hai màu. | TR BL |
 | `captain` 🆕 | Thủ Lĩnh | 🛡 🎼 | SỬ THI | Mỗi đường chuyền trao 1 Giáp cho người nhận (mỗi người hồi 6s). | Khiên lục giác nhỏ bay theo bóng rồi ốp lên người nhận. | PT FL |
 | `counter_strike` 🆕 | Phản Đòn | 🌀 🥊 | SỬ THI | Né thành công: cú đấm trong 1s không hồi chiêu, chắc chắn rơi bóng, +2 Nộ. | Impact frame đen trắng + chữ **COUNTER!** chéo màn hình. | IF CO |
 | `flying_kick` 🆕 | Phi Cước | 🏃 🦵 | SỬ THI | Hard tiêu hết Đà: bay người đá xa thêm 20% mỗi Đà, hất xa hơn. | Nhân vật bay ngang như tên lửa, chân bốc lửa, vệt khói dài. | TR PT SL |
-| `ghost_ball` 🆕 | Bóng Ma | 🌀 🎯 | SỬ THI | Sút khi có ảo ảnh / phân thân: mỗi cái sút theo 1 bóng giả; thủ môn −25% bắt. | 2–3 quả bóng bay toả về khung; bóng giả tan khói khi chạm lưới. | BL CL PT |
+| `ghost_ball` 🆕 | Bóng Ma | 🌀 🎯 | SỬ THI | Sút khi có ảo ảnh / phân thân: mỗi cái sút theo 1 bóng giả; thủ môn −20% bắt. | 2–3 quả bóng bay toả về khung; bóng giả tan khói khi chạm lưới. | BL CL PT |
 | `scissor_kick` 🆕 | Song Phi | 🦵 🎯 | HUYỀN THOẠI | Hard attack trúng bóng lỏng: bóng thành cú sút tụ lực tối đa bay thẳng về khung, xuyên người. | Xoay người đá chổng ngược; slow-mo 0.3s; bóng xé gió với vòng khí. | SM BL SW |
 
 ### 🎲 HỖN LOẠN (lấy được với mọi build)

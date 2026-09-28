@@ -34,8 +34,8 @@ SFC_CONFIG.cores = {
     momentum: { label: 'Đà', icon: '⚡', max: 5, gainEvery: 0.4, grace: 2.5, decayEvery: 0.7, stunLoss: 1, speedPer: 0.01 },
     // cả đội: chuyền tới chân +1; mất bóng mất turnoverLoss
     rhythm:   { label: 'Nhịp', icon: '♪', max: 5, grace: 6, decayEvery: 2.5, turnoverLoss: 2, passSpeedPer: 0.03 },
-    // mỗi cầu thủ: đấm trúng +1
-    rage:     { label: 'Nộ', icon: '🔥', max: 5, grace: 4, decayEvery: 2, stealPer: 0.04 },
+    // mỗi cầu thủ: đấm trúng +1; mỗi Nộ +stealPer tỉ lệ đấm rơi bóng, +speedPer tốc độ (hăng máu)
+    rage:     { label: 'Nộ', icon: '🔥', max: 5, grace: 4, decayEvery: 2, stealPer: 0.06, speedPer: 0.02 },
     guard:    { label: 'Giáp', icon: '🛡', max: 2 },                                                // mỗi cầu thủ, chặn 1 lần choáng
   },
   chargedShot: 0.6,          // "Sút tụ lực" = giữ >= 60% thanh lực (Cộng hưởng SÁT THỦ 3: 40%)
@@ -96,8 +96,8 @@ SFC_CONFIG.cores = {
     },
     phantom_step: {
       name: 'Thuấn Bộ', icon: '🌀', tags: ['trickster'], role: 'gen', rarity: 'rare',
-      desc: 'Lướt Z: biến mất trong khói rồi dịch chuyển xa thêm, để lại một ảo ảnh đứng tại chỗ cũ.',
-      params: { distance: 34, illusion: 1.2 },
+      desc: 'Lướt Z: biến mất trong khói rồi dịch chuyển xa thêm, để lại một ảo ảnh đứng tại chỗ cũ. Đang cầm bóng: đối thủ gần nhất lao vào ảo ảnh (hồi 4s).',
+      params: { distance: 34, illusion: 1.2, lureRadius: 60, lure: 0.4, lureCooldown: 4 },
     },
     fake_run: {
       name: 'Chạy Giả', icon: '🪞', tags: ['runner', 'trickster'], role: 'gen', rarity: 'rare',
@@ -114,8 +114,8 @@ SFC_CONFIG.cores = {
     },
     iron_body: {
       name: 'Da Thép', icon: '🛡', tags: ['iron'], role: 'gen', rarity: 'common',
-      desc: 'Mỗi cầu thủ có 1 Giáp (chặn 1 lần bị choáng), mất thì tự hồi sau 5s. Có Giáp: người ánh bạc kim loại.',
-      params: { regen: 5 },
+      desc: 'Mỗi cầu thủ có 1 Giáp (chặn 1 lần bị choáng), mất thì tự hồi sau 7s. Có Giáp: người ánh bạc kim loại.',
+      params: { regen: 7 },
     },
     blade_runner: {
       name: 'Cước Phong', icon: '🌙', tags: ['launcher'], role: 'gen', rarity: 'legendary',
@@ -126,8 +126,8 @@ SFC_CONFIG.cores = {
     /* ---------- 🛡 THÉP · 🎼 TIKI-TAKA · cầu nối ---------- */
     aegis_wall: {
       name: 'Khiên Aegis', icon: '🧱', tags: ['iron'], role: 'base', rarity: 'legendary',
-      desc: 'Khiên lục giác năng lượng trên vạch vôi đội nhà: chặn 1 cú sút vào lưới (vỡ vụn như kính), hồi lại sau 45s.',
-      params: { cooldown: 45 },
+      desc: 'Khiên lục giác năng lượng trên vạch vôi đội nhà: chặn 1 cú sút vào lưới (vỡ vụn như kính), hồi lại sau 60s.',
+      params: { cooldown: 60 },
     },
     counter_attack: {
       name: 'Phản Công', icon: '↩', tags: ['brawler', 'runner'], role: 'gen', rarity: 'rare',
@@ -151,7 +151,7 @@ SFC_CONFIG.cores = {
     lightning_dash: {
       name: 'Tia Chớp Xuyên Sân', icon: '⚡', tags: ['runner'], role: 'ult', rarity: 'mythic',
       desc: 'Hoá tia sét lao thẳng về phía trước (mang theo bóng nếu đang giữ); mọi đối thủ trên đường bị giật choáng.',
-      params: { distance: 220, width: 18, stun: 1.1, knock: 140 },
+      params: { distance: 190, width: 18, stun: 0.8, knock: 140 },
     },
 
     /* ================= Giai đoạn 3 — Core mới (hành vi ở src/systems/cores-new.js) ================= */
@@ -163,13 +163,13 @@ SFC_CONFIG.cores = {
     },
     sonic_boom: {
       name: 'Phá Âm Chướng', icon: '💥', tags: ['runner'], role: 'use', rarity: 'epic',
-      desc: 'Ở Đà tối đa: hình nón sóng âm trước mặt — lướt sát qua đối thủ (≤14px) hất họ văng sang bên + choáng ngắn, tiêu hết Đà. BOOM!',
+      desc: 'Cầm bóng ở Đà tối đa: hình nón sóng âm trước mặt — lướt sát qua đối thủ (≤14px) hất họ văng sang bên + choáng ngắn, tiêu hết Đà. BOOM!',
       params: { gap: 14, knock: 180, launch: 70, stun: 0.35, cooldown: 10 },
     },
     freight_train: {
       name: 'Húc Xe Tải', icon: '🚚', tags: ['runner'], role: 'use', rarity: 'epic',
-      desc: 'Va trực diện khi có ≥4 Đà: húc đối thủ bay xa như bị xe tông (hất tung), tiêu 4 Đà. Né được bằng Z.',
-      params: { minMomentum: 4, cost: 4, minSpeed: 90, knock: 240, launch: 170, stun: 0.6, cooldown: 10 },
+      desc: 'Va trực diện khi có ≥5 Đà: húc đối thủ bay xa như bị xe tông (hất tung), tiêu 5 Đà. Né được bằng Z.',
+      params: { minMomentum: 5, cost: 5, minSpeed: 90, knock: 190, launch: 120, stun: 0.4, cooldown: 15 },
     },
 
     /* ---------- 🎼 TIKI-TAKA ---------- */
@@ -236,8 +236,8 @@ SFC_CONFIG.cores = {
     },
     ground_slam: {
       name: 'Dậm Đất', icon: '🌋', tags: ['launcher'], role: 'gen', rarity: 'epic',
-      desc: 'Hard attack đổi thành: bật nhảy rồi dậm xuống — sóng chấn 52px hất tung TẤT CẢ đối thủ trong vùng + choáng, mặt sân nứt mạng nhện.',
-      params: { jump: 150, radius: 52, knock: 160, launch: 230, stun: 1.1, recover: 0.12 },
+      desc: 'Hard attack đổi thành: bật nhảy lao về đối thủ trước mặt rồi dậm xuống — sóng chấn 52px hất tung TẤT CẢ đối thủ trong vùng + choáng, mặt sân nứt mạng nhện.',
+      params: { jump: 150, leap: 130, maxSpeed: 300, radius: 52, knock: 160, launch: 230, stun: 1.1, recover: 0.12 },
     },
 
     /* ---------- 🌀 ẢO ẢNH ---------- */
@@ -261,8 +261,8 @@ SFC_CONFIG.cores = {
     /* ---------- 🛡 THÉP ---------- */
     bulldozer: {
       name: 'Xe Ủi', icon: '🚜', tags: ['iron'], role: 'use', rarity: 'epic',
-      desc: 'Có Giáp + cầm bóng: phình to 1.3×, không thể bị cướp bóng, người va phải bay ra như ki bowling (mỗi lần hất tiêu 1 Giáp; trúng đòn vẫn mất Giáp). Mỗi lần giao bóng có ít nhất 1 Giáp.',
-      params: { scale: 1.3, knock: 220, launch: 120, stun: 0.45, every: 2 },
+      desc: 'Có Giáp + cầm bóng: phình to 1.3× (chậm hơn 12%), không thể bị cướp bóng, người va phải bay ra như ki bowling (mỗi lần hất tiêu 1 Giáp; trúng đòn vẫn mất Giáp). Mỗi lần giao bóng có ít nhất 1 Giáp.',
+      params: { scale: 1.3, slow: 0.88, knock: 170, launch: 80, stun: 0.3, every: 2 },
     },
     giant_keeper: {
       name: 'Thủ Môn Khổng Lồ', icon: '🧤', tags: ['iron'], role: 'use', rarity: 'epic',
@@ -273,13 +273,13 @@ SFC_CONFIG.cores = {
     /* ---------- 🔗 Cầu nối ---------- */
     rubber_arm: {
       name: 'Tay Cao Su', icon: '🤜', tags: ['brawler', 'playmaker'], role: 'use', rarity: 'epic',
-      desc: 'Đấm vươn tay dài 55px: trúng người → đấm từ xa + kéo họ lại gần; trúng bóng lỏng / đường chuyền → giật bóng về chân. BOING!',
-      params: { reach: 55, pull: 180, stun: 0.4, steal: 0.35 },
+      desc: 'Đấm vươn tay dài 50px (mỗi người hồi 2s): trúng người → đấm từ xa + kéo họ lại gần; trúng bóng lỏng / đường chuyền → giật bóng về chân. BOING!',
+      params: { reach: 50, pull: 180, stun: 0.4, steal: 0.25, cooldown: 2 },
     },
     uppercut: {
       name: 'Long Quyền', icon: '🐲', tags: ['brawler', 'launcher'], role: 'use', rarity: 'rare',
-      desc: 'Đủ 5 Nộ: cú đấm thành cú móc hàm — vút lên theo vệt lửa hình rồng, hất đối thủ thẳng lên trời. Tiêu hết Nộ.',
-      params: { launch: 330, jump: 170 },
+      desc: 'Đủ 5 Nộ: cú đấm thành cú móc hàm — vút lên theo vệt lửa hình rồng, hất đối thủ thẳng lên trời, bóng rơi xuống chân bạn. Tiêu hết Nộ.',
+      params: { launch: 330, jump: 80 },
     },
     iron_fist: {
       name: 'Nắm Đấm Sắt', icon: '🦾', tags: ['brawler', 'iron'], role: 'gen', rarity: 'rare',
@@ -308,8 +308,8 @@ SFC_CONFIG.cores = {
     },
     ghost_ball: {
       name: 'Bóng Ma', icon: '👻', tags: ['trickster', 'striker'], role: 'use', rarity: 'epic',
-      desc: 'Sút khi đang có ảo ảnh / phân thân: mỗi cái sút theo 1 quả bóng giả về khung (tối đa 3), thủ môn −25% bắt.',
-      params: { max: 3, gkPenalty: 0.25, speed: 320 },
+      desc: 'Sút khi đang có ảo ảnh / phân thân: mỗi cái sút theo 1 quả bóng giả về khung (tối đa 3), thủ môn −20% bắt.',
+      params: { max: 3, gkPenalty: 0.2, speed: 320 },
     },
     scissor_kick: {
       name: 'Song Phi', icon: '✂', tags: ['launcher', 'striker'], role: 'use', rarity: 'legendary',

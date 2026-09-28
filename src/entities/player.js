@@ -162,7 +162,8 @@ window.SFC = window.SFC || {};
         case 'slam':
           // đang bật nhảy (Dậm Đất / Thiên Thạch Giáng) — tiếp đất xử lý ở updateAir
           this.stateT -= dt;
-          this.vx = U.damp(this.vx, 3, dt); this.vy = U.damp(this.vy, 3, dt);
+          // Dậm Đất: giữ nguyên đà lao tới điểm tiếp đất
+          if (this.slamKind !== 'ground') { this.vx = U.damp(this.vx, 3, dt); this.vy = U.damp(this.vy, 3, dt); }
           if (this.stateT <= 0) this.state = 'normal';
           break;
         case 'meteor':

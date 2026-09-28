@@ -120,7 +120,7 @@ window.SFC = window.SFC || {};
     /* 🏃 TỐC ĐỘ */
     speed_demon: run(),
     burst_start: run({ from: 0.35 }),
-    sonic_boom: run({ init: (s) => { s.me.res.momentum = 7; s.place(s.o1, A.x - 10, A.y + 13, PI); } }),
+    sonic_boom: run({ ball: true, init: (s) => { s.me.res.momentum = 7; s.place(s.o1, A.x - 10, A.y + 13, PI); } }),
     freight_train: run({ init: (s) => { s.me.res.momentum = 5; s.place(s.o1, A.x - 10, A.y, PI); } }),
     fake_run: run({ ball: true, init: (s) => s.place(s.o1, A.x + 10, A.y + 10, PI) }),
     lightning_dash: ult({ init: (s) => s.place(s.me, A.x - 90, A.y, 0), at: 0.3 }),
@@ -143,7 +143,7 @@ window.SFC = window.SFC || {};
     phantom_pass: pass({ mode: 'through', init: (s) => { s.g.rhythm[0] = 5; s.place(s.o1, A.x, A.y - 5, PI); } }),
     symphony: shot({ charge: 0.7, init: (s) => { s.g.rhythm[0] = 5; } }),
     endless_tiki: ult({ len: 3.2, init: (s) => { s.place(s.mate, A.x + 10, A.y - 34, 0); s.place(s.o1, A.x + 50, A.y + 20, PI); }, focus: (s) => s.g.ball }),
-    rubber_arm: punch({ dist: 55 }),
+    rubber_arm: punch({ dist: 45 }),
     one_two: shot({
       noCharge: true, at: 9, dist: 130,
       init: (s) => { s.place(s.mate, G.x - 190, G.y - 50, 0); s.give(s.mate); },
