@@ -159,6 +159,7 @@ window.SFC = window.SFC || {};
       const prev = this.ctrl[p.team];
       if (prev && prev !== p) {
         prev.charging = false;
+        prev.bracing = false;
         prev.intent.mx = prev.intent.my = 0;
       }
       this.ctrl[p.team] = p;
@@ -235,12 +236,13 @@ window.SFC = window.SFC || {};
       this.stateT = this.cfg.match.kickoffDelay;
       this.effects.clearHazards();
       this.passPreview = null;
+      this.lastShot = null;   // Đọc Cú Sút: cú sút gần nhất {t, team, pid, P}
       this.ball.reset(f.cx, f.cy);
       const vary = !!V;
       const mirror = [0, 1].map(() => vary && Math.random() < (V.mirrorY || 0));
       for (const p of this.players) {
         const pos = this.kickoffPos(p, vary, mirror[p.team]);
-        Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null });
+        Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null, bracing: false, readAt: -1 });
         p.res.momentum = 0; p.res.rage = 0;
         p.facing = this.teams[p.team].dir > 0 ? 0 : Math.PI;
         p.intent.mx = p.intent.my = 0;
@@ -557,16 +559,19 @@ window.SFC = window.SFC || {};
         return;
       }
       if (isGK && opp && b.kind === 'shot') {
+        // Đọc Cú Sút: bóng tới người khi vẫn còn giữ W -> chưa kịp thả = đọc hụt (không thì cứ giữ mãi là bắt chắc cú sút sát người)
+        if (p.bracing) { p.bracing = false; SFC.Actions.readRelease(this, p, true); }
+        const rd = b.read && b.read.pid === p.id ? b.read : null;
         // càng phải vươn xa (bóng góc) và bóng càng mạnh -> càng khó bắt
         const reach = p.radius + b.r + (C.player.gkReach + (p.state === 'dash' ? 5 : 0)) * p.sizeMul;
         // khoảng cách vuông góc từ thủ môn tới đường bay của bóng
         const perp = Math.abs((p.x - b.x) * dir.y - (p.y - b.y) * dir.x);
-        const stretch = U.clamp(perp / reach, 0, 1);
+        const stretch = rd && rd.noStretch ? 0 : U.clamp(perp / reach, 0, 1);
         let chance = C.player.gkSaveBase - Math.max(0, spd - C.player.gkSpeedFree) / C.player.gkSpeedPenalty - stretch * C.player.gkStretchPenalty;
         if (b.fx.thunder) chance -= b.fx.thunder.gkPenalty;
         if (b.fx.fire) chance -= 0.15;
         chance -= this.cores.keeperPenalty(b);
-        chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35) * this.cores.pmod(p, 'keeperSave'), 0.15, 0.95);
+        chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35) * this.cores.pmod(p, 'keeperSave') + (rd ? rd.bonus : 0), 0.15, 0.95);
         this.cores.shotOnTarget(b.lastKickTeam);
         const r = Math.random();
         if (r > chance) {

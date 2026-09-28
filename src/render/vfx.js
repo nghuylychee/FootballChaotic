@@ -137,10 +137,43 @@ window.SFC = window.SFC || {};
     if (ext > 0.2 && k < 0.4) for (let i = 1; i <= 3; i++) px(ctx, Math.round(fx - (ex - sx) / (len || 1) * i * 5), Math.round(fy - (ey - sy) / (len || 1) * i * 5) + (i % 2 ? -4 : 4), 3, 1, 'rgba(255,255,255,0.7)');
   }
 
+  /* ---------- Đọc Cú Sút ---------- */
+  // đường bóng dự kiến mà người đang thủ thế p cần đứng chặn: người cầm bóng đối phương -> giữa khung nhà,
+  // cú sút đang bay -> theo hướng bóng. null = không có gì để đọc
+  function readLine(g, p) {
+    const b = g.ball, o = b.owner;
+    if (o && o.team !== p.team) { const goal = g.ownGoal(p.team); return { x: o.x, y: o.y, dx: goal.x - o.x, dy: goal.y - o.y, carrier: o }; }
+    if (!o && b.kind === 'shot' && b.lastKickTeam !== p.team && b.speed > 1) return { x: b.x, y: b.y, dx: b.vx, dy: b.vy, carrier: null };
+    return null;
+  }
+  // xám -> xanh theo độ khớp đường bóng (0..1); bình phương để lệch vừa vừa vẫn còn xám rõ
+  function alignColor(a) {
+    const k = a * a, m = (c0, c1) => Math.round(c0 + (c1 - c0) * k);
+    return `rgb(${m(120, 63)},${m(124, 246)},${m(140, 255)})`;
+  }
+
   const VFX = {
     floor(ctx, g) {
       const V = g.effects.V;
       for (const d of V.decals) drawDecal(ctx, g, d);
+      // Đọc Cú Sút: nón sút từ người cầm bóng tới hai cột dọc + đường giữa (chỗ cần đứng chặn)
+      for (const p of g.players) {
+        if (!p.bracing) continue;
+        const L = readLine(g, p);
+        if (!L || !L.carrier) continue;
+        const f = g.field, goal = g.ownGoal(p.team);
+        ctx.strokeStyle = '#3ff6ff'; ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.16;
+        ctx.beginPath();
+        ctx.moveTo(L.x, L.y); ctx.lineTo(goal.x, f.gTop);
+        ctx.moveTo(L.x, L.y); ctx.lineTo(goal.x, f.gBot);
+        ctx.stroke();
+        ctx.globalAlpha = 0.4;
+        ctx.setLineDash([3, 3]); ctx.lineDashOffset = -g.time * 20;
+        ctx.beginPath(); ctx.moveTo(L.x, L.y); ctx.lineTo(goal.x, goal.y); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+      }
       for (const w of V.waves) {
         const k = 1 - w.t / w.max, e = 1 - (1 - k) * (1 - k);
         const rx = Math.max(1, w.r * e), ry = rx * 0.45;
@@ -176,6 +209,19 @@ window.SFC = window.SFC || {};
         return;
       }
       if (p.airZ > 0) return;
+      // Đọc Cú Sút: vòng tụ tâm co dần về chân (kiểu vòng nhịp), màu xám -> xanh khi đứng đúng đường bóng
+      if (p.bracing) {
+        const L = readLine(g, p), a = L ? SFC.Actions.readAlign(p, L.x, L.y, L.dx, L.dy) : 0;
+        const c = alignColor(a), k = (g.time / 0.6) % 1, r = 18 - k * 11;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = c; ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.25 + k * 0.6;
+        ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = a >= 0.9 ? 0.55 + 0.35 * Math.sin(g.time * 18) : 0.5;
+        ctx.lineWidth = a >= 0.9 ? 2 : 1;
+        ctx.beginPath(); ctx.ellipse(x, y, 7, 3.2, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      }
       const sp = Math.hypot(p.vx || 0, p.vy || 0);
       if (sp > 95 && g.cores.has(p.team, 'speed_demon')) {
         for (let i = 2; i >= 1; i--) {

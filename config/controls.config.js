@@ -17,7 +17,7 @@ SFC_CONFIG.controls = {
 
     // Tấn công            | Phòng ngự
     pass:    ['KeyS', 'Pad.A'],    // Chuyền sệt tự động | —
-    through: ['KeyW', 'Pad.Y'],    // Chọc khe           | —
+    through: ['KeyW', 'Pad.Y'],    // Chọc khe           | ĐỌC CÚ SÚT (trong vòng cấm nhà: giữ, thả đúng lúc đối phương sút)
     lob:     ['KeyA', 'Pad.B'],    // Chuyền bổng        | HARD ATTACK (gồng rồi vung chân đá bay đối thủ)
     shoot:   ['KeyD', 'Pad.X'],    // Sút (giữ để nạp) · sân nhà + còn đối phương phía trước: phá bóng | LIGHT ATTACK (đấm)
     skill:   ['KeyZ', 'Pad.RT'],   // Skill move / lướt né
@@ -52,6 +52,7 @@ SFC_CONFIG.controls = {
     defense: [
       ['D', 'Light attack (punch)'],
       ['A', 'Hard attack (dropkick)'],
+      ['W (hold in own box)', 'Catch the shot · release as they kick'],
       ['Z', 'Dash'],
     ],
     teammateHasBall: [
@@ -81,6 +82,7 @@ SFC_CONFIG.controls = {
     defense: [
       ['{shoot}', 'Light attack (punch)'],
       ['{lob}', 'Hard attack (dropkick)'],
+      ['{through} (hold in own box)', 'Catch the shot · release as they kick'],
       ['{switch}', 'Switch player'],
       ['{skill}', 'Dash'],
     ],
@@ -101,7 +103,7 @@ SFC_CONFIG.controls = {
     move:     { atk: 'Move' },
     sprint:   { atk: 'Sprint (hold)' },
     pass:     { atk: 'Ground pass' },
-    through:  { atk: 'Through ball (hold)' },
+    through:  { atk: 'Through ball (hold)', def: 'Catch the shot (hold in box)' },
     lob:      { atk: 'Lob pass (hold)', def: 'Hard attack · dropkick' },
     shoot:    { atk: 'Shoot (hold) · clearance', def: 'Light attack · punch' },
     skill:    { atk: 'Skill move', def: 'Dash' },
@@ -123,5 +125,6 @@ SFC_CONFIG.controls = {
     tackle: [0.3, 0.4, 80],
     clang:  [0.6, 0.3, 120],    // chạm cột / xà
     goal:   [0.7, 1.0, 450],
+    read:   [0.8, 0.5, 140],    // Đọc Cú Sút thành công (thủ thế W rồi thả đúng lúc)
   },
 };

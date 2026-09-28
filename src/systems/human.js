@@ -32,6 +32,18 @@ window.SFC = window.SFC || {};
       const b = g.ball;
       const has = b.owner === p;
       const teamHas = !!b.owner && b.owner.team === p.team;
+      // Đọc Cú Sút: đã thả W mà hết cửa sổ vẫn chưa có cú sút -> TOO EARLY
+      const RD = SFC_CONFIG.game.read, readWin = RD.grades[RD.grades.length - 1].window;
+      for (const q of g.teams[team].players) {
+        if (q.readAt >= 0 && g.time - q.readAt > readWin) {
+          const off = q.readAt - g.time, o = b.owner && b.owner.team !== q.team ? b.owner : null;
+          q.readAt = -1;
+          Act.read(g, q, off, 0, false, o);
+        }
+      }
+      // W đang giữ ở bước trước? (chỉ nhánh phòng ngự bên dưới giữ lại trạng thái thủ thế)
+      const wasBracing = p.bracing;
+      p.bracing = false;
 
       if (input.wasPressed('switch') && !has) g.switchPlayer(team);
       if (g.ctrl[team] !== p) return;
@@ -66,7 +78,7 @@ window.SFC = window.SFC || {};
           if (input.wasPressed('shoot')) { Act.clearance(g, p, my); return; }
         } else if (input.isDown('shoot')) {
           if (p.state === 'normal') {
-            if (!p.charging) { p.charging = true; p.charge = 0; }
+            if (!p.charging) { p.charging = true; p.charge = 0; p.shotTarget = 0; }
             p.charge += dt / g.chargeTime(p);
             if (p.charge >= K.maxOvercharge) Act.shoot(g, p, p.charge, 0, mx || my ? { x: mx, y: my } : null);
           }
@@ -105,8 +117,14 @@ window.SFC = window.SFC || {};
           if (input.wasPressed(key)) { carrier.ai.requestedPass = { target: p, mode }; break; }
         }
       } else {
-        if (input.wasPressed('shoot')) Act.lightAttack(g, p);
-        else if (input.wasPressed('lob')) Act.hardAttack(g, p);
+        // ĐỌC CÚ SÚT: trong vòng cấm nhà giữ W để thủ thế, thả đúng lúc đối phương sút
+        const canBrace = RD.enabled && p.state === 'normal' && p.cd.read <= 0 && p.readAt < 0 && g.inKeeperZone(p);
+        if (wasBracing ? input.isDown('through') && p.state === 'normal' : canBrace && input.wasPressed('through')) p.bracing = true;
+        else if (wasBracing && p.state === 'normal') Act.readRelease(g, p);
+        if (!p.bracing) {
+          if (input.wasPressed('shoot')) Act.lightAttack(g, p);
+          else if (input.wasPressed('lob')) Act.hardAttack(g, p);
+        }
       }
       if (input.wasPressed('skill')) Act.skill(g, p, mx, my);
     },

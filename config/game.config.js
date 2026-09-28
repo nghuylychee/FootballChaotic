@@ -92,6 +92,29 @@ SFC_CONFIG.game = {
     gkDiveTime: 0.24,
   },
 
+  // ĐỌC CÚ SÚT: người chơi đứng trong vòng cấm nhà khi đối phương cầm bóng -> giữ W (thủ thế), thả đúng lúc đối phương sút.
+  // Thưởng tỉ lệ bắt bóng = căn thời gian (chính) + vị trí (phụ, chỉ tính khi căn thời gian từ GOOD trở lên).
+  // Thả sớm hay muộn đều được tính (|thả − sút|): đọc thanh lực sút của đối phương để thả đúng khoảnh khắc.
+  read: {
+    enabled: true,
+    braceMoveMult: 0.6,       // tốc độ di chuyển khi đang giữ W
+    cooldown: 0.6,            // (s) đọc hụt (TOO EARLY / TOO LATE) -> chưa được thủ thế lại
+    lateLimit: 0.6,           // (s) thả muộn hơn cú sút quá mức này coi như không liên quan cú sút đó (đọc sớm cho cú sau)
+    // cửa sổ |thả − sút| (s) và thưởng tỉ lệ bắt bóng tương ứng
+    grades: [
+      { id: 'perfect', window: 0.06, bonus: 0.6, dive: true, noStretch: true },
+      { id: 'great',   window: 0.13, bonus: 0.35, dive: true },
+      { id: 'good',    window: 0.22, bonus: 0.15 },
+    ],
+    // vị trí: P = (đứng trên đường bóng) × (khoảng cách tới người sút), thưởng thêm posBonus × P
+    posBonus: 0.2,
+    lineFull: 12,             // (px) cách đường bóng <= mức này: đủ điểm
+    lineZero: 45,             // (px) cách đường bóng >= mức này: 0 điểm
+    rangeNear: 40,            // (px) người sút ở sát: điểm vị trí × rangeMin
+    rangeFar: 140,            // (px) người sút ở xa: điểm vị trí × 1
+    rangeMin: 0.5,
+  },
+
   ball: {
     radius: 3,
     gravity: 420,

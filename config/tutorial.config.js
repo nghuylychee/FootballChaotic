@@ -52,6 +52,11 @@ SFC_CONFIG.tutorial = {
         'Catch the ball in your box → you can\'t be tackled for a few seconds. Dribbling into your box yourself gives no protection.',
         'An AI DEFENDER drops back to guard the goal when the opponent brings the ball close. An AI FORWARD only drops back when it is really dangerous: the opponent is right at goal and you are not in the box. Otherwise, the goal is your job!',
         'Harder shots and shots into the corners are harder to save.',
+        '# Catching a shot (W)',
+        'In your own box while the opponent has the ball: hold W to get ready, then release it the moment they kick. The closer your release is to the kick, the better your chance to catch it: GOOD → GREAT → PERFECT. GREAT or better also dives toward the ball.',
+        'Watch the shooter\'s power bar: the red mark is where they will shoot. The mark flashes just before the bar reaches it: that is when the kick comes.',
+        'Stand on the line between the ball and your goal (your ring turns cyan) to save even more. Long shots give you more time to get set.',
+        'Released too early or too late → a short wait before you can try again. Still holding W when the ball arrives counts as too late.',
       ],
     },
     {

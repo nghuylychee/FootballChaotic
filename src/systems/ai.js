@@ -127,6 +127,7 @@ window.SFC = window.SFC || {};
               const [lo, hi] = M.quickShotPower;
               p.ai.chargeTarget = Math.max(Act().shotBasePower(g, p) + 0.02, U.lerp(lo, hi, U.clamp(dG / M.quickShotRange, 0, 1)));
               p.ai.aimY = U.rand(-0.4, 0.4);
+              p.shotTarget = p.ai.chargeTarget;
               return;
             }
           }
@@ -141,6 +142,7 @@ window.SFC = window.SFC || {};
           if (cc && near.d > 45 && Math.random() < 0.75) p.ai.chargeTarget = Math.max(p.ai.chargeTarget, Act().shotPower(g, p, cc) + 0.01);
           const gk = nearest(opps, goal, (o) => g.inKeeperZone(o)).p;
           p.ai.aimY = (gk && gk.y > f.cy ? -1 : 1) * U.rand(0.35, 0.95);
+          p.shotTarget = p.ai.chargeTarget;
           return;
         }
 

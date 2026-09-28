@@ -18,7 +18,7 @@ window.SFC = window.SFC || {};
         x, y, z: 0, vx: 0, vy: 0, vz: 0,
         owner: null, lastTouch: null, lastKickTeam: -1,
         passTarget: null, passPoint: null, sloppy: false, kind: null, roll: 0, trailT: 0, skin: null,
-        netSide: 0, shieldChecked: false, woodT: 0,
+        netSide: 0, shieldChecked: false, woodT: 0, read: null,
       });
       this.noPickup.clear();
       this.trail.length = 0;
@@ -46,6 +46,7 @@ window.SFC = window.SFC || {};
       this.sloppy = false;
       this.kind = null;
       this.skin = null;
+      this.read = null;
       this.clearFx();
     }
 
@@ -60,6 +61,7 @@ window.SFC = window.SFC || {};
       this.passPoint = null;
       this.sloppy = false;
       this.kind = null;
+      this.read = null;       // Đọc Cú Sút: {pid, grade, bonus} của thủ môn đã đọc cú sút này
       this.shieldChecked = false;
       this.clearFx();
     }

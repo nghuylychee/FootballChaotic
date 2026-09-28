@@ -82,6 +82,12 @@ window.SFC = window.SFC || {};
     zap()     { tone({ freq: 1400, to: 200, dur: 0.18, type: 'sawtooth', vol: 0.15 }); },
     fire()    { noise({ dur: 0.3, vol: 0.2, freq: 400, q: 0.4 }); },
     save()    { tone({ freq: 440, to: 660, dur: 0.1, type: 'triangle', vol: 0.2 }); },
+    // Đọc Cú Sút: g = 0 PERFECT · 1 GREAT · 2 GOOD (càng chuẩn càng cao, càng nhiều nốt)
+    read(g = 2) {
+      const notes = [[784, 1175, 1568], [659, 988], [587]][g] || [587];
+      notes.forEach((f, i) => tone({ freq: f, dur: 0.09, type: 'square', vol: 0.12, delay: i * 0.05 }));
+      if (g === 0) noise({ dur: 0.25, vol: 0.08, freq: 3000, q: 0.5 });
+    },
     pick()    { tone({ freq: 523, dur: 0.08, vol: 0.18 }); tone({ freq: 784, dur: 0.12, vol: 0.18, delay: 0.08 }); },
     whistle(long) {
       tone({ freq: 2100, dur: long ? 0.5 : 0.25, type: 'sine', vol: 0.18 });

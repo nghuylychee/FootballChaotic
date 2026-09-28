@@ -338,12 +338,13 @@ window.SFC = window.SFC || {};
       b.kick(p, Math.cos(ang) * spd, Math.sin(ang) * spd, vz);
       b.kind = 'shot';
       p.facing = ang;
-      p.charging = false; p.charge = 0;
+      p.charging = false; p.charge = 0; p.shotTarget = 0;
       this.startAttack(p, 'shoot'); // tư thế vung chân sút (kick.poseTime)
       g.cores.dispatch(p.team, 'onShoot', p, b, held);
       if (held >= g.cores.chargedThreshold(p.team)) g.cores.chargedShot(p, b, held);
       p.volley = false;
       p.recvT = -1;
+      this.readShot(g, p);
       g.effects.burst(b.x, b.y, 2, '#ffffff', 5 + Math.round(c * 6), 80);
       g.effects.shake(G().fx.shakeShot * c);
       g.sfx('kick', c);
@@ -633,6 +634,92 @@ window.SFC = window.SFC || {};
       p.stateT = U.clamp(Math.abs(dy) / P.gkDiveSpeed, 0.05, P.gkDiveTime);
       p.dashX = 0; p.dashY = Math.sign(dy) * P.gkDiveSpeed;
       g.effects.afterimage(p);
+    },
+
+    /* ---------- ĐỌC CÚ SÚT: giữ W trong vòng cấm nhà, thả đúng lúc đối phương sút ---------- */
+    // 0..1: p đứng gần đường thẳng từ (ox, oy) theo hướng (dx, dy) tới đâu (đứng phía sau điểm xuất phát = 0)
+    readAlign(p, ox, oy, dx, dy) {
+      const R = G().read, d = U.norm(dx, dy);
+      if ((p.x - ox) * d.x + (p.y - oy) * d.y <= 0) return 0;
+      const perp = Math.abs((p.x - ox) * d.y - (p.y - oy) * d.x);
+      return 1 - U.clamp((perp - R.lineFull) / (R.lineZero - R.lineFull), 0, 1);
+    },
+
+    // điểm vị trí lúc bóng rời chân (0..1): đứng trên đường bóng × người sút ở đủ xa (có thời gian chọn chỗ)
+    readPosition(g, p, shooter) {
+      const R = G().read, b = g.ball;
+      const range = U.lerp(R.rangeMin, 1, U.clamp((U.dist(p, shooter) - R.rangeNear) / (R.rangeFar - R.rangeNear), 0, 1));
+      return this.readAlign(p, b.x, b.y, b.vx, b.vy) * range;
+    },
+
+    // gọi ngay sau khi bóng rời chân người sút: ghi lại cú sút cho người chơi đang điều khiển bên phòng ngự,
+    // chấm điểm luôn nếu người đó đã thả W từ trước (đọc sớm)
+    readShot(g, shooter) {
+      g.lastShot = null;
+      if (!G().read.enabled) return;
+      const q = g.ctrl[1 - shooter.team];
+      if (!q || !g.isHuman(q.team)) return;
+      const P = this.readPosition(g, q, shooter);
+      g.lastShot = { t: g.time, team: shooter.team, pid: q.id, sid: shooter.id, P };
+      if (q.readAt >= 0) {
+        const off = q.readAt - g.time;
+        q.readAt = -1;
+        this.read(g, q, off, P, false, shooter);
+      }
+    },
+
+    // thả W: cú sút vừa xảy ra -> chấm điểm (đọc muộn); chưa có -> chờ cú sút trong cửa sổ đọc (Human.update hết hạn)
+    // miss = true: bóng chạm người khi vẫn còn giữ W -> luôn là TOO LATE
+    readRelease(g, p, miss = false) {
+      const R = G().read, b = g.ball, s = g.lastShot;
+      if (s && s.pid === p.id && s.team !== p.team && g.time - s.t <= R.lateLimit && b.kind === 'shot' && b.lastKickTeam === s.team && !b.read) {
+        g.lastShot = null;
+        this.read(g, p, g.time - s.t, s.P, miss, g.players.find((o) => o.id === s.sid));
+      } else if (!miss) p.readAt = g.time;
+    },
+
+    // off = lúc thả − lúc sút (âm = thả sớm), P = điểm vị trí lúc sút, miss = bắt buộc đọc hụt
+    // shooter = người sút (hoặc đang cầm bóng): chữ GOOD / GREAT / TOO EARLY / TOO LATE hiện trên đầu người đó —
+    // chỗ người chơi đang nhìn thanh lực, không đè lên SAVE! / PARRY của thủ môn
+    read(g, p, off, P, miss = false, shooter = null) {
+      const R = G().read, b = g.ball, fx = g.effects;
+      const gr = miss ? null : R.grades.find((it) => Math.abs(off) <= it.window) || null;
+      const pos = gr ? P : 0; // vị trí chỉ được tính khi căn thời gian đạt
+      const o = shooter || p, ox = o.x, oy = o.y - 44;
+      if (!gr) {
+        p.cd.read = R.cooldown;
+        fx.text(ox, oy, off < 0 ? 'TOO EARLY' : 'TOO LATE', '#9aa3b5');
+        fx.shield(p.x, p.y - 4, 10, '#9aa3b5', 0.4, 1);
+        return;
+      }
+      b.read = { pid: p.id, grade: gr.id, bonus: gr.bonus + R.posBonus * pos, noStretch: !!gr.noStretch };
+      if (gr.dive) this.readDive(g, p);
+      const x = p.x, y = p.y;
+      if (gr.id === 'perfect') {
+        g.hitStop(0.06);
+        g.slowMo(0.35, 0.35);
+        fx.zoom(x, y - 10, 0.18, 0.45);
+        fx.speedLines(0.35, x, y - 10, '#ffe14f');
+        fx.wave(x, y, 34, '#ffe14f', 0.45, 3);
+        fx.comic(ox, oy, 'PERFECT READ!', '#ffe14f', 0.8, 0.8);
+      } else if (gr.id === 'great') {
+        fx.zoom(x, y - 10, 0.08, 0.3);
+        fx.wave(x, y, 26, '#3ff6ff', 0.4, 2);
+        fx.comic(ox, oy, 'GREAT READ', '#3ff6ff', 0.65, 0.7);
+      } else {
+        fx.text(ox, oy, 'GOOD READ', '#9dff3d');
+      }
+      g.sfx('read', R.grades.indexOf(gr));
+    },
+
+    // đọc chuẩn: tự đổ người về đường bay của bóng (như thủ môn AI, giới hạn bởi gkDiveTime)
+    readDive(g, p) {
+      const b = g.ball;
+      if (Math.abs(b.vx) < 1) return;
+      const t = (p.x - b.x) / b.vx;
+      if (t <= 0) return;
+      const dy = b.y + b.vy * t - p.y;
+      if (Math.abs(dy) > 4) this.dive(g, p, dy);
     },
   };
 

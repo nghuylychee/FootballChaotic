@@ -279,6 +279,8 @@ window.SFC = window.SFC || {};
       const base = SFC.Actions.shotBasePower(g, p);
       const c = SFC.Actions.shotPower(g, p, p.charge), over = Math.max(0, p.charge - 1) / (K.maxOvercharge - 1);
       const col = over > 0 ? '#ff3d3d' : c > 0.85 ? '#ffb13d' : '#ffe14f';
+      // Đọc Cú Sút: đối phương đang thủ thế đọc cú sút này -> viền xanh (tín hiệu cần nhìn)
+      if (g.ball.owner === p && g.teams[1 - p.team].players.some((q) => q.bracing)) px(ctx, x - 2, y - 2, w + 4, 7, '#3ff6ff');
       px(ctx, x - 1, y - 1, w + 2, 5, OUT);
       // lực mặc định theo khoảng cách — mờ; phần giữ thêm — đậm
       ctx.globalAlpha = 0.45;
@@ -287,6 +289,18 @@ window.SFC = window.SFC || {};
       if (c > base + 0.01) px(ctx, x, y, Math.round(w * c), 3, col);
       px(ctx, x + Math.round(w * base), y - 1, 1, 5, '#ffffff');
       if (over > 0) px(ctx, x, y, Math.round(w * over), 1, '#ffffff');
+      // AI: vạch lực sẽ sút (sút ngay khi thanh chạm vạch) -> người chơi có mốc để căn Đọc Cú Sút.
+      // Phần còn phải nạp tô đỏ mờ; còn < 0.2s là sút: vạch loé trắng + mũi tên to hơn
+      const tg = p.shotTarget || 0;
+      if (tg > 0) {
+        const mx = x + Math.min(w - 1, Math.round(w * tg)), fillX = x + Math.round(w * c);
+        const left = (tg - c) * g.chargeTime(p) / Math.max(0.01, 1 - base);
+        const hot = left < 0.2 && Math.floor(g.time * 20) % 2 === 0, mc = hot ? '#ffffff' : '#ff3d5a';
+        if (mx > fillX) { ctx.globalAlpha = 0.35; px(ctx, fillX, y, mx - fillX, 3, '#ff3d5a'); ctx.globalAlpha = 1; }
+        px(ctx, mx, y - 2, 1, 7, mc);
+        px(ctx, mx - 1, y - 4, 3, 1, mc); px(ctx, mx, y - 3, 1, 1, mc);
+        if (left < 0.2) px(ctx, mx - 2, y - 5, 5, 1, mc);
+      }
     },
 
     passBar(ctx, p, hy) {
