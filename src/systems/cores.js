@@ -48,7 +48,7 @@ window.SFC = window.SFC || {};
 
   const PUNCH_WORDS = ['POW!', 'BAM!', 'WHAM!', 'BOP!'];
   const CHAOS_SKINS = ['melon', 'bowling', 'chicken', 'wheel', 'cube'];
-  const CHAOS_LABEL = { curve: 'CONG!', rocket: 'TÊN LỬA!', fire: 'LỬA!', thunder: 'SÉT!', split: 'x2!' };
+  const CHAOS_LABEL = { curve: 'CURVE!', rocket: 'ROCKET!', fire: 'FIRE!', thunder: 'ZAP!', split: 'x2!' };
 
   const Behaviors = SFC.CoreBehaviors = {
     /* ---------- 🎯 SÁT THỦ ---------- */
@@ -211,7 +211,7 @@ window.SFC = window.SFC || {};
         const st = sys.st(team, 'counter_attack');
         if (!(st.cd > 0)) {
           st.cd = p.calloutCd;
-          E.callout('PHẢN CÔNG!', '#3ff6ff', 1);
+          E.callout('COUNTER!', '#3ff6ff', 1);
           E.speedLines(0.45, pl.x, pl.y, '#bdf4ff');
           g.sfx('whistle');
         } else E.comic(pl.x, pl.y - 28, 'COUNTER!', '#3ff6ff', 0.75, 0.6);
@@ -568,7 +568,7 @@ window.SFC = window.SFC || {};
         // ĐẤU SĨ 3: chạm 5 Nộ -> đấm không hồi chiêu trong 2s
         if (before < max && attacker.res.rage >= max && this.tier(t, 'brawler') >= 3) {
           attacker.resT.frenzy = 2;
-          this.g.effects.comic(attacker.x, attacker.y - 30, 'NỘ!', '#ff3d5a', 1.1);
+          this.g.effects.comic(attacker.x, attacker.y - 30, 'RAGE!', '#ff3d5a', 1.1);
         }
       }
       // ĐẤU SĨ 4: đấm trúng hồi thể lực

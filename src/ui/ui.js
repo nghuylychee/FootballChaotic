@@ -48,7 +48,7 @@ window.SFC = window.SFC || {};
   const SLOTS = [
     { k: 'light', action: 'shoot', icon: '👊', name: 'LIGHT', atk: true, max: () => SFC_CONFIG.game.combat.light.cooldown, act: ['jab'] },
     { k: 'hard', action: 'lob', icon: '💥', name: 'HARD', atk: true, max: () => SFC_CONFIG.game.combat.hard.cooldown, act: ['windup', 'kick'] },
-    { k: 'skill', action: 'skill', icon: '💨', name: 'LƯỚT', max: () => SFC_CONFIG.game.skill.cooldown, act: ['dash'] },
+    { k: 'skill', action: 'skill', icon: '💨', name: 'DASH', max: () => SFC_CONFIG.game.skill.cooldown, act: ['dash'] },
   ];
   const keyLabel = (action) => (SFC_CONFIG.controls.bindings[action] || ['?'])[0].replace(/^(Key|Digit)/, '');
 
@@ -56,8 +56,8 @@ window.SFC = window.SFC || {};
     return list.map(([k, v]) => `<div class="hk"><kbd>${esc(k)}</kbd><span>${esc(v)}</span></div>`).join('');
   }
 
-  const PAUSE_SINGLE = [['resume', 'TIẾP TỤC'], ['restart', 'ĐÁ LẠI'], ['menu', 'VỀ MENU']];
-  const PAUSE_ONLINE = [['resume', 'VỀ TRẬN'], ['leave', 'RỜI PHÒNG']];
+  const PAUSE_SINGLE = [['resume', 'RESUME'], ['restart', 'RESTART'], ['menu', 'MAIN MENU']];
+  const PAUSE_ONLINE = [['resume', 'BACK TO MATCH'], ['leave', 'LEAVE ROOM']];
 
   const UI = {
     init(app) {
@@ -108,7 +108,7 @@ window.SFC = window.SFC || {};
         const tags = c.tags.map((t) => `<span style="--c:${ARCH(t).color}">${ARCH(t).icon} ${ARCH(t).label}</span>`).join('');
         return `<div class="card ${c.role === 'ult' ? 'ult' : ''} ${!picked && i === this.draftSel ? 'sel' : ''} ${chosen ? 'chosen' : ''}" data-pick="${i}" style="--c:${a.color};--c2:${a2.color};--t:${rar.color}">
           <div class="card-key">${i + 1}</div>
-          ${match && !picked ? '<div class="card-match">KHỚP</div>' : ''}
+          ${match && !picked ? '<div class="card-match">MATCH</div>' : ''}
           <div class="card-tags">${tags}</div>
           <div class="card-art">${SFC.CorePreview.html(id, 132, 56)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? '<kbd class="card-x">X</kbd>' : ''}</div>
           <div class="card-name">${esc(c.name)}</div>
@@ -119,14 +119,14 @@ window.SFC = window.SFC || {};
       }).join('');
       const opp = game.teams[1 - me];
       const left = (d.rerolls && d.rerolls[me]) || 0;
-      const reroll = picked ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> ĐỔI 3 LÁ (còn ${left})</button>`;
-      const sub = picked ? 'Đã chọn · đang chờ đối thủ...' : 'Chọn 1 Core cho cả đội · phím 1 / 2 / 3 hoặc ←→ + Enter';
+      const reroll = picked ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> REROLL 3 (${left} left)</button>`;
+      const sub = picked ? 'Picked · waiting for opponent...' : 'Pick 1 Core for your whole team · keys 1 / 2 / 3 or ←→ + Enter';
       this.el.draft.classList.toggle('waiting', picked);
       this.el.draft.innerHTML = `
-        <div class="draft-title">${d.pre ? 'CORE KHỞI ĐẦU' : 'CORE UPGRADE'} <span>${d.round}/${total}</span>${timer}</div>
+        <div class="draft-title">${d.pre ? 'STARTING CORE' : 'CORE UPGRADE'} <span>${d.round}/${total}</span>${timer}</div>
         <div class="draft-sub">${sub}${reroll}</div>
         <div class="cards">${cards}</div>
-        <div class="draft-opp"><span>Build của bạn:</span> ${traitChips(game, me) || '<em>—</em>'} <span class="sep">·</span> <span>${esc(opp.cfg.name)}:</span> ${traitChips(game, opp.index) || '<em>—</em>'}</div>`;
+        <div class="draft-opp"><span>Your build:</span> ${traitChips(game, me) || '<em>—</em>'} <span class="sep">·</span> <span>${esc(opp.cfg.name)}:</span> ${traitChips(game, opp.index) || '<em>—</em>'}</div>`;
       SFC.CorePreview.scan(this.el.draft);
     },
 
@@ -169,12 +169,12 @@ window.SFC = window.SFC || {};
       const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${l}</button>`).join('');
       this.el.pause.innerHTML = `
         <div class="pause-title">${this.online ? 'MENU' : 'PAUSED'}</div>
-        ${this.online ? '<div class="pause-note">Trận online không tạm dừng</div>' : ''}
+        ${this.online ? '<div class="pause-note">Online matches keep running</div>' : ''}
         <div class="pause-items">${items}</div>
         <div class="help small">
-          <div class="help-col"><h4>TẤN CÔNG</h4>${helpTable(ctr.attack)}</div>
-          <div class="help-col"><h4>PHÒNG NGỰ</h4>${helpTable(ctr.defense)}${helpTable(ctr.teammateHasBall)}</div>
-          <div class="help-col"><h4>HỆ THỐNG</h4>${helpTable(ctr.system)}</div>
+          <div class="help-col"><h4>ATTACK</h4>${helpTable(ctr.attack)}</div>
+          <div class="help-col"><h4>DEFENSE</h4>${helpTable(ctr.defense)}${helpTable(ctr.teammateHasBall)}</div>
+          <div class="help-col"><h4>SYSTEM</h4>${helpTable(ctr.system)}</div>
         </div>`;
     },
 
@@ -188,27 +188,27 @@ window.SFC = window.SFC || {};
 
     /* ================= END ================= */
     endItems() {
-      if (!this.online) return [['restart', 'ĐÁ LẠI'], ['menu', 'VỀ MENU']];
-      return SFC.Online.isHost ? [['lobby', 'VỀ PHÒNG CHỜ'], ['leave', 'RỜI PHÒNG']] : [['leave', 'RỜI PHÒNG']];
+      if (!this.online) return [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']];
+      return SFC.Online.isHost ? [['lobby', 'BACK TO LOBBY'], ['leave', 'LEAVE ROOM']] : [['leave', 'LEAVE ROOM']];
     },
 
     renderEnd(game) {
       const h = game.humanTeam, me = game.teams[h], op = game.teams[1 - h];
-      const res = me.score > op.score ? ['CHIẾN THẮNG!', 'win'] : me.score < op.score ? ['THUA RỒI...', 'lose'] : ['HÒA', 'draw'];
+      const res = me.score > op.score ? ['VICTORY!', 'win'] : me.score < op.score ? ['DEFEAT...', 'lose'] : ['DRAW', 'draw'];
       const build = (t) => {
         const ids = game.cores.owned[t.index];
-        return buildLabel(game, t.index) + (ids.length ? ids.map((id) => `<div class="b-item">${coreChip(id)} ${esc(CORES().list[id].name)}</div>`).join('') : '<em>Không có core</em>');
+        return buildLabel(game, t.index) + (ids.length ? ids.map((id) => `<div class="b-item">${coreChip(id)} ${esc(CORES().list[id].name)}</div>`).join('') : '<em>No cores</em>');
       };
-      const note = this.online && !SFC.Online.isHost ? 'Chờ chủ phòng quay lại phòng chờ...' : 'Lần sau thử một kiểu đá khác?';
+      const note = this.online && !SFC.Online.isHost ? 'Waiting for the host to return to the lobby...' : 'Try a different build next time?';
       // sân luôn vẽ đội 0 bên trái -> tỉ số giữ đúng thứ tự trái / phải
       const t0 = game.teams[0], t1 = game.teams[1];
       this.el.end.innerHTML = `
         <div class="end-title ${res[1]}">${res[0]}</div>
         <div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>
         <div class="builds">
-          <div class="build"><h4>BUILD CỦA BẠN</h4>${build(me)}</div>
+          <div class="build"><h4>YOUR BUILD</h4>${build(me)}</div>
           ${game.reward ? this.rewardPanel(game.reward) : ''}
-          <div class="build"><h4>BUILD ĐỐI THỦ</h4>${build(op)}</div>
+          <div class="build"><h4>OPPONENT BUILD</h4>${build(op)}</div>
         </div>
         ${this.momentPanel(game)}
         <div class="end-note">${note}</div>
@@ -228,16 +228,16 @@ window.SFC = window.SFC || {};
       const count = (t) => {
         const u = list.filter((m) => m.team === t && m.kind === 'ult').length;
         const hit = list.filter((m) => m.team === t && m.kind === 'combo').reduce((a, m) => Math.max(a, m.n || 0), 0);
-        return `${u ? `Tuyệt kỹ ×${u}` : ''}${u && hit ? ' · ' : ''}${hit ? `Combo ${hit} HIT` : ''}` || '—';
+        return `${u ? `Ultimate ×${u}` : ''}${u && hit ? ' · ' : ''}${hit ? `Combo ${hit} HIT` : ''}` || '—';
       };
       const me = game.humanTeam;
       return `<div class="moment" style="--c:${ARCH(c.tags[0]).color}">
         ${SFC.CorePreview.html(best.id, 150, 64)}
         <div class="mo-info">
-          <h4>KHOẢNH KHẮC CỦA TRẬN</h4>
+          <h4>MOMENT OF THE MATCH</h4>
           <div class="mo-name">${c.icon} ${esc(best.text)}</div>
           <div class="mo-sub"><span style="color:${tm.cfg.kit.shirt}">${esc(tm.cfg.short)}</span>${best.player ? ' · ' + esc(best.player) : ''} · ${esc(c.name)}</div>
-          <div class="mo-sub">Bạn: ${count(me)} <span class="sep">·</span> Đối thủ: ${count(1 - me)}</div>
+          <div class="mo-sub">You: ${count(me)} <span class="sep">·</span> Opponent: ${count(1 - me)}</div>
         </div>
       </div>`;
     },
@@ -252,7 +252,7 @@ window.SFC = window.SFC || {};
       const lines = r.lines.map((l, i) => `<div class="rw-line" data-rw="${i}"><span>${esc(l.label)}</span>${
         l.mult || l.note ? '' : `<b class="x">+${l.xp} XP</b><b class="g"><i class="coin"></i>+${l.gold}</b>`}</div>`).join('');
       return `<div class="build reward">
-        <h4>PHẦN THƯỞNG</h4>
+        <h4>REWARDS</h4>
         <div class="rw-lines">${lines}</div>
         <div class="rw-total"><span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
         <div class="lvrow"><span class="lv" id="rw-lv">LV ${r.before.level}</span><div class="xpbar"><i id="rw-bar"></i></div></div>
@@ -297,7 +297,7 @@ window.SFC = window.SFC || {};
         if (k >= 1) {
           if (r.eligible.length && !up.dataset.done) {
             up.dataset.done = 1;
-            up.insertAdjacentHTML('beforeend', `<div class="rw-new">Mới mở khoá: ${r.eligible.map(esc).join(', ')}</div>`);
+            up.insertAdjacentHTML('beforeend', `<div class="rw-new">Unlocked: ${r.eligible.map(esc).join(', ')}</div>`);
           }
           return;
         }
@@ -334,8 +334,8 @@ window.SFC = window.SFC || {};
       const cores = game.cores.owned[0].join() + '|' + game.cores.owned[1].join();
       // lượt chọn Core: đang chờ bàn thắng / còn bao lâu tới lượt kế
       const pend = game.draftPending(), next = game.draftNextIn();
-      const coreLine = pend > 0 ? `<div class="hud-core on">✦ CORE +${pend} · chờ bàn thắng</div>`
-        : next != null ? `<div class="hud-core">✦ Core tiếp sau ${SFC.U.fmtTime(next)}</div>` : '';
+      const coreLine = pend > 0 ? `<div class="hud-core on">✦ CORE +${pend} · waiting for a goal</div>`
+        : next != null ? `<div class="hud-core">✦ Next Core in ${SFC.U.fmtTime(next)}</div>` : '';
       const key = [t0.score, t1.score, time, phase, cores, coreLine].join('#');
       if (c.key !== key) {
         c.key = key;
@@ -390,7 +390,7 @@ window.SFC = window.SFC || {};
     ultMeter(game, t) {
       const id = game.cores.ultOf(t), c = id && CORES().list[id];
       if (!c) return '';
-      return `<div class="hud-ult has" data-t="${t}" title="${esc(c.name + ' — năng lượng Tuyệt kỹ')}"><b>${c.icon}</b><i></i><em>0%</em></div>`;
+      return `<div class="hud-ult has" data-t="${t}" title="${esc(c.name + ': Ultimate energy')}"><b>${c.icon}</b><i></i><em>0%</em></div>`;
     },
 
     /* ================= THANH KỸ NĂNG (giữa đáy, kiểu LoL) ================= */
@@ -417,7 +417,7 @@ window.SFC = window.SFC || {};
               <div class="ab-slot" data-k="${s.k}" title="${s.name}">
                 <i>${s.icon}</i><div class="sw"></div><b></b><kbd>${esc(keyLabel(s.action))}</kbd>
               </div>`).join('')}${ult ? `
-              <div class="ab-slot ult" data-k="ult" title="${esc(`TUYỆT KỸ: ${CORES().list[ult].name} — nạp năng lượng: ghi bàn, cướp bóng`)}">
+              <div class="ab-slot ult" data-k="ult" title="${esc(`ULTIMATE: ${CORES().list[ult].name}. Charge it by scoring and stealing the ball`)}">
                 <div class="ult-fill"></div><i>${CORES().list[ult].icon}</i><b class="ult-pct"></b><kbd>${esc(keyLabel('ultimate'))}</kbd>
               </div>` : ''}
             </div>
@@ -482,7 +482,7 @@ window.SFC = window.SFC || {};
           c.ult.style.setProperty('--u', (v / 100).toFixed(2));
           c.ult.classList.toggle('ready', v >= 100);
           c.ult.classList.toggle('full', v >= 100);
-          c.ult.querySelector('.ult-pct').textContent = v >= 100 ? 'ĐẦY' : v + '%';   // sẵn sàng: viền vàng + rung
+          c.ult.querySelector('.ult-pct').textContent = v >= 100 ? 'FULL' : v + '%';   // sẵn sàng: viền vàng + rung
           // vừa được nạp: "+20%" bay lên · vừa dùng: thanh rút cạn
           if (prev >= 0 && v > prev) {
             const f = document.createElement('span');
@@ -540,11 +540,11 @@ window.SFC = window.SFC || {};
       for (const e of evs) {
         if (e.type === 'goal') {
           const t = game.teams[e.team];
-          this.banner(e.value > 1 ? `GOAL x${e.value}!` : 'GOAL!', e.own ? 'Phản lưới nhà!' : `${e.scorer} · ${t.cfg.name}`, t.cfg.kit.shirt, 2.2);
+          this.banner(e.value > 1 ? `GOAL x${e.value}!` : 'GOAL!', e.own ? 'Own goal!' : `${e.scorer} · ${t.cfg.name}`, t.cfg.kit.shirt, 2.2);
         }
         if (e.type === 'banner') this.banner(e.text, e.sub, e.color, 2.2);
         // khoảnh khắc của trận (màn kết quả)
-        if (e.type === 'ultimate') (game.moments || (game.moments = [])).push({ kind: 'ult', team: e.team, id: e.id, player: e.player, text: 'TUYỆT KỸ · ' + CORES().list[e.id].name.toUpperCase(), score: 60 });
+        if (e.type === 'ultimate') (game.moments || (game.moments = [])).push({ kind: 'ult', team: e.team, id: e.id, player: e.player, text: 'ULTIMATE · ' + CORES().list[e.id].name.toUpperCase(), score: 60 });
         if (e.type === 'moment') (game.moments || (game.moments = [])).push({ kind: 'combo', team: e.team, id: e.id, text: e.text, n: parseInt(e.text, 10) || 0, score: e.score });
         if (e.type === 'draft') { this.draftSel = 0; this.renderDraft(game); if (!overlay) this.show('draft'); }
         if (e.type === 'draftWait' && game.draft) this.renderDraft(game);
@@ -552,7 +552,7 @@ window.SFC = window.SFC || {};
           if (this.current === 'draft') this.show(null);
           for (const pk of e.picks) {
             const c = CORES().list[pk.id], t = game.teams[pk.team];
-            this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${esc(t.cfg.short)} nhận ${coreChip(pk.id)} <b>${esc(c.name)}</b>`);
+            this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${esc(t.cfg.short)} gets ${coreChip(pk.id)} <b>${esc(c.name)}</b>`);
           }
         }
         if (e.type === 'end') {

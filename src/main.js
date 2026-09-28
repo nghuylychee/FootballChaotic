@@ -68,13 +68,13 @@
       this.screen = 'game';
       SFC.Input.textHandler = null;
       SFC.UI.hudCache = {};
-      SFC.UI.pauseItems = this.mode === 'online' ? [['resume', 'VỀ TRẬN'], ['leave', 'RỜI PHÒNG']] : [['resume', 'TIẾP TỤC'], ['restart', 'ĐÁ LẠI'], ['menu', 'VỀ MENU']];
+      SFC.UI.pauseItems = this.mode === 'online' ? [['resume', 'BACK TO MATCH'], ['leave', 'LEAVE ROOM']] : [['resume', 'RESUME'], ['restart', 'RESTART'], ['menu', 'MAIN MENU']];
       SFC.UI.clearToasts();
       SFC.UI.show(null);
       const vs = opts.training && opts.teamSize && !opts.teamSize[1]
-        ? `${SFC_CONFIG.teams.list[opts.home].name} · không đối thủ`
+        ? `${SFC_CONFIG.teams.list[opts.home].name} · no opponent`
         : `${SFC_CONFIG.teams.list[opts.home].name} vs ${SFC_CONFIG.teams.list[opts.away].name}`;
-      SFC.UI.banner(opts.training ? 'LUYỆN TẬP' : 'KICK OFF', vs, '#ffe14f', 1.4);
+      SFC.UI.banner(opts.training ? 'TRAINING' : 'KICK OFF', vs, '#ffe14f', 1.4);
       SFC.Audio.upgrade();
     },
 

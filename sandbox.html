@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -35,29 +35,29 @@
 <body>
   <header>
     <h1>VFX SANDBOX</h1>
-    <p>Bộ công cụ hiệu ứng + thử Core thật (docs/CORE_DESIGN.md). Bấm nút hoặc phím số để xem.</p>
+    <p>Effects toolkit + real Core testing (docs/CORE_DESIGN.md). Click a button or press a number key.</p>
   </header>
   <div class="view">
     <canvas id="game" width="640" height="360"></canvas>
-    <p class="hint">Điều khiển cầu thủ vàng: <kbd>← ↑ ↓ →</kbd> di chuyển · <kbd>E</kbd> chạy · <kbd>D</kbd> sút / đấm · <kbd>A</kbd> chuyền bổng / đá bay · <kbd>Z</kbd> lướt.
-      Khoảnh khắc: <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>. Bấm vào khung game trước để nhận phím.</p>
+    <p class="hint">Control the yellow player: <kbd>← ↑ ↓ →</kbd> move · <kbd>E</kbd> sprint · <kbd>D</kbd> shoot / punch · <kbd>A</kbd> lob / dropkick · <kbd>Z</kbd> dash.
+      Moments: <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd>. Click the game view first so it gets key presses.</p>
   </div>
   <aside>
     <section>
-      <h2>ĐIỀU KHIỂN CẢNH</h2>
+      <h2>SCENE CONTROLS</h2>
       <div class="row" id="scene"></div>
     </section>
     <section>
-      <h2>CORE THẬT (ĐỘI VÀNG)</h2>
+      <h2>REAL CORES (YELLOW TEAM)</h2>
       <div class="row" id="coretools"></div>
       <div class="grid" id="cores" style="margin-top:4px"></div>
     </section>
     <section>
-      <h2>KHOẢNH KHẮC (DEMO CORE)</h2>
+      <h2>MOMENTS (CORE DEMOS)</h2>
       <div class="grid" id="moments"></div>
     </section>
     <section>
-      <h2>VIÊN GẠCH</h2>
+      <h2>BRICKS</h2>
       <div class="grid" id="bricks"></div>
     </section>
   </aside>

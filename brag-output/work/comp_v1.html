@@ -1,0 +1,221 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #140c16; --red: #ff3d5a; --gold: #ffe14f; --cyan: #7fe7ff; --paper: #f3ead7; --px: "Press Start 2P", monospace; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #07050a; }
+  #stage { position: absolute; inset: 0; overflow: hidden; background: #07050a; }
+  #plate { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; image-rendering: pixelated; }
+  #plate img { display: block; width: 1920px; height: 1080px; image-rendering: pixelated; }
+  #dim, #flash, #card { position: absolute; inset: 0; pointer-events: none; }
+  #dim { background: radial-gradient(ellipse at center, rgba(7,5,10,0.55), rgba(7,5,10,0.92)); opacity: 0; }
+  #flash { background: #fff; opacity: 0; }
+  #card { background: var(--red); opacity: 0; display: flex; align-items: center; justify-content: center; }
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+
+  /* slanted comic band, the game's own callout motif */
+  .band { position: absolute; left: 50%; display: flex; align-items: center; justify-content: center; white-space: nowrap;
+    font-family: var(--px); color: #fff; text-transform: uppercase; }
+  .band .bg { position: absolute; inset: 0; background: var(--ink); border-top: 8px solid var(--c, var(--gold)); border-bottom: 8px solid var(--c, var(--gold)); }
+  .band span { position: relative; padding: 34px 64px 30px; text-shadow: 6px 6px 0 var(--ink); }
+
+  .tag { position: absolute; left: 72px; bottom: 84px; font-family: var(--px); display: flex; flex-direction: column; gap: 18px; }
+  .tag .k { font-size: 26px; color: var(--ink); background: var(--gold); padding: 10px 14px 8px; align-self: flex-start; }
+  .tag .n { font-size: 64px; color: #fff; text-shadow: 6px 6px 0 var(--ink), 10px 10px 0 var(--c, var(--red)); }
+
+  .logo { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); line-height: 1.15; }
+  .logo .l1 { font-size: 64px; color: #fff; text-shadow: 6px 6px 0 var(--ink); }
+  .logo .l3 { font-size: 200px; color: var(--red); text-shadow: 8px 8px 0 var(--ink), 18px 18px 0 #ffcf3f; margin-top: 18px; }
+  .sub { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); font-size: 36px; color: var(--paper); text-shadow: 4px 4px 0 var(--ink); letter-spacing: 2px; }
+  .sub b { color: var(--gold); font-weight: normal; }
+  .big { font-family: var(--px); font-size: 150px; color: #fff; text-shadow: 10px 10px 0 var(--ink); }
+  .repo { font-family: "VT323", monospace; font-size: 64px; color: var(--cyan); text-shadow: 4px 4px 0 var(--ink); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="plate"><img id="img"></div>
+  <div id="dim"></div>
+  <div id="txt" class="layer"></div>
+  <div id="card"></div>
+  <div id="flash"></div>
+</div>
+<script>
+const FPS = 30, W = 1920, H = 1080;
+const META = {};
+async function loadMeta(names) { for (const n of names) META[n] = await (await fetch(`frames/${n}/meta.json`)).json(); }
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const easeOut = (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
+const easeBack = (k) => { k = clamp(k, 0, 1); const c = 1.9; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+
+/* ---------- edit decision list ---------- */
+// seg: v0..v1 video time; clip frames from c0 at speed 1; cam: {z, fx, fy} fixed or follow:true (meta focus, smoothed)
+const SEGS = [
+  { v0: 0.00, v1: 2.60, clip: 'hook', c0: 0.00, cam: { follow: true, z: 2.3, smooth: 0.14 }, punchAt: [0.90] },
+  { v0: 2.60, v1: 5.30, clip: 'chaos', c0: 0.50, cam: { z: 1.08, fx: 320, fy: 195 }, dim: 1 },
+  { v0: 5.30, v1: 7.40, clip: 'draft', c0: 0.35, cam: { z: 1.0, fx: 320, fy: 180, drift: 0.04 } },
+  { v0: 7.40, v1: 8.00, card: '7 ULTIMATES.' },
+  { v0: 8.00, v1: 8.35, clip: 'ult_meteor', c0: 0.45, cam: { z: 1.25, fx: 320, fy: 172 } },
+  { v0: 8.35, v1: 10.15, clip: 'ult_meteor', c0: 1.30, cam: { follow: true, z: 1.55, smooth: 0.1 }, punchAt: [9.42] },
+  { v0: 10.15, v1: 10.45, clip: 'ult_fists', c0: 0.45, cam: { z: 1.25, fx: 320, fy: 172 } },
+  { v0: 10.45, v1: 11.85, clip: 'ult_fists', c0: 0.95, cam: { follow: true, z: 2.6, smooth: 0.2 } },
+  { v0: 11.85, v1: 12.15, clip: 'ult_drop', c0: 0.50, cam: { z: 1.25, fx: 320, fy: 172 } },
+  { v0: 12.15, v1: 13.25, clip: 'ult_drop', c0: 1.90, cam: { follow: true, z: 2.2, smooth: 0.2 }, punchAt: [12.55] },
+  { v0: 13.25, v1: 13.55, clip: 'ult_titan', c0: 0.50, cam: { z: 1.25, fx: 320, fy: 172 } },
+  { v0: 13.55, v1: 14.95, clip: 'ult_titan', c0: 1.05, cam: { follow: true, z: 2.3, smooth: 0.15 } },
+  { v0: 14.95, v1: 18.15, clip: 'gacha', c0: 0.45, cam: { z: 1.55, fx: 320, fy: 92, drift: 0.05 }, dim: 0.35 },
+  { v0: 18.15, v1: 21.50, clip: 'chaos', c0: 3.00, cam: { z: 1.0, fx: 320, fy: 180, drift: 0.06 }, dim: 1 },
+];
+const DUR = 21.5;
+const CUTS = SEGS.map((s) => s.v0).filter((v) => v > 0);
+
+/* ---------- text cues ---------- */
+function band(text, { t, t0, t1, size = 96, y = 760, rot = -3, c = 'var(--gold)' }) {
+  if (t < t0 || t >= t1) return '';
+  const k = (t - t0) * FPS;
+  const s = lerp(1.7, 1, easeBack(k / 6));
+  const wipe = easeOut(k / 5);
+  return `<div class="band" style="top:${y}px;--c:${c};transform:translate(-50%,-50%) rotate(${rot}deg) scale(${s})">
+    <div class="bg" style="clip-path:inset(0 ${100 - wipe * 100}% 0 0)"></div><span style="font-size:${size}px">${text}</span></div>`;
+}
+function tag(kicker, name, c, t, t0, t1) {
+  if (t < t0 || t >= t1) return '';
+  const k = (t - t0) * FPS;
+  const x = lerp(-700, 0, easeOut(k / 6));
+  return `<div class="tag" style="--c:${c};transform:translateX(${x}px)"><div class="k">${kicker}</div><div class="n">${name}</div></div>`;
+}
+function logo(t, t0, y, scale = 1) {
+  if (t < t0) return '';
+  const k = (t - t0) * FPS;
+  const s1 = lerp(2.2, 1, easeBack(k / 6));
+  const k3 = k - 5;
+  const s3 = k3 < 0 ? 0 : lerp(2.6, 1, easeBack(k3 / 6));
+  // the game's wobble: steps(4) every 1.6s, 1px @ 640 -> 3px here
+  const ph = Math.floor(((t - t0) % 1.6) / 0.4);
+  const wob = [[0, 0], [3, -3], [0, 0], [-3, 3]][ph];
+  return `<div class="logo" style="top:${y}px;transform:scale(${scale})">
+      <div class="l1" style="transform:scale(${s1});opacity:${k >= 0 ? 1 : 0}">STREET FOOTBALL</div>
+      <div class="l3" style="transform:translate(${wob[0]}px,${wob[1]}px) scale(${s3});opacity:${k3 >= 0 ? 1 : 0}">CHAOS</div></div>`;
+}
+function sub(html, t, t0, y) {
+  if (t < t0) return '';
+  const n = Math.floor((t - t0) * 60); // typewriter, 2 chars / frame
+  const plain = html.replace(/<[^>]+>/g, '');
+  let shown = 0, out = '';
+  // reveal characters while keeping tags intact
+  for (let i = 0; i < html.length; i++) {
+    if (html[i] === '<') { const j = html.indexOf('>', i); out += html.slice(i, j + 1); i = j; continue; }
+    out += shown < n ? html[i] : `<span style="opacity:0">${html[i]}</span>`;
+    shown++;
+  }
+  return `<div class="sub" style="top:${y}px">${out}</div>`;
+}
+
+function texts(t) {
+  let h = '';
+  // HOOK
+  h += band("IT'S FOOTBALL.", { t, t0: 0.08, t1: 0.90, size: 104, y: 820, rot: -2, c: 'var(--cyan)' });
+  h += band('WITH DROPKICKS.', { t, t0: 0.95, t1: 2.60, size: 104, y: 820, rot: -3, c: 'var(--red)' });
+  // REVEAL
+  if (t >= 2.6 && t < 5.3) {
+    h += logo(t, 2.66, 250);
+    h += sub('2V2 <b>·</b> PIXEL ART <b>·</b> RUNS IN YOUR BROWSER', t, 3.25, 800);
+  }
+  // CORES
+  h += band('PICK CORES MID-MATCH.', { t, t0: 5.36, t1: 7.40, size: 72, y: 935, rot: -2, c: 'var(--gold)' });
+  if (t >= 6.25 && t < 7.4) {
+    const k = (t - 6.25) * FPS;
+    h += `<div class="band" style="top:1005px;left:1440px;transform:translate(-50%,-50%) rotate(-2deg) scale(${lerp(1.8, 1, easeBack(k / 6))})"><div class="bg" style="--c:var(--red);border-color:var(--red)"></div><span style="font-size:56px;padding:22px 40px 18px">53 OF THEM.</span></div>`;
+  }
+  // ULTS
+  h += tag('ULTIMATE 1', 'METEOR SHOT', '#ff6a1f', t, 8.36, 10.15);
+  h += tag('ULTIMATE 2', 'HUNDRED FISTS', '#ff3d5a', t, 10.46, 11.85);
+  h += tag('ULTIMATE 3', 'METEOR DROP', '#9d7bff', t, 12.16, 13.25);
+  h += tag('ULTIMATE 4', 'TITAN MODE', '#ffd23f', t, 13.56, 14.95);
+  // FLEX
+  h += band('0 IMAGE FILES. 0 AUDIO FILES.', { t, t0: 15.00, t1: 18.15, size: 64, y: 790, rot: -2, c: 'var(--cyan)' });
+  h += band('EVERY PIXEL &amp; SOUND IS CODE.', { t, t0: 16.20, t1: 18.15, size: 64, y: 940, rot: -2, c: 'var(--gold)' });
+  // OUTRO
+  if (t >= 18.15) {
+    h += logo(t, 18.2, 170, 0.9);
+    h += sub('BUILDING IT IN PUBLIC <b>·</b> FOLLOW ALONG', t, 18.9, 700);
+    if (t >= 19.45) {
+      const k = (t - 19.45) * FPS;
+      h += `<div style="position:absolute;left:0;right:0;top:810px;text-align:center;opacity:${clamp(k / 4, 0, 1)};transform:translateY(${lerp(20, 0, easeOut(k / 6))}px)"><span class="repo">github.com/nghuylychee/FootballChaotic</span></div>`;
+    }
+  }
+  return h;
+}
+
+/* ---------- camera ---------- */
+const camCache = {};
+function camFor(seg, c) {
+  const cam = seg.cam;
+  let fx = cam.fx, fy = cam.fy, z = cam.z;
+  if (cam.follow) {
+    const key = seg.v0;
+    if (!camCache[key]) {
+      // smooth focus over the clip frames used by this segment
+      const fr = META[seg.clip].frames, i0 = Math.round(seg.c0 * FPS), n = Math.ceil((seg.v1 - seg.v0) * FPS) + 2;
+      const out = []; let x = null, y = null;
+      for (let i = i0; i < i0 + n; i++) {
+        const f = (fr[Math.min(i, fr.length - 1)] || {}).focus || { x: 320, y: 190 };
+        if (x == null) { x = f.x; y = f.y - 8; }
+        x += (f.x - x) * cam.smooth; y += (f.y - 8 - y) * cam.smooth;
+        out.push([x, y]);
+      }
+      camCache[key] = out;
+    }
+    const arr = camCache[key], j = clamp(Math.round((c - seg.c0) * FPS), 0, arr.length - 1);
+    [fx, fy] = arr[j];
+  }
+  if (cam.drift) z *= 1 + cam.drift * ((c - seg.c0) / Math.max(0.1, seg.v1 - seg.v0));
+  return { fx, fy, z };
+}
+
+/* ---------- render one frame ---------- */
+const img = document.getElementById('img'), plate = document.getElementById('plate');
+let lastSrc = '';
+async function render(t) {
+  const seg = SEGS.find((s) => t >= s.v0 && t < s.v1) || SEGS[SEGS.length - 1];
+  const card = document.getElementById('card');
+  if (seg.card) {
+    const k = (t - seg.v0) * FPS;
+    card.style.opacity = 1;
+    card.innerHTML = `<div class="big" style="transform:rotate(-3deg) scale(${lerp(1.8, 1, easeBack(k / 5))})">${seg.card}</div>`;
+    plate.style.visibility = 'hidden';
+  } else {
+    card.style.opacity = 0; card.innerHTML = ''; plate.style.visibility = 'visible';
+    const c = seg.c0 + (t - seg.v0);
+    const fr = META[seg.clip].frames.length;
+    const idx = clamp(Math.round(c * FPS), 0, fr - 1);
+    const src = `frames/${seg.clip}/${String(idx).padStart(4, '0')}.png`;
+    if (src !== lastSrc) { img.src = src; await img.decode(); lastSrc = src; }
+    let { fx, fy, z } = camFor(seg, c);
+    // zoom punch on cuts and on marked impacts
+    const since = Math.min(...CUTS.concat(seg.punchAt || []).map((v) => (t >= v ? t - v : 99)));
+    const punch = since < 0.2 ? 1 + 0.12 * (1 - easeOut(since / 0.2)) : 1;
+    z *= punch;
+    // world px (640x360) -> plate px (x3), clamp so the view never leaves the frame
+    const vw = W / z, vh = H / z;
+    const cx = clamp(fx * 3, vw / 2, W - vw / 2), cy = clamp(fy * 3, vh / 2, H - vh / 2);
+    plate.style.transform = `scale(${z}) translate(${-(cx - vw / 2)}px, ${-(cy - vh / 2)}px)`;
+  }
+  document.getElementById('dim').style.opacity = seg.dim || 0;
+  // flash: 2 frames at every cut and impact
+  const hits = CUTS.concat(...SEGS.map((s) => s.punchAt || []));
+  const fl = Math.min(...hits.map((v) => (t >= v ? t - v : 99)));
+  document.getElementById('flash').style.opacity = fl < 1 / FPS ? 0.85 : fl < 2 / FPS ? 0.35 : 0;
+  document.getElementById('txt').innerHTML = texts(t);
+  await document.fonts.ready;
+  return seg.clip || seg.card;
+}
+window.ready = (async () => { await loadMeta([...new Set(SEGS.filter((s) => s.clip).map((s) => s.clip))]); await document.fonts.load('40px "Press Start 2P"'); await document.fonts.load('40px "VT323"'); })();
+</script>
+</body>
+</html>

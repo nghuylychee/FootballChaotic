@@ -262,19 +262,19 @@ window.SFC = window.SFC || {};
       const my = game.teams[me].score, op = game.teams[1 - me].score;
       const result = my > op ? 'win' : my < op ? 'lose' : 'draw';
       const goals = Math.min(R.maxGoals, my);
-      const labels = { win: 'Thắng trận', draw: 'Hòa', lose: 'Thua trận' };
+      const labels = { win: 'Victory', draw: 'Draw', lose: 'Defeat' };
 
       const lines = [{ label: labels[result], xp: cfg[result].xp, gold: cfg[result].gold }];
-      if (goals > 0) lines.push({ label: `Ghi bàn ×${goals}`, xp: cfg.goal.xp * goals, gold: cfg.goal.gold * goals });
+      if (goals > 0) lines.push({ label: `Goals ×${goals}`, xp: cfg.goal.xp * goals, gold: cfg.goal.gold * goals });
       let xp = lines.reduce((s, l) => s + l.xp, 0), gold = lines.reduce((s, l) => s + l.gold, 0);
       if (!pvp) {
         const key = game.opts.difficulty, mult = (cfg.difficulty && cfg.difficulty[key]) || 1;
         if (mult !== 1) {
           const label = (SFC_CONFIG.game.ai.difficulty[key] || {}).label || key;
-          lines.push({ label: `Độ khó ${label} ×${mult}`, mult });
+          lines.push({ label: `Difficulty ${label} ×${mult}`, mult });
           xp = Math.round(xp * mult); gold = Math.round(gold * mult);
         }
-      } else lines.push({ label: 'Đối kháng online', note: true });
+      } else lines.push({ label: 'Online versus', note: true });
 
       const before = { level: d.level, xp: d.xp, need: this.xpToNext(d.level) };
       const ups = this.addXp(xp);

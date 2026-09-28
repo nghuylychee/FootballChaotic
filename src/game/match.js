@@ -332,20 +332,20 @@ window.SFC = window.SFC || {};
       // tới FINAL PUSH mà còn lượt chọn Core -> tạm dừng trận, chọn nốt rồi giao bóng lại (bàn x2 tính sau khi chọn xong)
       if (!this.finalPush && this.remaining <= M.finalPushTime && this.draftPending() > 0) {
         const t = this.lastPossessionTeam >= 0 ? this.lastPossessionTeam : 0;
-        this.emit('banner', { text: 'CHỌN CORE CUỐI', sub: 'Trước FINAL PUSH', color: '#ffe14f' });
+        this.emit('banner', { text: 'FINAL CORE PICK', sub: 'Before the FINAL PUSH', color: '#ffe14f' });
         this.kickoff(t);
         this.runPendingDrafts();
         return;
       }
       if (!this.finalPush && this.remaining <= M.finalPushTime) {
         this.finalPush = true;
-        this.emit('banner', { text: 'FINAL PUSH', sub: 'Bàn thắng x' + M.finalPushGoalValue, color: '#ff3d5a' });
+        this.emit('banner', { text: 'FINAL PUSH', sub: 'Goals count x' + M.finalPushGoalValue, color: '#ff3d5a' });
         this.sfx('whistle');
       }
       if (this.elapsed >= M.duration) {
         if (this.teams[0].score === this.teams[1].score && M.goldenGoal) {
           this.golden = true;
-          this.emit('banner', { text: 'GOLDEN GOAL', sub: 'Bàn thắng tiếp theo quyết định', color: '#ffd23f' });
+          this.emit('banner', { text: 'GOLDEN GOAL', sub: 'Next goal wins', color: '#ffd23f' });
           this.sfx('whistle');
         } else this.end();
       }

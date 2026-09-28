@@ -78,7 +78,7 @@ window.SFC = window.SFC || {};
       if (!b.owner && b.kind === 'pass' && b.lastKickTeam === 1 - team && b.z < 10 && U.dist(b, c) < 9) {
         b.vx *= -0.35; b.vy *= -0.35; b.rotate(U.rand(-0.8, 0.8));
         b.kind = null; b.passTarget = null; b.passPoint = null; b.lastKickTeam = -1;
-        E.comic(c.x, c.y - 26, 'CHẶN!', '#9d7bff', 0.7, 0.5);
+        E.comic(c.x, c.y - 26, 'BLOCK!', '#9d7bff', 0.7, 0.5);
         E.popClone(c.pid, c.x, c.y);
         g.sfx('touch');
       }
@@ -197,7 +197,7 @@ window.SFC = window.SFC || {};
         const len = b.passPoint ? Math.min(320, U.dist(b, b.passPoint) + 20) : 200;
         E.beam(b.x, b.y - 3, a, len, 6, '#ffd23f', 0.5);
         E.flash(0.2);
-        E.comic(pl.x, pl.y - 28, 'XUYÊN KHÔNG!', '#ffd23f', 0.7, 0.6);
+        E.comic(pl.x, pl.y - 28, 'PHASE!', '#ffd23f', 0.7, 0.6);
         if (target) { target.buffs.push({ speed: prm.boost, t: prm.time }); target.glow('#ffd23f', prm.time); }
         g.sfx('zap');
       },
@@ -213,7 +213,7 @@ window.SFC = window.SFC || {};
         g.rhythm[team] = 0;
         E.burst(ball.x, ball.y, 10, '#ffd23f', 18, 100, 0.6);
         E.wave(ball.x, ball.y, 30, '#ffd23f', 0.45, 2);
-        E.comic(pl.x, pl.y - 30, 'GIAO HƯỞNG!', '#ffd23f', 0.8 + n * 0.06, 0.7);
+        E.comic(pl.x, pl.y - 30, 'SYMPHONY!', '#ffd23f', 0.8 + n * 0.06, 0.7);
         g.sfx('pick');
       },
     },
@@ -261,7 +261,7 @@ window.SFC = window.SFC || {};
           b.gkMod += prm.gk;
           b.fx.string = true;
           b.skin = 'light';
-          E.comic(s.x, s.y - 32, 'GIAO HƯỞNG!', '#ffd23f', 1.2, 0.8);
+          E.comic(s.x, s.y - 32, 'SYMPHONY!', '#ffd23f', 1.2, 0.8);
           E.wave(s.x, s.y, 36, '#ffd23f', 0.5, 3);
           E.shake(5, 0.3);
           g.rhythm[team] = 0;
@@ -277,7 +277,7 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects, a = Math.atan2(ball.vy, ball.vx), d = { x: Math.cos(a), y: Math.sin(a) };
         const x0 = pl.x + d.x * 8, y0 = pl.y + d.y * 8;
         E.beam(x0, y0 - 6, a, prm.len, prm.width * 1.2, '#7fe7ff', 0.7);
-        E.comic(pl.x, pl.y - 30, 'CHƯỞNG SÓNG!', '#7fe7ff', 0.9, 0.7);
+        E.comic(pl.x, pl.y - 30, 'WAVE BLAST!', '#7fe7ff', 0.9, 0.7);
         E.shake(5, 0.5);
         g.sfx('zap');
         for (const o of g.teams[1 - team].players) {
@@ -297,7 +297,7 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects;
         ball.skin = 'blackhole';
         E.vortex(0, 0, prm.radius * 0.7, prm.time, 'ball');
-        E.comic(pl.x, pl.y - 30, 'VÙÙÙ!', '#9d7bff', 1, 0.7);
+        E.comic(pl.x, pl.y - 30, 'VWOOM!', '#9d7bff', 1, 0.7);
         E.shake(3, 0.5);
         g.sfx('zap');
         let T = prm.time;
@@ -354,7 +354,7 @@ window.SFC = window.SFC || {};
           b.fx.meteor = true;
           b.gkMod += prm.gk;
           H.applyFire(sys, team, b, SFC_CONFIG.cores.list.fire_shot.params);
-          E.comic(b.x, b.y - b.z - 10, 'BÙM!', '#ff6a1f', 1.2, 0.6);
+          E.comic(b.x, b.y - b.z - 10, 'BOOM!', '#ff6a1f', 1.2, 0.6);
           E.shake(5, 0.3);
           g.sfx('kick', 1);
         });
@@ -377,7 +377,7 @@ window.SFC = window.SFC || {};
         g.deflect(keeper, 0.5);
         g.hitStop(0.1);
         E.impactFrame();
-        E.comic(keeper.x, keeper.y - 30, 'BÙM!', '#ff6a1f', 1.2);
+        E.comic(keeper.x, keeper.y - 30, 'BOOM!', '#ff6a1f', 1.2);
         E.shake(6, 0.4);
         g.sfx('hit');
         return true;
@@ -401,7 +401,7 @@ window.SFC = window.SFC || {};
               o.kbx += n.x * (last ? prm.push : 40); o.kby += n.y * (last ? prm.push : 40);
               E.burst(o.x, o.y, 10, '#fff6a0', 5, 70, 0.3);
               sys.lightHit(pl, o);
-              if (last) { E.comic(o.x, o.y - 28, 'RẦM!', '#ff3d5a', 1, 0.5); g.sfx('hit'); }
+              if (last) { E.comic(o.x, o.y - 28, 'SLAM!', '#ff3d5a', 1, 0.5); g.sfx('hit'); }
             }
             g.sfx('tackle');
           });
@@ -421,7 +421,7 @@ window.SFC = window.SFC || {};
         g.hitStop(0.1);
         E.impactFrame();
         E.zoom(v.x, v.y, 0.15, 0.3);
-        E.comic(v.x, v.y - 30, 'KHỔNG LỒ!', '#ff3d5a', 1.2, 0.7);
+        E.comic(v.x, v.y - 30, 'GIANT!', '#ff3d5a', 1.2, 0.7);
         E.shake(6, 0.35);
         g.sfx('hit');
       },
@@ -509,7 +509,7 @@ window.SFC = window.SFC || {};
         E.decal(nearTB ? 'wallcrack' : 'crack', victim.x, victim.y, 1.3, 5);
         E.burst(victim.x, victim.y, 10, '#b0624a', 14, 100, 0.6);
         E.burst(victim.x, victim.y, 6, '#d9cbb0', 10, 70, 0.8);
-        E.comic(victim.x, victim.y - 32, 'RẮC!', '#ffffff', 1, 0.6);
+        E.comic(victim.x, victim.y - 32, 'CRACK!', '#ffffff', 1, 0.6);
         E.shake(5, 0.3);
         if (attacker && !b.owner && U.dist(b, victim) < 50) {
           const d = U.norm(attacker.x - b.x, attacker.y - b.y);
@@ -528,7 +528,7 @@ window.SFC = window.SFC || {};
         E.decal('crack', p.x, p.y, 1.8, 4);
         E.shake(6, 0.35);
         E.burst(p.x, p.y, 0, '#8a7f70', 22, 140, 0.7);
-        E.comic(p.x, p.y - 34, 'RẦM!', '#ffe14f', 1.2, 0.6);
+        E.comic(p.x, p.y - 34, 'SLAM!', '#ffe14f', 1.2, 0.6);
         g.sfx('hit');
         for (const o of g.teams[1 - team].players) {
           if (U.dist(o, p) > R + o.radius || g.isProtected(o) || o.state === 'meteor') continue;
@@ -559,7 +559,7 @@ window.SFC = window.SFC || {};
         if (g.ball.owner === pl) g.looseBall(pl, 0, 0, 10);
         E.burst(pl.x, pl.y, 0, '#8a7f70', 16, 110);
         E.wave(pl.x, pl.y, 24, '#ffffff', 0.4, 2);
-        E.comic(pl.x, pl.y - 30, 'VÚT!', '#ff6a1f', 1, 0.5);
+        E.comic(pl.x, pl.y - 30, 'WHOOSH!', '#ff6a1f', 1, 0.5);
         g.sfx('whoosh');
         pl.state = 'meteor'; pl.stateT = prm.aim;
         pl.airZ = 320; pl.airVz = 0; pl.charging = false;
@@ -600,7 +600,7 @@ window.SFC = window.SFC || {};
         E.decal('crater', p.x, p.y, 1.8, 5);
         E.burst(p.x, p.y, 4, '#ff6a1f', 30, 190, 0.9);
         E.burst(p.x, p.y, 2, '#6a6470', 20, 80, 1.2);
-        E.comic(p.x, p.y - 40, 'ẦM!!', '#ff6a1f', 1.5);
+        E.comic(p.x, p.y - 40, 'KRAKOOM!!', '#ff6a1f', 1.5);
         g.sfx('hit');
         for (const o of g.teams[1 - team].players) {
           if (U.dist(o, p) > R + o.radius || g.isProtected(o)) continue;
@@ -626,7 +626,7 @@ window.SFC = window.SFC || {};
         st.cd = prm.cooldown;
         g.slowMo(prm.scale, prm.time);
         E.tint('#6a3dff', prm.time + 0.3, 0.28);
-        E.comic(pl.x, pl.y - 30, 'NÉ!', '#c9b5ff', 1.2, 0.8);
+        E.comic(pl.x, pl.y - 30, 'DODGE!', '#c9b5ff', 1.2, 0.8);
         E.speedLines(0.6, pl.x, pl.y, '#c9b5ff');
         pl.cd.skill = 0;
         // riêng người né vẫn nhanh (bù lại slow-mo toàn sân)
@@ -657,7 +657,7 @@ window.SFC = window.SFC || {};
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball, dir = g.teams[team].dir;
         sys.st(team, 'clone_army').t = g.time + prm.time;
-        E.callout('PHÂN THÂN!', '#9d7bff', 1.0);
+        E.callout('CLONES!', '#9d7bff', 1.0);
         E.burst(pl.x, pl.y, 6, '#d8d0e0', 24, 120, 0.7);
         E.comic(pl.x, pl.y - 30, 'POOF!', '#d8d0e0', 1, 0.6);
         g.sfx('whoosh');
@@ -746,7 +746,7 @@ window.SFC = window.SFC || {};
         pl.titanT = prm.time;
         pl.sizeTarget = prm.scale; pl.sizeT = prm.time;
         E.burst(pl.x, pl.y, 8, '#ffffff', 14, 90);
-        E.callout('KHỔNG LỒ!', '#ffd23f', 1.1);
+        E.callout('GIANT!', '#ffd23f', 1.1);
         E.shake(6, 0.4);
         E.wave(pl.x, pl.y, 40, '#ffd23f', 0.5, 3);
         g.sfx('hit');
@@ -760,7 +760,7 @@ window.SFC = window.SFC || {};
             E.burst(pl.x, pl.y, 0, '#8a7f70', 5, 40);
             g.sfx('wall');
           }
-          trample(sys, team, pl, prm, 'BỐP!');
+          trample(sys, team, pl, prm, 'BONK!');
           return false;
         }, () => { pl.titanT = 0; pl.sizeTarget = 1; pl.sizeT = 0; });
       },
@@ -816,7 +816,7 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects;
         a.airVz = prm.jump; a.airZ = Math.max(a.airZ, 0.5);
         for (let i = 0; i < 6; i++) E.burst(v.x + Math.sin(i * 1.3) * 5, v.y, i * 7, i % 2 ? '#ff6a1f' : '#ffd23f', 4, 40, 0.55);
-        E.comic(v.x, v.y - 34, 'LONG QUYỀN!', '#ff6a1f', 1, 0.7);
+        E.comic(v.x, v.y - 34, 'UPPERCUT!', '#ff6a1f', 1, 0.7);
         g.hitStop(0.06);
         E.shake(4, 0.25);
         g.sfx('hit');
@@ -838,7 +838,7 @@ window.SFC = window.SFC || {};
         if (!pl.volley) return;
         const E = sys.g.effects;
         ball.fx.duo = true;
-        E.comic(pl.x, pl.y - 28, 'VÔ-LÊ!', '#ffb13d', 0.9, 0.55);
+        E.comic(pl.x, pl.y - 28, 'VOLLEY!', '#ffb13d', 0.9, 0.55);
         E.wave(pl.x, pl.y, 14, '#ffb13d', 0.25, 2);
       },
     },
@@ -877,7 +877,7 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects;
         E.afterimage(pl, 0.4);
         E.decal('skid', pl.x, pl.y, 1.2, 2, pl.facing);
-        E.comic(pl.x, pl.y - 28, 'PHI CƯỚC!', '#ff6a1f', 0.8, 0.5);
+        E.comic(pl.x, pl.y - 28, 'FLYING KICK!', '#ff6a1f', 0.8, 0.5);
         if (pl.flyMul >= 1.8 && bigMoment(g)) E.speedLines(0.35, pl.x, pl.y, '#ffd8b0');
         let k = 0;
         sys.task(() => {
@@ -900,7 +900,7 @@ window.SFC = window.SFC || {};
           E.burst(s.x, s.y, 6, '#d8d0e0', 8, 60, 0.4);
         }
         ball.gkMod += prm.gkPenalty;
-        E.comic(pl.x, pl.y - 30, 'BÓNG MA!', '#9d7bff', 0.9, 0.6);
+        E.comic(pl.x, pl.y - 30, 'GHOST!', '#9d7bff', 0.9, 0.6);
       },
     },
     scissor_kick: {
@@ -919,7 +919,7 @@ window.SFC = window.SFC || {};
         const st = sys.st(team, 'scissor_kick');
         if (!(st.cd > 0)) { st.cd = prm.cooldown; g.slowMo(0.3, 0.3); }
         E.wave(b.x, b.y, 18, '#ffffff', 0.35, 2);
-        E.comic(pl.x, pl.y - 30, 'SONG PHI!', '#b46bff', 1, 0.6);
+        E.comic(pl.x, pl.y - 30, 'SCISSOR KICK!', '#b46bff', 1, 0.6);
         E.shake(4, 0.25);
         g.sfx('kick', 1);
         let T = 0.8, k = 0;
@@ -941,7 +941,7 @@ window.SFC = window.SFC || {};
           st.t = (st.t || 0) + dt;
           if (st.t < prm.every) return;
           st.fuse = prm.fuse; st.last = Math.ceil(prm.fuse) + 1;
-          E.comic(b.x, b.y - b.z - 18, 'BOM!', '#ff3d5a', 1, 0.6);
+          E.comic(b.x, b.y - b.z - 18, 'BOMB!', '#ff3d5a', 1, 0.6);
         }
         st.fuse -= dt;
         b.skin = 'bomb';   // giữ hình bom kể cả khi có người khống chế bóng
@@ -959,7 +959,7 @@ window.SFC = window.SFC || {};
         E.decal('crack', x, y, 1.2, 4);
         E.burst(x, y, 6, '#ff6a1f', 30, 180, 0.8);
         E.burst(x, y, 4, '#6a6470', 20, 70, 1.2);
-        E.comic(x, y - 36, 'BÙMMM!', '#ff6a1f', 1.5);
+        E.comic(x, y - 36, 'KABOOM!', '#ff6a1f', 1.5);
         if (b.owner) g.looseBall(b.owner, U.rand(-1, 1), U.rand(-1, 1), 200);
         for (const q of g.players) if (U.dist(q, { x, y }) < prm.radius && q.state !== 'meteor') blast(q, { x, y: y + 1 }, prm.knock, prm.launch, prm.stun, null);
         g.sfx('hit');

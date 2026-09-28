@@ -9,18 +9,18 @@ window.SFC = window.SFC || {};
 
   // thông báo lỗi PeerJS -> tiếng Việt
   const ERRORS = {
-    'peer-unavailable': 'Không tìm thấy phòng. Kiểm tra lại mã.',
-    'network': 'Mất kết nối tới máy chủ bắt tay.',
-    'server-error': 'Máy chủ bắt tay đang lỗi, thử lại sau.',
-    'socket-error': 'Không kết nối được máy chủ bắt tay.',
-    'socket-closed': 'Kết nối máy chủ bắt tay bị đóng.',
-    'browser-incompatible': 'Trình duyệt không hỗ trợ WebRTC.',
-    'webrtc': 'Lỗi WebRTC — mạng có thể chặn kết nối P2P.',
-    'unavailable-id': 'Mã phòng đang được dùng.',
-    'timeout': 'Hết thời gian chờ kết nối.',
-    'load': 'Không tải được thư viện mạng (PeerJS). Kiểm tra Internet.',
-    'full': 'Phòng đã đủ người.',
-    'version': 'Hai máy đang chạy phiên bản game khác nhau.',
+    'peer-unavailable': 'Room not found. Check the code.',
+    'network': 'Lost connection to the handshake server.',
+    'server-error': 'The handshake server is having trouble, try again later.',
+    'socket-error': 'Could not reach the handshake server.',
+    'socket-closed': 'The handshake server connection was closed.',
+    'browser-incompatible': 'This browser does not support WebRTC.',
+    'webrtc': 'WebRTC error: your network may be blocking P2P connections.',
+    'unavailable-id': 'That room code is already in use.',
+    'timeout': 'Connection timed out.',
+    'load': 'Could not load the network library (PeerJS). Check your Internet.',
+    'full': 'The room is full.',
+    'version': 'The two machines are running different game versions.',
   };
 
   const Net = {
@@ -31,7 +31,7 @@ window.SFC = window.SFC || {};
 
     message(err) {
       const type = (err && (err.type || err.message)) || '';
-      return ERRORS[type] || 'Lỗi kết nối' + (type ? ` (${type})` : '') + '.';
+      return ERRORS[type] || 'Connection error' + (type ? ` (${type})` : '') + '.';
     },
 
     load() {

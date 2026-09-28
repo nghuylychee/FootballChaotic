@@ -257,9 +257,9 @@ SFC_CONFIG.game = {
   ai: {
     difficulty: {
       // tackleMult: nhân tỉ lệ Light attack làm rơi bóng của AI
-      easy:   { label: 'DỄ',   reaction: 0.34, tackleMult: 0.7, shotAccuracy: 0.55, aggression: 0.6, speedMult: 0.92 },
-      normal: { label: 'VỪA',  reaction: 0.2,  tackleMult: 1.0, shotAccuracy: 0.8,  aggression: 1.0, speedMult: 1.0 },
-      hard:   { label: 'KHÓ',  reaction: 0.1,  tackleMult: 1.2, shotAccuracy: 0.92, aggression: 1.3, speedMult: 1.06 },
+      easy:   { label: 'EASY', reaction: 0.34, tackleMult: 0.7, shotAccuracy: 0.55, aggression: 0.6, speedMult: 0.92 },
+      normal: { label: 'NORMAL', reaction: 0.2,  tackleMult: 1.0, shotAccuracy: 0.8,  aggression: 1.0, speedMult: 1.0 },
+      hard:   { label: 'HARD', reaction: 0.1,  tackleMult: 1.2, shotAccuracy: 0.92, aggression: 1.3, speedMult: 1.06 },
     },
     difficultyOrder: ['easy', 'normal', 'hard'],
     teammate: 'normal',       // độ khó tối đa của AI đồng đội người chơi (không bao giờ giỏi hơn độ khó đã chọn)

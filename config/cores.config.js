@@ -16,39 +16,39 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 SFC_CONFIG.cores = {
   // 7 trường phái + Hỗn loạn (không có Cộng hưởng)
   archetypes: {
-    runner:    { label: 'TỐC ĐỘ',    icon: '🏃', color: '#3ff6ff', mech: 'Đà', resource: 'momentum' },
-    playmaker: { label: 'TIKI-TAKA', icon: '🎼', color: '#ffd23f', mech: 'Nhịp', resource: 'rhythm' },
-    striker:   { label: 'SÁT THỦ',   icon: '🎯', color: '#ff7a3d', mech: 'Sút tụ lực' },
-    brawler:   { label: 'ĐẤU SĨ',    icon: '🥊', color: '#ff3d5a', mech: 'Nộ', resource: 'rage' },
-    launcher:  { label: 'VÕ SĨ ĐÁ',  icon: '🦵', color: '#b46bff', mech: 'Hất tung' },
-    trickster: { label: 'ẢO ẢNH',    icon: '🌀', color: '#9d7bff', mech: 'Ảo ảnh' },
-    iron:      { label: 'THÉP',      icon: '🛡', color: '#c7ccd6', mech: 'Giáp', resource: 'guard' },
-    chaos:     { label: 'HỖN LOẠN',  icon: '🎲', color: '#c63dff', noSet: true },
+    runner:    { label: 'SPEED',    icon: '🏃', color: '#3ff6ff', mech: 'Momentum', resource: 'momentum' },
+    playmaker: { label: 'TIKI-TAKA', icon: '🎼', color: '#ffd23f', mech: 'Rhythm', resource: 'rhythm' },
+    striker:   { label: 'STRIKER',   icon: '🎯', color: '#ff7a3d', mech: 'Charged shot' },
+    brawler:   { label: 'BRAWLER',    icon: '🥊', color: '#ff3d5a', mech: 'Rage', resource: 'rage' },
+    launcher:  { label: 'KICKER',  icon: '🦵', color: '#b46bff', mech: 'Launch' },
+    trickster: { label: 'ILLUSION',    icon: '🌀', color: '#9d7bff', mech: 'Illusion' },
+    iron:      { label: 'IRON',      icon: '🛡', color: '#c7ccd6', mech: 'Guard', resource: 'guard' },
+    chaos:     { label: 'CHAOS',  icon: '🎲', color: '#c63dff', noSet: true },
   },
-  roleLabels: { gen: 'TẠO', use: 'DÙNG', base: 'NỀN', ult: 'TUYỆT KỸ', wild: 'HỖN LOẠN' },   // mech (trường phái) = thứ Core TẠO / DÙNG
+  roleLabels: { gen: 'BUILDS', use: 'SPENDS', base: 'PASSIVE', ult: 'ULTIMATE', wild: 'WILD' },   // mech (trường phái) = thứ Core TẠO / DÙNG
 
   // Tài nguyên — chỉ chạy khi đội có ít nhất 1 Core của trường phái tương ứng.
   // Không hoạt động quá grace giây -> mỗi decayEvery giây mất 1 (giảm từ từ, không về thẳng 0)
   resources: {
     // mỗi cầu thủ: chạy nước rút +1 mỗi gainEvery; bị choáng mất stunLoss
-    momentum: { label: 'Đà', icon: '⚡', max: 5, gainEvery: 0.4, grace: 2.5, decayEvery: 0.7, stunLoss: 1, speedPer: 0.01 },
+    momentum: { label: 'Momentum', icon: '⚡', max: 5, gainEvery: 0.4, grace: 2.5, decayEvery: 0.7, stunLoss: 1, speedPer: 0.01 },
     // cả đội: chuyền tới chân +1; mất bóng mất turnoverLoss
-    rhythm:   { label: 'Nhịp', icon: '♪', max: 5, grace: 6, decayEvery: 2.5, turnoverLoss: 2, passSpeedPer: 0.03 },
+    rhythm:   { label: 'Rhythm', icon: '♪', max: 5, grace: 6, decayEvery: 2.5, turnoverLoss: 2, passSpeedPer: 0.03 },
     // mỗi cầu thủ: đấm trúng +1; mỗi Nộ +stealPer tỉ lệ đấm rơi bóng, +speedPer tốc độ (hăng máu)
-    rage:     { label: 'Nộ', icon: '🔥', max: 5, grace: 4, decayEvery: 2, stealPer: 0.06, speedPer: 0.02 },
-    guard:    { label: 'Giáp', icon: '🛡', max: 2 },                                                // mỗi cầu thủ, chặn 1 lần choáng
+    rage:     { label: 'Rage', icon: '🔥', max: 5, grace: 4, decayEvery: 2, stealPer: 0.06, speedPer: 0.02 },
+    guard:    { label: 'Guard', icon: '🛡', max: 2 },                                                // mỗi cầu thủ, chặn 1 lần choáng
   },
   chargedShot: 0.6,          // "Sút tụ lực" = giữ >= 60% thanh lực (Cộng hưởng SÁT THỦ 3: 40%)
 
   // Cộng hưởng: số Core cùng trường phái (Core cầu nối tính cho cả hai). Logic ở systems/cores.js (SET_RULES)
   sets: {
-    runner:    { 2: 'Đà tối đa +1', 3: 'Đà tối đa: chạy nước rút tốn ít hơn 25% thể lực', 4: 'Giữ Đà thêm 2s · mỗi Đà +1% lực sút & chuyền' },
-    playmaker: { 2: 'Nhận bóng cũng +1 Nhịp', 3: 'Mất bóng 1 lần không bị trừ Nhịp (hồi 10s)', 4: 'Đủ 5 Nhịp: đường chuyền không thể bị cắt' },
-    striker:   { 2: '+15% lực sút · sút tụ lực: thủ môn −12% bắt', 3: 'Sút tụ lực từ 40% thanh lực', 4: 'Sút trúng khung: hồi chiêu cả đội −30%' },
-    brawler:   { 2: 'Nộ giảm chậm gấp đôi', 3: 'Đủ 5 Nộ: đấm không hồi chiêu trong 2s', 4: 'Đấm trúng hồi 5 thể lực, choáng +50%' },
-    launcher:  { 2: 'Hất xa +25% · hồi chiêu Hard −15% · đá trúng người cầm bóng: bóng rơi về chân bạn', 3: 'BONK gây choáng lan 30px', 4: 'Hồi chiêu Hard −40%' },
-    trickster: { 2: 'Tàn ảnh lâu hơn +1s · hồi chiêu Z −20%', 3: 'Né thành công: hồi Z ngay', 4: 'Z có 2 lần dùng' },
-    iron:      { 2: '+1 Giáp mỗi lần giao bóng', 3: 'Tự hồi 1 Giáp mỗi 8s', 4: 'Thủ môn +20% tỉ lệ bắt bóng' },
+    runner:    { 2: 'Max Momentum +1', 3: 'At max Momentum: sprinting costs 25% less stamina', 4: 'Momentum lasts 2s longer · each Momentum +1% shot & pass power' },
+    playmaker: { 2: 'Receiving a pass also gives +1 Rhythm', 3: 'Losing the ball once keeps your Rhythm (10s cooldown)', 4: 'At 5 Rhythm: your passes cannot be intercepted' },
+    striker:   { 2: '+15% shot power · charged shots: keeper −12% save', 3: 'Charged shots from 40% power', 4: 'Shot on target: team cooldowns −30%' },
+    brawler:   { 2: 'Rage decays half as fast', 3: 'At 5 Rage: punches have no cooldown for 2s', 4: 'Punch hits restore 5 stamina, stun +50%' },
+    launcher:  { 2: 'Launch +25% · Hard cooldown −15% · kicking the ball carrier drops the ball at your feet', 3: 'BONK stuns everyone within 30px', 4: 'Hard cooldown −40%' },
+    trickster: { 2: 'Afterimages last +1s · Z cooldown −20%', 3: 'Successful dodge: Z resets instantly', 4: 'Z gets 2 charges' },
+    iron:      { 2: '+1 Guard every kickoff', 3: 'Regain 1 Guard every 8s', 4: 'Keeper +20% save chance' },
   },
 
   // Tuyệt kỹ: năng lượng chỉ nạp khi ghi bàn hoặc cướp được bóng
@@ -65,83 +65,83 @@ SFC_CONFIG.cores = {
   list: {
     /* ---------- 🎯 SÁT THỦ ---------- */
     sniper_foot: {
-      name: 'Mắt Thiện Xạ', icon: '🎯', tags: ['striker'], role: 'base', rarity: 'common',
-      desc: 'Sút chính xác hơn nhiều, bóng ít ma sát nên bay xa (nhưng chậm hơn). Khi giữ D: tia laser đỏ ngắm từ chân tới khung.',
+      name: 'Sharpshooter', icon: '🎯', tags: ['striker'], role: 'base', rarity: 'common',
+      desc: 'Much more accurate shots; the ball has less friction so it travels further (but slower). Holding D shows a red laser sight from your foot to the goal.',
       mods: { accuracy: 1.6 },
       params: { frictionMult: 0.35, speedMult: 0.85, aiRangeMult: 1.5 },
     },
     banana_kick: {
-      name: 'Xoáy Rồng', icon: '🐉', tags: ['striker'], role: 'gen', rarity: 'rare',
-      desc: 'Cú sút tự bẻ cong về góc khung thành, kéo vệt xoắn ốc xanh lá như rồng cuộn.',
+      name: 'Dragon Curl', icon: '🐉', tags: ['striker'], role: 'gen', rarity: 'rare',
+      desc: 'Shots curl on their own toward the corner of the goal, trailing a green dragon spiral.',
       params: { strength: 2.4 },
     },
     fire_shot: {
-      name: 'Hoả Cầu', icon: '🔥', tags: ['striker'], role: 'gen', rarity: 'rare',
-      desc: 'Sút tụ lực: bóng hoá quả cầu lửa, đốt cháy sân theo đường bay (giẫm phải bị choáng + đẩy lùi). Vào lưới thì lưới bốc cháy.',
+      name: 'Fireball', icon: '🔥', tags: ['striker'], role: 'gen', rarity: 'rare',
+      desc: 'Charged shot: the ball becomes a fireball that sets the pitch on fire along its path (step in it: stun + knockback). Score and the net catches fire.',
       mods: { shotPower: 1.12 },
       params: { trailInterval: 0.035, trailDuration: 2.6, trailRadius: 6, stun: 0.9, knockback: 150 },
     },
     thunder_kick: {
-      name: 'Lôi Cước', icon: '⚡', tags: ['striker'], role: 'gen', rarity: 'legendary',
-      desc: 'Tụ lực lâu (≥60%): chân tích điện, bóng sét xuyên qua 1 cầu thủ (giật choáng) và khó bắt hơn với thủ môn.',
+      name: 'Thunder Kick', icon: '⚡', tags: ['striker'], role: 'gen', rarity: 'legendary',
+      desc: 'Long charge (≥60%): your foot builds up electricity; the lightning ball pierces 1 player (shock stun) and is harder for the keeper to catch.',
       mods: { chargeTime: 1.2 },
       params: { minCharge: 0.6, pierce: 1, speedMult: 1.2, stun: 0.7, gkPenalty: 0.25 },
     },
 
     /* ---------- 🏃 TỐC ĐỘ · 🌀 ẢO ẢNH ---------- */
     speed_demon: {
-      name: 'Quỷ Tốc Độ', icon: '🪽', tags: ['runner'], role: 'gen', rarity: 'common',
-      desc: 'Chạy nước rút nạp Đà nhanh hơn 50%; +5% tốc độ khi không giữ bóng. Chạy để lại vệt tàn ảnh xanh.',
+      name: 'Speed Demon', icon: '🪽', tags: ['runner'], role: 'gen', rarity: 'common',
+      desc: 'Sprinting builds Momentum 50% faster; +5% speed off the ball. Leaves a blue afterimage trail.',
       mods: { offBallSpeed: 1.05, momentumGain: 1.5 },
     },
     phantom_step: {
-      name: 'Thuấn Bộ', icon: '🌀', tags: ['trickster'], role: 'gen', rarity: 'rare',
-      desc: 'Lướt Z: biến mất trong khói rồi dịch chuyển xa thêm, để lại một ảo ảnh đứng tại chỗ cũ. Đang cầm bóng: đối thủ gần nhất lao vào ảo ảnh (hồi 4s).',
+      name: 'Phantom Step', icon: '🌀', tags: ['trickster'], role: 'gen', rarity: 'rare',
+      desc: 'Z dash: vanish in smoke and teleport further, leaving an illusion behind. With the ball: the nearest opponent charges the illusion (4s cooldown).',
       params: { distance: 34, illusion: 1.2, lureRadius: 60, lure: 0.4, lureCooldown: 4 },
     },
     fake_run: {
-      name: 'Chạy Giả', icon: '🪞', tags: ['runner', 'trickster'], role: 'gen', rarity: 'rare',
-      desc: 'Cầm bóng bắt đầu chạy nước rút / lướt Z: ảo ảnh tím tách ra dắt bóng giả chạy hướng khác (lừa hậu vệ) + 2 Đà.',
+      name: 'Fake Run', icon: '🪞', tags: ['runner', 'trickster'], role: 'gen', rarity: 'rare',
+      desc: 'Start a sprint / Z dash with the ball: a purple illusion splits off dribbling a fake ball the other way (fools defenders) + 2 Momentum.',
       params: { cooldown: 3.5, duration: 1.6, confuseRadius: 90, confuseTime: 1.2, angle: 0.8, momentum: 2 },
     },
 
     /* ---------- 🥊 ĐẤU SĨ · 🛡 THÉP · 🦵 VÕ SĨ ĐÁ ---------- */
     street_fighter: {
-      name: 'Võ Đường Phố', icon: '🥊', tags: ['brawler'], role: 'gen', rarity: 'common',
-      desc: 'Đấm tầm xa hơn, dễ làm rơi bóng hơn, cướp được bóng +1 Nộ. Đấm trúng bung chữ POW / BAM / WHAM.',
+      name: 'Street Fighter', icon: '🥊', tags: ['brawler'], role: 'gen', rarity: 'common',
+      desc: 'Longer punch range, knocks the ball loose more often, +1 Rage on steals. Hits pop POW / BAM / WHAM.',
       mods: { tackleRange: 1.3, tackleChance: 1.3, knockback: 1.3 },
       params: { rageOnSteal: 1 },
     },
     iron_body: {
-      name: 'Da Thép', icon: '🛡', tags: ['iron'], role: 'gen', rarity: 'common',
-      desc: 'Mỗi cầu thủ có 1 Giáp (chặn 1 lần bị choáng), mất thì tự hồi sau 7s. Có Giáp: người ánh bạc kim loại.',
+      name: 'Iron Skin', icon: '🛡', tags: ['iron'], role: 'gen', rarity: 'common',
+      desc: 'Each player has 1 Guard (blocks one stun), regenerates after 7s. With Guard: metallic silver sheen.',
       params: { regen: 7 },
     },
     blade_runner: {
-      name: 'Cước Phong', icon: '🌙', tags: ['launcher'], role: 'gen', rarity: 'legendary',
-      desc: 'Cú đá Hard attack (A) phóng lưỡi gió trăng khuyết bay ~150px: trúng ai thì choáng + rơi bóng.',
+      name: 'Wind Blade', icon: '🌙', tags: ['launcher'], role: 'gen', rarity: 'legendary',
+      desc: 'Hard attack (A) fires a crescent wind blade ~150px: whoever it hits is stunned and drops the ball.',
       params: { speed: 300, life: 0.5, length: 18, stun: 0.9 },
     },
 
     /* ---------- 🛡 THÉP · 🎼 TIKI-TAKA · cầu nối ---------- */
     aegis_wall: {
-      name: 'Khiên Aegis', icon: '🧱', tags: ['iron'], role: 'base', rarity: 'legendary',
-      desc: 'Khiên lục giác năng lượng trên vạch vôi đội nhà: chặn 1 cú sút vào lưới (vỡ vụn như kính), hồi lại sau 60s.',
+      name: 'Aegis Shield', icon: '🧱', tags: ['iron'], role: 'base', rarity: 'legendary',
+      desc: 'A hexagonal energy shield on your goal line: blocks 1 shot (shatters like glass), recharges after 60s.',
       params: { cooldown: 60 },
     },
     counter_attack: {
-      name: 'Phản Công', icon: '↩', tags: ['brawler', 'runner'], role: 'gen', rarity: 'rare',
-      desc: 'Cướp được bóng: cả đội +3 Đà, +20% tốc độ và lực sút trong 3.5s, bùng hào quang xanh.',
+      name: 'Counter Attack', icon: '↩', tags: ['brawler', 'runner'], role: 'gen', rarity: 'rare',
+      desc: 'Win the ball: whole team +3 Momentum, +20% speed and shot power for 3.5s, with a blue aura.',
       params: { duration: 3.5, speedMult: 1.2, shotMult: 1.2, momentum: 3, calloutCd: 15 },
     },
     emp_trap: {
-      name: 'Mìn EMP', icon: '📡', tags: ['iron'], role: 'gen', rarity: 'epic',
-      desc: 'Mỗi lần ra đòn (Light / Hard) để lại một quả mìn EMP. Đối thủ dẫm phải bị sét giật choáng và mất bóng.',
+      name: 'EMP Mine', icon: '📡', tags: ['iron'], role: 'gen', rarity: 'epic',
+      desc: 'Every attack (Light / Hard) drops an EMP mine. Opponents who step on it get shocked, stunned and lose the ball.',
       params: { cooldown: 2.5, max: 3, life: 14, radius: 9, arm: 0.5, stun: 1.0 },
     },
     maestro: {
-      name: 'Nhạc Trưởng', icon: '🎼', tags: ['playmaker'], role: 'gen', rarity: 'common',
-      desc: 'Chuyền nhanh +20%, bóng kéo dải sáng vàng như dây đàn. Người nhận bùng hào quang vàng, tăng tốc 1.5s và +1 Nhịp thêm.',
+      name: 'Maestro', icon: '🎼', tags: ['playmaker'], role: 'gen', rarity: 'common',
+      desc: 'Passes +20% faster, trailing a golden string of light. The receiver bursts with a gold aura, a 1.5s speed boost and +1 extra Rhythm.',
       mods: { passSpeed: 1.2 },
       params: { duration: 1.5, speedMult: 1.25, rhythm: 1 },
     },
@@ -149,222 +149,222 @@ SFC_CONFIG.cores = {
     /* ---------- TUYỆT KỸ (phím X) ---------- */
     // Tuyệt kỹ thí điểm (Giai đoạn 1) — kiểm tra khung năng lượng + phím X; các Tuyệt kỹ khác ở Giai đoạn 3
     lightning_dash: {
-      name: 'Tia Chớp Xuyên Sân', icon: '⚡', tags: ['runner'], role: 'ult', rarity: 'mythic',
-      desc: 'Hoá tia sét lao thẳng về phía trước (mang theo bóng nếu đang giữ); mọi đối thủ trên đường bị giật choáng.',
+      name: 'Lightning Dash', icon: '⚡', tags: ['runner'], role: 'ult', rarity: 'mythic',
+      desc: 'Become a lightning bolt and dash straight ahead (taking the ball with you); every opponent in the path gets shocked.',
       params: { distance: 190, width: 18, stun: 0.8, knock: 140 },
     },
 
     /* ================= Giai đoạn 3 — Core mới (hành vi ở src/systems/cores-new.js) ================= */
     /* ---------- 🏃 TỐC ĐỘ ---------- */
     burst_start: {
-      name: 'Phóng Như Tên', icon: '🏹', tags: ['runner'], role: 'gen', rarity: 'rare',
-      desc: 'Bắt đầu chạy nước rút: +2 Đà ngay và bứt tốc 0.35s — nổ vòng siêu âm tại chỗ xuất phát, bụi tung.',
+      name: 'Arrow Start', icon: '🏹', tags: ['runner'], role: 'gen', rarity: 'rare',
+      desc: 'Start sprinting: instant +2 Momentum and a 0.35s burst, with a sonic ring and dust at the start point.',
       params: { momentum: 2, boost: 1.3, time: 0.35, cooldown: 3 },
     },
     sonic_boom: {
-      name: 'Phá Âm Chướng', icon: '💥', tags: ['runner'], role: 'use', rarity: 'epic',
-      desc: 'Cầm bóng ở Đà tối đa: hình nón sóng âm trước mặt — lướt sát qua đối thủ (≤14px) hất họ văng sang bên + choáng ngắn, tiêu hết Đà. BOOM!',
+      name: 'Sonic Boom', icon: '💥', tags: ['runner'], role: 'use', rarity: 'epic',
+      desc: 'Carrying the ball at max Momentum: a sonic cone in front of you. Brush past opponents (≤14px) to blast them aside + short stun, spends all Momentum. BOOM!',
       params: { gap: 14, knock: 180, launch: 70, stun: 0.35, cooldown: 10 },
     },
     freight_train: {
-      name: 'Húc Xe Tải', icon: '🚚', tags: ['runner'], role: 'use', rarity: 'epic',
-      desc: 'Va trực diện khi có ≥5 Đà: húc đối thủ bay xa như bị xe tông (hất tung), tiêu 5 Đà. Né được bằng Z.',
+      name: 'Freight Train', icon: '🚚', tags: ['runner'], role: 'use', rarity: 'epic',
+      desc: 'Head-on collision with ≥5 Momentum: send the opponent flying like they got hit by a truck, spends 5 Momentum. Dodgeable with Z.',
       params: { minMomentum: 5, cost: 5, minSpeed: 90, knock: 190, launch: 120, stun: 0.4, cooldown: 15 },
     },
 
     /* ---------- 🎼 TIKI-TAKA ---------- */
     eagle_eye: {
-      name: 'Mắt Đại Bàng', icon: '🦅', tags: ['playmaker'], role: 'base', rarity: 'common',
-      desc: 'Giữ phím chuyền: nét phấn vẽ quỹ đạo + điểm rơi trên sân. Chuyền chuẩn hơn, khó bị cắt hơn 30%.',
+      name: 'Eagle Eye', icon: '🦅', tags: ['playmaker'], role: 'base', rarity: 'common',
+      desc: 'Holding a pass key draws a chalk trajectory + landing spot on the pitch. More accurate passes, 30% harder to intercept.',
       mods: { passAccuracy: 1.6, interceptTaken: 0.7 },
     },
     one_touch: {
-      name: 'Chạm Một', icon: '✨', tags: ['playmaker'], role: 'gen', rarity: 'rare',
-      desc: 'Chuyền trong 0.6s sau khi nhận bóng: +2 Nhịp, bóng hoá quả cầu ánh sáng — đối thủ chạm vào thì bóng xuyên qua như ma.',
+      name: 'One Touch', icon: '✨', tags: ['playmaker'], role: 'gen', rarity: 'rare',
+      desc: 'Pass within 0.6s of receiving: +2 Rhythm, the ball turns into a ball of light that ghosts through opponents.',
       params: { window: 0.6, rhythm: 2 },
     },
     phantom_pass: {
-      name: 'Đường Chuyền Xuyên Không', icon: '💫', tags: ['playmaker'], role: 'use', rarity: 'epic',
-      desc: 'Có ≥3 Nhịp, chọc khe (W): tiêu 3 Nhịp — bóng thành tia sáng vàng xé ngang sân xuyên qua mọi đối thủ, người nhận tăng tốc 2s.',
+      name: 'Phantom Pass', icon: '💫', tags: ['playmaker'], role: 'use', rarity: 'epic',
+      desc: 'With ≥3 Rhythm, through pass (W): spends 3 Rhythm. The ball becomes a golden beam tearing across the pitch through every opponent; the receiver gets a 2s speed boost.',
       params: { cost: 3, speedMult: 1.3, boost: 1.3, time: 2 },
     },
     symphony: {
-      name: 'Bản Giao Hưởng', icon: '🎻', tags: ['playmaker'], role: 'use', rarity: 'epic',
-      desc: 'Sút khi có ≥3 Nhịp: mọi nốt nhạc hội tụ vào bóng — mỗi Nhịp +8% lực sút và thủ môn −5% bắt bóng. Tiêu hết Nhịp.',
+      name: 'Symphony', icon: '🎻', tags: ['playmaker'], role: 'use', rarity: 'epic',
+      desc: 'Shoot with ≥3 Rhythm: every note converges on the ball. Each Rhythm +8% shot power and keeper −5% save. Spends all Rhythm.',
       params: { min: 3, powerPer: 0.08, gkPer: 0.05 },
     },
 
     /* ---------- 🎯 SÁT THỦ ---------- */
     energy_wave: {
-      name: 'Chưởng Sóng', icon: '🌊', tags: ['striker'], role: 'use', rarity: 'epic',
-      desc: 'Sút gần đầy lực (≥80%): quả cầu sáng tụ trước chân rồi luồng năng lượng bắn theo bóng, đẩy mọi đối thủ trong luồng dạt ra hai bên + choáng.',
+      name: 'Energy Wave', icon: '🌊', tags: ['striker'], role: 'use', rarity: 'epic',
+      desc: 'Near-full charge (≥80%): an orb gathers at your foot, then an energy beam fires with the ball, pushing every opponent in it aside + stun.',
       params: { minCharge: 0.8, len: 300, width: 18, knock: 300, stun: 0.8 },
     },
     black_hole: {
-      name: 'Sút Lỗ Đen', icon: '🕳', tags: ['striker'], role: 'use', rarity: 'legendary',
-      desc: 'Sút gần đầy lực (≥80%): bóng hoá lỗ đen, hút đối thủ gần đường bay (cả thủ môn) lệch khỏi vị trí — họ không chạm được bóng.',
+      name: 'Black Hole Shot', icon: '🕳', tags: ['striker'], role: 'use', rarity: 'legendary',
+      desc: 'Near-full charge (≥80%): the ball becomes a black hole, pulling nearby opponents (keeper included) off position so they can\'t touch it.',
       params: { minCharge: 0.8, radius: 64, pull: 1500, time: 1.4 },
     },
 
     /* ---------- 🥊 ĐẤU SĨ ---------- */
     fist_storm: {
-      name: 'Bão Đấm', icon: '👊', tags: ['brawler'], role: 'gen', rarity: 'rare',
-      desc: 'Cú đấm thành chuỗi 4 cú liên hoàn (cú cuối đẩy lùi), mỗi cú trúng +1 Nộ. RẦM RẦM RẦM! Hồi chiêu đấm +10%.',
+      name: 'Fist Storm', icon: '👊', tags: ['brawler'], role: 'gen', rarity: 'rare',
+      desc: 'Punches become a 4-hit combo (the last one knocks back), each hit +1 Rage. BAM BAM BAM! Punch cooldown +10%.',
       mods: { lightCooldown: 1.1 },
       params: { hits: 4, gap: 0.07, range: 22, push: 220 },
     },
     giant_fist: {
-      name: 'Nắm Đấm Khổng Lồ', icon: '✊', tags: ['brawler'], role: 'use', rarity: 'epic',
-      desc: 'Đủ 5 Nộ, cú đấm kế tiếp: nắm tay to gấp 4, vùng đánh rộng, chắc chắn làm rơi bóng, hất văng. Tiêu hết Nộ.',
+      name: 'Giant Fist', icon: '✊', tags: ['brawler'], role: 'use', rarity: 'epic',
+      desc: 'At 5 Rage, your next punch: a fist 4× bigger, wide hitbox, always knocks the ball loose, sends them flying. Spends all Rage.',
     },
 
     /* ---------- 🦵 VÕ SĨ ĐÁ ---------- */
     heavy_boot: {
-      name: 'Giày Sắt', icon: '🥾', tags: ['launcher'], role: 'base', rarity: 'common',
-      desc: 'Hất xa +30%, tầm chân +40%, hồi chiêu Hard −20%, gồng chân nhanh hơn 30%. Mỗi cú đá làm nứt mặt sân, bắn tia lửa kim loại.',
+      name: 'Iron Boots', icon: '🥾', tags: ['launcher'], role: 'base', rarity: 'common',
+      desc: 'Launch +30%, kick range +40%, Hard cooldown −20%, 30% faster windup. Every kick cracks the pitch and sprays metal sparks.',
       mods: { launch: 1.3, hardCooldown: 0.8, hardWindup: 0.7, hardRange: 1.4 },
     },
     juggle: {
-      name: 'Tâng Người', icon: '🤹', tags: ['launcher'], role: 'use', rarity: 'rare',
-      desc: 'Đấm trúng người đang bay: tâng họ lên tiếp, kéo dài thời gian bay (+1 Nộ mỗi lần) — bộ đếm 2 HIT! 3 HIT!…',
+      name: 'Juggle', icon: '🤹', tags: ['launcher'], role: 'use', rarity: 'rare',
+      desc: 'Punch an airborne player to keep them in the air longer (+1 Rage each time). Combo counter: 2 HIT! 3 HIT!…',
       params: { lift: 200, stun: 0.7 },
     },
     wall_slam: {
-      name: 'Đập Tường', icon: '🏚', tags: ['launcher'], role: 'use', rarity: 'rare',
-      desc: 'Hất đối thủ va tường (BONK): tường nứt toác, choáng thêm 1s; bóng rơi gần đó nảy về phía bạn.',
+      name: 'Wall Slam', icon: '🏚', tags: ['launcher'], role: 'use', rarity: 'rare',
+      desc: 'Launch an opponent into the wall (BONK): the wall cracks, +1s stun; a loose ball nearby bounces toward you.',
       params: { stun: 1, ballSpeed: 170 },
     },
     ground_slam: {
-      name: 'Dậm Đất', icon: '🌋', tags: ['launcher'], role: 'gen', rarity: 'epic',
-      desc: 'Hard attack đổi thành: bật nhảy lao về đối thủ trước mặt rồi dậm xuống — sóng chấn 52px hất tung TẤT CẢ đối thủ trong vùng + choáng, mặt sân nứt mạng nhện.',
+      name: 'Ground Slam', icon: '🌋', tags: ['launcher'], role: 'gen', rarity: 'epic',
+      desc: 'Hard attack becomes a leap onto the opponent in front of you and a slam: a 52px shockwave launches ALL opponents in range + stun, spiderweb cracks in the pitch.',
       params: { jump: 150, leap: 130, maxSpeed: 300, radius: 52, knock: 160, launch: 230, stun: 1.1, recover: 0.12 },
     },
 
     /* ---------- 🌀 ẢO ẢNH ---------- */
     quick_feet: {
-      name: 'Bộ Pháp Ninja', icon: '🥷', tags: ['trickster'], role: 'base', rarity: 'common',
-      desc: 'Hồi chiêu Z −30%, thời gian né +0.15s. Mỗi lần lướt nổ khói POOF.',
+      name: 'Ninja Footwork', icon: '🥷', tags: ['trickster'], role: 'base', rarity: 'common',
+      desc: 'Z cooldown −30%, dodge window +0.15s. Every dash pops a POOF of smoke.',
       mods: { skillCooldown: 0.7 },
       params: { dodgeBonus: 0.15 },
     },
     witch_time: {
-      name: 'Né Hoàn Hảo', icon: '⏳', tags: ['trickster'], role: 'use', rarity: 'epic',
-      desc: 'Né thành công: cả sân chậm lại 0.8s, ngả tím — riêng bạn vẫn nhanh và hồi Z ngay. NÉ!',
+      name: 'Perfect Dodge', icon: '⏳', tags: ['trickster'], role: 'use', rarity: 'epic',
+      desc: 'Successful dodge: the whole pitch slows down for 0.8s and turns purple; you stay fast and Z resets instantly. DODGE!',
       params: { scale: 0.35, time: 0.8, boost: 2.6, cooldown: 4 },
     },
     shadow_clone: {
-      name: 'Ảnh Phân Thân', icon: '👥', tags: ['trickster'], role: 'gen', rarity: 'epic',
-      desc: 'Lướt Z tạo 2 phân thân chạy lệch hướng 2s: cản đường đối thủ, chặn được đường chuyền; bị chạm vào thì nổ khói.',
+      name: 'Shadow Clone', icon: '👥', tags: ['trickster'], role: 'gen', rarity: 'epic',
+      desc: 'Z dash spawns 2 clones running off at angles for 2s: they block opponents and passing lanes; touch one and it bursts into smoke.',
       params: { count: 2, time: 2, speed: 170, spread: 0.7 },
     },
 
     /* ---------- 🛡 THÉP ---------- */
     bulldozer: {
-      name: 'Xe Ủi', icon: '🚜', tags: ['iron'], role: 'use', rarity: 'epic',
-      desc: 'Có Giáp + cầm bóng: phình to 1.3× (chậm hơn 12%), không thể bị cướp bóng, người va phải bay ra như ki bowling (mỗi lần hất tiêu 1 Giáp; trúng đòn vẫn mất Giáp). Mỗi lần giao bóng có ít nhất 1 Giáp.',
+      name: 'Bulldozer', icon: '🚜', tags: ['iron'], role: 'use', rarity: 'epic',
+      desc: 'With Guard + the ball: grow 1.3× (12% slower), can\'t be tackled, anyone you hit flies like a bowling pin (each launch spends 1 Guard; getting hit still breaks Guard). At least 1 Guard every kickoff.',
       params: { scale: 1.3, slow: 0.88, knock: 170, launch: 80, stun: 0.3, every: 2 },
     },
     giant_keeper: {
-      name: 'Thủ Môn Khổng Lồ', icon: '🧤', tags: ['iron'], role: 'use', rarity: 'epic',
-      desc: 'Người trông khung có Giáp: phình to 1.4× khi bóng tới gần khung (tầm bắt bóng lớn theo). POOF! Mỗi lần giao bóng có ít nhất 1 Giáp.',
+      name: 'Giant Keeper', icon: '🧤', tags: ['iron'], role: 'use', rarity: 'epic',
+      desc: 'Your keeper with Guard grows 1.4× when the ball gets close to goal (bigger reach too). POOF! At least 1 Guard every kickoff.',
       params: { scale: 1.4, near: 150 },
     },
 
     /* ---------- 🔗 Cầu nối ---------- */
     rubber_arm: {
-      name: 'Tay Cao Su', icon: '🤜', tags: ['brawler', 'playmaker'], role: 'use', rarity: 'epic',
-      desc: 'Đấm vươn tay dài 50px (mỗi người hồi 2s): trúng người → đấm từ xa + kéo họ lại gần; trúng bóng lỏng / đường chuyền → giật bóng về chân. BOING!',
+      name: 'Rubber Arm', icon: '🤜', tags: ['brawler', 'playmaker'], role: 'use', rarity: 'epic',
+      desc: 'Punch stretches 50px (2s cooldown per player): hit a player to punch from range + pull them in; hit a loose ball / pass to yank it to your feet. BOING!',
       params: { reach: 50, pull: 180, stun: 0.4, steal: 0.25, cooldown: 2 },
     },
     uppercut: {
-      name: 'Long Quyền', icon: '🐲', tags: ['brawler', 'launcher'], role: 'use', rarity: 'rare',
-      desc: 'Đủ 5 Nộ: cú đấm thành cú móc hàm — vút lên theo vệt lửa hình rồng, hất đối thủ thẳng lên trời, bóng rơi xuống chân bạn. Tiêu hết Nộ.',
+      name: 'Dragon Uppercut', icon: '🐲', tags: ['brawler', 'launcher'], role: 'use', rarity: 'rare',
+      desc: 'At 5 Rage your punch becomes an uppercut: rise on a dragon-shaped flame trail, launch the opponent straight up, the ball drops at your feet. Spends all Rage.',
       params: { launch: 330, jump: 80 },
     },
     iron_fist: {
-      name: 'Nắm Đấm Sắt', icon: '🦾', tags: ['brawler', 'iron'], role: 'gen', rarity: 'rare',
-      desc: 'Có Giáp: nắm đấm thép — người cầm bóng không trụ được, +1 Nộ thêm. Mỗi Nộ giảm 8% thời gian bị choáng. Mỗi lần giao bóng có ít nhất 1 Giáp.',
+      name: 'Iron Fist', icon: '🦾', tags: ['brawler', 'iron'], role: 'gen', rarity: 'rare',
+      desc: 'With Guard: steel fists. The ball carrier can\'t hold on, +1 extra Rage. Each Rage cuts stun time by 8%. At least 1 Guard every kickoff.',
       params: { rage: 1, stunPerRage: 0.08 },
     },
     one_two: {
-      name: 'Một-Hai', icon: '🔁', tags: ['playmaker', 'striker'], role: 'use', rarity: 'epic',
-      desc: 'Sút trong 1.2s sau khi nhận đường chuyền: tính là sút tụ lực tối đa (vô-lê), bóng kéo vệt đôi vàng-cam.',
+      name: 'One-Two', icon: '🔁', tags: ['playmaker', 'striker'], role: 'use', rarity: 'epic',
+      desc: 'Shoot within 1.2s of receiving a pass: counts as a max charged shot (volley), trailing a gold-orange double streak.',
       params: { window: 1.2 },
     },
     captain: {
-      name: 'Thủ Lĩnh', icon: '🎖', tags: ['iron', 'playmaker'], role: 'gen', rarity: 'epic',
-      desc: 'Mỗi đường chuyền tới chân trao 1 Giáp cho người nhận (mỗi người hồi 6s) — khiên lục giác ốp lên người.',
+      name: 'Captain', icon: '🎖', tags: ['iron', 'playmaker'], role: 'gen', rarity: 'epic',
+      desc: 'Every completed pass gives the receiver 1 Guard (6s cooldown per player). A hex shield snaps onto them.',
       params: { cooldown: 6 },
     },
     counter_strike: {
-      name: 'Phản Đòn', icon: '⚔', tags: ['trickster', 'brawler'], role: 'use', rarity: 'epic',
-      desc: 'Né thành công: trong 1s cú đấm không hồi chiêu, chắc chắn làm rơi bóng, +2 Nộ. Impact frame + COUNTER!',
+      name: 'Counter Strike', icon: '⚔', tags: ['trickster', 'brawler'], role: 'use', rarity: 'epic',
+      desc: 'Successful dodge: for 1s punches have no cooldown, always knock the ball loose, +2 Rage. Impact frame + COUNTER!',
       params: { window: 1, rage: 2, cooldown: 4 },
     },
     flying_kick: {
-      name: 'Phi Cước', icon: '🚀', tags: ['runner', 'launcher'], role: 'use', rarity: 'epic',
-      desc: 'Hard attack tiêu hết Đà: mỗi Đà bay xa + hất xa thêm 20% — bay ngang như tên lửa, chân bốc lửa.',
+      name: 'Flying Kick', icon: '🚀', tags: ['runner', 'launcher'], role: 'use', rarity: 'epic',
+      desc: 'Hard attack spends all Momentum: each Momentum makes you fly + launch 20% further. Soar like a rocket, feet on fire.',
       params: { perMomentum: 0.2 },
     },
     ghost_ball: {
-      name: 'Bóng Ma', icon: '👻', tags: ['trickster', 'striker'], role: 'use', rarity: 'epic',
-      desc: 'Sút khi đang có ảo ảnh / phân thân: mỗi cái sút theo 1 quả bóng giả về khung (tối đa 3), thủ môn −20% bắt.',
+      name: 'Ghost Ball', icon: '👻', tags: ['trickster', 'striker'], role: 'use', rarity: 'epic',
+      desc: 'Shoot while you have illusions / clones out: each one fires a fake ball at goal (max 3), keeper −20% save.',
       params: { max: 3, gkPenalty: 0.2, speed: 320 },
     },
     scissor_kick: {
-      name: 'Song Phi', icon: '✂', tags: ['launcher', 'striker'], role: 'use', rarity: 'legendary',
-      desc: 'Hard attack trúng bóng lỏng: xoay người đá chổng ngược — bóng thành cú sút tụ lực tối đa bay thẳng về khung, xuyên qua 2 người.',
+      name: 'Scissor Kick', icon: '✂', tags: ['launcher', 'striker'], role: 'use', rarity: 'legendary',
+      desc: 'Hard attack on a loose ball: an overhead bicycle kick. The ball becomes a max charged shot straight at goal, piercing 2 players.',
       params: { speed: 1.1, pierce: 2, stun: 0.6, cooldown: 4 },
     },
 
     /* ---------- TUYỆT KỸ mới ---------- */
     endless_tiki: {
-      name: 'Tiki-taka Vô Tận', icon: '🎼', tags: ['playmaker'], role: 'ult', rarity: 'mythic',
-      desc: 'Sân ngả sepia, đối thủ chậm 60%; bóng tự chuyền 4 lần giữa 2 cầu thủ đội bạn (không thể cắt) rồi người cuối tung cú sút Giao Hưởng tối đa.',
+      name: 'Endless Tiki-Taka', icon: '🎼', tags: ['playmaker'], role: 'ult', rarity: 'mythic',
+      desc: 'The pitch turns sepia and opponents slow by 60%; the ball auto-passes 4 times between your 2 players (can\'t be intercepted), then the last one unleashes a max Symphony shot.',
       params: { passes: 4, gap: 0.22, slow: 0.4, slowTime: 1.8, gk: 0.25 },
     },
     meteor_strike: {
-      name: 'Cú Sút Sao Băng', icon: '🌟', tags: ['striker'], role: 'ult', rarity: 'mythic',
-      desc: 'Bật lên cao cùng bóng, 0.6s sau xoay người đá bóng cắm xuống khung với lực tối đa, đuôi lửa sao băng. Thủ môn bắt được vẫn bị hất văng.',
+      name: 'Meteor Shot', icon: '🌟', tags: ['striker'], role: 'ult', rarity: 'mythic',
+      desc: 'Leap high with the ball, then 0.6s later spin and drive it down into the goal at max power with a meteor tail. Even if the keeper saves it, they get sent flying.',
       params: { jump: 300, delay: 0.62, speed: 560, gk: 0.3 },
     },
     hundred_fists: {
-      name: 'Bách Quyền', icon: '💢', tags: ['brawler'], role: 'ult', rarity: 'mythic',
-      desc: 'Lao tới đối thủ gần nhất, tung 20 cú đấm trong 1s (giữ họ tại chỗ); cú cuối hất văng vào tường — BONK nứt toác.',
+      name: 'Hundred Fists', icon: '💢', tags: ['brawler'], role: 'ult', rarity: 'mythic',
+      desc: 'Rush the nearest opponent and throw 20 punches in 1s (pinning them in place); the last one blasts them into the wall. BONK, cracked.',
       params: { range: 160, hits: 20, gap: 0.05, knock: 560 },
     },
     meteor_drop: {
-      name: 'Thiên Thạch Giáng', icon: '☄️', tags: ['launcher'], role: 'ult', rarity: 'mythic',
-      desc: 'Nhảy vọt khỏi màn hình, 1s điều khiển tâm ngắm đỏ trên sân rồi rơi xuống tạo hố nổ 60px — hất tung mọi đối thủ, choáng 1.5s.',
+      name: 'Meteor Drop', icon: '☄️', tags: ['launcher'], role: 'ult', rarity: 'mythic',
+      desc: 'Leap off the screen, steer a red target on the pitch for 1s, then crash down in a 60px crater. Launches every opponent, 1.5s stun.',
       params: { aim: 1.0, speed: 190, radius: 60, knock: 240, launch: 260, stun: 1.5 },
     },
     clone_army: {
-      name: 'Đại Phân Thân', icon: '🎎', tags: ['trickster'], role: 'ult', rarity: 'mythic',
-      desc: '4 phân thân trong 3s. Không có bóng: vây đánh người cầm bóng — chắc chắn cướp bóng + choáng. Có bóng: toả ra dắt bóng giả, lừa hậu vệ, thủ môn −30% bắt.',
+      name: 'Clone Army', icon: '🎎', tags: ['trickster'], role: 'ult', rarity: 'mythic',
+      desc: '4 clones for 3s. Without the ball: they mob the ball carrier and always steal it + stun. With the ball: they fan out dribbling fakes, fooling defenders, keeper −30% save.',
       params: { time: 3, gkPenalty: 0.3, stun: 1.3, range: 170 },
     },
     titan: {
-      name: 'Hoá Khổng Lồ', icon: '🗿', tags: ['iron'], role: 'ult', rarity: 'mythic',
-      desc: '5s to gấp 2, miễn choáng, không thể bị cướp bóng, va phải ai là hất văng, sút cực mạnh; vẫn chuyền / rê bóng bình thường.',
+      name: 'Titan', icon: '🗿', tags: ['iron'], role: 'ult', rarity: 'mythic',
+      desc: '5s at double size: stun immune, can\'t be tackled, launches anyone you bump into, huge shot power; passing / dribbling still works normally.',
       params: { time: 5, scale: 2, knock: 360, launch: 220, stun: 1.0, shot: 1.35 },
     },
 
     /* ---------- 🎲 HỖN LOẠN (mới) ---------- */
     bomb_ball: {
-      name: 'Bóng Bom', icon: '💣', tags: ['chaos'], role: 'wild', rarity: 'legendary',
-      desc: 'Mỗi 12s bóng hoá bom (ngòi 3s, đếm ngược trên bóng): nổ hất tung + choáng mọi người quanh đó, bóng văng ngẫu nhiên. Mau đẩy bom sang đối thủ!',
+      name: 'Bomb Ball', icon: '💣', tags: ['chaos'], role: 'wild', rarity: 'legendary',
+      desc: 'Every 12s the ball turns into a bomb (3s fuse, countdown on the ball): it explodes, launching + stunning everyone nearby, the ball flies off randomly. Pass the bomb to them, fast!',
       params: { every: 12, fuse: 3, radius: 55, knock: 260, launch: 240, stun: 1.2 },
     },
 
     /* ---------- 🎲 HỖN LOẠN ---------- */
     chaos_ball: {
-      name: 'Bóng Hỗn Loạn', icon: '🎲', tags: ['chaos'], role: 'wild', rarity: 'rare',
-      desc: 'Mỗi cú sút / chuyền: bóng biến hình (dưa hấu, bóng bowling, con gà, bánh xe...) và nhận 1 hiệu ứng ngẫu nhiên: bẻ cong, tên lửa, lửa, sét, bóng giả.',
+      name: 'Chaos Ball', icon: '🎲', tags: ['chaos'], role: 'wild', rarity: 'rare',
+      desc: 'Every shot / pass: the ball transforms (watermelon, bowling ball, chicken, tire...) and gets a random effect: curve, rocket, fire, lightning, decoy.',
       params: { curve: 2.2, rocketMult: 1.3 },
     },
     warp_walls: {
-      name: 'Cổng Dịch Chuyển', icon: '🌌', tags: ['chaos'], role: 'wild', rarity: 'rare',
-      desc: 'Bóng do đội bạn đá chạm tường trên / dưới chui vào cổng xoáy tím và chui ra ở tường đối diện.',
+      name: 'Warp Walls', icon: '🌌', tags: ['chaos'], role: 'wild', rarity: 'rare',
+      desc: 'Balls your team kicks into the top / bottom wall go through a purple portal and come out of the opposite wall.',
       params: {},
     },
   },

@@ -1,0 +1,10 @@
+# /brag-slim: generated frames and intermediates (scripts, final brag.mp4 / brag.jpg stay tracked)
+brag-output*/**/work/frames/
+brag-output*/**/work/render/
+brag-output*/**/work/stills/
+brag-output*/**/work/pylib/
+brag-output*/**/work/__pycache__/
+brag-output*/**/work/*.png
+brag-output*/**/work/*.jpg
+brag-output*/**/work/*.wav
+brag-output*/**/work/*.log

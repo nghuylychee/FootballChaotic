@@ -29,7 +29,7 @@ window.SFC = window.SFC || {};
     createRoom() {
       if (this.status === 'busy') return;
       this.status = 'busy';
-      SFC.Menu.go('online', 'Đang tạo phòng...');
+      SFC.Menu.go('online', 'Creating room...');
       Net().on(this.handlers());
       Net().host().then((code) => {
         this.role = 'host';
@@ -44,7 +44,7 @@ window.SFC = window.SFC || {};
     joinRoom(code) {
       if (this.status === 'busy') return;
       this.status = 'busy';
-      SFC.Menu.setMsg('Đang kết nối tới phòng ' + code + '...');
+      SFC.Menu.setMsg('Connecting to room ' + code + '...');
       Net().on(this.handlers());
       Net().join(code).then(() => {
         this.role = 'guest';
@@ -52,7 +52,7 @@ window.SFC = window.SFC || {};
         this.lobby = { host: null, guest: null, guestIn: true, hostPf: null, guestPf: SFC.Profile.public() };
         this.status = 'lobby';
         Net().send({ t: 'hello', v: N().protocol, pf: SFC.Profile.public() });
-        SFC.Menu.go('lobby', 'Đang chờ thông tin phòng...');
+        SFC.Menu.go('lobby', 'Waiting for room info...');
       }).catch((e) => this.fail(e, 'join'));
     },
 
@@ -92,13 +92,13 @@ window.SFC = window.SFC || {};
         this.lobby.guest = null; this.lobby.guestIn = false; this.lobby.guestPf = null;
         this.status = 'lobby'; this.game = null; this.overlay = false;
         if (wasPlaying) SFC.Menu.app.toMenu('lobby');
-        SFC.Menu.go('lobby', 'Đối thủ đã rời phòng.', true);
+        SFC.Menu.go('lobby', 'Your opponent left the room.', true);
       } else {
         const code = this.code;
         Net().close();
         this.reset();
         SFC.Menu.app.toMenu('online');
-        SFC.Menu.setMsg(`Chủ phòng ${code || ''} đã đóng phòng.`, true);
+        SFC.Menu.setMsg(`Host ${code || ''} closed the room.`, true);
       }
     },
 
@@ -133,7 +133,7 @@ window.SFC = window.SFC || {};
           L.hostPf = SFC.Profile.public();
           L.guest = TEAMS().find((t) => t !== L.host);
           this.sendLobby();
-          SFC.Menu.go('lobby', 'Đối thủ đã vào phòng!');
+          SFC.Menu.go('lobby', 'Your opponent joined!');
           SFC.Audio.pick();
           break;
         case 'team':

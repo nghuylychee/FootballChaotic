@@ -87,7 +87,7 @@
 
   /* ================= KHOẢNH KHẮC ================= */
   const MOMENTS = [
-    { key: '1', name: 'Dậm Đất', sub: 'Võ Sĩ Đá · SW DC SH HS', color: '#8847ff', run() {
+    { key: '1', name: 'Ground Slam', sub: 'Kicker · SW DC SH HS', color: '#8847ff', run() {
       const p = me();
       p.airVz = 240; p.airZ = 0.5;
       fx().burst(p.x, p.y, 0, '#8a7f70', 10, 60);
@@ -101,12 +101,12 @@
         fx().decal('crack', p.x, p.y, 1.8, 4);
         fx().shake(7, 0.4);
         fx().burst(p.x, p.y, 0, '#8a7f70', 24, 140, 0.7);
-        fx().comic(p.x, p.y - 34, 'RẦM!', '#ffe14f', 1.3);
+        fx().comic(p.x, p.y - 34, 'SLAM!', '#ffe14f', 1.3);
         for (const o of opps()) if (U.dist(o, p) < R) launch(o, p, 160, 230, 1.2);
         g.sfx('hit');
       });
     } },
-    { key: '2', name: 'Tay Cao Su', sub: 'Đấu Sĩ + Tiki-taka · LB CO HS', color: '#ff8ac0', run() {
+    { key: '2', name: 'Rubber Arm', sub: 'Brawler + Tiki-taka · LB CO HS', color: '#ff8ac0', run() {
       const p = me(), o = nearest(opps(), p);
       fx().stretch(p.id, o.x, o.y, 0.45);
       g.sfx('whoosh');
@@ -121,9 +121,9 @@
         g.sfx('tackle');
       });
     } },
-    { key: '3', name: 'Đại Phân Thân', sub: 'Tuyệt kỹ Ảo Ảnh · CL CO IF', color: '#9d7bff', run() {
+    { key: '3', name: 'Clone Army', sub: 'Illusion ultimate · CL CO IF', color: '#9d7bff', run() {
       const p = me();
-      ultimate(p, 'ĐẠI PHÂN THÂN', '#9d7bff', () => {
+      ultimate(p, 'CLONE ARMY', '#9d7bff', () => {
         const o = g.ball.owner && g.ball.owner.team === 1 ? g.ball.owner : nearest(opps(), p);
         fx().burst(p.x, p.y, 6, '#d8d0e0', 24, 120, 0.7);
         fx().comic(p.x, p.y - 30, 'POOF!', '#d8d0e0');
@@ -143,14 +143,14 @@
         });
       });
     } },
-    { key: '4', name: 'Sút Lỗ Đen', sub: 'Sát Thủ · BL PL PT', color: '#9d7bff', run() {
+    { key: '4', name: 'Black Hole Shot', sub: 'Striker · BL PL PT', color: '#9d7bff', run() {
       const p = me();
       giveBall(p);
       p.facing = dir() > 0 ? 0 : Math.PI;
       Act.shoot(g, p, 1.0, 0);
       g.ball.skin = 'blackhole';
       fx().vortex(0, 0, 46, 1.4, 'ball');
-      fx().comic(p.x, p.y - 30, 'VÙÙÙ!', '#9d7bff');
+      fx().comic(p.x, p.y - 30, 'VWOOM!', '#9d7bff');
       fx().shake(3, 0.5);
       g.sfx('zap');
       let T = 1.4;
@@ -170,10 +170,10 @@
         return T <= 0 || !!b.owner;
       });
     } },
-    { key: '5', name: 'Cú Sút Sao Băng', sub: 'Tuyệt kỹ Sát Thủ · SM IF BL SH', color: '#ff6a1f', run() {
+    { key: '5', name: 'Meteor Shot', sub: 'Striker ultimate · SM IF BL SH', color: '#ff6a1f', run() {
       const p = me();
       giveBall(p);
-      ultimate(p, 'CÚ SÚT SAO BĂNG', '#ff6a1f', () => {
+      ultimate(p, 'METEOR SHOT', '#ff6a1f', () => {
         p.airVz = 300; p.airZ = 0.5;
         const b = g.ball;
         b.kick(p, 0, 0, 300); b.skin = 'fireball';
@@ -186,7 +186,7 @@
           b2.kick(p, (dx / d) * 560, (dy / d) * 560, -40);
           b2.skin = 'fireball'; b2.kind = 'shot';
           fx().shake(5);
-          fx().comic(b2.x, b2.y - b2.z - 10, 'BÙM!', '#ff6a1f', 1.2);
+          fx().comic(b2.x, b2.y - b2.z - 10, 'BOOM!', '#ff6a1f', 1.2);
           g.sfx('kick', 1);
           every(() => {
             const b3 = g.ball;
@@ -203,9 +203,9 @@
         });
       });
     } },
-    { key: '6', name: 'Tia Chớp Xuyên Sân', sub: 'Tuyệt kỹ Tốc Độ · SM CO IF TR DC', color: '#7fe7ff', run() {
+    { key: '6', name: 'Lightning Dash', sub: 'Speed ultimate · SM CO IF TR DC', color: '#7fe7ff', run() {
       const p = me();
-      fx().callout('TIA CHỚP!', '#7fe7ff', 1.0);
+      fx().callout('LIGHTNING!', '#7fe7ff', 1.0);
       fx().tint('#0a1830', 0.7, 0.45);
       g.slowMo(0.25, 0.35);
       g.sfx('zap');
@@ -231,11 +231,11 @@
         g.sfx('zap');
       });
     } },
-    { key: '7', name: 'Hoá Khổng Lồ', sub: 'Tuyệt kỹ Thép · GI SH DC', color: '#ffd23f', run() {
+    { key: '7', name: 'Titan', sub: 'Iron ultimate · GI SH DC', color: '#ffd23f', run() {
       const p = me();
-      ultimate(p, 'HOÁ KHỔNG LỒ', '#ffd23f', () => {
+      ultimate(p, 'TITAN', '#ffd23f', () => {
         p.giant(2, 5);
-        fx().comic(p.x, p.y - 50, 'KHỔNG LỒ!', '#ffd23f', 1.4);
+        fx().comic(p.x, p.y - 50, 'GIANT!', '#ffd23f', 1.4);
         fx().shake(6, 0.4);
         fx().wave(p.x, p.y, 40, '#ffd23f', 0.5, 3);
         let T = 5, stepT = 0;
@@ -253,7 +253,7 @@
         });
       });
     } },
-    { key: '8', name: 'Chưởng Sóng', sub: 'Sát Thủ · BM SH CO', color: '#7fe7ff', run() {
+    { key: '8', name: 'Energy Wave', sub: 'Striker · BM SH CO', color: '#7fe7ff', run() {
       const p = me(), dx = dir();
       p.facing = dx > 0 ? 0 : Math.PI;
       fx().projectile('orb', p.x + dx * 10, p.y, 0, 0, 0.35);
@@ -262,7 +262,7 @@
       later(0.35, () => {
         fx().beam(p.x + dx * 8, p.y - 6, dx > 0 ? 0 : Math.PI, 300, 22, '#7fe7ff', 0.7);
         fx().shake(5, 0.6);
-        fx().callout('CHƯỞNG SÓNG!', '#7fe7ff', 0.9);
+        fx().callout('WAVE BLAST!', '#7fe7ff', 0.9);
         g.sfx('kick', 1);
         if (g.ball.owner === p) Act.shoot(g, p, 1.0, 0);
         for (const o of opps()) {
@@ -271,9 +271,9 @@
         }
       });
     } },
-    { key: '9', name: 'Bách Quyền', sub: 'Tuyệt kỹ Đấu Sĩ · SM CO TR IF DC', color: '#ff3d5a', run() {
+    { key: '9', name: 'Hundred Fists', sub: 'Brawler ultimate · SM CO TR IF DC', color: '#ff3d5a', run() {
       const p = me(), o = nearest(opps(), p);
-      ultimate(p, 'BÁCH QUYỀN', '#ff3d5a', () => {
+      ultimate(p, 'HUNDRED FISTS', '#ff3d5a', () => {
         const side = p.x < o.x ? -1 : 1;
         fx().afterimage(p);
         p.x = o.x + side * 14; p.y = o.y; p.facing = side > 0 ? Math.PI : 0;
@@ -316,19 +316,19 @@
         punch();
       });
     } },
-    { key: '0', name: 'Né Hoàn Hảo', sub: 'Ảo Ảnh · SM FL CO', color: '#c9b5ff', run() {
+    { key: '0', name: 'Perfect Dodge', sub: 'Illusion · SM FL CO', color: '#c9b5ff', run() {
       const p = me();
       fx().tint('#6a3dff', 1.3, 0.28);
       g.slowMo(0.3, 1.1);
-      fx().comic(p.x, p.y - 30, 'NÉ!', '#c9b5ff', 1.2);
+      fx().comic(p.x, p.y - 30, 'DODGE!', '#c9b5ff', 1.2);
       fx().speedLines(0.6, p.x, p.y, '#c9b5ff');
       p.cd.skill = 0;
       Act.skill(g, p, 0, -1);
       g.sfx('whoosh');
     } },
-    { key: '', name: 'Thiên Thạch Giáng', sub: 'Tuyệt kỹ Võ Sĩ Đá · IF SH DC SW', color: '#ff6a1f', run() {
+    { key: '', name: 'Meteor Drop', sub: 'Kicker ultimate · IF SH DC SW', color: '#ff6a1f', run() {
       const p = me(), o = nearest(opps(), p);
-      ultimate(p, 'THIÊN THẠCH GIÁNG', '#ff6a1f', () => {
+      ultimate(p, 'METEOR DROP', '#ff6a1f', () => {
         p.airVz = 560; p.airZ = 0.5;
         fx().burst(p.x, p.y, 0, '#8a7f70', 16, 110);
         fx().wave(p.x, p.y, 24, '#ffffff', 0.4, 2);
@@ -354,7 +354,7 @@
             fx().decal('crater', p.x, p.y, 1.8, 5);
             fx().burst(p.x, p.y, 4, '#ff6a1f', 30, 190, 0.9);
             fx().burst(p.x, p.y, 2, '#6a6470', 20, 80, 1.2);
-            fx().comic(p.x, p.y - 40, 'ẦM!!', '#ff6a1f', 1.5);
+            fx().comic(p.x, p.y - 40, 'KRAKOOM!!', '#ff6a1f', 1.5);
             for (const q of opps()) if (U.dist(q, p) < R) launch(q, p, 240, 260, 1.5);
             g.sfx('hit');
             return true;
@@ -363,7 +363,7 @@
         });
       });
     } },
-    { key: '', name: 'Bóng Bom', sub: 'Hỗn Loạn · BL SW SH', color: '#ff3d5a', run() {
+    { key: '', name: 'Bomb Ball', sub: 'Chaos · BL SW SH', color: '#ff3d5a', run() {
       const b = g.ball;
       let T = 3, last = 4;
       every((dt) => {
@@ -382,7 +382,7 @@
         fx().decal('crack', x, y, 1.2, 4);
         fx().burst(x, y, 6, '#ff6a1f', 30, 180, 0.8);
         fx().burst(x, y, 4, '#6a6470', 20, 70, 1.2);
-        fx().comic(x, y - 36, 'BÙMMM!', '#ff6a1f', 1.5);
+        fx().comic(x, y - 36, 'KABOOM!', '#ff6a1f', 1.5);
         const holder = b.owner;
         if (holder) g.looseBall(holder, U.rand(-1, 1), U.rand(-1, 1), 200);
         for (const q of g.players) if (U.dist(q, { x, y }) < 55) launch(q, { x, y: y + 1 }, 260, 240, 1.2);
@@ -401,36 +401,36 @@
     ['ZM · Punch-zoom', () => fx().zoom(me().x, me().y - 6, 0.22, 0.45)],
     ['IF · Impact frame', () => { fx().O.impactCd = 0; fx().impactFrame(0.1); }],
     ['SL · Speed lines', () => fx().speedLines(0.9)],
-    ['CO · Callout', () => fx().callout('PHÁ ÂM CHƯỚNG!', '#7fe7ff')],
-    ['CO · Chữ comic', () => fx().comic(me().x, me().y - 30, U.pick(['POW!', 'BAM!', 'WHAM!', 'CLANG!', 'BOING!']), '#ffe14f', 1.2)],
+    ['CO · Callout', () => fx().callout('SONIC BOOM!', '#7fe7ff')],
+    ['CO · Comic text', () => fx().comic(me().x, me().y - 30, U.pick(['POW!', 'BAM!', 'WHAM!', 'CLANG!', 'BOING!']), '#ffe14f', 1.2)],
     ['CO · Combo HIT', () => fx().combo(me().x, me().y - 30, ++comboN)],
-    ['Cut-in', () => fx().cutIn(me().id, 'TÊN TUYỆT KỸ', '#ffe14f', 0.9)],
-    ['SW · Sóng chấn', () => fx().wave(me().x, me().y, 55, '#ffffff', 0.55, 3)],
-    ['DC · Vết nứt', () => fx().decal('crack', me().x + 20, me().y, 1.5, 5)],
-    ['DC · Hố', () => fx().decal('crater', me().x + 20, me().y, 1.6, 5)],
-    ['DC · Cháy xém', () => fx().decal('scorch', me().x + 20, me().y, 1.6, 5)],
-    ['DC · Vết trượt', () => fx().decal('skid', me().x, me().y, 1.5, 4, dir() > 0 ? 0 : Math.PI)],
-    ['DC · Nứt tường', () => fx().decal('wallcrack', me().x, g.field.y + 2, 1.5, 5)],
-    ['LB · Tay co giãn', () => { const o = nearest(opps(), me()); fx().stretch(me().id, o.x, o.y, 0.5); }],
-    ['CL · Phân thân', () => { const p = me(); fx().clone(p.id, p.x, p.y, 70, -60, 2); fx().clone(p.id, p.x, p.y, 70, 60, 2); }],
-    ['PJ · Lưỡi gió', () => fx().projectile('wind', me().x, me().y, dir() * 320, 0, 0.8)],
-    ['PJ · Cầu năng lượng', () => fx().projectile('orb', me().x, me().y, dir() * 220, 0, 1)],
-    ['BM · Luồng tia', () => fx().beam(me().x, me().y - 6, dir() > 0 ? 0 : Math.PI, 260, 20, '#7fe7ff', 0.7)],
-    ['PL · Lỗ đen', () => fx().vortex(me().x + dir() * 50, me().y - 8, 44, 2)],
-    ['Tia sét', () => { const o = nearest(opps(), me()); fx().bolt(me().x, me().y - 8, o.x, o.y - 8, '#bdf4ff', 0.5); }],
-    ['GI · Khổng lồ bật/tắt', () => { const p = me(); p.giant(p.sizeTarget > 1 ? 1 : 2, 0); }],
-    ['BL · Đổi skin bóng', () => { g.ball.skin = SKINS[skinI++ % SKINS.length]; }],
-    ['Phủ màu sepia', () => fx().tint('#704214', 1.5, 0.3)],
+    ['Cut-in', () => fx().cutIn(me().id, 'ULTIMATE NAME', '#ffe14f', 0.9)],
+    ['SW · Shockwave', () => fx().wave(me().x, me().y, 55, '#ffffff', 0.55, 3)],
+    ['DC · Crack', () => fx().decal('crack', me().x + 20, me().y, 1.5, 5)],
+    ['DC · Crater', () => fx().decal('crater', me().x + 20, me().y, 1.6, 5)],
+    ['DC · Scorch', () => fx().decal('scorch', me().x + 20, me().y, 1.6, 5)],
+    ['DC · Skid mark', () => fx().decal('skid', me().x, me().y, 1.5, 4, dir() > 0 ? 0 : Math.PI)],
+    ['DC · Wall crack', () => fx().decal('wallcrack', me().x, g.field.y + 2, 1.5, 5)],
+    ['LB · Stretch arm', () => { const o = nearest(opps(), me()); fx().stretch(me().id, o.x, o.y, 0.5); }],
+    ['CL · Clone', () => { const p = me(); fx().clone(p.id, p.x, p.y, 70, -60, 2); fx().clone(p.id, p.x, p.y, 70, 60, 2); }],
+    ['PJ · Wind blade', () => fx().projectile('wind', me().x, me().y, dir() * 320, 0, 0.8)],
+    ['PJ · Energy orb', () => fx().projectile('orb', me().x, me().y, dir() * 220, 0, 1)],
+    ['BM · Beam', () => fx().beam(me().x, me().y - 6, dir() > 0 ? 0 : Math.PI, 260, 20, '#7fe7ff', 0.7)],
+    ['PL · Black hole', () => fx().vortex(me().x + dir() * 50, me().y - 8, 44, 2)],
+    ['Lightning bolt', () => { const o = nearest(opps(), me()); fx().bolt(me().x, me().y - 8, o.x, o.y - 8, '#bdf4ff', 0.5); }],
+    ['GI · Giant on/off', () => { const p = me(); p.giant(p.sizeTarget > 1 ? 1 : 2, 0); }],
+    ['BL · Swap ball skin', () => { g.ball.skin = SKINS[skinI++ % SKINS.length]; }],
+    ['Sepia tint', () => fx().tint('#704214', 1.5, 0.3)],
   ];
 
   /* ================= UI ================= */
   function scene() {
     const el = $('scene');
     const items = [
-      [() => `AI: ${aiOn ? 'CHẠY' : 'ĐỨNG YÊN'}`, () => { aiOn = !aiOn; }],
-      [() => 'XẾP LẠI CẢNH', () => arrange()],
-      [() => `GIẢM NHÁY: ${SFC.FXSettings.reduceFlash ? 'BẬT' : 'TẮT'}`, () => { SFC.FXSettings.reduceFlash = !SFC.FXSettings.reduceFlash; SFC.FXSettings.save(); }],
-      [() => `ÂM THANH: ${SFC.Audio.muted ? 'TẮT' : 'BẬT'}`, () => SFC.Audio.toggleMute()],
+      [() => `AI: ${aiOn ? 'ON' : 'FROZEN'}`, () => { aiOn = !aiOn; }],
+      [() => 'RESET SCENE', () => arrange()],
+      [() => `REDUCE FLASH: ${SFC.FXSettings.reduceFlash ? 'ON' : 'OFF'}`, () => { SFC.FXSettings.reduceFlash = !SFC.FXSettings.reduceFlash; SFC.FXSettings.save(); }],
+      [() => `SOUND: ${SFC.Audio.muted ? 'OFF' : 'ON'}`, () => SFC.Audio.toggleMute()],
     ];
     el.innerHTML = '';
     items.forEach(([label, act]) => {
@@ -464,9 +464,9 @@
     });
     tools.innerHTML = '';
     [
-      ['ĐẦY TÀI NGUYÊN', () => { for (const p of g.teams[0].players) { p.res.momentum = g.cores.resMax(0, 'momentum'); p.res.rage = 5; p.res.guard = 2; } g.rhythm[0] = 5; }],
-      ['ĐẦY TUYỆT KỸ (X)', () => { g.ult[0] = 1; }],
-      ['BỎ HẾT CORE', () => { g.cores.owned[0].length = 0; g.cores.state[0] = {}; for (const p of g.teams[0].players) p.res = { momentum: 0, rage: 0, guard: 0 }; g.rhythm[0] = 0; coreButtons(); }],
+      ['MAX RESOURCES', () => { for (const p of g.teams[0].players) { p.res.momentum = g.cores.resMax(0, 'momentum'); p.res.rage = 5; p.res.guard = 2; } g.rhythm[0] = 5; }],
+      ['FULL ULTIMATE (X)', () => { g.ult[0] = 1; }],
+      ['CLEAR CORES', () => { g.cores.owned[0].length = 0; g.cores.state[0] = {}; for (const p of g.teams[0].players) p.res = { momentum: 0, rage: 0, guard: 0 }; g.rhythm[0] = 0; coreButtons(); }],
     ].forEach(([label, fn]) => {
       const b = document.createElement('button');
       b.className = 'btn';
