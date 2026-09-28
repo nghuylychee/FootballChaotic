@@ -9,7 +9,9 @@
     mode: 'single',     // single | online
     game: null,
     demo: null,
-    sel: { team: 0, opp: 0, diff: 1, ctrl: 0 },   // ctrl: 0 = cả đội, i > 0 = chỉ cầu thủ thứ i - 1
+    // ctrl: i > 0 = chỉ điều khiển cầu thủ thứ i - 1 (character của bạn), mặc định ĐÁ CAO.
+    // 0 = cả đội — logic vẫn còn nhưng menu không cho chọn nữa (người chơi chỉ điều khiển 1 character)
+    sel: { team: 0, opp: 0, diff: 1, ctrl: C.roles.indexOf('FWD') + 1 },
     train: { mine: 1, opp: 0 },                  // luyện tập: số người đội bạn (1 / 2) · đội đối thủ (0 / 2)
     lastOpts: null,
 

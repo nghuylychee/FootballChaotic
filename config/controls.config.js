@@ -50,7 +50,6 @@ SFC_CONFIG.controls = {
     defense: [
       ['D', 'Light attack (punch)'],
       ['A', 'Hard attack (dropkick)'],
-      ['Q', 'Switch player'],
       ['Z', 'Dash'],
     ],
     teammateHasBall: [

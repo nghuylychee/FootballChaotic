@@ -178,9 +178,12 @@ window.SFC = window.SFC || {};
     startMatch() {
       const L = this.lobby;
       if (!this.isHost || !L.guestIn || !L.guest) return;
+      const fwd = SFC_CONFIG.game.roles.indexOf('FWD');
       const opts = {
         home: L.host, away: L.guest, difficulty: N().difficulty,
         humanTeam: 0, humans: [0, 1], draftTimeLimit: N().draftTimeLimit,
+        // mỗi người chỉ điều khiển character của mình (ĐÁ CAO), không đổi người
+        solo: [fwd, fwd],
         // character + Core đã mở khoá của mỗi người (khách gửi lúc vào phòng)
         avatars: [SFC.Profile.avatar(), L.guestPf],
         // gacha Core tắt (progression.coreGacha): cả 2 người bốc được mọi Core
@@ -199,7 +202,7 @@ window.SFC = window.SFC || {};
       const o = m.opts || {};
       // trận "gương": cùng đội hình / character như host, nhưng góc nhìn đội 1
       this.game = new SFC.Game({
-        home: o.home, away: o.away, humanTeam: 1, humans: [0, 1], difficulty: N().difficulty, draftTimeLimit: o.draftTimeLimit,
+        home: o.home, away: o.away, humanTeam: 1, humans: [0, 1], difficulty: N().difficulty, draftTimeLimit: o.draftTimeLimit, solo: o.solo,
         avatars: (o.avatars || []).map((a) => SFC.Profile.sanitizePublic(a)), coreUnlocks: o.coreUnlocks,
       });
       this.game.events.length = 0;

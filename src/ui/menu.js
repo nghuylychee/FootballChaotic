@@ -106,7 +106,7 @@ window.SFC = window.SFC || {};
             { kind: 'pick', label: 'YOUR TEAM', value: TEAMS().list[o.order[s.team]].name, change: (d) => { s.team = wrap(s.team + d, o.order.length); } },
             { kind: 'pick', label: 'OPPONENT', value: opp === 'random' ? '??? RANDOM' : TEAMS().list[opp].name, change: (d) => { s.opp = wrap(s.opp + d, o.opp.length); } },
             { kind: 'pick', label: 'DIFFICULTY', value: SFC_CONFIG.game.ai.difficulty[o.diffs[s.diff]].label, change: (d) => { s.diff = wrap(s.diff + d, o.diffs.length); } },
-            { kind: 'pick', label: 'CONTROL', value: this.ctrlLabel(o.order[s.team], s.ctrl), change: (d) => { s.ctrl = wrap(s.ctrl + d, SFC_CONFIG.game.roles.length + 1); } },
+            { kind: 'pick', label: 'POSITION', value: this.ctrlLabel(o.order[s.team], s.ctrl), change: (d) => this.changeCtrl(d) },
             { kind: 'btn', label: 'START', main: true, act: () => app.startMatch() },
           ];
         }
@@ -117,7 +117,7 @@ window.SFC = window.SFC || {};
             { kind: 'pick', label: 'YOUR TEAM', value: TEAMS().list[o.order[s.team]].name, change: (d) => { s.team = wrap(s.team + d, o.order.length); } },
             { kind: 'pick', label: 'YOUR PLAYERS', value: t.mine + (t.mine === 1 ? ' PLAYER' : ' PLAYERS'), change: () => { t.mine = t.mine === 1 ? 2 : 1; } },
           ];
-          if (t.mine === 2) list.push({ kind: 'pick', label: 'CONTROL', value: this.ctrlLabel(o.order[s.team], s.ctrl), change: (d) => { s.ctrl = wrap(s.ctrl + d, SFC_CONFIG.game.roles.length + 1); } });
+          if (t.mine === 2) list.push({ kind: 'pick', label: 'POSITION', value: this.ctrlLabel(o.order[s.team], s.ctrl), change: (d) => this.changeCtrl(d) });
           list.push({ kind: 'pick', label: 'OPPONENTS', value: t.opp ? t.opp + ' PLAYERS' : 'NONE', change: () => { t.opp = t.opp ? 0 : 2; } });
           if (t.opp) {
             list.push({ kind: 'pick', label: 'OPPONENT TEAM', value: opp === 'random' ? '??? RANDOM' : TEAMS().list[opp].name, change: (d) => { s.opp = wrap(s.opp + d, o.opp.length); } });
@@ -147,7 +147,13 @@ window.SFC = window.SFC || {};
       }
     },
 
-    // CẢ ĐỘI (đổi người bằng Q) hoặc chỉ 1 cầu thủ: tên + vị trí xuất phát
+    // chỉ đổi giữa các vị trí (1..roles) — ẩn lựa chọn CẢ ĐỘI (ctrl = 0): người chơi chỉ điều khiển character của mình
+    changeCtrl(d) {
+      const s = this.app.sel, n = SFC_CONFIG.game.roles.length;
+      s.ctrl = wrap((s.ctrl || 1) - 1 + d, n) + 1;
+    },
+
+    // chỉ 1 cầu thủ: tên + vị trí xuất phát (CẢ ĐỘI: không còn chọn được trên menu)
     ctrlLabel(teamId, ctrl) {
       if (!ctrl) return 'WHOLE TEAM';
       // 1 CẦU THỦ: character của bạn đá vị trí này
