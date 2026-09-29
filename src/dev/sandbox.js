@@ -456,8 +456,8 @@
       b.innerHTML = `${c.icon} ${c.name}<small>${c.tags.map((t) => C.archetypes[t].label).join(' · ')} · ${C.roleLabels[c.role]}</small>`;
       b.onclick = () => {
         SFC.Audio.unlock();
-        if (g.cores.has(0, id)) { g.cores.owned[0].splice(g.cores.owned[0].indexOf(id), 1); delete g.cores.state[0][id]; }
-        else g.cores.add(0, id);
+        if (g.cores.has(0, id)) g.cores.remove(0, id);
+        else g.cores.add(0, id);   // Core là của từng người: sandbox thêm cho mọi cầu thủ đội vàng
         coreButtons();
       };
       el.appendChild(b);
@@ -465,8 +465,8 @@
     tools.innerHTML = '';
     [
       ['MAX RESOURCES', () => { for (const p of g.teams[0].players) { p.res.momentum = g.cores.resMax(0, 'momentum'); p.res.rage = 5; p.res.guard = 2; } g.rhythm[0] = 5; }],
-      ['FULL ULTIMATE (X)', () => { g.ult[0] = 1; }],
-      ['CLEAR CORES', () => { g.cores.owned[0].length = 0; g.cores.state[0] = {}; for (const p of g.teams[0].players) p.res = { momentum: 0, rage: 0, guard: 0 }; g.rhythm[0] = 0; coreButtons(); }],
+      ['FULL ULTIMATE (X)', () => { for (const p of g.teams[0].players) p.res.ult = 1; }],
+      ['CLEAR CORES', () => { g.cores.clearCores(0); for (const p of g.teams[0].players) p.res = { momentum: 0, rage: 0, guard: 0, ult: 0 }; g.rhythm[0] = 0; coreButtons(); }],
     ].forEach(([label, fn]) => {
       const b = document.createElement('button');
       b.className = 'btn';

@@ -22,7 +22,7 @@ window.SFC = window.SFC || {};
   // cooldown kỹ năng (thanh kỹ năng HUD của người chơi tại máy khách)
   const CD = ['light', 'hard', 'skill'];
   // tài nguyên Core của từng cầu thủ (HUD máy khách)
-  const RS = ['momentum', 'rage', 'guard'];
+  const RS = ['momentum', 'rage', 'guard', 'ult'];   // tài nguyên từng cầu thủ + năng lượng Tuyệt kỹ (Core là của từng người)
   // cờ hiệu ứng của bóng (bitmask) — lửa / sét có tác dụng gameplay, còn lại chỉ để vẽ
   const BFX = ['fire', 'thunder', 'string', 'spiral', 'laser', 'duo', 'ghost', 'meteor'];
 
@@ -94,10 +94,10 @@ window.SFC = window.SFC || {};
         sc: [g.teams[0].score, g.teams[1].score],
         ct: g.ctrl.map((p) => (p ? p.id : -1)),
         p: g.players.map((p) => PF.map((k) => pk(p[k])).concat(CD.map((k) => r2(p.cd[k])), RS.map((k) => p.res[k]))),
-        ul: g.ult.map(r2), rh: g.rhythm, ux: g.upgradeIdx,
+        rh: g.rhythm, ux: g.upgradeIdx,
         b: [r1(b.x), r1(b.y), r1(b.z), r1(b.vx), r1(b.vy), r1(b.vz), r1(b.roll), b.owner ? b.owner.id : -1,
           BFX.reduce((m, k, i) => (b.fx[k] ? m | (1 << i) : m), 0), b.skin || 0],
-        co: g.cores.owned,
+        co: g.cores.own,   // id cầu thủ -> Core của người đó
         ae: [0, 1].map((t) => (g.cores.shieldReady(t) ? 1 : 0)),
         hz: {
           f: E.fires.map((o) => [r1(o.x), r1(o.y), r2(o.t), o.max, o.r]),
@@ -119,7 +119,6 @@ window.SFC = window.SFC || {};
       g.state = s.st; g.stateT = s.sT; g.time = s.tm; g.elapsed = s.el; g.goldenT = s.gT;
       g.finalPush = !!s.fp; g.golden = !!s.gg;
       g.teams[0].score = s.sc[0]; g.teams[1].score = s.sc[1];
-      if (s.ul) g.ult = s.ul;
       if (s.rh) g.rhythm = s.rh;
       if (s.ux != null) g.upgradeIdx = s.ux;
       g.ctrl = s.ct.map((id) => g.players.find((p) => p.id === id) || null);
@@ -138,12 +137,12 @@ window.SFC = window.SFC || {};
       BFX.forEach((k, i) => { if (bb[8] & (1 << i)) b.fx[k] = {}; });
       b.skin = bb[9] || null;
 
-      // Core: chỉ thêm id mới (giữ nguyên thứ tự sở hữu)
-      for (let t = 0; t < 2; t++) {
-        const own = g.cores.owned[t];
-        for (const id of s.co[t]) if (!own.includes(id)) own.push(id);
-        g.cores.st(t, 'aegis_wall').ready = !!s.ae[t];
+      // Core của từng cầu thủ: chỉ thêm id mới (giữ nguyên thứ tự sở hữu)
+      for (const pid in s.co) {
+        const own = g.cores.own[pid] || (g.cores.own[pid] = []);
+        for (const id of s.co[pid]) if (!own.includes(id)) own.push(id);
       }
+      for (let t = 0; t < 2; t++) g.cores.st(t, 'aegis_wall').ready = !!s.ae[t];
 
       const E = g.effects, h = s.hz;
       E.fires = h.f.map(([x, y, t, max, r]) => ({ x, y, t, max, r }));

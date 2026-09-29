@@ -39,10 +39,10 @@ window.SFC = window.SFC || {};
     E.burst(player.x, player.y, 8, '#9d7bff', 12, 80, 0.45);
     E.comic(player.x, player.y - 28, 'FAKE!', '#9d7bff', 0.7, 0.6);
   }
-  // cộng tài nguyên Đà cho cầu thủ (chỉ khi đội có trường phái TỐC ĐỘ) và giữ Đà thêm hold giây
+  // cộng tài nguyên Đà cho cầu thủ (chỉ khi người đó có trường phái TỐC ĐỘ) và giữ Đà thêm hold giây
   function addMomentum(sys, pl, n, hold = 0) {
-    if (!sys.resActive(pl.team, 'momentum')) return;
-    pl.res.momentum = Math.min(sys.resMax(pl.team, 'momentum'), pl.res.momentum + n);
+    if (!sys.resActive(pl, 'momentum')) return;
+    pl.res.momentum = Math.min(sys.resMax(pl, 'momentum'), pl.res.momentum + n);
     pl.resT.idle = -hold;
   }
 
@@ -104,9 +104,9 @@ window.SFC = window.SFC || {};
       onSkillMove(sys, team, p, pl, d) {
         const g = sys.g, f = g.field, E = g.effects;
         const ox = pl.x, oy = pl.y;
-        E.clone(pl.id, ox, oy, 0, 0, p.illusion + (sys.tier(team, 'trickster') >= 2 ? 1 : 0));
+        E.clone(pl.id, ox, oy, 0, 0, p.illusion + (sys.tier(pl, 'trickster') >= 2 ? 1 : 0));
         // đang cầm bóng: đối thủ (máy) gần đó lao vào ảo ảnh
-        const st = sys.st(team, 'phantom_step');
+        const st = sys.st(pl, 'phantom_step');
         if (pl.hasBall && !(st.cd > 0)) {
           st.cd = p.lureCooldown;
           const lure = { x: ox, y: oy, alive: true };
@@ -130,7 +130,7 @@ window.SFC = window.SFC || {};
       onSprintStart(sys, team, p, pl) { this.trigger(sys, team, p, pl); },
       onSkillMove(sys, team, p, pl) { this.trigger(sys, team, p, pl); },
       trigger(sys, team, p, pl) {
-        const st = sys.st(team, 'fake_run');
+        const st = sys.st(pl, 'fake_run');
         if ((st.cd || 0) > 0 || !pl.hasBall) return;
         st.cd = p.cooldown;
         spawnDecoy(sys, team, pl, p);
@@ -147,20 +147,19 @@ window.SFC = window.SFC || {};
         sys.g.effects.comic(v.x + U.rand(-6, 6), v.y - 24, U.pick(PUNCH_WORDS), r >= 4 ? '#ff3d5a' : r >= 2 ? '#ff7a3d' : '#ffe14f', 0.7 + r * 0.08, 0.55);
       },
       onTackleWin(sys, team, p, a) {
-        if (sys.resActive(team, 'rage')) a.res.rage = Math.min(RES().rage.max, a.res.rage + p.rageOnSteal);
+        if (sys.resActive(a, 'rage')) a.res.rage = Math.min(RES().rage.max, a.res.rage + p.rageOnSteal);
       },
     },
-    // Da Thép: mỗi cầu thủ 1 Giáp, mất thì tự hồi sau regen giây
+    // Da Thép: người sở hữu có 1 Giáp, mất thì tự hồi sau regen giây
     iron_body: {
-      onAdd(sys, team) { for (const pl of sys.g.teams[team].players) pl.res.guard = Math.max(pl.res.guard, 1); },
+      onAdd(sys, team, p) { p.owner.res.guard = Math.max(p.owner.res.guard, 1); },
       update(sys, team, p, dt) {
-        for (const pl of sys.g.teams[team].players) {
-          if (pl.res.guard >= 1) { pl.resT.iron = 0; continue; }
-          if ((pl.resT.iron += dt) >= p.regen) {
-            pl.resT.iron = 0;
-            pl.res.guard = 1;
-            sys.g.effects.shield(pl.x, pl.y - 8, 10, '#c7ccd6', 0.35);
-          }
+        const pl = p.owner;
+        if (pl.res.guard >= 1) { pl.resT.iron = 0; return; }
+        if ((pl.resT.iron += dt) >= p.regen) {
+          pl.resT.iron = 0;
+          pl.res.guard = 1;
+          sys.g.effects.shield(pl.x, pl.y - 8, 10, '#c7ccd6', 0.35);
         }
       },
     },
@@ -199,16 +198,14 @@ window.SFC = window.SFC || {};
         if (!st.ready) { st.cd -= dt; if (st.cd <= 0) st.ready = true; }
       },
     },
-    // Phản Công: cướp được bóng -> cả đội +3 Đà, tăng tốc + lực sút, hào quang xanh, callout
+    // Phản Công: cướp được bóng -> +3 Đà, tăng tốc + lực sút, hào quang xanh, callout
     counter_attack: {
       onSteal(sys, team, p, pl) {
         const g = sys.g, E = g.effects;
-        sys.buffs[team].push({ speed: p.speedMult, shotPower: p.shotMult, t: p.duration });
-        for (const m of g.teams[team].players) {
-          addMomentum(sys, m, p.momentum, 2);
-          m.glow('#3ff6ff', p.duration);
-        }
-        const st = sys.st(team, 'counter_attack');
+        (sys.buffs[pl.id] || (sys.buffs[pl.id] = [])).push({ speed: p.speedMult, shotPower: p.shotMult, t: p.duration });
+        addMomentum(sys, pl, p.momentum, 2);
+        pl.glow('#3ff6ff', p.duration);
+        const st = sys.st(pl, 'counter_attack');
         if (!(st.cd > 0)) {
           st.cd = p.calloutCd;
           E.callout('COUNTER!', '#3ff6ff', 1);
@@ -220,7 +217,7 @@ window.SFC = window.SFC || {};
     // Mìn EMP: mìn + nổ điện ở systems/effects.js
     emp_trap: {
       onTackle(sys, team, p, pl) {
-        const st = sys.st(team, 'emp_trap');
+        const st = sys.st(pl, 'emp_trap');
         if ((st.cd || 0) > 0) return;
         st.cd = p.cooldown;
         sys.g.effects.mine(pl.x, pl.y, team, p, pl);
@@ -278,9 +275,9 @@ window.SFC = window.SFC || {};
     },
     // Tuyệt kỹ thí điểm: Tia Chớp Xuyên Sân
     lightning_dash: {
-      aiUse(sys, team) {
-        const b = sys.g.ball;
-        return b.owner && b.owner.team === team && b.owner.state === 'normal' ? b.owner : null;
+      aiUse(sys, team, prm) {
+        const o = prm.owner;
+        return sys.g.ball.owner === o && o.state === 'normal' ? o : null;
       },
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, f = g.field, E = g.effects;
@@ -321,15 +318,22 @@ window.SFC = window.SFC || {};
   const ARCH = () => DEF().archetypes;
   const RES = () => DEF().resources;
 
+  // x là cầu thủ (Player) hay số đội
+  const isP = (x) => !!(x && typeof x === 'object' && x.stats && x.team != null);
+
+  /* Core thuộc về TỪNG CẦU THỦ (không còn dùng chung cả đội): mỗi người có Core, Cộng hưởng, trạng thái, buff, Tuyệt kỹ riêng.
+   * Các truy vấn nhận cầu thủ (Player) hoặc số đội: số đội = hỏi chung cả đội (có ai có / mức cao nhất trong đội) —
+   * dùng cho thứ vẫn là của đội: Nhịp (TIKI-TAKA), khiên khung thành, Đại Phân Thân...
+   * Hook của Core nhận params đã nhân theo chỉ số của người sở hữu: prm.owner = cầu thủ sở hữu Core đó. */
   class CoreSystem {
     constructor(g) {
       this.g = g;
-      this.owned = [[], []];
-      this.state = [{}, {}];
-      this.buffs = [[], []];
-      this.aiUltT = [0, 0];
+      this.own = {};          // id cầu thủ -> [id Core]
+      this.state = {};        // 'p<id>' / 't<đội>' -> { id Core -> trạng thái }
+      this.buffs = {};        // id cầu thủ -> [{ key: hệ số, t }] (Phản Công...)
+      this.aiUltT = {};       // id cầu thủ -> hẹn giờ AI ra Tuyệt kỹ
       this.tasks = [];
-      this.newShown = [new Set(), new Set()];   // Core mới mở (opts.coreFresh) đã hiện ở lượt chọn -> nhãn NEW
+      this.newShown = {};     // id cầu thủ -> Set Core mới mở (opts.coreFresh) đã hiện ở lượt chọn -> nhãn NEW
       this.spCache = new Map();                  // params đã nhân theo chỉ số: 'id|người' -> params (chỉ số không đổi trong trận)
     }
     // việc chạy mỗi bước mô phỏng (chỉ lúc đang đá); fn(dt) trả true = xong; onEnd chạy khi xong / bị huỷ lúc giao bóng
@@ -339,8 +343,20 @@ window.SFC = window.SFC || {};
       for (const t of list) if (t.onEnd) t.onEnd();
     }
     def(id) { return DEF().list[id]; }
-    has(team, id) { return this.owned[team].includes(id); }
     params(id) { return (this.def(id) && this.def(id).params) || {}; }
+    // cầu thủ của x: Player -> [x], số đội -> cả đội
+    plist(x) { return isP(x) ? [x] : x >= 0 && this.g.teams[x] ? this.g.teams[x].players : []; }
+    coresOf(p) { return (p && this.own[p.id]) || []; }
+    // mọi Core của đội (gộp các cầu thủ, không trùng) — HUD / màn kết quả
+    teamCores(team) { return [...new Set(this.plist(team).flatMap((p) => this.coresOf(p)))]; }
+    has(x, id) { return this.plist(x).some((p) => this.coresOf(p).includes(id)); }
+    // cầu thủ người chơi tại máy / online đang điều khiển (chọn Core bằng tay) — null nếu đội do AI
+    humanOwner(team) {
+      const g = this.g;
+      if (team < 0 || !g.isHuman(team)) return null;
+      return (g.solo && g.solo[team]) || g.ctrl[team] || g.teams[team].players.find((p) => p.avatar) || g.teams[team].players[0] || null;
+    }
+    isHumanOwner(p) { return !!p && this.humanOwner(p.team) === p; }
 
     /* ---------- Core scale theo chỉ số (cores.config.js -> statScale, archetypes[].stat, list[].scale) ---------- */
     // người "cầm" Core của đội cho hiệu ứng cấp đội: character của người chơi; đội AI -> null (dùng trung bình đội)
@@ -365,84 +381,106 @@ window.SFC = window.SFC || {};
       for (const q of list) for (const st of stats) sum += SFC.CoreScale.ratingOf(q.stats, st);
       return sum / (list.length * stats.length);
     }
-    // params của Core id đã nhân theo chỉ số của who (cache theo trận)
+    // params của Core id đã nhân theo chỉ số của who (cache theo trận); owner = cầu thủ sở hữu (null nếu who là đội)
     sp(id, who) {
-      const key = id + '|' + (who && who.id != null ? 'p' + who.id : 't' + (typeof who === 'number' ? who : 'x'));
+      const key = id + '|' + (isP(who) ? 'p' + who.id : 't' + (typeof who === 'number' ? who : 'x'));
       let out = this.spCache.get(key);
       if (!out) {
         const r = this.rating(id, who);
         out = SFC.CoreScale.apply(id, this.params(id), r);
+        if (out === this.params(id)) out = Object.assign({}, out);
+        Object.defineProperty(out, 'owner', { value: isP(who) ? who : null, enumerable: false });
         this.spCache.set(key, out);
       }
       return out;
     }
-    st(team, id) { return this.state[team][id] || (this.state[team][id] = {}); }
+    // trạng thái riêng của Core: theo cầu thủ (Player) hoặc theo đội (số đội — khiên khung thành, Đại Phân Thân...)
+    st(x, id) {
+      const k = isP(x) ? 'p' + x.id : 't' + x;
+      const s = this.state[k] || (this.state[k] = {});
+      return s[id] || (s[id] = {});
+    }
     tagsOf(id) { const d = this.def(id); return (d && d.tags) || []; }
 
-    add(team, id) {
-      if (!this.def(id) || this.has(team, id)) return;
-      this.owned[team].push(id);
+    // thêm Core cho cầu thủ p (số đội: cho mọi cầu thủ trong đội — ảnh xem trước / sandbox)
+    add(p, id) {
+      if (!isP(p)) { for (const q of this.plist(p)) this.add(q, id); return; }
+      if (!this.def(id) || this.coresOf(p).includes(id)) return;
+      (this.own[p.id] || (this.own[p.id] = [])).push(id);
       const b = Behaviors[id];
-      if (b && b.onAdd) b.onAdd(this, team, this.sp(id, team));
+      if (b && b.onAdd) b.onAdd(this, p.team, this.sp(id, p));
     }
 
-    /* ---------- trường phái / Cộng hưởng ---------- */
-    tagCount(team, tag) {
-      if (team < 0) return 0;
-      let n = 0;
-      for (const id of this.owned[team]) if (this.tagsOf(id).includes(tag)) n++;
-      return n;
+    // bỏ Core (sandbox): x = cầu thủ hoặc số đội
+    remove(x, id) {
+      for (const p of this.plist(x)) {
+        const l = this.own[p.id];
+        if (l && l.includes(id)) { l.splice(l.indexOf(id), 1); delete this.st(p, id).cd; }
+      }
+    }
+    clearCores(x) { for (const p of this.plist(x)) { this.own[p.id] = []; delete this.state['p' + p.id]; } }
+
+    /* ---------- trường phái / Cộng hưởng (theo từng cầu thủ; số đội = người cao nhất đội) ---------- */
+    tagCount(x, tag) {
+      let best = 0;
+      for (const p of this.plist(x)) {
+        let n = 0;
+        for (const id of this.coresOf(p)) if (this.tagsOf(id).includes(tag)) n++;
+        if (n > best) best = n;
+      }
+      return best;
     }
     // bậc Cộng hưởng đang có: 0 (chưa có) · 2 · 3 · 4
-    tier(team, tag) {
+    tier(x, tag) {
       if (ARCH()[tag] && ARCH()[tag].noSet) return 0;
-      const n = this.tagCount(team, tag);
+      const n = this.tagCount(x, tag);
       return n >= 4 ? 4 : n >= 3 ? 3 : n >= 2 ? 2 : 0;
     }
-    // danh sách Cộng hưởng đang kích hoạt: [{ tag, count, tier }]
-    traits(team) {
+    // Cộng hưởng của 1 cầu thủ: [{ tag, count, tier }]
+    traits(x) {
       return Object.keys(ARCH()).filter((t) => !ARCH()[t].noSet)
-        .map((tag) => ({ tag, count: this.tagCount(team, tag), tier: this.tier(team, tag) }))
-        .filter((x) => x.count > 0)
+        .map((tag) => ({ tag, count: this.tagCount(x, tag), tier: this.tier(x, tag) }))
+        .filter((c) => c.count > 0)
         .sort((a, b) => b.count - a.count);
     }
-    // trường phái đạt bậc 4 (đổi hình thái cả đội)
-    formOf(team) { const t = this.traits(team).find((x) => x.tier >= 4); return t ? t.tag : null; }
-    // tài nguyên chạy khi đội có Core của trường phái sinh ra nó
-    resActive(team, res) {
-      return Object.keys(ARCH()).some((tag) => ARCH()[tag].resource === res && this.tagCount(team, tag) > 0);
+    // trường phái đạt bậc 4 (đổi hình thái của cầu thủ đó)
+    formOf(x) { const t = this.traits(x).find((c) => c.tier >= 4); return t ? t.tag : null; }
+    // tài nguyên chạy khi cầu thủ (hoặc có người trong đội, nếu x là số đội) có Core của trường phái sinh ra nó
+    resActive(x, res) {
+      return Object.keys(ARCH()).some((tag) => ARCH()[tag].resource === res && this.tagCount(x, tag) > 0);
     }
-    resMax(team, res) {
+    resMax(x, res) {
       const m = RES()[res].max;
-      return res === 'momentum' && this.tier(team, 'runner') >= 2 ? m + 1 : m;
+      return res === 'momentum' && this.tier(x, 'runner') >= 2 ? m + 1 : m;
     }
 
     /* ---------- hệ số ---------- */
-    // who (Player, tuỳ chọn): phần thưởng của mods được nhân theo chỉ số người đó (không có -> người cầm Core của đội)
-    mod(team, key, who) {
-      if (team < 0) return 1;
+    // mods của Core người đó (phần thưởng nhân theo chỉ số) x buff của Core (Phản Công...). mod(p, key) hoặc mod(đội, key, p)
+    mod(a, key, b) {
+      const p = isP(a) ? a : isP(b) ? b : null;
+      if (!p || p.team < 0) return 1;
       let m = 1;
-      for (const id of this.owned[team]) {
+      for (const id of this.coresOf(p)) {
         const mods = this.def(id).mods;
-        if (mods && mods[key] != null) m *= SFC.CoreScale.scaleMod(id, key, mods[key], () => this.rating(id, who || team));
+        if (mods && mods[key] != null) m *= SFC.CoreScale.scaleMod(id, key, mods[key], () => this.rating(id, p));
       }
-      for (const b of this.buffs[team]) if (b[key]) m *= b[key];
+      for (const bf of this.buffs[p.id] || []) if (bf[key]) m *= bf[key];
       return m;
     }
 
-    // hệ số theo cầu thủ = mods của đội x bonus động (tài nguyên đang có + Cộng hưởng)
+    // hệ số theo cầu thủ = mods của người đó x bonus động (tài nguyên đang có + Cộng hưởng của người đó)
     pmod(p, key) {
       const t = p.team;
-      let m = this.mod(t, key, p);
+      let m = this.mod(p, key);
       if (t < 0) return m;
-      const R = RES(), mo = p.res.momentum, runner4 = this.tier(t, 'runner') >= 4;
+      const R = RES(), mo = p.res.momentum, runner4 = this.tier(p, 'runner') >= 4;
       switch (key) {
         case 'speed':
           m *= 1 + mo * R.momentum.speedPer + p.res.rage * R.rage.speedPer;
-          if (p.hasBall && p.res.guard > 0 && this.has(t, 'bulldozer')) m *= this.params('bulldozer').slow;   // Xe Ủi: nặng nề
+          if (p.hasBall && p.res.guard > 0 && this.has(p, 'bulldozer')) m *= this.params('bulldozer').slow;   // Xe Ủi: nặng nề
           break;
         case 'shotPower':
-          if (this.tier(t, 'striker') >= 2) m *= 1.15;
+          if (this.tier(p, 'striker') >= 2) m *= 1.15;
           if (p.titanT > 0) m *= this.sp('titan', p).shot;
           if (runner4) m *= 1 + mo * 0.01;
           break;
@@ -451,63 +489,66 @@ window.SFC = window.SFC || {};
           if (runner4) m *= 1 + mo * 0.01;
           break;
         case 'tackleChance': m *= 1 + p.res.rage * R.rage.stealPer; break;
-        case 'launch': if (this.tier(t, 'launcher') >= 2) m *= 1.25; break;
+        case 'launch': if (this.tier(p, 'launcher') >= 2) m *= 1.25; break;
         case 'hardCooldown':
-          if (this.tier(t, 'launcher') >= 2) m *= 0.85;
-          if (this.tier(t, 'launcher') >= 4) m *= 0.6;
+          if (this.tier(p, 'launcher') >= 2) m *= 0.85;
+          if (this.tier(p, 'launcher') >= 4) m *= 0.6;
           break;
-        case 'lightStun': if (this.tier(t, 'brawler') >= 4) m *= 1.5; break;
-        case 'keeperSave': if (this.tier(t, 'iron') >= 4) m *= 1.2; break;
+        case 'lightStun': if (this.tier(p, 'brawler') >= 4) m *= 1.5; break;
+        case 'keeperSave': if (this.tier(p, 'iron') >= 4) m *= 1.2; break;
       }
       return m;
     }
 
     // ngưỡng "Sút tụ lực" (giữ bao nhiêu thanh lực)
-    chargedThreshold(team) { return this.tier(team, 'striker') >= 3 ? 0.4 : DEF().chargedShot; }
+    chargedThreshold(p) { return this.tier(p, 'striker') >= 3 ? 0.4 : DEF().chargedShot; }
     // hệ số tốn thể lực khi chạy nước rút (TỐC ĐỘ 3 khi Đà tối đa: -25%)
-    sprintDrain(p) { return p.team >= 0 && this.tier(p.team, 'runner') >= 3 && p.res.momentum >= this.resMax(p.team, 'momentum') ? 0.75 : 1; }
-    // TIKI-TAKA 4: đủ 5 Nhịp thì đường chuyền không thể bị cắt
-    passShielded(team) { return team >= 0 && this.tier(team, 'playmaker') >= 4 && this.g.rhythm[team] >= RES().rhythm.max; }
+    sprintDrain(p) { return p.team >= 0 && this.tier(p, 'runner') >= 3 && p.res.momentum >= this.resMax(p, 'momentum') ? 0.75 : 1; }
+    // TIKI-TAKA 4 (của người chuyền): đủ 5 Nhịp thì đường chuyền không thể bị cắt
+    passShielded(x) {
+      const team = isP(x) ? x.team : x;
+      return team >= 0 && this.tier(x, 'playmaker') >= 4 && this.g.rhythm[team] >= RES().rhythm.max;
+    }
 
     /* ---------- AI dùng Core (systems/ai.js) ---------- */
-    // mức "giữ lực" cần để kích hoạt Core sút của đội (Hoả Cầu / Lôi Cước / Chưởng Sóng / Lỗ Đen...), 0 = không có
-    aiShotCharge(team) {
+    // mức "giữ lực" cần để kích hoạt Core sút của cầu thủ (Hoả Cầu / Lôi Cước / Chưởng Sóng / Lỗ Đen...), 0 = không có
+    aiShotCharge(p) {
       let c = 0;
-      if (this.has(team, 'fire_shot') || this.has(team, 'one_two')) c = Math.max(c, this.chargedThreshold(team));
-      if (this.has(team, 'thunder_kick')) c = Math.max(c, this.params('thunder_kick').minCharge);
-      for (const id of ['energy_wave', 'black_hole']) if (this.has(team, id)) c = Math.max(c, this.params(id).minCharge);
+      if (this.has(p, 'fire_shot') || this.has(p, 'one_two')) c = Math.max(c, this.chargedThreshold(p));
+      if (this.has(p, 'thunder_kick')) c = Math.max(c, this.params('thunder_kick').minCharge);
+      for (const id of ['energy_wave', 'black_hole']) if (this.has(p, id)) c = Math.max(c, this.params(id).minCharge);
       return c ? Math.min(1, c + 0.03) : 0;
     }
     // có Core VÕ SĨ ĐÁ -> ra đòn Hard nhiều hơn; ẢO ẢNH -> lướt Z nhiều hơn
-    aiHardMult(team) { return 1 + this.tagCount(team, 'launcher') * 0.8; }
-    aiDodgeMult(team) { return 1 + this.tagCount(team, 'trickster') * 0.5; }
+    aiHardMult(p) { return 1 + this.tagCount(p, 'launcher') * 0.8; }
+    aiDodgeMult(p) { return 1 + this.tagCount(p, 'trickster') * 0.5; }
 
     /* ---------- truy vấn cho actions / match (Core Giai đoạn 3) ---------- */
     // tầm với của cú đấm (Tay Cao Su: vươn xa)
-    lightReach(p) { return this.has(p.team, 'rubber_arm') ? this.sp('rubber_arm', p).reach : 0; }
+    lightReach(p) { return this.has(p, 'rubber_arm') ? this.sp('rubber_arm', p).reach : 0; }
     // Một-Hai: sút ngay sau khi nhận đường chuyền = sút tụ lực tối đa
     volleyCharge(p) {
-      if (!this.has(p.team, 'one_two') || !(p.recvT >= 0)) return 0;
+      if (!this.has(p, 'one_two') || !(p.recvT >= 0)) return 0;
       return this.g.time - p.recvT <= this.sp('one_two', p).window ? 1 : 0;
     }
     // không thể bị cướp bóng: Xe Ủi (khi còn Giáp — đòn đánh kế đó vẫn tiêu Giáp như thường), Hoá Khổng Lồ
     unstealable(o) {
-      return o.titanT > 0 || (o.team >= 0 && this.has(o.team, 'bulldozer') && o.res.guard > 0);
+      return o.titanT > 0 || (o.team >= 0 && this.has(o, 'bulldozer') && o.res.guard > 0);
     }
     // Nắm Đấm Khổng Lồ: đủ Nộ thì cú đấm kế tiếp thành nắm đấm khổng lồ (tiêu hết Nộ)
     bigPunch(p) {
-      if (!this.has(p.team, 'giant_fist') || p.res.rage < RES().rage.max) return false;
+      if (!this.has(p, 'giant_fist') || p.res.rage < RES().rage.max) return false;
       p.res.rage = 0;
       return true;
     }
     // Long Quyền: đủ Nộ -> cú móc hàm hất tung (tiêu hết Nộ)
     uppercut(p) {
-      if (!this.has(p.team, 'uppercut') || p.res.rage < RES().rage.max) return false;
+      if (!this.has(p, 'uppercut') || p.res.rage < RES().rage.max) return false;
       p.res.rage = 0;
       return true;
     }
     // Nắm Đấm Sắt: có Giáp -> người cầm bóng không trụ được
-    ironFist(p) { return this.has(p.team, 'iron_fist') && p.res.guard > 0; }
+    ironFist(p) { return this.has(p, 'iron_fist') && p.res.guard > 0; }
     // Dậm Đất / Thiên Thạch Giáng: tiếp đất sau cú nhảy
     slamLand(p) {
       const b = Behaviors[p.slamKind === 'meteor' ? 'meteor_drop' : 'ground_slam'];
@@ -532,25 +573,33 @@ window.SFC = window.SFC || {};
     }
     // hệ số thời gian bị choáng (Nắm Đấm Sắt: mỗi Nộ -8%)
     stunTaken(p) {
-      if (p.team < 0 || !this.has(p.team, 'iron_fist')) return 1;
+      if (p.team < 0 || !this.has(p, 'iron_fist')) return 1;
       return Math.max(0.5, 1 - p.res.rage * this.sp('iron_fist', p).stunPerRage);
     }
     // trừ tỉ lệ bắt bóng của thủ môn theo cú sút (Giao Hưởng, Bóng Ma, Sao Băng, Đại Phân Thân...)
     keeperPenalty(ball) {
       let k = ball.gkMod || 0;
       const t = ball.lastKickTeam;
-      if (t >= 0 && this.st(t, 'clone_army').t > this.g.time) k += this.sp('clone_army', t).gkPenalty;
+      if (t >= 0 && this.st(t, 'clone_army').t > this.g.time) k += this.st(t, 'clone_army').gk || 0;
       return k;
     }
 
+    // gọi hook của Core. Tham số đầu là cầu thủ cùng đội (người ra chiêu / người bị đánh) -> chỉ Core của người đó;
+    // còn lại (giao bóng, bóng chạm vạch / tường...) -> Core của mọi cầu thủ trong đội
     dispatch(team, hook, ...args) {
       if (team < 0) return false;
+      const first = args[0];
+      const owners = isP(first) && first.team === team ? [first] : this.g.teams[team].players;
       let res = false;
-      for (const id of this.owned[team]) {
+      for (const o of owners) if (this.dispatchFor(o, hook, ...args)) res = true;
+      return res;
+    }
+    // gọi hook trên Core của đúng 1 cầu thủ
+    dispatchFor(owner, hook, ...args) {
+      let res = false;
+      for (const id of this.coresOf(owner)) {
         const b = Behaviors[id];
-        // tham số đầu là cầu thủ cùng đội (người ra chiêu / người bị đánh) -> nhân theo chỉ số người đó; còn lại -> người cầm Core của đội
-        const who = args[0] && args[0].stats && args[0].team === team ? args[0] : team;
-        if (b && b[hook] && b[hook].call(b, this, team, this.sp(id, who), ...args)) res = true;
+        if (b && b[hook] && b[hook].call(b, this, owner.team, this.sp(id, owner), ...args)) res = true;
       }
       return res;
     }
@@ -575,22 +624,27 @@ window.SFC = window.SFC || {};
       return this.dispatch(victim.team, 'onHit', victim, opts);
     }
     goalLine(ball, defTeam) { return this.dispatch(defTeam, 'onGoalLine', ball); }
-    wallHit(ball, side) { return ball.lastKickTeam >= 0 && this.dispatch(ball.lastKickTeam, 'onWallHit', ball, side); }
+    wallHit(ball, side) {
+      if (ball.lastKickTeam < 0) return false;
+      const k = ball.lastTouch && ball.lastTouch.team === ball.lastKickTeam ? ball.lastTouch : null;   // Core của người vừa đá
+      return k ? this.dispatchFor(k, 'onWallHit', ball, side) : this.dispatch(ball.lastKickTeam, 'onWallHit', ball, side);
+    }
     shieldReady(team) { return this.has(team, 'aegis_wall') && !!this.st(team, 'aegis_wall').ready; }
 
     /* ---------- sự kiện từ gameplay (match / actions / player gọi vào) ---------- */
-    // đường chuyền tới chân đồng đội -> Nhịp
+    // đường chuyền tới chân đồng đội -> Nhịp của đội (người chuyền hoặc người nhận có TIKI-TAKA); hook chạy trên Core của NGƯỜI CHUYỀN
     passReceived(receiver, passer) {
       const t = receiver.team, g = this.g;
       receiver.recvT = g.time;
-      if (this.resActive(t, 'rhythm')) {
-        const gain = 1 + (this.tier(t, 'playmaker') >= 2 ? 1 : 0);
+      const who = [receiver].concat(passer ? [passer] : []);
+      if (who.some((p) => this.resActive(p, 'rhythm'))) {
+        const gain = 1 + (who.some((p) => this.tier(p, 'playmaker') >= 2) ? 1 : 0);
         g.rhythm[t] = Math.min(RES().rhythm.max, g.rhythm[t] + gain);
         g.rhythmT[t] = 0;
       }
-      this.dispatch(t, 'onPassReceived', receiver, passer);
+      if (passer) this.dispatchFor(passer, 'onPassReceived', receiver, passer);
     }
-    // đội mất quyền kiểm soát bóng -> mất Nhịp (TIKI-TAKA 3: 1 lần được giữ, hồi 10s)
+    // đội mất quyền kiểm soát bóng -> mất Nhịp (TIKI-TAKA 3 của ai đó trong đội: 1 lần được giữ, hồi 10s)
     possessionLost(team) {
       const g = this.g;
       if (!g.rhythm[team]) return;
@@ -599,31 +653,30 @@ window.SFC = window.SFC || {};
       g.rhythm[team] = Math.max(0, g.rhythm[team] - RES().rhythm.turnoverLoss);
     }
     lightHit(attacker, victim) {
-      const t = attacker.team;
-      if (this.resActive(t, 'rage')) {
+      if (this.resActive(attacker, 'rage')) {
         const max = RES().rage.max;
         const before = attacker.res.rage;
         attacker.res.rage = Math.min(max, attacker.res.rage + 1);
         attacker.resT.rage = 0;
         // ĐẤU SĨ 3: chạm 5 Nộ -> đấm không hồi chiêu trong 2s
-        if (before < max && attacker.res.rage >= max && this.tier(t, 'brawler') >= 3) {
+        if (before < max && attacker.res.rage >= max && this.tier(attacker, 'brawler') >= 3) {
           attacker.resT.frenzy = 2;
           this.g.effects.comic(attacker.x, attacker.y - 30, 'RAGE!', '#ff3d5a', 1.1);
         }
       }
       // ĐẤU SĨ 4: đấm trúng hồi thể lực
-      if (this.tier(t, 'brawler') >= 4) attacker.stamina = Math.min(SFC_CONFIG.game.player.staminaMax, attacker.stamina + 5);
+      if (this.tier(attacker, 'brawler') >= 4) attacker.stamina = Math.min(SFC_CONFIG.game.player.staminaMax, attacker.stamina + 5);
       // năng lượng Tuyệt kỹ từ đấm trúng: tối đa 1 lần mỗi lightHitCooldown giây (Bão Đấm / Tâng Người đánh nhiều nhịp không nạp dồn)
-      const ul = this.st(t, '_ultLight'), U2 = DEF().ultimate;
-      if (!(ul.cd > 0)) { ul.cd = U2.lightHitCooldown || 0; this.gainUlt(t, U2.gainLightHit || 0); }
-      this.dispatch(t, 'onLightHit', attacker, victim);
+      const ul = this.st(attacker, '_ultLight'), U2 = DEF().ultimate;
+      if (!(ul.cd > 0)) { ul.cd = U2.lightHitCooldown || 0; this.gainUlt(attacker, U2.gainLightHit || 0); }
+      this.dispatch(attacker.team, 'onLightHit', attacker, victim);
     }
     hardHit(attacker, victim) { this.dispatch(attacker.team, 'onHardHit', attacker, victim); }
     // bị hất văng vào tường: attacker = người gây ra (có thể null)
     wallBonk(victim, attacker) {
       const t = attacker ? attacker.team : 1 - victim.team;
-      // VÕ SĨ ĐÁ 3: choáng lan ra đồng đội của nạn nhân ở gần
-      if (this.tier(t, 'launcher') >= 3) {
+      // VÕ SĨ ĐÁ 3 (của người hất): choáng lan ra đồng đội của nạn nhân ở gần
+      if (attacker && this.tier(attacker, 'launcher') >= 3) {
         for (const o of this.g.teams[victim.team].players) {
           if (o === victim || Math.hypot(o.x - victim.x, o.y - victim.y) > 30) continue;
           o.hit({ stun: 0.6, kbx: 0, kby: 0, source: attacker, type: 'bonk' });
@@ -634,67 +687,94 @@ window.SFC = window.SFC || {};
     }
     // Z xuyên qua đòn đánh
     dodge(p) {
-      if (this.tier(p.team, 'trickster') >= 3) p.cd.skill = 0; // ẢO ẢNH 3: né xong hồi Z ngay
+      if (this.tier(p, 'trickster') >= 3) p.cd.skill = 0; // ẢO ẢNH 3: né xong hồi Z ngay
       this.dispatch(p.team, 'onDodge', p);
     }
     chargedShot(p, ball, held) {
       // SÁT THỦ 2: sút tụ lực khó bắt hơn
-      if (this.tier(p.team, 'striker') >= 2) ball.gkMod += 0.12;
+      if (this.tier(p, 'striker') >= 2) ball.gkMod += 0.12;
       this.dispatch(p.team, 'onChargedShot', p, ball, held);
     }
-    // SÁT THỦ 4: sút trúng khung (vào lưới / bị cứu) -> hồi chiêu cả đội giảm 30%
+    // SÁT THỦ 4: sút trúng khung (vào lưới / bị cứu) -> hồi chiêu của người có SÁT THỦ 4 giảm 30%
     shotOnTarget(team) {
-      if (team < 0 || this.tier(team, 'striker') < 4) return;
-      for (const p of this.g.teams[team].players) { p.cd.light *= 0.7; p.cd.hard *= 0.7; p.cd.skill *= 0.7; }
+      if (team < 0) return;
+      for (const p of this.g.teams[team].players) {
+        if (this.tier(p, 'striker') < 4) continue;
+        p.cd.light *= 0.7; p.cd.hard *= 0.7; p.cd.skill *= 0.7;
+      }
     }
     steal(p) {
-      // năng lượng Tuyệt kỹ từ cướp bóng: tối đa 1 lần mỗi stealCooldown giây (mỗi đội)
-      const st = this.st(p.team, '_ultSteal'), U2 = DEF().ultimate;
+      // năng lượng Tuyệt kỹ từ cướp bóng: tối đa 1 lần mỗi stealCooldown giây (mỗi người)
+      const st = this.st(p, '_ultSteal'), U2 = DEF().ultimate;
       if (!(st.cd > 0)) {
         st.cd = U2.stealCooldown || 0;
-        // chữ "+ULT" trên đầu người cướp được bóng (năng lượng Tuyệt kỹ của đội vừa tăng)
-        if (this.ultOf(p.team) && this.g.ult[p.team] < 1 && !(this.st(p.team, '_ultLock').cd > 0)) this.g.effects.text(p.x, p.y - 34, '+ULT', '#ffd23f');
-        this.gainUlt(p.team, U2.gainSteal);
+        // chữ "+ULT" trên đầu người cướp được bóng (năng lượng Tuyệt kỹ của người đó vừa tăng)
+        if (this.ultOf(p) && this.ultE(p) < 1 && !(this.st(p, '_ultLock').cd > 0)) this.g.effects.text(p.x, p.y - 34, '+ULT', '#ffd23f');
+        this.gainUlt(p, U2.gainSteal);
       }
       this.dispatch(p.team, 'onSteal', p);
     }
     goalScored(team, scorer) {
-      this.gainUlt(team, DEF().ultimate.gainGoal);
-      this.gainUlt(1 - team, DEF().ultimate.gainConceded || 0);   // đội bị thủng lưới cũng được nạp (gỡ lại bằng Tuyệt kỹ)
+      const U2 = DEF().ultimate;
+      for (const p of this.g.teams[team].players) this.gainUlt(p, U2.gainGoal);
+      for (const p of this.g.teams[1 - team].players) this.gainUlt(p, U2.gainConceded || 0);   // đội bị thủng lưới cũng được nạp
       this.dispatch(team, 'onGoalScored', scorer);
     }
     kickoff() {
       this.endTasks();
       for (let t = 0; t < 2; t++) {
-        // THÉP 2: +1 Giáp mỗi lần giao bóng
-        if (this.tier(t, 'iron') >= 2) for (const p of this.g.teams[t].players) p.res.guard = Math.min(RES().guard.max, p.res.guard + 1);
+        // THÉP 2: +1 Giáp mỗi lần giao bóng (người có Cộng hưởng)
+        for (const p of this.g.teams[t].players) if (this.tier(p, 'iron') >= 2) p.res.guard = Math.min(RES().guard.max, p.res.guard + 1);
         this.dispatch(t, 'onKickoff');
       }
     }
 
-    /* ---------- Tuyệt kỹ ---------- */
-    ultOf(team) { return team >= 0 ? this.owned[team].find((id) => this.def(id).role === 'ult') || null : null; }
-    // năng lượng Tuyệt kỹ chỉ tích khi đội đã có Tuyệt kỹ
-    gainUlt(team, amt) {
-      if (team < 0 || !this.ultOf(team) || this.st(team, '_ultLock').cd > 0) return;   // dùng xong: khoá nạp ultimate.lockout giây
-      this.g.ult[team] = Math.min(1, this.g.ult[team] + amt);
+    /* ---------- Tuyệt kỹ (mỗi cầu thủ 1 Tuyệt kỹ, năng lượng riêng: p.res.ult 0..1) ---------- */
+    // Tuyệt kỹ của cầu thủ; số đội -> Tuyệt kỹ của người điều khiển / người đầu tiên có (HUD)
+    ultOf(x) {
+      for (const p of isP(x) ? [x] : this.ultOrder(x)) {
+        const id = this.coresOf(p).find((c) => this.def(c).role === 'ult');
+        if (id) return id;
+      }
+      return null;
     }
-    ultReady(team) { return !!this.ultOf(team) && this.g.ult[team] >= 1; }
+    ultOrder(team) {
+      const h = this.humanOwner(team), list = this.plist(team);
+      return h ? [h].concat(list.filter((p) => p !== h)) : list;
+    }
+    ultE(p) { return (p && p.res.ult) || 0; }
+    // năng lượng Tuyệt kỹ hiển thị cho đội (HUD): người điều khiển nếu có Tuyệt kỹ, không thì người có năng lượng cao nhất
+    teamUlt(team) {
+      let v = 0;
+      for (const p of this.ultOrder(team)) {
+        if (!this.ultOf(p)) continue;
+        if (this.isHumanOwner(p)) return this.ultE(p);
+        v = Math.max(v, this.ultE(p));
+      }
+      return v;
+    }
+    // năng lượng Tuyệt kỹ chỉ tích khi cầu thủ đã có Tuyệt kỹ
+    gainUlt(p, amt) {
+      if (!isP(p) || !this.ultOf(p) || this.st(p, '_ultLock').cd > 0) return;   // dùng xong: khoá nạp ultimate.lockout giây
+      p.res.ult = Math.min(1, this.ultE(p) + amt);
+    }
+    ultReady(p) { return isP(p) && !!this.ultOf(p) && this.ultE(p) >= 1; }
 
-    // ra Tuyệt kỹ: cut-in (dừng hình) rồi mới thực hiện
-    activateUltimate(team, p) {
-      const g = this.g, id = this.ultOf(team);
-      if (!id || g.ult[team] < 1 || g.state !== 'play' || !p || p.state !== 'normal' || p.airZ > 0) return false;
-      const def = this.def(id), U2 = DEF().ultimate;
+    // ra Tuyệt kỹ: cut-in (dừng hình) rồi mới thực hiện. activateUltimate(p) hoặc activateUltimate(đội, p)
+    activateUltimate(a, b) {
+      const p = isP(a) ? a : b;
+      const g = this.g, id = p && this.ultOf(p);
+      if (!id || this.ultE(p) < 1 || g.state !== 'play' || p.state !== 'normal' || p.airZ > 0) return false;
+      const team = p.team, def = this.def(id), U2 = DEF().ultimate;
       const color = ARCH()[def.tags[0]] ? ARCH()[def.tags[0]].color : '#ffe14f';
-      g.ult[team] = 0;
-      this.st(team, '_ultLock').cd = U2.lockout || 0;
+      p.res.ult = 0;
+      this.st(p, '_ultLock').cd = U2.lockout || 0;
       g.effects.cutIn(p.id, def.name.toUpperCase(), color, U2.cutIn);
       g.hitStop(U2.cutIn);
       g.sfx('upgrade');
       g.later(U2.cutIn, () => {
-        const b = Behaviors[id];
-        if (b && b.onUltimate && g.state === 'play') b.onUltimate(this, team, this.sp(id, p), p);
+        const bh = Behaviors[id];
+        if (bh && bh.onUltimate && g.state === 'play') bh.onUltimate(this, team, this.sp(id, p), p);
       });
       g.emit('ultimate', { team, id, player: p.name });
       return true;
@@ -708,37 +788,37 @@ window.SFC = window.SFC || {};
           if (t.fn(dt)) { this.tasks.splice(this.tasks.indexOf(t), 1); if (t.onEnd) t.onEnd(); }
         }
       }
+      for (const k in this.state) {
+        const s = this.state[k];
+        for (const id in s) if (s[id].cd > 0 && id !== 'aegis_wall') s[id].cd -= dt;
+      }
       for (let t = 0; t < 2; t++) {
-        for (const id in this.state[t]) {
-          const s = this.state[t][id];
-          if (s.cd > 0 && id !== 'aegis_wall') s.cd -= dt;
-        }
-        for (const id of this.owned[t]) {
-          const b = Behaviors[id];
-          if (b && b.update) b.update(this, t, this.sp(id, t), dt);
-        }
-        if (this.buffs[t].length) {
-          this.buffs[t].forEach((b) => (b.t -= dt));
-          this.buffs[t] = this.buffs[t].filter((b) => b.t > 0);
+        for (const p of g.teams[t].players) {
+          for (const id of this.coresOf(p)) {
+            const b = Behaviors[id];
+            if (b && b.update) b.update(this, t, this.sp(id, p), dt);
+          }
+          const bf = this.buffs[p.id];
+          if (bf && bf.length) {
+            bf.forEach((x) => (x.t -= dt));
+            this.buffs[p.id] = bf.filter((x) => x.t > 0);
+          }
+          this.aiUltimate(p, dt);
         }
         this.updateResources(t, dt);
         // Nhịp giảm dần khi lâu không chuyền
         // quá grace giây không chuyền -> mỗi decayEvery giây mất 1
         if (g.rhythm[t] > 0 && (g.rhythmT[t] += dt) >= R.rhythm.grace + R.rhythm.decayEvery) { g.rhythm[t]--; g.rhythmT[t] = R.rhythm.grace; }
-        this.aiUltimate(t, dt);
       }
     }
 
     updateResources(t, dt) {
       const R = RES();
-      const mo = this.resActive(t, 'momentum'), ra = this.resActive(t, 'rage');
-      const moMax = this.resMax(t, 'momentum'), hold = R.momentum.grace + (this.tier(t, 'runner') >= 4 ? 2 : 0);
-      const rageEvery = R.rage.decayEvery * (this.tier(t, 'brawler') >= 2 ? 2 : 1);
-      const ironRegen = this.tier(t, 'iron') >= 3;
-      const dash4 = this.tier(t, 'trickster') >= 4;
       for (const p of this.g.teams[t].players) {
         const r = p.res, T = p.resT;
+        const mo = this.resActive(p, 'momentum'), ra = this.resActive(p, 'rage');
         if (mo) {
+          const moMax = this.resMax(p, 'momentum'), hold = R.momentum.grace + (this.tier(p, 'runner') >= 4 ? 2 : 0);
           const stun = p.state === 'stun';
           // vừa bị choáng: mất stunLoss Đà (1 lần mỗi lần choáng)
           if (stun && !T.stunned) r.momentum = Math.max(0, r.momentum - R.momentum.stunLoss);
@@ -747,83 +827,97 @@ window.SFC = window.SFC || {};
           else if (p.sprinting) {
             T.idle = 0;
             // Quỷ Tốc Độ: nạp Đà nhanh hơn (scale theo PACE của từng người)
-            if ((T.sprint += dt) >= R.momentum.gainEvery / this.mod(t, 'momentumGain', p)) { T.sprint = 0; r.momentum = Math.min(moMax, r.momentum + 1); }
+            if ((T.sprint += dt) >= R.momentum.gainEvery / this.mod(p, 'momentumGain')) { T.sprint = 0; r.momentum = Math.min(moMax, r.momentum + 1); }
           } else if (r.momentum > 0 && (T.idle += dt) >= hold + R.momentum.decayEvery) { r.momentum--; T.idle = hold; }
         }
         // Nộ: quá grace giây không đấm trúng -> mỗi decayEvery giây mất 1
+        const rageEvery = R.rage.decayEvery * (this.tier(p, 'brawler') >= 2 ? 2 : 1);
         if (ra && r.rage > 0 && (T.rage += dt) >= R.rage.grace + rageEvery) { r.rage--; T.rage = R.rage.grace; }
         if (T.frenzy > 0) T.frenzy -= dt;
-        if (dash4 && p.cd.skill <= 0) p.extraDash = 1;
-        if (ironRegen && r.guard < R.guard.max && (T.guard += dt) >= 8) { r.guard++; T.guard = 0; }
+        if (this.tier(p, 'trickster') >= 4 && p.cd.skill <= 0) p.extraDash = 1;
+        if (this.tier(p, 'iron') >= 3 && r.guard < R.guard.max && (T.guard += dt) >= 8) { r.guard++; T.guard = 0; }
       }
     }
 
-    // AI tự ra Tuyệt kỹ (đội không do người điều khiển) sau một khoảng trễ ngẫu nhiên khi năng lượng đầy
-    aiUltimate(t, dt) {
-      const g = this.g;
-      if (g.isHuman(t) || g.state !== 'play' || !this.ultReady(t)) { this.aiUltT[t] = 0; return; }
-      if (!this.aiUltT[t]) { const d = DEF().ultimate.aiDelay; this.aiUltT[t] = U.rand(d[0], d[1]); return; }
-      if ((this.aiUltT[t] -= dt) > 0) return;
-      const id = this.ultOf(t), b = Behaviors[id];
-      const p = b && b.aiUse ? b.aiUse(this, t, this.sp(id, t)) : null;
-      if (p) this.activateUltimate(t, p);
-      else this.aiUltT[t] = 0.4; // chưa có thời cơ -> thử lại sau
+    // AI tự ra Tuyệt kỹ (mọi cầu thủ không do người điều khiển — cả đồng đội của người chơi) sau một khoảng trễ ngẫu nhiên
+    aiUltimate(p, dt) {
+      const g = this.g, k = p.id;
+      if (this.isHumanOwner(p) || g.state !== 'play' || !this.ultReady(p)) { this.aiUltT[k] = 0; return; }
+      if (!this.aiUltT[k]) { const d = DEF().ultimate.aiDelay; this.aiUltT[k] = U.rand(d[0], d[1]); return; }
+      if ((this.aiUltT[k] -= dt) > 0) return;
+      const id = this.ultOf(p), b = Behaviors[id];
+      // aiUse trả về người ra chiêu; Tuyệt kỹ là của riêng p nên chỉ nhận khi đúng là p
+      const who = b && b.aiUse ? b.aiUse(this, p.team, this.sp(id, p)) : null;
+      if (who === p) this.activateUltimate(p);
+      else this.aiUltT[k] = 0.4; // chưa có thời cơ -> thử lại sau
     }
 
-    /* ---------- chọn Core ---------- */
-    // trọng số 1 lá: độ hiếm x (1 + buildWeight x số Core cùng trường phái) x thiên hướng đội
-    weight(team, id) {
+    /* ---------- chọn Core (mỗi cầu thủ bốc riêng) ---------- */
+    // Core cầu thủ được bốc: người chơi = Core đã mở khoá (opts.coreUnlocks theo đội); đồng đội có deck = deck; còn lại = tất cả
+    allowList(p) {
+      if (p.deck) return p.deck;
+      const u = this.g.opts && this.g.opts.coreUnlocks;
+      return this.isHumanOwner(p) && u ? u[p.team] || null : null;
+    }
+    // trọng số 1 lá: độ hiếm x (1 + buildWeight x số Core cùng trường phái của người đó) x thiên hướng đội
+    weight(p, id) {
       const D = DEF().draft, c = this.def(id);
-      const style = this.g.teams[team].cfg.coreWeights || {};
-      const shared = c.tags.reduce((n, tag) => Math.max(n, this.tagCount(team, tag)), 0);
+      const style = this.g.teams[p.team].cfg.coreWeights || {};
+      const shared = c.tags.reduce((n, tag) => Math.max(n, this.tagCount(p, tag)), 0);
       const lean = c.tags.reduce((m, tag) => Math.max(m, style[tag] || 1), 0);
       // boss cầm Core đặc trưng: nghiêng về trường phái của Core đó (đủ lá cho Cộng hưởng / Tuyệt kỹ)
-      const sig = this.signature(team), sigLean = sig && c.tags.some((tag) => this.tagsOf(sig).includes(tag)) ? 2 : 1;
+      const sig = this.signature(p), sigLean = sig && c.tags.some((tag) => this.tagsOf(sig).includes(tag)) ? 2 : 1;
       return (D.rarityWeight[c.rarity] || 1) * (1 + D.buildWeight * shared) * lean * sigLean;
     }
-    signature(team) { const s = this.g.opts && this.g.opts.signature; return (s && s[team] && this.def(s[team]) && s[team]) || null; }
-    // Tuyệt kỹ chỉ xuất hiện khi có >= 2 Core cùng trường phái và đội chưa có Tuyệt kỹ nào
-    eligible(team, id) {
+    // Core đặc trưng (boss trận thăng hạng): thuộc về ngôi sao của đội = cầu thủ ĐÁ CAO (không có thì người đầu)
+    signature(p) {
+      const s = this.g.opts && this.g.opts.signature, id = s && s[p.team];
+      if (!id || !this.def(id)) return null;
+      const list = this.g.teams[p.team].players, star = list.find((q) => q.role === 'FWD') || list[0];
+      return star === p ? id : null;
+    }
+    // Tuyệt kỹ chỉ xuất hiện khi người đó có >= 2 Core cùng trường phái và chưa có Tuyệt kỹ nào
+    eligible(p, id) {
       const c = this.def(id);
       if (c.role !== 'ult') return true;
-      const sig = this.signature(team);
+      const sig = this.signature(p);
       if (sig && sig !== id && this.def(sig).role === 'ult') return false;   // boss: chỉ cầm Tuyệt kỹ đặc trưng
-      return !this.ultOf(team) && c.tags.some((tag) => this.tagCount(team, tag) >= 2);
+      return !this.ultOf(p) && c.tags.some((tag) => this.tagCount(p, tag) >= 2);
     }
-    pool(team, exclude = []) {
-      // người chơi chỉ bốc được Core đã mở khoá (opts.coreUnlocks); AI được bốc tất cả
-      const allow = this.g.opts && this.g.opts.coreUnlocks && this.g.opts.coreUnlocks[team];
-      return Object.keys(DEF().list).filter((id) => !this.has(team, id) && !exclude.includes(id)
-        && (!allow || allow.includes(id)) && this.eligible(team, id));
+    pool(p, exclude = []) {
+      const allow = this.allowList(p);
+      return Object.keys(DEF().list).filter((id) => !this.has(p, id) && !exclude.includes(id)
+        && (!allow || allow.includes(id)) && this.eligible(p, id));
     }
 
     // N lá theo trọng số build; từ lượt guaranteeFromRound: ít nhất 1 lá cùng trường phái với Core đang có
-    rollOptions(team, n, exclude = []) {
-      let pool = this.pool(team, exclude);
-      if (pool.length < n) pool = this.pool(team); // hết bài mới thì cho ra lại lá vừa đổi
+    rollOptions(p, n, exclude = []) {
+      let pool = this.pool(p, exclude);
+      if (pool.length < n) pool = this.pool(p); // hết bài mới thì cho ra lại lá vừa đổi
       const out = [];
       while (out.length < n && pool.length) {
-        const id = U.weightedPick(pool, (x) => this.weight(team, x));
+        const id = U.weightedPick(pool, (x) => this.weight(p, x));
         out.push(id);
         pool = pool.filter((x) => x !== id);
       }
-      const ownedTags = new Set(this.owned[team].flatMap((id) => this.tagsOf(id)));
+      const ownedTags = new Set(this.coresOf(p).flatMap((id) => this.tagsOf(id)));
       const matches = (id) => this.tagsOf(id).some((tag) => ownedTags.has(tag));
       if (this.g.upgradeIdx >= DEF().draft.guaranteeFromRound && ownedTags.size && out.length && !out.some(matches)) {
         const cand = pool.filter(matches);
-        if (cand.length) out[out.length - 1] = U.weightedPick(cand, (x) => this.weight(team, x));
+        if (cand.length) out[out.length - 1] = U.weightedPick(cand, (x) => this.weight(p, x));
       }
-      // Core vừa mở khoá (opts.coreFresh): lượt nào cũng đưa 1 lá chưa hiện vào (thay lá cuối), nhãn NEW
-      const fresh = this.g.opts && this.g.opts.coreFresh && this.g.opts.coreFresh[team];
-      const nu = fresh && fresh.find((id) => !this.newShown[team].has(id) && !exclude.includes(id) && this.pool(team).includes(id));
+      // Core vừa mở khoá (opts.coreFresh, chỉ người chơi): lượt nào cũng đưa 1 lá chưa hiện vào, nhãn NEW
+      const fresh = this.isHumanOwner(p) && this.g.opts && this.g.opts.coreFresh && this.g.opts.coreFresh[p.team];
+      const shown = this.newShown[p.id] || (this.newShown[p.id] = new Set());
+      const nu = fresh && fresh.find((id) => !shown.has(id) && !exclude.includes(id) && this.pool(p).includes(id));
       if (nu && !out.includes(nu)) {
         // bỏ 1 lá không khớp build (giữ lá bảo đảm hướng), lá NEW đứng đầu
         if (out.length >= n) { const k = out.findIndex((id) => !matches(id)); out.splice(k >= 0 ? k : out.length - 1, 1); }
         out.unshift(nu);
       }
-      if (nu) this.newShown[team].add(nu);
+      if (nu) shown.add(nu);
       // lượt chọn cuối: đủ điều kiện Tuyệt kỹ -> luôn có lá Tuyệt kỹ (của trường phái đang có nhiều Core nhất; kể cả khi vừa đổi bài)
-      const ult = this.finalUltOption(team);
+      const ult = this.finalUltOption(p);
       if (ult && !out.some((id) => this.def(id).role === 'ult')) {
         if (out.includes(ult)) out.splice(out.indexOf(ult), 1);
         if (out.length >= n) out.pop();
@@ -832,26 +926,26 @@ window.SFC = window.SFC || {};
       return out;
     }
 
-    finalUltOption(team) {
-      if (this.g.upgradeIdx < SFC_CONFIG.game.match.maxUpgrades || this.ultOf(team)) return null;
-      const allow = this.g.opts && this.g.opts.coreUnlocks && this.g.opts.coreUnlocks[team];
-      const ults = Object.keys(DEF().list).filter((id) => this.def(id).role === 'ult' && (!allow || allow.includes(id)) && this.eligible(team, id));
+    finalUltOption(p) {
+      if (this.g.upgradeIdx < SFC_CONFIG.game.match.maxUpgrades || this.ultOf(p)) return null;
+      const allow = this.allowList(p);
+      const ults = Object.keys(DEF().list).filter((id) => this.def(id).role === 'ult' && (!allow || allow.includes(id)) && this.eligible(p, id));
       if (!ults.length) return null;
-      return ults.reduce((a, b) => (this.tagCount(team, this.tagsOf(b)[0]) > this.tagCount(team, this.tagsOf(a)[0]) ? b : a));
+      return ults.reduce((a, b) => (this.tagCount(p, this.tagsOf(b)[0]) > this.tagCount(p, this.tagsOf(a)[0]) ? b : a));
     }
 
-    // AI: bốc 3 lá rồi chọn lá khớp build nhất (Tuyệt kỹ luôn được ưu tiên)
-    aiPick(team) {
+    // AI (đồng đội + đối thủ): bốc 3 lá rồi chọn lá khớp build nhất (Tuyệt kỹ luôn được ưu tiên)
+    aiPick(p) {
       // boss: tới lượt signatureRound thì lấy thẳng Core đặc trưng (Tuyệt kỹ: bỏ qua điều kiện 2 Core cùng trường phái)
-      const sig = this.signature(team);
-      if (sig && !this.has(team, sig) && !(this.def(sig).role === 'ult' && this.ultOf(team))) {
+      const sig = this.signature(p);
+      if (sig && !this.has(p, sig) && !(this.def(sig).role === 'ult' && this.ultOf(p))) {
         const R = SFC_CONFIG.mainPath.signatureRound || {};
-        if (this.g.upgradeIdx >= (this.def(sig).role === 'ult' ? R.ult || 3 : R.core || 1)) { this.add(team, sig); return sig; }
+        if (this.g.upgradeIdx >= (this.def(sig).role === 'ult' ? R.ult || 3 : R.core || 1)) { this.add(p, sig); return sig; }
       }
-      const opts = this.rollOptions(team, SFC_CONFIG.game.match.upgradeChoices);
+      const opts = this.rollOptions(p, SFC_CONFIG.game.match.upgradeChoices);
       if (!opts.length) return null;
-      const id = U.weightedPick(opts, (x) => (this.def(x).role === 'ult' ? 20 : 1) * this.weight(team, x));
-      this.add(team, id);
+      const id = U.weightedPick(opts, (x) => (this.def(x).role === 'ult' ? 20 : 1) * this.weight(p, x));
+      this.add(p, id);
       return id;
     }
   }

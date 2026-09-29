@@ -18,6 +18,7 @@ window.SFC = window.SFC || {};
   const PX = () => SFC.PixelIcon;   // icon pixel art (render/pixelicons.js)
   // Shop (hộp gacha) · mở hộp · túi đồ nằm ở ui/gacha.js
   const G = () => SFC.Gacha;
+  const TM = () => SFC.Team;          // NHÂN VẬT > TEAM: đội hình đồng đội + scout (ui/team.js)
   const coin = (n) => G().coin(n);
   const xpBar = (d) => G().xpBar(d);
   const CV = () => SFC.ControlsView;   // Settings > Controls (ui/controls.js)
@@ -94,13 +95,14 @@ window.SFC = window.SFC || {};
       const app = this.app, s = app.sel, o = this.options();
       switch (this.page) {
         case 'home':
+          // trang chủ: dòng phụ của mọi nút viết in hoa (kể cả dòng động: hạng Main Path, hộp miễn phí...)
           return [
             { kind: 'btn', label: 'MAIN PATH', sub: this.pathSub(), act: () => this.go('path') },
             { kind: 'btn', label: 'ONLINE VERSUS', sub: '1 vs 1 · create a room', act: () => this.go('online') },
-            { kind: 'btn', label: 'CHARACTER', sub: this.drillCount() ? `★ ${this.drillCount()} ready!` : 'Drill · stats · appearance · inventory', hot: PF().drillsPending() > 0, act: () => this.go('char') },
+            { kind: 'btn', label: 'CHARACTER', sub: this.drillCount() ? `★ ${this.drillCount()} READY!` : SFC.Mates.scoutReady() ? '★ SCOUT REPORT READY!' : 'STATS · TEAM · APPEARANCE · INVENTORY', hot: PF().drillsPending() > 0 || SFC.Mates.scoutReady(), act: () => this.go('char') },
             { kind: 'btn', label: 'SHOP', sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'SETTINGS', sub: 'Training · controls', act: () => this.go('settings') },
-          ];
+          ].map((it) => Object.assign(it, { sub: it.sub && it.sub.toUpperCase() }));
         case 'settings':
           return [
             { kind: 'btn', label: 'TRAINING', sub: 'No clock · pick team sizes', act: () => this.go('training') },
@@ -116,6 +118,7 @@ window.SFC = window.SFC || {};
           if (n) list.push({ kind: 'btn', label: 'DRILL', sub: `${n} ready · pick 1 of 3`, hot: true, act: () => this.openDrill() });
           return list.concat([
             { kind: 'btn', label: 'STATS', sub: `OVR ${PF().ovr()}`, act: () => this.go('attrs') },
+            { kind: 'btn', label: 'TEAM', sub: this.teamSub(), hot: SFC.Mates.scoutReady(), act: () => { TM().back0 = 'char'; TM().open(this, SFC.Mates.scoutReady() ? 1 : 0); } },
             { kind: 'btn', label: 'APPEARANCE', sub: `${d.name} · skin · hair color`, act: () => this.go('look') },
             { kind: 'btn', label: 'INVENTORY', sub: `${nItems} items · equip · dismantle`, act: () => { G().invBack = 'char'; this.go('inv'); } },
           ]);
@@ -146,6 +149,7 @@ window.SFC = window.SFC || {};
           return [
             { kind: 'btn', label: battle.label, sub: battle.sub, subHtml: battle.subHtml, main: true, act: () => app.startMainPath() },
             { kind: 'pick', label: 'POSITION', value: this.ctrlLabel(null, s.ctrl), change: (d) => this.changeCtrl(d) },
+            { kind: 'pick', label: 'TEAMMATE', value: this.mateLabel(), change: (d) => this.changeMate(d) },
             { kind: 'pick', label: 'VIEW AREA', value: `${v + 1}/${n} ${v > st.area ? '???' : MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
           ];
         }
@@ -186,6 +190,19 @@ window.SFC = window.SFC || {};
       }
     },
 
+    // đồng đội ra sân trận Main Path kế tiếp (đổi trong đội hình)
+    mateLabel() { const m = SFC.Mates.active(); return m ? `${m.name} · OVR ${m.ovr}` : '—'; },
+    changeMate(d) {
+      const list = SFC.Mates.roster(), i = list.indexOf(SFC.Mates.active());
+      SFC.Mates.setActive(list[wrap(i + d, list.length)].id);
+    },
+    // dòng phụ nút TEAM: số đồng đội + tình trạng scout
+    teamSub() {
+      const M = SFC.Mates, n = M.roster().length, max = SFC_CONFIG.teammates.rosterMax;
+      const sc = M.scoutReady() ? '★ report ready!' : M.scouting() ? 'scouting...' : 'scout idle';
+      return `${n}/${max} players · ${sc}`;
+    },
+
     // chỉ đổi giữa các vị trí (1..roles) — ẩn lựa chọn CẢ ĐỘI (ctrl = 0): người chơi chỉ điều khiển character của mình
     changeCtrl(d) {
       const s = this.app.sel, n = SFC_CONFIG.game.roles.length;
@@ -204,6 +221,7 @@ window.SFC = window.SFC || {};
       if (Online().status === 'busy') return;
       if (this.page === 'name') { if (PF().hasName) this.go(this.nameBack); return; } // lần đầu: bắt buộc đặt tên
       if (G().pages.includes(this.page)) return G().back(this);
+      if (TM().pages.includes(this.page)) return TM().back(this);
       if (this.page === 'attrs' || this.page === 'look') return this.go('char');
       if (['training', 'controls'].includes(this.page)) this.go('settings');
       else if (['path', 'online', 'tutorial', 'char', 'settings'].includes(this.page)) this.go('home');
@@ -216,10 +234,11 @@ window.SFC = window.SFC || {};
       if (!this.el) return;
       const items = this.items();
       if (this.sel >= items.length) this.sel = Math.max(0, items.length - 1);
-      this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || G().pages.includes(this.page));
+      this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || G().pages.includes(this.page) || TM().pages.includes(this.page));
       if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); this.bindAvatars(); return; }
       if (this.page === 'controls') { this.el.innerHTML = CV().render(); this.bindAvatars(); return; }
       if (G().pages.includes(this.page)) { G().render(this); this.bindAvatars(); return; }
+      if (TM().pages.includes(this.page)) { TM().render(this); this.bindAvatars(); return; }
       const list = items.map((it, i) => this.renderItem(it, i)).join('');
       const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', online: 'ONLINE VERSUS', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER', attrs: 'STATS', look: 'APPEARANCE' };
       const small = this.page !== 'home';
@@ -552,7 +571,12 @@ window.SFC = window.SFC || {};
         const id = cv.dataset.team;
         return { cv, look: MPATH().teamLook(id, +cv.dataset.idx || 0), kit: TEAMS().list[id].kit, big: false, sil: !!cv.dataset.sil };
       });
-      this.avatars = teamAvatars.concat([...this.el.querySelectorAll('canvas[data-avatar]')].map((cv) => {
+      // đồng đội / ứng viên scout (ui/team.js): mặc áo đội riêng của người chơi
+      const mateAvatars = [...this.el.querySelectorAll('canvas[data-mate]')].map((cv) => {
+        cv.width = 40; cv.height = 44;
+        return { cv, look: TM().lookOf(cv.dataset.mate), kit: TEAMS().list[SFC_CONFIG.mainPath.playerTeam.id].kit, big: cv.classList.contains('big') };
+      }).filter((a) => a.look);
+      this.avatars = teamAvatars.concat(mateAvatars, [...this.el.querySelectorAll('canvas[data-avatar]')].map((cv) => {
         const big = cv.classList.contains('big');
         cv.width = 40; cv.height = 44;
         const tryOn = cv.dataset.try;
@@ -567,6 +591,7 @@ window.SFC = window.SFC || {};
     animate(dt) {
       this.animT = (this.animT || 0) + dt;
       G().tick(this); // dải quay hộp gacha
+      TM().tick(this, dt); // bản đồ scout + đồng hồ
       if (!this.avatars.length) return;
       const dirs = [Math.PI / 2, 0, -Math.PI / 2, Math.PI];
       const facing = dirs[Math.floor(this.animT / 1.6) % 4];
@@ -583,6 +608,7 @@ window.SFC = window.SFC || {};
       const back = input.wasPressed('pause') || (this.page !== 'lobby' && input.wasPressed('back'));
       if (back) { SFC.Audio.menu(); return this.back(); }
       if (G().pages.includes(this.page)) return G().input(this, input);
+      if (TM().pages.includes(this.page)) return TM().input(this, input);
       if (this.page === 'name' && input.wasPressed('confirm')) return this.submitName();
       if (this.page === 'controls') return CV().input(this, input);
       if (this.page === 'tutorial') {
@@ -675,6 +701,7 @@ window.SFC = window.SFC || {};
           return;
         }
         if (G().pages.includes(this.page) && G().click(this, e)) return;
+        if (TM().pages.includes(this.page) && TM().click(this, e)) return;
         if (this.page === 'controls' && CV().click(this, e)) return;
         // Main Path: bấm 1 Area trên "con đường" để xem
         const pa = e.target.closest('[data-parea]');

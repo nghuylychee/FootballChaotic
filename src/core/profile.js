@@ -22,6 +22,7 @@ window.SFC = window.SFC || {};
       boxes: {},                     // hộp gacha được tặng (thưởng lên hạng Main Path): id -> số hộp, mở miễn phí
       look: Object.assign({}, P().defaultLook),
       stats: { matches: 0, wins: 0, draws: 0, losses: 0, goals: 0, boxes: 0 },
+      team: SFC.Mates.blankTeam(),   // đồng đội: đội hình + trạm scout (src/core/teammates.js)
       attrs: blankAttrs(),
     };
   }
@@ -61,6 +62,7 @@ window.SFC = window.SFC || {};
     sanitize(raw) {
       const d = blank();
       d.path = SFC.MainPath.sanitize(raw && raw.path);   // tiến trình Main Path (src/core/mainpath.js)
+      d.team = SFC.Mates.sanitizeTeam(raw && raw.team);  // đồng đội + scout (src/core/teammates.js)
       if (!raw || typeof raw !== 'object') return d;
       d.name = this.cleanName(raw.name || '');
       d.level = clampInt(raw.level, 1, P().maxLevel);

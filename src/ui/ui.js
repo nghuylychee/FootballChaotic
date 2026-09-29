@@ -105,7 +105,8 @@ window.SFC = window.SFC || {};
       const total = SFC_CONFIG.game.match.maxUpgrades;
       const opts = d.options[me] || [];
       const picked = !!d.picked[me];
-      const ownedTags = new Set(game.cores.owned[me].flatMap((id) => CORES().list[id].tags));
+      const mp = game.cores.humanOwner(me);   // Core là của riêng cầu thủ người chơi điều khiển
+      const ownedTags = new Set(game.cores.coresOf(mp).flatMap((id) => CORES().list[id].tags));
       const timer = d.limit > 0 ? `<span id="draft-timer" class="draft-timer">${Math.ceil(Math.max(0, d.t))}s</span>` : '';
       const cards = opts.map((id, i) => {
         const c = CORES().list[id];
@@ -114,7 +115,7 @@ window.SFC = window.SFC || {};
         const match = c.tags.some((t) => ownedTags.has(t));
         const tags = c.tags.map((t) => `<span style="--c:${ARCH(t).color}">${PX().arch(t, 'sm')} ${ARCH(t).label}</span>`).join('');
         // Core vừa mở khoá ở Main Path: nhãn NEW (hiện 1 lần rồi bỏ khỏi danh sách "mới")
-        const isNew = game.opts.coreFresh && game.cores.newShown[me].has(id);
+        const isNew = game.opts.coreFresh && !!mp && !!game.cores.newShown[mp.id] && game.cores.newShown[mp.id].has(id);
         if (isNew && game.opts.mainPath) SFC.MainPath.seen(id);
         return `<div class="card ${c.role === 'ult' ? 'ult' : ''} ${!picked && i === this.draftSel ? 'sel' : ''} ${chosen ? 'chosen' : ''}" data-pick="${i}" style="--c:${rar.color};--c2:${rar.color};--t:${rar.color}">
           <div class="card-key">${i + 1}</div>
@@ -124,7 +125,7 @@ window.SFC = window.SFC || {};
           <div class="card-art">${SFC.CorePreview.html(id, 132, 56)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(keyLabel('ultimate'))}</kbd>` : ''}</div>
           <div class="card-name">${esc(c.name)}</div>
           ${SFC.CoreScale.statLine(id)}
-          <div class="card-desc">${SFC.CoreScale.describe(id, game.cores.rating(id, me))}</div>
+          <div class="card-desc">${SFC.CoreScale.describe(id, game.cores.rating(id, mp || me))}</div>
         </div>`;
       }).join('');
       const opp = game.teams[1 - me];
@@ -137,7 +138,7 @@ window.SFC = window.SFC || {};
         <div class="draft-title">${d.pre ? 'STARTING CORE' : 'CORE UPGRADE'} <span>${d.round}/${total}</span>${timer}</div>
         <div class="draft-sub">${sub}${reroll}</div>
         <div class="cards">${cards}</div>
-        <div class="draft-opp"><span>Your build:</span> ${traitChips(game, me) || '<em>—</em>'} <span class="sep">·</span> <span>${esc(opp.cfg.name)}:</span> ${traitChips(game, opp.index) || '<em>—</em>'}</div>`;
+        <div class="draft-opp"><span>Your build:</span> ${traitChips(game, mp) || '<em>—</em>'}${this.mateChips(game, me, mp)} <span class="sep">·</span> <span>${esc(opp.cfg.name)}:</span> ${opp.players.map((q) => traitChips(game, q) || '<em>—</em>').join(' <span class="sep">/</span> ')}</div>`;
       SFC.CorePreview.scan(this.el.draft);
     },
 
@@ -181,10 +182,10 @@ window.SFC = window.SFC || {};
       const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${l}</button>`).join('');
       let build = '';
       if (g && me >= 0) {
-        const owned = g.cores.owned[me], n = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
+        const mp = g.cores.humanOwner(me), owned = g.cores.coresOf(mp), n = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
         const slots = Array.from({ length: n }, (_, i) => miniCard(owned[i]));
         build = `<div class="pause-build">
-          <div class="pb-traits"><h4>YOUR BUILD</h4>${traitList(g, me, true) || '<em>No synergies yet</em>'}</div>
+          <div class="pb-traits"><h4>YOUR BUILD</h4>${traitList(g, mp, true) || '<em>No synergies yet</em>'}</div>
           <div class="pb-cards">${slots.join('')}</div>
         </div>`;
       }
@@ -229,13 +230,18 @@ window.SFC = window.SFC || {};
       const res = me.score > op.score ? ['VICTORY!', 'win'] : me.score < op.score ? ['DEFEAT...', 'lose'] : ['DRAW', 'draw'];
       // Main Path: Core của đối thủ mà bạn chưa mở khoá -> 🔒 + cách mở (rê chuột xem)
       const lockOf = (t, id) => (game.opts.mainPath && t !== me && !SFC.Profile.coreUnlocked(id) ? SFC.MainPath.unlockHint(id) : '');
-      const build = (t) => {
-        const ids = game.cores.owned[t.index];
-        return buildLabel(game, t.index) + (ids.length ? ids.map((id) => {
+      // build của từng cầu thủ: người chơi = danh sách Core có tên; đồng đội / đối thủ = hàng chip
+      const build = (t) => t.players.map((q) => {
+        const ids = game.cores.coresOf(q), mine = t === me && game.cores.isHumanOwner(q);
+        const item = (id) => {
           const lk = lockOf(t, id);
-          return `<div class="b-item" ${lk ? `title="🔒 ${esc(lk)}"` : ''}>${coreChip(id)} ${esc(CORES().list[id].name)}${lk ? PX().ui('lock', 'sm lk') : ''}</div>`;
-        }).join('') : '<em>No cores</em>');
-      };
+          return mine
+            ? `<div class="b-item" ${lk ? `title="🔒 ${esc(lk)}"` : ''}>${coreChip(id)} ${esc(CORES().list[id].name)}${lk ? PX().ui('lock', 'sm lk') : ''}</div>`
+            : `<span class="b-chip" ${lk ? `title="🔒 ${esc(lk)}"` : ''}>${coreChip(id)}${lk ? PX().ui('lock', 'sm lk') : ''}</span>`;
+        };
+        const list = ids.length ? ids.map(item).join('') : '<em>No cores</em>';
+        return `<div class="b-player ${mine ? 'me' : ''}"><div class="bp-head"><b>${esc(q.name)}</b>${buildLabel(game, q)}</div>${mine ? list : `<div class="bp-chips">${list}</div>`}</div>`;
+      }).join('');
       const note = this.online && !SFC.Online.isHost ? 'Waiting for the host to return to the lobby...' : 'Try a different build next time?';
       // sân luôn vẽ đội 0 bên trái -> tỉ số giữ đúng thứ tự trái / phải
       const t0 = game.teams[0], t1 = game.teams[1];
@@ -447,7 +453,7 @@ window.SFC = window.SFC || {};
       const training = !!(game.opts && game.opts.training);
       const time = game.golden ? 'GOLDEN' : SFC.U.fmtTime(game.remaining);
       const phase = game.golden ? 'GOLDEN GOAL' : game.finalPush ? 'FINAL PUSH x' + SFC_CONFIG.game.match.finalPushGoalValue : '';
-      const cores = game.cores.owned[0].join() + '|' + game.cores.owned[1].join();
+      const cores = game.players.map((p) => game.cores.coresOf(p).join()).join('|');
       // lượt chọn Core: đang chờ bàn thắng / còn bao lâu tới lượt kế
       const pend = game.draftPending(), next = game.draftNextIn();
       const coreLine = pend > 0 ? `<div class="hud-core on">✦ CORE +${pend} · waiting for a goal</div>`
@@ -468,8 +474,7 @@ window.SFC = window.SFC || {};
         this.el.hud.innerHTML = `
           <div class="hud-team l" style="--c:${t0.cfg.kit.shirt}">
             <div class="hud-name">${esc(t0.cfg.short)}${tag(0)}</div>
-            <div class="hud-cores">${game.humanTeam === 0 ? '' : game.cores.owned[0].map((id) => coreChip(id)).join('')}</div>
-            <div class="hud-traits tft">${traitList(game, 0)}</div>
+            ${this.hudBuild(game, 0)}
             ${this.ultMeter(game, 0)}
           </div>
           <div class="hud-mid">${pathLine}${training ? '<div class="hud-time">TRAINING</div>' : `
@@ -480,8 +485,7 @@ window.SFC = window.SFC || {};
           </div>
           <div class="hud-team r" style="--c:${t1.cfg.kit.shirt}">
             <div class="hud-name">${tag(1)} ${esc(t1.cfg.short)}</div>
-            <div class="hud-cores">${game.humanTeam === 1 ? '' : game.cores.owned[1].map((id) => coreChip(id)).join('')}</div>
-            <div class="hud-traits tft">${traitList(game, 1)}</div>
+            ${this.hudBuild(game, 1)}
             ${this.ultMeter(game, 1)}
           </div>`;
         c.ultBars = [0, 1].map((t) => this.el.hud.querySelector(`.hud-ult[data-t="${t}"]`));
@@ -489,7 +493,7 @@ window.SFC = window.SFC || {};
       }
       // năng lượng Tuyệt kỹ 2 đội (cập nhật mỗi khung)
       for (let t = 0; t < 2; t++) {
-        const el = c.ultBars && c.ultBars[t], v = Math.round(game.ult[t] * 100);
+        const el = c.ultBars && c.ultBars[t], v = Math.round(game.cores.teamUlt(t) * 100);
         if (!el || v === c.ultVals[t]) continue;
         c.ultVals[t] = v;
         el.style.setProperty('--u', (v / 100).toFixed(2));
@@ -503,6 +507,21 @@ window.SFC = window.SFC || {};
         const s = Math.ceil(Math.max(0, game.draft.t)) + 's';
         if (el && el.textContent !== s) el.textContent = s;
       }
+    },
+
+    // build trên HUD: đội của người chơi = Cộng hưởng kiểu TFT của cầu thủ mình + chip Cộng hưởng của đồng đội;
+    // đội kia = mỗi cầu thủ 1 dòng (tên + chip Cộng hưởng)
+    hudBuild(game, t) {
+      const C = game.cores, own = t === game.humanTeam ? C.humanOwner(t) : null;
+      if (own) return `<div class="hud-traits tft">${traitList(game, own)}</div>${this.mateChips(game, t, own, true)}`;
+      return `<div class="hud-mates">${game.teams[t].players.map((q) => `<div class="hud-pl"><em>${esc(q.name)}</em>${traitChips(game, q) || '<i>—</i>'}</div>`).join('')}</div>`;
+    },
+    // Cộng hưởng của đồng đội (không phải cầu thủ mình điều khiển)
+    mateChips(game, t, own, block = false) {
+      const mates = game.teams[t].players.filter((q) => q !== own);
+      const html = mates.map((q) => traitChips(game, q)).filter(Boolean).join(' ');
+      if (!html) return '';
+      return block ? `<div class="hud-mates"><div class="hud-pl"><em>MATE</em>${html}</div></div>` : ` <span class="sep">+</span> <span>Mate:</span> ${html}`;
     },
 
     // thanh năng lượng Tuyệt kỹ nhỏ trên HUD của mỗi đội (icon Tuyệt kỹ nếu đã có)
@@ -519,13 +538,13 @@ window.SFC = window.SFC || {};
       el.classList.toggle('hidden', !p || this.current === 'menu');
       if (!p) return;
       const c = this.hudCache.bar || (this.hudCache.bar = {});
-      const owned = game.cores.owned[p.team];
+      const owned = game.cores.coresOf(p);
       // đổi bàn phím <-> tay cầm: vẽ lại nhãn phím trên thanh kỹ năng
       const key = p.id + '|' + owned.join() + '|' + SFC.Input.device + SFC.Pad.style;
       if (c.key !== key) {
         c.key = key;
         const kit = game.teams[p.team].cfg.kit;
-        const ult = game.cores.ultOf(p.team);
+        const ult = game.cores.ultOf(p);
         const nItems = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
         const items = [];
         for (let i = 0; i < nItems; i++) items.push(owned[i] ? coreChip(owned[i]) : '<span class="chip empty"></span>');
@@ -589,14 +608,14 @@ window.SFC = window.SFC || {};
       const R = CORES().resources, t = p.team;
       const parts = [];
       const pips = (res, n, max) => `<span class="res" style="--c:${res === 'guard' ? '#c7ccd6' : res === 'rhythm' ? '#ffd23f' : res === 'rage' ? '#ff3d5a' : '#3ff6ff'}">${PX().res(res, 'sm')}${'●'.repeat(n)}<i>${'○'.repeat(Math.max(0, max - n))}</i></span>`;
-      if (game.cores.resActive(t, 'momentum')) parts.push(pips('momentum', p.res.momentum, game.cores.resMax(t, 'momentum')));
-      if (game.cores.resActive(t, 'rhythm')) parts.push(pips('rhythm', game.rhythm[t], R.rhythm.max));
-      if (game.cores.resActive(t, 'rage')) parts.push(pips('rage', p.res.rage, R.rage.max));
-      if (p.res.guard > 0 || game.cores.resActive(t, 'guard')) parts.push(pips('guard', p.res.guard, R.guard.max));
+      if (game.cores.resActive(p, 'momentum')) parts.push(pips('momentum', p.res.momentum, game.cores.resMax(p, 'momentum')));
+      if (game.cores.resActive(p, 'rhythm')) parts.push(pips('rhythm', game.rhythm[t], R.rhythm.max));
+      if (game.cores.resActive(p, 'rage')) parts.push(pips('rage', p.res.rage, R.rage.max));
+      if (p.res.guard > 0 || game.cores.resActive(p, 'guard')) parts.push(pips('guard', p.res.guard, R.guard.max));
       const html = parts.join('');
       if (html !== c.lastRes) { c.lastRes = html; c.res.innerHTML = html; c.res.classList.toggle('hidden', !html); }
       if (c.ult) {
-        const v = Math.round(game.ult[t] * 100);
+        const v = Math.round(game.cores.ultE(p) * 100);
         if (v !== c.lastUlt) {
           const prev = c.lastUlt;
           c.lastUlt = v;
@@ -671,9 +690,15 @@ window.SFC = window.SFC || {};
         if (e.type === 'draftWait' && game.draft) this.renderDraft(game);
         if (e.type === 'corePicked') {
           if (this.current === 'draft') this.show(null);
-          for (const pk of e.picks) {
-            const c = CORES().list[pk.id], t = game.teams[pk.team];
-            this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${esc(t.cfg.short)} gets ${coreChip(pk.id)} <b>${esc(c.name)}</b>`);
+          // đội mình: từng người (bạn + đồng đội); đội kia: gộp 1 dòng các lá vừa lấy
+          const mine = e.picks.filter((pk) => pk.team === game.humanTeam), other = e.picks.filter((pk) => pk.team !== game.humanTeam);
+          for (const pk of mine) {
+            const c = CORES().list[pk.id], t = game.teams[pk.team], q = game.players.find((x) => x.id === pk.pid);
+            this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${esc(q ? q.name : t.cfg.short)} gets ${coreChip(pk.id)} <b>${esc(c.name)}</b>`);
+          }
+          if (other.length) {
+            const t = game.teams[other[0].team];
+            this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${esc(t.cfg.short)} gets ${other.map((pk) => coreChip(pk.id)).join('')}`);
           }
         }
         if (e.type === 'end') {

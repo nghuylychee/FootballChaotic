@@ -151,9 +151,9 @@ window.SFC = window.SFC || {};
       const I = CFG();
       const human = g.isHuman(p.team), you = human && p.isControlled;
       const num = you ? I.youNumber : I.numbers[p.role] || 7;
-      const tag = you ? '<em class="you">YOU</em>' : human ? '<em>AI</em>' : '';
-      // character có chỉ số riêng: OVR cá nhân (trung bình 6 chỉ số, như trang STATS)
-      const povr = you && p.ovr ? `<b class="in-povr">${p.ovr}<span>OVR</span></b>` : '';
+      const tag = you ? '<em class="you">YOU</em>' : p.mate ? '<em class="mate">MATE</em>' : human ? '<em>AI</em>' : '';
+      // character / đồng đội có chỉ số riêng: OVR cá nhân
+      const povr = (you || p.mate) && p.ovr ? `<b class="in-povr">${p.ovr}<span>OVR</span></b>` : '';
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">
         <div class="in-num">${num}</div>${tag}${povr}
         <canvas data-pid="${p.id}" data-delay="${d}"></canvas>

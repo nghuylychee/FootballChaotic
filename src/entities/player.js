@@ -20,7 +20,7 @@ window.SFC = window.SFC || {};
       // stamina / knock / keeper: chỉ character mới khác 1 (chỉ số character, progression.attrs)
       this.stats = Object.assign({ speed: 1, power: 1, pass: 1, tackle: 1, dribble: 1, accuracy: 1, stamina: 1, knock: 1, keeper: 1 }, tcfg.stats);
       this.radius = SFC_CONFIG.game.player.radius;
-      this.res = { momentum: 0, rage: 0, guard: 0 };   // tài nguyên Core (Đà, Nộ, Giáp) — Nhịp là của cả đội (g.rhythm)
+      this.res = { momentum: 0, rage: 0, guard: 0, ult: 0 };   // tài nguyên Core (Đà, Nộ, Giáp) + năng lượng Tuyệt kỹ (0..1) — Nhịp là của cả đội (g.rhythm)
       this.resT = { sprint: 0, idle: 0, rage: 0, frenzy: 0, guard: 0, iron: 0 };
       this.extraDash = 0;     // ẢO ẢNH 4: thêm 1 lần Z
       this.lastHitBy = null;  // người vừa đánh trúng (tính BONK cho đúng đội)

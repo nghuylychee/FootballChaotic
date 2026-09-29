@@ -250,7 +250,7 @@ window.SFC = window.SFC || {};
       init(s) {
         s.place(s.me, A.x - 60, A.y, 0); s.give(s.me);
         s.place(s.o1, A.x + 10, A.y + 4, PI);
-        const st = s.g.cores.st(0, 'bomb_ball'); st.t = s.g.cores.params('bomb_ball').every - 0.05;
+        const st = s.g.cores.st(s.me, 'bomb_ball'); st.t = s.g.cores.params('bomb_ball').every - 0.05;
       },
       tick(s) { s.me.intent.mx = s.t < 1.2 ? 0.8 : 0; },
       at: [[1.4, (s) => s.give(s.o1)]],
@@ -290,7 +290,7 @@ window.SFC = window.SFC || {};
         },
         ult: () => {
           const b = SFC.CoreBehaviors[this.id];
-          if (b && b.onUltimate) b.onUltimate(g.cores, 0, g.cores.params(this.id), s.me);
+          if (b && b.onUltimate) b.onUltimate(g.cores, 0, g.cores.sp(this.id, s.me), s.me);
         },
       };
       // mặc định: mọi người đứng xa, bóng ở chân đồng đội
@@ -300,8 +300,10 @@ window.SFC = window.SFC || {};
       s.place(s.o2, A.x + 200, A.y - 90, PI);
       s.give(s.mate);
       const team = this.scn.team || 0;
-      g.cores.add(team, this.id);
-      for (const id of this.scn.cores || []) g.cores.add(team, id);
+      // Core là của từng người: Core đang xem thuộc về nhân vật chính của cảnh (s.me); cảnh đội phòng thủ (team 1) -> cả đội đó
+      const who = team === 0 ? s.me : team;
+      g.cores.add(who, this.id);
+      for (const id of this.scn.cores || []) g.cores.add(who, id);
       for (const id of this.scn.opp || []) g.cores.add(1 - team, id);
       if (this.scn.init) this.scn.init(s);
       this.cam = this.focusPt();

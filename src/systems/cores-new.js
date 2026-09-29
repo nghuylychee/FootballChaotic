@@ -62,11 +62,11 @@ window.SFC = window.SFC || {};
     }
   }
 
-  // phân thân của đội (Ảnh Phân Thân / Đại Phân Thân): cản người, chặn đường chuyền, chạm vào là nổ khói
-  function cloneBlock(sys, team) {
+  // phân thân của người sở hữu (Ảnh Phân Thân / Đại Phân Thân): cản người, chặn đường chuyền, chạm vào là nổ khói
+  function cloneBlock(sys, team, owner) {
     const g = sys.g, E = g.effects, b = g.ball;
     for (const c of E.V.clones) {
-      if (c.team !== team || c.t < 0.05) continue;
+      if (c.team !== team || c.pid !== owner.id || c.t < 0.05) continue;
       for (const o of g.teams[1 - team].players) {
         if (o.airZ > 4 || U.dist(o, c) > 10) continue;
         const d = U.norm(o.x - c.x, o.y - c.y + 0.01);
@@ -85,10 +85,10 @@ window.SFC = window.SFC || {};
     }
   }
 
-  // Core DÙNG Giáp tự có tối thiểu 1 Giáp mỗi lần giao bóng (không thành lá chết khi chưa có Core TẠO Giáp)
+  // Core DÙNG Giáp: người sở hữu tự có tối thiểu 1 Giáp mỗi lần giao bóng (không thành lá chết khi chưa có Core TẠO Giáp)
   const guardFloor = {
-    onAdd(sys, team) { for (const p of sys.g.teams[team].players) p.res.guard = Math.max(p.res.guard, 1); },
-    onKickoff(sys, team) { for (const p of sys.g.teams[team].players) p.res.guard = Math.max(p.res.guard, 1); },
+    onAdd(sys, team, prm) { prm.owner.res.guard = Math.max(prm.owner.res.guard, 1); },
+    onKickoff(sys, team, prm) { prm.owner.res.guard = Math.max(prm.owner.res.guard, 1); },
   };
 
   Object.assign(B, {
@@ -110,8 +110,8 @@ window.SFC = window.SFC || {};
     },
     sonic_boom: {
       update(sys, team, prm) {
-        const g = sys.g, E = g.effects, max = sys.resMax(team, 'momentum');
-        for (const pl of g.teams[team].players) {
+        const g = sys.g, E = g.effects, max = sys.resMax(prm.owner, 'momentum');
+        for (const pl of [prm.owner]) {
           if (!pl.hasBall || !pl.sprinting || pl.state !== 'normal' || pl.res.momentum < max || g.time < (pl.sonicT || 0)) continue;
           const sp = Math.hypot(pl.vx, pl.vy);
           if (sp < 60) continue;
@@ -140,7 +140,7 @@ window.SFC = window.SFC || {};
     freight_train: {
       update(sys, team, prm) {
         const g = sys.g, E = g.effects;
-        for (const pl of g.teams[team].players) {
+        for (const pl of [prm.owner]) {
           if (pl.state !== 'normal' || pl.res.momentum < prm.minMomentum || g.time < (pl.trainT || 0)) continue;
           const sp = Math.hypot(pl.vx, pl.vy);
           if (sp < prm.minSpeed) continue;
@@ -179,7 +179,7 @@ window.SFC = window.SFC || {};
         const b = g.ball;
         b.fx.ghost = true;
         b.skin = 'light';
-        if (sys.resActive(team, 'rhythm')) { g.rhythm[team] = Math.min(RES().rhythm.max, g.rhythm[team] + prm.rhythm); g.rhythmT[team] = 0; }
+        if (sys.resActive(pl, 'rhythm')) { g.rhythm[team] = Math.min(RES().rhythm.max, g.rhythm[team] + prm.rhythm); g.rhythmT[team] = 0; }
         g.effects.burst(b.x, b.y, 4, '#fff6c0', 10, 70, 0.4);
         g.effects.ring(b.x, b.y - 4, '#fff6c0');
         g.sfx('pick');
@@ -218,10 +218,10 @@ window.SFC = window.SFC || {};
       },
     },
     endless_tiki: {
-      aiUse(sys, team) {
-        const g = sys.g, b = g.ball;
-        if (!b.owner || b.owner.team !== team || b.owner.state !== 'normal') return null;
-        return g.teams[team].players.some((m) => m !== b.owner && m.state === 'normal') ? b.owner : null;
+      aiUse(sys, team, prm) {
+        const g = sys.g, b = g.ball, me = prm.owner;
+        if (!b.owner || b.owner.team !== team || b.owner.state !== 'normal' || me.state !== 'normal') return null;
+        return g.teams[team].players.some((m) => m !== b.owner && m.state === 'normal') ? me : null;
       },
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball, f = g.field, dir = g.teams[team].dir;
@@ -318,10 +318,10 @@ window.SFC = window.SFC || {};
       },
     },
     meteor_strike: {
-      aiUse(sys, team) {
-        const g = sys.g, b = g.ball, o = b.owner;
-        if (!o || o.team !== team || o.state !== 'normal') return null;
-        return Math.abs(g.attackGoal(team).x - o.x) < 280 ? o : null;
+      aiUse(sys, team, prm) {
+        const g = sys.g, b = g.ball, o = b.owner, me = prm.owner;
+        if (!o || o.team !== team || o.state !== 'normal' || me.state !== 'normal') return null;
+        return Math.abs(g.attackGoal(team).x - o.x) < 280 ? me : null;
       },
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball;
@@ -393,7 +393,7 @@ window.SFC = window.SFC || {};
             if (g.state !== 'play' || pl.state === 'stun') return;
             const d = fv(pl), last = i === prm.hits - 1;
             E.stretch(pl.id, pl.x + d.x * U.rand(14, 22) + U.rand(-4, 4), pl.y + d.y * 12 + U.rand(-6, 6), 0.1);
-            for (const o of Act().inFront(g, pl, prm.range, 60, sys.has(team, 'juggle'))) {
+            for (const o of Act().inFront(g, pl, prm.range, 60, sys.has(pl, 'juggle'))) {
               if (Act().dodged(g, o)) continue;
               // Tâng Người: chuỗi đấm tâng tiếp người đang bay (Long Quyền -> Bão Đấm)
               if (o.airZ > 0) { sys.juggle(pl, o); continue; }
@@ -429,7 +429,7 @@ window.SFC = window.SFC || {};
     hundred_fists: {
       aiUse(sys, team, prm) {
         const g = sys.g;
-        for (const p of g.teams[team].players) {
+        for (const p of [prm.owner]) {
           if (p.state !== 'normal' || p.airZ > 0) continue;
           const o = nearestOpp(g, team, p, (q) => targetable(g)(q) && q.airZ <= 0);
           if (o && U.dist(o, p) < prm.range * 0.6 && (o.hasBall || Math.random() < 0.3)) return p;
@@ -543,16 +543,10 @@ window.SFC = window.SFC || {};
       },
     },
     meteor_drop: {
-      aiUse(sys, team) {
-        const g = sys.g, b = g.ball;
+      aiUse(sys, team, prm) {
+        const b = sys.g.ball, me = prm.owner;
         if (!b.owner || b.owner.team === team) return null;
-        let best = null, bd = Infinity;
-        for (const p of g.teams[team].players) {
-          if (p.state !== 'normal' || p.airZ > 0) continue;
-          const d = U.dist(p, b.owner);
-          if (d < bd) { bd = d; best = p; }
-        }
-        return best;
+        return me.state === 'normal' && me.airZ <= 0 ? me : null;
       },
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, f = g.field;
@@ -621,7 +615,7 @@ window.SFC = window.SFC || {};
     },
     witch_time: {
       onDodge(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects, st = sys.st(team, 'witch_time');
+        const g = sys.g, E = g.effects, st = sys.st(pl, 'witch_time');
         if (st.cd > 0) return;
         st.cd = prm.cooldown;
         g.slowMo(prm.scale, prm.time);
@@ -643,20 +637,19 @@ window.SFC = window.SFC || {};
           E.clone(pl.id, pl.x, pl.y, Math.cos(a) * prm.speed, Math.sin(a) * prm.speed, prm.time);
         }
       },
-      update(sys, team) { cloneBlock(sys, team); },
+      update(sys, team, prm) { cloneBlock(sys, team, prm.owner); },
     },
     clone_army: {
       aiUse(sys, team, prm) {
-        const g = sys.g, b = g.ball, o = b.owner;
-        if (!o) return null;
-        if (o.team === team) return o.state === 'normal' && Math.abs(g.attackGoal(team).x - o.x) < 260 ? o : null;
-        let best = null, bd = prm.range;
-        for (const p of g.teams[team].players) { const d = U.dist(p, o); if (p.state === 'normal' && d < bd) { bd = d; best = p; } }
-        return best;
+        const g = sys.g, b = g.ball, o = b.owner, me = prm.owner;
+        if (!o || me.state !== 'normal') return null;
+        if (o.team === team) return o === me && Math.abs(g.attackGoal(team).x - o.x) < 260 ? me : null;
+        return U.dist(me, o) < prm.range ? me : null;
       },
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball, dir = g.teams[team].dir;
-        sys.st(team, 'clone_army').t = g.time + prm.time;
+        const cst = sys.st(team, 'clone_army');   // cả đội sút được hưởng (thủ môn bị lừa), lưu mức trừ theo chỉ số người ra chiêu
+        cst.t = g.time + prm.time; cst.gk = prm.gkPenalty;
         E.callout('CLONES!', '#9d7bff', 1.0);
         E.burst(pl.x, pl.y, 6, '#d8d0e0', 24, 120, 0.7);
         E.comic(pl.x, pl.y - 30, 'POOF!', '#d8d0e0', 1, 0.6);
@@ -695,7 +688,7 @@ window.SFC = window.SFC || {};
           g.sfx('hit');
         });
       },
-      update(sys, team) { cloneBlock(sys, team); },
+      update(sys, team, prm) { cloneBlock(sys, team, prm.owner); },
     },
 
     /* ================= 🛡 THÉP ================= */
@@ -703,7 +696,7 @@ window.SFC = window.SFC || {};
       ...guardFloor,
       update(sys, team, prm) {
         const g = sys.g, E = g.effects;
-        for (const pl of g.teams[team].players) {
+        for (const pl of [prm.owner]) {
           if (!pl.hasBall || pl.res.guard <= 0 || pl.state !== 'normal') continue;
           if (pl.sizeMul < 1.05 && pl.sizeTarget <= 1) { E.burst(pl.x, pl.y, 8, '#c7ccd6', 10, 80, 0.4); g.sfx('block'); }
           pl.sizeTarget = Math.max(pl.sizeTarget, prm.scale); pl.sizeT = Math.max(pl.sizeT, 0.15);
@@ -722,7 +715,7 @@ window.SFC = window.SFC || {};
         const threat = (b.owner && b.owner.team !== team && Math.abs(b.owner.x - goal.x) < prm.near)
           || (!b.owner && b.lastKickTeam === 1 - team && Math.abs(b.x - goal.x) < prm.near * 1.3 && b.vx * dir < -60);
         if (!threat) return;
-        for (const pl of g.teams[team].players) {
+        for (const pl of [prm.owner]) {
           if (!g.inKeeperZone(pl) || pl.res.guard <= 0 || pl.state === 'stun') continue;
           if (pl.sizeMul < 1.05 && g.time > (pl.gkPoofT || 0)) {
             pl.gkPoofT = g.time + 2;
@@ -734,12 +727,10 @@ window.SFC = window.SFC || {};
       },
     },
     titan: {
-      aiUse(sys, team) {
-        const g = sys.g, b = g.ball;
-        if (b.owner && b.owner.team === team && b.owner.state === 'normal') return b.owner;
-        let best = null, bd = 80;
-        for (const p of g.teams[team].players) { const d = U.dist(p, b); if (p.state === 'normal' && d < bd) { bd = d; best = p; } }
-        return best;
+      aiUse(sys, team, prm) {
+        const b = sys.g.ball, me = prm.owner;
+        if (me.state !== 'normal') return null;
+        return b.owner === me || U.dist(me, b) < 80 ? me : null;
       },
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects;
@@ -827,10 +818,10 @@ window.SFC = window.SFC || {};
       onLightHit(sys, team, prm, a, v) {
         if (a.res.guard <= 0) return;
         const E = sys.g.effects;
-        if (sys.resActive(team, 'rage')) a.res.rage = Math.min(RES().rage.max, a.res.rage + prm.rage);
+        if (sys.resActive(a, 'rage')) a.res.rage = Math.min(RES().rage.max, a.res.rage + prm.rage);
         E.burst((a.x + v.x) / 2, (a.y + v.y) / 2, 10, '#ffffff', 8, 110, 0.3);
         E.burst((a.x + v.x) / 2, (a.y + v.y) / 2, 10, '#ffd23f', 4, 90, 0.3);
-        if (!sys.has(team, 'street_fighter')) E.comic(v.x, v.y - 26, 'CLANG!', '#c7ccd6', 0.7, 0.45);
+        if (!sys.has(a, 'street_fighter')) E.comic(v.x, v.y - 26, 'CLANG!', '#c7ccd6', 0.7, 0.45);
       },
     },
     one_two: {
@@ -854,7 +845,7 @@ window.SFC = window.SFC || {};
     },
     counter_strike: {
       onDodge(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects, st = sys.st(team, 'counter_strike');
+        const g = sys.g, E = g.effects, st = sys.st(pl, 'counter_strike');
         pl.counterT = g.time + prm.window;
         pl.cd.light = 0;
         pl.glow('#ff3d5a', prm.window);
@@ -866,7 +857,7 @@ window.SFC = window.SFC || {};
       },
       onLightHit(sys, team, prm, a, v) {
         if (!a.lastPunch || !a.lastPunch.counter) return;
-        if (sys.resActive(team, 'rage')) a.res.rage = Math.min(RES().rage.max, a.res.rage + prm.rage);
+        if (sys.resActive(a, 'rage')) a.res.rage = Math.min(RES().rage.max, a.res.rage + prm.rage);
         sys.g.hitStop(0.06);
         sys.g.effects.comic(v.x, v.y - 30, 'CRACK!', '#ff3d5a', 1, 0.5);
       },
@@ -916,7 +907,7 @@ window.SFC = window.SFC || {};
         b.pierce = prm.pierce;
         pl.facing = Math.atan2(d.y, d.x);
         sys.chargedShot(pl, b, 1);
-        const st = sys.st(team, 'scissor_kick');
+        const st = sys.st(pl, 'scissor_kick');
         if (!(st.cd > 0)) { st.cd = prm.cooldown; g.slowMo(0.3, 0.3); }
         E.wave(b.x, b.y, 18, '#ffffff', 0.35, 2);
         E.comic(pl.x, pl.y - 30, 'SCISSOR KICK!', '#b46bff', 1, 0.6);
@@ -934,9 +925,9 @@ window.SFC = window.SFC || {};
 
     /* ================= 🎲 HỖN LOẠN ================= */
     bomb_ball: {
-      onKickoff(sys, team) { const st = sys.st(team, 'bomb_ball'); st.t = 0; st.fuse = 0; },
+      onKickoff(sys, team, prm) { const st = sys.st(prm.owner, 'bomb_ball'); st.t = 0; st.fuse = 0; },
       update(sys, team, prm, dt) {
-        const g = sys.g, E = g.effects, b = g.ball, st = sys.st(team, 'bomb_ball');
+        const g = sys.g, E = g.effects, b = g.ball, st = sys.st(prm.owner, 'bomb_ball');
         if (!st.fuse) {
           st.t = (st.t || 0) + dt;
           if (st.t < prm.every) return;

@@ -223,7 +223,7 @@ window.SFC = window.SFC || {};
         ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
       const sp = Math.hypot(p.vx || 0, p.vy || 0);
-      if (sp > 95 && g.cores.has(p.team, 'speed_demon')) {
+      if (sp > 95 && g.cores.has(p, 'speed_demon')) {
         for (let i = 2; i >= 1; i--) {
           const k = i * 0.05;
           drawPlayer(ctx, Object.assign({}, p, { x: p.x - p.vx * k, y: p.y - p.vy * k, atkType: null, keeper: false }), g, 0.32 / i, '#3ff6ff');
@@ -239,7 +239,7 @@ window.SFC = window.SFC || {};
         ellipse(ctx, x, y, 7, 3, '#ffffff');
       }
       const mo = p.res ? p.res.momentum : 0;
-      if (mo > 0 && mo >= g.cores.resMax(p.team, 'momentum')) {
+      if (mo > 0 && mo >= g.cores.resMax(p, 'momentum')) {
         ctx.globalAlpha = 0.35 + 0.2 * Math.sin(t * 20);
         ellipse(ctx, x, y, 10, 4, '#3ff6ff');
       }
@@ -265,7 +265,7 @@ window.SFC = window.SFC || {};
       const mo = p.res.momentum;
       if (mo > 0) {
         for (let i = 0; i < mo; i++) if (R() < 0.25) px(ctx, x - 6 + Math.round(R() * 12), y - Math.round(R() * 3), R() < 0.5 ? 2 : 1, 1, i % 2 ? '#7fe7ff' : '#ffffff');
-        if (mo >= C.resMax(p.team, 'momentum') && R() < 0.45) {
+        if (mo >= C.resMax(p, 'momentum') && R() < 0.45) {
           const sx = x + (R() < 0.5 ? -6 : 5);
           let yy = y - 2;
           for (let k = 0; k < 4; k++) { const ny = yy - 3 - Math.round(R() * 2); px(ctx, sx + Math.round(R() * 2 - 1), ny, 1, yy - ny, '#bdf4ff'); yy = ny; }
@@ -281,13 +281,13 @@ window.SFC = window.SFC || {};
         }
       }
       // Nắm Đấm Sắt: có Giáp -> hai nắm tay thép
-      if (C.has(p.team, 'iron_fist') && p.res.guard > 0) {
+      if (C.has(p, 'iron_fist') && p.res.guard > 0) {
         ctx.globalCompositeOperation = 'source-over';
         for (const s of [-1, 1]) { px(ctx, x + s * 6 - 1, y - 8, 3, 3, '#140c16'); px(ctx, x + s * 6 - 1, y - 8, 2, 2, '#c7ccd6'); px(ctx, x + s * 6 - 1, y - 8, 1, 1, '#ffffff'); }
         ctx.globalCompositeOperation = 'lighter';
       }
       // Phá Âm Chướng: Đà tối đa + đang chạy -> hình nón sóng âm trắng trước mặt
-      if (C.has(p.team, 'sonic_boom') && mo >= C.resMax(p.team, 'momentum') && Math.hypot(p.vx || 0, p.vy || 0) > 90) {
+      if (C.has(p, 'sonic_boom') && mo >= C.resMax(p, 'momentum') && Math.hypot(p.vx || 0, p.vy || 0) > 90) {
         const a = Math.atan2(p.vy, p.vx), ph = (g.time * 6) % 1;
         for (let k = 0; k < 3; k++) {
           const r = 9 + ((k / 3 + ph) % 1) * 12;
@@ -319,14 +319,14 @@ window.SFC = window.SFC || {};
       if (p.charging) {
         const ready = (p.charge || 0) >= C.chargedThreshold(p.team);
         const fx = x + Math.round(Math.cos(p.facing) * 5);
-        if (ready && C.has(p.team, 'fire_shot')) for (let i = 0; i < 2; i++) px(ctx, fx - 2 + Math.round(R() * 4), y - 1 - Math.round(R() * 5), 1, 2, R() < 0.5 ? '#ff6a1f' : '#ffd23f');
+        if (ready && C.has(p, 'fire_shot')) for (let i = 0; i < 2; i++) px(ctx, fx - 2 + Math.round(R() * 4), y - 1 - Math.round(R() * 5), 1, 2, R() < 0.5 ? '#ff6a1f' : '#ffd23f');
         // Chưởng Sóng: quả cầu sáng tụ trước chân khi gần đầy lực
-        if (C.has(p.team, 'energy_wave') && (p.charge || 0) >= 0.6) {
+        if (C.has(p, 'energy_wave') && (p.charge || 0) >= 0.6) {
           const k = Math.min(1, ((p.charge || 0) - 0.6) / 0.3), ox = x + Math.round(Math.cos(p.facing) * 9);
           disc(ctx, ox, y - 5, 2 + Math.round(k * 4), 'rgba(127,231,255,0.35)');
           disc(ctx, ox, y - 5, 1 + Math.round(k * 2), '#dffbff');
         }
-        if (C.has(p.team, 'thunder_kick') && (p.charge || 0) >= 0.3) {
+        if (C.has(p, 'thunder_kick') && (p.charge || 0) >= 0.3) {
           const lit = (p.charge || 0) >= C.params('thunder_kick').minCharge;
           for (let i = 0; i < (lit ? 3 : 1); i++) if (R() < 0.7) {
             const a = R() * Math.PI * 2, r = 3 + R() * (lit ? 7 : 4);
@@ -341,7 +341,7 @@ window.SFC = window.SFC || {};
         px(ctx, sx - 1, sy - 1, 5, 5, '#140c16'); px(ctx, sx, sy, 3, 2, '#c7ccd6'); px(ctx, sx + 1, sy + 2, 1, 1, '#c7ccd6');
       }
       // Mắt Đại Bàng: đang nạp lực chuyền -> nét phấn (đường chấm + mũi tên + vòng điểm rơi) như bảng chiến thuật
-      if (p.passMode && p.hasBall && C.has(p.team, 'eagle_eye')) {
+      if (p.passMode && p.hasBall && C.has(p, 'eagle_eye')) {
         const b = g.ball, plan = SFC.Actions.passPlan(g, p, p.passLock, p.passMode, p.passCharge || 0, Math.cos(p.facing), Math.sin(p.facing), true);
         const ex = plan.point.x, ey = plan.point.y, L = Math.hypot(ex - b.x, ey - b.y) || 1, ux = (ex - b.x) / L, uy = (ey - b.y) / L;
         const chalk = 'rgba(240,236,228,0.85)';
@@ -355,7 +355,7 @@ window.SFC = window.SFC || {};
         ctx.beginPath(); ctx.ellipse(ex, ey, 6, 3, 0, 0, Math.PI * 2); ctx.stroke();
       }
       // Mắt Thiện Xạ: tia laser đỏ ngắm từ chân tới khung + tâm ngắm nhấp nháy trên lưới
-      if (p.charging && p.hasBall && C.has(p.team, 'sniper_foot')) {
+      if (p.charging && p.hasBall && C.has(p, 'sniper_foot')) {
         const b = g.ball, f = g.field, dir = g.teams[p.team].dir;
         const aim = SFC.Actions.shotAim(g, p, Math.cos(p.facing), Math.sin(p.facing));
         const lx = dir > 0 ? f.x + f.w : f.x, tt = (lx - b.x) / (Math.cos(aim.angle) || 1e-3);
@@ -439,7 +439,7 @@ window.SFC = window.SFC || {};
 
     // hình thái Cộng hưởng bậc 4: cả đội đổi ngoại hình theo trường phái
     form(ctx, g, p) {
-      const tag = g.cores.formOf(p.team);
+      const tag = g.cores.formOf(p);
       if (!tag || p.airZ > 0) return;
       const { px, disc } = SP(), t = g.time + p.id * 0.37, x = Math.round(p.x), y = Math.round(p.y), R = Math.random;
       const moving = Math.hypot(p.vx || 0, p.vy || 0) > 20;

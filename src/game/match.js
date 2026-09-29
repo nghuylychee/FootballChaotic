@@ -14,6 +14,7 @@ window.SFC = window.SFC || {};
      *         avatars: [{name, look, role?, stats?, ovr?} | null, ...] — character của người chơi, thay cầu thủ ở vị trí role
      *                  (DEF / FWD, mặc định FWD) của đội đó; stats = chỉ số riêng (Main Path / Luyện tập, không có thì dùng chỉ số đội),
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
+     *         mates: [{ name, ovr, stats, deck, look, role } | null, ...] — đồng đội của người chơi (thay cầu thủ AI không phải character),
      *         coreFresh: [[id...] | null, ...] — Core vừa mở khoá: ưu tiên hiện ở lượt chọn (nhãn NEW), mỗi lượt tối đa 1 lá,
      *         signature: [id | null, ...] — Core đặc trưng đội AI chắc chắn cầm (boss trận thăng hạng Main Path),
      *         noScale / coreRating: [r0, r1] — tắt scale Core theo chỉ số / ép rating scale Core từng đội (giả lập cân bằng),
@@ -71,6 +72,20 @@ window.SFC = window.SFC || {};
         p.avatar = true;
         if (av.stats) { p.stats = Object.assign({}, p.stats, av.stats); p.ovr = av.ovr; }
       });
+      // đồng đội của người chơi (Main Path / Luyện tập, src/core/teammates.js): thay 1 cầu thủ AI không phải character —
+      // tên, ngoại hình, chỉ số riêng, deck Core (mỗi lượt chọn Core tự bốc 1 lá trong deck)
+      (opts.mates || []).forEach((m, t) => {
+        if (!m || !this.teams[t]) return;
+        const list = this.teams[t].players.filter((q) => !q.avatar);
+        const p = list.find((q) => q.role === m.role) || list[0];
+        if (!p) return;
+        p.name = m.name;
+        if (m.look) p.look = Object.assign({}, m.look);
+        if (m.stats) p.stats = Object.assign({}, p.stats, m.stats);
+        p.ovr = m.ovr;
+        p.deck = m.deck && m.deck.length ? m.deck.slice() : null;
+        p.mate = true;
+      });
       // trạng thái điều khiển theo từng đội người chơi
       this.ctrl = [null, null];
       this.solo = (opts.solo || [null, null]).map((idx, t) => (idx == null ? null : this.teams[t].players[idx] || null));
@@ -85,7 +100,6 @@ window.SFC = window.SFC || {};
       this.draft = null;
       this.events = [];
       this.lastScorer = null;
-      this.ult = [0, 0];        // năng lượng Tuyệt kỹ mỗi đội (0..1) — nạp khi ghi bàn / cướp bóng
       this.rhythm = [0, 0];     // Nhịp (TIKI-TAKA) của mỗi đội
       this.rhythmT = [0, 0];
       this.timers = [];         // later(): hẹn giờ theo thời gian thật (chạy cả lúc hit-stop)
@@ -394,13 +408,14 @@ window.SFC = window.SFC || {};
 
     // Mở Core Upgrade lúc bóng chết: trước khi giao bóng đầu trận (pre) + sau bàn thắng (nếu có lượt đang chờ)
     startDraft(pre = false) {
-      const n = this.cfg.match.upgradeChoices;
+      const n = this.cfg.match.upgradeChoices, C = this.cores;
       this.upgradeIdx++;
-      const aiTeams = [0, 1].filter((t) => !this.isHuman(t));
-      const aiPicks = aiTeams.map((t) => ({ team: t, id: this.cores.aiPick(t) })).filter((x) => x.id);
-      // mỗi đội người chơi có bộ thẻ riêng
+      // Core là của từng cầu thủ: mọi cầu thủ AI (đồng đội của người chơi + đối thủ) tự bốc 1 lá cho riêng mình
+      const aiPicks = this.players.filter((p) => !C.isHumanOwner(p))
+        .map((p) => ({ team: p.team, pid: p.id, id: C.aiPick(p) })).filter((x) => x.id);
+      // người chơi (mỗi đội người): 3 lá cho cầu thủ mình điều khiển
       const options = {};
-      for (const t of this.humans) options[t] = this.cores.rollOptions(t, n);
+      for (const t of this.humans) { const p = C.humanOwner(t); options[t] = p ? C.rollOptions(p, n) : []; }
       if (!this.humans.some((t) => options[t].length)) {
         if (aiPicks.length) this.emit('corePicked', { picks: aiPicks });
         return;
@@ -426,8 +441,11 @@ window.SFC = window.SFC || {};
         this.emit('draftWait', { team });
         return;
       }
-      const picks = this.humans.filter((t) => d.picked[t]).map((t) => ({ team: t, id: d.picked[t] }));
-      for (const pk of picks) this.cores.add(pk.team, pk.id);
+      const picks = this.humans.filter((t) => d.picked[t]).map((t) => {
+        const p = this.cores.humanOwner(t);
+        return { team: t, pid: p && p.id, id: d.picked[t] };
+      });
+      for (const pk of picks) this.cores.add(this.cores.humanOwner(pk.team), pk.id);
       this.emit('corePicked', { picks: picks.concat(d.aiPicks) });
       this.draft = null;
       // còn lượt đang chờ (tích nhiều lượt / trước FINAL PUSH) -> chọn tiếp luôn
@@ -445,7 +463,7 @@ window.SFC = window.SFC || {};
       const d = this.draft;
       if (this.state !== 'draft' || !d || !d.options[team] || d.picked[team] || !(d.rerolls[team] > 0)) return false;
       d.rerolls[team]--;
-      d.options[team] = this.cores.rollOptions(team, this.cfg.match.upgradeChoices, d.options[team]);
+      d.options[team] = this.cores.rollOptions(this.cores.humanOwner(team), this.cfg.match.upgradeChoices, d.options[team]);
       this.emit('draftWait', { team });
       this.sfx('whoosh');
       return true;
@@ -602,7 +620,7 @@ window.SFC = window.SFC || {};
       } else if (opp && b.kind === 'pass' && spd > C.pass.intercept.minSpeed) {
         // TIKI-TAKA 4: đủ Nhịp thì đường chuyền không thể bị cắt
         // Chạm Một / Đường Chuyền Xuyên Không: bóng xuyên qua như ma
-        if (this.cores.passShielded(b.lastKickTeam) || b.fx.ghost) {
+        if (this.cores.passShielded(b.lastTouch && b.lastTouch.team === b.lastKickTeam ? b.lastTouch : b.lastKickTeam) || b.fx.ghost) {
           b.noPickup.set(p.id, 0.3);
           if (b.fx.ghost) this.effects.burst(b.x, b.y, b.z, '#fff6c0', 4, 40, 0.3);
           return;
@@ -619,7 +637,7 @@ window.SFC = window.SFC || {};
         // AI vừa cắt được bóng: khựng một nhịp mới chuyền / sút (pass.intercept.aiDelay)
         p.ai.interceptT = U.rand(C.pass.intercept.aiDelay[0], C.pass.intercept.aiDelay[1]);
         // đoạt bóng luôn là đổi quyền kiểm soát -> Core Counter Attack hiện COUNTER! cùng chỗ: ưu tiên chữ đó
-        if (!this.cores.has(p.team, 'counter_attack')) this.effects.text(p.x, p.y - 26, 'INTERCEPT', '#9aa3b5');
+        if (!this.cores.has(p, 'counter_attack')) this.effects.text(p.x, p.y - 26, 'INTERCEPT', '#9aa3b5');
       }
     }
 
@@ -633,7 +651,7 @@ window.SFC = window.SFC || {};
       const edge = U.clamp(Math.abs((p.x - b.x) * dir.y - (p.y - b.y) * dir.x) / reach, 0, 1);
       const fast = U.clamp((b.speed - I.slowSpeed) / (I.fastSpeed - I.slowSpeed), 0, 1);
       let chance = I.base * U.lerp(1, I.speedMin, fast) * U.lerp(1, I.edgeMin, edge) * p.stats.tackle
-        * this.cores.mod(b.lastKickTeam, 'interceptTaken');   // Mắt Đại Bàng: khó bị cắt
+        * this.cores.mod(b.lastKickTeam, 'interceptTaken', b.lastTouch);   // Mắt Đại Bàng: khó bị cắt
       if (!this.isHuman(p.team) || !p.isControlled) chance *= this.aiProfile(p.team).tackleMult;
       if (Math.random() < U.clamp(chance, 0.05, 0.95)) return true;
       b.noPickup.set(p.id, I.retry);

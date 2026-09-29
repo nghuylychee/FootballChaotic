@@ -34,6 +34,7 @@
         humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: m.arena,
         // Core mở khoá (bộ có sẵn + Main Path) · Core vừa mở ưu tiên hiện ở lượt chọn · boss trận thăng hạng cầm Core đặc trưng
         coreUnlocks: [SFC.Profile.unlockedCores(), null], coreFresh: [SFC.MainPath.state.fresh.slice(), null],
+        mates: [this.mateSpec(soloIdx), null],   // đồng đội đang chọn (NHÂN VẬT > TEAM) đá vị trí còn lại
         signature: m.promo ? [null, m.signature] : null,
         mainPath: { area: m.area, div: m.div, promo: m.promo, final: m.final, reward: m.reward },
       });
@@ -55,6 +56,12 @@
     },
 
     // chỉ số riêng của character (chỉ Main Path / Luyện tập — online đi qua Profile.avatar(), không kèm chỉ số)
+    // đồng đội đang chọn vào trận: đá vị trí còn lại so với character
+    mateSpec(soloIdx) {
+      const m = SFC.Mates.active();
+      return m ? SFC.Mates.spec(m, C.roles.find((r, i) => i !== soloIdx) || null) : null;
+    },
+
     avatarStats() { return { stats: SFC.Profile.avatarStats(), ovr: SFC.Profile.ovr() }; },
 
     startMatch(opts) {
@@ -77,6 +84,7 @@
       this.startMatch({
         home, away, difficulty: o.diffs[s.diff], humanTeam: 0, training: true, teamSize: [t.mine, t.opp],
         solo: [soloIdx, null], avatars: [Object.assign(SFC.Profile.avatar(), { role }, this.avatarStats()), null],
+        mates: [two ? this.mateSpec(C.roles.indexOf(role)) : null, null],   // 2 người: đồng đội đang chọn đá cùng
         coreUnlocks: [SFC.Profile.unlockedCores(), null],
       });
     },
