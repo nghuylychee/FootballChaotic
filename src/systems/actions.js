@@ -568,7 +568,13 @@ window.SFC = window.SFC || {};
         const had = o.hasBall && !g.cores.unstealable(o);
         // VÕ SĨ ĐÁ 2: bóng rơi về chân người đá (cướp bóng thật) thay vì văng theo nạn nhân
         const back = had && g.cores.tier(p.team, 'launcher') >= 2;
-        if (had) g.looseBall(o, back ? p.x - o.x : d.x, back ? p.y - o.y : d.y, back ? 70 : H.ballKick * 0.7);
+        if (had) {
+          // bóng văng lệch sang một bên so với hướng người bị đá bay (hard.ballAngle), không bay cùng người
+          const [a0, a1] = H.ballAngle;
+          const ang = Math.atan2(d.y, d.x) + (Math.random() < 0.5 ? -1 : 1) * U.rand(a0, a1) * Math.PI / 180;
+          if (back) g.looseBall(o, p.x - o.x, p.y - o.y, 70);
+          else g.looseBall(o, Math.cos(ang), Math.sin(ang), H.ballKick * 0.7);
+        }
         if (o.hit({ stun: H.stun, kbx: d.x * kb, kby: d.y * kb, launch: H.launch * g.cores.pmod(p, 'launch') * Math.sqrt(fly), source: p, type: 'hard' })) {
           g.cores.hardHit(p, o);
           g.effects.text(o.x, o.y - 30, 'SMASH!', '#ff3d5a');

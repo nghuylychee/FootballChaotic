@@ -214,9 +214,9 @@ window.SFC = window.SFC || {};
           ${game.reward ? this.rewardPanel(game.reward) : ''}
           <div class="build"><h4>OPPONENT BUILD</h4>${build(op)}</div>
         </div>
-        ${this.momentPanel(game)}
-        <div class="end-note">${note}</div>
-        <div class="pause-items row-items" id="end-items"></div>`;
+        <div class="end-foot">${this.momentPanel(game)}
+          <div class="end-act"><div class="end-note">${note}</div><div class="pause-items row-items" id="end-items"></div></div>
+        </div>`;
       this.el.end.classList.toggle('has-moment', !!(game.moments && game.moments.length));
       this.renderEndItems();
       SFC.CorePreview.scan(this.el.end);
@@ -249,6 +249,13 @@ window.SFC = window.SFC || {};
     renderEndItems() {
       const el = document.getElementById('end-items');
       if (el) el.innerHTML = this.endItems().map(([k, l], i) => `<button class="${i === this.endSel ? 'sel' : ''}" data-act="${k}">${l}</button>`).join('');
+      this.showEndItems();
+    },
+
+    // màn kết quả cao hơn khung 360 (hiếm): cuộn để nút đang chọn luôn nhìn thấy
+    showEndItems() {
+      const b = document.querySelector('#end-items .sel');
+      if (b) b.scrollIntoView({ block: 'nearest' });
     },
 
     /* ---------- thưởng sau trận: các dòng hiện lần lượt, gold đếm lên, thanh XP chạy qua từng level ---------- */
@@ -256,8 +263,7 @@ window.SFC = window.SFC || {};
       const lines = r.lines.map((l, i) => `<div class="rw-line" data-rw="${i}"><span>${esc(l.label)}</span>${
         l.mult || l.note ? '' : `<b class="x">+${l.xp} XP</b><b class="g"><i class="coin"></i>+${l.gold}</b>`}</div>`).join('');
       return `<div class="build reward">
-        ${r.path ? this.pathResult(r.path) : ''}
-        <h4>REWARDS</h4>
+        ${r.path ? this.pathResult(r.path) : '<h4>REWARDS</h4>'}
         <div class="rw-lines">${lines}</div>
         <div class="rw-total"><span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
         <div class="lvrow"><span class="lv" id="rw-lv">LV ${r.before.level}</span><div class="xpbar"><i id="rw-bar"></i></div></div>
@@ -334,6 +340,7 @@ window.SFC = window.SFC || {};
             // lên level: điểm chỉ số vừa nhận + số điểm chưa phân bổ (chỉ khi không có dòng Unlocked, giữ khung thưởng tối đa 2 dòng)
             const free = SFC.Profile.pointsFree(), gained = r.levelUps.length * SFC_CONFIG.progression.attrs.pointsPerLevel;
             if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">★ +${gained} stat pts · ${free} to spend</div>`);
+            this.showEndItems();   // dòng thưởng vừa thêm có thể đẩy nút xuống
           }
           return;
         }

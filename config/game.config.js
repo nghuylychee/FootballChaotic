@@ -279,6 +279,7 @@ SFC_CONFIG.game = {
       knockback: 380,         // lực hất văng (px/s) — bay xa nhờ ma sát trên không thấp (airDamp)
       launch: 190,            // vận tốc hất lên cao (px/s)
       ballKick: 230,          // chân trúng bóng lỏng -> sút bóng đi
+      ballAngle: [50, 80],    // (độ) đá trúng người cầm bóng: bóng văng lệch sang trái / phải so với hướng người bị đá bay
       recover: 0.3,           // khựng sau khi đá trúng
       whiffRecover: 0.6,      // khựng sau khi đá trượt
     },

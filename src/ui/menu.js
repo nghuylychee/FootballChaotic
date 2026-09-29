@@ -98,7 +98,7 @@ window.SFC = window.SFC || {};
           return [
             { kind: 'btn', label: 'MAIN PATH', sub: this.pathSub(), act: () => this.go('path') },
             { kind: 'btn', label: 'ONLINE VERSUS', sub: '1 vs 1 · create a room', act: () => this.go('online') },
-            { kind: 'btn', label: 'CHARACTER', sub: PF().pointsFree() > 0 ? `★ ${PF().pointsFree()} stat points to spend!` : 'Stats · inventory · rename', hot: PF().pointsFree() > 0, act: () => this.go('char') },
+            { kind: 'btn', label: 'CHARACTER', sub: PF().pointsFree() > 0 ? `★ ${PF().pointsFree()} stat points to spend!` : 'Stats · appearance · inventory', hot: PF().pointsFree() > 0, act: () => this.go('char') },
             { kind: 'btn', label: 'SHOP', sub: SFC_CONFIG.progression.coreGacha ? 'Gacha boxes · costumes & Cores' : 'Gacha boxes · costumes', act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'SETTINGS', sub: 'Training · controls', act: () => this.go('settings') },
           ];
@@ -110,15 +110,22 @@ window.SFC = window.SFC || {};
         case 'name':
           return [{ kind: 'btn', label: 'CONFIRM', main: true, act: () => this.submitName() }];
         case 'char': {
-          const d = PF().data, look = d.look, P = PROG();
+          const d = PF().data;
           const nItems = Object.values(d.items).reduce((a, b) => a + b, 0) + Object.values(d.cores).reduce((a, b) => a + b, 0);
           const free = PF().pointsFree();
           return [
             { kind: 'btn', label: 'STATS', sub: `OVR ${PF().ovr()}${free > 0 ? ` · ${free} pts free` : ''}`, hot: free > 0, act: () => this.go('attrs') },
-            { kind: 'btn', label: 'RENAME', sub: d.name, act: () => { this.nameBack = 'char'; this.go('name'); } },
+            { kind: 'btn', label: 'APPEARANCE', sub: `${d.name} · skin · hair color`, act: () => this.go('look') },
+            { kind: 'btn', label: 'INVENTORY', sub: `${nItems} items · equip · dismantle`, act: () => { G().invBack = 'char'; this.go('inv'); } },
+          ];
+        }
+        case 'look': {
+          // NGOẠI HÌNH: đổi tên + màu da / tóc (costume ở INVENTORY)
+          const d = PF().data, look = d.look, P = PROG();
+          return [
+            { kind: 'btn', label: 'RENAME', sub: d.name, act: () => { this.nameBack = 'look'; this.go('name'); } },
             { kind: 'pick', label: 'SKIN COLOR', swatch: SFC_CONFIG.teams.skins[look.skin], change: (dd) => PF().setColor('skin', dd) },
             { kind: 'pick', label: 'HAIR COLOR', swatch: P.hairColors[look.hairColor], change: (dd) => PF().setColor('hairColor', dd) },
-            { kind: 'btn', label: 'INVENTORY', sub: `${nItems} items · equip · dismantle`, act: () => { G().invBack = 'char'; this.go('inv'); } },
           ];
         }
         case 'attrs': {
@@ -211,6 +218,7 @@ window.SFC = window.SFC || {};
         this.pend = {};
         return this.go('char');
       }
+      if (this.page === 'look') return this.go('char');
       if (['training', 'controls'].includes(this.page)) this.go('settings');
       else if (['path', 'online', 'tutorial', 'char', 'settings'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
@@ -227,7 +235,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'controls') { this.el.innerHTML = CV().render(); this.bindAvatars(); return; }
       if (G().pages.includes(this.page)) { G().render(this); this.bindAvatars(); return; }
       const list = items.map((it, i) => this.renderItem(it, i)).join('');
-      const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', online: 'ONLINE VERSUS', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER', attrs: 'STATS' };
+      const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', online: 'ONLINE VERSUS', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER', attrs: 'STATS', look: 'APPEARANCE' };
       const small = this.page !== 'home';
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       this.el.innerHTML = `
@@ -279,6 +287,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'home') return this.profileCard();
       if (this.page === 'name') return `<div class="char-stage"><canvas class="avatar big" data-avatar="spin"></canvas><div class="char-name">${esc(this.nameBuf || '???')}</div></div>`;
       if (this.page === 'char') return this.charPanel();
+      if (this.page === 'look') return `<div class="char-stage"><canvas class="avatar big" data-avatar="spin"></canvas><div class="char-name">${esc(PF().data.name)}</div></div>`;
       if (this.page === 'attrs') return this.attrsPanel();
       if (this.page === 'path') return this.pathPanel();
       if (this.page === 'training') return teamCard(o.order[s.team], '');

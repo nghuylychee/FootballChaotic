@@ -576,6 +576,14 @@ canvas.avatar.big { width: 120px; height: 132px; }
 #end.has-moment .end-title { margin-bottom: 2px; }
 #end.has-moment .builds { margin: 8px 0 8px; }
 #end.has-moment .end-note { margin-bottom: 4px; }
+#end.has-moment .end-title { font-size: 32px; }
+/* hàng cuối: khoảnh khắc của trận nằm cạnh ghi chú + nút (tiết kiệm chiều cao); quá khung thì cuộn tới nút (ui.js showEndItems) */
+#end { overflow-y: auto; scrollbar-width: none; padding-top: 24px; padding-bottom: 8px; }
+#end::-webkit-scrollbar { display: none; }
+.end-foot { display: flex; align-items: center; gap: 14px; }
+.end-foot .moment { margin: 0; }
+.end-act { display: flex; flex-direction: column; align-items: center; }
+.end-act .pause-items { margin-bottom: 0; }
 .inv-left { display: flex; flex-direction: column; gap: 4px; min-height: 0; }
 .inv-left .arch-filter { margin-left: 2px; }
 .inv-left .af { font-size: 12px; padding: 1px 3px; }
