@@ -48,15 +48,35 @@ window.SFC = window.SFC || {};
     </div>`;
   }
 
-  // online: CLB riêng của người chơi (Online.club — host áo nhà, khách áo sân khách) thay cho thẻ đội
-  function clubCard(t, pf, label, extra = '') {
-    if (!pf) return teamCard(null, label);
-    const c = SFC.Online.club(t, pf.name), kit = c.kit;
-    return `<div class="team-card" style="--shirt:${kit.shirt};--accent:${kit.accent}">
-      <div class="tc-label">${esc(label)}</div>
-      <div class="tc-head"><span class="kit"><i style="background:${kit.shirt}"></i><i style="background:${kit.accent}"></i><i style="background:${kit.shorts}"></i></span>
-        <div><div class="tc-name">${esc(c.name)}</div><div class="tc-tag">${esc(c.tagline)}</div></div></div>${extra}
-    </div>`;
+  // phòng online: 1 đội = thẻ CLB (CLB riêng của người đầu tiên trong đội / đội bot ngẫu nhiên) + các slot theo vị trí.
+  // Slot trống: đồng đội AI của người duy nhất trong đội, hoặc bot (đội không có người) — bấm để nhảy vào
+  function lobbyTeam(t) {
+    const O = SFC.Online, roles = SFC_CONFIG.game.roles, L = O.lobby, list = O.byTeam()[t];
+    const coop = O.mode === 'coop', meId = O.mine && O.mine.id;
+    let head, style = '--shirt:#8a8f9e;--accent:#9aa3b5';
+    if (list.length) {
+      const c = O.club(list[0].pf.name, !coop && t === 1, coop ? 'CO-OP SQUAD' : null), kit = c.kit;
+      style = `--shirt:${kit.shirt};--accent:${kit.accent}`;
+      head = `<div class="tc-head"><span class="kit"><i style="background:${kit.shirt}"></i><i style="background:${kit.accent}"></i><i style="background:${kit.shorts}"></i></span>
+        <div><div class="tc-name">${esc(c.name)}</div><div class="tc-tag">${esc(c.tagline)}</div></div></div>`;
+    } else {
+      head = `<div class="tc-head"><span class="kit bot"><i></i><i></i><i></i></span>
+        <div><div class="tc-name">??? RANDOM BOTS</div><div class="tc-tag">A random club from your Areas</div></div></div>`;
+    }
+    const slots = roles.map((role) => {
+      const s = O.slotOf(t, role), m = O.memberAt(s), pos = ROLE_LABELS[role] || role;
+      if (m) {
+        const you = m.id === meId, n = L.members.indexOf(m) + 1;
+        const tag = you ? '<em class="you">YOU</em>' : m.id === 'host' ? '<em>HOST</em>' : '';
+        return `<div class="lb-slot ${you ? 'me' : ''}" data-slot="${s}"><u>P${n}</u><div><b>${esc(m.pf.name)}</b>${tag}
+          <span>${pos} · LV${m.pf.level}${m.pf.ovr ? ` · OVR ${m.pf.ovr}` : ''}</span></div></div>`;
+      }
+      const mate = list.length === 1 && list[0].pf.mate;
+      const who = mate ? `<b>${esc(mate.name)}</b><span>AI ${pos} · OVR ${mate.ovr} · ${mate.deck.length} Cores</span>`
+        : list.length ? `<b>AI</b><span>${pos}</span>` : `<b>BOT</b><span>AI ${pos}</span>`;
+      return `<div class="lb-slot open ${mate ? 'mate' : 'bot'}" data-slot="${s}"><u>+</u><div>${who}</div><i>JOIN</i></div>`;
+    }).join('');
+    return `<div class="team-card lb-team ${list.length ? '' : 'bots'}" style="${style}">${head}<div class="lb-slots">${slots}</div></div>`;
   }
 
   const Menu = {
@@ -110,7 +130,7 @@ window.SFC = window.SFC || {};
           // trang chủ: dòng phụ của mọi nút viết in hoa (kể cả dòng động: hạng Main Path, hộp miễn phí...)
           return [
             { kind: 'btn', label: 'MAIN PATH', sub: this.pathSub(), act: () => this.go('path') },
-            { kind: 'btn', label: 'ONLINE VERSUS', sub: '1 vs 1 · create a room', act: () => this.go('online') },
+            { kind: 'btn', label: 'ONLINE', sub: '2-4 players · versus or co-op', act: () => this.go('online') },
             { kind: 'btn', label: 'CHARACTER', sub: this.drillCount() ? `★ ${this.drillCount()} READY!` : SFC.Mates.scoutReady() ? '★ SCOUT REPORT READY!' : 'STATS · TEAM · APPEARANCE · INVENTORY', hot: PF().drillsPending() > 0 || SFC.Mates.scoutReady(), act: () => this.go('char') },
             { kind: 'btn', label: 'SHOP', sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'SETTINGS', sub: 'Training · controls', act: () => this.go('settings') },
@@ -194,12 +214,19 @@ window.SFC = window.SFC || {};
         case 'join':
           return [{ kind: 'btn', label: 'CONNECT', main: true, act: () => this.submitCode() }];
         case 'lobby': {
-          const O = Online(), L = O.lobby;
+          const O = Online(), me = O.mine;
           const list = [];
-          // như Main Path: không chọn đội (đá cho CLB riêng) — chỉ chọn vị trí character + đồng đội AI ra sân
-          list.push({ kind: 'pick', label: 'POSITION', value: this.ctrlLabel(null, s.ctrl), change: (d) => { this.changeCtrl(d); O.updatePf(); } });
-          list.push({ kind: 'pick', label: 'TEAMMATE', value: this.mateLabel(), change: (d) => { this.changeMate(d); O.updatePf(); } });
-          if (O.isHost) list.push({ kind: 'btn', label: 'START', main: true, disabled: !L.guestIn, act: () => O.startMatch() });
+          // như Main Path: không chọn đội (đá cho CLB riêng) — slot quyết định đội + vị trí character; đồng đội AI ra sân khi đội chỉ có mình bạn
+          // SLOT: các slot trống + GUEST (ghế chờ, không ra sân) — phòng đủ 4 người vẫn đổi chỗ được qua ghế chờ
+          list.push({ kind: 'pick', label: 'SLOT', value: me ? this.slotLabel(me.slot) : '—', change: (d) => O.cycleSlot(d) });
+          // đội đã đủ người -> không có đồng đội AI ra sân: khóa chọn đồng đội
+          const full = !!me && me.slot >= 0 && O.byTeam()[O.slotTeam(me.slot)].length >= SFC_CONFIG.game.roles.length;
+          list.push({ kind: 'pick', label: 'TEAMMATE', value: full ? 'TEAM FULL · NO AI' : this.mateLabel(), disabled: full, change: (d) => { this.changeMate(d); O.updatePf(); } });
+          if (O.isHost) {
+            const sub = O.canStart ? (O.mode === 'coop' ? 'CO-OP vs random bots' : 'VERSUS')
+              : O.benched.length ? 'Everyone on GUEST must take a slot' : 'Waiting for players...';
+            list.push({ kind: 'btn', label: 'START', sub, main: true, disabled: !O.canStart, act: () => O.startMatch() });
+          }
           list.push({ kind: 'btn', label: 'LEAVE ROOM', act: () => O.leave() });
           return list;
         }
@@ -219,6 +246,13 @@ window.SFC = window.SFC || {};
       const M = SFC.Mates, n = M.roster().length, max = SFC_CONFIG.teammates.rosterMax;
       const sc = M.scoutReady() ? '★ report ready!' : M.scouting() ? 'scouting...' : 'scout idle';
       return `${n}/${max} players · ${sc}`;
+    },
+
+    // phòng online: slot = đội A (trái) / B (phải) + vị trí
+    slotLabel(s) {
+      const O = Online();
+      if (s < 0) return 'GUEST · SITTING OUT';
+      return `TEAM ${'AB'[O.slotTeam(s)]} · ${ROLE_LABELS[O.slotRole(s)] || O.slotRole(s)}`;
     },
 
     // chỉ đổi giữa các vị trí (1..roles) — ẩn lựa chọn CẢ ĐỘI (ctrl = 0): người chơi chỉ điều khiển character của mình
@@ -258,7 +292,7 @@ window.SFC = window.SFC || {};
       if (G().pages.includes(this.page)) { G().render(this); this.bindAvatars(); return; }
       if (TM().pages.includes(this.page)) { TM().render(this); this.bindAvatars(); return; }
       const list = items.map((it, i) => this.renderItem(it, i)).join('');
-      const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', online: 'ONLINE VERSUS', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER', attrs: 'STATS', look: 'APPEARANCE' };
+      const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', online: 'ONLINE', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER', attrs: 'STATS', look: 'APPEARANCE' };
       const small = this.page !== 'home';
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       this.el.innerHTML = `
@@ -297,7 +331,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'join') return `Type the code · Enter connect · ${back} back`;
       if (this.page === 'name') return PF().hasName ? `Type a name (A-Z, 0-9) · Enter confirm · ${back} back` : 'Type a name (A-Z, 0-9) · Enter confirm';
       if (this.page === 'attrs') return `↑↓ select · ${back} back`;
-      if (this.page === 'lobby') return Online().isHost ? `↑↓ select · ←→ change position / teammate · ${ok} start · ${K('pause', 'Esc')} leave room` : `↑↓ select · ←→ change position / teammate · ${K('pause', 'Esc')} leave room`;
+      if (this.page === 'lobby') return `↑↓ select · ←→ change slot / teammate · click a slot / GUEST to move${Online().isHost ? ` · ${ok} start` : ''} · ${K('pause', 'Esc')} leave room`;
       return `↑↓ select · ←→ change · ${ok} · ${back} back`;
     },
 
@@ -311,24 +345,28 @@ window.SFC = window.SFC || {};
       if (this.page === 'path') return this.pathPanel();
       if (this.page === 'training') return teamCard(o.order[s.team], '');
       if (this.page === 'lobby') {
-        const O = Online(), L = O.lobby;
-        const me = O.isHost ? 'P1 · HOST' : 'P2 · GUEST';
-        const status = O.isHost
-          ? (L.guestIn ? '<div class="lb-note ok">Ready. Press Enter to start</div>' : '<div class="lb-note">Send the room code to a friend to play</div>')
-          : '<div class="lb-note">Waiting for the host to start...</div>';
-        const who = (pf) => (pf ? ` · ${pf.name} LV${pf.level}` : '');
-        // đội hình 2 người: character (vị trí + OVR) + đồng đội AI
-        const squad = (pf) => {
-          if (!pf) return '';
-          const you = `<div class="lb-pl"><b>${esc(pf.name)}</b><span>${esc(pf.role || 'FWD')}${pf.ovr ? ` · OVR ${pf.ovr}` : ''}</span></div>`;
-          const m = pf.mate;
-          const mate = m ? `<div class="lb-pl mate"><b>${esc(m.name)}</b><span>AI ${esc(m.role || '')} · OVR ${m.ovr} · ${m.deck.length} Cores</span></div>` : '';
-          return `<div class="lb-squad">${you}${mate}</div>`;
-        };
+        const O = Online(), n = O.lobby.members.length, max = SFC_CONFIG.net.maxPlayers;
+        if (!n) return '<div class="lobby"><div class="lb-note">Loading room...</div></div>';
+        const coop = O.mode === 'coop';
+        const bench = O.benched;
+        const status = bench.length ? '<div class="lb-note">Players on GUEST must take a slot before the match starts</div>'
+          : O.isHost
+            ? (O.canStart ? `<div class="lb-note ok">Ready. Press Enter to start ${coop ? 'CO-OP' : 'VERSUS'}</div>` : '<div class="lb-note">Send the room code to friends to play</div>')
+            : '<div class="lb-note">Waiting for the host to start...</div>';
+        // ghế chờ GUEST: không ra sân, dùng để đổi chỗ khi phòng đủ 4 người (bấm để ngồi ra)
+        const meId = O.mine && O.mine.id;
+        const benchList = bench.map((m) => `<b class="${m.id === meId ? 'me' : ''}">P${O.lobby.members.indexOf(m) + 1} ${esc(m.pf.name)}</b>`).join('');
+        const benchRow = `<div class="lb-bench ${O.mine && O.mine.slot < 0 ? 'on' : ''}" data-slot="-1"><u>GUEST</u>${benchList || '<span>Sit out here to free your slot for a swap</span>'}</div>`;
+        // chế độ theo cách mọi người đứng: 2 đội có người = VERSUS, chung 1 đội = CO-OP (đội kia bot)
+        const mode = coop
+          ? `<div class="lb-mode coop">CO-OP <span>· same team vs random bots · ${n}/${max}</span></div>`
+          : `<div class="lb-mode">VERSUS <span>· ${n}/${max} players</span></div>`;
         return `<div class="lobby">
-          ${clubCard(0, L.hostPf, (O.isHost ? me + ' (YOU)' : 'P1 · HOST') + who(L.hostPf), squad(L.hostPf))}
+          ${mode}
+          ${lobbyTeam(0)}
           <div class="vs">VS</div>
-          ${clubCard(1, L.guestIn && L.guestPf, (O.isHost ? 'P2 · GUEST' : me + ' (YOU)') + who(L.guestPf), squad(L.guestIn && L.guestPf))}
+          ${lobbyTeam(1)}
+          ${benchRow}
           ${status}
         </div>`;
       }
@@ -689,6 +727,7 @@ window.SFC = window.SFC || {};
     },
 
     change(it, d) {
+      if (it.disabled) return;
       it.change(d);
       SFC.Audio.menu();
       this.render();
@@ -753,6 +792,9 @@ window.SFC = window.SFC || {};
         // Main Path: bấm 1 Area trên "con đường" để xem
         const pa = e.target.closest('[data-parea]');
         if (pa) { this.pathView = +pa.dataset.parea; SFC.Audio.menu(); this.render(); return; }
+        // phòng online: bấm slot trống để nhảy vào
+        const slot = this.page === 'lobby' && e.target.closest('[data-slot]');
+        if (slot) { SFC.Audio.menu(); Online().requestSlot(+slot.dataset.slot); return; }
         const tab = e.target.closest('[data-tab]');
         if (tab) { this.tutPage = +tab.dataset.tab; SFC.Audio.menu(); this.render(); return; }
         const el = e.target.closest('[data-i]');

@@ -108,12 +108,35 @@ kbd {
 .lobby { display: flex; flex-direction: column; gap: 4px; }
 .lobby .tc-desc { display: none; }
 .lobby .stats { margin-top: 5px; }
-.lobby .lb-squad { display: flex; gap: 4px; margin-top: 5px; }
-.lobby .lb-pl { flex: 1; min-width: 0; background: rgba(0,0,0,.25); padding: 3px 5px; border-left: 2px solid var(--accent); }
-.lobby .lb-pl.mate { border-left-color: var(--muted); }
-.lobby .lb-pl b { display: block; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lobby .lb-pl span { display: block; font-size: 8px; color: var(--muted); }
 .lobby .vs { font-family: var(--px); font-size: 9px; color: #ff3d5a; text-align: center; text-shadow: 1px 1px 0 var(--ink); }
+/* phòng 4 slot: chế độ (versus / co-op) + mỗi đội 2 slot theo vị trí */
+.lb-mode { font-family: var(--px); font-size: 8px; color: #ff3d5a; text-shadow: 1px 1px 0 var(--ink); }
+.lb-mode.coop { color: #3ff6ff; }
+.lb-mode span { font-family: var(--vt); font-size: 13px; color: var(--muted); text-shadow: none; }
+.lb-team { padding: 6px 8px; }
+.lb-team.bots .tc-name { color: var(--muted); }
+.kit.bot i { background: #2a2230; border-style: dashed; border-color: var(--muted); }
+.lb-slots { display: flex; gap: 4px; margin-top: 5px; }
+.lb-slot { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,.25); padding: 3px 5px; border-left: 2px solid var(--accent); position: relative; }
+.lb-slot > div { min-width: 0; flex: 1; }
+.lb-slot u { font-family: var(--px); font-size: 6px; text-decoration: none; color: var(--accent); }
+.lb-slot b { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-slot em { font-style: normal; font-family: var(--px); font-size: 5px; margin-left: 4px; padding: 1px 2px; color: var(--muted); border: 1px solid var(--edge); vertical-align: 2px; }
+.lb-slot em.you { color: var(--ink); background: var(--gold); border-color: var(--gold); }
+.lb-slot span { display: block; font-size: 8px; color: var(--muted); }
+.lb-slot.me { box-shadow: inset 0 0 0 1px var(--gold); }
+.lb-slot.open { border-left: 2px dashed var(--muted); cursor: pointer; opacity: 0.8; }
+.lb-slot.open b { color: var(--muted); }
+.lb-slot.open i { font-style: normal; font-family: var(--px); font-size: 5px; color: var(--gold); opacity: 0; }
+.lb-slot.open:hover { opacity: 1; box-shadow: inset 0 0 0 1px var(--gold); }
+.lb-slot.open:hover i { opacity: 1; }
+/* ghế chờ GUEST (đổi chỗ khi phòng đủ người) */
+.lb-bench { display: flex; align-items: center; gap: 6px; min-height: 16px; padding: 2px 6px; border: 1px dashed var(--edge); cursor: pointer; }
+.lb-bench:hover, .lb-bench.on { border-color: var(--gold); }
+.lb-bench u { font-family: var(--px); font-size: 6px; text-decoration: none; color: var(--gold); }
+.lb-bench b { font-size: 11px; font-weight: normal; }
+.lb-bench b.me { color: var(--gold); }
+.lb-bench span { font-size: 11px; color: var(--muted); }
 .lb-note { font-size: 13px; color: var(--muted); text-align: center; margin-top: 2px; }
 .lb-note.ok { color: #9dff3d; animation: pulse 0.8s steps(2) infinite; }
 
@@ -238,6 +261,7 @@ kbd { font-family: var(--vt); font-size: 11px; padding: 0 3px; }
 /* ---------- online / PvP trong trận ---------- */
 .hud-name small.me { color: var(--gold); }
 .hud-name small.op { color: #ff5a6e; }
+.hud-name small.ally { color: #3ff6ff; }
 .draft-timer { font-family: var(--px); font-size: 8px; color: #ff5a6e; margin-left: 8px; }
 #draft.waiting .card { opacity: 0.35; transform: none; cursor: default; }
 #draft.waiting .card.chosen { opacity: 1; border-color: var(--c); box-shadow: 4px 4px 0 var(--ink), 0 0 0 1px var(--gold); }
@@ -1349,3 +1373,4 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .sr-fee.bad { opacity: 0.55; }
 .in-card em.mate { color: var(--ink); background: #7fe7ff; border-color: #7fe7ff; }
 .in-card em.rival { color: #fff; background: #ff3d5a; border-color: #ff3d5a; }
+.in-card em.ally { color: var(--ink); background: #3ff6ff; border-color: #3ff6ff; }

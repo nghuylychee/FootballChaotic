@@ -6,10 +6,11 @@ window.SFC = window.SFC || {};
   const PASS_KEYS = [['pass', 'ground'], ['through', 'through'], ['lob', 'lob']];
 
   SFC.Human = {
-    // team: đội do bộ phím này điều khiển (PvP: mỗi đội một input)
-    update(dt, g, input, team = g.humanTeam) {
-      const p = g.ctrl[team];
+    // seat: slot người chơi do bộ phím này điều khiển (online: mỗi slot một input; co-op 2 slot cùng đội)
+    update(dt, g, input, seat = g.me) {
+      const p = g.seatPlayer(seat);
       if (!p) return;
+      const team = p.team;
       const Act = SFC.Actions;
       const K = SFC_CONFIG.game.kick;
       const P = SFC_CONFIG.game.pass;
@@ -46,7 +47,7 @@ window.SFC = window.SFC || {};
       p.bracing = false;
 
       if (input.wasPressed('switch') && !has) g.switchPlayer(team);
-      if (g.ctrl[team] !== p) return;
+      if (g.seatPlayer(seat) !== p) return;
       // TUYỆT KỸ: phím X khi thanh năng lượng đầy
       if (input.wasPressed('ultimate') && g.cores.activateUltimate(team, p)) return;
 
@@ -65,7 +66,7 @@ window.SFC = window.SFC || {};
             // chỉ khóa đồng đội nằm trong vùng hướng mũi tên; không có ai -> null (chuyền theo hướng)
             p.passLock = Act.findPassTarget(g, p, mx, my, Act.targetBias(p.passCharge), p.passMode, p.passLock, P.coneAngle);
             p.passBase = Act.passBasePower(g, p, p.passLock, p.passMode);
-            if (team === g.humanTeam) g.passPreview = { from: p, target: p.passLock, mode: p.passMode };
+            if (seat === g.me) g.passPreview = { from: p, target: p.passLock, mode: p.passMode };
           } else {
             Act.pass(g, p, p.passMode, mx, my, p.passCharge);
           }

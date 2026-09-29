@@ -453,7 +453,9 @@ window.SFC = window.SFC || {};
       if (me < 0 || !this.data) return null;
       const d = this.data, R = P().rewards;
       const pvp = game.humans.length > 1;
-      const cfg = pvp ? R.pvp : R.single;
+      // online co-op: mọi người chơi cùng 1 đội đấu đội bot (rewards.coop)
+      const coop = !pvp && !!game.opts.online;
+      const cfg = pvp ? R.pvp : coop ? R.coop || R.single : R.single;
       const my = game.teams[me].score, op = game.teams[1 - me].score;
       const result = my > op ? 'win' : my < op ? 'lose' : 'draw';
       const goals = Math.min(R.maxGoals, my);
@@ -462,7 +464,7 @@ window.SFC = window.SFC || {};
       const lines = [{ label: labels[result], xp: cfg[result].xp, gold: cfg[result].gold }];
       if (goals > 0) lines.push({ label: `Goals ×${goals}`, xp: cfg.goal.xp * goals, gold: cfg.goal.gold * goals });
       // Main Path: cộng / trừ sao, lên / tụt hạng; thắng trận thăng hạng có thưởng thêm; thưởng nhân theo Area
-      const mp = !pvp && game.opts.mainPath;
+      const mp = !pvp && !coop && game.opts.mainPath;
       const path = mp ? SFC.MainPath.record(result, mp) : null;
       // mốc sao mới ở Area đã mở hết Core: thưởng gold (nhân theo Area như các dòng khác). Hộp lên hạng vào kho hộp miễn phí
       if (path) {
@@ -480,7 +482,8 @@ window.SFC = window.SFC || {};
           lines.push({ label: `${SFC.MainPath.area(mp.area).name} ×${mp.reward}`, mult: mp.reward });
           xp = Math.round(xp * mp.reward); gold = Math.round(gold * mp.reward);
         }
-      } else if (!pvp) {
+      } else if (coop) lines.push({ label: 'Online co-op', note: true });
+      else if (!pvp) {
         const key = game.opts.difficulty, mult = (cfg.difficulty && cfg.difficulty[key]) || 1;
         if (mult !== 1) {
           const label = (SFC_CONFIG.game.ai.difficulty[key] || {}).label || key;

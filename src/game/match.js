@@ -9,6 +9,10 @@ window.SFC = window.SFC || {};
      * opts: { home, away, difficulty, silent,
      *         humanTeam: đội của người chơi tại máy này (góc nhìn UI; -1 = demo),
      *         humans: các đội do người điều khiển (mặc định [humanTeam]; PvP = [0, 1]),
+     *         seats: [{ team, idx, avatar?, cores? }] — slot người chơi (online co-op / versus 4 slot): mỗi slot khóa vào cầu thủ
+     *                idx của đội team; avatar = character ở slot đó, cores = Core character được bốc (null = tất cả).
+     *                Không có -> mỗi đội trong humans 1 slot theo solo / avatars / coreUnlocks. humans = các đội có slot,
+     *         me: slot của người chơi tại máy này (mặc định slot đầu tiên thuộc humanTeam),
      *         draftTimeLimit: giây tối đa để chọn Core (0 = không giới hạn),
      *         solo: [idx đội 0, idx đội 1] — khóa người chơi vào 1 cầu thủ (chỉ số trong đội; null = điều khiển cả đội),
      *         avatars: [{name, look, role?, stats?, ovr?} | null, ...] — character của người chơi, thay cầu thủ ở vị trí role
@@ -63,14 +67,25 @@ window.SFC = window.SFC || {};
         });
       }
       // character đại diện của người chơi (Profile): thay cầu thủ ở vị trí đã chọn (mặc định ĐÁ CAO), vẫn mặc áo đội
-      (opts.avatars || []).forEach((av, t) => {
-        if (!av || !this.teams[t]) return;
-        const role = av.role || 'FWD';
-        const p = this.teams[t].players.find((q) => q.role === role) || this.teams[t].players[0];
+      const setAvatar = (p, av) => {
         p.name = av.name;
         p.look = Object.assign({}, av.look);
         p.avatar = true;
         if (av.stats) { p.stats = Object.assign({}, p.stats, av.stats); p.ovr = av.ovr; }
+      };
+      (opts.avatars || []).forEach((av, t) => {
+        if (!av || !this.teams[t]) return;
+        const role = av.role || 'FWD';
+        setAvatar(this.teams[t].players.find((q) => q.role === role) || this.teams[t].players[0], av);
+      });
+      // slot người chơi: character + bộ Core đã mở khoá của từng người (co-op: 2 character cùng đội)
+      const seatDefs = opts.seats || this.humans.map((t) => ({ team: t, idx: opts.solo ? opts.solo[t] : null }));
+      if (opts.seats) this.humans = [...new Set(opts.seats.map((s) => s.team))];
+      this.seats = seatDefs.map((s) => {
+        const p = s.idx == null || !this.teams[s.team] ? null : this.teams[s.team].players[s.idx] || null;
+        if (p && s.avatar) setAvatar(p, s.avatar);
+        if (p && s.cores) p.unlocks = s.cores.slice();
+        return { team: s.team, p, gone: false };
       });
       // đồng đội của người chơi (Main Path / Luyện tập, src/core/teammates.js): thay 1 cầu thủ AI không phải character —
       // tên, ngoại hình, chỉ số riêng, deck Core (mỗi lượt chọn Core tự bốc 1 lá trong deck)
@@ -88,7 +103,10 @@ window.SFC = window.SFC || {};
       });
       // trạng thái điều khiển theo từng đội người chơi
       this.ctrl = [null, null];
-      this.solo = (opts.solo || [null, null]).map((idx, t) => (idx == null ? null : this.teams[t].players[idx] || null));
+      // solo[t]: cầu thủ bị khóa của đội t (slot đầu tiên); co-op: slot thứ 2 cùng đội khóa qua p.seat
+      this.seats.forEach((s, i) => { if (s.p) s.p.seat = i; });
+      this.solo = [0, 1].map((t) => { const s = this.seats.find((x) => x.team === t && x.p); return s ? s.p : null; });
+      this.me = opts.me != null ? opts.me : this.seats.findIndex((s) => s.team === this.humanTeam);
       this.receiveLock = [false, false];
       this.passPreview = null;
       this.lastPossessionTeam = -1;
@@ -121,8 +139,37 @@ window.SFC = window.SFC || {};
     aiProfile(team) { return this.isHuman(team) ? this.teammateProfile : this.difficulty; }
     isHuman(team) { return this.humans.includes(team); }
     // cầu thủ người chơi tại máy này đang điều khiển
-    get controlled() { return this.humanTeam >= 0 ? this.ctrl[this.humanTeam] : null; }
-    inputFor(team, input) { return Array.isArray(input) ? input[team] : input; }
+    get controlled() { return this.me >= 0 ? this.seatPlayer(this.me) : null; }
+    // cầu thủ slot i đang điều khiển (slot khóa: luôn 1 người; không khóa: người đang cầm quyền của đội)
+    seatPlayer(i) {
+      const s = this.seats[i];
+      return !s || s.gone ? null : s.p || this.ctrl[s.team];
+    }
+    // các cầu thủ do người điều khiển của đội team
+    pilots(team) {
+      const out = [];
+      this.seats.forEach((s, i) => { const p = s.team === team && this.seatPlayer(i); if (p) out.push(p); });
+      return out;
+    }
+    // input: 1 bộ phím (máy này = slot me) hoặc mảng theo slot (host online)
+    inputFor(seat, input) { return Array.isArray(input) ? input[seat] : seat === this.me ? input : null; }
+
+    // người chơi ở slot i rời trận (online): AI đá thay cầu thủ đó
+    dropSeat(i) {
+      const s = this.seats[i];
+      if (!s || s.gone) return;
+      const d = this.draft;
+      if (d && d.options[i] && !d.picked[i]) this.pickCore(0, i);   // đang chọn Core: chọn hộ lá đầu
+      s.gone = true;
+      if (s.p) { s.p.seat = null; s.p.intent.mx = s.p.intent.my = 0; s.p.charging = false; s.p.bracing = false; s.p.cancelPass(); }
+      const live = this.seats.filter((x) => !x.gone);
+      this.humans = [...new Set(live.map((x) => x.team))];
+      for (let t = 0; t < 2; t++) {
+        const k = live.find((x) => x.team === t && x.p);
+        this.solo[t] = k ? k.p : null;
+        this.ctrl[t] = this.isHuman(t) ? this.solo[t] || this.ctrl[t] : null;
+      }
+    }
     chargeTime(p) { return this.cfg.kick.chargeTime * this.cores.mod(p.team, 'chargeTime', p); }
     attackGoal(team) {
       const f = this.field;
@@ -331,8 +378,10 @@ window.SFC = window.SFC || {};
         case 'draft':
           // PvP: hết giờ chọn -> tự chọn thẻ đầu cho ai chưa chọn
           if (this.draft && this.draft.limit > 0) {
-            this.draft.t -= dt;
-            if (this.draft.t <= 0) for (const t of this.humans) this.pickCore(0, t);
+            const d = this.draft;
+            d.t -= dt;
+            // (chọn xong lượt này có thể mở ngay lượt kế -> chỉ chọn hộ trong đúng lượt đang hết giờ)
+            if (d.t <= 0) for (const k of Object.keys(d.options)) if (this.draft === d) this.pickCore(0, +k);
           }
           break;
         default: // ended: đứng hình
@@ -342,9 +391,9 @@ window.SFC = window.SFC || {};
 
     simulate(dt, input) {
       this.passPreview = null;
-      for (const t of this.humans) {
-        const inp = input && this.inputFor(t, input);
-        if (inp) SFC.Human.update(dt, this, inp, t);
+      for (let i = 0; i < this.seats.length; i++) {
+        const inp = input && !this.seats[i].gone && this.inputFor(i, input);
+        if (inp) SFC.Human.update(dt, this, inp, i);
       }
       if (!this.opts.noAI) SFC.AI.update(dt, this);   // noAI: ảnh xem trước Core (ui/corepreview.js) tự điều khiển
       for (const p of this.players) p.update(dt);
@@ -419,39 +468,39 @@ window.SFC = window.SFC || {};
       // Core là của từng cầu thủ: mọi cầu thủ AI (đồng đội của người chơi + đối thủ) tự bốc 1 lá cho riêng mình
       const aiPicks = this.players.filter((p) => !C.isHumanOwner(p))
         .map((p) => ({ team: p.team, pid: p.id, id: C.aiPick(p) })).filter((x) => x.id);
-      // người chơi (mỗi đội người): 3 lá cho cầu thủ mình điều khiển
+      // người chơi (mỗi slot): 3 lá cho cầu thủ mình điều khiển — khóa theo chỉ số slot
       const options = {};
-      for (const t of this.humans) { const p = C.humanOwner(t); options[t] = p ? C.rollOptions(p, n) : []; }
-      if (!this.humans.some((t) => options[t].length)) {
+      this.seats.forEach((s, i) => { const p = C.seatOwner(i); if (p) options[i] = C.rollOptions(p, n); });
+      if (!Object.values(options).some((o) => o.length)) {
         if (aiPicks.length) this.emit('corePicked', { picks: aiPicks });
         return;
       }
       const limit = this.opts.draftTimeLimit || 0;
       this.state = 'draft';
       const rerolls = {};
-      for (const t of this.humans) rerolls[t] = SFC_CONFIG.cores.draft.rerollsPerRound;
+      for (const k in options) rerolls[k] = SFC_CONFIG.cores.draft.rerollsPerRound;
       this.draft = { options, picked: {}, aiPicks, round: this.upgradeIdx, limit, t: limit, pre, rerolls };
       this.releaseInputs();
       this.emit('draft', { round: this.upgradeIdx });
       this.sfx('upgrade');
     }
 
-    // team chọn thẻ thứ i; Core chỉ được thêm khi mọi người chơi đã chọn xong
-    pickCore(i, team = this.humanTeam) {
+    // slot seat chọn thẻ thứ i; Core chỉ được thêm khi mọi người chơi đã chọn xong
+    pickCore(i, seat = this.me) {
       const d = this.draft;
-      if (this.state !== 'draft' || !d || !d.options[team] || d.picked[team]) return;
-      const id = d.options[team][i];
+      if (this.state !== 'draft' || !d || !d.options[seat] || d.picked[seat]) return;
+      const id = d.options[seat][i];
       if (!id) return;
-      d.picked[team] = id;
-      if (this.humans.some((t) => d.options[t].length && !d.picked[t])) {
-        this.emit('draftWait', { team });
+      d.picked[seat] = id;
+      const keys = Object.keys(d.options);
+      if (keys.some((k) => d.options[k].length && !d.picked[k])) {
+        this.emit('draftWait', { seat });
         return;
       }
-      const picks = this.humans.filter((t) => d.picked[t]).map((t) => {
-        const p = this.cores.humanOwner(t);
-        return { team: t, pid: p && p.id, id: d.picked[t] };
-      });
-      for (const pk of picks) this.cores.add(this.cores.humanOwner(pk.team), pk.id);
+      // (slot vừa rời trận vẫn nhận lá đã chọn hộ -> lấy thẳng cầu thủ của slot)
+      const own = keys.filter((k) => d.picked[k]).map((k) => [(this.seats[k] && this.seats[k].p) || this.cores.seatOwner(+k), d.picked[k]]).filter(([p]) => p);
+      const picks = own.map(([p, cid]) => ({ team: p.team, pid: p.id, id: cid }));
+      for (const [p, cid] of own) this.cores.add(p, cid);
       this.emit('corePicked', { picks: picks.concat(d.aiPicks) });
       this.draft = null;
       // còn lượt đang chờ (tích nhiều lượt / trước FINAL PUSH) -> chọn tiếp luôn
@@ -465,12 +514,12 @@ window.SFC = window.SFC || {};
     }
 
     // đổi cả 3 lá (mỗi lượt chọn được đổi rerollsPerRound lần)
-    rerollDraft(team = this.humanTeam) {
+    rerollDraft(seat = this.me) {
       const d = this.draft;
-      if (this.state !== 'draft' || !d || !d.options[team] || d.picked[team] || !(d.rerolls[team] > 0)) return false;
-      d.rerolls[team]--;
-      d.options[team] = this.cores.rollOptions(this.cores.humanOwner(team), this.cfg.match.upgradeChoices, d.options[team]);
-      this.emit('draftWait', { team });
+      if (this.state !== 'draft' || !d || !d.options[seat] || d.picked[seat] || !(d.rerolls[seat] > 0)) return false;
+      d.rerolls[seat]--;
+      d.options[seat] = this.cores.rollOptions(this.cores.seatOwner(seat), this.cfg.match.upgradeChoices, d.options[seat]);
+      this.emit('draftWait', { seat });
       this.sfx('whoosh');
       return true;
     }

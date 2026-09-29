@@ -101,11 +101,11 @@ window.SFC = window.SFC || {};
     renderDraft(game) {
       const d = game.draft;
       if (!d) return;
-      const me = game.humanTeam;
+      const me = game.me, team = game.humanTeam;   // lượt chọn khóa theo slot người chơi (co-op: 2 slot cùng đội)
       const total = SFC_CONFIG.game.match.maxUpgrades;
       const opts = d.options[me] || [];
       const picked = !!d.picked[me];
-      const mp = game.cores.humanOwner(me);   // Core là của riêng cầu thủ người chơi điều khiển
+      const mp = game.cores.seatOwner(me);   // Core là của riêng cầu thủ người chơi điều khiển
       const ownedTags = new Set(game.cores.coresOf(mp).flatMap((id) => CORES().list[id].tags));
       const timer = d.limit > 0 ? `<span id="draft-timer" class="draft-timer">${Math.ceil(Math.max(0, d.t))}s</span>` : '';
       const cards = opts.map((id, i) => {
@@ -125,20 +125,20 @@ window.SFC = window.SFC || {};
           <div class="card-art">${SFC.CorePreview.html(id, 132, 56)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(keyLabel('ultimate'))}</kbd>` : ''}</div>
           <div class="card-name">${esc(c.name)}</div>
           ${SFC.CoreScale.statLine(id)}
-          <div class="card-desc">${SFC.CoreScale.describe(id, game.cores.rating(id, mp || me))}</div>
+          <div class="card-desc">${SFC.CoreScale.describe(id, game.cores.rating(id, mp || team))}</div>
         </div>`;
       }).join('');
-      const opp = game.teams[1 - me];
+      const opp = game.teams[1 - team];
       const left = (d.rerolls && d.rerolls[me]) || 0;
       const reroll = picked ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> REROLL 3 (${left} left)</button>`;
       // bàn phím: không cần chú thích (bỏ dòng "Pick 1 Core..."); tay cầm không có phím số -> gợi ý nút ngắn
-      const sub = picked ? 'Picked · waiting for opponent...' : SFC.Input.device === 'pad' ? `←→ + ${esc(keyLabel('confirm'))}` : '';
+      const sub = picked ? `Picked · waiting for ${game.seats.length > 2 || game.humans.length < 2 ? 'other players' : 'opponent'}...` :SFC.Input.device === 'pad' ? `←→ + ${esc(keyLabel('confirm'))}` : '';
       this.el.draft.classList.toggle('waiting', picked);
       this.el.draft.innerHTML = `
         <div class="draft-title">${d.pre ? 'STARTING CORE' : 'CORE UPGRADE'} <span>${d.round}/${total}</span>${timer}</div>
         <div class="draft-sub">${sub}${reroll}</div>
         <div class="cards">${cards}</div>
-        <div class="draft-opp"><span>Your build:</span> ${traitChips(game, mp) || '<em>—</em>'}${this.mateChips(game, me, mp)} <span class="sep">·</span> <span>${esc(opp.cfg.name)}:</span> ${opp.players.map((q) => traitChips(game, q) || '<em>—</em>').join(' <span class="sep">/</span> ')}</div>`;
+        <div class="draft-opp"><span>Your build:</span> ${traitChips(game, mp) || '<em>—</em>'}${this.mateChips(game, team, mp)} <span class="sep">·</span> <span>${esc(opp.cfg.name)}:</span> ${opp.players.map((q) => traitChips(game, q) || '<em>—</em>').join(' <span class="sep">/</span> ')}</div>`;
       SFC.CorePreview.scan(this.el.draft);
     },
 
@@ -150,8 +150,8 @@ window.SFC = window.SFC || {};
 
     draftInput(input, game) {
       const d = game.draft;
-      if (!d || d.picked[game.humanTeam]) return;
-      const n = (d.options[game.humanTeam] || []).length;
+      if (!d || d.picked[game.me]) return;
+      const n = (d.options[game.me] || []).length;
       if (!n) return;
       let changed = false;
       let sel = this.draftSel;
@@ -168,7 +168,7 @@ window.SFC = window.SFC || {};
     },
 
     pick(game, i) {
-      if (!game.draft || game.draft.picked[game.humanTeam]) return;
+      if (!game.draft || game.draft.picked[game.me]) return;
       this.draftSel = i;
       this.app.pickCore(i);
       if (game.state === 'draft') this.renderDraft(game);
@@ -182,7 +182,7 @@ window.SFC = window.SFC || {};
       const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${l}</button>`).join('');
       let build = '';
       if (g && me >= 0) {
-        const mp = g.cores.humanOwner(me), owned = g.cores.coresOf(mp), n = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
+        const mp = g.cores.seatOwner(g.me), owned = g.cores.coresOf(mp), n = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
         const slots = Array.from({ length: n }, (_, i) => miniCard(owned[i]));
         build = `<div class="pause-build">
           <div class="pb-traits"><h4>YOUR BUILD</h4>${traitList(g, mp, true) || '<em>No synergies yet</em>'}</div>
@@ -232,7 +232,7 @@ window.SFC = window.SFC || {};
       const lockOf = (t, id) => (game.opts.mainPath && t !== me && !SFC.Profile.coreUnlocked(id) ? SFC.MainPath.unlockHint(id) : '');
       // build của từng cầu thủ: người chơi = danh sách Core có tên; đồng đội / đối thủ = hàng chip
       const build = (t) => t.players.map((q) => {
-        const ids = game.cores.coresOf(q), mine = t === me && game.cores.isHumanOwner(q);
+        const ids = game.cores.coresOf(q), mine = q === game.controlled;
         const item = (id) => {
           const lk = lockOf(t, id);
           return mine
@@ -467,12 +467,9 @@ window.SFC = window.SFC || {};
       const key = [t0.score, t1.score, time, phase, cores, coreLine, pathLine].join('#');
       if (c.key !== key) {
         c.key = key;
-        // nhãn người chơi: P1 / P2; người ở máy này tô vàng
-        const tag = (t) => {
-          if (!game.isHuman(t)) return '';
-          const label = game.humans.length > 1 ? (t === 0 ? 'P1' : 'P2') : 'P1';
-          return ` <small class="${t === game.humanTeam ? 'me' : 'op'}">${label}</small>`;
-        };
+        // nhãn người chơi theo slot: P1..P4 (co-op: 2 nhãn cùng 1 đội); người ở máy này tô vàng, cùng đội xanh, đối thủ đỏ
+        const tag = (t) => game.seats.map((s, i) => (s.team !== t || s.gone ? ''
+          : ` <small class="${i === game.me ? 'me' : t === game.humanTeam ? 'ally' : 'op'}">P${i + 1}</small>`)).join('');
         this.el.hud.innerHTML = `
           <div class="hud-team l" style="--c:${t0.cfg.kit.shirt}">
             <div class="hud-name">${esc(t0.cfg.short)}${tag(0)}</div>
@@ -514,7 +511,7 @@ window.SFC = window.SFC || {};
     // build trên HUD: đội của người chơi = Cộng hưởng kiểu TFT của cầu thủ mình + chip Cộng hưởng của đồng đội;
     // đội kia = mỗi cầu thủ 1 dòng (tên + chip Cộng hưởng)
     hudBuild(game, t) {
-      const C = game.cores, own = t === game.humanTeam ? C.humanOwner(t) : null;
+      const C = game.cores, own = t === game.humanTeam ? game.controlled : null;
       if (own) return `<div class="hud-traits tft">${traitList(game, own)}</div>${this.mateChips(game, t, own, true)}`;
       return `<div class="hud-mates">${game.teams[t].players.map((q) => `<div class="hud-pl"><em>${esc(q.name)}</em>${traitChips(game, q) || '<i>—</i>'}</div>`).join('')}</div>`;
     },
@@ -523,7 +520,9 @@ window.SFC = window.SFC || {};
       const mates = game.teams[t].players.filter((q) => q !== own);
       const html = mates.map((q) => traitChips(game, q)).filter(Boolean).join(' ');
       if (!html) return '';
-      return block ? `<div class="hud-mates"><div class="hud-pl"><em>MATE</em>${html}</div></div>` : ` <span class="sep">+</span> <span>Mate:</span> ${html}`;
+      // co-op: đồng đội là người chơi khác -> hiện tên
+      const who = mates.length === 1 && mates[0].isControlled ? esc(mates[0].name) : 'MATE';
+      return block ? `<div class="hud-mates"><div class="hud-pl"><em>${who}</em>${html}</div></div>` : ` <span class="sep">+</span> <span>${who === 'MATE' ? 'Mate' : who}:</span> ${html}`;
     },
 
     // thanh năng lượng Tuyệt kỹ nhỏ trên HUD của mỗi đội (icon Tuyệt kỹ nếu đã có)

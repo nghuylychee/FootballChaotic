@@ -267,10 +267,11 @@ window.SFC = window.SFC || {};
       p.facing = Math.atan2(plan.vy, plan.vx);
       g.cores.dispatch(p.team, 'onPass', p, target, mode);
       if (target && g.isHuman(p.team) && p.isControlled) {
+        const prev = g.ctrl[p.team];
         g.setControlled(target);
         // mũi tên người chơi đang giữ là hướng chuyền, không phải lệnh cho người nhận -> khóa tới khi thả phím
-        // (chế độ 1 cầu thủ: quyền điều khiển không chuyển sang người nhận)
-        if (g.ctrl[p.team] === target) g.receiveLock[p.team] = true;
+        // (chế độ 1 cầu thủ / co-op: quyền điều khiển không chuyển sang người nhận -> không khóa)
+        if (prev !== target && g.ctrl[p.team] === target) g.receiveLock[p.team] = true;
       }
       g.sfx('pass');
     },
@@ -675,8 +676,10 @@ window.SFC = window.SFC || {};
     readShot(g, shooter) {
       g.lastShot = null;
       if (!G().read.enabled) return;
-      const q = g.ctrl[1 - shooter.team];
-      if (!q || !g.isHuman(q.team)) return;
+      // co-op: 2 người cùng phòng ngự -> ưu tiên người đang thủ thế / đã thả W, rồi người đứng trong vòng cấm nhà
+      const def = g.pilots(1 - shooter.team);
+      const q = def.find((o) => o.bracing || o.readAt >= 0) || def.find((o) => g.inKeeperZone(o)) || def[0];
+      if (!q) return;
       const P = this.readPosition(g, q, shooter);
       g.lastShot = { t: g.time, team: shooter.team, pid: q.id, sid: shooter.id, P };
       if (q.readAt >= 0) {

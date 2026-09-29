@@ -77,6 +77,13 @@ SFC_CONFIG.progression = {
       lose: { xp: 35, gold: 20 },
       goal: { xp: 10, gold: 6 },
     },
+    // online co-op: cả phòng cùng 1 đội đấu đội bot ngẫu nhiên (net.config.js -> bots)
+    coop: {
+      win:  { xp: 70, gold: 45 },
+      draw: { xp: 40, gold: 22 },
+      lose: { xp: 20, gold: 10 },
+      goal: { xp: 8, gold: 5 },
+    },
     maxGoals: 8,               // số bàn tối đa được tính thưởng mỗi trận (chống farm)
   },
 

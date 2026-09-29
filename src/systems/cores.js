@@ -351,12 +351,26 @@ window.SFC = window.SFC || {};
     teamCores(team) { return [...new Set(this.plist(team).flatMap((p) => this.coresOf(p)))]; }
     has(x, id) { return this.plist(x).some((p) => this.coresOf(p).includes(id)); }
     // cầu thủ người chơi tại máy / online đang điều khiển (chọn Core bằng tay) — null nếu đội do AI
+    // (co-op: đội có 2 slot -> slot đầu tiên; từng người xem seatOwner)
     humanOwner(team) {
       const g = this.g;
       if (team < 0 || !g.isHuman(team)) return null;
-      return (g.solo && g.solo[team]) || g.ctrl[team] || g.teams[team].players.find((p) => p.avatar) || g.teams[team].players[0] || null;
+      const i = (g.seats || []).findIndex((s) => s.team === team && !s.gone);
+      return i < 0 ? null : this.seatOwner(i);
     }
-    isHumanOwner(p) { return !!p && this.humanOwner(p.team) === p; }
+    // cầu thủ nhận Core của slot người chơi i
+    seatOwner(i) {
+      const g = this.g, s = g.seats && g.seats[i];
+      if (!s || s.gone) return null;
+      const ps = g.teams[s.team].players;
+      return s.p || g.ctrl[s.team] || ps.find((p) => p.avatar) || ps[0] || null;
+    }
+    isHumanOwner(p) {
+      if (!p) return false;
+      const seats = this.g.seats || [];
+      for (let i = 0; i < seats.length; i++) if (seats[i].team === p.team && this.seatOwner(i) === p) return true;
+      return false;
+    }
 
     /* ---------- Core scale theo chỉ số (cores.config.js -> statScale, archetypes[].stat, list[].scale) ---------- */
     // người "cầm" Core của đội cho hiệu ứng cấp đội: character của người chơi; đội AI -> null (dùng trung bình đội)
@@ -854,8 +868,10 @@ window.SFC = window.SFC || {};
 
     /* ---------- chọn Core (mỗi cầu thủ bốc riêng) ---------- */
     // Core cầu thủ được bốc: người chơi = Core đã mở khoá (opts.coreUnlocks theo đội); đồng đội có deck = deck; còn lại = tất cả
+    // (slot online: p.unlocks = Core đã mở khoá của character ở slot đó, giữ cả khi người chơi rời trận)
     allowList(p) {
       if (p.deck) return p.deck;
+      if (p.unlocks) return p.unlocks;
       const u = this.g.opts && this.g.opts.coreUnlocks;
       return this.isHumanOwner(p) && u ? u[p.team] || null : null;
     }

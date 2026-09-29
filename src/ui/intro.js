@@ -90,7 +90,9 @@ window.SFC = window.SFC || {};
         venue = A.name; venueIcon = PX().area(A.id) + ' ';
       } else if (g.opts.training) { comp = 'TRAINING'; title = 'PRACTICE MATCH'; }
       else if (g.opts.online) {
-        comp = 'ONLINE VERSUS'; title = 'RIVAL MATCH';
+        // co-op: mọi người chơi cùng 1 đội, đối thủ là đội bot
+        if (g.humans.length < 2) { comp = 'ONLINE CO-OP'; title = 'SQUAD vs BOTS'; }
+        else { comp = 'ONLINE VERSUS'; title = 'RIVAL MATCH'; }
         // sân online = sân của 1 Area (online.js pickArena)
         const A = MP.areas().find((a) => a.arena === g.opts.arena);
         if (A) { venue = A.name; venueIcon = PX().area(A.id) + ' '; }
@@ -155,10 +157,11 @@ window.SFC = window.SFC || {};
 
     card(g, p, d) {
       const I = CFG();
-      // online: cả 2 đội do người điều khiển -> character đối thủ gắn nhãn P1 / P2, chỉ character của máy này là YOU
-      const human = g.isHuman(p.team), ctl = human && p.isControlled, you = ctl && p.team === g.humanTeam;
+      // online: character người khác gắn nhãn slot P1..P4 (cùng đội = xanh, đối thủ = đỏ), chỉ character của máy này là YOU
+      const human = g.isHuman(p.team), ctl = human && p.isControlled, you = p === g.controlled;
       const num = ctl ? I.youNumber : I.numbers[p.role] || 7;
-      const tag = you ? '<em class="you">YOU</em>' : ctl ? `<em class="rival">P${p.team + 1}</em>` : p.mate ? '<em class="mate">MATE</em>' : human ? '<em>AI</em>' : '';
+      const pn = `P${(p.seat != null ? p.seat : p.team) + 1}`;
+      const tag = you ? '<em class="you">YOU</em>' : ctl ? `<em class="${p.team === g.humanTeam ? 'ally' : 'rival'}">${pn}</em>` : p.mate ? '<em class="mate">MATE</em>' : human ? '<em>AI</em>' : '';
       // character / đồng đội có chỉ số riêng: OVR cá nhân
       const povr = (ctl || p.mate) && p.ovr ? `<b class="in-povr">${p.ovr}<span>OVR</span></b>` : '';
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">

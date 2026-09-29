@@ -1,13 +1,13 @@
 /* =========================================================
- * NET CONFIG — chế độ online PvP (1:1).
+ * NET CONFIG — chế độ online: phòng 4 slot (2 đội x 2 vị trí), versus hoặc co-op.
  * Mô hình host-authoritative: máy chủ phòng chạy toàn bộ mô phỏng,
- * máy khách gửi phím và vẽ lại trạng thái nhận được.
+ * các máy khách gửi phím và vẽ lại trạng thái nhận được (host nối sao tới từng khách).
  * Kết nối P2P qua WebRTC (PeerJS); PeerJS server chỉ dùng để "bắt tay" lúc vào phòng.
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 7,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
+  protocol: 8,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
   peerjsUrl: 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js',
   // Tùy chọn PeerJS; để trống = dùng PeerJS Cloud miễn phí.
   // Tự host PeerServer: { host: 'my-server', port: 9000, path: '/sfc', secure: true }
@@ -16,6 +16,15 @@ SFC_CONFIG.net = {
   codeLength: 5,
   codeChars: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', // bỏ ký tự dễ nhầm (I, O, 0, 1)
   connectTimeout: 12,          // giây chờ kết nối trước khi báo lỗi
+
+  // Phòng: slot = đội x vị trí (game.config.js -> roles). Người chơi tự nhảy qua lại giữa các slot trống.
+  //  - 2 đội đều có người = VERSUS; slot trống của đội có đúng 1 người = đồng đội đang chọn của người đó (AI)
+  //  - mọi người cùng 1 đội = CO-OP; đội còn lại = đội bot ngẫu nhiên (bots)
+  maxPlayers: 4,               // tối đa người trong phòng (<= 2 x số vị trí)
+  minPlayers: 2,               // số người tối thiểu để chủ phòng bấm START
+  // Đội bot (co-op): 1 đội thường ngẫu nhiên của 1 Area chủ phòng đã tới (mainPath.config.js -> areas[].teams),
+  // độ khó AI = độ khó hạng ngẫu nhiên trong Area đó (divs: khoảng hạng, 0 = thấp nhất), sân = sân của Area đó
+  bots: { divs: [0, 2] },
 
   snapshotEvery: 1,            // host gửi trạng thái mỗi N bước mô phỏng (60/N lần/giây; ~0.6KB/gói)
   interpDelay: 0.06,           // giây trễ nội suy ở máy khách (mượt hơn nhưng trễ hơn khi tăng)

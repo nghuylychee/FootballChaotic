@@ -88,14 +88,15 @@ window.SFC = window.SFC || {};
       // hiệu ứng trang phục khi chạy (bụi / neon / lửa) — chỉ để trang trí, tính ở máy vẽ
       this.cosmetics(ctx, g);
 
-      // vòng chân người đang điều khiển (PvP: người chơi tại máy = vàng, đối thủ = đỏ)
+      // vòng chân người đang điều khiển (online: người chơi tại máy = vàng, người cùng đội (co-op) = xanh, đối thủ = đỏ)
       const cp = g.controlled;
       // ảnh xem trước Core (g.preview): không vẽ vòng / mũi tên điều khiển
-      const ctrlColor = (p) => (!g.preview && g.isHuman(p.team) && p.isControlled ? (p.team === g.humanTeam ? '#ffe14f' : '#ff5a6e') : null);
-      for (const t of (g.preview ? [] : g.humans)) {
-        const c = g.ctrl[t];
+      const ctrlColor = (p) => (!g.preview && g.isHuman(p.team) && p.isControlled
+        ? (p === cp ? '#ffe14f' : p.team === g.humanTeam ? '#3ff6ff' : '#ff5a6e') : null);
+      if (!g.preview) g.seats.forEach((s, i) => {
+        const c = g.seatPlayer(i);
         if (c) ringPx(ctx, c.x, c.y + 1, 8, ctrlColor(c));
-      }
+      });
 
       // assisted passing chạy ngầm; chỉ hiện gợi ý người nhận khi bật showTargetHint (debug)
       const pv = g.state === 'play' && SFC_CONFIG.game.pass.showTargetHint ? g.passPreview : null;

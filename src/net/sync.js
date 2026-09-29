@@ -108,7 +108,7 @@ window.SFC = window.SFC || {};
       };
       if (d) {
         const picked = {};
-        for (const t in d.options) picked[t] = d.picked[t] ? 1 : 0;
+        for (const k in d.options) picked[k] = d.picked[k] ? 1 : 0;   // khóa = slot người chơi
         s.dr = { o: d.options, pk: picked, r: d.round, l: d.limit, t: r1(d.t), pre: d.pre ? 1 : 0, rr: d.rerolls };
       }
       return s;
@@ -164,7 +164,7 @@ window.SFC = window.SFC || {};
         // khách vừa chọn nhưng host chưa xác nhận -> giữ trạng thái đã chọn
         if (prev && prev.round === s.dr.r && prev.localPick != null) {
           g.draft.localPick = prev.localPick;
-          g.draft.picked[g.humanTeam] = 1;
+          g.draft.picked[g.me] = 1;
         }
       } else g.draft = null;
     },

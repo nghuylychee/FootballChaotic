@@ -81,13 +81,15 @@ window.SFC = window.SFC || {};
       this.buffs = [];       // {speed, t}
       this.confused = null;  // {decoy, t}
       this.anim = Math.random() * 10;
+      this.seat = null;      // slot người chơi đang khóa vào cầu thủ này (Game.seats) — null = AI / điều khiển cả đội
       this.intent = { mx: 0, my: 0, sprint: false };
       this.ai = { t: 0, runTo: null, runT: 0, requestedPass: null, holdT: 0, interceptT: 0, chargeTarget: 0.6, aimY: 0, dir: { x: 0, y: 0 }, sprint: false };
       this.kickHits = new Set();
     }
 
     get hasBall() { return this.game.ball.owner === this; }
-    get isControlled() { return this.game.ctrl[this.team] === this; }
+    // người điều khiển: cầu thủ khóa vào 1 slot người chơi (co-op: 2 người cùng đội) hoặc người đang cầm quyền của đội
+    get isControlled() { return this.seat != null || this.game.ctrl[this.team] === this; }
     get teamRef() { return this.game.teams[this.team]; }
     // đang đứng trong vòng cấm nhà -> có cơ chế thủ môn
     get keeper() { return this.game.inKeeperZone(this); }
