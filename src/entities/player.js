@@ -7,6 +7,7 @@ window.SFC = window.SFC || {};
   const U = SFC.U;
 
   const ATTACK_STATES = { jab: 1, windup: 1, kick: 1, recover: 1 };
+  const DIVE = { diveU: 1, diveD: 1 };   // thủ môn đổ người (Actions.dive): lên / xuống màn hình
 
   class Player {
     constructor(game, team, role, idx) {
@@ -66,6 +67,9 @@ window.SFC = window.SFC || {};
       this.bracing = false;   // Đọc Cú Sút: đang giữ W trong vòng cấm nhà
       this.readAt = -1;       // lúc thả W (chờ cú sút trong cửa sổ đọc); -1 = không chờ
       this.hitImmune = 0;
+      this.punchStealT = -99; // lúc đấm rơi bóng của đối phương gần nhất
+      this.shotLockT = 0;     // vừa đấm cướp được bóng: còn bao lâu chưa sút được (combat.light.stealShotLock)
+      this.shotHold = false;  //   + D giữ từ cú đấm chưa thả ra
       this.recvT = -1;        // lúc nhận đường chuyền (Một-Hai, Chạm Một)
       this.counterT = 0;      // Phản Đòn: hạn cú đấm miễn phí
       this.titanT = 0;        // Hoá Khổng Lồ: còn bao lâu
@@ -109,6 +113,7 @@ window.SFC = window.SFC || {};
       this.tackleImmune = Math.max(0, this.tackleImmune - dt);
       this.keeperHold = Math.max(0, this.keeperHold - dt);
       this.hitImmune = Math.max(0, this.hitImmune - dt);
+      this.shotLockT = Math.max(0, this.shotLockT - dt);
       if (this.auraT > 0 && (this.auraT -= dt) <= 0) { this.auraT = 0; this.auraC = ''; }
       if (this.titanT > 0) this.titanT = Math.max(0, this.titanT - dt);
       this.flash = Math.max(0, this.flash - dt);
@@ -134,7 +139,8 @@ window.SFC = window.SFC || {};
 
       switch (this.state) {
         case 'stun':
-          this.stateT -= dt;
+          // bị hất tung (Hard, nổ bom...): choáng chỉ trôi khi đã tiếp đất (combat.airStunPause) — bay lâu không ăn bớt choáng
+          if (this.airZ <= 0 || !C.combat.airStunPause) this.stateT -= dt;
           this.vx = U.damp(this.vx, 8, dt); this.vy = U.damp(this.vy, 8, dt);
           // bị hất tung: còn trên không thì chưa hết choáng
           if (this.stateT <= 0 && this.airZ <= 0) { this.state = 'normal'; this.hitImmune = Math.max(this.hitImmune, C.combat.hitImmuneBonus); }
@@ -168,7 +174,11 @@ window.SFC = window.SFC || {};
             this.trailT += C.skill.dashTime / C.skill.afterimages;
             g.effects.afterimage(this, this.trailLife || 0.3);
           }
-          if (this.stateT <= 0) { this.state = 'normal'; this.trailLeft = 0; this.vx *= 0.5; this.vy *= 0.5; }
+          if (this.stateT <= 0) {
+            this.state = 'normal'; this.trailLeft = 0; this.vx *= 0.5; this.vy *= 0.5;
+            // đổ người xong: nằm sõng soài thêm gkDivePose giây (chỉ là anim)
+            if (DIVE[this.atkType]) this.poseEnd = this.atkT + C.player.gkDivePose;
+          }
           break;
         case 'slam':
           // đang bật nhảy (Dậm Đất / Thiên Thạch Giáng) — tiếp đất xử lý ở updateAir
@@ -191,8 +201,10 @@ window.SFC = window.SFC || {};
           this.moveNormal(dt);
       }
       // hết đòn (hoặc bị ngắt) -> dừng anim ra đòn
-      // tư thế sút: giữ kick.poseTime giây khi còn đứng bình thường
-      const keep = this.atkType === 'shoot' ? this.state === 'normal' && this.atkT < C.kick.poseTime : ATTACK_STATES[this.state];
+      // tư thế sút: giữ kick.poseTime giây khi còn đứng bình thường · đổ người: suốt lúc bay + tư thế nằm (gkDivePose)
+      const keep = this.atkType === 'shoot' ? this.state === 'normal' && this.atkT < C.kick.poseTime
+        : DIVE[this.atkType] ? this.state === 'dash' || (this.state === 'normal' && this.atkT < this.poseEnd)
+        : ATTACK_STATES[this.state];
       if (this.atkType && !keep) this.atkType = null;
 
       this.x += (this.vx + this.kbx) * dt;

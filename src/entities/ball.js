@@ -17,7 +17,7 @@ window.SFC = window.SFC || {};
       Object.assign(this, {
         x, y, z: 0, vx: 0, vy: 0, vz: 0,
         owner: null, lastTouch: null, lastKickTeam: -1,
-        passTarget: null, passPoint: null, sloppy: false, kind: null, roll: 0, trailT: 0, skin: null,
+        passTarget: null, passPoint: null, sloppy: false, lob: false, kind: null, roll: 0, trailT: 0, skin: null,
         netSide: 0, shieldChecked: false, woodT: 0, read: null,
       });
       this.noPickup.clear();
@@ -44,6 +44,7 @@ window.SFC = window.SFC || {};
       this.passTarget = null;
       this.passPoint = null;
       this.sloppy = false;
+      this.lob = false;
       this.kind = null;
       this.skin = null;
       this.read = null;
@@ -60,6 +61,7 @@ window.SFC = window.SFC || {};
       this.passTarget = null;
       this.passPoint = null;
       this.sloppy = false;
+      this.lob = false;       // chuyền bổng (A) — thủ môn đối phương bắt như cú sút (Game.tryControl)
       this.kind = null;
       this.read = null;       // Đọc Cú Sút: {pid, grade, bonus} của thủ môn đã đọc cú sút này
       this.shieldChecked = false;

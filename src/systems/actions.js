@@ -259,6 +259,7 @@ window.SFC = window.SFC || {};
       b.passTarget = target;
       b.passPoint = plan.point;
       b.kind = 'pass';
+      b.lob = mode === 'lob';
       // đồng đội AI của người chơi đón đường chuyền chuẩn: thỉnh thoảng đi bộ thay vì chạy nước rút (ai.mate)
       if (target) target.ai.recvWalk = Math.random() < G().ai.mate.receiveWalkChance;
       p.charging = false; p.charge = 0;
@@ -333,7 +334,13 @@ window.SFC = window.SFC || {};
       if (!p.isControlled) spread *= 2 - g.aiProfile(p.team).shotAccuracy;
       const ang = base + U.rand(-spread, spread);
 
-      const spd = U.lerp(K.shotMinSpeed, K.shotMaxSpeed, c) * p.stats.power * g.cores.pmod(p, 'shotPower');
+      let spd = U.lerp(K.shotMinSpeed, K.shotMaxSpeed, c) * p.stats.power;
+      // người chơi chạm nhẹ D: bóng chậm hơn đầu thanh lực, theo SHOOTING; giữ thêm tới shotTapWindow thì về lực của thanh
+      if (K.shotTapWindow > 0 && held < K.shotTapWindow && p.isControlled && g.isHuman(p.team)) {
+        const tap = K.shotTapSpeed * (1 + (p.stats.power - 1) * K.shotTapScale);
+        spd = U.lerp(Math.min(tap, spd), spd, held / K.shotTapWindow);
+      }
+      spd *= g.cores.pmod(p, 'shotPower');
       const vz = U.lerp(K.shotLiftMin, K.shotLiftMax, c * c) + over * K.overchargeLift;
       b.kick(p, Math.cos(ang) * spd, Math.sin(ang) * spd, vz);
       b.kind = 'shot';
@@ -451,6 +458,7 @@ window.SFC = window.SFC || {};
           if (!keep) {
             // đấm rơi bóng: người bị đấm choáng lâu hơn (stealStun) để người đấm kịp lấy bóng
             hopts.stun *= L.stealStun / L.stun;
+            p.punchStealT = g.time;   // lấy được bóng ngay sau đó -> chưa sút được (light.stealShotLock, Game.gainPossession)
             if (upper) g.looseBall(o, p.x - o.x, p.y - o.y, 40);   // Long Quyền: bóng rơi xuống chân người đấm
             else if (Math.random() < L.instantSteal) { g.looseBall(o, p.x - o.x, p.y - o.y, 0); g.gainPossession(p); }
             else {
@@ -616,6 +624,7 @@ window.SFC = window.SFC || {};
       // Bộ Pháp Ninja (mods) · ẢO ẢNH 2: hồi chiêu Z −20%
       p.cd.skill = this.cooldown(g, p, 'skill', S.cooldown * C.mod(p.team, 'skillCooldown', p) * (C.tier(p, 'trickster') >= 2 ? 0.8 : 1));
       p.state = 'dash'; p.stateT = S.dashTime;
+      if (p.atkType === 'diveU' || p.atkType === 'diveD') p.atkType = null;   // lướt ngay sau khi đổ người: bỏ tư thế nằm
       p.dashX = d.x * S.dashSpeed; p.dashY = d.y * S.dashSpeed;
       // Bộ Pháp Ninja: né lâu hơn
       p.tackleImmune = S.tackleImmune + (C.has(p, 'quick_feet') ? C.sp('quick_feet', p).dodgeBonus : 0);
@@ -640,6 +649,8 @@ window.SFC = window.SFC || {};
       p.trailLeft = 0; // đổ người: chỉ 1 bóng mờ
       p.stateT = U.clamp(Math.abs(dy) / P.gkDiveSpeed, 0.05, P.gkDiveTime);
       p.dashX = 0; p.dashY = Math.sign(dy) * P.gkDiveSpeed;
+      // anim bay người: diveU / diveD = bay lên / xuống màn hình (vẽ ở Renderer.diving, đồng bộ online qua atkType)
+      this.startAttack(p, dy < 0 ? 'diveU' : 'diveD');
       g.effects.afterimage(p);
     },
 

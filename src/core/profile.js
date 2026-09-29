@@ -59,6 +59,13 @@ window.SFC = window.SFC || {};
       try { localStorage.setItem(P().storageKey, JSON.stringify(this.data)); } catch (e) { /* storage bị chặn */ }
     },
 
+    // xoá hồ sơ đã lưu (RESET DATA ở SETTINGS) — lần tải sau như người chơi mới
+    resetAll() {
+      this.sandbox = false;
+      try { localStorage.removeItem(P().storageKey); } catch (e) { /* storage bị chặn */ }
+      this.data = this.sanitize(null);
+    },
+
     // dữ liệu hỏng / phiên bản cũ -> ghép với hồ sơ trống, bỏ id không còn tồn tại
     sanitize(raw) {
       const d = blank();
@@ -125,11 +132,22 @@ window.SFC = window.SFC || {};
       return level >= P().maxLevel ? Infinity : P().xpBase + P().xpStep * (level - 1);
     },
 
-    // cộng XP, trả về danh sách level mới đạt được (mỗi level thưởng thêm gold + drill chờ)
+    // trần level theo Main Path (mainpath.config.js -> areas[].levelCap, theo hạng cao nhất từng đạt); vô địch = maxLevel
+    levelCap() {
+      const path = this.data.path, MP = SFC.MainPath;
+      if (!path || !MP || path.titles > 0) return P().maxLevel;
+      const n = MP.nDiv(), a = MP.area(Math.floor(path.best / n)), caps = a && a.levelCap;
+      return caps ? Math.min(P().maxLevel, caps[Math.min(path.best % n, caps.length - 1)]) : P().maxLevel;
+    },
+    // đang chạm trần level (XP vẫn tích, lên hạng Main Path là lên level)
+    levelCapped() { return this.data.level < P().maxLevel && this.data.level >= this.levelCap(); },
+
+    // cộng XP, trả về danh sách level mới đạt được (mỗi level thưởng thêm gold + drill chờ).
+    // Chạm trần (levelCap) thì XP vẫn tích lại; lần cộng XP sau khi trần tăng sẽ lên các level còn nợ
     addXp(amount) {
-      const d = this.data, ups = [];
+      const d = this.data, ups = [], cap = this.levelCap();
       d.xp += amount;
-      while (d.level < P().maxLevel && d.xp >= this.xpToNext(d.level)) {
+      while (d.level < cap && d.xp >= this.xpToNext(d.level)) {
         d.xp -= this.xpToNext(d.level);
         d.level++;
         ups.push(d.level);
@@ -471,7 +489,9 @@ window.SFC = window.SFC || {};
         }
       } else lines.push({ label: 'Online versus', note: true });
 
-      const before = { level: d.level, xp: d.xp, need: this.xpToNext(d.level) };
+      // XP hiển thị trên thanh: chạm trần thì thanh đầy, không tràn
+      const bar = () => ({ level: d.level, xp: Math.min(d.xp, this.xpToNext(d.level)), need: this.xpToNext(d.level) });
+      const before = bar();
       const ups = this.addXp(xp);
       const levelGold = ups.length * P().levelUpGold;
       d.gold += gold + levelGold;
@@ -487,7 +507,7 @@ window.SFC = window.SFC || {};
 
       return {
         result, lines, xp, gold, levelGold, levelUps: ups, eligible, path,
-        before, after: { level: d.level, xp: d.xp, need: this.xpToNext(d.level) },
+        before, after: bar(), capped: this.levelCapped(),
       };
     },
   };

@@ -92,7 +92,8 @@ window.SFC = window.SFC || {};
         stop(p);
         if (p.ai.holdT > cfg.gkHoldTime && !settling) {
           const t = Act().findPassTarget(g, p, g.teams[p.team].dir, 0);
-          Act().passTo(g, p, t, t && !Act().laneClear(g, p, t.x, t.y, 12) ? 'lob' : 'ground');
+          if (this.shouldHoof(g, p, t)) this.hoof(g, p, t);
+          else Act().passTo(g, p, t, t && !Act().laneClear(g, p, t.x, t.y, 12) ? 'lob' : 'ground');
         }
         return;
       }
@@ -103,7 +104,8 @@ window.SFC = window.SFC || {};
         p.ai.outletDone = true;
         const fwd = g.ctrl[p.team];
         if (fwd && fwd !== p && fwd.state === 'normal' && (fwd.x - p.x) * g.teams[p.team].dir > O.ahead) {
-          Act().passTo(g, p, fwd, Act().laneClear(g, p, fwd.x, fwd.y, 10) ? 'ground' : 'lob');
+          if (this.shouldHoof(g, p, fwd)) this.hoof(g, p, fwd);
+          else Act().passTo(g, p, fwd, Act().laneClear(g, p, fwd.x, fwd.y, 10) ? 'ground' : 'lob');
           return;
         }
       }
@@ -117,7 +119,7 @@ window.SFC = window.SFC || {};
         const range = M ? f.w / 2 : cfg.shootRange * (g.cores.has(p, 'sniper_foot') ? g.cores.params('sniper_foot').aiRangeMult : 1) * (1 + g.cores.tagCount(p, 'striker') * 0.12);
         const clear = Act().laneClear(g, p, goal.x, goal.y, 12);
         // đồng đội AI: cơ hội mười mươi (khung trống) -> quyết định 1 lần có sút nhanh lực nhẹ hay không
-        if (M && !settling) {
+        if (M && !settling && !(p.shotLockT > 0)) {
           const open = this.mateOpenGoal(g, p, dG, clear);
           if (!open) p.ai.openSeen = false;
           else if (!p.ai.openSeen) {
@@ -132,7 +134,8 @@ window.SFC = window.SFC || {};
             }
           }
         }
-        const shoot = settling ? false : M ? this.mateShoots(g, p, dG, clear) : dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25);
+        // vừa đấm cướp được bóng: chưa sút (combat.light.stealShotLock)
+        const shoot = settling || p.shotLockT > 0 ? false : M ? this.mateShoots(g, p, dG, clear) : dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25);
 
         if (shoot) {
           p.charging = true; p.charge = 0;
@@ -265,12 +268,40 @@ window.SFC = window.SFC || {};
       moveTo(p, t.x + gd.x * cfg.markDistance, t.y + gd.y * cfg.markDistance, U.dist(p, t) > 80, 5);
     },
 
+    // Đồng đội AI ĐÁ LÙI định chuyền cho người chơi (t) mà đang bị áp sát + đường chuyền bị chắn -> phất bóng lên (ai.hoof)
+    shouldHoof(g, p, t) {
+      const H = A().hoof;
+      if (!H || !t || !g.isHuman(p.team) || mateStyle(g, p)) return false;
+      const opps = g.teams[1 - p.team].players.filter((o) => o.state !== 'stun');
+      if (!opps.some((o) => U.dist(o, p) < H.pressDist)) return false;
+      return opps.some((o) => U.segDist(o.x, o.y, p.x, p.y, t.x, t.y) < H.laneWidth);
+    },
+
+    // phất bóng lên phía trước: thử các góc trong kick.clearAngle, chọn góc thoáng đối phương nhất, nghiêng về phía người chơi
+    hoof(g, p, t) {
+      const K = SFC_CONFIG.game.kick, dir = g.teams[p.team].dir;
+      const opps = g.teams[1 - p.team].players.filter((o) => o.state !== 'stun');
+      let best = 0, bs = -Infinity;
+      for (let i = -4; i <= 4; i++) {
+        const dy = i / 4, ang = Math.atan2(dy * K.clearAngle, dir);
+        const ex = p.x + Math.cos(ang) * 90, ey = p.y + Math.sin(ang) * 90;
+        let room = 40;
+        for (const o of opps) room = Math.min(room, U.segDist(o.x, o.y, p.x, p.y, ex, ey));
+        const s = room - Math.abs(ey - t.y) * 0.1;
+        if (s > bs) { bs = s; best = dy; }
+      }
+      Act().clearance(g, p, best);
+    },
+
     // Đồng đội AI ĐÁ LÙI kẹp người cầm bóng cùng người chơi: mình ở gần + người chơi đang áp sát (cả khi gần khung nhà),
     // hoặc người cầm bóng đã vào phần sân nhà nhưng chưa tới mức nguy hiểm
     helpPress(g, p, c, ctl, danger) {
       const H = A().helpPress;
       if (!H || p.state === 'stun') return false;
       if (U.dist(p, c) < H.near && U.dist(ctl, c) < H.ctlNear) return true;
+      // bị phản công: người cầm bóng đã vượt qua người chơi (người chơi không còn chắn giữa bóng và khung nhà)
+      // -> lên áp sát người cầm bóng, không đứng kèm người còn lại
+      if (H.beaten != null && !danger && (ctl.x - c.x) * g.teams[p.team].dir > H.beaten) return true;
       return H.ownHalf && !danger && (c.x - g.field.cx) * g.teams[p.team].dir < 0;
     },
 

@@ -56,12 +56,15 @@ SFC_CONFIG.mainPath = {
    * (tham chiếu game.config.js: EASY 0.34/0.7/0.55/0.6/0.92 · NORMAL 0.2/1/0.8/1/1 · HARD 0.1/1.2/0.92/1.3/1.06)
    * stars: số sao cần ở từng hạng, theo thứ tự từ hạng thấp nhất (III) lên cao nhất (I).
    * reward: hệ số thưởng XP / gold. arena: id trong arenas.config.js. teams: 2 đội thường (bốc ngẫu nhiên), boss: đội trận thăng hạng.
-   * cores: Core mở bằng sao trong Area (số lượng nên <= tổng sao của Area) · signature: Core đặc trưng của boss · divBox: hộp thưởng khi lên hạng. */
+   * cores: Core mở bằng sao trong Area (số lượng nên <= tổng sao của Area) · signature: Core đặc trưng của boss · divBox: hộp thưởng khi lên hạng.
+   * levelCap: level tối đa của character theo hạng cao nhất từng đạt (III, II, I) — mỗi level = 1 DRILL, nên đây là trần chỉ số.
+   *   Chọn sao cho OVR character (dàn đều, ~0.86 OVR / level) thấp hơn OVR đội thường của Area ~3 lúc mới tới, tiến dần tới
+   *   Area sau ở hạng I. XP vượt trần vẫn tích lại, lên hạng / sang Area là lên level ngay. Vô địch (titles > 0): trần = maxLevel. */
   areas: [
     // AREA 1
     {
       id: 'village', name: 'VILLAGE GREEN', sub: 'Where the dream begins', color: '#9ccf5a', icon: '🌾',
-      stars: [1, 2, 2], reward: 1.0, arena: 'village',
+      levelCap: [3, 5, 7], stars: [1, 2, 2], reward: 1.0, arena: 'village',
       teams: ['paddy_kickers', 'muddy_ducks'], boss: 'buffalo_chiefs',
       ai: [{ reaction: 0.5, tackleMult: 0.45, shotAccuracy: 0.4, aggression: 0.35, speedMult: 0.82 }, { reaction: 0.44, tackleMult: 0.55, shotAccuracy: 0.46, aggression: 0.45, speedMult: 0.86 }],
       bossAi: { reaction: 0.4, tackleMult: 0.62, shotAccuracy: 0.52, aggression: 0.55, speedMult: 0.89 },
@@ -70,7 +73,7 @@ SFC_CONFIG.mainPath = {
     // AREA 2
     {
       id: 'alley', name: 'BACK ALLEY', sub: 'Where every legend starts', color: '#ff9a3d', icon: '🗑️',
-      stars: [2, 2, 3], reward: 1.1, arena: 'alley',
+      levelCap: [9, 10, 11], stars: [2, 2, 3], reward: 1.1, arena: 'alley',
       teams: ['alley_cats', 'trash_pandas'], boss: 'block_bosses',
       ai: [{ reaction: 0.42, tackleMult: 0.58, shotAccuracy: 0.48, aggression: 0.5, speedMult: 0.87 }, { reaction: 0.36, tackleMult: 0.68, shotAccuracy: 0.55, aggression: 0.6, speedMult: 0.91 }],
       bossAi: { reaction: 0.32, tackleMult: 0.75, shotAccuracy: 0.6, aggression: 0.7, speedMult: 0.93 },
@@ -79,7 +82,7 @@ SFC_CONFIG.mainPath = {
     // AREA 3
     {
       id: 'school', name: 'SCHOOLYARD', sub: 'Recess never ends', color: '#ffd23f', icon: '🏫',
-      stars: [2, 3, 3], reward: 1.25, arena: 'school',
+      levelCap: [12, 13, 15], stars: [2, 3, 3], reward: 1.25, arena: 'school',
       teams: ['hall_monitors', 'detention_club'], boss: 'varsity_seniors',
       ai: [{ reaction: 0.34, tackleMult: 0.72, shotAccuracy: 0.58, aggression: 0.65, speedMult: 0.92 }, { reaction: 0.29, tackleMult: 0.8, shotAccuracy: 0.64, aggression: 0.75, speedMult: 0.95 }],
       bossAi: { reaction: 0.26, tackleMult: 0.86, shotAccuracy: 0.68, aggression: 0.82, speedMult: 0.96 },
@@ -88,7 +91,7 @@ SFC_CONFIG.mainPath = {
     // AREA 4
     {
       id: 'rooftop', name: 'ROOFTOP', sub: 'Football above the city lights', color: '#6ec8ff', icon: '🏙️',
-      stars: [3, 3, 3], reward: 1.4, arena: 'rooftop',
+      levelCap: [17, 19, 21], stars: [3, 3, 3], reward: 1.4, arena: 'rooftop',
       teams: ['sky_hoppers', 'pigeon_gang'], boss: 'penthouse_kings',
       ai: [{ reaction: 0.27, tackleMult: 0.84, shotAccuracy: 0.66, aggression: 0.8, speedMult: 0.96 }, { reaction: 0.23, tackleMult: 0.92, shotAccuracy: 0.72, aggression: 0.88, speedMult: 0.98 }],
       bossAi: { reaction: 0.2, tackleMult: 0.98, shotAccuracy: 0.76, aggression: 0.95, speedMult: 0.99 },
@@ -97,7 +100,7 @@ SFC_CONFIG.mainPath = {
     // AREA 5
     {
       id: 'market', name: 'NIGHT MARKET', sub: 'Neon lanterns, loud crowds', color: '#ff3fb4', icon: '🏮',
-      stars: [3, 3, 4], reward: 1.55, arena: 'market',
+      levelCap: [22, 24, 25], stars: [3, 3, 4], reward: 1.55, arena: 'market',
       teams: ['noodle_kickers', 'lantern_crew'], boss: 'night_dragons',
       ai: [{ reaction: 0.21, tackleMult: 0.96, shotAccuracy: 0.75, aggression: 0.92, speedMult: 0.99 }, { reaction: 0.18, tackleMult: 1.02, shotAccuracy: 0.8, aggression: 1.0, speedMult: 1.0 }],
       bossAi: { reaction: 0.16, tackleMult: 1.08, shotAccuracy: 0.83, aggression: 1.08, speedMult: 1.01 },
@@ -106,7 +109,7 @@ SFC_CONFIG.mainPath = {
     // AREA 6
     {
       id: 'harbor', name: 'HARBOR DOCKS', sub: 'Rust, steel and salt', color: '#f2a33a', icon: '⚓',
-      stars: [3, 4, 4], reward: 1.7, arena: 'harbor',
+      levelCap: [26, 27, 29], stars: [3, 4, 4], reward: 1.7, arena: 'harbor',
       teams: ['crane_crushers', 'rust_buckets'], boss: 'iron_harbor',
       ai: [{ reaction: 0.17, tackleMult: 1.05, shotAccuracy: 0.82, aggression: 1.05, speedMult: 1.01 }, { reaction: 0.14, tackleMult: 1.12, shotAccuracy: 0.86, aggression: 1.12, speedMult: 1.03 }],
       bossAi: { reaction: 0.12, tackleMult: 1.16, shotAccuracy: 0.88, aggression: 1.18, speedMult: 1.04 },
@@ -115,7 +118,7 @@ SFC_CONFIG.mainPath = {
     // AREA 7
     {
       id: 'cage', name: 'UNDERGROUND CAGE', sub: 'No refs. No mercy.', color: '#ff3d3d', icon: '⛓️',
-      stars: [4, 4, 4], reward: 1.9, arena: 'cage',
+      levelCap: [30, 31, 32], stars: [4, 4, 4], reward: 1.9, arena: 'cage',
       teams: ['chain_gang', 'iron_knuckles'], boss: 'the_warden',
       ai: [{ reaction: 0.13, tackleMult: 1.14, shotAccuracy: 0.87, aggression: 1.16, speedMult: 1.04 }, { reaction: 0.11, tackleMult: 1.2, shotAccuracy: 0.9, aggression: 1.24, speedMult: 1.05 }],
       bossAi: { reaction: 0.1, tackleMult: 1.25, shotAccuracy: 0.92, aggression: 1.3, speedMult: 1.06 },
@@ -124,7 +127,7 @@ SFC_CONFIG.mainPath = {
     // AREA 8
     {
       id: 'plaza', name: 'CITY PLAZA CUP', sub: 'The city is watching', color: '#2fd6c0', icon: '🏟️',
-      stars: [4, 4, 5], reward: 2.1, arena: 'plaza',
+      levelCap: [33, 33, 34], stars: [4, 4, 5], reward: 2.1, arena: 'plaza',
       teams: ['metro_express', 'downtown_stars'], boss: 'city_champions',
       ai: [{ reaction: 0.1, tackleMult: 1.24, shotAccuracy: 0.91, aggression: 1.28, speedMult: 1.06 }, { reaction: 0.09, tackleMult: 1.3, shotAccuracy: 0.93, aggression: 1.36, speedMult: 1.07 }],
       bossAi: { reaction: 0.08, tackleMult: 1.35, shotAccuracy: 0.94, aggression: 1.42, speedMult: 1.08 },
@@ -133,7 +136,7 @@ SFC_CONFIG.mainPath = {
     // AREA 9
     {
       id: 'cyber', name: 'CYBER ARENA', sub: 'The pro circuit', color: '#9d7bff', icon: '👾',
-      stars: [4, 5, 5], reward: 2.35, arena: 'cyber',
+      levelCap: [34, 35, 36], stars: [4, 5, 5], reward: 2.35, arena: 'cyber',
       teams: ['glitch_squad', 'chrome_wolves'], boss: 'apex_legion',
       ai: [{ reaction: 0.08, tackleMult: 1.34, shotAccuracy: 0.94, aggression: 1.4, speedMult: 1.08 }, { reaction: 0.07, tackleMult: 1.4, shotAccuracy: 0.95, aggression: 1.48, speedMult: 1.09 }],
       bossAi: { reaction: 0.06, tackleMult: 1.45, shotAccuracy: 0.96, aggression: 1.55, speedMult: 1.1 },
@@ -142,7 +145,7 @@ SFC_CONFIG.mainPath = {
     // AREA 10
     {
       id: 'stadium', name: 'WORLD STAGE', sub: 'Legends are made here', color: '#ffd23f', icon: '🏆',
-      stars: [5, 5, 6], reward: 2.6, arena: 'stadium',
+      levelCap: [37, 38, 39], stars: [5, 5, 6], reward: 2.6, arena: 'stadium',
       teams: ['golden_eagles', 'royal_lions'], boss: 'the_legends',
       ai: [{ reaction: 0.06, tackleMult: 1.44, shotAccuracy: 0.96, aggression: 1.52, speedMult: 1.1 }, { reaction: 0.05, tackleMult: 1.5, shotAccuracy: 0.97, aggression: 1.6, speedMult: 1.11 }],
       bossAi: { reaction: 0.04, tackleMult: 1.58, shotAccuracy: 0.98, aggression: 1.7, speedMult: 1.14 },

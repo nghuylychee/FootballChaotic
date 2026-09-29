@@ -81,6 +81,7 @@ window.SFC = window.SFC || {};
     go(page, msg = '', err = false) {
       // nhớ mục đang chọn của từng trang: quay lại trang cũ (Esc, hết trận...) con trỏ nằm đúng mục vừa rời đi
       if (page !== this.page) {
+        this.resetArmed = false;   // RESET DATA: rời trang SETTINGS là huỷ xác nhận
         this.selMemo[this.page] = this.sel;
         this.sel = this.selMemo[page] || 0;
       }
@@ -119,6 +120,10 @@ window.SFC = window.SFC || {};
             { kind: 'btn', label: 'TRAINING', sub: 'No clock · pick team sizes', act: () => this.go('training') },
             { kind: 'btn', label: 'CONTROLS', sub: 'Keyboard & controller layout', act: () => { CV().open(); this.go('controls'); } },
             { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drills · stats reset on close', act: () => this.testDrill() },
+            // xoá toàn bộ tiến trình, chơi lại từ đầu — bấm 2 lần mới xoá (lần 1 chỉ hỏi lại, rời trang là huỷ)
+            this.resetArmed
+              ? { kind: 'btn', label: 'CONFIRM RESET', sub: 'Press again · this cannot be undone', danger: true, act: () => this.resetData() }
+              : { kind: 'btn', label: 'RESET DATA', sub: 'Erase all progress · start over', danger: true, act: () => { this.resetArmed = true; this.setMsg('Erase level, stats, Main Path, team, items and gold? Press again to confirm.', true); } },
           ];
         case 'name':
           return [{ kind: 'btn', label: 'CONFIRM', main: true, act: () => this.submitName() }];
@@ -275,7 +280,7 @@ window.SFC = window.SFC || {};
     },
 
     renderItem(it, i) {
-      const cls = ['mi', it.kind, i === this.sel ? 'sel' : '', it.main ? 'main' : '', it.disabled ? 'dis' : '', it.hot ? 'hot' : ''].join(' ');
+      const cls = ['mi', it.kind, i === this.sel ? 'sel' : '', it.main ? 'main' : '', it.disabled ? 'dis' : '', it.hot ? 'hot' : '', it.danger ? 'danger' : ''].join(' ');
       // dòng chỉ số (trang STATS, chỉ xem): tên · rating + thanh
       if (it.kind === 'attr') return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label><div class="st-val">${it.bar}</div></div>`;
       if (it.kind === 'pick') {
@@ -525,6 +530,13 @@ window.SFC = window.SFC || {};
 
     // cheat DRILL TEST: mở màn DRILL với vài drill chờ, không cần đá trận. Hồ sơ không được ghi trong lúc thử,
     // đóng màn thì trả chỉ số + drill chờ về như cũ
+    // RESET DATA (SETTINGS): xoá hồ sơ rồi tải lại trang -> chạy như lần đầu chơi (đặt tên, LV1, Area đầu).
+    // Giữ cài đặt máy (hiệu ứng, phím) — chỉ xoá tiến trình
+    resetData() {
+      PF().resetAll();
+      location.reload();
+    },
+
     testDrill(n = 5) {
       const pf = PF(), keep = JSON.parse(JSON.stringify(pf.data.attrs));
       pf.sandbox = true;

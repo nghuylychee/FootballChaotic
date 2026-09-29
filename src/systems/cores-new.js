@@ -474,7 +474,10 @@ window.SFC = window.SFC || {};
           E.shake(8, 0.4);
           // văng về phía tường trên / dưới gần nhất -> chắc chắn BONK
           const toTop = o.y - f.y < f.y + f.h - o.y;
-          blast(o, pl, prm.knock, 200, 1.4, pl, U.norm(-side * 0.35, toTop ? -1 : 1));
+          // nạn nhân đang choáng vì chuỗi đấm -> Player.hit bỏ qua đòn mới (chống khoá choáng). Thả choáng trước để cú kết
+          // thật sự hất văng + choáng prm.stun (không thì chỉ còn ~0.5s choáng của cú đấm cuối)
+          o.state = 'normal'; o.stateT = 0;
+          blast(o, pl, prm.knock, 200, prm.stun, pl, U.norm(-side * 0.35, toTop ? -1 : 1));
           sys.lightHit(pl, o);
           g.sfx('hit');
           sys.task(() => {

@@ -10,9 +10,11 @@ SFC_CONFIG.progression = {
   startGold: 150,
 
   // XP cần để lên level tiếp theo: xpBase + xpStep * (level - 1)
-  maxLevel: 30,
-  xpBase: 80,
-  xpStep: 40,
+  // Level còn bị chặn theo tiến trình Main Path (mainpath.config.js -> areas[].levelCap): drill (= chỉ số) đi theo OVR của Area.
+  // Đường cong XP phẳng để người thắng liên tục chạm trần gần cuối mỗi Area; thắng ~65% thì chạm trần sớm hơn (XP dư tích lại)
+  maxLevel: 40,
+  xpBase: 60,
+  xpStep: 20,
   levelUpGold: 30,             // thưởng gold mỗi lần lên level
 
   // Chỉ số character + DRILL (docs/DRILL_DESIGN.md): mỗi level 1 drill = chọn 1 trong 3, cộng chỉ số vĩnh viễn.
@@ -30,7 +32,7 @@ SFC_CONFIG.progression = {
       upScreen: true,          // chọn xong: true = màn STRONGER! riêng (Enter để đi tiếp) · false = thanh chỉ số đầy ngay trên bảng YOU rồi tự sang bộ kế
       kindWeight: { single: 3, combo: 2, all: 0.6 },   // trọng số theo loại drill
       lean: 1.5,               // trọng số x (1 + lean x tỉ lệ bước đã tập nằm ở các chỉ số của drill) -> nghiêng theo build
-      // gains: số bước (+rating) cộng vào từng chỉ số; icon / color (tuỳ chọn): poster riêng, mặc định theo chỉ số tăng nhiều nhất. 29 drill (LV1 -> LV30) x ~5.2 bước ≈ 150 bước: dàn đều ~85
+      // gains: số bước (+rating) cộng vào từng chỉ số; icon / color (tuỳ chọn): poster riêng, mặc định theo chỉ số tăng nhiều nhất. 39 drill (LV1 -> LV40) x ~5.2 bước ≈ 200 bước: dàn đều ~93
       list: {
         sprint:   { name: 'Sprint Ladder', kind: 'single', gains: { pace: 5 },     desc: 'Quick feet through the ladder, then flat-out sprints.' },
         finish:   { name: 'Finishing',     kind: 'single', gains: { shooting: 5 }, desc: 'Shot after shot from every angle until the net gives up.' },

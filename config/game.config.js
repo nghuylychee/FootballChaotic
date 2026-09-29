@@ -104,6 +104,8 @@ SFC_CONFIG.game = {
     gkHoldProtect: 2.5,       // (s) bắt được bóng trong vòng cấm nhà -> miễn tắc/xoạc/va vai trong thời gian này (khi còn ở trong vòng cấm)
     gkDiveSpeed: 250,
     gkDiveTime: 0.24,
+    gkLungeMinSpeed: 220,     // (px/s) bắt / đẩy bóng lệch sang bên: bóng nhanh hơn mức này mới đổ người (chậm hơn: đứng bắt tại chỗ)
+    gkDivePose: 0.22,         // (s) anim: đổ người xong nằm trên sân thêm chừng này (không ảnh hưởng di chuyển)
   },
 
   // ĐỌC CÚ SÚT: người chơi đứng trong vòng cấm nhà khi đối phương cầm bóng -> giữ W (thủ thế), thả đúng lúc đối phương sút.
@@ -227,6 +229,13 @@ SFC_CONFIG.game = {
     shotBaseFar: 0.25,
     shotBaseNearDist: 60,    // px tới khung thành
     shotBaseFarDist: 240,
+    // Chạm nhẹ D (người chơi điều khiển): bóng chậm hơn mức đầu thanh lực, theo chỉ số SHOOTING (stats.power).
+    // Giữ thêm tới shotTapWindow thì tăng dần về lực của thanh (giữ lâu hơn: y như cũ; AI không bị ảnh hưởng).
+    // Chạm nhẹ ~ SHO 60: 176 · 70: 198 · 80: 220 · 90: 242 · 99: 262 px/s (lăn tối đa ~170–250px, thủ môn bắt dễ)
+    // Đầu thanh cũ (lực mặc định ~0.1) ~ SHO 60: 237 · 80: 316 · 99: 391 · đầy lực ~ 60: 345 · 80: 460 · 99: 570
+    shotTapSpeed: 220,       // (px/s) chạm nhẹ ở SHOOTING 80 (hệ số 1.0)
+    shotTapScale: 0.8,       // tốc độ chạm nhẹ đổi theo chỉ số: x (1 + (power − 1) x mức này)
+    shotTapWindow: 0.25,     // (0..1 phần thanh đã giữ) 0 = chạm nhẹ, từ mức này trở lên = lực của thanh; 0 = tắt
     maxOvercharge: 1.25,     // giữ quá lâu -> bóng bay cao, lệch
     shotLiftMin: 10,
     shotLiftMax: 105,
@@ -265,6 +274,10 @@ SFC_CONFIG.game = {
       instantSteal: 0.3,      // tỉ lệ bóng về thẳng chân người đấm; còn lại bóng bật về phía người đấm (lệch sang bên), người bị đấm văng hướng ngược lại
       stealBallSpeed: 70,     // (px/s) tốc độ bóng bật ra
       stealBallAngle: [20, 50], // (độ) bóng lệch sang trái / phải so với hướng về người đấm
+      // Đấm cướp được bóng: chưa sút ngay được (chống bấm D liên tục = đấm xong sút luôn). Chỉ chặn sút — chuyền / lướt vẫn được,
+      // buff sau khi cướp bóng (Core Counter Attack: 3.5s) vẫn kịp dùng
+      stealShotLock: 0.35,    // (s) sau khi có bóng chưa sút được; D đang giữ từ cú đấm phải thả ra rồi bấm lại
+      stealShotWindow: 0.8,   // (s) nhặt bóng bật ra trong khoảng này sau cú đấm cướp bóng cũng tính
     },
     // A — HARD ATTACK: gồng co chân (đối thủ nhìn thấy được) rồi bước tới vung chân đá.
     // Trúng: đối thủ bị hất tung bay rất xa + choáng lâu + chắc chắn rơi bóng. Trượt: khựng lâu. Z (lướt) đúng lúc thì né được.
@@ -275,7 +288,7 @@ SFC_CONFIG.game = {
       step: 230,              // bước tới khi vung chân (px/s)
       range: 18,              // tầm chân tính từ mép người (px)
       arc: 80,                // (độ) nửa góc vùng vung chân
-      stun: 1.2,
+      stun: 0.8,              // choáng (tính từ lúc tiếp đất, combat.airStunPause) — bay ~0.6s trước đó
       knockback: 380,         // lực hất văng (px/s) — bay xa nhờ ma sát trên không thấp (airDamp)
       launch: 190,            // vận tốc hất lên cao (px/s)
       ballKick: 230,          // chân trúng bóng lỏng -> sút bóng đi
@@ -284,6 +297,7 @@ SFC_CONFIG.game = {
       whiffRecover: 0.6,      // khựng sau khi đá trượt
     },
 
+    airStunPause: true,      // bị hất tung: thời gian choáng chỉ trôi khi đã tiếp đất (false = trôi cả lúc bay -> Hard / bom chỉ còn ~0.5s choáng dưới đất)
     airGravity: 620,         // người bị hất tung: trọng lực
     airDamp: 1.4,            //   ma sát ngang khi còn trên không (thấp -> bay xa)
     wallBounce: 0.35,        // bị hất văng vào tường: bật ngược lại theo tỉ lệ này
@@ -325,13 +339,22 @@ SFC_CONFIG.game = {
       near: 40,               // (px) mình cách người cầm bóng dưới mức này và người chơi đang áp sát (ctlNear) -> cùng áp sát + đấm (kể cả gần khung nhà)
       ctlNear: 45,            // (px) người chơi cách người cầm bóng dưới mức này = đang áp sát
       ownHalf: false,         // true = người cầm bóng đã vào phần sân nhà (chưa tới mateKeeperCoverDist) -> luôn lên áp sát
+      beaten: 10,             // (px) bị phản công: người chơi đứng phía trên người cầm bóng (về hướng khung đối phương) quá mức này
+                              //      = đã bị vượt qua -> lên áp sát người cầm bóng thay vì kèm người còn lại. null = tắt
     },
     // đồng đội AI ĐÁ LÙI vừa giành được bóng (không phải nhận đường chuyền của đồng đội) -> chuyền nhanh cho người chơi
     outletPass: {
       delay: 0.4,             // (s) giữ bóng tối thiểu trước khi chuyền (khựng sau khi cắt bóng vẫn áp dụng)
       ahead: 20,              // (px) người chơi phải đứng phía trên mình (về hướng khung đối phương) ít nhất chừng này
     },
-    hardDistMin: 16,          // AI dùng Hard attack khi người cầm bóng cách trong khoảng này (px)
+    // đồng đội AI ĐÁ LÙI cầm bóng (ôm bóng trong vòng cấm / vừa giành bóng, định chuyền cho người chơi) mà đang bị áp sát
+    // và đường chuyền tới người chơi bị chắn -> phất bóng lên phía trước (bổng, góc thoáng đối phương nhất trong kick.clearAngle)
+    // thay vì cố chuyền vào chân. null = tắt
+    hoof: {
+      pressDist: 45,          // (px) đối phương gần hơn mức này = đang áp sát
+      laneWidth: 16,          // (px) đối phương cách đường chuyền tới người chơi dưới mức này = bị chắn
+    },
+    hardDistMin: 16,         // AI dùng Hard attack khi người cầm bóng cách trong khoảng này (px)
     hardDistMax: 44,
 
     // Đồng đội AI của người chơi (vd. chế độ 1 cầu thủ: người còn lại do AI đá). Đội máy không dùng phần này.

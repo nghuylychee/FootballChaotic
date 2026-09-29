@@ -131,9 +131,11 @@ window.SFC = window.SFC || {};
     ownGoal(team) { return this.attackGoal(1 - team); }
     inOwnHalf(p) { return (p.x - this.field.cx) * this.teams[p.team].dir < 0; }
     // "vai thủ môn": cầu thủ đứng trong vòng cấm nhà -> được bắt bóng / cứu thua / đổ người
-    inKeeperZone(p) {
+    inKeeperZone(p) { return this.inBox(p.team, p); }
+    // điểm pt ({x, y}) nằm trong vòng cấm nhà của đội team
+    inBox(team, pt) {
       const f = this.field;
-      return Math.abs(p.x - this.ownGoal(p.team).x) < f.boxDepth && Math.abs(p.y - f.cy) < f.boxWidth / 2;
+      return Math.abs(pt.x - this.ownGoal(team).x) < f.boxDepth && Math.abs(pt.y - f.cy) < f.boxWidth / 2;
     }
     // D ở phần sân nhà = phá bóng, trừ khi phía trước (theo trục x) không còn cầu thủ đối phương nào
     // (bỏ qua người đang trông khung thành của họ) -> được sút
@@ -235,6 +237,10 @@ window.SFC = window.SFC || {};
       p.ai.openSeen = false;
       p.ai.interceptT = 0;
       p.ai.outletDone = !!passer;   // nhận đường chuyền của đồng đội: không chuyền trả ngay (ai.outletPass)
+      // vừa đấm cướp được bóng: chưa sút ngay được, D đang giữ phải thả ra (combat.light.stealShotLock)
+      const L = this.cfg.combat.light, stole = this.time - p.punchStealT <= L.stealShotWindow;
+      p.shotLockT = stole ? L.stealShotLock : 0;
+      p.shotHold = stole;
       if (this.lastPossessionTeam !== -1 && this.lastPossessionTeam !== p.team) {
         this.cores.dispatch(p.team, 'onPossessionGained', p);
       }
@@ -562,9 +568,13 @@ window.SFC = window.SFC || {};
       const opp = b.lastKickTeam >= 0 && b.lastKickTeam !== p.team;
       const isGK = this.inKeeperZone(p);
       const dir = U.norm(b.vx, b.vy);
+      // chuyền bổng (A) của đối phương tới thủ môn: bắt như cú sút (tỉ lệ bắt bóng của thủ môn), không phải lượt cắt đường chuyền
+      // theo chỉ số tackle — không thì đứng gần khung bấm A lốp qua đầu thủ môn gần như luôn vào.
+      // Chỉ khi cả thủ môn lẫn bóng đều trong vòng cấm nhà (ngoài vòng cấm: cắt đường chuyền như thường)
+      const lob = isGK && opp && b.kind === 'pass' && b.lob && this.inBox(p.team, b);
       // đoạt được đường chuyền / chặn được cú sút (ngoài vòng cấm nhà) của đối phương, bóng còn đủ nhanh
       // (bóng lăn chậm dưới intercept.aiDelayMinSpeed coi như bóng lỏng: nhặt bình thường)
-      const cut = opp && (b.kind === 'pass' || (b.kind === 'shot' && !isGK)) && spd >= C.pass.intercept.aiDelayMinSpeed;
+      const cut = opp && ((b.kind === 'pass' && !lob) || (b.kind === 'shot' && !isGK)) && spd >= C.pass.intercept.aiDelayMinSpeed;
 
       // bóng xuyên người: Lôi Cước (sét), Song Phi (gió)
       const pierceFx = b.fx.thunder || b.fx.scissor;
@@ -585,9 +595,9 @@ window.SFC = window.SFC || {};
         this.deflect(p, 0.6);
         return;
       }
-      if (isGK && opp && b.kind === 'shot') {
+      if (isGK && opp && (b.kind === 'shot' || lob)) {
         // Đọc Cú Sút: bóng tới người khi vẫn còn giữ W -> chưa kịp thả = đọc hụt (không thì cứ giữ mãi là bắt chắc cú sút sát người)
-        if (p.bracing) { p.bracing = false; SFC.Actions.readRelease(this, p, true); }
+        if (p.bracing && !lob) { p.bracing = false; SFC.Actions.readRelease(this, p, true); }
         const rd = b.read && b.read.pid === p.id ? b.read : null;
         // càng phải vươn xa (bóng góc) và bóng càng mạnh -> càng khó bắt
         const reach = p.radius + b.r + (C.player.gkReach + (p.state === 'dash' ? 5 : 0)) * p.sizeMul;
@@ -599,10 +609,11 @@ window.SFC = window.SFC || {};
         if (b.fx.fire) chance -= 0.15;
         chance -= this.cores.keeperPenalty(b);
         chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35) * this.cores.pmod(p, 'keeperSave') * p.stats.keeper + (rd ? rd.bonus : 0), 0.15, 0.95);
-        this.cores.shotOnTarget(b.lastKickTeam);
+        if (!lob) this.cores.shotOnTarget(b.lastKickTeam);
         const r = Math.random();
         if (r > chance) {
           if (r < chance + (1 - chance) * C.player.gkParryShare) {
+            this.keeperLunge(p);
             this.deflect(p, 0.45);
             this.effects.text(p.x, p.y - 26, 'PARRY', '#ffffff');
             this.sfx('save');
@@ -615,6 +626,7 @@ window.SFC = window.SFC || {};
         }
         // Cú Sút Sao Băng: bắt được vẫn bị hất văng
         if (this.cores.dispatch(b.lastKickTeam, 'onKeeperSave', p, b)) return;
+        this.keeperLunge(p);
         this.effects.text(p.x, p.y - 26, 'SAVE!', '#9dff3d');
         this.sfx('save');
       } else if (opp && b.kind === 'pass' && spd > C.pass.intercept.minSpeed) {
@@ -661,6 +673,13 @@ window.SFC = window.SFC || {};
       this.effects.burst(b.x, b.y, b.z, '#ffffff', 4, 50);
       this.sfx('touch');
       return false;
+    }
+
+    // thủ môn chạm bóng (SAVE / PARRY) mà bóng lệch sang bên: đổ người về phía bóng (anim bay người, Actions.dive).
+    // Đang đổ người sẵn thì giữ nguyên; bóng đi thẳng vào người hoặc chậm (dưới gkLungeMinSpeed) thì bắt / đẩy tại chỗ
+    keeperLunge(p) {
+      const b = this.ball, dy = b.y - p.y;
+      if (Math.abs(dy) > 3 && b.speed >= this.cfg.player.gkLungeMinSpeed) SFC.Actions.dive(this, p, dy);
     }
 
     deflect(p, keep) {

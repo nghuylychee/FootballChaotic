@@ -105,9 +105,13 @@ Rating = `60 + steps` (steps = số bước đã cộng, 0..39). Hệ số trong
 
 ## 6. Ngân sách & cân bằng
 
-- LV1 → LV30 = **29 drill**, trung bình ~5.2 bước → **~150 bước**.
-- Dàn đều: ~+25 mỗi chỉ số → **~85** (x1.06). Dồn: 2–3 chỉ số lên 99, còn lại quanh 60–70.
-- So với đối thủ Main Path (OVR đội, thang x80): Village Green ~65–69 · The Legends ~98. Character LV1 = 60 → khởi đầu dưới cơ, lớn dần theo Area.
+- LV1 → LV40 = **39 drill**, trung bình ~5.2 bước → **~200 bước**. Dàn đều: ~+33 mỗi chỉ số → **~93** (x1.17). Dồn: 3–4 chỉ số lên 99.
+- **Trần level theo Main Path** (`mainpath.config.js → areas[].levelCap`, theo hạng cao nhất từng đạt; vô địch = LV40): drill vẫn chỉ đến từ lên level,
+  nhưng level không vượt trần → OVR character (dàn đều) luôn **thấp hơn OVR đội thường của Area ~3** lúc mới tới, tiến dần tới Area sau ở hạng I.
+  Lý do: bản đầu level chỉ theo XP, thua cũng có XP → thắng ~65% là LV30 (~85 OVR) ngay ở Harbor (Area 6/10), chỉ số vượt xa Area.
+  XP vượt trần vẫn tích; lên hạng / sang Area là lên level (và nhận drill) ngay.
+- Đường cong XP phẳng (60 + 20 / level): thắng liên tục thì chạm trần gần cuối mỗi Area; thắng ~65% thì chạm trần sớm hơn.
+- So với đối thủ Main Path (OVR đội, thang x80): Village Green ~65 · World Stage ~94 · The Legends ~98. Character LV1 = 60 → khởi đầu dưới cơ, lớn dần theo Area.
 - Nút chỉnh (`progression.config.js → attrs.drills`): `gains` từng drill, `kindWeight`, `lean`, `perLevel`, `choices`, `rerolls`.
 - **Cân bằng bằng chơi thử** — số AI vs AI không phản ánh cảm giác khi người điều khiển.
 

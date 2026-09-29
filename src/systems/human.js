@@ -72,12 +72,15 @@ window.SFC = window.SFC || {};
           return;
         }
 
+        // vừa đấm cướp được bóng: chưa sút được (combat.light.stealShotLock), D giữ từ cú đấm phải thả ra rồi bấm lại
+        if (p.shotHold && !input.isDown('shoot')) p.shotHold = false;
+        const shotLocked = p.shotHold || p.shotLockT > 0;
         // kick.clearance bật: D ở phần sân nhà và còn đối phương phía trước = phá bóng ngay khi nhấn (kiểu FC Online)
         // Còn lại (mặc định): giữ để nạp lực, thả để sút. Giữ quá lâu -> tự sút (overcharge)
         if (K.clearance && !p.charging && g.shouldClear(p)) {
-          if (input.wasPressed('shoot')) { Act.clearance(g, p, my); return; }
+          if (input.wasPressed('shoot') && !shotLocked) { Act.clearance(g, p, my); return; }
         } else if (input.isDown('shoot')) {
-          if (p.state === 'normal') {
+          if (p.state === 'normal' && !(shotLocked && !p.charging)) {
             if (!p.charging) { p.charging = true; p.charge = 0; p.shotTarget = 0; }
             p.charge += dt / g.chargeTime(p);
             if (p.charge >= K.maxOvercharge) Act.shoot(g, p, p.charge, 0, mx || my ? { x: mx, y: my } : null);

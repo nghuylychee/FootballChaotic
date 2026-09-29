@@ -70,6 +70,8 @@ window.SFC = window.SFC || {};
     }
     // sút / phá bóng: chân sút đưa ra trước (nhấc nhẹ), chân trụ lùi về sau — vẽ trong drawPlayer
     if (p.atkType === 'shoot') return { shoot: true };
+    // thủ môn đổ người: hai tay duỗi qua đầu (người nghiêng + bay khỏi mặt đất vẽ ở Renderer.diving)
+    if (p.atkType === 'diveU' || p.atkType === 'diveD') return { dive: true };
     return {};
   }
 
@@ -652,8 +654,10 @@ window.SFC = window.SFC || {};
     const arm = moving ? (step ? 1 : -1) : 0;
     const hand = gloves ? kit.accent : p.look.skin;
     const punchArm = atk && atk.fist != null;
-    if (!(punchArm && side < 0)) { px(ctx, x - 6, by + 1 + arm, 2, 4, OUT); px(ctx, x - 6, by + 2 + arm, 1, 2, hand); }
-    if (!(punchArm && side > 0)) { px(ctx, x + 4, by + 1 - arm, 2, 4, OUT); px(ctx, x + 5, by + 2 - arm, 1, 2, hand); }
+    const diveArms = atk && atk.dive;
+    // đổ người: tay vươn qua đầu vẽ sau phần đầu (bên dưới); ở đây chỉ bỏ 2 tay buông thõng
+    if (diveArms) { /* xem sau phần đầu */ } else if (!(punchArm && side < 0)) { px(ctx, x - 6, by + 1 + arm, 2, 4, OUT); px(ctx, x - 6, by + 2 + arm, 1, 2, hand); }
+    if (!diveArms && !(punchArm && side > 0)) { px(ctx, x + 4, by + 1 - arm, 2, 4, OUT); px(ctx, x + 5, by + 2 - arm, 1, 2, hand); }
     if (punchArm) drawPunch(ctx, x, by, fx, fy, side, atk, hand);
     // Hard attack đang gồng: hào quang đỏ nhấp nháy
     if (p.state === 'windup') {
@@ -675,7 +679,8 @@ window.SFC = window.SFC || {};
     // má hồng / bóng đổ đầu
     px(ctx, hx - 5, hy + 3, 11, 1, 'rgba(0,0,0,0.12)');
 
-    if (!back) {
+    // đổ người: nhìn từ sườn, không vẽ mắt / mặt (đầu chỉ còn tóc + da)
+    if (!back && !diveArms) {
       const ex = Math.round(fx * 2);
       const ey = fy > 0.4 ? 1 : 0;
       if (stunned) {
@@ -688,6 +693,17 @@ window.SFC = window.SFC || {};
       if (p.look.face) drawFace(ctx, p.look.face, p.look.hair, hx + ex, hy + ey, p.look, fx, fy, p.anim || 0);
     }
 
+    if (diveArms) {
+      // đổ người sang ngang (trục y): camera thấy sườn người — cánh tay trên vươn thẳng qua đầu, che mất mặt (phía sân);
+      // nách + sườn áo lộ ở vai, găng tay ở cuối
+      const ax = x + side * 2, top = by - 14;
+      px(ctx, ax - 3, by - 1, 4, 3, shirtDark);                 // nách / sườn áo lộ ra dưới cánh tay
+      px(ctx, ax - 2, top - 3, 5, by + 4 - top, OUT);           // cánh tay dày 3px (viền + da), đè lên đầu; chân tay liền vào áo (không viền đáy)
+      px(ctx, ax - 1, top + 1, 3, by + 1 - top, p.look.skin);
+      px(ctx, ax + (side > 0 ? 1 : -1), top + 1, 1, by + 1 - top, 'rgba(0,0,0,0.18)');   // bóng mép tay
+      px(ctx, ax - 1, top - 2, 3, 3, hand);                     // găng: bằng bề ngang cánh tay
+      px(ctx, ax - 1, top - 2, 1, 1, '#ffffff');
+    }
     if (p.flash > 0) {
       ctx.globalCompositeOperation = 'lighter';
       disc(ctx, hx, hy, 6, 'rgba(255,255,255,0.6)');

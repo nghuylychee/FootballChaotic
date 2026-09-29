@@ -67,10 +67,12 @@ window.SFC = window.SFC || {};
   // thanh XP + level (trang chủ, nhân vật, shop, túi đồ)
   function xpBar(d) {
     const need = PF().xpToNext(d.level);
-    const pct = need === Infinity ? 100 : Math.round((d.xp / need) * 100);
+    // chạm trần level theo Main Path (Profile.levelCap): thanh đầy, XP dư vẫn tích
+    const capped = PF().levelCapped();
+    const pct = need === Infinity || capped ? 100 : Math.round(Math.min(1, d.xp / need) * 100);
     return `<div class="lvrow"><span class="lv">LV ${d.level}</span>
       <div class="xpbar"><i style="width:${pct}%"></i></div>
-      <span class="xpnum">${need === Infinity ? 'MAX' : `${Math.floor(d.xp)}/${need} XP`}</span></div>`;
+      <span class="xpnum">${need === Infinity ? 'MAX' : capped ? 'LV CAP' : `${Math.floor(d.xp)}/${need} XP`}</span></div>`;
   }
 
   // hộp gacha vẽ bằng CSS (thân + nắp + dải ruy băng + dấu ?)

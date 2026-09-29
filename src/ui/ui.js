@@ -403,6 +403,8 @@ window.SFC = window.SFC || {};
             const gained = r.levelUps.length * SFC_CONFIG.progression.attrs.drills.perLevel;
             const where = this.online ? 'CHARACTER → DRILL' : 'pick after this screen';
             if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">★ +${gained} DRILL${gained > 1 ? 'S' : ''} · ${where}</div>`);
+            // chạm trần level theo Main Path: XP vẫn tích, lên hạng là lên level
+            else if (!r.eligible.length && r.capped) up.insertAdjacentHTML('beforeend', `<div class="rw-new">LV CAP · climb the Main Path to level up (XP is saved)</div>`);
             this.showEndItems();   // dòng thưởng vừa thêm có thể đẩy nút xuống
             // chơi đơn: vừa lên level -> tự mở màn DRILL (online tự xử lý phím -> chỉ tích drill, chọn ở CHARACTER)
             this.drillAfter = !this.online && gained > 0;

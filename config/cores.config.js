@@ -382,9 +382,9 @@ SFC_CONFIG.cores = {
     },
     hundred_fists: {
       name: 'Hundred Fists', icon: '💢', tags: ['brawler'], role: 'ult', rarity: 'mythic',
-      desc: 'Rush the nearest opponent within {range}px: 20 punches in 1s, then blast them into the wall.',
-      params: { range: 160, hits: 20, gap: 0.05, knock: 560 },
-      scale: { knock: 'pow', range: 'pow' },
+      desc: 'Rush the nearest opponent within {range}px: 20 punches in 1s, then blast them into the wall ({stun}s stun).',
+      params: { range: 160, hits: 20, gap: 0.05, knock: 560, stun: 1.4 },   // stun: choáng sau cú kết (tính từ lúc tiếp đất)
+      scale: { knock: 'pow', range: 'pow', stun: 'pow' },
     },
     meteor_drop: {
       name: 'Meteor Drop', icon: '☄️', tags: ['launcher'], role: 'ult', rarity: 'mythic',
