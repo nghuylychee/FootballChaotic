@@ -189,15 +189,19 @@ window.SFC = window.SFC || {};
     // hạt pixel bung ra từ tâm lá lúc lật
     burst(color) {
       const box = this.el.querySelector('.rv3-parts');
-      if (!box) return;
+      if (box) box.innerHTML = this.particles(color);
+    },
+
+    // HTML hạt pixel cho 1 hộp .rv3-parts (dùng chung với màn DRILL); reach = hệ số tầm bay
+    particles(color, reach = 1) {
       const cols = [color, color, '#ffe14f', '#ffffff'];
       let h = '';
       for (let i = 0; i < 40; i++) {
-        const a = Math.random() * Math.PI * 2, d = 70 + Math.random() * 130;
+        const a = Math.random() * Math.PI * 2, d = (70 + Math.random() * 130) * reach;
         const s = 2 + Math.floor(Math.random() * 3);
         h += `<i style="--dx:${Math.round(Math.cos(a) * d)}px;--dy:${Math.round(Math.sin(a) * d * 0.8)}px;--c:${cols[i % cols.length]};--s:${s}px;--dl:${(Math.random() * 0.08).toFixed(2)}s"></i>`;
       }
-      box.innerHTML = h;
+      return h;
     },
   };
 

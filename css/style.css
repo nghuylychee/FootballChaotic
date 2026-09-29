@@ -1061,7 +1061,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .drill { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(6,4,8,0.72); }
 /* gạch 12x6 + vữa 1px, cùng bảng màu tường gạch của sân (arenas.config.js -> wall brick) */
 .dr-wall {
-  position: relative; width: 604px; padding: 10px 16px 0; overflow: hidden; color: #e6dccb;
+  position: relative; width: 628px; padding: 10px 16px 0; overflow: hidden; color: #e6dccb;
   background:
     radial-gradient(ellipse at 50% 40%, transparent 45%, rgba(10,6,12,0.55) 100%),
     linear-gradient(rgba(20,12,22,0.1), rgba(20,12,22,0.35)),
@@ -1083,7 +1083,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .dr-left small { font-family: var(--vt); font-size: 9px; letter-spacing: 0.5px; }
 
 /* 3 poster: giấy xé mép + băng keo, bóng đổ theo mép giấy (drop-shadow) */
-.dr-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 10px 4px 10px; }
+.dr-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .dr-tile { position: relative; cursor: pointer; transform: rotate(-1.5deg); filter: drop-shadow(3px 4px 0 rgba(10,6,12,0.6));
   animation: drIn 0.25s steps(4) var(--d) both; transition: transform 0.08s, filter 0.08s, opacity 0.15s; }
 .dr-tile:nth-child(2) { transform: rotate(1deg); }
@@ -1118,7 +1118,8 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .dr-bar { grid-column: 1 / -1; position: relative; display: block; height: 5px; margin: 2px 0 5px; background: #d4c5a4; border: 1px solid #a8966e; }
 .dr-bar b { position: absolute; top: 0; left: 0; height: 100%; background: #6d6457; }
 .dr-bar u { position: absolute; top: 0; height: 100%; background: var(--pc); box-shadow: inset 0 0 0 1px rgba(20,12,22,0.25); animation: pulse 0.6s steps(2) infinite; }
-.dr-tile.all .dr-gains { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+.dr-tile.all .dr-gains { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 6px; }
+.dr-tile.all .dr-gain { grid-template-columns: 22px 14px 1fr; font-size: 12px; }
 .dr-tile.all .dr-bar { display: none; }
 .dr-desc { font-size: 12px; line-height: 1.1; color: #5a4f58; margin-top: 3px; }
 /* chọn xong: xịt chữ DONE! (quét từ trái sang, có vệt sơn chảy) */
@@ -1128,20 +1129,70 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .dr-tile.done .dr-stamp { animation: drSpray 0.3s steps(6) forwards; }
 @keyframes drSpray { to { clip-path: inset(0 -10% -30% 0); } }
 
-/* dải dưới: vỉa hè (đá vỉa + nhựa đường) — chỉ số hiện tại + nút sticker */
+/* dải dưới: vỉa hè (đá vỉa + nhựa đường) — gợi ý phím + nút sticker */
 .dr-curb { margin: 0 -16px; padding: 5px 16px 7px; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 3px, transparent 3px 7px), #1e1a22; border-top: 3px solid #8a8f9c; box-shadow: inset 0 1px 0 #c7ccd6; }
-.dr-strip { display: flex; align-items: baseline; gap: 10px; font-size: 13px; color: #9aa3b5; }
-.dr-strip b { font-weight: normal; color: #e6dccb; }
-.dr-strip .up, .dr-strip .up b { color: #ffe14f; }
-.dr-strip em { font-style: normal; color: #9dff3d; margin-left: 2px; }
-.dr-ovr { margin-left: auto; }
-.dr-foot { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.dr-foot { display: flex; align-items: center; gap: 10px; }
 .dr-hint { margin-right: auto; font-size: 12px; color: #9aa3b5; }
 .dr-btn { font-size: 14px; color: var(--ink); padding: 1px 8px; background: #e6dccb; transform: rotate(-1.5deg); box-shadow: 0 0 0 1px var(--ink), 2px 2px 0 rgba(0,0,0,0.6); }
 .dr-btn.roll { background: #ffe14f; transform: rotate(1.5deg); }
 .dr-btn kbd { color: var(--gold); }
 .dr-btn:hover { transform: rotate(0) translateY(-1px); }
 .dr-btn.off { opacity: 0.35; pointer-events: none; }
+
+/* thân màn: bảng YOU bên trái + 3 poster */
+.dr-body { display: grid; grid-template-columns: 124px 1fr; gap: 14px; align-items: start; margin: 10px 4px 10px; }
+/* bảng YOU: tấm dán tối — character trên vệt sơn màu drill đang chọn, OVR sticker ở góc, 6 thanh chỉ số */
+.dr-you { position: relative; padding: 5px 7px 6px; background: rgba(20,12,22,0.78); box-shadow: 0 0 0 1px var(--ink), 3px 3px 0 rgba(10,6,12,0.6); transform: rotate(-1deg); }
+.dr-you-av { position: relative; height: 88px; display: flex; justify-content: center; }
+.dr-av { width: 80px; height: 88px; image-rendering: pixelated; position: relative; }
+.dr-you-av .dr-splat, .dr-up-hero .dr-splat { top: auto; bottom: -12px; transform: translateX(-50%); opacity: 0.75; transition: background 0.15s; }
+.dr-you-av .rv3-parts, .dr-up-hero .rv3-parts { top: 55%; z-index: 1; }
+.dr-you-name { font-size: 14px; line-height: 1; color: #e6dccb; text-align: center; margin: 5px 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 1px; }
+.dr-you-name small { font-size: 12px; color: #9aa3b5; }
+.dr-you .dr-ob { position: absolute; right: -6px; top: 2px; }
+/* sticker OVR: số hiện tại → sau drill; tăng thật (pop) -> đóng dấu */
+.dr-ob { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 34px; padding: 3px 4px; line-height: 1; color: var(--ink);
+  background: #ffe14f; transform: rotate(8deg); box-shadow: 0 0 0 2px var(--ink), 2px 3px 0 rgba(0,0,0,0.5); }
+.dr-ob small { font-family: var(--px); font-size: 5px; letter-spacing: 1px; }
+.dr-ob b { font-family: var(--px); font-size: 11px; font-weight: normal; margin-top: 2px; }
+.dr-ob em { font-style: normal; font-size: 12px; color: #1f8a3a; margin-top: 1px; }
+.dr-ob.rise { animation: rv3Stamp 0.3s steps(4) both; }
+/* 1 dòng chỉ số: tên · rating · thanh (vệt sáng = phần sắp cộng) · +n */
+.dr-row { display: grid; grid-template-columns: 24px 18px 1fr 18px; gap: 0 3px; align-items: center; height: 14px; font-size: 13px; line-height: 1; color: #9aa3b5; }
+.dr-row b { font-weight: normal; color: #e6dccb; }
+.dr-row em { font-style: normal; color: #9dff3d; text-align: right; }
+.dr-row.up span, .dr-row.up b { color: var(--c); }
+.dr-rbar { position: relative; display: block; height: 5px; background: #141018; box-shadow: 0 0 0 1px #3b2a36; }
+.dr-rbar b { position: absolute; top: 0; left: 0; height: 100%; background: #8a8f9c; }
+.dr-rbar u { position: absolute; top: 0; height: 100%; background: var(--c); box-shadow: 0 0 4px var(--c); animation: drGlow 0.6s steps(2) infinite; }
+.dr-row.lit .dr-rbar b { background: var(--c); }
+.dr-row.lit b { text-shadow: 0 0 4px var(--c); }
+@keyframes drGlow { 50% { opacity: 0.4; } }
+
+/* màn STRONGER! sau khi chọn (drill.js -> renderUp): nhịp theo data-phase in / fill / pop / shown */
+.dr-pw .dr-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.dr-pw[data-phase="pop"] .dr-flash { animation: rv3Flash 0.35s ease-out; }
+.dr-up { position: relative; cursor: pointer; }
+.dr-up-head { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 2px; animation: inDrop 0.3s steps(4) both; }
+.dr-up-title { font-family: var(--px); font-size: 22px; font-weight: normal; color: #ffe14f; letter-spacing: 2px; transform: rotate(-3deg);
+  text-shadow: 2px 2px 0 var(--pc), 4px 4px 0 var(--ink); }
+.dr-up-stage { display: flex; align-items: center; justify-content: center; gap: 34px; height: 214px; }
+.dr-up-hero { position: relative; width: 120px; height: 132px; display: flex; justify-content: center; animation: drUpIn 0.3s cubic-bezier(0.25, 1.35, 0.5, 1) both; }
+.dr-up-hero .dr-av { width: 120px; height: 132px; }
+.dr-up-hero .dr-splat { width: 120px; height: 60px; bottom: -20px; }
+.dr-up .dr-sheet { position: relative; width: 230px; padding: 30px 10px 8px; background: rgba(20,12,22,0.78); box-shadow: 0 0 0 1px var(--ink), 3px 3px 0 rgba(10,6,12,0.6); transform: rotate(1deg); }
+.dr-up .dr-ob { position: absolute; right: -10px; top: -14px; min-width: 50px; padding: 5px 6px; }
+.dr-up .dr-ob b { font-size: 16px; }
+.dr-up .dr-ob em { font-size: 15px; }
+.dr-up .dr-row { grid-template-columns: 34px 26px 1fr 24px; height: 22px; font-size: 18px; }
+.dr-up .dr-rbar { height: 7px; }
+.dr-up .dr-row:not(.up) { opacity: 0.5; }
+.dr-up .dr-curb { margin-top: 6px; }
+.dr-up-go { color: var(--gold); letter-spacing: 1px; font-size: 14px; animation: pulse 0.8s steps(2) infinite; }
+.dr-up-go kbd { font-family: var(--vt); font-size: 12px; padding: 0 3px; }
+.dr-up:not([data-phase="shown"]) .dr-up-go { visibility: hidden; }
+.dr-up.rise[data-phase="pop"] .dr-up-stage, .dr-you.rise[data-phase="pop"] { animation: rv3Quake 0.34s steps(6); }
+@keyframes drUpIn { 0% { opacity: 0; transform: translateY(-120px); } 100% { opacity: 1; transform: none; } }
 
 /* ---------- Core scale theo chỉ số (src/systems/corescale.js) ---------- */
 .card-stat { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 11px; line-height: 1; color: var(--muted); margin: -1px 0 4px; letter-spacing: 0.5px; }

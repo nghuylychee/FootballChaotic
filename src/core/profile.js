@@ -55,6 +55,7 @@ window.SFC = window.SFC || {};
     },
 
     save() {
+      if (this.sandbox) return;   // DRILL TEST (menu SETTINGS): chỉ đổi trong bộ nhớ, không ghi hồ sơ
       try { localStorage.setItem(P().storageKey, JSON.stringify(this.data)); } catch (e) { /* storage bị chặn */ }
     },
 

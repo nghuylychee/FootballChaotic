@@ -118,6 +118,7 @@ window.SFC = window.SFC || {};
           return [
             { kind: 'btn', label: 'TRAINING', sub: 'No clock · pick team sizes', act: () => this.go('training') },
             { kind: 'btn', label: 'CONTROLS', sub: 'Keyboard & controller layout', act: () => { CV().open(); this.go('controls'); } },
+            { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drills · stats reset on close', act: () => this.testDrill() },
           ];
         case 'name':
           return [{ kind: 'btn', label: 'CONFIRM', main: true, act: () => this.submitName() }];
@@ -521,6 +522,20 @@ window.SFC = window.SFC || {};
 
     // mở màn DRILL (ui/drill.js) trên menu; đóng thì vẽ lại trang đang mở (số drill / chỉ số đã đổi)
     openDrill() { SFC.Drill.open(() => this.render()); },
+
+    // cheat DRILL TEST: mở màn DRILL với vài drill chờ, không cần đá trận. Hồ sơ không được ghi trong lúc thử,
+    // đóng màn thì trả chỉ số + drill chờ về như cũ
+    testDrill(n = 5) {
+      const pf = PF(), keep = JSON.parse(JSON.stringify(pf.data.attrs));
+      pf.sandbox = true;
+      pf.data.attrs.drills.pending = n;
+      pf.data.attrs.drills.offer = null;
+      SFC.Drill.open(() => {
+        pf.data.attrs = keep;
+        pf.sandbox = false;
+        this.render();
+      });
+    },
 
     // radar 6 cạnh theo rating hiện tại. Trục từ 60 tới tối đa
     statRadar(selId) {

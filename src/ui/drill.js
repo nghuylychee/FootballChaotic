@@ -1,7 +1,13 @@
 /* Drill — màn DRILL (docs/DRILL_DESIGN.md): mỗi drill chờ = chọn 1 trong 3, cộng chỉ số character vĩnh viễn.
  * Giao diện "tường phố": tường gạch (màu gạch sân Back Alley) + 3 poster dán băng keo, stencil icon chỉ số trên vệt sơn,
  * chọn xong xịt chữ DONE! lên poster. Lớp phủ trên cùng (#drill), mở trên màn kết quả (ui.js) hoặc menu (CHARACTER / STATS).
- * Khi active, main.js chuyển phím cho Drill.input. Chọn xong còn drill chờ -> bộ 3 kế tiếp; hết -> đóng, gọi onClose.
+ * Bảng YOU bên trái: character xoay người + 6 thanh chỉ số, ô đang chọn hiện phần tăng (vệt sáng) + OVR trước → sau.
+ * Chọn xong -> màn STRONGER! (data-phase trên .dr-pw, hoạt ảnh ở CSS):
+ *   in   : tiêu đề + character rơi xuống        fill : từng thanh chỉ số đầy dần, số đếm lên
+ *   pop  : chớp trắng + hạt pixel + tư thế sút, OVR đóng dấu (rung nếu OVR tăng)
+ *   shown: chờ Enter -> bộ 3 kế tiếp / đóng (gọi onClose)
+ * drills.upScreen = false: fill + pop chạy luôn trên bảng YOU, rồi tự sang bộ kế.
+ * Khi active, main.js gọi Drill.update(dt, input) mỗi bước (vẽ character + nhận phím).
  * Số liệu drill ở config/progression.config.js -> attrs.drills; bốc / lưu / cộng ở src/core/profile.js.
  */
 window.SFC = window.SFC || {};
@@ -11,7 +17,12 @@ window.SFC = window.SFC || {};
   const A = () => SFC_CONFIG.progression.attrs;
   const PF = () => SFC.Profile;
   const K = (action, kb) => SFC.Input.key(action, kb);
-  const PICK_DELAY = 0.55;   // (s) ô vừa chọn đóng dấu DONE rồi mới sang bộ 3 kế tiếp
+  const KIT = () => SFC_CONFIG.teams.list[SFC_CONFIG.mainPath.playerTeam.id].kit;
+  const PICK_DELAY = 0.55;   // (s) ô vừa chọn đóng dấu DONE rồi mới sang màn STRONGER!
+  // thời lượng từng nhịp màn STRONGER! (giây); fill = mỗi chỉ số tăng, hold = giữ sau pop khi chạy trên bảng YOU
+  const UP = { in: 0.3, fill: 0.35, pop: 0.45, pose: 0.35, hold: 0.8 };
+  const DIRS = [Math.PI / 2, 0, -Math.PI / 2, Math.PI];   // xoay người khoe trang phục (giống menu)
+  const pct = (r) => ((r - A().base) / (A().max - A().base)) * 100;
 
   const Drill = {
     active: false,
@@ -28,7 +39,9 @@ window.SFC = window.SFC || {};
       this.onClose = onClose;
       this.active = true;
       this.busy = false;
+      this.up = null;
       this.sel = 0;
+      this.animT = 0;
       el.classList.remove('hidden');
       this.render();
       SFC.Audio.whoosh();
@@ -37,16 +50,34 @@ window.SFC = window.SFC || {};
     close() {
       if (!this.active) return;
       this.active = false;
+      this.up = null;
       clearTimeout(this.pickT);
       this.el.classList.add('hidden');
       this.el.innerHTML = '';
+      this.cv = null;
       const cb = this.onClose;
       this.onClose = null;
       if (cb) cb();
     },
 
+    // mỗi bước (main.js): nhịp màn STRONGER! · vẽ character · phím
+    update(dt, input) {
+      if (!this.active) return;
+      if (this.up) this.tickUp(dt);
+      if (!this.active) return;
+      this.drawAvatar(dt);
+      if (this.up) this.upInput(input);
+      else this.input(input);
+    },
+
     /* ---------------- DOM ---------------- */
     render() {
+      // đổi thiết bị giữa màn STRONGER!: vẽ lại ở trạng thái đã xong; chạy trên bảng YOU thì bỏ qua hoạt ảnh
+      if (this.up) {
+        if (!this.up.inline) return this.renderUp(true);
+        this.up = null;
+        this.busy = false;
+      }
       const offer = PF().drillOffer();
       if (!offer.length) return this.close();
       if (this.sel >= offer.length) this.sel = 0;
@@ -54,15 +85,11 @@ window.SFC = window.SFC || {};
       const tiles = offer.map((id, i) => this.tile(id, i)).join('');
       const pad = SFC.Input.device === 'pad';
       const pick = pad ? `←→ + ${esc(K('confirm', 'Enter'))} pick` : '1 / 2 / 3 or ←→ + Enter pick';
-      // chữ graffiti mờ trên tường (giống tường sân, arenas.config.js -> graffiti)
-      const tags = [['STREET', 66, 5, 4, '#3ff6ff'], ['NO RULES', 49, 1, -5, '#ff3fb4']]
-        .map(([t, x, y, r, c]) => `<i class="dr-tag" style="left:${x}%;top:${y}%;--r:${r}deg;--c:${c}">${t}</i>`).join('');
       this.el.innerHTML = `<div class="drill">
-        <div class="dr-wall">${tags}
+        <div class="dr-wall">${this.tags()}
           <div class="dr-head"><b class="dr-title">DRILL</b><span class="dr-label">LV ${PF().data.level} · PICK 1 OF ${offer.length}</span><em class="dr-left">${n}<small>LEFT</small></em></div>
-          <div class="dr-tiles">${tiles}</div>
+          <div class="dr-body">${this.you(offer[this.sel])}<div class="dr-tiles">${tiles}</div></div>
           <div class="dr-curb">
-            <div class="dr-strip" id="dr-strip">${this.strip(offer[this.sel])}</div>
             <div class="dr-foot">
               <span class="dr-hint">${pick}</span>
               <button class="dr-btn roll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(K('reroll', 'R'))}</kbd> REROLL (${left})</button>
@@ -71,18 +98,30 @@ window.SFC = window.SFC || {};
           </div>
         </div>
       </div>`;
+      this.bindAvatar();
+    },
+
+    // chữ graffiti mờ trên tường (giống tường sân, arenas.config.js -> graffiti)
+    tags() {
+      return [['STREET', 66, 5, 4, '#3ff6ff'], ['NO RULES', 49, 1, -5, '#ff3fb4']]
+        .map(([t, x, y, r, c]) => `<i class="dr-tag" style="left:${x}%;top:${y}%;--r:${r}deg;--c:${c}">${t}</i>`).join('');
+    },
+
+    // icon / màu sơn của drill: của drill (Boot Camp) hoặc của chỉ số tăng nhiều nhất
+    paint(id) {
+      const L = A().drills.list[id];
+      const main = A().order.filter((k) => L.gains[k]).reduce((a, b) => (L.gains[b] > L.gains[a] ? b : a));
+      return { icon: L.icon || A().list[main].icon, color: L.color || A().list[main].color };
     },
 
     // 1 poster: số phím · chỉ số · stencil icon trên vệt sơn · tên · rating trước → sau + thanh · mô tả
     tile(id, i) {
-      const L = A().drills.list[id], pf = PF(), gains = pf.drillGains(id), span = A().max - A().base;
+      const L = A().drills.list[id], pf = PF(), gains = pf.drillGains(id);
       const keys = A().order.filter((k) => L.gains[k]);
-      // icon / màu sơn: của drill (Boot Camp) hoặc của chỉ số tăng nhiều nhất
-      const main = keys.reduce((a, b) => (L.gains[b] > L.gains[a] ? b : a));
-      const icon = L.icon || A().list[main].icon, color = L.color || A().list[main].color;
+      const { icon, color } = this.paint(id);
       const rows = keys.map((k) => {
         const r0 = pf.rating(k), r1 = pf.rating(k, gains);
-        const w0 = ((r0 - A().base) / span) * 100, w1 = ((r1 - A().base) / span) * 100;
+        const w0 = pct(r0), w1 = pct(r1);
         return `<div class="dr-gain"><span>${A().list[k].short}</span><b>${r0}</b><em>${r1 > r0 ? `→ ${r1}` : 'MAX'}</em>
           <i class="dr-bar"><b style="width:${w0.toFixed(1)}%"></b><u style="left:${w0.toFixed(1)}%;width:${(w1 - w0).toFixed(1)}%"></u></i></div>`;
       }).join('');
@@ -100,37 +139,79 @@ window.SFC = window.SFC || {};
       </div>`;
     },
 
-    // dải dưới: 6 rating hiện tại, phần tăng của ô đang chọn + OVR trước → sau
-    strip(id) {
+    // bảng YOU: character trên vệt sơn màu drill đang chọn · tên + LV · OVR + 6 thanh chỉ số (xem trước drill id)
+    you(id) {
       const pf = PF(), gains = id ? pf.drillGains(id) : {};
-      const cells = A().order.map((k) => `<span class="${gains[k] ? 'up' : ''}">${A().list[k].short} <b>${pf.rating(k)}</b>${gains[k] ? `<em>+${gains[k]}</em>` : ''}</span>`).join('');
-      const o0 = pf.ovr(), o1 = pf.ovr(gains);
-      return `${cells}<span class="dr-ovr">OVR <b>${o0}</b>${o1 !== o0 ? `<em>→ ${o1}</em>` : ''}</span>`;
+      const now = {};
+      for (const k of A().order) now[k] = pf.rating(k);
+      return `<div class="dr-you dr-pw" style="--pc:${id ? this.paint(id).color : '#ffe14f'}">
+        <div class="dr-you-av"><i class="dr-splat"></i><canvas class="dr-av" width="40" height="44"></canvas><div class="rv3-parts"></div></div>
+        <div class="dr-you-name">${esc(pf.data.name || 'PLAYER')} <small>LV ${pf.data.level}</small></div>
+        <div class="dr-sheet">${this.sheet(now, gains, pf.ovr(), pf.ovr(gains))}</div>
+        <div class="dr-flash"></div>
+      </div>`;
     },
 
-    // đổi ô đang chọn: không vẽ lại cả màn (giữ animation vào của các ô)
+    // OVR + 6 dòng chỉ số: vals = rating hiện có, gains = phần sắp cộng (vệt sáng + "+n"), o0 → o1 = OVR
+    sheet(vals, gains, o0, o1) {
+      const rows = A().order.map((k) => {
+        const S = A().list[k], g = gains[k] || 0, w0 = pct(vals[k]), w1 = pct(vals[k] + g);
+        return `<div class="dr-row ${g ? 'up' : ''}" data-k="${k}" style="--c:${S.color}"><span>${S.short}</span><b>${vals[k]}</b>
+          <i class="dr-rbar"><b style="width:${w0.toFixed(1)}%"></b><u style="left:${w0.toFixed(1)}%;width:${(w1 - w0).toFixed(1)}%"></u></i><em>${g ? `+${g}` : ''}</em></div>`;
+      }).join('');
+      return `<div class="dr-ob"><small>OVR</small><b>${o0}</b>${o1 !== o0 ? `<em>→ ${o1}</em>` : ''}</div>${rows}`;
+    },
+
+    // đổi ô đang chọn: không vẽ lại cả màn (giữ animation vào của các ô), chỉ phần xem trước trên bảng YOU
     setSel(i) {
-      const offer = PF().drillOffer();
+      const offer = PF().drillOffer(), pf = PF(), id = offer[i];
       this.sel = i;
       this.el.querySelectorAll('.dr-tile').forEach((t) => t.classList.toggle('sel', +t.dataset.drill === i));
-      const s = this.el.querySelector('#dr-strip');
-      if (s) s.innerHTML = this.strip(offer[i]);
+      const you = this.el.querySelector('.dr-you'), sh = you && you.querySelector('.dr-sheet');
+      if (!sh) return;
+      const gains = pf.drillGains(id), now = {};
+      for (const k of A().order) now[k] = pf.rating(k);
+      sh.innerHTML = this.sheet(now, gains, pf.ovr(), pf.ovr(gains));
+      you.style.setProperty('--pc', this.paint(id).color);
+    },
+
+    bindAvatar() {
+      this.look = PF().lookOf();
+      this.cv = this.el.querySelector('canvas.dr-av');
+      this.drawAvatar(0);
+    },
+
+    // character xoay người; lúc pop: tư thế vung chân sút
+    drawAvatar(dt) {
+      this.animT = (this.animT || 0) + dt;
+      if (!this.cv || !this.cv.isConnected) return;
+      let facing = DIRS[Math.floor(this.animT / 1.6) % 4], extra = null;
+      const u = this.up;
+      if (u && u.poseT != null && u.poseT < UP.pose) { facing = 0; extra = { atkType: 'shoot', atkT: u.poseT }; }
+      SFC.Sprites.drawAvatar(this.cv, this.look, KIT(), this.animT, facing, extra);
     },
 
     /* ---------------- chọn / đổi / để sau ---------------- */
     pick(i) {
       if (this.busy) return;
-      const r = PF().pickDrill(i);
+      if (i !== this.sel && i < PF().drillOffer().length) this.setSel(i);   // bảng YOU xem trước đúng drill được chọn (phím 1/2/3, click)
+      const pf = PF(), before = {};
+      for (const k of A().order) before[k] = pf.rating(k);
+      const o0 = pf.ovr();
+      const r = pf.pickDrill(i);
       if (!r) return;
       this.busy = true;
       const t = this.el.querySelector(`.dr-tile[data-drill="${i}"]`);
       if (t) t.classList.add('done');
       this.el.querySelectorAll('.dr-tile').forEach((x) => { if (x !== t) x.classList.add('gone'); });
       SFC.Audio.upgrade();
+      const keys = A().order.filter((k) => r.gains[k]);
       this.pickT = setTimeout(() => {
-        this.busy = false;
         if (!this.active) return;
-        if (PF().drillsPending() > 0) { this.sel = 0; this.render(); SFC.Audio.whoosh(); } else this.close();
+        this.up = { id: r.id, gains: r.gains, before, keys, o0, o1: pf.ovr(), shown: Object.assign({}, before),
+          inline: !A().drills.upScreen, phase: null, t: 0, poseT: null };
+        if (this.up.inline) { this.upRoot = this.el.querySelector('.dr-you'); this.upSet('fill'); }
+        else { this.renderUp(false); SFC.Audio.whoosh(); }
       }, PICK_DELAY * 1000);
     },
 
@@ -161,6 +242,7 @@ window.SFC = window.SFC || {};
     click(e) {
       if (!this.active) return;
       SFC.Audio.unlock();
+      if (this.up) { if (!this.up.inline) this.advance(); return; }
       const act = e.target.closest('[data-act]');
       if (act) {
         if (act.dataset.act === 'reroll') this.reroll();
@@ -169,6 +251,119 @@ window.SFC = window.SFC || {};
       }
       const t = e.target.closest('[data-drill]');
       if (t) this.pick(+t.dataset.drill);
+    },
+
+    /* ---------------- màn STRONGER! sau khi chọn ---------------- */
+    // done = vẽ luôn ở trạng thái đã xong (đổi thiết bị giữa chừng)
+    renderUp(done) {
+      const u = this.up, L = A().drills.list[u.id], { color } = this.paint(u.id);
+      const n = PF().drillsPending(), ok = esc(K('confirm', 'Enter'));
+      const go = n > 0 ? `<kbd>${ok}</kbd> NEXT DRILL (${n} LEFT) · <kbd>${esc(K('back', 'Esc'))}</kbd> LATER` : `<kbd>${ok}</kbd> CONTINUE`;
+      if (done) for (const k of u.keys) u.shown[k] = u.before[k] + u.gains[k];
+      const vals = done ? u.shown : u.before;
+      const rest = {};
+      for (const k of u.keys) rest[k] = u.before[k] + u.gains[k] - vals[k];
+      this.el.innerHTML = `<div class="drill">
+        <div class="dr-wall">${this.tags()}
+          <div class="dr-up dr-pw" style="--pc:${color}">
+            <div class="dr-up-head"><span class="dr-label">${esc(L.name)} · COMPLETE</span><b class="dr-up-title">STRONGER!</b></div>
+            <div class="dr-up-stage">
+              <div class="dr-up-hero"><i class="dr-splat"></i><canvas class="dr-av" width="40" height="44"></canvas><div class="rv3-parts"></div></div>
+              <div class="dr-sheet">${this.sheet(vals, rest, done ? u.o1 : u.o0, u.o1)}</div>
+            </div>
+            <div class="dr-curb"><div class="dr-foot"><span class="dr-hint">${esc(PF().data.name || 'PLAYER')} · LV ${PF().data.level}</span><span class="dr-up-go">${go}</span></div></div>
+            <div class="dr-flash"></div>
+          </div>
+        </div>
+      </div>`;
+      this.upRoot = this.el.querySelector('.dr-up');
+      this.bindAvatar();
+      if (done) { this.upRoot.querySelectorAll('.dr-row.up').forEach((r) => r.classList.add('lit')); this.upSet('shown'); }
+      else this.upSet('in');
+    },
+
+    upSet(phase) {
+      const u = this.up;
+      u.phase = phase; u.t = 0;
+      if (this.upRoot) this.upRoot.dataset.phase = phase;
+    },
+
+    tickUp(dt) {
+      const u = this.up;
+      u.t += dt;
+      if (u.poseT != null) u.poseT += dt;
+      if (u.phase === 'in' && u.t >= UP.in) this.upSet('fill');
+      else if (u.phase === 'fill') {
+        this.fill(u.t);
+        if (u.t >= u.keys.length * UP.fill) this.pop();
+      } else if (u.phase === 'pop' && u.t >= (u.inline ? UP.pop + UP.hold : UP.pop)) {
+        if (u.inline) this.nextAfterUp();
+        else this.upSet('shown');
+      }
+    },
+
+    // thanh chỉ số thứ j đầy trong khoảng [j, j + 1] x UP.fill; số đếm lên từng bước (kèm tiếng tích)
+    fill(t) {
+      const u = this.up, root = this.upRoot;
+      if (!root) return;
+      u.keys.forEach((k, j) => {
+        const p = Math.max(0, Math.min(1, (t - j * UP.fill) / UP.fill));
+        const cur = u.before[k] + Math.round(u.gains[k] * p);
+        const row = root.querySelector(`.dr-row[data-k="${k}"]`);
+        if (!row) return;
+        if (p > 0) row.classList.add('lit');
+        if (cur === u.shown[k]) return;
+        u.shown[k] = cur;
+        const w0 = pct(cur), w1 = pct(u.before[k] + u.gains[k]);
+        row.querySelector('b').textContent = cur;
+        row.querySelector('.dr-rbar b').style.width = `${w0.toFixed(1)}%`;
+        const glow = row.querySelector('.dr-rbar u');
+        glow.style.left = `${w0.toFixed(1)}%`;
+        glow.style.width = `${(w1 - w0).toFixed(1)}%`;
+        SFC.Audio.tick();
+      });
+    },
+
+    // chớp + hạt pixel + tư thế sút; OVR tăng: đóng dấu số mới + rung
+    pop() {
+      const u = this.up, root = this.upRoot;
+      this.fill(Infinity);
+      this.upSet('pop');
+      u.poseT = 0;
+      SFC.Audio.upgrade();
+      if (!root) return;
+      const box = root.querySelector('.rv3-parts');
+      if (box) box.innerHTML = SFC.Reveal.particles(this.paint(u.id).color, u.inline ? 0.45 : 0.75);
+      const ob = root.querySelector('.dr-ob');
+      if (ob && u.o1 > u.o0) {
+        ob.innerHTML = `<small>OVR</small><b>${u.o1}</b><em>+${u.o1 - u.o0}</em>`;
+        ob.classList.add('rise');
+        root.classList.add('rise');
+        SFC.Audio.reveal(2);
+      }
+    },
+
+    // Enter / click trên màn STRONGER!: bỏ qua tới pop · hiện xong · đi tiếp
+    advance() {
+      const u = this.up;
+      if (!u || u.inline) return;
+      if (u.phase === 'in' || u.phase === 'fill') this.pop();
+      else if (u.phase === 'pop' && u.t > 0.15) this.upSet('shown');
+      else if (u.phase === 'shown' && u.t > 0.2) { SFC.Audio.menu(); this.nextAfterUp(); }
+    },
+
+    upInput(input) {
+      if (this.up.inline) return;
+      if (input.wasPressed('pause') || input.wasPressed('back')) { SFC.Audio.menu(); return this.close(); }
+      if (input.wasPressed('confirm')) this.advance();
+    },
+
+    // xong màn STRONGER!: còn drill chờ -> bộ 3 kế tiếp; hết -> đóng
+    nextAfterUp() {
+      this.up = null;
+      this.upRoot = null;
+      this.busy = false;
+      if (PF().drillsPending() > 0) { this.sel = 0; this.render(); SFC.Audio.whoosh(); } else this.close();
     },
   };
 

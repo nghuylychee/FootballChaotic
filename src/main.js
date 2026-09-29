@@ -197,7 +197,7 @@
       if (app.demo.state === 'ended') app.newDemo();
       SFC.Menu.animate(dt);
       // màn DRILL mở trên menu (CHARACTER / STATS): nhận phím thay menu
-      if (SFC.Drill.active) SFC.Drill.input(Input);
+      if (SFC.Drill.active) SFC.Drill.update(dt, Input);
       else SFC.Menu.input(Input);
       return;
     }
@@ -210,7 +210,7 @@
     const g = app.game;
     if (app.screen === 'pause') { SFC.UI.pauseInput(Input); return; }
     // màn DRILL mở trên màn kết quả: nhận phím thay các nút kết quả
-    if (SFC.Drill.active) { SFC.Drill.input(Input); return; }
+    if (SFC.Drill.active) { SFC.Drill.update(dt, Input); return; }
 
     if (g.state === 'ended') {
       if (SFC.Reveal.active) SFC.Reveal.update(dt, Input);   // màn mở thẻ phần thưởng Main Path

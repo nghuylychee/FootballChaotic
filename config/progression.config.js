@@ -27,6 +27,7 @@ SFC_CONFIG.progression = {
       perLevel: 1,
       choices: 3,
       rerolls: 1,
+      upScreen: true,          // chọn xong: true = màn STRONGER! riêng (Enter để đi tiếp) · false = thanh chỉ số đầy ngay trên bảng YOU rồi tự sang bộ kế
       kindWeight: { single: 3, combo: 2, all: 0.6 },   // trọng số theo loại drill
       lean: 1.5,               // trọng số x (1 + lean x tỉ lệ bước đã tập nằm ở các chỉ số của drill) -> nghiêng theo build
       // gains: số bước (+rating) cộng vào từng chỉ số; icon / color (tuỳ chọn): poster riêng, mặc định theo chỉ số tăng nhiều nhất. 29 drill (LV1 -> LV30) x ~5.2 bước ≈ 150 bước: dàn đều ~85
