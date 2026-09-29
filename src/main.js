@@ -151,6 +151,7 @@
     // về menu; page = trang menu muốn mở (home / online / lobby)
     toMenu(page = 'home') {
       SFC.Intro.abort();
+      SFC.Drill.close();
       this.game = null;
       this.screen = 'menu';
       if (page !== 'lobby') this.mode = 'single';
@@ -164,6 +165,7 @@
   let deviceRev = 0;
   function refreshLabels() {
     const UI = SFC.UI, g = app.game;
+    if (SFC.Drill.active) SFC.Drill.render();
     if (app.screen === 'menu') return SFC.Menu.render();
     if (UI.current === 'pause') UI.renderPause();
     else if (UI.current === 'draft' && g) UI.renderDraft(g);
@@ -181,7 +183,9 @@
       app.demo.events.length = 0;
       if (app.demo.state === 'ended') app.newDemo();
       SFC.Menu.animate(dt);
-      SFC.Menu.input(Input);
+      // màn DRILL mở trên menu (CHARACTER / STATS): nhận phím thay menu
+      if (SFC.Drill.active) SFC.Drill.input(Input);
+      else SFC.Menu.input(Input);
       return;
     }
 
@@ -192,6 +196,8 @@
 
     const g = app.game;
     if (app.screen === 'pause') { SFC.UI.pauseInput(Input); return; }
+    // màn DRILL mở trên màn kết quả: nhận phím thay các nút kết quả
+    if (SFC.Drill.active) { SFC.Drill.input(Input); return; }
 
     if (g.state === 'ended') {
       if (SFC.Reveal.active) SFC.Reveal.update(dt, Input);   // màn mở thẻ phần thưởng Main Path

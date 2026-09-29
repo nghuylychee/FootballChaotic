@@ -196,7 +196,10 @@ window.SFC = window.SFC || {};
     endItems() {
       if (!this.online) {
         const mp = this.app.game && this.app.game.opts.mainPath;
-        return mp ? [['restart', 'NEXT MATCH'], ['menu', 'MAIN PATH']] : [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']];
+        // còn drill chờ (bấm LATER): nút DRILL (n) đứng đầu để mở lại (ui/drill.js)
+        const n = SFC.Profile.drillsPending();
+        const drill = n ? [['drill', `DRILL (${n})`]] : [];
+        return drill.concat(mp ? [['restart', 'NEXT MATCH'], ['menu', 'MAIN PATH']] : [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']]);
       }
       return SFC.Online.isHost ? [['lobby', 'BACK TO LOBBY'], ['leave', 'LEAVE ROOM']] : [['leave', 'LEAVE ROOM']];
     },
@@ -233,6 +236,7 @@ window.SFC = window.SFC || {};
       // Main Path: Core / hộp mới -> màn mở thẻ sau khi thưởng chạy xong (Enter trước đó thì mở ngay)
       const unlocks = game.reward && game.reward.path ? game.reward.path.rewards.filter((x) => x.kind !== 'gold') : [];
       this.pendingReveal = unlocks.length ? unlocks : null;
+      this.drillAfter = false;   // vừa lên level (chơi đơn): mở màn DRILL sau thưởng + sau màn mở thẻ (autoDrill)
       if (game.reward) this.playReward(game.reward);
     },
 
@@ -240,7 +244,17 @@ window.SFC = window.SFC || {};
       const list = this.pendingReveal;
       this.pendingReveal = null;
       clearTimeout(this.revealTimer);
-      if (list) SFC.Reveal.open(list, () => this.renderEndItems());
+      if (list) SFC.Reveal.open(list, () => { this.renderEndItems(); this.autoDrill(); });
+    },
+
+    // màn DRILL tự mở sau khi thưởng chạy xong; có màn mở thẻ (Main Path) thì đợi nó đóng rồi mới mở (không chồng 2 lớp phủ)
+    autoDrill() {
+      if (!this.drillAfter || this.pendingReveal || SFC.Reveal.active) return;
+      this.drillAfter = false;
+      setTimeout(() => {
+        const g = this.app.game;
+        if (this.current === 'end' && g && g.state === 'ended' && !SFC.Drill.active && !SFC.Reveal.active) this.openDrill();
+      }, 400);
     },
 
     // "Khoảnh khắc của trận": khoảnh khắc điểm cao nhất (Tuyệt kỹ, combo HIT) + ảnh động của Core đó
@@ -268,6 +282,7 @@ window.SFC = window.SFC || {};
 
     renderEndItems() {
       const el = document.getElementById('end-items');
+      this.endSel = Math.min(this.endSel, this.endItems().length - 1);
       if (el) el.innerHTML = this.endItems().map(([k, l], i) => `<button class="${i === this.endSel ? 'sel' : ''}" data-act="${k}">${l}</button>`).join('');
       this.showEndItems();
     },
@@ -358,10 +373,14 @@ window.SFC = window.SFC || {};
           if (!up.dataset.done) {
             up.dataset.done = 1;
             if (r.eligible.length) up.insertAdjacentHTML('beforeend', `<div class="rw-new">Unlocked: ${r.eligible.map(esc).join(', ')}</div>`);
-            // lên level: điểm chỉ số vừa nhận + số điểm chưa phân bổ (chỉ khi không có dòng Unlocked, giữ khung thưởng tối đa 2 dòng)
-            const free = SFC.Profile.pointsFree(), gained = r.levelUps.length * SFC_CONFIG.progression.attrs.pointsPerLevel;
-            if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">★ +${gained} stat pts · ${free} to spend</div>`);
+            // lên level: drill vừa nhận (chỉ khi không có dòng Unlocked, giữ khung thưởng tối đa 2 dòng)
+            const gained = r.levelUps.length * SFC_CONFIG.progression.attrs.drills.perLevel;
+            const where = this.online ? 'CHARACTER → DRILL' : 'pick after this screen';
+            if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">★ +${gained} DRILL${gained > 1 ? 'S' : ''} · ${where}</div>`);
             this.showEndItems();   // dòng thưởng vừa thêm có thể đẩy nút xuống
+            // chơi đơn: vừa lên level -> tự mở màn DRILL (online tự xử lý phím -> chỉ tích drill, chọn ở CHARACTER)
+            this.drillAfter = !this.online && gained > 0;
+            this.autoDrill();
           }
           return;
         }
@@ -389,6 +408,15 @@ window.SFC = window.SFC || {};
       if (act === 'leave') SFC.Online.leave();
       if (act === 'lobby') SFC.Online.backToLobby();
       if (act === 'reroll') this.app.rerollCore();
+      if (act === 'drill') this.openDrill();
+    },
+
+    // màn DRILL trên màn kết quả; đóng (chọn hết / LATER) -> vẽ lại nút (DRILL (n) / NEXT MATCH)
+    openDrill() {
+      SFC.Drill.open(() => {
+        if (!SFC.Profile.drillsPending()) this.endSel = 0;
+        this.renderEndItems();
+      });
     },
 
     /* ================= HUD ================= */

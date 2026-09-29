@@ -847,21 +847,14 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .st-mini .stat span { width: 20px; }
 .st-mini .stat em { font-style: normal; width: 14px; text-align: right; color: #e6dccb; }
 
-/* trang STATS: cột trái */
-.st-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); margin: -2px 0 4px; padding: 0 6px 0 14px; }
-.st-head b { font-family: var(--px); font-size: 9px; font-weight: normal; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); }
-.mi.st-row label { width: 56px; flex: none; }
-.mi.st-row .picker { gap: 3px; }
+/* trang STATS (chỉ xem): cột trái */
+.mi.attr { display: flex; align-items: center; justify-content: space-between; padding-top: 3px; padding-bottom: 3px; }
+.mi.attr label { font-size: 13px; color: var(--muted); letter-spacing: 0.5px; }
+.mi.attr.sel label { color: var(--gold); }
+.st-val { display: flex; align-items: center; gap: 6px; }
 .st-num { width: 16px; text-align: right; font-weight: normal; font-size: 16px; color: #fff; }
-.st-num.up { color: #7fe7ff; }
-.st-num.flash { animation: stFlash 0.9s steps(6); }
-@keyframes stFlash { 0%, 50% { color: var(--gold); transform: scale(1.3); } 100% { transform: none; } }
-.picker .st-bar { position: relative; min-width: 0; width: 84px; height: 7px; background: var(--tt); border: 1px solid var(--ink); box-sizing: content-box; }
-.st-bar i { position: absolute; top: 0; left: 0; height: 100%; }
-.st-bar i.have { background: var(--tg); background-size: 84px 100%; }
-.st-bar i.add { background: #7fe7ff; animation: pulse 0.6s steps(2) infinite; }
-.st-bar b.cut { position: absolute; top: -1px; bottom: -1px; width: 1px; background: var(--ink); }
-.st-cost { width: 20px; text-align: right; font-style: normal; font-size: 11px; color: var(--muted); }
+.st-bar { position: relative; display: block; width: 110px; height: 7px; background: #2a1f2c; border: 1px solid var(--ink); }
+.st-bar i.have { position: absolute; top: 0; left: 0; height: 100%; background: var(--gold); }
 
 /* trang STATS: bảng phải */
 .st-panel { display: flex; flex-direction: column; gap: 6px; width: 300px; align-self: center; }
@@ -870,14 +863,12 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .st-radar .ring { fill: none; stroke: #3b2a36; stroke-width: 1; }
 .st-radar .axis { stroke: #3b2a36; stroke-width: 1; }
 .st-radar .have { fill: rgba(255,225,79,0.28); stroke: var(--gold); stroke-width: 1.5; stroke-linejoin: round; }
-.st-radar .pend { fill: rgba(127,231,255,0.12); stroke: #7fe7ff; stroke-width: 1; stroke-dasharray: 3 2; }
 .st-radar text { font-family: var(--vt); font-size: 11px; fill: var(--muted); text-anchor: middle; }
 .st-radar text.sel { fill: var(--gold); }
 .st-side { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .st-side canvas.avatar { background: radial-gradient(ellipse at 50% 88%, rgba(255,225,79,0.18), transparent 60%); }
 .st-ovr { text-align: center; line-height: 1; padding: 3px 6px; background: var(--panel); border: 1px solid var(--gold); box-shadow: 2px 2px 0 var(--ink); }
 .st-ovr b { display: block; font-family: var(--px); font-size: 12px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
-.st-ovr b em { font-style: normal; font-size: 8px; color: #7fe7ff; margin-left: 2px; }
 .st-ovr span { font-size: 11px; color: var(--gold); }
 .st-detail { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--gold); padding: 5px 8px; box-shadow: 2px 2px 0 var(--ink); }
 .sd-head { display: flex; justify-content: space-between; align-items: baseline; }
@@ -1060,3 +1051,89 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .proad i.lock { filter: none; opacity: 0.7; }
 .rv3-frame i > span.pxi-fb { font-size: 34px; }
 .rv3-s-name { display: flex; align-items: center; gap: 6px; font-size: 25px; }
+
+/* ---------- MÀN DRILL (ui/drill.js, docs/DRILL_DESIGN.md): tường gạch phố + 3 poster dán băng keo, stencil trên vệt sơn ---------- */
+.drill { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(6,4,8,0.72); }
+/* gạch 12x6 + vữa 1px, cùng bảng màu tường gạch của sân (arenas.config.js -> wall brick) */
+.dr-wall {
+  position: relative; width: 604px; padding: 10px 16px 0; overflow: hidden; color: #e6dccb;
+  background:
+    radial-gradient(ellipse at 50% 40%, transparent 45%, rgba(10,6,12,0.55) 100%),
+    linear-gradient(rgba(20,12,22,0.1), rgba(20,12,22,0.35)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12' shape-rendering='crispEdges'%3E%3Crect width='24' height='12' fill='%232a1b20'/%3E%3Crect x='0' y='0' width='11' height='5' fill='%235a3a3c'/%3E%3Crect x='12' y='0' width='11' height='5' fill='%236b4644'/%3E%3Crect x='0' y='6' width='5' height='5' fill='%23633f40'/%3E%3Crect x='6' y='6' width='11' height='5' fill='%23523537'/%3E%3Crect x='18' y='6' width='6' height='5' fill='%23633f40'/%3E%3Crect x='0' y='0' width='11' height='1' fill='%23764f4d'/%3E%3Crect x='6' y='6' width='11' height='1' fill='%23604042'/%3E%3C/svg%3E") 0 0 / 24px 12px;
+  image-rendering: pixelated; border: 2px solid #1a1116; box-shadow: 0 0 0 1px var(--ink), 4px 4px 0 var(--ink);
+  animation: drWall 0.2s steps(3) both;
+}
+@keyframes drWall { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+.dr-tag { position: absolute; font-style: normal; font-family: var(--px); font-size: 13px; color: var(--c); opacity: 0.16; transform: rotate(var(--r)); pointer-events: none; white-space: nowrap; text-shadow: 2px 2px 0 var(--ink); }
+
+/* đầu: chữ DRILL xịt sơn · nhãn băng keo đen · sticker số drill còn lại */
+.dr-head { position: relative; display: flex; align-items: center; gap: 12px; height: 30px; }
+.dr-title { font-family: var(--px); font-size: 20px; font-weight: normal; color: #ffe14f; letter-spacing: 2px; transform: rotate(-3deg);
+  text-shadow: 2px 2px 0 #ff3fb4, 4px 4px 0 var(--ink); }
+.dr-label { font-size: 14px; color: #e6dccb; background: #141018; padding: 1px 7px; transform: rotate(1.5deg); box-shadow: 2px 2px 0 rgba(0,0,0,0.5); letter-spacing: 1px; }
+.dr-left { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-style: normal; font-family: var(--px); font-size: 11px; line-height: 1; color: var(--ink); background: #ffe14f; transform: rotate(8deg);
+  box-shadow: 0 0 0 2px var(--ink), 2px 3px 0 rgba(0,0,0,0.5); }
+.dr-left small { font-family: var(--vt); font-size: 9px; letter-spacing: 0.5px; }
+
+/* 3 poster: giấy xé mép + băng keo, bóng đổ theo mép giấy (drop-shadow) */
+.dr-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 10px 4px 10px; }
+.dr-tile { position: relative; cursor: pointer; transform: rotate(-1.5deg); filter: drop-shadow(3px 4px 0 rgba(10,6,12,0.6));
+  animation: drIn 0.25s steps(4) var(--d) both; transition: transform 0.08s, filter 0.08s, opacity 0.15s; }
+.dr-tile:nth-child(2) { transform: rotate(1deg); }
+.dr-tile:nth-child(3) { transform: rotate(-0.5deg); }
+.dr-tile.sel, .dr-tile:hover { transform: translateY(-4px) rotate(0deg);
+  filter: drop-shadow(1px 0 0 #ffe14f) drop-shadow(-1px 0 0 #ffe14f) drop-shadow(0 1px 0 #ffe14f) drop-shadow(0 -1px 0 #ffe14f) drop-shadow(4px 7px 0 rgba(10,6,12,0.65)); }
+.dr-tile.gone { opacity: 0.3; filter: grayscale(1) drop-shadow(3px 4px 0 rgba(10,6,12,0.6)); }
+@keyframes drIn { from { opacity: 0; translate: 0 -14px; } to { opacity: 1; translate: 0 0; } }
+.dr-paper { min-height: 188px; padding: 9px 9px 8px; color: #2a2230;
+  background: radial-gradient(circle at 80% 85%, rgba(120,90,50,0.16), transparent 30%), radial-gradient(circle at 15% 20%, rgba(120,90,50,0.12), transparent 25%), linear-gradient(#f2e9d3, #e6d9bb);
+  clip-path: polygon(0 1.5%, 7% 0, 15% 1.2%, 24% 0.2%, 33% 1.6%, 44% 0.3%, 55% 1.4%, 66% 0, 76% 1.3%, 87% 0.2%, 100% 1.2%, 99.2% 30%, 100% 62%, 99.4% 98.6%, 90% 100%, 79% 98.8%, 67% 100%, 55% 98.9%, 43% 100%, 31% 98.7%, 20% 100%, 9% 98.8%, 0 100%, 0.8% 60%, 0 30%); }
+.dr-tape { position: absolute; top: -5px; width: 26px; height: 9px; background: rgba(236,226,190,0.72); box-shadow: 0 0 0 1px rgba(20,12,22,0.15); }
+.dr-tape.l { left: -6px; transform: rotate(-32deg); }
+.dr-tape.r { right: -6px; transform: rotate(28deg); }
+.dr-top { display: flex; justify-content: space-between; align-items: baseline; }
+.dr-key { font-family: var(--px); font-size: 8px; color: #a89a80; }
+.dr-tags { font-size: 11px; line-height: 1; color: #8a4b22; letter-spacing: 1px; }
+/* stencil icon chỉ số (pixel icon .sil) trên vệt sơn màu chỉ số */
+.dr-art { position: relative; height: 46px; display: flex; align-items: center; justify-content: center; margin: 2px 0 4px; }
+.dr-splat { position: absolute; left: 50%; top: 50%; width: 76px; height: 46px; transform: translate(-50%, -50%); opacity: 0.9;
+  background: radial-gradient(circle at 50% 50%, var(--pc) 0 34%, transparent 35%), radial-gradient(circle at 18% 58%, var(--pc) 0 15%, transparent 16%),
+    radial-gradient(circle at 84% 34%, var(--pc) 0 14%, transparent 15%), radial-gradient(circle at 70% 84%, var(--pc) 0 8%, transparent 9%),
+    radial-gradient(circle at 30% 20%, var(--pc) 0 6%, transparent 7%); }
+.dr-splat::after { content: ""; position: absolute; left: 44%; top: 70%; width: 2px; height: 14px; background: var(--pc); box-shadow: 9px -4px 0 0 var(--pc); }
+.dr-art .pxi { position: relative; filter: grayscale(1) contrast(1.5) brightness(0.5); opacity: 0.92; }   /* stencil: tối nhưng giữ nét trong icon */
+.dr-art .pxi-fb { position: relative; font-size: 30px; }
+.dr-name { font-family: var(--px); font-size: 8px; line-height: 1.3; margin: 2px 0 6px; color: #2a2230; text-align: center; }
+.dr-gain { display: grid; grid-template-columns: 26px 18px 1fr; align-items: baseline; font-size: 14px; line-height: 1; }
+.dr-gain span { color: #6d6457; }
+.dr-gain b { font-weight: normal; color: #2a2230; }
+.dr-gain em { font-style: normal; color: #1f8a3a; }
+.dr-bar { grid-column: 1 / -1; position: relative; display: block; height: 5px; margin: 2px 0 5px; background: #d4c5a4; border: 1px solid #a8966e; }
+.dr-bar b { position: absolute; top: 0; left: 0; height: 100%; background: #6d6457; }
+.dr-bar u { position: absolute; top: 0; height: 100%; background: var(--pc); box-shadow: inset 0 0 0 1px rgba(20,12,22,0.25); animation: pulse 0.6s steps(2) infinite; }
+.dr-tile.all .dr-gains { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+.dr-tile.all .dr-bar { display: none; }
+.dr-desc { font-size: 12px; line-height: 1.1; color: #5a4f58; margin-top: 3px; }
+/* chọn xong: xịt chữ DONE! (quét từ trái sang, có vệt sơn chảy) */
+.dr-stamp { position: absolute; left: 50%; top: 44%; font-family: var(--px); font-size: 18px; color: #ff3fb4; white-space: nowrap; pointer-events: none;
+  text-shadow: 2px 2px 0 var(--ink), 0 0 8px rgba(255,63,180,0.6); transform: translate(-50%, -50%) rotate(-12deg); clip-path: inset(0 100% 0 0); }
+.dr-stamp::after { content: ""; position: absolute; left: 18%; top: 88%; width: 2px; height: 10px; background: #ff3fb4; box-shadow: 22px -2px 0 0 #ff3fb4, 48px 3px 0 0 #ff3fb4, 70px -1px 0 0 #ff3fb4; }
+.dr-tile.done .dr-stamp { animation: drSpray 0.3s steps(6) forwards; }
+@keyframes drSpray { to { clip-path: inset(0 -10% -30% 0); } }
+
+/* dải dưới: vỉa hè (đá vỉa + nhựa đường) — chỉ số hiện tại + nút sticker */
+.dr-curb { margin: 0 -16px; padding: 5px 16px 7px; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 3px, transparent 3px 7px), #1e1a22; border-top: 3px solid #8a8f9c; box-shadow: inset 0 1px 0 #c7ccd6; }
+.dr-strip { display: flex; align-items: baseline; gap: 10px; font-size: 13px; color: #9aa3b5; }
+.dr-strip b { font-weight: normal; color: #e6dccb; }
+.dr-strip .up, .dr-strip .up b { color: #ffe14f; }
+.dr-strip em { font-style: normal; color: #9dff3d; margin-left: 2px; }
+.dr-ovr { margin-left: auto; }
+.dr-foot { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.dr-hint { margin-right: auto; font-size: 12px; color: #9aa3b5; }
+.dr-btn { font-size: 14px; color: var(--ink); padding: 1px 8px; background: #e6dccb; transform: rotate(-1.5deg); box-shadow: 0 0 0 1px var(--ink), 2px 2px 0 rgba(0,0,0,0.6); }
+.dr-btn.roll { background: #ffe14f; transform: rotate(1.5deg); }
+.dr-btn kbd { color: var(--gold); }
+.dr-btn:hover { transform: rotate(0) translateY(-1px); }
+.dr-btn.off { opacity: 0.35; pointer-events: none; }

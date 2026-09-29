@@ -11,6 +11,8 @@ window.SFC = window.SFC || {};
   const CORES = () => P().cores;
   const SKINS = () => SFC_CONFIG.teams.skins;
   const A = () => P().attrs;
+  const D = () => P().attrs.drills;
+  const U = () => SFC.U;
   const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(+v || 0)));
 
   function blank() {
@@ -24,11 +26,13 @@ window.SFC = window.SFC || {};
     };
   }
 
-  // chỉ số character: steps = số bước đã cộng của từng chỉ số (rating = base + steps), bonus = điểm thưởng ngoài level
+  // chỉ số character (docs/DRILL_DESIGN.md): steps = số bước đã cộng của từng chỉ số (rating = base + steps)
+  // drills: pending = số drill chờ chọn, offer = bộ drill đang mời (lưu lại để không đổi miễn phí), rerolls = số lần đã đổi bộ này
+  // bonus / milestones: để dành cho giai đoạn 2 (drill thưởng)
   function blankAttrs() {
     const steps = {};
     for (const id of A().order) steps[id] = 0;
-    return { steps, bonus: 0, milestones: {} };
+    return { steps, drills: { pending: 0, offer: null, rerolls: 0 }, bonus: 0, milestones: {} };
   }
 
   // chọn ngẫu nhiên theo trọng số: list [{ w, v }]
@@ -80,12 +84,21 @@ window.SFC = window.SFC || {};
       d.look.skin = clampInt(lk.skin, 0, SKINS().length - 1);
       d.look.hairColor = clampInt(lk.hairColor, 0, P().hairColors.length - 1);
       Object.assign(d.stats, raw.stats || {});
-      // chỉ số: bước ngoài khoảng -> kẹp lại; tổng giá vượt số điểm có (đổi config) -> trả hết điểm
-      const ra = raw.attrs || {}, rs = ra.steps || {};
+      // chỉ số + DRILL: bước ngoài khoảng -> kẹp lại; bộ drill đang mời có id lạ / thiếu -> bỏ (bốc lại khi mở)
+      const ra = raw.attrs || {}, rs = ra.steps || {}, rd = ra.drills, dr = d.attrs.drills;
       for (const id of A().order) d.attrs.steps[id] = clampInt(rs[id], 0, A().max - A().base);
       d.attrs.bonus = Math.max(0, Math.floor(+ra.bonus || 0));
       if (ra.milestones && typeof ra.milestones === 'object') Object.assign(d.attrs.milestones, ra.milestones);
-      if (this.spentPoints(d.attrs.steps) > this.pointsEarned(d)) d.attrs.steps = blankAttrs().steps;
+      if (!rd || typeof rd !== 'object') {
+        // hồ sơ trước DRILL (hệ điểm cộng tay / chưa có chỉ số): chỉ số về 60, mỗi level đã lên = drill chờ
+        d.attrs.steps = blankAttrs().steps;
+        dr.pending = (d.level - 1) * D().perLevel;
+      } else {
+        dr.pending = clampInt(rd.pending, 0, P().maxLevel * D().perLevel);
+        const offer = Array.isArray(rd.offer) ? rd.offer.filter((id) => D().list[id]) : [];
+        dr.offer = dr.pending > 0 && offer.length === D().choices && new Set(offer).size === offer.length ? offer : null;
+        dr.rerolls = dr.offer ? clampInt(rd.rerolls, 0, D().rerolls) : 0;
+      }
       return d;
     },
 
@@ -109,7 +122,7 @@ window.SFC = window.SFC || {};
       return level >= P().maxLevel ? Infinity : P().xpBase + P().xpStep * (level - 1);
     },
 
-    // cộng XP, trả về danh sách level mới đạt được (mỗi level thưởng thêm gold)
+    // cộng XP, trả về danh sách level mới đạt được (mỗi level thưởng thêm gold + drill chờ)
     addXp(amount) {
       const d = this.data, ups = [];
       d.xp += amount;
@@ -119,6 +132,7 @@ window.SFC = window.SFC || {};
         ups.push(d.level);
       }
       if (d.level >= P().maxLevel) d.xp = 0;
+      d.attrs.drills.pending += ups.length * D().perLevel;
       return ups;
     },
 
@@ -254,59 +268,90 @@ window.SFC = window.SFC || {};
     },
     coreUnlocked(id) { return this.unlockedCores().includes(id); },
 
-    /* ---------- chỉ số character (config: progression.attrs) ---------- */
-    // pending: { id: số bước đang cộng thử, chưa xác nhận } — trang STATS dùng để xem trước
-    // giá 1 bước để đạt rating r
-    stepCost(r) {
-      const t = A().tierCost.find(([upTo]) => r <= upTo);
-      return t ? t[1] : Infinity;
-    },
-    // tổng điểm đã tiêu cho bộ bước steps
-    spentPoints(steps = this.data.attrs.steps) {
-      let sum = 0;
-      for (const id of A().order) for (let i = 1; i <= (steps[id] || 0); i++) sum += this.stepCost(A().base + i);
-      return sum;
-    },
-    pointsEarned(d = this.data) { return (d.level - 1) * A().pointsPerLevel + d.attrs.bonus; },
-    // điểm còn lại sau khi tính cả các bước đang cộng thử
-    pointsFree(pending = {}) {
-      const steps = {};
-      for (const id of A().order) steps[id] = this.data.attrs.steps[id] + (pending[id] || 0);
-      return this.pointsEarned() - this.spentPoints(steps);
-    },
-    rating(id, pending = {}) { return A().base + this.data.attrs.steps[id] + (pending[id] || 0); },
-    // giá bước kế tiếp (0 = đã tối đa)
-    nextCost(id, pending = {}) {
-      const r = this.rating(id, pending);
-      return r >= A().max ? 0 : this.stepCost(r + 1);
-    },
-    ovr(pending = {}) {
+    /* ---------- chỉ số character + DRILL (config: progression.attrs, docs/DRILL_DESIGN.md) ---------- */
+    // extra: { id chỉ số: số bước cộng thêm } — xem trước 1 drill trước khi chọn
+    rating(id, extra = {}) { return Math.min(A().max, A().base + this.data.attrs.steps[id] + (extra[id] || 0)); },
+    ovr(extra = {}) {
       const ids = A().order;
-      return Math.round(ids.reduce((s, id) => s + this.rating(id, pending), 0) / ids.length);
+      return Math.round(ids.reduce((s, id) => s + this.rating(id, extra), 0) / ids.length);
     },
     // hệ số trong trận của 1 chỉ số (khoá keys) theo rating
-    attrMult(id, key, pending = {}) {
+    attrMult(id, key, extra = {}) {
       const w = A().list[id].keys[key];
-      return 1 + (this.rating(id, pending) / A().scale - 1) * (w == null ? 1 : w);
+      return 1 + (this.rating(id, extra) / A().scale - 1) * (w == null ? 1 : w);
     },
-    // xác nhận các bước cộng thử. Trả về false nếu không đủ điểm / vượt tối đa
-    commitSteps(pending) {
-      if (this.pointsFree(pending) < 0) return false;
-      if (A().order.some((id) => (pending[id] || 0) < 0 || this.rating(id, pending) > A().max)) return false;
-      for (const id of A().order) this.data.attrs.steps[id] += pending[id] || 0;
+
+    drillsPending() { return this.data.attrs.drills.pending; },
+    // số bước drill thật sự cộng được (cắt ở tối đa); chỉ số đã tối đa không có trong kết quả
+    drillGains(id) {
+      const g = D().list[id].gains, out = {};
+      for (const k in g) { const room = A().max - this.rating(k); if (room > 0) out[k] = Math.min(g[k], room); }
+      return out;
+    },
+    // bộ drill đang mời: chưa có thì bốc + lưu. [] = không còn drill chờ
+    drillOffer() {
+      const dr = this.data.attrs.drills;
+      if (dr.pending <= 0) return [];
+      if (!dr.offer) {
+        dr.offer = this.rollDrills();
+        dr.rerolls = 0;
+        if (!dr.offer.length) { dr.pending = 0; dr.offer = null; }   // mọi chỉ số đã 99
+        this.save();
+      }
+      return dr.offer || [];
+    },
+    // bốc `choices` drill không trùng: trọng số theo loại x nghiêng theo build; bảo đảm có drill chạm chỉ số cao nhất
+    // và có drill không chạm nó (docs/DRILL_DESIGN.md mục 5). exclude = bộ vừa đổi (hết bài thì cho trùng)
+    rollDrills(exclude = []) {
+      const L = D().list, steps = this.data.attrs.steps;
+      const total = A().order.reduce((s, id) => s + steps[id], 0);
+      const open = Object.keys(L).filter((id) => Object.keys(this.drillGains(id)).length);
+      const weight = (id) => {
+        const share = total ? Object.keys(L[id].gains).reduce((s, k) => s + steps[k], 0) / total : 0;
+        return (D().kindWeight[L[id].kind] || 1) * (1 + D().lean * share);
+      };
+      let pool = open.filter((id) => !exclude.includes(id));
+      if (pool.length < D().choices) pool = open.slice();
+      const out = [];
+      while (out.length < D().choices && pool.length) {
+        const id = U().weightedPick(pool, weight);
+        out.push(id);
+        pool = pool.filter((x) => x !== id);
+      }
+      if (total > 0 && out.length > 1) {
+        const top = A().order.reduce((a, b) => (steps[b] > steps[a] ? b : a));
+        const hits = (id) => this.drillGains(id)[top] > 0;
+        const cand = (f) => {
+          const c = open.filter((id) => !out.includes(id) && f(id));
+          const fresh = c.filter((id) => !exclude.includes(id));
+          return fresh.length ? fresh : c;
+        };
+        if (!out.some(hits)) { const c = cand(hits); if (c.length) out[out.length - 1] = U().weightedPick(c, weight); }
+        if (out.every(hits)) { const c = cand((id) => !hits(id)); if (c.length) out[0] = U().weightedPick(c, weight); }
+      }
+      return out;
+    },
+    rerollsLeft() { const dr = this.data.attrs.drills; return dr.offer ? Math.max(0, D().rerolls - dr.rerolls) : 0; },
+    // đổi cả bộ đang mời (giới hạn drills.rerolls lần mỗi drill)
+    rerollDrill() {
+      const dr = this.data.attrs.drills;
+      if (!this.rerollsLeft()) return false;
+      dr.offer = this.rollDrills(dr.offer);
+      dr.rerolls++;
       this.save();
       return true;
     },
-    respecCost() { return A().respecGold.base + A().respecGold.perLevel * this.data.level; },
-    // trả lại toàn bộ điểm, mất gold. { ok, reason: empty | gold, cost }
-    respec() {
-      const cost = this.respecCost();
-      if (!this.spentPoints()) return { ok: false, reason: 'empty', cost };
-      if (this.data.gold < cost) return { ok: false, reason: 'gold', cost };
-      this.data.gold -= cost;
-      this.data.attrs.steps = blankAttrs().steps;
+    // chọn drill thứ i của bộ đang mời: cộng chỉ số, bớt 1 drill chờ. Trả về { id, gains } hoặc null
+    pickDrill(i) {
+      const dr = this.data.attrs.drills, id = dr.offer && dr.offer[i];
+      if (!id || dr.pending <= 0) return null;
+      const gains = this.drillGains(id);
+      for (const k in gains) this.data.attrs.steps[k] += gains[k];
+      dr.pending--;
+      dr.offer = null;
+      dr.rerolls = 0;
       this.save();
-      return { ok: true, cost };
+      return { id, gains };
     },
     // chỉ số trong trận (Player.stats) của character — chỉ Main Path / Luyện tập (main.js), online không gửi
     avatarStats() {

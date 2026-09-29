@@ -58,7 +58,6 @@ window.SFC = window.SFC || {};
     nameBuf: '',
     nameBack: 'home',   // đặt tên xong quay về trang nào
     avatars: [],        // canvas character đang hiện (vẽ lại mỗi khung hình để có chuyển động)
-    pend: {},           // trang STATS: số bước đang cộng thử của từng chỉ số
 
     init(app) {
       this.app = app;
@@ -79,7 +78,6 @@ window.SFC = window.SFC || {};
       if (page === 'join' && !msg) this.code = '';
       if (page === 'name') this.nameBuf = PF().data.name;
       if (page === 'path') this.pathView = MPATH().state.area;   // mở Main Path: xem Area đang đá
-      if (page === 'attrs') this.pend = {};                        // trang STATS: các bước đang cộng thử (chưa xác nhận)
       this.setTextMode(page === 'join' || page === 'name' ? page : null);
       this.render();
     },
@@ -99,7 +97,7 @@ window.SFC = window.SFC || {};
           return [
             { kind: 'btn', label: 'MAIN PATH', sub: this.pathSub(), act: () => this.go('path') },
             { kind: 'btn', label: 'ONLINE VERSUS', sub: '1 vs 1 · create a room', act: () => this.go('online') },
-            { kind: 'btn', label: 'CHARACTER', sub: PF().pointsFree() > 0 ? `★ ${PF().pointsFree()} stat points to spend!` : 'Stats · appearance · inventory', hot: PF().pointsFree() > 0, act: () => this.go('char') },
+            { kind: 'btn', label: 'CHARACTER', sub: this.drillCount() ? `★ ${this.drillCount()} ready!` : 'Drill · stats · appearance · inventory', hot: PF().drillsPending() > 0, act: () => this.go('char') },
             { kind: 'btn', label: 'SHOP', sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'SETTINGS', sub: 'Training · controls', act: () => this.go('settings') },
           ];
@@ -113,12 +111,14 @@ window.SFC = window.SFC || {};
         case 'char': {
           const d = PF().data;
           const nItems = Object.values(d.items).reduce((a, b) => a + b, 0) + Object.values(d.cores).reduce((a, b) => a + b, 0);
-          const free = PF().pointsFree();
-          return [
-            { kind: 'btn', label: 'STATS', sub: `OVR ${PF().ovr()}${free > 0 ? ` · ${free} pts free` : ''}`, hot: free > 0, act: () => this.go('attrs') },
+          const n = PF().drillsPending(), list = [];
+          // DRILL: chỉ hiện khi còn drill chờ chọn (docs/DRILL_DESIGN.md)
+          if (n) list.push({ kind: 'btn', label: 'DRILL', sub: `${n} ready · pick 1 of 3`, hot: true, act: () => this.openDrill() });
+          return list.concat([
+            { kind: 'btn', label: 'STATS', sub: `OVR ${PF().ovr()}`, act: () => this.go('attrs') },
             { kind: 'btn', label: 'APPEARANCE', sub: `${d.name} · skin · hair color`, act: () => this.go('look') },
             { kind: 'btn', label: 'INVENTORY', sub: `${nItems} items · equip · dismantle`, act: () => { G().invBack = 'char'; this.go('inv'); } },
-          ];
+          ]);
         }
         case 'look': {
           // NGOẠI HÌNH: đổi tên + màu da / tóc (costume ở INVENTORY)
@@ -130,18 +130,10 @@ window.SFC = window.SFC || {};
           ];
         }
         case 'attrs': {
-          // STATS: 1 dòng mỗi chỉ số (←→ cộng / bớt bước đang thử), CONFIRM, RESPEC
-          const A = ATTRS(), pf = PF(), pend = this.pend;
-          const nPend = A.order.reduce((a, id) => a + (pend[id] || 0), 0);
-          const list = A.order.map((id) => ({
-            kind: 'pick', label: A.list[id].label, attr: id, bar: this.attrBar(id),
-            change: (dd) => this.changeAttr(id, dd), enter: () => this.commitAttrs(),
-          }));
-          list.push({ kind: 'btn', label: 'CONFIRM', main: true, disabled: !nPend,
-            sub: nPend ? `+${nPend} step${nPend > 1 ? 's' : ''} · ${pf.pointsFree() - pf.pointsFree(pend)} pts` : 'Add points with ←→', act: () => this.commitAttrs() });
-          const spent = pf.spentPoints(), cost = pf.respecCost(), poor = pf.data.gold < cost;
-          list.push({ kind: 'btn', label: 'RESPEC', disabled: !spent || poor,
-            sub: !spent ? 'Nothing spent yet' : `Refund ${spent} pts · ${cost} gold${poor ? ' (not enough)' : ''}`, act: () => this.respecAttrs() });
+          // STATS (chỉ xem): 1 dòng mỗi chỉ số (↑↓ đổi khung chi tiết) + DRILL khi còn drill chờ
+          const A = ATTRS(), n = PF().drillsPending();
+          const list = A.order.map((id) => ({ kind: 'attr', label: A.list[id].label, attr: id, bar: this.attrBar(id) }));
+          if (n) list.push({ kind: 'btn', label: `DRILL (${n})`, sub: 'Pick 1 of 3 to raise your stats', hot: true, act: () => this.openDrill() });
           return list;
         }
         case 'path': {
@@ -212,14 +204,7 @@ window.SFC = window.SFC || {};
       if (Online().status === 'busy') return;
       if (this.page === 'name') { if (PF().hasName) this.go(this.nameBack); return; } // lần đầu: bắt buộc đặt tên
       if (G().pages.includes(this.page)) return G().back(this);
-      if (this.page === 'attrs') {
-        // còn bước chưa xác nhận: bấm 2 lần mới bỏ
-        const n = Object.values(this.pend).reduce((a, b) => a + b, 0);
-        if (n && !G().confirmed(this, 'discard', `Press ${SFC.Input.key('back', 'Esc')} again to discard ${n} pending step${n > 1 ? 's' : ''}`)) return;
-        this.pend = {};
-        return this.go('char');
-      }
-      if (this.page === 'look') return this.go('char');
+      if (this.page === 'attrs' || this.page === 'look') return this.go('char');
       if (['training', 'controls'].includes(this.page)) this.go('settings');
       else if (['path', 'online', 'tutorial', 'char', 'settings'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
@@ -249,7 +234,6 @@ window.SFC = window.SFC || {};
           ${this.page === 'join' ? this.renderCode() : ''}
           ${this.page === 'name' ? this.renderNameInput() : ''}
           ${this.page === 'lobby' ? this.renderRoomCode() : ''}
-          ${this.page === 'attrs' ? `<div class="st-head"><span>FREE POINTS</span><b>${PF().pointsFree(this.pend)}</b></div>` : ''}
           <div class="m-items">${list}</div>
           ${msg}
           <div class="m-hint">${this.hint()}</div>
@@ -259,12 +243,9 @@ window.SFC = window.SFC || {};
     },
 
     renderItem(it, i) {
-      const cls = ['mi', it.kind, i === this.sel ? 'sel' : '', it.main ? 'main' : '', it.disabled ? 'dis' : '', it.hot ? 'hot' : '', it.bar ? 'st-row' : ''].join(' ');
-      // dòng chỉ số (trang STATS): rating + thanh bước + giá bước kế tiếp
-      if (it.bar) {
-        return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label>
-          <div class="picker"><button data-i="${i}" data-d="-1">◀</button>${it.bar}<button data-i="${i}" data-d="1">▶</button></div></div>`;
-      }
+      const cls = ['mi', it.kind, i === this.sel ? 'sel' : '', it.main ? 'main' : '', it.disabled ? 'dis' : '', it.hot ? 'hot' : ''].join(' ');
+      // dòng chỉ số (trang STATS, chỉ xem): tên · rating + thanh
+      if (it.kind === 'attr') return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label><div class="st-val">${it.bar}</div></div>`;
       if (it.kind === 'pick') {
         const val = it.swatch ? `<i class="swatch" style="background:${it.swatch}"></i>` : esc(it.value);
         return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label>
@@ -278,7 +259,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'home') return `↑↓ select · ${ok} · ${K('mute', 'M')} mute`;
       if (this.page === 'join') return `Type the code · Enter connect · ${back} back`;
       if (this.page === 'name') return PF().hasName ? `Type a name (A-Z, 0-9) · Enter confirm · ${back} back` : 'Type a name (A-Z, 0-9) · Enter confirm';
-      if (this.page === 'attrs') return `←→ add / remove · ${ok} confirm · ${back} back`;
+      if (this.page === 'attrs') return `↑↓ select · ${back} back`;
       if (this.page === 'lobby') return Online().isHost ? `←→ change team · ${ok} start · ${K('pause', 'Esc')} leave room` : `←→ change team · ${K('pause', 'Esc')} leave room`;
       return `↑↓ select · ←→ change · ${ok} · ${back} back`;
     },
@@ -458,7 +439,7 @@ window.SFC = window.SFC || {};
         <div class="pc-info">
           <div class="pc-name">${esc(d.name)}</div>
           ${xpBar(d)}
-          ${PF().pointsFree() > 0 ? `<div class="pts-badge">★ ${PF().pointsFree()} STAT PTS</div>` : ''}
+          ${this.drillCount() ? `<div class="pts-badge">★ ${this.drillCount().toUpperCase()}</div>` : ''}
           <div class="pc-gold">${coin(d.gold)}</div>
           <div class="pc-stats">${st.matches} played · ${st.wins} wins · ${st.goals} goals</div>
         </div>
@@ -487,61 +468,24 @@ window.SFC = window.SFC || {};
       }).join('');
     },
 
-    // 1 dòng chỉ số: rating · thanh (đã xác nhận + đang thử, vạch chia + màu theo bậc giá) · giá bước kế tiếp
+    // 1 dòng chỉ số: rating + thanh (60 -> tối đa)
     attrBar(id) {
-      const A = ATTRS(), pf = PF(), pend = this.pend;
-      const have = pf.data.attrs.steps[id], add = pend[id] || 0, n = A.max - A.base;
-      const cost = pf.nextCost(id, pend);
-      const pct = (steps) => ((steps / n) * 100).toFixed(1) + '%';
-      // màu từng bậc giá (thanh đầy / nền), vạch chia ở mốc cuối mỗi bậc
-      const tints = [['var(--gold)', '#2a1f2c'], ['#ff9a3d', '#34222e'], ['#ff5a6e', '#3e2129']];
-      let from = 0;
-      const stops = A.tierCost.map(([upTo], i) => { const a = pct(from), b = pct(upTo - A.base); from = upTo - A.base; return [tints[Math.min(i, 2)], a, b]; });
-      const grad = (k) => `linear-gradient(90deg, ${stops.map(([c, a, b]) => `${c[k]} ${a} ${b}`).join(', ')})`;
-      const cuts = A.tierCost.slice(0, -1).map(([upTo]) => `<b class="cut" style="left:${pct(upTo - A.base)}"></b>`).join('');
-      const flash = performance.now() - (this.attrFlashT || 0) < 900 && (this.attrFlash || {})[id] ? ' flash' : '';
-      return `<b class="st-num${add ? ' up' : ''}${flash}">${pf.rating(id, pend)}</b>`
-        + `<span class="st-bar" style="--tg:${grad(0)};--tt:${grad(1)}"><i class="have" style="width:${pct(have)}"></i>`
-        + `<i class="add" style="left:${pct(have)};width:${pct(add)}"></i>${cuts}</span>`
-        + `<em class="st-cost">${cost ? cost + 'P' : 'MAX'}</em>`;
+      const A = ATTRS(), pf = PF(), w = ((pf.data.attrs.steps[id] / (A.max - A.base)) * 100).toFixed(1);
+      return `<b class="st-num">${pf.rating(id)}</b><span class="st-bar"><i class="have" style="width:${w}%"></i></span>`;
     },
 
-    // ←→ trên 1 dòng chỉ số: → cộng thử 1 bước (đủ điểm, chưa tối đa), ← bớt bước đang thử (không bớt dưới mức đã xác nhận)
-    changeAttr(id, d) {
-      const A = ATTRS(), pf = PF(), pend = this.pend, cur = pend[id] || 0;
-      this.msg = ''; this.msgErr = false;
-      if (d < 0) { if (cur > 0) pend[id] = cur - 1; return; }
-      const cost = pf.nextCost(id, pend);
-      if (!cost) { this.msg = `${A.list[id].label} is maxed at ${A.max}.`; this.msgErr = true; return; }
-      const free = pf.pointsFree(pend);
-      if (free < cost) { this.msg = `Need ${cost} point${cost > 1 ? 's' : ''} (${free} free).`; this.msgErr = true; return; }
-      pend[id] = cur + 1;
+    // "2 drills" — số drill chờ chọn (trang chủ / thẻ hồ sơ), '' khi không còn
+    drillCount() {
+      const n = PF().drillsPending();
+      return n ? `${n} drill${n > 1 ? 's' : ''}` : '';
     },
 
-    commitAttrs() {
-      const pend = this.pend;
-      if (!Object.values(pend).some((v) => v > 0)) return;
-      if (!PF().commitSteps(pend)) { this.setMsg('Not enough points.', true); return; }
-      this.attrFlash = Object.assign({}, pend);
-      this.attrFlashT = performance.now();
-      this.pend = {};
-      SFC.Audio.upgrade();
-      this.setMsg('Stats saved.');
-    },
+    // mở màn DRILL (ui/drill.js) trên menu; đóng thì vẽ lại trang đang mở (số drill / chỉ số đã đổi)
+    openDrill() { SFC.Drill.open(() => this.render()); },
 
-    respecAttrs() {
-      const pf = PF(), spent = pf.spentPoints(), cost = pf.respecCost();
-      if (!G().confirmed(this, 'respec', `Press ${SFC.Input.key('confirm', 'Enter')} again to reset all stats (-${cost} gold)`)) return;
-      const r = pf.respec();
-      if (!r.ok) { this.setMsg(r.reason === 'gold' ? `Respec costs ${cost} gold.` : 'Nothing to reset.', true); return; }
-      this.pend = {};
-      SFC.Audio.dismantle();
-      this.setMsg(`Stats reset. ${spent} points refunded.`);
-    },
-
-    // radar 6 cạnh: vàng = đã xác nhận, xanh viền = tính cả bước đang thử. Trục từ 60 tới tối đa
+    // radar 6 cạnh theo rating hiện tại. Trục từ 60 tới tối đa
     statRadar(selId) {
-      const A = ATTRS(), pf = PF(), pend = this.pend, ids = A.order, n = ids.length;
+      const A = ATTRS(), pf = PF(), ids = A.order, n = ids.length;
       const C = 64, R = 46, lo = 60, hi = A.max;
       const at = (i, k) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [C + Math.cos(a) * k, C + Math.sin(a) * k]; };
       const pt = (i, v) => at(i, Math.max(0, (v - lo) / (hi - lo)) * R);
@@ -552,34 +496,27 @@ window.SFC = window.SFC || {};
         const [x, y] = at(i, R + 10);
         return `<text class="${id === selId ? 'sel' : ''}" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}">${A.list[id].short}</text>`;
       }).join('');
-      const any = ids.some((id) => pend[id] > 0);
       return `<svg class="st-radar" viewBox="0 0 128 128">${rings}${axes}
-        <polygon class="have" points="${poly((id) => pf.rating(id))}"/>
-        ${any ? `<polygon class="pend" points="${poly((id) => pf.rating(id, pend))}"/>` : ''}${labels}</svg>`;
+        <polygon class="have" points="${poly((id) => pf.rating(id))}"/>${labels}</svg>`;
     },
 
     // bảng phải trang STATS: radar + character + OVR, khung chi tiết của dòng đang chọn
     attrsPanel() {
-      const A = ATTRS(), pf = PF(), pend = this.pend, it = this.items()[this.sel], id = it && it.attr;
-      const o0 = pf.ovr(), o1 = pf.ovr(pend);
+      const A = ATTRS(), pf = PF(), it = this.items()[this.sel], id = it && it.attr;
       let detail;
       if (id) {
-        const S = A.list[id], r0 = pf.rating(id), r1 = pf.rating(id, pend);
-        const mults = Object.keys(S.keys).map((k) => {
-          const a = pf.attrMult(id, k).toFixed(2), b = pf.attrMult(id, k, pend).toFixed(2);
-          return `<span>${KEY_LABELS[k] || k} ×${a}${b !== a ? ` → <em>×${b}</em>` : ''}</span>`;
-        }).join('');
-        detail = `<div class="sd-head"><b>${esc(S.label)}</b><span>${r0}${r1 !== r0 ? ` → <em>${r1}</em>` : ''}</span></div>
+        const S = A.list[id];
+        const mults = Object.keys(S.keys).map((k) => `<span>${KEY_LABELS[k] || k} ×${pf.attrMult(id, k).toFixed(2)}</span>`).join('');
+        detail = `<div class="sd-head"><b>${esc(S.label)}</b><span>${pf.rating(id)}</span></div>
           <p>${esc(S.desc)}</p><div class="sd-mult">${mults}</div>`;
       } else {
-        const tiers = A.tierCost.map(([upTo, c]) => `${c} pt up to ${upTo}`).join(' · ');
-        detail = `<div class="sd-head"><b>HOW IT WORKS</b></div>
-          <p>Every level gives ${A.pointsPerLevel} points. Higher stats cost more: ${tiers}.</p>`;
+        detail = `<div class="sd-head"><b>DRILL</b></div>
+          <p>Every level gives ${A.drills.perLevel} drill: pick 1 of ${A.drills.choices} to raise your stats for good. Offers lean toward what you've already trained.</p>`;
       }
       return `<div class="st-panel">
         <div class="st-top">${this.statRadar(id)}
           <div class="st-side"><canvas class="avatar" data-avatar="spin"></canvas>
-            <div class="st-ovr"><b>${o0}${o1 !== o0 ? `<em>→${o1}</em>` : ''}</b><span>OVR</span></div></div>
+            <div class="st-ovr"><b>${pf.ovr()}</b><span>OVR</span></div></div>
         </div>
         <div class="st-detail">${detail}</div>
       </div>`;
@@ -688,7 +625,6 @@ window.SFC = window.SFC || {};
       if (!it || it.disabled) return;
       SFC.Audio.menu();
       if (it.kind === 'btn') it.act();
-      else if (it.enter) it.enter();
     },
 
     submitCode() {

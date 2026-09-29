@@ -15,25 +15,46 @@ SFC_CONFIG.progression = {
   xpStep: 40,
   levelUpGold: 30,             // thưởng gold mỗi lần lên level
 
-  // Chỉ số character (kiểu eFootball): lên level được điểm, phân bổ vào 6 chỉ số, chỉ số càng cao càng tốn điểm.
+  // Chỉ số character + DRILL (docs/DRILL_DESIGN.md): mỗi level 1 drill = chọn 1 trong 3, cộng chỉ số vĩnh viễn.
   // Rating hiển thị = hệ số x scale (cùng thang OVR của màn giới thiệu trước trận, intro.config.js -> ovrScale).
   // Chỉ áp dụng ở Main Path + Luyện tập; online dùng chỉ số của đội như cũ.
   attrs: {
     base: 60,                  // rating khởi đầu (hệ số 0.75 — character mới yếu hơn đồng đội, 80 = hệ số 1.0)
     max: 99,
     scale: 80,                 // hệ số = 1 + (rating / scale - 1) x weight của từng key
-    // giá 1 bước (+1 rating) theo rating sẽ đạt được: tới 79 = 1 điểm, tới 89 = 2, tới 99 = 3 (60 -> 99 một chỉ số: 69 điểm)
-    tierCost: [[79, 1], [89, 2], [99, 3]],
-    pointsPerLevel: 6,         // LV30 = 174 điểm: dàn đều ~85 mỗi chỉ số (hệ số ~1.06)
-    respecGold: { base: 150, perLevel: 20 },   // giá reset toàn bộ điểm
+    // DRILL: lên level +perLevel drill chờ; mỗi drill bốc `choices` lựa chọn, đổi cả bộ được `rerolls` lần
+    drills: {
+      perLevel: 1,
+      choices: 3,
+      rerolls: 1,
+      kindWeight: { single: 3, combo: 2, all: 0.6 },   // trọng số theo loại drill
+      lean: 1.5,               // trọng số x (1 + lean x tỉ lệ bước đã tập nằm ở các chỉ số của drill) -> nghiêng theo build
+      // gains: số bước (+rating) cộng vào từng chỉ số; icon / color (tuỳ chọn): poster riêng, mặc định theo chỉ số tăng nhiều nhất. 29 drill (LV1 -> LV30) x ~5.2 bước ≈ 150 bước: dàn đều ~85
+      list: {
+        sprint:   { name: 'Sprint Ladder', kind: 'single', gains: { pace: 5 },     desc: 'Quick feet through the ladder, then flat-out sprints.' },
+        finish:   { name: 'Finishing',     kind: 'single', gains: { shooting: 5 }, desc: 'Shot after shot from every angle until the net gives up.' },
+        rondo:    { name: 'Rondo',         kind: 'single', gains: { passing: 5 },  desc: 'Keep it moving in the circle. One touch, never lose it.' },
+        slalom:   { name: 'Cone Slalom',   kind: 'single', gains: { dribble: 5 },  desc: 'Weave the cones with the ball glued to your feet.' },
+        sparring: { name: 'Sparring',      kind: 'single', gains: { fight: 5 },    desc: 'Pads, footwork, and a lot of getting hit back.' },
+        wall:     { name: 'Reaction Wall', kind: 'single', gains: { keeper: 5 },   desc: 'Balls fired off a wall. Catch them before they catch you.' },
+        counter:  { name: 'Counter Run',   kind: 'combo',  gains: { pace: 3, dribble: 2 },    desc: 'Break forward with the ball at full speed.' },
+        onetwo:   { name: 'One-Two',       kind: 'combo',  gains: { passing: 3, shooting: 2 }, desc: 'Give and go, then finish the move.' },
+        volley:   { name: 'Volleys',       kind: 'combo',  gains: { shooting: 3, pace: 2 },   desc: 'Sprint onto the cross and hit it first time.' },
+        keepups:  { name: 'Keep-Ups',      kind: 'combo',  gains: { dribble: 3, passing: 2 }, desc: 'Never let the ball touch the ground.' },
+        scrap:    { name: 'Street Scrap',  kind: 'combo',  gains: { fight: 3, pace: 2 },     desc: 'Chase, shove, win it back. Repeat.' },
+        duel:     { name: 'Penalty Duel',  kind: 'combo',  gains: { keeper: 3, fight: 2 },   desc: 'One on one in the box. Read them, then stand your ground.' },
+        camp:     { name: 'Boot Camp',     kind: 'all',    icon: 'ui-boom', color: '#6bff4f', gains: { pace: 1, shooting: 1, passing: 1, dribble: 1, fight: 1, keeper: 1 }, desc: 'A bit of everything. Rare, and brutal.' },
+      },
+    },
     // keys: chỉ số trong trận (Player.stats) mà chỉ số này điều khiển, kèm độ mạnh (1 = đủ theo rating)
+    // icon: icon pixel (src/render/pixelicons.js) in stencil trên poster màn DRILL · color: màu sơn (theo màu trường phái Core)
     list: {
-      pace:     { label: 'PACE',     short: 'PAC', keys: { speed: 1, stamina: 1 },   desc: 'Run speed on and off the ball. Stamina refills faster.' },
-      shooting: { label: 'SHOOTING', short: 'SHO', keys: { power: 1, accuracy: 1 }, desc: 'Shot speed and aim. Harder shots beat keepers more often.' },
-      passing:  { label: 'PASSING',  short: 'PAS', keys: { pass: 1 },               desc: 'Pass speed and accuracy. Sloppy S-passes drift less.' },
-      dribble:  { label: 'DRIBBLE',  short: 'DRI', keys: { dribble: 1 },            desc: 'Speed with the ball, keeping it under punches, controlling fast balls.' },
-      fight:    { label: 'FIGHT',    short: 'FIG', keys: { tackle: 1, knock: 1 },   desc: 'Punch steal chance, pass interceptions, knockback of punches and kicks.' },
-      keeper:   { label: 'KEEPER',   short: 'GK',  keys: { keeper: 1 },             desc: 'Save chance while standing in your own box.' },
+      pace:     { label: 'PACE',     short: 'PAC', icon: 'ui-dash',        color: '#3ff6ff', keys: { speed: 1, stamina: 1 },   desc: 'Run speed on and off the ball. Stamina refills faster.' },
+      shooting: { label: 'SHOOTING', short: 'SHO', icon: 'arch-striker',   color: '#ff7a3d', keys: { power: 1, accuracy: 1 }, desc: 'Shot speed and aim. Harder shots beat keepers more often.' },
+      passing:  { label: 'PASSING',  short: 'PAS', icon: 'arch-playmaker', color: '#ffd23f', keys: { pass: 1 },               desc: 'Pass speed and accuracy. Sloppy S-passes drift less.' },
+      dribble:  { label: 'DRIBBLE',  short: 'DRI', icon: 'arch-trickster', color: '#9d7bff', keys: { dribble: 1 },            desc: 'Speed with the ball, keeping it under punches, controlling fast balls.' },
+      fight:    { label: 'FIGHT',    short: 'FIG', icon: 'ui-fist',        color: '#ff3d5a', keys: { tackle: 1, knock: 1 },   desc: 'Punch steal chance, pass interceptions, knockback of punches and kicks.' },
+      keeper:   { label: 'KEEPER',   short: 'GK',  icon: 'res-guard',      color: '#6fa8dc', keys: { keeper: 1 },             desc: 'Save chance while standing in your own box.' },
     },
     order: ['pace', 'shooting', 'passing', 'dribble', 'fight', 'keeper'],
   },
