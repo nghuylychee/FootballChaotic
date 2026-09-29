@@ -48,24 +48,18 @@ window.SFC = window.SFC || {};
       .sort((a, b) => b.s - a.s).slice(0, 3).map((x) => x.k);
   }
 
-  function roleText(c) {
-    const L = SFC_CONFIG.cores.roleLabels;
-    if (c.role === 'gen' || c.role === 'use') {
-      const mech = c.tags.map((t) => ARCH()[t] && ARCH()[t].mech).filter(Boolean).join(' / ');
-      return mech ? `${L[c.role]}: ${mech}` : L[c.role];
-    }
-    return L[c.role] || '';
-  }
 
-  // lá Core tĩnh (túi đồ, màn mở thẻ): trường phái, ảnh động, tên, độ hiếm + vai trò, mô tả
+
+  // lá Core tĩnh (túi đồ, màn mở thẻ): trường phái, ảnh động, tên, chỉ số scale, mô tả. Viền lá = màu độ hiếm
   function coreCard(id, cls = '', w = 132, h = 56) {
-    const c = CORE_LIST()[id], r = RAR(c.rarity), cat = ARCH()[c.tags[0]], cat2 = ARCH()[c.tags[1] || c.tags[0]];
+    const c = CORE_LIST()[id], r = RAR(c.rarity);
     const tags = c.tags.map((t) => `<span style="--c:${ARCH()[t].color}">${PX().arch(t, 'sm')} ${ARCH()[t].label}</span>`).join('');
-    return `<div class="card static ${c.role === 'ult' ? 'ult' : ''} ${cls}" style="--c:${cat.color};--c2:${cat2.color};--t:${r.color}">
+    return `<div class="card static ${c.role === 'ult' ? 'ult' : ''} ${cls}" style="--c:${r.color};--c2:${r.color};--t:${r.color}">
         <div class="card-tags">${tags}</div>
         <div class="card-art">${SFC.CorePreview.html(id, w, h)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>
-        <div class="card-name">${esc(c.name)}</div><div class="card-tier">${r.label} · ${esc(roleText(c))}</div>
-        <div class="card-desc">${esc(c.desc)}</div></div>`;
+        <div class="card-name">${esc(c.name)}</div>
+        ${SFC.CoreScale.statLine(id)}
+        <div class="card-desc">${SFC.CoreScale.describe(id)}</div></div>`;
   }
 
   function coin(n) { return `<span class="gold"><i class="coin"></i>${Number(n).toLocaleString('en-US')}</span>`; }
@@ -346,7 +340,7 @@ window.SFC = window.SFC || {};
         const status = !PROG().coreGacha ? pathStatus() : e.def ? 'Starter Core, always in your pool' : ok ? 'In your Core draft pool' : `<span class="bad">Requires LV ${lv}</span>`;
         const sug = suggest(e.id).map((k) => {
           const o = CORE_LIST()[k], have = PROG().coreGacha ? PF().count('core', k) > 0 : PF().coreUnlocked(k);
-          return `<div class="sug ${have ? 'have' : ''}" style="--c:${ARCH()[o.tags[0]].color}" title="${esc(o.desc)}">${PX().core(k)} ${esc(o.name)} ${have ? PX().ui('check', 'sm') : PX().ui('lock', 'sm')}</div>`;
+          return `<div class="sug ${have ? 'have' : ''}" style="--c:${ARCH()[o.tags[0]].color}" title="${esc(SFC.CoreScale.plain(k))}">${PX().core(k)} ${esc(o.name)} ${have ? PX().ui('check', 'sm') : PX().ui('lock', 'sm')}</div>`;
         }).join('');
         return `${coreCard(e.id, e.locked ? 'locked' : '')}
           <div class="sd-side"><div class="sd-req">${e.locked ? 'Locked' : count}</div><div class="sd-note">${status}</div>

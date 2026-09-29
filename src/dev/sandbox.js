@@ -452,7 +452,7 @@
       const on = g.cores.has(0, id);
       b.className = 'btn' + (on ? ' on' : '');
       b.style.setProperty('--c', a.color);
-      b.title = c.desc;
+      b.title = SFC.CoreScale ? SFC.CoreScale.plain(id, SFC.CoreScale.cfg().anchor) : c.desc;
       b.innerHTML = `${c.icon} ${c.name}<small>${c.tags.map((t) => C.archetypes[t].label).join(' · ')} · ${C.roleLabels[c.role]}</small>`;
       b.onclick = () => {
         SFC.Audio.unlock();

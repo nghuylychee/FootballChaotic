@@ -92,7 +92,7 @@ window.SFC = window.SFC || {};
       const C = SFC_CONFIG.game, g = this.game, cores = g.cores;
       let s = C.player.speed * this.stats.speed * cores.pmod(this, 'speed');   // gồm Đà
       if (this.hasBall) s *= C.player.dribbleSpeedMult * (0.85 + this.stats.dribble * 0.15);
-      else s *= cores.mod(this.team, 'offBallSpeed');
+      else s *= cores.mod(this.team, 'offBallSpeed', this);
       if (this.sprinting) s *= C.player.sprintMult;
       if (this.charging) s *= C.player.chargeMoveMult;
       if (this.bracing) s *= C.read.braceMoveMult;
@@ -248,7 +248,7 @@ window.SFC = window.SFC || {};
       this.sprinting = wantSprint && this.stamina > (this.sprinting ? 0 : C.staminaMinToSprint);
       if (this.sprinting && !was) this.game.cores.dispatch(this.team, 'onSprintStart', this);
       if (this.sprinting) this.stamina -= C.staminaDrain * this.game.cores.sprintDrain(this) * dt;
-      else this.stamina += C.staminaRegen * this.stats.stamina * this.game.cores.mod(this.team, 'sprintRegen') * dt;
+      else this.stamina += C.staminaRegen * this.stats.stamina * this.game.cores.mod(this.team, 'sprintRegen', this) * dt;
       this.stamina = U.clamp(this.stamina, 0, C.staminaMax);
 
       const ms = this.maxSpeed();

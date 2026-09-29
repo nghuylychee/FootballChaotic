@@ -23,11 +23,12 @@ window.SFC = window.SFC || {};
     style: 'xbox',     // xbox | ps (nhãn nút)
     active: null,      // tay cầm vừa được dùng (để rung)
     stickDigital: [],  // hướng số của cần analog (menu + gửi online)
+    rstickY: 0,        // cần phải, trục dọc sau deadzone (-1..1) — cuộn bảng dài (màn Pause)
 
     // trả về danh sách phím ảo đang giữ ('Pad.A', 'Pad.StickUp'...); moved = cần analog vượt deadzone
     poll() {
       const held = [];
-      let sx = 0, sy = 0, moved = false;
+      let sx = 0, sy = 0, ry = 0, moved = false;
       const pads = navigator.getGamepads ? navigator.getGamepads() : [];
       for (const gp of pads) {
         if (!gp || !gp.connected || gp.mapping !== 'standard') continue;
@@ -38,7 +39,9 @@ window.SFC = window.SFC || {};
         });
         const x = gp.axes[0] || 0, y = gp.axes[1] || 0;
         if (Math.hypot(x, y) > Math.hypot(sx, sy)) { sx = x; sy = y; }
-        if (used || Math.hypot(x, y) > cfg().stick.deadzone) this.use(gp);
+        const r = gp.axes[3] || 0;
+        if (Math.abs(r) > Math.abs(ry)) ry = r;
+        if (used || Math.hypot(x, y) > cfg().stick.deadzone || Math.abs(r) > cfg().stick.deadzone) this.use(gp);
       }
 
       const S = cfg().stick;
@@ -48,6 +51,8 @@ window.SFC = window.SFC || {};
         this.stick = { x: sx * k, y: sy * k };
         moved = true;
       } else this.stick = null;
+      const dz = S.deadzone;
+      this.rstickY = Math.abs(ry) > dz ? Math.sign(ry) * (Math.abs(ry) - dz) / (1 - dz) : 0;
 
       // hướng số: bật khi vượt digitalOn, giữ nguyên tới khi tụt dưới digitalOff (tránh menu nhảy 2 ô)
       const on = this.stickDigital.length ? S.digitalOff : S.digitalOn;

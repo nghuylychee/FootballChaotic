@@ -16,6 +16,7 @@ window.SFC = window.SFC || {};
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
      *         coreFresh: [[id...] | null, ...] — Core vừa mở khoá: ưu tiên hiện ở lượt chọn (nhãn NEW), mỗi lượt tối đa 1 lá,
      *         signature: [id | null, ...] — Core đặc trưng đội AI chắc chắn cầm (boss trận thăng hạng Main Path),
+     *         noScale / coreRating: [r0, r1] — tắt scale Core theo chỉ số / ép rating scale Core từng đội (giả lập cân bằng),
      *         training: true = luyện tập (không giờ trận, không chọn Core, không kết thúc / không thưởng),
      *         teamSize: [n đội 0, n đội 1] — số cầu thủ mỗi đội (mặc định đủ đội hình; 0 = đội trống),
      *         aiProfile / mateDifficulty: độ khó AI đối thủ (object) / đồng đội (key) — Main Path,
@@ -108,7 +109,7 @@ window.SFC = window.SFC || {};
     // cầu thủ người chơi tại máy này đang điều khiển
     get controlled() { return this.humanTeam >= 0 ? this.ctrl[this.humanTeam] : null; }
     inputFor(team, input) { return Array.isArray(input) ? input[team] : input; }
-    chargeTime(p) { return this.cfg.kick.chargeTime * this.cores.mod(p.team, 'chargeTime'); }
+    chargeTime(p) { return this.cfg.kick.chargeTime * this.cores.mod(p.team, 'chargeTime', p); }
     attackGoal(team) {
       const f = this.field;
       return { x: this.teams[team].dir > 0 ? f.x + f.w : f.x, y: f.cy };

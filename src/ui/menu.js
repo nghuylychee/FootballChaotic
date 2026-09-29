@@ -326,7 +326,7 @@ window.SFC = window.SFC || {};
         const groups = Object.keys(C.archetypes).map((cat) => {
           const c = C.archetypes[cat];
           const list = Object.keys(C.list).filter((id) => C.list[id].tags[0] === cat)
-            .map((id) => `<div class="core-row" title="${esc(C.list[id].desc)}"><span class="chip" style="--c:${c.color}">${PX().core(id)}</span>${esc(C.list[id].name)}</div>`).join('');
+            .map((id) => `<div class="core-row" title="${esc(SFC.CoreScale.plain(id))}"><span class="chip" style="--c:${c.color}">${PX().core(id)}</span>${esc(C.list[id].name)}</div>`).join('');
           return `<div class="core-group"><h4 style="color:${c.color}">${esc(c.label)}</h4>${list}</div>`;
         }).join('');
         body += `<div class="core-grid">${groups}</div>`;
@@ -385,7 +385,7 @@ window.SFC = window.SFC || {};
             <div><b>???</b><span>${boss ? `${PX().ui('crown', 'sm')} ???` : '???'}</span></div></div>`;
         }
         const sub = boss ? (sig ? `${PX().ui('crown', 'sm')}${PX().core(A.signature, 'sm')} ${esc(sig.name)}` : 'BOSS') : esc(t.tagline);
-        return `<div class="po ${boss ? 'boss' : ''}" style="--shirt:${t.kit.shirt}" title="${esc(t.desc)}${boss && sig ? ` · Signature Core: ${esc(sig.name)} — ${esc(sig.desc)}` : ''}">
+        return `<div class="po ${boss ? 'boss' : ''}" style="--shirt:${t.kit.shirt}" title="${esc(t.desc)}${boss && sig ? ` · Signature Core: ${esc(sig.name)} — ${esc(SFC.CoreScale.plain(A.signature))}` : ''}">
           <canvas class="avatar" data-team="${id}" data-idx="1"></canvas>
           <div><b>${esc(t.name)}</b><span>${sub}</span></div></div>`;
       };

@@ -772,7 +772,7 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects, b = g.ball, L = SFC_CONFIG.game.combat.light;
         if (pl.bigPunch) return;
         // đối thủ trong tầm đấm thường -> đấm thường
-        if (Act().inFront(g, pl, L.range * sys.mod(team, 'tackleRange'), L.arc).length) return;
+        if (Act().inFront(g, pl, L.range * sys.mod(team, 'tackleRange', pl), L.arc).length) return;
         const d = fv(pl), cos = Math.cos(0.6);
         const inCone = (q) => { const dx = q.x - pl.x, dy = q.y - pl.y, dd = Math.hypot(dx, dy) || 1; return dd <= prm.reach && (dx * d.x + dy * d.y) / dd >= cos; };
         const ballT = !b.owner && b.z < 14 && inCone(b) ? b : null;

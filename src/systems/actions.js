@@ -135,7 +135,7 @@ window.SFC = window.SFC || {};
         dir = U.norm(U.lerp(inp.x, dir.x, P.aimAssist), U.lerp(inp.y, dir.y, P.aimAssist));
       }
       if (!exact) {
-        const acc = p.stats.pass * g.cores.mod(p.team, 'passAccuracy');   // Mắt Đại Bàng
+        const acc = p.stats.pass * g.cores.mod(p.team, 'passAccuracy', p);   // Mắt Đại Bàng
         const e = err
           ? U.randSign() * Math.atan(U.rand(err.miss[0], err.miss[1]) / acc)
           : U.rand(-1, 1) * P.spread / acc;
@@ -328,7 +328,7 @@ window.SFC = window.SFC || {};
         base = Math.atan2(gy - b.y, gx - b.x);
       }
 
-      const acc = p.stats.accuracy * g.cores.mod(p.team, 'accuracy');
+      const acc = p.stats.accuracy * g.cores.mod(p.team, 'accuracy', p);
       let spread = (K.shotSpread + awk) / acc + over * K.overchargeSpread;
       if (!p.isControlled) spread *= 2 - g.aiProfile(p.team).shotAccuracy;
       const ang = base + U.rand(-spread, spread);
@@ -398,7 +398,7 @@ window.SFC = window.SFC || {};
       const L = G().combat.light;
       if (p.cd.light > 0 || p.state !== 'normal' || p.airZ > 0) return false;
       // ĐẤU SĨ 3: đang "nổi Nộ" / Phản Đòn sau khi né -> gần như không hồi chiêu
-      p.cd.light = p.resT.frenzy > 0 || p.counterT > g.time ? 0.15 : this.cooldown(g, p, 'light', L.cooldown * g.cores.mod(p.team, 'lightCooldown'));
+      p.cd.light = p.resT.frenzy > 0 || p.counterT > g.time ? 0.15 : this.cooldown(g, p, 'light', L.cooldown * g.cores.mod(p.team, 'lightCooldown', p));
       const fv = facingVec(p);
       p.state = 'jab'; p.stateT = L.startup;
       this.startAttack(p, 'light');
@@ -417,8 +417,9 @@ window.SFC = window.SFC || {};
       const big = !!p.bigPunch;            // Nắm Đấm Khổng Lồ
       const counter = p.counterT > g.time; // Phản Đòn
       p.bigPunch = false;
-      const range = L.range * C.mod(p.team, 'tackleRange') * (big ? 2 : 1);
-      const kb = L.knockback * p.stats.knock * C.mod(p.team, 'knockback') * (big ? 2.5 : 1);
+      const GF = big && C.sp('giant_fist', p);   // Nắm Đấm Khổng Lồ: tầm x range, lực đẩy x knock (scale theo FIGHT)
+      const range = L.range * C.mod(p.team, 'tackleRange', p) * (big ? GF.range : 1);
+      const kb = L.knockback * p.stats.knock * C.mod(p.team, 'knockback', p) * (big ? GF.knock : 1);
       let hit = false;
       for (const o of this.inFront(g, p, range, big ? 100 : L.arc, C.has(p.team, 'juggle'))) {
         if (this.dodged(g, o)) continue;
@@ -432,7 +433,7 @@ window.SFC = window.SFC || {};
         const sure = big || counter || C.ironFist(p);          // chắc chắn làm rơi bóng
         const stun = L.stun * C.pmod(p, 'lightStun') * (big ? 3 : upper ? 2.5 : 1);
         const hopts = upper
-          ? { stun, kbx: d.x * 40, kby: d.y * 40, launch: C.params('uppercut').launch * C.pmod(p, 'launch'), source: p, type: 'light' }
+          ? { stun, kbx: d.x * 40, kby: d.y * 40, launch: C.sp('uppercut', p).launch * C.pmod(p, 'launch'), source: p, type: 'light' }
           : { stun, kbx: d.x * kb, kby: d.y * kb, launch: big ? 150 : 0, source: p, type: 'light' };
         p.lastPunch = { big, upper, counter };
         if (o.hasBall) {
@@ -479,7 +480,7 @@ window.SFC = window.SFC || {};
       const H = G().combat.hard;
       if (p.cd.hard > 0 || p.state !== 'normal') return false;
       p.cd.hard = this.cooldown(g, p, 'hard', H.cooldown * g.cores.pmod(p, 'hardCooldown'));
-      p.state = 'windup'; p.stateT = H.windup * g.cores.mod(p.team, 'hardWindup');   // Giày Sắt: gồng nhanh hơn
+      p.state = 'windup'; p.stateT = H.windup * g.cores.mod(p.team, 'hardWindup', p);   // Giày Sắt: gồng nhanh hơn
       this.startAttack(p, 'hard');
       p.charging = false;
       g.effects.text(p.x, p.y - 26, '!', '#ff3d5a');
@@ -494,7 +495,7 @@ window.SFC = window.SFC || {};
       // Dậm Đất: Hard attack thành cú bật nhảy rồi dậm xuống
       if (C.has(p.team, 'ground_slam')) {
         // lao về đối thủ gần nhất trước mặt (tới đúng lúc tiếp đất), không có ai thì nhảy tới trước
-        const P = C.params('ground_slam'), air = (2 * P.jump) / G().combat.airGravity;
+        const P = C.sp('ground_slam', p), air = (2 * P.jump) / G().combat.airGravity;
         let best = null, bd = P.leap + 60;
         for (const o of g.teams[1 - p.team].players) {
           const dx = o.x - p.x, dy = o.y - p.y, dd = Math.hypot(dx, dy);
@@ -514,11 +515,11 @@ window.SFC = window.SFC || {};
         C.dispatch(p.team, 'onTackle', p);
         return;
       }
-      let s = H.step * C.mod(p.team, 'slideSpeed');
+      let s = H.step * C.mod(p.team, 'slideSpeed', p);
       // Phi Cước: tiêu hết Đà, mỗi Đà bay xa + hất xa thêm
       p.flyMul = 1;
       if (C.has(p.team, 'flying_kick') && p.res.momentum > 0) {
-        p.flyMul = 1 + C.params('flying_kick').perMomentum * p.res.momentum;
+        p.flyMul = 1 + C.sp('flying_kick', p).perMomentum * p.res.momentum;
         p.res.momentum = 0;
         s *= p.flyMul;
       }
@@ -544,7 +545,7 @@ window.SFC = window.SFC || {};
     hardUpdate(g, p) {
       const H = G().combat.hard, b = g.ball;
       const fv = facingVec(p);
-      const hRange = H.range * g.cores.mod(p.team, 'hardRange');   // Giày Sắt: tầm chân dài hơn
+      const hRange = H.range * g.cores.mod(p.team, 'hardRange', p);   // Giày Sắt: tầm chân dài hơn
       const reach = p.radius + hRange;
       if (!b.owner && b.z < 10 && !p.kickHits.has('ball') && U.dist(p, b) < reach + b.r) {
         const dx = b.x - p.x, dy = b.y - p.y, d = Math.hypot(dx, dy) || 1;
@@ -556,7 +557,7 @@ window.SFC = window.SFC || {};
         }
       }
       const fly = p.flyMul || 1;
-      const kb = H.knockback * p.stats.knock * g.cores.mod(p.team, 'knockback') * g.cores.pmod(p, 'launch') * fly;
+      const kb = H.knockback * p.stats.knock * g.cores.mod(p.team, 'knockback', p) * g.cores.pmod(p, 'launch') * fly;
       for (const o of this.inFront(g, p, hRange, H.arc)) {
         if (p.kickHits.has(o.id)) continue;
         p.kickHits.add(o.id);
@@ -613,11 +614,11 @@ window.SFC = window.SFC || {};
       }
       const C = g.cores;
       // Bộ Pháp Ninja (mods) · ẢO ẢNH 2: hồi chiêu Z −20%
-      p.cd.skill = this.cooldown(g, p, 'skill', S.cooldown * C.mod(p.team, 'skillCooldown') * (C.tier(p.team, 'trickster') >= 2 ? 0.8 : 1));
+      p.cd.skill = this.cooldown(g, p, 'skill', S.cooldown * C.mod(p.team, 'skillCooldown', p) * (C.tier(p.team, 'trickster') >= 2 ? 0.8 : 1));
       p.state = 'dash'; p.stateT = S.dashTime;
       p.dashX = d.x * S.dashSpeed; p.dashY = d.y * S.dashSpeed;
       // Bộ Pháp Ninja: né lâu hơn
-      p.tackleImmune = S.tackleImmune + (C.has(p.team, 'quick_feet') ? C.params('quick_feet').dodgeBonus : 0);
+      p.tackleImmune = S.tackleImmune + (C.has(p.team, 'quick_feet') ? C.sp('quick_feet', p).dodgeBonus : 0);
       p.charging = false;
       p.facing = Math.atan2(d.y, d.x);
       // bóng mờ đầu tiên ở điểm xuất phát, các bóng còn lại rải đều dọc đường lướt (Player.update, state dash)

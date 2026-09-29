@@ -16,15 +16,18 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 SFC_CONFIG.cores = {
   // 7 trường phái + Hỗn loạn (không có Cộng hưởng)
   archetypes: {
-    runner:    { label: 'SPEED',    icon: '🏃', color: '#3ff6ff', mech: 'Momentum', resource: 'momentum' },
-    playmaker: { label: 'TIKI-TAKA', icon: '🎼', color: '#ffd23f', mech: 'Rhythm', resource: 'rhythm' },
-    striker:   { label: 'STRIKER',   icon: '🎯', color: '#ff7a3d', mech: 'Charged shot' },
-    brawler:   { label: 'BRAWLER',    icon: '🥊', color: '#ff3d5a', mech: 'Rage', resource: 'rage' },
-    launcher:  { label: 'KICKER',  icon: '🦵', color: '#b46bff', mech: 'Launch' },
-    trickster: { label: 'ILLUSION',    icon: '🌀', color: '#9d7bff', mech: 'Illusion' },
-    iron:      { label: 'IRON',      icon: '🛡', color: '#c7ccd6', mech: 'Guard', resource: 'guard' },
-    chaos:     { label: 'CHAOS',  icon: '🎲', color: '#c63dff', noSet: true },
+    runner:    { label: 'SPEED',    icon: '🏃', color: '#3ff6ff', mech: 'Momentum', resource: 'momentum', stat: 'pace' },
+    playmaker: { label: 'TIKI-TAKA', icon: '🎼', color: '#ffd23f', mech: 'Rhythm', resource: 'rhythm', stat: 'passing' },
+    striker:   { label: 'STRIKER',   icon: '🎯', color: '#ff7a3d', mech: 'Charged shot', stat: 'shooting' },
+    brawler:   { label: 'BRAWLER',    icon: '🥊', color: '#ff3d5a', mech: 'Rage', resource: 'rage', stat: 'fight' },
+    launcher:  { label: 'KICKER',  icon: '🦵', color: '#b46bff', mech: 'Launch', stat: 'fight' },
+    trickster: { label: 'ILLUSION',    icon: '🌀', color: '#9d7bff', mech: 'Illusion', stat: 'dribble' },
+    iron:      { label: 'IRON',      icon: '🛡', color: '#c7ccd6', mech: 'Guard', resource: 'guard', stat: 'keeper' },
+    chaos:     { label: 'CHAOS',  icon: '🎲', color: '#c63dff', noSet: true, stat: 'ovr' },
   },
+  // Core scale theo chỉ số (src/systems/corescale.js): rating min -> anchor -> max = độ mạnh / hồi chiêu (nội suy từng đoạn).
+  // anchor = rating của đồng đội / đội AI chỉ số 1.0 (mức cân bằng gốc của Core). stat của trường phái ở archetypes[].stat
+  statScale: { min: 60, anchor: 80, max: 99, power: [0.5, 1, 1.5], cooldown: [1.3, 1, 0.7] },
   roleLabels: { gen: 'BUILDS', use: 'SPENDS', base: 'PASSIVE', ult: 'ULTIMATE', wild: 'WILD' },   // mech (trường phái) = thứ Core TẠO / DÙNG
 
   // Tài nguyên — chỉ chạy khi đội có ít nhất 1 Core của trường phái tương ứng.
@@ -68,305 +71,358 @@ SFC_CONFIG.cores = {
     /* ---------- 🎯 SÁT THỦ ---------- */
     sniper_foot: {
       name: 'Sharpshooter', icon: '🎯', tags: ['striker'], role: 'base', rarity: 'common',
-      desc: 'Much more accurate shots; the ball has less friction so it travels further (but slower). Holding D shows a red laser sight from your foot to the goal.',
+      desc: 'Shots {m.accuracy+%}% more accurate and roll further. Hold D to aim with a red laser sight.',
       mods: { accuracy: 1.6 },
       params: { frictionMult: 0.35, speedMult: 0.85, aiRangeMult: 1.5 },
+      scale: { 'm.accuracy': 'mul' },
     },
     banana_kick: {
       name: 'Dragon Curl', icon: '🐉', tags: ['striker'], role: 'gen', rarity: 'rare',
-      desc: 'Shots curl on their own toward the corner of the goal, trailing a green dragon spiral.',
+      desc: 'Shots curl on their own toward the corner of the goal, trailing a green dragon.',
       params: { strength: 2.4 },
+      scale: { strength: 'pow' },
     },
     fire_shot: {
       name: 'Fireball', icon: '🔥', tags: ['striker'], role: 'gen', rarity: 'rare',
-      desc: 'Charged shot: the ball becomes a fireball that sets the pitch on fire along its path (step in it: stun + knockback). Score and the net catches fire.',
+      desc: 'Charged shot +{m.shotPower+%}% power and sets the pitch on fire for {trailDuration}s ({stun}s stun on touch).',
       mods: { shotPower: 1.12 },
       params: { trailInterval: 0.035, trailDuration: 2.6, trailRadius: 6, stun: 0.9, knockback: 150 },
+      scale: { 'm.shotPower': 'mul', stun: 'pow', knockback: 'pow', trailDuration: 'pow' },
     },
     thunder_kick: {
       name: 'Thunder Kick', icon: '⚡', tags: ['striker'], role: 'gen', rarity: 'legendary',
-      desc: 'Long charge (≥60%): your foot builds up electricity; the lightning ball pierces 1 player (shock stun) and is harder for the keeper to catch.',
+      desc: 'Long charge (≥60%): the lightning ball pierces 1 player ({stun}s stun), keeper −{gkPenalty%}% save.',
       mods: { chargeTime: 1.2 },
       params: { minCharge: 0.6, pierce: 1, speedMult: 1.2, stun: 0.7, gkPenalty: 0.25 },
+      scale: { stun: 'pow', gkPenalty: 'pow', speedMult: 'mul' },
     },
 
     /* ---------- 🏃 TỐC ĐỘ · 🌀 ẢO ẢNH ---------- */
     speed_demon: {
       name: 'Speed Demon', icon: '🪽', tags: ['runner'], role: 'gen', rarity: 'common',
-      desc: 'Sprinting builds Momentum 50% faster; +5% speed off the ball. Leaves a blue afterimage trail.',
+      desc: 'Sprinting builds Momentum {m.momentumGain+%}% faster. +{m.offBallSpeed+%}% speed off the ball.',
       mods: { offBallSpeed: 1.05, momentumGain: 1.5 },
+      scale: { 'm.offBallSpeed': 'mul', 'm.momentumGain': 'mul' },
     },
     phantom_step: {
       name: 'Phantom Step', icon: '🌀', tags: ['trickster'], role: 'gen', rarity: 'rare',
-      desc: 'Z dash: vanish in smoke and teleport further, leaving an illusion behind. With the ball: the nearest opponent charges the illusion (4s cooldown).',
+      desc: 'Z teleports further and leaves an illusion for {illusion}s that lures the nearest opponent ({lureCooldown}s cooldown).',
       params: { distance: 34, illusion: 1.2, lureRadius: 60, lure: 0.4, lureCooldown: 4 },
+      scale: { distance: 'pow', illusion: 'pow', lure: 'pow', lureCooldown: 'cd' },
     },
     fake_run: {
       name: 'Fake Run', icon: '🪞', tags: ['runner', 'trickster'], role: 'gen', rarity: 'rare',
-      desc: 'Start a sprint / Z dash with the ball: a purple illusion splits off dribbling a fake ball the other way (fools defenders) + 2 Momentum.',
+      desc: 'Sprint / Z with the ball: a fake runs the other way, fooling defenders for {confuseTime}s. +2 Momentum ({cooldown}s cooldown).',
       params: { cooldown: 3.5, duration: 1.6, confuseRadius: 90, confuseTime: 1.2, angle: 0.8, momentum: 2 },
+      scale: { cooldown: 'cd', duration: 'pow', confuseTime: 'pow' },
     },
 
     /* ---------- 🥊 ĐẤU SĨ · 🛡 THÉP · 🦵 VÕ SĨ ĐÁ ---------- */
     street_fighter: {
       name: 'Street Fighter', icon: '🥊', tags: ['brawler'], role: 'gen', rarity: 'common',
-      desc: 'Longer punch range, knocks the ball loose more often, +1 Rage on steals. Hits pop POW / BAM / WHAM.',
+      desc: 'Punch range +{m.tackleRange+%}%, steal chance +{m.tackleChance+%}%. +1 Rage per steal.',
       mods: { tackleRange: 1.3, tackleChance: 1.3, knockback: 1.3 },
       params: { rageOnSteal: 1 },
+      scale: { 'm.tackleRange': 'mul', 'm.tackleChance': 'mul', 'm.knockback': 'mul' },
     },
     iron_body: {
       name: 'Iron Skin', icon: '🛡', tags: ['iron'], role: 'gen', rarity: 'common',
-      desc: 'Each player has 1 Guard (blocks one stun), regenerates after 7s. With Guard: metallic silver sheen.',
+      desc: 'Each player gets 1 Guard (blocks one stun), refilled every {regen}s.',
       params: { regen: 7 },
+      scale: { regen: 'cd' },
     },
     blade_runner: {
       name: 'Wind Blade', icon: '🌙', tags: ['launcher'], role: 'gen', rarity: 'legendary',
-      desc: 'Hard attack (A) fires a crescent wind blade ~150px: whoever it hits is stunned and drops the ball.',
+      desc: 'Hard attack fires a wind blade: {stun}s stun and the ball drops.',
       params: { speed: 300, life: 0.5, length: 18, stun: 0.9 },
+      scale: { stun: 'pow' },
     },
 
     /* ---------- 🛡 THÉP · 🎼 TIKI-TAKA · cầu nối ---------- */
     aegis_wall: {
       name: 'Aegis Shield', icon: '🧱', tags: ['iron'], role: 'base', rarity: 'legendary',
-      desc: 'A hexagonal energy shield on your goal line: blocks 1 shot (shatters like glass), recharges after 60s.',
+      desc: 'An energy shield on your goal line blocks 1 shot, recharges after {cooldown}s.',
       params: { cooldown: 60 },
+      scale: { cooldown: 'cd' },
     },
     counter_attack: {
       name: 'Counter Attack', icon: '↩', tags: ['brawler', 'runner'], role: 'gen', rarity: 'rare',
-      desc: 'Win the ball: whole team +3 Momentum, +20% speed and shot power for 3.5s, with a blue aura.',
+      desc: 'Win the ball: team +3 Momentum, +{speedMult+%}% speed and +{shotMult+%}% shot power for {duration}s.',
       params: { duration: 3.5, speedMult: 1.2, shotMult: 1.2, momentum: 3, calloutCd: 15 },
+      scale: { duration: 'pow', speedMult: 'mul', shotMult: 'mul' },
     },
     emp_trap: {
       name: 'EMP Mine', icon: '📡', tags: ['iron'], role: 'gen', rarity: 'epic',
-      desc: 'Every attack (Light / Hard) drops an EMP mine. Opponents who step on it get shocked, stunned and lose the ball.',
+      desc: 'Every attack drops an EMP mine ({cooldown}s cooldown): {stun}s stun and the ball drops.',
       params: { cooldown: 2.5, max: 3, life: 14, radius: 9, arm: 0.5, stun: 1.0 },
+      scale: { stun: 'pow', radius: 'pow', cooldown: 'cd' },
     },
     maestro: {
       name: 'Maestro', icon: '🎼', tags: ['playmaker'], role: 'gen', rarity: 'common',
-      desc: 'Passes +20% faster, trailing a golden string of light. The receiver bursts with a gold aura, a 1.5s speed boost and +1 extra Rhythm.',
+      desc: 'Passes +{m.passSpeed+%}% faster. The receiver gets a {duration}s speed boost and +1 Rhythm.',
       mods: { passSpeed: 1.2 },
       params: { duration: 1.5, speedMult: 1.25, rhythm: 1 },
+      scale: { 'm.passSpeed': 'mul', duration: 'pow', speedMult: 'mul' },
     },
 
     /* ---------- TUYỆT KỸ (phím X) ---------- */
     // Tuyệt kỹ thí điểm (Giai đoạn 1) — kiểm tra khung năng lượng + phím X; các Tuyệt kỹ khác ở Giai đoạn 3
     lightning_dash: {
       name: 'Lightning Dash', icon: '⚡', tags: ['runner'], role: 'ult', rarity: 'mythic',
-      desc: 'Become a lightning bolt and dash straight ahead (taking the ball with you); every opponent in the path gets shocked.',
+      desc: 'Dash {distance}px as lightning with the ball, shocking everyone in the path for {stun}s.',
       params: { distance: 190, width: 18, stun: 0.8, knock: 140 },
+      scale: { distance: 'pow', stun: 'pow', knock: 'pow' },
     },
 
     /* ================= Giai đoạn 3 — Core mới (hành vi ở src/systems/cores-new.js) ================= */
     /* ---------- 🏃 TỐC ĐỘ ---------- */
     burst_start: {
       name: 'Arrow Start', icon: '🏹', tags: ['runner'], role: 'gen', rarity: 'rare',
-      desc: 'Start sprinting: instant +2 Momentum and a 0.35s burst, with a sonic ring and dust at the start point.',
+      desc: 'Start sprinting: +2 Momentum and a {time}s burst ({cooldown}s cooldown).',
       params: { momentum: 2, boost: 1.3, time: 0.35, cooldown: 3 },
+      scale: { boost: 'mul', time: 'pow', cooldown: 'cd' },
     },
     sonic_boom: {
       name: 'Sonic Boom', icon: '💥', tags: ['runner'], role: 'use', rarity: 'epic',
-      desc: 'Carrying the ball at max Momentum: a sonic cone in front of you. Brush past opponents (≤14px) to blast them aside + short stun, spends all Momentum. BOOM!',
+      desc: 'Max Momentum with the ball: blast opponents you brush past + {stun}s stun. Spends all Momentum ({cooldown}s cooldown).',
       params: { gap: 14, knock: 180, launch: 70, stun: 0.35, cooldown: 10 },
+      scale: { knock: 'pow', launch: 'pow', stun: 'pow', cooldown: 'cd' },
     },
     freight_train: {
       name: 'Freight Train', icon: '🚚', tags: ['runner'], role: 'use', rarity: 'epic',
-      desc: 'Head-on collision with ≥5 Momentum: send the opponent flying like they got hit by a truck, spends 5 Momentum. Dodgeable with Z.',
+      desc: 'Collide head-on with ≥5 Momentum: send them flying + {stun}s stun. Spends 5 Momentum ({cooldown}s cooldown).',
       params: { minMomentum: 5, cost: 5, minSpeed: 90, knock: 190, launch: 120, stun: 0.4, cooldown: 15 },
+      scale: { knock: 'pow', launch: 'pow', stun: 'pow', cooldown: 'cd' },
     },
 
     /* ---------- 🎼 TIKI-TAKA ---------- */
     eagle_eye: {
       name: 'Eagle Eye', icon: '🦅', tags: ['playmaker'], role: 'base', rarity: 'common',
-      desc: 'Holding a pass key draws a chalk trajectory + landing spot on the pitch. More accurate passes, 30% harder to intercept.',
+      desc: 'Shows your pass line. Passes {m.passAccuracy+%}% more accurate, {m.interceptTaken-%}% harder to intercept.',
       mods: { passAccuracy: 1.6, interceptTaken: 0.7 },
+      scale: { 'm.passAccuracy': 'mul', 'm.interceptTaken': 'mul' },
     },
     one_touch: {
       name: 'One Touch', icon: '✨', tags: ['playmaker'], role: 'gen', rarity: 'rare',
-      desc: 'Pass within 0.6s of receiving: +2 Rhythm, the ball turns into a ball of light that ghosts through opponents.',
+      desc: 'Pass within {window}s of receiving: +2 Rhythm and the ball ghosts through opponents.',
       params: { window: 0.6, rhythm: 2 },
+      scale: { window: 'pow' },
     },
     phantom_pass: {
       name: 'Phantom Pass', icon: '💫', tags: ['playmaker'], role: 'use', rarity: 'epic',
-      desc: 'With ≥3 Rhythm, through pass (W): spends 3 Rhythm. The ball becomes a golden beam tearing across the pitch through every opponent; the receiver gets a 2s speed boost.',
+      desc: 'Through pass with ≥3 Rhythm: an unstoppable golden beam; the receiver gets a {time}s speed boost.',
       params: { cost: 3, speedMult: 1.3, boost: 1.3, time: 2 },
+      scale: { boost: 'mul', time: 'pow' },
     },
     symphony: {
       name: 'Symphony', icon: '🎻', tags: ['playmaker'], role: 'use', rarity: 'epic',
-      desc: 'Shoot with ≥3 Rhythm: every note converges on the ball. Each Rhythm +8% shot power and keeper −5% save. Spends all Rhythm.',
+      desc: 'Shoot with ≥3 Rhythm: each Rhythm +{powerPer%}% shot power, keeper −{gkPer%}% save. Spends all Rhythm.',
       params: { min: 3, powerPer: 0.08, gkPer: 0.05 },
+      scale: { powerPer: 'pow', gkPer: 'pow' },
     },
 
     /* ---------- 🎯 SÁT THỦ ---------- */
     energy_wave: {
       name: 'Energy Wave', icon: '🌊', tags: ['striker'], role: 'use', rarity: 'epic',
-      desc: 'Near-full charge (≥80%): an orb gathers at your foot, then an energy beam fires with the ball, pushing every opponent in it aside + stun.',
+      desc: 'Charge ≥80%: an energy beam fires with the ball, pushing opponents aside + {stun}s stun.',
       params: { minCharge: 0.8, len: 300, width: 18, knock: 300, stun: 0.8 },
+      scale: { knock: 'pow', stun: 'pow' },
     },
     black_hole: {
       name: 'Black Hole Shot', icon: '🕳', tags: ['striker'], role: 'use', rarity: 'legendary',
-      desc: 'Near-full charge (≥80%): the ball becomes a black hole, pulling nearby opponents (keeper included) off position so they can\'t touch it.',
+      desc: 'Charge ≥80%: the ball becomes a black hole for {time}s, pulling everyone within {radius}px.',
       params: { minCharge: 0.8, radius: 64, pull: 1500, time: 1.4 },
+      scale: { radius: 'pow', pull: 'pow', time: 'pow' },
     },
 
     /* ---------- 🥊 ĐẤU SĨ ---------- */
     fist_storm: {
       name: 'Fist Storm', icon: '👊', tags: ['brawler'], role: 'gen', rarity: 'rare',
-      desc: 'Punches become a 4-hit combo (the last one knocks back), each hit +1 Rage. BAM BAM BAM! Punch cooldown +10%.',
+      desc: 'Punches become a 4-hit combo, +1 Rage per hit. Punch cooldown +10%.',
       mods: { lightCooldown: 1.1 },
       params: { hits: 4, gap: 0.07, range: 22, push: 220 },
+      scale: { push: 'pow' },
     },
     giant_fist: {
       name: 'Giant Fist', icon: '✊', tags: ['brawler'], role: 'use', rarity: 'epic',
-      desc: 'At 5 Rage, your next punch: a fist 4× bigger, wide hitbox, always knocks the ball loose, sends them flying. Spends all Rage.',
+      desc: 'At 5 Rage your next punch is 4× bigger: always steals, {knock}× knockback. Spends all Rage.',
+      scale: { knock: 'pow' },
+      params: { knock: 2.5, range: 2 },
     },
 
     /* ---------- 🦵 VÕ SĨ ĐÁ ---------- */
     heavy_boot: {
       name: 'Iron Boots', icon: '🥾', tags: ['launcher'], role: 'base', rarity: 'common',
-      desc: 'Launch +30%, kick range +40%, Hard cooldown −20%, 30% faster windup. Every kick cracks the pitch and sprays metal sparks.',
+      desc: 'Launch +{m.launch+%}%, kick range +{m.hardRange+%}%, Hard cooldown −{m.hardCooldown-%}%, windup {m.hardWindup-%}% faster.',
       mods: { launch: 1.3, hardCooldown: 0.8, hardWindup: 0.7, hardRange: 1.4 },
+      scale: { 'm.launch': 'mul', 'm.hardCooldown': 'mul', 'm.hardWindup': 'mul', 'm.hardRange': 'mul' },
     },
     juggle: {
       name: 'Juggle', icon: '🤹', tags: ['launcher'], role: 'use', rarity: 'rare',
-      desc: 'Punch an airborne player to keep them in the air longer (+1 Rage each time). Combo counter: 2 HIT! 3 HIT!…',
+      desc: 'Punch airborne players to keep them up ({stun}s stun, +1 Rage each). 2 HIT! 3 HIT!',
       params: { lift: 200, stun: 0.7 },
+      scale: { lift: 'pow', stun: 'pow' },
     },
     wall_slam: {
       name: 'Wall Slam', icon: '🏚', tags: ['launcher'], role: 'use', rarity: 'rare',
-      desc: 'Launch an opponent into the wall (BONK): the wall cracks, +1s stun; a loose ball nearby bounces toward you.',
+      desc: 'Launch an opponent into the wall: +{stun}s stun, and a loose ball bounces to you.',
       params: { stun: 1, ballSpeed: 170 },
+      scale: { stun: 'pow' },
     },
     ground_slam: {
       name: 'Ground Slam', icon: '🌋', tags: ['launcher'], role: 'gen', rarity: 'epic',
-      desc: 'Hard attack becomes a leap onto the opponent in front of you and a slam: a 52px shockwave launches ALL opponents in range + stun, spiderweb cracks in the pitch.',
+      desc: 'Hard attack leaps into a slam: a {radius}px shockwave launches everyone + {stun}s stun.',
       params: { jump: 150, leap: 130, maxSpeed: 300, radius: 52, knock: 160, launch: 230, stun: 1.1, recover: 0.12 },
+      scale: { radius: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
     },
 
     /* ---------- 🌀 ẢO ẢNH ---------- */
     quick_feet: {
       name: 'Ninja Footwork', icon: '🥷', tags: ['trickster'], role: 'base', rarity: 'common',
-      desc: 'Z cooldown −30%, dodge window +0.15s. Every dash pops a POOF of smoke.',
+      desc: 'Z cooldown −{m.skillCooldown-%}%, dodge window +{dodgeBonus}s.',
       mods: { skillCooldown: 0.7 },
       params: { dodgeBonus: 0.15 },
+      scale: { 'm.skillCooldown': 'mul', dodgeBonus: 'pow' },
     },
     witch_time: {
       name: 'Perfect Dodge', icon: '⏳', tags: ['trickster'], role: 'use', rarity: 'epic',
-      desc: 'Successful dodge: the whole pitch slows down for 0.8s and turns purple; you stay fast and Z resets instantly. DODGE!',
+      desc: 'Successful dodge slows the whole pitch for {time}s; you stay fast and Z resets.',
       params: { scale: 0.35, time: 0.8, boost: 2.6, cooldown: 4 },
+      scale: { time: 'pow', boost: 'mul' },
     },
     shadow_clone: {
       name: 'Shadow Clone', icon: '👥', tags: ['trickster'], role: 'gen', rarity: 'epic',
-      desc: 'Z dash spawns 2 clones running off at angles for 2s: they block opponents and passing lanes; touch one and it bursts into smoke.',
+      desc: 'Z spawns 2 clones for {time}s that block opponents and passing lanes.',
       params: { count: 2, time: 2, speed: 170, spread: 0.7 },
+      scale: { time: 'pow' },
     },
 
     /* ---------- 🛡 THÉP ---------- */
     bulldozer: {
       name: 'Bulldozer', icon: '🚜', tags: ['iron'], role: 'use', rarity: 'epic',
-      desc: 'With Guard + the ball: grow 1.3× (12% slower), can\'t be tackled, anyone you hit flies like a bowling pin (each launch spends 1 Guard; getting hit still breaks Guard). At least 1 Guard every kickoff.',
+      desc: 'With Guard + the ball: grow 1.3×, can\'t be tackled, bowl opponents over ({stun}s stun).',
       params: { scale: 1.3, slow: 0.88, knock: 170, launch: 80, stun: 0.3, every: 2 },
+      scale: { knock: 'pow', launch: 'pow', stun: 'pow' },
     },
     giant_keeper: {
       name: 'Giant Keeper', icon: '🧤', tags: ['iron'], role: 'use', rarity: 'epic',
-      desc: 'Your keeper with Guard grows 1.4× when the ball gets close to goal (bigger reach too). POOF! At least 1 Guard every kickoff.',
+      desc: 'Your keeper with Guard grows {scale}× when the ball is within {near}px of goal.',
       params: { scale: 1.4, near: 150 },
+      scale: { scale: 'mul', near: 'pow' },
     },
 
     /* ---------- 🔗 Cầu nối ---------- */
     rubber_arm: {
       name: 'Rubber Arm', icon: '🤜', tags: ['brawler', 'playmaker'], role: 'use', rarity: 'epic',
-      desc: 'Punch stretches 50px (2s cooldown per player): hit a player to punch from range + pull them in; hit a loose ball / pass to yank it to your feet. BOING!',
+      desc: 'Punch stretches {reach}px: pull players in or yank loose balls to you ({cooldown}s cooldown).',
       params: { reach: 50, pull: 180, stun: 0.4, steal: 0.25, cooldown: 2 },
+      scale: { reach: 'pow', pull: 'pow', stun: 'pow', steal: 'pow', cooldown: 'cd' },
     },
     uppercut: {
       name: 'Dragon Uppercut', icon: '🐲', tags: ['brawler', 'launcher'], role: 'use', rarity: 'rare',
-      desc: 'At 5 Rage your punch becomes an uppercut: rise on a dragon-shaped flame trail, launch the opponent straight up, the ball drops at your feet. Spends all Rage.',
+      desc: 'At 5 Rage your punch becomes an uppercut: launch them up, the ball drops to you. Spends all Rage.',
       params: { launch: 330, jump: 80 },
+      scale: { launch: 'pow' },
     },
     iron_fist: {
       name: 'Iron Fist', icon: '🦾', tags: ['brawler', 'iron'], role: 'gen', rarity: 'rare',
-      desc: 'With Guard: steel fists. The ball carrier can\'t hold on, +1 extra Rage. Each Rage cuts stun time by 8%. At least 1 Guard every kickoff.',
+      desc: 'With Guard: punches always steal, +1 extra Rage. Each Rage cuts your stun by {stunPerRage%}%.',
       params: { rage: 1, stunPerRage: 0.08 },
+      scale: { stunPerRage: 'pow' },
     },
     one_two: {
       name: 'One-Two', icon: '🔁', tags: ['playmaker', 'striker'], role: 'use', rarity: 'epic',
-      desc: 'Shoot within 1.2s of receiving a pass: counts as a max charged shot (volley), trailing a gold-orange double streak.',
+      desc: 'Shoot within {window}s of receiving a pass: counts as a max charged volley.',
       params: { window: 1.2 },
+      scale: { window: 'pow' },
     },
     captain: {
       name: 'Captain', icon: '🎖', tags: ['iron', 'playmaker'], role: 'gen', rarity: 'epic',
-      desc: 'Every completed pass gives the receiver 1 Guard (6s cooldown per player). A hex shield snaps onto them.',
+      desc: 'Every completed pass gives the receiver 1 Guard ({cooldown}s cooldown per player).',
       params: { cooldown: 6 },
+      scale: { cooldown: 'cd' },
     },
     counter_strike: {
       name: 'Counter Strike', icon: '⚔', tags: ['trickster', 'brawler'], role: 'use', rarity: 'epic',
-      desc: 'Successful dodge: for 1s punches have no cooldown, always knock the ball loose, +2 Rage. Impact frame + COUNTER!',
+      desc: 'Successful dodge: {window}s of free punches that always steal, +2 Rage ({cooldown}s cooldown).',
       params: { window: 1, rage: 2, cooldown: 4 },
+      scale: { window: 'pow', cooldown: 'cd' },
     },
     flying_kick: {
       name: 'Flying Kick', icon: '🚀', tags: ['runner', 'launcher'], role: 'use', rarity: 'epic',
-      desc: 'Hard attack spends all Momentum: each Momentum makes you fly + launch 20% further. Soar like a rocket, feet on fire.',
+      desc: 'Hard attack spends all Momentum: each Momentum flies + launches {perMomentum%}% further.',
       params: { perMomentum: 0.2 },
+      scale: { perMomentum: 'pow' },
     },
     ghost_ball: {
       name: 'Ghost Ball', icon: '👻', tags: ['trickster', 'striker'], role: 'use', rarity: 'epic',
-      desc: 'Shoot while you have illusions / clones out: each one fires a fake ball at goal (max 3), keeper −20% save.',
+      desc: 'Shoot with illusions out: each fires a fake ball too (max 3), keeper −{gkPenalty%}% save.',
       params: { max: 3, gkPenalty: 0.2, speed: 320 },
+      scale: { gkPenalty: 'pow' },
     },
     scissor_kick: {
       name: 'Scissor Kick', icon: '✂', tags: ['launcher', 'striker'], role: 'use', rarity: 'legendary',
-      desc: 'Hard attack on a loose ball: an overhead bicycle kick. The ball becomes a max charged shot straight at goal, piercing 2 players.',
+      desc: 'Hard attack on a loose ball: a bicycle-kick max shot that pierces 2 players ({stun}s stun, {cooldown}s cooldown).',
       params: { speed: 1.1, pierce: 2, stun: 0.6, cooldown: 4 },
+      scale: { stun: 'pow', cooldown: 'cd' },
     },
 
     /* ---------- TUYỆT KỸ mới ---------- */
     endless_tiki: {
       name: 'Endless Tiki-Taka', icon: '🎼', tags: ['playmaker'], role: 'ult', rarity: 'mythic',
-      desc: 'The pitch turns sepia and opponents slow by 60%; the ball auto-passes 4 times between your 2 players (can\'t be intercepted), then the last one unleashes a max Symphony shot.',
+      desc: 'Opponents slow {slow-%}% for {slowTime}s while your duo auto-passes 4 times, then a max shot (keeper −{gk%}% save).',
       params: { passes: 4, gap: 0.22, slow: 0.4, slowTime: 1.8, gk: 0.25 },
+      scale: { slow: 'mul', slowTime: 'pow', gk: 'pow' },
     },
     meteor_strike: {
       name: 'Meteor Shot', icon: '🌟', tags: ['striker'], role: 'ult', rarity: 'mythic',
-      desc: 'Leap high with the ball, then 0.6s later spin and drive it down into the goal at max power with a meteor tail. Even if the keeper saves it, they get sent flying.',
+      desc: 'Leap up, then drive the ball down at max power (keeper −{gk%}% save). Saving it still hurts.',
       params: { jump: 300, delay: 0.62, speed: 560, gk: 0.3 },
+      scale: { gk: 'pow' },
     },
     hundred_fists: {
       name: 'Hundred Fists', icon: '💢', tags: ['brawler'], role: 'ult', rarity: 'mythic',
-      desc: 'Rush the nearest opponent and throw 20 punches in 1s (pinning them in place); the last one blasts them into the wall. BONK, cracked.',
+      desc: 'Rush the nearest opponent within {range}px: 20 punches in 1s, then blast them into the wall.',
       params: { range: 160, hits: 20, gap: 0.05, knock: 560 },
+      scale: { knock: 'pow', range: 'pow' },
     },
     meteor_drop: {
       name: 'Meteor Drop', icon: '☄️', tags: ['launcher'], role: 'ult', rarity: 'mythic',
-      desc: 'Leap off the screen, steer a red target on the pitch for 1s, then crash down in a 60px crater. Launches every opponent, 1.5s stun.',
+      desc: 'Leap off screen, aim for 1s, crash down: a {radius}px crater launches everyone + {stun}s stun.',
       params: { aim: 1.0, speed: 190, radius: 60, knock: 240, launch: 260, stun: 1.5 },
+      scale: { radius: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
     },
     clone_army: {
       name: 'Clone Army', icon: '🎎', tags: ['trickster'], role: 'ult', rarity: 'mythic',
-      desc: '4 clones for 3s. Without the ball: they mob the ball carrier and always steal it + stun. With the ball: they fan out dribbling fakes, fooling defenders, keeper −30% save.',
+      desc: '4 clones for {time}s: they steal the ball + {stun}s stun, or fan out with fakes (keeper −{gkPenalty%}% save).',
       params: { time: 3, gkPenalty: 0.3, stun: 1.3, range: 170 },
+      scale: { time: 'pow', gkPenalty: 'pow', stun: 'pow' },
     },
     titan: {
       name: 'Titan', icon: '🗿', tags: ['iron'], role: 'ult', rarity: 'mythic',
-      desc: '5s at double size: stun immune, can\'t be tackled, launches anyone you bump into, huge shot power; passing / dribbling still works normally.',
+      desc: '{time}s at double size: stun immune, can\'t be tackled, bowl opponents over, +{shot+%}% shot power.',
       params: { time: 5, scale: 2, knock: 360, launch: 220, stun: 1.0, shot: 1.35 },
+      scale: { time: 'pow', knock: 'pow', launch: 'pow', stun: 'pow', shot: 'mul' },
     },
 
     /* ---------- 🎲 HỖN LOẠN (mới) ---------- */
     bomb_ball: {
       name: 'Bomb Ball', icon: '💣', tags: ['chaos'], role: 'wild', rarity: 'legendary',
-      desc: 'Every 12s the ball turns into a bomb (3s fuse, countdown on the ball): it explodes, launching + stunning everyone nearby, the ball flies off randomly. Pass the bomb to them, fast!',
+      desc: 'Every {every}s the ball becomes a bomb: 3s fuse, then launches + stuns ({stun}s) everyone within {radius}px.',
       params: { every: 12, fuse: 3, radius: 55, knock: 260, launch: 240, stun: 1.2 },
+      scale: { every: 'cd', radius: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
     },
 
     /* ---------- 🎲 HỖN LOẠN ---------- */
     chaos_ball: {
       name: 'Chaos Ball', icon: '🎲', tags: ['chaos'], role: 'wild', rarity: 'rare',
-      desc: 'Every shot / pass: the ball transforms (watermelon, bowling ball, chicken, tire...) and gets a random effect: curve, rocket, fire, lightning, decoy.',
+      desc: 'Every shot / pass turns the ball into something random with a random effect.',
       params: { curve: 2.2, rocketMult: 1.3 },
+      scale: { curve: 'pow', rocketMult: 'mul' },
     },
     warp_walls: {
       name: 'Warp Walls', icon: '🌌', tags: ['chaos'], role: 'wild', rarity: 'rare',
-      desc: 'Balls your team kicks into the top / bottom wall go through a purple portal and come out of the opposite wall.',
+      desc: 'Your balls into the top / bottom wall warp out of the opposite wall.',
       params: {},
     },
   },
