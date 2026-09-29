@@ -72,6 +72,13 @@ vào lưới vẫn ăn mừng rồi giao bóng lại (không có đối thủ th
 - Mọi con số (đường XP, thưởng, độ hiếm, giá trị phân rã, hộp + tỉ lệ, level Core) ở `config/progression.config.js`.
   Trang gacha ở `src/ui/gacha.js`; hình vẽ costume ở `src/render/sprites.js` (`drawHair`, `drawFace`, `SHOES` / `drawLeg`, `FX` + `spawnFx` / `drawFxParticle`,
   `drawItemIcon`); renderer (`cosmetics`) sinh hạt hiệu ứng khi chạy, menu xem trước bằng `drawAvatar`.
+- **Chỉ số character** (kiểu eFootball, `progression.attrs`): 6 chỉ số PACE · SHOOTING · PASSING · DRIBBLE · FIGHT · KEEPER, bắt đầu 60, tối đa 99
+  (cùng thang OVR của màn giới thiệu: rating = hệ số x 80 -> character mới x0.75, 80 = x1.0 như đồng đội AI). Mỗi level +6 điểm, phân bổ ở **NHÂN VẬT → STATS** (←→ cộng / bớt thử, Enter xác nhận);
+  chỉ số càng cao càng tốn điểm (tới 79: 1 điểm / bước, tới 89: 2, tới 99: 3; LV30 dàn đều ~85). RESPEC trả lại toàn bộ điểm, tốn gold (bấm 2 lần).
+  Mỗi chỉ số điều khiển các hệ số trong trận (`Player.stats`): PACE = speed + stamina (hồi thể lực) · SHOOTING = power + accuracy · PASSING = pass ·
+  DRIBBLE = dribble · FIGHT = tackle + knock (lực đẩy lùi của đấm / Hard) · KEEPER = keeper (tỉ lệ cứu thua trong vòng cấm nhà).
+  Chỉ áp dụng ở Main Path + Luyện tập (`main.js -> avatarStats`); online character dùng chỉ số của đội như cũ. Đồng đội AI giữ chỉ số đội.
+  Lưu ở `SFC.Profile.data.attrs` (`steps` = số bước mỗi chỉ số, `bonus` = điểm thưởng ngoài level); điểm còn lại tính từ level nên không lệch.
 - Debug: `SFC.Profile.data` trong console (vd. `SFC.Profile.data.gold = 5000; SFC.Profile.save()`).
 
 ## Online PvP (1 vs 1)

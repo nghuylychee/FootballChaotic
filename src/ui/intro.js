@@ -110,12 +110,26 @@ window.SFC = window.SFC || {};
       </div>`;
     },
 
+    // OVR của 1 bộ chỉ số đội: trung bình các chỉ số intro.stats x ovrScale (menu Main Path dùng chung)
+    ovrOf(stats) {
+      const I = CFG(), vals = I.stats.map(([key]) => stats[key] || 1);
+      return Math.max(1, Math.min(99, Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * I.ovrScale)));
+    },
+
+    // chỉ số đội trong trận: trung bình Player.stats của các cầu thủ (character có chỉ số riêng); đội trống -> chỉ số đội
+    teamStats(g, t) {
+      const ps = g.teams[t].players, out = {};
+      if (!ps.length) return g.teams[t].cfg.stats;
+      for (const [key] of CFG().stats) out[key] = ps.reduce((a, p) => a + (p.stats[key] || 1), 0) / ps.length;
+      return out;
+    },
+
     side(g, t, list, delay, boss) {
-      const I = CFG(), c = g.teams[t].cfg, o = g.teams[1 - t].cfg;
-      const vals = I.stats.map(([key]) => c.stats[key] || 1);
-      const ovr = Math.max(1, Math.min(99, Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * I.ovrScale)));
+      const I = CFG(), c = g.teams[t].cfg;
+      const cs = this.teamStats(g, t), os = this.teamStats(g, 1 - t);
+      const ovr = this.ovrOf(cs);
       const stats = I.stats.map(([key, label], i) => {
-        const v = c.stats[key] || 1, ov = o.stats[key] || 1;
+        const v = cs[key] || 1, ov = os[key] || 1;
         const w = Math.round(clamp01((v - I.statMin) / (I.statMax - I.statMin)) * 100);
         return `<div class="in-st ${v > ov + 0.001 ? 'up' : ''}" style="--d:${(I.statsAt + i * 0.05).toFixed(2)}s"><span>${label}</span><i><b style="--w:${w}%"></b></i><em>${Math.round(v * I.ovrScale)}</em></div>`;
       }).join('');
@@ -137,8 +151,10 @@ window.SFC = window.SFC || {};
       const human = g.isHuman(p.team), you = human && p.isControlled;
       const num = you ? I.youNumber : I.numbers[p.role] || 7;
       const tag = you ? '<em class="you">YOU</em>' : human ? '<em>AI</em>' : '';
+      // character có chỉ số riêng: OVR cá nhân (trung bình 6 chỉ số, như trang STATS)
+      const povr = you && p.ovr ? `<b class="in-povr">${p.ovr}<span>OVR</span></b>` : '';
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">
-        <div class="in-num">${num}</div>${tag}
+        <div class="in-num">${num}</div>${tag}${povr}
         <canvas data-pid="${p.id}" data-delay="${d}"></canvas>
         <b class="in-name">${esc(p.name)}</b><span class="in-pos">${ROLE[p.role] || p.role}</span>
       </div>`;

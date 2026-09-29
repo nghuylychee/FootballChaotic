@@ -418,7 +418,7 @@ window.SFC = window.SFC || {};
       const counter = p.counterT > g.time; // Phản Đòn
       p.bigPunch = false;
       const range = L.range * C.mod(p.team, 'tackleRange') * (big ? 2 : 1);
-      const kb = L.knockback * C.mod(p.team, 'knockback') * (big ? 2.5 : 1);
+      const kb = L.knockback * p.stats.knock * C.mod(p.team, 'knockback') * (big ? 2.5 : 1);
       let hit = false;
       for (const o of this.inFront(g, p, range, big ? 100 : L.arc, C.has(p.team, 'juggle'))) {
         if (this.dodged(g, o)) continue;
@@ -556,7 +556,7 @@ window.SFC = window.SFC || {};
         }
       }
       const fly = p.flyMul || 1;
-      const kb = H.knockback * g.cores.mod(p.team, 'knockback') * g.cores.pmod(p, 'launch') * fly;
+      const kb = H.knockback * p.stats.knock * g.cores.mod(p.team, 'knockback') * g.cores.pmod(p, 'launch') * fly;
       for (const o of this.inFront(g, p, hRange, H.arc)) {
         if (p.kickHits.has(o.id)) continue;
         p.kickHits.add(o.id);

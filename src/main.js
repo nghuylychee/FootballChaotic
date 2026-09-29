@@ -27,7 +27,7 @@
     startMainPath() {
       const MP = SFC_CONFIG.mainPath, m = SFC.MainPath.nextMatch();
       const soloIdx = this.sel.ctrl ? this.sel.ctrl - 1 : C.roles.indexOf('FWD');
-      const avatar = Object.assign(SFC.Profile.avatar(), { role: C.roles[soloIdx] });
+      const avatar = Object.assign(SFC.Profile.avatar(), { role: C.roles[soloIdx] }, this.avatarStats());
       SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
       this.startMatch({
         home: MP.playerTeam.id, away: m.away, difficulty: 'normal', aiProfile: m.aiProfile, mateDifficulty: MP.teammate,
@@ -52,6 +52,9 @@
       if (msg) SFC.Menu.setMsg(msg, true);
     },
 
+    // chỉ số riêng của character (chỉ Main Path / Luyện tập — online đi qua Profile.avatar(), không kèm chỉ số)
+    avatarStats() { return { stats: SFC.Profile.avatarStats(), ovr: SFC.Profile.ovr() }; },
+
     startMatch(opts) {
       this.mode = 'single';
       this.lastOpts = opts;
@@ -71,7 +74,7 @@
       const role = !two || soloIdx == null ? 'FWD' : C.roles[soloIdx];
       this.startMatch({
         home, away, difficulty: o.diffs[s.diff], humanTeam: 0, training: true, teamSize: [t.mine, t.opp],
-        solo: [soloIdx, null], avatars: [Object.assign(SFC.Profile.avatar(), { role }), null],
+        solo: [soloIdx, null], avatars: [Object.assign(SFC.Profile.avatar(), { role }, this.avatarStats()), null],
         coreUnlocks: [SFC.Profile.unlockedCores(), null],
       });
     },

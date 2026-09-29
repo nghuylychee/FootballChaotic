@@ -10,6 +10,7 @@ window.SFC = window.SFC || {};
   const ITEMS = () => P().items;
   const CORES = () => P().cores;
   const SKINS = () => SFC_CONFIG.teams.skins;
+  const A = () => P().attrs;
   const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(+v || 0)));
 
   function blank() {
@@ -18,7 +19,15 @@ window.SFC = window.SFC || {};
       items: {}, cores: {},          // id -> số lượng trong túi đồ
       look: Object.assign({}, P().defaultLook),
       stats: { matches: 0, wins: 0, draws: 0, losses: 0, goals: 0, boxes: 0 },
+      attrs: blankAttrs(),
     };
+  }
+
+  // chỉ số character: steps = số bước đã cộng của từng chỉ số (rating = base + steps), bonus = điểm thưởng ngoài level
+  function blankAttrs() {
+    const steps = {};
+    for (const id of A().order) steps[id] = 0;
+    return { steps, bonus: 0, milestones: {} };
   }
 
   // chọn ngẫu nhiên theo trọng số: list [{ w, v }]
@@ -69,6 +78,12 @@ window.SFC = window.SFC || {};
       d.look.skin = clampInt(lk.skin, 0, SKINS().length - 1);
       d.look.hairColor = clampInt(lk.hairColor, 0, P().hairColors.length - 1);
       Object.assign(d.stats, raw.stats || {});
+      // chỉ số: bước ngoài khoảng -> kẹp lại; tổng giá vượt số điểm có (đổi config) -> trả hết điểm
+      const ra = raw.attrs || {}, rs = ra.steps || {};
+      for (const id of A().order) d.attrs.steps[id] = clampInt(rs[id], 0, A().max - A().base);
+      d.attrs.bonus = Math.max(0, Math.floor(+ra.bonus || 0));
+      if (ra.milestones && typeof ra.milestones === 'object') Object.assign(d.attrs.milestones, ra.milestones);
+      if (this.spentPoints(d.attrs.steps) > this.pointsEarned(d)) d.attrs.steps = blankAttrs().steps;
       return d;
     },
 
@@ -226,6 +241,67 @@ window.SFC = window.SFC || {};
     unlockedCores() {
       if (!P().coreGacha) return Object.keys(SFC_CONFIG.cores.list);   // gacha Core tắt: mọi Core đều dùng được
       return P().starterCores.concat(Object.keys(this.data.cores).filter((id) => this.data.cores[id] > 0 && this.coreLevel(id) <= this.data.level));
+    },
+
+    /* ---------- chỉ số character (config: progression.attrs) ---------- */
+    // pending: { id: số bước đang cộng thử, chưa xác nhận } — trang STATS dùng để xem trước
+    // giá 1 bước để đạt rating r
+    stepCost(r) {
+      const t = A().tierCost.find(([upTo]) => r <= upTo);
+      return t ? t[1] : Infinity;
+    },
+    // tổng điểm đã tiêu cho bộ bước steps
+    spentPoints(steps = this.data.attrs.steps) {
+      let sum = 0;
+      for (const id of A().order) for (let i = 1; i <= (steps[id] || 0); i++) sum += this.stepCost(A().base + i);
+      return sum;
+    },
+    pointsEarned(d = this.data) { return (d.level - 1) * A().pointsPerLevel + d.attrs.bonus; },
+    // điểm còn lại sau khi tính cả các bước đang cộng thử
+    pointsFree(pending = {}) {
+      const steps = {};
+      for (const id of A().order) steps[id] = this.data.attrs.steps[id] + (pending[id] || 0);
+      return this.pointsEarned() - this.spentPoints(steps);
+    },
+    rating(id, pending = {}) { return A().base + this.data.attrs.steps[id] + (pending[id] || 0); },
+    // giá bước kế tiếp (0 = đã tối đa)
+    nextCost(id, pending = {}) {
+      const r = this.rating(id, pending);
+      return r >= A().max ? 0 : this.stepCost(r + 1);
+    },
+    ovr(pending = {}) {
+      const ids = A().order;
+      return Math.round(ids.reduce((s, id) => s + this.rating(id, pending), 0) / ids.length);
+    },
+    // hệ số trong trận của 1 chỉ số (khoá keys) theo rating
+    attrMult(id, key, pending = {}) {
+      const w = A().list[id].keys[key];
+      return 1 + (this.rating(id, pending) / A().scale - 1) * (w == null ? 1 : w);
+    },
+    // xác nhận các bước cộng thử. Trả về false nếu không đủ điểm / vượt tối đa
+    commitSteps(pending) {
+      if (this.pointsFree(pending) < 0) return false;
+      if (A().order.some((id) => (pending[id] || 0) < 0 || this.rating(id, pending) > A().max)) return false;
+      for (const id of A().order) this.data.attrs.steps[id] += pending[id] || 0;
+      this.save();
+      return true;
+    },
+    respecCost() { return A().respecGold.base + A().respecGold.perLevel * this.data.level; },
+    // trả lại toàn bộ điểm, mất gold. { ok, reason: empty | gold, cost }
+    respec() {
+      const cost = this.respecCost();
+      if (!this.spentPoints()) return { ok: false, reason: 'empty', cost };
+      if (this.data.gold < cost) return { ok: false, reason: 'gold', cost };
+      this.data.gold -= cost;
+      this.data.attrs.steps = blankAttrs().steps;
+      this.save();
+      return { ok: true, cost };
+    },
+    // chỉ số trong trận (Player.stats) của character — chỉ Main Path / Luyện tập (main.js), online không gửi
+    avatarStats() {
+      const out = {};
+      for (const id of A().order) for (const key in A().list[id].keys) out[key] = this.attrMult(id, key);
+      return out;
     },
 
     /* ---------- vào trận ---------- */

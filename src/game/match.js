@@ -11,8 +11,8 @@ window.SFC = window.SFC || {};
      *         humans: các đội do người điều khiển (mặc định [humanTeam]; PvP = [0, 1]),
      *         draftTimeLimit: giây tối đa để chọn Core (0 = không giới hạn),
      *         solo: [idx đội 0, idx đội 1] — khóa người chơi vào 1 cầu thủ (chỉ số trong đội; null = điều khiển cả đội),
-     *         avatars: [{name, look, role?} | null, ...] — character của người chơi, thay cầu thủ ở vị trí role
-     *                  (DEF / FWD, mặc định FWD) của đội đó,
+     *         avatars: [{name, look, role?, stats?, ovr?} | null, ...] — character của người chơi, thay cầu thủ ở vị trí role
+     *                  (DEF / FWD, mặc định FWD) của đội đó; stats = chỉ số riêng (Main Path / Luyện tập, không có thì dùng chỉ số đội),
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
      *         training: true = luyện tập (không giờ trận, không chọn Core, không kết thúc / không thưởng),
      *         teamSize: [n đội 0, n đội 1] — số cầu thủ mỗi đội (mặc định đủ đội hình; 0 = đội trống),
@@ -66,6 +66,7 @@ window.SFC = window.SFC || {};
         p.name = av.name;
         p.look = Object.assign({}, av.look);
         p.avatar = true;
+        if (av.stats) { p.stats = Object.assign({}, p.stats, av.stats); p.ovr = av.ovr; }
       });
       // trạng thái điều khiển theo từng đội người chơi
       this.ctrl = [null, null];
@@ -576,7 +577,7 @@ window.SFC = window.SFC || {};
         if (b.fx.thunder) chance -= b.fx.thunder.gkPenalty;
         if (b.fx.fire) chance -= 0.15;
         chance -= this.cores.keeperPenalty(b);
-        chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35) * this.cores.pmod(p, 'keeperSave') + (rd ? rd.bonus : 0), 0.15, 0.95);
+        chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35) * this.cores.pmod(p, 'keeperSave') * p.stats.keeper + (rd ? rd.bonus : 0), 0.15, 0.95);
         this.cores.shotOnTarget(b.lastKickTeam);
         const r = Math.random();
         if (r > chance) {

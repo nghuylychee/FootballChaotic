@@ -17,7 +17,8 @@ window.SFC = window.SFC || {};
       this.idx = idx;
       this.id = team.index * 10 + idx;
       this.name = tcfg.players[idx] || role;
-      this.stats = Object.assign({ speed: 1, power: 1, pass: 1, tackle: 1, dribble: 1, accuracy: 1 }, tcfg.stats);
+      // stamina / knock / keeper: chỉ character mới khác 1 (chỉ số character, progression.attrs)
+      this.stats = Object.assign({ speed: 1, power: 1, pass: 1, tackle: 1, dribble: 1, accuracy: 1, stamina: 1, knock: 1, keeper: 1 }, tcfg.stats);
       this.radius = SFC_CONFIG.game.player.radius;
       this.res = { momentum: 0, rage: 0, guard: 0 };   // tài nguyên Core (Đà, Nộ, Giáp) — Nhịp là của cả đội (g.rhythm)
       this.resT = { sprint: 0, idle: 0, rage: 0, frenzy: 0, guard: 0, iron: 0 };
@@ -247,7 +248,7 @@ window.SFC = window.SFC || {};
       this.sprinting = wantSprint && this.stamina > (this.sprinting ? 0 : C.staminaMinToSprint);
       if (this.sprinting && !was) this.game.cores.dispatch(this.team, 'onSprintStart', this);
       if (this.sprinting) this.stamina -= C.staminaDrain * this.game.cores.sprintDrain(this) * dt;
-      else this.stamina += C.staminaRegen * this.game.cores.mod(this.team, 'sprintRegen') * dt;
+      else this.stamina += C.staminaRegen * this.stats.stamina * this.game.cores.mod(this.team, 'sprintRegen') * dt;
       this.stamina = U.clamp(this.stamina, 0, C.staminaMax);
 
       const ms = this.maxSpeed();

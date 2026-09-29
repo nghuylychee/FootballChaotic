@@ -20,6 +20,10 @@ window.SFC = window.SFC || {};
   const coin = (n) => G().coin(n);
   const xpBar = (d) => G().xpBar(d);
   const CV = () => SFC.ControlsView;   // Settings > Controls (ui/controls.js)
+  const ATTRS = () => PROG().attrs;     // chỉ số character (trang STATS)
+  // tên chỉ số trong trận (Player.stats) cho khung chi tiết trang STATS
+  const KEY_LABELS = { speed: 'run speed', stamina: 'stamina refill', power: 'shot power', accuracy: 'shot aim', pass: 'passing',
+    dribble: 'dribbling', tackle: 'steal / intercept', knock: 'knockback', keeper: 'save chance' };
 
   function helpTable(list) {
     return list.map(([k, v]) => `<div class="hk"><kbd>${esc(k)}</kbd><span>${esc(v)}</span></div>`).join('');
@@ -53,6 +57,7 @@ window.SFC = window.SFC || {};
     nameBuf: '',
     nameBack: 'home',   // đặt tên xong quay về trang nào
     avatars: [],        // canvas character đang hiện (vẽ lại mỗi khung hình để có chuyển động)
+    pend: {},           // trang STATS: số bước đang cộng thử của từng chỉ số
 
     init(app) {
       this.app = app;
@@ -73,6 +78,7 @@ window.SFC = window.SFC || {};
       if (page === 'join' && !msg) this.code = '';
       if (page === 'name') this.nameBuf = PF().data.name;
       if (page === 'path') this.pathView = MPATH().state.area;   // mở Main Path: xem Area đang đá
+      if (page === 'attrs') this.pend = {};                        // trang STATS: các bước đang cộng thử (chưa xác nhận)
       this.setTextMode(page === 'join' || page === 'name' ? page : null);
       this.render();
     },
@@ -92,7 +98,7 @@ window.SFC = window.SFC || {};
           return [
             { kind: 'btn', label: 'MAIN PATH', sub: this.pathSub(), act: () => this.go('path') },
             { kind: 'btn', label: 'ONLINE VERSUS', sub: '1 vs 1 · create a room', act: () => this.go('online') },
-            { kind: 'btn', label: 'CHARACTER', sub: 'Inventory · rename', act: () => this.go('char') },
+            { kind: 'btn', label: 'CHARACTER', sub: PF().pointsFree() > 0 ? `★ ${PF().pointsFree()} stat points to spend!` : 'Stats · inventory · rename', hot: PF().pointsFree() > 0, act: () => this.go('char') },
             { kind: 'btn', label: 'SHOP', sub: SFC_CONFIG.progression.coreGacha ? 'Gacha boxes · costumes & Cores' : 'Gacha boxes · costumes', act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'SETTINGS', sub: 'Training · controls', act: () => this.go('settings') },
           ];
@@ -106,12 +112,29 @@ window.SFC = window.SFC || {};
         case 'char': {
           const d = PF().data, look = d.look, P = PROG();
           const nItems = Object.values(d.items).reduce((a, b) => a + b, 0) + Object.values(d.cores).reduce((a, b) => a + b, 0);
+          const free = PF().pointsFree();
           return [
+            { kind: 'btn', label: 'STATS', sub: `OVR ${PF().ovr()}${free > 0 ? ` · ${free} pts free` : ''}`, hot: free > 0, act: () => this.go('attrs') },
             { kind: 'btn', label: 'RENAME', sub: d.name, act: () => { this.nameBack = 'char'; this.go('name'); } },
             { kind: 'pick', label: 'SKIN COLOR', swatch: SFC_CONFIG.teams.skins[look.skin], change: (dd) => PF().setColor('skin', dd) },
             { kind: 'pick', label: 'HAIR COLOR', swatch: P.hairColors[look.hairColor], change: (dd) => PF().setColor('hairColor', dd) },
             { kind: 'btn', label: 'INVENTORY', sub: `${nItems} items · equip · dismantle`, act: () => { G().invBack = 'char'; this.go('inv'); } },
           ];
+        }
+        case 'attrs': {
+          // STATS: 1 dòng mỗi chỉ số (←→ cộng / bớt bước đang thử), CONFIRM, RESPEC
+          const A = ATTRS(), pf = PF(), pend = this.pend;
+          const nPend = A.order.reduce((a, id) => a + (pend[id] || 0), 0);
+          const list = A.order.map((id) => ({
+            kind: 'pick', label: A.list[id].label, attr: id, bar: this.attrBar(id),
+            change: (dd) => this.changeAttr(id, dd), enter: () => this.commitAttrs(),
+          }));
+          list.push({ kind: 'btn', label: 'CONFIRM', main: true, disabled: !nPend,
+            sub: nPend ? `+${nPend} step${nPend > 1 ? 's' : ''} · ${pf.pointsFree() - pf.pointsFree(pend)} pts` : 'Add points with ←→', act: () => this.commitAttrs() });
+          const spent = pf.spentPoints(), cost = pf.respecCost(), poor = pf.data.gold < cost;
+          list.push({ kind: 'btn', label: 'RESPEC', disabled: !spent || poor,
+            sub: !spent ? 'Nothing spent yet' : `Refund ${spent} pts · ${cost} gold${poor ? ' (not enough)' : ''}`, act: () => this.respecAttrs() });
+          return list;
         }
         case 'path': {
           // Main Path: không chọn đối thủ / độ khó — trận kế tiếp do Area + hạng quyết định
@@ -181,6 +204,13 @@ window.SFC = window.SFC || {};
       if (Online().status === 'busy') return;
       if (this.page === 'name') { if (PF().hasName) this.go(this.nameBack); return; } // lần đầu: bắt buộc đặt tên
       if (G().pages.includes(this.page)) return G().back(this);
+      if (this.page === 'attrs') {
+        // còn bước chưa xác nhận: bấm 2 lần mới bỏ
+        const n = Object.values(this.pend).reduce((a, b) => a + b, 0);
+        if (n && !G().confirmed(this, 'discard', `Press ${SFC.Input.key('back', 'Esc')} again to discard ${n} pending step${n > 1 ? 's' : ''}`)) return;
+        this.pend = {};
+        return this.go('char');
+      }
       if (['training', 'controls'].includes(this.page)) this.go('settings');
       else if (['path', 'online', 'tutorial', 'char', 'settings'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
@@ -197,7 +227,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'controls') { this.el.innerHTML = CV().render(); this.bindAvatars(); return; }
       if (G().pages.includes(this.page)) { G().render(this); this.bindAvatars(); return; }
       const list = items.map((it, i) => this.renderItem(it, i)).join('');
-      const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', online: 'ONLINE VERSUS', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER' };
+      const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', online: 'ONLINE VERSUS', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER', attrs: 'STATS' };
       const small = this.page !== 'home';
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       this.el.innerHTML = `
@@ -210,6 +240,7 @@ window.SFC = window.SFC || {};
           ${this.page === 'join' ? this.renderCode() : ''}
           ${this.page === 'name' ? this.renderNameInput() : ''}
           ${this.page === 'lobby' ? this.renderRoomCode() : ''}
+          ${this.page === 'attrs' ? `<div class="st-head"><span>FREE POINTS</span><b>${PF().pointsFree(this.pend)}</b></div>` : ''}
           <div class="m-items">${list}</div>
           ${msg}
           <div class="m-hint">${this.hint()}</div>
@@ -219,7 +250,12 @@ window.SFC = window.SFC || {};
     },
 
     renderItem(it, i) {
-      const cls = ['mi', it.kind, i === this.sel ? 'sel' : '', it.main ? 'main' : '', it.disabled ? 'dis' : ''].join(' ');
+      const cls = ['mi', it.kind, i === this.sel ? 'sel' : '', it.main ? 'main' : '', it.disabled ? 'dis' : '', it.hot ? 'hot' : '', it.bar ? 'st-row' : ''].join(' ');
+      // dòng chỉ số (trang STATS): rating + thanh bước + giá bước kế tiếp
+      if (it.bar) {
+        return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label>
+          <div class="picker"><button data-i="${i}" data-d="-1">◀</button>${it.bar}<button data-i="${i}" data-d="1">▶</button></div></div>`;
+      }
       if (it.kind === 'pick') {
         const val = it.swatch ? `<i class="swatch" style="background:${it.swatch}"></i>` : esc(it.value);
         return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label>
@@ -233,6 +269,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'home') return `↑↓ select · ${ok} · ${K('mute', 'M')} mute`;
       if (this.page === 'join') return `Type the code · Enter connect · ${back} back`;
       if (this.page === 'name') return PF().hasName ? `Type a name (A-Z, 0-9) · Enter confirm · ${back} back` : 'Type a name (A-Z, 0-9) · Enter confirm';
+      if (this.page === 'attrs') return `←→ add / remove · ${ok} confirm · ${back} back`;
       if (this.page === 'lobby') return Online().isHost ? `←→ change team · ${ok} start · ${K('pause', 'Esc')} leave room` : `←→ change team · ${K('pause', 'Esc')} leave room`;
       return `↑↓ select · ←→ change · ${ok} · ${back} back`;
     },
@@ -242,6 +279,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'home') return this.profileCard();
       if (this.page === 'name') return `<div class="char-stage"><canvas class="avatar big" data-avatar="spin"></canvas><div class="char-name">${esc(this.nameBuf || '???')}</div></div>`;
       if (this.page === 'char') return this.charPanel();
+      if (this.page === 'attrs') return this.attrsPanel();
       if (this.page === 'path') return this.pathPanel();
       if (this.page === 'training') return teamCard(o.order[s.team], '');
       if (this.page === 'lobby') {
@@ -343,6 +381,7 @@ window.SFC = window.SFC || {};
       return `<div class="path ${locked ? 'locked' : ''}" style="--ac:${A.color}">
         <div class="ph"><span class="ph-num">AREA ${v + 1}</span><span class="ph-name">${A.icon} ${esc(A.name)}</span><span class="ph-state">${state}${titles}</span></div>
         <div class="ph-sub">${esc(A.sub)}</div>
+        <div class="ph-ovr">YOUR OVR <b>${PF().ovr()}</b> · AREA OVR <b>${this.areaOvr(A)}</b></div>
         <div class="pa"><canvas data-arena="${v}" width="300" height="112"></canvas>${locked ? '<div class="pa-lock">🔒<span>Win the promotion match of the previous area</span></div>' : ''}</div>
         <div class="pdivs">${divs.join('')}</div>
         <div class="popps">${A.teams.map((id) => teamChip(id, false)).join('')}${teamChip(A.boss, true)}</div>
@@ -371,6 +410,7 @@ window.SFC = window.SFC || {};
         <div class="pc-info">
           <div class="pc-name">${esc(d.name)}</div>
           ${xpBar(d)}
+          ${PF().pointsFree() > 0 ? `<div class="pts-badge">★ ${PF().pointsFree()} STAT PTS</div>` : ''}
           <div class="pc-gold">${coin(d.gold)}</div>
           <div class="pc-stats">${st.matches} played · ${st.wins} wins · ${st.goals} goals</div>
         </div>
@@ -383,9 +423,125 @@ window.SFC = window.SFC || {};
         <canvas class="avatar big" data-avatar="spin"></canvas>
         <div class="char-name">${esc(d.name)}</div>
         <div class="char-info">${xpBar(d)}<div class="pc-gold">${coin(d.gold)}</div>
+          <div class="stats st-mini">${this.attrGrid()}</div>
           <div class="eq-list">${G().equippedHtml()}</div>
           <div class="pc-stats">${st.wins}W ${st.draws}D ${st.losses}L · ${st.goals} goals · ${st.boxes || 0} boxes</div></div>
       </div>`;
+    },
+
+    /* ---------------- chỉ số character (trang STATS) ---------------- */
+    // lưới chỉ số nhỏ (bảng CHARACTER): thanh 60 -> tối đa + rating
+    attrGrid() {
+      const A = ATTRS();
+      return A.order.map((id) => {
+        const r = PF().rating(id), w = Math.round(Math.max(0, (r - 60) / (A.max - 60)) * 100);
+        return `<div class="stat"><span>${A.list[id].short}</span><i><b style="width:${w}%"></b></i><em>${r}</em></div>`;
+      }).join('');
+    },
+
+    // 1 dòng chỉ số: rating · thanh (đã xác nhận + đang thử, vạch chia + màu theo bậc giá) · giá bước kế tiếp
+    attrBar(id) {
+      const A = ATTRS(), pf = PF(), pend = this.pend;
+      const have = pf.data.attrs.steps[id], add = pend[id] || 0, n = A.max - A.base;
+      const cost = pf.nextCost(id, pend);
+      const pct = (steps) => ((steps / n) * 100).toFixed(1) + '%';
+      // màu từng bậc giá (thanh đầy / nền), vạch chia ở mốc cuối mỗi bậc
+      const tints = [['var(--gold)', '#2a1f2c'], ['#ff9a3d', '#34222e'], ['#ff5a6e', '#3e2129']];
+      let from = 0;
+      const stops = A.tierCost.map(([upTo], i) => { const a = pct(from), b = pct(upTo - A.base); from = upTo - A.base; return [tints[Math.min(i, 2)], a, b]; });
+      const grad = (k) => `linear-gradient(90deg, ${stops.map(([c, a, b]) => `${c[k]} ${a} ${b}`).join(', ')})`;
+      const cuts = A.tierCost.slice(0, -1).map(([upTo]) => `<b class="cut" style="left:${pct(upTo - A.base)}"></b>`).join('');
+      const flash = performance.now() - (this.attrFlashT || 0) < 900 && (this.attrFlash || {})[id] ? ' flash' : '';
+      return `<b class="st-num${add ? ' up' : ''}${flash}">${pf.rating(id, pend)}</b>`
+        + `<span class="st-bar" style="--tg:${grad(0)};--tt:${grad(1)}"><i class="have" style="width:${pct(have)}"></i>`
+        + `<i class="add" style="left:${pct(have)};width:${pct(add)}"></i>${cuts}</span>`
+        + `<em class="st-cost">${cost ? cost + 'P' : 'MAX'}</em>`;
+    },
+
+    // ←→ trên 1 dòng chỉ số: → cộng thử 1 bước (đủ điểm, chưa tối đa), ← bớt bước đang thử (không bớt dưới mức đã xác nhận)
+    changeAttr(id, d) {
+      const A = ATTRS(), pf = PF(), pend = this.pend, cur = pend[id] || 0;
+      this.msg = ''; this.msgErr = false;
+      if (d < 0) { if (cur > 0) pend[id] = cur - 1; return; }
+      const cost = pf.nextCost(id, pend);
+      if (!cost) { this.msg = `${A.list[id].label} is maxed at ${A.max}.`; this.msgErr = true; return; }
+      const free = pf.pointsFree(pend);
+      if (free < cost) { this.msg = `Need ${cost} point${cost > 1 ? 's' : ''} (${free} free).`; this.msgErr = true; return; }
+      pend[id] = cur + 1;
+    },
+
+    commitAttrs() {
+      const pend = this.pend;
+      if (!Object.values(pend).some((v) => v > 0)) return;
+      if (!PF().commitSteps(pend)) { this.setMsg('Not enough points.', true); return; }
+      this.attrFlash = Object.assign({}, pend);
+      this.attrFlashT = performance.now();
+      this.pend = {};
+      SFC.Audio.upgrade();
+      this.setMsg('Stats saved.');
+    },
+
+    respecAttrs() {
+      const pf = PF(), spent = pf.spentPoints(), cost = pf.respecCost();
+      if (!G().confirmed(this, 'respec', `Press ${SFC.Input.key('confirm', 'Enter')} again to reset all stats (-${cost} gold)`)) return;
+      const r = pf.respec();
+      if (!r.ok) { this.setMsg(r.reason === 'gold' ? `Respec costs ${cost} gold.` : 'Nothing to reset.', true); return; }
+      this.pend = {};
+      SFC.Audio.dismantle();
+      this.setMsg(`Stats reset. ${spent} points refunded.`);
+    },
+
+    // radar 6 cạnh: vàng = đã xác nhận, xanh viền = tính cả bước đang thử. Trục từ 60 tới tối đa
+    statRadar(selId) {
+      const A = ATTRS(), pf = PF(), pend = this.pend, ids = A.order, n = ids.length;
+      const C = 64, R = 46, lo = 60, hi = A.max;
+      const at = (i, k) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [C + Math.cos(a) * k, C + Math.sin(a) * k]; };
+      const pt = (i, v) => at(i, Math.max(0, (v - lo) / (hi - lo)) * R);
+      const poly = (fn) => ids.map((id, i) => pt(i, fn(id)).map((x) => x.toFixed(1)).join(',')).join(' ');
+      const rings = [70, 80, 90, hi].map((v) => `<polygon class="ring" points="${poly(() => v)}"/>`).join('');
+      const axes = ids.map((id, i) => { const [x, y] = at(i, R); return `<line class="axis" x1="${C}" y1="${C}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; }).join('');
+      const labels = ids.map((id, i) => {
+        const [x, y] = at(i, R + 10);
+        return `<text class="${id === selId ? 'sel' : ''}" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}">${A.list[id].short}</text>`;
+      }).join('');
+      const any = ids.some((id) => pend[id] > 0);
+      return `<svg class="st-radar" viewBox="0 0 128 128">${rings}${axes}
+        <polygon class="have" points="${poly((id) => pf.rating(id))}"/>
+        ${any ? `<polygon class="pend" points="${poly((id) => pf.rating(id, pend))}"/>` : ''}${labels}</svg>`;
+    },
+
+    // bảng phải trang STATS: radar + character + OVR, khung chi tiết của dòng đang chọn
+    attrsPanel() {
+      const A = ATTRS(), pf = PF(), pend = this.pend, it = this.items()[this.sel], id = it && it.attr;
+      const o0 = pf.ovr(), o1 = pf.ovr(pend);
+      let detail;
+      if (id) {
+        const S = A.list[id], r0 = pf.rating(id), r1 = pf.rating(id, pend);
+        const mults = Object.keys(S.keys).map((k) => {
+          const a = pf.attrMult(id, k).toFixed(2), b = pf.attrMult(id, k, pend).toFixed(2);
+          return `<span>${KEY_LABELS[k] || k} ×${a}${b !== a ? ` → <em>×${b}</em>` : ''}</span>`;
+        }).join('');
+        detail = `<div class="sd-head"><b>${esc(S.label)}</b><span>${r0}${r1 !== r0 ? ` → <em>${r1}</em>` : ''}</span></div>
+          <p>${esc(S.desc)}</p><div class="sd-mult">${mults}</div>`;
+      } else {
+        const tiers = A.tierCost.map(([upTo, c]) => `${c} pt up to ${upTo}`).join(' · ');
+        detail = `<div class="sd-head"><b>HOW IT WORKS</b></div>
+          <p>Every level gives ${A.pointsPerLevel} points. Higher stats cost more: ${tiers}.</p>`;
+      }
+      return `<div class="st-panel">
+        <div class="st-top">${this.statRadar(id)}
+          <div class="st-side"><canvas class="avatar" data-avatar="spin"></canvas>
+            <div class="st-ovr"><b>${o0}${o1 !== o0 ? `<em>→${o1}</em>` : ''}</b><span>OVR</span></div></div>
+        </div>
+        <div class="st-detail">${detail}</div>
+      </div>`;
+    },
+
+    // OVR của Area (Main Path): khoảng OVR các đội của Area (tính như màn giới thiệu trước trận)
+    areaOvr(A) {
+      const list = A.teams.concat(A.boss).map((tid) => SFC.Intro.ovrOf(TEAMS().list[tid].stats));
+      const lo = Math.min(...list), hi = Math.max(...list);
+      return lo === hi ? `${lo}` : `${lo}–${hi}`;
     },
 
     renderNameInput() {
@@ -483,6 +639,7 @@ window.SFC = window.SFC || {};
       if (!it || it.disabled) return;
       SFC.Audio.menu();
       if (it.kind === 'btn') it.act();
+      else if (it.enter) it.enter();
     },
 
     submitCode() {

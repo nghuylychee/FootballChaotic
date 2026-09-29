@@ -15,6 +15,29 @@ SFC_CONFIG.progression = {
   xpStep: 40,
   levelUpGold: 30,             // thưởng gold mỗi lần lên level
 
+  // Chỉ số character (kiểu eFootball): lên level được điểm, phân bổ vào 6 chỉ số, chỉ số càng cao càng tốn điểm.
+  // Rating hiển thị = hệ số x scale (cùng thang OVR của màn giới thiệu trước trận, intro.config.js -> ovrScale).
+  // Chỉ áp dụng ở Main Path + Luyện tập; online dùng chỉ số của đội như cũ.
+  attrs: {
+    base: 60,                  // rating khởi đầu (hệ số 0.75 — character mới yếu hơn đồng đội, 80 = hệ số 1.0)
+    max: 99,
+    scale: 80,                 // hệ số = 1 + (rating / scale - 1) x weight của từng key
+    // giá 1 bước (+1 rating) theo rating sẽ đạt được: tới 79 = 1 điểm, tới 89 = 2, tới 99 = 3 (60 -> 99 một chỉ số: 69 điểm)
+    tierCost: [[79, 1], [89, 2], [99, 3]],
+    pointsPerLevel: 6,         // LV30 = 174 điểm: dàn đều ~85 mỗi chỉ số (hệ số ~1.06)
+    respecGold: { base: 150, perLevel: 20 },   // giá reset toàn bộ điểm
+    // keys: chỉ số trong trận (Player.stats) mà chỉ số này điều khiển, kèm độ mạnh (1 = đủ theo rating)
+    list: {
+      pace:     { label: 'PACE',     short: 'PAC', keys: { speed: 1, stamina: 1 },   desc: 'Run speed on and off the ball. Stamina refills faster.' },
+      shooting: { label: 'SHOOTING', short: 'SHO', keys: { power: 1, accuracy: 1 }, desc: 'Shot speed and aim. Harder shots beat keepers more often.' },
+      passing:  { label: 'PASSING',  short: 'PAS', keys: { pass: 1 },               desc: 'Pass speed and accuracy. Sloppy S-passes drift less.' },
+      dribble:  { label: 'DRIBBLE',  short: 'DRI', keys: { dribble: 1 },            desc: 'Speed with the ball, keeping it under punches, controlling fast balls.' },
+      fight:    { label: 'FIGHT',    short: 'FIG', keys: { tackle: 1, knock: 1 },   desc: 'Punch steal chance, pass interceptions, knockback of punches and kicks.' },
+      keeper:   { label: 'KEEPER',   short: 'GK',  keys: { keeper: 1 },             desc: 'Save chance while standing in your own box.' },
+    },
+    order: ['pace', 'shooting', 'passing', 'dribble', 'fight', 'keeper'],
+  },
+
   // Thưởng sau trận (chỉ tính trận đá hết giờ, bỏ giữa chừng không có thưởng)
   rewards: {
     single: {

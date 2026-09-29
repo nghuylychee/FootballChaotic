@@ -826,3 +826,59 @@ canvas.avatar.big { width: 120px; height: 132px; }
 @keyframes inTimer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 @keyframes inShine { 50% { color: #fff6c0; } }
 @keyframes inOut { to { opacity: 0; transform: scale(1.05); } }
+
+/* ---------- CHỈ SỐ CHARACTER (trang STATS, bảng CHARACTER, thẻ hồ sơ) ---------- */
+.mi.hot .mi-sub { color: var(--gold); }
+.pts-badge { display: inline-block; align-self: flex-start; font-family: var(--px); font-size: 5px; line-height: 1; color: var(--ink); background: var(--gold); padding: 2px 4px 1px; box-shadow: 1px 1px 0 var(--ink); white-space: nowrap; animation: pulse 0.8s steps(2) infinite; }
+.rw-new.pts { color: var(--gold); }
+.ph-ovr { font-size: 12px; color: var(--muted); line-height: 1; }
+.ph-ovr b { font-weight: normal; color: var(--gold); }
+
+/* bảng CHARACTER: lưới 6 chỉ số (dùng lại .stats / .stat của thẻ đội) */
+.st-mini { width: 100%; --shirt: var(--gold); }
+.st-mini .stat span { width: 20px; }
+.st-mini .stat em { font-style: normal; width: 14px; text-align: right; color: #e6dccb; }
+
+/* trang STATS: cột trái */
+.st-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); margin: -2px 0 4px; padding: 0 6px 0 14px; }
+.st-head b { font-family: var(--px); font-size: 9px; font-weight: normal; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); }
+.mi.st-row label { width: 56px; flex: none; }
+.mi.st-row .picker { gap: 3px; }
+.st-num { width: 16px; text-align: right; font-weight: normal; font-size: 16px; color: #fff; }
+.st-num.up { color: #7fe7ff; }
+.st-num.flash { animation: stFlash 0.9s steps(6); }
+@keyframes stFlash { 0%, 50% { color: var(--gold); transform: scale(1.3); } 100% { transform: none; } }
+.picker .st-bar { position: relative; min-width: 0; width: 84px; height: 7px; background: var(--tt); border: 1px solid var(--ink); box-sizing: content-box; }
+.st-bar i { position: absolute; top: 0; left: 0; height: 100%; }
+.st-bar i.have { background: var(--tg); background-size: 84px 100%; }
+.st-bar i.add { background: #7fe7ff; animation: pulse 0.6s steps(2) infinite; }
+.st-bar b.cut { position: absolute; top: -1px; bottom: -1px; width: 1px; background: var(--ink); }
+.st-cost { width: 20px; text-align: right; font-style: normal; font-size: 11px; color: var(--muted); }
+
+/* trang STATS: bảng phải */
+.st-panel { display: flex; flex-direction: column; gap: 6px; width: 300px; align-self: center; }
+.st-top { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 2px 8px; background: var(--panel); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); }
+.st-radar { width: 150px; height: 150px; flex: none; }
+.st-radar .ring { fill: none; stroke: #3b2a36; stroke-width: 1; }
+.st-radar .axis { stroke: #3b2a36; stroke-width: 1; }
+.st-radar .have { fill: rgba(255,225,79,0.28); stroke: var(--gold); stroke-width: 1.5; stroke-linejoin: round; }
+.st-radar .pend { fill: rgba(127,231,255,0.12); stroke: #7fe7ff; stroke-width: 1; stroke-dasharray: 3 2; }
+.st-radar text { font-family: var(--vt); font-size: 11px; fill: var(--muted); text-anchor: middle; }
+.st-radar text.sel { fill: var(--gold); }
+.st-side { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.st-side canvas.avatar { background: radial-gradient(ellipse at 50% 88%, rgba(255,225,79,0.18), transparent 60%); }
+.st-ovr { text-align: center; line-height: 1; padding: 3px 6px; background: var(--panel); border: 1px solid var(--gold); box-shadow: 2px 2px 0 var(--ink); }
+.st-ovr b { display: block; font-family: var(--px); font-size: 12px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
+.st-ovr b em { font-style: normal; font-size: 8px; color: #7fe7ff; margin-left: 2px; }
+.st-ovr span { font-size: 11px; color: var(--gold); }
+.st-detail { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--gold); padding: 5px 8px; box-shadow: 2px 2px 0 var(--ink); }
+.sd-head { display: flex; justify-content: space-between; align-items: baseline; }
+.sd-head b { font-family: var(--px); font-size: 7px; font-weight: normal; color: var(--gold); }
+.sd-head span { font-size: 15px; color: #fff; }
+.st-detail em { font-style: normal; color: #7fe7ff; }
+.st-detail p { font-size: 13px; line-height: 1.1; color: #e6dccb; margin: 3px 0; }
+.sd-mult { display: flex; flex-wrap: wrap; gap: 1px 10px; font-size: 12px; color: var(--muted); }
+
+/* màn giới thiệu: OVR riêng của character trên thẻ YOU */
+.in-povr { position: absolute; left: 4px; top: 18px; font-family: var(--px); font-size: 7px; font-weight: normal; line-height: 1; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); text-align: left; }
+.in-povr span { display: block; font-family: var(--vt); font-size: 9px; color: var(--muted); }

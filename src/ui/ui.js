@@ -328,9 +328,12 @@ window.SFC = window.SFC || {};
           SFC.Audio.upgrade();
         }
         if (k >= 1) {
-          if (r.eligible.length && !up.dataset.done) {
+          if (!up.dataset.done) {
             up.dataset.done = 1;
-            up.insertAdjacentHTML('beforeend', `<div class="rw-new">Unlocked: ${r.eligible.map(esc).join(', ')}</div>`);
+            if (r.eligible.length) up.insertAdjacentHTML('beforeend', `<div class="rw-new">Unlocked: ${r.eligible.map(esc).join(', ')}</div>`);
+            // lên level: điểm chỉ số vừa nhận + số điểm chưa phân bổ (chỉ khi không có dòng Unlocked, giữ khung thưởng tối đa 2 dòng)
+            const free = SFC.Profile.pointsFree(), gained = r.levelUps.length * SFC_CONFIG.progression.attrs.pointsPerLevel;
+            if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">★ +${gained} stat pts · ${free} to spend</div>`);
           }
           return;
         }
