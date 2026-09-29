@@ -238,6 +238,8 @@
         SFC.Renderer.render(g);
         if (app.screen !== 'menu') SFC.UI.updateHud(g);
       }
+      // nhạc nền: chỉ phát ở ngoài trận (config/music.config.js)
+      if (draw) SFC.Music.update(app.screen === 'menu');
       // âm thanh khán giả của trận đang hiện (menu: im lặng; tạm dừng / menu online: nhỏ lại)
       if (draw) SFC.Crowd.sound(app.screen === 'menu' ? null : g, app.screen === 'pause' || (app.mode === 'online' && SFC.Online.overlay));
     }

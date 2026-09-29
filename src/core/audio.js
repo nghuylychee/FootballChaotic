@@ -23,9 +23,10 @@ window.SFC = window.SFC || {};
     return SFC_CONFIG.game.audio.enabled && !muted && ensure();
   }
 
-  function tone({ freq = 440, to = null, dur = 0.1, type = 'square', vol = 0.25, delay = 0 }) {
+  // at: thời điểm phát tuyệt đối (ctx.currentTime) — nhạc nền lên lịch trước; dest: nút nhận (mặc định master)
+  function tone({ freq = 440, to = null, dur = 0.1, type = 'square', vol = 0.25, delay = 0, at = null, dest = null }) {
     if (!enabled()) return;
-    const t = ctx.currentTime + delay;
+    const t = at != null ? at : ctx.currentTime + delay;
     const o = ctx.createOscillator();
     const g = ctx.createGain();
     o.type = type;
@@ -34,14 +35,14 @@ window.SFC = window.SFC || {};
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     o.connect(g);
-    g.connect(master);
+    g.connect(dest || master);
     o.start(t);
     o.stop(t + dur + 0.02);
   }
 
-  function noise({ dur = 0.15, vol = 0.25, freq = 1200, q = 1, delay = 0 }) {
+  function noise({ dur = 0.15, vol = 0.25, freq = 1200, q = 1, delay = 0, at = null, dest = null, type = 'bandpass' }) {
     if (!enabled()) return;
-    const t = ctx.currentTime + delay;
+    const t = at != null ? at : ctx.currentTime + delay;
     const len = Math.floor(ctx.sampleRate * dur);
     const buf = ctx.createBuffer(1, len, ctx.sampleRate);
     const data = buf.getChannelData(0);
@@ -49,13 +50,13 @@ window.SFC = window.SFC || {};
     const src = ctx.createBufferSource();
     src.buffer = buf;
     const f = ctx.createBiquadFilter();
-    f.type = 'bandpass';
+    f.type = type;
     f.frequency.value = freq;
     f.Q.value = q;
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    src.connect(f); f.connect(g); g.connect(master);
+    src.connect(f); f.connect(g); g.connect(dest || master);
     src.start(t);
   }
 
@@ -112,6 +113,119 @@ window.SFC = window.SFC || {};
     src.connect(f); f.connect(g); g.connect(master);
     src.start(t);
   }
+
+  /* ---------- nhạc nền (config/music.config.js): bộ lên lịch nốt theo bước móc kép, đọc trước ~0.15s ---------- */
+  const NOTE = { C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11 };
+  const midi = (n) => { const m = /^([A-G][#b]?)(-?\d)$/.exec(n); return m ? (parseInt(m[2], 10) + 1) * 12 + NOTE[m[1]] : null; };
+  const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+
+  const Music = {
+    want: false, playing: false, gain: null, timer: null, song: null,
+
+    // gọi mỗi khung hình: on = đang ở ngoài trận (menu)
+    update(on) {
+      const M = SFC_CONFIG.music;
+      on = !!(on && M && M.enabled && SFC_CONFIG.game.audio.enabled);
+      if (on === this.want && (!on || this.playing)) return;
+      this.want = on;
+      if (on) this.start(); else this.stop();
+    },
+
+    start() {
+      // AudioContext chỉ chạy sau thao tác đầu tiên của người chơi (phím / chuột) -> chưa chạy thì thử lại ở khung sau
+      if (!ctx || ctx.state !== 'running') { this.want = false; return; }
+      const M = SFC_CONFIG.music;
+      if (!this.gain) { this.gain = ctx.createGain(); this.gain.gain.value = 0; this.gain.connect(master); }
+      const t = ctx.currentTime;
+      this.gain.gain.cancelScheduledValues(t);
+      this.gain.gain.setValueAtTime(this.gain.gain.value, t);
+      this.gain.gain.linearRampToValueAtTime(M.volume, t + M.fadeIn);
+      if (this.playing) return;   // đang tắt dần -> lên lại, không khởi động lại bài
+      this.song = this.prepare(M.menu);
+      this.pos = { sec: 0, bar: 0, st: 0 };
+      this.next = t + 0.1;
+      this.playing = true;
+      clearInterval(this.timer);
+      this.timer = setInterval(() => this.schedule(), 25);
+    },
+
+    stop() {
+      if (!this.playing || !ctx) return;
+      const M = SFC_CONFIG.music, t = ctx.currentTime;
+      this.gain.gain.cancelScheduledValues(t);
+      this.gain.gain.setValueAtTime(this.gain.gain.value, t);
+      this.gain.gain.linearRampToValueAtTime(0, t + M.fadeOut);
+      clearTimeout(this.stopT);
+      this.stopT = setTimeout(() => { if (!this.want) { clearInterval(this.timer); this.playing = false; } }, M.fadeOut * 1000 + 50);
+    },
+
+    // tách sẵn giai điệu thành token theo bước
+    prepare(S) {
+      const song = Object.assign({}, S, { sections: {} });
+      for (const k in S.sections) {
+        const sec = Object.assign({}, S.sections[k]);
+        if (sec.lead) sec.lead = sec.lead.map((bar) => bar.trim().split(/\s+/));
+        song.sections[k] = sec;
+      }
+      return song;
+    },
+
+    schedule() {
+      if (!this.playing || !ctx) return;
+      const S = this.song, step = 60 / S.bpm / 4;
+      while (this.next < ctx.currentTime + 0.15) {
+        const swing = this.pos.st % 2 ? step * (S.swing || 0) : 0;
+        this.playStep(this.next + swing, step);
+        this.next += step;
+        // sang bước / ô nhịp / đoạn kế tiếp
+        const sec = S.sections[S.order[this.pos.sec]];
+        if (++this.pos.st >= 16) {
+          this.pos.st = 0;
+          if (++this.pos.bar >= sec.chords.length) { this.pos.bar = 0; this.pos.sec = (this.pos.sec + 1) % S.order.length; }
+        }
+      }
+    },
+
+    playStep(t, step) {
+      const S = this.song, I = S.instruments, P = this.pos, dest = this.gain;
+      const sec = S.sections[S.order[P.sec]], st = P.st;
+      const chord = S.chords[sec.chords[P.bar]];
+      const last = P.bar === sec.chords.length - 1;
+      const D = last && sec.fill ? Object.assign({}, sec.drums, sec.fill) : sec.drums;
+      // trống
+      if (D.kick && D.kick[st] === 'x') tone({ freq: I.kick.from, to: I.kick.to, dur: I.kick.dur, type: 'sine', vol: I.kick.vol, at: t, dest });
+      if (D.snare && D.snare[st] === 'x') {
+        noise({ dur: I.snare.dur, vol: I.snare.vol, freq: I.snare.freq, q: 0.8, at: t, dest });
+        tone({ freq: I.snare.body, to: I.snare.body * 0.7, dur: 0.06, type: 'triangle', vol: I.snare.vol * 0.6, at: t, dest });
+      }
+      const h = D.hat && D.hat[st];
+      if (h === 'x' || h === 'o') noise({ dur: h === 'o' ? I.hat.open : I.hat.dur, vol: I.hat.vol, freq: I.hat.freq, q: 0.7, type: 'highpass', at: t, dest });
+      // bass: 1 gốc · 5 quãng 5 · 8 quãng tám
+      const b = sec.bass && sec.bass[st];
+      if (b && b !== '.') {
+        const m = midi(chord.root + I.bass.octave) + ({ 1: 0, 5: 7, 8: 12 }[b] || 0);
+        tone({ freq: hz(m), dur: step * I.bass.len, type: I.bass.type, vol: I.bass.vol, at: t, dest });
+      }
+      // hợp âm (đánh ngắn)
+      if (sec.stab && sec.stab[st] === 'x') for (const n of chord.notes) tone({ freq: hz(midi(n)), dur: step * I.stab.len, type: I.stab.type, vol: I.stab.vol, at: t, dest });
+      // arpeggio
+      const a = sec.arp && P.bar >= (sec.arpFrom || 0) ? sec.arp[st] : null;
+      if (a && a !== '.') {
+        const k = +a, n = chord.notes.length;
+        tone({ freq: hz(midi(chord.notes[k % n]) + 12 * (1 + Math.floor(k / n))), dur: step * I.arp.len, type: I.arp.type, vol: I.arp.vol, at: t, dest });
+      }
+      // giai điệu: nốt ngân tới hết các "-" phía sau
+      const bar = sec.lead && sec.lead[P.bar];
+      const tok = bar && bar[st];
+      if (tok && tok !== '-' && tok !== '.') {
+        let len = 1;
+        while (bar[st + len] === '-') len++;
+        const m = midi(tok);
+        if (m != null) tone({ freq: hz(m), dur: step * len * 0.95, type: I.lead.type, vol: I.lead.vol, at: t, dest });
+      }
+    },
+  };
+  SFC.Music = Music;
 
   SFC.Audio = {
     unlock: ensure,
