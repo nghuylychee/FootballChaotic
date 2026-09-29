@@ -17,6 +17,7 @@ window.SFC = window.SFC || {};
     return {
       v: 2, name: '', level: 1, xp: 0, gold: P().startGold,
       items: {}, cores: {},          // id -> số lượng trong túi đồ
+      boxes: {},                     // hộp gacha được tặng (thưởng lên hạng Main Path): id -> số hộp, mở miễn phí
       look: Object.assign({}, P().defaultLook),
       stats: { matches: 0, wins: 0, draws: 0, losses: 0, goals: 0, boxes: 0 },
       attrs: blankAttrs(),
@@ -70,6 +71,7 @@ window.SFC = window.SFC || {};
       };
       d.items = counts(raw.items || raw.owned, (id) => ITEMS()[id] && !ITEMS()[id].default);
       d.cores = counts(raw.cores, (id) => !!CORES()[id]);
+      d.boxes = counts(raw.boxes, (id) => !!P().boxes[id]);
       const lk = raw.look || {};
       for (const slot of Object.keys(P().slots)) {
         const id = lk[slot];
@@ -210,9 +212,13 @@ window.SFC = window.SFC || {};
       return tier[Math.floor(Math.random() * tier.length)];
     },
 
+    freeBoxes(boxId) { return this.data.boxes[boxId] || 0; },
+    addBox(boxId, n = 1) { this.data.boxes[boxId] = this.freeBoxes(boxId) + n; },
+
     canOpen(boxId) {
       const b = P().boxes[boxId];
       if (!b) return { ok: false, reason: 'missing' };
+      if (this.freeBoxes(boxId) > 0) return { ok: true, free: true };   // hộp được tặng: không cần level / gold
       if (b.level > this.data.level) return { ok: false, reason: 'level' };
       if (b.price > this.data.gold) return { ok: false, reason: 'gold' };
       return { ok: true };
@@ -223,7 +229,8 @@ window.SFC = window.SFC || {};
       const c = this.canOpen(boxId);
       if (!c.ok) return c;
       const d = this.data;
-      d.gold -= P().boxes[boxId].price;
+      if (c.free) { if (!--d.boxes[boxId]) delete d.boxes[boxId]; }
+      else d.gold -= P().boxes[boxId].price;
       const win = this.roll(boxId);
       const bag = win.kind === 'core' ? d.cores : d.items;
       bag[win.id] = (bag[win.id] || 0) + 1;
@@ -237,11 +244,15 @@ window.SFC = window.SFC || {};
 
     /* ---------- Core ---------- */
     coreLevel(id) { return CORES()[id] ? CORES()[id].level : 1; },
-    // Core được bốc khi chọn Core giữa trận: bộ cơ bản + Core trong túi đồ đã đủ level
+    // Core được bốc khi chọn Core giữa trận:
+    //   gacha Core bật: bộ cơ bản + Core trong túi đồ đã đủ level
+    //   gacha Core tắt: bộ cơ bản + Core mở khoá bằng Main Path (mainPath.lockCores = false: mọi Core)
     unlockedCores() {
-      if (!P().coreGacha) return Object.keys(SFC_CONFIG.cores.list);   // gacha Core tắt: mọi Core đều dùng được
-      return P().starterCores.concat(Object.keys(this.data.cores).filter((id) => this.data.cores[id] > 0 && this.coreLevel(id) <= this.data.level));
+      if (P().coreGacha) return P().starterCores.concat(Object.keys(this.data.cores).filter((id) => this.data.cores[id] > 0 && this.coreLevel(id) <= this.data.level));
+      if (!SFC_CONFIG.mainPath.lockCores) return Object.keys(SFC_CONFIG.cores.list);
+      return P().starterCores.concat(this.data.path.cores.filter((id) => !P().starterCores.includes(id)));
     },
+    coreUnlocked(id) { return this.unlockedCores().includes(id); },
 
     /* ---------- chỉ số character (config: progression.attrs) ---------- */
     // pending: { id: số bước đang cộng thử, chưa xác nhận } — trang STATS dùng để xem trước
@@ -346,6 +357,12 @@ window.SFC = window.SFC || {};
       // Main Path: cộng / trừ sao, lên / tụt hạng; thắng trận thăng hạng có thưởng thêm; thưởng nhân theo Area
       const mp = !pvp && game.opts.mainPath;
       const path = mp ? SFC.MainPath.record(result, mp) : null;
+      // mốc sao mới ở Area đã mở hết Core: thưởng gold (nhân theo Area như các dòng khác). Hộp lên hạng vào kho hộp miễn phí
+      if (path) {
+        const starGold = path.rewards.filter((x) => x.kind === 'gold').reduce((sum, x) => sum + x.gold, 0);
+        if (starGold) lines.push({ label: 'New star reward', xp: 0, gold: starGold });
+        path.rewards.filter((x) => x.kind === 'box').forEach((x) => this.addBox(x.id));
+      }
       if (path && (path.event === 'area' || path.event === 'title')) {
         const B = SFC_CONFIG.mainPath.promoBonus;
         lines.push({ label: path.event === 'title' ? 'Champion bonus' : 'Promotion bonus', xp: B.xp, gold: B.gold });

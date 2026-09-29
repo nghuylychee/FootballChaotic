@@ -170,10 +170,12 @@ SFC_CONFIG.progression = {
   // Core đã quay được trước đó vẫn giữ trong hồ sơ. Bật lại = true.
   coreGacha: false,
 
-  // Core Upgrade (khi coreGacha bật): user mới chỉ có bộ Core cơ bản; Core khác lấy từ Hộp Core.
-  // level = level tối thiểu để Core quay được xuất hiện khi chọn Core giữa trận (chưa đủ thì nằm chờ trong túi đồ).
+  // Bộ Core có sẵn cho user mới (8 Core THƯỜNG đủ 7 trường phái + 4 HIẾM). Core khác mở theo Main Path (mainpath.config.js -> areas[].cores / signature),
+  // hoặc lấy từ Hộp Core khi coreGacha bật.
+  // level (khi coreGacha bật) = level tối thiểu để Core quay được xuất hiện khi chọn Core giữa trận (chưa đủ thì nằm chờ trong túi đồ).
   // Độ hiếm của Core lấy từ config/cores.config.js (rarity) — dùng chung cho gacha và tần suất khi chọn Core.
-  starterCores: ['sniper_foot', 'banana_kick', 'speed_demon', 'street_fighter', 'counter_attack', 'maestro'],
+  starterCores: ['sniper_foot', 'speed_demon', 'quick_feet', 'street_fighter', 'iron_body', 'heavy_boot', 'maestro', 'eagle_eye',
+    'banana_kick', 'counter_attack', 'fist_storm', 'one_touch'],
   cores: {
     warp_walls:     { level: 2 },
     fire_shot:      { level: 3 },

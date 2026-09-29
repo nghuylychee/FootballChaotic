@@ -9,6 +9,7 @@ window.SFC = window.SFC || {};
   const CORES = () => SFC_CONFIG.cores;
 
   const ARCH = (tag) => CORES().archetypes[tag] || { label: tag, icon: '?', color: '#9aa3b5' };
+  const PX = () => SFC.PixelIcon;   // icon pixel art (render/pixelicons.js)
   const RARITY = (r) => (SFC_CONFIG.progression.rarities[r] || { label: '', color: '#b0c3d9' });
 
   const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
@@ -26,29 +27,29 @@ window.SFC = window.SFC || {};
     const t = game.cores.traits(team)[0];
     if (!t) return '';
     const a = ARCH(t.tag);
-    return `<span class="build-tag ${t.tier ? 'on' : ''}" style="--c:${a.color}">${a.icon} ${a.label} ${ROMAN[t.count] || t.count}</span>`;
+    return `<span class="build-tag ${t.tier ? 'on' : ''}" style="--c:${a.color}">${PX().arch(t.tag)} ${a.label} ${ROMAN[t.count] || t.count}</span>`;
   }
 
   // ô Core nhỏ: viền màu trường phái (Core cầu nối: 2 màu), Tuyệt kỹ viền vàng
   function coreChip(id) {
     const c = CORES().list[id];
     const a = ARCH(c.tags[0]), b = ARCH(c.tags[1] || c.tags[0]);
-    return `<span class="chip ${c.role === 'ult' ? 'ult' : ''}" style="--c:${a.color};--c2:${b.color}" title="${esc(c.name)} — ${esc(c.desc)}">${c.icon}</span>`;
+    return `<span class="chip ${c.role === 'ult' ? 'ult' : ''}" style="--c:${a.color};--c2:${b.color}" title="${esc(c.name)} — ${esc(c.desc)}">${PX().core(id)}</span>`;
   }
 
   // Cộng hưởng đang có của 1 đội: icon + số Core (bậc >= 2 sáng lên)
   function traitChips(game, team) {
     return game.cores.traits(team).map((t) => {
       const a = ARCH(t.tag);
-      return `<span class="trait ${t.tier ? 'on' : ''}" style="--c:${a.color}" title="${a.label}: ${t.count} Core">${a.icon}${t.count}</span>`;
+      return `<span class="trait ${t.tier ? 'on' : ''}" style="--c:${a.color}" title="${a.label}: ${t.count} Core">${PX().arch(t.tag)}${t.count}</span>`;
     }).join('');
   }
 
   // Ô trên thanh kỹ năng (giữa đáy màn hình, kiểu LoL). atk = đòn phòng ngự: chỉ dùng được khi đội mình không có bóng
   const SLOTS = [
-    { k: 'light', action: 'shoot', icon: '👊', name: 'LIGHT', atk: true, max: () => SFC_CONFIG.game.combat.light.cooldown, act: ['jab'] },
-    { k: 'hard', action: 'lob', icon: '💥', name: 'HARD', atk: true, max: () => SFC_CONFIG.game.combat.hard.cooldown, act: ['windup', 'kick'] },
-    { k: 'skill', action: 'skill', icon: '💨', name: 'DASH', max: () => SFC_CONFIG.game.skill.cooldown, act: ['dash'] },
+    { k: 'light', action: 'shoot', icon: 'fist', name: 'LIGHT', atk: true, max: () => SFC_CONFIG.game.combat.light.cooldown, act: ['jab'] },
+    { k: 'hard', action: 'lob', icon: 'boom', name: 'HARD', atk: true, max: () => SFC_CONFIG.game.combat.hard.cooldown, act: ['windup', 'kick'] },
+    { k: 'skill', action: 'skill', icon: 'dash', name: 'DASH', max: () => SFC_CONFIG.game.skill.cooldown, act: ['dash'] },
   ];
   const keyLabel = (action) => SFC.Input.label(action);
 
@@ -103,14 +104,18 @@ window.SFC = window.SFC || {};
         // tiến độ Cộng hưởng nếu lấy lá này: TỐC ĐỘ 1 → 2 ✦ (✦ = mở bậc mới)
         const prog = c.tags.filter((t) => sets[t]).map((t) => {
           const cur = game.cores.tagCount(me, t), next = cur + 1, bonus = sets[t][next];
-          return `<div class="cs-row ${bonus ? 'up' : ''}" style="--c:${ARCH(t).color}"><b>${ARCH(t).icon} ${cur} → ${next}${bonus ? ' ✦' : ''}</b>${bonus ? `<span>${esc(bonus)}</span>` : ''}</div>`;
+          return `<div class="cs-row ${bonus ? 'up' : ''}" style="--c:${ARCH(t).color}"><b>${PX().arch(t)} ${cur} → ${next}${bonus ? ' ✦' : ''}</b>${bonus ? `<span>${esc(bonus)}</span>` : ''}</div>`;
         }).join('');
-        const tags = c.tags.map((t) => `<span style="--c:${ARCH(t).color}">${ARCH(t).icon} ${ARCH(t).label}</span>`).join('');
+        const tags = c.tags.map((t) => `<span style="--c:${ARCH(t).color}">${PX().arch(t, 'sm')} ${ARCH(t).label}</span>`).join('');
+        // Core vừa mở khoá ở Main Path: nhãn NEW (hiện 1 lần rồi bỏ khỏi danh sách "mới")
+        const isNew = game.opts.coreFresh && game.cores.newShown[me].has(id);
+        if (isNew && game.opts.mainPath) SFC.MainPath.seen(id);
         return `<div class="card ${c.role === 'ult' ? 'ult' : ''} ${!picked && i === this.draftSel ? 'sel' : ''} ${chosen ? 'chosen' : ''}" data-pick="${i}" style="--c:${a.color};--c2:${a2.color};--t:${rar.color}">
           <div class="card-key">${i + 1}</div>
+          ${isNew ? '<div class="card-new">NEW</div>' : ''}
           ${match && !picked ? '<div class="card-match">MATCH</div>' : ''}
           <div class="card-tags">${tags}</div>
-          <div class="card-art">${SFC.CorePreview.html(id, 132, 56)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(keyLabel('ultimate'))}</kbd>` : ''}</div>
+          <div class="card-art">${SFC.CorePreview.html(id, 132, 56)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(keyLabel('ultimate'))}</kbd>` : ''}</div>
           <div class="card-name">${esc(c.name)}</div>
           <div class="card-tier">${rar.label} · ${roleText(c)}</div>
           <div class="card-desc">${esc(c.desc)}</div>
@@ -199,9 +204,14 @@ window.SFC = window.SFC || {};
     renderEnd(game) {
       const h = game.humanTeam, me = game.teams[h], op = game.teams[1 - h];
       const res = me.score > op.score ? ['VICTORY!', 'win'] : me.score < op.score ? ['DEFEAT...', 'lose'] : ['DRAW', 'draw'];
+      // Main Path: Core của đối thủ mà bạn chưa mở khoá -> 🔒 + cách mở (rê chuột xem)
+      const lockOf = (t, id) => (game.opts.mainPath && t !== me && !SFC.Profile.coreUnlocked(id) ? SFC.MainPath.unlockHint(id) : '');
       const build = (t) => {
         const ids = game.cores.owned[t.index];
-        return buildLabel(game, t.index) + (ids.length ? ids.map((id) => `<div class="b-item">${coreChip(id)} ${esc(CORES().list[id].name)}</div>`).join('') : '<em>No cores</em>');
+        return buildLabel(game, t.index) + (ids.length ? ids.map((id) => {
+          const lk = lockOf(t, id);
+          return `<div class="b-item" ${lk ? `title="🔒 ${esc(lk)}"` : ''}>${coreChip(id)} ${esc(CORES().list[id].name)}${lk ? PX().ui('lock', 'sm lk') : ''}</div>`;
+        }).join('') : '<em>No cores</em>');
       };
       const note = this.online && !SFC.Online.isHost ? 'Waiting for the host to return to the lobby...' : 'Try a different build next time?';
       // sân luôn vẽ đội 0 bên trái -> tỉ số giữ đúng thứ tự trái / phải
@@ -220,7 +230,17 @@ window.SFC = window.SFC || {};
       this.el.end.classList.toggle('has-moment', !!(game.moments && game.moments.length));
       this.renderEndItems();
       SFC.CorePreview.scan(this.el.end);
+      // Main Path: Core / hộp mới -> màn mở thẻ sau khi thưởng chạy xong (Enter trước đó thì mở ngay)
+      const unlocks = game.reward && game.reward.path ? game.reward.path.rewards.filter((x) => x.kind !== 'gold') : [];
+      this.pendingReveal = unlocks.length ? unlocks : null;
       if (game.reward) this.playReward(game.reward);
+    },
+
+    openReveal() {
+      const list = this.pendingReveal;
+      this.pendingReveal = null;
+      clearTimeout(this.revealTimer);
+      if (list) SFC.Reveal.open(list, () => this.renderEndItems());
     },
 
     // "Khoảnh khắc của trận": khoảnh khắc điểm cao nhất (Tuyệt kỹ, combo HIT) + ảnh động của Core đó
@@ -239,7 +259,7 @@ window.SFC = window.SFC || {};
         ${SFC.CorePreview.html(best.id, 150, 64)}
         <div class="mo-info">
           <h4>MOMENT OF THE MATCH</h4>
-          <div class="mo-name">${c.icon} ${esc(best.text)}</div>
+          <div class="mo-name">${PX().core(best.id)} ${esc(best.text)}</div>
           <div class="mo-sub"><span style="color:${tm.cfg.kit.shirt}">${esc(tm.cfg.short)}</span>${best.player ? ' · ' + esc(best.player) : ''} · ${esc(c.name)}</div>
           <div class="mo-sub">You: ${count(me)} <span class="sep">·</span> Opponent: ${count(1 - me)}</div>
         </div>
@@ -293,7 +313,7 @@ window.SFC = window.SFC || {};
       }[p.event] || (p.delta > 0 ? `+${p.delta} ★` : p.delta < 0 ? `${p.delta} ★` : 'No stars changed');
       const big = p.event === 'area' || p.event === 'title';
       return `<div class="rw-path ${big ? 'big' : ''} ${p.event === 'down' || p.event === 'promoFail' || p.delta < 0 ? 'bad' : ''}" style="--ac:${A.color}">
-        <div class="rp-div">${A.icon} ${esc(name)}</div>
+        <div class="rp-div">${PX().area(A.id, 'sm')} ${esc(name)}</div>
         <div class="rp-stars">${pips}</div>
         <div class="rp-msg">${esc(msg)}</div>
       </div>`;
@@ -334,6 +354,7 @@ window.SFC = window.SFC || {};
           SFC.Audio.upgrade();
         }
         if (k >= 1) {
+          if (this.pendingReveal && !this.revealTimer) this.revealTimer = setTimeout(() => { this.revealTimer = null; this.openReveal(); }, 450);
           if (!up.dataset.done) {
             up.dataset.done = 1;
             if (r.eligible.length) up.insertAdjacentHTML('beforeend', `<div class="rw-new">Unlocked: ${r.eligible.map(esc).join(', ')}</div>`);
@@ -350,6 +371,8 @@ window.SFC = window.SFC || {};
     },
 
     endInput(input) {
+      // còn thẻ chưa mở: Enter mở luôn thay vì sang trận kế
+      if (this.pendingReveal) { if (input.wasPressed('confirm')) this.openReveal(); return; }
       const n = this.endItems().length;
       if (input.wasPressed('left') || input.wasPressed('up')) { this.endSel = (this.endSel + n - 1) % n; this.renderEndItems(); }
       if (input.wasPressed('right') || input.wasPressed('down')) { this.endSel = (this.endSel + 1) % n; this.renderEndItems(); }
@@ -383,7 +406,7 @@ window.SFC = window.SFC || {};
         : next != null ? `<div class="hud-core">✦ Next Core in ${SFC.U.fmtTime(next)}</div>` : '';
       // Main Path: hạng đang đá (trận thăng hạng / chung kết nổi bật)
       const mp = game.opts && game.opts.mainPath;
-      const pathLine = !mp ? '' : mp.promo ? `<div class="hud-path promo">👑 ${mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH'}</div>`
+      const pathLine = !mp ? '' : mp.promo ? `<div class="hud-path promo">${PX().ui('crown', 'sm')} ${mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH'}</div>`
         : `<div class="hud-path">${esc(SFC.MainPath.divName(mp.area, mp.div))}</div>`;
       const key = [t0.score, t1.score, time, phase, cores, coreLine, pathLine].join('#');
       if (c.key !== key) {
@@ -439,7 +462,7 @@ window.SFC = window.SFC || {};
     ultMeter(game, t) {
       const id = game.cores.ultOf(t), c = id && CORES().list[id];
       if (!c) return '';
-      return `<div class="hud-ult has" data-t="${t}" title="${esc(c.name + ': Ultimate energy')}"><b>${c.icon}</b><i></i><em>0%</em></div>`;
+      return `<div class="hud-ult has" data-t="${t}" title="${esc(c.name + ': Ultimate energy')}"><b>${PX().core(id, 'sm')}</b><i></i><em>0%</em></div>`;
     },
 
     /* ================= THANH KỸ NĂNG (giữa đáy, kiểu LoL) ================= */
@@ -465,10 +488,10 @@ window.SFC = window.SFC || {};
             <div class="ab-res"></div>
             <div class="ab-slots">${SLOTS.map((s) => `
               <div class="ab-slot" data-k="${s.k}" title="${s.name}">
-                <i>${s.icon}</i><div class="sw"></div><b></b><kbd>${esc(keyLabel(s.action))}</kbd>
+                <i>${PX().ui(s.icon)}</i><div class="sw"></div><b></b><kbd>${esc(keyLabel(s.action))}</kbd>
               </div>`).join('')}${ult ? `
               <div class="ab-slot ult" data-k="ult" title="${esc(`ULTIMATE: ${CORES().list[ult].name}. Charge it by scoring, conceding, stealing the ball and landing punches`)}">
-                <div class="ult-fill"></div><i>${CORES().list[ult].icon}</i><b class="ult-pct"></b><kbd>${esc(keyLabel('ultimate'))}</kbd>
+                <div class="ult-fill"></div><i>${PX().core(ult)}</i><b class="ult-pct"></b><kbd>${esc(keyLabel('ultimate'))}</kbd>
               </div>` : ''}
             </div>
             <div class="ab-stam"><i></i></div>
@@ -517,7 +540,7 @@ window.SFC = window.SFC || {};
     updateBarExtras(game, p, c) {
       const R = CORES().resources, t = p.team;
       const parts = [];
-      const pips = (res, n, max) => `<span class="res" style="--c:${res === 'guard' ? '#c7ccd6' : res === 'rhythm' ? '#ffd23f' : res === 'rage' ? '#ff3d5a' : '#3ff6ff'}">${R[res].icon}${'●'.repeat(n)}<i>${'○'.repeat(Math.max(0, max - n))}</i></span>`;
+      const pips = (res, n, max) => `<span class="res" style="--c:${res === 'guard' ? '#c7ccd6' : res === 'rhythm' ? '#ffd23f' : res === 'rage' ? '#ff3d5a' : '#3ff6ff'}">${PX().res(res, 'sm')}${'●'.repeat(n)}<i>${'○'.repeat(Math.max(0, max - n))}</i></span>`;
       if (game.cores.resActive(t, 'momentum')) parts.push(pips('momentum', p.res.momentum, game.cores.resMax(t, 'momentum')));
       if (game.cores.resActive(t, 'rhythm')) parts.push(pips('rhythm', game.rhythm[t], R.rhythm.max));
       if (game.cores.resActive(t, 'rage')) parts.push(pips('rage', p.res.rage, R.rage.max));
@@ -622,6 +645,7 @@ window.SFC = window.SFC || {};
         const btn = e.target.closest('[data-act],[data-pick]');
         if (!btn) return;
         if (btn.dataset.pick != null && this.app.game) return this.pick(this.app.game, +btn.dataset.pick);
+        if (this.pendingReveal && btn.closest('#end')) return this.openReveal();   // còn thẻ chưa mở
         this.doAct(btn.dataset.act);
       });
     },

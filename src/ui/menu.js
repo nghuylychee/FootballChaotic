@@ -15,6 +15,7 @@ window.SFC = window.SFC || {};
   const PF = () => SFC.Profile;
   const PROG = () => SFC_CONFIG.progression;
   const MPATH = () => SFC.MainPath;
+  const PX = () => SFC.PixelIcon;   // icon pixel art (render/pixelicons.js)
   // Shop (hộp gacha) · mở hộp · túi đồ nằm ở ui/gacha.js
   const G = () => SFC.Gacha;
   const coin = (n) => G().coin(n);
@@ -99,7 +100,7 @@ window.SFC = window.SFC || {};
             { kind: 'btn', label: 'MAIN PATH', sub: this.pathSub(), act: () => this.go('path') },
             { kind: 'btn', label: 'ONLINE VERSUS', sub: '1 vs 1 · create a room', act: () => this.go('online') },
             { kind: 'btn', label: 'CHARACTER', sub: PF().pointsFree() > 0 ? `★ ${PF().pointsFree()} stat points to spend!` : 'Stats · appearance · inventory', hot: PF().pointsFree() > 0, act: () => this.go('char') },
-            { kind: 'btn', label: 'SHOP', sub: SFC_CONFIG.progression.coreGacha ? 'Gacha boxes · costumes & Cores' : 'Gacha boxes · costumes', act: () => { G().shopBack = 'home'; this.go('shop'); } },
+            { kind: 'btn', label: 'SHOP', sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'SETTINGS', sub: 'Training · controls', act: () => this.go('settings') },
           ];
         case 'settings':
@@ -148,12 +149,12 @@ window.SFC = window.SFC || {};
           const MP = MPATH(), st = MP.state, n = MP.areas().length, v = this.pathView;
           const boss = TEAMS().list[MP.area(st.area).boss];
           const battle = MP.isPromo()
-            ? { label: MP.isFinal() ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH', sub: `👑 vs ${boss.name}` }
+            ? { label: MP.isFinal() ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH', sub: `vs ${boss.name}`, subHtml: `${PX().ui('crown', 'sm')} vs ${esc(boss.name)}` }
             : { label: 'BATTLE', sub: `${MP.divName(st.area, st.div)} · ${st.stars}/${MP.need(st.area, st.div)} ★` };
           return [
-            { kind: 'btn', label: battle.label, sub: battle.sub, main: true, act: () => app.startMainPath() },
+            { kind: 'btn', label: battle.label, sub: battle.sub, subHtml: battle.subHtml, main: true, act: () => app.startMainPath() },
             { kind: 'pick', label: 'POSITION', value: this.ctrlLabel(null, s.ctrl), change: (d) => this.changeCtrl(d) },
-            { kind: 'pick', label: 'VIEW AREA', value: `${v + 1}/${n} ${MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
+            { kind: 'pick', label: 'VIEW AREA', value: `${v + 1}/${n} ${v > st.area ? '???' : MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
           ];
         }
         case 'training': {
@@ -269,7 +270,7 @@ window.SFC = window.SFC || {};
         return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label>
           <div class="picker"><button data-i="${i}" data-d="-1">◀</button><span>${val}</span><button data-i="${i}" data-d="1">▶</button></div></div>`;
       }
-      return `<button class="${cls}" data-i="${i}"><span class="mi-label">${esc(it.label)}</span>${it.sub ? `<span class="mi-sub">${esc(it.sub)}</span>` : ''}</button>`;
+      return `<button class="${cls}" data-i="${i}"><span class="mi-label">${esc(it.label)}</span>${it.subHtml || it.sub ? `<span class="mi-sub">${it.subHtml || esc(it.sub)}</span>` : ''}</button>`;
     },
 
     hint() {
@@ -344,7 +345,7 @@ window.SFC = window.SFC || {};
         const groups = Object.keys(C.archetypes).map((cat) => {
           const c = C.archetypes[cat];
           const list = Object.keys(C.list).filter((id) => C.list[id].tags[0] === cat)
-            .map((id) => `<div class="core-row" title="${esc(C.list[id].desc)}"><span class="chip" style="--c:${c.color}">${C.list[id].icon}</span>${esc(C.list[id].name)}</div>`).join('');
+            .map((id) => `<div class="core-row" title="${esc(C.list[id].desc)}"><span class="chip" style="--c:${c.color}">${PX().core(id)}</span>${esc(C.list[id].name)}</div>`).join('');
           return `<div class="core-group"><h4 style="color:${c.color}">${esc(c.label)}</h4>${list}</div>`;
         }).join('');
         body += `<div class="core-grid">${groups}</div>`;
@@ -353,6 +354,13 @@ window.SFC = window.SFC || {};
         <div class="tut-head"><div class="m-title">HOW TO PLAY</div><div class="tabs">${tabs}</div></div>
         <div class="tut-body">${body}</div>
         <div class="m-hint">←→ change page · ${SFC.Input.key('back', 'Esc')} back</div>`;
+    },
+
+    // dòng phụ của nút SHOP: báo hộp miễn phí đang chờ mở (thưởng lên hạng Main Path)
+    shopSub() {
+      const free = Object.values(PF().data.boxes).reduce((a, b) => a + b, 0);
+      if (free) return `${free} free box${free > 1 ? 'es' : ''} to open!`;
+      return PROG().coreGacha ? 'Gacha boxes · costumes & Cores' : 'Gacha boxes · costumes';
     },
 
     /* ---------------- Main Path ---------------- */
@@ -366,36 +374,65 @@ window.SFC = window.SFC || {};
     // thẻ Area kiểu Clash Royale: ảnh sân, các hạng + sao, đội đối thủ + boss, chấm chuyển Area
     pathPanel() {
       const MP = MPATH(), st = MP.state, v = this.pathView, A = MP.area(v), n = MP.nDiv();
+      // Area chưa mở: silhouette + ??? (tên, sân, đối thủ, boss, phần thưởng đều ẩn)
       const locked = v > st.area, cleared = v < st.area;
-      const state = locked ? '🔒 LOCKED' : cleared ? '✔ CLEARED' : 'YOU ARE HERE';
+      const state = locked ? `${PX().ui('lock', 'sm')} LOCKED` : cleared ? `${PX().ui('check', 'sm')} CLEARED` : 'YOU ARE HERE';
       const stars = (on, need) => Array.from({ length: need }, (_, i) => `<i class="${i < on ? 'on' : ''}">★</i>`).join('');
       const divs = [];
       for (let d = 0; d < n; d++) {
         const cur = !locked && !cleared && d === st.div, done = cleared || (!locked && d < st.div);
-        const need = MP.need(v, d);
-        divs.push(`<div class="pd ${cur ? 'cur' : done ? 'done' : 'lock'}"><b>${MP.divLabel(d)}</b><span>${stars(done ? need : cur ? st.stars : 0, need)}</span></div>`);
+        const need = MP.need(v, d), pl = MP.divPlan(v, d);
+        // thưởng lần đầu của hạng: lá Core (sao) · gold (sao khi Area hết Core) · hộp (lên hạng); đã nhận thì mờ
+        const rw = locked ? '<em class="pr unk">???</em>' : [
+          pl.cores ? `<em class="pr ${pl.coresGot >= pl.cores ? 'got' : ''}" title="New Core per new star">${PX().ui('card', 'sm')}${pl.coresGot}/${pl.cores}</em>` : '',
+          pl.gold ? `<em class="pr ${pl.goldGot >= pl.gold ? 'got' : ''}" title="Gold per new star"><i class="coin"></i>${pl.gold}</em>` : '',
+          pl.box ? `<em class="pr ${pl.boxGot ? 'got' : ''}" title="${esc(PROG().boxes[pl.box].name)} for reaching the next division">${PX().ui('gift', 'sm')}</em>` : '',
+        ].join('');
+        divs.push(`<div class="pd ${cur ? 'cur' : done ? 'done' : 'lock'}"><b>${MP.divLabel(d)}</b><span>${stars(done ? need : cur ? st.stars : 0, need)}</span><span class="prw">${rw}</span></div>`);
       }
       const promoReady = !locked && !cleared && MP.isPromo();
       const last = v === MP.areas().length - 1;
-      divs.push(`<div class="pd boss ${promoReady ? 'cur' : cleared ? 'done' : 'lock'}"><b>👑</b><span>${last ? 'FINAL' : 'PROMO'}</span></div>`);
+      const sig = !locked && SFC_CONFIG.cores.list[A.signature], sigGot = !!sig && PF().coreUnlocked(A.signature);
+      const sigChip = locked ? '<em class="pr unk">?</em>' : sig ? `<em class="pr sig ${sigGot ? 'got' : ''}" title="${esc(sig.name)}">${PX().core(A.signature, 'sm')}</em>` : '';
+      divs.push(`<div class="pd boss ${promoReady ? 'cur' : cleared ? 'done' : 'lock'}"><b>${PX().ui('crown', 'sm')}</b><span>${last ? 'FINAL' : 'PROMO'}</span><span class="prw">${sigChip}</span></div>`);
+      // boss: lộ Core đặc trưng (thắng trận thăng hạng để lấy). Area chưa mở: cầu thủ vẽ dạng bóng đen, tên ???
       const teamChip = (id, boss) => {
         const t = TEAMS().list[id];
-        return `<div class="po ${boss ? 'boss' : ''}" style="--shirt:${t.kit.shirt}" title="${esc(t.desc)}">
+        if (locked) {
+          return `<div class="po unk ${boss ? 'boss' : ''}">
+            <canvas class="avatar" data-team="${id}" data-idx="1" data-sil="1"></canvas>
+            <div><b>???</b><span>${boss ? `${PX().ui('crown', 'sm')} ???` : '???'}</span></div></div>`;
+        }
+        const sub = boss ? (sig ? `${PX().ui('crown', 'sm')}${PX().core(A.signature, 'sm')} ${esc(sig.name)}` : 'BOSS') : esc(t.tagline);
+        return `<div class="po ${boss ? 'boss' : ''}" style="--shirt:${t.kit.shirt}" title="${esc(t.desc)}${boss && sig ? ` · Signature Core: ${esc(sig.name)} — ${esc(sig.desc)}` : ''}">
           <canvas class="avatar" data-team="${id}" data-idx="1"></canvas>
-          <div><b>${esc(t.name)}</b><span>${boss ? 'BOSS' : esc(t.tagline)}</span></div></div>`;
+          <div><b>${esc(t.name)}</b><span>${sub}</span></div></div>`;
       };
-      // "con đường": 10 Area nối nhau, Area đang xem nổi lên, Area đang đá có cờ, chưa mở thì mờ
-      const dots = MP.areas().map((a, i) => `<i class="${i === v ? 'sel' : ''} ${i > st.area ? 'lock' : i < st.area ? 'done' : 'cur'}" style="--c:${a.color}" data-parea="${i}" title="${esc(a.name)}">${a.icon}</i>`).join('');
-      const titles = last && st.titles ? ` · 🏆 ×${st.titles}` : '';
-      return `<div class="path ${locked ? 'locked' : ''}" style="--ac:${A.color}">
-        <div class="ph"><span class="ph-num">AREA ${v + 1}</span><span class="ph-name">${A.icon} ${esc(A.name)}</span><span class="ph-state">${state}${titles}</span></div>
-        <div class="ph-sub">${esc(A.sub)}</div>
-        <div class="ph-ovr">YOUR OVR <b>${PF().ovr()}</b> · AREA OVR <b>${this.areaOvr(A)}</b></div>
-        <div class="pa"><canvas data-arena="${v}" width="300" height="112"></canvas>${locked ? '<div class="pa-lock">🔒<span>Win the promotion match of the previous area</span></div>' : ''}</div>
+      // "con đường": 10 Area nối nhau, Area đang xem nổi lên, Area đang đá có cờ, chưa mở thì dạng bóng đen
+      const dots = MP.areas().map((a, i) => {
+        const lk = i > st.area;
+        return `<i class="${i === v ? 'sel' : ''} ${lk ? 'lock' : i < st.area ? 'done' : 'cur'}" style="--c:${lk ? '#5a4658' : a.color}" data-parea="${i}" title="${lk ? '???' : esc(a.name)}">${lk ? PX().ui('unknown') : PX().area(a.id)}</i>`;
+      }).join('');
+      const titles = last && st.titles && !locked ? ` · ${PX().ui('trophy', 'sm')} ×${st.titles}` : '';
+      const name = locked ? '???' : esc(A.name);
+      return `<div class="path ${locked ? 'locked' : ''}" style="--ac:${locked ? '#6a5f6e' : A.color}">
+        <div class="ph"><span class="ph-num">AREA ${v + 1}</span><span class="ph-name">${locked ? PX().ui('unknown') : PX().area(A.id)} ${name}</span><span class="ph-state">${state}${titles}</span></div>
+        <div class="ph-sub">${locked ? '???' : esc(A.sub)}${locked ? '' : this.areaCoreCount(v)}</div>
+        <div class="ph-ovr">YOUR OVR <b>${PF().ovr()}</b> · AREA OVR <b>${locked ? '??' : this.areaOvr(A)}</b></div>
+        <div class="pa"><canvas data-arena="${v}" width="300" height="112"></canvas>${locked ? `<div class="pa-lock"><b>???</b>${PX().ui('lock', 'x2')}<span>Win the promotion match of the previous area</span></div>` : ''}</div>
         <div class="pdivs">${divs.join('')}</div>
         <div class="popps">${A.teams.map((id) => teamChip(id, false)).join('')}${teamChip(A.boss, true)}</div>
         <div class="proad">${dots}</div>
       </div>`;
+    },
+
+    // số Core của Area (sao + boss) đã mở khoá
+    areaCoreCount(a) {
+      if (!SFC_CONFIG.mainPath.lockCores || PROG().coreGacha) return '';
+      const A = MPATH().area(a), ids = (A.cores || []).concat(A.signature ? [A.signature] : []);
+      if (!ids.length) return '';
+      const have = ids.filter((id) => PF().coreUnlocked(id)).length;
+      return `<span class="ph-cores ${have >= ids.length ? 'all' : ''}">${PX().ui('card', 'sm')} CORES ${have}/${ids.length}</span>`;
     },
 
     // vẽ ảnh sân của Area vào canvas thẻ (cắt khung quanh sân)
@@ -405,6 +442,8 @@ window.SFC = window.SFC || {};
       const ctx = cv.getContext('2d');
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, 20, 22, 600, 224, 0, 0, cv.width, cv.height);
+      // Area chưa mở: phủ tối gần hết, chỉ còn lờ mờ đường nét sân
+      if (+cv.dataset.arena > MP.state.area) { ctx.fillStyle = 'rgba(7,5,10,0.86)'; ctx.fillRect(0, 0, cv.width, cv.height); }
     },
 
     /* ---------------- nhập liệu ---------------- */
@@ -574,7 +613,7 @@ window.SFC = window.SFC || {};
       const teamAvatars = [...this.el.querySelectorAll('canvas[data-team]')].map((cv) => {
         cv.width = 40; cv.height = 44;
         const id = cv.dataset.team;
-        return { cv, look: MPATH().teamLook(id, +cv.dataset.idx || 0), kit: TEAMS().list[id].kit, big: false };
+        return { cv, look: MPATH().teamLook(id, +cv.dataset.idx || 0), kit: TEAMS().list[id].kit, big: false, sil: !!cv.dataset.sil };
       });
       this.avatars = teamAvatars.concat([...this.el.querySelectorAll('canvas[data-avatar]')].map((cv) => {
         const big = cv.classList.contains('big');
@@ -598,6 +637,7 @@ window.SFC = window.SFC || {};
       for (const a of this.avatars) {
         if (!a.cv.isConnected) continue;
         SFC.Sprites.drawAvatar(a.cv, a.look, a.kit || kit, this.animT, facing);
+        if (a.sil) silhouette(a.cv);   // Area chưa mở: đội đối thủ chỉ hiện bóng đen
       }
     },
 
@@ -716,6 +756,16 @@ window.SFC = window.SFC || {};
       });
     },
   };
+
+  // tô đen mọi pixel đã vẽ trên canvas (giữ nguyên hình dáng)
+  function silhouette(cv) {
+    const x = cv.getContext('2d');
+    x.save();
+    x.globalCompositeOperation = 'source-in';
+    x.fillStyle = '#07050a';
+    x.fillRect(0, 0, cv.width, cv.height);
+    x.restore();
+  }
 
   function wrap(v, n) { return ((v % n) + n) % n; }
 

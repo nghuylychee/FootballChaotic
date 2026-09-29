@@ -6,6 +6,7 @@
 window.SFC = window.SFC || {};
 
 (function () {
+  const PX = () => SFC.PixelIcon;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const CFG = () => SFC_CONFIG.intro;
   const ROLE = { DEF: 'DEFENDER', FWD: 'FORWARD' };
@@ -81,12 +82,12 @@ window.SFC = window.SFC || {};
     /* ---------------- DOM ---------------- */
     html(g) {
       const I = CFG(), mp = g.opts.mainPath, MP = SFC.MainPath;
-      let comp = 'FRIENDLY', title = 'MATCHDAY', venue = 'STREET COURT';
+      let comp = 'FRIENDLY', title = 'MATCHDAY', venue = 'STREET COURT', venueIcon = '';
       if (mp) {
         const A = MP.area(mp.area);
         comp = `MAIN PATH · ${MP.divName(mp.area, mp.div)}`;
         title = mp.promo ? (mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH') : 'MATCHDAY';
-        venue = `${A.icon} ${A.name}`;
+        venue = A.name; venueIcon = PX().area(A.id) + ' ';
       } else if (g.opts.training) { comp = 'TRAINING'; title = 'PRACTICE MATCH'; }
       // thẻ cầu thủ hiện xen kẽ trái / phải: người chơi (character) lên đầu
       const lists = [0, 1].map((t) => g.teams[t].players.slice().sort((a, b) => (b.isControlled && g.isHuman(t) ? 1 : 0) - (a.isControlled && g.isHuman(t) ? 1 : 0)));
@@ -98,12 +99,12 @@ window.SFC = window.SFC || {};
       const boss = !!(mp && mp.promo);
       return `<div class="intro ${boss ? 'promo' : ''}" style="--c0:${g.teams[0].cfg.kit.shirt};--c1:${g.teams[1].cfg.kit.shirt};--dIn:${I.teamIn}s">
         <div class="in-bg l"></div><div class="in-bg r"></div>
-        <div class="in-top"><span class="in-comp">${esc(comp)}</span><b class="in-title">${boss ? '👑 ' : ''}${esc(title)}</b></div>
+        <div class="in-top"><span class="in-comp">${esc(comp)}</span><b class="in-title">${boss ? PX().ui('crown') + ' ' : ''}${esc(title)}</b></div>
         ${this.side(g, 0, lists[0], delay, false)}
         <div class="in-mid">
           <div class="in-vs" style="--d:${I.vsAt}s">VS</div>
           <div class="in-pitch" style="--d:${I.pitchAt - 0.2}s"><canvas width="124" height="74"></canvas></div>
-          <div class="in-venue" style="--d:${I.pitchAt}s">${esc(venue)}</div>
+          <div class="in-venue" style="--d:${I.pitchAt}s">${venueIcon}${esc(venue)}</div>
         </div>
         ${this.side(g, 1, lists[1], delay, boss)}
         <div class="in-foot"><span><kbd>Enter</kbd> skip</span><i class="in-timer" style="--dur:${I.duration}s"></i></div>
@@ -139,7 +140,7 @@ window.SFC = window.SFC || {};
           <div class="in-crest"><span>${esc(c.short)}</span></div>
           <div class="in-tn"><b>${esc(c.name)}</b><span>${esc(c.tagline || '')}</span></div>
           <div class="in-ovr"><b>${ovr}</b><span>OVR</span></div>
-          ${boss ? '<div class="in-boss">👑 BOSS</div>' : ''}
+          ${boss ? `<div class="in-boss">${PX().ui('crown', 'sm')} BOSS</div>` : ''}
         </div>
         <div class="in-cards">${cards}</div>
         <div class="in-stats">${stats}</div>

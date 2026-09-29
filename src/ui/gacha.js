@@ -14,6 +14,7 @@ window.SFC = window.SFC || {};
   const DEFAULT_RAR = { label: 'DEFAULT', color: '#6a5f6e', value: 0 };
   const RAR = (r) => PROG().rarities[r] || DEFAULT_RAR;
   const rank = (r) => PROG().rarityOrder.indexOf(r);            // -1 = đồ mặc định
+  // emoji dự phòng cho icon trail (hình chính: pixel art 'fx-<id>' ở render/pixelicons.js)
   const FX_ICON = {
     nofx: '', sparkle: '✨', bubbles: '🫧', leaves: '🍃', hearts: '💖', snow: '❄️', smoke: '🌫️', dust: '💨', notes: '🎵',
     confetti: '🎊', petals: '🌸', coins: '🪙', neon: '💠', frost: '🧊', lightning: '⚡', rainbow: '🌈', fire: '🔥',
@@ -26,6 +27,7 @@ window.SFC = window.SFC || {};
   const wrap = (v, n) => ((v % n) + n) % n;
   const K = (action, kb) => SFC.Input.key(action, kb);   // nhãn phím gợi ý theo thiết bị
   const ARCH = () => SFC_CONFIG.cores.archetypes;
+  const PX = () => SFC.PixelIcon;   // icon pixel art (render/pixelicons.js)
   const ARCH_KEYS = () => ['all'].concat(Object.keys(ARCH()));
 
   // "Thường đi cùng": 2–3 Core hợp build với Core id (cùng trường phái; ưu tiên TẠO <-> DÙNG, Tuyệt kỹ, cầu nối)
@@ -55,6 +57,17 @@ window.SFC = window.SFC || {};
     return L[c.role] || '';
   }
 
+  // lá Core tĩnh (túi đồ, màn mở thẻ): trường phái, ảnh động, tên, độ hiếm + vai trò, mô tả
+  function coreCard(id, cls = '', w = 132, h = 56) {
+    const c = CORE_LIST()[id], r = RAR(c.rarity), cat = ARCH()[c.tags[0]], cat2 = ARCH()[c.tags[1] || c.tags[0]];
+    const tags = c.tags.map((t) => `<span style="--c:${ARCH()[t].color}">${PX().arch(t, 'sm')} ${ARCH()[t].label}</span>`).join('');
+    return `<div class="card static ${c.role === 'ult' ? 'ult' : ''} ${cls}" style="--c:${cat.color};--c2:${cat2.color};--t:${r.color}">
+        <div class="card-tags">${tags}</div>
+        <div class="card-art">${SFC.CorePreview.html(id, w, h)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>
+        <div class="card-name">${esc(c.name)}</div><div class="card-tier">${r.label} · ${esc(roleText(c))}</div>
+        <div class="card-desc">${esc(c.desc)}</div></div>`;
+  }
+
   function coin(n) { return `<span class="gold"><i class="coin"></i>${Number(n).toLocaleString('en-US')}</span>`; }
 
   // thanh XP + level (trang chủ, nhân vật, shop, túi đồ)
@@ -75,21 +88,23 @@ window.SFC = window.SFC || {};
 
   // icon của 1 món: costume = canvas (vẽ ở bindIcons), Core = emoji
   function iconHtml(e) {
-    if (e.kind === 'core') return `<span class="ic-emoji">${CORE_LIST()[e.id].icon}</span>`;
+    if (e.kind === 'core') return `<span class="ic-emoji">${PX().core(e.id, 'x2')}</span>`;
     const it = PROG().items[e.id];
-    return `<canvas data-icon="${e.id}" width="40" height="40"></canvas>${it.slot === 'fx' && FX_ICON[e.id] ? `<span class="ic-fx">${FX_ICON[e.id]}</span>` : ''}`;
+    return `<canvas data-icon="${e.id}" width="40" height="40"></canvas>${it.slot === 'fx' && FX_ICON[e.id] ? `<span class="ic-fx">${PX().html('fx-' + e.id, FX_ICON[e.id])}</span>` : ''}`;
   }
 
   // món trong túi đồ / trong hộp: { kind: item | core, id, rarity, count, def }
   function entry(kind, id) {
     // gacha Core tắt: mọi Core là "có sẵn" (không đếm số lượng, không phân rã)
     const def = kind === 'core' ? !PROG().coreGacha || PROG().starterCores.includes(id) : !!PROG().items[id].default;
-    return { kind, id, rarity: def && kind !== 'core' ? null : PF().rarityOf(kind, id), count: PF().count(kind, id), def };
+    // gacha Core tắt: Core chưa mở khoá theo Main Path vẫn hiện trong bộ sưu tập nhưng bị khoá
+    const locked = kind === 'core' && !PROG().coreGacha && !PF().coreUnlocked(id);
+    return { kind, id, rarity: def && kind !== 'core' ? null : PF().rarityOf(kind, id), count: PF().count(kind, id), def, locked };
   }
 
   const Gacha = {
     pages: ['shop', 'open', 'inv'],
-    coin, xpBar,
+    coin, xpBar, coreCard, boxArt,
     boxSel: 0,        // 0..số hộp-1 = hộp, cuối cùng = nút TÚI ĐỒ
     invTab: 0,
     invSel: 0,
@@ -140,11 +155,12 @@ window.SFC = window.SFC || {};
       const n = P.boxOrder.length;
       this.boxSel = Math.min(this.boxSel, n);
       const rows = P.boxOrder.map((id, i) => {
-        const b = P.boxes[id], lock = b.level > d.level;
+        const b = P.boxes[id], free = PF().freeBoxes(id), lock = b.level > d.level && !free;
+        const price = free ? `<span class="free">${PX().ui('gift', 'sm')} FREE ×${free}</span>` : lock ? `${PX().ui('lock', 'sm')} LV ${b.level}` : coin(b.price);
         return `<button class="boxrow ${i === this.boxSel ? 'sel' : ''} ${lock ? 'lock' : ''}" data-box="${i}" style="--bc:${b.color}">
           ${boxArt(b.color)}
           <div class="br-info"><div class="br-name">${esc(b.name)}</div>
-            <div class="br-sub">${b.kind === 'core' ? 'CORE' : 'COSTUME'} · ${lock ? `🔒 LV ${b.level}` : coin(b.price)}</div></div>
+            <div class="br-sub">${b.kind === 'core' ? 'CORE' : 'COSTUME'} · ${price}</div></div>
         </button>`;
       }).join('') + `<button class="boxrow inv-link ${this.boxSel === n ? 'sel' : ''}" data-box="${n}">
           <div class="br-info"><div class="br-name">INVENTORY →</div><div class="br-sub">Equip · dismantle for gold</div></div></button>`;
@@ -164,7 +180,8 @@ window.SFC = window.SFC || {};
         const e = entry(x.kind, x.id), own = e.count > 0;
         return `<div class="icard mini ${own ? 'owned' : ''}" style="--rc:${RAR(x.rarity).color}" title="${esc(nameOf(e))}">${iconHtml(e)}${own ? `<b class="ic-count">×${e.count}</b>` : ''}</div>`;
       }).join('');
-      const act = c.ok ? `<kbd>${K('confirm', 'Enter')}</kbd> OPEN BOX · ${coin(b.price)}` : c.reason === 'level' ? `<span class="bad">🔒 Requires LV ${b.level}</span>` : `<span class="bad">Not enough gold (${coin(b.price)})</span>`;
+      const act = c.free ? `<kbd>${K('confirm', 'Enter')}</kbd> OPEN FREE BOX <span class="free">${PX().ui('gift', 'sm')} ×${PF().freeBoxes(id)}</span>`
+        : c.ok ? `<kbd>${K('confirm', 'Enter')}</kbd> OPEN BOX · ${coin(b.price)}` : c.reason === 'level' ? `<span class="bad">${PX().ui('lock', 'sm')} Requires LV ${b.level}</span>` : `<span class="bad">Not enough gold (${coin(b.price)})</span>`;
       return `${this.header('SHOP')}
         <div class="gacha-body shop-g">
           <div class="box-list">${rows}</div>
@@ -215,7 +232,7 @@ window.SFC = window.SFC || {};
       if (isCore) {
         const c = CORE_LIST()[w.id];
         // mở hộp ra Core: phát luôn khoảnh khắc của Core đó
-        art = `<div class="rv-core-art">${SFC.CorePreview.html(w.id, 150, 66)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>`;
+        art = `<div class="rv-core-art">${SFC.CorePreview.html(w.id, 150, 66)}<span class="card-emoji">${PX().core(w.id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>`;
         const lv = PF().coreLevel(w.id);
         note = lv > PF().data.level ? `<span class="bad">Requires LV ${lv} to use in matches</span>` : 'Added to your mid-match Core pool';
       } else {
@@ -224,7 +241,7 @@ window.SFC = window.SFC || {};
       }
       const equipped = !isCore && PF().data.look[PROG().items[w.id].slot] === w.id;
       const acts = [
-        `<span class="rv-act"><kbd>${K('confirm', 'Enter')}</kbd> OPEN ANOTHER ${coin(b.price)}</span>`,
+        `<span class="rv-act"><kbd>${K('confirm', 'Enter')}</kbd> OPEN ANOTHER ${PF().freeBoxes(o.boxId) ? `<span class="free">${PX().ui('gift', 'sm')} FREE ×${PF().freeBoxes(o.boxId)}</span>` : coin(b.price)}</span>`,
         !isCore && e.count > 0 ? `<span class="rv-act ${equipped ? 'on' : ''}"><kbd>${K('sprint', 'E')}</kbd> ${equipped ? 'EQUIPPED' : 'EQUIP'}</span>` : '',
         e.count > 0 && !o.dismantled ? `<span class="rv-act"><kbd>${K('dismantle', 'X')}</kbd> DISMANTLE +${PF().dismantleValue(w.kind, w.id)}</span>` : '',
         o.dismantled ? `<span class="rv-act ok">Dismantled ${coin('+' + o.dismantled)}</span>` : '',
@@ -280,8 +297,8 @@ window.SFC = window.SFC || {};
           if (tab === 'core') P.starterCores.filter(ok).forEach((id) => out.push(entry('core', id)));
         }
       }
-      // hiếm nhất lên đầu, đồ mặc định xuống cuối
-      return out.sort((a, b) => rank(b.rarity) - rank(a.rarity) || (a.kind === b.kind ? 0 : a.kind === 'item' ? -1 : 1));
+      // Core đã mở trước Core còn khoá · hiếm nhất lên đầu, đồ mặc định xuống cuối
+      return out.sort((a, b) => !!a.locked - !!b.locked || rank(b.rarity) - rank(a.rarity) || (a.kind === b.kind ? 0 : a.kind === 'item' ? -1 : 1));
     },
 
     isEquipped(e) {
@@ -298,14 +315,14 @@ window.SFC = window.SFC || {};
       if (coreTab) {
         filter = `<div class="arch-filter">${ARCH_KEYS().map((k, i) => {
           const a = ARCH()[k];
-          return `<button class="af ${i === this.invArch ? 'sel' : ''}" data-iarch="${i}" style="--c:${a ? a.color : '#e6dccb'}" title="${a ? a.label : 'All'}">${a ? a.icon : '★'}</button>`;
+          return `<button class="af ${i === this.invArch ? 'sel' : ''}" data-iarch="${i}" style="--c:${a ? a.color : '#e6dccb'}" title="${a ? a.label : 'All'}">${a ? PX().arch(k) : '★'}</button>`;
         }).join('')}</div>`;
       }
       const dupes = this.dupes(list);
       const cards = list.map((e, i) => {
-        const cls = [i === this.invSel ? 'sel' : '', this.isEquipped(e) && e.kind === 'item' ? 'eq' : '', e.def ? 'def' : ''].join(' ');
+        const cls = [i === this.invSel ? 'sel' : '', this.isEquipped(e) && e.kind === 'item' ? 'eq' : '', e.def ? 'def' : '', e.locked ? 'lock' : ''].join(' ');
         const badge = e.def ? '' : `<b class="ic-count">×${e.count}</b>`;
-        return `<div class="icard ${cls}" data-ic="${i}" style="--rc:${RAR(e.rarity).color}">${iconHtml(e)}${badge}${cls.includes('eq') ? '<i class="ic-eq">E</i>' : ''}</div>`;
+        return `<div class="icard ${cls}" data-ic="${i}" style="--rc:${RAR(e.rarity).color}">${iconHtml(e)}${badge}${cls.includes('eq') ? '<i class="ic-eq">E</i>' : ''}${e.locked ? PX().ui('lock', 'ic-lock') : ''}</div>`;
       }).join('') || '<div class="inv-empty">Nothing here yet. Open a box in the SHOP!</div>';
       return `${this.header('INVENTORY', tabs)}
         <div class="gacha-body inv-g">
@@ -319,20 +336,20 @@ window.SFC = window.SFC || {};
       const r = RAR(e.rarity), val = PF().dismantleValue(e.kind, e.id);
       const count = e.def ? 'Default' : `Owned ×${e.count}`;
       if (e.kind === 'core') {
-        const c = CORE_LIST()[e.id], cat = ARCH()[c.tags[0]], cat2 = ARCH()[c.tags[1] || c.tags[0]];
         const lv = PF().coreLevel(e.id), ok = lv <= PF().data.level;
-        const status = !PROG().coreGacha ? 'Available to every player' : e.def ? 'Starter Core, always in your pool' : ok ? 'In your Core draft pool' : `<span class="bad">Requires LV ${lv}</span>`;
-        const tags = c.tags.map((t) => `<span style="--c:${ARCH()[t].color}">${ARCH()[t].icon} ${ARCH()[t].label}</span>`).join('');
+        // gacha Core tắt: Core mở theo Main Path (bộ có sẵn / sao của Area / boss)
+        const pathStatus = () => {
+          if (!SFC_CONFIG.mainPath.lockCores) return 'Available to every player';
+          if (e.locked) return `<span class="bad">${PX().ui('lock', 'sm')} ${esc(SFC.MainPath.unlockHint(e.id))}</span>`;
+          return SFC.MainPath.coreSource(e.id).kind === 'starter' ? 'Starter Core, always in your pool' : 'Unlocked on the Main Path · in your Core draft pool';
+        };
+        const status = !PROG().coreGacha ? pathStatus() : e.def ? 'Starter Core, always in your pool' : ok ? 'In your Core draft pool' : `<span class="bad">Requires LV ${lv}</span>`;
         const sug = suggest(e.id).map((k) => {
-          const o = CORE_LIST()[k], have = PROG().coreGacha && PF().count('core', k) > 0;
-          return `<div class="sug ${have ? 'have' : ''}" style="--c:${ARCH()[o.tags[0]].color}" title="${esc(o.desc)}">${o.icon} ${esc(o.name)}${have ? ' ✓' : ''}</div>`;
+          const o = CORE_LIST()[k], have = PROG().coreGacha ? PF().count('core', k) > 0 : PF().coreUnlocked(k);
+          return `<div class="sug ${have ? 'have' : ''}" style="--c:${ARCH()[o.tags[0]].color}" title="${esc(o.desc)}">${PX().core(k)} ${esc(o.name)} ${have ? PX().ui('check', 'sm') : PX().ui('lock', 'sm')}</div>`;
         }).join('');
-        return `<div class="card static ${c.role === 'ult' ? 'ult' : ''}" style="--c:${cat.color};--c2:${cat2.color};--t:${r.color}">
-            <div class="card-tags">${tags}</div>
-            <div class="card-art">${SFC.CorePreview.html(e.id, 132, 56)}<span class="card-emoji">${c.icon}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>
-            <div class="card-name">${esc(c.name)}</div><div class="card-tier">${r.label} · ${esc(roleText(c))}</div>
-            <div class="card-desc">${esc(c.desc)}</div></div>
-          <div class="sd-side"><div class="sd-req">${count}</div><div class="sd-note">${status}</div>
+        return `${coreCard(e.id, e.locked ? 'locked' : '')}
+          <div class="sd-side"><div class="sd-req">${e.locked ? 'Locked' : count}</div><div class="sd-note">${status}</div>
             ${sug ? `<div class="sug-h">OFTEN PAIRED WITH</div>${sug}` : ''}
             <div class="sd-act">${e.def ? '' : `<kbd>${K('dismantle', 'X')}</kbd> DISMANTLE ${coin('+' + val)}`}</div></div>`;
       }

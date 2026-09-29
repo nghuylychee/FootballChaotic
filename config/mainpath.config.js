@@ -24,6 +24,16 @@ SFC_CONFIG.mainPath = {
   // Thắng trận thăng hạng: cộng thêm promoBonus (x reward của Area đó)
   promoBonus: { xp: 120, gold: 150 },
 
+  /* Mở khoá Core theo Main Path (logic ở src/core/mainpath.js -> claim). Mọi mốc chỉ thưởng LẦN ĐẦU đạt tới (rớt hạng rồi leo lại không nhận lại):
+   *  - mỗi sao mới trong 1 hạng: 1 Core ngẫu nhiên trong areas[].cores còn khoá; Area đã hết Core -> starGold gold (x reward của Area)
+   *  - lên 1 hạng: 1 hộp costume areas[].divBox (progression.config.js -> boxes), mở miễn phí trong SHOP
+   *  - thắng trận thăng hạng (sang Area mới / vô địch lần đầu): Core đặc trưng của boss (areas[].signature)
+   * Bộ Core có sẵn: progression.config.js -> starterCores. lockCores = false: mọi Core dùng được ngay (tắt hệ mở khoá).
+   * Trận thăng hạng: boss chắc chắn cầm Core đặc trưng — lượt chọn thứ signatureRound.core (Core thường) / .ult (Tuyệt kỹ). */
+  lockCores: true,
+  starGold: 40,
+  signatureRound: { core: 1, ult: 3 },
+
   // Đội riêng của người chơi (cố định). {name} = tên character. Chỉ số trung bình, không thiên hướng Core.
   playerTeam: {
     id: 'mp_player',
@@ -43,7 +53,8 @@ SFC_CONFIG.mainPath = {
    * shotAccuracy: độ chính xác sút + bắt bóng · aggression: tần suất ra đòn / lướt · speedMult: tốc độ chạy.
    * (tham chiếu game.config.js: EASY 0.34/0.7/0.55/0.6/0.92 · NORMAL 0.2/1/0.8/1/1 · HARD 0.1/1.2/0.92/1.3/1.06)
    * stars: số sao cần ở từng hạng, theo thứ tự từ hạng thấp nhất (III) lên cao nhất (I).
-   * reward: hệ số thưởng XP / gold. arena: id trong arenas.config.js. teams: 2 đội thường (bốc ngẫu nhiên), boss: đội trận thăng hạng. */
+   * reward: hệ số thưởng XP / gold. arena: id trong arenas.config.js. teams: 2 đội thường (bốc ngẫu nhiên), boss: đội trận thăng hạng.
+   * cores: Core mở bằng sao trong Area (số lượng nên <= tổng sao của Area) · signature: Core đặc trưng của boss · divBox: hộp thưởng khi lên hạng. */
   areas: [
     // AREA 1
     {
@@ -52,6 +63,7 @@ SFC_CONFIG.mainPath = {
       teams: ['paddy_kickers', 'muddy_ducks'], boss: 'buffalo_chiefs',
       ai: [{ reaction: 0.5, tackleMult: 0.45, shotAccuracy: 0.4, aggression: 0.35, speedMult: 0.82 }, { reaction: 0.44, tackleMult: 0.55, shotAccuracy: 0.46, aggression: 0.45, speedMult: 0.86 }],
       bossAi: { reaction: 0.4, tackleMult: 0.62, shotAccuracy: 0.52, aggression: 0.55, speedMult: 0.89 },
+      cores: ['fire_shot', 'burst_start', 'juggle', 'phantom_step', 'iron_fist'], signature: 'giant_fist', divBox: 'street',
     },
     // AREA 2
     {
@@ -60,6 +72,7 @@ SFC_CONFIG.mainPath = {
       teams: ['alley_cats', 'trash_pandas'], boss: 'block_bosses',
       ai: [{ reaction: 0.42, tackleMult: 0.58, shotAccuracy: 0.48, aggression: 0.5, speedMult: 0.87 }, { reaction: 0.36, tackleMult: 0.68, shotAccuracy: 0.55, aggression: 0.6, speedMult: 0.91 }],
       bossAi: { reaction: 0.32, tackleMult: 0.75, shotAccuracy: 0.6, aggression: 0.7, speedMult: 0.93 },
+      cores: ['wall_slam', 'uppercut', 'fake_run', 'warp_walls', 'chaos_ball'], signature: 'hundred_fists', divBox: 'street',
     },
     // AREA 3
     {
@@ -68,6 +81,7 @@ SFC_CONFIG.mainPath = {
       teams: ['hall_monitors', 'detention_club'], boss: 'varsity_seniors',
       ai: [{ reaction: 0.34, tackleMult: 0.72, shotAccuracy: 0.58, aggression: 0.65, speedMult: 0.92 }, { reaction: 0.29, tackleMult: 0.8, shotAccuracy: 0.64, aggression: 0.75, speedMult: 0.95 }],
       bossAi: { reaction: 0.26, tackleMult: 0.86, shotAccuracy: 0.68, aggression: 0.82, speedMult: 0.96 },
+      cores: ['symphony', 'sonic_boom', 'captain', 'emp_trap'], signature: 'lightning_dash', divBox: 'street',
     },
     // AREA 4
     {
@@ -76,6 +90,7 @@ SFC_CONFIG.mainPath = {
       teams: ['sky_hoppers', 'pigeon_gang'], boss: 'penthouse_kings',
       ai: [{ reaction: 0.27, tackleMult: 0.84, shotAccuracy: 0.66, aggression: 0.8, speedMult: 0.96 }, { reaction: 0.23, tackleMult: 0.92, shotAccuracy: 0.72, aggression: 0.88, speedMult: 0.98 }],
       bossAi: { reaction: 0.2, tackleMult: 0.98, shotAccuracy: 0.76, aggression: 0.95, speedMult: 0.99 },
+      cores: ['shadow_clone', 'freight_train', 'witch_time'], signature: 'endless_tiki', divBox: 'street',
     },
     // AREA 5
     {
@@ -84,6 +99,7 @@ SFC_CONFIG.mainPath = {
       teams: ['noodle_kickers', 'lantern_crew'], boss: 'night_dragons',
       ai: [{ reaction: 0.21, tackleMult: 0.96, shotAccuracy: 0.75, aggression: 0.92, speedMult: 0.99 }, { reaction: 0.18, tackleMult: 1.02, shotAccuracy: 0.8, aggression: 1.0, speedMult: 1.0 }],
       bossAi: { reaction: 0.16, tackleMult: 1.08, shotAccuracy: 0.83, aggression: 1.08, speedMult: 1.01 },
+      cores: ['energy_wave', 'one_two', 'ground_slam'], signature: 'meteor_strike', divBox: 'street',
     },
     // AREA 6
     {
@@ -92,6 +108,7 @@ SFC_CONFIG.mainPath = {
       teams: ['crane_crushers', 'rust_buckets'], boss: 'iron_harbor',
       ai: [{ reaction: 0.17, tackleMult: 1.05, shotAccuracy: 0.82, aggression: 1.05, speedMult: 1.01 }, { reaction: 0.14, tackleMult: 1.12, shotAccuracy: 0.86, aggression: 1.12, speedMult: 1.03 }],
       bossAi: { reaction: 0.12, tackleMult: 1.16, shotAccuracy: 0.88, aggression: 1.18, speedMult: 1.04 },
+      cores: ['bulldozer', 'giant_keeper', 'flying_kick'], signature: 'titan', divBox: 'legend',
     },
     // AREA 7
     {
@@ -100,6 +117,7 @@ SFC_CONFIG.mainPath = {
       teams: ['chain_gang', 'iron_knuckles'], boss: 'the_warden',
       ai: [{ reaction: 0.13, tackleMult: 1.14, shotAccuracy: 0.87, aggression: 1.16, speedMult: 1.04 }, { reaction: 0.11, tackleMult: 1.2, shotAccuracy: 0.9, aggression: 1.24, speedMult: 1.05 }],
       bossAi: { reaction: 0.1, tackleMult: 1.25, shotAccuracy: 0.92, aggression: 1.3, speedMult: 1.06 },
+      cores: ['counter_strike', 'rubber_arm'], signature: 'meteor_drop', divBox: 'legend',
     },
     // AREA 8
     {
@@ -108,6 +126,7 @@ SFC_CONFIG.mainPath = {
       teams: ['metro_express', 'downtown_stars'], boss: 'city_champions',
       ai: [{ reaction: 0.1, tackleMult: 1.24, shotAccuracy: 0.91, aggression: 1.28, speedMult: 1.06 }, { reaction: 0.09, tackleMult: 1.3, shotAccuracy: 0.93, aggression: 1.36, speedMult: 1.07 }],
       bossAi: { reaction: 0.08, tackleMult: 1.35, shotAccuracy: 0.94, aggression: 1.42, speedMult: 1.08 },
+      cores: ['phantom_pass', 'ghost_ball'], signature: 'black_hole', divBox: 'legend',
     },
     // AREA 9
     {
@@ -116,6 +135,7 @@ SFC_CONFIG.mainPath = {
       teams: ['glitch_squad', 'chrome_wolves'], boss: 'apex_legion',
       ai: [{ reaction: 0.08, tackleMult: 1.34, shotAccuracy: 0.94, aggression: 1.4, speedMult: 1.08 }, { reaction: 0.07, tackleMult: 1.4, shotAccuracy: 0.95, aggression: 1.48, speedMult: 1.09 }],
       bossAi: { reaction: 0.06, tackleMult: 1.45, shotAccuracy: 0.96, aggression: 1.55, speedMult: 1.1 },
+      cores: ['thunder_kick', 'blade_runner'], signature: 'clone_army', divBox: 'legend',
     },
     // AREA 10
     {
@@ -124,6 +144,7 @@ SFC_CONFIG.mainPath = {
       teams: ['golden_eagles', 'royal_lions'], boss: 'the_legends',
       ai: [{ reaction: 0.06, tackleMult: 1.44, shotAccuracy: 0.96, aggression: 1.52, speedMult: 1.1 }, { reaction: 0.05, tackleMult: 1.5, shotAccuracy: 0.97, aggression: 1.6, speedMult: 1.11 }],
       bossAi: { reaction: 0.04, tackleMult: 1.58, shotAccuracy: 0.98, aggression: 1.7, speedMult: 1.14 },
+      cores: ['aegis_wall', 'bomb_ball'], signature: 'scissor_kick', divBox: 'legend',
     },
   ],
 

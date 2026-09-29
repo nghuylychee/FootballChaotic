@@ -329,6 +329,7 @@ window.SFC = window.SFC || {};
       this.buffs = [[], []];
       this.aiUltT = [0, 0];
       this.tasks = [];
+      this.newShown = [new Set(), new Set()];   // Core mới mở (opts.coreFresh) đã hiện ở lượt chọn -> nhãn NEW
     }
     // việc chạy mỗi bước mô phỏng (chỉ lúc đang đá); fn(dt) trả true = xong; onEnd chạy khi xong / bị huỷ lúc giao bóng
     task(fn, onEnd) { this.tasks.push({ fn, onEnd }); }
@@ -737,12 +738,17 @@ window.SFC = window.SFC || {};
       const style = this.g.teams[team].cfg.coreWeights || {};
       const shared = c.tags.reduce((n, tag) => Math.max(n, this.tagCount(team, tag)), 0);
       const lean = c.tags.reduce((m, tag) => Math.max(m, style[tag] || 1), 0);
-      return (D.rarityWeight[c.rarity] || 1) * (1 + D.buildWeight * shared) * lean;
+      // boss cầm Core đặc trưng: nghiêng về trường phái của Core đó (đủ lá cho Cộng hưởng / Tuyệt kỹ)
+      const sig = this.signature(team), sigLean = sig && c.tags.some((tag) => this.tagsOf(sig).includes(tag)) ? 2 : 1;
+      return (D.rarityWeight[c.rarity] || 1) * (1 + D.buildWeight * shared) * lean * sigLean;
     }
+    signature(team) { const s = this.g.opts && this.g.opts.signature; return (s && s[team] && this.def(s[team]) && s[team]) || null; }
     // Tuyệt kỹ chỉ xuất hiện khi có >= 2 Core cùng trường phái và đội chưa có Tuyệt kỹ nào
     eligible(team, id) {
       const c = this.def(id);
       if (c.role !== 'ult') return true;
+      const sig = this.signature(team);
+      if (sig && sig !== id && this.def(sig).role === 'ult') return false;   // boss: chỉ cầm Tuyệt kỹ đặc trưng
       return !this.ultOf(team) && c.tags.some((tag) => this.tagCount(team, tag) >= 2);
     }
     pool(team, exclude = []) {
@@ -768,6 +774,15 @@ window.SFC = window.SFC || {};
         const cand = pool.filter(matches);
         if (cand.length) out[out.length - 1] = U.weightedPick(cand, (x) => this.weight(team, x));
       }
+      // Core vừa mở khoá (opts.coreFresh): lượt nào cũng đưa 1 lá chưa hiện vào (thay lá cuối), nhãn NEW
+      const fresh = this.g.opts && this.g.opts.coreFresh && this.g.opts.coreFresh[team];
+      const nu = fresh && fresh.find((id) => !this.newShown[team].has(id) && !exclude.includes(id) && this.pool(team).includes(id));
+      if (nu && !out.includes(nu)) {
+        // bỏ 1 lá không khớp build (giữ lá bảo đảm hướng), lá NEW đứng đầu
+        if (out.length >= n) { const k = out.findIndex((id) => !matches(id)); out.splice(k >= 0 ? k : out.length - 1, 1); }
+        out.unshift(nu);
+      }
+      if (nu) this.newShown[team].add(nu);
       // lượt chọn cuối: đủ điều kiện Tuyệt kỹ -> luôn có lá Tuyệt kỹ (của trường phái đang có nhiều Core nhất; kể cả khi vừa đổi bài)
       const ult = this.finalUltOption(team);
       if (ult && !out.some((id) => this.def(id).role === 'ult')) {
@@ -788,6 +803,12 @@ window.SFC = window.SFC || {};
 
     // AI: bốc 3 lá rồi chọn lá khớp build nhất (Tuyệt kỹ luôn được ưu tiên)
     aiPick(team) {
+      // boss: tới lượt signatureRound thì lấy thẳng Core đặc trưng (Tuyệt kỹ: bỏ qua điều kiện 2 Core cùng trường phái)
+      const sig = this.signature(team);
+      if (sig && !this.has(team, sig) && !(this.def(sig).role === 'ult' && this.ultOf(team))) {
+        const R = SFC_CONFIG.mainPath.signatureRound || {};
+        if (this.g.upgradeIdx >= (this.def(sig).role === 'ult' ? R.ult || 3 : R.core || 1)) { this.add(team, sig); return sig; }
+      }
       const opts = this.rollOptions(team, SFC_CONFIG.game.match.upgradeChoices);
       if (!opts.length) return null;
       const id = U.weightedPick(opts, (x) => (this.def(x).role === 'ult' ? 20 : 1) * this.weight(team, x));

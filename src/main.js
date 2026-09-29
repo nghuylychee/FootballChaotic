@@ -32,7 +32,9 @@
       this.startMatch({
         home: MP.playerTeam.id, away: m.away, difficulty: 'normal', aiProfile: m.aiProfile, mateDifficulty: MP.teammate,
         humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: m.arena,
-        coreUnlocks: SFC_CONFIG.progression.coreGacha ? [SFC.Profile.unlockedCores(), null] : null,
+        // Core mở khoá (bộ có sẵn + Main Path) · Core vừa mở ưu tiên hiện ở lượt chọn · boss trận thăng hạng cầm Core đặc trưng
+        coreUnlocks: [SFC.Profile.unlockedCores(), null], coreFresh: [SFC.MainPath.state.fresh.slice(), null],
+        signature: m.promo ? [null, m.signature] : null,
         mainPath: { area: m.area, div: m.div, promo: m.promo, final: m.final, reward: m.reward },
       });
     },
@@ -192,7 +194,8 @@
     if (app.screen === 'pause') { SFC.UI.pauseInput(Input); return; }
 
     if (g.state === 'ended') {
-      SFC.UI.endInput(Input);
+      if (SFC.Reveal.active) SFC.Reveal.update(dt, Input);   // màn mở thẻ phần thưởng Main Path
+      else SFC.UI.endInput(Input);
     } else if (g.state === 'draft') {
       if (Input.wasPressed('pause')) return app.pause();
       SFC.UI.draftInput(Input, g);
