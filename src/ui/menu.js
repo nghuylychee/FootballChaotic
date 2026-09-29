@@ -48,6 +48,17 @@ window.SFC = window.SFC || {};
     </div>`;
   }
 
+  // online: CLB riêng của người chơi (Online.club — host áo nhà, khách áo sân khách) thay cho thẻ đội
+  function clubCard(t, pf, label, extra = '') {
+    if (!pf) return teamCard(null, label);
+    const c = SFC.Online.club(t, pf.name), kit = c.kit;
+    return `<div class="team-card" style="--shirt:${kit.shirt};--accent:${kit.accent}">
+      <div class="tc-label">${esc(label)}</div>
+      <div class="tc-head"><span class="kit"><i style="background:${kit.shirt}"></i><i style="background:${kit.accent}"></i><i style="background:${kit.shorts}"></i></span>
+        <div><div class="tc-name">${esc(c.name)}</div><div class="tc-tag">${esc(c.tagline)}</div></div></div>${extra}
+    </div>`;
+  }
+
   const Menu = {
     page: 'home',
     sel: 0,
@@ -178,9 +189,10 @@ window.SFC = window.SFC || {};
           return [{ kind: 'btn', label: 'CONNECT', main: true, act: () => this.submitCode() }];
         case 'lobby': {
           const O = Online(), L = O.lobby;
-          const mine = O.isHost ? L.host : L.guest;
           const list = [];
-          if (mine) list.push({ kind: 'pick', label: 'YOUR TEAM', value: TEAMS().list[mine].name, change: (d) => O.setTeam(d) });
+          // như Main Path: không chọn đội (đá cho CLB riêng) — chỉ chọn vị trí character + đồng đội AI ra sân
+          list.push({ kind: 'pick', label: 'POSITION', value: this.ctrlLabel(null, s.ctrl), change: (d) => { this.changeCtrl(d); O.updatePf(); } });
+          list.push({ kind: 'pick', label: 'TEAMMATE', value: this.mateLabel(), change: (d) => { this.changeMate(d); O.updatePf(); } });
           if (O.isHost) list.push({ kind: 'btn', label: 'START', main: true, disabled: !L.guestIn, act: () => O.startMatch() });
           list.push({ kind: 'btn', label: 'LEAVE ROOM', act: () => O.leave() });
           return list;
@@ -279,7 +291,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'join') return `Type the code · Enter connect · ${back} back`;
       if (this.page === 'name') return PF().hasName ? `Type a name (A-Z, 0-9) · Enter confirm · ${back} back` : 'Type a name (A-Z, 0-9) · Enter confirm';
       if (this.page === 'attrs') return `↑↓ select · ${back} back`;
-      if (this.page === 'lobby') return Online().isHost ? `←→ change team · ${ok} start · ${K('pause', 'Esc')} leave room` : `←→ change team · ${K('pause', 'Esc')} leave room`;
+      if (this.page === 'lobby') return Online().isHost ? `↑↓ select · ←→ change position / teammate · ${ok} start · ${K('pause', 'Esc')} leave room` : `↑↓ select · ←→ change position / teammate · ${K('pause', 'Esc')} leave room`;
       return `↑↓ select · ←→ change · ${ok} · ${back} back`;
     },
 
@@ -299,10 +311,18 @@ window.SFC = window.SFC || {};
           ? (L.guestIn ? '<div class="lb-note ok">Ready. Press Enter to start</div>' : '<div class="lb-note">Send the room code to a friend to play</div>')
           : '<div class="lb-note">Waiting for the host to start...</div>';
         const who = (pf) => (pf ? ` · ${pf.name} LV${pf.level}` : '');
+        // đội hình 2 người: character (vị trí + OVR) + đồng đội AI
+        const squad = (pf) => {
+          if (!pf) return '';
+          const you = `<div class="lb-pl"><b>${esc(pf.name)}</b><span>${esc(pf.role || 'FWD')}${pf.ovr ? ` · OVR ${pf.ovr}` : ''}</span></div>`;
+          const m = pf.mate;
+          const mate = m ? `<div class="lb-pl mate"><b>${esc(m.name)}</b><span>AI ${esc(m.role || '')} · OVR ${m.ovr} · ${m.deck.length} Cores</span></div>` : '';
+          return `<div class="lb-squad">${you}${mate}</div>`;
+        };
         return `<div class="lobby">
-          ${teamCard(L.host, (O.isHost ? me + ' (YOU)' : 'P1 · HOST') + who(L.hostPf))}
+          ${clubCard(0, L.hostPf, (O.isHost ? me + ' (YOU)' : 'P1 · HOST') + who(L.hostPf), squad(L.hostPf))}
           <div class="vs">VS</div>
-          ${teamCard(L.guestIn ? L.guest : null, (O.isHost ? 'P2 · GUEST' : me + ' (YOU)') + who(L.guestPf))}
+          ${clubCard(1, L.guestIn && L.guestPf, (O.isHost ? 'P2 · GUEST' : me + ' (YOU)') + who(L.guestPf), squad(L.guestIn && L.guestPf))}
           ${status}
         </div>`;
       }

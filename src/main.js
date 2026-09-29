@@ -118,9 +118,14 @@
       };
       // màn giới thiệu lực lượng 2 đội (config/intro.config.js): trận đứng yên tới khi xong, rồi mới chọn Core / giao bóng
       SFC.Intro.abort();
-      if (this.mode !== 'online' && SFC.Intro.wants(opts)) {
+      // online: 2 máy cùng chiếu; host giữ trận đứng yên tới khi cả 2 xem xong (SFC.Online.introDone)
+      if (SFC.Intro.wants(opts)) {
         this.screen = 'intro';
-        SFC.Intro.start(this.game, () => { this.screen = 'game'; kickoff(); });
+        SFC.Intro.start(this.game, () => {
+          this.screen = 'game';
+          if (this.mode === 'online') SFC.Online.introDone();
+          kickoff();
+        });
       } else kickoff();
     },
 

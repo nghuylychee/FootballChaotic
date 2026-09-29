@@ -7,7 +7,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 6,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
+  protocol: 7,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
   peerjsUrl: 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js',
   // Tùy chọn PeerJS; để trống = dùng PeerJS Cloud miễn phí.
   // Tự host PeerServer: { host: 'my-server', port: 9000, path: '/sfc', secure: true }

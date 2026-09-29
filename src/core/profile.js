@@ -355,7 +355,7 @@ window.SFC = window.SFC || {};
       this.save();
       return { id, gains };
     },
-    // chỉ số trong trận (Player.stats) của character — chỉ Main Path / Luyện tập (main.js), online không gửi
+    // chỉ số trong trận (Player.stats) của character — Main Path / Luyện tập (main.js) + online (matchPublic)
     avatarStats() {
       const out = {};
       for (const id of A().order) for (const key in A().list[id].keys) out[key] = this.attrMult(id, key);
@@ -369,20 +369,61 @@ window.SFC = window.SFC || {};
     // gửi cho đối thủ online (phòng chờ)
     public() { return Object.assign(this.avatar(), { cores: this.unlockedCores() }); },
 
+    // online (giống Main Path): kèm vị trí, chỉ số riêng + OVR của character và đồng đội đang chọn (Mates.spec)
+    // role: 'DEF' / 'FWD' · mate: Mates.spec(...) hoặc null
+    matchPublic(role, mate) {
+      return Object.assign(this.public(), { role, stats: this.avatarStats(), ovr: this.ovr(), mate: mate || null });
+    },
+
     // dữ liệu nhận từ máy khác: chỉ giữ giá trị hợp lệ
     sanitizePublic(pub) {
       if (!pub || typeof pub !== 'object') return null;
-      const lk = pub.look || {};
+      const roles = SFC_CONFIG.game.roles;
+      const out = {
+        name: this.cleanName(pub.name || '').trim() || 'PLAYER',
+        level: clampInt(pub.level, 1, P().maxLevel),
+        look: this.sanitizeLook(pub.look),
+        cores: Array.isArray(pub.cores) ? pub.cores.filter((id) => SFC_CONFIG.cores.list[id]) : P().starterCores.slice(),
+      };
+      if (roles.includes(pub.role)) out.role = pub.role;
+      const stats = this.sanitizeStats(pub.stats);
+      if (stats) { out.stats = stats; out.ovr = clampInt(pub.ovr, 1, 99); }
+      if (pub.mate !== undefined) out.mate = this.sanitizeMate(pub.mate);
+      return out;
+    },
+
+    sanitizeLook(lk) {
+      lk = lk || {};
       const okItem = (id, slot) => (ITEMS()[id] && ITEMS()[id].slot === slot ? id : P().defaultLook[slot]);
       const okColor = (c, list) => (list.includes(c) ? c : list[0]);
       return {
-        name: this.cleanName(pub.name || '').trim() || 'PLAYER',
-        level: clampInt(pub.level, 1, P().maxLevel),
-        look: {
-          skin: okColor(lk.skin, SKINS()), hair: okColor(lk.hair, P().hairColors),
-          cut: okItem(lk.cut, 'hair'), face: okItem(lk.face, 'face'), shoes: okItem(lk.shoes, 'shoes'), fx: okItem(lk.fx, 'fx'),
-        },
-        cores: Array.isArray(pub.cores) ? pub.cores.filter((id) => SFC_CONFIG.cores.list[id]) : P().starterCores.slice(),
+        skin: okColor(lk.skin, SKINS()), hair: okColor(lk.hair, P().hairColors),
+        cut: okItem(lk.cut, 'hair'), face: okItem(lk.face, 'face'), shoes: okItem(lk.shoes, 'shoes'), fx: okItem(lk.fx, 'fx'),
+      };
+    },
+
+    // hệ số Player.stats từ máy khác: chỉ các khoá chỉ số có thật (attrs[].keys), kẹp trong khoảng an toàn
+    sanitizeStats(s) {
+      if (!s || typeof s !== 'object') return null;
+      const out = {};
+      for (const id of A().order) for (const k in A().list[id].keys) {
+        const v = +s[k];
+        if (isFinite(v)) out[k] = Math.max(0.3, Math.min(2.5, v));
+      }
+      return Object.keys(out).length ? out : null;
+    },
+
+    // đồng đội (Mates.spec) từ máy khác
+    sanitizeMate(m) {
+      if (!m || typeof m !== 'object') return null;
+      const roles = SFC_CONFIG.game.roles, list = SFC_CONFIG.cores.list;
+      return {
+        name: String(m.name || 'MATE').replace(/[<>&"']/g, '').slice(0, 12) || 'MATE',
+        ovr: clampInt(m.ovr, 1, 99),
+        stats: this.sanitizeStats(m.stats),
+        deck: Array.isArray(m.deck) ? [...new Set(m.deck.filter((id) => list[id]))].slice(0, 12) : [],
+        look: this.sanitizeLook(m.look),
+        role: roles.includes(m.role) ? m.role : null,
       };
     },
 

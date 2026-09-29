@@ -42,6 +42,8 @@ SFC_CONFIG.mainPath = {
     tagline: 'YOUR CLUB',
     desc: 'Your own street club. Climb the Main Path from the back alleys to the Apex.',
     kit: { shirt: '#f3ead7', shirtDark: '#a89e8a', shorts: '#2a2440', accent: '#ffe14f', hair: ['#1a1216', '#3b2415', '#8a4b22'] },
+    // online: 2 người đều đá cho CLB riêng -> khách mặc áo sân khách cho khỏi trùng màu
+    awayKit: { shirt: '#3a7bff', shirtDark: '#2046a8', shorts: '#1b1f3a', accent: '#ffe14f', hair: ['#1a1216', '#3b2415', '#8a4b22'] },
     stats: { speed: 1, power: 1, pass: 1, tackle: 1, dribble: 1, accuracy: 1 },
     coreWeights: {},
     aiStyle: { light: 1, hard: 1 },

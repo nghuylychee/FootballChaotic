@@ -108,6 +108,11 @@ kbd {
 .lobby { display: flex; flex-direction: column; gap: 4px; }
 .lobby .tc-desc { display: none; }
 .lobby .stats { margin-top: 5px; }
+.lobby .lb-squad { display: flex; gap: 4px; margin-top: 5px; }
+.lobby .lb-pl { flex: 1; min-width: 0; background: rgba(0,0,0,.25); padding: 3px 5px; border-left: 2px solid var(--accent); }
+.lobby .lb-pl.mate { border-left-color: var(--muted); }
+.lobby .lb-pl b { display: block; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lobby .lb-pl span { display: block; font-size: 8px; color: var(--muted); }
 .lobby .vs { font-family: var(--px); font-size: 9px; color: #ff3d5a; text-align: center; text-shadow: 1px 1px 0 var(--ink); }
 .lb-note { font-size: 13px; color: var(--muted); text-align: center; margin-top: 2px; }
 .lb-note.ok { color: #9dff3d; animation: pulse 0.8s steps(2) infinite; }
@@ -1291,3 +1296,4 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .sr-fee { margin-top: auto; font-size: 14px; text-align: right; }
 .sr-fee.bad { opacity: 0.55; }
 .in-card em.mate { color: var(--ink); background: #7fe7ff; border-color: #7fe7ff; }
+.in-card em.rival { color: #fff; background: #ff3d5a; border-color: #ff3d5a; }

@@ -20,7 +20,7 @@ window.SFC = window.SFC || {};
     wants(opts) {
       const I = CFG();
       if (!I || !I.enabled) return false;
-      const mode = opts.mainPath ? 'mainPath' : opts.training ? 'training' : 'single';
+      const mode = opts.online ? 'online' : opts.mainPath ? 'mainPath' : opts.training ? 'training' : 'single';
       return I.modes.includes(mode);
     },
 
@@ -89,6 +89,12 @@ window.SFC = window.SFC || {};
         title = mp.promo ? (mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH') : 'MATCHDAY';
         venue = A.name; venueIcon = PX().area(A.id) + ' ';
       } else if (g.opts.training) { comp = 'TRAINING'; title = 'PRACTICE MATCH'; }
+      else if (g.opts.online) {
+        comp = 'ONLINE VERSUS'; title = 'RIVAL MATCH';
+        // sân online = sân của 1 Area (online.js pickArena)
+        const A = MP.areas().find((a) => a.arena === g.opts.arena);
+        if (A) { venue = A.name; venueIcon = PX().area(A.id) + ' '; }
+      }
       // thẻ cầu thủ hiện xen kẽ trái / phải: người chơi (character) lên đầu
       const lists = [0, 1].map((t) => g.teams[t].players.slice().sort((a, b) => (b.isControlled && g.isHuman(t) ? 1 : 0) - (a.isControlled && g.isHuman(t) ? 1 : 0)));
       const delay = {};
@@ -149,11 +155,12 @@ window.SFC = window.SFC || {};
 
     card(g, p, d) {
       const I = CFG();
-      const human = g.isHuman(p.team), you = human && p.isControlled;
-      const num = you ? I.youNumber : I.numbers[p.role] || 7;
-      const tag = you ? '<em class="you">YOU</em>' : p.mate ? '<em class="mate">MATE</em>' : human ? '<em>AI</em>' : '';
+      // online: cả 2 đội do người điều khiển -> character đối thủ gắn nhãn P1 / P2, chỉ character của máy này là YOU
+      const human = g.isHuman(p.team), ctl = human && p.isControlled, you = ctl && p.team === g.humanTeam;
+      const num = ctl ? I.youNumber : I.numbers[p.role] || 7;
+      const tag = you ? '<em class="you">YOU</em>' : ctl ? `<em class="rival">P${p.team + 1}</em>` : p.mate ? '<em class="mate">MATE</em>' : human ? '<em>AI</em>' : '';
       // character / đồng đội có chỉ số riêng: OVR cá nhân
-      const povr = (you || p.mate) && p.ovr ? `<b class="in-povr">${p.ovr}<span>OVR</span></b>` : '';
+      const povr = (ctl || p.mate) && p.ovr ? `<b class="in-povr">${p.ovr}<span>OVR</span></b>` : '';
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">
         <div class="in-num">${num}</div>${tag}${povr}
         <canvas data-pid="${p.id}" data-delay="${d}"></canvas>

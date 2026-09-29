@@ -137,10 +137,12 @@ window.SFC = window.SFC || {};
       BFX.forEach((k, i) => { if (bb[8] & (1 << i)) b.fx[k] = {}; });
       b.skin = bb[9] || null;
 
-      // Core của từng cầu thủ: chỉ thêm id mới (giữ nguyên thứ tự sở hữu)
+      // Core của từng cầu thủ: theo đúng host (trận gương tự bốc Core cho AI lúc khởi tạo -> bỏ, không để lệch)
+      for (const pid in g.cores.own) if (!s.co[pid]) delete g.cores.own[pid];
       for (const pid in s.co) {
         const own = g.cores.own[pid] || (g.cores.own[pid] = []);
-        for (const id of s.co[pid]) if (!own.includes(id)) own.push(id);
+        own.length = 0;
+        own.push(...s.co[pid]);
       }
       for (let t = 0; t < 2; t++) g.cores.st(t, 'aegis_wall').ready = !!s.ae[t];
 

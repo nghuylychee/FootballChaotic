@@ -2,9 +2,15 @@
  * Host luôn là đội 0 (bên trái), khách là đội 1 (bên phải).
  *
  * Gói tin:
- *   khách -> host : hello{v,pf} · team{id} · i{d,p} (phím) · pick{i} · reroll · bye
- *   host  -> khách: lobby{host,guest,hp} · start{opts} · s{f,s,fx,sfx,ev} (snapshot) · toLobby · full · bye
- *   pf / hp = hồ sơ công khai (tên, level, ngoại hình, Core đã mở) — xem SFC.Profile.public()
+ *   khách -> host : hello{v,pf} · pf{pf} (đổi vị trí / đồng đội) · intro (xem xong màn giới thiệu) ·
+ *                   i{d,p} (phím) · pick{i} · reroll · bye
+ *   host  -> khách: lobby{hp} · start{opts} · s{f,s,fx,sfx,ev} (snapshot) · toLobby · full · bye
+ *   pf / hp = hồ sơ trận công khai — xem SFC.Profile.matchPublic(): tên, level, ngoại hình, Core đã mở,
+ *             vị trí + chỉ số / OVR của character, đồng đội đang chọn (Mates.spec)
+ *
+ * Luật trận giống Main Path: mỗi người đá cho CLB riêng (mainPath.playerTeam — không chọn đội; host áo nhà, khách áo
+ * sân khách), chỉ điều khiển character của mình (vị trí tự chọn), đồng đội đang chọn
+ * (NHÂN VẬT > TEAM) do AI đá vị trí còn lại, bốc Core trong deck riêng; character bốc Core trong bộ đã mở khoá.
  */
 window.SFC = window.SFC || {};
 
@@ -12,13 +18,14 @@ window.SFC = window.SFC || {};
   const N = () => SFC_CONFIG.net;
   const Net = () => SFC.Net;
   const Sync = () => SFC.Sync;
-  const TEAMS = () => SFC_CONFIG.teams.order;
+  // CLB của 2 người trong trận online (đăng ký vào teams.list lúc vào trận — Online.registerClubs)
+  const CLUBS = ['online_p1', 'online_p2'];
 
   const Online = {
     role: null,          // 'host' | 'guest'
     status: 'idle',      // idle | busy | lobby | playing
     code: null,
-    lobby: { host: null, guest: null, guestIn: false, hostPf: null, guestPf: null },
+    lobby: { guestIn: false, hostPf: null, guestPf: null },
     game: null,          // host: trận thật · khách: trận "gương"
     overlay: false,      // đang mở menu trong trận (không tạm dừng)
 
@@ -34,8 +41,7 @@ window.SFC = window.SFC || {};
       Net().host().then((code) => {
         this.role = 'host';
         this.code = code;
-        const first = TEAMS()[SFC.Menu.app.sel.team] || TEAMS()[0];
-        this.lobby = { host: first, guest: null, guestIn: false, hostPf: SFC.Profile.public(), guestPf: null };
+        this.lobby = { guestIn: false, hostPf: this.myPf(), guestPf: null };
         this.status = 'lobby';
         SFC.Menu.go('lobby');
       }).catch((e) => this.fail(e));
@@ -49,9 +55,9 @@ window.SFC = window.SFC || {};
       Net().join(code).then(() => {
         this.role = 'guest';
         this.code = code;
-        this.lobby = { host: null, guest: null, guestIn: true, hostPf: null, guestPf: SFC.Profile.public() };
+        this.lobby = { guestIn: true, hostPf: null, guestPf: this.myPf() };
         this.status = 'lobby';
-        Net().send({ t: 'hello', v: N().protocol, pf: SFC.Profile.public() });
+        Net().send({ t: 'hello', v: N().protocol, pf: this.lobby.guestPf });
         SFC.Menu.go('lobby', 'Waiting for room info...');
       }).catch((e) => this.fail(e, 'join'));
     },
@@ -71,8 +77,9 @@ window.SFC = window.SFC || {};
 
     reset() {
       this.role = null; this.status = 'idle'; this.code = null; this.game = null; this.overlay = false;
-      this.lobby = { host: null, guest: null, guestIn: false, hostPf: null, guestPf: null };
+      this.lobby = { guestIn: false, hostPf: null, guestPf: null };
       this.buf = []; this.remote = null;
+      this.myIntro = this.peerIntro = false; this.introLeft = 0;
     },
 
     handlers() {
@@ -89,8 +96,8 @@ window.SFC = window.SFC || {};
       if (this.isHost) {
         // khách rời: host về phòng chờ, phòng vẫn mở cho người khác vào
         const wasPlaying = this.status === 'playing';
-        this.lobby.guest = null; this.lobby.guestIn = false; this.lobby.guestPf = null;
-        this.status = 'lobby'; this.game = null; this.overlay = false;
+        this.lobby.guestIn = false; this.lobby.guestPf = null;
+        this.status = 'lobby'; this.game = null; this.overlay = false; this.introLeft = 0;
         if (wasPlaying) SFC.Menu.app.toMenu('lobby');
         SFC.Menu.go('lobby', 'Your opponent left the room.', true);
       } else {
@@ -102,19 +109,40 @@ window.SFC = window.SFC || {};
       }
     },
 
-    setTeam(delta) {
-      const order = TEAMS(), L = this.lobby;
-      const mine = this.isHost ? L.host : L.guest, other = this.isHost ? L.guest : L.host;
-      if (!mine) return;
-      let i = order.indexOf(mine);
-      do { i = (i + delta + order.length) % order.length; } while (order[i] === other);
-      if (this.isHost) { L.host = order[i]; this.sendLobby(); }
-      else { L.guest = order[i]; Net().send({ t: 'team', id: order[i] }); }
+    // CLB riêng của người chơi (mainPath.playerTeam): tên theo character, chỉ số đội trung tính; t = 0 host (áo nhà) / 1 khách (áo sân khách)
+    club(t, name) {
+      const P = SFC_CONFIG.mainPath.playerTeam;
+      name = name || 'PLAYER';
+      return Object.assign({}, SFC_CONFIG.teams.list[P.id], {
+        name: P.nameFormat.replace('{name}', name),
+        short: name.replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase() || 'P' + (t + 1),
+        tagline: t ? 'GUEST CLUB' : 'HOST CLUB',
+        kit: t ? P.awayKit : P.kit,
+      });
+    },
+    // đăng ký 2 CLB vào teams.list trước khi dựng trận (host + khách đều gọi, cùng tên -> cùng dữ liệu)
+    registerClubs(names) {
+      CLUBS.forEach((id, t) => { SFC_CONFIG.teams.list[id] = this.club(t, names[t]); });
+      return CLUBS;
+    },
+
+    // hồ sơ trận của người chơi tại máy này: vị trí đang chọn (menu sel.ctrl, dùng chung Main Path) + đồng đội đang chọn
+    myPf() {
+      const app = SFC.Menu.app, roles = SFC_CONFIG.game.roles;
+      const idx = app.sel.ctrl ? app.sel.ctrl - 1 : roles.indexOf('FWD');
+      return SFC.Profile.matchPublic(roles[idx], app.mateSpec(idx));
+    },
+
+    // đổi vị trí / đồng đội trong phòng chờ -> báo máy kia
+    updatePf() {
+      const pf = this.myPf();
+      if (this.isHost) { this.lobby.hostPf = pf; this.sendLobby(); }
+      else { this.lobby.guestPf = pf; Net().send({ t: 'pf', pf }); }
       SFC.Menu.render();
     },
 
     sendLobby() {
-      Net().send({ t: 'lobby', host: this.lobby.host, guest: this.lobby.guest, hp: this.lobby.hostPf });
+      Net().send({ t: 'lobby', hp: this.lobby.hostPf });
     },
 
     onData(m) {
@@ -130,17 +158,18 @@ window.SFC = window.SFC || {};
           if (m.v !== N().protocol) { Net().send({ t: 'version' }); setTimeout(() => Net().dropConn(), 300); return; }
           L.guestIn = true;
           L.guestPf = SFC.Profile.sanitizePublic(m.pf);
-          L.hostPf = SFC.Profile.public();
-          L.guest = TEAMS().find((t) => t !== L.host);
+          L.hostPf = this.myPf();
           this.sendLobby();
           SFC.Menu.go('lobby', 'Your opponent joined!');
           SFC.Audio.pick();
           break;
-        case 'team':
-          if (this.status !== 'lobby' || !TEAMS().includes(m.id) || m.id === L.host) { this.sendLobby(); return; }
-          L.guest = m.id;
-          this.sendLobby();
+        case 'pf':
+          if (this.status !== 'lobby') return;
+          L.guestPf = SFC.Profile.sanitizePublic(m.pf);
           SFC.Menu.render();
+          break;
+        case 'intro':
+          this.peerIntro = false;
           break;
         case 'i':
           if (this.remote) this.remote.receive(m.d, m.p);
@@ -161,9 +190,13 @@ window.SFC = window.SFC || {};
     guestData(m) {
       switch (m.t) {
         case 'lobby':
-          this.lobby.host = m.host; this.lobby.guest = m.guest; this.lobby.guestIn = true;
+          this.lobby.guestIn = true;
           this.lobby.hostPf = SFC.Profile.sanitizePublic(m.hp);
-          if (this.status === 'playing') { this.status = 'lobby'; this.game = null; SFC.Menu.app.toMenu('lobby'); }
+          if (this.status === 'playing') {
+            this.status = 'lobby'; this.game = null; SFC.Menu.app.toMenu('lobby');
+            // sau trận có thể đã lên level / đổi chỉ số -> gửi lại hồ sơ trận
+            Net().send({ t: 'pf', pf: (this.lobby.guestPf = this.myPf()) });
+          }
           if (SFC.Menu.page === 'lobby') SFC.Menu.go('lobby');
           break;
         case 'start': this.guestStart(m); break;
@@ -177,33 +210,45 @@ window.SFC = window.SFC || {};
     /* ================= VÀO TRẬN ================= */
     startMatch() {
       const L = this.lobby;
-      if (!this.isHost || !L.guestIn || !L.guest) return;
-      const fwd = SFC_CONFIG.game.roles.indexOf('FWD');
+      if (!this.isHost || !L.guestIn) return;
+      const roles = SFC_CONFIG.game.roles;
+      const pfs = [(L.hostPf = this.myPf()), L.guestPf || SFC.Profile.sanitizePublic({})];
       const opts = {
-        home: L.host, away: L.guest, difficulty: N().difficulty,
+        online: true, difficulty: N().difficulty, mateDifficulty: SFC_CONFIG.mainPath.teammate,
         humanTeam: 0, humans: [0, 1], draftTimeLimit: N().draftTimeLimit,
-        // mỗi người chỉ điều khiển character của mình (ĐÁ CAO), không đổi người
-        solo: [fwd, fwd],
-        // character + Core đã mở khoá của mỗi người (khách gửi lúc vào phòng)
-        avatars: [SFC.Profile.avatar(), L.guestPf],
-        // gacha Core tắt (progression.coreGacha): cả 2 người bốc được mọi Core
-        coreUnlocks: SFC_CONFIG.progression.coreGacha ? [SFC.Profile.unlockedCores(), L.guestPf ? L.guestPf.cores : null] : null,
+        // như Main Path: mỗi người chỉ điều khiển character của mình ở vị trí đã chọn, không đổi người
+        solo: pfs.map((pf) => Math.max(0, roles.indexOf(pf.role || 'FWD'))),
+        // character (ngoại hình + vị trí + chỉ số riêng) của mỗi người
+        avatars: pfs.map((pf) => Object.assign({}, pf, { role: pf.role || 'FWD', mate: undefined })),
+        // đồng đội đang chọn của mỗi người: AI đá vị trí còn lại, bốc Core trong deck riêng
+        mates: pfs.map((pf) => pf.mate || null),
+        // character chỉ bốc Core đã mở khoá (bộ có sẵn + Main Path)
+        coreUnlocks: pfs.map((pf) => pf.cores || null),
+        arena: this.pickArena(),
       };
+      [opts.home, opts.away] = this.registerClubs(pfs.map((pf) => pf.name));
       this.game = new SFC.Game(opts);
       Sync().capture(this.game);
       this.remote = new (Sync().RemoteInput)();
       this.frame = 0;
       this.status = 'playing';
+      // màn giới thiệu 2 đội: trận đứng yên tới khi 2 máy xem xong (hoặc quá giờ chờ)
+      this.holdIntro(SFC.Intro.wants(opts));
       Net().send({ t: 'start', opts });
       SFC.Menu.app.enterOnline(this.game);
     },
 
     guestStart(m) {
       const o = m.opts || {};
+      const avatars = (o.avatars || []).map((a) => SFC.Profile.sanitizePublic(a));
+      const [home, away] = this.registerClubs(avatars.map((a) => a && a.name));
       // trận "gương": cùng đội hình / character như host, nhưng góc nhìn đội 1
       this.game = new SFC.Game({
-        home: o.home, away: o.away, humanTeam: 1, humans: [0, 1], difficulty: N().difficulty, draftTimeLimit: o.draftTimeLimit, solo: o.solo,
-        avatars: (o.avatars || []).map((a) => SFC.Profile.sanitizePublic(a)), coreUnlocks: o.coreUnlocks,
+        home, away, online: true, humanTeam: 1, humans: [0, 1], difficulty: N().difficulty, mateDifficulty: o.mateDifficulty,
+        draftTimeLimit: o.draftTimeLimit, solo: o.solo, coreUnlocks: o.coreUnlocks,
+        avatars,
+        mates: (o.mates || []).map((m) => SFC.Profile.sanitizeMate(m)),
+        arena: SFC_CONFIG.arenas[o.arena] ? o.arena : undefined,
       });
       this.game.events.length = 0;
       this.buf = [];
@@ -215,11 +260,35 @@ window.SFC = window.SFC || {};
       SFC.Menu.app.enterOnline(this.game);
     },
 
+    // sân online: ngẫu nhiên trong các sân Area chủ phòng đã tới (Area chưa mở không lộ ra)
+    pickArena() {
+      const MP = SFC.MainPath, areas = MP.areas(), best = Math.min(areas.length - 1, Math.floor(MP.state.best / MP.nDiv()));
+      const list = areas.slice(0, best + 1).map((a) => a.arena).filter((id) => SFC_CONFIG.arenas[id]);
+      return list.length ? SFC.U.pick(list) : undefined;
+    },
+
+    /* ---------- màn giới thiệu 2 đội (config/intro.config.js, mode 'online') ---------- */
+    // host: giữ trận tới khi cả 2 máy xem xong; quá duration + outro + onlineWait giây thì chạy luôn
+    holdIntro(on) {
+      const I = SFC_CONFIG.intro;
+      this.myIntro = on; this.peerIntro = on;
+      this.introLeft = on ? I.duration + I.outro + (I.onlineWait || 4) : 0;
+    },
+    get introHold() { return this.isHost && (this.myIntro || this.peerIntro) && this.introLeft > 0; },
+
+    // máy này xem xong màn giới thiệu (main.js beginMatch)
+    introDone() {
+      if (!this.isHost) { Net().send({ t: 'intro' }); return; }
+      this.myIntro = false;
+      if (this.introHold) SFC.UI.banner('GET READY', 'Waiting for your opponent...', '#9aa3b5', 1.4);
+    },
+
     backToLobby() {
       if (!this.isHost) return;
       this.status = 'lobby';
       this.game = null;
       this.overlay = false;
+      this.lobby.hostPf = this.myPf();
       this.sendLobby();
       SFC.Menu.app.toMenu('lobby');
     },
@@ -228,6 +297,10 @@ window.SFC = window.SFC || {};
     tick(dt, input) {
       const g = this.game;
       if (!g) return;
+      // màn giới thiệu đang chiếu / host đang chờ máy kia xem xong: trận đứng yên (không mô phỏng, không gửi snapshot)
+      if (this.isHost && this.introLeft > 0) this.introLeft -= dt;
+      if (SFC.Menu.app.screen === 'intro') { SFC.Intro.update(dt, input); return; }
+      if (this.introHold) return;
       if (input.wasPressed('pause') && g.state !== 'ended') {
         this.overlay ? SFC.Menu.app.resume() : SFC.Menu.app.pause();
         return;
