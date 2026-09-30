@@ -43,19 +43,28 @@ Kiểu "chọn 1 trong 3 khi lên cấp" đã quen thuộc: **Hades** (boon sau 
 
 ## 2. Luồng
 
+Mỗi drill chờ là 1 **THẺ DRILL** (item, hình cọc tập xanh lá `ui-cone`). Số thẻ = `attrs.drills.pending`, không có trường lưu mới.
+
 ```
-lên level (Profile.addXp) ──► attrs.drills.pending += 1
+lên level (Profile.addXp) ──► attrs.drills.pending += 1   (= +1 thẻ DRILL)
         │
         ▼
-màn kết quả: "★ +1 DRILL" ──(thưởng chạy xong, ~0.6s)──► màn DRILL (chơi đơn / Main Path)
-                                                           │   ├─ chọn 1 trong 3 ─► cộng chỉ số ─► còn drill? bộ 3 mới : đóng
-                                                           │   ├─ R: đổi cả 3 (1 lần / drill)
-                                                           │   └─ Esc: LATER ─► nút "DRILL (n)" trên màn kết quả
+màn kết quả: "★ +1 DRILL CARD" ──(thưởng chạy xong)──► màn mở thẻ Core / hộp (Reveal, nếu có)
+                                                           │
                                                            ▼
-                                           còn drill chờ ─► CHARACTER → DRILL · trang chủ "★ n DRILLS"
+                                        màn LEVEL UP (chơi đơn / Main Path): quạt thẻ úp vừa nhận
+                                                           │   ├─ Enter: OPEN NOW ─► lật thẻ
+                                                           │   └─ Esc: LATER ─► nút "DRILL CARDS (n)" trên màn kết quả
+                                                           ▼
+                        lật thẻ: rơi ─► chờ Enter ─► rung ─► lật ─► vỡ 3 mảnh ─► 3 poster bay vào chỗ
+                                                           │   ├─ chọn 1 trong 3 ─► STRONGER! ─► còn thẻ? lật thẻ kế : đóng
+                                                           │   ├─ R: đổi cả 3 (1 lần / thẻ)
+                                                           │   └─ Esc: LATER (thẻ giữ nguyên, bộ 3 đã bốc được lưu)
+                                                           ▼
+                   còn thẻ ─► INVENTORY → DRILL CARDS · nút DRILL CARDS (n) ở CHARACTER / STATS · trang chủ "★ n DRILL CARDS"
 ```
 
-Online: dòng "★ +1 DRILL · CHARACTER → DRILL", không mở màn DRILL (vòng lặp online tự xử lý phím).
+Online: dòng "★ +1 DRILL CARD · open in INVENTORY", không mở màn LEVEL UP (vòng lặp online tự xử lý phím).
 
 ## 3. Chỉ số
 
@@ -143,18 +152,34 @@ Bản đầu dùng bảng đen phấn trắng — bỏ vì lệch phong cách ga
 
 - Ô: chỉ số, tên drill, rating trước → sau, thanh nhỏ, mô tả. Dải dưới: 6 rating hiện tại, ô đang chọn tô sáng phần tăng, OVR trước → sau.
 - Phím: ←→ chọn · 1/2/3 chọn thẳng · Enter · R đổi (mờ khi đã dùng) · Esc / Backspace = LATER. Chuột bấm ô / nút LATER / REROLL.
-- Chọn xong: xịt chữ **DONE!** hồng (quét từ trái sang, có vệt sơn chảy) lên poster, 2 poster kia xám đi ~0.5s; bộ 3 kế tiếp dán vào; hết drill thì đóng.
+- Chọn xong: xịt chữ **DONE!** hồng (quét từ trái sang, có vệt sơn chảy) lên poster, 2 poster kia xám đi ~0.5s; màn STRONGER!; còn thẻ thì lật thẻ kế, hết thì đóng.
+
+### Màn LEVEL UP (chỉ sau trận, `Drill.open(cb, { notice: { earned, from, to } })`)
+
+- Cùng tường gạch: tiêu đề **LEVEL UP!** + "LV a → LV b", quạt tối đa 5 thẻ úp vừa nhận (nhiều hơn ghi ×n), "+N DRILL CARDS", số thẻ đang có.
+- Nút **OPEN NOW** (Enter) → màn lật thẻ · **LATER** (Esc) → về màn kết quả, thẻ nằm trong túi đồ.
+
+### Màn lật thẻ (mở từ màn LEVEL UP, túi đồ, nút DRILL CARDS (n) ở màn kết quả)
+
+- Lá thẻ úp (mặt sau kiểu lá mở thưởng `.rv3-back`, viền xanh lá, cọc ở giữa) rơi xuống, chờ Enter / click, rung, lật (chớp + hạt pixel).
+- Mặt trước là 3 mảnh poster (màu sơn + icon của đúng bộ 3 đã bốc); mảnh vỡ bay toả ra, rồi 3 poster thật bay từ giữa tường vào ô.
+- Nhịp theo `data-phase` trên `.dr-opening`: drop · idle · charge · flip · burst. Esc = LATER ở mọi nhịp.
 
 ### Màn kết quả
 
-- Lên level: dòng "★ +N DRILL · pick after this screen" (online: "· CHARACTER → DRILL").
-- Còn drill chờ: nút đầu tiên là **DRILL (n)** để mở lại sau khi bấm LATER.
+- Lên level: dòng "★ +N DRILL CARDS" (online: "· open in INVENTORY").
+- Còn thẻ: nút đầu tiên là **DRILL CARDS (n)**, mở thẳng màn lật thẻ.
+
+### Túi đồ (`src/ui/gacha.js`)
+
+- 3 mục: **APPEARANCE** (costume, lọc theo slot: tất cả / tóc & mũ / mặt / giày / trail) · **CORES** (lọc theo trường phái) · **DRILL CARDS**.
+- DRILL CARDS: 1 ô gộp "cọc ×n", khung chi tiết + Enter OPEN → màn lật thẻ. Không phân rã được.
 
 ### Menu
 
-- Trang chủ: nút CHARACTER "★ n drills ready!", thẻ hồ sơ có huy hiệu "★ n DRILLS".
-- CHARACTER: dòng **DRILL** ở đầu (chỉ khi còn drill chờ) · STATS · APPEARANCE · INVENTORY.
-- STATS: 6 dòng chỉ xem (↑↓ đổi khung chi tiết), radar, OVR, nút DRILL (n) khi còn drill chờ.
+- Trang chủ: nút CHARACTER "★ n drill cards ready!", thẻ hồ sơ có huy hiệu "★ n DRILL CARDS".
+- CHARACTER: dòng **DRILL CARDS (n)** ở đầu (chỉ khi còn thẻ) → túi đồ, mục DRILL CARDS · STATS · APPEARANCE · INVENTORY.
+- STATS: 6 dòng chỉ xem (↑↓ đổi khung chi tiết), radar, OVR, nút DRILL CARDS (n) khi còn thẻ → túi đồ, mục DRILL CARDS.
 
 ## 8. Dữ liệu lưu & chuyển đổi
 

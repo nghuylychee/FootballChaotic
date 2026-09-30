@@ -102,11 +102,12 @@ SFC_CONFIG.progression = {
 
   // Costume, phối tự do. slot: hair (tóc / mũ) · face (mặt) · shoes (giày) · fx (hiệu ứng khi chạy)
   // default: true = có sẵn, không nằm trong hộp, không phân rã được. Hình vẽ ở src/render/sprites.js (theo id).
+  // icon / color: nút lọc slot ở túi đồ (APPEARANCE), icon pixel ở render/pixelicons.js
   slots: {
-    hair:  { label: 'HAIR & HATS' },
-    face:  { label: 'FACE' },
-    shoes: { label: 'SHOES' },
-    fx:    { label: 'TRAIL FX' },
+    hair:  { label: 'HAIR & HATS', icon: 'slot-hair',  color: '#ff3d5a' },
+    face:  { label: 'FACE',        icon: 'slot-face',  color: '#f2c79a' },
+    shoes: { label: 'SHOES',       icon: 'slot-shoes', color: '#c7ccd6' },
+    fx:    { label: 'TRAIL FX',    icon: 'slot-fx',    color: '#ffe14f' },
   },
   // Mỗi slot 20 món: 1–2 mặc định · ~6–7 THƯỜNG · ~5 HIẾM · 4 SỬ THI · 2–3 HUYỀN THOẠI · 1 THẦN THOẠI
   items: {

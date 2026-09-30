@@ -20,7 +20,9 @@ window.SFC = window.SFC || {};
     confetti: '🎊', petals: '🌸', coins: '🪙', neon: '💠', frost: '🧊', lightning: '⚡', rainbow: '🌈', fire: '🔥',
     shadow: '👻', galaxy: '🌌', aura: '🌟',
   };
-  const INV_TABS = [['all', 'ALL'], ['hair', 'HAIR & HATS'], ['face', 'FACE'], ['shoes', 'SHOES'], ['fx', 'TRAIL FX'], ['core', 'CORES']];
+  // wear = costume (lọc theo slot) · core = Core (lọc theo trường phái) · drill = thẻ DRILL (mở -> chọn 1 trong 3, ui/drill.js)
+  const INV_TABS = [['wear', 'APPEARANCE'], ['core', 'CORES'], ['drill', 'DRILL CARDS']];
+  const DRILL_COLOR = '#6bff4f';   // viền / ánh thẻ DRILL (cọc xanh lá)
   const INV_COLS = 6;
   const REEL_STEP = 56, REEL_CARD = 52, REEL_W = 560; // khớp CSS .rcard / .reel
   const REASON = { gold: 'Not enough gold.', level: 'Your level is too low for this box.' };
@@ -29,6 +31,7 @@ window.SFC = window.SFC || {};
   const ARCH = () => SFC_CONFIG.cores.archetypes;
   const PX = () => SFC.PixelIcon;   // icon pixel art (render/pixelicons.js)
   const ARCH_KEYS = () => ['all'].concat(Object.keys(ARCH()));
+  const SLOT_KEYS = () => ['all'].concat(Object.keys(PROG().slots));
 
   // "Thường đi cùng": 2–3 Core hợp build với Core id (cùng trường phái; ưu tiên TẠO <-> DÙNG, Tuyệt kỹ, cầu nối)
   function suggest(id) {
@@ -80,10 +83,11 @@ window.SFC = window.SFC || {};
     return `<div class="boxart ${big ? 'big' : ''}" style="--bc:${color}"><i></i><b>?</b></div>`;
   }
 
-  function nameOf(e) { return e.kind === 'core' ? CORE_LIST()[e.id].name : PROG().items[e.id].name; }
+  function nameOf(e) { return e.kind === 'drill' ? 'Drill Card' : e.kind === 'core' ? CORE_LIST()[e.id].name : PROG().items[e.id].name; }
 
   // icon của 1 món: costume = canvas (vẽ ở bindIcons), Core = emoji
   function iconHtml(e) {
+    if (e.kind === 'drill') return `<span class="ic-emoji">${PX().ui('cone', 'x2')}</span>`;
     if (e.kind === 'core') return `<span class="ic-emoji">${PX().core(e.id, 'x2')}</span>`;
     const it = PROG().items[e.id];
     return `<canvas data-icon="${e.id}" width="40" height="40"></canvas>${it.slot === 'fx' && FX_ICON[e.id] ? `<span class="ic-fx">${PX().html('fx-' + e.id, FX_ICON[e.id])}</span>` : ''}`;
@@ -105,6 +109,7 @@ window.SFC = window.SFC || {};
     invTab: 0,
     invSel: 0,
     invArch: 0,       // mục CORE: lọc theo trường phái (0 = tất cả)
+    invSlot: 0,       // mục APPEARANCE: lọc theo slot costume (0 = tất cả)
     opening: null,    // lượt quay hiện tại
     confirm: null,    // { key, t } — phân rã món hiếm cần bấm 2 lần
     shopBack: 'home',
@@ -276,21 +281,27 @@ window.SFC = window.SFC || {};
     invEntries() {
       const tab = INV_TABS[this.invTab][0], P = PROG(), d = PF().data;
       const out = [];
-      if (tab !== 'core') {
+      // thẻ DRILL: 1 ô gộp, số thẻ = số drill chờ chọn (Profile.drillsPending)
+      if (tab === 'drill') {
+        const n = PF().drillsPending();
+        return n > 0 ? [{ kind: 'drill', id: 'drill', rarity: null, count: n, def: false, locked: false }] : [];
+      }
+      if (tab === 'wear') {
+        const slot = SLOT_KEYS()[this.invSlot];
         for (const id in P.items) {
-          if (tab !== 'all' && P.items[id].slot !== tab) continue;
+          if (slot !== 'all' && P.items[id].slot !== slot) continue;
           if (PF().count('item', id) > 0) out.push(entry('item', id));
         }
       }
-      if (tab === 'core' || tab === 'all') {
-        const arch = tab === 'core' ? ARCH_KEYS()[this.invArch] : 'all';
+      if (tab === 'core') {
+        const arch = ARCH_KEYS()[this.invArch];
         const ok = (id) => arch === 'all' || CORE_LIST()[id].tags.includes(arch);
         if (!P.coreGacha) {
-          // gacha Core tắt: mục CORE là bộ sưu tập đủ mọi Core (xem ảnh động, gợi ý build); mục TẤT CẢ chỉ còn costume
-          if (tab === 'core') Object.keys(CORE_LIST()).filter(ok).forEach((id) => out.push(entry('core', id)));
+          // gacha Core tắt: mục CORE là bộ sưu tập đủ mọi Core (xem ảnh động, gợi ý build)
+          Object.keys(CORE_LIST()).filter(ok).forEach((id) => out.push(entry('core', id)));
         } else {
           for (const id of Object.keys(d.cores)) if (d.cores[id] > 0 && ok(id)) out.push(entry('core', id));
-          if (tab === 'core') P.starterCores.filter(ok).forEach((id) => out.push(entry('core', id)));
+          P.starterCores.filter(ok).forEach((id) => out.push(entry('core', id)));
         }
       }
       // Core đã mở trước Core còn khoá · hiếm nhất lên đầu, đồ mặc định xuống cuối
@@ -298,6 +309,7 @@ window.SFC = window.SFC || {};
     },
 
     isEquipped(e) {
+      if (e.kind === 'drill') return false;
       if (e.kind === 'core') return PF().unlockedCores().includes(e.id);
       return PF().data.look[PROG().items[e.id].slot] === e.id;
     },
@@ -306,29 +318,43 @@ window.SFC = window.SFC || {};
       const list = this.invEntries();
       this.invSel = Math.max(0, Math.min(this.invSel, list.length - 1));
       const tabs = `<div class="tabs">${INV_TABS.map(([, l], i) => `<button class="tab ${i === this.invTab ? 'sel' : ''}" data-itab="${i}">${l}</button>`).join('')}</div>`;
-      const coreTab = INV_TABS[this.invTab][0] === 'core';
+      const tab = INV_TABS[this.invTab][0], coreTab = tab === 'core', drillTab = tab === 'drill';
+      // nút lọc (dùng chung CORES / APPEARANCE): ★ = tất cả, còn lại = icon pixel + màu của nhóm
+      const chips = (keys, sel, attr, group) => `<div class="arch-filter">${keys.map((k, i) => {
+        const g = group(k);
+        return `<button class="af ${i === sel ? 'sel' : ''}" ${attr}="${i}" style="--c:${g ? g.color : '#e6dccb'}" title="${g ? g.label : 'All'}">${g ? g.icon : '★'}</button>`;
+      }).join('')}</div>`;
       let filter = '';
-      if (coreTab) {
-        filter = `<div class="arch-filter">${ARCH_KEYS().map((k, i) => {
-          const a = ARCH()[k];
-          return `<button class="af ${i === this.invArch ? 'sel' : ''}" data-iarch="${i}" style="--c:${a ? a.color : '#e6dccb'}" title="${a ? a.label : 'All'}">${a ? PX().arch(k) : '★'}</button>`;
-        }).join('')}</div>`;
-      }
+      if (coreTab) filter = chips(ARCH_KEYS(), this.invArch, 'data-iarch', (k) => ARCH()[k] && { color: ARCH()[k].color, label: ARCH()[k].label, icon: PX().arch(k) });
+      else if (tab === 'wear') filter = chips(SLOT_KEYS(), this.invSlot, 'data-islot', (k) => PROG().slots[k] && { color: PROG().slots[k].color, label: PROG().slots[k].label, icon: PX().html(PROG().slots[k].icon) });
       const dupes = this.dupes(list);
+      const empty = drillTab ? 'No drill cards yet. Level up to earn them!' : 'Nothing here yet. Open a box in the SHOP!';
       const cards = list.map((e, i) => {
         const cls = [i === this.invSel ? 'sel' : '', this.isEquipped(e) && e.kind === 'item' ? 'eq' : '', e.def ? 'def' : '', e.locked ? 'lock' : ''].join(' ');
         const badge = e.def ? '' : `<b class="ic-count">×${e.count}</b>`;
-        return `<div class="icard ${cls}" data-ic="${i}" style="--rc:${RAR(e.rarity).color}">${iconHtml(e)}${badge}${cls.includes('eq') ? '<i class="ic-eq">E</i>' : ''}${e.locked ? PX().ui('lock', 'ic-lock') : ''}</div>`;
-      }).join('') || '<div class="inv-empty">Nothing here yet. Open a box in the SHOP!</div>';
+        const rc = e.kind === 'drill' ? DRILL_COLOR : RAR(e.rarity).color;
+        return `<div class="icard ${cls}" data-ic="${i}" style="--rc:${rc}">${iconHtml(e)}${badge}${cls.includes('eq') ? '<i class="ic-eq">E</i>' : ''}${e.locked ? PX().ui('lock', 'ic-lock') : ''}</div>`;
+      }).join('') || `<div class="inv-empty">${empty}</div>`;
       return `${this.header('INVENTORY', tabs)}
         <div class="gacha-body inv-g">
           <div class="inv-left">${filter}<div class="inv-grid">${cards}</div></div>
           <div class="inv-detail">${list[this.invSel] ? this.invDetail(list[this.invSel]) : ''}</div>
         </div>
-        <!--msg--><div class="m-hint">${K('switch', 'Q')} / ${K('sprint', 'E')} switch tab${coreTab ? ` · ${K('skill', 'Z')} filter by archetype` : ''} · ←↑↓→ select${coreTab && !PROG().coreGacha ? '' : ` · ${K('confirm', 'Enter')} equip · ${K('dismantle', 'X')} dismantle`}${dupes.count ? ` · ${K('restart', 'R')} dismantle ${dupes.count} duplicates (+${dupes.gold})` : ''} · ${K('back', 'Esc')} back</div>`;
+        <!--msg--><div class="m-hint">${K('switch', 'Q')} / ${K('sprint', 'E')} switch tab${filter ? ` · ${K('skill', 'Z')} filter by ${coreTab ? 'archetype' : 'slot'}` : ''} · ←↑↓→ select${drillTab ? (list.length ? ` · ${K('confirm', 'Enter')} open` : '') : coreTab && !PROG().coreGacha ? '' : ` · ${K('confirm', 'Enter')} equip · ${K('dismantle', 'X')} dismantle`}${dupes.count ? ` · ${K('restart', 'R')} dismantle ${dupes.count} duplicates (+${dupes.gold})` : ''} · ${K('back', 'Esc')} back</div>`;
     },
 
     invDetail(e) {
+      if (e.kind === 'drill') {
+        const D = PROG().attrs.drills;
+        return `<div class="sd-preview inv-drill" style="--rc:${DRILL_COLOR}">${PX().ui('cone', 'x3')}</div>
+        <div class="sd-side">
+          <div class="rv-rar" style="--rc:${DRILL_COLOR}">LEVEL-UP REWARD</div>
+          <div class="sd-name">DRILL CARD</div>
+          <div class="sd-desc">Open a card to pick 1 of ${D.choices} drills. Each pick raises your stats for good. You earn ${D.perLevel} card every level.</div>
+          <div class="sd-req">Owned ×${e.count}</div>
+          <div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> OPEN</div>
+        </div>`;
+      }
       const r = RAR(e.rarity), val = PF().dismantleValue(e.kind, e.id);
       const count = e.def ? 'Default' : `Owned ×${e.count}`;
       if (e.kind === 'core') {
@@ -364,7 +390,7 @@ window.SFC = window.SFC || {};
     // đồ trùng trong mục đang xem: phân rã hết, mỗi món giữ lại 1
     dupes(list = this.invEntries()) {
       let count = 0, gold = 0;
-      for (const e of list) if (!e.def && e.count > 1) { count += e.count - 1; gold += (e.count - 1) * PF().dismantleValue(e.kind, e.id); }
+      for (const e of list) if (!e.def && e.kind !== 'drill' && e.count > 1) { count += e.count - 1; gold += (e.count - 1) * PF().dismantleValue(e.kind, e.id); }
       return { count, gold };
     },
 
@@ -379,7 +405,7 @@ window.SFC = window.SFC || {};
     },
 
     dismantleEntry(menu, e) {
-      if (!e || e.def || e.count <= 0) return;
+      if (!e || e.def || e.kind === 'drill' || e.count <= 0) return;
       const r = rank(e.rarity), last = e.count === 1;
       const risky = r >= rank('epic') || (last && this.isEquipped(e)) || (last && e.kind === 'core');
       const val = PF().dismantleValue(e.kind, e.id);
@@ -391,11 +417,25 @@ window.SFC = window.SFC || {};
     },
 
     equipEntry(menu, e) {
+      if (e && e.kind === 'drill') return this.openDrillCard(menu);
       if (!e || e.kind !== 'item') return;
       if (this.isEquipped(e)) return;
       PF().equip(e.id);
       SFC.Audio.pick();
       menu.setMsg(`Equipped: ${nameOf(e)}`);
+    },
+
+    // mở 1 thẻ DRILL: màn lật thẻ -> chọn 1 trong 3 (ui/drill.js); đóng thì vẽ lại túi đồ (số thẻ đã đổi)
+    openDrillCard(menu) {
+      SFC.Drill.open(() => menu.render());
+    },
+
+    // mở túi đồ ở đúng mục (vd. nút DRILL CARDS ở CHARACTER / STATS); back = trang về khi bấm Esc
+    openInv(menu, tabKey, back) {
+      const i = INV_TABS.findIndex(([k]) => k === tabKey);
+      if (i >= 0) { this.invTab = i; this.invSel = 0; }
+      this.invBack = back;
+      menu.go('inv');
     },
 
     /* ================= PHÍM ================= */
@@ -438,7 +478,9 @@ window.SFC = window.SFC || {};
       let moved = false;
       if (input.wasPressed('switch')) { this.invTab = wrap(this.invTab - 1, INV_TABS.length); this.invSel = 0; moved = true; }
       if (input.wasPressed('sprint')) { this.invTab = wrap(this.invTab + 1, INV_TABS.length); this.invSel = 0; moved = true; }
-      if (input.wasPressed('skill') && INV_TABS[this.invTab][0] === 'core') { this.invArch = wrap(this.invArch + 1, ARCH_KEYS().length); this.invSel = 0; moved = true; }
+      const tab = INV_TABS[this.invTab][0];
+      if (input.wasPressed('skill') && tab === 'core') { this.invArch = wrap(this.invArch + 1, ARCH_KEYS().length); this.invSel = 0; moved = true; }
+      if (input.wasPressed('skill') && tab === 'wear') { this.invSlot = wrap(this.invSlot + 1, SLOT_KEYS().length); this.invSel = 0; moved = true; }
       if (n) {
         if (input.wasPressed('left')) { this.invSel = Math.max(0, this.invSel - 1); moved = true; }
         if (input.wasPressed('right')) { this.invSel = Math.min(n - 1, this.invSel + 1); moved = true; }
@@ -483,6 +525,8 @@ window.SFC = window.SFC || {};
       }
       const af = e.target.closest('[data-iarch]');
       if (af) { this.invArch = +af.dataset.iarch; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
+      const sf = e.target.closest('[data-islot]');
+      if (sf) { this.invSlot = +sf.dataset.islot; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
       const tab = e.target.closest('[data-itab]');
       if (tab) { this.invTab = +tab.dataset.itab; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
       const ic = e.target.closest('[data-ic]');

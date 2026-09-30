@@ -157,7 +157,9 @@ window.SFC = window.SFC || {};
             return [
               // test PROLOGUE (tắt: config/ftue.config.js -> cheatButton = false)
               ...(SFC_CONFIG.ftue.cheatButton ? [{ kind: 'btn', label: 'TEST FTUE', sub: 'Cheat · replay prologue', danger: true, act: () => SFC.Tutorial.begin(this.app) }] : []),
-              { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drills · stats reset on close', danger: true, act: () => this.testDrill() },
+              { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drill cards · stats reset on close', danger: true, act: () => this.testDrill() },
+              // màn LEVEL UP sau trận (thẻ drill vừa nhận) -> lật thẻ -> chọn, không cần đá trận
+              { kind: 'btn', label: 'LEVEL UP TEST', sub: 'Cheat · level-up notice + 3 drill cards · stats reset on close', danger: true, act: () => this.testDrill(3, true) },
             ];
           }
           return [];
@@ -175,8 +177,8 @@ window.SFC = window.SFC || {};
           const d = PF().data;
           const nItems = Object.values(d.items).reduce((a, b) => a + b, 0) + Object.values(d.cores).reduce((a, b) => a + b, 0);
           const n = PF().drillsPending(), list = [];
-          // DRILL: chỉ hiện khi còn drill chờ chọn (docs/DRILL_DESIGN.md)
-          if (n) list.push({ kind: 'btn', label: 'DRILL', sub: `${n} ready · pick 1 of 3`, hot: true, act: () => this.openDrill() });
+          // DRILL CARDS: chỉ hiện khi còn thẻ drill -> túi đồ, mục DRILL CARDS (docs/DRILL_DESIGN.md)
+          if (n) list.push({ kind: 'btn', label: `DRILL CARDS (${n})`, sub: 'Open a card · pick 1 of 3', hot: true, act: () => G().openInv(this, 'drill', 'char') });
           return list.concat([
             { kind: 'btn', label: 'STATS', sub: `OVR ${PF().ovr()}`, act: () => this.go('attrs') },
             { kind: 'btn', label: 'TEAM', sub: this.teamSub(), hot: SFC.Mates.scoutReady(), act: () => { TM().back0 = 'char'; TM().open(this, SFC.Mates.scoutReady() ? 1 : 0); } },
@@ -194,10 +196,10 @@ window.SFC = window.SFC || {};
           ];
         }
         case 'attrs': {
-          // STATS (chỉ xem): 1 dòng mỗi chỉ số (↑↓ đổi khung chi tiết) + DRILL khi còn drill chờ
+          // STATS (chỉ xem): 1 dòng mỗi chỉ số (↑↓ đổi khung chi tiết) + DRILL CARDS khi còn thẻ drill (-> túi đồ)
           const A = ATTRS(), n = PF().drillsPending();
           const list = A.order.map((id) => ({ kind: 'attr', label: A.list[id].label, attr: id, bar: this.attrBar(id) }));
-          if (n) list.push({ kind: 'btn', label: `DRILL (${n})`, sub: 'Pick 1 of 3 to raise your stats', hot: true, act: () => this.openDrill() });
+          if (n) list.push({ kind: 'btn', label: `DRILL CARDS (${n})`, sub: 'Open a card to raise your stats', hot: true, act: () => G().openInv(this, 'drill', 'attrs') });
           return list;
         }
         case 'path': {
@@ -617,14 +619,11 @@ window.SFC = window.SFC || {};
       return `<b class="st-num">${pf.rating(id)}</b><span class="st-bar"><i class="have" style="width:${w}%"></i></span>`;
     },
 
-    // "2 drills" — số drill chờ chọn (trang chủ / thẻ hồ sơ), '' khi không còn
+    // "2 drill cards" — số thẻ drill chờ mở (trang chủ / thẻ hồ sơ), '' khi không còn
     drillCount() {
       const n = PF().drillsPending();
-      return n ? `${n} drill${n > 1 ? 's' : ''}` : '';
+      return n ? `${n} drill card${n > 1 ? 's' : ''}` : '';
     },
-
-    // mở màn DRILL (ui/drill.js) trên menu; đóng thì vẽ lại trang đang mở (số drill / chỉ số đã đổi)
-    openDrill() { SFC.Drill.open(() => this.render()); },
 
     // RESET DATA (SETTINGS): xoá hồ sơ rồi tải lại trang -> chạy như lần đầu chơi (đặt tên, LV1, Area đầu).
     // Giữ cài đặt máy (hiệu ứng, phím) — chỉ xoá tiến trình
@@ -636,16 +635,18 @@ window.SFC = window.SFC || {};
     // cheat DRILL TEST: mở màn DRILL với vài drill chờ, không cần đá trận. Hồ sơ không được ghi trong lúc thử,
     // đóng màn thì trả chỉ số + drill chờ về như cũ. Bản Steam: bị xoá (SFC_DEV)
     ...(SFC_DEV && {
-      testDrill(n = 5) {
+      // notice = true: mở từ màn LEVEL UP như sau trận (giả lập vừa lên n level)
+      testDrill(n = 5, notice = false) {
         const pf = PF(), keep = JSON.parse(JSON.stringify(pf.data.attrs));
         pf.sandbox = true;
         pf.data.attrs.drills.pending = n;
         pf.data.attrs.drills.offer = null;
+        const lv = pf.data.level;
         SFC.Drill.open(() => {
           pf.data.attrs = keep;
           pf.sandbox = false;
           this.render();
-        });
+        }, notice ? { notice: { earned: n, from: Math.max(1, lv - n), to: lv } } : {});
       },
     }),
 
@@ -676,8 +677,8 @@ window.SFC = window.SFC || {};
         detail = `<div class="sd-head"><b>${esc(S.label)}</b><span>${pf.rating(id)}</span></div>
           <p>${esc(S.desc)}</p><div class="sd-mult">${mults}</div>`;
       } else {
-        detail = `<div class="sd-head"><b>DRILL</b></div>
-          <p>Every level gives ${A.drills.perLevel} drill: pick 1 of ${A.drills.choices} to raise your stats for good. Offers lean toward what you've already trained.</p>`;
+        detail = `<div class="sd-head"><b>DRILL CARDS</b></div>
+          <p>Every level gives ${A.drills.perLevel} drill card. Open it in the INVENTORY to pick 1 of ${A.drills.choices} drills and raise your stats for good. Offers lean toward what you've already trained.</p>`;
       }
       return `<div class="st-panel">
         <div class="st-top">${this.statRadar(id)}

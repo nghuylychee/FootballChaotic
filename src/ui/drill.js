@@ -1,12 +1,17 @@
-/* Drill — màn DRILL (docs/DRILL_DESIGN.md): mỗi drill chờ = chọn 1 trong 3, cộng chỉ số character vĩnh viễn.
+/* Drill — màn DRILL (docs/DRILL_DESIGN.md): mỗi drill chờ = 1 THẺ DRILL (cọc xanh lá, nằm trong túi đồ);
+ * mở thẻ = chọn 1 trong 3, cộng chỉ số character vĩnh viễn.
+ * Thứ tự: notice (tuỳ chọn) -> card -> chọn 3 poster -> STRONGER! -> thẻ kế / đóng.
+ *   notice: LEVEL UP! + quạt thẻ úp vừa nhận, OPEN NOW / LATER (chỉ sau trận: ui.js -> open(cb, { notice }))
+ *   card  : lá thẻ rơi xuống (drop) -> chờ (idle) -> rung (charge) -> lật (flip) -> vỡ thành 3 mảnh (burst) -> 3 poster bay vào chỗ
+ *   Túi đồ (gacha.js) và nút DRILL CARDS ở màn kết quả mở thẳng từ card.
  * Giao diện "tường phố": tường gạch (màu gạch sân Back Alley) + 3 poster dán băng keo, stencil icon chỉ số trên vệt sơn,
  * chọn xong xịt chữ DONE! lên poster. Lớp phủ trên cùng (#drill), mở trên màn kết quả (ui.js) hoặc menu (CHARACTER / STATS).
  * Bảng YOU bên trái: character xoay người + 6 thanh chỉ số, ô đang chọn hiện phần tăng (vệt sáng) + OVR trước → sau.
  * Chọn xong -> màn STRONGER! (data-phase trên .dr-pw, hoạt ảnh ở CSS):
  *   in   : tiêu đề + character rơi xuống        fill : từng thanh chỉ số đầy dần, số đếm lên
  *   pop  : chớp trắng + hạt pixel + tư thế sút, OVR đóng dấu (rung nếu OVR tăng)
- *   shown: chờ Enter -> bộ 3 kế tiếp / đóng (gọi onClose)
- * drills.upScreen = false: fill + pop chạy luôn trên bảng YOU, rồi tự sang bộ kế.
+ *   shown: chờ Enter -> lật thẻ kế tiếp / đóng (gọi onClose)
+ * drills.upScreen = false: fill + pop chạy luôn trên bảng YOU, rồi tự sang thẻ kế.
  * Khi active, main.js gọi Drill.update(dt, input) mỗi bước (vẽ character + nhận phím).
  * Số liệu drill ở config/progression.config.js -> attrs.drills; bốc / lưu / cộng ở src/core/profile.js.
  */
@@ -22,14 +27,22 @@ window.SFC = window.SFC || {};
   // thời lượng từng nhịp màn STRONGER! (giây); fill = mỗi chỉ số tăng, hold = giữ sau pop khi chạy trên bảng YOU
   const UP = { in: 0.3, fill: 0.35, pop: 0.45, pose: 0.35, hold: 0.8 };
   const DIRS = [Math.PI / 2, 0, -Math.PI / 2, Math.PI];   // xoay người khoe trang phục (giống menu)
+  // thời lượng từng nhịp màn lật thẻ (giây), khớp CSS .dr-opening[data-phase]
+  const CARD = { drop: 0.45, charge: 0.55, flip: 0.35, burst: 0.4 };
+  const CONE = '#6bff4f';   // màu thẻ DRILL (cọc xanh lá, pixelicons.js -> ui-cone)
+  const FAN_MAX = 5;        // màn LEVEL UP: vẽ tối đa ngần này lá úp, nhiều hơn thì ghi ×n
   const pct = (r) => ((r - A().base) / (A().max - A().base)) * 100;
+  const plural = (n, w) => `${n} ${w}${n > 1 ? 'S' : ''}`;
 
   const Drill = {
     active: false,
     sel: 0,
+    stage: null,      // notice | card | pick
+    card: null,       // màn lật thẻ: { phase, t, tickT }
 
-    // mở màn DRILL; không còn drill chờ thì gọi onClose luôn
-    open(onClose) {
+    // mở màn DRILL; không còn thẻ drill thì gọi onClose luôn.
+    // opts.notice = { earned, from, to } -> bắt đầu ở màn LEVEL UP (sau trận), không có -> lật thẻ luôn
+    open(onClose, opts = {}) {
       if (PF().drillsPending() <= 0) { if (onClose) onClose(); return; }
       const el = this.el || (this.el = document.getElementById('drill'));
       if (!this.bound) {
@@ -43,13 +56,20 @@ window.SFC = window.SFC || {};
       this.sel = 0;
       this.animT = 0;
       el.classList.remove('hidden');
-      this.render();
-      SFC.Audio.whoosh();
+      if (opts.notice) {
+        this.notice = opts.notice;
+        this.stage = 'notice';
+        this.render();
+        SFC.Audio.upgrade();
+      } else this.startCard();
     },
 
     close() {
       if (!this.active) return;
       this.active = false;
+      this.stage = null;
+      this.card = null;
+      this.notice = null;
       this.up = null;
       clearTimeout(this.pickT);
       this.el.classList.add('hidden');
@@ -60,18 +80,30 @@ window.SFC = window.SFC || {};
       if (cb) cb();
     },
 
-    // mỗi bước (main.js): nhịp màn STRONGER! · vẽ character · phím
+    // mỗi bước (main.js): nhịp màn lật thẻ / STRONGER! · vẽ character · phím
     update(dt, input) {
+      if (!this.active) return;
+      if (this.card) this.tickCard(dt);
       if (!this.active) return;
       if (this.up) this.tickUp(dt);
       if (!this.active) return;
       this.drawAvatar(dt);
-      if (this.up) this.upInput(input);
+      if (this.stage === 'notice') this.noticeInput(input);
+      else if (this.card) this.cardInput(input);
+      else if (this.up) this.upInput(input);
       else this.input(input);
     },
 
     /* ---------------- DOM ---------------- */
     render() {
+      if (this.stage === 'notice') return this.renderNotice();
+      // đổi thiết bị giữa lúc lật thẻ: đang rơi / rung -> vẽ lại lúc chờ; đã lật -> sang luôn 3 poster
+      if (this.card) {
+        const P = this.card.phase;
+        if (P === 'flip' || P === 'burst') return this.toPick();
+        this.card.phase = 'idle';
+        return this.renderCard();
+      }
       // đổi thiết bị giữa màn STRONGER!: vẽ lại ở trạng thái đã xong; chạy trên bảng YOU thì bỏ qua hoạt ảnh
       if (this.up) {
         if (!this.up.inline) return this.renderUp(true);
@@ -83,12 +115,15 @@ window.SFC = window.SFC || {};
       if (this.sel >= offer.length) this.sel = 0;
       const n = PF().drillsPending(), left = PF().rerollsLeft();
       const tiles = offer.map((id, i) => this.tile(id, i)).join('');
+      // vừa lật thẻ: 3 poster bay từ giữa lá ra chỗ (chỉ lần vẽ đầu, reroll / đổi thiết bị thì không)
+      const fly = this.fromCard;
+      this.fromCard = false;
       const pad = SFC.Input.device === 'pad';
       const pick = pad ? `←→ + ${esc(K('confirm', 'Enter'))} pick` : '1 / 2 / 3 or ←→ + Enter pick';
       this.el.innerHTML = `<div class="drill">
         <div class="dr-wall">${this.tags()}
-          <div class="dr-head"><b class="dr-title">DRILL</b><span class="dr-label">LV ${PF().data.level} · PICK 1 OF ${offer.length}</span><em class="dr-left">${n}<small>LEFT</small></em></div>
-          <div class="dr-body">${this.you(offer[this.sel])}<div class="dr-tiles">${tiles}</div></div>
+          <div class="dr-head"><b class="dr-title">DRILL</b><span class="dr-label">LV ${PF().data.level} · PICK 1 OF ${offer.length}</span><em class="dr-left">${n}<small>${n > 1 ? 'CARDS' : 'CARD'}</small></em></div>
+          <div class="dr-body">${this.you(offer[this.sel])}<div class="dr-tiles ${fly ? 'fly' : ''}">${tiles}</div></div>
           <div class="dr-curb">
             <div class="dr-foot">
               <span class="dr-hint">${pick}</span>
@@ -99,6 +134,134 @@ window.SFC = window.SFC || {};
         </div>
       </div>`;
       this.bindAvatar();
+    },
+
+    /* ---------------- màn LEVEL UP (sau trận): thẻ vừa nhận, OPEN NOW / LATER ---------------- */
+    renderNotice() {
+      const nt = this.notice, n = PF().drillsPending(), earned = Math.max(1, nt.earned || 0);
+      const m = Math.min(earned, FAN_MAX);
+      const fan = Array.from({ length: m }, (_, i) => `<i class="dr-mini" style="--k:${(i - (m - 1) / 2).toFixed(1)};--d:${(0.15 + i * 0.07).toFixed(2)}s">${SFC.PixelIcon.ui('cone', 'x2')}</i>`).join('');
+      const ok = esc(K('confirm', 'Enter')), later = esc(K('back', 'Esc'));
+      const lv = nt.to > nt.from ? `LV ${nt.from} → LV ${nt.to}` : `LV ${PF().data.level}`;
+      this.el.innerHTML = `<div class="drill">
+        <div class="dr-wall">${this.tags()}
+          <div class="dr-notice" style="--pc:${CONE}">
+            <div class="dr-up-head"><span class="dr-label">${lv}</span><b class="dr-up-title">LEVEL UP!</b></div>
+            <div class="dr-nstage">
+              <div class="dr-fan">${fan}${earned > FAN_MAX ? `<em class="dr-fan-n">×${earned}</em>` : ''}</div>
+              <div class="dr-ninfo">
+                <div class="dr-nget">+${plural(earned, 'DRILL CARD')}</div>
+                <p>Open a card to pick 1 of ${A().drills.choices} drills. Each pick raises your stats for good.</p>
+                <div class="dr-nown">You have ${plural(n, 'card').toLowerCase()} · they wait in your INVENTORY</div>
+              </div>
+            </div>
+            <div class="dr-curb"><div class="dr-foot">
+              <span class="dr-hint">${esc(PF().data.name || 'PLAYER')} · LV ${PF().data.level}</span>
+              <button class="dr-btn roll" data-act="open"><kbd>${ok}</kbd> OPEN NOW</button>
+              <button class="dr-btn" data-act="later"><kbd>${later}</kbd> LATER</button>
+            </div></div>
+          </div>
+        </div>
+      </div>`;
+    },
+
+    noticeInput(input) {
+      if (input.wasPressed('pause') || input.wasPressed('back')) { SFC.Audio.menu(); return this.close(); }
+      if (input.wasPressed('confirm')) { SFC.Audio.menu(); this.startCard(); }
+    },
+
+    /* ---------------- màn lật thẻ: 1 thẻ = 1 lượt chọn; lật ra 3 poster ---------------- */
+    startCard() {
+      // bốc (hoặc lấy lại) bộ 3 đã lưu: mặt trước lá = 3 mảnh poster của đúng bộ đó
+      if (!PF().drillOffer().length) return this.close();
+      this.stage = 'card';
+      this.notice = null;
+      this.card = { phase: 'drop', t: 0, tickT: 0 };
+      this.renderCard();
+      SFC.Audio.whoosh();
+    },
+
+    renderCard() {
+      const c = this.card, n = PF().drillsPending(), offer = PF().drillOffer();
+      const ok = esc(K('confirm', 'Enter')), later = esc(K('back', 'Esc'));
+      // mặt trước: 3 mảnh poster (màu sơn + icon của từng drill) -> lúc vỡ bay ra thành 3 poster thật
+      const strips = offer.map((id, i) => {
+        const p = this.paint(id);
+        return `<i class="dr-strip" style="--pc:${p.color};--i:${i}">${SFC.PixelIcon.html(p.icon, '', '')}</i>`;
+      }).join('');
+      // data-phase gắn trên .dr-opening (gốc lớp phủ): CSS điều khiển cả lá lẫn dòng gợi ý ở vỉa hè
+      this.el.innerHTML = `<div class="drill dr-opening" style="--rc:${CONE}">
+        <div class="dr-wall">${this.tags()}
+          <div class="dr-head"><b class="dr-title">DRILL</b><span class="dr-label">LV ${PF().data.level} · OPEN A CARD</span><em class="dr-left">${n}<small>${n > 1 ? 'CARDS' : 'CARD'}</small></em></div>
+          <div class="dr-cstage">
+            <div class="dr-cwrap">
+              <div class="rv3-rays"></div><div class="rv3-glow"></div>
+              <div class="dr-cshake"><div class="dr-card">
+                <div class="dr-cface dr-cback"><div class="rv3-back"><div class="rv3-frame"><i><span>${SFC.PixelIcon.ui('cone', 'x3')}</span></i><b>DRILL<br>CARD</b><span>PICK 1 OF ${offer.length}</span></div></div></div>
+                <div class="dr-cface dr-cfront">${strips}</div>
+              </div></div>
+              <div class="rv3-parts"></div>
+            </div>
+            <div class="dr-flash"></div>
+          </div>
+          <div class="dr-curb"><div class="dr-foot">
+            <span class="dr-hint">${esc(PF().data.name || 'PLAYER')} · LV ${PF().data.level}</span>
+            <span class="dr-up-go dr-cgo"><kbd>${ok}</kbd> FLIP</span>
+            <button class="dr-btn" data-act="later"><kbd>${later}</kbd> LATER</button>
+          </div></div>
+        </div>
+      </div>`;
+      this.cardRoot = this.el.querySelector('.dr-opening');
+      this.cardSet(c.phase);
+    },
+
+    cardSet(phase) {
+      const c = this.card;
+      c.phase = phase; c.t = 0;
+      if (this.cardRoot) this.cardRoot.dataset.phase = phase;
+    },
+
+    tickCard(dt) {
+      const c = this.card;
+      c.t += dt;
+      if (c.phase === 'drop' && c.t >= CARD.drop) this.cardSet('idle');
+      else if (c.phase === 'charge') {
+        // tích tắc nhanh dần tới lúc lật (giống màn mở thẻ Core, reveal.js)
+        if ((c.tickT -= dt) <= 0) { SFC.Audio.tick(); c.tickT = 0.12 - 0.09 * Math.min(1, c.t / CARD.charge); }
+        if (c.t >= CARD.charge) this.flipCard();
+      } else if (c.phase === 'flip' && c.t >= CARD.flip) { this.cardSet('burst'); SFC.Audio.whoosh(); }
+      else if (c.phase === 'burst' && c.t >= CARD.burst) this.toPick();
+    },
+
+    flipCard() {
+      this.cardSet('flip');
+      const box = this.cardRoot && this.cardRoot.querySelector('.rv3-parts');
+      if (box) box.innerHTML = SFC.Reveal.particles(CONE);
+      SFC.Audio.reveal(2);
+    },
+
+    // Enter / click: bỏ qua lúc rơi · bắt đầu rung · lật ngay · sang 3 poster
+    cardAdvance() {
+      const c = this.card;
+      if (!c) return;
+      if ((c.phase === 'drop' && c.t > 0.15) || c.phase === 'idle') this.cardSet('charge');
+      else if (c.phase === 'charge') this.flipCard();
+      else if (c.phase === 'flip' || c.phase === 'burst') this.toPick();
+    },
+
+    cardInput(input) {
+      if (input.wasPressed('pause') || input.wasPressed('back')) { SFC.Audio.menu(); return this.close(); }
+      if (input.wasPressed('confirm')) this.cardAdvance();
+    },
+
+    // lá đã vỡ: vẽ màn chọn 3 poster, poster bay từ giữa lá ra (CSS .dr-tiles.fly)
+    toPick() {
+      this.stage = 'pick';
+      this.card = null;
+      this.cardRoot = null;
+      this.fromCard = true;
+      this.sel = 0;
+      this.render();
     },
 
     // chữ graffiti mờ trên tường (giống tường sân, arenas.config.js -> graffiti)
@@ -242,8 +405,17 @@ window.SFC = window.SFC || {};
     click(e) {
       if (!this.active) return;
       SFC.Audio.unlock();
-      if (this.up) { if (!this.up.inline) this.advance(); return; }
       const act = e.target.closest('[data-act]');
+      const later = act && act.dataset.act === 'later';
+      if (this.stage === 'notice') {
+        if (later) { SFC.Audio.menu(); this.close(); } else if (act && act.dataset.act === 'open') { SFC.Audio.menu(); this.startCard(); }
+        return;
+      }
+      if (this.card) {
+        if (later) { SFC.Audio.menu(); this.close(); } else this.cardAdvance();
+        return;
+      }
+      if (this.up) { if (!this.up.inline) this.advance(); return; }
       if (act) {
         if (act.dataset.act === 'reroll') this.reroll();
         if (act.dataset.act === 'later') { SFC.Audio.menu(); this.close(); }
@@ -258,7 +430,7 @@ window.SFC = window.SFC || {};
     renderUp(done) {
       const u = this.up, L = A().drills.list[u.id], { color } = this.paint(u.id);
       const n = PF().drillsPending(), ok = esc(K('confirm', 'Enter'));
-      const go = n > 0 ? `<kbd>${ok}</kbd> NEXT DRILL (${n} LEFT) · <kbd>${esc(K('back', 'Esc'))}</kbd> LATER` : `<kbd>${ok}</kbd> CONTINUE`;
+      const go = n > 0 ? `<kbd>${ok}</kbd> NEXT CARD (${n} LEFT) · <kbd>${esc(K('back', 'Esc'))}</kbd> LATER` : `<kbd>${ok}</kbd> CONTINUE`;
       if (done) for (const k of u.keys) u.shown[k] = u.before[k] + u.gains[k];
       const vals = done ? u.shown : u.before;
       const rest = {};
@@ -358,12 +530,12 @@ window.SFC = window.SFC || {};
       if (input.wasPressed('confirm')) this.advance();
     },
 
-    // xong màn STRONGER!: còn drill chờ -> bộ 3 kế tiếp; hết -> đóng
+    // xong màn STRONGER!: còn thẻ drill -> lật thẻ kế; hết -> đóng
     nextAfterUp() {
       this.up = null;
       this.upRoot = null;
       this.busy = false;
-      if (PF().drillsPending() > 0) { this.sel = 0; this.render(); SFC.Audio.whoosh(); } else this.close();
+      if (PF().drillsPending() > 0) this.startCard(); else this.close();
     },
   };
 

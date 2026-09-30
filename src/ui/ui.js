@@ -221,9 +221,9 @@ window.SFC = window.SFC || {};
     endItems() {
       if (!this.online) {
         const mp = this.app.game && this.app.game.opts.mainPath;
-        // còn drill chờ (bấm LATER): nút DRILL (n) đứng đầu để mở lại (ui/drill.js)
+        // còn thẻ drill (bấm LATER): nút DRILL CARDS (n) đứng đầu để mở lại (ui/drill.js)
         const n = SFC.Profile.drillsPending();
-        const drill = n ? [['drill', `DRILL (${n})`]] : [];
+        const drill = n ? [['drill', `DRILL CARDS (${n})`]] : [];
         return drill.concat(mp ? [['restart', 'NEXT MATCH'], ['menu', 'MAIN PATH']] : [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']]);
       }
       return SFC.Online.isHost ? [['lobby', 'BACK TO LOBBY'], ['leave', 'LEAVE ROOM']] : [['leave', 'LEAVE ROOM']];
@@ -266,7 +266,7 @@ window.SFC = window.SFC || {};
       // Main Path: Core / hộp mới -> màn mở thẻ sau khi thưởng chạy xong (Enter trước đó thì mở ngay)
       const unlocks = game.reward && game.reward.path ? game.reward.path.rewards.filter((x) => x.kind !== 'gold') : [];
       this.pendingReveal = unlocks.length ? unlocks : null;
-      this.drillAfter = false;   // vừa lên level (chơi đơn): mở màn DRILL sau thưởng + sau màn mở thẻ (autoDrill)
+      this.drillAfter = null;   // vừa lên level (chơi đơn): { earned, from, to } -> màn LEVEL UP của DRILL sau thưởng + sau màn mở thẻ (autoDrill)
       if (game.reward) this.playReward(game.reward);
     },
 
@@ -277,13 +277,15 @@ window.SFC = window.SFC || {};
       if (list) SFC.Reveal.open(list, () => { this.renderEndItems(); this.autoDrill(); });
     },
 
-    // màn DRILL tự mở sau khi thưởng chạy xong; có màn mở thẻ (Main Path) thì đợi nó đóng rồi mới mở (không chồng 2 lớp phủ)
+    // màn LEVEL UP (thẻ drill vừa nhận: OPEN NOW / LATER) tự mở sau khi thưởng chạy xong;
+    // có màn mở thẻ (Main Path) thì đợi nó đóng rồi mới mở (không chồng 2 lớp phủ)
     autoDrill() {
-      if (!this.drillAfter || this.pendingReveal || SFC.Reveal.active) return;
-      this.drillAfter = false;
+      const notice = this.drillAfter;
+      if (!notice || this.pendingReveal || SFC.Reveal.active) return;
+      this.drillAfter = null;
       setTimeout(() => {
         const g = this.app.game;
-        if (this.current === 'end' && g && g.state === 'ended' && !SFC.Drill.active && !SFC.Reveal.active) this.openDrill();
+        if (this.current === 'end' && g && g.state === 'ended' && !SFC.Drill.active && !SFC.Reveal.active) this.openDrill(notice);
       }, 400);
     },
 
@@ -408,15 +410,15 @@ window.SFC = window.SFC || {};
           if (!up.dataset.done) {
             up.dataset.done = 1;
             if (r.eligible.length) up.insertAdjacentHTML('beforeend', `<div class="rw-new">Unlocked: ${r.eligible.map(esc).join(', ')}</div>`);
-            // lên level: drill vừa nhận (chỉ khi không có dòng Unlocked, giữ khung thưởng tối đa 2 dòng)
+            // lên level: thẻ drill vừa nhận (chỉ khi không có dòng Unlocked, giữ khung thưởng tối đa 2 dòng)
             const gained = r.levelUps.length * SFC_CONFIG.progression.attrs.drills.perLevel;
-            const where = this.online ? 'CHARACTER → DRILL' : 'pick after this screen';
-            if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">★ +${gained} DRILL${gained > 1 ? 'S' : ''} · ${where}</div>`);
+            const where = this.online ? ' · open in INVENTORY' : '';
+            if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">★ +${gained} DRILL CARD${gained > 1 ? 'S' : ''}${where}</div>`);
             // chạm trần level theo Main Path: XP vẫn tích, lên hạng là lên level
             else if (!r.eligible.length && r.capped) up.insertAdjacentHTML('beforeend', `<div class="rw-new">LV CAP · climb the Main Path to level up (XP is saved)</div>`);
             this.showEndItems();   // dòng thưởng vừa thêm có thể đẩy nút xuống
-            // chơi đơn: vừa lên level -> tự mở màn DRILL (online tự xử lý phím -> chỉ tích drill, chọn ở CHARACTER)
-            this.drillAfter = !this.online && gained > 0;
+            // chơi đơn: vừa lên level -> tự mở màn LEVEL UP của DRILL (online tự xử lý phím -> chỉ tích thẻ, mở ở INVENTORY)
+            this.drillAfter = !this.online && gained > 0 ? { earned: gained, from: r.before.level, to: r.after.level } : null;
             this.autoDrill();
           }
           return;
@@ -449,12 +451,13 @@ window.SFC = window.SFC || {};
       if (act === 'skiptut') SFC.Tutorial.skip();
     },
 
-    // màn DRILL trên màn kết quả; đóng (chọn hết / LATER) -> vẽ lại nút (DRILL (n) / NEXT MATCH)
-    openDrill() {
+    // màn DRILL trên màn kết quả; notice = { earned, from, to } -> bắt đầu ở màn LEVEL UP (OPEN NOW / LATER),
+    // không có (nút DRILL CARDS) -> vào thẳng màn lật thẻ. Đóng (mở hết / LATER) -> vẽ lại nút (DRILL CARDS (n) / NEXT MATCH)
+    openDrill(notice) {
       SFC.Drill.open(() => {
         if (!SFC.Profile.drillsPending()) this.endSel = 0;
         this.renderEndItems();
-      });
+      }, notice ? { notice } : {});
     },
 
     /* ================= HUD ================= */

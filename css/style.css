@@ -1254,6 +1254,67 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .dr-up.rise[data-phase="pop"] .dr-up-stage, .dr-you.rise[data-phase="pop"] { animation: rv3Quake 0.34s steps(6); }
 @keyframes drUpIn { 0% { opacity: 0; transform: translateY(-120px); } 100% { opacity: 1; transform: none; } }
 
+/* màn LEVEL UP sau trận (drill.js -> renderNotice): quạt thẻ DRILL úp vừa nhận + OPEN NOW / LATER */
+.dr-notice { position: relative; }
+.dr-nstage { display: flex; align-items: center; justify-content: center; gap: 30px; height: 196px; }
+.dr-fan { position: relative; width: 190px; height: 140px; flex: none; }
+.dr-mini { position: absolute; left: 50%; top: 50%; width: 58px; height: 80px; margin: -40px 0 0 -29px; display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--pc); box-shadow: 3px 3px 0 var(--ink), 0 0 10px color-mix(in srgb, var(--pc) 55%, transparent);
+  background: repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 4px, transparent 4px 8px), radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--pc) 38%, #1c1320), #110a13 72%);
+  transform: translate(calc(var(--k) * 26px), calc(var(--k) * var(--k) * 4px)) rotate(calc(var(--k) * 9deg));
+  animation: drMini 0.35s cubic-bezier(0.25, 1.35, 0.5, 1) var(--d) both; }
+.dr-fan-n { position: absolute; right: 0; bottom: 2px; font-style: normal; font-family: var(--px); font-size: 12px; color: var(--pc); text-shadow: 2px 2px 0 var(--ink); }
+.dr-ninfo { width: 236px; display: flex; flex-direction: column; gap: 6px; animation: drWall 0.25s steps(3) 0.35s both; }
+.dr-nget { font-family: var(--px); font-size: 12px; line-height: 1.3; color: var(--pc); text-shadow: 2px 2px 0 var(--ink); }
+.dr-ninfo p { margin: 0; font-size: 15px; line-height: 1.1; color: #e6dccb; }
+.dr-nown { font-size: 13px; line-height: 1.1; color: #9aa3b5; border-top: 1px solid #3b2a36; padding-top: 5px; }
+.dr-notice .dr-curb { margin-top: 6px; }
+@keyframes drMini { from { opacity: 0; translate: 0 -140px; } to { opacity: 1; translate: 0 0; } }
+
+/* màn lật thẻ DRILL (drill.js -> renderCard): nhịp theo data-phase trên .dr-opening, mượn hiệu ứng màn mở thẻ Core (.rv3-*) */
+.dr-cstage { position: relative; height: 214px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
+.dr-cwrap { position: relative; width: 116px; height: 158px; flex: none; perspective: 600px; cursor: pointer; }
+.dr-cshake { position: absolute; inset: 0; }
+.dr-card { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.35s cubic-bezier(0.3, 1.45, 0.5, 1); }
+.dr-cface { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.dr-cback .rv3-frame { inset: 7px; gap: 12px; }
+.dr-cback .rv3-frame i { width: 54px; height: 54px; }
+/* mặt trước: 3 mảnh poster của bộ drill sắp chọn */
+.dr-cfront { transform: rotateY(180deg); display: flex; gap: 3px; padding: 6px; border: 2px solid var(--rc); background: #1c1320;
+  box-shadow: 4px 4px 0 var(--ink), 0 0 14px color-mix(in srgb, var(--rc) 60%, transparent); }
+.dr-strip { flex: 1; display: flex; align-items: center; justify-content: center; font-style: normal;
+  background: radial-gradient(circle at 50% 50%, var(--pc) 0 34%, transparent 36%), linear-gradient(#f2e9d3, #e6d9bb); box-shadow: 0 0 0 1px rgba(20,12,22,0.35); }
+.dr-strip .pxi { filter: grayscale(1) contrast(1.5) brightness(0.5); }
+.dr-cstage .rv3-glow { opacity: 0.45; }
+.dr-cstage .dr-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.dr-cgo { visibility: hidden; }
+
+.dr-opening[data-phase="drop"] .dr-cwrap { animation: rv3Drop 0.45s cubic-bezier(0.25, 1.35, 0.5, 1) both; }
+.dr-opening[data-phase="idle"] .dr-cshake { animation: pulse 1s steps(2) infinite; }
+.dr-opening[data-phase="idle"] .dr-cgo, .dr-opening[data-phase="drop"] .dr-cgo { visibility: visible; }
+.dr-opening[data-phase="charge"] .dr-cshake { animation: rv3Rattle 0.1s steps(2) infinite; }
+.dr-opening[data-phase="charge"] .rv3-glow { animation: rv3Charge 0.55s ease-in forwards; }
+.dr-opening[data-phase="charge"] .rv3-back { filter: brightness(1.25); }
+.dr-opening[data-phase="flip"] .dr-card, .dr-opening[data-phase="burst"] .dr-card { transform: rotateY(180deg); }
+.dr-opening[data-phase="flip"] .dr-flash { animation: rv3Flash 0.35s ease-out; }
+.dr-opening[data-phase="flip"] .rv3-rays { opacity: 1; }
+.dr-opening[data-phase="flip"] .rv3-glow { opacity: 0.9; }
+/* vỡ: khung lá biến mất, 3 mảnh bay toả ra như 3 poster */
+.dr-opening[data-phase="burst"] .dr-cfront { border-color: transparent; background: none; box-shadow: none; transition: border-color 0.1s, background 0.1s; }
+.dr-opening[data-phase="burst"] .dr-strip { animation: drStrip 0.4s cubic-bezier(0.4, 0, 0.6, 1) forwards; }
+.dr-opening[data-phase="burst"] .rv3-glow { opacity: 0; transition: opacity 0.3s; }
+@keyframes drStrip { to { translate: calc((var(--i) - 1) * 90px) -14px; rotate: calc((var(--i) - 1) * 10deg); scale: 1.6 2.2; opacity: 0; } }
+
+/* vừa lật thẻ: 3 poster bay từ giữa tường (chỗ lá vỡ) ra ô của mình; --fx = khoảng cách từ tâm tường tới tâm ô */
+.dr-tiles.fly .dr-tile { animation: drFly 0.4s cubic-bezier(0.25, 1.3, 0.5, 1) var(--d) both; }
+.dr-tiles.fly .dr-tile:nth-child(1) { --fx: 84px; }
+.dr-tiles.fly .dr-tile:nth-child(2) { --fx: -73px; }
+.dr-tiles.fly .dr-tile:nth-child(3) { --fx: -230px; }
+@keyframes drFly { from { opacity: 0; translate: var(--fx) 6px; scale: 0.4; } 50% { opacity: 1; } to { opacity: 1; translate: 0 0; scale: 1; } }
+
+/* túi đồ: ô chi tiết thẻ DRILL (gacha.js -> invDetail) */
+.sd-preview.inv-drill { justify-content: center; min-height: 110px; background: radial-gradient(circle, color-mix(in srgb, var(--rc) 30%, transparent) 0%, transparent 62%); }
+
 /* ---------- Core scale theo chỉ số (src/systems/corescale.js) ---------- */
 .card-stat { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 11px; line-height: 1; color: var(--muted); margin: -1px 0 4px; letter-spacing: 0.5px; }
 .card-stat b { font-weight: normal; color: var(--sc); letter-spacing: 1px; }

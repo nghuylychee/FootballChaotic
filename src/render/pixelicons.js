@@ -30,6 +30,14 @@ window.SFC = window.SFC || {};
     'ui-boom': ['.....o......', '.o...oo...o.', '..o.oyyo.o..', '..ooyyyyoo..', '.ooyywwyyoo.', 'ooyywwwwyyoo', '.ooyywwyyoo.', '..ooyyyyoo..', '..o.oyyo.o..', '.o...oo...o.', '.....o......', '............'],
     'ui-dash': ['............', '............', '......llll..', '.wwwwl....l.', '.........l..', '..wwwwwwll..', '............', '.wwwwwwwll..', '.........l..', '..wwwl....l.', '......llll..', '............'],
     'ui-card': ['..vvvvvvvv..', '..vwwwwwwv..', '..vwbbbbwv..', '..vwbyybwv..', '..vwbyybwv..', '..vwbbbbwv..', '..vwwwwwwv..', '..vwkkkkwv..', '..vwwwwwwv..', '..vwkkkwwv..', '..vwwwwwwv..', '..vvvvvvvv..'],
+    // cọc tập xanh lá: hình của thẻ DRILL (túi đồ, màn mở thẻ drill)
+    'ui-cone': ['.....gg.....', '.....gG.....', '....wwww....', '....ggGg....', '....ggGg....', '...wwwwww...', '...gggGgg...', '..ggggGggg..', '..wwwwwwww..', '..gggggGgg..', 'GGGGGGGGGGGG', '.GGGGGGGGGG.'],
+
+    /* lọc slot costume (túi đồ -> APPEARANCE) */
+    'slot-hair': ['............', '....rrrr....', '...rrrrrr...', '..rrwrrrrr..', '..rrrrrrrr..', '..RRRRRRRR..', '..RRRRRRRRrr', '.........rrr', '............', '............', '............', '............'],
+    'slot-face': ['...ssssss...', '..ssssssss..', '.ssssssssss.', '.sskksskkss.', '.sskksskkss.', '.ssssssssss.', '.ssssssssss.', '.ssksssskss.', '..sskkkkss..', '...ssssss...', '............', '............'],
+    'slot-shoes': { ref: 'core-heavy_boot' },
+    'slot-fx': { ref: 'core-one_touch' },
 
     /* tài nguyên */
     'res-momentum': ['.......yyy..', '......yyy...', '.....yyy....', '....yyy.....', '...yyyyyyy..', '..yyyyyyy...', '......yyy...', '.....yyy....', '....yyy.....', '...yy.......', '..yy........', '..y.........'],
