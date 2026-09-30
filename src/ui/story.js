@@ -98,6 +98,100 @@ window.SFC = window.SFC || {};
     ctx.restore();
   }
 
+
+  /* ---------- vẽ pixel art thật: canvas 160x90 (1 pixel = 4x4 trên màn), chỉ khối màu cứng + dither, phóng to không làm mượt ---------- */
+  const LW = 160, LH = 90, LS = W / LW;
+  let lo = null, lx = null;
+  function loBegin() {
+    if (!lo) { lo = document.createElement('canvas'); lo.width = LW; lo.height = LH; lx = lo.getContext('2d'); }
+    lx.clearRect(0, 0, LW, LH);
+  }
+  // ox / oy: lệch theo pixel thấp (rung màn kiểu pixel)
+  function loEnd(ox = 0, oy = 0) {
+    ctx.imageSmoothingEnabled = false;
+    if (ox || oy) rect(0, 0, W, H, '#050308');
+    ctx.drawImage(lo, ox * LS, oy * LS, W, H);
+  }
+  function P(x, y, w, h, c) { lx.fillStyle = c; lx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); }
+  // elip đặc theo hàng pixel
+  function pEllipse(cx, cy, rx, ry, c) {
+    for (let y = -ry; y <= ry; y++) { const h = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry)))); P(cx - h, cy + y, h * 2 + 1, 1, c); }
+  }
+  // hàng dither bàn cờ (mật độ: 2 = 50%, 4 = 25%)
+  function pDither(y, c, every = 2, x0 = 0, x1 = LW) {
+    lx.fillStyle = c;
+    for (let x = x0 + ((y + x0) % every); x < x1; x += every) lx.fillRect(x, y, 1, 1);
+  }
+  // gradient dạng dải màu, ranh giới giữa 2 dải 1 hàng dither 50%
+  function pBands(y0, y1, cols) {
+    const bh = (y1 - y0) / cols.length;
+    cols.forEach((c, i) => {
+      const a = Math.round(y0 + i * bh), b = Math.round(y0 + (i + 1) * bh);
+      P(0, a, LW, b - a, c);
+      if (i < cols.length - 1) pDither(b - 1, cols[i + 1], 2);
+    });
+  }
+  // tia pixel từ tâm (vạch tốc độ manga)
+  function pRay(cx, cy, a, r0, r1, c) {
+    const dx = Math.cos(a), dy = Math.sin(a);
+    lx.fillStyle = c;
+    for (let r = r0; r < r1; r += 1) lx.fillRect(Math.round(cx + dx * r), Math.round(cy + dy * r), 1, 1);
+  }
+  // nhân vật đúng 1x sprite gốc trên canvas thấp (mật độ pixel khớp cảnh)
+  function loHero(x, y, t, facing = Math.PI / 2, extra = null) {
+    const look = SFC.Profile.lookOf(), kit = SFC_CONFIG.mainPath.playerTeam.kit;
+    SFC.Sprites.drawAvatar(buf, look, kit, t, facing, extra);
+    lx.drawImage(buf, Math.round(x - buf.width / 2), Math.round(y - (buf.height - 4)));
+  }
+  // sáng / tối màu hex: k > 0 sáng hơn, k < 0 tối hơn
+  function shade(hex, k) {
+    const n = parseInt(String(hex).replace('#', '').padEnd(6, '0').slice(0, 6), 16);
+    const f = (v) => Math.max(0, Math.min(255, Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k)));
+    return '#' + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => f(v).toString(16).padStart(2, '0')).join('');
+  }
+  const INK = '#140c16';
+
+  // 1 mắt anime pixel: side -1 = mắt trái (đuôi mắt bên trái), open 0..1 = mở mắt
+  function pEye(cx, cy, side, open, hair) {
+    const rx = 15, ry = 7, ryO = Math.round(ry * open);
+    const outer = cx + side * (rx + 1);
+    // lông mày chau: đuôi cao, đầu mày thấp, bậc thang pixel
+    const bx0 = cx + side * (rx + 3), bx1 = cx - side * (rx - 3), N = Math.abs(bx1 - bx0);
+    for (let k = 0; k <= N; k++) {
+      const x = Math.round(bx0 + (bx1 - bx0) * (k / N)), y = Math.round(cy - 17 + 6 * (k / N));
+      P(x, y, 1, 3, hair); P(x, y + 3, 1, 1, shade(hair, -0.45));
+    }
+    if (ryO < 1) { P(cx - rx - 1, cy, rx * 2 + 3, 2, INK); return; }   // nhắm: 1 nét mi
+    // tròng trắng + bóng mí trên
+    pEllipse(cx, cy, rx, ryO, '#fbf6ea');
+    const half = (y) => Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ryO * ryO))));
+    for (let y = -ryO; y <= -ryO + 1; y++) P(cx - half(y), cy + y, half(y) * 2 + 1, 1, '#c9c2dc');
+    // con ngươi cao, nhìn vào giữa: dải màu tối trên -> vàng sáng dưới, cắt theo tròng trắng
+    const ix = cx - side * 2, IR = 6, IRY = 7;
+    const band = (y) => (y < -4 ? '#5a2208' : y < -1 ? '#a8480e' : y < 2 ? '#e0761a' : y < 5 ? '#ffae2e' : '#ffe07a');
+    for (let y = -ryO; y <= ryO; y++) {
+      if (Math.abs(y) > IRY) continue;
+      const ih = Math.round(IR * Math.sqrt(Math.max(0, 1 - (y * y) / (IRY * IRY)))), sh = half(y);
+      const l = Math.max(ix - ih, cx - sh), r = Math.min(ix + ih, cx + sh);
+      if (r >= l) P(l, cy + y, r - l + 1, 1, band(y));
+      // viền con ngươi + đồng tử
+      if (r >= l) { P(l, cy + y, 1, 1, '#3a1406'); P(r, cy + y, 1, 1, '#3a1406'); }
+      if (Math.abs(y) <= 4 && Math.abs(y) <= ryO) P(ix - 1, cy + y, 3, 1, INK);
+    }
+    // ánh sáng (chỉ khi mở đủ)
+    if (ryO >= 5) { P(ix - 4, cy - 4, 3, 3, '#ffffff'); P(ix + 2, cy + 2, 2, 2, '#ffffff'); P(ix - 1, cy + 4, 1, 1, '#fff6c0'); }
+    // mi trên dày + đuôi mi hất ra ngoài, mi dưới mảnh ở nửa ngoài
+    for (let x = -rx - 1; x <= rx + 1; x++) {
+      const y = -Math.round(ryO * Math.sqrt(Math.max(0, 1 - (x * x) / ((rx + 1) * (rx + 1))))) - 1;
+      P(cx + x, cy + y - 1, 1, 2, INK);
+    }
+    P(outer + side, cy - 2, 2, 1, INK); P(outer + side * 2, cy - 3, 2, 1, INK); P(outer + side * 3, cy - 4, 1, 1, INK);
+    for (let k = 0; k <= rx; k++) {
+      const x = side * k, y = Math.round(ryO * Math.sqrt(Math.max(0, 1 - (x * x) / (rx * rx)))) + 1;
+      if (k > rx * 0.3) P(cx + x, cy + y, 1, 1, '#7a4a3a');
+    }
+  }
+
   /* ---------------- các cảnh (t = giây trong cảnh, d = thời lượng cảnh) ---------------- */
   const ART = {
     black(t) {
@@ -155,47 +249,38 @@ window.SFC = window.SFC || {};
       vignette(0.75);
     },
 
-    // mắt anime cận cảnh + vạch tốc độ
+    // mắt anime cận cảnh (pixel art 160x90): tóc mái, lông mày chau, mắt mở ra + vạch tốc độ pixel
     eyes(t) {
-      const shake = t > 0.35 && t < 0.9 ? (hash(Math.floor(t * 60)) - 0.5) * 8 : 0;
-      ctx.save(); ctx.translate(shake, 0);
-      rect(-10, 0, W + 20, H, '#0a0610');
-      speedLines(W / 2, H / 2, 70, t, 0.22 + (t > 0.35 ? 0.2 : 0));
-      const skin = SFC.Profile.lookOf().skin || '#f1c7a0';
-      const hair = hairColor();
-      // dải mặt (letterbox)
-      rect(-10, 112, W + 20, 136, skin);
-      rect(-10, 112, W + 20, 6, 'rgba(0,0,0,0.25)'); rect(-10, 242, W + 20, 6, 'rgba(0,0,0,0.2)');
-      const open = easeOut(clamp01(t / 0.3));
-      for (const side of [-1, 1]) {
-        const cx = W / 2 + side * 128, cy = 184;
-        // lông mày chau lại
-        ctx.fillStyle = hair;
-        const ox = cx + side * 62, ix = cx - side * 56;   // đuôi mày cao, đầu mày chau xuống
-        ctx.beginPath(); ctx.moveTo(ox, cy - 56); ctx.lineTo(ix, cy - 42); ctx.lineTo(ix, cy - 33); ctx.lineTo(ox, cy - 47); ctx.fill();
-        // tròng trắng
-        const h = 34 * open;
-        ctx.fillStyle = '#fbf6ea';
-        ctx.beginPath(); ctx.ellipse(cx, cy, 56, Math.max(1, h), 0, 0, Math.PI * 2); ctx.fill();
-        if (open > 0.2) {
-          ctx.save();
-          ctx.beginPath(); ctx.ellipse(cx, cy, 56, h, 0, 0, Math.PI * 2); ctx.clip();
-          // con ngươi: vàng cháy -> lấp lánh
-          const ir = ctx.createRadialGradient(cx, cy + 4, 2, cx, cy, 30);
-          ir.addColorStop(0, '#fff7b0'); ir.addColorStop(0.45, '#ffb21f'); ir.addColorStop(1, '#7a3a08');
-          ctx.fillStyle = ir; ctx.beginPath(); ctx.arc(cx + side * -6, cy, 29, 0, Math.PI * 2); ctx.fill();
-          rect(cx + side * -6 - 7, cy - 12, 14, 24, '#140c16');
-          rect(cx + side * -6 - 16, cy - 18, 10, 10, '#ffffff');
-          rect(cx + side * -6 + 8, cy + 8, 5, 5, '#ffffff');
-          ctx.restore();
-        }
-        // mí trên đậm
-        ctx.strokeStyle = '#140c16'; ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.ellipse(cx, cy, 58, Math.max(1, h + 2), 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+      loBegin();
+      const look = SFC.Profile.lookOf(), skin = look.skin || '#f1c7a0', hair = hairColor();
+      const hit = t > 0.35;
+      const shake = hit && t < 0.9 ? Math.round((hash(Math.floor(t * 30)) - 0.5) * 4) : 0;
+      P(0, 0, LW, LH, '#0d0816');
+      // vạch tốc độ: tia pixel 2 tông, đổi 10 lần / giây (giật kiểu hoạt hình)
+      const seed = Math.floor(t * 10);
+      for (let i = 0; i < (hit ? 60 : 34); i++) {
+        const a = hash(i + seed * 7) * Math.PI * 2, r0 = 30 + hash(i * 3 + seed) * 26;
+        pRay(80, 45, a, r0, 110, hash(i + seed * 3) > 0.55 ? '#5a4880' : '#2e2446');
       }
-      ctx.restore();
-      if (t > 0.35 && t < 0.5) rect(0, 0, W, H, 'rgba(255,255,255,0.35)');
-      if (Story.cueOnce('eyes', t > 0.35)) { SFC.Audio.hit(); SFC.Audio.whoosh(); }
+      // dải mặt: da + bóng dưới, tóc mái răng cưa
+      const top = 18, bot = 72;
+      P(0, top, LW, bot - top, skin);
+      P(0, bot - 3, LW, 1, shade(skin, -0.12)); P(0, bot - 2, LW, 2, shade(skin, -0.22));
+      for (let x = 0; x < LW; x++) {
+        const k = x % 11, len = 2 + Math.round((k < 6 ? k : 11 - k) * 1.4), k2 = (x + 5) % 7, len2 = 2 + (k2 < 4 ? k2 : 7 - k2);
+        const L = Math.max(len, len2);
+        P(x, top, 1, L, hair); P(x, top + L, 1, 1, shade(skin, -0.25));   // bóng tóc đổ lên da
+        if (k === 3 && L > 5) P(x, top + 1, 1, L - 4, shade(hair, 0.22));   // vệt bóng tóc
+      }
+      const open = easeOut(clamp01(t / 0.3));
+      pEye(52, 51, -1, open, hair);
+      pEye(108, 51, 1, open, hair);
+      // má đỏ gay + giọt mồ hôi
+      if (hit) { pDither(63, '#e88a7a', 2, 30, 46); pDither(63, '#e88a7a', 2, 114, 130); P(137, 38, 2, 3, '#bfe6ff'); P(137, 41, 2, 1, '#ffffff'); }
+      // chớp: phủ dither trắng
+      if (t > 0.35 && t < 0.5) for (let y = 0; y < LH; y++) pDither(y, '#ffffff', 2);
+      loEnd(shake, 0);
+      if (Story.cueOnce('eyes', hit)) { SFC.Audio.hit(); SFC.Audio.whoosh(); }
     },
 
     // sân vận động khổng lồ: đèn quét, flash máy ảnh, pháo giấy, character toả hào quang vàng
@@ -278,39 +363,61 @@ window.SFC = window.SFC || {};
       vignette(0.6);
     },
 
-    // sáng sớm ở VILLAGE GREEN: sân bùn, khung thành gỗ
+    // sáng sớm ở VILLAGE GREEN (pixel art 160x90): bầu trời dải màu, đồi, hàng rào, sân bùn, khung thành gỗ
     village(t, d, dim = 0) {
-      rect(0, 0, W, H, vgrad(0, 200, ['#7fb6e8', '#ffd3a0', '#ffb88a']));
-      const sy = 150 - t * 3;
-      ctx.fillStyle = '#fffbe8'; ctx.beginPath(); ctx.arc(470, sy, 22, 0, Math.PI * 2); ctx.fill();
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; glow(470, sy, 90, '255,230,160', 0.45); ctx.restore();
-      // đồi
-      ctx.fillStyle = '#6f9a4a'; ctx.beginPath(); ctx.moveTo(0, 190); for (let x = 0; x <= W; x += 20) ctx.lineTo(x, 172 + Math.sin(x * 0.012) * 14); ctx.lineTo(W, 220); ctx.lineTo(0, 220); ctx.fill();
-      rect(0, 196, W, H - 196, vgrad(196, H, ['#8ab85a', '#6a9a3e']));
-      // sân bùn
-      ctx.fillStyle = '#7a5a3a'; ctx.beginPath(); ctx.ellipse(W / 2 + 40, 290, 230, 50, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#6a4a2e'; ctx.beginPath(); ctx.ellipse(W / 2 + 10, 296, 90, 16, 0, 0, Math.PI * 2); ctx.fill();
-      // khung thành gỗ
-      rect(510, 222, 5, 60, '#6a4020'); rect(590, 212, 5, 64, '#6a4020'); rect(508, 216, 90, 5, '#6a4020');
-      ctx.strokeStyle = 'rgba(240,240,230,0.35)'; ctx.lineWidth = 1;
-      for (let i = 0; i < 8; i++) { ctx.beginPath(); ctx.moveTo(515 + i * 10, 221); ctx.lineTo(515 + i * 10, 280); ctx.stroke(); }
-      // hàng rào
-      for (let x = 0; x < W; x += 26) rect(x, 200, 4, 22, '#8a6a44');
-      rect(0, 205, W, 3, '#8a6a44'); rect(0, 214, W, 3, '#8a6a44');
-      // chim
-      ctx.strokeStyle = '#3a2a3a'; ctx.lineWidth = 1.5;
-      for (let i = 0; i < 4; i++) {
-        const x = (80 + i * 50 + t * 22) % W, y = 70 + i * 12 + Math.sin(t * 3 + i) * 4, f = Math.sin(t * 12 + i) * 3;
-        ctx.beginPath(); ctx.moveTo(x - 5, y - f); ctx.lineTo(x, y); ctx.lineTo(x + 5, y - f); ctx.stroke();
+      loBegin();
+      pBands(0, 46, ['#5e8fd0', '#7aa8dc', '#9cc0e4', '#c8d6e0', '#ffd8b0', '#ffc190', '#ffa878']);
+      // mặt trời: 2 tông + vành dither
+      const sy = 28 - Math.floor(t * 0.8);
+      for (let y = -10; y <= 10; y++) for (let x = -10; x <= 10; x++) {
+        const r = Math.hypot(x, y);
+        if (r > 8 && r <= 10 && (x + y) % 2 === 0) P(118 + x, sy + y, 1, 1, '#ffe6b0');
+      }
+      pEllipse(118, sy, 7, 7, '#ffe9a8'); pEllipse(118, sy, 5, 5, '#fffbe8');
+      // mây trôi
+      const cloud = (x, y) => { P(x + 3, y, 6, 1, '#fff6ea'); P(x + 1, y + 1, 12, 2, '#fff6ea'); P(x, y + 3, 16, 2, '#fff6ea'); P(x + 1, y + 5, 14, 1, '#e8cfc4'); };
+      cloud(Math.round((20 + t * 3) % 190) - 20, 10);
+      cloud(Math.round((95 + t * 2) % 190) - 20, 18);
+      // đồi xa / gần
+      for (let x = 0; x < LW; x++) {
+        const h1 = 38 + Math.round(Math.sin(x * 0.045) * 3 + Math.sin(x * 0.12 + 1) * 1.5);
+        P(x, h1, 1, 12, '#88a86a');
+        const h2 = 43 + Math.round(Math.sin(x * 0.07 + 2) * 2);
+        P(x, h2, 1, 10, '#6c9650');
+        if (x % 13 === 5) { P(x, h2 - 4, 1, 4, '#4a6a38'); P(x - 1, h2 - 5, 3, 2, '#5a7e44'); }   // cây nhỏ trên đồi
+      }
+      // cỏ: nền + dither + bụi cỏ
+      P(0, 50, LW, LH - 50, '#7cb453');
+      pDither(50, '#94c866', 2); pDither(51, '#94c866', 4);
+      for (let i = 0; i < 70; i++) {
+        const x = Math.floor(hash(i + 3) * LW), y = 54 + Math.floor(hash(i + 40) * 36);
+        P(x, y, 1, 2, '#5f9a3e'); P(x + 2, y + 1, 1, 1, '#5f9a3e');
+      }
+      // hàng rào gỗ
+      for (let x = 2; x < LW; x += 8) { P(x, 44, 2, 8, '#8a6a44'); P(x, 44, 2, 1, '#b08a5a'); }
+      P(0, 46, LW, 1, '#8a6a44'); P(0, 49, LW, 1, '#8a6a44');
+      // sân bùn: nền + mảng sẫm + vũng nước lấp lánh
+      pEllipse(84, 66, 58, 10, '#7a5a3a');
+      for (let y = 57; y <= 76; y++) pDither(y, '#6a4c30', 4, 30, 138);
+      pEllipse(70, 68, 18, 3, '#654428');
+      pEllipse(106, 70, 6, 2, '#8fb4d0'); P(103, 69, 2, 1, '#e6f4ff');
+      // khung thành gỗ + lưới chấm
+      P(126, 50, 2, 17, '#6a4020'); P(148, 48, 2, 17, '#6a4020'); P(126, 48, 24, 2, '#6a4020'); P(126, 48, 24, 1, '#9a6a3a');
+      for (let y = 51; y < 65; y += 2) for (let x = 129; x < 148; x += 2) P(x + (y % 4 ? 1 : 0), y, 1, 1, '#e8e4d8');
+      // chim (chữ v pixel, vỗ cánh)
+      for (let i = 0; i < 3; i++) {
+        const x = Math.round((30 + i * 16 + t * 6) % LW), y = 14 + i * 4 + Math.round(Math.sin(t * 3 + i)), up = Math.floor(t * 6 + i) % 2;
+        P(x - 2, y - up, 1, 1, '#3a2a3a'); P(x - 1, y, 1, 1, '#3a2a3a'); P(x, y + 1 - up, 1, 1, '#3a2a3a'); P(x + 1, y, 1, 1, '#3a2a3a'); P(x + 2, y - up, 1, 1, '#3a2a3a');
       }
       // gà đi dạo
-      const cx = 120 + ((t * 18) % 80), hop = Math.floor(t * 6) % 2;
-      rect(cx, 300 - hop, 10, 8, '#f3ead7'); rect(cx + 8, 296 - hop, 5, 5, '#f3ead7'); rect(cx + 10, 294 - hop, 3, 2, '#d7263d'); rect(cx + 13, 298 - hop, 2, 1, '#ffb21f');
-      hero(300, 300, 3.5, t, 0, null);
-      ball(330, 298, 4);
-      if (dim) rect(0, 0, W, H, `rgba(8,5,12,${dim})`);
-      else vignette(0.35);
-      if (Story.cueOnce('morning', true)) SFC.Audio.pick();
+      const cx = 22 + Math.round((t * 4) % 20), hop = Math.floor(t * 6) % 2;
+      P(cx, 68 - hop, 4, 3, '#f3ead7'); P(cx + 3, 66 - hop, 2, 2, '#f3ead7'); P(cx + 4, 65 - hop, 1, 1, '#d7263d'); P(cx + 5, 67 - hop, 1, 1, '#ffb21f'); P(cx + 1, 71 - hop, 1, 1, '#ffb21f');
+      // nhân vật + quả bóng
+      loHero(74, 69, t, 0, null);
+      P(80, 66, 3, 3, '#f3ead7'); P(81, 67, 1, 1, INK); P(80, 69, 3, 1, 'rgba(0,0,0,0.25)');
+      if (dim) { lx.fillStyle = `rgba(8,5,12,${dim})`; lx.fillRect(0, 0, LW, LH); }
+      loEnd();
+      if (!dim && Story.cueOnce('morning', true)) SFC.Audio.pick();
     },
 
     // nền cho thẻ MAIN PATH (thẻ là DOM)
@@ -461,7 +568,7 @@ window.SFC = window.SFC || {};
       const P = CFG().pathCard, PX = SFC.PixelIcon, MP = SFC.MainPath;
       // font pixel không có ký tự ★ -> vẽ bằng font VT323
       const star = (txt) => esc(txt).replace(/★/g, '<i class="st-s">★</i>');
-      const icon = (k) => k === 'star' ? '<b class="st-star">★</b>' : k === 'core' ? PX.core('thunder_kick') : PX.ui('crown');
+      const icon = (k) => k === 'star' ? PX.ui('star') : k === 'core' ? PX.core('thunder_kick') : PX.ui('crown');
       const areas = MP.areas().slice(0, 4).map((a, i) => i === 0
         ? `<div class="st-area on" style="--c:${a.color}">${PX.area(a.id)}<span>${esc(a.name)}</span></div>`
         : '<div class="st-area"><b>?</b><span>???</span></div>').join('<em>›</em>');

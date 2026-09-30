@@ -21,6 +21,7 @@ window.SFC = window.SFC || {};
     /* giao diện */
     'ui-lock': ['....llll....', '...l....l...', '...l....l...', '...e....e...', '..yyyyyyyy..', '..yyyyyyyy..', '..yyykkyyy..', '..yyykkyyy..', '..yyyykyyy..', '..YYYYYYYY..', '..YYYYYYYY..', '............'],
     'ui-crown': ['............', '............', 'y....yy....y', 'yy..yyyy..yy', 'yyy.yyyy.yyy', 'yyyyyyyyyyyy', 'yyryyccyyryy', 'yyyyyyyyyyyy', 'YYYYYYYYYYYY', '............', '............', '............'],
+    'ui-star': ['.....y......', '.....y......', '....yyy.....', 'yyyyywyyyyy.', '.yyyywyyyy..', '..yyyyyyy...', '..yyyyyyy...', '.yyyyYyyyy..', '.yyY...YyY..', 'yY.......Yy.', '............', '............'],
     'ui-gift': ['...y....y...', '....y..y....', '.....yy.....', '.rrrryyrrrr.', '.RRRRyyRRRR.', '..rrryyrrr..', '..rrryyrrr..', '..rrryyrrr..', '..rrryyrrr..', '..RRRyyRRR..', '............', '............'],
     'ui-trophy': ['............', '..yyyyyyyy..', 'yyyyyyyyyyyy', 'y.yyyyyyyy.y', 'y.yyyyyyyy.y', '.yyyyyyyyyy.', '...yyyyyy...', '.....yy.....', '.....YY.....', '....yyyy....', '...YYYYYY...', '............'],
     'ui-check': ['............', '..........g.', '.........gg.', '........gg..', '.......gg...', 'g.....gg....', 'gg...gg.....', '.gg.gg......', '..ggg.......', '...g........', '............', '............'],
