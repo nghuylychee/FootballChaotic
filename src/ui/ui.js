@@ -221,10 +221,8 @@ window.SFC = window.SFC || {};
     endItems() {
       if (!this.online) {
         const mp = this.app.game && this.app.game.opts.mainPath;
-        // còn thẻ drill (bấm LATER): nút DRILL CARDS (n) đứng đầu để mở lại (ui/drill.js)
-        const n = SFC.Profile.drillsPending();
-        const drill = n ? [['drill', `DRILL CARDS (${n})`]] : [];
-        return drill.concat(mp ? [['restart', 'NEXT MATCH'], ['menu', 'MAIN PATH']] : [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']]);
+        // thẻ drill bấm LATER: mở lại ở INVENTORY (không có nút ở đây)
+        return mp ? [['restart', 'NEXT MATCH'], ['menu', 'MAIN PATH']] : [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']];
       }
       return SFC.Online.isHost ? [['lobby', 'BACK TO LOBBY'], ['leave', 'LEAVE ROOM']] : [['leave', 'LEAVE ROOM']];
     },
@@ -447,17 +445,13 @@ window.SFC = window.SFC || {};
       if (act === 'leave') SFC.Online.leave();
       if (act === 'lobby') SFC.Online.backToLobby();
       if (act === 'reroll') this.app.rerollCore();
-      if (act === 'drill') this.openDrill();
       if (act === 'skiptut') SFC.Tutorial.skip();
     },
 
-    // màn DRILL trên màn kết quả; notice = { earned, from, to } -> bắt đầu ở màn LEVEL UP (OPEN NOW / LATER),
-    // không có (nút DRILL CARDS) -> vào thẳng màn lật thẻ. Đóng (mở hết / LATER) -> vẽ lại nút (DRILL CARDS (n) / NEXT MATCH)
+    // màn DRILL trên màn kết quả; notice = { earned, from, to } -> bắt đầu ở màn LEVEL UP (OPEN NOW / LATER).
+    // Đóng (mở hết / LATER) -> vẽ lại nút kết quả
     openDrill(notice) {
-      SFC.Drill.open(() => {
-        if (!SFC.Profile.drillsPending()) this.endSel = 0;
-        this.renderEndItems();
-      }, notice ? { notice } : {});
+      SFC.Drill.open(() => this.renderEndItems(), { notice });
     },
 
     /* ================= HUD ================= */

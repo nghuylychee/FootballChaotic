@@ -176,15 +176,12 @@ window.SFC = window.SFC || {};
         case 'char': {
           const d = PF().data;
           const nItems = Object.values(d.items).reduce((a, b) => a + b, 0) + Object.values(d.cores).reduce((a, b) => a + b, 0);
-          const n = PF().drillsPending(), list = [];
-          // DRILL CARDS: chỉ hiện khi còn thẻ drill -> túi đồ, mục DRILL CARDS (docs/DRILL_DESIGN.md)
-          if (n) list.push({ kind: 'btn', label: `DRILL CARDS (${n})`, sub: 'Open a card · pick 1 of 3', hot: true, act: () => G().openInv(this, 'drill', 'char') });
-          return list.concat([
+          return [
             { kind: 'btn', label: 'STATS', sub: `OVR ${PF().ovr()}`, act: () => this.go('attrs') },
             { kind: 'btn', label: 'TEAM', sub: this.teamSub(), hot: SFC.Mates.scoutReady(), act: () => { TM().back0 = 'char'; TM().open(this, SFC.Mates.scoutReady() ? 1 : 0); } },
             { kind: 'btn', label: 'APPEARANCE', sub: `${d.name} · skin · hair color`, act: () => this.go('look') },
             { kind: 'btn', label: 'INVENTORY', sub: `${nItems} items · equip · dismantle`, act: () => { G().invBack = 'char'; this.go('inv'); } },
-          ]);
+          ];
         }
         case 'look': {
           // NGOẠI HÌNH: đổi tên + màu da / tóc (costume ở INVENTORY)
@@ -196,10 +193,10 @@ window.SFC = window.SFC || {};
           ];
         }
         case 'attrs': {
-          // STATS (chỉ xem): 1 dòng mỗi chỉ số (↑↓ đổi khung chi tiết) + DRILL CARDS khi còn thẻ drill (-> túi đồ)
+          // STATS (chỉ xem): 1 dòng mỗi chỉ số (↑↓ đổi khung chi tiết) + USE DRILL CARDS khi còn thẻ drill (-> túi đồ)
           const A = ATTRS(), n = PF().drillsPending();
           const list = A.order.map((id) => ({ kind: 'attr', label: A.list[id].label, attr: id, bar: this.attrBar(id) }));
-          if (n) list.push({ kind: 'btn', label: `DRILL CARDS (${n})`, sub: 'Open a card to raise your stats', hot: true, act: () => G().openInv(this, 'drill', 'attrs') });
+          if (n) list.push({ kind: 'btn', label: `USE DRILL CARDS (${n})`, sub: 'Open a card to raise your stats', hot: true, act: () => G().openInv(this, 'drill', 'attrs') });
           return list;
         }
         case 'path': {

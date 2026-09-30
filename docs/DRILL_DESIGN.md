@@ -54,14 +54,14 @@ màn kết quả: "★ +1 DRILL CARD" ──(thưởng chạy xong)──► mà
                                                            ▼
                                         màn LEVEL UP (chơi đơn / Main Path): quạt thẻ úp vừa nhận
                                                            │   ├─ Enter: OPEN NOW ─► lật thẻ
-                                                           │   └─ Esc: LATER ─► nút "DRILL CARDS (n)" trên màn kết quả
+                                                           │   └─ Esc: LATER ─► thẻ nằm trong INVENTORY
                                                            ▼
                         lật thẻ: rơi ─► chờ Enter ─► rung ─► lật ─► vỡ 3 mảnh ─► 3 poster bay vào chỗ
                                                            │   ├─ chọn 1 trong 3 ─► STRONGER! ─► còn thẻ? lật thẻ kế : đóng
                                                            │   ├─ R: đổi cả 3 (1 lần / thẻ)
                                                            │   └─ Esc: LATER (thẻ giữ nguyên, bộ 3 đã bốc được lưu)
                                                            ▼
-                   còn thẻ ─► INVENTORY → DRILL CARDS · nút DRILL CARDS (n) ở CHARACTER / STATS · trang chủ "★ n DRILL CARDS"
+                   còn thẻ ─► INVENTORY → DRILL CARDS · nút USE DRILL CARDS (n) ở STATS · trang chủ "★ n DRILL CARDS"
 ```
 
 Online: dòng "★ +1 DRILL CARD · open in INVENTORY", không mở màn LEVEL UP (vòng lặp online tự xử lý phím).
@@ -159,7 +159,7 @@ Bản đầu dùng bảng đen phấn trắng — bỏ vì lệch phong cách ga
 - Cùng tường gạch: tiêu đề **LEVEL UP!** + "LV a → LV b", quạt tối đa 5 thẻ úp vừa nhận (nhiều hơn ghi ×n), "+N DRILL CARDS", số thẻ đang có.
 - Nút **OPEN NOW** (Enter) → màn lật thẻ · **LATER** (Esc) → về màn kết quả, thẻ nằm trong túi đồ.
 
-### Màn lật thẻ (mở từ màn LEVEL UP, túi đồ, nút DRILL CARDS (n) ở màn kết quả)
+### Màn lật thẻ (mở từ màn LEVEL UP, túi đồ)
 
 - Lá thẻ úp (mặt sau kiểu lá mở thưởng `.rv3-back`, viền xanh lá, cọc ở giữa) rơi xuống, chờ Enter / click, rung, lật (chớp + hạt pixel).
 - Mặt trước là 3 mảnh poster (màu sơn + icon của đúng bộ 3 đã bốc); mảnh vỡ bay toả ra, rồi 3 poster thật bay từ giữa tường vào ô.
@@ -168,7 +168,7 @@ Bản đầu dùng bảng đen phấn trắng — bỏ vì lệch phong cách ga
 ### Màn kết quả
 
 - Lên level: dòng "★ +N DRILL CARDS" (online: "· open in INVENTORY").
-- Còn thẻ: nút đầu tiên là **DRILL CARDS (n)**, mở thẳng màn lật thẻ.
+- Không có nút DRILL CARDS: thẻ bấm LATER mở lại ở INVENTORY.
 
 ### Túi đồ (`src/ui/gacha.js`)
 
@@ -178,8 +178,8 @@ Bản đầu dùng bảng đen phấn trắng — bỏ vì lệch phong cách ga
 ### Menu
 
 - Trang chủ: nút CHARACTER "★ n drill cards ready!", thẻ hồ sơ có huy hiệu "★ n DRILL CARDS".
-- CHARACTER: dòng **DRILL CARDS (n)** ở đầu (chỉ khi còn thẻ) → túi đồ, mục DRILL CARDS · STATS · APPEARANCE · INVENTORY.
-- STATS: 6 dòng chỉ xem (↑↓ đổi khung chi tiết), radar, OVR, nút DRILL CARDS (n) khi còn thẻ → túi đồ, mục DRILL CARDS.
+- CHARACTER: STATS · TEAM · APPEARANCE · INVENTORY.
+- STATS: 6 dòng chỉ xem (↑↓ đổi khung chi tiết), radar, OVR, nút USE DRILL CARDS (n) khi còn thẻ → túi đồ, mục DRILL CARDS.
 
 ## 8. Dữ liệu lưu & chuyển đổi
 

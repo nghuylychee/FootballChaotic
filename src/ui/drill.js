@@ -3,7 +3,7 @@
  * Thứ tự: notice (tuỳ chọn) -> card -> chọn 3 poster -> STRONGER! -> thẻ kế / đóng.
  *   notice: LEVEL UP! + quạt thẻ úp vừa nhận, OPEN NOW / LATER (chỉ sau trận: ui.js -> open(cb, { notice }))
  *   card  : lá thẻ rơi xuống (drop) -> chờ (idle) -> rung (charge) -> lật (flip) -> vỡ thành 3 mảnh (burst) -> 3 poster bay vào chỗ
- *   Túi đồ (gacha.js) và nút DRILL CARDS ở màn kết quả mở thẳng từ card.
+ *   Túi đồ (gacha.js) mở thẳng từ card.
  * Giao diện "tường phố": tường gạch (màu gạch sân Back Alley) + 3 poster dán băng keo, stencil icon chỉ số trên vệt sơn,
  * chọn xong xịt chữ DONE! lên poster. Lớp phủ trên cùng (#drill), mở trên màn kết quả (ui.js) hoặc menu (CHARACTER / STATS).
  * Bảng YOU bên trái: character xoay người + 6 thanh chỉ số, ô đang chọn hiện phần tăng (vệt sáng) + OVR trước → sau.

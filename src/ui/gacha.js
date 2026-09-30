@@ -430,7 +430,7 @@ window.SFC = window.SFC || {};
       SFC.Drill.open(() => menu.render());
     },
 
-    // mở túi đồ ở đúng mục (vd. nút DRILL CARDS ở CHARACTER / STATS); back = trang về khi bấm Esc
+    // mở túi đồ ở đúng mục (vd. nút USE DRILL CARDS ở STATS); back = trang về khi bấm Esc
     openInv(menu, tabKey, back) {
       const i = INV_TABS.findIndex(([k]) => k === tabKey);
       if (i >= 0) { this.invTab = i; this.invSel = 0; }
