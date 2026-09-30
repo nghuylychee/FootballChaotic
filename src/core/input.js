@@ -19,7 +19,8 @@ SFC.Input = {
       this.setDevice('kb');
       // ô nhập chữ (vd. mã phòng): handler trả về true = đã dùng phím, không tính là action
       if (this.textHandler && !e.ctrlKey && !e.metaKey && this.textHandler(e)) { e.preventDefault(); return; }
-      if (this.gameCodes.has(e.code)) e.preventDefault();
+      // Tab: chặn trình duyệt chuyển focus qua các nút (focus nút ngoài khung làm cuộn màn hình)
+      if (this.gameCodes.has(e.code) || e.code === 'Tab') e.preventDefault();
       if (e.repeat) return;
       this.down.add(e.code);
       this.pressed.add(e.code);

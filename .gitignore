@@ -8,3 +8,7 @@ brag-output*/**/work/*.png
 brag-output*/**/work/*.jpg
 brag-output*/**/work/*.wav
 brag-output*/**/work/*.log
+
+# Electron build
+node_modules/
+dist/

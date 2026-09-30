@@ -119,7 +119,7 @@ SFC_CONFIG.tutorial = {
       title: 'ONLINE',
       lines: [
         '# 1 vs 1 Versus',
-        'One player picks CREATE ROOM and sends the 5-character room code to a friend.',
+        'One player picks CREATE ROOM and sends the 7-character room code to a friend.',
         'The other picks JOIN ROOM, types the code and presses Enter.',
         'Each player picks a team, then the host presses START.',
         '# Connection',

@@ -134,15 +134,16 @@ window.SFC = window.SFC || {};
             { kind: 'btn', label: 'CHARACTER', sub: this.drillCount() ? `★ ${this.drillCount()} READY!` : SFC.Mates.scoutReady() ? '★ SCOUT REPORT READY!' : 'STATS · TEAM · APPEARANCE · INVENTORY', hot: PF().drillsPending() > 0 || SFC.Mates.scoutReady(), act: () => this.go('char') },
             { kind: 'btn', label: 'SHOP', sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'SETTINGS', sub: 'Training · controls', act: () => this.go('settings') },
-            // nút cheat tạm để test PROLOGUE (tắt: config/ftue.config.js -> cheatButton = false)
-            ...(SFC_CONFIG.ftue.cheatButton ? [{ kind: 'btn', label: 'TEST FTUE', sub: 'Cheat · replay prologue', danger: true, act: () => SFC.Tutorial.begin(app) }] : []),
+            // nút cheat tạm để test PROLOGUE (tắt: config/ftue.config.js -> cheatButton = false). Bản Steam: bị xoá (SFC_DEV)
+            ...(SFC_DEV && SFC_CONFIG.ftue.cheatButton ? [{ kind: 'btn', label: 'TEST FTUE', sub: 'Cheat · replay prologue', danger: true, act: () => SFC.Tutorial.begin(app) }] : []),
           ].map((it) => Object.assign(it, { sub: it.sub && it.sub.toUpperCase() }));
         case 'settings':
           return [
             { kind: 'btn', label: 'TRAINING', sub: 'No clock · pick team sizes', act: () => this.go('training') },
             { kind: 'btn', label: 'CONTROLS', sub: 'Keyboard & controller layout', act: () => { CV().open(); this.go('controls'); } },
             { kind: 'btn', label: 'PROLOGUE', sub: 'Replay the intro & tutorial match', act: () => SFC.Tutorial.begin(this.app) },
-            { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drills · stats reset on close', act: () => this.testDrill() },
+            // cheat, bản Steam: bị xoá (SFC_DEV)
+            ...(SFC_DEV ? [{ kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drills · stats reset on close', act: () => this.testDrill() }] : []),
             // xoá toàn bộ tiến trình, chơi lại từ đầu — bấm 2 lần mới xoá (lần 1 chỉ hỏi lại, rời trang là huỷ)
             this.resetArmed
               ? { kind: 'btn', label: 'CONFIRM RESET', sub: 'Press again · this cannot be undone', danger: true, act: () => this.resetData() }
@@ -387,7 +388,7 @@ window.SFC = window.SFC || {};
     },
 
     renderRoomCode() {
-      const code = Online().code || '-----';
+      const code = Online().code || '-'.repeat(SFC_CONFIG.net.codeLength);
       return `<div class="room-code" title="Click to copy"><span class="rc-label">ROOM CODE</span><b data-copy="${esc(code)}">${esc(code)}</b></div>`;
     },
 
@@ -569,8 +570,6 @@ window.SFC = window.SFC || {};
     // mở màn DRILL (ui/drill.js) trên menu; đóng thì vẽ lại trang đang mở (số drill / chỉ số đã đổi)
     openDrill() { SFC.Drill.open(() => this.render()); },
 
-    // cheat DRILL TEST: mở màn DRILL với vài drill chờ, không cần đá trận. Hồ sơ không được ghi trong lúc thử,
-    // đóng màn thì trả chỉ số + drill chờ về như cũ
     // RESET DATA (SETTINGS): xoá hồ sơ rồi tải lại trang -> chạy như lần đầu chơi (đặt tên, LV1, Area đầu).
     // Giữ cài đặt máy (hiệu ứng, phím) — chỉ xoá tiến trình
     resetData() {
@@ -578,17 +577,21 @@ window.SFC = window.SFC || {};
       location.reload();
     },
 
-    testDrill(n = 5) {
-      const pf = PF(), keep = JSON.parse(JSON.stringify(pf.data.attrs));
-      pf.sandbox = true;
-      pf.data.attrs.drills.pending = n;
-      pf.data.attrs.drills.offer = null;
-      SFC.Drill.open(() => {
-        pf.data.attrs = keep;
-        pf.sandbox = false;
-        this.render();
-      });
-    },
+    // cheat DRILL TEST: mở màn DRILL với vài drill chờ, không cần đá trận. Hồ sơ không được ghi trong lúc thử,
+    // đóng màn thì trả chỉ số + drill chờ về như cũ. Bản Steam: bị xoá (SFC_DEV)
+    ...(SFC_DEV && {
+      testDrill(n = 5) {
+        const pf = PF(), keep = JSON.parse(JSON.stringify(pf.data.attrs));
+        pf.sandbox = true;
+        pf.data.attrs.drills.pending = n;
+        pf.data.attrs.drills.offer = null;
+        SFC.Drill.open(() => {
+          pf.data.attrs = keep;
+          pf.sandbox = false;
+          this.render();
+        });
+      },
+    }),
 
     // radar 6 cạnh theo rating hiện tại. Trục từ 60 tới tối đa
     statRadar(selId) {

@@ -2,18 +2,19 @@
  * NET CONFIG — chế độ online: phòng 4 slot (2 đội x 2 vị trí), versus hoặc co-op.
  * Mô hình host-authoritative: máy chủ phòng chạy toàn bộ mô phỏng,
  * các máy khách gửi phím và vẽ lại trạng thái nhận được (host nối sao tới từng khách).
- * Kết nối P2P qua WebRTC (PeerJS); PeerJS server chỉ dùng để "bắt tay" lúc vào phòng.
+ * Kết nối: Steam (lobby + relay, bản Electron có Steam) hoặc WebRTC qua PeerJS (bản web / không có Steam),
+ * xem src/net/transport.js. PeerJS server chỉ dùng để "bắt tay" lúc vào phòng.
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
   protocol: 8,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
-  peerjsUrl: 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js',
+  peerjsUrl: 'lib/peerjs.min.js',   // PeerJS 1.5.4, đóng gói kèm game
   // Tùy chọn PeerJS; để trống = dùng PeerJS Cloud miễn phí.
   // Tự host PeerServer: { host: 'my-server', port: 9000, path: '/sfc', secure: true }
   peerOptions: {},
   roomPrefix: 'sfc-chaos-',    // id peer = prefix + mã phòng
-  codeLength: 5,
+  codeLength: 7,               // Steam: mã = 32 bit của lobby id -> cần 7 ký tự (32 ký tự x 7 = 35 bit). PeerJS dùng chung độ dài
   codeChars: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', // bỏ ký tự dễ nhầm (I, O, 0, 1)
   connectTimeout: 12,          // giây chờ kết nối trước khi báo lỗi
 

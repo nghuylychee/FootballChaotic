@@ -92,11 +92,13 @@ vào lưới vẫn ăn mừng rồi giao bóng lại (không có đối thủ th
 - Debug: `SFC.Profile.data` trong console (vd. `SFC.Profile.data.gold = 5000; SFC.Profile.save()`).
 
 ## Online PvP (1 vs 1)
-- **Tạo phòng**: nhận mã 5 ký tự (bấm vào mã để sao chép), gửi cho bạn bè.
+- **Tạo phòng**: nhận mã 7 ký tự (bấm vào mã để sao chép), gửi cho bạn bè.
 - **Vào phòng**: gõ mã, Enter. Mỗi người chọn đội của mình trong phòng chờ, chủ phòng bấm **Bắt đầu**.
 - Mô hình **host-authoritative**: trận đấu chạy trên máy chủ phòng (đội trái, P1); máy khách (đội phải, P2)
-  chỉ gửi phím và vẽ lại trạng thái nhận về (nội suy ~60ms). Hai máy nối P2P qua WebRTC bằng
-  [PeerJS](https://peerjs.com) (tải từ CDN khi vào menu online); PeerJS Cloud chỉ dùng lúc bắt tay.
+  chỉ gửi phím và vẽ lại trạng thái nhận về (nội suy ~60ms). Hai đường kết nối, cùng một mã phòng:
+  - **Steam** (bản Electron, Steam đang mở): mã phòng = lobby id của Steam, dữ liệu đi P2P / qua relay của Steam.
+  - **PeerJS** (bản web, hoặc không có Steam): WebRTC bằng [PeerJS](https://peerjs.com) (`lib/peerjs.min.js`);
+    PeerJS Cloud chỉ dùng lúc bắt tay. Người chơi Steam và PeerJS không vào chung phòng được.
 - Core Upgrade: mỗi người chọn thẻ của mình, hết `draftTimeLimit` giây thì tự chọn thẻ đầu.
 - Esc trong trận online chỉ mở menu (trận không dừng). Đối thủ rời phòng → về phòng chờ / menu online.
 - Tab bị ẩn hoặc thu nhỏ vẫn chạy nhờ đồng hồ Web Worker, nên chủ phòng chuyển cửa sổ khác thì trận không bị đứng.
@@ -152,7 +154,7 @@ src/
                ai (trông khung/giữ bóng/hỗ trợ/phòng ngự), human (controller)
   game/        match.js — state machine trận đấu · tutorial.js — kịch bản trận mơ PROLOGUE
   render/      sprites (pixel-art procedural), background (sân + tường), renderer
-  net/         transport (PeerJS), sync (snapshot / nội suy / phím từ xa), online (phòng chờ + vòng lặp host/khách)
+  net/         transport (chọn backend) + transport-steam / transport-peer, sync (snapshot / nội suy / phím từ xa), online (phòng chờ + vòng lặp host/khách)
   ui/          menu (trang chủ + hồ sơ, chơi đơn, online, nhân vật, hướng dẫn), story (cut scene PROLOGUE), gacha (shop hộp, quay hộp, túi đồ), ui (HUD, chọn Core, pause, kết quả + thưởng)
 ```
 

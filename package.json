@@ -1,0 +1,44 @@
+{
+  "name": "street-football-chaos",
+  "productName": "Street Football Chaos",
+  "version": "0.1.0",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --dir"
+  },
+  "dependencies": {
+    "steamworks.js": "0.4.0"
+  },
+  "devDependencies": {
+    "electron": "44.5.0",
+    "electron-builder": "26.15.3",
+    "terser": "5.51.2"
+  },
+  "build": {
+    "appId": "com.streetfootballchaos.game",
+    "productName": "Street Football Chaos",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "package.json",
+      "index.html",
+      "css/**",
+      "config/**",
+      "src/**",
+      "!src/dev/**",
+      "assets/**",
+      "lib/**",
+      "electron/**",
+      "!node_modules/steamworks.js/dist/{osx,linux64}/**"
+    ],
+    "electronLanguages": ["en-US", "vi"],
+    "asar": false,
+    "afterPack": "scripts/strip-dev.js",
+    "win": {
+      "target": "dir"
+    }
+  }
+}

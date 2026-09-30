@@ -317,10 +317,15 @@ window.SFC = window.SFC || {};
       this.showEndItems();
     },
 
-    // màn kết quả cao hơn khung 360 (hiếm): cuộn để nút đang chọn luôn nhìn thấy
+    // màn kết quả cao hơn khung 360 (hiếm): cuộn để nút đang chọn luôn nhìn thấy.
+    // Chỉ cuộn #end — scrollIntoView cuộn cả #stage / body làm lệch khung game
     showEndItems() {
-      const b = document.querySelector('#end-items .sel');
-      if (b) b.scrollIntoView({ block: 'nearest' });
+      const box = this.el.end, b = box.querySelector('#end-items .sel');
+      if (!b) return;
+      let top = 0;
+      for (let n = b; n && n !== box; n = n.offsetParent) top += n.offsetTop;
+      if (top < box.scrollTop) box.scrollTop = top - 2;
+      else if (top + b.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = top + b.offsetHeight - box.clientHeight + 2;
     },
 
     /* ---------- thưởng sau trận: các dòng hiện lần lượt, gold đếm lên, thanh XP chạy qua từng level ---------- */
