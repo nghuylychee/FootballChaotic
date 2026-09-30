@@ -50,6 +50,18 @@ góc phải là thẻ hồ sơ (character, tên, level, thanh XP, gold, thống 
 Màn Hướng dẫn (`config/tutorial.config.js`) đã được gỡ khỏi trang chủ — code trang vẫn còn trong `src/ui/menu.js` nếu cần gắn lại chỗ khác.
 ↑↓ chọn · ←→ đổi · Enter · Esc/Backspace quay lại.
 
+## PROLOGUE (hướng dẫn người mới)
+Người chơi mới đặt tên xong → cut scene kiểu anime *"I have a dream... to be the GOAT of street football"* → **DREAM MATCH**:
+trận có kịch bản, không dừng trận để dạy, chỉ 1 hộp gợi ý nhỏ + ô kỹ năng nhấp nháy. Các bài: di chuyển → chuyền cho ACE → sút
+(Core Fireball có sẵn) → bàn thắng mở lượt chọn Core (3 lá từ 3 trường phái) → đấm / đá cướp bóng → GO SCORE: đối thủ lao vào gồng đá,
+trận chạy chậm + QTE bấm Z né (hụt thì làm lại) → ghi bàn → mở **ULTIMATE** theo trường phái vừa chọn (Striker: Meteor Shot · Brawler:
+Hundred Fists · Illusion: Clone Army) → tích năng lượng kiểu show, don't tell (thanh 0%, đấm / cướp bóng / ghi bàn nạp x4, nguồn nạp sáng lên)
+→ đầy thì bấm X → bật đồng hồ 45s đá tự do (có FINAL PUSH).
+Làm trước bài sau (vd. sút vào khi đang học di chuyển) thì nhảy cóc luôn. Hết trận → cut scene tỉnh dậy ở VILLAGE GREEN (Core trong mơ chỉ là
+"mượn") → thẻ giới thiệu **MAIN PATH** → trang Main Path. Cut scene: Enter = tiếp, giữ Enter / Esc = bỏ qua. Pause trong trận mơ: SKIP PROLOGUE.
+Xem lại: SETTINGS → PROLOGUE, hoặc nút cheat tạm **TEST FTUE** ở trang chủ (ẩn: `ftue.config.js` → `cheatButton: false`). Hồ sơ cũ (đã có tên) coi như đã xem. Kịch bản, chữ, Core, số liệu: `config/ftue.config.js`;
+cut scene: `src/ui/story.js`; kịch bản trận: `src/game/tutorial.js` (điều khiển AI qua `g.aiHook`).
+
 ## Luyện tập
 Chọn **SỐ NGƯỜI** đội bạn (1 = chỉ character của bạn đá ĐÁ CAO · 2 = đủ đội, chọn ĐIỀU KHIỂN như Chơi đơn) và **ĐỐI THỦ** (không có · 2 người,
 chọn đội + độ khó). Không giờ trận, không Final Push / Golden Goal, không chọn Core, không thưởng XP / gold, không tính tỉ số (HUD chỉ hiện TRAINING);
@@ -131,16 +143,17 @@ config/                 ← MỌI THÔNG SỐ CÂN BẰNG (tách riêng)
   cores.config.js       16 Core: mô tả, mods thụ động, params hành vi
   net.config.js         online PvP: PeerJS, mã phòng, tần suất snapshot, nội suy
   tutorial.config.js    nội dung màn Hướng dẫn
+  ftue.config.js        PROLOGUE: kịch bản cut scene, các bài của trận mơ, Core / Ultimate, đội + sân trong mơ
   progression.config.js level / XP / gold, thưởng sau trận, costume, độ hiếm, hộp gacha, level Core
 src/
   core/        utils, input (map phím → action), audio (WebAudio chiptune), profile (hồ sơ + tiến trình, localStorage)
   entities/    ball (vật lý 2.5D x/y/z, khung thành, lưới), player
   systems/     actions (chuyền/sút/tắc/Light & Hard attack...), cores (hook hành vi), effects,
                ai (trông khung/giữ bóng/hỗ trợ/phòng ngự), human (controller)
-  game/        match.js — state machine trận đấu
+  game/        match.js — state machine trận đấu · tutorial.js — kịch bản trận mơ PROLOGUE
   render/      sprites (pixel-art procedural), background (sân + tường), renderer
   net/         transport (PeerJS), sync (snapshot / nội suy / phím từ xa), online (phòng chờ + vòng lặp host/khách)
-  ui/          menu (trang chủ + hồ sơ, chơi đơn, online, nhân vật, hướng dẫn), gacha (shop hộp, quay hộp, túi đồ), ui (HUD, chọn Core, pause, kết quả + thưởng)
+  ui/          menu (trang chủ + hồ sơ, chơi đơn, online, nhân vật, hướng dẫn), story (cut scene PROLOGUE), gacha (shop hộp, quay hộp, túi đồ), ui (HUD, chọn Core, pause, kết quả + thưởng)
 ```
 
 ### Thêm Core mới

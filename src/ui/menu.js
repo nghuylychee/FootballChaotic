@@ -134,11 +134,14 @@ window.SFC = window.SFC || {};
             { kind: 'btn', label: 'CHARACTER', sub: this.drillCount() ? `★ ${this.drillCount()} READY!` : SFC.Mates.scoutReady() ? '★ SCOUT REPORT READY!' : 'STATS · TEAM · APPEARANCE · INVENTORY', hot: PF().drillsPending() > 0 || SFC.Mates.scoutReady(), act: () => this.go('char') },
             { kind: 'btn', label: 'SHOP', sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'SETTINGS', sub: 'Training · controls', act: () => this.go('settings') },
+            // nút cheat tạm để test PROLOGUE (tắt: config/ftue.config.js -> cheatButton = false)
+            ...(SFC_CONFIG.ftue.cheatButton ? [{ kind: 'btn', label: 'TEST FTUE', sub: 'Cheat · replay prologue', danger: true, act: () => SFC.Tutorial.begin(app) }] : []),
           ].map((it) => Object.assign(it, { sub: it.sub && it.sub.toUpperCase() }));
         case 'settings':
           return [
             { kind: 'btn', label: 'TRAINING', sub: 'No clock · pick team sizes', act: () => this.go('training') },
             { kind: 'btn', label: 'CONTROLS', sub: 'Keyboard & controller layout', act: () => { CV().open(); this.go('controls'); } },
+            { kind: 'btn', label: 'PROLOGUE', sub: 'Replay the intro & tutorial match', act: () => SFC.Tutorial.begin(this.app) },
             { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drills · stats reset on close', act: () => this.testDrill() },
             // xoá toàn bộ tiến trình, chơi lại từ đầu — bấm 2 lần mới xoá (lần 1 chỉ hỏi lại, rời trang là huỷ)
             this.resetArmed
@@ -644,6 +647,8 @@ window.SFC = window.SFC || {};
       SFC.Audio.pick();
       const back = this.nameBack;
       this.nameBack = 'home';
+      // người chơi mới: đặt tên xong -> PROLOGUE (cut scene + trận hướng dẫn)
+      if (SFC.Tutorial.wanted()) { this.setTextMode(null); return SFC.Tutorial.begin(this.app); }
       this.go(back);
     },
 

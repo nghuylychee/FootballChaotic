@@ -26,7 +26,9 @@ window.SFC = window.SFC || {};
      *         teamSize: [n đội 0, n đội 1] — số cầu thủ mỗi đội (mặc định đủ đội hình; 0 = đội trống),
      *         aiProfile / mateDifficulty: độ khó AI đối thủ (object) / đồng đội (key) — Main Path,
      *         arena: id giao diện sân (arenas.config.js), mainPath: { area, div, promo, final, reward } — trận Main Path,
-     *         noDraft / noAI: tắt chọn Core / AI (ảnh xem trước Core) }
+     *         noDraft / noAI: tắt chọn Core / AI (ảnh xem trước Core),
+     *         tutorial: trận mơ PROLOGUE (src/game/tutorial.js): không đồng hồ tới khi g.clockOn, lượt chọn Core do kịch bản mở,
+     *         noAiCores: cầu thủ AI không tự bốc Core ở lượt chọn }
      */
     constructor(opts) {
       const C = SFC_CONFIG.game;
@@ -408,6 +410,7 @@ window.SFC = window.SFC || {};
     tickClock(dt) {
       const M = this.cfg.match;
       if (this.opts.training) return; // luyện tập: không giờ trận, không Final Push / Golden Goal, không kết thúc
+      if (this.opts.tutorial && !this.clockOn) return; // trận mơ: đồng hồ chỉ chạy ở bài cuối (tutorial.js)
       if (this.golden) {
         this.goldenT = (this.goldenT || 0) + dt;
         if (this.goldenT >= M.goldenGoalMaxTime) this.end();
@@ -466,7 +469,7 @@ window.SFC = window.SFC || {};
       const n = this.cfg.match.upgradeChoices, C = this.cores;
       this.upgradeIdx++;
       // Core là của từng cầu thủ: mọi cầu thủ AI (đồng đội của người chơi + đối thủ) tự bốc 1 lá cho riêng mình
-      const aiPicks = this.players.filter((p) => !C.isHumanOwner(p))
+      const aiPicks = this.opts.noAiCores ? [] : this.players.filter((p) => !C.isHumanOwner(p))
         .map((p) => ({ team: p.team, pid: p.id, id: C.aiPick(p) })).filter((x) => x.id);
       // người chơi (mỗi slot): 3 lá cho cầu thủ mình điều khiển — khóa theo chỉ số slot
       const options = {};

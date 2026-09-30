@@ -130,14 +130,18 @@ window.SFC = window.SFC || {};
       }).join('');
       const opp = game.teams[1 - team];
       const left = (d.rerolls && d.rerolls[me]) || 0;
-      const reroll = picked ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> REROLL 3 (${left} left)</button>`;
+      const reroll = picked || d.noReroll ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> REROLL 3 (${left} left)</button>`;
       // bàn phím: không cần chú thích (bỏ dòng "Pick 1 Core..."); tay cầm không có phím số -> gợi ý nút ngắn
       const sub = picked ? `Picked · waiting for ${game.seats.length > 2 || game.humans.length < 2 ? 'other players' : 'opponent'}...` :SFC.Input.device === 'pad' ? `←→ + ${esc(keyLabel('confirm'))}` : '';
       this.el.draft.classList.toggle('waiting', picked);
+      // lượt chọn có kịch bản (PROLOGUE): tiêu đề riêng, ghi chú dưới lá bài, lá ULTIMATE lộ diện
+      this.el.draft.classList.toggle('ult-reveal', d.special === 'ult');
+      const title = d.title ? esc(d.title) : `${d.pre ? 'STARTING CORE' : 'CORE UPGRADE'} <span>${d.round}/${total}</span>`;
       this.el.draft.innerHTML = `
-        <div class="draft-title">${d.pre ? 'STARTING CORE' : 'CORE UPGRADE'} <span>${d.round}/${total}</span>${timer}</div>
+        <div class="draft-title">${title}${timer}</div>
         <div class="draft-sub">${sub}${reroll}</div>
         <div class="cards">${cards}</div>
+        ${d.note ? `<div class="draft-note">${esc(d.note).replace(/\*(.+?)\*/g, '<b>$1</b>')}</div>` : ''}
         <div class="draft-opp"><span>Your build:</span> ${traitChips(game, mp) || '<em>—</em>'}${this.mateChips(game, team, mp)} <span class="sep">·</span> <span>${esc(opp.cfg.name)}:</span> ${opp.players.map((q) => traitChips(game, q) || '<em>—</em>').join(' <span class="sep">/</span> ')}</div>`;
       SFC.CorePreview.scan(this.el.draft);
     },
@@ -437,6 +441,7 @@ window.SFC = window.SFC || {};
       if (act === 'lobby') SFC.Online.backToLobby();
       if (act === 'reroll') this.app.rerollCore();
       if (act === 'drill') this.openDrill();
+      if (act === 'skiptut') SFC.Tutorial.skip();
     },
 
     // màn DRILL trên màn kết quả; đóng (chọn hết / LATER) -> vẽ lại nút (DRILL (n) / NEXT MATCH)
@@ -453,6 +458,8 @@ window.SFC = window.SFC || {};
       const c = this.hudCache;
       const t0 = game.teams[0], t1 = game.teams[1];
       const training = !!(game.opts && game.opts.training);
+      // trận mơ PROLOGUE: có tỉ số nhưng chưa có đồng hồ tới bài cuối
+      const dream = !!(game.opts && game.opts.tutorial) && !game.clockOn;
       const time = game.golden ? 'GOLDEN' : SFC.U.fmtTime(game.remaining);
       const phase = game.golden ? 'GOLDEN GOAL' : game.finalPush ? 'FINAL PUSH x' + SFC_CONFIG.game.match.finalPushGoalValue : '';
       const cores = game.players.map((p) => game.cores.coresOf(p).join()).join('|');
@@ -462,9 +469,10 @@ window.SFC = window.SFC || {};
         : next != null ? `<div class="hud-core">✦ Next Core in ${SFC.U.fmtTime(next)}</div>` : '';
       // Main Path: hạng đang đá (trận thăng hạng / chung kết nổi bật)
       const mp = game.opts && game.opts.mainPath;
-      const pathLine = !mp ? '' : mp.promo ? `<div class="hud-path promo">${PX().ui('crown', 'sm')} ${mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH'}</div>`
+      const pathLine = game.opts && game.opts.tutorial ? '<div class="hud-path dream">PROLOGUE · THE DREAM</div>'
+        : !mp ? '' : mp.promo ? `<div class="hud-path promo">${PX().ui('crown', 'sm')} ${mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH'}</div>`
         : `<div class="hud-path">${esc(SFC.MainPath.divName(mp.area, mp.div))}</div>`;
-      const key = [t0.score, t1.score, time, phase, cores, coreLine, pathLine].join('#');
+      const key = [t0.score, t1.score, dream ? 'dream' : time, phase, cores, coreLine, pathLine].join('#');
       if (c.key !== key) {
         c.key = key;
         // nhãn người chơi theo slot: P1..P4 (co-op: 2 nhãn cùng 1 đội); người ở máy này tô vàng, cùng đội xanh, đối thủ đỏ
@@ -478,7 +486,7 @@ window.SFC = window.SFC || {};
           </div>
           <div class="hud-mid">${pathLine}${training ? '<div class="hud-time">TRAINING</div>' : `
             <div class="hud-score"><b style="color:${t0.cfg.kit.shirt}">${t0.score}</b><span>-</span><b style="color:${t1.cfg.kit.shirt}">${t1.score}</b></div>
-            <div class="hud-time ${game.finalPush || game.golden ? 'hot' : ''}">${time}</div>
+            <div class="hud-time ${game.finalPush || game.golden ? 'hot' : ''}">${dream ? 'DREAM' : time}</div>
             ${phase ? `<div class="hud-phase">${phase}</div>` : ''}`}
             ${coreLine}
           </div>
@@ -702,6 +710,7 @@ window.SFC = window.SFC || {};
             this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${esc(t.cfg.short)} gets ${other.map((pk) => coreChip(pk.id)).join('')}`);
           }
         }
+        if (e.type === 'end' && game.opts.tutorial) { SFC.Tutorial.onEnd(game); continue; }
         if (e.type === 'end') {
           // thưởng XP / gold: tính 1 lần cho người chơi tại máy này (chơi đơn + online)
           if (!game.reward && game.humanTeam >= 0 && SFC.Profile.data) game.reward = SFC.Profile.awardMatch(game);

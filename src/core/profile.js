@@ -24,6 +24,7 @@ window.SFC = window.SFC || {};
       stats: { matches: 0, wins: 0, draws: 0, losses: 0, goals: 0, boxes: 0 },
       team: SFC.Mates.blankTeam(),   // đồng đội: đội hình + trạm scout (src/core/teammates.js)
       attrs: blankAttrs(),
+      tut: { done: false },          // PROLOGUE (src/game/tutorial.js) đã xem xong / bỏ qua
     };
   }
 
@@ -73,6 +74,8 @@ window.SFC = window.SFC || {};
       d.team = SFC.Mates.sanitizeTeam(raw && raw.team);  // đồng đội + scout (src/core/teammates.js)
       if (!raw || typeof raw !== 'object') return d;
       d.name = this.cleanName(raw.name || '');
+      // hồ sơ có từ trước khi có PROLOGUE (đã đặt tên) -> coi như đã xem
+      d.tut = { done: raw.tut && typeof raw.tut === 'object' ? !!raw.tut.done : !!d.name };
       d.level = clampInt(raw.level, 1, P().maxLevel);
       d.xp = Math.max(0, +raw.xp || 0);
       d.gold = Math.max(0, Math.floor(+raw.gold || 0));

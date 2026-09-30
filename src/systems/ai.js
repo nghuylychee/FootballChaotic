@@ -45,6 +45,8 @@ window.SFC = window.SFC || {};
     update(dt, g) {
       for (const p of g.players) {
         if (p.isControlled && g.isHuman(p.team)) continue;
+        // trận mơ PROLOGUE: kịch bản điều khiển thay AI tuỳ bài (src/game/tutorial.js)
+        if (g.aiHook && g.aiHook(p, dt)) continue;
         p.ai.t -= dt;
         if (p.state === 'windup' && g.ball.owner && g.ball.owner.team !== p.team) {
           // đang gồng Hard attack: xoay theo người cầm bóng

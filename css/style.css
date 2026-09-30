@@ -1374,3 +1374,148 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .in-card em.mate { color: var(--ink); background: #7fe7ff; border-color: #7fe7ff; }
 .in-card em.rival { color: #fff; background: #ff3d5a; border-color: #ff3d5a; }
 .in-card em.ally { color: var(--ink); background: #3ff6ff; border-color: #3ff6ff; }
+
+/* =========================================================
+ * PROLOGUE (config/ftue.config.js): cut scene (src/ui/story.js) · hộp gợi ý trong trận mơ (src/game/tutorial.js)
+ * ========================================================= */
+#story { z-index: 40; background: #050308; overflow: hidden; }
+#story canvas { position: absolute; inset: 0; width: 640px; height: 360px; image-rendering: pixelated; }
+.st-text { position: absolute; inset: 0; pointer-events: none; }
+.st-line { position: absolute; left: 0; right: 0; text-align: center; }
+.st-caption {
+  left: 50%; right: auto; bottom: 26px; transform: translateX(-50%); width: 470px; min-height: 34px; text-align: left;
+  padding: 7px 12px; background: rgba(5,3,8,0.9); border: 2px solid #f3ead7; box-shadow: 3px 3px 0 var(--ink);
+  font-family: var(--px); font-size: 9px; line-height: 1.6; color: #fff;
+}
+.st-shout {
+  top: 34px; font-family: var(--px); font-size: 26px; color: #fff; letter-spacing: 2px;
+  text-shadow: 3px 3px 0 #d7263d, 6px 6px 0 var(--ink); animation: stShout 0.5s steps(6) both, ultShake 0.12s steps(2) 0.5s 4;
+}
+.st-title {
+  top: 62px; font-family: var(--px); font-size: 30px; color: var(--gold); letter-spacing: 1px;
+  text-shadow: 3px 3px 0 #b3421a, 6px 6px 0 var(--ink); animation: inVs 0.55s ease-out both;
+}
+.st-sub { top: 106px; font-family: var(--px); font-size: 14px; color: #fff; text-shadow: 2px 2px 0 var(--ink); animation: inDrop 0.4s steps(4) both; }
+.st-sign { top: 130px; font-size: 22px; color: #ffe9a8; text-shadow: 2px 2px 0 var(--ink); animation: inFade 0.8s both; }
+@keyframes stShout { 0% { opacity: 0; transform: scale(2.4); } 60% { opacity: 1; transform: scale(0.92); } 100% { transform: none; } }
+.st-skip {
+  position: absolute; right: 10px; bottom: 6px; display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: rgba(243,234,215,0.55); pointer-events: none;
+}
+.st-skip i {
+  --k: 0; width: 10px; height: 10px; border-radius: 50%;
+  background: conic-gradient(var(--gold) calc(var(--k) * 360deg), rgba(255,255,255,0.15) 0);
+}
+#story.on-card .st-skip { display: none; }
+
+/* thẻ MAIN PATH (cảnh cuối) */
+.st-card {
+  position: absolute; left: 130px; top: 30px; width: 380px; pointer-events: auto;
+  padding: 12px 16px 10px; background: var(--panel); border: 2px solid var(--gold); box-shadow: 4px 4px 0 var(--ink), 0 0 0 1px var(--ink);
+  animation: rvIn 0.35s steps(5) both;
+}
+.st-card-t { font-family: var(--px); font-size: 14px; color: var(--gold); text-align: center; text-shadow: 2px 2px 0 var(--ink); }
+.st-areas { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 10px 0 8px; }
+.st-areas em { font-style: normal; color: var(--muted); font-size: 14px; }
+.st-area {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; width: 70px; padding: 4px 2px;
+  background: #1a1220; border: 1px solid var(--edge); font-family: var(--px); font-size: 4px; color: var(--muted);
+}
+.st-area b { font-family: var(--px); font-size: 12px; color: #3b2a36; line-height: 16px; }
+.st-area.on { border-color: var(--c); color: var(--c); animation: pulse 0.8s steps(2) infinite; }
+.st-row { display: flex; align-items: center; gap: 9px; padding: 4px 0; border-top: 1px dashed #3b2a36; animation: inFromL 0.35s steps(4) var(--d) both; }
+.st-row b { display: block; font-family: var(--px); font-size: 7px; color: #fff; }
+.st-row small { font-size: 13px; color: var(--muted); }
+.st-ic { width: 22px; text-align: center; font-size: 16px; }
+.st-star { font-family: var(--vt); color: var(--gold); font-size: 22px; font-weight: normal; text-shadow: 1px 1px 0 var(--ink); }
+.st-s { font-family: var(--vt); font-style: normal; font-size: 13px; color: var(--gold); }
+.st-card-f { margin-top: 6px; text-align: center; font-size: 13px; color: #9ccf5a; }
+.st-card-go { margin-top: 6px; text-align: center; font-family: var(--px); font-size: 7px; color: var(--gold); animation: pulse 0.6s steps(2) infinite; }
+
+/* trận mơ: viền mờ tím + lấp lánh (dưới HUD) */
+#dreamfx {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(185,168,255,0) 58%, rgba(185,168,255,0.16) 82%, rgba(255,255,255,0.28) 100%);
+  animation: dreamPulse 3s ease-in-out infinite;
+}
+@keyframes dreamPulse { 50% { opacity: 0.6; } }
+.hud-path.dream { font-family: var(--px); font-size: 5px; color: #b9a8ff; }
+
+/* hộp gợi ý (không chặn trận) */
+#coach {
+  position: absolute; left: 50%; top: 46px; transform: translateX(-50%); pointer-events: none;
+  display: flex; align-items: center; gap: 8px; padding: 5px 10px; max-width: 380px;
+  background: rgba(20,12,22,0.9); border: 1px solid #b9a8ff; box-shadow: 2px 2px 0 var(--ink);
+  opacity: 0; transition: opacity 0.2s, transform 0.2s;
+}
+#coach.in { opacity: 1; }
+#coach.away, #coach.gone { opacity: 0; transform: translate(-50%, -6px); }
+#coach .co-t { font-family: var(--px); font-size: 10px; color: #b9a8ff; white-space: nowrap; text-shadow: 1px 1px 0 var(--ink); }
+#coach .co-k { display: flex; gap: 2px; }
+#coach .co-k kbd { font-size: 6px; }
+#coach .co-x { font-size: 14px; line-height: 1.05; color: var(--paper); }
+#coach .co-x kbd { font-size: 5px; vertical-align: 1px; }
+/* NICE! đè lên giữa khung (không nằm trong hàng) -> khung không phình ra */
+#coach .co-ok { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-family: var(--px); font-size: 9px; color: #9dff3d; text-shadow: 1px 1px 0 var(--ink); background: rgba(20,12,22,0.7); }
+#coach.ok { border-color: #9dff3d; }
+#coach.ok .co-ok { display: flex; animation: rwPop 0.25s steps(3); }
+#coach.ok .co-x, #coach.ok .co-t, #coach.ok .co-bar, #coach.ok .co-src { opacity: 0.35; }
+#coach.ult { border-color: var(--gold); animation: coachShake 0.2s steps(2) infinite; }
+@keyframes coachShake { 0%, 100% { transform: translate(-50%, 0); } 25% { transform: translate(calc(-50% - 1px), 0); } 50% { transform: translate(-50%, -1px); } 75% { transform: translate(calc(-50% + 1px), 0); } }
+#coach.ult .co-t { color: var(--gold); }
+#coach.final .co-t { color: var(--gold); }
+#coach .co-t x-px { vertical-align: -2px; }
+/* tích Ultimate: thanh năng lượng + nguồn nạp (sáng lên khi vừa nạp) */
+#coach .co-bar { --u: 0; position: relative; width: 110px; height: 9px; background: #231a28; border: 1px solid #8a6d3b; box-shadow: inset 0 0 0 1px var(--ink); }
+#coach .co-bar i { position: absolute; left: 1px; top: 1px; bottom: 1px; width: calc((100% - 2px) * var(--u)); background: linear-gradient(90deg, #ff9a3d, var(--gold)); transition: width 0.25s steps(5); }
+#coach .co-bar em { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--px); font-size: 5px; font-style: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
+#coach .co-src { display: flex; gap: 3px; }
+#coach .co-src span { font-family: var(--px); font-size: 4px; padding: 2px 3px; color: #5a4658; border: 1px solid #3b2a36; }
+#coach .co-src span.got { color: var(--gold); border-color: #8a6d3b; }
+#coach .co-src span.hit { animation: srcHit 0.5s steps(4); }
+@keyframes srcHit { 0% { transform: scale(1.8); background: var(--gold); color: var(--ink); } 100% { transform: none; } }
+
+/* QTE né đòn: trận chạy chậm, phím né to giữa màn, vòng co lại theo nhịp gồng đòn của đối thủ */
+#qte { position: absolute; inset: 0; pointer-events: none; }
+#qte .qte-box { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 5px; }
+#qte::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0) 30%, rgba(60,0,10,0.55) 100%); animation: inFade 0.2s both; }
+#qte kbd { position: relative; font-size: 16px; padding: 6px 9px 4px; border-width: 2px; border-bottom-width: 5px; animation: rwPop 0.25s steps(3), qteKey 0.3s steps(2) 0.25s infinite; }
+#qte b { position: relative; font-family: var(--px); font-size: 9px; color: #3ff6ff; text-shadow: 2px 2px 0 var(--ink); letter-spacing: 2px; }
+#qte .qte-ring {
+  --k: 1; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -30px 0 0 -22px; border-radius: 50%;
+  border: 3px solid #3ff6ff; box-shadow: 0 0 8px #3ff6ff; transform: scale(calc(0.8 + var(--k) * 1.6)); opacity: calc(0.4 + (1 - var(--k)) * 0.6);
+}
+@keyframes qteKey { 50% { transform: translateY(-2px); color: #fff; } }
+/* ô kỹ năng cần dùng */
+#abar .ab-slot.tut-pulse { border-color: #b9a8ff; animation: tutPulse 0.7s steps(2) infinite; }
+#abar .ab-slot.ult.tut-pulse { border-color: var(--gold); }
+@keyframes tutPulse { 50% { box-shadow: inset 0 0 0 1px var(--ink), 0 0 0 2px #b9a8ff, 0 0 8px #b9a8ff; } }
+
+/* lượt chọn có kịch bản */
+.draft-note { margin-top: 10px; max-width: 470px; text-align: center; font-size: 13px; color: #b9a8ff; }
+.draft-note b { font-weight: normal; color: var(--gold); }
+#draft.ult-reveal { background: radial-gradient(circle at 50% 55%, rgba(90,60,10,0.85), rgba(8,5,10,0.92) 65%); }
+#draft.ult-reveal .draft-title { font-size: 20px; animation: inVs 0.6s ease-out both, inShine 0.8s steps(2) 0.6s infinite; }
+#draft.ult-reveal .card { animation: rv3Drop 0.45s ease-out both, ultEdge 1.2s steps(6) infinite; }
+#draft.ult-reveal .draft-note { color: var(--gold); }
+
+/* phím trên đầu nhân vật (cùng kiểu QTE, không chạy chậm) */
+#prompt { position: absolute; inset: 0; pointer-events: none; }
+#prompt .pr-box { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%); display: flex; align-items: flex-end; gap: 8px; animation: prPop 0.25s steps(3); }
+/* pop giữ nguyên translate để không nhảy vị trí lúc hiện */
+@keyframes prPop { 0% { transform: translate(-50%, -100%) scale(1.4); opacity: 0; } 100% { transform: translate(-50%, -100%); opacity: 1; } }
+#prompt .pr-item { display: flex; flex-direction: column; align-items: center; gap: 2px; animation: qteKey 0.6s steps(2) infinite; }
+#prompt kbd { font-size: 11px; padding: 4px 6px 2px; border-width: 1px; border-bottom-width: 4px; box-shadow: 1px 1px 0 var(--ink); }
+/* nhấn: mặt phím dời xuống đúng bằng phần viền đáy mất đi -> cạnh dưới đứng yên, không che nhãn */
+#prompt kbd.on { margin-top: 3px; border-bottom-width: 1px; color: #fff; background: #3a2f4a; }
+#prompt .pr-item b { font-family: var(--px); font-size: 5px; color: #3ff6ff; text-shadow: 1px 1px 0 var(--ink); letter-spacing: 1px; }
+#prompt .pr-item i { font-family: var(--px); font-size: 4px; font-style: normal; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); }
+#prompt .pr-arrows { display: grid; grid-template-columns: repeat(3, auto); gap: 1px; }
+#prompt .pr-arrows kbd { font-size: 7px; padding: 2px 3px 1px; border-bottom-width: 3px; }
+#prompt .pr-arrows kbd.on { margin-top: 2px; border-bottom-width: 1px; }
+#prompt .pr-arrows kbd:nth-child(1) { grid-column: 2; grid-row: 1; }
+#prompt .pr-arrows kbd:nth-child(2) { grid-column: 1; grid-row: 2; }
+#prompt .pr-arrows kbd:nth-child(3) { grid-column: 2; grid-row: 2; }
+#prompt .pr-arrows kbd:nth-child(4) { grid-column: 3; grid-row: 2; }
+#prompt .pr-box.gold kbd { color: var(--ink); background: var(--gold); border-color: #fff3b0; font-size: 13px; }
+#prompt .pr-box.gold b { color: var(--gold); font-size: 6px; }

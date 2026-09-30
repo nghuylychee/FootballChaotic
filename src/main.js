@@ -5,7 +5,7 @@
   const STEP = 1 / 60;
 
   const app = {
-    screen: 'menu',     // menu | game | pause
+    screen: 'menu',     // menu | game | pause | intro | story (cut scene PROLOGUE)
     mode: 'single',     // single | online
     game: null,
     demo: null,
@@ -102,6 +102,7 @@
       SFC.UI.hudCache = {};
       // Main Path: không cho đá lại trận đang thua — chỉ tiếp tục hoặc bỏ trận (tính thua)
       SFC.UI.pauseItems = this.mode === 'online' ? [['resume', 'BACK TO MATCH'], ['leave', 'LEAVE ROOM']]
+        : opts.tutorial ? [['resume', 'RESUME'], ['skiptut', 'SKIP PROLOGUE']]
         : opts.mainPath ? [['resume', 'RESUME'], ['forfeit', 'FORFEIT (LOSS)']]
         : [['resume', 'RESUME'], ['restart', 'RESTART'], ['menu', 'MAIN MENU']];
       SFC.UI.clearToasts();
@@ -111,7 +112,8 @@
         const vs = opts.training && opts.teamSize && !opts.teamSize[1]
           ? `${L[opts.home].name} · no opponent`
           : `${L[opts.home].name} vs ${L[opts.away].name}`;
-        if (mp && mp.promo) SFC.UI.banner(mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH', `vs ${L[opts.away].name}`, '#ffd23f', 2.2);
+        if (opts.tutorial) SFC.UI.banner('THE DREAM', 'PROLOGUE', '#b9a8ff', 2);
+        else if (mp && mp.promo) SFC.UI.banner(mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH', `vs ${L[opts.away].name}`, '#ffd23f', 2.2);
         else if (mp) SFC.UI.banner('KICK OFF', `${SFC.MainPath.divName(mp.area, mp.div)} · vs ${L[opts.away].name}`, '#ffe14f', 1.6);
         else SFC.UI.banner(opts.training ? 'TRAINING' : 'KICK OFF', vs, '#ffe14f', 1.4);
         SFC.Audio.upgrade();
@@ -164,6 +166,8 @@
     // về menu; page = trang menu muốn mở (home / online / lobby)
     toMenu(page = 'home') {
       SFC.Intro.abort();
+      SFC.Story.abort();
+      SFC.Tutorial.cleanup();
       SFC.Drill.close();
       this.game = null;
       this.screen = 'menu';
@@ -190,6 +194,9 @@
       const m = SFC.Audio.toggleMute();
       if (app.screen !== 'menu') SFC.UI.banner(m ? 'MUTED' : 'SOUND ON', '', '#9aa3b5', 0.8);
     }
+
+    // cut scene PROLOGUE (src/ui/story.js)
+    if (app.screen === 'story') { SFC.Story.update(dt, Input); return; }
 
     if (app.screen === 'menu') {
       app.demo.update(dt, null);
@@ -222,6 +229,8 @@
       if (Input.wasPressed('pause')) return app.pause();
       g.update(dt, Input);
     }
+    // trận mơ PROLOGUE: kịch bản đọc sự kiện trước khi UI lấy đi
+    if (g.opts.tutorial) SFC.Tutorial.update(dt, Input, g);
     SFC.UI.consume(g);
   }
 
@@ -240,8 +249,10 @@
     SFC.UI.init(app);
     SFC.Menu.init(app);
     SFC.UI.show('menu');
-    // lần đầu chơi: đặt tên cho character trước khi vào trang chủ
+    // lần đầu chơi: đặt tên cho character trước khi vào trang chủ -> PROLOGUE.
+    // Đã đặt tên nhưng chưa xem xong PROLOGUE (tắt giữa chừng) -> xem lại từ đầu
     if (!SFC.Profile.hasName) SFC.Menu.go('name');
+    else if (SFC.Tutorial.wanted()) SFC.Tutorial.begin(app);
     fit();
     window.addEventListener('resize', fit);
 
@@ -256,7 +267,8 @@
         acc -= STEP;
       }
       let g = null;
-      if (app.screen === 'menu') g = app.demo;
+      if (app.screen === 'story') g = null;
+      else if (app.screen === 'menu') g = app.demo;
       else if (app.mode === 'online') g = SFC.Online.view(now);
       else g = app.game;
       if (g && draw) {
@@ -266,7 +278,7 @@
       // nhạc nền: chỉ phát ở ngoài trận (config/music.config.js)
       if (draw) SFC.Music.update(app.screen === 'menu');
       // âm thanh khán giả của trận đang hiện (menu: im lặng; tạm dừng / menu online: nhỏ lại)
-      if (draw) SFC.Crowd.sound(app.screen === 'menu' ? null : g, app.screen === 'pause' || (app.mode === 'online' && SFC.Online.overlay));
+      if (draw) SFC.Crowd.sound(app.screen === 'menu' || app.screen === 'story' ? null : g, app.screen === 'pause' || (app.mode === 'online' && SFC.Online.overlay));
     }
     let lastRaf = performance.now();
     function frame(now) {

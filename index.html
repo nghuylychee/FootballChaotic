@@ -12,10 +12,14 @@
 <body>
   <div id="stage">
     <canvas id="game"></canvas>
+    <div id="dreamfx" class="hidden"></div>
     <div id="hud" class="hidden"></div>
     <div id="abar" class="hidden"></div>
     <div id="banner"></div>
     <div id="toasts"></div>
+    <div id="prompt" class="hidden"></div>
+    <div id="coach" class="hidden"></div>
+    <div id="qte" class="hidden"></div>
     <div id="menu" class="screen"></div>
     <div id="draft" class="screen hidden"></div>
     <div id="pause" class="screen hidden"></div>
@@ -23,6 +27,7 @@
     <div id="intro" class="screen hidden"></div>
     <div id="reveal" class="screen hidden"></div>
     <div id="drill" class="screen hidden"></div>
+    <div id="story" class="screen hidden"></div>
   </div>
 
   <!-- Config (chỉnh cân bằng game tại đây) -->
@@ -38,6 +43,7 @@
   <script src="config/teammates.config.js"></script>
   <script src="config/intro.config.js"></script>
   <script src="config/music.config.js"></script>
+  <script src="config/ftue.config.js"></script>
 
   <!-- Engine -->
   <script src="src/core/utils.js"></script>
@@ -58,6 +64,7 @@
   <script src="src/systems/ai.js"></script>
   <script src="src/systems/human.js"></script>
   <script src="src/game/match.js"></script>
+  <script src="src/game/tutorial.js"></script>
   <script src="src/render/sprites.js"></script>
   <script src="src/render/background.js"></script>
   <script src="src/render/crowd.js"></script>
@@ -75,6 +82,7 @@
   <script src="src/ui/team.js"></script>
   <script src="src/ui/intro.js"></script>
   <script src="src/ui/drill.js"></script>
+  <script src="src/ui/story.js"></script>
   <script src="src/ui/menu.js"></script>
   <script src="src/main.js"></script>
 </body>
