@@ -7,13 +7,18 @@ const path = require('path');
 // âm thanh chạy ngay, không cần chờ người chơi bấm phím đầu tiên (src/core/audio.js)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
+// icon riêng của game (scripts/make-icon.py) thay logo Electron: cửa sổ / taskbar; Dock của Mac khi chạy dev
+const ICON = path.join(__dirname, '..', 'assets', 'icon.png');
+
 function createWindow() {
+  if (process.platform === 'darwin' && app.dock) app.dock.setIcon(ICON);
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
     useContentSize: true,
     backgroundColor: '#07050a',
     title: 'Street Football Chaos',
+    icon: ICON,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: false,     // preload gắn window.SFC_STEAM thẳng vào window của game

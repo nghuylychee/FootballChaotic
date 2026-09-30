@@ -38,7 +38,8 @@
     "asar": false,
     "afterPack": "scripts/strip-dev.js",
     "win": {
-      "target": "dir"
+      "target": "dir",
+      "icon": "build/icon.ico"
     }
   }
 }
