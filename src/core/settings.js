@@ -1,4 +1,4 @@
-/* Settings — cài đặt của máy: âm lượng nhạc / hiệu ứng, cỡ cửa sổ. Lưu localStorage 'sfc_settings'
+/* Settings — cài đặt của máy: âm lượng nhạc / hiệu ứng, cỡ cửa sổ. Lưu qua SFC.Storage, key 'sfc_settings'
  * (tách khỏi hồ sơ người chơi như FXSettings -> RESET DATA không xoá). Chỉnh ở SETTINGS > SOUND & DISPLAY (ui/menu.js).
  *  - Âm lượng: 0..10 (x10%) -> SFC.Audio.setVolume, nhân với âm lượng trong config
  *  - Cỡ cửa sổ: chỉ bản desktop (electron/preload.js -> window.SFC_DESKTOP). 'WxH' hoặc 'full'.
@@ -19,15 +19,14 @@ window.SFC = window.SFC || {};
     lastWindow: null,    // cỡ cửa sổ trước khi vào FULLSCREEN (F11 thoát ra thì về lại cỡ này)
 
     load() {
-      let raw = {};
-      try { raw = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { /* bỏ qua */ }
+      const raw = SFC.Storage.getJSON(KEY, {}) || {};
       this.music = vol10(raw.music, 10);
       this.sfx = vol10(raw.sfx, 10);
       if (raw.res === FULL || /^\d+x\d+$/.test(raw.res)) this.res = raw.res;
       return this;
     },
     save() {
-      try { localStorage.setItem(KEY, JSON.stringify({ music: this.music, sfx: this.sfx, res: this.res })); } catch (e) { /* bỏ qua */ }
+      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res });
     },
 
     get desktop() { return !!window.SFC_DESKTOP; },

@@ -5,6 +5,7 @@
  */
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 // âm thanh chạy ngay, không cần chờ người chơi bấm phím đầu tiên (src/core/audio.js)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -62,6 +63,13 @@ ipcMain.on('sfc-window', (e, mode) => {
 });
 
 ipcMain.on('sfc-quit', () => app.quit());
+
+// thư mục save (src/core/storage.js qua preload): %APPDATA%\Street Football Chaos\save — tên cố định, không theo productName,
+// đổi tên game cũng không mất save. Steam Auto-Cloud trỏ vào đây (docs/SAVE.md)
+ipcMain.on('sfc-save-dir', (e) => {
+  const dir = path.join(app.getPath('appData'), 'Street Football Chaos', 'save');
+  try { fs.mkdirSync(dir, { recursive: true }); e.returnValue = dir; } catch (err) { e.returnValue = null; }
+});
 
 app.whenReady().then(createWindow);
 app.on('window-all-closed', () => app.quit());

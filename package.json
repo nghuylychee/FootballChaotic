@@ -1,7 +1,7 @@
 {
   "name": "street-football-chaos",
   "productName": "Street Football Chaos",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
@@ -35,7 +35,8 @@
       "!node_modules/steamworks.js/dist/{osx,linux64}/**"
     ],
     "electronLanguages": ["en-US", "vi"],
-    "asar": false,
+    "asar": true,
+    "asarUnpack": ["**/*.node", "**/*.dll"],
     "afterPack": "scripts/strip-dev.js",
     "win": {
       "target": "dir",

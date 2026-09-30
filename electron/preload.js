@@ -4,8 +4,35 @@
  *   App ID: Steam tự đưa khi mở game từ Steam; chạy ngoài Steam thì đọc steam_appid.txt ở thư mục đang chạy (dev: 480).
  */
 const { ipcRenderer } = require('electron');
+const fs = require('fs');
+const path = require('path');
+
+// save dạng file JSON (src/core/storage.js): <key>.json + <key>.json.bak (bản trước đó).
+// Ghi: viết ra .tmp -> bản cũ thành .bak -> .tmp thành bản chính; tắt ngang lúc ghi thì vẫn còn .bak để đọc
+const SAVE_DIR = ipcRenderer.sendSync('sfc-save-dir');
+const saveFile = (key) => path.join(SAVE_DIR, key.replace(/[^\w.-]/g, '_') + '.json');
+const store = SAVE_DIR && {
+  dir: SAVE_DIR,
+  // chuỗi JSON đã lưu, null = chưa có. Bản chính hỏng (không parse được) -> đọc .bak
+  read(key) {
+    for (const f of [saveFile(key), saveFile(key) + '.bak']) {
+      try { const s = fs.readFileSync(f, 'utf8'); JSON.parse(s); return s; } catch (e) { /* thiếu / hỏng -> thử bản kế */ }
+    }
+    return null;
+  },
+  write(key, text) {
+    const f = saveFile(key), tmp = f + '.tmp';
+    fs.writeFileSync(tmp, text);
+    try { fs.renameSync(f, f + '.bak'); } catch (e) { /* lần đầu: chưa có bản cũ */ }
+    try { fs.renameSync(tmp, f); } catch (e) { fs.writeFileSync(f, text); fs.rmSync(tmp, { force: true }); }  // file bị khoá (antivirus) -> ghi thẳng
+  },
+  remove(key) {
+    for (const f of [saveFile(key), saveFile(key) + '.bak', saveFile(key) + '.tmp']) fs.rmSync(f, { force: true });
+  },
+};
 
 window.SFC_DESKTOP = {
+  store,
   // mode: { w, h } = cửa sổ cỡ w x h · { full: true } = toàn màn hình
   setWindow: (mode) => ipcRenderer.send('sfc-window', mode),
   // cb(full): vào / thoát toàn màn hình (kể cả bằng F11)

@@ -1,4 +1,4 @@
-/* afterPack (electron-builder): xoá code chỉ dùng khi dev khỏi bản đóng gói (không đụng file gốc).
+/* afterPack (electron-builder): xoá code chỉ dùng khi dev khỏi bản đóng gói (không đụng file gốc), trong app.asar hoặc resources/app.
  *  - config/build.config.js -> `var SFC_DEV = false;`
  *  - file nào có SFC_DEV: chạy Terser với SFC_DEV = false -> nhánh `if (SFC_DEV)` / `SFC_DEV ? … : …` / `SFC_DEV && …` bị xoá,
  *    comment bị bỏ, tên biến giữ nguyên (không mangle), vẫn xuống dòng để lỗi còn đọc được
@@ -48,5 +48,40 @@ async function strip(appDir) {
   console.log(`  • strip-dev: ${stripped.size} file đã xoá nhánh SFC_DEV`);
 }
 
-exports.default = (context) => strip(path.join(context.appOutDir, 'resources', 'app'));
+// asar bật: afterPack chạy sau khi đã gói app.asar -> giải nén ra thư mục tạm, xoá code dev, gói lại.
+// .node / .dll (steamworks.js) để ngoài asar (app.asar.unpacked) như electron-builder làm, không thì không nạp được
+exports.default = async (context) => {
+  const res = path.join(context.appOutDir, 'resources');
+  const asarFile = path.join(res, 'app.asar');
+  if (!fs.existsSync(asarFile)) return strip(path.join(res, 'app'));
+  const asar = require('@electron/asar');
+  const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'sfc-asar-'));
+  try {
+    asar.extractAll(asarFile, tmp);
+    await strip(tmp);
+    fs.rmSync(asarFile);
+    fs.rmSync(asarFile + '.unpacked', { recursive: true, force: true });
+    await asar.createPackageWithOptions(tmp, asarFile, { unpack: '*.{node,dll}' });
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+  fixIntegrity(context, asar.getRawHeader(asarFile).headerString);
+};
+
+// electron-builder ghi hash header của app.asar vào .exe TRƯỚC afterPack -> gói lại thì hash cũ sai.
+// Ghi lại hash mới (chỉ bị kiểm khi bật fuse EnableEmbeddedAsarIntegrityValidation). Ký .exe chạy sau afterPack
+function fixIntegrity(context, header) {
+  if (context.electronPlatformName !== 'win32') return;
+  const { NtExecutable, NtExecutableResource } = require('resedit');
+  const exe = path.join(context.appOutDir, `${context.packager.appInfo.productFilename}.exe`);
+  const bin = NtExecutable.from(fs.readFileSync(exe));
+  const res = NtExecutableResource.from(bin);
+  const entry = res.entries.find((e) => e.type === 'INTEGRITY' && e.id === 'ELECTRONASAR');
+  if (!entry) return;
+  const hash = require('crypto').createHash('sha256').update(header).digest('hex');
+  entry.bin = Buffer.from(JSON.stringify([{ file: path.win32.normalize('resources/app.asar'), alg: 'SHA256', value: hash }]));
+  res.outputResource(bin);
+  fs.writeFileSync(exe, Buffer.from(bin.generate()));
+  console.log('  • strip-dev: đã cập nhật asar integrity trong .exe');
+}
 exports.strip = strip;

@@ -1,7 +1,7 @@
 /* Profile — hồ sơ người chơi tại máy này: tên, level, XP, gold, túi đồ (costume + Core), thống kê.
  * Costume / Core lấy từ hộp gacha (openBox), trùng thì cộng số lượng, phân rã (dismantle) ra gold.
- * Lưu ở localStorage (config/progression.config.js -> storageKey). Mọi đọc / ghi đều bọc try/catch:
- * trình duyệt chặn storage thì game vẫn chạy, chỉ là không lưu được tiến trình.
+ * Lưu qua SFC.Storage (src/core/storage.js: file JSON ở bản desktop, localStorage ở bản web), key = progression.storageKey.
+ * Không lưu được thì game vẫn chạy, chỉ là không giữ được tiến trình.
  */
 window.SFC = window.SFC || {};
 
@@ -50,20 +50,19 @@ window.SFC = window.SFC || {};
 
     load() {
       let raw = null;
-      try { raw = JSON.parse(localStorage.getItem(P().storageKey) || 'null'); } catch (e) { raw = null; }
-      this.data = this.sanitize(raw);
+      this.data = this.sanitize(SFC.Storage.getJSON(P().storageKey, null));
       return this.data;
     },
 
     save() {
       if (SFC_DEV && this.sandbox) return;   // DRILL TEST (menu SETTINGS): chỉ đổi trong bộ nhớ, không ghi hồ sơ
-      try { localStorage.setItem(P().storageKey, JSON.stringify(this.data)); } catch (e) { /* storage bị chặn */ }
+      SFC.Storage.setJSON(P().storageKey, this.data);
     },
 
     // xoá hồ sơ đã lưu (RESET DATA ở SETTINGS) — lần tải sau như người chơi mới
     resetAll() {
       if (SFC_DEV) this.sandbox = false;
-      try { localStorage.removeItem(P().storageKey); } catch (e) { /* storage bị chặn */ }
+      SFC.Storage.remove(P().storageKey);
       this.data = this.sanitize(null);
     },
 

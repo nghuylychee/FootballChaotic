@@ -15,11 +15,12 @@ window.SFC = window.SFC || {};
   const FXSettings = {
     reduceFlash: false,
     load() {
-      try { Object.assign(this, JSON.parse(localStorage.getItem('sfc_fx') || '{}')); } catch (e) { /* bỏ qua */ }
+      const raw = SFC.Storage.getJSON('sfc_fx', {});
+      if (raw && typeof raw === 'object') this.reduceFlash = !!raw.reduceFlash;
       return this;
     },
     save() {
-      try { localStorage.setItem('sfc_fx', JSON.stringify({ reduceFlash: this.reduceFlash })); } catch (e) { /* bỏ qua */ }
+      SFC.Storage.setJSON('sfc_fx', { reduceFlash: this.reduceFlash });
     },
   };
   SFC.FXSettings = FXSettings.load();
