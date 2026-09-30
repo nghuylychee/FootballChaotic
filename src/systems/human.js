@@ -4,6 +4,8 @@ window.SFC = window.SFC || {};
 (function () {
   const U = SFC.U;
   const PASS_KEYS = [['pass', 'ground'], ['through', 'through'], ['lob', 'lob']];
+  // đòi bóng khi đồng đội cầm bóng: A là Hard attack nên không đòi bóng bổng
+  const CALL_KEYS = [['pass', 'ground'], ['through', 'through']];
 
   SFC.Human = {
     // seat: slot người chơi do bộ phím này điều khiển (online: mỗi slot một input; co-op 2 slot cùng đội)
@@ -115,11 +117,13 @@ window.SFC = window.SFC || {};
       g.receiveLock[team] = false;
 
       if (teamHas) {
-        // đòi bóng từ đồng đội AI
+        // đồng đội cầm bóng: S / W đòi bóng (sệt / chọc khe); D / A vẫn ra đòn (A không còn đòi bóng bổng)
         const carrier = b.owner;
-        for (const [key, mode] of PASS_KEYS) {
+        for (const [key, mode] of CALL_KEYS) {
           if (input.wasPressed(key)) { carrier.ai.requestedPass = { target: p, mode }; break; }
         }
+        if (input.wasPressed('shoot')) Act.lightAttack(g, p);
+        else if (input.wasPressed('lob')) Act.hardAttack(g, p);
       } else {
         // ĐỌC CÚ SÚT: trong vòng cấm nhà giữ W để thủ thế, thả đúng lúc đối phương sút
         const canBrace = RD.enabled && p.state === 'normal' && p.cd.read <= 0 && p.readAt < 0 && g.inKeeperZone(p);

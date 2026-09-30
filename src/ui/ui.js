@@ -62,7 +62,7 @@ window.SFC = window.SFC || {};
     </div>`;
   }
 
-  // Ô trên thanh kỹ năng (giữa đáy màn hình, kiểu LoL). atk = đòn phòng ngự: chỉ dùng được khi đội mình không có bóng
+  // Ô trên thanh kỹ năng (giữa đáy màn hình, kiểu LoL). atk = ra đòn: dùng được mọi lúc trừ khi chính mình cầm bóng
   const SLOTS = [
     { k: 'light', action: 'shoot', icon: 'fist', name: 'LIGHT', atk: true, max: () => SFC_CONFIG.game.combat.light.cooldown, act: ['jab'] },
     { k: 'hard', action: 'lob', icon: 'boom', name: 'HARD', atk: true, max: () => SFC_CONFIG.game.combat.hard.cooldown, act: ['windup', 'kick'] },
@@ -591,7 +591,8 @@ window.SFC = window.SFC || {};
       }
       this.updateBarExtras(game, p, c);
 
-      const teamHas = !!game.ball.owner && game.ball.owner.team === p.team;
+      // ô ra đòn chỉ mờ khi chính mình cầm bóng (đồng đội cầm bóng vẫn đánh được)
+      const teamHas = game.ball.owner === p;
       for (const sl of c.slots) {
         const rem = Math.max(0, p.cd[sl.s.k] || 0);
         const frac = Math.min(1, rem / sl.s.max());

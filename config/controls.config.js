@@ -55,7 +55,8 @@ SFC_CONFIG.controls = {
       ['Z', 'Dash'],
     ],
     teammateHasBall: [
-      ['S / W / A', 'Call for the ball (short/through/lob)'],
+      ['S / W', 'Call for the ball (short/through)'],
+      ['D / A', 'Light / Hard attack still work'],
     ],
     system: [
       ['1 / 2 / 3', 'Pick Core'],
@@ -84,7 +85,8 @@ SFC_CONFIG.controls = {
       ['{skill}', 'Dash'],
     ],
     teammateHasBall: [
-      ['{pass} / {through} / {lob}', 'Call for the ball (short/through/lob)'],
+      ['{pass} / {through}', 'Call for the ball (short/through)'],
+      ['{shoot} / {lob}', 'Light / Hard attack still work'],
     ],
     system: [
       ['{move} + {confirm}', 'Pick Core'],

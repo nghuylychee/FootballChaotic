@@ -42,7 +42,7 @@ Chỉnh trong `SFC_CONFIG.game.pass.intercept`. Sút / phá bóng / bóng lỏng
 
 Bóng chạm cột dọc / xà ngang (trong 1 bán kính bóng) → chữ **WOODWORK** + tiếng "keng" (`Ball.checkWoodwork`, chỉ hiển thị, đường bóng không đổi).
 
-Khi đồng đội AI giữ bóng: S / W / A để đòi bóng. `1/2/3` chọn Core, `Esc/P` tạm dừng (online: mở menu), `M` tắt âm.
+Khi đồng đội AI giữ bóng: S / W để đòi bóng (sệt / chọc khe), D / A vẫn ra đòn Light / Hard. `1/2/3` chọn Core, `Esc/P` tạm dừng (online: mở menu), `M` tắt âm.
 
 ## Menu
 Trang chủ: **CHƠI ĐƠN** (chọn đội / đối thủ / độ khó / điều khiển) · **LUYỆN TẬP** · **ĐỐI KHÁNG ONLINE** · **SHOP** (hộp gacha) · **NHÂN VẬT** (túi đồ),
@@ -113,7 +113,7 @@ Light (D): cú đấm thẳng — kéo tay lấy đà rồi đấm, tầm ngắn
 rồi vung chân đá — trúng thì đối thủ bị hất tung bay rất xa (văng vào tường thì bật lại), choáng lâu và chắc chắn rơi bóng; trượt thì khựng lâu. Z (lướt) đúng lúc thì né được cả hai. Chỉnh trong `SFC_CONFIG.game.combat.light / hard`.
 
 **Chế độ điều khiển (Chơi đơn):** `CẢ ĐỘI` (Q đổi người, chuyền bóng thì điều khiển luôn người nhận) hoặc `1 CẦU THỦ`
-— chỉ điều khiển đúng cầu thủ đã chọn cả trận (không đổi người, không tự chuyển), đồng đội do AI chơi; đòi bóng bằng S / W / A.
+— chỉ điều khiển đúng cầu thủ đã chọn cả trận (không đổi người, không tự chuyển), đồng đội do AI chơi; đòi bóng bằng S / W (D / A vẫn ra đòn).
 Cơ chế nằm ở `opts.solo` của `SFC.Game` (khóa theo từng đội, dùng lại được cho online).
 
 **Trông khung thành (2v2):** mỗi đội 2 cầu thủ sân, vai trò chỉ là vị trí xuất phát. Ai đứng trong vòng cấm nhà thì có cơ chế thủ môn
