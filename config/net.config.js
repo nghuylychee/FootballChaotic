@@ -9,6 +9,7 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
   protocol: 8,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
+  useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
   peerjsUrl: 'lib/peerjs.min.js',   // PeerJS 1.5.4, đóng gói kèm game
   // Tùy chọn PeerJS; để trống = dùng PeerJS Cloud miễn phí.
   // Tự host PeerServer: { host: 'my-server', port: 9000, path: '/sfc', secure: true }

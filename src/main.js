@@ -243,6 +243,7 @@
 
   function boot() {
     SFC.Profile.load();
+    SFC.Settings.apply();   // âm lượng + cỡ cửa sổ đã lưu (SETTINGS)
     Input.init(SFC_CONFIG.controls.bindings);
     SFC.Renderer.init(document.getElementById('game'));
     app.newDemo();

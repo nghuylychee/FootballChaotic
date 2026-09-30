@@ -1,7 +1,9 @@
 /* Electron — cửa sổ game cho bản desktop (Steam). Game vẫn là index.html như bản web.
  * F11: toàn màn hình · F12 (chỉ khi chưa đóng gói): DevTools
+ * SETTINGS > RESOLUTION (src/core/settings.js) gửi 'sfc-window' qua preload; vào / thoát toàn màn hình báo lại 'sfc-fullscreen'
+ * Trang chủ: Esc -> QUIT GAME? -> 'sfc-quit'
  */
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
 // âm thanh chạy ngay, không cần chờ người chơi bấm phím đầu tiên (src/core/audio.js)
@@ -35,12 +37,31 @@ function createWindow() {
     if (input.key === 'F11') { win.setFullScreen(!win.isFullScreen()); e.preventDefault(); }
     else if (input.key === 'F12' && !app.isPackaged) { win.webContents.toggleDevTools(); e.preventDefault(); }
   });
+  win.on('enter-full-screen', () => win.webContents.send('sfc-fullscreen', true));
+  win.on('leave-full-screen', () => win.webContents.send('sfc-fullscreen', false));
+
   // không cho trang điều hướng / mở cửa sổ ra ngoài game
   win.webContents.on('will-navigate', (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
   win.loadFile(path.join(__dirname, '..', 'index.html'));
 }
+
+// mode: { full: true } hoặc { w, h } (cỡ vùng vẽ, không tính viền cửa sổ)
+ipcMain.on('sfc-window', (e, mode) => {
+  const win = BrowserWindow.fromWebContents(e.sender);
+  if (!win || !mode) return;
+  if (mode.full) { win.setFullScreen(true); return; }
+  const w = Math.round(mode.w), h = Math.round(mode.h);
+  if (!(w > 0 && h > 0)) return;
+  const resize = () => { win.setContentSize(w, h); win.center(); };
+  if (win.isMaximized()) win.unmaximize();
+  // thoát toàn màn hình xong mới đổi cỡ, không thì Windows trả cửa sổ về cỡ cũ
+  if (win.isFullScreen()) { win.once('leave-full-screen', resize); win.setFullScreen(false); }
+  else resize();
+});
+
+ipcMain.on('sfc-quit', () => app.quit());
 
 app.whenReady().then(createWindow);
 app.on('window-all-closed', () => app.quit());

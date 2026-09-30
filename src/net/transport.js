@@ -3,7 +3,7 @@
  *  - SFC.NetPeer  (transport-peer.js):  WebRTC qua PeerJS. Bản web, hoặc bản Electron khi không có Steam.
  * Giao diện: on(handlers), host() -> mã phòng, join(code), send(msg, id?), drop(id), close(), message(err), id.
  * Handler (on): open(id), data(msg, id), close(id), error(err) — id = id của khách (host) / 'host' (khách)
- * SFC.Net chọn backend ở lần truy cập đầu (file này nạp trước 2 backend).
+ * SFC.Net chọn backend ở lần truy cập đầu (file này nạp trước 2 backend). Tắt Steam: net.config.js -> useSteam = false.
  */
 window.SFC = window.SFC || {};
 
@@ -67,7 +67,7 @@ window.SFC = window.SFC || {};
   let backend = null;
   Object.defineProperty(SFC, 'Net', {
     get() {
-      if (!backend) backend = SFC.NetSteam && SFC.NetSteam.available() ? SFC.NetSteam : SFC.NetPeer;
+      if (!backend) backend = N().useSteam && SFC.NetSteam && SFC.NetSteam.available() ? SFC.NetSteam : SFC.NetPeer;
       return backend;
     },
   });

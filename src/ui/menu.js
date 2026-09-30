@@ -22,6 +22,7 @@ window.SFC = window.SFC || {};
   const coin = (n) => G().coin(n);
   const xpBar = (d) => G().xpBar(d);
   const CV = () => SFC.ControlsView;   // Settings > Controls (ui/controls.js)
+  const ST = () => SFC.Settings;       // Settings: âm lượng, cỡ cửa sổ (core/settings.js)
   const ATTRS = () => PROG().attrs;     // chỉ số character (trang STATS)
   // tên chỉ số trong trận (Player.stats) cho khung chi tiết trang STATS
   const KEY_LABELS = { speed: 'run speed', stamina: 'stamina refill', power: 'shot power', accuracy: 'shot aim', pass: 'passing',
@@ -90,6 +91,8 @@ window.SFC = window.SFC || {};
     nameBuf: '',
     nameBack: 'home',   // đặt tên xong quay về trang nào
     avatars: [],        // canvas character đang hiện (vẽ lại mỗi khung hình để có chuyển động)
+    quitAsk: false,     // trang chủ: đang hiện hộp "QUIT GAME?" (chỉ bản desktop)
+    quitSel: 1,         // 0 = QUIT · 1 = CANCEL
 
     init(app) {
       this.app = app;
@@ -102,6 +105,7 @@ window.SFC = window.SFC || {};
       // nhớ mục đang chọn của từng trang: quay lại trang cũ (Esc, hết trận...) con trỏ nằm đúng mục vừa rời đi
       if (page !== this.page) {
         this.resetArmed = false;   // RESET DATA: rời trang SETTINGS là huỷ xác nhận
+        this.quitAsk = false;
         this.selMemo[this.page] = this.sel;
         this.sel = this.selMemo[page] || 0;
       }
@@ -133,21 +137,37 @@ window.SFC = window.SFC || {};
             { kind: 'btn', label: 'ONLINE', sub: '2-4 players · versus or co-op', act: () => this.go('online') },
             { kind: 'btn', label: 'CHARACTER', sub: this.drillCount() ? `★ ${this.drillCount()} READY!` : SFC.Mates.scoutReady() ? '★ SCOUT REPORT READY!' : 'STATS · TEAM · APPEARANCE · INVENTORY', hot: PF().drillsPending() > 0 || SFC.Mates.scoutReady(), act: () => this.go('char') },
             { kind: 'btn', label: 'SHOP', sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
-            { kind: 'btn', label: 'SETTINGS', sub: 'Training · controls', act: () => this.go('settings') },
-            // nút cheat tạm để test PROLOGUE (tắt: config/ftue.config.js -> cheatButton = false). Bản Steam: bị xoá (SFC_DEV)
-            ...(SFC_DEV && SFC_CONFIG.ftue.cheatButton ? [{ kind: 'btn', label: 'TEST FTUE', sub: 'Cheat · replay prologue', danger: true, act: () => SFC.Tutorial.begin(app) }] : []),
+            { kind: 'btn', label: 'SETTINGS', sub: 'Sound · display · controls', act: () => this.go('settings') },
           ].map((it) => Object.assign(it, { sub: it.sub && it.sub.toUpperCase() }));
         case 'settings':
           return [
-            { kind: 'btn', label: 'TRAINING', sub: 'No clock · pick team sizes', act: () => this.go('training') },
+            { kind: 'btn', label: 'SOUND & DISPLAY', sub: ST().desktop ? 'Music · sound FX · resolution' : 'Music · sound FX', act: () => this.go('display') },
             { kind: 'btn', label: 'CONTROLS', sub: 'Keyboard & controller layout', act: () => { CV().open(); this.go('controls'); } },
             { kind: 'btn', label: 'PROLOGUE', sub: 'Replay the intro & tutorial match', act: () => SFC.Tutorial.begin(this.app) },
-            // cheat, bản Steam: bị xoá (SFC_DEV)
-            ...(SFC_DEV ? [{ kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drills · stats reset on close', act: () => this.testDrill() }] : []),
+            // trang TEST (cheat / thử nghiệm), bản Steam: bị xoá (SFC_DEV)
+            ...(SFC_DEV ? [{ kind: 'btn', label: 'TEST', sub: 'Dev only · cheats & test tools', danger: true, act: () => this.go('test') }] : []),
             // xoá toàn bộ tiến trình, chơi lại từ đầu — bấm 2 lần mới xoá (lần 1 chỉ hỏi lại, rời trang là huỷ)
             this.resetArmed
               ? { kind: 'btn', label: 'CONFIRM RESET', sub: 'Press again · this cannot be undone', danger: true, act: () => this.resetData() }
               : { kind: 'btn', label: 'RESET DATA', sub: 'Erase all progress · start over', danger: true, act: () => { this.resetArmed = true; this.setMsg('Erase level, stats, Main Path, team, items and gold? Press again to confirm.', true); } },
+          ];
+        case 'test':
+          // SETTINGS > TEST: mọi nút cheat / thử nghiệm để ở đây. Bản Steam: cả trang bị xoá (SFC_DEV)
+          if (SFC_DEV) {
+            return [
+              // test PROLOGUE (tắt: config/ftue.config.js -> cheatButton = false)
+              ...(SFC_CONFIG.ftue.cheatButton ? [{ kind: 'btn', label: 'TEST FTUE', sub: 'Cheat · replay prologue', danger: true, act: () => SFC.Tutorial.begin(this.app) }] : []),
+              { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drills · stats reset on close', danger: true, act: () => this.testDrill() },
+            ];
+          }
+          return [];
+        case 'display':
+          // SETTINGS > SOUND & DISPLAY: lưu ngay khi đổi (core/settings.js)
+          return [
+            { kind: 'pick', label: 'MUSIC', value: ST().volumeLabel('music'), change: (d) => ST().stepVolume('music', d) },
+            { kind: 'pick', label: 'SOUND FX', value: ST().volumeLabel('sfx'), change: (d) => ST().stepVolume('sfx', d) },
+            // cỡ cửa sổ: chỉ bản desktop (Electron)
+            ...(ST().desktop ? [{ kind: 'pick', label: 'RESOLUTION', value: ST().resLabel(), change: (d) => ST().stepRes(d) }] : []),
           ];
         case 'name':
           return [{ kind: 'btn', label: 'CONFIRM', main: true, act: () => this.submitName() }];
@@ -192,6 +212,7 @@ window.SFC = window.SFC || {};
             { kind: 'pick', label: 'POSITION', value: this.ctrlLabel(null, s.ctrl), change: (d) => this.changeCtrl(d) },
             { kind: 'pick', label: 'TEAMMATE', value: this.mateLabel(), change: (d) => this.changeMate(d) },
             { kind: 'pick', label: 'VIEW AREA', value: `${v + 1}/${n} ${v > st.area ? '???' : MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
+            { kind: 'btn', label: 'TRAINING', sub: 'No clock · pick team sizes', foot: true, act: () => this.go('training') },
           ];
         }
         case 'training': {
@@ -275,11 +296,14 @@ window.SFC = window.SFC || {};
 
     back() {
       if (Online().status === 'busy') return;
+      // trang chủ: hỏi thoát game. Trình duyệt không tự đóng tab được -> bản web không làm gì
+      if (this.page === 'home') { if (ST().desktop) this.askQuit(); return; }
       if (this.page === 'name') { if (PF().hasName) this.go(this.nameBack); return; } // lần đầu: bắt buộc đặt tên
       if (G().pages.includes(this.page)) return G().back(this);
       if (TM().pages.includes(this.page)) return TM().back(this);
       if (this.page === 'attrs' || this.page === 'look') return this.go('char');
-      if (['training', 'controls'].includes(this.page)) this.go('settings');
+      if (this.page === 'training') this.go('path');
+      else if (['controls', 'display', 'test'].includes(this.page)) this.go('settings');
       else if (['path', 'online', 'tutorial', 'char', 'settings'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
       else if (this.page === 'lobby') Online().leave();
@@ -295,8 +319,10 @@ window.SFC = window.SFC || {};
       if (this.page === 'controls') { this.el.innerHTML = CV().render(); this.bindAvatars(); return; }
       if (G().pages.includes(this.page)) { G().render(this); this.bindAvatars(); return; }
       if (TM().pages.includes(this.page)) { TM().render(this); this.bindAvatars(); return; }
-      const list = items.map((it, i) => this.renderItem(it, i)).join('');
-      const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', online: 'ONLINE', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER', attrs: 'STATS', look: 'APPEARANCE' };
+      // it.foot: mục nằm dưới đáy cột trái (ngay trên dòng gợi ý phím), thứ tự ↑↓ vẫn theo danh sách
+      const list = items.map((it, i) => (it.foot ? '' : this.renderItem(it, i))).join('');
+      const foot = items.map((it, i) => (it.foot ? this.renderItem(it, i) : '')).join('');
+      const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', display: 'SOUND & DISPLAY', test: 'TEST', online: 'ONLINE', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER', attrs: 'STATS', look: 'APPEARANCE' };
       const small = this.page !== 'home';
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       this.el.innerHTML = `
@@ -311,10 +337,40 @@ window.SFC = window.SFC || {};
           ${this.page === 'lobby' ? this.renderRoomCode() : ''}
           <div class="m-items">${list}</div>
           ${msg}
+          ${foot ? `<div class="m-items m-foot">${foot}</div>` : ''}
           <div class="m-hint">${this.hint()}</div>
         </div>
-        <div class="m-right">${this.renderRight()}</div>`;
+        <div class="m-right">${this.renderRight()}</div>
+        ${this.quitAsk ? this.renderQuit() : ''}`;
       this.bindAvatars();
+    },
+
+    /* ---------- hộp QUIT GAME? (trang chủ, Esc / Back) ---------- */
+    askQuit() {
+      this.quitAsk = true;
+      this.quitSel = 1;   // mặc định CANCEL: bấm Enter nhầm không thoát
+      this.render();
+    },
+
+    quitInput(input) {
+      if (input.wasPressed('pause') || input.wasPressed('back')) return this.quitPick(false);
+      if (['left', 'right', 'up', 'down'].some((k) => input.wasPressed(k))) { this.quitSel = 1 - this.quitSel; SFC.Audio.menu(); this.render(); }
+      if (input.wasPressed('confirm')) this.quitPick(this.quitSel === 0);
+    },
+
+    quitPick(yes) {
+      SFC.Audio.menu();
+      if (yes) { window.SFC_DESKTOP.quit(); return; }
+      this.quitAsk = false;
+      this.render();
+    },
+
+    renderQuit() {
+      const b = (label, i) => `<button class="${i === this.quitSel ? 'sel' : ''}" data-quit="${i}">${label}</button>`;
+      return `<div class="quit-pop"><div class="quit-box">
+          <div class="pause-title">QUIT GAME?</div>
+          <div class="pause-items row-items">${b('QUIT', 0)}${b('CANCEL', 1)}</div>
+        </div></div>`;
     },
 
     renderItem(it, i) {
@@ -697,6 +753,7 @@ window.SFC = window.SFC || {};
     },
 
     input(input) {
+      if (this.quitAsk) return this.quitInput(input);
       // phòng chờ: chỉ Esc mới rời phòng (tránh bấm nhầm Backspace)
       const back = input.wasPressed('pause') || (this.page !== 'lobby' && input.wasPressed('back'));
       if (back) { SFC.Audio.menu(); return this.back(); }
@@ -788,6 +845,12 @@ window.SFC = window.SFC || {};
     bindMouse() {
       this.el.addEventListener('click', (e) => {
         SFC.Audio.unlock();
+        // hộp QUIT GAME?: chỉ nhận 2 nút của hộp
+        if (this.quitAsk) {
+          const q = e.target.closest('[data-quit]');
+          if (q) this.quitPick(q.dataset.quit === '0');
+          return;
+        }
         const copy = e.target.closest('[data-copy]');
         if (copy) {
           const code = copy.dataset.copy;

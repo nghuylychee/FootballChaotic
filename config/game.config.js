@@ -12,6 +12,8 @@ SFC_CONFIG.game = {
     vignette: 0.6,          // độ tối viền màn hình kiểu Isaac
     pixelFont: '"Press Start 2P", monospace',
     showDebug: false,
+    // SETTINGS > RESOLUTION (chỉ bản desktop): cỡ cửa sổ, luôn 16:9. Cỡ lớn hơn màn hình bị ẩn. Thêm FULLSCREEN ở cuối
+    windowSizes: [[1280, 720], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]],
   },
 
   audio: {

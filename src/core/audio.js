@@ -4,6 +4,10 @@ window.SFC = window.SFC || {};
 (function () {
   let ctx = null;
   let master = null;
+  // 2 nhánh dưới master: hiệu ứng (kể cả khán giả) và nhạc nền — âm lượng người chơi chỉnh ở SETTINGS (core/settings.js)
+  let sfxBus = null;
+  let musicBus = null;
+  const vol = { sfx: 1, music: 1 };
   let muted = false;
 
   function ensure() {
@@ -14,6 +18,12 @@ window.SFC = window.SFC || {};
       master = ctx.createGain();
       master.gain.value = SFC_CONFIG.game.audio.volume;
       master.connect(ctx.destination);
+      sfxBus = ctx.createGain();
+      sfxBus.gain.value = vol.sfx;
+      sfxBus.connect(master);
+      musicBus = ctx.createGain();
+      musicBus.gain.value = vol.music;
+      musicBus.connect(master);
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
@@ -23,7 +33,7 @@ window.SFC = window.SFC || {};
     return SFC_CONFIG.game.audio.enabled && !muted && ensure();
   }
 
-  // at: thời điểm phát tuyệt đối (ctx.currentTime) — nhạc nền lên lịch trước; dest: nút nhận (mặc định master)
+  // at: thời điểm phát tuyệt đối (ctx.currentTime) — nhạc nền lên lịch trước; dest: nút nhận (mặc định sfxBus)
   function tone({ freq = 440, to = null, dur = 0.1, type = 'square', vol = 0.25, delay = 0, at = null, dest = null }) {
     if (!enabled()) return;
     const t = at != null ? at : ctx.currentTime + delay;
@@ -35,7 +45,7 @@ window.SFC = window.SFC || {};
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     o.connect(g);
-    g.connect(dest || master);
+    g.connect(dest || sfxBus);
     o.start(t);
     o.stop(t + dur + 0.02);
   }
@@ -56,7 +66,7 @@ window.SFC = window.SFC || {};
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    src.connect(f); f.connect(g); g.connect(dest || master);
+    src.connect(f); f.connect(g); g.connect(dest || sfxBus);
     src.start(t);
   }
 
@@ -74,7 +84,7 @@ window.SFC = window.SFC || {};
 
   function crowdStart() {
     if (crowd.gain) return;
-    const g = ctx.createGain(); g.gain.value = 0; g.connect(master);
+    const g = ctx.createGain(); g.gain.value = 0; g.connect(sfxBus);
     // 2 lớp: tiếng ù đám đông (dải trầm) + tiếng nói lao xao (dải cao hơn, nhấp nhô nhanh hơn)
     const layers = [[520, 0.55, 0.19], [1150, 1.4, 0.63]];
     const lfoGain = ctx.createGain(); lfoGain.gain.value = 0; lfoGain.connect(g.gain);
@@ -110,7 +120,7 @@ window.SFC = window.SFC || {};
     g.gain.linearRampToValueAtTime(peak, t + peakAt);
     g.gain.setValueAtTime(peak, t + peakAt + hold);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    src.connect(f); f.connect(g); g.connect(master);
+    src.connect(f); f.connect(g); g.connect(sfxBus);
     src.start(t);
   }
 
@@ -135,7 +145,7 @@ window.SFC = window.SFC || {};
       // AudioContext chỉ chạy sau thao tác đầu tiên của người chơi (phím / chuột) -> chưa chạy thì thử lại ở khung sau
       if (!ctx || ctx.state !== 'running') { this.want = false; return; }
       const M = SFC_CONFIG.music;
-      if (!this.gain) { this.gain = ctx.createGain(); this.gain.gain.value = 0; this.gain.connect(master); }
+      if (!this.gain) { this.gain = ctx.createGain(); this.gain.gain.value = 0; this.gain.connect(musicBus); }
       const t = ctx.currentTime;
       this.gain.gain.cancelScheduledValues(t);
       this.gain.gain.setValueAtTime(this.gain.gain.value, t);
@@ -229,6 +239,12 @@ window.SFC = window.SFC || {};
 
   SFC.Audio = {
     unlock: ensure,
+    // kind: 'sfx' | 'music', v: 0..1 (nhân với âm lượng trong config). Gọi trước khi có AudioContext cũng được
+    setVolume(kind, v) {
+      vol[kind] = v;
+      const bus = kind === 'music' ? musicBus : sfxBus;
+      if (bus) bus.gain.setTargetAtTime(v, ctx.currentTime, 0.02);
+    },
     toggleMute() { muted = !muted; this.crowdLevel(crowd.level, true); return muted; },
 
     // độ ồn nền của khán giả (0 = không có khán giả); gọi mỗi khung hình (render/crowd.js)

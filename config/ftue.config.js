@@ -11,7 +11,7 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.ftue = {
   enabled: true,
-  cheatButton: true,        // TẠM: nút TEST FTUE ở trang chủ để test PROLOGUE — đặt false để ẩn khi test xong
+  cheatButton: true,        // nút TEST FTUE ở SETTINGS > TEST (chỉ bản dev) để test PROLOGUE — false = ẩn
   skipHold: 0.8,            // cut scene: giữ Enter / Esc bấy nhiêu giây để bỏ qua
   typeSpeed: 34,            // chữ gõ máy: ký tự / giây
 
