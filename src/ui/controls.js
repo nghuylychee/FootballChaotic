@@ -148,14 +148,13 @@ window.SFC = window.SFC || {};
   const kbCodes = (a) => (CFG().bindings[a] || []).filter((c) => !c.startsWith('Pad.'));
   const kbKeys = (a, n = 2) => kbCodes(a).slice(0, n).map((c) => `<kbd>${esc(kbName(c))}</kbd>`).join('');
 
-  // màu phím: play = dùng trong trận · def = chỉ khi phòng ngự · sys = menu / hệ thống
+  // màu phím: play = dùng trong trận (tấn công hoặc phòng ngự) · sys = menu / hệ thống
   function keyKind(code) {
     const B = CFG().bindings, L = CFG().legend;
     const acts = Object.keys(B).filter((a) => B[a].includes(code));
     if (!acts.length) return { kind: '', acts };
-    const play = acts.filter((a) => DIRS.includes(a) || (L[a] && L[a].atk && !['pause', 'mute'].includes(a)));
+    const play = acts.filter((a) => DIRS.includes(a) || (L[a] && (L[a].atk || L[a].def) && !['pause', 'mute'].includes(a)));
     if (play.length) return { kind: 'play', acts };
-    if (acts.some((a) => L[a] && L[a].def)) return { kind: 'def', acts };
     return { kind: 'sys', acts };
   }
 
@@ -201,7 +200,7 @@ window.SFC = window.SFC || {};
       let body;
       if (this.view === 'kb') {
         body = `${kbSvg()}
-          <div class="kv-key"><span class="play">In match</span><span class="def">Defense only</span><span class="sys">Menus &amp; system</span></div>
+          <div class="kv-key"><span class="play">In match</span><span class="sys">Menus &amp; system</span></div>
           <div class="kv-legend">${kbLegend()}
             <div class="kl"><span class="kl-k">${kbKeys('pass', 1)}${kbKeys('through', 1)}${kbKeys('lob', 1)}</span><span class="kl-t"><b>Teammate on the ball:</b><b>call for a pass</b></span></div></div>
           <div class="cv-note">Menus: ${kbKeys('confirm')} confirm · ${kbKeys('pause', 1)}${kbKeys('back', 1)} back · ${kbKeys('pick1', 1)}${kbKeys('pick2', 1)}${kbKeys('pick3', 1)} pick Core · ${kbKeys('reroll')} reroll 3 Cores</div>`;

@@ -6,7 +6,7 @@ window.SFC = window.SFC || {};
   // chỉ số nút theo Standard Gamepad mapping (tên theo vị trí trên tay Xbox)
   const BUTTONS = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'Back', 'Start', 'LS', 'RS', 'Up', 'Down', 'Left', 'Right'];
   const LABELS = {
-    xbox: { A: 'A', B: 'B', X: 'X', Y: 'Y', LB: 'LB', RB: 'RB', LT: 'LT', RT: 'RT', Back: 'View', Start: 'Menu', LS: 'LS', RS: 'RS' },
+    xbox: { A: 'A', B: 'B', X: 'X', Y: 'Y', LB: 'LB', RB: 'RB', LT: 'LT', RT: 'RT', Back: '⧉', Start: '☰', LS: 'LS', RS: 'RS' },
     ps:   { A: '✕', B: '○', X: '□', Y: '△', LB: 'L1', RB: 'R1', LT: 'L2', RT: 'R2', Back: 'Create', Start: 'Options', LS: 'L3', RS: 'R3' },
   };
   const DIR_LABELS = { Up: '↑', Down: '↓', Left: '←', Right: '→', StickUp: 'L↑', StickDown: 'L↓', StickLeft: 'L←', StickRight: 'L→' };

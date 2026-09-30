@@ -177,7 +177,8 @@ window.SFC = window.SFC || {};
           const d = PF().data;
           const nItems = Object.values(d.items).reduce((a, b) => a + b, 0) + Object.values(d.cores).reduce((a, b) => a + b, 0);
           return [
-            { kind: 'btn', label: 'STATS', sub: `OVR ${PF().ovr()}`, act: () => this.go('attrs') },
+            // còn thẻ drill: OVR vàng + ↑ (mở ở STATS -> USE DRILL CARDS)
+            { kind: 'btn', label: 'STATS', sub: `${PF().drillsPending() ? '↑ ' : ''}OVR ${PF().ovr()}`, hot: PF().drillsPending() > 0, act: () => this.go('attrs') },
             { kind: 'btn', label: 'TEAM', sub: this.teamSub(), hot: SFC.Mates.scoutReady(), act: () => { TM().back0 = 'char'; TM().open(this, SFC.Mates.scoutReady() ? 1 : 0); } },
             { kind: 'btn', label: 'APPEARANCE', sub: `${d.name} · skin · hair color`, act: () => this.go('look') },
             { kind: 'btn', label: 'INVENTORY', sub: `${nItems} items · equip · dismantle`, act: () => { G().invBack = 'char'; this.go('inv'); } },
@@ -285,12 +286,12 @@ window.SFC = window.SFC || {};
       s.ctrl = wrap((s.ctrl || 1) - 1 + d, n) + 1;
     },
 
-    // chỉ 1 cầu thủ: tên + vị trí xuất phát (CẢ ĐỘI: không còn chọn được trên menu)
+    // chỉ 1 cầu thủ: vị trí xuất phát (CẢ ĐỘI: không còn chọn được trên menu)
     ctrlLabel(teamId, ctrl) {
       if (!ctrl) return 'WHOLE TEAM';
       // 1 CẦU THỦ: character của bạn đá vị trí này
       const role = SFC_CONFIG.game.roles[ctrl - 1];
-      return `${PF().data.name || 'PLAYER'} · ${ROLE_LABELS[role] || role}`;
+      return ROLE_LABELS[role] || role;
     },
 
     back() {
@@ -386,7 +387,7 @@ window.SFC = window.SFC || {};
 
     hint() {
       const K = (a, kb) => SFC.Input.key(a, kb), ok = K('confirm', 'Enter'), back = K('back', 'Esc');
-      if (this.page === 'home') return `↑↓ select · ${ok} · ${K('mute', 'M')} mute`;
+      if (this.page === 'home') return `${ok} select · ${K('mute', 'M')} mute`;
       if (this.page === 'join') return `Type the code · Enter connect · ${back} back`;
       if (this.page === 'name') return PF().hasName ? `Type a name (A-Z, 0-9) · Enter confirm · ${back} back` : 'Type a name (A-Z, 0-9) · Enter confirm';
       if (this.page === 'attrs') return `↑↓ select · ${back} back`;
@@ -593,10 +594,10 @@ window.SFC = window.SFC || {};
       return `<div class="char-stage">
         <canvas class="avatar big" data-avatar="spin"></canvas>
         <div class="char-name">${esc(d.name)}</div>
-        <div class="char-info">${xpBar(d)}<div class="pc-gold">${coin(d.gold)}</div>
+        <div class="char-info">${xpBar(d)}<div class="pc-gold"><span class="gold">OVR ${PF().ovr()}</span></div>
           <div class="stats st-mini">${this.attrGrid()}</div>
           <div class="eq-list">${G().equippedHtml()}</div>
-          <div class="pc-stats">${st.wins}W ${st.draws}D ${st.losses}L · ${st.goals} goals · ${st.boxes || 0} boxes</div></div>
+          <div class="pc-stats">${st.wins}W ${st.draws}D ${st.losses}L · ${st.goals} goals</div></div>
       </div>`;
     },
 

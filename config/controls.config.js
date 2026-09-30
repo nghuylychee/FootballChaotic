@@ -100,13 +100,13 @@ SFC_CONFIG.controls = {
   // atk = khi đội mình giữ bóng / đang tấn công · def = khi phòng ngự (bỏ trống nếu giống atk hoặc không có)
   legend: {
     move:     { atk: 'Move' },
-    sprint:   { atk: 'Sprint (hold)' },
+    sprint:   { atk: 'Sprint' },
     pass:     { atk: 'Ground pass' },
-    through:  { atk: 'Through ball (hold)', def: 'Catch the shot (hold in box)' },
-    lob:      { atk: 'Lob pass (hold)', def: 'Hard attack · dropkick' },
-    shoot:    { atk: 'Shoot (hold)', def: 'Light attack · punch' },
+    through:  { atk: 'Through ball', def: 'Catch the shot (in box)' },
+    lob:      { atk: 'Lob pass', def: 'Hard attack · dropkick' },
+    shoot:    { atk: 'Shoot', def: 'Light attack · punch' },
     skill:    { atk: 'Skill move', def: 'Dash' },
-    ultimate: { atk: 'Ultimate (full bar)' },
+    ultimate: { atk: 'Ultimate' },
     pause:    { atk: 'Pause' },
     mute:     { atk: 'Mute / unmute' },
   },

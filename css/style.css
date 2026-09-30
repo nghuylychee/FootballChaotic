@@ -711,14 +711,11 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .kk text { font-family: var(--vt); font-size: 12px; fill: #5a4658; }
 .kk.play rect { fill: rgba(255,225,79,0.16); stroke: var(--gold); }
 .kk.play text { fill: var(--gold); }
-.kk.def rect { fill: rgba(90,156,255,0.16); stroke: #5a9cff; }
-.kk.def text { fill: #8fbcff; }
 .kk.sys rect { fill: rgba(200,190,214,0.08); stroke: #9a8fa8; }
 .kk.sys text { fill: #c8bed6; }
 .kv-key { display: flex; justify-content: center; gap: 14px; font-size: 12px; color: var(--muted); }
 .kv-key span::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 4px; vertical-align: -1px; border: 1px solid; }
 .kv-key .play::before { border-color: var(--gold); background: rgba(255,225,79,0.16); }
-.kv-key .def::before { border-color: #5a9cff; background: rgba(90,156,255,0.16); }
 .kv-key .sys::before { border-color: #9a8fa8; background: rgba(200,190,214,0.08); }
 .cv-chip-t.sym { font-family: var(--vt); font-size: 14px; }
 .kv-legend { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px 12px; background: var(--panel); border: 1px solid var(--edge); padding: 5px 10px; }
