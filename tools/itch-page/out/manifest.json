@@ -1,0 +1,41 @@
+{
+ "generated": "2026-10-01T10:31:32.017Z",
+ "shots": [
+  {
+   "file": "shot-1-street.png",
+   "score": 14
+  },
+  {
+   "file": "shot-2-cyber.png",
+   "score": 21
+  },
+  {
+   "file": "shot-3-stadium.png",
+   "score": 17.5
+  },
+  {
+   "file": "shot-4-market.png",
+   "score": 12
+  },
+  {
+   "file": "shot-5-village.png",
+   "score": 17
+  }
+ ],
+ "files": [
+  "banner.png",
+  "bg-tile.png",
+  "cover.png",
+  "h-controls.png",
+  "h-cores.png",
+  "h-download.png",
+  "h-features.png",
+  "h-online.png",
+  "logo.png",
+  "shot-1-street.png",
+  "shot-2-cyber.png",
+  "shot-3-stadium.png",
+  "shot-4-market.png",
+  "shot-5-village.png"
+ ]
+}

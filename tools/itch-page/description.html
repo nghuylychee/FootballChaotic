@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>itch.io description</title>
+  <!-- Phần mô tả trang itch.io (Edit game > Details > Description, ô này nhận HTML).
+       Copy đoạn giữa itch:start / itch:end (chỉ thẻ thường, không style riêng) rồi dán vào.
+       Ảnh: tải logo.png + h-*.png (out/) lên itch trước, thay src="out/..." bằng link ảnh itch trả về.
+       mock.html nhúng file này qua iframe. -->
+  <style>
+    @font-face { font-family: 'VT323'; src: url(../../assets/fonts/VT323-latin.woff2) format('woff2'); }
+    :root { --page: #140c16; --text: #f3ead7; --link: #ffe14f; --muted: #9aa3b5; }
+    body { margin: 0; padding: 0 2px 8px; background: var(--page); color: var(--text); font: 15px/1.55 "Lato", system-ui, sans-serif; }
+    a { color: var(--link); }
+    img { image-rendering: pixelated; display: block; max-width: 100%; }
+    body > img:first-of-type { margin: 4px 0 14px; }
+    p { margin: 0 0 12px; }
+    .h { margin: 26px 0 10px; width: 600px; }
+    ul { margin: 0 0 12px; padding-left: 20px; }
+    li { margin-bottom: 4px; }
+    table { border-collapse: collapse; margin-bottom: 12px; font-size: 14px; }
+    td { padding: 3px 14px 3px 0; vertical-align: top; }
+    td:first-child { color: var(--link); white-space: nowrap; font-family: 'VT323', monospace; font-size: 18px; }
+    .lead { font-size: 17px; }
+    .credit { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+<!-- ===== itch:start — copy from here (img src: replace out/... with the itch.io image URLs) ===== -->
+  <img src="out/logo.png" alt="Street Football Chaos" width="336">
+  <p class="lead"><b>Football, but the tackle button is a punch.</b> Punch the ball carrier, send defenders flying into the wall, and build a ridiculous playstyle from mid-match upgrades.</p>
+
+  <img class="h" width="600" src="out/h-features.png" alt="Features">
+  <ul>
+    <li><b>No tackles, only fists.</b> A quick punch to knock the ball loose, or a charged dropkick that launches people across the pitch.</li>
+    <li><b>53 Core upgrades.</b> Pick a card after goals and stack an archetype: runner, playmaker, striker, brawler, launcher, trickster, iron, chaos.</li>
+    <li><b>7 ultimates</b> with anime cut-ins: Meteor Shot, Hundred Fists, Clone Army, Titan…</li>
+    <li><b>Main Path campaign:</b> climb 10 areas, from a village pitch to the World Stage.</li>
+    <li><b>Dress your player:</b> 80 costume pieces (hats, faces, shoes, trail effects) from gacha boxes.</li>
+    <li><b>Train your stats</b> with drill cards every level.</li>
+    <li><b>Online 1v1</b> with a room code.</li>
+  </ul>
+
+  <img class="h" width="600" src="out/h-cores.png" alt="Core upgrades">
+  <p>After every goal, both teams pick one of three Cores. Stack two, three or four of the same archetype to unlock bonuses. Hold two of one style and that style's ultimate can show up in your picks. Every match plays out differently.</p>
+
+  <img class="h" width="600" src="out/h-controls.png" alt="Controls">
+  <table>
+    <tr><td>Arrow keys</td><td>Move</td></tr>
+    <tr><td>E (hold)</td><td>Sprint</td></tr>
+    <tr><td>S</td><td>Quick pass</td></tr>
+    <tr><td>W</td><td>Through ball</td></tr>
+    <tr><td>A</td><td>Lob pass · <i>defending:</i> dropkick</td></tr>
+    <tr><td>D</td><td>Shoot (hold to charge) · <i>defending:</i> punch</td></tr>
+    <tr><td>Z</td><td>Skill move / dash</td></tr>
+    <tr><td>X</td><td>Ultimate (when full)</td></tr>
+    <tr><td>1 2 3</td><td>Pick a Core</td></tr>
+    <tr><td>Esc</td><td>Pause</td></tr>
+  </table>
+  <p>Gamepads work too. Click the game first so it gets your key presses.</p>
+
+  <img class="h" width="600" src="out/h-online.png" alt="Play online">
+  <p>Create a room, send the 7-letter code to a friend, and play 1v1.</p>
+
+  <img class="h" width="600" src="out/h-download.png" alt="Browser or download">
+  <p>The browser version saves your progress in this browser. Clearing site data or switching browsers starts you over. The Windows download keeps saves in a file on your PC.</p>
+
+  <p class="credit">Made by Team41. Fonts: Press Start 2P and VT323 (SIL Open Font License).</p>
+<!-- ===== itch:end ===== -->
+
+  <script>
+    // khi nằm trong mock.html: báo chiều cao để khung tự giãn, nhận màu từ bảng Theme
+    if (parent !== window) {
+      const report = () => parent.postMessage({ descHeight: document.documentElement.scrollHeight }, '*');
+      addEventListener('load', report);
+      addEventListener('resize', report);
+      addEventListener('message', (e) => {
+        const vars = e.data && e.data.themeVars;
+        if (vars) for (const k in vars) document.documentElement.style.setProperty(k, vars[k]);
+      });
+    }
+  </script>
+</body>
+</html>

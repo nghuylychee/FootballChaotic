@@ -6,7 +6,8 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win --dir"
+    "dist": "electron-builder --win --dir",
+    "dist:web": "node scripts/build-web.js"
   },
   "dependencies": {
     "steamworks.js": "0.4.0"
