@@ -481,6 +481,24 @@ window.SFC = window.SFC || {};
         ctx.globalCompositeOperation = 'source-over';
         break;
       }
+      case 'aura': {   // AURA FARMING: tóc vàng dựng ngược kiểu siêu xay-da (mọi kiểu tóc / mũ đều bị thay)
+        const lit = '#fff6b0', dark = '#d9a514', flick = Math.floor(anim * 10) % 2;
+        // chỏm nhọn: [lệch x, cao, nghiêng]
+        const spikes = [[-6, 5, -1], [-3, 8, 0], [0, 10 + flick, 0], [3, 8, 0], [6, 5, 1]];
+        for (const pass of [0, 1]) {
+          for (const [sx, h, lean] of spikes) {
+            for (let k = 0; k < h; k++) {
+              const w = k < h * 0.45 ? 3 : k < h * 0.8 ? 2 : 1, ox = hx + sx + Math.round(lean * k * 0.4) - (w > 1 ? 1 : 0);
+              if (pass === 0) px(ctx, ox - 1, hy - 6 - k - 1, w + 2, 3, OUT);
+              else px(ctx, ox, hy - 6 - k, w, 1, k > h * 0.6 ? lit : hair);
+            }
+          }
+        }
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
+        if (!back) { px(ctx, hx - 4, hy - 3, 2, 2, hair); px(ctx, hx + 2, hy - 3, 2, 2, hair); px(ctx, hx - 1, hy - 2, 2, 2, hair); }   // tóc mái nhọn rủ xuống trán
+        px(ctx, hx - 4, hy - 6, 3, 1, lit); px(ctx, hx + 2, hy - 4, 3, 1, dark);
+        break;
+      }
       default: // classic: tóc ngắn + băng đô màu đội
         capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
         px(ctx, hx - 6, hy - 3, 13, 1, kit.accent);
@@ -670,12 +688,14 @@ window.SFC = window.SFC || {};
     const hx = x;
     const hy = by - 6 + (stunned ? Math.round(Math.sin(p.anim * 20)) : 0);
     const back = fy < -0.35;
-    const cut = p.look.cut || 'classic';
+    // AURA FARMING: tóc hoá vàng + dựng ngược (thay kiểu tóc / mũ trong lúc hiệu lực)
+    const aura = !ghost && p.auraFarmT > 0;
+    const cut = aura ? 'aura' : p.look.cut || 'classic';
     if (cut === 'afro') { disc(ctx, hx, hy - 3, 10, OUT); disc(ctx, hx, hy - 3, 9, p.look.hair); }
     disc(ctx, hx, hy, 7, OUT);
     disc(ctx, hx, hy, 6, p.look.skin);
     // tóc / mũ (trang phục mua ở Shop)
-    drawHair(ctx, cut, p.look.hair, kit, hx, hy, fx, fy, back, p.anim || 0);
+    drawHair(ctx, cut, aura ? '#ffe14f' : p.look.hair, kit, hx, hy, fx, fy, back, p.anim || 0);
     // má hồng / bóng đổ đầu
     px(ctx, hx - 5, hy + 3, 11, 1, 'rgba(0,0,0,0.12)');
 

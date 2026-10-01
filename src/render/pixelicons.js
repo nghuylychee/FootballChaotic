@@ -118,6 +118,7 @@ window.SFC = window.SFC || {};
     'core-meteor_drop': ['...r.oo.r...', '....ooyo....', '...roooyr...', '...ooyyoo...', '....oyyo....', '...nnnnnn...', '..nnNnnnnn..', '..nnnnnNnn..', '..nNnnnnnn..', '...nnnnnn...', '............', '............'],
     'core-clone_army': ['............', '.VV..vv..ww.', 'VVVVvvvvwwww', 'VVVVvvvvwwww', '.VV..vv..ww.', 'VVVVvvvvwwww', 'VVVVvvvvwwww', 'VVVVvvvvwwww', 'VVVVvvvvwwww', '............', '............', '............'],
     'core-titan': ['...eeeeee...', '..eeeeeeee..', '..EEEEEEEE..', '..eeEeeEee..', '..eeeeeeee..', '..eeeEEeee..', '..eeeEEeee..', '..eeeeeeee..', '..eeEEEEee..', '..eeeeeeee..', '.eeeeeeeeee.', '............'],
+    'core-aura_farming': ['.y...yy...y.', '.yy..yy..yy.', '.yyy.yy.yyy.', '..yyyyyyyy..', '.yyyyyyyyyy.', '.yYyyYYyyYy.', '..ssssssss..', '..skksskks..', '..ssssssss..', '...sskkss...', '...ssssss...', '....ssss....'],
     'core-bomb_ball': ['.........y..', '........yoy.', '.......n.y..', '......n.....', '...EEEEE....', '..EEEEEEE...', '.EElEEEEEE..', '.ElEEEEEEE..', '.EEEEEEEEE..', '.EEEEEEEEE..', '..EEEEEEE...', '...EEEEE....'],
     'core-chaos_ball': { ref: 'arch-chaos' },
     'core-warp_walls': ['....vvvv....', '..vvccccvv..', '.vccvvvvccv.', '.vcvwwwwvcv.', 'vcvwwkkwwvcv', 'vcvwkkkkwvcv', 'vcvwkkkkwvcv', 'vcvwwkkwwvcv', '.vcvwwwwvcv.', '.vccvvvvccv.', '..vvccccvv..', '....vvvv....'],

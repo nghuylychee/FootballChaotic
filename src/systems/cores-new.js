@@ -760,6 +760,25 @@ window.SFC = window.SFC || {};
       },
     },
 
+    // AURA FARMING (Tuyệt kỹ khởi đầu): buff tốc độ chạy / chuyền / sút + tóc vàng dựng ngược, hào quang lửa vàng (vẽ ở sprites.js / vfx.js)
+    aura_farming: {
+      aiUse(sys, team, prm) {
+        const b = sys.g.ball, me = prm.owner;
+        if (me.state !== 'normal') return null;
+        return b.owner === me || U.dist(me, b) < 90 ? me : null;
+      },
+      onUltimate(sys, team, prm, pl) {
+        const g = sys.g, E = g.effects;
+        (sys.buffs[pl.id] || (sys.buffs[pl.id] = [])).push({ speed: prm.speed, passSpeed: prm.pass, shotPower: prm.shot, t: prm.time });
+        pl.auraFarmT = prm.time;
+        E.burst(pl.x, pl.y - 10, 10, '#ffe14f', 18, 110);
+        E.wave(pl.x, pl.y, 44, '#ffe14f', 0.5, 3);
+        E.speedLines(0.4, pl.x, pl.y, '#fff3b0');
+        E.shake(4, 0.3);
+        g.sfx('upgrade');
+      },
+    },
+
     /* ================= 🔗 CẦU NỐI ================= */
     rubber_arm: {
       onLightAttack(sys, team, prm, pl) {

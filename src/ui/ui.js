@@ -113,7 +113,8 @@ window.SFC = window.SFC || {};
         const rar = RARITY(c.rarity);
         const chosen = picked && (d.localPick === i || d.picked[me] === id);
         const match = c.tags.some((t) => ownedTags.has(t));
-        const tags = c.tags.map((t) => `<span style="--c:${ARCH(t).color}">${PX().arch(t, 'sm')} ${ARCH(t).label}</span>`).join('');
+        const tags = c.anyBuild ? `<span style="--c:${c.color || rar.color}">${PX().ui('star', 'sm')} ANY BUILD</span>`
+          : c.tags.map((t) => `<span style="--c:${ARCH(t).color}">${PX().arch(t, 'sm')} ${ARCH(t).label}</span>`).join('');
         // Core vừa mở khoá ở Main Path: nhãn NEW (hiện 1 lần rồi bỏ khỏi danh sách "mới")
         const isNew = game.opts.coreFresh && !!mp && !!game.cores.newShown[mp.id] && game.cores.newShown[mp.id].has(id);
         if (isNew && game.opts.mainPath) SFC.MainPath.seen(id);

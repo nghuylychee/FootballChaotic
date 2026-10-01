@@ -1025,6 +1025,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .rv3-band span { font-family: var(--px); font-size: 14px; color: #fff; text-shadow: 2px 2px 0 var(--ink); }
 .rv3-band b { font-family: var(--px); font-size: 12px; font-weight: normal; color: #ff3d5a; padding: 4px 6px; border: 2px solid #ff3d5a; background: rgba(20,12,22,0.85);
   box-shadow: 2px 2px 0 var(--ink); transform: rotate(-8deg); animation: rv3Stamp 0.28s steps(4) 0.36s both; }
+.rv3-band b.fam { color: var(--gold); border-color: var(--gold); }   /* dấu FAMILY SECRET (bí kíp gia truyền) */
 .rv3:not([data-phase="boss"]) .rv3-band { animation: rv3BandOut 0.25s steps(4) forwards; }
 
 .rv3-foot { position: absolute; left: 16px; right: 16px; bottom: 9px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--muted); }
@@ -1500,6 +1501,11 @@ canvas.avatar.big { width: 120px; height: 132px; }
   background: conic-gradient(var(--gold) calc(var(--k) * 360deg), rgba(255,255,255,0.15) 0);
 }
 #story.on-card .st-skip { display: none; }
+#story.st-reveal { z-index: 25; }   /* màn lật thẻ bí kíp (#reveal, z 30) nằm trên cut scene */
+.st-aura {
+  top: 40px; font-family: var(--px); font-size: 30px; color: #ffe14f; letter-spacing: 2px;
+  text-shadow: 3px 3px 0 #c9781a, 6px 6px 0 var(--ink), 0 0 18px rgba(255,210,60,0.8); animation: stShout 0.5s steps(6) both, ultShake 0.12s steps(2) 0.5s 6;
+}
 
 /* thẻ MAIN PATH (cảnh cuối) */
 .st-card {

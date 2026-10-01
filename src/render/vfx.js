@@ -222,6 +222,24 @@ window.SFC = window.SFC || {};
         ctx.beginPath(); ctx.ellipse(x, y, 7, 3.2, 0, 0, Math.PI * 2); ctx.stroke();
         ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
+      // AURA FARMING: lửa vàng bốc ngược sau lưng (cao hơn chỏm tóc), vầng sáng dưới chân
+      if (p.auraFarmT > 0) {
+        const fade = Math.min(1, p.auraFarmT * 2);
+        const col = (i) => Math.round(34 - (Math.abs(i) / 10) ** 2 * 22 + 4 * Math.sin(t * 22 + i * 1.9));
+        // viền lửa cam (vẽ thường) cho nổi trên sân sáng, rồi lõi vàng cộng sáng
+        ctx.globalAlpha = fade * 0.55;
+        for (let i = -10; i <= 10; i++) { const h = col(i) + 2; px(ctx, x + i, y - h, 1, 3, '#ff9a1f'); }
+        px(ctx, x - 11, y - 14, 1, 12, '#ff9a1f'); px(ctx, x + 11, y - 14, 1, 12, '#ff9a1f');
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = -10; i <= 10; i++) {
+          const h = col(i);
+          ctx.globalAlpha = fade * (0.5 + 0.15 * Math.sin(t * 15 + i));
+          px(ctx, x + i, y - h, 1, h, i % 3 ? '#ffb81f' : '#fff3a0');
+        }
+        ctx.globalAlpha = fade * 0.6;
+        ellipse(ctx, x, y, 13, 5, '#ffd23f');
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      }
       const sp = Math.hypot(p.vx || 0, p.vy || 0);
       if (sp > 95 && g.cores.has(p, 'speed_demon')) {
         for (let i = 2; i >= 1; i--) {
@@ -260,6 +278,15 @@ window.SFC = window.SFC || {};
         px(ctx, x - 6, y - 17, 12, 16, p.auraC);
         ctx.globalAlpha = 1;
         if (R() < 0.5) px(ctx, x - 6 + Math.round(R() * 12), y - 4 - Math.round(R() * 16), 1, 2, p.auraC);
+      }
+      // AURA FARMING: tàn lửa vàng bay lên + thỉnh thoảng tia điện quanh người
+      if (p.auraFarmT > 0) {
+        if (R() < 0.7) px(ctx, x - 9 + Math.round(R() * 18), y - 4 - Math.round(R() * 30), 1, 2, R() < 0.5 ? '#ffe14f' : '#fff6b0');
+        if (R() < 0.12) {
+          const sx = x + (R() < 0.5 ? -8 : 7);
+          let yy = y - 6 - Math.round(R() * 10);
+          for (let k = 0; k < 4; k++) { const ny = yy - 2 - Math.round(R() * 3); px(ctx, sx + Math.round(R() * 2 - 1), ny, 1, yy - ny, '#cdf6ff'); yy = ny; }
+        }
       }
       // Đà: tia điện lách tách dưới chân, đầy Đà thì sét chạy dọc người
       const mo = p.res.momentum;

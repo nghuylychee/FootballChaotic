@@ -1,10 +1,13 @@
 /* Tutorial — PROLOGUE cho người chơi mới (config/ftue.config.js).
- * begin(): cut scene "intro" -> DREAM MATCH -> cut scene "outro" + thẻ MAIN PATH -> trang Main Path.
+ * begin(): cut scene "intro" -> DREAM MATCH -> cut scene "outro" (bí kíp gia truyền AURA FARMING + thẻ MAIN PATH) -> trang Main Path.
+ * Hồ sơ cũ đã xong PROLOGUE nhưng chưa nhận bí kíp: playHeirloom() phát riêng đoạn bí kíp 1 lần (main.js lúc mở game).
  * DREAM MATCH là trận thường (opts.tutorial) có kịch bản, chạy qua các bài theo thứ tự:
  *   move -> pass -> shoot -> (bàn thắng) chọn Core -> defend (đấm cướp bóng) -> attack (QTE: đối thủ lao vào đá, bấm Z né)
  *   -> (bàn thắng) mở ULTIMATE -> charge (tích năng lượng: show, don't tell) -> ult (dùng Ultimate) -> final (đá tự do tới hết giờ)
  * Không dừng trận để dạy: chỉ 1 hộp gợi ý nhỏ (#coach) + ô kỹ năng cần dùng nhấp nháy. Làm trước bài sau (vd. sút vào
- * luôn khi đang học di chuyển) thì nhảy cóc luôn. Đối thủ / đồng đội bị điều khiển qua g.aiHook tuỳ bài.
+ * luôn khi đang học di chuyển) thì nhảy cóc luôn. Đối thủ luôn đá bằng AI thật, mỗi bài chỉ đổi bộ chỉ số AI
+ * (ftue.config.js -> match.aiSteps / aiProfiles: chậm, không ra đòn, không cướp được bóng lúc đang dạy). Kịch bản chỉ
+ * giành quyền điều khiển (g.aiHook) ở khoảnh khắc cần thiết: đối thủ lao vào gồng đá ở bài né, đồng đội chuyền trả bóng.
  * update(dt, input, g) gọi từ vòng lặp chính, trước UI.consume (đọc g.events trước khi UI lấy đi).
  */
 window.SFC = window.SFC || {};
@@ -12,7 +15,7 @@ window.SFC = window.SFC || {};
 (function () {
   const CFG = () => SFC_CONFIG.ftue;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  // các bài trước lượt chọn Core đầu: đối thủ đứng xem (bóng xuyên qua họ như trong mơ)
+  // các bài trước lượt chọn Core đầu: đồng đội có bóng là chuyền trả bạn
   const EARLY = ['move', 'pass', 'shoot', 'draft1', 'core'];
   const HOLD = ['draft2', 'ultpick'];
 
@@ -32,8 +35,27 @@ window.SFC = window.SFC || {};
     markDone() {
       const d = SFC.Profile.data;
       if (!d) return;
-      d.tut = { done: true };
+      d.tut = { done: true, heirloom: !!(d.tut && d.tut.heirloom) };
       SFC.Profile.save();
+    },
+
+    /* ---------------- bí kíp gia truyền (Tuyệt kỹ AURA FARMING, ftue.config.js -> heirloom) ---------------- */
+    // Core nằm sẵn trong progression.starterCores -> cờ này chỉ để cut scene trao bí kíp phát đúng 1 lần
+    heirloomWanted() { return CFG() && CFG().enabled && this.done && !SFC.Profile.data.tut.heirloom; },
+    markHeirloom() {
+      const d = SFC.Profile.data;
+      if (!d || (d.tut && d.tut.heirloom)) return;
+      d.tut = Object.assign({}, d.tut, { heirloom: true });
+      SFC.Profile.save();
+    },
+    playHeirloom(app) {
+      this.app = app;
+      app.game = null;
+      app.mode = 'single';
+      app.screen = 'story';
+      SFC.UI.show(null);
+      SFC.UI.el.hud.classList.add('hidden');
+      SFC.Story.play('heirloom', () => app.toMenu('home'));
     },
 
     /* ---------------- luồng chính ---------------- */
@@ -148,6 +170,7 @@ window.SFC = window.SFC || {};
           break;
       }
       this.last.x = me.x; this.last.y = me.y;
+      this.applyAi(g);
       this.updateCoach(g);
       this.updatePrompt(g, input);
     },
@@ -296,32 +319,25 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------------- AI theo bài ---------------- */
-    // trả về true = đã điều khiển cầu thủ p ở bước này (AI thường bỏ qua)
+    // bộ chỉ số AI đối thủ của bài hiện tại (ftue.config.js -> match.aiSteps / aiProfiles; không có: match.ai) — đổi khi sang bài
+    applyAi(g) {
+      const F = CFG().match, key = (F.aiSteps && F.aiSteps[this.step]) || null;
+      if (key === this.aiKey && this.aiG === g) return;
+      this.aiKey = key; this.aiG = g;
+      const prof = (key && F.aiProfiles && F.aiProfiles[key]) || F.ai;
+      // g.difficulty = bộ chỉ số AI của đội máy (match.js -> aiProfile); saveMult không có = 1
+      Object.assign(g.difficulty, { saveMult: 1 }, prof);
+    },
+
+    // trả về true = đã điều khiển cầu thủ p ở bước này (AI thường bỏ qua). Còn lại để AI thật đá, chỉ số theo applyAi
     aiHook(g, p, dt) {
       if (!this.active) return false;
-      const s = this.step, b = g.ball, f = g.field, me = this.me;
+      const s = this.step, b = g.ball, me = this.me;
       if (p.team === 1) {
-        const i = g.teams[1].players.indexOf(p);
-        // chỗ đứng xem: phần sân đối thủ, sát tường trên / dưới, ngoài đường sút
-        const idle = () => { steer(p, f.x + f.w * 0.64, i ? f.y + f.h - 24 : f.y + 24, 0.7); p.facing = Math.atan2(b.y - p.y, b.x - p.x); return true; };
-        if (EARLY.includes(s)) { b.noPickup.set(p.id, 0.15); return idle(); }
-        if (s === 'defend') {
-          if (b.owner === p) {
-            // dắt bóng chậm về phía khung thành của bạn rồi đứng chờ (không chuyền, không sút)
-            steer(p, f.x + 120, f.cy + Math.sin(g.time * 1.3) * 30, CFG().match.carrierPace, 10);
-            return true;
-          }
-          b.noPickup.set(p.id, 0.15);
-          if (p.state === 'normal') { p.intent.mx = 0; p.intent.my = 0; }
-          return true;
-        }
-        if (HOLD.includes(s)) {
-          p.intent.mx = 0; p.intent.my = 0; p.intent.sprint = false;
-          return true;
-        }
+        // bài né: người gần bạn nhất lao vào gồng đá (QTE); người còn lại đá bình thường
         if (s === 'attack' && this.qte && this.qte.phase !== 'done') {
           const q = this.qte;
-          if (p !== q.o) { b.noPickup.set(p.id, 0.15); return idle(); }
+          if (p !== q.o) return false;
           if (q.phase === 'rush' && p.state === 'normal') {
             // lao thẳng vào bạn, đủ gần thì gồng đá
             steer(p, me.x, me.y, 1, 2);
@@ -334,37 +350,23 @@ window.SFC = window.SFC || {};
           b.noPickup.set(p.id, 0.15);
           return true;
         }
-        if (s === 'charge') {
-          // đối thủ cầm bóng: dắt chậm cho bạn đấm; không cầm bóng: đá bình thường (cướp lại được thì bạn đấm tiếp)
-          if (b.owner === p) { steer(p, f.x + 120, f.cy + Math.sin(g.time * 1.3) * 30, CFG().match.carrierPace, 10); return true; }
-          if (b.owner && b.owner.team === 1) { b.noPickup.set(p.id, 0.15); p.intent.mx = 0; p.intent.my = 0; return true; }
-          return false;
-        }
-        if (s === 'ult') {
-          // tiến lại gần để Ultimate chắc chắn trúng người
-          if (Math.hypot(me.x - p.x, me.y - p.y) > 55) steer(p, me.x, me.y, 0.55, 55);
-          else { p.intent.mx = 0; p.intent.my = 0; }
-          p.intent.sprint = false;
-          return true;
-        }
         return false;
       }
       if (p === this.mate) {
-        if (s === 'defend' || s === 'charge') {
-          // đồng đội lùi về giữ khung, nhường bạn cướp bóng
-          b.noPickup.set(p.id, 0.15);
-          const home = g.formationPos(p);
-          steer(p, home.x, home.y, 0.8);
-          return true;
-        }
-        // các bài đầu + lúc chờ Ultimate: có bóng là chuyền trả cho bạn
-        if ((EARLY.includes(s) || HOLD.includes(s) || s === 'ult' || s === 'attack') && b.owner === p) {
+        // các bài dạy: có bóng là chuyền trả cho bạn (đứng 1 nhịp rồi chuyền)
+        if ((EARLY.includes(s) || HOLD.includes(s) || ['defend', 'attack', 'charge', 'ult'].includes(s)) && b.owner === p) {
           this.mateT += dt;
           p.intent.mx = 0; p.intent.my = 0;
           if (this.mateT >= CFG().match.mateReturn && p.state === 'normal') { this.mateT = 0; SFC.Actions.passTo(g, p, me, 'ground'); }
           return true;
         }
         this.mateT = 0;
+        // bài đấm cướp bóng / tích Ultimate: đồng đội đá lùi giữ khung (vẫn bắt bóng, phá bóng bình thường), nhường bạn lên tranh chấp
+        if ((s === 'defend' || s === 'charge') && b.owner && b.owner.team === 1) {
+          const home = g.formationPos(p);
+          steer(p, home.x, home.y, 0.8);
+          return true;
+        }
       }
       return false;
     },
@@ -459,7 +461,7 @@ window.SFC = window.SFC || {};
       }, 2200);
     },
 
-    // Pause > SKIP PROLOGUE: vẫn xem thẻ MAIN PATH rồi vào trang Main Path
+    // Pause > SKIP PROLOGUE: vẫn nhận bí kíp (màn lật thẻ -> biến hình) + xem thẻ MAIN PATH rồi vào trang Main Path
     skip() {
       this.markDone();
       this.cleanup();
@@ -469,7 +471,7 @@ window.SFC = window.SFC || {};
       SFC.UI.show(null);
       SFC.UI.el.hud.classList.add('hidden');
       SFC.UI.el.abar.classList.add('hidden');
-      SFC.Story.play('outro', () => app.toMenu('path'), 'path');
+      SFC.Story.play('outro', () => app.toMenu('path'), 'reveal');
     },
 
     cleanup() {

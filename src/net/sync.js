@@ -17,7 +17,7 @@ window.SFC = window.SFC || {};
 
   // các trường cầu thủ cần để vẽ (sprites + renderer)
   const PF = ['x', 'y', 'vx', 'vy', 'facing', 'state', 'stamina', 'charging', 'charge',
-    'passMode', 'passCharge', 'passBase', 'flash', 'anim', 'auraC', 'auraT', 'atkType', 'atkT', 'airZ', 'sizeMul', 'bracing', 'shotTarget'];
+    'passMode', 'passCharge', 'passBase', 'flash', 'anim', 'auraC', 'auraT', 'auraFarmT', 'atkType', 'atkT', 'airZ', 'sizeMul', 'bracing', 'shotTarget'];
   const P_BOOL = { charging: true, bracing: true };
   // cooldown kỹ năng (thanh kỹ năng HUD của người chơi tại máy khách)
   const CD = ['light', 'hard', 'skill'];

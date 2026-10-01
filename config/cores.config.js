@@ -398,6 +398,14 @@ SFC_CONFIG.cores = {
       params: { time: 3, gkPenalty: 0.3, stun: 1.3, range: 170 },
       scale: { time: 'pow', gkPenalty: 'pow', stun: 'pow' },
     },
+    // Tuyệt kỹ khởi đầu (bí kíp gia truyền, nhận ở cuối PROLOGUE — ftue.config.js): có sẵn trong starterCores, yếu hơn các Tuyệt kỹ khác.
+    // anyBuild: đủ điều kiện khi có >= 2 Core cùng 1 trường phái BẤT KỲ (vẫn phải bốc được lá như mọi Tuyệt kỹ) · color: màu cut-in
+    // Chỉ số không scale theo character (cố định 15–20%).
+    aura_farming: {
+      name: 'Aura Farming', icon: '✨', tags: ['chaos'], role: 'ult', rarity: 'epic', anyBuild: true, color: '#ffe14f',
+      desc: '{time}s of pure aura: +{speed+%}% run speed, +{pass+%}% pass speed, +{shot+%}% shot power. Hair goes gold.',
+      params: { time: 6, speed: 1.18, pass: 1.18, shot: 1.18 },
+    },
     titan: {
       name: 'Titan', icon: '🗿', tags: ['iron'], role: 'ult', rarity: 'mythic',
       desc: '{time}s at double size: stun immune, can\'t be tackled, bowl opponents over, +{shot+%}% shot power.',

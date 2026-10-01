@@ -202,12 +202,12 @@ SFC_CONFIG.progression = {
   // Core đã quay được trước đó vẫn giữ trong hồ sơ. Bật lại = true.
   coreGacha: false,
 
-  // Bộ Core có sẵn cho user mới (8 Core THƯỜNG đủ 7 trường phái + 4 HIẾM). Core khác mở theo Main Path (mainpath.config.js -> areas[].cores / signature),
+  // Bộ Core có sẵn cho user mới (8 Core THƯỜNG đủ 7 trường phái + 4 HIẾM + Tuyệt kỹ khởi đầu AURA FARMING — bí kíp gia truyền, trao ở cuối PROLOGUE). Core khác mở theo Main Path (mainpath.config.js -> areas[].cores / signature),
   // hoặc lấy từ Hộp Core khi coreGacha bật.
   // level (khi coreGacha bật) = level tối thiểu để Core quay được xuất hiện khi chọn Core giữa trận (chưa đủ thì nằm chờ trong túi đồ).
   // Độ hiếm của Core lấy từ config/cores.config.js (rarity) — dùng chung cho gacha và tần suất khi chọn Core.
   starterCores: ['sniper_foot', 'speed_demon', 'quick_feet', 'street_fighter', 'iron_body', 'heavy_boot', 'maestro', 'eagle_eye',
-    'banana_kick', 'counter_attack', 'fist_storm', 'one_touch'],
+    'banana_kick', 'counter_attack', 'fist_storm', 'one_touch', 'aura_farming'],
   cores: {
     warp_walls:     { level: 2 },
     fire_shot:      { level: 3 },
@@ -229,7 +229,7 @@ SFC_CONFIG.progression = {
     phantom_pass: { level: 7 }, witch_time: { level: 7 }, bulldozer: { level: 7 }, counter_strike: { level: 7 },
     shadow_clone: { level: 8 }, giant_keeper: { level: 8 }, rubber_arm: { level: 8 }, flying_kick: { level: 8 }, ghost_ball: { level: 8 },
     black_hole: { level: 10 }, bomb_ball: { level: 11 }, scissor_kick: { level: 12 },
-    hundred_fists: { level: 15 }, meteor_strike: { level: 15 }, titan: { level: 16 }, meteor_drop: { level: 16 },
+    aura_farming: { level: 1 }, hundred_fists: { level: 15 }, meteor_strike: { level: 15 }, titan: { level: 16 }, meteor_drop: { level: 16 },
     clone_army: { level: 17 }, endless_tiki: { level: 18 },
   },
 

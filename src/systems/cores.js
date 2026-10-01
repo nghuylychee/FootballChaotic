@@ -780,7 +780,7 @@ window.SFC = window.SFC || {};
       const g = this.g, id = p && this.ultOf(p);
       if (!id || this.ultE(p) < 1 || g.state !== 'play' || p.state !== 'normal' || p.airZ > 0) return false;
       const team = p.team, def = this.def(id), U2 = DEF().ultimate;
-      const color = ARCH()[def.tags[0]] ? ARCH()[def.tags[0]].color : '#ffe14f';
+      const color = def.color || (ARCH()[def.tags[0]] ? ARCH()[def.tags[0]].color : '#ffe14f');
       p.res.ult = 0;
       this.st(p, '_ultLock').cd = U2.lockout || 0;
       g.effects.cutIn(p.id, def.name.toUpperCase(), color, U2.cutIn);
@@ -893,12 +893,17 @@ window.SFC = window.SFC || {};
       return star === p ? id : null;
     }
     // Tuyệt kỹ chỉ xuất hiện khi người đó có >= 2 Core cùng trường phái và chưa có Tuyệt kỹ nào
+    // (anyBuild — AURA FARMING: >= 2 Core cùng 1 trường phái bất kỳ)
     eligible(p, id) {
       const c = this.def(id);
       if (c.role !== 'ult') return true;
       const sig = this.signature(p);
       if (sig && sig !== id && this.def(sig).role === 'ult') return false;   // boss: chỉ cầm Tuyệt kỹ đặc trưng
-      return !this.ultOf(p) && c.tags.some((tag) => this.tagCount(p, tag) >= 2);
+      return !this.ultOf(p) && (c.anyBuild ? this.maxTagCount(p) : Math.max(...c.tags.map((tag) => this.tagCount(p, tag)))) >= 2;
+    }
+    // số Core của trường phái đang có nhiều nhất (bỏ Hỗn loạn — không có Cộng hưởng)
+    maxTagCount(p) {
+      return Object.keys(ARCH()).reduce((n, tag) => (ARCH()[tag].noSet ? n : Math.max(n, this.tagCount(p, tag))), 0);
     }
     pool(p, exclude = []) {
       const allow = this.allowList(p);
@@ -947,7 +952,9 @@ window.SFC = window.SFC || {};
       const allow = this.allowList(p);
       const ults = Object.keys(DEF().list).filter((id) => this.def(id).role === 'ult' && (!allow || allow.includes(id)) && this.eligible(p, id));
       if (!ults.length) return null;
-      return ults.reduce((a, b) => (this.tagCount(p, this.tagsOf(b)[0]) > this.tagCount(p, this.tagsOf(a)[0]) ? b : a));
+      // Tuyệt kỹ của trường phái đang có nhiều Core nhất; anyBuild (AURA FARMING) chỉ thắng khi không có Tuyệt kỹ trường phái nào ngang bằng
+      const score = (id) => (this.def(id).anyBuild ? this.maxTagCount(p) - 0.5 : this.tagCount(p, this.tagsOf(id)[0]));
+      return ults.reduce((a, b) => (score(b) > score(a) ? b : a));
     }
 
     // AI (đồng đội + đối thủ): bốc 3 lá rồi chọn lá khớp build nhất (Tuyệt kỹ luôn được ưu tiên)

@@ -73,6 +73,7 @@ window.SFC = window.SFC || {};
       this.recvT = -1;        // lúc nhận đường chuyền (Một-Hai, Chạm Một)
       this.counterT = 0;      // Phản Đòn: hạn cú đấm miễn phí
       this.titanT = 0;        // Hoá Khổng Lồ: còn bao lâu
+      this.auraFarmT = 0;     // AURA FARMING: còn bao lâu (tóc vàng + hào quang lửa, đồng bộ online)
       this.juggleN = 0;       // Tâng Người: số lần bị tâng trong 1 lần bay
       this.slamKind = null;   // đang nhảy: ground (Dậm Đất) | meteor (Thiên Thạch Giáng)
       this.auraC = '';      // hào quang Core (màu) — vẽ ở render/vfx.js, đồng bộ online
@@ -118,6 +119,7 @@ window.SFC = window.SFC || {};
       this.shotLockT = Math.max(0, this.shotLockT - dt);
       if (this.auraT > 0 && (this.auraT -= dt) <= 0) { this.auraT = 0; this.auraC = ''; }
       if (this.titanT > 0) this.titanT = Math.max(0, this.titanT - dt);
+      if (this.auraFarmT > 0) this.auraFarmT = Math.max(0, this.auraFarmT - dt);
       this.flash = Math.max(0, this.flash - dt);
       if (this.buffs.length) {
         this.buffs.forEach((b) => (b.t -= dt));

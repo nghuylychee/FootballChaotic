@@ -254,6 +254,8 @@
     // Đã đặt tên nhưng chưa xem xong PROLOGUE (tắt giữa chừng) -> xem lại từ đầu
     if (!SFC.Profile.hasName) SFC.Menu.go('name');
     else if (SFC.Tutorial.wanted()) SFC.Tutorial.begin(app);
+    // hồ sơ đã xong PROLOGUE từ trước khi có bí kíp gia truyền: phát đoạn ông nội trao AURA FARMING 1 lần
+    else if (SFC.Tutorial.heirloomWanted()) SFC.Tutorial.playHeirloom(app);
     fit();
     window.addEventListener('resize', fit);
 

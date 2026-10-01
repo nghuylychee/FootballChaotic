@@ -661,6 +661,8 @@ window.SFC = window.SFC || {};
         if (b.fx.fire) chance -= 0.15;
         chance -= this.cores.keeperPenalty(b);
         chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35) * this.cores.pmod(p, 'keeperSave') * p.stats.keeper + (rd ? rd.bonus : 0), 0.15, 0.95);
+        // thủ môn AI: saveMult của bộ chỉ số AI (trận mơ PROLOGUE hạ xuống lúc đang dạy sút)
+        if (!(this.isHuman(p.team) && p.isControlled) && this.aiProfile(p.team).saveMult != null) chance *= this.aiProfile(p.team).saveMult;
         if (!lob) this.cores.shotOnTarget(b.lastKickTeam);
         const r = Math.random();
         if (r > chance) {

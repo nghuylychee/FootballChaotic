@@ -144,6 +144,7 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
   Năng lượng **chỉ nạp khi ghi bàn hoặc cướp được bóng** (đấm / đá làm rơi bóng, cắt đường chuyền). Hiện tại: ghi bàn +60%, cướp bóng +20% (tối đa 1 lần mỗi 2s mỗi đội).
 - Mọi Tuyệt kỹ có **báo trước 0.3–0.5s** (slow-mo nhẹ + callout tên chiêu) → đối thủ có cửa né bằng Z. Né được Tuyệt kỹ cũng là một khoảnh khắc đẹp.
 - AI cũng dùng Tuyệt kỹ (đội AI có build Tuyệt kỹ → trận đấu với máy cũng đã mắt).
+- **Tuyệt kỹ khởi đầu — `aura_farming` (AURA FARMING, SỬ THI):** "bí kíp gia truyền" ông nội trao ở cuối PROLOGUE (`config/ftue.config.js` → `heirloom`), nằm sẵn trong `progression.starterCores` để người mới có Tuyệt kỹ ngay từ Area đầu. Vẫn là Core như mọi Tuyệt kỹ: phải đủ điều kiện rồi bốc được lá mới có. Khác biệt: `anyBuild` — đủ điều kiện khi có ≥ 2 Core cùng **1 trường phái bất kỳ** (lá ghi ANY BUILD); ở lượt chọn cuối, Tuyệt kỹ của trường phái ngang bằng được ưu tiên hơn. Hiệu ứng yếu có chủ đích: 6s +18% tốc độ chạy / tốc độ chuyền / lực sút (không scale theo chỉ số); tóc hoá vàng dựng ngược + lửa hào quang vàng (`auraFarmT`, đồng bộ online), cut-in vàng **AURA FARMING**.
 
 ---
 

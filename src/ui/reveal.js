@@ -1,5 +1,6 @@
 /* Reveal — màn mở thẻ kiểu TCG cho phần thưởng Main Path (src/core/mainpath.js -> claim):
- *   Core mới (sao) · Core đặc trưng của boss (thắng trận thăng hạng) · hộp costume (lên hạng).
+ *   Core mới (sao) · Core đặc trưng của boss (thắng trận thăng hạng) · hộp costume (lên hạng)
+ *   · Tuyệt kỹ bí kíp gia truyền (src: heirloom — cut scene PROLOGUE, src/ui/story.js; dải DEFEATED thành FAMILY SECRET).
  * Nhịp mỗi phần thưởng (thuộc tính data-phase trên .rv3, hoạt ảnh ở CSS):
  *   boss  : dải màu áo đội boss quét ngang + dấu DEFEATED (chỉ Core của boss)
  *   drop  : mặt sau lá rơi xuống, ánh màu độ hiếm lộ trước sau lá
@@ -53,7 +54,7 @@ window.SFC = window.SFC || {};
       SFC.CorePreview.scan(this.el);
       this.tickT = 0;
       this.stamped = false;
-      this.set(it.src === 'boss' ? 'boss' : 'drop');
+      this.set(it.src === 'boss' || it.src === 'heirloom' ? 'boss' : 'drop');
       SFC.Audio.whoosh();
     },
 
@@ -94,7 +95,7 @@ window.SFC = window.SFC || {};
       this.set('flip');
       this.burst(g.color);
       SFC.Audio.reveal(Math.max(0, g.rank));
-      if (g.rank >= BIG || it.src === 'boss') SFC.Audio.upgrade();
+      if (g.rank >= BIG || it.src === 'boss' || it.src === 'heirloom') SFC.Audio.upgrade();
     },
 
     close() {
@@ -111,14 +112,15 @@ window.SFC = window.SFC || {};
     // màu + bậc ánh sáng của lá: Core theo độ hiếm; boss luôn vàng; hộp theo màu hộp
     glow(it) {
       if (it.kind === 'box') { const b = PROG().boxes[it.id]; return { color: b.color, rank: 1 }; }
-      const r = CORES().list[it.id].rarity;
-      return { color: it.src === 'boss' ? '#ffd23f' : RAR(r).color, rank: it.src === 'boss' ? Math.max(BIG, rank(r)) : rank(r) };
+      const r = CORES().list[it.id].rarity, gold = it.src === 'boss' || it.src === 'heirloom';
+      return { color: gold ? '#ffd23f' : RAR(r).color, rank: gold ? Math.max(BIG, rank(r)) : rank(r) };
     },
 
     html(it) {
-      const A = MP().area(it.area), g = this.glow(it), boss = it.src === 'boss';
-      const title = it.kind === 'box' ? 'DIVISION REWARD' : boss ? 'BOSS SIGNATURE CORE' : 'NEW CORE UNLOCKED';
-      const emblem = boss ? PX().ui('crown', 'x3') : it.kind === 'box' ? PX().ui('gift', 'x3') : PX().area(A.id, 'x3');
+      const fam = it.src === 'heirloom', H = SFC_CONFIG.ftue.heirloom;
+      const A = fam ? MP().area(0) : MP().area(it.area), g = this.glow(it), boss = it.src === 'boss';
+      const title = it.kind === 'box' ? 'DIVISION REWARD' : fam ? 'FAMILY SECRET ULTIMATE' : boss ? 'BOSS SIGNATURE CORE' : 'NEW CORE UNLOCKED';
+      const emblem = boss ? PX().ui('crown', 'x3') : fam ? PX().ui('star', 'x3') : it.kind === 'box' ? PX().ui('gift', 'x3') : PX().area(A.id, 'x3');
       const back = `<div class="rv3-back"><div class="rv3-frame"><i><span>${emblem}</span></i><b>STREET<br>CHAOS</b><span>${it.kind === 'box' ? 'COSTUME BOX' : 'CORE'}</span></div></div>`;
       const front = it.kind === 'core' ? SFC.Gacha.coreCard(it.id, '', 150, 64) : this.boxFace(it);
       let band = '';
@@ -126,13 +128,16 @@ window.SFC = window.SFC || {};
         const t = MP().team(it.boss);
         band = `<div class="rv3-band" style="--k1:${t.kit.shirt};--k2:${t.kit.shirtDark || t.kit.shorts};--k3:${t.kit.accent}">
           <span>${esc(t.name)}</span><b>DEFEATED</b></div>`;
+      } else if (fam) {
+        band = `<div class="rv3-band" style="--k1:#8a5a30;--k2:#4a2812;--k3:#ffd23f"><span>${esc(H.band)}</span><b class="fam">${esc(H.stamp)}</b></div>`;
       }
       const n = this.items.length, last = this.i === n - 1;
       const count = n > 1 ? `<span class="rv3-count">${this.i + 1} / ${n}</span>` : '<span></span>';
       const ok = K('confirm', 'Enter');
-      return `<div class="rv3 k-${it.kind} ${boss ? 'boss' : ''} ${g.rank >= BIG ? 'big' : ''}" style="--rc:${g.color};--ac:${A.color}">
+      const kicker = fam ? `${PX().ui('star')} PASSED DOWN BY ${esc(H.giver.toUpperCase())}` : `AREA ${it.area + 1} · ${PX().area(A.id)} ${esc(A.name)}`;
+      return `<div class="rv3 k-${it.kind} ${boss || fam ? 'boss' : ''} ${g.rank >= BIG ? 'big' : ''}" style="--rc:${g.color};--ac:${fam ? '#ffd23f' : A.color}">
         <div class="rv3-bg"></div>
-        <div class="rv3-head"><div class="rv3-kicker">AREA ${it.area + 1} · ${PX().area(A.id)} ${esc(A.name)}</div><div class="rv3-title">${title}</div></div>
+        <div class="rv3-head"><div class="rv3-kicker">${kicker}</div><div class="rv3-title">${title}</div></div>
         ${band}
         <div class="rv3-stage">
           <div class="rv3-cardwrap">
@@ -173,17 +178,22 @@ window.SFC = window.SFC || {};
       // tiến độ bộ sưu tập theo trường phái chính: đã mở / tổng
       const ids = Object.keys(CORES().list).filter((id) => CORES().list[id].tags.includes(tag));
       const have = ids.filter((id) => SFC.Profile.coreUnlocked(id)).length;
+      const fam = it.src === 'heirloom';
       const src = it.src === 'boss'
         ? `<div class="rv3-s-line">${PX().ui('crown', 'sm')} Taken from <b>${esc(MP().team(it.boss).name)}</b></div>`
+        : fam ? `<div class="rv3-s-line">${PX().ui('star', 'sm')} Passed down by <b>${esc(SFC_CONFIG.ftue.heirloom.giver)}</b></div>`
         : `<div class="rv3-s-line">★ New star in ${esc(MP().area(it.area).name)}</div>`;
+      const need = c.anyBuild ? 'Cores of the same archetype' : `${esc(arch.label)} Cores`;
       const ult = c.role === 'ult'
-        ? `<div class="rv3-s-note">ULTIMATE · offered once you hold 2+ ${esc(arch.label)} Cores in a match, then fire it with <kbd>${K('ultimate', 'X')}</kbd></div>` : '';
+        ? `<div class="rv3-s-note">ULTIMATE · offered once you hold 2+ ${need} in a match, then fire it with <kbd>${K('ultimate', 'X')}</kbd></div>` : '';
+      const archRow = fam ? ''
+        : `<div class="rv3-s-arch" style="--c:${arch.color}">${PX().arch(tag)} ${esc(arch.label)} <i><b style="width:${Math.round((have / ids.length) * 100)}%"></b></i> ${have}/${ids.length}</div>`;
       return `<div class="rv3-s-rar" style="color:${r.color}">${r.label}${c.role === 'ult' ? ' · ULTIMATE' : ''}</div>
         <div class="rv3-s-name">${PX().core(it.id, 'x2')} ${esc(c.name)}</div>
         ${src}
-        <div class="rv3-s-arch" style="--c:${arch.color}">${PX().arch(tag)} ${esc(arch.label)} <i><b style="width:${Math.round((have / ids.length) * 100)}%"></b></i> ${have}/${ids.length}</div>
+        ${archRow}
         ${ult}
-        <div class="rv3-s-go">Added to your Core pool · shows up as <em>NEW</em> next match</div>`;
+        <div class="rv3-s-go">${fam ? 'Yours from day one · always in your Core pool' : 'Added to your Core pool · shows up as <em>NEW</em> next match'}</div>`;
     },
 
     // hạt pixel bung ra từ tâm lá lúc lật

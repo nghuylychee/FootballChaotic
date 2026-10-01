@@ -233,6 +233,11 @@ window.SFC = window.SFC || {};
       init: (s) => s.place(s.o1, A.x + 20, A.y, PI),
       tick: (s) => { if (s.t > 0.35) { s.me.intent.my = -1; s.o1.intent.mx = -0.9; } },
     }),
+    aura_farming: ult({
+      len: 3.4, at: 0.3,
+      init: (s) => { s.place(s.o1, A.x + 30, A.y + 22, PI); s.place(s.o2, A.x + 70, A.y - 22, PI); },
+      tick: (s) => { if (s.t > 0.8) { s.me.intent.mx = 1; s.me.intent.my = 0; s.me.intent.sprint = true; s.me.stamina = 100; } },
+    }),
     titan: ult({
       len: 3.4, at: 0.3,
       init: (s) => { s.place(s.o1, A.x + 10, A.y + 4, PI); s.place(s.o2, A.x + 40, A.y - 12, PI); },

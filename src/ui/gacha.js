@@ -56,7 +56,9 @@ window.SFC = window.SFC || {};
   // lá Core tĩnh (túi đồ, màn mở thẻ): trường phái, ảnh động, tên, chỉ số scale, mô tả. Viền lá = màu độ hiếm
   function coreCard(id, cls = '', w = 132, h = 56) {
     const c = CORE_LIST()[id], r = RAR(c.rarity);
-    const tags = c.tags.map((t) => `<span style="--c:${ARCH()[t].color}">${PX().arch(t, 'sm')} ${ARCH()[t].label}</span>`).join('');
+    // anyBuild (AURA FARMING): hợp mọi trường phái -> nhãn ANY BUILD thay cho trường phái gắn tạm
+    const tags = c.anyBuild ? `<span style="--c:${c.color || r.color}">${PX().ui('star', 'sm')} ANY BUILD</span>`
+      : c.tags.map((t) => `<span style="--c:${ARCH()[t].color}">${PX().arch(t, 'sm')} ${ARCH()[t].label}</span>`).join('');
     return `<div class="card static ${c.role === 'ult' ? 'ult' : ''} ${cls}" style="--c:${r.color};--c2:${r.color};--t:${r.color}">
         <div class="card-tags">${tags}</div>
         <div class="card-art">${SFC.CorePreview.html(id, w, h)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>

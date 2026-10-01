@@ -143,6 +143,45 @@ window.SFC = window.SFC || {};
     SFC.Sprites.drawAvatar(buf, look, kit, t, facing, extra);
     lx.drawImage(buf, Math.round(x - buf.width / 2), Math.round(y - (buf.height - 4)));
   }
+  // quả bóng 3x3 trên canvas thấp (x, y = góc trên trái)
+  function pBall(x, y) {
+    x = Math.round(x); y = Math.round(y);
+    P(x - 1, y - 1, 3, 3, '#f3ead7'); P(x, y, 1, 1, INK); P(x - 1, y + 2, 3, 1, 'rgba(0,0,0,0.25)');
+  }
+  // ông nội pixel 1x (khớp cỡ nhân vật trên canvas thấp): đầu hói tóc bạc 2 bên, ria trắng, kính, áo len, chống gậy
+  // pose: walk (đi, nhún) · talk (đứng, gật gù) · clap (vỗ tay)
+  function pGrandpa(x, y, t, pose = 'talk') {
+    x = Math.round(x);
+    const bob = pose === 'walk' ? Math.floor(t * 6) % 2 : 0, nod = pose === 'talk' && Math.floor(t * 2) % 3 === 0 ? 1 : 0;
+    const skin = '#e0b088', sweater = '#7a6a4a', white = '#f3f0ea';
+    P(x - 6, y, 12, 1, 'rgba(0,0,0,0.25)');   // bóng
+    // chân + giày (đi: so le)
+    const st = pose === 'walk' && Math.floor(t * 6) % 2 ? 1 : 0;
+    P(x - 3, y - 5 + st, 2, 5 - st, '#4a3a2a'); P(x, y - 5 + (1 - st), 2, 4 + st, '#4a3a2a');
+    P(x - 4, y - 1, 3, 1, INK); P(x, y - 1, 3, 1, INK);
+    // thân áo len (hơi còng)
+    const by = y - 13 + bob;
+    P(x - 5, by, 9, 9, INK); P(x - 4, by + 1, 7, 7, sweater); P(x - 4, by + 5, 7, 1, '#6a5a3c');
+    P(x - 1, by + 2, 1, 1, '#e8d8a8'); P(x - 1, by + 4, 1, 1, '#e8d8a8');
+    if (pose === 'clap') {
+      const c = Math.floor(t * 8) % 2;
+      P(x + 3, by + 2, 3 - c, 2, sweater); P(x + 5 - c, by + 1, 2, 2, skin);
+      P(x - 6, by + 2, 2, 2, sweater); P(x - 7 + c, by + 1, 2, 2, skin);
+      P(x + 6, y - 9, 1, 9, '#6a4020');   // gậy dựng bên cạnh
+    } else {
+      // tay chống gậy
+      P(x + 3, by + 2, 2, 3, sweater); P(x + 4, by + 4, 2, 1, skin);
+      P(x + 5, by + 4, 1, y - by - 4, '#6a4020'); P(x + 4, by + 3, 3, 1, '#8a5a30');
+      P(x - 6, by + 2, 2, 4, sweater); P(x - 6, by + 5, 1, 1, skin);
+    }
+    // đầu
+    const hy = by - 4 + nod;
+    pEllipse(x, hy, 4, 4, INK); pEllipse(x, hy, 3, 3, skin);
+    P(x - 1, hy - 3, 2, 1, '#f4cfa8');                               // đỉnh đầu hói bóng
+    P(x - 4, hy - 1, 1, 3, white); P(x + 4, hy - 1, 1, 3, white);    // tóc bạc 2 bên
+    P(x, hy - 1, 3, 1, '#c7ccd6'); P(x + 1, hy, 1, 1, INK);          // kính + mắt (nhìn sang phải)
+    P(x - 1, hy + 2, 5, 1, white); P(x - 1, hy + 3, 1, 1, white); P(x + 3, hy + 3, 1, 1, white);   // ria mép
+  }
   // sáng / tối màu hex: k > 0 sáng hơn, k < 0 tối hơn
   function shade(hex, k) {
     const n = parseInt(String(hex).replace('#', '').padEnd(6, '0').slice(0, 6), 16);
@@ -364,7 +403,8 @@ window.SFC = window.SFC || {};
     },
 
     // sáng sớm ở VILLAGE GREEN (pixel art 160x90): bầu trời dải màu, đồi, hàng rào, sân bùn, khung thành gỗ
-    village(t, d, dim = 0) {
+    // opt.draw(t): vẽ thêm (ông nội, nhân vật riêng...) trước lớp tối · opt.hero = false: bỏ nhân vật + bóng mặc định · opt.shake: [ox, oy]
+    village(t, d, dim = 0, opt = null) {
       loBegin();
       pBands(0, 46, ['#5e8fd0', '#7aa8dc', '#9cc0e4', '#c8d6e0', '#ffd8b0', '#ffc190', '#ffa878']);
       // mặt trời: 2 tông + vành dither
@@ -413,11 +453,200 @@ window.SFC = window.SFC || {};
       const cx = 22 + Math.round((t * 4) % 20), hop = Math.floor(t * 6) % 2;
       P(cx, 68 - hop, 4, 3, '#f3ead7'); P(cx + 3, 66 - hop, 2, 2, '#f3ead7'); P(cx + 4, 65 - hop, 1, 1, '#d7263d'); P(cx + 5, 67 - hop, 1, 1, '#ffb21f'); P(cx + 1, 71 - hop, 1, 1, '#ffb21f');
       // nhân vật + quả bóng
-      loHero(74, 69, t, 0, null);
-      P(80, 66, 3, 3, '#f3ead7'); P(81, 67, 1, 1, INK); P(80, 69, 3, 1, 'rgba(0,0,0,0.25)');
+      if (!opt || opt.hero !== false) {
+        loHero(74, 69, t, opt && opt.facing != null ? opt.facing : 0, null);
+        pBall(81, 67);
+      }
+      if (opt && opt.draw) opt.draw(t);
       if (dim) { lx.fillStyle = `rgba(8,5,12,${dim})`; lx.fillRect(0, 0, LW, LH); }
-      loEnd();
+      loEnd(...((opt && opt.shake) || [0, 0]));
       if (!dim && Story.cueOnce('morning', true)) SFC.Audio.pick();
+    },
+
+    /* ---------- BÍ KÍP GIA TRUYỀN (ftue.config.js -> SFC_FTUE_HEIRLOOM) ---------- */
+    // ông nội chống gậy đi ra sân làng, nhân vật quay lại nhìn
+    grandpa(t) {
+      const gx = Math.min(52, -12 + t * 30), walking = gx < 52;
+      ART.village(t + 5, 0, 0, {
+        hero: false,
+        draw() {
+          pGrandpa(gx, 70, t, walking ? 'walk' : 'talk');
+          loHero(74, 69, t, t > 1.2 ? Math.PI : 0, null);
+          pBall(81, 67);
+          // "!" trên đầu nhân vật khi thấy ông
+          if (t > 1.2 && t < 2.4) { P(74, 38, 1, 4, '#ffe14f'); P(74, 43, 1, 1, '#ffe14f'); }
+        },
+      });
+      vignette(0.35);
+    },
+
+    // cận cảnh: đôi tay ông nội mở cuốn sổ bí kíp cũ, ánh vàng tràn ra từ trang giấy
+    heirloom(t) {
+      loBegin();
+      pBands(0, LH, ['#2a1a26', '#3a2430', '#4a2e34', '#5a3a38', '#6a4438']);
+      for (let i = 0; i < 26; i++) {   // bụi lơ lửng trong nắng sớm
+        const x = Math.round((hash(i) * LW + t * (2 + hash(i + 5) * 3)) % LW), y = Math.round((hash(i + 9) * LH - t * 2 + LH) % LH);
+        P(x, y, 1, 1, 'rgba(255,220,160,0.35)');
+      }
+      const open = t >= 1.8, k = clamp01((t - 1.8) / 0.25);
+      if (!open) {
+        // bìa da cũ: gáy sẫm, góc sờn, ngôi sao vàng, nhãn băng dính
+        P(49, 21, 63, 53, INK); P(50, 22, 61, 51, '#6a3a1e'); P(50, 22, 5, 51, '#4a2812');
+        P(50, 22, 61, 1, '#8a5a32'); P(106, 22, 5, 5, '#8a5a32'); P(106, 68, 5, 5, '#8a5a32');
+        for (let y = 24; y < 72; y += 3) pDither(y, '#5e3218', 4, 56, 110);
+        P(64, 30, 34, 7, '#e8dcb8'); P(64, 36, 34, 1, '#b8a888');
+        // ngôi sao vàng dập nổi (9x9)
+        ['....y....', '....y....', '...yyy...', 'yyyyyyyyy', '.yyyyyyy.', '..yyyyy..', '..yy.yy..', '.yy...yy.', '.y.....y.']
+          .forEach((row, y) => [...row].forEach((c, x) => { if (c === 'y') P(77 + x, 46 + y, 1, 1, y < 4 && x === 4 ? '#fff6b0' : '#ffd23f'); }));
+      } else {
+        // trang mở: giấy ố, dòng kẻ, hình vẽ tay người tóc dựng + hào quang
+        P(29, 21, 103, 52, INK);
+        P(30, 22, 50, 50, '#efe2c0'); P(81, 22, 50, 50, '#e8d8b0'); P(79, 22, 3, 50, '#c9b48a');
+        for (let y = 28; y < 70; y += 4) { P(33, y, 44, 1, '#d8c8a0'); P(84, y, 44, 1, '#d0bc94'); }
+        const fx = 55, fy = 62;   // hình vẽ bút chì: người que tóc dựng, lửa quanh người
+        for (let i = -9; i <= 9; i += 2) { const h = 26 - Math.abs(i) * 1.6; P(fx + i, fy - h, 1, h * 0.35, '#e0a020'); }
+        pEllipse(fx, fy - 18, 3, 3, '#6a3a1e'); pEllipse(fx, fy - 18, 2, 2, '#efe2c0');
+        for (const [dx, h] of [[-3, 3], [-1, 5], [1, 5], [3, 3]]) P(fx + dx, fy - 21 - h, 1, h, '#c98a10');
+        P(fx, fy - 15, 1, 8, '#6a3a1e'); P(fx - 4, fy - 13, 9, 1, '#6a3a1e');
+        P(fx - 2, fy - 7, 1, 6, '#6a3a1e'); P(fx + 2, fy - 7, 1, 6, '#6a3a1e');
+        P(86, 50, 30, 1, '#8a5a32'); P(86, 55, 38, 1, '#8a5a32'); P(86, 60, 24, 1, '#8a5a32');   // nét chữ nguệch ngoạc
+        P(114, 62, 10, 6, '#d7263d'); P(115, 63, 8, 4, '#efe2c0');   // con dấu đỏ
+      }
+      // đôi tay ông nắm 2 mép sách (da nhăn, ngón cái đè lên bìa / trang) + tay áo len vươn từ ngoài khung vào
+      const edgeL = open ? 29 : 49, edgeR = open ? 131 : 111;
+      for (const dir of [-1, 1]) {
+        const ex = dir < 0 ? edgeL : edgeR, hx = ex + dir * 4;   // tâm bàn tay ngay ngoài mép sách
+        if (dir < 0) { P(0, 52, hx - 4, 14, INK); P(0, 53, hx - 4, 12, '#7a6a4a'); P(0, 57, hx - 4, 1, '#6a5a3c'); }
+        else { P(hx + 4, 52, LW - hx - 4, 14, INK); P(hx + 4, 53, LW - hx - 4, 12, '#7a6a4a'); P(hx + 4, 57, LW - hx - 4, 1, '#6a5a3c'); }
+        P(hx - 5, 50, 10, 16, INK); P(hx - 4, 51, 8, 14, '#d9a27a');
+        P(hx - 4, 55, 8, 1, '#b98258'); P(hx - 4, 59, 8, 1, '#b98258'); P(hx - 4, 63, 8, 1, '#b98258');   // nếp ngón tay
+        const tx = dir < 0 ? ex - 1 : ex - 3;   // ngón cái đè lên mép sách
+        P(tx - 1, 47, 6, 7, INK); P(tx, 48, 4, 5, '#e6b48a'); P(tx + 1, 48, 2, 1, '#f4d0aa');
+      }
+      if (open) {   // ánh vàng từ trang sách
+        lx.globalCompositeOperation = 'lighter';
+        const seed = Math.floor(t * 8);
+        for (let i = 0; i < 18; i++) pRay(80, 46, -Math.PI / 2 + (hash(i + seed) - 0.5) * 2.4, 14 + hash(i * 3) * 6, 46, 'rgba(255,200,80,0.35)');
+        for (let i = 0; i < 14; i++) {
+          const x = 36 + hash(i) * 90, y = 70 - ((t * 14 + hash(i + 2) * 50) % 50);
+          P(x, y, 1, 1, i % 2 ? '#ffe14f' : '#fff6b0');
+        }
+        lx.globalCompositeOperation = 'source-over';
+      }
+      loEnd();
+      if (open) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        glow(W / 2, 180, 200, '255,200,80', 0.22 + 0.06 * Math.sin(t * 4));
+        ctx.restore();
+        ctx.fillStyle = '#6a3a1e'; ctx.font = '12px "Press Start 2P"'; ctx.textAlign = 'center';
+        ctx.fillText('AURA', 420, 128); ctx.fillText('FARMING', 420, 152); ctx.textAlign = 'left';
+        rect(0, 0, W, H, `rgba(255,240,200,${(1 - k) * 0.9})`);
+      } else {
+        ctx.fillStyle = '#6a3a1e'; ctx.font = '8px "Press Start 2P"'; ctx.textAlign = 'center';
+        ctx.fillText('FAMILY', 324, 136); ctx.textAlign = 'left';
+      }
+      vignette(0.6);
+      if (Story.cueOnce('open', open)) { SFC.Audio.whoosh(); SFC.Audio.reveal(3); }
+    },
+
+    // nền màn lật thẻ Tuyệt kỹ (màn thẻ là DOM của src/ui/reveal.js, nằm trên)
+    reveal(t) { ART.village(t + 5, 0, 0.75); },
+
+    // biến hình: tụ khí (rung, đá bay lên, tóc chớp vàng) -> bùng nổ -> tóc vàng dựng ngược, lửa vàng bốc lên
+    transform(t) {
+      const BURST = 2.0, on = t >= BURST, kc = clamp01(t / BURST);
+      const quake = on ? Math.max(0, 1 - (t - BURST) / 0.8) * 3 : kc * 1.5;
+      const ox = Math.round((hash(Math.floor(t * 30)) - 0.5) * 2 * quake), oy = Math.round((hash(Math.floor(t * 30) + 7) - 0.5) * quake);
+      loBegin();
+      pBands(0, LH, on ? ['#1a1006', '#2a1a08', '#3a240a', '#4a2e0c'] : ['#0c0814', '#140c1c', '#1c1224', '#24182c']);
+      // tia vàng toả từ người
+      const seed = Math.floor(t * 12), nRay = on ? 46 : Math.round(kc * 18);
+      for (let i = 0; i < nRay; i++) pRay(80, 52, hash(i + seed * 5) * Math.PI * 2, 20 + hash(i + seed) * 16, 110, hash(i * 7 + seed) > 0.5 ? (on ? '#6a4a10' : '#3a2a40') : (on ? '#4a3208' : '#2a1e30'));
+      // mặt đất nứt + đá vụn bay lên
+      P(0, 72, LW, 18, on ? '#3a2410' : '#1e1620'); P(0, 72, LW, 1, on ? '#6a4a20' : '#2e2430');
+      for (let i = 0; i < 16; i++) {
+        const x = 30 + hash(i) * 100, rise = ((t * (6 + hash(i + 3) * 10)) + hash(i + 8) * 30) % 40;
+        if (kc > hash(i + 11)) P(x, 72 - rise, 2, 2, on ? '#8a6a3a' : '#4a3a4a');
+      }
+      if (on) { pEllipse(80, 74, 30, 3, '#2a1808'); P(66, 73, 6, 1, '#1a0e04'); P(92, 74, 7, 1, '#1a0e04'); }
+      // lửa hào quang (sau lưng nhân vật)
+      lx.globalCompositeOperation = 'lighter';
+      const size = on ? 1 : kc * 0.45;
+      for (let i = -18; i <= 18; i++) {
+        const e = Math.abs(i) / 18, h = Math.round((58 - e * e * 38 + 5 * Math.sin(t * 20 + i * 1.3)) * size);
+        if (h > 0) { P(80 + i, 74 - h, 1, h, i % 3 ? 'rgba(255,190,30,0.45)' : 'rgba(255,240,150,0.5)'); }
+      }
+      lx.globalCompositeOperation = 'source-over';
+      loEnd(ox, oy);
+      // nhân vật phóng to: tóc chớp vàng khi gần bùng nổ, sau đó vàng hẳn
+      const blink = !on && t > 1.2 && Math.floor(t * 10) % 2 === 0;
+      hero(W / 2 + ox * LS, 288 + oy * LS, 6, t, Math.PI / 2, on || blink ? { auraFarmT: 1 } : null);
+      // tia điện + tàn lửa (khối 4px cho khớp pixel)
+      if (on) {
+        for (let i = 0; i < 18; i++) {
+          const x = 240 + hash(i + seed * 3) * 160, y = 284 - ((t * 120 + hash(i) * 240) % 240);
+          rect(Math.round(x / 4) * 4, Math.round(y / 4) * 4, 4, 8, i % 2 ? '#ffe14f' : '#fff6b0');
+        }
+        if (hash(seed) > 0.4) {
+          let x = hash(seed + 1) > 0.5 ? 240 : 392, y = 140 + hash(seed + 2) * 80;
+          for (let k = 0; k < 5; k++) { const ny = y - 12 - hash(seed + k) * 10; rect(x, ny, 4, y - ny, '#cdf6ff'); x += (hash(seed + k + 4) - 0.5) * 16; x = Math.round(x / 4) * 4; y = ny; }
+        }
+      }
+      if (t >= BURST && t < BURST + 0.35) rect(0, 0, W, H, `rgba(255,248,210,${1 - (t - BURST) / 0.35})`);
+      vignette(on ? 0.45 : 0.7);
+      if (Story.cueOnce('rumble', t > 0.3)) SFC.Audio.whoosh();
+      if (Story.cueOnce('burst', on)) { SFC.Audio.hit(); SFC.Audio.upgrade(); }
+    },
+
+    // thử chiêu trên sân làng: lao lên với bóng, sút tung lưới khung thành gỗ, ông nội vỗ tay
+    auratest(t) {
+      const RUN0 = 0.4, SHOT = 1.6, HIT = 1.85;
+      const run = clamp01((t - RUN0) / (SHOT - RUN0)), hx = Math.round(36 + easeOut(run) * 70);
+      const shot = t >= SHOT, hit = t >= HIT;
+      const quake = hit ? Math.max(0, 1 - (t - HIT) / 0.5) * 2 : 0;
+      ART.village(t + 5, 0, 0, {
+        hero: false,
+        shake: [Math.round((hash(Math.floor(t * 30)) - 0.5) * 2 * quake), 0],
+        draw() {
+          pGrandpa(20, 70, t, hit ? 'clap' : 'talk');
+          // hào quang nhỏ quanh nhân vật
+          lx.globalCompositeOperation = 'lighter';
+          for (let i = -6; i <= 6; i++) {
+            const h = Math.round(22 - Math.abs(i) * 1.6 + 2 * Math.sin(t * 22 + i));
+            P(hx + i - 2, 70 - h, 1, h, i % 2 ? 'rgba(255,200,40,0.4)' : 'rgba(255,240,150,0.35)');
+          }
+          lx.globalCompositeOperation = 'source-over';
+          // vệt vàng sau lưng khi chạy
+          if (run > 0 && run < 1) for (let i = 1; i <= 3; i++) P(hx - 6 - i * 5, 60 + i * 2, 4, 1, 'rgba(255,225,80,0.7)');
+          const pose = shot && t < SHOT + 0.3 ? { auraFarmT: 1, atkType: 'shoot', atkT: t - SHOT } : { auraFarmT: 1, vx: run > 0 && run < 1 ? 60 : 0 };
+          loHero(hx, 69, t, 0, pose);
+          // bóng: dắt theo chân -> bay thẳng vào lưới -> nằm trong lưới
+          if (!shot) pBall(hx + 7, 67);
+          else if (!hit) {
+            const q = (t - SHOT) / (HIT - SHOT), bx = hx + 7 + (139 - hx - 7) * q, by = 67 - 9 * q;
+            for (let i = 1; i <= 4; i++) P(bx - i * 4, by + 1, 3, 1, 'rgba(255,225,80,0.8)');
+            pBall(bx, by);
+          } else pBall(141, 61);
+          // lưới phồng + tàn lửa vàng
+          if (hit && t < HIT + 0.6) {
+            const k = (t - HIT) / 0.6;
+            for (let i = 0; i < 10; i++) { const a = hash(i) * Math.PI * 2, r = 4 + k * 14; P(139 + Math.cos(a) * r, 58 + Math.sin(a) * r * 0.7, 1, 1, i % 2 ? '#ffe14f' : '#ffffff'); }
+            P(150, 51, 2, 13, '#e8e4d8');
+          }
+          if (hit && t < HIT + 1.4) {   // chữ GOAL! nảy lên
+            const yb = 30 - Math.round(Math.max(0, 1 - (t - HIT) * 4) * 6);
+            P(122, yb, 34, 9, INK); P(123, yb + 1, 32, 7, '#ffe14f');
+          }
+        },
+      });
+      if (hit && t < HIT + 1.4) {
+        const yb = 30 - Math.round(Math.max(0, 1 - (t - HIT) * 4) * 6);
+        ctx.fillStyle = INK; ctx.font = '12px "Press Start 2P"'; ctx.textAlign = 'center';
+        ctx.fillText('GOAL!', 139 * LS, (yb + 7) * LS); ctx.textAlign = 'left';
+      }
+      vignette(0.3);
+      if (Story.cueOnce('kick', shot)) SFC.Audio.kick(1);
+      if (Story.cueOnce('net', hit)) { SFC.Audio.goal(); SFC.Audio.hit(); }
     },
 
     // nền cho thẻ MAIN PATH (thẻ là DOM)
@@ -474,9 +703,28 @@ window.SFC = window.SFC || {};
       if (!sc) return this.finish();
       this.shown = [];
       this.textEl.innerHTML = sc.art === 'path' ? this.pathCard() : '';
-      this.el.classList.toggle('on-card', sc.art === 'path');
+      this.el.classList.toggle('on-card', sc.art === 'path' || !!sc.reveal);
       this.draw();
+      if (sc.reveal) this.openReveal();
     },
+
+    // cảnh reveal: dừng cut scene, mở màn lật thẻ Tuyệt kỹ bí kíp (src/ui/reveal.js, nằm trên cut scene); đóng thẻ -> cảnh kế
+    openReveal() {
+      const id = CFG().heirloom.core;
+      SFC.Tutorial.markHeirloom();
+      this.el.classList.add('st-reveal');
+      const opened = SFC.Reveal.open([{ kind: 'core', id, src: 'heirloom' }], () => {
+        if (this.el) this.el.classList.remove('st-reveal');
+        if (this.active) this.go(this.idx + 1);
+      });
+      if (!opened) { this.el.classList.remove('st-reveal'); this.go(this.idx + 1); }
+    },
+
+    // nhịp lời thoại (ftue.config.js -> captionPace): cảnh có caption kéo dài + caption hiện muộn hơn theo hệ số;
+    // chữ đập màn (shout / title / aura...) giữ đúng thời điểm để khớp hình
+    pace(sc) { return (sc.lines || []).some((l) => (l.style || 'caption') === 'caption') ? CFG().captionPace || 1 : 1; },
+    dur(sc) { return sc.dur * this.pace(sc); },
+    at(sc, l) { return (l.style || 'caption') === 'caption' ? l.at * this.pace(sc) : l.at; },
 
     // cue chạy đúng 1 lần mỗi cảnh (âm thanh)
     cueOnce(key, cond) {
@@ -489,29 +737,36 @@ window.SFC = window.SFC || {};
       if (!this.active) return;
       const sc = this.scenes[this.idx];
       this.t += dt;
+      // đang mở màn lật thẻ: phím thuộc về màn thẻ, cut scene chỉ vẽ nền
+      if (sc && sc.reveal && SFC.Reveal.active) {
+        SFC.Reveal.update(dt, input);
+        if (this.active && this.scenes[this.idx] === sc) this.draw();
+        return;
+      }
       // giữ Enter / Esc: bỏ qua cả cut scene
       const holding = input.isDown('confirm') || input.isDown('pause');
       this.hold = holding ? this.hold + dt : 0;
       if (this.skipEl) this.skipEl.style.setProperty('--k', clamp01(this.hold / CFG().skipHold).toFixed(2));
       if (this.hold >= CFG().skipHold && sc.art !== 'path') return this.skipAll();
       if (input.wasPressed('confirm')) this.advance();
-      else if (sc.dur > 0 && this.t >= sc.dur) return this.go(this.idx + 1);
+      else if (sc.dur > 0 && this.t >= this.dur(sc)) return this.go(this.idx + 1);
       if (this.active) this.draw();
     },
 
     // Enter: dòng đang gõ -> hiện hết; không thì sang cảnh kế
     advance() {
       const sc = this.scenes[this.idx];
-      if (!sc) return;
+      if (!sc || sc.reveal) return;
       const typing = this.shown.find((s) => s.el && s.n < s.text.length);
-      if (typing) { this.t = Math.max(this.t, ...((sc.lines || []).map((l) => l.at))); this.shown.forEach((s) => { s.n = s.text.length; s.el.textContent = s.text; }); return; }
+      if (typing) { this.t = Math.max(this.t, ...((sc.lines || []).map((l) => this.at(sc, l)))); this.shown.forEach((s) => { s.n = s.text.length; s.el.textContent = s.text; }); return; }
       SFC.Audio.menu();
       this.go(this.idx + 1);
     },
 
     skipAll() {
-      // bỏ qua: nhảy tới thẻ MAIN PATH nếu có (outro vẫn cần giải thích Main Path), không thì kết thúc
-      const card = this.scenes.findIndex((s) => s.art === 'path');
+      // bỏ qua: nhảy tới màn lật thẻ bí kíp / thẻ MAIN PATH kế tiếp nếu có (người chơi vẫn phải biết mình nhận Tuyệt kỹ
+      // và Main Path là gì), không thì kết thúc
+      const card = this.scenes.findIndex((s, i) => i > this.idx && (s.art === 'path' || s.reveal));
       if (card > this.idx) { this.hold = -99; return this.go(card); }
       this.finish();
     },
@@ -524,6 +779,11 @@ window.SFC = window.SFC || {};
     },
 
     abort() {
+      // đang mở màn lật thẻ bí kíp (về menu giữa chừng): đóng luôn, không chạy tiếp cut scene
+      if (this.el && this.el.classList.contains('st-reveal')) {
+        this.el.classList.remove('st-reveal');
+        if (SFC.Reveal.active) { SFC.Reveal.onClose = null; SFC.Reveal.close(); }
+      }
       this.active = false;
       if (this.el) { this.el.classList.add('hidden'); this.el.innerHTML = ''; }
     },
@@ -533,7 +793,7 @@ window.SFC = window.SFC || {};
       if (!sc) return;
       const art = ART[sc.art] || ART.black;
       ctx.save();
-      art(this.t, sc.dur || 1);
+      art(this.t, this.dur(sc) || 1);
       ctx.restore();
       this.drawText(sc);
     },
@@ -542,7 +802,7 @@ window.SFC = window.SFC || {};
     drawText(sc) {
       const name = SFC.Profile.data.name || 'PLAYER';
       (sc.lines || []).forEach((l, i) => {
-        if (this.t < l.at || this.shown[i]) return;
+        if (this.t < this.at(sc, l) || this.shown[i]) return;
         const text = l.text.replace('{name}', name);
         const el = document.createElement('div');
         el.className = 'st-line st-' + (l.style || 'caption');
