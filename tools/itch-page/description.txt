@@ -1,26 +1,26 @@
 itch.io > Edit game > Details > Description
 Paste everything below the line. Replace each [image: ...] with that PNG from tools/itch-page/out/ (toolbar image button).
 Bold the lead sentence and the start of each feature; use the toolbar bullet list for the features.
-Short description field: Football, but the tackle button is a punch.
+Short description field: Street football where punching is allowed!
 ----------------------------------------------------------------------
 
 [image: logo.png]
 
-Football, but the tackle button is a punch. Punch the ball carrier, send defenders flying into the wall, and build a ridiculous playstyle from mid-match upgrades.
+2v2 street football with no referee. To win the ball back, you punch whoever has it.
 
 [image: h-features.png]
 
-• No tackles, only fists. A quick punch to knock the ball loose, or a charged dropkick that launches people across the pitch.
-• 53 Core upgrades. Pick a card after goals and stack an archetype: runner, playmaker, striker, brawler, launcher, trickster, iron, chaos.
-• 7 ultimates with anime cut-ins: Meteor Shot, Hundred Fists, Clone Army, Titan…
+• Your tackle is a punch. Punch the ball carrier to knock the ball loose, or dropkick them into the wall.
+• No referee. No fouls, no cards, no whistle. Every loose ball turns into a brawl.
+• Power up your team after every goal. Pick one of three Cores, upgrades that last the rest of the match: faster sprints, harder shots, heavier punches. 53 Cores in all, 7 of them ultimates.
 • Main Path campaign: climb 10 areas, from a village pitch to the World Stage.
-• Dress your player: 80 costume pieces (hats, faces, shoes, trail effects) from gacha boxes.
-• Train your stats with drill cards every level.
+• Dress your player: 80 costume pieces (hats, faces, shoes, trail effects), unlocked with gold you earn in matches.
+• Level up your player: every level, pick one of three stat boosts: pace, shooting, passing, dribbling, fighting or goalkeeping.
 • Online 1v1 with a room code.
 
 [image: h-cores.png]
 
-After every goal, both teams pick one of three Cores. Stack two, three or four of the same archetype to unlock bonuses. Hold two of one style and that style's ultimate can show up in your picks. Every match plays out differently.
+After every goal, both teams pick one of three Cores. Stack two, three or four of the same archetype to unlock bonuses. Hold two of one style and that style's ultimate can show up in your picks.
 
 [image: h-controls.png]
 
@@ -40,9 +40,3 @@ Gamepads work too. Click the game first so it gets your key presses.
 [image: h-online.png]
 
 Create a room, send the 7-letter code to a friend, and play 1v1.
-
-[image: h-download.png]
-
-The browser version saves your progress in this browser. Clearing site data or switching browsers starts you over. The Windows download keeps saves in a file on your PC.
-
-Made by Team41. Fonts: Press Start 2P and VT323 (SIL Open Font License).

@@ -114,7 +114,7 @@ function run() {
     x.fillStyle = grad; x.fillRect(0, 0, 250, 120);
     text(x, 'STREET FOOTBALL', 16, 30, 8, '#ffffff', { shadows: [[1, 1, INK]] });
     text(x, 'CHAOS', 15, 42, 24, RED, { shadows: [[1, 1, INK], [2, 2, GOLD]] });
-    text(x, 'Football, but with punches.', 16, 74, 16, '#c9c2b4', { font: VT });
+    text(x, 'FOOTBALL, BUT WITH PUNCHES.', 16, 78, 8, PAPER, { shadows: [[1, 1, INK]] });
     save('banner.png', upscale(b, 2));
   }
 
@@ -171,7 +171,7 @@ function run() {
   }
 
   /* ---------- tiêu đề mục (ảnh, vì phần mô tả itch không dùng được font riêng) ---------- */
-  const HEADERS = { features: 'FEATURES', controls: 'CONTROLS', cores: 'CORE UPGRADES', online: 'PLAY ONLINE', download: 'BROWSER OR DOWNLOAD' };
+  const HEADERS = { features: 'FEATURES', controls: 'CONTROLS', cores: 'CORE UPGRADES', online: 'PLAY ONLINE' };
   for (const [id, label] of Object.entries(HEADERS)) {
     const b = canvas(300, 16), x = b.getContext('2d');
     x.fillStyle = INK; x.fillRect(0, 4, 7, 7);

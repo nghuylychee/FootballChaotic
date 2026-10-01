@@ -7,10 +7,11 @@
        Copy đoạn giữa itch:start / itch:end (chỉ thẻ thường, không style riêng) rồi dán vào.
        Ảnh: tải logo.png + h-*.png (out/) lên itch trước, thay src="out/..." bằng link ảnh itch trả về.
        mock.html nhúng file này qua iframe. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" />
   <style>
     @font-face { font-family: 'VT323'; src: url(../../assets/fonts/VT323-latin.woff2) format('woff2'); }
     :root { --page: #140c16; --text: #f3ead7; --link: #ffe14f; --muted: #9aa3b5; }
-    body { margin: 0; padding: 0 2px 8px; background: var(--page); color: var(--text); font: 15px/1.55 "Lato", system-ui, sans-serif; }
+    body { margin: 0; padding: 0 2px 8px; background: var(--page); color: var(--text); font: 15px/1.55 "Rubik", system-ui, sans-serif; }
     a { color: var(--link); }
     img { image-rendering: pixelated; display: block; max-width: 100%; }
     body > img:first-of-type { margin: 4px 0 14px; }
@@ -22,27 +23,26 @@
     td { padding: 3px 14px 3px 0; vertical-align: top; }
     td:first-child { color: var(--link); white-space: nowrap; font-family: 'VT323', monospace; font-size: 18px; }
     .lead { font-size: 17px; }
-    .credit { color: var(--muted); font-size: 13px; }
   </style>
 </head>
 <body>
 <!-- ===== itch:start — copy from here (img src: replace out/... with the itch.io image URLs) ===== -->
   <img src="out/logo.png" alt="Street Football Chaos" width="336">
-  <p class="lead"><b>Football, but the tackle button is a punch.</b> Punch the ball carrier, send defenders flying into the wall, and build a ridiculous playstyle from mid-match upgrades.</p>
+  <p class="lead"><b>2v2 street football with no referee.</b> To win the ball back, you punch whoever has it.</p>
 
   <img class="h" width="600" src="out/h-features.png" alt="Features">
   <ul>
-    <li><b>No tackles, only fists.</b> A quick punch to knock the ball loose, or a charged dropkick that launches people across the pitch.</li>
-    <li><b>53 Core upgrades.</b> Pick a card after goals and stack an archetype: runner, playmaker, striker, brawler, launcher, trickster, iron, chaos.</li>
-    <li><b>7 ultimates</b> with anime cut-ins: Meteor Shot, Hundred Fists, Clone Army, Titan…</li>
+    <li><b>Your tackle is a punch.</b> Punch the ball carrier to knock the ball loose, or dropkick them into the wall.</li>
+    <li><b>No referee.</b> No fouls, no cards, no whistle. Every loose ball turns into a brawl.</li>
+    <li><b>Power up your team after every goal.</b> Pick one of three Cores, upgrades that last the rest of the match: faster sprints, harder shots, heavier punches. 53 Cores in all, 7 of them ultimates.</li>
     <li><b>Main Path campaign:</b> climb 10 areas, from a village pitch to the World Stage.</li>
-    <li><b>Dress your player:</b> 80 costume pieces (hats, faces, shoes, trail effects) from gacha boxes.</li>
-    <li><b>Train your stats</b> with drill cards every level.</li>
+    <li><b>Dress your player:</b> 80 costume pieces (hats, faces, shoes, trail effects), unlocked with gold you earn in matches.</li>
+    <li><b>Level up your player:</b> every level, pick one of three stat boosts: pace, shooting, passing, dribbling, fighting or goalkeeping.</li>
     <li><b>Online 1v1</b> with a room code.</li>
   </ul>
 
   <img class="h" width="600" src="out/h-cores.png" alt="Core upgrades">
-  <p>After every goal, both teams pick one of three Cores. Stack two, three or four of the same archetype to unlock bonuses. Hold two of one style and that style's ultimate can show up in your picks. Every match plays out differently.</p>
+  <p>After every goal, both teams pick one of three Cores. Stack two, three or four of the same archetype to unlock bonuses. Hold two of one style and that style's ultimate can show up in your picks.</p>
 
   <img class="h" width="600" src="out/h-controls.png" alt="Controls">
   <table>
@@ -62,10 +62,6 @@
   <img class="h" width="600" src="out/h-online.png" alt="Play online">
   <p>Create a room, send the 7-letter code to a friend, and play 1v1.</p>
 
-  <img class="h" width="600" src="out/h-download.png" alt="Browser or download">
-  <p>The browser version saves your progress in this browser. Clearing site data or switching browsers starts you over. The Windows download keeps saves in a file on your PC.</p>
-
-  <p class="credit">Made by Team41. Fonts: Press Start 2P and VT323 (SIL Open Font License).</p>
 <!-- ===== itch:end ===== -->
 
   <script>
