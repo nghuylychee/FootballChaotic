@@ -1,6 +1,6 @@
 /* Bản web (itch.io): chép các file game chạy cần vào dist/web, xoá code dev giống bản Steam (strip-dev.js), rồi nén ra
  * dist/street-football-chaos-web.zip (index.html nằm ở gốc zip, đúng kiểu itch.io cần).
- * npm run dist:web
+ * npm run itch-web
  * Không chép: electron/, node_modules/, src/dev/, sandbox.html, tools/, brag-output/, steam_appid.txt
  */
 const fs = require('fs');
