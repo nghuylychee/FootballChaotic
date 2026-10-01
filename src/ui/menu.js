@@ -143,7 +143,6 @@ window.SFC = window.SFC || {};
           return [
             { kind: 'btn', label: 'SOUND & DISPLAY', sub: ST().desktop ? 'Music · sound FX · resolution' : 'Music · sound FX', act: () => this.go('display') },
             { kind: 'btn', label: 'CONTROLS', sub: 'Keyboard & controller layout', act: () => { CV().open(); this.go('controls'); } },
-            { kind: 'btn', label: 'PROLOGUE', sub: 'Replay the intro & tutorial match', act: () => SFC.Tutorial.begin(this.app) },
             // trang TEST (cheat / thử nghiệm), bản Steam: bị xoá (SFC_DEV)
             ...(SFC_DEV ? [{ kind: 'btn', label: 'TEST', sub: 'Dev only · cheats & test tools', danger: true, act: () => this.go('test') }] : []),
             // xoá toàn bộ tiến trình, chơi lại từ đầu — bấm 2 lần mới xoá (lần 1 chỉ hỏi lại, rời trang là huỷ)
@@ -155,8 +154,8 @@ window.SFC = window.SFC || {};
           // SETTINGS > TEST: mọi nút cheat / thử nghiệm để ở đây. Bản Steam: cả trang bị xoá (SFC_DEV)
           if (SFC_DEV) {
             return [
-              // test PROLOGUE (tắt: config/ftue.config.js -> cheatButton = false)
-              ...(SFC_CONFIG.ftue.cheatButton ? [{ kind: 'btn', label: 'TEST FTUE', sub: 'Cheat · replay prologue', danger: true, act: () => SFC.Tutorial.begin(this.app) }] : []),
+              // xem lại PROLOGUE (cut scene + trận mơ)
+              { kind: 'btn', label: 'PROLOGUE', sub: 'Replay the intro & tutorial match', danger: true, act: () => SFC.Tutorial.begin(this.app) },
               { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drill cards · stats reset on close', danger: true, act: () => this.testDrill() },
               // màn LEVEL UP sau trận (thẻ drill vừa nhận) -> lật thẻ -> chọn, không cần đá trận
               { kind: 'btn', label: 'LEVEL UP TEST', sub: 'Cheat · level-up notice + 3 drill cards · stats reset on close', danger: true, act: () => this.testDrill(3, true) },

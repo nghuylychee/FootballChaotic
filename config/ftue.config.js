@@ -7,7 +7,7 @@
  *    -> cảnh biến hình + thử chiêu -> thẻ giới thiệu MAIN PATH) -> trang Main Path.
  * Hồ sơ cũ (đã xong PROLOGUE trước khi có bí kíp): lần mở game kế tiếp phát riêng cut scene "heirloom" 1 lần (Profile.data.tut.heirloom).
  * Core trong trận mơ chỉ là "mượn": hết mơ là mất, phải leo Main Path để mở khoá thật.
- * Hồ sơ lưu Profile.data.tut.done. SETTINGS > PROLOGUE: xem lại.
+ * Hồ sơ lưu Profile.data.tut.done. SETTINGS > TEST > PROLOGUE: xem lại (chỉ bản dev).
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
@@ -37,7 +37,6 @@ const SFC_FTUE_HEIRLOOM = [
 
 SFC_CONFIG.ftue = {
   enabled: true,
-  cheatButton: true,        // nút TEST FTUE ở SETTINGS > TEST (chỉ bản dev) để test PROLOGUE — false = ẩn
   skipHold: 0.8,            // cut scene: giữ Enter / Esc bấy nhiêu giây để bỏ qua
   typeSpeed: 34,            // chữ gõ máy: ký tự / giây
   captionPace: 2,           // nhịp lời thoại: cảnh có caption dài ra + caption hiện muộn hơn bấy nhiêu lần (dur / at trong scenes là ở nhịp 1)

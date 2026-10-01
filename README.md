@@ -59,7 +59,7 @@ Hundred Fists · Illusion: Clone Army) → tích năng lượng kiểu show, don
 → đầy thì bấm X → bật đồng hồ 45s đá tự do (có FINAL PUSH).
 Làm trước bài sau (vd. sút vào khi đang học di chuyển) thì nhảy cóc luôn. Hết trận → cut scene tỉnh dậy ở VILLAGE GREEN (Core trong mơ chỉ là
 "mượn") → thẻ giới thiệu **MAIN PATH** → trang Main Path. Cut scene: Enter = tiếp, giữ Enter / Esc = bỏ qua. Pause trong trận mơ: SKIP PROLOGUE.
-Xem lại: SETTINGS → PROLOGUE, hoặc nút cheat tạm **TEST FTUE** ở trang chủ (ẩn: `ftue.config.js` → `cheatButton: false`). Hồ sơ cũ (đã có tên) coi như đã xem. Kịch bản, chữ, Core, số liệu: `config/ftue.config.js`;
+Xem lại: SETTINGS → TEST → PROLOGUE (chỉ bản dev, bị xoá khi đóng gói). Hồ sơ cũ (đã có tên) coi như đã xem. Kịch bản, chữ, Core, số liệu: `config/ftue.config.js`;
 cut scene: `src/ui/story.js`; kịch bản trận: `src/game/tutorial.js` (điều khiển AI qua `g.aiHook`).
 
 ## Luyện tập
