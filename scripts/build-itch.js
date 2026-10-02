@@ -1,7 +1,7 @@
 /* Bản desktop cho itch.io: giống bản Steam (npm run dist) nhưng không đóng gói steamworks.js
  * -> electron/preload.js không nạp được Steam -> game dùng PeerJS (giống bản web).
  * Bản DEMO như bản web: env SFC_DEMO=1 -> afterPack (strip-dev.js) ghi SFC_DEMO = true (config/demo.config.js: khoá Area 3+ và ONLINE).
- * Ra: dist/itch/Street Football Chaos/ + dist/street-football-chaos-windows.zip (trong zip là thư mục đó).
+ * Ra: dist/itch/Street Football Chaos/ + dist/street-football-chaos-windows-<version>.zip (version lấy từ package.json; trong zip là thư mục đó).
  * npm run itch-desktop
  */
 const fs = require('fs');
@@ -11,9 +11,9 @@ const { build, Platform } = require('electron-builder');
 
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'dist', 'itch');
-const ZIP = path.join(ROOT, 'dist', 'street-football-chaos-windows.zip');
-const FOLDER = 'Street Football Chaos';
 const pkg = require(path.join(ROOT, 'package.json'));
+const ZIP = path.join(ROOT, 'dist', `street-football-chaos-windows-${pkg.version}.zip`);
+const FOLDER = 'Street Football Chaos';
 
 (async () => {
   process.env.SFC_DEMO = '1';

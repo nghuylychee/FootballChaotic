@@ -359,7 +359,7 @@ window.SFC = window.SFC || {};
         up: `PROMOTED TO ${name}`,
         down: `DEMOTED TO ${name}`,
         ready: MP.isFinal() ? 'CHAMPIONSHIP FINAL NEXT!' : 'PROMOTION MATCH NEXT!',
-        area: MP.demoLocked(a.area) ? 'DEMO COMPLETE · WISHLIST ON STEAM!' : `NEW AREA UNLOCKED: ${A.name}`,
+        area: MP.demoLocked(a.area) ? (SFC_CONFIG.demo.steamUrl ? 'DEMO COMPLETE · WISHLIST ON STEAM!' : 'DEMO COMPLETE · COMING SOON TO STEAM!') : `NEW AREA UNLOCKED: ${A.name}`,
         title: `CHAMPION OF THE STREET ×${MP.state.titles}`,
         promoFail: 'PROMOTION FAILED · win again to retry',
       }[p.event] || (p.delta > 0 ? `+${p.delta} ★` : p.delta < 0 ? `${p.delta} ★` : 'No stars changed');

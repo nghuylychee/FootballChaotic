@@ -8,5 +8,5 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.demo = {
   areas: 2,                                                    // số Area đá được (Area 3 trở đi khoá)
-  steamUrl: 'https://store.steampowered.com/app/0000000/',     // TODO: link trang Steam thật
+  steamUrl: '',     // link trang Steam (https://store.steampowered.com/app/<APPID>/). Để trống: menu ghi COMING SOON TO STEAM, nút không mở gì
 };

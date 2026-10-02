@@ -15,6 +15,7 @@ window.SFC = window.SFC || {};
   const PF = () => SFC.Profile;
   const PROG = () => SFC_CONFIG.progression;
   const MPATH = () => SFC.MainPath;
+  const STEAM_SOON = () => !SFC_CONFIG.demo.steamUrl;   // bản DEMO: chưa có trang Steam (config/demo.config.js)
   const PX = () => SFC.PixelIcon;   // icon pixel art (render/pixelicons.js)
   // Shop (hộp gacha) · mở hộp · túi đồ nằm ở ui/gacha.js
   const G = () => SFC.Gacha;
@@ -213,7 +214,7 @@ window.SFC = window.SFC || {};
           const MP = MPATH(), st = MP.state, n = MP.areas().length, v = this.pathView;
           const boss = TEAMS().list[MP.area(st.area).boss];
           const battle = MP.demoOver()
-            ? { label: 'WISHLIST ON STEAM', sub: `AREA ${st.area + 1}+ is in the full game`, act: () => this.go('wishlist') }
+            ? { label: STEAM_SOON() ? 'COMING SOON TO STEAM' : 'WISHLIST ON STEAM', sub: `AREA ${st.area + 1}+ is in the full game`, act: () => this.go('wishlist') }
             : MP.isPromo()
             ?{ label: MP.isFinal() ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH', sub: `vs ${boss.name}`, subHtml: `${PX().ui('crown', 'sm')} vs ${esc(boss.name)}` }
             : { label: 'BATTLE', sub: `${MP.divName(st.area, st.div)} · ${st.stars}/${MP.need(st.area, st.div)} ★` };
@@ -251,7 +252,9 @@ window.SFC = window.SFC || {};
         case 'wishlist':
           // bản DEMO: hết Area đá được / bấm ONLINE (khung bên phải: wishlistPanel)
           return [
-            { kind: 'btn', label: 'WISHLIST ON STEAM', sub: 'Opens the Steam page', main: true, act: () => this.openSteam() },
+            STEAM_SOON()
+              ? { kind: 'btn', label: 'COMING SOON TO STEAM', sub: 'Steam page not live yet', main: true, act: () => this.setMsg('The Steam page is coming soon!') }
+              : { kind: 'btn', label: 'WISHLIST ON STEAM', sub: 'Opens the Steam page', main: true, act: () => this.openSteam() },
             { kind: 'btn', label: 'MAIN PATH', sub: 'See your progress', act: () => this.go('path') },
             { kind: 'btn', label: 'BACK', sub: 'Main menu', act: () => this.go('home') },
           ];
@@ -564,7 +567,7 @@ window.SFC = window.SFC || {};
         <div class="ph"><span class="ph-num">AREA ${v + 1}</span><span class="ph-name">${locked ? PX().ui('unknown') : PX().area(A.id)} ${name}</span><span class="ph-state">${state}${titles}</span></div>
         <div class="ph-sub">${locked ? '???' : esc(A.sub)}${locked ? '' : this.areaCoreCount(v)}</div>
         <div class="ph-ovr">YOUR OVR <b>${PF().ovr()}</b> · AREA OVR <b>${locked ? '??' : this.areaOvr(A)}</b></div>
-        <div class="pa"><canvas data-arena="${v}" width="300" height="112"></canvas>${locked ? `<div class="pa-lock"><b>???</b>${PX().ui('lock', 'x2')}<span>${demo ? 'Full game only · wishlist on Steam' : 'Win the promotion match of the previous area'}</span></div>` : ''}</div>
+        <div class="pa"><canvas data-arena="${v}" width="300" height="112"></canvas>${locked ? `<div class="pa-lock"><b>???</b>${PX().ui('lock', 'x2')}<span>${demo ? (STEAM_SOON() ? 'Full game only · coming soon to Steam' : 'Full game only · wishlist on Steam') : 'Win the promotion match of the previous area'}</span></div>` : ''}</div>
         <div class="pdivs">${divs.join('')}</div>
         <div class="popps">${A.teams.map((id) => teamChip(id, false)).join('')}${teamChip(A.boss, true)}</div>
         <div class="proad">${dots}</div>
@@ -600,7 +603,7 @@ window.SFC = window.SFC || {};
       const cores = rest.reduce((n, a) => n + (a.cores || []).length + (a.signature ? 1 : 0), 0);
       const boss = TEAMS().list[MP.area(D.areas - 1).boss];
       return `<div class="path wish" style="--ac:${next.color}">
-        <div class="ph"><span class="ph-num">${over ? 'DEMO COMPLETE' : 'FULL GAME ONLY'}</span><span class="ph-state">ON STEAM</span></div>
+        <div class="ph"><span class="ph-num">${over ? 'DEMO COMPLETE' : 'FULL GAME ONLY'}</span><span class="ph-state">${STEAM_SOON() ? 'COMING SOON' : 'ON STEAM'}</span></div>
         <div class="wl-head">${over ? 'THANKS FOR PLAYING!' : 'ONLINE IS LOCKED'}</div>
         <div class="ph-sub">${over ? `You beat ${esc(boss.name)}. The road goes on in the full game.` : 'Online versus & co-op come with the full game.'}</div>
         <div class="pa"><canvas data-arena="${D.areas}" data-tease="1" width="300" height="112"></canvas>
@@ -610,7 +613,7 @@ window.SFC = window.SFC || {};
           <li>${PX().ui('card', 'sm')}<span><b>${cores} more Cores</b> to unlock</span></li>
           <li>${PX().ui('fist', 'sm')}<span><b>Online</b> versus & co-op · 2-4 players</span></li>
         </ul>
-        <div class="wl-cta">Wishlist now so Steam tells you the day it launches</div>
+        <div class="wl-cta">${STEAM_SOON() ? 'The full game is coming soon to Steam' : 'Wishlist now so Steam tells you the day it launches'}</div>
       </div>`;
     },
 

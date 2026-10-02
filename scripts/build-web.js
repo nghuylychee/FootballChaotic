@@ -1,6 +1,6 @@
 /* Bản web (itch.io): chép các file game chạy cần vào dist/web, xoá code dev giống bản Steam (strip-dev.js), bật bản DEMO
  * (SFC_DEMO, config/demo.config.js: khoá Area 3+ và ONLINE), rồi nén ra
- * dist/street-football-chaos-web.zip (index.html nằm ở gốc zip, đúng kiểu itch.io cần).
+ * dist/street-football-chaos-web-<version>.zip (version lấy từ package.json; index.html nằm ở gốc zip, đúng kiểu itch.io cần).
  * npm run itch-web
  * Không chép: electron/, node_modules/, src/dev/, sandbox.html, tools/, brag-output/, steam_appid.txt
  */
@@ -11,7 +11,8 @@ const { strip } = require('./strip-dev');
 
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'dist', 'web');
-const ZIP = path.join(ROOT, 'dist', 'street-football-chaos-web.zip');
+const pkg = require(path.join(ROOT, 'package.json'));
+const ZIP = path.join(ROOT, 'dist', `street-football-chaos-web-${pkg.version}.zip`);
 const COPY = ['index.html', 'css', 'config', 'src', 'assets', 'lib'];
 const SKIP = [path.join('src', 'dev')];
 
