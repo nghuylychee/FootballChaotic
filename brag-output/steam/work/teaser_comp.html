@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #140c16; --red: #ff3d5a; --gold: #ffe14f; --px: "Press Start 2P", monospace; --bar: 138px; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+  #stage { position: absolute; inset: 0; overflow: hidden; background: #000; }
+  #pic { position: absolute; left: 0; width: 1920px; top: var(--bar); height: calc(1080px - 2 * var(--bar)); overflow: hidden; background: #07050a; }
+  .plate { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; image-rendering: pixelated; }
+  .plate img { display: block; width: 1920px; height: 1080px; image-rendering: pixelated; }
+  #dim, #flash, #vig, #black { position: absolute; inset: 0; pointer-events: none; }
+  #vig { background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5)); }
+  #dim { background: radial-gradient(ellipse at center, rgba(7,5,10,0.5), rgba(7,5,10,0.92)); opacity: 0; }
+  #flash { background: #fff; opacity: 0; }
+  #black { background: #000; opacity: 0; }
+  #grade { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light; opacity: 0; }
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+  .big { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); color: #fff; white-space: nowrap;
+    text-shadow: 7px 7px 0 var(--ink), 13px 13px 0 var(--c, var(--red)); }
+  .area { position: absolute; left: 64px; font-family: var(--px); display: flex; align-items: center; gap: 16px; }
+  .area .n { font-size: 20px; color: var(--ink); background: var(--c); padding: 9px 12px 7px; }
+  .area .t { font-size: 30px; color: #fff; text-shadow: 4px 4px 0 var(--ink); }
+  .logo { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); line-height: 1.15; }
+  .logo .l1 { font-size: 64px; color: #fff; text-shadow: 6px 6px 0 var(--ink); }
+  .logo .l3 { font-size: 196px; color: var(--red); text-shadow: 9px 9px 0 var(--ink), 18px 18px 0 #ffcf3f; margin-top: 22px; }
+  .cta { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); }
+  .btn { display: inline-block; font-size: 56px; color: var(--ink); background: var(--gold); padding: 28px 44px 22px;
+    border: 7px solid var(--ink); box-shadow: 0 12px 0 #b8901c, 0 12px 0 7px var(--ink), 0 0 80px rgba(255,225,79,0.3); }
+  .feat { font-size: 24px; color: #e9dff0; letter-spacing: 1px; text-shadow: 3px 3px 0 var(--ink); }
+  .feat i { font-style: normal; color: var(--red); margin: 0 14px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="pic">
+    <div id="full" class="plate"><img id="img"></div>
+    <div id="vig"></div>
+    <div id="dim"></div>
+    <div id="flash"></div>
+  </div>
+  <div id="txt" class="layer"></div>
+  <div id="black"></div>
+</div>
+<script>
+const FPS = 30, W = 1920, PH = 1080 - 2 * 138, FW = 1920, FH = 1080;
+const META = {};
+let EDL, SEGS, DUR;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const easeOut = (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
+const easeInOut = (k) => { k = clamp(k, 0, 1); return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
+const easeBack = (k) => { k = clamp(k, 0, 1); const c = 1.7; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+const on = (t, t0, t1) => t >= t0 && t < t1;
+
+/* ---------- text ---------- */
+// centered beat word: pops in, holds, snaps out
+function big(t, x) {
+  if (!on(t, x.t0, x.t1)) return '';
+  const k = (t - x.t0) * FPS, s = lerp(1.9, 1, easeBack(k / 5)), out = clamp((t - (x.t1 - 0.1)) / 0.1, 0, 1);
+  const y = x.y == null ? 222 : x.y;
+  return `<div class="big" style="top:${y}px;font-size:${x.fs || 88}px;--c:${x.c || 'var(--red)'};transform:translateY(-50%) scale(${s * (1 - out * 0.15)});opacity:${1 - out}">${x.text}</div>`;
+}
+function area(t, x) {
+  if (!on(t, x.t0, x.t1)) return '';
+  const k = easeOut((t - x.t0) * FPS / 5);
+  return `<div class="area" style="top:${1080 - 138 - 78}px;--c:${x.c};opacity:${k};transform:translateX(${lerp(-40, 0, k)}px)"><span class="n">AREA ${x.n}</span><span class="t">${x.name}</span></div>`;
+}
+function logo(t, t0, y, scale = 1) {
+  if (t < t0) return '';
+  const k = (t - t0) * FPS, s1 = lerp(2.2, 1, easeBack(k / 6)), k3 = k - 4, s3 = k3 < 0 ? 0 : lerp(2.8, 1, easeBack(k3 / 6));
+  const wob = [[0, 0], [3, -3], [0, 0], [-3, 3]][Math.floor(((t - t0) % 1.6) / 0.4)];
+  return `<div class="logo" style="top:${y}px;transform:scale(${scale})">
+      <div class="l1" style="transform:scale(${s1});opacity:${k >= 0 ? 1 : 0}">STREET FOOTBALL</div>
+      <div class="l3" style="transform:translate(${wob[0]}px,${wob[1]}px) scale(${s3});opacity:${k3 >= 0 ? 1 : 0}">CHAOS</div></div>`;
+}
+const CTA = { main: 'WISHLIST NOW', line: '10 AREAS<i>■</i>54 CORES<i>■</i>8 ULTIMATES<i>■</i>NO REFS' };
+function endcard(t, t0) {
+  if (t < t0) return '';
+  let h = logo(t, t0, 190);
+  if (t >= t0 + 0.75) {
+    const k = (t - t0 - 0.75) * FPS, sc = lerp(1.8, 1, easeBack(k / 6)) * (t > t0 + 1.8 ? 1 + 0.025 * Math.sin((t - t0 - 1.8) * 6) : 1);
+    h += `<div class="cta" style="top:620px"><div class="btn" style="transform:rotate(-1.5deg) scale(${sc})">${CTA.main}</div></div>`;
+  }
+  if (t >= t0 + 1.3) h += `<div class="cta" style="top:800px;opacity:${easeOut((t - t0 - 1.3) * 4)}"><div class="feat">${CTA.line}</div></div>`;
+  return h;
+}
+
+/* ---------- camera ---------- */
+const camCache = {};
+const fpsOf = (clip) => META[clip].fps || 30;
+function focusAt(clip, c) {
+  const fr = META[clip].frames, f = (fr[clamp(Math.round(c * fpsOf(clip)), 0, fr.length - 1)] || {}).focus;
+  return f || { x: 320, y: 190 };
+}
+function camFor(seg, c) {
+  const cam = seg.cam;
+  let fx = cam.fx, fy = cam.fy, z = cam.z;
+  const span = (seg.v1 - seg.v0) * (seg.rate == null ? 1 : seg.rate);
+  if (cam.follow) {
+    const key = seg.v0, cf = fpsOf(seg.clip), sm = 1 - Math.pow(1 - cam.smooth, 30 / cf);
+    if (!camCache[key]) {
+      const i0 = Math.round(seg.c0 * cf), n = Math.ceil(span * cf) + 2, out = [];
+      let x = null, y = null;
+      for (let i = i0; i < i0 + n; i++) {
+        const f = focusAt(seg.clip, i / cf);
+        if (x == null) { x = f.x + (cam.ox || 0); y = f.y - 8 + (cam.oy || 0); }
+        x += (f.x + (cam.ox || 0) - x) * sm; y += (f.y - 8 + (cam.oy || 0) - y) * sm;
+        out.push([x, y]);
+      }
+      camCache[key] = out;
+    }
+    const arr = camCache[key], j = clamp(Math.round((c - seg.c0) * cf), 0, arr.length - 1);
+    [fx, fy] = arr[j];
+  }
+  const p = clamp((c - seg.c0) / Math.max(0.05, span), 0, 1);
+  if (cam.z1) z = lerp(cam.z, cam.z1, easeInOut(p));
+  if (cam.drift) z *= 1 + cam.drift * p;
+  return { fx, fy, z };
+}
+function place(plate, fx, fy, z, vw, vh) {
+  const w = vw / z, h = vh / z;
+  const cx = w >= FW ? FW / 2 : clamp(fx * 3, w / 2, FW - w / 2);
+  const cy = h >= FH ? FH / 2 : clamp(fy * 3, h / 2, FH - h / 2);
+  plate.style.transform = `translate(${vw / 2}px, ${vh / 2}px) scale(${z}) translate(${-cx}px, ${-cy}px)`;
+}
+
+/* ---------- render ---------- */
+const $ = (id) => document.getElementById(id);
+let lastSrc = null;
+async function render(t) {
+  const seg = SEGS.find((s) => t >= s.v0 && t < s.v1) || SEGS[SEGS.length - 1];
+  const rate = seg.rate == null ? 1 : seg.rate;
+  const c = seg.c0 + (t - seg.v0) * rate, cf = fpsOf(seg.clip);
+  const idx = clamp(Math.round(c * cf), 0, META[seg.clip].frames.length - 1);
+  const src = `frames/${seg.clip}/${String(idx).padStart(4, '0')}.png`;
+  if (src !== lastSrc) { $('img').src = src; await $('img').decode(); lastSrc = src; }
+  let { fx, fy, z } = camFor(seg, c);
+  const hits = SEGS.flatMap((s) => s.punch || []);
+  const since = Math.min(...hits.map((v) => (t >= v ? t - v : 99)));
+  z *= since < 0.25 ? 1 + 0.08 * (1 - easeOut(since / 0.25)) : 1;
+  // shake on impacts
+  const sh = since < 0.2 ? (1 - since / 0.2) * 10 : 0;
+  place($('full'), fx + Math.sin(t * 91) * sh / 3, fy + Math.cos(t * 77) * sh / 3, z, W, PH);
+  $('dim').style.opacity = seg.dim ? Math.min(1, (t - seg.v0) / (seg.dimIn || 0.001)) * seg.dim : 0;
+  $('flash').style.opacity = since < 1 / FPS ? 0.55 : since < 2 / FPS ? 0.2 : 0;
+  // freeze frames: desaturate + push
+  $('full').style.filter = seg.rate === 0 ? 'saturate(0.3) contrast(1.25) brightness(1.1)' : seg.rate != null && seg.rate < 1 ? 'saturate(1.25) contrast(1.08)' : '';
+  let blk = 0;
+  for (const [a, b] of EDL.blacks || []) if (on(t, a, b)) blk = 1;
+  $('black').style.opacity = blk;
+  let h = '';
+  for (const x of EDL.text) h += x.kind === 'big' ? big(t, x) : x.kind === 'area' ? area(t, x) : x.kind === 'logo' ? (on(t, x.t0, x.t1) ? logo(t, x.t0, x.y || 300) : '') : x.kind === 'end' ? endcard(t, x.t0) : '';
+  $('txt').innerHTML = h;
+  await document.fonts.ready;
+  return seg.clip;
+}
+window.ready = (async () => {
+  EDL = await (await fetch('edl_teaser.json?' + Date.now())).json();
+  SEGS = EDL.segs; DUR = EDL.dur;
+  for (const n of new Set(SEGS.map((s) => s.clip))) META[n] = await (await fetch(`frames/${n}/meta.json`)).json();
+  await document.fonts.load('40px "Press Start 2P"');
+  return DUR;
+})();
+</script>
+</body>
+</html>

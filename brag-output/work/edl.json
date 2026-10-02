@@ -1,0 +1,840 @@
+{
+ "_doc": "Shared edit decision list (picture + sound). Times in seconds. seg: v0/v1 = video time, clip = frames/<clip>, c0 = clip time at v0, rate = playback speed (0 = freeze), layout: full | fit | pov | card, cam: {z, fx, fy} fixed (logical px, frame = x3) or {follow, z, smooth}. music: list of [type, t0, t1, opts].",
+ "A1": {
+  "dur": 20.0,
+  "segs": [
+   {
+    "v0": 0.0,
+    "v1": 2.2,
+    "clip": "hook",
+    "c0": 0.45,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 2.0,
+     "smooth": 0.14
+    },
+    "punch": [
+     0.45
+    ]
+   },
+   {
+    "v0": 2.2,
+    "v1": 4.6,
+    "clip": "punch_kick",
+    "c0": 0.05,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 2.1,
+     "smooth": 0.16
+    },
+    "punch": [
+     2.55,
+     3.62
+    ]
+   },
+   {
+    "v0": 4.6,
+    "v1": 6.7,
+    "clip": "draft",
+    "c0": 0.3,
+    "layout": "fit",
+    "h": 820,
+    "cam": {
+     "z": 0.78,
+     "fx": 320,
+     "fy": 178
+    }
+   },
+   {
+    "v0": 6.7,
+    "v1": 8.0,
+    "clip": "fire_goal",
+    "c0": 0.4,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.22
+    },
+    "punch": [
+     7.17
+    ]
+   },
+   {
+    "v0": 8.0,
+    "v1": 8.35,
+    "clip": "meteor_goal",
+    "c0": 0.45,
+    "layout": "fit",
+    "h": 760,
+    "cam": {
+     "z": 0.7,
+     "fx": 320,
+     "fy": 172
+    }
+   },
+   {
+    "v0": 8.35,
+    "v1": 9.95,
+    "clip": "meteor_goal",
+    "c0": 1.2,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.28
+    },
+    "punch": [
+     9.52
+    ]
+   },
+   {
+    "v0": 9.95,
+    "v1": 10.3,
+    "clip": "fists_goal",
+    "c0": 0.4,
+    "layout": "fit",
+    "h": 760,
+    "cam": {
+     "z": 0.7,
+     "fx": 320,
+     "fy": 172
+    }
+   },
+   {
+    "v0": 10.3,
+    "v1": 11.8,
+    "clip": "fists_goal",
+    "c0": 0.85,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 2.4,
+     "smooth": 0.2
+    }
+   },
+   {
+    "v0": 11.8,
+    "v1": 14.6,
+    "clip": "mainpath",
+    "c0": 0.2,
+    "layout": "fit",
+    "h": 900,
+    "cam": {
+     "z": 1.03,
+     "fx": 445,
+     "fy": 183,
+     "drift": 0.06
+    }
+   },
+   {
+    "v0": 14.6,
+    "v1": 20.0,
+    "clip": "chaos",
+    "c0": 0.5,
+    "layout": "full",
+    "cam": {
+     "z": 1.78,
+     "fx": 320,
+     "fy": 190,
+     "drift": 0.05
+    },
+    "dim": 1
+   }
+  ],
+  "music": [
+   [
+    "pulse",
+    0.0,
+    2.2,
+    {}
+   ],
+   [
+    "groove",
+    2.2,
+    14.6,
+    {
+     "melodyFrom": 8.0
+    }
+   ],
+   [
+    "outro",
+    14.6,
+    20.0,
+    {}
+   ]
+  ],
+  "stingers": [
+   8.0,
+   9.95
+  ],
+  "boom": [
+   [
+    0.45,
+    1.3
+   ],
+   [
+    0.85,
+    0.6
+   ],
+   [
+    2.55,
+    0.5
+   ],
+   [
+    3.62,
+    1.1
+   ],
+   [
+    7.43,
+    1.4
+   ],
+   [
+    9.52,
+    1.4
+   ],
+   [
+    11.8,
+    0.9
+   ],
+   [
+    14.6,
+    1.5
+   ]
+  ]
+ },
+ "B1": {
+  "dur": 9.6,
+  "segs": [
+   {
+    "v0": 0.0,
+    "v1": 1.6,
+    "clip": "calm",
+    "c0": 0.0,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 1.85,
+     "smooth": 0.06
+    }
+   },
+   {
+    "v0": 1.6,
+    "v1": 2.2,
+    "clip": "hook",
+    "c0": 0.3,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 2.0,
+     "smooth": 0.14
+    }
+   },
+   {
+    "v0": 2.2,
+    "v1": 2.42,
+    "clip": "hook",
+    "c0": 0.9,
+    "rate": 0,
+    "layout": "full",
+    "cam": {
+     "z": 2.3,
+     "fx": "focus",
+     "fy": "focus"
+    },
+    "punch": [
+     2.2
+    ]
+   },
+   {
+    "v0": 2.42,
+    "v1": 3.4,
+    "clip": "hook",
+    "c0": 0.9,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 2.0,
+     "smooth": 0.18
+    }
+   },
+   {
+    "v0": 3.4,
+    "v1": 5.1,
+    "clip": "punch_kick",
+    "c0": 0.05,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 2.1,
+     "smooth": 0.16
+    },
+    "punch": [
+     3.75,
+     4.82
+    ]
+   },
+   {
+    "v0": 5.1,
+    "v1": 5.45,
+    "clip": "fists_goal",
+    "c0": 0.4,
+    "layout": "fit",
+    "h": 760,
+    "cam": {
+     "z": 0.7,
+     "fx": 320,
+     "fy": 172
+    }
+   },
+   {
+    "v0": 5.45,
+    "v1": 6.9,
+    "clip": "fists_goal",
+    "c0": 0.85,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 2.4,
+     "smooth": 0.2
+    }
+   },
+   {
+    "v0": 6.9,
+    "v1": 9.6,
+    "clip": "fire_goal",
+    "c0": 0.45,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.22
+    },
+    "punch": [
+     7.32
+    ]
+   }
+  ],
+  "music": [
+   [
+    "calm",
+    0.0,
+    2.2,
+    {}
+   ],
+   [
+    "groove",
+    2.42,
+    9.6,
+    {
+     "melodyFrom": 5.1
+    }
+   ]
+  ],
+  "stingers": [
+   5.1
+  ],
+  "boom": [
+   [
+    2.2,
+    1.4
+   ],
+   [
+    2.8,
+    0.6
+   ],
+   [
+    3.75,
+    0.5
+   ],
+   [
+    4.82,
+    1.1
+   ],
+   [
+    7.58,
+    1.4
+   ]
+  ]
+ },
+ "B2": {
+  "dur": 10.6,
+  "segs": [
+   {
+    "v0": 0.0,
+    "v1": 1.0,
+    "clip": "fists_goal",
+    "c0": 0.28,
+    "rate": 0,
+    "layout": "full",
+    "cam": {
+     "z": 2.3,
+     "fx": 318,
+     "fy": 186
+    },
+    "var": true
+   },
+   {
+    "v0": 1.0,
+    "v1": 1.35,
+    "clip": "fists_goal",
+    "c0": 0.4,
+    "layout": "fit",
+    "h": 760,
+    "cam": {
+     "z": 0.7,
+     "fx": 320,
+     "fy": 172
+    }
+   },
+   {
+    "v0": 1.35,
+    "v1": 2.95,
+    "clip": "fists_goal",
+    "c0": 0.85,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 2.4,
+     "smooth": 0.2
+    }
+   },
+   {
+    "v0": 2.95,
+    "v1": 6.3,
+    "clip": "fists_goal",
+    "c0": 2.45,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.16
+    },
+    "punch": [
+     5.1
+    ]
+   },
+   {
+    "v0": 6.3,
+    "v1": 10.6,
+    "clip": "fists_goal",
+    "c0": 0.85,
+    "rate": 0.5,
+    "layout": "fit",
+    "h": 900,
+    "cam": {
+     "z": 1.6,
+     "fx": 330,
+     "fy": 186
+    },
+    "var": true,
+    "dimbg": 1
+   }
+  ],
+  "music": [
+   [
+    "var",
+    0.0,
+    1.0,
+    {}
+   ],
+   [
+    "groove",
+    1.0,
+    6.3,
+    {
+     "melodyFrom": 1.0
+    }
+   ],
+   [
+    "tension",
+    6.3,
+    8.6,
+    {}
+   ],
+   [
+    "groove",
+    8.6,
+    10.6,
+    {
+     "light": true
+    }
+   ]
+  ],
+  "stingers": [
+   1.0
+  ],
+  "boom": [
+   [
+    2.68,
+    1.0
+   ],
+   [
+    5.1,
+    1.4
+   ],
+   [
+    8.6,
+    1.2
+   ]
+  ]
+ },
+ "C1": {
+  "dur": 9.4,
+  "pov": true,
+  "segs": [
+   {
+    "v0": 0.0,
+    "v1": 6.97,
+    "clip": "c1_dropkicked",
+    "c0": 0.0,
+    "layout": "pov",
+    "h": 1100,
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.12
+    }
+   },
+   {
+    "v0": 6.97,
+    "v1": 9.4,
+    "clip": "c1_dropkicked",
+    "c0": 6.97,
+    "layout": "pov",
+    "h": 1100,
+    "cam": {
+     "z": 1.0,
+     "fx": 320,
+     "fy": 175
+    }
+   }
+  ],
+  "music": [
+   [
+    "ingame",
+    0.0,
+    6.97,
+    {}
+   ]
+  ],
+  "boom": []
+ },
+ "C2": {
+  "dur": 9.0,
+  "pov": true,
+  "segs": [
+   {
+    "v0": 0.0,
+    "v1": 1.1,
+    "clip": "c2_clutch",
+    "c0": 0.0,
+    "layout": "pov",
+    "h": 1100,
+    "cam": {
+     "z": 1.25,
+     "fx": 320,
+     "fy": 186
+    }
+   },
+   {
+    "v0": 1.1,
+    "v1": 2.47,
+    "clip": "c2_clutch",
+    "c0": 1.1,
+    "layout": "pov",
+    "h": 1100,
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.2
+    }
+   },
+   {
+    "v0": 2.47,
+    "v1": 3.07,
+    "clip": "c2_clutch",
+    "c0": 2.47,
+    "layout": "pov",
+    "h": 1100,
+    "cam": {
+     "z": 0.95,
+     "fx": 330,
+     "fy": 207
+    }
+   },
+   {
+    "v0": 3.07,
+    "v1": 9.0,
+    "clip": "c2_clutch",
+    "c0": 3.07,
+    "layout": "pov",
+    "h": 1100,
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.16
+    }
+   }
+  ],
+  "music": [
+   [
+    "ingame",
+    0.0,
+    9.0,
+    {
+     "tense": true
+    }
+   ]
+  ],
+  "boom": []
+ },
+ "TAIL": {
+  "dur": 10.4,
+  "segs": [
+   {
+    "v0": 0.0,
+    "v1": 0.35,
+    "clip": "t_drop",
+    "c0": 0.4,
+    "layout": "fit",
+    "h": 760,
+    "cam": {
+     "z": 0.7,
+     "fx": 320,
+     "fy": 172
+    }
+   },
+   {
+    "v0": 0.35,
+    "v1": 1.75,
+    "clip": "t_drop",
+    "c0": 1.2,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.2
+    },
+    "punch": [
+     1.45
+    ]
+   },
+   {
+    "v0": 1.75,
+    "v1": 2.1,
+    "clip": "t_titan",
+    "c0": 0.33,
+    "layout": "fit",
+    "h": 760,
+    "cam": {
+     "z": 0.7,
+     "fx": 320,
+     "fy": 172
+    }
+   },
+   {
+    "v0": 2.1,
+    "v1": 3.3,
+    "clip": "t_titan",
+    "c0": 1.0,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 2.0,
+     "smooth": 0.18
+    }
+   },
+   {
+    "v0": 3.3,
+    "v1": 3.62,
+    "clip": "t_lightning",
+    "c0": 0.6,
+    "layout": "fit",
+    "h": 760,
+    "cam": {
+     "z": 0.7,
+     "fx": 320,
+     "fy": 172
+    }
+   },
+   {
+    "v0": 3.62,
+    "v1": 4.55,
+    "clip": "t_lightning",
+    "c0": 0.82,
+    "layout": "fit",
+    "h": 1000,
+    "cam": {
+     "z": 1.0,
+     "fx": 330,
+     "fy": 195
+    },
+    "punch": [
+     3.7
+    ]
+   },
+   {
+    "v0": 4.55,
+    "v1": 4.9,
+    "clip": "t_aura",
+    "c0": 0.55,
+    "layout": "fit",
+    "h": 760,
+    "cam": {
+     "z": 0.7,
+     "fx": 320,
+     "fy": 172
+    }
+   },
+   {
+    "v0": 4.9,
+    "v1": 6.0,
+    "clip": "t_aura",
+    "c0": 1.0,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 2.2,
+     "smooth": 0.2
+    }
+   },
+   {
+    "v0": 6.0,
+    "v1": 7.1,
+    "clip": "t_blackhole",
+    "c0": 0.45,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.22
+    },
+    "punch": [
+     6.42
+    ]
+   },
+   {
+    "v0": 7.1,
+    "v1": 8.3,
+    "clip": "t_bomb",
+    "c0": 0.75,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.25
+    },
+    "punch": [
+     7.62
+    ]
+   },
+   {
+    "v0": 8.3,
+    "v1": 8.62,
+    "clip": "meteor_goal",
+    "c0": 0.45,
+    "layout": "fit",
+    "h": 760,
+    "cam": {
+     "z": 0.7,
+     "fx": 320,
+     "fy": 172
+    }
+   },
+   {
+    "v0": 8.62,
+    "v1": 10.4,
+    "clip": "meteor_goal",
+    "c0": 1.3,
+    "layout": "full",
+    "cam": {
+     "follow": true,
+     "z": 1.9,
+     "smooth": 0.28
+    },
+    "punch": [
+     9.69
+    ]
+   }
+  ],
+  "music": [
+   [
+    "groove",
+    0.0,
+    10.4,
+    {
+     "melodyFrom": 4.55
+    }
+   ]
+  ],
+  "stingers": [],
+  "boom": [
+   [
+    0.0,
+    1.0
+   ],
+   [
+    1.45,
+    1.4
+   ],
+   [
+    2.57,
+    0.7
+   ],
+   [
+    3.7,
+    1.0
+   ],
+   [
+    6.42,
+    1.2
+   ],
+   [
+    7.62,
+    1.5
+   ],
+   [
+    9.69,
+    1.4
+   ]
+  ]
+ },
+ "END": {
+  "dur": 4.0,
+  "segs": [
+   {
+    "v0": 0.0,
+    "v1": 4.0,
+    "clip": "chaos",
+    "c0": 2.0,
+    "layout": "full",
+    "cam": {
+     "z": 1.78,
+     "fx": 320,
+     "fy": 190,
+     "drift": 0.05
+    },
+    "dim": 1,
+    "endcard": true
+   }
+  ],
+  "music": [
+   [
+    "outro",
+    0.0,
+    4.0,
+    {}
+   ]
+  ],
+  "stingers": [],
+  "boom": [
+   [
+    0.0,
+    1.2
+   ]
+  ]
+ }
+}

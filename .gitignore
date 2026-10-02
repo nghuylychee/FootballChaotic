@@ -1,13 +1,28 @@
-# /brag-slim: generated frames and intermediates (scripts, final brag.mp4 / brag.jpg stay tracked)
+# /brag + /brag-slim: keep only the skill's core (scripts, comp pages, EDLs, plans, copy); videos are archived outside git
+# work dirs: generated frames, renders, image sequences, stills, logs, audio stems, symlinks, local libs
 brag-output*/**/work/frames/
+brag-output*/**/work/oldframes
 brag-output*/**/work/render*/
+brag-output*/**/work/seq*/
+brag-output*/**/work/tseq/
+brag-output*/**/work/trender/
 brag-output*/**/work/stills*/
-brag-output*/**/work/pylib/
+brag-output*/**/work/tstills/
+brag-output*/**/work/st2/
+brag-output*/**/work/logs/
+brag-output*/**/work/pylib
 brag-output*/**/work/__pycache__/
 brag-output*/**/work/*.png
 brag-output*/**/work/*.jpg
 brag-output*/**/work/*.wav
 brag-output*/**/work/*.log
+brag-output*/**/work/log_*.txt
+# outputs: videos, posters / thumbnails
+brag-output*/**/*.mp4
+brag-output*/**/*.wav
+brag-output*/**/*.jpg
+brag-output*/**/*.png
+.DS_Store
 
 # Electron build
 node_modules/

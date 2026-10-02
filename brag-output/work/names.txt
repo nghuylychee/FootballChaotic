@@ -1,0 +1,5 @@
+A1 A1_dev_tackle-button
+B1 B1_meme_normal-football
+B2 B2_meme_var-check
+C1 C1_player_bro-dropkicked
+C2 C2_player_clutch-clones

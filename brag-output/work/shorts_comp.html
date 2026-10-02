@@ -1,0 +1,334 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Montserrat:wght@900&family=Inter:wght@800&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #140c16; --red: #ff3d5a; --gold: #ffe14f; --cyan: #7fe7ff; --green: #4dff88; --px: "Press Start 2P", monospace;
+    --meme: "Montserrat", "Arial Black", sans-serif; --gamer: "Inter", "Helvetica Neue", sans-serif; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: #07050a; }
+  #stage { position: absolute; inset: 0; overflow: hidden; background: #07050a; }
+  .plate { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; image-rendering: pixelated; }
+  .plate img { display: block; width: 1920px; height: 1080px; image-rendering: pixelated; }
+  #bg { position: absolute; left: 50%; top: 0; height: 1920px; width: auto; transform: translateX(-50%) scale(1.15); filter: blur(28px) brightness(0.32) saturate(1.2); }
+  #win { position: absolute; left: 0; width: 1080px; overflow: hidden; border-top: 6px solid var(--ink); border-bottom: 6px solid var(--ink); box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+  #dim, #flash { position: absolute; inset: 0; pointer-events: none; }
+  #dim { background: radial-gradient(ellipse at center, rgba(7,5,10,0.55), rgba(7,5,10,0.92)); opacity: 0; }
+  #flash { background: #fff; opacity: 0; }
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+
+  /* PLAYER pov: real HUD pieces cropped out of the same frame and pinned */
+  .pin { position: absolute; left: 50%; overflow: hidden; transform-origin: 50% 0; image-rendering: pixelated; }
+  .pin img { position: absolute; width: 1920px; height: 1080px; image-rendering: pixelated; }
+
+  /* DEV: pixel bands */
+  .band { position: absolute; left: 50%; display: flex; align-items: center; justify-content: center; white-space: nowrap; text-align: center;
+    font-family: var(--px); color: #fff; text-transform: uppercase; line-height: 1.4; }
+  .band .bg { position: absolute; inset: 0; background: var(--ink); border-top: 8px solid var(--c, var(--gold)); border-bottom: 8px solid var(--c, var(--gold)); }
+  .band span { position: relative; padding: 34px 44px 30px; text-shadow: 6px 6px 0 var(--ink); }
+  .key { position: absolute; left: 64px; font-family: var(--px); display: flex; align-items: center; gap: 26px; }
+  .key .cap { font-size: 54px; color: var(--ink); background: #fff; padding: 20px 24px 16px; box-shadow: 0 8px 0 #9a8fa0, 0 8px 0 4px var(--ink); border: 4px solid var(--ink); }
+  .key .n { font-size: 56px; color: #fff; text-shadow: 6px 6px 0 var(--ink), 10px 10px 0 var(--c, var(--red)); }
+  .tag { position: absolute; left: 60px; font-family: var(--px); display: flex; flex-direction: column; gap: 16px; }
+  .tag .k { font-size: 24px; color: var(--ink); background: var(--c, var(--gold)); padding: 10px 14px 8px; align-self: flex-start; }
+  .tag .n { font-size: 54px; color: #fff; text-shadow: 6px 6px 0 var(--ink), 10px 10px 0 var(--c, var(--red)); }
+  /* END card: CTA + link */
+  .cta { position: absolute; left: 0; right: 0; text-align: center; }
+  .btn { display: inline-block; font-family: var(--px); font-size: 92px; color: var(--ink); background: var(--gold); padding: 36px 54px 30px;
+    border: 8px solid var(--ink); box-shadow: 0 14px 0 #b8901c, 0 14px 0 8px var(--ink), 0 0 80px rgba(255,225,79,0.35); }
+  .btn small { display: block; font-size: 30px; margin-top: 20px; letter-spacing: 2px; }
+  .url { display: inline-flex; align-items: center; gap: 22px; background: #fff; color: #111; border-radius: 999px; padding: 30px 52px 30px 40px;
+    font-family: var(--gamer); font-weight: 800; font-size: 64px; letter-spacing: -1px; box-shadow: 0 0 0 8px var(--ink), 0 0 0 16px var(--red), 0 24px 60px rgba(0,0,0,0.6); white-space: nowrap; }
+  .url .ic { width: 58px; height: 58px; border-radius: 50%; background: var(--red); color: #fff; font-size: 36px; display: flex; align-items: center; justify-content: center; }
+  .url .cur { display: inline-block; width: 6px; height: 72px; background: #111; margin-left: 4px; vertical-align: -10px; }
+  .free { font-family: var(--px); font-size: 30px; color: #fff; letter-spacing: 2px; text-shadow: 4px 4px 0 var(--ink); }
+  .logo { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); line-height: 1.15; }
+  .logo .l1 { font-size: 60px; color: #fff; text-shadow: 6px 6px 0 var(--ink); }
+  .logo .l3 { font-size: 184px; color: var(--red); text-shadow: 8px 8px 0 var(--ink), 16px 16px 0 #ffcf3f; margin-top: 18px; }
+  .slot { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); }
+  .slot .s1 { font-size: 26px; color: #cfc3d6; margin-top: 34px; letter-spacing: 2px; }
+
+  /* MEME: classic white caption with black outline */
+  .meme { position: absolute; left: 70px; right: 70px; text-align: center; font-family: var(--meme); font-weight: 900; color: #fff;
+    -webkit-text-stroke: 14px #000; paint-order: stroke fill; line-height: 1.12; letter-spacing: -1px; }
+  .wm { position: absolute; left: 44px; top: 70px; font-family: var(--px); font-size: 20px; color: rgba(255,255,255,0.55); line-height: 1.5;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.6); }
+  .wm b { color: rgba(255,61,90,0.8); font-weight: normal; }
+
+  /* PLAYER: TikTok-style gamer caption */
+  .gamer { position: absolute; left: 60px; right: 60px; text-align: center; font-family: var(--gamer); font-weight: 800; color: #fff;
+    -webkit-text-stroke: 11px #000; paint-order: stroke fill; line-height: 1.15; }
+
+  /* VAR review */
+  #var { position: absolute; inset: 0; pointer-events: none; display: none; }
+  #var .frame { position: absolute; inset: 22px; border: 10px solid var(--vc, var(--red)); box-shadow: inset 0 0 60px rgba(255,61,90,0.25); }
+  #var .badge { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); display: flex; align-items: stretch; font-family: var(--gamer); font-weight: 800; }
+  #var .badge .v { background: #fff; color: #000; font-size: 64px; padding: 14px 26px; letter-spacing: 4px; }
+  #var .badge .s { white-space: nowrap; background: var(--vc, var(--red)); color: #fff; font-size: 40px; padding: 26px 26px 0; letter-spacing: 1px; }
+  #var .scan { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 6px); }
+  #var .rec { position: absolute; top: 260px; right: 70px; font-family: var(--gamer); font-weight: 800; font-size: 34px; color: #fff; }
+  #var .rec i { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--red); margin-right: 12px; vertical-align: 2px; }
+  .stamp { position: absolute; left: 50%; top: 1500px; font-family: var(--gamer); font-weight: 800; color: var(--green); border: 12px solid var(--green);
+    font-size: 96px; padding: 18px 40px; white-space: nowrap; text-shadow: 0 0 30px rgba(77,255,136,0.5); background: rgba(0,0,0,0.55); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <img id="bg">
+  <div id="full" class="plate"><img id="img"></div>
+  <div id="win"><div id="wplate" class="plate"><img id="wimg"></div></div>
+  <div id="pins" class="layer"></div>
+  <div id="dim"></div>
+  <div id="var"><div class="scan"></div><div class="frame"></div><div class="badge"><div class="v">VAR</div><div class="s" id="varsub">CHECKING</div></div><div class="rec"><i></i>REPLAY</div></div>
+  <div id="txt" class="layer"></div>
+  <div id="flash"></div>
+</div>
+<script>
+const FPS = 30, W = 1080, H = 1920, FW = 1920, FH = 1080;
+const ID = new URLSearchParams(location.search).get('clip') || 'A1';
+const META = {};
+let EDL, SEGS, DUR, CUTS;
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const easeOut = (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
+const easeBack = (k) => { k = clamp(k, 0, 1); const c = 1.9; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+const smooth = (k) => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
+const on = (t, t0, t1) => t >= t0 && t < t1;
+
+/* ---------- text kinds ---------- */
+function band(text, t, t0, t1, { size = 84, y = 330, rot = -2, c = 'var(--gold)' } = {}) {
+  if (!on(t, t0, t1)) return '';
+  const k = (t - t0) * FPS, s = lerp(1.6, 1, easeBack(k / 6)), wipe = easeOut(k / 5);
+  return `<div class="band" style="top:${y}px;--c:${c};transform:translate(-50%,-50%) rotate(${rot}deg) scale(${s})">
+    <div class="bg" style="clip-path:inset(0 ${100 - wipe * 100}% 0 0)"></div><span style="font-size:${size}px">${text}</span></div>`;
+}
+function keycap(cap, name, c, t, t0, t1, y = 1380) {
+  if (!on(t, t0, t1)) return '';
+  const x = lerp(-900, 0, easeOut((t - t0) * FPS / 6));
+  return `<div class="key" style="top:${y}px;--c:${c};transform:translateX(${x}px)"><div class="cap">${cap}</div><div class="n">${name}</div></div>`;
+}
+function tag(kicker, name, c, t, t0, t1, y = 1380) {
+  if (!on(t, t0, t1)) return '';
+  const x = lerp(-900, 0, easeOut((t - t0) * FPS / 6));
+  return `<div class="tag" style="top:${y}px;--c:${c};transform:translateX(${x}px)"><div class="k">${kicker}</div><div class="n">${name}</div></div>`;
+}
+function logo(t, t0, y) {
+  if (t < t0) return '';
+  const k = (t - t0) * FPS, s1 = lerp(2.2, 1, easeBack(k / 6)), k3 = k - 5, s3 = k3 < 0 ? 0 : lerp(2.6, 1, easeBack(k3 / 6));
+  const wob = [[0, 0], [3, -3], [0, 0], [-3, 3]][Math.floor(((t - t0) % 1.6) / 0.4)];
+  return `<div class="logo" style="top:${y}px">
+      <div class="l1" style="transform:scale(${s1});opacity:${k >= 0 ? 1 : 0}">STREET FOOTBALL</div>
+      <div class="l3" style="transform:translate(${wob[0]}px,${wob[1]}px) scale(${s3});opacity:${k3 >= 0 ? 1 : 0}">CHAOS</div></div>`;
+}
+/* [SLOT OUTRO] swap these two lines once the store page / itch.io link exists */
+const OUTRO = { main: 'PLAYTEST SOON', sub: 'FOLLOW TO GET IN' };
+function outroSlot(t, t0, y) {
+  if (t < t0) return '';
+  return band(OUTRO.main, t, t0, 99, { size: 64, y, c: 'var(--gold)' }) +
+    (t >= t0 + 0.35 ? `<div class="slot" style="top:${y + 100}px;opacity:${easeOut((t - t0 - 0.35) * 4)}"><div class="s1">${OUTRO.sub}</div></div>` : '');
+}
+function meme(text, t, t0, t1, { y = 300, size = 92, pop = true } = {}) {
+  if (!on(t, t0, t1)) return '';
+  const s = pop ? lerp(1.25, 1, easeBack((t - t0) * FPS / 5)) : 1;
+  return `<div class="meme" style="top:${y}px;font-size:${size}px;transform:scale(${s})">${text}</div>`;
+}
+function gamer(text, t, t0, t1, { y = 470, size = 70 } = {}) {
+  if (!on(t, t0, t1)) return '';
+  const s = lerp(1.12, 1, easeOut((t - t0) * FPS / 3));
+  return `<div class="gamer" style="top:${y}px;font-size:${size}px;transform:scale(${s})">${text}</div>`;
+}
+const WATERMARK = `<div class="wm">STREET FOOTBALL<br><b>CHAOS</b></div>`;
+
+/* ---------- per-clip text tracks ---------- */
+const TEXTS = {
+  A1(t) {
+    let h = '';
+    h += band('I REMOVED THE<br>TACKLE BUTTON', t, 0.05, 2.20, { size: 70, y: 1250, c: 'var(--cyan)' });
+    h += band('AND REPLACED IT<br>WITH A PUNCH', t, 2.20, 3.45, { size: 62, y: 1230 });
+    h += band('...AND A DROPKICK', t, 3.45, 4.60, { size: 62, y: 1230, c: 'var(--red)' });
+    h += keycap('D', 'PUNCH', 'var(--gold)', t, 2.35, 3.45, 1420);
+    h += keycap('A', 'DROPKICK', 'var(--red)', t, 3.45, 4.60, 1420);
+    h += band('THEN I ADDED<br>53 SUPERPOWERS', t, 4.60, 8.00, { size: 62, y: 300, c: 'var(--gold)' });
+    h += band('THEN ANIME<br>ULTIMATES', t, 8.35, 11.80, { size: 70, y: 330, c: '#9d7bff' });
+    h += band('THEN IT GOT<br>OUT OF HAND', t, 11.80, 14.60, { size: 70, y: 330, c: 'var(--red)' });
+    if (t >= 14.6) { h += logo(t, 14.66, 560); h += outroSlot(t, 15.5, 1180); }
+    return h;
+  },
+  B1(t) {
+    let h = WATERMARK;
+    h += meme('just a normal<br>football game', t, 0.08, 2.20, { pop: false });
+    h += meme('there is no<br>tackle button.', t, 2.42, 3.40, { y: 1250 });
+    h += meme('ONLY THIS.', t, 3.40, 5.10, { size: 110 });
+    h += meme('AND THIS.', t, 5.45, 6.90, { size: 110 });
+    h += meme('AND... THIS.', t, 6.90, 8.30, { size: 110 });
+    h += meme("it's still<br>football.", t, 8.30, 9.60);
+    return h;
+  },
+  B2(t) {
+    let h = WATERMARK;
+    h += meme('VAR CHECK:<br>FOUL? 🟥', t, 0.05, 1.00, { y: 1450, size: 96 });
+    h += meme('he kept the ball btw', t, 3.10, 5.00, { y: 300, size: 78 });
+    h += meme('GOAL.', t, 5.10, 6.30, { y: 300, size: 120 });
+    if (t >= 8.6) {
+      const k = (t - 8.6) * FPS;
+      h += `<div class="stamp" style="transform:translateX(-50%) rotate(-6deg) scale(${lerp(2.4, 1, easeBack(k / 5))})">✅ NO FOUL</div>`;
+    }
+    h += meme('there is no referee.', t, 9.3, 10.6, { y: 1720, size: 70, pop: true });
+    return h;
+  },
+  TAIL(t) {
+    let h = '';
+    h += meme("and that's before<br>the ULTIMATES…", t, 0.02, 1.75, { y: 290, size: 84 });
+    h += tag('ULTIMATE', 'METEOR DROP', '#9d7bff', t, 0.40, 1.75);
+    h += tag('ULTIMATE', 'TITAN', '#ffd23f', t, 2.12, 3.30);
+    h += tag('ULTIMATE', 'LIGHTNING DASH', '#7fe7ff', t, 3.64, 4.55);
+    h += tag('ULTIMATE', 'AURA FARMING', '#ffe14f', t, 4.92, 6.00);
+    h += tag('CORE', 'BLACK HOLE SHOT', '#9d7bff', t, 6.02, 7.10);
+    h += tag('CORE', 'BOMB BALL', '#ff6a1f', t, 7.12, 8.30);
+    h += tag('ULTIMATE', 'METEOR SHOT', '#ff6a1f', t, 8.64, 9.60);
+    h += meme('which one is<br>broken? 👇', t, 9.62, 10.40, { y: 300, size: 96 });
+    return h;
+  },
+  END(t) {
+    let h = '';
+    h += logo(t, 0.0, 250);
+    if (t >= 0.25) {
+      const k = (t - 0.25) * FPS, sc = lerp(1.8, 1, easeBack(k / 6)) * (t > 1.2 ? 1 + 0.035 * Math.sin((t - 1.2) * 7) : 1);
+      h += `<div class="cta" style="top:700px"><div class="btn" style="transform:rotate(-2deg) scale(${sc})">PLAY FREE<small>IN YOUR BROWSER</small></div></div>`;
+    }
+    if (t >= 0.55) {
+      const URL = 'team41.itch.io/sfc', n = Math.min(URL.length, Math.floor((t - 0.55) / 0.028));
+      const cur = n < URL.length || Math.floor(t * 2.5) % 2 === 0 ? '<span class="cur"></span>' : '';
+      const y = lerp(60, 0, easeOut((t - 0.55) * FPS / 6));
+      h += `<div class="cta" style="right:110px;top:${1040 + y}px;opacity:${easeOut((t - 0.55) * 5)}"><div class="url"><span class="ic">▶</span><span>${URL.slice(0, n)}${cur}</span></div></div>`;
+    }
+    if (t >= 1.25) {
+      const b = Math.abs(Math.sin((t - 1.25) * 5)) * 18;
+      h += `<div class="meme" style="right:110px;top:${1250 + b}px;font-size:62px">👇 link in the comments</div>`;
+    }
+    return h;
+  },
+  C1(t) {
+    let h = '';
+    h += gamer('free goal. easy.', t, 0.15, 2.40);
+    h += gamer('bro.', t, 3.30, 6.97, { size: 96 });
+    h += gamer('BRO 💀', t, 7.05, 9.40, { size: 120 });
+    return h;
+  },
+  C2(t) {
+    let h = '';
+    h += gamer('6 seconds left. down 1.', t, 0.10, 1.55);
+    h += gamer('ult is up…', t, 1.55, 2.47);
+    h += gamer('please please please', t, 3.10, 5.05);
+    h += gamer('NO WAYYYY', t, 5.10, 6.60, { size: 120 });
+    h += gamer('goals count x2 in final push 😭', t, 6.60, 9.00, { size: 64 });
+    return h;
+  },
+};
+
+/* ---------- camera ---------- */
+const camCache = {};
+function focusAt(clip, c) {
+  const fr = META[clip].frames, f = (fr[clamp(Math.round(c * FPS), 0, fr.length - 1)] || {}).focus;
+  return f || { x: 320, y: 190 };
+}
+function camFor(seg, c) {
+  const cam = seg.cam;
+  let fx = cam.fx, fy = cam.fy, z = cam.z;
+  if (fx === 'focus') { const f = focusAt(seg.clip, seg.c0); fx = f.x; fy = f.y - 8; }
+  if (cam.follow) {
+    const key = seg.v0;
+    if (!camCache[key]) {
+      const i0 = Math.round(seg.c0 * FPS), n = Math.ceil((seg.v1 - seg.v0) * FPS * (seg.rate == null ? 1 : Math.max(seg.rate, 0.01))) + 2;
+      const out = []; let x = null, y = null;
+      for (let i = i0; i < i0 + n; i++) {
+        const f = focusAt(seg.clip, i / FPS);
+        if (x == null) { x = f.x; y = f.y - 8; }
+        x += (f.x - x) * cam.smooth; y += (f.y - 8 - y) * cam.smooth;
+        out.push([x, y]);
+      }
+      camCache[key] = out;
+    }
+    const arr = camCache[key], j = clamp(Math.round((c - seg.c0) * FPS), 0, arr.length - 1);
+    [fx, fy] = arr[j];
+  }
+  if (cam.drift) z *= 1 + cam.drift * ((c - seg.c0) / Math.max(0.1, seg.v1 - seg.v0));
+  return { fx, fy, z };
+}
+function place(plate, vw, vh, fx, fy, z) {
+  const w = vw / z, h = vh / z;
+  const cx = w >= FW ? FW / 2 : clamp(fx * 3, w / 2, FW - w / 2);
+  const cy = h >= FH ? FH / 2 : clamp(fy * 3, h / 2, FH - h / 2);
+  plate.style.transform = `scale(${z}) translate(${-(cx - w / 2)}px, ${-(cy - h / 2)}px)`;
+}
+
+/* ---------- pinned HUD (PLAYER clips) ---------- */
+const PINS = [
+  { id: 'score', x: 858, y: 6, w: 204, h: 96, s: 3.1, top: 70 },     // score + clock + FINAL PUSH line
+  { id: 'abar', x: 776, y: 932, w: 368, h: 146, s: 2.3, top: 1520 },  // LoL-style ability bar (D / A / Z / X)
+];
+function pinsHTML(src) {
+  return PINS.map((p) => `<div class="pin" style="top:${p.top}px;width:${p.w}px;height:${p.h}px;transform:translateX(-50%) scale(${p.s})">
+    <img src="${src}" style="left:${-p.x}px;top:${-p.y}px"></div>`).join('');
+}
+
+/* ---------- render ---------- */
+const $ = (id) => document.getElementById(id);
+const imgs = { img: $('img'), wimg: $('wimg'), bg: $('bg') };
+const last = {};
+async function setSrc(key, src) { if (last[key] !== src) { imgs[key].src = src; await imgs[key].decode(); last[key] = src; } }
+async function render(t) {
+  const seg = SEGS.find((s) => t >= s.v0 && t < s.v1) || SEGS[SEGS.length - 1];
+  const full = $('full'), win = $('win'), bg = $('bg');
+  const rate = seg.rate == null ? 1 : seg.rate;
+  const c = seg.c0 + (t - seg.v0) * rate;
+  const idx = clamp(Math.round(c * FPS), 0, META[seg.clip].frames.length - 1);
+  const src = `frames/${seg.clip}/${String(idx).padStart(4, '0')}.png`;
+  let { fx, fy, z } = camFor(seg, c);
+  const since = Math.min(...CUTS.concat(seg.punch || []).map((v) => (t >= v ? t - v : 99)));
+  if (!EDL.pov) z *= since < 0.2 ? 1 + 0.12 * (1 - easeOut(since / 0.2)) : 1;
+  if (seg.layout === 'fit' || seg.layout === 'pov') {
+    await setSrc('wimg', src); await setSrc('bg', src);
+    const h = seg.h || 760, cy = seg.layout === 'pov' ? 940 : 900;
+    win.style.top = (cy - h / 2) + 'px'; win.style.height = h + 'px';
+    place($('wplate'), W, h, fx, fy, z);
+    full.style.visibility = 'hidden'; win.style.visibility = bg.style.visibility = 'visible';
+    bg.style.filter = seg.dimbg ? 'blur(28px) brightness(0.18) saturate(1.2)' : 'blur(28px) brightness(0.32) saturate(1.2)';
+  } else {
+    await setSrc('img', src);
+    place(full, W, H, fx, fy, z);
+    full.style.visibility = 'visible'; win.style.visibility = bg.style.visibility = 'hidden';
+  }
+  $('pins').innerHTML = seg.layout === 'pov' ? pinsHTML(src) : '';
+  $('dim').style.opacity = seg.dim || 0;
+  // VAR overlay: red while checking, green after the verdict
+  const v = $('var');
+  v.style.display = seg.var ? 'block' : 'none';
+  if (seg.var) {
+    const ok = t >= 8.6;
+    v.style.setProperty('--vc', ok ? 'var(--green)' : 'var(--red)');
+    $('varsub').textContent = t < 1 ? 'CHECKING' : ok ? 'DECISION' : 'REVIEW · FOUL?';
+    v.querySelector('.rec').style.visibility = t >= 6.3 && Math.floor(t * 2) % 2 === 0 ? 'visible' : t >= 6.3 ? 'hidden' : 'hidden';
+  }
+  const hits = EDL.pov ? [] : CUTS.concat(...SEGS.map((s) => s.punch || []));
+  const fl = Math.min(...hits.map((x) => (t >= x ? t - x : 99)));
+  const fpk = ID[0] === 'A' ? 1 : 0.55;
+  $('flash').style.opacity = (fl < 1 / FPS ? 0.85 : fl < 2 / FPS ? 0.35 : 0) * fpk;
+  $('txt').innerHTML = TEXTS[ID](t);
+  await document.fonts.ready;
+  for (const im of document.querySelectorAll('#pins img')) await im.decode().catch(() => {});
+  return seg.clip;
+}
+window.ready = (async () => {
+  EDL = (await (await fetch('edl.json')).json())[ID];
+  SEGS = EDL.segs; DUR = EDL.dur;
+  CUTS = SEGS.map((s) => s.v0).filter((v) => v > 0);
+  for (const n of new Set(SEGS.map((s) => s.clip))) META[n] = await (await fetch(`frames/${n}/meta.json`)).json();
+  await Promise.all(['40px "Press Start 2P"', '900 40px Montserrat', '800 40px Inter'].map((f) => document.fonts.load(f)));
+  return DUR;
+})();
+</script>
+</body>
+</html>

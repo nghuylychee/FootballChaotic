@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #140c16; --red: #ff3d5a; --gold: #ffe14f; --cyan: #7fe7ff; --violet: #9d7bff; --green: #4dff88; --px: "Press Start 2P", monospace; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #07050a; }
+  #stage { position: absolute; inset: 0; overflow: hidden; background: #07050a; }
+  .plate { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; image-rendering: pixelated; }
+  .plate img { display: block; width: 1920px; height: 1080px; image-rendering: pixelated; }
+  #bg { position: absolute; inset: -60px; width: calc(100% + 120px); height: calc(100% + 120px); object-fit: cover; filter: blur(30px) brightness(0.3) saturate(1.2); }
+  #win { position: absolute; left: 154px; top: 26px; width: 1612px; height: 907px; overflow: hidden; border: 5px solid #2a1f30; box-shadow: 0 24px 80px rgba(0,0,0,0.7); background: #07050a; }
+  #dim, #flash, #vig { position: absolute; inset: 0; pointer-events: none; }
+  #dim { background: radial-gradient(ellipse at center, rgba(7,5,10,0.55), rgba(7,5,10,0.93)); opacity: 0; }
+  #vig { background: radial-gradient(ellipse at center, transparent 55%, rgba(7,5,10,0.45)); }
+  #flash { background: #fff; opacity: 0; }
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+
+  /* real HUD pieces cropped from the same frame, pinned at their home spots */
+  .pin { position: absolute; overflow: hidden; image-rendering: pixelated; }
+  .pin img { position: absolute; width: 1920px; height: 1080px; image-rendering: pixelated; }
+
+  /* captions: top-left, pixel band */
+  .cap { position: absolute; left: 72px; font-family: var(--px); color: #fff; text-transform: uppercase; }
+  .cap .k { display: inline-block; font-size: 22px; color: var(--ink); background: var(--c, var(--gold)); padding: 10px 14px 8px; margin-bottom: 14px; }
+  .cap .line { position: relative; display: block; width: max-content; margin-bottom: 10px; }
+  .cap .line .bg { position: absolute; inset: 0; background: var(--ink); border-left: 10px solid var(--c, var(--gold)); }
+  .cap .line span { position: relative; display: block; padding: 22px 30px 18px 34px; font-size: var(--fs, 50px); line-height: 1.25; text-shadow: 5px 5px 0 #000; }
+  .cap .line b { color: var(--c, var(--gold)); font-weight: normal; }
+  /* keycaps */
+  .keys { position: absolute; left: 72px; font-family: var(--px); display: flex; flex-direction: column; gap: 22px; }
+  .key { display: flex; align-items: center; gap: 22px; }
+  .key .capk { font-size: 44px; color: var(--ink); background: #fff; padding: 16px 20px 12px; box-shadow: 0 7px 0 #9a8fa0, 0 7px 0 4px var(--ink); border: 4px solid var(--ink); min-width: 84px; text-align: center; }
+  .key .n { font-size: 44px; color: #fff; text-shadow: 5px 5px 0 var(--ink), 9px 9px 0 var(--c, var(--red)); }
+  /* end card */
+  .logo { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); line-height: 1.15; }
+  .logo .l1 { font-size: 64px; color: #fff; text-shadow: 6px 6px 0 var(--ink); }
+  .logo .l3 { font-size: 196px; color: var(--red); text-shadow: 9px 9px 0 var(--ink), 18px 18px 0 #ffcf3f; margin-top: 22px; }
+  .cta { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); }
+  .btn { display: inline-block; font-size: 60px; color: var(--ink); background: var(--gold); padding: 30px 46px 24px;
+    border: 7px solid var(--ink); box-shadow: 0 12px 0 #b8901c, 0 12px 0 7px var(--ink), 0 0 80px rgba(255,225,79,0.3); }
+  .sub { font-size: 26px; color: #e9dff0; letter-spacing: 2px; text-shadow: 4px 4px 0 var(--ink); }
+  .feat { font-size: 22px; color: #cfc3d6; letter-spacing: 1px; text-shadow: 3px 3px 0 var(--ink); }
+  .feat i { font-style: normal; color: var(--red); margin: 0 16px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <img id="bg">
+  <div id="full" class="plate"><img id="img"></div>
+  <div id="win"><div id="wplate" class="plate"><img id="wimg"></div></div>
+  <div id="vig"></div>
+  <div id="pins" class="layer"></div>
+  <div id="dim"></div>
+  <div id="txt" class="layer"></div>
+  <div id="flash"></div>
+</div>
+<script>
+const FPS = 30, W = 1920, H = 1080, FW = 1920, FH = 1080;
+const META = {};
+let EDL, SEGS, DUR, CUTS, TEXT = [];
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const easeOut = (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
+const easeInOut = (k) => { k = clamp(k, 0, 1); return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
+const easeBack = (k) => { k = clamp(k, 0, 1); const c = 1.7; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+const on = (t, t0, t1) => t >= t0 && t < t1;
+
+/* ---------- text kinds ---------- */
+// caption: [t0, t1, lines[], {k: kicker, c: color, y, fs}] ; lines slide in one after another, all leave together
+function caption(t, t0, t1, lines, o = {}) {
+  if (!on(t, t0, t1)) return '';
+  const y = o.y == null ? 168 : o.y;
+  const out = Math.max(0, (t - (t1 - 0.18)) / 0.18);   // last 0.18s: wipe out
+  let h = `<div class="cap" style="top:${y}px;left:${o.x == null ? 72 : o.x}px;--c:${o.c || 'var(--gold)'};${o.fs ? `--fs:${o.fs}px` : ''}">`;
+  if (o.k) { const kk = easeOut((t - t0) * FPS / 5); h += `<div class="k" style="opacity:${kk * (1 - out)};transform:translateX(${lerp(-40, 0, kk)}px)">${o.k}</div>`; }
+  lines.forEach((ln, i) => {
+    const s = t0 + (o.k ? 0.08 : 0) + i * (o.stagger == null ? 0.22 : o.stagger);
+    if (t < s) return;
+    const k = (t - s) * FPS, wipe = easeOut(k / 5), tx = lerp(-60, 0, easeOut(k / 6));
+    const clip = out > 0 ? `clip-path:inset(0 ${out * 100}% 0 0)` : `clip-path:inset(0 ${100 - wipe * 100}% 0 0)`;
+    h += `<div class="line" style="transform:translateX(${tx}px);${clip}"><div class="bg"></div><span>${ln}</span></div>`;
+  });
+  return h + '</div>';
+}
+function keys(t, t0, t1, list, y = 800) {
+  if (!on(t, t0, t1)) return '';
+  let h = `<div class="keys" style="top:${y}px">`;
+  list.forEach(([cap, name, c, at], i) => {
+    if (t < at) return;
+    const x = lerp(-700, 0, easeOut((t - at) * FPS / 6)), sc = lerp(1.25, 1, easeBack((t - at) * FPS / 6));
+    h += `<div class="key" style="--c:${c};transform:translateX(${x}px)"><div class="capk" style="transform:scale(${sc})">${cap}</div><div class="n">${name}</div></div>`;
+  });
+  return h + '</div>';
+}
+function logo(t, t0, y) {
+  if (t < t0) return '';
+  const k = (t - t0) * FPS, s1 = lerp(2.2, 1, easeBack(k / 7)), k3 = k - 5, s3 = k3 < 0 ? 0 : lerp(2.6, 1, easeBack(k3 / 7));
+  const wob = [[0, 0], [3, -3], [0, 0], [-3, 3]][Math.floor(((t - t0) % 1.6) / 0.4)];
+  return `<div class="logo" style="top:${y}px">
+      <div class="l1" style="transform:scale(${s1});opacity:${k >= 0 ? 1 : 0}">STREET FOOTBALL</div>
+      <div class="l3" style="transform:translate(${wob[0]}px,${wob[1]}px) scale(${s3});opacity:${k3 >= 0 ? 1 : 0}">CHAOS</div></div>`;
+}
+/* [CTA SLOT] swap these lines when the store date is known */
+const CTA = { main: 'WISHLIST NOW', sub: 'ON STEAM' };
+function endcard(t, t0) {
+  if (t < t0) return '';
+  let h = logo(t, t0 + 0.05, 200);
+  if (t >= t0 + 0.6) {
+    const k = (t - t0 - 0.6) * FPS, sc = lerp(1.8, 1, easeBack(k / 6)) * (t > t0 + 1.6 ? 1 + 0.025 * Math.sin((t - t0 - 1.6) * 6) : 1);
+    h += `<div class="cta" style="top:640px"><div class="btn" style="transform:rotate(-1.5deg) scale(${sc})">${CTA.main}</div></div>`;
+  }
+  if (t >= t0 + 0.95) h += `<div class="cta" style="top:800px;opacity:${easeOut((t - t0 - 0.95) * 5)}"><div class="sub">${CTA.sub}</div></div>`;
+  if (t >= t0 + 1.3) h += `<div class="cta" style="top:930px;opacity:${easeOut((t - t0 - 1.3) * 4)}"><div class="feat">2V2 STREET FOOTBALL<i>■</i>SOLO CAMPAIGN<i>■</i>ONLINE 2-4 PLAYERS</div></div>`;
+  return h;
+}
+
+/* ---------- camera ---------- */
+const camCache = {};
+function focusAt(clip, c) {
+  const fr = META[clip].frames, f = (fr[clamp(Math.round(c * FPS), 0, fr.length - 1)] || {}).focus;
+  return f || { x: 320, y: 190 };
+}
+function camFor(seg, c) {
+  const cam = seg.cam;
+  let fx = cam.fx, fy = cam.fy, z = cam.z;
+  if (cam.follow) {
+    const key = seg.v0;
+    if (!camCache[key]) {
+      const i0 = Math.round(seg.c0 * FPS), n = Math.ceil((seg.v1 - seg.v0) * FPS * (seg.rate == null ? 1 : Math.max(seg.rate, 0.01))) + 2;
+      const out = []; let x = null, y = null;
+      for (let i = i0; i < i0 + n; i++) {
+        const f = focusAt(seg.clip, i / FPS);
+        if (x == null) { x = f.x + (cam.ox || 0); y = f.y - 8 + (cam.oy || 0); }
+        x += (f.x + (cam.ox || 0) - x) * cam.smooth; y += (f.y - 8 + (cam.oy || 0) - y) * cam.smooth;
+        out.push([x, y]);
+      }
+      camCache[key] = out;
+    }
+    const arr = camCache[key], j = clamp(Math.round((c - seg.c0) * FPS), 0, arr.length - 1);
+    [fx, fy] = arr[j];
+  }
+  const p = clamp((c - seg.c0) / Math.max(0.1, (seg.v1 - seg.v0) * (seg.rate == null ? 1 : seg.rate || 1)), 0, 1);
+  if (cam.z1) z = lerp(cam.z, cam.z1, easeInOut(p));
+  if (cam.fx1 != null) { fx = lerp(cam.fx, cam.fx1, easeInOut(p)); fy = lerp(cam.fy, cam.fy1, easeInOut(p)); }
+  if (cam.drift) z *= 1 + cam.drift * p;
+  return { fx, fy, z };
+}
+// gameplay plates keep the camera inside the field band so the HUD baked into the frame never shows magnified;
+// the real HUD is pinned on top instead
+function place(plate, fx, fy, z, band, vw = W, vh = H) {
+  const w = vw / z, h = vh / z;
+  const [y0, y1] = band ? [104, 928] : [0, FH];
+  const cx = w >= FW ? FW / 2 : clamp(fx * 3, w / 2, FW - w / 2);
+  const cy = h >= (y1 - y0) ? (y0 + y1) / 2 : clamp(fy * 3, y0 + h / 2, y1 - h / 2);
+  plate.style.transform = `scale(${z}) translate(${-(cx - w / 2)}px, ${-(cy - h / 2)}px)`;
+}
+
+/* ---------- pinned HUD ---------- */
+const PINS = [
+  { id: 'score', x: 858, y: 4, w: 204, h: 98, s: 1.35, left: 960, top: 14 },
+  { id: 'abar', x: 776, y: 930, w: 368, h: 150, s: 1.15, left: 960, top: 1080 - 150 * 1.15 - 6 },
+];
+function pinsHTML(src, which) {
+  return PINS.filter((p) => which.includes(p.id)).map((p) => `<div class="pin" style="left:${p.left}px;top:${p.top}px;width:${p.w}px;height:${p.h}px;transform-origin:50% 0;transform:translateX(-50%) scale(${p.s})">
+    <img src="${src}" style="left:${-p.x}px;top:${-p.y}px"></div>`).join('');
+}
+
+/* ---------- render ---------- */
+const $ = (id) => document.getElementById(id);
+const last = {};
+async function setSrc(el, src) { if (last[el.id] !== src) { el.src = src; await el.decode(); last[el.id] = src; } }
+async function render(t) {
+  const seg = SEGS.find((s) => t >= s.v0 && t < s.v1) || SEGS[SEGS.length - 1];
+  const rate = seg.rate == null ? 1 : seg.rate;
+  const c = seg.c0 + (t - seg.v0) * rate;
+  const idx = clamp(Math.round(c * FPS), 0, META[seg.clip].frames.length - 1);
+  const src = `frames/${seg.clip}/${String(idx).padStart(4, '0')}.png`;
+  const ui = seg.layout === 'ui';
+  if (ui) { await setSrc($('wimg'), src); await setSrc($('bg'), src); } else await setSrc($('img'), src);
+  $('full').style.visibility = ui ? 'hidden' : 'visible';
+  $('win').style.visibility = $('bg').style.visibility = ui ? 'visible' : 'hidden';
+  $('vig').style.visibility = ui ? 'hidden' : 'visible';
+  let { fx, fy, z } = camFor(seg, c);
+  const hits = CUTS.concat(...SEGS.map((s) => s.punch || []));
+  const since = Math.min(...hits.map((v) => (t >= v ? t - v : 99)));
+  if (seg.layout === 'game') z *= since < 0.22 ? 1 + 0.06 * (1 - easeOut(since / 0.22)) : 1;
+  if (ui) place($('wplate'), fx, fy, z * 1612 / 1920, false, 1612, 907);
+  else place($('full'), fx, fy, z, seg.layout === 'game' && !seg.noband);
+  $('pins').innerHTML = seg.layout === 'game' ? pinsHTML(src, seg.pins || ['score', 'abar']) : '';
+  for (const im of document.querySelectorAll('#pins img')) await im.decode().catch(() => {});
+  // dim: per segment, ramps in over 0.3s
+  const dimT = seg.dim ? Math.min(1, (t - seg.v0) / (seg.dimIn || 0.001)) * seg.dim : 0;
+  $('dim').style.opacity = dimT;
+  // dip between sections: fade to ink and back around a cut
+  let dip = 0;
+  for (const d of EDL.dips || []) { const k = Math.abs(t - d) / 0.12; if (k < 1) dip = Math.max(dip, 1 - k); }
+  $('stage').style.filter = dip ? `brightness(${1 - dip * 0.85})` : '';
+  const pk = (seg.punch || []).map((x) => (t >= x ? t - x : 99)), fl = Math.min(...pk, ...CUTS.filter((x) => (EDL.flashCuts || []).includes(x)).map((x) => (t >= x ? t - x : 99)));
+  $('flash').style.opacity = fl < 1 / FPS ? 0.4 : fl < 2 / FPS ? 0.15 : 0;
+  $('txt').innerHTML = TEXTS(t);
+  await document.fonts.ready;
+  return seg.clip;
+}
+
+/* ---------- text track ---------- */
+function TEXTS(t) {
+  let h = '';
+  for (const x of EDL.text) {
+    if (x.kind === 'cap') h += caption(t, x.t0, x.t1, x.lines, x);
+    else if (x.kind === 'keys') h += keys(t, x.t0, x.t1, x.keys, x.y);
+    else if (x.kind === 'end') h += endcard(t, x.t0);
+  }
+  return h;
+}
+
+window.ready = (async () => {
+  EDL = await (await fetch('edl_steam.json?' + Date.now())).json();
+  SEGS = EDL.segs; DUR = EDL.dur;
+  CUTS = SEGS.map((s) => s.v0).filter((v) => v > 0);
+  for (const n of new Set(SEGS.map((s) => s.clip))) META[n] = await (await fetch(`frames/${n}/meta.json`)).json();
+  await document.fonts.load('40px "Press Start 2P"');
+  return DUR;
+})();
+</script>
+</body>
+</html>

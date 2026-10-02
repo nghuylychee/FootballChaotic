@@ -1,0 +1,610 @@
+{
+ "dur": 36.0,
+ "beat": 0.375,
+ "segs": [
+  {
+   "v0": 0.0,
+   "v1": 1.5,
+   "clip": "T_calm_village",
+   "c0": 0.2,
+   "cam": {
+    "follow": true,
+    "z": 1.25,
+    "smooth": 0.08,
+    "drift": 0.04
+   },
+   "punch": []
+  },
+  {
+   "v0": 1.5,
+   "v1": 1.875,
+   "clip": "T_hook_village",
+   "c0": 0.525,
+   "cam": {
+    "follow": true,
+    "z": 1.9,
+    "smooth": 0.14
+   },
+   "punch": []
+  },
+  {
+   "v0": 1.875,
+   "v1": 2.25,
+   "clip": "T_hook_village",
+   "c0": 0.93,
+   "cam": {
+    "follow": true,
+    "z": 2.2,
+    "smooth": 0.14
+   },
+   "rate": 0,
+   "punch": [
+    1.875
+   ]
+  },
+  {
+   "v0": 2.25,
+   "v1": 3.0,
+   "clip": "T_hook_village",
+   "c0": 0.93,
+   "cam": {
+    "follow": true,
+    "z": 2.0,
+    "smooth": 0.2
+   },
+   "rate": 0.4,
+   "punch": []
+  },
+  {
+   "v0": 3.0,
+   "v1": 4.5,
+   "clip": "T_hook_village",
+   "c0": 1.23,
+   "cam": {
+    "follow": true,
+    "z": 1.6,
+    "smooth": 0.2
+   },
+   "punch": [
+    3.09
+   ],
+   "dim": 0.6,
+   "dimIn": 0.15
+  },
+  {
+   "v0": 4.5,
+   "v1": 6.0,
+   "clip": "T_punch_kick_alley",
+   "c0": 0.025000000000000022,
+   "cam": {
+    "follow": true,
+    "z": 2.0,
+    "smooth": 0.2
+   },
+   "punch": [
+    4.875,
+    5.905
+   ]
+  },
+  {
+   "v0": 6.0,
+   "v1": 7.5,
+   "clip": "T_punch_kick_school",
+   "c0": 0.6799999999999999,
+   "cam": {
+    "follow": true,
+    "z": 2.0,
+    "smooth": 0.2
+   },
+   "punch": [
+    6.75
+   ]
+  },
+  {
+   "v0": 7.5,
+   "v1": 9.0,
+   "clip": "T_fire_goal_rooftop",
+   "c0": 0.15000000000000002,
+   "cam": {
+    "follow": true,
+    "z": 1.8,
+    "smooth": 0.2
+   },
+   "punch": [
+    8.25,
+    8.48
+   ]
+  },
+  {
+   "v0": 9.0,
+   "v1": 10.5,
+   "clip": "T_t_bomb_market",
+   "c0": 0.48,
+   "cam": {
+    "follow": true,
+    "z": 1.9,
+    "smooth": 0.2
+   },
+   "punch": [
+    9.75
+   ]
+  },
+  {
+   "v0": 10.5,
+   "v1": 12.0,
+   "clip": "T_t_blackhole_harbor",
+   "c0": 0.07999999999999996,
+   "cam": {
+    "follow": true,
+    "z": 1.8,
+    "smooth": 0.2
+   },
+   "punch": [
+    10.99,
+    11.25
+   ]
+  },
+  {
+   "v0": 12.0,
+   "v1": 13.5,
+   "clip": "T_t_titan_cage",
+   "c0": 0.9075,
+   "cam": {
+    "follow": true,
+    "z": 1.8,
+    "smooth": 0.2
+   },
+   "punch": [
+    12.5625,
+    12.8925
+   ]
+  },
+  {
+   "v0": 13.5,
+   "v1": 15.0,
+   "clip": "T_t_drop_plaza",
+   "c0": 1.5499999999999998,
+   "cam": {
+    "follow": true,
+    "z": 1.9,
+    "smooth": 0.2
+   },
+   "punch": [
+    14.25
+   ]
+  },
+  {
+   "v0": 15.0,
+   "v1": 16.5,
+   "clip": "T_t_lightning_cyber",
+   "c0": 0.9,
+   "cam": {
+    "follow": true,
+    "z": 1.6,
+    "smooth": 0.2
+   },
+   "punch": [
+    15.0
+   ]
+  },
+  {
+   "v0": 16.5,
+   "v1": 16.8,
+   "clip": "T_vs_final",
+   "c0": 0.1,
+   "cam": {
+    "z": 0.744,
+    "fx": 320,
+    "fy": 180
+   },
+   "punch": []
+  },
+  {
+   "v0": 16.8,
+   "v1": 19.5,
+   "clip": "T_vs_final",
+   "c0": 0.4,
+   "cam": {
+    "z": 0.744,
+    "fx": 320,
+    "fy": 180,
+    "drift": 0.04
+   },
+   "punch": [
+    16.8
+   ]
+  },
+  {
+   "v0": 19.5,
+   "v1": 20.25,
+   "clip": "T_meteor_goal_market",
+   "c0": 0.4,
+   "cam": {
+    "z": 1.0,
+    "fx": 320,
+    "fy": 180
+   },
+   "rate": 0.73,
+   "punch": []
+  },
+  {
+   "v0": 20.25,
+   "v1": 21.0,
+   "clip": "T_meteor_goal_market",
+   "c0": 1.5,
+   "cam": {
+    "follow": true,
+    "z": 1.8,
+    "smooth": 0.3
+   },
+   "punch": [
+    20.35
+   ]
+  },
+  {
+   "v0": 21.0,
+   "v1": 21.75,
+   "clip": "T_fists_goal_school",
+   "c0": 0.38,
+   "cam": {
+    "z": 1.0,
+    "fx": 320,
+    "fy": 180
+   },
+   "rate": 0.7,
+   "punch": []
+  },
+  {
+   "v0": 21.75,
+   "v1": 22.5,
+   "clip": "T_fists_goal_school",
+   "c0": 0.9,
+   "cam": {
+    "follow": true,
+    "z": 2.1,
+    "smooth": 0.2
+   },
+   "punch": [
+    21.75
+   ]
+  },
+  {
+   "v0": 22.5,
+   "v1": 22.875,
+   "clip": "T_t_aura_rooftop",
+   "c0": 0.4,
+   "cam": {
+    "z": 1.0,
+    "fx": 320,
+    "fy": 180
+   },
+   "punch": []
+  },
+  {
+   "v0": 22.875,
+   "v1": 23.25,
+   "clip": "T_t_aura_rooftop",
+   "c0": 1.0,
+   "cam": {
+    "follow": true,
+    "z": 2.0,
+    "smooth": 0.2
+   },
+   "punch": []
+  },
+  {
+   "v0": 23.25,
+   "v1": 23.625,
+   "clip": "T_t_tiki_village",
+   "c0": 0.45,
+   "cam": {
+    "z": 1.0,
+    "fx": 320,
+    "fy": 180
+   },
+   "punch": []
+  },
+  {
+   "v0": 23.625,
+   "v1": 24.0,
+   "clip": "T_t_tiki_village",
+   "c0": 1.3,
+   "cam": {
+    "follow": true,
+    "z": 1.8,
+    "smooth": 0.25
+   },
+   "punch": []
+  },
+  {
+   "v0": 24.0,
+   "v1": 24.375,
+   "clip": "T_t_titan_cage",
+   "c0": 0.45,
+   "cam": {
+    "z": 1.0,
+    "fx": 320,
+    "fy": 180
+   },
+   "punch": []
+  },
+  {
+   "v0": 24.375,
+   "v1": 24.75,
+   "clip": "T_t_drop_plaza",
+   "c0": 0.5,
+   "cam": {
+    "z": 1.0,
+    "fx": 320,
+    "fy": 180
+   },
+   "punch": []
+  },
+  {
+   "v0": 24.75,
+   "v1": 25.125,
+   "clip": "T_t_lightning_cyber",
+   "c0": 0.5,
+   "cam": {
+    "z": 1.0,
+    "fx": 320,
+    "fy": 180
+   },
+   "punch": []
+  },
+  {
+   "v0": 25.125,
+   "v1": 25.5,
+   "clip": "T_meteor_goal_market",
+   "c0": 2.3,
+   "cam": {
+    "follow": true,
+    "z": 1.5,
+    "smooth": 0.3
+   },
+   "punch": [
+    25.195
+   ]
+  },
+  {
+   "v0": 25.5,
+   "v1": 26.625,
+   "clip": "T_c2_clutch_stadium",
+   "c0": 1.3,
+   "cam": {
+    "follow": true,
+    "z": 1.9,
+    "smooth": 0.12
+   },
+   "punch": []
+  },
+  {
+   "v0": 26.625,
+   "v1": 27.375,
+   "clip": "T_c2_clutch_stadium",
+   "c0": 2.5,
+   "cam": {
+    "z": 1.0,
+    "fx": 320,
+    "fy": 180
+   },
+   "punch": []
+  },
+  {
+   "v0": 27.375,
+   "v1": 28.875,
+   "clip": "T_c2_clutch_stadium",
+   "c0": 3.25,
+   "cam": {
+    "follow": true,
+    "z": 1.75,
+    "smooth": 0.1
+   },
+   "punch": []
+  },
+  {
+   "v0": 28.875,
+   "v1": 30.0,
+   "clip": "T_c2_clutch_stadium",
+   "c0": 4.75,
+   "cam": {
+    "follow": true,
+    "z": 1.9,
+    "z1": 1.5,
+    "smooth": 0.12
+   },
+   "rate": 0.35555555555555585,
+   "punch": []
+  },
+  {
+   "v0": 30.0,
+   "v1": 31.5,
+   "clip": "T_c2_clutch_stadium",
+   "c0": 5.15,
+   "cam": {
+    "follow": true,
+    "z": 1.4,
+    "z1": 1.2,
+    "smooth": 0.1
+   },
+   "punch": [
+    30.0
+   ]
+  },
+  {
+   "v0": 31.5,
+   "v1": 36.0,
+   "clip": "T_c2_clutch_stadium",
+   "c0": 6.65,
+   "cam": {
+    "z": 1.15,
+    "fx": 320,
+    "fy": 185,
+    "drift": 0.05
+   },
+   "rate": 0.5,
+   "punch": [],
+   "dim": 0.9,
+   "dimIn": 0.35
+  }
+ ],
+ "text": [
+  {
+   "kind": "area",
+   "t0": 0.1,
+   "t1": 1.45,
+   "n": 1,
+   "name": "VILLAGE GREEN",
+   "c": "#9ccf5a"
+  },
+  {
+   "kind": "logo",
+   "t0": 3.02,
+   "t1": 4.5,
+   "y": 250
+  },
+  {
+   "kind": "area",
+   "t0": 4.53,
+   "t1": 5.97,
+   "n": 2,
+   "name": "BACK ALLEY",
+   "c": "#ff9a3d"
+  },
+  {
+   "kind": "area",
+   "t0": 6.03,
+   "t1": 7.47,
+   "n": 3,
+   "name": "SCHOOLYARD",
+   "c": "#ffd23f"
+  },
+  {
+   "kind": "area",
+   "t0": 7.53,
+   "t1": 8.97,
+   "n": 4,
+   "name": "ROOFTOP",
+   "c": "#6ec8ff"
+  },
+  {
+   "kind": "area",
+   "t0": 9.03,
+   "t1": 10.47,
+   "n": 5,
+   "name": "NIGHT MARKET",
+   "c": "#ff3fb4"
+  },
+  {
+   "kind": "area",
+   "t0": 10.53,
+   "t1": 11.97,
+   "n": 6,
+   "name": "HARBOR DOCKS",
+   "c": "#f2a33a"
+  },
+  {
+   "kind": "area",
+   "t0": 12.03,
+   "t1": 13.47,
+   "n": 7,
+   "name": "UNDERGROUND CAGE",
+   "c": "#ff3d3d"
+  },
+  {
+   "kind": "area",
+   "t0": 13.53,
+   "t1": 14.97,
+   "n": 8,
+   "name": "CITY PLAZA CUP",
+   "c": "#2fd6c0"
+  },
+  {
+   "kind": "area",
+   "t0": 15.03,
+   "t1": 16.47,
+   "n": 9,
+   "name": "CYBER ARENA",
+   "c": "#9d7bff"
+  },
+  {
+   "kind": "big",
+   "t0": 4.6,
+   "t1": 7.4,
+   "text": "ONE BALL.",
+   "c": "#9ccf5a"
+  },
+  {
+   "kind": "big",
+   "t0": 7.6,
+   "t1": 10.4,
+   "text": "FOUR PLAYERS.",
+   "c": "var(--gold)"
+  },
+  {
+   "kind": "big",
+   "t0": 10.6,
+   "t1": 13.4,
+   "text": "ZERO RULES.",
+   "c": "var(--red)"
+  },
+  {
+   "kind": "big",
+   "t0": 16.95,
+   "t1": 19.45,
+   "text": "THEN THE BOSSES SHOW UP.",
+   "fs": 40,
+   "y": 1011,
+   "c": "var(--red)"
+  },
+  {
+   "kind": "big",
+   "t0": 25.55,
+   "t1": 26.575,
+   "text": "FINAL PUSH.",
+   "c": "var(--gold)"
+  },
+  {
+   "kind": "big",
+   "t0": 30.02,
+   "t1": 31.45,
+   "text": "GOAL x2.",
+   "fs": 120,
+   "c": "var(--gold)"
+  },
+  {
+   "kind": "end",
+   "t0": 31.6,
+   "t1": 36.0
+  }
+ ],
+ "blacks": [
+  [
+   16.5,
+   16.8
+  ]
+ ],
+ "stingers": [
+  19.5,
+  21.0,
+  22.5,
+  23.25,
+  24.0,
+  24.375,
+  24.75,
+  26.625
+ ],
+ "marks": {
+  "title": 3.0,
+  "esc0": 4.5,
+  "esc1": 16.5,
+  "brk": 16.5,
+  "bar0": 19.5,
+  "bar1": 25.5,
+  "cl": 25.5,
+  "slow0": 28.875,
+  "goal": 30.0,
+  "end": 31.5,
+  "kick": 1.875
+ }
+}
