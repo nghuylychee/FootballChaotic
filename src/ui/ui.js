@@ -223,7 +223,8 @@ window.SFC = window.SFC || {};
       if (!this.online) {
         const mp = this.app.game && this.app.game.opts.mainPath;
         // thẻ drill bấm LATER: mở lại ở INVENTORY (không có nút ở đây)
-        return mp ? [['restart', 'NEXT MATCH'], ['menu', 'MAIN PATH']] : [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']];
+        // bản DEMO hết Area đá được: restart -> màn WISHLIST (app.startMainPath)
+        return mp ? [['restart', SFC.MainPath.demoOver() ? 'CONTINUE' : 'NEXT MATCH'], ['menu', 'MAIN PATH']] : [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']];
       }
       return SFC.Online.isHost ? [['lobby', 'BACK TO LOBBY'], ['leave', 'LEAVE ROOM']] : [['leave', 'LEAVE ROOM']];
     },
@@ -358,7 +359,7 @@ window.SFC = window.SFC || {};
         up: `PROMOTED TO ${name}`,
         down: `DEMOTED TO ${name}`,
         ready: MP.isFinal() ? 'CHAMPIONSHIP FINAL NEXT!' : 'PROMOTION MATCH NEXT!',
-        area: `NEW AREA UNLOCKED: ${A.name}`,
+        area: MP.demoLocked(a.area) ? 'DEMO COMPLETE · WISHLIST ON STEAM!' : `NEW AREA UNLOCKED: ${A.name}`,
         title: `CHAMPION OF THE STREET ×${MP.state.titles}`,
         promoFail: 'PROMOTION FAILED · win again to retry',
       }[p.event] || (p.delta > 0 ? `+${p.delta} ★` : p.delta < 0 ? `${p.delta} ★` : 'No stars changed');

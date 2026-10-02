@@ -25,6 +25,8 @@
     // Main Path: trận kế tiếp theo tiến trình (đối thủ / độ khó / sân do Area + hạng quyết định).
     // Người chơi đá cho đội riêng (mainPath.playerTeam), character đá đúng vị trí đã chọn, đồng đội AI đá vị trí còn lại
     startMainPath() {
+      // bản DEMO: đã tới Area bị khoá -> màn WISHLIST thay vì vào trận (cả nút NEXT MATCH ở màn kết quả)
+      if (SFC.MainPath.demoOver()) return this.toMenu('wishlist');
       const MP = SFC_CONFIG.mainPath, m = SFC.MainPath.nextMatch();
       const soloIdx = this.sel.ctrl ? this.sel.ctrl - 1 : C.roles.indexOf('FWD');
       const avatar = Object.assign(SFC.Profile.avatar(), { role: C.roles[soloIdx] }, this.avatarStats());

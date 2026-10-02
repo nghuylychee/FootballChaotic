@@ -93,6 +93,7 @@ window.SFC = window.SFC || {};
     avatars: [],        // canvas character đang hiện (vẽ lại mỗi khung hình để có chuyển động)
     quitAsk: false,     // trang chủ: đang hiện hộp "QUIT GAME?" (chỉ bản desktop)
     quitSel: 1,         // 0 = QUIT · 1 = CANCEL
+    wishSeen: false,    // bản DEMO: đã hiện màn WISHLIST sau khi hết Area đá được (mỗi lần chạy game hiện 1 lần khi mở Main Path)
 
     init(app) {
       this.app = app;
@@ -102,6 +103,10 @@ window.SFC = window.SFC || {};
     },
 
     go(page, msg = '', err = false) {
+      // bản DEMO: ONLINE khoá -> màn WISHLIST. Đã tới Area bị khoá: lần đầu mở Main Path mỗi lần chạy game cũng ra màn WISHLIST
+      if (SFC_DEMO && ['online', 'join', 'lobby'].includes(page)) page = 'wishlist';
+      if (page === 'path' && MPATH().demoOver() && !this.wishSeen) page = 'wishlist';
+      if (page === 'wishlist') this.wishSeen = MPATH().demoOver();
       // nhớ mục đang chọn của từng trang: quay lại trang cũ (Esc, hết trận...) con trỏ nằm đúng mục vừa rời đi
       if (page !== this.page) {
         this.resetArmed = false;   // RESET DATA: rời trang SETTINGS là huỷ xác nhận
@@ -134,7 +139,9 @@ window.SFC = window.SFC || {};
           // trang chủ: dòng phụ của mọi nút viết in hoa (kể cả dòng động: hạng Main Path, hộp miễn phí...)
           return [
             { kind: 'btn', label: 'MAIN PATH', sub: this.pathSub(), act: () => this.go('path') },
-            { kind: 'btn', label: 'ONLINE', sub: '2-4 players · versus or co-op', act: () => this.go('online') },
+            SFC_DEMO
+              ? { kind: 'btn', label: 'ONLINE', sub: 'FULL GAME ONLY', subHtml: `${PX().ui('lock', 'sm')} FULL GAME ONLY`, locked: true, act: () => this.go('wishlist') }
+              : { kind: 'btn', label: 'ONLINE', sub: '2-4 players · versus or co-op', act: () => this.go('online') },
             { kind: 'btn', label: 'CHARACTER', sub: this.drillCount() ? `★ ${this.drillCount()} READY!` : SFC.Mates.scoutReady() ? '★ SCOUT REPORT READY!' : 'STATS · TEAM · APPEARANCE · INVENTORY', hot: PF().drillsPending() > 0 || SFC.Mates.scoutReady(), act: () => this.go('char') },
             { kind: 'btn', label: 'SHOP', sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', label: 'SETTINGS', sub: 'Sound · display · controls', act: () => this.go('settings') },
@@ -159,6 +166,8 @@ window.SFC = window.SFC || {};
               { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drill cards · stats reset on close', danger: true, act: () => this.testDrill() },
               // màn LEVEL UP sau trận (thẻ drill vừa nhận) -> lật thẻ -> chọn, không cần đá trận
               { kind: 'btn', label: 'LEVEL UP TEST', sub: 'Cheat · level-up notice + 3 drill cards · stats reset on close', danger: true, act: () => this.testDrill(3, true) },
+              // xem thử bản DEMO itch.io (config/demo.config.js): khoá Area 3+ và ONLINE, đến khi tắt game
+              { kind: 'btn', label: 'DEMO MODE', sub: SFC_DEMO ? 'ON · itch.io gating · until restart' : 'OFF · preview itch.io gating', danger: true, act: () => { SFC_DEMO = !SFC_DEMO; this.wishSeen = false; this.render(); } },
             ];
           }
           return [];
@@ -203,14 +212,16 @@ window.SFC = window.SFC || {};
           // Main Path: không chọn đối thủ / độ khó — trận kế tiếp do Area + hạng quyết định
           const MP = MPATH(), st = MP.state, n = MP.areas().length, v = this.pathView;
           const boss = TEAMS().list[MP.area(st.area).boss];
-          const battle = MP.isPromo()
-            ? { label: MP.isFinal() ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH', sub: `vs ${boss.name}`, subHtml: `${PX().ui('crown', 'sm')} vs ${esc(boss.name)}` }
+          const battle = MP.demoOver()
+            ? { label: 'WISHLIST ON STEAM', sub: `AREA ${st.area + 1}+ is in the full game`, act: () => this.go('wishlist') }
+            : MP.isPromo()
+            ?{ label: MP.isFinal() ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH', sub: `vs ${boss.name}`, subHtml: `${PX().ui('crown', 'sm')} vs ${esc(boss.name)}` }
             : { label: 'BATTLE', sub: `${MP.divName(st.area, st.div)} · ${st.stars}/${MP.need(st.area, st.div)} ★` };
           return [
-            { kind: 'btn', label: battle.label, sub: battle.sub, subHtml: battle.subHtml, main: true, act: () => app.startMainPath() },
+            { kind: 'btn', label: battle.label, sub: battle.sub, subHtml: battle.subHtml, main: true, act: battle.act || (() => app.startMainPath()) },
             { kind: 'pick', label: 'POSITION', value: this.ctrlLabel(null, s.ctrl), change: (d) => this.changeCtrl(d) },
             { kind: 'pick', label: 'TEAMMATE', value: this.mateLabel(), change: (d) => this.changeMate(d) },
-            { kind: 'pick', label: 'VIEW AREA', value: `${v + 1}/${n} ${v > st.area ? '???' : MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
+            { kind: 'pick', label: 'VIEW AREA', value: `${v + 1}/${n} ${v > st.area || MP.demoLocked(v) ? '???' : MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
             { kind: 'btn', label: 'TRAINING', sub: 'No clock · pick team sizes', foot: true, act: () => this.go('training') },
           ];
         }
@@ -237,6 +248,13 @@ window.SFC = window.SFC || {};
           ];
         case 'join':
           return [{ kind: 'btn', label: 'CONNECT', main: true, act: () => this.submitCode() }];
+        case 'wishlist':
+          // bản DEMO: hết Area đá được / bấm ONLINE (khung bên phải: wishlistPanel)
+          return [
+            { kind: 'btn', label: 'WISHLIST ON STEAM', sub: 'Opens the Steam page', main: true, act: () => this.openSteam() },
+            { kind: 'btn', label: 'MAIN PATH', sub: 'See your progress', act: () => this.go('path') },
+            { kind: 'btn', label: 'BACK', sub: 'Main menu', act: () => this.go('home') },
+          ];
         case 'lobby': {
           const O = Online(), me = O.mine;
           const list = [];
@@ -303,7 +321,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'attrs' || this.page === 'look') return this.go('char');
       if (this.page === 'training') this.go('path');
       else if (['controls', 'display', 'test'].includes(this.page)) this.go('settings');
-      else if (['path', 'online', 'tutorial', 'char', 'settings'].includes(this.page)) this.go('home');
+      else if (['path', 'online', 'tutorial', 'char', 'settings', 'wishlist'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
       else if (this.page === 'lobby') Online().leave();
     },
@@ -321,7 +339,8 @@ window.SFC = window.SFC || {};
       // it.foot: mục nằm dưới đáy cột trái (ngay trên dòng gợi ý phím), thứ tự ↑↓ vẫn theo danh sách
       const list = items.map((it, i) => (it.foot ? '' : this.renderItem(it, i))).join('');
       const foot = items.map((it, i) => (it.foot ? this.renderItem(it, i) : '')).join('');
-      const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', display: 'SOUND & DISPLAY', test: 'TEST', online: 'ONLINE', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER', attrs: 'STATS', look: 'APPEARANCE' };
+      const titles = { path: 'MAIN PATH', training: 'TRAINING', settings: 'SETTINGS', display: 'SOUND & DISPLAY', test: 'TEST', online: 'ONLINE', join: 'JOIN ROOM', lobby: 'LOBBY', name: 'YOUR NAME', char: 'CHARACTER', attrs: 'STATS', look: 'APPEARANCE',
+        wishlist: MPATH().demoOver() ? 'DEMO COMPLETE' : 'FULL GAME' };
       const small = this.page !== 'home';
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       this.el.innerHTML = `
@@ -373,7 +392,8 @@ window.SFC = window.SFC || {};
     },
 
     renderItem(it, i) {
-      const cls = ['mi', it.kind, i === this.sel ? 'sel' : '', it.main ? 'main' : '', it.disabled ? 'dis' : '', it.hot ? 'hot' : '', it.danger ? 'danger' : ''].join(' ');
+      // it.locked: trông như bị khoá nhưng vẫn bấm được (bản DEMO: ONLINE -> màn WISHLIST)
+      const cls = ['mi', it.kind, i === this.sel ? 'sel' : '', it.main ? 'main' : '', it.disabled ? 'dis' : '', it.locked ? 'locked' : '', it.hot ? 'hot' : '', it.danger ? 'danger' : ''].join(' ');
       // dòng chỉ số (trang STATS, chỉ xem): tên · rating + thanh
       if (it.kind === 'attr') return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label><div class="st-val">${it.bar}</div></div>`;
       if (it.kind === 'pick') {
@@ -402,6 +422,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'look') return `<div class="char-stage"><canvas class="avatar big" data-avatar="spin"></canvas><div class="char-name">${esc(PF().data.name)}</div></div>`;
       if (this.page === 'attrs') return this.attrsPanel();
       if (this.page === 'path') return this.pathPanel();
+      if (this.page === 'wishlist') return this.wishlistPanel();
       if (this.page === 'training') return teamCard(o.order[s.team], '');
       if (this.page === 'lobby') {
         const O = Online(), n = O.lobby.members.length, max = SFC_CONFIG.net.maxPlayers;
@@ -490,6 +511,7 @@ window.SFC = window.SFC || {};
     // dòng phụ của nút MAIN PATH ở trang chủ: hạng + sao hiện tại
     pathSub() {
       const MP = MPATH(), st = MP.state;
+      if (MP.demoOver()) return 'DEMO COMPLETE · FULL GAME ON STEAM';
       if (MP.isPromo()) return `${MP.divName(st.area, st.div)} · ${MP.isFinal() ? 'FINAL' : 'PROMOTION'} ready!`;
       return `${MP.divName(st.area, st.div)} · ${st.stars}/${MP.need(st.area, st.div)} ★`;
     },
@@ -497,9 +519,9 @@ window.SFC = window.SFC || {};
     // thẻ Area kiểu Clash Royale: ảnh sân, các hạng + sao, đội đối thủ + boss, chấm chuyển Area
     pathPanel() {
       const MP = MPATH(), st = MP.state, v = this.pathView, A = MP.area(v), n = MP.nDiv();
-      // Area chưa mở: silhouette + ??? (tên, sân, đối thủ, boss, phần thưởng đều ẩn)
-      const locked = v > st.area, cleared = v < st.area;
-      const state = locked ? `${PX().ui('lock', 'sm')} LOCKED` : cleared ? `${PX().ui('check', 'sm')} CLEARED` : 'YOU ARE HERE';
+      // Area chưa mở: silhouette + ??? (tên, sân, đối thủ, boss, phần thưởng đều ẩn). Bản DEMO: Area bị khoá cũng vậy, kể cả Area đang đứng
+      const demo = MP.demoLocked(v), locked = v > st.area || demo, cleared = v < st.area;
+      const state = demo ? `${PX().ui('lock', 'sm')} FULL GAME` : locked ? `${PX().ui('lock', 'sm')} LOCKED` : cleared ? `${PX().ui('check', 'sm')} CLEARED` : 'YOU ARE HERE';
       const stars = (on, need) => Array.from({ length: need }, (_, i) => `<i class="${i < on ? 'on' : ''}">★</i>`).join('');
       const divs = [];
       for (let d = 0; d < n; d++) {
@@ -533,7 +555,7 @@ window.SFC = window.SFC || {};
       };
       // "con đường": 10 Area nối nhau, Area đang xem nổi lên, Area đang đá có cờ, chưa mở thì dạng bóng đen
       const dots = MP.areas().map((a, i) => {
-        const lk = i > st.area;
+        const lk = i > st.area || MP.demoLocked(i);
         return `<i class="${i === v ? 'sel' : ''} ${lk ? 'lock' : i < st.area ? 'done' : 'cur'}" style="--c:${lk ? '#5a4658' : a.color}" data-parea="${i}" title="${lk ? '???' : esc(a.name)}">${lk ? PX().ui('unknown') : PX().area(a.id)}</i>`;
       }).join('');
       const titles = last && st.titles && !locked ? ` · ${PX().ui('trophy', 'sm')} ×${st.titles}` : '';
@@ -542,7 +564,7 @@ window.SFC = window.SFC || {};
         <div class="ph"><span class="ph-num">AREA ${v + 1}</span><span class="ph-name">${locked ? PX().ui('unknown') : PX().area(A.id)} ${name}</span><span class="ph-state">${state}${titles}</span></div>
         <div class="ph-sub">${locked ? '???' : esc(A.sub)}${locked ? '' : this.areaCoreCount(v)}</div>
         <div class="ph-ovr">YOUR OVR <b>${PF().ovr()}</b> · AREA OVR <b>${locked ? '??' : this.areaOvr(A)}</b></div>
-        <div class="pa"><canvas data-arena="${v}" width="300" height="112"></canvas>${locked ? `<div class="pa-lock"><b>???</b>${PX().ui('lock', 'x2')}<span>Win the promotion match of the previous area</span></div>` : ''}</div>
+        <div class="pa"><canvas data-arena="${v}" width="300" height="112"></canvas>${locked ? `<div class="pa-lock"><b>???</b>${PX().ui('lock', 'x2')}<span>${demo ? 'Full game only · wishlist on Steam' : 'Win the promotion match of the previous area'}</span></div>` : ''}</div>
         <div class="pdivs">${divs.join('')}</div>
         <div class="popps">${A.teams.map((id) => teamChip(id, false)).join('')}${teamChip(A.boss, true)}</div>
         <div class="proad">${dots}</div>
@@ -565,8 +587,39 @@ window.SFC = window.SFC || {};
       const ctx = cv.getContext('2d');
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, 20, 22, 600, 224, 0, 0, cv.width, cv.height);
-      // Area chưa mở: phủ tối gần hết, chỉ còn lờ mờ đường nét sân
-      if (+cv.dataset.arena > MP.state.area) { ctx.fillStyle = 'rgba(7,5,10,0.86)'; ctx.fillRect(0, 0, cv.width, cv.height); }
+      // Area chưa mở (bản DEMO: cả Area bị khoá): phủ tối gần hết, chỉ còn lờ mờ đường nét sân. data-tease: màn WISHLIST, khoe sân
+      const a = +cv.dataset.arena;
+      if (!cv.dataset.tease && (a > MP.state.area || MP.demoLocked(a))) { ctx.fillStyle = 'rgba(7,5,10,0.86)'; ctx.fillRect(0, 0, cv.width, cv.height); }
+    },
+
+    /* ---------------- bản DEMO (itch.io) ---------------- */
+    // màn WISHLIST: khoe Area kế tiếp + phần còn lại của bản đầy đủ (số Area, Core, online)
+    wishlistPanel() {
+      const MP = MPATH(), D = SFC_CONFIG.demo, next = MP.area(D.areas), over = MP.demoOver();
+      const rest = MP.areas().slice(D.areas);
+      const cores = rest.reduce((n, a) => n + (a.cores || []).length + (a.signature ? 1 : 0), 0);
+      const boss = TEAMS().list[MP.area(D.areas - 1).boss];
+      return `<div class="path wish" style="--ac:${next.color}">
+        <div class="ph"><span class="ph-num">${over ? 'DEMO COMPLETE' : 'FULL GAME ONLY'}</span><span class="ph-state">ON STEAM</span></div>
+        <div class="wl-head">${over ? 'THANKS FOR PLAYING!' : 'ONLINE IS LOCKED'}</div>
+        <div class="ph-sub">${over ? `You beat ${esc(boss.name)}. The road goes on in the full game.` : 'Online versus & co-op come with the full game.'}</div>
+        <div class="pa"><canvas data-arena="${D.areas}" data-tease="1" width="300" height="112"></canvas>
+          <div class="wl-next"><span>NEXT · AREA ${D.areas + 1}</span><b>${PX().area(next.id)} ${esc(next.name)}</b></div></div>
+        <ul class="wl-list">
+          <li>${PX().ui('crown', 'sm')}<span><b>${rest.length} more Areas</b> up to the championship final</span></li>
+          <li>${PX().ui('card', 'sm')}<span><b>${cores} more Cores</b> to unlock</span></li>
+          <li>${PX().ui('fist', 'sm')}<span><b>Online</b> versus & co-op · 2-4 players</span></li>
+        </ul>
+        <div class="wl-cta">Wishlist now so Steam tells you the day it launches</div>
+      </div>`;
+    },
+
+    // trang Steam (config/demo.config.js): desktop mở bằng trình duyệt của máy (electron/preload.js), web mở tab mới
+    openSteam() {
+      const url = SFC_CONFIG.demo.steamUrl;
+      if (window.SFC_DESKTOP && window.SFC_DESKTOP.openUrl) window.SFC_DESKTOP.openUrl(url);
+      else window.open(url, '_blank', 'noopener');
+      this.setMsg('Steam page opened in your browser.');
     },
 
     /* ---------------- nhập liệu ---------------- */

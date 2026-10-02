@@ -3,7 +3,7 @@
  * SETTINGS > RESOLUTION (src/core/settings.js) gửi 'sfc-window' qua preload; vào / thoát toàn màn hình báo lại 'sfc-fullscreen'
  * Trang chủ: Esc -> QUIT GAME? -> 'sfc-quit'
  */
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -63,6 +63,11 @@ ipcMain.on('sfc-window', (e, mode) => {
 });
 
 ipcMain.on('sfc-quit', () => app.quit());
+
+// mở link ngoài game (bản DEMO: trang Steam) bằng trình duyệt của máy — chỉ https
+ipcMain.on('sfc-open-url', (e, url) => {
+  if (typeof url === 'string' && /^https:\/\//.test(url)) shell.openExternal(url);
+});
 
 // thư mục save (src/core/storage.js qua preload): %APPDATA%\Street Football Chaos\save — tên cố định, không theo productName,
 // đổi tên game cũng không mất save. Steam Auto-Cloud trỏ vào đây (docs/SAVE.md)

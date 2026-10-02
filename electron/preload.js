@@ -39,6 +39,8 @@ window.SFC_DESKTOP = {
   onFullscreen: (cb) => ipcRenderer.on('sfc-fullscreen', (e, full) => cb(full)),
   // thoát game (trang chủ: Esc -> QUIT GAME?)
   quit: () => ipcRenderer.send('sfc-quit'),
+  // mở link https bằng trình duyệt của máy (bản DEMO: trang Steam, src/ui/menu.js -> openSteam)
+  openUrl: (url) => ipcRenderer.send('sfc-open-url', url),
 };
 
 try {

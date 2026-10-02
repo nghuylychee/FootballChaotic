@@ -1115,6 +1115,18 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .rv3-frame i > span.pxi-fb { font-size: 34px; }
 .rv3-s-name { display: flex; align-items: center; gap: 6px; font-size: 25px; }
 
+/* ---------- bản DEMO (itch.io): nút khoá + màn WISHLIST (ui/menu.js -> wishlistPanel) ---------- */
+.mi.locked { opacity: 0.5; }
+.mi.locked .pxi { vertical-align: -1px; }
+.wl-head { font-family: var(--px); font-size: 11px; color: #fff; text-shadow: 1px 1px 0 var(--ink), 2px 2px 0 var(--ac); margin-top: 2px; }
+.wl-next { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 6px; padding: 10px 6px 4px; line-height: 1; background: linear-gradient(0deg, rgba(7,5,10,0.9), rgba(7,5,10,0)); }
+.wl-next span { font-family: var(--px); font-size: 5px; color: var(--ac); letter-spacing: 1px; }
+.wl-next b { font-family: var(--px); font-size: 8px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
+.wl-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.wl-list li { display: flex; align-items: center; gap: 5px; padding: 2px 5px; font-size: 13px; line-height: 1; color: #e6dccb; background: #1c1320; border: 1px solid var(--edge); }
+.wl-list b { font-weight: normal; color: var(--gold); }
+.wl-cta { font-size: 12px; line-height: 1; color: var(--muted); text-align: center; }
+
 /* ---------- MÀN DRILL (ui/drill.js, docs/DRILL_DESIGN.md): tường gạch phố + 3 poster dán băng keo, stencil trên vệt sơn ---------- */
 .drill { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(6,4,8,0.72); }
 /* gạch 12x6 + vữa 1px, cùng bảng màu tường gạch của sân (arenas.config.js -> wall brick) */

@@ -155,6 +155,10 @@ window.SFC = window.SFC || {};
     divName(a, d) { return `${this.area(a).name} ${this.divLabel(d)}`; },
     team(id) { return SFC_CONFIG.teams.list[id]; },
 
+    // bản DEMO (itch.io, config/demo.config.js): Area a có bị khoá không · đã tới Area bị khoá (hết demo) chưa
+    demoLocked(a) { return SFC_DEMO && a >= SFC_CONFIG.demo.areas; },
+    demoOver(st = this.state) { return this.demoLocked(st.area); },
+
     isPromo(st = this.state) { return st.div === this.nDiv() - 1 && st.stars >= this.need(st.area, st.div); },
     isFinal(st = this.state) { return this.isPromo(st) && st.area === this.areas().length - 1; },
 

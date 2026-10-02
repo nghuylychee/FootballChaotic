@@ -1,4 +1,5 @@
-/* Bản web (itch.io): chép các file game chạy cần vào dist/web, xoá code dev giống bản Steam (strip-dev.js), rồi nén ra
+/* Bản web (itch.io): chép các file game chạy cần vào dist/web, xoá code dev giống bản Steam (strip-dev.js), bật bản DEMO
+ * (SFC_DEMO, config/demo.config.js: khoá Area 3+ và ONLINE), rồi nén ra
  * dist/street-football-chaos-web.zip (index.html nằm ở gốc zip, đúng kiểu itch.io cần).
  * npm run itch-web
  * Không chép: electron/, node_modules/, src/dev/, sandbox.html, tools/, brag-output/, steam_appid.txt
@@ -23,7 +24,7 @@ const SKIP = [path.join('src', 'dev')];
       filter: (src) => !SKIP.includes(path.relative(ROOT, src)),
     });
   }
-  await strip(OUT);
+  await strip(OUT, { demo: true });
 
   // tar của Windows (bsdtar) nén được zip, đường dẫn trong zip dùng '/'
   const entries = fs.readdirSync(OUT);
