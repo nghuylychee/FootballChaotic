@@ -67,7 +67,8 @@ window.SFC = window.SFC || {};
         <div class="card-desc">${SFC.CoreScale.describe(id)}</div></div>`;
   }
 
-  function coin(n) { return `<span class="gold"><i class="coin"></i>${Number(n).toLocaleString('en-US')}</span>`; }
+  // số tiền viết theo ngôn ngữ đang chọn (1,200 / 1.200)
+  function coin(n) { return `<span class="gold"><i class="coin"></i>${SFC.I18n.num(n)}</span>`; }
 
   // thanh XP + level (trang chủ, nhân vật, shop, túi đồ)
   function xpBar(d) {
@@ -75,9 +76,9 @@ window.SFC = window.SFC || {};
     // chạm trần level theo Main Path (Profile.levelCap): thanh đầy, XP dư vẫn tích
     const capped = PF().levelCapped();
     const pct = need === Infinity || capped ? 100 : Math.round(Math.min(1, d.xp / need) * 100);
-    return `<div class="lvrow"><span class="lv">LV ${d.level}</span>
+    return `<div class="lvrow"><span class="lv">${SFC.t('LV {n}', { n: d.level })}</span>
       <div class="xpbar"><i style="width:${pct}%"></i></div>
-      <span class="xpnum">${need === Infinity ? 'MAX' : capped ? 'LV CAP' : `${Math.floor(d.xp)}/${need} XP`}</span></div>`;
+      <span class="xpnum">${need === Infinity ? SFC.t('MAX') : capped ? SFC.t('LV CAP') : `${Math.floor(d.xp)}/${need} XP`}</span></div>`;
   }
 
   // hộp gacha vẽ bằng CSS (thân + nắp + dải ruy băng + dấu ?)

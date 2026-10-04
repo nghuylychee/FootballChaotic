@@ -50,6 +50,11 @@ góc phải là thẻ hồ sơ (character, tên, level, thanh XP, gold, thống 
 Màn Hướng dẫn (`config/tutorial.config.js`) đã được gỡ khỏi trang chủ — code trang vẫn còn trong `src/ui/menu.js` nếu cần gắn lại chỗ khác.
 ↑↓ chọn · ←→ đổi · Enter · Esc/Backspace quay lại.
 
+## Ngôn ngữ
+English · Português (Brasil, popup ghi "Brasil") · Português (Bồ Đào Nha, popup ghi "Português") · Español. Lần đầu mở game hiện popup chọn ngôn ngữ (chọn sẵn theo Steam / hệ điều hành), đổi lại ở SETTINGS > LANGUAGE.
+Câu tiếng Anh là key (`SFC.t`), bản dịch ở `src/i18n/`, chữ trong config dịch theo `src/i18n/fields.js`. Kiểm tra bản dịch: `node scripts/i18n-check.js`.
+Bản dev: `index.html?lang=es` vào thẳng 1 ngôn ngữ · `?lang=pseudo` giả dịch để soi chữ sót / tràn. Chi tiết + quy trình dịch: [docs/LOCALIZATION.md](docs/LOCALIZATION.md).
+
 ## PROLOGUE (hướng dẫn người mới)
 Người chơi mới đặt tên xong → cut scene kiểu anime *"I have a dream... to be the GOAT of street football"* → **DREAM MATCH**:
 trận có kịch bản, không dừng trận để dạy, chỉ 1 hộp gợi ý nhỏ + ô kỹ năng nhấp nháy. Các bài: di chuyển → chuyền cho ACE → sút

@@ -51,7 +51,7 @@
         const st = SFC.Profile.data.stats;
         st.matches++; st.losses++;
         SFC.Profile.save();
-        msg = `Forfeit counts as a loss${r.delta ? ` (${r.delta} ★)` : ''}.`;
+        msg = r.delta ? SFC.t('Forfeit counts as a loss ({n} ★).', { n: r.delta }) : SFC.t('Forfeit counts as a loss.');
       }
       this.toMenu('path');
       if (msg) SFC.Menu.setMsg(msg, true);
@@ -103,21 +103,24 @@
       SFC.Input.textHandler = null;
       SFC.UI.hudCache = {};
       // Main Path: không cho đá lại trận đang thua — chỉ tiếp tục hoặc bỏ trận (tính thua)
-      SFC.UI.pauseItems = this.mode === 'online' ? [['resume', 'BACK TO MATCH'], ['leave', 'LEAVE ROOM']]
-        : opts.tutorial ? [['resume', 'RESUME'], ['skiptut', 'SKIP PROLOGUE']]
-        : opts.mainPath ? [['resume', 'RESUME'], ['forfeit', 'FORFEIT (LOSS)']]
-        : [['resume', 'RESUME'], ['restart', 'RESTART'], ['menu', 'MAIN MENU']];
+      // dịch lúc vào trận (đổi ngôn ngữ chỉ làm được ở menu)
+      const _t = SFC.t;
+      SFC.UI.pauseItems = this.mode === 'online' ? [['resume', _t('BACK TO MATCH')], ['leave', _t('LEAVE ROOM')]]
+        : opts.tutorial ? [['resume', _t('RESUME')], ['skiptut', _t('SKIP PROLOGUE')]]
+        : opts.mainPath ? [['resume', _t('RESUME')], ['forfeit', _t('FORFEIT (LOSS)')]]
+        : [['resume', _t('RESUME')], ['restart', _t('RESTART')], ['menu', _t('MAIN MENU')]];
       SFC.UI.clearToasts();
       SFC.UI.show(null);
       const L = SFC_CONFIG.teams.list, mp = opts.mainPath;
       const kickoff = () => {
+        const vsAway = _t('vs {team}', { team: L[opts.away].name });
         const vs = opts.training && opts.teamSize && !opts.teamSize[1]
-          ? `${L[opts.home].name} · no opponent`
-          : `${L[opts.home].name} vs ${L[opts.away].name}`;
-        if (opts.tutorial) SFC.UI.banner('THE DREAM', 'PROLOGUE', '#b9a8ff', 2);
-        else if (mp && mp.promo) SFC.UI.banner(mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH', `vs ${L[opts.away].name}`, '#ffd23f', 2.2);
-        else if (mp) SFC.UI.banner('KICK OFF', `${SFC.MainPath.divName(mp.area, mp.div)} · vs ${L[opts.away].name}`, '#ffe14f', 1.6);
-        else SFC.UI.banner(opts.training ? 'TRAINING' : 'KICK OFF', vs, '#ffe14f', 1.4);
+          ? _t('{team} · no opponent', { team: L[opts.home].name })
+          : _t('{home} vs {away}', { home: L[opts.home].name, away: L[opts.away].name });
+        if (opts.tutorial) SFC.UI.banner(_t('THE DREAM'), _t('PROLOGUE'), '#b9a8ff', 2);
+        else if (mp && mp.promo) SFC.UI.banner(mp.final ? _t('CHAMPIONSHIP FINAL') : _t('PROMOTION MATCH'), vsAway, '#ffd23f', 2.2);
+        else if (mp) SFC.UI.banner(_t('KICK OFF'), `${SFC.MainPath.divName(mp.area, mp.div)} · ${vsAway}`, '#ffe14f', 1.6);
+        else SFC.UI.banner(opts.training ? _t('TRAINING') : _t('KICK OFF'), vs, '#ffe14f', 1.4);
         SFC.Audio.upgrade();
       };
       // màn giới thiệu lực lượng 2 đội (config/intro.config.js): trận đứng yên tới khi xong, rồi mới chọn Core / giao bóng
@@ -185,6 +188,7 @@
   function refreshLabels() {
     const UI = SFC.UI, g = app.game;
     if (SFC.Drill.active) SFC.Drill.render();
+    if (SFC.LangPick.active) SFC.LangPick.update();
     if (app.screen === 'menu') return SFC.Menu.render();
     if (UI.current === 'pause') UI.renderPause();
     else if (UI.current === 'draft' && g) UI.renderDraft(g);
@@ -194,7 +198,7 @@
     if (Input.deviceRev !== deviceRev) { deviceRev = Input.deviceRev; refreshLabels(); }
     if (Input.wasPressed('mute') && !Input.textHandler) {
       const m = SFC.Audio.toggleMute();
-      if (app.screen !== 'menu') SFC.UI.banner(m ? 'MUTED' : 'SOUND ON', '', '#9aa3b5', 0.8);
+      if (app.screen !== 'menu') SFC.UI.banner(m ? SFC.t('MUTED') : SFC.t('SOUND ON'), '', '#9aa3b5', 0.8);
     }
 
     // cut scene PROLOGUE (src/ui/story.js)
@@ -205,8 +209,9 @@
       app.demo.events.length = 0;
       if (app.demo.state === 'ended') app.newDemo();
       SFC.Menu.animate(dt);
-      // màn DRILL mở trên menu (CHARACTER / STATS): nhận phím thay menu
-      if (SFC.Drill.active) SFC.Drill.update(dt, Input);
+      // popup chọn ngôn ngữ / màn DRILL mở trên menu (CHARACTER / STATS): nhận phím thay menu
+      if (SFC.LangPick.active) SFC.LangPick.input(Input);
+      else if (SFC.Drill.active) SFC.Drill.update(dt, Input);
       else SFC.Menu.input(Input);
       return;
     }
@@ -244,6 +249,7 @@
   }
 
   function boot() {
+    const langChosen = SFC.I18n.init();   // ngôn ngữ đã chọn / đoán theo máy -> dịch config trước khi vẽ bất cứ gì
     SFC.Profile.load();
     SFC.Settings.apply();   // âm lượng + cỡ cửa sổ đã lưu (SETTINGS)
     Input.init(SFC_CONFIG.controls.bindings);
@@ -252,12 +258,21 @@
     SFC.UI.init(app);
     SFC.Menu.init(app);
     SFC.UI.show('menu');
-    // lần đầu chơi: đặt tên cho character trước khi vào trang chủ -> PROLOGUE.
-    // Đã đặt tên nhưng chưa xem xong PROLOGUE (tắt giữa chừng) -> xem lại từ đầu
-    if (!SFC.Profile.hasName) SFC.Menu.go('name');
-    else if (SFC.Tutorial.wanted()) SFC.Tutorial.begin(app);
-    // hồ sơ đã xong PROLOGUE từ trước khi có bí kíp gia truyền: phát đoạn ông nội trao AURA FARMING 1 lần
-    else if (SFC.Tutorial.heirloomWanted()) SFC.Tutorial.playHeirloom(app);
+    const start = () => {
+      // lần đầu chơi: đặt tên cho character trước khi vào trang chủ -> PROLOGUE.
+      // Đã đặt tên nhưng chưa xem xong PROLOGUE (tắt giữa chừng) -> xem lại từ đầu
+      if (!SFC.Profile.hasName) SFC.Menu.go('name');
+      else if (SFC.Tutorial.wanted()) SFC.Tutorial.begin(app);
+      // hồ sơ đã xong PROLOGUE từ trước khi có bí kíp gia truyền: phát đoạn ông nội trao AURA FARMING 1 lần
+      else if (SFC.Tutorial.heirloomWanted()) SFC.Tutorial.playHeirloom(app);
+    };
+    // chưa chọn ngôn ngữ (lần đầu mở game, kể cả hồ sơ cũ từ trước khi có đa ngôn ngữ): popup chọn ngôn ngữ trước tiên,
+    // menu phía sau ẩn đi; chọn xong mới tới đặt tên / PROLOGUE
+    if (langChosen) start();
+    else {
+      SFC.Menu.el.classList.add('hidden');
+      SFC.LangPick.open({ first: true, done: () => { SFC.Menu.el.classList.remove('hidden'); SFC.Menu.render(); start(); } });
+    }
     fit();
     window.addEventListener('resize', fit);
 

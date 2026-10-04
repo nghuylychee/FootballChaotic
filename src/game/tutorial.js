@@ -147,7 +147,7 @@ window.SFC = window.SFC || {};
           if (this.mate && b.owner === this.mate && (this.passed || this.stepT > 0.1)) this.complete('shoot');
           break;
         case 'draft1':
-          if (g.state === 'kickoff') this.openDraft(CFG().match.draftCores, { title: 'CORE UPGRADE', note: CFG().draftNote }, 'core');
+          if (g.state === 'kickoff') this.openDraft(CFG().match.draftCores, { title: SFC.t('CORE UPGRADE'), note: CFG().draftNote }, 'core');
           break;
         case 'defend':
           if (b.owner === me) this.complete('attack');
@@ -256,7 +256,7 @@ window.SFC = window.SFC || {};
       const el = this.qteEl;
       if (!el) return;
       if (on) {
-        el.innerHTML = `<div class="qte-box"><div class="qte-ring"></div><kbd>${esc(SFC.Input.label('skill'))}</kbd><b>DODGE</b></div>`;
+        el.innerHTML = `<div class="qte-box"><div class="qte-ring"></div><kbd>${esc(SFC.Input.label('skill'))}</kbd><b>${esc(SFC.t('DODGE'))}</b></div>`;
         el.className = 'qte';
         SFC.Audio.whoosh();
       } else el.className = 'hidden';
@@ -314,7 +314,7 @@ window.SFC = window.SFC || {};
       const id = F.ultOf[arch] || Object.keys(L).find((k) => L[k].role === 'ult' && L[k].tags.includes(arch)) || 'meteor_strike';
       this.ultId = id;
       const A = SFC_CONFIG.cores.archetypes[arch];
-      this.openDraft([id], { title: 'ULTIMATE UNLOCKED', special: 'ult', note: CFG().ultNote.replace('{arch}', A ? A.label : arch) }, 'ultpick');
+      this.openDraft([id], { title: SFC.t('ULTIMATE UNLOCKED'), special: 'ult', note: CFG().ultNote.replace('{arch}', A ? A.label : arch) }, 'ultpick');
       SFC.Audio.reveal(4);
     },
 
@@ -380,11 +380,11 @@ window.SFC = window.SFC || {};
       const I = SFC.Input, pad = I.device === 'pad';
       const cap = (a) => {
         if (a !== 'move') return `<kbd data-a="${a}">${esc(I.label(a))}</kbd>`;
-        if (pad) return '<kbd data-a="move">L-STICK</kbd>';
+        if (pad) return `<kbd data-a="move">${esc(SFC.t('L-STICK'))}</kbd>`;
         return `<span class="pr-arrows"><kbd data-a="up">↑</kbd><kbd data-a="left">←</kbd><kbd data-a="down">↓</kbd><kbd data-a="right">→</kbd></span>`;
       };
       el.innerHTML = `<div class="pr-box ${S.gold ? 'gold' : ''}">${S.prompts.map(([a, label, hold]) =>
-        `<div class="pr-item">${hold ? '<i>HOLD</i>' : ''}${cap(a)}<b>${esc(label)}</b></div>`).join('')}</div>`;
+        `<div class="pr-item">${hold ? `<i>${esc(SFC.tc('button', 'HOLD'))}</i>` : ''}${cap(a)}<b>${esc(label)}</b></div>`).join('')}</div>`;
     },
     updatePrompt(g, input) {
       const el = this.promptEl;
@@ -418,7 +418,7 @@ window.SFC = window.SFC || {};
         ? `<div class="co-bar" style="--u:${this.ultLast.toFixed(2)}"><i></i><em>${Math.round(this.ultLast * 100)}%</em></div>
            <div class="co-src">${CFG().ultCharge.sources.slice(0, 3).map(([k, l]) => `<span data-s="${k}">${l}</span>`).join('')}</div>`
         : S.text ? `<div class="co-x">${esc(S.text)}</div>` : '';
-      el.innerHTML = `<div class="co-t">${S.charge && this.ultId ? SFC.PixelIcon.core(this.ultId, 'sm') + ' ' : ''}${esc(S.title)}</div>${body}<div class="co-ok">NICE!</div>`;
+      el.innerHTML = `<div class="co-t">${S.charge && this.ultId ? SFC.PixelIcon.core(this.ultId, 'sm') + ' ' : ''}${esc(S.title)}</div>${body}<div class="co-ok">${esc(SFC.t('NICE!'))}</div>`;
       el.className = 'coach' + (this.step === 'ult' || S.charge ? ' ult' : '') + (this.step === 'final' ? ' final' : '');
       void el.offsetWidth;
       el.classList.add('in');
@@ -448,7 +448,7 @@ window.SFC = window.SFC || {};
     onEnd(g) {
       if (g !== this.g) return;
       const t0 = g.teams[0], t1 = g.teams[1];
-      SFC.UI.banner('FULL TIME', `${t0.score} - ${t1.score} · what a dream...`, '#b9a8ff', 2.4);
+      SFC.UI.banner(SFC.t('FULL TIME'), SFC.t('{home} - {away} · what a dream...', { home: t0.score, away: t1.score }), '#b9a8ff', 2.4);
       this.markDone();
       setTimeout(() => {
         if (this.app.game !== g) return;

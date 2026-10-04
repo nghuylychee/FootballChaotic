@@ -14,9 +14,9 @@ window.SFC = window.SFC || {};
 (function () {
   const SP = () => SFC.Sprites;
   const W = 640, H = 360;
-  const ascii = (s) => /^[\x00-\x7F]*$/.test(s);
-  // chữ có dấu tiếng Việt -> VT323 (Press Start 2P không có dấu)
-  const font = (s, px) => (ascii(s) ? `${Math.round(px * 0.55)}px "Press Start 2P", monospace` : `${px}px "VT323", monospace`);
+  // Press Start 2P (assets/fonts) có Latin-1: chữ có dấu kiểu á ç ñ ¡ vẫn dùng được; ngoài khoảng đó (dấu tiếng Việt...) -> VT323
+  const latin1 = (s) => /^[\x00-\xFF]*$/.test(s);
+  const font = (s, px) => (latin1(s) ? `${Math.round(px * 0.55)}px ${SFC.I18n.pxFont()}` : `${px}px "VT323", monospace`);
 
   // random có hạt giống (vết nứt giữ nguyên hình dạng qua các khung hình)
   function rng(seed) {
@@ -634,8 +634,9 @@ window.SFC = window.SFC || {};
         ctx.save();
         ctx.translate(Math.round(c.x), Math.round(c.y)); ctx.rotate(c.rot); ctx.scale(pop, pop);
         ctx.globalAlpha = Math.min(1, (c.t / c.max) * 3);
-        outlinedText(ctx, c.str, 1, 1, 18 * c.size, '#140c16', '#140c16', 4);
-        outlinedText(ctx, c.str, 0, 0, 18 * c.size, c.color, '#140c16', 4);
+        const str = SFC.t(c.str);   // dịch lúc vẽ (tiếng tượng thanh BOOM / POW giữ nguyên trong bản dịch)
+        outlinedText(ctx, str, 1, 1, 18 * c.size, '#140c16', '#140c16', 4);
+        outlinedText(ctx, str, 0, 0, 18 * c.size, c.color, '#140c16', 4);
         ctx.restore();
       }
       ctx.globalAlpha = 1;
@@ -707,8 +708,9 @@ window.SFC = window.SFC || {};
         ctx.translate(x, 70); ctx.rotate(-0.12);
         ctx.fillStyle = 'rgba(20,12,22,0.85)'; ctx.fillRect(-230, -22, 460, 44);
         ctx.fillStyle = c.color; ctx.fillRect(-230, -22, 460, 3); ctx.fillRect(-230, 19, 460, 3);
-        outlinedText(ctx, c.str, 3, 3, 40, '#140c16', '#140c16', 5);
-        outlinedText(ctx, c.str, 0, 0, 40, c.color, '#140c16', 5);
+        const str = SFC.t(c.str);
+        outlinedText(ctx, str, 3, 3, 40, '#140c16', '#140c16', 5);
+        outlinedText(ctx, str, 0, 0, 40, c.color, '#140c16', 5);
         ctx.restore();
       }
       if (O.impact > 0) this.impactOverlay(ctx);

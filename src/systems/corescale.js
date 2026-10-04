@@ -28,11 +28,11 @@ window.SFC = window.SFC || {};
     return v;
   }
 
-  // số hiển thị: >= 10 làm tròn số nguyên, >= 1 một chữ số thập phân, < 1 hai chữ số
+  // số hiển thị: >= 10 làm tròn số nguyên, >= 1 một chữ số thập phân, < 1 hai chữ số · dấu thập phân theo ngôn ngữ (0.5 / 0,5)
   function fmt(v) {
     const a = Math.abs(v);
     const n = a >= 10 ? Math.round(v) : a >= 1 ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100;
-    return String(n);
+    return SFC.I18n ? SFC.I18n.num(n) : String(n);
   }
 
   const CoreScale = {
@@ -81,7 +81,7 @@ window.SFC = window.SFC || {};
 
     // nhãn chỉ số của Core: "FIGHT" · "PACE / DRIBBLE" · "OVR"
     label(id) {
-      return this.statsOf(id).map((st) => (st === 'ovr' ? 'OVR' : (ATTR().list[st] || {}).label || st.toUpperCase())).join(' / ');
+      return this.statsOf(id).map((st) => (st === 'ovr' ? SFC.t('OVR') : (ATTR().list[st] || {}).label || st.toUpperCase())).join(' / ');
     },
     color(id) {
       const st = this.statsOf(id)[0];
@@ -93,7 +93,7 @@ window.SFC = window.SFC || {};
       const stats = this.statsOf(id), sc = (DEF().list[id] || {}).scale;
       if (!stats.length || !sc || !Object.keys(sc).length) return '';   // Core không có số nào scale (Warp Walls)
       const icons = stats.map((st) => (st !== 'ovr' && ATTR().list[st] && ATTR().list[st].icon && SFC.PixelIcon ? SFC.PixelIcon.html(ATTR().list[st].icon, '', 'sm') : '')).join('');
-      return `<div class="card-stat" style="--sc:${this.color(id)}">${icons}<span>SCALES WITH</span> <b>${esc(this.label(id))}</b></div>`;
+      return `<div class="card-stat" style="--sc:${this.color(id)}">${icons}<span>${esc(SFC.t('SCALES WITH'))}</span> <b>${esc(this.label(id))}</b></div>`;
     },
 
     // mô tả Core (HTML) với số đã nhân theo rating r (mặc định: rating character), tô xanh / đỏ khi hơn / kém mức gốc
@@ -111,11 +111,13 @@ window.SFC = window.SFC || {};
         return sc[key] && diff ? `<b class="sv ${diff}">${shown}</b>` : `<b class="sv">${shown}</b>`;
       });
     },
-    // chữ tài nguyên (Momentum / Rhythm / Rage / Guard) -> icon pixel như trên HUD (chỉ trong HTML, tooltip vẫn giữ chữ)
+    // chữ tài nguyên (Momentum / Rhythm / Rage / Guard, đã dịch theo ngôn ngữ đang chọn) -> icon pixel như trên HUD
+    // (chỉ trong HTML, tooltip vẫn giữ chữ). Ranh giới từ theo Unicode: \b của regex không nhận chữ có dấu (Ímpeto, Fúria)
     iconize(html) {
       const R = DEF().resources, map = {};
       for (const k in R) map[R[k].label] = k;
-      const re = new RegExp('\\b(' + Object.keys(map).join('|') + ')\\b', 'g');
+      const words = Object.keys(map).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      const re = new RegExp('(?<![\\p{L}\\p{N}_])(' + words.join('|') + ')(?![\\p{L}\\p{N}_])', 'gu');
       return html.replace(re, (w) => (SFC.PixelIcon ? SFC.PixelIcon.res(map[w], 'res-in') : w));
     },
     // mô tả dạng chữ thường (tooltip, tìm kiếm): bỏ thẻ HTML

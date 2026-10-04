@@ -7,7 +7,7 @@ window.SFC = window.SFC || {};
 (function () {
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const CFG = () => SFC_CONFIG.controls;
-  const VIEWS = [['kb', 'KEYBOARD'], ['xbox', 'XBOX'], ['ps', 'PLAYSTATION']];
+  const VIEWS = [['kb', 'KEYBOARD'], ['xbox', 'XBOX'], ['ps', 'PLAYSTATION']];   // tên tab: KEYBOARD dịch lúc vẽ, tên hãng giữ nguyên
   const DIRS = ['up', 'down', 'left', 'right'];
   const wrap = (v, n) => ((v % n) + n) % n;
 
@@ -80,8 +80,8 @@ window.SFC = window.SFC || {};
       const two = atk && def;
       const text = [
         // nút 2 công dụng: ATK (đỏ) / DEF (xanh) mỗi dòng một; chỉ tấn công: chữ trắng không nhãn; chỉ phòng ngự: DEF (xanh)
-        atk ? `<text class="cv-atk${two ? ' both' : ''}" x="${tx}" y="${two ? y - 1 : y + 4}" text-anchor="${anchor}">${two ? '<tspan class="cv-tag">ATK </tspan>' : ''}${esc(atk)}</text>` : '',
-        def ? `<text class="cv-def" x="${tx}" y="${two ? y + 10 : y + 4}" text-anchor="${anchor}"><tspan class="cv-tag">DEF </tspan>${esc(def)}</text>` : '',
+        atk ? `<text class="cv-atk${two ? ' both' : ''}" x="${tx}" y="${two ? y - 1 : y + 4}" text-anchor="${anchor}">${two ? `<tspan class="cv-tag">${esc(SFC.t('ATK'))} </tspan>` : ''}${esc(atk)}</text>` : '',
+        def ? `<text class="cv-def" x="${tx}" y="${two ? y + 10 : y + 4}" text-anchor="${anchor}"><tspan class="cv-tag">${esc(SFC.t('DEF'))} </tspan>${esc(def)}</text>` : '',
       ].join('');
       labels.push(`<g class="cv-label"><rect class="cv-chip" x="${cx}" y="${y - 7}" width="${cw}" height="14" rx="2"${fill ? ` style="stroke:${fill}"` : ''}/>
         <text class="cv-chip-t${sym ? ' sym' : ''}" x="${cx + cw / 2}" y="${y + (sym ? 4 : 3)}" text-anchor="middle"${fill ? ` style="fill:${fill}"` : ''}>${esc(chip)}</text>${text}</g>`);
@@ -184,7 +184,8 @@ window.SFC = window.SFC || {};
       const keys = a === 'move' ? `<kbd>${DIRS.map((d) => esc(kbName(kbCodes(d)[0] || ''))).join('')}</kbd>` : kbKeys(a);
       if (a !== 'move' && !kbCodes(a).length) return '';
       const { atk, def } = legendLines([a]);
-      return `<div class="kl"><span class="kl-k">${keys}</span><span class="kl-t">${atk ? (def ? `<b class="both"><em>ATK</em> ${esc(atk)}</b>` : `<b>${esc(atk)}</b>`) : ''}${def ? `<i><em>DEF</em> ${esc(def)}</i>` : ''}</span></div>`;
+      const ATK = esc(SFC.t('ATK')), DEF = esc(SFC.t('DEF'));
+      return `<div class="kl"><span class="kl-k">${keys}</span><span class="kl-t">${atk ? (def ? `<b class="both"><em>${ATK}</em> ${esc(atk)}</b>` : `<b>${esc(atk)}</b>`) : ''}${def ? `<i><em>${DEF}</em> ${esc(def)}</i>` : ''}</span></div>`;
     }).join('');
   }
 
@@ -196,27 +197,29 @@ window.SFC = window.SFC || {};
     open() { this.view = SFC.Input.device === 'pad' ? SFC.Pad.style : 'kb'; },
 
     render() {
-      const tabs = VIEWS.map(([id, name]) => `<button class="tab ${id === this.view ? 'sel' : ''}" data-ctab="${id}">${name}</button>`).join('');
+      const _t = SFC.t;
+      const tabs = VIEWS.map(([id, name]) => `<button class="tab ${id === this.view ? 'sel' : ''}" data-ctab="${id}">${id === 'kb' ? esc(_t('KEYBOARD')) : name}</button>`).join('');
       let body;
       if (this.view === 'kb') {
         body = `${kbSvg()}
-          <div class="kv-key"><span class="play">In match</span><span class="sys">Menus &amp; system</span></div>
+          <div class="kv-key"><span class="play">${esc(_t('In match'))}</span><span class="sys">${esc(_t('Menus & system'))}</span></div>
           <div class="kv-legend">${kbLegend()}
-            <div class="kl"><span class="kl-k">${kbKeys('pass', 1)}${kbKeys('through', 1)}${kbKeys('lob', 1)}</span><span class="kl-t"><b>Teammate on the ball:</b><b>call for a pass</b></span></div></div>
-          <div class="cv-note">Menus: ${kbKeys('confirm')} confirm · ${kbKeys('pause', 1)}${kbKeys('back', 1)} back · ${kbKeys('pick1', 1)}${kbKeys('pick2', 1)}${kbKeys('pick3', 1)} pick Core · ${kbKeys('reroll')} reroll 3 Cores</div>`;
+            <div class="kl"><span class="kl-k">${kbKeys('pass', 1)}${kbKeys('through', 1)}${kbKeys('lob', 1)}</span><span class="kl-t"><b>${esc(_t('Teammate on the ball:'))}</b><b>${esc(_t('call for a pass'))}</b></span></div></div>
+          <div class="cv-note">${_t('Menus: {confirm} confirm · {back} back · {pick} pick Core · {reroll} reroll 3 Cores', {
+            confirm: kbKeys('confirm'), back: kbKeys('pause', 1) + kbKeys('back', 1), pick: kbKeys('pick1', 1) + kbKeys('pick2', 1) + kbKeys('pick3', 1), reroll: kbKeys('reroll') })}</div>`;
       } else {
         const lb = (a) => {
           const c = (CFG().bindings[a] || []).find((x) => x.startsWith('Pad.'));
-          return c ? esc(SFC.Pad.label(c, this.view)) : '?';
+          return `<kbd>${c ? esc(SFC.Pad.label(c, this.view)) : '?'}</kbd>`;
         };
         body = `${padSvg(this.view)}
-          <div class="cv-note">Menus: D-pad / stick to move · <kbd>${lb('confirm')}</kbd> confirm · <kbd>${lb('back')}</kbd> back ·
-            Teammate on the ball: <kbd>${lb('pass')}</kbd> <kbd>${lb('through')}</kbd> <kbd>${lb('lob')}</kbd> call for a pass</div>`;
+          <div class="cv-note">${_t('Menus: D-pad / stick to move · {confirm} confirm · {back} back · Teammate on the ball: {call} call for a pass', {
+            confirm: lb('confirm'), back: lb('back'), call: `${lb('pass')} ${lb('through')} ${lb('lob')}` })}</div>`;
       }
       return `
-        <div class="tut-head"><div class="m-title">CONTROLS</div><div class="tabs">${tabs}</div></div>
+        <div class="tut-head"><div class="m-title">${esc(_t('CONTROLS'))}</div><div class="tabs">${tabs}</div></div>
         <div class="tut-body ctl-body">${body}</div>
-        <div class="m-hint">←→ switch view · ${SFC.Input.key('back', 'Esc')} back</div>`;
+        <div class="m-hint">${_t('←→ switch view · {back} back', { back: SFC.Input.key('back', 'Esc') })}</div>`;
     },
 
     input(menu, input) {

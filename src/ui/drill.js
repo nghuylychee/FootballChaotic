@@ -19,6 +19,8 @@ window.SFC = window.SFC || {};
 
 (function () {
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const _t = SFC.t, _tn = SFC.tn;   // dịch theo ngôn ngữ đang chọn (core/i18n.js)
+  const lvl = () => _t('LV {n}', { n: PF().data.level });
   const A = () => SFC_CONFIG.progression.attrs;
   const PF = () => SFC.Profile;
   const K = (action, kb) => SFC.Input.key(action, kb);
@@ -32,7 +34,6 @@ window.SFC = window.SFC || {};
   const CONE = '#6bff4f';   // màu thẻ DRILL (cọc xanh lá, pixelicons.js -> ui-cone)
   const FAN_MAX = 5;        // màn LEVEL UP: vẽ tối đa ngần này lá úp, nhiều hơn thì ghi ×n
   const pct = (r) => ((r - A().base) / (A().max - A().base)) * 100;
-  const plural = (n, w) => `${n} ${w}${n > 1 ? 'S' : ''}`;
 
   const Drill = {
     active: false,
@@ -119,16 +120,16 @@ window.SFC = window.SFC || {};
       const fly = this.fromCard;
       this.fromCard = false;
       const pad = SFC.Input.device === 'pad';
-      const pick = pad ? `←→ + ${esc(K('confirm', 'Enter'))} pick` : '1 / 2 / 3 or ←→ + Enter pick';
+      const pick = pad ? _t('←→ + {key} pick', { key: esc(K('confirm', 'Enter')) }) : _t('1 / 2 / 3 or ←→ + Enter pick');
       this.el.innerHTML = `<div class="drill">
         <div class="dr-wall">${this.tags()}
-          <div class="dr-head"><b class="dr-title">DRILL</b><span class="dr-label">LV ${PF().data.level} · PICK 1 OF ${offer.length}</span><em class="dr-left">${n}<small>${n > 1 ? 'CARDS' : 'CARD'}</small></em></div>
+          <div class="dr-head"><b class="dr-title">${esc(_t('DRILL'))}</b><span class="dr-label">${esc(_t('LV {lv} · PICK 1 OF {n}', { lv: PF().data.level, n: offer.length }))}</span><em class="dr-left">${n}<small>${esc(_tn('CARD', 'CARDS', n))}</small></em></div>
           <div class="dr-body">${this.you(offer[this.sel])}<div class="dr-tiles ${fly ? 'fly' : ''}">${tiles}</div></div>
           <div class="dr-curb">
             <div class="dr-foot">
               <span class="dr-hint">${pick}</span>
-              <button class="dr-btn roll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(K('reroll', 'R'))}</kbd> REROLL (${left})</button>
-              <button class="dr-btn" data-act="later"><kbd>${esc(K('back', 'Esc'))}</kbd> LATER</button>
+              <button class="dr-btn roll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(K('reroll', 'R'))}</kbd> ${esc(_t('REROLL ({n})', { n: left }))}</button>
+              <button class="dr-btn" data-act="later"><kbd>${esc(K('back', 'Esc'))}</kbd> ${esc(_t('LATER'))}</button>
             </div>
           </div>
         </div>
@@ -142,23 +143,23 @@ window.SFC = window.SFC || {};
       const m = Math.min(earned, FAN_MAX);
       const fan = Array.from({ length: m }, (_, i) => `<i class="dr-mini" style="--k:${(i - (m - 1) / 2).toFixed(1)};--d:${(0.15 + i * 0.07).toFixed(2)}s">${SFC.PixelIcon.ui('cone', 'x2')}</i>`).join('');
       const ok = esc(K('confirm', 'Enter')), later = esc(K('back', 'Esc'));
-      const lv = nt.to > nt.from ? `LV ${nt.from} → LV ${nt.to}` : `LV ${PF().data.level}`;
+      const lv = nt.to > nt.from ? _t('LV {from} → LV {to}', { from: nt.from, to: nt.to }) : lvl();
       this.el.innerHTML = `<div class="drill">
         <div class="dr-wall">${this.tags()}
           <div class="dr-notice" style="--pc:${CONE}">
-            <div class="dr-up-head"><span class="dr-label">${lv}</span><b class="dr-up-title">LEVEL UP!</b></div>
+            <div class="dr-up-head"><span class="dr-label">${esc(lv)}</span><b class="dr-up-title">${esc(_t('LEVEL UP!'))}</b></div>
             <div class="dr-nstage">
               <div class="dr-fan">${fan}${earned > FAN_MAX ? `<em class="dr-fan-n">×${earned}</em>` : ''}</div>
               <div class="dr-ninfo">
-                <div class="dr-nget">+${plural(earned, 'DRILL CARD')}</div>
-                <p>Open a card to pick 1 of ${A().drills.choices} drills. Each pick raises your stats for good.</p>
-                <div class="dr-nown">You have ${plural(n, 'card').toLowerCase()} · they wait in your INVENTORY</div>
+                <div class="dr-nget">${esc(_tn('+{n} DRILL CARD', '+{n} DRILL CARDS', earned))}</div>
+                <p>${esc(_t('Open a card to pick 1 of {n} drills. Each pick raises your stats for good.', { n: A().drills.choices }))}</p>
+                <div class="dr-nown">${esc(_tn('You have {n} card · it waits in your INVENTORY', 'You have {n} cards · they wait in your INVENTORY', n))}</div>
               </div>
             </div>
             <div class="dr-curb"><div class="dr-foot">
-              <span class="dr-hint">${esc(PF().data.name || 'PLAYER')} · LV ${PF().data.level}</span>
-              <button class="dr-btn roll" data-act="open"><kbd>${ok}</kbd> OPEN NOW</button>
-              <button class="dr-btn" data-act="later"><kbd>${later}</kbd> LATER</button>
+              <span class="dr-hint">${esc(PF().data.name || 'PLAYER')} · ${esc(lvl())}</span>
+              <button class="dr-btn roll" data-act="open"><kbd>${ok}</kbd> ${esc(_t('OPEN NOW'))}</button>
+              <button class="dr-btn" data-act="later"><kbd>${later}</kbd> ${esc(_t('LATER'))}</button>
             </div></div>
           </div>
         </div>
@@ -192,12 +193,12 @@ window.SFC = window.SFC || {};
       // data-phase gắn trên .dr-opening (gốc lớp phủ): CSS điều khiển cả lá lẫn dòng gợi ý ở vỉa hè
       this.el.innerHTML = `<div class="drill dr-opening" style="--rc:${CONE}">
         <div class="dr-wall">${this.tags()}
-          <div class="dr-head"><b class="dr-title">DRILL</b><span class="dr-label">LV ${PF().data.level} · OPEN A CARD</span><em class="dr-left">${n}<small>${n > 1 ? 'CARDS' : 'CARD'}</small></em></div>
+          <div class="dr-head"><b class="dr-title">${esc(_t('DRILL'))}</b><span class="dr-label">${esc(_t('LV {lv} · OPEN A CARD', { lv: PF().data.level }))}</span><em class="dr-left">${n}<small>${esc(_tn('CARD', 'CARDS', n))}</small></em></div>
           <div class="dr-cstage">
             <div class="dr-cwrap">
               <div class="rv3-rays"></div><div class="rv3-glow"></div>
               <div class="dr-cshake"><div class="dr-card">
-                <div class="dr-cface dr-cback"><div class="rv3-back"><div class="rv3-frame"><i><span>${SFC.PixelIcon.ui('cone', 'x3')}</span></i><b>DRILL<br>CARD</b><span>PICK 1 OF ${offer.length}</span></div></div></div>
+                <div class="dr-cface dr-cback"><div class="rv3-back"><div class="rv3-frame"><i><span>${SFC.PixelIcon.ui('cone', 'x3')}</span></i><b>${_t('DRILL<br>CARD')}</b><span>${esc(_t('PICK 1 OF {n}', { n: offer.length }))}</span></div></div></div>
                 <div class="dr-cface dr-cfront">${strips}</div>
               </div></div>
               <div class="rv3-parts"></div>
@@ -205,9 +206,9 @@ window.SFC = window.SFC || {};
             <div class="dr-flash"></div>
           </div>
           <div class="dr-curb"><div class="dr-foot">
-            <span class="dr-hint">${esc(PF().data.name || 'PLAYER')} · LV ${PF().data.level}</span>
-            <span class="dr-up-go dr-cgo"><kbd>${ok}</kbd> FLIP</span>
-            <button class="dr-btn" data-act="later"><kbd>${later}</kbd> LATER</button>
+            <span class="dr-hint">${esc(PF().data.name || 'PLAYER')} · ${esc(lvl())}</span>
+            <span class="dr-up-go dr-cgo"><kbd>${ok}</kbd> ${esc(_t('FLIP'))}</span>
+            <button class="dr-btn" data-act="later"><kbd>${later}</kbd> ${esc(_t('LATER'))}</button>
           </div></div>
         </div>
       </div>`;
@@ -285,10 +286,10 @@ window.SFC = window.SFC || {};
       const rows = keys.map((k) => {
         const r0 = pf.rating(k), r1 = pf.rating(k, gains);
         const w0 = pct(r0), w1 = pct(r1);
-        return `<div class="dr-gain"><span>${A().list[k].short}</span><b>${r0}</b><em>${r1 > r0 ? `→ ${r1}` : 'MAX'}</em>
+        return `<div class="dr-gain"><span>${A().list[k].short}</span><b>${r0}</b><em>${r1 > r0 ? `→ ${r1}` : esc(_t('MAX'))}</em>
           <i class="dr-bar"><b style="width:${w0.toFixed(1)}%"></b><u style="left:${w0.toFixed(1)}%;width:${(w1 - w0).toFixed(1)}%"></u></i></div>`;
       }).join('');
-      const tags = L.kind === 'all' ? 'ALL STATS' : keys.map((k) => A().list[k].short).join(' · ');
+      const tags = L.kind === 'all' ? esc(_t('ALL STATS')) : keys.map((k) => A().list[k].short).join(' · ');
       return `<div class="dr-tile ${L.kind} ${i === this.sel ? 'sel' : ''}" data-drill="${i}" style="--d:${(i * 0.07).toFixed(2)}s;--pc:${color}">
         <div class="dr-paper">
           <div class="dr-top"><span class="dr-key">${i + 1}</span><span class="dr-tags">${tags}</span></div>
@@ -298,7 +299,7 @@ window.SFC = window.SFC || {};
           <p class="dr-desc">${esc(L.desc)}</p>
         </div>
         <i class="dr-tape l"></i><i class="dr-tape r"></i>
-        <div class="dr-stamp">DONE!</div>
+        <div class="dr-stamp">${esc(_t('DONE!'))}</div>
       </div>`;
     },
 
@@ -309,7 +310,7 @@ window.SFC = window.SFC || {};
       for (const k of A().order) now[k] = pf.rating(k);
       return `<div class="dr-you dr-pw" style="--pc:${id ? this.paint(id).color : '#ffe14f'}">
         <div class="dr-you-av"><i class="dr-splat"></i><canvas class="dr-av" width="40" height="44"></canvas><div class="rv3-parts"></div></div>
-        <div class="dr-you-name">${esc(pf.data.name || 'PLAYER')} <small>LV ${pf.data.level}</small></div>
+        <div class="dr-you-name">${esc(pf.data.name || 'PLAYER')} <small>${esc(lvl())}</small></div>
         <div class="dr-sheet">${this.sheet(now, gains, pf.ovr(), pf.ovr(gains))}</div>
         <div class="dr-flash"></div>
       </div>`;
@@ -322,7 +323,7 @@ window.SFC = window.SFC || {};
         return `<div class="dr-row ${g ? 'up' : ''}" data-k="${k}" style="--c:${S.color}"><span>${S.short}</span><b>${vals[k]}</b>
           <i class="dr-rbar"><b style="width:${w0.toFixed(1)}%"></b><u style="left:${w0.toFixed(1)}%;width:${(w1 - w0).toFixed(1)}%"></u></i><em>${g ? `+${g}` : ''}</em></div>`;
       }).join('');
-      return `<div class="dr-ob"><small>OVR</small><b>${o0}</b>${o1 !== o0 ? `<em>→ ${o1}</em>` : ''}</div>${rows}`;
+      return `<div class="dr-ob"><small>${esc(_t('OVR'))}</small><b>${o0}</b>${o1 !== o0 ? `<em>→ ${o1}</em>` : ''}</div>${rows}`;
     },
 
     // đổi ô đang chọn: không vẽ lại cả màn (giữ animation vào của các ô), chỉ phần xem trước trên bảng YOU
@@ -430,7 +431,7 @@ window.SFC = window.SFC || {};
     renderUp(done) {
       const u = this.up, L = A().drills.list[u.id], { color } = this.paint(u.id);
       const n = PF().drillsPending(), ok = esc(K('confirm', 'Enter'));
-      const go = n > 0 ? `<kbd>${ok}</kbd> NEXT CARD (${n} LEFT) · <kbd>${esc(K('back', 'Esc'))}</kbd> LATER` : `<kbd>${ok}</kbd> CONTINUE`;
+      const go = n > 0 ? `<kbd>${ok}</kbd> ${esc(_tn('NEXT CARD ({n} LEFT)', 'NEXT CARD ({n} LEFT)', n))} · <kbd>${esc(K('back', 'Esc'))}</kbd> ${esc(_t('LATER'))}` : `<kbd>${ok}</kbd> ${esc(_t('CONTINUE'))}`;
       if (done) for (const k of u.keys) u.shown[k] = u.before[k] + u.gains[k];
       const vals = done ? u.shown : u.before;
       const rest = {};
@@ -438,12 +439,12 @@ window.SFC = window.SFC || {};
       this.el.innerHTML = `<div class="drill">
         <div class="dr-wall">${this.tags()}
           <div class="dr-up dr-pw" style="--pc:${color}">
-            <div class="dr-up-head"><span class="dr-label">${esc(L.name)} · COMPLETE</span><b class="dr-up-title">STRONGER!</b></div>
+            <div class="dr-up-head"><span class="dr-label">${esc(_t('{drill} · COMPLETE', { drill: L.name }))}</span><b class="dr-up-title">${esc(_t('STRONGER!'))}</b></div>
             <div class="dr-up-stage">
               <div class="dr-up-hero"><i class="dr-splat"></i><canvas class="dr-av" width="40" height="44"></canvas><div class="rv3-parts"></div></div>
               <div class="dr-sheet">${this.sheet(vals, rest, done ? u.o1 : u.o0, u.o1)}</div>
             </div>
-            <div class="dr-curb"><div class="dr-foot"><span class="dr-hint">${esc(PF().data.name || 'PLAYER')} · LV ${PF().data.level}</span><span class="dr-up-go">${go}</span></div></div>
+            <div class="dr-curb"><div class="dr-foot"><span class="dr-hint">${esc(PF().data.name || 'PLAYER')} · ${esc(lvl())}</span><span class="dr-up-go">${go}</span></div></div>
             <div class="dr-flash"></div>
           </div>
         </div>
@@ -508,7 +509,7 @@ window.SFC = window.SFC || {};
       if (box) box.innerHTML = SFC.Reveal.particles(this.paint(u.id).color, u.inline ? 0.45 : 0.75);
       const ob = root.querySelector('.dr-ob');
       if (ob && u.o1 > u.o0) {
-        ob.innerHTML = `<small>OVR</small><b>${u.o1}</b><em>+${u.o1 - u.o0}</em>`;
+        ob.innerHTML = `<small>${esc(_t('OVR'))}</small><b>${u.o1}</b><em>+${u.o1 - u.o0}</em>`;
         ob.classList.add('rise');
         root.classList.add('rise');
         SFC.Audio.reveal(2);

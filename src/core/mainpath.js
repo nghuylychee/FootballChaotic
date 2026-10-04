@@ -106,12 +106,14 @@ window.SFC = window.SFC || {};
     unlockHint(id) {
       // Area chưa tới: không lộ tên Area / boss (bản đồ đang hiện ???)
       const src = this.coreSource(id), seen = src.area <= this.state.area;
-      if (src.kind === 'star') return `Win stars in AREA ${src.area + 1}${seen ? ' · ' + this.area(src.area).name : ''}`;
+      const _t = SFC.t, n = src.area + 1;
+      if (src.kind === 'star') return _t('Win stars in AREA {n}', { n }) + (seen ? ' · ' + this.area(src.area).name : '');
       if (src.kind === 'boss') {
-        const A = this.area(src.area), stage = src.area === this.areas().length - 1 ? 'final' : 'promotion';
-        return seen ? `Beat ${this.team(A.boss).name} · AREA ${src.area + 1} ${stage}` : `Beat the AREA ${src.area + 1} boss in the ${stage}`;
+        const A = this.area(src.area), final = src.area === this.areas().length - 1;
+        if (seen) return final ? _t('Beat {team} · AREA {n} final', { team: this.team(A.boss).name, n }) : _t('Beat {team} · AREA {n} promotion', { team: this.team(A.boss).name, n });
+        return final ? _t('Beat the AREA {n} boss in the final', { n }) : _t('Beat the AREA {n} boss in the promotion', { n });
       }
-      return 'Not available yet';
+      return _t('Not available yet');
     },
 
     // Core đã xuất hiện ở lượt chọn -> bỏ nhãn NEW

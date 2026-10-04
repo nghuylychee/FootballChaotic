@@ -6,6 +6,7 @@ window.SFC = window.SFC || {};
 (function () {
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const _t = SFC.t, _tn = SFC.tn;   // dịch theo ngôn ngữ đang chọn (core/i18n.js)
   const CORES = () => SFC_CONFIG.cores;
 
   const ARCH = (tag) => CORES().archetypes[tag] || { label: tag, icon: '?', color: '#9aa3b5' };
@@ -32,7 +33,7 @@ window.SFC = window.SFC || {};
   function traitChips(game, team) {
     return game.cores.traits(team).map((t) => {
       const a = ARCH(t.tag);
-      return `<span class="trait ${t.tier ? 'on' : ''}" style="--c:${a.color}" title="${a.label}: ${t.count} Core">${PX().arch(t.tag)}${t.count}</span>`;
+      return `<span class="trait ${t.tier ? 'on' : ''}" style="--c:${a.color}" title="${esc(_tn('{arch}: {n} Core', '{arch}: {n} Cores', t.count, { arch: a.label }))}">${PX().arch(t.tag)}${t.count}</span>`;
     }).join('');
   }
 
@@ -64,14 +65,16 @@ window.SFC = window.SFC || {};
 
   // Ô trên thanh kỹ năng (giữa đáy màn hình, kiểu LoL). atk = ra đòn: dùng được mọi lúc trừ khi chính mình cầm bóng
   const SLOTS = [
-    { k: 'light', action: 'shoot', icon: 'fist', name: 'LIGHT', atk: true, max: () => SFC_CONFIG.game.combat.light.cooldown, act: ['jab'] },
-    { k: 'hard', action: 'lob', icon: 'boom', name: 'HARD', atk: true, max: () => SFC_CONFIG.game.combat.hard.cooldown, act: ['windup', 'kick'] },
-    { k: 'skill', action: 'skill', icon: 'dash', name: 'DASH', max: () => SFC_CONFIG.game.skill.cooldown, act: ['dash'] },
+    { k: 'light', action: 'shoot', icon: 'fist', atk: true, max: () => SFC_CONFIG.game.combat.light.cooldown, act: ['jab'] },
+    { k: 'hard', action: 'lob', icon: 'boom', atk: true, max: () => SFC_CONFIG.game.combat.hard.cooldown, act: ['windup', 'kick'] },
+    { k: 'skill', action: 'skill', icon: 'dash', max: () => SFC_CONFIG.game.skill.cooldown, act: ['dash'] },
   ];
+  // tooltip ô kỹ năng ('attack|HARD' = đòn mạnh, khác độ khó HARD)
+  const SLOT_NAMES = () => ({ light: SFC.tc('attack', 'LIGHT'), hard: SFC.tc('attack', 'HARD'), skill: _t('DASH') });
   const keyLabel = (action) => SFC.Input.label(action);
 
+  // nút Pause mặc định — main.js -> beginMatch đặt lại (đã dịch) mỗi lần vào trận
   const PAUSE_SINGLE = [['resume', 'RESUME'], ['restart', 'RESTART'], ['menu', 'MAIN MENU']];
-  const PAUSE_ONLINE = [['resume', 'BACK TO MATCH'], ['leave', 'LEAVE ROOM']];
 
   const UI = {
     init(app) {
@@ -113,15 +116,15 @@ window.SFC = window.SFC || {};
         const rar = RARITY(c.rarity);
         const chosen = picked && (d.localPick === i || d.picked[me] === id);
         const match = c.tags.some((t) => ownedTags.has(t));
-        const tags = c.anyBuild ? `<span style="--c:${c.color || rar.color}">${PX().ui('star', 'sm')} ANY BUILD</span>`
+        const tags = c.anyBuild ? `<span style="--c:${c.color || rar.color}">${PX().ui('star', 'sm')} ${esc(_t('ANY BUILD'))}</span>`
           : c.tags.map((t) => `<span style="--c:${ARCH(t).color}">${PX().arch(t, 'sm')} ${ARCH(t).label}</span>`).join('');
         // Core vừa mở khoá ở Main Path: nhãn NEW (hiện 1 lần rồi bỏ khỏi danh sách "mới")
         const isNew = game.opts.coreFresh && !!mp && !!game.cores.newShown[mp.id] && game.cores.newShown[mp.id].has(id);
         if (isNew && game.opts.mainPath) SFC.MainPath.seen(id);
         return `<div class="card ${c.role === 'ult' ? 'ult' : ''} ${!picked && i === this.draftSel ? 'sel' : ''} ${chosen ? 'chosen' : ''}" data-pick="${i}" style="--c:${rar.color};--c2:${rar.color};--t:${rar.color}">
           <div class="card-key">${i + 1}</div>
-          ${isNew ? '<div class="card-new">NEW</div>' : ''}
-          ${match && !picked ? '<div class="card-match">MATCH</div>' : ''}
+          ${isNew ? `<div class="card-new">${esc(_t('NEW'))}</div>` : ''}
+          ${match && !picked ? `<div class="card-match">${esc(_t('MATCH'))}</div>` : ''}
           <div class="card-tags">${tags}</div>
           <div class="card-art">${SFC.CorePreview.html(id, 132, 56)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(keyLabel('ultimate'))}</kbd>` : ''}</div>
           <div class="card-name">${esc(c.name)}</div>
@@ -131,19 +134,19 @@ window.SFC = window.SFC || {};
       }).join('');
       const opp = game.teams[1 - team];
       const left = (d.rerolls && d.rerolls[me]) || 0;
-      const reroll = picked || d.noReroll ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> REROLL 3 (${left} left)</button>`;
+      const reroll = picked || d.noReroll ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> ${esc(_tn('REROLL 3 ({n} left)', 'REROLL 3 ({n} left)', left))}</button>`;
       // bàn phím: không cần chú thích (bỏ dòng "Pick 1 Core..."); tay cầm không có phím số -> gợi ý nút ngắn
-      const sub = picked ? `Picked · waiting for ${game.seats.length > 2 || game.humans.length < 2 ? 'other players' : 'opponent'}...` :SFC.Input.device === 'pad' ? `←→ + ${esc(keyLabel('confirm'))}` : '';
+      const sub = picked ? esc(game.seats.length > 2 || game.humans.length < 2 ? _t('Picked · waiting for other players...') : _t('Picked · waiting for opponent...')) : SFC.Input.device === 'pad' ? `←→ + ${esc(keyLabel('confirm'))}` : '';
       this.el.draft.classList.toggle('waiting', picked);
       // lượt chọn có kịch bản (PROLOGUE): tiêu đề riêng, ghi chú dưới lá bài, lá ULTIMATE lộ diện
       this.el.draft.classList.toggle('ult-reveal', d.special === 'ult');
-      const title = d.title ? esc(d.title) : `${d.pre ? 'STARTING CORE' : 'CORE UPGRADE'} <span>${d.round}/${total}</span>`;
+      const title = d.title ? esc(d.title) : `${esc(d.pre ? _t('STARTING CORE') : _t('CORE UPGRADE'))} <span>${d.round}/${total}</span>`;
       this.el.draft.innerHTML = `
         <div class="draft-title">${title}${timer}</div>
         <div class="draft-sub">${sub}${reroll}</div>
         <div class="cards">${cards}</div>
         ${d.note ? `<div class="draft-note">${esc(d.note).replace(/\*(.+?)\*/g, '<b>$1</b>')}</div>` : ''}
-        <div class="draft-opp"><span>Your build:</span> ${traitChips(game, mp) || '<em>—</em>'}${this.mateChips(game, team, mp)} <span class="sep">·</span> <span>${esc(opp.cfg.name)}:</span> ${opp.players.map((q) => traitChips(game, q) || '<em>—</em>').join(' <span class="sep">/</span> ')}</div>`;
+        <div class="draft-opp"><span>${esc(_t('Your build:'))}</span> ${traitChips(game, mp) || '<em>—</em>'}${this.mateChips(game, team, mp)} <span class="sep">·</span> <span>${esc(opp.cfg.name)}:</span> ${opp.players.map((q) => traitChips(game, q) || '<em>—</em>').join(' <span class="sep">/</span> ')}</div>`;
       SFC.CorePreview.scan(this.el.draft);
     },
 
@@ -184,19 +187,19 @@ window.SFC = window.SFC || {};
     // Pause: build hiện tại — bên trái Cộng hưởng đạt mốc mấy (kèm hiệu ứng), bên phải các lá Core đang có (ô trống: ???)
     renderPause() {
       const g = this.app.game, me = g ? g.humanTeam : -1;
-      const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${l}</button>`).join('');
+      const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${esc(l)}</button>`).join('');
       let build = '';
       if (g && me >= 0) {
         const mp = g.cores.seatOwner(g.me), owned = g.cores.coresOf(mp), n = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
         const slots = Array.from({ length: n }, (_, i) => miniCard(owned[i]));
         build = `<div class="pause-build">
-          <div class="pb-traits"><h4>YOUR BUILD</h4>${traitList(g, mp, true) || '<em>No synergies yet</em>'}</div>
+          <div class="pb-traits"><h4>${esc(_t('YOUR BUILD'))}</h4>${traitList(g, mp, true) || `<em>${esc(_t('No synergies yet'))}</em>`}</div>
           <div class="pb-cards">${slots.join('')}</div>
         </div>`;
       }
       this.el.pause.innerHTML = `
-        <div class="pause-title">${this.online ? 'MENU' : 'PAUSED'}</div>
-        ${this.online ? '<div class="pause-note">Online matches keep running</div>' : ''}
+        <div class="pause-title">${esc(this.online ? _t('MENU') : _t('PAUSED'))}</div>
+        ${this.online ? `<div class="pause-note">${esc(_t('Online matches keep running'))}</div>` : ''}
         ${build}
         <div class="pause-items row-items">${items}</div>`;
       SFC.CorePreview.scan(this.el.pause);
@@ -224,14 +227,14 @@ window.SFC = window.SFC || {};
         const mp = this.app.game && this.app.game.opts.mainPath;
         // thẻ drill bấm LATER: mở lại ở INVENTORY (không có nút ở đây)
         // bản DEMO hết Area đá được: restart -> màn WISHLIST (app.startMainPath)
-        return mp ? [['restart', SFC.MainPath.demoOver() ? 'CONTINUE' : 'NEXT MATCH'], ['menu', 'MAIN PATH']] : [['restart', 'PLAY AGAIN'], ['menu', 'MAIN MENU']];
+        return mp ? [['restart', SFC.MainPath.demoOver() ? _t('CONTINUE') : _t('NEXT MATCH')], ['menu', _t('MAIN PATH')]] : [['restart', _t('PLAY AGAIN')], ['menu', _t('MAIN MENU')]];
       }
-      return SFC.Online.isHost ? [['lobby', 'BACK TO LOBBY'], ['leave', 'LEAVE ROOM']] : [['leave', 'LEAVE ROOM']];
+      return SFC.Online.isHost ? [['lobby', _t('BACK TO LOBBY')], ['leave', _t('LEAVE ROOM')]] : [['leave', _t('LEAVE ROOM')]];
     },
 
     renderEnd(game) {
       const h = game.humanTeam, me = game.teams[h], op = game.teams[1 - h];
-      const res = me.score > op.score ? ['VICTORY!', 'win'] : me.score < op.score ? ['DEFEAT...', 'lose'] : ['DRAW', 'draw'];
+      const res = me.score > op.score ? [_t('VICTORY!'), 'win'] : me.score < op.score ? [_t('DEFEAT...'), 'lose'] : [_t('DRAW'), 'draw'];
       // Main Path: Core của đối thủ mà bạn chưa mở khoá -> 🔒 + cách mở (rê chuột xem)
       const lockOf = (t, id) => (game.opts.mainPath && t !== me && !SFC.Profile.coreUnlocked(id) ? SFC.MainPath.unlockHint(id) : '');
       // build của từng cầu thủ: người chơi = danh sách Core có tên; đồng đội / đối thủ = hàng chip
@@ -243,22 +246,22 @@ window.SFC = window.SFC || {};
             ? `<div class="b-item" ${lk ? `title="🔒 ${esc(lk)}"` : ''}>${coreChip(id)} ${esc(CORES().list[id].name)}${lk ? PX().ui('lock', 'sm lk') : ''}</div>`
             : `<span class="b-chip" ${lk ? `title="🔒 ${esc(lk)}"` : ''}>${coreChip(id)}${lk ? PX().ui('lock', 'sm lk') : ''}</span>`;
         };
-        const list = ids.length ? ids.map(item).join('') : '<em>No cores</em>';
+        const list = ids.length ? ids.map(item).join('') : `<em>${esc(_t('No cores'))}</em>`;
         return `<div class="b-player ${mine ? 'me' : ''}"><div class="bp-head"><b>${esc(q.name)}</b>${buildLabel(game, q)}</div>${mine ? list : `<div class="bp-chips">${list}</div>`}</div>`;
       }).join('');
-      const note = this.online && !SFC.Online.isHost ? 'Waiting for the host to return to the lobby...' : 'Try a different build next time?';
+      const note = this.online && !SFC.Online.isHost ? _t('Waiting for the host to return to the lobby...') : _t('Try a different build next time?');
       // sân luôn vẽ đội 0 bên trái -> tỉ số giữ đúng thứ tự trái / phải
       const t0 = game.teams[0], t1 = game.teams[1];
       this.el.end.innerHTML = `
-        <div class="end-title ${res[1]}">${res[0]}</div>
+        <div class="end-title ${res[1]}">${esc(res[0])}</div>
         <div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>
         <div class="builds">
-          <div class="build"><h4>YOUR BUILD</h4>${build(me)}</div>
+          <div class="build"><h4>${esc(_t('YOUR BUILD'))}</h4>${build(me)}</div>
           ${game.reward ? this.rewardPanel(game.reward) : ''}
-          <div class="build"><h4>OPPONENT BUILD</h4>${build(op)}</div>
+          <div class="build"><h4>${esc(_t('OPPONENT BUILD'))}</h4>${build(op)}</div>
         </div>
         <div class="end-foot">${this.momentPanel(game)}
-          <div class="end-act"><div class="end-note">${note}</div><div class="pause-items row-items" id="end-items"></div></div>
+          <div class="end-act"><div class="end-note">${esc(note)}</div><div class="pause-items row-items" id="end-items"></div></div>
         </div>`;
       this.el.end.classList.toggle('has-moment', !!(game.moments && game.moments.length));
       this.renderEndItems();
@@ -298,16 +301,18 @@ window.SFC = window.SFC || {};
       const count = (t) => {
         const u = list.filter((m) => m.team === t && m.kind === 'ult').length;
         const hit = list.filter((m) => m.team === t && m.kind === 'combo').reduce((a, m) => Math.max(a, m.n || 0), 0);
-        return `${u ? `Ultimate ×${u}` : ''}${u && hit ? ' · ' : ''}${hit ? `Combo ${hit} HIT` : ''}` || '—';
+        return `${u ? _t('Ultimate ×{n}', { n: u }) : ''}${u && hit ? ' · ' : ''}${hit ? _t('Combo {n} HIT', { n: hit }) : ''}` || '—';
       };
       const me = game.humanTeam;
+      // chữ dựng lúc hiện (online: khoảnh khắc combo đến từ sự kiện của host)
+      const text = best.kind === 'ult' ? _t('ULTIMATE · {core}', { core: c.name.toUpperCase() }) : _t('{n} HIT!', { n: best.n });
       return `<div class="moment" style="--c:${ARCH(c.tags[0]).color}">
         ${SFC.CorePreview.html(best.id, 150, 64)}
         <div class="mo-info">
-          <h4>MOMENT OF THE MATCH</h4>
-          <div class="mo-name">${PX().core(best.id)} ${esc(best.text)}</div>
+          <h4>${esc(_t('MOMENT OF THE MATCH'))}</h4>
+          <div class="mo-name">${PX().core(best.id)} ${esc(text)}</div>
           <div class="mo-sub"><span style="color:${tm.cfg.kit.shirt}">${esc(tm.cfg.short)}</span>${best.player ? ' · ' + esc(best.player) : ''} · ${esc(c.name)}</div>
-          <div class="mo-sub">You: ${count(me)} <span class="sep">·</span> Opponent: ${count(1 - me)}</div>
+          <div class="mo-sub">${esc(_t('You: {stats}', { stats: count(me) }))} <span class="sep">·</span> ${esc(_t('Opponent: {stats}', { stats: count(1 - me) }))}</div>
         </div>
       </div>`;
     },
@@ -315,7 +320,7 @@ window.SFC = window.SFC || {};
     renderEndItems() {
       const el = document.getElementById('end-items');
       this.endSel = Math.min(this.endSel, this.endItems().length - 1);
-      if (el) el.innerHTML = this.endItems().map(([k, l], i) => `<button class="${i === this.endSel ? 'sel' : ''}" data-act="${k}">${l}</button>`).join('');
+      if (el) el.innerHTML = this.endItems().map(([k, l], i) => `<button class="${i === this.endSel ? 'sel' : ''}" data-act="${k}">${esc(l)}</button>`).join('');
       this.showEndItems();
     },
 
@@ -335,10 +340,10 @@ window.SFC = window.SFC || {};
       const lines = r.lines.map((l, i) => `<div class="rw-line" data-rw="${i}"><span>${esc(l.label)}</span>${
         l.mult || l.note ? '' : `<b class="x">+${l.xp} XP</b><b class="g"><i class="coin"></i>+${l.gold}</b>`}</div>`).join('');
       return `<div class="build reward">
-        ${r.path ? this.pathResult(r.path) : '<h4>REWARDS</h4>'}
+        ${r.path ? this.pathResult(r.path) : `<h4>${esc(_t('REWARDS'))}</h4>`}
         <div class="rw-lines">${lines}</div>
         <div class="rw-total"><span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
-        <div class="lvrow"><span class="lv" id="rw-lv">LV ${r.before.level}</span><div class="xpbar"><i id="rw-bar"></i></div></div>
+        <div class="lvrow"><span class="lv" id="rw-lv">${esc(_t('LV {n}', { n: r.before.level }))}</span><div class="xpbar"><i id="rw-bar"></i></div></div>
         <div class="rw-up" id="rw-up"></div>
       </div>`;
     },
@@ -356,13 +361,13 @@ window.SFC = window.SFC || {};
       }
       const name = MP.divName(a.area, a.div);
       const msg = {
-        up: `PROMOTED TO ${name}`,
-        down: `DEMOTED TO ${name}`,
-        ready: MP.isFinal() ? 'CHAMPIONSHIP FINAL NEXT!' : 'PROMOTION MATCH NEXT!',
-        area: MP.demoLocked(a.area) ? (SFC_CONFIG.demo.steamUrl ? 'DEMO COMPLETE · WISHLIST ON STEAM!' : 'DEMO COMPLETE · COMING SOON TO STEAM!') : `NEW AREA UNLOCKED: ${A.name}`,
-        title: `CHAMPION OF THE STREET ×${MP.state.titles}`,
-        promoFail: 'PROMOTION FAILED · win again to retry',
-      }[p.event] || (p.delta > 0 ? `+${p.delta} ★` : p.delta < 0 ? `${p.delta} ★` : 'No stars changed');
+        up: _t('PROMOTED TO {div}', { div: name }),
+        down: _t('DEMOTED TO {div}', { div: name }),
+        ready: MP.isFinal() ? _t('CHAMPIONSHIP FINAL NEXT!') : _t('PROMOTION MATCH NEXT!'),
+        area: MP.demoLocked(a.area) ? (SFC_CONFIG.demo.steamUrl ? _t('DEMO COMPLETE · WISHLIST ON STEAM!') : _t('DEMO COMPLETE · COMING SOON TO STEAM!')) : _t('NEW AREA UNLOCKED: {area}', { area: A.name }),
+        title: _t('CHAMPION OF THE STREET ×{n}', { n: MP.state.titles }),
+        promoFail: _t('PROMOTION FAILED · win again to retry'),
+      }[p.event] || (p.delta > 0 ? `+${p.delta} ★` : p.delta < 0 ? `${p.delta} ★` : _t('No stars changed'));
       const big = p.event === 'area' || p.event === 'title';
       return `<div class="rw-path ${big ? 'big' : ''} ${p.event === 'down' || p.event === 'promoFail' || p.delta < 0 ? 'bad' : ''}" style="--ac:${A.color}">
         <div class="rp-div">${PX().area(A.id, 'sm')} ${esc(name)}</div>
@@ -400,8 +405,8 @@ window.SFC = window.SFC || {};
         bar.style.width = (need(level) === Infinity ? 100 : (cur - level) * 100) + '%';
         if (level > shownLv) {
           shownLv = level;
-          lv.textContent = 'LV ' + level;
-          up.innerHTML = `<b class="lvup">LEVEL UP! LV ${level}</b><span class="gold"><i class="coin"></i>+${SFC_CONFIG.progression.levelUpGold}</span>`;
+          lv.textContent = _t('LV {n}', { n: level });
+          up.innerHTML = `<b class="lvup">${esc(_t('LEVEL UP! LV {n}', { n: level }))}</b><span class="gold"><i class="coin"></i>+${SFC_CONFIG.progression.levelUpGold}</span>`;
           up.classList.remove('pop'); void up.offsetWidth; up.classList.add('pop');
           SFC.Audio.upgrade();
         }
@@ -409,13 +414,13 @@ window.SFC = window.SFC || {};
           if (this.pendingReveal && !this.revealTimer) this.revealTimer = setTimeout(() => { this.revealTimer = null; this.openReveal(); }, 450);
           if (!up.dataset.done) {
             up.dataset.done = 1;
-            if (r.eligible.length) up.insertAdjacentHTML('beforeend', `<div class="rw-new">Unlocked: ${r.eligible.map(esc).join(', ')}</div>`);
+            if (r.eligible.length) up.insertAdjacentHTML('beforeend', `<div class="rw-new">${esc(_t('Unlocked: {list}', { list: r.eligible.join(', ') }))}</div>`);
             // lên level: thẻ drill vừa nhận (chỉ khi không có dòng Unlocked, giữ khung thưởng tối đa 2 dòng)
             const gained = r.levelUps.length * SFC_CONFIG.progression.attrs.drills.perLevel;
-            const where = this.online ? ' · open in INVENTORY' : '';
-            if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">★ +${gained} DRILL CARD${gained > 1 ? 'S' : ''}${where}</div>`);
+            const where = this.online ? ' · ' + _t('open in INVENTORY') : '';
+            if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">${esc(_tn('★ +{n} DRILL CARD', '★ +{n} DRILL CARDS', gained) + where)}</div>`);
             // chạm trần level theo Main Path: XP vẫn tích, lên hạng là lên level
-            else if (!r.eligible.length && r.capped) up.insertAdjacentHTML('beforeend', `<div class="rw-new">LV CAP · climb the Main Path to level up (XP is saved)</div>`);
+            else if (!r.eligible.length && r.capped) up.insertAdjacentHTML('beforeend', `<div class="rw-new">${esc(_t('LV CAP · climb the Main Path to level up (XP is saved)'))}</div>`);
             this.showEndItems();   // dòng thưởng vừa thêm có thể đẩy nút xuống
             // chơi đơn: vừa lên level -> tự mở màn LEVEL UP của DRILL (online tự xử lý phím -> chỉ tích thẻ, mở ở INVENTORY)
             this.drillAfter = !this.online && gained > 0 ? { earned: gained, from: r.before.level, to: r.after.level } : null;
@@ -464,17 +469,17 @@ window.SFC = window.SFC || {};
       const training = !!(game.opts && game.opts.training);
       // trận mơ PROLOGUE: có tỉ số nhưng chưa có đồng hồ tới bài cuối
       const dream = !!(game.opts && game.opts.tutorial) && !game.clockOn;
-      const time = game.golden ? 'GOLDEN' : SFC.U.fmtTime(game.remaining);
-      const phase = game.golden ? 'GOLDEN GOAL' : game.finalPush ? 'FINAL PUSH x' + SFC_CONFIG.game.match.finalPushGoalValue : '';
+      const time = game.golden ? _t('GOLDEN') : SFC.U.fmtTime(game.remaining);
+      const phase = game.golden ? _t('GOLDEN GOAL') : game.finalPush ? _t('FINAL PUSH x{n}', { n: SFC_CONFIG.game.match.finalPushGoalValue }) : '';
       const cores = game.players.map((p) => game.cores.coresOf(p).join()).join('|');
       // lượt chọn Core: đang chờ bàn thắng / còn bao lâu tới lượt kế
       const pend = game.draftPending(), next = game.draftNextIn();
-      const coreLine = pend > 0 ? `<div class="hud-core on">✦ CORE +${pend} · waiting for a goal</div>`
-        : next != null ? `<div class="hud-core">✦ Next Core in ${SFC.U.fmtTime(next)}</div>` : '';
+      const coreLine = pend > 0 ? `<div class="hud-core on">${esc(_t('✦ CORE +{n} · waiting for a goal', { n: pend }))}</div>`
+        : next != null ? `<div class="hud-core">${esc(_t('✦ Next Core in {time}', { time: SFC.U.fmtTime(next) }))}</div>` : '';
       // Main Path: hạng đang đá (trận thăng hạng / chung kết nổi bật)
       const mp = game.opts && game.opts.mainPath;
-      const pathLine = game.opts && game.opts.tutorial ? '<div class="hud-path dream">PROLOGUE · THE DREAM</div>'
-        : !mp ? '' : mp.promo ? `<div class="hud-path promo">${PX().ui('crown', 'sm')} ${mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH'}</div>`
+      const pathLine = game.opts && game.opts.tutorial ? `<div class="hud-path dream">${esc(_t('PROLOGUE · THE DREAM'))}</div>`
+        : !mp ? '' : mp.promo ? `<div class="hud-path promo">${PX().ui('crown', 'sm')} ${esc(mp.final ? _t('CHAMPIONSHIP FINAL') : _t('PROMOTION MATCH'))}</div>`
         : `<div class="hud-path">${esc(SFC.MainPath.divName(mp.area, mp.div))}</div>`;
       const key = [t0.score, t1.score, dream ? 'dream' : time, phase, cores, coreLine, pathLine].join('#');
       if (c.key !== key) {
@@ -488,9 +493,9 @@ window.SFC = window.SFC || {};
             ${this.hudBuild(game, 0)}
             ${this.ultMeter(game, 0)}
           </div>
-          <div class="hud-mid">${pathLine}${training ? '<div class="hud-time">TRAINING</div>' : `
+          <div class="hud-mid">${pathLine}${training ? `<div class="hud-time">${esc(_t('TRAINING'))}</div>` : `
             <div class="hud-score"><b style="color:${t0.cfg.kit.shirt}">${t0.score}</b><span>-</span><b style="color:${t1.cfg.kit.shirt}">${t1.score}</b></div>
-            <div class="hud-time ${game.finalPush || game.golden ? 'hot' : ''}">${dream ? 'DREAM' : time}</div>
+            <div class="hud-time ${game.finalPush || game.golden ? 'hot' : ''}">${esc(dream ? _t('DREAM') : time)}</div>
             ${phase ? `<div class="hud-phase">${phase}</div>` : ''}`}
             ${coreLine}
           </div>
@@ -533,8 +538,8 @@ window.SFC = window.SFC || {};
       const html = mates.map((q) => traitChips(game, q)).filter(Boolean).join(' ');
       if (!html) return '';
       // co-op: đồng đội là người chơi khác -> hiện tên
-      const who = mates.length === 1 && mates[0].isControlled ? esc(mates[0].name) : 'MATE';
-      return block ? `<div class="hud-mates"><div class="hud-pl"><em>${who}</em>${html}</div></div>` : ` <span class="sep">+</span> <span>${who === 'MATE' ? 'Mate' : who}:</span> ${html}`;
+      const named = mates.length === 1 && mates[0].isControlled, name = named && esc(mates[0].name);
+      return block ? `<div class="hud-mates"><div class="hud-pl"><em>${named ? name : esc(_t('MATE'))}</em>${html}</div></div>` : ` <span class="sep">+</span> <span>${named ? name : esc(_t('Mate'))}:</span> ${html}`;
     },
 
     // thanh năng lượng Tuyệt kỹ nhỏ trên HUD của mỗi đội (icon Tuyệt kỹ nếu đã có)
@@ -542,7 +547,7 @@ window.SFC = window.SFC || {};
     ultMeter(game, t) {
       const id = game.cores.ultOf(t), c = id && CORES().list[id];
       if (!c) return '';
-      return `<div class="hud-ult has" data-t="${t}" title="${esc(c.name + ': Ultimate energy')}"><b>${PX().core(id, 'sm')}</b><i></i><em>0%</em></div>`;
+      return `<div class="hud-ult has" data-t="${t}" title="${esc(_t('{core}: Ultimate energy', { core: c.name }))}"><b>${PX().core(id, 'sm')}</b><i></i><em>0%</em></div>`;
     },
 
     /* ================= THANH KỸ NĂNG (giữa đáy, kiểu LoL) ================= */
@@ -557,7 +562,7 @@ window.SFC = window.SFC || {};
       if (c.key !== key) {
         c.key = key;
         const kit = game.teams[p.team].cfg.kit;
-        const ult = game.cores.ultOf(p);
+        const ult = game.cores.ultOf(p), names = SLOT_NAMES();
         const nItems = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
         const items = [];
         for (let i = 0; i < nItems; i++) items.push(owned[i] ? coreChip(owned[i]) : '<span class="chip empty"></span>');
@@ -567,10 +572,10 @@ window.SFC = window.SFC || {};
           <div class="ab-mid">
             <div class="ab-res"></div>
             <div class="ab-slots">${SLOTS.map((s) => `
-              <div class="ab-slot" data-k="${s.k}" title="${s.name}">
+              <div class="ab-slot" data-k="${s.k}" title="${esc(names[s.k])}">
                 <i>${PX().ui(s.icon)}</i><div class="sw"></div><b></b><kbd>${esc(keyLabel(s.action))}</kbd>
               </div>`).join('')}${ult ? `
-              <div class="ab-slot ult" data-k="ult" title="${esc(`ULTIMATE: ${CORES().list[ult].name}. Charge it by scoring, conceding, stealing the ball and landing punches`)}">
+              <div class="ab-slot ult" data-k="ult" title="${esc(_t('ULTIMATE: {core}. Charge it by scoring, conceding, stealing the ball and landing punches', { core: CORES().list[ult].name }))}">
                 <div class="ult-fill"></div><i>${PX().core(ult)}</i><b class="ult-pct"></b><kbd>${esc(keyLabel('ultimate'))}</kbd>
               </div>` : ''}
             </div>
@@ -636,7 +641,7 @@ window.SFC = window.SFC || {};
           c.ult.style.setProperty('--u', (v / 100).toFixed(2));
           c.ult.classList.toggle('ready', v >= 100);
           c.ult.classList.toggle('full', v >= 100);
-          c.ult.querySelector('.ult-pct').textContent = v >= 100 ? 'FULL' : v + '%';   // sẵn sàng: viền vàng + rung
+          c.ult.querySelector('.ult-pct').textContent = v >= 100 ? _t('FULL') : v + '%';   // sẵn sàng: viền vàng + rung
           // vừa được nạp: "+20%" bay lên · vừa dùng: thanh rút cạn
           if (prev >= 0 && v > prev) {
             const f = document.createElement('span');
@@ -694,9 +699,10 @@ window.SFC = window.SFC || {};
       for (const e of evs) {
         if (e.type === 'goal') {
           const t = game.teams[e.team];
-          this.banner(e.value > 1 ? `GOAL x${e.value}!` : 'GOAL!', e.own ? 'Own goal!' : `${e.scorer} · ${t.cfg.name}`, t.cfg.kit.shirt, 2.2);
+          this.banner(e.value > 1 ? _t('GOAL x{n}!', { n: e.value }) : _t('GOAL!'), e.own ? _t('Own goal!') : `${e.scorer} · ${t.cfg.name}`, t.cfg.kit.shirt, 2.2);
         }
-        if (e.type === 'banner') this.banner(e.text, e.sub, e.color, 2.2);
+        // banner của trận (match.js, chữ đánh dấu SFC.N_): dịch lúc hiện — online thì sự kiện đến từ máy host
+        if (e.type === 'banner') this.banner(_t(e.text, e.vars), e.sub && _t(e.sub, e.vars), e.color, 2.2);
         // khoảnh khắc của trận (màn kết quả)
         if (e.type === 'ultimate') (game.moments || (game.moments = [])).push({ kind: 'ult', team: e.team, id: e.id, player: e.player, text: 'ULTIMATE · ' + CORES().list[e.id].name.toUpperCase(), score: 60 });
         if (e.type === 'moment') (game.moments || (game.moments = [])).push({ kind: 'combo', team: e.team, id: e.id, text: e.text, n: parseInt(e.text, 10) || 0, score: e.score });
@@ -708,11 +714,11 @@ window.SFC = window.SFC || {};
           const mine = e.picks.filter((pk) => pk.team === game.humanTeam), other = e.picks.filter((pk) => pk.team !== game.humanTeam);
           for (const pk of mine) {
             const c = CORES().list[pk.id], t = game.teams[pk.team], q = game.players.find((x) => x.id === pk.pid);
-            this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${esc(q ? q.name : t.cfg.short)} gets ${coreChip(pk.id)} <b>${esc(c.name)}</b>`);
+            this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${_t('{player} gets {core}', { player: esc(q ? q.name : t.cfg.short), core: `${coreChip(pk.id)} <b>${esc(c.name)}</b>` })}`);
           }
           if (other.length) {
             const t = game.teams[other[0].team];
-            this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${esc(t.cfg.short)} gets ${other.map((pk) => coreChip(pk.id)).join('')}`);
+            this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${_t('{player} gets {core}', { player: esc(t.cfg.short), core: other.map((pk) => coreChip(pk.id)).join('') })}`);
           }
         }
         if (e.type === 'end' && game.opts.tutorial) { SFC.Tutorial.onEnd(game); continue; }

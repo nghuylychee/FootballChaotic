@@ -1,5 +1,5 @@
 /* Preload — chạy trước game, dùng chung window (contextIsolation tắt).
- * - window.SFC_DESKTOP: đổi cỡ cửa sổ / toàn màn hình (src/core/settings.js), gửi sang electron/main.js
+ * - window.SFC_DESKTOP: đổi cỡ cửa sổ / toàn màn hình (src/core/settings.js), gửi sang electron/main.js; ngôn ngữ của hệ điều hành
  * - Khởi động Steam; được thì gắn window.SFC_STEAM cho src/net/transport-steam.js, không được thì game dùng PeerJS.
  *   App ID: Steam tự đưa khi mở game từ Steam; chạy ngoài Steam thì đọc steam_appid.txt ở thư mục đang chạy (dev: 480).
  */
@@ -41,6 +41,8 @@ window.SFC_DESKTOP = {
   quit: () => ipcRenderer.send('sfc-quit'),
   // mở link https bằng trình duyệt của máy (bản DEMO: trang Steam, src/ui/menu.js -> openSteam)
   openUrl: (url) => ipcRenderer.send('sfc-open-url', url),
+  // ngôn ngữ ưu tiên của hệ điều hành ['pt-BR', 'en-US'...] — đoán ngôn ngữ lần đầu mở game (src/core/i18n.js)
+  languages: (() => { try { return ipcRenderer.sendSync('sfc-languages') || []; } catch (e) { return []; } })(),
 };
 
 try {

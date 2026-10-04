@@ -9,7 +9,7 @@ window.SFC = window.SFC || {};
   const PX = () => SFC.PixelIcon;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const CFG = () => SFC_CONFIG.intro;
-  const ROLE = { DEF: 'DEFENDER', FWD: 'FORWARD' };
+  const ROLE = () => ({ DEF: SFC.t('DEFENDER'), FWD: SFC.t('FORWARD') });
   const clamp01 = (v) => Math.max(0, Math.min(1, v));
   const easeOut = (k) => 1 - (1 - k) * (1 - k);
 
@@ -81,18 +81,18 @@ window.SFC = window.SFC || {};
 
     /* ---------------- DOM ---------------- */
     html(g) {
-      const I = CFG(), mp = g.opts.mainPath, MP = SFC.MainPath;
-      let comp = 'FRIENDLY', title = 'MATCHDAY', venue = 'STREET COURT', venueIcon = '';
+      const I = CFG(), mp = g.opts.mainPath, MP = SFC.MainPath, _t = SFC.t;
+      let comp = _t('FRIENDLY'), title = _t('MATCHDAY'), venue = _t('STREET COURT'), venueIcon = '';
       if (mp) {
         const A = MP.area(mp.area);
-        comp = `MAIN PATH · ${MP.divName(mp.area, mp.div)}`;
-        title = mp.promo ? (mp.final ? 'CHAMPIONSHIP FINAL' : 'PROMOTION MATCH') : 'MATCHDAY';
+        comp = `${_t('MAIN PATH')} · ${MP.divName(mp.area, mp.div)}`;
+        title = mp.promo ? (mp.final ? _t('CHAMPIONSHIP FINAL') : _t('PROMOTION MATCH')) : _t('MATCHDAY');
         venue = A.name; venueIcon = PX().area(A.id) + ' ';
-      } else if (g.opts.training) { comp = 'TRAINING'; title = 'PRACTICE MATCH'; }
+      } else if (g.opts.training) { comp = _t('TRAINING'); title = _t('PRACTICE MATCH'); }
       else if (g.opts.online) {
         // co-op: mọi người chơi cùng 1 đội, đối thủ là đội bot
-        if (g.humans.length < 2) { comp = 'ONLINE CO-OP'; title = 'SQUAD vs BOTS'; }
-        else { comp = 'ONLINE VERSUS'; title = 'RIVAL MATCH'; }
+        if (g.humans.length < 2) { comp = _t('ONLINE CO-OP'); title = _t('SQUAD vs BOTS'); }
+        else { comp = _t('ONLINE VERSUS'); title = _t('RIVAL MATCH'); }
         // sân online = sân của 1 Area (online.js pickArena)
         const A = MP.areas().find((a) => a.arena === g.opts.arena);
         if (A) { venue = A.name; venueIcon = PX().area(A.id) + ' '; }
@@ -110,12 +110,12 @@ window.SFC = window.SFC || {};
         <div class="in-top"><span class="in-comp">${esc(comp)}</span><b class="in-title">${boss ? PX().ui('crown') + ' ' : ''}${esc(title)}</b></div>
         ${this.side(g, 0, lists[0], delay, false)}
         <div class="in-mid">
-          <div class="in-vs" style="--d:${I.vsAt}s">VS</div>
+          <div class="in-vs" style="--d:${I.vsAt}s">${esc(_t('VS'))}</div>
           <div class="in-pitch" style="--d:${I.pitchAt - 0.2}s"><canvas width="124" height="74"></canvas></div>
           <div class="in-venue" style="--d:${I.pitchAt}s">${venueIcon}${esc(venue)}</div>
         </div>
         ${this.side(g, 1, lists[1], delay, boss)}
-        <div class="in-foot"><span><kbd>Enter</kbd> skip</span><i class="in-timer" style="--dur:${I.duration}s"></i></div>
+        <div class="in-foot"><span>${_t('{key} skip', { key: `<kbd>${esc(SFC.Input.key('confirm', 'Enter'))}</kbd>` })}</span><i class="in-timer" style="--dur:${I.duration}s"></i></div>
       </div>`;
     },
 
@@ -147,8 +147,8 @@ window.SFC = window.SFC || {};
         <div class="in-team">
           <div class="in-crest"><span>${esc(c.short)}</span></div>
           <div class="in-tn"><b>${esc(c.name)}</b><span>${esc(c.tagline || '')}</span></div>
-          <div class="in-ovr"><b>${ovr}</b><span>OVR</span></div>
-          ${boss ? `<div class="in-boss">${PX().ui('crown', 'sm')} BOSS</div>` : ''}
+          <div class="in-ovr"><b>${ovr}</b><span>${esc(SFC.t('OVR'))}</span></div>
+          ${boss ? `<div class="in-boss">${PX().ui('crown', 'sm')} ${esc(SFC.t('BOSS'))}</div>` : ''}
         </div>
         <div class="in-cards">${cards}</div>
         <div class="in-stats">${stats}</div>
@@ -161,13 +161,14 @@ window.SFC = window.SFC || {};
       const human = g.isHuman(p.team), ctl = human && p.isControlled, you = p === g.controlled;
       const num = ctl ? I.youNumber : I.numbers[p.role] || 7;
       const pn = `P${(p.seat != null ? p.seat : p.team) + 1}`;
-      const tag = you ? '<em class="you">YOU</em>' : ctl ? `<em class="${p.team === g.humanTeam ? 'ally' : 'rival'}">${pn}</em>` : p.mate ? '<em class="mate">MATE</em>' : human ? '<em>AI</em>' : '';
+      const _t = SFC.t;
+      const tag = you ? `<em class="you">${esc(_t('YOU'))}</em>` : ctl ? `<em class="${p.team === g.humanTeam ? 'ally' : 'rival'}">${pn}</em>` : p.mate ? `<em class="mate">${esc(_t('MATE'))}</em>` : human ? `<em>${esc(_t('AI'))}</em>` : '';
       // character / đồng đội có chỉ số riêng: OVR cá nhân
-      const povr = (ctl || p.mate) && p.ovr ? `<b class="in-povr">${p.ovr}<span>OVR</span></b>` : '';
+      const povr = (ctl || p.mate) && p.ovr ? `<b class="in-povr">${p.ovr}<span>${esc(_t('OVR'))}</span></b>` : '';
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">
         <div class="in-num">${num}</div>${tag}${povr}
         <canvas data-pid="${p.id}" data-delay="${d}"></canvas>
-        <b class="in-name">${esc(p.name)}</b><span class="in-pos">${ROLE[p.role] || p.role}</span>
+        <b class="in-name">${esc(p.name)}</b><span class="in-pos">${esc(ROLE()[p.role] || p.role)}</span>
       </div>`;
     },
 

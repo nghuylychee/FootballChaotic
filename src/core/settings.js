@@ -1,8 +1,9 @@
-/* Settings — cài đặt của máy: âm lượng nhạc / hiệu ứng, cỡ cửa sổ. Lưu qua SFC.Storage, key 'sfc_settings'
+/* Settings — cài đặt của máy: âm lượng nhạc / hiệu ứng, cỡ cửa sổ, ngôn ngữ. Lưu qua SFC.Storage, key 'sfc_settings'
  * (tách khỏi hồ sơ người chơi như FXSettings -> RESET DATA không xoá). Chỉnh ở SETTINGS > SOUND & DISPLAY (ui/menu.js).
  *  - Âm lượng: 0..10 (x10%) -> SFC.Audio.setVolume, nhân với âm lượng trong config
  *  - Cỡ cửa sổ: chỉ bản desktop (electron/preload.js -> window.SFC_DESKTOP). 'WxH' hoặc 'full'.
  *    Danh sách cỡ: game.config.js -> render.windowSizes, bỏ cỡ lớn hơn màn hình
+ *  - Ngôn ngữ: mã trong src/core/i18n.js. null = chưa chọn -> popup chọn ngôn ngữ lúc mở game (src/ui/langpick.js)
  */
 window.SFC = window.SFC || {};
 
@@ -17,16 +18,18 @@ window.SFC = window.SFC || {};
     sfx: 10,
     res: '1280x720',     // khớp cỡ cửa sổ lúc mở (electron/main.js)
     lastWindow: null,    // cỡ cửa sổ trước khi vào FULLSCREEN (F11 thoát ra thì về lại cỡ này)
+    lang: null,          // ngôn ngữ đã chọn ('en', 'pt-BR'...) · null = chưa chọn
 
     load() {
       const raw = SFC.Storage.getJSON(KEY, {}) || {};
       this.music = vol10(raw.music, 10);
       this.sfx = vol10(raw.sfx, 10);
       if (raw.res === FULL || /^\d+x\d+$/.test(raw.res)) this.res = raw.res;
+      if (typeof raw.lang === 'string') this.lang = raw.lang;
       return this;
     },
     save() {
-      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res });
+      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang });
     },
 
     get desktop() { return !!window.SFC_DESKTOP; },
@@ -44,7 +47,14 @@ window.SFC = window.SFC || {};
       SFC.Audio.setVolume(kind, this[kind] / 10);
       this.save();
     },
-    volumeLabel(kind) { return this[kind] ? `${this[kind] * 10}%` : 'OFF'; },
+    volumeLabel(kind) { return this[kind] ? `${this[kind] * 10}%` : SFC.t('OFF'); },
+
+    // đổi ngôn ngữ (popup chọn ngôn ngữ): dịch lại config + lưu ngay
+    setLang(id) {
+      this.lang = id;
+      SFC.I18n.set(id);
+      this.save();
+    },
 
     resOptions() {
       const sw = window.screen.availWidth, sh = window.screen.availHeight;
@@ -58,7 +68,7 @@ window.SFC = window.SFC || {};
       this.applyRes();
       this.save();
     },
-    resLabel() { return this.res === FULL ? 'FULLSCREEN' : this.res.replace('x', ' x '); },
+    resLabel() { return this.res === FULL ? SFC.t('FULLSCREEN') : this.res.replace('x', ' x '); },
 
     applyRes() {
       if (this.res === FULL) { window.SFC_DESKTOP.setWindow({ full: true }); return; }

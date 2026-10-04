@@ -197,12 +197,14 @@ window.SFC = window.SFC || {};
       ctx.globalAlpha = 1;
       ctx.font = '8px ' + C.pixelFont;
       ctx.textAlign = 'center';
+      // chữ bay (effects.text): dịch lúc vẽ — chuỗi tạo ở systems / entities bằng tiếng Anh
       for (const tx of fx.texts) {
+        const str = SFC.t(tx.str);
         ctx.globalAlpha = Math.min(1, (tx.t / tx.max) * 2);
         ctx.fillStyle = SP().OUT;
-        ctx.fillText(tx.str, Math.round(tx.x) + 1, Math.round(tx.y) + 1);
+        ctx.fillText(str, Math.round(tx.x) + 1, Math.round(tx.y) + 1);
         ctx.fillStyle = tx.color;
-        ctx.fillText(tx.str, Math.round(tx.x), Math.round(tx.y));
+        ctx.fillText(str, Math.round(tx.x), Math.round(tx.y));
       }
       ctx.globalAlpha = 1;
       // VFX Kit: lỗ đen, luồng tia, tia sét, chiêu bay, chữ comic

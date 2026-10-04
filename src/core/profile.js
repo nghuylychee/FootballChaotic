@@ -462,22 +462,23 @@ window.SFC = window.SFC || {};
       const my = game.teams[me].score, op = game.teams[1 - me].score;
       const result = my > op ? 'win' : my < op ? 'lose' : 'draw';
       const goals = Math.min(R.maxGoals, my);
-      const labels = { win: 'Victory', draw: 'Draw', lose: 'Defeat' };
+      // nhãn dịch ngay lúc tính thưởng (mỗi máy tự tính cho người chơi của mình)
+      const _t = SFC.t, labels = { win: _t('Victory'), draw: _t('Draw'), lose: _t('Defeat') };
 
       const lines = [{ label: labels[result], xp: cfg[result].xp, gold: cfg[result].gold }];
-      if (goals > 0) lines.push({ label: `Goals ×${goals}`, xp: cfg.goal.xp * goals, gold: cfg.goal.gold * goals });
+      if (goals > 0) lines.push({ label: _t('Goals ×{n}', { n: goals }), xp: cfg.goal.xp * goals, gold: cfg.goal.gold * goals });
       // Main Path: cộng / trừ sao, lên / tụt hạng; thắng trận thăng hạng có thưởng thêm; thưởng nhân theo Area
       const mp = !pvp && !coop && game.opts.mainPath;
       const path = mp ? SFC.MainPath.record(result, mp) : null;
       // mốc sao mới ở Area đã mở hết Core: thưởng gold (nhân theo Area như các dòng khác). Hộp lên hạng vào kho hộp miễn phí
       if (path) {
         const starGold = path.rewards.filter((x) => x.kind === 'gold').reduce((sum, x) => sum + x.gold, 0);
-        if (starGold) lines.push({ label: 'New star reward', xp: 0, gold: starGold });
+        if (starGold) lines.push({ label: _t('New star reward'), xp: 0, gold: starGold });
         path.rewards.filter((x) => x.kind === 'box').forEach((x) => this.addBox(x.id));
       }
       if (path && (path.event === 'area' || path.event === 'title')) {
         const B = SFC_CONFIG.mainPath.promoBonus;
-        lines.push({ label: path.event === 'title' ? 'Champion bonus' : 'Promotion bonus', xp: B.xp, gold: B.gold });
+        lines.push({ label: path.event === 'title' ? _t('Champion bonus') : _t('Promotion bonus'), xp: B.xp, gold: B.gold });
       }
       let xp = lines.reduce((s, l) => s + l.xp, 0), gold = lines.reduce((s, l) => s + l.gold, 0);
       if (mp) {
@@ -485,15 +486,15 @@ window.SFC = window.SFC || {};
           lines.push({ label: `${SFC.MainPath.area(mp.area).name} ×${mp.reward}`, mult: mp.reward });
           xp = Math.round(xp * mp.reward); gold = Math.round(gold * mp.reward);
         }
-      } else if (coop) lines.push({ label: 'Online co-op', note: true });
+      } else if (coop) lines.push({ label: _t('Online co-op'), note: true });
       else if (!pvp) {
         const key = game.opts.difficulty, mult = (cfg.difficulty && cfg.difficulty[key]) || 1;
         if (mult !== 1) {
           const label = (SFC_CONFIG.game.ai.difficulty[key] || {}).label || key;
-          lines.push({ label: `Difficulty ${label} ×${mult}`, mult });
+          lines.push({ label: _t('Difficulty {level} ×{n}', { level: label, n: mult }), mult });
           xp = Math.round(xp * mult); gold = Math.round(gold * mult);
         }
-      } else lines.push({ label: 'Online versus', note: true });
+      } else lines.push({ label: _t('Online versus'), note: true });
 
       // XP hiển thị trên thanh: chạm trần thì thanh đầy, không tràn
       const bar = () => ({ level: d.level, xp: Math.min(d.xp, this.xpToNext(d.level)), need: this.xpToNext(d.level) });

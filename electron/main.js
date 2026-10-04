@@ -64,6 +64,12 @@ ipcMain.on('sfc-window', (e, mode) => {
 
 ipcMain.on('sfc-quit', () => app.quit());
 
+// ngôn ngữ ưu tiên của hệ điều hành (src/core/i18n.js -> detect): navigator.languages trong cửa sổ bị khoá theo
+// electronLanguages của package.json nên không dùng được
+ipcMain.on('sfc-languages', (e) => {
+  try { e.returnValue = app.getPreferredSystemLanguages(); } catch (err) { e.returnValue = [app.getLocale()]; }
+});
+
 // mở link ngoài game (bản DEMO: trang Steam) bằng trình duyệt của máy — chỉ https
 ipcMain.on('sfc-open-url', (e, url) => {
   if (typeof url === 'string' && /^https:\/\//.test(url)) shell.openExternal(url);

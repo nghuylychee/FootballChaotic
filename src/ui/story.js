@@ -685,7 +685,7 @@ window.SFC = window.SFC || {};
       this.active = true;
       this.hold = 0;
       el.innerHTML = `<canvas width="${W}" height="${H}"></canvas><div class="st-text"></div>
-        <div class="st-skip"><i></i><span><kbd>${esc(SFC.Input.label('confirm'))}</kbd> next · hold to skip</span></div>`;
+        <div class="st-skip"><i></i><span>${SFC.t('{key} next · hold to skip', { key: `<kbd>${esc(SFC.Input.label('confirm'))}</kbd>` })}</span></div>`;
       el.classList.remove('hidden');
       ctx = el.querySelector('canvas').getContext('2d');
       ctx.imageSmoothingEnabled = false;
@@ -837,7 +837,7 @@ window.SFC = window.SFC || {};
         <div class="st-areas">${areas}</div>
         ${P.lines.map(([k, a, b], i) => `<div class="st-row" style="--d:${0.25 + i * 0.3}s"><span class="st-ic">${icon(k)}</span><div><b>${star(a)}</b><small>${esc(b)}</small></div></div>`).join('')}
         <div class="st-card-f">${esc(P.foot)}</div>
-        <div class="st-card-go"><kbd>${esc(SFC.Input.label('confirm'))}</kbd> LET'S GO</div>
+        <div class="st-card-go"><kbd>${esc(SFC.Input.label('confirm'))}</kbd> ${esc(SFC.t("LET'S GO"))}</div>
       </div>`;
     },
   };
