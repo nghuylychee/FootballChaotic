@@ -10,7 +10,7 @@ const { minify } = require('terser');
 
 const DIRS = ['config', 'src'];
 // sau khi xoá: file đã qua Terser (không còn comment) không được còn các chữ này. Mọi file khác chỉ kiểm SFC_DEV
-const MARKERS = ['SFC_DEV', 'DRILL TEST', 'LEVEL UP TEST', 'Replay the intro','testDrill'];
+const MARKERS = ['SFC_DEV', 'DRILL TEST', 'LEVEL UP TEST', 'Replay the intro', 'testDrill', 'testArea', 'JUMP TO AREA'];
 
 function jsFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => {

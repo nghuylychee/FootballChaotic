@@ -170,6 +170,8 @@ window.SFC = window.SFC || {};
               { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drill cards · stats reset on close', danger: true, act: () => this.testDrill() },
               // màn LEVEL UP sau trận (thẻ drill vừa nhận) -> lật thẻ -> chọn, không cần đá trận
               { kind: 'btn', label: 'LEVEL UP TEST', sub: 'Cheat · level-up notice + 3 drill cards · stats reset on close', danger: true, act: () => this.testDrill(3, true) },
+              // nhảy thẳng tới Area bất kỳ của Main Path (hạng thấp nhất, 0 sao) để thử Area khó. Có ghi hồ sơ
+              { kind: 'pick', label: 'JUMP TO AREA', value: this.testAreaLabel(), danger: true, change: (d) => this.testArea(d) },
               // xem thử bản DEMO itch.io (config/demo.config.js): khoá Area 3+ và ONLINE, đến khi tắt game
               { kind: 'btn', label: 'DEMO MODE', sub: SFC_DEMO ? 'ON · itch.io gating · until restart' : 'OFF · preview itch.io gating', danger: true, act: () => { SFC_DEMO = !SFC_DEMO; this.wishSeen = false; this.render(); } },
             ];
@@ -711,6 +713,20 @@ window.SFC = window.SFC || {};
           pf.sandbox = false;
           this.render();
         }, notice ? { notice: { earned: n, from: Math.max(1, lv - n), to: lv } } : {});
+      },
+      // cheat JUMP TO AREA: đổi Area đang đá (về hạng thấp nhất, 0 sao). Core của các Area đã bỏ qua được cấp bù (backfill)
+      testArea(d) {
+        const MP = MPATH(), st = MP.state, a = wrap(st.area + d, MP.areas().length);
+        Object.assign(st, { area: a, id: MP.area(a).id, div: 0, stars: 0 });
+        st.best = Math.max(st.best, MP.rank(a, 0));
+        st.peak = Math.max(st.peak, MP.pos(a, 0, 0));
+        MP.backfill(st);
+        PF().save();
+        this.pathView = a;
+      },
+      testAreaLabel() {
+        const MP = MPATH(), a = MP.state.area;
+        return `${a + 1}/${MP.areas().length} ${MP.area(a).name}`;
       },
     }),
 
