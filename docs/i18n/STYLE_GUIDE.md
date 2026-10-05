@@ -1,6 +1,6 @@
 # Street Football Chaos: Localization Style Guide
 
-**For:** translators and native reviewers. Current languages: **Brazilian Portuguese (pt-BR)**, **European Portuguese (pt-PT)** and **Spanish (es)**. Russian is planned; see its section at the end.
+**For:** translators and native reviewers. Current languages: **Brazilian Portuguese (pt-BR)**, **European Portuguese (pt-PT)**, **Spanish (es)** and **Japanese (ja)**. Russian is planned; see its section at the end.
 **Use with:** [GLOSSARY.md](GLOSSARY.md). Its terms are mandatory.
 
 ---
@@ -100,6 +100,17 @@ If a literal translation sounds like a translation, it is wrong even when it is 
 - **Gender:** la definitiva, la build, el Core, el Camino, la Zona.
 - **False friends to avoid:** "buey" (in Mexico it reads as the slang *güey*: say "fuerte como un toro"); "muy pronto" (means "very soon": say "muy temprano" for *too early*); "golpes libres" (sounds like *tiros libres*, free kicks: say "golpes sin enfriamiento"); "gol en contra" (often means *own goal*: say "gol recibido" for *conceding*).
 - **Spoken lines:** the grandfather calls the kid "mijo", the warm form used all over Latin America. Coach shouts are short and direct: "¡Pásala!", "¡Dispara!", "¡Ve por el gol!".
+
+### Japanese (ja)
+
+- **Voice:** casual and loud, like an arcade football game (think イナズマイレブン). No 敬語. Hints and coach shouts use the plain imperative: 「パスだ！」「シュート！」「Dを長押し」. System UI uses short noun phrases: 「設定」「データを削除」.
+- **The kid** says 「オレ」, and the game calls the player 「きみ」. **Grandpa** (じいちゃん) talks like an old man: わし, 〜じゃ, ほれ, and calls the kid 「坊主」.
+- **Width:** a Japanese character is about twice as wide as a Latin letter in these fonts. Aim for about 55% of the English character count on buttons, labels, banners and HUD text. `node scripts/i18n-check.js` counts width, not characters, for both the `--long` list and the `@N` limits.
+- **Punctuation:** use full-width 、。！？「」 after Japanese text. Keep the source's separators (`·`, `→`, `★`). Keys (D, Z, Enter, Esc) stay Latin.
+- **No plurals:** strings that have `one` / `other` forms take one plain string.
+- **Names:** Core names are short and punchy, mixing kanji and katakana (ファイアボール, 韋駄天, 返し技). Areas and teams are transcreated with Japanese neighborhood flavor (路地裏, 屋上, 屋台横丁, 田んぼFC).
+- **Kana and kanji are small on screen.** The UI is 640×360, so the smallest labels draw kanji at 5 px before scaling. Prefer kana or simple kanji for tiny labels, and confirm in game at 1280×720.
+- **Font:** Japanese is drawn with DotGothic16, cut down to the characters in `src/i18n/ja.js`. After you edit Japanese strings, run `python scripts/build-ja-font.py`, or new kanji will fall back to a system font.
 
 ### Russian (ru): planned
 

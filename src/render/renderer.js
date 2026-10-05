@@ -195,11 +195,12 @@ window.SFC = window.SFC || {};
         ringPx(ctx, r.x, r.y, 6 + k * 14, r.color);
       }
       ctx.globalAlpha = 1;
-      ctx.font = '8px ' + C.pixelFont;
       ctx.textAlign = 'center';
       // chữ bay (effects.text): dịch lúc vẽ — chuỗi tạo ở systems / entities bằng tiếng Anh
       for (const tx of fx.texts) {
         const str = SFC.t(tx.str);
+        // chữ Nhật: chữ Hán 8px vỡ nét -> 12px DotGothic16
+        ctx.font = SFC.I18n.isCJK(str) ? '12px ' + SFC.I18n.pxFont() : '8px ' + C.pixelFont;
         ctx.globalAlpha = Math.min(1, (tx.t / tx.max) * 2);
         ctx.fillStyle = SP().OUT;
         ctx.fillText(str, Math.round(tx.x) + 1, Math.round(tx.y) + 1);

@@ -51,7 +51,7 @@ Màn Hướng dẫn (`config/tutorial.config.js`) đã được gỡ khỏi tran
 ↑↓ chọn · ←→ đổi · Enter · Esc/Backspace quay lại.
 
 ## Ngôn ngữ
-English · Português (Brasil, popup ghi "Brasil") · Português (Bồ Đào Nha, popup ghi "Português") · Español. Lần đầu mở game hiện popup chọn ngôn ngữ (chọn sẵn theo Steam / hệ điều hành), đổi lại ở SETTINGS > LANGUAGE.
+English · Português (Brasil, popup ghi "Brasil") · Português (Bồ Đào Nha, popup ghi "Português") · Español · 日本語. Lần đầu mở game hiện popup chọn ngôn ngữ (chọn sẵn theo Steam / hệ điều hành), đổi lại ở SETTINGS > LANGUAGE.
 Câu tiếng Anh là key (`SFC.t`), bản dịch ở `src/i18n/`, chữ trong config dịch theo `src/i18n/fields.js`. Kiểm tra bản dịch: `node scripts/i18n-check.js`.
 Bản dev: `index.html?lang=es` vào thẳng 1 ngôn ngữ · `?lang=pseudo` giả dịch để soi chữ sót / tràn. Chi tiết + quy trình dịch: [docs/LOCALIZATION.md](docs/LOCALIZATION.md).
 

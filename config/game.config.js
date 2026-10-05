@@ -10,7 +10,8 @@ SFC_CONFIG.game = {
     width: 640,
     height: 360,
     vignette: 0.6,          // độ tối viền màn hình kiểu Isaac
-    pixelFont: '"Press Start 2P", monospace',
+    // "SFC JP": kana / chữ Hán của tiếng Nhật (unicode-range trong css/style.css -> ngôn ngữ khác không tải font này)
+    pixelFont: '"Press Start 2P", "SFC JP", monospace',
     showDebug: false,
     // SETTINGS > RESOLUTION (chỉ bản desktop): cỡ cửa sổ, luôn 16:9. Cỡ lớn hơn màn hình bị ẩn. Thêm FULLSCREEN ở cuối
     windowSizes: [[1280, 720], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]],

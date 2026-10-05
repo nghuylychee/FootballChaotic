@@ -1,8 +1,9 @@
 # Đa ngôn ngữ (localization)
 
-Trạng thái 2026-10: có **English · Português (Brasil) · Português (Portugal) · Español** (tiếng Tây Ban Nha cho Mỹ Latinh, nền kiểu Mexico).
+Trạng thái 2026-10: có **English · Português (Brasil) · Português (Portugal) · Español · 日本語** (tiếng Tây Ban Nha cho Mỹ Latinh, nền kiểu Mexico).
 Trong popup chọn ngôn ngữ, bản Brazil ghi **Brasil**, bản Bồ Đào Nha ghi **Português** (chốt 2026-10-04).
 Bản pt-BR và es đã qua **bản dịch đầu + 2 lượt tự trau chuốt**, CHƯA qua người bản xứ duyệt. Bản **pt-PT** (2026-10-04) mới có bản dịch đầu: viết lại bản pt-BR theo chuẩn Bồ Đào Nha (xưng *tu*, golo / guarda-redes / equipa / remate, chính tả kiểu Bồ Đào Nha), tên Area và tên đội đặt mới cho người Bồ Đào Nha. Bản này cũng chưa qua người bản xứ duyệt. Lượt 2 (2026-10-04) sửa những câu nghe như dịch máy và đối chiếu thuật ngữ với cách game / truyền hình ở từng nước đang dùng: EA FC, eFootball, Overwatch 2, LoL, Valorant, Fortnite, TUDN, báo Brazil.
+Bản **ja** (2026-10-05) mới có bản dịch đầu, CHƯA qua người bản xứ duyệt: giọng thân mật kiểu game arcade, thuật ngữ ở bảng Japanese trong GLOSSARY.md.
 Tài liệu cho người dịch / duyệt (tiếng Anh): [i18n/STYLE_GUIDE.md](i18n/STYLE_GUIDE.md) · [i18n/GLOSSARY.md](i18n/GLOSSARY.md) · [i18n/REVIEW_QUESTIONS.md](i18n/REVIEW_QUESTIONS.md) (những chỗ chưa chắc, người duyệt trả lời trước).
 
 ## Cách hoạt động
@@ -17,7 +18,7 @@ Tài liệu cho người dịch / duyệt (tiếng Anh): [i18n/STYLE_GUIDE.md](i
   | `SFC.N_(s)` | chỉ đánh dấu, dịch ở chỗ khác lúc hiện | banner sự kiện trong `match.js` (online: khách nhận sự kiện của host) |
 - **Config:** các trường liệt kê trong `src/i18n/fields.js` được dịch tại chỗ mỗi lần đổi ngôn ngữ, nên code đọc config không phải sửa. Bản tiếng Anh gốc được giữ lại để đổi qua lại. Đuôi `#ngữ cảnh` hoạt động như `tc`. Đuôi `@N` giới hạn bản dịch tối đa N ký tự, dùng cho chỗ hiển thị có bề rộng cố định (sơ đồ tay cầm).
 - **Chữ bay trong trận** (`effects.text` / `effects.comic` / `callout`): dịch lúc vẽ (`renderer.js`, `vfx.js`), không phải sửa systems. Tiếng tượng thanh (BOOM!, POW!) để nguyên trong bản dịch.
-- **Bản dịch:** `src/i18n/pt-BR.js`, `src/i18n/pt-PT.js`, `src/i18n/es.js`. Mỗi file gọi `SFC.I18n.add({ id, name, steam, accentCaps, strings })`. Thứ tự `<script>` trong `index.html` là thứ tự trong popup.
+- **Bản dịch:** `src/i18n/pt-BR.js`, `src/i18n/pt-PT.js`, `src/i18n/es.js`, `src/i18n/ja.js`. Mỗi file gọi `SFC.I18n.add({ id, name, steam, accentCaps, strings })`. Thứ tự `<script>` trong `index.html` là thứ tự trong popup.
 - **Số:** `SFC.I18n.num(n, digits)` tách hàng nghìn / thập phân theo ngôn ngữ (12,500 / 12.500 · 0.5 / 0,5). Tiền ở trang chủ và số trong mô tả Core đã dùng hàm này.
 
 ## Popup chọn ngôn ngữ (`src/ui/langpick.js`)
@@ -44,7 +45,7 @@ Tài liệu cho người dịch / duyệt (tiếng Anh): [i18n/STYLE_GUIDE.md](i
 
 | Lệnh | Để làm gì |
 |---|---|
-| `node scripts/i18n-check.js` | Tóm tắt: % đã dịch, thiếu, thừa, sai thuật ngữ. **LỖI** (exit 1) khi lệch `{biến}` / thẻ HTML / `*từ khoá*`, hoặc vượt giới hạn `@N` |
+| `node scripts/i18n-check.js` | Tóm tắt: % đã dịch, thiếu, thừa, sai thuật ngữ. **LỖI** (exit 1) khi lệch `{biến}` / thẻ HTML / `*từ khoá*`, hoặc vượt giới hạn `@N`. Độ dài tính theo bề rộng: chữ Nhật / Hán = 2 ô |
 | `... --missing es` | Liệt kê chuỗi chưa dịch kèm chỗ dùng |
 | `... --long` | Bản dịch dài hơn hẳn tiếng Anh, dễ tràn khung |
 | `... --sheet review.csv` | Bảng duyệt (UTF-8, mở được bằng Excel / Google Sheets): key · chỗ dùng · tiếng Anh · từng ngôn ngữ |
@@ -68,7 +69,8 @@ Bảng thuật ngữ được kiểm tự động: dòng nào có `Lint ✓` tro
 2. Khai báo `steam: [...]` theo mã ngôn ngữ API của Steam (`russian`, `schinese`, `japanese`...).
 3. **Font:** Press Start 2P và VT323 đang đóng gói chỉ có Latin (+ chữ Việt cho VT323).
    - Tiếng Nga: Press Start 2P có bản Cyrillic (tải thêm file `cyrillic` vào `assets/fonts`, khai báo `@font-face` với `unicode-range`). VT323 không có Cyrillic, nên phải chọn font thay cho phần chữ thân.
-   - Trung / Nhật: cần font pixel có chữ Hán (vài MB), ảnh hưởng dung lượng bản web.
+   - **Tiếng Nhật (đã làm 2026-10-05):** font pixel **DotGothic16** (OFL), cắt chỉ còn những chữ `ja.js` dùng + đủ bộ kana (`scripts/build-ja-font.py` -> `assets/fonts/DotGothic16-ja.woff2`, ~75 KB; font gốc ~2 MB để ở `scripts/fonts/`, không đóng gói). **Sửa / thêm chuỗi tiếng Nhật thì chạy lại script**, không thì chữ Hán mới hiện bằng font hệ thống. CSS luôn để font "SFC JP" sau Press Start 2P và "SFC JP VT" (nhỏ hơn 20%) sau VT323: chữ Latin không đổi, `unicode-range` nên ngôn ngữ khác chỉ tải font khi màn hình có chữ Nhật (dòng 日本語 ở popup chọn ngôn ngữ). Pack khai báo `cjk: true` -> `i18n.js` gắn class `cjk` lên `<html>`: chữ thân (`--vt`) đổi hẳn sang DotGothic16 ("SFC JP Body", cả số / chữ Latin, để "3試合 · 2勝" không lẫn 2 kiểu pixel; cỡ 80% nên chữ Latin rộng đúng bằng VT323), Press Start 2P vẫn giữ cho tiêu đề / số lớn; ngắt dòng kiểu kinsoku. Chữ vẽ trên canvas lấy font qua `SFC.I18n.pxFont()` / `vtFont()`. Chữ Hán 8px trên canvas vỡ nét, nên chữ bay và callout có chữ Nhật được vẽ tối thiểu 12px (`SFC.I18n.isCJK`).
+   - Tiếng Trung: làm giống tiếng Nhật (DotGothic16 không đủ chữ Hán giản thể, cần font khác).
    - **Chữ hoa có dấu** (Á É Ó Ñ... pt-BR, pt-PT, es; sau này È Î Ö... cho Pháp, Đức): Press Start 2P vẽ chúng thấp như chữ thường. Bật `accentCaps: true` trong file dịch để dùng font phụ **SFC Accent Caps**. Chữ nào font phụ chưa có thì thêm vào `GLYPHS` trong `scripts/build-accent-caps.py`, chạy lại, rồi thêm mã chữ vào `unicode-range` của `@font-face` "SFC Accent Caps" trong `css/style.css`.
 4. Thêm cột ngôn ngữ đó vào `GLOSSARY.md` và một mục trong STYLE_GUIDE.
 
@@ -79,20 +81,21 @@ Bảng thuật ngữ được kiểm tự động: dòng nào có `Lint ✓` tro
 - CHARACTER (chỉ số, ngoại hình, tên đồ đang mặc), Main Path, Luyện tập, Online / phòng chờ, màn WISHLIST (bản demo)
 - toàn bộ PROLOGUE (cut scene, trận mơ, thẻ Main Path), màn giới thiệu đội, chọn Core (tên + mô tả 54 Core, Cộng hưởng), HUD, Pause, kết quả + thưởng, màn mở thẻ, màn DRILL / LEVEL UP
 - chữ bay trong trận; tên đội, khẩu hiệu, mô tả 30+ đội; tên Area.
+- SHOP / mở hộp / túi đồ (`gacha.js`, mô tả đồ), TEAM / scout (`team.js`, tên vùng scout) (2026-10-05)
 
 **Chưa dịch** (vẫn hiện tiếng Anh):
-- SHOP / mở hộp / túi đồ (`gacha.js`): mô tả đồ, tỉ lệ, nút
-- TEAM / scout (`team.js`)
+- trang HOW TO PLAY (`menu.js` -> `renderTutorial`, `config/tutorial.config.js`): không còn nút nào mở trang này
 - trang TEST (chỉ bản dev, cố ý để tiếng Anh)
 - chữ vẽ trên sân (bảng quảng cáo, graffiti, màn hình sân vận động) và chữ trong hình cut scene (GOAT, FAMILY...): cố ý giữ như chữ trong tranh.
 
 ## Giới hạn đã biết
 
 - **Chữ hoa có dấu (đã sửa 2026-10-04):** Press Start 2P vẽ chữ hoa có dấu thấp như chữ thường (MUéVETE, PRóLOGO, VOCê). Font phụ **SFC Accent Caps** (`assets/fonts/SFCAccentCaps.woff2`, dựng bằng `scripts/build-accent-caps.py` từ chính pixel của Press Start 2P, giấy phép OFL) vẽ lại 13 chữ đủ cao. Font này chỉ bật cho ngôn ngữ có `accentCaps: true` (pt-BR, pt-PT, es, giả dịch): `i18n.js` gắn class `accent-caps` lên `<html>`, CSS đổi biến `--px`, chữ vẽ trên canvas lấy font qua `SFC.I18n.pxFont()`. Dấu nhô lên trên ô chữ 1/4 cỡ chữ, nên khung `overflow: hidden` dùng `--px` phải chừa chỗ (`:root.accent-caps :is(...)` trong `css/style.css`). Thêm khung kiểu đó thì thêm selector vào danh sách này.
-- **Icon tài nguyên trong mô tả Core** thay theo đúng chữ (Embalo, Furia...). Ngôn ngữ biến cách như tiếng Nga sẽ không khớp. Trước khi dịch tiếng Nga nên đổi mô tả sang token kiểu `{res:rage}`.
+- **Icon tài nguyên trong mô tả Core** thay theo đúng chữ (Embalo, Furia, 勢い...). Chữ Nhật / Hán không có dấu cách nên không bị chặn bởi ranh giới từ (`corescale.js` -> `iconize`). Ngôn ngữ biến cách như tiếng Nga sẽ không khớp. Trước khi dịch tiếng Nga nên đổi mô tả sang token kiểu `{res:rage}`.
 - **Mô tả Core ghi phím bàn phím** (D, Z): khi chơi bằng tay cầm / console thì sai. Nên đổi sang token phím theo thiết bị (`{key:shoot}`), giống gợi ý phím ở menu.
 - **Ô đặt tên** chỉ nhận A-Z, 0-9, không gõ được dấu (João, Íñigo). Trên console cũng chưa có bàn phím ảo.
 - **Trang Main Path:** ô đội chỉ vừa khoảng 14 ký tự cho tên đội và khoảng 16 ký tự cho tagline, dài hơn bị cắt "…". Tên Core của chefão được xuống tối đa 2 dòng (đã kiểm cả 10 Area ở 3 ngôn ngữ, không tên nào bị cắt). pt-PT: tên đội và tagline (trừ dòng của chefão) đều nằm trong giới hạn; tên Core exclusivo dài nhất là "Arrancada Relâmpago" / "Remate Buraco Negro" (19 ký tự), chưa chụp màn từng Area.
 - **Online:** tên Core trong cut-in Tuyệt kỹ đến từ máy host nên có thể khác ngôn ngữ với máy khách. Banner và chữ bay thì mỗi máy tự dịch.
 - **Brazil cấm hộp quà ngẫu nhiên trả tiền** trong game mà trẻ vị thành niên có thể chơi (Lei 15.211/2025, hiệu lực từ 17/03/2026; luật định nghĩa "caixa de recompensa" là mua "mediante pagamento"). Hộp gacha hiện chỉ mở bằng vàng kiếm trong trận nên nằm ngoài định nghĩa này. Nếu sau này bán vàng hoặc bán hộp bằng tiền thật (kể cả qua một loại tiền nạp), phải hỏi lại pháp lý trước khi phát hành ở Brazil.
 - **`electronLanguages`** (package.json) chỉ có `en-US`, `vi`. Mục này chỉ ảnh hưởng chữ của Chromium (menu chuột phải...), không ảnh hưởng game. Game đọc ngôn ngữ hệ điều hành qua preload.
+- **Tiếng Nhật, chữ nhỏ:** UI 640×360 có nhiều nhãn cỡ 5px (gợi ý phím trên sân, nhãn ô division, tag trên thẻ). Chữ Hán ở cỡ đó vẫn đọc được ở 1280×720 nhưng sát giới hạn; ở cửa sổ nhỏ hơn sẽ khó đọc. Mã chỉ số 3 chữ (PAC, SPD...) giữ tiếng Anh vì ô chỉ vừa 3 chữ Latin. Chữ quảng cáo trên sân vẽ tên đội đã dịch ở cỡ ~6px nên chữ Nhật ở đó chỉ mang tính trang trí.

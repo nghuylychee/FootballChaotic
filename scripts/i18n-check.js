@@ -188,6 +188,8 @@ const wordRe = (w) => new RegExp(`(?<![\\p{L}\\p{N}])${w.replace(/[.*+?^${}()|[\
 const tokens = (s, re) => (s.match(re) || []).sort().join(' ');
 const VARS = /\{[\w.+%-]+\}/g, TAGS = /<\/?[a-z][^>]*>/gi, STARS = /\*[^*]+\*/g;
 const visible = (s) => s.replace(VARS, 'xx').replace(TAGS, '');
+// bề rộng tính theo ô chữ Latin: chữ Nhật / Hán / toàn khổ rộng gấp đôi (so độ dài + giới hạn @N)
+const width = (s) => [...s].reduce((w, c) => w + (/[⺀-鿿豈-﫿＀-｠￠-￦]/.test(c) ? 2 : 1), 0);
 
 const errors = [], report = {};
 for (const p of packs) {
@@ -209,7 +211,7 @@ for (const p of packs) {
       if (lack.length || extra.length) errors.push(`${p.id}: biến lệch ${lack.length ? 'thiếu ' + lack.join(',') : ''}${extra.length ? ' thừa ' + extra.join(',') : ''} — ${JSON.stringify(key)} → ${JSON.stringify(f)}`);
       if (tokens(f, TAGS) !== tokens(src.en, TAGS)) errors.push(`${p.id}: thẻ HTML lệch — ${JSON.stringify(key)} → ${JSON.stringify(f)}`);
       if ((f.match(STARS) || []).length !== (src.en.match(STARS) || []).length) errors.push(`${p.id}: *từ khoá* lệch — ${JSON.stringify(key)} → ${JSON.stringify(f)}`);
-      const a = visible(src.en).length, b = visible(f).length;
+      const a = width(visible(src.en)), b = width(visible(f));
       if (src.max && b > src.max) errors.push(`${p.id}: dài ${b} > ${src.max} ký tự (chỗ hiển thị cố định) — ${JSON.stringify(key)} → ${JSON.stringify(f)}`);
       if (b > a * 1.4 && b - a > 6) R.long.push(`${Math.round((b / a) * 100)}% ${JSON.stringify(src.en)} → ${JSON.stringify(f)}`);
     }

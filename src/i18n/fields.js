@@ -25,9 +25,11 @@ SFC.I18n.fields = [
   // chỉ số character, độ hiếm, độ khó, chú thích nút (SETTINGS > CONTROLS)
   'progression.attrs.list.*.label', 'progression.attrs.list.*.short', 'progression.attrs.list.*.desc',
   'progression.rarities.*.label', 'progression.boxes.*.name', 'progression.boxes.*.desc',
-  'progression.slots.*.label', 'progression.items.*.name',
+  'progression.slots.*.label', 'progression.items.*.name', 'progression.items.*.desc',
   'progression.attrs.drills.list.*.name', 'progression.attrs.drills.list.*.desc',
   'intro.stats.*.1',
+  // vùng scout (TEAM > SCOUT): save lưu chỉ số vùng (scout.ri) nên đổi ngôn ngữ giữa chừng vẫn đúng tên
+  'teammates.regions.*',
   'game.ai.difficulty.*.label',
   // chú thích nút trên sơ đồ tay cầm (SVG bề rộng cố định): dài hơn là bị cắt
   'controls.legend.*.atk@24', 'controls.legend.*.def@24',

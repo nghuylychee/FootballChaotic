@@ -112,12 +112,14 @@ window.SFC = window.SFC || {};
       });
     },
     // chữ tài nguyên (Momentum / Rhythm / Rage / Guard, đã dịch theo ngôn ngữ đang chọn) -> icon pixel như trên HUD
-    // (chỉ trong HTML, tooltip vẫn giữ chữ). Ranh giới từ theo Unicode: \b của regex không nhận chữ có dấu (Ímpeto, Fúria)
+    // (chỉ trong HTML, tooltip vẫn giữ chữ). Ranh giới từ theo Unicode: \b của regex không nhận chữ có dấu (Ímpeto, Fúria).
+    // Chữ Nhật / Hán không có dấu cách -> không tính là ranh giới chặn (勢いが、リズムを)
     iconize(html) {
       const R = DEF().resources, map = {};
       for (const k in R) map[R[k].label] = k;
       const words = Object.keys(map).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      const re = new RegExp('(?<![\\p{L}\\p{N}_])(' + words.join('|') + ')(?![\\p{L}\\p{N}_])', 'gu');
+      const B = '(?![\\p{scx=Han}\\p{scx=Hira}\\p{scx=Kana}])[\\p{L}\\p{N}_]';
+      const re = new RegExp('(?<!' + B + ')(' + words.join('|') + ')(?!' + B + ')', 'gu');
       return html.replace(re, (w) => (SFC.PixelIcon ? SFC.PixelIcon.res(map[w], 'res-in') : w));
     },
     // mô tả dạng chữ thường (tooltip, tìm kiếm): bỏ thẻ HTML

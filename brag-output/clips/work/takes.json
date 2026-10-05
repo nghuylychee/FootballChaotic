@@ -1,0 +1,9 @@
+{
+  "aura_pose":         ["aura_pose_s7", 6.8],
+  "aura_run":          ["aura_run_s7", 4.8],
+  "meteor_mid_goal":   ["meteor_mid_s2", 4.4],
+  "meteor_mid_keeper": ["meteor_mid_s4", 4.4],
+  "meteor_angle_goal": ["meteor_angle_s1", 4.4],
+  "fists_wall":        ["fists_wall_s7", 4.5],
+  "fists_goal":        ["fists_goal_s7", 6.0]
+}

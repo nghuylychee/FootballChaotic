@@ -84,7 +84,8 @@ window.SFC = window.SFC || {};
     misses: new Set(),   // bản dev: key chưa dịch đã gặp (SFC.I18n.report() để xem)
 
     // pack: { id, name (tên viết bằng chính ngôn ngữ đó), steam: [mã ngôn ngữ Steam], tags?: [mã BCP 47 nhận thêm], strings,
-    //         accentCaps?: true = có chữ hoa có dấu (Á É Ó Ñ...) -> chữ Press Start 2P dùng thêm font phụ SFC Accent Caps }
+    //         accentCaps?: true = có chữ hoa có dấu (Á É Ó Ñ...) -> chữ Press Start 2P dùng thêm font phụ SFC Accent Caps,
+    //         cjk?: true = chữ Nhật (kana / Hán) -> font dự phòng DotGothic16 "SFC JP" sau font pixel (css/style.css: :root.cjk) }
     add(pack) {
       if (byId[pack.id]) return;
       packs.push(pack);
@@ -124,10 +125,23 @@ window.SFC = window.SFC || {};
       // chữ hoa có dấu vẽ đủ cao (css/style.css: :root.accent-caps) · nạp sẵn font để chữ vẽ trên canvas cũng đúng ngay
       document.documentElement.classList.toggle('accent-caps', !!cur.accentCaps);
       if (cur.accentCaps && document.fonts && document.fonts.load) document.fonts.load('8px "SFC Accent Caps"', 'ÁÉÍÓÚÑ').catch(() => {});
+      // tiếng Nhật: font dự phòng cho kana / chữ Hán (DOM + canvas)
+      document.documentElement.classList.toggle('cjk', !!cur.cjk);
+      if (cur.cjk && document.fonts && document.fonts.load) {
+        document.fonts.load('16px "SFC JP"', 'あア字').catch(() => {});
+        document.fonts.load('16px "SFC JP VT"', 'あア字').catch(() => {});
+      }
       this.localizeConfig();
     },
     // font Press Start 2P cho chữ vẽ trên canvas (cùng danh sách với biến --px trong css/style.css)
-    pxFont() { return cur.accentCaps ? '"SFC Accent Caps", "Press Start 2P", monospace' : '"Press Start 2P", monospace'; },
+    pxFont() {
+      if (cur.cjk) return '"Press Start 2P", "SFC JP", monospace';
+      return cur.accentCaps ? '"SFC Accent Caps", "Press Start 2P", monospace' : '"Press Start 2P", monospace';
+    },
+    // font VT323 cho chữ vẽ trên canvas (cùng danh sách với biến --vt)
+    vtFont() { return cur.cjk ? '"SFC JP Body", "VT323", monospace' : '"VT323", monospace'; },
+    // chuỗi có chữ Nhật / Hán (canvas: chữ Hán cỡ 8px vỡ nét -> chỗ vẽ chữ nhỏ tự phóng to)
+    isCJK(s) { return /[\u3000-\u30ff\u3400-\u9fff\uff00-\uffef]/.test(s); },
 
     // fields: 'đường.dẫn' · '#ngữ cảnh' (cùng câu tiếng Anh nhưng dịch khác chỗ khác) · '@N' tối đa N ký tự (chỉ scripts/i18n-check.js kiểm)
     localizeConfig() {

@@ -151,7 +151,7 @@ window.SFC = window.SFC || {};
       d.active = d.roster.some((m) => m.id === raw.active) ? raw.active : d.roster[0].id;
       d.station = clamp(Math.round(+raw.station || 1), 1, C().station.length);
       const sc = raw.scout;
-      if (sc && Array.isArray(sc.offers) && sc.end > 0) d.scout = { start: +sc.start || 0, end: +sc.end, region: sc.region || '', offers: sc.offers.filter((m) => m && Array.isArray(m.deck) && m.ratings).map((m) => clean(Object.assign({ id: 1 }, m))) };
+      if (sc && Array.isArray(sc.offers) && sc.end > 0) d.scout = { start: +sc.start || 0, end: +sc.end, region: sc.region || '', ri: Number.isInteger(sc.ri) ? sc.ri : Math.max(0, C().regions.indexOf(sc.region)), offers: sc.offers.filter((m) => m && Array.isArray(m.deck) && m.ratings).map((m) => clean(Object.assign({ id: 1 }, m))) };
       return d;
     },
 
@@ -188,13 +188,16 @@ window.SFC = window.SFC || {};
     scouting() { return this.T.scout; },
     scoutLeft() { const s = this.T.scout; return s ? Math.max(0, s.end - Date.now()) : 0; },
     scoutReady() { return !!this.T.scout && this.scoutLeft() <= 0; },
+    // tên vùng đang scout theo ngôn ngữ đang chọn (config regions được dịch tại chỗ, src/i18n/fields.js); save cũ chỉ có chữ
+    regionName(sc = this.T.scout) { return sc ? C().regions[sc.ri] || sc.region : ''; },
     startScout() {
       if (this.T.scout) return false;
       const MP = SFC.MainPath, area = Math.floor(MP.state.best / MP.nDiv());
       const offers = [];
       for (let i = 0; i < C().offers; i++) offers.push(this.generate(area, this.T.station));
       const now = Date.now();
-      this.T.scout = { start: now, end: now + this.station().minutes * 60000, region: pick(C().regions), offers };
+      const ri = Math.floor(Math.random() * C().regions.length);
+      this.T.scout = { start: now, end: now + this.station().minutes * 60000, region: C().regions[ri], ri, offers };
       SFC.Profile.save();
       return true;
     },

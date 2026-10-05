@@ -33,6 +33,28 @@
   src: url(../assets/fonts/SFCAccentCaps.woff2) format('woff2');
   unicode-range: U+00C0-00C3, U+00C9-00CA, U+00CD, U+00D1, U+00D3-00D5, U+00DA, U+00DC;
 }
+/* Tiếng Nhật: DotGothic16 cắt còn chữ bản dịch dùng (scripts/build-ja-font.py). Đứng sau Press Start 2P / VT323 trong danh sách font
+   (:root.cjk) nên chữ Latin không đổi, chỉ kana / chữ Hán rơi xuống đây. Ép ascent + descent = 1em để dòng không cao lên.
+   Bản "VT" nhỏ hơn: VT323 vẽ chữ nhỏ trong ô chữ, chữ Hán đủ 1em đứng cạnh sẽ to hẳn */
+@font-face {
+  font-family: 'SFC JP'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url(../assets/fonts/DotGothic16-ja.woff2) format('woff2');
+  unicode-range: U+2E80-2FFF, U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+  ascent-override: 88%; descent-override: 12%; line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'SFC JP VT'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url(../assets/fonts/DotGothic16-ja.woff2) format('woff2');
+  unicode-range: U+2E80-2FFF, U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+  size-adjust: 80%; ascent-override: 110%; descent-override: 15%; line-gap-override: 0%;
+}
+/* Bản tiếng Nhật: chữ thân (--vt) vẽ hết bằng DotGothic16, kể cả số / chữ Latin, để "3試合 · 2勝" không lẫn 2 kiểu pixel.
+   80% -> chữ Latin rộng 0.4em, đúng bằng VT323, nên bố cục không xê dịch. Chỉ dùng trong :root.cjk */
+@font-face {
+  font-family: 'SFC JP Body'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url(../assets/fonts/DotGothic16-ja.woff2) format('woff2');
+  size-adjust: 80%; ascent-override: 100%; descent-override: 25%; line-gap-override: 0%;
+}
 
 :root {
   --ink: #140c16;
@@ -41,10 +63,15 @@
   --gold: #ffe14f;
   --panel: rgba(20, 12, 22, 0.88);
   --edge: #3b2a36;
-  --px: "Press Start 2P", monospace;
-  --vt: "VT323", monospace;
+  /* "SFC JP" luôn đứng sau: chữ Nhật (dòng 日本語 ở popup chọn ngôn ngữ, bản ja) vẽ bằng font pixel; unicode-range -> ngôn ngữ khác
+     chỉ tải font này khi trên màn hình có chữ Nhật */
+  --px: "Press Start 2P", "SFC JP", monospace;
+  --vt: "VT323", "SFC JP VT", monospace;
 }
-:root.accent-caps { --px: "SFC Accent Caps", "Press Start 2P", monospace; }
+:root.accent-caps { --px: "SFC Accent Caps", "Press Start 2P", "SFC JP", monospace; }
+/* tiếng Nhật (pack có cjk: true): chữ thân dùng DotGothic16 (Press Start 2P vẫn cho tiêu đề / số lớn) ·
+   ngắt dòng theo luật kinsoku (không mở dòng bằng 。、ー) */
+:root.cjk { --vt: "SFC JP Body", "VT323", monospace; line-break: strict; }
 /* khung cắt chữ (overflow: hidden) dùng --px: nới khung lên trên cho phần dấu, margin âm bù lại nên bố cục không xê dịch */
 :root.accent-caps :is(.pc-name, .ph-name, .in-tn b) { padding-top: 0.25em; margin-top: -0.25em; }
 

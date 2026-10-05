@@ -151,6 +151,62 @@ These terms are **mandatory**. Use the same translation every time it appears. I
 
 Team-card stats (training and lobby): SPEED / POWER / PASSING / PHYSICAL / DRIBBLE / ACCURACY become VELOCIDADE / FORÇA / PASSE / FÍSICO / DRIBLE / PRECISÃO in both Portuguese variants and VELOCIDAD / POTENCIA / PASE / FÍSICO / REGATE / PRECISIÓN in es.
 
+## Japanese (ja)
+
+Japanese has its own table so the tables above stay readable. The `ja` column is linted the same way as the other languages (rows with Lint ✓).
+
+| English | ja | Lint | Notes |
+|---|---|---|---|
+| Core / Cores | コア | ✓ | No plural. Core Upgrade screen: コア強化. Starting Core: 初期コア. Signature Core: 固有コア. Core Box: コアBOX. |
+| Ultimate | 必殺技 | ✓ | The classic Japanese word for a super move (イナズマイレブン, fighting games). |
+| build | ビルド | ✓ | |
+| archetype | タイプ | ✓ | |
+| synergy | シナジー | | |
+| reroll | 引き直し / 引き直す | | REROLL 3 → 3枚引き直す |
+| SCALES WITH | 強化元 | | Card label followed by the stat name. |
+| Archetypes: SPEED / TIKI-TAKA / STRIKER / BRAWLER / KICKER / ILLUSION / IRON / CHAOS | スピード / ティキタカ / ストライカー / ケンカ屋 / 飛び蹴り / 幻影 / 鉄壁 / カオス | | KICKER is named after the flying kick. "キッカー" means a set-piece taker in Japanese football. |
+| Momentum | 勢い | ✓ | Replaced by an icon: exact form. Don't use 勢い for anything else. |
+| Rhythm | リズム | ✓ | Icon, exact form. |
+| Rage | 怒り | ✓ | Icon, exact form. The RAGE! callout is 怒り！ (callouts are never swapped for icons). |
+| Guard | ガード | ✓ | Icon, exact form. |
+| Main Path | キャリア | ✓ | Japanese football games call the single-player ladder キャリア. |
+| Area | エリア | ✓ | |
+| division | ディビジョン | | Roman numerals (III / II / I) stay. |
+| promotion match | 昇格戦 | ✓ | PROMOTED → 昇格！ · DEMOTED → 降格… |
+| championship final | 決勝戦 | | |
+| boss | ボス | ✓ | |
+| OVR | 総合 | ✓ | |
+| drill / drill card | 特訓 / 特訓カード | ✓ | |
+| scout / scout report | スカウト / スカウトレポート | ✓ | |
+| teammate / MATE | 相棒 | | |
+| level / LV | レベル / Lv | | |
+| XP | EXP | | |
+| gold | ゴールド | | |
+| keeper | キーパー | ✓ | |
+| goal / save / shot | ゴール / セーブ / シュート | | Callouts: ゴール！ / セーブ！ |
+| charged shot | 溜めシュート | | |
+| ground pass / through ball / lob pass | グラウンダーパス / スルーパス / ロブパス | | |
+| volley / bicycle kick | ボレー / オーバーヘッド | | |
+| woodwork | ポスト | | Callout: ポスト直撃！ |
+| FULL TIME / FINAL PUSH / GOLDEN GOAL | 試合終了 / ラストスパート / ゴールデンゴール | | |
+| intercept | カット / インターセプト | | Callout: カット！ |
+| RIVAL MATCH | ダービー | | |
+| punch / dropkick | パンチ / ドロップキック | | |
+| light / hard attack | 弱攻撃 / 強攻撃 | | |
+| dash / skill move / dodge | 突進 / フェイント / 回避 | | Sprint is ダッシュ, so the defensive dash is 突進. |
+| stun | スタン | ✓ | |
+| knockback / launch | ノックバック / 打ち上げ | | |
+| cooldown | クールダウン | ✓ | |
+| SETTINGS / CONTROLS / LANGUAGE | 設定 / 操作 / 言語 | | |
+| RESUME / RESTART / skip | 再開 / やり直す / スキップ | | |
+| SHOP / CHARACTER / INVENTORY / APPEARANCE / STATS / TEAM | ショップ / キャラクター / 持ち物 / 見た目 / ステータス / チーム | | |
+| costume / gacha box / dismantle | 衣装 / ガチャボックス / 分解 | | Box names use "BOX" to save width: ストリートBOX. |
+| room / host / lobby / co-op / versus | ルーム / ホスト / ロビー / 協力 / 対戦 | | |
+| GUEST (bench seat) | ベンチ | | |
+| full game / demo / COMING SOON | 製品版 / 体験版 / 近日公開 | | |
+| Stats PACE / SHOOTING / PASSING / DRIBBLE / FIGHT / KEEPER | 走力 / 決定力 / パス / ドリブル / 格闘 / キーパー | | |
+| Stat codes (PAC SHO PAS DRI FIG GK, SPD PWR PHY) | kept in English | | The slots fit 3 Latin letters, not 1.5 kanji. FIFA's Japanese version prints PAC / SHO / PAS on cards too. |
+
 ## Kept in English
 
 GOAT · AURA FARMING · character names (ACE, SHADOW, ECHO, ROOKIE, MAESTRO...) · 3-letter team codes · sound effects (BOOM!, POW!, BONK!, BAM!, KRAKOOM!!, POOF, ZAP!, CLANG!) · "{n} HIT!" · TIKI-TAKA · XP · key names (D, Z, S, X, Enter, Esc).

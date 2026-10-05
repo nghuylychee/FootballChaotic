@@ -14,9 +14,13 @@ window.SFC = window.SFC || {};
 (function () {
   const SP = () => SFC.Sprites;
   const W = 640, H = 360;
-  // Press Start 2P (assets/fonts) có Latin-1: chữ có dấu kiểu á ç ñ ¡ vẫn dùng được; ngoài khoảng đó (dấu tiếng Việt...) -> VT323
+  // Press Start 2P (assets/fonts) có Latin-1: chữ có dấu kiểu á ç ñ ¡ vẫn dùng được; ngoài khoảng đó (dấu tiếng Việt...) -> VT323.
+  // Chữ Nhật: font dự phòng DotGothic16 (vẽ theo lưới 16px) -> không nhỏ hơn 12px kẻo chữ Hán vỡ nét
   const latin1 = (s) => /^[\x00-\xFF]*$/.test(s);
-  const font = (s, px) => (latin1(s) ? `${Math.round(px * 0.55)}px ${SFC.I18n.pxFont()}` : `${px}px "VT323", monospace`);
+  const font = (s, px) => {
+    if (SFC.I18n.isCJK(s)) return `${Math.max(12, Math.round(px * 0.6))}px ${SFC.I18n.pxFont()}`;
+    return latin1(s) ? `${Math.round(px * 0.55)}px ${SFC.I18n.pxFont()}` : `${px}px ${SFC.I18n.vtFont()}`;
+  };
 
   // random có hạt giống (vết nứt giữ nguyên hình dạng qua các khung hình)
   function rng(seed) {

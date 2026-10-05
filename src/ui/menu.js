@@ -227,7 +227,7 @@ window.SFC = window.SFC || {};
             { kind: 'btn', label: battle.label, sub: battle.sub, subHtml: battle.subHtml, main: true, act: battle.act || (() => app.startMainPath()) },
             { kind: 'pick', label: _t('POSITION'), value: this.ctrlLabel(null, s.ctrl), change: (d) => this.changeCtrl(d) },
             { kind: 'pick', label: _t('TEAMMATE'), value: this.mateLabel(), change: (d) => this.changeMate(d) },
-            { kind: 'pick', label: _t('VIEW AREA'), value: `${v + 1}/${n} ${v > st.area || MP.demoLocked(v) ? '???' : MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
+            { kind: 'pick', label: _t('AREA'), value: `${v + 1}/${n} ${v > st.area || MP.demoLocked(v) ? '???' : MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
             { kind: 'btn', label: _t('TRAINING'), sub: _t('No clock · pick team sizes'), foot: true, act: () => this.go('training') },
           ];
         }

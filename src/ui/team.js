@@ -8,6 +8,7 @@
 window.SFC = window.SFC || {};
 
 (function () {
+  const _t = SFC.t, _tn = SFC.tn;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const M = () => SFC.Mates;
   const CFG = () => SFC_CONFIG.teammates;
@@ -18,7 +19,8 @@ window.SFC = window.SFC || {};
   const G = () => SFC.Gacha;
   const K = (a, kb) => SFC.Input.key(a, kb);
   const wrap = (v, n) => ((v % n) + n) % n;
-  const TABS = [['roster', 'ROSTER'], ['scout', 'SCOUT']];
+  const TABS = [['roster'], ['scout']];
+  const TAB_LABEL = () => ({ roster: _t('ROSTER'), scout: _t('SCOUT') });   // dịch lúc vẽ
 
   // thời gian còn lại: 1:05:09 / 12:31
   function fmtLeft(ms) {
@@ -81,7 +83,7 @@ window.SFC = window.SFC || {};
     },
     tabs() {
       const ready = M().scoutReady();
-      return `<div class="tabs">${TABS.map(([k, l], i) => `<button class="tab ${i === this.tab ? 'sel' : ''}" data-ttab="${i}">${l}${k === 'scout' && ready ? ' <b class="tm-dot">!</b>' : ''}</button>`).join('')}</div>`;
+      return `<div class="tabs">${TABS.map(([k], i) => `<button class="tab ${i === this.tab ? 'sel' : ''}" data-ttab="${i}">${TAB_LABEL()[k]}${k === 'scout' && ready ? ' <b class="tm-dot">!</b>' : ''}</button>`).join('')}</div>`;
     },
 
     // hàng chỉ số: 6 thanh (tô màu chỉ số), số rating
@@ -103,7 +105,7 @@ window.SFC = window.SFC || {};
     },
     ovrBadge(m, big = false) {
       const g = M().grade(m), r = RAR(g.rarity);
-      return `<div class="tm-ovr ${big ? 'big' : ''}" style="--rc:${r.color}"><b>${m.ovr}</b><span>OVR</span><em>${g.label}</em></div>`;
+      return `<div class="tm-ovr ${big ? 'big' : ''}" style="--rc:${r.color}"><b>${m.ovr}</b><span>${_t('OVR')}</span><em>${g.label}</em></div>`;
     },
 
     /* ---------- ROSTER ---------- */
@@ -113,12 +115,12 @@ window.SFC = window.SFC || {};
       const rows = [];
       for (let i = 0; i < max; i++) {
         const m = list[i];
-        if (!m) { rows.push(`<div class="tm-row empty"><span>EMPTY SLOT</span><em>Scout to recruit</em></div>`); continue; }
+        if (!m) { rows.push(`<div class="tm-row empty"><span>${_t('EMPTY SLOT')}</span><em>${_t('Scout to recruit')}</em></div>`); continue; }
         const g = M().grade(m);
         rows.push(`<button class="tm-row ${i === this.sel ? 'sel' : ''} ${m.id === T.active ? 'act' : ''}" data-tm="${i}" style="--rc:${RAR(g.rarity).color}">
           <canvas class="avatar" data-mate="r${m.id}"></canvas>
           <div class="tm-info"><b>${esc(m.name)}</b><span class="tm-tags">${this.archTags(m)}</span></div>
-          ${this.ovrBadge(m)}${m.id === T.active ? '<i class="tm-act">IN TEAM</i>' : ''}
+          ${this.ovrBadge(m)}${m.id === T.active ? `<i class="tm-act">${_t('IN TEAM')}</i>` : ''}
         </button>`);
       }
       const m = list[this.sel];
@@ -126,45 +128,51 @@ window.SFC = window.SFC || {};
           <div class="tm-top"><canvas class="avatar big" data-mate="r${m.id}"></canvas>
             <div><div class="sd-name">${esc(m.name)}</div><div class="tm-tags">${this.archTags(m)}</div>${this.ovrBadge(m, true)}</div></div>
           ${this.statBars(m)}
-          <div class="tm-h">CORE DECK <em>${m.deck.length} cards · drafts 1 per round in matches</em></div>
+          <div class="tm-h">${_t('CORE DECK')} <em>${_tn('{n} card · drafts 1 per round in matches', '{n} cards · drafts 1 per round in matches', m.deck.length)}</em></div>
           ${this.deckGrid(m)}
-          <div class="sd-act">${m.id === T.active ? '<span class="on">PLAYS WITH YOU</span>' : `<kbd>${K('confirm', 'Enter')}</kbd> SET AS TEAMMATE`}
-            ${list.length > 1 ? ` · <kbd>${K('dismantle', 'X')}</kbd> SELL ${G().coin('+' + M().sellValue(m))}` : ''}</div>
+          <div class="sd-act">${m.id === T.active ? `<span class="on">${_t('PLAYS WITH YOU')}</span>` : `<kbd>${K('confirm', 'Enter')}</kbd> ${_t('SET AS TEAMMATE')}`}
+            ${list.length > 1 ? ` · <kbd>${K('dismantle', 'X')}</kbd> ${_t('SELL {gold}', { gold: G().coin('+' + M().sellValue(m)) })}` : ''}</div>
         </div>` : '';
-      return `${this.header('TEAM', this.tabs())}
+      return `${this.header(_t('TEAM'), this.tabs())}
         <div class="gacha-body tm-g"><div class="tm-list">${rows.join('')}</div>${detail}</div>
-        <!--msg--><div class="m-hint">${K('switch', 'Q')} / ${K('sprint', 'E')} switch tab · ↑↓ select · ${K('confirm', 'Enter')} set as teammate · ${K('dismantle', 'X')} sell · ${K('back', 'Esc')} back</div>`;
+        <!--msg--><div class="m-hint">${_t('{a} / {b} switch tab · ↑↓ select · {ok} set as teammate · {sell} sell · {back} back', { a: K('switch', 'Q'), b: K('sprint', 'E'), ok: K('confirm', 'Enter'), sell: K('dismantle', 'X'), back: K('back', 'Esc') })}</div>`;
     },
 
     /* ---------- SCOUT ---------- */
     pageScout() {
       const st = M().station(), nx = M().nextStation(), T = M().T, sc = M().scouting(), ready = M().scoutReady();
+      const region = esc(M().regionName(sc));
       let status;
-      if (!sc) status = `<div class="sc-status"><b>Scout is free.</b> Send a scout out to find new players.<div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> START SCOUTING · ${st.minutes} min</div></div>`;
-      else if (!ready) status = `<div class="sc-status"><b>Scouting ${esc(sc.region)}...</b><div class="sc-bar"><i data-scbar></i></div><div class="sc-left" data-scleft>${fmtLeft(M().scoutLeft())}</div></div>`;
-      else status = `<div class="sc-status ready"><b>SCOUT REPORT READY!</b> ${CFG().offers} players found in ${esc(sc.region)}.<div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> VIEW REPORT</div></div>`;
+      if (!sc) status = `<div class="sc-status">${_t('<b>Scout is free.</b> Send a scout out to find new players.')}<div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('START SCOUTING · {n} min', { n: st.minutes })}</div></div>`;
+      else if (!ready) status = `<div class="sc-status"><b>${_t('Scouting {region}...', { region })}</b><div class="sc-bar"><i data-scbar></i></div><div class="sc-left" data-scleft>${fmtLeft(M().scoutLeft())}</div></div>`;
+      else status = `<div class="sc-status ready">${_tn('<b>SCOUT REPORT READY!</b> {n} player found in {region}.', '<b>SCOUT REPORT READY!</b> {n} players found in {region}.', CFG().offers, { region })}<div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('VIEW REPORT')}</div></div>`;
       const lv = T.station, O = CFG().ovr, MP = SFC.MainPath, area = Math.floor(MP.state.best / MP.nDiv());
       const center = Math.round(O.base + O.perArea * area + st.ovrBonus);
-      const up = nx ? `<div class="sd-act"><kbd>${K('restart', 'R')}</kbd> UPGRADE ${G().coin(nx.cost)} → ${nx.minutes} min · OVR +${nx.ovrBonus}</div>` : '<div class="sd-act on">MAX LEVEL</div>';
-      return `${this.header('TEAM', this.tabs())}
+      const up = nx ? `<div class="sd-act"><kbd>${K('restart', 'R')}</kbd> ${_t('UPGRADE {gold} → {n} min · OVR +{ovr}', { gold: G().coin(nx.cost), n: nx.minutes, ovr: nx.ovrBonus })}</div>` : `<div class="sd-act on">${_t('MAX LEVEL')}</div>`;
+      return `${this.header(_t('TEAM'), this.tabs())}
         <div class="gacha-body sc-g">
           <div class="sc-map"><canvas class="world" width="320" height="144"></canvas>${status}</div>
           <div class="sc-side">
-            <div class="tm-h">SCOUT STATION <em>LV ${lv}/${CFG().station.length}</em></div>
-            <div class="sc-line">Scout time <b>${st.minutes} min</b></div>
-            <div class="sc-line">Expected OVR <b>${center - O.spread}-${center + O.spread}</b></div>
-            <div class="sc-line">Deck quality <b>tier ${Math.min(4, Math.floor(area / 2) + st.deckBonus) + 1}</b></div>
-            <div class="sc-note">Go further on the Main Path to meet stronger players.</div>
+            <div class="tm-h">${_t('SCOUT STATION')} <em>${_t('LV {n}/{max}', { n: lv, max: CFG().station.length })}</em></div>
+            <div class="sc-line">${_t('Scout time <b>{n} min</b>', { n: st.minutes })}</div>
+            <div class="sc-line">${_t('Expected OVR <b>{min}-{max}</b>', { min: center - O.spread, max: center + O.spread })}</div>
+            <div class="sc-line">${_t('Deck quality <b>tier {n}</b>', { n: Math.min(4, Math.floor(area / 2) + st.deckBonus) + 1 })}</div>
+            <div class="sc-note">${_t('Go further on the Main Path to meet stronger players.')}</div>
             ${up}
           </div>
         </div>
-        <!--msg--><div class="m-hint">${K('switch', 'Q')} / ${K('sprint', 'E')} switch tab ${ready ? ` · ${K('confirm', 'Enter')} view report` : sc ? '' : ` · ${K('confirm', 'Enter')} start scouting`} · ${K('restart', 'R')} upgrade station · ${K('back', 'Esc')} back</div>`;
+        <!--msg--><div class="m-hint">${[
+          _t('{a} / {b} switch tab', { a: K('switch', 'Q'), b: K('sprint', 'E') }),
+          ready ? _t('{key} view report', { key: K('confirm', 'Enter') }) : sc ? '' : _t('{key} start scouting', { key: K('confirm', 'Enter') }),
+          _t('{key} upgrade station', { key: K('restart', 'R') }),
+          _t('{key} back', { key: K('back', 'Esc') }),
+        ].filter(Boolean).join(' · ')}</div>`;
     },
 
     /* ---------- báo cáo scout: 3 ứng viên ---------- */
     pageReport() {
       const sc = M().scouting();
-      if (!sc) return `${this.header('SCOUT REPORT')}<div class="gacha-body"></div>`;
+      if (!sc) return `${this.header(_t('SCOUT REPORT'))}<div class="gacha-body"></div>`;
       const cards = sc.offers.map((m, i) => {
         const g = M().grade(m), r = RAR(g.rarity), c = M().canRecruit(i);
         return `<div class="sr-card ${i === this.offerSel ? 'sel' : ''}" data-of="${i}" style="--rc:${r.color}">
@@ -172,14 +180,14 @@ window.SFC = window.SFC || {};
           <div class="sr-name">${esc(m.name)}</div>
           <div class="tm-tags">${this.archTags(m)}</div>
           ${this.statBars(m)}
-          <div class="tm-h">DECK <em>${m.deck.length}</em></div>
+          <div class="tm-h">${_t('DECK')} <em>${m.deck.length}</em></div>
           ${this.deckGrid(m)}
           <div class="sr-fee ${c.ok ? '' : 'bad'}">${G().coin(m.fee)}</div>
         </div>`;
       }).join('');
-      return `${this.header('SCOUT REPORT', `<div class="sr-region">${esc(sc.region)}</div>`)}
+      return `${this.header(_t('SCOUT REPORT'), `<div class="sr-region">${esc(M().regionName(sc))}</div>`)}
         <div class="sr-cards">${cards}</div>
-        <!--msg--><div class="m-hint">←→ select · ${K('confirm', 'Enter')} recruit (pay fee) · ${K('dismantle', 'X')} pass on all · ${K('back', 'Esc')} decide later</div>`;
+        <!--msg--><div class="m-hint">${_t('←→ select · {ok} recruit (pay fee) · {pass} pass on all · {back} decide later', { ok: K('confirm', 'Enter'), pass: K('dismantle', 'X'), back: K('back', 'Esc') })}</div>`;
     },
 
     // ngoại hình để vẽ avatar: 'r<id>' đồng đội trong đội hình · 'o<i>' ứng viên thứ i
@@ -208,7 +216,7 @@ window.SFC = window.SFC || {};
       const spot = (k) => ({ x: SPOTS[k][0] * S + 4, y: SPOTS[k][1] * S + 4 });
       const hq = { x: HQ[0] * S + 4, y: HQ[1] * S + 4 };
       // điểm scout: chấm nhấp nháy; nơi đang scout sáng vàng
-      const regIdx = sc ? Math.max(0, CFG().regions.indexOf(sc.region)) % SPOTS.length : -1;
+      const regIdx = sc ? (sc.ri || 0) % SPOTS.length : -1;
       SPOTS.forEach((_, k) => {
         const p = spot(k), on = k === regIdx, blink = Math.floor(t * 3 + k) % 2;
         x.fillStyle = on ? (blink ? '#ffe14f' : '#ff9a3d') : blink ? '#9aa3b5' : '#5a6478';
@@ -283,21 +291,21 @@ window.SFC = window.SFC || {};
       if (m.id === M().T.active) return;
       M().setActive(m.id);
       SFC.Audio.pick();
-      menu.setMsg(`${m.name} will play with you.`);
+      menu.setMsg(_t('{name} will play with you.', { name: m.name }));
     },
     sell(menu, m) {
-      if (M().roster().length <= 1) return menu.setMsg('You need at least one teammate.', true);
+      if (M().roster().length <= 1) return menu.setMsg(_t('You need at least one teammate.'), true);
       const now = performance.now(), key = 'sell' + m.id;
       if (!this.confirm || this.confirm.key !== key || now - this.confirm.t > 3000) {
         this.confirm = { key, t: now };
         SFC.Audio.menu();
-        return menu.setMsg(`Press X again to sell ${m.name} (+${M().sellValue(m)} gold)`, true);
+        return menu.setMsg(_t('Press {key} again to sell {name} (+{gold} gold)', { key: K('dismantle', 'X'), name: m.name, gold: M().sellValue(m) }), true);
       }
       this.confirm = null;
       const g = M().sell(m.id);
       SFC.Audio.dismantle();
       this.sel = Math.max(0, this.sel - 1);
-      menu.setMsg(`Sold ${m.name}: +${g} gold`);
+      menu.setMsg(_t('Sold {name}: +{gold} gold', { name: m.name, gold: g }));
     },
     inputScout(menu, input) {
       if (input.wasPressed('confirm')) this.scoutAction(menu);
@@ -305,17 +313,17 @@ window.SFC = window.SFC || {};
     },
     scoutAction(menu) {
       if (M().scoutReady()) { this.offerSel = 0; SFC.Audio.whoosh(); return menu.go('report'); }
-      if (M().scouting()) return menu.setMsg('The scout is still out. Come back later!');
+      if (M().scouting()) return menu.setMsg(_t('The scout is still out. Come back later!'));
       M().startScout();
       SFC.Audio.whoosh();
-      menu.setMsg(`Scout sent to ${M().scouting().region}!`);
+      menu.setMsg(_t('Scout sent to {region}!', { region: M().regionName() }));
     },
     upgrade(menu) {
       const nx = M().nextStation();
-      if (!nx) return menu.setMsg('Scout station is at max level.');
-      if (!M().upgradeStation()) return menu.setMsg(`Not enough gold (${nx.cost}).`, true);
+      if (!nx) return menu.setMsg(_t('Scout station is at max level.'));
+      if (!M().upgradeStation()) return menu.setMsg(_t('Not enough gold ({price})', { price: nx.cost }), true);
       SFC.Audio.upgrade();
-      menu.setMsg(`Scout station upgraded to LV ${M().T.station}!`);
+      menu.setMsg(_t('Scout station upgraded to LV {n}!', { n: M().T.station }));
     },
     inputReport(menu, input) {
       const sc = M().scouting();
@@ -333,27 +341,27 @@ window.SFC = window.SFC || {};
     recruit(menu, i) {
       const r = M().recruit(i);
       if (!r.ok) {
-        const why = { full: `Roster is full (${CFG().rosterMax}). Sell a teammate first.`, gold: 'Not enough gold for the transfer fee.' }[r.reason] || 'Cannot recruit.';
+        const why = { full: _t('Roster is full ({n}). Sell a teammate first.', { n: CFG().rosterMax }), gold: _t('Not enough gold for the transfer fee.') }[r.reason] || _t('Cannot recruit.');
         SFC.Audio.menu();
         return menu.setMsg(why, true);
       }
       SFC.Audio.reveal(3);
       this.tab = 0;
       this.sel = M().roster().length - 1;
-      menu.go('team', `${r.mate.name} joined your team!`);
+      menu.go('team', _t('{name} joined your team!', { name: r.mate.name }));
     },
     decline(menu) {
       const now = performance.now();
       if (!this.confirm || this.confirm.key !== 'decline' || now - this.confirm.t > 3000) {
         this.confirm = { key: 'decline', t: now };
         SFC.Audio.menu();
-        return menu.setMsg('Press X again to pass on all 3 players.', true);
+        return menu.setMsg(_tn('Press {key} again to pass on the {n} player.', 'Press {key} again to pass on all {n} players.', M().scouting().offers.length, { key: K('dismantle', 'X') }), true);
       }
       this.confirm = null;
       M().decline();
       SFC.Audio.dismantle();
       this.tab = 1;
-      menu.go('team', 'Report discarded. Send a new scout any time.');
+      menu.go('team', _t('Report discarded. Send a new scout any time.'));
     },
 
     back(menu) {
