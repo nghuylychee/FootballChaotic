@@ -331,7 +331,7 @@ window.SFC = window.SFC || {};
       this.hitImmune = stun;
       g.effects.burst(this.x, this.y, 14, '#fff6a0', 6, 60);
       g.effects.shake(SFC_CONFIG.game.fx.shakeHit);
-      g.sfx('hit');
+      g.sfx('hit', opts.type);
       return true;
     }
   }

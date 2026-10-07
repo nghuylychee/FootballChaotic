@@ -31,6 +31,23 @@ SFC_CONFIG.game = {
       ooh: 0.6,            // "ồồ" khi cứu thua / bóng dội cột
       applause: 0.8,       // vỗ tay khi hết trận
     },
+    // Tiếng thu sẵn (assets/sfx/<file>.wav, nguồn: docs/SFX.md): mỗi lần phát chọn ngẫu nhiên 1 file trong bộ.
+    // Chưa nạp xong / nạp lỗi -> dùng tiếng tổng hợp như cũ
+    samples: {
+      ballBounce: { files: ['ball_bounce_1', 'ball_bounce_2', 'ball_bounce_3', 'ball_bounce_4'], volume: 0.6 },
+      ballPass: { files: ['ball_pass_1', 'ball_pass_2', 'ball_pass_3'], volume: 0.6 },
+      // sút: lực 0..1 chia 3 khoảng đều — dưới 1/3 weak · tới 2/3 mid · còn lại strong
+      kickWeak: { files: ['ball_kick_weak'], volume: 0.6 },
+      kickMid: { files: ['ball_kick_mid'], volume: 0.6 },
+      kickStrong: { files: ['ball_kick_strong'], volume: 0.6 },
+      punchLight: { files: ['punch_light_1', 'punch_light_2'], volume: 0.6 },   // Light attack trúng người
+      swingLight: { files: ['swing_light'], volume: 1.8 },                       // Light attack vung tay (trúng hay trượt đều có). File gốc nhỏ hơn ~9 dB -> x3
+      // Hard attack: gồng · hết gồng thì bước chân + vung chân cùng lúc · chân trúng người
+      hardWindup: { files: ['hard_windup'], volume: 0.6 },
+      hardStep: { files: ['hard_step_1', 'hard_step_2'], volume: 0.6 },
+      hardSwing: { files: ['hard_swing'], volume: 1.4 },   // file gốc nhỏ hơn ~4 dB
+      hardHit: { files: ['hard_hit'], volume: 1.0 },
+    },
   },
 
   // Sân: hình chữ nhật trong "phòng" có tường bao quanh

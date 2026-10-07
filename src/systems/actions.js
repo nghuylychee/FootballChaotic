@@ -412,7 +412,7 @@ window.SFC = window.SFC || {};
       this.startAttack(p, 'light');
       p.vx += fv.x * L.lunge; p.vy += fv.y * L.lunge;
       p.bigPunch = g.cores.bigPunch(p);
-      g.sfx('whoosh');
+      g.sfx('swing');
       g.cores.dispatch(p.team, 'onLightAttack', p);
       g.cores.dispatch(p.team, 'onTackle', p);
       return true;
@@ -480,7 +480,7 @@ window.SFC = window.SFC || {};
       }
       if (counter) p.counterT = 0;
       p.lastPunch = null;
-      if (hit) { g.sfx('tackle'); g.effects.shake(G().fx.shakeHit * 0.6); }
+      if (hit) { g.sfx('punch'); g.effects.shake(G().fx.shakeHit * 0.6); }
       p.state = 'recover'; p.stateT = L.recover;
     },
 
@@ -493,7 +493,7 @@ window.SFC = window.SFC || {};
       this.startAttack(p, 'hard');
       p.charging = false;
       g.effects.text(p.x, p.y - 26, '!', '#ff3d5a');
-      g.sfx('tackle');
+      g.sfx('windup');
       return true;
     },
 
@@ -536,7 +536,7 @@ window.SFC = window.SFC || {};
       p.dashX = fv.x * s; p.dashY = fv.y * s;
       p.kickHits.clear();
       p.hardLanded = false;
-      g.sfx('whoosh');
+      g.sfx('kickSwing');
       g.cores.dispatch(p.team, 'onHardAttack', p);
       g.cores.dispatch(p.team, 'onTackle', p);
     },
@@ -562,7 +562,7 @@ window.SFC = window.SFC || {};
           p.kickHits.add('ball');
           // Song Phi: bóng lỏng thành cú sút tụ lực tối đa bay thẳng về khung
           if (g.cores.has(p, 'scissor_kick')) g.cores.dispatch(p.team, 'onScissor', p, b);
-          else b.kick(p, fv.x * H.ballKick, fv.y * H.ballKick, 60);
+          else { b.kick(p, fv.x * H.ballKick, fv.y * H.ballKick, 60); g.sfx('kick', 0.5); }
         }
       }
       const fly = p.flyMul || 1;

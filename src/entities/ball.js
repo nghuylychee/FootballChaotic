@@ -101,6 +101,7 @@ window.SFC = window.SFC || {};
       if (this.z <= 0) {
         this.z = 0;
         if (this.vz < -50) {
+          this.g.sfx('bounce', Math.min(1, -this.vz / 300));   // rơi càng mạnh tiếng càng to
           this.vz = -this.vz * C.bounce;
           this.vx *= 0.78; this.vy *= 0.78;
         } else this.vz = 0;

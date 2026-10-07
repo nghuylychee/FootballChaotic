@@ -121,6 +121,8 @@ SFC_CONFIG.controls = {
     kick:   [0.35, 0.6, 110],   // sút (mạnh theo lực)
     hit:    [0.5, 0.9, 160],    // trúng đòn
     tackle: [0.3, 0.4, 80],
+    punch:  [0.3, 0.4, 80],     // Light attack trúng người
+    windup: [0.3, 0.4, 80],     // Hard attack gồng
     clang:  [0.6, 0.3, 120],    // chạm cột / xà
     goal:   [0.7, 1.0, 450],
     read:   [0.8, 0.5, 140],    // Đọc Cú Sút thành công (thủ thế W rồi thả đúng lúc)

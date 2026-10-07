@@ -24,6 +24,7 @@ window.SFC = window.SFC || {};
       musicBus = ctx.createGain();
       musicBus.gain.value = vol.music;
       musicBus.connect(master);
+      loadSamples();
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
@@ -68,6 +69,42 @@ window.SFC = window.SFC || {};
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     src.connect(f); f.connect(g); g.connect(dest || sfxBus);
     src.start(t);
+  }
+
+  /* ---------- tiếng thu sẵn (config: audio.samples) — nạp 1 lần khi có AudioContext ---------- */
+  const samples = {};   // tên bộ -> các AudioBuffer đã giải mã xong
+
+  function loadSamples() {
+    const S = SFC_CONFIG.game.audio.samples || {};
+    for (const name in S) {
+      samples[name] = [];
+      for (const file of S[name].files) {
+        // XHR thay fetch: bản Electron chạy từ file://, fetch không đọc được file://
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', 'assets/sfx/' + file + '.wav');
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = () => {
+          if (xhr.status !== 200 && xhr.status !== 0) return;   // file:// trả status 0
+          ctx.decodeAudioData(xhr.response, (buf) => samples[name].push(buf), () => {});
+        };
+        xhr.send();
+      }
+    }
+  }
+
+  // phát 1 file ngẫu nhiên trong bộ `name`, level 0..1 nhân với volume trong config.
+  // Trả false khi bộ chưa có file nào nạp xong -> nơi gọi tự phát tiếng tổng hợp thay
+  function sample(name, level = 1) {
+    if (!enabled()) return true;
+    const list = samples[name];
+    if (!list || !list.length) return false;
+    const src = ctx.createBufferSource();
+    src.buffer = list[Math.floor(Math.random() * list.length)];
+    const g = ctx.createGain();
+    g.gain.value = level * SFC_CONFIG.game.audio.samples[name].volume;
+    src.connect(g); g.connect(sfxBus);
+    src.start();
+    return true;
   }
 
   /* ---------- khán giả: tiếng rì rầm nền (vòng lặp) + hò reo / "ồồ" / vỗ tay theo sự kiện ---------- */
@@ -281,10 +318,18 @@ window.SFC = window.SFC || {};
     },
     get muted() { return muted; },
 
-    touch()   { tone({ freq: 220, to: 160, dur: 0.05, type: 'triangle', vol: 0.15 }); },
-    pass()    { noise({ dur: 0.06, vol: 0.25, freq: 900 }); tone({ freq: 330, to: 250, dur: 0.06, type: 'triangle', vol: 0.15 }); },
-    kick(p)   { noise({ dur: 0.12, vol: 0.35 + p * 0.2, freq: 600 }); tone({ freq: 160, to: 60, dur: 0.15, type: 'square', vol: 0.2 }); },
-    wall()    { tone({ freq: 120, to: 80, dur: 0.06, type: 'square', vol: 0.12 }); },
+    touch()   { if (!sample('ballBounce')) tone({ freq: 220, to: 160, dur: 0.05, type: 'triangle', vol: 0.15 }); },
+    // bóng tự nảy trên mặt sân; p = độ mạnh cú nảy 0..1 (entities/ball.js)
+    bounce(p = 1) { sample('ballBounce', p); },
+    pass()    {
+      if (sample('ballPass')) return;
+      noise({ dur: 0.06, vol: 0.25, freq: 900 }); tone({ freq: 330, to: 250, dur: 0.06, type: 'triangle', vol: 0.15 });
+    },
+    kick(p)   {
+      if (sample(p < 1 / 3 ? 'kickWeak' : p < 2 / 3 ? 'kickMid' : 'kickStrong')) return;
+      noise({ dur: 0.12, vol: 0.35 + p * 0.2, freq: 600 }); tone({ freq: 160, to: 60, dur: 0.15, type: 'square', vol: 0.2 });
+    },
+    wall()    { if (!sample('ballBounce')) tone({ freq: 120, to: 80, dur: 0.06, type: 'square', vol: 0.12 }); },
     // bóng chạm cột dọc / xà ngang: tiếng kim loại "keng" (các tần số lệch nhau ngân ngắn + tiếng gõ)
     clang()   {
       noise({ dur: 0.05, vol: 0.22, freq: 3200, q: 2 });
@@ -293,9 +338,21 @@ window.SFC = window.SFC || {};
       tone({ freq: 2790, dur: 0.22, type: 'square', vol: 0.04 });
       this.crowdOoh();
     },
-    hit()     { noise({ dur: 0.15, vol: 0.35, freq: 300 }); tone({ freq: 90, to: 40, dur: 0.18, type: 'sawtooth', vol: 0.18 }); },
+    // trúng đòn; kind = loại đòn (Player.hit opts.type) — Hard attack có tiếng riêng
+    hit(kind) {
+      if (kind === 'hard' && sample('hardHit')) return;
+      noise({ dur: 0.15, vol: 0.35, freq: 300 }); tone({ freq: 90, to: 40, dur: 0.18, type: 'sawtooth', vol: 0.18 });
+    },
     whoosh()  { noise({ dur: 0.18, vol: 0.18, freq: 2200, q: 0.6 }); },
     tackle()  { noise({ dur: 0.08, vol: 0.3, freq: 500 }); },
+    // Light attack trúng người (systems/actions.js)
+    punch()   { if (!sample('punchLight')) this.tackle(); },
+    // Light attack vung tay, trúng hay trượt đều phát
+    swing()   { if (!sample('swingLight')) this.whoosh(); },
+    // Hard attack: gồng (co chân lấy đà)
+    windup()  { if (!sample('hardWindup')) this.tackle(); },
+    // Hard attack hết gồng: bước chân tới + vung chân, cùng lúc
+    kickSwing() { sample('hardStep'); if (!sample('hardSwing')) this.whoosh(); },
     block()   { tone({ freq: 880, to: 1320, dur: 0.12, type: 'square', vol: 0.15 }); },
     zap()     { tone({ freq: 1400, to: 200, dur: 0.18, type: 'sawtooth', vol: 0.15 }); },
     fire()    { noise({ dur: 0.3, vol: 0.2, freq: 400, q: 0.4 }); },
