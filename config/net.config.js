@@ -8,7 +8,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 9,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
+  protocol: 10,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
   // Máy chủ riêng (server/): máy chủ chạy trận, mọi người là khách. url trống = chỉ người chơi làm host (Steam / PeerJS).
   // TẠO PHÒNG thử máy chủ trước, không tới được thì tự chuyển sang người chơi làm host.
@@ -27,6 +27,7 @@ SFC_CONFIG.net = {
   codeLength: 7,               // Steam: mã = 32 bit của lobby id -> cần 7 ký tự (32 ký tự x 7 = 35 bit). PeerJS dùng chung độ dài
   codeChars: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', // bỏ ký tự dễ nhầm (I, O, 0, 1)
   connectTimeout: 12,          // giây chờ kết nối trước khi báo lỗi
+  reconnectGrace: 30,          // giây giữ slot cho người mất kết nối giữa trận (AI đá thay, vào lại được). 0 = tắt
 
   // Phòng: slot = đội x vị trí (game.config.js -> roles). Người chơi tự nhảy qua lại giữa các slot trống.
   //  - 2 đội đều có người = VERSUS; slot trống của đội có đúng 1 người = đồng đội đang chọn của người đó (AI)

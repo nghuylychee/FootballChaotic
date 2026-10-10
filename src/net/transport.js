@@ -33,6 +33,8 @@ window.SFC = window.SFC || {};
     'room-missing': 'Room not found. Check the code.',
     'server-full': 'The game server is full, try again later.',
     'server-closing': 'The game server is restarting, try again in a minute.',
+    'expired': 'You were away too long and the match moved on without you.',
+    'rejoin-failed': 'Lost connection and could not rejoin the match.',
   };
 
   SFC.NetCommon = {

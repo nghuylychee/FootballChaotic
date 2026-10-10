@@ -72,6 +72,7 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
   - `snapshot()` / `apply()` copy the player fields named in `PF`.
   - `capture()` wraps a **hard-coded list of `Effects` method names** and replays them on guests.
   - A new player field that rendering needs, or a new effect method guests should see, must be added there. Otherwise it silently won't appear online.
+- Reconnect lives in `Room` too: a mid-match disconnect marks the member `away` for `net.reconnectGrace` seconds (AI plays the seat). `hello{tok}` reclaims it via `rejoin()`, and whoever runs the Room must call `room.expire(Date.now())` periodically. Never send a `lobby` packet mid-match: guests treat it as "match over, back to lobby"; resume data travels inside `start{opts.resume, opts.lobby}`.
 - Bump `net.protocol` when the message format changes. The server must be redeployed together with the client.
 - `server/README.md` covers server env vars, Docker (`docker build -f server/Dockerfile .`, built from the repo root) and the handshake.
 

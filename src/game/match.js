@@ -164,6 +164,18 @@ window.SFC = window.SFC || {};
       if (d && d.options[i] && !d.picked[i]) this.pickCore(0, i);   // đang chọn Core: chọn hộ lá đầu
       s.gone = true;
       if (s.p) { s.p.seat = null; s.p.intent.mx = s.p.intent.my = 0; s.p.charging = false; s.p.bracing = false; s.p.cancelPass(); }
+      this.refreshSeats();
+    }
+    // người chơi slot i kết nối lại (online, room.js): lấy lại cầu thủ từ AI
+    resumeSeat(i) {
+      const s = this.seats[i];
+      if (!s || !s.gone) return;
+      s.gone = false;
+      if (s.p) { s.p.seat = i; s.p.intent.mx = s.p.intent.my = 0; }
+      this.refreshSeats();
+    }
+    // đội nào còn người điều khiển + cầu thủ bị khóa của từng đội, theo các slot còn trong trận
+    refreshSeats() {
       const live = this.seats.filter((x) => !x.gone);
       this.humans = [...new Set(live.map((x) => x.team))];
       for (let t = 0; t < 2; t++) {

@@ -67,6 +67,8 @@ function createRoom() {
     hooks: {
       start: (g) => { entry.ended = false; entry.startedAt = Date.now(); log(entry, `match started (${SFC.Room.Slots.mode(entry.room.lobby)}, ${entry.room.lobby.members.length} players)`); },
       toLobby: () => { if (entry.startedAt && !entry.ended) log(entry, 'match stopped before the end'); entry.startedAt = 0; },
+      dropped: (name, away) => { if (away) log(entry, `a player disconnected, seat held ${NET.reconnectGrace}s`); },
+      back: () => log(entry, 'a player reconnected'),
     },
   });
   rooms.set(entry.code, entry);
@@ -102,7 +104,14 @@ function leave(c) {
   c.room = null;
   entry.clients.delete(c.id);
   try { entry.room.gone(c.id); } catch (e) { roomFailed(entry, 'leave', e); return; }
-  if (!entry.clients.size) { rooms.delete(entry.code); log(entry, 'closed (empty)'); }
+  dropIfEmpty(entry);
+}
+
+// không còn kết nối nào và không ai đang chờ kết nối lại -> xoá phòng
+function dropIfEmpty(entry) {
+  if (entry.clients.size || entry.room.hasAway || rooms.get(entry.code) !== entry) return;
+  rooms.delete(entry.code);
+  log(entry, 'closed (empty)');
 }
 
 // địa chỉ người chơi: sau proxy / load balancer của nhà cung cấp thì lấy địa chỉ cuối trong X-Forwarded-For (do proxy ghi thêm)
@@ -224,6 +233,11 @@ setInterval(() => {
       c.alive = false;
       try { c.ws.ping(); } catch (e) { /* bỏ qua */ }
     }
+  }
+  // người mất kết nối quá net.reconnectGrace giây -> rời hẳn; phòng hết người thì xoá
+  for (const e of [...rooms.values()]) {
+    try { e.room.expire(now); } catch (err) { roomFailed(e, 'expire', err); continue; }
+    dropIfEmpty(e);
   }
   // phòng không đá (phòng chờ / trận đã hết, mọi người ngồi ở màn kết quả) mà bỏ không quá lâu
   for (const e of [...rooms.values()]) if (!e.room.active && now - e.touched > ENV.LOBBY_TTL * 1000) closeRoom(e, 'idle');

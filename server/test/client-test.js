@@ -2,6 +2,7 @@
  * mỗi "máy" = 1 vm context nạp đúng các file game (menu / UI / vẽ thay bằng stub), P2P thay bằng mạng giả trong bộ nhớ.
  *  1. Phòng máy chủ riêng: A tạo phòng (mã 6 ký tự), B vào, A là chủ phòng, START, B nhận snapshot, A về phòng chờ
  *  2. Máy chủ không tới được: A tạo phòng -> tự chuyển sang làm host (P2P giả), B vào bằng mã 7 ký tự, đá, về phòng chờ
+ *  Cả 2: B rớt mạng giữa trận -> tự kết nối lại, lấy lại slot, A thấy RECONNECTED
  * node server/test/client-test.js
  */
 const assert = require('assert');
@@ -53,6 +54,14 @@ function fakePeer() {
       for (const g of to) setImmediate(() => g.emit('data', JSON.parse(data), 'host'));
     },
     drop(id) { this.conns.delete(id); },
+    // khách rớt mạng (không bye): cả 2 phía nhận close
+    sever() {
+      const h = this.hostT, me = this.myId;
+      if (!h) return;
+      h.conns.delete(me);
+      this.hostT = null;
+      setImmediate(() => { h.emit('close', me); this.emit('close', 'host'); });
+    },
     close() { if (this.hosting) hub.delete(this.code); this.hosting = false; this.hostT = null; },
   };
   return T;
@@ -111,6 +120,21 @@ async function play(ms, ...ms_) {
   }
 }
 
+// B rớt mạng giữa trận -> online.js tự vào lại (tok) -> lấy lại slot, nhận snapshot, A được báo
+async function dropAndRejoin(A, B, cut) {
+  const seat = B.O.game.me, entered = B.log.entered;
+  cut();
+  await until(() => B.O.rejoining, 3000, 'B starts reconnecting');
+  assert.strictEqual(B.O.status, 'playing', 'match stays on screen while reconnecting');
+  await until(() => !B.O.rejoining && B.log.entered > entered, 8000, 'B rejoined');
+  assert.strictEqual(B.O.game.me, seat, 'same seat after reconnecting');
+  B.O.buf.length = 0;
+  await play(800, A, B);
+  assert.ok(B.O.buf.length > 0 || B.O.game.time > 0, 'snapshots flow again');
+  assert.ok(A.log.banners.some((b) => /RECONNECTED/.test(b)), 'the other player is told');
+  assert.ok(B.log.banners.some((b) => /CONNECTION LOST/.test(b)) && B.log.banners.some((b) => b === 'RECONNECTED'), 'the dropped player sees lost / reconnected');
+}
+
 async function serverRoom(url) {
   const A = machine('ALICE', url), B = machine('BOB', url);
   A.O.createRoom();
@@ -127,10 +151,17 @@ async function serverRoom(url) {
   A.O.introDone(); B.O.introDone();
   await play(1500, A, B);
   assert.ok(B.O.buf.length > 0 && B.O.game.state !== 'ended', 'guest receives snapshots');
+  await dropAndRejoin(A, B, () => B.SFC.NetServer.ws.close());   // rớt WebSocket
   A.O.backToLobby();
   await until(() => A.O.status === 'lobby' && B.O.status === 'lobby', 5000, 'back to lobby');
-  B.O.leave(); A.O.leave();
-  console.log('server room: OK (create 6-char code, join, owner start, snapshots, back to lobby)');
+  // phòng bị máy chủ đóng giữa trận (bye) -> về menu ngay, không thử kết nối lại
+  A.O.startMatch();
+  await until(() => A.O.status === 'playing' && B.O.status === 'playing', 5000, 'second match');
+  await until(() => B.O.tok, 2000, 'B has a token');
+  B.O.guestData({ t: 'bye' });
+  assert.ok(!B.O.rejoining && B.O.status === 'idle', 'room closed by the server: no reconnect attempt');
+  A.O.leave();
+  console.log('server room: OK (create 6-char code, join, owner start, snapshots, drop + auto rejoin, back to lobby)');
 }
 
 async function fallbackRoom() {
@@ -151,9 +182,10 @@ async function fallbackRoom() {
   await play(1500, A, B);
   assert.ok(B.O.buf.length > 0, 'guest receives snapshots from player host');
   assert.ok(A.O.game.time > 0.5, 'host simulates');
+  await dropAndRejoin(A, B, () => B.SFC.NetPeer.sever());   // rớt kết nối P2P
   A.O.backToLobby();
   await until(() => A.O.status === 'lobby' && B.O.status === 'lobby', 5000, 'p2p back to lobby');
-  console.log('player-hosted fallback: OK (create, 7-char join, start, snapshots, back to lobby)');
+  console.log('player-hosted fallback: OK (create, 7-char join, start, snapshots, drop + auto rejoin, back to lobby)');
 }
 
 (async () => {

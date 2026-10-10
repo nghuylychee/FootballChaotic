@@ -113,6 +113,7 @@
       SFC.UI.show(null);
       const L = SFC_CONFIG.teams.list, mp = opts.mainPath;
       const kickoff = () => {
+        if (opts.resume) return;   // kết nối lại giữa trận (online.js): trận đang đá dở
         const vsAway = _t('vs {team}', { team: L[opts.away].name });
         const vs = opts.training && opts.teamSize && !opts.teamSize[1]
           ? _t('{team} · no opponent', { team: L[opts.home].name })

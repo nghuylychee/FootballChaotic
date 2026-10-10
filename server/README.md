@@ -46,14 +46,15 @@ Behind a provider's proxy or load balancer, the player's address is read from th
 
 ## Protocol
 
-The handshake is `create{v}` or `join{code,v}`, answered by `room{code,id}` or `err{e}` (`version`, `room-missing`, `server-full`, `server-closing`). After that, every message goes straight to the room. The message list is in [src/net/online.js](../src/net/online.js). `net.protocol` must match between game and server. Bump it when the message format changes and redeploy the server together with the game.
+The handshake is `create{v}` or `join{code,v}`, answered by `room{code,id}` or `err{e}` (`version`, `room-missing`, `server-full`, `server-closing`). A reconnecting player joins the same way and sends its token in `hello{tok}`. After that, every message goes straight to the room. The message list is in [src/net/online.js](../src/net/online.js). `net.protocol` must match between game and server. Bump it when the message format changes and redeploy the server together with the game.
 
 ## Robustness
 
+- **Reconnect.** A player whose connection drops mid-match is held as "away" for `net.reconnectGrace` seconds (30, in `config/net.config.js`): the AI plays their footballer, and the room stays alive even if every connection dropped. The client retries every 2 s with its private token and gets its seat back. After the grace period the old rules apply (removed; a room left with fewer than 2 players returns to the lobby). Leaving on purpose (`bye`) or the server closing the room skips all this.
 - **Errors stay in their room.** An exception while handling a message or simulating a match closes only that room (players get disconnected with "Lost connection to the server") and is logged with the room code. Other rooms keep running.
 - **Only room members receive room traffic.** A connection that joined with a code but hasn't been accepted (`hello`) gets nothing but direct replies, and is dropped after `JOIN_TIMEOUT`.
 - **Shutdown (SIGTERM):** create and join are refused with `server-closing` (CREATE ROOM then falls back to player-hosting), `/healthz` returns 503, running matches get up to `SHUTDOWN_GRACE` seconds to finish.
-- **Logs:** one line per room event: `[room ABC123] created`, `match started (versus, 2 players)`, `match ended 3-1 after 241s`, `closed (empty | idle | error | shutdown, N connected)`. Errors include the room code and a stack trace.
+- **Logs:** one line per room event: `[room ABC123] created`, `match started (versus, 2 players)`, `match ended 3-1 after 241s`, `a player disconnected, seat held 30s`, `a player reconnected`, `closed (empty | idle | error | shutdown, N connected)`. Errors include the room code and a stack trace.
 - **Flood limits:** `MAX_PER_IP` connections per address, `MSG_RATE` messages per second per connection, 16 KB max message, `MAX_ROOMS` rooms. Clients that stop answering pings, or fall 1 MB behind on receiving, are disconnected.
 
 ## Limits (for now)

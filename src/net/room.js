@@ -4,11 +4,15 @@
  *  - Máy chủ riêng (server/index.js, Node): không có ghế local, mọi người đều là khách
  * Gói tin: xem online.js. Thêm so với khách -> host: begin{area} (chủ phòng bấm START) · toLobby (chủ phòng về phòng chờ).
  * Chủ phòng (lobby.owner) = người được START / về phòng chờ: host (người chơi làm host) / người tạo phòng (máy chủ riêng);
- * chủ phòng rời đi -> người vào sớm nhất còn lại.
+ * chủ phòng rời đi -> người có mặt vào sớm nhất còn lại.
+ * Kết nối lại (net.reconnectGrace giây, 0 = tắt): vào phòng được cấp mã bí mật you{tok}. Mất kết nối giữa trận -> "vắng mặt"
+ * (AI đá thay, gửi drop{seat,o,away}); hello{tok} trong hạn -> lấy lại slot, nhận start{opts.resume, opts.lobby}, mọi người nhận back{seat,o}.
+ * Quá hạn -> rời hẳn như cũ. Máy chạy Room gọi expire(Date.now()) định kỳ.
  *
  * new SFC.Room({ send(msg, id?), drop(id), local?, snapshotEvery, hooks? })
  *  - send: bỏ id = gửi mọi khách (bên gửi tự JSON 1 lần rồi phát cho từng người)
- *  - hooks (đều tuỳ chọn): changed() · joined(name) · left(name) · dropped(name) · toLobby() · start(game) · events(g) · localRole(role)
+ *  - hooks (đều tuỳ chọn): changed() · joined(name) · left(name) · dropped(name, away) · back(name) · toLobby() · start(game) ·
+ *    events(g) · localRole(role)
  */
 window.SFC = window.SFC || {};
 
@@ -19,6 +23,13 @@ window.SFC = window.SFC || {};
   const clampInt = (v, a, b) => Math.max(a, Math.min(b, Math.round(+v) || 0));
   // CLB của đội có người trong trận online (đăng ký vào teams.list lúc vào trận — Room.registerClubs)
   const CLUBS = ['online_p1', 'online_p2'];
+  // mã bí mật để kết nối lại (crypto có ở trình duyệt + Node 19+)
+  const token = () => {
+    const c = globalThis.crypto;
+    if (c && c.getRandomValues) return Array.from(c.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, '0')).join('');
+    return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  };
+  const GRACE = () => Math.max(0, +N().reconnectGrace || 0);
 
   /* ---------- luật slot (dùng chung với online.js để vẽ phòng chờ) ---------- */
   const Slots = {
@@ -70,6 +81,8 @@ window.SFC = window.SFC || {};
 
     hook(name, ...a) { const h = this.hooks[name]; if (h) return h(...a); }
     member(id) { return this.lobby.members.find((x) => x.id === id) || null; }
+    // còn người vắng mặt chờ kết nối lại (máy chủ: chưa xoá phòng dù không còn kết nối nào)
+    get hasAway() { return this.lobby.members.some((m) => m.away); }
     // trận đang chạy cần mô phỏng (hết trận đã gửi snapshot cuối -> đứng yên tới khi về phòng chờ)
     get active() { return this.status === 'playing' && !!this.game && !this.endSent; }
 
@@ -81,7 +94,14 @@ window.SFC = window.SFC || {};
 
     sendLobby() {
       const L = this.lobby;
-      this.send({ t: 'lobby', m: L.members.map(({ id, pf, slot }) => ({ id, pf, slot })), o: L.owner });
+      this.send({ t: 'lobby', m: this.publicMembers(), o: L.owner });
+    }
+    // danh sách gửi đi: không kèm mã bí mật
+    publicMembers() { return this.lobby.members.map(({ id, pf, slot }) => ({ id, pf, slot })); }
+    // chủ phòng mới: người có mặt vào sớm nhất
+    passOwner() {
+      const next = this.lobby.members.find((x) => !x.away);
+      this.lobby.owner = next ? next.id : null;
     }
 
     // đổi slot 1 người (slot phải trống; GUEST luôn được)
@@ -105,12 +125,19 @@ window.SFC = window.SFC || {};
       switch (m.t) {
         case 'hello': {
           if (m.v !== N().protocol) return this.refuse(id, 'version');
-          if (this.status !== 'lobby') return this.refuse(id, 'started');
+          // kết nối lại giữa trận bằng mã bí mật
+          const back = typeof m.tok === 'string' && this.status === 'playing' && L.members.find((x) => x.away && x.tok === m.tok);
+          if (back) return this.rejoin(back, id);
+          if (this.status !== 'lobby') return this.refuse(id, m.tok ? 'expired' : 'started');
           const pf = SFC.Profile.sanitizePublic(m.pf) || SFC.Profile.sanitizePublic({});
           // người vào sau: mặc định sang đội kia (versus) đúng vị trí họ chọn; hết chỗ thì slot trống bất kỳ
           const slot = Slots.free(L, L.members.length ? 1 : 0, pf.role || 'FWD');
           if (slot < 0) return this.refuse(id, 'full');
-          if (!who) L.members.push({ id, pf, slot });
+          if (!who) {
+            const tok = token();
+            L.members.push({ id, pf, slot, tok, away: 0 });
+            if (!this.isLocal(id)) this.send({ t: 'you', tok }, id);
+          }
           if (!L.owner) L.owner = id;
           this.refreshLocal();
           this.sendLobby();
@@ -149,21 +176,46 @@ window.SFC = window.SFC || {};
           break;
         case 'bye':
           this.drop(id);
-          this.gone(id);
+          this.gone(id, true);
           break;
       }
     }
 
-    // 1 người rời phòng (mất kết nối / bye)
-    gone(id) {
+    // 1 người mất kết nối. bye = tự rời phòng (không chờ kết nối lại)
+    gone(id, bye = false) {
       const L = this.lobby, m = this.member(id);
-      if (!m) return;   // chưa kịp hello (sai phiên bản / phòng đầy)
+      if (!m || m.away) return;   // chưa kịp hello (sai phiên bản / phòng đầy) / đang vắng mặt
+      // giữa trận: vắng mặt, AI đá thay, chờ kết nối lại trong net.reconnectGrace giây
+      if (this.status === 'playing' && !bye && GRACE() > 0) {
+        m.away = Date.now() + GRACE() * 1000;
+        const seat = this.seatOf[id];
+        delete this.remotes[id];
+        this.introWait.delete(id);
+        if (L.owner === id) this.passOwner();
+        if (this.game && seat != null) this.game.dropSeat(seat);
+        this.send({ t: 'drop', seat, o: L.owner, away: GRACE() });
+        this.hook('dropped', (m.pf && m.pf.name) || 'A player', true);
+        return;
+      }
+      this.remove(m);
+    }
+
+    // người vắng mặt quá hạn kết nối lại -> rời hẳn. now = Date.now()
+    expire(now) {
+      for (const m of this.lobby.members.slice()) if (m.away && now > m.away) this.remove(m);
+    }
+
+    // xoá hẳn 1 người khỏi phòng (rời / vắng mặt quá hạn)
+    remove(m) {
+      const L = this.lobby, id = m.id, wasAway = !!m.away;
       L.members = L.members.filter((x) => x !== m);
-      if (L.owner === id) L.owner = L.members.length ? L.members[0].id : null;
+      if (L.owner === id || !L.owner) this.passOwner();
       const name = (m.pf && m.pf.name) || 'A player';
       if (this.status === 'playing') {
+        // vắng mặt quá hạn: slot đã giao AI từ lúc mất kết nối -> còn ít nhất 2 người thì đá tiếp, không báo lại
+        if (wasAway && L.members.length > 1) return;
         // còn ít nhất 2 người: AI đá thay người vừa rời, trận tiếp tục. Không thì về phòng chờ
-        if (L.members.length > 1) {
+        if (!wasAway && L.members.length > 1) {
           const seat = this.seatOf[id];
           delete this.remotes[id];
           this.introWait.delete(id);
@@ -214,6 +266,7 @@ window.SFC = window.SFC || {};
         arena: bot ? bot.arena : Room.pickArena(area),
       };
       const [home, away] = Room.registerClubs(clubs);
+      this.startOpts = opts;   // người kết nối lại giữa trận dựng lại trận "gương" từ đây
       this.seatIds = ms.map((m) => m.id);
       this.seatOf = {};
       ms.forEach((m, i) => { this.seatOf[m.id] = i; });
@@ -234,8 +287,29 @@ window.SFC = window.SFC || {};
 
     isLocal(id) { return !!this.local && id === this.local.id; }
 
+    // người vắng mặt kết nối lại (id = kết nối mới): lấy lại slot, nhận trận đang đá (không màn giới thiệu)
+    rejoin(m, id) {
+      const old = m.id, seat = this.seatOf[old];
+      m.id = id;
+      m.away = 0;
+      if (seat != null) {
+        delete this.seatOf[old];
+        this.seatOf[id] = seat;
+        this.seatIds[seat] = id;
+        this.remotes[id] = new (Sync().RemoteInput)();
+        this.game.resumeSeat(seat);
+      }
+      const opts = Object.assign({}, this.startOpts, { me: seat, resume: 1, lobby: { m: this.publicMembers(), o: this.lobby.owner } });
+      this.send({ t: 'start', opts }, id);
+      this.send({ t: 'back', seat, o: this.lobby.owner });
+      this.hook('back', (m.pf && m.pf.name) || 'A player');
+    }
+
     backToLobby() {
       if (this.status !== 'playing') return;
+      // người vắng mặt lỡ trận -> rời phòng (vào lại bằng mã phòng như người mới)
+      this.lobby.members = this.lobby.members.filter((m) => !m.away);
+      if (!this.member(this.lobby.owner)) this.passOwner();
       this.toLobbyState();
       this.refreshLocal();
       this.sendLobby();
@@ -289,7 +363,7 @@ window.SFC = window.SFC || {};
     // giống SFC.Intro.wants (ui/intro.js gọi hàm này) — Room chạy được cả khi không có UI
     static wantsIntro(opts) {
       const I = SFC_CONFIG.intro;
-      if (!I || !I.enabled) return false;
+      if (!I || !I.enabled || opts.resume) return false;   // kết nối lại giữa trận: không chiếu lại
       const mode = opts.online ? 'online' : opts.mainPath ? 'mainPath' : opts.training ? 'training' : 'single';
       return I.modes.includes(mode);
     }
