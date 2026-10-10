@@ -1,8 +1,8 @@
 /* Room — phòng online phía chạy trận (không đụng UI): phòng chờ, slot, vào trận, vòng lặp mô phỏng + gửi snapshot.
  * Dùng chung cho 2 mô hình (cùng 1 bản luật, không lệch nhau):
- *  - Người chơi làm host (src/net/online.js): có ghế local { id: 'host', pf() } = người chơi tại máy này
+ *  - Người chơi làm host (src/net/session.js): có ghế local { id: 'host', pf() } = người chơi tại máy này
  *  - Máy chủ riêng (server/index.js, Node): không có ghế local, mọi người đều là khách
- * Gói tin: xem online.js. Thêm so với khách -> host: begin{area} (chủ phòng bấm START) · toLobby (chủ phòng về phòng chờ).
+ * Gói tin: xem session.js. Thêm so với khách -> host: begin{area} (chủ phòng bấm START) · toLobby (chủ phòng về phòng chờ).
  * Chủ phòng (lobby.owner) = người được START / về phòng chờ: host (người chơi làm host) / người tạo phòng (máy chủ riêng);
  * chủ phòng rời đi -> người có mặt vào sớm nhất còn lại.
  * Kết nối lại (net.reconnectGrace giây, 0 = tắt): vào phòng được cấp mã bí mật you{tok}. Mất kết nối giữa trận -> "vắng mặt"
@@ -31,7 +31,7 @@ window.SFC = window.SFC || {};
   };
   const GRACE = () => Math.max(0, +N().reconnectGrace || 0);
 
-  /* ---------- luật slot (dùng chung với online.js để vẽ phòng chờ) ---------- */
+  /* ---------- luật slot (dùng chung với session.js để vẽ phòng chờ) ---------- */
   const Slots = {
     n() { return ROLES().length * 2; },
     team(s) { return Math.floor(s / ROLES().length); },

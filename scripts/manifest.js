@@ -80,7 +80,7 @@ const FILES = [
   ['src/net/transport-server.js', 'game'],
   ['src/net/sync.js', 'game server'],
   ['src/net/room.js', 'game server'],
-  ['src/net/online.js', 'game'],
+  ['src/net/session.js', 'game'],
   ['src/ui/corepreview.js', 'game'],
   ['src/ui/controls.js', 'game'],
   ['src/ui/ui.js', 'game'],
@@ -92,6 +92,7 @@ const FILES = [
   ['src/ui/story.js', 'game'],
   ['src/ui/langpick.js', 'game'],
   ['src/ui/menu.js', 'game'],
+  ['src/ui/online.js', 'game'],
   ['src/main.js', 'game'],
 ];
 

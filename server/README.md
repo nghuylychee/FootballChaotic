@@ -47,7 +47,7 @@ Behind a provider's proxy or load balancer, the player's address is read from th
 
 ## Protocol
 
-The handshake is `create{v}` or `join{code,v}`, answered by `room{code,id}` or `err{e}` (`version`, `room-missing`, `server-full`, `server-closing`). A reconnecting player joins the same way and sends its token in `hello{tok}`. After that, every message goes straight to the room. The message list is in [src/net/online.js](../src/net/online.js). `net.protocol` must match between game and server. Bump it when the message format changes and redeploy the server together with the game.
+The handshake is `create{v}` or `join{code,v}`, answered by `room{code,id}` or `err{e}` (`version`, `room-missing`, `server-full`, `server-closing`). A reconnecting player joins the same way and sends its token in `hello{tok}`. After that, every message goes straight to the room. The message list is in [src/net/session.js](../src/net/session.js). `net.protocol` must match between game and server. Bump it when the message format changes and redeploy the server together with the game.
 
 ## Robustness
 

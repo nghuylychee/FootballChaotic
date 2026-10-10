@@ -1,7 +1,7 @@
 /* NetServer — backend máy chủ riêng: 1 WebSocket tới net.server.url (server/index.js). Giao diện chung: xem transport.js.
  * Máy chủ chạy trận (SFC.Room) nên máy này luôn là khách: mọi gói nhận được đều từ 'host'.
  * Bắt tay: create{v} / join{code,v} -> máy chủ trả room{code,id} (id = id máy chủ cấp cho máy này) hoặc err{e}.
- * Sau đó mọi gói đi thẳng tới Room trên máy chủ (hello, i, pick...; xem online.js).
+ * Sau đó mọi gói đi thẳng tới Room trên máy chủ (hello, i, pick...; xem session.js).
  * Dùng WebSocket có sẵn của trình duyệt / Electron, không cần thư viện.
  * Máy chủ có thể đang "ngủ" (gói miễn phí của nhà cung cấp tắt máy khi không ai dùng, bật lại mất ~1 phút):
  *  - wake(): gọi /healthz cho máy chủ dậy sớm (mở trang ONLINE)
@@ -21,13 +21,12 @@ window.SFC = window.SFC || {};
     code: null,
     handlers: {},
 
-    message(err) { return SFC.NetCommon.message(err); },
     on(handlers) { this.handlers = handlers || {}; },
     emit(name, a, b) { const h = this.handlers[name]; if (h) h(a, b); },
     get connected() { return this.joined && !!this.ws && this.ws.readyState === 1; },
     get id() { return this.myId; },
 
-    /** Tạo phòng trên máy chủ -> resolve(mã phòng). Chờ máy chủ dậy tới wakeTimeout giây, không được thì reject (online.js tự host) */
+    /** Tạo phòng trên máy chủ -> resolve(mã phòng). Chờ máy chủ dậy tới wakeTimeout giây, không được thì reject (session.js tự host) */
     host(onWait) { return this.until({ t: 'create', v: N().protocol }, onWait); },
 
     /** Vào phòng theo mã -> resolve khi máy chủ xác nhận. wait: chờ máy chủ dậy (VÀO PHÒNG); không: thử 1 lần (kết nối lại) */

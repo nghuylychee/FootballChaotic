@@ -123,7 +123,7 @@
       SFC.UI.show(null);
       const L = SFC_CONFIG.teams.list, mp = opts.mainPath;
       const kickoff = () => {
-        if (opts.resume) return;   // kết nối lại giữa trận (online.js): trận đang đá dở
+        if (opts.resume) return;   // kết nối lại giữa trận (net/session.js): trận đang đá dở
         const vsAway = _t('vs {team}', { team: L[opts.away].name });
         const vs = opts.training && opts.teamSize && !opts.teamSize[1]
           ? _t('{team} · no opponent', { team: L[opts.home].name })
@@ -135,12 +135,12 @@
       };
       // màn giới thiệu lực lượng 2 đội (config/intro.config.js): trận đứng yên tới khi xong, rồi mới chọn Core / giao bóng
       SFC.Intro.abort();
-      // online: 2 máy cùng chiếu; host giữ trận đứng yên tới khi cả 2 xem xong (SFC.Online.introDone)
+      // online: 2 máy cùng chiếu; host giữ trận đứng yên tới khi cả 2 xem xong (SFC.Session.introDone)
       if (SFC.Intro.wants(opts)) {
         this.screen = 'intro';
         SFC.Intro.start(this.game, () => {
           this.screen = 'game';
-          if (this.mode === 'online') SFC.Online.introDone();
+          if (this.mode === 'online') SFC.Session.introDone();
           kickoff();
         });
       } else kickoff();
@@ -154,24 +154,24 @@
     },
 
     pickCore(i) {
-      if (this.mode === 'online') SFC.Online.pick(i);
+      if (this.mode === 'online') SFC.Session.pick(i);
       else if (this.game) this.game.pickCore(i);
     },
 
     rerollCore() {
-      if (this.mode === 'online') SFC.Online.reroll();
+      if (this.mode === 'online') SFC.Session.reroll();
       else if (this.game) this.game.rerollDraft();
     },
 
     resume() {
-      if (this.mode === 'online') SFC.Online.overlay = false;
+      if (this.mode === 'online') SFC.OnlineUI.overlay = false;
       this.screen = 'game';
       const g = this.game;
       SFC.UI.show(g && g.state === 'draft' ? 'draft' : g && g.state === 'ended' ? 'end' : null);
     },
 
     pause() {
-      if (this.mode === 'online') SFC.Online.overlay = true;
+      if (this.mode === 'online') SFC.OnlineUI.overlay = true;
       else this.screen = 'pause';
       SFC.UI.pauseSel = 0;
       SFC.UI.renderPause();
@@ -227,7 +227,7 @@
       return;
     }
 
-    if (app.mode === 'online') { SFC.Online.tick(dt, Input); return; }
+    if (app.mode === 'online') { SFC.OnlineUI.tick(dt, Input); return; }
 
     // màn giới thiệu đội hình: trận chưa chạy, sự kiện (lượt chọn Core đầu trận) chờ tới khi xong
     if (app.screen === 'intro') { SFC.Intro.update(dt, Input); return; }
@@ -300,7 +300,7 @@
       let g = null;
       if (app.screen === 'story') g = null;
       else if (app.screen === 'menu') g = app.demo;
-      else if (app.mode === 'online') g = SFC.Online.view(now);
+      else if (app.mode === 'online') g = SFC.OnlineUI.view(now);
       else g = app.game;
       if (g && draw) {
         SFC.Renderer.render(g);
@@ -309,7 +309,7 @@
       // nhạc nền: chỉ phát ở ngoài trận (config/music.config.js)
       if (draw) SFC.Music.update(app.screen === 'menu');
       // âm thanh khán giả của trận đang hiện (menu: im lặng; tạm dừng / menu online: nhỏ lại)
-      if (draw) SFC.Crowd.sound(app.screen === 'menu' || app.screen === 'story' ? null : g, app.screen === 'pause' || (app.mode === 'online' && SFC.Online.overlay));
+      if (draw) SFC.Crowd.sound(app.screen === 'menu' || app.screen === 'story' ? null : g, app.screen === 'pause' || (app.mode === 'online' && SFC.OnlineUI.overlay));
     }
     let lastRaf = performance.now();
     function frame(now) {

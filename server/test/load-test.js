@@ -1,6 +1,7 @@
 /* Thử tải: tăng dần số trận chạy cùng lúc tới khi máy chủ không giữ nổi 60 bước/giây.
  *   node server/test/load-test.js [mức1,mức2,...]      (mặc định 10,25,50,100,150,200,300,400)
  *   COMPRESSION=0 node server/test/load-test.js        so sánh khi tắt nén
+ *   PLAYERS=4 node server/test/load-test.js            4 người / trận (2v2), mặc định 2
  * - Máy chủ chạy ở tiến trình riêng (fork), mỗi 2 giây báo: CPU % (của 1 nhân), RSS, heap, số bước mô phỏng / giây / trận
  * - Tiến trình này mở 2 WebSocket / trận (tạo phòng, vào phòng, START), mỗi khách gửi phím 10 lần/giây, đếm byte nhận
  * - Mỗi mức: chờ 3 giây cho ổn định rồi đo 6 giây. Dừng khi số bước / giây tụt dưới 57 hoặc CPU > 95%
@@ -11,6 +12,7 @@ const { fork } = require('child_process');
 const WebSocket = require('ws');
 
 const LEVELS = (process.argv[2] || '10,25,50,100,150,200,300,400').split(',').map(Number);
+const PLAYERS = Math.max(2, Math.min(4, +process.env.PLAYERS || 2));   // người / trận
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -62,25 +64,28 @@ function client() {
   return c;
 }
 
+// 1 trận: người đầu tạo phòng, còn lại vào bằng mã. Vị trí xen kẽ FWD / DEF -> 2 người = 1v1, 4 người = 2v2 (phòng tự xếp slot)
 async function startMatch(i) {
-  const A = client(), B = client();
-  await Promise.all([A.open, B.open]);
+  const cs = Array.from({ length: PLAYERS }, client);
+  await Promise.all(cs.map((c) => c.open));
+  const [A] = cs;
   const room = A.next((m) => m.t === 'room');
   A.send({ t: 'create', v: PROTOCOL });
   const { code } = await room;
-  const joined = B.next((m) => m.t === 'room');
-  B.send({ t: 'join', code, v: PROTOCOL });
-  await joined;
-  const ready = A.next((m) => m.t === 'lobby' && m.m.length === 2);
-  A.send({ t: 'hello', v: PROTOCOL, pf: pf('A' + i, 'FWD') });
-  B.send({ t: 'hello', v: PROTOCOL, pf: pf('B' + i, 'DEF') });
+  await Promise.all(cs.slice(1).map((c) => { const j = c.next((m) => m.t === 'room'); c.send({ t: 'join', code, v: PROTOCOL }); return j; }));
+  const ready = A.next((m) => m.t === 'lobby' && m.m.length === PLAYERS && m.m.every((x) => x.slot >= 0));
+  for (const [k, c] of cs.entries()) {
+    const joinedLobby = A.next((m) => m.t === 'lobby' && m.m.length === k + 1);
+    c.send({ t: 'hello', v: PROTOCOL, pf: pf('P' + k + '_' + i, k % 2 ? 'DEF' : 'FWD') });
+    await joinedLobby;   // vào lần lượt để slot xếp đúng như người thật
+  }
   await ready;
-  const started = B.next((m) => m.t === 'start');
+  const started = cs[1].next((m) => m.t === 'start');
   A.send({ t: 'begin', area: 0 });
   await started;
-  A.send({ t: 'intro' }); B.send({ t: 'intro' });
+  for (const c of cs) c.send({ t: 'intro' });
   // phím: 10 lần / giây mỗi khách (thực tế chỉ gửi khi đổi phím -> đây là mức nặng)
-  for (const c of [A, B]) c.timer = setInterval(() => c.send({ t: 'i', d: (Math.random() * 4096) | 0, p: Math.random() < 0.1 ? 256 : 0 }), 100);
+  for (const c of cs) c.timer = setInterval(() => c.send({ t: 'i', d: (Math.random() * 4096) | 0, p: Math.random() < 0.1 ? 256 : 0 }), 100);
 }
 
 (async () => {
@@ -88,7 +93,7 @@ async function startMatch(i) {
   let stats = null;
   srv.on('message', (s) => { stats = s; });
   await sleep(1500);
-  console.log(`compression ${process.env.COMPRESSION === '0' ? 'OFF' : 'ON'}`);
+  console.log(`compression ${process.env.COMPRESSION === '0' ? 'OFF' : 'ON'} · ${PLAYERS} players per match`);
   console.log('matches | server CPU (1 core) | ticks/s avg (min) | RSS     | heap    | per player on the wire');
   let running = 0;
   for (const level of LEVELS) {
@@ -100,10 +105,12 @@ async function startMatch(i) {
     const samples = [], b0 = bytesIn, t0 = Date.now();
     for (let k = 0; k < 3; k++) { stats = null; while (!stats) await sleep(50); samples.push(stats); }
     const avg = (key) => samples.reduce((s, x) => s + x[key], 0) / samples.length;
-    const perPlayer = avg('wire') / (running * 2) / 1024;
+    const perPlayer = avg('wire') / (running * PLAYERS) / 1024;
     const cpu = avg('cpu'), tps = avg('tps'), minTps = Math.min(...samples.map((x) => x.minTps));
     console.log(`${String(level).padStart(7)} | ${cpu.toFixed(0).padStart(5)} %${' '.repeat(13)} | ${tps.toFixed(1).padStart(5)} (${minTps.toFixed(0).padStart(2)})${' '.repeat(6)} | ${avg('rss').toFixed(0).padStart(4)} MB | ${avg('heap').toFixed(0).padStart(4)} MB | ${perPlayer.toFixed(1)} KB/s`);
-    if (tps < 57 || cpu > 95) { console.log(`stopped: server can no longer keep 60 ticks/s at ${level} matches`); break; }
+    if (tps < 57) { console.log(`stopped: server can no longer keep 60 ticks/s at ${level} matches`); break; }
+    // nén chạy ở luồng phụ của Node nên CPU vượt 100% được; trên máy chủ thuê, tổng CPU này mới là thứ bị giới hạn
+    if (cpu > 95) { console.log(`stopped: ${cpu.toFixed(0)}% CPU at ${level} matches (more than 1 core in total)`); break; }
   }
   for (const c of all) { clearInterval(c.timer); c.ws.terminate(); }
   srv.kill();

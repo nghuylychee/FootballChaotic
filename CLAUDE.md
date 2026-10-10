@@ -28,7 +28,7 @@ Opening `index.html` from disk mostly works, but browsers block the XHR that loa
 
 ## Architecture
 
-**No modules.** Every file is a classic `<script>`, and **load order matters**. Each file is an IIFE that attaches to the global `window.SFC` namespace (`SFC.Game`, `SFC.Online`, ...). Tuning data lives in `window.SFC_CONFIG.*`, defined by `config/*.config.js`. All balance numbers belong in `config/`, not in code.
+**No modules.** Every file is a classic `<script>`, and **load order matters**. Each file is an IIFE that attaches to the global `window.SFC` namespace (`SFC.Game`, `SFC.Session`, ...). Tuning data lives in `window.SFC_CONFIG.*`, defined by `config/*.config.js`. All balance numbers belong in `config/`, not in code.
 
 **Script list = `scripts/manifest.js`, the single source.** It lists every file in load order, and each file names the targets that load it:
 - `game` = `index.html`
@@ -65,7 +65,8 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 
 **Online** (`src/net/`). The model is host-authoritative, and the same room logic runs in two places:
 - `room.js` (`SFC.Room`) holds the UI-free room rules: lobby slots, owner, starting a match, the tick loop, snapshot broadcast. It runs in the browser when a player hosts (Steam P2P via `transport-steam.js`, or PeerJS/WebRTC via `transport-peer.js`) and in Node on the dedicated server (`server/`, reached through `transport-server.js`).
-- `online.js` is the client: lobby UI state, and guests that send input bitmasks and draw a **mirror `Game` that is never simulated**.
+- `session.js` (`SFC.Session`) is the player's online session and has **no UI**. It never calls `Menu`, `UI`, `Audio`, `Intro` or `Input`, and contains no player-facing text. It reports everything through events (`Session.on('busy' | 'waiting' | 'lobby' | 'notice' | 'role' | 'start' | 'toLobby' | 'player' | 'owner' | 'reconnecting' | 'getReady' | 'closed', fn)`) with neutral reason codes. It gets game data through `Session.provide({ profile, area })`. Guests send input bitmasks and draw a **mirror `Game` that is never simulated**.
+- `src/ui/online.js` (`SFC.OnlineUI`) is the online UI. It turns those events into pages, messages, banners and sounds, owns all online texts (`TEXT`, `REASONS`), and routes in-match input (pause overlay, draft, result screen, intro). `main.js` calls `OnlineUI.tick/view`, while menus call `Session`'s commands (`createRoom`, `joinRoom`, `cancel`, `leave`, `startMatch`, `requestSlot`, `updateProfile`, `prepare`…) and read its state. To change how online looks, edit the UI files only; `client-test.js` fails if `src/net/` references the UI.
 - `isHost` means this machine runs the match. `isOwner` means this player controls START / BACK TO LOBBY. Use `isOwner` for UI gating.
 - CREATE ROOM tries the server first when `net.server.url` is set (empty by default), then falls back to player-hosting. All room codes are 7 characters; JOIN recognises a server room by its first character (`net.server.codeFirst`, see `NetCommon.isServerCode`). Steam codes always start A–D, and PeerJS codes avoid those characters.
 - **Players must never be able to tell which model a room uses.** Every message, error text (`ERRORS` in `transport.js`), room code and lobby tag (HOST = room owner) is identical across server, Steam and PeerJS. Don't mention servers, hosting machines, P2P, Steam, PeerJS or waking in player-facing text; `client-test.js` fails if any appears.

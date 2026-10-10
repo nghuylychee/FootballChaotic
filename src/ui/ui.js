@@ -229,7 +229,7 @@ window.SFC = window.SFC || {};
         // bản DEMO hết Area đá được: restart -> màn WISHLIST (app.startMainPath)
         return mp ? [['restart', SFC.MainPath.demoOver() ? _t('CONTINUE') : _t('NEXT MATCH')], ['menu', _t('LOBBY')]] : [['restart', _t('PLAY AGAIN')], ['menu', _t('MAIN MENU')]];
       }
-      return SFC.Online.isOwner ? [['lobby', _t('BACK TO LOBBY')], ['leave', _t('LEAVE ROOM')]] : [['leave', _t('LEAVE ROOM')]];
+      return SFC.Session.isOwner ? [['lobby', _t('BACK TO LOBBY')], ['leave', _t('LEAVE ROOM')]] : [['leave', _t('LEAVE ROOM')]];
     },
 
     renderEnd(game) {
@@ -249,7 +249,7 @@ window.SFC = window.SFC || {};
         const list = ids.length ? ids.map(item).join('') : `<em>${esc(_t('No cores'))}</em>`;
         return `<div class="b-player ${mine ? 'me' : ''}"><div class="bp-head"><b>${esc(q.name)}</b>${buildLabel(game, q)}</div>${mine ? list : `<div class="bp-chips">${list}</div>`}</div>`;
       }).join('');
-      const note = this.online && !SFC.Online.isOwner ? _t('Waiting for the host to return to the lobby...') : _t('Try a different build next time?');
+      const note = this.online && !SFC.Session.isOwner ? _t('Waiting for the host to return to the lobby...') : _t('Try a different build next time?');
       // sân luôn vẽ đội 0 bên trái -> tỉ số giữ đúng thứ tự trái / phải
       const t0 = game.teams[0], t1 = game.teams[1];
       this.el.end.innerHTML = `
@@ -443,8 +443,8 @@ window.SFC = window.SFC || {};
       if (act === 'forfeit') this.app.forfeit();
       // trận Main Path xong -> về trang Main Path
       if (act === 'menu') this.app.toMenu(this.app.game && this.app.game.opts.mainPath ? 'party' : 'home');
-      if (act === 'leave') SFC.Online.leave();
-      if (act === 'lobby') SFC.Online.backToLobby();
+      if (act === 'leave') SFC.Session.leave();
+      if (act === 'lobby') SFC.Session.backToLobby();
       if (act === 'reroll') this.app.rerollCore();
       if (act === 'skiptut') SFC.Tutorial.skip();
     },

@@ -35,7 +35,6 @@ window.SFC = window.SFC || {};
     cbs: [],
 
     available() { return !!(S() && S().client); },
-    message(err) { return SFC.NetCommon.message(err); },
     get client() { return S().client; },
 
     on(handlers) { this.handlers = handlers || {}; },
@@ -152,7 +151,7 @@ window.SFC = window.SFC || {};
       }
     },
 
-    // host: gói từ 1 thành viên lobby. Gói đầu = khách mới -> open (online.js chờ gói hello)
+    // host: gói từ 1 thành viên lobby. Gói đầu = khách mới -> open (session.js chờ gói hello)
     receive(id, sid, msg) {
       if (this.banned.has(id)) return;
       if (!this.conns.has(id)) { this.conns.set(id, sid); this.emit('open', id); }

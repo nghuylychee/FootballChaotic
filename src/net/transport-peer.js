@@ -16,7 +16,6 @@ window.SFC = window.SFC || {};
     code: null,
     handlers: {},
 
-    message(err) { return SFC.NetCommon.message(err); },
 
     load() {
       if (window.Peer) return Promise.resolve();

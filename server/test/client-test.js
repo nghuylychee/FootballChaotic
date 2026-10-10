@@ -1,9 +1,11 @@
-/* Kiểm tra phía người chơi (src/net/online.js + transport-server.js + Room làm host) không cần trình duyệt:
+/* Kiểm tra phía người chơi (src/net/session.js + transport-server.js + Room làm host) không cần trình duyệt:
  * mỗi "máy" = 1 vm context nạp đúng các file game (menu / UI / vẽ thay bằng stub), P2P thay bằng mạng giả trong bộ nhớ.
  *  1. Phòng máy chủ riêng: A tạo phòng (mã 6 ký tự), B vào, A là chủ phòng, START, B nhận snapshot, A về phòng chờ
  *  2. Máy chủ không tới được: A tạo phòng -> tự chuyển sang làm host (P2P giả), B vào bằng mã 7 ký tự, đá, về phòng chờ
  *  Cả 2: B rớt mạng giữa trận -> tự kết nối lại, lấy lại slot, A thấy RECONNECTED
  *  Mọi thông báo / banner người chơi thấy không được lộ cách kết nối (máy chủ riêng / làm host / Steam / PeerJS)
+ *  Mã online (src/net/) không được gọi tới giao diện (Menu / UI / Audio / Intro / Input): UI sửa thoải mái không ảnh hưởng online
+ *  Máy giả chạy đúng như game: main.js -> SFC.OnlineUI.tick / view (src/ui/online.js) -> SFC.Session
  * node server/test/client-test.js
  */
 const assert = require('assert');
@@ -13,10 +15,10 @@ const vm = require('vm');
 const { spawn } = require('child_process');
 
 const ROOT = path.join(__dirname, '..', '..');
-// file của máy chủ + phần khách online (scripts/manifest.js), theo thứ tự nạp của game
+// file của máy chủ + phần khách online + giao diện online (scripts/manifest.js), theo thứ tự nạp của game
 const manifest = require(path.join(ROOT, 'scripts', 'manifest.js'));
 const SERVER_FILES = manifest.files('server');
-const FILES = manifest.files('game').filter((f) => SERVER_FILES.includes(f) || ['src/net/transport-server.js', 'src/net/online.js'].includes(f));
+const FILES = manifest.files('game').filter((f) => SERVER_FILES.includes(f) || ['src/net/transport-server.js', 'src/net/session.js', 'src/ui/online.js'].includes(f));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const until = async (fn, ms = 5000, what = 'condition') => {
   const end = Date.now() + ms;
@@ -92,6 +94,8 @@ function machine(name, serverUrl) {
   const app = {
     sel: { ctrl: 2 }, screen: 'menu',
     mateSpec: () => null,
+    // như main.js app.myRole
+    myRole() { const R = ctx.SFC_CONFIG.game.roles; return R[this.sel.ctrl ? this.sel.ctrl - 1 : R.indexOf('FWD')]; },
     toMenu(page) { this.screen = 'menu'; log.pages.push(page); SFC.Menu.page = page; },
     enterOnline(game) { this.screen = 'game'; this.game = game; log.entered++; },
     resume() {}, pause() {},
@@ -108,7 +112,7 @@ function machine(name, serverUrl) {
   };
   SFC.Intro = { update() {}, wants: (o) => SFC.Room.wantsIntro(o) };
   const input = { isDown: () => false, wasPressed: () => false, wasReleased: () => false, endFrame() {} };
-  const m = { name, SFC, SFC_CONFIG: ctx.SFC_CONFIG, O: SFC.Online, log, input, app };
+  const m = { name, SFC, SFC_CONFIG: ctx.SFC_CONFIG, O: SFC.Session, log, input, app };
   MACHINES.push(m);
   return m;
 }
@@ -118,14 +122,14 @@ async function play(ms, ...ms_) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
     for (const m of ms_) {
-      if (m.O.game) m.O.tick(1 / 60, m.input);
-      if (m.O.game) m.O.view(performance.now());
+      if (m.O.game) m.SFC.OnlineUI.tick(1 / 60, m.input);
+      if (m.O.game) m.SFC.OnlineUI.view(performance.now());
     }
     await sleep(16);
   }
 }
 
-// B rớt mạng giữa trận -> online.js tự vào lại (tok) -> lấy lại slot, nhận snapshot, A được báo
+// B rớt mạng giữa trận -> session.js tự vào lại (tok) -> lấy lại slot, nhận snapshot, A được báo
 async function dropAndRejoin(A, B, cut) {
   const seat = B.O.game.me, entered = B.log.entered;
   cut();
@@ -177,7 +181,7 @@ async function fallbackRoom() {
   C.SFC_CONFIG.net.server.wakeTimeout = 30;
   C.O.createRoom();
   await until(() => C.log.msgs.some((m) => /Creating room.*cancel/.test(m)), 4000, 'waiting message');
-  C.O.cancelWait();
+  C.O.cancel();
   await until(() => C.O.status === 'idle', 2000, 'Esc cancels');
   assert.strictEqual(C.SFC.Menu.msg, 'Cancelled.');
   console.log('waiting + Esc: OK (cancels)');
@@ -221,10 +225,23 @@ async function fallbackRoom() {
     const seen = MACHINES.flatMap((m) => m.log.msgs.concat(m.log.banners));
     const leaks = seen.filter((t) => LEAK.test(t));
     assert.deepStrictEqual(leaks, [], 'player-visible text reveals the network model');
-    const errors = Object.values(['network', 'webrtc', 'load', 'steam-lobby', 'steam-offline', 'server-unreachable', 'server-full', 'server-closing', 'version', 'timeout'])
-      .map((type) => NC.message({ type }));
-    assert.deepStrictEqual(errors.filter((t) => LEAK.test(t)), [], 'error texts reveal the network model');
-    console.log(`neutral texts: OK (${seen.length} messages/banners checked, error texts too)`);
+    // mọi lỗi của mọi backend -> lý do trung tính -> chữ của giao diện
+    const OUI = MACHINES[0].SFC.OnlineUI;
+    const rawTypes = ['network', 'webrtc', 'load', 'steam-lobby', 'steam-offline', 'server-unreachable', 'server-full', 'server-closing',
+      'version', 'timeout', 'peer-unavailable', 'room-missing', 'socket-error', 'browser-incompatible', 'unavailable-id', 'something-new'];
+    const texts = rawTypes.map((type) => OUI.reasonText(NC.kind({ type }))).concat(Object.values(OUI.REASONS),
+      Object.values(OUI.TEXT).map((t) => (typeof t === 'function' ? t('ABCD234') : t)));
+    assert.deepStrictEqual(texts.filter((t) => LEAK.test(t)), [], 'UI texts reveal the network model');
+    console.log(`neutral texts: OK (${seen.length} messages/banners seen + all UI texts checked)`);
+    // mã online không gọi tới giao diện
+    const NET_DIR = path.join(ROOT, 'src', 'net');
+    for (const f of fs.readdirSync(NET_DIR)) {
+      // bỏ chú thích (/* */ và //) — chỉ kiểm code thật
+      const src = fs.readFileSync(path.join(NET_DIR, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
+      const hit = src.match(/SFC\.(Menu|UI|OnlineUI|Audio|Intro|Input|Renderer)\b/);
+      assert.ok(!hit, `src/net/${f} uses ${hit && hit[0]}: online code must not depend on the UI`);
+    }
+    console.log('online/UI separation: OK (src/net/ has no UI references)');
     console.log('OK');
   } finally {
     proc.kill('SIGTERM');

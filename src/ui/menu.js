@@ -11,7 +11,7 @@ window.SFC = window.SFC || {};
   const _t = SFC.t, _tn = SFC.tn;   // dịch theo ngôn ngữ đang chọn (engine/i18n.js) — nhãn cố định viết thành hàm, gọi lúc vẽ
   const TEAMS = () => SFC_CONFIG.teams;
   const STAT_LABELS = () => ({ speed: _t('SPEED'), power: _t('POWER'), pass: _t('PASSING'), tackle: _t('PHYSICAL'), dribble: _t('DRIBBLE'), accuracy: _t('ACCURACY') });
-  const Online = () => SFC.Online;
+  const Session = () => SFC.Session;
   const ROLE_LABELS = () => ({ DEF: _t('DEFENDER'), FWD: _t('FORWARD') }); // vị trí xuất phát
   const PF = () => SFC.Profile;
   const PROG = () => SFC_CONFIG.progression;
@@ -54,7 +54,7 @@ window.SFC = window.SFC || {};
   // phòng online: 1 đội = thẻ CLB (CLB riêng của người đầu tiên trong đội / đội bot ngẫu nhiên) + các slot theo vị trí.
   // Slot trống: đồng đội AI của người duy nhất trong đội, hoặc bot (đội không có người) — bấm để nhảy vào
   function lobbyTeam(t) {
-    const O = SFC.Online, roles = SFC_CONFIG.game.roles, L = O.lobby, list = O.byTeam()[t];
+    const O = SFC.Session, roles = SFC_CONFIG.game.roles, L = O.lobby, list = O.byTeam()[t];
     const coop = O.mode === 'coop', meId = O.mine && O.mine.id;
     let head, style = '--shirt:#8a8f9e;--accent:#9aa3b5';
     if (list.length) {
@@ -133,7 +133,7 @@ window.SFC = window.SFC || {};
       this.msgErr = err;
       if (page === 'join' && !msg) this.code = '';
       // máy chủ riêng có thể đang ngủ: mở ONLINE là đánh thức luôn, tới lúc bấm TẠO / VÀO PHÒNG đã dậy được một lúc
-      if (page === 'online' && SFC.NetCommon.serverOn()) SFC.NetServer.wake();
+      if (page === 'online') Session().prepare();
       if (page === 'name') this.nameBuf = PF().data.name;
       if (page === 'path') this.pathView = MPATH().state.area;   // mở Main Path: xem Area đang đá
       if (page !== 'party' && SFC.Social.chatWith) SFC.Social.chatWith = null;
@@ -278,7 +278,7 @@ window.SFC = window.SFC || {};
         }
         case 'online':
           return [
-            { kind: 'btn', label: _t('CREATE ROOM'), sub: _t('Get a code to share with friends'), act: () => Online().createRoom() },
+            { kind: 'btn', label: _t('CREATE ROOM'), sub: _t('Get a code to share with friends'), act: () => Session().createRoom() },
             { kind: 'btn', label: _t('JOIN ROOM'), sub: _t('Enter a friend\'s room code'), act: () => this.go('join') },
           ];
         case 'join':
@@ -293,14 +293,14 @@ window.SFC = window.SFC || {};
             { kind: 'btn', label: _t('BACK'), sub: _t('Main menu'), act: () => this.go('home') },
           ];
         case 'lobby': {
-          const O = Online(), me = O.mine;
+          const O = Session(), me = O.mine;
           const list = [];
           // như Main Path: không chọn đội (đá cho CLB riêng) — slot quyết định đội + vị trí character; đồng đội AI ra sân khi đội chỉ có mình bạn
           // SLOT: các slot trống + GUEST (ghế chờ, không ra sân) — phòng đủ 4 người vẫn đổi chỗ được qua ghế chờ
           list.push({ kind: 'pick', label: _t('SLOT'), value: me ? this.slotLabel(me.slot) : '—', change: (d) => O.cycleSlot(d) });
           // đội đã đủ người -> không có đồng đội AI ra sân: khóa chọn đồng đội
           const full = !!me && me.slot >= 0 && O.byTeam()[O.slotTeam(me.slot)].length >= SFC_CONFIG.game.roles.length;
-          list.push({ kind: 'pick', label: _t('TEAMMATE'), value: full ? _t('TEAM FULL · NO AI') : this.mateLabel(), disabled: full, change: (d) => { this.changeMate(d); O.updatePf(); } });
+          list.push({ kind: 'pick', label: _t('TEAMMATE'), value: full ? _t('TEAM FULL · NO AI') : this.mateLabel(), disabled: full, change: (d) => { this.changeMate(d); O.updateProfile(); } });
           if (O.isOwner) {
             const sub = O.canStart ? (O.mode === 'coop' ? _t('CO-OP vs random bots') : _t('VERSUS'))
               : O.benched.length ? _t('Everyone on GUEST must take a slot') : _t('Waiting for players...');
@@ -330,7 +330,7 @@ window.SFC = window.SFC || {};
 
     // phòng online: slot = đội A (trái) / B (phải) + vị trí
     slotLabel(s) {
-      const O = Online();
+      const O = Session();
       if (s < 0) return _t('GUEST · SITTING OUT');
       return _t('TEAM {side} · {role}', { side: 'AB'[O.slotTeam(s)], role: ROLE_LABELS()[O.slotRole(s)] || O.slotRole(s) });
     },
@@ -356,7 +356,7 @@ window.SFC = window.SFC || {};
     },
 
     back() {
-      if (Online().status === 'busy') { Online().cancelWait(); return; }
+      if (Session().status === 'busy') { Session().cancel(); return; }
       // trang chủ: hỏi thoát game. Trình duyệt không tự đóng tab được -> bản web không làm gì
       if (this.page === 'home') { if (ST().desktop) this.askQuit(); return; }
       if (this.page === 'name') { if (PF().hasName) this.go(this.nameBack); return; } // lần đầu: bắt buộc đặt tên
@@ -371,7 +371,7 @@ window.SFC = window.SFC || {};
       else if (['controls', 'display', 'test'].includes(this.page)) this.go('settings');
       else if (['path', 'online', 'tutorial', 'char', 'settings', 'wishlist'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
-      else if (this.page === 'lobby') Online().leave();
+      else if (this.page === 'lobby') Session().leave();
     },
 
     /* ---------------- vẽ ---------------- */
@@ -464,7 +464,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'join') return _t('Type the code · Enter connect · {back} back', { back });
       if (this.page === 'name') return PF().hasName ? _t('Type a name (A-Z, 0-9) · Enter confirm · {back} back', { back }) : _t('Type a name (A-Z, 0-9) · Enter confirm');
       if (this.page === 'attrs') return _t('↑↓ select · {back} back', { back });
-      if (this.page === 'lobby') return _t('↑↓ select · ←→ change slot / teammate · click a slot / GUEST to move') + (Online().isOwner ? ` · ${_t('{ok} start', { ok })}` : '') + ` · ${_t('{key} leave room', { key: K('pause', 'Esc') })}`;
+      if (this.page === 'lobby') return _t('↑↓ select · ←→ change slot / teammate · click a slot / GUEST to move') + (Session().isOwner ? ` · ${_t('{ok} start', { ok })}` : '') + ` · ${_t('{key} leave room', { key: K('pause', 'Esc') })}`;
       return _t('↑↓ select · ←→ change · {ok} · {back} back', { ok, back });
     },
 
@@ -479,7 +479,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'wishlist') return this.wishlistPanel();
       if (this.page === 'training') return teamCard(o.order[s.team], '');
       if (this.page === 'lobby') {
-        const O = Online(), n = O.lobby.members.length, max = SFC_CONFIG.net.maxPlayers;
+        const O = Session(), n = O.lobby.members.length, max = SFC_CONFIG.net.maxPlayers;
         if (!n) return `<div class="lobby"><div class="lb-note">${esc(_t('Loading room...'))}</div></div>`;
         const coop = O.mode === 'coop';
         const bench = O.benched;
@@ -519,7 +519,7 @@ window.SFC = window.SFC || {};
     },
 
     renderRoomCode() {
-      const code = Online().code || '-'.repeat(SFC_CONFIG.net.codeLength);
+      const code = Session().code || '-'.repeat(SFC_CONFIG.net.codeLength);
       return `<div class="room-code" title="${esc(_t('Click to copy'))}"><span class="rc-label">${esc(_t('ROOM CODE'))}</span><b data-copy="${esc(code)}">${esc(code)}</b></div>`;
     },
 
@@ -1076,7 +1076,7 @@ window.SFC = window.SFC || {};
       }
       if (input.wasPressed('confirm')) {
         // phòng chờ: Enter luôn là "Bắt đầu" với chủ phòng
-        if (this.page === 'lobby' && Online().isOwner) return this.activate(items.find((x) => x.main));
+        if (this.page === 'lobby' && Session().isOwner) return this.activate(items.find((x) => x.main));
         if (this.page === 'join') return this.submitCode();
         this.activate(it);
       }
@@ -1104,7 +1104,7 @@ window.SFC = window.SFC || {};
 
     submitCode() {
       if (this.code.length < SFC_CONFIG.net.codeLength) { this.setMsg(_t('Room codes are {n} characters.', { n: SFC_CONFIG.net.codeLength }), true); return; }
-      Online().joinRoom(this.code);
+      Session().joinRoom(this.code);
     },
 
     // trang Vào phòng / Đặt tên: gõ chữ/số trực tiếp
@@ -1143,7 +1143,7 @@ window.SFC = window.SFC || {};
         return true;
       };
       I.textHandler = (e) => {
-        if (Online().status === 'busy') return false;
+        if (Session().status === 'busy') return false;
         if (e.key === 'Backspace') { this.code = this.code.slice(0, -1); this.render(); return true; }
         if (e.key.length === 1 && /[a-z0-9]/i.test(e.key)) { add(e.key); return true; }
         return false;
@@ -1175,7 +1175,7 @@ window.SFC = window.SFC || {};
         if (pa) { this.pathView = +pa.dataset.parea; SFC.Audio.menu(); this.render(); return; }
         // phòng online: bấm slot trống để nhảy vào
         const slot = this.page === 'lobby' && e.target.closest('[data-slot]');
-        if (slot) { SFC.Audio.menu(); Online().requestSlot(+slot.dataset.slot); return; }
+        if (slot) { SFC.Audio.menu(); Session().requestSlot(+slot.dataset.slot); return; }
         const tab = e.target.closest('[data-tab]');
         if (tab) { this.tutPage = +tab.dataset.tab; SFC.Audio.menu(); this.render(); return; }
         if (this.page === 'party') {
