@@ -151,10 +151,6 @@ kbd {
 .code-in { display: flex; gap: 4px; margin: 4px 0 8px; }
 .code-in .cb { width: 26px; height: 30px; display: flex; align-items: center; justify-content: center; font-family: var(--px); font-size: 13px; color: var(--gold); background: #1c1320; border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); }
 .code-in .cb.cur { border-color: var(--gold); animation: blink 0.8s steps(1) infinite; }
-.room-code { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 8px; cursor: pointer; }
-.rc-label { font-size: 13px; color: var(--muted); }
-.room-code b { font-family: var(--px); font-size: 15px; font-weight: normal; color: var(--gold); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--ink); }
-.room-code:hover b { color: #fff; }
 
 /* thẻ đội */
 .team-card { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--shirt); padding: 8px 10px; }
@@ -172,42 +168,6 @@ kbd {
 .stat span { width: 52px; }
 .stat i { flex: 1; height: 4px; background: #2a1f2c; display: block; }
 .stat b { display: block; height: 100%; background: var(--shirt); }
-
-/* phòng chờ */
-.lobby { display: flex; flex-direction: column; gap: 4px; }
-.lobby .tc-desc { display: none; }
-.lobby .stats { margin-top: 5px; }
-.lobby .vs { font-family: var(--px); font-size: 9px; color: #ff3d5a; text-align: center; text-shadow: 1px 1px 0 var(--ink); }
-/* phòng 4 slot: chế độ (versus / co-op) + mỗi đội 2 slot theo vị trí */
-.lb-mode { font-family: var(--px); font-size: 8px; color: #ff3d5a; text-shadow: 1px 1px 0 var(--ink); }
-.lb-mode.coop { color: #3ff6ff; }
-.lb-mode span { font-family: var(--vt); font-size: 13px; color: var(--muted); text-shadow: none; }
-.lb-team { padding: 6px 8px; }
-.lb-team.bots .tc-name { color: var(--muted); }
-.kit.bot i { background: #2a2230; border-style: dashed; border-color: var(--muted); }
-.lb-slots { display: flex; gap: 4px; margin-top: 5px; }
-.lb-slot { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,.25); padding: 3px 5px; border-left: 2px solid var(--accent); position: relative; }
-.lb-slot > div { min-width: 0; flex: 1; }
-.lb-slot u { font-family: var(--px); font-size: 6px; text-decoration: none; color: var(--accent); }
-.lb-slot b { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-slot em { font-style: normal; font-family: var(--px); font-size: 5px; margin-left: 4px; padding: 1px 2px; color: var(--muted); border: 1px solid var(--edge); vertical-align: 2px; }
-.lb-slot em.you { color: var(--ink); background: var(--gold); border-color: var(--gold); }
-.lb-slot span { display: block; font-size: 8px; color: var(--muted); }
-.lb-slot.me { box-shadow: inset 0 0 0 1px var(--gold); }
-.lb-slot.open { border-left: 2px dashed var(--muted); cursor: pointer; opacity: 0.8; }
-.lb-slot.open b { color: var(--muted); }
-.lb-slot.open i { font-style: normal; font-family: var(--px); font-size: 5px; color: var(--gold); opacity: 0; }
-.lb-slot.open:hover { opacity: 1; box-shadow: inset 0 0 0 1px var(--gold); }
-.lb-slot.open:hover i { opacity: 1; }
-/* ghế chờ GUEST (đổi chỗ khi phòng đủ người) */
-.lb-bench { display: flex; align-items: center; gap: 6px; min-height: 16px; padding: 2px 6px; border: 1px dashed var(--edge); cursor: pointer; }
-.lb-bench:hover, .lb-bench.on { border-color: var(--gold); }
-.lb-bench u { font-family: var(--px); font-size: 6px; text-decoration: none; color: var(--gold); }
-.lb-bench b { font-size: 11px; font-weight: normal; }
-.lb-bench b.me { color: var(--gold); }
-.lb-bench span { font-size: 11px; color: var(--muted); }
-.lb-note { font-size: 13px; color: var(--muted); text-align: center; margin-top: 2px; }
-.lb-note.ok { color: #9dff3d; animation: pulse 0.8s steps(2) infinite; }
 
 /* hướng dẫn */
 #menu.tut { display: flex; flex-direction: column; gap: 6px; background: rgba(10,6,12,0.93); }
@@ -458,7 +418,12 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .pt-back { position: absolute; left: 10px; top: 10px; font-size: 13px; color: var(--muted); cursor: pointer; z-index: 2; }
 .pt-back:hover { color: var(--gold); }
 .pt-tabs { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.pt-tab { font-family: var(--px); font-size: 8px; color: #fff; letter-spacing: 2px; padding: 0 10px 4px; border-bottom: 2px solid var(--gold); text-shadow: 1px 1px 0 var(--ink); }
+/* thanh tab RANKED · PRIVATE MATCH (kiểu Rocket League): Q / E (LB / RB) đổi tab */
+.pt-tabrow { display: flex; align-items: center; gap: 4px; }
+.pt-tabrow kbd { font-family: var(--px); font-size: 5px; color: var(--muted); padding: 2px 3px 1px; background: #1c1320; border: 1px solid var(--edge); box-shadow: 1px 1px 0 var(--ink); }
+.pt-tab { font-family: var(--px); font-size: 7px; color: var(--muted); letter-spacing: 1px; padding: 0 6px 4px; white-space: nowrap; border-bottom: 2px solid transparent; text-shadow: 1px 1px 0 var(--ink); cursor: pointer; }
+.pt-tab:hover { color: var(--gold); }
+.pt-tab.on { color: #fff; border-bottom-color: var(--gold); }
 .pt-area { font-size: 12px; line-height: 1; }
 .pt-slots { flex: 1; display: flex; justify-content: center; align-items: center; gap: 16px; min-height: 0; }
 .pt-card { position: relative; width: 116px; height: 196px; display: flex; flex-direction: column; align-items: center; background: var(--ac); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 10px) calc(100% - 16px), calc(100% - 10px) calc(100% - 10px), calc(100% - 24px) calc(100% - 10px), calc(100% - 24px) calc(100% - 4px), calc(50% + 10px) calc(100% - 4px), calc(50% + 10px) 100%, calc(50% - 10px) 100%, calc(50% - 10px) calc(100% - 4px), 24px calc(100% - 4px), 24px calc(100% - 10px), 10px calc(100% - 10px), 10px calc(100% - 16px), 0 calc(100% - 16px)); }
@@ -510,6 +475,67 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .pt-btn.go { font-family: var(--px); font-size: 12px; letter-spacing: 3px; color: var(--ink); padding: 8px 26px 7px; background: var(--gold); border: 2px solid var(--ink);
   box-shadow: inset 2px 2px 0 #fff4b0, inset -2px -2px 0 #c99a12, 2px 2px 0 var(--ink); }
 .pt-btn.go.sel, .pt-btn.go:hover { color: var(--ink); background: #fff07a; box-shadow: inset 2px 2px 0 #fff4b0, inset -2px -2px 0 #c99a12, 2px 2px 0 var(--ink), 0 0 0 2px #fff; }
+/* PRIVATE MATCH (tab 2 màn PLAY): 2 ô CREATE / JOIN · nhập mã · phòng 2 đội x 2 ô người chơi */
+.pt-private { gap: 5px; }
+.pt-tile { width: 150px; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px;
+  background: var(--panel); border: 1px solid var(--edge); box-shadow: 3px 3px 0 var(--ink); cursor: pointer; }
+.pt-tile b { font-family: var(--px); font-size: 28px; font-weight: normal; color: var(--gold); text-shadow: 2px 2px 0 var(--ink); line-height: 1; }
+.pt-tlabel { font-family: var(--px); font-size: 8px; color: #fff; letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); }
+.pt-tsub { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.1; }
+.pt-tile.sel, .pt-tile:hover { border-color: var(--gold); box-shadow: 3px 3px 0 var(--ink), 0 0 0 1px var(--gold); }
+.pt-tile.sel .pt-tlabel, .pt-tile:hover .pt-tlabel { color: var(--gold); }
+.pt-joinbox { flex-direction: column; gap: 8px; }
+.pt-jtitle { font-family: var(--px); font-size: 8px; color: #fff; letter-spacing: 2px; text-shadow: 1px 1px 0 var(--ink); }
+.pt-joinbox .code-in { margin: 0; }
+.pt-hint { font-size: 11px; color: var(--muted); line-height: 1; }
+.pt-code { cursor: pointer; }
+.pt-roomhead { margin-top: 4px; }
+.pt-roomhead .pt-area { font-size: 13px; }
+.pt-roomhead .pt-code b { font-size: 11px; letter-spacing: 2px; }
+.pt-code b { font-family: var(--px); font-size: 8px; font-weight: normal; color: var(--gold); letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); }
+.pt-code:hover b { color: #fff; }
+.pt-mode { color: #ff8a9a; }
+.pt-mode.coop { color: #3ff6ff; }
+/* phòng: mỗi đội = tên CLB + 2 ô người chơi nhỏ (người / đồng đội AI / bot; bấm ô không phải người để nhảy vào) */
+.pt-room { gap: 10px; }
+.pt-team { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.pt-thead { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; min-height: 16px; line-height: 1; max-width: 176px; }   /* cao cố định: tên đội 1 / 2 dòng thì thẻ vẫn thẳng hàng */
+.pt-thead b { font-family: var(--px); font-size: 7px; font-weight: normal; color: var(--ac); text-shadow: 1px 1px 0 var(--ink); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-thead span { font-family: var(--px); font-size: 5px; color: var(--muted); }
+.pt-team.bots .pt-thead b { color: var(--muted); }
+.pt-tcards { display: flex; gap: 6px; }
+.pt-vs { font-family: var(--px); font-size: 10px; color: #ff3d5a; text-shadow: 1px 1px 0 var(--ink); margin-top: 18px; }
+.pt-card.sm { width: 84px; height: 140px; cursor: pointer; }
+.pt-card.sm .pt-art { height: 70px; }
+.pt-card.sm .pt-art canvas.avatar.big { width: 64px; height: 70px; margin-bottom: -2px; }
+.pt-card.sm .pt-name { font-size: 12px; }
+.pt-card.sm .pt-meta { gap: 4px; font-size: 10px; }
+.pt-card.sm.empty b { font-size: 26px; }
+.pt-card.ai { opacity: 0.8; }
+.pt-card.ai .pt-name { background: var(--muted); }
+.pt-card.ai:hover { opacity: 1; }
+.pt-join { position: absolute; left: 0; right: 0; top: 6px; text-align: center; font-style: normal; font-family: var(--px); font-size: 5px; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); opacity: 0; }
+.pt-card.empty .pt-join { position: static; }
+.pt-card.ai:hover .pt-join, .pt-card.empty:hover .pt-join { opacity: 1; }
+/* ghế chờ GUEST (đổi chỗ khi phòng đủ người) */
+.pt-bench { display: flex; align-items: center; gap: 6px; min-height: 14px; padding: 1px 8px; background: rgba(10,6,12,0.45); border: 1px dashed var(--edge); cursor: pointer; line-height: 1; }
+.pt-bench:hover, .pt-bench.on { border-color: var(--gold); }
+.pt-bench u { font-family: var(--px); font-size: 5px; text-decoration: none; color: var(--gold); }
+.pt-bench b { font-size: 11px; font-weight: normal; }
+.pt-bench b.me { color: var(--gold); }
+.pt-bench span { font-size: 11px; color: var(--muted); }
+.pt-note { font-size: 12px; color: var(--muted); text-align: center; line-height: 1; }
+.pt-note.ok { color: #9dff3d; animation: pulse 0.8s steps(2) infinite; }
+/* SLOT / TEAMMATE: bộ chọn ←→ gọn */
+.pt-picks { display: flex; gap: 6px; }
+.pt-pick { display: flex; align-items: center; gap: 4px; padding: 2px 5px 1px; font-size: 12px; line-height: 1; color: #e6dccb; background: var(--panel); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
+.pt-pick label { font-family: var(--px); font-size: 5px; color: var(--muted); cursor: pointer; }
+.pt-pick b { font-weight: normal; color: var(--muted); }
+.pt-pick span { max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-pick.sel { border-color: var(--gold); }
+.pt-pick.sel b, .pt-pick b:hover { color: var(--gold); }
+.pt-pick.dis { opacity: 0.5; }
+.pt-btn.dis { opacity: 0.45; }
 /* khung bạn bè (placeholder: bạn bè giả SFC.Social) */
 .pt-friends { display: flex; flex-direction: column; min-height: 0; background: rgba(16,10,20,0.95); border-left: 2px solid var(--ink); box-shadow: inset 1px 0 0 var(--edge); }
 .fr-me { display: flex; align-items: center; gap: 4px; padding: 4px 6px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--edge); }

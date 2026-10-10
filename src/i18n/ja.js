@@ -167,6 +167,10 @@ SFC.I18n.add({
     'HARD': 'むずかしい',
 
     /* ===== Online: sala, lobby ===== */
+    /* màn PLAY: tab RANKED · PRIVATE MATCH */
+    'RANKED': 'ランクマッチ',
+    'PRIVATE MATCH': 'プライベートマッチ',
+    'Play with friends · no ELO': 'フレンドと対戦 · ELO変動なし',
     'CREATE ROOM': 'ルーム作成',
     'Get a code to share with friends': 'フレンドに送るコードを発行',
     'JOIN ROOM': 'ルームに参加',
@@ -183,8 +187,8 @@ SFC.I18n.add({
     'Waiting for players...': 'プレイヤー待ち...',
     'LEAVE ROOM': 'ルームを出る',
     'GUEST · SITTING OUT': 'ベンチ · 待機中',
+    'TEAM {side}': 'チーム{side}',
     'TEAM {side} · {role}': 'チーム{side} · {role}',
-    '↑↓ select · ←→ change slot / teammate · click a slot / GUEST to move': '↑↓ 選択 · ←→ 枠 / 相棒を変更 · 枠 / ベンチをクリックで移動',
     '{ok} start': '{ok} スタート',
     '{key} leave room': '{key} ルームを出る',
     'Loading room...': 'ルーム読み込み中...',

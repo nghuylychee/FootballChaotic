@@ -166,6 +166,10 @@ SFC.I18n.add({
     'HARD': 'DIFÍCIL',
 
     /* ===== Online: sala, lobby ===== */
+    /* màn PLAY: tab RANKED · PRIVATE MATCH */
+    'RANKED': 'CLASIFICATORIA',
+    'PRIVATE MATCH': 'PARTIDA PRIVADA',
+    'Play with friends · no ELO': 'Juega con amigos · sin ELO',
     'CREATE ROOM': 'CREAR SALA',
     'Get a code to share with friends': 'Recibe un código para compartir con tus amigos',
     'JOIN ROOM': 'UNIRSE A UNA SALA',
@@ -182,8 +186,8 @@ SFC.I18n.add({
     'Waiting for players...': 'Esperando jugadores...',
     'LEAVE ROOM': 'SALIR DE LA SALA',
     'GUEST · SITTING OUT': 'BANCA · SIN JUGAR',
+    'TEAM {side}': 'EQUIPO {side}',
     'TEAM {side} · {role}': 'EQUIPO {side} · {role}',
-    '↑↓ select · ←→ change slot / teammate · click a slot / GUEST to move': '↑↓ elegir · ←→ cambiar lugar / compañero · haz clic en un lugar / BANCA para moverte',
     '{ok} start': '{ok} empezar',
     '{key} leave room': '{key} salir de la sala',
     'Loading room...': 'Cargando sala...',

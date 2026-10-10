@@ -170,6 +170,10 @@ SFC.I18n.add({
     'HARD': 'DIFÍCIL',
 
     /* ===== Online: phòng, phòng chờ ===== */
+    /* màn PLAY: tab RANKED · PRIVATE MATCH */
+    'RANKED': 'CLASSIFICATÓRIA',
+    'PRIVATE MATCH': 'PARTIDA PRIVADA',
+    'Play with friends · no ELO': 'Joga com amigos · sem ELO',
     'CREATE ROOM': 'CRIAR SALA',
     'Get a code to share with friends': 'Recebe um código para partilhar com amigos',
     'JOIN ROOM': 'ENTRAR NA SALA',
@@ -186,8 +190,8 @@ SFC.I18n.add({
     'Waiting for players...': 'À espera de jogadores...',
     'LEAVE ROOM': 'SAIR DA SALA',
     'GUEST · SITTING OUT': 'BANCO · DE FORA',
+    'TEAM {side}': 'EQUIPA {side}',
     'TEAM {side} · {role}': 'EQUIPA {side} · {role}',
-    '↑↓ select · ←→ change slot / teammate · click a slot / GUEST to move': '↑↓ escolher · ←→ trocar lugar / colega · clica num lugar / BANCO para mudar',
     '{ok} start': '{ok} começar',
     '{key} leave room': '{key} sair da sala',
     'Loading room...': 'A carregar a sala...',
