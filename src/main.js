@@ -38,7 +38,7 @@
     // trận Main Path 2v2: character của bạn + đồng đội giả vs 2 đối thủ giả (bot đóng vai người chơi, lb = MainPath.matchmake)
     startRanked(lb) {
       const MP = SFC_CONFIG.mainPath, st = SFC.MainPath.state;
-      const soloIdx = C.roles.indexOf(this.myRole());
+      const soloIdx = Math.max(0, C.roles.indexOf(lb.role));   // vị trí ngẫu nhiên mỗi trận (Menu.startSearch)
       const avatar = Object.assign(SFC.Profile.avatar(), { role: C.roles[soloIdx] }, this.avatarStats());
       SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
       this.startMatch({

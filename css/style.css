@@ -426,6 +426,11 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .pt-tab.on { color: #fff; border-bottom-color: var(--gold); }
 .pt-area { font-size: 12px; line-height: 1; }
 .pt-slots { flex: 1; display: flex; justify-content: center; align-items: center; gap: 16px; min-height: 0; }
+/* RANKED: thẻ của bạn đúng giữa màn, người bạn / ô MỜI BẠN nhỏ hơn đứng bên phải (không đẩy thẻ của bạn lệch đi) */
+.pt-solo { position: relative; }
+.pt-side { position: absolute; left: calc(50% + 74px); top: 50%; transform: translateY(-50%); }
+.pt-side .pt-card.empty span { text-align: center; padding: 0 6px; line-height: 1.4; }
+.pt-side .pt-card.dis { opacity: 0.5; cursor: default; }
 .pt-card { position: relative; width: 116px; height: 196px; display: flex; flex-direction: column; align-items: center; background: var(--ac); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 10px) calc(100% - 16px), calc(100% - 10px) calc(100% - 10px), calc(100% - 24px) calc(100% - 10px), calc(100% - 24px) calc(100% - 4px), calc(50% + 10px) calc(100% - 4px), calc(50% + 10px) 100%, calc(50% - 10px) 100%, calc(50% - 10px) calc(100% - 4px), 24px calc(100% - 4px), 24px calc(100% - 10px), 10px calc(100% - 10px), 10px calc(100% - 16px), 0 calc(100% - 16px)); }
 .pt-card.you { background: var(--gold); }
 .pt-card::before { content: ""; position: absolute; inset: 2px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 10px) calc(100% - 16px), calc(100% - 10px) calc(100% - 10px), calc(100% - 24px) calc(100% - 10px), calc(100% - 24px) calc(100% - 4px), calc(50% + 10px) calc(100% - 4px), calc(50% + 10px) 100%, calc(50% - 10px) 100%, calc(50% - 10px) calc(100% - 4px), 24px calc(100% - 4px), 24px calc(100% - 10px), 10px calc(100% - 10px), 10px calc(100% - 16px), 0 calc(100% - 16px));
@@ -498,7 +503,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .pt-mode.coop { color: #3ff6ff; }
 /* phòng: mỗi đội = tên CLB + 2 ô người chơi nhỏ (người / đồng đội AI / bot; bấm ô không phải người để nhảy vào) */
 .pt-room { gap: 10px; }
-.pt-team { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.pt-team { display: flex; flex-direction: column; align-items: center; gap: 9px; }   /* chừa chỗ thẻ đang chọn nhấc lên */
 .pt-thead { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; min-height: 16px; line-height: 1; max-width: 176px; }   /* cao cố định: tên đội 1 / 2 dòng thì thẻ vẫn thẳng hàng */
 .pt-thead b { font-family: var(--px); font-size: 7px; font-weight: normal; color: var(--ac); text-shadow: 1px 1px 0 var(--ink); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pt-thead span { font-family: var(--px); font-size: 5px; color: var(--muted); }
@@ -514,27 +519,41 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .pt-card.ai { opacity: 0.8; }
 .pt-card.ai .pt-name { background: var(--muted); }
 .pt-card.ai:hover { opacity: 1; }
-.pt-join { position: absolute; left: 0; right: 0; top: 6px; text-align: center; font-style: normal; font-family: var(--px); font-size: 5px; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); opacity: 0; }
-.pt-card.empty .pt-join { position: static; }
-.pt-card.ai:hover .pt-join, .pt-card.empty:hover .pt-join { opacity: 1; }
+.pt-join { display: none; font-style: normal; font-family: var(--px); font-size: 5px; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); }
+/* 1 dòng chữ: BOT / AI · vị trí (ô trống), nhãn AI (đồng đội AI); khi chọn / rê chuột thì đổi thành việc sẽ làm (JOIN / CHANGE) — không hiện cả 2 */
+.pt-card.sel .pt-join, .pt-card:hover .pt-join { display: block; }
+.pt-card.empty.sel > span, .pt-card.empty:hover > span, .pt-card.ai.sel .pt-ready > span, .pt-card.ai:hover .pt-ready > span { display: none; }
+/* ô đang chọn bằng phím mũi tên: nhấc lên + viền trắng (thẻ bị clip-path cắt nên đổi màu viền thay cho outline;
+   áo sân nhà cũng trắng -> nhấc lên để luôn thấy) */
+.pt-card.sm { transition: transform 0.08s steps(2); }
+.pt-card.sm.sel { background: #fff; opacity: 1; transform: translateY(-6px); }
+.pt-card.sm.empty.sel { background: rgba(10,6,12,0.45); border: 1px solid var(--gold); }
+.pt-card.sm.empty.sel b, .pt-card.sm.empty.sel span { color: var(--gold); }
 /* ghế chờ GUEST (đổi chỗ khi phòng đủ người) */
 .pt-bench { display: flex; align-items: center; gap: 6px; min-height: 14px; padding: 1px 8px; background: rgba(10,6,12,0.45); border: 1px dashed var(--edge); cursor: pointer; line-height: 1; }
 .pt-bench:hover, .pt-bench.on { border-color: var(--gold); }
+.pt-bench.sel { border: 1px solid #fff; }
 .pt-bench u { font-family: var(--px); font-size: 5px; text-decoration: none; color: var(--gold); }
 .pt-bench b { font-size: 11px; font-weight: normal; }
 .pt-bench b.me { color: var(--gold); }
 .pt-bench span { font-size: 11px; color: var(--muted); }
 .pt-note { font-size: 12px; color: var(--muted); text-align: center; line-height: 1; }
 .pt-note.ok { color: #9dff3d; animation: pulse 0.8s steps(2) infinite; }
-/* SLOT / TEAMMATE: bộ chọn ←→ gọn */
-.pt-picks { display: flex; gap: 6px; }
-.pt-pick { display: flex; align-items: center; gap: 4px; padding: 2px 5px 1px; font-size: 12px; line-height: 1; color: #e6dccb; background: var(--panel); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
-.pt-pick label { font-family: var(--px); font-size: 5px; color: var(--muted); cursor: pointer; }
-.pt-pick b { font-weight: normal; color: var(--muted); }
-.pt-pick span { max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pt-pick.sel { border-color: var(--gold); }
-.pt-pick.sel b, .pt-pick b:hover { color: var(--gold); }
-.pt-pick.dis { opacity: 0.5; }
+/* bảng chọn đồng đội AI (ô AI của mình trong phòng): đội hình + SWAP POSITION */
+.pt-pop { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; background: rgba(10,6,12,0.55); }
+.pt-popbox { width: 190px; display: flex; flex-direction: column; gap: 2px; padding: 6px; background: rgba(16,10,20,0.97); border: 1px solid var(--gold); box-shadow: 3px 3px 0 var(--ink); }
+.pt-poptitle { font-family: var(--px); font-size: 7px; color: #fff; letter-spacing: 2px; text-align: center; padding: 2px 0 5px; text-shadow: 1px 1px 0 var(--ink); }
+.pt-mrow { display: flex; align-items: center; gap: 6px; padding: 2px 6px; border-left: 2px solid transparent; cursor: pointer; line-height: 1; }
+.pt-mrow:hover { background: rgba(255,255,255,0.04); }
+.pt-mrow.sel { border-left-color: var(--gold); background: rgba(255,225,79,0.1); }
+.pt-mrow canvas.avatar { width: 20px; height: 22px; flex: none; }
+.pt-mrow > div { flex: 1; min-width: 0; }
+.pt-mrow b { display: block; font-size: 13px; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-mrow span { font-size: 10px; color: var(--muted); }
+.pt-mrow em { font-style: normal; color: #6bff4f; font-size: 13px; }
+.pt-mrow.on b { color: var(--gold); }
+.pt-mrow.swap { margin-top: 3px; padding-top: 5px; border-top: 1px solid var(--edge); }
+.pt-mrow.swap b { font-family: var(--px); font-size: 6px; color: var(--gold); letter-spacing: 1px; }
 .pt-btn.dis { opacity: 0.45; }
 /* khung bạn bè (placeholder: bạn bè giả SFC.Social) */
 .pt-friends { display: flex; flex-direction: column; min-height: 0; background: rgba(16,10,20,0.95); border-left: 2px solid var(--ink); box-shadow: inset 1px 0 0 var(--edge); }

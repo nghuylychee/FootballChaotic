@@ -173,7 +173,7 @@ window.SFC = window.SFC || {};
       // sân: Area của Elo trung bình cả 4 người
       const a = this.areaOf(Math.round((myElo + oppElo) / 2)), A = this.area(a);
       return {
-        area: a, arena: A.arena, reward: this.area(st.area).reward, range: Math.round(range),
+        area: a, arena: A.arena, reward: this.area(st.area).reward, range: Math.round(range), role,
         mate: friend || Object.assign(SFC.Mates.spec(mateRaw, mateRole), { elo: mateRaw.elo, fake: true }),
         party: !!friend,
         opps: opps.map((m, i) => Object.assign(SFC.Mates.spec(m, roles[i]), { elo: m.elo, fake: true })),

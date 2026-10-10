@@ -56,34 +56,42 @@ window.SFC = window.SFC || {};
   const PRIVATE_PAGES = ['online', 'join', 'lobby'];
 
   // phòng online (PRIVATE MATCH): 1 ô người chơi theo slot (đội t, vị trí role) — người trong phòng / đồng đội AI của người duy nhất
-  // trong đội / bot (đội không có người). Bấm ô không phải người để nhảy vào slot đó
-  function roomCard(t, role, list, away) {
-    const O = SFC.Session, L = O.lobby, s = O.slotOf(t, role), m = O.memberAt(s), pos = ROLE_LABELS()[role] || role;
+  // trong đội / bot (đội không có người). Bấm / Enter ô không phải người để nhảy vào slot đó.
+  // Vị trí (ĐÁ CAO / ĐÁ LÙI) chỉ có nghĩa khi đội có đúng 1 người + 1 đồng đội AI (AI đá vị trí còn lại theo lối chơi riêng):
+  // chỉ hiện ở đội đó; ô AI của chính mình = chọn đồng đội AI / đổi vị trí với AI (CHANGE). Đội 2 người / đội bot: không hiện vị trí.
+  // nav(s) -> { i, on }: chỉ số mục của ô (Menu.items) + đang được chọn
+  function roomCard(t, role, list, away, nav) {
+    const O = SFC.Session, L = O.lobby, s = O.slotOf(t, role), m = O.memberAt(s);
+    const n = nav(s), at = `data-slot="${s}" data-i="${n.i}"`, sel = n.on ? 'sel' : '';
+    const withAi = list.length === 1, posTxt = ROLE_LABELS()[role] || role, pos = withAi ? `<div class="pt-pos">${esc(posTxt)}</div>` : '';
     const art = (look) => `<div class="pt-art"><canvas class="avatar big" data-mmlook="${esc(JSON.stringify(look))}" data-mmaway="${away ? 1 : 0}"></canvas></div>`;
     const meta = (list2) => `<div class="pt-meta">${list2.filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
     if (m) {
       const you = !!O.mine && m.id === O.mine.id;
       const tag = you ? _t('YOU') : m.id === L.owner ? _t('HOST') : `P${L.members.indexOf(m) + 1}`;
-      return `<div class="pt-card sm ${you ? 'you' : ''}" data-slot="${s}">${art(m.pf.look)}<div class="pt-ready">${esc(tag)}</div>
-        <div class="pt-name">${esc(m.pf.name)}</div>${meta([_t('LV {n}', { n: m.pf.level }), m.pf.ovr && _t('OVR {n}', { n: m.pf.ovr })])}<div class="pt-pos">${esc(pos)}</div></div>`;
+      return `<div class="pt-card sm ${you ? 'you' : ''} ${sel}" ${at}>${art(m.pf.look)}<div class="pt-ready">${esc(tag)}</div>
+        <div class="pt-name">${esc(m.pf.name)}</div>${meta([_t('LV {n}', { n: m.pf.level }), m.pf.ovr && _t('OVR {n}', { n: m.pf.ovr })])}${pos}</div>`;
     }
-    const mate = list.length === 1 && list[0].pf.mate;
+    // ô AI cùng đội với mình: Enter = bảng chọn đồng đội / đổi vị trí (Menu.slotAct); ô của đội khác: vào đội đó
+    const act = esc(withAi && O.mine && list[0].id === O.mine.id ? _t('CHANGE') : _t('JOIN'));
+    const mate = withAi && list[0].pf.mate;
     if (mate) {
-      return `<div class="pt-card sm ai" data-slot="${s}">${art(mate.look)}<div class="pt-ready">${esc(_t('AI'))}</div>
-        <div class="pt-name">${esc(mate.name)}</div>${meta([_t('OVR {n}', { n: mate.ovr })])}<div class="pt-pos">${esc(pos)}</div><i class="pt-join">${esc(_t('JOIN'))}</i></div>`;
+      return `<div class="pt-card sm ai ${sel}" ${at}>${art(mate.look)}<div class="pt-ready"><span>${esc(_t('AI'))}</span><i class="pt-join">${act}</i></div>
+        <div class="pt-name">${esc(mate.name)}</div>${meta([_t('OVR {n}', { n: mate.ovr })])}${pos}</div>`;
     }
-    return `<div class="pt-card sm empty" data-slot="${s}"><b>${list.length ? '+' : '?'}</b><span>${esc(list.length ? _t('AI') : _t('BOT'))} · ${esc(pos)}</span><i class="pt-join">${esc(_t('JOIN'))}</i></div>`;
+    const what = list.length ? `${esc(_t('AI'))} · ${esc(posTxt)}` : esc(_t('BOT'));
+    return `<div class="pt-card sm empty ${sel}" ${at}><b>${list.length ? '+' : '?'}</b><span>${what}</span><i class="pt-join">${act}</i></div>`;
   }
 
-  // 1 đội của phòng: TEAM A / B (khớp bộ chọn SLOT, màu áo đội) hoặc đội bot ngẫu nhiên (đội không có người) + 2 ô theo vị trí
-  function roomTeam(t) {
+  // 1 đội của phòng: TEAM A / B (màu áo đội) hoặc đội bot ngẫu nhiên (đội không có người) + 2 ô theo vị trí
+  function roomTeam(t, nav) {
     const O = SFC.Session, list = O.byTeam()[t], coop = O.mode === 'coop', away = !coop && t === 1;
     let head = `<b>${esc(_t('??? RANDOM BOTS'))}</b><span>${esc(_t('A random club from your Areas'))}</span>`, color = '#8a8f9e';
     if (list.length) {
       color = SFC.Room.club(list[0].pf.name, away).kit.shirt;
       head = `<b>${esc(_t('TEAM {side}', { side: 'AB'[t] }))}</b>`;
     }
-    const cards = SFC_CONFIG.game.roles.map((role) => roomCard(t, role, list, away)).join('');
+    const cards = SFC_CONFIG.game.roles.map((role) => roomCard(t, role, list, away, nav)).join('');
     return `<div class="pt-team ${list.length ? '' : 'bots'}" style="--ac:${color}"><div class="pt-thead">${head}</div><div class="pt-tcards">${cards}</div></div>`;
   }
 
@@ -128,6 +136,8 @@ window.SFC = window.SFC || {};
       if (page === 'wishlist') this.wishSeen = MPATH().demoOver();
       // nhớ mục đang chọn của từng trang: quay lại trang cũ (Esc, hết trận...) con trỏ nằm đúng mục vừa rời đi
       if (page !== this.page) {
+        this.lobbyFocus = page === 'lobby';
+        this.matePop = null;   // vào phòng: chọn sẵn START (chủ phòng) / ô của mình khi có danh sách phòng (render)
         this.resetArmed = false;   // RESET DATA: rời trang SETTINGS là huỷ xác nhận
         this.quitAsk = false;
         this.selMemo[this.page] = this.sel;
@@ -236,21 +246,21 @@ window.SFC = window.SFC || {};
           return list;
         }
         case 'path': {
-          // Main Path: không chọn đối thủ / độ khó — BATTLE = tìm trận 2v2 theo Elo (matchmaking giả)
+          // Main Path: không chọn đối thủ / độ khó / vị trí (mỗi trận ngẫu nhiên) — BATTLE = tìm trận 2v2 theo Elo
           const MP = MPATH(), st = MP.state, n = MP.areas().length, v = this.pathView;
           const battle = MP.demoOver()
             ? { label: STEAM_SOON() ? _t('COMING SOON TO STEAM') : _t('WISHLIST ON STEAM'), sub: _t('AREA {n}+ is in the full game', { n: st.area + 1 }), act: () => this.go('wishlist') }
             : { label: _t('BATTLE'), sub: `${MP.area(st.area).name} · ${st.elo} ${_t('ELO')}` };
           return [
             { kind: 'btn', label: battle.label, sub: battle.sub, main: true, act: battle.act || (() => this.startSearch()) },
-            { kind: 'pick', label: _t('POSITION'), value: this.ctrlLabel(null, s.ctrl), change: (d) => this.changeCtrl(d) },
             { kind: 'pick', label: _t('AREA'), value: `${v + 1}/${n} ${v > st.best || MP.demoLocked(v) ? '???' : MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
             { kind: 'btn', label: _t('TRAINING'), sub: _t('No clock · pick team sizes'), foot: true, act: () => this.go('training') },
           ];
         }
         case 'party': {
           // phòng chờ PLAY (kiểu Valorant): START = tìm trận Main Path ngay trên màn này (người bạn trong phòng chung đội; đang tìm thì thành CANCEL) ·
-          // vị trí · rời phòng · ẩn / hiện khung bạn bè; sau đó là từng dòng bạn bè (kind 'friend': ←→ đổi MỜI / CHAT, Enter làm)
+          // rời phòng · ẩn / hiện khung bạn bè; sau đó là từng dòng bạn bè (kind 'friend': ←→ đổi MỜI / CHAT, Enter làm).
+          // Không chọn vị trí: trận xếp hạng chia vị trí ngẫu nhiên (startSearch)
           const MP = MPATH(), SO = SFC.Social, S = this.search;
           const list = [
             MP.demoOver()
@@ -258,8 +268,9 @@ window.SFC = window.SFC || {};
               : S && S.lobby ? { kind: 'btn', main: true, found: true, label: _t('MATCH FOUND'), act: () => {} }
               : S ? { kind: 'btn', main: true, searching: true, label: _t('CANCEL'), act: () => this.cancelSearch() }
               : { kind: 'btn', main: true, label: _t('START'), act: () => this.startSearch() },
-            { kind: 'pick', label: _t('POSITION'), value: this.ctrlLabel(null, s.ctrl), change: (d) => { if (!this.search) this.changeCtrl(d); } },
           ];
+          // ô nhỏ bên phải thẻ của bạn: MỜI BẠN (chọn bằng phím mũi tên / bấm -> nhảy tới bạn bè đầu tiên mời được)
+          if (!SO.party.length && !S) list.push({ kind: 'btn', invite: true, label: _t('INVITE A FRIEND'), act: () => this.inviteFriend() });
           if (SO.party.length && !S) list.push({ kind: 'btn', side: true, label: _t('LEAVE PARTY'), act: () => SO.leaveParty() });
           list.push({ kind: 'btn', ftoggle: true, label: _t('FRIENDS'), act: () => { this.friendsOpen = !this.friendsOpen; if (!this.friendsOpen && SO.chatWith) this.closeChat(); else this.render(); } });
           if (this.friendsOpen) for (const f of SO.friends()) list.push({ kind: 'friend', id: f.id, label: f.name });
@@ -299,20 +310,23 @@ window.SFC = window.SFC || {};
             { kind: 'btn', label: _t('BACK'), sub: _t('Main menu'), act: () => this.go('home') },
           ];
         case 'lobby': {
-          const O = Session(), me = O.mine;
+          const O = Session();
           const list = [];
-          // như Main Path: không chọn đội (đá cho CLB riêng) — slot quyết định đội + vị trí character; đồng đội AI ra sân khi đội chỉ có mình bạn
-          // SLOT: các slot trống + GUEST (ghế chờ, không ra sân) — phòng đủ 4 người vẫn đổi chỗ được qua ghế chờ
-          list.push({ kind: 'pick', label: _t('SLOT'), value: me ? this.slotLabel(me.slot) : '—', change: (d) => O.cycleSlot(d) });
-          // đội đã đủ người -> không có đồng đội AI ra sân: khóa chọn đồng đội
-          const full = !!me && me.slot >= 0 && O.byTeam()[O.slotTeam(me.slot)].length >= SFC_CONFIG.game.roles.length;
-          list.push({ kind: 'pick', label: _t('TEAMMATE'), value: full ? _t('TEAM FULL · NO AI') : this.mateLabel(), disabled: full, change: (d) => { this.changeMate(d); O.updateProfile(); } });
+          // như Main Path: không chọn đội (đá cho CLB riêng) — slot quyết định đội + vị trí character; đồng đội AI ra sân khi đội chỉ có mình bạn.
+          // Mỗi ô người chơi (đội A rồi đội B) + ghế GUEST (không ra sân, để đổi chỗ khi phòng đủ 4 người) là 1 mục: Enter = nhảy vào
+          for (const t of [0, 1]) {
+            for (const role of SFC_CONFIG.game.roles) {
+              const s = O.slotOf(t, role);
+              list.push({ kind: 'btn', slot: s, label: '', act: () => this.slotAct(s) });
+            }
+          }
+          list.push({ kind: 'btn', slot: -1, label: _t('GUEST'), act: () => O.requestSlot(-1) });
+          list.push({ kind: 'btn', label: _t('LEAVE ROOM'), act: () => O.leave() });
           if (O.isOwner) {
             const sub = O.canStart ? (O.mode === 'coop' ? _t('CO-OP vs random bots') : _t('VERSUS'))
               : O.benched.length ? _t('Everyone on GUEST must take a slot') : _t('Waiting for players...');
             list.push({ kind: 'btn', label: _t('START'), sub, main: true, disabled: !O.canStart, act: () => O.startMatch() });
           }
-          list.push({ kind: 'btn', label: _t('LEAVE ROOM'), act: () => O.leave() });
           return list;
         }
         default:
@@ -322,9 +336,48 @@ window.SFC = window.SFC || {};
 
     // đồng đội ra sân trận Main Path kế tiếp (đổi trong đội hình)
     mateLabel() { const m = SFC.Mates.active(); return m ? `${m.name} · ${_t('OVR {n}', { n: m.ovr })}` : '—'; },
-    changeMate(d) {
-      const list = SFC.Mates.roster(), i = list.indexOf(SFC.Mates.active());
-      SFC.Mates.setActive(list[wrap(i + d, list.length)].id);
+
+    /* ---------- phòng: ô AI của chính mình -> bảng chọn đồng đội AI (đội hình SFC.Mates) + đổi vị trí với AI ---------- */
+    // ô slot s của phòng: ô AI cùng đội với mình (đội chỉ có mình) -> mở bảng; còn lại -> nhảy vào slot đó
+    slotAct(s) {
+      const O = Session(), me = O.mine, team = s >= 0 ? O.byTeam()[O.slotTeam(s)] : [];
+      if (!O.memberAt(s) && me && team.length === 1 && team[0] === me && me.pf.mate) return this.openMatePop(s);
+      O.requestSlot(s);
+    },
+    // bảng: các đồng đội trong đội hình (đang chọn có dấu ✓) + dòng cuối SWAP POSITION. slot = ô của AI (đổi vị trí = nhảy vào đó)
+    openMatePop(slot) {
+      const list = SFC.Mates.roster();
+      this.matePop = { slot, sel: Math.max(0, list.indexOf(SFC.Mates.active())) };
+      SFC.Audio.menu();
+      this.render();
+    },
+    closeMatePop() { this.matePop = null; this.render(); },
+    // chọn dòng i của bảng: đồng đội -> ra sân (báo phòng) · dòng cuối -> đổi vị trí với AI
+    pickMatePop(i) {
+      const P = this.matePop, list = SFC.Mates.roster();
+      if (!P) return;
+      this.matePop = null;
+      SFC.Audio.menu();
+      if (i >= list.length) { Session().requestSlot(P.slot); this.render(); return; }
+      SFC.Mates.setActive(list[i].id);
+      Session().updateProfile();
+      this.render();
+    },
+    matePopInput(input) {
+      const P = this.matePop, n = SFC.Mates.roster().length + 1;
+      if (input.wasPressed('up') || input.wasPressed('down')) { P.sel = wrap(P.sel + (input.wasPressed('up') ? -1 : 1), n); SFC.Audio.menu(); this.render(); }
+      if (input.wasPressed('confirm')) this.pickMatePop(P.sel);
+    },
+    renderMatePop() {
+      const P = this.matePop, O = Session(), list = SFC.Mates.roster(), cur = SFC.Mates.active();
+      const rows = list.map((m, i) => `<div class="pt-mrow ${i === P.sel ? 'sel' : ''} ${m === cur ? 'on' : ''}" data-mp="${i}">
+          <canvas class="avatar" data-mate="r${m.id}"></canvas>
+          <div><b>${esc(m.name)}</b><span>${esc(_t('OVR {n}', { n: m.ovr }))} · ${esc(_tn('{n} Core', '{n} Cores', m.deck.length))}</span></div>
+          <em>${m === cur ? '✓' : ''}</em></div>`).join('');
+      // đổi vị trí: mình sang vị trí của ô AI
+      const pos = ROLE_LABELS()[O.slotRole(P.slot)] || O.slotRole(P.slot);
+      const swap = `<div class="pt-mrow swap ${P.sel === list.length ? 'sel' : ''}" data-mp="${list.length}"><div><b>${esc(_t('SWAP POSITION'))}</b><span>→ ${esc(pos)}</span></div></div>`;
+      return `<div class="pt-pop"><div class="pt-popbox"><div class="pt-poptitle">${esc(_t('TEAMMATE'))}</div>${rows}${swap}</div></div>`;
     },
     // dòng phụ nút TEAM: số đồng đội + tình trạng scout
     teamSub() {
@@ -332,13 +385,6 @@ window.SFC = window.SFC || {};
       if (SFC_CONFIG.teammates.scout === false) return this.mateLabel();   // scout tạm ẩn: chỉ hiện đồng đội đang chọn
       const sc = M.scoutReady() ? _t('★ report ready!') : M.scouting() ? _t('scouting...') : _t('scout idle');
       return _t('{n}/{max} players · {scout}', { n, max, scout: sc });
-    },
-
-    // phòng online: slot = đội A (trái) / B (phải) + vị trí
-    slotLabel(s) {
-      const O = Session();
-      if (s < 0) return _t('GUEST · SITTING OUT');
-      return _t('TEAM {side} · {role}', { side: 'AB'[O.slotTeam(s)], role: ROLE_LABELS()[O.slotRole(s)] || O.slotRole(s) });
     },
 
     // chỉ đổi giữa các vị trí (1..roles) — ẩn lựa chọn CẢ ĐỘI (ctrl = 0): người chơi chỉ điều khiển character của mình
@@ -369,7 +415,14 @@ window.SFC = window.SFC || {};
       if (G().pages.includes(this.page)) return G().back(this);
       if (TM().pages.includes(this.page)) return TM().back(this);
       if (this.page === 'attrs' || this.page === 'look') return this.go('char');
+      if (this.page === 'lobby' && this.matePop) return this.closeMatePop();
       if (this.page === 'party' && SFC.Social.chatWith) return this.closeChat();
+      // đang chọn trong khung bạn bè: Esc đóng khung, chọn lại ô MỜI BẠN (không có thì START)
+      if (this.page === 'party' && this.friendsOpen && (this.items()[this.sel] || {}).kind === 'friend') {
+        this.friendsOpen = false;
+        this.sel = Math.max(0, this.items().findIndex((x) => x.invite));
+        return this.render();
+      }
       if (this.page === 'party' && this.search && !this.search.lobby) return this.cancelSearch();
       if (this.page === 'party') return this.go('home');
       if (this.page === 'path') return this.go('party');
@@ -384,6 +437,11 @@ window.SFC = window.SFC || {};
     render() {
       if (!this.el) return;
       const items = this.items();
+      if (this.page === 'lobby' && this.lobbyFocus && Session().lobby.members.length) {
+        const me = Session().mine, start = items.findIndex((x) => x.main);
+        this.lobbyFocus = false;
+        this.sel = start >= 0 ? start : Math.max(0, items.findIndex((x) => me && x.slot === me.slot));
+      }
       if (this.sel >= items.length) this.sel = Math.max(0, items.length - 1);
       this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || G().pages.includes(this.page) || TM().pages.includes(this.page));
       // class riêng của trang chủ / màn PLAY: bật / tắt cả 2 trước mọi nhánh return (sót class 'party' làm vỡ layout trang chủ)
@@ -588,9 +646,11 @@ window.SFC = window.SFC || {};
       const M = SFC_CONFIG.mainPath.matchmaking;
       if (this.page !== 'party') this.go('party');
       const online = !SFC.Social.party.length;
-      this.search = { t: 0, wait: M.searchTime[0] + Math.random() * (M.searchTime[1] - M.searchTime[0]), lobby: null, hold: 0, online };
+      // vị trí của character trong trận xếp hạng: ngẫu nhiên mỗi trận (đồng đội — AI / người bạn — đá vị trí còn lại)
+      const role = SFC.U.pick(SFC_CONFIG.game.roles);
+      this.search = { t: 0, wait: M.searchTime[0] + Math.random() * (M.searchTime[1] - M.searchTime[0]), lobby: null, hold: 0, online, role };
       SFC.Audio.pick();
-      if (online) Session().queue();   // không có máy chủ -> solo ngay trong lúc gọi
+      if (online) Session().queue(role);   // không có máy chủ -> solo ngay trong lúc gọi
       this.render();
     },
     cancelSearch() {
@@ -630,7 +690,7 @@ window.SFC = window.SFC || {};
           S.lobby = { game: g, opps: g.teams[1 - g.humanTeam].players.map((p) => ({ name: p.name, elo: p.elo != null ? p.elo : '' })) };
         } else if (!S.online && S.t >= S.wait) {
           const SO = SFC.Social;
-          S.lobby = MPATH().matchmake(S.t, this.app.myRole(), SO.party.length ? (r) => SO.partyMate(r) : null);
+          S.lobby = MPATH().matchmake(S.t, S.role, SO.party.length ? (r) => SO.partyMate(r) : null);
         }
         if (S.lobby) { SFC.Audio.reveal(2); this.render(); }
         return;
@@ -642,7 +702,7 @@ window.SFC = window.SFC || {};
         if (!lb.game) this.app.startRanked(lb);
         // trận người thật vẫn còn (chưa rớt mạng) -> vào trận; rớt rồi thì ghép người chơi giả luôn
         else if (Session().game === lb.game) this.app.enterOnline(lb.game);
-        else this.app.startRanked(MPATH().matchmake(S.t, this.app.myRole(), null));
+        else this.app.startRanked(MPATH().matchmake(S.t, S.role, null));
       }
     },
 
@@ -697,24 +757,21 @@ window.SFC = window.SFC || {};
     renderParty(items) {
       const MP = MPATH(), st = MP.state, A = MP.area(st.area), SO = SFC.Social, d = PF().data;
       const at = (pred) => items.findIndex(pred), sel = (i) => (i === this.sel ? 'sel' : '');
-      const iStart = at((x) => x.main), iPos = at((x) => x.kind === 'pick');
+      const iStart = at((x) => x.main);
       const btn = (i) => (i < 0 ? '' : `<button class="pt-btn ${items[i].main ? 'go' : ''} ${items[i].searching ? 'searching' : ''} ${items[i].found ? 'found' : ''} ${sel(i)}" data-i="${i}">${esc(items[i].label)}</button>`);
-      const posItem = items[iPos];
       // ô người chơi: dải tên vàng + READY như Valorant, nhân vật pixel, Elo / OVR / vị trí
-      const roles = SFC_CONFIG.game.roles, myRole = this.app.myRole(), mateRole = roles.find((r) => r !== myRole) || roles[0];
-      const card = (o) => `<div class="pt-card ${o.you ? 'you' : ''}" style="--ac:${o.color}">
+      const card = (o) => `<div class="pt-card ${o.you ? 'you' : 'sm'}" style="--ac:${o.color}">
           <div class="pt-art"><canvas class="avatar big" ${o.you ? 'data-avatar="spin"' : `data-mmlook="${esc(JSON.stringify(o.look))}" data-mmaway="0"`}></canvas></div>
           <div class="pt-ready">${esc(o.tag)}</div>
           <div class="pt-name">${esc(o.name)}</div>
           <div class="pt-meta"><span>${o.elo} ${esc(_t('ELO'))}</span><span>${esc(_t('OVR {n}', { n: o.ovr }))}</span></div>
-          ${o.you ? `<div class="pt-pos ${sel(iPos)}" data-i="${iPos}"><b data-i="${iPos}" data-d="-1">◀</b>${esc(posItem.value)}<b data-i="${iPos}" data-d="1">▶</b></div>`
-            : `<div class="pt-pos">${esc(ROLE_LABELS()[mateRole] || mateRole)}</div>`}
           ${o.kick ? `<button class="pt-kick" data-kick="${o.id}" title="${esc(_t('KICK'))}">✕</button>` : ''}
         </div>`;
-      const slots = [card({ you: true, name: d.name, elo: st.elo, ovr: PF().ovr(), tag: _t('READY'), color: A.color })];
-      const mate = SO.friend(SO.party[0]);
-      if (mate) slots.push(card({ name: mate.name, elo: mate.elo, ovr: mate.ovr, tag: _t('READY'), color: A.color, look: this.friendLook(mate), kick: true, id: mate.id }));
-      else slots.push(`<button class="pt-card empty" data-invite="1"><b>+</b><span>${esc(_t('INVITE A FRIEND'))}</span></button>`);
+      // thẻ của bạn ở giữa màn; người bạn trong phòng / ô MỜI BẠN nhỏ hơn, đứng bên phải
+      const mate = SO.friend(SO.party[0]), iInv = at((x) => x.invite);
+      const side = mate ? card({ name: mate.name, elo: mate.elo, ovr: mate.ovr, tag: _t('READY'), color: A.color, look: this.friendLook(mate), kick: true, id: mate.id })
+        : `<button class="pt-card sm empty ${sel(iInv)} ${iInv < 0 ? 'dis' : ''}" data-invite="1" ${iInv < 0 ? '' : `data-i="${iInv}"`}><b>+</b><span>${esc(_t('INVITE A FRIEND'))}</span></button>`;
+      const slots = [card({ you: true, name: d.name, elo: st.elo, ovr: PF().ovr(), tag: _t('READY'), color: A.color }), `<div class="pt-side">${side}</div>`];
       // đang tìm trận: đồng hồ + khoảng Elo (searchTick cập nhật số mỗi khung hình) · tìm thấy: MATCH FOUND + 2 đối thủ
       const S = this.search, M = SFC_CONFIG.mainPath.matchmaking;
       const status = !S ? ''
@@ -728,7 +785,7 @@ window.SFC = window.SFC || {};
       return `<div class="pt-main">
           ${this.playTabs('ranked', `<span class="pt-area" style="color:${A.color}">${PX().area(A.id, 'sm')} ${esc(A.name)} · ${st.elo} ${esc(_t('ELO'))}</span>`)}
           ${toggle}
-          <div class="pt-slots">${slots.join('')}</div>
+          <div class="pt-slots pt-solo">${slots.join('')}</div>
           ${status}
           ${msg}
           <div class="pt-acts"><div class="pt-side-btns">${sideBtns}</div>${btn(iStart)}</div>
@@ -781,21 +838,22 @@ window.SFC = window.SFC || {};
           const note = (s, cls = '') => `<div class="pt-note ${cls}">${esc(s)}</div>`;
           const status = bench.length ? note(_t('Players on GUEST must take a slot before the match starts'))
             : O.isOwner
-              ? (O.canStart ? note(coop ? _t('Ready. Press Enter to start CO-OP') : _t('Ready. Press Enter to start VERSUS'), 'ok') : note(_t('Send the room code to friends to play')))
+              ? (O.canStart ? note(coop ? _t('Ready to start CO-OP') : _t('Ready to start VERSUS'), 'ok') : note(_t('Send the room code to friends to play')))
               : note(_t('Waiting for the host to start...'));
+          // ô người chơi / ghế GUEST -> mục tương ứng (chọn bằng phím mũi tên, Enter = nhảy vào)
+          const nav = (s) => { const i = items.findIndex((x) => x.slot === s); return { i, on: i === this.sel }; };
           // ghế chờ GUEST: không ra sân, dùng để đổi chỗ khi phòng đủ 4 người (bấm để ngồi ra)
           const names = bench.map((m) => `<b class="${m.id === meId ? 'me' : ''}">${esc(m.pf.name)}</b>`).join('');
-          const benchRow = `<div class="pt-bench ${O.mine && O.mine.slot < 0 ? 'on' : ''}" data-slot="-1"><u>${esc(_t('GUEST'))}</u>${names || `<span>${esc(_t('Sit out here to free your slot for a swap'))}</span>`}</div>`;
-          // SLOT / TEAMMATE: bộ chọn ←→ gọn; LEAVE ROOM + START (chủ phòng)
-          const pick = (i) => (i < 0 ? '' : `<div class="pt-pick ${sel(i)} ${items[i].disabled ? 'dis' : ''}" data-i="${i}"><label>${esc(items[i].label)}</label>
-              <b data-i="${i}" data-d="-1">◀</b><span>${esc(items[i].value)}</span><b data-i="${i}" data-d="1">▶</b></div>`);
-          const picks = items.map((it, i) => (it.kind === 'pick' ? pick(i) : '')).join('');
-          const iStart = items.findIndex((x) => x.main), iLeave = items.findIndex((x) => x.kind === 'btn' && !x.main);
-          body = `<div class="pt-slots pt-room">${roomTeam(0)}<div class="pt-vs">${esc(_t('VS'))}</div>${roomTeam(1)}</div>
+          const benchRow = `<div class="pt-bench ${O.mine && O.mine.slot < 0 ? 'on' : ''} ${nav(-1).on ? 'sel' : ''}" data-slot="-1" data-i="${nav(-1).i}"><u>${esc(_t('GUEST'))}</u>${names || `<span>${esc(_t('Sit out here to free your slot for a swap'))}</span>`}</div>`;
+          // LEAVE ROOM + START (chủ phòng). Bảng chọn đồng đội AI: chỉ khi ô AI vẫn là đồng đội của mình
+          const team = this.matePop && O.mine ? O.byTeam()[O.slotTeam(this.matePop.slot)] : [];
+          if (this.matePop && (O.memberAt(this.matePop.slot) || team.length !== 1 || team[0] !== O.mine)) this.matePop = null;
+          const iStart = items.findIndex((x) => x.main), iLeave = items.findIndex((x) => x.kind === 'btn' && !x.main && x.slot == null);
+          body = `<div class="pt-slots pt-room">${roomTeam(0, nav)}<div class="pt-vs">${esc(_t('VS'))}</div>${roomTeam(1, nav)}</div>
             ${benchRow}${status}${msg}
-            <div class="pt-picks">${picks}</div>
             <div class="pt-acts"><div class="pt-side-btns">${btn(iLeave)}</div>${btn(iStart)}</div>
-            ${hint((O.isOwner ? _t('{ok} start', { ok }) + ' · ' : '') + _t('{key} leave room', { key: K('pause', 'Esc') }))}`;
+            ${hint(_t('{key} leave room', { key: K('pause', 'Esc') }))}
+            ${this.matePop ? this.renderMatePop() : ''}`;
         }
       }
       // trong phòng: không có tab RANKED / PRIVATE MATCH và nút BACK (rời phòng = LEAVE ROOM / Esc), chỉ còn dòng mã phòng
@@ -805,6 +863,17 @@ window.SFC = window.SFC || {};
     },
 
     friendLook(f) { return PF().lookOf(Object.assign({}, PROG().defaultLook, f.look)); },
+    // MỜI BẠN: mở khung bạn bè (nếu đang ẩn), chọn sẵn nút MỜI của người bạn đầu tiên mời được
+    inviteFriend() {
+      if (this.search) return;
+      this.friendsOpen = true;
+      const i = this.items().findIndex((x) => x.kind === 'friend' && SFC.Social.canInvite(x.id));
+      if (i < 0) { this.setMsg(_t('No friends online to invite'), true); return; }
+      this.sel = i;
+      this.frAct = 0;
+      SFC.Audio.menu();
+      this.render();
+    },
     // khung bạn bè (phải): tên bạn · số bạn online · từng dòng bạn bè (dòng đang chọn hiện nút MỜI / CHAT) · khung chat ở đáy
     friendPanel(items) {
       const SO = SFC.Social, d = PF().data, _st = { online: _t('Online'), match: _t('In a match'), offline: _t('Offline') };
@@ -865,20 +934,10 @@ window.SFC = window.SFC || {};
       SFC.Audio.pick();
       this.setMsg(_t('Invite sent to {name}', { name: f.name }));
     },
-    // phím riêng phòng chờ: đang chat thì Enter gửi; dòng bạn bè: ←→ đổi MỜI / CHAT, Enter làm. Trả về true = đã xử lý
-    partyInput(input, items) {
+    // đang chat (khung bạn bè): Enter gửi
+    chatInput(input) {
       const SO = SFC.Social;
-      if (SO.chatWith) {
-        if (input.wasPressed('confirm') && this.chatBuf.trim()) { SO.send(SO.chatWith, this.chatBuf); this.chatBuf = ''; SFC.Audio.menu(); this.render(); }
-        return true;
-      }
-      const it = items[this.sel];
-      if (!it || it.kind !== 'friend') return false;
-      if (input.wasPressed('up')) this.move(-1);
-      if (input.wasPressed('down')) this.move(1);
-      if (input.wasPressed('left') || input.wasPressed('right')) { this.frAct = 1 - (this.frAct || 0); SFC.Audio.menu(); this.render(); }
-      if (input.wasPressed('confirm')) this.friendAction(it.id, this.frAct === 1 ? 'chat' : 'invite');
-      return true;
+      if (input.wasPressed('confirm') && this.chatBuf.trim()) { SO.send(SO.chatWith, this.chatBuf); this.chatBuf = ''; SFC.Audio.menu(); this.render(); }
     },
 
     // trang chủ: logo (trái trên) · bánh răng SETTINGS (phải trên) · thanh điều hướng đáy, PLAY là tab hình thang ở giữa
@@ -1136,9 +1195,7 @@ window.SFC = window.SFC || {};
         if (input.wasPressed('switch')) return this.playTab(-1);
         if (input.wasPressed('sprint')) return this.playTab(1);
       }
-      if (this.page === 'party' && this.partyInput(input, items)) return;
-      // PRIVATE MATCH: 2 ô CREATE / JOIN nằm ngang -> ←→ cũng đổi ô
-      if (this.page === 'online' && (input.wasPressed('left') || input.wasPressed('right'))) return this.move(input.wasPressed('left') ? -1 : 1);
+      if (PLAY_PAGES.includes(this.page)) return this.playInput(input, items);
       if (this.page !== 'home' && input.wasPressed('up')) { this.move(-1); }
       if (this.page !== 'home' && input.wasPressed('down')) { this.move(1); }
       // trang chủ: ←→ đi dọc thanh điều hướng (CHARACTER · PLAY · SHOP), ↑ lên bánh răng SETTINGS, ↓ về thanh điều hướng
@@ -1148,12 +1205,61 @@ window.SFC = window.SFC || {};
         if (input.wasPressed('left')) this.change(it, -1);
         if (input.wasPressed('right')) this.change(it, 1);
       }
-      if (input.wasPressed('confirm')) {
-        // phòng chờ: Enter luôn là "Bắt đầu" với chủ phòng
-        if (this.page === 'lobby' && Session().isOwner) return this.activate(items.find((x) => x.main));
-        if (this.page === 'join') return this.submitCode();
-        this.activate(it);
+      if (input.wasPressed('confirm')) this.activate(it);
+    },
+
+    // màn PLAY (RANKED / PRIVATE MATCH): bố cục 2 chiều -> phím mũi tên đi tới mục gần nhất theo hướng đó trên màn hình (navMove).
+    // Bộ chọn ◀▶ đang chọn: ←→ đổi giá trị · dòng bạn bè: ←→ đổi MỜI / CHAT · Enter = làm mục đang chọn
+    playInput(input, items) {
+      const SO = SFC.Social;
+      if (this.page === 'lobby' && this.matePop) return this.matePopInput(input);
+      if (this.page === 'party' && SO.chatWith) return this.chatInput(input);
+      const it = items[this.sel];
+      for (const dir of ['up', 'down', 'left', 'right']) {
+        if (!input.wasPressed(dir)) continue;
+        const h = dir === 'left' || dir === 'right', d = dir === 'left' ? -1 : 1;
+        if (h && it && it.kind === 'pick') this.change(it, d);
+        else if (h && it && it.kind === 'friend') { this.frAct = 1 - (this.frAct || 0); SFC.Audio.menu(); this.render(); }
+        else this.navMove(dir);
+        return;
       }
+      if (!input.wasPressed('confirm') || !it) return;
+      if (it.kind === 'friend') return this.friendAction(it.id, this.frAct === 1 ? 'chat' : 'invite');
+      if (this.page === 'join') return this.submitCode();
+      this.activate(it);
+    },
+
+    // đi tới mục gần nhất theo hướng dir (up / down / left / right) dựa trên vị trí thật trên màn hình:
+    // ưu tiên mục cùng hàng (←→) / cùng cột (↑↓), gần nhất theo hướng đi; không có thì mục lệch sang bên không quá xa
+    // (điểm = khoảng cách theo hướng đi + lệch sang bên x2). Không có mục nào phía đó: đứng yên
+    navMove(dir) {
+      const items = this.items(), cur = this.navRect(this.sel), h = dir === 'left' || dir === 'right';
+      if (!cur) return this.move(dir === 'up' || dir === 'left' ? -1 : 1);
+      let best = -1, bestScore = Infinity;
+      items.forEach((it, i) => {
+        const r = i === this.sel ? null : this.navRect(i);
+        if (!r) return;
+        const dx = r.x - cur.x, dy = r.y - cur.y;
+        const along = dir === 'left' ? -dx : dir === 'right' ? dx : dir === 'up' ? -dy : dy;
+        const across = h ? Math.abs(dy) : Math.abs(dx);
+        if (along <= 2) return;
+        const inLine = h ? r.top < cur.bottom && r.bottom > cur.top : r.left < cur.right && r.right > cur.left;
+        if (!inLine && across > along * 1.5) return;   // lệch quá xa sang bên: không tính là "phía này"
+        const score = inLine ? along + across * 0.5 : 1e4 + along + across * 2;
+        if (score < bestScore) { bestScore = score; best = i; }
+      });
+      if (best < 0) return;
+      this.sel = best;
+      SFC.Audio.menu();
+      this.render();
+    },
+    // khung + tâm của mục i trên màn hình (phần tử data-i đầu tiên, không tính nút ◀▶ của bộ chọn); không hiện -> null
+    navRect(i) {
+      const el = this.el.querySelector(`[data-i="${i}"]:not([data-d])`);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      if (!r.width && !r.height) return null;
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2, left: r.left, right: r.right, top: r.top, bottom: r.bottom };
     },
 
     move(d) {
@@ -1248,8 +1354,14 @@ window.SFC = window.SFC || {};
         const pa = e.target.closest('[data-parea]');
         if (pa) { this.pathView = +pa.dataset.parea; SFC.Audio.menu(); this.render(); return; }
         // phòng online: bấm slot trống để nhảy vào
+        if (this.page === 'lobby' && this.matePop) {
+          const row = e.target.closest('[data-mp]');
+          if (row) return this.pickMatePop(+row.dataset.mp);
+          if (!e.target.closest('.pt-popbox')) return this.closeMatePop();
+          return;
+        }
         const slot = this.page === 'lobby' && e.target.closest('[data-slot]');
-        if (slot) { SFC.Audio.menu(); Session().requestSlot(+slot.dataset.slot); return; }
+        if (slot) { this.sel = Math.max(0, this.items().findIndex((x) => x.slot === +slot.dataset.slot)); return this.slotAct(+slot.dataset.slot); }
         const tab = e.target.closest('[data-tab]');
         if (tab) { this.tutPage = +tab.dataset.tab; SFC.Audio.menu(); this.render(); return; }
         // màn PLAY: tab RANKED / PRIVATE MATCH · BACK
@@ -1262,12 +1374,8 @@ window.SFC = window.SFC || {};
           if (e.target.closest('[data-chatclose]')) return this.closeChat();
           const kick = e.target.closest('[data-kick]');
           if (kick) { SFC.Audio.menu(); return SFC.Social.kick(+kick.dataset.kick); }
-          // ô trống: nhảy tới bạn bè đầu tiên mời được
-          if (e.target.closest('[data-invite]')) {
-            const items = this.items(), i = items.findIndex((x) => x.kind === 'friend' && SFC.Social.canInvite(x.id));
-            if (i >= 0) { this.sel = i; this.frAct = 0; SFC.Audio.menu(); this.render(); } else this.setMsg(_t('No friends online to invite'), true);
-            return;
-          }
+          // ô MỜI BẠN: nhảy tới bạn bè đầu tiên mời được
+          if (e.target.closest('[data-invite]')) return this.inviteFriend();
         }
         const el = e.target.closest('[data-i]');
         if (!el) return;

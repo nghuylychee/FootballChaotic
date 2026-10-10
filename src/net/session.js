@@ -138,13 +138,13 @@ window.SFC = window.SFC || {};
     },
 
     /* ================= TÌM TRẬN XẾP HẠNG ================= */
-    // vào hàng chờ trên máy chủ riêng. Mọi đường không ghép được người thật -> solo (không báo lỗi)
-    queue() {
+    // vào hàng chờ trên máy chủ riêng (role = vị trí mong muốn, mặc định theo hồ sơ). Mọi đường không ghép được người thật -> solo
+    queue(role) {
       if (this.status !== 'idle' || !NC().serverOn()) { this.emit('solo'); return; }
       this.status = 'searching';
       this.ranked = true;
       this.role = 'guest';
-      const pf = this.myPf();
+      const pf = Object.assign({}, this.myPf(), role ? { role } : {});
       this.use(SFC.NetServer).queue({ elo: this.provider.rank().elo, role: pf.role, pf })
         .then((code) => {
           if (this.status !== 'searching') return;
