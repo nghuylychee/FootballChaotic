@@ -32,6 +32,7 @@ window.SFC = window.SFC || {};
     'server-unreachable': 'Could not reach the game server.',
     'room-missing': 'Room not found. Check the code.',
     'server-full': 'The game server is full, try again later.',
+    'server-closing': 'The game server is restarting, try again in a minute.',
   };
 
   SFC.NetCommon = {
