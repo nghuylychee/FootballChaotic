@@ -7,11 +7,12 @@ với hệ thống **Core Upgrade** (kiểu Augment LoL Arena) thay đổi lối
 Không cần build, không cần thư viện, không cần file ảnh/âm thanh (vẽ + tổng hợp âm bằng code).
 
 - **Cách 1:** mở trực tiếp `index.html` bằng Chrome/Edge.
-- **Cách 2 (server local):**
+- **Cách 2 (server local, cần Node):**
   ```
-  powershell -ExecutionPolicy Bypass -File serve.ps1
+  npm run serve
   ```
-  rồi mở http://localhost:8080
+  rồi mở http://localhost:8080 (`npm run serve -- --port 3000` để đổi cổng)
+- **Thử online với máy chủ trận riêng:** `npm run online` (game ở :8080 + máy chủ trận ở :8081, xem `server/README.md`)
 
 ## Điều khiển (mặc định, sửa ở `config/controls.config.js`)
 | Phím | Tấn công | Phòng ngự |
@@ -107,7 +108,7 @@ vào lưới vẫn ăn mừng rồi giao bóng lại (không có đối thủ th
 - Core Upgrade: mỗi người chọn thẻ của mình, hết `draftTimeLimit` giây thì tự chọn thẻ đầu.
 - Esc trong trận online chỉ mở menu (trận không dừng). Đối thủ rời phòng → về phòng chờ / menu online.
 - Tab bị ẩn hoặc thu nhỏ vẫn chạy nhờ đồng hồ Web Worker, nên chủ phòng chuyển cửa sổ khác thì trận không bị đứng.
-- Mỗi người chạy bản game của mình (mở `index.html` hoặc `serve.ps1`), cần Internet để bắt tay.
+- Mỗi người chạy bản game của mình (mở `index.html` hoặc `npm run serve`), cần Internet để bắt tay.
   Muốn chơi qua link: đưa cả thư mục lên host tĩnh (GitHub Pages, Netlify, itch.io...).
 - Thông số ở `config/net.config.js` (tần suất gửi, độ trễ nội suy, thời gian chọn Core, PeerServer riêng).
 - Debug trên 1 máy: mở 2 tab, tab này tạo phòng, tab kia vào phòng.

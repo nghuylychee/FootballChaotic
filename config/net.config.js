@@ -8,8 +8,17 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 8,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
+  protocol: 9,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
+  // Máy chủ riêng (server/): máy chủ chạy trận, mọi người là khách. url trống = chỉ người chơi làm host (Steam / PeerJS).
+  // TẠO PHÒNG thử máy chủ trước, không tới được thì tự chuyển sang người chơi làm host.
+  server: {
+    url: '',                   // 'wss://...' · chạy thử máy chủ trên máy này: npm run online (tự gắn url, không cần sửa ở đây)
+    codeLength: 6,             // khác độ dài mã Steam / PeerJS (codeLength) -> VÀO PHÒNG tự biết phòng loại nào
+    connectTimeout: 3,         // giây chờ máy chủ trước khi chuyển sang tự host
+    snapshotEvery: 2,          // máy chủ gửi trạng thái 30 lần/giây (đỡ băng thông; khách vẫn nội suy mượt)
+    interpDelay: 0.09,         // trễ nội suy ở máy khách phòng máy chủ riêng (snapshot thưa hơn -> đệm dài hơn interpDelay)
+  },
   peerjsUrl: 'lib/peerjs.min.js',   // PeerJS 1.5.4, đóng gói kèm game
   // Tùy chọn PeerJS; để trống = dùng PeerJS Cloud miễn phí.
   // Tự host PeerServer: { host: 'my-server', port: 9000, path: '/sfc', secure: true }

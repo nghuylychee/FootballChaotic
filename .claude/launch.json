@@ -3,13 +3,21 @@
   "configurations": [
     {
       "name": "game",
-      "runtimeExecutable": "powershell",
+      "runtimeExecutable": "node",
       "runtimeArgs": [
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "serve.ps1",
-        "-Port",
+        "scripts/serve.js",
+        "--port",
+        "8080"
+      ],
+      "port": 8080
+    },
+    {
+      "name": "game-online",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.js",
+        "--online",
+        "--port",
         "8080"
       ],
       "port": 8080

@@ -17,12 +17,8 @@ window.SFC = window.SFC || {};
     active: false,
 
     // trận này có màn giới thiệu không (theo intro.modes)
-    wants(opts) {
-      const I = CFG();
-      if (!I || !I.enabled) return false;
-      const mode = opts.online ? 'online' : opts.mainPath ? 'mainPath' : opts.training ? 'training' : 'single';
-      return I.modes.includes(mode);
-    },
+    // logic nằm ở SFC.Room.wantsIntro (máy chủ riêng không có UI vẫn cần biết)
+    wants(opts) { return SFC.Room.wantsIntro(opts); },
 
     start(game, onDone) {
       const el = this.el || (this.el = document.getElementById('intro'));

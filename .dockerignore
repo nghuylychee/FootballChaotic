@@ -1,0 +1,9 @@
+# Chỉ dùng cho server/Dockerfile: chỉ gửi những gì máy chủ cần
+*
+!index.html
+!config/
+!src/
+!server/
+src/dev/
+server/node_modules/
+server/test/

@@ -58,7 +58,7 @@ window.SFC = window.SFC || {};
     const coop = O.mode === 'coop', meId = O.mine && O.mine.id;
     let head, style = '--shirt:#8a8f9e;--accent:#9aa3b5';
     if (list.length) {
-      const c = O.club(list[0].pf.name, !coop && t === 1, coop ? _t('CO-OP SQUAD') : null), kit = c.kit;
+      const c = SFC.Room.club(list[0].pf.name, !coop && t === 1, coop ? _t('CO-OP SQUAD') : null), kit = c.kit;
       style = `--shirt:${kit.shirt};--accent:${kit.accent}`;
       head = `<div class="tc-head"><span class="kit"><i style="background:${kit.shirt}"></i><i style="background:${kit.accent}"></i><i style="background:${kit.shorts}"></i></span>
         <div><div class="tc-name">${esc(c.name)}</div><div class="tc-tag">${esc(c.tagline)}</div></div></div>`;
@@ -249,7 +249,7 @@ window.SFC = window.SFC || {};
         }
         case 'online':
           return [
-            { kind: 'btn', label: _t('CREATE ROOM'), sub: _t('You host · the match runs on your machine'), act: () => Online().createRoom() },
+            { kind: 'btn', label: _t('CREATE ROOM'), sub: SFC.NetCommon.serverOn() ? _t('The match runs on our server') : _t('You host · the match runs on your machine'), act: () => Online().createRoom() },
             { kind: 'btn', label: _t('JOIN ROOM'), sub: _t('Enter a friend\'s room code'), act: () => this.go('join') },
           ];
         case 'join':
@@ -272,7 +272,7 @@ window.SFC = window.SFC || {};
           // đội đã đủ người -> không có đồng đội AI ra sân: khóa chọn đồng đội
           const full = !!me && me.slot >= 0 && O.byTeam()[O.slotTeam(me.slot)].length >= SFC_CONFIG.game.roles.length;
           list.push({ kind: 'pick', label: _t('TEAMMATE'), value: full ? _t('TEAM FULL · NO AI') : this.mateLabel(), disabled: full, change: (d) => { this.changeMate(d); O.updatePf(); } });
-          if (O.isHost) {
+          if (O.isOwner) {
             const sub = O.canStart ? (O.mode === 'coop' ? _t('CO-OP vs random bots') : _t('VERSUS'))
               : O.benched.length ? _t('Everyone on GUEST must take a slot') : _t('Waiting for players...');
             list.push({ kind: 'btn', label: _t('START'), sub, main: true, disabled: !O.canStart, act: () => O.startMatch() });
@@ -424,7 +424,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'join') return _t('Type the code · Enter connect · {back} back', { back });
       if (this.page === 'name') return PF().hasName ? _t('Type a name (A-Z, 0-9) · Enter confirm · {back} back', { back }) : _t('Type a name (A-Z, 0-9) · Enter confirm');
       if (this.page === 'attrs') return _t('↑↓ select · {back} back', { back });
-      if (this.page === 'lobby') return _t('↑↓ select · ←→ change slot / teammate · click a slot / GUEST to move') + (Online().isHost ? ` · ${_t('{ok} start', { ok })}` : '') + ` · ${_t('{key} leave room', { key: K('pause', 'Esc') })}`;
+      if (this.page === 'lobby') return _t('↑↓ select · ←→ change slot / teammate · click a slot / GUEST to move') + (Online().isOwner ? ` · ${_t('{ok} start', { ok })}` : '') + ` · ${_t('{key} leave room', { key: K('pause', 'Esc') })}`;
       return _t('↑↓ select · ←→ change · {ok} · {back} back', { ok, back });
     },
 
@@ -445,7 +445,7 @@ window.SFC = window.SFC || {};
         const bench = O.benched;
         const note = (s, cls = '') => `<div class="lb-note ${cls}">${esc(s)}</div>`;
         const status = bench.length ? note(_t('Players on GUEST must take a slot before the match starts'))
-          : O.isHost
+          : O.isOwner
             ? (O.canStart ? note(coop ? _t('Ready. Press Enter to start CO-OP') : _t('Ready. Press Enter to start VERSUS'), 'ok') : note(_t('Send the room code to friends to play')))
             : note(_t('Waiting for the host to start...'));
         // ghế chờ GUEST: không ra sân, dùng để đổi chỗ khi phòng đủ 4 người (bấm để ngồi ra)
@@ -860,7 +860,7 @@ window.SFC = window.SFC || {};
       }
       if (input.wasPressed('confirm')) {
         // phòng chờ: Enter luôn là "Bắt đầu" với chủ phòng
-        if (this.page === 'lobby' && Online().isHost) return this.activate(items.find((x) => x.main));
+        if (this.page === 'lobby' && Online().isOwner) return this.activate(items.find((x) => x.main));
         if (this.page === 'join') return this.submitCode();
         this.activate(it);
       }
@@ -887,7 +887,9 @@ window.SFC = window.SFC || {};
     },
 
     submitCode() {
-      if (this.code.length < SFC_CONFIG.net.codeLength) { this.setMsg(_t('Room codes are {n} characters.', { n: SFC_CONFIG.net.codeLength }), true); return; }
+      // mã ngắn (net.server.codeLength) = phòng máy chủ riêng
+      const short = SFC.NetCommon.serverOn() && this.code.length === SFC_CONFIG.net.server.codeLength;
+      if (!short && this.code.length < SFC_CONFIG.net.codeLength) { this.setMsg(_t('Room codes are {n} characters.', { n: SFC_CONFIG.net.codeLength }), true); return; }
       Online().joinRoom(this.code);
     },
 

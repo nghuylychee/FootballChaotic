@@ -1,9 +1,11 @@
-/* Net — lớp kết nối dùng chung cho 2 backend (cùng giao diện, online.js không cần biết đang chạy cái nào):
- *  - SFC.NetSteam (transport-steam.js): Steam lobby + P2P qua relay của Steam. Dùng khi chạy bản Electron và Steam đã mở.
- *  - SFC.NetPeer  (transport-peer.js):  WebRTC qua PeerJS. Bản web, hoặc bản Electron khi không có Steam.
+/* Net — lớp kết nối dùng chung cho 3 backend (cùng giao diện, online.js không cần biết đang chạy cái nào):
+ *  - SFC.NetServer (transport-server.js): WebSocket tới máy chủ riêng (net.server.url). Máy chủ chạy trận, máy này luôn là khách.
+ *  - SFC.NetSteam  (transport-steam.js):  Steam lobby + P2P qua relay của Steam. Dùng khi chạy bản Electron và Steam đã mở.
+ *  - SFC.NetPeer   (transport-peer.js):   WebRTC qua PeerJS. Bản web, hoặc bản Electron khi không có Steam.
  * Giao diện: on(handlers), host() -> mã phòng, join(code), send(msg, id?), drop(id), close(), message(err), id.
  * Handler (on): open(id), data(msg, id), close(id), error(err) — id = id của khách (host) / 'host' (khách)
- * SFC.Net chọn backend ở lần truy cập đầu (file này nạp trước 2 backend). Tắt Steam: net.config.js -> useSteam = false.
+ * SFC.Net = backend của phòng hiện tại, online.js chọn mỗi lần tạo / vào phòng (NetCommon.use).
+ * Người chơi làm host: NetCommon.p2p() = Steam nếu có, không thì PeerJS. Tắt Steam: net.config.js -> useSteam = false.
  */
 window.SFC = window.SFC || {};
 
@@ -27,6 +29,9 @@ window.SFC = window.SFC || {};
     'version': 'The machines are running different game versions.',
     'steam-lobby': 'Could not create a Steam room.',
     'steam-offline': 'Steam is not connected.',
+    'server-unreachable': 'Could not reach the game server.',
+    'room-missing': 'Room not found. Check the code.',
+    'server-full': 'The game server is full, try again later.',
   };
 
   SFC.NetCommon = {
@@ -65,9 +70,14 @@ window.SFC = window.SFC || {};
   };
 
   let backend = null;
+  // backend người chơi làm host
+  SFC.NetCommon.p2p = () => (N().useSteam && SFC.NetSteam && SFC.NetSteam.available() ? SFC.NetSteam : SFC.NetPeer);
+  // có máy chủ riêng không (net.server.url trống = chỉ người chơi làm host)
+  SFC.NetCommon.serverOn = () => !!(N().server && N().server.url && SFC.NetServer);
+  SFC.NetCommon.use = (b) => { backend = b; };
   Object.defineProperty(SFC, 'Net', {
     get() {
-      if (!backend) backend = N().useSteam && SFC.NetSteam && SFC.NetSteam.available() ? SFC.NetSteam : SFC.NetPeer;
+      if (!backend) backend = SFC.NetCommon.p2p();
       return backend;
     },
   });

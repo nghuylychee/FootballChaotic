@@ -8,7 +8,11 @@
     "start": "electron .",
     "dist": "electron-builder --win --dir",
     "itch-web": "node scripts/build-web.js",
-    "itch-desktop": "node scripts/build-itch.js"
+    "itch-desktop": "node scripts/build-itch.js",
+    "serve": "node scripts/serve.js",
+    "online": "node scripts/serve.js --online",
+    "server": "node server/index.js",
+    "server:test": "npm test --prefix server"
   },
   "dependencies": {
     "steamworks.js": "0.4.0"

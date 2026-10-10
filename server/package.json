@@ -1,0 +1,17 @@
+{
+  "name": "street-football-chaos-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dedicated match server for Street Football Chaos online rooms",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test/room-test.js && node test/client-test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "8.18.3"
+  }
+}
