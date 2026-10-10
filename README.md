@@ -46,8 +46,10 @@ Bóng chạm cột dọc / xà ngang (trong 1 bán kính bóng) → chữ **WOOD
 Khi đồng đội AI giữ bóng: S / W để đòi bóng (sệt / chọc khe), D / A vẫn ra đòn Light / Hard. `1/2/3` chọn Core, `Esc/P` tạm dừng (online: mở menu), `M` tắt âm.
 
 ## Menu
-Trang chủ: **CHƠI ĐƠN** (chọn đội / đối thủ / độ khó / điều khiển) · **LUYỆN TẬP** · **ĐỐI KHÁNG ONLINE** · **SHOP** (hộp gacha) · **NHÂN VẬT** (túi đồ),
-góc phải là thẻ hồ sơ (character, tên, level, thanh XP, gold, thống kê).
+Trang chủ (bố cục kiểu Valorant): thanh điều hướng ở đáy **CHARACTER · PLAY · SHOP** — PLAY là tab hình thang ở giữa, mở **phòng chờ** (party),
+được chọn sẵn; góc trái trên là logo, góc phải trên là nút bánh răng **SETTINGS**. Trận đá nền dùng sân + 2 đội bot của Area người chơi đang đứng. ←→ đi dọc thanh điều hướng, ↑ lên bánh răng, ↓ quay về.
+**ONLINE tạm ẩn** khỏi trang chủ (code trang `online` / `lobby` vẫn còn). CHARACTER: STATS · APPEARANCE · INVENTORY (TEAM tạm ẩn). SHOP chỉ còn các hộp
+(túi đồ vào từ CHARACTER). Dòng gợi ý phím ở các màn menu đã ẩn bằng CSS (`.m-hint, .lp-hint`).
 Màn Hướng dẫn (`config/tutorial.config.js`) đã được gỡ khỏi trang chủ — code trang vẫn còn trong `src/ui/menu.js` nếu cần gắn lại chỗ khác.
 ↑↓ chọn · ←→ đổi · Enter · Esc/Backspace quay lại.
 
@@ -96,6 +98,29 @@ vào lưới vẫn ăn mừng rồi giao bóng lại (không có đối thủ th
   NHÂN VẬT → STATS chỉ xem (rating, radar, hệ số trong trận). Chỉ áp dụng ở Main Path + Luyện tập; online dùng chỉ số đội, lên level chỉ tích drill.
   Debug: `SFC.Profile.data.attrs.drills.pending = 3; SFC.Profile.save()`.
 - Debug: `SFC.Profile.data` trong console (vd. `SFC.Profile.data.gold = 5000; SFC.Profile.save()`).
+
+## Phòng chờ PLAY + bạn bè (placeholder)
+- PLAY mở phòng chờ kiểu Valorant: tab **RANKED** (Area + Elo) · 2 ô người chơi (bạn + 1 người bạn, ô trống bấm để mời) · **START** · POSITION
+  (◀▶ trên thẻ của bạn) · LEAVE PARTY · nút **FRIENDS** góc phải trên ẩn / hiện khung bạn bè. START tìm trận ngay trên màn này: dải trạng thái hiện
+  đồng hồ + khoảng Elo, START thành **CANCEL** (Esc cũng huỷ); tìm thấy -> MATCH FOUND + tên 2 đối thủ rồi vào trận.
+  Hết trận: NEXT MATCH (về phòng chờ và tìm tiếp, người bạn vẫn trong phòng) / LOBBY.
+- Khung **bạn bè** bên phải: online / đang trong trận / offline / trong phòng / đã mời. Dòng đang chọn có nút **INVITE** · **CHAT** (←→ đổi, Enter làm).
+  Khung **chat** ở đáy khung bạn bè: gõ thẳng, Enter gửi, Esc / ✕ đóng; tin chưa đọc có huy hiệu đỏ.
+- Phòng tối đa **2 người**. Trận party: 2 bạn chung đội vs 2 đối thủ giả (Elo quanh Elo trung bình 2 người); mỗi người tự cộng / trừ Elo.
+- **PLACEHOLDER**: bạn bè là người chơi giả do bot đóng vai (sinh 1 lần, lưu key `sfc_social_v1`): trạng thái đổi ngẫu nhiên, chat tự trả lời bằng câu soạn sẵn,
+  nhận / từ chối lời mời theo tỉ lệ. Số liệu + câu thoại: `config/social.config.js`; logic: `src/meta/social.js`; UI: `src/ui/menu.js` (trang `party`).
+
+## Main Path (xếp hạng theo Elo, kiểu Clash Royale)
+- Mỗi trận là **2v2 xếp hạng**: character của bạn + 1 đồng đội vs 2 đối thủ. **Matchmaking hiện là placeholder**: màn tìm trận đếm giờ,
+  nới dần khoảng Elo, rồi ghép 3 **người chơi giả do bot điều khiển** (tên, Elo, OVR, deck Core, ngoại hình riêng; ưu tiên cùng Area).
+  Độ khó AI 2 đội theo Elo trung bình; OVR người chơi giả ngang 1 character thật ở Elo đó.
+- **Elo**: công thức Elo (k = 40) so Elo trung bình 2 đội, ngang nhau thì thắng ~+20 / thua ~−20; không xuống dưới 0. Bỏ trận = thua.
+- **Area = khoảng Elo** (10 Area, ngưỡng 0 · 200 · 450 · 750 · 1100 · 1500 · 1950 · 2450 · 3000 · 3600). Tụt dưới ngưỡng = rớt Area (rớt tự do).
+- **Thưởng**: mỗi trận gold + XP (nhân hệ số Area). **Lần đầu tới 1 Area** = mở 1 **Tuyệt kỹ** (thẻ mở kiểu TCG); rớt rồi lên lại không nhận lại.
+  Core thường ai cũng dùng được ngay; Tuyệt kỹ mở qua Area (Aura Farming từ PROLOGUE). Area 9–10 chưa có Tuyệt kỹ (chờ Tuyệt kỹ mới).
+- Trần level character theo Elo cao nhất từng đạt (`areas[].levelCap`). Hồ sơ cũ (Area > hạng > sao) tự đổi sang Elo khi mở game.
+- Số liệu: `config/mainpath.config.js` (`elo`, `matchmaking`, `areas[].elo / ult / ai / levelCap`). Logic: `src/meta/mainpath.js`; tìm trận: `src/ui/menu.js` (phòng chờ `party`).
+  Cheat: SETTINGS → TEST → JUMP TO AREA (đặt Elo về ngưỡng Area).
 
 ## Online PvP (1 vs 1)
 - **Tạo phòng**: nhận mã 7 ký tự (bấm vào mã để sao chép), gửi cho bạn bè.

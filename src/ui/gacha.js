@@ -109,7 +109,7 @@ window.SFC = window.SFC || {};
   const Gacha = {
     pages: ['shop', 'open', 'inv'],
     coin, xpBar, coreCard, boxArt,
-    boxSel: 0,        // 0..số hộp-1 = hộp, cuối cùng = nút TÚI ĐỒ
+    boxSel: 0,        // 0..số hộp-1 = hộp
     invTab: 0,
     invSel: 0,
     invArch: 0,       // mục CORE: lọc theo trường phái (0 = tất cả)
@@ -158,7 +158,7 @@ window.SFC = window.SFC || {};
     pageShop() {
       const d = PF().data, P = PROG();
       const n = P.boxOrder.length;
-      this.boxSel = Math.min(this.boxSel, n);
+      this.boxSel = Math.min(this.boxSel, n - 1);
       const rows = P.boxOrder.map((id, i) => {
         const b = P.boxes[id], free = PF().freeBoxes(id), lock = b.level > d.level && !free;
         const price = free ? `<span class="free">${PX().ui('gift', 'sm')} ${_t('FREE ×{n}', { n: free })}</span>` : lock ? `${PX().ui('lock', 'sm')} ${_t('LV {n}', { n: b.level })}` : coin(b.price);
@@ -167,15 +167,7 @@ window.SFC = window.SFC || {};
           <div class="br-info"><div class="br-name">${esc(b.name)}</div>
             <div class="br-sub">${b.kind === 'core' ? _t('CORE') : _t('COSTUME')} · ${price}</div></div>
         </button>`;
-      }).join('') + `<button class="boxrow inv-link ${this.boxSel === n ? 'sel' : ''}" data-box="${n}">
-          <div class="br-info"><div class="br-name">${_t('INVENTORY')} →</div><div class="br-sub">${_t('Equip · dismantle for gold')}</div></div></button>`;
-      if (this.boxSel === n) {
-        return `${this.header(_t('SHOP'))}
-          <div class="gacha-body shop-g"><div class="box-list">${rows}</div>
-            <div class="box-detail center"><div class="sd-name">${_t('INVENTORY')}</div><div class="sd-desc">${_t("See everything you have pulled, equip it on your character, or dismantle what you don't need into gold for more spins.")}</div>
-            <div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN INVENTORY')}</div></div></div>
-          <!--msg--><div class="m-hint">${_t('↑↓ select · {ok} open · {back} back', { ok: K('confirm', 'Enter'), back: K('back', 'Esc') })}</div>`;
-      }
+      }).join('');   // nút TÚI ĐỒ đã bỏ khỏi SHOP (vào túi đồ từ CHARACTER > INVENTORY)
       const id = P.boxOrder[this.boxSel], b = P.boxes[id], c = PF().canOpen(id);
       const odds = PF().boxOdds(id).map((o) => {
         const r = RAR(o.rarity);
@@ -459,7 +451,7 @@ window.SFC = window.SFC || {};
     },
 
     inputShop(menu, input) {
-      const n = PROG().boxOrder.length + 1;
+      const n = PROG().boxOrder.length;
       let moved = false;
       if (input.wasPressed('up')) { this.boxSel = wrap(this.boxSel - 1, n); moved = true; }
       if (input.wasPressed('down')) { this.boxSel = wrap(this.boxSel + 1, n); moved = true; }
@@ -469,7 +461,7 @@ window.SFC = window.SFC || {};
 
     activateBox(menu) {
       const order = PROG().boxOrder;
-      if (this.boxSel >= order.length) { SFC.Audio.menu(); this.invBack = 'shop'; return menu.go('inv'); }
+      if (this.boxSel >= order.length) return;
       this.openBox(menu, order[this.boxSel]);
     },
 

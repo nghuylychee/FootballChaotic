@@ -135,14 +135,13 @@ window.SFC = window.SFC || {};
       return level >= P().maxLevel ? Infinity : P().xpBase + P().xpStep * (level - 1);
     },
 
-    // trần level theo Main Path (mainpath.config.js -> areas[].levelCap, theo hạng cao nhất từng đạt); vô địch = maxLevel
+    // trần level theo Main Path (mainpath.config.js -> areas[].levelCap): theo Elo cao nhất từng đạt, khoảng Elo của Area chia đều
+    // cho các nấc trong levelCap; vượt hết khoảng Elo của Area cuối = maxLevel
     levelCap() {
       const path = this.data.path, MP = SFC.MainPath;
-      if (!path || !MP || path.titles > 0) return P().maxLevel;
-      const n = MP.nDiv(), a = MP.area(Math.floor(path.best / n)), caps = a && a.levelCap;
-      return caps ? Math.min(P().maxLevel, caps[Math.min(path.best % n, caps.length - 1)]) : P().maxLevel;
+      return path && MP ? MP.levelCapAt(path.peak) : P().maxLevel;
     },
-    // đang chạm trần level (XP vẫn tích, lên hạng Main Path là lên level)
+    // đang chạm trần level (XP vẫn tích, lên Elo Main Path là lên level)
     levelCapped() { return this.data.level < P().maxLevel && this.data.level >= this.levelCap(); },
 
     // cộng XP, trả về danh sách level mới đạt được (mỗi level thưởng thêm gold + drill chờ).
@@ -284,11 +283,12 @@ window.SFC = window.SFC || {};
     coreLevel(id) { return CORES()[id] ? CORES()[id].level : 1; },
     // Core được bốc khi chọn Core giữa trận:
     //   gacha Core bật: bộ cơ bản + Core trong túi đồ đã đủ level
-    //   gacha Core tắt: bộ cơ bản + Core mở khoá bằng Main Path (mainPath.lockCores = false: mọi Core)
+    //   gacha Core tắt: mọi Core thường + Tuyệt kỹ có sẵn (starterCores) + Tuyệt kỹ mở bằng Main Path (mainPath.lockCores = false: mọi Core)
     unlockedCores() {
       if (P().coreGacha) return P().starterCores.concat(Object.keys(this.data.cores).filter((id) => this.data.cores[id] > 0 && this.coreLevel(id) <= this.data.level));
-      if (!SFC_CONFIG.mainPath.lockCores) return Object.keys(SFC_CONFIG.cores.list);
-      return P().starterCores.concat(this.data.path.cores.filter((id) => !P().starterCores.includes(id)));
+      const L = SFC_CONFIG.cores.list, all = Object.keys(L);
+      if (!SFC_CONFIG.mainPath.lockCores) return all;
+      return all.filter((id) => L[id].role !== 'ult' || P().starterCores.includes(id) || this.data.path.cores.includes(id));
     },
     coreUnlocked(id) { return this.unlockedCores().includes(id); },
 
@@ -467,19 +467,9 @@ window.SFC = window.SFC || {};
 
       const lines = [{ label: labels[result], xp: cfg[result].xp, gold: cfg[result].gold }];
       if (goals > 0) lines.push({ label: _t('Goals ×{n}', { n: goals }), xp: cfg.goal.xp * goals, gold: cfg.goal.gold * goals });
-      // Main Path: cộng / trừ sao, lên / tụt hạng; thắng trận thăng hạng có thưởng thêm; thưởng nhân theo Area
+      // Main Path: cộng / trừ Elo (lên / rớt Area, Tuyệt kỹ mở lần đầu tới Area hiện ở màn mở thẻ); thưởng nhân theo Area
       const mp = !pvp && !coop && game.opts.mainPath;
       const path = mp ? SFC.MainPath.record(result, mp) : null;
-      // mốc sao mới ở Area đã mở hết Core: thưởng gold (nhân theo Area như các dòng khác). Hộp lên hạng vào kho hộp miễn phí
-      if (path) {
-        const starGold = path.rewards.filter((x) => x.kind === 'gold').reduce((sum, x) => sum + x.gold, 0);
-        if (starGold) lines.push({ label: _t('New star reward'), xp: 0, gold: starGold });
-        path.rewards.filter((x) => x.kind === 'box').forEach((x) => this.addBox(x.id));
-      }
-      if (path && (path.event === 'area' || path.event === 'title')) {
-        const B = SFC_CONFIG.mainPath.promoBonus;
-        lines.push({ label: path.event === 'title' ? _t('Champion bonus') : _t('Promotion bonus'), xp: B.xp, gold: B.gold });
-      }
       let xp = lines.reduce((s, l) => s + l.xp, 0), gold = lines.reduce((s, l) => s + l.gold, 0);
       if (mp) {
         if (mp.reward !== 1) {

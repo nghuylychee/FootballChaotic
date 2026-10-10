@@ -96,9 +96,21 @@ window.SFC = window.SFC || {};
     quitAsk: false,     // trang chủ: đang hiện hộp "QUIT GAME?" (chỉ bản desktop)
     quitSel: 1,         // 0 = QUIT · 1 = CANCEL
     wishSeen: false,    // bản DEMO: đã hiện màn WISHLIST sau khi hết Area đá được (mỗi lần chạy game hiện 1 lần khi mở Main Path)
+    friendsOpen: true,  // phòng chờ: khung bạn bè đang mở (nút FRIENDS ẩn / hiện)
 
     init(app) {
       this.app = app;
+      SFC.Social.load();
+      // bạn bè giả đổi trạng thái / nhắn tin / vào phòng -> vẽ lại phòng chờ (giữ nguyên chữ đang gõ)
+      // danh sách đổi (bạn vào phòng thì có thêm LEAVE PARTY, bạn bè xếp lại) -> giữ con trỏ ở đúng mục đang chọn
+      const key = (it) => (it ? (it.kind === 'friend' ? 'f' + it.id : it.label) : null);
+      SFC.Social.onChange = () => {
+        if (this.page !== 'party' || app.screen !== 'menu') return;
+        const k = key(this.partyItems && this.partyItems[this.sel]);
+        const i = k ? this.items().findIndex((it) => key(it) === k) : -1;
+        if (i >= 0) this.sel = i;
+        this.render();
+      };
       this.el = $('menu');
       this.bindMouse();
       this.render();
@@ -124,7 +136,8 @@ window.SFC = window.SFC || {};
       if (page === 'online' && SFC.NetCommon.serverOn()) SFC.NetServer.wake();
       if (page === 'name') this.nameBuf = PF().data.name;
       if (page === 'path') this.pathView = MPATH().state.area;   // mở Main Path: xem Area đang đá
-      this.setTextMode(page === 'join' || page === 'name' ? page : null);
+      if (page !== 'party' && SFC.Social.chatWith) SFC.Social.chatWith = null;
+      this.setTextMode(page === 'join' || page === 'name' ? page : page === 'party' && SFC.Social.chatWith ? 'chat' : null);
       this.render();
     },
 
@@ -139,17 +152,18 @@ window.SFC = window.SFC || {};
     items() {
       const app = this.app, s = app.sel, o = this.options();
       switch (this.page) {
-        case 'home':
-          // trang chủ: dòng phụ của mọi nút viết in hoa (kể cả dòng động: hạng Main Path, hộp miễn phí...)
+        case 'home': {
+          // trang chủ kiểu Valorant: thanh điều hướng đáy CHARACTER · PLAY · SHOP (it.nav = thứ tự hiển thị, PLAY ở giữa) + bánh răng SETTINGS góc phải.
+          // PLAY = vào chế độ chơi chính (Main Path). ONLINE tạm ẩn khỏi trang chủ (logic trang 'online' vẫn còn).
+          // Mục đầu (PLAY) được chọn sẵn. Dòng phụ viết in hoa
+          const drills = PF().drillsPending();
           return [
-            { kind: 'btn', label: _t('MAIN PATH'), sub: this.pathSub(), act: () => this.go('path') },
-            SFC_DEMO
-              ? { kind: 'btn', label: _t('ONLINE'), sub: _t('FULL GAME ONLY'), subHtml: `${PX().ui('lock', 'sm')} ${esc(_t('FULL GAME ONLY'))}`, locked: true, act: () => this.go('wishlist') }
-              : { kind: 'btn', label: _t('ONLINE'), sub: _t('2-4 players · versus or co-op'), act: () => this.go('online') },
-            { kind: 'btn', label: _t('CHARACTER'), sub: PF().drillsPending() ? _tn('★ {n} drill card ready!', '★ {n} drill cards ready!', PF().drillsPending()) : SFC.Mates.scoutReady() ? _t('★ SCOUT REPORT READY!') : _t('STATS · TEAM · APPEARANCE · INVENTORY'), hot: PF().drillsPending() > 0 || SFC.Mates.scoutReady(), act: () => this.go('char') },
-            { kind: 'btn', label: _t('SHOP'), sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
-            { kind: 'btn', label: _t('SETTINGS'), sub: _t('Sound · display · controls'), act: () => this.go('settings') },
+            { kind: 'btn', nav: 1, label: _t('PLAY'), sub: this.pathSub(), act: () => this.go('party') },
+            { kind: 'btn', nav: 0, label: _t('CHARACTER'), sub: drills ? _tn('★ {n} drill card ready!', '★ {n} drill cards ready!', drills) : _t('STATS · APPEARANCE · INVENTORY'), hot: drills > 0, act: () => this.go('char') },
+            { kind: 'btn', nav: 2, label: _t('SHOP'), sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
+            { kind: 'btn', gear: true, label: _t('SETTINGS'), sub: _t('Sound · display · controls'), act: () => this.go('settings') },
           ].map((it) => Object.assign(it, { sub: it.sub && it.sub.toUpperCase() }));
+        }
         case 'settings':
           return [
             { kind: 'btn', label: _t('SOUND & DISPLAY'), sub: ST().desktop ? _t('Music · sound FX · resolution') : _t('Music · sound FX'), act: () => this.go('display') },
@@ -195,7 +209,7 @@ window.SFC = window.SFC || {};
           return [
             // còn thẻ drill: OVR vàng + ↑ (mở ở STATS -> USE DRILL CARDS)
             { kind: 'btn', label: _t('STATS'), sub: `${PF().drillsPending() ? '↑ ' : ''}${_t('OVR {n}', { n: PF().ovr() })}`, hot: PF().drillsPending() > 0, act: () => this.go('attrs') },
-            { kind: 'btn', label: _t('TEAM'), sub: this.teamSub(), hot: SFC.Mates.scoutReady(), act: () => { TM().back0 = 'char'; TM().open(this, SFC.Mates.scoutReady() ? 1 : 0); } },
+            // TEAM (đội hình đồng đội, src/ui/team.js) tạm ẩn — logic + trang 'team' vẫn còn
             { kind: 'btn', label: _t('APPEARANCE'), sub: _t('{name} · skin · hair color', { name: d.name }), act: () => this.go('look') },
             { kind: 'btn', label: _t('INVENTORY'), sub: _tn('{n} item · equip · dismantle', '{n} items · equip · dismantle', nItems), act: () => { G().invBack = 'char'; this.go('inv'); } },
           ];
@@ -217,21 +231,34 @@ window.SFC = window.SFC || {};
           return list;
         }
         case 'path': {
-          // Main Path: không chọn đối thủ / độ khó — trận kế tiếp do Area + hạng quyết định
+          // Main Path: không chọn đối thủ / độ khó — BATTLE = tìm trận 2v2 theo Elo (matchmaking giả)
           const MP = MPATH(), st = MP.state, n = MP.areas().length, v = this.pathView;
-          const boss = TEAMS().list[MP.area(st.area).boss];
           const battle = MP.demoOver()
             ? { label: STEAM_SOON() ? _t('COMING SOON TO STEAM') : _t('WISHLIST ON STEAM'), sub: _t('AREA {n}+ is in the full game', { n: st.area + 1 }), act: () => this.go('wishlist') }
-            : MP.isPromo()
-            ?{ label: MP.isFinal() ? _t('CHAMPIONSHIP FINAL') : _t('PROMOTION MATCH'), sub: _t('vs {team}', { team: boss.name }), subHtml: `${PX().ui('crown', 'sm')} ${esc(_t('vs {team}', { team: boss.name }))}` }
-            : { label: _t('BATTLE'), sub: `${MP.divName(st.area, st.div)} · ${st.stars}/${MP.need(st.area, st.div)} ★` };
+            : { label: _t('BATTLE'), sub: `${MP.area(st.area).name} · ${st.elo} ${_t('ELO')}` };
           return [
-            { kind: 'btn', label: battle.label, sub: battle.sub, subHtml: battle.subHtml, main: true, act: battle.act || (() => app.startMainPath()) },
+            { kind: 'btn', label: battle.label, sub: battle.sub, main: true, act: battle.act || (() => this.startSearch()) },
             { kind: 'pick', label: _t('POSITION'), value: this.ctrlLabel(null, s.ctrl), change: (d) => this.changeCtrl(d) },
-            { kind: 'pick', label: _t('TEAMMATE'), value: this.mateLabel(), change: (d) => this.changeMate(d) },
-            { kind: 'pick', label: _t('AREA'), value: `${v + 1}/${n} ${v > st.area || MP.demoLocked(v) ? '???' : MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
+            { kind: 'pick', label: _t('AREA'), value: `${v + 1}/${n} ${v > st.best || MP.demoLocked(v) ? '???' : MP.area(v).name}`, change: (d) => { this.pathView = wrap(v + d, n); } },
             { kind: 'btn', label: _t('TRAINING'), sub: _t('No clock · pick team sizes'), foot: true, act: () => this.go('training') },
           ];
+        }
+        case 'party': {
+          // phòng chờ PLAY (kiểu Valorant): START = tìm trận Main Path ngay trên màn này (người bạn trong phòng chung đội; đang tìm thì thành CANCEL) ·
+          // vị trí · rời phòng · ẩn / hiện khung bạn bè; sau đó là từng dòng bạn bè (kind 'friend': ←→ đổi MỜI / CHAT, Enter làm)
+          const MP = MPATH(), SO = SFC.Social, S = this.search;
+          const list = [
+            MP.demoOver()
+              ? { kind: 'btn', main: true, label: STEAM_SOON() ? _t('COMING SOON TO STEAM') : _t('WISHLIST ON STEAM'), act: () => this.go('wishlist') }
+              : S && S.lobby ? { kind: 'btn', main: true, found: true, label: _t('MATCH FOUND'), act: () => {} }
+              : S ? { kind: 'btn', main: true, searching: true, label: _t('CANCEL'), act: () => this.cancelSearch() }
+              : { kind: 'btn', main: true, label: _t('START'), act: () => this.startSearch() },
+            { kind: 'pick', label: _t('POSITION'), value: this.ctrlLabel(null, s.ctrl), change: (d) => { if (!this.search) this.changeCtrl(d); } },
+          ];
+          if (SO.party.length && !S) list.push({ kind: 'btn', side: true, label: _t('LEAVE PARTY'), act: () => SO.leaveParty() });
+          list.push({ kind: 'btn', ftoggle: true, label: _t('FRIENDS'), act: () => { this.friendsOpen = !this.friendsOpen; if (!this.friendsOpen && SO.chatWith) this.closeChat(); else this.render(); } });
+          if (this.friendsOpen) for (const f of SO.friends()) list.push({ kind: 'friend', id: f.id, label: f.name });
+          return list;
         }
         case 'training': {
           // luyện tập: số người đội bạn (1 / 2) · đối thủ (0 / 2). Đội / đối thủ / độ khó / điều khiển dùng chung với Chơi đơn
@@ -296,6 +323,7 @@ window.SFC = window.SFC || {};
     // dòng phụ nút TEAM: số đồng đội + tình trạng scout
     teamSub() {
       const M = SFC.Mates, n = M.roster().length, max = SFC_CONFIG.teammates.rosterMax;
+      if (SFC_CONFIG.teammates.scout === false) return this.mateLabel();   // scout tạm ẩn: chỉ hiện đồng đội đang chọn
       const sc = M.scoutReady() ? _t('★ report ready!') : M.scouting() ? _t('scouting...') : _t('scout idle');
       return _t('{n}/{max} players · {scout}', { n, max, scout: sc });
     },
@@ -335,6 +363,10 @@ window.SFC = window.SFC || {};
       if (G().pages.includes(this.page)) return G().back(this);
       if (TM().pages.includes(this.page)) return TM().back(this);
       if (this.page === 'attrs' || this.page === 'look') return this.go('char');
+      if (this.page === 'party' && SFC.Social.chatWith) return this.closeChat();
+      if (this.page === 'party' && this.search && !this.search.lobby) return this.cancelSearch();
+      if (this.page === 'party') return this.go('home');
+      if (this.page === 'path') return this.go('party');
       if (this.page === 'training') this.go('path');
       else if (['controls', 'display', 'test'].includes(this.page)) this.go('settings');
       else if (['path', 'online', 'tutorial', 'char', 'settings', 'wishlist'].includes(this.page)) this.go('home');
@@ -348,6 +380,12 @@ window.SFC = window.SFC || {};
       const items = this.items();
       if (this.sel >= items.length) this.sel = Math.max(0, items.length - 1);
       this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || G().pages.includes(this.page) || TM().pages.includes(this.page));
+      // class riêng của trang chủ / phòng chờ: bật / tắt cả 2 trước mọi nhánh return (sót class 'party' làm vỡ layout trang chủ)
+      this.el.classList.toggle('home', this.page === 'home');
+      this.el.classList.toggle('party', this.page === 'party');
+      this.el.classList.toggle('nofriends', this.page === 'party' && !this.friendsOpen);
+      if (this.page === 'home') { this.el.innerHTML = this.renderHome(items); this.bindAvatars(); return; }
+      if (this.page === 'party') { this.partyItems = items; this.el.innerHTML = this.renderParty(items); this.bindAvatars(); this.scrollChat(); return; }
       if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); this.bindAvatars(); return; }
       if (this.page === 'controls') { this.el.innerHTML = CV().render(); this.bindAvatars(); return; }
       if (G().pages.includes(this.page)) { G().render(this); this.bindAvatars(); return; }
@@ -525,89 +563,100 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------------- Main Path ---------------- */
-    // dòng phụ của nút MAIN PATH ở trang chủ: hạng + sao hiện tại
+    // dòng phụ của nút MAIN PATH ở trang chủ: Area + Elo hiện tại
     pathSub() {
       const MP = MPATH(), st = MP.state;
       if (MP.demoOver()) return _t('DEMO COMPLETE · FULL GAME ON STEAM');
-      const div = MP.divName(st.area, st.div);
-      if (MP.isPromo()) return MP.isFinal() ? _t('{div} · FINAL ready!', { div }) : _t('{div} · PROMOTION ready!', { div });
-      return `${MP.divName(st.area, st.div)} · ${st.stars}/${MP.need(st.area, st.div)} ★`;
+      return `${MP.area(st.area).name} · ${st.elo} ${_t('ELO')}`;
     },
 
-    // thẻ Area kiểu Clash Royale: ảnh sân, các hạng + sao, đội đối thủ + boss, chấm chuyển Area
+    // thẻ Area kiểu Clash Royale: ảnh sân, khoảng Elo + Elo của bạn, Tuyệt kỹ thưởng lần đầu tới Area, chấm chuyển Area
     pathPanel() {
-      const MP = MPATH(), st = MP.state, v = this.pathView, A = MP.area(v), n = MP.nDiv();
-      // Area chưa mở: silhouette + ??? (tên, sân, đối thủ, boss, phần thưởng đều ẩn). Bản DEMO: Area bị khoá cũng vậy, kể cả Area đang đứng
-      const demo = MP.demoLocked(v), locked = v > st.area || demo, cleared = v < st.area;
-      const state = demo ? `${PX().ui('lock', 'sm')} ${esc(_t('FULL GAME'))}` : locked ? `${PX().ui('lock', 'sm')} ${esc(_t('LOCKED'))}` : cleared ? `${PX().ui('check', 'sm')} ${esc(_t('CLEARED'))}` : esc(_t('YOU ARE HERE'));
-      const stars = (on, need) => Array.from({ length: need }, (_, i) => `<i class="${i < on ? 'on' : ''}">★</i>`).join('');
-      const divs = [];
-      for (let d = 0; d < n; d++) {
-        const cur = !locked && !cleared && d === st.div, done = cleared || (!locked && d < st.div);
-        const need = MP.need(v, d), pl = MP.divPlan(v, d);
-        // thưởng lần đầu của hạng: lá Core (sao) · gold (sao khi Area hết Core) · hộp (lên hạng); đã nhận thì mờ
-        const rw = locked ? '<em class="pr unk">???</em>' : [
-          pl.cores ? `<em class="pr ${pl.coresGot >= pl.cores ? 'got' : ''}" title="${esc(_t('New Core per new star'))}">${PX().ui('card', 'sm')}${pl.coresGot}/${pl.cores}</em>` : '',
-          pl.gold ? `<em class="pr ${pl.goldGot >= pl.gold ? 'got' : ''}" title="${esc(_t('Gold per new star'))}"><i class="coin"></i>${pl.gold}</em>` : '',
-          pl.box ? `<em class="pr ${pl.boxGot ? 'got' : ''}" title="${esc(_t('{box} for reaching the next division', { box: PROG().boxes[pl.box].name }))}">${PX().ui('gift', 'sm')}</em>` : '',
-        ].join('');
-        divs.push(`<div class="pd ${cur ? 'cur' : done ? 'done' : 'lock'}"><b>${MP.divLabel(d)}</b><span>${stars(done ? need : cur ? st.stars : 0, need)}</span><span class="prw">${rw}</span></div>`);
-      }
-      const promoReady = !locked && !cleared && MP.isPromo();
-      const last = v === MP.areas().length - 1;
-      const sig = !locked && SFC_CONFIG.cores.list[A.signature], sigGot = !!sig && PF().coreUnlocked(A.signature);
-      const sigChip = locked ? '<em class="pr unk">?</em>' : sig ? `<em class="pr sig ${sigGot ? 'got' : ''}" title="${esc(sig.name)}">${PX().core(A.signature, 'sm')}</em>` : '';
-      divs.push(`<div class="pd boss ${promoReady ? 'cur' : cleared ? 'done' : 'lock'}"><b>${PX().ui('crown', 'sm')}</b><span>${esc(last ? _t('FINAL') : _t('PROMO'))}</span><span class="prw">${sigChip}</span></div>`);
-      // boss: lộ Core đặc trưng (thắng trận thăng hạng để lấy). Area chưa mở: cầu thủ vẽ dạng bóng đen, tên ???
-      const teamChip = (id, boss) => {
-        const t = TEAMS().list[id];
-        if (locked) {
-          return `<div class="po unk ${boss ? 'boss' : ''}">
-            <canvas class="avatar" data-team="${id}" data-idx="1" data-sil="1"></canvas>
-            <div><b>???</b><span>${boss ? `${PX().ui('crown', 'sm')} ???` : '???'}</span></div></div>`;
-        }
-        const sub = boss ? (sig ? `${PX().ui('crown', 'sm')}${PX().core(A.signature, 'sm')} ${esc(sig.name)}` : esc(_t('BOSS'))) : esc(t.tagline);
-        return `<div class="po ${boss ? 'boss' : ''}" style="--shirt:${t.kit.shirt}" title="${esc(t.desc)}${boss && sig ? ` · ${esc(_t('Signature Core: {core}', { core: sig.name }))} — ${esc(SFC.CoreScale.plain(A.signature))}` : ''}">
-          <canvas class="avatar" data-team="${id}" data-idx="1"></canvas>
-          <div><b>${esc(t.name)}</b><span>${sub}</span></div></div>`;
-      };
-      // "con đường": 10 Area nối nhau, Area đang xem nổi lên, Area đang đá có cờ, chưa mở thì dạng bóng đen
+      const MP = MPATH(), st = MP.state, v = this.pathView, A = MP.area(v), next = MP.area(v + 1);
+      // Area chưa từng tới: silhouette + ??? (tên, sân, phần thưởng đều ẩn). Bản DEMO: Area bị khoá cũng vậy, kể cả Area đang đứng
+      const demo = MP.demoLocked(v), locked = v > st.best || demo, here = v === st.area;
+      const state = demo ? `${PX().ui('lock', 'sm')} ${esc(_t('FULL GAME'))}` : locked ? `${PX().ui('lock', 'sm')} ${esc(_t('LOCKED'))}`
+        : here ? `${esc(_t('YOU ARE HERE'))} · ${st.elo} ${esc(_t('ELO'))}` : v < st.area ? `${PX().ui('check', 'sm')} ${esc(_t('PASSED'))}` : `${PX().ui('check', 'sm')} ${esc(_t('REACHED'))}`;
+      const range = next ? `${A.elo} – ${next.elo - 1}` : `${A.elo}+`;
+      // thanh Elo: Area đang đứng = vị trí của bạn trong khoảng; Area dưới = đầy; Area trên = rỗng
+      const pct = here ? Math.round(Math.max(0, Math.min(1, MP.frac(st.elo, v))) * 100) : v < st.area ? 100 : 0;
+      const eloRow = `<div class="pe"><span>${esc(_t('ELO'))} ${esc(range)}</span>
+        <div class="pe-bar"><i style="width:${pct}%"></i></div>
+        <span>${here && next ? esc(_t('{n} to next', { n: next.elo - st.elo })) : ''}</span></div>`;
+      // thưởng lần đầu tới Area: Tuyệt kỹ (đã có thì sáng). Area 1 / Area chưa có Tuyệt kỹ: chỉ thưởng gold + XP
+      const ult = !locked && SFC_CONFIG.cores.list[A.ult], got = !!ult && PF().coreUnlocked(A.ult);
+      const reward = locked
+        ? `<div class="pu unk"><i>${PX().ui('unknown', 'x2')}</i><div><b>???</b><span>${esc(_t('Reach this Area to find out'))}</span></div></div>`
+        : ult ? `<div class="pu ${got ? 'got' : ''}" title="${esc(SFC.CoreScale.plain(A.ult))}"><i>${PX().core(A.ult, 'x2')}</i><div><b>${esc(ult.name)}</b>
+            <span>${esc(_t('ULTIMATE'))} · ${got ? `${PX().ui('check', 'sm')} ${esc(_t('UNLOCKED'))}` : esc(_t('first time you reach this Area'))}</span></div></div>`
+        : `<div class="pu none"><i>${PX().ui('star', 'x2')}</i><div><b>${esc(v === 0 ? _t('STARTING AREA') : _t('NEW ULTIMATE COMING SOON'))}</b><span>${esc(_t('Gold & XP after every match'))}</span></div></div>`;
+      // "con đường": 10 Area nối nhau, Area đang xem nổi lên, Area đang đá có cờ, chưa tới thì dạng bóng đen
       const dots = MP.areas().map((a, i) => {
-        const lk = i > st.area || MP.demoLocked(i);
-        return `<i class="${i === v ? 'sel' : ''} ${lk ? 'lock' : i < st.area ? 'done' : 'cur'}" style="--c:${lk ? '#5a4658' : a.color}" data-parea="${i}" title="${lk ? '???' : esc(a.name)}">${lk ? PX().ui('unknown') : PX().area(a.id)}</i>`;
+        const lk = i > st.best || MP.demoLocked(i);
+        return `<i class="${i === v ? 'sel' : ''} ${lk ? 'lock' : i < st.area ? 'done' : i === st.area ? 'cur' : ''}" style="--c:${lk ? '#5a4658' : a.color}" data-parea="${i}" title="${lk ? '???' : esc(a.name)}">${lk ? PX().ui('unknown') : PX().area(a.id)}</i>`;
       }).join('');
-      const titles = last && st.titles && !locked ? ` · ${PX().ui('trophy', 'sm')} ×${st.titles}` : '';
       const name = locked ? '???' : esc(A.name);
       return `<div class="path ${locked ? 'locked' : ''}" style="--ac:${locked ? '#6a5f6e' : A.color}">
-        <div class="ph"><span class="ph-num">${esc(_t('AREA {n}', { n: v + 1 }))}</span><span class="ph-name">${locked ? PX().ui('unknown') : PX().area(A.id)} ${name}</span><span class="ph-state">${state}${titles}</span></div>
-        <div class="ph-sub">${locked ? '???' : esc(A.sub)}${locked ? '' : this.areaCoreCount(v)}</div>
-        <div class="ph-ovr">${esc(_t('YOUR OVR'))} <b>${PF().ovr()}</b> · ${esc(_t('AREA OVR'))} <b>${locked ? '??' : this.areaOvr(A)}</b></div>
-        <div class="pa"><canvas data-arena="${v}" width="300" height="112"></canvas>${locked ? `<div class="pa-lock"><b>???</b>${PX().ui('lock', 'x2')}<span>${esc(demo ? (STEAM_SOON() ? _t('Full game only · coming soon to Steam') : _t('Full game only · wishlist on Steam')) : _t('Win the promotion match of the previous area'))}</span></div>` : ''}</div>
-        <div class="pdivs">${divs.join('')}</div>
-        <div class="popps">${A.teams.map((id) => teamChip(id, false)).join('')}${teamChip(A.boss, true)}</div>
+        <div class="ph"><span class="ph-num">${esc(_t('AREA {n}', { n: v + 1 }))}</span><span class="ph-name">${locked ? PX().ui('unknown') : PX().area(A.id)} ${name}</span><span class="ph-state">${state}</span></div>
+        <div class="ph-sub">${locked ? '???' : esc(A.sub)}${locked || A.reward === 1 ? '' : ` · <span class="ph-cores">${esc(_t('REWARDS ×{n}', { n: A.reward }))}</span>`}</div>
+        <div class="ph-ovr">${esc(_t('YOUR OVR'))} <b>${PF().ovr()}</b> · ${esc(_t('PLAYERS OVR'))} <b>${locked ? '??' : this.areaOvr(v)}</b></div>
+        <div class="pa"><canvas data-arena="${v}" width="300" height="112"></canvas>${locked ? `<div class="pa-lock"><b>???</b>${PX().ui('lock', 'x2')}<span>${esc(demo ? (STEAM_SOON() ? _t('Full game only · coming soon to Steam') : _t('Full game only · wishlist on Steam')) : _t('Reach {n} ELO to unlock', { n: A.elo }))}</span></div>` : ''}</div>
+        ${eloRow}
+        ${reward}
         <div class="proad">${dots}</div>
       </div>`;
     },
 
-    // số Core của Area (sao + boss) đã mở khoá
-    areaCoreCount(a) {
-      if (!SFC_CONFIG.mainPath.lockCores || PROG().coreGacha) return '';
-      const A = MPATH().area(a), ids = (A.cores || []).concat(A.signature ? [A.signature] : []);
-      if (!ids.length) return '';
-      const have = ids.filter((id) => PF().coreUnlocked(id)).length;
-      return `<span class="ph-cores ${have >= ids.length ? 'all' : ''}">${PX().ui('card', 'sm')} ${esc(_t('CORES {n}/{total}', { n: have, total: ids.length }))}</span>`;
+    /* ---------------- tìm trận (matchmaking giả: SFC.MainPath.matchmake) ---------------- */
+    // tìm trận ngay trên phòng chờ (gọi từ chỗ khác: BATTLE ở Main Path, NEXT MATCH sau trận -> chuyển về phòng chờ rồi tìm)
+    startSearch() {
+      const M = SFC_CONFIG.mainPath.matchmaking;
+      if (this.page !== 'party') this.go('party');
+      this.search = { t: 0, wait: M.searchTime[0] + Math.random() * (M.searchTime[1] - M.searchTime[0]), lobby: null, hold: 0 };
+      SFC.Audio.pick();
+      this.render();
+    },
+    cancelSearch() {
+      this.search = null;
+      this.render();
+    },
+    // mỗi khung hình (animate): đồng hồ chờ + khoảng Elo nới dần; tới giờ thì ghép trận, hiện MATCH FOUND rồi vào trận
+    searchTick(dt) {
+      const S = this.search;
+      if (!S) return;
+      if (this.page !== 'party') { this.search = null; return; }   // rời phòng chờ = huỷ tìm
+      const M = SFC_CONFIG.mainPath.matchmaking;
+      S.t += dt;
+      if (!S.lobby) {
+        const time = this.el.querySelector('[data-mm-time]'), range = this.el.querySelector('[data-mm-range]');
+        if (time) time.textContent = SFC.U.fmtTime(S.t);
+        if (range) range.textContent = `± ${Math.round(SFC.U.lerp(M.range[0], M.range[1], Math.min(1, S.t / M.searchTime[1])))}`;
+        if (S.t >= S.wait) {
+          const SO = SFC.Social;
+          S.lobby = MPATH().matchmake(S.t, this.app.myRole(), SO.party.length ? (r) => SO.partyMate(r) : null);
+          SFC.Audio.reveal(2);
+          this.render();
+        }
+        return;
+      }
+      S.hold += dt;
+      if (S.hold >= M.foundHold) {
+        const lb = S.lobby;
+        this.search = null;
+        this.app.startRanked(lb);
+      }
     },
 
     // vẽ ảnh sân của Area vào canvas thẻ (cắt khung quanh sân)
     drawArena(cv) {
       const MP = MPATH(), A = MP.area(+cv.dataset.arena);
-      const img = SFC.Background.thumb(A.arena, SFC_CONFIG.mainPath.playerTeam.id, A.boss);
+      const img = SFC.Background.thumb(A.arena, SFC_CONFIG.mainPath.playerTeam.id, A.teams[A.teams.length - 1]);
       const ctx = cv.getContext('2d');
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, 20, 22, 600, 224, 0, 0, cv.width, cv.height);
-      // Area chưa mở (bản DEMO: cả Area bị khoá): phủ tối gần hết, chỉ còn lờ mờ đường nét sân. data-tease: màn WISHLIST, khoe sân
+      // Area chưa tới (bản DEMO: cả Area bị khoá): phủ tối gần hết, chỉ còn lờ mờ đường nét sân. data-tease: màn WISHLIST, khoe sân
       const a = +cv.dataset.arena;
-      if (!cv.dataset.tease && (a > MP.state.area || MP.demoLocked(a))) { ctx.fillStyle = 'rgba(7,5,10,0.86)'; ctx.fillRect(0, 0, cv.width, cv.height); }
+      if (!cv.dataset.tease && (a > MP.state.best || MP.demoLocked(a))) { ctx.fillStyle = 'rgba(7,5,10,0.86)'; ctx.fillRect(0, 0, cv.width, cv.height); }
     },
 
     /* ---------------- bản DEMO (itch.io) ---------------- */
@@ -615,17 +664,16 @@ window.SFC = window.SFC || {};
     wishlistPanel() {
       const MP = MPATH(), D = SFC_CONFIG.demo, next = MP.area(D.areas), over = MP.demoOver();
       const rest = MP.areas().slice(D.areas);
-      const cores = rest.reduce((n, a) => n + (a.cores || []).length + (a.signature ? 1 : 0), 0);
-      const boss = TEAMS().list[MP.area(D.areas - 1).boss];
+      const ults = rest.filter((a) => SFC_CONFIG.cores.list[a.ult]).length;
       return `<div class="path wish" style="--ac:${next.color}">
         <div class="ph"><span class="ph-num">${esc(over ? _t('DEMO COMPLETE') : _t('FULL GAME ONLY'))}</span><span class="ph-state">${esc(STEAM_SOON() ? _t('COMING SOON') : _t('ON STEAM'))}</span></div>
         <div class="wl-head">${esc(over ? _t('THANKS FOR PLAYING!') : _t('ONLINE IS LOCKED'))}</div>
-        <div class="ph-sub">${esc(over ? _t('You beat {team}. The road goes on in the full game.', { team: boss.name }) : _t('Online versus & co-op come with the full game.'))}</div>
+        <div class="ph-sub">${esc(over ? _t('You reached {n} ELO. The road goes on in the full game.', { n: MP.state.elo }) : _t('Online versus & co-op come with the full game.'))}</div>
         <div class="pa"><canvas data-arena="${D.areas}" data-tease="1" width="300" height="112"></canvas>
           <div class="wl-next"><span>${esc(_t('NEXT · AREA {n}', { n: D.areas + 1 }))}</span><b>${PX().area(next.id)} ${esc(next.name)}</b></div></div>
         <ul class="wl-list">
-          <li>${PX().ui('crown', 'sm')}<span>${_tn('<b>{n} more Area</b> up to the championship final', '<b>{n} more Areas</b> up to the championship final', rest.length)}</span></li>
-          <li>${PX().ui('card', 'sm')}<span>${_tn('<b>{n} more Core</b> to unlock', '<b>{n} more Cores</b> to unlock', cores)}</span></li>
+          <li>${PX().ui('crown', 'sm')}<span>${_tn('<b>{n} more Area</b> up to the World Stage', '<b>{n} more Areas</b> up to the World Stage', rest.length)}</span></li>
+          <li>${PX().ui('card', 'sm')}<span>${_tn('<b>{n} more Ultimate</b> to unlock', '<b>{n} more Ultimates</b> to unlock', ults)}</span></li>
           <li>${PX().ui('fist', 'sm')}<span>${_t('<b>Online</b> versus & co-op · 2-4 players')}</span></li>
         </ul>
         <div class="wl-cta">${esc(STEAM_SOON() ? _t('The full game is coming soon to Steam') : _t('Wishlist now so Steam tells you the day it launches'))}</div>
@@ -644,6 +692,157 @@ window.SFC = window.SFC || {};
     /* ---------------- hồ sơ / nhân vật ---------------- */
     // kit dùng để vẽ character ngoài trận: áo đội đang chọn ở Chơi đơn
     kit() { return TEAMS().list[this.options().order[this.app.sel.team]].kit; },
+
+    /* ---------------- phòng chờ PLAY + bạn bè (placeholder: SFC.Social) ---------------- */
+    // giữa: tab chế độ · 2 ô người chơi (bạn + 1 người bạn / ô trống mời) · mô tả · LEAVE / START / MAIN PATH. Phải: khung bạn bè + chat
+    renderParty(items) {
+      const MP = MPATH(), st = MP.state, A = MP.area(st.area), SO = SFC.Social, d = PF().data;
+      const at = (pred) => items.findIndex(pred), sel = (i) => (i === this.sel ? 'sel' : '');
+      const iStart = at((x) => x.main), iPos = at((x) => x.kind === 'pick');
+      const btn = (i) => (i < 0 ? '' : `<button class="pt-btn ${items[i].main ? 'go' : ''} ${items[i].searching ? 'searching' : ''} ${items[i].found ? 'found' : ''} ${sel(i)}" data-i="${i}">${esc(items[i].label)}</button>`);
+      const posItem = items[iPos];
+      // ô người chơi: dải tên vàng + READY như Valorant, nhân vật pixel, Elo / OVR / vị trí
+      const roles = SFC_CONFIG.game.roles, myRole = this.app.myRole(), mateRole = roles.find((r) => r !== myRole) || roles[0];
+      const card = (o) => `<div class="pt-card ${o.you ? 'you' : ''}" style="--ac:${o.color}">
+          <div class="pt-art"><canvas class="avatar big" ${o.you ? 'data-avatar="spin"' : `data-mmlook="${esc(JSON.stringify(o.look))}" data-mmaway="0"`}></canvas></div>
+          <div class="pt-ready">${esc(o.tag)}</div>
+          <div class="pt-name">${esc(o.name)}</div>
+          <div class="pt-meta"><span>${o.elo} ${esc(_t('ELO'))}</span><span>${esc(_t('OVR {n}', { n: o.ovr }))}</span></div>
+          ${o.you ? `<div class="pt-pos ${sel(iPos)}" data-i="${iPos}"><b data-i="${iPos}" data-d="-1">◀</b>${esc(posItem.value)}<b data-i="${iPos}" data-d="1">▶</b></div>`
+            : `<div class="pt-pos">${esc(ROLE_LABELS()[mateRole] || mateRole)}</div>`}
+          ${o.kick ? `<button class="pt-kick" data-kick="${o.id}" title="${esc(_t('KICK'))}">✕</button>` : ''}
+        </div>`;
+      const slots = [card({ you: true, name: d.name, elo: st.elo, ovr: PF().ovr(), tag: _t('READY'), color: A.color })];
+      const mate = SO.friend(SO.party[0]);
+      if (mate) slots.push(card({ name: mate.name, elo: mate.elo, ovr: mate.ovr, tag: _t('READY'), color: A.color, look: this.friendLook(mate), kick: true, id: mate.id }));
+      else slots.push(`<button class="pt-card empty" data-invite="1"><b>+</b><span>${esc(_t('INVITE A FRIEND'))}</span></button>`);
+      // đang tìm trận: đồng hồ + khoảng Elo (searchTick cập nhật số mỗi khung hình) · tìm thấy: MATCH FOUND + 2 đối thủ
+      const S = this.search, M = SFC_CONFIG.mainPath.matchmaking;
+      const status = !S ? ''
+        : S.lobby ? `<div class="pt-search found"><b>${esc(_t('MATCH FOUND'))}</b><span>${esc(_t('VS'))} ${S.lobby.opps.map((o) => `${esc(o.name)} <em>${o.elo}</em>`).join(' · ')}</span></div>`
+        : `<div class="pt-search"><b>${esc(_t('SEARCHING FOR PLAYERS'))}<span class="mm-dots"><i>.</i><i>.</i><i>.</i></span></b>
+            <span><i class="pt-time" data-mm-time>${SFC.U.fmtTime(S.t)}</i> · ${esc(_t('ELO RANGE'))} <i data-mm-range>± ${Math.round(SFC.U.lerp(M.range[0], M.range[1], Math.min(1, S.t / M.searchTime[1])))}</i> · ${esc(_t('same Area first'))}</span></div>`;
+      const iTog = at((x) => x.ftoggle), tog = items[iTog];
+      const toggle = `<button class="pt-ftoggle ${sel(iTog)} ${this.friendsOpen ? 'open' : ''}" data-i="${iTog}">${esc(tog.label)} <em>${SO.onlineCount()}</em> ${this.friendsOpen ? '▶' : '◀'}</button>`;
+      const sideBtns = items.map((x, i) => (x.side ? btn(i) : '')).join('');
+      const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
+      return `<div class="pt-main">
+          <div class="pt-tabs"><span class="pt-tab on">${esc(_t('RANKED'))}</span><span class="pt-area" style="color:${A.color}">${PX().area(A.id, 'sm')} ${esc(A.name)} · ${st.elo} ${esc(_t('ELO'))}</span></div>
+          ${toggle}
+          <div class="pt-slots">${slots.join('')}</div>
+          ${status}
+          ${msg}
+          <div class="pt-acts"><div class="pt-side-btns">${sideBtns}</div>${btn(iStart)}</div>
+        </div>
+        ${this.friendsOpen ? this.friendPanel(items) : ''}
+        <button class="pt-back" data-back="1">◀ ${esc(_t('BACK'))}</button>`;
+    },
+    friendLook(f) { return PF().lookOf(Object.assign({}, PROG().defaultLook, f.look)); },
+    // khung bạn bè (phải): tên bạn · số bạn online · từng dòng bạn bè (dòng đang chọn hiện nút MỜI / CHAT) · khung chat ở đáy
+    friendPanel(items) {
+      const SO = SFC.Social, d = PF().data, _st = { online: _t('Online'), match: _t('In a match'), offline: _t('Offline') };
+      const rows = items.map((it, i) => {
+        if (it.kind !== 'friend') return '';
+        const f = SO.friend(it.id), stt = SO.status[f.id], on = i === this.sel;
+        const status = SO.inParty(f.id) ? _t('In your party') : SO.pending[f.id] ? _t('Invite sent...') : SO.typing[f.id] ? _t('typing...') : _st[stt];
+        const unread = SO.unread[f.id] ? `<i class="fr-unread">${SO.unread[f.id]}</i>` : '';
+        const acts = on ? `<div class="fr-acts">
+            <button class="${this.frAct === 0 ? 'on' : ''} ${SO.canInvite(f.id) ? '' : 'off'}" data-fr="${f.id}" data-fa="invite">${esc(_t('INVITE'))}</button>
+            <button class="${this.frAct === 1 ? 'on' : ''}" data-fr="${f.id}" data-fa="chat">${esc(_t('CHAT'))}</button></div>` : '';
+        return `<div class="fr-row ${on ? 'sel' : ''} st-${SO.inParty(f.id) ? 'party' : stt}" data-i="${i}">
+            <canvas class="avatar" data-mmlook="${esc(JSON.stringify(this.friendLook(f)))}" data-mmaway="0"></canvas>
+            <div class="fr-info"><b>${esc(f.name)}</b><span><i class="fr-dot"></i>${esc(status)}</span></div>${unread}${acts}</div>`;
+      }).join('');
+      return `<div class="pt-friends">
+          <div class="fr-me"><canvas class="avatar" data-avatar="spin"></canvas><div><b>${esc(d.name)}</b><span><i class="fr-dot"></i>${esc(_t('Online'))}</span></div></div>
+          <div class="fr-head">${esc(_t('FRIENDS'))} <em>${SO.onlineCount()}/${SO.data.friends.length} ${esc(_t('ONLINE'))}</em></div>
+          <div class="fr-list">${rows}</div>
+          ${SO.chatWith ? this.chatBox() : ''}
+        </div>`;
+    },
+    chatBox() {
+      const SO = SFC.Social, f = SO.friend(SO.chatWith), me = PF().data.name;
+      const lines = SO.chat(f.id).map((m) => `<div class="ch-line ${m.me ? 'me' : ''}"><b>${esc(m.me ? me : f.name)}:</b> ${esc(m.txt)}</div>`).join('');
+      const typing = SO.typing[f.id] ? `<div class="ch-typing">${esc(_t('{name} is typing...', { name: f.name }))}</div>` : '';
+      const off = SO.status[f.id] === 'offline' ? `<div class="ch-typing">${esc(_t('{name} is offline', { name: f.name }))}</div>` : '';
+      return `<div class="pt-chat">
+          <div class="ch-head"><b>${esc(f.name)}</b><button data-chatclose="1">✕</button></div>
+          <div class="ch-lines">${lines || `<div class="ch-typing">${esc(_t('Say hi!'))}</div>`}${typing}${off}</div>
+          <div class="ch-in"><span data-chatbuf>${esc(this.chatBuf || '')}</span><i class="caret"></i></div>
+        </div>`;
+    },
+    renderChatInput() { const el = this.el.querySelector('[data-chatbuf]'); if (el) el.textContent = this.chatBuf; },
+    scrollChat() { const el = this.el.querySelector('.ch-lines'); if (el) el.scrollTop = el.scrollHeight; },
+    openChat(id) {
+      SFC.Social.openChat(id);
+      this.chatBuf = '';
+      this.setTextMode('chat');
+      this.render();
+    },
+    closeChat() {
+      SFC.Social.closeChat();
+      this.setTextMode(null);
+      this.render();
+    },
+    friendAction(id, act) {
+      const SO = SFC.Social, f = SO.friend(id);
+      if (!f) return;
+      if (act === 'chat') return this.openChat(id);
+      if (!SO.canInvite(id)) {
+        SFC.Audio.menu();
+        const why = SO.inParty(id) ? _t('{name} is already in your party', { name: f.name }) : SO.pending[id] ? _t('Invite already sent')
+          : SO.partyFull() ? _t('Your party is full (max {n})', { n: SFC_CONFIG.social.partyMax }) : _t('{name} is offline', { name: f.name });
+        return this.setMsg(why, true);
+      }
+      SO.invite(id);
+      SFC.Audio.pick();
+      this.setMsg(_t('Invite sent to {name}', { name: f.name }));
+    },
+    // phím riêng phòng chờ: đang chat thì Enter gửi; dòng bạn bè: ←→ đổi MỜI / CHAT, Enter làm. Trả về true = đã xử lý
+    partyInput(input, items) {
+      const SO = SFC.Social;
+      if (SO.chatWith) {
+        if (input.wasPressed('confirm') && this.chatBuf.trim()) { SO.send(SO.chatWith, this.chatBuf); this.chatBuf = ''; SFC.Audio.menu(); this.render(); }
+        return true;
+      }
+      const it = items[this.sel];
+      if (!it || it.kind !== 'friend') return false;
+      if (input.wasPressed('up')) this.move(-1);
+      if (input.wasPressed('down')) this.move(1);
+      if (input.wasPressed('left') || input.wasPressed('right')) { this.frAct = 1 - (this.frAct || 0); SFC.Audio.menu(); this.render(); }
+      if (input.wasPressed('confirm')) this.friendAction(it.id, this.frAct === 1 ? 'chat' : 'invite');
+      return true;
+    },
+
+    // trang chủ: logo (trái trên) · bánh răng SETTINGS (phải trên) · thanh điều hướng đáy, PLAY là tab hình thang ở giữa
+    renderHome(items) {
+      const nav = items.map((it, i) => Object.assign({ i }, it)).filter((it) => it.nav != null).sort((a, b) => a.nav - b.nav);
+      const gi = items.findIndex((it) => it.gear);
+      const tab = (it) => `<button class="hn-tab ${it.label === _t('PLAY') ? 'play' : ''} ${it.i === this.sel ? 'sel' : ''} ${it.hot ? 'hot' : ''}" data-i="${it.i}">
+          <span class="hn-label">${esc(it.label)}</span><span class="hn-sub">${it.subHtml || esc(it.sub || '')}</span><i class="hn-pip"></i></button>`;
+      const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
+      return `<div class="hm-top">
+          <div class="hm-left">
+            <div class="logo"><div class="l1">STREET</div><div class="l2">FOOTBALL</div><div class="l3">CHAOS</div></div>
+            ${msg}
+          </div>
+          <div class="hm-right">
+            <button class="hm-gear ${gi === this.sel ? 'sel' : ''}" data-i="${gi}" title="${esc(_t('SETTINGS'))}">${PX().ui('gear', 'x2')}</button></div>
+        </div>
+        <div class="hm-nav">${nav.map(tab).join('')}</div>
+        ${this.quitAsk ? this.renderQuit() : ''}`;
+    },
+    homeInput(input, items) {
+      const nav = items.map((it, i) => ({ it, i })).filter((x) => x.it.nav != null).sort((a, b) => a.it.nav - b.it.nav).map((x) => x.i);
+      const gi = items.findIndex((it) => it.gear), cur = nav.indexOf(this.sel);
+      let to = this.sel;
+      if (input.wasPressed('left')) to = cur < 0 ? nav[0] : nav[(cur + nav.length - 1) % nav.length];
+      if (input.wasPressed('right')) to = cur < 0 ? nav[nav.length - 1] : nav[(cur + 1) % nav.length];
+      if (input.wasPressed('up')) to = gi;
+      if (input.wasPressed('down') && this.sel === gi) to = items.findIndex((it) => it.nav === 1);
+      if (to !== this.sel && to >= 0) { this.sel = to; SFC.Audio.menu(); this.render(); }
+      if (input.wasPressed('confirm')) this.activate(items[this.sel]);
+    },
 
     profileCard() {
       const d = PF().data, st = d.stats;
@@ -697,6 +896,7 @@ window.SFC = window.SFC || {};
     // Giữ cài đặt máy (hiệu ứng, phím) — chỉ xoá tiến trình
     resetData() {
       PF().resetAll();
+      SFC.Social.reset();
       location.reload();
     },
 
@@ -716,14 +916,15 @@ window.SFC = window.SFC || {};
           this.render();
         }, notice ? { notice: { earned: n, from: Math.max(1, lv - n), to: lv } } : {});
       },
-      // cheat JUMP TO AREA: đổi Area đang đá (về hạng thấp nhất, 0 sao). Core của các Area đã bỏ qua được cấp bù (backfill)
+      // cheat JUMP TO AREA: đặt Elo về ngưỡng của Area. Tuyệt kỹ của các Area đã bỏ qua được cấp bù (backfill)
       testArea(d) {
         const MP = MPATH(), st = MP.state, a = wrap(st.area + d, MP.areas().length);
-        Object.assign(st, { area: a, id: MP.area(a).id, div: 0, stars: 0 });
-        st.best = Math.max(st.best, MP.rank(a, 0));
-        st.peak = Math.max(st.peak, MP.pos(a, 0, 0));
+        Object.assign(st, { elo: MP.area(a).elo, area: a, id: MP.area(a).id });
+        st.best = Math.max(st.best, a);
+        st.peak = Math.max(st.peak, st.elo);
         MP.backfill(st);
         PF().save();
+        this.app.newDemo();   // sân nền menu theo Area mới
         this.pathView = a;
       },
       testAreaLabel() {
@@ -772,11 +973,11 @@ window.SFC = window.SFC || {};
       </div>`;
     },
 
-    // OVR của Area (Main Path): khoảng OVR các đội của Area (tính như màn giới thiệu trước trận)
-    areaOvr(A) {
-      const list = A.teams.concat(A.boss).map((tid) => SFC.Intro.ovrOf(TEAMS().list[tid].stats));
-      const lo = Math.min(...list), hi = Math.max(...list);
-      return lo === hi ? `${lo}` : `${lo}–${hi}`;
+    // OVR người chơi (giả) của Area: từ đầu tới cuối khoảng Elo của Area (MainPath.ovrAt ± spread)
+    areaOvr(a) {
+      const MP = MPATH(), sp = SFC_CONFIG.mainPath.matchmaking.ovr.spread, A = MP.area(a);
+      const lo = Math.round(MP.ovrAt(A.elo) - sp), hi = Math.round(MP.ovrAt(A.elo + MP.span(a) - 1) + sp);
+      return `${lo}–${hi}`;
     },
 
     renderNameInput() {
@@ -809,7 +1010,15 @@ window.SFC = window.SFC || {};
         cv.width = 40; cv.height = 44;
         return { cv, look: TM().lookOf(cv.dataset.mate), kit: TEAMS().list[SFC_CONFIG.mainPath.playerTeam.id].kit, big: cv.classList.contains('big') };
       }).filter((a) => a.look);
-      this.avatars = teamAvatars.concat(mateAvatars, [...this.el.querySelectorAll('canvas[data-avatar]')].map((cv) => {
+      // người chơi giả ở màn tìm thấy trận: ngoại hình đã dựng sẵn (MainPath.matchmake), áo sân nhà / sân khách
+      const P = SFC_CONFIG.mainPath.playerTeam;
+      const mmAvatars = [...this.el.querySelectorAll('canvas[data-mmlook]')].map((cv) => {
+        cv.width = 40; cv.height = 44;
+        let look = null;
+        try { look = JSON.parse(cv.dataset.mmlook); } catch (e) { /* bỏ qua */ }
+        return { cv, look, kit: cv.dataset.mmaway === '1' ? P.awayKit : P.kit, big: false };
+      }).filter((a) => a.look);
+      this.avatars = teamAvatars.concat(mateAvatars, mmAvatars, [...this.el.querySelectorAll('canvas[data-avatar]')].map((cv) => {
         const big = cv.classList.contains('big');
         cv.width = 40; cv.height = 44;
         const tryOn = cv.dataset.try;
@@ -825,6 +1034,8 @@ window.SFC = window.SFC || {};
       this.animT = (this.animT || 0) + dt;
       G().tick(this); // dải quay hộp gacha
       TM().tick(this, dt); // bản đồ scout + đồng hồ
+      this.searchTick(dt); // tìm trận Main Path
+      SFC.Social.tick(dt); // bạn bè giả: trả lời mời / chat, đổi trạng thái
       if (!this.avatars.length) return;
       const dirs = [Math.PI / 2, 0, -Math.PI / 2, Math.PI];
       const facing = dirs[Math.floor(this.animT / 1.6) % 4];
@@ -853,8 +1064,11 @@ window.SFC = window.SFC || {};
       }
       const items = this.items();
       if (!items.length) return;
-      if (input.wasPressed('up')) { this.move(-1); }
-      if (input.wasPressed('down')) { this.move(1); }
+      if (this.page === 'party' && this.partyInput(input, items)) return;
+      if (this.page !== 'home' && input.wasPressed('up')) { this.move(-1); }
+      if (this.page !== 'home' && input.wasPressed('down')) { this.move(1); }
+      // trang chủ: ←→ đi dọc thanh điều hướng (CHARACTER · PLAY · SHOP), ↑ lên bánh răng SETTINGS, ↓ về thanh điều hướng
+      if (this.page === 'home') return this.homeInput(input, items);
       const it = items[this.sel];
       if (it && it.kind === 'pick') {
         if (input.wasPressed('left')) this.change(it, -1);
@@ -897,6 +1111,18 @@ window.SFC = window.SFC || {};
     setTextMode(kind) {
       const I = SFC.Input;
       if (!kind) { I.textHandler = null; I.pasteHandler = null; return; }
+      if (kind === 'chat') {
+        // khung chat phòng chờ: gõ chữ vào chatBuf (Enter gửi / Esc đóng đi qua action confirm / back)
+        const max = SFC_CONFIG.social.chatMax;
+        const upd = (v) => { this.chatBuf = v.slice(0, max); this.renderChatInput(); return true; };
+        I.textHandler = (e) => {
+          if (e.key === 'Backspace') return upd(this.chatBuf.slice(0, -1));
+          if (e.key.length === 1) return upd(this.chatBuf + e.key);
+          return false;
+        };
+        I.pasteHandler = (text) => upd(this.chatBuf + text.replace(/\s+/g, ' '));
+        return;
+      }
       if (kind === 'name') {
         const upd = (v) => { this.nameBuf = PF().cleanName(v); this.msg = ''; this.render(); return true; };
         I.textHandler = (e) => {
@@ -952,6 +1178,20 @@ window.SFC = window.SFC || {};
         if (slot) { SFC.Audio.menu(); Online().requestSlot(+slot.dataset.slot); return; }
         const tab = e.target.closest('[data-tab]');
         if (tab) { this.tutPage = +tab.dataset.tab; SFC.Audio.menu(); this.render(); return; }
+        if (this.page === 'party') {
+          const fa = e.target.closest('[data-fa]');
+          if (fa) return this.friendAction(+fa.dataset.fr, fa.dataset.fa);
+          if (e.target.closest('[data-chatclose]')) return this.closeChat();
+          const kick = e.target.closest('[data-kick]');
+          if (kick) { SFC.Audio.menu(); return SFC.Social.kick(+kick.dataset.kick); }
+          if (e.target.closest('[data-back]')) { SFC.Audio.menu(); return this.back(); }
+          // ô trống: nhảy tới bạn bè đầu tiên mời được
+          if (e.target.closest('[data-invite]')) {
+            const items = this.items(), i = items.findIndex((x) => x.kind === 'friend' && SFC.Social.canInvite(x.id));
+            if (i >= 0) { this.sel = i; this.frAct = 0; SFC.Audio.menu(); this.render(); } else this.setMsg(_t('No friends online to invite'), true);
+            return;
+          }
+        }
         const el = e.target.closest('[data-i]');
         if (!el) return;
         const i = +el.dataset.i, it = this.items()[i];

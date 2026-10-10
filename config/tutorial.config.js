@@ -59,7 +59,7 @@ SFC_CONFIG.tutorial = {
     {
       title: 'MATCH RULES',
       lines: [
-        '# Street 2v2',
+        '# Street football',
         'Two players per team, split attack / defense however you like. Matches last 2:30.',
         '# Your player',
         'You control only your own character for the whole match; your teammate is AI. Call for the ball with S / W (D / A still attack). An AI FORWARD loves to dribble, shoot and press to win the ball; an AI DEFENDER stays home, marks and feeds you passes.',

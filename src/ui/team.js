@@ -64,7 +64,7 @@ window.SFC = window.SFC || {};
     mapT: 0,
     back0: 'char',
 
-    open(menu, tab = 0) { this.tab = tab; this.sel = Math.max(0, M().roster().findIndex((m) => m.id === M().T.active)); menu.go('team'); },
+    open(menu, tab = 0) { this.tab = CFG().scout === false ? 0 : tab; this.sel = Math.max(0, M().roster().findIndex((m) => m.id === M().T.active)); menu.go('team'); },
 
     /* ================= VẼ ================= */
     render(menu) {
@@ -82,6 +82,7 @@ window.SFC = window.SFC || {};
         <div class="shop-wallet">${G().xpBar(d)}${G().coin(d.gold)}</div></div>`;
     },
     tabs() {
+      if (CFG().scout === false) return '';   // scout tạm ẩn: không có tab
       const ready = M().scoutReady();
       return `<div class="tabs">${TABS.map(([k], i) => `<button class="tab ${i === this.tab ? 'sel' : ''}" data-ttab="${i}">${TAB_LABEL()[k]}${k === 'scout' && ready ? ' <b class="tm-dot">!</b>' : ''}</button>`).join('')}</div>`;
     },
@@ -115,6 +116,7 @@ window.SFC = window.SFC || {};
       const rows = [];
       for (let i = 0; i < max; i++) {
         const m = list[i];
+        if (!m && CFG().scout === false) break;   // scout tạm ẩn: không hiện ô trống "Scout to recruit"
         if (!m) { rows.push(`<div class="tm-row empty"><span>${_t('EMPTY SLOT')}</span><em>${_t('Scout to recruit')}</em></div>`); continue; }
         const g = M().grade(m);
         rows.push(`<button class="tm-row ${i === this.sel ? 'sel' : ''} ${m.id === T.active ? 'act' : ''}" data-tm="${i}" style="--rc:${RAR(g.rarity).color}">
@@ -135,7 +137,9 @@ window.SFC = window.SFC || {};
         </div>` : '';
       return `${this.header(_t('TEAM'), this.tabs())}
         <div class="gacha-body tm-g"><div class="tm-list">${rows.join('')}</div>${detail}</div>
-        <!--msg--><div class="m-hint">${_t('{a} / {b} switch tab · ↑↓ select · {ok} set as teammate · {sell} sell · {back} back', { a: K('switch', 'Q'), b: K('sprint', 'E'), ok: K('confirm', 'Enter'), sell: K('dismantle', 'X'), back: K('back', 'Esc') })}</div>`;
+        <!--msg--><div class="m-hint">${CFG().scout === false
+          ? _t('↑↓ select · {ok} set as teammate · {sell} sell · {back} back', { ok: K('confirm', 'Enter'), sell: K('dismantle', 'X'), back: K('back', 'Esc') })
+          : _t('{a} / {b} switch tab · ↑↓ select · {ok} set as teammate · {sell} sell · {back} back', { a: K('switch', 'Q'), b: K('sprint', 'E'), ok: K('confirm', 'Enter'), sell: K('dismantle', 'X'), back: K('back', 'Esc') })}</div>`;
     },
 
     /* ---------- SCOUT ---------- */
@@ -146,7 +150,7 @@ window.SFC = window.SFC || {};
       if (!sc) status = `<div class="sc-status">${_t('<b>Scout is free.</b> Send a scout out to find new players.')}<div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('START SCOUTING · {n} min', { n: st.minutes })}</div></div>`;
       else if (!ready) status = `<div class="sc-status"><b>${_t('Scouting {region}...', { region })}</b><div class="sc-bar"><i data-scbar></i></div><div class="sc-left" data-scleft>${fmtLeft(M().scoutLeft())}</div></div>`;
       else status = `<div class="sc-status ready">${_tn('<b>SCOUT REPORT READY!</b> {n} player found in {region}.', '<b>SCOUT REPORT READY!</b> {n} players found in {region}.', CFG().offers, { region })}<div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('VIEW REPORT')}</div></div>`;
-      const lv = T.station, O = CFG().ovr, MP = SFC.MainPath, area = Math.floor(MP.state.best / MP.nDiv());
+      const lv = T.station, O = CFG().ovr, area = SFC.MainPath.state.best;
       const center = Math.round(O.base + O.perArea * area + st.ovrBonus);
       const up = nx ? `<div class="sd-act"><kbd>${K('restart', 'R')}</kbd> ${_t('UPGRADE {gold} → {n} min · OVR +{ovr}', { gold: G().coin(nx.cost), n: nx.minutes, ovr: nx.ovrBonus })}</div>` : `<div class="sd-act on">${_t('MAX LEVEL')}</div>`;
       return `${this.header(_t('TEAM'), this.tabs())}
@@ -274,7 +278,7 @@ window.SFC = window.SFC || {};
     /* ================= PHÍM ================= */
     input(menu, input) {
       if (menu.page === 'report') return this.inputReport(menu, input);
-      if (input.wasPressed('switch') || input.wasPressed('sprint')) { this.tab = 1 - this.tab; menu.msg = ''; SFC.Audio.menu(); return menu.render(); }
+      if (CFG().scout !== false && (input.wasPressed('switch') || input.wasPressed('sprint'))) { this.tab = 1 - this.tab; menu.msg = ''; SFC.Audio.menu(); return menu.render(); }
       if (this.tab === 0) return this.inputRoster(menu, input);
       return this.inputScout(menu, input);
     },

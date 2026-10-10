@@ -227,7 +227,7 @@ window.SFC = window.SFC || {};
         const mp = this.app.game && this.app.game.opts.mainPath;
         // thẻ drill bấm LATER: mở lại ở INVENTORY (không có nút ở đây)
         // bản DEMO hết Area đá được: restart -> màn WISHLIST (app.startMainPath)
-        return mp ? [['restart', SFC.MainPath.demoOver() ? _t('CONTINUE') : _t('NEXT MATCH')], ['menu', _t('MAIN PATH')]] : [['restart', _t('PLAY AGAIN')], ['menu', _t('MAIN MENU')]];
+        return mp ? [['restart', SFC.MainPath.demoOver() ? _t('CONTINUE') : _t('NEXT MATCH')], ['menu', _t('LOBBY')]] : [['restart', _t('PLAY AGAIN')], ['menu', _t('MAIN MENU')]];
       }
       return SFC.Online.isOwner ? [['lobby', _t('BACK TO LOBBY')], ['leave', _t('LEAVE ROOM')]] : [['leave', _t('LEAVE ROOM')]];
     },
@@ -348,30 +348,22 @@ window.SFC = window.SFC || {};
       </div>`;
     },
 
-    // Main Path sau trận: hạng hiện tại + dãy sao (sao vừa được / vừa mất nhấp nháy) + thông báo lên / tụt hạng
+    // Main Path sau trận: Elo +/- (đếm lên ở playReward), thanh tiến độ tới Area kế + thông báo lên / rớt Area
     pathResult(p) {
-      const MP = SFC.MainPath, a = p.after, A = MP.area(a.area);
-      const need = MP.need(a.area, a.div);
-      const gained = p.delta > 0 && (p.event == null || p.event === 'ready') ? p.delta : 0;
-      const lost = p.delta < 0 && p.event !== 'down' ? -p.delta : 0;
-      let pips = '';
-      for (let i = 0; i < need + lost; i++) {
-        const cls = i < a.stars ? (i >= a.stars - gained ? 'on new' : 'on') : i < a.stars + lost ? 'lost' : '';
-        pips += `<i class="${cls}">★</i>`;
-      }
-      const name = MP.divName(a.area, a.div);
-      const msg = {
-        up: _t('PROMOTED TO {div}', { div: name }),
-        down: _t('DEMOTED TO {div}', { div: name }),
-        ready: MP.isFinal() ? _t('CHAMPIONSHIP FINAL NEXT!') : _t('PROMOTION MATCH NEXT!'),
-        area: MP.demoLocked(a.area) ? (SFC_CONFIG.demo.steamUrl ? _t('DEMO COMPLETE · WISHLIST ON STEAM!') : _t('DEMO COMPLETE · COMING SOON TO STEAM!')) : _t('NEW AREA UNLOCKED: {area}', { area: A.name }),
-        title: _t('CHAMPION OF THE STREET ×{n}', { n: MP.state.titles }),
-        promoFail: _t('PROMOTION FAILED · win again to retry'),
-      }[p.event] || (p.delta > 0 ? `+${p.delta} ★` : p.delta < 0 ? `${p.delta} ★` : _t('No stars changed'));
-      const big = p.event === 'area' || p.event === 'title';
-      return `<div class="rw-path ${big ? 'big' : ''} ${p.event === 'down' || p.event === 'promoFail' || p.delta < 0 ? 'bad' : ''}" style="--ac:${A.color}">
-        <div class="rp-div">${PX().area(A.id, 'sm')} ${esc(name)}</div>
-        <div class="rp-stars">${pips}</div>
+      const MP = SFC.MainPath, a = p.after, A = MP.area(a.area), next = MP.area(a.area + 1);
+      const pct = (elo) => Math.round(Math.max(0, Math.min(1, MP.frac(elo, a.area))) * 100);
+      const msg = p.event === 'up'
+        ? (MP.demoLocked(a.area) ? (SFC_CONFIG.demo.steamUrl ? _t('DEMO COMPLETE · WISHLIST ON STEAM!') : _t('DEMO COMPLETE · COMING SOON TO STEAM!'))
+          : p.first ? _t('NEW AREA UNLOCKED: {area}', { area: A.name }) : _t('BACK TO {area}', { area: A.name }))
+        : p.event === 'down' ? _t('DROPPED TO {area}', { area: A.name })
+        : next ? _t('{n} ELO to {area}', { n: next.elo - a.elo, area: MP.demoLocked(a.area + 1) || a.area + 1 > MP.state.best ? '???' : next.name }) : _t('TOP AREA');
+      const sign = p.delta > 0 ? '+' : '';
+      // thanh: vị trí cũ (mờ) -> vị trí mới; đổi Area thì chỉ vẽ vị trí mới
+      const from = p.before.area === a.area ? pct(p.before.elo) : pct(a.elo);
+      return `<div class="rw-path ${p.event === 'up' && p.first ? 'big' : ''} ${p.delta < 0 ? 'bad' : ''}" style="--ac:${A.color}">
+        <div class="rp-div">${PX().area(A.id, 'sm')} ${esc(A.name)}</div>
+        <div class="rp-row"><b class="rp-elo" data-elo-from="${p.before.elo}" data-elo-to="${a.elo}">${p.before.elo}</b><span class="rp-delta">${sign}${p.delta} ${esc(_t('ELO'))}</span></div>
+        <div class="rp-bar"><i class="was" style="width:${from}%"></i><i class="now" style="width:${pct(a.elo)}%"></i></div>
         <div class="rp-msg">${esc(msg)}</div>
       </div>`;
     },
@@ -399,6 +391,8 @@ window.SFC = window.SFC || {};
         const gold = $$('rw-gold'), xp = $$('rw-xp'), bar = $$('rw-bar'), lv = $$('rw-lv'), up = $$('rw-up');
         if (!gold) return; // đã rời màn kết quả
         gold.textContent = '+' + Math.round((r.gold + (k >= 1 ? r.levelGold : 0)) * e);
+        const elo = document.querySelector('[data-elo-to]');
+        if (elo) elo.textContent = Math.round(+elo.dataset.eloFrom + (+elo.dataset.eloTo - +elo.dataset.eloFrom) * e);
         xp.textContent = '+' + Math.round(r.xp * e) + ' XP';
         const cur = from + (to - from) * e;
         const level = Math.min(Math.floor(cur), r.after.level);
@@ -448,7 +442,7 @@ window.SFC = window.SFC || {};
       if (act === 'restart') this.app.restart();
       if (act === 'forfeit') this.app.forfeit();
       // trận Main Path xong -> về trang Main Path
-      if (act === 'menu') this.app.toMenu(this.app.game && this.app.game.opts.mainPath ? 'path' : 'home');
+      if (act === 'menu') this.app.toMenu(this.app.game && this.app.game.opts.mainPath ? 'party' : 'home');
       if (act === 'leave') SFC.Online.leave();
       if (act === 'lobby') SFC.Online.backToLobby();
       if (act === 'reroll') this.app.rerollCore();
@@ -476,11 +470,10 @@ window.SFC = window.SFC || {};
       const pend = game.draftPending(), next = game.draftNextIn();
       const coreLine = pend > 0 ? `<div class="hud-core on">${esc(_t('✦ CORE +{n} · waiting for a goal', { n: pend }))}</div>`
         : next != null ? `<div class="hud-core">${esc(_t('✦ Next Core in {time}', { time: SFC.U.fmtTime(next) }))}</div>` : '';
-      // Main Path: hạng đang đá (trận thăng hạng / chung kết nổi bật)
+      // Main Path: Area + Elo lúc vào trận
       const mp = game.opts && game.opts.mainPath;
       const pathLine = game.opts && game.opts.tutorial ? `<div class="hud-path dream">${esc(_t('PROLOGUE · THE DREAM'))}</div>`
-        : !mp ? '' : mp.promo ? `<div class="hud-path promo">${PX().ui('crown', 'sm')} ${esc(mp.final ? _t('CHAMPIONSHIP FINAL') : _t('PROMOTION MATCH'))}</div>`
-        : `<div class="hud-path">${esc(SFC.MainPath.divName(mp.area, mp.div))}</div>`;
+        : !mp ? '' : `<div class="hud-path">${esc(SFC.MainPath.area(mp.area).name)} · ${mp.elo} ${esc(_t('ELO'))}</div>`;
       const key = [t0.score, t1.score, dream ? 'dream' : time, phase, cores, coreLine, pathLine].join('#');
       if (c.key !== key) {
         c.key = key;
@@ -725,6 +718,7 @@ window.SFC = window.SFC || {};
         if (e.type === 'end') {
           // thưởng XP / gold: tính 1 lần cho người chơi tại máy này (chơi đơn + online)
           if (!game.reward && game.humanTeam >= 0 && SFC.Profile.data) game.reward = SFC.Profile.awardMatch(game);
+          if (game.opts.mainPath && game.opts.mainPath.party) SFC.Social.afterMatch();   // người bạn trong phòng nhắn "gg! again?"
           this.endSel = 0;
           setTimeout(() => { if (this.app.game === game) { this.renderEnd(game); this.show('end'); } }, 900);
         }

@@ -36,6 +36,7 @@ const FILES = [
   ['config/music.config.js', 'game itch server'],
   ['config/ftue.config.js', 'game itch server'],
   ['config/demo.config.js', 'game server'],
+  ['config/social.config.js', 'game'],
 
   { comment: 'Engine', gap: true },
   ['src/engine/utils.js', 'game sandbox itch server'],
@@ -54,6 +55,7 @@ const FILES = [
   ['src/meta/teammates.js', 'game sandbox itch server'],
   ['src/meta/profile.js', 'game sandbox itch server'],
   ['src/meta/mainpath.js', 'game sandbox itch server'],
+  ['src/meta/social.js', 'game'],                          // bạn bè giả + phòng chờ (placeholder), chỉ menu
   ['src/entities/ball.js', 'game sandbox itch server'],
   ['src/entities/player.js', 'game sandbox itch server'],
   ['src/systems/actions.js', 'game sandbox itch server'],

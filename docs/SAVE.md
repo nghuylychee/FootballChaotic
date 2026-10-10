@@ -13,6 +13,7 @@ Không chuyển save cũ từ `localStorage` sang file: bản desktop chỉ đ�
 | Key | Nội dung | Xoá khi RESET DATA |
 |---|---|---|
 | `sfc_profile_v1` | hồ sơ: level, gold, túi đồ, Main Path, đồng đội, chỉ số | ✅ |
+| `sfc_social_v1` | bạn bè giả (placeholder) + lịch sử chat | ✅ |
 | `sfc_settings` | âm lượng, cỡ cửa sổ | — |
 | `sfc_fx` | Giảm nháy | — |
 

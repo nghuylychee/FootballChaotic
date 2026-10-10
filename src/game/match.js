@@ -18,14 +18,15 @@ window.SFC = window.SFC || {};
      *         avatars: [{name, look, role?, stats?, ovr?} | null, ...] — character của người chơi, thay cầu thủ ở vị trí role
      *                  (DEF / FWD, mặc định FWD) của đội đó; stats = chỉ số riêng (Main Path / Luyện tập, không có thì dùng chỉ số đội),
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
-     *         mates: [{ name, ovr, stats, deck, look, role } | null, ...] — đồng đội của người chơi (thay cầu thủ AI không phải character),
+     *         mates: [{ name, ovr, stats, deck, look, role, elo?, fake? } | [..] | null, ...] — đồng đội của người chơi (thay cầu thủ AI không phải character);
+     *                mảng = nhiều người (Main Path: 2 đối thủ giả); fake = người chơi giả do bot điều khiển (hiện như người chơi, kèm Elo),
      *         coreFresh: [[id...] | null, ...] — Core vừa mở khoá: ưu tiên hiện ở lượt chọn (nhãn NEW), mỗi lượt tối đa 1 lá,
      *         signature: [id | null, ...] — Core đặc trưng đội AI chắc chắn cầm (boss trận thăng hạng Main Path),
      *         noScale / coreRating: [r0, r1] — tắt scale Core theo chỉ số / ép rating scale Core từng đội (giả lập cân bằng),
      *         training: true = luyện tập (không giờ trận, không chọn Core, không kết thúc / không thưởng),
      *         teamSize: [n đội 0, n đội 1] — số cầu thủ mỗi đội (mặc định đủ đội hình; 0 = đội trống),
-     *         aiProfile / mateDifficulty: độ khó AI đối thủ (object) / đồng đội (key) — Main Path,
-     *         arena: id giao diện sân (arenas.config.js), mainPath: { area, div, promo, final, reward } — trận Main Path,
+     *         aiProfile / mateDifficulty / mateProfile: độ khó AI đối thủ (object) / đồng đội (key / object) — Main Path,
+     *         arena: id giao diện sân (arenas.config.js), mainPath: { area, elo, reward, myElo, oppElo } — trận Main Path,
      *         noDraft / noAI: tắt chọn Core / AI (ảnh xem trước Core),
      *         tutorial: trận mơ PROLOGUE (src/game/tutorial.js): không đồng hồ tới khi g.clockOn, lượt chọn Core do kịch bản mở,
      *         noAiCores: cầu thủ AI không tự bốc Core ở lượt chọn }
@@ -47,9 +48,9 @@ window.SFC = window.SFC || {};
       // aiProfile: độ khó AI đối thủ tự do (Main Path) thay cho mức EASY / NORMAL / HARD
       this.difficulty = opts.aiProfile ? Object.assign({ label: 'PATH' }, opts.aiProfile) : C.ai.difficulty[diffKey];
       // đồng đội AI của người chơi: theo ai.teammate nhưng không bao giờ giỏi hơn độ khó đã chọn
-      // (mateDifficulty: chỉ định thẳng mức độ khó của đồng đội — Main Path)
+      // (mateDifficulty / mateProfile: chỉ định thẳng mức độ khó của đồng đội — Main Path: đồng đội giả cùng trình với đối thủ)
       const order = C.ai.difficultyOrder, mi = order.indexOf(C.ai.teammate);
-      this.teammateProfile = C.ai.difficulty[opts.mateDifficulty]
+      this.teammateProfile = (opts.mateProfile && Object.assign({ label: 'PATH' }, opts.mateProfile)) || C.ai.difficulty[opts.mateDifficulty]
         || C.ai.difficulty[mi >= 0 && mi < order.indexOf(diffKey) ? C.ai.teammate : diffKey];
 
       this.teams = [opts.home, opts.away].map((id, i) => ({
@@ -91,17 +92,21 @@ window.SFC = window.SFC || {};
       });
       // đồng đội của người chơi (Main Path / Luyện tập, src/meta/teammates.js): thay 1 cầu thủ AI không phải character —
       // tên, ngoại hình, chỉ số riêng, deck Core (mỗi lượt chọn Core tự bốc 1 lá trong deck)
-      (opts.mates || []).forEach((m, t) => {
-        if (!m || !this.teams[t]) return;
-        const list = this.teams[t].players.filter((q) => !q.avatar);
-        const p = list.find((q) => q.role === m.role) || list[0];
-        if (!p) return;
-        p.name = m.name;
-        if (m.look) p.look = Object.assign({}, m.look);
-        if (m.stats) p.stats = Object.assign({}, p.stats, m.stats);
-        p.ovr = m.ovr;
-        p.deck = m.deck && m.deck.length ? m.deck.slice() : null;
-        p.mate = true;
+      (opts.mates || []).forEach((ms, t) => {
+        if (!ms || !this.teams[t]) return;
+        for (const m of [].concat(ms)) {
+          if (!m) continue;
+          const list = this.teams[t].players.filter((q) => !q.avatar && !q.mate);
+          const p = list.find((q) => q.role === m.role) || list[0];
+          if (!p) continue;
+          p.name = m.name;
+          if (m.look) p.look = Object.assign({}, m.look);
+          if (m.stats) p.stats = Object.assign({}, p.stats, m.stats);
+          p.ovr = m.ovr;
+          p.deck = m.deck && m.deck.length ? m.deck.slice() : null;
+          p.mate = true;
+          if (m.fake) { p.fake = true; p.elo = m.elo; }
+        }
       });
       // trạng thái điều khiển theo từng đội người chơi
       this.ctrl = [null, null];

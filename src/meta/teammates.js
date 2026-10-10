@@ -187,12 +187,12 @@ window.SFC = window.SFC || {};
     // scout: miễn phí, 1 lần 1 chuyến; ứng viên sinh lúc bắt đầu (theo Area xa nhất + cấp trạm) và lộ ra khi hết giờ
     scouting() { return this.T.scout; },
     scoutLeft() { const s = this.T.scout; return s ? Math.max(0, s.end - Date.now()) : 0; },
-    scoutReady() { return !!this.T.scout && this.scoutLeft() <= 0; },
+    scoutReady() { return C().scout !== false && !!this.T.scout && this.scoutLeft() <= 0; },
     // tên vùng đang scout theo ngôn ngữ đang chọn (config regions được dịch tại chỗ, src/i18n/fields.js); save cũ chỉ có chữ
     regionName(sc = this.T.scout) { return sc ? C().regions[sc.ri] || sc.region : ''; },
     startScout() {
       if (this.T.scout) return false;
-      const MP = SFC.MainPath, area = Math.floor(MP.state.best / MP.nDiv());
+      const area = SFC.MainPath.state.best;
       const offers = [];
       for (let i = 0; i < C().offers; i++) offers.push(this.generate(area, this.T.station));
       const now = Date.now();

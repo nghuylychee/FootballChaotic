@@ -8,6 +8,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.teammates = {
+  scout: false,             // false = tạm ẩn SCOUT (trang TEAM chỉ còn đội hình, không báo "report ready"); logic scout vẫn còn
   rosterMax: 5,             // số đồng đội tối đa trong đội hình (đầy: phải bán bớt mới tuyển được)
   sellRefund: 0.4,          // bán đồng đội: nhận lại bấy nhiêu phần phí chuyển nhượng
   offers: 3,                // số ứng viên mỗi lần scout

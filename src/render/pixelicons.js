@@ -31,6 +31,8 @@ window.SFC = window.SFC || {};
     'ui-dash': ['............', '............', '......llll..', '.wwwwl....l.', '.........l..', '..wwwwwwll..', '............', '.wwwwwwwll..', '.........l..', '..wwwl....l.', '......llll..', '............'],
     'ui-card': ['..vvvvvvvv..', '..vwwwwwwv..', '..vwbbbbwv..', '..vwbyybwv..', '..vwbyybwv..', '..vwbbbbwv..', '..vwwwwwwv..', '..vwkkkkwv..', '..vwwwwwwv..', '..vwkkkwwv..', '..vwwwwwwv..', '..vvvvvvvv..'],
     // cọc tập xanh lá: hình của thẻ DRILL (túi đồ, màn mở thẻ drill)
+    // bánh răng: nút SETTINGS ở góc phải trang chủ
+    'ui-gear': ['.....ll.....', '..l.llll.l..', '.llllllllll.', '..lllEElll..', '.lllE..Elll.', 'llllE..Ellll', 'eeeeE..Eeeee', '.eeeE..Eeee.', '..eeeEEeee..', '.eeeeeeeeee.', '..e.eeee.e..', '.....ee.....'],
     'ui-cone': ['.....gg.....', '.....gG.....', '....wwww....', '....ggGg....', '....ggGg....', '...wwwwww...', '...gggGgg...', '..ggggGggg..', '..wwwwwwww..', '..gggggGgg..', 'GGGGGGGGGGGG', '.GGGGGGGGGG.'],
 
     /* lọc slot costume (túi đồ -> APPEARANCE) */

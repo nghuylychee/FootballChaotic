@@ -399,7 +399,7 @@ window.SFC = window.SFC || {};
     // Area cao nhất người chơi tại máy này đã tới (chọn đội bot / sân khi là chủ phòng; Area chưa mở không lộ ra)
     bestArea() {
       const MP = SFC.MainPath;
-      return Math.min(MP.areas().length - 1, Math.floor(MP.state.best / MP.nDiv()));
+      return Math.min(MP.areas().length - 1, MP.state.best);
     },
 
     // máy này xem xong màn giới thiệu (main.js beginMatch)

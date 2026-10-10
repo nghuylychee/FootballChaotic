@@ -15,30 +15,40 @@
     train: { mine: 1, opp: 0 },                  // luyện tập: số người đội bạn (1 / 2) · đội đối thủ (0 / 2)
     lastOpts: null,
 
+    // trận demo chạy nền ở menu: sân + 2 đội bot của Area người chơi đang đứng trên Main Path (đổi Area -> toMenu dựng lại)
     newDemo() {
-      const order = SFC_CONFIG.teams.order;
+      const MP = SFC.MainPath, A = SFC.Profile.data && MP.area(MP.state.area);
+      const order = A && A.teams.length > 1 ? A.teams : SFC_CONFIG.teams.order;
       const a = SFC.U.pick(order);
       const b = SFC.U.pick(order.filter((t) => t !== a));
-      this.demo = new SFC.Game({ home: a, away: b, difficulty: 'normal', humanTeam: -1, silent: true });
+      this.demoArea = A ? MP.state.area : -1;
+      this.demo = new SFC.Game({ home: a, away: b, difficulty: 'normal', humanTeam: -1, silent: true, arena: A && SFC_CONFIG.arenas[A.arena] ? A.arena : undefined });
     },
 
-    // Main Path: trận kế tiếp theo tiến trình (đối thủ / độ khó / sân do Area + hạng quyết định).
-    // Người chơi đá cho đội riêng (mainPath.playerTeam), character đá đúng vị trí đã chọn, đồng đội AI đá vị trí còn lại
+    // Main Path: vào màn tìm trận (matchmaking giả, src/ui/menu.js -> search). Tìm xong -> startRanked
     startMainPath() {
       // bản DEMO: đã tới Area bị khoá -> màn WISHLIST thay vì vào trận (cả nút NEXT MATCH ở màn kết quả)
       if (SFC.MainPath.demoOver()) return this.toMenu('wishlist');
-      const MP = SFC_CONFIG.mainPath, m = SFC.MainPath.nextMatch();
-      const soloIdx = this.sel.ctrl ? this.sel.ctrl - 1 : C.roles.indexOf('FWD');
+      if (this.screen !== 'menu') this.toMenu('party');
+      SFC.Menu.startSearch();
+    },
+    // vị trí character đang chọn (POSITION)
+    myRole() { return C.roles[this.sel.ctrl ? this.sel.ctrl - 1 : C.roles.indexOf('FWD')]; },
+
+    // trận Main Path 2v2: character của bạn + đồng đội giả vs 2 đối thủ giả (bot đóng vai người chơi, lb = MainPath.matchmake)
+    startRanked(lb) {
+      const MP = SFC_CONFIG.mainPath, st = SFC.MainPath.state;
+      const soloIdx = C.roles.indexOf(this.myRole());
       const avatar = Object.assign(SFC.Profile.avatar(), { role: C.roles[soloIdx] }, this.avatarStats());
       SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
       this.startMatch({
-        home: MP.playerTeam.id, away: m.away, difficulty: 'normal', aiProfile: m.aiProfile, mateDifficulty: MP.teammate,
-        humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: m.arena,
-        // Core mở khoá (bộ có sẵn + Main Path) · Core vừa mở ưu tiên hiện ở lượt chọn · boss trận thăng hạng cầm Core đặc trưng
-        coreUnlocks: [SFC.Profile.unlockedCores(), null], coreFresh: [SFC.MainPath.state.fresh.slice(), null],
-        mates: [this.mateSpec(soloIdx), null],   // đồng đội đang chọn (NHÂN VẬT > TEAM) đá vị trí còn lại
-        signature: m.promo ? [null, m.signature] : null,
-        mainPath: { area: m.area, div: m.div, promo: m.promo, final: m.final, reward: m.reward },
+        home: MP.playerTeam.id, away: SFC.MainPath.rivalClub(lb.opps[0].name), difficulty: 'normal',
+        aiProfile: lb.aiProfile, mateProfile: lb.aiProfile,
+        humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: lb.arena,
+        // Core mở khoá (Core thường + Tuyệt kỹ đã mở) · Core vừa mở ưu tiên hiện ở lượt chọn
+        coreUnlocks: [SFC.Profile.unlockedCores(), null], coreFresh: [st.fresh.slice(), null],
+        mates: [lb.mate, lb.opps],
+        mainPath: { area: st.area, elo: st.elo, reward: lb.reward, myElo: lb.myElo, oppElo: lb.oppElo, party: lb.party },
       });
     },
 
@@ -51,9 +61,9 @@
         const st = SFC.Profile.data.stats;
         st.matches++; st.losses++;
         SFC.Profile.save();
-        msg = r.delta ? SFC.t('Forfeit counts as a loss ({n} ★).', { n: r.delta }) : SFC.t('Forfeit counts as a loss.');
+        msg = r.delta ? SFC.t('Forfeit counts as a loss ({n} ELO).', { n: r.delta }) : SFC.t('Forfeit counts as a loss.');
       }
-      this.toMenu('path');
+      this.toMenu('party');
       if (msg) SFC.Menu.setMsg(msg, true);
     },
 
@@ -119,8 +129,7 @@
           ? _t('{team} · no opponent', { team: L[opts.home].name })
           : _t('{home} vs {away}', { home: L[opts.home].name, away: L[opts.away].name });
         if (opts.tutorial) SFC.UI.banner(_t('THE DREAM'), _t('PROLOGUE'), '#b9a8ff', 2);
-        else if (mp && mp.promo) SFC.UI.banner(mp.final ? _t('CHAMPIONSHIP FINAL') : _t('PROMOTION MATCH'), vsAway, '#ffd23f', 2.2);
-        else if (mp) SFC.UI.banner(_t('KICK OFF'), `${SFC.MainPath.divName(mp.area, mp.div)} · ${vsAway}`, '#ffe14f', 1.6);
+        else if (mp) SFC.UI.banner(_t('KICK OFF'), `${SFC.MainPath.area(mp.area).name} · ${vsAway}`, '#ffe14f', 1.6);
         else SFC.UI.banner(opts.training ? _t('TRAINING') : _t('KICK OFF'), vs, '#ffe14f', 1.4);
         SFC.Audio.upgrade();
       };
@@ -180,6 +189,7 @@
       if (page !== 'lobby') this.mode = 'single';
       SFC.UI.clearToasts();
       SFC.UI.show('menu');
+      if (SFC.Profile.data && this.demoArea !== SFC.MainPath.state.area) this.newDemo();   // đổi Area -> đổi sân nền menu
       SFC.Menu.go(page);
     },
   };

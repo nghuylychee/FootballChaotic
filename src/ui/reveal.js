@@ -1,8 +1,8 @@
-/* Reveal — màn mở thẻ kiểu TCG cho phần thưởng Main Path (src/meta/mainpath.js -> claim):
- *   Core mới (sao) · Core đặc trưng của boss (thắng trận thăng hạng) · hộp costume (lên hạng)
+/* Reveal — màn mở thẻ kiểu TCG cho phần thưởng Main Path (src/meta/mainpath.js -> record):
+ *   Tuyệt kỹ mở lần đầu tới 1 Area (src: area — dải màu Area + dấu NEW AREA) · Core / hộp costume (src: star / boss, bản cũ, vẫn vẽ được)
  *   · Tuyệt kỹ bí kíp gia truyền (src: heirloom — cut scene PROLOGUE, src/ui/story.js; dải DEFEATED thành FAMILY SECRET).
  * Nhịp mỗi phần thưởng (thuộc tính data-phase trên .rv3, hoạt ảnh ở CSS):
- *   boss  : dải màu áo đội boss quét ngang + dấu DEFEATED (chỉ Core của boss)
+ *   boss  : dải màu quét ngang + dấu (Core của boss: DEFEATED · Tuyệt kỹ Area: NEW AREA · bí kíp: FAMILY SECRET)
  *   drop  : mặt sau lá rơi xuống, ánh màu độ hiếm lộ trước sau lá
  *   idle  : chờ Enter / click
  *   charge: lá rung, sáng dần, tiếng tích tắc nhanh dần
@@ -30,7 +30,7 @@ window.SFC = window.SFC || {};
   const Reveal = {
     active: false,
 
-    // items: [{ kind: core | box, id, src: star | boss, area, div, boss }]; mục khác (gold) bị bỏ qua
+    // items: [{ kind: core | box, id, src: area | heirloom | star | boss, area, div, boss }]; mục khác (gold) bị bỏ qua
     open(items, onClose) {
       const list = (items || []).filter((x) => (x.kind === 'core' && CORES().list[x.id]) || (x.kind === 'box' && PROG().boxes[x.id]));
       if (!list.length) { if (onClose) onClose(); return false; }
@@ -54,7 +54,7 @@ window.SFC = window.SFC || {};
       SFC.CorePreview.scan(this.el);
       this.tickT = 0;
       this.stamped = false;
-      this.set(it.src === 'boss' || it.src === 'heirloom' ? 'boss' : 'drop');
+      this.set(it.src === 'boss' || it.src === 'heirloom' || it.src === 'area' ? 'boss' : 'drop');
       SFC.Audio.whoosh();
     },
 
@@ -95,7 +95,7 @@ window.SFC = window.SFC || {};
       this.set('flip');
       this.burst(g.color);
       SFC.Audio.reveal(Math.max(0, g.rank));
-      if (g.rank >= BIG || it.src === 'boss' || it.src === 'heirloom') SFC.Audio.upgrade();
+      if (g.rank >= BIG || it.src === 'boss' || it.src === 'heirloom' || it.src === 'area') SFC.Audio.upgrade();
     },
 
     close() {
@@ -112,15 +112,15 @@ window.SFC = window.SFC || {};
     // màu + bậc ánh sáng của lá: Core theo độ hiếm; boss luôn vàng; hộp theo màu hộp
     glow(it) {
       if (it.kind === 'box') { const b = PROG().boxes[it.id]; return { color: b.color, rank: 1 }; }
-      const r = CORES().list[it.id].rarity, gold = it.src === 'boss' || it.src === 'heirloom';
+      const r = CORES().list[it.id].rarity, gold = it.src === 'boss' || it.src === 'heirloom' || it.src === 'area';
       return { color: gold ? '#ffd23f' : RAR(r).color, rank: gold ? Math.max(BIG, rank(r)) : rank(r) };
     },
 
     html(it) {
       const fam = it.src === 'heirloom', H = SFC_CONFIG.ftue.heirloom;
-      const A = fam ? MP().area(0) : MP().area(it.area), g = this.glow(it), boss = it.src === 'boss';
+      const A = fam ? MP().area(0) : MP().area(it.area), g = this.glow(it), boss = it.src === 'boss', area = it.src === 'area';
       const _t = SFC.t;
-      const title = esc(it.kind === 'box' ? _t('DIVISION REWARD') : fam ? _t('FAMILY SECRET ULTIMATE') : boss ? _t('BOSS SIGNATURE CORE') : _t('NEW CORE UNLOCKED'));
+      const title = esc(it.kind === 'box' ? _t('DIVISION REWARD') : fam ? _t('FAMILY SECRET ULTIMATE') : boss ? _t('BOSS SIGNATURE CORE') : area ? _t('NEW AREA ULTIMATE') : _t('NEW CORE UNLOCKED'));
       const emblem = boss ? PX().ui('crown', 'x3') : fam ? PX().ui('star', 'x3') : it.kind === 'box' ? PX().ui('gift', 'x3') : PX().area(A.id, 'x3');
       const back = `<div class="rv3-back"><div class="rv3-frame"><i><span>${emblem}</span></i><b>STREET<br>CHAOS</b><span>${esc(it.kind === 'box' ? _t('COSTUME BOX') : _t('CORE'))}</span></div></div>`;
       const front = it.kind === 'core' ? SFC.Gacha.coreCard(it.id, '', 150, 64) : this.boxFace(it);
@@ -131,12 +131,14 @@ window.SFC = window.SFC || {};
           <span>${esc(t.name)}</span><b>${esc(_t('DEFEATED'))}</b></div>`;
       } else if (fam) {
         band = `<div class="rv3-band" style="--k1:#8a5a30;--k2:#4a2812;--k3:#ffd23f"><span>${esc(H.band)}</span><b class="fam">${esc(H.stamp)}</b></div>`;
+      } else if (area) {
+        band = `<div class="rv3-band" style="--k1:${A.color};--k2:#14101c;--k3:#ffd23f"><span>${PX().area(A.id)} ${esc(A.name)}</span><b class="fam">${esc(_t('NEW AREA'))}</b></div>`;
       }
       const n = this.items.length, last = this.i === n - 1;
       const count = n > 1 ? `<span class="rv3-count">${this.i + 1} / ${n}</span>` : '<span></span>';
       const ok = K('confirm', 'Enter');
       const kicker = fam ? `${PX().ui('star')} ${esc(_t('PASSED DOWN BY {who}', { who: H.giver.toUpperCase() }))}` : `${esc(_t('AREA {n}', { n: it.area + 1 }))} · ${PX().area(A.id)} ${esc(A.name)}`;
-      return `<div class="rv3 k-${it.kind} ${boss || fam ? 'boss' : ''} ${g.rank >= BIG ? 'big' : ''}" style="--rc:${g.color};--ac:${fam ? '#ffd23f' : A.color}">
+      return `<div class="rv3 k-${it.kind} ${boss || fam || area ? 'boss' : ''} ${g.rank >= BIG ? 'big' : ''}" style="--rc:${g.color};--ac:${fam ? '#ffd23f' : A.color}">
         <div class="rv3-bg"></div>
         <div class="rv3-head"><div class="rv3-kicker">${kicker}</div><div class="rv3-title">${title}</div></div>
         ${band}
@@ -172,7 +174,7 @@ window.SFC = window.SFC || {};
         const b = PROG().boxes[it.id];
         return `<div class="rv3-s-rar" style="color:${b.color}">${PX().ui('gift', 'sm')} ${esc(_t('DIVISION REWARD'))}</div>
           <div class="rv3-s-name">${esc(b.name)}</div>
-          <div class="rv3-s-line">${esc(_t('Reached {div}', { div: MP().divName(it.area, it.div) }))}</div>
+          <div class="rv3-s-line">${esc(_t('Reached {div}', { div: MP().area(it.area).name }))}</div>
           <div class="rv3-s-note">${esc(b.desc)}</div>
           <div class="rv3-s-go">${esc(_t('Open it for free in the SHOP'))}</div>`;
       }
@@ -184,6 +186,7 @@ window.SFC = window.SFC || {};
       const src = it.src === 'boss'
         ? `<div class="rv3-s-line">${PX().ui('crown', 'sm')} ${_t('Taken from {team}', { team: `<b>${esc(MP().team(it.boss).name)}</b>` })}</div>`
         : fam ? `<div class="rv3-s-line">${PX().ui('star', 'sm')} ${_t('Passed down by {who}', { who: `<b>${esc(SFC_CONFIG.ftue.heirloom.giver)}</b>` })}</div>`
+        : it.src === 'area' ? `<div class="rv3-s-line">${PX().area(MP().area(it.area).id, 'sm')} ${_t('Reached {area}', { area: `<b>${esc(MP().area(it.area).name)}</b>` })}</div>`
         : `<div class="rv3-s-line">★ ${esc(_t('New star in {area}', { area: MP().area(it.area).name }))}</div>`;
       const key = `<kbd>${K('ultimate', 'X')}</kbd>`;
       const ult = c.role === 'ult'

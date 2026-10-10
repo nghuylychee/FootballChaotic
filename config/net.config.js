@@ -38,8 +38,8 @@ SFC_CONFIG.net = {
   maxPlayers: 4,               // tối đa người trong phòng (<= 2 x số vị trí)
   minPlayers: 2,               // số người tối thiểu để chủ phòng bấm START
   // Đội bot (co-op): 1 đội thường ngẫu nhiên của 1 Area chủ phòng đã tới (mainPath.config.js -> areas[].teams),
-  // độ khó AI = độ khó hạng ngẫu nhiên trong Area đó (divs: khoảng hạng, 0 = thấp nhất), sân = sân của Area đó
-  bots: { divs: [0, 2] },
+  // độ khó AI = độ khó ở 1 mức Elo ngẫu nhiên trong Area đó (span: phần khoảng Elo, 0 = đầu Area, 1 = cuối Area), sân = sân của Area đó
+  bots: { span: [0, 1] },
 
   snapshotEvery: 1,            // host gửi trạng thái mỗi N bước mô phỏng (60/N lần/giây; ~0.6KB/gói)
   interpDelay: 0.06,           // giây trễ nội suy ở máy khách (mượt hơn nhưng trễ hơn khi tăng)

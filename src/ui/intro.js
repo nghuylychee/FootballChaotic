@@ -80,16 +80,17 @@ window.SFC = window.SFC || {};
       const I = CFG(), mp = g.opts.mainPath, MP = SFC.MainPath, _t = SFC.t;
       let comp = _t('FRIENDLY'), title = _t('MATCHDAY'), venue = _t('STREET COURT'), venueIcon = '';
       if (mp) {
-        const A = MP.area(mp.area);
-        comp = `${_t('MAIN PATH')} · ${MP.divName(mp.area, mp.div)}`;
-        title = mp.promo ? (mp.final ? _t('CHAMPIONSHIP FINAL') : _t('PROMOTION MATCH')) : _t('MATCHDAY');
+        // trận 2v2 xếp theo Elo: sân của Area theo Elo trung bình 4 người (opts.arena)
+        const A = MP.areas().find((a) => a.arena === g.opts.arena) || MP.area(mp.area);
+        comp = `${_t('MAIN PATH')} · ${MP.area(mp.area).name} · ${mp.elo} ${_t('ELO')}`;
+        title = _t('RANKED MATCH');
         venue = A.name; venueIcon = PX().area(A.id) + ' ';
       } else if (g.opts.training) { comp = _t('TRAINING'); title = _t('PRACTICE MATCH'); }
       else if (g.opts.online) {
         // co-op: mọi người chơi cùng 1 đội, đối thủ là đội bot
         if (g.humans.length < 2) { comp = _t('ONLINE CO-OP'); title = _t('SQUAD vs BOTS'); }
         else { comp = _t('ONLINE VERSUS'); title = _t('RIVAL MATCH'); }
-        // sân online = sân của 1 Area (online.js pickArena)
+        // sân online = sân của 1 Area (room.js pickArena)
         const A = MP.areas().find((a) => a.arena === g.opts.arena);
         if (A) { venue = A.name; venueIcon = PX().area(A.id) + ' '; }
       }
@@ -100,7 +101,7 @@ window.SFC = window.SFC || {};
       for (let i = 0; i < Math.max(lists[0].length, lists[1].length); i++) {
         for (const t of [0, 1]) if (lists[t][i]) delay[lists[t][i].id] = +(I.cardsAt + k++ * I.cardGap).toFixed(2);
       }
-      const boss = !!(mp && mp.promo);
+      const boss = false;
       return `<div class="intro ${boss ? 'promo' : ''}" style="--c0:${g.teams[0].cfg.kit.shirt};--c1:${g.teams[1].cfg.kit.shirt};--dIn:${I.teamIn}s">
         <div class="in-bg l"></div><div class="in-bg r"></div>
         <div class="in-top"><span class="in-comp">${esc(comp)}</span><b class="in-title">${boss ? PX().ui('crown') + ' ' : ''}${esc(title)}</b></div>
@@ -158,7 +159,9 @@ window.SFC = window.SFC || {};
       const num = ctl ? I.youNumber : I.numbers[p.role] || 7;
       const pn = `P${(p.seat != null ? p.seat : p.team) + 1}`;
       const _t = SFC.t;
-      const tag = you ? `<em class="you">${esc(_t('YOU'))}</em>` : ctl ? `<em class="${p.team === g.humanTeam ? 'ally' : 'rival'}">${pn}</em>` : p.mate ? `<em class="mate">${esc(_t('MATE'))}</em>` : human ? `<em>${esc(_t('AI'))}</em>` : '';
+      // người chơi giả (Main Path): hiện như người chơi khác — nhãn Elo màu đồng đội / đối thủ
+      const tag = you ? `<em class="you">${esc(_t('YOU'))}</em>` : ctl ? `<em class="${p.team === g.humanTeam ? 'ally' : 'rival'}">${pn}</em>`
+        : p.fake ? `<em class="${p.team === g.humanTeam ? 'ally' : 'rival'}">${p.elo}</em>` : p.mate ? `<em class="mate">${esc(_t('MATE'))}</em>` : human ? `<em>${esc(_t('AI'))}</em>` : '';
       // character / đồng đội có chỉ số riêng: OVR cá nhân
       const povr = (ctl || p.mate) && p.ovr ? `<b class="in-povr">${p.ovr}<span>${esc(_t('OVR'))}</span></b>` : '';
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">

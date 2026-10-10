@@ -399,13 +399,13 @@ window.SFC = window.SFC || {};
       return list.length ? SFC.U.pick(list) : undefined;
     }
 
-    // đội bot co-op (net.bots): 1 đội thường ngẫu nhiên của 1 Area trong 0..area, độ khó 1 hạng ngẫu nhiên trong khoảng divs, sân của Area đó
+    // đội bot co-op (net.bots): 1 đội thường ngẫu nhiên của 1 Area trong 0..area, độ khó ở 1 mức Elo ngẫu nhiên trong khoảng span
+    // (phần khoảng Elo của Area, 0 = đầu Area, 1 = cuối Area), sân của Area đó
     static pickBot(area) {
       const MP = SFC.MainPath, a = Math.floor(Math.random() * (area + 1)), A = MP.area(a);
-      const n = MP.nDiv(), [lo, hi] = (N().bots && N().bots.divs) || [0, n - 1];
-      const d0 = clampInt(lo, 0, n - 1), d1 = clampInt(hi, d0, n - 1);
-      const div = d0 + Math.floor(Math.random() * (d1 - d0 + 1));
-      return { id: SFC.U.pick(A.teams), aiProfile: MP.aiProfile(a, div, false), arena: SFC_CONFIG.arenas[A.arena] ? A.arena : undefined };
+      const [lo, hi] = (N().bots && N().bots.span) || [0, 1];
+      const elo = Math.round(A.elo + (lo + Math.random() * (hi - lo)) * MP.span(a));
+      return { id: SFC.U.pick(A.teams), aiProfile: MP.aiProfile(elo), arena: SFC_CONFIG.arenas[A.arena] ? A.arena : undefined };
     }
   }
 

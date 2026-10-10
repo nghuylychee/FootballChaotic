@@ -42,7 +42,7 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 
 **Folders under `src/`.**
 - `engine/`: utils, input, gamepad, audio, storage, i18n.
-- `meta/`: profile, mainpath, teammates, settings (progression and save data).
+- `meta/`: profile, mainpath, teammates, settings, social (progression and save data).
 - `entities/`, `systems/`, `game/`: the simulation.
 - `render/`, `ui/`: drawing and screens.
 - `net/`: online play.
@@ -60,7 +60,7 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 - `src/render/` and `src/ui/` only read game state. The simulation has no DOM dependencies, which is what lets it run headless on the server.
 
 **Meta / persistence.**
-- `SFC.Profile` (level, gold, inventory, attributes), `SFC.MainPath` (career ladder: areas × divisions) and `SFC.Mates` (AI teammates) are all saved through `SFC.Storage`.
+- `SFC.Profile` (level, gold, inventory, attributes), `SFC.MainPath` (career ladder: Areas are Elo ranges; matchmaking is a placeholder that fills the 2v2 with bot-driven fake players), `SFC.Mates` (AI teammates) and `SFC.Social` (placeholder friend list / chat / 2-player party with bot-driven fake friends, key `sfc_social_v1`) are all saved through `SFC.Storage`.
 - `SFC.Storage` writes to `localStorage` on the web and to JSON files with `.bak` copies on desktop (via `electron/preload.js`). See `docs/SAVE.md`.
 
 **Online** (`src/net/`). The model is host-authoritative, and the same room logic runs in two places:
