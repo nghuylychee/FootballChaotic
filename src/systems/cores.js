@@ -435,11 +435,12 @@ window.SFC = window.SFC || {};
     clearCores(x) { for (const p of this.plist(x)) { this.own[p.id] = []; delete this.state['p' + p.id]; } }
 
     /* ---------- trường phái / Cộng hưởng (theo từng cầu thủ; số đội = người cao nhất đội) ---------- */
+    // Tuyệt kỹ là kỹ năng đặc trưng, không tính vào Cộng hưởng trường phái
     tagCount(x, tag) {
       let best = 0;
       for (const p of this.plist(x)) {
         let n = 0;
-        for (const id of this.coresOf(p)) if (this.tagsOf(id).includes(tag)) n++;
+        for (const id of this.coresOf(p)) if (this.def(id).role !== 'ult' && this.tagsOf(id).includes(tag)) n++;
         if (n > best) best = n;
       }
       return best;
@@ -894,12 +895,25 @@ window.SFC = window.SFC || {};
     }
     // Tuyệt kỹ chỉ xuất hiện khi người đó có >= 2 Core cùng trường phái và chưa có Tuyệt kỹ nào
     // (anyBuild — AURA FARMING: >= 2 Core cùng 1 trường phái bất kỳ)
-    eligible(p, id) {
-      const c = this.def(id);
-      if (c.role !== 'ult') return true;
-      const sig = this.signature(p);
-      if (sig && sig !== id && this.def(sig).role === 'ult') return false;   // boss: chỉ cầm Tuyệt kỹ đặc trưng
-      return !this.ultOf(p) && (c.anyBuild ? this.maxTagCount(p) : Math.max(...c.tags.map((tag) => this.tagCount(p, tag)))) >= 2;
+    // Tuyệt kỹ không còn là lá để chọn: mỗi cầu thủ mang sẵn 1 Tuyệt kỹ đặc trưng từ đầu trận (match.js)
+    eligible(p, id) { return this.def(id).role !== 'ult'; }
+
+    /* ---------- Tuyệt kỹ đặc trưng ---------- */
+    ultIds() { return Object.keys(DEF().list).filter((id) => this.def(id).role === 'ult'); }
+    validUlt(id) { return id && this.def(id) && this.def(id).role === 'ult' ? id : null; }
+    // cầu thủ AI không được giao Tuyệt kỹ: Tuyệt kỹ của trường phái đội thiên về nhất (coreWeights), hoà thì chọn cố định theo đội + vị trí
+    // (không ngẫu nhiên: máy khách online dựng lại trận "gương" phải ra cùng Tuyệt kỹ)
+    defaultUlt(p) {
+      const ids = this.ultIds();
+      if (!ids.length) return null;
+      const w = this.g.teams[p.team].cfg.coreWeights || {};
+      const score = (id) => Math.max(...this.tagsOf(id).map((tag) => w[tag] || 0));
+      const best = Math.max(...ids.map(score));
+      const pool = best > 0 ? ids.filter((id) => score(id) === best) : ids;
+      const key = String(this.g.teams[p.team].id) + p.role;
+      let h = 0;
+      for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      return pool[h % pool.length];
     }
     // số Core của trường phái đang có nhiều nhất (bỏ Hỗn loạn — không có Cộng hưởng)
     maxTagCount(p) {
@@ -948,7 +962,7 @@ window.SFC = window.SFC || {};
     }
 
     finalUltOption(p) {
-      if (this.g.upgradeIdx < SFC_CONFIG.game.match.maxUpgrades || this.ultOf(p)) return null;
+      if (this.g.upgradeIdx < SFC_CONFIG.game.match.maxUpgrades || this.ultOf(p) || !this.ultIds().some((id) => this.eligible(p, id))) return null;
       const allow = this.allowList(p);
       const ults = Object.keys(DEF().list).filter((id) => this.def(id).role === 'ult' && (!allow || allow.includes(id)) && this.eligible(p, id));
       if (!ults.length) return null;

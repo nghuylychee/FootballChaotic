@@ -10,7 +10,8 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.social = {
-  partyMax: 2,                  // số người tối đa trong phòng (bạn + 1 người bạn)
+  msgHide: 3.5,                 // giây: dòng thông báo trên nút START (vào phòng, mời, kết bạn...) tự ẩn
+  partyMax: 3,                  // số người tối đa trong phòng (bạn + 2 người bạn = cả đội 3v3)
   friends: 8,                   // số bạn bè giả sinh ra lần đầu
   eloSpread: 250,               // Elo bạn bè giả: quanh Elo của bạn ± bấy nhiêu (không dưới 0)
 
@@ -24,6 +25,13 @@ SFC_CONFIG.social = {
   // chat: chờ replyWait giây (hiện "đang gõ...") rồi trả lời · giữ tối đa chatKeep tin mỗi người · độ dài tối đa 1 tin
   replyWait: [1.2, 3.2], chatKeep: 40, chatMax: 60,
 
+  /* Kết bạn bằng username (PLACEHOLDER, chưa có server):
+   *  - gửi: username hợp lệ (như tên character: A-Z 0-9 _ -, tối đa progression.nameMaxLength) luôn "tồn tại"; chờ requestWait giây,
+   *    acceptChance nhận lời -> thành bạn bè (người chơi giả mang đúng tên đó); không nhận thì lời mời nằm ở SENT tới khi huỷ
+   *  - nhận: lần đầu sau incomingFirst giây, rồi mỗi incomingEvery giây có incomingChance 1 người chơi giả gửi lời mời (tối đa incomingMax đang chờ)
+   *  maxFriends: tối đa bạn bè (đầy thì không gửi / nhận thêm) */
+  add: { requestWait: [3, 8], acceptChance: 0.75, incomingFirst: [15, 30], incomingEvery: [60, 140], incomingChance: 0.6, incomingMax: 3, maxFriends: 40 },
+
   // câu trả lời soạn sẵn (theo ý tin nhắn của bạn: chào / rủ chơi / khen / còn lại). {name} = tên bạn
   replies: {
     hello: ['yo {name}!', 'heyy', 'sup', 'what up {name}', 'ayo'],
@@ -34,6 +42,7 @@ SFC_CONFIG.social = {
     decline: ['cant rn sorry', 'next one', 'brb 5 min', 'not now'],
     busy: ['in a match, after this', 'mid game, gimme a sec'],
     after: ['gg! again?', 'one more?', 'nice one', 'run it back'],
+    friended: ['yo thanks for the add!', 'hey! lets play sometime', 'added, gl on ranked', 'sup new friend'],
   },
   // từ khoá nhận ý tin nhắn của bạn (chữ thường)
   keywords: {

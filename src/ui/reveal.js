@@ -189,9 +189,9 @@ window.SFC = window.SFC || {};
         : it.src === 'area' ? `<div class="rv3-s-line">${PX().area(MP().area(it.area).id, 'sm')} ${_t('Reached {area}', { area: `<b>${esc(MP().area(it.area).name)}</b>` })}</div>`
         : `<div class="rv3-s-line">★ ${esc(_t('New star in {area}', { area: MP().area(it.area).name }))}</div>`;
       const key = `<kbd>${K('ultimate', 'X')}</kbd>`;
-      const ult = c.role === 'ult'
-        ? `<div class="rv3-s-note">${c.anyBuild ? _t('ULTIMATE · offered once you hold 2+ Cores of the same archetype in a match, then fire it with {key}', { key })
-          : _t('ULTIMATE · offered once you hold 2+ {arch} Cores in a match, then fire it with {key}', { arch: esc(arch.label), key })}</div>` : '';
+      // Tuyệt kỹ = kỹ năng đặc trưng: mang 1 cái vào trận (CHARACTER > ULTIMATE), có ngay từ đầu trận, nạp đầy rồi bấm X
+      const isUlt = c.role === 'ult';
+      const ult = isUlt ? `<div class="rv3-s-note">${_t('SIGNATURE ULTIMATE · ready from kickoff once charged, fire it with {key}', { key })}</div>` : '';
       const archRow = fam ? ''
         : `<div class="rv3-s-arch" style="--c:${arch.color}">${PX().arch(tag)} ${esc(arch.label)} <i><b style="width:${Math.round((have / ids.length) * 100)}%"></b></i> ${have}/${ids.length}</div>`;
       return `<div class="rv3-s-rar" style="color:${r.color}">${esc(r.label)}${c.role === 'ult' ? ` · ${esc(_t('ULTIMATE'))}` : ''}</div>
@@ -199,7 +199,8 @@ window.SFC = window.SFC || {};
         ${src}
         ${archRow}
         ${ult}
-        <div class="rv3-s-go">${fam ? esc(_t('Yours from day one · always in your Core pool')) : _t('Added to your Core pool · shows up as <em>NEW</em> next match')}</div>`;
+        <div class="rv3-s-go">${isUlt ? (fam ? esc(_t('Yours from day one · equipped')) : esc(_t('Added to your Ultimates · equip it in CHARACTER > ULTIMATE')))
+          : fam ? esc(_t('Yours from day one · always in your Core pool')) : _t('Added to your Core pool · shows up as <em>NEW</em> next match')}</div>`;
     },
 
     // hạt pixel bung ra từ tâm lá lúc lật

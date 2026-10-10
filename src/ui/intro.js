@@ -9,7 +9,6 @@ window.SFC = window.SFC || {};
   const PX = () => SFC.PixelIcon;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const CFG = () => SFC_CONFIG.intro;
-  const ROLE = () => ({ DEF: SFC.t('DEFENDER'), FWD: SFC.t('FORWARD') });
   const clamp01 = (v) => Math.max(0, Math.min(1, v));
   const easeOut = (k) => 1 - (1 - k) * (1 - k);
 
@@ -80,9 +79,9 @@ window.SFC = window.SFC || {};
       const I = CFG(), mp = g.opts.mainPath, MP = SFC.MainPath, _t = SFC.t;
       let comp = _t('FRIENDLY'), title = _t('MATCHDAY'), venue = _t('STREET COURT'), venueIcon = '';
       if (mp) {
-        // trận 2v2 xếp theo Elo: sân của Area theo Elo trung bình 4 người (opts.arena)
+        // trận 3v3 xếp theo Elo: sân của Area theo Elo trung bình 2 đội (opts.arena)
         const A = MP.areas().find((a) => a.arena === g.opts.arena) || MP.area(mp.area);
-        comp = `${_t('MAIN PATH')} · ${MP.area(mp.area).name} · ${mp.elo} ${_t('ELO')}`;
+        comp = `${_t('MAIN PATH')} · ${MP.area(mp.area).name} · {stars}`;
         title = _t('RANKED MATCH');
         venue = A.name; venueIcon = PX().area(A.id) + ' ';
       } else if (g.opts.training) { comp = _t('TRAINING'); title = _t('PRACTICE MATCH'); }
@@ -104,9 +103,11 @@ window.SFC = window.SFC || {};
         for (const t of [0, 1]) if (lists[t][i]) delay[lists[t][i].id] = +(I.cardsAt + k++ * I.cardGap).toFixed(2);
       }
       const boss = false;
-      return `<div class="intro ${boss ? 'promo' : ''}" style="--c0:${g.teams[0].cfg.kit.shirt};--c1:${g.teams[1].cfg.kit.shirt};--dIn:${I.teamIn}s">
+      // 3v3: 3 thẻ mỗi bên -> thẻ hẹp hơn (CSS .intro.n3)
+      const n3 = Math.max(lists[0].length, lists[1].length) >= 3;
+      return `<div class="intro ${boss ? 'promo' : ''} ${n3 ? 'n3' : ''}" style="--c0:${g.teams[0].cfg.kit.shirt};--c1:${g.teams[1].cfg.kit.shirt};--dIn:${I.teamIn}s">
         <div class="in-bg l"></div><div class="in-bg r"></div>
-        <div class="in-top"><span class="in-comp">${esc(comp)}</span><b class="in-title">${boss ? PX().ui('crown') + ' ' : ''}${esc(title)}</b></div>
+        <div class="in-top"><span class="in-comp">${esc(comp).replace('{stars}', mp ? PX().elo(mp.elo) : '')}</span><b class="in-title">${boss ? PX().ui('crown') + ' ' : ''}${esc(title)}</b></div>
         ${this.side(g, 0, lists[0], delay, false)}
         <div class="in-mid">
           <div class="in-vs" style="--d:${I.vsAt}s">${esc(_t('VS'))}</div>
@@ -163,14 +164,15 @@ window.SFC = window.SFC || {};
       const _t = SFC.t;
       // Main Path: người chơi khác (người thật trận xếp hạng / người chơi giả) hiện như nhau — nhãn Elo màu đồng đội / đối thủ
       const side = p.team === g.humanTeam ? 'ally' : 'rival';
-      const tag = you ? `<em class="you">${esc(_t('YOU'))}</em>` : p.elo != null ? `<em class="${side}">${p.elo}</em>` : ctl ? `<em class="${side}">${pn}</em>`
+      const tag = you ? `<em class="you">${esc(_t('YOU'))}</em>` : p.elo != null ? `<em class="${side}">★${p.elo}</em>` : ctl ? `<em class="${side}">${pn}</em>`
         : p.mate ? `<em class="mate">${esc(_t('MATE'))}</em>` : human ? `<em>${esc(_t('AI'))}</em>` : '';
       // character / đồng đội có chỉ số riêng: OVR cá nhân
       const povr = (ctl || p.mate) && p.ovr ? `<b class="in-povr">${p.ovr}<span>${esc(_t('OVR'))}</span></b>` : '';
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">
         <div class="in-num">${num}</div>${tag}${povr}
         <canvas data-pid="${p.id}" data-delay="${d}"></canvas>
-        <b class="in-name">${esc(p.name)}</b><span class="in-pos">${esc(ROLE()[p.role] || p.role)}</span>
+        <b class="in-name">${esc(p.name)}</b>
+        ${p.ult && SFC_CONFIG.cores.list[p.ult] ? `<span class="in-ult">${PX().core(p.ult, 'sm')}<i>${esc(SFC_CONFIG.cores.list[p.ult].name)}</i></span>` : ''}
       </div>`;
     },
 

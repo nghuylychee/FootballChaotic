@@ -20,6 +20,8 @@ window.SFC = window.SFC || {};
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
      *         mates: [{ name, ovr, stats, deck, look, role, elo?, fake? } | [..] | null, ...] — đồng đội của người chơi (thay cầu thủ AI không phải character);
      *                mảng = nhiều người (Main Path: 2 đối thủ giả); fake = người chơi giả do bot điều khiển (hiện như người chơi, kèm Elo),
+     *         Tuyệt kỹ (kỹ năng đặc trưng, không phải Core để chọn): mỗi cầu thủ có 1 Tuyệt kỹ từ đầu trận — avatars[t].ult / seats[i].avatar.ult /
+     *                mates[].ult; cầu thủ AI không ghi thì lấy theo đội (CoreSystem.defaultUlt). noUlts / tutorial: không gán,
      *         coreFresh: [[id...] | null, ...] — Core vừa mở khoá: ưu tiên hiện ở lượt chọn (nhãn NEW), mỗi lượt tối đa 1 lá,
      *         signature: [id | null, ...] — Core đặc trưng đội AI chắc chắn cầm (boss trận thăng hạng Main Path),
      *         noScale / coreRating: [r0, r1] — tắt scale Core theo chỉ số / ép rating scale Core từng đội (giả lập cân bằng),
@@ -76,6 +78,7 @@ window.SFC = window.SFC || {};
         p.look = Object.assign({}, av.look);
         p.avatar = true;
         if (av.stats) { p.stats = Object.assign({}, p.stats, av.stats); p.ovr = av.ovr; }
+        if (av.ult) p.ult = av.ult;
       };
       (opts.avatars || []).forEach((av, t) => {
         if (!av || !this.teams[t]) return;
@@ -108,8 +111,18 @@ window.SFC = window.SFC || {};
           p.deck = m.deck && m.deck.length ? m.deck.slice() : null;
           p.mate = true;
           if (m.fake) { p.fake = true; p.elo = m.elo; }
+          if (m.ult) p.ult = m.ult;
         }
       });
+      // Tuyệt kỹ đặc trưng của từng cầu thủ: có ngay từ đầu trận (nạp năng lượng rồi bấm X), giữ cả trận.
+      // Trận mơ PROLOGUE tự trao Tuyệt kỹ theo kịch bản (src/game/tutorial.js) -> không gán ở đây
+      if (!opts.tutorial && !opts.noUlts) {
+        for (const p of this.players) {
+          const id = this.cores.validUlt(p.ult) || this.cores.defaultUlt(p);
+          p.ult = id;
+          if (id) this.cores.add(p, id);
+        }
+      }
       // trạng thái điều khiển theo từng đội người chơi
       this.ctrl = [null, null];
       // solo[t]: cầu thủ bị khóa của đội t (slot đầu tiên); co-op: slot thứ 2 cùng đội khóa qua p.seat
@@ -436,8 +449,8 @@ window.SFC = window.SFC || {};
         return;
       }
       this.elapsed += dt;
-      // tới FINAL PUSH mà còn lượt chọn Core -> tạm dừng trận, chọn nốt rồi giao bóng lại (bàn x2 tính sau khi chọn xong)
-      if (!this.finalPush && this.remaining <= M.finalPushTime && this.draftPending() > 0) {
+      // tới FINAL PUSH mà còn lượt chọn Core -> (match.finalPushForceDraft) tạm dừng trận, chọn nốt rồi giao bóng lại (bàn x2 tính sau khi chọn xong)
+      if (M.finalPushForceDraft && !this.finalPush && this.remaining <= M.finalPushTime && this.draftPending() > 0) {
         const t = this.lastPossessionTeam >= 0 ? this.lastPossessionTeam : 0;
         this.emit('banner', { text: SFC.N_('FINAL CORE PICK'), sub: SFC.N_('Before the FINAL PUSH'), color: '#ffe14f' });
         this.kickoff(t);

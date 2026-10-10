@@ -1,6 +1,6 @@
 # Street Football Chaos — MVP (web)
 
-Bóng đá đường phố 2v2 (không có thủ môn cố định), top-down 2.5D kiểu *Binding of Isaac*, điều khiển full bàn phím kiểu *FC Online*,
+Bóng đá đường phố 3v3 (không có thủ môn cố định), top-down 2.5D kiểu *Binding of Isaac*, điều khiển full bàn phím kiểu *FC Online*,
 với hệ thống **Core Upgrade** (kiểu Augment LoL Arena) thay đổi lối chơi giữa trận.
 
 ## Chạy game
@@ -100,24 +100,30 @@ vào lưới vẫn ăn mừng rồi giao bóng lại (không có đối thủ th
 - Debug: `SFC.Profile.data` trong console (vd. `SFC.Profile.data.gold = 5000; SFC.Profile.save()`).
 
 ## Phòng chờ PLAY + bạn bè (placeholder)
-- PLAY mở phòng chờ kiểu Valorant: tab **RANKED** (Area + Elo) · 2 ô người chơi (bạn + 1 người bạn, ô trống bấm để mời) · **START** · POSITION
-  (◀▶ trên thẻ của bạn) · LEAVE PARTY · nút **FRIENDS** góc phải trên ẩn / hiện khung bạn bè. START tìm trận ngay trên màn này: dải trạng thái hiện
-  đồng hồ + khoảng Elo, START thành **CANCEL** (Esc cũng huỷ); tìm thấy -> MATCH FOUND + tên 2 đối thủ rồi vào trận.
-  Hết trận: NEXT MATCH (về phòng chờ và tìm tiếp, người bạn vẫn trong phòng) / LOBBY.
+- PLAY mở phòng chờ kiểu Valorant: tab **RANKED** (Area + Elo) · 3 ô người chơi (bạn luôn đứng giữa + tối đa 2 người bạn, ô trống bấm để mời) · **START** ·
+  LEAVE PARTY · nút **FRIENDS** góc phải trên ẩn / hiện khung bạn bè. START tìm trận ngay trên màn này: đồng hồ chờ nhỏ hiện ngay trên nút,
+  START thành **CANCEL** (Esc cũng huỷ); tìm thấy -> MATCH FOUND + tên các đối thủ rồi vào trận.
+  Màn kết quả: tỉ số · thưởng (★ + gold + XP) · build cả 2 đội (mỗi cầu thủ 1 dòng: tên + chip các Core đã chọn, bạn tô vàng) · 1 nút **LOBBY** về phòng chờ.
+  Dòng thông báo trên nút START tự ẩn sau `social.msgHide` giây. Bấm vào 1 người bạn = mở chat với người đó (đang chat: ↑↓ hoặc bấm người khác để đổi).
 - Khung **bạn bè** bên phải: online / đang trong trận / offline / trong phòng / đã mời. Dòng đang chọn có nút **INVITE** · **CHAT** (←→ đổi, Enter làm).
+  Dòng đang chọn có thêm **REMOVE** (xoá bạn, bấm 2 lần để chắc: lần 1 nút thành SURE?; xoá luôn khỏi phòng + lịch sử chat).
   Khung **chat** ở đáy khung bạn bè: gõ thẳng, Enter gửi, Esc / ✕ đóng; tin chưa đọc có huy hiệu đỏ.
-- Phòng tối đa **2 người**. Trận party: 2 bạn chung đội vs 2 đối thủ giả (Elo quanh Elo trung bình 2 người); mỗi người tự cộng / trừ Elo.
+- **Kết bạn bằng username** (đầu khung bạn bè): hiện username của bạn để đưa người khác · ô **ADD FRIEND** (Enter / bấm để gõ, Enter gửi, Esc thôi) ->
+  lời mời nằm ở mục **SENT** (✕ huỷ) tới khi người kia đồng ý · người khác mời bạn -> mục **REQUESTS** (✓ đồng ý / ✕ từ chối, ←→ đổi, Enter làm).
+  Placeholder: username hợp lệ nào cũng "tồn tại", người được mời đồng ý sau vài giây (`social.add`); thỉnh thoảng 1 người chơi giả gửi lời mời tới bạn.
+- Phòng tối đa **3 người** (cả đội 3v3). Trận party: cả phòng chung đội, thiếu người thì người chơi giả lấp vào, vs 3 đối thủ giả (Elo quanh Elo trung bình đội mình); mỗi người tự cộng / trừ Elo.
 - **PLACEHOLDER**: bạn bè là người chơi giả do bot đóng vai (sinh 1 lần, lưu key `sfc_social_v1`): trạng thái đổi ngẫu nhiên, chat tự trả lời bằng câu soạn sẵn,
   nhận / từ chối lời mời theo tỉ lệ. Số liệu + câu thoại: `config/social.config.js`; logic: `src/meta/social.js`; UI: `src/ui/menu.js` (trang `party`).
 
 ## Main Path (xếp hạng theo Elo, kiểu Clash Royale)
-- Mỗi trận là **2v2 xếp hạng**: character của bạn + 1 đồng đội vs 2 đối thủ. **Matchmaking hiện là placeholder**: màn tìm trận đếm giờ,
+- Mỗi trận là **3v3 xếp hạng**: character của bạn + 2 đồng đội (bạn bè trong phòng, thiếu thì người chơi giả) vs 3 đối thủ. **Matchmaking hiện là placeholder**: màn tìm trận đếm giờ,
   nới dần khoảng Elo, rồi ghép 3 **người chơi giả do bot điều khiển** (tên, Elo, OVR, deck Core, ngoại hình riêng; ưu tiên cùng Area).
   Độ khó AI 2 đội theo Elo trung bình; OVR người chơi giả ngang 1 character thật ở Elo đó.
-- **Elo**: công thức Elo (k = 40) so Elo trung bình 2 đội, ngang nhau thì thắng ~+20 / thua ~−20; không xuống dưới 0. Bỏ trận = thua.
+- **Elo** (hiển thị bằng **ngôi sao** ★ + số: `SFC.PixelIcon.elo(n)` / chỗ chỉ có chữ `SFC.MainPath.stars(n)`, không ghi chữ "ELO"): công thức Elo (k = 40) so Elo trung bình 2 đội, ngang nhau thì thắng ~+20 / thua ~−20; không xuống dưới 0. Bỏ trận = thua.
 - **Area = khoảng Elo** (10 Area, ngưỡng 0 · 200 · 450 · 750 · 1100 · 1500 · 1950 · 2450 · 3000 · 3600). Tụt dưới ngưỡng = rớt Area (rớt tự do).
 - **Thưởng**: mỗi trận gold + XP (nhân hệ số Area). **Lần đầu tới 1 Area** = mở 1 **Tuyệt kỹ** (thẻ mở kiểu TCG); rớt rồi lên lại không nhận lại.
-  Core thường ai cũng dùng được ngay; Tuyệt kỹ mở qua Area (Aura Farming từ PROLOGUE). Area 9–10 chưa có Tuyệt kỹ (chờ Tuyệt kỹ mới).
+  Core thường ai cũng dùng được ngay; Tuyệt kỹ mở qua Area vào bộ sưu tập, chọn 1 cái mang vào trận ở CHARACTER → ULTIMATE (Aura Farming có sẵn).
+  Area 9–10 chưa có Tuyệt kỹ (chờ Tuyệt kỹ mới).
 - Trần level character theo Elo cao nhất từng đạt (`areas[].levelCap`). Hồ sơ cũ (Area > hạng > sao) tự đổi sang Elo khi mở game.
 - Số liệu: `config/mainpath.config.js` (`elo`, `matchmaking`, `areas[].elo / ult / ai / levelCap`). Logic: `src/meta/mainpath.js`; tìm trận: `src/ui/menu.js` (phòng chờ `party`).
   Cheat: SETTINGS → TEST → JUMP TO AREA (đặt Elo về ngưỡng Area).
@@ -147,9 +153,12 @@ rồi vung chân đá — trúng thì đối thủ bị hất tung bay rất xa 
 — chỉ điều khiển đúng cầu thủ đã chọn cả trận (không đổi người, không tự chuyển), đồng đội do AI chơi; đòi bóng bằng S / W (D / A vẫn ra đòn).
 Cơ chế nằm ở `opts.solo` của `SFC.Game` (khóa theo từng đội, dùng lại được cho online).
 
-**Trông khung thành (2v2):** mỗi đội 2 cầu thủ sân, vai trò chỉ là vị trí xuất phát. Ai đứng trong vòng cấm nhà thì có cơ chế thủ môn
+**Trông khung thành (3v3):** mỗi đội 3 cầu thủ sân, **không có vai trò** (không chọn / không hiện vị trí): `game.roles` + `formation` chỉ còn là
+3 chỗ đứng khi giao bóng (character luôn vào chỗ `FWD`, `app.myRole`). Core của đồng đội không hiện (HUD, màn chọn Core, màn kết quả chỉ có build của bạn). Ai đứng trong vòng cấm nhà thì có cơ chế thủ môn
 (tầm bắt `gkReach`, bắt bóng bổng `gkCatchHeight`, tỉ lệ cứu thua / PARRY, đeo găng). Bắt được bóng trong vòng cấm → miễn tắc `gkHoldProtect` giây;
 tự rê bóng vào vòng cấm thì không. Đội máy: AI không áp sát sẽ lùi về trông khung khi đối phương cầm bóng cách khung thành dưới `ai.keeperCoverDist`.
+3v3: **chỉ 1 người trông khung** (người gần khung nhà nhất, trừ người áp sát / đuổi bóng) — người còn lại kèm mỗi người 1 đối thủ khác nhau (nguy hiểm nhất trước); đồng đội cầm bóng thì vị trí thấp nhất CHỐT sau lưng bóng, cao nhất BĂNG lên (`ai.support3`).
+Trận mơ PROLOGUE và ảnh động xem trước Core vẫn là 2v2 (`teamSize: [2, 2]`, TIỀN VỆ + ĐÁ CAO).
 
 **Đồng đội AI của người chơi** (`ai.mate`, vd. người còn lại ở chế độ 1 CẦU THỦ) — lối chơi theo vị trí (`mate.roles`):
 - **ĐÁ CAO** (bạn đá ĐÁ LÙI): phòng ngự luôn áp sát người cầm bóng, chỉ về trông khung khi nguy hiểm rõ ràng
@@ -204,7 +213,11 @@ src/
 - Mỗi Core có **trường phái** (`tags`: runner / playmaker / striker / brawler / launcher / trickster / iron / chaos), **vai trò** (`role`) và **độ hiếm** (`rarity`) trong `config/cores.config.js`.
 - **Cộng hưởng**: gom 2 / 3 / 4 Core cùng trường phái (Core cầu nối tính cho cả hai) → mở bonus (`sets`); bậc 4 đổi **hình thái** cả đội. Hiện trên HUD dạng `🏃3`.
 - **Tài nguyên**: Đà (chạy nước rút), Nhịp (chuyền tới chân, của cả đội), Nộ (đấm trúng), Giáp (chặn 1 lần choáng) — chỉ chạy khi đội có Core của trường phái đó; bộ đếm ở thanh kỹ năng.
-- **Tuyệt kỹ** (`role: 'ult'`, phím **X**): năng lượng nạp khi ghi bàn / cướp bóng; cut-in rồi mới ra chiêu; AI tự dùng. Chỉ xuất hiện khi đã có ≥ 2 Core cùng trường phái, mỗi đội tối đa 1.
+- **Tuyệt kỹ = kỹ năng đặc trưng** (`role: 'ult'`, phím **X**), không còn là lá ở lượt chọn Core: mỗi cầu thủ mang **1 Tuyệt kỹ từ đầu trận**
+  (người chơi chọn ở **CHARACTER → ULTIMATE**, lưu `Profile.data.ult`; mặc định `progression.defaultUlt` = AURA FARMING). Năng lượng nạp khi ghi bàn /
+  cướp bóng; cut-in rồi mới ra chiêu; AI tự dùng. **Không tính vào Cộng hưởng.** Bộ sưu tập: Tuyệt kỹ có sẵn + Tuyệt kỹ mở khi lần đầu tới Area.
+  Đồng đội / người chơi giả / bạn bè giả có Tuyệt kỹ riêng (người giả: theo Area của họ); cầu thủ AI không được giao thì lấy theo `coreWeights` của đội
+  (`CoreSystem.defaultUlt`, cố định để trận online "gương" khớp). Tuyệt kỹ hiện trên thẻ ở phòng chờ, dòng MATCH FOUND và màn giới thiệu trận.
 - **Chọn Core**: 5 lượt — 1 trước khi giao bóng, sau đó cứ `match.draftEvery` giây (mặc định 24s) tích +1 lượt, **chỉ mở khi có bàn thắng**
   (tích nhiều thì chọn liền); tới FINAL PUSH mà còn lượt thì tạm dừng trận để chọn nốt. Mỗi lượt được **đổi 3 lá 1 lần (phím R)**; trọng số theo build, từ lượt 2 luôn có ít nhất 1 lá cùng trường phái. Logic ở `src/systems/cores.js` (`CoreSystem`).
 - **Không Core vô hình**: tài nguyên hiện trên người cầu thủ (tia điện dưới chân = Đà, nắm tay bốc lửa = Nộ, ánh bạc + khiên nhỏ = Giáp,

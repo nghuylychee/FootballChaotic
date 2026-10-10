@@ -213,6 +213,8 @@ window.SFC = window.SFC || {};
     area(id, extra) { const a = SFC_CONFIG.mainPath.areas.find((x) => x.id === id); return this.html('area-' + id, a && a.icon, extra); },
     res(name, extra) { const r = SFC_CONFIG.cores.resources[name]; return this.html('res-' + name, r && r.icon, extra); },
     ui(name, extra) { return this.html('ui-' + name, '', extra); },
+    // điểm xếp hạng (Elo) hiển thị bằng ngôi sao: ★ + số (chỗ chỉ có chữ thường dùng ký tự '★' + số: SFC.MainPath.stars)
+    elo(n, extra = '') { return `<span class="elo ${extra}">${this.ui('star', 'sm')}<b>${n}</b></span>`; },
   };
 
   SFC.PixelIcon = PixelIcon;

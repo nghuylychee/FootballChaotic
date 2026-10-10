@@ -120,14 +120,16 @@ window.SFC = window.SFC || {};
       return Object.keys(n).sort((a, b) => n[b] - n[a]).map((tag) => ({ tag, n: n[tag] }));
     },
 
-    // dữ liệu vào trận (Game opts.mates): hệ số Player.stats từ chỉ số (giống character), deck, ngoại hình
+    // dữ liệu vào trận (Game opts.mates): hệ số Player.stats từ chỉ số (giống character), deck, ngoại hình, Tuyệt kỹ đặc trưng
+    // (m.ult; đồng đội cũ có Tuyệt kỹ nằm trong deck -> lấy lá đó làm Tuyệt kỹ, deck chỉ còn Core thường)
     spec(m, role) {
-      const out = {};
+      const out = {}, L = CORES().list, isUlt = (id) => L[id] && L[id].role === 'ult';
       for (const id of A().order) {
         const keys = A().list[id].keys;
         for (const k in keys) out[k] = 1 + (m.ratings[id] / A().scale - 1) * (keys[k] == null ? 1 : keys[k]);
       }
-      return { name: m.name, ovr: m.ovr, stats: out, deck: m.deck.slice(), look: SFC.Profile.lookOf(Object.assign({}, PROG().defaultLook, m.look)), role };
+      const ult = (isUlt(m.ult) && m.ult) || m.deck.find(isUlt) || PROG().defaultUlt;
+      return { name: m.name, ovr: m.ovr, stats: out, deck: m.deck.filter((id) => !isUlt(id)), look: SFC.Profile.lookOf(Object.assign({}, PROG().defaultLook, m.look)), role, ult };
     },
 
     /* ---------- đội hình + scout (hồ sơ: SFC.Profile.data.team) ---------- */

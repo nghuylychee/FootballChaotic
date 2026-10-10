@@ -275,7 +275,8 @@ window.SFC = window.SFC || {};
     }
 
     reset() {
-      const g = new SFC.Game({ home: 'street_kings', away: 'neon_strikers', difficulty: 'normal', humanTeam: 0, humans: [0, 1], silent: true, noDraft: true, noAI: true });
+      // trận mini 2v2 (teamSize: TIỀN VỆ + ĐÁ CAO mỗi đội), không gán Tuyệt kỹ đặc trưng (lá đang xem tự kích hoạt)
+      const g = new SFC.Game({ home: 'street_kings', away: 'neon_strikers', difficulty: 'normal', humanTeam: 0, humans: [0, 1], silent: true, noDraft: true, noAI: true, teamSize: [2, 2], noUlts: true });
       g.preview = true;
       g.state = 'play'; g.stateT = 0;
       const t0 = g.teams[0].players, t1 = g.teams[1].players;

@@ -67,12 +67,14 @@ SFC_CONFIG.game = {
     maxUpgrades: 5,              // số lần chọn Core tối đa mỗi trận (gồm lượt khởi đầu)
     preKickoffDraft: true,       // chọn 1 Core trước khi giao bóng đầu trận
     // lượt chọn Core tích theo thời gian: cứ draftEvery giây được +1 lượt, nhưng chỉ mở khi có bàn thắng (chọn liền các lượt đang chờ).
-    // Lượt cuối luôn có trước FINAL PUSH: tới FINAL PUSH mà còn lượt thì tạm dừng trận để chọn nốt.
+    // Tới FINAL PUSH là đủ mọi lượt; finalPushForceDraft = true: còn lượt thì tạm dừng trận để chọn nốt ("FINAL CORE PICK"),
+    // false: không ép — lượt còn lại vẫn chỉ mở sau bàn thắng (kể cả trong FINAL PUSH), không có bàn thì thôi.
     // 0 = tự chia: (duration - finalPushTime) / maxUpgrades -> 150s, 30s cuối, 5 lượt: +1 lượt mỗi 24s (lượt cuối ở giây 96,
     //     còn 24s để có bàn thắng trước FINAL PUSH; không có bàn thì tạm dừng trận để chọn)
     draftEvery: 0,
     upgradeChoices: 3,
     finalPushTime: 30,           // 30s cuối = FINAL PUSH
+    finalPushForceDraft: false,  // true = tới FINAL PUSH còn lượt chọn Core thì dừng trận để chọn nốt
     finalPushGoalValue: 2,       // bàn thắng trong Final Push được x2
     finalPushSpeedMult: 1.1,
     goldenGoal: true,            // hòa khi hết giờ -> bàn thắng vàng
@@ -90,13 +92,15 @@ SFC_CONFIG.game = {
     autoSwitchDistance: 150,
   },
 
-  // Street 2v2: không có thủ môn cố định. Ai đứng trong vòng cấm nhà (boxDepth x boxWidth)
+  // Street 3v3: không có thủ môn cố định. Ai đứng trong vòng cấm nhà (boxDepth x boxWidth)
   // thì được cơ chế thủ môn (gk* bên dưới). Vai trò chỉ là vị trí xuất phát, chia việc tùy người chơi.
   // Vị trí đội hình (tỉ lệ sân, tính cho đội tấn công sang PHẢI)
-  roles: ['DEF', 'FWD'],
+  // 3v3: ĐÁ LÙI · TIỀN VỆ · ĐÁ CAO (thứ tự = thứ tự players / looks của mỗi đội)
+  roles: ['DEF', 'MID', 'FWD'],
   formation: {
-    DEF: { x: 0.20, y: 0.58 },
-    FWD: { x: 0.40, y: 0.40 },
+    DEF: { x: 0.17, y: 0.52 },
+    MID: { x: 0.30, y: 0.32 },
+    FWD: { x: 0.41, y: 0.66 },
   },
 
   player: {
@@ -351,6 +355,10 @@ SFC_CONFIG.game = {
     restDefenseFrom: 0.5,     // đồng đội cầm bóng vượt mốc này (tỉ lệ sân, 0.5 = giữa sân) -> người còn lại lùi chốt phía sau
     restDefenseDist: 110,     //   đứng sau người cầm bóng bao xa (px)
     markDistance: 26,
+    // 3v3: chia vai khi đồng đội cầm bóng (vị trí thấp nhất CHỐT, cao nhất BĂNG lên, ở giữa dạt CÙNG cánh)
+    // anchorBack: người CHỐT đứng sau bóng restDefenseDist x hệ số này khi bóng còn ở phần sân nhà (qua giữa sân: x1) ·
+    // runnerAhead / wideAhead: người BĂNG / người DẠT đứng trước bóng supportAhead x hệ số này
+    support3: { anchorBack: 0.55, runnerAhead: 1.4, wideAhead: 0.4 },
     keeperCoverDist: 420,     // đội máy: người cầm bóng đối phương cách khung thành nhà dưới mức này -> người gần khung nhất lùi về trông khung
     mateKeeperCoverDist: 300, // như trên, cho đồng đội AI ĐÁ LÙI của người chơi (sân rộng 528px: 420 -> trông khung ~64% thời gian phòng ngự, 220 -> ~17%)
     keeperPressDist: 110,     // đồng đội AI ĐÁ LÙI: chưa tới mateKeeperCoverDist mà người chơi cách người cầm bóng xa hơn mức này -> lên áp sát (không thì kèm người)

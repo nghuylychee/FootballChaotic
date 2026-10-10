@@ -8,7 +8,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 11,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
+  protocol: 13,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
   // Máy chủ riêng (server/): máy chủ chạy trận, mọi người là khách. url trống = chỉ người chơi làm host (Steam / PeerJS).
   // TẠO PHÒNG thử máy chủ trước, không tới được thì tự chuyển sang người chơi làm host.
@@ -35,7 +35,7 @@ SFC_CONFIG.net = {
   // Phòng: slot = đội x vị trí (game.config.js -> roles). Người chơi tự nhảy qua lại giữa các slot trống.
   //  - 2 đội đều có người = VERSUS; slot trống của đội có đúng 1 người = đồng đội đang chọn của người đó (AI)
   //  - mọi người cùng 1 đội = CO-OP; đội còn lại = đội bot ngẫu nhiên (bots)
-  maxPlayers: 4,               // tối đa người trong phòng (<= 2 x số vị trí)
+  maxPlayers: 6,               // tối đa người trong phòng (<= 2 x số vị trí: 3v3 = 6)
   minPlayers: 2,               // số người tối thiểu để chủ phòng bấm START
   // Đội bot (co-op): 1 đội thường ngẫu nhiên của 1 Area chủ phòng đã tới (mainPath.config.js -> areas[].teams),
   // độ khó AI = độ khó ở 1 mức Elo ngẫu nhiên trong Area đó (span: phần khoảng Elo, 0 = đầu Area, 1 = cuối Area), sân = sân của Area đó

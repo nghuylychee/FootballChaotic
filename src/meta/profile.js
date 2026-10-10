@@ -24,6 +24,7 @@ window.SFC = window.SFC || {};
       stats: { matches: 0, wins: 0, draws: 0, losses: 0, goals: 0, boxes: 0 },
       team: SFC.Mates.blankTeam(),   // đồng đội: đội hình + trạm scout (src/meta/teammates.js)
       attrs: blankAttrs(),
+      ult: P().defaultUlt,           // Tuyệt kỹ đặc trưng đang mang (CHARACTER > ULTIMATE); bộ sưu tập = ownedUlts()
       tut: { done: false, heirloom: false },   // PROLOGUE (src/game/tutorial.js) đã xem xong / bỏ qua · đã nhận bí kíp gia truyền (cut scene trao AURA FARMING)
     };
   }
@@ -72,6 +73,7 @@ window.SFC = window.SFC || {};
       d.path = SFC.MainPath.sanitize(raw && raw.path);   // tiến trình Main Path (src/meta/mainpath.js)
       d.team = SFC.Mates.sanitizeTeam(raw && raw.team);  // đồng đội + scout (src/meta/teammates.js)
       if (!raw || typeof raw !== 'object') return d;
+      d.ult = this.ownedUlts(d).includes(raw.ult) ? raw.ult : P().defaultUlt;
       d.name = this.cleanName(raw.name || '');
       // hồ sơ có từ trước khi có PROLOGUE (đã đặt tên) -> coi như đã xem
       const tut = raw.tut && typeof raw.tut === 'object' ? raw.tut : null;
@@ -292,6 +294,19 @@ window.SFC = window.SFC || {};
     },
     coreUnlocked(id) { return this.unlockedCores().includes(id); },
 
+    /* ---------- Tuyệt kỹ đặc trưng (không phải lá chọn Core: mỗi người mang 1 cái vào trận) ---------- */
+    // bộ sưu tập: Tuyệt kỹ có sẵn (progression.starterCores, vd. AURA FARMING) + Tuyệt kỹ mở khi lần đầu tới Area (Main Path)
+    ownedUlts(d = this.data) {
+      const L = SFC_CONFIG.cores.list, isUlt = (id) => L[id] && L[id].role === 'ult';
+      return [...new Set(P().starterCores.filter(isUlt).concat(((d && d.path && d.path.cores) || []).filter(isUlt)))];
+    },
+    equipUlt(id) {
+      if (!this.ownedUlts().includes(id)) return false;
+      this.data.ult = id;
+      this.save();
+      return true;
+    },
+
     /* ---------- chỉ số character + DRILL (config: progression.attrs, docs/DRILL_DESIGN.md) ---------- */
     // extra: { id chỉ số: số bước cộng thêm } — xem trước 1 drill trước khi chọn
     rating(id, extra = {}) { return Math.min(A().max, A().base + this.data.attrs.steps[id] + (extra[id] || 0)); },
@@ -386,7 +401,7 @@ window.SFC = window.SFC || {};
 
     /* ---------- vào trận ---------- */
     // character đại diện: thay 1 cầu thủ của đội mình (Game opts.avatars; thêm role để chọn vị trí, mặc định ĐÁ CAO)
-    avatar() { return { name: this.data.name || 'PLAYER', level: this.data.level, look: this.lookOf() }; },
+    avatar() { return { name: this.data.name || 'PLAYER', level: this.data.level, look: this.lookOf(), ult: this.data.ult }; },
 
     // gửi cho đối thủ online (phòng chờ)
     public() { return Object.assign(this.avatar(), { cores: this.unlockedCores() }); },
@@ -408,6 +423,7 @@ window.SFC = window.SFC || {};
         cores: Array.isArray(pub.cores) ? pub.cores.filter((id) => SFC_CONFIG.cores.list[id]) : P().starterCores.slice(),
       };
       if (roles.includes(pub.role)) out.role = pub.role;
+      out.ult = this.cleanUlt(pub.ult);
       const stats = this.sanitizeStats(pub.stats);
       if (stats) { out.stats = stats; out.ovr = clampInt(pub.ovr, 1, 99); }
       if (pub.mate !== undefined) out.mate = this.sanitizeMate(pub.mate);
@@ -447,11 +463,14 @@ window.SFC = window.SFC || {};
         deck: Array.isArray(m.deck) ? [...new Set(m.deck.filter((id) => list[id]))].slice(0, 12) : [],
         look: this.sanitizeLook(m.look),
         role: roles.includes(m.role) ? m.role : null,
+        ult: this.cleanUlt(m.ult),
       };
       // người chơi giả (trận xếp hạng): hiện kèm Elo như người chơi
       if (m.fake) { out.fake = true; out.elo = clampInt(m.elo, 0, 1e6); }
       return out;
     },
+    // id Tuyệt kỹ nhận từ máy khác: phải là Tuyệt kỹ có thật, không thì Tuyệt kỹ mặc định
+    cleanUlt(id) { const c = SFC_CONFIG.cores.list[id]; return c && c.role === 'ult' ? id : P().defaultUlt; },
 
     /* ---------- thưởng sau trận ---------- */
     // gọi 1 lần khi trận kết thúc (hết giờ / golden goal). Trả về chi tiết để màn kết quả diễn hoạt.

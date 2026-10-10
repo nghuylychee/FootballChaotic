@@ -368,6 +368,8 @@ window.SFC = window.SFC || {};
         const pathStatus = () => {
           if (!SFC_CONFIG.mainPath.lockCores) return _t('Available to every player');
           if (e.locked) return `<span class="bad">${PX().ui('lock', 'sm')} ${esc(SFC.MainPath.unlockHint(e.id))}</span>`;
+          // Tuyệt kỹ đặc trưng: không vào lượt chọn Core, mang vào trận ở CHARACTER > ULTIMATE
+          if (CORE_LIST()[e.id] && CORE_LIST()[e.id].role === 'ult') return PF().data.ult === e.id ? _t('Signature Ultimate · equipped') : _t('Signature Ultimate · equip it in CHARACTER > ULTIMATE');
           return SFC.MainPath.coreSource(e.id).kind === 'starter' ? _t('Starter Core, always in your pool') : _t('Unlocked on the Main Path · in your Core draft pool');
         };
         const status = !PROG().coreGacha ? pathStatus() : e.def ? _t('Starter Core, always in your pool') : ok ? _t('In your Core draft pool') : `<span class="bad">${_t('Requires LV {n}', { n: lv })}</span>`;

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Street Football Chaos: a 2v2 top-down arcade football game in plain browser JavaScript (canvas, procedural pixel art, WebAudio). It ships as a web build (itch.io) and an Electron desktop build (Steam). The README (in Vietnamese) documents gameplay rules and tuning knobs in detail. Some of it is out of date: its online section predates the dedicated server, and its Core/team counts are old.
+Street Football Chaos: a 3v3 top-down arcade football game in plain browser JavaScript (canvas, procedural pixel art, WebAudio). It ships as a web build (itch.io) and an Electron desktop build (Steam). The README (in Vietnamese) documents gameplay rules and tuning knobs in detail. Some of it is out of date: its online section predates the dedicated server, and its Core/team counts are old.
 
 ## Commands
 
@@ -60,7 +60,7 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 - `src/render/` and `src/ui/` only read game state. The simulation has no DOM dependencies, which is what lets it run headless on the server.
 
 **Meta / persistence.**
-- `SFC.Profile` (level, gold, inventory, attributes), `SFC.MainPath` (career ladder: Areas are Elo ranges; ranked 2v2 against real players when the server can match some, otherwise bot-driven fake players from `matchmake()`; a `pending` loss is saved at kickoff so quitting mid-match still counts), `SFC.Mates` (AI teammates) and `SFC.Social` (placeholder friend list / chat / 2-player party with bot-driven fake friends, key `sfc_social_v1`) are all saved through `SFC.Storage`.
+- `SFC.Profile` (level, gold, inventory, attributes), `SFC.MainPath` (career ladder: Areas are Elo ranges; ranked 3v3 against real players when the server can match some, empty seats / unmatched players get bot-driven fake players from `matchmake()`; a `pending` loss is saved at kickoff so quitting mid-match still counts), `SFC.Mates` (AI teammates) and `SFC.Social` (placeholder friend list / chat / username friend requests / 3-player party with bot-driven fake friends, key `sfc_social_v1`) are all saved through `SFC.Storage`.
 - `SFC.Storage` writes to `localStorage` on the web and to JSON files with `.bak` copies on desktop (via `electron/preload.js`). See `docs/SAVE.md`.
 
 **Online** (`src/net/`). The model is host-authoritative, and the same room logic runs in two places:

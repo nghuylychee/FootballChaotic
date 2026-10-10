@@ -7,7 +7,7 @@
 
 ## 1. The game in 30 seconds
 
-Street Football Chaos is a 2v2 arcade street-football game with pixel art and top-down 2.5D camera. You play a kid who dreams of becoming "the GOAT of street football" and climbs from a muddy village pitch to the World Stage. Mid-match you pick **Cores**: power-up cards that bend the rules (fireball shots, clones, 20-punch combos). Fighting is part of football here.
+Street Football Chaos is a 3v3 arcade street-football game with pixel art and top-down 2.5D camera. You play a kid who dreams of becoming "the GOAT of street football" and climbs from a muddy village pitch to the World Stage. Mid-match you pick **Cores**: power-up cards that bend the rules (fireball shots, clones, 20-punch combos). Fighting is part of football here.
 
 **Tone:** cheeky, loud, fast, a bit absurd. Picture a street-football YouTube channel crossed with a fighting game.
 **Audience:** teens and young adults who play on PC and console, many of them football fans. Never crude, never offensive.

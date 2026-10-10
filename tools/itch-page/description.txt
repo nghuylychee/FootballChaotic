@@ -6,7 +6,7 @@ Short description field: Street football where punching is allowed!
 
 [image: logo.png]
 
-2v2 street football with no referee. To win the ball back, you punch whoever has it.
+3v3 street football with no referee. To win the ball back, you punch whoever has it.
 
 [image: h-features.png]
 

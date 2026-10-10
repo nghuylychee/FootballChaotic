@@ -3,10 +3,10 @@
  * Luật (config net.queue):
  *  - mỗi vé có khoảng Elo nới dần theo thời gian chờ (range[0] -> range[1] trong widen giây; quá anyAfter giây = ai cũng được)
  *  - 2 vé hợp nhau khi lệch Elo <= khoảng của vé chờ lâu hơn (max 2 khoảng)
- *  - xét vé chờ lâu nhất trước: gom tối đa 4 vé hợp nhau (gần Elo nhất trước); đủ 4 -> ghép ngay,
- *    2–3 -> ghép khi vé đó đã chờ >= gather giây (xem có thêm người tới không)
+ *  - xét vé chờ lâu nhất trước: gom tối đa 2 x số vị trí vé hợp nhau (3v3: 6, gần Elo nhất trước); đủ -> ghép ngay,
+ *    2..đủ-1 -> ghép khi vé đó đã chờ >= gather giây (xem có thêm người tới không)
  *  - hàng không có ai khác quá aloneWait giây (ngẫu nhiên), hoặc chờ quá maxWait -> solo (game tự ghép người chơi giả)
- * Matchmaker.lineup(nhóm) -> đội hình trận 2v2 giống MainPath.matchmake: người thật + người chơi giả cho ghế trống.
+ * Matchmaker.lineup(nhóm) -> đội hình trận 3v3 giống MainPath.matchmake: người thật + người chơi giả cho ghế trống.
  * Vé: { id, elo, role, pf, at (Date.now() lúc vào hàng) } — thêm trường khác tuỳ ý (máy chủ giữ kết nối trong vé).
  */
 window.SFC = window.SFC || {};
@@ -42,7 +42,7 @@ window.SFC = window.SFC || {};
 
     // -> { groups: [[vé...]], solo: [vé...] } (các vé này đã ra khỏi hàng)
     tick(now) {
-      const q = Q(), out = { groups: [], solo: [] }, used = new Set();
+      const q = Q(), out = { groups: [], solo: [] }, used = new Set(), full = ROLES().length * 2;
       const list = this.tickets.slice().sort((a, b) => a.at - b.at);
       for (const t of list) {
         if (used.has(t)) continue;
@@ -50,8 +50,8 @@ window.SFC = window.SFC || {};
         const others = list.filter((o) => o !== t && !used.has(o));
         const near = others.filter((o) => this.fits(t, o, now)).sort((a, b) => Math.abs(a.elo - t.elo) - Math.abs(b.elo - t.elo));
         const group = [t];
-        for (const o of near) if (group.length < 4 && group.every((g) => this.fits(g, o, now))) group.push(o);
-        if (group.length === 4 || (group.length >= 2 && waited >= q.gather)) {
+        for (const o of near) if (group.length < full && group.every((g) => this.fits(g, o, now))) group.push(o);
+        if (group.length === full || (group.length >= 2 && waited >= q.gather)) {
           for (const g of group) used.add(g);
           out.groups.push(group);
         } else if ((!others.length && waited >= t.alone) || waited >= q.maxWait) {
@@ -64,17 +64,19 @@ window.SFC = window.SFC || {};
     }
 
     /**
-     * Đội hình 1 trận 2v2 từ 2–4 vé:
-     *  4 người: Elo cao nhất + thấp nhất vs 2 người giữa · 3 người: người cao nhất + người chơi giả vs 2 người còn lại
-     *  (Elo người giả cân cho 2 đội bằng nhau) · 2 người: đối đầu, mỗi người 1 đồng đội giả quanh Elo của mình.
-     * Vị trí: ai cũng được vị trí mình chọn; trùng trong đội -> người vào hàng trước giữ.
+     * Đội hình 1 trận 3v3 (số vị trí = game.roles) từ 2..6 vé:
+     *  chia đội kiểu "rắn" theo Elo (cao nhất -> đội 0, 2 người kế -> đội 1, 2 người kế -> đội 0...) để Elo 2 đội gần nhau;
+     *  2 người: đối đầu. Ghế trống mỗi đội -> người chơi giả, Elo cân cho trung bình đội bằng trung bình người thật cả trận
+     *  (kẹp trong ± queue.range[1] quanh người thật của đội đó).
+     * Vị trí: ai cũng được vị trí mình chọn; trùng trong đội -> người vào hàng trước giữ, người sau lấy vị trí trống đầu tiên.
      * -> { seats: [{ id, team, role, elo, name }], fakes: [[spec...], [spec...]], taken: [tên đã dùng], arena, aiProfile }
-     *    fakes = Mates.spec + { elo, fake } (giống MainPath.matchmake), arena / aiProfile theo Elo trung bình cả 4 người
+     *    fakes = Mates.spec + { elo, fake } (giống MainPath.matchmake), arena / aiProfile theo Elo trung bình cả trận
      */
     static lineup(group) {
-      const MP = SFC.MainPath, roles = ROLES(), q = Q();
-      const hs = group.slice().sort((a, b) => b.elo - a.elo);
-      const teams = hs.length >= 4 ? [[hs[0], hs[3]], [hs[1], hs[2]]] : hs.length === 3 ? [[hs[0]], [hs[1], hs[2]]] : [[hs[0]], [hs[1]]];
+      const MP = SFC.MainPath, roles = ROLES(), q = Q(), n = roles.length;
+      const hs = group.slice().sort((a, b) => b.elo - a.elo).slice(0, n * 2);
+      const teams = [[], []];
+      hs.forEach((h, i) => { const t = (i % 4 === 0 || i % 4 === 3) ? 0 : 1; (teams[t].length < n ? teams[t] : teams[1 - t]).push(h); });
       const seats = [];
       teams.forEach((list, team) => {
         const used = [];
@@ -85,15 +87,16 @@ window.SFC = window.SFC || {};
         }
       });
       const taken = seats.map((s) => s.name);
+      const target = avg(hs.map((h) => h.elo));
       const fakes = [[], []];
       teams.forEach((list, team) => {
-        if (list.length >= roles.length) return;
-        const h = list[0], mine = seats.find((s) => s.id === h.id), other = teams[1 - team];
-        const role = roles.find((r) => r !== mine.role) || roles[0];
-        // đội kia đủ 2 người: Elo người giả để 2 đội ngang nhau; không thì quanh Elo người đó (giống MainPath.matchmake)
-        let elo = other.length >= 2 ? 2 * avg(other.map((x) => x.elo)) - h.elo : MP.fakeElo(h.elo, q.range[0]);
-        elo = Math.max(0, h.elo - q.range[1], Math.min(h.elo + q.range[1], Math.round(elo)));
-        fakes[team].push(Matchmaker.fake(elo, role, taken));
+        const mine = seats.filter((s) => s.team === team), free = roles.filter((r) => !mine.some((s) => s.role === r));
+        if (!free.length) return;
+        const base = avg(mine.map((s) => s.elo));
+        // Elo người giả để trung bình đội = trung bình người thật cả trận, kẹp quanh người thật của đội
+        let elo = (target * n - mine.reduce((sum, s) => sum + s.elo, 0)) / free.length;
+        elo = Math.max(0, base - q.range[1], Math.min(base + q.range[1], elo));
+        for (const r of free) fakes[team].push(Matchmaker.fake(Math.round(elo), r, taken));
       });
       const all = Math.round(avg(seats.map((s) => s.elo).concat(fakes[0].concat(fakes[1]).map((f) => f.elo))));
       const A = MP.area(MP.areaOf(all));

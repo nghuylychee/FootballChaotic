@@ -202,9 +202,29 @@ window.SFC = window.SFC || {};
       }
       const wob = Math.sin(g.time * 0.9 + p.id) * 14;
       let tx, ty;
-      // người cầm bóng còn ở phần sân nhà -> băng lên làm phương án;
-      // đã qua phần sân đối phương -> lùi lại chốt phía sau (chống phản công, sẵn sàng về trông khung)
       const progress = ((c.x - f.x) / f.w - 0.5) * dir + 0.5;
+      // 3v3+: nhiều người không cầm bóng -> chia vai theo vị trí (roles): thấp nhất CHỐT sau lưng bóng, cao nhất BĂNG lên
+      // phía cánh đối diện bóng, ở giữa dạt CÙNG cánh làm phương án gần (không ai đứng chồng lên nhau)
+      const mates = g.teams[p.team].players.filter((o) => o !== c).sort((a, b) => a.idx - b.idx);
+      if (mates.length > 1) {
+        const k = mates.indexOf(p), last = mates.length - 1, S = A().support3 || {};
+        if (k === 0) {
+          tx = c.x - dir * A().restDefenseDist * (progress < A().restDefenseFrom ? (S.anchorBack || 0.55) : 1);
+          ty = f.cy + (c.y - f.cy) * 0.3 + wob;
+        } else if (k === last) {
+          tx = c.x + dir * A().supportAhead * (S.runnerAhead || 1.4);
+          ty = (c.y < f.cy ? f.cy + f.h * 0.28 : f.cy - f.h * 0.28) + wob;
+        } else {
+          tx = c.x + dir * A().supportAhead * (S.wideAhead || 0.4);
+          ty = (c.y < f.cy ? f.y + f.h * 0.16 : f.y + f.h * 0.84) + wob;
+        }
+        tx = U.clamp(tx, f.x + 40, f.x + f.w - 40);
+        ty = U.clamp(ty, f.y + 24, f.y + f.h - 24);
+        moveTo(p, tx, ty, U.dist(p, { x: tx, y: ty }) > 90, 6);
+        return;
+      }
+      // chỉ 1 người hỗ trợ (2v2: trận mơ / xem trước Core): người cầm bóng còn ở phần sân nhà -> băng lên làm phương án;
+      // đã qua phần sân đối phương -> lùi lại chốt phía sau (chống phản công, sẵn sàng về trông khung)
       if (progress < A().restDefenseFrom) {
         tx = c.x + dir * A().supportAhead;
         ty = (c.y < f.cy ? f.cy + f.h * 0.24 : f.cy - f.h * 0.24) + wob;
@@ -259,13 +279,23 @@ window.SFC = window.SFC || {};
         return;
       }
 
-      if (danger) return this.goalkeeper(dt, g, p);
+      // chỉ 1 người trông khung: người được chọn (keeperOf) — đồng đội AI lối chơi ai.mate tự xét (mateDanger: chưa ai đứng trong vòng cấm).
+      // Người còn lại (3v3) đi kèm người bên dưới, không chạy về đứng chung khung thành
+      if (danger && (M || p === keeper)) return this.goalkeeper(dt, g, p);
 
-      // kèm người: đứng giữa cầu thủ nguy hiểm nhất và khung thành
-      const threats = g.teams[1 - p.team].players.filter((o) => o !== c);
-      let t = threats[0];
-      for (const o of threats) if (Math.abs(o.x - ownGoal.x) < Math.abs(t.x - ownGoal.x)) t = o;
+      // kèm người: đứng giữa đối thủ được giao và khung thành. 3v3+: mỗi người kèm 1 đối thủ khác nhau — người kèm (không cầm quyền điều
+      // khiển, không áp sát, không trông khung) xếp theo vị trí, đối thủ xếp theo độ nguy hiểm (gần khung nhà trước); thiếu đối thủ thì
+      // người dư lùi chắn giữa bóng và khung
+      const threats = g.teams[1 - p.team].players.filter((o) => o !== c)
+        .sort((a, b) => Math.abs(a.x - ownGoal.x) - Math.abs(b.x - ownGoal.x));
+      const markers = tm.players.filter((o) => o !== ctl && o !== presser && o !== keeper && o.state !== 'stun').sort((a, b) => a.idx - b.idx);
+      const mi = Math.max(0, markers.indexOf(p));
+      const t = threats[Math.min(mi, threats.length - 1)];
       if (!t) return stop(p);
+      if (mi >= threats.length && markers.length > threats.length) {
+        const cover = { x: U.lerp(ownGoal.x, c.x, 0.35), y: U.lerp(ownGoal.y, c.y, 0.35) };
+        return moveTo(p, cover.x, cover.y, U.dist(p, cover) > 80, 5);
+      }
       const gd = U.norm(ownGoal.x - t.x, ownGoal.y - t.y);
       moveTo(p, t.x + gd.x * cfg.markDistance, t.y + gd.y * cfg.markDistance, U.dist(p, t) > 80, 5);
     },
@@ -363,12 +393,14 @@ window.SFC = window.SFC || {};
       if (ctl && U.dist(ctl, pred) < chaser.d) chaser = { p: null };
       if (p === chaser.p && !passToMate) return moveTo(p, pred.x, pred.y, true, 1);
 
-      // người không đuổi bóng lùi về trông khung. Đội máy / đồng đội AI ĐÁ LÙI: bóng lỏng ở phần sân nhà (hoặc đang bay về khung thành nhà).
-      // Đồng đội AI ĐÁ CAO: chỉ khi bóng đã sát khung nhà và người chơi không đứng trong vòng cấm nhà
+      // 1 người không đuổi bóng lùi về trông khung (người gần khung nhà nhất, trừ người đuổi bóng / người chơi đang điều khiển).
+      // Đội máy / đồng đội AI ĐÁ LÙI: bóng lỏng ở phần sân nhà (hoặc đang bay về khung thành nhà).
+      // Đồng đội AI ĐÁ CAO: chỉ khi bóng đã sát khung nhà và người chơi không đứng trong vòng cấm nhà. Người còn lại giữ vị trí đội hình
+      const keeper = nearest(tm.players, g.ownGoal(p.team), (o) => o !== ctl && o !== chaser.p && o.state !== 'stun').p;
       const cover = M
         ? U.dist(b, g.ownGoal(p.team)) < A().mate.dangerDist && !(ctl && g.inKeeperZone(ctl))
         : (b.x - f.cx) * dir < 0 || b.vx * dir < -120;
-      if (!passToMate && cover) return this.goalkeeper(dt, g, p);
+      if (!passToMate && cover && (M || p === keeper)) return this.goalkeeper(dt, g, p);
 
       const home = g.formationPos(p);
       moveTo(p, home.x + (b.x - f.cx) * 0.35, home.y + (b.y - f.cy) * 0.25, false, 6);

@@ -32,10 +32,11 @@
       if (this.screen !== 'menu') this.toMenu('party');
       SFC.Menu.startSearch();
     },
-    // vị trí character đang chọn (POSITION)
-    myRole() { return C.roles[this.sel.ctrl ? this.sel.ctrl - 1 : C.roles.indexOf('FWD')]; },
+    // không còn chọn vị trí (mọi người cùng 1 vai trò): character luôn vào chỗ đứng ĐÁ CAO khi giao bóng;
+    // roles chỉ còn là các chỗ đứng trong đội hình (game.formation), không hiện trên giao diện
+    myRole() { return C.roles.includes('FWD') ? 'FWD' : C.roles[C.roles.length - 1]; },
 
-    // trận Main Path 2v2: character của bạn + đồng đội giả vs 2 đối thủ giả (bot đóng vai người chơi, lb = MainPath.matchmake)
+    // trận Main Path 3v3: character của bạn + 2 đồng đội (bạn bè trong phòng / người giả) vs 3 đối thủ giả (bot đóng vai người chơi, lb = MainPath.matchmake)
     startRanked(lb) {
       const MP = SFC_CONFIG.mainPath, st = SFC.MainPath.state;
       const soloIdx = Math.max(0, C.roles.indexOf(lb.role));   // vị trí ngẫu nhiên mỗi trận (Menu.startSearch)
@@ -49,7 +50,7 @@
         coreUnlocks: [SFC.Profile.unlockedCores(), null], coreFresh: [st.fresh.slice(), null],
         // giờ chọn Core như trận xếp hạng có người thật (net.draftTimeLimit)
         draftTimeLimit: SFC_CONFIG.net.draftTimeLimit,
-        mates: [lb.mate, lb.opps],
+        mates: [lb.mates, lb.opps],   // 3v3: 2 đồng đội (bạn bè trong phòng / người giả) vs 3 đối thủ giả
         mainPath: { area: st.area, elo: st.elo, reward: lb.reward, myElo: lb.myElo, oppElo: lb.oppElo, party: lb.party },
       });
     },
@@ -70,7 +71,7 @@
       this.toMenu('party');
       if (msg) SFC.Menu.setMsg(msg, true);
     },
-    forfeitText(r) { return r.delta ? SFC.t('Forfeit counts as a loss ({n} ELO).', { n: r.delta }) : SFC.t('Forfeit counts as a loss.'); },
+    forfeitText(r) { return r.delta ? SFC.t('Forfeit counts as a loss ({n} ★).', { n: r.delta }) : SFC.t('Forfeit counts as a loss.'); },
 
     // chỉ số riêng của character (chỉ Main Path / Luyện tập — online đi qua Profile.avatar(), không kèm chỉ số)
     // đồng đội đang chọn vào trận: đá vị trí còn lại so với character
@@ -95,7 +96,8 @@
       const home = o.order[s.team];
       let away = o.opp[s.opp];
       if (away === 'random') away = SFC.U.pick(o.order.filter((id) => id !== home));
-      const two = t.mine === 2;
+      // đội bạn: 1 người (character đá ĐÁ CAO) hoặc đủ đội (chỉ số slot = chỉ số vị trí trong roles)
+      const two = t.mine > 1;
       const soloIdx = !two ? 0 : s.ctrl ? s.ctrl - 1 : null;
       const role = !two || soloIdx == null ? 'FWD' : C.roles[soloIdx];
       this.startMatch({

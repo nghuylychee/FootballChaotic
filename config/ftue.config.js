@@ -73,8 +73,8 @@ SFC_CONFIG.ftue = {
   pathCard: {
     title: 'THE MAIN PATH',
     lines: [
-      ['star', 'RANKED · WIN = + ELO', 'Lose and your Elo drops. Every match pays gold & XP'],
-      ['crown', 'ENOUGH ELO = NEXT AREA', 'Each Area is an Elo range, from the alleys to the World Stage'],
+      ['star', 'RANKED · WIN = + ★', 'Lose and your ★ drop. Every match pays gold & XP'],
+      ['crown', 'ENOUGH ★ = NEXT AREA', 'Each Area needs more ★, from the alleys to the World Stage'],
       ['core', 'NEW AREA = NEW ULTIMATE', 'The powers from your dream are waiting up there'],
     ],
     foot: 'Your journey starts at the VILLAGE GREEN',

@@ -72,6 +72,8 @@ window.SFC = window.SFC || {};
     },
     // vị trí trong Area: 0 = vừa vào, 1 = sắp lên Area kế (Area cuối: có thể > 1)
     frac(elo, a = this.areaOf(elo)) { return (elo - this.area(a).elo) / this.span(a); },
+    // Elo dạng chữ cho chỗ không vẽ được icon (thông báo, gợi ý): ★ + số. Chỗ có HTML dùng SFC.PixelIcon.elo(n)
+    stars(n) { return '★' + n; },
     // ngưỡng Elo của Area kế tiếp (null ở Area cuối)
     nextElo(a = this.state.area) { const n = this.area(a + 1); return n ? n.elo : null; },
 
@@ -101,7 +103,7 @@ window.SFC = window.SFC || {};
       const src = this.coreSource(id), _t = SFC.t;
       if (src.kind !== 'area') return _t('Not available yet');
       const n = src.area + 1, seen = src.area <= this.state.best;
-      return _t('Reach AREA {n}', { n }) + (seen ? ' · ' + this.area(src.area).name : '') + ` · ${this.area(src.area).elo} ${_t('ELO')}`;
+      return _t('Reach AREA {n}', { n }) + (seen ? ' · ' + this.area(src.area).name : '') + ` · ${this.stars(this.area(src.area).elo)}`;
     },
 
     // Core đã xuất hiện ở lượt chọn -> bỏ nhãn NEW
@@ -151,36 +153,43 @@ window.SFC = window.SFC || {};
       const M = C().matchmaking, names = M.names.filter((n) => !taken.includes(n));
       const m = SFC.Mates.generate(this.areaOf(elo), 1);
       m.ovr = clampInt(this.ovrAt(elo) + rnd(-M.ovr.spread, M.ovr.spread), 40, 99);
+      m.ult = U().pick(this.ultsAt(elo));
       m.ratings = SFC.Mates.genRatings(m.ovr, m.main);
       m.name = names.length ? U().pick(names) : m.name;
       m.elo = elo;
       taken.push(m.name);
       return m;
     },
-    // ghép 1 trận 2v2: đồng đội + 2 đối thủ giả. waited = giây đã chờ (nới range); role = vị trí của bạn;
-    // partyMate(role): người bạn trong phòng (SFC.Social.partyMate) làm đồng đội thay người giả — đối thủ ghép quanh Elo trung bình 2 người
-    matchmake(waited = 0, role = 'FWD', partyMate = null) {
+    // ghép 1 trận 3v3: 2 đồng đội + 3 đối thủ giả. waited = giây đã chờ (nới range); role = vị trí của bạn;
+    // partyMates(roles): những người bạn trong phòng (SFC.Social.partyMates) làm đồng đội ở các vị trí còn lại, thiếu thì người giả lấp vào —
+    // đối thủ ghép quanh Elo trung bình đội mình
+    matchmake(waited = 0, role = 'FWD', partyMates = null) {
       const M = C().matchmaking, st = this.state, roles = SFC_CONFIG.game.roles;
       const range = U().lerp(M.range[0], M.range[1], Math.min(1, waited / Math.max(0.1, M.searchTime[1])));
-      const mateRole = roles.find((r) => r !== role) || roles[0];
-      const friend = partyMate && partyMate(mateRole);
-      const taken = [SFC.Profile.data.name].concat(friend ? [friend.name] : []);
-      const mateRaw = friend ? null : this.fakePlayer(this.fakeElo(st.elo, range), taken);
-      const mateElo = friend ? friend.elo : mateRaw.elo;
-      const myElo = (st.elo + mateElo) / 2;
-      const opps = [0, 1].map(() => this.fakePlayer(this.fakeElo(Math.round(myElo), range), taken));
-      const oppElo = (opps[0].elo + opps[1].elo) / 2;
-      // sân: Area của Elo trung bình cả 4 người
+      const mateRoles = roles.filter((r) => r !== role);
+      const friends = (partyMates ? partyMates(mateRoles) : []).slice(0, mateRoles.length);
+      const taken = [SFC.Profile.data.name].concat(friends.map((f) => f.name));
+      const fakeSpec = (m, r) => Object.assign(SFC.Mates.spec(m, r), { elo: m.elo, fake: true });
+      const mates = mateRoles.map((r, i) => friends[i] || fakeSpec(this.fakePlayer(this.fakeElo(st.elo, range), taken), r));
+      const avg = (list) => list.reduce((s, x) => s + x, 0) / Math.max(1, list.length);
+      const myElo = avg([st.elo].concat(mates.map((m) => m.elo)));
+      const opps = roles.map((r) => fakeSpec(this.fakePlayer(this.fakeElo(Math.round(myElo), range), taken), r));
+      const oppElo = avg(opps.map((o) => o.elo));
+      // sân: Area của Elo trung bình cả 2 đội
       const a = this.areaOf(Math.round((myElo + oppElo) / 2)), A = this.area(a);
       return {
         area: a, arena: A.arena, reward: this.area(st.area).reward, range: Math.round(range), role,
-        mate: friend || Object.assign(SFC.Mates.spec(mateRaw, mateRole), { elo: mateRaw.elo, fake: true }),
-        party: !!friend,
-        opps: opps.map((m, i) => Object.assign(SFC.Mates.spec(m, roles[i]), { elo: m.elo, fake: true })),
-        myElo, oppElo,
+        mates, party: friends.length > 0, opps, myElo, oppElo,
         aiProfile: this.aiProfile(Math.round((myElo + oppElo) / 2)),
       };
     },
+    // Tuyệt kỹ 1 người chơi ở mức Elo có thể đã sưu tập: Tuyệt kỹ mặc định + Tuyệt kỹ của các Area đã tới (tới Area của Elo đó)
+    ultsAt(elo) {
+      const a = this.areaOf(elo), L = SFC_CONFIG.cores.list;
+      const ids = [SFC_CONFIG.progression.defaultUlt].concat(this.areas().slice(0, a + 1).map((A) => A.ult));
+      return [...new Set(ids.filter((id) => L[id] && L[id].role === 'ult'))];
+    },
+
     // CLB của đội đối thủ giả: tên theo người đầu tiên, áo sân khách
     rivalClub(name) {
       const P = C().playerTeam, id = 'mp_rival';

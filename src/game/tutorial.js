@@ -72,14 +72,15 @@ window.SFC = window.SFC || {};
     },
 
     startMatch() {
-      const app = this.app, F = CFG().match, MP = SFC_CONFIG.mainPath, roles = SFC_CONFIG.game.roles;
-      const soloIdx = roles.indexOf(F.role);
+      // trận mơ giữ 2v2 (teamSize): mỗi đội chỉ có 2 vị trí cuối của roles (TIỀN VỆ + ĐÁ CAO), chỉ số slot tính trong 2 vị trí đó
+      const app = this.app, F = CFG().match, MP = SFC_CONFIG.mainPath, roles = SFC_CONFIG.game.roles.slice(-2);
+      const soloIdx = Math.max(0, roles.indexOf(F.role));
       const avatar = Object.assign(SFC.Profile.avatar(), { role: F.role, stats: Object.assign({}, F.stats), ovr: F.ovr });
       SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
       app.startMatch({
         home: MP.playerTeam.id, away: CFG().team.id, difficulty: 'normal', aiProfile: F.ai, mateDifficulty: MP.teammate,
         humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: F.arena,
-        tutorial: true, noDraft: true, noAiCores: true, noScale: true,
+        tutorial: true, noDraft: true, noAiCores: true, noScale: true, teamSize: [2, 2],
       });
       const g = this.g = app.game;
       this.me = g.controlled;
