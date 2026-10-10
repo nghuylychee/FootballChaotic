@@ -3,6 +3,10 @@
  * Bắt tay: create{v} / join{code,v} -> máy chủ trả room{code,id} (id = id máy chủ cấp cho máy này) hoặc err{e}.
  * Sau đó mọi gói đi thẳng tới Room trên máy chủ (hello, i, pick...; xem online.js).
  * Dùng WebSocket có sẵn của trình duyệt / Electron, không cần thư viện.
+ * Máy chủ có thể đang "ngủ" (gói miễn phí của nhà cung cấp tắt máy khi không ai dùng, bật lại mất ~1 phút):
+ *  - wake(): gọi /healthz cho máy chủ dậy sớm (mở trang ONLINE)
+ *  - host() / join(code, { wait }) thử lại mỗi 2 giây tới net.server.wakeTimeout giây; onWait(giây còn lại) để hiện đếm ngược
+ *  - cancel(): bỏ chờ -> reject { type: 'cancelled' }
  */
 window.SFC = window.SFC || {};
 
@@ -23,11 +27,52 @@ window.SFC = window.SFC || {};
     get connected() { return this.joined && !!this.ws && this.ws.readyState === 1; },
     get id() { return this.myId; },
 
-    /** Tạo phòng trên máy chủ -> resolve(mã phòng). Hết net.server.connectTimeout giây -> reject (online.js chuyển sang tự host) */
-    host() { return this.open({ t: 'create', v: N().protocol }, S().connectTimeout); },
+    /** Tạo phòng trên máy chủ -> resolve(mã phòng). Chờ máy chủ dậy tới wakeTimeout giây, không được thì reject (online.js tự host) */
+    host(onWait) { return this.until({ t: 'create', v: N().protocol }, onWait); },
 
-    /** Vào phòng theo mã -> resolve khi máy chủ xác nhận */
-    join(code) { return this.open({ t: 'join', code, v: N().protocol }, N().connectTimeout).then(() => undefined); },
+    /** Vào phòng theo mã -> resolve khi máy chủ xác nhận. wait: chờ máy chủ dậy (VÀO PHÒNG); không: thử 1 lần (kết nối lại) */
+    join(code, opts = {}) {
+      const first = { t: 'join', code, v: N().protocol };
+      return (opts.wait ? this.until(first, opts.onWait) : this.open(first, S().connectTimeout)).then(() => undefined);
+    },
+
+    // thử kết nối mỗi 2 giây tới hạn; chỉ lỗi "không tới được" mới thử lại (sai mã / đầy / sai phiên bản thì báo ngay)
+    until(first, onWait) {
+      const deadline = Date.now() + (S().wakeTimeout || S().connectTimeout) * 1000;
+      this.cancelled = false;
+      return new Promise((resolve, reject) => {
+        // cancel() kết thúc lần chờ ngay (cả khi đang giữa 1 lần thử hoặc đang đợi 2 giây)
+        this.abort = () => { this.abort = null; reject({ type: 'cancelled' }); };
+        const ok = (v) => { this.abort = null; resolve(v); };
+        const attempt = () => {
+          if (this.cancelled) { reject({ type: 'cancelled' }); return; }
+          this.open(first, S().connectTimeout).then(ok, (e) => {
+            const left = Math.ceil((deadline - Date.now()) / 1000);
+            if (this.cancelled) reject({ type: 'cancelled' });
+            else if (e.type !== 'server-unreachable' || left <= 0) reject(e);
+            else { if (onWait) onWait(left); this.retry = setTimeout(attempt, 2000); }
+          });
+        };
+        attempt();
+      });
+    },
+
+    cancel() {
+      this.cancelled = true;
+      clearTimeout(this.retry);
+      this.close();
+      if (this.abort) this.abort();
+    },
+
+    // đánh thức máy chủ đang ngủ (không cần kết quả); tối đa 1 lần / phút
+    wake() {
+      if (!S().url || Date.now() - (this.wokeAt || 0) < 60000) return;
+      this.wokeAt = Date.now();
+      try {
+        const http = S().url.replace(/^ws/, 'http');
+        fetch(new URL('/healthz', http).href, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+      } catch (e) { /* bỏ qua */ }
+    },
 
     open(first, timeoutSec) {
       this.close();

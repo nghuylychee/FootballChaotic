@@ -67,7 +67,8 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 - `room.js` (`SFC.Room`) holds the UI-free room rules: lobby slots, owner, starting a match, the tick loop, snapshot broadcast. It runs in the browser when a player hosts (Steam P2P via `transport-steam.js`, or PeerJS/WebRTC via `transport-peer.js`) and in Node on the dedicated server (`server/`, reached through `transport-server.js`).
 - `online.js` is the client: lobby UI state, and guests that send input bitmasks and draw a **mirror `Game` that is never simulated**.
 - `isHost` means this machine runs the match. `isOwner` means this player controls START / BACK TO LOBBY. Use `isOwner` for UI gating.
-- CREATE ROOM tries the server first when `net.server.url` is set (empty by default), then falls back to player-hosting. JOIN picks the backend by code length: `net.server.codeLength` (6) means a server room, 7 means player-hosted.
+- CREATE ROOM tries the server first when `net.server.url` is set (empty by default), then falls back to player-hosting. All room codes are 7 characters; JOIN recognises a server room by its first character (`net.server.codeFirst`, see `NetCommon.isServerCode`). Steam codes always start A–D, and PeerJS codes avoid those characters.
+- **Players must never be able to tell which model a room uses.** Every message, error text (`ERRORS` in `transport.js`), room code and lobby tag (HOST = room owner) is identical across server, Steam and PeerJS. Don't mention servers, hosting machines, P2P, Steam, PeerJS or waking in player-facing text; `client-test.js` fails if any appears.
 - `sync.js` defines what guests see:
   - `snapshot()` / `apply()` copy the player fields named in `PF`.
   - `capture()` wraps a **hard-coded list of `Effects` method names** and replays them on guests.

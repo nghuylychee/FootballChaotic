@@ -171,8 +171,7 @@ SFC.I18n.add({
 
     /* ===== Online: phòng, phòng chờ ===== */
     'CREATE ROOM': 'CRIAR SALA',
-    'You host · the match runs on your machine': 'És o host · o jogo corre na tua máquina',
-    'The match runs on our server': 'O jogo corre no nosso servidor',
+    'Get a code to share with friends': 'Recebe um código para partilhar com amigos',
     'JOIN ROOM': 'ENTRAR NA SALA',
     "Enter a friend's room code": 'Escreve o código da sala de um amigo',
     'CONNECT': 'LIGAR',

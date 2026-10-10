@@ -70,7 +70,7 @@ window.SFC = window.SFC || {};
       const s = O.slotOf(t, role), m = O.memberAt(s), pos = ROLE_LABELS()[role] || role;
       if (m) {
         const you = m.id === meId, n = L.members.indexOf(m) + 1;
-        const tag = you ? `<em class="you">${esc(_t('YOU'))}</em>` : m.id === 'host' ? `<em>${esc(_t('HOST'))}</em>` : '';
+        const tag = you ? `<em class="you">${esc(_t('YOU'))}</em>` : m.id === L.owner ? `<em>${esc(_t('HOST'))}</em>` : '';
         return `<div class="lb-slot ${you ? 'me' : ''}" data-slot="${s}"><u>P${n}</u><div><b>${esc(m.pf.name)}</b>${tag}
           <span>${pos} · ${_t('LV {n}', { n: m.pf.level })}${m.pf.ovr ? ` · ${_t('OVR {n}', { n: m.pf.ovr })}` : ''}</span></div></div>`;
       }
@@ -120,6 +120,8 @@ window.SFC = window.SFC || {};
       this.msg = msg;
       this.msgErr = err;
       if (page === 'join' && !msg) this.code = '';
+      // máy chủ riêng có thể đang ngủ: mở ONLINE là đánh thức luôn, tới lúc bấm TẠO / VÀO PHÒNG đã dậy được một lúc
+      if (page === 'online' && SFC.NetCommon.serverOn()) SFC.NetServer.wake();
       if (page === 'name') this.nameBuf = PF().data.name;
       if (page === 'path') this.pathView = MPATH().state.area;   // mở Main Path: xem Area đang đá
       this.setTextMode(page === 'join' || page === 'name' ? page : null);
@@ -249,7 +251,7 @@ window.SFC = window.SFC || {};
         }
         case 'online':
           return [
-            { kind: 'btn', label: _t('CREATE ROOM'), sub: SFC.NetCommon.serverOn() ? _t('The match runs on our server') : _t('You host · the match runs on your machine'), act: () => Online().createRoom() },
+            { kind: 'btn', label: _t('CREATE ROOM'), sub: _t('Get a code to share with friends'), act: () => Online().createRoom() },
             { kind: 'btn', label: _t('JOIN ROOM'), sub: _t('Enter a friend\'s room code'), act: () => this.go('join') },
           ];
         case 'join':
@@ -326,7 +328,7 @@ window.SFC = window.SFC || {};
     },
 
     back() {
-      if (Online().status === 'busy') return;
+      if (Online().status === 'busy') { Online().cancelWait(); return; }
       // trang chủ: hỏi thoát game. Trình duyệt không tự đóng tab được -> bản web không làm gì
       if (this.page === 'home') { if (ST().desktop) this.askQuit(); return; }
       if (this.page === 'name') { if (PF().hasName) this.go(this.nameBack); return; } // lần đầu: bắt buộc đặt tên
@@ -887,9 +889,7 @@ window.SFC = window.SFC || {};
     },
 
     submitCode() {
-      // mã ngắn (net.server.codeLength) = phòng máy chủ riêng
-      const short = SFC.NetCommon.serverOn() && this.code.length === SFC_CONFIG.net.server.codeLength;
-      if (!short && this.code.length < SFC_CONFIG.net.codeLength) { this.setMsg(_t('Room codes are {n} characters.', { n: SFC_CONFIG.net.codeLength }), true); return; }
+      if (this.code.length < SFC_CONFIG.net.codeLength) { this.setMsg(_t('Room codes are {n} characters.', { n: SFC_CONFIG.net.codeLength }), true); return; }
       Online().joinRoom(this.code);
     },
 

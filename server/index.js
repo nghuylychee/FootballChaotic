@@ -25,6 +25,17 @@ const ENV = {
   LOG_STATS: num(process.env.LOG_STATS, 0),              // giây giữa 2 dòng thống kê (0 = tắt)
   MAX_PER_IP: num(process.env.MAX_PER_IP, 10),           // số kết nối cùng lúc / 1 địa chỉ IP (0 = không giới hạn)
   JOIN_TIMEOUT: num(process.env.JOIN_TIMEOUT, 10),       // giây: kết nối phải tạo / vào phòng và được nhận vào phòng (hello) trong bấy nhiêu giây
+  COMPRESSION: num(process.env.COMPRESSION, 1),          // 1 = nén WebSocket (permessage-deflate), 0 = tắt
+};
+// Nén: snapshot liên tiếp gần như giống hệt nhau -> deflate nhớ ngữ cảnh giữa các gói nén ~9 lần (~900 B -> ~90 B).
+// Cửa sổ 4 KB (2^12) vẫn chứa vài snapshot nên nén gần bằng mặc định 32 KB, nhưng mỗi kết nối chỉ tốn ~48 KB thay vì ~256 KB.
+// threshold 0: snapshot (~900 B) nhỏ hơn ngưỡng mặc định 1 KB của ws -> mặc định sẽ không nén gì.
+const DEFLATE = {
+  serverMaxWindowBits: 12,
+  zlibDeflateOptions: { memLevel: 6, level: 6 },
+  // KHÔNG đặt clientMaxWindowBits: ws sẽ từ chối (400) mọi trình duyệt không xin client_max_window_bits — Firefox
+  clientNoContextTakeover: true,    // gói từ người chơi (phím) nhỏ: máy chủ không phải giữ ngữ cảnh giải nén cho từng người
+  threshold: 0,
 };
 const STEP = 1 / 60;
 const MAX_BUFFER = 1 << 20;   // người chơi nhận chậm tới mức đọng 1 MB -> ngắt (khỏi phình bộ nhớ)
@@ -33,15 +44,17 @@ const rooms = new Map();      // mã phòng -> { code, room, clients: Map(id -> 
 const clients = new Set();    // mọi kết nối: { id, ws, ip, room, msgs, alive, since }
 const perIp = new Map();      // địa chỉ IP -> số kết nối đang mở
 let draining = false;         // đang tắt: không nhận phòng mới
-let bytesOut = 0;
+let bytesOut = 0;            // byte thật đã gửi qua mạng (sau nén + khung WebSocket) của các kết nối đã đóng; đang mở: c.sock.bytesWritten
+const wireOut = () => { let n = bytesOut; for (const c of clients) n += c.sock.bytesWritten; return n; };
 const log = (entry, text) => console.log(`[room ${entry.code}] ${text}`);
 
 /* ================= PHÒNG ================= */
+// mã phòng: dài như mọi mã (net.codeLength), ký tự đầu trong net.server.codeFirst -> game nhận ra phòng máy chủ riêng
 function newCode() {
-  const chars = NET.codeChars, n = NET.server.codeLength;
+  const chars = NET.codeChars, first = NET.server.codeFirst;
   for (;;) {
-    let s = '';
-    for (let i = 0; i < n; i++) s += chars[crypto.randomInt(chars.length)];
+    let s = first[crypto.randomInt(first.length)];
+    for (let i = 1; i < NET.codeLength; i++) s += chars[crypto.randomInt(chars.length)];
     if (!rooms.has(s)) return s;
   }
 }
@@ -50,7 +63,6 @@ function out(c, data) {
   if (c.ws.readyState !== 1) return;
   if (c.ws.bufferedAmount > MAX_BUFFER) { c.ws.terminate(); return; }
   c.ws.send(data);
-  bytesOut += data.length;
 }
 
 function createRoom() {
@@ -151,13 +163,13 @@ const server = http.createServer((req, res) => {
   res.end();
 });
 
-const wss = new WebSocketServer({ server, maxPayload: 16 * 1024, perMessageDeflate: false });
+const wss = new WebSocketServer({ server, maxPayload: 16 * 1024, perMessageDeflate: ENV.COMPRESSION ? DEFLATE : false });
 
 wss.on('connection', (ws, req) => {
   const ip = clientIp(req), n = (perIp.get(ip) || 0) + 1;
   if (ENV.MAX_PER_IP && n > ENV.MAX_PER_IP) { ws.close(1008, 'too many connections'); return; }
   perIp.set(ip, n);
-  const c = { id: 'c' + crypto.randomBytes(5).toString('hex'), ws, ip, room: null, msgs: 0, alive: true, since: Date.now() };
+  const c = { id: 'c' + crypto.randomBytes(5).toString('hex'), ws, sock: req.socket, ip, room: null, msgs: 0, alive: true, since: Date.now() };
   clients.add(c);
   ws.on('pong', () => { c.alive = true; });
   ws.on('message', (raw) => {
@@ -165,6 +177,8 @@ wss.on('connection', (ws, req) => {
     let msg;
     try { msg = JSON.parse(raw); } catch (e) { return; }
     if (!msg || typeof msg.t !== 'string') return;
+    // giữ máy chủ thức (máy khách gửi mỗi net.server.keepAlive giây): không tính là phòng đang được dùng (LOBBY_TTL)
+    if (msg.t === 'ka') return;
     if (!c.room) { handshake(c, msg); return; }
     const entry = c.room;
     entry.touched = Date.now();
@@ -173,6 +187,7 @@ wss.on('connection', (ws, req) => {
   });
   ws.on('close', () => {
     clients.delete(c);
+    bytesOut += c.sock.bytesWritten;
     const left = (perIp.get(ip) || 1) - 1;
     if (left > 0) perIp.set(ip, left); else perIp.delete(ip);
     leave(c);
@@ -246,8 +261,9 @@ setInterval(() => {
   if (ENV.IDLE_EXIT && idleFor >= ENV.IDLE_EXIT) { console.log('[server] idle, exiting'); process.exit(0); }
   if (ENV.LOG_STATS && sec % ENV.LOG_STATS === 0) {
     const matches = [...rooms.values()].filter((e) => e.room.status === 'playing').length;
-    console.log(`[stats] rooms=${rooms.size} matches=${matches} clients=${wss.clients.size} out=${((bytesOut - lastBytes) / ENV.LOG_STATS / 1024).toFixed(1)}KB/s heap=${(process.memoryUsage().heapUsed / 1048576).toFixed(1)}MB`);
-    lastBytes = bytesOut;
+    const wire = wireOut();
+    console.log(`[stats] rooms=${rooms.size} matches=${matches} clients=${wss.clients.size} out=${((wire - lastBytes) / ENV.LOG_STATS / 1024).toFixed(1)}KB/s heap=${(process.memoryUsage().heapUsed / 1048576).toFixed(1)}MB`);
+    lastBytes = wire;
   }
 }, 1000).unref();
 
@@ -271,4 +287,4 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 server.listen(ENV.PORT, () => console.log(`[server] listening on :${ENV.PORT} · protocol ${NET.protocol}`));
 
-module.exports = { rooms, ENV, shutdown };
+module.exports = { rooms, ENV, shutdown, wireOut };

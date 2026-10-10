@@ -5,6 +5,7 @@
  *  4. Quá MAX_PER_IP kết nối từ 1 địa chỉ: kết nối thừa bị từ chối
  *  5. Phòng hết trận mà bỏ không quá LOBBY_TTL thì đóng · nhật ký phòng (tạo / bắt đầu / đóng)
  *  6. Đang tắt (SIGTERM): không nhận tạo / vào phòng, /healthz trả 503
+ *  0. Mọi kiểu xin nén của trình duyệt (Chrome / Firefox / không xin) đều vào được, trình duyệt có xin thì được nén
  * node server/test/hardening-test.js
  */
 const assert = require('assert');
@@ -62,7 +63,28 @@ async function match(nameA, nameB) {
   return { A, B, code };
 }
 
+// bắt tay WebSocket thô với 1 kiểu xin nén -> phần mở rộng máy chủ trả về, hoặc mã lỗi
+function handshakeWith(ext) {
+  const http = require('http');
+  return new Promise((res) => {
+    const headers = { Connection: 'Upgrade', Upgrade: 'websocket', 'Sec-WebSocket-Version': '13', 'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ==' };
+    if (ext) headers['Sec-WebSocket-Extensions'] = ext;
+    const req = http.request({ port: PORT, path: '/', headers });
+    req.on('upgrade', (r, sock) => { sock.destroy(); res({ ok: true, ext: r.headers['sec-websocket-extensions'] || '' }); });
+    req.on('response', (r) => res({ ok: false, status: r.statusCode }));
+    req.end();
+  });
+}
+
 (async () => {
+  // 0. trình duyệt xin nén khác nhau: Chrome kèm client_max_window_bits, Firefox / Safari không -> đều phải vào được
+  for (const [name, offer] of [['Chrome', 'permessage-deflate; client_max_window_bits'], ['Firefox', 'permessage-deflate'], ['no compression', '']]) {
+    const r = await handshakeWith(offer);
+    assert.ok(r.ok, `${name} handshake refused (${r.status})`);
+    if (offer) assert.ok(r.ext.startsWith('permessage-deflate'), `${name} gets compression`);
+  }
+  console.log('0. browser compression offers: OK (Chrome, Firefox, no compression)');
+
   const logged = [];
   const origError = console.error;
   console.error = (...a) => logged.push(a.join(' '));
@@ -130,13 +152,16 @@ async function match(nameA, nameB) {
   // 5. trận đã hết, mọi người ngồi ở màn kết quả -> đóng sau LOBBY_TTL (2 giây trong test)
   const r5 = await match('A5', 'B5');
   rooms.get(r5.code).room.endSent = true;   // giả như trận vừa hết
+  // gói giữ thức (ka) vẫn đều đặn: không được tính là phòng đang dùng
+  const ka = setInterval(() => { r5.A.send({ t: 'ka' }); r5.B.send({ t: 'ka' }); }, 300);
   await r5.B.next((m) => m.t === 'bye', 5000);
+  clearInterval(ka);
   assert.ok(!rooms.has(r5.code), 'finished room left idle is closed');
   const mine = roomLog.filter((l) => l.includes(r5.code));
   assert.ok(mine.some((l) => l.includes('created')) && mine.some((l) => l.includes('match started (versus, 2 players)')) && mine.some((l) => l.includes('closed (idle')), 'room lifecycle is logged: ' + mine.join(' | '));
   assert.ok(roomLog.some((l) => l.includes(r1.code) && l.includes('closed (error')), 'failed room logged as closed (error)');
   assert.ok(roomLog.some((l) => l.includes('closed (empty)')), 'empty room logged');
-  console.log('5. idle finished room + logging: OK');
+  console.log('5. idle finished room + keep-alive + logging: OK');
   await Promise.all([r5.A, r5.B].map((c) => c.close()));
 
   // 6. đang tắt: trận đang đá được đá tiếp, nhưng không tạo / vào phòng mới

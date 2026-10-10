@@ -90,7 +90,8 @@ async function overWebSocket() {
     await Promise.all([A.open, B.open, C.open]);
     A.send({ t: 'create', v: NET.protocol });
     const room = await A.next((m) => m.t === 'room');
-    assert.strictEqual(room.code.length, NET.server.codeLength);
+    assert.strictEqual(room.code.length, NET.codeLength);
+    assert.ok(NET.server.codeFirst.includes(room.code[0]), 'server room codes start with a server character');
     B.send({ t: 'join', code: 'ZZZZZZ', v: NET.protocol });
     assert.strictEqual((await B.next((m) => m.t === 'err')).e, 'room-missing');
     B.send({ t: 'join', code: room.code, v: NET.protocol });

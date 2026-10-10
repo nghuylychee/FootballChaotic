@@ -14,8 +14,11 @@ SFC_CONFIG.net = {
   // TẠO PHÒNG thử máy chủ trước, không tới được thì tự chuyển sang người chơi làm host.
   server: {
     url: '',                   // 'wss://...' · chạy thử máy chủ trên máy này: npm run online (tự gắn url, không cần sửa ở đây)
-    codeLength: 6,             // khác độ dài mã Steam / PeerJS (codeLength) -> VÀO PHÒNG tự biết phòng loại nào
-    connectTimeout: 3,         // giây chờ máy chủ trước khi chuyển sang tự host
+    codeFirst: '23456789',     // ký tự đầu của mã phòng máy chủ riêng (mã Steam luôn bắt đầu A-D, mã PeerJS tránh các ký tự này)
+                               // -> mọi mã đều dài codeLength, người chơi không phân biệt được, VÀO PHÒNG tự biết phòng loại nào
+    connectTimeout: 5,         // giây chờ 1 lần thử kết nối
+    wakeTimeout: 70,           // giây chờ máy chủ đang ngủ dậy (gói miễn phí ~1 phút) trước khi TẠO PHÒNG tự host; Esc bỏ chờ
+    keepAlive: 60,             // giây giữa 2 gói giữ máy chủ thức khi đang ở phòng máy chủ riêng (0 = tắt)
     snapshotEvery: 2,          // máy chủ gửi trạng thái 30 lần/giây (đỡ băng thông; khách vẫn nội suy mượt)
     interpDelay: 0.09,         // trễ nội suy ở máy khách phòng máy chủ riêng (snapshot thưa hơn -> đệm dài hơn interpDelay)
   },

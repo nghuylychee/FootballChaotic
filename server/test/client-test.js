@@ -3,6 +3,7 @@
  *  1. Phòng máy chủ riêng: A tạo phòng (mã 6 ký tự), B vào, A là chủ phòng, START, B nhận snapshot, A về phòng chờ
  *  2. Máy chủ không tới được: A tạo phòng -> tự chuyển sang làm host (P2P giả), B vào bằng mã 7 ký tự, đá, về phòng chờ
  *  Cả 2: B rớt mạng giữa trận -> tự kết nối lại, lấy lại slot, A thấy RECONNECTED
+ *  Mọi thông báo / banner người chơi thấy không được lộ cách kết nối (máy chủ riêng / làm host / Steam / PeerJS)
  * node server/test/client-test.js
  */
 const assert = require('assert');
@@ -34,7 +35,7 @@ function fakePeer() {
     get id() { return this.hosting ? 'host' : this.myId; },
     host() {
       this.hosting = true;
-      this.code = 'P2PCODE';   // 7 ký tự
+      this.code = 'KXQMRTA';   // 7 ký tự, ký tự đầu không phải net.server.codeFirst
       hub.set(this.code, this);
       return Promise.resolve(this.code);
     },
@@ -68,6 +69,7 @@ function fakePeer() {
 }
 
 /* ---------- 1 máy người chơi ---------- */
+const MACHINES = [];
 function machine(name, serverUrl) {
   const ctx = vm.createContext({
     console, setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, performance, WebSocket, Intl, URL,
@@ -83,6 +85,7 @@ function machine(name, serverUrl) {
   for (const f of FILES) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
   const SFC = ctx.SFC;
   ctx.SFC_CONFIG.net.server.url = serverUrl;
+  ctx.SFC_CONFIG.net.server.keepAlive = 0.2;   // test: gói giữ thức mỗi 0,2 giây
   SFC.NetPeer = fakePeer();
   SFC.Profile.load();
   SFC.Profile.data.name = name;
@@ -105,7 +108,9 @@ function machine(name, serverUrl) {
   };
   SFC.Intro = { update() {}, wants: (o) => SFC.Room.wantsIntro(o) };
   const input = { isDown: () => false, wasPressed: () => false, wasReleased: () => false, endFrame() {} };
-  return { name, SFC, O: SFC.Online, log, input, app };
+  const m = { name, SFC, SFC_CONFIG: ctx.SFC_CONFIG, O: SFC.Online, log, input, app };
+  MACHINES.push(m);
+  return m;
 }
 
 // chạy vòng lặp game của các máy (60 bước/giây) trong ms
@@ -140,7 +145,8 @@ async function serverRoom(url) {
   A.O.createRoom();
   await until(() => A.O.status === 'lobby' && A.O.lobby.members.length === 1, 5000, 'A in server lobby');
   assert.ok(A.O.onServer && !A.O.isHost, 'server room: creator is a guest');
-  assert.strictEqual(A.O.code.length, 6);
+  assert.strictEqual(A.O.code.length, 7, 'server codes look like every other code');
+  assert.ok(A.SFC.NetCommon.isServerCode(A.O.code), 'first character marks a server room');
   assert.ok(A.O.isOwner, 'creator owns the room');
   B.O.joinRoom(A.O.code);
   await until(() => B.O.lobby.members.length === 2 && A.O.lobby.members.length === 2, 5000, 'both in lobby');
@@ -161,18 +167,30 @@ async function serverRoom(url) {
   B.O.guestData({ t: 'bye' });
   assert.ok(!B.O.rejoining && B.O.status === 'idle', 'room closed by the server: no reconnect attempt');
   A.O.leave();
-  console.log('server room: OK (create 6-char code, join, owner start, snapshots, drop + auto rejoin, back to lobby)');
+  console.log('server room: OK (7-char code, join, owner start, snapshots, drop + auto rejoin, back to lobby)');
 }
 
 async function fallbackRoom() {
-  const dead = 'ws://localhost:1';   // không có máy chủ
+  const dead = 'ws://localhost:1';   // không có máy chủ (như máy chủ đang ngủ mãi không dậy)
+  // Esc khi đang chờ máy chủ dậy -> huỷ tạo phòng
+  const C = machine('CARA', dead);
+  C.SFC_CONFIG.net.server.wakeTimeout = 30;
+  C.O.createRoom();
+  await until(() => C.log.msgs.some((m) => /Creating room.*cancel/.test(m)), 4000, 'waiting message');
+  C.O.cancelWait();
+  await until(() => C.O.status === 'idle', 2000, 'Esc cancels');
+  assert.strictEqual(C.SFC.Menu.msg, 'Cancelled.');
+  console.log('waiting + Esc: OK (cancels)');
+
   const A = machine('ALICE', dead), B = machine('BOB', dead);
+  A.SFC_CONFIG.net.server.wakeTimeout = 3;   // test: chờ 3 giây thay vì ~70
   const t0 = Date.now();
   A.O.createRoom();
-  await until(() => A.O.status === 'lobby', 8000, 'fallback host lobby');
+  await until(() => A.O.status === 'lobby', 10000, 'fallback host lobby');
   assert.ok(A.O.isHost && A.O.isOwner && !A.O.onServer, 'fell back to player-hosted');
-  assert.ok(A.log.msgs.some((m) => /Server unreachable/.test(m)), 'player is told about the fallback');
-  console.log(`fallback after ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  assert.ok(Date.now() - t0 >= 2500, 'kept retrying until wakeTimeout');
+  assert.ok(!A.SFC.NetCommon.isServerCode(A.O.code), 'player-hosted code is not mistaken for a server code');
+  console.log(`fallback after ${((Date.now() - t0) / 1000).toFixed(1)} s of retrying`);
   B.O.joinRoom(A.O.code);   // 7 ký tự -> P2P
   await until(() => B.O.lobby.members.length === 2 && A.O.lobby.members.length === 2, 5000, 'p2p lobby');
   assert.ok(!B.O.isOwner && B.O.lobby.owner === 'host');
@@ -195,6 +213,18 @@ async function fallbackRoom() {
   try {
     await serverRoom(`ws://localhost:${port}`);
     await fallbackRoom();
+    // mã PeerJS ngẫu nhiên không bao giờ trùng dạng mã máy chủ riêng
+    const NC = MACHINES[0].SFC.NetCommon;
+    for (let i = 0; i < 2000; i++) assert.ok(!NC.isServerCode(NC.randomCode()), 'random P2P code never looks like a server code');
+    // không thông báo nào lộ cách kết nối
+    const LEAK = /server|host|machine|p2p|peer|steam|webrtc|handshake|waking|dedicated/i;
+    const seen = MACHINES.flatMap((m) => m.log.msgs.concat(m.log.banners));
+    const leaks = seen.filter((t) => LEAK.test(t));
+    assert.deepStrictEqual(leaks, [], 'player-visible text reveals the network model');
+    const errors = Object.values(['network', 'webrtc', 'load', 'steam-lobby', 'steam-offline', 'server-unreachable', 'server-full', 'server-closing', 'version', 'timeout'])
+      .map((type) => NC.message({ type }));
+    assert.deepStrictEqual(errors.filter((t) => LEAK.test(t)), [], 'error texts reveal the network model');
+    console.log(`neutral texts: OK (${seen.length} messages/banners checked, error texts too)`);
     console.log('OK');
   } finally {
     proc.kill('SIGTERM');

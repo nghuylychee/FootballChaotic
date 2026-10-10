@@ -168,8 +168,7 @@ SFC.I18n.add({
 
     /* ===== Online: sala, lobby ===== */
     'CREATE ROOM': 'ルーム作成',
-    'You host · the match runs on your machine': 'きみがホスト · 試合はきみのPCで動く',
-    'The match runs on our server': '試合はこちらのサーバーで動く',
+    'Get a code to share with friends': 'フレンドに送るコードを発行',
     'JOIN ROOM': 'ルームに参加',
     'Enter a friend\'s room code': '友だちのルームコードを入力',
     'CONNECT': '接続',
