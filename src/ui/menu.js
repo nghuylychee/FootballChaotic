@@ -8,7 +8,7 @@ window.SFC = window.SFC || {};
 (function () {
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const _t = SFC.t, _tn = SFC.tn;   // dịch theo ngôn ngữ đang chọn (core/i18n.js) — nhãn cố định viết thành hàm, gọi lúc vẽ
+  const _t = SFC.t, _tn = SFC.tn;   // dịch theo ngôn ngữ đang chọn (engine/i18n.js) — nhãn cố định viết thành hàm, gọi lúc vẽ
   const TEAMS = () => SFC_CONFIG.teams;
   const STAT_LABELS = () => ({ speed: _t('SPEED'), power: _t('POWER'), pass: _t('PASSING'), tackle: _t('PHYSICAL'), dribble: _t('DRIBBLE'), accuracy: _t('ACCURACY') });
   const Online = () => SFC.Online;
@@ -24,7 +24,7 @@ window.SFC = window.SFC || {};
   const coin = (n) => G().coin(n);
   const xpBar = (d) => G().xpBar(d);
   const CV = () => SFC.ControlsView;   // Settings > Controls (ui/controls.js)
-  const ST = () => SFC.Settings;       // Settings: âm lượng, cỡ cửa sổ (core/settings.js)
+  const ST = () => SFC.Settings;       // Settings: âm lượng, cỡ cửa sổ (meta/settings.js)
   const ATTRS = () => PROG().attrs;     // chỉ số character (trang STATS)
   // tên chỉ số trong trận (Player.stats) cho khung chi tiết trang STATS
   const KEY_LABELS = () => ({ speed: _t('run speed'), stamina: _t('stamina refill'), power: _t('shot power'), accuracy: _t('shot aim'), pass: _t('passing'),
@@ -178,7 +178,7 @@ window.SFC = window.SFC || {};
           }
           return [];
         case 'display':
-          // SETTINGS > SOUND & DISPLAY: lưu ngay khi đổi (core/settings.js)
+          // SETTINGS > SOUND & DISPLAY: lưu ngay khi đổi (meta/settings.js)
           return [
             { kind: 'pick', label: _t('MUSIC'), value: ST().volumeLabel('music'), change: (d) => ST().stepVolume('music', d) },
             { kind: 'pick', label: _t('SOUND FX'), value: ST().volumeLabel('sfx'), change: (d) => ST().stepVolume('sfx', d) },

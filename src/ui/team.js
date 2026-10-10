@@ -2,7 +2,7 @@
  *   team  : 2 tab — ROSTER (đội hình: chọn đồng đội ra sân, xem chỉ số + deck Core, bán) · SCOUT (trạm scout: bản đồ thế giới pixel,
  *           máy bay bay vòng quanh trong lúc scout theo giờ thật; nâng cấp trạm bằng gold)
  *   report: báo cáo scout — 3 ứng viên (chỉ số + deck), chọn 1 người để tuyển (trả phí chuyển nhượng) hoặc bỏ qua cả 3
- * Số liệu: config/teammates.config.js · logic: src/core/teammates.js
+ * Số liệu: config/teammates.config.js · logic: src/meta/teammates.js
  * Menu gọi: render(menu) · input(menu, input) · click(menu, e) · tick(menu, dt) · back(menu) · lookOf(key)
  */
 window.SFC = window.SFC || {};

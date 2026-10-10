@@ -6,7 +6,7 @@ window.SFC = window.SFC || {};
 (function () {
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const _t = SFC.t, _tn = SFC.tn;   // dịch theo ngôn ngữ đang chọn (core/i18n.js)
+  const _t = SFC.t, _tn = SFC.tn;   // dịch theo ngôn ngữ đang chọn (engine/i18n.js)
   const CORES = () => SFC_CONFIG.cores;
 
   const ARCH = (tag) => CORES().archetypes[tag] || { label: tag, icon: '?', color: '#9aa3b5' };

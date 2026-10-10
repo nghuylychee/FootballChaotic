@@ -1,6 +1,6 @@
 # Đồng đội & Scout — vector nâng cấp thứ 2 (2026-09-30)
 
-> Số liệu: `config/teammates.config.js` · logic: `src/core/teammates.js` (SFC.Mates) · UI: `src/ui/team.js` (NHÂN VẬT → TEAM)
+> Số liệu: `config/teammates.config.js` · logic: `src/meta/teammates.js` (SFC.Mates) · UI: `src/ui/team.js` (NHÂN VẬT → TEAM)
 
 ## Quyết định đã chốt
 | Chủ đề | Quyết định |

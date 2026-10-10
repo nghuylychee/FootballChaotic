@@ -4,7 +4,7 @@ window.SFC = window.SFC || {};
 (function () {
   let ctx = null;
   let master = null;
-  // 2 nhánh dưới master: hiệu ứng (kể cả khán giả) và nhạc nền — âm lượng người chơi chỉnh ở SETTINGS (core/settings.js)
+  // 2 nhánh dưới master: hiệu ứng (kể cả khán giả) và nhạc nền — âm lượng người chơi chỉnh ở SETTINGS (meta/settings.js)
   let sfxBus = null;
   let musicBus = null;
   const vol = { sfx: 1, music: 1 };

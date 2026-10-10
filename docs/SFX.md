@@ -1,6 +1,6 @@
 # Sound effects list
 
-Every sound in the game is synthesized at runtime in `src/core/audio.js`. There are no audio files yet.
+Every sound in the game is synthesized at runtime in `src/engine/audio.js`. There are no audio files yet.
 This is the shopping list for replacing them with recorded or generated files.
 
 Gameplay code plays a sound with `g.sfx('<name>', arg)`, which calls `SFC.Audio[<name>]`. UI code calls `SFC.Audio.<name>()` directly.
@@ -136,4 +136,4 @@ The jousting crowd for `crowdRoar` and `crowdOoh` sounds small. If it's too thin
 | `assets/sfx/hard_swing.wav` | Universal Sound FX v1.6, `WHOOSHES/Classic/WHOOSH_Wide_Fast_mono.wav` | Imphenzia | Same as above |
 | `assets/sfx/hard_hit.wav` | Universal Sound FX v1.6, `IMPACTS/Punch/IMPACT_Punch_08_mono.wav` | Imphenzia | Same as above |
 
-Files are listed in `config/game.config.js` under `audio.samples` and played by `sample()` in `src/core/audio.js`.
+Files are listed in `config/game.config.js` under `audio.samples` and played by `sample()` in `src/engine/audio.js`.

@@ -5,7 +5,7 @@
  *   node scripts/i18n-check.js --sheet file.csv bảng duyệt cho người bản xứ: key · chỗ dùng · tiếng Anh · từng ngôn ngữ
  *   node scripts/i18n-check.js --extract file.json  danh sách chuỗi nguồn (cho công cụ dịch / người dịch)
  * Chuỗi nguồn gom từ:
- *   - code (src/**, trừ src/dev, src/i18n, src/core/i18n.js): SFC.t / _t · SFC.tc / _tc · SFC.tn / _tn · SFC.N_ với chuỗi viết thẳng
+ *   - code (src/**, trừ src/dev, src/i18n, src/engine/i18n.js): SFC.t / _t · SFC.tc / _tc · SFC.tn / _tn · SFC.N_ với chuỗi viết thẳng
  *   - chữ bay trong trận: mọi chuỗi trong lời gọi .text( .comic( .callout( (trừ mã màu) — dịch lúc vẽ
  *   - config: các đường dẫn trong src/i18n/fields.js (chạy config/*.js trong vm theo thứ tự của index.html)
  * LỖI (exit 1): lệch biến {x} · lệch thẻ HTML · lệch *từ khoá* · giá trị sai kiểu.
@@ -89,7 +89,7 @@ function addSource(key, info, where) {
 }
 const dynamicCalls = [];
 
-const SKIP = ['src/dev/', 'src/i18n/', 'src/core/i18n.js'];
+const SKIP = ['src/dev/', 'src/i18n/', 'src/engine/i18n.js'];
 for (const file of jsFiles(path.join(ROOT, 'src'))) {
   const r = rel(file);
   if (SKIP.some((p) => r.startsWith(p))) continue;

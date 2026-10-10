@@ -1,13 +1,13 @@
 /* Electron — cửa sổ game cho bản desktop (Steam). Game vẫn là index.html như bản web.
  * F11: toàn màn hình · F12 (chỉ khi chưa đóng gói): DevTools
- * SETTINGS > RESOLUTION (src/core/settings.js) gửi 'sfc-window' qua preload; vào / thoát toàn màn hình báo lại 'sfc-fullscreen'
+ * SETTINGS > RESOLUTION (src/meta/settings.js) gửi 'sfc-window' qua preload; vào / thoát toàn màn hình báo lại 'sfc-fullscreen'
  * Trang chủ: Esc -> QUIT GAME? -> 'sfc-quit'
  */
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// âm thanh chạy ngay, không cần chờ người chơi bấm phím đầu tiên (src/core/audio.js)
+// âm thanh chạy ngay, không cần chờ người chơi bấm phím đầu tiên (src/engine/audio.js)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // icon riêng của game (scripts/make-icon.py) thay logo Electron: cửa sổ / taskbar; Dock của Mac khi chạy dev
@@ -64,7 +64,7 @@ ipcMain.on('sfc-window', (e, mode) => {
 
 ipcMain.on('sfc-quit', () => app.quit());
 
-// ngôn ngữ ưu tiên của hệ điều hành (src/core/i18n.js -> detect): navigator.languages trong cửa sổ bị khoá theo
+// ngôn ngữ ưu tiên của hệ điều hành (src/engine/i18n.js -> detect): navigator.languages trong cửa sổ bị khoá theo
 // electronLanguages của package.json nên không dùng được
 ipcMain.on('sfc-languages', (e) => {
   try { e.returnValue = app.getPreferredSystemLanguages(); } catch (err) { e.returnValue = [app.getLocale()]; }
@@ -75,7 +75,7 @@ ipcMain.on('sfc-open-url', (e, url) => {
   if (typeof url === 'string' && /^https:\/\//.test(url)) shell.openExternal(url);
 });
 
-// thư mục save (src/core/storage.js qua preload): %APPDATA%\Street Football Chaos\save — tên cố định, không theo productName,
+// thư mục save (src/engine/storage.js qua preload): %APPDATA%\Street Football Chaos\save — tên cố định, không theo productName,
 // đổi tên game cũng không mất save. Steam Auto-Cloud trỏ vào đây (docs/SAVE.md)
 ipcMain.on('sfc-save-dir', (e) => {
   const dir = path.join(app.getPath('appData'), 'Street Football Chaos', 'save');

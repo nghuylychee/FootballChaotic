@@ -9,7 +9,7 @@ Tài liệu cho người dịch / duyệt (tiếng Anh): [i18n/STYLE_GUIDE.md](i
 ## Cách hoạt động
 
 - **Câu tiếng Anh chính là key** (kiểu gettext). Câu chưa có bản dịch thì hiện tiếng Anh, không bao giờ hiện key lạ.
-- **Code:** `src/core/i18n.js`. Mỗi file UI đặt tắt `const _t = SFC.t, _tn = SFC.tn;`. Không đặt tên là `t`, vì `t` đã được dùng cho biến team / time ở khắp nơi.
+- **Code:** `src/engine/i18n.js`. Mỗi file UI đặt tắt `const _t = SFC.t, _tn = SFC.tn;`. Không đặt tên là `t`, vì `t` đã được dùng cho biến team / time ở khắp nơi.
   | Hàm | Dùng khi | Ví dụ |
   |---|---|---|
   | `_t(s, vars)` | chuỗi thường, có biến | `_t('vs {team}', { team: boss.name })` |

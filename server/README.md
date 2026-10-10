@@ -2,7 +2,7 @@
 
 This server runs online matches so that no player has to host. It's an alternative to player-hosted rooms (Steam P2P / PeerJS); the game tries the server first and falls back to player-hosting if the server can't be reached.
 
-- It uses the same room rules as player-hosted rooms (`src/net/room.js`) and the same match code (`src/game`, `src/entities`, `src/systems`), loaded from the repo by `sim.js`.
+- It uses the same room rules as player-hosted rooms (`src/net/room.js`) and the same match code (`src/game`, `src/entities`, `src/systems`), loaded from the repo by `sim.js` (the file list is the `server` entries in `scripts/manifest.js`).
 - It's provider-independent: plain Node plus one dependency (`ws`). It runs anywhere that can run a Docker image or Node 18+ with WebSockets.
 - It's light: about 0.04 ms of CPU per room per tick (60 ticks/s), around 20 MB of memory, and nothing runs while no match is in progress. Each player receives about 25 KB/s (snapshots at 30/s).
 
@@ -19,7 +19,7 @@ To point the game at it, set `server.url: 'ws://localhost:8080'` in [config/net.
 
 ## Docker
 
-Build from the repo root, because the image needs `config/`, `src/` and `index.html`:
+Build from the repo root, because the image needs `config/`, `src/` and `scripts/manifest.js`:
 
 ```sh
 docker build -f server/Dockerfile -t sfc-server .

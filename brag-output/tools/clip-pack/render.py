@@ -1,7 +1,7 @@
 """Turn captured takes into editable clips: game-accurate audio + 16:9 full frame + 9:16 crop that follows the action.
 usage: python render.py <pack> [take ...]   (default: every take in <pack>/work/takes.json; run capture.py first)
   takes  : <pack>/work/takes.json = { "<clip name>": ["<frames dir under work/frames>", <seconds to keep>], ... }
-  audio  : the game's own WebAudio SFX (src/core/audio.js) rendered offline from the logged events + crowd bed
+  audio  : the game's own WebAudio SFX (src/engine/audio.js) rendered offline from the logged events + crowd bed
   out    : <pack>/<name>_16x9.mp4  <pack>/<name>_9x16.mp4  <pack>/<name>.wav
 needs the repo served at http://127.0.0.1:8765 (python -m http.server 8765 from the repo root)"""
 import sys, os, json, base64, shutil, subprocess, wave
@@ -40,7 +40,7 @@ def render_audio(pg, events, dur, path):
     pg.goto('http://127.0.0.1:8765/brag-output/tools/clip-pack/')
     pg.evaluate("""(dur) => { window.AudioContext = function () {
         const c = new OfflineAudioContext(2, Math.ceil(dur * 44100), 44100); c.resume = () => Promise.resolve(); window.__ctx = c; return c; }; }""", dur)
-    for s in ['config/game.config.js', 'config/music.config.js', 'src/core/utils.js', 'src/core/audio.js']:
+    for s in ['config/game.config.js', 'config/music.config.js', 'src/engine/utils.js', 'src/engine/audio.js']:
         pg.add_script_tag(url=f'/{s}')
     pcm = base64.b64decode(pg.evaluate(AUDIO_JS, [events, dur, CROWD, GAIN]))
     with wave.open(path, 'wb') as w:

@@ -1,6 +1,6 @@
 /* =========================================================
  * PROGRESSION CONFIG — meta ngoài trận: level, XP, gold, hộp gacha (costume + Core), túi đồ.
- * Dữ liệu người chơi lưu ở localStorage của trình duyệt (src/core/profile.js).
+ * Dữ liệu người chơi lưu ở localStorage của trình duyệt (src/meta/profile.js).
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 

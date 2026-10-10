@@ -1,5 +1,5 @@
 /* =========================================================
- * TEAMMATES CONFIG — đồng đội (vector nâng cấp thứ 2 ngoài chỉ số character). Logic: src/core/teammates.js, UI: src/ui/team.js
+ * TEAMMATES CONFIG — đồng đội (vector nâng cấp thứ 2 ngoài chỉ số character). Logic: src/meta/teammates.js, UI: src/ui/team.js
  * - Đồng đội có OVR cố định (không nâng cấp), 6 chỉ số riêng (rating 40..99) và 1 DECK Core: mỗi lượt chọn Core trong trận
  *   đồng đội tự bốc 1 lá từ deck của mình (Core đó chỉ tác dụng với họ, scale theo chỉ số của họ).
  * - Tuyển đồng đội qua SCOUT: bắt đầu scout (miễn phí) -> chờ theo giờ thật -> 3 ứng viên -> chọn 1 người, trả phí chuyển nhượng.

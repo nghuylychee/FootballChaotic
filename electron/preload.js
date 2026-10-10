@@ -1,5 +1,5 @@
 /* Preload — chạy trước game, dùng chung window (contextIsolation tắt).
- * - window.SFC_DESKTOP: đổi cỡ cửa sổ / toàn màn hình (src/core/settings.js), gửi sang electron/main.js; ngôn ngữ của hệ điều hành
+ * - window.SFC_DESKTOP: đổi cỡ cửa sổ / toàn màn hình (src/meta/settings.js), gửi sang electron/main.js; ngôn ngữ của hệ điều hành
  * - Khởi động Steam; được thì gắn window.SFC_STEAM cho src/net/transport-steam.js, không được thì game dùng PeerJS.
  *   App ID: Steam tự đưa khi mở game từ Steam; chạy ngoài Steam thì đọc steam_appid.txt ở thư mục đang chạy (dev: 480).
  */
@@ -7,7 +7,7 @@ const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
-// save dạng file JSON (src/core/storage.js): <key>.json + <key>.json.bak (bản trước đó).
+// save dạng file JSON (src/engine/storage.js): <key>.json + <key>.json.bak (bản trước đó).
 // Ghi: viết ra .tmp -> bản cũ thành .bak -> .tmp thành bản chính; tắt ngang lúc ghi thì vẫn còn .bak để đọc
 const SAVE_DIR = ipcRenderer.sendSync('sfc-save-dir');
 const saveFile = (key) => path.join(SAVE_DIR, key.replace(/[^\w.-]/g, '_') + '.json');
@@ -41,7 +41,7 @@ window.SFC_DESKTOP = {
   quit: () => ipcRenderer.send('sfc-quit'),
   // mở link https bằng trình duyệt của máy (bản DEMO: trang Steam, src/ui/menu.js -> openSteam)
   openUrl: (url) => ipcRenderer.send('sfc-open-url', url),
-  // ngôn ngữ ưu tiên của hệ điều hành ['pt-BR', 'en-US'...] — đoán ngôn ngữ lần đầu mở game (src/core/i18n.js)
+  // ngôn ngữ ưu tiên của hệ điều hành ['pt-BR', 'en-US'...] — đoán ngôn ngữ lần đầu mở game (src/engine/i18n.js)
   languages: (() => { try { return ipcRenderer.sendSync('sfc-languages') || []; } catch (e) { return []; } })(),
 };
 

@@ -11,12 +11,10 @@ const vm = require('vm');
 const { spawn } = require('child_process');
 
 const ROOT = path.join(__dirname, '..', '..');
-const ALLOW = [
-  /^config\//, /^src\/core\/(utils|i18n|profile|mainpath|teammates)\.js$/, /^src\/entities\//, /^src\/systems\//,
-  /^src\/game\/match\.js$/, /^src\/net\/(transport|transport-server|sync|room|online)\.js$/,
-];
-const FILES = [...fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').matchAll(/<script src="([^"]+\.js)"/g)]
-  .map((m) => m[1]).filter((f) => ALLOW.some((re) => re.test(f)));
+// file của máy chủ + phần khách online (scripts/manifest.js), theo thứ tự nạp của game
+const manifest = require(path.join(ROOT, 'scripts', 'manifest.js'));
+const SERVER_FILES = manifest.files('server');
+const FILES = manifest.files('game').filter((f) => SERVER_FILES.includes(f) || ['src/net/transport-server.js', 'src/net/online.js'].includes(f));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const until = async (fn, ms = 5000, what = 'condition') => {
   const end = Date.now() + ms;

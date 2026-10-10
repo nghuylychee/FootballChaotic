@@ -27,7 +27,7 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 /* Press Start 2P ép chữ hoa có dấu thấp như chữ thường (MUéVETE). Font phụ vẽ lại đủ cao, dấu nhô lên trên ô chữ 1/4 cỡ chữ
-   (scripts/build-accent-caps.py). Chỉ dùng khi <html> có class accent-caps = ngôn ngữ khai báo accentCaps (src/core/i18n.js) */
+   (scripts/build-accent-caps.py). Chỉ dùng khi <html> có class accent-caps = ngôn ngữ khai báo accentCaps (src/engine/i18n.js) */
 @font-face {
   font-family: 'SFC Accent Caps'; font-style: normal; font-weight: 400; font-display: swap;
   src: url(../assets/fonts/SFCAccentCaps.woff2) format('woff2');
@@ -443,10 +443,6 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .shop-head { gap: 10px; }
 .shop-wallet { margin-left: auto; display: flex; align-items: center; gap: 8px; padding-bottom: 3px; }
 .shop-wallet .lvrow { width: 150px; }
-  display: flex; align-items: center; justify-content: space-between; gap: 6px; flex: none;
-  padding: 2px 6px 2px 10px; text-align: left; font-size: 15px; color: #e6dccb;
-  border-left: 2px solid transparent; background: rgba(20,12,22,0.55);
-}
 .sd-preview { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .sd-try { font-family: var(--px); font-size: 5px; color: var(--muted); }
 .sd-side { flex: 1; display: flex; flex-direction: column; gap: 6px; }

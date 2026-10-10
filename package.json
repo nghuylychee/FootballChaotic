@@ -7,6 +7,10 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win --dir",
+    "manifest": "node scripts/manifest.js",
+    "predist": "node scripts/manifest.js --check",
+    "preitch-web": "node scripts/manifest.js --check",
+    "preitch-desktop": "node scripts/manifest.js --check",
     "itch-web": "node scripts/build-web.js",
     "itch-desktop": "node scripts/build-itch.js",
     "serve": "node scripts/serve.js",

@@ -20,7 +20,7 @@ SFC_CONFIG.game = {
   audio: {
     enabled: true,
     volume: 0.3,
-    // Âm thanh khán giả (src/core/audio.js + src/render/crowd.js). Độ ồn mỗi sân: arenas.config.js -> crowd.sound (0..1)
+    // Âm thanh khán giả (src/engine/audio.js + src/render/crowd.js). Độ ồn mỗi sân: arenas.config.js -> crowd.sound (0..1)
     crowd: {
       enabled: true,
       volume: 0.35,        // tiếng rì rầm nền ở sân ồn nhất (sound = 1)

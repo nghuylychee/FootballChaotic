@@ -1,4 +1,4 @@
-/* Reveal — màn mở thẻ kiểu TCG cho phần thưởng Main Path (src/core/mainpath.js -> claim):
+/* Reveal — màn mở thẻ kiểu TCG cho phần thưởng Main Path (src/meta/mainpath.js -> claim):
  *   Core mới (sao) · Core đặc trưng của boss (thắng trận thăng hạng) · hộp costume (lên hạng)
  *   · Tuyệt kỹ bí kíp gia truyền (src: heirloom — cut scene PROLOGUE, src/ui/story.js; dải DEFEATED thành FAMILY SECRET).
  * Nhịp mỗi phần thưởng (thuộc tính data-phase trên .rv3, hoạt ảnh ở CSS):

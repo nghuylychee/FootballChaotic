@@ -1,6 +1,5 @@
 /* Nạp code game dùng chung (config + mô phỏng trận + SFC.Room) vào Node, không có trình duyệt.
- * Danh sách file lấy từ index.html (đúng thứ tự nạp của game), chỉ giữ các file khớp ALLOW -> file mô phỏng mới thêm vào
- * index.html tự có ở máy chủ. Không nạp: vẽ, UI, âm thanh, input, transport (máy chủ có WebSocket riêng).
+ * Danh sách file + thứ tự: scripts/manifest.js, các file có nơi nạp 'server' (chỉ mô phỏng: không vẽ, UI, âm thanh, input).
  * Trả về window.SFC; SFC_CONFIG nằm ở global.
  */
 const fs = require('fs');
@@ -10,14 +9,7 @@ const vm = require('vm');
 // thư mục gốc game: mặc định thư mục cha của server/ (Docker: /app)
 const ROOT = process.env.GAME_ROOT || path.join(__dirname, '..');
 
-const ALLOW = [
-  /^config\//,
-  /^src\/core\/(utils|i18n|profile|mainpath|teammates)\.js$/,
-  /^src\/entities\//,
-  /^src\/systems\//,
-  /^src\/game\/match\.js$/,
-  /^src\/net\/(transport|sync|room)\.js$/,
-];
+const manifest = require(path.join(ROOT, 'scripts', 'manifest.js'));
 
 function load() {
   const g = globalThis;
@@ -31,8 +23,7 @@ function load() {
   // máy chủ không phát âm thanh / rung tay cầm, không lưu gì (vfxkit.js đọc Storage ngay lúc nạp -> stub có trước)
   g.SFC = { Audio: {}, Pad: null, Storage: { getJSON: (k, d) => d, setJSON() {}, remove() {} } };
 
-  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  const files = [...html.matchAll(/<script src="([^"]+\.js)"/g)].map((m) => m[1]).filter((f) => ALLOW.some((re) => re.test(f)));
+  const files = manifest.files('server');
   for (const f of files) vm.runInThisContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f });
 
   const SFC = g.SFC;

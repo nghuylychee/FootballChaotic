@@ -27,6 +27,12 @@ const TYPES = {
   '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav',
 };
 
+// danh sách script (scripts/manifest.js): trang HTML nào lệch thì ghi lại luôn trước khi phục vụ
+try {
+  const changed = require('./manifest').write();
+  if (changed.length) console.log(`[serve] script list updated from scripts/manifest.js: ${changed.join(', ')}`);
+} catch (e) { console.warn('[serve] manifest:', e.message); }
+
 /* ---------- máy chủ trận (--online) ---------- */
 let child = null, stopping = false;
 if (ONLINE) {

@@ -1,6 +1,6 @@
 # Save game (2026-09-30)
 
-> Logic: `src/core/storage.js` (SFC.Storage) · file: `electron/preload.js` (SFC_DESKTOP.store) · thư mục: `electron/main.js` (`sfc-save-dir`)
+> Logic: `src/engine/storage.js` (SFC.Storage) · file: `electron/preload.js` (SFC_DESKTOP.store) · thư mục: `electron/main.js` (`sfc-save-dir`)
 
 ## Lưu ở đâu
 | Bản | Nơi lưu |

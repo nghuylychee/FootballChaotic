@@ -1,6 +1,6 @@
 # Chỉ dùng cho server/Dockerfile: chỉ gửi những gì máy chủ cần
 *
-!index.html
+!scripts/manifest.js
 !config/
 !src/
 !server/

@@ -1,6 +1,6 @@
 /* Profile — hồ sơ người chơi tại máy này: tên, level, XP, gold, túi đồ (costume + Core), thống kê.
  * Costume / Core lấy từ hộp gacha (openBox), trùng thì cộng số lượng, phân rã (dismantle) ra gold.
- * Lưu qua SFC.Storage (src/core/storage.js: file JSON ở bản desktop, localStorage ở bản web), key = progression.storageKey.
+ * Lưu qua SFC.Storage (src/engine/storage.js: file JSON ở bản desktop, localStorage ở bản web), key = progression.storageKey.
  * Không lưu được thì game vẫn chạy, chỉ là không giữ được tiến trình.
  */
 window.SFC = window.SFC || {};
@@ -22,7 +22,7 @@ window.SFC = window.SFC || {};
       boxes: {},                     // hộp gacha được tặng (thưởng lên hạng Main Path): id -> số hộp, mở miễn phí
       look: Object.assign({}, P().defaultLook),
       stats: { matches: 0, wins: 0, draws: 0, losses: 0, goals: 0, boxes: 0 },
-      team: SFC.Mates.blankTeam(),   // đồng đội: đội hình + trạm scout (src/core/teammates.js)
+      team: SFC.Mates.blankTeam(),   // đồng đội: đội hình + trạm scout (src/meta/teammates.js)
       attrs: blankAttrs(),
       tut: { done: false, heirloom: false },   // PROLOGUE (src/game/tutorial.js) đã xem xong / bỏ qua · đã nhận bí kíp gia truyền (cut scene trao AURA FARMING)
     };
@@ -69,8 +69,8 @@ window.SFC = window.SFC || {};
     // dữ liệu hỏng / phiên bản cũ -> ghép với hồ sơ trống, bỏ id không còn tồn tại
     sanitize(raw) {
       const d = blank();
-      d.path = SFC.MainPath.sanitize(raw && raw.path);   // tiến trình Main Path (src/core/mainpath.js)
-      d.team = SFC.Mates.sanitizeTeam(raw && raw.team);  // đồng đội + scout (src/core/teammates.js)
+      d.path = SFC.MainPath.sanitize(raw && raw.path);   // tiến trình Main Path (src/meta/mainpath.js)
+      d.team = SFC.Mates.sanitizeTeam(raw && raw.team);  // đồng đội + scout (src/meta/teammates.js)
       if (!raw || typeof raw !== 'object') return d;
       d.name = this.cleanName(raw.name || '');
       // hồ sơ có từ trước khi có PROLOGUE (đã đặt tên) -> coi như đã xem

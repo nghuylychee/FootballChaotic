@@ -1,5 +1,5 @@
 /* =========================================================
- * MAIN PATH CONFIG — đường tiến trình chính của chế độ Single player (logic ở src/core/mainpath.js).
+ * MAIN PATH CONFIG — đường tiến trình chính của chế độ Single player (logic ở src/meta/mainpath.js).
  *
  * Area (khu vực) > Division (hạng). Mỗi Area có divisionsPerArea hạng, tên dạng "<Area> III" -> "<Area> I" (cao dần).
  * Thắng +starWin sao, thua -starLose sao, hoà +starDraw. Đủ stars[hạng] sao -> lên hạng kế tiếp (về 0 sao).
@@ -24,7 +24,7 @@ SFC_CONFIG.mainPath = {
   // Thắng trận thăng hạng: cộng thêm promoBonus (x reward của Area đó)
   promoBonus: { xp: 120, gold: 150 },
 
-  /* Mở khoá Core theo Main Path (logic ở src/core/mainpath.js -> claim). Mọi mốc chỉ thưởng LẦN ĐẦU đạt tới (rớt hạng rồi leo lại không nhận lại):
+  /* Mở khoá Core theo Main Path (logic ở src/meta/mainpath.js -> claim). Mọi mốc chỉ thưởng LẦN ĐẦU đạt tới (rớt hạng rồi leo lại không nhận lại):
    *  - mỗi sao mới trong 1 hạng: 1 Core ngẫu nhiên trong areas[].cores còn khoá; Area đã hết Core -> starGold gold (x reward của Area)
    *  - lên 1 hạng: 1 hộp costume areas[].divBox (progression.config.js -> boxes), mở miễn phí trong SHOP
    *  - thắng trận thăng hạng (sang Area mới / vô địch lần đầu): Core đặc trưng của boss (areas[].signature)

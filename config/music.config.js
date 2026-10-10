@@ -1,5 +1,5 @@
 /* =========================================================
- * MUSIC CONFIG — nhạc nền tổng hợp bằng WebAudio (src/core/audio.js -> SFC.Music), không cần file nhạc.
+ * MUSIC CONFIG — nhạc nền tổng hợp bằng WebAudio (src/engine/audio.js -> SFC.Music), không cần file nhạc.
  * menu: phát ở mọi màn ngoài trận (trang chủ, Main Path, Shop, Nhân vật, Settings, phòng chờ online).
  *
  * Cách viết nhạc (mỗi ô nhịp = 16 bước nốt móc kép):

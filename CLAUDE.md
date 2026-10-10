@@ -28,12 +28,26 @@ Opening `index.html` from disk mostly works, but browsers block the XHR that loa
 
 ## Architecture
 
-**No modules.** Every file is a classic `<script>` listed in `index.html`, and **load order matters**. Each file is an IIFE that attaches to the global `window.SFC` namespace (`SFC.Game`, `SFC.Online`, ...). Tuning data lives in `window.SFC_CONFIG.*`, defined by `config/*.config.js`. All balance numbers belong in `config/`, not in code.
+**No modules.** Every file is a classic `<script>`, and **load order matters**. Each file is an IIFE that attaches to the global `window.SFC` namespace (`SFC.Game`, `SFC.Online`, ...). Tuning data lives in `window.SFC_CONFIG.*`, defined by `config/*.config.js`. All balance numbers belong in `config/`, not in code.
 
-When adding a script:
-- Add the `<script>` tag to `index.html`.
-- `sandbox.html` has its **own** script list; add the file there too if the sandbox needs it.
-- The match server loads simulation files from `index.html` through an allowlist in `server/sim.js` (`ALLOW`). A new file outside the allowed paths won't exist on the server.
+**Script list = `scripts/manifest.js`, the single source.** It lists every file in load order, and each file names the targets that load it:
+- `game` = `index.html`
+- `sandbox` = `sandbox.html`
+- `itch` = `tools/itch-page/generate.html`
+- `server` = the match server, loaded directly by `server/sim.js`; simulation code only
+
+To add, remove or reorder a script, edit `FILES` there and run `npm run manifest`. That rewrites the `<!-- scripts:begin -->…<!-- scripts:end -->` block in each HTML page; never edit that block by hand.
+- `npm run serve` / `npm run online` regenerate stale pages on start.
+- `npm run dist` and `itch-*` fail via `node scripts/manifest.js --check` if the pages are out of date.
+
+**Folders under `src/`.**
+- `engine/`: utils, input, gamepad, audio, storage, i18n.
+- `meta/`: profile, mainpath, teammates, settings (progression and save data).
+- `entities/`, `systems/`, `game/`: the simulation.
+- `render/`, `ui/`: drawing and screens.
+- `net/`: online play.
+
+"Core" always means the **Core Upgrade** gameplay feature (`cores.config.js`, `systems/cores*.js`), never a folder.
 
 **Runtime.**
 - `src/main.js` owns `SFC.app`: screens (`menu | game | pause | intro | story`), modes (`single | online`), and a fixed 60 Hz step driven by `requestAnimationFrame`. A Web Worker clock keeps online matches ticking in hidden tabs.

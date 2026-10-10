@@ -74,7 +74,7 @@ chọn đội + độ khó). Không giờ trận, không Final Push / Golden Goa
 vào lưới vẫn ăn mừng rồi giao bóng lại (không có đối thủ thì luôn giao bóng cho bạn). Esc → ĐÁ LẠI / VỀ MENU. Engine: `SFC.Game` opts `training` + `teamSize`.
 
 ## Meta progression (level · XP · gold · gacha · túi đồ)
-- Hồ sơ lưu ở `localStorage` của trình duyệt (`src/core/profile.js`, key `sfc_profile_v1`). Lần đầu mở game phải đặt tên.
+- Hồ sơ lưu ở `localStorage` của trình duyệt (`src/meta/profile.js`, key `sfc_profile_v1`). Lần đầu mở game phải đặt tên.
 - **Character**: mang tên + costume của bạn, vào sân thay 1 cầu thủ của đội mình (đối thủ online thấy được). Chơi đơn `1 CẦU THỦ`: chọn
   character đá ĐÁ LÙI hay ĐÁ CAO, cầu thủ AI của đội đá vị trí còn lại; `CẢ ĐỘI` và online: character đá ĐÁ CAO.
 - **Thưởng sau trận** (chỉ khi đá hết trận): thắng / hòa / thua + theo số bàn, nhân độ khó ở chơi đơn; online thưởng cao hơn.
@@ -154,7 +154,8 @@ config/                 ← MỌI THÔNG SỐ CÂN BẰNG (tách riêng)
   ftue.config.js        PROLOGUE: kịch bản cut scene, các bài của trận mơ, Core / Ultimate, đội + sân trong mơ
   progression.config.js level / XP / gold, thưởng sau trận, costume, độ hiếm, hộp gacha, level Core
 src/
-  core/        utils, input (map phím → action), audio (WebAudio chiptune), profile (hồ sơ + tiến trình, localStorage)
+  engine/      utils, input + gamepad (map phím → action), audio (WebAudio chiptune), storage (localStorage / file save), i18n
+  meta/        profile (hồ sơ + tiến trình), mainpath (Main Path), teammates (đồng đội), settings
   entities/    ball (vật lý 2.5D x/y/z, khung thành, lưới), player
   systems/     actions (chuyền/sút/tắc/Light & Hard attack...), cores (hook hành vi), effects,
                ai (trông khung/giữ bóng/hỗ trợ/phòng ngự), human (controller)

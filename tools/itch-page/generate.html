@@ -8,6 +8,8 @@
 </head>
 <body>
   <canvas id="game"></canvas>
+  <!-- scripts:begin · tạo bởi scripts/manifest.js (npm run manifest), đừng sửa tay -->
+  <!-- Config (chỉnh cân bằng game tại đây) -->
   <script src="../../config/build.config.js"></script>
   <script src="../../config/game.config.js"></script>
   <script src="../../config/controls.config.js"></script>
@@ -22,15 +24,17 @@
   <script src="../../config/intro.config.js"></script>
   <script src="../../config/music.config.js"></script>
   <script src="../../config/ftue.config.js"></script>
-  <script src="../../src/core/utils.js"></script>
-  <script src="../../src/core/storage.js"></script>
-  <script src="../../src/core/gamepad.js"></script>
-  <script src="../../src/core/input.js"></script>
-  <script src="../../src/core/audio.js"></script>
-  <script src="../../src/core/settings.js"></script>
-  <script src="../../src/core/teammates.js"></script>
-  <script src="../../src/core/profile.js"></script>
-  <script src="../../src/core/mainpath.js"></script>
+
+  <!-- Engine -->
+  <script src="../../src/engine/utils.js"></script>
+  <script src="../../src/engine/storage.js"></script>
+  <script src="../../src/engine/gamepad.js"></script>
+  <script src="../../src/engine/input.js"></script>
+  <script src="../../src/engine/audio.js"></script>
+  <script src="../../src/meta/settings.js"></script>
+  <script src="../../src/meta/teammates.js"></script>
+  <script src="../../src/meta/profile.js"></script>
+  <script src="../../src/meta/mainpath.js"></script>
   <script src="../../src/entities/ball.js"></script>
   <script src="../../src/entities/player.js"></script>
   <script src="../../src/systems/actions.js"></script>
@@ -49,6 +53,7 @@
   <script src="../../src/render/vfx.js"></script>
   <script src="../../src/render/renderer.js"></script>
   <script src="../../src/render/pixelicons.js"></script>
+  <!-- scripts:end -->
   <script src="generate.js"></script>
 </body>
 </html>

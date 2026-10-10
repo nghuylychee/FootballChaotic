@@ -89,7 +89,7 @@ window.SFC = window.SFC || {};
         if (p && s.cores) p.unlocks = s.cores.slice();
         return { team: s.team, p, gone: false };
       });
-      // đồng đội của người chơi (Main Path / Luyện tập, src/core/teammates.js): thay 1 cầu thủ AI không phải character —
+      // đồng đội của người chơi (Main Path / Luyện tập, src/meta/teammates.js): thay 1 cầu thủ AI không phải character —
       // tên, ngoại hình, chỉ số riêng, deck Core (mỗi lượt chọn Core tự bốc 1 lá trong deck)
       (opts.mates || []).forEach((m, t) => {
         if (!m || !this.teams[t]) return;

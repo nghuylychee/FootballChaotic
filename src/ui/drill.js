@@ -13,13 +13,13 @@
  *   shown: chờ Enter -> lật thẻ kế tiếp / đóng (gọi onClose)
  * drills.upScreen = false: fill + pop chạy luôn trên bảng YOU, rồi tự sang thẻ kế.
  * Khi active, main.js gọi Drill.update(dt, input) mỗi bước (vẽ character + nhận phím).
- * Số liệu drill ở config/progression.config.js -> attrs.drills; bốc / lưu / cộng ở src/core/profile.js.
+ * Số liệu drill ở config/progression.config.js -> attrs.drills; bốc / lưu / cộng ở src/meta/profile.js.
  */
 window.SFC = window.SFC || {};
 
 (function () {
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const _t = SFC.t, _tn = SFC.tn;   // dịch theo ngôn ngữ đang chọn (core/i18n.js)
+  const _t = SFC.t, _tn = SFC.tn;   // dịch theo ngôn ngữ đang chọn (engine/i18n.js)
   const lvl = () => _t('LV {n}', { n: PF().data.level });
   const A = () => SFC_CONFIG.progression.attrs;
   const PF = () => SFC.Profile;

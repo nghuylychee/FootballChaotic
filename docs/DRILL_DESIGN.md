@@ -25,7 +25,7 @@
 | Giai đoạn | Trạng thái | Ghi chú |
 |---|---|---|
 | 0 · Hệ điểm cộng tay | ✅ Đã thay | Base 60, 6 điểm / level, giá theo bậc 1/2/3, RESPEC tốn gold. Bị thay bởi giai đoạn 1 (giữ lại: 6 chỉ số, móc vào engine, thang rating, trang STATS dạng xem) |
-| 1 · DRILL | ✅ Xong — chờ chơi thử | 13 drill · bốc 3 nghiêng theo build · 1 lần đổi · màn DRILL sau kết quả + LATER · CHARACTER → DRILL · STATS chỉ xem · chuyển đổi hồ sơ cũ. Code: `src/ui/drill.js` (màn DRILL), `src/core/profile.js` (bốc / lưu / cộng), `progression.config.js → attrs.drills`. Giả lập 50 lần dàn đều tới LV30: OVR 84–86 |
+| 1 · DRILL | ✅ Xong — chờ chơi thử | 13 drill · bốc 3 nghiêng theo build · 1 lần đổi · màn DRILL sau kết quả + LATER · CHARACTER → DRILL · STATS chỉ xem · chuyển đổi hồ sơ cũ. Code: `src/ui/drill.js` (màn DRILL), `src/meta/profile.js` (bốc / lưu / cộng), `progression.config.js → attrs.drills`. Giả lập 50 lần dàn đều tới LV30: OVR 84–86 |
 | 2 · Nguồn drill khác | ⏸ Chưa làm | Drill thưởng khi thắng trận thăng hạng / mốc thành tích (dùng `attrs.bonus` / `attrs.milestones` còn giữ trong hồ sơ) |
 
 ---

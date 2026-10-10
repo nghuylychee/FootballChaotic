@@ -1,4 +1,4 @@
-/* Các trường chữ trong config được dịch tại chỗ (src/core/i18n.js -> localizeConfig). Đường dẫn tính từ SFC_CONFIG,
+/* Các trường chữ trong config được dịch tại chỗ (src/engine/i18n.js -> localizeConfig). Đường dẫn tính từ SFC_CONFIG,
  * * = mọi key / phần tử, số = phần tử thứ mấy của mảng. Chỉ trường kiểu chuỗi mới được dịch.
  * '#ngữ cảnh' ở cuối: key trong bản dịch thành 'ngữ cảnh|câu tiếng Anh' — dùng khi cùng 1 câu tiếng Anh cần dịch khác nhau
  * (vd. tên trường phái SPEED khác chỉ số SPEED của đội; tên bài PASS là lời hô "Chuyền!" còn nhãn nút PASS là danh từ).

@@ -3,7 +3,7 @@
  *  - Âm lượng: 0..10 (x10%) -> SFC.Audio.setVolume, nhân với âm lượng trong config
  *  - Cỡ cửa sổ: chỉ bản desktop (electron/preload.js -> window.SFC_DESKTOP). 'WxH' hoặc 'full'.
  *    Danh sách cỡ: game.config.js -> render.windowSizes, bỏ cỡ lớn hơn màn hình
- *  - Ngôn ngữ: mã trong src/core/i18n.js. null = chưa chọn -> popup chọn ngôn ngữ lúc mở game (src/ui/langpick.js)
+ *  - Ngôn ngữ: mã trong src/engine/i18n.js. null = chưa chọn -> popup chọn ngôn ngữ lúc mở game (src/ui/langpick.js)
  */
 window.SFC = window.SFC || {};
 
