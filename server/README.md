@@ -88,6 +88,11 @@ Measured with `node test/load-test.js` (2 clients per match, input 10 times a se
 | Memory | ~140 MB RSS at 200 matches | ~190 MB RSS at 200 matches |
 | Bandwidth per player | ~25 KB/s (~90 MB per player-hour) | ~3 KB/s (~10 MB per player-hour) |
 
+Matchmaking costs little next to the matches themselves. Measured with `node test/queue-load-test.js`:
+- **200 players per second entering the queue:** the server used about 12 % of a desktop core on average (peaks around 45 %) for matching, setting up the room and starting it. That excludes playing the match.
+- **Queue size:** the queue holds about one second of arrivals, so the once-a-second matching pass stays under 1 ms.
+- **Growth:** the pass grows with the square of the queue size. About 25 ms at 1,000 waiting tickets, about 0.6 s at 5,000, which only a flooded queue would reach.
+
 CPU is the limit, not RAM. On a 512 MB / 0.5 CPU instance (Render Starter), plan for roughly 30–40 matches at once with compression on. That estimate allows for cloud cores being slower than a desktop, plus headroom; confirm it with `LOG_STATS` after deploying. Bandwidth is what grows with players, which is why compression is on by default.
 
 ## Free instances that sleep (e.g. Render Free)
