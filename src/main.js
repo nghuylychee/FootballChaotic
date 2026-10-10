@@ -47,25 +47,30 @@
         humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: lb.arena,
         // Core mở khoá (Core thường + Tuyệt kỹ đã mở) · Core vừa mở ưu tiên hiện ở lượt chọn
         coreUnlocks: [SFC.Profile.unlockedCores(), null], coreFresh: [st.fresh.slice(), null],
+        // giờ chọn Core như trận xếp hạng có người thật (net.draftTimeLimit)
+        draftTimeLimit: SFC_CONFIG.net.draftTimeLimit,
         mates: [lb.mate, lb.opps],
         mainPath: { area: st.area, elo: st.elo, reward: lb.reward, myElo: lb.myElo, oppElo: lb.oppElo, party: lb.party },
       });
     },
 
-    // bỏ trận Main Path giữa chừng (Pause > FORFEIT): tính là thua
+    // bỏ trận Main Path giữa chừng (Pause > FORFEIT, rời trận xếp hạng online): tính là thua
     forfeit() {
       const g = this.game, mp = g && g.opts.mainPath;
       let msg = '';
-      if (mp && g.state !== 'ended' && SFC_CONFIG.mainPath.forfeitCountsAsLoss) {
-        const r = SFC.MainPath.record('lose', mp);
-        const st = SFC.Profile.data.stats;
-        st.matches++; st.losses++;
-        SFC.Profile.save();
-        msg = r.delta ? SFC.t('Forfeit counts as a loss ({n} ELO).', { n: r.delta }) : SFC.t('Forfeit counts as a loss.');
+      if (mp && g.state !== 'ended') {
+        if (SFC_CONFIG.mainPath.forfeitCountsAsLoss) {
+          const r = SFC.MainPath.record('lose', mp);
+          const st = SFC.Profile.data.stats;
+          st.matches++; st.losses++;
+          SFC.Profile.save();
+          msg = this.forfeitText(r);
+        } else if (SFC.MainPath.state.pending) { delete SFC.MainPath.state.pending; SFC.Profile.save(); }
       }
       this.toMenu('party');
       if (msg) SFC.Menu.setMsg(msg, true);
     },
+    forfeitText(r) { return r.delta ? SFC.t('Forfeit counts as a loss ({n} ELO).', { n: r.delta }) : SFC.t('Forfeit counts as a loss.'); },
 
     // chỉ số riêng của character (chỉ Main Path / Luyện tập — online đi qua Profile.avatar(), không kèm chỉ số)
     // đồng đội đang chọn vào trận: đá vị trí còn lại so với character
@@ -115,10 +120,12 @@
       // Main Path: không cho đá lại trận đang thua — chỉ tiếp tục hoặc bỏ trận (tính thua)
       // dịch lúc vào trận (đổi ngôn ngữ chỉ làm được ở menu)
       const _t = SFC.t;
-      SFC.UI.pauseItems = this.mode === 'online' ? [['resume', _t('BACK TO MATCH')], ['leave', _t('LEAVE ROOM')]]
+      SFC.UI.pauseItems = opts.mainPath ? [['resume', _t('RESUME')], ['forfeit', _t('FORFEIT (LOSS)')]]
+        : this.mode === 'online' ? [['resume', _t('BACK TO MATCH')], ['leave', _t('LEAVE ROOM')]]
         : opts.tutorial ? [['resume', _t('RESUME')], ['skiptut', _t('SKIP PROLOGUE')]]
-        : opts.mainPath ? [['resume', _t('RESUME')], ['forfeit', _t('FORFEIT (LOSS)')]]
         : [['resume', _t('RESUME')], ['restart', _t('RESTART')], ['menu', _t('MAIN MENU')]];
+      // trận xếp hạng: lưu sẵn 1 trận thua tới khi có kết quả (tắt game / rớt mạng giữa trận vẫn tính thua)
+      if (opts.mainPath && !opts.resume) SFC.MainPath.begin(opts.mainPath);
       SFC.UI.clearToasts();
       SFC.UI.show(null);
       const L = SFC_CONFIG.teams.list, mp = opts.mainPath;
@@ -148,6 +155,11 @@
 
     // Main Path: "đá lại" = sang trận kế tiếp theo tiến trình mới
     restart() {
+      // trận xếp hạng online: NEXT MATCH = rời phòng rồi tìm trận mới
+      if (this.mode === 'online') {
+        if (this.game && this.game.opts.mainPath) { SFC.Session.leave(); this.startMainPath(); }
+        return;
+      }
       if (this.mode !== 'single') return;
       if (this.lastOpts && this.lastOpts.mainPath) this.startMainPath();
       else this.startMatch(this.lastOpts);
@@ -180,6 +192,8 @@
 
     // về menu; page = trang menu muốn mở (home / online / lobby)
     toMenu(page = 'home') {
+      // rời trận xếp hạng online (LOBBY / FORFEIT): rời phòng luôn (trận thường: OnlineUI tự rời / về phòng chờ)
+      if (this.mode === 'online' && this.game && this.game.opts.mainPath) SFC.Session.leave();
       SFC.Intro.abort();
       SFC.Story.abort();
       SFC.Tutorial.cleanup();
@@ -233,7 +247,16 @@
     if (app.screen === 'intro') { SFC.Intro.update(dt, Input); return; }
 
     const g = app.game;
-    if (app.screen === 'pause') { SFC.UI.pauseInput(Input); return; }
+    // trận xếp hạng (Main Path): giống trận online — mở menu không dừng trận (phím không vào trận), giờ chọn Core vẫn chạy
+    const live = !!g.opts.mainPath;
+    if (app.screen === 'pause') {
+      SFC.UI.pauseInput(Input);
+      if (!live || app.game !== g || app.screen !== 'pause') return;
+      if (g.state === 'ended') { app.screen = 'game'; return; }   // hết trận khi đang mở menu: màn kết quả nhận phím
+      g.update(dt, SFC.Sync.NULL_INPUT);
+      SFC.UI.consume(g);
+      return;
+    }
     // màn DRILL mở trên màn kết quả: nhận phím thay các nút kết quả
     if (SFC.Drill.active) { SFC.Drill.update(dt, Input); return; }
 
@@ -243,6 +266,7 @@
     } else if (g.state === 'draft') {
       if (Input.wasPressed('pause')) return app.pause();
       SFC.UI.draftInput(Input, g);
+      if (live && app.game === g && g.state === 'draft') g.update(dt, SFC.Sync.NULL_INPUT);   // đồng hồ chọn Core
     } else {
       if (Input.wasPressed('pause')) return app.pause();
       g.update(dt, Input);
@@ -262,6 +286,7 @@
   function boot() {
     const langChosen = SFC.I18n.init();   // ngôn ngữ đã chọn / đoán theo máy -> dịch config trước khi vẽ bất cứ gì
     SFC.Profile.load();
+    const forfeited = SFC.MainPath.settle();   // lần trước tắt game giữa trận xếp hạng -> tính thua
     SFC.Settings.apply();   // âm lượng + cỡ cửa sổ đã lưu (SETTINGS)
     Input.init(SFC_CONFIG.controls.bindings);
     SFC.Renderer.init(document.getElementById('game'));
@@ -269,6 +294,7 @@
     SFC.UI.init(app);
     SFC.Menu.init(app);
     SFC.UI.show('menu');
+    if (forfeited) SFC.Menu.setMsg(app.forfeitText(forfeited), true);
     const start = () => {
       // lần đầu chơi: đặt tên cho character trước khi vào trang chủ -> PROLOGUE.
       // Đã đặt tên nhưng chưa xem xong PROLOGUE (tắt giữa chừng) -> xem lại từ đầu

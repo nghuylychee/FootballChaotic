@@ -105,6 +105,9 @@ function machine(name, serverUrl) {
     go(page, msg = '', err = false) { this.page = page; this.msg = msg; this.msgErr = err; log.pages.push(page); if (msg) log.msgs.push(msg); },
     setMsg(msg, err) { this.msg = msg; this.msgErr = err; log.msgs.push(msg); },
     render() {},
+    // tìm trận xếp hạng (menu.js): không ghép được -> người chơi giả · ghép được -> MATCH FOUND rồi vào trận
+    searchSolo() { log.solo = (log.solo || 0) + 1; },
+    searchFound(game) { log.found = game; },
   };
   SFC.UI = {
     banner: (t) => log.banners.push(t), consume: (g) => { g.events.length = 0; },
@@ -174,6 +177,49 @@ async function serverRoom(url) {
   console.log('server room: OK (7-char code, join, owner start, snapshots, drop + auto rejoin, back to lobby)');
 }
 
+// tìm trận xếp hạng: 2 người tìm cùng lúc -> chung trận, mỗi máy có Main Path riêng; không có / không tới được máy chủ -> solo
+async function rankedSearch(url) {
+  const A = machine('ALICE', url), B = machine('BOB', url);
+  A.SFC.MainPath.state.elo = 300;
+  B.SFC.MainPath.state.elo = 360;
+  A.O.queue(); B.O.queue();
+  assert.strictEqual(A.O.status, 'searching');
+  await until(() => A.log.found && B.log.found, 15000, 'both matched');
+  assert.ok(!A.log.pages.includes('lobby') && !A.log.pages.includes('online'), 'no room pages while searching');
+  for (const m of [A, B]) {
+    const g = m.log.found, mp = g.opts.mainPath;
+    assert.ok(g.opts.ranked && mp, 'ranked match carries Main Path info');
+    assert.strictEqual(mp.elo, m.SFC.MainPath.state.elo, 'each machine uses its own Main Path');
+    assert.ok(mp.myElo > 0 && mp.oppElo > 0);
+    const opp = g.teams[1 - g.humanTeam].players;
+    assert.ok(opp.every((p) => p.elo != null), 'every opponent shows an Elo (real or AI alike)');
+    m.app.enterOnline(g);   // menu.js: sau MATCH FOUND
+  }
+  assert.strictEqual(A.log.found.opts.mainPath.myElo, B.log.found.opts.mainPath.oppElo, 'team Elo mirrored');
+  A.O.introDone(); B.O.introDone();
+  await play(1200, A, B);
+  assert.ok(B.O.buf.length > 0 || B.O.game.time > 0, 'ranked match runs');
+  const banners = A.log.banners.length;
+  B.O.leave();
+  await play(600, A);
+  assert.strictEqual(A.log.banners.length, banners, 'no player left banner in ranked matches');
+  assert.strictEqual(A.O.status, 'playing', 'match goes on');
+  A.O.leave();
+  // không ai khác -> solo; huỷ tìm
+  const C = machine('CARA', url);
+  C.O.queue();
+  C.O.cancelQueue();
+  assert.strictEqual(C.O.status, 'idle', 'cancel leaves the queue');
+  const D = machine('DAN', '');
+  D.O.queue();
+  assert.strictEqual(D.log.solo, 1, 'no server configured: solo at once');
+  const E = machine('EVE', 'ws://localhost:1');
+  E.O.queue();
+  await until(() => E.log.solo, 8000, 'unreachable: solo');
+  assert.strictEqual(E.O.status, 'idle');
+  console.log('ranked search: OK (matched on the server, own Main Path per machine, solo when no server, cancel)');
+}
+
 async function fallbackRoom() {
   const dead = 'ws://localhost:1';   // không có máy chủ (như máy chủ đang ngủ mãi không dậy)
   // Esc khi đang chờ máy chủ dậy -> huỷ tạo phòng
@@ -216,6 +262,7 @@ async function fallbackRoom() {
   await new Promise((res) => proc.stdout.once('data', res));
   try {
     await serverRoom(`ws://localhost:${port}`);
+    await rankedSearch(`ws://localhost:${port}`);
     await fallbackRoom();
     // mã PeerJS ngẫu nhiên không bao giờ trùng dạng mã máy chủ riêng
     const NC = MACHINES[0].SFC.NetCommon;

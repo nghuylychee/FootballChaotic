@@ -18,12 +18,18 @@
  *   start {game, resume}                    vào trận (resume: kết nối lại giữa trận) · toLobby  hết trận, về phòng chờ
  *   player {kind: 'away'|'left'|'back', name}  người khác mất kết nối / rời trận / quay lại · owner  chủ phòng đổi
  *   reconnecting                            mình mất kết nối giữa trận, đang thử vào lại · getReady  xem xong giới thiệu, chờ người khác
- *   closed {reason, from: 'create'|'join'|'room'}  hết phiên online. reason: left · closed · lost · cancelled · not-found · full ·
- *                                           started · version · busy · expired · rejoin-failed · unsupported · in-use · connect
+ *   closed {reason, from: 'create'|'join'|'room', ranked}  hết phiên online. reason: left · closed · lost · cancelled · not-found ·
+ *                                           full · started · version · busy · expired · rejoin-failed · unsupported · in-use · connect
+ *   solo                                    tìm trận xếp hạng không ghép được người thật (không ai đang tìm / không kết nối được /
+ *                                           máy chủ bận): game tự ghép người chơi giả (MainPath.matchmake) như khi chơi một mình
+ *
+ * Tìm trận xếp hạng (Main Path, chỉ máy chủ riêng): queue() -> máy chủ ghép (src/net/matchmaker.js) -> vào phòng xếp hạng như khách
+ * (không có phòng chờ, không sự kiện lobby) -> start {game} như trận thường (opts.ranked + opts.mainPath) | solo. cancelQueue() = bỏ tìm.
  *
  * Gói tin:
  *   khách -> host : hello{v,pf,tok?} · pf{pf} (đổi đồng đội / chỉ số) · slot{s} (nhảy slot) · intro (xem xong màn giới thiệu) ·
  *                   i{d,p} (phím) · pick{i} · reroll · bye · begin{area} / toLobby (chủ phòng, phòng máy chủ riêng) · ka (giữ thức)
+ *   khách -> máy chủ (trước khi vào phòng): queue{v,elo,role,pf} · unqueue — xem transport-server.js
  *   host  -> khách: you{tok} (mã kết nối lại) · lobby{m:[{id,pf,slot}],o} · start{opts} · s{f,s,fx,sfx,ev} (snapshot) ·
  *                   drop{seat,o,away?} (1 người rời / mất kết nối) · back{seat,o} (người đó kết nối lại) ·
  *                   full · started · expired · version · bye
@@ -51,7 +57,8 @@ window.SFC = window.SFC || {};
 
   const Session = {
     role: null,          // 'host' (máy này chạy trận) | 'guest'
-    status: 'idle',      // idle | busy | lobby | playing
+    status: 'idle',      // idle | busy | searching (tìm trận xếp hạng) | lobby | playing
+    ranked: false,       // phiên tìm / đá trận xếp hạng
     code: null,
     room: null,          // host: SFC.Room
     lobby: { members: [], owner: null },   // [{ id, pf, slot }] · host: chính là room.lobby
@@ -62,7 +69,8 @@ window.SFC = window.SFC || {};
     on(name, fn) { (listeners[name] || (listeners[name] = [])).push(fn); return () => { listeners[name] = listeners[name].filter((f) => f !== fn); }; },
     emit(name, data) { for (const fn of listeners[name] || []) fn(data || {}); },
     // profile(): hồ sơ trận công khai của người chơi (vị trí đang chọn + đồng đội) · area(): Area cao nhất đã tới (đội bot / sân)
-    provider: { profile: () => SFC.Profile.sanitizePublic({}), area: () => 0 },
+    // rank(): Main Path của người chơi { area, elo, reward } (tìm trận xếp hạng + opts.mainPath của trận xếp hạng)
+    provider: { profile: () => SFC.Profile.sanitizePublic({}), area: () => 0, rank: () => ({ area: 0, elo: 0, reward: 1 }) },
     provide(p) { Object.assign(this.provider, p); },
     myPf() { return this.provider.profile(); },
     // sắp vào online (mở menu ONLINE): khởi động trước những gì cần (máy chủ đang ngủ thì đánh thức)
@@ -129,6 +137,45 @@ window.SFC = window.SFC || {};
       if (this.cancellable) SFC.NetServer.cancel();
     },
 
+    /* ================= TÌM TRẬN XẾP HẠNG ================= */
+    // vào hàng chờ trên máy chủ riêng. Mọi đường không ghép được người thật -> solo (không báo lỗi)
+    queue() {
+      if (this.status !== 'idle' || !NC().serverOn()) { this.emit('solo'); return; }
+      this.status = 'searching';
+      this.ranked = true;
+      this.role = 'guest';
+      const pf = this.myPf();
+      this.use(SFC.NetServer).queue({ elo: this.provider.rank().elo, role: pf.role, pf })
+        .then((code) => {
+          if (this.status !== 'searching') return;
+          this.code = code;
+          this.keepAlive();
+          Net().send({ t: 'hello', v: N().protocol, pf: this.myPf() });
+        })
+        .catch(() => this.solo());
+    },
+
+    // bỏ tìm (rời trang tìm trận / CANCEL). Đã ghép xong mà chưa vào trận cũng bỏ luôn (AI đá thay ghế đó)
+    cancelQueue() {
+      if (this.status !== 'searching') return;
+      SFC.NetServer.cancel();
+      this.reset();
+    },
+
+    // không ghép được người thật: đóng kết nối, game tự ghép người chơi giả
+    solo() {
+      if (this.status !== 'searching') return;
+      Net().close();
+      this.reset();
+      this.emit('solo');
+    },
+
+    // phòng máy chủ riêng: gói nhỏ định kỳ để máy chủ gói miễn phí không "ngủ" khi cả phòng ngồi yên (phòng chờ / màn kết quả)
+    keepAlive() {
+      clearInterval(this.ka);
+      if (this.onServer && N().server.keepAlive > 0) this.ka = setInterval(() => { if (this.onServer && this.status !== 'idle') Net().send({ t: 'ka' }); }, N().server.keepAlive * 1000);
+    },
+
     // chọn backend cho phòng này + gắn handler
     use(backend) {
       NC().use(backend);
@@ -155,9 +202,7 @@ window.SFC = window.SFC || {};
     // khách (phòng người chơi làm host, hoặc mọi người ở phòng máy chủ riêng)
     enterAsGuest(code) {
       this.role = 'guest';
-      // phòng máy chủ riêng: gói nhỏ định kỳ để máy chủ gói miễn phí không "ngủ" khi cả phòng ngồi yên (phòng chờ / màn kết quả)
-      clearInterval(this.ka);
-      if (this.onServer && N().server.keepAlive > 0) this.ka = setInterval(() => { if (this.onServer && this.status !== 'idle') Net().send({ t: 'ka' }); }, N().server.keepAlive * 1000);
+      this.keepAlive();
       this.code = code;
       this.lobby = { members: [], owner: null };
       this.status = 'lobby';
@@ -182,22 +227,26 @@ window.SFC = window.SFC || {};
 
     // hết phiên vì lỗi / bị từ chối / huỷ. from: đang làm gì (create | join | room)
     fail(e, from = 'room') {
+      if (this.status === 'searching') { this.solo(); return; }   // phòng xếp hạng từ chối trước khi vào trận
+      const ranked = this.ranked;
       Net().close();
       this.reset();
-      this.emit('closed', { reason: NC().kind(e), from });
+      this.emit('closed', { reason: NC().kind(e), from, ranked });
     },
 
     // rời phòng chủ động
     leave() {
-      const net = Net();
+      if (this.status === 'idle') return;
+      if (this.status === 'searching') { this.cancelQueue(); return; }
+      const net = Net(), ranked = this.ranked;
       net.send({ t: 'bye' });
       setTimeout(() => net.close(), 150);
       this.reset();
-      this.emit('closed', { reason: 'left', from: 'room' });
+      this.emit('closed', { reason: 'left', from: 'room', ranked });
     },
 
     reset() {
-      this.role = null; this.status = 'idle'; this.code = null; this.game = null;
+      this.role = null; this.status = 'idle'; this.code = null; this.game = null; this.ranked = false;
       this.room = null;
       this.lobby = { members: [], owner: null };
       this.buf = [];
@@ -221,12 +270,15 @@ window.SFC = window.SFC || {};
     onPeerGone(id) {
       if (this.status === 'idle') return;
       if (this.isHost) { if (this.room) this.room.gone(id); return; }
+      if (this.status === 'searching') { this.solo(); return; }
+      // trận xếp hạng đã hết (phòng đóng sau trận): không cần vào lại
+      const over = this.ranked && this.game && this.game.state === 'ended';
       // mất kết nối giữa trận: thử vào lại thay vì về menu
-      if (this.status === 'playing' && this.tok && N().reconnectGrace > 0) { this.reconnect(); return; }
-      const closed = this.roomClosed;
+      if (this.status === 'playing' && this.tok && N().reconnectGrace > 0 && !over) { this.reconnect(); return; }
+      const closed = this.roomClosed, ranked = this.ranked;
       Net().close();
       this.reset();
-      this.emit('closed', { reason: closed ? 'closed' : 'lost', from: 'room' });
+      this.emit('closed', { reason: closed ? 'closed' : 'lost', from: 'room', ranked });
     },
 
     // khách mất kết nối giữa trận: giữ nguyên trận, vào lại phòng (cùng backend, cùng mã) mỗi 2 giây với tok
@@ -372,15 +424,22 @@ window.SFC = window.SFC || {};
         return c.id ? { id: String(c.id) } : { name: SFC.Profile.cleanName(String(c.name || '')).trim() || 'PLAYER', away: !!c.away };
       });
       const [home, away] = SFC.Room.registerClubs(clubs);
+      // đồng đội AI mỗi đội: 1 người, hoặc mảng (trận xếp hạng: đội không ai vào được = 2 người chơi giả)
+      const mate = (x) => (Array.isArray(x) ? x.slice(0, roles.length).map((y) => SFC.Profile.sanitizeMate(y)).filter(Boolean) : SFC.Profile.sanitizeMate(x));
+      // trận xếp hạng: Main Path của máy này (Area / Elo / thưởng) + Elo trung bình 2 đội phòng gửi (mỗi người tự tính Elo sau trận)
+      const mp = o.ranked && o.mainPath && typeof o.mainPath === 'object' ? Object.assign({}, this.provider.rank(), {
+        myElo: Math.max(0, +o.mainPath.myElo || 0), oppElo: Math.max(0, +o.mainPath.oppElo || 0),
+      }) : undefined;
       // trận "gương": cùng đội hình / character / slot như host, nhưng góc nhìn slot của máy này
       this.game = new SFC.Game({
         home, away, online: true, me, humanTeam: seats[me].team, seats,
-        difficulty: N().difficulty, aiProfile: this.sanitizeAi(o.aiProfile),
+        difficulty: N().difficulty, aiProfile: this.sanitizeAi(o.aiProfile), mateProfile: this.sanitizeAi(o.mateProfile),
         mateDifficulty: SFC_CONFIG.game.ai.difficulty[o.mateDifficulty] ? o.mateDifficulty : undefined,
         draftTimeLimit: +o.draftTimeLimit || 0,
-        mates: (Array.isArray(o.mates) ? o.mates.slice(0, 2) : []).map((x) => SFC.Profile.sanitizeMate(x)),
+        mates: (Array.isArray(o.mates) ? o.mates.slice(0, 2) : []).map(mate),
         arena: SFC_CONFIG.arenas[o.arena] ? o.arena : undefined,
         resume: o.resume ? 1 : undefined,
+        ranked: mp ? 1 : undefined, mainPath: mp,
       });
       this.game.events.length = 0;
       this.buf = [];

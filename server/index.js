@@ -4,6 +4,9 @@
  * Nhẹ: 1 vòng lặp 60 bước/giây chung cho mọi phòng, chỉ chạy khi có trận đang đá; snapshot JSON 1 lần rồi phát cho cả phòng.
  *
  * Bắt tay (xem src/net/transport-server.js): create{v} / join{code,v} -> room{code,id} | err{e}; sau đó gói đi thẳng vào Room.
+ * Tìm trận xếp hạng: queue{v,elo,role,pf} -> queued (đã vào hàng, src/net/matchmaker.js ghép mỗi giây) -> room{code,id}
+ * (phòng xếp hạng đã ghép xong; gửi hello như vào phòng thường) | solo (không ghép được: game tự đá với người chơi giả) | err{e}.
+ * unqueue = rời hàng (đóng kết nối cũng vậy).
  * Biến môi trường: xem ENV bên dưới + server/README.md.
  */
 const http = require('http');
@@ -41,7 +44,8 @@ const STEP = 1 / 60;
 const MAX_BUFFER = 1 << 20;   // người chơi nhận chậm tới mức đọng 1 MB -> ngắt (khỏi phình bộ nhớ)
 
 const rooms = new Map();      // mã phòng -> { code, room, clients: Map(id -> client), touched }
-const clients = new Set();    // mọi kết nối: { id, ws, ip, room, msgs, alive, since }
+const clients = new Set();    // mọi kết nối: { id, ws, ip, room, ticket, msgs, alive, since }
+const queue = new SFC.Matchmaker();   // hàng chờ trận xếp hạng (vé giữ kết nối: ticket.c)
 const perIp = new Map();      // địa chỉ IP -> số kết nối đang mở
 let draining = false;         // đang tắt: không nhận phòng mới
 let bytesOut = 0;            // byte thật đã gửi qua mạng (sau nén + khung WebSocket) của các kết nối đã đóng; đang mở: c.sock.bytesWritten
@@ -65,9 +69,12 @@ function out(c, data) {
   c.ws.send(data);
 }
 
-function createRoom() {
+// ranked = đội hình trận xếp hạng (Matchmaker.lineup); không có = phòng thường (mã phòng, chủ phòng bấm START)
+function createRoom(ranked) {
   const entry = { code: newCode(), clients: new Map(), touched: Date.now() };
+  const mode = () => (ranked ? 'ranked' : SFC.Room.Slots.mode(entry.room.lobby));
   entry.room = new SFC.Room({
+    ranked,
     // JSON 1 lần, phát cho mọi THÀNH VIÊN phòng (đã hello). Kết nối chưa được nhận vào phòng không nhận gì ngoài gói gửi riêng
     send: (msg, id) => {
       const data = JSON.stringify(msg);
@@ -77,14 +84,14 @@ function createRoom() {
     drop: (id) => { const c = entry.clients.get(id); if (c) c.ws.close(1000); },
     snapshotEvery: NET.server.snapshotEvery || 1,
     hooks: {
-      start: (g) => { entry.ended = false; entry.startedAt = Date.now(); log(entry, `match started (${SFC.Room.Slots.mode(entry.room.lobby)}, ${entry.room.lobby.members.length} players)`); },
+      start: (g) => { entry.ended = false; entry.startedAt = Date.now(); log(entry, `match started (${mode()}, ${entry.room.lobby.members.length} players)`); },
       toLobby: () => { if (entry.startedAt && !entry.ended) log(entry, 'match stopped before the end'); entry.startedAt = 0; },
       dropped: (name, away) => { if (away) log(entry, `a player disconnected, seat held ${NET.reconnectGrace}s`); },
       back: () => log(entry, 'a player reconnected'),
     },
   });
   rooms.set(entry.code, entry);
-  log(entry, 'created');
+  log(entry, ranked ? `created (ranked, ${ranked.seats.length} players)` : 'created');
   return entry;
 }
 
@@ -134,9 +141,21 @@ function clientIp(req) {
 }
 
 /* ================= KẾT NỐI ================= */
-const err = (c, e) => c.ws.send(JSON.stringify({ t: 'err', e }));
+const say = (c, msg) => { if (c.ws.readyState === 1) c.ws.send(JSON.stringify(msg)); };
+const err = (c, e) => say(c, { t: 'err', e });
+const busy = () => draining || rooms.size >= ENV.MAX_ROOMS;
 
 function handshake(c, msg) {
+  if (msg.t === 'queue') {
+    if (msg.v !== NET.protocol) return err(c, 'version');
+    if (busy()) return say(c, { t: 'solo' });   // máy chủ bận / đang tắt: đá với người chơi giả, không báo lỗi
+    if (c.ticket) return;
+    const pf = SFC.Profile.sanitizePublic(msg.pf) || SFC.Profile.sanitizePublic({});
+    const elo = Math.max(0, Math.min(1e6, Math.round(+msg.elo) || 0));
+    c.ticket = queue.add({ id: c.id, c, elo, role: pf.role || msg.role, pf, at: Date.now() });
+    return say(c, { t: 'queued' });
+  }
+  if (msg.t === 'unqueue') { unqueue(c); return; }
   if (msg.t === 'create') {
     if (msg.v !== NET.protocol) return err(c, 'version');
     if (draining) return err(c, 'server-closing');
@@ -149,6 +168,29 @@ function handshake(c, msg) {
     if (!entry) return err(c, 'room-missing');
     if (msg.v !== NET.protocol) return err(c, 'version');
     return attach(c, entry);
+  }
+}
+
+function unqueue(c) {
+  if (!c.ticket) return;
+  queue.remove(c.id);
+  c.ticket = null;
+}
+
+// ghép hàng chờ (1 lần / giây): nhóm ghép xong -> 1 phòng xếp hạng, mọi người vào phòng (room{code,id}) rồi tự hello
+function matchmake(now) {
+  const { groups, solo } = queue.tick(now);
+  for (const t of solo) { t.c.ticket = null; say(t.c, { t: 'solo' }); }
+  for (const g of groups) {
+    for (const t of g) t.c.ticket = null;
+    if (busy()) { for (const t of g) say(t.c, { t: 'solo' }); continue; }
+    let entry;
+    try { entry = createRoom(SFC.Matchmaker.lineup(g)); } catch (e) {
+      console.error('[queue] lineup failed:', e && e.stack || e);
+      for (const t of g) say(t.c, { t: 'solo' });
+      continue;
+    }
+    for (const t of g) if (t.c.ws.readyState === 1) attach(t.c, entry);
   }
 }
 
@@ -169,7 +211,7 @@ wss.on('connection', (ws, req) => {
   const ip = clientIp(req), n = (perIp.get(ip) || 0) + 1;
   if (ENV.MAX_PER_IP && n > ENV.MAX_PER_IP) { ws.close(1008, 'too many connections'); return; }
   perIp.set(ip, n);
-  const c = { id: 'c' + crypto.randomBytes(5).toString('hex'), ws, sock: req.socket, ip, room: null, msgs: 0, alive: true, since: Date.now() };
+  const c = { id: 'c' + crypto.randomBytes(5).toString('hex'), ws, sock: req.socket, ip, room: null, ticket: null, msgs: 0, alive: true, since: Date.now() };
   clients.add(c);
   ws.on('pong', () => { c.alive = true; });
   ws.on('message', (raw) => {
@@ -190,6 +232,7 @@ wss.on('connection', (ws, req) => {
     bytesOut += c.sock.bytesWritten;
     const left = (perIp.get(ip) || 1) - 1;
     if (left > 0) perIp.set(ip, left); else perIp.delete(ip);
+    unqueue(c);
     leave(c);
   });
   ws.on('error', () => {});
@@ -223,6 +266,7 @@ function frame() {
       if (r.endSent && !e.ended) {
         e.ended = true;
         const t = r.game.teams;
+        e.endedAt = Date.now();
         log(e, `match ended ${t[0].score}-${t[1].score} after ${Math.round((Date.now() - e.startedAt) / 1000)}s`);
       }
     }
@@ -240,8 +284,8 @@ setInterval(() => {
   for (const c of clients) {
     c.msgs = 0;   // giới hạn gói / giây
     // chưa tạo / vào phòng, hoặc vào rồi mà chưa được nhận (không hello / bị từ chối) quá JOIN_TIMEOUT -> ngắt
-    // (phòng không còn ai thì tự xoá ở leave -> phòng tạo ra rồi bỏ đó không tồn tại quá JOIN_TIMEOUT)
-    if (ENV.JOIN_TIMEOUT && (!c.room || !c.room.room.member(c.id)) && now - c.since > ENV.JOIN_TIMEOUT * 1000) { c.ws.close(1008, 'join timeout'); continue; }
+    // (phòng không còn ai thì tự xoá ở leave -> phòng tạo ra rồi bỏ đó không tồn tại quá JOIN_TIMEOUT). Đang trong hàng chờ: không tính
+    if (ENV.JOIN_TIMEOUT && !c.ticket && (!c.room || !c.room.room.member(c.id)) && now - c.since > ENV.JOIN_TIMEOUT * 1000) { c.ws.close(1008, 'join timeout'); continue; }
     // ping 15 giây / lần: ai không trả lời lần trước thì ngắt
     if (sec % 15 === 0) {
       if (!c.alive) { c.ws.terminate(); continue; }
@@ -255,14 +299,20 @@ setInterval(() => {
     dropIfEmpty(e);
   }
   // phòng không đá (phòng chờ / trận đã hết, mọi người ngồi ở màn kết quả) mà bỏ không quá lâu
-  for (const e of [...rooms.values()]) if (!e.room.active && now - e.touched > ENV.LOBBY_TTL * 1000) closeRoom(e, 'idle');
+  // trận xếp hạng không có phòng chờ: hết trận 2 phút là đóng (màn kết quả của mỗi người không cần phòng nữa)
+  for (const e of [...rooms.values()]) {
+    if (!e.room.active && now - e.touched > ENV.LOBBY_TTL * 1000) closeRoom(e, 'idle');
+    else if (e.room.ranked && e.endedAt && now - e.endedAt > 120000) closeRoom(e, 'done');
+  }
+  try { matchmake(now); } catch (e) { console.error('[queue] failed:', e && e.stack || e); }
+  wake();   // trận xếp hạng có thể vừa vào (expire: quá giờ chờ người vào phòng)
   // không có ai -> thoát (tuỳ chọn)
   idleFor = clients.size || rooms.size ? 0 : idleFor + 1;
   if (ENV.IDLE_EXIT && idleFor >= ENV.IDLE_EXIT) { console.log('[server] idle, exiting'); process.exit(0); }
   if (ENV.LOG_STATS && sec % ENV.LOG_STATS === 0) {
     const matches = [...rooms.values()].filter((e) => e.room.status === 'playing').length;
     const wire = wireOut();
-    console.log(`[stats] rooms=${rooms.size} matches=${matches} clients=${wss.clients.size} out=${((wire - lastBytes) / ENV.LOG_STATS / 1024).toFixed(1)}KB/s heap=${(process.memoryUsage().heapUsed / 1048576).toFixed(1)}MB`);
+    console.log(`[stats] rooms=${rooms.size} matches=${matches} queue=${queue.size} clients=${wss.clients.size} out=${((wire - lastBytes) / ENV.LOG_STATS / 1024).toFixed(1)}KB/s heap=${(process.memoryUsage().heapUsed / 1048576).toFixed(1)}MB`);
     lastBytes = wire;
   }
 }, 1000).unref();
@@ -272,6 +322,7 @@ function shutdown(sig) {
   if (draining) return;
   draining = true;
   console.log(`[server] ${sig}: no new rooms, waiting for matches (max ${ENV.SHUTDOWN_GRACE}s)`);
+  for (const c of clients) if (c.ticket) { unqueue(c); say(c, { t: 'solo' }); }
   const deadline = Date.now() + ENV.SHUTDOWN_GRACE * 1000;
   const check = setInterval(() => {
     const playing = [...rooms.values()].some((e) => e.room.status === 'playing' && e.room.active);
@@ -287,4 +338,4 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 server.listen(ENV.PORT, () => console.log(`[server] listening on :${ENV.PORT} · protocol ${NET.protocol}`));
 
-module.exports = { rooms, ENV, shutdown, wireOut };
+module.exports = { rooms, queue, ENV, shutdown, wireOut };

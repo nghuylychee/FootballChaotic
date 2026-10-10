@@ -1,7 +1,8 @@
 /* =========================================================
  * MAIN PATH CONFIG — đường tiến trình chính kiểu Clash Royale, xếp theo ELO (logic ở src/meta/mainpath.js).
  *
- * Mỗi trận là 2v2 "người chơi" (tạm thời: matchmaking giả, 3 người còn lại là bot đóng vai người chơi — xem matchmaking).
+ * Mỗi trận là 2v2 "người chơi": máy chủ riêng ghép người thật khi có (net.config.js -> queue), ghế còn trống / không ghép được
+ * = bot đóng vai người chơi (xem matchmaking).
  * Thắng / hoà / thua -> cộng / trừ Elo theo công thức Elo (k), so Elo trung bình 2 đội. Elo không xuống dưới 0.
  * Area = khoảng Elo: đang ở Area cao nhất có areas[].elo <= Elo hiện tại. Tụt Elo dưới ngưỡng = rớt về Area dưới (rớt tự do).
  * Thưởng mỗi trận: gold + XP (progression.config.js -> rewards.single, nhân reward của Area).
@@ -16,7 +17,8 @@ SFC_CONFIG.mainPath = {
   elo: { start: 0, k: 40, minWin: 4, lastSpan: 600 },
   forfeitCountsAsLoss: true,    // bỏ trận giữa chừng (Pause > FORFEIT) = thua
 
-  /* Matchmaking (PLACEHOLDER — chưa có server): màn tìm trận đếm giờ rồi ghép 3 người chơi giả do bot điều khiển.
+  /* Matchmaking người chơi giả (khi máy chủ không ghép được người thật — net.queue): màn tìm trận đếm giờ rồi ghép 3 người chơi giả
+   * do bot điều khiển. foundHold / searchTime[0] dùng chung cho trận có người thật (MATCH FOUND hiện giống hệt).
    * searchTime: [min, max] giây chờ giả · range: [lúc đầu, tối đa] độ lệch Elo của người chơi giả, nới dần theo thời gian chờ ·
    * sameArea: tỉ lệ người chơi giả nằm cùng Area với bạn (ưu tiên cùng Area) · foundHold: giây hiện màn "ĐÃ TÌM THẤY" trước khi vào trận.
    * Người chơi giả: tên trong names, deck Core / ngoại hình theo Area của họ (src/meta/teammates.js -> generate),

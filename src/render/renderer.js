@@ -93,9 +93,10 @@ window.SFC = window.SFC || {};
       // ảnh xem trước Core (g.preview): không vẽ vòng / mũi tên điều khiển
       const ctrlColor = (p) => (!g.preview && g.isHuman(p.team) && p.isControlled
         ? (p === cp ? '#ffe14f' : p.team === g.humanTeam ? '#3ff6ff' : '#ff5a6e') : null);
+      // trận xếp hạng (Main Path): chỉ vòng của máy này — người thật khác không khác gì người chơi giả
       if (!g.preview) g.seats.forEach((s, i) => {
         const c = g.seatPlayer(i);
-        if (c) ringPx(ctx, c.x, c.y + 1, 8, ctrlColor(c));
+        if (c && (!g.opts.mainPath || c === cp)) ringPx(ctx, c.x, c.y + 1, 8, ctrlColor(c));
       });
 
       // assisted passing chạy ngầm; chỉ hiện gợi ý người nhận khi bật showTargetHint (debug)

@@ -2,8 +2,10 @@
  * Trạng thái lưu trong hồ sơ (SFC.Profile.data.path):
  *   { elo, peak, area, id, best, cores, fresh } — area = Area theo Elo hiện tại (id dùng để đọc lại); peak = Elo cao nhất từng đạt;
  *   best = Area cao nhất từng tới (mở Tuyệt kỹ, sân online, scout); cores = Tuyệt kỹ đã mở bằng Main Path;
- *   fresh = Core vừa mở, chưa hiện ở lượt chọn Core nào (lá có nhãn NEW, được ưu tiên bốc)
- * Matchmaking hiện là PLACEHOLDER: matchmake() sinh 3 người chơi giả (bot) quanh Elo của bạn, ưu tiên cùng Area.
+ *   fresh = Core vừa mở, chưa hiện ở lượt chọn Core nào (lá có nhãn NEW, được ưu tiên bốc);
+ *   pending = { myElo, oppElo } trận xếp hạng đang đá dở (begin): tắt game / mất kết nối giữa trận -> lần chạy sau tính thua (settle)
+ * Tìm trận: máy chủ riêng ghép người thật (src/net/matchmaker.js) khi có; không thì matchmake() sinh 3 người chơi giả (bot)
+ * quanh Elo của bạn, ưu tiên cùng Area.
  */
 window.SFC = window.SFC || {};
 
@@ -46,6 +48,8 @@ window.SFC = window.SFC || {};
       d.area = this.areaOf(d.elo);
       d.best = Math.max(d.best, d.area);
       d.id = this.area(d.area).id;
+      const p = raw.pending;
+      if (p && typeof p === 'object' && isFinite(+p.myElo) && isFinite(+p.oppElo)) d.pending = { myElo: Math.max(0, +p.myElo), oppElo: Math.max(0, +p.oppElo) };
       this.backfill(d);
       return d;
     },
@@ -214,6 +218,7 @@ window.SFC = window.SFC || {};
      */
     record(result, info) {
       const st = this.state, before = { elo: st.elo, area: st.area }, bestBefore = st.best;
+      delete st.pending;
       const my = info && info.myElo != null ? info.myElo : st.elo, opp = info && info.oppElo != null ? info.oppElo : st.elo;
       const delta = Math.max(-st.elo, this.eloDelta(result, my, opp));
       st.elo += delta;
@@ -229,6 +234,21 @@ window.SFC = window.SFC || {};
       st.best = Math.max(st.best, st.area);
       SFC.Profile.save();
       return { before, after: { elo: st.elo, area: st.area }, delta, event, rewards, first: st.area > bestBefore };
+    },
+
+    // vào trận xếp hạng (info = opts.mainPath): lưu sẵn 1 trận thua — bỏ trận bằng cách tắt game / rớt mạng vẫn tính thua.
+    // record() (hết trận / FORFEIT) xoá đi
+    begin(info) {
+      this.state.pending = { myElo: +info.myElo || 0, oppElo: +info.oppElo || 0 };
+      SFC.Profile.save();
+    },
+    // trận xếp hạng còn dở (lần chạy trước tắt giữa trận / vừa mất kết nối): tính thua như FORFEIT. -> kết quả record() | null
+    settle() {
+      const p = this.state && this.state.pending;
+      if (!p) return null;
+      const st = SFC.Profile.data.stats;
+      if (st) { st.matches++; st.losses++; }
+      return this.record('lose', p);
     },
   };
 

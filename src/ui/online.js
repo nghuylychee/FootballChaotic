@@ -51,7 +51,7 @@ window.SFC = window.SFC || {};
 
     /* ================= VÒNG LẶP (main.js, 60 bước/giây) ================= */
     tick(dt, input) {
-      const on = O(), g = on.game;
+      const on = O(), g = on.game || this.finished();
       if (!g) return;
       // màn giới thiệu đang chiếu / máy làm host chờ người khác xem xong: trận đứng yên
       if (app().screen === 'intro') { SFC.Intro.update(dt, input); on.clock(dt); return; }
@@ -65,7 +65,13 @@ window.SFC = window.SFC || {};
       const play = this.overlay || g.state === 'draft' || g.state === 'ended' ? on.NO_INPUT : input;
       if (this.overlay) SFC.UI.pauseInput(input);
       else if (g.state === 'draft') SFC.UI.draftInput(input, g);
-      else if (g.state === 'ended') SFC.UI.endInput(input);
+      // màn kết quả (trận xếp hạng có thêm màn mở thẻ phần thưởng + LEVEL UP của DRILL như chơi đơn)
+      else if (g.state === 'ended') {
+        if (SFC.Drill.active) SFC.Drill.update(dt, input);
+        else if (SFC.Reveal.active) SFC.Reveal.update(dt, input);
+        else SFC.UI.endInput(input);
+      }
+      if (!on.game) return;   // vừa rời trận (FORFEIT / NEXT MATCH / LOBBY)
       on.tick(dt, play);
       // máy làm host: sự kiện trận (bàn thắng, banner...) sinh ra ở bước vừa chạy
       if (on.isHost && on.game) SFC.UI.consume(on.game);
@@ -75,7 +81,13 @@ window.SFC = window.SFC || {};
     view(now) {
       const on = O(), g = on.view(now);
       if (g && !on.isHost) SFC.UI.consume(g);
-      return g;
+      return g || this.finished();
+    },
+
+    // trận xếp hạng đã hết mà phòng đã đóng (Session không còn trận): vẫn ở màn kết quả tới khi người chơi chọn NEXT MATCH / LOBBY
+    finished() {
+      const g = app().game;
+      return app().mode === 'online' && g && g.opts.mainPath && g.state === 'ended' ? g : null;
     },
   };
 
@@ -92,6 +104,11 @@ window.SFC = window.SFC || {};
     area() {
       const MP = SFC.MainPath;
       return Math.min(MP.areas().length - 1, MP.state.best);
+    },
+    // Main Path hiện tại (tìm trận xếp hạng + opts.mainPath): thưởng theo Area của mình như MainPath.matchmake
+    rank() {
+      const st = SFC.MainPath.state;
+      return { area: st.area, elo: st.elo, reward: SFC.MainPath.area(st.area).reward };
     },
   });
 
@@ -120,8 +137,11 @@ window.SFC = window.SFC || {};
     if (i >= 0) app().sel.ctrl = i + 1;
   });
 
+  // tìm trận xếp hạng: ghép được -> MATCH FOUND trên phòng chờ PLAY (menu.js) rồi mới vào trận; không -> người chơi giả
+  on('solo', () => Menu().searchSolo());
   on('start', ({ game, resume }) => {
     OnlineUI.overlay = false;
+    if (O().ranked && !resume) { Menu().searchFound(game); return; }
     app().enterOnline(game);
     if (resume) banner('RECONNECTED', 'Back in the match', GREEN, 1.4);
   });
@@ -129,6 +149,7 @@ window.SFC = window.SFC || {};
   on('getReady', () => banner('GET READY', 'Waiting for other players...', GREY, 1.4));
   on('reconnecting', () => banner('CONNECTION LOST', 'Reconnecting...', RED, 2));
   on('player', ({ kind, name }) => {
+    if (O().ranked) return;   // trận xếp hạng: như trận với người chơi giả, không báo ai rời / vào lại (AI đá thay)
     name = name || 'A PLAYER';
     if (kind === 'away') banner(`${name} DISCONNECTED`, 'AI plays until they reconnect', GREY, 1.6);
     else if (kind === 'left') banner(`${name} LEFT`, 'AI takes over', GREY, 1.6);
@@ -137,8 +158,16 @@ window.SFC = window.SFC || {};
   // chủ phòng đổi khi đang ở màn kết quả: hiện / ẩn nút BACK TO LOBBY
   on('owner', () => { const g = O().game; if (g && g.state === 'ended') SFC.UI.renderEndItems(); });
 
-  on('closed', ({ reason, from }) => {
+  on('closed', ({ reason, from, ranked }) => {
     OnlineUI.overlay = false;
+    if (ranked) {
+      // tự rời (NEXT MATCH / LOBBY / FORFEIT: nơi gọi tự chuyển trang) · đã hết trận: ở lại màn kết quả
+      const g = app().game;
+      if (reason === 'left' || !g || app().mode !== 'online' || g.state === 'ended') return;
+      // mất kết nối hẳn giữa trận: tính thua như FORFEIT
+      app().forfeit();
+      return;
+    }
     app().toMenu(from === 'join' && reason !== 'left' ? 'join' : 'online');
     if (reason !== 'left') Menu().setMsg(OnlineUI.reasonText(reason), true);
   });

@@ -8,7 +8,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 10,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
+  protocol: 11,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
   // Máy chủ riêng (server/): máy chủ chạy trận, mọi người là khách. url trống = chỉ người chơi làm host (Steam / PeerJS).
   // TẠO PHÒNG thử máy chủ trước, không tới được thì tự chuyển sang người chơi làm host.
@@ -40,6 +40,19 @@ SFC_CONFIG.net = {
   // Đội bot (co-op): 1 đội thường ngẫu nhiên của 1 Area chủ phòng đã tới (mainPath.config.js -> areas[].teams),
   // độ khó AI = độ khó ở 1 mức Elo ngẫu nhiên trong Area đó (span: phần khoảng Elo, 0 = đầu Area, 1 = cuối Area), sân = sân của Area đó
   bots: { span: [0, 1] },
+
+  // Tìm trận xếp hạng Main Path (PLAY > START khi không có bạn trong phòng) trên máy chủ riêng: src/net/matchmaker.js.
+  // Người thật thay người chơi giả; ghế còn trống = người chơi giả (bot). Không có máy chủ / không tới được / máy chủ bận /
+  // không ai để ghép -> game tự ghép người chơi giả như chơi một mình (mainPath.matchmaking), người chơi không thấy khác gì.
+  queue: {
+    range: [100, 400],         // ghép được khi lệch Elo <= khoảng này: nới dần từ range[0] tới range[1] trong widen giây chờ
+    widen: 15,
+    anyAfter: 20,              // chờ quá bấy nhiêu giây: ghép với bất kỳ ai (ít người chơi thì vẫn gặp được nhau)
+    gather: 5,                 // đã có người hợp: người chờ lâu nhất phải chờ ít nhất bấy nhiêu giây (xem có thêm người tới không)
+    aloneWait: [6, 12],        // hàng không có ai khác: sau bấy nhiêu giây (ngẫu nhiên trong khoảng) -> đá với người chơi giả
+    maxWait: 30,               // chờ tối đa (có người khác nhưng chưa hợp)
+    joinWait: 5,               // ghép xong: ai chưa vào phòng sau bấy nhiêu giây -> người chơi giả thế chỗ
+  },
 
   snapshotEvery: 1,            // host gửi trạng thái mỗi N bước mô phỏng (60/N lần/giây; ~0.6KB/gói)
   interpDelay: 0.06,           // giây trễ nội suy ở máy khách (mượt hơn nhưng trễ hơn khi tăng)

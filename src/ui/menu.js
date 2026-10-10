@@ -133,7 +133,7 @@ window.SFC = window.SFC || {};
       this.msgErr = err;
       if (page === 'join' && !msg) this.code = '';
       // máy chủ riêng có thể đang ngủ: mở ONLINE là đánh thức luôn, tới lúc bấm TẠO / VÀO PHÒNG đã dậy được một lúc
-      if (page === 'online') Session().prepare();
+      if (page === 'online' || page === 'party') Session().prepare();
       if (page === 'name') this.nameBuf = PF().data.name;
       if (page === 'path') this.pathView = MPATH().state.area;   // mở Main Path: xem Area đang đá
       if (page !== 'party' && SFC.Social.chatWith) SFC.Social.chatWith = null;
@@ -607,43 +607,69 @@ window.SFC = window.SFC || {};
       </div>`;
     },
 
-    /* ---------------- tìm trận (matchmaking giả: SFC.MainPath.matchmake) ---------------- */
+    /* ---------------- tìm trận: người thật (SFC.Session.queue, máy chủ riêng) hoặc người chơi giả (SFC.MainPath.matchmake) ---------------- */
     // tìm trận ngay trên phòng chờ (gọi từ chỗ khác: BATTLE ở Main Path, NEXT MATCH sau trận -> chuyển về phòng chờ rồi tìm)
+    // một mình (không có bạn trong phòng): vào hàng chờ tìm người thật; không ghép được (solo) -> người chơi giả như cũ.
+    // 2 cách hiện giống hệt nhau: SEARCHING -> MATCH FOUND (2 đối thủ + Elo) -> vào trận
     startSearch() {
       const M = SFC_CONFIG.mainPath.matchmaking;
       if (this.page !== 'party') this.go('party');
-      this.search = { t: 0, wait: M.searchTime[0] + Math.random() * (M.searchTime[1] - M.searchTime[0]), lobby: null, hold: 0 };
+      const online = !SFC.Social.party.length;
+      this.search = { t: 0, wait: M.searchTime[0] + Math.random() * (M.searchTime[1] - M.searchTime[0]), lobby: null, hold: 0, online };
       SFC.Audio.pick();
+      if (online) Session().queue();   // không có máy chủ -> solo ngay trong lúc gọi
       this.render();
     },
     cancelSearch() {
-      this.search = null;
+      this.dropSearch();
       this.render();
+    },
+    // bỏ lượt tìm đang chạy: còn trong hàng chờ thì rời hàng; đã ghép người thật (đang hiện MATCH FOUND) thì rời phòng
+    dropSearch() {
+      const S = this.search;
+      this.search = null;
+      if (S && S.online) Session().leave();
+    },
+    // không ghép được người thật -> ghép người chơi giả khi tới giờ (searchTick)
+    searchSolo() {
+      if (this.search && this.search.online && !this.search.lobby) this.search.online = false;
+    },
+    // ghép được người thật: trận đã dựng (trận "gương"), hiện MATCH FOUND như ghép người chơi giả rồi vào trận
+    searchFound(game) {
+      const S = this.search;
+      if (!S || !S.online || S.lobby || this.page !== 'party' || this.app.screen !== 'menu') { Session().leave(); return; }
+      S.found = game;
     },
     // mỗi khung hình (animate): đồng hồ chờ + khoảng Elo nới dần; tới giờ thì ghép trận, hiện MATCH FOUND rồi vào trận
     searchTick(dt) {
       const S = this.search;
       if (!S) return;
-      if (this.page !== 'party') { this.search = null; return; }   // rời phòng chờ = huỷ tìm
+      if (this.page !== 'party') { this.dropSearch(); return; }   // rời phòng chờ = huỷ tìm
       const M = SFC_CONFIG.mainPath.matchmaking;
       S.t += dt;
       if (!S.lobby) {
         const time = this.el.querySelector('[data-mm-time]'), range = this.el.querySelector('[data-mm-range]');
         if (time) time.textContent = SFC.U.fmtTime(S.t);
         if (range) range.textContent = `± ${Math.round(SFC.U.lerp(M.range[0], M.range[1], Math.min(1, S.t / M.searchTime[1])))}`;
-        if (S.t >= S.wait) {
+        // người thật: hiện MATCH FOUND sau ít nhất searchTime[0] giây (như ghép người chơi giả)
+        if (S.found && S.t >= M.searchTime[0]) {
+          const g = S.found;
+          S.lobby = { game: g, opps: g.teams[1 - g.humanTeam].players.map((p) => ({ name: p.name, elo: p.elo != null ? p.elo : '' })) };
+        } else if (!S.online && S.t >= S.wait) {
           const SO = SFC.Social;
           S.lobby = MPATH().matchmake(S.t, this.app.myRole(), SO.party.length ? (r) => SO.partyMate(r) : null);
-          SFC.Audio.reveal(2);
-          this.render();
         }
+        if (S.lobby) { SFC.Audio.reveal(2); this.render(); }
         return;
       }
       S.hold += dt;
       if (S.hold >= M.foundHold) {
         const lb = S.lobby;
         this.search = null;
-        this.app.startRanked(lb);
+        if (!lb.game) this.app.startRanked(lb);
+        // trận người thật vẫn còn (chưa rớt mạng) -> vào trận; rớt rồi thì ghép người chơi giả luôn
+        else if (Session().game === lb.game) this.app.enterOnline(lb.game);
+        else this.app.startRanked(MPATH().matchmake(S.t, this.app.myRole(), null));
       }
     },
 

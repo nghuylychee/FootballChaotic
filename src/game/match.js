@@ -26,7 +26,8 @@ window.SFC = window.SFC || {};
      *         training: true = luyện tập (không giờ trận, không chọn Core, không kết thúc / không thưởng),
      *         teamSize: [n đội 0, n đội 1] — số cầu thủ mỗi đội (mặc định đủ đội hình; 0 = đội trống),
      *         aiProfile / mateDifficulty / mateProfile: độ khó AI đối thủ (object) / đồng đội (key / object) — Main Path,
-     *         arena: id giao diện sân (arenas.config.js), mainPath: { area, elo, reward, myElo, oppElo } — trận Main Path,
+     *         arena: id giao diện sân (arenas.config.js), mainPath: { area, elo, reward, myElo, oppElo } — trận Main Path
+     *                (cả trận xếp hạng online: ranked = 1, seats[].avatar.elo = Elo người chơi),
      *         noDraft / noAI: tắt chọn Core / AI (ảnh xem trước Core),
      *         tutorial: trận mơ PROLOGUE (src/game/tutorial.js): không đồng hồ tới khi g.clockOn, lượt chọn Core do kịch bản mở,
      *         noAiCores: cầu thủ AI không tự bốc Core ở lượt chọn }
@@ -87,6 +88,7 @@ window.SFC = window.SFC || {};
       this.seats = seatDefs.map((s) => {
         const p = s.idx == null || !this.teams[s.team] ? null : this.teams[s.team].players[s.idx] || null;
         if (p && s.avatar) setAvatar(p, s.avatar);
+        if (p && s.avatar && s.avatar.elo != null) p.elo = s.avatar.elo;   // trận xếp hạng: Elo người chơi (hiện như người chơi giả)
         if (p && s.cores) p.unlocks = s.cores.slice();
         return { team: s.team, p, gone: false };
       });

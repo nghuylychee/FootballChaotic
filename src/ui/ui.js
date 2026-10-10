@@ -99,6 +99,10 @@ window.SFC = window.SFC || {};
     },
 
     get online() { return this.app.mode === 'online'; },
+    // trận xếp hạng Main Path (chơi đơn hoặc online có người thật): cùng 1 giao diện, không lộ có người thật hay không
+    get ranked() { return !!(this.app.game && this.app.game.opts.mainPath); },
+    // trận trong phòng online (mã phòng, chủ phòng, phòng chờ)
+    get roomMatch() { return this.online && !this.ranked; },
 
     /* ================= DRAFT ================= */
     renderDraft(game) {
@@ -198,8 +202,8 @@ window.SFC = window.SFC || {};
         </div>`;
       }
       this.el.pause.innerHTML = `
-        <div class="pause-title">${esc(this.online ? _t('MENU') : _t('PAUSED'))}</div>
-        ${this.online ? `<div class="pause-note">${esc(_t('Online matches keep running'))}</div>` : ''}
+        <div class="pause-title">${esc(this.online || this.ranked ? _t('MENU') : _t('PAUSED'))}</div>
+        ${this.online || this.ranked ? `<div class="pause-note">${esc(_t('Online matches keep running'))}</div>` : ''}
         ${build}
         <div class="pause-items row-items">${items}</div>`;
       SFC.CorePreview.scan(this.el.pause);
@@ -223,7 +227,7 @@ window.SFC = window.SFC || {};
 
     /* ================= END ================= */
     endItems() {
-      if (!this.online) {
+      if (!this.roomMatch) {
         const mp = this.app.game && this.app.game.opts.mainPath;
         // thẻ drill bấm LATER: mở lại ở INVENTORY (không có nút ở đây)
         // bản DEMO hết Area đá được: restart -> màn WISHLIST (app.startMainPath)
@@ -249,7 +253,7 @@ window.SFC = window.SFC || {};
         const list = ids.length ? ids.map(item).join('') : `<em>${esc(_t('No cores'))}</em>`;
         return `<div class="b-player ${mine ? 'me' : ''}"><div class="bp-head"><b>${esc(q.name)}</b>${buildLabel(game, q)}</div>${mine ? list : `<div class="bp-chips">${list}</div>`}</div>`;
       }).join('');
-      const note = this.online && !SFC.Session.isOwner ? _t('Waiting for the host to return to the lobby...') : _t('Try a different build next time?');
+      const note = this.roomMatch && !SFC.Session.isOwner ? _t('Waiting for the host to return to the lobby...') : _t('Try a different build next time?');
       // sân luôn vẽ đội 0 bên trái -> tỉ số giữ đúng thứ tự trái / phải
       const t0 = game.teams[0], t1 = game.teams[1];
       this.el.end.innerHTML = `
@@ -411,13 +415,13 @@ window.SFC = window.SFC || {};
             if (r.eligible.length) up.insertAdjacentHTML('beforeend', `<div class="rw-new">${esc(_t('Unlocked: {list}', { list: r.eligible.join(', ') }))}</div>`);
             // lên level: thẻ drill vừa nhận (chỉ khi không có dòng Unlocked, giữ khung thưởng tối đa 2 dòng)
             const gained = r.levelUps.length * SFC_CONFIG.progression.attrs.drills.perLevel;
-            const where = this.online ? ' · ' + _t('open in INVENTORY') : '';
+            const where = this.roomMatch ? ' · ' + _t('open in INVENTORY') : '';
             if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">${esc(_tn('★ +{n} DRILL CARD', '★ +{n} DRILL CARDS', gained) + where)}</div>`);
             // chạm trần level theo Main Path: XP vẫn tích, lên hạng là lên level
             else if (!r.eligible.length && r.capped) up.insertAdjacentHTML('beforeend', `<div class="rw-new">${esc(_t('LV CAP · climb the Main Path to level up (XP is saved)'))}</div>`);
             this.showEndItems();   // dòng thưởng vừa thêm có thể đẩy nút xuống
             // chơi đơn: vừa lên level -> tự mở màn LEVEL UP của DRILL (online tự xử lý phím -> chỉ tích thẻ, mở ở INVENTORY)
-            this.drillAfter = !this.online && gained > 0 ? { earned: gained, from: r.before.level, to: r.after.level } : null;
+            this.drillAfter = !this.roomMatch && gained > 0 ? { earned: gained, from: r.before.level, to: r.after.level } : null;
             this.autoDrill();
           }
           return;

@@ -411,6 +411,7 @@ window.SFC = window.SFC || {};
       const stats = this.sanitizeStats(pub.stats);
       if (stats) { out.stats = stats; out.ovr = clampInt(pub.ovr, 1, 99); }
       if (pub.mate !== undefined) out.mate = this.sanitizeMate(pub.mate);
+      if (pub.elo != null) out.elo = clampInt(pub.elo, 0, 1e6);   // trận xếp hạng: Elo người chơi (Room gắn vào ghế)
       return out;
     },
 
@@ -439,7 +440,7 @@ window.SFC = window.SFC || {};
     sanitizeMate(m) {
       if (!m || typeof m !== 'object') return null;
       const roles = SFC_CONFIG.game.roles, list = SFC_CONFIG.cores.list;
-      return {
+      const out = {
         name: String(m.name || 'MATE').replace(/[<>&"']/g, '').slice(0, 12) || 'MATE',
         ovr: clampInt(m.ovr, 1, 99),
         stats: this.sanitizeStats(m.stats),
@@ -447,6 +448,9 @@ window.SFC = window.SFC || {};
         look: this.sanitizeLook(m.look),
         role: roles.includes(m.role) ? m.role : null,
       };
+      // người chơi giả (trận xếp hạng): hiện kèm Elo như người chơi
+      if (m.fake) { out.fake = true; out.elo = clampInt(m.elo, 0, 1e6); }
+      return out;
     },
 
     /* ---------- thưởng sau trận ---------- */
@@ -455,9 +459,11 @@ window.SFC = window.SFC || {};
       const me = game.humanTeam;
       if (me < 0 || !this.data) return null;
       const d = this.data, R = P().rewards;
-      const pvp = game.humans.length > 1;
+      // Main Path (cả trận xếp hạng online có người thật): thưởng + Elo như trận Main Path, không tính là PvP / co-op
+      const mp = game.opts.mainPath || null;
+      const pvp = !mp && game.humans.length > 1;
       // online co-op: mọi người chơi cùng 1 đội đấu đội bot (rewards.coop)
-      const coop = !pvp && !!game.opts.online;
+      const coop = !mp && !pvp && !!game.opts.online;
       const cfg = pvp ? R.pvp : coop ? R.coop || R.single : R.single;
       const my = game.teams[me].score, op = game.teams[1 - me].score;
       const result = my > op ? 'win' : my < op ? 'lose' : 'draw';
@@ -468,7 +474,6 @@ window.SFC = window.SFC || {};
       const lines = [{ label: labels[result], xp: cfg[result].xp, gold: cfg[result].gold }];
       if (goals > 0) lines.push({ label: _t('Goals ×{n}', { n: goals }), xp: cfg.goal.xp * goals, gold: cfg.goal.gold * goals });
       // Main Path: cộng / trừ Elo (lên / rớt Area, Tuyệt kỹ mở lần đầu tới Area hiện ở màn mở thẻ); thưởng nhân theo Area
-      const mp = !pvp && !coop && game.opts.mainPath;
       const path = mp ? SFC.MainPath.record(result, mp) : null;
       let xp = lines.reduce((s, l) => s + l.xp, 0), gold = lines.reduce((s, l) => s + l.gold, 0);
       if (mp) {

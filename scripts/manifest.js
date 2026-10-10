@@ -80,6 +80,7 @@ const FILES = [
   ['src/net/transport-server.js', 'game'],
   ['src/net/sync.js', 'game server'],
   ['src/net/room.js', 'game server'],
+  ['src/net/matchmaker.js', 'server'],                     // hàng chờ trận xếp hạng (chỉ máy chủ riêng)
   ['src/net/session.js', 'game'],
   ['src/ui/corepreview.js', 'game'],
   ['src/ui/controls.js', 'game'],

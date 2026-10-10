@@ -7,6 +7,8 @@
  *  - wake(): gọi /healthz cho máy chủ dậy sớm (mở trang ONLINE)
  *  - host() / join(code, { wait }) thử lại mỗi 2 giây tới net.server.wakeTimeout giây; onWait(giây còn lại) để hiện đếm ngược
  *  - cancel(): bỏ chờ -> reject { type: 'cancelled' }
+ * Tìm trận xếp hạng: queue(vé) -> queue{v,elo,role,pf}; queued = đã vào hàng (hết hạn kết nối), room{code,id} = ghép xong (resolve),
+ * solo = không ghép được (reject { type: 'solo' }). Chỉ thử 1 lần: máy chủ đang ngủ nghĩa là không ai đang tìm trận.
  */
 window.SFC = window.SFC || {};
 
@@ -33,6 +35,16 @@ window.SFC = window.SFC || {};
     join(code, opts = {}) {
       const first = { t: 'join', code, v: N().protocol };
       return (opts.wait ? this.until(first, opts.onWait) : this.open(first, S().connectTimeout)).then(() => undefined);
+    },
+
+    /** Vào hàng chờ trận xếp hạng -> resolve(mã phòng) khi ghép xong. cancel() -> reject { type: 'cancelled' } */
+    queue(ticket) {
+      this.cancelled = false;
+      return new Promise((resolve, reject) => {
+        this.abort = () => { this.abort = null; reject({ type: 'cancelled' }); };
+        this.open(Object.assign({ t: 'queue', v: N().protocol }, ticket), S().connectTimeout)
+          .then((code) => { this.abort = null; resolve(code); }, (e) => { this.abort = null; reject(e); });
+      });
     },
 
     // thử kết nối mỗi 2 giây tới hạn; chỉ lỗi "không tới được" mới thử lại (sai mã / đầy / sai phiên bản thì báo ngay)
@@ -103,7 +115,9 @@ window.SFC = window.SFC || {};
             this.myId = String(msg.id);
             this.code = String(msg.code);
             resolve(this.code);
-          } else if (msg.t === 'err') fail({ type: msg.e || 'server-error' });
+          } else if (msg.t === 'queued') clearTimeout(timer);   // đã vào hàng chờ: chờ ghép bao lâu cũng được
+          else if (msg.t === 'solo') fail({ type: 'solo' });
+          else if (msg.t === 'err') fail({ type: msg.e || 'server-error' });
         };
       });
     },

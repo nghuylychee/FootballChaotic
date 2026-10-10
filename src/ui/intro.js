@@ -95,7 +95,9 @@ window.SFC = window.SFC || {};
         if (A) { venue = A.name; venueIcon = PX().area(A.id) + ' '; }
       }
       // thẻ cầu thủ hiện xen kẽ trái / phải: người chơi (character) lên đầu
-      const lists = [0, 1].map((t) => g.teams[t].players.slice().sort((a, b) => (b.isControlled && g.isHuman(t) ? 1 : 0) - (a.isControlled && g.isHuman(t) ? 1 : 0)));
+      // (Main Path: chỉ character của máy này — người thật / người chơi giả xếp như nhau)
+      const first = (p, t) => (mp ? p === g.controlled : p.isControlled && g.isHuman(t)) ? 1 : 0;
+      const lists = [0, 1].map((t) => g.teams[t].players.slice().sort((a, b) => first(b, t) - first(a, t)));
       const delay = {};
       let k = 0;
       for (let i = 0; i < Math.max(lists[0].length, lists[1].length); i++) {
@@ -159,9 +161,10 @@ window.SFC = window.SFC || {};
       const num = ctl ? I.youNumber : I.numbers[p.role] || 7;
       const pn = `P${(p.seat != null ? p.seat : p.team) + 1}`;
       const _t = SFC.t;
-      // người chơi giả (Main Path): hiện như người chơi khác — nhãn Elo màu đồng đội / đối thủ
-      const tag = you ? `<em class="you">${esc(_t('YOU'))}</em>` : ctl ? `<em class="${p.team === g.humanTeam ? 'ally' : 'rival'}">${pn}</em>`
-        : p.fake ? `<em class="${p.team === g.humanTeam ? 'ally' : 'rival'}">${p.elo}</em>` : p.mate ? `<em class="mate">${esc(_t('MATE'))}</em>` : human ? `<em>${esc(_t('AI'))}</em>` : '';
+      // Main Path: người chơi khác (người thật trận xếp hạng / người chơi giả) hiện như nhau — nhãn Elo màu đồng đội / đối thủ
+      const side = p.team === g.humanTeam ? 'ally' : 'rival';
+      const tag = you ? `<em class="you">${esc(_t('YOU'))}</em>` : p.elo != null ? `<em class="${side}">${p.elo}</em>` : ctl ? `<em class="${side}">${pn}</em>`
+        : p.mate ? `<em class="mate">${esc(_t('MATE'))}</em>` : human ? `<em>${esc(_t('AI'))}</em>` : '';
       // character / đồng đội có chỉ số riêng: OVR cá nhân
       const povr = (ctl || p.mate) && p.ovr ? `<b class="in-povr">${p.ovr}<span>${esc(_t('OVR'))}</span></b>` : '';
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">
@@ -219,7 +222,7 @@ window.SFC = window.SFC || {};
         disc(x, cx, cy, 4, OUT);
         disc(x, cx, cy, 3, kit.shirt);
         px(x, cx - 1, cy - 1, 2, 2, kit.accent);
-        if (g.isHuman(p.team) && p.isControlled && k >= 1) ringPx(x, cx, cy, 6 + (Math.floor(this.t * 4) % 2), '#ffe14f');
+        if ((g.opts.mainPath ? p === g.controlled : g.isHuman(p.team) && p.isControlled) && k >= 1) ringPx(x, cx, cy, 6 + (Math.floor(this.t * 4) % 2), '#ffe14f');
       });
     },
   };

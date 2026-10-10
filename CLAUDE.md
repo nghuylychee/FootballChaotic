@@ -12,7 +12,7 @@ Street Football Chaos: a 2v2 top-down arcade football game in plain browser Java
 | Game + local dedicated match server (ws://localhost:8081, URL injected at serve time) | `npm run online` |
 | Desktop build in dev (Electron; Steam P2P if Steam is running, App ID 480 from `steam_appid.txt`) | `npm start` |
 | Match server tests (server + client, no browser) | `npm run server:test` |
-| Single test file | `node server/test/room-test.js` or `node server/test/client-test.js` |
+| Single test file | `node server/test/room-test.js`, `client-test.js`, `hardening-test.js`, `reconnect-test.js` or `queue-test.js` |
 | Translation check (missing keys, `{var}` / tag mismatches; exits 1 on errors) | `node scripts/i18n-check.js` |
 | Rebuild the Japanese subset font after editing `src/i18n/ja.js` | `python scripts/build-ja-font.py` |
 | Steam build | `npm run dist` |
@@ -60,7 +60,7 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 - `src/render/` and `src/ui/` only read game state. The simulation has no DOM dependencies, which is what lets it run headless on the server.
 
 **Meta / persistence.**
-- `SFC.Profile` (level, gold, inventory, attributes), `SFC.MainPath` (career ladder: Areas are Elo ranges; matchmaking is a placeholder that fills the 2v2 with bot-driven fake players), `SFC.Mates` (AI teammates) and `SFC.Social` (placeholder friend list / chat / 2-player party with bot-driven fake friends, key `sfc_social_v1`) are all saved through `SFC.Storage`.
+- `SFC.Profile` (level, gold, inventory, attributes), `SFC.MainPath` (career ladder: Areas are Elo ranges; ranked 2v2 against real players when the server can match some, otherwise bot-driven fake players from `matchmake()`; a `pending` loss is saved at kickoff so quitting mid-match still counts), `SFC.Mates` (AI teammates) and `SFC.Social` (placeholder friend list / chat / 2-player party with bot-driven fake friends, key `sfc_social_v1`) are all saved through `SFC.Storage`.
 - `SFC.Storage` writes to `localStorage` on the web and to JSON files with `.bak` copies on desktop (via `electron/preload.js`). See `docs/SAVE.md`.
 
 **Online** (`src/net/`). The model is host-authoritative, and the same room logic runs in two places:
@@ -74,6 +74,10 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
   - `snapshot()` / `apply()` copy the player fields named in `PF`.
   - `capture()` wraps a **hard-coded list of `Effects` method names** and replays them on guests.
   - A new player field that rendering needs, or a new effect method guests should see, must be added there. Otherwise it silently won't appear online.
+- **Ranked matchmaking** (PLAY › START with no party). `Session.queue()` sends `queue{elo,role,pf}` to the server, where `src/net/matchmaker.js` (`net.queue`, server-only) groups 2–4 players by a widening Elo window. A `Room` with `ranked` lineup then plays the match with no lobby or owner, and AI fills the empty seats. The client gets `start{opts.ranked, opts.mainPath}` and records its own Elo.
+  - Every failure emits `solo`, and the menu runs the offline `MainPath.matchmake()`.
+  - **Players must not be able to tell real players from AI** (the user's decision). Both look the same in MATCH FOUND, the intro (Elo badges), the pause menu (it doesn't freeze ranked matches, offline included), the draft timer and the result screen. Only your own control ring shows, and there are no away/left banners.
+  - UI code tells ranked apart with `game.opts.mainPath` (`UI.ranked`), and online rooms with `UI.roomMatch`.
 - Reconnect lives in `Room` too: a mid-match disconnect marks the member `away` for `net.reconnectGrace` seconds (AI plays the seat). `hello{tok}` reclaims it via `rejoin()`, and whoever runs the Room must call `room.expire(Date.now())` periodically. Never send a `lobby` packet mid-match: guests treat it as "match over, back to lobby"; resume data travels inside `start{opts.resume, opts.lobby}`.
 - Bump `net.protocol` when the message format changes. The server must be redeployed together with the client.
 - `server/README.md` covers server env vars, Docker (`docker build -f server/Dockerfile .`, built from the repo root) and the handshake.
