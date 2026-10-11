@@ -1,0 +1,265 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Montserrat:wght@900&family=Inter:wght@800&family=Noto+Sans+JP:wght@900&family=Noto+Sans+SC:wght@900&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family: "DotGothic16"; src: url("/scripts/fonts/DotGothic16-Regular.ttf"); }   /* font pixel Nhật của game: fallback cho --px khi caption tiếng Nhật */
+  :root { --ink: #140c16; --red: #ff3d5a; --gold: #ffe14f; --cyan: #7fe7ff; --px: "Press Start 2P", "DotGothic16", monospace;
+    --meme: "Montserrat", "Noto Sans JP", "Noto Sans SC", "Arial Black", sans-serif;   /* Noto: caption tiếng Nhật / Trung cho biến thể ngôn ngữ (edl_zzz_lang.py) */ --gamer: "Inter", "Helvetica Neue", sans-serif; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: #07050a; }
+  #stage { position: absolute; inset: 0; overflow: hidden; background: #07050a; }
+  .plate { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; image-rendering: pixelated; }
+  .plate img { display: block; width: 1920px; height: 1080px; image-rendering: pixelated; }
+  #bg { position: absolute; left: 50%; top: 0; height: 1920px; width: auto; transform: translateX(-50%) scale(1.15); filter: blur(28px) brightness(0.32) saturate(1.2); }
+  #win { position: absolute; left: 0; width: 1080px; overflow: hidden; border-top: 6px solid var(--ink); border-bottom: 6px solid var(--ink); box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+  #real { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 50% 50%; }
+  #dim, #flash { position: absolute; inset: 0; pointer-events: none; }
+  #dim { background: radial-gradient(ellipse at center, rgba(7,5,10,0.55), rgba(7,5,10,0.92)); opacity: 0; }
+  #flash { background: #fff; opacity: 0; }
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+
+  /* meme caption: white, heavy black outline, top third */
+  .meme { position: absolute; left: 60px; right: 60px; text-align: center; font-family: var(--meme); font-weight: 900; color: #fff;
+    -webkit-text-stroke: 14px #000; paint-order: stroke fill; line-height: 1.12; letter-spacing: -1px; }
+  .meme b { color: var(--gold); font-weight: 900; }
+  .meme i { color: var(--red); font-style: normal; }
+  /* small corner watermark (S clips) */
+  .wm { position: absolute; left: 44px; top: 70px; font-family: var(--px); font-size: 20px; color: rgba(255,255,255,0.55); line-height: 1.5; text-shadow: 3px 3px 0 rgba(0,0,0,0.6); }
+  .wm b { color: rgba(255,61,90,0.8); font-weight: normal; }
+  /* end card */
+  .logo { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); line-height: 1.15; }
+  .logo .l1 { font-size: 60px; color: #fff; text-shadow: 6px 6px 0 var(--ink); }
+  .logo .l3 { font-size: 184px; color: var(--red); text-shadow: 8px 8px 0 var(--ink), 16px 16px 0 #ffcf3f; margin-top: 18px; }
+  .slot { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--px); font-size: 28px; color: #cfc3d6; letter-spacing: 2px; text-shadow: 4px 4px 0 var(--ink); }
+  /* ability tag (kicker + name) and keycap (key + action), sliding in from the left */
+  .tag { position: absolute; left: 60px; font-family: var(--px); display: flex; flex-direction: column; gap: 16px; }
+  .tag .k { font-size: 24px; color: var(--ink); background: var(--c, var(--gold)); padding: 10px 14px 8px; align-self: flex-start; }
+  .tag .n { font-size: 54px; color: #fff; text-shadow: 6px 6px 0 var(--ink), 10px 10px 0 var(--c, var(--red)); }
+  .key { position: absolute; left: 64px; font-family: var(--px); display: flex; align-items: center; gap: 26px; }
+  .key .cap { font-size: 54px; color: var(--ink); background: #fff; padding: 20px 24px 16px; box-shadow: 0 8px 0 #9a8fa0, 0 8px 0 4px var(--ink); border: 4px solid var(--ink); }
+  .key .n { font-size: 56px; color: #fff; text-shadow: 6px 6px 0 var(--ink), 10px 10px 0 var(--c, var(--red)); }
+  /* PvP player cams: pixel avatar "webcams" with gamer tags, a green ring while talking, reaction emotes, a shake when hit */
+  .cam { position: absolute; border-radius: 22px; overflow: hidden; border: 6px solid var(--ink);
+    background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--tc) 55%, #fff 0%), color-mix(in srgb, var(--tc) 40%, #07050a) 75%);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.55); }
+  .cam.talk { box-shadow: 0 0 0 7px #3ef07a, 0 0 34px rgba(62,240,122,0.65), 0 14px 40px rgba(0,0,0,0.55); }
+  .cam .av { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background-repeat: no-repeat; image-rendering: pixelated; }
+  .cam .nm { position: absolute; left: 12px; bottom: 10px; display: flex; align-items: center; gap: 8px; font-family: var(--gamer); font-weight: 800;
+    color: #fff; background: rgba(7,5,10,0.78); border-radius: 10px; padding: 6px 12px 6px 10px; }
+  .cam .nm i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #3ef07a; }
+  .cam .nm i.off { background: #6b6573; }
+  .cam .live { position: absolute; right: 12px; top: 12px; font-family: var(--gamer); font-weight: 800; font-size: 22px; color: #fff; background: var(--red);
+    border-radius: 6px; padding: 3px 9px; letter-spacing: 1px; }
+  .cam .em { position: absolute; right: 8px; top: 4px; font-size: 92px; line-height: 1; filter: drop-shadow(0 6px 0 rgba(0,0,0,0.45)); }
+  .cam .ko { position: absolute; inset: 0; background: rgba(255,61,90,0.38); }
+  .cam.dead .av { filter: grayscale(1) brightness(0.6); }
+  .vs { position: absolute; font-family: var(--px); color: var(--gold); text-shadow: 6px 6px 0 var(--ink), 10px 10px 0 var(--red); }
+  /* voice / text chat line */
+  .chat { position: absolute; left: 50px; right: 50px; display: flex; align-items: flex-start; gap: 18px; font-family: var(--gamer); font-weight: 800; }
+  .chat .who { flex: none; color: var(--hc, #fff); font-size: 40px; text-shadow: 0 4px 0 rgba(0,0,0,0.6); }
+  .chat .msg { color: #fff; font-size: 46px; background: rgba(7,5,10,0.82); border-radius: 18px; padding: 10px 20px 12px; border: 4px solid rgba(255,255,255,0.12); }
+  /* REPLAY / IRL badge on real footage */
+  .badge { position: absolute; left: 50%; top: 150px; transform: translateX(-50%); display: flex; font-family: var(--gamer); font-weight: 800; }
+  .badge .v { background: #fff; color: #000; font-size: 44px; padding: 10px 20px; letter-spacing: 3px; }
+  .badge .s { background: var(--red); color: #fff; font-size: 44px; padding: 10px 20px; letter-spacing: 2px; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <img id="bg">
+  <div id="full" class="plate"><img id="img"></div>
+  <div id="win"><div id="wplate" class="plate"><img id="wimg"></div></div>
+  <img id="real">
+  <div id="dim"></div>
+  <div id="txt" class="layer"></div>
+  <div id="flash"></div>
+</div>
+<script>
+const FPS = 30, W = 1080, H = 1920, FW = 1920, FH = 1080;
+const ID = new URLSearchParams(location.search).get('clip') || 'BODY';
+const META = {};
+let EDL, SEGS, DUR, CUTS;
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const easeOut = (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
+const easeBack = (k) => { k = clamp(k, 0, 1); const c = 1.9; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+const on = (t, t0, t1) => t >= t0 && t < t1;
+
+/* ---------- text kinds (all driven by EDL.texts) ---------- */
+function meme(x, t) {
+  if (!on(t, x.t0, x.t1)) return '';
+  const s = x.pop === false ? 1 : lerp(1.25, 1, easeBack((t - x.t0) * FPS / 5));
+  return `<div class="meme" style="top:${x.y || 300}px;font-size:${x.size || 92}px;transform:scale(${s})">${x.s}</div>`;
+}
+function badge(x, t) {
+  if (!on(t, x.t0, x.t1)) return '';
+  return `<div class="badge"><div class="v">${x.a}</div><div class="s">${x.b}</div></div>`;
+}
+function endcard(x, t) {
+  if (t < x.t0) return '';
+  const k = (t - x.t0) * FPS, s1 = lerp(2.2, 1, easeBack(k / 6)), k3 = k - 5, s3 = k3 < 0 ? 0 : lerp(2.6, 1, easeBack(k3 / 6));
+  const wob = [[0, 0], [3, -3], [0, 0], [-3, 3]][Math.floor(((t - x.t0) % 1.6) / 0.4)];
+  let h = `<div class="logo" style="top:${x.y || 520}px">
+      <div class="l1" style="transform:scale(${s1});opacity:${k >= 0 ? 1 : 0}">STREET FOOTBALL</div>
+      <div class="l3" style="transform:translate(${wob[0]}px,${wob[1]}px) scale(${s3});opacity:${k3 >= 0 ? 1 : 0}">CHAOS</div></div>`;
+  if (x.ask && t >= x.t0 + 0.3) h += meme({ s: x.ask, t0: x.t0 + 0.3, t1: 99, y: (x.y || 520) + 520, size: 84 }, t);
+  if (x.slot && t >= x.t0 + 0.55) h += `<div class="slot" style="top:${(x.y || 520) + 330}px;opacity:${easeOut((t - x.t0 - 0.55) * 4)}">${x.slot}</div>`;
+  return h;
+}
+function tag(x, t) {      // {k:'tag', a: 'ULTIMATE', b: 'METEOR SHOT', c: '#ff6a1f', t0, t1, y}
+  if (!on(t, x.t0, x.t1)) return '';
+  const dx = lerp(-900, 0, easeOut((t - x.t0) * FPS / 6));
+  return `<div class="tag" style="top:${x.y || 1380}px;--c:${x.c || 'var(--gold)'};transform:translateX(${dx}px)"><div class="k">${x.a}</div><div class="n">${x.b}</div></div>`;
+}
+function key(x, t) {      // {k:'key', a: 'D', b: 'PUNCH', c: '#ffe14f', t0, t1, y}
+  if (!on(t, x.t0, x.t1)) return '';
+  const dx = lerp(-900, 0, easeOut((t - x.t0) * FPS / 6));
+  return `<div class="key" style="top:${x.y || 1420}px;--c:${x.c || 'var(--red)'};transform:translateX(${dx}px)"><div class="cap">${x.a}</div><div class="n">${x.b}</div></div>`;
+}
+/* PvP cams. {k:'cams', t0, t1, layout, players:[{h, side, talk:[[a,b]], react:[[t,'💀']], hit:[t], dead:t, live}], vs, y}
+   layouts: 'duo' 2 big cams side by side (VS between) · 'squads' 3 cams top (side 0) + 3 cams bottom (side 1) · 'row' N cams in one row at y
+   · 'corner' 1 streamer cam bottom-right (or at x, y). Positions can be overridden per player with x, y, w, h. */
+let PLAYERS = {};
+const inAny = (t, ranges) => (ranges || []).some(([a, b]) => t >= a && t < b);
+function camBox(pl, t, x, y, w, h, i) {
+  const P = PLAYERS[pl.h] || {}, tc = pl.color || P.color || '#7fe7ff';
+  const bob = Math.sin(t * 3.1 + i * 1.7) * 3;
+  let sx = 0, sy = 0, ko = '';
+  for (const th of pl.hit || []) { const k = t - th; if (k >= 0 && k < 0.3) { sx = Math.sin(k * 90) * 16 * (1 - k / 0.3); sy = Math.cos(k * 70) * 10 * (1 - k / 0.3); ko = `<div class="ko" style="opacity:${1 - k / 0.3}"></div>`; } }
+  let em = '';
+  for (const [tr, e] of pl.react || []) { const k = t - tr; if (k >= 0 && k < (pl.emHold || 1.1)) { const s = lerp(1.9, 1, easeBack(k * FPS / 5)); em = `<div class="em" style="transform:scale(${s}) rotate(${-8 + 6 * Math.sin(k * 9)}deg)">${e}</div>`; } }
+  const talk = inAny(t, pl.talk), dead = pl.dead != null && t >= pl.dead;
+  const zoom = pl.zoom || 2.0;   // the avatar fills the box at this zoom, framed on the head + shoulders
+  const fs = Math.max(22, Math.min(34, w / 11));
+  return `<div class="cam ${talk ? 'talk' : ''} ${dead ? 'dead' : ''}" style="left:${x + sx}px;top:${y + sy + bob}px;width:${w}px;height:${h}px;--tc:${tc}">
+    <div class="av" style="background-image:url(${P.file || ''});background-size:auto ${zoom * 100}%;background-position:50% ${pl.py != null ? pl.py : 12}%"></div>${ko}${em}
+    ${pl.live ? '<div class="live">LIVE</div>' : ''}<div class="nm" style="font-size:${fs}px"><i class="${talk ? '' : 'off'}"></i>${pl.label || pl.h}</div></div>`;
+}
+function cams(x, t) {
+  if (!on(t, x.t0, x.t1)) return '';
+  const pls = x.players || [], L = x.layout || 'duo', y0 = x.y != null ? x.y : 40;
+  const k = easeOut((t - x.t0) * FPS / 7);   // slide in from the edges
+  let h = '';
+  pls.forEach((pl, i) => {
+    let bx, by, bw, bh;
+    if (L === 'duo') { bw = 470; bh = 340; bx = i === 0 ? 40 : W - 40 - bw; by = y0; bx += (i === 0 ? -1 : 1) * (1 - k) * 600; }
+    else if (L === 'squads') { const side = pl.side || 0, idx = pls.filter((q) => (q.side || 0) === side).indexOf(pl);
+      bw = 320; bh = 250; bx = 30 + idx * (bw + 25); by = side === 0 ? y0 : (x.y2 != null ? x.y2 : H - bh - 60); by += (side === 0 ? -1 : 1) * (1 - k) * 400; }
+    else if (L === 'row') { const n = pls.length; bw = Math.min(330, (W - 60 - (n - 1) * 20) / n); bh = bw * 0.78; bx = 30 + i * (bw + 20); by = y0 - (1 - k) * 400; }
+    else { bw = pl.w || 360; bh = pl.h2 || 300; bx = pl.x != null ? pl.x : W - bw - 40; by = pl.y != null ? pl.y : H - bh - 260; bx += (1 - k) * 500; }
+    if (pl.x != null && L !== 'corner') bx = pl.x; if (pl.y != null && L !== 'corner') by = pl.y; if (pl.w) bw = pl.w; if (pl.h2) bh = pl.h2;
+    h += camBox(pl, t, bx, by, bw, bh, i);
+  });
+  if (x.vs && L === 'duo') h += `<div class="vs" style="left:${W / 2 - 62}px;top:${y0 + 120}px;font-size:84px;transform:scale(${lerp(2.4, 1, easeBack((t - x.t0) * FPS / 6))})">VS</div>`;
+  return h;
+}
+function chat(x, t) {      // {k:'chat', h:'NGH', s:'BRO 💀', t0, t1, y, color}
+  if (!on(t, x.t0, x.t1)) return '';
+  const P = PLAYERS[x.h] || {}, dy = lerp(30, 0, easeOut((t - x.t0) * FPS / 4));
+  return `<div class="chat" style="top:${(x.y || 1500) + dy}px;opacity:${easeOut((t - x.t0) * FPS / 3)};--hc:${x.color || P.color || '#fff'}"><div class="who">${x.h}:</div><div class="msg">${x.s}</div></div>`;
+}
+const KINDS = { meme, badge, end: endcard, tag, key, cams, chat };
+const WATERMARK = `<div class="wm">STREET FOOTBALL<br><b>CHAOS</b></div>`;
+
+/* ---------- camera ---------- */
+const camCache = {};
+function focusAt(clip, c) {
+  const fr = META[clip].frames, f = (fr[clamp(Math.round(c * FPS), 0, fr.length - 1)] || {}).focus;
+  return f || { x: 320, y: 190 };
+}
+function camFor(seg, c) {
+  const cam = seg.cam || { follow: true, z: 2, smooth: 0.18 };
+  let fx = cam.fx, fy = cam.fy, z = cam.z;
+  if (fx === 'focus') { const f = focusAt(seg.clip, seg.c0); fx = f.x; fy = f.y - 8; }
+  if (cam.follow) {
+    const key = ID + ':' + seg.v0;
+    if (!camCache[key]) {
+      const i0 = Math.round(seg.c0 * FPS), n = Math.ceil((seg.v1 - seg.v0) * FPS * (seg.rate == null ? 1 : Math.max(seg.rate, 0.01))) + 2;
+      const out = []; let x = null, y = null;
+      for (let i = i0; i < i0 + n; i++) {
+        const f = focusAt(seg.clip, i / FPS);
+        if (x == null) { x = f.x + (cam.dx || 0); y = f.y - 8 + (cam.dy || 0); }
+        x += (f.x + (cam.dx || 0) - x) * cam.smooth; y += (f.y - 8 + (cam.dy || 0) - y) * cam.smooth;
+        out.push([x, y]);
+      }
+      camCache[key] = out;
+    }
+    const arr = camCache[key], j = clamp(Math.round((c - seg.c0) * FPS), 0, arr.length - 1);
+    [fx, fy] = arr[j];
+  }
+  if (cam.drift) z *= 1 + cam.drift * ((c - seg.c0) / Math.max(0.1, seg.v1 - seg.v0));
+  return { fx, fy, z };
+}
+function place(plate, vw, vh, fx, fy, z) {
+  const w = vw / z, h = vh / z;
+  const cx = w >= FW ? FW / 2 : clamp(fx * 3, w / 2, FW - w / 2);
+  const cy = h >= FH ? FH / 2 : clamp(fy * 3, h / 2, FH - h / 2);
+  plate.style.transform = `scale(${z}) translate(${-(cx - w / 2)}px, ${-(cy - h / 2)}px)`;
+}
+
+/* ---------- render ---------- */
+const $ = (id) => document.getElementById(id);
+const imgs = { img: $('img'), wimg: $('wimg'), bg: $('bg'), real: $('real') };
+const last = {};
+async function setSrc(key, src) { if (last[key] !== src) { imgs[key].src = src; await imgs[key].decode(); last[key] = src; } }
+async function render(t) {
+  const seg = SEGS.find((s) => t >= s.v0 && t < s.v1) || SEGS[SEGS.length - 1];
+  const full = $('full'), win = $('win'), bg = $('bg'), real = $('real');
+  const rate = seg.rate == null ? 1 : seg.rate;
+  const c = seg.c0 + (t - seg.v0) * rate;
+  const since = Math.min(...CUTS.concat(seg.punch || []).map((v) => (t >= v ? t - v : 99)));
+  const pz = since < 0.2 ? 1 + 0.12 * (1 - easeOut(since / 0.2)) : 1;
+  if (seg.real) {
+    // real footage: pre-cropped 1080x1920 frames, optional slow push-in
+    const n = REAL[seg.real], idx = clamp(Math.round(c * FPS), 0, n - 1);
+    await setSrc('real', `real/${seg.real}/${String(idx).padStart(4, '0')}.png`);
+    const k = (t - seg.v0) / Math.max(0.01, seg.v1 - seg.v0), zz = lerp(seg.z0 || 1, seg.z1 || seg.z0 || 1, k) * pz;
+    real.style.transform = `scale(${zz})`;
+    real.style.visibility = 'visible'; full.style.visibility = win.style.visibility = bg.style.visibility = 'hidden';
+  } else {
+    real.style.visibility = 'hidden';
+    const idx = clamp(Math.round(c * FPS), 0, META[seg.clip].frames.length - 1);
+    const src = `frames/${seg.clip}/${String(idx).padStart(4, '0')}.png`;
+    let { fx, fy, z } = camFor(seg, c);
+    z *= pz;
+    if (seg.layout === 'fit') {
+      await setSrc('wimg', src); await setSrc('bg', src);
+      const h = seg.h || 760, cy = 900;
+      win.style.top = (cy - h / 2) + 'px'; win.style.height = h + 'px';
+      place($('wplate'), W, h, fx, fy, z);
+      full.style.visibility = 'hidden'; win.style.visibility = bg.style.visibility = 'visible';
+    } else {
+      await setSrc('img', src);
+      place(full, W, H, fx, fy, z);
+      full.style.visibility = 'visible'; win.style.visibility = bg.style.visibility = 'hidden';
+    }
+  }
+  $('dim').style.opacity = seg.dim || 0;
+  const hits = CUTS.concat(...SEGS.map((s) => s.punch || [])).filter((x) => !(EDL.noflash || []).includes(x));
+  const fl = Math.min(...hits.map((x) => (t >= x ? t - x : 99)));
+  $('flash').style.opacity = (fl < 1 / FPS ? 0.85 : fl < 2 / FPS ? 0.35 : 0) * (EDL.flashk == null ? 0.55 : EDL.flashk);
+  $('txt').innerHTML = (EDL.wm ? WATERMARK : '') + (EDL.texts || []).map((x) => KINDS[x.k](x, t)).join('');
+  await document.fonts.ready;
+  return seg.clip || seg.real;
+}
+let REAL = {};
+window.ready = (async () => {
+  EDL = (await (await fetch('edl.json?' + Date.now())).json())[ID];
+  SEGS = EDL.segs; DUR = EDL.dur;
+  CUTS = SEGS.map((s) => s.v0).filter((v) => v > 0 && !(EDL.nocut || []).includes(v));
+  for (const n of new Set(SEGS.filter((s) => s.clip).map((s) => s.clip))) META[n] = await (await fetch(`frames/${n}/meta.json`)).json();
+  for (const r of new Set(SEGS.filter((s) => s.real).map((s) => s.real))) REAL[r] = (await (await fetch(`real/${r}/count.json`)).json()).n;
+  if ((EDL.texts || []).some((x) => x.k === 'cams' || x.k === 'chat')) {
+    PLAYERS = await (await fetch('portraits/players.json')).json();
+    await Promise.all(Object.values(PLAYERS).map((p) => new Promise((ok) => { const im = new Image(); im.onload = im.onerror = ok; im.src = p.file; })));
+  }
+  try { const dg = new FontFace('DotGothic16', 'url(/scripts/fonts/DotGothic16-Regular.ttf)'); await dg.load(); document.fonts.add(dg); } catch (e) { console.warn('DotGothic16', e); }   // nạp bằng JS cho chắc (fallback chữ Nhật của --px)
+  await Promise.all(['40px "Press Start 2P"', '900 40px Montserrat', '800 40px Inter', '900 40px "Noto Sans JP"', '28px "DotGothic16"'].map((f) => document.fonts.load(f)));
+  return DUR;
+})();
+</script>
+</body>
+</html>

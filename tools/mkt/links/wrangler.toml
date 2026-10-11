@@ -1,0 +1,20 @@
+# Cloudflare Worker cho link router. Chạy trong tools/mkt/links:
+#   npx wrangler login
+#   npx wrangler kv namespace create CLICKS        (tùy chọn: đếm lượt bấm; dán id vào dưới)
+#   npx wrangler deploy
+# Rồi gắn domain ngắn (vd. sfc.gg) ở Cloudflare dashboard > Workers > Triggers > Custom Domains.
+name = "sfc-links"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+STEAM_URL = ""                      # https://store.steampowered.com/app/<APPID>/ (điền khi có page)
+STEAM_APPID = ""                    # hoặc chỉ APPID
+FALLBACK_URL = "https://team41.itch.io/sfc"   # chưa có Steam thì link về đây (vẫn gắn UTM, vô hại)
+HOME_URL = "https://nghuylychee.github.io/FootballChaotic/"
+CAMPAIGN = "prelaunch"              # utm_campaign mặc định; đổi thành pagelive / playtest1 ... khi tới giai đoạn
+STATS_TOKEN = ""                    # token cho /_stats?token=...
+
+# [[kv_namespaces]]
+# binding = "CLICKS"
+# id = "<id từ lệnh kv namespace create>"

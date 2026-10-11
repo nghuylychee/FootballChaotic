@@ -1,0 +1,25 @@
+{
+  "name": "sfc-mkt-tools",
+  "private": true,
+  "type": "module",
+  "description": "Bộ tool marketing wishlist cho Street Football Chaos: link UTM, tìm streamer, gửi mail, press kit, đăng clip, kéo số liệu, dashboard. Không dùng thư viện ngoài.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "links": "node links/serve.js",
+    "link": "node links/make.js",
+    "streamers": "node streamers/find.js",
+    "streamers:export": "node streamers/export.js",
+    "mail": "node outreach/mail.js",
+    "presskit": "node presskit/build.js",
+    "publish:add": "node publish/add.js",
+    "publish:run": "node publish/run.js",
+    "yt:pull": "node analytics/youtube-pull.js",
+    "comments": "node analytics/comments.js",
+    "steam:import": "node analytics/steam-import.js",
+    "dashboard": "node dashboard/build.js",
+    "auth:google": "node lib/google.js"
+  }
+}

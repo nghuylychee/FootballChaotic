@@ -1,0 +1,16 @@
+pc_party frames 120 marks {'start': 0.6, 'found': 1.8333333333333333} score None
+sfx [(0.6, 'pick'), (1.83, 'upgrade')]
+pc_intro frames 180 marks {} score [0, 0]
+sfx [(0, 'touch'), (0, 'upgrade'), (0, 'upgrade'), (0, 'whoosh'), (0, 'whoosh'), (0.73, 'kick'), (0.87, 'pass'), (1.13, 'pass'), (1.33, 'pass'), (1.57, 'pass'), (1.77, 'pass'), (1.8, 'upgrade'), (2, 'pass')]
+pc_res0 frames 120 marks {'end': 0} score [3, 2]
+sfx [(0, 'touch'), (0, 'upgrade'), (0, 'whistle'), (1.23, 'pass'), (1.5, 'pass'), (1.8, 'pass')]
+pc_res1 frames 108 marks {'end': 0} score [2, 1]
+sfx [(0, 'touch'), (0, 'upgrade'), (0, 'whistle'), (1.2, 'pass'), (1.47, 'pass'), (1.77, 'pass')]
+pc_res2 frames 108 marks {'end': 0} score [4, 2]
+sfx [(0, 'touch'), (0, 'upgrade'), (0, 'whistle'), (1.23, 'pass'), (1.5, 'pass'), (1.77, 'pass')]
+pc_res3 frames 228 marks {'end': 0, 'charge': 5.433333333333334} score [3, 1]
+sfx [(0, 'touch'), (0, 'upgrade'), (0, 'whistle'), (1.23, 'pass'), (1.5, 'pass'), (1.77, 'pass'), (3.6, 'whoosh'), (4, 'kick'), (4.73, 'whoosh'), (5.43, 'pass'), (5.6, 'pass'), (5.7, 'pass'), (5.77, 'pass'), (5.87, 'pass'), (5.93, 'pass'), (6, 'pass'), (6.03, 'pass'), (6.07, 'pass'), (6.07, 'upgrade')]
+pc_friends frames 102 marks {'inv1': 0.6, 'inv2': 1.3} score None
+sfx [(0.6, 'pick'), (1, 'pass'), (1.3, 'pick')]
+pc_ult_kaito frames 90 marks {'ult_kaito_04': 0.43333333333333335, 'shot': 1.1333333333333333, 'goal': 1.5666666666666667} score [1, 0]
+sfx [(0, 'touch'), (0, 'touch'), (0.43, 'upgrade'), (1.07, 'hit'), (1.07, 'hit'), (1.07, 'zap'), (1.13, 'kick'), (1.53, 'goal'), (1.57, 'crowdRoar'), (1.73, 'bounce')]

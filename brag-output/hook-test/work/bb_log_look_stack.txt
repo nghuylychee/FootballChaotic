@@ -1,0 +1,3 @@
+bb_stack frames 102 marks {'shot': 0.6, 'goal': 2.3} score [1, 0]
+sfx [(0, 'touch'), (0, 'touch'), (0.6, 'zap'), (0.6, 'fire'), (0.6, 'kick'), (2.27, 'goal'), (2.3, 'crowdRoar'), (2.9, 'hit'), (2.9, 'hit')] 
+marks {'shot': 0.6, 'goal': 2.3} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\bb_stack_s7.jpg

@@ -1,0 +1,32 @@
+pa_steal:
+  pa_steal frames 120 marks {'shot': 0.4, 'dive': 0.5333333333333333, 'tap': 2.2666666666666666, 'goal': 2.3} score [1, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.4, 'kick'), (2.27, 'touch'), (2.27, 'kick'), (2.27, 'goal'), (2.3, 'crowdRoar')] 
+  marks {'shot': 0.4, 'dive': 0.5333333333333333, 'tap': 2.2666666666666666, 'goal': 2.3} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_steal_s7.jpg
+pa_meteor:
+  pa_meteor frames 120 marks {'ult': 0.23333333333333334, 'air': 0.8666666666666667, 'land': 1.8666666666666667} score [0, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.23, 'upgrade'), (0.83, 'whoosh'), (2.23, 'hit'), (2.23, 'hit'), (2.23, 'hit'), (2.23, 'hit'), (3.27, 'hit'), (3.27, 'hit'), (3.27, 'hit')] 
+  marks {'ult': 0.23333333333333334, 'air': 0.8666666666666667, 'land': 1.8666666666666667} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_meteor_s7.jpg
+pa_strangers:
+  pa_strangers frames 120 marks {'kick': 0.7333333333333333, 'fly': 1, 'own': 2.7666666666666666, 'shot': 3.066666666666667, 'goal': 3.5} score [1, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.73, 'windup'), (0.73, 'windup'), (0.73, 'windup'), (0.93, 'kickSwing'), (0.93, 'kickSwing'), (0.93, 'kickSwing'), (0.97, 'hit'), (0.97, 'kick'), (1, 'kick'), (1, 'kick'), (1.27, 'bounce'), (1.83, 'hit'), (2.77, 'touch'), (3.07, 'kick'), (3.4, 'bounce'), (3.47, 'goal'), (3.5, 'crowdRoar')] 
+  marks {'kick': 0.7333333333333333, 'fly': 1, 'own': 2.7666666666666666, 'shot': 3.066666666666667, 'goal': 3.5} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_strangers_s7.jpg
+pa_ragequit:
+  pa_ragequit frames 120 marks {'kick': 0.43333333333333335, 'fly': 0.6333333333333333, 'left': 1.4, 'ai': 1.9666666666666666, 'steal': 3.4, 'own': 3.7333333333333334, 'shot': 3.966666666666667} score [0, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.43, 'windup'), (0.6, 'kickSwing'), (0.63, 'hit'), (0.63, 'kick'), (0.77, 'touch'), (1.43, 'hit'), (3.4, 'swing'), (3.47, 'hit'), (3.47, 'punch'), (3.47, 'touch'), (3.97, 'kick')] 
+  marks {'kick': 0.43333333333333335, 'fly': 0.6333333333333333, 'left': 1.4, 'ai': 1.9666666666666666, 'steal': 3.4, 'own': 3.7333333333333334, 'shot': 3.966666666666667} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_ragequit_s7.jpg
+pa_nopass:
+  pa_nopass frames 120 marks {'kick': 1.4333333333333333, 'hit': 1.6333333333333333, 'pass': 2.8333333333333335} score [0, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (1.43, 'windup'), (1.43, 'windup'), (1.6, 'kickSwing'), (1.6, 'kickSwing'), (1.63, 'hit'), (1.63, 'hit'), (1.63, 'kick'), (1.9, 'hit'), (1.9, 'bounce'), (2.47, 'hit'), (2.47, 'hit'), (2.8, 'touch'), (2.83, 'pass'), (2.83, 'touch')] 
+  marks {'kick': 1.4333333333333333, 'hit': 1.6333333333333333, 'pass': 2.8333333333333335} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_nopass_s7.jpg
+pa_bet:
+  pa_bet frames 120 marks {'shot': 0.6, 'grab_xX_vex_Xx': 0.6, 'grab_zzz_mi': 0.7, 'grab_bigboss99': 1.5, 'goal': 2.6333333333333333} score [1, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.6, 'zap'), (0.6, 'kick'), (2.6, 'goal'), (2.63, 'crowdRoar')] 
+  marks {'shot': 0.6, 'grab_xX_vex_Xx': 0.6, 'grab_zzz_mi': 0.7, 'grab_bigboss99': 1.5, 'goal': 2.6333333333333333} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_bet_s7.jpg
+pa_bestie:
+  pa_bestie frames 120 marks {'kick': 1, 'hit': 1.2666666666666666, 'sorry': 1.8} score [0, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (1, 'windup'), (1.2, 'kickSwing'), (1.23, 'hit'), (1.27, 'kick'), (1.53, 'bounce'), (2, 'hit'), (2.7, 'touch')] 
+  marks {'kick': 1, 'hit': 1.2666666666666666, 'sorry': 1.8} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_bestie_s7.jpg
+pa_aura:
+  pa_aura frames 120 marks {'ult': 0.1, 'faint': 1.9333333333333333} score [0, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.1, 'upgrade'), (0.73, 'upgrade'), (1.93, 'hit')] 
+  marks {'ult': 0.1, 'faint': 1.9333333333333333} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_aura_s7.jpg

@@ -1,0 +1,12 @@
+{
+  "_doc": "Bí danh đặt tay cho link router. Mã theo quy ước <source>-<medium>[-<content>] (vd. yt-ptbr-R12) KHÔNG cần khai ở đây. to = đích (bỏ trống = trang Steam từ STEAM_URL / STEAM_APPID); utm:false = không gắn UTM.",
+  "play": { "to": "https://nghuylychee.github.io/FootballChaotic/", "source": "web", "medium": "all", "content": "play" },
+  "itch": { "to": "https://team41.itch.io/sfc", "source": "itch", "medium": "all" },
+  "press": { "to": "https://nghuylychee.github.io/FootballChaotic/presskit/", "utm": false },
+  "discord": { "to": "https://discord.gg/REPLACE_ME", "utm": false },
+  "steam": { "source": "direct", "medium": "all" },
+  "wl": { "source": "direct", "medium": "all", "content": "wl" },
+  "menu": { "source": "web", "medium": "all", "content": "menu" },
+  "result": { "source": "web", "medium": "all", "content": "result" },
+  "demo-end": { "source": "web", "medium": "all", "content": "demo_end" }
+}

@@ -1,0 +1,2 @@
+pd_friends frames 90 marks {'req_ratking': 0.3, 'req_m0le': 0.7666666666666667, 'ok_ratking': 1.3666666666666667, 'ok_m0le': 1.8666666666666667} score None
+sfx [(0.3, 'pick'), (0.77, 'pick'), (1.37, 'upgrade'), (1.87, 'upgrade')]

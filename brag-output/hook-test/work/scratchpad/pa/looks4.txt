@@ -1,0 +1,4 @@
+pa_steal:
+  pa_steal frames 120 marks {'shot': 0.4, 'dive': 0.5333333333333333, 'tap': 1.5666666666666667, 'goal': 1.7} score [1, 0]
+pa_ragequit:
+  pa_ragequit frames 120 marks {'kick': 0.43333333333333335, 'fly': 0.7666666666666667, 'left': 1.2333333333333334, 'ai': 1.5333333333333334, 'steal': 1.6333333333333333, 'own': 1.9666666666666666, 'shot': 2.1, 'goal': 2.6} score [0, 1]

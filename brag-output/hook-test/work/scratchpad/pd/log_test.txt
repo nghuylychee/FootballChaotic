@@ -1,0 +1,2 @@
+pd_test frames 90 marks {} score [0, 0]
+sfx [(0, 'touch'), (0.47, 'whoosh'), (0.47, 'swing'), (1.73, 'kick'), (2.6, 'save'), (2.6, 'touch')]

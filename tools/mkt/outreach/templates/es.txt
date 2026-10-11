@@ -1,0 +1,31 @@
+subject: Fútbol callejero 3v3 donde la barrida es una patada voladora — Street Football Chaos (key adentro)
+subject_followup: Re: Street Football Chaos — la key sigue activa, hay fecha nueva
+---
+Hola {{name}},
+
+{{personal_line}}
+
+Somos un equipo pequeño de Vietnam haciendo Street Football Chaos: fútbol callejero 3v3 en pixel art, sin botón de barrida. Golpeas, das patadas voladoras y lanzas 8 ultimates estilo anime. Corre en el navegador, sin descargar nada, en 30 segundos estás jugando: {{web_link}}
+
+Momento que funciona en cámara: el arquero intenta atajar el Meteor Shot y sale volando de la cancha.
+
+Tu key de Steam (juego completo, online 3v3): {{key}}
+¿Quieres jugar con dos amigos? Responde y te mando dos más.
+Página de Steam: {{steam_link}}
+Press kit (logo, GIFs, arte sin fondo para miniaturas): {{presskit_link}}
+
+Sin compromiso y sin exigencias de contenido; si mencionas que la key vino de nosotros, genial. Cualquier feedback ayuda muchísimo.
+
+{{sender}}
+Team41 · {{discord_link}}
+---followup---
+Hola {{name}},
+
+Solo para recordarte que tu key de Street Football Chaos ({{key}}) sigue activa. {{followup_news}}
+
+Jugar en el navegador en 30 s: {{web_link}}
+Steam: {{steam_link}}
+
+Si no es el momento, ningún problema. ¡Gracias!
+
+{{sender}}

@@ -16,7 +16,10 @@
     "serve": "node scripts/serve.js",
     "online": "node scripts/serve.js --online",
     "server": "node server/index.js",
-    "server:test": "npm test --prefix server"
+    "server:test": "npm test --prefix server",
+    "mkt:test": "npm test --prefix tools/mkt",
+    "mkt:presskit": "node tools/mkt/presskit/build.js",
+    "mkt:dashboard": "node tools/mkt/dashboard/build.js"
   },
   "dependencies": {
     "steamworks.js": "0.4.0"

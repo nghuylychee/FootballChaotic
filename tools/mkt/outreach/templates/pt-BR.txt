@@ -1,0 +1,31 @@
+subject: Futebol de rua 3v3 com voadora no lugar do carrinho — Street Football Chaos (key dentro)
+subject_followup: Re: Street Football Chaos — key ainda vale, e tem nova data
+---
+Oi {{name}},
+
+{{personal_line}}
+
+Somos um time pequeno do Vietnã fazendo o Street Football Chaos: futebol de rua 3v3 em pixel art, sem botão de carrinho — só soco, voadora e 8 ultimates estilo anime. Dá pra jogar no navegador em 30 segundos, sem baixar nada: {{web_link}}
+
+Momento que funciona bem na câmera: o goleiro tenta defender o Meteor Shot e voa pra fora do campo.
+
+Sua key Steam (versão completa, online 3v3): {{key}}
+Se quiser jogar com dois amigos, me avisa que mando mais duas.
+Página Steam: {{steam_link}}
+Press kit (logo, GIFs, arte sem fundo pra thumbnail): {{presskit_link}}
+
+Sem compromisso nenhum e sem exigência de conteúdo; se mencionar que a key veio da gente, ótimo. Qualquer feedback já ajuda muito.
+
+{{sender}}
+Team41 · {{discord_link}}
+---followup---
+Oi {{name}},
+
+Só passando pra lembrar que a key do Street Football Chaos ({{key}}) continua valendo. {{followup_news}}
+
+Jogar no navegador em 30 s: {{web_link}}
+Steam: {{steam_link}}
+
+Se não for o momento, sem problema nenhum. Valeu!
+
+{{sender}}

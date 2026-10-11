@@ -1,0 +1,36 @@
+pa_lobby:
+  pa_lobby frames 120 marks {'whistle': 0.3, 'go': 0.3333333333333333, 'kick': 0.5333333333333333, 'boom': 0.7333333333333333, 'roll': 1.8666666666666667, 'goal': 2.9} score [1, 0]
+  sfx [(0, 'touch'), (0.3, 'whistle'), (0.53, 'windup'), (0.53, 'windup'), (0.53, 'windup'), (0.53, 'windup'), (0.53, 'windup'), (0.53, 'windup'), (0.7, 'kickSwing'), (0.7, 'kickSwing'), (0.7, 'kickSwing'), (0.7, 'kick'), (0.7, 'hit'), (0.7, 'hit'), (0.7, 'kick'), (0.7, 'hit'), (0.7, 'kick'), (0.73, 'hit'), (0.73, 'hit'), (0.73, 'hit'), (0.73, 'hit'), (0.73, 'hit'), (0.73, 'hit'), (0.73, 'hit'), (0.93, 'hit'), (1, 'bounce'), (1.17, 'hit'), (1.27, 'hit'), (1.27, 'hit'), (1.33, 'hit'), (1.33, 'hit'), (1.33, 'hit'), (1.33, 'hit'), (1.37, 'hit'), (1.37, 'hit'), (1.37, 'hit'), (2.87, 'goal'), (2.9, 'crowdRoar')] 
+  marks {'whistle': 0.3, 'go': 0.3333333333333333, 'kick': 0.5333333333333333, 'boom': 0.7333333333333333, 'roll': 1.8666666666666667, 'goal': 2.9} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_lobby_s7.jpg
+pa_afk:
+  pa_afk frames 120 marks {'clear': 0.9, 'bonk': 0.9666666666666667, 'goal': 1.1666666666666667} score [1, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.9, 'kick'), (0.97, 'hit'), (1.13, 'bounce'), (1.13, 'goal'), (1.17, 'crowdRoar'), (3.57, 'touch')] 
+  marks {'clear': 0.9, 'bonk': 0.9666666666666667, 'goal': 1.1666666666666667} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_afk_s7.jpg
+pa_celebrate:
+  pa_celebrate frames 120 marks {'shot': 0.13333333333333333, 'goal': 0.36666666666666664, 'resume': 0.9, 'jump': 1.2333333333333334, 'kick': 1.3666666666666667, 'hit': 1.5666666666666667} score [0, 1]
+  sfx [(0, 'touch'), (0, 'touch'), (0.13, 'kick'), (0.33, 'goal'), (0.37, 'crowdRoar'), (0.53, 'bounce'), (0.9, 'touch'), (1.37, 'windup'), (1.53, 'kickSwing'), (1.57, 'hit'), (2.07, 'hit'), (2.17, 'hit')] 
+  marks {'shot': 0.13333333333333333, 'goal': 0.36666666666666664, 'resume': 0.9, 'jump': 1.2333333333333334, 'kick': 1.3666666666666667, 'hit': 1.5666666666666667} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_celebrate_s7.jpg
+pa_pro:
+  pa_pro frames 120 marks {'dodge': 0.4, 'shot': 1.3666666666666667, 'post': 1.5333333333333334, 'dots': 2.066666666666667} score [0, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.4, 'whoosh'), (1.37, 'kick'), (1.53, 'clang'), (1.7, 'bounce')] 
+  marks {'dodge': 0.4, 'shot': 1.3666666666666667, 'post': 1.5333333333333334, 'dots': 2.066666666666667} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_pro_s7.jpg
+pa_quiet:
+  pa_quiet frames 120 marks {'ult': 0.5666666666666667, 'own': 1.2666666666666666, 'shot': 1.7333333333333334, 'goal': 1.9333333333333333} score [1, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.57, 'upgrade'), (1.2, 'hit'), (1.2, 'hit'), (1.2, 'hit'), (1.2, 'zap'), (1.73, 'kick'), (1.9, 'goal'), (1.93, 'crowdRoar')] 
+  marks {'ult': 0.5666666666666667, 'own': 1.2666666666666666, 'shot': 1.7333333333333334, 'goal': 1.9333333333333333} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_quiet_s7.jpg
+pa_sync:
+  pa_sync frames 120 marks {'ult': 0.3, 'shot': 1.9666666666666666, 'goal': 2.2666666666666666} score [1, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.3, 'upgrade'), (1, 'touch'), (1, 'pass'), (1.27, 'touch'), (1.27, 'pass'), (1.5, 'touch'), (1.5, 'pass'), (1.73, 'touch'), (1.73, 'pass'), (1.97, 'kick'), (2.23, 'goal'), (2.27, 'crowdRoar'), (2.43, 'bounce')] 
+  marks {'ult': 0.3, 'shot': 1.9666666666666666, 'goal': 2.2666666666666666} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_sync_s7.jpg
+pa_keeper:
+  pa_keeper frames 120 marks {'notme': 0.9666666666666667, 'shot': 2.3333333333333335, 'goal': 2.6666666666666665} score [0, 1]
+  sfx [(0, 'touch'), (0, 'touch'), (2.33, 'kick'), (2.63, 'goal'), (2.67, 'crowdRoar')] 
+  marks {'notme': 0.9666666666666667, 'shot': 2.3333333333333335, 'goal': 2.6666666666666665} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_keeper_s7.jpg
+pa_reveal:
+  pa_reveal frames 120 marks {'ult': 0.5333333333333333, 'mugged': 1.8333333333333333} score [0, 0]
+  sfx [(0, 'touch'), (0, 'touch'), (0.53, 'upgrade'), (1.13, 'whoosh'), (1.7, 'hit'), (1.7, 'hit'), (2.03, 'touch')] 
+  marks {'ult': 0.5333333333333333, 'mugged': 1.8333333333333333} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_reveal_s7.jpg
+pa_lastsecond:
+  pa_lastsecond frames 120 marks {'kick': 0.5, 'boot': 0.7333333333333333} score [2, 2]
+  sfx [(0, 'touch'), (0.5, 'windup'), (0.7, 'kickSwing'), (0.73, 'kick'), (0.73, 'kick'), (0.97, 'bounce'), (3.2, 'whistle')] 
+  marks {'kick': 0.5, 'boot': 0.7333333333333333} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_lastsecond_s7.jpg

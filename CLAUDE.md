@@ -96,6 +96,10 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 - Packs live in `src/i18n/{pt-BR,pt-PT,es,ja}.js`. When adding a player-facing string, add it to every pack, run `i18n-check`, and rebuild the ja font.
 - Process, style guide and glossary: `docs/LOCALIZATION.md`, `docs/i18n/`.
 
+## Marketing tools
+
+`tools/mkt/` is the wishlist-marketing toolset (link router + UTM, streamer finder, outreach mailer, press kit / copy generator, publish queue, analytics, dashboard); `tools/mkt/README.md` documents every tool. Plain Node ESM, no dependencies; `npm run mkt:test` runs its tests (mocked HTTP, no network). Credentials live in `tools/mkt/.env` (never committed), local data in `tools/mkt/data/`, generated files in `tools/mkt/out/`. `tools/mkt/presskit/facts.json` is the single source for every public number and blurb (3v3, 54 Cores, 8 ultimates, 10 Areas); change it there and run `npm run mkt:presskit`. Language variants of the hook-test clips are made in `brag-output/hook-test/work/` with `captions.py` + `edl_zzz_lang.py`.
+
 ## Conventions
 
 - Code comments are written in Vietnamese; keep new comments in Vietnamese to match. Player-facing text is English (the i18n key).

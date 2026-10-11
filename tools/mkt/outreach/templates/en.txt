@@ -1,0 +1,31 @@
+subject: 3v3 street football where the tackle button is a dropkick — Street Football Chaos (key inside)
+subject_followup: Re: Street Football Chaos — key still valid, new date inside
+---
+Hi {{name}},
+
+{{personal_line}}
+
+We're a small team in Vietnam making Street Football Chaos: 3v3 pixel-art street football with no tackle button. You punch, dropkick, and fire 8 anime-style ultimates. It runs in the browser, no download, 30 seconds to your first match: {{web_link}}
+
+Moment that works on camera: the keeper tries to save a Meteor Shot and gets blasted off the pitch.
+
+Your Steam key (full game, 3v3 online): {{key}}
+Want to play with two friends? Reply and I'll send two more.
+Steam page: {{steam_link}}
+Press kit (logo, GIFs, transparent character art for thumbnails): {{presskit_link}}
+
+No strings attached and no content requirements. If you mention the key came from us, great. Any feedback helps a lot.
+
+{{sender}}
+Team41 · {{discord_link}}
+---followup---
+Hi {{name}},
+
+Quick nudge: your Street Football Chaos key ({{key}}) still works. {{followup_news}}
+
+Play in the browser in 30 s: {{web_link}}
+Steam: {{steam_link}}
+
+If it's not a fit, no worries at all. Thanks!
+
+{{sender}}

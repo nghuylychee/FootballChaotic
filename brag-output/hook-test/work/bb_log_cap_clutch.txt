@@ -1,0 +1,2 @@
+bb_clutch frames 210 marks {'punch': 0.5666666666666667, 'own': 0.8666666666666667, 'ult': 2.2666666666666666, 'shot': 3.966666666666667, 'goal': 4.133333333333334} score [3, 2]
+sfx [(0, 'touch'), (0, 'touch'), (0, 'whistle'), (0.57, 'swing'), (0.63, 'hit'), (0.63, 'punch'), (0.63, 'touch'), (2.27, 'upgrade'), (2.87, 'whoosh'), (3.97, 'kick'), (4.1, 'goal'), (4.13, 'crowdRoar'), (4.4, 'bounce'), (6.5, 'touch')]

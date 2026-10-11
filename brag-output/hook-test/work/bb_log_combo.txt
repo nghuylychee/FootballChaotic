@@ -1,0 +1,20 @@
+G1_B7: re-uses render_G1 + render_B7 (nothing to render)
+G1_B8: re-uses render_G1 + render_B8 (nothing to render)
+G1_B9: re-uses render_G1 + render_B9 (nothing to render)
+G1_B10: re-uses render_G1 + render_B10 (nothing to render)
+G1_B11: re-uses render_G1 + render_B11 (nothing to render)
+R12_B7: re-uses render_R12 + render_B7 (nothing to render)
+R12_B8: re-uses render_R12 + render_B8 (nothing to render)
+R12_B9: re-uses render_R12 + render_B9 (nothing to render)
+R12_B10: re-uses render_R12 + render_B10 (nothing to render)
+R12_B11: re-uses render_R12 + render_B11 (nothing to render)
+G1_B7: wrote short_G1_B7.wav 11.4 s, rms dBFS -12.4 | wrote ..\out\G1_B7.mp4 11.4 s
+G1_B8: wrote short_G1_B8.wav 11.4 s, rms dBFS -12.3 | wrote ..\out\G1_B8.mp4 11.4 s
+G1_B9: wrote short_G1_B9.wav 11.4 s, rms dBFS -11.9 | wrote ..\out\G1_B9.mp4 11.4 s
+G1_B10: wrote short_G1_B10.wav 11.4 s, rms dBFS -12.2 | wrote ..\out\G1_B10.mp4 11.4 s
+G1_B11: wrote short_G1_B11.wav 11.4 s, rms dBFS -12.8 | wrote ..\out\G1_B11.mp4 11.4 s
+R12_B7: wrote short_R12_B7.wav 11.4 s, rms dBFS -12.4 | wrote ..\out\R12_B7.mp4 11.4 s
+R12_B8: wrote short_R12_B8.wav 11.4 s, rms dBFS -12.3 | wrote ..\out\R12_B8.mp4 11.4 s
+R12_B9: wrote short_R12_B9.wav 11.4 s, rms dBFS -11.8 | wrote ..\out\R12_B9.mp4 11.4 s
+R12_B10: wrote short_R12_B10.wav 11.4 s, rms dBFS -12.1 | wrote ..\out\R12_B10.mp4 11.4 s
+R12_B11: wrote short_R12_B11.wav 11.4 s, rms dBFS -12.6 | wrote ..\out\R12_B11.mp4 11.4 s

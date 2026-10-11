@@ -1,0 +1,34 @@
+subject: 【Steamキー同封】タックルがドロップキックになる3v3ストリートサッカー「Street Football Chaos」
+subject_followup: Re: Street Football Chaos — キーは引き続き有効です（発売日のお知らせ）
+---
+{{name}} 様
+
+はじめまして。ベトナムの小さなチーム「Team41」の{{sender}}と申します。
+
+{{personal_line}}
+
+私たちは「Street Football Chaos」というゲームを開発しています。ピクセルアートの3v3ストリートサッカーで、タックルボタンがありません。代わりにパンチ、ドロップキック、そしてアニメ風の必殺技（ウルティメット）8種で戦います。ブラウザで30秒、ダウンロード不要で遊べます: {{web_link}}
+
+配信で映える場面: キーパーがメテオシュートを止めようとして場外まで吹き飛ばされます。
+
+Steamキー（製品版、3v3オンライン対応）: {{key}}
+ご友人お二人と遊びたい場合はご返信ください。あと2本お送りします。
+Steamストアページ: {{steam_link}}
+プレスキット（ロゴ、GIF、サムネイル用の背景透過キャラ素材）: {{presskit_link}}
+配信・収益化ガイドライン: {{policy_link}}
+
+内容に関するお願いは一切ありません。キーの提供元として触れていただけると嬉しいです。ご感想だけでも大変助かります。
+
+{{sender}}
+Team41 · {{discord_link}}
+---followup---
+{{name}} 様
+
+先日お送りした「Street Football Chaos」のSteamキー（{{key}}）は引き続きご利用いただけます。{{followup_news}}
+
+ブラウザで30秒プレイ: {{web_link}}
+Steam: {{steam_link}}
+
+ご都合が合わなければお気になさらないでください。よろしくお願いいたします。
+
+{{sender}}

@@ -28,3 +28,14 @@ brag-output*/**/*.png
 # Electron build
 node_modules/
 dist/
+
+# local clone of the /brag skill repo (installed to ~/.claude/skills)
+brag/
+
+# third-party reference clips for hook tests (never commit)
+brag-output*/**/source/
+
+# marketing tools (tools/mkt): credentials, local data and generated files
+tools/mkt/.env
+tools/mkt/data/
+tools/mkt/out/

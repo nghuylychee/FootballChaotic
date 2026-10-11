@@ -1,0 +1,10 @@
+B7: B7 frames 120 .. 341
+B8: B8 frames 120 .. 341
+B9: B9 frames 120 .. 341
+B10: B10 frames 120 .. 341
+B11: B11 frames 120 .. 341
+B7: frames only
+B8: frames only
+B9: frames only
+B10: frames only
+B11: frames only

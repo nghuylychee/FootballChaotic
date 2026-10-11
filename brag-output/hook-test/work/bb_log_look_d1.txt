@@ -1,0 +1,3 @@
+bb_draft1 frames 66 marks {'sel1': 0.5, 'sel2': 1, 'pick': 1.6} score [0, 0]
+sfx [(0, 'touch'), (0, 'upgrade'), (0.5, 'pass'), (1, 'pass'), (1.6, 'pick')] 
+marks {'sel1': 0.5, 'sel2': 1, 'pick': 1.6} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\bb_draft1_s7.jpg

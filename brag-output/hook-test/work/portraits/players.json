@@ -1,0 +1,110 @@
+{
+ "NGH": {
+  "file": "portraits/NGH.png",
+  "team": "street_kings",
+  "color": "#d7263d",
+  "size": [
+   150,
+   300
+  ]
+ },
+ "tuanbeo": {
+  "file": "portraits/tuanbeo.png",
+  "team": "street_kings",
+  "color": "#d7263d",
+  "size": [
+   150,
+   270
+  ]
+ },
+ "kaito_04": {
+  "file": "portraits/kaito_04.png",
+  "team": "street_kings",
+  "color": "#d7263d",
+  "size": [
+   190,
+   290
+  ]
+ },
+ "zzz_mi": {
+  "file": "portraits/zzz_mi.png",
+  "team": "neon_strikers",
+  "color": "#ff3fb4",
+  "size": [
+   250,
+   310
+  ]
+ },
+ "bigboss99": {
+  "file": "portraits/bigboss99.png",
+  "team": "neon_strikers",
+  "color": "#ff3fb4",
+  "size": [
+   150,
+   310
+  ]
+ },
+ "xX_vex_Xx": {
+  "file": "portraits/xX_vex_Xx.png",
+  "team": "neon_strikers",
+  "color": "#ff3fb4",
+  "size": [
+   150,
+   320
+  ]
+ },
+ "mochi": {
+  "file": "portraits/mochi.png",
+  "team": "cyber_united",
+  "color": "#2fb8ff",
+  "size": [
+   150,
+   310
+  ]
+ },
+ "DUKE": {
+  "file": "portraits/DUKE.png",
+  "team": "cyber_united",
+  "color": "#2fb8ff",
+  "size": [
+   150,
+   270
+  ]
+ },
+ "panda.exe": {
+  "file": "portraits/panda_exe.png",
+  "team": "cyber_united",
+  "color": "#2fb8ff",
+  "size": [
+   150,
+   270
+  ]
+ },
+ "ratking": {
+  "file": "portraits/ratking.png",
+  "team": "underground_fc",
+  "color": "#6bff4f",
+  "size": [
+   240,
+   270
+  ]
+ },
+ "jinx": {
+  "file": "portraits/jinx.png",
+  "team": "underground_fc",
+  "color": "#6bff4f",
+  "size": [
+   170,
+   270
+  ]
+ },
+ "m0le": {
+  "file": "portraits/m0le.png",
+  "team": "underground_fc",
+  "color": "#6bff4f",
+  "size": [
+   210,
+   330
+  ]
+ }
+}

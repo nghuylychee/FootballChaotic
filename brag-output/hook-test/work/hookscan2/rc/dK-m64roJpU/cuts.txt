@@ -1,0 +1,60 @@
+frame:0    pts:49120   pts_time:3.07
+lavfi.scene_score=0.635545
+frame:1    pts:49648   pts_time:3.103
+lavfi.scene_score=0.158969
+frame:2    pts:68864   pts_time:4.304
+lavfi.scene_score=0.215689
+frame:3    pts:69392   pts_time:4.337
+lavfi.scene_score=0.284447
+frame:4    pts:93424   pts_time:5.839
+lavfi.scene_score=0.439669
+frame:5    pts:161232  pts_time:10.077
+lavfi.scene_score=0.426304
+frame:6    pts:264800  pts_time:16.55
+lavfi.scene_score=0.424767
+frame:7    pts:265344  pts_time:16.584
+lavfi.scene_score=0.197992
+frame:8    pts:297904  pts_time:18.619
+lavfi.scene_score=0.331495
+frame:9    pts:309648  pts_time:19.353
+lavfi.scene_score=0.208445
+frame:10   pts:310176  pts_time:19.386
+lavfi.scene_score=0.169971
+frame:11   pts:359296  pts_time:22.456
+lavfi.scene_score=0.499634
+frame:12   pts:419616  pts_time:26.226
+lavfi.scene_score=0.596838
+frame:13   pts:488496  pts_time:30.531
+lavfi.scene_score=0.263775
+frame:14   pts:635840  pts_time:39.74
+lavfi.scene_score=0.274145
+frame:15   pts:662528  pts_time:41.408
+lavfi.scene_score=0.540021
+frame:16   pts:663056  pts_time:41.441
+lavfi.scene_score=0.208854
+frame:17   pts:713776  pts_time:44.611
+lavfi.scene_score=0.216349
+frame:18   pts:759152  pts_time:47.447
+lavfi.scene_score=0.376374
+frame:19   pts:759696  pts_time:47.481
+lavfi.scene_score=0.162412
+frame:20   pts:806144  pts_time:50.384
+lavfi.scene_score=0.208359
+frame:21   pts:883552  pts_time:55.222
+lavfi.scene_score=0.452624
+frame:22   pts:955616  pts_time:59.726
+lavfi.scene_score=0.661989
+frame:23   pts:1043168 pts_time:65.198
+lavfi.scene_score=0.527231
+frame:24   pts:1164368 pts_time:72.773
+lavfi.scene_score=0.348111
+frame:25   pts:1215088 pts_time:75.943
+lavfi.scene_score=0.386594
+frame:26   pts:1215616 pts_time:75.976
+lavfi.scene_score=0.197493
+frame:27   pts:1250848 pts_time:78.178
+lavfi.scene_score=0.282507
+frame:28   pts:1368832 pts_time:85.552
+lavfi.scene_score=0.434012
+frame:29   pts:1369360 pts_time:85.585
+lavfi.scene_score=0.157785

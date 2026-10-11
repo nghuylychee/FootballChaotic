@@ -1,0 +1,2 @@
+pd_intro frames 195 marks {} score [0, 0]
+sfx [(0, 'touch'), (0, 'whoosh'), (0.73, 'hit'), (0.87, 'pass'), (1.1, 'pass'), (1.33, 'pass'), (1.53, 'pass'), (1.77, 'pass'), (1.8, 'upgrade'), (2, 'pass'), (6.2, 'whoosh')]

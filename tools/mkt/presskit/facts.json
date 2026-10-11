@@ -1,0 +1,225 @@
+{
+  "_doc": "NGUỒN DUY NHẤT cho mọi copy (press kit, Steam, bio kênh, pinned comment, mail). Sửa ở đây rồi chạy `node presskit/build.js`. Số liệu lấy từ config/ của game; đổi game thì đổi ở đây. Bản dịch pt-BR / es / ja / zh-CN do AI viết, cần người bản xứ duyệt trước khi lên Steam.",
+  "name": "Street Football Chaos",
+  "developer": "Team41",
+  "location": "Vietnam",
+  "release": { "en": "Early 2027 (TBA)", "pt-BR": "Início de 2027 (a confirmar)", "es": "Principios de 2027 (por confirmar)", "ja": "2027年初頭（未定）", "zh-CN": "2027 年初（待定）" },
+  "price": { "en": "TBA", "pt-BR": "A confirmar", "es": "Por confirmar", "ja": "未定", "zh-CN": "待定" },
+  "platforms": { "en": "PC (Steam, Windows) · free browser demo (itch.io)", "pt-BR": "PC (Steam, Windows) · demo grátis no navegador (itch.io)", "es": "PC (Steam, Windows) · demo gratis en el navegador (itch.io)", "ja": "PC（Steam、Windows）・ブラウザ無料体験版（itch.io）", "zh-CN": "PC（Steam，Windows）· 免费浏览器试玩（itch.io）" },
+  "languages": "English · Português (Brasil) · Português (Portugal) · Español · 日本語",
+  "numbers": { "players": "3v3", "cores": 54, "ultimates": 8, "areas": 10, "teams": 30, "matchSeconds": 150, "finalPushSeconds": 30, "languages": 5 },
+  "links": {
+    "itch": "https://team41.itch.io/sfc",
+    "web": "https://nghuylychee.github.io/FootballChaotic/",
+    "presskit": "https://nghuylychee.github.io/FootballChaotic/presskit/",
+    "x": "", "youtube": "", "tiktok": "", "instagram": ""
+  },
+  "trailerYouTubeId": "",
+  "screenshots": [
+    { "file": "shot-1-street.png", "caption": { "en": "Back Alley: a dropkick sends the ball carrier into the wall", "pt-BR": "Beco: uma voadora manda o dono da bola na parede", "es": "Callejón: una patada voladora manda al rival contra la pared", "ja": "裏路地：ドロップキックでボール保持者を壁へ吹き飛ばす" } },
+    { "file": "shot-2-cyber.png", "caption": { "en": "Cyber Arena, the pro circuit", "pt-BR": "Cyber Arena, o circuito profissional", "es": "Cyber Arena, el circuito profesional", "ja": "サイバーアリーナ：プロの舞台" } },
+    { "file": "shot-3-stadium.png", "caption": { "en": "World Stage: the final Area", "pt-BR": "World Stage: a última Área", "es": "World Stage: la última Área", "ja": "ワールドステージ：最後のエリア" } },
+    { "file": "shot-4-market.png", "caption": { "en": "Night Market under neon lanterns", "pt-BR": "Night Market sob lanternas de neon", "es": "Night Market bajo linternas de neón", "ja": "ネオンの提灯が灯るナイトマーケット" } },
+    { "file": "shot-5-village.png", "caption": { "en": "Village Green, where the Main Path begins", "pt-BR": "Village Green, onde o Main Path começa", "es": "Village Green, donde empieza el Main Path", "ja": "ビレッジグリーン：メインパスの始まり" } }
+  ],
+  "text": {
+    "en": {
+      "tagline": "Street football where punching is allowed.",
+      "pitch": "3v3 street football with no tackle button: punch, dropkick, and fire anime ultimates.",
+      "short": "Street Football Chaos is 3v3 top-down arcade football with no referee. Your tackle is a punch, your slide is a dropkick, and after every goal both teams draft Cores: 54 mid-match upgrades, 8 of them anime-style ultimates. Climb 10 Areas to the World Stage, then take your build online.",
+      "long": [
+        "Street Football Chaos is a 3v3 top-down arcade football game where the rules got out of hand. There is no referee and no tackle button: to win the ball back you punch whoever has it, or dropkick them into the wall. Matches last two and a half minutes, and the last 30 seconds are FINAL PUSH, when every goal counts double.",
+        "After every goal both teams pick one of three Cores, upgrades that last the rest of the match. Stack a style and its ultimate shows up in your picks: Meteor Shot, Hundred Fists, Meteor Drop, Clone Army, Titan, Lightning Dash, Endless Tiki-Taka and Aura Farming, each with its own manga cut-in. 54 Cores in all, so no two matches play the same.",
+        "The Main Path takes you through 10 Areas and 30 teams with their own personalities, from a village pitch to the World Stage. Online, play ranked 3v3 with matchmaking, or open a private room for versus or co-op against bots with two friends. Dress your player with cosmetics earned in matches, and level up stats the way you like to play.",
+        "The whole game is drawn and sounded by code: procedural pixel art, synthesized audio, one simulation that runs in the browser, on desktop and on the match server."
+      ],
+      "features": [
+        { "h": "Your tackle is a punch", "p": "Punch the ball carrier to knock the ball loose, or charge a dropkick that sends them flying. No fouls, no cards, no whistle." },
+        { "h": "Draft Cores mid-match", "p": "After every goal, pick one of three Cores. 54 upgrades: fireball shots, black-hole balls, giant keepers, EMP mines, shadow clones." },
+        { "h": "8 anime ultimates", "p": "Fill the bar, hit X, and the cut-in plays: Meteor Shot, Hundred Fists, Titan, Clone Army and more." },
+        { "h": "10 Areas, 30 teams", "p": "Climb the Main Path from Village Green to the World Stage, with a boss team guarding every promotion." },
+        { "h": "3v3 online", "p": "Ranked matchmaking, or a private room code for versus and co-op against bots with friends." },
+        { "h": "Learn in one match", "p": "Four buttons do everything. Keyboard or gamepad, 150-second matches, FINAL PUSH in the last 30 seconds." },
+        { "h": "Make it yours", "p": "Costume pieces, trail effects and stat boosts unlocked by playing. No real-money purchases in the game." }
+      ],
+      "controls": [["Arrow keys", "Move"], ["E (hold)", "Sprint"], ["S", "Quick pass"], ["W", "Through ball"], ["A", "Lob pass · defending: dropkick"], ["D", "Shoot (hold to charge) · defending: punch"], ["Z", "Skill move / dash"], ["X", "Ultimate"], ["1 2 3", "Pick a Core"]],
+      "about": "Team41 is a small independent team in Vietnam. Street Football Chaos is our first commercial game, built in plain JavaScript with no engine.",
+      "contactLabel": "Press and creator contact",
+      "policyTitle": "Streaming and video policy",
+      "policy": [
+        "You may record, stream, and monetize videos of Street Football Chaos on any platform, including YouTube, Twitch, Kick, TikTok, Instagram and X. No permission needed.",
+        "This covers the full game, the browser demo, playtests and betas, unless a build says otherwise on its title screen.",
+        "All music and sound effects in the game are our own, synthesized in code. They are safe to use in videos; we do not file Content ID claims on gameplay footage.",
+        "You may use our logo, screenshots and art from this press kit in thumbnails and overlays. Please do not present the game as your own creation or sell merchandise with our art.",
+        "Sponsored or paid content must follow the disclosure rules of your platform and country (for example FTC in the US, CONAR in Brazil).",
+        "A link to the Steam page in your description is appreciated but not required."
+      ]
+    },
+    "pt-BR": {
+      "tagline": "Futebol de rua onde soco é permitido.",
+      "pitch": "Futebol de rua 3v3 sem botão de carrinho: soco, voadora e ultimates estilo anime.",
+      "short": "Street Football Chaos é futebol arcade 3v3 visto de cima, sem juiz. Seu carrinho é um soco, seu desarme é uma voadora, e depois de cada gol os dois times escolhem Cores: 54 upgrades no meio da partida, 8 deles ultimates estilo anime. Suba 10 Áreas até o World Stage e leve sua build pro online.",
+      "long": [
+        "Street Football Chaos é um jogo de futebol arcade 3v3 visto de cima em que as regras saíram do controle. Não tem juiz nem botão de carrinho: pra recuperar a bola você dá um soco em quem está com ela, ou uma voadora que manda o cara na parede. As partidas duram dois minutos e meio, e os últimos 30 segundos são o FINAL PUSH, quando cada gol vale dobrado.",
+        "Depois de cada gol, os dois times escolhem um de três Cores, upgrades que duram até o fim da partida. Repita um estilo e o ultimate dele aparece nas suas opções: Meteor Shot, Hundred Fists, Meteor Drop, Clone Army, Titan, Lightning Dash, Endless Tiki-Taka e Aura Farming, cada um com seu cut-in de mangá. São 54 Cores, então nenhuma partida é igual à outra.",
+        "O Main Path leva você por 10 Áreas e 30 times com personalidade própria, de um campinho de vila até o World Stage. No online, jogue ranqueada 3v3 com matchmaking ou abra uma sala privada pra jogar contra ou junto com dois amigos contra bots. Vista seu jogador com cosméticos ganhos nas partidas e evolua os atributos do seu jeito.",
+        "O jogo inteiro é desenhado e sonorizado por código: pixel art procedural, áudio sintetizado e uma única simulação que roda no navegador, no desktop e no servidor de partidas."
+      ],
+      "features": [
+        { "h": "Seu carrinho é um soco", "p": "Dê um soco em quem está com a bola pra soltá-la, ou carregue uma voadora que manda o adversário voando. Sem falta, sem cartão, sem apito." },
+        { "h": "Escolha Cores durante a partida", "p": "Depois de cada gol, escolha um de três Cores. 54 upgrades: chute de fogo, bola buraco negro, goleiro gigante, mina EMP, clones de sombra." },
+        { "h": "8 ultimates estilo anime", "p": "Encha a barra, aperte X e o cut-in toca: Meteor Shot, Hundred Fists, Titan, Clone Army e mais." },
+        { "h": "10 Áreas, 30 times", "p": "Suba o Main Path do Village Green até o World Stage, com um time chefe guardando cada promoção." },
+        { "h": "3v3 online", "p": "Ranqueada com matchmaking, ou um código de sala privada pra jogar contra ou em co-op contra bots com amigos." },
+        { "h": "Aprende em uma partida", "p": "Quatro botões fazem tudo. Teclado ou controle, partidas de 150 segundos, FINAL PUSH nos últimos 30." },
+        { "h": "Do seu jeito", "p": "Roupas, rastros e bônus de atributo desbloqueados jogando. Sem compras com dinheiro real dentro do jogo." }
+      ],
+      "controls": [["Setas", "Mover"], ["E (segurar)", "Correr"], ["S", "Passe rápido"], ["W", "Passe em profundidade"], ["A", "Lançamento · defendendo: voadora"], ["D", "Chute (segure pra carregar) · defendendo: soco"], ["Z", "Drible / dash"], ["X", "Ultimate"], ["1 2 3", "Escolher Core"]],
+      "about": "A Team41 é um time independente pequeno do Vietnã. Street Football Chaos é nosso primeiro jogo comercial, feito em JavaScript puro, sem engine.",
+      "contactLabel": "Contato para imprensa e criadores",
+      "policyTitle": "Política de vídeos e lives",
+      "policy": [
+        "Você pode gravar, transmitir e monetizar vídeos de Street Football Chaos em qualquer plataforma, incluindo YouTube, Twitch, Kick, TikTok, Instagram e X. Não precisa pedir permissão.",
+        "Isso vale para o jogo completo, a demo no navegador, playtests e betas, a menos que a build diga o contrário na tela inicial.",
+        "Toda a música e os efeitos sonoros do jogo são nossos, sintetizados por código. São seguros para usar em vídeos; não fazemos reivindicações de Content ID sobre gameplay.",
+        "Você pode usar nosso logo, capturas e arte deste press kit em thumbnails e overlays. Por favor, não apresente o jogo como criação sua nem venda produtos com nossa arte.",
+        "Conteúdo pago ou patrocinado deve seguir as regras de divulgação da sua plataforma e do seu país (por exemplo, o CONAR no Brasil).",
+        "Um link para a página da Steam na descrição é bem-vindo, mas não é obrigatório."
+      ]
+    },
+    "es": {
+      "tagline": "Fútbol callejero donde se permite pegar.",
+      "pitch": "Fútbol callejero 3v3 sin botón de barrida: puñetazos, patadas voladoras y ultimates estilo anime.",
+      "short": "Street Football Chaos es fútbol arcade 3v3 sin árbitro. Tu barrida es un puñetazo, tu entrada es una patada voladora, y tras cada gol ambos equipos eligen Cores: 54 mejoras a mitad de partido, 8 de ellas ultimates estilo anime. Sube 10 Áreas hasta el World Stage y lleva tu build al online.",
+      "long": [
+        "Street Football Chaos es un juego de fútbol arcade 3v3 con vista cenital en el que las reglas se salieron de control. No hay árbitro ni botón de barrida: para recuperar el balón le pegas un puñetazo a quien lo tenga, o una patada voladora que lo manda contra la pared. Los partidos duran dos minutos y medio, y los últimos 30 segundos son el FINAL PUSH, cuando cada gol vale doble.",
+        "Después de cada gol, ambos equipos eligen uno de tres Cores, mejoras que duran el resto del partido. Repite un estilo y su ultimate aparece entre tus opciones: Meteor Shot, Hundred Fists, Meteor Drop, Clone Army, Titan, Lightning Dash, Endless Tiki-Taka y Aura Farming, cada uno con su propio cut-in de manga. Son 54 Cores, así que no hay dos partidos iguales.",
+        "El Main Path te lleva por 10 Áreas y 30 equipos con personalidad propia, desde una cancha de pueblo hasta el World Stage. En línea, juega ranked 3v3 con matchmaking o abre una sala privada para enfrentarte o cooperar contra bots con dos amigos. Viste a tu jugador con cosméticos ganados en los partidos y sube los atributos como más te guste.",
+        "Todo el juego está dibujado y sonorizado por código: pixel art procedural, audio sintetizado y una sola simulación que corre en el navegador, en escritorio y en el servidor de partidas."
+      ],
+      "features": [
+        { "h": "Tu barrida es un puñetazo", "p": "Golpea a quien tiene el balón para soltarlo, o carga una patada voladora que lo manda por los aires. Sin faltas, sin tarjetas, sin silbato." },
+        { "h": "Elige Cores a mitad de partido", "p": "Después de cada gol, elige uno de tres Cores. 54 mejoras: tiros de fuego, balones agujero negro, arqueros gigantes, minas EMP, clones de sombra." },
+        { "h": "8 ultimates estilo anime", "p": "Llena la barra, pulsa X y suena el cut-in: Meteor Shot, Hundred Fists, Titan, Clone Army y más." },
+        { "h": "10 Áreas, 30 equipos", "p": "Sube el Main Path desde Village Green hasta el World Stage, con un equipo jefe cuidando cada ascenso." },
+        { "h": "3v3 en línea", "p": "Ranked con matchmaking, o un código de sala privada para versus y cooperativo contra bots con amigos." },
+        { "h": "Se aprende en un partido", "p": "Cuatro botones hacen todo. Teclado o mando, partidos de 150 segundos, FINAL PUSH en los últimos 30." },
+        { "h": "Hazlo tuyo", "p": "Prendas, estelas y bonus de atributos que se desbloquean jugando. Sin compras con dinero real dentro del juego." }
+      ],
+      "controls": [["Flechas", "Mover"], ["E (mantener)", "Correr"], ["S", "Pase rápido"], ["W", "Pase filtrado"], ["A", "Pase elevado · defendiendo: patada voladora"], ["D", "Tiro (mantener para cargar) · defendiendo: puñetazo"], ["Z", "Regate / dash"], ["X", "Ultimate"], ["1 2 3", "Elegir Core"]],
+      "about": "Team41 es un equipo independiente pequeño de Vietnam. Street Football Chaos es nuestro primer juego comercial, hecho en JavaScript puro, sin motor.",
+      "contactLabel": "Contacto para prensa y creadores",
+      "policyTitle": "Política de vídeos y directos",
+      "policy": [
+        "Puedes grabar, transmitir y monetizar vídeos de Street Football Chaos en cualquier plataforma, incluidas YouTube, Twitch, Kick, TikTok, Instagram y X. No hace falta pedir permiso.",
+        "Esto aplica al juego completo, la demo en el navegador, playtests y betas, salvo que una build indique lo contrario en su pantalla de título.",
+        "Toda la música y los efectos de sonido del juego son nuestros, sintetizados por código. Son seguros para usar en vídeos; no presentamos reclamaciones de Content ID sobre gameplay.",
+        "Puedes usar nuestro logo, capturas y arte de este press kit en miniaturas y overlays. Por favor, no presentes el juego como creación tuya ni vendas productos con nuestro arte.",
+        "El contenido pagado o patrocinado debe seguir las normas de divulgación de tu plataforma y tu país.",
+        "Un enlace a la página de Steam en la descripción se agradece, pero no es obligatorio."
+      ]
+    },
+    "ja": {
+      "tagline": "殴ってもいいストリートサッカー。",
+      "pitch": "タックルボタンのない3v3ストリートサッカー。パンチ、ドロップキック、そしてアニメ風必殺技。",
+      "short": "Street Football Chaosは、審判のいない見下ろし型3v3アーケードサッカーです。タックルの代わりにパンチ、スライディングの代わりにドロップキック。ゴールのたびに両チームが「コア」を選びます。試合中に手に入る強化は54種、うち8種はアニメ風の必殺技。10のエリアを勝ち上がってワールドステージを目指し、育てたビルドでオンラインへ。",
+      "long": [
+        "Street Football Chaosは、ルールが暴走した見下ろし型3v3アーケードサッカーです。審判もタックルボタンもありません。ボールを奪うにはボール保持者を殴るか、ドロップキックで壁まで吹き飛ばします。試合は2分30秒。ラスト30秒は「FINAL PUSH」となり、すべてのゴールが2倍になります。",
+        "ゴールのたびに両チームが3枚の「コア」から1枚を選びます。コアは試合終了まで続く強化です。同じ系統を重ねると、その系統の必殺技が選択肢に現れます。メテオシュート、百裂拳、メテオドロップ、分身軍団、タイタン、ライトニングダッシュ、エンドレス・ティキタカ、オーラ・ファーミング。それぞれに漫画風のカットインが入ります。コアは全54種、同じ試合は二度とありません。",
+        "メインパスでは、村の広場からワールドステージまで10のエリアと個性豊かな30チームを勝ち抜きます。オンラインではマッチメイキングのランク戦3v3、またはプライベートルームで友人2人と対戦やボット相手の協力プレイ。試合で手に入るコスメで選手を着飾り、好みのプレイスタイルに合わせて能力を伸ばせます。",
+        "グラフィックもサウンドもすべてコードで生成。プロシージャルなピクセルアートとシンセサイザー音源、そしてブラウザ・デスクトップ・対戦サーバーで同じシミュレーションが動きます。"
+      ],
+      "features": [
+        { "h": "タックルはパンチ", "p": "ボール保持者を殴ってボールをこぼさせるか、溜めてドロップキックで吹き飛ばす。ファウルもカードも笛もありません。" },
+        { "h": "試合中にコアをドラフト", "p": "ゴールのたびに3枚から1枚を選択。全54種：ファイアボールシュート、ブラックホールボール、巨大キーパー、EMP地雷、影分身。" },
+        { "h": "8つのアニメ風必殺技", "p": "ゲージを溜めてXを押せばカットインが入る。メテオシュート、百裂拳、タイタン、分身軍団など。" },
+        { "h": "10エリア、30チーム", "p": "ビレッジグリーンからワールドステージまでメインパスを駆け上がる。各昇格戦にはボスチームが待ち構えます。" },
+        { "h": "3v3オンライン", "p": "マッチメイキングのランク戦、またはルームコードで友人と対戦・ボット相手の協力プレイ。" },
+        { "h": "1試合で覚えられる", "p": "ボタン4つですべての操作。キーボードでもゲームパッドでも。1試合150秒、ラスト30秒はFINAL PUSH。" },
+        { "h": "自分だけの選手に", "p": "プレイで手に入るコスチューム、トレイルエフェクト、能力ボーナス。ゲーム内に課金要素はありません。" }
+      ],
+      "controls": [["矢印キー", "移動"], ["E（長押し）", "ダッシュ"], ["S", "クイックパス"], ["W", "スルーパス"], ["A", "ロブパス・守備時：ドロップキック"], ["D", "シュート（長押しで溜め）・守備時：パンチ"], ["Z", "スキルムーブ／ダッシュ"], ["X", "必殺技"], ["1 2 3", "コアを選ぶ"]],
+      "about": "Team41はベトナムの小さなインディーチームです。Street Football Chaosは初の商業作品で、エンジンを使わずJavaScriptだけで作られています。",
+      "contactLabel": "プレス・配信者のお問い合わせ",
+      "policyTitle": "配信・動画投稿ガイドライン",
+      "policy": [
+        "Street Football Chaosのプレイ動画・配信は、YouTube、Twitch、Kick、TikTok、Instagram、Xなどあらゆるプラットフォームで、収益化を含めて自由に行えます。事前の許可は不要です。",
+        "製品版、ブラウザ体験版、プレイテスト、ベータ版すべてが対象です（タイトル画面に別の記載があるビルドを除く）。",
+        "ゲーム内の音楽と効果音はすべて自社制作（コードによる合成音）です。動画での使用は安全で、ゲームプレイ映像に対してContent IDの申し立ては行いません。",
+        "本プレスキットのロゴ、スクリーンショット、アートはサムネイルやオーバーレイに使用できます。ゲームをご自身の制作物として紹介すること、アートを使った商品の販売はご遠慮ください。",
+        "有償・スポンサード案件は、各プラットフォームおよび各国の広告表示ルールに従ってください。",
+        "概要欄にSteamストアページへのリンクを入れていただけると嬉しいですが、必須ではありません。"
+      ]
+    },
+    "zh-CN": {
+      "tagline": "可以动手的街头足球。",
+      "pitch": "没有铲球键的 3v3 街头足球：出拳、飞踢、释放动漫风格的终极技。",
+      "short": "《Street Football Chaos》是一款没有裁判的俯视角 3v3 街机足球游戏。你的铲球是一记重拳，你的滑铲是一记飞踢；每次进球后双方都要选择“核心”：54 种赛中强化，其中 8 种是动漫风格的终极技。攀登 10 个赛区直到世界舞台，再带着你的配置打线上。",
+      "long": [
+        "《Street Football Chaos》是一款规则彻底失控的俯视角 3v3 街机足球游戏。没有裁判，也没有铲球键：想抢回球，就一拳打向持球者，或者用飞踢把他踹到墙上。每场比赛两分半钟，最后 30 秒进入 FINAL PUSH，所有进球双倍计分。",
+        "每次进球后，双方都从三张“核心”中选一张，这些强化会持续到比赛结束。叠加同一流派，该流派的终极技就会出现在你的选项里：流星射门、百裂拳、流星坠落、分身军团、泰坦、闪电冲刺、无尽传控、气场修炼，每一招都有自己的漫画分镜。共 54 种核心，没有两场比赛是一样的。",
+        "主线之路带你穿越 10 个赛区和 30 支个性鲜明的球队，从乡村球场一路打到世界舞台。线上模式可以匹配 3v3 排位，或者开一个私人房间，和两位好友对战或合作打机器人。用比赛赚来的装扮打扮你的球员，按你喜欢的方式加点。",
+        "整个游戏的画面和声音都由代码生成：程序化像素美术、合成音效，同一套模拟在浏览器、桌面端和对战服务器上运行。"
+      ],
+      "features": [
+        { "h": "铲球就是出拳", "p": "一拳打掉持球者的球，或者蓄力飞踢把他踹飞。没有犯规、没有红黄牌、没有哨声。" },
+        { "h": "赛中选择核心", "p": "每次进球后三选一。54 种强化：火球射门、黑洞球、巨型门将、EMP 地雷、影分身。" },
+        { "h": "8 种动漫终极技", "p": "攒满能量按下 X，分镜登场：流星射门、百裂拳、泰坦、分身军团等。" },
+        { "h": "10 个赛区，30 支球队", "p": "从 Village Green 一路打到 World Stage，每次晋级都有 Boss 球队把守。" },
+        { "h": "3v3 线上", "p": "排位匹配，或用房间码和好友对战、合作打机器人。" },
+        { "h": "一场比赛就能上手", "p": "四个键搞定一切。键盘或手柄，每场 150 秒，最后 30 秒 FINAL PUSH。" },
+        { "h": "打造你的球员", "p": "通过游玩解锁服装、拖尾特效和属性加成。游戏内没有真实货币购买。" }
+      ],
+      "controls": [["方向键", "移动"], ["E（按住）", "冲刺"], ["S", "快速传球"], ["W", "直塞"], ["A", "挑传 · 防守时：飞踢"], ["D", "射门（按住蓄力）· 防守时：出拳"], ["Z", "花式 / 冲刺"], ["X", "终极技"], ["1 2 3", "选择核心"]],
+      "about": "Team41 是来自越南的小型独立团队。《Street Football Chaos》是我们的第一款商业游戏，用纯 JavaScript 编写，没有使用引擎。",
+      "contactLabel": "媒体与创作者联系",
+      "policyTitle": "直播与视频政策",
+      "policy": [
+        "你可以在任何平台录制、直播并通过《Street Football Chaos》的视频获利，包括 YouTube、Twitch、Kick、TikTok、Instagram、X、B站和抖音。无需申请许可。",
+        "适用于完整版、浏览器试玩版、测试版和 Beta 版，除非某个版本在标题画面另有说明。",
+        "游戏中的所有音乐和音效均为我们自制（代码合成），可安全用于视频；我们不会对游戏实况提出 Content ID 版权主张。",
+        "你可以在缩略图和叠加层中使用本新闻资料包中的 Logo、截图和美术素材。请勿将游戏宣称为你自己的作品，也请勿用我们的美术素材售卖商品。",
+        "付费或赞助内容须遵守你所在平台和国家的披露规定。",
+        "欢迎在简介中附上 Steam 商店页链接，但并非强制。"
+      ]
+    }
+  },
+  "social": {
+    "en": {
+      "bio": "3v3 street football with no tackle button. Punch. Dropkick. Ultimates. Play free in your browser ⬇",
+      "pinned": "Game: Street Football Chaos. 3v3 street football where tackles are punches and dropkicks, with 54 mid-match power-ups. Play free in your browser: {web} · Wishlist on Steam: {steam}",
+      "description": "Street Football Chaos: 3v3 pixel street football. No tackle button, just punches, dropkicks and anime ultimates. Free browser demo: {web} · Steam: {steam}",
+      "reply": "It's Street Football Chaos. You can play it free in your browser: {web} (Steam wishlist: {steam})",
+      "hashtags": { "yt": "#shorts #indiegame #football #soccer #gamedev #pixelart", "tt": "#gaming #indiegame #football #soccer #steam #pixelart #fyp", "ig": "#indiegame #football #soccer #gaming #pixelart #steam", "x": "#indiegame #indiedev #football #Steam" }
+    },
+    "pt-BR": {
+      "bio": "Futebol de rua 3v3 sem botão de carrinho. Soco. Voadora. Ultimates. Joga grátis no navegador ⬇",
+      "pinned": "Jogo: Street Football Chaos. Futebol de rua 3v3 onde o carrinho é soco e voadora, com 54 power-ups no meio da partida. Joga grátis no navegador: {web} · Wishlist na Steam: {steam}",
+      "description": "Street Football Chaos: futebol de rua 3v3 em pixel art. Sem botão de carrinho, só soco, voadora e ultimates estilo anime. Demo grátis no navegador: {web} · Steam: {steam}",
+      "reply": "É o Street Football Chaos. Dá pra jogar de graça no navegador: {web} (wishlist na Steam: {steam})",
+      "hashtags": { "yt": "#shorts #futebol #jogos #indiegame #gamesbrasil #pixelart", "tt": "#futebol #jogos #games #indiegame #steam #foryou #fy", "ig": "#futebol #jogos #games #indiegame #pixelart #steam", "x": "#indiegame #futebol #jogosindie #Steam" }
+    },
+    "es": {
+      "bio": "Fútbol callejero 3v3 sin botón de barrida. Puñetazo. Patada voladora. Ultimates. Juega gratis en el navegador ⬇",
+      "pinned": "Juego: Street Football Chaos. Fútbol callejero 3v3 donde la barrida es un puñetazo o una patada voladora, con 54 power-ups a mitad de partido. Juega gratis en el navegador: {web} · Wishlist en Steam: {steam}",
+      "description": "Street Football Chaos: fútbol callejero 3v3 en pixel art. Sin botón de barrida, solo puñetazos, patadas voladoras y ultimates estilo anime. Demo gratis en el navegador: {web} · Steam: {steam}",
+      "reply": "Es Street Football Chaos. Puedes jugarlo gratis en el navegador: {web} (wishlist en Steam: {steam})",
+      "hashtags": { "yt": "#shorts #futbol #videojuegos #indiegame #gaming #pixelart", "tt": "#futbol #videojuegos #gaming #indiegame #steam #parati #fyp", "ig": "#futbol #videojuegos #gaming #indiegame #pixelart #steam", "x": "#indiegame #futbol #videojuegos #Steam" }
+    },
+    "ja": {
+      "bio": "タックルボタンのない3v3ストリートサッカー。殴る。蹴り飛ばす。必殺技。ブラウザで無料プレイ ⬇",
+      "pinned": "ゲーム名：Street Football Chaos。タックルがパンチとドロップキックになる3v3ストリートサッカー、試合中に54種のパワーアップ。ブラウザで無料プレイ：{web} ・ Steamでウィッシュリスト登録：{steam}",
+      "description": "Street Football Chaos：ピクセルアートの3v3ストリートサッカー。タックルボタンなし、パンチとドロップキックとアニメ風必殺技だけ。ブラウザ無料体験版：{web} ・ Steam：{steam}",
+      "reply": "「Street Football Chaos」というゲームです。ブラウザで無料で遊べます：{web}（Steamウィッシュリスト：{steam}）",
+      "hashtags": { "yt": "#shorts #インディーゲーム #サッカーゲーム #ゲーム実況 #ドット絵 #Steam", "tt": "#ゲーム #インディーゲーム #サッカー #ドット絵 #Steam #おすすめ", "ig": "#インディーゲーム #サッカーゲーム #ゲーム #ドット絵 #Steam", "x": "#インディーゲーム #indiegame #サッカーゲーム #Steam #ゲーム制作" }
+    },
+    "hi": {
+      "bio": "3v3 street football, no tackle button. Punch. Dropkick. Ultimates. Browser mein free khelo ⬇",
+      "pinned": "Game: Street Football Chaos. 3v3 street football jahan tackle ki jagah punch aur dropkick hai, 54 mid-match power-ups ke saath. Browser mein free khelo: {web} · Steam wishlist: {steam}",
+      "description": "Street Football Chaos: 3v3 pixel street football. No tackle button, sirf punch, dropkick aur anime ultimates. Free browser demo: {web} · Steam: {steam}",
+      "reply": "Ye Street Football Chaos hai. Browser mein free khel sakte ho: {web} (Steam wishlist: {steam})",
+      "hashtags": { "yt": "#shorts #football #indiegame #gaming #pcgames #pixelart", "tt": "", "ig": "#football #gaming #indiegame #pcgaming #pixelart #steam", "x": "#indiegame #football #Steam" }
+    }
+  },
+  "steamTags": ["Football (Soccer)", "Sports", "Arcade", "Multiplayer", "Co-op", "PvP", "Online Co-Op", "Pixel Graphics", "Funny", "Fast-Paced", "Competitive", "Team-Based", "Top-Down", "Action", "Casual", "Indie", "Controller", "2D", "Combat", "Roguelite"]
+}

@@ -1,0 +1,3 @@
+pa_1v1 frames 105 marks {'whistle': 0.36666666666666664, 'kick': 0.6, 'fly': 0.8333333333333334} score [0, 0]
+sfx [(0, 'touch'), (0.37, 'whistle'), (0.6, 'windup'), (0.8, 'kickSwing'), (0.8, 'kick'), (0.8, 'hit'), (1.07, 'bounce'), (1.63, 'hit'), (2.8, 'touch')] 
+marks {'whistle': 0.36666666666666664, 'kick': 0.6, 'fly': 0.8333333333333334} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pa_1v1_s7.jpg

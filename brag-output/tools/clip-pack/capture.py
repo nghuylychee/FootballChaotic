@@ -13,6 +13,7 @@ SEED_JS = """
 (() => { let s = %d >>> 0; Math.random = function () { s = (s + 0x6D2B79F5) >>> 0; let t = s;
   t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })();
 localStorage.setItem('sfc_fx', '{}');
+localStorage.setItem('sfc_settings', JSON.stringify({ music: 10, sfx: 10, res: '1280x720', lang: 'en' }));   // skip the first-run language popup
 """
 PROFILE = {"v": 2, "name": "NGH", "level": 12, "xp": 0, "gold": 99999, "items": {}, "cores": {},
            "look": {"hair": "spiky", "face": "none", "shoes": "kicks", "fx": "nofx", "skin": 0, "hairColor": 0},
@@ -31,7 +32,9 @@ out = os.path.join(work, 'frames', f'{scene}_s{seed}')
 if stills is None:
     shutil.rmtree(out, ignore_errors=True)
 os.makedirs(out, exist_ok=True)
+import glob
 director = open(os.path.join(work, 'scenes.js'), encoding='utf-8').read()
+extras = [open(f, encoding='utf-8').read() for f in sorted(glob.glob(os.path.join(work, 'scenes_*.js')))]   # batch files add more scenes
 
 with sync_playwright() as p:
     b = p.chromium.launch(channel='chrome')
@@ -47,6 +50,7 @@ with sync_playwright() as p:
     pg.clock.run_for(300)
     pg.clock.pause_at(datetime.datetime.fromtimestamp((pg.evaluate('Date.now()') + 200) / 1000, tz=datetime.timezone.utc))
     pg.add_script_tag(content=director)
+    for x in extras: pg.add_script_tag(content=x)
     pg.evaluate(f'BRAG.setup({json.dumps(scene)})')
     n = int(round(secs * FPS))
     meta, cur = [], 0.0

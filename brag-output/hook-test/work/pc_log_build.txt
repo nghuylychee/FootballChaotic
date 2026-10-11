@@ -1,0 +1,20 @@
+B12: B12 frames 120 .. 341
+B13: B13 frames 120 .. 341
+B14: B14 frames 120 .. 341
+B15: B15 frames 120 .. 341
+B16: B16 frames 120 .. 341
+B17: B17 frames 120 .. 341
+B18: B18 frames 120 .. 341
+B19: B19 frames 120 .. 341
+B20: B20 frames 120 .. 341
+B21: B21 frames 120 .. 341
+B12: frames only
+B13: frames only
+B14: frames only
+B15: frames only
+B16: frames only
+B17: frames only
+B18: frames only
+B19: frames only
+B20: frames only
+B21: frames only

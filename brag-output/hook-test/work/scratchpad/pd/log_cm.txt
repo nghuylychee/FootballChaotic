@@ -1,0 +1,3 @@
+pd_clash_meteor frames 120 marks {'titan': 0.2, 'meteor': 1.9} score [0, 0]
+sfx [(0, 'touch'), (0, 'touch'), (0.2, 'upgrade'), (0.8, 'hit'), (1.9, 'upgrade'), (2.47, 'whoosh'), (3.13, 'kick'), (3.6, 'wall'), (3.73, 'hit'), (3.9, 'bounce')] 
+marks {'titan': 0.2, 'meteor': 1.9} -> E:\FootballChaotic\brag-output\hook-test\work\sheets\pd_clash_meteor_s7.jpg

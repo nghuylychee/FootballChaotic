@@ -1,0 +1,14 @@
+{
+  "_doc": "Kênh đăng clip. slots = giờ đăng ưu tiên theo giờ ĐỊA PHƯƠNG của thị trường (tz), maxPerDay = trần clip/ngày/kênh (đăng dày hơn không thêm reach). source = utm_source. manual: true = chưa có API, tool in thẻ đăng tay. Thêm kênh = thêm dòng.",
+  "yt-en":  { "platform": "youtube",   "lang": "en",    "tz": "America/New_York",  "slots": ["12:30", "17:30", "20:30"], "maxPerDay": 3, "source": "yt", "note": "kênh chính; audio track pt-BR/es/hi khi được mở" },
+  "yt-ja":  { "platform": "youtube",   "lang": "ja",    "tz": "Asia/Tokyo",        "slots": ["12:00", "20:00"],          "maxPerDay": 2, "source": "yt", "note": "kênh riêng tiếng Nhật" },
+  "yt-br":  { "platform": "youtube",   "lang": "pt-BR", "tz": "America/Sao_Paulo", "slots": ["12:00", "19:00", "21:00"], "maxPerDay": 3, "source": "yt", "note": "mở khi caption EN trong hình làm người BR lướt" },
+  "tt-us":  { "platform": "tiktok",    "lang": "en",    "tz": "America/Chicago",   "slots": ["11:00", "15:00", "19:00", "21:30"], "maxPerDay": 4, "source": "tt", "manual": true, "note": "TikTok Mỹ là hệ thống riêng từ 1/2026; tài khoản tạo bằng eSIM Mỹ" },
+  "tt-br":  { "platform": "tiktok",    "lang": "pt-BR", "tz": "America/Sao_Paulo", "slots": ["11:30", "15:30", "19:00", "21:30"], "maxPerDay": 4, "source": "tt", "manual": true },
+  "tt-mx":  { "platform": "tiktok",    "lang": "es",    "tz": "America/Mexico_City","slots": ["12:00", "16:00", "20:00", "22:00"], "maxPerDay": 4, "source": "tt", "manual": true },
+  "tt-jp":  { "platform": "tiktok",    "lang": "ja",    "tz": "Asia/Tokyo",        "slots": ["12:00", "19:00", "22:00"], "maxPerDay": 3, "source": "tt", "manual": true },
+  "ig-main":{ "platform": "instagram", "lang": "en",    "tz": "America/Sao_Paulo", "slots": ["12:00", "19:30"],          "maxPerDay": 2, "source": "ig", "manual": true, "note": "một tài khoản, Meta auto-dub ES/PT/HI; giờ theo Brazil vì đó là thị trường Reels chính" },
+  "kwai-br":{ "platform": "kwai",      "lang": "pt-BR", "tz": "America/Sao_Paulo", "slots": ["12:30", "20:00"],          "maxPerDay": 2, "source": "kwai", "manual": true },
+  "x-en":   { "platform": "x",         "lang": "en",    "tz": "America/New_York",  "slots": ["10:00", "18:00"],          "maxPerDay": 2, "source": "x", "manual": true },
+  "x-ja":   { "platform": "x",         "lang": "ja",    "tz": "Asia/Tokyo",        "slots": ["12:30", "21:00"],          "maxPerDay": 2, "source": "x", "manual": true, "note": "#インディーゲーム #Steam, clip 15 giây có chữ Nhật" }
+}

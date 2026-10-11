@@ -5,21 +5,21 @@ Video A1 có slot outro "PLAYTEST SOON · FOLLOW TO GET IN" (shorts_comp.html �
 === A1_dev_tackle-button.mp4 (DEV) ===
 Title: I removed the tackle button from football (it got worse)
 Pinned comment: Solo dev here. Playtest coming soon, follow and I'll drop the link right here.
-Description: 2v2 pixel street football where the tackle button is a punch and a dropkick. #indiegame #gamedev #football
+Description: 3v3 pixel street football where the tackle button is a punch and a dropkick. #indiegame #gamedev #football
 
 === B1_meme_normal-football.mp4 (MEME) ===
 Title: football but tackling is illegal… so we punch
-Pinned comment: Game: Street Football Chaos. 2v2, no tackle button, only violence. Playtest coming soon.
+Pinned comment: Game: Street Football Chaos. 3v3, no tackle button, only violence. Playtest coming soon.
 Description: #football #gaming #indiegame
 
 === B2_meme_var-check.mp4 (MEME) ===
 Title: VAR said this is legal 💀
-Pinned comment: Rules: no ref, no tackles, 2v2. Game: Street Football Chaos (playtest coming soon).
+Pinned comment: Rules: no ref, no tackles, 3v3. Game: Street Football Chaos (playtest coming soon).
 Description: #football #var #gaming
 
 === C1_player_bro-dropkicked.mp4 (PLAYER) ===
 Title: he waited the whole match for this 💀
-Pinned comment: game is Street Football Chaos (2v2, the tackle button is a dropkick). playtest soon
+Pinned comment: game is Street Football Chaos (3v3, the tackle button is a dropkick). playtest soon
 Description: what would you do here? #gaming #football #funny
 
 === C2_player_clutch-clones.mp4 (PLAYER) ===
