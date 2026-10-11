@@ -374,7 +374,7 @@ window.SFC = window.SFC || {};
             up.dataset.done = 1;
             if (r.eligible.length) up.insertAdjacentHTML('beforeend', `<div class="rw-new">${esc(_t('Unlocked: {list}', { list: r.eligible.join(', ') }))}</div>`);
             // lên level: thẻ drill vừa nhận (chỉ khi không có dòng Unlocked, giữ khung thưởng tối đa 2 dòng)
-            const gained = r.levelUps.length * SFC_CONFIG.progression.attrs.drills.perLevel;
+            const gained = SFC.Profile.statsHidden() ? 0 : r.levelUps.length * SFC_CONFIG.progression.attrs.drills.perLevel;   // hệ chỉ số ẩn: không báo thẻ drill
             const where = this.roomMatch ? ' · ' + _t('open in INVENTORY') : '';
             if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">${esc(_tn('★ +{n} DRILL CARD', '★ +{n} DRILL CARDS', gained) + where)}</div>`);
             // chạm trần level theo Main Path: XP vẫn tích, lên hạng là lên level

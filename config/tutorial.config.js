@@ -15,12 +15,8 @@ SFC_CONFIG.tutorial = {
     {
       title: 'PASS & SHOOT',
       lines: [
-        '# Ground pass (S)',
-        'Press S to pass instantly, no charging. The game picks the receiver and the power.',
-        'Hold an arrow pointing at a teammate while pressing S → a clean pass, and the receiver runs onto it.',
-        'No direction, or pointing off to the side → the ball goes toward the nearest teammate but always a little off in direction and power, and the receiver won\'t come for it. Chase it yourself.',
-        '# Assisted pass (W / A)',
-        'Hold W / A to charge, release to pass. The ball follows the arrow you are holding.',
+        '# Passing (S / W / A)',
+        'S = ground pass · W = through ball · A = lob. Hold to charge, release to pass. The ball follows the arrow you are holding.',
         'A teammate in that direction → the ball locks onto them. Nobody there → it rolls straight that way.',
         'A light tap is already enough to reach them. The white mark on the bar = default power; charge past it for a firmer ball.',
         'The receiver runs to meet the ball. When a pass comes to you, you run onto it automatically; press a direction to move yourself.',

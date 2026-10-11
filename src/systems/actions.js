@@ -445,7 +445,7 @@ window.SFC = window.SFC || {};
           : { stun, kbx: d.x * kb, kby: d.y * kb, launch: big ? 150 : 0, source: p, type: 'light' };
         p.lastPunch = { big, upper, counter };
         if (o.hasBall) {
-          let chance = L.stealChance * (p.stats.tackle / o.stats.dribble) * C.pmod(p, 'tackleChance');   // gồm Nộ
+          let chance = L.stealChance * (p.stats.tackle / (o.stats.dribble * C.mod(o, 'dribble'))) * C.pmod(p, 'tackleChance');   // gồm Nộ · Kiểm Soát Bóng của người bị đấm
           if (!p.isControlled) chance *= g.aiProfile(p.team).tackleMult;
           if (sure || upper) chance = 1;
           if (Math.random() >= chance) {

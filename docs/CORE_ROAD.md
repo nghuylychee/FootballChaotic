@@ -10,7 +10,8 @@
 |---|---|---|
 | 1 | Mở Core theo rank | Leo Elo mở Core mới (trophy road kiểu Clash Royale). **Mỗi Area rải Core của nhiều trường phái**, không dồn 1 trường phái / Area (tránh đóng khung người chơi vào 1 lối chơi từ đầu) |
 | 2 | Chọn Core trong trận | **Ngẫu nhiên từ mọi Core đã mở** như Võ Đài LoL. Không có deck |
-| 3 | Bộ khởi đầu | **16 lá** (đổi từ 8, 2026-10-11): 8 THƯỜNG + 1 HIẾM mỗi trường phái + Chaos Ball → trường phái nào cũng ≥ 2 lá từ trận đầu, đầu game đủ đa dạng. + Tuyệt kỹ AURA FARMING |
+| 3 | Bộ khởi đầu | **23 lá** (8 → 16 → 23, 2026-10-11): 8 THƯỜNG + **7 Core chỉ số** (THƯỜNG, mỗi trường phái 1 lá) + 1 HIẾM mỗi trường phái + Chaos Ball → trường phái nào cũng ≥ 3 lá từ trận đầu. + Tuyệt kỹ AURA FARMING |
+| 7 | Chỉ số / OVR / DRILL | **Tạm ẩn** (`progression.attrs.hidden`): game thuần kỹ năng + Core. Mọi người chơi chung rating `attrs.fixed` = 80 (hệ số 1.0). Khác biệt chỉ số đến từ **Core chỉ số** chọn trong trận (`CORE_DESIGN.md` mục Core chỉ số) |
 | 4 | Đổi bài (REROLL) khi chọn Core | **Tạm bỏ** (`cores.draft.rerollsPerRound = 0`, nút REROLL ẩn, phím R không đổi). Đổi bài ở màn DRILL giữ nguyên |
 | 5 | Trần level theo rank | **Bỏ** (`progression.levelCapByRank = false`): level chỉ dừng ở `maxLevel`. `areas[].levelCap` vẫn dùng để ước lượng OVR người chơi giả theo Elo |
 | 6 | Cân bằng | **Để sau** |
@@ -36,13 +37,14 @@ Mốc mở = **các nấc `levelCap`** của Area: mỗi Area chia khoảng Elo 
 Mở theo **Elo cao nhất từng đạt** (`peak`): rớt Area không mất Core, lên lại không nhận lại.
 
 Nguyên tắc rải:
-- **Bộ khởi đầu rộng** (16 lá) để người mới được thử nhiều Core ngay; Area 1 mở nốt 6 lá HIẾM còn lại → hết Area 1 có 22 lá.
+- **Bộ khởi đầu rộng** (23 lá) để người mới được thử nhiều Core ngay; Area 1 mở nốt 6 lá HIẾM còn lại → hết Area 1 có 29 lá.
 - Từ Area 2 chỉ còn SỬ THI / HUYỀN THOẠI. **Trường phái nào cũng đạt 4 lá (đủ bậc 4) trong khoảng Area 2–3**, trường phái thiếu (Thép, Sát thủ, Tiki) được ưu tiên mở trước.
 - Mỗi Area có nhiều trường phái khác nhau, mỗi mốc 1–2 Core. Mỗi Area 5–10 có **1 HUYỀN THOẠI**.
 
 Viết tắt: BRA Đấu sĩ · LAU Võ sĩ đá · STR Sát thủ · RUN Tốc độ · PM Tiki-taka · TRI Ảo ảnh · IRN Thép · CHA Hỗn loạn. R / E / L = HIẾM / SỬ THI / HUYỀN THOẠI.
 
-**Bộ khởi đầu (16):** 8 THƯỜNG `sniper_foot` STR · `speed_demon` RUN · `quick_feet` TRI · `street_fighter` BRA · `iron_body` IRN · `heavy_boot` LAU · `maestro` PM · `eagle_eye` PM
+**Bộ khởi đầu (23):** 8 THƯỜNG `sniper_foot` STR · `speed_demon` RUN · `quick_feet` TRI · `street_fighter` BRA · `iron_body` IRN · `heavy_boot` LAU · `maestro` PM · `eagle_eye` PM
++ 7 Core chỉ số `leg_day` RUN · `cannon_leg` STR · `silk_pass` PM · `close_control` TRI · `heavy_hands` BRA · `thunder_thighs` LAU · `safe_hands` IRN
 + `burst_start` RUN·R · `one_touch` PM·R · `banana_kick` STR·R · `fist_storm` BRA·R · `wall_slam` LAU·R · `phantom_step` TRI·R · `iron_fist` BRA/IRN·R · `chaos_ball` CHA·R
 
 | Area (Elo) | Vào Area | ⅓ | ⅔ | Tổng sở hữu |
@@ -62,13 +64,13 @@ Số lá mỗi trường phái (lá cầu nối tính cả hai; cần 4 lá cho 
 
 | Khi | Tổng | Tốc độ | Tiki | Sát thủ | Đấu sĩ | Võ sĩ đá | Ảo ảnh | Thép |
 |---|---|---|---|---|---|---|---|---|
-| Bắt đầu | 16 | 2 | 3 | 2 | 3 | 2 | 2 | 2 |
-| Hết Area 1 | 22 | 4 | 3 | 3 | 5 | 4 | 3 | 2 |
-| Hết Area 2 | 26 | 4 | 4 | 4 | 5 | 4 | 4 | 3 |
-| Hết Area 3 | 30 | 5 | 4 | 4 | 6 | 5 | 4 | 4 |
-| Hết Area 10 | 46 | 7 | 8 | 9 | 8 | 8 | 7 | 7 |
+| Bắt đầu | 23 | 3 | 4 | 3 | 4 | 3 | 3 | 3 |
+| Hết Area 1 | 29 | 5 | 4 | 4 | 6 | 5 | 4 | 3 |
+| Hết Area 2 | 33 | 5 | 5 | 5 | 6 | 5 | 5 | 4 |
+| Hết Area 3 | 37 | 6 | 5 | 5 | 7 | 6 | 5 | 5 |
+| Hết Area 10 | 53 | 8 | 9 | 10 | 9 | 9 | 8 | 8 |
 
-Kiểm: 46 Core thường (8 THƯỜNG + 14 HIẾM + 18 SỬ THI + 6 HUYỀN THOẠI), mỗi lá đúng 1 chỗ.
+Kiểm: 53 Core thường (15 THƯỜNG gồm 7 Core chỉ số + 14 HIẾM + 18 SỬ THI + 6 HUYỀN THOẠI), mỗi lá đúng 1 chỗ.
 Area 9–10 vẫn chưa có Tuyệt kỹ; mốc ⅓ / ⅔ của Area 8–10 để trống, dành cho phần thưởng khác sau này.
 
 Config: `mainpath.config.js → areas[].road = [[...vào Area], [...⅓], [...⅔]]`. `areas[].ult` giữ nguyên.
@@ -76,6 +78,7 @@ Config: `mainpath.config.js → areas[].road = [[...vào Area], [...⅓], [...�
 
 ## 3. UI
 - **Màn lật thẻ sau trận:** qua mốc → lật thẻ Core (`src: road` — "Reached ★284 in BACK ALLEY"; mốc vào Area: `src: area`).
+- **GOAT PATH** (màn PLAY › RANKED, bấm cụm Area + thanh tiến độ ở đầu màn): bản đồ biển ngang, mỗi Area 1 đảo pixel (sân thu nhỏ, cờ tên + khoảng Elo, Tuyệt kỹ khung vàng + Core vào Area ở mép đảo). Mốc ⅓ / ⅔ = cột mốc giữa biển trên đường đi zigzag, nhân vật của bạn đứng đúng chỗ Elo hiện tại, đoạn đã đi tô vàng. Thanh dưới: chi tiết đảo đang chọn kèm tên từng phần thưởng. ←→ chọn đảo, lăn chuột cuộn ngang. Hiện hết (user bỏ ??? 2026-10-11, `mainPath.roadSpoilers`).
 - **MAIN PATH:** thẻ Area có hàng **CORES**: từng mốc Elo + Core mở ở đó (đã có: sáng · chưa có: bóng xám, không lộ tên).
 - **Lượt chọn Core:** lá Core vừa mở có nhãn NEW.
 - **Túi đồ › CORE:** Core chưa mở bị khoá + cách mở (`MainPath.unlockHint`: "Reach ★367 · BACK ALLEY").

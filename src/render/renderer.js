@@ -94,9 +94,16 @@ window.SFC = window.SFC || {};
       const ctrlColor = (p) => (!g.preview && g.isHuman(p.team) && p.isControlled
         ? (p === cp ? '#ffe14f' : p.team === g.humanTeam ? '#3ff6ff' : '#ff5a6e') : null);
       // trận xếp hạng (Main Path): chỉ vòng của máy này — người thật khác không khác gì người chơi giả
+      const rank = !!g.opts.mainPath, seatRing = (c) => c && (!rank || c === cp);
+      // vòng mỏng dưới chân mọi đồng đội (người lẫn AI, như nhau) — bỏ người đã có vòng điều khiển
+      const AR = SFC_CONFIG.game.render.allyRing;
+      if (AR && !g.preview && g.humanTeam >= 0 && g.teams[g.humanTeam]) {
+        const ringed = new Set(g.seats.map((s, i) => g.seatPlayer(i)).filter(seatRing));
+        for (const q of g.teams[g.humanTeam].players) if (!ringed.has(q)) ringPx(ctx, q.x, q.y + 1, AR.r, AR.color);
+      }
       if (!g.preview) g.seats.forEach((s, i) => {
         const c = g.seatPlayer(i);
-        if (c && (!g.opts.mainPath || c === cp)) ringPx(ctx, c.x, c.y + 1, 8, ctrlColor(c));
+        if (seatRing(c)) ringPx(ctx, c.x, c.y + 1, 8, ctrlColor(c));
       });
 
       // assisted passing chạy ngầm; chỉ hiện gợi ý người nhận khi bật showTargetHint (debug)

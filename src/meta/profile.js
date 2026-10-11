@@ -25,6 +25,7 @@ window.SFC = window.SFC || {};
       team: SFC.Mates.blankTeam(),   // đồng đội: đội hình + trạm scout (src/meta/teammates.js)
       attrs: blankAttrs(),
       ult: P().defaultUlt,           // Tuyệt kỹ đặc trưng đang mang (CHARACTER > ULTIMATE); bộ sưu tập = ownedUlts()
+      ach: [],                       // id thành tích đã nhận thưởng (src/meta/achievements.js)
       tut: { done: false, heirloom: false },   // PROLOGUE (src/game/tutorial.js) đã xem xong / bỏ qua · đã nhận bí kíp gia truyền (cut scene trao AURA FARMING)
     };
   }
@@ -91,6 +92,8 @@ window.SFC = window.SFC || {};
       d.items = counts(raw.items || raw.owned, (id) => ITEMS()[id] && !ITEMS()[id].default);
       d.cores = counts(raw.cores, (id) => !!CORES()[id]);
       d.boxes = counts(raw.boxes, (id) => !!P().boxes[id]);
+      const achList = (SFC_CONFIG.achievements && SFC_CONFIG.achievements.list) || [];
+      d.ach = Array.isArray(raw.ach) ? [...new Set(raw.ach.filter((id) => achList.some((a) => a.id === id)))] : [];
       const lk = raw.look || {};
       for (const slot of Object.keys(P().slots)) {
         const id = lk[slot];
@@ -334,7 +337,9 @@ window.SFC = window.SFC || {};
 
     /* ---------- chỉ số character + DRILL (config: progression.attrs, docs/DRILL_DESIGN.md) ---------- */
     // extra: { id chỉ số: số bước cộng thêm } — xem trước 1 drill trước khi chọn
-    rating(id, extra = {}) { return Math.min(A().max, A().base + this.data.attrs.steps[id] + (extra[id] || 0)); },
+    // attrs.hidden (hệ chỉ số đang ẩn): mọi chỉ số = attrs.fixed
+    statsHidden() { return !!A().hidden; },
+    rating(id, extra = {}) { return A().hidden ? A().fixed : Math.min(A().max, A().base + this.data.attrs.steps[id] + (extra[id] || 0)); },
     ovr(extra = {}) {
       const ids = A().order;
       return Math.round(ids.reduce((s, id) => s + this.rating(id, extra), 0) / ids.length);
@@ -345,7 +350,8 @@ window.SFC = window.SFC || {};
       return 1 + (this.rating(id, extra) / A().scale - 1) * (w == null ? 1 : w);
     },
 
-    drillsPending() { return this.data.attrs.drills.pending; },
+    // thẻ drill chờ mở (hệ chỉ số ẩn: 0 — vẫn tích ngầm, bật lại là có)
+    drillsPending() { return A().hidden ? 0 : this.data.attrs.drills.pending; },
     // số bước drill thật sự cộng được (cắt ở tối đa); chỉ số đã tối đa không có trong kết quả
     drillGains(id) {
       const g = D().list[id].gains, out = {};

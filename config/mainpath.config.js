@@ -41,6 +41,9 @@ SFC_CONFIG.mainPath = {
   /* lockCores = true -> Core chỉ dùng được khi đã mở: Tuyệt kỹ (Aura Farming từ PROLOGUE + areas[].ult) và Core thường
    * (progression.starterCores + areas[].road). lockCores = false: mọi Core dùng được ngay. */
   lockCores: true,
+  // GOAT PATH (màn PLAY › RANKED, src/ui/road.js): true = hiện hết tên / Core / Tuyệt kỹ mọi Area (user chốt 2026-10-11) ·
+  // false = Area chưa từng tới hiện ??? + phần thưởng bóng xám
+  roadSpoilers: true,
 
   // Đội riêng của người chơi (cố định). {name} = tên character. Chỉ số trung bình, không thiên hướng Core.
   playerTeam: {

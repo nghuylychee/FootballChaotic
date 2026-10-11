@@ -90,6 +90,7 @@ window.SFC = window.SFC || {};
 
     // dòng "SCALES WITH <chỉ số>" trên lá Core (icon chỉ số của trang STATS)
     statLine(id) {
+      if (ATTR().hidden) return '';   // hệ chỉ số ẩn: Core không scale theo chỉ số người chơi -> không có dòng này
       const stats = this.statsOf(id), sc = (DEF().list[id] || {}).scale;
       if (!stats.length || !sc || !Object.keys(sc).length) return '';   // Core không có số nào scale (Warp Walls)
       const icons = stats.map((st) => (st !== 'ovr' && ATTR().list[st] && ATTR().list[st].icon && SFC.PixelIcon ? SFC.PixelIcon.html(ATTR().list[st].icon, '', 'sm') : '')).join('');

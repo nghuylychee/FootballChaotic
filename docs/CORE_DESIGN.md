@@ -165,11 +165,27 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 
 ---
 
-## 6. Danh sách 53 Core
+## 6. Danh sách Core (61 lá: 53 Core thường gồm 7 Core chỉ số + 8 Tuyệt kỹ)
 
 **Vai trò:** `TẠO` sinh tài nguyên · `DÙNG` tiêu tài nguyên · `NỀN` chỉ số (vẫn có hình) · `TUYỆT KỸ` (phím X).
 **Nguồn:** ♻️ làm lại từ Core cũ (giữ ID để không mất đồ người chơi) · 🆕 mới. **Có sẵn** = Core cơ bản miễn phí.
 **Kit** = viên gạch hiệu ứng dùng (mục 2).
+
+### 📈 CORE CHỈ SỐ (thêm 2026-10-11)
+
+Hệ chỉ số / OVR / DRILL đang ẩn (`progression.attrs.hidden`) → khác biệt chỉ số giữa người chơi đến từ 7 lá này. THƯỜNG · NỀN · có sẵn (bộ khởi đầu),
+mỗi trường phái 1 lá (tính Cộng hưởng như Core khác). Đi qua `mods` → online + dự đoán chuyển động ở máy khách tự đúng.
+**Khoảnh khắc trên màn hình (chung):** dấu "+" màu chỉ số (viền mực) bay lên chậm quanh người, mỗi lá 1 dấu (`boost`, `src/render/vfx.js → look`).
+
+| ID | Tên | Trường phái | Cơ chế (`mods`) |
+|---|---|---|---|
+| `leg_day` | Leg Day | TỐC ĐỘ | Tốc chạy +7% · hồi thể lực +25% |
+| `cannon_leg` | Cannon Leg | SÁT THỦ | Lực sút +10% · chính xác +20% |
+| `silk_pass` | Silk Passing | TIKI-TAKA | Tốc bóng chuyền +10% · chuyền chuẩn +25% |
+| `close_control` | Close Control | ẢO ẢNH | `dribble` ×1.25: dẫn bóng nhanh hơn chút, khó bị đấm rơi bóng hơn 20% |
+| `heavy_hands` | Heavy Hands | ĐẤU SĨ | Tỉ lệ đấm rơi bóng +20% · tầm đấm +10% |
+| `thunder_thighs` | Thunder Thighs | VÕ SĨ ĐÁ | Hất xa +15% · hồi chiêu Hard −12% |
+| `safe_hands` | Safe Hands | THÉP | Bắt bóng trong vòng cấm nhà +15% |
 
 ### 🏃 TỐC ĐỘ — Đà
 

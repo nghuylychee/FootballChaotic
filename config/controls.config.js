@@ -41,7 +41,7 @@ SFC_CONFIG.controls = {
     attack: [
       ['← ↑ ↓ →', 'Move'],
       ['E (hold)', 'Sprint'],
-      ['S', 'Ground pass · arrow at a teammate = accurate'],
+      ['S (hold)', 'Ground pass'],
       ['W (hold)', 'Through ball'],
       ['A (hold)', 'Lob pass'],
       ['D (hold)', 'Shoot · arrow = shot direction'],
@@ -71,7 +71,7 @@ SFC_CONFIG.controls = {
     attack: [
       ['{move}', 'Move'],
       ['{sprint} (hold)', 'Sprint'],
-      ['{pass}', 'Ground pass · stick at a teammate = accurate'],
+      ['{pass} (hold)', 'Ground pass'],
       ['{through} (hold)', 'Through ball'],
       ['{lob} (hold)', 'Lob pass'],
       ['{shoot} (hold)', 'Shoot · stick = shot direction'],

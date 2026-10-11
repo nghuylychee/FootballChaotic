@@ -136,7 +136,7 @@ window.SFC = window.SFC || {};
     side(g, t, list, delay, boss) {
       const I = CFG(), c = g.teams[t].cfg;
       const cs = this.teamStats(g, t), os = this.teamStats(g, 1 - t);
-      const ovr = this.ovrOf(cs);
+      const ovr = this.ovrOf(cs), hidden = SFC.Profile.statsHidden();   // hệ chỉ số ẩn: không OVR đội, không thanh chỉ số
       const stats = I.stats.map(([key, label], i) => {
         const v = cs[key] || 1, ov = os[key] || 1;
         const w = Math.round(clamp01((v - I.statMin) / (I.statMax - I.statMin)) * 100);
@@ -147,11 +147,11 @@ window.SFC = window.SFC || {};
         <div class="in-team">
           <div class="in-crest"><span>${esc(c.short)}</span></div>
           <div class="in-tn"><b>${esc(c.name)}</b><span>${esc(c.tagline || '')}</span></div>
-          <div class="in-ovr"><b>${ovr}</b><span>${esc(SFC.t('OVR'))}</span></div>
+          ${hidden ? '' : `<div class="in-ovr"><b>${ovr}</b><span>${esc(SFC.t('OVR'))}</span></div>`}
           ${boss ? `<div class="in-boss">${PX().ui('crown', 'sm')} ${esc(SFC.t('BOSS'))}</div>` : ''}
         </div>
         <div class="in-cards">${cards}</div>
-        <div class="in-stats">${stats}</div>
+        ${hidden ? '' : `<div class="in-stats">${stats}</div>`}
       </div>`;
     },
 
@@ -167,7 +167,7 @@ window.SFC = window.SFC || {};
       const tag = you ? `<em class="you">${esc(_t('YOU'))}</em>` : p.elo != null ? `<em class="${side}">★${p.elo}</em>` : ctl ? `<em class="${side}">${pn}</em>`
         : p.mate ? `<em class="mate">${esc(_t('MATE'))}</em>` : human ? `<em>${esc(_t('AI'))}</em>` : '';
       // character / đồng đội có chỉ số riêng: OVR cá nhân
-      const povr = (ctl || p.mate) && p.ovr ? `<b class="in-povr">${p.ovr}<span>${esc(_t('OVR'))}</span></b>` : '';
+      const povr = (ctl || p.mate) && p.ovr && !SFC.Profile.statsHidden() ? `<b class="in-povr">${p.ovr}<span>${esc(_t('OVR'))}</span></b>` : '';
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">
         <div class="in-num">${num}</div>${tag}${povr}
         <canvas data-pid="${p.id}" data-delay="${d}"></canvas>

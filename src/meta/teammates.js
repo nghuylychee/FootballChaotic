@@ -125,8 +125,8 @@ window.SFC = window.SFC || {};
     spec(m, role) {
       const out = {}, L = CORES().list, isUlt = (id) => L[id] && L[id].role === 'ult';
       for (const id of A().order) {
-        const keys = A().list[id].keys;
-        for (const k in keys) out[k] = 1 + (m.ratings[id] / A().scale - 1) * (keys[k] == null ? 1 : keys[k]);
+        const keys = A().list[id].keys, r = A().hidden ? A().fixed : m.ratings[id];   // hệ chỉ số ẩn: chỉ số chung attrs.fixed
+        for (const k in keys) out[k] = 1 + (r / A().scale - 1) * (keys[k] == null ? 1 : keys[k]);
       }
       const ult = (isUlt(m.ult) && m.ult) || m.deck.find(isUlt) || PROG().defaultUlt;
       return { name: m.name, ovr: m.ovr, stats: out, deck: m.deck.filter((id) => !isUlt(id)), look: SFC.Profile.lookOf(Object.assign({}, PROG().defaultLook, m.look)), role, ult };

@@ -98,7 +98,7 @@ window.SFC = window.SFC || {};
     maxSpeed() {
       const C = SFC_CONFIG.game, g = this.game, cores = g.cores;
       let s = C.player.speed * this.stats.speed * cores.pmod(this, 'speed');   // gồm Đà
-      if (this.hasBall) s *= C.player.dribbleSpeedMult * (0.85 + this.stats.dribble * 0.15);
+      if (this.hasBall) s *= C.player.dribbleSpeedMult * (0.85 + this.stats.dribble * cores.mod(this, 'dribble') * 0.15);   // Kiểm Soát Bóng
       else s *= cores.mod(this.team, 'offBallSpeed', this);
       if (this.sprinting) s *= C.player.sprintMult;
       if (this.charging) s *= C.player.chargeMoveMult;

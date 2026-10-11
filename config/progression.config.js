@@ -22,6 +22,11 @@ SFC_CONFIG.progression = {
   // Rating hiển thị = hệ số x scale (cùng thang OVR của màn giới thiệu trước trận, intro.config.js -> ovrScale).
   // Chỉ áp dụng ở Main Path + Luyện tập; online dùng chỉ số của đội như cũ.
   attrs: {
+    // hidden: true = TẠM ẨN cả hệ chỉ số / OVR / DRILL (thử game thuần kỹ năng + Core, 2026-10-11): mọi người chơi (character,
+    // đồng đội, người chơi giả) dùng chung rating `fixed` cho mọi chỉ số, không hiện OVR / STATS / thẻ DRILL ở đâu cả.
+    // Drill vẫn tích ngầm theo level (bật lại là có). fixed = 80 = hệ số 1.0 = mức cân bằng gốc của Core (cores.statScale.anchor)
+    hidden: true,
+    fixed: 80,
     base: 60,                  // rating khởi đầu (hệ số 0.75 — character mới yếu hơn đồng đội, 80 = hệ số 1.0)
     max: 99,
     scale: 80,                 // hệ số = 1 + (rating / scale - 1) x weight của từng key
@@ -203,14 +208,15 @@ SFC_CONFIG.progression = {
   // Core đã quay được trước đó vẫn giữ trong hồ sơ. Bật lại = true.
   coreGacha: false,
 
-  // Bộ Core có sẵn cho user mới (16 lá: 8 THƯỜNG + 1 HIẾM mỗi trường phái + Chaos Ball — trường phái nào cũng có >= 2 lá từ trận đầu)
-  // + Tuyệt kỹ khởi đầu
+  // Bộ Core có sẵn cho user mới (23 lá: 8 THƯỜNG + 7 Core chỉ số THƯỜNG + 1 HIẾM mỗi trường phái + Chaos Ball — trường phái nào cũng
+  // có >= 3 lá từ trận đầu) + Tuyệt kỹ khởi đầu
   // AURA FARMING (bí kíp gia truyền, trao ở cuối PROLOGUE). Core khác mở theo Core Road (mainpath.config.js -> areas[].road / ult),
   // hoặc lấy từ Hộp Core khi coreGacha bật.
   // level (khi coreGacha bật) = level tối thiểu để Core quay được xuất hiện khi chọn Core giữa trận (chưa đủ thì nằm chờ trong túi đồ).
   // Độ hiếm của Core lấy từ config/cores.config.js (rarity) — dùng chung cho gacha và tần suất khi chọn Core.
   defaultUlt: 'aura_farming',   // Tuyệt kỹ đặc trưng ai cũng có lúc đầu (phải nằm trong starterCores)
   starterCores: ['sniper_foot', 'speed_demon', 'quick_feet', 'street_fighter', 'iron_body', 'heavy_boot', 'maestro', 'eagle_eye',
+    'leg_day', 'cannon_leg', 'silk_pass', 'close_control', 'heavy_hands', 'thunder_thighs', 'safe_hands',
     'burst_start', 'one_touch', 'banana_kick', 'fist_storm', 'wall_slam', 'phantom_step', 'iron_fist', 'chaos_ball',
     'aura_farming'],
   cores: {
