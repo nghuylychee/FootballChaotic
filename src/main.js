@@ -296,6 +296,9 @@
     SFC.UI.init(app);
     SFC.Menu.init(app);
     SFC.UI.show('menu');
+    // máy chủ trận (gói miễn phí ngủ khi không ai dùng, dậy mất ~1 phút): đánh thức ngay lúc mở game,
+    // tới lúc người chơi bấm tìm trận / tạo phòng thì đã dậy
+    SFC.Session.prepare();
     if (forfeited) SFC.Menu.setMsg(app.forfeitText(forfeited), true);
     const start = () => {
       // lần đầu chơi: đặt tên cho character trước khi vào trang chủ -> PROLOGUE.

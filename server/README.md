@@ -47,6 +47,12 @@ A provider needs three things: run the image, expose `PORT`, and allow WebSocket
 
 Behind a provider's proxy or load balancer, the player's address is read from the last entry of `X-Forwarded-For` (the one the proxy adds). Without a proxy, the socket address is used.
 
+## Versions
+
+The server's version is `version` in `server/package.json`: `<net.protocol>.<minor>.<patch>` (semver, e.g. `5.1.0`). The major is always the protocol, so a message-format change (protocol bump) starts a new major. Minor and patch are server-only changes. The version is also the Docker image tag (`npm run server:image` builds `team41sfc/sfc-server:<version>`, `-- --push` publishes it). The server exits at startup if the major doesn't equal `net.protocol`, and `/healthz` reports `version` and `protocol`.
+
+The game's version is `<package.json version>-<net.protocol>` (e.g. `1.1.0-5`). Clients send it as `cv` in `create`, `join` and `queue`, and the server logs it (`[room ABC1234] opened by client 1.1.0-5`). Replies carry the server version as `sv` (`room{code,id,sv}`, `err{e,sv}`).
+
 ## Protocol
 
 The handshake is `create{v}` or `join{code,v}`, answered by `room{code,id}` or `err{e}` (`version`, `room-missing`, `server-full`, `server-closing`). A reconnecting player joins the same way and sends its token in `hello{tok}`. After that, every message goes straight to the room. The message list is in [src/net/session.js](../src/net/session.js). `net.protocol` must match between game and server. Bump it when the message format changes and redeploy the server together with the game.
@@ -77,7 +83,7 @@ From the player's side, every failure ends in `solo`: no server URL, server unre
 - **Errors stay in their room.** An exception while handling a message or simulating a match closes only that room (players get disconnected with "Lost connection to the server") and is logged with the room code. Other rooms keep running.
 - **Only room members receive room traffic.** A connection that joined with a code but hasn't been accepted (`hello`) gets nothing but direct replies, and is dropped after `JOIN_TIMEOUT`.
 - **Shutdown (SIGTERM):** create and join are refused with `server-closing` (CREATE ROOM then falls back to player-hosting), `/healthz` returns 503, running matches get up to `SHUTDOWN_GRACE` seconds to finish.
-- **Logs:** one line per room event: `[room ABC123] created`, `match started (versus, 2 players)`, `match ended 3-1 after 241s`, `a player disconnected, seat held 30s`, `a player reconnected`, `closed (empty | idle | done | error | shutdown, N connected)`, plus `created (ranked, N players)` for matched rooms. Errors include the room code and a stack trace.
+- **Logs:** one line per room event: `[room ABC123] created`, `match started (versus, 2 players)`, `match ended 3-1 after 241s · sent 1.24 MB (0.86 KB/s per player, 6 connected)`, `[room ABC1234] opened by client 1.1.0-5`, `a player disconnected, seat held 30s`, `a player reconnected`, `closed (empty | idle | done | error | shutdown, N connected) · sent 3.10 MB in total`, plus `created (ranked, N players)` for matched rooms. "Sent" is the room's outbound data after compression (without WebSocket / TLS framing), per match and for the room's whole life. Errors include the room code and a stack trace.
 - **Flood limits:** `MAX_PER_IP` connections per address, `MSG_RATE` messages per second per connection, 16 KB max message, `MAX_ROOMS` rooms. Clients that stop answering pings, or fall 1 MB behind on receiving, are disconnected.
 
 ## Capacity

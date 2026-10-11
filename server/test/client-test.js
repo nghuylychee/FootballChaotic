@@ -232,6 +232,7 @@ async function rankedSearch(url) {
   D.O.queue();
   assert.strictEqual(D.log.solo, 1, 'no server configured: solo at once');
   const E = machine('EVE', 'ws://localhost:1');
+  E.SFC_CONFIG.net.server.queueWake = 3;   // test: máy chủ không dậy -> thử lại 3 giây rồi solo (thật: queueWake ~45 giây)
   E.O.queue();
   await until(() => E.log.solo, 8000, 'unreachable: solo');
   assert.strictEqual(E.O.status, 'idle');

@@ -79,13 +79,17 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
   - A new player field that rendering needs, or a new effect method guests should see, must be added there. Otherwise it silently won't appear online.
 - **Ranked matchmaking** (PLAY › START with no party). `Session.queue()` sends `queue{elo,role,pf}` to the server, where `src/net/matchmaker.js` (`net.queue`, server-only) groups 2–4 players by a widening Elo window. A `Room` with `ranked` lineup then plays the match with no lobby or owner, and AI fills the empty seats. The client gets `start{opts.ranked, opts.mainPath}` and records its own Elo.
   - Every failure emits `solo`, and the menu runs the offline `MainPath.matchmake()`.
-  - **Players must not be able to tell real players from AI** (the user's decision). Both look the same in MATCH FOUND, the intro (Elo badges), the pause menu (it doesn't freeze ranked matches, offline included), the draft timer and the result screen. Only your own control ring shows, and there are no away/left banners.
+  - **Players must not be able to tell real players from AI** (the user's decision). Both look the same in MATCH FOUND, the intro (Elo badges), the pause menu (it doesn't freeze ranked matches, offline included), the draft timer and the result screen. Only your own control ring shows, and there are no away/left banners. One accepted exception (the user's call): online ranked matches show the ping readout (`src/ui/online.js`), offline ones have none.
   - UI code tells ranked apart with `game.opts.mainPath` (`UI.ranked`), and online rooms with `UI.roomMatch`.
 - Reconnect lives in `Room` too: a mid-match disconnect marks the member `away` for `net.reconnectGrace` seconds (AI plays the seat). `hello{tok}` reclaims it via `rejoin()`, and whoever runs the Room must call `room.expire(Date.now())` periodically. Never send a `lobby` packet mid-match: guests treat it as "match over, back to lobby"; resume data travels inside `start{opts.resume, opts.lobby}`.
 - Bump `net.protocol` when the message format changes. The server must be redeployed together with the client.
+- **Versions.**
+  - Server: `server/package.json` `version` is `<net.protocol>.<minor>.<patch>` (semver, e.g. `5.1.0`), and it's also the Docker image tag. The server refuses to start if the major doesn't equal `net.protocol`, so a protocol bump means the server goes to `<new protocol>.0.0` (or `.1.0`).
+  - Client: the game's semver is `version` in the root `package.json`. The full client version is `<version>-<net.protocol>` (e.g. `1.1.0-5`; `NetCommon.clientVersion()`), shown on the SETTINGS heading. Dev runs show `dev-<protocol>`, because `config/build.config.js` has `SFC_VERSION = 'dev'` and `scripts/strip-dev.js` writes the real number when packaging.
+  - The handshake carries both (`cv` from the client, `sv` in `room` / `err` replies), and the server logs which client version opened or joined each room. `/healthz` reports `version`.
 - **Live server deployment is manual.** The match server runs on Render (`wss://sfc-server.onrender.com`, the `net.server.url`) from the Docker Hub image `team41sfc/sfc-server:<tag>`.
-  - `npm run server:image -- <tag>` builds and smoke-tests the image locally. That's all Claude does by default.
-  - Pushing (`npm run server:image -- <tag> --push`) only happens when the user asks for it in chat; pushes to the hub are limited.
+  - `npm run server:image` builds and smoke-tests the image locally (tag = server version). That's all Claude does by default.
+  - Pushing (`npm run server:image -- --push`) only happens when the user asks for it in chat; pushes to the hub are limited.
   - The user switches the tag on Render and deploys by hand. Until then the live server keeps the old protocol, so a client with a newer `net.protocol` falls back to player-hosting / AI ranked.
 - `server/README.md` covers server env vars, Docker (`docker build -f server/Dockerfile .`, built from the repo root) and the handshake.
 

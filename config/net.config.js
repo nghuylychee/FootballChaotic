@@ -8,7 +8,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 4,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
+  protocol: 5,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
   pingEvery: 1,                // giây giữa 2 lần đo ping tới máy chạy trận (NETWORK STATS, 0 = tắt)
   // Máy chủ riêng (server/): máy chủ chạy trận, mọi người là khách. url trống = chỉ người chơi làm host (Steam / PeerJS).
@@ -19,6 +19,7 @@ SFC_CONFIG.net = {
                                // -> mọi mã đều dài codeLength, người chơi không phân biệt được, VÀO PHÒNG tự biết phòng loại nào
     connectTimeout: 5,         // giây chờ 1 lần thử kết nối
     wakeTimeout: 70,           // giây chờ máy chủ đang ngủ dậy (gói miễn phí ~1 phút) trước khi TẠO PHÒNG tự host; Esc bỏ chờ
+    queueWake: 45,             // tìm trận xếp hạng lúc máy chủ đang ngủ: thử lại tới bấy nhiêu giây rồi mới đá với người chơi giả
     keepAlive: 60,             // giây giữa 2 gói giữ máy chủ thức khi đang ở phòng máy chủ riêng (0 = tắt)
     snapshotEvery: 2,          // máy chủ gửi trạng thái 30 lần/giây (đỡ băng thông; khách vẫn nội suy mượt)
     interpDelay: 0.05,         // trễ nội suy tối thiểu ở máy khách phòng máy chủ riêng (đệm tự tăng theo độ giật, tới net.interpMax)
@@ -50,8 +51,10 @@ SFC_CONFIG.net = {
     widen: 15,
     anyAfter: 20,              // chờ quá bấy nhiêu giây: ghép với bất kỳ ai (ít người chơi thì vẫn gặp được nhau)
     gather: 5,                 // đã có người hợp: người chờ lâu nhất phải chờ ít nhất bấy nhiêu giây (xem có thêm người tới không)
-    aloneWait: [6, 12],        // hàng không có ai khác: sau bấy nhiêu giây (ngẫu nhiên trong khoảng) -> đá với người chơi giả
-    maxWait: 30,               // chờ tối đa (có người khác nhưng chưa hợp)
+    // hàng không có ai khác: sau bấy nhiêu giây (ngẫu nhiên trong khoảng) -> đá với người chơi giả. Ít người chơi -> chờ lâu hơn
+    // để 2 người bấm tìm cách nhau vài giây vẫn gặp nhau
+    aloneWait: [15, 25],
+    maxWait: 45,               // chờ tối đa (có người khác nhưng chưa hợp)
     joinWait: 5,               // ghép xong: ai chưa vào phòng sau bấy nhiêu giây -> người chơi giả thế chỗ
   },
 

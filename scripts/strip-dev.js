@@ -38,7 +38,9 @@ async function strip(appDir, { demo = false } = {}) {
     fs.writeFileSync(file, out.code);
     stripped.add(file);
   }
-  fs.writeFileSync(flagFile, `var SFC_DEV = false;\nvar SFC_DEMO = ${!!demo};\n`);
+  // phiên bản game = package.json của repo (bản dev ghi 'dev')
+  const version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version;
+  fs.writeFileSync(flagFile, `var SFC_DEV = false;\nvar SFC_DEMO = ${!!demo};\nvar SFC_VERSION = ${JSON.stringify(version)};\n`);
 
   const left = files.flatMap((f) => {
     const src = fs.readFileSync(f, 'utf8');

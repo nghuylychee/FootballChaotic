@@ -17,6 +17,15 @@ const { load } = require('./sim');
 
 const { SFC } = load();
 const NET = globalThis.SFC_CONFIG.net;
+// phiên bản máy chủ = server/package.json, dạng <net.protocol>.<minor>.<patch> (cũng là tag Docker image).
+// Số đầu phải bằng net.protocol của bản game này -> sai thì không chạy (đóng gói nhầm config / quên tăng phiên bản)
+const VERSION = require('./package.json').version;
+if (+VERSION.split('.')[0] !== NET.protocol) {
+  console.error(`[server] version ${VERSION} does not match net.protocol ${NET.protocol} (major must equal the protocol)`);
+  process.exit(1);
+}
+// phiên bản game gửi trong gói bắt tay (cv): chỉ để ghi log
+const cleanCv = (v) => (typeof v === 'string' ? v.replace(/[^\w.+-]/g, '').slice(0, 32) : '') || '?';
 
 const num = (v, d) => (v !== undefined && v !== '' && isFinite(+v) ? +v : d);
 const ENV = {
@@ -68,14 +77,23 @@ function zstart(c) {
 }
 
 // done(): gọi sau khi gói đã vào hàng gửi (đóng kết nối ngay sau gói cuối)
+// dung lượng gửi đi của phòng (byte nội dung gói sau nén, chưa tính khung WebSocket / TLS): cả phòng + trận đang đá
+const usage = (entry, n) => { if (entry) { entry.sent += n; entry.matchSent += n; } };
+const kb = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(2)} MB` : `${(n / 1024).toFixed(1)} KB`);
+
 function out(c, data, done) {
   if (c.ws.readyState !== 1) { if (done) done(); return; }
   if (c.ws.bufferedAmount > MAX_BUFFER) { c.ws.terminate(); return; }
-  if (!c.z) { c.ws.send(data); if (done) done(); return; }
+  const entry = c.room;
+  if (!c.z) { c.ws.send(data); usage(entry, Buffer.byteLength(data)); if (done) done(); return; }
   const { z, parts } = c.z;
   z.write(data + '\n');
   z.flush(zlib.constants.Z_SYNC_FLUSH, () => {
-    if (parts.length && c.ws.readyState === 1) c.ws.send(parts.length === 1 ? parts[0] : Buffer.concat(parts), { binary: true, compress: false });
+    if (parts.length && c.ws.readyState === 1) {
+      const buf = parts.length === 1 ? parts[0] : Buffer.concat(parts);
+      c.ws.send(buf, { binary: true, compress: false });
+      usage(entry, buf.length);
+    }
     parts.length = 0;
     if (done) done();
   });
@@ -83,7 +101,7 @@ function out(c, data, done) {
 
 // ranked = đội hình trận xếp hạng (Matchmaker.lineup); không có = phòng thường (mã phòng, chủ phòng bấm START)
 function createRoom(ranked) {
-  const entry = { code: newCode(), clients: new Map(), touched: Date.now() };
+  const entry = { code: newCode(), clients: new Map(), touched: Date.now(), sent: 0, matchSent: 0 };
   const mode = () => (ranked ? 'ranked' : SFC.Room.Slots.mode(entry.room.lobby));
   entry.room = new SFC.Room({
     ranked,
@@ -96,8 +114,8 @@ function createRoom(ranked) {
     drop: (id) => { const c = entry.clients.get(id); if (c) c.ws.close(1000); },
     snapshotEvery: NET.server.snapshotEvery || 1,
     hooks: {
-      start: (g) => { entry.ended = false; entry.startedAt = Date.now(); log(entry, `match started (${mode()}, ${entry.room.lobby.members.length} players)`); },
-      toLobby: () => { if (entry.startedAt && !entry.ended) log(entry, 'match stopped before the end'); entry.startedAt = 0; },
+      start: (g) => { entry.ended = false; entry.startedAt = Date.now(); entry.matchSent = 0; log(entry, `match started (${mode()}, ${entry.room.lobby.members.length} players)`); },
+      toLobby: () => { if (entry.startedAt && !entry.ended) log(entry, `match stopped before the end · sent ${kb(entry.matchSent)}`); entry.startedAt = 0; },
       dropped: (name, away) => { if (away) log(entry, `a player disconnected, seat held ${NET.reconnectGrace}s`); },
       back: () => log(entry, 'a player reconnected'),
     },
@@ -116,7 +134,7 @@ function roomFailed(entry, where, e) {
 // reason: idle | error | shutdown (phòng hết người thì leave() tự xoá + ghi log)
 function closeRoom(entry, reason) {
   rooms.delete(entry.code);
-  log(entry, `closed (${reason}, ${entry.clients.size} connected)`);
+  log(entry, `closed (${reason}, ${entry.clients.size} connected) · sent ${kb(entry.sent)} in total`);
   for (const c of entry.clients.values()) { c.room = null; out(c, JSON.stringify({ t: 'bye' }), () => { try { c.ws.close(1000); } catch (e) { /* bỏ qua */ } }); }
   entry.clients.clear();
 }
@@ -126,7 +144,8 @@ function attach(c, entry) {
   c.since = Date.now();   // từ giờ phải được nhận vào phòng (hello) trong JOIN_TIMEOUT
   entry.clients.set(c.id, c);
   entry.touched = Date.now();
-  out(c, JSON.stringify({ t: 'room', code: entry.code, id: c.id }));
+  out(c, JSON.stringify({ t: 'room', code: entry.code, id: c.id, sv: VERSION }));
+  log(entry, `${ranked(entry) ? 'matched' : entry.clients.size === 1 ? 'opened by' : 'joined by'} client ${c.cv}`);
 }
 
 function leave(c) {
@@ -142,7 +161,7 @@ function leave(c) {
 function dropIfEmpty(entry) {
   if (entry.clients.size || entry.room.hasAway || rooms.get(entry.code) !== entry) return;
   rooms.delete(entry.code);
-  log(entry, 'closed (empty)');
+  log(entry, `closed (empty) · sent ${kb(entry.sent)} in total`);
 }
 
 // địa chỉ người chơi: sau proxy / load balancer của nhà cung cấp thì lấy địa chỉ cuối trong X-Forwarded-For (do proxy ghi thêm)
@@ -154,11 +173,13 @@ function clientIp(req) {
 
 /* ================= KẾT NỐI ================= */
 const say = (c, msg) => out(c, JSON.stringify(msg));
-const err = (c, e) => say(c, { t: 'err', e });
+const err = (c, e) => say(c, { t: 'err', e, sv: VERSION });
+const ranked = (entry) => !!entry.room.ranked;
 const busy = () => draining || rooms.size >= ENV.MAX_ROOMS;
 
 function handshake(c, msg) {
   if (msg.z === 1) zstart(c);
+  if (!c.cv) c.cv = cleanCv(msg.cv);
   if (msg.t === 'queue') {
     if (msg.v !== NET.protocol) return err(c, 'version');
     if (busy()) return say(c, { t: 'solo' });   // máy chủ bận / đang tắt: đá với người chơi giả, không báo lỗi
@@ -211,7 +232,7 @@ const server = http.createServer((req, res) => {
   if (req.url === '/healthz' || req.url === '/') {
     const matches = [...rooms.values()].filter((e) => e.room.status === 'playing').length;
     res.writeHead(draining ? 503 : 200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ ok: !draining, rooms: rooms.size, matches, clients: wss.clients.size, protocol: NET.protocol }));
+    res.end(JSON.stringify({ ok: !draining, rooms: rooms.size, matches, clients: wss.clients.size, protocol: NET.protocol, version: VERSION }));
     return;
   }
   res.writeHead(404);
@@ -282,7 +303,8 @@ function frame() {
         e.ended = true;
         const t = r.game.teams;
         e.endedAt = Date.now();
-        log(e, `match ended ${t[0].score}-${t[1].score} after ${Math.round((Date.now() - e.startedAt) / 1000)}s`);
+        const secs = Math.max(1, Math.round((Date.now() - e.startedAt) / 1000)), players = e.clients.size || 1;
+        log(e, `match ended ${t[0].score}-${t[1].score} after ${secs}s · sent ${kb(e.matchSent)} (${(e.matchSent / 1024 / secs / players).toFixed(2)} KB/s per player, ${players} connected)`);
       }
     }
   }
@@ -351,6 +373,6 @@ function shutdown(sig) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
-server.listen(ENV.PORT, () => console.log(`[server] listening on :${ENV.PORT} · protocol ${NET.protocol}`));
+server.listen(ENV.PORT, () => console.log(`[server] v${VERSION} listening on :${ENV.PORT} · protocol ${NET.protocol}`));
 
 module.exports = { rooms, queue, ENV, shutdown, wireOut };

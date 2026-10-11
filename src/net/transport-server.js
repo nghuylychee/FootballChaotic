@@ -8,7 +8,10 @@
  *  - host() / join(code, { wait }) thử lại mỗi 2 giây tới net.server.wakeTimeout giây; onWait(giây còn lại) để hiện đếm ngược
  *  - cancel(): bỏ chờ -> reject { type: 'cancelled' }
  * Tìm trận xếp hạng: queue(vé) -> queue{v,elo,role,pf}; queued = đã vào hàng (hết hạn kết nối), room{code,id} = ghép xong (resolve),
- * solo = không ghép được (reject { type: 'solo' }). Chỉ thử 1 lần: máy chủ đang ngủ nghĩa là không ai đang tìm trận.
+ * solo = không ghép được (reject { type: 'solo' }). Máy chủ đang ngủ: thử lại tới net.server.queueWake giây rồi mới solo
+ * (mở màn PLAY đã đánh thức sẵn; 2 người tìm cùng lúc lúc máy chủ ngủ vẫn gặp được nhau).
+ * Phiên bản: gói đầu kèm cv (NetCommon.clientVersion, vd. 1.1.0-5); máy chủ trả sv (phiên bản máy chủ, vd. 5.1.0) trong
+ * room{code,id,sv} / err{e,sv} -> NetServer.serverVersion (chỉ để chẩn đoán, không hiện cho người chơi).
  * Nén trong game: trình duyệt có DecompressionStream('deflate-raw') thì gói đầu kèm z:1 -> máy chủ gửi gói nhị phân
  * (1 luồng deflate-raw giữ ngữ cảnh, mỗi gói = JSON + '\n'; xem server/index.js). Không có thì nhận JSON thường như cũ.
  */
@@ -71,14 +74,15 @@ window.SFC = window.SFC || {};
       this.cancelled = false;
       return new Promise((resolve, reject) => {
         this.abort = () => { this.abort = null; reject({ type: 'cancelled' }); };
-        this.open(Object.assign({ t: 'queue', v: N().protocol }, ticket), S().connectTimeout)
+        // máy chủ đang ngủ: thử lại tới queueWake giây (người tìm trận cùng lúc đều phải chờ nó dậy mới gặp được nhau)
+        this.until(Object.assign({ t: 'queue', v: N().protocol }, ticket), null, S().queueWake)
           .then((code) => { this.abort = null; resolve(code); }, (e) => { this.abort = null; reject(e); });
       });
     },
 
     // thử kết nối mỗi 2 giây tới hạn; chỉ lỗi "không tới được" mới thử lại (sai mã / đầy / sai phiên bản thì báo ngay)
-    until(first, onWait) {
-      const deadline = Date.now() + (S().wakeTimeout || S().connectTimeout) * 1000;
+    until(first, onWait, timeoutSec) {
+      const deadline = Date.now() + (timeoutSec || S().wakeTimeout || S().connectTimeout) * 1000;
       this.cancelled = false;
       return new Promise((resolve, reject) => {
         // cancel() kết thúc lần chờ ngay (cả khi đang giữa 1 lần thử hoặc đang đợi 2 giây)
@@ -126,7 +130,8 @@ window.SFC = window.SFC || {};
         const z = canInflate() ? inflater((text) => parse(text), () => { try { ws.close(); } catch (e) { /* bỏ qua */ } }) : null;
         if (z) ws.binaryType = 'arraybuffer';
         this.compressed = !!z;
-        ws.onopen = () => ws.send(JSON.stringify(z ? Object.assign({ z: 1 }, first) : first));
+        const hi = Object.assign({ cv: SFC.NetCommon.clientVersion() }, z ? { z: 1 } : {}, first);
+        ws.onopen = () => ws.send(JSON.stringify(hi));
         ws.onerror = () => fail({ type: 'server-unreachable' });
         ws.onclose = () => {
           // gói cuối (vd. bye) có thể còn đang giải nén: xử lý hết rồi mới báo mất kết nối
@@ -152,6 +157,7 @@ window.SFC = window.SFC || {};
           try { msg = JSON.parse(text); } catch (e) { return; }
           if (!msg || !msg.t) return;
           if (this.joined) { this.emit('data', msg, 'host'); return; }
+          if (typeof msg.sv === 'string') this.serverVersion = msg.sv;
           // bắt tay
           if (msg.t === 'room') {
             done = true;

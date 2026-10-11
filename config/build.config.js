@@ -4,7 +4,10 @@
  * và xoá hẳn các nhánh `if (SFC_DEV)` / `SFC_DEV ? … : …` khỏi file đóng gói.
  * SFC_DEMO = true: bản demo itch.io, khoá Area 3+ và ONLINE (config/demo.config.js). Bản dev / Steam: false,
  * scripts/build-web.js + build-itch.js ghi thành true khi đóng gói.
+ * SFC_VERSION: phiên bản game (semver, = "version" trong package.json). Bản dev: 'dev'; strip-dev.js ghi số thật khi đóng gói.
+ * Phiên bản đầy đủ hiện / gửi đi = SFC_VERSION + '-' + net.protocol (vd. 1.1.0-5): xem NetCommon.clientVersion().
  * Nạp trước mọi script khác.
  * ========================================================= */
 var SFC_DEV = true;
 var SFC_DEMO = false;
+var SFC_VERSION = 'dev';

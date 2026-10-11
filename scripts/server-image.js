@@ -1,6 +1,8 @@
 /* Đóng gói máy chủ trận thành Docker image (server/Dockerfile) để deploy lên Render (Existing Image):
- *   npm run server:image -- 5            -> build team41sfc/sfc-server:5 + chạy thử (KHÔNG push)
- *   npm run server:image -- 5 --push     -> như trên rồi push lên Docker Hub (chỉ khi đã chốt deploy: hạn chế số lần push)
+ *   npm run server:image                 -> build team41sfc/sfc-server:<phiên bản> + chạy thử (KHÔNG push)
+ *   npm run server:image -- --push       -> như trên rồi push lên Docker Hub (chỉ khi đã chốt deploy: hạn chế số lần push)
+ * Tag = phiên bản máy chủ trong server/package.json: <net.protocol>.<minor>.<patch> (vd. 5.1.0). Số đầu phải bằng net.protocol
+ * (đổi định dạng gói tin -> tăng protocol -> phiên bản máy chủ lên <protocol mới>.0.0 hoặc .1.0). Ghi tag khác: npm run server:image -- 5.1.0-test
  * Chạy thử: bật container ở cổng tạm, chờ /healthz trả ok với đúng net.protocol của bản game hiện tại, rồi tắt.
  * Sau khi push: Render > service > Settings > Image -> đổi tag sang bản mới -> Deploy.
  * Cần Docker (Docker Desktop / Docker Engine) và đã `docker login` (tài khoản team41sfc) nếu push.
@@ -16,7 +18,8 @@ const ROOT = path.join(__dirname, '..');
 const IMAGE = process.env.SFC_IMAGE || 'team41sfc/sfc-server';
 const args = process.argv.slice(2);
 const PUSH = args.includes('--push');
-const TAG = args.find((a) => !a.startsWith('--'));
+const VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'server', 'package.json'), 'utf8')).version;
+const TAG = args.find((a) => !a.startsWith('--')) || VERSION;
 
 // docker: lấy trong PATH; Windows mới cài Docker Desktop (terminal cũ chưa có PATH mới) -> đường dẫn cài đặt mặc định
 function dockerBin() {
@@ -54,8 +57,13 @@ function protocol() {
 }
 
 (async () => {
-  if (!TAG || !/^[\w.-]+$/.test(TAG)) {
-    console.error('Usage: npm run server:image -- <tag> [--push]   (e.g. npm run server:image -- 5)');
+  if (!/^[\w.-]+$/.test(TAG)) {
+    console.error('Usage: npm run server:image [-- <tag>] [--push]   (tag defaults to server/package.json version)');
+    process.exit(1);
+  }
+  const want = protocol();
+  if (+VERSION.split('.')[0] !== want || +TAG.split('.')[0] !== want) {
+    console.error(`[image] server version ${VERSION} / tag ${TAG} must start with net.protocol ${want} (e.g. ${want}.0.0)`);
     process.exit(1);
   }
   const docker = dockerBin();
@@ -75,13 +83,12 @@ function protocol() {
   } finally {
     spawnSync(docker, ['rm', '-f', name], { stdio: 'ignore' });
   }
-  const want = protocol();
   if (!h || !h.ok) { console.error('[image] check failed: /healthz did not answer'); process.exit(1); }
-  if (h.protocol !== want) { console.error(`[image] check failed: server protocol ${h.protocol}, game protocol ${want}`); process.exit(1); }
-  console.log(`[image] check OK: /healthz ok, protocol ${h.protocol}`);
+  if (h.protocol !== want || h.version !== VERSION) { console.error(`[image] check failed: server ${h.version} protocol ${h.protocol}, expected ${VERSION} protocol ${want}`); process.exit(1); }
+  console.log(`[image] check OK: /healthz ok, version ${h.version}, protocol ${h.protocol}`);
 
   if (!PUSH) {
-    console.log(`[image] built ${ref} (not pushed). To publish: npm run server:image -- ${TAG} --push`);
+    console.log(`[image] built ${ref} (not pushed). To publish: npm run server:image -- ${TAG === VERSION ? '' : TAG + ' '}--push`);
     return;
   }
   console.log(`[image] pushing ${ref}`);

@@ -38,6 +38,9 @@ window.SFC = window.SFC || {};
       return s;
     },
 
+    // phiên bản đầy đủ của game: <phiên bản game>-<net.protocol>, vd. 1.1.0-5 (bản dev: dev-5). Gửi kèm gói bắt tay với máy chủ
+    clientVersion() { return `${typeof SFC_VERSION === 'string' ? SFC_VERSION : 'dev'}-${N().protocol}`; },
+
     // mã phòng máy chủ riêng? (cùng độ dài với mọi mã, nhận ra bằng ký tự đầu)
     isServerCode(code) {
       return typeof code === 'string' && code.length === N().codeLength && SERVER_FIRST().includes(code[0]);

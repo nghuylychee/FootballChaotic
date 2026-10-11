@@ -153,8 +153,9 @@ window.SFC = window.SFC || {};
       this.msgErr = err;
       this.msgAt = performance.now();
       if (page === 'join' && !msg) this.code = '';
-      // máy chủ riêng có thể đang ngủ: mở ONLINE là đánh thức luôn, tới lúc bấm TẠO / VÀO PHÒNG đã dậy được một lúc
-      if (page === 'online' || page === 'party') Session().prepare();
+      // máy chủ riêng có thể đang ngủ: đánh thức lúc mở game (main.js); mở PRIVATE MATCH đánh thức thêm lần nữa (tối đa 1 lần / phút)
+      // phòng khi người chơi ngồi ở menu quá lâu và máy chủ đã ngủ lại
+      if (page === 'online') Session().prepare();
       if (page === 'name') this.nameBuf = PF().data.name;
       if (page === 'path') this.pathView = MPATH().state.area;   // mở Main Path: xem Area đang đá
       if (page !== 'party' && SFC.Social.chatWith) SFC.Social.chatWith = null;
@@ -488,7 +489,7 @@ window.SFC = window.SFC || {};
       const small = this.page !== 'home', headed = HEAD_PAGES.includes(this.page);
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       const head = !headed ? '' : WALLET_PAGES.includes(this.page) ? G().header(esc(titles[this.page]))
-        : `<div class="tut-head shop-head"><div class="m-title">${esc(titles[this.page])}</div></div>`;
+        : `<div class="tut-head shop-head"><div class="m-title">${esc(titles[this.page])}</div>${this.versionTag()}</div>`;
       this.el.innerHTML = `
         ${head}
         <div class="m-left">
@@ -508,6 +509,13 @@ window.SFC = window.SFC || {};
       this.addBack();
       this.bindAvatars();
       if (this.page === 'ults') SFC.CorePreview.scan(this.el);   // ảnh động của lá Tuyệt kỹ
+    },
+
+    // phiên bản game ở góc dòng tiêu đề SETTINGS: <phiên bản>-<net.protocol> (vd. v1.1.0-5; bản dev: dev-5) — báo lỗi kèm số này
+    versionTag() {
+      if (!['settings', 'display', 'test'].includes(this.page) || !SFC.NetCommon) return '';
+      const v = SFC.NetCommon.clientVersion();
+      return `<span class="m-ver">${esc(/^\d/.test(v) ? 'v' + v : v)}</span>`;
     },
 
     addBack() {

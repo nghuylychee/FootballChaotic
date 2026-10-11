@@ -436,6 +436,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 /* NHÂN VẬT / SETTINGS: dòng tiêu đề kiểu SHOP trải cả 2 cột */
 #menu.m-headed { grid-template-rows: auto minmax(0, 1fr); row-gap: 8px; }
 #menu.m-headed > .tut-head { grid-column: 1 / -1; }
+.m-ver { margin-left: auto; padding-bottom: 3px; font-size: 12px; color: var(--muted); }   /* phiên bản game (SETTINGS) */
 .pt-tabs { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 /* thanh tab RANKED · PRIVATE MATCH (kiểu Rocket League): Q / E (LB / RB) đổi tab */
 .pt-tabrow { display: flex; align-items: center; gap: 4px; }
