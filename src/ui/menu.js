@@ -53,6 +53,11 @@ window.SFC = window.SFC || {};
 
   // màn PLAY: tab RANKED (page 'party') · PRIVATE MATCH (page 'online' / 'join' / 'lobby') — kiểu Rocket League
   const PLAY_PAGES = ['party', 'online', 'join', 'lobby'];
+  // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, TÚI ĐỒ
+  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test'];
+  // trang không có logo, tiêu đề là 1 dòng ngang cả màn như SHOP (NHÂN VẬT thêm LV / XP / vàng bên phải)
+  const HEAD_PAGES = ['char', 'ults', 'attrs', 'look', 'settings', 'display', 'test'];
+  const WALLET_PAGES = ['char', 'ults', 'attrs', 'look'];
   const PRIVATE_PAGES = ['online', 'join', 'lobby'];
 
   // phòng online (PRIVATE MATCH): 1 ô người chơi theo slot (đội t, vị trí role) — người trong phòng / đồng đội AI của người duy nhất
@@ -108,7 +113,7 @@ window.SFC = window.SFC || {};
     quitAsk: false,     // trang chủ: đang hiện hộp "QUIT GAME?" (chỉ bản desktop)
     quitSel: 1,         // 0 = QUIT · 1 = CANCEL
     wishSeen: false,    // bản DEMO: đã hiện màn WISHLIST sau khi hết Area đá được (mỗi lần chạy game hiện 1 lần khi mở Main Path)
-    friendsOpen: true,  // phòng chờ: khung bạn bè đang mở (nút FRIENDS ẩn / hiện)
+    friendsOpen: false, // phòng chờ: khung bạn bè đang mở (nút FRIENDS ẩn / hiện) — vào màn PLAY luôn đóng
 
     init(app) {
       this.app = app;
@@ -139,6 +144,7 @@ window.SFC = window.SFC || {};
         this.matePop = null;   // vào phòng: chọn sẵn START (chủ phòng) / ô của mình khi có danh sách phòng (render)
         this.resetArmed = false;   // RESET DATA: rời trang SETTINGS là huỷ xác nhận
         this.quitAsk = false;
+        if (page === 'party' && !PLAY_PAGES.includes(this.page)) this.friendsOpen = false;   // từ ngoài vào RANKED: khung bạn bè đóng, bấm FRIENDS mới mở
         this.selMemo[this.page] = this.sel;
         this.sel = this.selMemo[page] || 0;
       }
@@ -319,8 +325,8 @@ window.SFC = window.SFC || {};
         // PRIVATE MATCH (tab thứ 2 màn PLAY, vẽ ở renderPrivate): 2 ô CREATE / JOIN
         case 'online':
           return [
-            { kind: 'btn', label: _t('CREATE ROOM'), sub: _t('Get a code to share with friends'), act: () => Session().createRoom() },
-            { kind: 'btn', label: _t('JOIN ROOM'), sub: _t('Enter a friend\'s room code'), act: () => this.go('join') },
+            { kind: 'btn', label: _t('CREATE ROOM'), act: () => Session().createRoom() },
+            { kind: 'btn', label: _t('JOIN ROOM'), act: () => this.go('join') },
           ];
         case 'join':
           return [{ kind: 'btn', label: _t('CONNECT'), main: true, act: () => this.submitCode() }];
@@ -346,6 +352,8 @@ window.SFC = window.SFC || {};
           }
           list.push({ kind: 'btn', slot: -1, label: _t('GUEST'), act: () => O.requestSlot(-1) });
           list.push({ kind: 'btn', label: _t('LEAVE ROOM'), act: () => O.leave() });
+          // sân (chủ phòng chọn, người khác chỉ xem): RANDOM rồi các Area đã tới
+          if (O.isOwner) list.push({ kind: 'pick', ground: true, label: _t('PITCH'), change: (d) => O.setGround(wrap(O.lobby.ground + 1 + d, Session().provider.area() + 2) - 1) });
           if (O.isOwner) {
             const sub = O.canStart ? (O.mode === 'coop' ? _t('CO-OP vs random bots') : _t('VERSUS'))
               : O.benched.length ? _t('Everyone on GUEST must take a slot') : _t('Waiting for players...');
@@ -441,7 +449,6 @@ window.SFC = window.SFC || {};
       else if (['controls', 'display', 'test'].includes(this.page)) this.go('settings');
       else if (['path', 'online', 'tutorial', 'char', 'settings', 'wishlist'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
-      else if (this.page === 'lobby') Session().leave();
     },
 
     /* ---------------- vẽ ---------------- */
@@ -461,28 +468,33 @@ window.SFC = window.SFC || {};
       this.el.classList.toggle('home', this.page === 'home');
       this.el.classList.toggle('party', play);
       this.el.classList.toggle('nofriends', play && (this.page !== 'party' || !this.friendsOpen));
-      this.el.classList.toggle('ults-pg', this.page === 'ults');   // danh sách Tuyệt kỹ dài: chữ nhỏ hơn
+      this.el.classList.toggle('ults-pg', this.page === 'ults');
+      this.el.classList.toggle('has-back', BACK_PAGES.includes(this.page));
+      this.el.classList.toggle('m-headed', HEAD_PAGES.includes(this.page));   // chừa chỗ trên cùng cho nút ◀ BACK   // danh sách Tuyệt kỹ dài: chữ nhỏ hơn
       if (this.page === 'home') { this.el.innerHTML = this.renderHome(items); this.bindAvatars(); return; }
       if (this.page === 'party') { this.partyItems = items; this.el.innerHTML = this.renderParty(items); this.bindAvatars(); this.scrollChat(); return; }
       if (play) { this.el.innerHTML = this.renderPrivate(items); this.bindAvatars(); return; }
       if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); this.bindAvatars(); return; }
       if (this.page === 'controls') { this.el.innerHTML = CV().render(); this.bindAvatars(); return; }
-      if (G().pages.includes(this.page)) { G().render(this); this.bindAvatars(); return; }
+      if (G().pages.includes(this.page)) { G().render(this); this.addBack(); this.bindAvatars(); return; }
       if (TM().pages.includes(this.page)) { TM().render(this); this.bindAvatars(); return; }
       // it.foot: mục nằm dưới đáy cột trái (ngay trên dòng gợi ý phím), thứ tự ↑↓ vẫn theo danh sách
       const list = items.map((it, i) => (it.foot ? '' : this.renderItem(it, i))).join('');
       const foot = items.map((it, i) => (it.foot ? this.renderItem(it, i) : '')).join('');
       const titles = { ults: _t('ULTIMATE'), path: _t('MAIN PATH'), training: _t('TRAINING'), settings: _t('SETTINGS'), display: _t('SOUND & DISPLAY'), test: 'TEST', name: _t('YOUR NAME'), char: _t('CHARACTER'), attrs: _t('STATS'), look: _t('APPEARANCE'),
         wishlist: MPATH().demoOver() ? _t('DEMO COMPLETE') : _t('FULL GAME') };
-      const small = this.page !== 'home';
+      const small = this.page !== 'home', headed = HEAD_PAGES.includes(this.page);
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
+      const head = !headed ? '' : WALLET_PAGES.includes(this.page) ? G().header(esc(titles[this.page]))
+        : `<div class="tut-head shop-head"><div class="m-title">${esc(titles[this.page])}</div></div>`;
       this.el.innerHTML = `
+        ${head}
         <div class="m-left">
-          <div class="logo ${small ? 'small' : ''}">
+          ${headed ? '' : `<div class="logo ${small ? 'small' : ''}">
             <div class="l1">STREET</div><div class="l2">FOOTBALL</div><div class="l3">CHAOS</div>
             ${small ? '' : `<div class="tag">${esc(_t('Football meets Arcade Combat'))}</div>`}
-          </div>
-          ${titles[this.page] ? `<div class="m-title">${esc(titles[this.page])}</div>` : ''}
+          </div>`}
+          ${titles[this.page] && !headed ? `<div class="m-title">${esc(titles[this.page])}</div>` : ''}
           ${this.page === 'name' ? this.renderNameInput() : ''}
           <div class="m-items">${list}</div>
           ${msg}
@@ -491,8 +503,13 @@ window.SFC = window.SFC || {};
         </div>
         <div class="m-right">${this.renderRight()}</div>
         ${this.quitAsk ? this.renderQuit() : ''}`;
+      this.addBack();
       this.bindAvatars();
       if (this.page === 'ults') SFC.CorePreview.scan(this.el);   // ảnh động của lá Tuyệt kỹ
+    },
+
+    addBack() {
+      if (BACK_PAGES.includes(this.page)) this.el.insertAdjacentHTML('beforeend', `<button class="pt-back" data-back="1">◀ ${esc(_t('BACK'))}</button>`);
     },
 
     /* ---------- hộp QUIT GAME? (trang chủ, Esc / Back) ---------- */
@@ -850,7 +867,7 @@ window.SFC = window.SFC || {};
       let sub = `<span class="pt-area">${esc(_t('Play with friends · no ELO'))}</span>`, body;
       if (this.page === 'online') {
         const tiles = items.map((it, i) => `<button class="pt-tile ${sel(i)}" data-i="${i}"><b>${i ? '#' : '+'}</b>
-            <span class="pt-tlabel">${esc(it.label)}</span><span class="pt-tsub">${esc(it.sub)}</span></button>`).join('');
+            <span class="pt-tlabel">${esc(it.label)}</span></button>`).join('');
         body = `<div class="pt-slots">${tiles}</div>${msg}`;
       } else if (this.page === 'join') {
         body = `<div class="pt-slots pt-joinbox"><div class="pt-jtitle">${esc(_t('JOIN ROOM'))}</div>${this.renderCode()}</div>
@@ -858,16 +875,15 @@ window.SFC = window.SFC || {};
       } else {
         const n = O.lobby.members.length, max = SFC_CONFIG.net.maxPlayers, coop = O.mode === 'coop';
         const code = O.code || '-'.repeat(SFC_CONFIG.net.codeLength);
-        // mã phòng (bấm để chép) · chế độ theo cách mọi người đứng: 2 đội có người = VERSUS, chung 1 đội = CO-OP (đội kia bot)
-        const mode = coop ? `${esc(_t('CO-OP'))} · ${esc(_t('same team vs random bots'))} · ${n}/${max}` : `${esc(_t('VERSUS'))} · ${esc(_t('{n}/{max} players', { n, max }))}`;
-        sub = `<span class="pt-area"><span class="pt-code" data-copy="${esc(code)}" title="${esc(_t('Click to copy'))}">${esc(_t('ROOM CODE'))} <b>${esc(code)}</b></span> · <span class="pt-mode ${coop ? 'coop' : ''}">${mode}</span></span>`;
+        // mã phòng (bấm để chép) · số người trong phòng
+        sub = `<span class="pt-area"><span class="pt-code" data-copy="${esc(code)}" title="${esc(_t('Click to copy'))}">${esc(_t('ROOM CODE'))} <b>${esc(code)}</b></span> · ${esc(_t('{n}/{max} players', { n, max }))}</span>`;
         if (!n) body = `<div class="pt-slots"><div class="pt-note">${esc(_t('Loading room...'))}</div></div>${msg}`;
         else {
           const bench = O.benched, meId = O.mine && O.mine.id;
           const note = (s, cls = '') => `<div class="pt-note ${cls}">${esc(s)}</div>`;
           const status = bench.length ? note(_t('Players on GUEST must take a slot before the match starts'))
             : O.isOwner
-              ? (O.canStart ? note(coop ? _t('Ready to start CO-OP') : _t('Ready to start VERSUS'), 'ok') : note(_t('Send the room code to friends to play')))
+              ? (O.canStart ? note(coop ? _t('Ready to start CO-OP') : _t('Ready to start VERSUS'), 'ok') : '')
               : note(_t('Waiting for the host to start...'));
           // ô người chơi / ghế GUEST -> mục tương ứng (chọn bằng phím mũi tên, Enter = nhảy vào)
           const nav = (s) => { const i = items.findIndex((x) => x.slot === s); return { i, on: i === this.sel }; };
@@ -878,14 +894,19 @@ window.SFC = window.SFC || {};
           const team = this.matePop && O.mine ? O.byTeam()[O.slotTeam(this.matePop.slot)] : [];
           if (this.matePop && (O.memberAt(this.matePop.slot) || team.length !== 1 || team[0] !== O.mine)) this.matePop = null;
           const iStart = items.findIndex((x) => x.main), iLeave = items.findIndex((x) => x.kind === 'btn' && !x.main && x.slot == null);
+          // sân (ngay dưới ghế GUEST): chủ phòng ◀▶ đổi (←→ khi đang chọn) · người khác chỉ thấy tên
+          const g = O.lobby.ground, iG = items.findIndex((x) => x.ground);
+          const gName = g >= 0 ? `${PX().area(MPATH().area(g).id, 'sm')} ${esc(MPATH().area(g).name)}` : esc(_t('RANDOM'));
+          const ground = iG >= 0
+            ? `<div class="pt-ground ${sel(iG)}" data-i="${iG}"><u>${esc(_t('PITCH'))}</u><button data-i="${iG}" data-d="-1">◀</button><span>${gName}</span><button data-i="${iG}" data-d="1">▶</button></div>`
+            : `<div class="pt-ground ro"><u>${esc(_t('PITCH'))}</u><span>${gName}</span></div>`;
           body = `<div class="pt-slots pt-room">${roomTeam(0, nav)}<div class="pt-vs">${esc(_t('VS'))}</div>${roomTeam(1, nav)}</div>
-            ${benchRow}${status}${msg}
+            ${benchRow}${ground}${status}${msg}
             <div class="pt-acts"><div class="pt-side-btns">${btn(iLeave)}</div>${btn(iStart)}</div>
-            ${hint(_t('{key} leave room', { key: K('pause', 'Esc') }))}
             ${this.matePop ? this.renderMatePop() : ''}`;
         }
       }
-      // trong phòng: không có tab RANKED / PRIVATE MATCH và nút BACK (rời phòng = LEAVE ROOM / Esc), chỉ còn dòng mã phòng
+      // trong phòng: không có tab RANKED / PRIVATE MATCH và nút BACK (rời phòng chỉ bằng nút LEAVE ROOM), chỉ còn dòng mã phòng
       const head = this.page === 'lobby' ? `<div class="pt-tabs pt-roomhead">${sub}</div>` : this.playTabs('private', sub);
       return `<div class="pt-main pt-private">${head}${body}</div>
         ${this.page === 'lobby' ? '' : `<button class="pt-back" data-back="1">◀ ${esc(_t('BACK'))}</button>`}`;
@@ -1109,12 +1130,13 @@ window.SFC = window.SFC || {};
       </div>`;
     },
 
+    // thanh LV / XP đã có ở dòng tiêu đề trang -> bảng không lặp lại
     charPanel() {
       const d = PF().data, st = d.stats;
       return `<div class="char-stage">
         <canvas class="avatar big" data-avatar="spin"></canvas>
         <div class="char-name">${esc(d.name)}</div>
-        <div class="char-info">${xpBar(d)}<div class="pc-gold"><span class="gold">${esc(_t('OVR {n}', { n: PF().ovr() }))}</span></div>
+        <div class="char-info"><div class="pc-gold"><span class="gold">${esc(_t('OVR {n}', { n: PF().ovr() }))}</span></div>
           <div class="stats st-mini">${this.attrGrid()}</div>
           <div class="eq-list">${G().equippedHtml()}</div>
           <div class="pc-stats">${nbsp(esc(_t('{w}W {d}D {l}L · {goals} goals', { w: st.wins, d: st.draws, l: st.losses, goals: st.goals })))}</div></div>
@@ -1512,7 +1534,7 @@ window.SFC = window.SFC || {};
         // màn PLAY: tab RANKED / PRIVATE MATCH · BACK
         const ptab = PLAY_PAGES.includes(this.page) && e.target.closest('[data-ptab]');
         if (ptab) return this.playTab(ptab.dataset.ptab === 'online' ? 1 : -1);
-        if (PLAY_PAGES.includes(this.page) && e.target.closest('[data-back]')) { SFC.Audio.menu(); return this.back(); }
+        if ((PLAY_PAGES.includes(this.page) || BACK_PAGES.includes(this.page)) && e.target.closest('[data-back]')) { SFC.Audio.menu(); return this.back(); }
         if (this.page === 'party') {
           const fa = e.target.closest('[data-fa]');
           if (fa) return this.friendAction(+fa.dataset.fr, fa.dataset.fa);

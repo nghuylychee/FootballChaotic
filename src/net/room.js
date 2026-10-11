@@ -2,7 +2,8 @@
  * Dùng chung cho 2 mô hình (cùng 1 bản luật, không lệch nhau):
  *  - Người chơi làm host (src/net/session.js): có ghế local { id: 'host', pf() } = người chơi tại máy này
  *  - Máy chủ riêng (server/index.js, Node): không có ghế local, mọi người đều là khách
- * Gói tin: xem session.js. Thêm so với khách -> host: begin{area} (chủ phòng bấm START) · toLobby (chủ phòng về phòng chờ).
+ * Gói tin: xem session.js. Thêm so với khách -> host: begin{area} (chủ phòng bấm START) · toLobby (chủ phòng về phòng chờ) ·
+ * ground{a} (chủ phòng chọn sân: chỉ số Area, -1 = ngẫu nhiên).
  * Chủ phòng (lobby.owner) = người được START / về phòng chờ: host (người chơi làm host) / người tạo phòng (máy chủ riêng);
  * chủ phòng rời đi -> người có mặt vào sớm nhất còn lại.
  * Kết nối lại (net.reconnectGrace giây, 0 = tắt): vào phòng được cấp mã bí mật you{tok}. Mất kết nối giữa trận -> "vắng mặt"
@@ -69,7 +70,7 @@ window.SFC = window.SFC || {};
       this.hooks = o.hooks || {};
       this.ranked = o.ranked || null;        // trận xếp hạng: đội hình đã ghép (Matchmaker.lineup)
       this.createdAt = Date.now();
-      this.lobby = { members: [], owner: null };   // [{ id, pf, slot }] · owner = id chủ phòng
+      this.lobby = { members: [], owner: null, ground: -1 };   // [{ id, pf, slot }] · owner = id chủ phòng · ground = sân (Area, -1 = ngẫu nhiên)
       this.status = 'lobby';                 // lobby | playing
       this.game = null;
       this.remotes = {};
@@ -102,7 +103,7 @@ window.SFC = window.SFC || {};
     sendLobby() {
       const L = this.lobby;
       if (this.ranked) return;   // trận xếp hạng không có phòng chờ
-      this.send({ t: 'lobby', m: this.publicMembers(), o: L.owner });
+      this.send({ t: 'lobby', m: this.publicMembers(), o: L.owner, g: L.ground });
     }
     // danh sách gửi đi: không kèm mã bí mật
     publicMembers() { return this.lobby.members.map(({ id, pf, slot }) => ({ id, pf, slot })); }
@@ -118,6 +119,14 @@ window.SFC = window.SFC || {};
       if (!m || this.status !== 'lobby' || s < -1 || s >= Slots.n() || Slots.memberAt(this.lobby, s)) return;
       m.slot = s;
       if (this.local && id === this.local.id && s >= 0) { this.hook('localRole', Slots.role(s)); m.pf = this.local.pf(); }
+      this.sendLobby();
+      this.hook('changed');
+    }
+
+    // chủ phòng chọn sân: chỉ số Area (sân của Area đó), -1 = ngẫu nhiên. Area chủ phòng chưa tới -> lúc vào trận coi như ngẫu nhiên
+    setGround(id, a) {
+      if (id !== this.lobby.owner || this.status !== 'lobby' || this.ranked) return;
+      this.lobby.ground = clampInt(a, -1, SFC.MainPath.areas().length - 1);
       this.sendLobby();
       this.hook('changed');
     }
@@ -179,6 +188,9 @@ window.SFC = window.SFC || {};
         // chủ phòng không phải máy chạy trận (máy chủ riêng): xin START / về phòng chờ
         case 'begin':
           if (id === L.owner && this.status === 'lobby' && !this.ranked) this.startMatch(m.area);
+          break;
+        case 'ground':
+          this.setGround(id, m.a);
           break;
         case 'toLobby':
           if (id === L.owner && this.status === 'playing' && !this.ranked) this.backToLobby();
@@ -274,9 +286,9 @@ window.SFC = window.SFC || {};
       const opts = {
         online: true, difficulty: N().difficulty, mateDifficulty: SFC_CONFIG.mainPath.teammate,
         draftTimeLimit: N().draftTimeLimit, seats, mates, clubs,
-        // co-op: độ khó + sân theo đội bot; versus: sân ngẫu nhiên trong các Area chủ phòng đã tới
+        // sân chủ phòng chọn (Area đã tới); ngẫu nhiên: co-op theo đội bot, versus trong các Area chủ phòng đã tới. Độ khó co-op theo đội bot
         aiProfile: bot ? bot.aiProfile : undefined,
-        arena: bot ? bot.arena : Room.pickArena(area),
+        arena: Room.groundArena(L.ground, area) || (bot ? bot.arena : Room.pickArena(area)),
       };
       this.launch(ms.map((m) => m.id), opts);
     }
@@ -461,6 +473,13 @@ window.SFC = window.SFC || {};
         SFC_CONFIG.teams.list[CLUBS[t]] = Room.club(c.name, !!c.away, coop ? 'CO-OP SQUAD' : null);
         return CLUBS[t];
       });
+    }
+
+    // sân của Area g chủ phòng chọn (chỉ khi g <= area = Area cao nhất chủ phòng đã tới); không hợp lệ -> undefined
+    static groundArena(g, area) {
+      if (!(g >= 0 && g <= area)) return undefined;
+      const id = SFC.MainPath.area(g).arena;
+      return SFC_CONFIG.arenas[id] ? id : undefined;
     }
 
     // sân versus: ngẫu nhiên trong các sân của Area 0..area

@@ -28,9 +28,9 @@
  *
  * Gói tin:
  *   khách -> host : hello{v,pf,tok?} · pf{pf} (đổi đồng đội / chỉ số) · slot{s} (nhảy slot) · intro (xem xong màn giới thiệu) ·
- *                   i{d,p} (phím) · pick{i} · reroll · bye · begin{area} / toLobby (chủ phòng, phòng máy chủ riêng) · ka (giữ thức)
+ *                   i{d,p} (phím) · pick{i} · reroll · bye · begin{area} / toLobby / ground{a} (chủ phòng, phòng máy chủ riêng) · ka (giữ thức)
  *   khách -> máy chủ (trước khi vào phòng): queue{v,elo,role,pf} · unqueue — xem transport-server.js
- *   host  -> khách: you{tok} (mã kết nối lại) · lobby{m:[{id,pf,slot}],o} · start{opts} · s{f,s,fx,sfx,ev} (snapshot) ·
+ *   host  -> khách: you{tok} (mã kết nối lại) · lobby{m:[{id,pf,slot}],o,g} (g = sân: chỉ số Area, -1 = ngẫu nhiên) · start{opts} · s{f,s,fx,sfx,ev} (snapshot) ·
  *                   drop{seat,o,away?} (1 người rời / mất kết nối) · back{seat,o} (người đó kết nối lại) ·
  *                   full · started · expired · version · bye
  *   Kết nối lại (net.reconnectGrace): mất kết nối giữa trận -> giữ trận, thử vào lại phòng mỗi 2 giây với tok (room.js)
@@ -61,7 +61,7 @@ window.SFC = window.SFC || {};
     ranked: false,       // phiên tìm / đá trận xếp hạng
     code: null,
     room: null,          // host: SFC.Room
-    lobby: { members: [], owner: null },   // [{ id, pf, slot }] · host: chính là room.lobby
+    lobby: { members: [], owner: null, ground: -1 },   // [{ id, pf, slot }] · ground = sân chủ phòng chọn (Area, -1 = ngẫu nhiên) · host: chính là room.lobby
     game: null,          // host: trận thật · khách: trận "gương"
     NO_INPUT: null,      // phím rỗng (UI truyền vào tick khi đang mở menu / chọn Core / hết trận)
 
@@ -204,7 +204,8 @@ window.SFC = window.SFC || {};
       this.role = 'guest';
       this.keepAlive();
       this.code = code;
-      this.lobby = { members: [], owner: null };
+      this.lobby = { members: [], owner: null, ground: -1 };
+      this.roleSent = null;
       this.status = 'lobby';
       Net().send({ t: 'hello', v: N().protocol, pf: this.myPf() });
       this.emit('lobby', { entered: true, pending: true });
@@ -248,7 +249,8 @@ window.SFC = window.SFC || {};
     reset() {
       this.role = null; this.status = 'idle'; this.code = null; this.game = null; this.ranked = false;
       this.room = null;
-      this.lobby = { members: [], owner: null };
+      this.lobby = { members: [], owner: null, ground: -1 };
+      this.roleSent = null;
       this.buf = [];
       this.tok = null;             // mã kết nối lại do phòng cấp (you{tok})
       this.waitingServer = false;  // đang chờ máy chủ dậy (huỷ được)
@@ -338,6 +340,7 @@ window.SFC = window.SFC || {};
         case 'lobby': {
           this.lobby.members = this.sanitizeMembers(m.m);
           this.lobby.owner = typeof m.o === 'string' ? m.o : null;
+          this.lobby.ground = clampInt(m.g == null ? -1 : m.g, -1, SFC.MainPath.areas().length - 1);
           if (this.status === 'playing') {
             this.status = 'lobby'; this.game = null;
             this.emit('toLobby');
@@ -346,8 +349,9 @@ window.SFC = window.SFC || {};
           }
           // vị trí character theo slot đang đứng
           if (this.mine && this.mine.slot >= 0) {
+            // mỗi vị trí chỉ báo 1 lần: hồ sơ vẫn chưa theo kịp slot thì không gửi lại liên tục (pf -> lobby -> pf... -> quá giới hạn gói, bị ngắt)
             const role = this.slotRole(this.mine.slot);
-            if (role !== this.myPf().role) { this.emit('role', { role }); Net().send({ t: 'pf', pf: this.myPf() }); }
+            if (role !== this.myPf().role && role !== this.roleSent) { this.roleSent = role; this.emit('role', { role }); Net().send({ t: 'pf', pf: this.myPf() }); }
           }
           this.emit('lobby');
           break;
@@ -401,6 +405,14 @@ window.SFC = window.SFC || {};
     /* ================= VÀO TRẬN ================= */
     // chủ phòng, đủ người và không ai còn ngồi GUEST
     get canStart() { return this.status === 'lobby' && this.isOwner && Slots().ready(this.lobby); },
+
+    // chủ phòng chọn sân: a = chỉ số Area (trong Area đã tới, provider.area()), -1 = ngẫu nhiên
+    setGround(a) {
+      if (this.status !== 'lobby' || !this.isOwner) return;
+      a = clampInt(a, -1, this.provider.area());
+      if (this.isHost) this.room.setGround(this.room.local.id, a);
+      else { this.lobby.ground = a; Net().send({ t: 'ground', a }); this.emit('lobby'); }
+    },
 
     startMatch() {
       if (!this.canStart) return;

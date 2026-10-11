@@ -430,6 +430,10 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .pt-main { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 16px 10px; min-width: 0; }
 .pt-back { position: absolute; left: 10px; top: 10px; font-size: 13px; color: var(--muted); cursor: pointer; z-index: 2; }
 .pt-back:hover { color: var(--gold); }
+#menu.has-back { padding-top: 34px; }   /* trang NHÂN VẬT / SHOP: nút ◀ BACK nằm trên logo / tiêu đề */
+/* NHÂN VẬT / SETTINGS: dòng tiêu đề kiểu SHOP trải cả 2 cột */
+#menu.m-headed { grid-template-rows: auto minmax(0, 1fr); row-gap: 8px; }
+#menu.m-headed > .tut-head { grid-column: 1 / -1; }
 .pt-tabs { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 /* thanh tab RANKED · PRIVATE MATCH (kiểu Rocket League): Q / E (LB / RB) đổi tab */
 .pt-tabrow { display: flex; align-items: center; gap: 4px; }
@@ -503,7 +507,6 @@ canvas.avatar.big { width: 120px; height: 132px; }
   background: var(--panel); border: 1px solid var(--edge); box-shadow: 3px 3px 0 var(--ink); cursor: pointer; }
 .pt-tile b { font-family: var(--px); font-size: 28px; font-weight: normal; color: var(--gold); text-shadow: 2px 2px 0 var(--ink); line-height: 1; }
 .pt-tlabel { font-family: var(--px); font-size: 8px; color: #fff; letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); }
-.pt-tsub { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.1; }
 .pt-tile.sel, .pt-tile:hover { border-color: var(--gold); box-shadow: 3px 3px 0 var(--ink), 0 0 0 1px var(--gold); }
 .pt-tile.sel .pt-tlabel, .pt-tile:hover .pt-tlabel { color: var(--gold); }
 .pt-joinbox { flex-direction: column; gap: 8px; }
@@ -516,8 +519,15 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .pt-roomhead .pt-code b { font-size: 11px; letter-spacing: 2px; }
 .pt-code b { font-family: var(--px); font-size: 8px; font-weight: normal; color: var(--gold); letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); }
 .pt-code:hover b { color: #fff; }
-.pt-mode { color: #ff8a9a; }
-.pt-mode.coop { color: #3ff6ff; }
+/* phòng: chọn sân (chủ phòng ◀▶, người khác chỉ xem) */
+.pt-ground { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #e6dccb; padding: 3px 6px 2px; background: var(--panel); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); line-height: 1; }
+.pt-ground u { text-decoration: none; color: var(--muted); margin-right: 2px; }
+.pt-ground button { color: var(--muted); cursor: pointer; padding: 0 2px; }
+.pt-ground button:hover { color: var(--gold); }
+.pt-ground span { min-width: 110px; text-align: center; white-space: nowrap; }
+.pt-ground.sel { border-color: var(--gold); }
+.pt-ground.sel span, .pt-ground.sel button { color: var(--gold); }
+.pt-ground.ro span { min-width: 0; }
 /* phòng: mỗi đội = tên CLB + 2 ô người chơi nhỏ (người / đồng đội AI / bot; bấm ô không phải người để nhảy vào) */
 .pt-room { gap: 10px; }
 .pt-team { display: flex; flex-direction: column; align-items: center; gap: 9px; }   /* chừa chỗ thẻ đang chọn nhấc lên */
@@ -649,7 +659,10 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .char-stage { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .char-stage canvas.avatar { background: radial-gradient(ellipse at 50% 88%, rgba(255,225,79,0.18), transparent 60%); }
 .char-name { font-family: var(--px); font-size: 11px; color: #fff; text-shadow: 2px 2px 0 var(--ink); }
-.char-info { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 250px; background: var(--panel); border: 1px solid var(--edge); padding: 5px 8px; }
+.char-info { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 230px; background: var(--panel); border: 1px solid var(--edge); padding: 4px 8px; }
+#menu .m-right:has(> .char-stage) { justify-content: flex-start; }   /* trang NHÂN VẬT: đẩy nhân vật + bảng lên sát dòng tiêu đề */
+/* trang NHÂN VẬT: nhân vật nhỏ hơn, cắt bớt khoảng trống phía trên hình -> bảng chỉ số lên cao */
+.char-stage:has(.char-info) canvas.avatar.big { width: 96px; height: 106px; margin-top: -16px; }
 .char-info .lvrow { width: 100%; }
 .name-in { display: flex; align-items: center; gap: 2px; margin: 4px 0 8px; padding: 5px 7px; background: #1c1320; border: 1px solid var(--gold); box-shadow: 2px 2px 0 var(--ink); }
 .name-in span { font-family: var(--px); font-size: 10px; color: var(--gold); white-space: pre; }

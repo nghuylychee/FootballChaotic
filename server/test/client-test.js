@@ -94,8 +94,8 @@ function machine(name, serverUrl) {
   const app = {
     sel: { ctrl: 2 }, screen: 'menu',
     mateSpec: () => null,
-    // như main.js app.myRole
-    myRole() { const R = ctx.SFC_CONFIG.game.roles; return R[this.sel.ctrl ? this.sel.ctrl - 1 : R.indexOf('FWD')]; },
+    // như main.js app.myRole: vị trí mặc định cố định (vị trí trong phòng đi theo slot đang đứng)
+    myRole() { const R = ctx.SFC_CONFIG.game.roles; return R.includes('FWD') ? 'FWD' : R[R.length - 1]; },
     toMenu(page) { this.screen = 'menu'; log.pages.push(page); SFC.Menu.page = page; },
     enterOnline(game) { this.screen = 'game'; this.game = game; log.entered++; },
     resume() {}, pause() {},
@@ -155,6 +155,15 @@ async function serverRoom(url) {
   assert.strictEqual(A.O.code.length, 7, 'server codes look like every other code');
   assert.ok(A.SFC.NetCommon.isServerCode(A.O.code), 'first character marks a server room');
   assert.ok(A.O.isOwner, 'creator owns the room');
+  // đổi sang slot vị trí khác ở đội kia rồi quay về: không vòng lặp pf <-> lobby (quá giới hạn gói -> bị ngắt)
+  const home = A.O.mine.slot, other = A.O.slotOf(1, A.SFC_CONFIG.game.roles.find((r) => r !== A.O.slotRole(home)));
+  A.O.requestSlot(other);
+  await until(() => A.O.mine && A.O.mine.slot === other, 3000, 'A moved to the other team');
+  await sleep(1500);
+  assert.ok(A.O.status === 'lobby' && A.O.mine.slot === other, 'still connected after switching slot');
+  assert.strictEqual(A.O.myPf().role, A.O.slotRole(other), 'profile role follows the slot');
+  A.O.requestSlot(home);
+  await until(() => A.O.mine && A.O.mine.slot === home, 3000, 'A moved back');
   B.O.joinRoom(A.O.code);
   await until(() => B.O.lobby.members.length === 2 && A.O.lobby.members.length === 2, 5000, 'both in lobby');
   assert.ok(!B.O.isOwner && !B.O.canStart);

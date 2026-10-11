@@ -93,10 +93,10 @@ window.SFC = window.SFC || {};
 
   /* ================= DỮ LIỆU GAME CHO PHÒNG ================= */
   O().provide({
-    // hồ sơ trận: vị trí character đang chọn (app.myRole, dùng chung Main Path) + đồng đội đang chọn (đá vị trí còn lại)
+    // hồ sơ trận: vị trí character = vị trí của slot đang đứng trong phòng (chưa có slot: app.myRole) + đồng đội đang chọn (đá vị trí còn lại)
     profile() {
-      const R = ROLES();
-      let idx = R.indexOf(app().myRole());
+      const R = ROLES(), me = O().mine;
+      let idx = R.indexOf(me && me.slot >= 0 ? O().slotRole(me.slot) : app().myRole());
       if (idx < 0) idx = Math.max(0, R.indexOf('FWD'));
       return SFC.Profile.matchPublic(R[idx], app().mateSpec(idx));
     },

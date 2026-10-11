@@ -377,7 +377,7 @@ window.SFC = window.SFC || {};
             const where = this.roomMatch ? ' · ' + _t('open in INVENTORY') : '';
             if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">${esc(_tn('★ +{n} DRILL CARD', '★ +{n} DRILL CARDS', gained) + where)}</div>`);
             // chạm trần level theo Main Path: XP vẫn tích, lên hạng là lên level
-            else if (!r.eligible.length && r.capped) up.insertAdjacentHTML('beforeend', `<div class="rw-new">${esc(_t('LV CAP · climb the Main Path to level up (XP is saved)'))}</div>`);
+            else if (!r.eligible.length && r.capped) up.insertAdjacentHTML('beforeend', `<div class="rw-new">${esc(_t('LV CAP · win RANKED matches to raise it (XP is saved)'))}</div>`);
             this.showEndItems();   // dòng thưởng vừa thêm có thể đẩy nút xuống
             // chơi đơn: vừa lên level -> tự mở màn LEVEL UP của DRILL (online tự xử lý phím -> chỉ tích thẻ, mở ở INVENTORY)
             this.drillAfter = !this.roomMatch && gained > 0 ? { earned: gained, from: r.before.level, to: r.after.level } : null;

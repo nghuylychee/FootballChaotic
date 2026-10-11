@@ -8,7 +8,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 13,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
+  protocol: 1,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
   // Máy chủ riêng (server/): máy chủ chạy trận, mọi người là khách. url trống = chỉ người chơi làm host (Steam / PeerJS).
   // TẠO PHÒNG thử máy chủ trước, không tới được thì tự chuyển sang người chơi làm host.
