@@ -16,7 +16,8 @@
     "serve": "node scripts/serve.js",
     "online": "node scripts/serve.js --online",
     "server": "node server/index.js",
-    "server:test": "npm test --prefix server"
+    "server:test": "npm test --prefix server",
+    "server:image": "node scripts/server-image.js"
   },
   "dependencies": {
     "steamworks.js": "0.4.0"

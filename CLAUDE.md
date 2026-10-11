@@ -83,6 +83,10 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
   - UI code tells ranked apart with `game.opts.mainPath` (`UI.ranked`), and online rooms with `UI.roomMatch`.
 - Reconnect lives in `Room` too: a mid-match disconnect marks the member `away` for `net.reconnectGrace` seconds (AI plays the seat). `hello{tok}` reclaims it via `rejoin()`, and whoever runs the Room must call `room.expire(Date.now())` periodically. Never send a `lobby` packet mid-match: guests treat it as "match over, back to lobby"; resume data travels inside `start{opts.resume, opts.lobby}`.
 - Bump `net.protocol` when the message format changes. The server must be redeployed together with the client.
+- **Live server deployment is manual.** The match server runs on Render (`wss://sfc-server.onrender.com`, the `net.server.url`) from the Docker Hub image `team41sfc/sfc-server:<tag>`.
+  - `npm run server:image -- <tag>` builds and smoke-tests the image locally. That's all Claude does by default.
+  - Pushing (`npm run server:image -- <tag> --push`) only happens when the user asks for it in chat; pushes to the hub are limited.
+  - The user switches the tag on Render and deploys by hand. Until then the live server keeps the old protocol, so a client with a newer `net.protocol` falls back to player-hosting / AI ranked.
 - `server/README.md` covers server env vars, Docker (`docker build -f server/Dockerfile .`, built from the repo root) and the handshake.
 
 **Build flavors** (`config/build.config.js`):

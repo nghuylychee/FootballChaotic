@@ -15,10 +15,17 @@ window.SFC = window.SFC || {};
   const pk = (v) => (typeof v === 'number' ? r2(v) : typeof v === 'boolean' ? (v ? 1 : 0) : v);
   const lerp = (a, b, t) => a + (b - a) * t;
 
-  // các trường cầu thủ cần để vẽ (sprites + renderer)
+  // các trường cầu thủ cần để vẽ (sprites + renderer). Không gửi anim: chỉ là đồng hồ hoạt ảnh riêng từng cầu thủ
+  // (bắt đầu ngẫu nhiên, +1/giây) — máy khách tự đếm (session.js tick), lệch pha bước chân / tóc không ai thấy
   const PF = ['x', 'y', 'vx', 'vy', 'facing', 'state', 'stamina', 'charging', 'charge',
-    'passMode', 'passCharge', 'passBase', 'flash', 'anim', 'auraC', 'auraT', 'auraFarmT', 'atkType', 'atkT', 'airZ', 'sizeMul', 'bracing', 'shotTarget'];
+    'passMode', 'passCharge', 'passBase', 'flash', 'auraC', 'auraT', 'auraFarmT', 'atkType', 'atkT', 'airZ', 'sizeMul', 'bracing', 'shotTarget'];
   const P_BOOL = { charging: true, bracing: true };
+  // làm tròn riêng (đỡ băng thông, ~-21% sau nén): canvas 640x360 và cầu thủ vẽ ở pixel nguyên (Math.round) nên 0,1 px không thấy được;
+  // vận tốc chỉ dùng để biết đang chạy (> 12 px/s) + hướng bụi; thanh thể lực rộng 12 px. Còn lại: 2 chữ số (pk)
+  const num = (f) => (v) => (typeof v === 'number' ? f(v) : v);
+  // hướng nhìn: đưa về -π..π trước (cầu thủ xoay nhiều vòng thì số cứ lớn dần), máy khách chỉ dùng sin / cos / angleDiff
+  const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  const PQ = { x: num(r1), y: num(r1), vx: num(Math.round), vy: num(Math.round), stamina: num(Math.round), facing: num((v) => r2(wrapA(v))) };
   // cooldown kỹ năng (thanh kỹ năng HUD của người chơi tại máy khách)
   const CD = ['light', 'hard', 'skill'];
   // tài nguyên Core của từng cầu thủ (HUD máy khách)
@@ -93,7 +100,7 @@ window.SFC = window.SFC || {};
         fp: g.finalPush ? 1 : 0, gg: g.golden ? 1 : 0,
         sc: [g.teams[0].score, g.teams[1].score],
         ct: g.ctrl.map((p) => (p ? p.id : -1)),
-        p: g.players.map((p) => PF.map((k) => pk(p[k])).concat(CD.map((k) => r2(p.cd[k])), RS.map((k) => p.res[k]))),
+        p: g.players.map((p) => PF.map((k) => (PQ[k] ? PQ[k](p[k]) : pk(p[k]))).concat(CD.map((k) => r2(p.cd[k])), RS.map((k) => p.res[k]))),
         rh: g.rhythm, ux: g.upgradeIdx,
         b: [r1(b.x), r1(b.y), r1(b.z), r1(b.vx), r1(b.vy), r1(b.vz), r1(b.roll), b.owner ? b.owner.id : -1,
           BFX.reduce((m, k, i) => (b.fx[k] ? m | (1 << i) : m), 0), b.skin || 0],

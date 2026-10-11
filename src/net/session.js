@@ -547,6 +547,7 @@ window.SFC = window.SFC || {};
       this.lastTick = now;
       g.effects.updateCosmetic(dt);
       g.effects.updateOverlay(dt);
+      for (const p of g.players) p.anim += dt;   // đồng hồ hoạt ảnh tự đếm ở máy khách (không có trong snapshot)
       if (!buf.length) return g;
 
       // đồng hồ vẽ chạy sau snapshot mới nhất một khoảng interpDelay
