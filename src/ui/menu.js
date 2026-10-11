@@ -846,7 +846,7 @@ window.SFC = window.SFC || {};
       const sideBtns = items.map((x, i) => (x.side ? btn(i) : '')).join('');
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       return `<div class="pt-main">
-          ${this.playTabs('ranked', `<span class="pt-area" style="color:${A.color}">${PX().area(A.id, 'sm')} ${esc(A.name)} · ${PX().elo(st.elo)}</span>`)}
+          ${this.playTabs('ranked', `<span class="pt-area" style="color:${A.color}">${PX().area(A.id, 'sm')} ${esc(A.name)} · ${PX().elo(st.elo)}</span>${this.areaProgress()}`)}
           ${toggle}
           <div class="pt-slots">${slots.join("")}</div>
           ${status}
@@ -855,6 +855,13 @@ window.SFC = window.SFC || {};
         </div>
         ${this.friendsOpen ? this.friendPanel(items) : ''}
         <button class="pt-back" data-back="1">◀ ${esc(_t('BACK'))}</button>`;
+    },
+    // RANKED: thanh tiến độ tới Area kế + "80 stars to unlock next area". Area cuối: TOP AREA
+    areaProgress() {
+      const MP = MPATH(), st = MP.state, A = MP.area(st.area), next = MP.area(st.area + 1);
+      const pct = Math.round(Math.max(0, Math.min(1, MP.frac(st.elo, st.area))) * 100);
+      const txt = esc(next ? _tn('{n} star to unlock next area', '{n} stars to unlock next area', next.elo - st.elo) : _t('TOP AREA'));
+      return `<div class="pt-next" style="--ac:${A.color}"><i class="pt-prog"><b style="width:${next ? pct : 100}%"></b></i><span>${txt}</span></div>`;
     },
     // thanh tab đầu màn PLAY (kiểu Rocket League): RANKED · PRIVATE MATCH, Q / E (LB / RB) đổi tab; sub = dòng dưới (HTML)
     playTabs(on, sub) {

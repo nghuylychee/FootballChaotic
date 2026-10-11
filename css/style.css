@@ -445,6 +445,10 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .pt-tab:hover { color: var(--gold); }
 .pt-tab.on { color: #fff; border-bottom-color: var(--gold); }
 .pt-area { font-size: 12px; line-height: 1; }
+/* RANKED: tiến độ tới Area kế (menu.js areaProgress) */
+.pt-next { display: flex; align-items: center; gap: 5px; font-size: 10px; line-height: 1; color: var(--muted); }
+.pt-prog { position: relative; width: 70px; height: 4px; background: #2a2230; border: 1px solid var(--ink); }
+.pt-prog b { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ac); }
 .pt-slots { flex: 1; display: flex; justify-content: center; align-items: center; gap: 16px; min-height: 0; }
 /* RANKED: thẻ của bạn đúng giữa màn, người bạn / ô MỜI BẠN nhỏ hơn đứng bên phải (không đẩy thẻ của bạn lệch đi) */
 .pt-solo { position: relative; }
