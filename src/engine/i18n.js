@@ -48,7 +48,7 @@ window.SFC = window.SFC || {};
   // chuỗi dịch của pack p (string | { one, other... }), không có -> undefined
   function find(p, key) {
     const v = p.strings[key];
-    if (v == null && SFC_DEV && p !== EN && !p.pseudo) I18n.misses.add(key);
+    if (v == null && SFC_DEBUG && p !== EN && !p.pseudo) I18n.misses.add(key);
     return v;
   }
 
@@ -120,7 +120,7 @@ window.SFC = window.SFC || {};
     set(id) {
       cur = byId[id] || EN;
       this.lang = cur.id;
-      if (SFC_DEV) this.misses.clear();
+      if (SFC_DEBUG) this.misses.clear();
       document.documentElement.lang = this.locale();
       // chữ hoa có dấu vẽ đủ cao (css/style.css: :root.accent-caps) · nạp sẵn font để chữ vẽ trên canvas cũng đúng ngay
       document.documentElement.classList.toggle('accent-caps', !!cur.accentCaps);
@@ -175,7 +175,7 @@ window.SFC = window.SFC || {};
 
     // lúc khởi động (main.js -> boot). Trả về true nếu người chơi đã chọn ngôn ngữ (false -> mở popup chọn ngôn ngữ)
     init() {
-      if (SFC_DEV) {
+      if (SFC_DEBUG) {
         // bản dev: index.html?lang=es (hoặc pseudo) -> vào thẳng ngôn ngữ đó, không hỏi, không lưu (chụp màn hình / kiểm tra nhanh)
         const q = new URLSearchParams(location.search).get('lang');
         if (q && byId[q]) { this.set(q); return true; }
@@ -186,7 +186,7 @@ window.SFC = window.SFC || {};
     },
   };
 
-  if (SFC_DEV) {
+  if (SFC_DEBUG) {
     I18n.add({ id: 'pseudo', name: '[Pséúdó]', pseudo: true, accentCaps: true, strings: {} });
     // danh sách key chưa dịch của ngôn ngữ đang dùng đã gặp từ lúc mở game
     I18n.report = () => { console.table([...I18n.misses].map((key) => ({ lang: I18n.lang, key }))); };

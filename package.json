@@ -6,13 +6,15 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win --dir",
     "manifest": "node scripts/manifest.js",
-    "predist": "node scripts/manifest.js --check",
-    "preitch-web": "node scripts/manifest.js --check",
-    "preitch-desktop": "node scripts/manifest.js --check",
-    "itch-web": "node scripts/build-web.js",
-    "itch-desktop": "node scripts/build-itch.js",
+    "prebuild:steam": "node scripts/manifest.js --check",
+    "prebuild:itch-web": "node scripts/manifest.js --check",
+    "prebuild:itch-desktop": "node scripts/manifest.js --check",
+    "prebuild:crazygames": "node scripts/manifest.js --check",
+    "build:steam": "electron-builder --win --dir",
+    "build:itch-web": "node scripts/build-web.js itch",
+    "build:itch-desktop": "node scripts/build-itch.js",
+    "build:crazygames": "node scripts/build-web.js crazygames",
     "serve": "node scripts/serve.js",
     "online": "node scripts/serve.js --online",
     "server": "node server/index.js",
@@ -31,7 +33,7 @@
     "appId": "com.streetfootballchaos.game",
     "productName": "Street Football Chaos",
     "directories": {
-      "output": "dist"
+      "output": "dist/steam"
     },
     "files": [
       "package.json",
@@ -54,7 +56,7 @@
       "**/*.node",
       "**/*.dll"
     ],
-    "afterPack": "scripts/strip-dev.js",
+    "afterPack": "scripts/strip-debug.js",
     "win": {
       "target": "dir",
       "icon": "build/icon.ico"

@@ -15,8 +15,9 @@ Street Football Chaos: a 3v3 top-down arcade football game in plain browser Java
 | Single test file | `node server/test/room-test.js`, `client-test.js`, `hardening-test.js`, `reconnect-test.js`, `queue-test.js` or `compression-test.js` |
 | Translation check (missing keys, `{var}` / tag mismatches; exits 1 on errors) | `node scripts/i18n-check.js` |
 | Rebuild the Japanese subset font after editing `src/i18n/ja.js` | `python scripts/build-ja-font.py` |
-| Steam build | `npm run dist` |
-| itch.io web / desktop builds (DEMO) | `npm run itch-web` / `npm run itch-desktop` |
+| Steam build (`dist/steam`; Steam page not live yet, so this build is behind) | `npm run build:steam` |
+| itch.io web / desktop builds (DEMO) | `npm run build:itch-web` / `npm run build:itch-desktop` |
+| CrazyGames web build (DEMO) | `npm run build:crazygames` |
 
 There is no bundler, linter or unit-test framework for the game itself. Gameplay is checked in the running game:
 - `sandbox.html` is the VFX/Core playground.
@@ -38,7 +39,7 @@ Opening `index.html` from disk mostly works, but browsers block the XHR that loa
 
 To add, remove or reorder a script, edit `FILES` there and run `npm run manifest`. That rewrites the `<!-- scripts:begin -->…<!-- scripts:end -->` block in each HTML page; never edit that block by hand.
 - `npm run serve` / `npm run online` regenerate stale pages on start.
-- `npm run dist` and `itch-*` fail via `node scripts/manifest.js --check` if the pages are out of date.
+- Every `npm run build:*` fails via `node scripts/manifest.js --check` if the pages are out of date.
 
 **Folders under `src/`.**
 - `engine/`: utils, input, gamepad, audio, storage, i18n.
@@ -85,7 +86,7 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 - Bump `net.protocol` when the message format changes. The server must be redeployed together with the client.
 - **Versions.**
   - Server: `server/package.json` `version` is `<net.protocol>.<minor>.<patch>` (semver, e.g. `5.1.0`), and it's also the Docker image tag. The server refuses to start if the major doesn't equal `net.protocol`, so a protocol bump means the server goes to `<new protocol>.0.0` (or `.1.0`).
-  - Client: the game's semver is `version` in the root `package.json`. The full client version is `<version>-<net.protocol>` (e.g. `1.1.0-5`; `NetCommon.clientVersion()`), shown on the SETTINGS heading. Dev runs show `dev-<protocol>`, because `config/build.config.js` has `SFC_VERSION = 'dev'` and `scripts/strip-dev.js` writes the real number when packaging.
+  - Client: the game's semver is `version` in the root `package.json`. The full client version is `<version>-<net.protocol>` (e.g. `1.1.0-5`; `NetCommon.clientVersion()`), shown on the SETTINGS heading. Dev runs show `dev-<protocol>`, because `config/build.config.js` has `SFC_VERSION_STRING = 'dev'` and `scripts/strip-debug.js` writes the real number when packaging.
   - The handshake carries both (`cv` from the client, `sv` in `room` / `err` replies), and the server logs which client version opened or joined each room. `/healthz` reports `version`.
 - **Live server deployment is manual.** The match server runs on Render (`wss://sfc-server.onrender.com`, the `net.server.url`) from the Docker Hub image `team41sfc/sfc-server:<tag>`.
   - `npm run server:image` builds and smoke-tests the image locally (tag = server version). That's all Claude does by default.
@@ -94,8 +95,9 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 - `server/README.md` covers server env vars, Docker (`docker build -f server/Dockerfile .`, built from the repo root) and the handshake.
 
 **Build flavors** (`config/build.config.js`):
-- `SFC_DEV`: dev-only features (test menus, cheats). `scripts/strip-dev.js` runs as electron-builder `afterPack` and inside `build-web.js`, and uses Terser to delete `if (SFC_DEV)` branches. The build **fails** if dev-only marker strings (the `MARKERS` list) survive outside those branches.
-- `SFC_DEMO`: the itch.io builds. `config/demo.config.js` locks Area 3+ and ONLINE.
+- `SFC_DEBUG`: dev-only features (test menus, cheats). `scripts/strip-debug.js` runs as electron-builder `afterPack` and inside `build-web.js`, and uses Terser to delete `if (SFC_DEBUG)` branches. The build **fails** if dev-only marker strings (the `MARKERS` list) survive outside those branches.
+- `SFC_STORE`: which store this build ships to: `'none'` (run from the repo) | `'steam'` | `'itch'` (web + desktop) | `'crazygames'`. `strip-debug.js` writes it when packaging (from `build-web.js <target>`, or env `SFC_STORE` for Electron, default `steam`). Gate platform-specific behaviour on this, not on new booleans.
+- `SFC_DEMO`: the itch.io and CrazyGames builds. `config/demo.config.js` locks Area 3+ and ONLINE.
 - The itch desktop build excludes `steamworks.js`, so it uses PeerJS like the web build.
 
 **Localization.**

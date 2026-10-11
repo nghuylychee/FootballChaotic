@@ -10,7 +10,7 @@
  *    Script riêng của trang (src/dev/sandbox.js, generate.js) đặt sau scripts:end.
  * Lệnh:
  *   npm run manifest                    ghi lại các trang HTML
- *   node scripts/manifest.js --check    chỉ kiểm, lệch thì báo + exit 1 (build tự chạy: predist / preitch-*)
+ *   node scripts/manifest.js --check    chỉ kiểm, lệch thì báo + exit 1 (build tự chạy: prebuild:*)
  * Code khác dùng: require('./manifest').files('server') -> danh sách đường dẫn theo thứ tự.
  */
 const fs = require('fs');

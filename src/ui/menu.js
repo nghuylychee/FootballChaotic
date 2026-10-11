@@ -193,16 +193,16 @@ window.SFC = window.SFC || {};
             { kind: 'btn', label: _t('CONTROLS'), sub: _t('Keyboard & controller layout'), act: () => { CV().open(); this.go('controls'); } },
             // popup chọn ngôn ngữ (ui/langpick.js); đổi xong vẽ lại trang bằng ngôn ngữ mới
             { kind: 'btn', label: _t('LANGUAGE'), sub: this.langSub(), act: () => SFC.LangPick.open({ done: () => this.render() }) },
-            // trang TEST (cheat / thử nghiệm), bản Steam: bị xoá (SFC_DEV)
-            ...(SFC_DEV ? [{ kind: 'btn', label: 'TEST', sub: 'Dev only · cheats & test tools', danger: true, act: () => this.go('test') }] : []),
+            // trang TEST (cheat / thử nghiệm), bản Steam: bị xoá (SFC_DEBUG)
+            ...(SFC_DEBUG ? [{ kind: 'btn', label: 'TEST', sub: 'Dev only · cheats & test tools', danger: true, act: () => this.go('test') }] : []),
             // xoá toàn bộ tiến trình, chơi lại từ đầu — bấm 2 lần mới xoá (lần 1 chỉ hỏi lại, rời trang là huỷ)
             this.resetArmed
               ? { kind: 'btn', label: _t('CONFIRM RESET'), sub: _t('Press again · this cannot be undone'), danger: true, act: () => this.resetData() }
               : { kind: 'btn', label: _t('RESET DATA'), sub: _t('Erase all progress · start over'), danger: true, act: () => { this.resetArmed = true; this.setMsg(_t('Erase level, stats, Main Path, team, items and gold? Press again to confirm.'), true); } },
           ];
         case 'test':
-          // SETTINGS > TEST: mọi nút cheat / thử nghiệm để ở đây. Bản Steam: cả trang bị xoá (SFC_DEV)
-          if (SFC_DEV) {
+          // SETTINGS > TEST: mọi nút cheat / thử nghiệm để ở đây. Bản Steam: cả trang bị xoá (SFC_DEBUG)
+          if (SFC_DEBUG) {
             return [
               // xem lại PROLOGUE (cut scene + trận mơ)
               { kind: 'btn', label: 'PROLOGUE', sub: 'Replay the intro & tutorial match', danger: true, act: () => SFC.Tutorial.begin(this.app) },
@@ -1198,8 +1198,8 @@ window.SFC = window.SFC || {};
     },
 
     // cheat DRILL TEST: mở màn DRILL với vài drill chờ, không cần đá trận. Hồ sơ không được ghi trong lúc thử,
-    // đóng màn thì trả chỉ số + drill chờ về như cũ. Bản Steam: bị xoá (SFC_DEV)
-    ...(SFC_DEV && {
+    // đóng màn thì trả chỉ số + drill chờ về như cũ. Bản Steam: bị xoá (SFC_DEBUG)
+    ...(SFC_DEBUG && {
       // notice = true: mở từ màn LEVEL UP như sau trận (giả lập vừa lên n level)
       testDrill(n = 5, notice = false) {
         const pf = PF(), keep = JSON.parse(JSON.stringify(pf.data.attrs));

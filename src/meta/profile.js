@@ -56,13 +56,13 @@ window.SFC = window.SFC || {};
     },
 
     save() {
-      if (SFC_DEV && this.sandbox) return;   // DRILL TEST (menu SETTINGS): chỉ đổi trong bộ nhớ, không ghi hồ sơ
+      if (SFC_DEBUG && this.sandbox) return;   // DRILL TEST (menu SETTINGS): chỉ đổi trong bộ nhớ, không ghi hồ sơ
       SFC.Storage.setJSON(P().storageKey, this.data);
     },
 
     // xoá hồ sơ đã lưu (RESET DATA ở SETTINGS) — lần tải sau như người chơi mới
     resetAll() {
-      if (SFC_DEV) this.sandbox = false;
+      if (SFC_DEBUG) this.sandbox = false;
       SFC.Storage.remove(P().storageKey);
       this.data = this.sanitize(null);
     },
