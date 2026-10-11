@@ -78,7 +78,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 /* overflow: clip (không phải hidden): hidden vẫn cho trình duyệt tự cuộn (Tab, scrollIntoView, kéo bôi đen) -> khung game bị lệch */
 html, body { width: 100%; height: 100%; background: #07050a; overflow: clip; }
-body { font-family: var(--vt); color: var(--paper); user-select: none; }
+body { font-family: var(--vt); color: var(--paper); -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
 
 #stage {
   position: absolute; left: 50%; top: 50%;
@@ -182,6 +182,10 @@ kbd {
 .tut-body p { font-size: 14px; line-height: 1.15; color: #e6dccb; margin-bottom: 2px; padding-left: 8px; position: relative; }
 .tut-body p::before { content: "·"; position: absolute; left: 1px; color: var(--muted); }
 .tut-body .help { grid-template-columns: 1fr 1fr 1fr; margin-top: 2px; }
+/* SETTINGS > PRIVACY NOTICE: văn bản dài, cuộn được (↑↓ / chuột) */
+.tut-body.priv-body { overflow-y: auto; padding-right: 8px; scrollbar-width: thin; scrollbar-color: #5a4658 transparent; }
+.priv-body p { margin-bottom: 5px; }
+.priv-body p::before { content: none; }
 .core-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
 .core-group h4 { font-size: 14px; margin: 0 0 3px; }
 .core-row { display: flex; align-items: center; gap: 4px; font-size: 12px; margin-bottom: 3px; color: #e6dccb; }

@@ -124,12 +124,30 @@ window.SFC = window.SFC || {};
       return String(s).toUpperCase().replace(/[^A-Z0-9 _-]/g, '').replace(/\s+/g, ' ').replace(/^\s+/, '').slice(0, P().nameMaxLength);
     },
 
+    // true = đã đặt · 'empty' = không còn chữ hợp lệ · 'blocked' = tên bị chặn (config/namefilter.config.js)
     setName(n) {
       const name = this.cleanName(n).trim();
-      if (!name) return false;
+      if (!name) return 'empty';
+      if (!this.nameAllowed(name)) return 'blocked';
       this.data.name = name;
       this.save();
       return true;
+    },
+
+    // tên không chứa từ tục tĩu / xúc phạm (config/namefilter.config.js; cách so ghi ở đầu file đó)
+    nameAllowed(name) {
+      const F = SFC_CONFIG.nameFilter;
+      if (!F) return true;
+      const LEET = { 0: 'O', 1: 'I', 3: 'E', 4: 'A', 5: 'S', 7: 'T', 8: 'B', 9: 'G' };
+      const leet = (s) => s.replace(/[0-9]/g, (d) => LEET[d] || d);
+      const squash = (s) => s.replace(/(.)\1+/g, '$1');
+      const up = String(name).toUpperCase(), raw = up.replace(/[\s_-]+/g, ''), joined = leet(raw);
+      // dạng gộp chữ lặp chỉ so khi còn >= 4 chữ (KKK -> K, JIZZ -> JIZ sẽ chặn nhầm cả đống tên)
+      const loose = (w) => squash(w).length >= 4 && squash(joined).includes(squash(w));
+      if (F.anywhere.some((w) => raw.includes(w) || joined.includes(w) || loose(w))) return false;
+      const tokens = up.split(/[\s_-]+/).filter(Boolean).map(leet);
+      const forms = new Set(tokens.concat(tokens.map(squash)));
+      return !F.words.some((w) => forms.has(w) || forms.has(w + 'S') || forms.has(w + 'ES'));
     },
 
     /* ---------- level / XP ---------- */
@@ -420,11 +438,18 @@ window.SFC = window.SFC || {};
     },
 
     // dữ liệu nhận từ máy khác: chỉ giữ giá trị hợp lệ
+    // tên người khác gửi tới: rỗng -> PLAYER, bị chặn -> nameFilter.fallback (máy chủ không nạp nameFilter -> không lọc)
+    publicName(n) {
+      const name = this.cleanName(n || '').trim();
+      if (!name) return 'PLAYER';
+      return this.nameAllowed(name) ? name : (SFC_CONFIG.nameFilter && SFC_CONFIG.nameFilter.fallback) || 'PLAYER';
+    },
+
     sanitizePublic(pub) {
       if (!pub || typeof pub !== 'object') return null;
       const roles = SFC_CONFIG.game.roles;
       const out = {
-        name: this.cleanName(pub.name || '').trim() || 'PLAYER',
+        name: this.publicName(pub.name),
         level: clampInt(pub.level, 1, P().maxLevel),
         look: this.sanitizeLook(pub.look),
         cores: Array.isArray(pub.cores) ? pub.cores.filter((id) => SFC_CONFIG.cores.list[id]) : P().starterCores.slice(),

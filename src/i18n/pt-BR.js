@@ -55,6 +55,8 @@ SFC.I18n.add({
     'CONFIRM RESET': 'SIM, APAGAR TUDO',
     'Press again · this cannot be undone': 'Aperte de novo · não dá para desfazer',
     'RESET DATA': 'APAGAR DADOS',
+    'PRIVACY NOTICE': 'AVISO DE PRIVACIDADE',
+    '↑↓ scroll · {back} back': '↑↓ rolar · {back} voltar',
     'Erase all progress · start over': 'Apaga todo o progresso · começa do zero',
     'Erase level, stats, Main Path, team, items and gold? Press again to confirm.': 'Apagar nível, atributos, Jornada, time, itens e ouro? Aperte de novo para confirmar.',
     'MUSIC': 'MÚSICA',
@@ -68,6 +70,7 @@ SFC.I18n.add({
     'CONFIRM': 'CONFIRMAR',
     'Type a name (A-Z, 0-9) · Enter confirm · {back} back': 'Digite um nome (A-Z, 0-9) · Enter confirmar · {back} voltar',
     'Type a name (A-Z, 0-9) · Enter confirm': 'Digite um nome (A-Z, 0-9) · Enter confirmar',
+    "That name isn't allowed. Try another one.": 'Esse nome não é permitido. Tente outro.',
     'Your name needs at least 1 character (A-Z, 0-9).': 'Seu nome precisa de pelo menos 1 caractere (A-Z, 0-9).',
 
     /* ===== CHARACTER / STATS / APPEARANCE ===== */
@@ -109,6 +112,7 @@ SFC.I18n.add({
     /* ===== MAIN PATH (trang + thẻ Area) ===== */
     'COMING SOON TO STEAM': 'EM BREVE NA STEAM',
     'WISHLIST ON STEAM': 'LISTA DE DESEJOS',
+    'PRIVATE MATCH is in the full game.': 'PARTIDA PRIVADA só no jogo completo.',
     'AREA {n}+ is in the full game': 'ÁREA {n}+ só no jogo completo',
     'CHAMPIONSHIP FINAL': 'FINAL DO CAMPEONATO',
     'PROMOTION MATCH': 'JOGO DO ACESSO',

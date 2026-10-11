@@ -56,6 +56,8 @@ SFC.I18n.add({
     'CONFIRM RESET': '削除を確定',
     'Press again · this cannot be undone': 'もう一度押すと確定 · 元に戻せない',
     'RESET DATA': 'データを削除',
+    'PRIVACY NOTICE': 'プライバシー通知',
+    '↑↓ scroll · {back} back': '↑↓ スクロール · {back} 戻る',
     'Erase all progress · start over': '全データを消して最初から',
     'Erase level, stats, Main Path, team, items and gold? Press again to confirm.': 'レベル、ステータス、キャリア、チーム、アイテム、ゴールドを全部消す？もう一度押すと確定。',
     'MUSIC': 'BGM',
@@ -69,6 +71,7 @@ SFC.I18n.add({
     'CONFIRM': '決定',
     'Type a name (A-Z, 0-9) · Enter confirm · {back} back': '名前を入力（A-Z、0-9） · Enter 決定 · {back} 戻る',
     'Type a name (A-Z, 0-9) · Enter confirm': '名前を入力（A-Z、0-9） · Enter 決定',
+    "That name isn't allowed. Try another one.": 'その名前は使えません。別の名前にしてください。',
     'Your name needs at least 1 character (A-Z, 0-9).': '名前は1文字以上必要（A-Z、0-9）。',
 
     /* ===== CHARACTER / STATS / APPEARANCE ===== */
@@ -109,6 +112,7 @@ SFC.I18n.add({
     /* ===== MAIN PATH (trang + thẻ Zona) ===== */
     'COMING SOON TO STEAM': 'Steamで近日公開',
     'WISHLIST ON STEAM': 'ウィッシュリスト追加',
+    'PRIVATE MATCH is in the full game.': 'プライベートマッチは製品版で遊べます。',
     'AREA {n}+ is in the full game': 'エリア{n}以降は製品版で',
     'CHAMPIONSHIP FINAL': '決勝戦',
     'PROMOTION MATCH': '昇格戦',

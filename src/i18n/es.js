@@ -54,6 +54,8 @@ SFC.I18n.add({
     'CONFIRM RESET': 'SÍ, BORRAR TODO',
     'Press again · this cannot be undone': 'Presiona otra vez · no se puede deshacer',
     'RESET DATA': 'BORRAR DATOS',
+    'PRIVACY NOTICE': 'AVISO DE PRIVACIDAD',
+    '↑↓ scroll · {back} back': '↑↓ desplazar · {back} volver',
     'Erase all progress · start over': 'Borra todo el progreso · empieza de cero',
     'Erase level, stats, Main Path, team, items and gold? Press again to confirm.': '¿Borrar nivel, atributos, progreso en El Camino, equipo, objetos y oro? Presiona otra vez para confirmar.',
     'MUSIC': 'MÚSICA',
@@ -67,6 +69,7 @@ SFC.I18n.add({
     'CONFIRM': 'CONFIRMAR',
     'Type a name (A-Z, 0-9) · Enter confirm · {back} back': 'Escribe un nombre (A-Z, 0-9) · Enter confirmar · {back} volver',
     'Type a name (A-Z, 0-9) · Enter confirm': 'Escribe un nombre (A-Z, 0-9) · Enter confirmar',
+    "That name isn't allowed. Try another one.": 'Ese nombre no está permitido. Prueba otro.',
     'Your name needs at least 1 character (A-Z, 0-9).': 'Tu nombre debe tener al menos 1 carácter (A-Z, 0-9).',
 
     /* ===== CHARACTER / STATS / APPEARANCE ===== */
@@ -108,6 +111,7 @@ SFC.I18n.add({
     /* ===== MAIN PATH (trang + thẻ Zona) ===== */
     'COMING SOON TO STEAM': 'PRONTO EN STEAM',
     'WISHLIST ON STEAM': 'LISTA DE DESEADOS',
+    'PRIVATE MATCH is in the full game.': 'PARTIDA PRIVADA solo en el juego completo.',
     'AREA {n}+ is in the full game': 'ZONA {n}+ solo en el juego completo',
     'CHAMPIONSHIP FINAL': 'FINAL DEL CAMPEONATO',
     'PROMOTION MATCH': 'PARTIDO DE ASCENSO',

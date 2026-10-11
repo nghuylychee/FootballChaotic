@@ -99,6 +99,15 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 - `SFC_STORE`: which store this build ships to: `'none'` (run from the repo) | `'steam'` | `'itch'` (web + desktop) | `'crazygames'`. `strip-debug.js` writes it when packaging (from `build-web.js <target>`, or env `SFC_STORE` for Electron, default `steam`). Gate platform-specific behaviour on this, not on new booleans.
 - `SFC_DEMO`: the itch.io and CrazyGames builds. `config/demo.config.js` locks Area 3+ and ONLINE.
 - The itch desktop build excludes `steamworks.js`, so it uses PeerJS like the web build.
+- Dev runs can pretend to be a store with `index.html?store=crazygames`.
+- **CrazyGames** (`SFC_STORE === 'crazygames'`, Basic launch: only Basic requirements apply):
+  - `SFC.Store` (`src/engine/store.js`, `config/store.config.js`) loads the CrazyGames SDK v3 at runtime; boot waits for it (`initTimeout`). It exposes `locale()` and `gameplay(on)` (start/stop on match begin, single-player pause/resume, back to menu; ranked pause stays "playing").
+  - Language: a saved choice wins; otherwise a store locale that maps to a pack is used without the popup (not saved). No locale, or no matching pack, shows the language popup.
+  - Escape is a restricted key (it exits fullscreen): `controls.restrictedKeys` strips it from every binding, and `Input.key(action, 'Esc')` falls back to the action's remaining key (back → Backspace, pause → P).
+  - Store links only on the main menu or at the end of the demo: PRIVATE MATCH shows a "full game" message instead of the WISHLIST screen, and Main Path doesn't pop WISHLIST.
+  - `social.enabled` is false: no fake friends, invites, party or chat.
+- SETTINGS › PRIVACY NOTICE shows `config/privacy.config.js` (English only, not translated). Update the text when the game starts collecting anything new. Every store.
+- Player names go through `Profile.nameAllowed` (`config/namefilter.config.js`), **client side only**: `setName` rejects blocked names, and every name received from others (`sanitizePublic`: room members, match seats; club names in `Session.guestStart`) becomes `nameFilter.fallback`. The dedicated server doesn't load the list, so editing it needs no redeploy. Every store, not just CrazyGames.
 
 **Localization.**
 - English source strings are the keys: `SFC.t('...')`, `SFC.tn` for plurals, `SFC.tc('ctx', '...')` for context variants. In UI files the alias is `_t`, never `t`.

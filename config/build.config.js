@@ -12,5 +12,7 @@
  * ========================================================= */
 var SFC_DEBUG = true;
 var SFC_STORE = 'none';
+// bản dev: index.html?store=crazygames -> chạy thử như bản cửa hàng đó (SDK, phím bị cấm...). Bản đóng gói: file này bị ghi đè, mất dòng này
+if (typeof location !== 'undefined') SFC_STORE = new URLSearchParams(location.search).get('store') || SFC_STORE;
 var SFC_DEMO = false;
 var SFC_VERSION_STRING = 'dev';

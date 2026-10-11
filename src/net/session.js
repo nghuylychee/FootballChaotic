@@ -452,7 +452,8 @@ window.SFC = window.SFC || {};
       const me = clampInt(o.me, 0, seats.length - 1);
       const clubs = [0, 1].map((t) => {
         const c = (Array.isArray(o.clubs) && o.clubs[t]) || {};
-        return c.id ? { id: String(c.id) } : { name: SFC.Profile.cleanName(String(c.name || '')).trim() || 'PLAYER', away: !!c.away };
+        // tên CLB = tên character của người chơi -> lọc như tên người chơi (config/namefilter.config.js)
+        return c.id ? { id: String(c.id) } : { name: SFC.Profile.publicName(String(c.name || '')), away: !!c.away };
       });
       const [home, away] = SFC.Room.registerClubs(clubs);
       // đồng đội AI mỗi đội: 1 người, hoặc mảng (trận xếp hạng: đội không ai vào được = 2 người chơi giả)

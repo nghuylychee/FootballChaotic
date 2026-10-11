@@ -29,6 +29,7 @@ const FILES = [
   ['config/net.config.js', 'game sandbox itch server'],
   ['config/tutorial.config.js', 'game itch server'],
   ['config/progression.config.js', 'game sandbox itch server'],
+  ['config/namefilter.config.js', 'game sandbox itch'],     // lọc tên ở máy người chơi; máy chủ không lọc
   ['config/arenas.config.js', 'game sandbox itch server'],
   ['config/mainpath.config.js', 'game sandbox itch server'],
   ['config/teammates.config.js', 'game sandbox itch server'],
@@ -37,10 +38,13 @@ const FILES = [
   ['config/ftue.config.js', 'game itch server'],
   ['config/demo.config.js', 'game server'],
   ['config/social.config.js', 'game'],
+  ['config/store.config.js', 'game'],
+  ['config/privacy.config.js', 'game'],
 
   { comment: 'Engine', gap: true },
   ['src/engine/utils.js', 'game sandbox itch server'],
   ['src/engine/storage.js', 'game sandbox itch'],          // máy chủ: SFC.Storage giả (server/sim.js)
+  ['src/engine/store.js', 'game'],                         // tích hợp cửa hàng (SDK CrazyGames...)
   ['src/engine/i18n.js', 'game sandbox server'],
   { comment: 'Bản dịch (thứ tự = thứ tự trong popup chọn ngôn ngữ) · trường config cần dịch' },
   ['src/i18n/fields.js', 'game'],

@@ -164,13 +164,19 @@ window.SFC = window.SFC || {};
       // bản desktop: navigator.languages bị khoá theo electronLanguages (package.json) -> lấy danh sách của hệ điều hành qua preload
       const prefs = [].concat((window.SFC_DESKTOP && window.SFC_DESKTOP.languages) || [], navigator.languages || [navigator.language]);
       for (const tag of prefs) {
-        if (typeof tag !== 'string') continue;
-        const low = tag.toLowerCase(), base = low.split(/[-_]/)[0];
-        const exact = packs.find((p) => !p.pseudo && [p.id].concat(p.tags || []).some((x) => x.toLowerCase() === low));
-        const near = exact || packs.find((p) => !p.pseudo && p.id.toLowerCase().split('-')[0] === base);
-        if (near) return pick(near);
+        const id = this.match(tag);
+        if (id) return id;
       }
       return 'en';
+    },
+
+    // mã ngôn ngữ ('es-MX', 'pt_BR', 'ja'...) -> id gói ngôn ngữ có trong game, không có -> null
+    match(tag) {
+      if (typeof tag !== 'string' || !tag) return null;
+      const low = tag.toLowerCase(), base = low.split(/[-_]/)[0];
+      const exact = packs.find((p) => !p.pseudo && [p.id].concat(p.tags || []).some((x) => x.toLowerCase() === low));
+      const near = exact || packs.find((p) => !p.pseudo && p.id.toLowerCase().split('-')[0] === base);
+      return near ? near.id : null;
     },
 
     // lúc khởi động (main.js -> boot). Trả về true nếu người chơi đã chọn ngôn ngữ (false -> mở popup chọn ngôn ngữ)
@@ -181,8 +187,13 @@ window.SFC = window.SFC || {};
         if (q && byId[q]) { this.set(q); return true; }
       }
       const saved = SFC.Settings.lang;
-      this.set(saved && byId[saved] ? saved : this.detect());
-      return !!(saved && byId[saved]);
+      if (saved && byId[saved]) { this.set(saved); return true; }
+      // cửa hàng báo ngôn ngữ (CrazyGames: systemInfo.locale) và game có gói đó -> dùng luôn, không hỏi, không lưu
+      // (lần sau vẫn theo cửa hàng). Không báo / không có gói -> popup chọn ngôn ngữ như thường
+      const store = SFC.Store && this.match(SFC.Store.locale());
+      if (store) { this.set(store); return true; }
+      this.set(this.detect());
+      return false;
     },
   };
 

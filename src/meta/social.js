@@ -218,7 +218,7 @@ window.SFC = window.SFC || {};
 
     /* ---------- mỗi khung hình ---------- */
     tick(dt) {
-      if (!this.data) return;
+      if (!this.data || !C().enabled) return;
       const t = now(), A = C().add;
       let dirty = false;
       for (const k in this.answers) if (t >= this.answers[k]) { this.answerRequest(k); dirty = true; }
