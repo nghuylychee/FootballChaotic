@@ -38,6 +38,9 @@ window.SFC = window.SFC || {};
       return s;
     },
 
+    // phiên bản đầy đủ của game: <phiên bản game>-<net.protocol>, vd. 1.1.0-5 (bản dev: dev-5). Gửi kèm gói bắt tay với máy chủ
+    clientVersion() { return `${typeof SFC_VERSION_STRING === 'string' ? SFC_VERSION_STRING : 'dev'}-${N().protocol}`; },
+
     // mã phòng máy chủ riêng? (cùng độ dài với mọi mã, nhận ra bằng ký tự đầu)
     isServerCode(code) {
       return typeof code === 'string' && code.length === N().codeLength && SERVER_FIRST().includes(code[0]);
@@ -64,6 +67,30 @@ window.SFC = window.SFC || {};
       return n <= 0xffffffff ? n : null;
     },
   };
+
+  // thống kê kết nối của phiên online (hiện ở SETTINGS > SOUND & DISPLAY > NETWORK STATS, src/ui/online.js):
+  // byte gửi / nhận = độ dài gói JSON (trước nén / khung của từng backend) · rtt = ping (ms) tới máy chạy trận, làm mượt
+  SFC.NetStats = {
+    up: 0, down: 0,            // tổng byte từ lúc vào phòng
+    upRate: 0, downRate: 0,    // byte / giây (đo mỗi giây)
+    rtt: null,                 // ms · null = chưa đo được
+    wu: 0, wd: 0, wt: 0,
+    out(n) { this.up += n; this.wu += n; },
+    in(n) { this.down += n; this.wd += n; },
+    // giờ gửi trong ping làm tròn tới ms -> mạng rất nhanh có thể ra số âm nhỏ: coi là 0
+    pong(ms) { if (ms > -2 && ms < 60000) { ms = Math.max(0, ms); this.rtt = this.rtt == null ? ms : this.rtt * 0.7 + ms * 0.3; } },
+    // gọi trước khi đọc upRate / downRate
+    roll(now = Date.now()) {
+      if (!this.wt) this.wt = now;
+      const dt = now - this.wt;
+      if (dt < 1000) return;
+      this.upRate = (this.wu * 1000) / dt; this.downRate = (this.wd * 1000) / dt;
+      this.wu = this.wd = 0; this.wt = now;
+    },
+    reset() { this.up = this.down = this.upRate = this.downRate = this.wu = this.wd = this.wt = 0; this.rtt = null; },
+  };
+  // độ dài gói (backend nhận gói đã giải mã thành object: PeerJS)
+  SFC.NetStats.size = (msg) => { try { return JSON.stringify(msg).length; } catch (e) { return 0; } };
 
   let backend = null;
   // backend người chơi làm host

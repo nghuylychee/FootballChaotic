@@ -10,7 +10,7 @@
  *    Script riêng của trang (src/dev/sandbox.js, generate.js) đặt sau scripts:end.
  * Lệnh:
  *   npm run manifest                    ghi lại các trang HTML
- *   node scripts/manifest.js --check    chỉ kiểm, lệch thì báo + exit 1 (build tự chạy: predist / preitch-*)
+ *   node scripts/manifest.js --check    chỉ kiểm, lệch thì báo + exit 1 (build tự chạy: prebuild:*)
  * Code khác dùng: require('./manifest').files('server') -> danh sách đường dẫn theo thứ tự.
  */
 const fs = require('fs');
@@ -29,18 +29,23 @@ const FILES = [
   ['config/net.config.js', 'game sandbox itch server'],
   ['config/tutorial.config.js', 'game itch server'],
   ['config/progression.config.js', 'game sandbox itch server'],
+  ['config/namefilter.config.js', 'game sandbox itch'],     // lọc tên ở máy người chơi; máy chủ không lọc
   ['config/arenas.config.js', 'game sandbox itch server'],
   ['config/mainpath.config.js', 'game sandbox itch server'],
   ['config/teammates.config.js', 'game sandbox itch server'],
+  ['config/achievements.config.js', 'game'],
   ['config/intro.config.js', 'game itch server'],
   ['config/music.config.js', 'game itch server'],
   ['config/ftue.config.js', 'game itch server'],
   ['config/demo.config.js', 'game server'],
   ['config/social.config.js', 'game'],
+  ['config/store.config.js', 'game'],
+  ['config/privacy.config.js', 'game'],
 
   { comment: 'Engine', gap: true },
   ['src/engine/utils.js', 'game sandbox itch server'],
   ['src/engine/storage.js', 'game sandbox itch'],          // máy chủ: SFC.Storage giả (server/sim.js)
+  ['src/engine/store.js', 'game'],                         // tích hợp cửa hàng (SDK CrazyGames...)
   ['src/engine/i18n.js', 'game sandbox server'],
   { comment: 'Bản dịch (thứ tự = thứ tự trong popup chọn ngôn ngữ) · trường config cần dịch' },
   ['src/i18n/fields.js', 'game'],
@@ -55,6 +60,7 @@ const FILES = [
   ['src/meta/teammates.js', 'game sandbox itch server'],
   ['src/meta/profile.js', 'game sandbox itch server'],
   ['src/meta/mainpath.js', 'game sandbox itch server'],
+  ['src/meta/achievements.js', 'game'],
   ['src/meta/social.js', 'game'],                          // bạn bè giả + phòng chờ (placeholder), chỉ menu
   ['src/entities/ball.js', 'game sandbox itch server'],
   ['src/entities/player.js', 'game sandbox itch server'],
@@ -81,6 +87,7 @@ const FILES = [
   ['src/net/sync.js', 'game server'],
   ['src/net/room.js', 'game server'],
   ['src/net/matchmaker.js', 'server'],                     // hàng chờ trận xếp hạng (chỉ máy chủ riêng)
+  ['src/net/predict.js', 'game'],                          // dự đoán cầu thủ của mình ở máy khách
   ['src/net/session.js', 'game'],
   ['src/ui/corepreview.js', 'game'],
   ['src/ui/controls.js', 'game'],
@@ -88,6 +95,8 @@ const FILES = [
   ['src/ui/gacha.js', 'game'],
   ['src/ui/reveal.js', 'game'],
   ['src/ui/team.js', 'game'],
+  ['src/ui/achievements.js', 'game'],
+  ['src/ui/road.js', 'game'],
   ['src/ui/intro.js', 'game'],
   ['src/ui/drill.js', 'game'],
   ['src/ui/story.js', 'game'],

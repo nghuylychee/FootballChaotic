@@ -17,7 +17,7 @@
  * new SFC.Room({ send(msg, id?), drop(id), local?, snapshotEvery, ranked?, hooks? })
  *  - send: bỏ id = gửi mọi khách (bên gửi tự JSON 1 lần rồi phát cho từng người)
  *  - hooks (đều tuỳ chọn): changed() · joined(name) · left(name) · dropped(name, away) · back(name) · toLobby() · start(game) ·
- *    events(g) · localRole(role)
+ *    events(g) · localRole(role) · pong(id, c)
  */
 window.SFC = window.SFC || {};
 
@@ -192,6 +192,13 @@ window.SFC = window.SFC || {};
         case 'ground':
           this.setGround(id, m.a);
           break;
+        // đo ping: khách ping máy chạy trận -> trả ngay · host ping khách -> khách trả pong (session.js tính)
+        case 'ping':
+          if (typeof m.c === 'number') this.send({ t: 'pong', c: m.c }, id);
+          break;
+        case 'pong':
+          if (typeof m.c === 'number') this.hook('pong', id, m.c);
+          break;
         case 'toLobby':
           if (id === L.owner && this.status === 'playing' && !this.ranked) this.backToLobby();
           break;
@@ -345,6 +352,8 @@ window.SFC = window.SFC || {};
       // máy chủ riêng không có góc nhìn: me = -1 (không slot nào là "tại máy này")
       const me = this.local ? this.seatOf[this.local.id] : -1;
       this.game = new SFC.Game(Object.assign({ home, away, me, humanTeam: me >= 0 ? opts.seats[me].team : -1 }, opts));
+      // máy chủ riêng: không ai xem -> bỏ hiệu ứng hình ảnh (vẫn ghi lại gửi khách). Phải trước capture
+      if (!this.local) this.game.effects.headless();
       Sync().capture(this.game);
       this.remotes = {};
       for (const id of this.seatIds) if (!this.isLocal(id)) this.remotes[id] = new (Sync().RemoteInput)();

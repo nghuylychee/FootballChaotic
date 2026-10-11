@@ -29,6 +29,7 @@
  * Gói tin:
  *   khách -> host : hello{v,pf,tok?} · pf{pf} (đổi đồng đội / chỉ số) · slot{s} (nhảy slot) · intro (xem xong màn giới thiệu) ·
  *                   i{d,p} (phím) · pick{i} · reroll · bye · begin{area} / toLobby / ground{a} (chủ phòng, phòng máy chủ riêng) · ka (giữ thức)
+ *   cả 2 chiều    : ping{c} -> pong{c} (đo ping mỗi net.pingEvery giây, c = giờ của bên gửi; SFC.NetStats)
  *   khách -> máy chủ (trước khi vào phòng): queue{v,elo,role,pf} · unqueue — xem transport-server.js
  *   host  -> khách: you{tok} (mã kết nối lại) · lobby{m:[{id,pf,slot}],o,g} (g = sân: chỉ số Area, -1 = ngẫu nhiên) · start{opts} · s{f,s,fx,sfx,ev} (snapshot) ·
  *                   drop{seat,o,away?} (1 người rời / mất kết nối) · back{seat,o} (người đó kết nối lại) ·
@@ -174,6 +175,17 @@ window.SFC = window.SFC || {};
     keepAlive() {
       clearInterval(this.ka);
       if (this.onServer && N().server.keepAlive > 0) this.ka = setInterval(() => { if (this.onServer && this.status !== 'idle') Net().send({ t: 'ka' }); }, N().server.keepAlive * 1000);
+      this.pinger();
+    },
+
+    // đo ping + đếm byte (SFC.NetStats) từ lúc vào phòng: khách ping máy chạy trận, host ping các khách (trung bình)
+    pinger() {
+      clearInterval(this.pingT);
+      SFC.NetStats.reset();
+      const every = N().pingEvery || 0;
+      if (every > 0) this.pingT = setInterval(() => {
+        if ((this.status === 'lobby' || this.status === 'playing') && !this.rejoining) Net().send({ t: 'ping', c: Math.round(performance.now()) });
+      }, every * 1000);
     },
 
     // chọn backend cho phòng này + gắn handler
@@ -196,6 +208,7 @@ window.SFC = window.SFC || {};
       });
       this.lobby = this.room.lobby;
       this.status = 'lobby';
+      this.pinger();
       this.emit('lobby', { entered: true });
     },
 
@@ -215,6 +228,7 @@ window.SFC = window.SFC || {};
     roomHooks() {
       return {
         changed: () => this.emit('lobby'),
+        pong: (id, c) => SFC.NetStats.pong(performance.now() - c),
         joined: (name) => this.emit('notice', { kind: 'joined', name }),
         left: (name) => this.emit('notice', { kind: 'left', name }),
         dropped: (name, away) => this.emit('player', { kind: away ? 'away' : 'left', name }),
@@ -252,10 +266,13 @@ window.SFC = window.SFC || {};
       this.lobby = { members: [], owner: null, ground: -1 };
       this.roleSent = null;
       this.buf = [];
+      this.jit = null;             // đo độ giật snapshot (đệm nội suy tự điều chỉnh)
+      this.pred = null;            // dự đoán cầu thủ của mình (predict.js)
       this.tok = null;             // mã kết nối lại do phòng cấp (you{tok})
       this.waitingServer = false;  // đang chờ máy chủ dậy (huỷ được)
       this.roomClosed = false;     // phòng đóng hẳn (bye) -> closed{reason: 'closed'} thay vì 'lost'
       clearInterval(this.ka);
+      clearInterval(this.pingT);
       this.rejoining = null;       // đang kết nối lại: hạn chót (Date.now())
       clearTimeout(this.retry);
     },
@@ -357,8 +374,10 @@ window.SFC = window.SFC || {};
           break;
         }
         case 'you': if (typeof m.tok === 'string') this.tok = m.tok; break;
+        case 'ping': if (typeof m.c === 'number') Net().send({ t: 'pong', c: m.c }); break;
+        case 'pong': if (typeof m.c === 'number') SFC.NetStats.pong(performance.now() - m.c); break;
         case 'start': this.guestStart(m); break;
-        case 's': if (this.status === 'playing') this.buf.push(m); break;
+        case 's': if (this.status === 'playing') { this.buf.push(m); this.jitter(m.f); } break;
         case 'drop':
           if (typeof m.o === 'string') this.setOwner(m.o);
           if (this.game) {
@@ -433,7 +452,8 @@ window.SFC = window.SFC || {};
       const me = clampInt(o.me, 0, seats.length - 1);
       const clubs = [0, 1].map((t) => {
         const c = (Array.isArray(o.clubs) && o.clubs[t]) || {};
-        return c.id ? { id: String(c.id) } : { name: SFC.Profile.cleanName(String(c.name || '')).trim() || 'PLAYER', away: !!c.away };
+        // tên CLB = tên character của người chơi -> lọc như tên người chơi (config/namefilter.config.js)
+        return c.id ? { id: String(c.id) } : { name: SFC.Profile.publicName(String(c.name || '')), away: !!c.away };
       });
       const [home, away] = SFC.Room.registerClubs(clubs);
       // đồng đội AI mỗi đội: 1 người, hoặc mảng (trận xếp hạng: đội không ai vào được = 2 người chơi giả)
@@ -455,6 +475,8 @@ window.SFC = window.SFC || {};
       });
       this.game.events.length = 0;
       this.buf = [];
+      this.jit = null;   // khung trận mới đếm lại từ 0 -> đo độ giật lại từ đầu
+      this.pred = null;  // dự đoán cầu thủ của mình: trận mới bắt đầu lại
       this.renderF = null;
       this.lastTick = null;
       this.pressedMask = 0;
@@ -528,11 +550,13 @@ window.SFC = window.SFC || {};
       this.lastTick = now;
       g.effects.updateCosmetic(dt);
       g.effects.updateOverlay(dt);
+      for (const p of g.players) p.anim += dt;   // đồng hồ hoạt ảnh tự đếm ở máy khách (không có trong snapshot)
       if (!buf.length) return g;
 
       // đồng hồ vẽ chạy sau snapshot mới nhất một khoảng interpDelay
       const newest = buf[buf.length - 1].f;
-      const delay = this.onServer ? N().server.interpDelay || N().interpDelay : N().interpDelay;
+      const base = this.onServer ? N().server.interpDelay || N().interpDelay : N().interpDelay;
+      const delay = Math.max(base, this.jit ? this.jit.delay : 0);
       const target = newest - delay * 60;
       if (this.renderF == null || Math.abs(this.renderF - target) > 12) this.renderF = target;
       else this.renderF += dt * 60 + (target - this.renderF) * 0.08;
@@ -544,8 +568,25 @@ window.SFC = window.SFC || {};
       Sync().apply(g, a.s);
       const b = buf[1];
       if (b) Sync().blend(g, a.s, b.s, Math.min(1, Math.max(0, (this.renderF - a.f) / (b.f - a.f))));
+      // dự đoán cầu thủ của mình (src/net/predict.js): chạy ngay theo phím, tự sửa theo máy chủ
+      if (SFC.Predict) (this.pred || (this.pred = new SFC.Predict())).step(g, g.seatPlayer(g.me), this.downMask | 0, dt, now, SFC.NetStats.rtt, buf[buf.length - 1]);
       Sync().trail(g);
       return g;
+    },
+
+    // đo độ giật của snapshot: lệch = giờ nhận - giờ "đáng lẽ" (khung * 1/60 s). Trong ~2 giây gần nhất, gói tới sớm nhất làm mốc;
+    // đệm cần = phân vị jitterPct của (lệch - mốc) + 1 khoảng giữa 2 snapshot + jitterPad. Tăng ngay khi mạng xấu đi, giảm từ từ
+    jitter(f) {
+      const now = performance.now(), J = this.jit || (this.jit = { offs: [], lastF: null, step: 2, delay: 0, n: 0 });
+      if (J.lastF != null && f > J.lastF) J.step = Math.min(30, f - J.lastF);
+      J.lastF = f;
+      J.offs.push(now - (f * 1000) / 60);
+      if (J.offs.length > 64) J.offs.shift();
+      if (++J.n % 4 || J.offs.length < 8) return;
+      const min = Math.min(...J.offs), sorted = J.offs.map((o) => o - min).sort((a, b) => a - b);
+      const spread = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * (N().jitterPct || 0.95)))] / 1000;
+      const want = Math.min(N().interpMax || 0.3, spread + J.step / 60 + (N().jitterPad || 0));
+      J.delay = want > J.delay ? want : J.delay + (want - J.delay) * 0.05;
     },
 
     consumeSnap(m) {

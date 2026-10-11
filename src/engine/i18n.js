@@ -48,7 +48,7 @@ window.SFC = window.SFC || {};
   // chuỗi dịch của pack p (string | { one, other... }), không có -> undefined
   function find(p, key) {
     const v = p.strings[key];
-    if (v == null && SFC_DEV && p !== EN && !p.pseudo) I18n.misses.add(key);
+    if (v == null && SFC_DEBUG && p !== EN && !p.pseudo) I18n.misses.add(key);
     return v;
   }
 
@@ -120,7 +120,7 @@ window.SFC = window.SFC || {};
     set(id) {
       cur = byId[id] || EN;
       this.lang = cur.id;
-      if (SFC_DEV) this.misses.clear();
+      if (SFC_DEBUG) this.misses.clear();
       document.documentElement.lang = this.locale();
       // chữ hoa có dấu vẽ đủ cao (css/style.css: :root.accent-caps) · nạp sẵn font để chữ vẽ trên canvas cũng đúng ngay
       document.documentElement.classList.toggle('accent-caps', !!cur.accentCaps);
@@ -164,29 +164,40 @@ window.SFC = window.SFC || {};
       // bản desktop: navigator.languages bị khoá theo electronLanguages (package.json) -> lấy danh sách của hệ điều hành qua preload
       const prefs = [].concat((window.SFC_DESKTOP && window.SFC_DESKTOP.languages) || [], navigator.languages || [navigator.language]);
       for (const tag of prefs) {
-        if (typeof tag !== 'string') continue;
-        const low = tag.toLowerCase(), base = low.split(/[-_]/)[0];
-        const exact = packs.find((p) => !p.pseudo && [p.id].concat(p.tags || []).some((x) => x.toLowerCase() === low));
-        const near = exact || packs.find((p) => !p.pseudo && p.id.toLowerCase().split('-')[0] === base);
-        if (near) return pick(near);
+        const id = this.match(tag);
+        if (id) return id;
       }
       return 'en';
     },
 
+    // mã ngôn ngữ ('es-MX', 'pt_BR', 'ja'...) -> id gói ngôn ngữ có trong game, không có -> null
+    match(tag) {
+      if (typeof tag !== 'string' || !tag) return null;
+      const low = tag.toLowerCase(), base = low.split(/[-_]/)[0];
+      const exact = packs.find((p) => !p.pseudo && [p.id].concat(p.tags || []).some((x) => x.toLowerCase() === low));
+      const near = exact || packs.find((p) => !p.pseudo && p.id.toLowerCase().split('-')[0] === base);
+      return near ? near.id : null;
+    },
+
     // lúc khởi động (main.js -> boot). Trả về true nếu người chơi đã chọn ngôn ngữ (false -> mở popup chọn ngôn ngữ)
     init() {
-      if (SFC_DEV) {
+      if (SFC_DEBUG) {
         // bản dev: index.html?lang=es (hoặc pseudo) -> vào thẳng ngôn ngữ đó, không hỏi, không lưu (chụp màn hình / kiểm tra nhanh)
         const q = new URLSearchParams(location.search).get('lang');
         if (q && byId[q]) { this.set(q); return true; }
       }
       const saved = SFC.Settings.lang;
-      this.set(saved && byId[saved] ? saved : this.detect());
-      return !!(saved && byId[saved]);
+      if (saved && byId[saved]) { this.set(saved); return true; }
+      // cửa hàng báo ngôn ngữ (CrazyGames: systemInfo.locale) và game có gói đó -> dùng luôn, không hỏi, không lưu
+      // (lần sau vẫn theo cửa hàng). Không báo / không có gói -> popup chọn ngôn ngữ như thường
+      const store = SFC.Store && this.match(SFC.Store.locale());
+      if (store) { this.set(store); return true; }
+      this.set(this.detect());
+      return false;
     },
   };
 
-  if (SFC_DEV) {
+  if (SFC_DEBUG) {
     I18n.add({ id: 'pseudo', name: '[Pséúdó]', pseudo: true, accentCaps: true, strings: {} });
     // danh sách key chưa dịch của ngôn ngữ đang dùng đã gặp từ lúc mở game
     I18n.report = () => { console.table([...I18n.misses].map((key) => ({ lang: I18n.lang, key }))); };

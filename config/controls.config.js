@@ -33,7 +33,7 @@ SFC_CONFIG.controls = {
     restart: ['KeyR', 'Pad.Y'],     // túi đồ: phân rã toàn bộ đồ trùng (giữ 1)
     dismantle: ['KeyX', 'Delete', 'Pad.X'], // túi đồ / mở hộp: phân rã món đang chọn
     ultimate: ['KeyX', 'Pad.LT'],    // trong trận: TUYỆT KỸ (khi thanh năng lượng đầy)
-    reroll:  ['KeyR', 'Pad.Y'],     // màn chọn Core: đổi cả 3 lá (mỗi lượt 1 lần)
+    reroll:  ['KeyR', 'Pad.Y'],     // màn DRILL: đổi cả 3 drill · màn chọn Core: đổi cả 3 lá (khi cores.draft.rerollsPerRound > 0)
   },
 
   // Bảng hướng dẫn hiển thị trong menu / pause
@@ -41,7 +41,7 @@ SFC_CONFIG.controls = {
     attack: [
       ['← ↑ ↓ →', 'Move'],
       ['E (hold)', 'Sprint'],
-      ['S', 'Ground pass · arrow at a teammate = accurate'],
+      ['S (hold)', 'Ground pass'],
       ['W (hold)', 'Through ball'],
       ['A (hold)', 'Lob pass'],
       ['D (hold)', 'Shoot · arrow = shot direction'],
@@ -61,7 +61,7 @@ SFC_CONFIG.controls = {
     system: [
       ['1 / 2 / 3', 'Pick Core'],
       ['R', 'Reroll 3 Core cards (once per round)'],
-      ['Esc / P', 'Pause'],
+      [SFC_STORE === 'crazygames' ? 'P' : 'Esc / P', 'Pause'],   // khớp restrictedKeys bên dưới
       ['M', 'Mute/unmute'],
     ],
   },
@@ -71,7 +71,7 @@ SFC_CONFIG.controls = {
     attack: [
       ['{move}', 'Move'],
       ['{sprint} (hold)', 'Sprint'],
-      ['{pass}', 'Ground pass · stick at a teammate = accurate'],
+      ['{pass} (hold)', 'Ground pass'],
       ['{through} (hold)', 'Through ball'],
       ['{lob} (hold)', 'Lob pass'],
       ['{shoot} (hold)', 'Shoot · stick = shot direction'],
@@ -90,7 +90,7 @@ SFC_CONFIG.controls = {
     ],
     system: [
       ['{move} + {confirm}', 'Pick Core'],
-      ['{reroll}', 'Reroll 3 Core cards (once per round)'],
+      // ['{reroll}', 'Reroll 3 Core cards (once per round)'],   // tạm bỏ đổi bài Core (cores.draft.rerollsPerRound = 0)
       ['{pause}', 'Pause'],
       ['{mute}', 'Mute/unmute'],
     ],
@@ -127,4 +127,13 @@ SFC_CONFIG.controls = {
     goal:   [0.7, 1.0, 450],
     read:   [0.8, 0.5, 140],    // Đọc Cú Sút thành công (thủ thế W rồi thả đúng lúc)
   },
+
+  // phím cửa hàng cấm dùng (theo SFC_STORE): bị gỡ khỏi mọi action ngay dưới đây, gợi ý 'Esc' trên UI tự đổi sang phím còn lại
+  // (Input.key). CrazyGames: Esc = thoát toàn màn hình -> tạm dừng / quay lại chỉ còn P / Backspace
+  restrictedKeys: { crazygames: ['Escape'] },
 };
+
+(function () {
+  const C = SFC_CONFIG.controls, cut = C.restrictedKeys[SFC_STORE] || [];
+  for (const a in C.bindings) C.bindings[a] = C.bindings[a].filter((code) => !cut.includes(code));
+})();

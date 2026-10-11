@@ -13,6 +13,8 @@ SFC_CONFIG.game = {
     // "SFC JP": kana / chữ Hán của tiếng Nhật (unicode-range trong css/style.css -> ngôn ngữ khác không tải font này)
     pixelFont: '"Press Start 2P", "SFC JP", monospace',
     showDebug: false,
+    // vòng mỏng dưới chân đồng đội của người chơi tại máy này (màu áo không đủ để phân biệt). r = bán kính (px), null = tắt
+    allyRing: { r: 7, color: 'rgba(127,231,255,0.6)' },
     // SETTINGS > RESOLUTION (chỉ bản desktop): cỡ cửa sổ, luôn 16:9. Cỡ lớn hơn màn hình bị ẩn. Thêm FULLSCREEN ở cuối
     windowSizes: [[1280, 720], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]],
   },
@@ -182,7 +184,7 @@ SFC_CONFIG.game = {
     // Không bấm hướng / mũi tên không chỉ vào ai -> chuyền cho đồng đội gần nhất nhưng kém chuẩn (sloppy):
     // luôn lệch một khoảng rõ rệt, và người nhận KHÔNG tự chạy đón bóng -> phải tự đuổi theo, kể cả khi không có ai áp sát.
     quick: {
-      enabled: true,          // false = S giữ nạp lực như W / A
+      enabled: false,         // false = S giữ nạp lực như W / A (user chốt 2026-10-11: chuyền sệt chỉnh được lực) · true = S chuyền ngay khi nhấn
       aimCone: 30,            // (độ) nửa góc quanh mũi tên để tính là "đang nhắm" vào đồng đội
       sloppy: {
         miss: [0.05, 0.15],   // lệch ngang = tỉ lệ quãng chuyền (trung bình 10% ~ "chính xác 90%"; ~3°–8.5°), ngẫu nhiên trái/phải
@@ -290,11 +292,11 @@ SFC_CONFIG.game = {
       lunge: 90,              // nhoài người về trước khi đấm (px/s)
       range: 17,              // tầm đấm tính từ mép người (px) — Core: tackleRange
       arc: 70,                // (độ) nửa góc vùng đấm phía trước mặt
-      stun: 0.35,
+      stun: 0.7,              // (s) choáng khi đấm trúng người không cầm bóng (gấp đôi 0.35, 2026-10-11: tỉnh lại quá nhanh)
       knockback: 150,
       stealChance: 0.6,       // tỉ lệ làm người cầm bóng rơi bóng (x chỉ số tackle / dribble đối thủ, Core: tackleChance); trượt -> chỉ đẩy lùi
       // Đấm rơi bóng: người bị đấm choáng lâu hơn (đấm người không có bóng vẫn là stun ở trên) để người đấm kịp lấy bóng
-      stealStun: 0.7,
+      stealStun: 1.4,         // (s) gấp đôi 0.7 cùng lúc với stun
       instantSteal: 0.3,      // tỉ lệ bóng về thẳng chân người đấm; còn lại bóng bật về phía người đấm (lệch sang bên), người bị đấm văng hướng ngược lại
       stealBallSpeed: 70,     // (px/s) tốc độ bóng bật ra
       stealBallAngle: [20, 50], // (độ) bóng lệch sang trái / phải so với hướng về người đấm
@@ -312,7 +314,7 @@ SFC_CONFIG.game = {
       step: 230,              // bước tới khi vung chân (px/s)
       range: 18,              // tầm chân tính từ mép người (px)
       arc: 80,                // (độ) nửa góc vùng vung chân
-      stun: 0.8,              // choáng (tính từ lúc tiếp đất, combat.airStunPause) — bay ~0.6s trước đó
+      stun: 1.6,              // choáng (tính từ lúc tiếp đất, combat.airStunPause) — bay ~0.6s trước đó (gấp đôi 0.8, 2026-10-11)
       knockback: 380,         // lực hất văng (px/s) — bay xa nhờ ma sát trên không thấp (airDamp)
       launch: 190,            // vận tốc hất lên cao (px/s)
       ballKick: 230,          // chân trúng bóng lỏng -> sút bóng đi

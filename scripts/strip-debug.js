@@ -1,6 +1,7 @@
 /* afterPack (electron-builder): xoá code chỉ dùng khi dev khỏi bản đóng gói (không đụng file gốc), trong app.asar hoặc resources/app.
- *  - config/build.config.js -> `var SFC_DEV = false;` + SFC_DEMO (bản itch.io: true — build-web.js truyền demo, build-itch.js đặt env SFC_DEMO=1)
- *  - file nào có SFC_DEV: chạy Terser với SFC_DEV = false -> nhánh `if (SFC_DEV)` / `SFC_DEV ? … : …` / `SFC_DEV && …` bị xoá,
+ *  - config/build.config.js -> `var SFC_DEBUG = false;` + SFC_STORE + SFC_DEMO. build-web.js truyền thẳng;
+ *    afterPack (Electron) đọc env SFC_STORE / SFC_DEMO (build-itch.js đặt 'itch' / '1'; không đặt = bản steam)
+ *  - file nào có SFC_DEBUG: chạy Terser với SFC_DEBUG = false -> nhánh `if (SFC_DEBUG)` / `SFC_DEBUG ? … : …` / `SFC_DEBUG && …` bị xoá,
  *    comment bị bỏ, tên biến giữ nguyên (không mangle), vẫn xuống dòng để lỗi còn đọc được
  *  - còn sót dấu vết cheat trong bất kỳ file nào -> báo lỗi, dừng build
  */
@@ -9,8 +10,8 @@ const path = require('path');
 const { minify } = require('terser');
 
 const DIRS = ['config', 'src'];
-// sau khi xoá: file đã qua Terser (không còn comment) không được còn các chữ này. Mọi file khác chỉ kiểm SFC_DEV
-const MARKERS = ['SFC_DEV', 'DRILL TEST', 'LEVEL UP TEST', 'Replay the intro', 'testDrill', 'testArea', 'JUMP TO AREA'];
+// sau khi xoá: file đã qua Terser (không còn comment) không được còn các chữ này. Mọi file khác chỉ kiểm SFC_DEBUG
+const MARKERS = ['SFC_DEBUG', 'DRILL TEST', 'LEVEL UP TEST', 'Replay the intro', 'testDrill', 'testArea', 'JUMP TO AREA'];
 
 function jsFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => {
@@ -19,17 +20,18 @@ function jsFiles(dir) {
   });
 }
 
-async function strip(appDir, { demo = false } = {}) {
+async function strip(appDir, { store, demo = false } = {}) {
+  if (!['steam', 'itch', 'crazygames'].includes(store)) throw new Error(`strip-debug: cửa hàng không hợp lệ: ${store}`);
   const flagFile = path.join(appDir, 'config', 'build.config.js');
   const files = DIRS.flatMap((d) => jsFiles(path.join(appDir, d))).filter((f) => f !== flagFile);
   const stripped = new Set();
   for (const file of files) {
     const src = fs.readFileSync(file, 'utf8');
-    if (!src.includes('SFC_DEV')) continue;
+    if (!src.includes('SFC_DEBUG')) continue;
     const out = await minify(src, {
       compress: {
         defaults: false,
-        global_defs: { SFC_DEV: false },
+        global_defs: { SFC_DEBUG: false },
         evaluate: true, conditionals: true, dead_code: true, booleans: true, side_effects: true,
       },
       mangle: false,
@@ -38,14 +40,16 @@ async function strip(appDir, { demo = false } = {}) {
     fs.writeFileSync(file, out.code);
     stripped.add(file);
   }
-  fs.writeFileSync(flagFile, `var SFC_DEV = false;\nvar SFC_DEMO = ${!!demo};\n`);
+  // phiên bản game = package.json của repo (bản dev ghi 'dev')
+  const version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version;
+  fs.writeFileSync(flagFile, `var SFC_DEBUG = false;\nvar SFC_STORE = ${JSON.stringify(store)};\nvar SFC_DEMO = ${!!demo};\nvar SFC_VERSION_STRING = ${JSON.stringify(version)};\n`);
 
   const left = files.flatMap((f) => {
     const src = fs.readFileSync(f, 'utf8');
-    return (stripped.has(f) ? MARKERS : ['SFC_DEV']).filter((m) => src.includes(m)).map((m) => `${path.relative(appDir, f)}: ${m}`);
+    return (stripped.has(f) ? MARKERS : ['SFC_DEBUG']).filter((m) => src.includes(m)).map((m) => `${path.relative(appDir, f)}: ${m}`);
   });
-  if (left.length) throw new Error('strip-dev: code dev còn sót trong bản đóng gói:\n  ' + left.join('\n  '));
-  console.log(`  • strip-dev: ${stripped.size} file đã xoá nhánh SFC_DEV${demo ? ' · bản DEMO' : ''}`);
+  if (left.length) throw new Error('strip-debug: code dev còn sót trong bản đóng gói:\n  ' + left.join('\n  '));
+  console.log(`  • strip-debug: ${stripped.size} file đã xoá nhánh SFC_DEBUG · ${store}${demo ? ' · DEMO' : ''}`);
 }
 
 // asar bật: afterPack chạy sau khi đã gói app.asar -> giải nén ra thư mục tạm, xoá code dev, gói lại.
@@ -53,7 +57,7 @@ async function strip(appDir, { demo = false } = {}) {
 exports.default = async (context) => {
   const res = path.join(context.appOutDir, 'resources');
   const asarFile = path.join(res, 'app.asar');
-  const opts = { demo: process.env.SFC_DEMO === '1' };   // scripts/build-itch.js
+  const opts = { store: process.env.SFC_STORE || 'steam', demo: process.env.SFC_DEMO === '1' };   // scripts/build-itch.js đặt env
   if (!fs.existsSync(asarFile)) return strip(path.join(res, 'app'), opts);
   const asar = require('@electron/asar');
   const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'sfc-asar-'));
@@ -83,6 +87,6 @@ function fixIntegrity(context, header) {
   entry.bin = Buffer.from(JSON.stringify([{ file: path.win32.normalize('resources/app.asar'), alg: 'SHA256', value: hash }]));
   res.outputResource(bin);
   fs.writeFileSync(exe, Buffer.from(bin.generate()));
-  console.log('  • strip-dev: đã cập nhật asar integrity trong .exe');
+  console.log('  • strip-debug: đã cập nhật asar integrity trong .exe');
 }
 exports.strip = strip;

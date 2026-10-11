@@ -78,7 +78,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 /* overflow: clip (không phải hidden): hidden vẫn cho trình duyệt tự cuộn (Tab, scrollIntoView, kéo bôi đen) -> khung game bị lệch */
 html, body { width: 100%; height: 100%; background: #07050a; overflow: clip; }
-body { font-family: var(--vt); color: var(--paper); user-select: none; }
+body { font-family: var(--vt); color: var(--paper); -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
 
 #stage {
   position: absolute; left: 50%; top: 50%;
@@ -182,6 +182,10 @@ kbd {
 .tut-body p { font-size: 14px; line-height: 1.15; color: #e6dccb; margin-bottom: 2px; padding-left: 8px; position: relative; }
 .tut-body p::before { content: "·"; position: absolute; left: 1px; color: var(--muted); }
 .tut-body .help { grid-template-columns: 1fr 1fr 1fr; margin-top: 2px; }
+/* SETTINGS > PRIVACY NOTICE: văn bản dài, cuộn được (↑↓ / chuột) */
+.tut-body.priv-body { overflow-y: auto; padding-right: 8px; scrollbar-width: thin; scrollbar-color: #5a4658 transparent; }
+.priv-body p { margin-bottom: 5px; }
+.priv-body p::before { content: none; }
 .core-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
 .core-group h4 { font-size: 14px; margin: 0 0 3px; }
 .core-row { display: flex; align-items: center; gap: 4px; font-size: 12px; margin-bottom: 3px; color: #e6dccb; }
@@ -229,6 +233,8 @@ kbd {
 .b-main { font-family: var(--px); font-size: 26px; text-shadow: 2px 2px 0 var(--ink), 4px 4px 0 rgba(0,0,0,0.5); }
 .b-sub { font-size: 15px; margin-top: 6px; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
 
+/* NETWORK STATS: ping + dung lượng mạng khi ở phòng online (src/ui/online.js) */
+#netstats { position: absolute; right: 6px; top: 4px; font-size: 11px; color: #e6dccb; background: rgba(10,6,12,0.7); padding: 1px 5px; pointer-events: none; z-index: 30; white-space: nowrap; }
 #toasts { position: absolute; right: 8px; top: 36px; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; pointer-events: none; }
 .toast {
   font-size: 12px; background: var(--panel); border: 1px solid var(--edge); padding: 1px 6px;
@@ -434,6 +440,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 /* NHÂN VẬT / SETTINGS: dòng tiêu đề kiểu SHOP trải cả 2 cột */
 #menu.m-headed { grid-template-rows: auto minmax(0, 1fr); row-gap: 8px; }
 #menu.m-headed > .tut-head { grid-column: 1 / -1; }
+.m-ver { margin-left: auto; padding-bottom: 3px; font-size: 12px; color: var(--muted); }   /* phiên bản game (SETTINGS) */
 .pt-tabs { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 /* thanh tab RANKED · PRIVATE MATCH (kiểu Rocket League): Q / E (LB / RB) đổi tab */
 .pt-tabrow { display: flex; align-items: center; gap: 4px; }
@@ -442,6 +449,10 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .pt-tab:hover { color: var(--gold); }
 .pt-tab.on { color: #fff; border-bottom-color: var(--gold); }
 .pt-area { font-size: 12px; line-height: 1; }
+/* RANKED: tiến độ tới Area kế (menu.js areaProgress) */
+.pt-next { display: flex; align-items: center; gap: 5px; font-size: 10px; line-height: 1; color: var(--muted); }
+.pt-prog { position: relative; width: 70px; height: 4px; background: #2a2230; border: 1px solid var(--ink); }
+.pt-prog b { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ac); }
 .pt-slots { flex: 1; display: flex; justify-content: center; align-items: center; gap: 16px; min-height: 0; }
 /* RANKED: thẻ của bạn đúng giữa màn, người bạn / ô MỜI BẠN nhỏ hơn đứng bên phải (không đẩy thẻ của bạn lệch đi) */
 .pt-solo { position: relative; }
@@ -1931,3 +1942,163 @@ canvas.avatar.big { width: 120px; height: 132px; }
 #prompt .pr-arrows kbd:nth-child(4) { grid-column: 3; grid-row: 2; }
 #prompt .pr-box.gold kbd { color: var(--ink); background: var(--gold); border-color: #fff3b0; font-size: 13px; }
 #prompt .pr-box.gold b { color: var(--gold); font-size: 6px; }
+
+/* ---------- MAIN PATH: Core Road của Area (docs/CORE_ROAD.md) — mỗi nấc = mốc Elo + Core mở ở đó ---------- */
+.proad-cores { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 8px; font-size: 11px; color: var(--muted); }
+.proad-cores > b { font-weight: normal; letter-spacing: 1px; color: #e6dccb; }
+.proad-cores em { font-style: normal; }
+.prc { display: inline-flex; align-items: center; gap: 2px; }
+.prc > span { margin-right: 2px; }
+.prc i { font-style: normal; line-height: 0; opacity: 0.8; }
+.prc i.got { opacity: 1; }
+/* bóng đen Core chưa mở: xám thay vì đen tuyền (nền tối) */
+.prc .pxi.sil { filter: brightness(0) invert(0.32); }
+
+/* ---------- ACHIEVEMENTS (src/ui/achievements.js): nút cúp trang chủ · danh sách thành tích · bảng phần thưởng ---------- */
+.hm-right { flex-direction: column; }
+.hm-ach { position: relative; }
+.hm-ach b { position: absolute; right: -6px; top: -6px; min-width: 13px; height: 13px; padding: 0 2px; display: flex; align-items: center; justify-content: center;
+  font-family: var(--px); font-size: 6px; font-weight: normal; color: var(--ink); background: var(--gold); box-shadow: 1px 1px 0 var(--ink); }
+.hm-ach.hot { border-color: var(--gold); }
+.hm-ach.hot x-px { animation: pulse 0.6s steps(2) infinite; }
+
+.ac-g { grid-template-columns: 1fr 236px; }
+.ac-sum { display: flex; align-items: center; gap: 4px; margin-left: 12px; font-size: 13px; color: var(--muted); }
+.ac-sum b { font-weight: normal; color: var(--gold); }
+.ac-new { margin-left: 6px; padding: 1px 4px; font-size: 11px; color: var(--ink); background: var(--gold); animation: pulse 0.8s steps(2) infinite; }
+.ac-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; min-height: 0; padding: 2px; scrollbar-width: thin; scrollbar-color: #5a4658 transparent; }
+.ac-row { display: grid; grid-template-columns: 32px 1fr 44px 52px; align-items: center; gap: 8px; padding: 4px 8px 4px 6px; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--gc); }
+.ac-row.sel { border-color: var(--gold); border-left-color: var(--gc); box-shadow: 0 0 0 1px rgba(255,225,79,0.25), 2px 2px 0 var(--ink);
+  background: linear-gradient(90deg, rgba(255,225,79,0.12), var(--panel)); }
+.ac-row.ready { background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 16%, transparent), var(--panel)); }
+.ac-row.got { opacity: 0.6; }
+.ac-row.got.sel { opacity: 1; }
+.ac-ic { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: #1c1622; border: 1px solid var(--edge); }
+.ac-row:not(.got):not(.ready) .ac-ic x-px { filter: grayscale(0.7) brightness(0.8); }
+.ac-ic.big { width: 50px; height: 50px; flex: none; border-color: var(--gc); box-shadow: 0 0 6px color-mix(in srgb, var(--gc) 50%, transparent); }
+.ac-tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ac-tx b { font-weight: normal; font-size: 16px; line-height: 1; color: #fff; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-row.sel .ac-tx b { color: var(--gold); }
+.ac-tx em { font-style: normal; font-size: 12px; color: var(--muted); line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-bar { display: block; height: 4px; margin-top: 2px; background: #231a28; border: 1px solid var(--ink); }
+.ac-bar > i { display: block; height: 100%; background: var(--gc, var(--gold)); }
+.ac-row.got .ac-bar > i, .ac-row.ready .ac-bar > i { background: var(--gold); }
+.ac-bar.big { height: 6px; }
+.ac-ri { position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #1c1622 40%, color-mix(in srgb, var(--rc) 22%, #1c1622)); border: 1px solid #3b2a36; border-bottom: 3px solid var(--rc); }
+.ac-ri canvas { image-rendering: pixelated; }
+.ac-ri.box .boxart { margin-top: 4px; transform: scale(0.85); }
+.ac-ri b { position: absolute; right: 1px; bottom: 0; font-family: var(--px); font-size: 5px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
+.ac-ri.big { width: 70px; height: 70px; flex: none; }
+.ac-ri.big.box .boxart { transform: none; margin-top: 8px; }
+.ac-st { font-style: normal; justify-self: end; font-size: 12px; color: var(--muted); }
+.ac-st.claim { padding: 3px 5px; font-family: var(--px); font-size: 6px; color: var(--ink); background: var(--gold); box-shadow: 1px 1px 0 var(--ink); animation: pulse 0.8s steps(2) infinite; }
+.ac-st.ok { line-height: 0; }
+
+.ac-detail { gap: 8px; }
+.ac-dh { display: flex; align-items: center; gap: 8px; }
+.ac-dh .sd-name { font-size: 18px; line-height: 1; }
+.ac-dd { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.ac-rw { display: flex; flex-direction: column; gap: 4px; padding: 6px; background: #1c1320; border: 1px solid var(--edge); }
+.ac-rh { display: flex; align-items: center; gap: 4px; font-size: 12px; letter-spacing: 1px; color: #e6dccb; }
+.ac-rb { display: flex; align-items: center; gap: 8px; }
+.ac-rb > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ac-rb b { font-weight: normal; font-size: 15px; line-height: 1; }
+.ac-rb span { font-size: 11px; color: var(--muted); line-height: 1.1; }
+.ac-act { margin-top: auto; font-size: 13px; color: var(--muted); text-align: center; }
+.ac-act.ok { color: #9dff3d; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.ac-act.claim { padding: 6px; font-size: 14px; color: var(--ink); background: var(--gold); border: 1px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
+.ac-act.claim kbd { color: var(--ink); border-color: var(--ink); }
+
+/* ---------- GOAT PATH (src/ui/road.js): lối vào ở đầu màn RANKED · bản đồ biển ngang, mỗi Area 1 đảo ---------- */
+.pt-road { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 3px 10px 3px; cursor: pointer; border: 1px solid transparent; }
+.pt-road:hover, .pt-road.sel { border-color: var(--gold); background: rgba(20,12,22,0.55); box-shadow: 2px 2px 0 var(--ink); }
+.pt-road-go { display: flex; align-items: center; gap: 3px; font-size: 10px; line-height: 1; color: var(--gold); opacity: 0.75; }
+.pt-road:hover .pt-road-go, .pt-road.sel .pt-road-go { opacity: 1; }
+
+.rd-sum { display: flex; align-items: center; gap: 10px; margin-left: 12px; font-size: 12px; color: var(--muted); }
+/* biển: nền xanh đêm + sóng pixel */
+.rd-view { flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden; position: relative; border: 1px solid var(--edge); box-shadow: inset 0 0 24px rgba(0,0,0,0.7), 2px 2px 0 var(--ink);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='48' shape-rendering='crispEdges'%3E%3Cg fill='%237fe7ff'%3E%3Crect x='6' y='9' width='8' height='2' fill-opacity='.2'/%3E%3Crect x='14' y='7' width='4' height='2' fill-opacity='.2'/%3E%3Crect x='42' y='29' width='10' height='2' fill-opacity='.13'/%3E%3Crect x='52' y='27' width='4' height='2' fill-opacity='.13'/%3E%3C/g%3E%3Crect x='26' y='41' width='6' height='2' fill='white' fill-opacity='.07'/%3E%3C/svg%3E") 0 0 / 72px 48px repeat, radial-gradient(ellipse at 50% 50%, #17375e 0%, #0f2440 60%, #0a1830 100%);
+  scrollbar-width: thin; scrollbar-color: #5a4658 transparent; }
+.rd-world { position: relative; }
+.rd-path { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.rd-path polyline { fill: none; stroke-linejoin: miter; }
+.rd-path .all { stroke: #e8d49a; stroke-width: 4; stroke-dasharray: 6 6; opacity: 0.55; }
+.rd-path .done { stroke: var(--gold); stroke-width: 4; stroke-dasharray: 6 6; filter: drop-shadow(0 0 2px rgba(255,225,79,0.8)); }
+
+/* đảo: bọt sóng + vách đá + mặt đảo (màu Area, viền cát) + sân thu nhỏ */
+.rd-isl { position: absolute; width: 150px; height: 74px; margin: -37px 0 0 -75px; cursor: pointer; }
+.rd-isl > .rd-foam, .rd-isl > .rd-cliff, .rd-isl > .rd-land {
+  position: absolute; clip-path: polygon(14px 0, calc(100% - 14px) 0, calc(100% - 14px) 4px, calc(100% - 6px) 4px, calc(100% - 6px) 10px, 100% 10px, 100% calc(100% - 10px), calc(100% - 6px) calc(100% - 10px), calc(100% - 6px) calc(100% - 4px), calc(100% - 14px) calc(100% - 4px), calc(100% - 14px) 100%, 14px 100%, 14px calc(100% - 4px), 6px calc(100% - 4px), 6px calc(100% - 10px), 0 calc(100% - 10px), 0 10px, 6px 10px, 6px 4px, 14px 4px); }
+.rd-foam { inset: -6px -8px; background: rgba(200,240,255,0.22); animation: rdFoam 1.6s steps(2) infinite; }
+@keyframes rdFoam { 50% { inset: -8px -10px; background: rgba(200,240,255,0.14); } }
+.rd-cliff { inset: 6px 0 -8px; background: color-mix(in srgb, var(--ac) 35%, #2a1d18); }
+.rd-land { inset: 0; background: color-mix(in srgb, var(--ac) 70%, #1c2a14); box-shadow: inset 0 0 0 4px #e8d49a, inset 0 0 0 6px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center; }
+.rd-land canvas { width: 112px; height: 42px; image-rendering: pixelated; border: 2px solid var(--ink); box-shadow: 0 0 0 1px rgba(255,255,255,0.25); }
+.rd-q { position: absolute; line-height: 0; }
+/* Area chưa từng tới: xám hết (đảo, sân, cờ, phần thưởng, cột mốc của Area đó) — đảo đang chọn giữ màu cờ để biết đang chọn */
+.rd-isl.ahead > .rd-foam, .rd-isl.ahead > .rd-cliff, .rd-isl.ahead > .rd-land, .rd-isl.ahead > .rd-flag, .rd-isl.ahead > .rd-loot,
+.rd-node.ahead { filter: grayscale(1) brightness(0.7); }
+.rd-isl.ahead.sel > .rd-flag { filter: none; }
+.rd-isl.sel .rd-land { box-shadow: inset 0 0 0 4px var(--gold), inset 0 0 0 6px rgba(0,0,0,0.25); }
+.rd-isl.sel { animation: rdBob 0.9s steps(2) infinite; }
+@keyframes rdBob { 50% { transform: translateY(-2px); } }
+.rd-isl.here .rd-foam { background: rgba(255,225,79,0.28); }
+.rd-lock { position: absolute; right: 2px; top: 6px; line-height: 0; font-style: normal; }
+/* cờ tên đảo: trên đảo hàng trên, dưới đảo hàng dưới (né đường đi) */
+.rd-flag { position: absolute; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: auto auto; column-gap: 4px; align-items: center; white-space: nowrap;
+  padding: 2px 6px 2px 2px; background: rgba(16,10,20,0.92); border: 1px solid var(--ac); box-shadow: 2px 2px 0 var(--ink); }
+.rd-isl.high .rd-flag { bottom: calc(100% + 4px); }
+.rd-isl.low .rd-flag { top: calc(100% + 8px); }
+.rd-flag b { grid-row: 1 / 3; font-family: var(--px); font-size: 7px; font-weight: normal; color: var(--ink); background: var(--ac); padding: 3px 3px 2px; }
+.rd-flag span { font-size: 12px; line-height: 1; color: #fff; letter-spacing: 0.5px; }
+.rd-flag em { font-style: normal; font-size: 10px; line-height: 1; color: var(--muted); }
+.rd-isl.sel .rd-flag { border-color: var(--gold); }
+/* phần thưởng khi vào Area: trên mép đảo (hàng trên: mép dưới · hàng dưới: mép trên) */
+.rd-loot { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 2px; }
+.rd-isl.high .rd-loot { top: calc(100% - 4px); }
+.rd-isl.low .rd-loot { bottom: calc(100% - 4px); }
+
+.rd-rw { position: relative; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; flex: none;
+  background: #1c1622; border: 1px solid var(--c); box-shadow: 1px 1px 0 var(--ink); }
+.rd-rw.ult { width: 24px; height: 24px; border: 2px solid var(--gold); box-shadow: 0 0 0 1px var(--ink), 0 0 6px rgba(255,225,79,0.7); }
+.rd-rw.ult::before { content: ""; position: absolute; left: 50%; top: -5px; width: 5px; height: 5px; margin-left: -2px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 0 1px var(--ink); }
+.rd-rw.next { filter: saturate(0.7); opacity: 0.8; }
+.rd-rw .pxi.sil { filter: brightness(0) invert(0.32); }
+.rd-rw em { position: absolute; right: -4px; bottom: -4px; line-height: 0; font-style: normal; }
+
+/* cột mốc ⅓ / ⅔ trên đường */
+.rd-node { position: absolute; width: 0; height: 0; }
+.rd-stone { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; background: #8b93a3; border: 1px solid var(--ink); box-shadow: inset -2px -2px 0 rgba(0,0,0,0.3); font-style: normal; }
+.rd-node.done .rd-stone { background: var(--gold); box-shadow: inset -2px -2px 0 rgba(0,0,0,0.25), 0 0 5px rgba(255,225,79,0.8); }
+.rd-ne, .rd-nl { position: absolute; left: 0; transform: translateX(-50%); display: flex; gap: 2px; white-space: nowrap; }
+.rd-ne { font-size: 10px; color: #e6dccb; text-shadow: 1px 1px 0 var(--ink); }
+.rd-node.up .rd-ne { top: 8px; } .rd-node.up .rd-nl { bottom: 8px; }
+.rd-node.dn .rd-ne { bottom: 8px; } .rd-node.dn .rd-nl { top: 8px; }
+
+/* bạn: nhân vật đứng trên đường */
+.rd-me { position: absolute; width: 0; height: 0; z-index: 3; pointer-events: none; }
+/* đứng dưới đường đi (không đè lên Core của cột mốc phía trên đường); nhãn YOU dưới chân */
+.rd-me canvas { position: absolute; left: -15px; top: 2px; width: 30px; height: 33px; image-rendering: pixelated; filter: drop-shadow(0 0 2px rgba(255,225,79,0.9)); }
+.rd-me::before { content: ""; position: absolute; left: -1px; top: -2px; width: 3px; height: 5px; background: var(--gold); box-shadow: 0 0 0 1px var(--ink); }
+.rd-me b { position: absolute; left: 0; top: 36px; transform: translateX(-50%); font-family: var(--px); font-size: 6px; font-weight: normal; color: var(--ink);
+  background: var(--gold); padding: 2px 3px 1px; box-shadow: 1px 1px 0 var(--ink); animation: pulse 0.8s steps(2) infinite; }
+
+/* thanh dưới: chi tiết đảo đang chọn */
+.rd-info { display: grid; grid-template-columns: 34px 170px 1fr; align-items: center; gap: 8px; margin-top: 4px; padding: 5px 8px 5px 6px;
+  background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--ac); }
+.rd-ib { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #1c1622; border: 1px solid var(--ac); }
+.rd-ih { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rd-ih b { font-weight: normal; font-size: 14px; color: #fff; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-ih span { font-size: 11px; color: var(--muted); line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-ih em { font-style: normal; font-size: 11px; color: #e6dccb; line-height: 1; display: flex; align-items: center; gap: 3px; }
+.rd-iw { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
+.rd-ig { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); }
+.rd-ig.done { color: #e6dccb; }
+.rd-ig b { font-weight: normal; font-size: 11px; color: #e6dccb; margin-right: 4px; }
+.rd-ig b.ult { color: var(--gold); }
+.rd-ig .rd-rw { width: 16px; height: 16px; }
+.rd-ig .rd-rw.ult { width: 18px; height: 18px; }
+.rd-ig .rd-rw.ult::before { display: none; }

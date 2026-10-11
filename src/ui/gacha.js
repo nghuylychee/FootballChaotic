@@ -21,7 +21,8 @@ window.SFC = window.SFC || {};
     shadow: '👻', galaxy: '🌌', aura: '🌟',
   };
   // wear = costume (lọc theo slot) · core = Core (lọc theo trường phái) · drill = thẻ DRILL (mở -> chọn 1 trong 3, ui/drill.js)
-  const INV_TABS = [['wear'], ['core'], ['drill']];
+  // hệ chỉ số ẩn (progression.attrs.hidden): không có tab DRILL
+  const INV_TABS = () => (SFC_CONFIG.progression.attrs.hidden ? [['wear'], ['core']] : [['wear'], ['core'], ['drill']]);
   const INV_LABEL = () => ({ wear: _t('APPEARANCE'), core: _t('CORES'), drill: _t('DRILL CARDS') });   // dịch lúc vẽ (đổi ngôn ngữ khi đang chạy)
   const DRILL_COLOR = '#6bff4f';   // viền / ánh thẻ DRILL (cọc xanh lá)
   const INV_COLS = 6;
@@ -117,6 +118,7 @@ window.SFC = window.SFC || {};
     opening: null,    // lượt quay hiện tại
     confirm: null,    // { key, t } — phân rã món hiếm cần bấm 2 lần
     shopBack: 'home',
+    openBack: null,   // màn mở hộp: Esc về trang này (ACHIEVEMENTS nhận thưởng hộp) · null = về SHOP
     invBack: 'char',
 
     /* ================= VẼ ================= */
@@ -275,7 +277,7 @@ window.SFC = window.SFC || {};
 
     /* ---------- TÚI ĐỒ ---------- */
     invEntries() {
-      const tab = INV_TABS[this.invTab][0], P = PROG(), d = PF().data;
+      const tab = INV_TABS()[this.invTab][0], P = PROG(), d = PF().data;
       const out = [];
       // thẻ DRILL: 1 ô gộp, số thẻ = số drill chờ chọn (Profile.drillsPending)
       if (tab === 'drill') {
@@ -291,7 +293,8 @@ window.SFC = window.SFC || {};
       }
       if (tab === 'core') {
         const arch = ARCH_KEYS()[this.invArch];
-        const ok = (id) => arch === 'all' || CORE_LIST()[id].tags.includes(arch);
+        // Tuyệt kỹ không nằm ở đây (có trang riêng CHARACTER > ULTIMATE)
+        const ok = (id) => CORE_LIST()[id].role !== 'ult' && (arch === 'all' || CORE_LIST()[id].tags.includes(arch));
         if (!P.coreGacha) {
           // gacha Core tắt: mục CORE là bộ sưu tập đủ mọi Core (xem ảnh động, gợi ý build)
           Object.keys(CORE_LIST()).filter(ok).forEach((id) => out.push(entry('core', id)));
@@ -313,8 +316,8 @@ window.SFC = window.SFC || {};
     pageInv() {
       const list = this.invEntries();
       this.invSel = Math.max(0, Math.min(this.invSel, list.length - 1));
-      const tabs = `<div class="tabs">${INV_TABS.map(([k], i) => `<button class="tab ${i === this.invTab ? 'sel' : ''}" data-itab="${i}">${INV_LABEL()[k]}</button>`).join('')}</div>`;
-      const tab = INV_TABS[this.invTab][0], coreTab = tab === 'core', drillTab = tab === 'drill';
+      const tabs = `<div class="tabs">${INV_TABS().map(([k], i) => `<button class="tab ${i === this.invTab ? 'sel' : ''}" data-itab="${i}">${INV_LABEL()[k]}</button>`).join('')}</div>`;
+      const tab = INV_TABS()[this.invTab][0], coreTab = tab === 'core', drillTab = tab === 'drill';
       // nút lọc (dùng chung CORES / APPEARANCE): ★ = tất cả, còn lại = icon pixel + màu của nhóm
       const chips = (keys, sel, attr, group) => `<div class="arch-filter">${keys.map((k, i) => {
         const g = group(k);
@@ -439,7 +442,7 @@ window.SFC = window.SFC || {};
 
     // mở túi đồ ở đúng mục (vd. nút USE DRILL CARDS ở STATS); back = trang về khi bấm Esc
     openInv(menu, tabKey, back) {
-      const i = INV_TABS.findIndex(([k]) => k === tabKey);
+      const i = INV_TABS().findIndex(([k]) => k === tabKey);
       if (i >= 0) { this.invTab = i; this.invSel = 0; }
       this.invBack = back;
       menu.go('inv');
@@ -464,6 +467,7 @@ window.SFC = window.SFC || {};
     activateBox(menu) {
       const order = PROG().boxOrder;
       if (this.boxSel >= order.length) return;
+      this.openBack = null;
       this.openBox(menu, order[this.boxSel]);
     },
 
@@ -483,9 +487,9 @@ window.SFC = window.SFC || {};
     inputInv(menu, input) {
       const list = this.invEntries(), n = list.length;
       let moved = false;
-      if (input.wasPressed('switch')) { this.invTab = wrap(this.invTab - 1, INV_TABS.length); this.invSel = 0; moved = true; }
-      if (input.wasPressed('sprint')) { this.invTab = wrap(this.invTab + 1, INV_TABS.length); this.invSel = 0; moved = true; }
-      const tab = INV_TABS[this.invTab][0];
+      if (input.wasPressed('switch')) { this.invTab = wrap(this.invTab - 1, INV_TABS().length); this.invSel = 0; moved = true; }
+      if (input.wasPressed('sprint')) { this.invTab = wrap(this.invTab + 1, INV_TABS().length); this.invSel = 0; moved = true; }
+      const tab = INV_TABS()[this.invTab][0];
       if (input.wasPressed('skill') && tab === 'core') { this.invArch = wrap(this.invArch + 1, ARCH_KEYS().length); this.invSel = 0; moved = true; }
       if (input.wasPressed('skill') && tab === 'wear') { this.invSlot = wrap(this.invSlot + 1, SLOT_KEYS().length); this.invSel = 0; moved = true; }
       if (n) {
@@ -515,7 +519,7 @@ window.SFC = window.SFC || {};
     back(menu) {
       if (menu.page === 'open') {
         if (this.opening && !this.opening.done) { this.opening.t0 = performance.now() - this.opening.dur * 1000; this.tick(menu); }
-        return menu.go('shop');
+        return menu.go(this.openBack || 'shop');
       }
       if (menu.page === 'inv') return menu.go(this.invBack);
       return menu.go(this.shopBack);

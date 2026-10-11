@@ -77,13 +77,14 @@ function handshakeWith(ext) {
 }
 
 (async () => {
-  // 0. trình duyệt xin nén khác nhau: Chrome kèm client_max_window_bits, Firefox / Safari không -> đều phải vào được
+  // 0. trình duyệt luôn xin permessage-deflate (Chrome kèm client_max_window_bits, Firefox / Safari không) -> đều vào được,
+  //    máy chủ không nhận nén WebSocket (nén trong game thay thế, không phụ thuộc proxy của nhà cung cấp)
   for (const [name, offer] of [['Chrome', 'permessage-deflate; client_max_window_bits'], ['Firefox', 'permessage-deflate'], ['no compression', '']]) {
     const r = await handshakeWith(offer);
     assert.ok(r.ok, `${name} handshake refused (${r.status})`);
-    if (offer) assert.ok(r.ext.startsWith('permessage-deflate'), `${name} gets compression`);
+    assert.strictEqual(r.ext, '', `${name}: no permessage-deflate (in-game compression only)`);
   }
-  console.log('0. browser compression offers: OK (Chrome, Firefox, no compression)');
+  console.log('0. browser compression offers: OK (Chrome, Firefox, none; WebSocket compression declined)');
 
   const logged = [];
   const origError = console.error;

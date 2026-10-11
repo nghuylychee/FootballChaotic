@@ -25,6 +25,7 @@ window.SFC = window.SFC || {};
       team: SFC.Mates.blankTeam(),   // đồng đội: đội hình + trạm scout (src/meta/teammates.js)
       attrs: blankAttrs(),
       ult: P().defaultUlt,           // Tuyệt kỹ đặc trưng đang mang (CHARACTER > ULTIMATE); bộ sưu tập = ownedUlts()
+      ach: [],                       // id thành tích đã nhận thưởng (src/meta/achievements.js)
       tut: { done: false, heirloom: false },   // PROLOGUE (src/game/tutorial.js) đã xem xong / bỏ qua · đã nhận bí kíp gia truyền (cut scene trao AURA FARMING)
     };
   }
@@ -56,13 +57,13 @@ window.SFC = window.SFC || {};
     },
 
     save() {
-      if (SFC_DEV && this.sandbox) return;   // DRILL TEST (menu SETTINGS): chỉ đổi trong bộ nhớ, không ghi hồ sơ
+      if (SFC_DEBUG && this.sandbox) return;   // DRILL TEST (menu SETTINGS): chỉ đổi trong bộ nhớ, không ghi hồ sơ
       SFC.Storage.setJSON(P().storageKey, this.data);
     },
 
     // xoá hồ sơ đã lưu (RESET DATA ở SETTINGS) — lần tải sau như người chơi mới
     resetAll() {
-      if (SFC_DEV) this.sandbox = false;
+      if (SFC_DEBUG) this.sandbox = false;
       SFC.Storage.remove(P().storageKey);
       this.data = this.sanitize(null);
     },
@@ -91,6 +92,8 @@ window.SFC = window.SFC || {};
       d.items = counts(raw.items || raw.owned, (id) => ITEMS()[id] && !ITEMS()[id].default);
       d.cores = counts(raw.cores, (id) => !!CORES()[id]);
       d.boxes = counts(raw.boxes, (id) => !!P().boxes[id]);
+      const achList = (SFC_CONFIG.achievements && SFC_CONFIG.achievements.list) || [];
+      d.ach = Array.isArray(raw.ach) ? [...new Set(raw.ach.filter((id) => achList.some((a) => a.id === id)))] : [];
       const lk = raw.look || {};
       for (const slot of Object.keys(P().slots)) {
         const id = lk[slot];
@@ -124,12 +127,30 @@ window.SFC = window.SFC || {};
       return String(s).toUpperCase().replace(/[^A-Z0-9 _-]/g, '').replace(/\s+/g, ' ').replace(/^\s+/, '').slice(0, P().nameMaxLength);
     },
 
+    // true = đã đặt · 'empty' = không còn chữ hợp lệ · 'blocked' = tên bị chặn (config/namefilter.config.js)
     setName(n) {
       const name = this.cleanName(n).trim();
-      if (!name) return false;
+      if (!name) return 'empty';
+      if (!this.nameAllowed(name)) return 'blocked';
       this.data.name = name;
       this.save();
       return true;
+    },
+
+    // tên không chứa từ tục tĩu / xúc phạm (config/namefilter.config.js; cách so ghi ở đầu file đó)
+    nameAllowed(name) {
+      const F = SFC_CONFIG.nameFilter;
+      if (!F) return true;
+      const LEET = { 0: 'O', 1: 'I', 3: 'E', 4: 'A', 5: 'S', 7: 'T', 8: 'B', 9: 'G' };
+      const leet = (s) => s.replace(/[0-9]/g, (d) => LEET[d] || d);
+      const squash = (s) => s.replace(/(.)\1+/g, '$1');
+      const up = String(name).toUpperCase(), raw = up.replace(/[\s_-]+/g, ''), joined = leet(raw);
+      // dạng gộp chữ lặp chỉ so khi còn >= 4 chữ (KKK -> K, JIZZ -> JIZ sẽ chặn nhầm cả đống tên)
+      const loose = (w) => squash(w).length >= 4 && squash(joined).includes(squash(w));
+      if (F.anywhere.some((w) => raw.includes(w) || joined.includes(w) || loose(w))) return false;
+      const tokens = up.split(/[\s_-]+/).filter(Boolean).map(leet);
+      const forms = new Set(tokens.concat(tokens.map(squash)));
+      return !F.words.some((w) => forms.has(w) || forms.has(w + 'S') || forms.has(w + 'ES'));
     },
 
     /* ---------- level / XP ---------- */
@@ -137,11 +158,11 @@ window.SFC = window.SFC || {};
       return level >= P().maxLevel ? Infinity : P().xpBase + P().xpStep * (level - 1);
     },
 
-    // trần level theo Main Path (mainpath.config.js -> areas[].levelCap): theo Elo cao nhất từng đạt, khoảng Elo của Area chia đều
-    // cho các nấc trong levelCap; vượt hết khoảng Elo của Area cuối = maxLevel
+    // trần level: progression.levelCapByRank = true -> theo Main Path (mainpath.config.js -> areas[].levelCap, theo Elo cao nhất từng đạt,
+    // khoảng Elo của Area chia đều cho các nấc); tắt -> maxLevel
     levelCap() {
       const path = this.data.path, MP = SFC.MainPath;
-      return path && MP ? MP.levelCapAt(path.peak) : P().maxLevel;
+      return P().levelCapByRank && path && MP ? MP.levelCapAt(path.peak) : P().maxLevel;
     },
     // đang chạm trần level (XP vẫn tích, lên Elo Main Path là lên level)
     levelCapped() { return this.data.level < P().maxLevel && this.data.level >= this.levelCap(); },
@@ -283,16 +304,23 @@ window.SFC = window.SFC || {};
 
     /* ---------- Core ---------- */
     coreLevel(id) { return CORES()[id] ? CORES()[id].level : 1; },
-    // Core được bốc khi chọn Core giữa trận:
+    // Core đã mở = pool lượt chọn Core giữa trận (Tuyệt kỹ không vào lượt chọn: CoreSystem.eligible) + túi đồ khoá / không khoá:
     //   gacha Core bật: bộ cơ bản + Core trong túi đồ đã đủ level
-    //   gacha Core tắt: mọi Core thường + Tuyệt kỹ có sẵn (starterCores) + Tuyệt kỹ mở bằng Main Path (mainPath.lockCores = false: mọi Core)
+    //   gacha Core tắt: Core thường đã mở (collection) + Tuyệt kỹ đã sưu tập
     unlockedCores() {
       if (P().coreGacha) return P().starterCores.concat(Object.keys(this.data.cores).filter((id) => this.data.cores[id] > 0 && this.coreLevel(id) <= this.data.level));
-      const L = SFC_CONFIG.cores.list, all = Object.keys(L);
-      if (!SFC_CONFIG.mainPath.lockCores) return all;
-      return all.filter((id) => L[id].role !== 'ult' || P().starterCores.includes(id) || this.data.path.cores.includes(id));
+      return this.collection().concat(this.ownedUlts());
     },
     coreUnlocked(id) { return this.unlockedCores().includes(id); },
+
+    // Core thường đã mở (docs/CORE_ROAD.md): bộ khởi đầu + Core Road đã mở (path.cores) + Core quay được từ gacha cũ
+    // (mainPath.lockCores = false: mọi Core thường)
+    collection(d = this.data) {
+      const L = SFC_CONFIG.cores.list, normal = (id) => L[id] && L[id].role !== 'ult';
+      if (!SFC_CONFIG.mainPath.lockCores) return Object.keys(L).filter(normal);
+      const bag = Object.keys((d && d.cores) || {}).filter((id) => d.cores[id] > 0);
+      return [...new Set(P().starterCores.concat((d && d.path && d.path.cores) || [], bag).filter(normal))];
+    },
 
     /* ---------- Tuyệt kỹ đặc trưng (không phải lá chọn Core: mỗi người mang 1 cái vào trận) ---------- */
     // bộ sưu tập: Tuyệt kỹ có sẵn (progression.starterCores, vd. AURA FARMING) + Tuyệt kỹ mở khi lần đầu tới Area (Main Path)
@@ -309,7 +337,9 @@ window.SFC = window.SFC || {};
 
     /* ---------- chỉ số character + DRILL (config: progression.attrs, docs/DRILL_DESIGN.md) ---------- */
     // extra: { id chỉ số: số bước cộng thêm } — xem trước 1 drill trước khi chọn
-    rating(id, extra = {}) { return Math.min(A().max, A().base + this.data.attrs.steps[id] + (extra[id] || 0)); },
+    // attrs.hidden (hệ chỉ số đang ẩn): mọi chỉ số = attrs.fixed
+    statsHidden() { return !!A().hidden; },
+    rating(id, extra = {}) { return A().hidden ? A().fixed : Math.min(A().max, A().base + this.data.attrs.steps[id] + (extra[id] || 0)); },
     ovr(extra = {}) {
       const ids = A().order;
       return Math.round(ids.reduce((s, id) => s + this.rating(id, extra), 0) / ids.length);
@@ -320,7 +350,8 @@ window.SFC = window.SFC || {};
       return 1 + (this.rating(id, extra) / A().scale - 1) * (w == null ? 1 : w);
     },
 
-    drillsPending() { return this.data.attrs.drills.pending; },
+    // thẻ drill chờ mở (hệ chỉ số ẩn: 0 — vẫn tích ngầm, bật lại là có)
+    drillsPending() { return A().hidden ? 0 : this.data.attrs.drills.pending; },
     // số bước drill thật sự cộng được (cắt ở tối đa); chỉ số đã tối đa không có trong kết quả
     drillGains(id) {
       const g = D().list[id].gains, out = {};
@@ -413,11 +444,18 @@ window.SFC = window.SFC || {};
     },
 
     // dữ liệu nhận từ máy khác: chỉ giữ giá trị hợp lệ
+    // tên người khác gửi tới: rỗng -> PLAYER, bị chặn -> nameFilter.fallback (máy chủ không nạp nameFilter -> không lọc)
+    publicName(n) {
+      const name = this.cleanName(n || '').trim();
+      if (!name) return 'PLAYER';
+      return this.nameAllowed(name) ? name : (SFC_CONFIG.nameFilter && SFC_CONFIG.nameFilter.fallback) || 'PLAYER';
+    },
+
     sanitizePublic(pub) {
       if (!pub || typeof pub !== 'object') return null;
       const roles = SFC_CONFIG.game.roles;
       const out = {
-        name: this.cleanName(pub.name || '').trim() || 'PLAYER',
+        name: this.publicName(pub.name),
         level: clampInt(pub.level, 1, P().maxLevel),
         look: this.sanitizeLook(pub.look),
         cores: Array.isArray(pub.cores) ? pub.cores.filter((id) => SFC_CONFIG.cores.list[id]) : P().starterCores.slice(),

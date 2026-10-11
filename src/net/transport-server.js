@@ -8,13 +8,62 @@
  *  - host() / join(code, { wait }) thử lại mỗi 2 giây tới net.server.wakeTimeout giây; onWait(giây còn lại) để hiện đếm ngược
  *  - cancel(): bỏ chờ -> reject { type: 'cancelled' }
  * Tìm trận xếp hạng: queue(vé) -> queue{v,elo,role,pf}; queued = đã vào hàng (hết hạn kết nối), room{code,id} = ghép xong (resolve),
- * solo = không ghép được (reject { type: 'solo' }). Chỉ thử 1 lần: máy chủ đang ngủ nghĩa là không ai đang tìm trận.
+ * solo = không ghép được (reject { type: 'solo' }). Máy chủ đang ngủ: thử lại tới net.server.queueWake giây rồi mới solo
+ * (mở màn PLAY đã đánh thức sẵn; 2 người tìm cùng lúc lúc máy chủ ngủ vẫn gặp được nhau).
+ * Phiên bản: gói đầu kèm cv (NetCommon.clientVersion, vd. 1.1.0-5); máy chủ trả sv (phiên bản máy chủ, vd. 5.1.0) trong
+ * room{code,id,sv} / err{e,sv} -> NetServer.serverVersion (chỉ để chẩn đoán, không hiện cho người chơi).
+ * Nén trong game: trình duyệt có DecompressionStream('deflate-raw') thì gói đầu kèm z:1 -> gói chung của phòng tới dạng nhị phân
+ * (1 luồng deflate-raw chung của phòng, bắt đầu từ 1 điểm FULL_FLUSH, mỗi gói = JSON + '\n'; xem server/index.js), gói gửi riêng
+ * máy này (room, you, start, pong, err...) tới dạng chữ. Xử lý cả 2 theo đúng thứ tự nhận (inflater). Không xin nén: mọi gói là chữ.
  */
 window.SFC = window.SFC || {};
 
 (function () {
   const N = () => SFC_CONFIG.net;
   const S = () => SFC_CONFIG.net.server;
+
+  // trình duyệt giải nén được luồng deflate-raw? (Chrome 103+, Firefox 113+, Safari 16.4+, Electron)
+  const canInflate = () => {
+    try { return typeof DecompressionStream === 'function' && typeof TextDecoder === 'function' && !!new DecompressionStream('deflate-raw'); } catch (e) { return false; }
+  };
+
+  // hàng xử lý gói theo ĐÚNG THỨ TỰ NHẬN (gói chữ + gói nhị phân). Gói nhị phân = 1 đoạn luồng nén chung của phòng chứa trọn vẹn
+  // >= 1 gói tin (máy chủ flush sau mỗi gói) -> giải xong hết mới xử lý gói kế (gói chữ gửi riêng không vượt lên trước gói chung).
+  // push(chuỗi | Uint8Array); onLine(chuỗi JSON) cho từng gói; drain() = chờ xử lý hết phần đã nhận
+  function inflater(onLine, onError) {
+    const dec = new TextDecoder(), q = [];
+    let w = null, r = null, rest = '', busy = false, dead = false, idle = [];
+    const lines = () => {
+      let i, got = false;
+      while ((i = rest.indexOf('\n')) >= 0) { const line = rest.slice(0, i); rest = rest.slice(i + 1); got = true; onLine(line); }
+      return got;
+    };
+    const bin = async (bytes) => {
+      if (!w) { const ds = new DecompressionStream('deflate-raw'); w = ds.writable.getWriter(); r = ds.readable.getReader(); }
+      const wrote = w.write(bytes);
+      for (let got = false; !got || rest;) {
+        const { value, done } = await r.read();
+        if (done) throw new Error('stream ended');
+        rest += dec.decode(value, { stream: true });
+        if (lines()) got = true;
+      }
+      await wrote;
+    };
+    const pump = async () => {
+      busy = true;
+      try {
+        while (q.length && !dead) { const it = q.shift(); if (typeof it === 'string') onLine(it); else await bin(it); }
+      } catch (e) { dead = true; onError(e); }
+      busy = false;
+      const done = idle; idle = [];
+      for (const fn of done) fn();
+    };
+    return {
+      push(item) { if (dead) return; q.push(item); if (!busy) pump(); },
+      drain() { return busy || q.length ? new Promise((res) => idle.push(res)) : Promise.resolve(); },
+      close() { dead = true; if (w) w.abort().catch(() => {}); },
+    };
+  }
 
   const NetServer = {
     ws: null,
@@ -42,14 +91,15 @@ window.SFC = window.SFC || {};
       this.cancelled = false;
       return new Promise((resolve, reject) => {
         this.abort = () => { this.abort = null; reject({ type: 'cancelled' }); };
-        this.open(Object.assign({ t: 'queue', v: N().protocol }, ticket), S().connectTimeout)
+        // máy chủ đang ngủ: thử lại tới queueWake giây (người tìm trận cùng lúc đều phải chờ nó dậy mới gặp được nhau)
+        this.until(Object.assign({ t: 'queue', v: N().protocol }, ticket), null, S().queueWake)
           .then((code) => { this.abort = null; resolve(code); }, (e) => { this.abort = null; reject(e); });
       });
     },
 
     // thử kết nối mỗi 2 giây tới hạn; chỉ lỗi "không tới được" mới thử lại (sai mã / đầy / sai phiên bản thì báo ngay)
-    until(first, onWait) {
-      const deadline = Date.now() + (S().wakeTimeout || S().connectTimeout) * 1000;
+    until(first, onWait, timeoutSec) {
+      const deadline = Date.now() + (timeoutSec || S().wakeTimeout || S().connectTimeout) * 1000;
       this.cancelled = false;
       return new Promise((resolve, reject) => {
         // cancel() kết thúc lần chờ ngay (cả khi đang giữa 1 lần thử hoặc đang đợi 2 giây)
@@ -93,20 +143,42 @@ window.SFC = window.SFC || {};
         const timer = setTimeout(() => fail({ type: 'server-unreachable' }), timeoutSec * 1000);
         try { ws = new WebSocket(S().url); } catch (e) { fail({ type: 'server-unreachable' }); return; }
         this.ws = ws;
-        ws.onopen = () => ws.send(JSON.stringify(first));
+        // nén trong game: gói nhị phân -> giải theo thứ tự -> handle như gói chữ
+        const z = canInflate() ? inflater((text) => parse(text), () => { try { ws.close(); } catch (e) { /* bỏ qua */ } }) : null;
+        if (z) ws.binaryType = 'arraybuffer';
+        this.compressed = !!z;
+        const hi = Object.assign({ cv: SFC.NetCommon.clientVersion() }, z ? { z: 1 } : {}, first);
+        ws.onopen = () => ws.send(JSON.stringify(hi));
         ws.onerror = () => fail({ type: 'server-unreachable' });
         ws.onclose = () => {
-          if (this.ws !== ws) return;
-          if (!done) { fail({ type: 'server-unreachable' }); return; }
-          const was = this.joined;
-          this.reset();
-          if (was) this.emit('close', 'host');
+          // gói cuối (vd. bye) có thể còn đang giải nén: xử lý hết rồi mới báo mất kết nối
+          const closed = () => {
+            if (z) z.close();
+            if (this.ws !== ws) return;
+            if (!done) { fail({ type: 'server-unreachable' }); return; }
+            const was = this.joined;
+            this.reset();
+            if (was) this.emit('close', 'host');
+          };
+          if (z) z.drain().then(closed); else closed();
         };
         ws.onmessage = (ev) => {
+          if (typeof ev.data === 'string') {
+            SFC.NetStats.in(ev.data.length);
+            if (z) z.push(ev.data); else parse(ev.data);   // có luồng nén: xếp hàng sau phần nhị phân đang giải
+            return;
+          }
+          if (!z) return;
+          SFC.NetStats.in(ev.data.byteLength);
+          z.push(new Uint8Array(ev.data));
+        };
+        const parse = (text) => {
+          if (this.ws !== ws) return;
           let msg;
-          try { msg = JSON.parse(ev.data); } catch (e) { return; }
+          try { msg = JSON.parse(text); } catch (e) { return; }
           if (!msg || !msg.t) return;
           if (this.joined) { this.emit('data', msg, 'host'); return; }
+          if (typeof msg.sv === 'string') this.serverVersion = msg.sv;
           // bắt tay
           if (msg.t === 'room') {
             done = true;
@@ -123,7 +195,10 @@ window.SFC = window.SFC || {};
     },
 
     send(msg) {
-      if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(msg));
+      if (!this.ws || this.ws.readyState !== 1) return;
+      const s = JSON.stringify(msg);
+      this.ws.send(s);
+      SFC.NetStats.out(s.length);
     },
 
     // máy này không bao giờ làm host trên máy chủ riêng

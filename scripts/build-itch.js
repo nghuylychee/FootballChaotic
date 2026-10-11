@@ -1,8 +1,9 @@
-/* Bản desktop cho itch.io: giống bản Steam (npm run dist) nhưng không đóng gói steamworks.js
+/* Bản desktop cho itch.io: giống bản Steam (npm run build:steam) nhưng không đóng gói steamworks.js
  * -> electron/preload.js không nạp được Steam -> game dùng PeerJS (giống bản web).
- * Bản DEMO như bản web: env SFC_DEMO=1 -> afterPack (strip-dev.js) ghi SFC_DEMO = true (config/demo.config.js: khoá Area 3+ và ONLINE).
- * Ra: dist/itch/Street Football Chaos/ + dist/street-football-chaos-windows-<version>.zip (version lấy từ package.json; trong zip là thư mục đó).
- * npm run itch-desktop
+ * Bản DEMO như bản web: env SFC_STORE=itch + SFC_DEMO=1 -> afterPack (strip-debug.js) ghi vào build.config.js
+ * (config/demo.config.js: khoá Area 3+ và ONLINE).
+ * Ra: dist/itch-desktop/Street Football Chaos/ + dist/street-football-chaos-itch-desktop-<version>.zip (version lấy từ package.json; trong zip là thư mục đó).
+ * npm run build:itch-desktop
  */
 const fs = require('fs');
 const path = require('path');
@@ -10,12 +11,13 @@ const { execFileSync } = require('child_process');
 const { build, Platform } = require('electron-builder');
 
 const ROOT = path.join(__dirname, '..');
-const OUT = path.join(ROOT, 'dist', 'itch');
+const OUT = path.join(ROOT, 'dist', 'itch-desktop');
 const pkg = require(path.join(ROOT, 'package.json'));
-const ZIP = path.join(ROOT, 'dist', `street-football-chaos-windows-${pkg.version}.zip`);
+const ZIP = path.join(ROOT, 'dist', `street-football-chaos-itch-desktop-${pkg.version}.zip`);
 const FOLDER = 'Street Football Chaos';
 
 (async () => {
+  process.env.SFC_STORE = 'itch';
   process.env.SFC_DEMO = '1';
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.rmSync(ZIP, { force: true });

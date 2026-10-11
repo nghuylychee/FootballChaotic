@@ -18,7 +18,7 @@ const ROOT = path.join(__dirname, '..', '..');
 // file của máy chủ + phần khách online + giao diện online (scripts/manifest.js), theo thứ tự nạp của game
 const manifest = require(path.join(ROOT, 'scripts', 'manifest.js'));
 const SERVER_FILES = manifest.files('server');
-const FILES = manifest.files('game').filter((f) => SERVER_FILES.includes(f) || ['src/net/transport-server.js', 'src/net/session.js', 'src/ui/online.js'].includes(f));
+const FILES = manifest.files('game').filter((f) => SERVER_FILES.includes(f) || ['src/net/transport-server.js', 'src/net/predict.js', 'src/net/session.js', 'src/ui/online.js'].includes(f));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const until = async (fn, ms = 5000, what = 'condition') => {
   const end = Date.now() + ms;
@@ -75,6 +75,7 @@ const MACHINES = [];
 function machine(name, serverUrl) {
   const ctx = vm.createContext({
     console, setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, performance, WebSocket, Intl, URL,
+    DecompressionStream, TextDecoder,   // nén trong game (transport-server.js)
   });
   ctx.window = ctx;
   const mem = {};
@@ -173,6 +174,14 @@ async function serverRoom(url) {
   A.O.introDone(); B.O.introDone();
   await play(1500, A, B);
   assert.ok(B.O.buf.length > 0 && B.O.game.state !== 'ended', 'guest receives snapshots');
+  // NETWORK STATS: ping tới máy chủ + byte gửi / nhận
+  await until(() => A.SFC.NetStats.rtt != null && B.SFC.NetStats.rtt != null, 3000, 'ping measured on both sides');
+  for (const m of [A, B]) { const S = m.SFC.NetStats; assert.ok(S.up > 0 && S.down > S.up, `${m.name}: bytes measured`); }
+  // nén trong game: gói nhị phân deflate-raw, snapshot ~0,1 KB thay vì ~1,1 KB
+  assert.ok(B.SFC.NetServer.compressed, 'server stream is compressed');
+  const perSnap = B.SFC.NetStats.down / Math.max(1, B.O.game.time * 30);
+  assert.ok(perSnap < 400, `compressed snapshots are small (${perSnap.toFixed(0)} B each)`);
+  console.log(`in-game compression: ~${perSnap.toFixed(0)} B per snapshot on the wire`);
   await dropAndRejoin(A, B, () => B.SFC.NetServer.ws.close());   // rớt WebSocket
   A.O.backToLobby();
   await until(() => A.O.status === 'lobby' && B.O.status === 'lobby', 5000, 'back to lobby');
@@ -223,6 +232,7 @@ async function rankedSearch(url) {
   D.O.queue();
   assert.strictEqual(D.log.solo, 1, 'no server configured: solo at once');
   const E = machine('EVE', 'ws://localhost:1');
+  E.SFC_CONFIG.net.server.queueWake = 3;   // test: máy chủ không dậy -> thử lại 3 giây rồi solo (thật: queueWake ~45 giây)
   E.O.queue();
   await until(() => E.log.solo, 8000, 'unreachable: solo');
   assert.strictEqual(E.O.status, 'idle');
@@ -259,6 +269,9 @@ async function fallbackRoom() {
   await play(1500, A, B);
   assert.ok(B.O.buf.length > 0, 'guest receives snapshots from player host');
   assert.ok(A.O.game.time > 0.5, 'host simulates');
+  // host đo ping tới khách, khách đo ping tới host
+  // ping mỗi net.pingEvery giây: chờ lần đo đầu (khách có thể vừa vào phòng chưa tới 1 giây). Mạng P2P giả không đếm byte
+  await until(() => A.SFC.NetStats.rtt != null && B.SFC.NetStats.rtt != null, 3000, 'p2p ping measured on both sides');
   await dropAndRejoin(A, B, () => B.SFC.NetPeer.sever());   // rớt kết nối P2P
   A.O.backToLobby();
   await until(() => A.O.status === 'lobby' && B.O.status === 'lobby', 5000, 'p2p back to lobby');

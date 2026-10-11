@@ -155,6 +155,10 @@ window.SFC = window.SFC || {};
   // phủ màu toàn màn hình (sepia, tím né hoàn hảo...)
   E.tint = function (color, t = 1, a = 0.25) { this.O.tints.push({ color, t, max: t, a }); };
 
+  // toàn bộ VFX Kit chỉ để nhìn -> máy chủ riêng bỏ qua (Effects.headless)
+  SFC.Effects.COSMETIC.push('wave', 'decal', 'stretch', 'clone', 'popClone', 'projectile', 'beam', 'vortex', 'bolt', 'comic', 'combo',
+    'shield', 'portal', 'netFire', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint');
+
   /* ================= UPDATE ================= */
   const baseClear = E.clearHazards;
   E.clearHazards = function () {

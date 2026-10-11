@@ -3,6 +3,7 @@
  *  - Âm lượng: 0..10 (x10%) -> SFC.Audio.setVolume, nhân với âm lượng trong config
  *  - Cỡ cửa sổ: chỉ bản desktop (electron/preload.js -> window.SFC_DESKTOP). 'WxH' hoặc 'full'.
  *    Danh sách cỡ: game.config.js -> render.windowSizes, bỏ cỡ lớn hơn màn hình
+ *  - NETWORK STATS: hiện ping + dung lượng gửi / nhận khi đang ở phòng online (src/ui/online.js)
  *  - Ngôn ngữ: mã trong src/engine/i18n.js. null = chưa chọn -> popup chọn ngôn ngữ lúc mở game (src/ui/langpick.js)
  */
 window.SFC = window.SFC || {};
@@ -19,6 +20,7 @@ window.SFC = window.SFC || {};
     res: '1280x720',     // khớp cỡ cửa sổ lúc mở (electron/main.js)
     lastWindow: null,    // cỡ cửa sổ trước khi vào FULLSCREEN (F11 thoát ra thì về lại cỡ này)
     lang: null,          // ngôn ngữ đã chọn ('en', 'pt-BR'...) · null = chưa chọn
+    netStats: false,     // hiện ping + KB/s khi online
 
     load() {
       const raw = SFC.Storage.getJSON(KEY, {}) || {};
@@ -26,10 +28,11 @@ window.SFC = window.SFC || {};
       this.sfx = vol10(raw.sfx, 10);
       if (raw.res === FULL || /^\d+x\d+$/.test(raw.res)) this.res = raw.res;
       if (typeof raw.lang === 'string') this.lang = raw.lang;
+      this.netStats = raw.netStats === true;
       return this;
     },
     save() {
-      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang });
+      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats });
     },
 
     get desktop() { return !!window.SFC_DESKTOP; },
@@ -48,6 +51,8 @@ window.SFC = window.SFC || {};
       this.save();
     },
     volumeLabel(kind) { return this[kind] ? `${this[kind] * 10}%` : SFC.t('OFF'); },
+
+    toggleNetStats() { this.netStats = !this.netStats; this.save(); },
 
     // đổi ngôn ngữ (popup chọn ngôn ngữ): dịch lại config + lưu ngay
     setLang(id) {

@@ -61,6 +61,15 @@ window.SFC = window.SFC || {};
       return d;
     }
 
+    // máy chủ riêng (không ai xem): mọi hàm chỉ để nhìn thành rỗng, không cập nhật particle / lớp phủ — chỉ còn hazard gameplay.
+    // Gọi TRƯỚC Sync.capture: lệnh hiệu ứng vẫn được ghi lại gửi cho máy khách, chỉ không tự chạy ở đây
+    headless() {
+      const no = () => {};
+      for (const m of Effects.COSMETIC) this[m] = no;
+      this.updateCosmetic = no;
+      this.updateOverlay = no;
+    }
+
     /* ---------- update ---------- */
     update(dt) {
       this.updateCosmetic(dt);
@@ -162,6 +171,10 @@ window.SFC = window.SFC || {};
       this.decoys = this.decoys.filter((d) => d.alive);
     }
   }
+
+  // hàm hiệu ứng chỉ để nhìn (headless() bỏ qua). Không trả về gì, không mô phỏng nào đọc trạng thái của chúng.
+  // vfxkit.js thêm phần của nó; hiệu ứng mới chỉ để nhìn thì thêm tên vào đây
+  Effects.COSMETIC = ['burst', 'text', 'ring', 'shake', 'flash', 'afterimage'];
 
   SFC.Effects = Effects;
 })();

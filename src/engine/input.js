@@ -82,8 +82,12 @@ SFC.Input = {
     return c.startsWith('Pad.') ? SFC.Pad.label(c) : c.replace(/^(Key|Digit)/, '');
   },
 
-  // chữ gợi ý phím: tay cầm -> nút của action, bàn phím -> giữ nguyên chữ viết sẵn ('Enter', 'Esc'...)
-  key(action, kb) { return this.device === 'pad' ? this.label(action) : kb; },
+  // chữ gợi ý phím: tay cầm -> nút của action, bàn phím -> giữ nguyên chữ viết sẵn ('Enter', 'Esc'...).
+  // Esc bị cấm ở cửa hàng này (controls.restrictedKeys) -> nhãn phím bàn phím của action (back -> Backspace)
+  key(action, kb) {
+    if (this.device === 'pad') return this.label(action);
+    return kb === 'Esc' && !this.gameCodes.has('Escape') ? this.label(action) : kb;
+  },
 
   // bảng hướng dẫn phím theo thiết bị: tay cầm -> controls.padHelp với {action} thay bằng nhãn nút
   helpSet() {

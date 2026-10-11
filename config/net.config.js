@@ -8,19 +8,21 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 1,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
+  protocol: 6,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
+  pingEvery: 1,                // giây giữa 2 lần đo ping tới máy chạy trận (NETWORK STATS, 0 = tắt)
   // Máy chủ riêng (server/): máy chủ chạy trận, mọi người là khách. url trống = chỉ người chơi làm host (Steam / PeerJS).
   // TẠO PHÒNG thử máy chủ trước, không tới được thì tự chuyển sang người chơi làm host.
   server: {
-    url: '',                   // 'wss://...' · chạy thử máy chủ trên máy này: npm run online (tự gắn url, không cần sửa ở đây)
+    url: 'wss://sfc-server.onrender.com',   // máy chủ Render (bản free: ngủ sau 15 phút, ~1 phút để dậy) · chạy thử máy chủ trên máy này: npm run online (tự gắn url, không cần sửa ở đây)
     codeFirst: '23456789',     // ký tự đầu của mã phòng máy chủ riêng (mã Steam luôn bắt đầu A-D, mã PeerJS tránh các ký tự này)
                                // -> mọi mã đều dài codeLength, người chơi không phân biệt được, VÀO PHÒNG tự biết phòng loại nào
     connectTimeout: 5,         // giây chờ 1 lần thử kết nối
     wakeTimeout: 70,           // giây chờ máy chủ đang ngủ dậy (gói miễn phí ~1 phút) trước khi TẠO PHÒNG tự host; Esc bỏ chờ
+    queueWake: 45,             // tìm trận xếp hạng lúc máy chủ đang ngủ: thử lại tới bấy nhiêu giây rồi mới đá với người chơi giả
     keepAlive: 60,             // giây giữa 2 gói giữ máy chủ thức khi đang ở phòng máy chủ riêng (0 = tắt)
     snapshotEvery: 2,          // máy chủ gửi trạng thái 30 lần/giây (đỡ băng thông; khách vẫn nội suy mượt)
-    interpDelay: 0.09,         // trễ nội suy ở máy khách phòng máy chủ riêng (snapshot thưa hơn -> đệm dài hơn interpDelay)
+    interpDelay: 0.05,         // trễ nội suy tối thiểu ở máy khách phòng máy chủ riêng (đệm tự tăng theo độ giật, tới net.interpMax)
   },
   peerjsUrl: 'lib/peerjs.min.js',   // PeerJS 1.5.4, đóng gói kèm game
   // Tùy chọn PeerJS; để trống = dùng PeerJS Cloud miễn phí.
@@ -49,13 +51,26 @@ SFC_CONFIG.net = {
     widen: 15,
     anyAfter: 20,              // chờ quá bấy nhiêu giây: ghép với bất kỳ ai (ít người chơi thì vẫn gặp được nhau)
     gather: 5,                 // đã có người hợp: người chờ lâu nhất phải chờ ít nhất bấy nhiêu giây (xem có thêm người tới không)
-    aloneWait: [6, 12],        // hàng không có ai khác: sau bấy nhiêu giây (ngẫu nhiên trong khoảng) -> đá với người chơi giả
-    maxWait: 30,               // chờ tối đa (có người khác nhưng chưa hợp)
+    // hàng không có ai khác: sau bấy nhiêu giây (ngẫu nhiên trong khoảng) -> đá với người chơi giả. Ít người chơi -> chờ lâu hơn
+    // để 2 người bấm tìm cách nhau vài giây vẫn gặp nhau
+    aloneWait: [15, 25],
+    maxWait: 45,               // chờ tối đa (có người khác nhưng chưa hợp)
     joinWait: 5,               // ghép xong: ai chưa vào phòng sau bấy nhiêu giây -> người chơi giả thế chỗ
   },
 
   snapshotEvery: 1,            // host gửi trạng thái mỗi N bước mô phỏng (60/N lần/giây; ~0.6KB/gói)
-  interpDelay: 0.06,           // giây trễ nội suy ở máy khách (mượt hơn nhưng trễ hơn khi tăng)
+  interpDelay: 0.06,           // giây trễ nội suy ở máy khách (mượt hơn nhưng trễ hơn khi tăng) — mức thấp nhất
+  // đệm tự điều chỉnh: máy khách đo độ "giật" của snapshot (gói tới dồn cục / trễ thất thường) trong ~2 giây gần nhất,
+  // đệm = độ giật (phân vị jitterPct) + 1 khoảng snapshot + jitterPad, trong [interpDelay, interpMax]. Tăng ngay, giảm từ từ
+  interpMax: 0.3,
+  // dự đoán cầu thủ của mình ở máy khách (src/net/predict.js): chạy ngay theo phím thay vì chờ 1 lần khứ hồi.
+  // corr: tốc độ kéo phần lệch về vị trí máy chủ (/giây; lớn = sửa nhanh nhưng giật) · dead: lệch dưới bấy nhiêu px thì bỏ qua
+  // snap: lệch quá bấy nhiêu px thì nhảy thẳng · blendOut: giây trượt về vị trí máy chủ khi hết dự đoán (bị choáng, lướt, sút...)
+  // lag: ms vẽ cầu thủ trễ hơn dự đoán (0 = phản hồi ngay; tăng = bớt chạy trước thế giới, phím chậm hơn bấy nhiêu)
+  // extra: ms cộng thêm vào ping khi so với máy chủ (phím chờ bước mô phỏng + chờ snapshot + khung hình vẽ)
+  predict: { enabled: true, corr: 4, dead: 1.5, snap: 48, blendOut: 0.15, lag: 0, extra: 30 },
+  jitterPct: 0.95,
+  jitterPad: 0.015,
   draftTimeLimit: 15,          // giây tối đa để chọn Core trong trận online
   difficulty: 'normal',        // độ khó AI đồng đội trong trận online
 };

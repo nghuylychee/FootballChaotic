@@ -115,6 +115,25 @@ window.SFC = window.SFC || {};
   /* ================= SỰ KIỆN ONLINE -> GIAO DIỆN ================= */
   const on = (name, fn) => O().on(name, fn);
 
+  /* ================= NETWORK STATS (SETTINGS > SOUND & DISPLAY) ================= */
+  // Góc trên phải. Mọi trận online (phòng riêng + xếp hạng online): luôn hiện ping. Bật NETWORK STATS: cả dòng đầy đủ (ping + KB/s
+  // gửi / nhận + tổng từ lúc vào phòng), cả ở phòng chờ. Trận xếp hạng đá với người giả (offline) không có ping — người dùng chấp nhận
+  // điểm khác biệt này (ngoại lệ của luật "không phân biệt được người thật / AI")
+  // dưới 1 KB ghi theo byte (gói phím gửi đi chỉ vài chục B/s, ghi KB sẽ luôn là 0.0)
+  const size = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : n >= 1024 ? `${(n / 1024).toFixed(1)} KB` : `${Math.round(n)} B`);
+  setInterval(() => {
+    const el = typeof document !== 'undefined' && document.getElementById('netstats');
+    if (!el) return;
+    const st = O().status, full = !!(SFC.Settings && SFC.Settings.netStats) && (st === 'lobby' || st === 'playing');
+    const show = full || st === 'playing';
+    el.classList.toggle('hidden', !show);
+    if (!show) return;
+    const S = SFC.NetStats;
+    S.roll();
+    const ping = `${SFC.t('PING')} ${S.rtt == null ? '--' : Math.round(S.rtt)} ms`;
+    el.textContent = full ? `${ping} · ↑ ${size(S.upRate)}/s ↓ ${size(S.downRate)}/s · ↑ ${size(S.up)} ↓ ${size(S.down)}` : ping;
+  }, 500);
+
   on('busy', ({ action, code }) => {
     if (action === 'create') Menu().go('online', TEXT.creating);
     else Menu().setMsg(TEXT.connecting(code));

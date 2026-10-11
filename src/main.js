@@ -117,6 +117,7 @@
 
     beginMatch(opts) {
       this.screen = 'game';
+      SFC.Store.gameplay(true);
       SFC.Input.textHandler = null;
       SFC.UI.hudCache = {};
       // Main Path: không cho đá lại trận đang thua — chỉ tiếp tục hoặc bỏ trận (tính thua)
@@ -180,13 +181,18 @@
     resume() {
       if (this.mode === 'online') SFC.OnlineUI.overlay = false;
       this.screen = 'game';
+      SFC.Store.gameplay(true);
       const g = this.game;
       SFC.UI.show(g && g.state === 'draft' ? 'draft' : g && g.state === 'ended' ? 'end' : null);
     },
 
     pause() {
       if (this.mode === 'online') SFC.OnlineUI.overlay = true;
-      else this.screen = 'pause';
+      else {
+        this.screen = 'pause';
+        // trận xếp hạng (cả offline) vẫn chạy khi mở menu tạm dừng -> vẫn là đang chơi
+        if (!(this.game && this.game.opts.mainPath)) SFC.Store.gameplay(false);
+      }
       SFC.UI.pauseSel = 0;
       SFC.UI.renderPause();
       SFC.UI.show('pause');
@@ -202,6 +208,7 @@
       SFC.Drill.close();
       this.game = null;
       this.screen = 'menu';
+      SFC.Store.gameplay(false);
       if (page !== 'lobby') this.mode = 'single';
       SFC.UI.clearToasts();
       SFC.UI.show('menu');
@@ -296,6 +303,9 @@
     SFC.UI.init(app);
     SFC.Menu.init(app);
     SFC.UI.show('menu');
+    // máy chủ trận (gói miễn phí ngủ khi không ai dùng, dậy mất ~1 phút): đánh thức ngay lúc mở game,
+    // tới lúc người chơi bấm tìm trận / tạo phòng thì đã dậy
+    SFC.Session.prepare();
     if (forfeited) SFC.Menu.setMsg(app.forfeitText(forfeited), true);
     const start = () => {
       // lần đầu chơi: đặt tên cho character trước khi vào trang chủ -> PROLOGUE.
@@ -360,11 +370,12 @@
     window.SFC.app = app; // debug
   }
 
-  // chờ font pixel tải xong để background vẽ chữ đúng font
-  if (document.fonts && document.fonts.load) {
-    Promise.race([
+  // chờ font pixel tải xong để background vẽ chữ đúng font + SDK cửa hàng (ngôn ngữ cửa hàng cần trước I18n.init)
+  const fonts = document.fonts && document.fonts.load
+    ? Promise.race([
       Promise.all([document.fonts.load('8px "Press Start 2P"'), document.fonts.load('16px "VT323"')]),
       new Promise((r) => setTimeout(r, 1500)),
-    ]).finally(boot);
-  } else boot();
+    ]).catch(() => {})
+    : Promise.resolve();
+  Promise.all([fonts, SFC.Store.ready()]).finally(boot);
 })();

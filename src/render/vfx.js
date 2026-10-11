@@ -275,6 +275,18 @@ window.SFC = window.SFC || {};
       const { px, disc } = SP(), R = Math.random, t = g.time + p.id * 0.37;
       const x = Math.round(p.x), y = Math.round(p.y - (p.airZ || 0));
       const C = g.cores;
+      // Core chỉ số (cores.list[].boost): dấu "+" màu chỉ số (bóng mực bên dưới cho rõ trên nền sáng) bay lên chậm quanh người —
+      // mỗi Core 1 dấu, lệch pha nhau
+      const boosts = C.coresOf(p).filter((id) => C.def(id) && C.def(id).boost);
+      boosts.forEach((id, i) => {
+        const st = SFC_CONFIG.progression.attrs.list[C.def(id).boost];
+        if (!st) return;
+        const k = (t * 0.6 + i / boosts.length) % 1, bx = x - 8 + ((i * 7 + p.id * 3) % 17), by = y - 6 - Math.round(k * 14);
+        ctx.globalAlpha = Math.min(1, (1 - k) * 1.6);
+        px(ctx, bx - 1, by + 1, 3, 1, SP().OUT); px(ctx, bx, by + 2, 1, 1, SP().OUT);
+        px(ctx, bx - 1, by, 3, 1, st.color); px(ctx, bx, by - 1, 1, 3, st.color);
+      });
+      ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'lighter';
       // hào quang: hạt sáng bay lên + thân phát sáng
       if (p.auraT > 0 && p.auraC) {

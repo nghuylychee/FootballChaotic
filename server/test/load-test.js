@@ -1,6 +1,6 @@
 /* Thử tải: tăng dần số trận chạy cùng lúc tới khi máy chủ không giữ nổi 60 bước/giây.
  *   node server/test/load-test.js [mức1,mức2,...]      (mặc định 10,25,50,100,150,200,300,400)
- *   COMPRESSION=0 node server/test/load-test.js        so sánh khi tắt nén
+ *   COMPRESSION=0 node server/test/load-test.js        so sánh khi tắt nén (nén trong game: khách giả xin z:1 như game)
  *   PLAYERS=4 node server/test/load-test.js            4 người / trận (2v2), mặc định 2
  * - Máy chủ chạy ở tiến trình riêng (fork), mỗi 2 giây báo: CPU % (của 1 nhân), RSS, heap, số bước mô phỏng / giây / trận
  * - Tiến trình này mở 2 WebSocket / trận (tạo phòng, vào phòng, START), mỗi khách gửi phím 10 lần/giây, đếm byte nhận
@@ -10,9 +10,10 @@
 const path = require('path');
 const { fork } = require('child_process');
 const WebSocket = require('ws');
+const zlib = require('zlib');
 
 const LEVELS = (process.argv[2] || '10,25,50,100,150,200,300,400').split(',').map(Number);
-const PLAYERS = Math.max(2, Math.min(4, +process.env.PLAYERS || 2));   // người / trận
+const PLAYERS = Math.max(2, Math.min(6, +process.env.PLAYERS || 2));   // người / trận (6 = 3v3 toàn người)
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -48,16 +49,32 @@ let bytesIn = 0;
 const all = [];
 
 function client() {
-  const ws = new WebSocket(`ws://localhost:${PORT}`);   // như trình duyệt: tự xin nén (permessage-deflate)
-  const c = { ws, waiters: [] };
-  ws.on('message', (data) => {
-    bytesIn += data.length;
+  const ws = new WebSocket(`ws://localhost:${PORT}`);
+  const c = { ws, waiters: [], first: true };
+  // như game: xin nén trong game (z:1) -> gói nhị phân = 1 luồng deflate-raw, mỗi gói JSON + '\n'
+  const inf = zlib.createInflateRaw();
+  let rest = '';
+  const onText = (text) => {
     if (!c.waiters.length) return;   // đang đá: không parse snapshot (tiết kiệm CPU cho máy đo)
-    const m = JSON.parse(data);
+    const m = JSON.parse(text);
     c.waiters = c.waiters.filter((w) => (w.fn(m) ? (w.res(m), false) : true));
+  };
+  inf.on('data', (b) => {
+    rest += b.toString();
+    let i;
+    while ((i = rest.indexOf('\n')) >= 0) { const line = rest.slice(0, i); rest = rest.slice(i + 1); onText(line); }
+  });
+  ws.on('message', (data, binary) => {
+    bytesIn += data.length;
+    if (binary) inf.write(data); else onText(String(data));
   });
   ws.on('error', () => {});
-  c.send = (m) => { if (ws.readyState === 1) ws.send(JSON.stringify(m)); };
+  c.send = (m) => {
+    if (ws.readyState !== 1) return;
+    if (c.first && process.env.COMPRESSION !== '0') m = Object.assign({ z: 1 }, m);
+    c.first = false;
+    ws.send(JSON.stringify(m));
+  };
   c.next = (fn) => new Promise((res, rej) => { c.waiters.push({ fn, res }); setTimeout(() => rej(new Error('timeout')), 15000); });
   c.open = new Promise((r) => ws.on('open', r));
   all.push(c);

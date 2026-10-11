@@ -187,6 +187,7 @@ window.SFC = window.SFC || {};
         ? `<div class="rv3-s-line">${PX().ui('crown', 'sm')} ${_t('Taken from {team}', { team: `<b>${esc(MP().team(it.boss).name)}</b>` })}</div>`
         : fam ? `<div class="rv3-s-line">${PX().ui('star', 'sm')} ${_t('Passed down by {who}', { who: `<b>${esc(SFC_CONFIG.ftue.heirloom.giver)}</b>` })}</div>`
         : it.src === 'area' ? `<div class="rv3-s-line">${PX().area(MP().area(it.area).id, 'sm')} ${_t('Reached {area}', { area: `<b>${esc(MP().area(it.area).name)}</b>` })}</div>`
+        : it.src === 'road' ? `<div class="rv3-s-line">${_t('Reached {elo} in {area}', { elo: PX().elo(it.elo), area: `<b>${esc(MP().area(it.area).name)}</b>` })}</div>`
         : `<div class="rv3-s-line">★ ${esc(_t('New star in {area}', { area: MP().area(it.area).name }))}</div>`;
       const key = `<kbd>${K('ultimate', 'X')}</kbd>`;
       // Tuyệt kỹ = kỹ năng đặc trưng: mang 1 cái vào trận (CHARACTER > ULTIMATE), có ngay từ đầu trận, nạp đầy rồi bấm X
