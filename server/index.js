@@ -38,7 +38,7 @@ const ENV = {
   LOG_STATS: num(process.env.LOG_STATS, 0),              // giây giữa 2 dòng thống kê (0 = tắt)
   MAX_PER_IP: num(process.env.MAX_PER_IP, 10),           // số kết nối cùng lúc / 1 địa chỉ IP (0 = không giới hạn)
   JOIN_TIMEOUT: num(process.env.JOIN_TIMEOUT, 10),       // giây: kết nối phải tạo / vào phòng và được nhận vào phòng (hello) trong bấy nhiêu giây
-  COMPRESSION: num(process.env.COMPRESSION, 1),          // 1 = nén trong game cho máy khách xin z:1 (zstart), 0 = tắt (so sánh khi đo tải)
+  COMPRESSION: num(process.env.COMPRESSION, 1),          // 1 = nén trong game cho máy khách xin z:1 (luồng chung của phòng: roomZ), 0 = tắt (so sánh khi đo tải)
   IDLE_CPU: num(process.env.IDLE_CPU, 300),             // giây không có trận nào -> ghi log CPU nền (0 = tắt)
 };
 const STEP = 1 / 60;
@@ -65,16 +65,29 @@ function newCode() {
 }
 
 // Nén trong game (gói nhị phân) — cách nén DUY NHẤT: không dùng permessage-deflate của WebSocket vì proxy của nhà cung cấp có thể
-// bỏ đi (Render bỏ). Máy khách xin bằng z:1 ở gói đầu (create / join / queue): mỗi người 1 luồng deflate-raw giữ ngữ cảnh giữa các gói (snapshot liên tiếp gần giống nhau
-// -> ~1,1 KB còn ~0,1 KB). Mỗi gói = JSON + '\n', đẩy ra bằng Z_SYNC_FLUSH; máy khách giải bằng DecompressionStream('deflate-raw').
-// Gói gửi đi theo đúng thứ tự (zlib xử lý tuần tự, flush xong mới gửi). Cửa sổ 4 KB như nén WebSocket: ~48 KB / người.
-function zstart(c) {
-  if (c.z || !ENV.COMPRESSION) return;
+// bỏ đi (Render bỏ). Máy khách xin bằng z:1 ở gói đầu (create / join / queue).
+// MỖI PHÒNG 1 luồng deflate-raw dùng chung (roomZ): gói phát cho cả phòng (snapshot, lobby, sự kiện...) nén 1 lần, cùng 1 chuỗi byte
+// gửi cho mọi thành viên xin nén (trước đây mỗi người 1 luồng: phòng 6 người nén cùng 1 snapshot 6 lần). Luồng giữ ngữ cảnh giữa
+// các gói (snapshot liên tiếp gần giống nhau -> ~1,1 KB còn ~0,1 KB). Mỗi gói = JSON + '\n', đẩy ra bằng Z_SYNC_FLUSH -> mỗi gói nhị phân
+// = trọn vẹn 1 gói tin. Người mới nhận luồng (vào phòng / kết nối lại): Z_FULL_FLUSH ngay trước gói chung kế tiếp (không tham chiếu
+// gì phía trước) -> người đó giải từ đó bằng DecompressionStream mới, người đang nhận không bị ảnh hưởng.
+// Gói gửi riêng 1 người (room, you{tok}, start, pong, err, bye...) = JSON chữ thường, không nén (hiếm, nhỏ; you / start là riêng tư).
+// Thứ tự: mọi gói của 1 phòng đi qua hàng đợi của phòng (sendQ) -> tới máy khách đúng thứ tự Room gửi; máy khách xử lý gói chữ
+// và gói nhị phân theo đúng thứ tự nhận (src/net/transport-server.js). Cửa sổ 4 KB: ~48 KB / phòng.
+const zWants = (c) => !!c.zip && !!ENV.COMPRESSION;
+function roomZ(entry) {
+  if (entry.z) return entry.z;
   const z = zlib.createDeflateRaw({ windowBits: 12, memLevel: 6, level: 6 });
   const parts = [];
   z.on('data', (b) => parts.push(b));
-  z.on('error', () => { try { c.ws.terminate(); } catch (e) { /* bỏ qua */ } });
-  c.z = { z, parts };
+  // lỗi nén (không nên xảy ra): hàng đợi kẹt -> ngắt mọi người trong phòng (ngắt kết nối = leave -> phòng hết người tự xoá)
+  z.on('error', (e) => {
+    console.error(`[room ${entry.code}] compression failed:`, e && e.stack || e);
+    entry.sendQ.length = 0;
+    for (const c of entry.clients.values()) c.ws.terminate();
+  });
+  entry.z = { z, parts, synced: new Set() };   // synced: id kết nối đã nhận luồng từ 1 điểm FULL_FLUSH
+  return entry.z;
 }
 
 // done(): gọi sau khi gói đã vào hàng gửi (đóng kết nối ngay sau gói cuối)
@@ -87,49 +100,94 @@ const kb = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(2)} MB` : `${(n / 102
 const cpuPct = (from, ms) => { const u = process.cpuUsage(from); return ((u.user + u.system) / 1000 / Math.max(1, ms)) * 100; };
 const pct = (ms, wall) => ((ms / Math.max(1, wall)) * 100).toFixed(1);
 const sendTime = (entry, ms) => { if (entry) entry.sendMs += ms; };
+// ai = thời gian SFC.AI.update (quyết định của mọi cầu thủ máy: bot + đồng đội AI), nằm trong sim. Bọc ở đây, không đụng code game
+let ticking = null;   // phòng đang chạy bước mô phỏng
+const aiUpdate = SFC.AI.update;
+SFC.AI.update = function (dt, g) {
+  const t0 = performance.now();
+  try { return aiUpdate.call(this, dt, g); } finally { if (ticking) ticking.aiMs += performance.now() - t0; }
+};
 
-function out(c, data, done) {
-  if (c.ws.readyState !== 1) { if (done) done(); return; }
+// gửi 1 khung tới 1 kết nối (chữ hoặc nhị phân), đếm dung lượng của phòng
+function wire(c, entry, data, binary) {
+  if (c.ws.readyState !== 1) return;
   if (c.ws.bufferedAmount > MAX_BUFFER) { c.ws.terminate(); return; }
-  const entry = c.room, t0 = performance.now();
-  if (!c.z) { c.ws.send(data); usage(entry, Buffer.byteLength(data)); sendTime(entry, performance.now() - t0); if (done) done(); return; }
-  const { z, parts } = c.z;
-  z.write(data + '\n');
-  z.flush(zlib.constants.Z_SYNC_FLUSH, () => {
-    const t1 = performance.now();
-    if (parts.length && c.ws.readyState === 1) {
-      const buf = parts.length === 1 ? parts[0] : Buffer.concat(parts);
-      c.ws.send(buf, { binary: true, compress: false });
-      usage(entry, buf.length);
-    }
-    parts.length = 0;
-    sendTime(entry, performance.now() - t1);
-    if (done) done();
+  c.ws.send(data, binary ? { binary: true, compress: false } : undefined);
+  usage(entry, binary ? data.length : Buffer.byteLength(data));
+}
+
+// hàng đợi gửi của phòng: việc gửi chạy đúng thứ tự gọi; nén (bất đồng bộ) chặn các việc sau tới khi xong
+function enqueue(entry, job) {
+  entry.sendQ.push(job);
+  if (entry.sendQ.length === 1) drainQ(entry);
+}
+function drainQ(entry) {
+  while (entry.sendQ.length) {
+    const job = entry.sendQ[0], t0 = performance.now();
+    const wait = job(() => { entry.sendQ.shift(); drainQ(entry); });
+    sendTime(entry, performance.now() - t0);   // chỉ phần chạy trên luồng chính (chờ zlib không tính)
+    if (wait) return;   // đang nén: callback của việc này chạy tiếp hàng đợi
+    entry.sendQ.shift();
+  }
+}
+
+// gói riêng 1 người (chữ, không nén). Trong phòng: qua hàng đợi của phòng (sau mọi gói chung gửi trước nó). done(): sau khi đã gửi
+function out(c, data, done) {
+  const entry = c.room;
+  if (!entry) { wire(c, null, data, false); if (done) done(); return; }
+  enqueue(entry, () => { wire(c, entry, data, false); if (done) done(); return false; });
+}
+
+// gói chung cho cả phòng (cac thành viên `to`): nén 1 lần cho mọi người xin nén, chữ cho người không xin
+function broadcast(entry, data, to) {
+  const t0 = performance.now();
+  const zs = to.filter(zWants), plain = to.filter((c) => !zWants(c));
+  enqueue(entry, (next) => {
+    for (const c of plain) wire(c, entry, data, false);
+    if (!zs.length) return false;
+    const Z = roomZ(entry);
+    // người mới nhận luồng -> điểm FULL_FLUSH trước gói này (ngắt mọi tham chiếu về phía trước)
+    const fresh = zs.some((c) => !Z.synced.has(c.id));
+    if (fresh) Z.z.flush(zlib.constants.Z_FULL_FLUSH);
+    Z.z.write(data + '\n');
+    Z.z.flush(zlib.constants.Z_SYNC_FLUSH, () => {
+      const t1 = performance.now();
+      if (Z.parts.length) {
+        const buf = Z.parts.length === 1 ? Z.parts[0] : Buffer.concat(Z.parts);
+        Z.parts.length = 0;
+        for (const c of zs) { if (fresh) Z.synced.add(c.id); wire(c, entry, buf, true); }
+      }
+      sendTime(entry, performance.now() - t1);
+      next();
+    });
+    return true;
   });
-  // phần đồng bộ (đưa vào zlib) chạy bên trong Room.step -> sendSync để trừ ra khỏi sim; callback ở trên chạy sau, ngoài step
+  // phần đồng bộ chạy bên trong Room.step -> sendSync để trừ ra khỏi sim
   const ms = performance.now() - t0;
-  sendTime(entry, ms);
-  if (entry) entry.sendSync += ms;
+  entry.sendSync += ms;
 }
 
 // ranked = đội hình trận xếp hạng (Matchmaker.lineup); không có = phòng thường (mã phòng, chủ phòng bấm START)
 function createRoom(ranked) {
-  const entry = { code: newCode(), clients: new Map(), touched: Date.now(), sent: 0, matchSent: 0, stepMs: 0, sendMs: 0, sendSync: 0 };
+  const entry = { code: newCode(), clients: new Map(), touched: Date.now(), sent: 0, matchSent: 0, stepMs: 0, sendMs: 0, sendSync: 0, aiMs: 0, sendQ: [], z: null };
   const mode = () => (ranked ? 'ranked' : SFC.Room.Slots.mode(entry.room.lobby));
   entry.room = new SFC.Room({
     ranked,
-    // JSON 1 lần, phát cho mọi THÀNH VIÊN phòng (đã hello). Kết nối chưa được nhận vào phòng không nhận gì ngoài gói gửi riêng
+    // JSON 1 lần, phát cho mọi THÀNH VIÊN phòng (đã hello), nén 1 lần (broadcast). Kết nối chưa được nhận vào phòng không nhận gì
+    // ngoài gói gửi riêng (chữ)
     send: (msg, id) => {
       const data = JSON.stringify(msg);
       if (id != null) { const c = entry.clients.get(id); if (c) out(c, data); return; }
-      for (const c of entry.clients.values()) if (entry.room.member(c.id)) out(c, data);
+      const to = [];
+      for (const c of entry.clients.values()) if (entry.room.member(c.id)) to.push(c);
+      if (to.length) broadcast(entry, data, to);
     },
     drop: (id) => { const c = entry.clients.get(id); if (c) c.ws.close(1000); },
     snapshotEvery: NET.server.snapshotEvery || 1,
     hooks: {
       start: (g) => {
         entry.ended = false; entry.startedAt = Date.now(); entry.matchSent = 0;
-        entry.cpu0 = process.cpuUsage(); entry.stepMs = entry.sendMs = entry.sendSync = 0;
+        entry.cpu0 = process.cpuUsage(); entry.stepMs = entry.sendMs = entry.sendSync = entry.aiMs = 0;
         log(entry, `match started (${mode()}, ${entry.room.lobby.members.length} players)`); },
       toLobby: () => { if (entry.startedAt && !entry.ended) log(entry, `match stopped before the end · sent ${kb(entry.matchSent)}`); entry.startedAt = 0; },
       dropped: (name, away) => { if (away) log(entry, `a player disconnected, seat held ${NET.reconnectGrace}s`); },
@@ -151,8 +209,9 @@ function roomFailed(entry, where, e) {
 function closeRoom(entry, reason) {
   rooms.delete(entry.code);
   log(entry, `closed (${reason}, ${entry.clients.size} connected) · sent ${kb(entry.sent)} in total`);
-  for (const c of entry.clients.values()) { c.room = null; out(c, JSON.stringify({ t: 'bye' }), () => { try { c.ws.close(1000); } catch (e) { /* bỏ qua */ } }); }
-  entry.clients.clear();
+  // bye đi sau mọi gói đang chờ trong hàng đợi của phòng, rồi đóng kết nối
+  for (const c of entry.clients.values()) out(c, JSON.stringify({ t: 'bye' }), () => { c.room = null; try { c.ws.close(1000); } catch (e) { /* bỏ qua */ } });
+  enqueue(entry, () => { entry.clients.clear(); zclose(entry); return false; });
 }
 
 function attach(c, entry) {
@@ -164,11 +223,15 @@ function attach(c, entry) {
   log(entry, `${ranked(entry) ? 'matched' : entry.clients.size === 1 ? 'opened by' : 'joined by'} client ${c.cv}`);
 }
 
+// hết phòng: bỏ luồng nén chung
+function zclose(entry) { if (entry.z) { entry.z.z.close(); entry.z = null; } }
+
 function leave(c) {
   const entry = c.room;
   if (!entry) return;
   c.room = null;
   entry.clients.delete(c.id);
+  if (entry.z) entry.z.synced.delete(c.id);   // kết nối lại = kết nối mới (id mới) -> nhận lại từ 1 điểm FULL_FLUSH
   try { entry.room.gone(c.id); } catch (e) { roomFailed(entry, 'leave', e); return; }
   dropIfEmpty(entry);
 }
@@ -177,6 +240,7 @@ function leave(c) {
 function dropIfEmpty(entry) {
   if (entry.clients.size || entry.room.hasAway || rooms.get(entry.code) !== entry) return;
   rooms.delete(entry.code);
+  zclose(entry);
   log(entry, `closed (empty) · sent ${kb(entry.sent)} in total`);
 }
 
@@ -194,7 +258,7 @@ const ranked = (entry) => !!entry.room.ranked;
 const busy = () => draining || rooms.size >= ENV.MAX_ROOMS;
 
 function handshake(c, msg) {
-  if (msg.z === 1) zstart(c);
+  if (msg.z === 1) c.zip = true;   // xin nén: nhận gói chung của phòng qua luồng nén chung (broadcast)
   if (!c.cv) c.cv = cleanCv(msg.cv);
   if (msg.t === 'queue') {
     if (msg.v !== NET.protocol) return err(c, 'version');
@@ -255,7 +319,7 @@ const server = http.createServer((req, res) => {
   res.end();
 });
 
-const wss = new WebSocketServer({ server, maxPayload: 16 * 1024, perMessageDeflate: false });   // nén: zstart (trong game)
+const wss = new WebSocketServer({ server, maxPayload: 16 * 1024, perMessageDeflate: false });   // nén: roomZ (trong game)
 
 wss.on('connection', (ws, req) => {
   const ip = clientIp(req), n = (perIp.get(ip) || 0) + 1;
@@ -285,7 +349,6 @@ wss.on('connection', (ws, req) => {
     if (left > 0) perIp.set(ip, left); else perIp.delete(ip);
     unqueue(c);
     leave(c);
-    if (c.z) { c.z.z.close(); c.z = null; }
   });
   ws.on('error', () => {});
 });
@@ -313,20 +376,22 @@ function frame() {
       const r = e.room;
       if (!r.active) continue;
       const t0 = performance.now();
+      ticking = e;
       try {
         r.introClock(STEP);
         if (!r.introHold) r.step(STEP, null);
-      } catch (err) { roomFailed(e, 'tick', err); continue; }
+      } catch (err) { roomFailed(e, 'tick', err); continue; } finally { ticking = null; }
       e.stepMs += performance.now() - t0;
       if (r.endSent && !e.ended) {
         e.ended = true;
         const t = r.game.teams;
         e.endedAt = Date.now();
         const secs = Math.max(1, Math.round((Date.now() - e.startedAt) / 1000)), players = e.clients.size || 1;
+        const bots = r.game.players.length - r.seatIds.length;   // ghế không có người = máy điều khiển
         // cpu cả tiến trình: nhiều trận chạy cùng lúc thì gồm cả các trận kia (matches=)
         const wall = Date.now() - e.startedAt, sim = Math.max(0, e.stepMs - e.sendSync);
         log(e, `match ended ${t[0].score}-${t[1].score} after ${secs}s · sent ${kb(e.matchSent)} (${(e.matchSent / 1024 / secs / players).toFixed(2)} KB/s per player, ${players} connected)` +
-          ` · cpu ${cpuPct(e.cpu0, wall).toFixed(1)}% of a core (sim ${pct(sim, wall)}%, send ${pct(e.sendMs, wall)}%, ${activeCount() - (r.active ? 1 : 0)} other matches running)`);
+          ` · cpu ${cpuPct(e.cpu0, wall).toFixed(1)}% of a core (sim ${pct(sim, wall)}% incl. ai ${pct(e.aiMs, wall)}% for ${bots} bots, send ${pct(e.sendMs, wall)}%, ${activeCount() - (r.active ? 1 : 0)} other matches running)`);
       }
     }
   }

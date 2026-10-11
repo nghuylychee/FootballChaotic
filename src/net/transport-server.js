@@ -12,8 +12,9 @@
  * (mở màn PLAY đã đánh thức sẵn; 2 người tìm cùng lúc lúc máy chủ ngủ vẫn gặp được nhau).
  * Phiên bản: gói đầu kèm cv (NetCommon.clientVersion, vd. 1.1.0-5); máy chủ trả sv (phiên bản máy chủ, vd. 5.1.0) trong
  * room{code,id,sv} / err{e,sv} -> NetServer.serverVersion (chỉ để chẩn đoán, không hiện cho người chơi).
- * Nén trong game: trình duyệt có DecompressionStream('deflate-raw') thì gói đầu kèm z:1 -> máy chủ gửi gói nhị phân
- * (1 luồng deflate-raw giữ ngữ cảnh, mỗi gói = JSON + '\n'; xem server/index.js). Không có thì nhận JSON thường như cũ.
+ * Nén trong game: trình duyệt có DecompressionStream('deflate-raw') thì gói đầu kèm z:1 -> gói chung của phòng tới dạng nhị phân
+ * (1 luồng deflate-raw chung của phòng, bắt đầu từ 1 điểm FULL_FLUSH, mỗi gói = JSON + '\n'; xem server/index.js), gói gửi riêng
+ * máy này (room, you, start, pong, err...) tới dạng chữ. Xử lý cả 2 theo đúng thứ tự nhận (inflater). Không xin nén: mọi gói là chữ.
  */
 window.SFC = window.SFC || {};
 
@@ -26,25 +27,41 @@ window.SFC = window.SFC || {};
     try { return typeof DecompressionStream === 'function' && typeof TextDecoder === 'function' && !!new DecompressionStream('deflate-raw'); } catch (e) { return false; }
   };
 
-  // giải luồng nén: push(byte) theo đúng thứ tự nhận, onLine(chuỗi JSON) cho từng gói; drain() = chờ giải hết phần đã nhận
+  // hàng xử lý gói theo ĐÚNG THỨ TỰ NHẬN (gói chữ + gói nhị phân). Gói nhị phân = 1 đoạn luồng nén chung của phòng chứa trọn vẹn
+  // >= 1 gói tin (máy chủ flush sau mỗi gói) -> giải xong hết mới xử lý gói kế (gói chữ gửi riêng không vượt lên trước gói chung).
+  // push(chuỗi | Uint8Array); onLine(chuỗi JSON) cho từng gói; drain() = chờ xử lý hết phần đã nhận
   function inflater(onLine, onError) {
-    const ds = new DecompressionStream('deflate-raw'), w = ds.writable.getWriter(), r = ds.readable.getReader(), dec = new TextDecoder();
-    let rest = '', last = Promise.resolve();
-    (async () => {
+    const dec = new TextDecoder(), q = [];
+    let w = null, r = null, rest = '', busy = false, dead = false, idle = [];
+    const lines = () => {
+      let i, got = false;
+      while ((i = rest.indexOf('\n')) >= 0) { const line = rest.slice(0, i); rest = rest.slice(i + 1); got = true; onLine(line); }
+      return got;
+    };
+    const bin = async (bytes) => {
+      if (!w) { const ds = new DecompressionStream('deflate-raw'); w = ds.writable.getWriter(); r = ds.readable.getReader(); }
+      const wrote = w.write(bytes);
+      for (let got = false; !got || rest;) {
+        const { value, done } = await r.read();
+        if (done) throw new Error('stream ended');
+        rest += dec.decode(value, { stream: true });
+        if (lines()) got = true;
+      }
+      await wrote;
+    };
+    const pump = async () => {
+      busy = true;
       try {
-        for (;;) {
-          const { value, done } = await r.read();
-          if (done) return;
-          rest += dec.decode(value, { stream: true });
-          let i;
-          while ((i = rest.indexOf('\n')) >= 0) { const line = rest.slice(0, i); rest = rest.slice(i + 1); onLine(line); }
-        }
-      } catch (e) { onError(e); }
-    })();
+        while (q.length && !dead) { const it = q.shift(); if (typeof it === 'string') onLine(it); else await bin(it); }
+      } catch (e) { dead = true; onError(e); }
+      busy = false;
+      const done = idle; idle = [];
+      for (const fn of done) fn();
+    };
     return {
-      push(bytes) { last = w.write(bytes).catch(() => {}); },
-      drain() { return last.then(() => new Promise((res) => setTimeout(res, 0))); },
-      close() { w.abort().catch(() => {}); },
+      push(item) { if (dead) return; q.push(item); if (!busy) pump(); },
+      drain() { return busy || q.length ? new Promise((res) => idle.push(res)) : Promise.resolve(); },
+      close() { dead = true; if (w) w.abort().catch(() => {}); },
     };
   }
 
@@ -146,7 +163,11 @@ window.SFC = window.SFC || {};
           if (z) z.drain().then(closed); else closed();
         };
         ws.onmessage = (ev) => {
-          if (typeof ev.data === 'string') { SFC.NetStats.in(ev.data.length); parse(ev.data); return; }
+          if (typeof ev.data === 'string') {
+            SFC.NetStats.in(ev.data.length);
+            if (z) z.push(ev.data); else parse(ev.data);   // có luồng nén: xếp hàng sau phần nhị phân đang giải
+            return;
+          }
           if (!z) return;
           SFC.NetStats.in(ev.data.byteLength);
           z.push(new Uint8Array(ev.data));

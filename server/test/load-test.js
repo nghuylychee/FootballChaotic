@@ -13,7 +13,7 @@ const WebSocket = require('ws');
 const zlib = require('zlib');
 
 const LEVELS = (process.argv[2] || '10,25,50,100,150,200,300,400').split(',').map(Number);
-const PLAYERS = Math.max(2, Math.min(4, +process.env.PLAYERS || 2));   // người / trận
+const PLAYERS = Math.max(2, Math.min(6, +process.env.PLAYERS || 2));   // người / trận (6 = 3v3 toàn người)
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

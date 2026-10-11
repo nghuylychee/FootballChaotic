@@ -12,7 +12,7 @@ Street Football Chaos: a 3v3 top-down arcade football game in plain browser Java
 | Game + local dedicated match server (ws://localhost:8081, URL injected at serve time) | `npm run online` |
 | Desktop build in dev (Electron; Steam P2P if Steam is running, App ID 480 from `steam_appid.txt`) | `npm start` |
 | Match server tests (server + client, no browser) | `npm run server:test` |
-| Single test file | `node server/test/room-test.js`, `client-test.js`, `hardening-test.js`, `reconnect-test.js` or `queue-test.js` |
+| Single test file | `node server/test/room-test.js`, `client-test.js`, `hardening-test.js`, `reconnect-test.js`, `queue-test.js` or `compression-test.js` |
 | Translation check (missing keys, `{var}` / tag mismatches; exits 1 on errors) | `node scripts/i18n-check.js` |
 | Rebuild the Japanese subset font after editing `src/i18n/ja.js` | `python scripts/build-ja-font.py` |
 | Steam build | `npm run dist` |
