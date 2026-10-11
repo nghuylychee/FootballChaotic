@@ -229,6 +229,8 @@ kbd {
 .b-main { font-family: var(--px); font-size: 26px; text-shadow: 2px 2px 0 var(--ink), 4px 4px 0 rgba(0,0,0,0.5); }
 .b-sub { font-size: 15px; margin-top: 6px; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
 
+/* NETWORK STATS: ping + dung lượng mạng khi ở phòng online (src/ui/online.js) */
+#netstats { position: absolute; right: 6px; top: 4px; font-size: 11px; color: #e6dccb; background: rgba(10,6,12,0.7); padding: 1px 5px; pointer-events: none; z-index: 30; white-space: nowrap; }
 #toasts { position: absolute; right: 8px; top: 36px; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; pointer-events: none; }
 .toast {
   font-size: 12px; background: var(--panel); border: 1px solid var(--edge); padding: 1px 6px;

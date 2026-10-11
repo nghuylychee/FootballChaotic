@@ -40,7 +40,9 @@ A provider needs three things: run the image, expose `PORT`, and allow WebSocket
 | `SHUTDOWN_GRACE` | 60 | On SIGTERM: stop accepting rooms, wait up to this many seconds for running matches, then exit |
 | `LOG_STATS` | 0 | Print rooms / matches / queue / clients / outgoing KB/s / heap every N seconds. 0 = off |
 | `MAX_PER_IP` | 10 | Open connections allowed from one IP address; extra ones are refused. 0 = no limit |
-| `COMPRESSION` | 1 | WebSocket compression (`permessage-deflate`, 4 KB window). About 9× less bandwidth, about 60 % more CPU per match. 0 = off |
+| `COMPRESSION` | 1 | In-game compression for clients that ask for it (see below). About 38× less bandwidth. 0 = off (for load-test comparisons) |
+
+**Compression.** The server doesn't use WebSocket compression (`permessage-deflate`): providers' proxies can strip it (Render does), and then players silently get about 38× more traffic. The game compresses on its own instead, so it works the same behind any proxy. A client whose browser has `DecompressionStream('deflate-raw')` (Chrome 103+, Firefox 113+, Safari 16.4+, Electron) adds `z:1` to its first message (`create`, `join` or `queue`). From then on the server sends that client binary frames: one `deflate-raw` stream per client with the context kept across messages (4 KB window, about 48 KB of memory per client), each message being JSON plus `\n`, flushed with `Z_SYNC_FLUSH`. A snapshot drops from about 1.1 KB to under 0.1 KB, so about 0.9 KB/s per player instead of about 34 KB/s. Older browsers get plain JSON. Messages from players (inputs) are small and stay uncompressed.
 | `JOIN_TIMEOUT` | 10 | Seconds a connection has to create or join a room **and** be accepted into it (`hello`). Otherwise it's disconnected; a room left with nobody in it is deleted |
 
 Behind a provider's proxy or load balancer, the player's address is read from the last entry of `X-Forwarded-For` (the one the proxy adds). Without a proxy, the socket address is used.
@@ -80,7 +82,7 @@ From the player's side, every failure ends in `solo`: no server URL, server unre
 
 ## Capacity
 
-Measured with `node test/load-test.js` (2 clients per match, input 10 times a second; `COMPRESSION=0` to compare). The test ramps up matches until the server can't hold 60 ticks/s.
+Measured with `node test/load-test.js` (2 clients per match, input 10 times a second; `COMPRESSION=0` to compare). The table predates 3v3 and in-game compression: now bandwidth is about 0.9 KB/s per player with compression and 34 KB/s without, at about the same CPU. The test ramps up matches until the server can't hold 60 ticks/s.
 
 | | Compression off | Compression on |
 |---|---|---|
@@ -104,7 +106,7 @@ Free tiers usually stop the server after a period with no incoming traffic (Rend
 - **Staying awake while in use:** players in a server room send a tiny `ka` message every `net.server.keepAlive` seconds (60), so a lobby or result screen where nobody presses anything doesn't put the server to sleep. The server ignores `ka` for `LOBBY_TTL`, so abandoned rooms still close and the server can still sleep.
 - **Rooms live in memory,** so sleeping or restarting ends them. That only happens when nobody has sent anything for 15 minutes.
 
-Render Free settings: Docker web service built from the repo root with `server/Dockerfile`. Render sets `PORT` itself. Set the health check path to `/healthz` and `MAX_ROOMS` to about **8**. The free instance has 0.1 CPU, roughly 5–8 matches at once from the load-test numbers (an estimate). Above the limit, CREATE gets `server-full` and falls back to player-hosting instead of slowing everyone down. Keep `COMPRESSION=1`: outbound bandwidth counts against the workspace's 5 GB.
+Render Free settings: Docker web service built from the repo root with `server/Dockerfile`. Render sets `PORT` itself. Set the health check path to `/healthz` and `MAX_ROOMS` to about **5**. The free instance has 0.1 CPU, which fits only a handful of 3v3 matches at once (an estimate; check with `LOG_STATS`). Above the limit, CREATE gets `server-full` and falls back to player-hosting instead of slowing everyone down. Outbound bandwidth counts against the workspace's 5 GB a month (Hobby). Without a payment method, going over stops every service until next month. In-game compression keeps a match at about 0.9 KB/s per player (about 3 MB per player-hour), so 5 GB is about 1,500 player-hours.
 
 ## Limits (for now)
 

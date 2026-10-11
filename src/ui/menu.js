@@ -222,6 +222,8 @@ window.SFC = window.SFC || {};
             { kind: 'pick', label: _t('SOUND FX'), value: ST().volumeLabel('sfx'), change: (d) => ST().stepVolume('sfx', d) },
             // cỡ cửa sổ: chỉ bản desktop (Electron)
             ...(ST().desktop ? [{ kind: 'pick', label: _t('RESOLUTION'), value: ST().resLabel(), change: (d) => ST().stepRes(d) }] : []),
+            // ping + dung lượng mạng góc trên phải khi ở phòng online (src/ui/online.js)
+            { kind: 'pick', label: _t('NETWORK STATS'), value: ST().netStats ? SFC.tc('switch', 'ON') : SFC.tc('switch', 'OFF'), change: () => ST().toggleNetStats() },
           ];
         case 'name':
           return [{ kind: 'btn', label: _t('CONFIRM'), main: true, act: () => this.submitName() }];

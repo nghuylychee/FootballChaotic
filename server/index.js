@@ -10,6 +10,7 @@
  * Biến môi trường: xem ENV bên dưới + server/README.md.
  */
 const http = require('http');
+const zlib = require('zlib');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const { load } = require('./sim');
@@ -28,17 +29,7 @@ const ENV = {
   LOG_STATS: num(process.env.LOG_STATS, 0),              // giây giữa 2 dòng thống kê (0 = tắt)
   MAX_PER_IP: num(process.env.MAX_PER_IP, 10),           // số kết nối cùng lúc / 1 địa chỉ IP (0 = không giới hạn)
   JOIN_TIMEOUT: num(process.env.JOIN_TIMEOUT, 10),       // giây: kết nối phải tạo / vào phòng và được nhận vào phòng (hello) trong bấy nhiêu giây
-  COMPRESSION: num(process.env.COMPRESSION, 1),          // 1 = nén WebSocket (permessage-deflate), 0 = tắt
-};
-// Nén: snapshot liên tiếp gần như giống hệt nhau -> deflate nhớ ngữ cảnh giữa các gói nén ~9 lần (~900 B -> ~90 B).
-// Cửa sổ 4 KB (2^12) vẫn chứa vài snapshot nên nén gần bằng mặc định 32 KB, nhưng mỗi kết nối chỉ tốn ~48 KB thay vì ~256 KB.
-// threshold 0: snapshot (~900 B) nhỏ hơn ngưỡng mặc định 1 KB của ws -> mặc định sẽ không nén gì.
-const DEFLATE = {
-  serverMaxWindowBits: 12,
-  zlibDeflateOptions: { memLevel: 6, level: 6 },
-  // KHÔNG đặt clientMaxWindowBits: ws sẽ từ chối (400) mọi trình duyệt không xin client_max_window_bits — Firefox
-  clientNoContextTakeover: true,    // gói từ người chơi (phím) nhỏ: máy chủ không phải giữ ngữ cảnh giải nén cho từng người
-  threshold: 0,
+  COMPRESSION: num(process.env.COMPRESSION, 1),          // 1 = nén trong game cho máy khách xin z:1 (zstart), 0 = tắt (so sánh khi đo tải)
 };
 const STEP = 1 / 60;
 const MAX_BUFFER = 1 << 20;   // người chơi nhận chậm tới mức đọng 1 MB -> ngắt (khỏi phình bộ nhớ)
@@ -63,10 +54,31 @@ function newCode() {
   }
 }
 
-function out(c, data) {
-  if (c.ws.readyState !== 1) return;
+// Nén trong game (gói nhị phân) — cách nén DUY NHẤT: không dùng permessage-deflate của WebSocket vì proxy của nhà cung cấp có thể
+// bỏ đi (Render bỏ). Máy khách xin bằng z:1 ở gói đầu (create / join / queue): mỗi người 1 luồng deflate-raw giữ ngữ cảnh giữa các gói (snapshot liên tiếp gần giống nhau
+// -> ~1,1 KB còn ~0,1 KB). Mỗi gói = JSON + '\n', đẩy ra bằng Z_SYNC_FLUSH; máy khách giải bằng DecompressionStream('deflate-raw').
+// Gói gửi đi theo đúng thứ tự (zlib xử lý tuần tự, flush xong mới gửi). Cửa sổ 4 KB như nén WebSocket: ~48 KB / người.
+function zstart(c) {
+  if (c.z || !ENV.COMPRESSION) return;
+  const z = zlib.createDeflateRaw({ windowBits: 12, memLevel: 6, level: 6 });
+  const parts = [];
+  z.on('data', (b) => parts.push(b));
+  z.on('error', () => { try { c.ws.terminate(); } catch (e) { /* bỏ qua */ } });
+  c.z = { z, parts };
+}
+
+// done(): gọi sau khi gói đã vào hàng gửi (đóng kết nối ngay sau gói cuối)
+function out(c, data, done) {
+  if (c.ws.readyState !== 1) { if (done) done(); return; }
   if (c.ws.bufferedAmount > MAX_BUFFER) { c.ws.terminate(); return; }
-  c.ws.send(data);
+  if (!c.z) { c.ws.send(data); if (done) done(); return; }
+  const { z, parts } = c.z;
+  z.write(data + '\n');
+  z.flush(zlib.constants.Z_SYNC_FLUSH, () => {
+    if (parts.length && c.ws.readyState === 1) c.ws.send(parts.length === 1 ? parts[0] : Buffer.concat(parts), { binary: true, compress: false });
+    parts.length = 0;
+    if (done) done();
+  });
 }
 
 // ranked = đội hình trận xếp hạng (Matchmaker.lineup); không có = phòng thường (mã phòng, chủ phòng bấm START)
@@ -105,7 +117,7 @@ function roomFailed(entry, where, e) {
 function closeRoom(entry, reason) {
   rooms.delete(entry.code);
   log(entry, `closed (${reason}, ${entry.clients.size} connected)`);
-  for (const c of entry.clients.values()) { c.room = null; try { c.ws.send(JSON.stringify({ t: 'bye' })); c.ws.close(1000); } catch (e) { /* bỏ qua */ } }
+  for (const c of entry.clients.values()) { c.room = null; out(c, JSON.stringify({ t: 'bye' }), () => { try { c.ws.close(1000); } catch (e) { /* bỏ qua */ } }); }
   entry.clients.clear();
 }
 
@@ -114,7 +126,7 @@ function attach(c, entry) {
   c.since = Date.now();   // từ giờ phải được nhận vào phòng (hello) trong JOIN_TIMEOUT
   entry.clients.set(c.id, c);
   entry.touched = Date.now();
-  c.ws.send(JSON.stringify({ t: 'room', code: entry.code, id: c.id }));
+  out(c, JSON.stringify({ t: 'room', code: entry.code, id: c.id }));
 }
 
 function leave(c) {
@@ -141,11 +153,12 @@ function clientIp(req) {
 }
 
 /* ================= KẾT NỐI ================= */
-const say = (c, msg) => { if (c.ws.readyState === 1) c.ws.send(JSON.stringify(msg)); };
+const say = (c, msg) => out(c, JSON.stringify(msg));
 const err = (c, e) => say(c, { t: 'err', e });
 const busy = () => draining || rooms.size >= ENV.MAX_ROOMS;
 
 function handshake(c, msg) {
+  if (msg.z === 1) zstart(c);
   if (msg.t === 'queue') {
     if (msg.v !== NET.protocol) return err(c, 'version');
     if (busy()) return say(c, { t: 'solo' });   // máy chủ bận / đang tắt: đá với người chơi giả, không báo lỗi
@@ -205,7 +218,7 @@ const server = http.createServer((req, res) => {
   res.end();
 });
 
-const wss = new WebSocketServer({ server, maxPayload: 16 * 1024, perMessageDeflate: ENV.COMPRESSION ? DEFLATE : false });
+const wss = new WebSocketServer({ server, maxPayload: 16 * 1024, perMessageDeflate: false });   // nén: zstart (trong game)
 
 wss.on('connection', (ws, req) => {
   const ip = clientIp(req), n = (perIp.get(ip) || 0) + 1;
@@ -223,7 +236,8 @@ wss.on('connection', (ws, req) => {
     if (msg.t === 'ka') return;
     if (!c.room) { handshake(c, msg); return; }
     const entry = c.room;
-    entry.touched = Date.now();
+    // ping (đo độ trễ, mỗi giây) cũng không tính là phòng đang được dùng: phòng bỏ không vẫn đóng theo LOBBY_TTL
+    if (msg.t !== 'ping') entry.touched = Date.now();
     try { entry.room.onData(msg, c.id); } catch (e) { roomFailed(entry, `message "${msg.t}"`, e); return; }
     wake();
   });
@@ -234,6 +248,7 @@ wss.on('connection', (ws, req) => {
     if (left > 0) perIp.set(ip, left); else perIp.delete(ip);
     unqueue(c);
     leave(c);
+    if (c.z) { c.z.z.close(); c.z = null; }
   });
   ws.on('error', () => {});
 });

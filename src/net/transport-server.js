@@ -9,12 +9,41 @@
  *  - cancel(): bỏ chờ -> reject { type: 'cancelled' }
  * Tìm trận xếp hạng: queue(vé) -> queue{v,elo,role,pf}; queued = đã vào hàng (hết hạn kết nối), room{code,id} = ghép xong (resolve),
  * solo = không ghép được (reject { type: 'solo' }). Chỉ thử 1 lần: máy chủ đang ngủ nghĩa là không ai đang tìm trận.
+ * Nén trong game: trình duyệt có DecompressionStream('deflate-raw') thì gói đầu kèm z:1 -> máy chủ gửi gói nhị phân
+ * (1 luồng deflate-raw giữ ngữ cảnh, mỗi gói = JSON + '\n'; xem server/index.js). Không có thì nhận JSON thường như cũ.
  */
 window.SFC = window.SFC || {};
 
 (function () {
   const N = () => SFC_CONFIG.net;
   const S = () => SFC_CONFIG.net.server;
+
+  // trình duyệt giải nén được luồng deflate-raw? (Chrome 103+, Firefox 113+, Safari 16.4+, Electron)
+  const canInflate = () => {
+    try { return typeof DecompressionStream === 'function' && typeof TextDecoder === 'function' && !!new DecompressionStream('deflate-raw'); } catch (e) { return false; }
+  };
+
+  // giải luồng nén: push(byte) theo đúng thứ tự nhận, onLine(chuỗi JSON) cho từng gói; drain() = chờ giải hết phần đã nhận
+  function inflater(onLine, onError) {
+    const ds = new DecompressionStream('deflate-raw'), w = ds.writable.getWriter(), r = ds.readable.getReader(), dec = new TextDecoder();
+    let rest = '', last = Promise.resolve();
+    (async () => {
+      try {
+        for (;;) {
+          const { value, done } = await r.read();
+          if (done) return;
+          rest += dec.decode(value, { stream: true });
+          let i;
+          while ((i = rest.indexOf('\n')) >= 0) { const line = rest.slice(0, i); rest = rest.slice(i + 1); onLine(line); }
+        }
+      } catch (e) { onError(e); }
+    })();
+    return {
+      push(bytes) { last = w.write(bytes).catch(() => {}); },
+      drain() { return last.then(() => new Promise((res) => setTimeout(res, 0))); },
+      close() { w.abort().catch(() => {}); },
+    };
+  }
 
   const NetServer = {
     ws: null,
@@ -93,18 +122,34 @@ window.SFC = window.SFC || {};
         const timer = setTimeout(() => fail({ type: 'server-unreachable' }), timeoutSec * 1000);
         try { ws = new WebSocket(S().url); } catch (e) { fail({ type: 'server-unreachable' }); return; }
         this.ws = ws;
-        ws.onopen = () => ws.send(JSON.stringify(first));
+        // nén trong game: gói nhị phân -> giải theo thứ tự -> handle như gói chữ
+        const z = canInflate() ? inflater((text) => parse(text), () => { try { ws.close(); } catch (e) { /* bỏ qua */ } }) : null;
+        if (z) ws.binaryType = 'arraybuffer';
+        this.compressed = !!z;
+        ws.onopen = () => ws.send(JSON.stringify(z ? Object.assign({ z: 1 }, first) : first));
         ws.onerror = () => fail({ type: 'server-unreachable' });
         ws.onclose = () => {
-          if (this.ws !== ws) return;
-          if (!done) { fail({ type: 'server-unreachable' }); return; }
-          const was = this.joined;
-          this.reset();
-          if (was) this.emit('close', 'host');
+          // gói cuối (vd. bye) có thể còn đang giải nén: xử lý hết rồi mới báo mất kết nối
+          const closed = () => {
+            if (z) z.close();
+            if (this.ws !== ws) return;
+            if (!done) { fail({ type: 'server-unreachable' }); return; }
+            const was = this.joined;
+            this.reset();
+            if (was) this.emit('close', 'host');
+          };
+          if (z) z.drain().then(closed); else closed();
         };
         ws.onmessage = (ev) => {
+          if (typeof ev.data === 'string') { SFC.NetStats.in(ev.data.length); parse(ev.data); return; }
+          if (!z) return;
+          SFC.NetStats.in(ev.data.byteLength);
+          z.push(new Uint8Array(ev.data));
+        };
+        const parse = (text) => {
+          if (this.ws !== ws) return;
           let msg;
-          try { msg = JSON.parse(ev.data); } catch (e) { return; }
+          try { msg = JSON.parse(text); } catch (e) { return; }
           if (!msg || !msg.t) return;
           if (this.joined) { this.emit('data', msg, 'host'); return; }
           // bắt tay
@@ -123,7 +168,10 @@ window.SFC = window.SFC || {};
     },
 
     send(msg) {
-      if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(msg));
+      if (!this.ws || this.ws.readyState !== 1) return;
+      const s = JSON.stringify(msg);
+      this.ws.send(s);
+      SFC.NetStats.out(s.length);
     },
 
     // máy này không bao giờ làm host trên máy chủ riêng

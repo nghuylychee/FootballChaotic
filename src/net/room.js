@@ -17,7 +17,7 @@
  * new SFC.Room({ send(msg, id?), drop(id), local?, snapshotEvery, ranked?, hooks? })
  *  - send: bỏ id = gửi mọi khách (bên gửi tự JSON 1 lần rồi phát cho từng người)
  *  - hooks (đều tuỳ chọn): changed() · joined(name) · left(name) · dropped(name, away) · back(name) · toLobby() · start(game) ·
- *    events(g) · localRole(role)
+ *    events(g) · localRole(role) · pong(id, c)
  */
 window.SFC = window.SFC || {};
 
@@ -191,6 +191,13 @@ window.SFC = window.SFC || {};
           break;
         case 'ground':
           this.setGround(id, m.a);
+          break;
+        // đo ping: khách ping máy chạy trận -> trả ngay · host ping khách -> khách trả pong (session.js tính)
+        case 'ping':
+          if (typeof m.c === 'number') this.send({ t: 'pong', c: m.c }, id);
+          break;
+        case 'pong':
+          if (typeof m.c === 'number') this.hook('pong', id, m.c);
           break;
         case 'toLobby':
           if (id === L.owner && this.status === 'playing' && !this.ranked) this.backToLobby();

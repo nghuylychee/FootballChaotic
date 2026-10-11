@@ -65,7 +65,7 @@ window.SFC = window.SFC || {};
       const id = conn.peer;
       this.conns.set(id, conn);
       conn.on('open', () => this.emit('open', id));
-      conn.on('data', (d) => this.emit('data', d, id));
+      conn.on('data', (d) => { SFC.NetStats.in(SFC.NetStats.size(d)); this.emit('data', d, id); });
       conn.on('close', () => { if (this.conns.get(id) === conn) { this.conns.delete(id); this.emit('close', id); } });
       conn.on('error', (e) => this.emit('error', e));
     },
@@ -87,7 +87,7 @@ window.SFC = window.SFC || {};
         peer.on('open', () => {
           const conn = peer.connect(N().roomPrefix + code, { reliable: true, serialization: 'json' });
           this.conn = conn;
-          conn.on('data', (d) => this.emit('data', d, 'host'));
+          conn.on('data', (d) => { SFC.NetStats.in(SFC.NetStats.size(d)); this.emit('data', d, 'host'); });
           conn.on('close', () => { if (this.conn === conn) { this.conn = null; this.emit('close', 'host'); } });
           conn.on('error', (e) => this.emit('error', e));
           conn.on('open', () => { if (done) return; done = true; clearTimeout(timer); this.code = code; resolve(); });
@@ -98,9 +98,10 @@ window.SFC = window.SFC || {};
 
     // khách: gửi cho host · host: gửi cho khách id (bỏ id = gửi mọi khách)
     send(msg, id) {
-      if (!this.hosting) { if (this.conn && this.conn.open) this.conn.send(msg); return; }
-      if (id != null) { const c = this.conns.get(id); if (c && c.open) c.send(msg); return; }
-      for (const c of this.conns.values()) if (c.open) c.send(msg);
+      const n = SFC.NetStats.size(msg);
+      if (!this.hosting) { if (this.conn && this.conn.open) { this.conn.send(msg); SFC.NetStats.out(n); } return; }
+      if (id != null) { const c = this.conns.get(id); if (c && c.open) { c.send(msg); SFC.NetStats.out(n); } return; }
+      for (const c of this.conns.values()) if (c.open) { c.send(msg); SFC.NetStats.out(n); }
     },
 
     // host: đóng kết nối với 1 khách (phòng vẫn mở)

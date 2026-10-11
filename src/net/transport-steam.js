@@ -137,6 +137,7 @@ window.SFC = window.SFC || {};
       let size;
       while (this.lobby && (size = net.isP2PPacketAvailable()) > 0) {
         const pk = net.readP2PPacket(size);
+        SFC.NetStats.in(size);
         let msg;
         try { msg = JSON.parse(S().fromBuffer(pk.data)); } catch (e) { continue; }
         const sid = pk.steamId.steamId64;
@@ -162,9 +163,9 @@ window.SFC = window.SFC || {};
     send(msg, id) {
       if (!this.lobby) return;
       const net = this.client.networking, buf = S().toBuffer(JSON.stringify(msg));
-      if (!this.hosting) { if (this.hostId) net.sendP2PPacket(this.hostId, SEND_RELIABLE, buf); return; }
-      if (id != null) { const to = this.conns.get(id); if (to) net.sendP2PPacket(to, SEND_RELIABLE, buf); return; }
-      for (const to of this.conns.values()) net.sendP2PPacket(to, SEND_RELIABLE, buf);
+      if (!this.hosting) { if (this.hostId) { net.sendP2PPacket(this.hostId, SEND_RELIABLE, buf); SFC.NetStats.out(buf.length); } return; }
+      if (id != null) { const to = this.conns.get(id); if (to) { net.sendP2PPacket(to, SEND_RELIABLE, buf); SFC.NetStats.out(buf.length); } return; }
+      for (const to of this.conns.values()) { net.sendP2PPacket(to, SEND_RELIABLE, buf); SFC.NetStats.out(buf.length); }
     },
 
     // host: ngừng nhận 1 khách (phòng vẫn mở). steamworks.js không có hàm đóng phiên P2P -> chỉ bỏ qua gói của họ
