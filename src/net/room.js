@@ -352,6 +352,8 @@ window.SFC = window.SFC || {};
       // máy chủ riêng không có góc nhìn: me = -1 (không slot nào là "tại máy này")
       const me = this.local ? this.seatOf[this.local.id] : -1;
       this.game = new SFC.Game(Object.assign({ home, away, me, humanTeam: me >= 0 ? opts.seats[me].team : -1 }, opts));
+      // máy chủ riêng: không ai xem -> bỏ hiệu ứng hình ảnh (vẫn ghi lại gửi khách). Phải trước capture
+      if (!this.local) this.game.effects.headless();
       Sync().capture(this.game);
       this.remotes = {};
       for (const id of this.seatIds) if (!this.isLocal(id)) this.remotes[id] = new (Sync().RemoteInput)();

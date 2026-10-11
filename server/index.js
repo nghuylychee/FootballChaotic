@@ -39,6 +39,7 @@ const ENV = {
   MAX_PER_IP: num(process.env.MAX_PER_IP, 10),           // số kết nối cùng lúc / 1 địa chỉ IP (0 = không giới hạn)
   JOIN_TIMEOUT: num(process.env.JOIN_TIMEOUT, 10),       // giây: kết nối phải tạo / vào phòng và được nhận vào phòng (hello) trong bấy nhiêu giây
   COMPRESSION: num(process.env.COMPRESSION, 1),          // 1 = nén trong game cho máy khách xin z:1 (zstart), 0 = tắt (so sánh khi đo tải)
+  IDLE_CPU: num(process.env.IDLE_CPU, 300),             // giây không có trận nào -> ghi log CPU nền (0 = tắt)
 };
 const STEP = 1 / 60;
 const MAX_BUFFER = 1 << 20;   // người chơi nhận chậm tới mức đọng 1 MB -> ngắt (khỏi phình bộ nhớ)
@@ -81,27 +82,39 @@ function zstart(c) {
 const usage = (entry, n) => { if (entry) { entry.sent += n; entry.matchSent += n; } };
 const kb = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(2)} MB` : `${(n / 1024).toFixed(1)} KB`);
 
+// đo CPU (ghi log khi hết trận + lúc rảnh): tính bằng % của 1 nhân. Render free = 0.1 nhân -> biểu đồ CPU của Render ~ gấp 10.
+// cpu = cả tiến trình (process.cpuUsage, gồm luồng nén zlib + GC + nhận gói) · sim = Room.step trừ phần gửi · send = luồng chính trong out()
+const cpuPct = (from, ms) => { const u = process.cpuUsage(from); return ((u.user + u.system) / 1000 / Math.max(1, ms)) * 100; };
+const pct = (ms, wall) => ((ms / Math.max(1, wall)) * 100).toFixed(1);
+const sendTime = (entry, ms) => { if (entry) entry.sendMs += ms; };
+
 function out(c, data, done) {
   if (c.ws.readyState !== 1) { if (done) done(); return; }
   if (c.ws.bufferedAmount > MAX_BUFFER) { c.ws.terminate(); return; }
-  const entry = c.room;
-  if (!c.z) { c.ws.send(data); usage(entry, Buffer.byteLength(data)); if (done) done(); return; }
+  const entry = c.room, t0 = performance.now();
+  if (!c.z) { c.ws.send(data); usage(entry, Buffer.byteLength(data)); sendTime(entry, performance.now() - t0); if (done) done(); return; }
   const { z, parts } = c.z;
   z.write(data + '\n');
   z.flush(zlib.constants.Z_SYNC_FLUSH, () => {
+    const t1 = performance.now();
     if (parts.length && c.ws.readyState === 1) {
       const buf = parts.length === 1 ? parts[0] : Buffer.concat(parts);
       c.ws.send(buf, { binary: true, compress: false });
       usage(entry, buf.length);
     }
     parts.length = 0;
+    sendTime(entry, performance.now() - t1);
     if (done) done();
   });
+  // phần đồng bộ (đưa vào zlib) chạy bên trong Room.step -> sendSync để trừ ra khỏi sim; callback ở trên chạy sau, ngoài step
+  const ms = performance.now() - t0;
+  sendTime(entry, ms);
+  if (entry) entry.sendSync += ms;
 }
 
 // ranked = đội hình trận xếp hạng (Matchmaker.lineup); không có = phòng thường (mã phòng, chủ phòng bấm START)
 function createRoom(ranked) {
-  const entry = { code: newCode(), clients: new Map(), touched: Date.now(), sent: 0, matchSent: 0 };
+  const entry = { code: newCode(), clients: new Map(), touched: Date.now(), sent: 0, matchSent: 0, stepMs: 0, sendMs: 0, sendSync: 0 };
   const mode = () => (ranked ? 'ranked' : SFC.Room.Slots.mode(entry.room.lobby));
   entry.room = new SFC.Room({
     ranked,
@@ -114,7 +127,10 @@ function createRoom(ranked) {
     drop: (id) => { const c = entry.clients.get(id); if (c) c.ws.close(1000); },
     snapshotEvery: NET.server.snapshotEvery || 1,
     hooks: {
-      start: (g) => { entry.ended = false; entry.startedAt = Date.now(); entry.matchSent = 0; log(entry, `match started (${mode()}, ${entry.room.lobby.members.length} players)`); },
+      start: (g) => {
+        entry.ended = false; entry.startedAt = Date.now(); entry.matchSent = 0;
+        entry.cpu0 = process.cpuUsage(); entry.stepMs = entry.sendMs = entry.sendSync = 0;
+        log(entry, `match started (${mode()}, ${entry.room.lobby.members.length} players)`); },
       toLobby: () => { if (entry.startedAt && !entry.ended) log(entry, `match stopped before the end · sent ${kb(entry.matchSent)}`); entry.startedAt = 0; },
       dropped: (name, away) => { if (away) log(entry, `a player disconnected, seat held ${NET.reconnectGrace}s`); },
       back: () => log(entry, 'a player reconnected'),
@@ -278,6 +294,7 @@ wss.on('connection', (ws, req) => {
 // chỉ chạy khi có ít nhất 1 trận đang đá; bước cố định 1/60 giây, bù trễ của bộ hẹn giờ
 let loop = null, last = 0, acc = 0;
 const anyActive = () => { for (const e of rooms.values()) if (e.room.active) return true; return false; };
+const activeCount = () => { let n = 0; for (const e of rooms.values()) if (e.room.active) n++; return n; };
 
 function wake() {
   if (loop || !anyActive()) return;
@@ -295,16 +312,21 @@ function frame() {
     for (const e of [...rooms.values()]) {
       const r = e.room;
       if (!r.active) continue;
+      const t0 = performance.now();
       try {
         r.introClock(STEP);
         if (!r.introHold) r.step(STEP, null);
       } catch (err) { roomFailed(e, 'tick', err); continue; }
+      e.stepMs += performance.now() - t0;
       if (r.endSent && !e.ended) {
         e.ended = true;
         const t = r.game.teams;
         e.endedAt = Date.now();
         const secs = Math.max(1, Math.round((Date.now() - e.startedAt) / 1000)), players = e.clients.size || 1;
-        log(e, `match ended ${t[0].score}-${t[1].score} after ${secs}s · sent ${kb(e.matchSent)} (${(e.matchSent / 1024 / secs / players).toFixed(2)} KB/s per player, ${players} connected)`);
+        // cpu cả tiến trình: nhiều trận chạy cùng lúc thì gồm cả các trận kia (matches=)
+        const wall = Date.now() - e.startedAt, sim = Math.max(0, e.stepMs - e.sendSync);
+        log(e, `match ended ${t[0].score}-${t[1].score} after ${secs}s · sent ${kb(e.matchSent)} (${(e.matchSent / 1024 / secs / players).toFixed(2)} KB/s per player, ${players} connected)` +
+          ` · cpu ${cpuPct(e.cpu0, wall).toFixed(1)}% of a core (sim ${pct(sim, wall)}%, send ${pct(e.sendMs, wall)}%, ${activeCount() - (r.active ? 1 : 0)} other matches running)`);
       }
     }
   }
@@ -314,7 +336,7 @@ function frame() {
 }
 
 /* ================= BẢO TRÌ (1 lần / giây) ================= */
-let sec = 0, idleFor = 0, lastBytes = 0;
+let sec = 0, idleFor = 0, lastBytes = 0, idleCpu = null;
 setInterval(() => {
   sec++;
   const now = Date.now();
@@ -343,6 +365,13 @@ setInterval(() => {
   }
   try { matchmake(now); } catch (e) { console.error('[queue] failed:', e && e.stack || e); }
   wake();   // trận xếp hạng có thể vừa vào (expire: quá giờ chờ người vào phòng)
+  // CPU nền lúc không có trận nào đang đá (ghi log mỗi IDLE_CPU giây không trận; có trận thì đếm lại từ đầu)
+  if (!ENV.IDLE_CPU || anyActive()) idleCpu = null;
+  else if (!idleCpu) idleCpu = { u: process.cpuUsage(), t: now };
+  else if (now - idleCpu.t >= ENV.IDLE_CPU * 1000) {
+    console.log(`[server] no match for ${Math.round((now - idleCpu.t) / 1000)}s · cpu ${cpuPct(idleCpu.u, now - idleCpu.t).toFixed(1)}% of a core (${clients.size} connected, ${rooms.size} rooms)`);
+    idleCpu = { u: process.cpuUsage(), t: now };
+  }
   // không có ai -> thoát (tuỳ chọn)
   idleFor = clients.size || rooms.size ? 0 : idleFor + 1;
   if (ENV.IDLE_EXIT && idleFor >= ENV.IDLE_EXIT) { console.log('[server] idle, exiting'); process.exit(0); }
