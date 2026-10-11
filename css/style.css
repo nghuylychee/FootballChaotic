@@ -1934,3 +1934,14 @@ canvas.avatar.big { width: 120px; height: 132px; }
 #prompt .pr-arrows kbd:nth-child(4) { grid-column: 3; grid-row: 2; }
 #prompt .pr-box.gold kbd { color: var(--ink); background: var(--gold); border-color: #fff3b0; font-size: 13px; }
 #prompt .pr-box.gold b { color: var(--gold); font-size: 6px; }
+
+/* ---------- MAIN PATH: Core Road của Area (docs/CORE_ROAD.md) — mỗi nấc = mốc Elo + Core mở ở đó ---------- */
+.proad-cores { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 8px; font-size: 11px; color: var(--muted); }
+.proad-cores > b { font-weight: normal; letter-spacing: 1px; color: #e6dccb; }
+.proad-cores em { font-style: normal; }
+.prc { display: inline-flex; align-items: center; gap: 2px; }
+.prc > span { margin-right: 2px; }
+.prc i { font-style: normal; line-height: 0; opacity: 0.8; }
+.prc i.got { opacity: 1; }
+/* bóng đen Core chưa mở: xám thay vì đen tuyền (nền tối) */
+.prc .pxi.sil { filter: brightness(0) invert(0.32); }

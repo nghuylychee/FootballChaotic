@@ -33,7 +33,7 @@ SFC_CONFIG.controls = {
     restart: ['KeyR', 'Pad.Y'],     // túi đồ: phân rã toàn bộ đồ trùng (giữ 1)
     dismantle: ['KeyX', 'Delete', 'Pad.X'], // túi đồ / mở hộp: phân rã món đang chọn
     ultimate: ['KeyX', 'Pad.LT'],    // trong trận: TUYỆT KỸ (khi thanh năng lượng đầy)
-    reroll:  ['KeyR', 'Pad.Y'],     // màn chọn Core: đổi cả 3 lá (mỗi lượt 1 lần)
+    reroll:  ['KeyR', 'Pad.Y'],     // màn DRILL: đổi cả 3 drill · màn chọn Core: đổi cả 3 lá (khi cores.draft.rerollsPerRound > 0)
   },
 
   // Bảng hướng dẫn hiển thị trong menu / pause
@@ -90,7 +90,7 @@ SFC_CONFIG.controls = {
     ],
     system: [
       ['{move} + {confirm}', 'Pick Core'],
-      ['{reroll}', 'Reroll 3 Core cards (once per round)'],
+      // ['{reroll}', 'Reroll 3 Core cards (once per round)'],   // tạm bỏ đổi bài Core (cores.draft.rerollsPerRound = 0)
       ['{pause}', 'Pause'],
       ['{mute}', 'Mute/unmute'],
     ],

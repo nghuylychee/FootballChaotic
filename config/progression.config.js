@@ -10,8 +10,9 @@ SFC_CONFIG.progression = {
   startGold: 150,
 
   // XP cần để lên level tiếp theo: xpBase + xpStep * (level - 1)
-  // Level còn bị chặn theo tiến trình Main Path (mainpath.config.js -> areas[].levelCap): drill (= chỉ số) đi theo OVR của Area.
-  // Đường cong XP phẳng để người thắng liên tục chạm trần gần cuối mỗi Area; thắng ~65% thì chạm trần sớm hơn (XP dư tích lại)
+  // levelCapByRank: true = level còn bị chặn theo Elo cao nhất từng đạt (mainpath.config.js -> areas[].levelCap, XP dư tích lại);
+  // false = chỉ chặn ở maxLevel (user bỏ giới hạn theo rank, 2026-10-11)
+  levelCapByRank: false,
   maxLevel: 40,
   xpBase: 60,
   xpStep: 20,
@@ -202,13 +203,16 @@ SFC_CONFIG.progression = {
   // Core đã quay được trước đó vẫn giữ trong hồ sơ. Bật lại = true.
   coreGacha: false,
 
-  // Bộ Core có sẵn cho user mới (8 Core THƯỜNG đủ 7 trường phái + 4 HIẾM + Tuyệt kỹ khởi đầu AURA FARMING — bí kíp gia truyền, trao ở cuối PROLOGUE). Core khác mở theo Main Path (mainpath.config.js -> areas[].cores / signature),
+  // Bộ Core có sẵn cho user mới (16 lá: 8 THƯỜNG + 1 HIẾM mỗi trường phái + Chaos Ball — trường phái nào cũng có >= 2 lá từ trận đầu)
+  // + Tuyệt kỹ khởi đầu
+  // AURA FARMING (bí kíp gia truyền, trao ở cuối PROLOGUE). Core khác mở theo Core Road (mainpath.config.js -> areas[].road / ult),
   // hoặc lấy từ Hộp Core khi coreGacha bật.
   // level (khi coreGacha bật) = level tối thiểu để Core quay được xuất hiện khi chọn Core giữa trận (chưa đủ thì nằm chờ trong túi đồ).
   // Độ hiếm của Core lấy từ config/cores.config.js (rarity) — dùng chung cho gacha và tần suất khi chọn Core.
   defaultUlt: 'aura_farming',   // Tuyệt kỹ đặc trưng ai cũng có lúc đầu (phải nằm trong starterCores)
   starterCores: ['sniper_foot', 'speed_demon', 'quick_feet', 'street_fighter', 'iron_body', 'heavy_boot', 'maestro', 'eagle_eye',
-    'banana_kick', 'counter_attack', 'fist_storm', 'one_touch', 'aura_farming'],
+    'burst_start', 'one_touch', 'banana_kick', 'fist_storm', 'wall_slam', 'phantom_step', 'iron_fist', 'chaos_ball',
+    'aura_farming'],
   cores: {
     warp_walls:     { level: 2 },
     fire_shot:      { level: 3 },

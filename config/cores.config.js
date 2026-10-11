@@ -64,7 +64,7 @@ SFC_CONFIG.cores = {
     rarityWeight: { common: 3, rare: 2, epic: 1.2, legendary: 0.7, mythic: 0.5 },
     buildWeight: 0.8,
     guaranteeFromRound: 2,   // từ lượt này: ít nhất 1 lá cùng trường phái với Core đang có
-    rerollsPerRound: 1,      // mỗi lượt chọn được đổi cả 3 lá bao nhiêu lần
+    rerollsPerRound: 0,      // mỗi lượt chọn được đổi cả 3 lá bao nhiêu lần (0 = tạm bỏ đổi bài, ẩn nút REROLL)
   },
 
   list: {

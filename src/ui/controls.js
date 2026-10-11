@@ -205,7 +205,7 @@ window.SFC = window.SFC || {};
           <div class="kv-key"><span class="play">${esc(_t('In match'))}</span><span class="sys">${esc(_t('Menus & system'))}</span></div>
           <div class="kv-legend">${kbLegend()}
             <div class="kl"><span class="kl-k">${kbKeys('pass', 1)}${kbKeys('through', 1)}${kbKeys('lob', 1)}</span><span class="kl-t"><b>${esc(_t('Teammate on the ball:'))}</b><b>${esc(_t('call for a pass'))}</b></span></div></div>
-          <div class="cv-note">${_t('Menus: {confirm} confirm · {back} back · {pick} pick Core · {reroll} reroll 3 Cores', {
+          <div class="cv-note">${_t(SFC_CONFIG.cores.draft.rerollsPerRound ? 'Menus: {confirm} confirm · {back} back · {pick} pick Core · {reroll} reroll 3 Cores' : 'Menus: {confirm} confirm · {back} back · {pick} pick Core', {
             confirm: kbKeys('confirm'), back: kbKeys('pause', 1) + kbKeys('back', 1), pick: kbKeys('pick1', 1) + kbKeys('pick2', 1) + kbKeys('pick3', 1), reroll: kbKeys('reroll') })}</div>`;
       } else {
         const lb = (a) => {

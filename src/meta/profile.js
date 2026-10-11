@@ -137,11 +137,11 @@ window.SFC = window.SFC || {};
       return level >= P().maxLevel ? Infinity : P().xpBase + P().xpStep * (level - 1);
     },
 
-    // trần level theo Main Path (mainpath.config.js -> areas[].levelCap): theo Elo cao nhất từng đạt, khoảng Elo của Area chia đều
-    // cho các nấc trong levelCap; vượt hết khoảng Elo của Area cuối = maxLevel
+    // trần level: progression.levelCapByRank = true -> theo Main Path (mainpath.config.js -> areas[].levelCap, theo Elo cao nhất từng đạt,
+    // khoảng Elo của Area chia đều cho các nấc); tắt -> maxLevel
     levelCap() {
       const path = this.data.path, MP = SFC.MainPath;
-      return path && MP ? MP.levelCapAt(path.peak) : P().maxLevel;
+      return P().levelCapByRank && path && MP ? MP.levelCapAt(path.peak) : P().maxLevel;
     },
     // đang chạm trần level (XP vẫn tích, lên Elo Main Path là lên level)
     levelCapped() { return this.data.level < P().maxLevel && this.data.level >= this.levelCap(); },
@@ -283,16 +283,23 @@ window.SFC = window.SFC || {};
 
     /* ---------- Core ---------- */
     coreLevel(id) { return CORES()[id] ? CORES()[id].level : 1; },
-    // Core được bốc khi chọn Core giữa trận:
+    // Core đã mở = pool lượt chọn Core giữa trận (Tuyệt kỹ không vào lượt chọn: CoreSystem.eligible) + túi đồ khoá / không khoá:
     //   gacha Core bật: bộ cơ bản + Core trong túi đồ đã đủ level
-    //   gacha Core tắt: mọi Core thường + Tuyệt kỹ có sẵn (starterCores) + Tuyệt kỹ mở bằng Main Path (mainPath.lockCores = false: mọi Core)
+    //   gacha Core tắt: Core thường đã mở (collection) + Tuyệt kỹ đã sưu tập
     unlockedCores() {
       if (P().coreGacha) return P().starterCores.concat(Object.keys(this.data.cores).filter((id) => this.data.cores[id] > 0 && this.coreLevel(id) <= this.data.level));
-      const L = SFC_CONFIG.cores.list, all = Object.keys(L);
-      if (!SFC_CONFIG.mainPath.lockCores) return all;
-      return all.filter((id) => L[id].role !== 'ult' || P().starterCores.includes(id) || this.data.path.cores.includes(id));
+      return this.collection().concat(this.ownedUlts());
     },
     coreUnlocked(id) { return this.unlockedCores().includes(id); },
+
+    // Core thường đã mở (docs/CORE_ROAD.md): bộ khởi đầu + Core Road đã mở (path.cores) + Core quay được từ gacha cũ
+    // (mainPath.lockCores = false: mọi Core thường)
+    collection(d = this.data) {
+      const L = SFC_CONFIG.cores.list, normal = (id) => L[id] && L[id].role !== 'ult';
+      if (!SFC_CONFIG.mainPath.lockCores) return Object.keys(L).filter(normal);
+      const bag = Object.keys((d && d.cores) || {}).filter((id) => d.cores[id] > 0);
+      return [...new Set(P().starterCores.concat((d && d.path && d.path.cores) || [], bag).filter(normal))];
+    },
 
     /* ---------- Tuyệt kỹ đặc trưng (không phải lá chọn Core: mỗi người mang 1 cái vào trận) ---------- */
     // bộ sưu tập: Tuyệt kỹ có sẵn (progression.starterCores, vd. AURA FARMING) + Tuyệt kỹ mở khi lần đầu tới Area (Main Path)

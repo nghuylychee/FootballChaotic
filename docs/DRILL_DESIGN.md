@@ -115,7 +115,7 @@ Rating = `60 + steps` (steps = số bước đã cộng, 0..39). Hệ số trong
 ## 6. Ngân sách & cân bằng
 
 - LV1 → LV40 = **39 drill**, trung bình ~5.2 bước → **~200 bước**. Dàn đều: ~+33 mỗi chỉ số → **~93** (x1.17). Dồn: 3–4 chỉ số lên 99.
-- **Trần level theo Main Path** (`mainpath.config.js → areas[].levelCap`, theo hạng cao nhất từng đạt; vô địch = LV40): drill vẫn chỉ đến từ lên level,
+- **(Đã TẮT 2026-10-11, `progression.levelCapByRank: false` — user bỏ giới hạn level theo rank; giữ mô tả để bật lại)** **Trần level theo Main Path** (`mainpath.config.js → areas[].levelCap`, theo hạng cao nhất từng đạt; vô địch = LV40): drill vẫn chỉ đến từ lên level,
   nhưng level không vượt trần → OVR character (dàn đều) luôn **thấp hơn OVR đội thường của Area ~3** lúc mới tới, tiến dần tới Area sau ở hạng I.
   Lý do: bản đầu level chỉ theo XP, thua cũng có XP → thắng ~65% là LV30 (~85 OVR) ngay ở Harbor (Area 6/10), chỉ số vượt xa Area.
   XP vượt trần vẫn tích; lên hạng / sang Area là lên level (và nhận drill) ngay.

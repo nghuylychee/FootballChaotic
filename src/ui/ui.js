@@ -130,7 +130,8 @@ window.SFC = window.SFC || {};
       }).join('');
       const opp = game.teams[1 - team];
       const left = (d.rerolls && d.rerolls[me]) || 0;
-      const reroll = picked || d.noReroll ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> ${esc(_tn('REROLL 3 ({n} left)', 'REROLL 3 ({n} left)', left))}</button>`;
+      // cores.draft.rerollsPerRound = 0: tạm bỏ đổi bài -> không có nút REROLL
+      const reroll = picked || d.noReroll || !SFC_CONFIG.cores.draft.rerollsPerRound ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> ${esc(_tn('REROLL 3 ({n} left)', 'REROLL 3 ({n} left)', left))}</button>`;
       // bàn phím: không cần chú thích (bỏ dòng "Pick 1 Core..."); tay cầm không có phím số -> gợi ý nút ngắn
       const sub = picked ? esc(game.seats.length > 2 || game.humans.length < 2 ? _t('Picked · waiting for other players...') : _t('Picked · waiting for opponent...')) : SFC.Input.device === 'pad' ? `←→ + ${esc(keyLabel('confirm'))}` : '';
       this.el.draft.classList.toggle('waiting', picked);
@@ -168,7 +169,7 @@ window.SFC = window.SFC || {};
       if (input.wasPressed('pick3')) pick = 2;
       if (input.wasPressed('confirm')) pick = this.draftSel;
       if (pick >= 0 && pick < n) this.pick(game, pick);
-      else if (input.wasPressed('reroll')) this.doAct('reroll');
+      else if (input.wasPressed('reroll') && SFC_CONFIG.cores.draft.rerollsPerRound) this.doAct('reroll');
     },
 
     pick(game, i) {

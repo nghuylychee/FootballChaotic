@@ -1,8 +1,8 @@
 /* MainPath — tiến trình chính kiểu Clash Royale xếp theo Elo (số liệu ở config/mainpath.config.js).
  * Trạng thái lưu trong hồ sơ (SFC.Profile.data.path):
  *   { elo, peak, area, id, best, cores, fresh } — area = Area theo Elo hiện tại (id dùng để đọc lại); peak = Elo cao nhất từng đạt;
- *   best = Area cao nhất từng tới (mở Tuyệt kỹ, sân online, scout); cores = Tuyệt kỹ đã mở bằng Main Path;
- *   fresh = Core vừa mở, chưa hiện ở lượt chọn Core nào (lá có nhãn NEW, được ưu tiên bốc);
+ *   best = Area cao nhất từng tới (mở Tuyệt kỹ, sân online, scout); cores = Core + Tuyệt kỹ đã mở bằng Main Path (Core Road);
+ *   fresh = Core vừa mở, chưa hiện ở lượt chọn Core nào (lá có nhãn NEW, được ưu tiên bốc) / Tuyệt kỹ vừa mở chưa xem (NEW ở ULTIMATE);
  *   pending = { myElo, oppElo } trận xếp hạng đang đá dở (begin): tắt game / mất kết nối giữa trận -> lần chạy sau tính thua (settle)
  * Tìm trận: máy chủ riêng ghép người thật (src/net/matchmaker.js) khi có; không thì matchmake() sinh 3 người chơi giả (bot)
  * quanh Elo của bạn, ưu tiên cùng Area.
@@ -77,36 +77,65 @@ window.SFC = window.SFC || {};
     // ngưỡng Elo của Area kế tiếp (null ở Area cuối)
     nextElo(a = this.state.area) { const n = this.area(a + 1); return n ? n.elo : null; },
 
-    /* ---------- Tuyệt kỹ mở theo Area ---------- */
+    /* ---------- Core Road: Tuyệt kỹ + Core thường mở theo Elo cao nhất từng đạt (areas[].ult / road) ---------- */
+    // Elo mở nấc i của Area a (cùng cách chia nấc với levelCap: nấc 0 = lúc vào Area)
+    roadElo(a, i) {
+      const n = Math.max(1, (this.area(a).road || []).length);
+      return this.area(a).elo + Math.ceil((i / n) * this.span(a));
+    },
+    // mọi mốc đã mở ở mức Elo: [{ id, area, step, elo }] — Tuyệt kỹ của Area đứng đầu nấc 0
+    roadAt(elo) {
+      const out = [];
+      this.areas().forEach((A, a) => {
+        if (A.elo > elo) return;
+        if (A.ult) out.push({ id: A.ult, area: a, step: 0, elo: A.elo });
+        (A.road || []).forEach((ids, i) => {
+          const e = this.roadElo(a, i);
+          if (e <= elo) for (const id of ids) out.push({ id, area: a, step: i, elo: e });
+        });
+      });
+      return out.filter((x) => SFC_CONFIG.cores.list[x.id]);
+    },
+    // Core thường 1 người chơi có ở mức Elo (bộ khởi đầu + Core Road) — pool lượt chọn Core của người chơi giả
+    collectionAt(elo) {
+      const L = SFC_CONFIG.cores.list, normal = (id) => L[id] && L[id].role !== 'ult';
+      return [...new Set(SFC_CONFIG.progression.starterCores.filter(normal).concat(this.roadAt(elo).map((x) => x.id).filter(normal)))];
+    },
+
     unlock(d, id, fresh = true) {
       if (!id || !SFC_CONFIG.cores.list[id] || d.cores.includes(id)) return false;
       d.cores.push(id);
       if (fresh) d.fresh.push(id);
       return true;
     },
-    // hồ sơ cũ / đổi config: cấp bù Tuyệt kỹ của mọi Area đã tới (không hiện màn mở thẻ)
+    // hồ sơ cũ / đổi config: cấp bù mọi mốc Core Road tới Elo cao nhất từng đạt + Tuyệt kỹ của mọi Area đã tới (không hiện màn mở thẻ)
     backfill(d) {
+      for (const x of this.roadAt(d.peak)) this.unlock(d, x.id, false);
       for (let a = 0; a <= d.best; a++) this.unlock(d, this.area(a).ult, false);
     },
 
-    // nguồn mở khoá của 1 Core: { kind: starter | area | none, area }
+    // nguồn mở khoá của 1 Core: { kind: starter | area (Tuyệt kỹ của Area) | road (mốc Core Road) | none, area, elo }
     coreSource(id) {
       if (SFC_CONFIG.progression.starterCores.includes(id)) return { kind: 'starter' };
       const i = this.areas().findIndex((a) => a.ult === id);
-      if (i >= 0) return { kind: 'area', area: i };
-      const c = SFC_CONFIG.cores.list[id];
-      return c && c.role !== 'ult' ? { kind: 'starter' } : { kind: 'none' };
+      if (i >= 0) return { kind: 'area', area: i, elo: this.area(i).elo };
+      for (let a = 0; a < this.areas().length; a++) {
+        const k = (this.area(a).road || []).findIndex((ids) => ids.includes(id));
+        if (k >= 0) return { kind: 'road', area: a, step: k, elo: this.roadElo(a, k) };
+      }
+      return { kind: 'none' };
     },
 
-    // cách mở 1 Core còn khoá (túi đồ, màn kết quả). Area chưa tới: không lộ tên Area (bản đồ đang hiện ???)
+    // cách mở 1 Core còn khoá (túi đồ, ULTIMATE). Area chưa tới: không lộ tên Area (bản đồ đang hiện ???)
     unlockHint(id) {
       const src = this.coreSource(id), _t = SFC.t;
+      if (src.kind === 'road') return _t('Reach {elo}', { elo: this.stars(src.elo) }) + (src.area <= this.state.best ? ' · ' + this.area(src.area).name : '');
       if (src.kind !== 'area') return _t('Not available yet');
       const n = src.area + 1, seen = src.area <= this.state.best;
       return _t('Reach AREA {n}', { n }) + (seen ? ' · ' + this.area(src.area).name : '') + ` · ${this.stars(this.area(src.area).elo)}`;
     },
 
-    // Core đã xuất hiện ở lượt chọn -> bỏ nhãn NEW
+    // đã xem Core / Tuyệt kỹ vừa mở -> bỏ nhãn NEW
     seen(id) {
       const f = this.state.fresh, i = f.indexOf(id);
       if (i < 0) return;
@@ -118,7 +147,8 @@ window.SFC = window.SFC || {};
     demoLocked(a) { return SFC_DEMO && a >= SFC_CONFIG.demo.areas; },
     demoOver(st = this.state) { return this.demoLocked(st.area); },
 
-    // trần level character ở mức Elo (areas[].levelCap: khoảng Elo của Area chia đều cho các nấc); vượt hết Area cuối = maxLevel
+    // level ở mức Elo (areas[].levelCap: khoảng Elo của Area chia đều cho các nấc); vượt hết Area cuối = maxLevel.
+    // Trần level của character (khi progression.levelCapByRank bật) + mốc ước lượng OVR người chơi giả (ovrAt)
     levelCapAt(elo) {
       const max = SFC_CONFIG.progression.maxLevel, a = this.areaOf(elo), caps = this.area(a).levelCap, f = this.frac(elo, a);
       if (!caps || (a === this.areas().length - 1 && f >= 1)) return max;
@@ -148,10 +178,12 @@ window.SFC = window.SFC || {};
       }
       return Math.max(0, e);
     },
-    // 1 người chơi giả: tên, Elo, deck / ngoại hình theo Area của họ (giống ứng viên scout), OVR ngang character thật ở Elo đó
+    // 1 người chơi giả: tên, Elo, ngoại hình theo Area của họ (giống ứng viên scout), OVR ngang character thật ở Elo đó.
+    // Pool lượt chọn Core (deck) = mọi Core 1 người chơi thật ở Elo đó đã mở (Core Road) — bốc như người thật
     fakePlayer(elo, taken) {
       const M = C().matchmaking, names = M.names.filter((n) => !taken.includes(n));
       const m = SFC.Mates.generate(this.areaOf(elo), 1);
+      m.deck = this.collectionAt(elo);
       m.ovr = clampInt(this.ovrAt(elo) + rnd(-M.ovr.spread, M.ovr.spread), 40, 99);
       m.ult = U().pick(this.ultsAt(elo));
       m.ratings = SFC.Mates.genRatings(m.ovr, m.main);
@@ -223,7 +255,7 @@ window.SFC = window.SFC || {};
      * Ghi kết quả 1 trận Main Path. result: win | draw | lose; info = game.opts.mainPath ({ myElo, oppElo } lúc vào trận).
      * Trả về { before, after, delta, event, rewards, first } — before / after: { elo, area };
      *   event: up (lên Area) · down (rớt Area) · null; first: lần đầu tới Area này;
-     *   rewards: Tuyệt kỹ mở lần đầu tới Area [{ kind: 'core', id, src: 'area', area }]
+     *   rewards: Tuyệt kỹ + Core thường vừa mở theo Core Road [{ kind: 'core', id, src: 'area' (vào Area) | 'road' (nấc giữa Area), area, elo }]
      */
     record(result, info) {
       const st = this.state, before = { elo: st.elo, area: st.area }, bestBefore = st.best;
@@ -236,9 +268,8 @@ window.SFC = window.SFC || {};
       st.id = this.area(st.area).id;
       const event = st.area > before.area ? 'up' : st.area < before.area ? 'down' : null;
       const rewards = [];
-      for (let a = st.best + 1; a <= st.area; a++) {
-        const id = this.area(a).ult;
-        if (this.unlock(st, id)) rewards.push({ kind: 'core', id, src: 'area', area: a });
+      for (const x of this.roadAt(st.peak)) {
+        if (this.unlock(st, x.id)) rewards.push({ kind: 'core', id: x.id, src: x.step === 0 ? 'area' : 'road', area: x.area, elo: x.elo });
       }
       st.best = Math.max(st.best, st.area);
       SFC.Profile.save();

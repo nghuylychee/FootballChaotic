@@ -668,6 +668,11 @@ window.SFC = window.SFC || {};
         : ult ? `<div class="pu ${got ? 'got' : ''}" title="${esc(SFC.CoreScale.plain(A.ult))}"><i>${PX().core(A.ult, 'x2')}</i><div><b>${esc(ult.name)}</b>
             <span>${esc(_t('ULTIMATE'))} · ${got ? `${PX().ui('check', 'sm')} ${esc(_t('UNLOCKED'))}` : esc(_t('first time you reach this Area'))}</span></div></div>`
         : `<div class="pu none"><i>${PX().ui('star', 'x2')}</i><div><b>${esc(v === 0 ? _t('STARTING AREA') : _t('NEW ULTIMATE COMING SOON'))}</b><span>${esc(_t('Gold & XP after every match'))}</span></div></div>`;
+      // Core Road của Area: mỗi nấc = mốc Elo + Core mở ở đó (đã có: icon sáng · chưa có: bóng đen, không lộ tên)
+      const road = locked ? '' : `<div class="proad-cores"><b>${esc(_t('CORES'))}</b>${(A.road || []).map((ids, i) => (ids.length ? `<div class="prc"><span>${PX().elo(MP.roadElo(v, i))}</span>${ids.map((id) => {
+        const have = PF().coreUnlocked(id);
+        return `<i class="${have ? 'got' : ''}" title="${have ? esc(SFC_CONFIG.cores.list[id].name) : '???'}">${PX().core(id, have ? '' : 'sil')}</i>`;
+      }).join('')}</div>` : '')).join('') || `<em>${esc(_t('Starter Cores'))}</em>`}</div>`;
       // "con đường": 10 Area nối nhau, Area đang xem nổi lên, Area đang đá có cờ, chưa tới thì dạng bóng đen
       const dots = MP.areas().map((a, i) => {
         const lk = i > st.best || MP.demoLocked(i);
@@ -681,6 +686,7 @@ window.SFC = window.SFC || {};
         <div class="pa"><canvas data-arena="${v}" width="300" height="112"></canvas>${locked ? `<div class="pa-lock"><b>???</b>${PX().ui('lock', 'x2')}<span>${esc(demo ? (STEAM_SOON() ? _t('Full game only · coming soon to Steam') : _t('Full game only · wishlist on Steam')) : _t('Reach {n} to unlock', { n: '{stars}' })).replace('{stars}', demo ? '' : PX().elo(A.elo))}</span></div>` : ''}</div>
         ${eloRow}
         ${reward}
+        ${road}
         <div class="proad">${dots}</div>
       </div>`;
     },
@@ -771,6 +777,7 @@ window.SFC = window.SFC || {};
       const MP = MPATH(), D = SFC_CONFIG.demo, next = MP.area(D.areas), over = MP.demoOver();
       const rest = MP.areas().slice(D.areas);
       const ults = rest.filter((a) => SFC_CONFIG.cores.list[a.ult]).length;
+      const coresLeft = rest.reduce((n, a) => n + (a.road || []).reduce((m, ids) => m + ids.length, 0), 0);
       return `<div class="path wish" style="--ac:${next.color}">
         <div class="ph"><span class="ph-num">${esc(over ? _t('DEMO COMPLETE') : _t('FULL GAME ONLY'))}</span><span class="ph-state">${esc(STEAM_SOON() ? _t('COMING SOON') : _t('ON STEAM'))}</span></div>
         <div class="wl-head">${esc(over ? _t('THANKS FOR PLAYING!') : _t('ONLINE IS LOCKED'))}</div>
@@ -779,7 +786,7 @@ window.SFC = window.SFC || {};
           <div class="wl-next"><span>${esc(_t('NEXT · AREA {n}', { n: D.areas + 1 }))}</span><b>${PX().area(next.id)} ${esc(next.name)}</b></div></div>
         <ul class="wl-list">
           <li>${PX().ui('crown', 'sm')}<span>${_tn('<b>{n} more Area</b> up to the World Stage', '<b>{n} more Areas</b> up to the World Stage', rest.length)}</span></li>
-          <li>${PX().ui('card', 'sm')}<span>${_tn('<b>{n} more Ultimate</b> to unlock', '<b>{n} more Ultimates</b> to unlock', ults)}</span></li>
+          <li>${PX().ui('card', 'sm')}<span>${_tn('<b>{n} more Core</b> to unlock', '<b>{n} more Cores</b> to unlock', coresLeft)} · ${_tn('<b>{n} more Ultimate</b> to unlock', '<b>{n} more Ultimates</b> to unlock', ults)}</span></li>
           <li>${PX().ui('fist', 'sm')}<span>${_t('<b>Online</b> versus & co-op · 2-4 players')}</span></li>
         </ul>
         <div class="wl-cta">${esc(STEAM_SOON() ? _t('The full game is coming soon to Steam') : _t('Wishlist now so Steam tells you the day it launches'))}</div>
