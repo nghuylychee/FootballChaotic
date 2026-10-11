@@ -81,6 +81,7 @@ const FILES = [
   ['src/net/sync.js', 'game server'],
   ['src/net/room.js', 'game server'],
   ['src/net/matchmaker.js', 'server'],                     // hàng chờ trận xếp hạng (chỉ máy chủ riêng)
+  ['src/net/predict.js', 'game'],                          // dự đoán cầu thủ của mình ở máy khách
   ['src/net/session.js', 'game'],
   ['src/ui/corepreview.js', 'game'],
   ['src/ui/controls.js', 'game'],

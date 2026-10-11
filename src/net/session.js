@@ -267,6 +267,7 @@ window.SFC = window.SFC || {};
       this.roleSent = null;
       this.buf = [];
       this.jit = null;             // đo độ giật snapshot (đệm nội suy tự điều chỉnh)
+      this.pred = null;            // dự đoán cầu thủ của mình (predict.js)
       this.tok = null;             // mã kết nối lại do phòng cấp (you{tok})
       this.waitingServer = false;  // đang chờ máy chủ dậy (huỷ được)
       this.roomClosed = false;     // phòng đóng hẳn (bye) -> closed{reason: 'closed'} thay vì 'lost'
@@ -474,6 +475,7 @@ window.SFC = window.SFC || {};
       this.game.events.length = 0;
       this.buf = [];
       this.jit = null;   // khung trận mới đếm lại từ 0 -> đo độ giật lại từ đầu
+      this.pred = null;  // dự đoán cầu thủ của mình: trận mới bắt đầu lại
       this.renderF = null;
       this.lastTick = null;
       this.pressedMask = 0;
@@ -565,6 +567,8 @@ window.SFC = window.SFC || {};
       Sync().apply(g, a.s);
       const b = buf[1];
       if (b) Sync().blend(g, a.s, b.s, Math.min(1, Math.max(0, (this.renderF - a.f) / (b.f - a.f))));
+      // dự đoán cầu thủ của mình (src/net/predict.js): chạy ngay theo phím, tự sửa theo máy chủ
+      if (SFC.Predict) (this.pred || (this.pred = new SFC.Predict())).step(g, g.seatPlayer(g.me), this.downMask | 0, dt, now, SFC.NetStats.rtt, buf[buf.length - 1]);
       Sync().trail(g);
       return g;
     },

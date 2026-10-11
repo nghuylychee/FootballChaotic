@@ -74,7 +74,8 @@ window.SFC = window.SFC || {};
     wu: 0, wd: 0, wt: 0,
     out(n) { this.up += n; this.wu += n; },
     in(n) { this.down += n; this.wd += n; },
-    pong(ms) { if (ms >= 0 && ms < 60000) this.rtt = this.rtt == null ? ms : this.rtt * 0.7 + ms * 0.3; },
+    // giờ gửi trong ping làm tròn tới ms -> mạng rất nhanh có thể ra số âm nhỏ: coi là 0
+    pong(ms) { if (ms > -2 && ms < 60000) { ms = Math.max(0, ms); this.rtt = this.rtt == null ? ms : this.rtt * 0.7 + ms * 0.3; } },
     // gọi trước khi đọc upRate / downRate
     roll(now = Date.now()) {
       if (!this.wt) this.wt = now;

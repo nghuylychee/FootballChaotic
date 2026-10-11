@@ -18,7 +18,7 @@ const ROOT = path.join(__dirname, '..', '..');
 // file của máy chủ + phần khách online + giao diện online (scripts/manifest.js), theo thứ tự nạp của game
 const manifest = require(path.join(ROOT, 'scripts', 'manifest.js'));
 const SERVER_FILES = manifest.files('server');
-const FILES = manifest.files('game').filter((f) => SERVER_FILES.includes(f) || ['src/net/transport-server.js', 'src/net/session.js', 'src/ui/online.js'].includes(f));
+const FILES = manifest.files('game').filter((f) => SERVER_FILES.includes(f) || ['src/net/transport-server.js', 'src/net/predict.js', 'src/net/session.js', 'src/ui/online.js'].includes(f));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const until = async (fn, ms = 5000, what = 'condition') => {
   const end = Date.now() + ms;

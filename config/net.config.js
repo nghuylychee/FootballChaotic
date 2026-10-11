@@ -60,6 +60,12 @@ SFC_CONFIG.net = {
   // đệm tự điều chỉnh: máy khách đo độ "giật" của snapshot (gói tới dồn cục / trễ thất thường) trong ~2 giây gần nhất,
   // đệm = độ giật (phân vị jitterPct) + 1 khoảng snapshot + jitterPad, trong [interpDelay, interpMax]. Tăng ngay, giảm từ từ
   interpMax: 0.3,
+  // dự đoán cầu thủ của mình ở máy khách (src/net/predict.js): chạy ngay theo phím thay vì chờ 1 lần khứ hồi.
+  // corr: tốc độ kéo phần lệch về vị trí máy chủ (/giây; lớn = sửa nhanh nhưng giật) · dead: lệch dưới bấy nhiêu px thì bỏ qua
+  // snap: lệch quá bấy nhiêu px thì nhảy thẳng · blendOut: giây trượt về vị trí máy chủ khi hết dự đoán (bị choáng, lướt, sút...)
+  // lag: ms vẽ cầu thủ trễ hơn dự đoán (0 = phản hồi ngay; tăng = bớt chạy trước thế giới, phím chậm hơn bấy nhiêu)
+  // extra: ms cộng thêm vào ping khi so với máy chủ (phím chờ bước mô phỏng + chờ snapshot + khung hình vẽ)
+  predict: { enabled: true, corr: 4, dead: 1.5, snap: 48, blendOut: 0.15, lag: 0, extra: 30 },
   jitterPct: 0.95,
   jitterPad: 0.015,
   draftTimeLimit: 15,          // giây tối đa để chọn Core trong trận online
