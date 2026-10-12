@@ -326,13 +326,13 @@ kbd { font-family: var(--vt); font-size: 11px; padding: 0 3px; }
   border: 1px solid #8a6d3b; box-shadow: 0 0 0 1px var(--ink), 2px 2px 0 var(--ink);
   pointer-events: none;
 }
-#abar kbd { position: absolute; font-size: 4px; padding: 1px 2px; border-bottom-width: 1px; }
+#abar kbd { position: absolute; font-family: var(--px); font-size: 5px; padding: 1px 2px; border-bottom-width: 1px; }
 .ab-por { position: relative; width: 24px; height: 24px; border: 1px solid var(--c); background: #231a28; box-shadow: inset 0 0 0 1px var(--ink); }
 .ab-por canvas { display: block; width: 22px; height: 22px; image-rendering: pixelated; }
 .ab-por kbd { right: -3px; bottom: -3px; }
 .ab-name {
   position: absolute; left: 50%; top: -8px; transform: translateX(-50%); white-space: nowrap;
-  font-family: var(--px); font-size: 4px; line-height: 1; padding: 1px 2px; color: var(--c);
+  font-family: var(--px); font-size: 5px; line-height: 1; padding: 1px 2px; color: var(--c);
   background: #0f0a12; border: 1px solid #8a6d3b;
 }
 .ab-mid { display: flex; flex-direction: column; justify-content: space-between; gap: 2px; }
@@ -604,7 +604,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 /* ô kết bạn bằng username + dòng lời mời kết bạn (tới: ✓ / ✕ · đã gửi: ✕) */
 .fr-add { padding: 4px 6px 5px; border-bottom: 1px solid var(--edge); border-left: 2px solid transparent; cursor: text; }
 .fr-add.sel { border-left-color: var(--gold); background: rgba(255,225,79,0.06); }
-.fa-me { font-family: var(--px); font-size: 4px; color: var(--muted); letter-spacing: 1px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fa-me { font-family: var(--px); font-size: 5px; color: var(--muted); letter-spacing: 1px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fa-me b { font-weight: normal; color: var(--gold); }
 .fa-in { display: flex; align-items: center; gap: 2px; padding: 2px 2px 2px 4px; background: #1c1320; border: 1px solid var(--edge); min-height: 16px; }
 .fr-add.typing .fa-in { border-color: var(--gold); }
@@ -1732,7 +1732,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .tm-ovr { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 34px; height: 34px; flex: none; position: relative;
   background: rgba(20,12,22,0.8); border: 2px solid var(--rc); box-shadow: 1px 1px 0 var(--ink), 0 0 6px color-mix(in srgb, var(--rc) 40%, transparent); line-height: 1; }
 .tm-ovr b { font-family: var(--px); font-size: 10px; font-weight: normal; color: #fff; }
-.tm-ovr span { font-family: var(--px); font-size: 4px; color: var(--muted); margin-top: 2px; }
+.tm-ovr span { font-family: var(--px); font-size: 5px; color: var(--muted); margin-top: 2px; }
 .tm-ovr em { position: absolute; right: -5px; top: -6px; font-style: normal; font-family: var(--px); font-size: 6px; color: var(--ink); background: var(--rc); padding: 1px 2px; box-shadow: 1px 1px 0 var(--ink); }
 .tm-ovr.big { width: 46px; height: 46px; margin-top: 4px; }
 .tm-ovr.big b { font-size: 15px; }
@@ -1842,7 +1842,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .st-areas em { font-style: normal; color: var(--muted); font-size: 14px; }
 .st-area {
   display: flex; flex-direction: column; align-items: center; gap: 2px; width: 70px; padding: 4px 2px;
-  background: #1a1220; border: 1px solid var(--edge); font-family: var(--px); font-size: 4px; color: var(--muted);
+  background: #1a1220; border: 1px solid var(--edge); font-family: var(--px); font-size: 5px; color: var(--muted);
 }
 .st-area b { font-family: var(--px); font-size: 12px; color: #3b2a36; line-height: 16px; }
 .st-area.on { border-color: var(--c); color: var(--c); animation: pulse 0.8s steps(2) infinite; }
@@ -1893,7 +1893,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 #coach .co-bar i { position: absolute; left: 1px; top: 1px; bottom: 1px; width: calc((100% - 2px) * var(--u)); background: linear-gradient(90deg, #ff9a3d, var(--gold)); transition: width 0.25s steps(5); }
 #coach .co-bar em { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--px); font-size: 5px; font-style: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
 #coach .co-src { display: flex; gap: 3px; }
-#coach .co-src span { font-family: var(--px); font-size: 4px; padding: 2px 3px; color: #5a4658; border: 1px solid #3b2a36; }
+#coach .co-src span { font-family: var(--px); font-size: 5px; padding: 2px 3px; color: #5a4658; border: 1px solid #3b2a36; }
 #coach .co-src span.got { color: var(--gold); border-color: #8a6d3b; }
 #coach .co-src span.hit { animation: srcHit 0.5s steps(4); }
 @keyframes srcHit { 0% { transform: scale(1.8); background: var(--gold); color: var(--ink); } 100% { transform: none; } }
@@ -1932,7 +1932,7 @@ canvas.avatar.big { width: 120px; height: 132px; }
 /* nhấn: mặt phím dời xuống đúng bằng phần viền đáy mất đi -> cạnh dưới đứng yên, không che nhãn */
 #prompt kbd.on { margin-top: 3px; border-bottom-width: 1px; color: #fff; background: #3a2f4a; }
 #prompt .pr-item b { font-family: var(--px); font-size: 5px; color: #3ff6ff; text-shadow: 1px 1px 0 var(--ink); letter-spacing: 1px; }
-#prompt .pr-item i { font-family: var(--px); font-size: 4px; font-style: normal; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); }
+#prompt .pr-item i { font-family: var(--px); font-size: 5px; font-style: normal; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); }
 #prompt .pr-arrows { display: grid; grid-template-columns: repeat(3, auto); gap: 1px; }
 #prompt .pr-arrows kbd { font-size: 7px; padding: 2px 3px 1px; border-bottom-width: 3px; }
 #prompt .pr-arrows kbd.on { margin-top: 2px; border-bottom-width: 1px; }

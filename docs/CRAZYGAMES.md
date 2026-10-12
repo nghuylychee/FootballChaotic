@@ -19,7 +19,7 @@ Requirement pages: [technical](https://docs.crazygames.com/requirements/technica
 
 ## B. Checks before submitting
 
-- [ ] **Readability** at their frame sizes: 821×462 (tightest), 907×510, 1077×606, 1216×684, 1280×720, 1366×768, 1536×864, 1920×1080. Menu, PLAY, match HUD, draft, result, inventory. Home and privacy pages checked at 821×462: fine.
+- [x] **Readability** at their frame sizes: 821×462 (tightest), 907×510, 1077×606, 1216×684, 1280×720, 1366×768, 1536×864, 1920×1080. The stage is 640×360 scaled in 0.25 steps (`main.js → fit`), so every size has the same layout and 821×462 / 907×510 are the smallest (1.25×). Checked at 821×462 with device scale 1: home, PLAY (both tabs), Main Path, GOAT PATH, achievements, shop, inventory, character, ultimate, team, settings, privacy, intro, match HUD, draft, result. All readable after raising the 4px labels to 5px Press Start 2P (ability-bar keys were illegible in VT323 4px; also OVR, HUD name tag, story Areas, tutorial coach/HOLD). Keep new text at 5px or more.
 - [ ] **Desktop only** when submitting (no touch controls).
 - [ ] **Upload to the Developer Portal preview** (private, submit for review whenever ready) and confirm there: `index.html` at zip root, SDK loads, `gameplayStart` registers, language follows their locale, match server and PeerJS reachable inside their iframe.
 

@@ -88,11 +88,12 @@ window.SFC = window.SFC || {};
       // hiệu ứng trang phục khi chạy (bụi / neon / lửa) — chỉ để trang trí, tính ở máy vẽ
       this.cosmetics(ctx, g);
 
-      // vòng chân người đang điều khiển (online: người chơi tại máy = vàng, người cùng đội (co-op) = xanh, đối thủ = đỏ)
+      // vòng chân người đang điều khiển (màu: game.render.ctrlColors)
       const cp = g.controlled;
       // ảnh xem trước Core (g.preview): không vẽ vòng / mũi tên điều khiển
+      const CC = C.ctrlColors;
       const ctrlColor = (p) => (!g.preview && g.isHuman(p.team) && p.isControlled
-        ? (p === cp ? '#ffe14f' : p.team === g.humanTeam ? '#3ff6ff' : '#ff5a6e') : null);
+        ? (p === cp ? CC.me : p.team === g.humanTeam ? CC.ally : CC.opp) : null);
       // trận xếp hạng (Main Path): chỉ vòng của máy này — người thật khác không khác gì người chơi giả
       const rank = !!g.opts.mainPath, seatRing = (c) => c && (!rank || c === cp);
       // vòng mỏng dưới chân mọi đồng đội (người lẫn AI, như nhau) — bỏ người đã có vòng điều khiển
@@ -101,9 +102,14 @@ window.SFC = window.SFC || {};
         const ringed = new Set(g.seats.map((s, i) => g.seatPlayer(i)).filter(seatRing));
         for (const q of g.teams[g.humanTeam].players) if (!ringed.has(q)) ringPx(ctx, q.x, q.y + 1, AR.r, AR.color);
       }
+      // vòng điều khiển: 2 nét màu + viền tối, nổi trên mọi mặt sân / vệt hiệu ứng
       if (!g.preview) g.seats.forEach((s, i) => {
         const c = g.seatPlayer(i);
-        if (seatRing(c)) ringPx(ctx, c.x, c.y + 1, 8, ctrlColor(c));
+        if (!seatRing(c)) return;
+        const col = ctrlColor(c);
+        if (!col) return;
+        ringPx(ctx, c.x, c.y + 1, 10, SP().OUT); ringPx(ctx, c.x, c.y + 1, 7, SP().OUT);
+        ringPx(ctx, c.x, c.y + 1, 9, col); ringPx(ctx, c.x, c.y + 1, 8, col);
       });
 
       // assisted passing chạy ngầm; chỉ hiện gợi ý người nhận khi bật showTargetHint (debug)
@@ -122,6 +128,7 @@ window.SFC = window.SFC || {};
       for (const a of fx.afterimages) list.push({ y: a.y - 0.1, k: 'a', o: a });
       for (const c of SFC.VFX.clones(g)) list.push({ y: c.y, k: 'cl', o: c });
       list.sort((a, b) => a.y - b.y);
+      const marks = [];
 
       for (const e of list) {
         if (e.k === 'p') {
@@ -142,11 +149,9 @@ window.SFC = window.SFC || {};
             const ay = hy - 13 + Math.round(Math.sin(t * 10));
             px(ctx, p.x - 3, ay, 7, 1, pvCol); px(ctx, p.x - 2, ay + 1, 5, 1, pvCol); px(ctx, p.x - 1, ay + 2, 3, 1, pvCol);
           }
+          // mũi tên trên đầu: vẽ sau cùng (sau mọi VFX) để hiệu ứng không che mất người mình điều khiển
           const cc = ctrlColor(p);
-          if (cc) {
-            const ay = hy - 13 + Math.round(Math.sin(t * 8));
-            px(ctx, p.x - 3, ay, 7, 1, cc); px(ctx, p.x - 2, ay + 1, 5, 1, cc); px(ctx, p.x - 1, ay + 2, 3, 1, cc);
-          }
+          if (cc && seatRing(p)) marks.push({ p, hy, cc });
           if (p === cp && !g.preview) {
             if (p.stamina < SFC_CONFIG.game.player.staminaMax - 1) {
               px(ctx, p.x - 7, p.y + 4, 14, 2, SP().OUT);
@@ -218,6 +223,7 @@ window.SFC = window.SFC || {};
       ctx.globalAlpha = 1;
       // VFX Kit: lỗ đen, luồng tia, tia sét, chiêu bay, chữ comic
       SFC.VFX.top(ctx, g);
+      for (const m of marks) this.ctrlMark(ctx, m.p, m.hy, m.cc, t);
       ctx.restore();
 
       ctx.drawImage(this.vig, 0, 0);
@@ -233,6 +239,32 @@ window.SFC = window.SFC || {};
       }
       // VFX Kit: phủ màu, tia tốc độ, cut-in, callout, impact frame (toạ độ màn hình)
       SFC.VFX.overlay(ctx, g);
+    },
+
+    // dấu người mình điều khiển, vẽ sau mọi VFX: nửa trước vòng chân + mũi tên trên đầu.
+    // Viền tối 2px để nổi trên cả hiệu ứng vàng / sáng (AURA FARMING: tóc vàng, lửa vàng, vầng sáng dưới chân)
+    ctrlMark(ctx, p, hy, col, t) {
+      const { px, OUT } = SP();
+      const x = Math.round(p.x), y = Math.round(p.y) + 1;
+      // nửa trước vòng chân (phía người xem): nằm dưới bàn chân nên không che sprite, nhưng đè lên vầng sáng
+      const arc = (r, c) => {
+        ctx.fillStyle = c;
+        const steps = r * 7;
+        for (let i = 0; i <= steps / 2; i++) {
+          const a = (i / steps) * Math.PI * 2;
+          ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y + Math.sin(a) * r * 0.5), 1, 1);
+        }
+      };
+      arc(10, OUT); arc(7, OUT); arc(9, col); arc(8, col);
+      // mũi tên trên đầu: tam giác 11px, viền tối 2px; AURA FARMING -> nhấc lên khỏi ngọn lửa vàng sau lưng
+      const lift = p.auraFarmT > 0 ? 14 : 0;
+      const bob = Math.round(Math.sin(t * 8) * 1.5);
+      const n = 5;
+      const ay = Math.max(4, Math.round(hy - 14 - lift) + bob);
+      px(ctx, x - n - 2, ay - 2, 2 * n + 5, 2, OUT);
+      for (let i = 0; i <= n + 1; i++) px(ctx, x - (n + 2 - i), ay + i, 2 * (n + 2 - i) + 1, 1, OUT);
+      for (let i = 0; i < n; i++) px(ctx, x - (n - i), ay + i, 2 * (n - i) + 1, 1, col);
+      px(ctx, x - n + 1, ay, 2 * n - 1, 1, '#ffffff');   // vệt sáng mép trên
     },
 
     // bị Hard attack đá bay: bóng đổ dưới đất, người lộn vòng trên không + vệt gió

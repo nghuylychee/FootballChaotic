@@ -15,6 +15,9 @@ SFC_CONFIG.game = {
     showDebug: false,
     // vòng mỏng dưới chân đồng đội của người chơi tại máy này (màu áo không đủ để phân biệt). r = bán kính (px), null = tắt
     allyRing: { r: 7, color: 'rgba(127,231,255,0.6)' },
+    // màu dấu điều khiển trên sân (vòng chân + mũi tên trên đầu): me = người chơi tại máy này, ally = người cùng đội (co-op),
+    // opp = đối thủ là người (phòng riêng)
+    ctrlColors: { me: '#5cff4a', ally: '#3ff6ff', opp: '#ff5a6e' },
     // SETTINGS > RESOLUTION (chỉ bản desktop): cỡ cửa sổ, luôn 16:9. Cỡ lớn hơn màn hình bị ẩn. Thêm FULLSCREEN ở cuối
     windowSizes: [[1280, 720], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]],
   },
