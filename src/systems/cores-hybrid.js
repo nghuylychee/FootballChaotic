@@ -129,11 +129,13 @@ window.SFC = window.SFC || {};
         pl.facing = side > 0 ? Math.PI : 0;
         if (b.owner === pl) b.follow(0);
         if (o.hasBall && !sys.unstealable(o)) { g.looseBall(o, pl.x - o.x, pl.y - o.y, 40); sys.steal(pl); }   // bóng rơi về chân
-        // móc hàm: hất thẳng lên + cột lửa
+        // móc hàm: hất thẳng lên + cột lửa + rồng lửa cuộn xoắn bay lên quanh người bị hất
         o.hitImmune = 0; o.state = 'normal'; o.stateT = 0;
         o.hit({ stun: 1.2, kbx: 0, kby: 0, launch: prm.launch, source: pl, type: 'light' });
+        E.dragon(o.x, o.y + 2, o.x, o.y - 115, 1.0, '#ff6a1f', 1.3, 16);
+        E.wave(o.x, o.y, 26, '#ff6a1f', 0.4, 2);
         for (let i = 0; i < 8; i++) E.burst(o.x + Math.sin(i * 1.3) * 5, o.y, i * 8, i % 2 ? '#ff6a1f' : '#ffd23f', 4, 40, 0.6);
-        E.comic(o.x, o.y - 36, 'RISING DRAGON!', '#ff6a1f', 1.2, 0.8);
+        E.comic(o.x, o.y + 26, 'RISING DRAGON!', '#ff6a1f', 1.2, 0.8);   // chữ dưới chân, không che con rồng bay lên
         g.hitStop(0.08);
         E.shake(5, 0.3);
         g.sfx('hit');
@@ -143,9 +145,11 @@ window.SFC = window.SFC || {};
         g.later(prm.delay, () => {
           if (g.state !== 'play') return;
           // cú đá bay: văng về phía tường trên / dưới gần nhất -> chắc chắn BONK
-          const toTop = o.y - f.y < f.y + f.h - o.y;
+          const toTop = o.y - f.y < f.y + f.h - o.y, kd = U.norm(-side * 0.4, toTop ? -1 : 1);
+          // rồng thứ hai lao bổ xuống theo cú đá, đẩy nạn nhân về phía tường
+          E.dragon(pl.x, pl.y - pl.airZ - 12, o.x + kd.x * 100, o.y + kd.y * 100, 0.65, '#ff3d5a', 0.7, 8);
           o.state = 'normal'; o.stateT = 0;
-          H.blast(o, pl, prm.knock, 60, prm.stun, pl, U.norm(-side * 0.4, toTop ? -1 : 1));
+          H.blast(o, pl, prm.knock, 60, prm.stun, pl, kd);
           g.hitStop(0.12);
           E.impactFrame();
           E.zoom(o.x, o.y - o.airZ, 0.18, 0.35);

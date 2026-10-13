@@ -108,6 +108,86 @@ window.SFC = window.SFC || {};
     }
   }
 
+  // rồng lửa (VFX Kit E.dragon): đầu bay dọc đường (x0, y0) -> (x1, y1), thân nhiều đốt uốn lượn theo sau, tàn lửa rơi.
+  // Đầu tới đích ở ~70% thời gian, phần còn lại thân trườn nốt rồi tan. Thân 1 màu + sọc bụng vàng + vây lưng + 2 cặp vuốt;
+  // đầu: mõm dài, hàm há / ngậm, nanh, mắt đỏ, sừng cong ra sau, bờm lửa, râu dài
+  function drawDragon(ctx, d, t) {
+    const { px, disc, OUT } = SP();
+    const life = 1 - d.t / d.max, head = Math.min(1, life / 0.7), fade = Math.min(1, (d.t / d.max) * 4);
+    const dx = d.x1 - d.x0, dy = d.y1 - d.y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+    const N = 22, GAP = 0.045, belly = '#ffd23f', dark = '#a8203a';
+    const ph = (s) => s * Math.PI * 2 * d.coil + d.seed + t * 6;
+    const at = (s) => {
+      const w = Math.sin(ph(s)) * d.amp * (1 - s * 0.25);
+      return { x: d.x0 + dx * s + nx * w, y: d.y0 + dy * s + ny * w, z: Math.cos(ph(s)) };
+    };
+    // thân: vẽ từ đuôi lên đầu (đầu đè lên trên); đốt ở "phía sau" (z < 0) tối hơn -> cảm giác cuộn xoắn quanh người bị hất
+    for (let i = N - 1; i >= 1; i--) {
+      const s = head - i * GAP;
+      if (s < 0) continue;
+      const q = at(s), q2 = at(Math.max(0, s - 0.02)), a = Math.atan2(q.y - q2.y, q.x - q2.x);
+      const r = Math.max(1.5, 5.5 - i * 0.2), back = q.z < 0, cx = Math.round(q.x), cy = Math.round(q.y);
+      const ux = -Math.sin(a), uy = Math.cos(a);   // pháp tuyến: phía "lưng" (vây) và "bụng"
+      ctx.globalAlpha = fade * (back ? 0.7 : 1);
+      disc(ctx, cx, cy, Math.round(r) + 1, OUT);
+      disc(ctx, cx, cy, Math.round(r), back ? dark : d.color);
+      if (!back) {
+        px(ctx, Math.round(cx - ux * r * 0.5), Math.round(cy - uy * r * 0.5), 2, 2, belly);       // sọc bụng
+        if (i % 2) px(ctx, Math.round(cx + ux * r * 0.3), Math.round(cy + uy * r * 0.3), 1, 1, dark);   // vảy
+      }
+      // vây lưng nhọn
+      if (i % 2 === 0 && i < N - 3) {
+        for (let k = 1; k <= 3; k++) px(ctx, Math.round(cx + ux * (r + k)), Math.round(cy + uy * (r + k)), k === 3 ? 1 : 2, 1, k === 3 ? '#fff6b0' : '#ffe14f');
+      }
+      // 2 cặp vuốt (đốt 4 và 11): 3 móng chĩa về phía bụng
+      if (i === 4 || i === 11) {
+        for (const o of [-1, 1]) {
+          const fx = cx - ux * (r + 2) + Math.cos(a) * o * 2, fy = cy - uy * (r + 2) + Math.sin(a) * o * 2;
+          px(ctx, Math.round(fx), Math.round(fy), 2, 2, d.color);
+          px(ctx, Math.round(fx - ux * 2), Math.round(fy - uy * 2), 1, 1, '#ffffff');
+        }
+      }
+      if (Math.random() < 0.3) px(ctx, Math.round(q.x + (Math.random() - 0.5) * 10), Math.round(q.y + 3 + Math.random() * 7), 1, 2, Math.random() < 0.5 ? '#ff6a1f' : '#ffd23f');
+    }
+    // đầu: quay theo hướng bay (hướng +x trong toạ độ địa phương), phóng 1.6 lần
+    const h = at(head), hp = at(Math.max(0, head - 0.03)), ang = Math.atan2(h.y - hp.y, h.x - hp.x);
+    const flip = Math.cos(ang) < 0 ? -1 : 1;   // bay sang trái: lật dọc để sừng luôn ở trên
+    ctx.globalAlpha = fade;
+    ctx.save();
+    ctx.translate(Math.round(h.x), Math.round(h.y));
+    ctx.rotate(ang);
+    ctx.scale(1.35, 1.35 * flip);
+    const R = (x, y, w, hh, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, hh); };
+    const jaw = 1 + Math.round(Math.abs(Math.sin(t * 14)) * 2);
+    // bờm lửa sau gáy
+    for (let k = 0; k < 4; k++) R(-9 - k * 2, -4 + ((k * 3 + Math.floor(t * 20)) % 5), 2, 3, k % 2 ? '#ff6a1f' : '#ffd23f');
+    // viền từng mảng (sọ, mõm, hàm) -> dáng đầu rồng thay vì 1 khối hộp
+    const parts = [[-6, -5, 8, 8], [2, -3, 9, 4], [2, 1 + jaw, 8, 2]];
+    for (const [x, y, w, hh] of parts) R(x - 1, y - 1, w + 2, hh + 2, OUT);
+    R(2, 1, 8, jaw, '#7a1020');                   // trong miệng
+    R(-6, -5, 8, 8, d.color);                     // sọ
+    R(-6, 1, 7, 2, belly);                        // cằm
+    R(2, -3, 9, 4, d.color); R(2, -3, 9, 1, '#ffb070');   // mõm trên (gờ sáng)
+    R(10, -3, 1, 1, OUT);                         // lỗ mũi
+    R(2, 1 + jaw, 8, 2, dark);                    // hàm dưới
+    R(3, 1, 1, jaw, '#ffffff'); R(6, 1, 1, jaw, '#ffffff'); R(9, 1, 1, Math.max(1, jaw - 1), '#ffffff');   // nanh
+    R(-3, -4, 3, 2, '#ffffff'); R(-1, -4, 1, 2, '#ff3d5a');   // mắt
+    R(-4, -5, 4, 1, dark);                        // mày
+    // sừng cong ra sau
+    for (let k = 0; k < 6; k++) { R(-4 - k, -6 - Math.floor(k * 0.8), 1, 1, '#ffe14f'); R(-1 - k, -6 - Math.floor(k * 0.6), 1, 1, '#fff6b0'); }
+    // râu dài bay ra sau
+    for (let k = 0; k < 8; k++) R(8 - k * 2, 2 + Math.round(Math.sin(t * 9 + k * 0.7) * 1.5 + k * 0.5), 2, 1, '#fff6b0');
+    ctx.restore();
+    // lửa phụt từ miệng
+    ctx.globalCompositeOperation = 'lighter';
+    for (let k = 0; k < 4; k++) {
+      const r = 16 + k * 4 + Math.random() * 3;
+      px(ctx, Math.round(h.x + Math.cos(ang) * r + (Math.random() - 0.5) * (2 + k * 2)), Math.round(h.y + Math.sin(ang) * r + (Math.random() - 0.5) * (2 + k * 2)), 2 + (k < 2 ? 1 : 0), 2, k ? '#ff6a1f' : '#ffd23f');
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+
   function drawArm(ctx, p, a) {
     const { px, disc, OUT } = SP();
     const k = 1 - a.t / a.max;
@@ -533,6 +613,8 @@ window.SFC = window.SFC || {};
         ctx.beginPath(); ctx.arc(0, 0, w * 0.6, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       }
+      // rồng lửa (Rising Dragon)
+      for (const d of V.dragons) drawDragon(ctx, d, t);
       // tia sét
       for (const b of V.bolts) {
         const k = b.t / b.max, on = Math.floor(t * 30) % 2 === 0 || k > 0.6;

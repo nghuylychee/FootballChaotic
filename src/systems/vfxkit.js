@@ -25,7 +25,7 @@ window.SFC = window.SFC || {};
   };
   SFC.FXSettings = FXSettings.load();
 
-  const worldBlank = () => ({ waves: [], decals: [], arms: [], clones: [], shots: [], beams: [], vortexes: [], bolts: [], comics: [], shields: [], portals: [], netfires: [] });
+  const worldBlank = () => ({ waves: [], decals: [], arms: [], clones: [], shots: [], beams: [], vortexes: [], bolts: [], comics: [], shields: [], portals: [], netfires: [], dragons: [] });
   const overlayBlank = () => ({ zoom: null, impact: 0, impactCd: 0, lines: null, callouts: [], cutins: [], tints: [] });
 
   // trạng thái VFX (tạo lười, không cần sửa constructor)
@@ -88,6 +88,12 @@ window.SFC = window.SFC || {};
   // PL (hình) — xoáy lỗ đen tại (x, y); follow = 'ball' để bám theo bóng
   E.vortex = function (x, y, r, t = 1, follow = '') {
     this.V.vortexes.push({ x, y, r, t, max: t, follow });
+  };
+
+  // DR — rồng lửa: thân rắn nhiều đốt + đầu (sừng, mắt, hàm há) bay dọc đường (x0, y0) -> (x1, y1) (toạ độ màn hình, đã tính độ cao)
+  // trong t giây; coil = số vòng uốn lượn quanh đường bay (cuộn xoắn khi bay thẳng lên), amp = độ rộng uốn (px). Rising Dragon
+  E.dragon = function (x0, y0, x1, y1, t = 0.9, color = '#ff6a1f', coil = 1, amp = 10) {
+    this.V.dragons.push({ x0, y0, x1, y1, t, max: t, color, coil, amp, seed: Math.random() * 6 });
   };
 
   // tia sét zigzag từ A tới B
@@ -156,7 +162,7 @@ window.SFC = window.SFC || {};
   E.tint = function (color, t = 1, a = 0.25) { this.O.tints.push({ color, t, max: t, a }); };
 
   // toàn bộ VFX Kit chỉ để nhìn -> máy chủ riêng bỏ qua (Effects.headless)
-  SFC.Effects.COSMETIC.push('wave', 'decal', 'stretch', 'clone', 'popClone', 'projectile', 'beam', 'vortex', 'bolt', 'comic', 'combo',
+  SFC.Effects.COSMETIC.push('wave', 'decal', 'stretch', 'clone', 'popClone', 'projectile', 'beam', 'vortex', 'bolt', 'dragon', 'comic', 'combo',
     'shield', 'portal', 'netFire', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint');
 
   /* ================= UPDATE ================= */
@@ -164,7 +170,7 @@ window.SFC = window.SFC || {};
   E.clearHazards = function () {
     baseClear.call(this);
     const V = this.V;
-    V.arms.length = 0; V.clones.length = 0; V.shots.length = 0; V.beams.length = 0; V.vortexes.length = 0; V.bolts.length = 0;
+    V.arms.length = 0; V.clones.length = 0; V.shots.length = 0; V.beams.length = 0; V.vortexes.length = 0; V.bolts.length = 0; V.dragons.length = 0;
   };
 
   const baseCosmetic = E.updateCosmetic;
@@ -184,7 +190,7 @@ window.SFC = window.SFC || {};
     for (const s of V.shots) { s.x += s.vx * dt; s.y += s.vy * dt; }
     for (const v of V.vortexes) if (v.follow === 'ball') { const b = this.g.ball; v.x = b.x; v.y = b.y - b.z; }
     for (const c of V.comics) c.y -= 10 * dt;
-    [V.waves, V.decals, V.arms, V.clones, V.shots, V.beams, V.vortexes, V.bolts, V.comics, V.shields, V.portals, V.netfires].forEach(tick);
+    [V.waves, V.decals, V.arms, V.clones, V.shots, V.beams, V.vortexes, V.bolts, V.comics, V.shields, V.portals, V.netfires, V.dragons].forEach(tick);
   };
 
   // lớp phủ chạy theo thời gian thật (Game.update gọi mỗi bước, kể cả lúc hit-stop)
