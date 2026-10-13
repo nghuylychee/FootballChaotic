@@ -5,7 +5,7 @@
  *   Nhân vật của bạn đứng trên đường đúng chỗ Elo hiện tại; đoạn đã đi tô vàng. Thanh dưới: chi tiết đảo đang chọn.
  *   ←→ chọn đảo (camera trượt theo) · lăn chuột = cuộn ngang · bấm đảo để chọn.
  *   mainPath.roadSpoilers = false: Area chưa từng tới hiện ??? + bóng xám (mặc định true: hiện hết).
- * Số liệu: config/mainpath.config.js (areas[].elo / ult / road) · mốc: SFC.MainPath.roadElo
+ * Số liệu: config/mainpath.config.js (areas[].elo / road) · mốc: SFC.MainPath.roadElo
  * Menu gọi: render(menu) · input(menu, input) · click(menu, e) · back(menu) · open(menu)
  */
 window.SFC = window.SFC || {};
@@ -63,7 +63,7 @@ window.SFC = window.SFC || {};
     island(A, a) {
       const st = MP().state, show = this.seen(a), p = this.pos(a), next = MP().area(a + 1);
       const here = a === st.area, reached = a <= st.best;
-      const entry = (A.ult ? [A.ult] : []).concat((A.road || [])[0] || []);
+      const entry = (A.road || [])[0] || [];
       const range = next ? `${A.elo}–${next.elo - 1}` : `${A.elo}+`;
       const flagPos = a % 2 ? 'low' : 'high';
       return `<div class="rd-isl ${here ? 'here' : ''} ${reached ? 'reached' : 'ahead'} ${a === this.sel ? 'sel' : ''} ${flagPos}" data-rd="${a}"
@@ -107,7 +107,7 @@ window.SFC = window.SFC || {};
       const status = MP().demoLocked(a) ? _t('FULL GAME') : a === st.area ? _t('YOU ARE HERE') : a <= st.best ? _t('REACHED') : _t('LOCKED');
       const name = (id) => (show && L[id] ? esc(L[id].name) : '???');
       const groups = (A.road || []).map((ids, i) => {
-        const all = (i === 0 && A.ult ? [A.ult] : []).concat(ids);
+        const all = ids;
         if (!all.length) return '';
         return `<span class="rd-ig ${st.peak >= MP().roadElo(a, i) ? 'done' : ''}">${PX().elo(MP().roadElo(a, i))} ${all.map((id) => `${this.reward(id, show)}<b class="${L[id] && L[id].role === 'ult' ? 'ult' : ''}">${name(id)}</b>`).join(' ')}</span>`;
       }).join('');
@@ -124,9 +124,9 @@ window.SFC = window.SFC || {};
       const areas = MP().areas(), st = MP().state, L = CORES().list;
       this.sel = Math.max(0, Math.min(this.sel, areas.length - 1));
       const old = menu.el.querySelector('.rd-view'), from = old ? old.scrollLeft : this.scroll;
-      const normal = Object.keys(L).filter((id) => L[id].role !== 'ult'), ults = Object.keys(L).filter((id) => L[id].role === 'ult');
+      const normal = Object.keys(L).filter((id) => L[id].role !== 'ult');
       const sum = `<div class="rd-sum">${PX().elo(st.elo)} <span>${esc(_t('CORES {n}/{total}', { n: PF().collection().length, total: normal.length }))}</span>
-        <span>${esc(_t('ULTIMATES {n}/{total}', { n: PF().ownedUlts().length, total: ults.length }))}</span></div>`;
+        <span>${esc(_t('ULT BOOK {n}/{total}', { n: PF().data.ultBook.length, total: PF().ultEntries().length }))}</span></div>`;
       const me = this.mePos(), W = PAD * 2 + (areas.length - 1) * STEP + STEP * 0.8;
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
       menu.el.innerHTML = `${G().header(esc(_t('GOAT PATH')), sum)}

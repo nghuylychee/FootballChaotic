@@ -24,7 +24,7 @@ window.SFC = window.SFC || {};
       stats: { matches: 0, wins: 0, draws: 0, losses: 0, goals: 0, boxes: 0 },
       team: SFC.Mates.blankTeam(),   // đồng đội: đội hình + trạm scout (src/meta/teammates.js)
       attrs: blankAttrs(),
-      ult: P().defaultUlt,           // Tuyệt kỹ đặc trưng đang mang (CHARACTER > ULTIMATE); bộ sưu tập = ownedUlts()
+      ultBook: [],                   // sổ Tuyệt kỹ: 'id:cấp' đã tự đạt công thức trong trận (docs/ULT_RECIPE.md) — ultEntries()
       ach: [],                       // id thành tích đã nhận thưởng (src/meta/achievements.js)
       tut: { done: false, heirloom: false },   // PROLOGUE (src/game/tutorial.js) đã xem xong / bỏ qua · đã nhận bí kíp gia truyền (cut scene trao AURA FARMING)
     };
@@ -74,7 +74,8 @@ window.SFC = window.SFC || {};
       d.path = SFC.MainPath.sanitize(raw && raw.path);   // tiến trình Main Path (src/meta/mainpath.js)
       d.team = SFC.Mates.sanitizeTeam(raw && raw.team);  // đồng đội + scout (src/meta/teammates.js)
       if (!raw || typeof raw !== 'object') return d;
-      d.ult = this.ownedUlts(d).includes(raw.ult) ? raw.ult : P().defaultUlt;
+      const keys = this.ultEntries().map((e) => e.key);
+      d.ultBook = Array.isArray(raw.ultBook) ? [...new Set(raw.ultBook.filter((k) => keys.includes(k)))] : [];
       d.name = this.cleanName(raw.name || '');
       // hồ sơ có từ trước khi có PROLOGUE (đã đặt tên) -> coi như đã xem
       const tut = raw.tut && typeof raw.tut === 'object' ? raw.tut : null;
@@ -306,10 +307,10 @@ window.SFC = window.SFC || {};
     coreLevel(id) { return CORES()[id] ? CORES()[id].level : 1; },
     // Core đã mở = pool lượt chọn Core giữa trận (Tuyệt kỹ không vào lượt chọn: CoreSystem.eligible) + túi đồ khoá / không khoá:
     //   gacha Core bật: bộ cơ bản + Core trong túi đồ đã đủ level
-    //   gacha Core tắt: Core thường đã mở (collection) + Tuyệt kỹ đã sưu tập
+    //   gacha Core tắt: Core thường đã mở (collection)
     unlockedCores() {
       if (P().coreGacha) return P().starterCores.concat(Object.keys(this.data.cores).filter((id) => this.data.cores[id] > 0 && this.coreLevel(id) <= this.data.level));
-      return this.collection().concat(this.ownedUlts());
+      return this.collection();
     },
     coreUnlocked(id) { return this.unlockedCores().includes(id); },
 
@@ -322,15 +323,24 @@ window.SFC = window.SFC || {};
       return [...new Set(P().starterCores.concat((d && d.path && d.path.cores) || [], bag).filter(normal))];
     },
 
-    /* ---------- Tuyệt kỹ đặc trưng (không phải lá chọn Core: mỗi người mang 1 cái vào trận) ---------- */
-    // bộ sưu tập: Tuyệt kỹ có sẵn (progression.starterCores, vd. AURA FARMING) + Tuyệt kỹ mở khi lần đầu tới Area (Main Path)
-    ownedUlts(d = this.data) {
-      const L = SFC_CONFIG.cores.list, isUlt = (id) => L[id] && L[id].role === 'ult';
-      return [...new Set(P().starterCores.filter(isUlt).concat(((d && d.path && d.path.cores) || []).filter(isUlt)))];
+    /* ---------- Sổ Tuyệt kỹ (docs/ULT_RECIPE.md): Tuyệt kỹ mở theo công thức trong trận, giấu tới khi tự đạt ---------- */
+    // mọi ô của sổ theo thứ tự: mỗi trường phái 1 dòng (gốc X3 · nâng cấp ★★ X4), rồi Tuyệt kỹ lai (X2 + Y2)
+    // [{ key: 'id:cấp', id, lv, tags, need: [số Core mỗi trường phái] }]
+    ultEntries() {
+      const R = SFC_CONFIG.cores.ults, L = SFC_CONFIG.cores.list, out = [];
+      for (const tag in R.base) {
+        if (!L[R.base[tag]]) continue;
+        R.tiers.forEach((m, i) => out.push({ key: R.base[tag] + ':' + (i + 1), id: R.base[tag], lv: i + 1, tags: [tag], need: [m] }));
+      }
+      for (const h of R.hybrids || []) if (L[h.id]) out.push({ key: h.id + ':1', id: h.id, lv: 1, tags: h.tags, need: h.tags.map(() => R.hybridTier || 2) });
+      return out;
     },
-    equipUlt(id) {
-      if (!this.ownedUlts().includes(id)) return false;
-      this.data.ult = id;
+    ultKnown(key) { return this.data.ultBook.includes(key); },
+    // vừa đạt công thức trong trận -> ghi sổ. true = lần đầu khám phá
+    discoverUlt(id, lv) {
+      const key = id + ':' + (lv || 1);
+      if (!this.ultEntries().some((e) => e.key === key) || this.ultKnown(key)) return false;
+      this.data.ultBook.push(key);
       this.save();
       return true;
     },
@@ -432,7 +442,7 @@ window.SFC = window.SFC || {};
 
     /* ---------- vào trận ---------- */
     // character đại diện: thay 1 cầu thủ của đội mình (Game opts.avatars; thêm role để chọn vị trí, mặc định ĐÁ CAO)
-    avatar() { return { name: this.data.name || 'PLAYER', level: this.data.level, look: this.lookOf(), ult: this.data.ult }; },
+    avatar() { return { name: this.data.name || 'PLAYER', level: this.data.level, look: this.lookOf() }; },
 
     // gửi cho đối thủ online (phòng chờ)
     public() { return Object.assign(this.avatar(), { cores: this.unlockedCores() }); },
@@ -461,7 +471,6 @@ window.SFC = window.SFC || {};
         cores: Array.isArray(pub.cores) ? pub.cores.filter((id) => SFC_CONFIG.cores.list[id]) : P().starterCores.slice(),
       };
       if (roles.includes(pub.role)) out.role = pub.role;
-      out.ult = this.cleanUlt(pub.ult);
       const stats = this.sanitizeStats(pub.stats);
       if (stats) { out.stats = stats; out.ovr = clampInt(pub.ovr, 1, 99); }
       if (pub.mate !== undefined) out.mate = this.sanitizeMate(pub.mate);
@@ -501,14 +510,11 @@ window.SFC = window.SFC || {};
         deck: Array.isArray(m.deck) ? [...new Set(m.deck.filter((id) => list[id]))].slice(0, 12) : [],
         look: this.sanitizeLook(m.look),
         role: roles.includes(m.role) ? m.role : null,
-        ult: this.cleanUlt(m.ult),
       };
       // người chơi giả (trận xếp hạng): hiện kèm Elo như người chơi
       if (m.fake) { out.fake = true; out.elo = clampInt(m.elo, 0, 1e6); }
       return out;
     },
-    // id Tuyệt kỹ nhận từ máy khác: phải là Tuyệt kỹ có thật, không thì Tuyệt kỹ mặc định
-    cleanUlt(id) { const c = SFC_CONFIG.cores.list[id]; return c && c.role === 'ult' ? id : P().defaultUlt; },
 
     /* ---------- thưởng sau trận ---------- */
     // gọi 1 lần khi trận kết thúc (hết giờ / golden goal). Trả về chi tiết để màn kết quả diễn hoạt.

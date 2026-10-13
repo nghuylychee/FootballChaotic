@@ -2,12 +2,13 @@
  * CORES CONFIG — Core Upgrade (docs/CORE_DESIGN.md). Core áp dụng cho CẢ ĐỘI khi được chọn.
  *
  * Mỗi Core:
- *  tags   : trường phái (1, hoặc 2 với Core cầu nối) — tính Cộng hưởng + trọng số khi chọn Core
- *  role   : gen (TẠO tài nguyên) · use (DÙNG tài nguyên) · base (chỉ số) · ult (TUYỆT KỸ — phím X) · wild (Hỗn loạn)
+ *  tags   : trường phái — mỗi Core đúng 1 trường phái (bỏ Core cầu nối 2 hệ, user chốt 2026-10-13); Tuyệt kỹ lai có 2 —
+ *           đếm cho công thức Tuyệt kỹ (ults) + trọng số khi chọn Core
+ *  role   : gen / use (Core có hành vi) · base (chỉ số) · ult (TUYỆT KỸ — phím X) · wild (Hỗn loạn)
  *  rarity : common · rare · epic · legendary · mythic — dùng chung cho gacha (progression.config.js) và tần suất khi chọn Core
  *  mods   : hệ số nhân thụ động: speed, offBallSpeed, sprintRegen, shotPower, passSpeed,
  *           tackleRange (tầm Light), tackleChance (tỉ lệ Light làm rơi bóng), slideSpeed (bước Hard),
- *           knockback (Light + Hard), chargeTime, accuracy, momentumGain (Đà nhận mỗi lần), launch, hardCooldown,
+ *           knockback (Light + Hard), chargeTime, accuracy, surgeTime (thời gian chạy nước rút tới lúc TOÉ ĐIỆN), launch, hardCooldown,
  *           lightCooldown, skillCooldown, passAccuracy, interceptTaken (tỉ lệ bị cắt đường chuyền),
  *           dribble (giữ bóng: tốc độ dẫn bóng + khó bị đấm rơi bóng), keeperSave (tỉ lệ bắt bóng trong vòng cấm nhà)
  *  boost  : (Core chỉ số) id chỉ số trong progression.attrs.list — chỉ để vẽ dấu "+" màu chỉ số trên người (src/render/vfx.js)
@@ -17,58 +18,69 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.cores = {
-  // 7 trường phái + Hỗn loạn (không có Cộng hưởng)
+  // 7 trường phái + Hỗn loạn (không có công thức Tuyệt kỹ)
   archetypes: {
-    runner:    { label: 'SPEED',    icon: '🏃', color: '#3ff6ff', mech: 'Momentum', resource: 'momentum', stat: 'pace' },
-    playmaker: { label: 'TIKI-TAKA', icon: '🎼', color: '#ffd23f', mech: 'Rhythm', resource: 'rhythm', stat: 'passing' },
-    striker:   { label: 'STRIKER',   icon: '🎯', color: '#ff7a3d', mech: 'Charged shot', stat: 'shooting' },
-    brawler:   { label: 'BRAWLER',    icon: '🥊', color: '#ff3d5a', mech: 'Rage', resource: 'rage', stat: 'fight' },
-    launcher:  { label: 'KICKER',  icon: '🦵', color: '#b46bff', mech: 'Launch', stat: 'fight' },
-    trickster: { label: 'ILLUSION',    icon: '🌀', color: '#9d7bff', mech: 'Illusion', stat: 'dribble' },
-    iron:      { label: 'IRON',      icon: '🛡', color: '#c7ccd6', mech: 'Guard', resource: 'guard', stat: 'keeper' },
+    runner:    { label: 'SPEED',    icon: '🏃', color: '#3ff6ff', stat: 'pace' },
+    playmaker: { label: 'TIKI-TAKA', icon: '🎼', color: '#ffd23f', stat: 'passing' },
+    striker:   { label: 'STRIKER',   icon: '🎯', color: '#ff7a3d', stat: 'shooting' },
+    brawler:   { label: 'BRAWLER',    icon: '🥊', color: '#ff3d5a', stat: 'fight' },
+    launcher:  { label: 'KICKER',  icon: '🦵', color: '#b46bff', stat: 'fight' },
+    trickster: { label: 'ILLUSION',    icon: '🌀', color: '#9d7bff', stat: 'dribble' },
+    iron:      { label: 'IRON',      icon: '🛡', color: '#c7ccd6', stat: 'keeper' },
     chaos:     { label: 'CHAOS',  icon: '🎲', color: '#c63dff', noSet: true, stat: 'ovr' },
   },
   // Core scale theo chỉ số (src/systems/corescale.js): rating min -> anchor -> max = độ mạnh / hồi chiêu (nội suy từng đoạn).
   // anchor = rating của đồng đội / đội AI chỉ số 1.0 (mức cân bằng gốc của Core). stat của trường phái ở archetypes[].stat
   statScale: { min: 60, anchor: 80, max: 99, power: [0.5, 1, 1.5], cooldown: [1.3, 1, 0.7] },
-  roleLabels: { gen: 'BUILDS', use: 'SPENDS', base: 'PASSIVE', ult: 'ULTIMATE', wild: 'WILD' },   // mech (trường phái) = thứ Core TẠO / DÙNG
+  roleLabels: { gen: 'ACTIVE', use: 'ACTIVE', base: 'PASSIVE', ult: 'ULTIMATE', wild: 'WILD' },   // chỉ hiện ở sandbox
 
-  // Tài nguyên — chỉ chạy khi đội có ít nhất 1 Core của trường phái tương ứng.
-  // Không hoạt động quá grace giây -> mỗi decayEvery giây mất 1 (giảm từ từ, không về thẳng 0)
-  resources: {
-    // mỗi cầu thủ: chạy nước rút +1 mỗi gainEvery; bị choáng mất stunLoss
-    momentum: { label: 'Momentum', icon: '⚡', max: 5, gainEvery: 0.4, grace: 2.5, decayEvery: 0.7, stunLoss: 1, speedPer: 0.01 },
-    // cả đội: chuyền tới chân +1; mất bóng mất turnoverLoss
-    rhythm:   { label: 'Rhythm', icon: '♪', max: 5, grace: 6, decayEvery: 2.5, turnoverLoss: 2, passSpeedPer: 0.03 },
-    // mỗi cầu thủ: đấm trúng +1; mỗi Nộ +stealPer tỉ lệ đấm rơi bóng, +speedPer tốc độ (hăng máu)
-    rage:     { label: 'Rage', icon: '🔥', max: 5, grace: 4, decayEvery: 2, stealPer: 0.06, speedPer: 0.02 },
-    guard:    { label: 'Guard', icon: '🛡', max: 2 },                                                // mỗi cầu thủ, chặn 1 lần choáng
-  },
-  chargedShot: 0.6,          // "Sút tụ lực" = giữ >= 60% thanh lực (Cộng hưởng SÁT THỦ 3: 40%)
+  // ĐÃ BỎ tài nguyên trường phái (Đà / Nhịp / Nộ / Giáp — docs/ULT_RECIPE.md). Core kích hoạt bằng trạng thái nhìn thấy được.
+  // TOÉ ĐIỆN: chạy nước rút liên tục time giây (người có Core TỐC ĐỘ) -> người toé điện, nhanh hơn speed.
+  // Phá Âm Chướng / Húc Xe Tải / Phi Cước dùng trạng thái này. Mods surgeTime (Quỷ Tốc Độ) rút ngắn thời gian
+  surge: { time: 1.2, speed: 1.06 },
+  chargedShot: 0.6,          // "Sút tụ lực" = giữ >= 60% thanh lực
 
-  // Cộng hưởng: số Core cùng trường phái (Core cầu nối tính cho cả hai). Logic ở systems/cores.js (SET_RULES) — số liệu thật nằm ở đó.
-  // Chữ hiển thị: câu ngắn, KHÔNG ghi số (như desc của Core)
-  sets: {
-    runner:    { 2: 'Hold more Momentum', 3: 'Sprinting costs less at full Momentum', 4: 'Momentum lasts longer and powers your kicks' },
-    playmaker: { 2: 'Receiving a pass also builds Rhythm', 3: 'Keep your Rhythm after losing the ball once', 4: 'Full Rhythm: your passes cannot be intercepted' },
-    striker:   { 2: 'Stronger shots that beat keepers more often', 3: 'Charged shots kick in sooner', 4: 'Shots on target cut your cooldowns' },
-    brawler:   { 2: 'Rage fades slower', 3: 'Full Rage: punch nonstop for a moment', 4: 'Punch hits restore stamina and stun longer' },
-    launcher:  { 2: 'Launch further, kick faster, hits knock the ball to you', 3: 'BONK stuns everyone nearby', 4: 'Hard attacks recharge much faster' },
-    trickster: { 2: 'Longer afterimages and a faster Z', 3: 'A perfect dodge resets Z instantly', 4: 'Z gets an extra charge' },
-    iron:      { 2: 'Extra Guard at every kickoff', 3: 'Guard slowly regenerates', 4: 'Your keeper saves more shots' },
+  // TUYỆT KỸ THEO CÔNG THỨC (docs/ULT_RECIPE.md, thay cho Cộng hưởng 2/3/4): đếm Core cùng trường phái của từng cầu thủ
+  // (Tuyệt kỹ không tính). Đạt mốc tiers[i] của trường phái X -> Tuyệt kỹ base[X] cấp i+1
+  // (user chốt 2026-10-13: X3 = Tuyệt kỹ gốc, X4 = dạng nâng cấp ★★, tham số ở list[id].evolve[0]).
+  // hybrids: { id, tags: [X, Y] } = Tuyệt kỹ lai, mở khi đạt hybridTier Core của CẢ X và Y (X2 + Y2; chưa có Tuyệt kỹ lai nào).
+  // Nhiều công thức cùng thoả: công thức dùng nhiều Core hơn thắng; bằng nhau -> công thức vừa đạt (lá vừa chọn).
+  // Chưa đạt công thức nào: start (null = chưa có Tuyệt kỹ, ô X ẩn; năng lượng vẫn nạp ngầm để vừa mở là dùng được).
+  // Mọi Tuyệt kỹ giấu tới khi người chơi tự đạt (Profile.data.ultBook)
+  ults: {
+    start: null,   // AURA FARMING tạm ẩn (user chốt 2026-10-13): Tuyệt kỹ chỉ có khi đạt mốc
+    tiers: [3, 4],
+    hybridTier: 2,
+    base: {
+      runner: 'lightning_dash', playmaker: 'endless_tiki', striker: 'meteor_strike', brawler: 'hundred_fists',
+      launcher: 'meteor_drop', trickster: 'clone_army', iron: 'titan',
+    },
+    // Tuyệt kỹ lai (user duyệt 2026-10-13): 7 cặp từng có Core cầu nối + Slingshot. Hành vi ở src/systems/cores-hybrid.js
+    hybrids: [
+      { id: 'comet_onetwo', tags: ['striker', 'playmaker'] },
+      { id: 'rising_dragon', tags: ['brawler', 'launcher'] },
+      { id: 'comet_dropkick', tags: ['runner', 'launcher'] },
+      { id: 'phantom_barrage', tags: ['trickster', 'striker'] },
+      { id: 'steel_formation', tags: ['iron', 'playmaker'] },
+      { id: 'iron_hammer', tags: ['brawler', 'iron'] },
+      { id: 'mirage_sprint', tags: ['runner', 'trickster'] },
+      { id: 'slingshot', tags: ['brawler', 'playmaker'] },
+    ],
   },
 
   // Tuyệt kỹ: năng lượng chỉ nạp khi ghi bàn hoặc cướp được bóng
+  // Luật Tuyệt kỹ (user duyệt 2026-10-13): needsBall = chỉ bấm được khi đội mình đang cầm bóng (không bao giờ giật bóng);
+  // mọi đòn của Tuyệt kỹ có báo trước sau cut-in (telegraph) và né được bằng Z; trạng thái bất khả xâm phạm ngắn.
   // Năng lượng Tuyệt kỹ (X), 0..1: ghi bàn · bị thủng lưới · cướp bóng (tối đa 1 lần / stealCooldown giây) ·
   // đấm trúng đối thủ bằng Light attack (tối đa 1 lần / lightHitCooldown giây). lockout: dùng xong bao lâu không nạp
   ultimate: { gainGoal: 0.5, gainConceded: 0.3, gainSteal: 0.12, stealCooldown: 3, gainLightHit: 0.05, lightHitCooldown: 1, lockout: 10, cutIn: 0.6, aiDelay: [0.5, 2.5] },
 
-  // Chọn Core: trọng số = độ hiếm x (1 + buildWeight x số Core cùng trường phái đang có) x thiên hướng đội
+  // Chọn Core: trọng số = độ hiếm x (1 + buildWeight x số Core cùng trường phái đang có) x thiên hướng đội.
+  // KHÔNG bảo đảm có lá cùng hướng (user bỏ 2026-10-13): ra đúng build phải là cảm giác may mắn, không phải chắc chắn.
   draft: {
     rarityWeight: { common: 3, rare: 2, epic: 1.2, legendary: 0.7, mythic: 0.5 },
     buildWeight: 0.8,
-    guaranteeFromRound: 2,   // từ lượt này: ít nhất 1 lá cùng trường phái với Core đang có
-    rerollsPerRound: 0,      // mỗi lượt chọn được đổi cả 3 lá bao nhiêu lần (0 = tạm bỏ đổi bài, ẩn nút REROLL)
+    rerollsPerRound: 1,      // mỗi lượt chọn được đổi cả 3 lá bao nhiêu lần (0 = ẩn nút REROLL) — bật lại 2026-10-13
   },
 
   list: {
@@ -149,9 +161,9 @@ SFC_CONFIG.cores = {
     /* ---------- 🏃 TỐC ĐỘ · 🌀 ẢO ẢNH ---------- */
     speed_demon: {
       name: 'Speed Demon', icon: '🪽', tags: ['runner'], role: 'gen', rarity: 'common',
-      desc: 'Sprint to build Momentum faster, quicker off the ball.',
-      mods: { offBallSpeed: 1.05, momentumGain: 1.5 },
-      scale: { 'm.offBallSpeed': 'mul', 'm.momentumGain': 'mul' },
+      desc: 'Quicker off the ball, and you crackle sooner.',
+      mods: { offBallSpeed: 1.05, surgeTime: 0.5 },
+      scale: { 'm.offBallSpeed': 'mul', 'm.surgeTime': 'cd' },
     },
     phantom_step: {
       name: 'Phantom Step', icon: '🌀', tags: ['trickster'], role: 'gen', rarity: 'rare',
@@ -160,7 +172,7 @@ SFC_CONFIG.cores = {
       scale: { distance: 'pow', illusion: 'pow', lure: 'pow', lureCooldown: 'cd' },
     },
     fake_run: {
-      name: 'Fake Run', icon: '🪞', tags: ['runner', 'trickster'], role: 'gen', rarity: 'rare',
+      name: 'Fake Run', icon: '🪞', tags: ['trickster'], role: 'gen', rarity: 'rare',
       desc: 'Sprint or Z on the ball sends a fake running away.',
       params: { cooldown: 3.5, duration: 1.6, confuseRadius: 90, confuseTime: 1.2, angle: 0.8, momentum: 2 },
       scale: { cooldown: 'cd', duration: 'pow', confuseTime: 'pow' },
@@ -169,16 +181,15 @@ SFC_CONFIG.cores = {
     /* ---------- 🥊 ĐẤU SĨ · 🛡 THÉP · 🦵 VÕ SĨ ĐÁ ---------- */
     street_fighter: {
       name: 'Street Fighter', icon: '🥊', tags: ['brawler'], role: 'gen', rarity: 'common',
-      desc: 'Longer punches that steal more, and every steal builds Rage.',
+      desc: 'Longer, harder punches with big comic-book hits.',
       mods: { tackleRange: 1.3, tackleChance: 1.3, knockback: 1.3 },
-      params: { rageOnSteal: 1 },
       scale: { 'm.tackleRange': 'mul', 'm.tackleChance': 'mul', 'm.knockback': 'mul' },
     },
     iron_body: {
       name: 'Iron Skin', icon: '🛡', tags: ['iron'], role: 'gen', rarity: 'common',
-      desc: 'Each player gets a Guard that blocks one stun.',
-      params: { regen: 7 },
-      scale: { regen: 'cd' },
+      desc: 'Shorter stuns, and hits knock you back less.',
+      params: { stun: 0.65, knock: 0.6 },
+      scale: { stun: 'cd', knock: 'cd' },
     },
     blade_runner: {
       name: 'Wind Blade', icon: '🌙', tags: ['launcher'], role: 'gen', rarity: 'legendary',
@@ -187,7 +198,7 @@ SFC_CONFIG.cores = {
       scale: { stun: 'pow' },
     },
 
-    /* ---------- 🛡 THÉP · 🎼 TIKI-TAKA · cầu nối ---------- */
+    /* ---------- 🛡 THÉP · 🎼 TIKI-TAKA ---------- */
     aegis_wall: {
       name: 'Aegis Shield', icon: '🧱', tags: ['iron'], role: 'base', rarity: 'legendary',
       desc: 'A shield on your goal line blocks one shot.',
@@ -195,9 +206,9 @@ SFC_CONFIG.cores = {
       scale: { cooldown: 'cd' },
     },
     counter_attack: {
-      name: 'Counter Attack', icon: '↩', tags: ['brawler', 'runner'], role: 'gen', rarity: 'rare',
+      name: 'Counter Attack', icon: '↩', tags: ['brawler'], role: 'gen', rarity: 'rare',
       desc: 'Win the ball: your whole team speeds up and hits harder.',
-      params: { duration: 3.5, speedMult: 1.2, shotMult: 1.2, momentum: 3, calloutCd: 15 },
+      params: { duration: 3.5, speedMult: 1.2, shotMult: 1.2, calloutCd: 15 },
       scale: { duration: 'pow', speedMult: 'mul', shotMult: 'mul' },
     },
     emp_trap: {
@@ -208,9 +219,9 @@ SFC_CONFIG.cores = {
     },
     maestro: {
       name: 'Maestro', icon: '🎼', tags: ['playmaker'], role: 'gen', rarity: 'common',
-      desc: 'Faster passes; the receiver gets a speed boost and Rhythm.',
+      desc: 'Faster passes; the receiver gets a speed boost.',
       mods: { passSpeed: 1.2 },
-      params: { duration: 1.5, speedMult: 1.25, rhythm: 1 },
+      params: { duration: 1.5, speedMult: 1.25 },
       scale: { 'm.passSpeed': 'mul', duration: 'pow', speedMult: 'mul' },
     },
 
@@ -219,7 +230,8 @@ SFC_CONFIG.cores = {
     lightning_dash: {
       name: 'Lightning Dash', icon: '⚡', tags: ['runner'], role: 'ult', rarity: 'mythic',
       desc: 'Dash as lightning with the ball, shocking everyone you pass.',
-      params: { distance: 190, width: 18, stun: 0.8, knock: 140 },
+      params: { distance: 190, width: 18, stun: 0.8, knock: 140, bolts: 3, telegraph: 0.35 },
+      evolve: [{ distance: 300, width: 30, stun: 1.2, knock: 220, bolts: 7 }],
       scale: { distance: 'pow', stun: 'pow', knock: 'pow' },
     },
 
@@ -227,20 +239,20 @@ SFC_CONFIG.cores = {
     /* ---------- 🏃 TỐC ĐỘ ---------- */
     burst_start: {
       name: 'Arrow Start', icon: '🏹', tags: ['runner'], role: 'gen', rarity: 'rare',
-      desc: 'Start sprinting with an instant burst and Momentum.',
-      params: { momentum: 2, boost: 1.3, time: 0.35, cooldown: 3 },
+      desc: 'Start sprinting with an instant burst of speed.',
+      params: { boost: 1.3, time: 0.35, cooldown: 3 },
       scale: { boost: 'mul', time: 'pow', cooldown: 'cd' },
     },
     sonic_boom: {
       name: 'Sonic Boom', icon: '💥', tags: ['runner'], role: 'use', rarity: 'epic',
-      desc: 'At max Momentum, blast away defenders you brush past.',
+      desc: 'Crackling on the ball: blast away defenders you brush past.',
       params: { gap: 14, knock: 180, launch: 70, stun: 0.35, cooldown: 10 },
       scale: { knock: 'pow', launch: 'pow', stun: 'pow', cooldown: 'cd' },
     },
     freight_train: {
       name: 'Freight Train', icon: '🚚', tags: ['runner'], role: 'use', rarity: 'epic',
-      desc: 'Charge into someone with high Momentum and send them flying.',
-      params: { minMomentum: 5, cost: 5, minSpeed: 90, knock: 190, launch: 120, stun: 0.4, cooldown: 15 },
+      desc: 'Crackling: charge into someone and send them flying.',
+      params: { minSpeed: 90, knock: 190, launch: 120, stun: 0.4, cooldown: 15 },
       scale: { knock: 'pow', launch: 'pow', stun: 'pow', cooldown: 'cd' },
     },
 
@@ -253,20 +265,20 @@ SFC_CONFIG.cores = {
     },
     one_touch: {
       name: 'One Touch', icon: '✨', tags: ['playmaker'], role: 'gen', rarity: 'rare',
-      desc: 'Quick first-time passes ghost through opponents and build Rhythm.',
-      params: { window: 0.6, rhythm: 2 },
+      desc: 'Quick first-time passes ghost right through opponents.',
+      params: { window: 0.6 },
       scale: { window: 'pow' },
     },
     phantom_pass: {
       name: 'Phantom Pass', icon: '💫', tags: ['playmaker'], role: 'use', rarity: 'epic',
-      desc: 'With Rhythm, through balls become an unstoppable golden beam.',
-      params: { cost: 3, speedMult: 1.3, boost: 1.3, time: 2 },
+      desc: 'First-time through balls become an unstoppable golden beam.',
+      params: { window: 0.8, cooldown: 5, speedMult: 1.3, boost: 1.3, time: 2 },
       scale: { boost: 'mul', time: 'pow' },
     },
     symphony: {
       name: 'Symphony', icon: '🎻', tags: ['playmaker'], role: 'use', rarity: 'epic',
-      desc: 'Spend Rhythm on a shot the keeper can barely stop.',
-      params: { min: 3, powerPer: 0.08, gkPer: 0.05 },
+      desc: 'Shoot after a passing chain for a near-unstoppable strike.',
+      params: { min: 2, max: 5, powerPer: 0.08, gkPer: 0.05 },   // chuỗi chuyền của đội (Game.passChain) >= min; tính tối đa max đường
       scale: { powerPer: 'pow', gkPer: 'pow' },
     },
 
@@ -287,16 +299,16 @@ SFC_CONFIG.cores = {
     /* ---------- 🥊 ĐẤU SĨ ---------- */
     fist_storm: {
       name: 'Fist Storm', icon: '👊', tags: ['brawler'], role: 'gen', rarity: 'rare',
-      desc: 'Punches become a flurry combo, each hit builds Rage.',
+      desc: 'Every punch becomes a rapid flurry of hits.',
       mods: { lightCooldown: 1.1 },
       params: { hits: 4, gap: 0.07, range: 22, push: 220 },
       scale: { push: 'pow' },
     },
     giant_fist: {
       name: 'Giant Fist', icon: '✊', tags: ['brawler'], role: 'use', rarity: 'epic',
-      desc: 'Full Rage: your next punch is giant and always steals.',
-      scale: { knock: 'pow' },
-      params: { knock: 2.5, range: 2 },
+      desc: 'Your glowing fist lands a giant punch that always steals.',
+      scale: { knock: 'pow', cooldown: 'cd' },
+      params: { knock: 2.5, range: 2, cooldown: 8 },
     },
 
     /* ---------- 🦵 VÕ SĨ ĐÁ ---------- */
@@ -349,8 +361,8 @@ SFC_CONFIG.cores = {
     /* ---------- 🛡 THÉP ---------- */
     bulldozer: {
       name: 'Bulldozer', icon: '🚜', tags: ['iron'], role: 'use', rarity: 'epic',
-      desc: 'With Guard on the ball: grow, unstoppable, bowl them over.',
-      params: { scale: 1.3, slow: 0.88, knock: 170, launch: 80, stun: 0.3, every: 2 },
+      desc: 'Hold the ball to grow huge and bowl them over.',
+      params: { hold: 0.8, time: 3, cooldown: 6, scale: 1.3, slow: 0.88, knock: 170, launch: 80, stun: 0.3, every: 2 },
       scale: { knock: 'pow', launch: 'pow', stun: 'pow' },
     },
     giant_keeper: {
@@ -362,55 +374,55 @@ SFC_CONFIG.cores = {
 
     /* ---------- 🔗 Cầu nối ---------- */
     rubber_arm: {
-      name: 'Rubber Arm', icon: '🤜', tags: ['brawler', 'playmaker'], role: 'use', rarity: 'epic',
+      name: 'Rubber Arm', icon: '🤜', tags: ['brawler'], role: 'use', rarity: 'epic',
       desc: 'Stretchy punches pull players in or grab loose balls.',
       params: { reach: 50, pull: 180, stun: 0.4, steal: 0.25, cooldown: 2 },
       scale: { reach: 'pow', pull: 'pow', stun: 'pow', steal: 'pow', cooldown: 'cd' },
     },
     uppercut: {
-      name: 'Dragon Uppercut', icon: '🐲', tags: ['brawler', 'launcher'], role: 'use', rarity: 'rare',
-      desc: 'Full Rage uppercut launches them; the ball drops to you.',
-      params: { launch: 330, jump: 80 },
-      scale: { launch: 'pow' },
+      name: 'Dragon Uppercut', icon: '🐲', tags: ['brawler'], role: 'use', rarity: 'rare',
+      desc: 'Two quick punches in a row: the second launches them.',
+      params: { launch: 330, jump: 80, window: 1.2, cooldown: 4 },
+      scale: { launch: 'pow', cooldown: 'cd' },
     },
     iron_fist: {
-      name: 'Iron Fist', icon: '🦾', tags: ['brawler', 'iron'], role: 'gen', rarity: 'rare',
-      desc: 'With Guard, punches always steal and shrug off stuns.',
-      params: { rage: 1, stunPerRage: 0.08 },
-      scale: { stunPerRage: 'pow' },
+      name: 'Iron Fist', icon: '🦾', tags: ['iron'], role: 'gen', rarity: 'rare',
+      desc: 'A steel punch always steals, then you shrug off stuns.',
+      params: { cooldown: 6, armor: 1 },   // armor: giây miễn choáng sau cú đấm thép trúng người
+      scale: { cooldown: 'cd', armor: 'pow' },
     },
     one_two: {
-      name: 'One-Two', icon: '🔁', tags: ['playmaker', 'striker'], role: 'use', rarity: 'epic',
+      name: 'One-Two', icon: '🔁', tags: ['playmaker'], role: 'use', rarity: 'epic',
       desc: 'Shoot right after receiving for a max-power volley.',
       params: { window: 1.2 },
       scale: { window: 'pow' },
     },
     captain: {
-      name: 'Captain', icon: '🎖', tags: ['iron', 'playmaker'], role: 'gen', rarity: 'epic',
-      desc: 'Every completed pass gives the receiver a Guard.',
-      params: { cooldown: 6 },
-      scale: { cooldown: 'cd' },
+      name: 'Captain', icon: '🎖', tags: ['playmaker'], role: 'gen', rarity: 'epic',
+      desc: 'Completed passes make the receiver stun-proof for a moment.',
+      params: { time: 1.5, cooldown: 6 },
+      scale: { time: 'pow', cooldown: 'cd' },
     },
     counter_strike: {
-      name: 'Counter Strike', icon: '⚔', tags: ['trickster', 'brawler'], role: 'use', rarity: 'epic',
+      name: 'Counter Strike', icon: '⚔', tags: ['trickster'], role: 'use', rarity: 'epic',
       desc: 'Perfect dodge opens a window of free, sure-steal punches.',
-      params: { window: 1, rage: 2, cooldown: 4 },
+      params: { window: 1, cooldown: 4 },
       scale: { window: 'pow', cooldown: 'cd' },
     },
     flying_kick: {
-      name: 'Flying Kick', icon: '🚀', tags: ['runner', 'launcher'], role: 'use', rarity: 'epic',
-      desc: 'Hard attack spends Momentum to fly and launch further.',
-      params: { perMomentum: 0.2 },
-      scale: { perMomentum: 'pow' },
+      name: 'Flying Kick', icon: '🚀', tags: ['runner'], role: 'use', rarity: 'epic',
+      desc: 'Hard attack while sprinting: fly further and launch harder.',
+      params: { fly: 1.5, surgeFly: 2 },   // hệ số khi đang chạy nước rút / khi đang TOÉ ĐIỆN
+      scale: { fly: 'pow', surgeFly: 'pow' },
     },
     ghost_ball: {
-      name: 'Ghost Ball', icon: '👻', tags: ['trickster', 'striker'], role: 'use', rarity: 'epic',
+      name: 'Ghost Ball', icon: '👻', tags: ['striker'], role: 'use', rarity: 'epic',
       desc: 'Shoot with illusions out to fire fake balls too.',
       params: { max: 3, gkPenalty: 0.2, speed: 320 },
       scale: { gkPenalty: 'pow' },
     },
     scissor_kick: {
-      name: 'Scissor Kick', icon: '✂', tags: ['launcher', 'striker'], role: 'use', rarity: 'legendary',
+      name: 'Scissor Kick', icon: '✂', tags: ['launcher'], role: 'use', rarity: 'legendary',
       desc: 'Hard attack on a loose ball: a piercing bicycle kick.',
       params: { speed: 1.1, pierce: 2, stun: 0.6, cooldown: 4 },
       scale: { stun: 'pow', cooldown: 'cd' },
@@ -418,37 +430,42 @@ SFC_CONFIG.cores = {
 
     /* ---------- TUYỆT KỸ mới ---------- */
     endless_tiki: {
-      name: 'Endless Tiki-Taka', icon: '🎼', tags: ['playmaker'], role: 'ult', rarity: 'mythic',
+      name: 'Endless Tiki-Taka', icon: '🎼', tags: ['playmaker'], role: 'ult', rarity: 'mythic', needsBall: true,
       desc: 'Opponents slow down while your team auto-passes, then shoots.',
-      params: { passes: 4, gap: 0.22, slow: 0.4, slowTime: 1.8, gk: 0.25 },
+      params: { passes: 4, gap: 0.12, passSpeed: 1.7, slow: 0.4, slowTime: 2.4, gk: 0.25 },   // passSpeed: đường chuyền thật nhưng nhanh hơn
+      evolve: [{ passes: 6, slow: 0.3, slowTime: 2.6, gk: 0.45 }],
       scale: { slow: 'mul', slowTime: 'pow', gk: 'pow' },
     },
     meteor_strike: {
-      name: 'Meteor Shot', icon: '🌟', tags: ['striker'], role: 'ult', rarity: 'mythic',
+      name: 'Meteor Shot', icon: '🌟', tags: ['striker'], role: 'ult', rarity: 'mythic', needsBall: true,
       desc: 'Leap up and smash the ball down at max power.',
       params: { jump: 300, delay: 0.62, speed: 560, gk: 0.3 },
+      evolve: [{ jump: 340, speed: 680, gk: 0.5 }],
       scale: { gk: 'pow' },
     },
     hundred_fists: {
       name: 'Hundred Fists', icon: '💢', tags: ['brawler'], role: 'ult', rarity: 'mythic',
       desc: 'Rush an opponent with a punch barrage, then blast them.',
-      params: { range: 160, hits: 20, gap: 0.05, knock: 560, stun: 1.4 },   // stun: choáng sau cú kết (tính từ lúc tiếp đất)
+      params: { range: 160, rush: 520, hits: 20, gap: 0.05, knock: 560, stun: 1.4 },   // rush: tốc độ lao tới (né Z được) · stun: choáng sau cú kết
+      evolve: [{ range: 220, hits: 36, knock: 720, stun: 2.0 }],
       scale: { knock: 'pow', range: 'pow', stun: 'pow' },
     },
     meteor_drop: {
       name: 'Meteor Drop', icon: '☄️', tags: ['launcher'], role: 'ult', rarity: 'mythic',
       desc: 'Leap off screen, then crash down in a launching crater.',
       params: { aim: 1.0, speed: 190, radius: 60, knock: 240, launch: 260, stun: 1.5 },
+      evolve: [{ speed: 230, radius: 92, knock: 320, launch: 300, stun: 1.9 }],
       scale: { radius: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
     },
     clone_army: {
       name: 'Clone Army', icon: '🎎', tags: ['trickster'], role: 'ult', rarity: 'mythic',
       desc: 'An army of clones steals the ball and fakes shots.',
       params: { time: 3, gkPenalty: 0.3, stun: 1.3, range: 170 },
+      evolve: [{ time: 4.6, gkPenalty: 0.46, stun: 1.9, range: 230 }],
       scale: { time: 'pow', gkPenalty: 'pow', stun: 'pow' },
     },
-    // Tuyệt kỹ khởi đầu (bí kíp gia truyền, nhận ở cuối PROLOGUE — ftue.config.js): có sẵn trong starterCores, yếu hơn các Tuyệt kỹ khác.
-    // anyBuild: đủ điều kiện khi có >= 2 Core cùng 1 trường phái BẤT KỲ (vẫn phải bốc được lá như mọi Tuyệt kỹ) · color: màu cut-in
+    // Tuyệt kỹ khởi đầu (bí kíp gia truyền, nhận ở cuối PROLOGUE — ftue.config.js): ai cũng mang từ đầu trận tới khi đạt công thức
+    // Tuyệt kỹ đầu tiên (ults.start), yếu hơn các Tuyệt kỹ khác · anyBuild: lá ghi ANY BUILD thay cho trường phái · color: màu cut-in
     // Chỉ số không scale theo character (cố định 15–20%).
     aura_farming: {
       name: 'Aura Farming', icon: '✨', tags: ['chaos'], role: 'ult', rarity: 'epic', anyBuild: true, color: '#ffe14f',
@@ -458,8 +475,59 @@ SFC_CONFIG.cores = {
     titan: {
       name: 'Titan', icon: '🗿', tags: ['iron'], role: 'ult', rarity: 'mythic',
       desc: 'Grow giant: stun-proof, untackleable, bowling everyone over.',
-      params: { time: 5, scale: 2, knock: 360, launch: 220, stun: 1.0, shot: 1.35 },
+      params: { time: 5, scale: 2, knock: 360, launch: 220, stun: 1.0, shot: 1.35, slow: 0.85 },   // slow: chạy chậm hơn khi khổng lồ
+      evolve: [{ time: 8, scale: 2.6, knock: 440, shot: 1.5 }],
       scale: { time: 'pow', knock: 'pow', launch: 'pow', stun: 'pow', shot: 'mul' },
+    },
+
+    /* ---------- TUYỆT KỸ LAI (X2 + Y2, ults.hybrids) — hành vi ở systems/cores-hybrid.js ---------- */
+    comet_onetwo: {
+      name: 'Comet One-Two', icon: '☄', tags: ['striker', 'playmaker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Instant one-two with a teammate, then a piercing volley.',
+      params: { gap: 0.18, speed: 1.25, gk: 0.3, pierce: 2, stun: 0.7 },
+      scale: { gk: 'pow', stun: 'pow' },
+    },
+    rising_dragon: {
+      name: 'Rising Dragon', icon: '🐉', tags: ['brawler', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Uppercut them skyward, then dropkick them into the wall.',
+      params: { range: 150, rush: 520, launch: 330, delay: 0.42, knock: 460, stun: 1.6 },
+      scale: { knock: 'pow', stun: 'pow' },
+    },
+    comet_dropkick: {
+      name: 'Comet Dropkick', icon: '🔥', tags: ['runner', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Rocket across the pitch in a flaming dropkick.',
+      params: { distance: 230, width: 20, knock: 300, launch: 220, stun: 1.0, telegraph: 0.35 },
+      scale: { distance: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
+    },
+    phantom_barrage: {
+      name: 'Phantom Barrage', icon: '👻', tags: ['trickster', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Your clones all shoot too; only one ball is real.',
+      params: { clones: 3, delay: 0.3, gk: 0.35, speed: 340 },
+      scale: { gk: 'pow' },
+    },
+    steel_formation: {
+      name: 'Steel Formation', icon: '🛡', tags: ['iron', 'playmaker'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Your whole team turns steel: stun-proof, unbreakable passes.',
+      params: { time: 3 },   // cả đội miễn choáng + đường chuyền không bị cắt trong time giây
+      scale: { time: 'pow' },
+    },
+    iron_hammer: {
+      name: 'Iron Hammer', icon: '🔨', tags: ['brawler', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'A giant steel fist hammers down, flattening everyone ahead.',
+      params: { range: 70, arc: 75, windup: 0.4, stun: 1.4, armor: 1.5 },
+      scale: { range: 'pow', stun: 'pow' },
+    },
+    mirage_sprint: {
+      name: 'Mirage Sprint', icon: '🌫', tags: ['runner', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Vanish mid-sprint while fake runners scatter with fake balls.',
+      params: { time: 2.5, decoys: 5, speed: 170, boost: 1.35 },   // time: giây tàng hình (vẫn đánh trúng được, chỉ khó thấy)
+      scale: { time: 'pow', boost: 'mul' },
+    },
+    slingshot: {
+      name: 'Slingshot', icon: '🪃', tags: ['brawler', 'playmaker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Stretch your arms and slingshot a teammate at the goal.',
+      params: { grab: 0.22, distance: 200, flight: 0.38, knock: 200, launch: 120, stun: 0.6 },
+      scale: { distance: 'pow', knock: 'pow', stun: 'pow' },
     },
 
     /* ---------- 🎲 HỖN LOẠN (mới) ---------- */

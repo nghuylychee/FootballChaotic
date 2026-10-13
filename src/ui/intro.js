@@ -172,7 +172,6 @@ window.SFC = window.SFC || {};
         <div class="in-num">${num}</div>${tag}${povr}
         <canvas data-pid="${p.id}" data-delay="${d}"></canvas>
         <b class="in-name">${esc(p.name)}</b>
-        ${p.ult && SFC_CONFIG.cores.list[p.ult] ? `<span class="in-ult">${PX().core(p.ult, 'sm')}<i>${esc(SFC_CONFIG.cores.list[p.ult].name)}</i></span>` : ''}
       </div>`;
     },
 

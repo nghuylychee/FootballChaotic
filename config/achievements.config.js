@@ -50,7 +50,7 @@ SFC_CONFIG.achievements = {
     { id: 'collector',    group: 'cores', name: 'Collector',          desc: 'Unlock 30 Cores',              stat: 'cores', target: 30, reward: { box: 'street', n: 2 } },
     { id: 'hoarder',      group: 'cores', name: 'Hoarder',            desc: 'Unlock 40 Cores',              stat: 'cores', target: 40, reward: { box: 'legend' } },
     { id: 'completionist',group: 'cores', name: 'Completionist',      desc: 'Unlock every Core',            stat: 'cores', target: 'all', reward: { item: 'aura' } },
-    { id: 'signature',    group: 'cores', name: 'Signature Move',     desc: 'Collect 3 Ultimates',          stat: 'ults', target: 3,   reward: { item: 'viking' } },
+    { id: 'signature',    group: 'cores', name: 'Signature Move',     desc: 'Discover 3 Ultimates',          stat: 'ults', target: 3,   reward: { item: 'viking' } },
     { id: 'storm_chaser', group: 'cores', name: 'Storm Chaser',       desc: 'Unlock Lightning Dash',        stat: 'core', core: 'lightning_dash', target: 1, reward: { item: 'lightning' } },
     { id: 'event_horizon',group: 'cores', name: 'Event Horizon',      desc: 'Unlock Black Hole Shot',       stat: 'core', core: 'black_hole', target: 1,     reward: { item: 'galaxy' } },
     /* ---------- phong cách ---------- */

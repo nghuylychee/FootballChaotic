@@ -869,6 +869,8 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .res { font-family: var(--px); font-size: 5px; line-height: 1; color: var(--c); text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; }
 .res i { font-style: normal; color: #4a3f4f; }
 .ab-slot.ult { border-color: #8a6d3b; background: #1f1810; overflow: hidden; }
+.ab-slot.ult .ult-lv { position: absolute; left: 1px; top: 0; z-index: 1; font-style: normal; font-family: var(--px); font-size: 4px; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); letter-spacing: -1px; }
+.ab-slot.ult.lv2 { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--ink), 0 0 4px var(--gold); }
 .ab-slot.ult .ult-fill { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--u, 0) * 100%); background: linear-gradient(0deg, rgba(255,210,63,0.55), rgba(255,210,63,0.15)); }
 .ab-slot.ult i { position: relative; z-index: 1; filter: grayscale(0.8); opacity: 0.6; }
 .ab-slot.ult.ready { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--ink), 0 0 6px var(--gold); animation: pulse 0.6s steps(2) infinite; }
@@ -1376,6 +1378,14 @@ canvas.avatar.big { width: 120px; height: 132px; }
 @keyframes rv3Stamp { 0% { opacity: 0; transform: rotate(-8deg) scale(3); } 100% { opacity: 1; transform: rotate(-8deg) scale(1); } }
 
 /* ---------- mở khoá Core: nhãn NEW ở lượt chọn · Core còn khoá · hộp miễn phí ---------- */
+/* lá Core mở / tiến hoá Tuyệt kỹ (docs/ULT_RECIPE.md): dải vàng dưới đáy lá */
+.card-ultnext { position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; bottom: -8px; z-index: 2; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--px); font-size: 5px; color: var(--ink); background: var(--gold); padding: 2px 4px; box-shadow: 1px 1px 0 var(--ink); animation: pulse 0.8s steps(2) infinite; }
+.card-ultnext .pxi { vertical-align: -1px; }
+/* sổ Tuyệt kỹ: ô chưa khám phá = lá úp */
+.card.static.ul-hidden { display: flex; align-items: center; justify-content: center; cursor: default; height: 160px; flex: none;
+  background: repeating-linear-gradient(45deg, #1c1320 0 6px, #241a28 6px 12px); }
+.card.static.ul-hidden b { font-family: var(--px); font-size: 18px; color: #5a4658; text-shadow: 2px 2px 0 var(--ink); }
 .card-new { position: absolute; left: 50%; top: -7px; transform: translateX(-50%); z-index: 2; font-family: var(--px); font-size: 6px; color: var(--ink);
   background: #9dff3d; padding: 2px 4px; box-shadow: 1px 1px 0 var(--ink), 0 0 6px #9dff3d; animation: pulse 0.6s steps(2) infinite; }
 .card.static.locked { filter: grayscale(0.9) brightness(0.6); }
@@ -2102,3 +2112,36 @@ canvas.avatar.big { width: 120px; height: 132px; }
 .rd-ig .rd-rw { width: 16px; height: 16px; }
 .rd-ig .rd-rw.ult { width: 18px; height: 18px; }
 .rd-ig .rd-rw.ult::before { display: none; }
+
+/* RecipeFx (src/ui/recipefx.js): đoạn diễn mở Tuyệt kỹ ở màn chọn Core — lá cùng trường phái rơi vào ô công thức -> lá Tuyệt kỹ lật ra */
+#recipefx { z-index: 6; }
+.rfx { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  background: radial-gradient(ellipse at center, rgba(40,26,8,0.94), rgba(8,5,10,0.96)); cursor: pointer; animation: rfxIn 0.2s steps(3); }
+.rfx-title { font-family: var(--px); font-size: 14px; color: var(--gold); text-shadow: 2px 2px 0 var(--ink); opacity: 0; animation: rfxPop 0.35s steps(4) var(--rev) forwards; }
+.rfx-row { display: flex; align-items: center; gap: 10px; }
+.rfx-group { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 8px; border: 2px solid var(--c); background: rgba(0,0,0,0.35);
+  box-shadow: 3px 3px 0 var(--ink); animation: rfxGlow 0.5s steps(3) calc(var(--rev) - 0.3s) 1 both; }
+.rfx-school { font-family: var(--px); font-size: 6px; color: var(--c); text-shadow: 1px 1px 0 var(--ink); }
+.rfx-school b { color: #fff; font-weight: normal; }
+.rfx-slots { display: flex; gap: 4px; }
+.rfx-slots i { display: flex; width: 34px; height: 34px; align-items: center; justify-content: center; background: #1c1320; border: 1px solid var(--c);
+  opacity: 0; transform: translateY(-14px); animation: rfxDrop 0.22s steps(3) var(--d) forwards; }
+.rfx-slots i.new { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 0 6px var(--gold); }
+.rfx-plus, .rfx-arrow { font-family: var(--px); font-size: 14px; color: var(--gold); text-shadow: 2px 2px 0 var(--ink); }
+.rfx-arrow { opacity: 0; animation: rfxPop 0.25s steps(3) calc(var(--rev) - 0.25s) forwards; }
+.rfx-card { position: relative; width: 150px; height: 196px; perspective: 400px; }
+.rfx-card .rfx-front { position: absolute; inset: 0; opacity: 0; animation: rfxFlip 0.35s steps(5) var(--rev) forwards; }
+.rfx-card .rfx-front .card { margin: 0; }
+.rfx-card .rfx-back { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px solid var(--edge);
+  background: repeating-linear-gradient(45deg, #1c1320 0 6px, #241a28 6px 12px); box-shadow: 4px 4px 0 var(--ink); animation: rfxHide 0.2s steps(2) var(--rev) forwards; }
+.rfx-card .rfx-back b { font-family: var(--px); font-size: 20px; color: #5a4658; text-shadow: 2px 2px 0 var(--ink); }
+.rfx-stars { position: absolute; right: -6px; top: -8px; z-index: 3; font-size: 16px; color: var(--gold); text-shadow: 1px 1px 0 var(--ink), 0 0 4px var(--gold); }
+.rfx-name { font-family: var(--px); font-size: 9px; color: #fff; text-shadow: 1px 1px 0 var(--ink); opacity: 0; animation: rfxPop 0.3s steps(3) calc(var(--rev) + 0.25s) forwards; }
+.rfx-note { font-size: 12px; color: #e6dccb; opacity: 0; animation: rfxPop 0.3s steps(3) calc(var(--rev) + 0.4s) forwards; }
+.rfx-skip { position: absolute; right: 10px; bottom: 8px; font-family: var(--px); font-size: 5px; color: var(--muted); }
+@keyframes rfxIn { from { opacity: 0; } }
+@keyframes rfxDrop { to { opacity: 1; transform: none; } }
+@keyframes rfxPop { 0% { opacity: 0; transform: scale(0.6); } 70% { opacity: 1; transform: scale(1.15); } 100% { opacity: 1; transform: none; } }
+@keyframes rfxGlow { 50% { box-shadow: 3px 3px 0 var(--ink), 0 0 10px var(--c); transform: scale(1.06); } }
+@keyframes rfxFlip { 0% { opacity: 1; transform: rotateY(90deg); } 100% { opacity: 1; transform: none; } }
+@keyframes rfxHide { to { opacity: 0; transform: rotateY(90deg); } }

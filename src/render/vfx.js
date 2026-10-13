@@ -1,7 +1,7 @@
 /* VFX render — vẽ các "viên gạch" của VFX Kit (systems/vfxkit.js). Renderer gọi theo lớp:
  *   floor(ctx, g)      : dấu vết trên sân + vòng sóng chấn (dưới cầu thủ)
  *   under(ctx, g, p)   : hào quang / vệt tàn ảnh của Core dưới sprite cầu thủ p
- *   look(ctx, g, p, hy): hình của tài nguyên (Đà, Nộ, Giáp, Nhịp) + tín hiệu ngắm / tụ lực của Core trên sprite
+ *   look(ctx, g, p, hy): hình trạng thái Core (TOÉ ĐIỆN, nắm tay sáng...) + tín hiệu ngắm / tụ lực của Core trên sprite
  *   ballFx(ctx, b)     : vệt bóng của Core (dây đàn vàng, xoắn rồng, laser, sét)
  *   arm(ctx, g, p)     : tay co giãn của cầu thủ p (vẽ ngay sau sprite của p)
  *   clones(g)          : danh sách phân thân để renderer xếp theo chiều sâu
@@ -260,8 +260,8 @@ window.SFC = window.SFC || {};
         ctx.globalAlpha = a * 0.6;
         ellipse(ctx, x, y, 7, 3, '#ffffff');
       }
-      const mo = p.res ? p.res.momentum : 0;
-      if (mo > 0 && mo >= g.cores.resMax(p, 'momentum')) {
+      // TOÉ ĐIỆN: vòng điện xanh dưới chân
+      if (p.surge) {
         ctx.globalAlpha = 0.35 + 0.2 * Math.sin(t * 20);
         ellipse(ctx, x, y, 10, 4, '#3ff6ff');
       }
@@ -269,7 +269,7 @@ window.SFC = window.SFC || {};
       ctx.globalCompositeOperation = 'source-over';
     },
 
-    // trên sprite: tài nguyên nhìn thấy được + tín hiệu báo trước của Core
+    // trên sprite: trạng thái Core nhìn thấy được + tín hiệu báo trước của Core
     look(ctx, g, p, hy) {
       if (!p.res) return;
       const { px, disc } = SP(), R = Math.random, t = g.time + p.id * 0.37;
@@ -304,33 +304,31 @@ window.SFC = window.SFC || {};
           for (let k = 0; k < 4; k++) { const ny = yy - 2 - Math.round(R() * 3); px(ctx, sx + Math.round(R() * 2 - 1), ny, 1, yy - ny, '#cdf6ff'); yy = ny; }
         }
       }
-      // Đà: tia điện lách tách dưới chân, đầy Đà thì sét chạy dọc người
-      const mo = p.res.momentum;
-      if (mo > 0) {
-        for (let i = 0; i < mo; i++) if (R() < 0.25) px(ctx, x - 6 + Math.round(R() * 12), y - Math.round(R() * 3), R() < 0.5 ? 2 : 1, 1, i % 2 ? '#7fe7ff' : '#ffffff');
-        if (mo >= C.resMax(p, 'momentum') && R() < 0.45) {
+      // TOÉ ĐIỆN (chạy nước rút đủ lâu, có Core TỐC ĐỘ): tia điện lách tách dưới chân + sét chạy dọc người
+      if (p.surge) {
+        for (let i = 0; i < 5; i++) if (R() < 0.25) px(ctx, x - 6 + Math.round(R() * 12), y - Math.round(R() * 3), R() < 0.5 ? 2 : 1, 1, i % 2 ? '#7fe7ff' : '#ffffff');
+        if (R() < 0.45) {
           const sx = x + (R() < 0.5 ? -6 : 5);
           let yy = y - 2;
           for (let k = 0; k < 4; k++) { const ny = yy - 3 - Math.round(R() * 2); px(ctx, sx + Math.round(R() * 2 - 1), ny, 1, yy - ny, '#bdf4ff'); yy = ny; }
         }
       }
-      // Nộ: hai nắm tay bốc lửa lớn dần
-      const ra = p.res.rage;
-      if (ra > 0) {
+      // Nắm Đấm Khổng Lồ sẵn sàng: hai nắm tay bốc lửa
+      if (p.fistRdy && C.has(p, 'giant_fist')) {
         for (const s of [-1, 1]) {
           const hx = x + s * 6, hy2 = y - 7;
-          disc(ctx, hx, hy2, 1 + Math.round(ra * 0.45 + (Math.sin(t * 14 + s) > 0 ? 1 : 0)), `rgba(255,${ra >= 4 ? 50 : 110},40,${0.3 + ra * 0.06})`);
-          if (R() < 0.12 * ra) px(ctx, hx - 1 + Math.round(R() * 2), hy2 - 3 - Math.round(R() * 4), 1, 1, R() < 0.5 ? '#ffd23f' : '#ff6a1f');
+          disc(ctx, hx, hy2, 3 + (Math.sin(t * 14 + s) > 0 ? 1 : 0), 'rgba(255,50,40,0.6)');
+          if (R() < 0.5) px(ctx, hx - 1 + Math.round(R() * 2), hy2 - 3 - Math.round(R() * 4), 1, 1, R() < 0.5 ? '#ffd23f' : '#ff6a1f');
         }
       }
-      // Nắm Đấm Sắt: có Giáp -> hai nắm tay thép
-      if (C.has(p, 'iron_fist') && p.res.guard > 0) {
+      // Nắm Đấm Sắt sẵn sàng: hai nắm tay thép
+      if (p.fistRdy && C.has(p, 'iron_fist') && !C.has(p, 'giant_fist')) {
         ctx.globalCompositeOperation = 'source-over';
         for (const s of [-1, 1]) { px(ctx, x + s * 6 - 1, y - 8, 3, 3, '#140c16'); px(ctx, x + s * 6 - 1, y - 8, 2, 2, '#c7ccd6'); px(ctx, x + s * 6 - 1, y - 8, 1, 1, '#ffffff'); }
         ctx.globalCompositeOperation = 'lighter';
       }
-      // Phá Âm Chướng: Đà tối đa + đang chạy -> hình nón sóng âm trắng trước mặt
-      if (C.has(p, 'sonic_boom') && mo >= C.resMax(p, 'momentum') && Math.hypot(p.vx || 0, p.vy || 0) > 90) {
+      // Phá Âm Chướng: đang TOÉ ĐIỆN -> hình nón sóng âm trắng trước mặt
+      if (C.has(p, 'sonic_boom') && p.surge && Math.hypot(p.vx || 0, p.vy || 0) > 90) {
         const a = Math.atan2(p.vy, p.vx), ph = (g.time * 6) % 1;
         for (let k = 0; k < 3; k++) {
           const r = 9 + ((k / 3 + ph) % 1) * 12;
@@ -339,24 +337,6 @@ window.SFC = window.SFC || {};
           ctx.beginPath(); ctx.arc(x, y - 7, r, a - 0.6, a + 0.6); ctx.stroke();
         }
         ctx.globalAlpha = 1;
-      }
-      // Giáp: ánh bạc kim loại chạy dọc người
-      const gu = p.res.guard;
-      if (gu > 0) {
-        const k = (t * 1.2) % 1.6;
-        ctx.globalAlpha = 0.14;
-        px(ctx, x - 5, y - 16, 10, 14, '#c7ccd6');
-        ctx.globalAlpha = 1;
-        if (k < 1) px(ctx, x - 5 + Math.round(k * 10), y - 16, 1, 14, 'rgba(255,255,255,0.4)');
-      }
-      // Nhịp: nốt nhạc lơ lửng quanh cả đội (chia đều cho các cầu thủ)
-      const rh = p.team >= 0 ? g.rhythm[p.team] || 0 : 0;
-      if (rh > 0) {
-        const mates = g.teams[p.team].players, idx = mates.indexOf(p), n = mates.length;
-        for (let i = idx; i < rh; i += n) {
-          const a = t * 2.4 + i * 1.7, nx = x + Math.round(Math.cos(a) * 10), ny = y - 21 + Math.round(Math.sin(a * 1.3) * 2);
-          px(ctx, nx + 1, ny - 3, 1, 3, '#ffd23f'); px(ctx, nx - 1, ny, 3, 1, '#ffd23f'); px(ctx, nx - 1, ny - 1, 2, 1, '#ffd23f');
-        }
       }
       // tụ lực sút: Hoả Cầu (lửa ở chân), Lôi Cước (chân tích điện)
       if (p.charging) {
@@ -378,11 +358,6 @@ window.SFC = window.SFC || {};
         }
       }
       ctx.globalCompositeOperation = 'source-over';
-      // Giáp: khiên nhỏ xếp dọc cạnh đầu (mỗi Giáp 1 cái) — không đè thanh lực / mũi tên điều khiển
-      for (let i = 0; i < gu; i++) {
-        const sx = x + 7, sy = hy + 1 + i * 5;
-        px(ctx, sx - 1, sy - 1, 5, 5, '#140c16'); px(ctx, sx, sy, 3, 2, '#c7ccd6'); px(ctx, sx + 1, sy + 2, 1, 1, '#c7ccd6');
-      }
       // Mắt Đại Bàng: đang nạp lực chuyền -> nét phấn (đường chấm + mũi tên + vòng điểm rơi) như bảng chiến thuật
       if (p.passMode && p.hasBall && C.has(p, 'eagle_eye')) {
         const b = g.ball, plan = SFC.Actions.passPlan(g, p, p.passLock, p.passMode, p.passCharge || 0, Math.cos(p.facing), Math.sin(p.facing), true);
@@ -480,7 +455,7 @@ window.SFC = window.SFC || {};
       ctx.globalCompositeOperation = 'source-over';
     },
 
-    // hình thái Cộng hưởng bậc 4: cả đội đổi ngoại hình theo trường phái
+    // hình thái Tuyệt kỹ nâng cấp (X4): cầu thủ đổi ngoại hình theo trường phái của Tuyệt kỹ
     form(ctx, g, p) {
       const tag = g.cores.formOf(p);
       if (!tag || p.airZ > 0) return;

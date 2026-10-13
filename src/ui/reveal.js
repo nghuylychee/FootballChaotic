@@ -190,7 +190,7 @@ window.SFC = window.SFC || {};
         : it.src === 'road' ? `<div class="rv3-s-line">${_t('Reached {elo} in {area}', { elo: PX().elo(it.elo), area: `<b>${esc(MP().area(it.area).name)}</b>` })}</div>`
         : `<div class="rv3-s-line">★ ${esc(_t('New star in {area}', { area: MP().area(it.area).name }))}</div>`;
       const key = `<kbd>${K('ultimate', 'X')}</kbd>`;
-      // Tuyệt kỹ = kỹ năng đặc trưng: mang 1 cái vào trận (CHARACTER > ULTIMATE), có ngay từ đầu trận, nạp đầy rồi bấm X
+      // Tuyệt kỹ (chỉ còn bí kíp gia truyền AURA FARMING): ai cũng mang từ đầu trận tới khi đạt công thức, nạp đầy rồi bấm X
       const isUlt = c.role === 'ult';
       const ult = isUlt ? `<div class="rv3-s-note">${_t('SIGNATURE ULTIMATE · ready from kickoff once charged, fire it with {key}', { key })}</div>` : '';
       const archRow = fam ? ''
@@ -200,7 +200,7 @@ window.SFC = window.SFC || {};
         ${src}
         ${archRow}
         ${ult}
-        <div class="rv3-s-go">${isUlt ? (fam ? esc(_t('Yours from day one · equipped')) : esc(_t('Added to your Ultimates · equip it in CHARACTER > ULTIMATE')))
+        <div class="rv3-s-go">${isUlt ? esc(_t('Yours from day one · equipped'))
           : fam ? esc(_t('Yours from day one · always in your Core pool')) : _t('Added to your Core pool · shows up as <em>NEW</em> next match')}</div>`;
     },
 

@@ -20,8 +20,8 @@ window.SFC = window.SFC || {};
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
      *         mates: [{ name, ovr, stats, deck, look, role, elo?, fake? } | [..] | null, ...] — đồng đội của người chơi (thay cầu thủ AI không phải character);
      *                mảng = nhiều người (Main Path: 2 đối thủ giả); fake = người chơi giả do bot điều khiển (hiện như người chơi, kèm Elo),
-     *         Tuyệt kỹ (kỹ năng đặc trưng, không phải Core để chọn): mỗi cầu thủ có 1 Tuyệt kỹ từ đầu trận — avatars[t].ult / seats[i].avatar.ult /
-     *                mates[].ult; cầu thủ AI không ghi thì lấy theo đội (CoreSystem.defaultUlt). noUlts / tutorial: không gán,
+     *         Tuyệt kỹ (không phải Core để chọn): mọi cầu thủ mang cores.ults.start từ đầu trận, đạt mốc Core cùng trường phái thì
+     *                đổi / tiến hoá theo công thức (CoreSystem.bestRecipe, docs/ULT_RECIPE.md). noUlts / tutorial: không gán,
      *         coreFresh: [[id...] | null, ...] — Core vừa mở khoá: ưu tiên hiện ở lượt chọn (nhãn NEW), mỗi lượt tối đa 1 lá,
      *         signature: [id | null, ...] — Core đặc trưng đội AI chắc chắn cầm (boss trận thăng hạng Main Path),
      *         noScale / coreRating: [r0, r1] — tắt scale Core theo chỉ số / ép rating scale Core từng đội (giả lập cân bằng),
@@ -78,7 +78,6 @@ window.SFC = window.SFC || {};
         p.look = Object.assign({}, av.look);
         p.avatar = true;
         if (av.stats) { p.stats = Object.assign({}, p.stats, av.stats); p.ovr = av.ovr; }
-        if (av.ult) p.ult = av.ult;
       };
       (opts.avatars || []).forEach((av, t) => {
         if (!av || !this.teams[t]) return;
@@ -111,15 +110,14 @@ window.SFC = window.SFC || {};
           p.deck = m.deck && m.deck.length ? m.deck.slice() : null;
           p.mate = true;
           if (m.fake) { p.fake = true; p.elo = m.elo; }
-          if (m.ult) p.ult = m.ult;
         }
       });
-      // Tuyệt kỹ đặc trưng của từng cầu thủ: có ngay từ đầu trận (nạp năng lượng rồi bấm X), giữ cả trận.
+      // Tuyệt kỹ khởi đầu của mọi cầu thủ (cores.ults.start, null = chưa có); đạt công thức thì đổi (CoreSystem.add -> setUlt).
       // Trận mơ PROLOGUE tự trao Tuyệt kỹ theo kịch bản (src/game/tutorial.js) -> không gán ở đây
       if (!opts.tutorial && !opts.noUlts) {
+        const id = this.cores.startUlt();
         for (const p of this.players) {
-          const id = this.cores.validUlt(p.ult) || this.cores.defaultUlt(p);
-          p.ult = id;
+          p.ult = id; p.ultLv = 1;
           if (id) this.cores.add(p, id);
         }
       }
@@ -140,8 +138,7 @@ window.SFC = window.SFC || {};
       this.draft = null;
       this.events = [];
       this.lastScorer = null;
-      this.rhythm = [0, 0];     // Nhịp (TIKI-TAKA) của mỗi đội
-      this.rhythmT = [0, 0];
+      this.passChain = [0, 0];  // chuỗi chuyền liên tiếp của mỗi đội (Giao Hưởng), mất bóng / giao bóng về 0
       this.timers = [];         // later(): hẹn giờ theo thời gian thật (chạy cả lúc hit-stop)
       this.freezeT = 0;     // VFX Kit hit-stop: còn bao lâu đứng hình (giây thật)
       this.slowT = 0;       // VFX Kit slow-mo: còn bao lâu chạy chậm (giây thật)
@@ -284,6 +281,7 @@ window.SFC = window.SFC || {};
     }
 
     // bắt được bóng trong vòng cấm nhà -> không thể bị tắc/xoạc/va vai (trong gkHoldProtect giây, khi còn ở trong vòng cấm)
+    // không bị nhắm / đánh trúng: thủ môn đang ôm bóng trong vòng cấm
     isProtected(p) {
       return p.hasBall && p.keeperHold > 0 && this.inKeeperZone(p);
     }
@@ -353,7 +351,6 @@ window.SFC = window.SFC || {};
       for (const p of this.players) {
         const pos = this.kickoffPos(p, vary, mirror[p.team]);
         Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null, bracing: false, readAt: -1 });
-        p.res.momentum = 0; p.res.rage = 0;
         p.facing = this.teams[p.team].dir > 0 ? 0 : Math.PI;
         p.intent.mx = p.intent.my = 0;
         p.ai.runT = 0; p.ai.requestedPass = null;
@@ -370,7 +367,7 @@ window.SFC = window.SFC || {};
         const tp = this.teams[t].players;
         if (tp.length) this.setControlled(teamIdx === t ? fwd : tp.find((p) => p.role === 'FWD') || tp[0]);
       }
-      this.rhythm = [0, 0];
+      this.passChain = [0, 0];
       this.cores.kickoff();
     }
 
@@ -586,7 +583,6 @@ window.SFC = window.SFC || {};
       this.effects.burst(gx, f.cy, 10, col, 40, 160, 1.2);
       this.effects.burst(gx, f.cy, 10, '#ffffff', 20, 120, 1.0);
       this.emit('goal', { team: scorer, value, scorer: by ? by.name : '', own });
-      if (b.kind === 'shot') this.cores.shotOnTarget(scorer);
       this.cores.goalScored(scorer, by);
       this.sfx('goal');
       return true;
@@ -695,7 +691,6 @@ window.SFC = window.SFC || {};
         chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35) * this.cores.pmod(p, 'keeperSave') * p.stats.keeper + (rd ? rd.bonus : 0), 0.15, 0.95);
         // thủ môn AI: saveMult của bộ chỉ số AI (trận mơ PROLOGUE hạ xuống lúc đang dạy sút)
         if (!(this.isHuman(p.team) && p.isControlled) && this.aiProfile(p.team).saveMult != null) chance *= this.aiProfile(p.team).saveMult;
-        if (!lob) this.cores.shotOnTarget(b.lastKickTeam);
         const r = Math.random();
         if (r > chance) {
           if (r < chance + (1 - chance) * C.player.gkParryShare) {
@@ -716,9 +711,8 @@ window.SFC = window.SFC || {};
         this.effects.text(p.x, p.y - 26, 'SAVE!', '#9dff3d');
         this.sfx('save');
       } else if (opp && b.kind === 'pass' && spd > C.pass.intercept.minSpeed) {
-        // TIKI-TAKA 4: đủ Nhịp thì đường chuyền không thể bị cắt
-        // Chạm Một / Đường Chuyền Xuyên Không: bóng xuyên qua như ma
-        if (this.cores.passShielded(b.lastTouch && b.lastTouch.team === b.lastKickTeam ? b.lastTouch : b.lastKickTeam) || b.fx.ghost) {
+        // Chạm Một / Đường Chuyền Xuyên Không: bóng xuyên qua như ma · Steel Formation: đường chuyền không bị cắt
+        if (b.fx.ghost || this.cores.passGuarded(b.lastKickTeam)) {
           b.noPickup.set(p.id, 0.3);
           if (b.fx.ghost) this.effects.burst(b.x, b.y, b.z, '#fff6c0', 4, 40, 0.3);
           return;

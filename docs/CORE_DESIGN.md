@@ -1,5 +1,7 @@
 # Core Upgrade — Thiết kế hệ thống build (v2 · visual-first)
 
+> **Cập nhật 2026-10-13 (`docs/ULT_RECIPE.md`):** đã BỎ tài nguyên trường phái (Đà / Nhịp / Nộ / Giáp) và Cộng hưởng 2/3/4. Mốc trường phái giờ mở / tiến hoá Tuyệt kỹ. Các mục nói về tài nguyên / Cộng hưởng / Tuyệt kỹ đặc trưng bên dưới là lịch sử.
+>
 > Trạng thái: **ĐÃ DUYỆT (2026-09-27)** — xem *Quyết định đã chốt* ngay dưới. Số liệu là số khởi điểm, sẽ cân bằng lại bằng giả lập.
 > **v2 (so với v1):** chuyển trọng tâm sang **đã mắt**. Bỏ các Core "+x% vô hình", mọi Core đều phải là một khoảnh khắc nhìn thấy được;
 > Core Đỉnh thành **Tuyệt kỹ** (chủ động, có cinematic); thêm **bộ công cụ hiệu ứng (VFX Kit)** làm nền kỹ thuật. Khung combo của v1 giữ nguyên.

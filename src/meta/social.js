@@ -29,11 +29,9 @@ window.SFC = window.SFC || {};
     load() {
       const raw = SFC.Storage.getJSON(KEY, null);
       const known = (id) => !!SFC_CONFIG.cores.list[id];
-      // bạn bè lưu từ trước khi có Tuyệt kỹ đặc trưng: bốc 1 Tuyệt kỹ theo Elo của họ
-      const isUlt = (id) => known(id) && SFC_CONFIG.cores.list[id].role === 'ult';
       const friends = raw && Array.isArray(raw.friends) ? raw.friends.filter((f) => f && f.name && f.look && f.ratings).map((f) => Object.assign(f, {
         deck: Array.isArray(f.deck) ? f.deck.filter(known) : [], elo: Math.max(0, f.elo | 0),
-      }, isUlt(f.ult) ? {} : { ult: SFC.U.pick(SFC.MainPath.ultsAt(Math.max(0, f.elo | 0))) })) : [];
+      })) : [];
       const reqs = (list) => (Array.isArray(list) ? list : []).filter((r) => r && typeof r.name === 'string' && this.cleanName(r.name))
         .map((r) => ({ name: this.cleanName(r.name), at: +r.at || Date.now() }));
       this.data = { friends, chats: (raw && raw.chats && typeof raw.chats === 'object') ? raw.chats : {}, sent: reqs(raw && raw.sent), incoming: reqs(raw && raw.incoming) };
@@ -50,7 +48,7 @@ window.SFC = window.SFC || {};
       this.data.friends = [];
       for (let i = 0; i < C().friends; i++) {
         const m = MP.fakePlayer(Math.max(0, Math.round(me + rnd(-C().eloSpread, C().eloSpread))), taken);
-        this.data.friends.push({ id: i + 1, name: m.name, elo: m.elo, ovr: m.ovr, ratings: m.ratings, deck: m.deck, main: m.main, look: m.look, ult: m.ult });
+        this.data.friends.push({ id: i + 1, name: m.name, elo: m.elo, ovr: m.ovr, ratings: m.ratings, deck: m.deck, main: m.main, look: m.look });
       }
       this.save();
     },
@@ -196,7 +194,7 @@ window.SFC = window.SFC || {};
     makeFriend(name) {
       const MP = SFC.MainPath, id = this.data.friends.reduce((n, f) => Math.max(n, f.id), 0) + 1;
       const m = MP.fakePlayer(Math.max(0, Math.round(MP.state.elo + rnd(-C().eloSpread, C().eloSpread))), []);
-      const f = { id, name, elo: m.elo, ovr: m.ovr, ratings: m.ratings, deck: m.deck, main: m.main, look: m.look, ult: m.ult };
+      const f = { id, name, elo: m.elo, ovr: m.ovr, ratings: m.ratings, deck: m.deck, main: m.main, look: m.look };
       this.data.friends.push(f);
       this.status[id] = 'online';
       this.save();

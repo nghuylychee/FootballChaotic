@@ -105,26 +105,15 @@ window.SFC = window.SFC || {};
       for (const k in c.mods || {}) base['m.' + k] = c.mods[k];
       const P = this.power(r), Cd = this.cooldown(r);
       const diff = Math.abs(r - this.cfg().anchor) < 0.5 ? '' : r > this.cfg().anchor ? 'up' : 'down';
-      return this.iconize(esc(c.desc)).replace(/\{([\w.]+)(\+%|-%|%)?\}/g, (m, key, pct) => {
+      return esc(c.desc).replace(/\{([\w.]+)(\+%|-%|%)?\}/g, (m, key, pct) => {
         if (base[key] == null) return m;
         const v = sc[key] ? scaleVal(sc[key], base[key], P, Cd) : base[key];
         const shown = pct === '%' ? Math.round(v * 100) : pct === '+%' ? Math.round((v - 1) * 100) : pct === '-%' ? Math.round((1 - v) * 100) : fmt(v);
         return sc[key] && diff ? `<b class="sv ${diff}">${shown}</b>` : `<b class="sv">${shown}</b>`;
       });
     },
-    // chữ tài nguyên (Momentum / Rhythm / Rage / Guard, đã dịch theo ngôn ngữ đang chọn) -> icon pixel như trên HUD
-    // (chỉ trong HTML, tooltip vẫn giữ chữ). Ranh giới từ theo Unicode: \b của regex không nhận chữ có dấu (Ímpeto, Fúria).
-    // Chữ Nhật / Hán không có dấu cách -> không tính là ranh giới chặn (勢いが、リズムを)
-    iconize(html) {
-      const R = DEF().resources, map = {};
-      for (const k in R) map[R[k].label] = k;
-      const words = Object.keys(map).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      const B = '(?![\\p{scx=Han}\\p{scx=Hira}\\p{scx=Kana}])[\\p{L}\\p{N}_]';
-      const re = new RegExp('(?<!' + B + ')(' + words.join('|') + ')(?!' + B + ')', 'gu');
-      return html.replace(re, (w) => (SFC.PixelIcon ? SFC.PixelIcon.res(map[w], 'res-in') : w));
-    },
     // mô tả dạng chữ thường (tooltip, tìm kiếm): bỏ thẻ HTML
-    plain(id, r) { return this.describe(id, r).replace(/<x-px class="pxi pxi-res-(\w+)[^>]*><\/x-px>/g, (m, k) => (DEF().resources[k] || {}).label || k).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"'); },
+    plain(id, r) { return this.describe(id, r).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"'); },
   };
 
   SFC.CoreScale = CoreScale;

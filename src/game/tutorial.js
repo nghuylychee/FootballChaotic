@@ -41,7 +41,7 @@ window.SFC = window.SFC || {};
 
     /* ---------------- bí kíp gia truyền (Tuyệt kỹ AURA FARMING, ftue.config.js -> heirloom) ---------------- */
     // Core nằm sẵn trong progression.starterCores -> cờ này chỉ để cut scene trao bí kíp phát đúng 1 lần
-    heirloomWanted() { return CFG() && CFG().enabled && this.done && !SFC.Profile.data.tut.heirloom; },
+    heirloomWanted() { return CFG() && CFG().enabled && CFG().heirloom.enabled !== false && this.done && !SFC.Profile.data.tut.heirloom; },
     markHeirloom() {
       const d = SFC.Profile.data;
       if (!d || (d.tut && d.tut.heirloom)) return;

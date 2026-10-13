@@ -40,7 +40,6 @@ SFC_CONFIG.teammates = {
       { common: 10, rare: 30, epic: 38, legendary: 16, mythic: 6 },
       { common: 5, rare: 22, epic: 40, legendary: 22, mythic: 11 },
     ],
-    ultChance: [0, 0.15, 0.35, 0.6, 0.85],   // xác suất deck có Tuyệt kỹ của trường phái chính, theo bậc
   },
 
   // phí chuyển nhượng = (OVR - feeBase)^2 x feeMult + tổng giá trị độ hiếm deck (progression.rarities[].value) x deckMult

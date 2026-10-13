@@ -3,7 +3,7 @@
  * rồi gắn thành CSS class .pxi-<key> (ảnh nền data URL) -> HTML chỉ là <x-px class="pxi pxi-core-fire_shot"></x-px>.
  * Icon có thể mượn hình icon khác: { ref: 'key', map: { màu cũ: màu mới } }.
  * Chưa vẽ icon nào thì trả về emoji cũ (fallback) để UI không vỡ.
- * Dùng: SFC.PixelIcon.core(id) · .arch(tag) · .area(id) · .ui(name) · .res(name) — thêm class 'x2' / 'x3' để phóng to đúng bội số pixel.
+ * Dùng: SFC.PixelIcon.core(id) · .arch(tag) · .area(id) · .ui(name) — thêm class 'x2' / 'x3' để phóng to đúng bội số pixel.
  */
 window.SFC = window.SFC || {};
 
@@ -127,6 +127,15 @@ window.SFC = window.SFC || {};
     'core-meteor_strike': ['r...........', '.ro.........', '..roo.......', '...rooo.....', '....roowww..', '.....owwkww.', '......wkkkw.', '......wwkww.', '.......www..', '............', '............', '............'],
     'core-hundred_fists': ['............', '...rr..rr...', '...rr..rr...', '.rrrr..rrrr.', '.rr......rr.', '............', '............', '.rr......rr.', '.rrrr..rrrr.', '...rr..rr...', '...rr..rr...', '............'],
     'core-meteor_drop': ['...r.oo.r...', '....ooyo....', '...roooyr...', '...ooyyoo...', '....oyyo....', '...nnnnnn...', '..nnNnnnnn..', '..nnnnnNnn..', '..nNnnnnnn..', '...nnnnnn...', '............', '............'],
+    /* Tuyệt kỹ lai (mượn hình Core cầu nối, đổi màu) */
+    'core-comet_onetwo': { ref: 'core-one_two', map: { o: 'y' } },
+    'core-rising_dragon': { ref: 'core-uppercut', map: { g: 'o', G: 'O' } },
+    'core-comet_dropkick': { ref: 'core-flying_kick', map: { w: 'y', b: 'r' } },
+    'core-phantom_barrage': { ref: 'core-ghost_ball', map: { w: 'v' } },
+    'core-steel_formation': { ref: 'core-captain', map: { y: 'l', Y: 'e', b: 'e', r: 'l' } },
+    'core-iron_hammer': { ref: 'core-giant_fist', map: { s: 'l', S: 'e', r: 'E' } },
+    'core-mirage_sprint': { ref: 'core-speed_demon', map: { c: 'v' } },
+    'core-slingshot': { ref: 'core-rubber_arm', map: { r: 'y' } },
     'core-clone_army': ['............', '.VV..vv..ww.', 'VVVVvvvvwwww', 'VVVVvvvvwwww', '.VV..vv..ww.', 'VVVVvvvvwwww', 'VVVVvvvvwwww', 'VVVVvvvvwwww', 'VVVVvvvvwwww', '............', '............', '............'],
     'core-titan': ['...eeeeee...', '..eeeeeeee..', '..EEEEEEEE..', '..eeEeeEee..', '..eeeeeeee..', '..eeeEEeee..', '..eeeEEeee..', '..eeeeeeee..', '..eeEEEEee..', '..eeeeeeee..', '.eeeeeeeeee.', '............'],
     'core-aura_farming': ['.y...yy...y.', '.yy..yy..yy.', '.yyy.yy.yyy.', '..yyyyyyyy..', '.yyyyyyyyyy.', '.yYyyYYyyYy.', '..ssssssss..', '..skksskks..', '..ssssssss..', '...sskkss...', '...ssssss...', '....ssss....'],
@@ -220,7 +229,6 @@ window.SFC = window.SFC || {};
     core(id, extra) { const c = SFC_CONFIG.cores.list[id]; return this.html('core-' + id, c && c.icon, extra); },
     arch(tag, extra) { const a = SFC_CONFIG.cores.archetypes[tag]; return this.html('arch-' + tag, a && a.icon, extra); },
     area(id, extra) { const a = SFC_CONFIG.mainPath.areas.find((x) => x.id === id); return this.html('area-' + id, a && a.icon, extra); },
-    res(name, extra) { const r = SFC_CONFIG.cores.resources[name]; return this.html('res-' + name, r && r.icon, extra); },
     ui(name, extra) { return this.html('ui-' + name, '', extra); },
     // điểm xếp hạng (Elo) hiển thị bằng ngôi sao: ★ + số (chỗ chỉ có chữ thường dùng ký tự '★' + số: SFC.MainPath.stars)
     elo(n, extra = '') { return `<span class="elo ${extra}">${this.ui('star', 'sm')}<b>${n}</b></span>`; },

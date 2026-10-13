@@ -214,7 +214,6 @@ SFC_CONFIG.progression = {
   // hoặc lấy từ Hộp Core khi coreGacha bật.
   // level (khi coreGacha bật) = level tối thiểu để Core quay được xuất hiện khi chọn Core giữa trận (chưa đủ thì nằm chờ trong túi đồ).
   // Độ hiếm của Core lấy từ config/cores.config.js (rarity) — dùng chung cho gacha và tần suất khi chọn Core.
-  defaultUlt: 'aura_farming',   // Tuyệt kỹ đặc trưng ai cũng có lúc đầu (phải nằm trong starterCores)
   starterCores: ['sniper_foot', 'speed_demon', 'quick_feet', 'street_fighter', 'iron_body', 'heavy_boot', 'maestro', 'eagle_eye',
     'leg_day', 'cannon_leg', 'silk_pass', 'close_control', 'heavy_hands', 'thunder_thighs', 'safe_hands',
     'burst_start', 'one_touch', 'banana_kick', 'fist_storm', 'wall_slam', 'phantom_step', 'iron_fist', 'chaos_ball',

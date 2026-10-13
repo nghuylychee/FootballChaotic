@@ -8,7 +8,6 @@ window.SFC = window.SFC || {};
 (function () {
   const U = SFC.U;
   const B = SFC.CoreBehaviors, H = SFC.CoreHelpers;
-  const RES = () => SFC_CONFIG.cores.resources;
   const Act = () => SFC.Actions;
   const fv = (p) => ({ x: Math.cos(p.facing), y: Math.sin(p.facing) });
 
@@ -38,8 +37,7 @@ window.SFC = window.SFC || {};
   }
 
   // va phải là bay (Xe Ủi, Hoá Khổng Lồ). ahead = chỉ người đứng phía trước hướng chạy (Xe Ủi)
-  // cost = true: mỗi lần hất tiêu 1 Giáp (Xe Ủi)
-  function trample(sys, team, pl, prm, word, ahead = false, cost = false) {
+  function trample(sys, team, pl, prm, word, ahead = false) {
     const g = sys.g, E = g.effects;
     const sp = Math.hypot(pl.vx, pl.vy);
     if (ahead && sp < 40) return;
@@ -48,9 +46,7 @@ window.SFC = window.SFC || {};
       if (U.dist(o, pl) > pl.radius + o.radius + 2) continue;
       if (ahead && ((o.x - pl.x) * pl.vx + (o.y - pl.y) * pl.vy) / (sp * U.dist(o, pl) || 1) < 0.3) continue;
       if (Act().dodged(g, o)) continue;
-      if (cost && pl.res.guard <= 0) return;
       o.trampleT = g.time + (prm.every || 0.8);
-      if (cost) pl.res.guard--;
       const had = o.hasBall;
       if (blast(o, pl, prm.knock, prm.launch, prm.stun, pl)) {
         E.comic(o.x, o.y - 30, word, '#ffd23f', 0.9, 0.5);
@@ -85,11 +81,38 @@ window.SFC = window.SFC || {};
     }
   }
 
-  // Core DÙNG Giáp: người sở hữu tự có tối thiểu 1 Giáp mỗi lần giao bóng (không thành lá chết khi chưa có Core TẠO Giáp)
-  const guardFloor = {
-    onAdd(sys, team, prm) { prm.owner.res.guard = Math.max(prm.owner.res.guard, 1); },
-    onKickoff(sys, team, prm) { prm.owner.res.guard = Math.max(prm.owner.res.guard, 1); },
-  };
+  // lao tới mục tiêu nhìn thấy được (không dịch chuyển tức thời): chạm người thì onHit(); mục tiêu kịp lướt Z / hết maxT
+  // thì trượt -> onMiss() (mặc định: chữ MISS + khựng). Tuyệt kỹ áp sát (Bách Quyền, Rising Dragon)
+  function rush(sys, pl, o, speed, maxT, onHit, onMiss) {
+    const g = sys.g, E = g.effects;
+    let T = 0, k = 0;
+    pl.state = 'recover'; pl.stateT = maxT + 0.3; pl.charging = false;
+    const miss = () => {
+      if (onMiss) return onMiss();
+      E.comic(pl.x, pl.y - 28, 'MISS', '#9aa3b5', 0.9, 0.5);
+      pl.state = 'recover'; pl.stateT = 0.5;
+    };
+    sys.task((dt) => {
+      if (g.state !== 'play') return true;
+      if (pl.state === 'stun') return true;
+      T += dt;
+      const d = U.dist(pl, o);
+      if (d <= pl.radius + o.radius + 4) {
+        if (o.state === 'meteor' || g.isProtected(o) || Act().dodged(g, o)) miss(); else onHit();
+        return true;
+      }
+      if (T >= maxT) { miss(); return true; }
+      const n = U.norm(o.x - pl.x, o.y - pl.y), step = Math.min(d, speed * dt);
+      pl.x += n.x * step; pl.y += n.y * step;
+      pl.vx = 0; pl.vy = 0; pl.facing = Math.atan2(n.y, n.x);
+      if (g.ball.owner === pl) g.ball.follow(0);
+      if ((k += dt) >= 0.05) { k = 0; E.afterimage(pl, 0.25); }
+      return false;
+    });
+  }
+
+  // dùng chung cho Tuyệt kỹ lai (systems/cores-hybrid.js)
+  Object.assign(H, { nearestOpp, targetable, blast, rush });
 
   Object.assign(B, {
     /* ================= 🏃 TỐC ĐỘ ================= */
@@ -98,7 +121,6 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects;
         if (g.time < (pl.burstT || 0)) return;
         pl.burstT = g.time + prm.cooldown;
-        H.addMomentum(sys, pl, prm.momentum);
         pl.buffs.push({ speed: prm.boost, t: prm.time });
         const a = Math.hypot(pl.vx, pl.vy) > 5 ? Math.atan2(pl.vy, pl.vx) : pl.facing;
         E.wave(pl.x, pl.y, 26, '#ffffff', 0.35, 2);
@@ -108,11 +130,12 @@ window.SFC = window.SFC || {};
         g.sfx('whoosh');
       },
     },
+    // Phá Âm Chướng: đang TOÉ ĐIỆN + cầm bóng -> hất văng hậu vệ chạm phải
     sonic_boom: {
       update(sys, team, prm) {
-        const g = sys.g, E = g.effects, max = sys.resMax(prm.owner, 'momentum');
+        const g = sys.g, E = g.effects;
         for (const pl of [prm.owner]) {
-          if (!pl.hasBall || !pl.sprinting || pl.state !== 'normal' || pl.res.momentum < max || g.time < (pl.sonicT || 0)) continue;
+          if (!pl.hasBall || !pl.surge || pl.state !== 'normal' || g.time < (pl.sonicT || 0)) continue;
           const sp = Math.hypot(pl.vx, pl.vy);
           if (sp < 60) continue;
           for (const o of g.teams[1 - team].players) {
@@ -124,7 +147,6 @@ window.SFC = window.SFC || {};
             const n = { x: (-pl.vy / sp) * side, y: (pl.vx / sp) * side };
             const had = o.hasBall;
             if (o.hit({ stun: prm.stun, kbx: n.x * prm.knock, kby: n.y * prm.knock, launch: prm.launch, source: pl, type: 'hard' })) {
-              pl.res.momentum = 0;   // DÙNG: tiêu hết Đà
               E.comic(o.x, o.y - 28, 'BOOM!', '#ffffff', 1, 0.5);
               E.wave(pl.x, pl.y, 24, '#ffffff', 0.3, 2);
               E.shake(3, 0.2);
@@ -137,11 +159,12 @@ window.SFC = window.SFC || {};
         }
       },
     },
+    // Húc Xe Tải: đang TOÉ ĐIỆN -> húc trực diện ai là hất bay
     freight_train: {
       update(sys, team, prm) {
         const g = sys.g, E = g.effects;
         for (const pl of [prm.owner]) {
-          if (pl.state !== 'normal' || pl.res.momentum < prm.minMomentum || g.time < (pl.trainT || 0)) continue;
+          if (pl.state !== 'normal' || !pl.surge || g.time < (pl.trainT || 0)) continue;
           const sp = Math.hypot(pl.vx, pl.vy);
           if (sp < prm.minSpeed) continue;
           const dv = { x: pl.vx / sp, y: pl.vy / sp };
@@ -155,7 +178,6 @@ window.SFC = window.SFC || {};
             const had = o.hasBall && !sys.unstealable(o);
             if (had) g.looseBall(o, dv.x, dv.y, 140);
             if (o.hit({ stun: prm.stun, kbx: dv.x * prm.knock, kby: dv.y * prm.knock, launch: prm.launch * sys.pmod(pl, 'launch'), source: pl, type: 'hard' })) {
-              pl.res.momentum = Math.max(0, pl.res.momentum - prm.cost);
               g.hitStop(0.08);
               E.comic(o.x, o.y - 30, 'BAM!', '#3ff6ff', 1.3, 0.6);
               E.decal('skid', o.x, o.y, 1.4, 3, Math.atan2(dv.y, dv.x));
@@ -179,17 +201,17 @@ window.SFC = window.SFC || {};
         const b = g.ball;
         b.fx.ghost = true;
         b.skin = 'light';
-        if (sys.resActive(pl, 'rhythm')) { g.rhythm[team] = Math.min(RES().rhythm.max, g.rhythm[team] + prm.rhythm); g.rhythmT[team] = 0; }
         g.effects.burst(b.x, b.y, 4, '#fff6c0', 10, 70, 0.4);
         g.effects.ring(b.x, b.y - 4, '#fff6c0');
         g.sfx('pick');
       },
     },
+    // Đường Chuyền Xuyên Không: chuyền xuyên tuyến chạm đầu tiên (ngay sau khi nhận bóng) -> tia vàng không cắt được
     phantom_pass: {
       onPass(sys, team, prm, pl, target, mode) {
         const g = sys.g, b = g.ball, E = g.effects;
-        if (mode !== 'through' || g.rhythm[team] < prm.cost) return;
-        g.rhythm[team] -= prm.cost;
+        if (mode !== 'through' || !(pl.recvT >= 0) || g.time - pl.recvT > prm.window || g.time < (pl.phantomT || 0)) return;
+        pl.phantomT = g.time + prm.cooldown;
         b.vx *= prm.speedMult; b.vy *= prm.speedMult;
         b.fx.ghost = true; b.fx.string = true;
         b.skin = 'light';
@@ -202,15 +224,16 @@ window.SFC = window.SFC || {};
         g.sfx('zap');
       },
     },
+    // Giao Hưởng: sút sau chuỗi chuyền của đội (Game.passChain, mất bóng về 0) -> mạnh + khó bắt theo số đường chuyền
     symphony: {
       onShoot(sys, team, prm, pl, ball) {
-        const g = sys.g, E = g.effects, n = g.rhythm[team];
+        const g = sys.g, E = g.effects, n = Math.min(prm.max, g.passChain[team]);
         if (n < prm.min) return;
         ball.vx *= 1 + n * prm.powerPer; ball.vy *= 1 + n * prm.powerPer;
         ball.gkMod += n * prm.gkPer;
         ball.fx.string = true;
         ball.skin = 'light';
-        g.rhythm[team] = 0;
+        g.passChain[team] = 0;
         E.burst(ball.x, ball.y, 10, '#ffd23f', 18, 100, 0.6);
         E.wave(ball.x, ball.y, 30, '#ffd23f', 0.45, 2);
         E.comic(pl.x, pl.y - 30, 'SYMPHONY!', '#ffd23f', 0.8 + n * 0.06, 0.7);
@@ -225,16 +248,15 @@ window.SFC = window.SFC || {};
       },
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball, f = g.field, dir = g.teams[team].dir;
-        // cầm bóng: người đang giữ bóng của đội; không thì "cướp" bóng về người ra chiêu
-        let a = b.owner && b.owner.team === team ? b.owner : pl;
-        if (b.owner && b.owner.team !== team) { g.looseBall(b.owner, 0, 0, 0); sys.steal(a); }
-        if (b.owner !== a) { b.owner = null; g.gainPossession(a); }
+        // needsBall: người đang giữ bóng của đội (mất bóng trong lúc cut-in -> chiêu xịt, không giật bóng)
+        const a = b.owner && b.owner.team === team ? b.owner : null;
+        if (!a) return;
         const m = g.teams[team].players.find((x) => x !== a && x.state !== 'stun');
         if (!m) return;
         E.tint('#704214', 2.4, 0.3);
         E.callout('TIKI-TAKA!', '#ffd23f', 1.2);
-        g.rhythm[team] = RES().rhythm.max;
         for (const o of g.teams[1 - team].players) { o.buffs.push({ speed: prm.slow, t: prm.slowTime }); o.charging = false; }
+        // đường chuyền THẬT (Actions.passTo): đối thủ bị làm chậm nhưng đứng đúng chỗ vẫn cắt được -> cắt là dừng chuỗi
         const step = (i) => {
           if (g.state !== 'play') return;
           const from = i % 2 === 0 ? a : m, to = i % 2 === 0 ? m : a;
@@ -245,11 +267,21 @@ window.SFC = window.SFC || {};
           to.y = U.clamp(to.y + (f.cy - to.y) * 0.25 + U.rand(-10, 10), f.y + 12, f.y + f.h - 12);
           const ang = Math.atan2(to.y - from.y, to.x - from.x);
           E.beam(from.x, from.y - 4, ang, U.dist(from, to), 4, '#ffd23f', 1.2);
-          E.burst(to.x, to.y, 12, '#ffd23f', 8, 60, 0.5);
-          b.owner = null;
-          g.gainPossession(to);
-          g.sfx('pass');
-          g.later(prm.gap, () => (i + 1 < prm.passes ? step(i + 1) : finish()));
+          from.state = 'normal';
+          Act().passTo(g, from, to, 'ground');
+          b.vx *= prm.passSpeed; b.vy *= prm.passSpeed;
+          b.fx.string = true;
+          let T = 0;
+          sys.task((dt) => {
+            T += dt;
+            if (g.state !== 'play') return true;
+            if (b.owner === to) {
+              E.burst(to.x, to.y, 12, '#ffd23f', 8, 60, 0.5);
+              g.later(prm.gap, () => (i + 1 < prm.passes ? step(i + 1) : finish()));
+              return true;
+            }
+            return !!(b.owner && b.owner.team !== team) || T > 1.5;   // bị cắt / lạc bóng -> dừng chuỗi
+          });
         };
         const finish = () => {
           if (g.state !== 'play') return;
@@ -264,7 +296,6 @@ window.SFC = window.SFC || {};
           E.comic(s.x, s.y - 32, 'SYMPHONY!', '#ffd23f', 1.2, 0.8);
           E.wave(s.x, s.y, 36, '#ffd23f', 0.5, 3);
           E.shake(5, 0.3);
-          g.rhythm[team] = 0;
         };
         g.later(0.1, () => step(0));
       },
@@ -325,9 +356,9 @@ window.SFC = window.SFC || {};
       },
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball;
-        const s = b.owner && b.owner.team === team ? b.owner : pl;
-        if (b.owner && b.owner.team !== team) { g.looseBall(b.owner, 0, 0, 0); sys.steal(s); }
-        if (b.owner !== s) { b.owner = null; g.gainPossession(s); }
+        // needsBall: người đang giữ bóng của đội nhảy lên (mất bóng trong lúc cut-in -> chiêu xịt, không giật bóng)
+        const s = b.owner && b.owner.team === team ? b.owner : null;
+        if (!s) return;
         s.airVz = prm.jump; s.airZ = 0.5;
         s.state = 'recover'; s.stateT = prm.delay + 0.5;
         b.kick(s, 0, 0, prm.jump);
@@ -436,13 +467,17 @@ window.SFC = window.SFC || {};
         }
         return null;
       },
+      // lao tới (nhìn thấy được, mục tiêu lướt Z kịp thì trượt) rồi mới tung chuỗi đấm
       onUltimate(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects, f = g.field;
+        const g = sys.g, E = g.effects;
         const o = nearestOpp(g, team, pl, targetable(g));
         if (!o) return;
+        E.speedLines(0.3, pl.x, pl.y, '#ffcfcf');
+        rush(sys, pl, o, prm.rush, prm.range / prm.rush + 0.15, () => this.barrage(sys, team, prm, pl, o));
+      },
+      barrage(sys, team, prm, pl, o) {
+        const g = sys.g, E = g.effects, f = g.field;
         const side = pl.x < o.x ? -1 : 1;
-        E.afterimage(pl, 0.4);
-        pl.x = U.clamp(o.x + side * 14, f.x + 8, f.x + f.w - 8); pl.y = o.y;
         pl.facing = side > 0 ? Math.PI : 0;
         if (g.ball.owner === pl) g.ball.follow(0);
         pl.state = 'recover'; pl.stateT = prm.hits * prm.gap + 0.3;
@@ -600,7 +635,7 @@ window.SFC = window.SFC || {};
         E.comic(p.x, p.y - 40, 'KRAKOOM!!', '#ff6a1f', 1.5);
         g.sfx('hit');
         for (const o of g.teams[1 - team].players) {
-          if (U.dist(o, p) > R + o.radius || g.isProtected(o)) continue;
+          if (U.dist(o, p) > R + o.radius || g.isProtected(o) || Act().dodged(g, o)) continue;
           const had = o.hasBall;
           if (blast(o, p, prm.knock, prm.launch, prm.stun, p) && had) sys.steal(p);
         }
@@ -676,6 +711,8 @@ window.SFC = window.SFC || {};
         }
         g.later(0.55, () => {
           if (g.state !== 'play') return;
+          // phân thân chạy tới thấy rõ: mục tiêu lướt Z đúng lúc thì né được cả đòn
+          if (Act().dodged(g, o)) { E.comic(o.x, o.y - 30, 'DODGE!', '#9d7bff', 1, 0.6); return; }
           g.hitStop(0.1);
           E.impactFrame();
           E.shake(5, 0.3);
@@ -695,31 +732,30 @@ window.SFC = window.SFC || {};
     },
 
     /* ================= 🛡 THÉP ================= */
+    // Xe Ủi: giữ bóng đủ lâu -> hoá to (p.bullT, CoreSystem.updateStates), không bị cướp bóng, húc đổ người phía trước
     bulldozer: {
-      ...guardFloor,
       update(sys, team, prm) {
         const g = sys.g, E = g.effects;
         for (const pl of [prm.owner]) {
-          if (!pl.hasBall || pl.res.guard <= 0 || pl.state !== 'normal') continue;
+          if (!(pl.bullT > 0) || !pl.hasBall || pl.state !== 'normal') continue;
           if (pl.sizeMul < 1.05 && pl.sizeTarget <= 1) { E.burst(pl.x, pl.y, 8, '#c7ccd6', 10, 80, 0.4); g.sfx('block'); }
           pl.sizeTarget = Math.max(pl.sizeTarget, prm.scale); pl.sizeT = Math.max(pl.sizeT, 0.15);
           if (Math.hypot(pl.vx, pl.vy) > 30 && g.time > (pl.stompT || 0)) {
             pl.stompT = g.time + 0.3;
             E.burst(pl.x, pl.y, 0, '#8a7f70', 4, 40, 0.4);
           }
-          trample(sys, team, pl, prm, 'STRIKE!', true, true);
+          trample(sys, team, pl, prm, 'STRIKE!', true);
         }
       },
     },
     giant_keeper: {
-      ...guardFloor,
       update(sys, team, prm) {
         const g = sys.g, E = g.effects, b = g.ball, goal = g.ownGoal(team), dir = g.teams[team].dir;
         const threat = (b.owner && b.owner.team !== team && Math.abs(b.owner.x - goal.x) < prm.near)
           || (!b.owner && b.lastKickTeam === 1 - team && Math.abs(b.x - goal.x) < prm.near * 1.3 && b.vx * dir < -60);
         if (!threat) return;
         for (const pl of [prm.owner]) {
-          if (!g.inKeeperZone(pl) || pl.res.guard <= 0 || pl.state === 'stun') continue;
+          if (!g.inKeeperZone(pl) || pl.state === 'stun') continue;
           if (pl.sizeMul < 1.05 && g.time > (pl.gkPoofT || 0)) {
             pl.gkPoofT = g.time + 2;
             E.comic(pl.x, pl.y - 44, 'POOF!', '#c7ccd6', 0.9, 0.5);
@@ -779,7 +815,7 @@ window.SFC = window.SFC || {};
       },
     },
 
-    /* ================= 🔗 CẦU NỐI ================= */
+    /* ================= Core từng là cầu nối 2 hệ (giờ mỗi lá 1 hệ — cores.config.js) ================= */
     rubber_arm: {
       onLightAttack(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball, L = SFC_CONFIG.game.combat.light;
@@ -835,12 +871,15 @@ window.SFC = window.SFC || {};
         g.sfx('hit');
       },
     },
+    // Nắm Đấm Sắt: nắm tay thép sẵn sàng -> cú đấm chắc chắn cướp bóng (Actions.lightHit: sure), trúng thì miễn choáng armor giây
     iron_fist: {
-      ...guardFloor,
       onLightHit(sys, team, prm, a, v) {
-        if (a.res.guard <= 0) return;
+        const st = sys.st(a, 'iron_fist');
+        if (st.cd > 0) return;
+        st.cd = prm.cooldown;
+        a.armorT = sys.g.time + prm.armor;
+        a.glow('#c7ccd6', prm.armor);
         const E = sys.g.effects;
-        if (sys.resActive(a, 'rage')) a.res.rage = Math.min(RES().rage.max, a.res.rage + prm.rage);
         E.burst((a.x + v.x) / 2, (a.y + v.y) / 2, 10, '#ffffff', 8, 110, 0.3);
         E.burst((a.x + v.x) / 2, (a.y + v.y) / 2, 10, '#ffd23f', 4, 90, 0.3);
         if (!sys.has(a, 'street_fighter')) E.comic(v.x, v.y - 26, 'CLANG!', '#c7ccd6', 0.7, 0.45);
@@ -855,11 +894,13 @@ window.SFC = window.SFC || {};
         E.wave(pl.x, pl.y, 14, '#ffb13d', 0.25, 2);
       },
     },
+    // Đội Trưởng: người nhận đường chuyền miễn choáng một lúc (viền vàng, CoreSystem.blockHit)
     captain: {
       onPassReceived(sys, team, prm, rc) {
         const g = sys.g;
-        if (g.time < (rc.capT || 0) || rc.res.guard >= RES().guard.max) return;
-        rc.res.guard++;
+        if (g.time < (rc.capT || 0)) return;
+        rc.armorT = Math.max(rc.armorT || 0, g.time + prm.time);
+        rc.glow('#ffd23f', prm.time);
         rc.capT = g.time + prm.cooldown;
         g.effects.shield(rc.x, rc.y - 8, 11, '#ffd23f', 0.45);
         g.effects.burst(rc.x, rc.y, 10, '#ffd23f', 6, 50, 0.4);
@@ -879,7 +920,6 @@ window.SFC = window.SFC || {};
       },
       onLightHit(sys, team, prm, a, v) {
         if (!a.lastPunch || !a.lastPunch.counter) return;
-        if (sys.resActive(a, 'rage')) a.res.rage = Math.min(RES().rage.max, a.res.rage + prm.rage);
         sys.g.hitStop(0.06);
         sys.g.effects.comic(v.x, v.y - 30, 'CRACK!', '#ff3d5a', 1, 0.5);
       },

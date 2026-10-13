@@ -129,12 +129,12 @@ window.SFC = window.SFC || {};
     /* 🏃 TỐC ĐỘ */
     speed_demon: run(),
     burst_start: run({ from: 0.35 }),
-    sonic_boom: run({ ball: true, init: (s) => { s.me.res.momentum = 7; s.place(s.o1, A.x - 10, A.y + 13, PI); } }),
-    freight_train: run({ init: (s) => { s.me.res.momentum = 5; s.place(s.o1, A.x - 10, A.y, PI); } }),
+    sonic_boom: run({ ball: true, init: (s) => { s.me.previewSurge = true; s.place(s.o1, A.x - 10, A.y + 13, PI); } }),
+    freight_train: run({ init: (s) => { s.me.previewSurge = true; s.place(s.o1, A.x - 10, A.y, PI); } }),
     fake_run: run({ ball: true, init: (s) => s.place(s.o1, A.x + 10, A.y + 10, PI) }),
     lightning_dash: ult({ init: (s) => s.place(s.me, A.x - 90, A.y, 0), at: 0.3 }),
     counter_attack: punch(),
-    flying_kick: kick({ dist: 55, init: (s) => { s.me.res.momentum = 5; } }),
+    flying_kick: kick({ dist: 55, init: (s) => { s.me.previewSurge = true; } }),
 
     /* 🎼 TIKI-TAKA */
     maestro: pass(),
@@ -149,9 +149,9 @@ window.SFC = window.SFC || {};
       more: [[0.2, (s) => { Act().passTo(s.g, s.mate, s.me, 'ground'); }]],
       len: 2.4,
     }),
-    phantom_pass: pass({ mode: 'through', init: (s) => { s.g.rhythm[0] = 5; s.place(s.o1, A.x, A.y - 5, PI); } }),
-    symphony: shot({ charge: 0.7, init: (s) => { s.g.rhythm[0] = 5; } }),
-    endless_tiki: ult({ len: 3.2, init: (s) => { s.place(s.mate, A.x + 10, A.y - 34, 0); s.place(s.o1, A.x + 50, A.y + 20, PI); }, focus: (s) => s.g.ball }),
+    phantom_pass: pass({ mode: 'through', init: (s) => { s.me.recvT = s.g.time; s.place(s.o1, A.x, A.y - 5, PI); } }),
+    symphony: shot({ charge: 0.7, init: (s) => { s.g.passChain[0] = 4; } }),
+    endless_tiki: ult({ len: 3.4, init: (s) => { s.place(s.mate, A.x + 10, A.y - 34, 0); s.place(s.o1, A.x + 50, A.y + 20, PI); }, focus: (s) => s.g.ball }),
     rubber_arm: punch({ dist: 45 }),
     one_two: shot({
       noCharge: true, at: 9, dist: 130,
@@ -178,12 +178,12 @@ window.SFC = window.SFC || {};
     },
 
     /* 🥊 ĐẤU SĨ */
-    street_fighter: punch({ init: (s) => { s.me.res.rage = 3; } }),
+    street_fighter: punch({ init: (s) => { s.me.landT = s.g.time; s.me.punchCombo = 2; } }),
     fist_storm: punch(),
-    giant_fist: punch({ init: (s) => { s.me.res.rage = 5; s.place(s.o1, A.x - 12, A.y, PI); } }),
+    giant_fist: punch({ init: (s) => { s.place(s.o1, A.x - 12, A.y, PI); } }),
     hundred_fists: ult({ ball: false, len: 3.4, init: (s) => { s.place(s.o1, A.x + 10, A.y, PI); s.place(s.o2, A.x + 150, A.y + 60, PI); }, focus: (s) => s.o1 }),
-    uppercut: punch({ init: (s) => { s.me.res.rage = 5; } }),
-    iron_fist: punch({ init: (s) => { s.me.res.guard = 1; } }),
+    uppercut: punch({ init: (s) => { s.me.landT = s.g.time; } }),
+    iron_fist: punch(),
     counter_strike: punch({
       at: 0.6, len: 2.4,
       init: (s) => { s.place(s.o2, A.x - 16, A.y, PI); s.place(s.o1, A.x + 6, A.y + 12, PI); s.give(s.o1); },
@@ -231,10 +231,9 @@ window.SFC = window.SFC || {};
     /* 🛡 THÉP */
     iron_body: punch({
       ball: false, at: 9,
-      init: (s) => { s.me.res.guard = 1; },
       more: [[0.3, (s) => { s.face(s.o1, s.me); Act().lightAttack(s.g, s.o1); }]],
     }),
-    bulldozer: run({ ball: true, from: 0.1, init: (s) => { s.me.res.guard = 1; s.place(s.o1, A.x - 20, A.y, PI); } }),
+    bulldozer: run({ ball: true, from: 0.1, init: (s) => { s.me.ballT = 1; s.place(s.o1, A.x - 20, A.y, PI); } }),
     giant_keeper: shot({ team: 1, aimY: 0.35, charge: 0.8 }),
     aegis_wall: shot({ team: 1 }),
     emp_trap: punch({
@@ -252,6 +251,22 @@ window.SFC = window.SFC || {};
       init: (s) => { s.place(s.o1, A.x + 10, A.y + 4, PI); s.place(s.o2, A.x + 40, A.y - 12, PI); },
       tick: (s) => { if (s.t > 0.6) { s.me.intent.mx = 1; s.me.intent.my = 0; } },
     }),
+
+    /* TUYỆT KỸ LAI (systems/cores-hybrid.js) */
+    comet_onetwo: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x + 10, A.y - 40, PI); s.place(s.o1, A.x + 40, A.y + 2, PI); } }),
+    rising_dragon: ult({ ball: false, len: 2.8, focus: (s) => s.o1 }),
+    comet_dropkick: ult({ ball: false, len: 2.4, focus: (s) => (s.t > 0.4 ? s.mid(s.me, s.o2) : s.me) }),
+    phantom_barrage: ult({ len: 2.6, init: (s) => { s.place(s.o1, A.x + 90, A.y + 30, PI); } }),
+    steel_formation: ult({
+      ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x - 22, A.y, PI); s.place(s.mate, A.x - 60, A.y - 24, 0); },
+      more: [[0.9, (s) => { s.face(s.o1, s.me); Act().lightAttack(s.g, s.o1); }]],
+    }),
+    iron_hammer: ult({ ball: false, len: 2.4, init: (s) => { s.place(s.o1, A.x - 14, A.y, PI); s.place(s.o2, A.x - 8, A.y + 14, PI); } }),
+    mirage_sprint: ult({
+      len: 2.8, at: 0.2, init: (s) => { s.place(s.o1, A.x - 20, A.y + 8, PI); },
+      tick: (s) => { s.me.intent.mx = 1; s.me.intent.my = 0; s.me.intent.sprint = true; s.me.stamina = 100; },
+    }),
+    slingshot: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x - 30, A.y - 28, 0); s.place(s.o1, A.x + 40, A.y - 20, PI); }, focus: (s) => s.mate }),
 
     /* 🎲 HỖN LOẠN */
     warp_walls: {

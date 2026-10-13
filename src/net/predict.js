@@ -89,7 +89,7 @@ window.SFC = window.SFC || {};
       // thể lực tự tính như Player.moveNormal (máy chủ thấy hết thể lực sớm hơn snapshot báo về)
       const cores = g.cores;
       this.sprinting = !!(mask & ACT.sprint) && moving && this.st > (this.sprinting ? 0 : C.staminaMinToSprint);
-      if (this.sprinting) this.st -= C.staminaDrain * cores.sprintDrain(p) * dt;
+      if (this.sprinting) this.st -= C.staminaDrain * dt;
       else this.st += C.staminaRegen * p.stats.stamina * cores.mod(p.team, 'sprintRegen', p) * dt;
       this.st = u.clamp(this.st, 0, C.staminaMax);
       // chậm lại theo phím của mình (như human.js): giữ D khi có bóng = nạp lực sút · giữ W trong vòng cấm nhà khi đội không có bóng = thủ thế

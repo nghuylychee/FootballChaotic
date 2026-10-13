@@ -14,6 +14,7 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 /* BÍ KÍP GIA TRUYỀN: ông nội ra sân làng, trao cuốn sổ bí kíp -> màn lật thẻ Tuyệt kỹ -> biến hình -> thử chiêu.
  * Cảnh có reveal: dừng cut scene, mở màn lật thẻ (src/ui/reveal.js) cho Core đó, đóng thẻ thì chạy tiếp.
  * GRANDPA: lời ông nội (caption) */
+const SFC_FTUE_HEIRLOOM_ON = false;   // bí kíp gia truyền (AURA FARMING) tạm ẩn 2026-10-13 -> ftue.heirloom.enabled
 const SFC_FTUE_HEIRLOOM = [
   { art: 'grandpa', dur: 6.4, lines: [
     { at: 0.6, text: 'GRANDPA: Up before the roosters again? Dreaming of being the GOAT, huh?', style: 'caption' },
@@ -59,15 +60,16 @@ SFC_CONFIG.ftue = {
       { art: 'fade', dur: 1.4, lines: [{ at: 0.2, text: '...', style: 'caption' }] },
       { art: 'wake', dur: 3.4, lines: [{ at: 0.2, text: 'RRRRING!', style: 'shout' }, { at: 1.4, text: '...and then I woke up.', style: 'caption' }] },
       { art: 'village', dur: 5.0, lines: [{ at: 0.3, text: 'No powers. No crowd. Just a muddy field...', style: 'caption' }, { at: 2.6, text: '...and a dream. Every legend starts somewhere.', style: 'caption' }] },
-      ...SFC_FTUE_HEIRLOOM,
+      ...(SFC_FTUE_HEIRLOOM_ON ? SFC_FTUE_HEIRLOOM : []),
       { art: 'path', dur: 0 },   // thẻ giới thiệu MAIN PATH, chờ Enter
     ],
     // hồ sơ cũ (đã xong PROLOGUE trước khi có bí kíp): chỉ phát đoạn bí kíp, 1 lần
     heirloom: [{ art: 'village', dur: 3.0, lines: [{ at: 0.3, text: 'Another morning on the muddy field...', style: 'caption' }] }, ...SFC_FTUE_HEIRLOOM],
   },
 
-  // Tuyệt kỹ khởi đầu ông nội trao (Core trong cores.config.js, có sẵn trong progression.starterCores)
-  heirloom: { core: 'aura_farming', giver: 'Grandpa', band: "GRANDPA'S NOTEBOOK", stamp: 'FAMILY SECRET' },
+  // Tuyệt kỹ khởi đầu ông nội trao (Core trong cores.config.js, có sẵn trong progression.starterCores).
+  // enabled (SFC_FTUE_HEIRLOOM_ON) = false: TẠM ẨN cùng AURA FARMING (2026-10-13, Tuyệt kỹ chỉ có khi đạt công thức) — outro bỏ cảnh bí kíp
+  heirloom: { enabled: SFC_FTUE_HEIRLOOM_ON, core: 'aura_farming', giver: 'Grandpa', band: "GRANDPA'S NOTEBOOK", stamp: 'FAMILY SECRET' },
 
   // thẻ MAIN PATH (cảnh cuối outro)
   pathCard: {
@@ -75,7 +77,7 @@ SFC_CONFIG.ftue = {
     lines: [
       ['star', 'RANKED · WIN = + ★', 'Lose and your ★ drop. Every match pays gold & XP'],
       ['crown', 'ENOUGH ★ = NEXT AREA', 'Each Area needs more ★, from the alleys to the World Stage'],
-      ['core', 'NEW AREA = NEW ULTIMATE', 'The powers from your dream are waiting up there'],
+      ['core', 'NEW AREA = NEW CORES', 'Stack one school in a match to awaken its Ultimate'],
     ],
     foot: 'Your journey starts at the VILLAGE GREEN',
   },

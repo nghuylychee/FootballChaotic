@@ -189,7 +189,7 @@ window.SFC = window.SFC || {};
           const drills = PF().drillsPending();
           return [
             { kind: 'btn', nav: 1, label: _t('PLAY'), sub: this.pathSub(), subHtml: this.pathSubHtml(), act: () => this.go('party') },
-            { kind: 'btn', nav: 0, label: _t('CHARACTER'), sub: drills ? _tn('★ {n} drill card ready!', '★ {n} drill cards ready!', drills) : (PF().statsHidden() ? _t('ULTIMATE · APPEARANCE · INVENTORY') : _t('STATS · APPEARANCE · INVENTORY')), hot: drills > 0, act: () => this.go('char') },
+            { kind: 'btn', nav: 0, label: _t('CHARACTER'), sub: drills ? _tn('★ {n} drill card ready!', '★ {n} drill cards ready!', drills) : (PF().statsHidden() ? _t('ULT BOOK · APPEARANCE · INVENTORY') : _t('STATS · APPEARANCE · INVENTORY')), hot: drills > 0, act: () => this.go('char') },
             { kind: 'btn', nav: 2, label: _t('SHOP'), sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', gear: true, label: _t('SETTINGS'), sub: _t('Sound · display · controls'), act: () => this.go('settings') },
             // ACHIEVEMENTS: nút cúp ngay dưới bánh răng, số trên nút = thành tích chờ nhận thưởng
@@ -244,8 +244,8 @@ window.SFC = window.SFC || {};
           const nItems = Object.values(d.items).reduce((a, b) => a + b, 0) + Object.values(d.cores).reduce((a, b) => a + b, 0);
           return [
             // còn thẻ drill: OVR vàng + ↑ (mở ở STATS -> USE DRILL CARDS)
-            // Tuyệt kỹ đặc trưng đang mang (đổi ở trang ULTIMATE)
-            { kind: 'btn', label: _t('ULTIMATE'), sub: CORES().list[d.ult] ? CORES().list[d.ult].name : '', hot: this.newUlts().length > 0, act: () => this.go('ults') },
+            // SỔ TUYỆT KỸ: Tuyệt kỹ đã tự đạt công thức trong trận (docs/ULT_RECIPE.md)
+            { kind: 'btn', label: _t('ULT BOOK'), sub: _t('{n}/{total} discovered', { n: d.ultBook.length, total: PF().ultEntries().length }), act: () => this.go('ults') },
             // hệ chỉ số ẩn (progression.attrs.hidden): không có trang STATS
             PF().statsHidden() ? null : { kind: 'btn', label: _t('STATS'), sub: `${PF().drillsPending() ? '↑ ' : ''}${_t('OVR {n}', { n: PF().ovr() })}`, hot: PF().drillsPending() > 0, act: () => this.go('attrs') },
             // TEAM (đội hình đồng đội, src/ui/team.js) tạm ẩn — logic + trang 'team' vẫn còn
@@ -254,18 +254,14 @@ window.SFC = window.SFC || {};
           ].filter(Boolean);
         }
         case 'ults': {
-          // ULTIMATE: Tuyệt kỹ đã sưu tập trước (đang mang đứng đầu), chưa có thì mờ + cách mở. Enter = mang vào trận
-          const owned = PF().ownedUlts(), L = CORES().list, cur = PF().data.ult, fresh = this.newUlts();
-          // thứ tự: đang mang · đã có · chưa có theo Area mở (sớm trước)
-          const at = (id) => { const s = MPATH().coreSource(id); return s.kind === 'area' ? s.area : -1; };
-          const ids = Object.keys(L).filter((id) => L[id].role === 'ult')
-            .sort((a, b) => (b === cur) - (a === cur) || owned.includes(b) - owned.includes(a) || at(a) - at(b));
-          return ids.map((id) => {
-            const have = owned.includes(id), src = MPATH().coreSource(id), seen = src.kind !== 'area' || src.area <= MPATH().state.best;
+          // SỔ TUYỆT KỸ: mỗi ô = 1 công thức (gốc · ★★ mỗi trường phái, rồi lai). Chưa tự đạt trong trận: ??? (giấu cả công thức)
+          const L = CORES().list;
+          return PF().ultEntries().map((e) => {
+            const known = PF().ultKnown(e.key);
             return {
-              kind: 'btn', ult: id, label: have || seen ? L[id].name : '???', disabled: !have, hot: fresh.includes(id),
-              sub: id === cur ? _t('EQUIPPED') : have ? (fresh.includes(id) ? _t('NEW · equip') : _t('Equip')) : MPATH().unlockHint(id),
-              act: () => { if (PF().equipUlt(id)) { SFC.Audio.pick(); this.setMsg(_t('{name} equipped', { name: L[id].name })); } },
+              kind: 'btn', ult: e.id, entry: e, known, act: () => {},
+              label: known ? L[e.id].name + (e.lv > 1 ? ' ' + '★'.repeat(e.lv) : '') : '???',
+              sub: known ? this.recipeText(e) : _t('Undiscovered'),
             };
           });
         }
@@ -504,7 +500,7 @@ window.SFC = window.SFC || {};
       // it.foot: mục nằm dưới đáy cột trái (ngay trên dòng gợi ý phím), thứ tự ↑↓ vẫn theo danh sách
       const list = items.map((it, i) => (it.foot ? '' : this.renderItem(it, i))).join('');
       const foot = items.map((it, i) => (it.foot ? this.renderItem(it, i) : '')).join('');
-      const titles = { ults: _t('ULTIMATE'), path: _t('MAIN PATH'), training: _t('TRAINING'), settings: _t('SETTINGS'), display: _t('SOUND & DISPLAY'), test: 'TEST', name: _t('YOUR NAME'), char: _t('CHARACTER'), attrs: _t('STATS'), look: _t('APPEARANCE'),
+      const titles = { ults: _t('ULT BOOK'), path: _t('MAIN PATH'), training: _t('TRAINING'), settings: _t('SETTINGS'), display: _t('SOUND & DISPLAY'), test: 'TEST', name: _t('YOUR NAME'), char: _t('CHARACTER'), attrs: _t('STATS'), look: _t('APPEARANCE'),
         wishlist: MPATH().demoOver() ? _t('DEMO COMPLETE') : _t('FULL GAME') };
       const small = this.page !== 'home', headed = HEAD_PAGES.includes(this.page);
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
@@ -691,13 +687,13 @@ window.SFC = window.SFC || {};
       const eloRow = `<div class="pe"><span>${PX().elo(esc(range))}</span>
         <div class="pe-bar"><i style="width:${pct}%"></i></div>
         <span>${here && next ? esc(_t('{n} to next', { n: '{stars}' })).replace('{stars}', PX().elo(next.elo - st.elo)) : ''}</span></div>`;
-      // thưởng lần đầu tới Area: Tuyệt kỹ (đã có thì sáng). Area 1 / Area chưa có Tuyệt kỹ: chỉ thưởng gold + XP
-      const ult = !locked && SFC_CONFIG.cores.list[A.ult], got = !!ult && PF().coreUnlocked(A.ult);
+      // thưởng lần đầu tới Area: Core mở lúc vào Area (đã có thì sáng). Area 1: chỉ thưởng gold + XP
+      const entry = !locked && ((A.road || [])[0] || []).find((id) => SFC_CONFIG.cores.list[id]), got = !!entry && PF().coreUnlocked(entry);
       const reward = locked
         ? `<div class="pu unk"><i>${PX().ui('unknown', 'x2')}</i><div><b>???</b><span>${esc(_t('Reach this Area to find out'))}</span></div></div>`
-        : ult ? `<div class="pu ${got ? 'got' : ''}" title="${esc(SFC.CoreScale.plain(A.ult))}"><i>${PX().core(A.ult, 'x2')}</i><div><b>${esc(ult.name)}</b>
-            <span>${esc(_t('ULTIMATE'))} · ${got ? `${PX().ui('check', 'sm')} ${esc(_t('UNLOCKED'))}` : esc(_t('first time you reach this Area'))}</span></div></div>`
-        : `<div class="pu none"><i>${PX().ui('star', 'x2')}</i><div><b>${esc(v === 0 ? _t('STARTING AREA') : _t('NEW ULTIMATE COMING SOON'))}</b><span>${esc(_t('Gold & XP after every match'))}</span></div></div>`;
+        : entry ? `<div class="pu ${got ? 'got' : ''}" title="${esc(SFC.CoreScale.plain(entry))}"><i>${PX().core(entry, 'x2')}</i><div><b>${esc(SFC_CONFIG.cores.list[entry].name)}</b>
+            <span>${esc(_t('CORE'))} · ${got ? `${PX().ui('check', 'sm')} ${esc(_t('UNLOCKED'))}` : esc(_t('first time you reach this Area'))}</span></div></div>`
+        : `<div class="pu none"><i>${PX().ui('star', 'x2')}</i><div><b>${esc(_t('STARTING AREA'))}</b><span>${esc(_t('Gold & XP after every match'))}</span></div></div>`;
       // Core Road của Area: mỗi nấc = mốc Elo + Core mở ở đó (đã có: icon sáng · chưa có: bóng đen, không lộ tên)
       const road = locked ? '' : `<div class="proad-cores"><b>${esc(_t('CORES'))}</b>${(A.road || []).map((ids, i) => (ids.length ? `<div class="prc"><span>${PX().elo(MP.roadElo(v, i))}</span>${ids.map((id) => {
         const have = PF().coreUnlocked(id);
@@ -806,7 +802,6 @@ window.SFC = window.SFC || {};
     wishlistPanel() {
       const MP = MPATH(), D = SFC_CONFIG.demo, next = MP.area(D.areas), over = MP.demoOver();
       const rest = MP.areas().slice(D.areas);
-      const ults = rest.filter((a) => SFC_CONFIG.cores.list[a.ult]).length;
       const coresLeft = rest.reduce((n, a) => n + (a.road || []).reduce((m, ids) => m + ids.length, 0), 0);
       return `<div class="path wish" style="--ac:${next.color}">
         <div class="ph"><span class="ph-num">${esc(over ? _t('DEMO COMPLETE') : _t('FULL GAME ONLY'))}</span><span class="ph-state">${esc(STEAM_SOON() ? _t('COMING SOON') : _t('ON STEAM'))}</span></div>
@@ -816,7 +811,7 @@ window.SFC = window.SFC || {};
           <div class="wl-next"><span>${esc(_t('NEXT · AREA {n}', { n: D.areas + 1 }))}</span><b>${PX().area(next.id)} ${esc(next.name)}</b></div></div>
         <ul class="wl-list">
           <li>${PX().ui('crown', 'sm')}<span>${_tn('<b>{n} more Area</b> up to the World Stage', '<b>{n} more Areas</b> up to the World Stage', rest.length)}</span></li>
-          <li>${PX().ui('card', 'sm')}<span>${_tn('<b>{n} more Core</b> to unlock', '<b>{n} more Cores</b> to unlock', coresLeft)} · ${_tn('<b>{n} more Ultimate</b> to unlock', '<b>{n} more Ultimates</b> to unlock', ults)}</span></li>
+          <li>${PX().ui('card', 'sm')}<span>${_tn('<b>{n} more Core</b> to unlock', '<b>{n} more Cores</b> to unlock', coresLeft)}</span></li>
           <li>${PX().ui('fist', 'sm')}<span>${_t('<b>Online</b> versus & co-op · 2-4 players')}</span></li>
         </ul>
         <div class="wl-cta">${esc(STEAM_SOON() ? _t('The full game is coming soon to Steam') : _t('Wishlist now so Steam tells you the day it launches'))}</div>
@@ -851,13 +846,12 @@ window.SFC = window.SFC || {};
           <div class="pt-ready">${esc(o.tag)}</div>
           <div class="pt-name">${esc(o.name)}</div>
           <div class="pt-meta">${PX().elo(o.elo)}${PF().statsHidden() ? '' : `<span>${esc(_t('OVR {n}', { n: o.ovr }))}</span>`}</div>
-          ${CORES().list[o.ult] ? `<div class="pt-ult" title="${esc(SFC.CoreScale.plain(o.ult))}">${PX().core(o.ult, 'sm')}<span>${esc(CORES().list[o.ult].name)}</span></div>` : ''}
           ${o.kick ? `<button class="pt-kick" data-kick="${o.id}" title="${esc(_t('KICK'))}">✕</button>` : ''}
         </div>`;
       // bạn bè trong phòng (mỗi người 1 vị trí còn lại), ô trống tới đủ partyMax: bấm để mời.
       // Người chơi tại máy này luôn đứng GIỮA, những người còn lại chia 2 bên (trái trước)
       const others = SO.party.map((id) => SO.friend(id)).filter(Boolean).map((f, i) => card({
-        name: f.name, elo: f.elo, ovr: f.ovr, tag: _t('READY'), color: A.color, look: this.friendLook(f), kick: true, id: f.id, ult: f.ult, role: mateRoles[i],
+        name: f.name, elo: f.elo, ovr: f.ovr, tag: _t('READY'), color: A.color, look: this.friendLook(f), kick: true, id: f.id, role: mateRoles[i],
       }));
       // ô trống đầu tiên = mục MỜI BẠN (chọn bằng phím mũi tên, Enter = mở khung bạn bè chọn sẵn người mời được); ô trống sau chỉ bấm chuột
       const iInv = at((x) => x.invite);
@@ -866,10 +860,10 @@ window.SFC = window.SFC || {};
         others.push(`<button class="pt-card empty ${nav ? sel(iInv) : ''}" data-invite="1" ${nav}><b>+</b><span>${esc(_t('INVITE A FRIEND'))}</span></button>`);
       }
       const slots = others.slice();
-      slots.splice(Math.floor(others.length / 2), 0, card({ you: true, name: d.name, elo: st.elo, ovr: PF().ovr(), tag: _t('READY'), color: A.color, ult: d.ult }));
+      slots.splice(Math.floor(others.length / 2), 0, card({ you: true, name: d.name, elo: st.elo, ovr: PF().ovr(), tag: _t('READY'), color: A.color }));
       // đang tìm trận: đồng hồ chờ nhỏ ngay trên nút CANCEL (searchTick cập nhật mỗi khung hình) · tìm thấy: MATCH FOUND + các đối thủ
       const S = this.search;
-      const status = S && S.lobby ? `<div class="pt-search found"><b>${esc(_t('MATCH FOUND'))}</b><span>${esc(_t('VS'))} ${S.lobby.opps.map((o) => `${CORES().list[o.ult] ? PX().core(o.ult, 'sm') : ''}${esc(o.name)} ${PX().elo(o.elo)}`).join(' · ')}</span></div>` : '';
+      const status = S && S.lobby ? `<div class="pt-search found"><b>${esc(_t('MATCH FOUND'))}</b><span>${esc(_t('VS'))} ${S.lobby.opps.map((o) => `${esc(o.name)} ${PX().elo(o.elo)}`).join(' · ')}</span></div>` : '';
       const timer = S && !S.lobby ? `<i class="pt-timer" data-mm-time>${SFC.U.fmtTime(S.t)}</i>` : '';
       const iTog = at((x) => x.ftoggle), tog = items[iTog], iRoad = at((x) => x.road);
       const toggle = tog ? `<button class="pt-ftoggle ${sel(iTog)} ${this.friendsOpen ? 'open' : ''}" data-i="${iTog}">${esc(tog.label)} <em>${SO.onlineCount()}</em> ${this.friendsOpen ? '▶' : '◀'}</button>` : '';
@@ -966,23 +960,23 @@ window.SFC = window.SFC || {};
       return `<div class="pt-main pt-private">${head}${body}</div>
         ${this.page === 'lobby' ? '' : `<button class="pt-back" data-back="1">◀ ${esc(_t('BACK'))}</button>`}`;
     },
-    /* ---------------- Tuyệt kỹ đặc trưng (CHARACTER > ULTIMATE) ---------------- */
-    // Tuyệt kỹ vừa mở chưa xem (nhãn NEW): Tuyệt kỹ trong MainPath.state.fresh đã sưu tập
-    newUlts() { const own = PF().ownedUlts(); return MPATH().state.fresh.filter((id) => own.includes(id)); },
-    // bảng phải: lá Tuyệt kỹ đang chọn (ảnh động) + trạng thái + cách dùng / cách mở
+    /* ---------------- SỔ TUYỆT KỸ (CHARACTER > ULT BOOK, docs/ULT_RECIPE.md) ---------------- */
+    // công thức: "🎯 STRIKER ×3" (lai: 2 trường phái nối bằng +)
+    recipeText(e) { return e.tags.map((t, i) => `${CORES().archetypes[t].label} ×${e.need[i]}`).join(' + '); },
+    // bảng phải: ô đã khám phá = lá Tuyệt kỹ (ảnh động) + công thức; chưa khám phá = lá úp ???
     ultPanel(it) {
-      if (!it || !it.ult) return '';
-      const id = it.ult, c = CORES().list[id], have = PF().ownedUlts().includes(id), cur = PF().data.ult === id;
-      if (have && this.newUlts().includes(id)) MPATH().seen(id);   // đã xem -> bỏ nhãn NEW
-      const key = `<kbd>${esc(SFC.Input.key('ultimate', 'X'))}</kbd>`;
-      const status = cur ? `<div class="ul-st on">${PX().ui('check', 'sm')} ${esc(_t('EQUIPPED'))}</div>`
-        : have ? `<div class="ul-st">${esc(_t('Press {ok} to equip', { ok: SFC.Input.key('confirm', 'Enter') }))}</div>`
-        : `<div class="ul-st lock">${PX().ui('lock', 'sm')} ${esc(MPATH().unlockHint(id))}</div>`;
-      return `<div class="ul-panel ${have ? '' : 'locked'}">
-          ${G().coreCard(id, '', 150, 64)}
+      if (!it || !it.entry) return '';
+      const e = it.entry, key = `<kbd>${esc(SFC.Input.key('ultimate', 'X'))}</kbd>`;
+      const total = PF().ultEntries().length, n = PF().data.ultBook.length;
+      const card = it.known ? G().coreCard(e.id, '', 150, 64) : '<div class="card static ul-hidden"><b>???</b></div>';
+      const status = it.known
+        ? `<div class="ul-st on">${PX().ui('check', 'sm')} ${esc(this.recipeText(e))}${e.lv > 1 ? ` · ${'★'.repeat(e.lv)}` : ''}</div>`
+        : `<div class="ul-st lock">${PX().ui('lock', 'sm')} ${esc(_t('Undiscovered'))}</div>`;
+      return `<div class="ul-panel ${it.known ? '' : 'locked'}">
+          ${card}
           <div class="ul-side">${status}
-            <div class="ul-note">${_t('Your signature skill: everyone sees it before kickoff. Charge it during the match, then fire it with {key}.', { key })}</div>
-            <div class="ul-count">${esc(_t('COLLECTED {n}/{total}', { n: PF().ownedUlts().length, total: Object.keys(CORES().list).filter((k) => CORES().list[k].role === 'ult').length }))}</div>
+            <div class="ul-note">${_t('Stack Cores of one school in a match to unlock its Ultimate. More of that school evolves it. Charge it, then fire it with {key}.', { key })}</div>
+            <div class="ul-count">${esc(_t('DISCOVERED {n}/{total}', { n, total }))}</div>
           </div>
         </div>`;
     },

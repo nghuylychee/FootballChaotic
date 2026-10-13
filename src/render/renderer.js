@@ -135,10 +135,14 @@ window.SFC = window.SFC || {};
           const p = e.o;
           // khổng lồ (VFX Kit GI): phóng to quanh bàn chân
           const s = p.sizeMul || 1;
+          // Mirage Sprint: đang tàng hình -> vẽ mờ sprite (cả bóng đang dắt)
+          const ghost = p.ghostT > 0;
           SFC.VFX.under(ctx, g, p);
           if (s !== 1) { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(s, s); ctx.translate(-p.x, -p.y); }
           const dive = p.atkType === 'diveU' || p.atkType === 'diveD';
-          let hy = p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g);
+          // drawPlayer tự đặt globalAlpha theo tham số alpha
+          let hy = p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.28 + 0.08 * Math.sin(t * 18) : 1);
+          ctx.globalAlpha = 1;
           if (s !== 1) { ctx.restore(); hy = p.y + (hy - p.y) * s; }
           SFC.VFX.form(ctx, g, p);
           SFC.VFX.arm(ctx, g, p);
@@ -159,9 +163,12 @@ window.SFC = window.SFC || {};
             }
           }
         } else if (e.k === 'b') {
+          const ghostBall = g.ball.owner && g.ball.owner.ghostT > 0;
+          if (ghostBall) ctx.globalAlpha = 0.3;
           this.ballTrail(ctx, g.ball);
           SFC.VFX.ballFx(ctx, g.ball);
           drawBall(ctx, g.ball);
+          if (ghostBall) ctx.globalAlpha = 1;
         } else if (e.k === 'd') {
           const d = e.o, a = 0.5 + 0.3 * Math.sin(t * 20);
           // ảo ảnh Chạy Giả: áo tím, nhấp nháy

@@ -33,7 +33,7 @@ window.SFC = window.SFC || {};
         case 'elo': return path.peak || 0;
         case 'area': return (path.best || 0) + 1;
         case 'cores': return PF().collection().length;
-        case 'ults': return PF().ownedUlts().length;
+        case 'ults': return PF().data.ultBook.length;   // ô đã khám phá trong sổ Tuyệt kỹ
         case 'outfits': return Object.keys(d.items).filter((id) => d.items[id] > 0).length;
         case 'core': return PF().coreUnlocked(a.core) ? 1 : 0;
         default: return 0;

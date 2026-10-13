@@ -457,6 +457,7 @@
       b.onclick = () => {
         SFC.Audio.unlock();
         if (g.cores.has(0, id)) g.cores.remove(0, id);
+        else if (c.role === 'ult') for (const p of g.teams[0].players) g.cores.setUlt(p, id, 1);   // Tuyệt kỹ: thay ô X
         else g.cores.add(0, id);   // Core là của từng người: sandbox thêm cho mọi cầu thủ đội vàng
         coreButtons();
       };
@@ -464,9 +465,10 @@
     });
     tools.innerHTML = '';
     [
-      ['MAX RESOURCES', () => { for (const p of g.teams[0].players) { p.res.momentum = g.cores.resMax(0, 'momentum'); p.res.rage = 5; p.res.guard = 2; } g.rhythm[0] = 5; }],
       ['FULL ULTIMATE (X)', () => { for (const p of g.teams[0].players) p.res.ult = 1; }],
-      ['CLEAR CORES', () => { g.cores.clearCores(0); for (const p of g.teams[0].players) p.res = { momentum: 0, rage: 0, guard: 0, ult: 0 }; g.rhythm[0] = 0; coreButtons(); }],
+      // cấp Tuyệt kỹ đang có: gốc ↔ nâng cấp ★★
+      ['ULT LEVEL +1', () => { for (const p of g.teams[0].players) { const id = g.cores.ultOf(p); if (id) g.cores.setUlt(p, id, (p.ultLv || 1) % SFC_CONFIG.cores.ults.tiers.length + 1); } }],
+      ['CLEAR CORES', () => { g.cores.clearCores(0); for (const p of g.teams[0].players) { p.res = { ult: 0 }; p.ultLv = 1; } g.passChain[0] = 0; coreButtons(); }],
     ].forEach(([label, fn]) => {
       const b = document.createElement('button');
       b.className = 'btn';

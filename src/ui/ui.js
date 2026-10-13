@@ -21,24 +21,33 @@ window.SFC = window.SFC || {};
     return `<span class="chip ${c.role === 'ult' ? 'ult' : ''}" style="--c:${a.color};--c2:${b.color}" title="${esc(c.name)} — ${esc(SFC.CoreScale.plain(id))}">${PX().core(id)}</span>`;
   }
 
-  // Cộng hưởng đang có của 1 đội: icon + số Core (bậc >= 2 sáng lên)
+  // mốc công thức Tuyệt kỹ của số Core count: 0 (chưa) · 2 · 3 · 4 (cores.ults.tiers)
+  const TIERS = () => CORES().ults.tiers;
+  const tierOf = (count) => TIERS().reduce((t, m) => (count >= m ? m : t), 0);
+  // tên Tuyệt kỹ ở 1 mốc: đã khám phá (sổ Tuyệt kỹ) -> tên + ★, chưa -> ???
+  function ultName(id, lv) {
+    const c = CORES().list[id], known = SFC.Profile && SFC.Profile.data && SFC.Profile.ultKnown(id + ':' + lv);
+    return c && known ? c.name + (lv > 1 ? ' ' + '★'.repeat(lv) : '') : '???';
+  }
+
+  // trường phái của 1 cầu thủ: icon + số Core (đạt mốc Tuyệt kỹ thì sáng lên)
   function traitChips(game, team) {
-    return game.cores.traits(team).map((t) => {
+    return game.cores.schools(team).map((t) => {
       const a = ARCH(t.tag);
-      return `<span class="trait ${t.tier ? 'on' : ''}" style="--c:${a.color}" title="${esc(_tn('{arch}: {n} Core', '{arch}: {n} Cores', t.count, { arch: a.label }))}">${PX().arch(t.tag)}${t.count}</span>`;
+      return `<span class="trait ${tierOf(t.count) ? 'on' : ''}" style="--c:${a.color}" title="${esc(_tn('{arch}: {n} Core', '{arch}: {n} Cores', t.count, { arch: a.label }))}">${PX().arch(t.tag)}${t.count}</span>`;
     }).join('');
   }
 
-  // Cộng hưởng kiểu TFT: huy hiệu lục giác theo bậc (chưa kích hoạt · đồng 2 · bạc 3 · vàng 4), số Core, các mốc 2 › 3 › 4.
-  // full = kèm dòng hiệu ứng từng mốc (màn Pause). Trường phái không có Cộng hưởng (HỖN LOẠN) không hiện
+  // tiến độ công thức Tuyệt kỹ kiểu TFT: huy hiệu lục giác theo mốc (chưa · đồng 2 · bạc 3 · vàng 4), số Core, các mốc 2 › 3 › 4.
+  // full = kèm Tuyệt kỹ ở từng mốc (màn Pause; chưa khám phá: ???). HỖN LOẠN không có công thức -> không hiện
   const TIER_COLOR = { 0: '#4a3f4c', 2: '#c77b3e', 3: '#c7ccd6', 4: '#ffd23f' };
   function traitList(game, team, full = false) {
-    const sets = CORES().sets;
-    return game.cores.traits(team).sort((a, b) => b.tier - a.tier || b.count - a.count).map((t) => {
-      const a = ARCH(t.tag), marks = Object.keys(sets[t.tag] || {}).map(Number).sort((x, y) => x - y);
+    const base = CORES().ults.base;
+    return game.cores.schools(team).sort((a, b) => b.count - a.count).map((t) => {
+      const a = ARCH(t.tag), tier = tierOf(t.count), marks = TIERS();
       const steps = marks.map((m) => `<i class="${t.count >= m ? 'on' : ''}">${m}</i>`).join('<em>›</em>');
-      const bonus = full ? `<div class="tr-bonus">${marks.map((m) => `<div class="${t.count >= m ? 'on' : ''}"><b>${m}</b><span>${SFC.CoreScale.iconize(esc(sets[t.tag][m]))}</span></div>`).join('')}</div>` : '';
-      return `<div class="trait-row t${t.tier}" style="--c:${a.color};--tc:${TIER_COLOR[t.tier] || TIER_COLOR[0]}">
+      const bonus = full && base[t.tag] ? `<div class="tr-bonus">${marks.map((m, i) => `<div class="${t.count >= m ? 'on' : ''}"><b>${m}</b><span>${esc(ultName(base[t.tag], i + 1))}</span></div>`).join('')}</div>` : '';
+      return `<div class="trait-row t${tier}" style="--c:${a.color};--tc:${TIER_COLOR[tier] || TIER_COLOR[0]}">
         <span class="tr-hex">${PX().arch(t.tag, 'sm')}</span><b class="tr-n">${t.count}</b><span class="tr-name">${esc(a.label)}</span><span class="tr-steps">${steps}</span></div>${bonus}`;
     }).join('');
   }
@@ -84,6 +93,7 @@ window.SFC = window.SFC || {};
     },
 
     show(name) {
+      if (name === 'menu' || name === 'end') SFC.RecipeFx.cancel();   // rời trận / hết trận giữa lúc diễn mở Tuyệt kỹ
       ['menu', 'draft', 'pause', 'end'].forEach((k) => this.el[k].classList.toggle('hidden', k !== name));
       this.el.hud.classList.toggle('hidden', name === 'menu');
       if (name === 'menu') this.el.abar.classList.add('hidden');
@@ -112,6 +122,9 @@ window.SFC = window.SFC || {};
         const rar = RARITY(c.rarity);
         const chosen = picked && (d.localPick === i || d.picked[me] === id);
         const match = c.tags.some((t) => ownedTags.has(t));
+        // lá này mở / tiến hoá Tuyệt kỹ: "→ METEOR SHOT ★★" (đã khám phá) hoặc "→ ??? NEW ULTIMATE"
+        const nu = mp && !picked && game.cores.recipesOn() && game.cores.bestRecipe(mp, id);
+        const ultTag = nu ? `<div class="card-ultnext">${PX().ui('star', 'sm')} ${esc(ultName(nu.id, nu.lv) === '???' ? _t('??? NEW ULTIMATE') : ultName(nu.id, nu.lv))}</div>` : '';
         const tags = c.anyBuild ? `<span style="--c:${c.color || rar.color}">${PX().ui('star', 'sm')} ${esc(_t('ANY BUILD'))}</span>`
           : c.tags.map((t) => `<span style="--c:${ARCH(t).color}">${PX().arch(t, 'sm')} ${ARCH(t).label}</span>`).join('');
         // Core vừa mở khoá ở Main Path: nhãn NEW (hiện 1 lần rồi bỏ khỏi danh sách "mới")
@@ -121,6 +134,7 @@ window.SFC = window.SFC || {};
           <div class="card-key">${i + 1}</div>
           ${isNew ? `<div class="card-new">${esc(_t('NEW'))}</div>` : ''}
           ${match && !picked ? `<div class="card-match">${esc(_t('MATCH'))}</div>` : ''}
+          ${ultTag}
           <div class="card-tags">${tags}</div>
           <div class="card-art">${SFC.CorePreview.html(id, 132, 56)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(keyLabel('ultimate'))}</kbd>` : ''}</div>
           <div class="card-name">${esc(c.name)}</div>
@@ -154,6 +168,8 @@ window.SFC = window.SFC || {};
     },
 
     draftInput(input, game) {
+      // đang diễn mở Tuyệt kỹ (RecipeFx): Enter / Esc bỏ qua
+      if (SFC.RecipeFx.active) { if (input.wasPressed('confirm') || input.wasPressed('back')) SFC.RecipeFx.skip(); return; }
       const d = game.draft;
       if (!d || d.picked[game.me]) return;
       const n = (d.options[game.me] || []).length;
@@ -172,7 +188,22 @@ window.SFC = window.SFC || {};
       else if (input.wasPressed('reroll') && SFC_CONFIG.cores.draft.rerollsPerRound) this.doAct('reroll');
     },
 
+    // lá vừa chọn đạt công thức Tuyệt kỹ -> diễn RecipeFx trước rồi mới gửi lượt chọn
+    // (online: chỉ diễn khi đồng hồ chọn còn đủ giờ, không thì gửi luôn — banner NEW ULTIMATE vẫn báo)
     pick(game, i) {
+      const d = game.draft;
+      if (!d || d.picked[game.me] || SFC.RecipeFx.active) return;
+      const id = (d.options[game.me] || [])[i], mp = game.cores.seatOwner(game.me);
+      const rc = id && mp && game.cores.recipesOn() ? game.cores.bestRecipe(mp, id) : null;
+      if (rc && !(d.limit > 0 && d.t < 4)) {
+        this.draftSel = i;
+        this.setDraftSel(i);
+        SFC.RecipeFx.play(game, mp, id, rc, () => { if (this.app.game === game) this.commitPick(game, i); });
+        return;
+      }
+      this.commitPick(game, i);
+    },
+    commitPick(game, i) {
       if (!game.draft || game.draft.picked[game.me]) return;
       this.draftSel = i;
       this.app.pickCore(i);
@@ -187,10 +218,12 @@ window.SFC = window.SFC || {};
       const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${esc(l)}</button>`).join('');
       let build = '';
       if (g && me >= 0) {
-        const mp = g.cores.seatOwner(g.me), owned = g.cores.coresOf(mp), n = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
-        const slots = Array.from({ length: n }, (_, i) => miniCard(owned[i]));
+        // ô Core = số lượt chọn của trận; Tuyệt kỹ (nếu đã mở) là lá riêng viền vàng ở cuối, không chiếm ô Core
+        const mp = g.cores.seatOwner(g.me), all = g.cores.coresOf(mp), owned = all.filter((id) => CORES().list[id].role !== 'ult');
+        const ult = all.find((id) => CORES().list[id].role === 'ult'), n = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
+        const slots = Array.from({ length: n }, (_, i) => miniCard(owned[i])).concat(ult ? [miniCard(ult)] : []);
         build = `<div class="pause-build">
-          <div class="pb-traits"><h4>${esc(_t('YOUR BUILD'))}</h4>${traitList(g, mp, true) || `<em>${esc(_t('No synergies yet'))}</em>`}</div>
+          <div class="pb-traits"><h4>${esc(_t('YOUR BUILD'))}</h4>${traitList(g, mp, true) || `<em>${esc(_t('Stack Cores of one school to unlock an Ultimate'))}</em>`}</div>
           <div class="pb-cards">${slots.join('')}</div>
         </div>`;
       }
@@ -411,6 +444,7 @@ window.SFC = window.SFC || {};
       if (act === 'lobby') SFC.Session.backToLobby();
       if (act === 'reroll') this.app.rerollCore();
       if (act === 'skiptut') SFC.Tutorial.skip();
+      if (act === 'rfxskip') SFC.RecipeFx.skip();
     },
 
     // màn DRILL trên màn kết quả; notice = { earned, from, to } -> bắt đầu ở màn LEVEL UP (OPEN NOW / LATER).
@@ -482,11 +516,11 @@ window.SFC = window.SFC || {};
       }
     },
 
-    // build trên HUD: đội của người chơi = Cộng hưởng kiểu TFT của cầu thủ mình + chip Cộng hưởng của đồng đội;
-    // đội kia = mỗi cầu thủ 1 dòng (tên + chip Cộng hưởng)
+    // build trên HUD: đội của người chơi = tiến độ công thức Tuyệt kỹ kiểu TFT của cầu thủ mình;
+    // đội kia = mỗi cầu thủ 1 dòng (tên + chip trường phái)
     hudBuild(game, t) {
       const C = game.cores, own = t === game.humanTeam ? game.controlled : null;
-      // đội mình: chỉ Cộng hưởng của bạn (Core đồng đội ẩn cho gọn)
+      // đội mình: chỉ trường phái của bạn (Core đồng đội ẩn cho gọn)
       if (own) return `<div class="hud-traits tft">${traitList(game, own)}</div>`;
       return `<div class="hud-mates">${game.teams[t].players.map((q) => `<div class="hud-pl"><em>${esc(q.name)}</em>${traitChips(game, q) || '<i>—</i>'}</div>`).join('')}</div>`;
     },
@@ -507,25 +541,26 @@ window.SFC = window.SFC || {};
       const c = this.hudCache.bar || (this.hudCache.bar = {});
       const owned = game.cores.coresOf(p);
       // đổi bàn phím <-> tay cầm: vẽ lại nhãn phím trên thanh kỹ năng
-      const key = p.id + '|' + owned.join() + '|' + SFC.Input.device + SFC.Pad.style;
+      const key = p.id + '|' + owned.join() + '|' + (p.ultLv || 1) + '|' + SFC.Input.device + SFC.Pad.style;
       if (c.key !== key) {
         c.key = key;
         const kit = game.teams[p.team].cfg.kit;
-        const ult = game.cores.ultOf(p), names = SLOT_NAMES();
-        const nItems = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
+        const ult = game.cores.ultOf(p), names = SLOT_NAMES(), stars = (p.ultLv || 1) > 1 ? ' ' + '★'.repeat(p.ultLv) : '';
+        // ô Core = số lượt chọn của trận (Tuyệt kỹ đã nằm ở ô X, không lặp lại ở đây)
+        const cores = owned.filter((id) => CORES().list[id].role !== 'ult');
+        const nItems = Math.max(SFC_CONFIG.game.match.maxUpgrades, cores.length);
         const items = [];
-        for (let i = 0; i < nItems; i++) items.push(owned[i] ? coreChip(owned[i]) : '<span class="chip empty"></span>');
+        for (let i = 0; i < nItems; i++) items.push(cores[i] ? coreChip(cores[i]) : '<span class="chip empty"></span>');
         el.style.setProperty('--c', kit.shirt);
         el.innerHTML = `
           <div class="ab-por"><canvas width="22" height="22"></canvas><div class="ab-name">${esc(p.name)}</div>${game.lockedPlayer(p.team) ? '' : `<kbd>${esc(keyLabel('switch'))}</kbd>`}</div>
           <div class="ab-mid">
-            <div class="ab-res"></div>
             <div class="ab-slots">${SLOTS.map((s) => `
               <div class="ab-slot" data-k="${s.k}" title="${esc(names[s.k])}">
                 <i>${PX().ui(s.icon)}</i><div class="sw"></div><b></b><kbd>${esc(keyLabel(s.action))}</kbd>
               </div>`).join('')}${ult ? `
-              <div class="ab-slot ult" data-k="ult" title="${esc(_t('ULTIMATE: {core}. Charge it by scoring, conceding, stealing the ball and landing punches', { core: CORES().list[ult].name }))}">
-                <div class="ult-fill"></div><i>${PX().core(ult)}</i><b class="ult-pct"></b><kbd>${esc(keyLabel('ultimate'))}</kbd>
+              <div class="ab-slot ult lv${p.ultLv || 1}" data-k="ult" title="${esc(_t('ULTIMATE: {core}. Charge it by scoring, conceding, stealing the ball and landing punches', { core: CORES().list[ult].name + stars }))}">
+                <div class="ult-fill"></div><i>${PX().core(ult)}</i><b class="ult-pct"></b><kbd>${esc(keyLabel('ultimate'))}</kbd>${stars ? `<em class="ult-lv">${'★'.repeat(p.ultLv)}</em>` : ''}
               </div>` : ''}
             </div>
             <div class="ab-stam"><i></i></div>
@@ -538,9 +573,8 @@ window.SFC = window.SFC || {};
         });
         c.stam = el.querySelector('.ab-stam i');
         c.lastStam = -1;
-        c.res = el.querySelector('.ab-res');
         c.ult = el.querySelector('[data-k="ult"]');
-        c.lastRes = null; c.lastUlt = -1;
+        c.lastUlt = -1;
       }
       this.updateBarExtras(game, p, c);
 
@@ -571,18 +605,12 @@ window.SFC = window.SFC || {};
       }
     },
 
-    // bộ đếm tài nguyên (Đà / Nhịp / Nộ / Giáp) + thanh năng lượng Tuyệt kỹ
+    // thanh năng lượng Tuyệt kỹ (tài nguyên trường phái đã bỏ — docs/ULT_RECIPE.md)
     updateBarExtras(game, p, c) {
-      const R = CORES().resources, t = p.team;
-      const parts = [];
-      const pips = (res, n, max) => `<span class="res" style="--c:${res === 'guard' ? '#c7ccd6' : res === 'rhythm' ? '#ffd23f' : res === 'rage' ? '#ff3d5a' : '#3ff6ff'}">${PX().res(res, 'sm')}${'●'.repeat(n)}<i>${'○'.repeat(Math.max(0, max - n))}</i></span>`;
-      if (game.cores.resActive(p, 'momentum')) parts.push(pips('momentum', p.res.momentum, game.cores.resMax(p, 'momentum')));
-      if (game.cores.resActive(p, 'rhythm')) parts.push(pips('rhythm', game.rhythm[t], R.rhythm.max));
-      if (game.cores.resActive(p, 'rage')) parts.push(pips('rage', p.res.rage, R.rage.max));
-      if (p.res.guard > 0 || game.cores.resActive(p, 'guard')) parts.push(pips('guard', p.res.guard, R.guard.max));
-      const html = parts.join('');
-      if (html !== c.lastRes) { c.lastRes = html; c.res.innerHTML = html; c.res.classList.toggle('hidden', !html); }
       if (c.ult) {
+        // Tuyệt kỹ cần bóng (needsBall) mà đội mình không cầm bóng: ô X mờ (bấm không ra chiêu)
+        const blocked = game.cores.ultBlocked(p);
+        if (blocked !== c.lastBlocked) { c.lastBlocked = blocked; c.ult.classList.toggle('off', blocked); }
         const v = Math.round(game.cores.ultE(p) * 100);
         if (v !== c.lastUlt) {
           const prev = c.lastUlt;
@@ -627,6 +655,18 @@ window.SFC = window.SFC || {};
       this._bt = setTimeout(() => el.classList.remove('show'), dur * 1000);
     },
 
+    ultUnlocked(game, e) {
+      const mp = game.cores.seatOwner(game.me);
+      if (!mp || e.pid !== mp.id || !CORES().list[e.id]) return;
+      const fresh = !game.opts.tutorial && SFC.Profile.data ? SFC.Profile.discoverUlt(e.id, e.lv) : false;
+      // vừa diễn RecipeFx cho đúng công thức này: không hiện banner lặp lại
+      if (SFC.RecipeFx.shown === e.id + ':' + e.lv) { SFC.RecipeFx.shown = null; return; }
+      const name = CORES().list[e.id].name + (e.lv > 1 ? ' ' + '★'.repeat(e.lv) : '');
+      const title = fresh ? _t('NEW ULTIMATE DISCOVERED!') : e.evolved ? _t('ULTIMATE EVOLVED!') : _t('NEW ULTIMATE!');
+      this.banner(title, name, '#ffd23f', 2.4);
+      SFC.Audio.upgrade();
+    },
+
     toast(html) {
       const d = document.createElement('div');
       d.className = 'toast';
@@ -655,6 +695,8 @@ window.SFC = window.SFC || {};
         // khoảnh khắc của trận (màn kết quả)
         if (e.type === 'draft') { this.draftSel = 0; this.renderDraft(game); if (!overlay) this.show('draft'); }
         if (e.type === 'draftWait' && game.draft) this.renderDraft(game);
+        // Tuyệt kỹ của bạn vừa đổi theo công thức: ghi sổ Tuyệt kỹ + banner (lần đầu khám phá / tiến hoá / đổi)
+        if (e.type === 'ultUnlock') this.ultUnlocked(game, e);
         if (e.type === 'corePicked') {
           if (this.current === 'draft') this.show(null);
           // đội mình: chỉ lá bạn vừa lấy (Core đồng đội ẩn cho gọn); đội kia: gộp 1 dòng các lá vừa lấy

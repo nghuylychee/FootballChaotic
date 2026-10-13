@@ -18,8 +18,9 @@ window.SFC = window.SFC || {};
   // các trường cầu thủ cần để vẽ (sprites + renderer). Không gửi anim: chỉ là đồng hồ hoạt ảnh riêng từng cầu thủ
   // (bắt đầu ngẫu nhiên, +1/giây) — máy khách tự đếm (session.js tick), lệch pha bước chân / tóc không ai thấy
   const PF = ['x', 'y', 'vx', 'vy', 'facing', 'state', 'stamina', 'charging', 'charge',
-    'passMode', 'passCharge', 'passBase', 'flash', 'auraC', 'auraT', 'auraFarmT', 'atkType', 'atkT', 'airZ', 'sizeMul', 'bracing', 'shotTarget'];
-  const P_BOOL = { charging: true, bracing: true };
+    'passMode', 'passCharge', 'passBase', 'flash', 'auraC', 'auraT', 'auraFarmT', 'atkType', 'atkT', 'airZ', 'sizeMul', 'bracing', 'shotTarget',
+    'surge', 'fistRdy', 'ultLv', 'ghostT'];   // trạng thái Core nhìn thấy được (TOÉ ĐIỆN, nắm tay sáng, tàng hình) + cấp Tuyệt kỹ (★)
+  const P_BOOL = { charging: true, bracing: true, surge: true, fistRdy: true };
   // làm tròn riêng (đỡ băng thông, ~-21% sau nén): canvas 640x360 và cầu thủ vẽ ở pixel nguyên (Math.round) nên 0,1 px không thấy được;
   // vận tốc chỉ dùng để biết đang chạy (> 12 px/s) + hướng bụi; thanh thể lực rộng 12 px. Còn lại: 2 chữ số (pk)
   const num = (f) => (v) => (typeof v === 'number' ? f(v) : v);
@@ -28,8 +29,8 @@ window.SFC = window.SFC || {};
   const PQ = { x: num(r1), y: num(r1), vx: num(Math.round), vy: num(Math.round), stamina: num(Math.round), facing: num((v) => r2(wrapA(v))) };
   // cooldown kỹ năng (thanh kỹ năng HUD của người chơi tại máy khách)
   const CD = ['light', 'hard', 'skill'];
-  // tài nguyên Core của từng cầu thủ (HUD máy khách)
-  const RS = ['momentum', 'rage', 'guard', 'ult'];   // tài nguyên từng cầu thủ + năng lượng Tuyệt kỹ (Core là của từng người)
+  // năng lượng Tuyệt kỹ của từng cầu thủ (HUD máy khách)
+  const RS = ['ult'];
   // cờ hiệu ứng của bóng (bitmask) — lửa / sét có tác dụng gameplay, còn lại chỉ để vẽ
   const BFX = ['fire', 'thunder', 'string', 'spiral', 'laser', 'duo', 'ghost', 'meteor'];
 
@@ -101,7 +102,7 @@ window.SFC = window.SFC || {};
         sc: [g.teams[0].score, g.teams[1].score],
         ct: g.ctrl.map((p) => (p ? p.id : -1)),
         p: g.players.map((p) => PF.map((k) => (PQ[k] ? PQ[k](p[k]) : pk(p[k]))).concat(CD.map((k) => r2(p.cd[k])), RS.map((k) => p.res[k]))),
-        rh: g.rhythm, ux: g.upgradeIdx,
+        ux: g.upgradeIdx,
         b: [r1(b.x), r1(b.y), r1(b.z), r1(b.vx), r1(b.vy), r1(b.vz), r1(b.roll), b.owner ? b.owner.id : -1,
           BFX.reduce((m, k, i) => (b.fx[k] ? m | (1 << i) : m), 0), b.skin || 0],
         co: g.cores.own,   // id cầu thủ -> Core của người đó
@@ -126,7 +127,6 @@ window.SFC = window.SFC || {};
       g.state = s.st; g.stateT = s.sT; g.time = s.tm; g.elapsed = s.el; g.goldenT = s.gT;
       g.finalPush = !!s.fp; g.golden = !!s.gg;
       g.teams[0].score = s.sc[0]; g.teams[1].score = s.sc[1];
-      if (s.rh) g.rhythm = s.rh;
       if (s.ux != null) g.upgradeIdx = s.ux;
       g.ctrl = s.ct.map((id) => g.players.find((p) => p.id === id) || null);
 

@@ -2,7 +2,9 @@
 
 > Trạng thái: **ĐÃ DUYỆT + ĐÃ LÀM (2026-10-11)**. Cân bằng để sau.
 > **Thay cho:** mọi Core thường mở sẵn cho mọi người (Main Path theo Elo, 2026-10-10).
-> **Không đụng:** DRILL / OVR (`docs/DRILL_DESIGN.md`) — user tính sau. Tuyệt kỹ đặc trưng giữ nguyên (1 ô riêng, chọn ở CHARACTER › ULTIMATE).
+> **Không đụng:** DRILL / OVR (`docs/DRILL_DESIGN.md`) — user tính sau.
+> **Cập nhật 2026-10-13 (`docs/ULT_RECIPE.md`):** Area **không còn thưởng Tuyệt kỹ** (`areas[].ult` đã bỏ, thưởng Area chỉ còn là Core). Tuyệt kỹ mở theo công thức trong trận; bỏ trang CHARACTER › ULTIMATE (thay bằng ULT BOOK). Các cột "ult" trong bảng dưới là lịch sử.
+> **Cập nhật 2026-10-13:** bỏ Core cầu nối 2 hệ — 11 lá đổi về 1 hệ (Counter Attack / Rubber Arm / Dragon Uppercut → ĐẤU SĨ · Iron Fist → THÉP · One-Two / Captain → TIKI · Fake Run / Counter Strike → ẢO ẢNH · Flying Kick → TỐC ĐỘ · Scissor Kick → VÕ SĨ ĐÁ · Ghost Ball → SÁT THỦ). Vị trí mở trên Core Road giữ nguyên; bảng "số lá mỗi trường phái" dưới là lịch sử (hết Area 10: SÁT THỦ 8 · TIKI 8 · ĐẤU SĨ 7 · VÕ SĨ ĐÁ 7 · ẢO ẢNH 7 · THÉP 7 · TỐC ĐỘ 6).
 
 ### Quyết định đã chốt
 
@@ -12,7 +14,7 @@
 | 2 | Chọn Core trong trận | **Ngẫu nhiên từ mọi Core đã mở** như Võ Đài LoL. Không có deck |
 | 3 | Bộ khởi đầu | **23 lá** (8 → 16 → 23, 2026-10-11): 8 THƯỜNG + **7 Core chỉ số** (THƯỜNG, mỗi trường phái 1 lá) + 1 HIẾM mỗi trường phái + Chaos Ball → trường phái nào cũng ≥ 3 lá từ trận đầu. + Tuyệt kỹ AURA FARMING |
 | 7 | Chỉ số / OVR / DRILL | **Tạm ẩn** (`progression.attrs.hidden`): game thuần kỹ năng + Core. Mọi người chơi chung rating `attrs.fixed` = 80 (hệ số 1.0). Khác biệt chỉ số đến từ **Core chỉ số** chọn trong trận (`CORE_DESIGN.md` mục Core chỉ số) |
-| 4 | Đổi bài (REROLL) khi chọn Core | **Tạm bỏ** (`cores.draft.rerollsPerRound = 0`, nút REROLL ẩn, phím R không đổi). Đổi bài ở màn DRILL giữ nguyên |
+| 4 | Đổi bài (REROLL) khi chọn Core | ~~Tạm bỏ~~ → **bật lại 2026-10-13**: 1 lần / lượt (`cores.draft.rerollsPerRound = 1`). Bỏ luôn bảo đảm hướng (`docs/ULT_RECIPE.md`) |
 | 5 | Trần level theo rank | **Bỏ** (`progression.levelCapByRank = false`): level chỉ dừng ở `maxLevel`. `areas[].levelCap` vẫn dùng để ước lượng OVR người chơi giả theo Elo |
 | 6 | Cân bằng | **Để sau** |
 
@@ -24,7 +26,7 @@ cho người chơi tự **tắt bớt Core khỏi pool** (mặc định bật h�
 
 ## 1. Chọn Core trong trận
 
-Khung giữ như cũ: 5 lượt (`game.match.maxUpgrades`), mỗi lượt 3 lá (`upgradeChoices`), bảo đảm hướng từ lượt 2.
+Khung: **4 lượt** (`game.match.maxUpgrades`, từ 2026-10-13), mỗi lượt 3 lá (`upgradeChoices`), **không** bảo đảm hướng, 1 lần REROLL / lượt.
 - **Pool** = Core thường đã mở (`Profile.unlockedCores()` → `opts.coreUnlocks`; online gửi trong `Profile.public().cores`).
 - **Trọng số** = độ hiếm × (1 + `buildWeight` × số Core cùng trường phái đang có) — như cũ (`cores.draft`).
 - **Core vừa mở** (`MainPath.state.fresh`): lượt nào cũng đưa 1 lá chưa hiện vào, nhãn **NEW**, hiện 1 lần rồi bỏ — để Core mới chắc chắn được thử ngay trận sau.

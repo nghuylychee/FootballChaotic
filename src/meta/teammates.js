@@ -43,11 +43,6 @@ window.SFC = window.SFC || {};
       for (let i = 0; i < nMain; i++) draw((c) => c.tags.includes(main));
       for (let i = 0; i < nSide; i++) draw((c) => c.tags.includes(side));
       while (deck.length < size) draw(() => true);
-      // Tuyệt kỹ của trường phái chính (xác suất theo bậc)
-      if (Math.random() < (D.ultChance[clamp(tier, 0, D.ultChance.length - 1)] || 0)) {
-        const ult = Object.keys(L).find((id) => L[id].role === 'ult' && L[id].tags.includes(main));
-        if (ult) deck.push(ult);
-      }
       return { deck, main, side };
     },
 
@@ -120,16 +115,14 @@ window.SFC = window.SFC || {};
       return Object.keys(n).sort((a, b) => n[b] - n[a]).map((tag) => ({ tag, n: n[tag] }));
     },
 
-    // dữ liệu vào trận (Game opts.mates): hệ số Player.stats từ chỉ số (giống character), deck, ngoại hình, Tuyệt kỹ đặc trưng
-    // (m.ult; đồng đội cũ có Tuyệt kỹ nằm trong deck -> lấy lá đó làm Tuyệt kỹ, deck chỉ còn Core thường)
+    // dữ liệu vào trận (Game opts.mates): hệ số Player.stats từ chỉ số (giống character), deck (chỉ Core thường), ngoại hình
     spec(m, role) {
       const out = {}, L = CORES().list, isUlt = (id) => L[id] && L[id].role === 'ult';
       for (const id of A().order) {
         const keys = A().list[id].keys, r = A().hidden ? A().fixed : m.ratings[id];   // hệ chỉ số ẩn: chỉ số chung attrs.fixed
         for (const k in keys) out[k] = 1 + (r / A().scale - 1) * (keys[k] == null ? 1 : keys[k]);
       }
-      const ult = (isUlt(m.ult) && m.ult) || m.deck.find(isUlt) || PROG().defaultUlt;
-      return { name: m.name, ovr: m.ovr, stats: out, deck: m.deck.filter((id) => !isUlt(id)), look: SFC.Profile.lookOf(Object.assign({}, PROG().defaultLook, m.look)), role, ult };
+      return { name: m.name, ovr: m.ovr, stats: out, deck: m.deck.filter((id) => !isUlt(id)), look: SFC.Profile.lookOf(Object.assign({}, PROG().defaultLook, m.look)), role };
     },
 
     /* ---------- đội hình + scout (hồ sơ: SFC.Profile.data.team) ---------- */

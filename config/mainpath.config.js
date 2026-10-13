@@ -6,7 +6,7 @@
  * Thắng / hoà / thua -> cộng / trừ Elo theo công thức Elo (k), so Elo trung bình 2 đội. Elo không xuống dưới 0.
  * Area = khoảng Elo: đang ở Area cao nhất có areas[].elo <= Elo hiện tại. Tụt Elo dưới ngưỡng = rớt về Area dưới (rớt tự do).
  * Thưởng mỗi trận: gold + XP (progression.config.js -> rewards.single, nhân reward của Area).
- * Thưởng lớn: LẦN ĐẦU tới 1 Area -> mở Tuyệt kỹ areas[].ult (rớt rồi lên lại không nhận lại).
+ * Thưởng Area chỉ còn là Core (Core Road). Tuyệt kỹ không mở theo Area nữa: đạt công thức trong trận (docs/ULT_RECIPE.md).
  * CORE ROAD (docs/CORE_ROAD.md): Core thường mở theo Elo cao nhất từng đạt (areas[].road); lượt chọn Core trong trận bốc ngẫu nhiên từ mọi Core đã mở.
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
@@ -38,10 +38,10 @@ SFC_CONFIG.mainPath = {
   // đồng đội AI trong trận online (đội có 1 người: đồng đội đang chọn) dùng độ khó này (game.config.js -> ai.difficulty)
   teammate: 'normal',
 
-  /* lockCores = true -> Core chỉ dùng được khi đã mở: Tuyệt kỹ (Aura Farming từ PROLOGUE + areas[].ult) và Core thường
-   * (progression.starterCores + areas[].road). lockCores = false: mọi Core dùng được ngay. */
+  /* lockCores = true -> Core thường chỉ dùng được khi đã mở (progression.starterCores + areas[].road).
+   * lockCores = false: mọi Core dùng được ngay. */
   lockCores: true,
-  // GOAT PATH (màn PLAY › RANKED, src/ui/road.js): true = hiện hết tên / Core / Tuyệt kỹ mọi Area (user chốt 2026-10-11) ·
+  // GOAT PATH (màn PLAY › RANKED, src/ui/road.js): true = hiện hết tên / Core mọi Area (user chốt 2026-10-11) ·
   // false = Area chưa từng tới hiện ??? + phần thưởng bóng xám
   roadSpoilers: true,
 
@@ -61,7 +61,7 @@ SFC_CONFIG.mainPath = {
     players: ['ROOKIE', 'HUSTLE', 'ACE'],   // theo thứ tự vị trí (DEF, MID, FWD); character của bạn thay 1 người
   },
 
-  /* elo: ngưỡng Elo để vào Area (Area 1 phải là 0). ult: Tuyệt kỹ mở khi LẦN ĐẦU tới Area (null = chưa có Tuyệt kỹ cho Area này).
+  /* elo: ngưỡng Elo để vào Area (Area 1 phải là 0).
    * Độ khó AI bot: ai = [đầu Area, cuối Area], nội suy theo Elo trong Area.
    * reaction: giây giữa các quyết định (thấp = nhanh) · tackleMult: tỉ lệ làm rơi bóng / cắt bóng ·
    * shotAccuracy: độ chính xác sút + bắt bóng · aggression: tần suất ra đòn / lướt · speedMult: tốc độ chạy.
@@ -79,7 +79,6 @@ SFC_CONFIG.mainPath = {
       levelCap: [3, 5, 7], elo: 0, reward: 1.0, arena: 'village',
       teams: ['paddy_kickers', 'muddy_ducks'],
       ai: [{ reaction: 0.5, tackleMult: 0.45, shotAccuracy: 0.4, aggression: 0.35, speedMult: 0.82 }, { reaction: 0.44, tackleMult: 0.55, shotAccuracy: 0.46, aggression: 0.45, speedMult: 0.86 }],
-      ult: null,
       road: [[], ['fire_shot', 'juggle', 'counter_attack'], ['fake_run', 'uppercut', 'warp_walls']],
     },
     // AREA 2
@@ -88,7 +87,6 @@ SFC_CONFIG.mainPath = {
       levelCap: [9, 10, 11], elo: 200, reward: 1.1, arena: 'alley',
       teams: ['alley_cats', 'trash_pandas'],
       ai: [{ reaction: 0.42, tackleMult: 0.58, shotAccuracy: 0.48, aggression: 0.5, speedMult: 0.87 }, { reaction: 0.36, tackleMult: 0.68, shotAccuracy: 0.55, aggression: 0.6, speedMult: 0.91 }],
-      ult: 'hundred_fists',
       road: [['symphony'], ['energy_wave', 'bulldozer'], ['shadow_clone']],
     },
     // AREA 3
@@ -97,7 +95,6 @@ SFC_CONFIG.mainPath = {
       levelCap: [12, 13, 15], elo: 450, reward: 1.25, arena: 'school',
       teams: ['hall_monitors', 'detention_club'],
       ai: [{ reaction: 0.34, tackleMult: 0.72, shotAccuracy: 0.58, aggression: 0.65, speedMult: 0.92 }, { reaction: 0.29, tackleMult: 0.8, shotAccuracy: 0.64, aggression: 0.75, speedMult: 0.95 }],
-      ult: 'lightning_dash',
       road: [['giant_keeper'], ['sonic_boom', 'ground_slam'], ['giant_fist']],
     },
     // AREA 4
@@ -106,7 +103,6 @@ SFC_CONFIG.mainPath = {
       levelCap: [17, 19, 21], elo: 750, reward: 1.4, arena: 'rooftop',
       teams: ['sky_hoppers', 'pigeon_gang'],
       ai: [{ reaction: 0.27, tackleMult: 0.84, shotAccuracy: 0.66, aggression: 0.8, speedMult: 0.96 }, { reaction: 0.23, tackleMult: 0.92, shotAccuracy: 0.72, aggression: 0.88, speedMult: 0.98 }],
-      ult: 'endless_tiki',
       road: [['witch_time'], ['one_two'], ['freight_train']],
     },
     // AREA 5
@@ -115,7 +111,6 @@ SFC_CONFIG.mainPath = {
       levelCap: [22, 24, 25], elo: 1100, reward: 1.55, arena: 'market',
       teams: ['noodle_kickers', 'lantern_crew'],
       ai: [{ reaction: 0.21, tackleMult: 0.96, shotAccuracy: 0.75, aggression: 0.92, speedMult: 0.99 }, { reaction: 0.18, tackleMult: 1.02, shotAccuracy: 0.8, aggression: 1.0, speedMult: 1.0 }],
-      ult: 'meteor_strike',
       road: [['emp_trap'], ['flying_kick'], ['thunder_kick']],
     },
     // AREA 6
@@ -124,7 +119,6 @@ SFC_CONFIG.mainPath = {
       levelCap: [26, 27, 29], elo: 1500, reward: 1.7, arena: 'harbor',
       teams: ['crane_crushers', 'rust_buckets'],
       ai: [{ reaction: 0.17, tackleMult: 1.05, shotAccuracy: 0.82, aggression: 1.05, speedMult: 1.01 }, { reaction: 0.14, tackleMult: 1.12, shotAccuracy: 0.86, aggression: 1.12, speedMult: 1.03 }],
-      ult: 'titan',
       road: [['phantom_pass'], ['counter_strike'], ['blade_runner']],
     },
     // AREA 7
@@ -133,7 +127,6 @@ SFC_CONFIG.mainPath = {
       levelCap: [30, 31, 32], elo: 1950, reward: 1.9, arena: 'cage',
       teams: ['chain_gang', 'iron_knuckles'],
       ai: [{ reaction: 0.13, tackleMult: 1.14, shotAccuracy: 0.87, aggression: 1.16, speedMult: 1.04 }, { reaction: 0.11, tackleMult: 1.2, shotAccuracy: 0.9, aggression: 1.24, speedMult: 1.05 }],
-      ult: 'meteor_drop',
       road: [['rubber_arm'], ['ghost_ball'], ['aegis_wall']],
     },
     // AREA 8
@@ -142,7 +135,6 @@ SFC_CONFIG.mainPath = {
       levelCap: [33, 33, 34], elo: 2450, reward: 2.1, arena: 'plaza',
       teams: ['metro_express', 'downtown_stars'],
       ai: [{ reaction: 0.1, tackleMult: 1.24, shotAccuracy: 0.91, aggression: 1.28, speedMult: 1.06 }, { reaction: 0.09, tackleMult: 1.3, shotAccuracy: 0.93, aggression: 1.36, speedMult: 1.07 }],
-      ult: 'clone_army',
       road: [['captain'], ['bomb_ball'], []],
     },
     // AREA 9
@@ -151,7 +143,6 @@ SFC_CONFIG.mainPath = {
       levelCap: [34, 35, 36], elo: 3000, reward: 2.35, arena: 'cyber',
       teams: ['glitch_squad', 'chrome_wolves'],
       ai: [{ reaction: 0.08, tackleMult: 1.34, shotAccuracy: 0.94, aggression: 1.4, speedMult: 1.08 }, { reaction: 0.07, tackleMult: 1.4, shotAccuracy: 0.95, aggression: 1.48, speedMult: 1.09 }],
-      ult: null,
       road: [['black_hole'], [], []],
     },
     // AREA 10
@@ -160,7 +151,6 @@ SFC_CONFIG.mainPath = {
       levelCap: [37, 38, 39], elo: 3600, reward: 2.6, arena: 'stadium',
       teams: ['golden_eagles', 'royal_lions'],
       ai: [{ reaction: 0.06, tackleMult: 1.44, shotAccuracy: 0.96, aggression: 1.52, speedMult: 1.1 }, { reaction: 0.05, tackleMult: 1.5, shotAccuracy: 0.97, aggression: 1.6, speedMult: 1.11 }],
-      ult: null,
       road: [['scissor_kick'], [], []],
     },
   ],

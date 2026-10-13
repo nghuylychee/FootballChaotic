@@ -21,9 +21,13 @@ window.SFC = window.SFC || {};
       // stamina / knock / keeper: chỉ character mới khác 1 (chỉ số character, progression.attrs)
       this.stats = Object.assign({ speed: 1, power: 1, pass: 1, tackle: 1, dribble: 1, accuracy: 1, stamina: 1, knock: 1, keeper: 1 }, tcfg.stats);
       this.radius = SFC_CONFIG.game.player.radius;
-      this.res = { momentum: 0, rage: 0, guard: 0, ult: 0 };   // tài nguyên Core (Đà, Nộ, Giáp) + năng lượng Tuyệt kỹ (0..1) — Nhịp là của cả đội (g.rhythm)
-      this.resT = { sprint: 0, idle: 0, rage: 0, frenzy: 0, guard: 0, iron: 0 };
-      this.extraDash = 0;     // ẢO ẢNH 4: thêm 1 lần Z
+      this.res = { ult: 0 };   // năng lượng Tuyệt kỹ (0..1)
+      this.ultLv = 1;         // cấp Tuyệt kỹ: 1 gốc · 2 / 3 = tiến hoá ★★ / ★★★ (cores.config.js -> ults)
+      // trạng thái Core nhìn thấy được (CoreSystem.updateStates): TOÉ ĐIỆN, nắm tay sáng (Nắm Đấm Khổng Lồ / Nắm Đấm Sắt),
+      // Xe Ủi hoá to (giây còn lại), miễn choáng tới lúc (Nắm Đấm Sắt / Đội Trưởng), cú đấm trúng gần nhất + combo
+      this.sprintT = 0; this.surge = false; this.fistRdy = false; this.ballT = 0; this.bullT = 0; this.armorT = 0;
+      this.ghostT = 0;        // Mirage Sprint: giây tàng hình còn lại
+      this.landT = -1; this.punchCombo = 0;
       this.lastHitBy = null;  // người vừa đánh trúng (tính BONK cho đúng đội)
       this.sizeMul = 1;       // VFX Kit khổng lồ: tỉ lệ vẽ + va chạm hiện tại
       this.sizeTarget = 1;
@@ -263,7 +267,7 @@ window.SFC = window.SFC || {};
       const was = this.sprinting;
       this.sprinting = wantSprint && this.stamina > (this.sprinting ? 0 : C.staminaMinToSprint);
       if (this.sprinting && !was) this.game.cores.dispatch(this.team, 'onSprintStart', this);
-      if (this.sprinting) this.stamina -= C.staminaDrain * this.game.cores.sprintDrain(this) * dt;
+      if (this.sprinting) this.stamina -= C.staminaDrain * dt;
       else this.stamina += C.staminaRegen * this.stats.stamina * this.game.cores.mod(this.team, 'sprintRegen', this) * dt;
       this.stamina = U.clamp(this.stamina, 0, C.staminaMax);
 
@@ -308,15 +312,16 @@ window.SFC = window.SFC || {};
      */
     hit(opts) {
       const g = this.game;
-      const stun = (opts.stun || 0) * (opts.stun > 0 ? g.cores.stunTaken(this) : 1);   // Nắm Đấm Sắt
+      const stun = (opts.stun || 0) * (opts.stun > 0 ? g.cores.stunTaken(this) : 1);   // Da Thép
       if (this.state === 'meteor') return false;   // đang ở ngoài màn hình (Thiên Thạch Giáng)
       if (stun > 0 && (this.hitImmune > 0 || this.state === 'stun')) return false;
       if (stun > 0 && g.cores.blockHit(this, opts)) {
         this.kbx += (opts.kbx || 0) * 0.3; this.kby += (opts.kby || 0) * 0.3;
         return false;
       }
-      this.kbx += opts.kbx || 0;
-      this.kby += opts.kby || 0;
+      const kt = g.cores.knockTaken(this);   // Da Thép
+      this.kbx += (opts.kbx || 0) * kt;
+      this.kby += (opts.kby || 0) * kt;
       if (stun <= 0) return true;
 
       if (this.hasBall) g.looseBall(this, opts.kbx || U.rand(-1, 1), opts.kby || U.rand(-1, 1));
