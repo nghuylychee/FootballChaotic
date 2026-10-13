@@ -114,6 +114,8 @@ window.SFC = window.SFC || {};
 
       const near = nearest(opps, p, (o) => o.state !== 'stun');
       const dG = Math.hypot(goal.x - p.x, goal.y - p.y);
+      // đang khựng sau khi cắt bóng nhưng đã sát khung đối phương: vẫn được sút (pass.intercept.aiDelayGoalDist)
+      const shotSettling = settling && dG >= SFC_CONFIG.game.pass.intercept.aiDelayGoalDist;
 
       if (p.ai.t <= 0) {
         p.ai.t = D.reaction * U.rand(0.7, 1.3);
@@ -121,7 +123,7 @@ window.SFC = window.SFC || {};
         const range = M ? f.w / 2 : cfg.shootRange * (g.cores.has(p, 'sniper_foot') ? g.cores.params('sniper_foot').aiRangeMult : 1) * (1 + g.cores.tagCount(p, 'striker') * 0.12);
         const clear = Act().laneClear(g, p, goal.x, goal.y, 12);
         // đồng đội AI: cơ hội mười mươi (khung trống) -> quyết định 1 lần có sút nhanh lực nhẹ hay không
-        if (M && !settling && !(p.shotLockT > 0)) {
+        if (M && !shotSettling && !(p.shotLockT > 0)) {
           const open = this.mateOpenGoal(g, p, dG, clear);
           if (!open) p.ai.openSeen = false;
           else if (!p.ai.openSeen) {
@@ -137,7 +139,7 @@ window.SFC = window.SFC || {};
           }
         }
         // vừa đấm cướp được bóng: chưa sút (combat.light.stealShotLock)
-        const shoot = settling || p.shotLockT > 0 ? false : M ? this.mateShoots(g, p, dG, clear) : dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25);
+        const shoot = shotSettling || p.shotLockT > 0 ? false : M ? this.mateShoots(g, p, dG, clear) : dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25);
 
         if (shoot) {
           p.charging = true; p.charge = 0;

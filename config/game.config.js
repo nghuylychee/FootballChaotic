@@ -244,6 +244,8 @@ SFC_CONFIG.game = {
       aiDelay: [0.45, 1.3],   // (s) AI (đội máy + đồng đội AI) cắt được đường chuyền / chặn được cú sút ngoài vòng cấm nhà:
                               //     vẫn rê bóng nhưng chưa chuyền / sút trong khoảng này (kèm chữ INTERCEPT)
       aiDelayMinSpeed: 100,   // (px/s) bóng chậm hơn mức này lúc cắt -> không tính (không khựng, không chữ INTERCEPT)
+      aiDelayGoalDist: 105,   // (px tới khung đối phương) gần hơn mức này: đang khựng vẫn được sút (chỉ chưa chuyền) —
+                              //     không thì AI rê thẳng tới vạch vôi rồi đứng chờ hết khựng, bị cướp lại bóng
     },
   },
 
