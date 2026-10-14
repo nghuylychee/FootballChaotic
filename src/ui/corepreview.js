@@ -290,6 +290,14 @@ window.SFC = window.SFC || {};
     shadow_ambush: ult({ ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x + 25, A.y - 18, PI); s.place(s.o2, A.x + 35, A.y + 22, PI); s.give(s.o1); }, focus: (s) => s.mid(s.o1, s.o2) }),
     crossfire_kicks: ult({ ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x + 40, A.y, PI); s.give(s.o1); }, focus: (s) => s.o1 }),
     iron_quake: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 10, A.y + 6, PI); s.place(s.o2, A.x + 50, A.y - 8, PI); s.give(s.o1); }, focus: (s) => s.mid(s.me, s.o2) }),
+    // 🎲 Hỗn loạn + 7 hệ
+    wormhole_dash: ult({ len: 2.4, init: (s) => { s.place(s.o1, A.x + 10, A.y + 6, PI); s.place(s.o2, A.x + 150, A.y - 10, PI); }, focus: (s) => s.me }),
+    wild_pass: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x + 70, A.y - 30, PI); s.place(s.o1, A.x + 15, A.y - 14, PI); }, focus: (s) => (s.t > 0.8 ? s.mate : s.g.ball) }),
+    jackpot_shot: ult({ len: 2.6, init: (s) => { s.place(s.me, G.x - 150, G.y + 10, 0); s.place(s.o1, G.x - 16, G.y, PI); }, focus: (s) => (s.t > 0.5 ? s.g.ball : s.me) }),
+    wild_haymaker: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 20, A.y, PI); s.give(s.o1); }, focus: (s) => s.o1 }),
+    pinball_kick: ult({ ball: false, len: 3, init: (s) => { s.place(s.o1, A.x - 10, A.y, PI); s.place(s.o2, A.x + 60, A.y + 30, PI); }, focus: (s) => s.o1 }),
+    shell_game: ult({ len: 2.6, init: (s) => { s.place(s.o1, A.x, A.y + 10, PI); } }),
+    iron_dice: ult({ ball: false, len: 3, init: (s) => { s.place(s.o1, A.x + 20, A.y, PI); s.give(s.o1); s.place(s.o2, A.x + 70, A.y + 6, PI); }, focus: (s) => s.mid(s.me, s.o1) }),
     mirror_wall: ult({
       ball: false, len: 3, at: 0.2,
       init: (s) => { s.place(s.me, A.x - 20, A.y + 40, 0); s.place(s.o1, A.x + 70, A.y, PI); s.give(s.o1); },
@@ -303,6 +311,10 @@ window.SFC = window.SFC || {};
       init(s) { s.place(s.me, A.x - 40, 80 + 60, 0); s.give(s.me); },
       at: [[0.3, (s) => { const b = s.g.ball; b.kick(s.me, 70, -380, 0); b.kind = 'shot'; }]],
     },
+    glitch_step: dash(),
+    wild_card: run({ ball: true, init: (s) => s.g.cores.dispatch(0, 'onKickoff') }),
+    loaded_dice: punch({ len: 2.8, more: [[1.1, (s) => { s.me.cd.light = 0; s.face(s.me, s.o1); Act().lightAttack(s.g, s.me); }], [1.9, (s) => { s.me.cd.light = 0; s.face(s.me, s.o1); Act().lightAttack(s.g, s.me); }]] }),
+    chaos_roulette: ult({ ball: false, len: 3.6, init: (s) => { s.place(s.o1, A.x + 40, A.y - 10, PI); s.place(s.o2, A.x + 70, A.y + 20, PI); s.give(s.o1); }, focus: (s) => s.mid(s.o1, s.o2) }),
     bomb_ball: {
       len: 3.8,
       init(s) {

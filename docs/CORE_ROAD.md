@@ -6,6 +6,50 @@
 > **Cập nhật 2026-10-13 (`docs/ULT_RECIPE.md`):** Area **không còn thưởng Tuyệt kỹ** (`areas[].ult` đã bỏ, thưởng Area chỉ còn là Core). Tuyệt kỹ mở theo công thức trong trận; bỏ trang CHARACTER › ULTIMATE (thay bằng ULT BOOK). Các cột "ult" trong bảng dưới là lịch sử.
 > **Cập nhật 2026-10-13:** bỏ Core cầu nối 2 hệ — 11 lá đổi về 1 hệ (Counter Attack / Rubber Arm / Dragon Uppercut → ĐẤU SĨ · Iron Fist → THÉP · One-Two / Captain → TIKI · Fake Run / Counter Strike → ẢO ẢNH · Flying Kick → TỐC ĐỘ · Scissor Kick → VÕ SĨ ĐÁ · Ghost Ball → SÁT THỦ). Vị trí mở trên Core Road giữ nguyên; bảng "số lá mỗi trường phái" dưới là lịch sử (hết Area 10: SÁT THỦ 8 · TIKI 8 · ĐẤU SĨ 7 · VÕ SĨ ĐÁ 7 · ẢO ẢNH 7 · THÉP 7 · TỐC ĐỘ 6).
 
+### Cập nhật 2026-10-14 — Area đầu ngắn lại + rải lại Core Road (user: "các area đầu ngắn lại để người chơi nhanh progress")
+Thắng / thua ngang Elo = ±20 (`elo.k = 40`) → số **trận thắng ròng** (thắng − thua) để qua 1 Area = khoảng Elo ÷ 20.
+Số trận qua 1 Area tỉ lệ với khoảng Elo (độ khó AI nội suy theo vị trí trong Area, nên tỉ lệ thắng ở cùng "đoạn" Area không đổi).
+
+| Area | Elo cũ | Elo mới | Khoảng cũ → mới | Thắng ròng cũ → mới |
+|---|---|---|---|---|
+| 1 VILLAGE | 0 | 0 | 200 → **80** | 10 → **4** |
+| 2 ALLEY | 200 | 80 | 250 → **120** | 12.5 → **6** |
+| 3 SCHOOL | 450 | 200 | 300 → **160** | 15 → **8** |
+| 4 ROOFTOP | 750 | 360 | 350 → **220** | 17.5 → **11** |
+| 5 MARKET | 1100 | 580 | 400 → **300** | 20 → **15** |
+| 6 HARBOR | 1500 | 880 | 450 | 22.5 |
+| 7 CAGE | 1950 | 1330 | 500 | 25 |
+| 8 PLAZA | 2450 | 1830 | 550 | 27.5 |
+| 9 CYBER | 3000 | 2380 | 600 | 30 |
+| 10 STADIUM | 3600 | 2980 | 600 (`lastSpan`) | 30 |
+
+Tới Area 5: 37.5 → **18** thắng ròng (nhanh gấp ~2). Area 6+ giữ nguyên độ dài, chỉ dời ngưỡng.
+
+**Core Road mới — mỗi mốc 1 Core** (30 Core trên 30 mốc; mốc vào Area 1 trống, mốc vào Area 3 có 2). Trước đây Area 1 dồn 6 lá
+còn Area 8–10 bỏ trống 4 mốc → giờ Area đầu (ngắn) mở dồn dập, Area sau (dài) vẫn có Core ở cả 3 mốc.
+- HIẾM ở Area 1–3 · SỬ THI từ Area 3 · Area 5–10 mỗi Area 1 HUYỀN THOẠI ở mốc ⅔ (như cũ).
+- Hết Area 3 (Elo 360, trước là 750) trường phái nào cũng **≥ 4 lá** → dạng ★★ (X4) đạt được. Mỗi Area 3 trường phái khác nhau.
+
+| Area (Elo) | Vào Area | ⅓ | ⅔ | Tổng sở hữu · số lá TỐC/TIKI/SÁT/ĐẤU/ĐÁ/ẢO/THÉP |
+|---|---|---|---|---|
+| Bắt đầu | | | | 23 · 3/4/3/3/3/3/3 |
+| **1 VILLAGE** (0) | — | `fire_shot` STR·R | `juggle` LAU·R | 25 · 3/4/4/3/4/3/3 |
+| **2 ALLEY** (80) | `counter_attack` BRA·R | `fake_run` TRI·R | `warp_walls` CHA·R | 28 · 3/4/4/4/4/4/3 |
+| **3 SCHOOL** (200) | `uppercut` BRA·R + `symphony` PM·E | `sonic_boom` RUN·E | `bulldozer` IRN·E | 32 · 4/5/4/5/4/4/4 |
+| **4 ROOFTOP** (360) | `shadow_clone` TRI·E | `energy_wave` STR·E | `giant_keeper` IRN·E | 35 · 4/5/5/5/4/5/5 |
+| **5 MARKET** (580) | `freight_train` RUN·E | `giant_fist` BRA·E | `thunder_kick` STR·**L** | 38 · 5/5/6/6/4/5/5 |
+| **6 HARBOR** (880) | `witch_time` TRI·E | `one_two` PM·E | `blade_runner` LAU·**L** | 41 · 5/6/6/6/5/6/5 |
+| **7 CAGE** (1330) | `ground_slam` LAU·E | `rubber_arm` BRA·E | `aegis_wall` IRN·**L** | 44 · 5/6/6/7/6/6/6 |
+| **8 PLAZA** (1830) | `flying_kick` RUN·E | `phantom_pass` PM·E | `bomb_ball` CHA·**L** | 47 · 6/7/6/7/6/6/6 |
+| **9 CYBER** (2380) | `counter_strike` TRI·E | `emp_trap` IRN·E | `black_hole` STR·**L** | 50 · 6/7/7/7/6/7/7 |
+| **10 STADIUM** (2980) | `ghost_ball` STR·E | `captain` PM·E | `scissor_kick` LAU·**L** | 53 · 6/8/8/7/7/7/7 |
+
+**+3 Core Hỗn loạn (2026-10-14, `docs/ULT_RECIPE.md`):** `glitch_step` CHA·R ở Area 3 ⅓ (cùng `sonic_boom`) · `wild_card` CHA·E ở vào Area 4
+(cùng `shadow_clone`) · `loaded_dice` CHA·E ở Area 6 ⅓ (cùng `one_two`) → 56 Core thường; Hỗn loạn 1 → 6 lá, đủ 3 lá ở Area 3, 4 lá ở Area 4.
+
+Hồ sơ cũ: Area tính lại theo Elo đang có (Elo giữ nguyên → nhiều người nhảy lên Area cao hơn); `backfill` theo Elo cao nhất từng đạt
+cấp bù mọi Core ở mốc ≤ Elo đó (không bao giờ thu lại Core). Bảng Area / Core Road ở mục 2 bên dưới là **lịch sử**.
+
 ### Quyết định đã chốt
 
 | # | Chủ đề | Quyết định |

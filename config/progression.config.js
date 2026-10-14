@@ -264,6 +264,7 @@ SFC_CONFIG.progression = {
     black_hole: { level: 10 }, bomb_ball: { level: 11 }, scissor_kick: { level: 12 },
     aura_farming: { level: 1 }, hundred_fists: { level: 15 }, meteor_strike: { level: 15 }, titan: { level: 16 }, meteor_drop: { level: 16 },
     clone_army: { level: 17 }, endless_tiki: { level: 18 },
+    glitch_step: { level: 3 }, wild_card: { level: 5 }, loaded_dice: { level: 6 },
   },
 
   // Hộp gacha (quay kiểu CSGO). kind: costume (mọi slot trừ ăn mừng) | cel (chỉ động tác ăn mừng) | core. odds = % theo độ hiếm (chuẩn hoá theo các độ hiếm có trong hộp),

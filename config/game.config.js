@@ -433,5 +433,8 @@ SFC_CONFIG.game = {
   celebration: {
     botWeights: { default: 4, common: 6, rare: 3, epic: 1.4, legendary: 0.6, mythic: 0.2 },
     runSpeed: 95, slideSpeed: 150, mateSpeed: 0.7, mateGap: 22,
+    // máy quay (src/render/renderer.js -> goalCam): phóng to zoom lần bám người ghi bàn sau delay giây, vào trong in giây,
+    // trả về toàn sân trong out giây cuối. lift: khung nhìn nhích lên trên chân người bao nhiêu px (thấy cả đạo cụ trên đầu)
+    camera: { zoom: 2, delay: 0.15, in: 0.45, out: 0.35, lift: 14 },
   },
 };

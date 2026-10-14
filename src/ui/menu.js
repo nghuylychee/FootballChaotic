@@ -964,7 +964,7 @@ window.SFC = window.SFC || {};
     /* ---------------- SỔ TUYỆT KỸ (CHARACTER > ULT BOOK, docs/ULT_RECIPE.md) ---------------- */
     // công thức: "🎯 STRIKER ×3" (lai: 2 trường phái nối bằng +)
     recipeText(e) { return e.tags.map((t, i) => `${CORES().archetypes[t].label} ×${e.need[i]}`).join(' + '); },
-    // bảng trái: bảng ghép cặp 7x7 hiện đủ MỌI ô của sổ cùng lúc. Hàng / cột = trường phái; đường chéo = Tuyệt kỹ gốc (X3),
+    // bảng trái: bảng ghép cặp 8x8 (8 trường phái, cả Hỗn loạn) hiện đủ MỌI ô của sổ cùng lúc. Hàng / cột = trường phái; đường chéo = Tuyệt kỹ gốc (X3),
     // ô dưới đường chéo = Tuyệt kỹ lai của 2 trường phái hàng + cột (X2 + Y2), cột cuối = dạng nâng cấp ★★ (X4).
     // Chưa khám phá: ô ??? (công thức vẫn giấu ở bảng phải)
     ultGrid(items) {

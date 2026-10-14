@@ -71,7 +71,11 @@ SFC_CONFIG.mainPath = {
    *   chỉ chặn level của character khi progression.levelCapByRank = true (XP vượt trần tích lại, lên Elo là lên level ngay).
    * road: CORE ROAD — Core thường mở theo nấc, cùng cách chia nấc với levelCap: road[i] mở khi Elo cao nhất từng đạt
    *   >= elo + i/road.length x khoảng Elo của Area (road[0] = lúc vào Area). Mỗi Area rải Core của nhiều trường phái
-   *   (không dồn 1 trường phái / Area). Mỗi Core thường có đúng 1 chỗ: ở đây hoặc progression.starterCores. */
+   *   (không dồn 1 trường phái / Area). Mỗi Core thường có đúng 1 chỗ: ở đây hoặc progression.starterCores.
+   * Nhịp (2026-10-14, docs/CORE_ROAD.md): Area đầu ngắn cho người mới lên hạng nhanh — khoảng Elo 80 · 120 · 160 · 220 · 300,
+   *   từ Area 6 giữ như cũ (450 · 500 · 550 · 600). Mỗi mốc 1 Core (mốc vào Area 3 có 2): HIẾM ở Area 1–3, hết Area 3 trường phái
+   *   nào cũng đủ 4 lá (đạt được ★★); Area 5–10 mỗi Area 1 HUYỀN THOẠI ở mốc ⅔, Area cuối cũng có Core ở cả 3 mốc.
+   *   3 lá Hỗn loạn mới (Glitch Step · Wild Card · Loaded Dice) đi kèm mốc có sẵn ở Area 3 · 4 · 6 -> Hỗn loạn đủ 4 lá từ Area 4. */
   areas: [
     // AREA 1
     {
@@ -79,79 +83,79 @@ SFC_CONFIG.mainPath = {
       levelCap: [3, 5, 7], elo: 0, reward: 1.0, arena: 'village',
       teams: ['paddy_kickers', 'muddy_ducks'],
       ai: [{ reaction: 0.5, tackleMult: 0.45, shotAccuracy: 0.4, aggression: 0.35, speedMult: 0.82 }, { reaction: 0.44, tackleMult: 0.55, shotAccuracy: 0.46, aggression: 0.45, speedMult: 0.86 }],
-      road: [[], ['fire_shot', 'juggle', 'counter_attack'], ['fake_run', 'uppercut', 'warp_walls']],
+      road: [[], ['fire_shot'], ['juggle']],
     },
     // AREA 2
     {
       id: 'alley', name: 'BACK ALLEY', sub: 'Where every legend starts', color: '#ff9a3d', icon: '🗑️',
-      levelCap: [9, 10, 11], elo: 200, reward: 1.1, arena: 'alley',
+      levelCap: [9, 10, 11], elo: 80, reward: 1.1, arena: 'alley',
       teams: ['alley_cats', 'trash_pandas'],
       ai: [{ reaction: 0.42, tackleMult: 0.58, shotAccuracy: 0.48, aggression: 0.5, speedMult: 0.87 }, { reaction: 0.36, tackleMult: 0.68, shotAccuracy: 0.55, aggression: 0.6, speedMult: 0.91 }],
-      road: [['symphony'], ['energy_wave', 'bulldozer'], ['shadow_clone']],
+      road: [['counter_attack'], ['fake_run'], ['warp_walls']],
     },
     // AREA 3
     {
       id: 'school', name: 'SCHOOLYARD', sub: 'Recess never ends', color: '#ffd23f', icon: '🏫',
-      levelCap: [12, 13, 15], elo: 450, reward: 1.25, arena: 'school',
+      levelCap: [12, 13, 15], elo: 200, reward: 1.25, arena: 'school',
       teams: ['hall_monitors', 'detention_club'],
       ai: [{ reaction: 0.34, tackleMult: 0.72, shotAccuracy: 0.58, aggression: 0.65, speedMult: 0.92 }, { reaction: 0.29, tackleMult: 0.8, shotAccuracy: 0.64, aggression: 0.75, speedMult: 0.95 }],
-      road: [['giant_keeper'], ['sonic_boom', 'ground_slam'], ['giant_fist']],
+      road: [['uppercut', 'symphony'], ['sonic_boom', 'glitch_step'], ['bulldozer']],
     },
     // AREA 4
     {
       id: 'rooftop', name: 'ROOFTOP', sub: 'Football above the city lights', color: '#6ec8ff', icon: '🏙️',
-      levelCap: [17, 19, 21], elo: 750, reward: 1.4, arena: 'rooftop',
+      levelCap: [17, 19, 21], elo: 360, reward: 1.4, arena: 'rooftop',
       teams: ['sky_hoppers', 'pigeon_gang'],
       ai: [{ reaction: 0.27, tackleMult: 0.84, shotAccuracy: 0.66, aggression: 0.8, speedMult: 0.96 }, { reaction: 0.23, tackleMult: 0.92, shotAccuracy: 0.72, aggression: 0.88, speedMult: 0.98 }],
-      road: [['witch_time'], ['one_two'], ['freight_train']],
+      road: [['shadow_clone', 'wild_card'], ['energy_wave'], ['giant_keeper']],
     },
     // AREA 5
     {
       id: 'market', name: 'NIGHT MARKET', sub: 'Neon lanterns, loud crowds', color: '#ff3fb4', icon: '🏮',
-      levelCap: [22, 24, 25], elo: 1100, reward: 1.55, arena: 'market',
+      levelCap: [22, 24, 25], elo: 580, reward: 1.55, arena: 'market',
       teams: ['noodle_kickers', 'lantern_crew'],
       ai: [{ reaction: 0.21, tackleMult: 0.96, shotAccuracy: 0.75, aggression: 0.92, speedMult: 0.99 }, { reaction: 0.18, tackleMult: 1.02, shotAccuracy: 0.8, aggression: 1.0, speedMult: 1.0 }],
-      road: [['emp_trap'], ['flying_kick'], ['thunder_kick']],
+      road: [['freight_train'], ['giant_fist'], ['thunder_kick']],
     },
     // AREA 6
     {
       id: 'harbor', name: 'HARBOR DOCKS', sub: 'Rust, steel and salt', color: '#f2a33a', icon: '⚓',
-      levelCap: [26, 27, 29], elo: 1500, reward: 1.7, arena: 'harbor',
+      levelCap: [26, 27, 29], elo: 880, reward: 1.7, arena: 'harbor',
       teams: ['crane_crushers', 'rust_buckets'],
       ai: [{ reaction: 0.17, tackleMult: 1.05, shotAccuracy: 0.82, aggression: 1.05, speedMult: 1.01 }, { reaction: 0.14, tackleMult: 1.12, shotAccuracy: 0.86, aggression: 1.12, speedMult: 1.03 }],
-      road: [['phantom_pass'], ['counter_strike'], ['blade_runner']],
+      road: [['witch_time'], ['one_two', 'loaded_dice'], ['blade_runner']],
     },
     // AREA 7
     {
       id: 'cage', name: 'UNDERGROUND CAGE', sub: 'No refs. No mercy.', color: '#ff3d3d', icon: '⛓️',
-      levelCap: [30, 31, 32], elo: 1950, reward: 1.9, arena: 'cage',
+      levelCap: [30, 31, 32], elo: 1330, reward: 1.9, arena: 'cage',
       teams: ['chain_gang', 'iron_knuckles'],
       ai: [{ reaction: 0.13, tackleMult: 1.14, shotAccuracy: 0.87, aggression: 1.16, speedMult: 1.04 }, { reaction: 0.11, tackleMult: 1.2, shotAccuracy: 0.9, aggression: 1.24, speedMult: 1.05 }],
-      road: [['rubber_arm'], ['ghost_ball'], ['aegis_wall']],
+      road: [['ground_slam'], ['rubber_arm'], ['aegis_wall']],
     },
     // AREA 8
     {
       id: 'plaza', name: 'CITY PLAZA CUP', sub: 'The city is watching', color: '#2fd6c0', icon: '🏟️',
-      levelCap: [33, 33, 34], elo: 2450, reward: 2.1, arena: 'plaza',
+      levelCap: [33, 33, 34], elo: 1830, reward: 2.1, arena: 'plaza',
       teams: ['metro_express', 'downtown_stars'],
       ai: [{ reaction: 0.1, tackleMult: 1.24, shotAccuracy: 0.91, aggression: 1.28, speedMult: 1.06 }, { reaction: 0.09, tackleMult: 1.3, shotAccuracy: 0.93, aggression: 1.36, speedMult: 1.07 }],
-      road: [['captain'], ['bomb_ball'], []],
+      road: [['flying_kick'], ['phantom_pass'], ['bomb_ball']],
     },
     // AREA 9
     {
       id: 'cyber', name: 'CYBER ARENA', sub: 'The pro circuit', color: '#9d7bff', icon: '👾',
-      levelCap: [34, 35, 36], elo: 3000, reward: 2.35, arena: 'cyber',
+      levelCap: [34, 35, 36], elo: 2380, reward: 2.35, arena: 'cyber',
       teams: ['glitch_squad', 'chrome_wolves'],
       ai: [{ reaction: 0.08, tackleMult: 1.34, shotAccuracy: 0.94, aggression: 1.4, speedMult: 1.08 }, { reaction: 0.07, tackleMult: 1.4, shotAccuracy: 0.95, aggression: 1.48, speedMult: 1.09 }],
-      road: [['black_hole'], [], []],
+      road: [['counter_strike'], ['emp_trap'], ['black_hole']],
     },
     // AREA 10
     {
       id: 'stadium', name: 'WORLD STAGE', sub: 'Legends are made here', color: '#ffd23f', icon: '🏆',
-      levelCap: [37, 38, 39], elo: 3600, reward: 2.6, arena: 'stadium',
+      levelCap: [37, 38, 39], elo: 2980, reward: 2.6, arena: 'stadium',
       teams: ['golden_eagles', 'royal_lions'],
       ai: [{ reaction: 0.06, tackleMult: 1.44, shotAccuracy: 0.96, aggression: 1.52, speedMult: 1.1 }, { reaction: 0.05, tackleMult: 1.5, shotAccuracy: 0.97, aggression: 1.6, speedMult: 1.11 }],
-      road: [['scissor_kick'], [], []],
+      road: [['ghost_ball'], ['captain'], ['scissor_kick']],
     },
   ],
 

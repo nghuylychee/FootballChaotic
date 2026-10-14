@@ -424,11 +424,11 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 #menu.ults-pg .mi-sub { font-size: 10px; }
 #menu.ults-pg .mi { padding-top: 1px; padding-bottom: 1px; }
 /* bảng ghép cặp của sổ: hàng / cột = trường phái, đường chéo = Tuyệt kỹ gốc, dưới chéo = lai, cột cuối = ★★ */
-.ub { display: grid; grid-template-columns: 16px repeat(var(--n), 22px) 6px 22px; grid-auto-rows: 21px; gap: 2px; align-items: center; justify-items: center; padding: 2px 0 4px; }
+.ub { display: grid; grid-template-columns: 16px repeat(var(--n), 20px) 6px 20px; grid-auto-rows: 20px; gap: 2px; align-items: center; justify-items: center; padding: 2px 0 4px; }
 .ub > b { font-family: var(--px); font-size: 7px; color: var(--gold); letter-spacing: 1px; }
 .ub-sch { display: flex; justify-content: center; filter: drop-shadow(0 0 2px var(--c, transparent)); }
 .ub-sep { align-self: stretch; width: 1px; background: var(--edge); }
-.ub-t { display: flex; align-items: center; justify-content: center; width: 22px; height: 21px; position: relative;
+.ub-t { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; position: relative;
   background: var(--panel); border: 1px solid color-mix(in srgb, var(--c, #6a5f6e) 55%, var(--edge)); box-shadow: 1px 1px 0 var(--ink); }
 .ub-t.on { background: color-mix(in srgb, var(--c) 22%, var(--panel)); }
 .ub-t.lock { --c: #6a5f6e; opacity: 0.75; }

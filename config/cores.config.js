@@ -18,7 +18,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.cores = {
-  // 7 trường phái + Hỗn loạn (không có công thức Tuyệt kỹ)
+  // 8 trường phái (Hỗn loạn có công thức Tuyệt kỹ như mọi hệ từ 2026-10-14)
   archetypes: {
     runner:    { label: 'SPEED',    icon: '🏃', color: '#3ff6ff', stat: 'pace' },
     playmaker: { label: 'TIKI-TAKA', icon: '🎼', color: '#ffd23f', stat: 'passing' },
@@ -27,7 +27,7 @@ SFC_CONFIG.cores = {
     launcher:  { label: 'KICKER',  icon: '🦵', color: '#b46bff', stat: 'fight' },
     trickster: { label: 'ILLUSION',    icon: '🌀', color: '#9d7bff', stat: 'dribble' },
     iron:      { label: 'IRON',      icon: '🛡', color: '#c7ccd6', stat: 'keeper' },
-    chaos:     { label: 'CHAOS',  icon: '🎲', color: '#c63dff', noSet: true, stat: 'ovr' },
+    chaos:     { label: 'CHAOS',  icon: '🎲', color: '#c63dff', stat: 'ovr' },
   },
   // Core scale theo chỉ số (src/systems/corescale.js): rating min -> anchor -> max = độ mạnh / hồi chiêu (nội suy từng đoạn).
   // anchor = rating của đồng đội / đội AI chỉ số 1.0 (mức cân bằng gốc của Core). stat của trường phái ở archetypes[].stat
@@ -43,7 +43,7 @@ SFC_CONFIG.cores = {
   // TUYỆT KỸ THEO CÔNG THỨC (docs/ULT_RECIPE.md, thay cho Cộng hưởng 2/3/4): đếm Core cùng trường phái của từng cầu thủ
   // (Tuyệt kỹ không tính). Đạt mốc tiers[i] của trường phái X -> Tuyệt kỹ base[X] cấp i+1
   // (user chốt 2026-10-13: X3 = Tuyệt kỹ gốc, X4 = dạng nâng cấp ★★, tham số ở list[id].evolve[0]).
-  // hybrids: { id, tags: [X, Y] } = Tuyệt kỹ lai, mở khi đạt hybridTier Core của CẢ X và Y (X2 + Y2; đủ 21 cặp của 7 trường phái).
+  // hybrids: { id, tags: [X, Y] } = Tuyệt kỹ lai, mở khi đạt hybridTier Core của CẢ X và Y (X2 + Y2; đủ 28 cặp của 8 trường phái).
   // Nhiều công thức cùng thoả: công thức dùng nhiều Core hơn thắng; bằng nhau -> công thức vừa đạt (lá vừa chọn).
   // Chưa đạt công thức nào: start (null = chưa có Tuyệt kỹ, ô X ẩn; năng lượng vẫn nạp ngầm để vừa mở là dùng được).
   // Mọi Tuyệt kỹ giấu tới khi người chơi tự đạt (Profile.data.ultBook)
@@ -53,7 +53,7 @@ SFC_CONFIG.cores = {
     hybridTier: 2,
     base: {
       runner: 'lightning_dash', playmaker: 'endless_tiki', striker: 'meteor_strike', brawler: 'hundred_fists',
-      launcher: 'meteor_drop', trickster: 'clone_army', iron: 'titan',
+      launcher: 'meteor_drop', trickster: 'clone_army', iron: 'titan', chaos: 'chaos_roulette',
     },
     // Tuyệt kỹ lai (user duyệt 2026-10-13): 7 cặp từng có Core cầu nối + Slingshot, rồi 13 cặp còn lại. Hành vi ở src/systems/cores-hybrid.js
     hybrids: [
@@ -79,6 +79,14 @@ SFC_CONFIG.cores = {
       { id: 'crossfire_kicks', tags: ['launcher', 'trickster'] },
       { id: 'iron_quake', tags: ['launcher', 'iron'] },
       { id: 'mirror_wall', tags: ['trickster', 'iron'] },
+      // Hỗn loạn + 7 hệ còn lại (2026-10-14) -> đủ 28 cặp của 8 trường phái
+      { id: 'wormhole_dash', tags: ['chaos', 'runner'] },
+      { id: 'wild_pass', tags: ['chaos', 'playmaker'] },
+      { id: 'jackpot_shot', tags: ['chaos', 'striker'] },
+      { id: 'wild_haymaker', tags: ['chaos', 'brawler'] },
+      { id: 'pinball_kick', tags: ['chaos', 'launcher'] },
+      { id: 'shell_game', tags: ['chaos', 'trickster'] },
+      { id: 'iron_dice', tags: ['chaos', 'iron'] },
     ],
   },
 
@@ -486,6 +494,15 @@ SFC_CONFIG.cores = {
       desc: 'Pure aura: run, pass and shoot faster. Hair goes gold.',
       params: { time: 6, speed: 1.18, pass: 1.18, shot: 1.18 },
     },
+    chaos_roulette: {
+      name: 'Chaos Roulette', icon: '🎰', tags: ['chaos'], role: 'ult', rarity: 'mythic',
+      desc: 'Spin the wheel: a random disaster hits your opponents.',
+      // rolls: số tai hoạ bốc (khác nhau): mưa thiên thạch (meteors quả, vòng báo trước telegraph giây) · mất trọng lực (hất tung, có vòng
+      // báo trước dưới chân) · nguyền chậm (đối thủ chậm còn slow trong slowTime giây)
+      params: { rolls: 1, telegraph: 0.6, meteors: 4, radius: 34, knock: 220, launch: 240, stun: 1.1, slow: 0.55, slowTime: 2.5 },
+      evolve: [{ rolls: 2, meteors: 6, radius: 40, stun: 1.4, slowTime: 3 }],
+      scale: { radius: 'pow', knock: 'pow', launch: 'pow', stun: 'pow', slowTime: 'pow' },
+    },
     titan: {
       name: 'Titan', icon: '🗿', tags: ['iron'], role: 'ult', rarity: 'mythic',
       desc: 'Grow giant: stun-proof, untackleable, bowling everyone over.',
@@ -622,6 +639,50 @@ SFC_CONFIG.cores = {
       params: { time: 3.5, clones: 5, gap: 16, ahead: 44 },   // ahead: tường cách bóng bao xa về phía khung thành nhà
       scale: { time: 'pow' },
     },
+    // Hỗn loạn + 7 hệ (2026-10-14)
+    wormhole_dash: {
+      name: 'Wormhole Dash', icon: '🌀', tags: ['chaos', 'runner'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Dive into a wormhole and burst out far ahead.',
+      params: { distance: 200, telegraph: 0.35, radius: 34, knock: 220, launch: 160, stun: 0.9 },   // cửa ra hiện trước telegraph giây
+      scale: { distance: 'pow', radius: 'pow', stun: 'pow' },
+    },
+    wild_pass: {
+      name: 'Wild Card Pass', icon: '🃏', tags: ['chaos', 'playmaker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'An uncuttable pass that hands a teammate a random buff.',
+      params: { time: 3, speed: 1.35, shot: 1.4, pass: 1.4, passSpeed: 1.3 },   // người nhận bốc 1 trong 3 buff trong time giây
+      scale: { time: 'pow', speed: 'mul', shot: 'mul', pass: 'mul' },
+    },
+    jackpot_shot: {
+      name: 'Jackpot Shot', icon: '🎰', tags: ['chaos', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Your shot rolls two random powers at once.',
+      params: { picks: 2, curve: 2.4, rocket: 1.35, gk: 0.3 },   // bốc picks trong: lửa · sét · cong · tên lửa · tách đôi · thủ môn hoa mắt
+      scale: { gk: 'pow', rocket: 'mul' },
+    },
+    wild_haymaker: {
+      name: 'Wild Haymaker', icon: '🎲', tags: ['chaos', 'brawler'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Rush in and land a punch with a random knockout.',
+      params: { range: 160, rush: 540, knock: 520, launch: 360, stun: 1.6 },   // kết quả ngẫu nhiên: bay lên trời · văng vào tường · choáng xoay vòng
+      scale: { knock: 'pow', launch: 'pow', stun: 'pow' },
+    },
+    pinball_kick: {
+      name: 'Pinball Kick', icon: '🕹', tags: ['chaos', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Kick an opponent into a pinball that bowls others over.',
+      params: { range: 150, rush: 520, speed: 420, bounces: 3, time: 1.2, knock: 220, launch: 160, stun: 1.0 },   // bounces: nảy tường tối đa
+      scale: { speed: 'pow', knock: 'pow', stun: 'pow' },
+    },
+    shell_game: {
+      name: 'Shell Game', icon: '🥥', tags: ['chaos', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'You and your clones shuffle spots; guess which is real.',
+      params: { clones: 3, spread: 46, delay: 0.35, time: 2.2, confuse: 1.6 },   // delay: phân thân hiện ra rồi mới tráo chỗ
+      scale: { time: 'pow', confuse: 'pow' },
+    },
+    iron_dice: {
+      name: 'Iron Dice', icon: '🎲', tags: ['chaos', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Roll forward as a giant steel die, flattening everyone.',
+      // lăn theo đường vạch trước (miễn choáng chỉ lúc lăn), dừng lại tung xúc xắc: sóng chấn bán kính radius + perPip x số chấm
+      params: { distance: 180, speed: 380, telegraph: 0.35, width: 18, knock: 260, launch: 160, stun: 1.0, size: 1.6, radius: 10, perPip: 6 },
+      scale: { distance: 'pow', knock: 'pow', stun: 'pow' },
+    },
 
     /* ---------- 🎲 HỖN LOẠN (mới) ---------- */
     bomb_ball: {
@@ -642,6 +703,25 @@ SFC_CONFIG.cores = {
       name: 'Warp Walls', icon: '🌌', tags: ['chaos'], role: 'wild', rarity: 'rare',
       desc: 'Balls into side walls warp out the opposite wall.',
       params: {},
+    },
+    // 3 lá mới (2026-10-14): Hỗn loạn có 6 lá như hệ khác -> Tuyệt kỹ gốc X3 / ★★ X4 / lai X2 + Y2 đạt được
+    glitch_step: {
+      name: 'Glitch Step', icon: '📺', tags: ['chaos'], role: 'wild', rarity: 'rare',
+      desc: 'Dodging sometimes glitches you to a random nearby spot.',
+      params: { chance: 0.4, distance: 70, cooldown: 2 },   // lướt Z: chance tỉ lệ dịch chuyển thêm tới chỗ ngẫu nhiên trong distance px
+      scale: { distance: 'pow', cooldown: 'cd' },
+    },
+    wild_card: {
+      name: 'Wild Card', icon: '🃏', tags: ['chaos'], role: 'wild', rarity: 'epic',
+      desc: 'Every kickoff you draw a random power-up card.',
+      params: { time: 12, speed: 1.15, shot: 1.25, pass: 1.25, tackle: 1.3 },   // mỗi lần giao bóng: 1 trong 4 buff trong time giây
+      scale: { time: 'pow' },
+    },
+    loaded_dice: {
+      name: 'Loaded Dice', icon: '🎲', tags: ['chaos'], role: 'wild', rarity: 'epic',
+      desc: 'Every punch rolls a die; high rolls hit like trucks.',
+      params: { big: 5, knock: 320, launch: 220, stun: 1.2 },   // đấm trúng tung xúc xắc: >= big thì văng mạnh, 6 thì hất tung
+      scale: { knock: 'pow', launch: 'pow', stun: 'pow' },
     },
   },
 };

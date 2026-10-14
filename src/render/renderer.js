@@ -28,6 +28,7 @@ window.SFC = window.SFC || {};
       ctx.save();
       if (fx.shakeA > 0) ctx.translate(Math.round((Math.random() - 0.5) * fx.shakeA * 2), Math.round((Math.random() - 0.5) * fx.shakeA * 2));
       SFC.VFX.applyZoom(ctx, g);
+      this.goalCam(ctx, g);
       ctx.drawImage(this.bg, 0, 0);
       // khán giả chuyển động (arena.crowd) — đè lên ảnh nền, dưới mọi thứ trên sân
       SFC.Crowd.draw(ctx, g);
@@ -274,6 +275,27 @@ window.SFC = window.SFC || {};
       for (let i = 0; i <= n + 1; i++) px(ctx, x - (n + 2 - i), ay + i, 2 * (n + 2 - i) + 1, 1, OUT);
       for (let i = 0; i < n; i++) px(ctx, x - (n - i), ay + i, 2 * (n - i) + 1, 1, col);
       px(ctx, x - n + 1, ay, 2 * n - 1, 1, '#ffffff');   // vệt sáng mép trên
+    },
+
+    // MÁY QUAY ĂN MỪNG (game.celebration.camera): trận dừng sau bàn thắng -> phóng to bám người ghi bàn đang ăn mừng
+    // (phản lưới nhà: bám bóng trong lưới), vào / ra mượt, khung nhìn không lọt ra ngoài ảnh nền. Chỉ vẽ: máy khách online
+    // tự tính theo g.state / g.stateT (đã có trong snapshot). Ảnh xem trước Core (g.preview) không dùng
+    goalCam(ctx, g) {
+      const K = SFC_CONFIG.game.celebration.camera, C = SFC_CONFIG.game.render;
+      if (!K || g.preview || g.state !== 'goal') return;
+      const total = g.cfg.match.goalCelebration, el = total - g.stateT;
+      const k0 = Math.min(U.clamp((el - K.delay) / K.in, 0, 1), U.clamp(g.stateT / K.out, 0, 1));
+      if (k0 <= 0) return;
+      const k = k0 * k0 * (3 - 2 * k0);
+      const p = g.players.find((q) => q.celId);
+      const tx = p ? p.x : g.ball.x, ty = p ? p.y - K.lift : g.ball.y;
+      const W = C.width, H = C.height, s = 1 + (K.zoom - 1) * k, hw = W / 2 / s, hh = H / 2 / s;
+      // tâm khung nhìn trượt từ giữa sân tới người ghi bàn; zoom hết cỡ thì làm tròn pixel cho nét
+      let x = U.clamp(W / 2 + (tx - W / 2) * k, hw, W - hw), y = U.clamp(H / 2 + (ty - H / 2) * k, hh, H - hh);
+      if (k >= 1) { x = Math.round(x); y = Math.round(y); }
+      ctx.translate(W / 2, H / 2);
+      ctx.scale(s, s);
+      ctx.translate(-x, -y);
     },
 
     // bị Hard attack đá bay: bóng đổ dưới đất, người lộn vòng trên không + vệt gió

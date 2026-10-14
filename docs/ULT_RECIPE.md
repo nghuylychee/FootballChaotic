@@ -178,7 +178,32 @@ Giả lập AI vs AI 40 trận (đội AI bốc từ toàn bộ Core): công th�
 
 ## 5. Chưa chốt / để sau
 - Tuyệt kỹ lai (bước C): cặp nào, bao nhiêu cái lúc ra mắt (`ults.hybrids`).
-- HỖN LOẠN có công thức không (vd. Chaos 2 → ?).
+- ~~HỖN LOẠN có công thức không~~ → **có** (2026-10-14, xem mục Hỗn loạn bên dưới).
 - Cân bằng: ★★★ quá dễ đạt nếu dồn 1 trường phái (núm: `draft.buildWeight`, `guaranteeFromRound`, `ults.tiers`); bỏ tài nguyên làm TỐC ĐỘ / ĐẤU SĨ yếu đi.
 - Dạng tiến hoá hiện chỉ tăng tham số + lớp hình chung (vòng sóng, chớp sáng); muốn khác hẳn thì thêm hình riêng từng Tuyệt kỹ.
 - Deploy máy chủ `7.0.0` (protocol mới) — tới lúc đó máy khách mới sẽ tự chơi kiểu người chơi host / AI ranked.
+
+## Hỗn loạn thành trường phái đủ công thức (2026-10-14)
+User: "Chaotic là 1 hệ nhưng giờ ko có ulti, cũng ko có ulti lai". Bỏ `archetypes.chaos.noSet` → HỖN LOẠN tính công thức như mọi hệ.
+Hệ chỉ có 3 lá nên ★★ (X4) không thể đạt → user chọn **thêm 3 Core Hỗn loạn** (6 lá như TỐC ĐỘ):
+
+| Core | Độ hiếm · mở ở | Làm gì |
+|---|---|---|
+| **Glitch Step** | HIẾM · Area 3 ⅓ | Lướt Z: 40% "lỗi hình" nhảy thêm tới chỗ ngẫu nhiên gần đó (xoáy tím 2 đầu, hồi 2s) |
+| **Wild Card** | SỬ THI · Area 4 vào Area | Mỗi lần giao bóng bốc 1 lá buff 12s: tốc độ / lực sút / chuyền / tỉ lệ đấm rơi bóng (hào quang + chữ trên đầu) |
+| **Loaded Dice** | SỬ THI · Area 6 ⅓ | Đấm trúng tung xúc xắc (số hiện trên đầu): 5–6 văng mạnh + choáng, 6 hất tung |
+
+Hỗn loạn đủ 3 lá (X3) từ Area 3, đủ 4 lá (★★) từ Area 4. Tuyệt kỹ gốc + 7 lai (`cores-new.js` / `cores-hybrid.js`):
+
+| Công thức | Tên | Làm gì |
+|---|---|---|
+| HỖN LOẠN ×3 (★★ ×4) | **Chaos Roulette** | Vòng quay bốc 1 tai hoạ (★★: 2) giáng xuống đối thủ: mưa thiên thạch (vòng báo trước) · mất trọng lực (hất tung, vòng dưới chân báo trước) · nguyền chậm |
+| HỖN LOẠN + TỐC ĐỘ | **Wormhole Dash** | Cửa ra xoáy tím hiện trước 0.35s, lặn vào hố rồi trồi ra xa phía trước, nổ hất người quanh cửa ra |
+| HỖN LOẠN + TIKI | **Wild Card Pass** | Đường chuyền không cắt được (bóng hoá đồ vật), người nhận bốc 1 buff ngẫu nhiên |
+| HỖN LOẠN + SÁT THỦ | **Jackpot Shot** | Sút tối đa, bóng bốc 2 năng lực khác nhau: lửa · sét · cong · tên lửa · tách đôi · thủ môn hoa mắt |
+| HỖN LOẠN + ĐẤU SĨ | **Wild Haymaker** | Lao tới (né Z), cú đấm kết quả ngẫu nhiên: bay lên trời · văng vào tường · choáng xoay |
+| HỖN LOẠN + VÕ SĨ ĐÁ | **Pinball Kick** | Lao tới (né Z), đá đối thủ thành viên bi nảy tường 3 lần, ai bị chạm cũng văng |
+| HỖN LOẠN + ẢO ẢNH | **Shell Game** | 3 phân thân hiện quanh bạn rồi cả 4 tráo chỗ; có bóng thì phân thân dắt bóng giả |
+| HỖN LOẠN + THÉP | **Iron Dice** | Hoá khối thép to lăn theo đường vạch trước, dừng lại tung xúc xắc: sóng chấn to theo số chấm |
+
+ULT BOOK thành bảng 8×8 (44 ô). Giả lập 60 trận AI vs AI: không lỗi; cầu thủ hết trận cầm Tuyệt kỹ lai 12% → 16%.
