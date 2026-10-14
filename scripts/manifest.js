@@ -71,11 +71,13 @@ const FILES = [
   ['src/systems/cores-hybrid.js', 'game sandbox itch server'],
   ['src/systems/effects.js', 'game sandbox itch server'],
   ['src/systems/vfxkit.js', 'game sandbox itch server'],
+  ['src/systems/celebrate.js', 'game sandbox itch server'],   // ăn mừng bàn thắng: chọn động tác + di chuyển
   ['src/systems/ai.js', 'game sandbox itch server'],
   ['src/systems/human.js', 'game sandbox itch server'],
   ['src/game/match.js', 'game sandbox itch server'],
   ['src/game/tutorial.js', 'game itch'],
   ['src/render/sprites.js', 'game sandbox itch'],
+  ['src/render/celebrate-draw.js', 'game sandbox itch'],     // ăn mừng bàn thắng: tư thế + đạo cụ
   ['src/render/background.js', 'game sandbox itch'],
   ['src/render/crowd.js', 'game sandbox itch'],
   ['src/render/vfx.js', 'game sandbox itch'],

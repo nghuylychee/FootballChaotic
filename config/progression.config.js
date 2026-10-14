@@ -106,7 +106,8 @@ SFC_CONFIG.progression = {
   // Màu miễn phí (chọn trong NHÂN VẬT) — màu da lấy từ SFC_CONFIG.teams.skins
   hairColors: ['#1a1216', '#3b2415', '#8a4b22', '#f2d16b', '#e8ecf5', '#ff3d5a', '#3ff6ff', '#9d7bff', '#6bff4f'],
 
-  // Costume, phối tự do. slot: hair (tóc / mũ) · face (mặt) · shoes (giày) · fx (hiệu ứng khi chạy)
+  // Costume, phối tự do. slot: hair (tóc / mũ) · face (mặt) · shoes (giày) · fx (hiệu ứng khi chạy) ·
+  // cel (động tác ăn mừng bàn thắng: chỉ ra từ Hộp Ăn Mừng, diễn ở src/systems/celebrate.js + src/render/celebrate-draw.js)
   // default: true = có sẵn, không nằm trong hộp, không phân rã được. Hình vẽ ở src/render/sprites.js (theo id).
   // icon / color: nút lọc slot ở túi đồ (APPEARANCE), icon pixel ở render/pixelicons.js
   slots: {
@@ -114,6 +115,7 @@ SFC_CONFIG.progression = {
     face:  { label: 'FACE',        icon: 'slot-face',  color: '#f2c79a' },
     shoes: { label: 'SHOES',       icon: 'slot-shoes', color: '#c7ccd6' },
     fx:    { label: 'TRAIL FX',    icon: 'slot-fx',    color: '#ffe14f' },
+    cel:   { label: 'CELEBRATION', icon: 'slot-cel',   color: '#6bff4f' },
   },
   // Mỗi slot 20 món: 1–2 mặc định · ~6–7 THƯỜNG · ~5 HIẾM · 4 SỬ THI · 2–3 HUYỀN THOẠI · 1 THẦN THOẠI
   items: {
@@ -201,8 +203,29 @@ SFC_CONFIG.progression = {
     shadow:    { slot: 'fx', name: 'Phantom',          rarity: 'legendary', desc: 'Your own purple shadow chases after you.' },
     galaxy:    { slot: 'fx', name: 'Galaxy',           rarity: 'legendary', desc: 'Stardust sprinkled with every step.' },
     aura:      { slot: 'fx', name: 'Golden Aura',      rarity: 'mythic', desc: 'A golden glow always shining under your feet.' },
+    /* ---------- ĂN MỪNG (sau khi ghi bàn) — 20 động tác: 1 mặc định · 6 THƯỜNG · 5 HIẾM · 4 SỬ THI · 3 HUYỀN THOẠI · 1 THẦN THOẠI ---------- */
+    fistpump:  { slot: 'cel', name: 'Fist Pump',       default: true, desc: 'A little hop and a pumped fist. Simple, honest.' },
+    airplane:  { slot: 'cel', name: 'Airplane',        rarity: 'common', desc: 'Arms out wide, banking past the crowd.' },
+    kneeslide: { slot: 'cel', name: 'Knee Slide',      rarity: 'common', desc: 'Full sprint, then slide on your knees. Grass stains guaranteed.' },
+    skypoint:  { slot: 'cel', name: 'Sky Point',       rarity: 'common', desc: 'Both fingers to the sky. That one was for someone.' },
+    shush:     { slot: 'cel', name: 'Shush',           rarity: 'common', desc: 'Finger to your lips. The away fans go quiet.' },
+    flex:      { slot: 'cel', name: 'Flex',            rarity: 'common', desc: 'Show them the guns that hit that shot.' },
+    bow:       { slot: 'cel', name: 'Take a Bow',      rarity: 'common', desc: 'A polite bow to every side of the street.' },
+    spinjump:  { slot: 'cel', name: 'Spin Jump',       rarity: 'rare', desc: 'Spin, leap, land with arms flared. The whole street shouts it.' },
+    robot:     { slot: 'cel', name: 'The Robot',       rarity: 'rare', desc: 'Stiff arms, sharp angles, zero emotions.' },
+    dab:       { slot: 'cel', name: 'Dab',             rarity: 'rare', desc: 'Hide your face in your elbow. Both sides.' },
+    phonecall: { slot: 'cel', name: 'Phone Call',      rarity: 'rare', desc: 'Calling home to say you just scored again.' },
+    nap:       { slot: 'cel', name: 'Nap Time',        rarity: 'rare', desc: 'Lie down and snore. That was too easy.' },
+    backflip:  { slot: 'cel', name: 'Backflip',        rarity: 'epic', desc: 'A clean backflip and a perfect landing.' },
+    worm:      { slot: 'cel', name: 'The Worm',        rarity: 'epic', desc: 'Drop to the floor and ripple across the pitch.' },
+    moonwalk:  { slot: 'cel', name: 'Moonwalk',        rarity: 'epic', desc: 'Glide backwards like the floor is ice.' },
+    makeitrain:{ slot: 'cel', name: 'Make It Rain',    rarity: 'epic', desc: 'Throw cash at the crowd. Goals pay well.' },
+    firebreath:{ slot: 'cel', name: 'Fire Breath',     rarity: 'legendary', desc: 'Roar at the sky and breathe real fire.' },
+    fireworks: { slot: 'cel', name: 'Fireworks',       rarity: 'legendary', desc: 'Launch rockets from your hands. The sky lights up.' },
+    levitate:  { slot: 'cel', name: 'Levitate',        rarity: 'legendary', desc: 'Sit cross-legged and float in a calm golden glow.' },
+    ascend:    { slot: 'cel', name: 'Ascension',       rarity: 'mythic', desc: 'A beam from the sky, wings, a halo. You rise.' },
   },
-  defaultLook: { hair: 'classic', face: 'none', shoes: 'kicks', fx: 'nofx', skin: 0, hairColor: 0 },
+  defaultLook: { hair: 'classic', face: 'none', shoes: 'kicks', fx: 'nofx', cel: 'fistpump', skin: 0, hairColor: 0 },
 
   // TẠM TẮT gacha Core: mọi Core dùng được ngay cho mọi người chơi (không cần quay / level), Hộp Core ẩn khỏi SHOP.
   // Core đã quay được trước đó vẫn giữ trong hồ sơ. Bật lại = true.
@@ -243,13 +266,18 @@ SFC_CONFIG.progression = {
     clone_army: { level: 17 }, endless_tiki: { level: 18 },
   },
 
-  // Hộp gacha (quay kiểu CSGO). kind: costume | core. odds = % theo độ hiếm (chuẩn hoá theo các độ hiếm có trong hộp),
+  // Hộp gacha (quay kiểu CSGO). kind: costume (mọi slot trừ ăn mừng) | cel (chỉ động tác ăn mừng) | core. odds = % theo độ hiếm (chuẩn hoá theo các độ hiếm có trong hộp),
   // sau đó chọn đều 1 món trong độ hiếm đó. rarities = độ hiếm có trong hộp.
   boxes: {
     street: {
       name: 'Street Box', kind: 'costume', price: 100, level: 1, color: '#b0c3d9',
       desc: 'All kinds of costumes: hair, face, shoes, trail FX. Mostly commons, the occasional flash of gold.',
       odds: { common: 60, rare: 27, epic: 10, legendary: 2.5, mythic: 0.5 },
+    },
+    party: {
+      name: 'Celebration Box', kind: 'cel', price: 150, level: 1, color: '#6bff4f',
+      desc: 'Goal celebrations only. Equip one, score, then show off.',
+      odds: { common: 58, rare: 27, epic: 11, legendary: 3.4, mythic: 0.6 },
     },
     legend: {
       name: 'Legend Box', kind: 'costume', price: 450, level: 6, color: '#eb4b4b',
@@ -262,7 +290,7 @@ SFC_CONFIG.progression = {
       odds: { rare: 60, epic: 30, legendary: 8, mythic: 2 },
     },
   },
-  boxOrder: ['street', 'legend', 'core'],
+  boxOrder: ['street', 'party', 'legend', 'core'],
   reelLength: 46,              // số ô trên dải quay
   reelWinIndex: 40,            // ô trúng thưởng
   reelTime: 4.8,               // giây quay

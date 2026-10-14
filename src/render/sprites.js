@@ -604,10 +604,44 @@ window.SFC = window.SFC || {};
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const g = { teams: [{ cfg: { kit } }], previewLook: look };
     const x = canvas.width / 2, y = canvas.height - 4;
+    // xem trước động tác ăn mừng (túi đồ / mở hộp): extra = { celId, celT }
+    if (extra && extra.celId && SFC.CelebrateDraw) {
+      SFC.CelebrateDraw.draw(ctx, Object.assign({ x, y: canvas.height - 6, vx: 0, vy: 0, facing: Math.PI / 2, anim: t, flash: 0, state: 'normal', team: 0, look, preview: true }, extra), g);
+      return;
+    }
     const behind = look.fx === 'shadow';
     if (behind) drawFxPreview(ctx, look.fx, x, y, t, g);
     drawPlayer(ctx, Object.assign({ x, y, vx: 0, vy: 0, facing, anim: t, flash: 0, state: 'normal', team: 0, look }, extra), g);
     if (!behind && look.fx && FX[look.fx]) drawFxPreview(ctx, look.fx, x, y, t, g);
+  }
+
+  /* ---------- tư thế ăn mừng (src/render/celebrate-draw.js) ---------- */
+  // mắt 3x3 tại (x, y): happy = ^ · closed = gạch ngang · up = nhìn lên trời
+  function celEyes(ctx, kind, x, y) {
+    if (kind === 'happy') { px(ctx, x, y + 1, 1, 1, OUT); px(ctx, x + 1, y, 1, 1, OUT); px(ctx, x + 2, y + 1, 1, 1, OUT); return; }
+    if (kind === 'closed') { px(ctx, x, y + 1, 3, 1, OUT); return; }
+    px(ctx, x, y - 1, 3, 3, OUT); px(ctx, x + 1, y - 1, 1, 1, '#ffffff');
+  }
+  // 2 tay: arms = [trái, phải], mỗi tay [dx, dy] (bàn tay) hoặc [khuỷu dx, dy, bàn tay dx, dy] tính từ vai (x ∓ 5, by + 2)
+  function celArms(ctx, x, by, arms, hand) {
+    arms.forEach((a, i) => {
+      if (!a) return;
+      const sx = x + (i ? 5 : -5), sy = by + 2;
+      const pts = a.length > 2 ? [[sx, sy], [sx + a[0], sy + a[1]], [sx + a[2], sy + a[3]]] : [[sx, sy], [sx + a[0], sy + a[1]]];
+      for (let pass = 0; pass < 2; pass++) {
+        for (let k = 1; k < pts.length; k++) {
+          const [x0, y0] = pts[k - 1], [x1, y1] = pts[k];
+          const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
+          for (let j = 0; j <= n; j++) {
+            const cx = Math.round(x0 + ((x1 - x0) * j) / n), cy = Math.round(y0 + ((y1 - y0) * j) / n);
+            if (pass === 0) px(ctx, cx - 1, cy - 1, 3, 3, OUT); else px(ctx, cx, cy, 1, 1, hand);
+          }
+        }
+      }
+      const [hx, hy] = pts[pts.length - 1];
+      px(ctx, hx - 1, hy - 1, 4, 4, OUT);
+      px(ctx, hx, hy, 2, 2, hand);
+    });
   }
 
   /* ---------- cầu thủ ---------- */
@@ -620,7 +654,9 @@ window.SFC = window.SFC || {};
     const shirtDark = tint || kit.shirtDark;
     const gloves = !ghost && p.keeper; // đứng trong vòng cấm nhà -> đeo găng thủ môn
     const x = Math.round(p.x), y0 = Math.round(p.y);
-    const moving = Math.hypot(p.vx || 0, p.vy || 0) > 12;
+    // tư thế ăn mừng bàn thắng (CelebrateDraw.draw gắn vào): tay / chân / thân hạ / mắt / miệng riêng
+    const cp = !ghost && p.celPose;
+    const moving = cp ? !!cp.run : Math.hypot(p.vx || 0, p.vy || 0) > 12;
     const step = moving ? Math.floor(p.anim * 12) % 2 : 0;
     const stunned = p.state === 'stun';
     const y = y0;
@@ -655,6 +691,15 @@ window.SFC = window.SFC || {};
       const lift = Math.abs(fy) > 0.7 ? 1 : 2;
       drawLeg(ctx, supL - Math.round(fx), y - Math.round(fy), p.look, p.anim, side > 0 ? 0 : 1);
       drawLeg(ctx, kickL + Math.round(fx * 3), y + Math.round(fy * (fy > 0 ? 2 : 1)) - lift, p.look, p.anim, side > 0 ? 1 : 0);
+    } else if (cp && cp.legs === 'cross') {
+      // ngồi xếp bằng: 2 ống chân nằm ngang trước người, giày ở 2 đầu
+      const { main } = shoeColors(p.look, p.anim, 0);
+      px(ctx, x - 9, y - 4, 18, 4, OUT);
+      px(ctx, x - 8, y - 3, 16, 2, p.look.skin);
+      px(ctx, x - 8, y - 3, 3, 2, main); px(ctx, x + 5, y - 3, 3, 2, main);
+    } else if (cp && cp.legs === 'split') {
+      drawLeg(ctx, x - 7, y, p.look, p.anim, 0);
+      drawLeg(ctx, x + 3, y, p.look, p.anim, 1);
     } else {
       if (!(kickLeg && side < 0)) drawLeg(ctx, x - 4, y + l, p.look, p.anim, 0);
       if (!(kickLeg && side > 0)) drawLeg(ctx, x, y + r, p.look, p.anim, 1);
@@ -662,7 +707,7 @@ window.SFC = window.SFC || {};
     }
 
     // thân
-    const by = y - 10 + bob;
+    const by = y - 10 + bob + (cp && cp.drop || 0);   // quỳ / xếp bằng: thân hạ xuống che chân
     px(ctx, x - 5, by - 1, 10, 8, OUT);
     px(ctx, x - 4, by, 8, 6, shirt);
     px(ctx, x - 4, by + 4, 8, 2, kit.shorts);
@@ -674,8 +719,8 @@ window.SFC = window.SFC || {};
     const punchArm = atk && atk.fist != null;
     const diveArms = atk && atk.dive;
     // đổ người: tay vươn qua đầu vẽ sau phần đầu (bên dưới); ở đây chỉ bỏ 2 tay buông thõng
-    if (diveArms) { /* xem sau phần đầu */ } else if (!(punchArm && side < 0)) { px(ctx, x - 6, by + 1 + arm, 2, 4, OUT); px(ctx, x - 6, by + 2 + arm, 1, 2, hand); }
-    if (!diveArms && !(punchArm && side > 0)) { px(ctx, x + 4, by + 1 - arm, 2, 4, OUT); px(ctx, x + 5, by + 2 - arm, 1, 2, hand); }
+    if (diveArms || (cp && cp.arms)) { /* xem sau phần đầu */ } else if (!(punchArm && side < 0)) { px(ctx, x - 6, by + 1 + arm, 2, 4, OUT); px(ctx, x - 6, by + 2 + arm, 1, 2, hand); }
+    if (!diveArms && !(cp && cp.arms) && !(punchArm && side > 0)) { px(ctx, x + 4, by + 1 - arm, 2, 4, OUT); px(ctx, x + 5, by + 2 - arm, 1, 2, hand); }
     if (punchArm) drawPunch(ctx, x, by, fx, fy, side, atk, hand);
     // Hard attack đang gồng: hào quang đỏ nhấp nháy
     if (p.state === 'windup') {
@@ -686,7 +731,7 @@ window.SFC = window.SFC || {};
 
     // đầu to kiểu Isaac
     const hx = x;
-    const hy = by - 6 + (stunned ? Math.round(Math.sin(p.anim * 20)) : 0);
+    const hy = by - 6 + (stunned ? Math.round(Math.sin(p.anim * 20)) : 0) + (cp && cp.headDy || 0);
     const back = fy < -0.35;
     // AURA FARMING: tóc hoá vàng + dựng ngược (thay kiểu tóc / mũ trong lúc hiệu lực)
     const aura = !ghost && p.auraFarmT > 0;
@@ -705,14 +750,19 @@ window.SFC = window.SFC || {};
       const ey = fy > 0.4 ? 1 : 0;
       if (stunned) {
         px(ctx, hx - 4 + ex, hy + ey, 3, 1, OUT); px(ctx, hx + 1 + ex, hy + ey, 3, 1, OUT);
+      } else if (cp && cp.eyes) {
+        celEyes(ctx, cp.eyes, hx - 4 + ex, hy - 1 + ey);
+        celEyes(ctx, cp.eyes, hx + 1 + ex, hy - 1 + ey);
       } else {
         px(ctx, hx - 4 + ex, hy - 1 + ey, 3, 3, OUT); px(ctx, hx + 1 + ex, hy - 1 + ey, 3, 3, OUT);
         px(ctx, hx - 4 + ex, hy - 1 + ey, 1, 1, '#ffffff'); px(ctx, hx + 1 + ex, hy - 1 + ey, 1, 1, '#ffffff');
       }
-      px(ctx, hx - 1 + ex, hy + 3 + ey, 2, 1, stunned ? OUT : 'rgba(20,12,22,0.6)');
+      if (cp && cp.mouth) { px(ctx, hx - 1 + ex, hy + 2 + ey, 3, 2, OUT); px(ctx, hx + ex, hy + 3 + ey, 1, 1, '#c0304a'); }
+      else px(ctx, hx - 1 + ex, hy + 3 + ey, 2, 1, stunned ? OUT : 'rgba(20,12,22,0.6)');
       if (p.look.face) drawFace(ctx, p.look.face, p.look.hair, hx + ex, hy + ey, p.look, fx, fy, p.anim || 0);
     }
 
+    if (cp && cp.arms) celArms(ctx, x, by, cp.arms, hand);
     if (diveArms) {
       // đổ người sang ngang (trục y): camera thấy sườn người — cánh tay trên vươn thẳng qua đầu, che mất mặt (phía sân);
       // nách + sườn áo lộ ở vai, găng tay ở cuối
@@ -839,6 +889,17 @@ window.SFC = window.SFC || {};
   const ICON_CROP = { hair: [5, 6, 30, 30], face: [9, 13, 22, 22], shoes: [11, 33, 18, 9], fx: [4, 2, 32, 42] };
   let iconBuf = null;
   function drawItemIcon(canvas, look, kit, slot) {
+    if (slot === 'cel' && SFC.CelebrateDraw) {
+      // động tác ăn mừng: character đứng đúng khoảnh khắc đặc trưng của động tác (CelebrateDraw.iconT), cả người
+      iconBuf = iconBuf || document.createElement('canvas');
+      iconBuf.width = 48; iconBuf.height = 52;
+      drawAvatar(iconBuf, look, kit, 0.3, Math.PI / 2, { celId: look.cel, celT: SFC.CelebrateDraw.iconT(look.cel), icon: true });
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(iconBuf, Math.round((canvas.width - 48) / 2), canvas.height - 50);
+      return;
+    }
     if (slot === 'shoes') {
       // giày: vẽ riêng đôi chân phóng to x3 cho dễ nhìn (bánh xe, đinh, lửa phụt dưới đế...)
       const ctx = canvas.getContext('2d');

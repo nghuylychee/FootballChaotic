@@ -350,7 +350,7 @@ window.SFC = window.SFC || {};
       const mirror = [0, 1].map(() => vary && Math.random() < (V.mirrorY || 0));
       for (const p of this.players) {
         const pos = this.kickoffPos(p, vary, mirror[p.team]);
-        Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null, bracing: false, readAt: -1 });
+        Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null, bracing: false, readAt: -1, celId: null });
         p.facing = this.teams[p.team].dir > 0 ? 0 : Math.PI;
         p.intent.mx = p.intent.my = 0;
         p.ai.runT = 0; p.ai.requestedPass = null;
@@ -401,7 +401,7 @@ window.SFC = window.SFC || {};
           break;
         case 'goal':
           this.stateT -= dt;
-          for (const p of this.players) { p.intent.mx = p.intent.my = 0; p.update(dt); }
+          SFC.Celebrate.update(this, dt);   // người ghi bàn ăn mừng, đồng đội chạy lại (src/systems/celebrate.js)
           this.ball.update(dt);
           this.effects.update(dt);
           if (this.stateT <= 0) this.afterGoal();
@@ -582,7 +582,9 @@ window.SFC = window.SFC || {};
       const col = this.teams[scorer].cfg.kit.shirt;
       this.effects.burst(gx, f.cy, 10, col, 40, 160, 1.2);
       this.effects.burst(gx, f.cy, 10, '#ffffff', 20, 120, 1.0);
-      this.emit('goal', { team: scorer, value, scorer: by ? by.name : '', own });
+      // ăn mừng: người ghi bàn diễn động tác (phản lưới nhà thì không). pid + cel gửi theo sự kiện cho máy khách online
+      const cel = SFC.Celebrate.start(this, own ? null : by);
+      this.emit('goal', { team: scorer, value, scorer: by ? by.name : '', own, pid: cel ? by.id : -1, cel });
       this.cores.goalScored(scorer, by);
       this.sfx('goal');
       return true;

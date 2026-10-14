@@ -141,7 +141,9 @@ window.SFC = window.SFC || {};
           if (s !== 1) { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(s, s); ctx.translate(-p.x, -p.y); }
           const dive = p.atkType === 'diveU' || p.atkType === 'diveD';
           // drawPlayer tự đặt globalAlpha theo tham số alpha
-          let hy = p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.28 + 0.08 * Math.sin(t * 18) : 1);
+          // ăn mừng bàn thắng (src/render/celebrate-draw.js): chỉ trong lúc trận dừng sau bàn thắng
+          const cel = p.celId && g.state === 'goal' && !(p.airZ > 0);
+          let hy = cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.28 + 0.08 * Math.sin(t * 18) : 1);
           ctx.globalAlpha = 1;
           if (s !== 1) { ctx.restore(); hy = p.y + (hy - p.y) * s; }
           SFC.VFX.form(ctx, g, p);

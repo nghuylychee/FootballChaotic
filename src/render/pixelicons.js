@@ -38,6 +38,8 @@ window.SFC = window.SFC || {};
     /* lọc slot costume (túi đồ -> APPEARANCE) */
     'slot-hair': ['............', '....rrrr....', '...rrrrrr...', '..rrwrrrrr..', '..rrrrrrrr..', '..RRRRRRRR..', '..RRRRRRRRrr', '.........rrr', '............', '............', '............', '............'],
     'slot-face': ['...ssssss...', '..ssssssss..', '.ssssssssss.', '.sskksskkss.', '.sskksskkss.', '.ssssssssss.', '.ssssssssss.', '.ssksssskss.', '..sskkkkss..', '...ssssss...', '............', '............'],
+    // người giơ 2 tay ăn mừng (lọc slot ĂN MỪNG)
+    'slot-cel': ['g....gg....g', 'g...gggg...g', '.g..gggg..g.', '.g...gg...g.', '..gggggggg..', '.....gg.....', '....gggg....', '....gggg....', '....g..g....', '...gg..gg...', '............', '............'],
     'slot-shoes': { ref: 'core-heavy_boot' },
     'slot-fx': { ref: 'core-one_touch' },
 

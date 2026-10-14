@@ -241,7 +241,7 @@ window.SFC = window.SFC || {};
       return {
         skin: SKINS()[look.skin] || SKINS()[0],
         hair: P().hairColors[look.hairColor] || P().hairColors[0],
-        cut: look.hair, face: look.face, shoes: look.shoes, fx: look.fx,
+        cut: look.hair, face: look.face, shoes: look.shoes, fx: look.fx, cel: look.cel,
       };
     },
 
@@ -254,7 +254,9 @@ window.SFC = window.SFC || {};
         return Object.keys(CORES()).filter((id) => SFC_CONFIG.cores.list[id] && b.odds[this.rarityOf('core', id)] != null)
           .map((id) => ({ kind: 'core', id, rarity: this.rarityOf('core', id) }));
       }
-      return Object.keys(ITEMS()).filter((id) => !ITEMS()[id].default && b.odds[ITEMS()[id].rarity] != null).map((id) => ({ kind: 'item', id, rarity: ITEMS()[id].rarity }));
+      // Hộp Ăn Mừng (kind 'cel') chỉ ra động tác ăn mừng; hộp costume ra mọi slot còn lại
+      const slotOk = (it) => (b.kind === 'cel') === (it.slot === 'cel');
+      return Object.keys(ITEMS()).filter((id) => !ITEMS()[id].default && slotOk(ITEMS()[id]) && b.odds[ITEMS()[id].rarity] != null).map((id) => ({ kind: 'item', id, rarity: ITEMS()[id].rarity }));
     },
 
     // tỉ lệ thực (%) theo độ hiếm — chỉ tính các độ hiếm thật sự có món trong hộp
@@ -485,6 +487,7 @@ window.SFC = window.SFC || {};
       return {
         skin: okColor(lk.skin, SKINS()), hair: okColor(lk.hair, P().hairColors),
         cut: okItem(lk.cut, 'hair'), face: okItem(lk.face, 'face'), shoes: okItem(lk.shoes, 'shoes'), fx: okItem(lk.fx, 'fx'),
+        cel: okItem(lk.cel, 'cel'),   // động tác ăn mừng (máy chủ chưa cập nhật bỏ trường này -> động tác mặc định)
       };
     },
 

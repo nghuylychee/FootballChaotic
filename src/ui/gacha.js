@@ -167,7 +167,7 @@ window.SFC = window.SFC || {};
         return `<button class="boxrow ${i === this.boxSel ? 'sel' : ''} ${lock ? 'lock' : ''}" data-box="${i}" style="--bc:${b.color}">
           ${boxArt(b.color)}
           <div class="br-info"><div class="br-name">${esc(b.name)}</div>
-            <div class="br-sub">${b.kind === 'core' ? _t('CORE') : _t('COSTUME')} · ${price}</div></div>
+            <div class="br-sub">${b.kind === 'core' ? _t('CORE') : b.kind === 'cel' ? _t('CELEBRATION') : _t('COSTUME')} · ${price}</div></div>
         </button>`;
       }).join('');   // nút TÚI ĐỒ đã bỏ khỏi SHOP (vào túi đồ từ CHARACTER > INVENTORY)
       const id = P.boxOrder[this.boxSel], b = P.boxes[id], c = PF().canOpen(id);

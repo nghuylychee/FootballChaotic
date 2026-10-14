@@ -259,7 +259,7 @@ window.SFC = window.SFC || {};
           return PF().ultEntries().map((e) => {
             const known = PF().ultKnown(e.key);
             return {
-              kind: 'btn', ult: e.id, entry: e, known, act: () => {},
+              kind: 'btn', ult: e.id, entry: e, known, act: () => this.render(),
               label: known ? L[e.id].name + (e.lv > 1 ? ' ' + '★'.repeat(e.lv) : '') : '???',
               sub: known ? this.recipeText(e) : _t('Undiscovered'),
             };
@@ -498,7 +498,7 @@ window.SFC = window.SFC || {};
       if (AU().pages.includes(this.page)) { AU().render(this); this.addBack(); return; }
       if (RD().pages.includes(this.page)) { RD().render(this); this.addBack(); this.bindAvatars(); return; }   // sân thu nhỏ trên đảo + nhân vật
       // it.foot: mục nằm dưới đáy cột trái (ngay trên dòng gợi ý phím), thứ tự ↑↓ vẫn theo danh sách
-      const list = items.map((it, i) => (it.foot ? '' : this.renderItem(it, i))).join('');
+      const list = this.page === 'ults' ? this.ultGrid(items) : items.map((it, i) => (it.foot ? '' : this.renderItem(it, i))).join('');
       const foot = items.map((it, i) => (it.foot ? this.renderItem(it, i) : '')).join('');
       const titles = { ults: _t('ULT BOOK'), path: _t('MAIN PATH'), training: _t('TRAINING'), settings: _t('SETTINGS'), display: _t('SOUND & DISPLAY'), test: 'TEST', name: _t('YOUR NAME'), char: _t('CHARACTER'), attrs: _t('STATS'), look: _t('APPEARANCE'),
         wishlist: MPATH().demoOver() ? _t('DEMO COMPLETE') : _t('FULL GAME') };
@@ -584,6 +584,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'home') return _t('{ok} select · {mute} mute', { ok, mute: K('mute', 'M') });
       if (this.page === 'name') return PF().hasName ? _t('Type a name (A-Z, 0-9) · Enter confirm · {back} back', { back }) : _t('Type a name (A-Z, 0-9) · Enter confirm');
       if (this.page === 'attrs') return _t('↑↓ select · {back} back', { back });
+      if (this.page === 'ults') return _t('←↑↓→ select') + ' · ' + _t('{key} back', { key: back });
       return _t('↑↓ select · ←→ change · {ok} · {back} back', { ok, back });
     },
 
@@ -963,6 +964,36 @@ window.SFC = window.SFC || {};
     /* ---------------- SỔ TUYỆT KỸ (CHARACTER > ULT BOOK, docs/ULT_RECIPE.md) ---------------- */
     // công thức: "🎯 STRIKER ×3" (lai: 2 trường phái nối bằng +)
     recipeText(e) { return e.tags.map((t, i) => `${CORES().archetypes[t].label} ×${e.need[i]}`).join(' + '); },
+    // bảng trái: hiện đủ MỌI ô của sổ cùng lúc (danh sách dài cũ bị cắt, không thấy Tuyệt kỹ lai).
+    // Mỗi trường phái 1 hàng (★ gốc · ★★ nâng cấp) | cột Tuyệt kỹ lai bên phải. Chưa khám phá: ô ??? (giấu cả trường phái của ô lai)
+    ultGrid(items) {
+      const A = CORES().archetypes;
+      const tile = (i) => {
+        const it = items[i];
+        if (!it) return '<i class="ub-t ub-none"></i>';
+        const e = it.entry, col = e.tags.length > 1 ? '#ffd23f' : A[e.tags[0]].color;
+        return `<button class="ub-t ${i === this.sel ? 'sel' : ''} ${it.known ? 'on' : 'lock'}" data-i="${i}" style="--c:${col}" title="${esc(it.label)}">${it.known ? PX().core(e.id) : PX().ui('unknown')}</button>`;
+      };
+      const base = [], hyb = [];
+      items.forEach((it, i) => (it.entry.tags.length > 1 ? hyb : base).push(i));
+      const schools = [];
+      for (let k = 0; k < base.length; k += 2) schools.push(base.slice(k, k + 2));
+      const rows = [];
+      for (let r = 0; r < Math.max(schools.length, hyb.length); r++) {
+        const s = schools[r], h = hyb[r];
+        const tag = s && items[s[0]].entry.tags[0];
+        const chips = h != null && items[h].known ? items[h].entry.tags.map((t) => `<span style="--c:${A[t].color}">${PX().arch(t)}</span>`).join('') : '';
+        rows.push(`<div class="ub-row">
+            <span class="ub-sch" ${tag ? `style="--c:${A[tag].color}" title="${esc(A[tag].label)}"` : ''}>${tag ? PX().arch(tag) : ''}</span>
+            ${s ? tile(s[0]) + tile(s[1]) : '<i class="ub-t ub-none"></i><i class="ub-t ub-none"></i>'}
+            <i class="ub-sep"></i>${h != null ? tile(h) : '<i class="ub-t ub-none"></i>'}<span class="ub-chips">${chips}</span>
+          </div>`);
+      }
+      return `<div class="ub">
+          <div class="ub-row ub-head"><span class="ub-sch"></span><b>★</b><b>★★</b><i class="ub-sep"></i><b class="ub-hy">${esc(_t('HYBRID'))}</b></div>
+          ${rows.join('')}
+        </div>`;
+    },
     // bảng phải: ô đã khám phá = lá Tuyệt kỹ (ảnh động) + công thức; chưa khám phá = lá úp ???
     ultPanel(it) {
       if (!it || !it.entry) return '';
@@ -1346,11 +1377,14 @@ window.SFC = window.SFC || {};
       }).filter((a) => a.look);
       this.avatars = teamAvatars.concat(mateAvatars, mmAvatars, [...this.el.querySelectorAll('canvas[data-avatar]')].map((cv) => {
         const big = cv.classList.contains('big');
-        cv.width = 40; cv.height = 44;
         const tryOn = cv.dataset.try;
         let look = PF().data.look;
         if (tryOn) { const it = PROG().items[tryOn]; look = Object.assign({}, look, { [it.slot]: tryOn }); }
-        return { cv, look: PF().lookOf(look), big };
+        // động tác ăn mừng: khung to hơn (nhảy / lộn / đạo cụ), diễn lặp lại thay cho xoay người
+        const cel = tryOn && PROG().items[tryOn].slot === 'cel' ? tryOn : null;
+        cv.width = cel ? 64 : 40; cv.height = cel ? 64 : 44;
+        cv.classList.toggle('cel', !!cel);
+        return { cv, look: PF().lookOf(look), big, cel };
       }));
       this.animate(0);
     },
@@ -1370,7 +1404,8 @@ window.SFC = window.SFC || {};
       const kit = this.kit();
       for (const a of this.avatars) {
         if (!a.cv.isConnected) continue;
-        SFC.Sprites.drawAvatar(a.cv, a.look, a.kit || kit, this.animT, facing);
+        const cel = a.cel ? { celId: a.cel, celT: this.animT % (SFC_CONFIG.game.match.goalCelebration + 0.4) } : null;
+        SFC.Sprites.drawAvatar(a.cv, a.look, a.kit || kit, this.animT, facing, cel);
         if (a.sil) silhouette(a.cv);   // Area chưa mở: đội đối thủ chỉ hiện bóng đen
       }
     },
@@ -1405,6 +1440,11 @@ window.SFC = window.SFC || {};
         if (input.wasPressed('sprint')) return this.playTab(1);
       }
       if (PLAY_PAGES.includes(this.page)) return this.playInput(input, items);
+      // SỔ TUYỆT KỸ: bảng ô -> ←↑↓→ đi theo vị trí trên màn hình
+      if (this.page === 'ults') {
+        for (const d of ['up', 'down', 'left', 'right']) if (input.wasPressed(d)) return this.navMove(d);
+        return;
+      }
       if (this.page !== 'home' && input.wasPressed('up')) { this.move(-1); }
       if (this.page !== 'home' && input.wasPressed('down')) { this.move(1); }
       // trang chủ: ←→ đi dọc thanh điều hướng (CHARACTER · PLAY · SHOP), ↑ lên bánh răng SETTINGS, ↓ về thanh điều hướng

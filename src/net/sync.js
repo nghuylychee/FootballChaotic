@@ -214,7 +214,10 @@ window.SFC = window.SFC || {};
       }
       // âm thanh + rung tay cầm phát qua đúng đường của trận (Game.sfx), giống chơi đơn — mã online không gọi thẳng âm thanh
       for (const [n, a] of pack.sfx) g.sfx(n, a);
-      for (const e of pack.ev) g.events.push(e);
+      for (const e of pack.ev) {
+        if (e.type === 'goal') SFC.Celebrate.remote(g, e);   // động tác ăn mừng của người ghi bàn (src/systems/celebrate.js)
+        g.events.push(e);
+      }
     },
   };
 

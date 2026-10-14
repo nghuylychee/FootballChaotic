@@ -92,7 +92,7 @@ SFC_CONFIG.game = {
       y: 0.16,         // lệch tối đa theo chiều ngang sân (tỉ lệ chiều rộng sân, ~39px)
       mirrorY: 0.5,    // xác suất lật đội hình trên <-> dưới (tính riêng từng đội)
     },
-    goalCelebration: 2.4,
+    goalCelebration: 3.2,        // giây đứng hình sau bàn thắng = thời gian diễn động tác ăn mừng (celebration bên dưới)
     autoSwitchOnDefense: true,   // tự đổi người khi mất bóng và đang ở xa
     autoSwitchDistance: 150,
   },
@@ -425,4 +425,13 @@ SFC_CONFIG.game = {
   },
 
   fx: { shakeGoal: 5, shakeHit: 2, shakeShot: 1.5 },
+
+  // ĂN MỪNG BÀN THẮNG (src/systems/celebrate.js, vẽ ở src/render/celebrate-draw.js): người ghi bàn diễn động tác trong slot
+  // costume 'cel' (progression.config.js, bán trong Hộp Ăn Mừng); đồng đội chạy tới chúc mừng. Phản lưới nhà: không ăn mừng.
+  // botWeights: cầu thủ AI / người chơi giả bốc 1 động tác theo độ hiếm (default = động tác mặc định), giữ nguyên cả trận.
+  // runSpeed / slideSpeed: px/s khi chạy về khán đài / trượt gối · mateSpeed: đồng đội chạy tới · mateGap: đứng cách người ghi bàn
+  celebration: {
+    botWeights: { default: 4, common: 6, rare: 3, epic: 1.4, legendary: 0.6, mythic: 0.2 },
+    runSpeed: 95, slideSpeed: 150, mateSpeed: 0.7, mateGap: 22,
+  },
 };
