@@ -964,35 +964,26 @@ window.SFC = window.SFC || {};
     /* ---------------- SỔ TUYỆT KỸ (CHARACTER > ULT BOOK, docs/ULT_RECIPE.md) ---------------- */
     // công thức: "🎯 STRIKER ×3" (lai: 2 trường phái nối bằng +)
     recipeText(e) { return e.tags.map((t, i) => `${CORES().archetypes[t].label} ×${e.need[i]}`).join(' + '); },
-    // bảng trái: hiện đủ MỌI ô của sổ cùng lúc (danh sách dài cũ bị cắt, không thấy Tuyệt kỹ lai).
-    // Mỗi trường phái 1 hàng (★ gốc · ★★ nâng cấp) | cột Tuyệt kỹ lai bên phải. Chưa khám phá: ô ??? (giấu cả trường phái của ô lai)
+    // bảng trái: bảng ghép cặp 7x7 hiện đủ MỌI ô của sổ cùng lúc. Hàng / cột = trường phái; đường chéo = Tuyệt kỹ gốc (X3),
+    // ô dưới đường chéo = Tuyệt kỹ lai của 2 trường phái hàng + cột (X2 + Y2), cột cuối = dạng nâng cấp ★★ (X4).
+    // Chưa khám phá: ô ??? (công thức vẫn giấu ở bảng phải)
     ultGrid(items) {
-      const A = CORES().archetypes;
-      const tile = (i) => {
+      const A = CORES().archetypes, tags = Object.keys(A).filter((t) => !A[t].noSet), at = {};
+      items.forEach((it, i) => {
+        const e = it.entry, ix = e.tags.map((t) => tags.indexOf(t)).sort((a, b) => b - a);
+        at[e.tags.length > 1 ? ix[0] + ':' + ix[1] : e.lv > 1 ? ix[0] + ':x' : ix[0] + ':' + ix[0]] = i;
+      });
+      const tile = (i, col) => {
         const it = items[i];
         if (!it) return '<i class="ub-t ub-none"></i>';
-        const e = it.entry, col = e.tags.length > 1 ? '#ffd23f' : A[e.tags[0]].color;
-        return `<button class="ub-t ${i === this.sel ? 'sel' : ''} ${it.known ? 'on' : 'lock'}" data-i="${i}" style="--c:${col}" title="${esc(it.label)}">${it.known ? PX().core(e.id) : PX().ui('unknown')}</button>`;
+        return `<button class="ub-t ${i === this.sel ? 'sel' : ''} ${it.known ? 'on' : 'lock'}" data-i="${i}" style="--c:${col}" title="${esc(it.label)}">${it.known ? PX().core(it.entry.id) : PX().ui('unknown')}</button>`;
       };
-      const base = [], hyb = [];
-      items.forEach((it, i) => (it.entry.tags.length > 1 ? hyb : base).push(i));
-      const schools = [];
-      for (let k = 0; k < base.length; k += 2) schools.push(base.slice(k, k + 2));
-      const rows = [];
-      for (let r = 0; r < Math.max(schools.length, hyb.length); r++) {
-        const s = schools[r], h = hyb[r];
-        const tag = s && items[s[0]].entry.tags[0];
-        const chips = h != null && items[h].known ? items[h].entry.tags.map((t) => `<span style="--c:${A[t].color}">${PX().arch(t)}</span>`).join('') : '';
-        rows.push(`<div class="ub-row">
-            <span class="ub-sch" ${tag ? `style="--c:${A[tag].color}" title="${esc(A[tag].label)}"` : ''}>${tag ? PX().arch(tag) : ''}</span>
-            ${s ? tile(s[0]) + tile(s[1]) : '<i class="ub-t ub-none"></i><i class="ub-t ub-none"></i>'}
-            <i class="ub-sep"></i>${h != null ? tile(h) : '<i class="ub-t ub-none"></i>'}<span class="ub-chips">${chips}</span>
-          </div>`);
-      }
-      return `<div class="ub">
-          <div class="ub-row ub-head"><span class="ub-sch"></span><b>★</b><b>★★</b><i class="ub-sep"></i><b class="ub-hy">${esc(_t('HYBRID'))}</b></div>
-          ${rows.join('')}
-        </div>`;
+      const head = `<span></span>${tags.map((t) => `<span class="ub-sch" style="--c:${A[t].color}" title="${esc(A[t].label)}">${PX().arch(t)}</span>`).join('')}<i></i><b>★★</b>`;
+      const rows = tags.map((t, r) => {
+        const cells = tags.map((u, c) => (c > r ? '<i></i>' : tile(at[r + ':' + c], c === r ? A[t].color : '#ffd23f'))).join('');
+        return `<span class="ub-sch" style="--c:${A[t].color}" title="${esc(A[t].label)}">${PX().arch(t)}</span>${cells}<i class="ub-sep"></i>${tile(at[r + ':x'], A[t].color)}`;
+      }).join('');
+      return `<div class="ub" style="--n:${tags.length}">${head}${rows}</div>`;
     },
     // bảng phải: ô đã khám phá = lá Tuyệt kỹ (ảnh động) + công thức; chưa khám phá = lá úp ???
     ultPanel(it) {

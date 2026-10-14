@@ -43,7 +43,7 @@ SFC_CONFIG.cores = {
   // TUYỆT KỸ THEO CÔNG THỨC (docs/ULT_RECIPE.md, thay cho Cộng hưởng 2/3/4): đếm Core cùng trường phái của từng cầu thủ
   // (Tuyệt kỹ không tính). Đạt mốc tiers[i] của trường phái X -> Tuyệt kỹ base[X] cấp i+1
   // (user chốt 2026-10-13: X3 = Tuyệt kỹ gốc, X4 = dạng nâng cấp ★★, tham số ở list[id].evolve[0]).
-  // hybrids: { id, tags: [X, Y] } = Tuyệt kỹ lai, mở khi đạt hybridTier Core của CẢ X và Y (X2 + Y2; chưa có Tuyệt kỹ lai nào).
+  // hybrids: { id, tags: [X, Y] } = Tuyệt kỹ lai, mở khi đạt hybridTier Core của CẢ X và Y (X2 + Y2; đủ 21 cặp của 7 trường phái).
   // Nhiều công thức cùng thoả: công thức dùng nhiều Core hơn thắng; bằng nhau -> công thức vừa đạt (lá vừa chọn).
   // Chưa đạt công thức nào: start (null = chưa có Tuyệt kỹ, ô X ẩn; năng lượng vẫn nạp ngầm để vừa mở là dùng được).
   // Mọi Tuyệt kỹ giấu tới khi người chơi tự đạt (Profile.data.ultBook)
@@ -55,7 +55,7 @@ SFC_CONFIG.cores = {
       runner: 'lightning_dash', playmaker: 'endless_tiki', striker: 'meteor_strike', brawler: 'hundred_fists',
       launcher: 'meteor_drop', trickster: 'clone_army', iron: 'titan',
     },
-    // Tuyệt kỹ lai (user duyệt 2026-10-13): 7 cặp từng có Core cầu nối + Slingshot. Hành vi ở src/systems/cores-hybrid.js
+    // Tuyệt kỹ lai (user duyệt 2026-10-13): 7 cặp từng có Core cầu nối + Slingshot, rồi 13 cặp còn lại. Hành vi ở src/systems/cores-hybrid.js
     hybrids: [
       { id: 'comet_onetwo', tags: ['striker', 'playmaker'] },
       { id: 'rising_dragon', tags: ['brawler', 'launcher'] },
@@ -65,6 +65,20 @@ SFC_CONFIG.cores = {
       { id: 'iron_hammer', tags: ['brawler', 'iron'] },
       { id: 'mirage_sprint', tags: ['runner', 'trickster'] },
       { id: 'slingshot', tags: ['brawler', 'playmaker'] },
+      // 13 cặp còn lại (user duyệt 2026-10-14) -> đủ 21 cặp, 2 + 2 nào cũng ra Tuyệt kỹ
+      { id: 'lightning_relay', tags: ['runner', 'playmaker'] },
+      { id: 'flash_strike', tags: ['runner', 'striker'] },
+      { id: 'thunder_rush', tags: ['runner', 'brawler'] },
+      { id: 'steel_express', tags: ['runner', 'iron'] },
+      { id: 'sky_volley', tags: ['playmaker', 'launcher'] },
+      { id: 'ghost_pass', tags: ['playmaker', 'trickster'] },
+      { id: 'knockout_volley', tags: ['striker', 'brawler'] },
+      { id: 'cannonball', tags: ['striker', 'launcher'] },
+      { id: 'wrecking_ball', tags: ['striker', 'iron'] },
+      { id: 'shadow_ambush', tags: ['brawler', 'trickster'] },
+      { id: 'crossfire_kicks', tags: ['launcher', 'trickster'] },
+      { id: 'iron_quake', tags: ['launcher', 'iron'] },
+      { id: 'mirror_wall', tags: ['trickster', 'iron'] },
     ],
   },
 
@@ -528,6 +542,85 @@ SFC_CONFIG.cores = {
       desc: 'Stretch your arms and slingshot a teammate at the goal.',
       params: { grab: 0.22, distance: 200, flight: 0.38, knock: 200, launch: 120, stun: 0.6 },
       scale: { distance: 'pow', knock: 'pow', stun: 'pow' },
+    },
+    // 13 cặp còn lại (2026-10-14). Mọi đòn có báo trước + né được bằng Z; chiêu sút / chuyền có needsBall
+    lightning_relay: {
+      name: 'Lightning Relay', icon: '⚡', tags: ['runner', 'playmaker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'The ball zaps to your furthest teammate, who bursts forward.',
+      params: { telegraph: 0.3, width: 16, stun: 0.7, knock: 130, boost: 1.4, time: 2.5 },   // boost: tốc độ người nhận trong time giây
+      scale: { stun: 'pow', time: 'pow', boost: 'mul' },
+    },
+    flash_strike: {
+      name: 'Flash Strike', icon: '🌩', tags: ['runner', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Blitz forward as lightning, then fire a thunder shot.',
+      params: { distance: 120, width: 16, telegraph: 0.3, stun: 0.8, knock: 150, gk: 0.3, pierce: 2 },
+      scale: { distance: 'pow', stun: 'pow', gk: 'pow' },
+    },
+    thunder_rush: {
+      name: 'Thunder Rush', icon: '👊', tags: ['runner', 'brawler'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Zigzag through nearby opponents, punching each one in turn.',
+      params: { range: 170, rush: 600, hits: 3, stun: 0.9, knock: 230 },   // hits: số người tối đa · rush: tốc độ lao (né Z được)
+      scale: { range: 'pow', knock: 'pow', stun: 'pow' },
+    },
+    steel_express: {
+      name: 'Steel Express', icon: '🚂', tags: ['runner', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Turn to steel and charge straight through anyone ahead.',
+      params: { distance: 220, speed: 460, width: 18, telegraph: 0.35, knock: 300, launch: 180, stun: 1.0 },   // miễn choáng chỉ trong lúc lao
+      scale: { distance: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
+    },
+    sky_volley: {
+      name: 'Sky Volley', icon: '🌠', tags: ['playmaker', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Lob it skyward; a teammate leaps and smashes it goalward.',
+      params: { lob: 0.6, jump: 300, speed: 600, gk: 0.3, radius: 40, knock: 160, launch: 200, stun: 0.8 },   // radius: sóng chấn chỗ người đá
+      scale: { gk: 'pow', radius: 'pow', stun: 'pow' },
+    },
+    ghost_pass: {
+      name: 'Ghost Pass', icon: '🫥', tags: ['playmaker', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Fake passes fly everywhere; the real one ghosts through.',
+      params: { decoys: 4, speed: 210, time: 1.4, confuse: 1.3, passSpeed: 1.3 },   // đường chuyền thật bay xuyên người cắt (b.fx.ghost)
+      scale: { time: 'pow', confuse: 'pow' },
+    },
+    knockout_volley: {
+      name: 'Knockout Volley', icon: '🥊', tags: ['striker', 'brawler'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Punch out everyone around you, then fire a burning shot.',
+      params: { radius: 46, windup: 0.3, knock: 260, stun: 1.0, gk: 0.2 },
+      scale: { radius: 'pow', knock: 'pow', stun: 'pow', gk: 'pow' },
+    },
+    cannonball: {
+      name: 'Cannonball', icon: '💣', tags: ['striker', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'A shot so heavy it blows up whatever it hits.',
+      params: { windup: 0.25, speed: 1.1, fuse: 2.2, radius: 52, knock: 300, launch: 260, stun: 1.3 },   // fuse: chưa chạm ai thì tự nổ
+      scale: { radius: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
+    },
+    wrecking_ball: {
+      name: 'Wrecking Ball', icon: '🎳', tags: ['striker', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Fire an iron ball that bowls over everyone ahead.',
+      params: { windup: 0.3, speed: 0.85, pierce: 4, stun: 1.1, gk: 0.35, armor: 1.5 },   // speed < 1: bóng sắt nặng, chậm hơn
+      scale: { stun: 'pow', gk: 'pow' },
+    },
+    shadow_ambush: {
+      name: 'Shadow Ambush', icon: '🌑', tags: ['brawler', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Clones pop up behind opponents and punch them all.',
+      params: { range: 160, targets: 3, delay: 0.4, knock: 210, stun: 1.0 },   // delay: phân thân hiện ra trước khi đấm (né Z được)
+      scale: { range: 'pow', knock: 'pow', stun: 'pow' },
+    },
+    crossfire_kicks: {
+      name: 'Crossfire Kicks', icon: '✖', tags: ['launcher', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Clones fly-kick in from every side at one opponent.',
+      params: { range: 170, clones: 3, aim: 0.45, dist: 60, width: 14, knock: 280, launch: 260, stun: 1.2 },   // aim: vạch đường đá trước khi lao
+      scale: { range: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
+    },
+    iron_quake: {
+      name: 'Iron Quake', icon: '🌋', tags: ['launcher', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Three armored stomps quake forward, launching everyone nearby.',
+      params: { stomps: 3, gap: 0.3, step: 34, radius: 34, telegraph: 0.35, knock: 200, launch: 240, stun: 1.0, armor: 1.4 },
+      scale: { radius: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
+    },
+    mirror_wall: {
+      name: 'Mirror Wall', icon: '🪞', tags: ['trickster', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'A wall of steel clones blocks passes and shots.',
+      params: { time: 3.5, clones: 5, gap: 16, ahead: 44 },   // ahead: tường cách bóng bao xa về phía khung thành nhà
+      scale: { time: 'pow' },
     },
 
     /* ---------- 🎲 HỖN LOẠN (mới) ---------- */

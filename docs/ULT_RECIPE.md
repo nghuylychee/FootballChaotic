@@ -1,6 +1,6 @@
 # TUYỆT KỸ THEO CÔNG THỨC — Bỏ tài nguyên + Cộng hưởng, mốc trường phái mở Tuyệt kỹ
 
-> Trạng thái: **ĐÃ LÀM THỬ bước A + B + C (2026-10-13)**: 8 Tuyệt kỹ lai đầu tiên đã có. Cân bằng để sau.
+> Trạng thái: **ĐÃ LÀM THỬ bước A + B + C (2026-10-13)**: 8 Tuyệt kỹ lai đầu tiên, rồi **đủ 21 cặp (2026-10-14)**. Cân bằng để sau.
 > **Thay cho:** 4 tài nguyên trường phái (Đà / Nhịp / Nộ / Giáp), 21 bonus Cộng hưởng 2/3/4, Tuyệt kỹ đặc trưng chọn trước trận (CHARACTER › ULTIMATE, `docs/CORE_DESIGN.md` giai đoạn 9).
 > **Giữ nguyên:** năng lượng Tuyệt kỹ (nạp khi ghi bàn / bị thủng lưới / cướp bóng / đấm trúng), 5 lượt chọn Core, Core Road (`docs/CORE_ROAD.md`).
 
@@ -25,7 +25,7 @@
 |---|---|---|
 | 8 | Số lần chọn Core | **4 lần / trận**, gồm lượt trước giao bóng (`game.match.maxUpgrades = 4` → lượt ở giây 0 · 30 · 60 · 90, lượt 2–4 vẫn chỉ mở sau bàn thắng) |
 | 9 | Mốc | **X3 = mở Tuyệt kỹ gốc · X4 = dạng nâng cấp** (★★, 1 dạng duy nhất — `ults.tiers = [3, 4]`, `evolve` còn 1 bộ số = bộ ★★★ cũ). Thay cho X2 / X3 / X4 ở bảng dưới |
-| 10 | Tuyệt kỹ lai | Mở khi đạt **X2 + Y2** (`ults.hybridTier = 2`). Chưa có Tuyệt kỹ lai nào |
+| 10 | Tuyệt kỹ lai | Mở khi đạt **X2 + Y2** (`ults.hybridTier = 2`). Đủ 21 cặp (bảng ở mục Tuyệt kỹ lai bên dưới) |
 | 11 | Aura Farming | **Tạm ẩn**: không ai mang Tuyệt kỹ khởi đầu, ô X chỉ hiện khi đạt công thức (`ults.start = null`). Năng lượng vẫn nạp ngầm từ đầu trận. Cảnh ông nội trao bí kíp trong PROLOGUE cũng ẩn (`SFC_FTUE_HEIRLOOM_ON = false`) |
 
 Giả lập 60 trận AI vs AI với luật mới: 58/60 trận đủ 4 lượt · Tuyệt kỹ trường phái đầu tiên ~giây 92 ·
@@ -66,7 +66,28 @@ Rising Dragon có hình rồng lửa thật: viên gạch VFX mới `E.dragon(x0
 | TỐC ĐỘ + ẢO ẢNH | Chạy Giả | **Mirage Sprint** | Bạn tàng hình (không bị nhắm), một bầy ảo ảnh dắt bóng giả toả ra mọi hướng | Vanish mid-sprint while fake runners scatter with fake balls. |
 | *(tuỳ chọn)* ĐẤU SĨ + TIKI | Tay Cao Su | **Slingshot** | Vươn tay túm đồng đội đang cầm bóng, bắn họ như ná về phía khung thành | Stretch your arms and slingshot a teammate at the goal. |
 
-13 cặp còn lại (không có Core cầu nối) để sau.
+### 13 cặp còn lại — ĐÃ LÀM (2026-10-14, user: "làm đủ 13 tuyệt kỹ")
+Chỉ dùng viên gạch VFX + cờ bóng / skin bóng có sẵn → online không đổi định dạng gói tin (không tăng `net.protocol`).
+Mọi đòn có báo trước + né được bằng Z; chiêu sút / chuyền có `needsBall`. Icon mượn hình Core thường, đổi màu (`pixelicons.js`).
+| Cặp | Tên | Làm gì | desc trên lá |
+|---|---|---|---|
+| TỐC ĐỘ + TIKI | **Lightning Relay** | Vạch sét 0.3s, bóng hoá tia sét sang đồng đội đứng cao nhất (giật người đứng chắn), người nhận +40% tốc độ 2.5s | The ball zaps to your furthest teammate, who bursts forward. |
+| TỐC ĐỘ + SÁT THỦ | **Flash Strike** | Người cầm bóng vạch đường 0.3s, hoá sét lao 120px (giật người trên đường), tới nơi sút sấm xuyên 2 người | Blitz forward as lightning, then fire a thunder shot. |
+| TỐC ĐỘ + ĐẤU SĨ | **Thunder Rush** | Lao zigzag (`CoreHelpers.rush`, né Z được) qua tối đa 3 đối thủ gần nhất, mỗi người 1 cú đấm sét, bóng rơi về chân | Zigzag through nearby opponents, punching each one in turn. |
+| TỐC ĐỘ + THÉP | **Steel Express** | Vạch đường 0.35s, hoá thép (miễn choáng chỉ lúc lao) húc thẳng 220px, hất văng mọi người trên đường | Turn to steel and charge straight through anyone ahead. |
+| TIKI + VÕ SĨ ĐÁ | **Sky Volley** | Bổng bóng (không ai chạm được) về phía đồng đội đứng cao nhất, người đó bật lên đá móc vào khung; sóng chấn dưới chân (vòng báo trước suốt lúc bóng bay) | Lob it skyward; a teammate leaps and smashes it goalward. |
+| TIKI + ẢO ẢNH | **Ghost Pass** | Phân thân chuyền 4 bóng giả toả ra (AI đối thủ đuổi nhầm), đường chuyền thật bay xuyên người cắt (`b.fx.ghost`) | Fake passes fly everywhere; the real one ghosts through. |
+| SÁT THỦ + ĐẤU SĨ | **Knockout Volley** | Gồng 0.3s (vòng đỏ = tầm đấm), đấm văng mọi đối thủ quanh người rồi sút lửa | Punch out everyone around you, then fire a burning shot. |
+| SÁT THỦ + VÕ SĨ ĐÁ | **Cannonball** | Bóng hoá bom, nổ (hố + hất tung) ở chỗ chạm đối thủ đầu tiên, kể cả tay thủ môn; vào lưới thì lưới nổ; đồng đội đỡ thì tháo ngòi | A shot so heavy it blows up whatever it hits. |
+| SÁT THỦ + THÉP | **Wrecking Ball** | Người sút hoá thép 1.5s, bóng sắt (skin bowling, chậm hơn 15%) xuyên 4 người, nứt sân dọc đường | Fire an iron ball that bowls over everyone ahead. |
+| ĐẤU SĨ + ẢO ẢNH | **Shadow Ambush** | Phân thân hiện sau lưng tối đa 3 đối thủ (0.4s báo trước), cùng đấm văng họ về phía bạn | Clones pop up behind opponents and punch them all. |
+| VÕ SĨ ĐÁ + ẢO ẢNH | **Crossfire Kicks** | 3 phân thân vây 1 đối thủ, vạch đường đá 0.45s rồi cùng đá bay xuyên qua, hất tung | Clones fly-kick in from every side at one opponent. |
+| VÕ SĨ ĐÁ + THÉP | **Iron Quake** | Hoá thép, 3 cú dậm tiến dần về phía trước (vết lõm báo trước), mỗi cú hất tung người đứng gần | Three armored stomps quake forward, launching everyone nearby. |
+| ẢO ẢNH + THÉP | **Mirror Wall** | 5 phân thân thép đứng thành tường giữa bóng và khung thành nhà 3.5s: bóng đối thủ đá trúng bật lại, người không đi xuyên qua (không gây choáng) | A wall of steel clones blocks passes and shots. |
+
+Giả lập 60 trận AI vs AI: cầu thủ hết trận cầm Tuyệt kỹ lai 5% → 12%; không ai có Tuyệt kỹ 55% → 52%. Phần còn lại là người ra
+2 + 1 + 1 / 1 + 1 + 1 + 1 (không công thức nào thoả) — không phải do thiếu cặp.
+ULT BOOK vẽ thành bảng ghép cặp 7×7 (hàng / cột = trường phái, đường chéo = gốc, dưới chéo = lai, cột cuối = ★★).
 
 ## 1. Bỏ tài nguyên
 

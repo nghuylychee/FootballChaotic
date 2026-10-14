@@ -267,6 +267,35 @@ window.SFC = window.SFC || {};
       tick: (s) => { s.me.intent.mx = 1; s.me.intent.my = 0; s.me.intent.sprint = true; s.me.stamina = 100; },
     }),
     slingshot: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x - 30, A.y - 28, 0); s.place(s.o1, A.x + 40, A.y - 20, PI); }, focus: (s) => s.mate }),
+    lightning_relay: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x + 70, A.y - 30, 0); s.place(s.o1, A.x + 15, A.y - 14, PI); }, focus: (s) => (s.t > 0.6 ? s.mate : s.me) }),
+    flash_strike: ult({
+      len: 2.6, init: (s) => { s.place(s.me, G.x - 200, G.y + 10, 0); s.place(s.o1, G.x - 16, G.y, PI); s.place(s.o2, G.x - 140, G.y + 8, PI); },
+      focus: (s) => (s.t > 0.7 ? s.g.ball : s.me),
+    }),
+    thunder_rush: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 10, A.y - 22, PI); s.place(s.o2, A.x + 45, A.y + 22, PI); s.give(s.o1); } }),
+    steel_express: ult({ ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x + 30, A.y, PI); s.give(s.o1); s.place(s.o2, A.x + 80, A.y + 6, PI); } }),
+    sky_volley: ult({
+      len: 2.8, init: (s) => { s.place(s.me, G.x - 220, G.y + 30, 0); s.place(s.mate, G.x - 120, G.y - 20, 0); s.place(s.o1, G.x - 16, G.y, PI); s.place(s.o2, G.x - 110, G.y - 6, PI); },
+      focus: (s) => (s.t > 1.0 ? s.g.ball : s.t > 0.45 ? s.mate : s.me),
+    }),
+    ghost_pass: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x + 70, A.y - 30, PI); s.place(s.o1, A.x + 15, A.y - 14, PI); s.place(s.o2, A.x - 10, A.y + 22, PI); }, focus: (s) => s.g.ball }),
+    knockout_volley: ult({
+      len: 2.6, init: (s) => { s.place(s.me, G.x - 140, G.y + 8, 0); s.place(s.o2, G.x - 124, G.y - 8, PI); s.place(s.o1, G.x - 16, G.y, PI); },
+      focus: (s) => (s.t > 0.8 ? s.g.ball : s.me),
+    }),
+    cannonball: ult({ len: 2.8, init: (s) => { s.place(s.me, G.x - 230, G.y, 0); s.place(s.o2, G.x - 140, G.y + 4, PI); s.place(s.o1, G.x - 16, G.y, PI); }, focus: (s) => s.g.ball }),
+    wrecking_ball: ult({
+      len: 2.8, init: (s) => { s.place(s.me, G.x - 230, G.y, 0); s.place(s.o2, G.x - 150, G.y + 2, PI); s.place(s.o1, G.x - 16, G.y, PI); }, focus: (s) => s.g.ball,
+    }),
+    shadow_ambush: ult({ ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x + 25, A.y - 18, PI); s.place(s.o2, A.x + 35, A.y + 22, PI); s.give(s.o1); }, focus: (s) => s.mid(s.o1, s.o2) }),
+    crossfire_kicks: ult({ ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x + 40, A.y, PI); s.give(s.o1); }, focus: (s) => s.o1 }),
+    iron_quake: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 10, A.y + 6, PI); s.place(s.o2, A.x + 50, A.y - 8, PI); s.give(s.o1); }, focus: (s) => s.mid(s.me, s.o2) }),
+    mirror_wall: ult({
+      ball: false, len: 3, at: 0.2,
+      init: (s) => { s.place(s.me, A.x - 20, A.y + 40, 0); s.place(s.o1, A.x + 70, A.y, PI); s.give(s.o1); },
+      more: [[0.9, (s) => { const b = s.g.ball; if (b.owner === s.o1) { b.kick(s.o1, -360, 0, 0); b.kind = 'shot'; } }]],
+      focus: (s) => s.g.ball,
+    }),
 
     /* 🎲 HỖN LOẠN */
     warp_walls: {
