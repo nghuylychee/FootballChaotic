@@ -112,7 +112,10 @@ window.SFC = window.SFC || {};
   }
 
   // dùng chung cho Tuyệt kỹ lai (systems/cores-hybrid.js)
-  Object.assign(H, { nearestOpp, targetable, blast, rush });
+  // id vật thể trên sân (Effects.prop) — chỉ máy chạy mô phỏng cấp, gửi kèm lệnh hiệu ứng cho máy khách
+  const propId = (g) => (g.propSeq = (g.propSeq || 0) + 1);
+
+  Object.assign(H, { nearestOpp, targetable, blast, rush, propId });
 
   Object.assign(B, {
     /* ================= 🏃 TỐC ĐỘ ================= */
@@ -580,68 +583,6 @@ window.SFC = window.SFC || {};
         p.state = 'recover'; p.stateT = prm.recover;
       },
     },
-    meteor_drop: {
-      aiUse(sys, team, prm) {
-        const b = sys.g.ball, me = prm.owner;
-        if (!b.owner || b.owner.team === team) return null;
-        return me.state === 'normal' && me.airZ <= 0 ? me : null;
-      },
-      onUltimate(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects, f = g.field;
-        if (g.ball.owner === pl) g.looseBall(pl, 0, 0, 10);
-        E.burst(pl.x, pl.y, 0, '#8a7f70', 16, 110);
-        E.wave(pl.x, pl.y, 24, '#ffffff', 0.4, 2);
-        E.comic(pl.x, pl.y - 30, 'WHOOSH!', '#ff6a1f', 1, 0.5);
-        g.sfx('whoosh');
-        pl.state = 'meteor'; pl.stateT = prm.aim;
-        pl.airZ = 320; pl.airVz = 0; pl.charging = false;
-        let phase = 0, T = prm.aim, ringT = 0;
-        sys.task((dt) => {
-          if (phase === 0) {
-            if (pl.state !== 'meteor') return true;
-            T -= dt;
-            // điều khiển tâm ngắm: người chơi bằng mũi tên, AI bám người cầm bóng / đối thủ gần nhất
-            let mx = 0, my = 0;
-            if (g.isHuman(team) && pl.isControlled) { mx = pl.intent.mx; my = pl.intent.my; }
-            else {
-              const b = g.ball, tgt = b.owner && b.owner.team !== team ? b.owner : nearestOpp(g, team, pl);
-              if (tgt) { const d = Math.hypot(tgt.x - pl.x, tgt.y - pl.y); if (d > 2) { mx = ((tgt.x - pl.x) / d) * Math.min(1, d / 20); my = ((tgt.y - pl.y) / d) * Math.min(1, d / 20); } }
-            }
-            pl.x = U.clamp(pl.x + mx * prm.speed * dt, f.x + 10, f.x + f.w - 10);
-            pl.y = U.clamp(pl.y + my * prm.speed * dt, f.y + 10, f.y + f.h - 10);
-            if ((ringT -= dt) <= 0) { ringT = 0.16; E.wave(pl.x, pl.y, 30, '#ff3d5a', 0.28, 1); }
-            if (T > 0) return false;
-            phase = 1;
-            pl.state = 'slam'; pl.slamKind = 'meteor'; pl.stateT = 3; pl.airVz = -700;
-            return false;
-          }
-          // đang rơi: đuôi lửa
-          if (pl.state !== 'slam') return true;
-          E.burst(pl.x, pl.y, pl.airZ + 6, Math.random() < 0.5 ? '#ff6a1f' : '#ffd23f', 3, 50, 0.4);
-          return false;
-        }, () => { if (pl.state === 'meteor') { pl.state = 'normal'; pl.airZ = 0; } });
-      },
-      land(sys, team, prm, p) {
-        const g = sys.g, E = g.effects, R = prm.radius;
-        g.hitStop(0.13);
-        E.impactFrame();
-        E.shake(10, 0.5);
-        E.zoom(p.x, p.y, 0.2, 0.4);
-        E.wave(p.x, p.y, R, '#ff6a1f', 0.6, 4);
-        E.wave(p.x, p.y, R * 0.6, '#ffffff', 0.45, 2);
-        E.decal('crater', p.x, p.y, 1.8, 5);
-        E.burst(p.x, p.y, 4, '#ff6a1f', 30, 190, 0.9);
-        E.burst(p.x, p.y, 2, '#6a6470', 20, 80, 1.2);
-        E.comic(p.x, p.y - 40, 'KRAKOOM!!', '#ff6a1f', 1.5);
-        g.sfx('hit');
-        for (const o of g.teams[1 - team].players) {
-          if (U.dist(o, p) > R + o.radius || g.isProtected(o) || Act().dodged(g, o)) continue;
-          const had = o.hasBall;
-          if (blast(o, p, prm.knock, prm.launch, prm.stun, p) && had) sys.steal(p);
-        }
-        p.state = 'recover'; p.stateT = 0.4;
-      },
-    },
 
     /* ================= 🌀 ẢO ẢNH ================= */
     quick_feet: {
@@ -1078,80 +1019,29 @@ window.SFC = window.SFC || {};
       },
     },
 
-    // CHAOS ROULETTE (Tuyệt kỹ gốc Hỗn loạn): vòng quay bốc rolls tai hoạ khác nhau giáng xuống đội đối thủ
+    // PITCH TILT (id chaos_roulette, Tuyệt kỹ gốc Hỗn loạn — user chốt 2026-10-15 chỉ giữ nghiêng sân): cả sân nghiêng về khung thành đối thủ,
+    // mọi người đứng dưới đất trôi theo, bóng lỏng lăn nhanh dần về phía đó (cả 2 đội đều bị: đội mình được lợi vì đang tấn công)
     chaos_roulette: {
       aiUse(sys, team, prm) {
         const g = sys.g, b = g.ball, me = prm.owner;
-        if (me.state !== 'normal') return null;
-        return (b.owner && b.owner.team !== team) || Math.random() < 0.25 ? me : null;
+        return me.state === 'normal' && b.owner && b.owner.team === team && !g.inOwnHalf(b.owner) ? me : null;
       },
       onUltimate(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects;
-        const kinds = ['meteor', 'gravity', 'slow'];
-        const picks = [];
-        while (picks.length < Math.min(prm.rolls, kinds.length)) { const k = U.pick(kinds); if (!picks.includes(k)) picks.push(k); }
-        E.tint(CHAOS, 0.5, 0.2);
+        const g = sys.g, E = g.effects, b = g.ball, dir = g.teams[team].dir;
+        E.tilt(dir, prm.time);
+        E.callout('PITCH TILT!', '#ffd23f', 1);
         E.burst(pl.x, pl.y - 10, 10, CHAOS, 20, 120, 0.6);
-        E.wave(pl.x, pl.y, 40, CHAOS, 0.5, 3);
-        g.sfx('upgrade');
-        picks.forEach((k, i) => g.later(i * 0.9, () => { if (g.state === 'play') this[k](sys, team, prm, pl); }));
-      },
-      // mưa thiên thạch: vòng + vết lõm báo trước quanh đối thủ, rơi xuống hất tung
-      meteor(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects, f = g.field, opp = g.teams[1 - team].players;
-        E.callout('METEOR RAIN!', '#ff6a1f', 1);
-        for (let i = 0; i < prm.meteors; i++) {
-          const o = opp[i % opp.length];
-          const x = U.clamp((o ? o.x : f.cx) + U.rand(-30, 30), f.x + 10, f.x + f.w - 10), y = U.clamp((o ? o.y : f.cy) + U.rand(-24, 24), f.y + 10, f.y + f.h - 10);
-          const at = prm.telegraph + i * 0.18;
-          E.decal('crater', x, y, 0.6, at + 0.1);
-          E.wave(x, y, prm.radius, '#ff6a1f', at, 1);
-          g.later(at - 0.15, () => { if (g.state === 'play') E.projectile('orb', x, y - 120, 0, 800, 0.15, '#ff6a1f'); });
-          g.later(at, () => {
-            if (g.state !== 'play') return;
-            E.wave(x, y, prm.radius, '#ff6a1f', 0.45, 3);
-            E.decal('crater', x, y, 1.1, 4);
-            E.burst(x, y, 4, '#ff6a1f', 18, 150, 0.7);
-            E.comic(x, y - 26, 'BOOM!', '#ff6a1f', 1, 0.5);
-            E.shake(5, 0.25);
-            g.sfx('hit');
-            const c = { x, y };
-            for (const q of opp) {
-              if (U.dist(q, c) > prm.radius + q.radius || g.isProtected(q) || q.state === 'meteor' || Act().dodged(g, q)) continue;
-              if (q.hasBall && !sys.unstealable(q)) g.looseBall(q, U.rand(-1, 1), U.rand(-1, 1), 60);
-              blast(q, c, prm.knock, prm.launch, prm.stun, pl);
-            }
-          });
-        }
-      },
-      // mất trọng lực: vòng tím dưới chân mọi đối thủ (báo trước) rồi hất tung tại chỗ
-      gravity(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects, opp = g.teams[1 - team].players;
-        E.callout('ZERO GRAVITY!', CHAOS, 1);
-        for (const q of opp) E.wave(q.x, q.y, 16, CHAOS, prm.telegraph, 1);
-        g.later(prm.telegraph, () => {
-          if (g.state !== 'play') return;
-          for (const q of opp) {
-            if (g.isProtected(q) || q.state === 'meteor' || q.airZ > 4 || Act().dodged(g, q)) continue;
-            if (q.hasBall && !sys.unstealable(q)) g.looseBall(q, U.rand(-1, 1), U.rand(-1, 1), 40);
-            blast(q, { x: q.x + U.rand(-1, 1), y: q.y + 1 }, 40, prm.launch * 1.2, prm.stun, pl);
-            E.burst(q.x, q.y, 2, CHAOS, 10, 80, 0.5);
-          }
-          E.shake(4, 0.3);
-          g.sfx('whoosh');
+        E.shake(5, 0.5);
+        g.sfx('whoosh');
+        g.sfx('wall');
+        let T = 0;
+        sys.task((dt) => {
+          if (g.state !== 'play' || (T += dt) >= prm.time) return true;
+          const e = Math.min(1, T * 3, (prm.time - T) * 3);   // nghiêng dần vào / ra
+          for (const q of g.players) if (q.airZ <= 4 && q.state !== 'meteor') q.x += dir * prm.tilt * e * dt;
+          if (!b.owner) b.vx += dir * prm.ball * e * dt;
+          return false;
         });
-      },
-      // nguyền chậm: cả đội đối thủ chậm lại (phủ tím), không gây choáng
-      slow(sys, team, prm) {
-        const g = sys.g, E = g.effects;
-        E.callout('SLOW CURSE!', '#9d7bff', 1);
-        E.tint('#3a1060', prm.slowTime, 0.18);
-        for (const q of g.teams[1 - team].players) {
-          q.buffs.push({ speed: prm.slow, t: prm.slowTime });
-          q.glow('#9d7bff', prm.slowTime);
-          E.burst(q.x, q.y - 10, 8, '#9d7bff', 10, 60, 0.5);
-        }
-        g.sfx('zap');
       },
     },
   });

@@ -25,8 +25,8 @@ window.SFC = window.SFC || {};
   };
   SFC.FXSettings = FXSettings.load();
 
-  const worldBlank = () => ({ waves: [], decals: [], arms: [], clones: [], shots: [], beams: [], vortexes: [], bolts: [], comics: [], shields: [], portals: [], netfires: [], dragons: [] });
-  const overlayBlank = () => ({ zoom: null, impact: 0, impactCd: 0, lines: null, callouts: [], cutins: [], tints: [] });
+  const worldBlank = () => ({ waves: [], decals: [], arms: [], clones: [], shots: [], beams: [], vortexes: [], bolts: [], comics: [], shields: [], portals: [], netfires: [], dragons: [], props: [] });
+  const overlayBlank = () => ({ zoom: null, impact: 0, impactCd: 0, lines: null, callouts: [], cutins: [], tints: [], vhs: null, tilt: null });
 
   // trạng thái VFX (tạo lười, không cần sửa constructor)
   Object.defineProperty(E, 'V', {
@@ -130,6 +130,19 @@ window.SFC = window.SFC || {};
     this.V.netfires = [{ side, t, max: t }];
   };
 
+  // PR — vật thể trên sân của Tuyệt kỹ (docs/ULT_REDESIGN.md): tường sét, cột đá, gương, hộp lò xo, đe, xích, bàn tay ma, cổng, lốc xoáy...
+  // id do máy chạy mô phỏng cấp (SFC.CoreHelpers.propId), kind quyết định hình (render/vfx.js -> drawProp), (x, y) + a, b tuỳ kind
+  // (điểm cuối · id cầu thủ bám theo · góc · độ dài...), sống t giây. Chỉ để nhìn: va chạm do Tuyệt kỹ tự tính ở máy chạy mô phỏng
+  E.prop = function (id, kind, x, y, a = 0, b = 0, t = 1, color = '') {
+    const list = this.V.props;
+    list.push({ id, kind, x, y, a, b, t, max: t, color });
+    if (list.length > 160) list.shift();
+  };
+  // gỡ vật thể id sớm (hộp nổ, gương vỡ, xích đứt): mờ đi trong fade giây
+  E.propOff = function (id, fade = 0.15) {
+    for (const o of this.V.props) if (o.id === id && o.t > fade) { o.t = fade; o.max = fade; o.off = true; }
+  };
+
   E.combo = function (x, y, n) { this.comic(x, y, n + ' HIT!', n >= 10 ? '#ff3d5a' : '#ffe14f', Math.min(1.6, 0.9 + n * 0.05), 0.6); };
 
   /* ================= OVERLAY (thời gian thật) ================= */
@@ -161,9 +174,14 @@ window.SFC = window.SFC || {};
   // phủ màu toàn màn hình (sepia, tím né hoàn hảo...)
   E.tint = function (color, t = 1, a = 0.25) { this.O.tints.push({ color, t, max: t, a }); };
 
+  // băng VHS tua ngược: sọc nhiễu + chữ <<, lệch màu (VHS Rewind)
+  E.vhs = function (t = 0.8) { this.O.vhs = { t, max: t }; };
+  // sân nghiêng về phía dir (-1 trái / 1 phải): khung hình xoay nhẹ + mũi tên trôi (Chaos Roulette)
+  E.tilt = function (dir, t = 3) { this.O.tilt = { dir, t, max: t }; };
+
   // toàn bộ VFX Kit chỉ để nhìn -> máy chủ riêng bỏ qua (Effects.headless)
   SFC.Effects.COSMETIC.push('wave', 'decal', 'stretch', 'clone', 'popClone', 'projectile', 'beam', 'vortex', 'bolt', 'dragon', 'comic', 'combo',
-    'shield', 'portal', 'netFire', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint');
+    'shield', 'portal', 'netFire', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint', 'prop', 'propOff', 'vhs', 'tilt');
 
   /* ================= UPDATE ================= */
   const baseClear = E.clearHazards;
@@ -171,6 +189,9 @@ window.SFC = window.SFC || {};
     baseClear.call(this);
     const V = this.V;
     V.arms.length = 0; V.clones.length = 0; V.shots.length = 0; V.beams.length = 0; V.vortexes.length = 0; V.bolts.length = 0; V.dragons.length = 0;
+    V.props.length = 0;
+    const O = this.O;
+    O.tilt = null;
   };
 
   const baseCosmetic = E.updateCosmetic;
@@ -190,7 +211,7 @@ window.SFC = window.SFC || {};
     for (const s of V.shots) { s.x += s.vx * dt; s.y += s.vy * dt; }
     for (const v of V.vortexes) if (v.follow === 'ball') { const b = this.g.ball; v.x = b.x; v.y = b.y - b.z; }
     for (const c of V.comics) c.y -= 10 * dt;
-    [V.waves, V.decals, V.arms, V.clones, V.shots, V.beams, V.vortexes, V.bolts, V.comics, V.shields, V.portals, V.netfires, V.dragons].forEach(tick);
+    [V.waves, V.decals, V.arms, V.clones, V.shots, V.beams, V.vortexes, V.bolts, V.comics, V.shields, V.portals, V.netfires, V.dragons, V.props].forEach(tick);
   };
 
   // lớp phủ chạy theo thời gian thật (Game.update gọi mỗi bước, kể cả lúc hit-stop)
@@ -200,6 +221,7 @@ window.SFC = window.SFC || {};
     o.impact = Math.max(0, o.impact - dt);
     if (o.zoom && (o.zoom.t -= dt) <= 0) o.zoom = null;
     if (o.lines && (o.lines.t -= dt) <= 0) o.lines = null;
+    for (const k of ['vhs', 'tilt']) if (o[k] && (o[k].t -= dt) <= 0) o[k] = null;
     for (const k of ['callouts', 'cutins', 'tints']) {
       for (const it of o[k]) it.t -= dt;
       o[k] = o[k].filter((it) => it.t > 0);

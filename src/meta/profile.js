@@ -74,8 +74,10 @@ window.SFC = window.SFC || {};
       d.path = SFC.MainPath.sanitize(raw && raw.path);   // tiến trình Main Path (src/meta/mainpath.js)
       d.team = SFC.Mates.sanitizeTeam(raw && raw.team);  // đồng đội + scout (src/meta/teammates.js)
       if (!raw || typeof raw !== 'object') return d;
-      const keys = this.ultEntries().map((e) => e.key);
-      d.ultBook = Array.isArray(raw.ultBook) ? [...new Set(raw.ultBook.filter((k) => keys.includes(k)))] : [];
+      const keys = this.ultEntries().map((e) => e.key), ren = SFC_CONFIG.cores.ults.renamed || {};
+      // Tuyệt kỹ đã thay (docs/ULT_REDESIGN.md): 'id cũ:cấp' -> 'id mới:cấp' cùng ô công thức, vẫn tính là đã khám phá
+      const mig = (k) => { const [id, lv] = String(k).split(':'); return ren[id] ? ren[id] + ':' + lv : k; };
+      d.ultBook = Array.isArray(raw.ultBook) ? [...new Set(raw.ultBook.map(mig).filter((k) => keys.includes(k)))] : [];
       d.name = this.cleanName(raw.name || '');
       // hồ sơ có từ trước khi có PROLOGUE (đã đặt tên) -> coi như đã xem
       const tut = raw.tut && typeof raw.tut === 'object' ? raw.tut : null;

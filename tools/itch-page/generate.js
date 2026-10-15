@@ -185,11 +185,11 @@ function run() {
   // mỗi sân 1 ảnh: chạy trận, chấm điểm "độ hành động" từng bước, giữ khung hình điểm cao nhất
   SFC.Renderer.init(document.getElementById('game'));
   const SHOTS = [
-    { arena: 'street', home: 'street_kings', away: 'neon_strikers', cores: [['fire_shot', 'street_fighter', 'fist_storm', 'hundred_fists'], ['lightning_dash', 'speed_demon', 'burst_start', 'sonic_boom']] },
-    { arena: 'cyber', home: 'cyber_united', away: 'underground_fc', cores: [['thunder_kick', 'eagle_eye', 'sniper_foot', 'meteor_strike'], ['wall_slam', 'flying_kick', 'ground_slam', 'meteor_drop']] },
+    { arena: 'street', home: 'street_kings', away: 'neon_strikers', cores: [['fire_shot', 'street_fighter', 'fist_storm', 'hundred_fists'], ['light_cycle', 'speed_demon', 'burst_start', 'sonic_boom']] },
+    { arena: 'cyber', home: 'cyber_united', away: 'underground_fc', cores: [['thunder_kick', 'eagle_eye', 'sniper_foot', 'meteor_strike'], ['wall_slam', 'flying_kick', 'ground_slam', 'moon_stomp']] },
     { arena: 'stadium', home: 'neon_strikers', away: 'street_kings', cores: [['shadow_clone', 'phantom_step', 'fake_run', 'clone_army'], ['iron_body', 'giant_fist', 'bulldozer', 'titan']] },
     { arena: 'market', home: 'underground_fc', away: 'cyber_united', cores: [['bomb_ball', 'chaos_ball', 'black_hole', 'warp_walls'], ['maestro', 'one_touch', 'symphony', 'endless_tiki']] },
-    { arena: 'village', home: 'street_kings', away: 'cyber_united', cores: [['uppercut', 'iron_fist', 'one_two', 'hundred_fists'], ['heavy_boot', 'juggle', 'scissor_kick', 'meteor_drop']] },
+    { arena: 'village', home: 'street_kings', away: 'cyber_united', cores: [['uppercut', 'iron_fist', 'one_two', 'hundred_fists'], ['heavy_boot', 'juggle', 'scissor_kick', 'moon_stomp']] },
   ];
   const score = (g) => {
     // phủ màu toàn màn hình (tints) / impact frame đen trắng / chớp trắng (flashA): ảnh bị bạc màu -> bỏ

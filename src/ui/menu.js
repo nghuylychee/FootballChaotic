@@ -215,6 +215,8 @@ window.SFC = window.SFC || {};
           // SETTINGS > TEST: mọi nút cheat / thử nghiệm để ở đây. Bản Steam: cả trang bị xoá (SFC_DEBUG)
           if (SFC_DEBUG) {
             return [
+              // PHÒNG TEST TUYỆT KỸ (src/ui/ulttest.js): thử từng Tuyệt kỹ, năng lượng tự đầy, [ ] đổi chiêu
+              { kind: 'btn', label: 'ULT TEST ROOM', sub: 'Try every Ultimate · [ ] switch · \\ ★★ · O enemy ults', danger: true, act: () => SFC.UltTest.start(this.app) },
               // xem lại PROLOGUE (cut scene + trận mơ)
               { kind: 'btn', label: 'PROLOGUE', sub: 'Replay the intro & tutorial match', danger: true, act: () => SFC.Tutorial.begin(this.app) },
               { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drill cards · stats reset on close', danger: true, act: () => this.testDrill() },

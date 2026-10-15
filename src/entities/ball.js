@@ -14,6 +14,7 @@ window.SFC = window.SFC || {};
     }
 
     reset(x, y) {
+      this.r = SFC_CONFIG.game.ball.radius;   // Boulder Shot phóng to bóng -> giao bóng trả về cỡ thường
       Object.assign(this, {
         x, y, z: 0, vx: 0, vy: 0, vz: 0,
         owner: null, lastTouch: null, lastKickTeam: -1,

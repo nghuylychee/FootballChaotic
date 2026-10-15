@@ -143,6 +143,8 @@ window.SFC = window.SFC || {};
       this.freezeT = 0;     // VFX Kit hit-stop: còn bao lâu đứng hình (giây thật)
       this.slowT = 0;       // VFX Kit slow-mo: còn bao lâu chạy chậm (giây thật)
       this.slowScale = 1;
+      this.stopT = 0;       // Time Stop Strike / VHS Rewind: còn bao lâu cả sân đứng yên (chỉ later() + stopTick của Tuyệt kỹ chạy)
+      this.stopTick = null; // fn(dt) -> true = xong: Tuyệt kỹ tự diễn trong lúc cả sân đứng yên (VHS Rewind tua ngược)
       this.kickoff(0);
       // lượt chọn Core khởi đầu (trước khi giao bóng đầu trận)
       if (!opts.noDraft && !opts.training && this.cfg.match.preKickoffDraft && this.cfg.match.maxUpgrades > 0) this.startDraft(true);
@@ -368,6 +370,8 @@ window.SFC = window.SFC || {};
         if (tp.length) this.setControlled(teamIdx === t ? fwd : tp.find((p) => p.role === 'FWD') || tp[0]);
       }
       this.passChain = [0, 0];
+      this.stopT = 0;
+      this.stopTick = null;
       this.cores.kickoff();
     }
 
@@ -421,6 +425,13 @@ window.SFC = window.SFC || {};
     }
 
     simulate(dt, input) {
+      // Time Stop Strike: mọi người + bóng đứng yên, chỉ hình ảnh chạy; Tuyệt kỹ tự điều khiển bằng later() (thời gian thật)
+      if (this.stopT > 0) {
+        this.stopT -= dt;
+        this.effects.updateCosmetic(dt);
+        if (this.stopTick && this.stopTick(dt)) this.stopTick = null;
+        return;
+      }
       this.passPreview = null;
       for (let i = 0; i < this.seats.length; i++) {
         const inp = input && !this.seats[i].gone && this.inputFor(i, input);
@@ -599,6 +610,8 @@ window.SFC = window.SFC || {};
 
     end() {
       this.state = 'ended';
+      this.stopT = 0;
+      this.stopTick = null;
       this.sfx('whistle', true);
       this.emit('end', {});
     }

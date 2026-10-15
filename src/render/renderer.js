@@ -128,6 +128,7 @@ window.SFC = window.SFC || {};
       for (const d of fx.decoys) list.push({ y: d.y, k: 'd', o: d });
       for (const a of fx.afterimages) list.push({ y: a.y - 0.1, k: 'a', o: a });
       for (const c of SFC.VFX.clones(g)) list.push({ y: c.y, k: 'cl', o: c });
+      for (const pr of SFC.VFX.props(g)) list.push({ y: pr.y, k: 'pr', o: pr.o });   // vật thể Tuyệt kỹ (cột đá, đe, gương...)
       list.sort((a, b) => a.y - b.y);
       const marks = [];
 
@@ -183,6 +184,8 @@ window.SFC = window.SFC || {};
           drawPlayer(ctx, a, g, (a.t / a.max) * 0.5, null, true);
         } else if (e.k === 'cl') {
           SFC.VFX.drawClone(ctx, g, e.o);
+        } else if (e.k === 'pr') {
+          SFC.VFX.drawProp(ctx, g, e.o);
         }
       }
 
@@ -266,11 +269,11 @@ window.SFC = window.SFC || {};
         }
       };
       arc(10, OUT); arc(7, OUT); arc(9, col); arc(8, col);
-      // mũi tên trên đầu: tam giác 11px, viền tối 2px; AURA FARMING -> nhấc lên khỏi ngọn lửa vàng sau lưng
+      // mũi tên trên đầu: tam giác 7px, viền tối 2px (nhỏ, nằm dưới thanh lực); AURA FARMING -> nhấc lên khỏi ngọn lửa vàng sau lưng
       const lift = p.auraFarmT > 0 ? 14 : 0;
       const bob = Math.round(Math.sin(t * 8) * 1.5);
-      const n = 5;
-      const ay = Math.max(4, Math.round(hy - 14 - lift) + bob);
+      const n = 3;
+      const ay = Math.max(4, Math.round(hy - 12 - lift) + bob);
       px(ctx, x - n - 2, ay - 2, 2 * n + 5, 2, OUT);
       for (let i = 0; i <= n + 1; i++) px(ctx, x - (n + 2 - i), ay + i, 2 * (n + 2 - i) + 1, 1, OUT);
       for (let i = 0; i < n; i++) px(ctx, x - (n - i), ay + i, 2 * (n - i) + 1, 1, col);
@@ -319,6 +322,8 @@ window.SFC = window.SFC || {};
       ctx.translate(Math.round(p.x), Math.round(cy));
       // bị đá bay (choáng) thì lộn vòng; tự nhảy (Dậm Đất, Thiên Thạch...) thì bay thẳng người
       if (p.state === 'stun') ctx.rotate(dir * p.anim * 13);
+      // Comet One-Two: móc xe đạp — lộn ngược ra sau (đầu chúc xuống lúc đá), xoay tiếp cho tròn vòng khi rơi
+      else if (p.atkType === 'bicycle') ctx.rotate(-(Math.cos(p.facing) >= 0 ? 1 : -1) * Math.min(2, (p.atkT || 0) / 0.42) * Math.PI);
       drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, keeper: false }), g, 0.999);
       ctx.restore();
       return Math.round(cy) - 8;
@@ -396,7 +401,7 @@ window.SFC = window.SFC || {};
     chargeBar(ctx, p, hy, g) {
       const { px, OUT } = SP();
       const K = SFC_CONFIG.game.kick;
-      const w = 18, x = Math.round(p.x - w / 2), y = hy - 16;
+      const w = 18, x = Math.round(p.x - w / 2), y = hy - 22;   // trên mũi tên điều khiển, không bị che
       const base = SFC.Actions.shotBasePower(g, p);
       const c = SFC.Actions.shotPower(g, p, p.charge), over = Math.max(0, p.charge - 1) / (K.maxOvercharge - 1);
       const col = over > 0 ? '#ff3d3d' : c > 0.85 ? '#ffb13d' : '#ffe14f';
@@ -426,7 +431,7 @@ window.SFC = window.SFC || {};
 
     passBar(ctx, p, hy) {
       const { px, OUT } = SP();
-      const w = 18, x = Math.round(p.x - w / 2), y = hy - 16;
+      const w = 18, x = Math.round(p.x - w / 2), y = hy - 22;   // trên mũi tên điều khiển, không bị che
       const col = PASS_COLORS[p.passMode];
       const base = p.passBase || 0;
       px(ctx, x - 1, y - 1, w + 2, 5, OUT);
@@ -458,7 +463,7 @@ window.SFC = window.SFC || {};
     },
 
     ballTrail(ctx, b) {
-      if (b.owner || b.speed < 200) return;
+      if (b.owner || b.speed < 200 || b.skin === 'ghost') return;   // Vanishing Ball: tàng hình, không để lại vệt
       const { px } = SP();
       const col = b.fx.fire ? '255,140,40' : b.fx.thunder ? '120,230,255' : '255,255,255';
       b.trail.forEach((tp, i) => {

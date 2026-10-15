@@ -355,6 +355,11 @@ window.SFC = window.SFC || {};
     kickSwing() { sample('hardStep'); if (!sample('hardSwing')) this.whoosh(); },
     block()   { tone({ freq: 880, to: 1320, dur: 0.12, type: 'square', vol: 0.15 }); },
     zap()     { tone({ freq: 1400, to: 200, dur: 0.18, type: 'sawtooth', vol: 0.15 }); },
+    // VHS Rewind: băng tua ngược — tiếng rít trượt xuống lặp lại + nhiễu sột soạt
+    rewind()  {
+      for (let i = 0; i < 4; i++) tone({ freq: 1200 - i * 120, to: 300, dur: 0.22, type: 'sawtooth', vol: 0.09, delay: i * 0.21 });
+      noise({ dur: 0.9, vol: 0.08, freq: 3000, q: 0.5 });
+    },
     fire()    { noise({ dur: 0.3, vol: 0.2, freq: 400, q: 0.4 }); },
     save()    { tone({ freq: 440, to: 660, dur: 0.1, type: 'triangle', vol: 0.2 }); this.crowdOoh(); },
     // Đọc Cú Sút: g = 0 PERFECT · 1 GREAT · 2 GOOD (càng chuẩn càng cao, càng nhiều nốt)

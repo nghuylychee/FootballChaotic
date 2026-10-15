@@ -132,7 +132,6 @@ window.SFC = window.SFC || {};
     sonic_boom: run({ ball: true, init: (s) => { s.me.previewSurge = true; s.place(s.o1, A.x - 10, A.y + 13, PI); } }),
     freight_train: run({ init: (s) => { s.me.previewSurge = true; s.place(s.o1, A.x - 10, A.y, PI); } }),
     fake_run: run({ ball: true, init: (s) => s.place(s.o1, A.x + 10, A.y + 10, PI) }),
-    lightning_dash: ult({ init: (s) => s.place(s.me, A.x - 90, A.y, 0), at: 0.3 }),
     counter_attack: punch(),
     flying_kick: kick({ dist: 55, init: (s) => { s.me.previewSurge = true; } }),
 
@@ -210,12 +209,6 @@ window.SFC = window.SFC || {};
     }),
     ground_slam: kick({ dist: 18, init: (s) => s.place(s.o2, A.x - 30, A.y + 22, PI) }),
     blade_runner: kick({ dist: 90 }),
-    meteor_drop: ult({
-      ball: false, len: 3.4,
-      init: (s) => { s.place(s.o1, A.x + 30, A.y + 6, PI); s.place(s.o2, A.x + 45, A.y - 14, PI); s.give(s.o1); },
-      tick: (s) => { if (s.me.state === 'meteor') { const d = U.norm(s.o1.x - s.me.x, s.o1.y - s.me.y); const k = Math.min(1, U.dist(s.o1, s.me) / 10); s.me.intent.mx = d.x * k; s.me.intent.my = d.y * k; } },
-      focus: (s) => s.me,
-    }),
 
     /* 🌀 ẢO ẢNH */
     quick_feet: dash(),
@@ -253,58 +246,94 @@ window.SFC = window.SFC || {};
     }),
 
     /* TUYỆT KỸ LAI (systems/cores-hybrid.js) */
-    comet_onetwo: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x + 10, A.y - 40, PI); s.place(s.o1, A.x + 40, A.y + 2, PI); } }),
     rising_dragon: ult({ ball: false, len: 2.8, focus: (s) => s.o1 }),
-    comet_dropkick: ult({ ball: false, len: 2.4, focus: (s) => (s.t > 0.4 ? s.mid(s.me, s.o2) : s.me) }),
-    phantom_barrage: ult({ len: 2.6, init: (s) => { s.place(s.o1, A.x + 90, A.y + 30, PI); } }),
-    steel_formation: ult({
-      ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x - 22, A.y, PI); s.place(s.mate, A.x - 60, A.y - 24, 0); },
-      more: [[0.9, (s) => { s.face(s.o1, s.me); Act().lightAttack(s.g, s.o1); }]],
-    }),
-    iron_hammer: ult({ ball: false, len: 2.4, init: (s) => { s.place(s.o1, A.x - 14, A.y, PI); s.place(s.o2, A.x - 8, A.y + 14, PI); } }),
-    mirage_sprint: ult({
-      len: 2.8, at: 0.2, init: (s) => { s.place(s.o1, A.x - 20, A.y + 8, PI); },
-      tick: (s) => { s.me.intent.mx = 1; s.me.intent.my = 0; s.me.intent.sprint = true; s.me.stamina = 100; },
-    }),
     slingshot: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x - 30, A.y - 28, 0); s.place(s.o1, A.x + 40, A.y - 20, PI); }, focus: (s) => s.mate }),
-    lightning_relay: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x + 70, A.y - 30, 0); s.place(s.o1, A.x + 15, A.y - 14, PI); }, focus: (s) => (s.t > 0.6 ? s.mate : s.me) }),
-    flash_strike: ult({
-      len: 2.6, init: (s) => { s.place(s.me, G.x - 200, G.y + 10, 0); s.place(s.o1, G.x - 16, G.y, PI); s.place(s.o2, G.x - 140, G.y + 8, PI); },
-      focus: (s) => (s.t > 0.7 ? s.g.ball : s.me),
-    }),
-    thunder_rush: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 10, A.y - 22, PI); s.place(s.o2, A.x + 45, A.y + 22, PI); s.give(s.o1); } }),
-    steel_express: ult({ ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x + 30, A.y, PI); s.give(s.o1); s.place(s.o2, A.x + 80, A.y + 6, PI); } }),
-    sky_volley: ult({
-      len: 2.8, init: (s) => { s.place(s.me, G.x - 220, G.y + 30, 0); s.place(s.mate, G.x - 120, G.y - 20, 0); s.place(s.o1, G.x - 16, G.y, PI); s.place(s.o2, G.x - 110, G.y - 6, PI); },
-      focus: (s) => (s.t > 1.0 ? s.g.ball : s.t > 0.45 ? s.mate : s.me),
-    }),
-    ghost_pass: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x + 70, A.y - 30, PI); s.place(s.o1, A.x + 15, A.y - 14, PI); s.place(s.o2, A.x - 10, A.y + 22, PI); }, focus: (s) => s.g.ball }),
-    knockout_volley: ult({
-      len: 2.6, init: (s) => { s.place(s.me, G.x - 140, G.y + 8, 0); s.place(s.o2, G.x - 124, G.y - 8, PI); s.place(s.o1, G.x - 16, G.y, PI); },
-      focus: (s) => (s.t > 0.8 ? s.g.ball : s.me),
-    }),
     cannonball: ult({ len: 2.8, init: (s) => { s.place(s.me, G.x - 230, G.y, 0); s.place(s.o2, G.x - 140, G.y + 4, PI); s.place(s.o1, G.x - 16, G.y, PI); }, focus: (s) => s.g.ball }),
-    wrecking_ball: ult({
-      len: 2.8, init: (s) => { s.place(s.me, G.x - 230, G.y, 0); s.place(s.o2, G.x - 150, G.y + 2, PI); s.place(s.o1, G.x - 16, G.y, PI); }, focus: (s) => s.g.ball,
-    }),
-    shadow_ambush: ult({ ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x + 25, A.y - 18, PI); s.place(s.o2, A.x + 35, A.y + 22, PI); s.give(s.o1); }, focus: (s) => s.mid(s.o1, s.o2) }),
-    crossfire_kicks: ult({ ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x + 40, A.y, PI); s.give(s.o1); }, focus: (s) => s.o1 }),
-    iron_quake: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 10, A.y + 6, PI); s.place(s.o2, A.x + 50, A.y - 8, PI); s.give(s.o1); }, focus: (s) => s.mid(s.me, s.o2) }),
     // 🎲 Hỗn loạn + 7 hệ
-    wormhole_dash: ult({ len: 2.4, init: (s) => { s.place(s.o1, A.x + 10, A.y + 6, PI); s.place(s.o2, A.x + 150, A.y - 10, PI); }, focus: (s) => s.me }),
-    wild_pass: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x + 70, A.y - 30, PI); s.place(s.o1, A.x + 15, A.y - 14, PI); }, focus: (s) => (s.t > 0.8 ? s.mate : s.g.ball) }),
-    jackpot_shot: ult({ len: 2.6, init: (s) => { s.place(s.me, G.x - 150, G.y + 10, 0); s.place(s.o1, G.x - 16, G.y, PI); }, focus: (s) => (s.t > 0.5 ? s.g.ball : s.me) }),
-    wild_haymaker: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 20, A.y, PI); s.give(s.o1); }, focus: (s) => s.o1 }),
     pinball_kick: ult({ ball: false, len: 3, init: (s) => { s.place(s.o1, A.x - 10, A.y, PI); s.place(s.o2, A.x + 60, A.y + 30, PI); }, focus: (s) => s.o1 }),
     shell_game: ult({ len: 2.6, init: (s) => { s.place(s.o1, A.x, A.y + 10, PI); } }),
-    iron_dice: ult({ ball: false, len: 3, init: (s) => { s.place(s.o1, A.x + 20, A.y, PI); s.give(s.o1); s.place(s.o2, A.x + 70, A.y + 6, PI); }, focus: (s) => s.mid(s.me, s.o1) }),
-    mirror_wall: ult({
-      ball: false, len: 3, at: 0.2,
-      init: (s) => { s.place(s.me, A.x - 20, A.y + 40, 0); s.place(s.o1, A.x + 70, A.y, PI); s.give(s.o1); },
-      more: [[0.9, (s) => { const b = s.g.ball; if (b.owner === s.o1) { b.kick(s.o1, -360, 0, 0); b.kind = 'shot'; } }]],
+
+    /* TUYỆT KỸ THIẾT KẾ LẠI (docs/ULT_REDESIGN.md, systems/cores-ult2.js) */
+    light_cycle: ult({
+      ball: false, len: 3.2, at: 0.2,
+      init: (s) => { s.place(s.me, A.x - 110, A.y + 20, 0); s.place(s.o1, A.x + 10, A.y - 40, PI / 2); },
+      tick: (s) => {
+        s.me.intent.mx = 1; s.me.intent.my = s.t < 1.2 ? -0.6 : 0.5; s.me.intent.sprint = true; s.me.stamina = 100;
+        if (s.t > 1.3) { s.o1.intent.mx = 0; s.o1.intent.my = 1; }
+      },
+      focus: (s) => (s.t > 1.4 ? s.o1 : s.me),
+    }),
+    moon_stomp: ult({
+      ball: false, len: 3.4,
+      init: (s) => { s.place(s.o1, A.x + 10, A.y + 10, PI); s.place(s.o2, A.x - 5, A.y - 24, PI); s.give(s.o1); },
+      tick: (s) => { if (s.t > 1.3) { const d = U.norm(s.o1.x - s.me.x, s.o1.y - s.me.y); s.me.intent.mx = d.x; s.me.intent.my = d.y; } },
+      focus: (s) => s.mid(s.me, s.o1),
+    }),
+    time_stop_strike: ult({
+      len: 3.4, init: (s) => { s.place(s.me, G.x - 200, G.y + 10, 0); s.place(s.o1, G.x - 16, G.y, PI); s.place(s.o2, G.x - 150, G.y + 8, PI); },
+      focus: (s) => (s.t > 0.4 ? s.g.ball : s.me),
+    }),
+    hurricane_kick: ult({
+      ball: false, len: 3, init: (s) => { s.place(s.o1, A.x + 30, A.y + 6, PI); s.place(s.o2, A.x + 70, A.y - 10, PI); s.give(s.o1); },
+      tick: (s) => { s.me.intent.mx = 1; s.me.intent.my = 0; },
+      focus: (s) => s.me,
+    }),
+    phase_step: ult({
+      len: 2.8, at: 0.2, init: (s) => { s.place(s.o1, A.x + 10, A.y, PI); s.place(s.o2, A.x + 80, A.y - 20, PI); },
+      tick: (s) => { s.me.intent.mx = 1; s.me.intent.my = 0; s.me.intent.sprint = true; s.me.stamina = 100; },
+      more: [[0.7, (s) => Act().skill(s.g, s.me, 1, -0.8)], [1.5, (s) => Act().skill(s.g, s.me, 1, 0.8)]],
+    }),
+    vhs_rewind: ult({
+      ball: false, len: 3.4, at: 2.2,
+      init: (s) => { s.place(s.o1, A.x + 120, A.y, PI); s.give(s.o1); },
+      tick: (s) => { if (s.t < 2.2) { s.o1.intent.mx = -1; s.o1.intent.my = 0; } else { s.o1.intent.mx = 0; } },
+      focus: (s) => s.o1,
+    }),
+    boomerang_kick: ult({
+      len: 3, init: (s) => { s.place(s.mate, A.x + 90, A.y - 10, PI); s.place(s.o1, A.x + 30, A.y - 4, PI); s.place(s.o2, A.x + 50, A.y + 30, PI); },
       focus: (s) => s.g.ball,
     }),
+    iron_chain: ult({
+      ball: false, len: 3, init: (s) => { s.place(s.mate, A.x + 40, A.y - 30, 0); s.place(s.o1, A.x + 30, A.y + 40, PI); },
+      tick: (s) => { if (s.t > 0.6) { s.o1.intent.mx = 0; s.o1.intent.my = -1; } },
+      focus: (s) => s.mid(s.me, s.mate),
+    }),
+    boulder_shot: ult({
+      len: 3.4, init: (s) => { s.place(s.me, G.x - 230, G.y, 0); s.place(s.o2, G.x - 140, G.y + 2, PI); s.place(s.o1, G.x - 16, G.y, PI); },
+      focus: (s) => s.g.ball,
+    }),
+    ghost_hands: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 40, A.y - 18, PI); s.place(s.o2, A.x + 55, A.y + 22, PI); s.give(s.o1); }, focus: (s) => s.mid(s.o1, s.o2) }),
+    jack_in_box: ult({
+      ball: false, len: 3, at: 0.2,
+      init: (s) => { s.place(s.o1, A.x + 90, A.y, PI); s.give(s.o1); },
+      tick: (s) => { s.o1.intent.mx = -0.8; s.o1.intent.my = 0; },
+      focus: (s) => s.mid(s.me, s.o1),
+    }),
+    portal_kicks: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 60, A.y - 20, PI); s.place(s.o2, A.x + 80, A.y + 24, PI); s.give(s.o1); }, focus: (s) => s.mid(s.o1, s.o2) }),
+    earth_spike: ult({ ball: false, len: 3, init: (s) => { s.place(s.o1, A.x + 50, A.y, PI); s.give(s.o1); s.place(s.o2, A.x + 90, A.y + 6, PI); }, focus: (s) => s.mid(s.me, s.o1) }),
 
+    /* đợt 2 (2026-10-15) */
+    comet_onetwo: ult({ len: 3, init: (s) => { s.place(s.me, G.x - 170, G.y + 10, 0); s.place(s.mate, G.x - 120, G.y - 40, PI); s.place(s.o1, G.x - 16, G.y, PI); }, focus: (s) => (s.t > 1.1 ? s.g.ball : s.me) }),
+    iron_hammer: ult({ ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x - 10, A.y, PI); s.place(s.o2, A.x - 4, A.y + 16, PI); s.give(s.o1); }, focus: (s) => s.mid(s.me, s.o1) }),
+    thunderstorm: ult({ ball: false, len: 3.2, init: (s) => { s.place(s.o1, A.x + 50, A.y - 10, PI); s.place(s.o2, A.x + 80, A.y + 24, PI); s.give(s.o1); }, focus: (s) => s.mid(s.o1, s.o2) }),
+    rocket_punch: ult({ ball: false, len: 2.6, init: (s) => { s.place(s.o1, A.x + 70, A.y + 4, PI); s.give(s.o1); }, focus: (s) => (s.t > 0.6 ? s.o1 : s.me) }),
+    monster_truck: ult({
+      ball: false, len: 3.2, init: (s) => { s.place(s.o1, A.x + 50, A.y + 4, PI); s.place(s.o2, A.x + 90, A.y - 20, PI); s.give(s.o1); },
+      tick: (s) => { s.me.intent.mx = 1; s.me.intent.my = s.t > 1.2 ? -0.6 : 0; }, focus: (s) => s.me,
+    }),
+    hypno_eyes: ult({ len: 3, init: (s) => { s.place(s.me, G.x - 190, G.y, 0); s.place(s.o1, G.x - 20, G.y, PI); s.place(s.o2, G.x - 110, G.y + 10, PI); }, focus: (s) => s.mid(s.o1, s.o2) }),
+    switcheroo: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x + 110, A.y - 20, 0); s.place(s.o1, A.x + 10, A.y + 4, PI); }, focus: (s) => s.mid(s.me, s.mate) }),
+    dodgeball: ult({ len: 3.2, init: (s) => { s.place(s.me, G.x - 220, G.y, 0); s.place(s.o2, G.x - 170, G.y + 20, PI); s.place(s.o1, G.x - 120, G.y - 24, PI); }, focus: (s) => s.g.ball }),
+    medusa_gaze: ult({ ball: false, len: 3, init: (s) => { s.place(s.o1, A.x + 50, A.y, PI); s.place(s.o2, A.x + 80, A.y + 22, PI); s.give(s.o1); }, focus: (s) => s.mid(s.me, s.o1) }),
+    banana_pass: ult({
+      len: 3.2, init: (s) => { s.place(s.mate, A.x + 110, A.y - 20, PI); s.place(s.o1, A.x + 50, A.y + 30, PI); },
+      tick: (s) => { if (s.t > 0.8) { s.o1.intent.mx = 0; s.o1.intent.my = -1; } }, focus: (s) => s.mid(s.me, s.mate),
+    }),
+    shrink_ray: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 50, A.y, PI); s.place(s.o2, A.x + 90, A.y + 4, PI); s.give(s.o1); }, focus: (s) => s.mid(s.o1, s.o2) }),
+    mega_magnet: ult({
+      ball: false, len: 3.4, init: (s) => { s.place(s.o1, A.x + 40, A.y - 20, PI); s.place(s.o2, A.x + 80, A.y + 20, PI); s.give(s.o1); },
+      focus: (s) => s.mid(s.o1, s.o2),
+    }),
     /* 🎲 HỖN LOẠN */
     warp_walls: {
       len: 2.4, focus: (s) => s.g.ball,

@@ -261,58 +261,6 @@ window.SFC = window.SFC || {};
         return true;
       },
     },
-    // Tuyệt kỹ thí điểm: Tia Chớp Xuyên Sân
-    lightning_dash: {
-      aiUse(sys, team, prm) {
-        const o = prm.owner;
-        return sys.g.ball.owner === o && o.state === 'normal' ? o : null;
-      },
-      onUltimate(sys, team, prm, pl) {
-        const g = sys.g, f = g.field, E = g.effects, nb = prm.bolts || 3;
-        // hướng: phím đang giữ, không giữ thì lao về phía khung thành đối phương
-        let dx = pl.intent.mx, dy = pl.intent.my;
-        if (Math.hypot(dx, dy) < 0.2) { const goal = g.attackGoal(team); dx = goal.x - pl.x; dy = goal.y - pl.y; }
-        const d = U.norm(dx, dy);
-        const x0 = pl.x, y0 = pl.y;
-        const x1 = U.clamp(x0 + d.x * prm.distance, f.x + 8, f.x + f.w - 8), y1 = U.clamp(y0 + d.y * prm.distance, f.y + 8, f.y + f.h - 8);
-        // báo trước: vạch sét mảnh dọc đường lao, người ra chiêu đứng gồng -> đối thủ kịp tránh / lướt Z
-        const tel = prm.telegraph || 0;
-        E.beam(x0, y0 - 4, Math.atan2(y1 - y0, x1 - x0), Math.hypot(x1 - x0, y1 - y0), 2, '#bdf4ff', tel + 0.1);
-        E.bolt(pl.x, pl.y - 22, pl.x, pl.y - 2, '#bdf4ff', tel);
-        pl.state = 'recover'; pl.stateT = tel + 0.05; pl.charging = false;
-        g.later(tel, () => {
-          if (g.state !== 'play' || pl.state === 'stun') return;
-          this.dash(sys, team, prm, pl, d, x0, y0, pl.x + (x1 - x0), pl.y + (y1 - y0), nb);
-        });
-      },
-      dash(sys, team, prm, pl, d, x0, y0, x1, y1, nb) {
-        const g = sys.g, f = g.field, E = g.effects;
-        x0 = pl.x; y0 = pl.y;
-        x1 = U.clamp(x1, f.x + 8, f.x + f.w - 8); y1 = U.clamp(y1, f.y + 8, f.y + f.h - 8);
-        pl.state = 'normal'; pl.stateT = 0;
-        E.tint('#0a1830', 0.5, 0.4);
-        g.slowMo(0.35, 0.3);
-        for (let i = 0; i < nb; i++) E.bolt(x0, y0 - 8 + (i - (nb >> 1)) * 2, x1, y1 - 6, i ? '#7fe7ff' : '#ffffff', 0.5);
-        const len = Math.hypot(x1 - x0, y1 - y0);
-        for (let k = 0; k < len; k += 14) E.decal('scorch', x0 + (d.x * k), y0 + (d.y * k), 0.7, 2.5);
-        for (const o of g.teams[1 - team].players) {
-          if (U.segDist(o.x, o.y, x0, y0, x1, y1) > prm.width || g.isProtected(o) || SFC.Actions.dodged(g, o)) continue;
-          const side = (o.x - x0) * -d.y + (o.y - y0) * d.x >= 0 ? 1 : -1;
-          o.hitImmune = 0;
-          o.hit({ stun: prm.stun, kbx: -d.y * side * prm.knock, kby: d.x * side * prm.knock, source: pl, type: 'slash' });
-          E.bolt(o.x, o.y - 22, o.x, o.y - 2, '#bdf4ff', 0.4);
-          E.burst(o.x, o.y, 8, '#bdf4ff', 12, 90);
-        }
-        E.afterimage(pl);
-        pl.x = x1; pl.y = y1;
-        if (g.ball.owner === pl) g.ball.follow(0);
-        g.hitStop(0.08);
-        E.impactFrame();
-        E.speedLines(0.4);
-        E.shake(6, 0.35);
-        g.sfx('zap');
-      },
-    },
   };
 
   SFC.CoreHelpers = { applyFire, applyThunder, spawnDecoy };
@@ -545,13 +493,14 @@ window.SFC = window.SFC || {};
       return true;
     }
     // Steel Formation (Tuyệt kỹ lai): đường chuyền của đội không bị cắt
-    passGuarded(team) { return team >= 0 && this.st(team, 'steel_formation').t > this.g.time; }
+    // Iron Chain: đường chuyền của đội không bị cắt khi xích còn nối
+    passGuarded(team) { return team >= 0 && this.st(team, 'iron_chain').t > this.g.time; }
     // Nắm Đấm Sắt: nắm tay thép sẵn sàng -> người cầm bóng không trụ được (dùng ở onLightHit của iron_fist)
     ironFist(p) { return this.has(p, 'iron_fist') && !(this.st(p, 'iron_fist').cd > 0); }
-    // Dậm Đất / Thiên Thạch Giáng: tiếp đất sau cú nhảy
+    // Dậm Đất: tiếp đất sau cú nhảy
     slamLand(p) {
-      const b = Behaviors[p.slamKind === 'meteor' ? 'meteor_drop' : 'ground_slam'];
-      if (b && b.land) b.land(this, p.team, this.sp(p.slamKind === 'meteor' ? 'meteor_drop' : 'ground_slam', p), p);
+      const b = Behaviors.ground_slam;
+      if (b && b.land) b.land(this, p.team, this.sp('ground_slam', p), p);
     }
     // khoảnh khắc đáng nhớ (màn kết quả "Khoảnh khắc của trận"): combo HIT cao, Tuyệt kỹ...
     moment(team, id, text, score) { this.g.emit('moment', { team, id, text, score }); }
@@ -718,9 +667,12 @@ window.SFC = window.SFC || {};
     }
     ultReady(p) { return isP(p) && !!this.ultOf(p) && this.ultE(p) >= 1; }
     // Tuyệt kỹ cần bóng (list[id].needsBall): chỉ dùng được khi đội mình đang cầm bóng (không bao giờ giật bóng)
+    // noBall (Iron Hammer): ngược lại, chỉ dùng được khi chính mình KHÔNG cầm bóng
     ultBlocked(p) {
       const id = this.ultOf(p), b = this.g.ball;
-      return !!(id && this.def(id).needsBall && !(b.owner && b.owner.team === p.team));
+      if (!id) return false;
+      const d = this.def(id);
+      return !!((d.needsBall && !(b.owner && b.owner.team === p.team)) || (d.noBall && b.owner === p));
     }
 
     /* ---------- Tuyệt kỹ theo công thức (cores.config.js -> ults, docs/ULT_RECIPE.md) ---------- */
@@ -782,7 +734,10 @@ window.SFC = window.SFC || {};
     activateUltimate(a, b) {
       const p = isP(a) ? a : b;
       const g = this.g, id = p && this.ultOf(p);
-      if (!id || this.ultE(p) < 1 || g.state !== 'play' || p.state !== 'normal' || p.airZ > 0 || this.ultBlocked(p)) return false;
+      // Tuyệt kỹ nhiều lần dùng (Earth Spike): còn lượt thì bấm X là ra tiếp, không cần năng lượng / cut-in
+      const rb = id && Behaviors[id];
+      if (rb && rb.recast && g.state === 'play' && !(g.stopT > 0) && rb.recast(this, p.team, this.sp(id, p), p)) return true;
+      if (!id || this.ultE(p) < 1 || g.state !== 'play' || g.stopT > 0 || p.state !== 'normal' || p.airZ > 0 || this.ultBlocked(p)) return false;
       const team = p.team, def = this.def(id), U2 = DEF().ultimate, lv = p.ultLv || 1;
       const color = def.color || (ARCH()[def.tags[0]] ? ARCH()[def.tags[0]].color : '#ffe14f');
       p.res.ult = 0;

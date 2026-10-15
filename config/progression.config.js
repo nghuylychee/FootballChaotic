@@ -252,7 +252,7 @@ SFC_CONFIG.progression = {
     thunder_kick:   { level: 10 },
     blade_runner:   { level: 12 },
     aegis_wall:     { level: 14 },
-    lightning_dash: { level: 14 },
+    light_cycle:    { level: 14 },
     // Giai đoạn 3 — THƯỜNG LV1 · HIẾM LV2–4 · SỬ THI LV5–8 · HUYỀN THOẠI LV10–12 · Tuyệt kỹ LV14+
     eagle_eye: { level: 1 }, heavy_boot: { level: 1 }, quick_feet: { level: 1 },
     burst_start: { level: 2 }, one_touch: { level: 2 }, fist_storm: { level: 3 }, juggle: { level: 3 },
@@ -262,7 +262,7 @@ SFC_CONFIG.progression = {
     phantom_pass: { level: 7 }, witch_time: { level: 7 }, bulldozer: { level: 7 }, counter_strike: { level: 7 },
     shadow_clone: { level: 8 }, giant_keeper: { level: 8 }, rubber_arm: { level: 8 }, flying_kick: { level: 8 }, ghost_ball: { level: 8 },
     black_hole: { level: 10 }, bomb_ball: { level: 11 }, scissor_kick: { level: 12 },
-    aura_farming: { level: 1 }, hundred_fists: { level: 15 }, meteor_strike: { level: 15 }, titan: { level: 16 }, meteor_drop: { level: 16 },
+    aura_farming: { level: 1 }, hundred_fists: { level: 15 }, meteor_strike: { level: 15 }, titan: { level: 16 }, moon_stomp: { level: 16 },
     clone_army: { level: 17 }, endless_tiki: { level: 18 },
     glitch_step: { level: 3 }, wild_card: { level: 5 }, loaded_dice: { level: 6 },
   },

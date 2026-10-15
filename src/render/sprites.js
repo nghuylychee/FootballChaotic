@@ -839,6 +839,26 @@ window.SFC = window.SFC || {};
         px(ctx, x - 3, by - 3, 6, 1, 'rgba(255,255,255,0.5)'); px(ctx, x - 1, by - 1, 2, 2, f ? '#ffd23f' : '#9dff3d');
         return true;
       }
+      case 'dodge': {   // Dodgeball: bóng né cao su đỏ
+        disc(ctx, x, by, 5, OUT); disc(ctx, x, by, 4, '#ff3d5a');
+        px(ctx, x - 4, by, 9, 1, '#a8203a'); px(ctx, x - 2, by - 3, 2, 1, '#ffb0bc');
+        return true;
+      }
+      case 'boulder': {   // Boulder Shot: tảng đá khổng lồ lăn (vân đá xoay theo quãng lăn)
+        disc(ctx, x, by - 5, 10, OUT); disc(ctx, x, by - 5, 9, '#7a6e5f');
+        disc(ctx, x - 2, by - 8, 5, '#8f8371');
+        for (let i = 0; i < 4; i++) { const a = t * 0.6 + i * 1.6; px(ctx, x + Math.round(Math.cos(a) * 5), by - 5 + Math.round(Math.sin(a) * 4), 2, 1, '#544b40'); }
+        px(ctx, x - 4, by - 11, 3, 1, '#b5a890');
+        return true;
+      }
+      case 'ghost': {   // Vanishing Ball: tàng hình — chỉ còn vệt gợn sóng mờ (thủ môn đọc theo vệt này)
+        const r = 4 + Math.sin(now * 30) * 1;
+        ctx.globalAlpha *= 0.35;
+        ctx.strokeStyle = '#d8d0e0'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(x, by, r, r * 0.8, 0, 0, Math.PI * 2); ctx.stroke();
+        if (Math.floor(now * 20) % 2) px(ctx, x + Math.round(Math.sin(now * 17) * 3), by + Math.round(Math.cos(now * 13) * 2), 1, 1, '#ffffff');
+        return true;
+      }
       case 'chicken':
         px(ctx, x - 4, by - 3, 8, 6, OUT); px(ctx, x - 3, by - 2, 6, 4, '#f3ead7');
         px(ctx, x + 3, by - 5, 3, 3, OUT); px(ctx, x + 3, by - 4, 2, 2, '#f3ead7'); px(ctx, x + 3, by - 6, 2, 1, '#d7263d');

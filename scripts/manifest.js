@@ -69,6 +69,7 @@ const FILES = [
   ['src/systems/cores.js', 'game sandbox itch server'],
   ['src/systems/cores-new.js', 'game sandbox itch server'],
   ['src/systems/cores-hybrid.js', 'game sandbox itch server'],
+  ['src/systems/cores-ult2.js', 'game sandbox itch server'],
   ['src/systems/effects.js', 'game sandbox itch server'],
   ['src/systems/vfxkit.js', 'game sandbox itch server'],
   ['src/systems/celebrate.js', 'game sandbox itch server'],   // ăn mừng bàn thắng: chọn động tác + di chuyển
@@ -106,6 +107,7 @@ const FILES = [
   ['src/ui/story.js', 'game'],
   ['src/ui/langpick.js', 'game'],
   ['src/ui/menu.js', 'game'],
+  ['src/ui/ulttest.js', 'game'],                           // phòng test Tuyệt kỹ (dev, SFC_DEBUG — bản đóng gói thành rỗng)
   ['src/ui/online.js', 'game'],
   ['src/main.js', 'game'],
 ];

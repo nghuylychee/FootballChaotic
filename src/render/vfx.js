@@ -236,10 +236,336 @@ window.SFC = window.SFC || {};
     return `rgb(${m(120, 63)},${m(124, 246)},${m(140, 255)})`;
   }
 
+  /* ---------- vật thể trên sân của Tuyệt kỹ (Effects.prop, docs/ULT_REDESIGN.md) ---------- */
+  // FLOOR: nằm trên mặt sân, dưới cầu thủ · UPRIGHT: đứng trên sân, xếp chiều sâu cùng cầu thủ · TOP: vẽ trên cùng
+  const PROP_FLOOR = { trail: 1, puddle: 1, peel: 1, mark: 1, gaze: 1, magic: 1, moon: 1, arrow: 1, dot: 1, chain: 1, stance: 1, magnet: 1 };
+  const PROP_TOP = { glove: 1, foot: 1 };
+  // vật thể bám theo cầu thủ (a = id cầu thủ)
+  const PROP_FOLLOW = { tornado: 1, hand: 1, stance: 1, hammer: 1, truck: 1, stone: 1, hypno: 1, magic: 1 };
+  // vẽ SAU sprite của người được bám (phủ lên người): tượng đá, xe tải, búa, mắt thôi miên
+  const PROP_OVER = { stone: 1, truck: 1, hammer: 1, hypno: 1 };
+  const byId = (g, id) => g.players.find((q) => q.id === id) || null;
+  // vị trí vật thể bám người (a = id cầu thủ) hoặc toạ độ riêng
+  function propAt(g, o) {
+    if (PROP_FOLLOW[o.kind]) { const q = byId(g, o.a); return q ? { x: q.x, y: q.y } : { x: o.x, y: o.y }; }
+    if (o.kind === 'magnet') return { x: g.ball.x, y: g.ball.y - g.ball.z };
+    return { x: o.x, y: o.y };
+  }
+
+  function drawProp(ctx, g, o) {
+    const { px, disc, ellipse, OUT } = SP(), t = g.time;
+    const k = o.t / o.max, el = o.max - o.t;                  // k: 1 -> 0 · el: giây đã sống
+    const fade = Math.min(1, k * 5, el * 8);
+    const c = propAt(g, o), x = Math.round(c.x), y = Math.round(c.y);
+    ctx.globalAlpha = fade;
+    switch (o.kind) {
+      case 'trail': {   // Light Cycle: tường sét thấp dọc đường chạy
+        const flick = 0.75 + 0.25 * Math.sin(t * 40 + o.id);
+        ctx.globalCompositeOperation = 'lighter';
+        for (const [w, col, a] of [[5, o.color, 0.25], [3, o.color, 0.7], [1, '#ffffff', 1]]) {
+          ctx.globalAlpha = fade * a * flick;
+          ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.a, o.b); ctx.stroke();
+        }
+        // màn sét đứng: dải mờ cao 8px phía trên vệt
+        ctx.globalAlpha = fade * 0.18 * flick;
+        ctx.fillStyle = o.color;
+        ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.a, o.b); ctx.lineTo(o.a, o.b - 8); ctx.lineTo(o.x, o.y - 8); ctx.closePath(); ctx.fill();
+        if (Math.random() < 0.25) px(ctx, Math.round(o.a + (Math.random() - 0.5) * 4), Math.round(o.b - 2 - Math.random() * 8), 1, 2, '#ffffff');
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      }
+      case 'peel': {   // Banana Pass: vỏ chuối nằm trên sân
+        const ux = Math.cos(o.a), uy = Math.sin(o.a);
+        ellipse(ctx, x, y + 1, 4, 1.5, 'rgba(0,0,0,0.3)');
+        px(ctx, x - 2, y - 2, 5, 3, OUT); px(ctx, x - 1, y - 2, 3, 2, '#ffe14f');
+        for (const sd of [-1, 1]) { const ex = Math.round(x + (ux - uy * sd) * 4), ey = Math.round(y - 1 + (uy + ux * sd) * 2); px(ctx, ex - 1, ey - 1, 3, 2, OUT); px(ctx, ex, ey - 1, 1, 1, '#ffd23f'); }
+        px(ctx, x, y - 3, 1, 1, '#6a3d20');
+        break;
+      }
+      case 'mark': {   // Thunderstorm: vòng cảnh báo tia sét sắp đánh (co lại + nhấp nháy)
+        const r = o.a * (0.5 + 0.5 * k);
+        ctx.strokeStyle = Math.floor(t * 16) % 2 ? '#ffffff' : o.color; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(x, y, o.a, o.a * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = fade * 0.25; ctx.fillStyle = o.color;
+        ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+        break;
+      }
+      case 'gaze': {   // Medusa Gaze: hình nón ánh mắt xanh lá báo trước
+        const cone = 38 * Math.PI / 180;
+        ctx.globalAlpha = fade * (0.18 + 0.12 * Math.sin(t * 20));
+        ctx.fillStyle = o.color;
+        ctx.beginPath(); ctx.moveTo(o.x, o.y);
+        for (let i = 0; i <= 12; i++) { const a = o.a - cone + (2 * cone * i) / 12; ctx.lineTo(o.x + Math.cos(a) * o.b, o.y + Math.sin(a) * o.b * 0.7); }
+        ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = fade * 0.7; ctx.strokeStyle = o.color; ctx.lineWidth = 1; ctx.stroke();
+        break;
+      }
+      case 'magic': {   // Switcheroo: vòng phép dưới chân
+        const r = 12 + Math.sin(t * 12) * 1.5;
+        ctx.strokeStyle = o.color; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(x, y + 1, r, r * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(x, y + 1, r - 3, (r - 3) * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+        for (let i = 0; i < 6; i++) { const a = t * 3 + i * 1.05; px(ctx, Math.round(x + Math.cos(a) * r), Math.round(y + 1 + Math.sin(a) * r * 0.45 - el * 20 * ((i % 3) / 3)), 1, 1, i % 2 ? '#ffffff' : o.color); }
+        break;
+      }
+      case 'stone': {   // hoá đá: tượng xám phủ lên người + vết nứt
+        const q = byId(g, o.a);
+        if (!q) break;
+        SP().drawPlayer(ctx, Object.assign({}, q, { state: 'normal', anim: 0, vx: 0, vy: 0, flash: 0 }), g, 0.92, '#8a8f99');
+        ctx.globalAlpha = fade * 0.55; ctx.fillStyle = '#6e737d';
+        ctx.fillRect(x - 5, y - 22, 10, 22);
+        ctx.globalAlpha = fade;
+        const r = rng(o.id * 7);
+        for (let i = 0; i < 4; i++) px(ctx, x - 4 + Math.round(r() * 8), y - 20 + Math.round(r() * 18), 1, 2 + Math.round(r() * 2), '#3c4048');
+        if (k < 0.2 && Math.floor(t * 20) % 2) px(ctx, x - 6, y - 24, 12, 1, '#ffffff');   // sắp vỡ
+        break;
+      }
+      case 'hypno': {   // thôi miên: vòng xoắn ốc hồng quay trên đầu + sao
+        const hy = y - 30;
+        for (let i = 0; i < 16; i++) {
+          const a = t * 8 + i * 0.6, r = 1 + i * 0.4;
+          px(ctx, Math.round(x + Math.cos(a) * r), Math.round(hy + Math.sin(a) * r * 0.6), 1, 1, i % 2 ? '#ffffff' : o.color);
+        }
+        if (Math.floor(t * 4) % 2) px(ctx, x + 7, hy - 3, 2, 2, '#ffe14f');
+        break;
+      }
+      case 'hammer': {   // Iron Hammer: búa khổng lồ — gồng (giơ ra sau + hình quạt báo trước) rồi nện xuống phía trước
+        const q = byId(g, o.a);
+        if (!q) break;
+        const wind = o.b, f = q.facing, swing = el >= wind;
+        const sk = swing ? Math.min(1, (el - wind) / 0.08) : 0;
+        if (!swing) {   // hình quạt nơi búa sắp nện
+          const arc = 70 * Math.PI / 180, R = 48;
+          ctx.globalAlpha = fade * (0.12 + 0.18 * (el / wind));
+          ctx.fillStyle = '#ff3d5a';
+          ctx.beginPath(); ctx.moveTo(x, y);
+          for (let i = 0; i <= 10; i++) { const a = f - arc + (2 * arc * i) / 10; ctx.lineTo(x + Math.cos(a) * R, y + Math.sin(a) * R * 0.6); }
+          ctx.closePath(); ctx.fill();
+          ctx.globalAlpha = fade;
+        }
+        // góc cán: giơ ra sau lưng lúc gồng -> quất qua đầu xuống trước mặt
+        const lift = swing ? 1 - sk : Math.min(1, el / (wind * 0.6));
+        const len = 34, hx = x + Math.cos(f) * len * (1 - lift * 1.6), hy = y - 10 - len * Math.sin(lift * Math.PI * 0.9) * 0.9 + Math.sin(f) * len * 0.5 * (1 - lift);
+        ctx.strokeStyle = OUT; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(hx, hy); ctx.stroke();
+        ctx.strokeStyle = '#a8683a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(hx, hy); ctx.stroke();
+        const hw = 26, hh = 16;
+        px(ctx, Math.round(hx - hw / 2) - 1, Math.round(hy - hh / 2) - 1, hw + 2, hh + 2, OUT);
+        px(ctx, Math.round(hx - hw / 2), Math.round(hy - hh / 2), hw, hh, '#8b93a3');
+        px(ctx, Math.round(hx - hw / 2), Math.round(hy - hh / 2), hw, 3, '#e8ecf5');
+        px(ctx, Math.round(hx - hw / 2), Math.round(hy + hh / 2) - 2, hw, 2, '#4a4f5c');
+        px(ctx, Math.round(hx - 2), Math.round(hy - hh / 2), 4, hh, '#ffd23f');   // đai vàng giữa búa
+        break;
+      }
+      case 'truck': {   // Monster Truck: xe tải bánh to, quay theo hướng người lái
+        const q = byId(g, o.a);
+        if (!q) break;
+        const c = Math.cos(q.facing), sd = c >= 0 ? 1 : -1, bob = Math.round(Math.sin(t * 30) * 1);
+        ellipse(ctx, x, y + 2, 16, 5, 'rgba(0,0,0,0.45)');
+        for (const wx of [-9, 9]) { disc(ctx, x + wx, y - 2, 6, OUT); disc(ctx, x + wx, y - 2, 5, '#262a36'); disc(ctx, x + wx, y - 2, 2, '#9aa3b5'); }   // bánh to
+        px(ctx, x - 15, y - 14 + bob, 30, 9, OUT); px(ctx, x - 14, y - 13 + bob, 28, 7, o.color);                // thân
+        px(ctx, x - 14, y - 13 + bob, 28, 2, '#ff8a9a');
+        px(ctx, x + sd * 2 - 6, y - 22 + bob, 12, 9, OUT); px(ctx, x + sd * 2 - 5, y - 21 + bob, 10, 7, o.color);   // cabin
+        px(ctx, x + sd * 5 - 2, y - 20 + bob, 5, 4, '#a8e6ff');                                                    // kính
+        disc(ctx, x + sd * 1, y - 19 + bob, 2, q.look ? q.look.skin : '#f2c79a');                                  // đầu người lái
+        px(ctx, x + sd * 14 - 1, y - 11 + bob, 2, 3, '#ffe14f');                                                   // đèn
+        break;
+      }
+      case 'bigmagnet': {   // Mega Magnet: nam châm chữ U khổng lồ hạ từ trên trời xuống
+        const z = Math.round(Math.max(0, 1 - el / Math.max(0.01, o.a)) * 160) + 34, my = y - z;
+        ellipse(ctx, x, y + 1, 16, 6, `rgba(0,0,0,${0.15 + 0.25 * Math.min(1, el / o.a)})`);
+        for (const sd of [-1, 1]) {
+          px(ctx, x + sd * 9 - 4, my - 16, 9, 20, OUT);
+          px(ctx, x + sd * 9 - 3, my - 15, 7, 14, sd < 0 ? '#ff3d5a' : '#4b69ff');
+          px(ctx, x + sd * 9 - 3, my - 1, 7, 4, '#e8ecf5');   // đầu cực bạc
+        }
+        px(ctx, x - 13, my - 22, 27, 8, OUT); px(ctx, x - 12, my - 21, 25, 6, '#a8203a');
+        if (el >= o.a) {   // đang hút: tia từ trường chạy xuống
+          ctx.globalAlpha = fade * 0.5;
+          for (let i = 0; i < 4; i++) { const yy = my + ((t * 90 + i * 9) % 34); px(ctx, x - 12 + i * 8, Math.round(yy), 2, 3, i % 2 ? '#ff3d5a' : '#4b69ff'); }
+        }
+        break;
+      }
+      case 'puddle': {   // Ghost Hands: vũng bóng tím sắp có bàn tay trồi lên
+        const r = o.a * (0.6 + 0.4 * Math.min(1, el * 4)) + Math.sin(t * 12) * 1;
+        ellipse(ctx, x, y + 1, r + 2, (r + 2) * 0.45, 'rgba(20,8,40,0.55)');
+        ellipse(ctx, x, y + 1, r, r * 0.45, 'rgba(91,63,176,0.7)');
+        for (let i = 0; i < 5; i++) { const a = t * 4 + i * 1.26; px(ctx, Math.round(x + Math.cos(a) * r * 0.7), Math.round(y + 1 + Math.sin(a) * r * 0.3), 1, 1, '#c9b5ff'); }
+        break;
+      }
+      case 'hand': {   // Ghost Hands: bàn tay ma túm chân (trồi lên rồi giữ)
+        const rise = Math.min(1, el * 6), hh = Math.round(14 * rise);
+        ellipse(ctx, x, y + 1, 9, 4, 'rgba(20,8,40,0.55)');
+        for (const sd of [-1, 1]) {
+          const hx = x + sd * 6;
+          px(ctx, hx - 2, y - hh, 4, hh, OUT); px(ctx, hx - 1, y - hh + 1, 2, hh - 1, '#9d7bff');
+          // ngón tay quặp vào người
+          for (let f = 0; f < 3; f++) { px(ctx, hx - sd * (1 + f), y - hh - 2 + f, 2, 2, OUT); px(ctx, hx - sd * (1 + f), y - hh - 1 + f, 1, 1, '#c9b5ff'); }
+        }
+        if (Math.random() < 0.3) px(ctx, x + Math.round((Math.random() - 0.5) * 16), y - Math.round(Math.random() * 16), 1, 1, '#c9b5ff');
+        break;
+      }
+      case 'moon': {   // Moon Stomp: vòng trăng + bụi lơ lửng bay lên chậm
+        ctx.strokeStyle = o.color; ctx.lineWidth = 1;
+        ctx.globalAlpha = fade * 0.55;
+        ctx.beginPath(); ctx.ellipse(o.x, o.y, o.a, o.a * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = fade * 0.1; ctx.fillStyle = o.color; ctx.fill();
+        ctx.globalAlpha = fade * 0.8;
+        for (let i = 0; i < 18; i++) {
+          const r = rng(o.id * 31 + i), a = r() * Math.PI * 2, d = Math.sqrt(r()) * o.a, ph = (el * 0.4 + r()) % 1;
+          px(ctx, Math.round(o.x + Math.cos(a) * d), Math.round(o.y + Math.sin(a) * d * 0.45 - ph * 30), 1, 1, i % 3 ? '#e8fbff' : o.color);
+        }
+        break;
+      }
+      case 'arrow': {   // Time Stop Strike: mũi tên hướng cú đá (đứng yên giữa thời gian ngưng)
+        const ex = o.x + Math.cos(o.a) * o.b, ey = o.y + Math.sin(o.a) * o.b;
+        ctx.strokeStyle = OUT; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(o.x, o.y - 3); ctx.lineTo(ex, ey - 3); ctx.stroke();
+        ctx.strokeStyle = o.color; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.lineDashOffset = -t * 30;
+        ctx.beginPath(); ctx.moveTo(o.x, o.y - 3); ctx.lineTo(ex, ey - 3); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = o.color;
+        ctx.beginPath();
+        ctx.moveTo(ex + Math.cos(o.a) * 5, ey - 3 + Math.sin(o.a) * 5);
+        ctx.lineTo(ex + Math.cos(o.a + 2.4) * 6, ey - 3 + Math.sin(o.a + 2.4) * 6);
+        ctx.lineTo(ex + Math.cos(o.a - 2.4) * 6, ey - 3 + Math.sin(o.a - 2.4) * 6);
+        ctx.closePath(); ctx.fill();
+        break;
+      }
+      case 'dot':   // Boomerang Kick: chấm đường bay báo trước (nhấp nháy, nổi trên sân tối)
+        ellipse(ctx, x, y + 1, 3, 1.5, 'rgba(0,0,0,0.35)');
+        disc(ctx, x, y - 5, 3, OUT); disc(ctx, x, y - 5, 2, Math.floor(t * 8 + o.id) % 2 ? o.color : '#ffffff');
+        break;
+      case 'chain': {   // Iron Chain: xích thép nối 2 cầu thủ (mắt xích so le)
+        const A = byId(g, o.a), Bq = byId(g, o.b);
+        if (!A || !Bq) break;
+        const dx = Bq.x - A.x, dy = Bq.y - A.y, len = Math.hypot(dx, dy), n = Math.max(2, Math.floor(len / 5));
+        for (let i = 0; i <= n; i++) {
+          const u = i / n, sag = Math.sin(u * Math.PI) * Math.min(6, len * 0.04);
+          const lx = Math.round(A.x + dx * u), ly = Math.round(A.y + dy * u - 5 + sag);
+          if (i % 2) { px(ctx, lx - 2, ly - 1, 4, 3, OUT); px(ctx, lx - 1, ly, 2, 1, '#c7ccd6'); }
+          else { px(ctx, lx - 1, ly - 2, 3, 4, OUT); px(ctx, lx, ly - 1, 1, 2, '#e8ecf5'); }
+        }
+        break;
+      }
+      case 'stance': {   // Parry Volley: vòng vàng thế thủ (2 lớp, viền tối) + 2 thanh kiếm chéo trên đầu
+        const r = 12 + Math.sin(t * 10);
+        ctx.lineWidth = 3; ctx.strokeStyle = OUT;
+        ctx.beginPath(); ctx.ellipse(x, y + 1, r, r * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 2; ctx.strokeStyle = o.color; ctx.stroke();
+        ctx.globalAlpha = fade * 0.2; ctx.fillStyle = o.color; ctx.fill();
+        ctx.globalAlpha = fade;
+        for (const sd of [-1, 1]) for (let i = 0; i < 7; i++) { px(ctx, x + sd * (7 - i * 2) - 1, y - 30 + i * 2 - 1, 4, 3, OUT); px(ctx, x + sd * (7 - i * 2), y - 30 + i * 2, 2, 1, i < 2 ? '#ffffff' : o.color); }
+        break;
+      }
+      case 'magnet': {   // Magnet Ball: đường sức từ đỏ / xanh quanh bóng
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const r = 7 + i * 4 + Math.sin(t * 8 + i) * 1.5;
+          ctx.globalAlpha = fade * (0.7 - i * 0.18);
+          ctx.strokeStyle = '#ff3d5a'; ctx.beginPath(); ctx.arc(x, y - 3, r, Math.PI * 0.6, Math.PI * 1.4); ctx.stroke();
+          ctx.strokeStyle = '#4b69ff'; ctx.beginPath(); ctx.arc(x, y - 3, r, -Math.PI * 0.4, Math.PI * 0.4); ctx.stroke();
+        }
+        break;
+      }
+      case 'tornado': {   // Hurricane Kick: lốc xoáy hình phễu xoay quanh người
+        for (let i = 0; i < 10; i++) {
+          const hy = y - i * 4, r = 5 + i * 2, a = t * 18 + i * 0.7;
+          ctx.globalAlpha = fade * (0.85 - i * 0.05);
+          ctx.strokeStyle = i % 2 ? '#ffffff' : o.color; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.ellipse(x + Math.sin(t * 6 + i) * 1.5, hy, r, r * 0.35, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.globalAlpha = fade;
+          px(ctx, Math.round(x + Math.cos(a) * r), Math.round(hy + Math.sin(a) * r * 0.35), 1, 1, '#b46bff');
+        }
+        break;
+      }
+      case 'portal': {   // Portal Kicks: cổng xoáy đứng
+        const open = Math.min(1, el * 5, k * 4), rx = 5 * open, ry = 10 * open;
+        if (rx < 0.5) break;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = o.color; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(x, y - 10, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+        for (let i = 0; i < 8; i++) { const a = t * 9 + i * 0.8, r = 0.3 + (i % 3) * 0.3; px(ctx, Math.round(x + Math.cos(a) * rx * r), Math.round(y - 10 + Math.sin(a) * ry * r), 1, 1, i % 2 ? '#ffffff' : o.color); }
+        ctx.globalCompositeOperation = 'source-over';
+        ellipse(ctx, x, y - 10, Math.max(0.5, rx - 2), Math.max(0.5, ry - 3), '#140820');
+        break;
+      }
+      case 'foot': {   // Portal Kicks: chân thò ra khỏi cổng
+        const ext = Math.sin(Math.min(1, el / o.max) * Math.PI) * (o.b || 16), ux = Math.cos(o.a), uy = Math.sin(o.a);   // b: độ vươn
+        for (let i = 0; i < ext; i += 2) { px(ctx, Math.round(x + ux * i) - 2, Math.round(y - 8 + uy * i) - 2, 5, 5, OUT); px(ctx, Math.round(x + ux * i) - 1, Math.round(y - 8 + uy * i) - 1, 3, 3, o.color); }
+        const fx = Math.round(x + ux * ext), fy = Math.round(y - 8 + uy * ext);
+        px(ctx, fx - 3, fy - 3, 7, 6, OUT); px(ctx, fx - 2, fy - 2, 5, 4, '#ffffff'); px(ctx, fx - 2, fy + 1, 5, 1, '#c7ccd6');
+        break;
+      }
+      case 'glove': {   // Jack-in-the-Box: lò xo + găng đấm đỏ bật ra
+        const ext = Math.sin(Math.min(1, el / o.max) * Math.PI) * 20, ux = Math.cos(o.a), uy = Math.sin(o.a);
+        for (let i = 0; i < ext; i += 3) px(ctx, Math.round(x + ux * i + (i % 6 ? 2 : -2) * -uy), Math.round(y - 6 + uy * i + (i % 6 ? 2 : -2) * ux), 2, 2, '#c7ccd6');
+        const gx = Math.round(x + ux * ext), gy = Math.round(y - 6 + uy * ext);
+        disc(ctx, gx, gy, 5, OUT); disc(ctx, gx, gy, 4, o.color); px(ctx, gx - 2, gy - 3, 2, 1, '#ffb0bc');
+        break;
+      }
+      case 'pillar': {   // Earth Spike: cột đá trồi lên rồi lún xuống
+        const hh = Math.round(22 * Math.min(1, el * 8, k * 6));
+        ellipse(ctx, x, y + 1, 9, 4, 'rgba(0,0,0,0.4)');
+        if (hh <= 0) break;
+        px(ctx, x - 6, y - hh, 12, hh + 2, OUT);
+        px(ctx, x - 5, y - hh + 1, 10, hh, '#8a7f70');
+        px(ctx, x - 5, y - hh + 1, 3, hh, '#b5a890');
+        px(ctx, x + 2, y - hh + 1, 3, hh, '#6a6052');
+        px(ctx, x - 4, y - hh - 2, 8, 3, OUT); px(ctx, x - 3, y - hh - 1, 6, 2, '#c9bca3');   // đỉnh nhọn
+        px(ctx, x - 1, y - hh - 4, 2, 2, OUT);
+        const r = rng(o.id * 13);
+        for (let i = 0; i < 3; i++) px(ctx, x - 4 + Math.round(r() * 7), y - Math.round(r() * hh), 2, 1, '#5a5044');
+        break;
+      }
+      case 'anvil': {   // Anvil Rain: đe rơi từ trời (bóng đổ lớn dần) rồi nằm trên sân
+        const fall = o.a, land = el >= fall, z = land ? 0 : Math.round(Math.pow(1 - el / fall, 2) * 220);
+        const sr = land ? 8 : 3 + 5 * (el / fall);
+        ellipse(ctx, x, y + 1, sr, sr * 0.45, land ? 'rgba(0,0,0,0.45)' : `rgba(0,0,0,${0.2 + 0.3 * (el / fall)})`);
+        if (!land && el < fall * 0.25) break;   // còn ở ngoài khung hình
+        const ay = y - z;
+        px(ctx, x - 8, ay - 12, 17, 5, OUT); px(ctx, x - 7, ay - 11, 15, 3, '#5a606e');   // mặt đe
+        px(ctx, x - 11, ay - 11, 5, 3, OUT); px(ctx, x - 10, ay - 10, 3, 1, '#5a606e');   // mũi đe
+        px(ctx, x - 4, ay - 7, 9, 4, OUT); px(ctx, x - 3, ay - 7, 7, 3, '#4a4f5c');          // eo
+        px(ctx, x - 7, ay - 3, 15, 4, OUT); px(ctx, x - 6, ay - 3, 13, 2, '#5a606e');        // chân đế
+        px(ctx, x - 6, ay - 11, 8, 1, '#9aa3b5');
+        break;
+      }
+      case 'jbox': {   // Jack-in-the-Box: hộp quà lò xo, rung khi sẵn sàng
+        const wob = el > 0.4 ? Math.round(Math.sin(t * 20 + o.id) * 1) : 0;
+        ellipse(ctx, x, y + 1, 7, 3, 'rgba(0,0,0,0.4)');
+        px(ctx, x - 6 + wob, y - 11, 12, 12, OUT);
+        px(ctx, x - 5 + wob, y - 10, 10, 10, o.color);
+        px(ctx, x - 1 + wob, y - 10, 2, 10, '#ffd23f'); px(ctx, x - 5 + wob, y - 6, 10, 2, '#ffd23f');
+        px(ctx, x - 5 + wob, y - 10, 10, 1, '#ff8a9a');
+        px(ctx, x - 3 + wob, y - 14, 6, 3, OUT); px(ctx, x - 2 + wob, y - 13, 4, 1, '#ffd23f');   // nơ
+        break;
+      }
+      case 'mirror': {   // Hall of Mirrors: tấm gương thép đứng, vệt sáng chạy ngang
+        const half = o.b / 2, ux = Math.cos(o.a), uy = Math.sin(o.a), H = 16;
+        const x0 = o.x - ux * half, y0 = o.y - uy * half, x1 = o.x + ux * half, y1 = o.y + uy * half;
+        ctx.fillStyle = OUT;
+        ctx.beginPath(); ctx.moveTo(x0, y0 + 1); ctx.lineTo(x1, y1 + 1); ctx.lineTo(x1, y1 - H - 1); ctx.lineTo(x0, y0 - H - 1); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = fade * 0.75; ctx.fillStyle = o.color;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x1, y1 - H); ctx.lineTo(x0, y0 - H); ctx.closePath(); ctx.fill();
+        const s0 = ((t * 0.8 + o.id * 0.3) % 1.4) - 0.2;
+        if (s0 > 0 && s0 < 1) {
+          ctx.globalAlpha = fade;
+          const gx = x0 + (x1 - x0) * s0, gy = y0 + (y1 - y0) * s0;
+          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(gx, gy - 2); ctx.lineTo(gx + 3, gy - H + 2); ctx.stroke();
+        }
+        break;
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
   const VFX = {
     floor(ctx, g) {
       const V = g.effects.V;
       for (const d of V.decals) drawDecal(ctx, g, d);
+      for (const o of V.props) if (PROP_FLOOR[o.kind]) drawProp(ctx, g, o);
       // Đọc Cú Sút: nón sút từ người cầm bóng tới hai cột dọc + đường giữa (chỗ cần đứng chặn)
       for (const p of g.players) {
         if (!p.bracing) continue;
@@ -277,6 +603,13 @@ window.SFC = window.SFC || {};
     },
 
     clones(g) { return g.effects.V.clones; },
+    // vật thể đứng (cột đá, đe, gương, hộp lò xo, cổng, lốc xoáy, bàn tay ma) để renderer xếp theo chiều sâu cùng cầu thủ
+    props(g) {
+      const out = [];
+      for (const o of g.effects.V.props) if (!PROP_FLOOR[o.kind] && !PROP_TOP[o.kind]) out.push({ y: propAt(g, o).y + (PROP_OVER[o.kind] ? 0.3 : o.kind === 'hand' || o.kind === 'tornado' ? 0.2 : 0), o });
+      return out;
+    },
+    drawProp,
 
     // dưới sprite: hào quang (Phản Công, Nhạc Trưởng...), Đà tối đa, vệt tàn ảnh Quỷ Tốc Độ
     under(ctx, g, p) {
@@ -583,6 +916,7 @@ window.SFC = window.SFC || {};
 
     top(ctx, g) {
       const V = g.effects.V, { px, disc } = SP(), t = g.time;
+      for (const o of V.props) if (PROP_TOP[o.kind]) drawProp(ctx, g, o);
       for (const a of V.arms) {
         if (!(a.size > 1)) continue;
         const p = g.players.find((q) => q.id === a.pid);
@@ -634,7 +968,28 @@ window.SFC = window.SFC || {};
         const k = s.t / s.max, a = Math.atan2(s.vy, s.vx);
         ctx.globalAlpha = Math.min(1, k * 4);
         ctx.globalCompositeOperation = 'lighter';
-        if (s.kind === 'orb') {
+        if (s.kind === 'rocket') {   // Rocket Punch: nắm đấm tên lửa — găng + vây + lửa phụt đuôi
+          ctx.globalCompositeOperation = 'source-over';
+          const ux = Math.cos(a), uy = Math.sin(a), fx = Math.round(s.x), fy = Math.round(s.y - 8);
+          ctx.globalAlpha = Math.min(1, k * 4);
+          for (let i = 1; i <= 6; i++) {   // lửa + khói đuôi
+            const tx = Math.round(fx - ux * (6 + i * 4)), ty = Math.round(fy - uy * (6 + i * 4) + Math.sin(t * 40 + i) * 1.5);
+            disc(ctx, tx, ty, Math.max(1, 5 - i * 0.6), i < 3 ? (i % 2 ? '#ffd23f' : '#ff7a3d') : 'rgba(154,163,181,0.6)');
+          }
+          for (const sd of [-1, 1]) px(ctx, Math.round(fx - ux * 6 - uy * sd * 6) - 1, Math.round(fy - uy * 6 + ux * sd * 6) - 1, 3, 3, '#ff3d5a');   // vây
+          px(ctx, Math.round(fx - ux * 5) - 3, Math.round(fy - uy * 5) - 3, 6, 6, '#9aa3b5');   // cổ tay kim loại
+          disc(ctx, fx, fy, 7, SP().OUT); disc(ctx, fx, fy, 6, s.color || '#ffd8b0');
+          for (let i = -1; i <= 1; i++) px(ctx, Math.round(fx + ux * 4 - uy * i * 3) - 1, Math.round(fy + uy * 4 + ux * i * 3) - 1, 2, 2, '#ffb48a');
+          disc(ctx, fx - 2, fy - 2, 2, '#fff0e0');
+        } else if (s.kind === 'fist') {   // Sonic Fist: nắm đấm sóng chấn khổng lồ + vệt gió
+          ctx.globalCompositeOperation = 'source-over';
+          const c = s.color || '#ffd8b0', ux = Math.cos(a), uy = Math.sin(a), fx = Math.round(s.x), fy = Math.round(s.y - 8);
+          for (let i = 1; i <= 5; i++) { ctx.globalAlpha = Math.min(1, k * 4) * (0.6 - i * 0.1); px(ctx, Math.round(fx - ux * i * 6) - 3, Math.round(fy - uy * i * 6) - 3, 6, 6, '#ffffff'); }
+          ctx.globalAlpha = Math.min(1, k * 4);
+          disc(ctx, fx, fy, 9, SP().OUT); disc(ctx, fx, fy, 8, c);
+          for (let i = -1; i <= 1; i++) px(ctx, Math.round(fx + ux * 5 - uy * i * 4) - 1, Math.round(fy + uy * 5 + ux * i * 4) - 1, 3, 3, '#ffb48a');   // đốt ngón
+          disc(ctx, fx - 2, fy - 3, 2, '#fff0e0');
+        } else if (s.kind === 'orb') {
           const c = s.color || '#7fe7ff';
           disc(ctx, s.x, s.y - 6, 7, 'rgba(127,231,255,0.25)');
           disc(ctx, s.x, s.y - 6, 5, c);
@@ -716,6 +1071,11 @@ window.SFC = window.SFC || {};
     },
 
     applyZoom(ctx, g) {
+      const tl = g.effects.O.tilt;
+      if (tl) {   // NGHIÊNG SÂN: xoay khung hình nhẹ về phía dir (vào / ra mượt)
+        const k = tl.t / tl.max, e = Math.min(1, (1 - k) * 5, k * 5);
+        ctx.translate(W / 2, H / 2); ctx.rotate(tl.dir * 0.05 * e); ctx.translate(-W / 2, -H / 2);
+      }
       const z = g.effects.O.zoom;
       if (!z) return;
       const k = z.t / z.max, s = 1 + z.a * Math.sin(k * Math.PI * 0.5);
@@ -743,6 +1103,30 @@ window.SFC = window.SFC || {};
           const a = Math.random() * Math.PI * 2, r0 = 330, r1 = 110 + Math.random() * 90;
           ctx.lineWidth = Math.random() < 0.3 ? 2 : 1;
           ctx.beginPath(); ctx.moveTo(L.x + Math.cos(a) * r0, L.y + Math.sin(a) * r0); ctx.lineTo(L.x + Math.cos(a) * r1, L.y + Math.sin(a) * r1); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+      // băng VHS tua ngược: sọc nhiễu chạy dọc, lệch màu, chữ << góc trên
+      if (O.vhs) {
+        const k = O.vhs.t / O.vhs.max, a = Math.min(1, (1 - k) * 8, k * 4);
+        ctx.globalAlpha = 0.18 * a; ctx.fillStyle = '#c63dff'; ctx.fillRect(0, 0, W, H);
+        for (let i = 0; i < 9; i++) {
+          const yy = ((now * 260 + i * 53) % (H + 40)) - 20;
+          ctx.globalAlpha = 0.35 * a; ctx.fillStyle = i % 3 ? '#ffffff' : '#3ff6ff';
+          ctx.fillRect(0, yy, W, 1 + (i % 2));
+          ctx.globalAlpha = 0.12 * a; ctx.fillRect(Math.sin(now * 30 + i) * 6, yy + 3, W, 4);
+        }
+        ctx.globalAlpha = a;
+        if (Math.floor(now * 4) % 2) outlinedText(ctx, '<< REW', 70, 30, 22, '#ffffff', '#140c16', 4);
+        ctx.globalAlpha = 1;
+      }
+      // nghiêng sân: mũi tên trôi về phía dir ở 2 mép trên / dưới
+      if (O.tilt) {
+        const k = O.tilt.t / O.tilt.max, a = Math.min(1, (1 - k) * 6, k * 4), d = O.tilt.dir;
+        ctx.globalAlpha = 0.55 * a; ctx.fillStyle = '#ffd23f';
+        for (let i = 0; i < 6; i++) for (const yy of [14, H - 14]) {
+          const xx = (((now * 90 * d + i * 120) % (W + 60)) + W + 60) % (W + 60) - 30;
+          ctx.beginPath(); ctx.moveTo(xx + d * 8, yy); ctx.lineTo(xx - d * 4, yy - 6); ctx.lineTo(xx - d * 4, yy + 6); ctx.closePath(); ctx.fill();
         }
         ctx.globalAlpha = 1;
       }

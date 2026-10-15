@@ -317,7 +317,10 @@
     };
     // chưa chọn ngôn ngữ (lần đầu mở game, kể cả hồ sơ cũ từ trước khi có đa ngôn ngữ): popup chọn ngôn ngữ trước tiên,
     // menu phía sau ẩn đi; chọn xong mới tới đặt tên / PROLOGUE
-    if (langChosen) start();
+    // dev: index.html?ulttest[=id] vào thẳng phòng test Tuyệt kỹ (src/ui/ulttest.js)
+    if (SFC_DEBUG && SFC.UltTest && /[?&]ulttest\b/.test(location.search)) {
+      SFC.UltTest.start(app, new URLSearchParams(location.search).get('ulttest'));
+    } else if (langChosen) start();
     else {
       SFC.Menu.el.classList.add('hidden');
       SFC.LangPick.open({ first: true, done: () => { SFC.Menu.el.classList.remove('hidden'); SFC.Menu.render(); start(); } });
