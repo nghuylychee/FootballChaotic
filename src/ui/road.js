@@ -51,7 +51,7 @@ window.SFC = window.SFC || {};
       if (!c) return '';
       const have = PF().coreUnlocked(id), ult = c.role === 'ult', col = (CORES().archetypes[c.tags[0]] || {}).color || '#e6dccb';
       const title = show ? `${c.name}${ult ? ' · ' + _t('ULTIMATE') : ''}` : (ult ? _t('ULTIMATE') : _t('CORE')) + ' · ???';
-      return `<i class="rd-rw ${ult ? 'ult' : ''} ${big ? 'big' : ''} ${have ? 'got' : show ? 'next' : 'sil'}" style="--c:${show ? col : '#5a4658'}" title="${esc(title)}">${PX().core(id, show ? '' : 'sil')}${have ? `<em>${PX().ui('check', 'sm')}</em>` : ''}</i>`;
+      return `<i class="rd-rw ${ult ? 'ult' : ''} ${big ? 'big' : ''} ${have ? 'got' : show ? 'next' : 'sil'}" style="--c:${show ? col : '#525a6b'}" title="${esc(title)}">${PX().core(id, show ? '' : 'sil')}${have ? `<em>${PX().ui('check', 'sm')}</em>` : ''}</i>`;
     },
 
     // vị trí của bạn trên đường: đảo Area đang đứng + tỉ lệ trong khoảng Elo của Area

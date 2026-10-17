@@ -94,6 +94,7 @@ window.SFC = window.SFC || {};
 
     show(name) {
       if (name === 'menu' || name === 'end') SFC.RecipeFx.cancel();   // rời trận / hết trận giữa lúc diễn mở Tuyệt kỹ
+      if (name !== 'draft') this.skipDraftAnim();
       ['menu', 'draft', 'pause', 'end'].forEach((k) => this.el[k].classList.toggle('hidden', k !== name));
       this.el.hud.classList.toggle('hidden', name === 'menu');
       if (name === 'menu') this.el.abar.classList.add('hidden');
@@ -142,7 +143,6 @@ window.SFC = window.SFC || {};
           <div class="card-desc">${SFC.CoreScale.describe(id, game.cores.rating(id, mp || team))}</div>
         </div>`;
       }).join('');
-      const opp = game.teams[1 - team];
       const left = (d.rerolls && d.rerolls[me]) || 0;
       // cores.draft.rerollsPerRound = 0: tạm bỏ đổi bài -> không có nút REROLL
       const reroll = picked || d.noReroll || !SFC_CONFIG.cores.draft.rerollsPerRound ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> ${esc(_tn('REROLL 3 ({n} left)', 'REROLL 3 ({n} left)', left))}</button>`;
@@ -152,13 +152,53 @@ window.SFC = window.SFC || {};
       // lượt chọn có kịch bản (PROLOGUE): tiêu đề riêng, ghi chú dưới lá bài, lá ULTIMATE lộ diện
       this.el.draft.classList.toggle('ult-reveal', d.special === 'ult');
       const title = d.title ? esc(d.title) : `${esc(d.pre ? _t('STARTING CORE') : _t('CORE UPGRADE'))} <span>${d.round}/${total}</span>`;
+
+      // slots: các lượt chọn Core (tối đa 4) + ô Tuyệt kỹ
+      const maxSlots = total;
+      const owned = mp ? game.cores.coresOf(mp).filter((cid) => CORES().list[cid].role !== 'ult') : [];
+      const ult = mp ? game.cores.coresOf(mp).find((cid) => CORES().list[cid].role === 'ult') : null;
+      const targetSlot = owned.length;
+      const slots = Array.from({ length: maxSlots }, (_, idx) => {
+        const id = owned[idx];
+        if (id) {
+          const c = CORES().list[id], a = ARCH(c.tags[0]);
+          return `<div class="d-slot filled" style="--c:${a.color}" title="${esc(c.name)}">${PX().core(id, 'sm')}</div>`;
+        }
+        const isTarget = idx === targetSlot && d.special !== 'ult';
+        return `<div class="d-slot empty ${isTarget ? 'target' : ''}" data-slot="${idx}"><b>${idx + 1}</b></div>`;
+      }).join('');
+      const isUltTarget = d.special === 'ult' || (targetSlot >= total && !ult);
+      const ultSlot = ult ? `<div class="d-slot ult filled" title="${esc(CORES().list[ult].name)}">${PX().core(ult, 'sm')}</div>`
+        : `<div class="d-slot ult empty ${isUltTarget ? 'target' : ''}" title="${esc(_t('Ultimate'))}"><kbd>X</kbd></div>`;
+      const traits = traitChips(game, mp);
+
       this.el.draft.innerHTML = `
         <div class="draft-title">${title}${timer}</div>
         <div class="draft-sub">${sub}${reroll}</div>
         <div class="cards">${cards}</div>
         ${d.note ? `<div class="draft-note">${esc(d.note).replace(/\*(.+?)\*/g, '<b>$1</b>')}</div>` : ''}
-        <div class="draft-opp"><span>${esc(_t('Your build:'))}</span> ${traitChips(game, mp) || '<em>—</em>'} <span class="sep">·</span> <span>${esc(opp.cfg.name)}:</span> ${opp.players.map((q) => traitChips(game, q) || '<em>—</em>').join(' <span class="sep">/</span> ')}</div>`;
+        <div class="draft-build">
+          <div class="draft-build-row">
+            <div class="draft-square-wrap">
+              <span class="draft-build-label">${esc(_t('YOUR BUILD'))}</span>
+              <div class="draft-square">${slots}</div>
+            </div>
+            ${(ult || d.special === 'ult') ? `
+            <div class="draft-ult-wrap">
+              <span class="draft-build-label">${esc(_t('ULTIMATE'))}</span>
+              ${ultSlot}
+            </div>` : ''}
+          </div>
+          ${traits ? `<div class="draft-traits-row">${traits}</div>` : ''}
+        </div>`;
       SFC.CorePreview.scan(this.el.draft);
+
+      // âm thanh chia bài khi lá mới xuất hiện
+      const roundKey = `${d.round}:${d.pre ? 'pre' : ''}:${d.special || ''}`;
+      if (this.lastDraftRound !== roundKey && !picked) {
+        this.lastDraftRound = roundKey;
+        SFC.Audio.whoosh();
+      }
     },
 
     // đổi lá đang chọn mà không vẽ lại (giữ ảnh động đang chạy)
@@ -170,6 +210,12 @@ window.SFC = window.SFC || {};
     draftInput(input, game) {
       // đang diễn mở Tuyệt kỹ (RecipeFx): Enter / Esc bỏ qua
       if (SFC.RecipeFx.active) { if (input.wasPressed('confirm') || input.wasPressed('back')) SFC.RecipeFx.skip(); return; }
+      if (this.draftAnimActive || this.draftMorphActive) {
+        if (input.wasPressed('confirm') || input.wasPressed('back') || input.wasPressed('pick1') || input.wasPressed('pick2') || input.wasPressed('pick3')) {
+          this.skipDraftAnim();
+        }
+        return;
+      }
       const d = game.draft;
       if (!d || d.picked[game.me]) return;
       const n = (d.options[game.me] || []).length;
@@ -188,27 +234,223 @@ window.SFC = window.SFC || {};
       else if (input.wasPressed('reroll') && SFC_CONFIG.cores.draft.rerollsPerRound) this.doAct('reroll');
     },
 
+    playPickAnim(game, i, onDone) {
+      const d = game.draft;
+      if (!d) return onDone();
+      const id = (d.options[game.me] || [])[i];
+      if (!id) return onDone();
+      const c = CORES().list[id], rar = RARITY(c.rarity);
+      const cardEl = this.el.draft.querySelector(`.card[data-pick="${i}"]`);
+      if (!cardEl) return onDone();
+
+      // 1. Tìm ô đích trong khối vuông YOUR BUILD và tính toạ độ trước khi biến đổi
+      const targetSlot = (c.role === 'ult' ? this.el.draft.querySelector('.d-slot.ult') : null)
+        || this.el.draft.querySelector('.draft-square .d-slot.target')
+        || this.el.draft.querySelector('.draft-square .d-slot.empty')
+        || this.el.draft.querySelector('.d-slot.ult');
+
+      if (targetSlot) {
+        const stage = document.getElementById('stage') || this.el.stage || this.el.draft;
+        const getStageBox = (el) => {
+          const sRect = stage.getBoundingClientRect(), eRect = el.getBoundingClientRect();
+          const scale = sRect.width / 640;
+          return {
+            x: (eRect.left - sRect.left) / scale,
+            y: (eRect.top - sRect.top) / scale,
+            w: eRect.width / scale,
+            h: eRect.height / scale,
+          };
+        };
+
+        const cardBox = getStageBox(cardEl);
+        const slotBox = getStageBox(targetSlot);
+        const dx = (slotBox.x + slotBox.w / 2) - (cardBox.x + cardBox.w / 2);
+        const dy = (slotBox.y + slotBox.h / 2) - (cardBox.y + cardBox.h / 2);
+        const tarScale = slotBox.w / cardBox.w;
+
+        cardEl.style.setProperty('--dx', `${dx.toFixed(1)}px`);
+        cardEl.style.setProperty('--dy', `${dy.toFixed(1)}px`);
+        cardEl.style.setProperty('--tar-scale', tarScale.toFixed(4));
+      }
+
+      // 2. Phóng to lá được chọn theo màu độ hiếm, làm mờ các lá còn lại
+      this.el.draft.querySelectorAll('.card[data-pick]').forEach((card, idx) => {
+        if (idx === i) card.classList.add('picked-hero');
+        else card.classList.add('dimmed');
+      });
+
+      // 3. Âm thanh chọn
+      SFC.Audio.pick();
+
+      if (targetSlot) {
+        // Chờ 200ms để thấy rõ lá bài được chọn phóng to trước khi chính lá bài đó thu nhỏ bay vào ô build (không clone)
+        this.draftAnimTimerFly = setTimeout(() => {
+          cardEl.classList.add('flying-card');
+
+          // Chạm ô đích sau 420ms: ô loé sáng, nổ hiệu ứng và chuyển sang Core mới
+          this.draftAnimTimer = setTimeout(() => {
+            cardEl.style.visibility = 'hidden';
+            targetSlot.classList.remove('empty', 'target');
+            targetSlot.classList.add('filled', 'impact');
+            targetSlot.style.setProperty('--c', rar.color);
+            targetSlot.innerHTML = PX().core(id, 'sm');
+            SFC.Audio.upgrade();
+
+            // Gỡ class impact ngay khi hiệu ứng loé sáng 350ms hoàn tất
+            this.draftImpactTimer = setTimeout(() => {
+              targetSlot.classList.remove('impact');
+            }, 350);
+          }, 420);
+        }, 200);
+      }
+
+      // 4. Chờ bay vào đích (200 + 420) + loé sáng ô hoàn tất (350) + nghỉ ngơi (180) = 1150ms rồi mới kết thúc để morph
+      this.draftAnimTimerEnd = setTimeout(() => {
+        this.draftAnimActive = false;
+        onDone();
+      }, 1150);
+    },
+
+    skipDraftAnim() {
+      if (this.draftAnimActive) {
+        this.draftAnimActive = false;
+        clearTimeout(this.draftAnimTimerFly);
+        clearTimeout(this.draftAnimTimer);
+        clearTimeout(this.draftImpactTimer);
+        clearTimeout(this.draftAnimTimerEnd);
+        const card = this.el.draft.querySelector('.card.picked-hero, .card.flying-card');
+        if (card) {
+          card.classList.remove('flying-card');
+          card.style.visibility = 'hidden';
+        }
+        const impactSlot = this.el.draft.querySelector('.d-slot.impact');
+        if (impactSlot) impactSlot.classList.remove('impact');
+        const done = this.draftAnimDone;
+        this.draftAnimDone = null;
+        if (done) done();
+      }
+      if (this.draftMorphActive) {
+        clearTimeout(this.draftMorphTimer);
+        const done = this.draftMorphDone;
+        this.draftMorphActive = false;
+        this.draftMorphDone = null;
+        const morphEl = document.querySelector('.morphing-square');
+        if (morphEl) morphEl.remove();
+        this.el.draft.classList.remove('draft-fade-out');
+        const draftSquare = this.el.draft.querySelector('.draft-square');
+        if (draftSquare) draftSquare.style.visibility = '';
+        if (done) done();
+      }
+    },
+
     // lá vừa chọn đạt công thức Tuyệt kỹ -> diễn RecipeFx trước rồi mới gửi lượt chọn
     // (online: chỉ diễn khi đồng hồ chọn còn đủ giờ, không thì gửi luôn — banner NEW ULTIMATE vẫn báo)
     pick(game, i) {
       const d = game.draft;
-      if (!d || d.picked[game.me] || SFC.RecipeFx.active) return;
+      if (!d || d.picked[game.me] || SFC.RecipeFx.active || this.draftAnimActive || this.draftMorphActive) return;
       const id = (d.options[game.me] || [])[i], mp = game.cores.seatOwner(game.me);
       const rc = id && mp && game.cores.recipesOn() ? game.cores.bestRecipe(mp, id) : null;
-      if (rc && !(d.limit > 0 && d.t < 4)) {
-        this.draftSel = i;
-        this.setDraftSel(i);
-        SFC.RecipeFx.play(game, mp, id, rc, () => { if (this.app.game === game) this.commitPick(game, i); });
-        return;
-      }
-      this.commitPick(game, i);
+      this.draftSel = i;
+      this.setDraftSel(i);
+
+      const proceed = () => {
+        if (rc && !(d.limit > 0 && d.t < 4)) {
+          SFC.RecipeFx.play(game, mp, id, rc, () => { if (this.app.game === game) this.commitPick(game, i); });
+          return;
+        }
+        this.commitPick(game, i);
+      };
+
+      this.draftAnimActive = true;
+      this.draftAnimDone = proceed;
+      this.playPickAnim(game, i, () => {
+        this.draftAnimActive = false;
+        this.draftAnimDone = null;
+        proceed();
+      });
     },
+
     commitPick(game, i) {
       if (!game.draft || game.draft.picked[game.me]) return;
       this.draftSel = i;
       this.app.pickCore(i);
-      if (game.state === 'draft') this.renderDraft(game);
-      else if (this.current === 'draft') this.show(null);
+      // Co-op / PvP: mình đã chọn xong nhưng đang chờ người khác trong cùng lượt
+      if (game.state === 'draft' && game.draft && game.draft.picked[game.me]) {
+        this.renderDraft(game);
+      } else if (game.state !== 'draft' && this.current === 'draft' && !this.draftMorphActive) {
+        this.morphDraftToAbar(game, () => this.show(null));
+      }
+    },
+
+    // biến hình khối vuông YOUR BUILD 2x2 từ draft bay vào thanh trạng thái abar ở đáy màn hình
+    morphDraftToAbar(game, onDone) {
+      const stage = document.getElementById('stage') || this.el.stage;
+      const draftSquare = this.el.draft.querySelector('.draft-square');
+      const abar = this.el.abar;
+      if (!stage || !draftSquare || !abar || !game || !game.controlled) return onDone();
+
+      this.updateBar(game);
+      abar.classList.remove('hidden');
+
+      const abarItems = abar.querySelector('.ab-items');
+      if (!abarItems) return onDone();
+
+      const getStageBox = (el) => {
+        const sRect = stage.getBoundingClientRect(), eRect = el.getBoundingClientRect();
+        const scale = sRect.width / 640;
+        return {
+          x: (eRect.left - sRect.left) / scale,
+          y: (eRect.top - sRect.top) / scale,
+          w: eRect.width / scale,
+          h: eRect.height / scale,
+        };
+      };
+
+      const dBox = getStageBox(draftSquare);
+      const aBox = getStageBox(abarItems);
+
+      const morphEl = draftSquare.cloneNode(true);
+      morphEl.className = 'draft-square morphing-square';
+      morphEl.style.left = `${dBox.x.toFixed(1)}px`;
+      morphEl.style.top = `${dBox.y.toFixed(1)}px`;
+      morphEl.style.width = `${dBox.w.toFixed(1)}px`;
+      morphEl.style.height = `${dBox.h.toFixed(1)}px`;
+      morphEl.style.transformOrigin = 'top left';
+
+      const dx = (aBox.x - dBox.x).toFixed(1);
+      const dy = (aBox.y - dBox.y).toFixed(1);
+      const mScale = (aBox.w / dBox.w).toFixed(4);
+
+      morphEl.style.setProperty('--mex', `${dx}px`);
+      morphEl.style.setProperty('--mey', `${dy}px`);
+      morphEl.style.setProperty('--mscale', mScale);
+
+      stage.appendChild(morphEl);
+      draftSquare.style.visibility = 'hidden';
+      this.el.draft.classList.add('draft-fade-out');
+
+      let cleaned = false;
+      const finish = () => {
+        if (cleaned) return;
+        cleaned = true;
+        clearTimeout(this.draftMorphTimer);
+        morphEl.remove();
+        draftSquare.style.visibility = '';
+        this.el.draft.classList.remove('draft-fade-out');
+        this.draftMorphActive = false;
+        this.draftMorphDone = null;
+
+        abarItems.classList.remove('landing-pulse');
+        void abarItems.offsetWidth;
+        abarItems.classList.add('landing-pulse');
+        setTimeout(() => abarItems.classList.remove('landing-pulse'), 400);
+
+        onDone();
+      };
+
+      this.draftMorphActive = true;
+      this.draftMorphDone = finish;
+      this.draftMorphTimer = setTimeout(finish, 380);
     },
 
     /* ================= PAUSE / MENU TRONG TRẬN ================= */
@@ -694,12 +936,23 @@ window.SFC = window.SFC || {};
         // banner của trận (match.js, chữ đánh dấu SFC.N_): dịch lúc hiện — online thì sự kiện đến từ máy host
         if (e.type === 'banner') this.banner(_t(e.text, e.vars), e.sub && _t(e.sub, e.vars), e.color, 2.2);
         // khoảnh khắc của trận (màn kết quả)
-        if (e.type === 'draft') { this.draftSel = 0; this.renderDraft(game); if (!overlay) this.show('draft'); }
+        if (e.type === 'draft') {
+          this.draftSel = 0;
+          this.el.draft.classList.remove('draft-fade-out');
+          const draftSquare = this.el.draft.querySelector('.draft-square');
+          if (draftSquare) draftSquare.style.visibility = '';
+          this.renderDraft(game);
+          if (!overlay) this.show('draft');
+        }
         if (e.type === 'draftWait' && game.draft) this.renderDraft(game);
         // Tuyệt kỹ của bạn vừa đổi theo công thức: ghi sổ Tuyệt kỹ + banner (lần đầu khám phá / tiến hoá / đổi)
         if (e.type === 'ultUnlock') this.ultUnlocked(game, e);
         if (e.type === 'corePicked') {
-          if (this.current === 'draft') this.show(null);
+          // Còn lượt chọn tiếp theo (tích nhiều lượt / trước FINAL PUSH) -> không đóng draft hay morph về abar
+          const hasMoreDraft = game.state === 'draft' || !!game.draft || evs.some((x) => x.type === 'draft') || (typeof game.draftPending === 'function' && game.draftPending() > 0);
+          if (!hasMoreDraft && this.current === 'draft' && !this.draftMorphActive) {
+            this.morphDraftToAbar(game, () => this.show(null));
+          }
           // đội mình: chỉ lá bạn vừa lấy (Core đồng đội ẩn cho gọn); đội kia: gộp 1 dòng các lá vừa lấy
           const me = game.controlled;
           const mine = e.picks.filter((pk) => pk.team === game.humanTeam && me && pk.pid === me.id), other = e.picks.filter((pk) => pk.team !== game.humanTeam);
@@ -728,6 +981,7 @@ window.SFC = window.SFC || {};
       document.addEventListener('click', (e) => {
         SFC.Audio.unlock();
         if (e.target.closest('#menu')) return; // menu tự xử lý
+        if (this.draftAnimActive || this.draftMorphActive) { this.skipDraftAnim(); return; }
         const btn = e.target.closest('[data-act],[data-pick]');
         if (!btn) return;
         if (btn.dataset.pick != null && this.app.game) return this.pick(this.app.game, +btn.dataset.pick);

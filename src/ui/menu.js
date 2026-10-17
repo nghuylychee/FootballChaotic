@@ -705,10 +705,10 @@ window.SFC = window.SFC || {};
       // "con đường": 10 Area nối nhau, Area đang xem nổi lên, Area đang đá có cờ, chưa tới thì dạng bóng đen
       const dots = MP.areas().map((a, i) => {
         const lk = i > st.best || MP.demoLocked(i);
-        return `<i class="${i === v ? 'sel' : ''} ${lk ? 'lock' : i < st.area ? 'done' : i === st.area ? 'cur' : ''}" style="--c:${lk ? '#5a4658' : a.color}" data-parea="${i}" title="${lk ? '???' : esc(a.name)}">${lk ? PX().ui('unknown') : PX().area(a.id)}</i>`;
+        return `<i class="${i === v ? 'sel' : ''} ${lk ? 'lock' : i < st.area ? 'done' : i === st.area ? 'cur' : ''}" style="--c:${lk ? '#525a6b' : a.color}" data-parea="${i}" title="${lk ? '???' : esc(a.name)}">${lk ? PX().ui('unknown') : PX().area(a.id)}</i>`;
       }).join('');
       const name = locked ? '???' : esc(A.name);
-      return `<div class="path ${locked ? 'locked' : ''}" style="--ac:${locked ? '#6a5f6e' : A.color}">
+      return `<div class="path ${locked ? 'locked' : ''}" style="--ac:${locked ? '#5a6373' : A.color}">
         <div class="ph"><span class="ph-num">${esc(_t('AREA {n}', { n: v + 1 }))}</span><span class="ph-name">${locked ? PX().ui('unknown') : PX().area(A.id)} ${name}</span><span class="ph-state">${state}</span></div>
         <div class="ph-sub">${locked ? '???' : esc(A.sub)}${locked || A.reward === 1 ? '' : ` · <span class="ph-cores">${esc(_t('REWARDS ×{n}', { n: A.reward }))}</span>`}</div>
         ${PF().statsHidden() ? '' : `<div class="ph-ovr">${esc(_t('YOUR OVR'))} <b>${PF().ovr()}</b> · ${esc(_t('PLAYERS OVR'))} <b>${locked ? '??' : this.areaOvr(v)}</b></div>`}
