@@ -360,16 +360,23 @@
     }
     requestAnimationFrame(frame);
 
-    // Trận online: tab bị ẩn / thu nhỏ thì requestAnimationFrame dừng -> dùng đồng hồ Worker
-    // (không bị trình duyệt hãm) để host vẫn mô phỏng và khách vẫn nhận / gửi dữ liệu.
+    // Tab bị ẩn / cửa sổ mất focus, thu nhỏ hay bị che: requestAnimationFrame dừng (hoặc bị hãm) -> đồng hồ Worker (không bị trình duyệt
+    // hãm) chạy tiếp mô phỏng, không vẽ. Mọi trận (chơi đơn lẫn online — user 2026-10-17: trận không được đứng khi không focus);
+    // host online vẫn mô phỏng, khách vẫn nhận / gửi dữ liệu. Menu chỉ chạy khi đang tìm trận (đồng hồ chờ + ghép trận — Menu.searchTick,
+    // user 2026-10-17), cut scene thì không. Màn tạm dừng vẫn dừng như cũ (tick)
+    const background = () => {
+      const now = performance.now();
+      const live = app.screen === 'menu' ? !!(SFC.Menu && SFC.Menu.search) : app.screen !== 'story';
+      if (live && now - lastRaf > 50) step(now, false);
+    };
     try {
       const src = 'setInterval(function(){postMessage(0)},16)';
       const clock = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
-      clock.onmessage = () => {
-        const now = performance.now();
-        if (app.mode === 'online' && app.screen !== 'menu' && now - lastRaf > 50) step(now, false);
-      };
-    } catch (e) { /* file:// có thể chặn Worker — khi đó trận online chỉ chạy lúc tab đang mở */ }
+      clock.onmessage = background;
+    } catch (e) {
+      // file:// có thể chặn Worker: dùng hẹn giờ của trang (tab ẩn bị hãm còn ~1 lần/giây, nhưng cửa sổ mất focus / bị che vẫn chạy đủ nhịp)
+      setInterval(background, 16);
+    }
     window.SFC.app = app; // debug
   }
 

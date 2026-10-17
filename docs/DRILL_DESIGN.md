@@ -1,7 +1,7 @@
 # DRILL — Thiết kế tiến trình chỉ số character
 
 > **TẠM ẨN (2026-10-11):** `progression.attrs.hidden = true` — thử game thuần kỹ năng + Core. Mọi người chơi dùng chung rating `attrs.fixed` (80),
-> không hiện OVR / STATS / thẻ DRILL; drill vẫn tích ngầm theo level. Khác biệt chỉ số chuyển sang Core chỉ số (`CORE_DESIGN.md`). Bật lại: `hidden: false`.
+> không hiện OVR / STATS / thẻ DRILL; drill vẫn tích ngầm theo level. Khác biệt chỉ số từng chuyển sang Core chỉ số (đã bỏ 2026-10-17). Bật lại: `hidden: false`.
 >
 > Trạng thái: **ĐÃ DUYỆT (2026-09-29)** — xem *Quyết định đã chốt* ngay dưới. Số liệu là số khởi điểm, sẽ cân bằng lại khi chơi thử.
 > **Thay cho hệ điểm cộng tay:** bản đầu cho mỗi level +điểm để tự chia vào 6 chỉ số (+1 mỗi lần bấm). Chơi thử thấy **quá thủ công**

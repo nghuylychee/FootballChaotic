@@ -117,15 +117,6 @@ window.SFC = window.SFC || {};
   });
 
   const SCENES = {
-    /* CORE CHỈ SỐ (dấu "+" màu chỉ số trên người, src/render/vfx.js) */
-    leg_day: run(),
-    cannon_leg: shot({ charge: 0.9 }),
-    silk_pass: pass(),
-    close_control: run({ ball: true }),
-    heavy_hands: punch(),
-    thunder_thighs: kick(),
-    safe_hands: shot({ team: 1, aimY: 0.35, charge: 0.8 }),
-
     /* 🏃 TỐC ĐỘ */
     speed_demon: run(),
     burst_start: run({ from: 0.35 }),

@@ -149,51 +149,6 @@ SFC_CONFIG.cores = {
   },
 
   list: {
-    /* ---------- CORE CHỈ SỐ — THƯỜNG, có sẵn: mỗi trường phái 1 lá tăng chỉ số (chỉ số character đang ẩn, progression.attrs.hidden).
-     * Đi qua mods nên online / dự đoán chuyển động ở máy khách tự đúng. Hình: dấu "+" màu chỉ số bay lên trên người (boost) ---------- */
-    leg_day: {
-      name: 'Leg Day', icon: '🦵', tags: ['runner'], role: 'base', rarity: 'common', boost: 'pace',
-      desc: 'Run faster and get your stamina back quicker.',
-      mods: { speed: 1.07, sprintRegen: 1.25 },
-      scale: { 'm.speed': 'mul', 'm.sprintRegen': 'mul' },
-    },
-    cannon_leg: {
-      name: 'Cannon Leg', icon: '💥', tags: ['striker'], role: 'base', rarity: 'common', boost: 'shooting',
-      desc: 'Harder, more accurate shots every time you kick.',
-      mods: { shotPower: 1.1, accuracy: 1.2 },
-      scale: { 'm.shotPower': 'mul', 'm.accuracy': 'mul' },
-    },
-    silk_pass: {
-      name: 'Silk Passing', icon: '🧵', tags: ['playmaker'], role: 'base', rarity: 'common', boost: 'passing',
-      desc: 'Faster, cleaner passes that find their target.',
-      mods: { passSpeed: 1.1, passAccuracy: 1.25 },
-      scale: { 'm.passSpeed': 'mul', 'm.passAccuracy': 'mul' },
-    },
-    close_control: {
-      name: 'Close Control', icon: '🧲', tags: ['trickster'], role: 'base', rarity: 'common', boost: 'dribble',
-      desc: 'Ball sticks to your feet, hard to punch loose.',
-      mods: { dribble: 1.25 },
-      scale: { 'm.dribble': 'mul' },
-    },
-    heavy_hands: {
-      name: 'Heavy Hands', icon: '✊', tags: ['brawler'], role: 'base', rarity: 'common', boost: 'fight',
-      desc: 'Longer punches that knock the ball loose more often.',
-      mods: { tackleChance: 1.2, tackleRange: 1.1 },
-      scale: { 'm.tackleChance': 'mul', 'm.tackleRange': 'mul' },
-    },
-    thunder_thighs: {
-      name: 'Thunder Thighs', icon: '🍗', tags: ['launcher'], role: 'base', rarity: 'common', boost: 'fight',
-      desc: 'Hard attacks launch further and recharge faster.',
-      mods: { launch: 1.15, hardCooldown: 0.88 },
-      scale: { 'm.launch': 'mul', 'm.hardCooldown': 'cd' },
-    },
-    safe_hands: {
-      name: 'Safe Hands', icon: '🧤', tags: ['iron'], role: 'base', rarity: 'common', boost: 'keeper',
-      desc: 'Save more shots while standing in your own box.',
-      mods: { keeperSave: 1.15 },
-      scale: { 'm.keeperSave': 'mul' },
-    },
-
     /* ---------- 🎯 SÁT THỦ ---------- */
     sniper_foot: {
       name: 'Sharpshooter', icon: '🎯', tags: ['striker'], role: 'base', rarity: 'common',

@@ -767,9 +767,10 @@ window.SFC = window.SFC || {};
       return `<div class="hud-mates">${game.teams[t].players.map((q) => `<div class="hud-pl"><em>${esc(q.name)}</em>${traitChips(game, q) || '<i>—</i>'}</div>`).join('')}</div>`;
     },
 
-    // thanh năng lượng Tuyệt kỹ nhỏ trên HUD của mỗi đội (icon Tuyệt kỹ nếu đã có)
-    // (chỉ khi đội đã có Tuyệt kỹ)
+    // thanh năng lượng Tuyệt kỹ nhỏ trên HUD (icon Tuyệt kỹ nếu đã có), chỉ khi đội đã có Tuyệt kỹ.
+    // Đội của người chơi: không hiện (user 2026-10-17 — Tuyệt kỹ của mình đã ở ô X, của đồng đội thì không cần) -> chỉ còn thanh của đội đối thủ
     ultMeter(game, t) {
+      if (t === game.humanTeam) return '';
       const id = game.cores.ultOf(t), c = id && CORES().list[id];
       if (!c) return '';
       return `<div class="hud-ult has" data-t="${t}" title="${esc(_t('{core}: Ultimate energy', { core: c.name }))}"><b>${PX().core(id, 'sm')}</b><i></i><em>0%</em></div>`;

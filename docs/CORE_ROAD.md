@@ -56,8 +56,8 @@ cấp bù mọi Core ở mốc ≤ Elo đó (không bao giờ thu lại Core). B
 |---|---|---|
 | 1 | Mở Core theo rank | Leo Elo mở Core mới (trophy road kiểu Clash Royale). **Mỗi Area rải Core của nhiều trường phái**, không dồn 1 trường phái / Area (tránh đóng khung người chơi vào 1 lối chơi từ đầu) |
 | 2 | Chọn Core trong trận | **Ngẫu nhiên từ mọi Core đã mở** như Võ Đài LoL. Không có deck |
-| 3 | Bộ khởi đầu | **23 lá** (8 → 16 → 23, 2026-10-11): 8 THƯỜNG + **7 Core chỉ số** (THƯỜNG, mỗi trường phái 1 lá) + 1 HIẾM mỗi trường phái + Chaos Ball → trường phái nào cũng ≥ 3 lá từ trận đầu. + Tuyệt kỹ AURA FARMING |
-| 7 | Chỉ số / OVR / DRILL | **Tạm ẩn** (`progression.attrs.hidden`): game thuần kỹ năng + Core. Mọi người chơi chung rating `attrs.fixed` = 80 (hệ số 1.0). Khác biệt chỉ số đến từ **Core chỉ số** chọn trong trận (`CORE_DESIGN.md` mục Core chỉ số) |
+| 3 | Bộ khởi đầu | **16 lá** (8 → 16 → 23 → 16): 8 THƯỜNG + 1 HIẾM mỗi trường phái + Chaos Ball. 7 Core chỉ số đã bỏ (2026-10-17) → phần lớn trường phái chỉ còn 2 lá từ trận đầu. + Tuyệt kỹ AURA FARMING |
+| 7 | Chỉ số / OVR / DRILL | **Tạm ẩn** (`progression.attrs.hidden`): game thuần kỹ năng + Core. Mọi người chơi chung rating `attrs.fixed` = 80 (hệ số 1.0). Không còn khác biệt chỉ số (Core chỉ số đã bỏ 2026-10-17) |
 | 4 | Đổi bài (REROLL) khi chọn Core | ~~Tạm bỏ~~ → **bật lại 2026-10-13**: 1 lần / lượt (`cores.draft.rerollsPerRound = 1`). Bỏ luôn bảo đảm hướng (`docs/ULT_RECIPE.md`) |
 | 5 | Trần level theo rank | **Bỏ** (`progression.levelCapByRank = false`): level chỉ dừng ở `maxLevel`. `areas[].levelCap` vẫn dùng để ước lượng OVR người chơi giả theo Elo |
 | 6 | Cân bằng | **Để sau** |
@@ -89,9 +89,15 @@ Nguyên tắc rải:
 
 Viết tắt: BRA Đấu sĩ · LAU Võ sĩ đá · STR Sát thủ · RUN Tốc độ · PM Tiki-taka · TRI Ảo ảnh · IRN Thép · CHA Hỗn loạn. R / E / L = HIẾM / SỬ THI / HUYỀN THOẠI.
 
-**Bộ khởi đầu (23):** 8 THƯỜNG `sniper_foot` STR · `speed_demon` RUN · `quick_feet` TRI · `street_fighter` BRA · `iron_body` IRN · `heavy_boot` LAU · `maestro` PM · `eagle_eye` PM
-+ 7 Core chỉ số `leg_day` RUN · `cannon_leg` STR · `silk_pass` PM · `close_control` TRI · `heavy_hands` BRA · `thunder_thighs` LAU · `safe_hands` IRN
-+ `burst_start` RUN·R · `one_touch` PM·R · `banana_kick` STR·R · `fist_storm` BRA·R · `wall_slam` LAU·R · `phantom_step` TRI·R · `iron_fist` BRA/IRN·R · `chaos_ball` CHA·R
+**Bộ khởi đầu (22, 2026-10-17):** 8 THƯỜNG `sniper_foot` STR · `speed_demon` RUN · `quick_feet` TRI · `street_fighter` BRA · `iron_body` IRN · `heavy_boot` LAU · `maestro` PM · `eagle_eye` PM
++ `burst_start` RUN·R · `one_touch` PM·R · `banana_kick` STR·R · `fist_storm` BRA·R · `wall_slam` LAU·R · `phantom_step` TRI·R · `iron_fist` IRN·R · `chaos_ball` CHA·R
++ 6 lá chuyển từ Core Road: `uppercut` BRA·R · `sonic_boom` RUN·E · `shadow_clone` TRI·E · `juggle` LAU·R · `energy_wave` STR·E · `bulldozer` IRN·E
+→ mọi trường phái (trừ Hỗn loạn: 1 lá) có 3 lá từ trận đầu, đạt được Tuyệt kỹ gốc X3.
+
+Lịch sử: 23 lá có 7 Core chỉ số; bỏ 7 lá đó (2026-10-17) làm 6 trường phái còn 2 lá, nên chuyển 1 Core Road / trường phái vào bộ khởi đầu,
+ưu tiên nấc có 2 Core để nấc đó vẫn còn phần thưởng. Nấc trống sau khi chuyển: Area 1 · ⅔, Area 3 · ⅔, Area 4 · ⅓ (Area 1 · vào Area vốn trống).
+
+> Bảng dưới là bố cục cũ (trước khi Core Road chia lại theo Elo 2026-10-14) — bố cục đúng hiện tại nằm ở `config/mainpath.config.js → areas[].road`.
 
 | Area (Elo) | Vào Area | ⅓ | ⅔ | Tổng sở hữu |
 |---|---|---|---|---|
@@ -116,7 +122,7 @@ Số lá mỗi trường phái (lá cầu nối tính cả hai; cần 4 lá cho 
 | Hết Area 3 | 37 | 6 | 5 | 5 | 7 | 6 | 5 | 5 |
 | Hết Area 10 | 53 | 8 | 9 | 10 | 9 | 9 | 8 | 8 |
 
-Kiểm: 53 Core thường (15 THƯỜNG gồm 7 Core chỉ số + 14 HIẾM + 18 SỬ THI + 6 HUYỀN THOẠI), mỗi lá đúng 1 chỗ.
+Kiểm: 46 Core thường (8 THƯỜNG + 14 HIẾM + 18 SỬ THI + 6 HUYỀN THOẠI; 7 Core chỉ số đã bỏ 2026-10-17), mỗi lá đúng 1 chỗ.
 Area 9–10 vẫn chưa có Tuyệt kỹ; mốc ⅓ / ⅔ của Area 8–10 để trống, dành cho phần thưởng khác sau này.
 
 Config: `mainpath.config.js → areas[].road = [[...vào Area], [...⅓], [...⅔]]`. `areas[].ult` giữ nguyên.

@@ -231,15 +231,16 @@ SFC_CONFIG.progression = {
   // Core đã quay được trước đó vẫn giữ trong hồ sơ. Bật lại = true.
   coreGacha: false,
 
-  // Bộ Core có sẵn cho user mới (23 lá: 8 THƯỜNG + 7 Core chỉ số THƯỜNG + 1 HIẾM mỗi trường phái + Chaos Ball — trường phái nào cũng
-  // có >= 3 lá từ trận đầu) + Tuyệt kỹ khởi đầu
+  // Bộ Core có sẵn cho user mới (22 lá: 8 THƯỜNG + 1 HIẾM mỗi trường phái + Chaos Ball + 6 lá chuyển từ Core Road) + Tuyệt kỹ khởi đầu.
+  // 2026-10-17: bỏ 7 Core chỉ số -> 6 trường phái chỉ còn 2 lá; chuyển 1 Core Road / trường phái vào đây (ưu tiên nấc có 2 Core)
+  // để trường phái nào cũng >= 3 lá từ trận đầu (đạt được Tuyệt kỹ gốc X3). Hỗn loạn vẫn 1 lá như trước
   // AURA FARMING (bí kíp gia truyền, trao ở cuối PROLOGUE). Core khác mở theo Core Road (mainpath.config.js -> areas[].road / ult),
   // hoặc lấy từ Hộp Core khi coreGacha bật.
   // level (khi coreGacha bật) = level tối thiểu để Core quay được xuất hiện khi chọn Core giữa trận (chưa đủ thì nằm chờ trong túi đồ).
   // Độ hiếm của Core lấy từ config/cores.config.js (rarity) — dùng chung cho gacha và tần suất khi chọn Core.
   starterCores: ['sniper_foot', 'speed_demon', 'quick_feet', 'street_fighter', 'iron_body', 'heavy_boot', 'maestro', 'eagle_eye',
-    'leg_day', 'cannon_leg', 'silk_pass', 'close_control', 'heavy_hands', 'thunder_thighs', 'safe_hands',
     'burst_start', 'one_touch', 'banana_kick', 'fist_storm', 'wall_slam', 'phantom_step', 'iron_fist', 'chaos_ball',
+    'uppercut', 'sonic_boom', 'shadow_clone', 'juggle', 'energy_wave', 'bulldozer',
     'aura_farming'],
   cores: {
     warp_walls:     { level: 2 },

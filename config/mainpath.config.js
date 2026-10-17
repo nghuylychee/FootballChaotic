@@ -83,7 +83,7 @@ SFC_CONFIG.mainPath = {
       levelCap: [3, 5, 7], elo: 0, reward: 1.0, arena: 'village',
       teams: ['paddy_kickers', 'muddy_ducks'],
       ai: [{ reaction: 0.5, tackleMult: 0.45, shotAccuracy: 0.4, aggression: 0.35, speedMult: 0.82 }, { reaction: 0.44, tackleMult: 0.55, shotAccuracy: 0.46, aggression: 0.45, speedMult: 0.86 }],
-      road: [[], ['fire_shot'], ['juggle']],
+      road: [[], ['fire_shot'], []],   // juggle -> bộ khởi đầu (2026-10-17)
     },
     // AREA 2
     {
@@ -99,7 +99,7 @@ SFC_CONFIG.mainPath = {
       levelCap: [12, 13, 15], elo: 200, reward: 1.25, arena: 'school',
       teams: ['hall_monitors', 'detention_club'],
       ai: [{ reaction: 0.34, tackleMult: 0.72, shotAccuracy: 0.58, aggression: 0.65, speedMult: 0.92 }, { reaction: 0.29, tackleMult: 0.8, shotAccuracy: 0.64, aggression: 0.75, speedMult: 0.95 }],
-      road: [['uppercut', 'symphony'], ['sonic_boom', 'glitch_step'], ['bulldozer']],
+      road: [['symphony'], ['glitch_step'], []],   // uppercut · sonic_boom · bulldozer -> bộ khởi đầu (2026-10-17)
     },
     // AREA 4
     {
@@ -107,7 +107,7 @@ SFC_CONFIG.mainPath = {
       levelCap: [17, 19, 21], elo: 360, reward: 1.4, arena: 'rooftop',
       teams: ['sky_hoppers', 'pigeon_gang'],
       ai: [{ reaction: 0.27, tackleMult: 0.84, shotAccuracy: 0.66, aggression: 0.8, speedMult: 0.96 }, { reaction: 0.23, tackleMult: 0.92, shotAccuracy: 0.72, aggression: 0.88, speedMult: 0.98 }],
-      road: [['shadow_clone', 'wild_card'], ['energy_wave'], ['giant_keeper']],
+      road: [['wild_card'], [], ['giant_keeper']],   // shadow_clone · energy_wave -> bộ khởi đầu (2026-10-17)
     },
     // AREA 5
     {
