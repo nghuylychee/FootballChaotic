@@ -13,11 +13,13 @@ SFC_CONFIG.game = {
     // "SFC JP": kana / chữ Hán của tiếng Nhật (unicode-range trong css/style.css -> ngôn ngữ khác không tải font này)
     pixelFont: '"Press Start 2P", "SFC JP", monospace',
     showDebug: false,
-    // vòng mỏng dưới chân đồng đội của người chơi tại máy này (màu áo không đủ để phân biệt). r = bán kính (px), null = tắt
-    allyRing: { r: 7, color: 'rgba(127,231,255,0.6)' },
-    // màu dấu điều khiển trên sân (vòng chân + mũi tên trên đầu): me = người chơi tại máy này, ally = người cùng đội (co-op),
-    // opp = đối thủ là người (phòng riêng)
-    ctrlColors: { me: '#5cff4a', ally: '#3ff6ff', opp: '#ff5a6e' },
+    // màu dấu điều khiển & vòng chân trên sân: me = người chơi tại máy này, ally = đồng đội, opp = đối thủ
+    ctrlColors: { me: '#5cff4a', ally: '#3ff6ff', opp: '#ff4757' },
+    // vòng chân (1 kiểu viền tối kẹp màu ở giữa): cùng độ dày (thick: 1), me hơi to hơn (r: 8) so với ally/opp (r: 7)
+    footRings: {
+      me: { r: 8, thick: 1 },
+      other: { r: 7, thick: 1 },
+    },
     // SETTINGS > RESOLUTION (chỉ bản desktop): cỡ cửa sổ, luôn 16:9. Cỡ lớn hơn màn hình bị ẩn. Thêm FULLSCREEN ở cuối
     windowSizes: [[1280, 720], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]],
   },

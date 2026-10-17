@@ -89,29 +89,34 @@ window.SFC = window.SFC || {};
       // hiệu ứng trang phục khi chạy (bụi / neon / lửa) — chỉ để trang trí, tính ở máy vẽ
       this.cosmetics(ctx, g);
 
-      // vòng chân người đang điều khiển (màu: game.render.ctrlColors)
+      // vòng chân cầu thủ trên sân (1 kiểu viền tối kẹp màu ở giữa):
+      // - người đang điều khiển (me): to và dày hơn (thick = 2)
+      // - đồng đội (ally): cyan, nhỏ và mảnh hơn (thick = 1)
+      // - đối thủ (opp): đỏ, nhỏ và mảnh hơn (thick = 1)
       const cp = g.controlled;
-      // ảnh xem trước Core (g.preview): không vẽ vòng / mũi tên điều khiển
       const CC = C.ctrlColors;
       const ctrlColor = (p) => (!g.preview && g.isHuman(p.team) && p.isControlled
         ? (p === cp ? CC.me : p.team === g.humanTeam ? CC.ally : CC.opp) : null);
-      // trận xếp hạng (Main Path): chỉ vòng của máy này — người thật khác không khác gì người chơi giả
+      // trận xếp hạng (Main Path): chỉ dấu mũi tên của máy này — người thật khác không khác gì người chơi giả
       const rank = !!g.opts.mainPath, seatRing = (c) => c && (!rank || c === cp);
-      // vòng mỏng dưới chân mọi đồng đội (người lẫn AI, như nhau) — bỏ người đã có vòng điều khiển
-      const AR = SFC_CONFIG.game.render.allyRing;
-      if (AR && !g.preview && g.humanTeam >= 0 && g.teams[g.humanTeam]) {
-        const ringed = new Set(g.seats.map((s, i) => g.seatPlayer(i)).filter(seatRing));
-        for (const q of g.teams[g.humanTeam].players) if (!ringed.has(q)) ringPx(ctx, q.x, q.y + 1, AR.r, AR.color);
+
+      const drawFootRing = (cx, cy, r, thick, col) => {
+        const OUT = SP().OUT;
+        ringPx(ctx, cx, cy, r + thick, OUT);
+        ringPx(ctx, cx, cy, r - 1, OUT);
+        for (let i = 0; i < thick; i++) ringPx(ctx, cx, cy, r + i, col);
+      };
+
+      if (!g.preview && g.humanTeam >= 0) {
+        const FR = C.footRings || { me: { r: 8, thick: 1 }, other: { r: 7, thick: 1 } };
+        for (const p of g.players) {
+          const isMe = p === cp;
+          const isAlly = p.team === g.humanTeam;
+          const col = isMe ? CC.me : isAlly ? CC.ally : CC.opp;
+          const cfg = isMe ? FR.me : FR.other;
+          drawFootRing(p.x, p.y + 1, cfg.r, cfg.thick, col);
+        }
       }
-      // vòng điều khiển: 2 nét màu + viền tối, nổi trên mọi mặt sân / vệt hiệu ứng
-      if (!g.preview) g.seats.forEach((s, i) => {
-        const c = g.seatPlayer(i);
-        if (!seatRing(c)) return;
-        const col = ctrlColor(c);
-        if (!col) return;
-        ringPx(ctx, c.x, c.y + 1, 10, SP().OUT); ringPx(ctx, c.x, c.y + 1, 7, SP().OUT);
-        ringPx(ctx, c.x, c.y + 1, 9, col); ringPx(ctx, c.x, c.y + 1, 8, col);
-      });
 
       // assisted passing chạy ngầm; chỉ hiện gợi ý người nhận khi bật showTargetHint (debug)
       const pv = g.state === 'play' && SFC_CONFIG.game.pass.showTargetHint ? g.passPreview : null;
