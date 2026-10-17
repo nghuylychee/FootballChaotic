@@ -326,7 +326,12 @@ window.SFC = window.SFC || {};
         this.cores.dispatch(p.team, 'onPossessionGained', p);
       }
       this.lastPossessionTeam = p.team;
-      if (passer) this.cores.passReceived(p, passer);
+      if (passer) {
+        this.lastPass = { from: passer, to: p, team: p.team, t: this.time };
+        this.cores.passReceived(p, passer);
+      } else if (this.lastPass && (this.lastPass.team !== p.team || this.lastPass.to !== p)) {
+        this.lastPass = null;
+      }
       if (prevTeam !== -1 && prevTeam !== p.team) this.cores.possessionLost(prevTeam);
       for (const t of this.humans) {
         const cur = this.ctrl[t];
@@ -347,6 +352,7 @@ window.SFC = window.SFC || {};
       this.effects.clearHazards();
       this.passPreview = null;
       this.lastShot = null;   // Đọc Cú Sút: cú sút gần nhất {t, team, pid, P}
+      this.lastPass = null;   // đường chuyền gần nhất để tính kiến tạo (assist)
       this.ball.reset(f.cx, f.cy);
       const vary = !!V;
       const mirror = [0, 1].map(() => vary && Math.random() < (V.mirrorY || 0));
@@ -583,6 +589,13 @@ window.SFC = window.SFC || {};
       if (!this.opts.training) this.teams[scorer].score += value; // luyện tập: không tính tỉ số
       const by = b.lastTouch;
       const own = by && by.team !== scorer;
+      if (!this.opts.training && !own && by && by.team === scorer && by.mstats) {
+        by.mstats.goals++;
+        const lp = this.lastPass;
+        if (lp && lp.team === scorer && lp.to === by && lp.from && lp.from !== by && lp.from.mstats && this.time - lp.t <= (this.cfg.match.assistWindow || 6)) {
+          lp.from.mstats.assists++;
+        }
+      }
       this.lastScorer = by;
       this.state = 'goal';
       this.stateT = this.cfg.match.goalCelebration;
@@ -612,8 +625,15 @@ window.SFC = window.SFC || {};
       this.state = 'ended';
       this.stopT = 0;
       this.stopTick = null;
+      this.effects.shakeA = this.cfg.fx.shakeShot;
+      this.effects.shakeT = 0.5;
       this.sfx('whistle', true);
-      this.emit('end', {});
+      const cels = SFC.Celebrate ? SFC.Celebrate.startEnd(this) : [];
+      const stats = this.players.map((p) => {
+        const m = p.mstats || {};
+        return [p.id, m.goals | 0, m.assists | 0, m.saves | 0, m.shots | 0];
+      });
+      this.emit('end', { stats, cels });
     }
 
     /* ---------- vật lý tương tác ---------- */
@@ -711,6 +731,7 @@ window.SFC = window.SFC || {};
           if (r < chance + (1 - chance) * C.player.gkParryShare) {
             this.keeperLunge(p);
             this.deflect(p, 0.45);
+            if (p.mstats && !this.opts.training) p.mstats.saves++;
             this.effects.text(p.x, p.y - 26, 'PARRY', '#ffffff');
             this.sfx('save');
           } else {
@@ -723,6 +744,7 @@ window.SFC = window.SFC || {};
         // Cú Sút Sao Băng: bắt được vẫn bị hất văng
         if (this.cores.dispatch(b.lastKickTeam, 'onKeeperSave', p, b)) return;
         this.keeperLunge(p);
+        if (p.mstats && !this.opts.training) p.mstats.saves++;
         this.effects.text(p.x, p.y - 26, 'SAVE!', '#9dff3d');
         this.sfx('save');
       } else if (opp && b.kind === 'pass' && spd > C.pass.intercept.minSpeed) {

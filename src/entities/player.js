@@ -93,6 +93,8 @@ window.SFC = window.SFC || {};
       this.intent = { mx: 0, my: 0, sprint: false };
       this.ai = { t: 0, runTo: null, runT: 0, requestedPass: null, holdT: 0, interceptT: 0, chargeTarget: 0.6, aimY: 0, dir: { x: 0, y: 0 }, sprint: false };
       this.kickHits = new Set();
+      // thống kê cá nhân trong trận (bảng tỉ số + MVP sau trận)
+      this.mstats = { goals: 0, assists: 0, saves: 0, shots: 0 };
     }
 
     get hasBall() { return this.game.ball.owner === this; }

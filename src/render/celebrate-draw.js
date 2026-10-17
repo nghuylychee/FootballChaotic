@@ -454,6 +454,57 @@ window.SFC = window.SFC || {};
         ctx.globalAlpha = 1;
       },
     },
+
+    /* ---------- CUỐI TRẬN: đội thắng giơ 2 tay ăn mừng không nhảy (_win2) · đội thua thất vọng (_lose) · hoà (_draw) ---------- */
+    _win2: {
+      pose(t) {
+        const w = Math.round(S(t * 5) * 0.7);
+        return {
+          lift: 0,
+          arms: [[-3, -3, -4, -9 + w], [3, -3, 4, -9 - w]],
+          eyes: 'happy', mouth: true, face: FRONT,
+        };
+      },
+      fx(ctx, I) {
+        const b = Math.floor(I.t * 4) % 2;
+        const h = I.hand(b);
+        if (((I.t * 4) % 1) < 0.35) twinkle(ctx, h.x + (b ? 1 : -1), h.y - 2, 2);
+      },
+    },
+    _lose: {
+      pose(t, p) {
+        const sigh = S(t * 2.0) > 0.35 ? 1 : 0;
+        const sit = p && (p.id % 2 === 1);
+        if (sit) {
+          // Tư thế 1: ngồi bệt trên cỏ, chân co trước mặt, 2 tay vươn gác lên đầu gối nhìn xa xăm
+          const s = p.x > 320 ? -1 : 1;
+          return {
+            legs: 'sit', drop: 4, headDy: 1 + sigh,
+            face: s > 0 ? 0.35 : Math.PI - 0.35,
+            arms: s > 0 ? [[9, 0], [1, -1, 3, 0]] : [[-1, -1, -3, 0], [-9, 0]],
+          };
+        }
+        // Tư thế 2: đứng sững ôm đầu tiếc nuối (2 khuỷu tay khuỳnh rộng sang 2 bên, 2 bàn tay đặt lên đỉnh đầu)
+        return {
+          drop: 0, headDy: sigh,
+          arms: [[-4, -6, 3, -13 + sigh], [4, -6, -3, -13 + sigh]],
+          mouth: true, face: FRONT,
+        };
+      },
+      fx(ctx, I) {
+        // giọt mồ hôi rơi nhẹ bên thái dương
+        const h = I.head, k = (I.t * 0.85) % 1;
+        ctx.globalAlpha = (1 - k) * 0.8;
+        px(ctx, Math.round(h.x + 6), Math.round(h.y - 1 + k * 5), 1, 2, '#7fe7ff');
+        ctx.globalAlpha = 1;
+      },
+    },
+    _draw: {
+      pose(t) {
+        const b = Math.floor(t * 2.6) % 2;
+        return { drop: 2 + b, headDy: 1 + b, arms: [[-3, 3], [3, 3]], eyes: 'closed', face: FRONT };
+      },
+    },
   };
 
   const CelebrateDraw = {

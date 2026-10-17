@@ -552,7 +552,7 @@ window.SFC = window.SFC || {};
       g.effects.updateOverlay(dt);
       for (const p of g.players) {
         p.anim += dt;   // đồng hồ hoạt ảnh tự đếm ở máy khách (không có trong snapshot)
-        if (p.celId) p.celT += dt;   // động tác ăn mừng (bắt đầu từ sự kiện 'goal')
+        if (p.celId && g.state === 'goal') p.celT += dt;   // động tác ăn mừng bàn thắng (khi 'ended' thì Renderer tự đếm cho mọi chế độ)
       }
       if (!buf.length) return g;
 

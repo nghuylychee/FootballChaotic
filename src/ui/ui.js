@@ -95,9 +95,16 @@ window.SFC = window.SFC || {};
     show(name) {
       if (name === 'menu' || name === 'end') SFC.RecipeFx.cancel();   // rời trận / hết trận giữa lúc diễn mở Tuyệt kỹ
       if (name !== 'draft') this.skipDraftAnim();
+      if (name !== 'end') {
+        clearTimeout(this.outroTimer);
+        clearTimeout(this.sbTimer);
+        this.outroActive = false;
+        this.rwFocus = false;
+        this.el.end.classList.remove('outro', 'rw-focus', 'sb-shown');
+      }
       ['menu', 'draft', 'pause', 'end'].forEach((k) => this.el[k].classList.toggle('hidden', k !== name));
-      this.el.hud.classList.toggle('hidden', name === 'menu');
-      if (name === 'menu') this.el.abar.classList.add('hidden');
+      this.el.hud.classList.toggle('hidden', name === 'menu' || name === 'end');
+      if (name === 'menu' || name === 'end') this.el.abar.classList.add('hidden');
       this.current = name;
     },
 
@@ -292,7 +299,7 @@ window.SFC = window.SFC || {};
             cardEl.style.visibility = 'hidden';
             targetSlot.classList.remove('empty', 'target');
             targetSlot.classList.add('filled', 'impact');
-            targetSlot.style.setProperty('--c', rar.color);
+            targetSlot.style.setProperty('--c', ARCH(c.tags[0]).color);
             targetSlot.innerHTML = PX().core(id, 'sm');
             SFC.Audio.upgrade();
 
@@ -493,7 +500,7 @@ window.SFC = window.SFC || {};
       if (input.wasPressed('confirm')) this.doAct(this.pauseItems[this.pauseSel][0]);
     },
 
-    /* ================= END ================= */
+    /* ================= END (2 NHỊP: BEAT 1 ĂN MỪNG TRÊN SÂN → BEAT 2 BẢNG TỈ SỐ + TIẾN ĐỘ) ================= */
     endItems() {
       if (!this.roomMatch) {
         const mp = this.app.game && this.app.game.opts.mainPath;
@@ -505,27 +512,137 @@ window.SFC = window.SFC || {};
       return SFC.Session.isOwner ? [['lobby', _t('BACK TO LOBBY')], ['leave', _t('LEAVE ROOM')]] : [['leave', _t('LEAVE ROOM')]];
     },
 
-    renderEnd(game) {
-      const h = game.humanTeam, me = game.teams[h], op = game.teams[1 - h];
-      const res = me.score > op.score ? [_t('VICTORY!'), 'win'] : me.score < op.score ? [_t('DEFEAT...'), 'lose'] : [_t('DRAW'), 'draw'];
-      // build cả 2 đội, gọn: mỗi cầu thủ 1 dòng = tên + hàng chip các Core đã chọn (rê chuột xem tên / mô tả). Bạn tô vàng
-      const build = (t) => t.players.map((q) => {
-        const ids = game.cores.coresOf(q), mine = q === game.controlled;
-        const chips = ids.length ? ids.map((id) => `<span class="b-chip">${coreChip(id)}</span>`).join('') : `<em>${esc(_t('No cores'))}</em>`;
-        return `<div class="b-player ${mine ? 'me' : ''}"><div class="bp-head"><b>${esc(q.name)}</b></div><div class="bp-chips">${chips}</div></div>`;
-      }).join('');
-      const note = this.roomMatch && !SFC.Session.isOwner ? `<div class="end-note">${esc(_t('Waiting for the host to return to the lobby...'))}</div>` : '';
-      // sân luôn vẽ đội 0 bên trái -> tỉ số giữ đúng thứ tự trái / phải
+    // tổng hợp thống kê trận: xếp hạng cầu thủ theo Bàn thắng → Kiến tạo → Cứu thua → Sút và chọn 1 MVP duy nhất
+    matchSummary(game) {
       const t0 = game.teams[0], t1 = game.teams[1];
+      const win = t0.score > t1.score ? 0 : t1.score > t0.score ? 1 : -1;
+      const msOf = (p) => p.mstats || { goals: 0, assists: 0, saves: 0, shots: 0 };
+      const cmp = (a, b) => {
+        const ma = msOf(a), mb = msOf(b);
+        return (mb.goals - ma.goals) || (mb.assists - ma.assists) || (mb.saves - ma.saves) || (mb.shots - ma.shots);
+      };
+      const pool = (win >= 0 ? game.teams[win].players : game.players).slice().sort(cmp);
+      const top = pool[0], tms = top && msOf(top);
+      const mvp = top && (win >= 0 || (tms.goals + tms.assists + tms.saves + tms.shots > 0)) ? top : null;
+      return { win, mvp, msOf, cmp };
+    },
+
+    // Beat 1: giữ nguyên sân + rung màn hình sau tiếng còi mãn cuộc — đội thắng ăn mừng tại chỗ, đội thua quỳ gối thất vọng
+    beginOutro(game) {
+      clearTimeout(this.outroTimer);
+      if (!game.players.some((p) => p.celId) && SFC.Celebrate) SFC.Celebrate.startEnd(game);
+      this.outroActive = true;
+      this.outroAt = performance.now();
+      this.clearToasts();
+      const dur = (SFC_CONFIG.game.match && SFC_CONFIG.game.match.outroDuration) || 3.0;
+      this.renderOutro(game, dur);
+      this.show('end');
+      this.el.end.classList.add('outro');
+      this.outroTimer = setTimeout(() => this.finishOutro(), dur * 1000);
+    },
+
+    renderOutro(game, dur) {
+      const { win } = this.matchSummary(game);
+      const t0 = game.teams[0], t1 = game.teams[1];
+      const wt = win >= 0 ? game.teams[win] : null;
+      const h = game.humanTeam;
+      const resLabel = h < 0 ? (wt ? _t('WINNER') : _t('DRAW'))
+        : win === h ? _t('VICTORY!') : win >= 0 ? _t('DEFEAT...') : _t('DRAW');
+      const resCls = h < 0 ? (wt ? 'win' : 'draw') : win === h ? 'win' : win >= 0 ? 'lose' : 'draw';
+      const devBar = SFC_DEBUG && this._devEndMode ? this.devEndBar('outro') : '';
       this.el.end.innerHTML = `
-        <div class="end-title ${res[1]}">${esc(res[0])}</div>
-        <div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>
-        <div class="builds">
-          <div class="build"><h4>${esc(_t('YOUR TEAM'))}</h4>${build(me)}</div>
-          ${game.reward ? this.rewardPanel(game.reward) : ''}
-          <div class="build"><h4>${esc(_t('OPPONENT'))}</h4>${build(op)}</div>
+        ${devBar}
+        <div class="outro-top ${resCls}" style="--c:${wt ? wt.cfg.kit.shirt : '#fff'}">
+          <div class="ot-res">${esc(resLabel)}</div>
+          <div class="ot-sub">
+            ${wt ? `<span class="ot-win">${esc(_t('WINNER'))}</span><b style="color:${wt.cfg.kit.shirt}">${esc(wt.cfg.name)}</b>` : `<b>${esc(_t('DRAW'))}</b>`}
+            <span class="ot-score">${t0.score} - ${t1.score}</span>
+          </div>
+        </div>
+        <div class="outro-foot"><div class="outro-bar" style="--dur:${dur}s"></div></div>`;
+    },
+
+    finishOutro() {
+      if (!this.outroActive) return;
+      clearTimeout(this.outroTimer);
+      this.outroActive = false;
+      this.el.end.classList.remove('outro');
+      const g = this.app.game;
+      if (g && g.state === 'ended') {
+        this.renderEnd(g);
+        this.show('end');
+      }
+    },
+
+    // Beat 2: Trái = Tiến độ xếp hạng & Thưởng XP · Phải = Bảng tỉ số 2 đội (tối đa 5 Core/Ult + 4 cột GOALS, ASSISTS, SAVES, SHOTS)
+    renderEnd(game) {
+      const h = game.humanTeam >= 0 ? game.humanTeam : 0;
+      const me = game.teams[h], op = game.teams[1 - h];
+      const res = me.score > op.score ? [_t('VICTORY!'), 'win'] : me.score < op.score ? [_t('DEFEAT...'), 'lose'] : [_t('DRAW'), 'draw'];
+      const { win, mvp, msOf, cmp } = this.matchSummary(game);
+      // đội thắng xếp trên (kiểu Rocket League); nếu hoà thì đội của bạn xếp trên
+      const orderedTeams = win >= 0 ? [game.teams[win], game.teams[1 - win]] : [me, op];
+      const teamBlock = (t, ti) => {
+        const isWin = win === t.index, isMine = t.index === game.humanTeam;
+        const rows = t.players.slice().sort(cmp).map((q) => {
+          const rawIds = game.cores.coresOf(q), mine = q === game.controlled;
+          const ids = rawIds.filter((id) => CORES().list[id].role !== 'ult').concat(rawIds.filter((id) => CORES().list[id].role === 'ult'));
+          const ms = msOf(q);
+          const chips = ids.length ? ids.map((id) => `<span class="b-chip">${coreChip(id)}</span>`).join('') : `<em class="sb-nocore">—</em>`;
+          const badge = q === mvp ? `<span class="sb-badge mvp">${PX().ui('star', 'sm')}${esc(_t('MVP'))}</span>` : '';
+          return `<div class="sb-row ${mine ? 'me' : ''} ${q === mvp ? 'is-mvp' : ''}">
+            <div class="sb-who">
+              <canvas class="sb-por" width="18" height="18" data-pid="${q.id}"></canvas>
+              <b class="sb-name">${esc(q.name)}</b>
+              ${mine ? `<em class="sb-you">${esc(_t('YOU'))}</em>` : ''}
+              ${badge}
+            </div>
+            <div class="sb-cores">${chips}</div>
+            <span class="sb-c">${ms.goals}</span>
+            <span class="sb-c">${ms.assists}</span>
+            <span class="sb-c">${ms.saves}</span>
+            <span class="sb-c">${ms.shots}</span>
+          </div>`;
+        }).join('');
+        return `<div class="sb-team ${isWin ? 'winner' : ''}" style="--c:${t.cfg.kit.shirt}">
+          <div class="sb-thead">
+            <div class="sb-tleft">
+              <i class="sb-swatch"></i>
+              <b class="sb-tname">${esc(t.cfg.name)}</b>
+              ${isMine ? `<span class="sb-mtag">${esc(_t('YOUR TEAM'))}</span>` : ''}
+              <b class="sb-tscore">${t.score}</b>
+            </div>
+            <div class="sb-cols">
+              ${ti === 0 ? `<span>${esc(_t('GOALS'))}</span><span>${esc(_t('ASSISTS'))}</span><span>${esc(_t('SAVES'))}</span><span>${esc(_t('SHOTS'))}</span>` : `<span></span><span></span><span></span><span></span>`}
+            </div>
+          </div>
+          <div class="sb-rows">${rows}</div>
+        </div>`;
+      };
+      const note = this.roomMatch && !SFC.Session.isOwner ? `<div class="end-note">${esc(_t('Waiting for the host to return to the lobby...'))}</div>` : '';
+      const t0 = game.teams[0], t1 = game.teams[1];
+      const devBar = SFC_DEBUG && this._devEndMode ? this.devEndBar(this._devEndMode) : '';
+      clearTimeout(this.sbTimer);
+      this.rwSkip = false;
+      this.rwDone = !game.reward;
+      this.rwFocus = !!game.reward;
+      this.el.end.classList.remove('outro', 'sb-shown');
+      this.el.end.classList.toggle('rw-focus', this.rwFocus);
+      this.el.end.innerHTML = `
+        ${devBar}
+        <div class="end-head">
+          <div class="end-title ${res[1]}">${esc(res[0])}</div>
+          <div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>
+        </div>
+        <div class="end-body ${game.reward ? 'has-rw' : 'only-sb'}">
+          ${game.reward ? `<div class="end-left">${this.rewardPanel(game.reward)}</div>` : ''}
+          <div class="sb-wrap">${orderedTeams.map((t, i) => teamBlock(t, i)).join('')}</div>
         </div>
         <div class="end-act">${note}<div class="pause-items row-items" id="end-items"></div></div>`;
+      this.el.end.querySelectorAll('canvas.sb-por[data-pid]').forEach((cv) => {
+        const p = game.players.find((q) => q.id === +cv.dataset.pid);
+        if (p) this.drawPortrait(cv, p, game);
+      });
       this.renderEndItems();
       SFC.CorePreview.scan(this.el.end);
       // Main Path: Core / hộp mới -> màn mở thẻ sau khi thưởng chạy xong (Enter trước đó thì mở ngay)
@@ -535,11 +652,29 @@ window.SFC = window.SFC || {};
       if (game.reward) this.playReward(game.reward);
     },
 
+    // xong toàn bộ diễn tiến độ ở giữa màn hình (và đóng xong mở thẻ / drill nếu có) -> trượt cột tiến độ sang trái + hiện bảng tỉ số bên phải
+    revealScoreboard() {
+      clearTimeout(this.sbTimer);
+      if (!this.rwFocus) return;
+      if (this.pendingReveal || SFC.Reveal.active || this.drillAfter || SFC.Drill.active) return;
+      this.rwFocus = false;
+      this.el.end.classList.remove('rw-focus');
+      this.el.end.classList.add('sb-shown');
+      if (SFC.Audio && SFC.Audio.whoosh) SFC.Audio.whoosh();
+      this.showEndItems();
+    },
+
     openReveal() {
       const list = this.pendingReveal;
       this.pendingReveal = null;
       clearTimeout(this.revealTimer);
-      if (list) SFC.Reveal.open(list, () => { this.renderEndItems(); this.autoDrill(); });
+      if (list) {
+        SFC.Reveal.open(list, () => {
+          this.renderEndItems();
+          this.autoDrill();
+          if (!this.drillAfter && !SFC.Drill.active) this.sbTimer = setTimeout(() => this.revealScoreboard(), 220);
+        });
+      }
     },
 
     // màn LEVEL UP (thẻ drill vừa nhận: OPEN NOW / LATER) tự mở sau khi thưởng chạy xong;
@@ -551,10 +686,9 @@ window.SFC = window.SFC || {};
       setTimeout(() => {
         const g = this.app.game;
         if (this.current === 'end' && g && g.state === 'ended' && !SFC.Drill.active && !SFC.Reveal.active) this.openDrill(notice);
+        else this.revealScoreboard();
       }, 400);
     },
-
-
 
     renderEndItems() {
       const el = document.getElementById('end-items');
@@ -574,34 +708,44 @@ window.SFC = window.SFC || {};
       else if (top + b.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = top + b.offsetHeight - box.clientHeight + 2;
     },
 
-    /* ---------- thưởng sau trận: các dòng hiện lần lượt, gold đếm lên, thanh XP chạy qua từng level ---------- */
+    /* ---------- thưởng sau trận: cột trái (Xếp hạng Area + Thưởng & XP) ---------- */
     rewardPanel(r) {
       const lines = r.lines.map((l, i) => `<div class="rw-line" data-rw="${i}"><span>${esc(l.label)}</span>${
         l.mult || l.note ? '' : `<b class="x">+${l.xp} XP</b><b class="g"><i class="coin"></i>+${l.gold}</b>`}</div>`).join('');
-      return `<div class="build reward">
-        ${r.path ? this.pathResult(r.path) : `<h4>${esc(_t('REWARDS'))}</h4>`}
-        <div class="rw-lines">${lines}</div>
-        <div class="rw-total"><span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
-        <div class="lvrow"><span class="lv" id="rw-lv">${esc(_t('LV {n}', { n: r.before.level }))}</span><div class="xpbar"><i id="rw-bar"></i></div></div>
-        <div class="rw-up" id="rw-up"></div>
-      </div>`;
+      return `${r.path ? this.pathResult(r.path) : ''}
+        <div class="build reward">
+          <h4>${esc(_t('REWARDS'))}</h4>
+          <div class="rw-lines">${lines}</div>
+          <div class="rw-total"><span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
+          <div class="lvrow"><span class="lv" id="rw-lv">${esc(_t('LV {n}', { n: r.before.level }))}</span><div class="xpbar"><i id="rw-bar"></i></div></div>
+          <div class="rw-up" id="rw-up"></div>
+        </div>`;
     },
 
-    // Main Path sau trận: Elo +/- (đếm lên ở playReward), thanh tiến độ tới Area kế + thông báo lên / rớt Area
+    // Main Path sau trận: Elo +/- (đếm lên ở playReward), thanh tiến độ tới Area kế + huy hiệu LÊN / RỚT AREA nổi bật
     pathResult(p) {
-      const MP = SFC.MainPath, a = p.after, A = MP.area(a.area), next = MP.area(a.area + 1);
+      const MP = SFC.MainPath, a = p.after, A = MP.area(a.area), prevA = MP.area(p.before.area), next = MP.area(a.area + 1);
       const pct = (elo) => Math.round(Math.max(0, Math.min(1, MP.frac(elo, a.area))) * 100);
-      const msg = p.event === 'up'
+      const isUp = p.event === 'up', isDown = p.event === 'down';
+      const stamp = isDown
+        ? `<div class="rp-stamp down">▼ ${esc(_t('DEMOTED TO {area}', { area: A.name }))}</div>`
+        : isUp
+          ? `<div class="rp-stamp up">▲ ${esc(p.first ? _t('NEW AREA UNLOCKED: {area}', { area: A.name }) : _t('PROMOTED TO {area}', { area: A.name }))}</div>`
+          : '';
+      const msg = isUp
         ? (MP.demoLocked(a.area) ? (SFC_CONFIG.demo.steamUrl ? _t('DEMO COMPLETE · WISHLIST ON STEAM!') : _t('DEMO COMPLETE · COMING SOON TO STEAM!'))
-          : p.first ? _t('NEW AREA UNLOCKED: {area}', { area: A.name }) : _t('BACK TO {area}', { area: A.name }))
-        : p.event === 'down' ? _t('DROPPED TO {area}', { area: A.name })
+          : `${prevA.name} → ${A.name}`)
+        : isDown ? `${prevA.name} → ${A.name}`
         : next ? _t('{n} to {area}', { n: '{stars}', area: MP.demoLocked(a.area + 1) || a.area + 1 > MP.state.best ? '???' : next.name }) : _t('TOP AREA');
       const sign = p.delta > 0 ? '+' : '';
       // thanh: vị trí cũ (mờ) -> vị trí mới; đổi Area thì chỉ vẽ vị trí mới
       const from = p.before.area === a.area ? pct(p.before.elo) : pct(a.elo);
-      return `<div class="rw-path ${p.event === 'up' && p.first ? 'big' : ''} ${p.delta < 0 ? 'bad' : ''}" style="--ac:${A.color}">
-        <div class="rp-div">${PX().area(A.id, 'sm')} ${esc(A.name)}</div>
-        <div class="rp-row">${PX().ui('star')}<b class="rp-elo" data-elo-from="${p.before.elo}" data-elo-to="${a.elo}">${p.before.elo}</b><span class="rp-delta">${sign}${p.delta}</span></div>
+      return `<div class="rw-path ${isUp ? 'promoted big' : ''} ${isDown ? 'demoted' : ''} ${p.delta < 0 ? 'bad' : ''}" style="--ac:${A.color}">
+        ${stamp}
+        <div class="rp-top">
+          <div class="rp-div">${PX().area(A.id, 'sm')} <span>${esc(A.name)}</span></div>
+          <div class="rp-row">${PX().ui('star')}<b class="rp-elo" data-elo-from="${p.before.elo}" data-elo-to="${a.elo}">${p.before.elo}</b><span class="rp-delta">${sign}${p.delta}</span></div>
+        </div>
         <div class="rp-bar"><i class="was" style="width:${from}%"></i><i class="now" style="width:${pct(a.elo)}%"></i></div>
         <div class="rp-msg">${esc(msg).replace('{stars}', next ? PX().elo(next.elo - a.elo) : '')}</div>
       </div>`;
@@ -612,18 +756,21 @@ window.SFC = window.SFC || {};
       const $$ = (id) => document.getElementById(id);
       const t0 = performance.now();
       const nLines = r.lines.length;
-      const LINE = 0.28, COUNT = 1.1;
-      const startCount = 0.3 + nLines * LINE;
+      const LINE = 0.24, COUNT = 1.0;
+      const startCount = 0.25 + nLines * LINE;
+      // âm báo lên / rớt Area ngay khi bảng hiện ra để người chơi không thể bỏ lỡ
+      if (r.path && r.path.event === 'down' && SFC.Audio && SFC.Audio.buzz) SFC.Audio.buzz();
+      else if (r.path && r.path.event === 'up' && SFC.Audio && SFC.Audio.upgrade) SFC.Audio.upgrade();
       // quãng XP phải chạy: tính theo "level thập phân" để thanh chạy qua từng level
       const need = (lv) => SFC.Profile.xpToNext(lv);
       const from = r.before.level + (r.before.need === Infinity ? 0 : r.before.xp / r.before.need);
       const to = r.after.level + (r.after.need === Infinity ? 0 : r.after.xp / r.after.need);
       let shownLv = r.before.level;
       const step = (now) => {
-        const t = (now - t0) / 1000;
+        const t = this.rwSkip ? 999 : (now - t0) / 1000;
         for (let i = 0; i < nLines; i++) {
           const el = document.querySelector(`[data-rw="${i}"]`);
-          if (el && t > 0.3 + i * LINE && !el.classList.contains('in')) { el.classList.add('in'); SFC.Audio.menu(); }
+          if (el && t > 0.25 + i * LINE && !el.classList.contains('in')) { el.classList.add('in'); if (!this.rwSkip) SFC.Audio.menu(); }
         }
         const k = Math.max(0, Math.min(1, (t - startCount) / COUNT));
         const e = 1 - (1 - k) * (1 - k);
@@ -644,6 +791,7 @@ window.SFC = window.SFC || {};
           SFC.Audio.upgrade();
         }
         if (k >= 1) {
+          this.rwDone = true;
           if (this.pendingReveal && !this.revealTimer) this.revealTimer = setTimeout(() => { this.revealTimer = null; this.openReveal(); }, 450);
           if (!up.dataset.done) {
             up.dataset.done = 1;
@@ -658,6 +806,9 @@ window.SFC = window.SFC || {};
             // chơi đơn: vừa lên level -> tự mở màn LEVEL UP của DRILL (online tự xử lý phím -> chỉ tích thẻ, mở ở INVENTORY)
             this.drillAfter = !this.roomMatch && gained > 0 ? { earned: gained, from: r.before.level, to: r.after.level } : null;
             this.autoDrill();
+            if (!this.pendingReveal && !this.drillAfter) {
+              this.sbTimer = setTimeout(() => this.revealScoreboard(), this.rwSkip ? 60 : 420);
+            }
           }
           return;
         }
@@ -667,8 +818,28 @@ window.SFC = window.SFC || {};
     },
 
     endInput(input) {
+      // đang ở Beat 1 (ăn mừng trên sân): bấm Enter / Space / Esc (sau 0,45s) chuyển ngay sang bảng tỉ số (Beat 2)
+      if (this.outroActive) {
+        if (performance.now() - (this.outroAt || 0) > 450 && (input.wasPressed('confirm') || input.wasPressed('back') || input.wasPressed('shoot') || input.wasPressed('pass'))) {
+          SFC.Audio.menu();
+          this.finishOutro();
+        }
+        return;
+      }
       // còn thẻ chưa mở: Enter mở luôn thay vì sang trận kế
       if (this.pendingReveal) { if (input.wasPressed('confirm')) this.openReveal(); return; }
+      if (SFC_DEBUG && this._devBackup && (input.wasPressed('back') || input.wasPressed('pause'))) {
+        SFC.Audio.menu();
+        return this.devEndTest('back');
+      }
+      // đang diễn tiến độ ở giữa màn hình: bấm xác nhận để tua nhanh & trượt sang hiện bảng tỉ số
+      if (this.rwFocus) {
+        if (input.wasPressed('confirm') || input.wasPressed('shoot') || input.wasPressed('pass')) {
+          if (!this.rwDone) this.rwSkip = true;
+          else this.revealScoreboard();
+        }
+        return;
+      }
       const n = this.endItems().length;
       if (input.wasPressed('left') || input.wasPressed('up')) { this.endSel = (this.endSel + n - 1) % n; this.renderEndItems(); }
       if (input.wasPressed('right') || input.wasPressed('down')) { this.endSel = (this.endSel + 1) % n; this.renderEndItems(); }
@@ -690,9 +861,12 @@ window.SFC = window.SFC || {};
     },
 
     // màn DRILL trên màn kết quả; notice = { earned, from, to } -> bắt đầu ở màn LEVEL UP (OPEN NOW / LATER).
-    // Đóng (mở hết / LATER) -> vẽ lại nút kết quả
+    // Đóng (mở hết / LATER) -> vẽ lại nút kết quả + trượt tiến độ sang trái hiện bảng tỉ số
     openDrill(notice) {
-      SFC.Drill.open(() => this.renderEndItems(), { notice });
+      SFC.Drill.open(() => {
+        this.renderEndItems();
+        this.sbTimer = setTimeout(() => this.revealScoreboard(), 200);
+      }, { notice });
     },
 
     /* ================= HUD ================= */
@@ -779,7 +953,7 @@ window.SFC = window.SFC || {};
     /* ================= THANH KỸ NĂNG (giữa đáy, kiểu LoL) ================= */
     updateBar(game) {
       const el = this.el.abar, p = game.controlled;
-      el.classList.toggle('hidden', !p || this.current === 'menu');
+      el.classList.toggle('hidden', !p || this.current === 'menu' || this.current === 'end');
       if (!p) return;
       const c = this.hudCache.bar || (this.hudCache.bar = {});
       const owned = game.cores.coresOf(p);
@@ -883,7 +1057,7 @@ window.SFC = window.SFC || {};
       const ctx = cv.getContext('2d');
       ctx.clearRect(0, 0, cv.width, cv.height);
       SFC.Sprites.drawPlayer(ctx, {
-        x: 11, y: 28, vx: 0, vy: 0, facing: Math.PI / 2, anim: 0, flash: 0, state: 'normal',
+        x: Math.round(cv.width / 2), y: cv.height + 6, vx: 0, vy: 0, facing: Math.PI / 2, anim: 0, flash: 0, state: 'normal',
         team: p.team, role: p.role, look: p.look,
       }, game);
     },
@@ -972,7 +1146,7 @@ window.SFC = window.SFC || {};
           if (!game.reward && game.humanTeam >= 0 && SFC.Profile.data) game.reward = SFC.Profile.awardMatch(game);
           if (game.opts.mainPath && game.opts.mainPath.party) SFC.Social.afterMatch();   // người bạn trong phòng nhắn "gg! again?"
           this.endSel = 0;
-          setTimeout(() => { if (this.app.game === game) { this.renderEnd(game); this.show('end'); } }, 900);
+          if (this.app.game === game) this.beginOutro(game);
         }
       }
     },
@@ -982,7 +1156,21 @@ window.SFC = window.SFC || {};
       document.addEventListener('click', (e) => {
         SFC.Audio.unlock();
         if (e.target.closest('#menu')) return; // menu tự xử lý
+        if (SFC_DEBUG) {
+          const de = e.target.closest('[data-devend]');
+          if (de) { SFC.Audio.menu(); this.devEndTest(de.dataset.devend); return; }
+        }
         if (this.draftAnimActive || this.draftMorphActive) { this.skipDraftAnim(); return; }
+        if (this.outroActive && e.target.closest('#end') && performance.now() - (this.outroAt || 0) > 450) {
+          SFC.Audio.menu();
+          this.finishOutro();
+          return;
+        }
+        if (this.rwFocus && e.target.closest('#end')) {
+          if (this.rwRaf) this.rwSkip = true;
+          else if (!this.pendingReveal && !this.drillAfter) this.revealScoreboard();
+          return;
+        }
         const btn = e.target.closest('[data-act],[data-pick]');
         if (!btn) return;
         if (btn.dataset.pick != null && this.app.game) return this.pick(this.app.game, +btn.dataset.pick);
@@ -990,6 +1178,154 @@ window.SFC = window.SFC || {};
         this.doAct(btn.dataset.act);
       });
     },
+
+    ...(SFC_DEBUG && {
+      devEndBar(cur) {
+        const btns = [
+          ['back', '◀ BACK'],
+          ['win', 'WIN'],
+          ['lose', 'LOSE'],
+          ['promote', 'PROMOTE'],
+          ['demote', 'DEMOTE'],
+          ['outro', 'BEAT 1'],
+        ].map(([k, l]) => `<button class="${cur === k ? 'on' : ''}" data-devend="${k}">${l}</button>`).join('');
+        return `<div class="dev-endbar"><span>DEV</span>${btns}</div>`;
+      },
+
+      devEndTest(mode = 'win', fromMenu = false) {
+        if (mode === 'back') {
+          cancelAnimationFrame(this.rwRaf);
+          clearTimeout(this.revealTimer);
+          clearTimeout(this.outroTimer);
+          clearTimeout(this.sbTimer);
+          this.pendingReveal = null;
+          this.app.toMenu('test');
+          return;
+        }
+        if (mode === 'outro' && this.app.game && this.app.game.state === 'ended') {
+          cancelAnimationFrame(this.rwRaf);
+          clearTimeout(this.revealTimer);
+          clearTimeout(this.sbTimer);
+          this.pendingReveal = null;
+          if (this.app.game.effects && this.app.game.cfg) {
+            this.app.game.effects.shakeA = this.app.game.cfg.fx.shakeShot;
+            this.app.game.effects.shakeT = 0.5;
+          }
+          this.beginOutro(this.app.game);
+          return;
+        }
+        const PF = SFC.Profile, MP = SFC.MainPath, C = SFC_CONFIG.game;
+        if (!this._devBackup) {
+          this._devBackup = {
+            pf: JSON.parse(JSON.stringify(PF.data)),
+            mp: JSON.parse(JSON.stringify(MP.state)),
+          };
+          const origToMenu = this.app.toMenu.bind(this.app);
+          this.app.toMenu = (page) => {
+            if (this._devBackup) {
+              PF.data = JSON.parse(JSON.stringify(this._devBackup.pf));
+              MP.state = JSON.parse(JSON.stringify(this._devBackup.mp));
+              PF.sandbox = false;
+              this._devBackup = null;
+              this._devEndMode = null;
+            }
+            return origToMenu(page);
+          };
+        } else {
+          PF.data = JSON.parse(JSON.stringify(this._devBackup.pf));
+          MP.state = JSON.parse(JSON.stringify(this._devBackup.mp));
+        }
+        PF.sandbox = true;
+        this._devEndMode = mode;
+
+        const st = MP.state;
+        if (mode === 'demote') {
+          if (st.area < 1) st.area = 1;
+          st.elo = MP.area(st.area).elo + 2;
+          st.id = MP.area(st.area).id;
+        } else if (mode === 'promote') {
+          const maxA = MP.areas().length - 2;
+          if (st.area > maxA) st.area = Math.max(0, maxA);
+          const nextElo = MP.area(st.area + 1).elo;
+          st.elo = nextElo - 4;
+          st.id = MP.area(st.area).id;
+          st.best = Math.max(st.best, st.area + 1);
+          st.peak = Math.max(st.peak, nextElo + 30);
+          MP.backfill(st);
+        }
+
+        cancelAnimationFrame(this.rwRaf);
+        clearTimeout(this.revealTimer);
+        clearTimeout(this.outroTimer);
+        clearTimeout(this.sbTimer);
+        this.pendingReveal = null;
+        SFC.Reveal.active = false;
+        SFC.Drill.close();
+
+        const role = this.app.myRole();
+        const lb = MP.matchmake(0, role, null);
+        const soloIdx = Math.max(0, C.roles.indexOf(lb.role));
+        const avatar = Object.assign(PF.avatar(), { role: C.roles[soloIdx] }, this.app.avatarStats());
+        SFC_CONFIG.teams.list[SFC_CONFIG.mainPath.playerTeam.id].name = SFC_CONFIG.mainPath.playerTeam.nameFormat.replace('{name}', avatar.name);
+        const opts = {
+          home: SFC_CONFIG.mainPath.playerTeam.id, away: MP.rivalClub(lb.opps[0].name), difficulty: 'normal',
+          aiProfile: lb.aiProfile, mateProfile: lb.aiProfile,
+          humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: lb.arena,
+          coreUnlocks: [PF.unlockedCores(), null], coreFresh: [[], null],
+          mates: [lb.mates, lb.opps],
+          mainPath: { area: st.area, elo: st.elo, reward: lb.reward, myElo: lb.myElo, oppElo: lb.oppElo, party: false },
+        };
+        this.app.mode = 'single';
+        this.app.lastOpts = opts;
+        this.app.screen = 'game';
+        const g = new SFC.Game(opts);
+        this.app.game = g;
+        g.draft = null;
+        g.state = 'play';
+        g.events.length = 0;
+
+        // đặt vị trí cầu thủ trên sân + cấp Core + chỉ số mẫu
+        const spots = [
+          [190, 145, 0], [275, 225, -0.3], [360, 165, 0.2],
+          [445, 185, Math.PI], [335, 130, 2.8], [240, 200, -2.9],
+        ];
+        const sampleCores = [
+          ['sniper_foot', 'fire_shot', 'cannon_leg', 'leg_day'],
+          ['silk_pass', 'eagle_eye', 'one_two'],
+          ['safe_hands', 'giant_keeper', 'aegis_wall'],
+          ['heavy_hands', 'heavy_boot', 'wall_slam', 'leg_day'],
+          ['leg_day', 'phantom_step', 'quick_feet'],
+          ['close_control', 'counter_attack', 'rubber_arm'],
+        ];
+        const win = mode === 'win' || mode === 'promote';
+        g.teams[0].score = win ? 3 : 1;
+        g.teams[1].score = win ? 1 : 3;
+        const winStats = [
+          { goals: 2, assists: 1, saves: 0, shots: 5 },
+          { goals: 1, assists: 2, saves: 0, shots: 3 },
+          { goals: 0, assists: 0, saves: 3, shots: 1 },
+        ];
+        const loseStats = [
+          { goals: 1, assists: 0, saves: 0, shots: 4 },
+          { goals: 0, assists: 1, saves: 1, shots: 2 },
+          { goals: 0, assists: 0, saves: 1, shots: 1 },
+        ];
+        g.players.forEach((p, idx) => {
+          const [px, py, pf] = spots[idx] || [320, 180, 0];
+          p.x = px; p.y = py; p.facing = pf; p.vx = 0; p.vy = 0;
+          const cList = sampleCores[idx] || [];
+          for (const cid of cList) if (CORES().list[cid]) g.cores.add(p, cid);
+        });
+        const myOrder = [g.controlled].concat(g.teams[0].players.filter((p) => p !== g.controlled));
+        myOrder.forEach((p, i) => { p.mstats = Object.assign({}, (win ? winStats : loseStats)[i]); });
+        g.teams[1].players.forEach((p, i) => { p.mstats = Object.assign({}, (win ? loseStats : winStats)[i]); });
+
+        const stayBeat2 = !fromMenu && !this.outroActive && this.current === 'end';
+        g.end();
+        this.consume(g);
+        if (stayBeat2) this.finishOutro();
+      },
+    }),
   };
 
   SFC.UI = UI;

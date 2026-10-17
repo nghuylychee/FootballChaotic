@@ -217,6 +217,7 @@ window.SFC = window.SFC || {};
       for (const [n, a] of pack.sfx) g.sfx(n, a);
       for (const e of pack.ev) {
         if (e.type === 'goal') SFC.Celebrate.remote(g, e);   // động tác ăn mừng của người ghi bàn (src/systems/celebrate.js)
+        if (e.type === 'end') SFC.Celebrate.remoteEnd(g, e); // thống kê trận + tư thế ăn mừng / thất vọng cuối trận
         g.events.push(e);
       }
     },

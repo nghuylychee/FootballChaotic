@@ -697,6 +697,8 @@ window.SFC = window.SFC || {};
       px(ctx, x - 9, y - 4, 18, 4, OUT);
       px(ctx, x - 8, y - 3, 16, 2, p.look.skin);
       px(ctx, x - 8, y - 3, 3, 2, main); px(ctx, x + 5, y - 3, 3, 2, main);
+    } else if (cp && cp.legs === 'sit') {
+      /* vẽ chân co gối sau thân để đùi + đầu gối nổi phía trước quần */
     } else if (cp && cp.legs === 'split') {
       drawLeg(ctx, x - 7, y, p.look, p.anim, 0);
       drawLeg(ctx, x + 3, y, p.look, p.anim, 1);
@@ -707,12 +709,28 @@ window.SFC = window.SFC || {};
     }
 
     // thân
-    const by = y - 10 + bob + (cp && cp.drop || 0);   // quỳ / xếp bằng: thân hạ xuống che chân
+    const by = y - 10 + bob + (cp && cp.drop || 0);   // quỳ / xếp bằng / ngồi: thân hạ xuống
     px(ctx, x - 5, by - 1, 10, 8, OUT);
     px(ctx, x - 4, by, 8, 6, shirt);
     px(ctx, x - 4, by + 4, 8, 2, kit.shorts);
     px(ctx, x - 4, by + 3, 8, 1, shirtDark);
     px(ctx, x - 1, by, 2, 1, kit.accent);
+    if (cp && cp.legs === 'sit') {
+      // ngồi bệt trên sân, co gối về phía trước (hướng side): đùi -> đầu gối nhô cao -> tất -> giày
+      const { s: sh, main, sole } = shoeColors(p.look, p.anim, 0);
+      const sock = sh.sock === 'skin' ? p.look.skin : Array.isArray(sh.sock) ? sh.sock[0] : sh.sock || '#e8e8e8';
+      const k0 = side > 0 ? x + 2 : x - 6;
+      const s0 = side > 0 ? x + 5 : x - 8;
+      const f0 = side > 0 ? x + 7 : x - 11;
+      px(ctx, k0 - 1, y - 6, 6, 7, OUT);
+      px(ctx, s0 - 1, y - 4, 5, 5, OUT);
+      px(ctx, f0 - 1, y - 3, 5, 4, OUT);
+      px(ctx, side > 0 ? x + 1 : x - 5, y - 3, 4, 3, kit.shorts);
+      px(ctx, side > 0 ? x + 4 : x - 6, y - 5, 2, 3, p.look.skin);
+      px(ctx, side > 0 ? x + 5 : x - 7, y - 3, 2, 2, sock);
+      px(ctx, f0, y - 2, 3, 1, main);
+      px(ctx, f0, y - 1, 3, 1, sole);
+    }
     // tay (đang đấm: tay phía hướng mặt vẽ riêng)
     const arm = moving ? (step ? 1 : -1) : 0;
     const hand = gloves ? kit.accent : p.look.skin;

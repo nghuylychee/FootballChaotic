@@ -345,6 +345,7 @@ window.SFC = window.SFC || {};
       const vz = U.lerp(K.shotLiftMin, K.shotLiftMax, c * c) + over * K.overchargeLift;
       b.kick(p, Math.cos(ang) * spd, Math.sin(ang) * spd, vz);
       b.kind = 'shot';
+      if (p.mstats && !g.opts.training) p.mstats.shots++;
       p.facing = ang;
       p.charging = false; p.charge = 0; p.shotTarget = 0;
       this.startAttack(p, 'shoot'); // tư thế vung chân sút (kick.poseTime)

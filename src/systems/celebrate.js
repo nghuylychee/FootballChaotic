@@ -58,11 +58,60 @@ window.SFC = window.SFC || {};
       return p.celId;
     },
 
-    // máy khách: sự kiện 'goal' từ host -> gắn động tác lên trận "gương"
+    // máy khách: sự kiện 'goal' từ host -> gắn động tác lên trận "gương" (+ dự phòng thống kê bàn thắng nếu máy chủ cũ chưa gửi stats)
     remote(g, e) {
       for (const q of g.players) q.celId = null;
-      const p = e.cel && g.players.find((q) => q.id === e.pid);
-      if (p && this.valid(e.cel)) { p.celId = e.cel; p.celT = 0; }
+      const p = e.pid >= 0 ? g.players.find((q) => q.id === e.pid) : null;
+      if (p && !e.own && p.mstats) {
+        p.mstats.goals++;
+        p.mstats.shots = Math.max(p.mstats.shots, p.mstats.goals);
+      }
+      if (p && e.cel && this.valid(e.cel)) { p.celId = e.cel; p.celT = 0; }
+    },
+
+    // hết trận (Beat 1 trên sân): giữ nguyên vị trí cầu thủ; đội thắng diễn động tác ăn mừng tại chỗ (bỏ qua nhịp chạy đà),
+    // đội thua diễn tư thế thất vọng (_lose), hoà thì chống gối thở (_draw). Trả về danh sách [id, celId] gửi kèm sự kiện 'end'
+    startEnd(g) {
+      const s0 = g.teams[0].score, s1 = g.teams[1].score;
+      const win = s0 > s1 ? 0 : s1 > s0 ? 1 : -1;
+      for (const p of g.players) {
+        let cid = '_draw';
+        if (win >= 0) {
+          if (p.team === win) {
+            const custom = p.avatar && this.valid(p.look.cel) && p.look.cel !== DEF() ? p.look.cel : null;
+            cid = custom || (p.idx % 2 === 1 ? '_win2' : DEF());
+          } else cid = '_lose';
+        }
+        Object.assign(p, {
+          celId: cid, celT: this.lead(cid), vx: 0, vy: 0, kbx: 0, kby: 0, airZ: 0, airVz: 0,
+          facing: FRONT, atkType: null, charging: false, charge: 0, bracing: false, state: 'normal',
+        });
+      }
+      return g.players.map((p) => [p.id, p.celId]);
+    },
+
+    // máy khách: sự kiện 'end' từ host -> đồng bộ thống kê trận + tư thế ăn mừng / thất vọng của cả 6 cầu thủ
+    remoteEnd(g, e) {
+      if (g.effects && g.cfg && g.cfg.fx) { g.effects.shakeA = g.cfg.fx.shakeShot; g.effects.shakeT = 0.5; }
+      if (Array.isArray(e.stats)) {
+        for (const [id, goals, assists, saves, shots] of e.stats) {
+          const p = g.players.find((q) => q.id === id);
+          if (p) p.mstats = { goals: goals | 0, assists: assists | 0, saves: saves | 0, shots: shots | 0 };
+        }
+      }
+      if (Array.isArray(e.cels) && e.cels.length) {
+        for (const [id, cid] of e.cels) {
+          const p = g.players.find((q) => q.id === id);
+          if (p && cid) {
+            Object.assign(p, {
+              celId: cid, celT: this.lead(cid), vx: 0, vy: 0, kbx: 0, kby: 0, airZ: 0, airVz: 0,
+              facing: FRONT, atkType: null, charging: false, charge: 0, bracing: false, state: 'normal',
+            });
+          }
+        }
+      } else {
+        this.startEnd(g);
+      }
     },
 
     // mỗi bước trong trạng thái 'goal' (Game.update): người ghi bàn diễn, đồng đội chạy lại, còn lại đứng yên

@@ -23,6 +23,19 @@ window.SFC = window.SFC || {};
       const ctx = this.ctx, { px, disc, ellipse, ringPx, drawPlayer, drawBall } = SP();
       const C = SFC_CONFIG.game.render;
       if (this.bgFor !== g) { this.bg = SFC.Background.build(g); this.bgFor = g; }
+      // hết trận (Beat 1 trên sân): mô phỏng đã dừng -> giữ rung màn hình như trước và tự đếm nhịp ăn mừng / thất vọng theo khung vẽ
+      if (g.state === 'ended' && !g.preview) {
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        const dt = g._endTick ? Math.min(0.05, (now - g._endTick) / 1000) : 0;
+        g._endTick = now;
+        if (dt > 0) {
+          g.time += dt;
+          for (const p of g.players) {
+            p.anim += dt;
+            if (p.celId) p.celT = (p.celT || 0) + dt;
+          }
+        }
+      }
       const fx = g.effects, f = g.field, t = g.time;
 
       ctx.save();
@@ -154,8 +167,8 @@ window.SFC = window.SFC || {};
           if (s !== 1) { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(s, s); ctx.translate(-p.x, -p.y); }
           const dive = p.atkType === 'diveU' || p.atkType === 'diveD';
           // drawPlayer tự đặt globalAlpha theo tham số alpha
-          // ăn mừng bàn thắng (src/render/celebrate-draw.js): chỉ trong lúc trận dừng sau bàn thắng
-          const cel = p.celId && g.state === 'goal' && !(p.airZ > 0);
+          // ăn mừng bàn thắng + cuối trận (src/render/celebrate-draw.js): diễn khi 'goal' hoặc 'ended'
+          const cel = p.celId && (g.state === 'goal' || g.state === 'ended') && !(p.airZ > 0);
           // King Kong / đứng trên tảng đá / con gà: vật thể Tuyệt kỹ tự vẽ nhân vật (render/vfx.js), bỏ sprite thật
           const swap = SFC.VFX.hides(g, p);
           // hoảng sợ (Panic Ball): run lẩy bẩy
@@ -177,7 +190,7 @@ window.SFC = window.SFC || {};
           // mũi tên trên đầu: vẽ sau cùng (sau mọi VFX) để hiệu ứng không che mất người mình điều khiển
           const cc = ctrlColor(p);
           if (cc && seatRing(p)) marks.push({ p, hy, cc });
-          if (p === cp && !g.preview) {
+          if (p === cp && !g.preview && g.state !== 'ended') {
             if (p.stamina < SFC_CONFIG.game.player.staminaMax - 1) {
               px(ctx, p.x - 7, p.y + 4, 14, 2, SP().OUT);
               px(ctx, p.x - 6, p.y + 4, Math.round(12 * p.stamina / SFC_CONFIG.game.player.staminaMax), 1, p.stamina > 25 ? '#6bff7a' : '#ff5a4f');

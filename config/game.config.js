@@ -95,6 +95,8 @@ SFC_CONFIG.game = {
       mirrorY: 0.5,    // xác suất lật đội hình trên <-> dưới (tính riêng từng đội)
     },
     goalCelebration: 3.2,        // giây đứng hình sau bàn thắng = thời gian diễn động tác ăn mừng (celebration bên dưới)
+    outroDuration: 3.0,          // giây đứng hình sau còi mãn cuộc (Beat 1: đội thắng ăn mừng / đội thua thất vọng tại chỗ trên sân)
+    assistWindow: 6,             // (s) thời gian tính kiến tạo từ lúc đồng đội nhận đường chuyền tới lúc bóng vào lưới
     autoSwitchOnDefense: true,   // tự đổi người khi mất bóng và đang ở xa
     autoSwitchDistance: 150,
   },
