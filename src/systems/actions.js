@@ -169,7 +169,7 @@ window.SFC = window.SFC || {};
 
     // Người chơi: chỉ khóa người nhận nằm trong vùng hướng mũi tên; không có ai -> chuyền theo hướng
     pass(g, p, mode, dx, dy, power = null) {
-      if (g.ball.owner !== p) return;
+      if (g.ball.owner !== p || p.noActT > 0) return;   // noActT: hoá gà / con rối (Tuyệt kỹ) — không ra đòn / chuyền / sút / lướt
       const lock = p.passLock && p.passLock.state !== 'stun' ? p.passLock : null;
       const target = lock || this.findPassTarget(g, p, dx, dy, this.targetBias(power), mode, null, G().pass.coneAngle);
       this.passTo(g, p, target, mode, dx, dy, power);
@@ -178,7 +178,7 @@ window.SFC = window.SFC || {};
     // S (pass.quick): chuyền sệt tự động, lực lý tưởng. Mũi tên chỉ vào đồng đội -> chuyền chuẩn cho người đó;
     // không bấm hướng / chỉ lệch khỏi đồng đội -> chuyền cho người gần nhất, cộng sai số hướng + lực
     quickPass(g, p, dx, dy) {
-      if (g.ball.owner !== p) return;
+      if (g.ball.owner !== p || p.noActT > 0) return;
       const Q = G().pass.quick;
       let target = Math.hypot(dx, dy) > 0.2 ? this.findPassTarget(g, p, dx, dy, null, 'ground', null, Q.aimCone) : null;
       const aimed = !!target;
@@ -308,7 +308,7 @@ window.SFC = window.SFC || {};
     // aim = hướng phím người chơi giữ lúc thả ({x, y}) hoặc null -> nhắm theo aimY (-1..1, 0 = giữa khung; AI dùng)
     shoot(g, p, charge, aimY, aim = null) {
       const b = g.ball, K = G().kick, f = g.field;
-      if (b.owner !== p) return;
+      if (b.owner !== p || p.noActT > 0) return;
       const tm = g.teams[p.team];
       // Một-Hai: sút ngay sau khi nhận đường chuyền = sút tụ lực tối đa (vô-lê)
       const volley = g.cores.volleyCharge(p) > 0 && charge < 1;
@@ -361,7 +361,7 @@ window.SFC = window.SFC || {};
     // Phá bóng: bóng bổng, mạnh, luôn về phía trước — ↑/↓ chỉ chỉnh góc (không phá ngược về khung thành nhà)
     clearance(g, p, dy) {
       const b = g.ball, K = G().kick;
-      if (b.owner !== p) return;
+      if (b.owner !== p || p.noActT > 0) return;
       const ang = Math.atan2(U.clamp(dy || 0, -1, 1) * K.clearAngle, g.teams[p.team].dir) + U.rand(-K.clearSpread, K.clearSpread);
       const spd = K.clearSpeed * p.stats.power;
       b.kick(p, Math.cos(ang) * spd, Math.sin(ang) * spd, K.clearLift);
@@ -404,7 +404,7 @@ window.SFC = window.SFC || {};
     /* ---------- D — LIGHT ATTACK: cú đấm thẳng ---------- */
     lightAttack(g, p) {
       const L = G().combat.light;
-      if (p.cd.light > 0 || p.state !== 'normal' || p.airZ > 0) return false;
+      if (p.cd.light > 0 || p.state !== 'normal' || p.airZ > 0 || p.noActT > 0) return false;
       // Phản Đòn sau khi né -> gần như không hồi chiêu
       p.cd.light = p.counterT > g.time ? 0.15 : this.cooldown(g, p, 'light', L.cooldown * g.cores.mod(p.team, 'lightCooldown', p));
       const fv = facingVec(p);
@@ -487,7 +487,7 @@ window.SFC = window.SFC || {};
     /* ---------- A — HARD ATTACK: gồng co chân rồi vung chân đá ---------- */
     hardAttack(g, p) {
       const H = G().combat.hard;
-      if (p.cd.hard > 0 || p.state !== 'normal') return false;
+      if (p.cd.hard > 0 || p.state !== 'normal' || p.noActT > 0) return false;
       p.cd.hard = this.cooldown(g, p, 'hard', H.cooldown * g.cores.pmod(p, 'hardCooldown'));
       p.state = 'windup'; p.stateT = H.windup * g.cores.mod(p.team, 'hardWindup', p);   // Giày Sắt: gồng nhanh hơn
       this.startAttack(p, 'hard');
@@ -605,7 +605,7 @@ window.SFC = window.SFC || {};
 
     skill(g, p, dx, dy) {
       const S = G().skill;
-      if (p.state !== 'normal' || p.airZ > 0) return;
+      if (p.state !== 'normal' || p.airZ > 0 || p.noActT > 0) return;
       if (p.cd.skill > 0) return;
       let d;
       if (Math.hypot(dx, dy) > 0.2) d = U.norm(dx, dy);

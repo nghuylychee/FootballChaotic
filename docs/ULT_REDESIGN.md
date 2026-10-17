@@ -98,12 +98,12 @@ Hệ quả: đạt công thức mới không cho cảm giác "mở khoá thứ m
 
 | Hệ | 8 Tuyệt kỹ (gốc + 7 lai) |
 |---|---|
-| TỐC ĐỘ | tường sét · chuyền sét · ngưng thời gian · đấm sóng chấn · mở đường · lốc xoáy · dịch chuyển · tua băng |
+| TỐC ĐỘ | tường sét · chuyền sét · chạy chậm cả sân (đợt 3) · đấm sóng chấn · mở đường · lốc xoáy · dịch chuyển · tua băng |
 | TIKI-TAKA | chuyền tự động · chuyền sét · 1-2 · phóng đồng đội · bóng vòng cung · chuyền giả · xích đội hình · bóng nam châm |
-| SÁT THỦ | bật lên đập · ngưng thời gian · 1-2 · trả đòn · bóng bom · bóng tàng hình · tảng đá · sút ngẫu nhiên |
+| SÁT THỦ | bật lên đập · chạy chậm cả sân (đợt 3) · 1-2 · trả đòn · bóng bom · bom khói (đợt 3) · tảng đá · sút ngẫu nhiên |
 | ĐẤU SĨ | trăm cú đấm · đấm sóng chấn · phóng đồng đội · trả đòn · rồng (hất + đá) · bàn tay ma · nắm đấm khổng lồ · bẫy lò xo |
 | VÕ SĨ ĐÁ | mất trọng lực · lốc xoáy · bóng vòng cung · bóng bom · rồng · đá qua cổng · cột đá · người pinball |
-| ẢO ẢNH | đội phân thân · dịch chuyển · chuyền giả · bóng tàng hình · bàn tay ma · đá qua cổng · gương phản xạ · tráo chỗ |
+| ẢO ẢNH | đội phân thân · dịch chuyển · chuyền giả · bom khói (đợt 3) · bàn tay ma · đá qua cổng · gương phản xạ · tráo chỗ |
 | THÉP | khổng lồ · mở đường · xích đội hình · tảng đá · nắm đấm khổng lồ · cột đá · gương phản xạ · đe sắt |
 | HỖN LOẠN | bánh xe toàn sân · tua băng · bóng nam châm · sút ngẫu nhiên · bẫy lò xo · người pinball · tráo chỗ · đe sắt |
 
@@ -196,3 +196,63 @@ Số trong cột # = số thứ tự trong phòng test (`ULT n/36`).
 
 Ghi chú: Monster Truck và Hurricane Kick đều là "hoá thành vật cản tự lái"; khác ở chỗ xe nhanh, rẽ theo bán kính, cán bẹp, còn lốc chậm, hút người lên rồi nhả bóng ngẫu nhiên.
 `cores.ults.renamed` trỏ thẳng từ id gốc (trước đợt 1) và id đợt 1 tới id mới nhất.
+
+## 10. Đợt 3 (2026-10-17) — ĐÃ LÀM
+
+| # | Chiêu | User góp ý | Đã làm |
+|---|---|---|---|
+| 12 | Hypno Eyes → **Smoke Bomb** (`smoke_bomb`) | Khó hiểu, cần ý khác. User chọn: bom khói kiểu Akali | Bom khói elip to (`radius` 82, `squash` 0.6) tồn tại 5s. Người đội mình đứng trong khói **tàng hình với đối thủ** (`p.ghostT`, đã có trong `PF`): máy đối thủ không vẽ người lẫn bóng ở chân, đội mình thấy bóng mờ. Người đang điều khiển tàng hình thì có viền màn hình tím than + mắt gạch chéo, chữ HIDDEN trên đầu (`Renderer.hiddenMark / stealthVignette`). Chuyền / sút: lộ `reveal` 0.5s rồi lại ẩn nếu còn trong khói; bị đánh trúng: lộ tới khi đứng dậy. AI đối thủ không thấy người cầm bóng: đuổi theo chỗ đoán trong khói (`confused.decoy`). Đỡ: đấm mò vào khói, chặn lối ra, chờ chuyền / sút |
+| 14 | **Iron Hammer** | Diễn xoay búa vòng tròn rồi mới vung; địa chấn hất tung theo đường thẳng, bay cao | Giữ `noBall`. Xoay búa 2 vòng trong 0.95s (xoay hướng được, dải đỏ báo trước đường địa chấn; bị đấm lúc xoay là huỷ). Nện: địa chấn chạy thẳng 560 px/s, dài 270px, rộng 22px (vết nứt + đá trồi, `prop 'quake'`): mọi đối thủ trên đường **bay cao** (`launch` 400, ~160px), bóng lỏng trên đường bị hất tung. Lướt Z lúc sóng tới là thoát. Khác Earth Spike: không để lại vật cản, chỉ 1 lần, sóng chạy từ chân người nện |
+| 15 | **Phase Step** | Không thấy được ý "lướt liên tục"; muốn hiệu ứng như chui qua cổng portal | 5 lượt trong 5s, **pip** trên đầu = số lượt còn (người điều khiển thấy thêm nhãn phím lướt). Không hồi chiêu giữa các lượt (`gap` 0.12s). Mỗi lượt: chui vào cổng tím, ra ở cổng xanh cách 78px (không trượt như Z thường), chữ BLINK!, vẫn để ảo ảnh chạy tiếp hướng cũ |
+| 18 | Time Stop Strike → **Bullet Time** (`bullet_time`) | Ý khác, kiểu Quicksilver, kết thúc bằng cú sút | Cả sân chạy chậm ×0.12 (`Game.slowMo`, không phải ngưng hẳn: đối thủ vẫn nhích được), người cầm bóng chạy 280 px/s thời gian thật tối đa 1s, lái theo phím, vệt ảo ảnh + phủ xanh + tia tốc độ. Đối thủ bị lướt sát qua (trừ thủ môn trong vòng cấm): thời gian chạy lại thì quay ngược + **trơn té**. Kết thúc bằng cú sút: bấm sút (`intent.shootTap`, `human.js`) / hết giờ / chạy tới cách khung 200px; lực ×0.8, thủ môn dễ bắt hơn (`gk` -0.25) |
+
+Cân số (AI đánh AI, xuất phát cách khung 200–330px, 6 giây sau khi ra chiêu): Bullet Time ~36% ra bàn (mốc không dùng chiêu ~8%;
+bản đầu không giới hạn khoảng cách sút ~75%, nên thêm `shootAt`), Smoke Bomb ~20%. Iron Hammer: đối thủ đứng trên đường bay cao ~160px.
+`cores.ults.renamed`: `hypno_eyes` / `vanishing_ball` / `phantom_barrage` → `smoke_bomb`, `time_stop_strike` / `flash_strike` → `bullet_time`.
+Bỏ prop `arrow` (chỉ Time Stop Strike dùng). Định dạng gói tin không đổi (`ghostT` đã có trong `PF`, prop mới đi qua lệnh hiệu ứng có sẵn),
+nhưng id Tuyệt kỹ đổi nên **`net.protocol` 8 → 9**, máy chủ `9.0.0` (như đợt 1): cần build image + deploy tay.
+
+## 11. Đợt 4 (2026-10-17) — ĐÃ LÀM
+
+| # | Chiêu | User góp ý | Đã làm |
+|---|---|---|---|
+| 21 | Boomerang Kick → **Mega Boomerang** (`mega_boomerang`) | Ném boomerang khổng lồ quét cả địch lẫn đồng đội, bay 3 vòng khắp sân rồi về tay | Không cần bóng. Bay xoắn ốc 3 vòng quanh tâm sân trong 6s (vòng nhỏ dần, `spiral`), rồi về tay người ném (đường bay = `CoreBehaviors.mega_boomerang.at`, hình vẽ dùng chung). Trúng ai (trừ người ném) cũng bị hất ngã, rơi bóng; bóng lỏng bị quét thì văng theo. Né Z |
+| 22 | Switcheroo → **Puppet Master** (`puppet_master`) | Cần ý khác. User chọn con rối | Sợi chỉ (báo trước 0.3s, né Z / chạy ra xa là thoát) móc tối đa 2 đối thủ gần nhất (ưu tiên người cầm bóng) trong 2.6s: chạy theo đúng hướng bạn chạy (`Player.puppet`, bỏ qua hệ số tốc độ AI), không ra đòn / chuyền / sút / lướt (`noActT`). Đứt chỉ khi bạn bị đánh choáng hoặc đi quá 280px |
+| 23 | Dodgeball → **Rage** (`rage`) | Hoá King Kong, dậm nhảy tại chỗ 3 lần ra 3 đợt địa chấn, ai cũng bị, né bằng lướt đúng lúc, vẽ rõ | Gầm đấm ngực 0.55s rồi 3 cú dậm cách nhau 0.8s. Mỗi cú: vòng địa chấn elip (dọc ×0.6, khớp hình vẽ) lan 220 px/s tới 190px, vành dày 14px: ai đứng đúng chỗ vành đi qua (cả đồng đội) bay cao ~70px. Lướt Z lúc vành tới là thoát. Bị đánh choáng thì hết King Kong |
+| 24 | **Cannonball** | Bóng bay vòng cung như đạn pháo | Sút bổng cao ~95px rơi xuống cách khung 80px (giữ đúng vòng cung, không ai chạm được khi còn cao, có vòng điểm rơi). Nổ lúc chạm đất / chạm người, bóng nảy tiếp về khung ×0.5 |
+| 25 | **Boulder Shot** | Đứng trên tảng đá, giữ thăng bằng bằng thanh quicktime; trúng 3 lần thì thả đá lăn; đá cán người thì nhỏ lại, đủ 3 người thành bóng thường | Thanh kim chạy qua lại (1 lượt 0.9s, vùng giữa 24%), bấm sút đúng vùng: đá to thêm 1 cỡ; trượt: chao đảo, khoá phím 0.35s. Đủ 3 cỡ (hoặc hết 4s, ít nhất cỡ 1) thì thả đá lăn vào khung (cỡ càng to càng nhanh). Cán đối thủ: nhỏ 1 cỡ, chậm ×0.85; cỡ 0 = bóng thường. Đứng trên đá: không bị đánh choáng / cướp bóng (`armorT`, `noStealT`, tối đa 4s) — thêm vào sau khi giả lập thấy AI đấm ngã gần như mọi lần |
+| 31 | Banana Pass → **Magic Wall Pass** (`magic_wall_pass`) | Đá bóng vào tường, hiện điểm hẹn ưu tiên gần khung, bàn tay ma thuật từ tường ném bóng qua lại tới đúng chỗ; có mặt đúng lúc thì nhận bóng | Điểm hẹn trước khung 110px, kéo về phía người chơi nếu không chạy tới kịp. Đá vào tường gần → 3 bàn tay găng trắng ném so le giữa tường trên / dưới (bóng bay cao, không ai chạm được) → thả xuống điểm hẹn sau 1.85s. Người ra chiêu đứng trong 18px nhận bóng; không thì người gần nhất (đối thủ đứng chờ sẵn cũng cướp được); không ai thì bóng lỏng |
+| 32 | Shrink Ray → **Chicken Ray** (`chicken_ray`) | Trúng chiêu hoá gà 3s | Giữ tia + báo trước. Trúng: hoá gà 3s (`Stat.chicken`): rơi bóng, không chạm được bóng (cả thủ môn bắt bóng), không ra đòn / chuyền / sút / lướt, chạy ×1.05. Nhắm người cầm bóng / người gần nhất, không nhắm thủ môn |
+| 35 | Shell Game → **Panic Ball** (`panic_ball`) | Bóng dí đối thủ, trúng thì hoảng sợ (đảo ngược mọi hướng di chuyển), thể hiện rõ | Bóng ma quái (mắt đỏ, răng nhọn) đuổi tối đa 3 đối thủ trong 4s (không nhắm thủ môn, không bay vào khung). Trúng: hoảng sợ 3s (`Stat.panic`, `Player.panicT`: di chuyển + hướng nhắm đảo ngược), rơi bóng, "!!" to nhấp nháy, vạch sốc trên mặt, mồ hôi, người run lẩy bẩy. Né Z. Xong thì bóng bay về chân bạn |
+
+Viên gạch mới: `Player.noActT` (chặn ra đòn / chuyền / sút / lướt / Tuyệt kỹ, kiểm ở `Actions` + `activateUltimate`), `panicT`, `chickenT`, `puppet`;
+vật thể tự vẽ nhân vật thay sprite thật (`VFX.hides`, `PROP_HIDE`: King Kong, đứng trên đá, con gà) — chạy được ở máy khách online vì chỉ đọc vật thể đã đồng bộ;
+skin bóng `monster`, `hide`, `boulder1..3` (cỡ nằm trong tên skin, đã đồng bộ). `Human.update` ghi `intent.shootTap`; chiêu đọc xong tự xoá.
+
+Giả lập (AI đánh AI, xuất phát cách khung 200–330px, 6 giây sau khi ra chiêu, mốc không dùng chiêu 2–5%): Rage ~25% · Cannonball 14–22%
+(bản đầu rơi sát khung 54%) · Mega Boomerang / Puppet Master / Magic Wall Pass / Boulder Shot / Panic Ball 9–14% · Chicken Ray ~4% (chiêu phòng thủ).
+`cores.ults.renamed`: `boomerang_kick` / `sky_volley` → `mega_boomerang`, `switcheroo` / `ghost_pass` → `puppet_master`, `dodgeball` / `parry_volley` /
+`knockout_volley` → `rage`, `banana_pass` / `magnet_ball` / `wild_pass` → `magic_wall_pass`, `shrink_ray` / `jackpot_shot` → `chicken_ray`, `shell_game` → `panic_ball`.
+Vẫn `net.protocol` 9 (chưa deploy bản 9 nên không tăng thêm).
+
+## 12. Đợt 5 (2026-10-17) — ĐÃ LÀM
+
+**Luật dùng Tuyệt kỹ** (`CoreSystem.ultUse`, user chốt): mỗi chiêu đúng 1 loại, hiện ở ULT BOOK (dòng dưới công thức) và ở bảng phòng test.
+Không hiện trên ô X trong trận (đã thử nhãn BALL / NO BALL, user thấy xấu) — ô X chỉ mờ đi khi chưa dùng được.
+
+| Loại | Config | Chiêu |
+|---|---|---|
+| Chỉ khi **chính mình** cầm bóng (đồng đội cầm cũng không được) | `needsBall` | Endless Tiki-Taka · Meteor Shot · Comet One-Two · Slingshot · Bullet Time · Cannonball · Magic Wall Pass · Panic Ball |
+| Chỉ khi **không** cầm bóng | `noBall` | Iron Hammer · Boulder Rider |
+| Lúc nào cũng được | (không có) | 26 chiêu còn lại |
+
+Trước đây `needsBall` = đội mình cầm bóng. AI cũng không thử ra chiêu khi đang bị chặn (`aiUltimate`).
+
+| # | Chiêu | User góp ý | Đã làm |
+|---|---|---|---|
+| 22 | **Puppet Master** | Làm rõ cơ chế bắn dây rồi giữ N giây mới nối được | 3 pha nhìn thấy được: **bắn dây** 0.3s (chỉ xám bay tới, đầu có móc; lướt Z là né) → **nối dây** 0.9s (chỉ căng rung, vòng tiến trình quanh chân + thanh trên đầu đầy dần, đối thủ bị kéo chậm ×0.45; đứt nếu họ lướt Z / chạy xa quá 200px, hoặc người giật dây bị đánh choáng — người giật dây đứng yên giữ dây) → **con rối** 2.6s như cũ. Giữ dây là tự động (đứng yên), không phải giữ phím |
+| 25 | Boulder Shot → **Boulder Rider** (id giữ `boulder_shot`) | Chỉ dùng khi không cầm bóng; tự tạo đá riêng (không biến bóng); mỗi lần to gấp đôi; quicktime chậm lại; trượt nhiều thì đá vỡ, ngã choáng; thành công thì cưỡi đá lái đi cán hết | `noBall`. Đá bán kính 5 → 10 → 20 → 40px. Thanh quicktime 1.4s / lượt (cũ 0.9s), vùng giữa 26%. Trượt 3 lần (hoặc hết 6s mà chưa trúng lần nào): đá vỡ vụn (`rubble`), ngã choáng 1.5s. Đủ 3 lần (hết 6s: cỡ đang có): cưỡi đá 4s, lái theo phím (125 px/s), cán bẹp **mọi người** chạm phải (cả đồng đội), đá văng bóng lỏng. Đứng / cưỡi đá không bị đánh choáng (`armorT`). Giả lập: AI cưỡi được ~73% lần, mỗi lượt cưỡi cán ~6 lượt người |
+
+Ghi chú: Boulder Rider giờ gần Monster Truck (cùng hệ THÉP, cùng "lái vật to cán người"); khác ở pha nhịp quicktime + đá to dần + rủi ro vỡ.
+Bỏ skin bóng `boulder1..3` / `hide` và `noStealT` (chỉ bản Boulder trước dùng).
+

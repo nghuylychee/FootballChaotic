@@ -156,7 +156,7 @@ SFC_CONFIG.ftue = {
     label: 'DODGE!',
   },
 
-  // bài tích Ultimate: năng lượng nạp nhân lên (đấm trúng 5% -> 20%, cướp bóng 12% -> 48%, ghi bàn 50% -> 100%)
+  // bài tích Ultimate: năng lượng nạp nhân lên (đấm trúng 5% -> 20%, cướp bóng 12% -> 48%, ghi bàn 30% -> 100%). Trận hướng dẫn không nạp theo thời gian
   ultCharge: {
     mult: 4,
     // nguồn nạp (nhận ra theo lượng vừa nạp gốc, cores.config.js -> ultimate)

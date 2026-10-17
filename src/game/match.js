@@ -143,7 +143,7 @@ window.SFC = window.SFC || {};
       this.freezeT = 0;     // VFX Kit hit-stop: còn bao lâu đứng hình (giây thật)
       this.slowT = 0;       // VFX Kit slow-mo: còn bao lâu chạy chậm (giây thật)
       this.slowScale = 1;
-      this.stopT = 0;       // Time Stop Strike / VHS Rewind: còn bao lâu cả sân đứng yên (chỉ later() + stopTick của Tuyệt kỹ chạy)
+      this.stopT = 0;       // VHS Rewind: còn bao lâu cả sân đứng yên (chỉ later() + stopTick của Tuyệt kỹ chạy)
       this.stopTick = null; // fn(dt) -> true = xong: Tuyệt kỹ tự diễn trong lúc cả sân đứng yên (VHS Rewind tua ngược)
       this.kickoff(0);
       // lượt chọn Core khởi đầu (trước khi giao bóng đầu trận)
@@ -352,7 +352,7 @@ window.SFC = window.SFC || {};
       const mirror = [0, 1].map(() => vary && Math.random() < (V.mirrorY || 0));
       for (const p of this.players) {
         const pos = this.kickoffPos(p, vary, mirror[p.team]);
-        Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null, bracing: false, readAt: -1, celId: null });
+        Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null, bracing: false, readAt: -1, celId: null, noActT: 0, panicT: 0, chickenT: 0, puppet: null, puppetT: 0, ghostT: 0 });
         p.facing = this.teams[p.team].dir > 0 ? 0 : Math.PI;
         p.intent.mx = p.intent.my = 0;
         p.ai.runT = 0; p.ai.requestedPass = null;
@@ -425,7 +425,7 @@ window.SFC = window.SFC || {};
     }
 
     simulate(dt, input) {
-      // Time Stop Strike: mọi người + bóng đứng yên, chỉ hình ảnh chạy; Tuyệt kỹ tự điều khiển bằng later() (thời gian thật)
+      // VHS Rewind: mọi người + bóng đứng yên, chỉ hình ảnh chạy; Tuyệt kỹ tự điều khiển bằng later() (thời gian thật)
       if (this.stopT > 0) {
         this.stopT -= dt;
         this.effects.updateCosmetic(dt);

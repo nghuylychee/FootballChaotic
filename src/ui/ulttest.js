@@ -13,7 +13,7 @@ if (SFC_DEBUG) (function () {
   const list = () => { const R = CORES().ults; return Object.values(R.base).concat(R.hybrids.map((h) => h.id)).filter((id) => CORES().list[id]); };
   // chiêu mới của đợt thiết kế lại (docs/ULT_REDESIGN.md): đánh dấu NEW trên bảng
   // + các chiêu sửa lại ở đợt 2 (sau khi user thử phòng test)
-  const fresh = () => new Set(Object.values(CORES().ults.renamed || {}).concat(['chaos_roulette', 'comet_onetwo', 'iron_hammer', 'pinball_kick']));
+  const fresh = () => new Set(Object.values(CORES().ults.renamed || {}).concat(['chaos_roulette', 'comet_onetwo', 'iron_hammer', 'pinball_kick', 'phase_step', 'cannonball', 'boulder_shot']));
   const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 
   const UltTest = {
@@ -114,6 +114,7 @@ if (SFC_DEBUG) (function () {
         : `<div style="color:#ffe14f">ULT ${this.idx + 1}/${ids.length}${isNew}</div>`
         + `<div style="color:#fff">${esc(d.name)}${this.lv > 1 ? ' ★★' : ''}</div>`
         + `<div>${tags}</div>`
+        + `<div style="color:${d.needsBall ? '#ffe14f' : d.noBall ? '#ff8a9a' : '#6bff4f'}">${d.needsBall ? 'NEEDS YOUR BALL' : d.noBall ? 'ONLY WITHOUT BALL' : 'ANYTIME'}</div>`
         + `<div style="margin-top:2px">[ ] \\★★ O:${this.opp ? 'ON' : 'off'} F:${this.freeze ? 'ON' : 'off'}</div>`
         + `<div>B:BALL N:RESET H:HIDE</div>`;
     },

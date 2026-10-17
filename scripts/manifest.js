@@ -56,6 +56,7 @@ const FILES = [
   ['src/engine/gamepad.js', 'game sandbox itch'],
   ['src/engine/input.js', 'game sandbox itch'],
   ['src/engine/audio.js', 'game sandbox itch'],
+  ['src/engine/ultsfx.js', 'game sandbox itch'],   // tiếng riêng của từng Tuyệt kỹ (SFC.Audio.ult)
   ['src/meta/settings.js', 'game itch'],
   ['src/meta/teammates.js', 'game sandbox itch server'],
   ['src/meta/profile.js', 'game sandbox itch server'],

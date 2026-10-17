@@ -440,6 +440,9 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .ul-st { font-size: 13px; color: #e6dccb; line-height: 1.1; }
 .ul-st.on { color: #6bff4f; }
 .ul-st.lock { color: #ff8a9a; }
+.ul-use { font-size: 12px; line-height: 1.1; margin-top: 3px; padding-left: 4px; border-left: 3px solid #6bff4f; color: #e6dccb; }
+.ul-use.u-ball { border-color: #ffe14f; }
+.ul-use.u-noBall { border-color: #c7ccd6; }
 .ul-note { font-size: 11px; color: var(--muted); line-height: 1.15; }
 .ul-count { font-family: var(--px); font-size: 5px; color: var(--gold); letter-spacing: 1px; }
 

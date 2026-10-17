@@ -666,13 +666,13 @@ window.SFC = window.SFC || {};
       p.res.ult = Math.min(1, this.ultE(p) + amt);
     }
     ultReady(p) { return isP(p) && !!this.ultOf(p) && this.ultE(p) >= 1; }
-    // Tuyệt kỹ cần bóng (list[id].needsBall): chỉ dùng được khi đội mình đang cầm bóng (không bao giờ giật bóng)
-    // noBall (Iron Hammer): ngược lại, chỉ dùng được khi chính mình KHÔNG cầm bóng
+    // khi nào dùng được Tuyệt kỹ (user chốt 2026-10-17, hiện ở ô X + ULT BOOK): 'ball' = chính mình đang cầm bóng (list[id].needsBall;
+    // đồng đội cầm bóng cũng không được, không bao giờ giật bóng) · 'noBall' = chính mình KHÔNG cầm bóng (list[id].noBall) · 'any' = lúc nào cũng được
+    ultUse(id) { const d = id && this.def(id); return !d ? 'any' : d.needsBall ? 'ball' : d.noBall ? 'noBall' : 'any'; }
     ultBlocked(p) {
-      const id = this.ultOf(p), b = this.g.ball;
+      const id = this.ultOf(p), b = this.g.ball, use = this.ultUse(id);
       if (!id) return false;
-      const d = this.def(id);
-      return !!((d.needsBall && !(b.owner && b.owner.team === p.team)) || (d.noBall && b.owner === p));
+      return (use === 'ball' && b.owner !== p) || (use === 'noBall' && b.owner === p);
     }
 
     /* ---------- Tuyệt kỹ theo công thức (cores.config.js -> ults, docs/ULT_RECIPE.md) ---------- */
@@ -737,7 +737,7 @@ window.SFC = window.SFC || {};
       // Tuyệt kỹ nhiều lần dùng (Earth Spike): còn lượt thì bấm X là ra tiếp, không cần năng lượng / cut-in
       const rb = id && Behaviors[id];
       if (rb && rb.recast && g.state === 'play' && !(g.stopT > 0) && rb.recast(this, p.team, this.sp(id, p), p)) return true;
-      if (!id || this.ultE(p) < 1 || g.state !== 'play' || g.stopT > 0 || p.state !== 'normal' || p.airZ > 0 || this.ultBlocked(p)) return false;
+      if (!id || this.ultE(p) < 1 || g.state !== 'play' || g.stopT > 0 || p.state !== 'normal' || p.airZ > 0 || p.noActT > 0 || this.ultBlocked(p)) return false;
       const team = p.team, def = this.def(id), U2 = DEF().ultimate, lv = p.ultLv || 1;
       const color = def.color || (ARCH()[def.tags[0]] ? ARCH()[def.tags[0]].color : '#ffe14f');
       p.res.ult = 0;
@@ -745,7 +745,7 @@ window.SFC = window.SFC || {};
       // cut-in: tên + sao tiến hoá (cut-in hiện tên Tuyệt kỹ của mọi người, kể cả đối thủ — người chơi thấy là muốn thử)
       g.effects.cutIn(p.id, def.name.toUpperCase() + (lv > 1 ? ' ' + '★'.repeat(lv) : ''), color, U2.cutIn);
       g.hitStop(U2.cutIn);
-      g.sfx('upgrade');
+      g.sfx('ult', 'cut.' + def.tags[0]);   // câu nhạc cut-in theo trường phái (engine/ultsfx.js)
       g.later(U2.cutIn, () => {
         const bh = Behaviors[id];
         if (!bh || !bh.onUltimate || g.state !== 'play') return;
@@ -794,6 +794,10 @@ window.SFC = window.SFC || {};
     // trạng thái nhìn thấy được thay cho tài nguyên: TOÉ ĐIỆN, Xe Ủi hoá to, nắm tay sáng (máy khách online đọc p.surge / p.fistRdy / sizeMul)
     updateStates(p, dt) {
       const g = this.g;
+      // Tuyệt kỹ tự nạp theo thời gian (chỉ lúc đang đá; dùng xong vẫn khoá nạp lockout giây như hồi chiêu — gainUlt).
+      // Trận hướng dẫn: tắt, bài tích Ultimate dạy nạp bằng đấm / cướp bóng / ghi bàn (game/tutorial.js)
+      const gt = DEF().ultimate.gainTime || 0;
+      if (gt > 0 && g.state === 'play' && !(g.opts && g.opts.tutorial)) this.gainUlt(p, gt * dt);
       // chạy nước rút liên tục (đứng lại / bị choáng là về 0)
       p.sprintT = p.sprinting && p.state === 'normal' ? (p.sprintT || 0) + dt : 0;
       p.surge = (p.sprintT >= this.surgeTime(p) && this.tagCount(p, 'runner') > 0) || (g.preview && !!p.previewSurge && p.sprinting);   // ảnh xem trước: toé điện ngay
@@ -824,7 +828,7 @@ window.SFC = window.SFC || {};
       if ((this.aiUltT[k] -= dt) > 0) return;
       const id = this.ultOf(p), b = Behaviors[id];
       // aiUse trả về người ra chiêu; Tuyệt kỹ là của riêng p nên chỉ nhận khi đúng là p
-      const who = b && b.aiUse ? b.aiUse(this, p.team, this.sp(id, p)) : null;
+      const who = b && b.aiUse && !this.ultBlocked(p) ? b.aiUse(this, p.team, this.sp(id, p)) : null;   // chưa đúng lúc dùng (ultUse): chờ
       if (who === p) this.activateUltimate(p);
       else this.aiUltT[k] = 0.4; // chưa có thời cơ -> thử lại sau
     }

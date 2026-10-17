@@ -125,6 +125,7 @@ window.SFC = window.SFC || {};
         g.hitStop(0.08);
         E.shake(5, 0.3);
         g.sfx('hit');
+        g.sfx('ult', 'dragon.up');
         // người ra chiêu bật lên theo
         pl.airVz = prm.launch * 0.75; pl.airZ = Math.max(pl.airZ, 0.5);
         pl.state = 'recover'; pl.stateT = prm.delay + 0.4;
@@ -143,6 +144,7 @@ window.SFC = window.SFC || {};
           E.afterimage(pl, 0.3);
           E.shake(8, 0.4);
           g.sfx('hit');
+          g.sfx('ult', 'dragon.roar');
           sys.moment(team, 'rising_dragon', 'RISING DRAGON!', 70);
           wallCrack(sys, o);
         });
@@ -167,7 +169,7 @@ window.SFC = window.SFC || {};
         const m = nearestMate(g, team, pl) || pl;   // không có đồng đội: tự bắn mình
         if (m !== pl) E.stretch(pl.id, m.x, m.y, prm.grab + 0.15);
         E.comic(pl.x, pl.y - 30, 'SLINGSHOT!', '#ff8ac0', 1.1, 0.7);
-        g.sfx('whoosh');
+        g.sfx('ult', 'sling.stretch');
         g.later(prm.grab, () => {
           if (g.state !== 'play' || m.state === 'stun') return;
           if (b.owner && b.owner !== m && b.owner.team === team) { b.owner = null; g.gainPossession(m); }   // bóng bay cùng người
@@ -177,7 +179,7 @@ window.SFC = window.SFC || {};
           m.state = 'recover'; m.stateT = prm.flight + 0.2; m.charging = false;
           E.wave(x0, y0, 22, '#ff8ac0', 0.35, 2);
           E.comic(x0, y0 - 28, 'BOING!', '#ff8ac0', 1, 0.5);
-          g.sfx('pass');
+          g.sfx('ult', 'sling.release');
           let T = 0, k0 = 0;
           sys.task((dt) => {
             T += dt;
@@ -208,15 +210,15 @@ window.SFC = window.SFC || {};
 
 
 
-    /* 🎯 SÁT THỦ + 🦵 VÕ SĨ ĐÁ — Cannonball: bóng hoá quả bom, nổ (hố + hất tung) ở chỗ chạm đối thủ đầu tiên, kể cả tay thủ môn;
-       vào lưới thì lưới nổ. Đồng đội đỡ được thì tháo ngòi */
+    /* 🎯 SÁT THỦ + 🦵 VÕ SĨ ĐÁ — Cannonball (đợt 4: bay vòng cung như đạn pháo): sút bổng thật cao, rơi xuống trước khung; nổ (hố + hất tung)
+       lúc chạm đất / chạm người (kể cả tay thủ môn), bóng nảy tiếp về khung. Vào lưới thì lưới nổ. Đồng đội đỡ được thì tháo ngòi */
     cannonball: {
       aiUse(sys, team, prm) {
         const g = sys.g, me = prm.owner, s = teamBall(sys, team);
-        return s && s.state === 'normal' && me.state === 'normal' && nearGoal(g, team, s, 360) ? me : null;
+        return s && s.state === 'normal' && me.state === 'normal' && nearGoal(g, team, s, 380) && !nearGoal(g, team, s, prm.land + 60) ? me : null;
       },
       onUltimate(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects, b = g.ball, st = sys.st(team, 'cannonball');
+        const g = sys.g, E = g.effects, b = g.ball, f = g.field, st = sys.st(team, 'cannonball');
         const s = teamBall(sys, team);
         if (!s) return;
         hold(s, prm.windup + 0.1);
@@ -225,13 +227,23 @@ window.SFC = window.SFC || {};
         g.sfx('whoosh');
         g.later(prm.windup, () => {
           if (g.state !== 'play' || b.owner !== s || s.state === 'stun') return;
-          shootGoal(g, team, s);
-          b.vx *= prm.speed; b.vy *= prm.speed;
+          unlock(s);
+          // điểm rơi: trước khung land px, lệch ngẫu nhiên trong bề rộng khung; bay bổng tới apex px (trọng lực bóng)
+          const goal = g.attackGoal(team), dir = g.teams[team].dir, G = SFC_CONFIG.game.ball.gravity;
+          const L = { x: goal.x - dir * prm.land, y: goal.y + U.rand(-1, 1) * f.goalWidth * 0.35 };
+          const vz = Math.sqrt(2 * G * prm.apex), tf = (2 * vz) / G, d = U.norm(L.x - b.x, L.y - b.y), spd = U.dist(b, L) / tf;
+          const pvx = d.x * spd, pvy = d.y * spd;
+          s.facing = Math.atan2(d.y, d.x);
+          b.kick(s, pvx, pvy, vz);
+          b.kind = 'shot';
           b.skin = 'bomb';
+          Act().startAttack(s, 'shoot');
           st.live = true;
           g.hitStop(0.06);
           E.shake(5, 0.3);
           g.sfx('kick', 1);
+          g.sfx('ult', 'cannon.fire');
+          g.sfx('ult', 'cannon.whistle');
           const boom = (x, y) => {
             st.live = false;
             b.skin = null;
@@ -247,24 +259,33 @@ window.SFC = window.SFC || {};
             E.burst(x, y, 2, '#6a6470', 16, 80, 1.1);
             E.comic(x, y - 34, 'KABOOM!', '#ff6a1f', 1.5, 0.8);
             g.sfx('hit');
+            g.sfx('ult', 'cannon.boom');
             const c = { x, y };
             for (const o of g.teams[1 - team].players) {
               if (U.dist(o, c) > prm.radius + o.radius || g.isProtected(o) || o.state === 'meteor' || Act().dodged(g, o)) continue;
               H.blast(o, c, prm.knock, prm.launch, prm.stun, s);
             }
-            if (!b.owner) { b.vx *= 0.3; b.vy *= 0.3; }
           };
-          let T = 0;
+          let T = 0, landed = false;
           sys.task((dt) => {
-            if (g.state !== 'play' || !st.live || b.skin !== 'bomb') return true;
+            // có người chạm bóng thì xét trước (nhặt bóng có thể đã xoá skin bom — Game.gainPossession)
+            if (g.state !== 'play' || !st.live || (b.skin !== 'bomb' && !b.owner)) return true;
             T += dt;
             if (b.owner) {
               if (b.owner.team === team) { st.live = false; b.skin = null; return true; }   // đồng đội đỡ: tháo ngòi
               boom(b.owner.x, b.owner.y);
               return true;
             }
-            const near = g.teams[1 - team].players.some((q) => q.airZ <= 4 && b.z < 16 && U.dist(q, b) < q.radius + b.r + 6);
-            if (near || T >= prm.fuse || (T > 0.3 && b.speed < 90)) { boom(b.x, b.y); return true; }
+            // đang bay: giữ đúng vòng cung (bỏ lực cản không khí), không ai nhặt được khi còn cao
+            if (!landed && b.z > 1) { b.vx = pvx; b.vy = pvy; }
+            const near = b.z < 16 && g.teams[1 - team].players.some((q) => q.airZ <= 4 && U.dist(q, b) < q.radius + b.r + 6);
+            const ground = !landed && T > 0.2 && b.z <= 1.5;
+            if (near || ground || T > tf + 1.5) {
+              landed = true;
+              boom(b.x, b.y);
+              if (!b.owner) { b.vx = pvx * prm.bounce; b.vy = pvy * prm.bounce; b.vz = 60; }   // nảy tiếp về khung
+              return true;
+            }
             return false;
           });
         });
@@ -317,6 +338,7 @@ window.SFC = window.SFC || {};
           E.comic(o.x, o.y - 30, 'BOING!', '#c63dff', 1.2, 0.6);
           E.shake(6, 0.3);
           g.sfx('hit');
+          g.sfx('ult', 'pinball.flip');
           pl.state = 'recover'; pl.stateT = 0.3;
           let T = 0, bounces = 0, k = 0;
           const hit = new Set([o]);
@@ -336,7 +358,7 @@ window.SFC = window.SFC || {};
               E.burst(o.x, o.y, 6, '#c63dff', 10, 100, 0.4);
               E.comic(o.x, o.y - 26, 'BONK!', '#c63dff', 0.9, 0.4);
               E.shake(3, 0.15);
-              g.sfx('wall');
+              g.sfx('ult', 'pinball.ding');
             }
             if ((k += dt) >= 0.05) { k = 0; E.afterimage(o, 0.2); }
             for (const q of g.teams[1 - team].players) {
@@ -347,50 +369,10 @@ window.SFC = window.SFC || {};
               H.blast(q, o, prm.knock, prm.launch, prm.stun, pl);
               E.comic(q.x, q.y - 28, 'STRIKE!', '#ffe14f', 1, 0.5);
               g.sfx('hit');
+              g.sfx('ult', 'pinball.ding');
             }
             return T >= prm.time || bounces > prm.bounces;
           }, () => { if (o.state === 'stun') o.stateT = Math.min(o.stateT, prm.stun); });
-        });
-      },
-    },
-
-    /* 🎲 + 🌀 — Shell Game: phân thân hiện quanh bạn, rồi cả 4 tráo chỗ (bạn nhảy tới 1 chỗ ngẫu nhiên); có bóng thì phân thân dắt bóng giả */
-    shell_game: {
-      aiUse(sys, team, prm) {
-        const g = sys.g, me = prm.owner;
-        if (g.ball.owner !== me || me.state !== 'normal') return null;
-        const o = H.nearestOpp(g, team, me);
-        return o && U.dist(o, me) < 90 ? me : null;
-      },
-      onUltimate(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects, b = g.ball, f = g.field;
-        const spots = [{ x: pl.x, y: pl.y }];
-        for (let i = 0; i < prm.clones; i++) {
-          const a = pl.facing + ((i + 1) * Math.PI * 2) / (prm.clones + 1);
-          spots.push({ x: U.clamp(pl.x + Math.cos(a) * prm.spread, f.x + 10, f.x + f.w - 10), y: U.clamp(pl.y + Math.sin(a) * prm.spread, f.y + 10, f.y + f.h - 10) });
-        }
-        E.callout('SHELL GAME!', '#c63dff', 0.9);
-        for (const sp of spots.slice(1)) E.clone(pl.id, sp.x, sp.y, 0, 0, prm.delay + 0.1);
-        E.burst(pl.x, pl.y, 6, '#d8d0e0', 16, 100, 0.5);
-        hold(pl, prm.delay + 0.05);
-        g.sfx('whoosh');
-        g.later(prm.delay, () => {
-          if (g.state !== 'play' || pl.state === 'stun') return;
-          unlock(pl);
-          // tráo: bạn sang 1 chỗ ngẫu nhiên, 3 chỗ còn lại là phân thân (dắt bóng giả nếu bạn đang cầm bóng)
-          const real = U.pick(spots), had = b.owner === pl, decoys = [];
-          for (const sp of spots) {
-            E.burst(sp.x, sp.y, 6, '#c63dff', 10, 80, 0.4);
-            if (sp === real) continue;
-            const a = Math.atan2(sp.y - pl.y, sp.x - pl.x) + U.rand(-0.4, 0.4);
-            E.clone(pl.id, sp.x, sp.y, Math.cos(a) * 110, Math.sin(a) * 110, prm.time);
-            if (had) decoys.push(E.decoy(pl, sp.x, sp.y, Math.cos(a) * 110, Math.sin(a) * 110, prm.time));
-          }
-          pl.x = real.x; pl.y = real.y;
-          if (had) b.follow(0);
-          if (decoys.length) for (const o of g.teams[1 - team].players) if (!o.isControlled && !g.inKeeperZone(o)) o.confused = { decoy: U.pick(decoys), t: prm.confuse };
-          E.comic(pl.x, pl.y - 30, 'POOF!', '#c63dff', 1, 0.5);
-          g.sfx('whoosh');
         });
       },
     },

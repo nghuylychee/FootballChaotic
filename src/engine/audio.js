@@ -35,7 +35,8 @@ window.SFC = window.SFC || {};
   }
 
   // at: thời điểm phát tuyệt đối (ctx.currentTime) — nhạc nền lên lịch trước; dest: nút nhận (mặc định sfxBus)
-  function tone({ freq = 440, to = null, dur = 0.1, type = 'square', vol = 0.25, delay = 0, at = null, dest = null }) {
+  // vib / vibDepth: rung tần số (Hz / biên độ Hz) · attack: giây tăng âm lượng từ 0 (mặc định bật ngay)
+  function tone({ freq = 440, to = null, dur = 0.1, type = 'square', vol = 0.25, delay = 0, at = null, dest = null, vib = 0, vibDepth = 0, attack = 0 }) {
     if (!enabled()) return;
     const t = at != null ? at : ctx.currentTime + delay;
     const o = ctx.createOscillator();
@@ -43,15 +44,23 @@ window.SFC = window.SFC || {};
     o.type = type;
     o.frequency.setValueAtTime(freq, t);
     if (to) o.frequency.exponentialRampToValueAtTime(Math.max(20, to), t + dur);
-    g.gain.setValueAtTime(vol, t);
+    if (attack > 0) { g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(vol, t + Math.min(attack, dur * 0.9)); }
+    else g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    if (vib > 0 && vibDepth > 0) {
+      const lfo = ctx.createOscillator(), lg = ctx.createGain();
+      lfo.frequency.value = vib; lg.gain.value = vibDepth;
+      lfo.connect(lg); lg.connect(o.frequency);
+      lfo.start(t); lfo.stop(t + dur + 0.02);
+    }
     o.connect(g);
     g.connect(dest || sfxBus);
     o.start(t);
     o.stop(t + dur + 0.02);
   }
 
-  function noise({ dur = 0.15, vol = 0.25, freq = 1200, q = 1, delay = 0, at = null, dest = null, type = 'bandpass' }) {
+  // to: tần số bộ lọc trượt tới (quét gió / tiếng rít) · attack: giây tăng âm lượng từ 0
+  function noise({ dur = 0.15, vol = 0.25, freq = 1200, q = 1, delay = 0, at = null, dest = null, type = 'bandpass', to = null, attack = 0 }) {
     if (!enabled()) return;
     const t = at != null ? at : ctx.currentTime + delay;
     const len = Math.floor(ctx.sampleRate * dur);
@@ -62,10 +71,12 @@ window.SFC = window.SFC || {};
     src.buffer = buf;
     const f = ctx.createBiquadFilter();
     f.type = type;
-    f.frequency.value = freq;
+    f.frequency.setValueAtTime(freq, t);
+    if (to) f.frequency.exponentialRampToValueAtTime(Math.max(20, to), t + dur);
     f.Q.value = q;
     const g = ctx.createGain();
-    g.gain.setValueAtTime(vol, t);
+    if (attack > 0) { g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(vol, t + Math.min(attack, dur * 0.9)); }
+    else g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     src.connect(f); f.connect(g); g.connect(dest || sfxBus);
     src.start(t);
@@ -276,6 +287,8 @@ window.SFC = window.SFC || {};
 
   SFC.Audio = {
     unlock: ensure,
+    // bộ tổng hợp cho các file tiếng khác (engine/ultsfx.js: tiếng riêng của từng Tuyệt kỹ)
+    synth: { tone, noise },
     // kind: 'sfx' | 'music', v: 0..1 (nhân với âm lượng trong config). Gọi trước khi có AudioContext cũng được
     setVolume(kind, v) {
       vol[kind] = v;

@@ -31,6 +31,53 @@ Columns:
 | `save` | Goalkeeper save | Rising tone, then crowd "ooh" | keeper catch, glove save, ball catch | 1–2 |
 | `read(g)` | Shot-read timing grade. `g`: 0 PERFECT, 1 GREAT, 2 GOOD | 3 / 2 / 1 rising notes; PERFECT adds a shimmer | rhythm hit perfect, combo chime | 3 (one per grade) |
 
+## Ultimates
+
+Every Ultimate has its own sounds (2026-10-17: before this they all reused `whoosh` / `hit` / `zap` / `wall` and the cut-in was `upgrade`).
+Gameplay plays them with `g.sfx('ult', '<key>')`, which calls `SFC.Audio.ult(key)` in `src/engine/ultsfx.js` (synth recipes built on `SFC.Audio.synth`).
+Online they travel by name like every other sound, so the packet format is unchanged. Generic impact sounds (`hit`, `kick`) stay at the impact so pad rumble still works;
+the `ult` sound is the part that tells you which Ultimate it is. Loudness was checked with an `OfflineAudioContext` render: big blasts peak ~2–3× a normal `hit`, everything else sits near it.
+
+| Key | Ultimate · when | Sound |
+|---|---|---|
+| `cut.<school>` | Every Ultimate · cut-in (school of its first tag) | Short stinger per school: runner = fast saw arpeggio, playmaker = major triangle arpeggio, striker = power chord, brawler = punch + low chord, launcher = rising boom, trickster = wobbly sine notes, iron = metallic ring, chaos = random detuned blips |
+| `cycle.start` / `cycle.zap` | Light Cycle · start / someone crosses the wall | Electric engine rev · buzzing 60 Hz zap |
+| `tiki.start` / `tiki.pass0..3` / `tiki.finale` | Endless Tiki-Taka · start / each pass / final shot | Samba flute run · marimba note rising each pass · chord |
+| `meteor.leap` / `meteor.fall` / `meteor.boom` | Meteor Shot | Rising whoosh · falling bomb whistle · deep blast |
+| `fists.pop` / `fists.final` | Hundred Fists · every punch / finisher | Machine-gun pops · heavy punch with a ring |
+| `moon.stomp` / `moon.float` | Moon Stomp · landing | Thud · floaty theremin |
+| `clone.poof` / `clone.strike` | Clone Army | Four staggered puffs + chime · double blip |
+| `titan.grow` / `titan.step` | Titan · grow / each giant step | Bass sliding up + rising notes · footstep boom |
+| `tilt.creak` | Pitch Tilt | Creaking wobble |
+| `comet.one` / `comet.two` / `comet.bike` / `comet.strike` | Comet One-Two | Two crisp ticks · spinning whoosh · sparkly strike |
+| `dragon.up` / `dragon.roar` | Rising Dragon · uppercut / dragon kick | Rising square sweep · growling roar |
+| `hurricane` | Hurricane Kick · whole spin (`params.time`) | Howling wind |
+| `smoke.pop` | Smoke Bomb | Pop + long hiss |
+| `chain.rattle` / `chain.trip` | Iron Chain · start / someone trips | Chain rattle + clank · metal clink |
+| `hammer.spin` / `hammer.slam` | Iron Hammer · each spin turn / slam | Heavy whoosh · blast + steel ring + quake rumble |
+| `phase.blink` | Phase Step · each blink | Portal "vwomp" in and out + sparkle |
+| `sling.stretch` / `sling.release` | Slingshot | Rubber creak · boing twang |
+| `storm.warn` / `storm.bolt` | Thunderstorm · each warning circle / each strike | Tiny tick · thunder crack + rumble |
+| `bullet.slow` / `bullet.boom` | Bullet Time · slow-mo starts / shot | Time slowing "bwoom" + heartbeat · sonic boom |
+| `rocket.ignite` / `rocket.launch` / `rocket.boom` | Rocket Punch | Engine ignition · rocket jet · explosion |
+| `truck.horn` / `truck.engine` / `truck.crash` | Monster Truck · summon / drive (`params.time`) / knocked out | Two-tone horn · engine rumble · crash + debris |
+| `boomer.throw` / `boomer.catch` | Mega Boomerang · whole flight / catch | Whirring rotor · wooden clack |
+| `puppet.shoot` / `puppet.link` / `puppet.gotcha` / `puppet.snap` | Puppet Master · string flies / linking / puppets / string cut | String zing · tension creak · minor music box · snap |
+| `rage.roar` / `rage.stomp` | Rage · roar / each stomp | Ape roar + chest drums · blast + long quake rumble |
+| `cannon.fire` / `cannon.whistle` / `cannon.boom` | Cannonball | Cannon boom · falling whistle · big explosion |
+| `boulder.summon` / `boulder.grow1..3` / `boulder.miss` / `boulder.crumble` / `boulder.roll` | Boulder Rider | Rock thunk · crunch + rising notes per size · wobble · rocks rattling apart · rolling rumble |
+| `ghost.rise` / `ghost.grab` | Ghost Hands | Ghostly "ooo" · snatch |
+| `portal.open` / `portal.kick` | Portal Kicks · each portal / each kick | Rising "vwip" · kick through the portal |
+| `spike.erupt` | Earth Spike · each eruption | Rock crunch + thud |
+| `medusa.hiss` / `medusa.stone` | Medusa Gaze | Snake hiss · stone crackle |
+| `vhs.stop` | VHS Rewind · before `rewind` | Tape-stop slide |
+| `wall.hand0..2` / `wall.arrive` | Magic Wall Pass · each magic hand / ball arrives | Chime rising per hand · "ta-da" |
+| `chicken.ray` / `chicken.bawk` | Chicken Ray · beam / each chicken | Wobbly ray · "bawk-bawk-BAWK" |
+| `jack.crank` / `jack.pop` | Jack-in-the-Box · boxes placed / glove pops | Music-box crank tune · spring boing |
+| `pinball.flip` / `pinball.ding` | Pinball Kick · launch / each bounce | Flipper clack · bumper bell |
+| `panic.spook` / `panic.boo` | Panic Ball · ball released / someone panics | Spooky theremin · falling scream |
+| `magnet.drop` / `magnet.hum` | Mega Magnet · falls / pulls | Falling whistle · magnetic hum |
+
 ## Match flow
 
 | Name | Plays when | Current sound | Look for | Variants |

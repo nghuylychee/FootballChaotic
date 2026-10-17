@@ -793,6 +793,17 @@ window.SFC = window.SFC || {};
   function drawBallSkin(ctx, b, x, by) {
     const t = (b.roll || 0) * 0.3, now = performance.now() / 1000;
     switch (b.skin) {
+      case 'monster': {   // Panic Ball: bóng ma quái — mắt đỏ giận, răng nhọn, quầng xanh + đuôi khói
+        ctx.globalCompositeOperation = 'lighter';
+        disc(ctx, x, by, 8, 'rgba(127,231,255,0.3)');
+        ctx.globalCompositeOperation = 'source-over';
+        for (let i = 1; i <= 3; i++) px(ctx, x - i * 2 + Math.round(Math.sin(now * 20 + i) * 1), by + 3 + i, 2, 1, 'rgba(232,251,255,0.6)');
+        disc(ctx, x, by, 5, OUT); disc(ctx, x, by, 4, '#e8fbff');
+        px(ctx, x - 3, by - 3, 2, 1, OUT); px(ctx, x + 2, by - 3, 2, 1, OUT);                 // lông mày cau
+        px(ctx, x - 3, by - 2, 2, 2, '#ff3d5a'); px(ctx, x + 2, by - 2, 2, 2, '#ff3d5a');     // mắt
+        px(ctx, x - 2, by + 1, 5, 2, OUT); px(ctx, x - 2, by + 1, 1, 1, '#ffffff'); px(ctx, x, by + 1, 1, 1, '#ffffff'); px(ctx, x + 2, by + 1, 1, 1, '#ffffff');
+        return true;
+      }
       case 'blackhole':
         ctx.globalCompositeOperation = 'lighter';
         disc(ctx, x, by, 7, 'rgba(157,123,255,0.35)');
@@ -837,18 +848,6 @@ window.SFC = window.SFC || {};
         const f = Math.floor(t) % 2;
         px(ctx, x - 4, by - 4, 8, 8, OUT); px(ctx, x - 3, by - 3, 6, 6, f ? '#ff3d5a' : '#3f8cff');
         px(ctx, x - 3, by - 3, 6, 1, 'rgba(255,255,255,0.5)'); px(ctx, x - 1, by - 1, 2, 2, f ? '#ffd23f' : '#9dff3d');
-        return true;
-      }
-      case 'dodge': {   // Dodgeball: bóng né cao su đỏ
-        disc(ctx, x, by, 5, OUT); disc(ctx, x, by, 4, '#ff3d5a');
-        px(ctx, x - 4, by, 9, 1, '#a8203a'); px(ctx, x - 2, by - 3, 2, 1, '#ffb0bc');
-        return true;
-      }
-      case 'boulder': {   // Boulder Shot: tảng đá khổng lồ lăn (vân đá xoay theo quãng lăn)
-        disc(ctx, x, by - 5, 10, OUT); disc(ctx, x, by - 5, 9, '#7a6e5f');
-        disc(ctx, x - 2, by - 8, 5, '#8f8371');
-        for (let i = 0; i < 4; i++) { const a = t * 0.6 + i * 1.6; px(ctx, x + Math.round(Math.cos(a) * 5), by - 5 + Math.round(Math.sin(a) * 4), 2, 1, '#544b40'); }
-        px(ctx, x - 4, by - 11, 3, 1, '#b5a890');
         return true;
       }
       case 'ghost': {   // Vanishing Ball: tàng hình — chỉ còn vệt gợn sóng mờ (thủ môn đọc theo vệt này)

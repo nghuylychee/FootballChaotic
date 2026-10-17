@@ -996,9 +996,13 @@ window.SFC = window.SFC || {};
       const status = it.known
         ? `<div class="ul-st on">${PX().ui('check', 'sm')} ${esc(this.recipeText(e))}${e.lv > 1 ? ` · ${'★'.repeat(e.lv)}` : ''}</div>`
         : `<div class="ul-st lock">${PX().ui('lock', 'sm')} ${esc(_t('Undiscovered'))}</div>`;
+      // khi nào dùng được (CoreSystem.ultUse — đọc thẳng từ config, ngoài trận không có CoreSystem)
+      const d = CORES().list[e.id], use = d.needsBall ? 'ball' : d.noBall ? 'noBall' : 'any';
+      const useTxt = { ball: _t('Use it while you hold the ball'), noBall: _t('Use it only without the ball'), any: _t('Use it anytime') }[use];
+      const useLine = it.known ? `<div class="ul-use u-${use}">${esc(useTxt)}</div>` : '';
       return `<div class="ul-panel ${it.known ? '' : 'locked'}">
           ${card}
-          <div class="ul-side">${status}
+          <div class="ul-side">${status}${useLine}
             <div class="ul-note">${_t('Stack Cores of one school in a match to unlock its Ultimate. More of that school evolves it. Charge it, then fire it with {key}.', { key })}</div>
             <div class="ul-count">${esc(_t('DISCOVERED {n}/{total}', { n, total }))}</div>
           </div>

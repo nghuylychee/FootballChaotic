@@ -258,6 +258,7 @@ window.SFC = window.SFC || {};
         if (!m) return;
         E.tint('#704214', 2.4, 0.3);
         E.callout('TIKI-TAKA!', '#ffd23f', 1.2);
+        g.sfx('ult', 'tiki.start');
         for (const o of g.teams[1 - team].players) { o.buffs.push({ speed: prm.slow, t: prm.slowTime }); o.charging = false; }
         // đường chuyền THẬT (Actions.passTo): đối thủ bị làm chậm nhưng đứng đúng chỗ vẫn cắt được -> cắt là dừng chuỗi
         const step = (i) => {
@@ -272,6 +273,7 @@ window.SFC = window.SFC || {};
           E.beam(from.x, from.y - 4, ang, U.dist(from, to), 4, '#ffd23f', 1.2);
           from.state = 'normal';
           Act().passTo(g, from, to, 'ground');
+          g.sfx('ult', 'tiki.pass' + (i % 4));   // mỗi đường chuyền một nốt cao dần
           b.vx *= prm.passSpeed; b.vy *= prm.passSpeed;
           b.fx.string = true;
           let T = 0;
@@ -297,6 +299,7 @@ window.SFC = window.SFC || {};
           b.fx.string = true;
           b.skin = 'light';
           E.comic(s.x, s.y - 32, 'SYMPHONY!', '#ffd23f', 1.2, 0.8);
+          g.sfx('ult', 'tiki.finale');
           E.wave(s.x, s.y, 36, '#ffd23f', 0.5, 3);
           E.shake(5, 0.3);
         };
@@ -369,7 +372,8 @@ window.SFC = window.SFC || {};
         for (const q of g.players) b.noPickup.set(q.id, prm.delay + 0.1);   // không ai chạm được bóng đang bay lên
         E.burst(s.x, s.y, 0, '#8a7f70', 14, 90);
         E.wave(s.x, s.y, 24, '#ffffff', 0.4, 2);
-        g.sfx('whoosh');
+        g.sfx('ult', 'meteor.leap');
+        g.later(Math.max(0, prm.delay - 0.5), () => g.sfx('ult', 'meteor.fall'));
         g.later(prm.delay - 0.17, () => {
           if (g.state !== 'play') return;
           g.slowMo(0.25, 0.4);
@@ -390,6 +394,7 @@ window.SFC = window.SFC || {};
           H.applyFire(sys, team, b, SFC_CONFIG.cores.list.fire_shot.params);
           E.comic(b.x, b.y - b.z - 10, 'BOOM!', '#ff6a1f', 1.2, 0.6);
           E.shake(5, 0.3);
+          g.sfx('ult', 'meteor.boom');
           g.sfx('kick', 1);
         });
       },
@@ -497,7 +502,7 @@ window.SFC = window.SFC || {};
           E.burst(o.x + U.rand(-4, 4), o.y - 8 + U.rand(-6, 6), 8, '#fff6a0', 4, 60, 0.3);
           if (n % 4 === 0) E.combo(o.x, o.y - 30, n);
           if (n % 3 === 0) E.shake(1.5, 0.05);
-          if (n % 2) g.sfx('tackle');
+          g.sfx('ult', 'fists.pop');
           o.state = 'stun'; o.stateT = Math.max(o.stateT, 0.5); o.kbx = o.kby = 0;
           pl.state = 'recover'; pl.stateT = Math.max(pl.stateT, 0.2);
           if (n < prm.hits) g.later(prm.gap, punch); else g.later(0.08, finisher);
@@ -510,6 +515,7 @@ window.SFC = window.SFC || {};
           sys.moment(team, 'hundred_fists', prm.hits + ' HIT!', 80);
           E.zoom(o.x, o.y, 0.2, 0.35);
           E.shake(8, 0.4);
+          g.sfx('ult', 'fists.final');
           // văng về phía tường trên / dưới gần nhất -> chắc chắn BONK
           const toTop = o.y - f.y < f.y + f.h - o.y;
           // nạn nhân đang choáng vì chuỗi đấm -> Player.hit bỏ qua đòn mới (chống khoá choáng). Thả choáng trước để cú kết
@@ -632,7 +638,7 @@ window.SFC = window.SFC || {};
         E.callout('CLONES!', '#9d7bff', 1.0);
         E.burst(pl.x, pl.y, 6, '#d8d0e0', 24, 120, 0.7);
         E.comic(pl.x, pl.y - 30, 'POOF!', '#d8d0e0', 1, 0.6);
-        g.sfx('whoosh');
+        g.sfx('ult', 'clone.poof');
         if (b.owner === pl) {
           // có bóng: 4 ảo ảnh toả lên phía trước, mỗi cái dắt 1 bóng giả -> hậu vệ bị lừa
           const decoys = [];
@@ -667,6 +673,7 @@ window.SFC = window.SFC || {};
           o.hitImmune = 0;
           o.hit({ stun: prm.stun, kbx: 0, kby: 0, source: pl, type: 'light' });
           g.sfx('hit');
+          g.sfx('ult', 'clone.strike');
         });
       },
       update(sys, team, prm) { cloneBlock(sys, team, prm.owner); },
@@ -721,6 +728,7 @@ window.SFC = window.SFC || {};
         E.shake(6, 0.4);
         E.wave(pl.x, pl.y, 40, '#ffd23f', 0.5, 3);
         g.sfx('hit');
+        g.sfx('ult', 'titan.grow');
         let stepT = 0;
         sys.task((dt) => {
           if (pl.titanT <= 0) return true;
@@ -729,7 +737,7 @@ window.SFC = window.SFC || {};
             E.shake(2.5, 0.12);
             E.decal('crack', pl.x, pl.y, 0.6, 1.5);
             E.burst(pl.x, pl.y, 0, '#8a7f70', 5, 40);
-            g.sfx('wall');
+            g.sfx('ult', 'titan.step');
           }
           trample(sys, team, pl, prm, 'BONK!');
           return false;
@@ -1032,8 +1040,7 @@ window.SFC = window.SFC || {};
         E.callout('PITCH TILT!', '#ffd23f', 1);
         E.burst(pl.x, pl.y - 10, 10, CHAOS, 20, 120, 0.6);
         E.shake(5, 0.5);
-        g.sfx('whoosh');
-        g.sfx('wall');
+        g.sfx('ult', 'tilt.creak');
         let T = 0;
         sys.task((dt) => {
           if (g.state !== 'play' || (T += dt) >= prm.time) return true;

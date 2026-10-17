@@ -99,6 +99,8 @@ window.SFC = window.SFC || {};
         ? (p === cp ? CC.me : p.team === g.humanTeam ? CC.ally : CC.opp) : null);
       // trận xếp hạng (Main Path): chỉ dấu mũi tên của máy này — người thật khác không khác gì người chơi giả
       const rank = !!g.opts.mainPath, seatRing = (c) => c && (!rank || c === cp);
+      // Smoke Bomb: người tàng hình (p.ghostT) — đối thủ của máy này không thấy gì (cả bóng ở chân), đội mình thấy bóng mờ
+      const unseen = (p) => p.ghostT > 0 && g.humanTeam >= 0 && p.team !== g.humanTeam;
 
       const drawFootRing = (cx, cy, r, thick, col) => {
         const OUT = SP().OUT;
@@ -110,6 +112,7 @@ window.SFC = window.SFC || {};
       if (!g.preview && g.humanTeam >= 0) {
         const FR = C.footRings || { me: { r: 8, thick: 1 }, other: { r: 7, thick: 1 } };
         for (const p of g.players) {
+          if (unseen(p)) continue;   // vòng chân không được làm lộ người đang tàng hình
           const isMe = p === cp;
           const isAlly = p.team === g.humanTeam;
           const col = isMe ? CC.me : isAlly ? CC.ally : CC.opp;
@@ -136,22 +139,31 @@ window.SFC = window.SFC || {};
       for (const pr of SFC.VFX.props(g)) list.push({ y: pr.y, k: 'pr', o: pr.o });   // vật thể Tuyệt kỹ (cột đá, đe, gương...)
       list.sort((a, b) => a.y - b.y);
       const marks = [];
+      let hidden = null;   // người đang điều khiển đang tàng hình (chữ HIDDEN trên đầu + viền màn hình)
 
       for (const e of list) {
         if (e.k === 'p') {
           const p = e.o;
+          if (unseen(p)) continue;
           // khổng lồ (VFX Kit GI): phóng to quanh bàn chân
           const s = p.sizeMul || 1;
-          // Mirage Sprint: đang tàng hình -> vẽ mờ sprite (cả bóng đang dắt)
+          // Smoke Bomb: đồng đội đang tàng hình -> vẽ mờ sprite (cả bóng đang dắt)
           const ghost = p.ghostT > 0;
+          if (ghost && p === cp && !g.preview) hidden = p;
           SFC.VFX.under(ctx, g, p);
           if (s !== 1) { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(s, s); ctx.translate(-p.x, -p.y); }
           const dive = p.atkType === 'diveU' || p.atkType === 'diveD';
           // drawPlayer tự đặt globalAlpha theo tham số alpha
           // ăn mừng bàn thắng (src/render/celebrate-draw.js): chỉ trong lúc trận dừng sau bàn thắng
           const cel = p.celId && g.state === 'goal' && !(p.airZ > 0);
-          let hy = cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.28 + 0.08 * Math.sin(t * 18) : 1);
+          // King Kong / đứng trên tảng đá / con gà: vật thể Tuyệt kỹ tự vẽ nhân vật (render/vfx.js), bỏ sprite thật
+          const swap = SFC.VFX.hides(g, p);
+          // hoảng sợ (Panic Ball): run lẩy bẩy
+          const shiver = SFC.VFX.has(g, p, 'panic') ? (Math.floor(t * 30) % 2 ? 1 : -1) : 0;
+          if (shiver) { ctx.save(); ctx.translate(shiver, 0); }
+          let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.28 + 0.08 * Math.sin(t * 18) : 1);
           ctx.globalAlpha = 1;
+          if (shiver) ctx.restore();
           if (s !== 1) { ctx.restore(); hy = p.y + (hy - p.y) * s; }
           SFC.VFX.form(ctx, g, p);
           SFC.VFX.arm(ctx, g, p);
@@ -172,6 +184,7 @@ window.SFC = window.SFC || {};
             }
           }
         } else if (e.k === 'b') {
+          if (g.ball.owner && unseen(g.ball.owner)) continue;
           const ghostBall = g.ball.owner && g.ball.owner.ghostT > 0;
           if (ghostBall) ctx.globalAlpha = 0.3;
           this.ballTrail(ctx, g.ball);
@@ -242,9 +255,11 @@ window.SFC = window.SFC || {};
       // VFX Kit: lỗ đen, luồng tia, tia sét, chiêu bay, chữ comic
       SFC.VFX.top(ctx, g);
       for (const m of marks) this.ctrlMark(ctx, m.p, m.hy, m.cc, t);
+      if (hidden) this.hiddenMark(ctx, hidden, t);
       ctx.restore();
 
       ctx.drawImage(this.vig, 0, 0);
+      if (hidden) this.stealthVignette(ctx, t);
       if (g.finalPush && g.state === 'play') {
         ctx.globalAlpha = 0.18 + Math.sin(t * 5) * 0.08;
         ctx.strokeStyle = '#ff3d5a'; ctx.lineWidth = 4;
@@ -257,6 +272,34 @@ window.SFC = window.SFC || {};
       }
       // VFX Kit: phủ màu, tia tốc độ, cut-in, callout, impact frame (toạ độ màn hình)
       SFC.VFX.overlay(ctx, g);
+    },
+
+    // Smoke Bomb: mình đang tàng hình — mắt gạch chéo + chữ HIDDEN trên đầu
+    hiddenMark(ctx, p, t) {
+      const { px, OUT } = SP(), x = Math.round(p.x), y = Math.round(p.y) - 40 + Math.round(Math.sin(t * 4));
+      px(ctx, x - 6, y - 3, 13, 7, OUT);
+      px(ctx, x - 5, y - 2, 11, 5, '#b9a6d9'); px(ctx, x - 2, y - 2, 5, 5, '#3a2f4a'); px(ctx, x - 1, y - 1, 1, 1, '#ffffff');
+      for (let i = 0; i < 9; i++) px(ctx, x - 5 + i, y + 3 - i, 2, 1, i % 2 ? OUT : '#ffffff');   // gạch chéo
+      const str = SFC.t('HIDDEN');
+      ctx.font = SFC.I18n.isCJK(str) ? '12px ' + SFC.I18n.pxFont() : '8px ' + SFC_CONFIG.game.render.pixelFont;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = OUT; ctx.fillText(str, x + 1, y - 6);
+      ctx.fillStyle = '#d8d0e0'; ctx.fillText(str, x, y - 7);
+    },
+    // viền màn hình tím than khi mình đang tàng hình (toạ độ màn hình)
+    stealthVignette(ctx, t) {
+      const C = SFC_CONFIG.game.render;
+      if (!this.svig) {
+        const cv = document.createElement('canvas');
+        cv.width = C.width; cv.height = C.height;
+        const c2 = cv.getContext('2d'), gr = c2.createRadialGradient(C.width / 2, C.height / 2, C.height * 0.35, C.width / 2, C.height / 2, C.width * 0.62);
+        gr.addColorStop(0, 'rgba(26,18,38,0)'); gr.addColorStop(1, 'rgba(26,18,38,0.85)');
+        c2.fillStyle = gr; c2.fillRect(0, 0, C.width, C.height);
+        this.svig = cv;
+      }
+      ctx.globalAlpha = 0.8 + 0.15 * Math.sin(t * 3);
+      ctx.drawImage(this.svig, 0, 0);
+      ctx.globalAlpha = 1;
     },
 
     // dấu người mình điều khiển, vẽ sau mọi VFX: nửa trước vòng chân + mũi tên trên đầu.
@@ -387,7 +430,7 @@ window.SFC = window.SFC || {};
       if (this.cosFor !== g) { list.length = 0; this.cosFor = g; }
       for (const p of g.players) {
         const kind = p.look.fx, d = S.FX[kind];
-        if (!d || p.airZ > 0) continue;
+        if (!d || p.airZ > 0 || p.ghostT > 0) continue;   // tàng hình (Smoke Bomb): không để lại vệt trang phục
         const sp = Math.hypot(p.vx || 0, p.vy || 0);
         if (sp < 40) continue;
         p.cosAcc = (p.cosAcc || 0) + d.rate * dt * (sp > 110 ? 1.6 : 1);

@@ -29,6 +29,10 @@ window.SFC = window.SFC || {};
       p.intent.mx = mx;
       p.intent.my = my;
       p.intent.sprint = input.isDown('sprint');
+      // bấm sút ở bước này (Tuyệt kỹ tự điều khiển người chơi đọc được, vd. Bullet Time: bấm sút để kết thúc)
+      p.intent.shootTap = input.wasPressed('shoot');
+      // hoảng sợ (Panic Ball): hướng nhắm cũng đảo (di chuyển đã đảo trong Player.moveNormal)
+      if (p.panicT > 0) { mx = -mx; my = -my; }
       // hướng nhắm (chuyền / sút / lướt) luôn là vector đơn vị như phím mũi tên
       if (st) { const l = Math.hypot(mx, my); mx /= l; my /= l; }
 

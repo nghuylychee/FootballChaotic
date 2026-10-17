@@ -59,53 +59,63 @@ SFC_CONFIG.cores = {
     renamed: {
       lightning_dash: 'light_cycle', meteor_drop: 'moon_stomp',
       comet_dropkick: 'hurricane_kick',
-      phantom_barrage: 'hypno_eyes',
+      phantom_barrage: 'smoke_bomb',
       steel_formation: 'iron_chain',
       mirage_sprint: 'phase_step',
-      flash_strike: 'time_stop_strike',
+      flash_strike: 'bullet_time',
       thunder_rush: 'rocket_punch',
       steel_express: 'monster_truck',
-      sky_volley: 'boomerang_kick',
-      knockout_volley: 'dodgeball',
+      sky_volley: 'mega_boomerang',
+      knockout_volley: 'rage',
       wrecking_ball: 'boulder_shot',
       shadow_ambush: 'ghost_hands',
       crossfire_kicks: 'portal_kicks',
       iron_quake: 'earth_spike',
       mirror_wall: 'medusa_gaze',
       wormhole_dash: 'vhs_rewind',
-      wild_pass: 'banana_pass',
+      wild_pass: 'magic_wall_pass',
       wild_haymaker: 'jack_in_box',
       iron_dice: 'mega_magnet',
       // đợt 2 (2026-10-15, sau khi user thử phòng test)
       lightning_relay: 'thunderstorm',
       sonic_fist: 'rocket_punch',
       lead_blocker: 'monster_truck',
-      vanishing_ball: 'hypno_eyes',
-      ghost_pass: 'switcheroo',
-      parry_volley: 'dodgeball',
+      vanishing_ball: 'smoke_bomb',
+      ghost_pass: 'puppet_master',
+      parry_volley: 'rage',
       hall_of_mirrors: 'medusa_gaze',
-      magnet_ball: 'banana_pass',
-      jackpot_shot: 'shrink_ray',
+      magnet_ball: 'magic_wall_pass',
+      jackpot_shot: 'chicken_ray',
       anvil_rain: 'mega_magnet',
+      // đợt 3 (2026-10-17)
+      hypno_eyes: 'smoke_bomb',
+      time_stop_strike: 'bullet_time',
+      // đợt 4 (2026-10-17)
+      boomerang_kick: 'mega_boomerang',
+      switcheroo: 'puppet_master',
+      dodgeball: 'rage',
+      banana_pass: 'magic_wall_pass',
+      shrink_ray: 'chicken_ray',
+      shell_game: 'panic_ball',
     },
     // Tuyệt kỹ lai (user duyệt 2026-10-13): 7 cặp từng có Core cầu nối + Slingshot, rồi 13 cặp còn lại. Hành vi ở src/systems/cores-hybrid.js
     hybrids: [
       { id: 'comet_onetwo', tags: ['striker', 'playmaker'] },
       { id: 'rising_dragon', tags: ['brawler', 'launcher'] },
       { id: 'hurricane_kick', tags: ['runner', 'launcher'] },
-      { id: 'hypno_eyes', tags: ['trickster', 'striker'] },
+      { id: 'smoke_bomb', tags: ['trickster', 'striker'] },
       { id: 'iron_chain', tags: ['iron', 'playmaker'] },
       { id: 'iron_hammer', tags: ['brawler', 'iron'] },
       { id: 'phase_step', tags: ['runner', 'trickster'] },
       { id: 'slingshot', tags: ['brawler', 'playmaker'] },
       // 13 cặp còn lại (user duyệt 2026-10-14) -> đủ 21 cặp, 2 + 2 nào cũng ra Tuyệt kỹ
       { id: 'thunderstorm', tags: ['runner', 'playmaker'] },
-      { id: 'time_stop_strike', tags: ['runner', 'striker'] },
+      { id: 'bullet_time', tags: ['runner', 'striker'] },
       { id: 'rocket_punch', tags: ['runner', 'brawler'] },
       { id: 'monster_truck', tags: ['runner', 'iron'] },
-      { id: 'boomerang_kick', tags: ['playmaker', 'launcher'] },
-      { id: 'switcheroo', tags: ['playmaker', 'trickster'] },
-      { id: 'dodgeball', tags: ['striker', 'brawler'] },
+      { id: 'mega_boomerang', tags: ['playmaker', 'launcher'] },
+      { id: 'puppet_master', tags: ['playmaker', 'trickster'] },
+      { id: 'rage', tags: ['striker', 'brawler'] },
       { id: 'cannonball', tags: ['striker', 'launcher'] },
       { id: 'boulder_shot', tags: ['striker', 'iron'] },
       { id: 'ghost_hands', tags: ['brawler', 'trickster'] },
@@ -114,21 +124,21 @@ SFC_CONFIG.cores = {
       { id: 'medusa_gaze', tags: ['trickster', 'iron'] },
       // Hỗn loạn + 7 hệ còn lại (2026-10-14) -> đủ 28 cặp của 8 trường phái
       { id: 'vhs_rewind', tags: ['chaos', 'runner'] },
-      { id: 'banana_pass', tags: ['chaos', 'playmaker'] },
-      { id: 'shrink_ray', tags: ['chaos', 'striker'] },
+      { id: 'magic_wall_pass', tags: ['chaos', 'playmaker'] },
+      { id: 'chicken_ray', tags: ['chaos', 'striker'] },
       { id: 'jack_in_box', tags: ['chaos', 'brawler'] },
       { id: 'pinball_kick', tags: ['chaos', 'launcher'] },
-      { id: 'shell_game', tags: ['chaos', 'trickster'] },
+      { id: 'panic_ball', tags: ['chaos', 'trickster'] },
       { id: 'mega_magnet', tags: ['chaos', 'iron'] },
     ],
   },
 
-  // Tuyệt kỹ: năng lượng chỉ nạp khi ghi bàn hoặc cướp được bóng
-  // Luật Tuyệt kỹ (user duyệt 2026-10-13): needsBall = chỉ bấm được khi đội mình đang cầm bóng (không bao giờ giật bóng);
+  // Luật Tuyệt kỹ (user duyệt 2026-10-13, sửa 2026-10-17): needsBall = chỉ bấm được khi CHÍNH MÌNH cầm bóng (không bao giờ giật bóng);
   // mọi đòn của Tuyệt kỹ có báo trước sau cut-in (telegraph) và né được bằng Z; trạng thái bất khả xâm phạm ngắn.
-  // Năng lượng Tuyệt kỹ (X), 0..1: ghi bàn · bị thủng lưới · cướp bóng (tối đa 1 lần / stealCooldown giây) ·
-  // đấm trúng đối thủ bằng Light attack (tối đa 1 lần / lightHitCooldown giây). lockout: dùng xong bao lâu không nạp
-  ultimate: { gainGoal: 0.5, gainConceded: 0.3, gainSteal: 0.12, stealCooldown: 3, gainLightHit: 0.05, lightHitCooldown: 1, lockout: 10, cutIn: 0.6, aiDelay: [0.5, 2.5] },
+  // Năng lượng Tuyệt kỹ (X), 0..1: tự nạp theo thời gian gainTime / giây lúc đang đá (user chốt 2026-10-17; 0.02 = ~50s đầy nếu chỉ nạp theo thời gian) · bị thủng lưới ·
+  // ghi bàn (bị thủng lưới nạp NHIỀU hơn ghi bàn — user đổi 2026-10-17, đội đang thua có chiêu gỡ) · cướp bóng (tối đa 1 lần / stealCooldown giây) ·
+  // đấm trúng đối thủ bằng Light attack (tối đa 1 lần / lightHitCooldown giây). lockout: dùng xong bao lâu không nạp (= hồi chiêu)
+  ultimate: { gainTime: 0.02, gainGoal: 0.3, gainConceded: 0.5, gainSteal: 0.12, stealCooldown: 3, gainLightHit: 0.05, lightHitCooldown: 1, lockout: 10, cutIn: 0.6, aiDelay: [0.5, 2.5] },
 
   // Chọn Core: trọng số = độ hiếm x (1 + buildWeight x số Core cùng trường phái đang có) x thiên hướng đội.
   // KHÔNG bảo đảm có lá cùng hướng (user bỏ 2026-10-13): ra đúng build phải là cảm giác may mắn, không phải chắc chắn.
@@ -570,13 +580,13 @@ SFC_CONFIG.cores = {
       params: { time: 2, speed: 125, radius: 18, launch: 280, knock: 260, stun: 1.0, ballSpeed: 300 },
       scale: { time: 'pow', launch: 'pow', stun: 'pow' },
     },
-    // 🌀 + 🎯 — Hypno Eyes: mắt xoắn ốc chiếu tia thôi miên (báo trước telegraph giây, né Z được) vào tối đa targets đối thủ phía trước
-    // (ưu tiên người đứng giữa mình và khung): người trúng đi lang thang ra xa khung time giây, ai / bóng chạm vào là tỉnh
-    hypno_eyes: {
-      name: 'Hypno Eyes', icon: '🌀', tags: ['trickster', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'Hypnotize defenders so they wander away from goal.',
-      params: { range: 230, targets: 2, telegraph: 0.3, catch: 30, time: 2.6, speed: 45 },   // catch: chạy xa khỏi chỗ tia nhắm hơn ngần này px là thoát
-      scale: { time: 'pow' },
+    // 🌀 + 🎯 — Smoke Bomb (kiểu Akali, user chốt 2026-10-17): ném bom khói rộng radius px (hình elip, cao x squash) tồn tại time giây.
+    // Người đội mình đứng trong khói tàng hình với đối thủ (đội mình thấy bóng mờ); chuyền / sút / bị đánh thì lộ reveal giây rồi lại ẩn
+    smoke_bomb: {
+      name: 'Smoke Bomb', icon: '💨', tags: ['trickster', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Drop a smoke cloud that hides your whole team inside.',
+      params: { radius: 82, squash: 0.6, time: 5, reveal: 0.5 },
+      scale: { time: 'pow', radius: 'pow' },
     },
     // 🛡 + 🎼 — Iron Chain: xích thép nối người dùng với từng đồng đội trọn time giây (xích giãn theo người, không đứt):
     // đối thủ chạy vào xích bị vấp ngã, đường chuyền của đội không bị cắt (CoreSystem.passGuarded)
@@ -586,21 +596,22 @@ SFC_CONFIG.cores = {
       params: { time: 3.5, width: 5, stun: 0.9, knock: 140 },
       scale: { time: 'pow', stun: 'pow' },
     },
-    // 🥊 + 🛡 — Iron Hammer (búa kiểu Poppy): chỉ dùng khi KHÔNG cầm bóng (noBall). Lôi búa khổng lồ ra gồng windup giây
-    // (xoay hướng được), nện hình quạt phía trước: đối thủ trúng bay rất xa theo hướng búa
+    // 🥊 + 🛡 — Iron Hammer (user chốt 2026-10-17): chỉ dùng khi KHÔNG cầm bóng (noBall). Cầm búa xoay vòng tròn spin giây (xoay hướng được,
+    // vạch đường địa chấn báo trước), rồi nện xuống: địa chấn chạy thẳng về trước speed px/s, dài length px, rộng width px:
+    // đối thủ trên đường bị hất bay cao (launch), bóng lỏng trên đường cũng bị hất tung. Bị đấm lúc xoay là huỷ, lướt Z lúc sóng tới là thoát
     iron_hammer: {
       name: 'Iron Hammer', icon: '🔨', tags: ['brawler', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true, noBall: true,
-      desc: 'Swing a giant hammer that sends opponents flying.',
-      params: { windup: 0.55, range: 48, arc: 70, knock: 720, launch: 180, stun: 1.4 },
-      scale: { knock: 'pow', stun: 'pow' },
+      desc: 'Spin a giant hammer, then slam a launching quake.',
+      params: { spin: 0.95, turns: 2, length: 270, width: 22, speed: 560, knock: 90, launch: 400, stun: 1.5, ballUp: 320, ballSpeed: 140 },
+      scale: { length: 'pow', launch: 'pow', stun: 'pow' },
     },
-    // 🏃 + 🌀 — Phase Step: time giây, mỗi lần lướt Z dịch chuyển thêm distance px, hồi lướt nhanh (cdMult),
-    // để lại ảo ảnh chạy tiếp hướng cũ (AI đối thủ gần đó đuổi nhầm confuse giây)
+    // 🏃 + 🌀 — Phase Step (user chốt 2026-10-17): time giây, có blinks lượt dịch chuyển (pip trên đầu, không hồi chiêu):
+    // mỗi lần bấm Z chui vào cổng, ra ở cổng cách distance px, để lại ảo ảnh chạy tiếp hướng cũ (AI đối thủ gần đó đuổi nhầm confuse giây)
     phase_step: {
       name: 'Phase Step', icon: '👣', tags: ['runner', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'Your dodges become blinks that leave running afterimages behind.',
-      params: { time: 4, distance: 60, cdMult: 0.3, clone: 1.2, confuse: 1.2 },
-      scale: { time: 'pow', distance: 'pow' },
+      desc: 'Blink through portals again and again, leaving decoys behind.',
+      params: { time: 5, blinks: 5, distance: 78, gap: 0.12, clone: 1.2, confuse: 1.2 },
+      scale: { distance: 'pow' },
     },
     slingshot: {
       name: 'Slingshot', icon: '🪃', tags: ['brawler', 'playmaker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
@@ -615,13 +626,14 @@ SFC_CONFIG.cores = {
       params: { bolts: 9, telegraph: 0.5, gap: 0.14, radius: 18, stun: 1.0, knock: 120 },
       scale: { radius: 'pow', stun: 'pow' },
     },
-    // 🏃 + 🎯 — Time Stop Strike: thời gian ngưng (mọi người + bóng đứng yên), người cầm bóng chớp quanh bóng đá kicks lần
-    // (bóng chỉ nhích step px, mũi tên hiện cho cả sân thấy). Hết ngưng: đối thủ cử động lại trước react giây (kịp chạy ra chắn
-    // mũi tên) rồi bóng mới bay với lực sút x speed; thủ môn đã thấy trước nên dễ bắt hơn (gk âm)
-    time_stop_strike: {
-      name: 'Time Stop Strike', icon: '⏱', tags: ['runner', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
-      desc: 'Freeze time, kick the ball thrice, then let it fly.',
-      params: { gap: 0.4, kicks: 3, step: 22, react: 0.45, speed: 0.85, gk: -0.25 },   // react: đối thủ cử động lại trước khi bóng bay
+    // 🏃 + 🎯 — Bullet Time (kiểu Quicksilver, user chốt 2026-10-17): cả sân chạy chậm còn slow (×), người cầm bóng chạy siêu tốc speed px/s
+    // (thời gian thật) tối đa time giây, lái theo phím. Đối thủ bị lướt sát qua (touch px, không tính thủ môn trong vòng cấm) thì lúc thời gian
+    // chạy lại bị xoay mòng mòng rồi ngã (trơn té trip giây). Kết thúc bằng cú sút: bấm sút (hoặc hết giờ / tới cách khung shootAt px), lực x power, thủ môn dễ bắt hơn (gk âm)
+    bullet_time: {
+      name: 'Bullet Time', icon: '⚡', tags: ['runner', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'The world slows down while you sprint, then you shoot.',
+      params: { slow: 0.12, time: 1, speed: 280, touch: 20, trip: 1.1, power: 0.8, shootAt: 200, gk: -0.25 },
+      scale: { time: 'pow', trip: 'pow' },
     },
     // 🏃 + 🥊 — Rocket Punch: gồng windup giây (vạch thẳng ngang sân; bị đấm lúc gồng là huỷ), nắm đấm phóng ra như tên lửa bay speed px/s:
     // đối thủ đầu tiên trúng văng, bóng lỏng trên đường bị thổi về phía trước
@@ -639,41 +651,48 @@ SFC_CONFIG.cores = {
       params: { time: 2.6, speed: 210, turn: 2.6, radius: 13, knock: 320, launch: 160, stun: 1.1 },
       scale: { time: 'pow', knock: 'pow', stun: 'pow' },
     },
-    // 🎼 + 🦵 — Boomerang Kick: bóng bay theo vòng cung lớn (đường chấm hiện trước) flight giây tới đồng đội đứng cao nhất,
-    // hất ngã đối thủ bóng đi qua (né Z được); thủ môn bắt được như thường
-    boomerang_kick: {
-      name: 'Boomerang Kick', icon: '🪃', tags: ['playmaker', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
-      desc: 'Kick a huge curving arc that flattens opponents, then returns.',
-      params: { telegraph: 0.25, flight: 1.1, bend: 110, width: 10, knock: 260, launch: 200, stun: 1.0 },
-      scale: { knock: 'pow', stun: 'pow' },
+    // 🎼 + 🦵 — Mega Boomerang (user chốt 2026-10-17): ném boomerang khổng lồ bay xoắn ốc laps vòng khắp sân trong time giây
+    // (vòng to dần nhỏ lại theo spiral) rồi quay về tay người ném. Trúng AI CŨNG BỊ (cả đồng đội): hất ngã, rơi bóng. Né Z được
+    mega_boomerang: {
+      name: 'Mega Boomerang', icon: '🪃', tags: ['playmaker', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Hurl a giant boomerang that sweeps everyone, friend or foe.',
+      params: { time: 6, laps: 3, spiral: 0.55, radius: 18, knock: 220, launch: 220, stun: 1.0, every: 0.7 },
+      scale: { stun: 'pow' },
     },
-    // 🎼 + 🌀 — Switcheroo: phép tráo chỗ với đồng đội (báo trước telegraph giây): đội cầm bóng -> đồng đội đứng cao nhất;
-    // đối thủ cầm bóng -> đồng đội gần người cầm bóng nhất. Bóng ở chân ai vẫn ở chân người đó
-    switcheroo: {
-      name: 'Switcheroo', icon: '🔄', tags: ['playmaker', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'Swap places with your best-placed teammate in a puff.',
-      params: { telegraph: 0.35 },
+    // 🎼 + 🌀 — Puppet Master (user chốt 2026-10-17): bắn dây fly giây tới tối đa targets đối thủ trong range px (né Z được) → nối dây link giây
+    // (vòng tiến trình, đối thủ bị kéo chậm x drag; lướt Z / chạy xa quá linkDist px / bạn bị choáng là đứt) → con rối time giây: chạy theo
+    // hướng bạn chạy, không ra đòn / chuyền / sút. Đứt khi bạn bị choáng hoặc đi quá maxDist px
+    puppet_master: {
+      name: 'Puppet Master', icon: '🎭', tags: ['playmaker', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'String up opponents and make them copy your moves.',
+      params: { range: 170, targets: 2, fly: 0.3, link: 0.9, drag: 0.45, linkDist: 200, time: 2.6, maxDist: 280 },
+      scale: { time: 'pow' },
     },
-    // 🎯 + 🥊 — Dodgeball: cú sút hoá bóng né, nảy từ đầu đối thủ này sang đầu đối thủ khác (tối đa hits người, trong range px),
-    // ai trúng thì trơn té; hết người thì bay về khung. Né Z được, thủ môn trong vòng cấm không bị nhắm
-    dodgeball: {
-      name: 'Dodgeball', icon: '🏐', tags: ['striker', 'brawler'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
-      desc: 'Your shot ricochets off opponents\' heads, then flies at goal.',
-      params: { windup: 0.2, hits: 3, speed: 400, range: 170, slip: 1.0, slide: 200, gk: 0.15 },
-      scale: { slip: 'pow', gk: 'pow' },
+    // 🎯 + 🥊 — Rage (user chốt 2026-10-17): hoá King Kong (gầm roar giây), nhảy dậm tại chỗ stomps lần (cách nhau gap giây):
+    // mỗi lần tiếp đất là một vòng địa chấn lan ra speed px/s tới radius px, dày width px. AI CŨNG BỊ (cả đồng đội): hất tung, choáng.
+    // Né: lướt Z đúng lúc vòng địa chấn lan tới (hoặc đứng ngoài radius)
+    rage: {
+      name: 'Rage', icon: '🦍', tags: ['striker', 'brawler'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Go full ape: stomp out quake rings that hit everyone.',
+      params: { roar: 0.55, stomps: 3, gap: 0.8, radius: 190, speed: 220, width: 14, knock: 110, launch: 300, stun: 1.2 },
+      scale: { radius: 'pow', stun: 'pow' },
     },
+    // 🎯 + 🦵 — Cannonball (đợt 4: bay vòng cung như đạn pháo): sút bổng cao tới apex px, rơi xuống trước khung land px; nổ (hố + hất tung
+    // radius px) lúc chạm đất / chạm người, bóng nảy tiếp về khung (bounce x vận tốc). Vào lưới thì lưới nổ. Đồng đội đỡ được thì tháo ngòi
     cannonball: {
       name: 'Cannonball', icon: '💣', tags: ['striker', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
-      desc: 'A shot so heavy it blows up whatever it hits.',
-      params: { windup: 0.25, speed: 1.1, fuse: 2.2, radius: 52, knock: 300, launch: 260, stun: 1.3 },   // fuse: chưa chạm ai thì tự nổ
+      desc: 'Lob a bomb in a high arc that explodes on landing.',
+      params: { windup: 0.25, apex: 95, land: 80, bounce: 0.5, radius: 52, knock: 300, launch: 260, stun: 1.3 },
       scale: { radius: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
     },
-    // 🎯 + 🛡 — Boulder Shot: bóng hoá tảng đá khổng lồ lăn chậm (speed px/s) time giây, không ai nhặt được, cán bẹp người đứng trước;
-    // đối thủ đấm / đá vào tảng đá thì nó chậm lại (x slow) và lệch theo hướng cú đánh. Hết giờ / dừng hẳn -> bóng thường
+    // 🎯 + 🛡 — Boulder Rider (id cũ boulder_shot; user chốt 2026-10-17): chỉ dùng khi KHÔNG cầm bóng (noBall). Gọi tảng đá (bán kính r0)
+    // rồi đứng lên: thanh quicktime (1 lượt period giây, vùng giữa zone), bấm sút đúng vùng -> đá to gấp đôi; trượt misses lần (hoặc hết build
+    // giây mà chưa trúng lần nào) -> đá vỡ, ngã choáng fall giây. Đủ 3 lần (hết build giây: cỡ đang có) -> cưỡi đá lái time giây (speed px/s,
+    // rẽ turn rad/s), cán bẹp mọi người chạm phải, cả đồng đội. Đứng / cưỡi đá không bị đánh choáng
     boulder_shot: {
-      name: 'Boulder Shot', icon: '🪨', tags: ['striker', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
-      desc: 'The ball becomes a giant boulder rolling over everyone.',
-      params: { windup: 0.3, speed: 150, time: 3.2, r: 9, slow: 0.6, knock: 200, stun: 1.2 },
+      name: 'Boulder Rider', icon: '🪨', tags: ['striker', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true, noBall: true,
+      desc: 'Grow a boulder in rhythm, then ride it over everyone.',
+      params: { r0: 5, period: 1.4, zone: 0.26, build: 6, misses: 3, fall: 1.5, aiHit: 0.6, time: 4, speed: 125, turn: 2.6, knock: 260, launch: 140, stun: 1.2 },
       scale: { time: 'pow', stun: 'pow' },
     },
     // 🥊 + 🌀 — Ghost Hands: vũng bóng tím hiện dưới chân tối đa targets đối thủ (báo trước telegraph giây), bàn tay ma trồi lên
@@ -715,20 +734,20 @@ SFC_CONFIG.cores = {
       desc: 'Rewind everyone else a few seconds; the ball stays put.',
       params: { telegraph: 0.3, back: 2, every: 0.1, anim: 1.0 },   // anim: giây diễn tua ngược (cả sân đứng yên, mọi người chạy lùi theo đường cũ)
     },
-    // 🎲 + 🎼 — Banana Pass: chuyền tới đồng đội đứng cao nhất, bóng rải vỏ chuối dọc đường bay (mỗi every px, nằm life giây);
-    // đối thủ dẫm phải trơn té trượt đi. Nhìn thấy để đi vòng / lướt Z qua
-    banana_pass: {
-      name: 'Banana Pass', icon: '🍌', tags: ['chaos', 'playmaker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
-      desc: 'Your pass drops banana peels; opponents slip and slide.',
-      params: { every: 16, life: 6, radius: 7, slip: 1.1, slide: 220 },
-      scale: { life: 'pow', slip: 'pow' },
+    // 🎲 + 🎼 — Magic Wall Pass (user chốt 2026-10-17): đá bóng vào tường, hiện điểm hẹn (ưu tiên gần khung, trong tầm chạy tới kịp);
+    // bàn tay ma thuật thò ra từ tường ném bóng qua lại throws lần (mỗi lần seg giây, bóng bay cao, không ai chạm được) rồi thả xuống điểm hẹn.
+    // Lúc bóng tới: người đứng gần điểm hẹn nhất trong catch px nhận bóng (người ra chiêu được ưu tiên) — đối thủ đứng chờ sẵn cũng tranh được
+    magic_wall_pass: {
+      name: 'Magic Wall Pass', icon: '🧤', tags: ['chaos', 'playmaker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Bounce it off the walls; magic hands deliver it to you.',
+      params: { kickT: 0.35, throws: 3, seg: 0.5, near: 110, catch: 18, reach: 0.8 },
     },
-    // 🎲 + 🎯 — Shrink Ray: tia thu nhỏ (vạch báo trước telegraph giây, né Z được) xuyên mọi đối thủ trên đường: teo nhỏ time giây
-    // (cỡ size: tầm bắt bóng thủ môn nhỏ theo), chạy chậm còn slow
-    shrink_ray: {
-      name: 'Shrink Ray', icon: '🔬', tags: ['chaos', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'Zap opponents tiny: slower, weaker, and easier to beat.',
-      params: { telegraph: 0.35, width: 22, time: 4, size: 0.55, slow: 0.75 },
+    // 🎲 + 🎯 — Chicken Ray (user chốt 2026-10-17): tia biến hình (vạch báo trước telegraph giây, né Z được) xuyên mọi đối thủ trên đường:
+    // hoá gà time giây — rơi bóng, không chạm được bóng, không đấm / sút / chuyền / lướt được, chạy lon ton (tốc độ x speed)
+    chicken_ray: {
+      name: 'Chicken Ray', icon: '🐔', tags: ['chaos', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Zap opponents into chickens that cannot touch the ball.',
+      params: { telegraph: 0.35, width: 22, time: 3, speed: 1.05 },
       scale: { time: 'pow' },
     },
     // 🎲 + 🥊 — Jack-in-the-Box: đặt boxes hộp lò xo quanh mình (sẵn sàng sau arm giây, sống life giây); đối thủ tới gần radius
@@ -745,11 +764,13 @@ SFC_CONFIG.cores = {
       params: { range: 150, rush: 520, speed: 420, bounces: 6, time: 2.4, knock: 220, launch: 160, stun: 1.0 },   // bounces: nảy tường tối đa
       scale: { speed: 'pow', knock: 'pow', stun: 'pow' },
     },
-    shell_game: {
-      name: 'Shell Game', icon: '🥥', tags: ['chaos', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'You and your clones shuffle spots; guess which is real.',
-      params: { clones: 3, spread: 46, delay: 0.35, time: 2.2, confuse: 1.6 },   // delay: phân thân hiện ra rồi mới tráo chỗ
-      scale: { time: 'pow', confuse: 'pow' },
+    // 🎲 + 🌀 — Panic Ball (user chốt 2026-10-17): bóng hoá quái vật đuổi theo đối thủ (speed px/s, rẽ turn rad/s) tối đa targets người
+    // trong time giây; trúng ai thì người đó HOẢNG SỢ panic giây (mọi hướng di chuyển đảo ngược, rơi bóng). Né Z được. Xong thì bóng bay về chân bạn
+    panic_ball: {
+      name: 'Panic Ball', icon: '👻', tags: ['chaos', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'A spooky ball chases opponents and flips their controls.',
+      params: { speed: 240, turn: 4.5, targets: 3, time: 4, panic: 3, back: 320 },
+      scale: { panic: 'pow' },
     },
     // 🎲 + 🛡 — Mega Magnet: nam châm khổng lồ hạ xuống giữa đám đối thủ (bóng đổ + vòng báo trước telegraph giây), hút mọi đối thủ trong radius
     // về tâm pull px/s trong time giây (chạy nước rút / lướt Z thoát được); ai bị hút dính vào tâm thì choáng

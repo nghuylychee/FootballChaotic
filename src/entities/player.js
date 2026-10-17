@@ -26,7 +26,10 @@ window.SFC = window.SFC || {};
       // trạng thái Core nhìn thấy được (CoreSystem.updateStates): TOÉ ĐIỆN, nắm tay sáng (Nắm Đấm Khổng Lồ / Nắm Đấm Sắt),
       // Xe Ủi hoá to (giây còn lại), miễn choáng tới lúc (Nắm Đấm Sắt / Đội Trưởng), cú đấm trúng gần nhất + combo
       this.sprintT = 0; this.surge = false; this.fistRdy = false; this.ballT = 0; this.bullT = 0; this.armorT = 0;
-      this.ghostT = 0;        // Mirage Sprint: giây tàng hình còn lại
+      this.ghostT = 0;        // Smoke Bomb: giây tàng hình còn lại (đối thủ không thấy)
+      // trạng thái Tuyệt kỹ đợt 4 (cores-ult2.js Stat): không ra đòn / chuyền / sút / lướt được · hoảng sợ (phím di chuyển đảo ngược) ·
+      // hoá gà · con rối (chạy theo hướng người giật dây: puppet = { by: Player })
+      this.noActT = 0; this.panicT = 0; this.chickenT = 0; this.puppet = null; this.puppetT = 0;
       this.landT = -1; this.punchCombo = 0;
       this.lastHitBy = null;  // người vừa đánh trúng (tính BONK cho đúng đội)
       this.sizeMul = 1;       // VFX Kit khổng lồ: tỉ lệ vẽ + va chạm hiện tại
@@ -110,7 +113,8 @@ window.SFC = window.SFC || {};
       for (const b of this.buffs) s *= b.speed || 1;
       if (g.finalPush) s *= C.match.finalPushSpeedMult;
       if (!this.isControlled && this.keeper) s *= C.player.gkSpeedMult;
-      if (!g.isHuman(this.team) || !this.isControlled) s *= g.aiProfile(this.team).speedMult;
+      // con rối (Puppet Master) chạy theo người giật dây: không theo hệ số tốc độ AI của đội mình
+      if ((!g.isHuman(this.team) || !this.isControlled) && !this.puppet) s *= g.aiProfile(this.team).speedMult;
       return s;
     }
 
@@ -130,6 +134,10 @@ window.SFC = window.SFC || {};
         this.buffs = this.buffs.filter((b) => b.t > 0);
       }
       if (this.confused) { this.confused.t -= dt; if (this.confused.t <= 0) this.confused = null; }
+      if (this.noActT > 0) this.noActT = Math.max(0, this.noActT - dt);
+      if (this.panicT > 0) this.panicT = Math.max(0, this.panicT - dt);
+      if (this.chickenT > 0) this.chickenT = Math.max(0, this.chickenT - dt);
+      if (this.puppetT > 0 && (this.puppetT -= dt) <= 0) { this.puppetT = 0; this.puppet = null; }
       this.anim += dt;
       if (this.atkType) this.atkT += dt;
       const air = this.airZ > 0;
@@ -259,6 +267,14 @@ window.SFC = window.SFC || {};
     moveNormal(dt) {
       const C = SFC_CONFIG.game.player;
       let { mx, my } = this.intent;
+      // con rối (Puppet Master): chạy theo đúng hướng người giật dây đang chạy, bỏ qua phím / AI của chính mình
+      if (this.puppet) {
+        const m = this.puppet, sp = Math.hypot(m.vx, m.vy);
+        mx = sp > 12 ? m.vx / sp : 0; my = sp > 12 ? m.vy / sp : 0;
+        this.intent.sprint = sp > C.speed * 1.1;
+      }
+      // hoảng sợ (Panic Ball): mọi hướng di chuyển đảo ngược
+      if (this.panicT > 0) { mx = -mx; my = -my; }
       const len = Math.hypot(mx, my);
       if (len > 1) { mx /= len; my /= len; }
       const moving = len > 0.1;

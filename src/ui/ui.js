@@ -559,7 +559,7 @@ window.SFC = window.SFC || {};
               <div class="ab-slot" data-k="${s.k}" title="${esc(names[s.k])}">
                 <i>${PX().ui(s.icon)}</i><div class="sw"></div><b></b><kbd>${esc(keyLabel(s.action))}</kbd>
               </div>`).join('')}${ult ? `
-              <div class="ab-slot ult lv${p.ultLv || 1}" data-k="ult" title="${esc(_t('ULTIMATE: {core}. Charge it by scoring, conceding, stealing the ball and landing punches', { core: CORES().list[ult].name + stars }))}">
+              <div class="ab-slot ult lv${p.ultLv || 1}" data-k="ult" title="${esc(_t('ULTIMATE: {core}. Charges over time, plus extra when you concede, score, steal the ball or land punches', { core: CORES().list[ult].name + stars }))}">
                 <div class="ult-fill"></div><i>${PX().core(ult)}</i><b class="ult-pct"></b><kbd>${esc(keyLabel('ultimate'))}</kbd>${stars ? `<em class="ult-lv">${'★'.repeat(p.ultLv)}</em>` : ''}
               </div>` : ''}
             </div>
@@ -620,7 +620,8 @@ window.SFC = window.SFC || {};
           c.ult.classList.toggle('full', v >= 100);
           c.ult.querySelector('.ult-pct').textContent = v >= 100 ? _t('FULL') : v + '%';   // sẵn sàng: viền vàng + rung
           // vừa được nạp: "+20%" bay lên · vừa dùng: thanh rút cạn
-          if (prev >= 0 && v > prev) {
+          // nạp theo thời gian tăng từng 1%: chỉ hiện "+x%" khi được nạp một cục (ghi bàn, cướp bóng, đấm trúng)
+          if (prev >= 0 && v - prev >= 3) {
             const f = document.createElement('span');
             f.className = 'ult-gain';
             f.textContent = '+' + (v - prev) + '%';

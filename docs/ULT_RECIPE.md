@@ -3,7 +3,7 @@
 > Trạng thái: **ĐÃ LÀM THỬ bước A + B + C (2026-10-13)**: 8 Tuyệt kỹ lai đầu tiên, rồi **đủ 21 cặp (2026-10-14)**. Cân bằng để sau.
 > **Thay cho:** 4 tài nguyên trường phái (Đà / Nhịp / Nộ / Giáp), 21 bonus Cộng hưởng 2/3/4, Tuyệt kỹ đặc trưng chọn trước trận (CHARACTER › ULTIMATE, `docs/CORE_DESIGN.md` giai đoạn 9).
 > **Cập nhật 2026-10-15:** 20 Tuyệt kỹ bị trùng cơ chế đã thay bằng chiêu mới (cùng ô công thức) — xem `docs/ULT_REDESIGN.md`. Các bảng bên dưới là lịch sử.
-> **Giữ nguyên:** năng lượng Tuyệt kỹ (nạp khi ghi bàn / bị thủng lưới / cướp bóng / đấm trúng), 5 lượt chọn Core, Core Road (`docs/CORE_ROAD.md`).
+> **Giữ nguyên:** năng lượng Tuyệt kỹ (nạp khi ghi bàn / bị thủng lưới / cướp bóng / đấm trúng; từ 2026-10-17 thêm tự nạp theo thời gian (`gainTime`, ~50s đầy), bị thủng lưới nạp nhiều hơn ghi bàn — `cores.ultimate`), 5 lượt chọn Core, Core Road (`docs/CORE_ROAD.md`).
 
 ### Vấn đề
 - Thiếu động lực chơi tiếp từ trận này qua trận khác, thiếu động lực thử build mới (so với Balatro: 1 run dài, nhiều lựa chọn; ARAM: ít lựa chọn nhưng nhân với pool tướng).
