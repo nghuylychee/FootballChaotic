@@ -81,7 +81,7 @@ window.SFC = window.SFC || {};
       o.hit({ stun: prm.stun, kbx: -d.y * side * prm.knock, kby: d.x * side * prm.knock, source: src, type: 'slash' });
       E.bolt(o.x, o.y - 22, o.x, o.y - 2, '#bdf4ff', 0.4);
       E.burst(o.x, o.y, 8, '#bdf4ff', 12, 90);
-      E.comic(o.x, o.y - 30, 'ZZT!', '#7fe7ff', 0.8, 0.5);
+      E.pop(o.x, o.y - 30, 'ZZT!', 'light', '#7fe7ff');
     }
   }
   // người cầm bóng sút thẳng về khung thành đối phương (dùng chung cho các Tuyệt kỹ sút)
@@ -121,7 +121,7 @@ window.SFC = window.SFC || {};
         E.dragon(o.x, o.y + 2, o.x, o.y - 115, 1.0, '#ff6a1f', 1.3, 16);
         E.wave(o.x, o.y, 26, '#ff6a1f', 0.4, 2);
         for (let i = 0; i < 8; i++) E.burst(o.x + Math.sin(i * 1.3) * 5, o.y, i * 8, i % 2 ? '#ff6a1f' : '#ffd23f', 4, 40, 0.6);
-        E.comic(o.x, o.y + 26, 'RISING DRAGON!', '#ff6a1f', 1.2, 0.8);   // chữ dưới chân, không che con rồng bay lên
+        E.pop(o.x, o.y + 26, 'RISING DRAGON!', 'move', '#ff6a1f');   // chữ dưới chân, không che con rồng bay lên
         g.hitStop(0.08);
         E.shake(5, 0.3);
         g.sfx('hit');
@@ -140,7 +140,7 @@ window.SFC = window.SFC || {};
           g.hitStop(0.12);
           E.impactFrame();
           E.zoom(o.x, o.y - o.airZ, 0.18, 0.35);
-          E.comic(o.x, o.y - o.airZ - 30, 'DRAGON KICK!', '#ff3d5a', 1.3, 0.7);
+          E.pop(o.x, o.y - o.airZ - 30, 'DRAGON KICK!', 'move', '#ff3d5a');
           E.afterimage(pl, 0.3);
           E.shake(8, 0.4);
           g.sfx('hit');
@@ -168,7 +168,7 @@ window.SFC = window.SFC || {};
         if (!teamBall(sys, team)) return;
         const m = nearestMate(g, team, pl) || pl;   // không có đồng đội: tự bắn mình
         if (m !== pl) E.stretch(pl.id, m.x, m.y, prm.grab + 0.15);
-        E.comic(pl.x, pl.y - 30, 'SLINGSHOT!', '#ff8ac0', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'SLINGSHOT!', 'move', '#ff8ac0');
         g.sfx('ult', 'sling.stretch');
         g.later(prm.grab, () => {
           if (g.state !== 'play' || m.state === 'stun') return;
@@ -178,7 +178,7 @@ window.SFC = window.SFC || {};
           const x1 = U.clamp(x0 + d.x * prm.distance, f.x + 10, f.x + f.w - 10), y1 = U.clamp(y0 + d.y * prm.distance, f.y + 10, f.y + f.h - 10);
           m.state = 'recover'; m.stateT = prm.flight + 0.2; m.charging = false;
           E.wave(x0, y0, 22, '#ff8ac0', 0.35, 2);
-          E.comic(x0, y0 - 28, 'BOING!', '#ff8ac0', 1, 0.5);
+          E.pop(x0, y0 - 28, 'BOING!', 'light', '#ff8ac0');
           g.sfx('ult', 'sling.release');
           let T = 0, k0 = 0;
           sys.task((dt) => {
@@ -193,7 +193,7 @@ window.SFC = window.SFC || {};
               if (o.state === 'stun' || g.isProtected(o) || U.dist(o, m) > m.radius + o.radius + 4 || (o.slingT || 0) > g.time) continue;
               o.slingT = g.time + 1;
               if (Act().dodged(g, o)) continue;
-              if (H.blast(o, m, prm.knock, prm.launch, prm.stun, m)) { E.comic(o.x, o.y - 28, 'BONK!', '#ff8ac0', 0.9, 0.5); g.sfx('hit'); }
+              if (H.blast(o, m, prm.knock, prm.launch, prm.stun, m)) { E.pop(o.x, o.y - 30, 'BONK!', 'light', '#ff8ac0'); g.sfx('hit'); }
             }
             return k >= 1;
           }, () => {
@@ -223,7 +223,7 @@ window.SFC = window.SFC || {};
         if (!s) return;
         hold(s, prm.windup + 0.1);
         E.wave(s.x, s.y, 22, '#b46bff', prm.windup, 2);
-        E.comic(s.x, s.y - 30, 'CANNONBALL!', '#b46bff', 1.1, 0.7);
+        E.pop(s.x, s.y - 30, 'CANNONBALL!', 'move', '#b46bff');
         g.sfx('whoosh');
         g.later(prm.windup, () => {
           if (g.state !== 'play' || b.owner !== s || s.state === 'stun') return;
@@ -257,7 +257,7 @@ window.SFC = window.SFC || {};
             E.decal('crater', x, y, 1.5, 5);
             E.burst(x, y, 4, '#ff6a1f', 26, 180, 0.8);
             E.burst(x, y, 2, '#6a6470', 16, 80, 1.1);
-            E.comic(x, y - 34, 'KABOOM!', '#ff6a1f', 1.5, 0.8);
+            E.pop(x, y - 34, 'KABOOM!', 'huge', '#ff6a1f');
             g.sfx('hit');
             g.sfx('ult', 'cannon.boom');
             const c = { x, y };
@@ -300,7 +300,7 @@ window.SFC = window.SFC || {};
         E.shake(8, 0.5);
         E.burst(b.x, b.y, 10, '#ff6a1f', 30, 180, 0.8);
         E.wave(b.x, b.y, 40, '#b46bff', 0.5, 3);
-        E.comic(b.x, b.y - 30, 'KABOOM!', '#ff6a1f', 1.5, 0.8);
+        E.pop(b.x, b.y - 30, 'KABOOM!', 'huge', '#ff6a1f');
         E.netFire(b.x > g.field.cx ? 1 : -1);
       },
       onKickoff(sys, team) { sys.st(team, 'cannonball').live = false; },
@@ -326,7 +326,7 @@ window.SFC = window.SFC || {};
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, o = targetsNear(g, team, pl, prm.range)[0];
         if (!o) return;
-        g.effects.comic(pl.x, pl.y - 30, 'PINBALL KICK!', '#c63dff', 1.1, 0.7);
+        g.effects.pop(pl.x, pl.y - 30, 'PINBALL KICK!', 'move', '#c63dff');
         H.rush(sys, pl, o, prm.rush, U.dist(pl, o) / prm.rush + 0.15, () => {
           const E = g.effects, f = g.field;
           if (o.hasBall && !sys.unstealable(o)) { g.looseBall(o, pl.x - o.x, pl.y - o.y, 40); sys.steal(pl); }
@@ -335,7 +335,7 @@ window.SFC = window.SFC || {};
           o.hit({ stun: prm.stun + prm.time, kbx: 0, kby: 0, source: pl, type: 'hard' });
           g.hitStop(0.08);
           E.impactFrame();
-          E.comic(o.x, o.y - 30, 'BOING!', '#c63dff', 1.2, 0.6);
+          E.pop(o.x, o.y - 30, 'BOING!', 'heavy', '#c63dff');
           E.shake(6, 0.3);
           g.sfx('hit');
           g.sfx('ult', 'pinball.flip');
@@ -356,7 +356,7 @@ window.SFC = window.SFC || {};
               bounces++;
               E.decal(o.x <= f.x + r || o.x >= f.x + f.w - r ? 'crack' : 'wallcrack', o.x, o.y, 1.1, 4);
               E.burst(o.x, o.y, 6, '#c63dff', 10, 100, 0.4);
-              E.comic(o.x, o.y - 26, 'BONK!', '#c63dff', 0.9, 0.4);
+              E.pop(o.x, o.y - 30, 'BONK!', 'light', '#c63dff');
               E.shake(3, 0.15);
               g.sfx('ult', 'pinball.ding');
             }
@@ -367,7 +367,7 @@ window.SFC = window.SFC || {};
               if (Act().dodged(g, q)) continue;
               if (q.hasBall && !sys.unstealable(q)) g.looseBall(q, d.x, d.y, 60);
               H.blast(q, o, prm.knock, prm.launch, prm.stun, pl);
-              E.comic(q.x, q.y - 28, 'STRIKE!', '#ffe14f', 1, 0.5);
+              E.pop(q.x, q.y - 30, 'STRIKE!', 'light', '#ffe14f');
               g.sfx('hit');
               g.sfx('ult', 'pinball.ding');
             }

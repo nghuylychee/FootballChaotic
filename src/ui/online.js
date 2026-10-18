@@ -1,6 +1,6 @@
 /* OnlineUI — giao diện của chế độ online: nghe sự kiện của SFC.Session (src/net/session.js) rồi quyết định trang menu, chữ báo,
  * banner, âm thanh; điều phối phím trong trận online (menu tạm dừng, chọn Core, màn kết quả, màn giới thiệu).
- * Sửa giao diện online ở đây (hoặc menu.js / ui.js) thoải mái: session.js không biết gì về UI, chỉ phát sự kiện + mã lý do.
+ * Sửa giao diện online ở đây (hoặc menu.js / matchui.js và các file gắn vào SFC.UI) thoải mái: session.js không biết gì về UI, chỉ phát sự kiện + mã lý do.
  * Quy tắc: chữ hiển thị KHÔNG được lộ cách kết nối (máy chủ riêng / người chơi làm host / Steam / PeerJS) —
  * server/test/client-test.js kiểm mọi chữ người chơi thấy.
  * main.js gọi OnlineUI.tick / view khi đang ở chế độ online.

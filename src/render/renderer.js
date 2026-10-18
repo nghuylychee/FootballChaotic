@@ -256,19 +256,7 @@ window.SFC = window.SFC || {};
       }
       ctx.globalAlpha = 1;
       ctx.textAlign = 'center';
-      // chữ bay (effects.text): dịch lúc vẽ — chuỗi tạo ở systems / entities bằng tiếng Anh
-      for (const tx of fx.texts) {
-        const str = SFC.t(tx.str);
-        // chữ Nhật: chữ Hán 8px vỡ nét -> 12px DotGothic16
-        ctx.font = SFC.I18n.isCJK(str) ? '12px ' + SFC.I18n.pxFont() : '8px ' + C.pixelFont;
-        ctx.globalAlpha = Math.min(1, (tx.t / tx.max) * 2);
-        ctx.fillStyle = SP().OUT;
-        ctx.fillText(str, Math.round(tx.x) + 1, Math.round(tx.y) + 1);
-        ctx.fillStyle = tx.color;
-        ctx.fillText(str, Math.round(tx.x), Math.round(tx.y));
-      }
-      ctx.globalAlpha = 1;
-      // VFX Kit: lỗ đen, luồng tia, tia sét, chiêu bay, chữ comic
+      // VFX Kit: lỗ đen, luồng tia, tia sét, chiêu bay, chữ bật ra (Effects.pop)
       SFC.VFX.top(ctx, g);
       for (const m of marks) this.ctrlMark(ctx, m.p, m.hy, m.cc, t);
       if (hidden) this.hiddenMark(ctx, hidden, t);

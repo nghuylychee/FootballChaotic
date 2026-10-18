@@ -39,7 +39,7 @@ window.SFC = window.SFC || {};
       }
     }
     E.burst(player.x, player.y, 8, '#9d7bff', 12, 80, 0.45);
-    E.comic(player.x, player.y - 28, 'FAKE!', '#9d7bff', 0.7, 0.6);
+    E.pop(player.x, player.y - 30, 'FAKE!', 'move', '#9d7bff');
   }
 
   const PUNCH_WORDS = ['POW!', 'BAM!', 'WHAM!', 'BOP!'];
@@ -139,7 +139,7 @@ window.SFC = window.SFC || {};
       onLightHit(sys, team, p, a, v) {
         if (a.lastPunch && (a.lastPunch.big || a.lastPunch.upper)) return;   // cú đặc biệt có chữ riêng
         const r = Math.min(4, a.punchCombo || 0);
-        sys.g.effects.comic(v.x + U.rand(-6, 6), v.y - 24, U.pick(PUNCH_WORDS), r >= 3 ? '#ff3d5a' : r >= 2 ? '#ff7a3d' : '#ffe14f', 0.7 + r * 0.08, 0.55);
+        sys.g.effects.pop(v.x + U.rand(-6, 6), v.y - 30, U.pick(PUNCH_WORDS), r >= 3 ? 'heavy' : 'light', r >= 3 ? '#ff3d5a' : r >= 2 ? '#ff7a3d' : '#ffe14f');
       },
     },
     // Da Thép: choáng ngắn hơn, bị đẩy lùi ít hơn (stunTaken / knockTaken) — trúng đòn bắn tia lửa thép
@@ -149,7 +149,7 @@ window.SFC = window.SFC || {};
         const E = sys.g.effects;
         E.burst(victim.x, victim.y - 8, 6, '#ffffff', 8, 90, 0.3);
         E.burst(victim.x, victim.y - 8, 6, '#c7ccd6', 6, 70, 0.35);
-        E.text(victim.x, victim.y - 28, 'TINK', '#c7ccd6');
+        E.pop(victim.x, victim.y - 30, 'TINK', 'info', '#c7ccd6');
         return false;
       },
     },
@@ -178,7 +178,7 @@ window.SFC = window.SFC || {};
         E.shield(x, ball.y - 6, 20, '#7fe7ff', 0.55, 1);
         E.burst(x, ball.y, 10, '#7fe7ff', 16, 130);
         E.burst(x, ball.y, 10, '#ffffff', 10, 160, 0.4);
-        E.comic(x + s * 36, f.cy - 38, 'AEGIS!', '#7fe7ff', 1);
+        E.pop(x + s * 36, f.cy - 38, 'AEGIS!', 'good', '#7fe7ff');
         E.shake(4, 0.3);
         g.sfx('block');
         return true;
@@ -200,7 +200,7 @@ window.SFC = window.SFC || {};
           E.callout('COUNTER!', '#3ff6ff', 1);
           E.speedLines(0.45, pl.x, pl.y, '#bdf4ff');
           g.sfx('whistle');
-        } else E.comic(pl.x, pl.y - 28, 'COUNTER!', '#3ff6ff', 0.75, 0.6);
+        } else E.pop(pl.x, pl.y - 30, 'COUNTER!', 'good', '#3ff6ff');
       },
     },
     // Mìn EMP: mìn + nổ điện ở systems/effects.js
@@ -242,7 +242,7 @@ window.SFC = window.SFC || {};
         // lửa / sét giữ hình bóng nguyên tố, còn lại bóng biến thành đồ vật ngẫu nhiên
         if (pick !== 'fire' && pick !== 'thunder') ball.skin = U.pick(CHAOS_SKINS);
         sys.g.effects.burst(ball.x, ball.y, 4, '#c63dff', 8, 70, 0.4);
-        sys.g.effects.comic(pl.x, pl.y - 26, CHAOS_LABEL[pick], '#c63dff', 0.6, 0.6);
+        sys.g.effects.pop(pl.x, pl.y - 30, CHAOS_LABEL[pick], 'move', '#c63dff');
       },
       onShoot(sys, team, p, pl, ball) { this.roll(sys, team, p, pl, ball, true); },
       onPass(sys, team, p, pl) { if (Math.random() < 0.5) this.roll(sys, team, p, pl, sys.g.ball, false); },
@@ -556,7 +556,7 @@ window.SFC = window.SFC || {};
       }
       if (victim.armorT > this.g.time && (opts.stun || 0) > 0) {
         const E = this.g.effects;
-        E.comic(victim.x, victim.y - 28, 'CLANG!', '#c7ccd6', 0.9);
+        E.pop(victim.x, victim.y - 30, 'CLANG!', 'light', '#c7ccd6');
         E.shield(victim.x, victim.y - 8, 12, '#c7ccd6', 0.4);
         E.burst(victim.x, victim.y, 8, '#ffffff', 10, 90);
         E.ring(victim.x, victim.y - 8, '#c7ccd6');
@@ -582,7 +582,7 @@ window.SFC = window.SFC || {};
         g.passChain[t]++;
         // có Giao Hưởng trong đội: hiện số đường chuyền liên tiếp (số vàng + vòng sáng) trên đầu người nhận
         if (g.passChain[t] >= 2 && this.has(t, 'symphony')) {
-          g.effects.text(receiver.x, receiver.y - 30, String(g.passChain[t]), '#ffd23f');
+          g.effects.pop(receiver.x, receiver.y - 30, String(g.passChain[t]), 'res', '#ffd23f');
           g.effects.ring(receiver.x, receiver.y - 6, '#ffd23f');
         }
         this.dispatchFor(passer, 'onPassReceived', receiver, passer);
@@ -615,7 +615,7 @@ window.SFC = window.SFC || {};
       if (!(st.cd > 0)) {
         st.cd = U2.stealCooldown || 0;
         // chữ "+ULT" trên đầu người cướp được bóng (năng lượng Tuyệt kỹ của người đó vừa tăng)
-        if (this.ultOf(p) && this.ultE(p) < 1) this.g.effects.text(p.x, p.y - 34, '+ULT', '#ffd23f');
+        if (this.ultOf(p) && this.ultE(p) < 1) this.g.effects.pop(p.x, p.y - 30, '+ULT', 'res', '#ffd23f');
         this.gainUlt(p, U2.gainSteal);
       }
       this.dispatch(p.team, 'onSteal', p);

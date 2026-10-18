@@ -4,6 +4,7 @@
  *  - Cỡ cửa sổ: chỉ bản desktop (electron/preload.js -> window.SFC_DESKTOP). 'WxH' hoặc 'full'.
  *    Danh sách cỡ: game.config.js -> render.windowSizes, bỏ cỡ lớn hơn màn hình
  *  - NETWORK STATS: hiện ping + dung lượng gửi / nhận khi đang ở phòng online (src/ui/online.js)
+ *  - FRAME RATE: giới hạn số khung hình vẽ mỗi giây (UNLIMITED / 60 / 30); mô phỏng + đọc phím vẫn 60 Hz
  *  - CONNECTION (PRIVATE MATCH): AUTO = tạo phòng trên máy chủ riêng trước · DIRECT = máy này làm host (Steam / PeerJS)
  *  - Ngôn ngữ: mã trong src/engine/i18n.js. null = chưa chọn -> popup chọn ngôn ngữ lúc mở game (src/ui/langpick.js)
  */
@@ -12,6 +13,7 @@ window.SFC = window.SFC || {};
 (function () {
   const KEY = 'sfc_settings';
   const FULL = 'full';
+  const FPS = [0, 60, 30];   // FRAME RATE: 0 = không giới hạn
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const vol10 = (v, d) => (Number.isInteger(v) ? clamp(v, 0, 10) : d);
 
@@ -23,6 +25,7 @@ window.SFC = window.SFC || {};
     lang: null,          // ngôn ngữ đã chọn ('en', 'pt-BR'...) · null = chưa chọn
     netStats: false,     // hiện ping + KB/s khi online
     roomDirect: false,   // PRIVATE MATCH › CONNECTION: false = AUTO (máy chủ riêng trước) · true = DIRECT (máy này làm host)
+    fps: 0,              // FRAME RATE: 0 = không giới hạn (theo tần số màn hình) · 60 · 30. Chỉ giới hạn số lần vẽ, mô phỏng vẫn 60 Hz (main.js)
 
     load() {
       const raw = SFC.Storage.getJSON(KEY, {}) || {};
@@ -32,10 +35,11 @@ window.SFC = window.SFC || {};
       if (typeof raw.lang === 'string') this.lang = raw.lang;
       this.netStats = raw.netStats === true;
       this.roomDirect = raw.roomDirect === true;
+      this.fps = FPS.includes(raw.fps) ? raw.fps : 0;
       return this;
     },
     save() {
-      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats, roomDirect: this.roomDirect });
+      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats, roomDirect: this.roomDirect, fps: this.fps });
     },
 
     get desktop() { return !!window.SFC_DESKTOP; },
@@ -57,6 +61,9 @@ window.SFC = window.SFC || {};
 
     toggleNetStats() { this.netStats = !this.netStats; this.save(); },
     toggleRoomDirect() { this.roomDirect = !this.roomDirect; this.save(); },
+    // FRAME RATE ◀▶: UNLIMITED -> 60 -> 30
+    stepFps(d) { this.fps = FPS[(FPS.indexOf(this.fps) + d + FPS.length) % FPS.length]; this.save(); },
+    fpsLabel() { return this.fps ? SFC.t('{n} FPS', { n: this.fps }) : SFC.tc('fps', 'UNLIMITED'); },
 
     // đổi ngôn ngữ (popup chọn ngôn ngữ): dịch lại config + lưu ngay
     setLang(id) {

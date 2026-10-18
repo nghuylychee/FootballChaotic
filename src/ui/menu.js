@@ -238,6 +238,8 @@ window.SFC = window.SFC || {};
             { kind: 'pick', label: _t('SOUND FX'), value: ST().volumeLabel('sfx'), change: (d) => ST().stepVolume('sfx', d) },
             // cỡ cửa sổ: chỉ bản desktop (Electron)
             ...(ST().desktop ? [{ kind: 'pick', label: _t('RESOLUTION'), value: ST().resLabel(), change: (d) => ST().stepRes(d) }] : []),
+            // giới hạn số khung hình vẽ (máy yếu / tiết kiệm pin); mô phỏng vẫn 60 Hz (main.js)
+            { kind: 'pick', label: _t('FRAME RATE'), value: ST().fpsLabel(), change: (d) => ST().stepFps(d) },
             // ping + dung lượng mạng góc trên phải khi ở phòng online (src/ui/online.js)
             { kind: 'pick', label: _t('NETWORK STATS'), value: ST().netStats ? SFC.tc('switch', 'ON') : SFC.tc('switch', 'OFF'), change: () => ST().toggleNetStats() },
           ];
@@ -309,12 +311,13 @@ window.SFC = window.SFC || {};
               : S ? { kind: 'btn', main: true, searching: true, label: _t('CANCEL'), act: () => this.cancelSearch() }
               : { kind: 'btn', main: true, label: _t('START'), act: () => this.startSearch() },
           ];
+          // GOAT PATH: cụm Area + thanh tiến độ ở đầu màn (↑ từ các ô người chơi). Đang tìm trận: không mở (rời màn lỡ MATCH FOUND).
+          // Có cả khi tắt bạn bè (bản CrazyGames: social.enabled = false) -> đặt trước dòng return bên dưới
+          if (!S) list.push({ kind: 'btn', road: true, label: _t('GOAT PATH'), act: () => RD().open(this) });
           if (!SFC_CONFIG.social.enabled) return list;
           // ô nhỏ bên phải thẻ của bạn: MỜI BẠN (chọn bằng phím mũi tên / bấm -> nhảy tới bạn bè đầu tiên mời được)
           if (!SO.partyFull() && !S) list.push({ kind: 'btn', invite: true, label: _t('INVITE A FRIEND'), act: () => this.inviteFriend() });
           if (SO.party.length && !S) list.push({ kind: 'btn', side: true, label: _t('LEAVE PARTY'), act: () => SO.leaveParty() });
-          // GOAT PATH: cụm Area + thanh tiến độ ở đầu màn (↑ từ các ô người chơi). Đang tìm trận: không mở (rời màn lỡ MATCH FOUND)
-          if (!S) list.push({ kind: 'btn', road: true, label: _t('GOAT PATH'), act: () => RD().open(this) });
           list.push({ kind: 'btn', ftoggle: true, label: _t('FRIENDS'), act: () => { this.friendsOpen = !this.friendsOpen; if (!this.friendsOpen && SO.chatWith) this.closeChat(); else this.render(); } });
           // khung bạn bè: ô ADD FRIEND · lời mời kết bạn tới (REQUESTS) · lời mời đã gửi (SENT) · bạn bè
           if (this.friendsOpen) {

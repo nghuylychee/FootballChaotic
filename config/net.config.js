@@ -8,7 +8,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 9,                 // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng (8: Tuyệt kỹ thiết kế lại, 9: Tuyệt kỹ đợt 3 — docs/ULT_REDESIGN.md)
+  protocol: 10,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng (8: Tuyệt kỹ thiết kế lại, 9: Tuyệt kỹ đợt 3 — docs/ULT_REDESIGN.md, 10: chữ bật ra Effects.pop thay text / comic)
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
   pingEvery: 1,                // giây giữa 2 lần đo ping tới máy chạy trận (NETWORK STATS, 0 = tắt)
   // Máy chủ riêng (server/): máy chủ chạy trận, mọi người là khách. url trống = chỉ người chơi làm host (Steam / PeerJS).

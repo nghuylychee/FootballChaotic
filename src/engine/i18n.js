@@ -5,7 +5,7 @@
  *  - Config: các trường liệt kê ở src/i18n/fields.js được dịch tại chỗ mỗi lần đổi ngôn ngữ (localizeConfig) -> code đọc config
  *            không phải sửa. Bản tiếng Anh gốc được giữ lại nên đổi qua lại bao nhiêu lần cũng được.
  *  - {tên} không có trong vars thì giữ nguyên: config "{name}", mô tả Core "{m.accuracy+%}" dịch xong code cũ vẫn tự thay số.
- *  - SFC.N_('...'): chỉ đánh dấu chuỗi cần dịch (dịch ở chỗ khác, lúc hiện). Chữ bay trong trận (effects.text / effects.comic)
+ *  - SFC.N_('...'): chỉ đánh dấu chuỗi cần dịch (dịch ở chỗ khác, lúc hiện). Chữ bật ra trong trận (effects.pop)
  *    được dịch lúc vẽ, scripts/i18n-check.js tự gom chuỗi ở 2 hàm đó.
  *  - Bản dịch: src/i18n/<mã>.js -> SFC.I18n.add({ id, name, steam, strings }). Thứ tự nạp trong index.html = thứ tự trong popup.
  *    Giá trị số nhiều: { one, few, many, other } theo Intl.PluralRules của ngôn ngữ đó (thiếu dạng nào thì dùng other);

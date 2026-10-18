@@ -67,8 +67,8 @@ window.SFC = window.SFC || {};
       let depth = 0;
       const E = g.effects;
       // hiệu ứng cơ bản + VFX Kit (systems/vfxkit.js) — tham số đều là giá trị nguyên thuỷ nên gửi thẳng được
-      for (const m of ['burst', 'text', 'ring', 'shake', 'flash', 'wave', 'decal', 'stretch', 'clone', 'projectile', 'beam', 'vortex', 'bolt', 'dragon',
-        'comic', 'combo', 'shield', 'portal', 'netFire', 'popClone', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint',
+      for (const m of ['burst', 'ring', 'shake', 'flash', 'wave', 'decal', 'stretch', 'clone', 'projectile', 'beam', 'vortex', 'bolt', 'dragon',
+        'pop', 'combo', 'shield', 'portal', 'netFire', 'popClone', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint',
         'prop', 'propOff', 'vhs', 'tilt']) {
         const orig = E[m];
         // chỉ ghi lệnh ngoài cùng (combo -> comic, clone -> burst...) để máy khách không phát lại 2 lần

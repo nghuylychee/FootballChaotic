@@ -354,10 +354,14 @@
       // âm thanh khán giả của trận đang hiện (menu: im lặng; tạm dừng / menu online: nhỏ lại)
       if (draw) SFC.Crowd.sound(app.screen === 'menu' || app.screen === 'story' ? null : g, app.screen === 'pause' || (app.mode === 'online' && SFC.OnlineUI.overlay));
     }
-    let lastRaf = performance.now();
+    // SETTINGS > FRAME RATE (Settings.fps): chỉ bỏ bớt lần vẽ — mô phỏng + đọc phím vẫn chạy mỗi lần rAF (60 Hz cố định).
+    // Lần vẽ kế tiếp hẹn theo nhịp (cộng dồn) để màn 144 Hz vẫn trung bình đúng 60 / 30; dung sai 2 ms để màn 60 Hz không rớt còn 30
+    let lastRaf = performance.now(), nextDraw = 0;
     function frame(now) {
       lastRaf = performance.now();
-      step(now, true);
+      const cap = SFC.Settings.fps, draw = !cap || now >= nextDraw - 2;
+      if (draw && cap) nextDraw = Math.max(nextDraw + 1000 / cap, now);
+      step(now, draw);
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);

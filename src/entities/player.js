@@ -245,7 +245,7 @@ window.SFC = window.SFC || {};
         if (nx !== this.x) this.kbx = -this.kbx * C.combat.wallBounce;
         if (ny !== this.y) this.kby = -this.kby * C.combat.wallBounce;
         g.effects.burst(nx, ny, this.airZ + 6, '#d9cbb0', 10, 80);
-        g.effects.text(nx, ny - 26, 'BONK!', '#ffffff');
+        g.effects.pop(nx, ny - 26, 'BONK!', 'light', '#ffffff');
         g.effects.shake(SFC_CONFIG.game.fx.shakeHit * 1.5);
         g.sfx('hit');
         if (this.state === 'stun') g.cores.wallBonk(this, this.lastHitBy);

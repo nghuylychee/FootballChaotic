@@ -222,7 +222,7 @@ window.SFC = window.SFC || {};
       this.showQte(false);
       if (q.dodging && !q.hit) {
         q.phase = 'done';
-        g.effects.comic(me.x, me.y - 34, Q.label, '#3ff6ff', 1.3, 0.7);
+        g.effects.pop(me.x, me.y - 30, Q.label, 'good', '#3ff6ff');
         SFC.Audio.read(0);
         this.coachOk();
         setTimeout(() => { if (this.step === 'attack' && this.coachEl) this.coachEl.classList.add('gone'); }, 900);
@@ -272,7 +272,7 @@ window.SFC = window.SFC || {};
         const src = C.sources.reduce((a, s) => (Math.abs((U2[s[2]] || 0) - d) < Math.abs((U2[a[2]] || 0) - d) ? s : a));
         me.res.ult = Math.min(1, v + d * (C.mult - 1));
         const gain = Math.round((me.res.ult - this.ultLast) * 100);
-        g.effects.comic(me.x, me.y - 34, `+${gain}%`, '#ffd23f', 1.1, 0.6);
+        g.effects.pop(me.x, me.y - 30, `+${gain}%`, 'res', '#ffd23f');
         this.flashSource(src[0]);
         SFC.Audio.reveal(1);
       }

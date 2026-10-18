@@ -47,6 +47,7 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 - `meta/`: profile, mainpath, teammates, settings, social (progression and save data).
 - `entities/`, `systems/`, `game/`: the simulation.
 - `render/`, `ui/`: drawing and screens.
+  - The in-match DOM UI is one object, `SFC.UI`, split by screen: `ui/matchui.js` is the core (`init`, `show`, pause, `consume` = match events → UI, mouse), and `hud.js` (HUD, skill bar, banners/toasts), `draft.js` (Core draft), `endscreen.js` (results) and `endtest.js` (dev, `SFC_DEBUG`) each add methods to it. Shared HTML helpers are in `ui/helpers.js` (`SFC.UIHelpers`). Out-of-match screens are `ui/menu.js`.
 - `net/`: online play.
 
 "Core" always means the **Core Upgrade** gameplay feature (`cores.config.js`, `systems/cores*.js`), never a folder.
@@ -121,6 +122,7 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 ## Conventions
 
 - Code comments are written in Vietnamese; keep new comments in Vietnamese to match. Player-facing text is English (the i18n key).
+- Popup words over players (SAVE!, POW!, move names…) all go through `Effects.pop(x, y, word, kind, color)`. The kind sets size, outline, shadow and motion so every popup looks consistent: `info` (MISS, HOLD) · `res` (+ULT, counters) · `good` (SAVE!, DODGE!) · `status` (SLIP!, STONE!) · `move` (Core / Ultimate names) · `light` / `heavy` / `huge` (impact words by strength). The colour is the word's own (`'#rrggbb'`; a Core id or school name gives the school colour; omitted = the kind's default) — the user wants each word's colour kept. Sizes, timing and default colours live in `game.fx.popups` (`config/game.config.js`); anchor popups at `p.y - 30`, and popups at one spot stack instead of being deleted.
 - Design docs to read before changing these systems: `docs/CORE_DESIGN.md` (Core rules, including "no invisible Cores": every Core needs a visual in `src/render/vfx.js`), `docs/DRILL_DESIGN.md`, `docs/TEAMMATE_DESIGN.md`, `docs/SFX.md`, `docs/SAVE.md`.
 - To add a Core: add an entry in `config/cores.config.js` (its `desc` is one short line of 7–10 words with no numbers or `{param}` values; the user decided players don't read numbers), and give it exactly one unlock spot: `progression.starterCores` or a Core Road notch (`mainpath.config.js → areas[].road`). The in-match draft picks at random from every Core the player has unlocked (`docs/CORE_ROAD.md`).
 - Every non-ult Core belongs to exactly one school (`tags` has one entry; the old two-school bridge Cores were reassigned, 2026-10-13). Only hybrid Ultimates have two tags.

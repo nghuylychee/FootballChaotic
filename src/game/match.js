@@ -720,7 +720,7 @@ window.SFC = window.SFC || {};
         this.effects.burst(p.x, p.y, 8, '#7fe7ff', 10, 90);
         this.effects.bolt(b.x, b.y - b.z - 4, p.x, p.y - 22, '#bdf4ff', 0.35);
         this.effects.bolt(p.x - 6, p.y - 24, p.x + 5, p.y - 2, '#7fe7ff', 0.3);
-        this.effects.comic(p.x, p.y - 30, 'ZZT!', '#7fe7ff', 0.7, 0.5);
+        this.effects.pop(p.x, p.y - 30, 'ZZT!', 'light', '#7fe7ff');
         this.sfx('zap');
         return;
       }
@@ -752,12 +752,12 @@ window.SFC = window.SFC || {};
             this.keeperLunge(p);
             this.deflect(p, 0.45);
             if (p.mstats && !this.opts.training) p.mstats.saves++;
-            this.effects.text(p.x, p.y - 26, 'PARRY', '#ffffff');
+            this.effects.pop(p.x, p.y - 30, 'PARRY', 'good', '#ffffff');
             this.sfx('save');
           } else {
             // bóng quá mạnh, lọt tay thủ môn
             b.noPickup.set(p.id, 0.5);
-            this.effects.text(p.x, p.y - 26, 'SLIP!', '#ff6a3d');
+            this.effects.pop(p.x, p.y - 30, 'SLIP!', 'status', '#ff6a3d');
           }
           return;
         }
@@ -765,7 +765,7 @@ window.SFC = window.SFC || {};
         if (this.cores.dispatch(b.lastKickTeam, 'onKeeperSave', p, b)) return;
         this.keeperLunge(p);
         if (p.mstats && !this.opts.training) p.mstats.saves++;
-        this.effects.text(p.x, p.y - 26, 'SAVE!', '#9dff3d');
+        this.effects.pop(p.x, p.y - 30, 'SAVE!', 'good', '#9dff3d');
         this.sfx('save');
       } else if (opp && b.kind === 'pass' && spd > C.pass.intercept.minSpeed) {
         // Chạm Một / Đường Chuyền Xuyên Không: bóng xuyên qua như ma · Steel Formation: đường chuyền không bị cắt
@@ -786,7 +786,7 @@ window.SFC = window.SFC || {};
         // AI vừa cắt được bóng: khựng một nhịp mới chuyền / sút (pass.intercept.aiDelay)
         p.ai.interceptT = U.rand(C.pass.intercept.aiDelay[0], C.pass.intercept.aiDelay[1]);
         // đoạt bóng luôn là đổi quyền kiểm soát -> Core Counter Attack hiện COUNTER! cùng chỗ: ưu tiên chữ đó
-        if (!this.cores.has(p, 'counter_attack')) this.effects.text(p.x, p.y - 26, 'INTERCEPT', '#9aa3b5');
+        if (!this.cores.has(p, 'counter_attack')) this.effects.pop(p.x, p.y - 30, 'INTERCEPT', 'info', '#9aa3b5');
       }
     }
 

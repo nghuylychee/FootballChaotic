@@ -498,6 +498,25 @@ SFC_CONFIG.game = {
       stepVolume: 0.5,   // tiếng bước chân khi chạy nước rút, chỉ cầu thủ mình điều khiển (0 = tắt; nhân với âm lượng SFX)
       dust: ['#e0d4bc', '#b4a892'],
     },
+    // CHỮ BẬT RA trên sân (Effects.pop, vẽ ở src/render/vfx.js -> pops): loại chữ quyết định cỡ / viền / bóng / chuyển động (đồng bộ mọi nơi);
+    // màu do người gọi truyền (giữ màu riêng từng chữ, user chốt 2026-10-18), không truyền thì dùng color ở đây.
+    // px = cỡ chữ pixel (Press Start) · lw = độ dày viền · shadow = bóng đổ (px) · t = giây hiện · rise = bay lên (px/s)
+    // pop = phóng to lúc hiện (1 = bắt đầu x2 rồi thu về) · tilt = nghiêng (đổi chiều luân phiên) · wobble = lắc lư · color = màu mặc định (null = màu trường phái)
+    popups: {
+      kinds: {
+        info:   { px: 7,  lw: 2, shadow: 1, t: 0.9, rise: 18, pop: 0,   tilt: 0,    color: '#9aa3b5' },   // phản hồi trung tính: MISS, HOLD, INTERCEPT, TINK
+        res:    { px: 8,  lw: 2, shadow: 1, t: 0.9, rise: 18, pop: 0,   tilt: 0,    color: '#ffd23f' },   // tài nguyên / số đếm: +ULT, chuỗi chuyền, lượt còn lại
+        good:   { px: 10, lw: 4, shadow: 1, t: 0.8, rise: 12, pop: 0.5, tilt: 0,    color: '#9dff3d' },   // phòng thủ thành công: SAVE!, DODGE!, PARRY, READ
+        status: { px: 10, lw: 4, shadow: 1, t: 0.8, rise: 10, pop: 0.5, tilt: 0, wobble: 0.12, color: '#ff8ac0' },   // chuyện xảy ra với người đó: SLIP!, STONE!, HUH?
+        move:   { px: 10, lw: 4, shadow: 1, t: 0.8, rise: 10, pop: 0.6, tilt: 0,    color: null },        // tên chiêu Core / Tuyệt kỹ: màu trường phái
+        light:  { px: 10, lw: 4, shadow: 1, t: 0.5, rise: 10, pop: 1,   tilt: 0.12, color: '#ffffff' },   // tiếng va chạm nhẹ: POW!, BONK!, ZZT!
+        heavy:  { px: 13, lw: 4, shadow: 1, t: 0.6, rise: 10, pop: 1,   tilt: 0.1,  color: '#ffe14f' },   // va chạm mạnh: SMASH!, CRASH!, KAPOW!
+        huge:   { px: 17, lw: 5, shadow: 2, t: 0.8, rise: 10, pop: 1,   tilt: 0.1,  color: '#ff3d5a' },   // va chạm cực mạnh: KABOOM!, BONK!!
+      },
+      // chữ mới chạm chữ đang có (theo khung chữ thật, kể cả của người đứng cạnh) -> đẩy chữ cũ lên thay vì chồng lên nhau / xoá bớt
+      stackPad: 2,     // (px) khoảng hở giữa 2 chữ xếp chồng
+      max: 24,         // an toàn: quá số này mới bỏ chữ cũ nhất (bình thường không bao giờ chạm)
+    },
   },
 
   // Đệm phím (giây): bấm đấm (D) / Hard (A) / lướt (Z) hơi sớm (đang khựng sau đòn, còn vài frame hồi chiêu)

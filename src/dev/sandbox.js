@@ -45,7 +45,7 @@
     g.freezeT = 0; g.slowT = 0;
     g.effects.clearHazards();
     g.effects._vw = null; g.effects._vo = null; // xoá sạch VFX (chữ comic, vết nứt, cut-in...)
-    g.effects.particles.length = 0; g.effects.texts.length = 0;
+    g.effects.particles.length = 0; g.effects.V.pops.length = 0;
     const place = (p, x, y, facing) => Object.assign(p, {
       x, y, vx: 0, vy: 0, kbx: 0, kby: 0, airZ: 0, airVz: 0, state: 'normal', stateT: 0, hitImmune: 0, atkType: null,
       facing, sizeTarget: 1, sizeT: 0,
@@ -101,7 +101,7 @@
         fx().decal('crack', p.x, p.y, 1.8, 4);
         fx().shake(7, 0.4);
         fx().burst(p.x, p.y, 0, '#8a7f70', 24, 140, 0.7);
-        fx().comic(p.x, p.y - 34, 'SLAM!', '#ffe14f', 1.3);
+        fx().pop(p.x, p.y - 30, 'SLAM!', 'heavy', '#ffe14f');
         for (const o of opps()) if (U.dist(o, p) < R) launch(o, p, 160, 230, 1.2);
         g.sfx('hit');
       });
@@ -114,7 +114,7 @@
         const d = U.norm(p.x - o.x, p.y - o.y);
         g.hitStop(0.07);
         fx().zoom(o.x, o.y, 0.12, 0.25);
-        fx().comic(o.x, o.y - 26, 'BOING!', '#ff8ac0');
+        fx().pop(o.x, o.y - 30, 'BOING!', 'light', '#ff8ac0');
         fx().burst(o.x, o.y, 10, '#fff6a0', 10, 90);
         o.hitImmune = 0;
         o.hit({ stun: 0.7, kbx: d.x * 260, kby: d.y * 260, type: 'light' });
@@ -126,7 +126,7 @@
       ultimate(p, 'CLONE ARMY', '#9d7bff', () => {
         const o = g.ball.owner && g.ball.owner.team === 1 ? g.ball.owner : nearest(opps(), p);
         fx().burst(p.x, p.y, 6, '#d8d0e0', 24, 120, 0.7);
-        fx().comic(p.x, p.y - 30, 'POOF!', '#d8d0e0');
+        fx().pop(p.x, p.y - 30, 'POOF!', 'light', '#d8d0e0');
         for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
           const tx = o.x + Math.cos(a) * 24, ty = o.y + Math.sin(a) * 16;
           fx().clone(p.id, p.x, p.y, (tx - p.x) * 2.2, (ty - p.y) * 2.2, 1.4);
@@ -150,7 +150,7 @@
       Act.shoot(g, p, 1.0, 0);
       g.ball.skin = 'blackhole';
       fx().vortex(0, 0, 46, 1.4, 'ball');
-      fx().comic(p.x, p.y - 30, 'VWOOM!', '#9d7bff');
+      fx().pop(p.x, p.y - 30, 'VWOOM!', 'light', '#9d7bff');
       fx().shake(3, 0.5);
       g.sfx('zap');
       let T = 1.4;
@@ -186,7 +186,7 @@
           b2.kick(p, (dx / d) * 560, (dy / d) * 560, -40);
           b2.skin = 'fireball'; b2.kind = 'shot';
           fx().shake(5);
-          fx().comic(b2.x, b2.y - b2.z - 10, 'BOOM!', '#ff6a1f', 1.2);
+          fx().pop(b2.x, b2.y - b2.z - 10, 'BOOM!', 'heavy', '#ff6a1f');
           g.sfx('kick', 1);
           every(() => {
             const b3 = g.ball;
@@ -235,7 +235,7 @@
       const p = me();
       ultimate(p, 'TITAN', '#ffd23f', () => {
         p.giant(2, 5);
-        fx().comic(p.x, p.y - 50, 'GIANT!', '#ffd23f', 1.4);
+        fx().pop(p.x, p.y - 50, 'GIANT!', 'huge', '#ffd23f');
         fx().shake(6, 0.4);
         fx().wave(p.x, p.y, 40, '#ffd23f', 0.5, 3);
         let T = 5, stepT = 0;
@@ -320,7 +320,7 @@
       const p = me();
       fx().tint('#6a3dff', 1.3, 0.28);
       g.slowMo(0.3, 1.1);
-      fx().comic(p.x, p.y - 30, 'DODGE!', '#c9b5ff', 1.2);
+      fx().pop(p.x, p.y - 30, 'DODGE!', 'good', '#c9b5ff');
       fx().speedLines(0.6, p.x, p.y, '#c9b5ff');
       p.cd.skill = 0;
       Act.skill(g, p, 0, -1);
@@ -354,7 +354,7 @@
             fx().decal('crater', p.x, p.y, 1.8, 5);
             fx().burst(p.x, p.y, 4, '#ff6a1f', 30, 190, 0.9);
             fx().burst(p.x, p.y, 2, '#6a6470', 20, 80, 1.2);
-            fx().comic(p.x, p.y - 40, 'KRAKOOM!!', '#ff6a1f', 1.5);
+            fx().pop(p.x, p.y - 40, 'KRAKOOM!!', 'huge', '#ff6a1f');
             for (const q of opps()) if (U.dist(q, p) < R) launch(q, p, 240, 260, 1.5);
             g.sfx('hit');
             return true;
@@ -370,7 +370,7 @@
         T -= dt;
         b.skin = 'bomb'; // giữ hình bom kể cả khi có người khống chế bóng
         const n = Math.ceil(T);
-        if (n < last && n > 0) { last = n; fx().comic(b.x, b.y - b.z - 16, String(n), '#ff3d5a', 1.2, 0.5); g.sfx('menu'); }
+        if (n < last && n > 0) { last = n; fx().pop(b.x, b.y - b.z - 16, String(n), 'res', '#ff3d5a'); g.sfx('menu'); }
         if (T > 0) return false;
         b.skin = null;
         const x = b.owner ? b.owner.x : b.x, y = b.owner ? b.owner.y : b.y;
@@ -382,7 +382,7 @@
         fx().decal('crack', x, y, 1.2, 4);
         fx().burst(x, y, 6, '#ff6a1f', 30, 180, 0.8);
         fx().burst(x, y, 4, '#6a6470', 20, 70, 1.2);
-        fx().comic(x, y - 36, 'KABOOM!', '#ff6a1f', 1.5);
+        fx().pop(x, y - 36, 'KABOOM!', 'huge', '#ff6a1f');
         const holder = b.owner;
         if (holder) g.looseBall(holder, U.rand(-1, 1), U.rand(-1, 1), 200);
         for (const q of g.players) if (U.dist(q, { x, y }) < 55) launch(q, { x, y: y + 1 }, 260, 240, 1.2);
@@ -396,13 +396,13 @@
   let comboN = 0, skinI = 0;
   const SKINS = ['blackhole', 'bomb', 'fireball', 'light', 'melon', 'bowling', 'chicken', null];
   const BRICKS = [
-    ['HS · Hit-stop', () => { g.hitStop(0.2); fx().comic(me().x, me().y - 30, 'HIT-STOP', '#ffffff', 0.7); }],
+    ['HS · Hit-stop', () => { g.hitStop(0.2); fx().pop(me().x, me().y - 30, 'HIT-STOP', 'light', '#ffffff'); }],
     ['SM · Slow-mo', () => g.slowMo(0.3, 1.5)],
     ['ZM · Punch-zoom', () => fx().zoom(me().x, me().y - 6, 0.22, 0.45)],
     ['IF · Impact frame', () => { fx().O.impactCd = 0; fx().impactFrame(0.1); }],
     ['SL · Speed lines', () => fx().speedLines(0.9)],
     ['CO · Callout', () => fx().callout('SONIC BOOM!', '#7fe7ff')],
-    ['CO · Comic text', () => fx().comic(me().x, me().y - 30, U.pick(['POW!', 'BAM!', 'WHAM!', 'CLANG!', 'BOING!']), '#ffe14f', 1.2)],
+    ['CO · Comic text', () => fx().pop(me().x, me().y - 30, U.pick(['POW!', 'BAM!', 'WHAM!', 'CLANG!', 'BOING!']), 'light', '#ffe14f')],
     ['CO · Combo HIT', () => fx().combo(me().x, me().y - 30, ++comboN)],
     ['Cut-in', () => fx().cutIn(me().id, 'ULTIMATE NAME', '#ffe14f', 0.9)],
     ['SW · Shockwave', () => fx().wave(me().x, me().y, 55, '#ffffff', 0.55, 3)],

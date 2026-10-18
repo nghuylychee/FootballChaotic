@@ -25,7 +25,7 @@ window.SFC = window.SFC || {};
   };
   SFC.FXSettings = FXSettings.load();
 
-  const worldBlank = () => ({ waves: [], decals: [], arms: [], clones: [], shots: [], beams: [], vortexes: [], bolts: [], comics: [], shields: [], portals: [], netfires: [], dragons: [], props: [] });
+  const worldBlank = () => ({ waves: [], decals: [], arms: [], clones: [], shots: [], beams: [], vortexes: [], bolts: [], pops: [], shields: [], portals: [], netfires: [], dragons: [], props: [] });
   const overlayBlank = () => ({ zoom: null, impact: 0, impactCd: 0, lines: null, callouts: [], cutins: [], tints: [], vhs: null, tilt: null });
 
   // trạng thái VFX (tạo lười, không cần sửa constructor)
@@ -109,11 +109,27 @@ window.SFC = window.SFC || {};
     this.V.bolts.push({ pts, color, t, max: t });
   };
 
-  // CO (world) — chữ comic lớn bật ra (POW / BAM / BOING...)
-  E.comic = function (x, y, str, color = '#ffe14f', size = 1, t = 0.8) {
-    const list = this.V.comics;
-    list.push({ x, y, str, color, size, t, max: t, rot: U.rand(-0.18, 0.08) });
-    if (list.length > 3) list.shift();
+  // PO (world) — chữ bật ra trên sân. Loại (kind) quyết định cỡ chữ / viền / bóng / chuyển động (config game.fx.popups.kinds):
+  //   info (MISS, HOLD) · res (+ULT, số đếm) · good (SAVE!, DODGE!) · status (SLIP!, STONE!) · move (tên chiêu) · light / heavy / huge (POW! … KABOOM!)
+  // color: màu riêng của chữ ('#rrggbb'), hoặc id Core / tên trường phái -> màu trường phái; bỏ trống -> màu mặc định của loại.
+  // Chữ mới gần chữ đang có -> đẩy chữ cũ lên, không xoá
+  let popSeq = 0;
+  E.pop = function (x, y, str, kind = 'light', color = null) {
+    const P = SFC_CONFIG.game.fx.popups, KS = P.kinds, K = KS[kind] ? kind : 'light', list = this.V.pops;
+    str = String(str);
+    const t = KS[K].t, me = { x, y, str, kind: K, color, t, max: t, dir: popSeq++ % 2 ? 1 : -1 };
+    // xếp chồng: font pixel đơn cách -> khung chữ = số ký tự x cỡ chữ (tính được cả ở máy chủ, không cần canvas).
+    // Chữ mới đứng yên; chữ nào chạm chữ vừa dời / vừa hiện thì bị đẩy lên ngay trên nó, lan dây chuyền — chỉ dời lên nên luôn dừng, không xoá
+    // cao = cỡ chữ + phần đầu / cuối chữ nghiêng (tilt / lắc lư wobble) chiếm thêm theo chiều dọc
+    const w = (o) => o.str.length * KS[o.kind].px, h = (o) => KS[o.kind].px + w(o) * ((KS[o.kind].tilt || 0) + (KS[o.kind].wobble || 0));
+    const hit = (a, o) => Math.abs(a.x - o.x) < (w(a) + w(o)) / 2 + P.stackPad && Math.abs(a.y - o.y) < (h(a) + h(o)) / 2 + P.stackPad;
+    list.push(me);
+    const queue = [me];
+    for (let guard = 0; queue.length && guard < 200; guard++) {
+      const a = queue.shift();
+      for (const o of list) if (o !== me && o !== a && hit(a, o)) { o.y = a.y - (h(a) + h(o)) / 2 - P.stackPad; queue.push(o); }
+    }
+    if (list.length > P.max) list.shift();
   };
   // khiên lục giác loé lên quanh (x, y) — chặn đòn (Giáp), khiên Aegis vỡ (shatter = 1: mảnh vỡ bay ra)
   E.shield = function (x, y, r = 12, color = '#c7ccd6', t = 0.4, shatter = 0) {
@@ -143,7 +159,8 @@ window.SFC = window.SFC || {};
     for (const o of this.V.props) if (o.id === id && o.t > fade) { o.t = fade; o.max = fade; o.off = true; }
   };
 
-  E.combo = function (x, y, n) { this.comic(x, y, n + ' HIT!', n >= 10 ? '#ff3d5a' : '#ffe14f', Math.min(1.6, 0.9 + n * 0.05), 0.6); };
+  // đếm combo: càng dài chữ càng to (light -> heavy từ 5 -> huge từ 10)
+  E.combo = function (x, y, n) { this.pop(x, y, n + ' HIT!', n >= 10 ? 'huge' : n >= 5 ? 'heavy' : 'light', n >= 10 ? '#ff3d5a' : '#ffe14f'); };
 
   /* ================= OVERLAY (thời gian thật) ================= */
   // ZM — phóng to nhẹ vào (x, y) rồi trả về
@@ -210,8 +227,9 @@ window.SFC = window.SFC || {};
     }
     for (const s of V.shots) { s.x += s.vx * dt; s.y += s.vy * dt; }
     for (const v of V.vortexes) if (v.follow === 'ball') { const b = this.g.ball; v.x = b.x; v.y = b.y - b.z; }
-    for (const c of V.comics) c.y -= 10 * dt;
-    [V.waves, V.decals, V.arms, V.clones, V.shots, V.beams, V.vortexes, V.bolts, V.comics, V.shields, V.portals, V.netfires, V.dragons, V.props].forEach(tick);
+    const PK = SFC_CONFIG.game.fx.popups.kinds;
+    for (const c of V.pops) c.y -= PK[c.kind].rise * dt;
+    [V.waves, V.decals, V.arms, V.clones, V.shots, V.beams, V.vortexes, V.bolts, V.pops, V.shields, V.portals, V.netfires, V.dragons, V.props].forEach(tick);
   };
 
   // lớp phủ chạy theo thời gian thật (Game.update gọi mỗi bước, kể cả lúc hit-stop)

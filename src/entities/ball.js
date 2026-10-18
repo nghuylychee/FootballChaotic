@@ -203,7 +203,7 @@ window.SFC = window.SFC || {};
       const bar = this.y > f.gTop && this.y < f.gBot && Math.abs(this.z - f.goalHeight) <= r;
       if (!post && !bar) return;
       this.woodT = 0.6;
-      this.g.effects.text(this.x - side * 28, this.y - this.z - 12, 'WOODWORK', '#ffe14f');
+      this.g.effects.pop(this.x - side * 28, this.y - this.z - 12, 'WOODWORK', 'info', '#ffe14f');
       this.g.sfx('clang');
     }
 

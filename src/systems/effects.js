@@ -8,7 +8,6 @@ window.SFC = window.SFC || {};
     constructor(g) {
       this.g = g;
       this.particles = [];
-      this.texts = [];
       this.rings = [];
       this.afterimages = [];
       this.clearHazards();
@@ -31,7 +30,6 @@ window.SFC = window.SFC || {};
         this.particles.push({ x, y, z, vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.6, vz: U.rand(20, 80), t: life * U.rand(0.6, 1), max: life, color, size: Math.random() < 0.3 ? 2 : 1 });
       }
     }
-    text(x, y, str, color) { this.texts.push({ x, y, str, color, t: 0.9, max: 0.9 }); }
     ring(x, y, color) { this.rings.push({ x, y, color, t: 0.4, max: 0.4 }); }
     shake(a, t = 0.25) { this.shakeA = Math.max(this.shakeA, a); this.shakeT = Math.max(this.shakeT, t); }
     flash(a = 0.6) { this.flashA = Math.max(this.flashA, a); }
@@ -84,8 +82,6 @@ window.SFC = window.SFC || {};
         if (p.z < 0) { p.z = 0; p.vz *= -0.3; p.vx *= 0.6; p.vy *= 0.6; }
       }
       this.particles = this.particles.filter((p) => p.t > 0);
-      this.texts.forEach((t) => { t.t -= dt; t.y -= 18 * dt; });
-      this.texts = this.texts.filter((t) => t.t > 0);
       this.rings.forEach((r) => (r.t -= dt));
       this.rings = this.rings.filter((r) => r.t > 0);
       this.afterimages.forEach((a) => (a.t -= dt));
@@ -125,7 +121,7 @@ window.SFC = window.SFC || {};
             // làm rơi bóng = cướp bóng (năng lượng Tuyệt kỹ, Phản Công...)
             if (pl.hasBall) { g.looseBall(pl, s.dx, s.dy, 120); if (s.src) g.cores.steal(s.src); }
             if (pl.hit({ stun: s.stun, kbx: s.dx * 80, kby: s.dy * 80, type: 'slash' })) {
-              this.comic(pl.x, pl.y - 26, 'SLASH!', '#dffbff', 0.7, 0.5);
+              this.pop(pl.x, pl.y - 30, 'SLASH!', 'light', '#dffbff');
               g.hitStop(0.05);
             }
             this.burst(pl.x, pl.y, 8, '#7fe7ff', 8, 70);
@@ -147,7 +143,7 @@ window.SFC = window.SFC || {};
             this.burst(m.x, m.y, 4, '#7fe7ff', 14, 90);
             this.wave(m.x, m.y, 26, '#7fe7ff', 0.4, 2);
             for (let i = 0; i < 2; i++) this.bolt(m.x, m.y - 2, pl.x + U.rand(-4, 4), pl.y - 16 - i * 4, i ? '#ffffff' : '#7fe7ff', 0.35);
-            this.comic(pl.x, pl.y - 28, 'ZAP!', '#7fe7ff', 0.7, 0.5);
+            this.pop(pl.x, pl.y - 30, 'ZAP!', 'light', '#7fe7ff');
             g.sfx('zap');
             m.t = 0;
             break;

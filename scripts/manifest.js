@@ -96,7 +96,12 @@ const FILES = [
   ['src/net/session.js', 'game'],
   ['src/ui/corepreview.js', 'game'],
   ['src/ui/controls.js', 'game'],
-  ['src/ui/ui.js', 'game'],
+  ['src/ui/helpers.js', 'game'],                           // hàm vẽ dùng chung của SFC.UI
+  ['src/ui/matchui.js', 'game'],                           // SFC.UI: lõi giao diện trận (các file dưới gắn thêm vào)
+  ['src/ui/hud.js', 'game'],
+  ['src/ui/draft.js', 'game'],
+  ['src/ui/endscreen.js', 'game'],
+  ['src/ui/endtest.js', 'game'],                           // dev (SFC_DEBUG)
   ['src/ui/recipefx.js', 'game'],
   ['src/ui/gacha.js', 'game'],
   ['src/ui/reveal.js', 'game'],

@@ -17,7 +17,7 @@ Tài liệu cho người dịch / duyệt (tiếng Anh): [i18n/STYLE_GUIDE.md](i
   | `SFC.tc(ctx, s)` | cùng câu tiếng Anh nhưng nghĩa khác | `SFC.tc('attack', 'HARD')` (đòn mạnh) ≠ `_t('HARD')` (độ khó) |
   | `SFC.N_(s)` | chỉ đánh dấu, dịch ở chỗ khác lúc hiện | banner sự kiện trong `match.js` (online: khách nhận sự kiện của host) |
 - **Config:** các trường liệt kê trong `src/i18n/fields.js` được dịch tại chỗ mỗi lần đổi ngôn ngữ, nên code đọc config không phải sửa. Bản tiếng Anh gốc được giữ lại để đổi qua lại. Đuôi `#ngữ cảnh` hoạt động như `tc`. Đuôi `@N` giới hạn bản dịch tối đa N ký tự, dùng cho chỗ hiển thị có bề rộng cố định (sơ đồ tay cầm).
-- **Chữ bay trong trận** (`effects.text` / `effects.comic` / `callout`): dịch lúc vẽ (`renderer.js`, `vfx.js`), không phải sửa systems. Tiếng tượng thanh (BOOM!, POW!) để nguyên trong bản dịch.
+- **Chữ bay trong trận** (`effects.pop` / `callout`): dịch lúc vẽ (`vfx.js`), không phải sửa systems. Tiếng tượng thanh (BOOM!, POW!) để nguyên trong bản dịch.
 - **Bản dịch:** `src/i18n/pt-BR.js`, `src/i18n/pt-PT.js`, `src/i18n/es.js`, `src/i18n/ja.js`. Mỗi file gọi `SFC.I18n.add({ id, name, steam, accentCaps, strings })`. Thứ tự `<script>` trong `index.html` là thứ tự trong popup.
 - **Số:** `SFC.I18n.num(n, digits)` tách hàng nghìn / thập phân theo ngôn ngữ (12,500 / 12.500 · 0.5 / 0,5). Tiền ở trang chủ và số trong mô tả Core đã dùng hàm này.
 

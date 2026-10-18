@@ -78,7 +78,7 @@ window.SFC = window.SFC || {};
       if (!o.hit({ stun: t, kbx: d.x * slide, kby: d.y * slide, source: src, type: 'hard' })) return false;
       E.decal('skid', o.x, o.y, 0.9, 2.5, Math.atan2(d.y, d.x));
       E.burst(o.x, o.y, 2, '#ffe14f', 6, 60, 0.4);
-      E.text(o.x, o.y - 26, 'SLIP!', '#ffe14f');
+      E.pop(o.x, o.y - 30, 'SLIP!', 'status', '#ffe14f');
       return true;
     },
     // hoá đá: choáng t giây, không bị đẩy đi (đứng chôn chân), hình tượng đá phủ lên người
@@ -100,7 +100,7 @@ window.SFC = window.SFC || {};
       o.sizeTarget = size; o.sizeT = t;
       o.buffs.push({ speed: slow, t });
       E.burst(o.x, o.y - 6, 6, '#ff7ab8', 12, 70, 0.5);
-      E.comic(o.x, o.y - 26, 'TINY!', '#ff7ab8', 0.9, 0.5);
+      E.pop(o.x, o.y - 30, 'TINY!', 'status', '#ff7ab8');
       return true;
     },
     // hoá gà (Chicken Ray): rơi bóng, không chạm được bóng (kể cả thủ môn bắt bóng), không ra đòn / chuyền / sút / lướt t giây.
@@ -113,7 +113,7 @@ window.SFC = window.SFC || {};
       o.buffs.push({ speed, t });
       E.prop(H.propId(g), 'chicken', o.x, o.y, o.id, 0, t, '#f3ead7');
       E.burst(o.x, o.y - 10, 8, '#ffffff', 18, 90, 0.6);
-      E.comic(o.x, o.y - 30, 'BAWK!', '#ffe14f', 1, 0.5);
+      E.pop(o.x, o.y - 30, 'BAWK!', 'status', '#ffe14f');
       g.sfx('ult', 'chicken.bawk');
       let T = 0;
       sys.task((dt) => {
@@ -130,7 +130,7 @@ window.SFC = window.SFC || {};
       o.panicT = t;
       o.charging = false; o.cancelPass();
       E.prop(H.propId(g), 'panic', o.x, o.y, o.id, 0, t, '#7fe7ff');
-      E.comic(o.x, o.y - 32, 'EEK!', '#7fe7ff', 1.1, 0.5);
+      E.pop(o.x, o.y - 30, 'EEK!', 'status', '#7fe7ff');
       return true;
     },
     // thôi miên: t giây đi lang thang (dir() -> hướng), không làm gì được; bị đánh / có người hoặc bóng chạm vào là tỉnh
@@ -142,7 +142,7 @@ window.SFC = window.SFC || {};
       const wake = (why) => {
         E.propOff(id);
         if (o.state === 'recover') { o.state = 'normal'; o.stateT = 0; }
-        if (why) E.comic(o.x, o.y - 28, 'HUH?', '#ff7ab8', 0.9, 0.5);
+        if (why) E.pop(o.x, o.y - 30, 'HUH?', 'status', '#ff7ab8');
       };
       sys.task((dt) => {
         if (g.state !== 'play') return true;
@@ -211,7 +211,7 @@ window.SFC = window.SFC || {};
               if (o.hit({ stun: prm.stun, kbx: -d.y * side * prm.knock, kby: d.x * side * prm.knock, source: pl, type: 'slash' })) {
                 E.bolt(o.x, o.y - 22, o.x, o.y - 2, '#bdf4ff', 0.4);
                 E.burst(o.x, o.y, 8, '#bdf4ff', 12, 90);
-                E.comic(o.x, o.y - 30, 'ZZT!', '#7fe7ff', 0.9, 0.5);
+                E.pop(o.x, o.y - 30, 'ZZT!', 'light', '#7fe7ff');
                 g.sfx('ult', 'cycle.zap');
               }
               break;
@@ -238,7 +238,7 @@ window.SFC = window.SFC || {};
         // báo trước: vòng xanh trăng + mặt trăng mờ trên sân -> ra khỏi vòng / lướt Z đúng lúc dậm
         E.wave(c.x, c.y, R, '#a8e6ff', prm.telegraph, 1);
         E.prop(zid, 'moon', c.x, c.y, R, 0, prm.telegraph + prm.float, '#a8e6ff');
-        E.comic(pl.x, pl.y - 34, 'MOON STOMP!', '#a8e6ff', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'MOON STOMP!', 'move', '#a8e6ff');
         g.sfx('whoosh');
         g.later(prm.telegraph, () => {
           if (g.state !== 'play' || pl.state === 'stun') { E.propOff(zid); return; }
@@ -286,7 +286,7 @@ window.SFC = window.SFC || {};
                 gone.add(o);
                 o.hitImmune = 0; o.state = 'normal'; o.stateT = 0;
                 H.blast(o, pl, prm.knock, prm.launch, prm.stun, pl);
-                E.comic(o.x, o.y - 40, 'HOME RUN!', '#a8e6ff', 1.2, 0.7);
+                E.pop(o.x, o.y - 40, 'HOME RUN!', 'move', '#a8e6ff');
                 E.burst(o.x, o.y - o.airZ, 8, '#ffffff', 12, 110, 0.5);
                 g.hitStop(0.08);
                 E.shake(6, 0.3);
@@ -303,7 +303,7 @@ window.SFC = window.SFC || {};
                   ball = false;
                   fireAtGoal(g, team, pl, fullShot(sys, pl) * prm.volley, 20);
                   b.fx.spiral = true;
-                  E.comic(b.x, b.y - b.z - 16, 'VOLLEY!', '#a8e6ff', 1.2, 0.6);
+                  E.pop(b.x, b.y - b.z - 16, 'VOLLEY!', 'move', '#a8e6ff');
                   E.impactFrame();
                   g.sfx('kick', 1);
                 }
@@ -336,7 +336,7 @@ window.SFC = window.SFC || {};
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball, f = g.field, id = H.propId(g);
         E.prop(id, 'tornado', pl.x, pl.y, pl.id, 0, prm.time + 0.1, '#e8f0f5');
-        E.comic(pl.x, pl.y - 40, 'HURRICANE KICK!', '#b46bff', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 40, 'HURRICANE KICK!', 'move', '#b46bff');
         g.sfx('ult', 'hurricane');
         let T = 0, k = 0, ball = b.owner === pl;
         if (ball) b.owner = null;
@@ -363,7 +363,7 @@ window.SFC = window.SFC || {};
             const had = o.hasBall && !sys.unstealable(o);
             H.blast(o, pl, prm.knock, prm.launch, prm.stun, pl, { x: Math.cos(a), y: Math.sin(a) });
             if (had) sys.steal(pl);
-            E.comic(o.x, o.y - 30, 'WHOOSH!', '#b46bff', 1, 0.5);
+            E.pop(o.x, o.y - 30, 'WHOOSH!', 'light', '#b46bff');
             g.sfx('hit');
           }
           // bóng lỏng chạm lốc: bị cuốn vào
@@ -416,7 +416,7 @@ window.SFC = window.SFC || {};
         pl.cd.skill = 0;
         this.pips(sys, pl, st);
         E.prop(H.propId(g), 'gate', pl.x, pl.y, -Math.PI / 2, 1, 0.5, '#9d7bff');
-        E.comic(pl.x, pl.y - 30, 'PHASE STEP!', '#9d7bff', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'PHASE STEP!', 'move', '#9d7bff');
         g.sfx('ult', 'phase.blink');
         // hết giờ / hết lượt: tắt pip, Z về hồi chiêu thường
         sys.task(() => {
@@ -471,7 +471,7 @@ window.SFC = window.SFC || {};
         pl.x = np.x; pl.y = np.y;
         if (pl.hasBall) g.ball.follow(0);
         E.burst(pl.x + d.x * 4, pl.y - 10 + d.y * 4, 6, '#3ff6ff', 12, 90, 0.4);
-        E.comic(pl.x, pl.y - 30, 'BLINK!', '#3ff6ff', 0.8, 0.4);
+        E.pop(pl.x, pl.y - 30, 'BLINK!', 'move', '#3ff6ff');
         g.sfx('ult', 'phase.blink');
         // còn lượt: Z dùng lại gần như ngay (gap), hết lượt: hồi chiêu thường
         if (st.left > 0) pl.cd.skill = prm.gap;
@@ -501,7 +501,7 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects, b = g.ball, f = g.field, id = H.propId(g);
         const x0 = pl.x, y0 = pl.y, th0 = Math.atan2((pl.y - f.cy) / (f.h / 2 - 24), (pl.x - f.cx) / (f.w / 2 - 34));
         E.prop(id, 'boomer', x0, y0, pl.id, th0, prm.time, '#ffd23f');
-        E.comic(pl.x, pl.y - 32, 'MEGA BOOMERANG!', '#ffd23f', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'MEGA BOOMERANG!', 'move', '#ffd23f');
         Act().startAttack(pl, 'light');
         g.sfx('whoosh');
         g.sfx('ult', 'boomer.throw');
@@ -522,7 +522,7 @@ window.SFC = window.SFC || {};
             if (q.state === 'stun') { q.state = 'normal'; q.stateT = 0; }
             if (H.blast(q, c, prm.knock, prm.launch, prm.stun, pl, U.norm(d.x + (q.x - c.x) / 30, d.y + (q.y - c.y) / 30))) {
               if (had && q.team !== team) sys.steal(pl);
-              E.comic(q.x, q.y - 30, 'WHACK!', '#ffd23f', 1, 0.5);
+              E.pop(q.x, q.y - 30, 'WHACK!', 'light', '#ffd23f');
               E.burst(q.x, q.y, 8, '#ffd23f', 10, 90, 0.4);
               g.sfx('hit');
             }
@@ -538,7 +538,7 @@ window.SFC = window.SFC || {};
           E.propOff(id, 0.05);
           if (g.state !== 'play') return;
           E.burst(pl.x, pl.y - 10, 6, '#ffd23f', 10, 70, 0.4);
-          E.comic(pl.x, pl.y - 30, 'CATCH!', '#ffd23f', 0.9, 0.5);
+          E.pop(pl.x, pl.y - 30, 'CATCH!', 'good', '#ffd23f');
           g.sfx('ult', 'boomer.catch');
         });
       },
@@ -573,7 +573,7 @@ window.SFC = window.SFC || {};
           if (qte) { qteId = H.propId(g); E.prop(qteId, 'qte', pl.x, pl.y, pl.id, lv, prm.build + 0.5, '#ffe14f'); }
         };
         props(true);
-        E.comic(pl.x, pl.y - 44, 'BOULDER!', '#c7ccd6', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 44, 'BOULDER!', 'move', '#c7ccd6');
         E.burst(pl.x, pl.y, 2, '#8a7f70', 14, 90, 0.5);
         g.sfx('ult', 'boulder.summon');
         sys.task((dt) => {
@@ -592,12 +592,12 @@ window.SFC = window.SFC || {};
             lv++; T0 = T;
             props(lv < 3);
             E.burst(pl.x, pl.y - 6, 2, '#b5a890', 10 + lv * 6, 100, 0.5);
-            E.comic(pl.x, pl.y - 30 - this.R(lv) * 2, lv >= 3 ? 'MAX!' : 'BIGGER!', '#ffe14f', 1, 0.4);
+            E.pop(pl.x, pl.y - 30 - this.R(lv) * 2, lv >= 3 ? 'MAX!' : 'BIGGER!', 'move', '#ffe14f');
             E.shake(3 + lv * 2, 0.25);
             g.sfx('ult', 'boulder.grow' + lv);
           } else if (press) {
             miss++; lock = 0.35;
-            E.comic(pl.x, pl.y - 30 - this.R(lv) * 2, 'WOBBLE!', '#9aa3b5', 0.9, 0.4);
+            E.pop(pl.x, pl.y - 30 - this.R(lv) * 2, 'WOBBLE!', 'status', '#9aa3b5');
             E.shake(2, 0.2);
             g.sfx('ult', 'boulder.miss');
           }
@@ -613,7 +613,7 @@ window.SFC = window.SFC || {};
         E.prop(H.propId(g), 'rubble', pl.x, pl.y, R, 0, 1.6, '#7a6e5f');
         E.burst(pl.x, pl.y - R, 2, '#8a7f70', 18 + lv * 6, 120, 0.8);
         E.decal('crack', pl.x, pl.y, 0.8 + lv * 0.3, 3);
-        E.comic(pl.x, pl.y - 30 - R, 'CRUMBLE!', '#ff8a9a', 1.2, 0.6);
+        E.pop(pl.x, pl.y - 30 - R, 'CRUMBLE!', 'status', '#ff8a9a');
         E.shake(5, 0.3);
         g.sfx('hit');
         g.sfx('ult', 'boulder.crumble');
@@ -627,7 +627,7 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects, b = g.ball, f = g.field, R = this.R(lv);
         pl.armorT = g.time + prm.time;
         H.hold(pl, prm.time + 0.2);
-        E.comic(pl.x, pl.y - 34 - R * 2, 'ROLL OUT!', '#ffe14f', 1.2, 0.6);
+        E.pop(pl.x, pl.y - 34 - R * 2, 'ROLL OUT!', 'move', '#ffe14f');
         E.shake(6, 0.3);
         g.sfx('ult', 'boulder.roll');
         let T = 0, k = 0, head = pl.facing, ballT = 0;
@@ -659,7 +659,7 @@ window.SFC = window.SFC || {};
             if (q.state === 'stun') { q.state = 'normal'; q.stateT = 0; }
             if (H.blast(q, pl, prm.knock, prm.launch, prm.stun, pl, U.norm(Math.cos(head) - Math.sin(head) * side, Math.sin(head) + Math.cos(head) * side))) {
               if (had && q.team !== team) sys.steal(pl);
-              E.comic(q.x, q.y - 30, 'SQUASH!', '#c7ccd6', 1.1, 0.5);
+              E.pop(q.x, q.y - 30, 'SQUASH!', 'heavy', '#c7ccd6');
               E.burst(q.x, q.y, 6, '#ffffff', 10, 100, 0.4);
               E.shake(4, 0.2);
               g.sfx('hit');
@@ -677,7 +677,7 @@ window.SFC = window.SFC || {};
           if (g.state !== 'play') { pl.armorT = 0; return; }
           E.prop(H.propId(g), 'rubble', pl.x, pl.y, R, 0, 1.4, '#7a6e5f');
           E.burst(pl.x, pl.y - R, 2, '#8a7f70', 20, 110, 0.7);
-          E.comic(pl.x, pl.y - 30, 'POOF!', '#ffffff', 1, 0.5);
+          E.pop(pl.x, pl.y - 30, 'POOF!', 'light', '#ffffff');
           pl.armorT = 0;
           pl.vx *= 0.3; pl.vy *= 0.3;
           H.unlock(pl);
@@ -708,7 +708,7 @@ window.SFC = window.SFC || {};
           E.burst(bx.x, bx.y, 4, '#ffd23f', 6, 50, 0.4);
           boxes.push(bx);
         }
-        E.comic(pl.x, pl.y - 32, 'JACK-IN-THE-BOX!', '#c63dff', 1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'JACK-IN-THE-BOX!', 'move', '#c63dff');
         g.sfx('ult', 'jack.crank');
         let T = 0;
         sys.task((dt) => {
@@ -722,7 +722,7 @@ window.SFC = window.SFC || {};
               if (attacking(g, o) && d < prm.radius + 8) {
                 bx.live = false;
                 E.propOff(bx.id);
-                E.comic(bx.x, bx.y - 22, 'CRASH!', '#ffffff', 0.9, 0.4);
+                E.pop(bx.x, bx.y - 22, 'CRASH!', 'light', '#ffffff');
                 E.burst(bx.x, bx.y, 4, '#ff3d5a', 12, 90, 0.4);
                 g.sfx('wall');
                 break;
@@ -735,7 +735,7 @@ window.SFC = window.SFC || {};
               const had = o.hasBall && !sys.unstealable(o);
               H.blast(o, bx, prm.knock, prm.launch, prm.stun, pl);
               if (had) sys.steal(pl);
-              E.comic(o.x, o.y - 30, 'BOING!', '#ff3d5a', 1.2, 0.5);
+              E.pop(o.x, o.y - 30, 'BOING!', 'heavy', '#ff3d5a');
               g.hitStop(0.06);
               E.shake(5, 0.25);
               g.sfx('hit');
@@ -780,7 +780,7 @@ window.SFC = window.SFC || {};
           b.kick(from, (s.x - b.x) / prm.lob, (s.y - b.y) / prm.lob, vz);
           for (const q of g.players) b.noPickup.set(q.id, prm.lob + 0.05);
           b.fx.string = true;
-          E.comic(from.x, from.y - 28, 'BOING!', '#ffd23f', 0.9, 0.5);
+          E.pop(from.x, from.y - 30, 'BOING!', 'light', '#ffd23f');
           g.sfx('kick', 0.5);
           g.sfx('ult', 'comet.two');
           // người dùng bật lên trời, lộn ngược (atkType 'bicycle' -> renderer xoay người)
@@ -804,7 +804,7 @@ window.SFC = window.SFC || {};
             g.hitStop(0.1);
             E.impactFrame();
             E.zoom(s.x, s.y - s.airZ, 0.18, 0.35);
-            E.comic(s.x, s.y - s.airZ - 30, 'BICYCLE KICK!', '#ffb13d', 1.3, 0.8);
+            E.pop(s.x, s.y - s.airZ - 30, 'BICYCLE KICK!', 'move', '#ffb13d');
             E.wave(b.x, b.y, 30, '#ffb13d', 0.45, 3);
             E.speedLines(0.4, b.x, b.y - b.z, '#ffffff');
             E.shake(6, 0.35);
@@ -846,7 +846,7 @@ window.SFC = window.SFC || {};
         H.hold(pl, prm.spin + 0.35);
         // b = thời gian xoay, c (màu) — búa vẽ ở render/vfx.js (case 'hammer'): xoay turns vòng rồi nện
         E.prop(id, 'hammer', pl.x, pl.y, pl.id, prm.spin, prm.spin + 0.45, '#c7ccd6');
-        E.comic(pl.x, pl.y - 40, 'IRON HAMMER!', '#c7ccd6', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 40, 'IRON HAMMER!', 'move', '#c7ccd6');
         g.sfx('ult', 'hammer.spin');
         let T = 0, k = 0;
         sys.task((dt) => {   // xoay: người chơi chỉnh hướng nện theo phím, tiếng gió vù vù mỗi vòng
@@ -860,7 +860,7 @@ window.SFC = window.SFC || {};
         });
         g.later(prm.spin, () => {
           if (g.state !== 'play') return;
-          if (pl.state === 'stun') { E.propOff(id); E.comic(pl.x, pl.y - 30, 'MISS', '#9aa3b5', 0.9, 0.5); return; }
+          if (pl.state === 'stun') { E.propOff(id); E.pop(pl.x, pl.y - 30, 'MISS', 'info', '#9aa3b5'); return; }
           this.slam(sys, team, prm, pl);
         });
       },
@@ -874,7 +874,7 @@ window.SFC = window.SFC || {};
         E.decal('crack', x0, y0, 1.8, 5);
         E.wave(x0, y0, 30, '#c7ccd6', 0.5, 3);
         E.burst(x0, y0, 2, '#8a7f70', 22, 140, 0.8);
-        E.comic(x0, y0 - 30, 'BONK!!', '#ffffff', 1.5, 0.6);
+        E.pop(x0, y0 - 30, 'BONK!!', 'huge', '#ffffff');
         E.shake(10, 0.5);
         g.sfx('hit');
         g.sfx('ult', 'hammer.slam');
@@ -904,7 +904,7 @@ window.SFC = window.SFC || {};
             if (H.blast(o, { x: o.x - d.x, y: o.y - d.y }, prm.knock, prm.launch, prm.stun, pl, d)) {
               if (had) sys.steal(pl);
               E.burst(o.x, o.y, 2, '#d9cbb0', 12, 120, 0.6);
-              E.comic(o.x, o.y - 34, 'BOOM!', '#ffd23f', 1.1, 0.5);
+              E.pop(o.x, o.y - 30, 'BOOM!', 'heavy', '#ffd23f');
               g.sfx('hit');
             }
           }
@@ -961,7 +961,7 @@ window.SFC = window.SFC || {};
                 o.hitImmune = 0;
                 if (o.hit({ stun: prm.stun, kbx: d.x * prm.knock, kby: d.y * prm.knock, source: pl, type: 'slash' })) {
                   if (had) sys.steal(pl);
-                  E.comic(o.x, o.y - 30, 'ZZT!', '#7fe7ff', 1, 0.5);
+                  E.pop(o.x, o.y - 30, 'ZZT!', 'light', '#7fe7ff');
                 }
               }
             });
@@ -1089,11 +1089,11 @@ window.SFC = window.SFC || {};
         E.beam(pl.x + d.x * 8, pl.y - 6 + d.y * 8, pl.facing, len, 2, '#ff7a3d', prm.windup + 0.1);
         pl.glow('#ff7a3d', prm.windup + 0.2);
         E.burst(pl.x + d.x * 8, pl.y - 6, 6, '#ff7a3d', 8, 50, prm.windup);   // tên lửa đang nạp: khói ở tay
-        E.comic(pl.x, pl.y - 32, 'ROCKET PUNCH!', '#ff7a3d', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'ROCKET PUNCH!', 'move', '#ff7a3d');
         g.sfx('ult', 'rocket.ignite');
         g.later(prm.windup, () => {
           if (g.state !== 'play') return;
-          if (pl.state === 'stun') { E.comic(pl.x, pl.y - 30, 'MISS', '#9aa3b5', 0.9, 0.5); return; }
+          if (pl.state === 'stun') { E.pop(pl.x, pl.y - 30, 'MISS', 'info', '#9aa3b5'); return; }
           const x0 = pl.x + d.x * 10, y0 = pl.y + d.y * 10, maxT = len / prm.speed;
           E.projectile('rocket', x0, y0, d.x * prm.speed, d.y * prm.speed, maxT, '#ffd8b0');
           E.burst(x0, y0, 6, '#ff7a3d', 16, 120, 0.5);
@@ -1117,7 +1117,7 @@ window.SFC = window.SFC || {};
                 g.hitStop(0.1);
                 E.impactFrame();
                 E.zoom(o.x, o.y, 0.15, 0.3);
-                E.comic(o.x, o.y - 32, 'KAPOW!', '#ff7a3d', 1.3, 0.7);
+                E.pop(o.x, o.y - 30, 'KAPOW!', 'heavy', '#ff7a3d');
                 E.burst(o.x, o.y, 8, '#ffd23f', 18, 150, 0.5);
                 E.shake(8, 0.35);
                 g.sfx('hit');
@@ -1156,7 +1156,7 @@ window.SFC = window.SFC || {};
         const hitT = new Map();
         sys.task((dt) => {
           if (g.state !== 'play') return true;
-          if (pl.state === 'stun') { E.comic(pl.x, pl.y - 30, 'CRASH!', '#ff3d5a', 1.1, 0.5); g.sfx('ult', 'truck.crash'); return true; }
+          if (pl.state === 'stun') { E.pop(pl.x, pl.y - 30, 'CRASH!', 'heavy', '#ff3d5a'); g.sfx('ult', 'truck.crash'); return true; }
           if ((T += dt) >= prm.time) return true;
           H.hold(pl, 0.1);
           // lái: người chơi theo phím, AI về phía người cầm bóng đối thủ / đối thủ gần nhất / khung thành
@@ -1184,7 +1184,7 @@ window.SFC = window.SFC || {};
             const had = o.hasBall && !sys.unstealable(o);
             if (H.blast(o, pl, prm.knock, prm.launch, prm.stun, pl, U.norm(Math.cos(head) - Math.sin(head) * side, Math.sin(head) + Math.cos(head) * side))) {
               if (had) sys.steal(pl);
-              E.comic(o.x, o.y - 30, 'SQUASH!', '#ff3d5a', 1.1, 0.5);
+              E.pop(o.x, o.y - 30, 'SQUASH!', 'heavy', '#ff3d5a');
               E.burst(o.x, o.y, 8, '#ffffff', 12, 110, 0.4);
               E.shake(5, 0.2);
               g.sfx('hit');
@@ -1194,7 +1194,7 @@ window.SFC = window.SFC || {};
         }, () => {
           E.propOff(id, 0.2);
           E.burst(pl.x, pl.y, 4, '#6a6470', 18, 110, 0.7);
-          E.comic(pl.x, pl.y - 30, 'POOF!', '#ffffff', 1, 0.5);
+          E.pop(pl.x, pl.y - 30, 'POOF!', 'light', '#ffffff');
           H.unlock(pl);
           pl.vx *= 0.3; pl.vy *= 0.3;
         });
@@ -1220,7 +1220,7 @@ window.SFC = window.SFC || {};
         E.prop(id, 'smoke', c.x, c.y, prm.radius, prm.squash, prm.time, '#4f4466');
         E.burst(c.x, c.y, 6, '#8a7f9a', 30, 170, 0.8);
         E.wave(c.x, c.y, prm.radius, '#b9a6d9', 0.4, 2);
-        E.comic(pl.x, pl.y - 34, 'SMOKE BOMB!', '#b9a6d9', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'SMOKE BOMB!', 'move', '#b9a6d9');
         E.shake(4, 0.2);
         g.sfx('ult', 'smoke.pop');
         const seen = new Map(), had = new Map();   // giây còn lộ hình · bước trước có cầm bóng không
@@ -1281,7 +1281,7 @@ window.SFC = window.SFC || {};
         pl.glow('#e8ecf5', prm.fly + prm.link);
         // 1. bắn dây: chỉ xám bay tới (render/vfx.js case 'string': màu #9aa3b5 = đang bay, vẽ dài dần theo fly)
         const ts = list.map((o) => { const id = H.propId(g); E.prop(id, 'string', o.x, o.y, pl.id, o.id, prm.fly + 0.02, '#9aa3b5'); return { o, id, cut: false }; });
-        E.comic(pl.x, pl.y - 34, 'PUPPET MASTER!', '#e8ecf5', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'PUPPET MASTER!', 'move', '#e8ecf5');
         g.sfx('ult', 'puppet.shoot');
         const cut = (c, snap) => {
           if (c.cut) return;
@@ -1289,7 +1289,7 @@ window.SFC = window.SFC || {};
           if (c.o.puppet === pl) { c.o.puppet = null; c.o.puppetT = 0; c.o.noActT = Math.max(0, c.o.chickenT || 0); }
           E.propOff(c.id, 0.1);
           if (c.ring) E.propOff(c.ring, 0.1);
-          if (snap) { E.comic(c.o.x, c.o.y - 28, 'SNAP!', '#e8ecf5', 0.9, 0.4); E.burst(c.o.x, c.o.y - 20, 6, '#ffffff', 6, 50, 0.3); g.sfx('ult', 'puppet.snap'); }
+          if (snap) { E.pop(c.o.x, c.o.y - 30, 'SNAP!', 'light', '#e8ecf5'); E.burst(c.o.x, c.o.y - 20, 6, '#ffffff', 6, 50, 0.3); g.sfx('ult', 'puppet.snap'); }
         };
         g.later(prm.fly, () => {
           if (g.state !== 'play') return;
@@ -1298,7 +1298,7 @@ window.SFC = window.SFC || {};
           for (const c of ts) {
             const o = c.o;
             E.propOff(c.id, 0);
-            if (!hittable(g, o) || o.state === 'stun' || Act().dodged(g, o)) { c.cut = true; E.comic(o.x, o.y - 26, 'MISS', '#9aa3b5', 0.8, 0.4); continue; }
+            if (!hittable(g, o) || o.state === 'stun' || Act().dodged(g, o)) { c.cut = true; E.pop(o.x, o.y - 30, 'MISS', 'info', '#9aa3b5'); continue; }
             c.id = H.propId(g); c.ring = H.propId(g);
             E.prop(c.id, 'string', o.x, o.y, pl.id, o.id, prm.link + 0.05, '#c7ccd6');
             E.prop(c.ring, 'link', o.x, o.y, o.id, prm.link, prm.link + 0.05, '#ffffff');
@@ -1328,7 +1328,7 @@ window.SFC = window.SFC || {};
               E.propOff(c.id, 0); E.propOff(c.ring, 0); c.ring = 0;
               c.id = H.propId(g);
               E.prop(c.id, 'string', o.x, o.y, pl.id, o.id, prm.time, '#ffffff');
-              E.comic(o.x, o.y - 30, 'GOTCHA!', '#e8ecf5', 1, 0.5);
+              E.pop(o.x, o.y - 30, 'GOTCHA!', 'light', '#e8ecf5');
             }
             g.sfx('ult', 'puppet.gotcha');
             let T2 = 0;
@@ -1372,7 +1372,7 @@ window.SFC = window.SFC || {};
         }
         sys.task(() => {
           if (g.state !== 'play') return true;
-          if (pl.state === 'stun') { E.propOff(id); E.comic(pl.x, pl.y - 30, 'OOF!', '#9aa3b5', 1, 0.5); return true; }
+          if (pl.state === 'stun') { E.propOff(id); E.pop(pl.x, pl.y - 30, 'OOF!', 'status', '#9aa3b5'); return true; }
           return false;
         });
         g.later(total, () => { if (pl.state === 'recover') H.unlock(pl); });
@@ -1383,7 +1383,7 @@ window.SFC = window.SFC || {};
         E.prop(H.propId(g), 'qring', x, y, prm.radius, prm.speed, prm.radius / prm.speed + 0.35, '#ff9a3d');
         E.decal('crater', x, y, 1.4, 4);
         E.burst(x, y, 2, '#8a7f70', 20, 150, 0.7);
-        E.comic(x, y - 44, 'STOMP!', '#ff3d5a', 1.3, 0.5);
+        E.pop(x, y - 44, 'STOMP!', 'heavy', '#ff3d5a');
         E.shake(10, 0.4);
         g.hitStop(0.05);
         g.sfx('hit');
@@ -1445,7 +1445,7 @@ window.SFC = window.SFC || {};
               const d = U.norm(c.m.x - pl.x, c.m.y - pl.y + 0.001), side = (o.x - pl.x) * -d.y + (o.y - pl.y) * d.x >= 0 ? 1 : -1;
               o.hitImmune = 0;
               if (o.hit({ stun: prm.stun, kbx: -d.y * side * prm.knock, kby: d.x * side * prm.knock, source: pl, type: 'hard' })) {
-                E.comic(o.x, o.y - 30, 'TRIP!', '#c7ccd6', 1, 0.5);
+                E.pop(o.x, o.y - 30, 'TRIP!', 'status', '#c7ccd6');
                 E.burst(o.x, o.y, 6, '#ffffff', 8, 70, 0.4);
                 g.sfx('hit');
                 g.sfx('ult', 'chain.trip');
@@ -1483,14 +1483,14 @@ window.SFC = window.SFC || {};
           const held = [];
           for (const s of spots) {
             const o = s.o;
-            if (!hittable(g, o) || U.dist(o, s) > prm.radius + o.radius * 0.5 || Act().dodged(g, o)) { E.comic(s.x, s.y - 24, 'MISS', '#9aa3b5', 0.8, 0.4); continue; }
+            if (!hittable(g, o) || U.dist(o, s) > prm.radius + o.radius * 0.5 || Act().dodged(g, o)) { E.pop(s.x, s.y - 30, 'MISS', 'info', '#9aa3b5'); continue; }
             const had = o.hasBall && !sys.unstealable(o);
             o.hitImmune = 0;
             if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; }
             if (!o.hit({ stun: prm.hold, kbx: 0, kby: 0, source: pl, type: 'hard' })) continue;
             if (had) sys.steal(pl);
             E.prop(H.propId(g), 'hand', o.x, o.y, o.id, 0, prm.hold, '#9d7bff');
-            E.comic(o.x, o.y - 30, 'GRAB!', '#9d7bff', 1.1, 0.5);
+            E.pop(o.x, o.y - 30, 'GRAB!', 'heavy', '#9d7bff');
             E.burst(o.x, o.y, 0, '#5b3fb0', 10, 60, 0.5);
             held.push({ o, x: o.x, y: o.y });
           }
@@ -1542,13 +1542,13 @@ window.SFC = window.SFC || {};
                 if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; }
                 H.blast(o, pt, prm.knock, prm.launch, prm.stun, pl);
                 if (had) sys.steal(pl);
-                E.comic(o.x, o.y - 30, 'BAM!', '#c63dff', 1.1, 0.5);
+                E.pop(o.x, o.y - 30, 'BAM!', 'heavy', '#c63dff');
                 E.burst(o.x, o.y, 8, '#c63dff', 12, 100, 0.4);
                 g.hitStop(0.06);
                 E.shake(5, 0.2);
                 g.sfx('hit');
                 g.sfx('ult', 'portal.kick');
-              } else E.comic(pt.x, pt.y - 24, 'MISS', '#9aa3b5', 0.8, 0.4);
+              } else E.pop(pt.x, pt.y - 30, 'MISS', 'info', '#9aa3b5');
             });
           });
         });
@@ -1600,9 +1600,9 @@ window.SFC = window.SFC || {};
         const last = pts[pts.length - 1];
         E.beam(pts[0].x, pts[0].y, pl.facing, Math.hypot(last.x - pts[0].x, last.y - pts[0].y) + 4, 2, '#8a7f70', prm.telegraph + 0.1);
         pts.forEach((p, i) => g.later((prm.telegraph * i) / pts.length, () => { if (g.state === 'play') E.decal('crack', p.x, p.y, 0.8, prm.telegraph + prm.life); }));
-        E.comic(pl.x, pl.y - 32, 'EARTH SPIKE!', '#b46bff', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'EARTH SPIKE!', 'move', '#b46bff');
         const left = String(st.left) + 'x';   // còn mấy lượt (bấm X lại) — số, không cần dịch
-        if (st.left > 0) E.comic(pl.x + 30, pl.y - 48, left, '#ffffff', 1, 0.9);
+        if (st.left > 0) E.pop(pl.x + 30, pl.y - 48, left, 'res', '#ffffff');
         g.sfx('wall');
         g.later(prm.telegraph, () => {
           if (g.state !== 'play') return;
@@ -1622,7 +1622,7 @@ window.SFC = window.SFC || {};
             if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; }
             H.blast(o, p, prm.knock, prm.launch, prm.stun, pl, { x: pp.x * side, y: pp.y * side });
             if (had) sys.steal(pl);
-            E.comic(o.x, o.y - 34, 'CRACK!', '#b46bff', 1.1, 0.5);
+            E.pop(o.x, o.y - 30, 'CRACK!', 'heavy', '#b46bff');
           }
           solids(sys, pts, prm.life, () => { for (const id of ids) E.propOff(id, 0.3); });
         });
@@ -1649,7 +1649,7 @@ window.SFC = window.SFC || {};
         H.hold(pl, prm.telegraph + 0.25);
         E.prop(H.propId(g), 'gaze', pl.x, pl.y, pl.facing, prm.range, prm.telegraph + 0.2, '#6bff4f');
         pl.glow('#6bff4f', prm.telegraph + 0.2);
-        E.comic(pl.x, pl.y - 34, 'MEDUSA GAZE!', '#6bff4f', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'MEDUSA GAZE!', 'move', '#6bff4f');
         g.sfx('ult', 'medusa.hiss');
         g.later(prm.telegraph, () => {
           if (g.state !== 'play' || pl.state === 'stun') return;
@@ -1659,7 +1659,7 @@ window.SFC = window.SFC || {};
           for (const o of g.teams[1 - team].players) {
             if (!hittable(g, o) || !this.inCone(g, pl, o, d, prm) || Act().dodged(g, o)) continue;
             const had = o.hasBall && !sys.unstealable(o);
-            if (Stat.stone(sys, o, prm.time, pl)) { n++; if (had) sys.steal(pl); E.comic(o.x, o.y - 32, 'STONE!', '#c7ccd6', 1.1, 0.6); }
+            if (Stat.stone(sys, o, prm.time, pl)) { n++; if (had) sys.steal(pl); E.pop(o.x, o.y - 30, 'STONE!', 'status', '#c7ccd6'); }
           }
           if (n) { g.hitStop(0.08); E.shake(5, 0.3); g.sfx('ult', 'medusa.stone'); }
         });
@@ -1764,7 +1764,7 @@ window.SFC = window.SFC || {};
         wps.forEach((w, i) => g.later(Math.max(0, times[i + 1] - 0.25), () => {
           if (g.state === 'play') E.prop(H.propId(g), 'mhand', w.x, w.y, w.y < f.cy ? Math.PI / 2 : -Math.PI / 2, 0.25, 0.6, '#ffffff');
         }));
-        E.comic(s.x, s.y - 32, 'MAGIC PASS!', '#ffe14f', 1.1, 0.7);
+        E.pop(s.x, s.y - 30, 'MAGIC PASS!', 'move', '#ffe14f');
         s.facing = Math.atan2(wps[0].y - s.y, wps[0].x - s.x);
         Act().startAttack(s, 'shoot');
         b.kick(s, 0, 0, 0);
@@ -1794,7 +1794,7 @@ window.SFC = window.SFC || {};
           if (!rcv) { let bd = Infinity; for (const q of g.players) if (ok(q) && U.dist(q, M) < bd) { bd = U.dist(q, M); rcv = q; } }
           E.burst(M.x, M.y, 4, '#ffe14f', 14, 90, 0.4);
           g.sfx('ult', 'wall.arrive');
-          if (rcv) { g.gainPossession(rcv); E.comic(rcv.x, rcv.y - 30, rcv.team === team ? 'CATCH!' : 'STOLEN!', rcv.team === team ? '#ffe14f' : '#ff3d5a', 1, 0.5); g.sfx('pick'); }
+          if (rcv) { g.gainPossession(rcv); E.pop(rcv.x, rcv.y - 30, rcv.team === team ? 'CATCH!' : 'STOLEN!', 'good', rcv.team === team ? '#ffe14f' : '#ff3d5a'); g.sfx('pick'); }
           return true;
         }, () => { for (const q of g.players) b.noPickup.delete(q.id); });
       },
@@ -1815,7 +1815,7 @@ window.SFC = window.SFC || {};
         pl.facing = a;
         H.hold(pl, prm.telegraph + 0.15);
         E.beam(pl.x + d.x * 8, pl.y - 8, a, len, 2, '#ffe14f', prm.telegraph + 0.1);
-        E.comic(pl.x, pl.y - 32, 'CHICKEN RAY!', '#ffe14f', 1.1, 0.7);
+        E.pop(pl.x, pl.y - 30, 'CHICKEN RAY!', 'move', '#ffe14f');
         g.sfx('ult', 'chicken.ray');
         g.later(prm.telegraph, () => {
           if (g.state !== 'play' || pl.state === 'stun') return;
@@ -1854,7 +1854,7 @@ window.SFC = window.SFC || {};
         if (!s) return;
         const hit = new Set();
         let tgt = this.pick(sys, team, s, hit), T = 0, back = !tgt, head = s.facing;
-        E.comic(s.x, s.y - 32, 'PANIC BALL!', '#7fe7ff', 1.1, 0.7);
+        E.pop(s.x, s.y - 30, 'PANIC BALL!', 'move', '#7fe7ff');
         E.burst(b.x, b.y, 6, '#7fe7ff', 12, 80, 0.4);
         Act().startAttack(s, 'shoot');
         b.kick(s, Math.cos(head) * prm.speed, Math.sin(head) * prm.speed, 20);
@@ -1887,7 +1887,7 @@ window.SFC = window.SFC || {};
             hit.add(tgt.id);
             if (!Act().dodged(g, tgt)) {
               Stat.panic(sys, tgt, prm.panic, pl);
-              E.comic(tgt.x, tgt.y - 44, 'BOO!', '#ffffff', 1.3, 0.5);
+              E.pop(tgt.x, tgt.y - 44, 'BOO!', 'status', '#ffffff');
               E.burst(b.x, b.y, b.z, '#7fe7ff', 10, 80, 0.4);
               g.hitStop(0.05);
               g.sfx('hit');
@@ -1950,7 +1950,7 @@ window.SFC = window.SFC || {};
               if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; }
               if (o.hit({ stun: prm.stun, kbx: d.x * 120, kby: d.y * 120, source: pl, type: 'hard' })) { n++; if (had) sys.steal(pl); }
             }
-            E.comic(c.x, c.y - 34, n ? 'CLANG!' : 'MISS', n ? '#ff3d5a' : '#9aa3b5', n ? 1.3 : 0.9, 0.6);
+            E.pop(c.x, c.y - 30, n ? 'CLANG!' : 'MISS', n ? 'heavy' : 'info', n ? '#ff3d5a' : '#9aa3b5');
             if (n) { g.hitStop(0.08); E.impactFrame(); E.shake(7, 0.35); g.sfx('hit'); }
           });
         });

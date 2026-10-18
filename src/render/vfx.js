@@ -21,6 +21,12 @@ window.SFC = window.SFC || {};
     if (SFC.I18n.isCJK(s)) return `${Math.max(12, Math.round(px * 0.6))}px ${SFC.I18n.pxFont()}`;
     return latin1(s) ? `${Math.round(px * 0.55)}px ${SFC.I18n.pxFont()}` : `${px}px ${SFC.I18n.vtFont()}`;
   };
+  // font chữ bật ra (Effects.pop): px = cỡ Press Start thật (config game.fx.popups) — chữ Nhật / ngoài Latin-1 đổi font cùng cỡ nhìn
+  const popFont = (s, px) => {
+    if (SFC.I18n.isCJK(s)) return `${Math.max(12, Math.round(px * 1.1))}px ${SFC.I18n.pxFont()}`;
+    return latin1(s) ? `${px}px ${SFC.I18n.pxFont()}` : `${Math.round(px / 0.55)}px ${SFC.I18n.vtFont()}`;
+  };
+  const OUT_C = '#140c16';   // viền + bóng đổ chữ bật ra
 
   // random có hạt giống (vết nứt giữ nguyên hình dạng qua các khung hình)
   function rng(seed) {
@@ -1324,18 +1330,33 @@ window.SFC = window.SFC || {};
         }
         ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
-      // chữ comic
-      for (const c of V.comics) {
-        const k = 1 - c.t / c.max, pop = k < 0.12 ? 2 - (k / 0.12) : 1;
+      this.pops(ctx, g);
+    },
+
+    // chữ bật ra (Effects.pop): kiểu theo loại trong config game.fx.popups.kinds. Dịch lúc vẽ (tượng thanh BOOM / POW giữ nguyên trong bản dịch)
+    pops(ctx, g) {
+      const K = SFC_CONFIG.game.fx.popups.kinds, CL = SFC_CONFIG.cores.list, A = SFC_CONFIG.cores.archetypes;
+      for (const c of g.effects.V.pops) {
+        const s = K[c.kind], k = 1 - c.t / c.max, str = SFC.t(c.str);
+        // màu: '#rrggbb' của người gọi · id Core / tên trường phái -> màu trường phái · không có -> màu mặc định của loại
+        const school = c.color && CL[c.color] ? CL[c.color].tags[0] : c.color;
+        const color = c.color && c.color[0] === '#' ? c.color : A[school] ? A[school].color : s.color || '#ffe14f';
+        const scale = s.pop && k < 0.12 ? 1 + s.pop * (1 - k / 0.12) : 1;
+        const rot = c.dir * (s.tilt || 0) + (s.wobble ? Math.sin((c.max - c.t) * 20) * s.wobble : 0);
         ctx.save();
-        ctx.translate(Math.round(c.x), Math.round(c.y)); ctx.rotate(c.rot); ctx.scale(pop, pop);
+        ctx.font = popFont(str, s.px);
+        // gần mép sân: dời vào trong cho chữ không bị cắt (tên chiêu dài)
+        const half = (ctx.measureText(str).width * scale) / 2 + s.lw;
+        const x = Math.round(Math.max(half, Math.min(W - half, c.x)));
+        ctx.translate(x, Math.round(c.y)); ctx.rotate(rot); ctx.scale(scale, scale);
         ctx.globalAlpha = Math.min(1, (c.t / c.max) * 3);
-        const str = SFC.t(c.str);   // dịch lúc vẽ (tiếng tượng thanh BOOM / POW giữ nguyên trong bản dịch)
-        outlinedText(ctx, str, 1, 1, 18 * c.size, '#140c16', '#140c16', 4);
-        outlinedText(ctx, str, 0, 0, 18 * c.size, c.color, '#140c16', 4);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+        ctx.strokeStyle = OUT_C; ctx.lineWidth = s.lw;
+        if (s.shadow) { ctx.fillStyle = OUT_C; ctx.strokeText(str, s.shadow, s.shadow); ctx.fillText(str, s.shadow, s.shadow); }
+        ctx.strokeText(str, 0, 0);
+        ctx.fillStyle = color; ctx.fillText(str, 0, 0);
         ctx.restore();
       }
-      ctx.globalAlpha = 1;
     },
 
     applyZoom(ctx, g) {

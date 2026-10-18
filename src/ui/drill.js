@@ -1,11 +1,11 @@
 /* Drill — màn DRILL (docs/DRILL_DESIGN.md): mỗi drill chờ = 1 THẺ DRILL (cọc xanh lá, nằm trong túi đồ);
  * mở thẻ = chọn 1 trong 3, cộng chỉ số character vĩnh viễn.
  * Thứ tự: notice (tuỳ chọn) -> card -> chọn 3 poster -> STRONGER! -> thẻ kế / đóng.
- *   notice: LEVEL UP! + quạt thẻ úp vừa nhận, OPEN NOW / LATER (chỉ sau trận: ui.js -> open(cb, { notice }))
+ *   notice: LEVEL UP! + quạt thẻ úp vừa nhận, OPEN NOW / LATER (chỉ sau trận: endscreen.js -> open(cb, { notice }))
  *   card  : lá thẻ rơi xuống (drop) -> chờ (idle) -> rung (charge) -> lật (flip) -> vỡ thành 3 mảnh (burst) -> 3 poster bay vào chỗ
  *   Túi đồ (gacha.js) mở thẳng từ card.
  * Giao diện "tường phố": tường gạch (màu gạch sân Back Alley) + 3 poster dán băng keo, stencil icon chỉ số trên vệt sơn,
- * chọn xong xịt chữ DONE! lên poster. Lớp phủ trên cùng (#drill), mở trên màn kết quả (ui.js) hoặc menu (CHARACTER / STATS).
+ * chọn xong xịt chữ DONE! lên poster. Lớp phủ trên cùng (#drill), mở trên màn kết quả (endscreen.js) hoặc menu (CHARACTER / STATS).
  * Bảng YOU bên trái: character xoay người + 6 thanh chỉ số, ô đang chọn hiện phần tăng (vệt sáng) + OVR trước → sau.
  * Chọn xong -> màn STRONGER! (data-phase trên .dr-pw, hoạt ảnh ở CSS):
  *   in   : tiêu đề + character rơi xuống        fill : từng thanh chỉ số đầy dần, số đếm lên

@@ -459,7 +459,7 @@ window.SFC = window.SFC || {};
     // Né đòn: đang lướt (Z) hoặc được bảo vệ (ôm bóng trong vòng cấm) -> đòn không có tác dụng
     dodged(g, o) {
       if (g.isProtected(o)) return true;
-      if (o.tackleImmune > 0) { g.effects.text(o.x, o.y - 26, 'DODGE', '#3ff6ff'); g.cores.dodge(o); return true; }
+      if (o.tackleImmune > 0) { g.effects.pop(o.x, o.y - 30, 'DODGE!', 'good', '#3ff6ff'); g.cores.dodge(o); return true; }
       return false;
     },
 
@@ -534,7 +534,7 @@ window.SFC = window.SFC || {};
           if (Math.random() >= chance) {
             // người cầm bóng trụ được: chỉ bị đẩy lùi
             o.hit({ stun: 0, kbx: d.x * kb * 0.6, kby: d.y * kb * 0.6, source: p, type: 'light' });
-            g.effects.text(o.x, o.y - 26, 'HOLD', '#9aa3b5');
+            g.effects.pop(o.x, o.y - 30, 'HOLD', 'info', '#9aa3b5');
             continue;
           }
           // Xe Ủi / Hoá Khổng Lồ: không rời bóng
@@ -559,7 +559,7 @@ window.SFC = window.SFC || {};
         }
         C.lightHit(p, o);
         // Võ Đường Phố thay bằng chữ comic to
-        if (!C.has(p, 'street_fighter') && !big && !upper) g.effects.text(o.x, o.y - 26, 'POW!', '#ffcf3f');
+        if (!C.has(p, 'street_fighter') && !big && !upper) g.effects.pop(o.x, o.y - 30, 'POW!', 'light', '#ffcf3f');
       }
       if (counter) p.counterT = 0;
       p.lastPunch = null;
@@ -575,7 +575,7 @@ window.SFC = window.SFC || {};
       p.state = 'windup'; p.stateT = H.windup * g.cores.mod(p.team, 'hardWindup', p);   // Giày Sắt: gồng nhanh hơn
       this.startAttack(p, 'hard');
       p.charging = false;
-      g.effects.text(p.x, p.y - 26, '!', '#ff3d5a');
+      g.effects.pop(p.x, p.y - 30, '!', 'status', '#ff3d5a');
       g.sfx('windup');
       return true;
     },
@@ -667,7 +667,7 @@ window.SFC = window.SFC || {};
         }
         if (o.hit({ stun: H.stun, kbx: d.x * kb, kby: d.y * kb, launch: H.launch * g.cores.pmod(p, 'launch') * Math.sqrt(fly), source: p, type: 'hard' })) {
           g.cores.hardHit(p, o);
-          g.effects.text(o.x, o.y - 30, 'SMASH!', '#ff3d5a');
+          g.effects.pop(o.x, o.y - 30, 'SMASH!', 'heavy', '#ff3d5a');
           g.effects.burst(o.x, o.y, 10, '#ffffff', 10, 140, 0.4);
           g.effects.burst(o.x, o.y, 10, '#ff6a3d', 8, 110, 0.5);
           g.effects.flash(0.25);
@@ -685,7 +685,7 @@ window.SFC = window.SFC || {};
       const H = G().combat.hard;
       p.state = 'recover';
       p.stateT = p.hardLanded ? H.recover : H.whiffRecover;
-      if (!p.hardLanded) g.effects.text(p.x, p.y - 26, 'MISS', '#9aa3b5');
+      if (!p.hardLanded) g.effects.pop(p.x, p.y - 30, 'MISS', 'info', '#9aa3b5');
       p.hardLanded = false;
     },
 
@@ -788,7 +788,7 @@ window.SFC = window.SFC || {};
       const o = shooter || p, ox = o.x, oy = o.y - 44;
       if (!gr) {
         p.cd.read = R.cooldown;
-        fx.text(ox, oy, off < 0 ? 'TOO EARLY' : 'TOO LATE', '#9aa3b5');
+        fx.pop(ox, oy, off < 0 ? 'TOO EARLY' : 'TOO LATE', 'info', '#9aa3b5');
         fx.shield(p.x, p.y - 4, 10, '#9aa3b5', 0.4, 1);
         return;
       }
@@ -801,13 +801,13 @@ window.SFC = window.SFC || {};
         fx.zoom(x, y - 10, 0.18, 0.45);
         fx.speedLines(0.35, x, y - 10, '#ffe14f');
         fx.wave(x, y, 34, '#ffe14f', 0.45, 3);
-        fx.comic(ox, oy, 'PERFECT READ!', '#ffe14f', 0.8, 0.8);
+        fx.pop(ox, oy, 'PERFECT READ!', 'good', '#ffe14f');
       } else if (gr.id === 'great') {
         fx.zoom(x, y - 10, 0.08, 0.3);
         fx.wave(x, y, 26, '#3ff6ff', 0.4, 2);
-        fx.comic(ox, oy, 'GREAT READ', '#3ff6ff', 0.65, 0.7);
+        fx.pop(ox, oy, 'GREAT READ', 'good', '#3ff6ff');
       } else {
-        fx.text(ox, oy, 'GOOD READ', '#9dff3d');
+        fx.pop(ox, oy, 'GOOD READ', 'good', '#9dff3d');
       }
       g.sfx('read', R.grades.indexOf(gr));
     },
