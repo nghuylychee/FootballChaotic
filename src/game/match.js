@@ -310,12 +310,14 @@ window.SFC = window.SFC || {};
       const passer = b.kind === 'pass' && b.lastKickTeam === p.team && b.lastTouch && b.lastTouch !== p && b.lastTouch.team === p.team ? b.lastTouch : null;
       const prevTeam = this.lastPossessionTeam;
       b.setOwner(p);
+      SFC.Actions.disarm(p);   // đang chờ đá 1 chạm mà nhận bóng: thanh lực chờ không được thành lực sút khi đã cầm bóng
       p.keeperHold = 0;
       p.cancelPass();
       p.ai.holdT = 0;
       p.ai.t = 0;
       p.ai.runT = 0;
       p.ai.openSeen = false;
+      p.ai.wing = null;   // AI: đi bóng dọc biên chờ tạt (firstTime.ai.wingChance) — quyết định lại mỗi lần có bóng
       p.ai.interceptT = 0;
       p.ai.outletDone = !!passer;   // nhận đường chuyền của đồng đội: không chuyền trả ngay (ai.outletPass)
       // vừa đấm cướp được bóng: chưa sút ngay được, D đang giữ phải thả ra (combat.light.stealShotLock)
@@ -660,22 +662,40 @@ window.SFC = window.SFC || {};
         if (b.owner.state === 'stun') this.looseBall(b.owner, U.rand(-1, 1), U.rand(-1, 1));
         return;
       }
+      if (b.freezeT > 0) return;   // bóng đang khựng ở chân người sút (fx.hitStop.shot): chưa ai chạm được
       let best = null, bd = Infinity;
       // đường chuyền còn sống -> đồng đội khác của người nhận không chặn bóng
       const pt = b.passTarget;
       const passAlive = pt && pt.state !== 'stun' && b.speed > 40;
+      const FT = C.firstTime;
       for (const p of this.players) {
         if (p.state === 'stun' || p.state === 'kick' || p.airZ > 4 || b.noPickup.has(p.id)) continue;
         if (passAlive && p !== pt && p.team === pt.team) continue;
         const gk = this.inKeeperZone(p);
         // Thủ Môn Khổng Lồ: tầm với theo kích thước
-        const reach = p.radius + b.r + (gk ? (C.player.gkReach + (p.state === 'dash' ? 5 : 0)) * p.sizeMul : C.ball.pickupRange)
+        let reach = p.radius + b.r + (gk ? (C.player.gkReach + (p.state === 'dash' ? 5 : 0)) * p.sizeMul : C.ball.pickupRange)
           + (b.passTarget === p ? C.pass.receiveRangeBonus : 0);
-        const maxZ = gk ? C.player.gkCatchHeight : C.ball.pickupHeight;
+        let maxZ = gk ? C.player.gkCatchHeight : C.ball.pickupHeight;
+        // đang chờ đá 1 chạm: với tới bóng ngang đầu (firstTime.maxZ). Ai gần bóng nhất chạm trước — kể cả thủ môn ra đón quả tạt
+        if (p.ot) { reach = Math.max(reach, p.radius + b.r + FT.reach); maxZ = Math.max(maxZ, FT.maxZ); }
         const d = U.dist(p, b);
         if (d < reach && b.z < maxZ && d < bd) { bd = d; best = p; }
       }
-      if (best) this.tryControl(best);
+      if (best) { if (best.ot) this.strike(best); else this.tryControl(best); }
+    }
+
+    // bóng chạm người đang chờ đá 1 chạm (firstTime): đá luôn. Bóng của đối phương vẫn qua luật cũ (tryControl):
+    // cú sút / bóng có hiệu ứng Core / thủ môn trước chuyền bổng -> chặn, cứu thua như thường; đường chuyền thường (cả quả tạt)
+    // -> 1 lần thử cắt, cắt được thì phá luôn bằng cú đá 1 chạm
+    strike(p) {
+      const b = this.ball, C = this.cfg;
+      const opp = b.lastKickTeam >= 0 && b.lastKickTeam !== p.team;
+      if (opp) {
+        const plain = b.kind === 'pass' && !b.fx.ghost && !b.fx.thunder && !b.fx.scissor && !this.cores.passGuarded(b.lastKickTeam);
+        if (!plain || (this.inKeeperZone(p) && b.lob)) { SFC.Actions.disarm(p); return this.tryControl(p); }
+        if (b.speed >= C.pass.intercept.minSpeed && !this.intercepts(p)) return;
+      }
+      SFC.Actions.firstTime(this, p);
     }
 
     tryControl(p) {

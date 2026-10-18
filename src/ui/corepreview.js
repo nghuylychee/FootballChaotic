@@ -143,11 +143,15 @@ window.SFC = window.SFC || {};
     symphony: shot({ charge: 0.7, init: (s) => { s.g.passChain[0] = 4; } }),
     endless_tiki: ult({ len: 3.4, init: (s) => { s.place(s.mate, A.x + 10, A.y - 34, 0); s.place(s.o1, A.x + 50, A.y + 20, PI); }, focus: (s) => s.g.ball }),
     rubber_arm: punch({ dist: 45 }),
+    // đồng đội chuyền, người vàng giữ D chờ (lực chờ nhỏ) -> bóng tới là sút 1 chạm, One-Two đẩy lên đầy lực
     one_two: shot({
       noCharge: true, at: 9, dist: 130,
       init: (s) => { s.place(s.mate, G.x - 190, G.y - 50, 0); s.give(s.mate); },
-      tick: (s) => { if (s.me.hasBall && !s.shot && s.t > 0.3) s.shoot(0.3, 0.7); },
-      more: [[0.2, (s) => Act().passTo(s.g, s.mate, s.me, 'ground')]],
+      tick: (s) => { if (!s.shot && s.g.ball.kind === 'shot' && s.g.ball.lastTouch === s.me) s.shot = true; },
+      more: [
+        [0.2, (s) => Act().passTo(s.g, s.mate, s.me, 'ground')],
+        [0.3, (s) => { if (Act().armFirstTime(s.g, s.me)) { s.me.ot.target = 0.3; s.me.ot.aimY = 0.7; } }],
+      ],
     }),
     captain: pass(),
 

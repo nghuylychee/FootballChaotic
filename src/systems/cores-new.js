@@ -839,7 +839,7 @@ window.SFC = window.SFC || {};
         if (!pl.volley) return;
         const E = sys.g.effects;
         ball.fx.duo = true;
-        E.comic(pl.x, pl.y - 28, 'VOLLEY!', '#ffb13d', 0.9, 0.55);
+        if (pl.ftKind !== 'header') E.comic(pl.x, pl.y - 28, 'VOLLEY!', '#ffb13d', 0.9, 0.55);
         E.wave(pl.x, pl.y, 14, '#ffb13d', 0.25, 2);
       },
     },

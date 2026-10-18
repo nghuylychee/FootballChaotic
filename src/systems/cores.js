@@ -457,7 +457,7 @@ window.SFC = window.SFC || {};
     // mức "giữ lực" cần để kích hoạt Core sút của cầu thủ (Hoả Cầu / Lôi Cước / Chưởng Sóng / Lỗ Đen...), 0 = không có
     aiShotCharge(p) {
       let c = 0;
-      if (this.has(p, 'fire_shot') || this.has(p, 'one_two')) c = Math.max(c, this.chargedThreshold(p));
+      if (this.has(p, 'fire_shot')) c = Math.max(c, this.chargedThreshold(p));
       if (this.has(p, 'thunder_kick')) c = Math.max(c, this.params('thunder_kick').minCharge);
       for (const id of ['energy_wave', 'black_hole']) if (this.has(p, id)) c = Math.max(c, this.params(id).minCharge);
       return c ? Math.min(1, c + 0.03) : 0;
@@ -469,11 +469,8 @@ window.SFC = window.SFC || {};
     /* ---------- truy vấn cho actions / match (Core Giai đoạn 3) ---------- */
     // tầm với của cú đấm (Tay Cao Su: vươn xa)
     lightReach(p) { return this.has(p, 'rubber_arm') ? this.sp('rubber_arm', p).reach : 0; }
-    // Một-Hai: sút ngay sau khi nhận đường chuyền = sút tụ lực tối đa
-    volleyCharge(p) {
-      if (!this.has(p, 'one_two') || !(p.recvT >= 0)) return 0;
-      return this.g.time - p.recvT <= this.sp('one_two', p).window ? 1 : 0;
-    }
+    // One-Two: dứt điểm 1 chạm (sút 1 chạm / vô-lê / đánh đầu, game.firstTime) luôn đầy lực, không bị phạt sai số
+    volleyCharge(p) { return this.has(p, 'one_two') ? 1 : 0; }
     // không thể bị cướp bóng: Xe Ủi (đang hoá to), Hoá Khổng Lồ
     unstealable(o) { return o.titanT > 0 || o.bullT > 0; }
     // Nắm Đấm Khổng Lồ: nắm tay sáng (hồi chiêu xong) -> cú đấm kế tiếp thành nắm đấm khổng lồ
@@ -618,7 +615,7 @@ window.SFC = window.SFC || {};
       if (!(st.cd > 0)) {
         st.cd = U2.stealCooldown || 0;
         // chữ "+ULT" trên đầu người cướp được bóng (năng lượng Tuyệt kỹ của người đó vừa tăng)
-        if (this.ultOf(p) && this.ultE(p) < 1 && !(this.st(p, '_ultLock').cd > 0)) this.g.effects.text(p.x, p.y - 34, '+ULT', '#ffd23f');
+        if (this.ultOf(p) && this.ultE(p) < 1) this.g.effects.text(p.x, p.y - 34, '+ULT', '#ffd23f');
         this.gainUlt(p, U2.gainSteal);
       }
       this.dispatch(p.team, 'onSteal', p);
@@ -662,7 +659,7 @@ window.SFC = window.SFC || {};
     // năng lượng Tuyệt kỹ: trận có công thức thì nạp cả khi chưa có Tuyệt kỹ (nạp ngầm, vừa đạt công thức là dùng được ngay);
     // đổi Tuyệt kỹ giữ năng lượng. Trận mơ / không công thức: chỉ nạp khi đã có Tuyệt kỹ
     gainUlt(p, amt) {
-      if (!isP(p) || (!this.ultOf(p) && !this.recipesOn()) || this.st(p, '_ultLock').cd > 0) return;   // dùng xong: khoá nạp ultimate.lockout giây
+      if (!isP(p) || (!this.ultOf(p) && !this.recipesOn())) return;
       p.res.ult = Math.min(1, this.ultE(p) + amt);
     }
     ultReady(p) { return isP(p) && !!this.ultOf(p) && this.ultE(p) >= 1; }
@@ -740,8 +737,7 @@ window.SFC = window.SFC || {};
       if (!id || this.ultE(p) < 1 || g.state !== 'play' || g.stopT > 0 || p.state !== 'normal' || p.airZ > 0 || p.noActT > 0 || this.ultBlocked(p)) return false;
       const team = p.team, def = this.def(id), U2 = DEF().ultimate, lv = p.ultLv || 1;
       const color = def.color || (ARCH()[def.tags[0]] ? ARCH()[def.tags[0]].color : '#ffe14f');
-      p.res.ult = 0;
-      this.st(p, '_ultLock').cd = U2.lockout || 0;
+      p.res.ult = 0;   // dùng xong nạp lại ngay từ 0 (khoá nạp sau khi dùng đã bỏ, user chốt 2026-10-18)
       // cut-in: tên + sao tiến hoá (cut-in hiện tên Tuyệt kỹ của mọi người, kể cả đối thủ — người chơi thấy là muốn thử)
       g.effects.cutIn(p.id, def.name.toUpperCase() + (lv > 1 ? ' ' + '★'.repeat(lv) : ''), color, U2.cutIn);
       g.hitStop(U2.cutIn);
@@ -794,7 +790,7 @@ window.SFC = window.SFC || {};
     // trạng thái nhìn thấy được thay cho tài nguyên: TOÉ ĐIỆN, Xe Ủi hoá to, nắm tay sáng (máy khách online đọc p.surge / p.fistRdy / sizeMul)
     updateStates(p, dt) {
       const g = this.g;
-      // Tuyệt kỹ tự nạp theo thời gian (chỉ lúc đang đá; dùng xong vẫn khoá nạp lockout giây như hồi chiêu — gainUlt).
+      // Tuyệt kỹ tự nạp theo thời gian (chỉ lúc đang đá).
       // Trận hướng dẫn: tắt, bài tích Ultimate dạy nạp bằng đấm / cướp bóng / ghi bàn (game/tutorial.js)
       const gt = DEF().ultimate.gainTime || 0;
       if (gt > 0 && g.state === 'play' && !(g.opts && g.opts.tutorial)) this.gainUlt(p, gt * dt);

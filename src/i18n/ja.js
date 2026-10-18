@@ -1393,5 +1393,6 @@ SFC.I18n.add({
     'Mega Magnet': 'メガマグネット',
     'MEGA MAGNET!': 'メガマグネット！',
     'A giant magnet drags opponents together into a heap.': '巨大マグネットが相手を引き寄せ、ひと山にする。',
+    'First-time shots, volleys and headers hit at full power.': 'ダイレクトシュート・ボレー・ヘディングが常に全力で飛ぶ。',
   },
 });

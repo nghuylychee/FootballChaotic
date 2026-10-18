@@ -7,7 +7,8 @@ window.SFC = window.SFC || {};
   const U = SFC.U;
 
   const ATTACK_STATES = { jab: 1, windup: 1, kick: 1, recover: 1 };
-  const DIVE = { diveU: 1, diveD: 1 };   // thủ môn đổ người (Actions.dive): lên / xuống màn hình
+  const DIVE = { diveU: 1, diveD: 1 };
+  const FT_POSE = { volley: 1, header: 1 };   // tư thế dứt điểm 1 chạm (game.firstTime.volley / header .pose)   // thủ môn đổ người (Actions.dive): lên / xuống màn hình
 
   class Player {
     constructor(game, team, role, idx) {
@@ -64,6 +65,9 @@ window.SFC = window.SFC || {};
       this.sprinting = false;
       this.charging = false;
       this.charge = 0;
+      // dứt điểm 1 chạm (game.firstTime): đang giữ D chờ bóng tới -> { charge, held, t, miss, aim, aimY, target } · null = không chờ.
+      // Thanh lực vẫn vẽ qua charging / charge (đồng bộ online)
+      this.ot = null;
       this.shotTarget = 0;    // AI đang nạp lực: mức lực sẽ sút (0..1) — vạch trên thanh lực để người chơi căn Đọc Cú Sút; 0 = không có
       this.passMode = null;   // đang nạp lực chuyền: ground | through | lob
       this.passCharge = 0;
@@ -86,6 +90,7 @@ window.SFC = window.SFC || {};
       this.auraC = '';      // hào quang Core (màu) — vẽ ở render/vfx.js, đồng bộ online
       this.auraT = 0;
       this.flash = 0;
+      this.freezeT = 0;      // hitstop cục bộ (fx.hitStop): còn bao lâu đứng hình — cả sân vẫn chạy, chỉ người này khựng
       this.buffs = [];       // {speed, t}
       this.confused = null;  // {decoy, t}
       this.anim = Math.random() * 10;
@@ -110,7 +115,7 @@ window.SFC = window.SFC || {};
       if (this.hasBall) s *= C.player.dribbleSpeedMult * (0.85 + this.stats.dribble * cores.mod(this, 'dribble') * 0.15);   // Kiểm Soát Bóng
       else s *= cores.mod(this.team, 'offBallSpeed', this);
       if (this.sprinting) s *= C.player.sprintMult;
-      if (this.charging) s *= C.player.chargeMoveMult;
+      if (this.charging && this.hasBall) s *= C.player.chargeMoveMult;   // chờ đá 1 chạm (không có bóng): không chậm lại
       if (this.bracing) s *= C.read.braceMoveMult;
       for (const b of this.buffs) s *= b.speed || 1;
       if (g.finalPush) s *= C.match.finalPushSpeedMult;
@@ -122,6 +127,8 @@ window.SFC = window.SFC || {};
 
     update(dt) {
       const C = SFC_CONFIG.game, g = this.game, f = g.field;
+      // hitstop cục bộ: đứng yên hoàn toàn (tư thế, nháy trắng, lực văng đều giữ nguyên, hết khựng mới bay đi)
+      if (this.freezeT > 0) { this.freezeT -= dt; return; }
       for (const k in this.cd) this.cd[k] = Math.max(0, this.cd[k] - dt);
       this.tackleImmune = Math.max(0, this.tackleImmune - dt);
       this.keeperHold = Math.max(0, this.keeperHold - dt);
@@ -142,6 +149,7 @@ window.SFC = window.SFC || {};
       if (this.puppetT > 0 && (this.puppetT -= dt) <= 0) { this.puppetT = 0; this.puppet = null; }
       this.anim += dt;
       if (this.atkType) this.atkT += dt;
+      if (this.ot) this.tickFirstTime(dt);
       const air = this.airZ > 0;
       const kd = air ? C.combat.airDamp : C.combat.knockbackDamp;
       this.kbx = U.damp(this.kbx, kd, dt);
@@ -221,6 +229,7 @@ window.SFC = window.SFC || {};
       // hết đòn (hoặc bị ngắt) -> dừng anim ra đòn
       // tư thế sút: giữ kick.poseTime giây khi còn đứng bình thường · đổ người: suốt lúc bay + tư thế nằm (gkDivePose)
       const keep = this.atkType === 'shoot' ? this.state === 'normal' && this.atkT < C.kick.poseTime
+        : FT_POSE[this.atkType] ? this.state === 'normal' && this.atkT < C.firstTime[this.atkType].pose
         : DIVE[this.atkType] ? this.state === 'dash' || (this.state === 'normal' && this.atkT < this.poseEnd)
         : ATTACK_STATES[this.state];
       if (this.atkType && !keep) this.atkType = null;
@@ -300,6 +309,22 @@ window.SFC = window.SFC || {};
       if (moving) this.turnTo(Math.atan2(my, mx), dt);
     }
 
+    // đang chờ đá 1 chạm: nạp lực khi còn giữ D (AI: tự thả khi đủ ot.target), huỷ khi bị choáng / chờ quá lâu / bóng đi chỗ khác
+    tickFirstTime(dt) {
+      const F = SFC_CONFIG.game.firstTime, o = this.ot, g = this.game;
+      o.t += dt;
+      if (o.held) o.charge = Math.min(1, o.charge + dt / g.chargeTime(this));
+      if (o.held && o.target != null && o.charge >= o.target) o.held = false;
+      o.miss = SFC.Actions.ballIncoming(g, this) ? 0 : o.miss + dt;
+      const ok = (this.state === 'normal' || this.state === 'dash') && !(this.airZ > 0) && !(this.noActT > 0);
+      if (!ok || !F.enabled || g.ball.owner || o.t > F.armTime || o.miss > F.missTime) { SFC.Actions.disarm(this); return; }
+      this.charging = true;
+      this.charge = o.charge;
+    }
+
+    // hitstop cục bộ t giây (fx.hitStop): không cộng dồn, lấy mức dài hơn
+    freeze(t) { if (t > 0) this.freezeT = Math.max(this.freezeT, t); }
+
     // hào quang Core (Phản Công, Nhạc Trưởng...): màu + thời gian
     glow(color, t) { this.auraC = color; this.auraT = Math.max(this.auraT, t); }
 
@@ -349,6 +374,7 @@ window.SFC = window.SFC || {};
       this.stateT = stun;
       this.charging = false;
       this.charge = 0;
+      this.ot = null;
       this.cancelPass();
       this.flash = 0.12;
       this.hitImmune = stun;

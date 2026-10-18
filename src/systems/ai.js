@@ -57,6 +57,7 @@ window.SFC = window.SFC || {};
         }
         if (p.state !== 'normal') { stop(p); continue; }
         const own = g.ball.owner;
+        if (!own) this.firstTime(g, p);
         if (own === p) this.carrier(dt, g, p);
         else if (own && own.team === p.team) this.support(dt, g, p);
         else if (own) this.defend(dt, g, p);
@@ -138,6 +139,12 @@ window.SFC = window.SFC || {};
             }
           }
         }
+        // TẠT CÁNH (firstTime.cross): đang ở hành lang cánh 1/3 cuối, có đồng đội trong vòng cấm -> tạt bổng cho người đó
+        const FA = SFC_CONFIG.game.firstTime;
+        if (!settling && FA && FA.enabled) {
+          const xt = this.crossTarget(g, p);
+          if (xt && Math.random() < FA.ai.crossChance) { Act().passTo(g, p, xt, 'lob'); return; }
+        }
         // vừa đấm cướp được bóng: chưa sút (combat.light.stealShotLock)
         const shoot = shotSettling || p.shotLockT > 0 ? false : M ? this.mateShoots(g, p, dG, clear) : dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25);
 
@@ -180,6 +187,16 @@ window.SFC = window.SFC || {};
 
         // rê bóng về khung thành, né hậu vệ trước mặt
         let dir = U.norm(goal.x - p.x, goal.y - p.y);
+        // ở cánh gần 1/3 cuối: đi bóng dọc biên (giữ độ dạt) để tạt, thay vì cắt thẳng vào giữa. Tới sát đường biên ngang thì thôi
+        if (FA && FA.enabled && this.crossSpot(g, p, 0.15)) {
+          const prog = g.teams[p.team].dir > 0 ? (p.x - f.x) / f.w : (f.x + f.w - p.x) / f.w;
+          if (p.ai.wing == null) p.ai.wing = Math.random() < FA.ai.wingChance;
+          if (prog > 0.9) p.ai.wing = false;
+          if (p.ai.wing) {
+            const wy = f.cy + Math.sign(p.y - f.cy) * Math.max(FA.cross.wide + 10, Math.abs(p.y - f.cy));
+            dir = U.norm(goal.x - p.x, (wy - p.y) * 3);
+          }
+        }
         if (near.p && near.d < cfg.dribbleAvoid) {
           const ox = near.p.x - p.x, oy = near.p.y - p.y;
           if (ox * dir.x + oy * dir.y > 0) {
@@ -213,6 +230,11 @@ window.SFC = window.SFC || {};
         if (k === 0) {
           tx = c.x - dir * A().restDefenseDist * (progress < A().restDefenseFrom ? (S.anchorBack || 0.55) : 1);
           ty = f.cy + (c.y - f.cy) * 0.3 + wob;
+        } else if (k === last && this.crossSpot(g, c, 0.08)) {
+          // đồng đội đang ở cánh 1/3 cuối: chạy vào vòng cấm, hơi lệch về cột xa, chờ quả tạt
+          const X = SFC_CONFIG.game.firstTime.cross, goal = g.attackGoal(p.team);
+          tx = goal.x - dir * X.runDepth;
+          ty = f.cy + (c.y < f.cy ? 1 : -1) * X.runSide + wob * 0.3;
         } else if (k === last) {
           tx = c.x + dir * A().supportAhead * (S.runnerAhead || 1.4);
           ty = (c.y < f.cy ? f.cy + f.h * 0.28 : f.cy - f.h * 0.28) + wob;
@@ -300,6 +322,51 @@ window.SFC = window.SFC || {};
       }
       const gd = U.norm(ownGoal.x - t.x, ownGoal.y - t.y);
       moveTo(p, t.x + gd.x * cfg.markDistance, t.y + gd.y * cfg.markDistance, U.dist(p, t) > 80, 5);
+    },
+
+    /* ---------- dứt điểm 1 chạm + tạt cánh (game.firstTime) ---------- */
+    // c đang ở hành lang cánh trong 1/3 sân đối phương (early: tính sớm hơn chừng này tỉ lệ sân, để người BĂNG lên kịp chạy vào)
+    crossSpot(g, c, early = 0) {
+      const F = SFC_CONFIG.game.firstTime, X = F && F.cross, f = g.field;
+      if (!X || !F.enabled) return false;
+      const dir = g.teams[c.team].dir;
+      const prog = dir > 0 ? (c.x - f.x) / f.w : (f.x + f.w - c.x) / f.w;
+      return prog >= X.zone - early && Math.abs(c.y - f.cy) >= X.wide;
+    },
+
+    // người nhận quả tạt: đồng đội gần khung nhất, không bị kèm sát
+    crossTarget(g, p) {
+      if (!this.crossSpot(g, p)) return null;
+      const goal = g.attackGoal(p.team), opps = g.teams[1 - p.team].players;
+      let best = null, bd = Infinity;
+      for (const m of g.teams[p.team].players) {
+        if (m === p || m.state !== 'normal' || !Act().crossFrom(g, p, m)) continue;
+        if (nearest(opps, m, (o) => o.state !== 'stun' && !g.inKeeperZone(o)).d < 14) continue;
+        const d = U.dist(m, goal);
+        if (d < bd) { bd = d; best = m; }
+      }
+      return best;
+    },
+
+    // bóng đang tới cầu thủ AI: quyết định 1 lần cho mỗi quả bóng có chờ đá 1 chạm không (tấn công: sút 1 chạm / đánh đầu;
+    // phòng ngự: phá quả tạt của đối phương). Lực chờ ngẫu nhiên trong firstTime.ai.charge, nhắm góc xa thủ môn
+    firstTime(g, p) {
+      const F = SFC_CONFIG.game.firstTime, b = g.ball;
+      if (!F || !F.enabled || p.ot || p.ai.ftFor === b.kickN || !Act().ballIncoming(g, p)) return;
+      p.ai.ftFor = b.kickN;
+      const FA = F.ai, D = g.aiProfile(p.team), goal = g.attackGoal(p.team), dG = U.dist(p, goal);
+      const opp = b.lastKickTeam >= 0 && b.lastKickTeam !== p.team;
+      let chance = 0;
+      if (opp) { if (b.cross && !g.inKeeperZone(p)) chance = FA.clearChance; }
+      else if (b.passTarget === p && dG < FA.range) {
+        if (b.cross) chance = FA.headerChance;
+        else if (Act().laneClear(g, p, goal.x, goal.y, 12)) chance = FA.oneTouchChance;
+      }
+      if (!chance || Math.random() >= Math.min(0.95, chance * (0.6 + 0.4 * D.aggression))) return;
+      if (!Act().armFirstTime(g, p)) return;
+      p.ot.target = U.rand(FA.charge[0], FA.charge[1]);
+      const f = g.field, gk = nearest(g.teams[1 - p.team].players, goal, (o) => g.inKeeperZone(o)).p;
+      p.ot.aimY = (gk && gk.y > f.cy ? -1 : 1) * U.rand(0.3, 0.9);
     },
 
     // Đồng đội AI ĐÁ LÙI định chuyền cho người chơi (t) mà đang bị áp sát + đường chuyền bị chắn -> phất bóng lên (ai.hoof)

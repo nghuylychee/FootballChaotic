@@ -375,6 +375,14 @@ window.SFC = window.SFC || {};
     },
     fire()    { noise({ dur: 0.3, vol: 0.2, freq: 400, q: 0.4 }); },
     save()    { tone({ freq: 440, to: 660, dur: 0.1, type: 'triangle', vol: 0.2 }); this.crowdOoh(); },
+    nearMiss() { this.crowdOoh(); },
+    // đánh đầu (dứt điểm 1 chạm): tiếng "bụp" trầm, ngắn — khác tiếng sút chân
+    header(p = 0.6) {
+      tone({ freq: 190, to: 95, dur: 0.09, type: 'triangle', vol: 0.18 + 0.1 * p });
+      noise({ dur: 0.05, vol: 0.16 + 0.08 * p, freq: 1100, q: 0.9 });
+    },
+    // bước chân khi chạy nước rút (fx.run.stepVolume): tiếng "sột" rất nhỏ, đổi cao độ chút cho đỡ đều
+    step(v = 0.5) { noise({ dur: 0.035, vol: 0.09 * v, freq: 650 + Math.random() * 250, q: 0.8, type: 'lowpass' }); },   // sút chệch sát cột / xà: chỉ khán giả "ồồ"
     // Đọc Cú Sút: g = 0 PERFECT · 1 GREAT · 2 GOOD (càng chuẩn càng cao, càng nhiều nốt)
     read(g = 2) {
       const notes = [[784, 1175, 1568], [659, 988], [587]][g] || [587];

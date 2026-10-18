@@ -181,6 +181,7 @@ SFC_CONFIG.game = {
     landingMarker: true,     // bóng bổng (cao hơn pickupHeight): vẽ vòng điểm rơi trên sân
     controlSpeed: 310,       // bóng nhanh hơn -> khó khống chế (đối phương)
     trailLength: 7,
+    nearMiss: 12,            // (px) cú sút đi ra ngoài cách cột dọc / trên xà trong khoảng này -> khán giả "ồồ"
   },
 
   // Chuyền bóng: giữ S/W/A để nạp thanh lực, thả để chuyền.
@@ -288,6 +289,52 @@ SFC_CONFIG.game = {
     clearLift: 120,          // vz ban đầu -> bay ~0.57s, chạm đất ở ~155px, lăn tổng ~340px
     clearAngle: 0.8,         // ↑/↓ lệch góc phá bóng tối đa (~39°)
     clearSpread: 0.2,        // rad sai số ngẫu nhiên
+  },
+
+  // DỨT ĐIỂM 1 CHẠM (Actions.firstTime): bóng đang tới mình (đường chuyền nhắm mình / bóng lỏng lăn về phía mình) -> giữ D để
+  // "chờ đá": thanh lực nạp dần trong lúc bóng bay tới, thả D = chốt lực. Bóng chạm người là đá luôn, không khống chế.
+  // Kiểu cú đá theo độ cao bóng lúc chạm: sát đất = sút 1 chạm · ngang hông (volleyZ) = vô-lê · ngang đầu (headerZ) = đánh đầu.
+  // Không bấm D: nhận bóng như cũ.
+  firstTime: {
+    enabled: true,
+    incomingTime: 1.3,     // (s) bóng tới trong khoảng này mới tính là "đang tới mình"
+    incomingDist: 24,      // (px) đường bóng đi qua cách mình dưới mức này
+    armTime: 1.8,          // (s) chờ quá lâu mà bóng chưa tới -> huỷ
+    missTime: 0.25,        // (s) bóng không còn hướng về mình chừng này -> huỷ
+    reach: 7,              // (px) tầm chạm bóng tính từ mép người + bóng (khống chế thường: ball.pickupRange)
+    volleyZ: 7,            // (px) bóng cao từ mức này: vô-lê
+    headerZ: 17,           //      từ mức này: đánh đầu (nhảy lên)
+    maxZ: 34,              //      cao hơn mức này: với không tới
+    // đánh đổi của sút 1 chạm: sai số x spread; bóng tới càng nhanh càng khó (từ fastFrom px/s, thêm tới +fastSpread sau fastRange px/s)
+    spread: 1.3, fastFrom: 200, fastRange: 300, fastSpread: 0.5,
+    // bóng bị đổi hướng gắt (thủ môn phải dịch người): trừ tỉ lệ bắt bóng tối đa redirectGk, từ redirectMin° tới redirectMax°
+    redirectGk: 0.2, redirectMin: 30, redirectMax: 100,
+    volley: { power: 1.08, spread: 1.8, lift: 1.4, pose: 0.22 },   // mạnh, dễ lệch, dễ vọt xà
+    // đánh đầu: tốc độ theo thanh lực (nhân chỉ số SHOOTING), chúc xuống (vz âm) -> bóng nảy khó bắt; gk = trừ thêm tỉ lệ bắt
+    header: { speedMin: 250, speedMax: 340, spread: 0.8, vz: -70, gk: 0.08, pose: 0.32, hop: 6 },
+    hitStop: 0.04,         // vô-lê / đánh đầu chạm bóng: khựng cục bộ (người + bóng)
+    // TẠT CÁNH: chuyền bổng (A) từ hành lang cánh ở 1/3 sân đối phương tới đồng đội gần khung -> bóng tới trước mặt người nhận
+    // ở độ cao ngang đầu (z) thay vì rơi xuống chân
+    cross: {
+      zone: 0.58,          // người tạt đã vượt mốc này (tỉ lệ sân, tính từ khung nhà)
+      wide: 50,            // (px) cách trục giữa sân theo chiều ngang ít nhất chừng này (sân rộng 246, vòng cấm rộng 140)
+      boxDist: 150,        // (px) người nhận cách khung đối phương dưới mức này
+      z: 20,               // (px) độ cao bóng khi tới điểm đón
+      timeMin: 0.55, timeMax: 0.9,   // (s) thời gian bay theo quãng đường
+      lead: 0.9,           // đón đầu theo hướng chạy của người nhận
+      runDepth: 42,        // AI: người BĂNG lên chạy vào điểm cách khung chừng này (px) khi đồng đội đang ở cánh
+      runSide: 16,         //     lệch về cột xa (px)
+    },
+    // AI quyết định 1 lần cho mỗi quả bóng (theo độ hăng của độ khó)
+    ai: {
+      range: 170,          // (px tới khung) trong tầm này mới sút 1 chạm / đánh đầu
+      oneTouchChance: 0.5,   // đường chuyền sệt / chọc khe tới chân, đường sút thoáng
+      headerChance: 0.85,  // quả tạt
+      clearChance: 0.5,    // hậu vệ phá quả tạt của đối phương
+      crossChance: 0.45,   // mỗi lần ra quyết định khi đang ở cánh + có đồng đội trong vòng cấm
+      wingChance: 0.6,     // cầm bóng ở cánh gần 1/3 cuối: tỉ lệ đi bóng dọc biên chờ tạt thay vì cắt vào giữa (quyết định 1 lần mỗi lần có bóng)
+      charge: [0.5, 1],
+    },
   },
 
   // Phòng ngự (đội mình không có bóng): D = LIGHT ATTACK (đấm), A = HARD ATTACK (vung chân đá).
@@ -428,7 +475,34 @@ SFC_CONFIG.game = {
     },
   },
 
-  fx: { shakeGoal: 5, shakeHit: 2, shakeShot: 1.5 },
+  fx: {
+    shakeGoal: 5, shakeHit: 2, shakeShot: 1.5,
+    // HITSTOP CỤC BỘ (giây): chỉ người ra đòn + người trúng đòn (sút: người sút + bóng) khựng lại, cả sân vẫn chạy.
+    // Khác Game.hitStop (đứng hình cả trận, dành cho Tuyệt kỹ) -> 3v3 online đấm nhau liên tục không bị giật cả sân. 0 = tắt
+    hitStop: {
+      smash: 0.08,     // Hard attack trúng người (SMASH!)
+      punch: 0.035,    // Light attack trúng người (~2 frame)
+      shot: 0.05,      // sút mạnh: bóng "dính" chân một nhịp rồi mới bay
+      shotMin: 0.9,    //   thanh lực từ mức này trở lên mới khựng
+    },
+    // bóng rất nhanh (px/s, cú sút mạnh): vẽ thêm vệt tốc độ sau bóng (chỉ hình ảnh, src/render/renderer.js -> ballTrail)
+    speedLines: 420,
+    // CẢM GIÁC CHẠY (chỉ hình ảnh / âm thanh ở máy vẽ, src/render/renderer.js -> runFeel; online khách cũng thấy)
+    run: {
+      sprint: 105,       // (px/s) chạy nhanh hơn mức này = đang chạy nước rút (đi bộ 86, nước rút ~129)
+      lean: 1,           // (px) nghiêng thân + đầu theo hướng chạy ngang khi chạy nước rút. 0 = tắt
+      stride: 0.17,      // (s) mỗi bước chạy nước rút tung 1 nhúm bụi nhỏ
+      // (px/s²) đang chạy nước rút mà giảm tốc / bẻ lái ngược hướng mạnh hơn mức này -> tung bụi trượt
+      // (thả phím: giảm tốc 950 · quay ngược ~720 · rẽ vuông góc ~510 -> không tính)
+      brake: 650,
+      stepVolume: 0.5,   // tiếng bước chân khi chạy nước rút, chỉ cầu thủ mình điều khiển (0 = tắt; nhân với âm lượng SFX)
+      dust: ['#e0d4bc', '#b4a892'],
+    },
+  },
+
+  // Đệm phím (giây): bấm đấm (D) / Hard (A) / lướt (Z) hơi sớm (đang khựng sau đòn, còn vài frame hồi chiêu)
+  // thì phím được giữ chừng này, hết khựng là ra đòn ngay thay vì bị nuốt mất. 0 = tắt
+  input: { buffer: 0.13 },
 
   // ĂN MỪNG BÀN THẮNG (src/systems/celebrate.js, vẽ ở src/render/celebrate-draw.js): người ghi bàn diễn động tác trong slot
   // costume 'cel' (progression.config.js, bán trong Hộp Ăn Mừng); đồng đội chạy tới chúc mừng. Phản lưới nhà: không ăn mừng.

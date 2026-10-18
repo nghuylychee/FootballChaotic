@@ -14,7 +14,7 @@ SFC_CONFIG.net = {
   // Máy chủ riêng (server/): máy chủ chạy trận, mọi người là khách. url trống = chỉ người chơi làm host (Steam / PeerJS).
   // TẠO PHÒNG thử máy chủ trước, không tới được thì tự chuyển sang người chơi làm host.
   server: {
-    url: 'wss://sfc-server.onrender.com',   // máy chủ Render (bản free: ngủ sau 15 phút, ~1 phút để dậy) · chạy thử máy chủ trên máy này: npm run online (tự gắn url, không cần sửa ở đây)
+    url: 'wss://sfc-server-sg.onrender.com',   // máy chủ Render (bản free: ngủ sau 15 phút, ~1 phút để dậy) · chạy thử máy chủ trên máy này: npm run online (tự gắn url, không cần sửa ở đây)
     codeFirst: '23456789',     // ký tự đầu của mã phòng máy chủ riêng (mã Steam luôn bắt đầu A-D, mã PeerJS tránh các ký tự này)
                                // -> mọi mã đều dài codeLength, người chơi không phân biệt được, VÀO PHÒNG tự biết phòng loại nào
     connectTimeout: 5,         // giây chờ 1 lần thử kết nối

@@ -1453,5 +1453,6 @@ SFC.I18n.add({
     'Mega Magnet': 'Megaíman',
     'MEGA MAGNET!': 'MEGAÍMAN!',
     'A giant magnet drags opponents together into a heap.': 'Um íman gigante puxa os adversários e amontoa-os todos.',
+    'First-time shots, volleys and headers hit at full power.': 'Remates de primeira, voleios e cabeceamentos saem com força máxima.',
   },
 });

@@ -70,6 +70,12 @@ window.SFC = window.SFC || {};
     }
     // sút / phá bóng: chân sút đưa ra trước (nhấc nhẹ), chân trụ lùi về sau — vẽ trong drawPlayer
     if (p.atkType === 'shoot') return { shoot: true };
+    // dứt điểm 1 chạm (game.firstTime): vô-lê = tư thế sút nhưng chân sút vung ngang hông · đánh đầu = bật nhảy (hop px) + gật đầu
+    if (p.atkType === 'volley') return { shoot: true, volley: true };
+    if (p.atkType === 'header') {
+      const H = SFC_CONFIG.game.firstTime.header, k = clamp01(t / H.pose);
+      return { header: true, hop: Math.sin(k * Math.PI) * H.hop, nod: k > 0.15 && k < 0.55 };
+    }
     // thủ môn đổ người: hai tay duỗi qua đầu (người nghiêng + bay khỏi mặt đất vẽ ở Renderer.diving)
     if (p.atkType === 'diveU' || p.atkType === 'diveD') return { dive: true };
     return {};
@@ -659,12 +665,13 @@ window.SFC = window.SFC || {};
     const moving = cp ? !!cp.run : Math.hypot(p.vx || 0, p.vy || 0) > 12;
     const step = moving ? Math.floor(p.anim * 12) % 2 : 0;
     const stunned = p.state === 'stun';
-    const y = y0;
+    const atk = !ghost && p.atkType ? attackPose(p) : null;
+    // đánh đầu: cả người bật lên khỏi mặt sân, bóng đổ dưới chân giữ nguyên
+    const y = y0 - (atk && atk.hop ? Math.round(atk.hop) : 0);
     const bob = moving && step ? -1 : 0;
     const fx = Math.cos(p.facing), fy = Math.sin(p.facing);
     // tay / chân ra đòn nằm ở phía hướng mặt (nhìn sang phải -> tay/chân phải)
     const side = fx >= 0 ? 1 : -1;
-    const atk = !ghost && p.atkType ? attackPose(p) : null;
 
     ctx.globalAlpha = alpha;
     if (alpha >= 1) ellipse(ctx, x, y0 + 1, 6, 2.5, 'rgba(0,0,0,0.38)');
@@ -682,13 +689,13 @@ window.SFC = window.SFC || {};
     if (atk && atk.shoot && Math.abs(fx) >= 0.5) {
       // tư thế sút (nhìn ngang): 2 chân chéo từ hông — chân sút -15° (ra trước, hơi chúc xuống), chân trụ -120° (chéo xuống ra sau)
       const kickH = side > 0 ? x + 1 : x - 3, supH = side > 0 ? x - 3 : x + 1;
-      drawDiagLeg(ctx, supH, y - 5, -120, 6, side, p.look, kit, p.anim, side > 0 ? 0 : 1);
-      drawDiagLeg(ctx, kickH, y - 5, -15, 7, side, p.look, kit, p.anim, side > 0 ? 1 : 0);
+      drawDiagLeg(ctx, supH, y - 5, atk.volley ? -105 : -120, 6, side, p.look, kit, p.anim, side > 0 ? 0 : 1);
+      drawDiagLeg(ctx, kickH, y - 5, atk.volley ? 12 : -15, atk.volley ? 8 : 7, side, p.look, kit, p.anim, side > 0 ? 1 : 0);
     } else if (atk && atk.shoot) {
       // tư thế sút (nhìn lên / xuống): chân trụ lùi 1px về sau đứng vững, chân sút (phía hướng mặt) đưa ra trước ~3px và nhấc khỏi đất
       // (quay lưng lên trên: đưa ra ít hơn + nhấc ít hơn để chân không bị thân che mất)
       const kickL = side > 0 ? x : x - 4, supL = side > 0 ? x - 4 : x;
-      const lift = Math.abs(fy) > 0.7 ? 1 : 2;
+      const lift = (Math.abs(fy) > 0.7 ? 1 : 2) + (atk.volley ? 2 : 0);
       drawLeg(ctx, supL - Math.round(fx), y - Math.round(fy), p.look, p.anim, side > 0 ? 0 : 1);
       drawLeg(ctx, kickL + Math.round(fx * 3), y + Math.round(fy * (fy > 0 ? 2 : 1)) - lift, p.look, p.anim, side > 0 ? 1 : 0);
     } else if (cp && cp.legs === 'cross') {
@@ -707,6 +714,11 @@ window.SFC = window.SFC || {};
       if (!(kickLeg && side > 0)) drawLeg(ctx, x, y + r, p.look, p.anim, 1);
       if (kickLeg) drawKick(ctx, p, x, y, fx, fy, side, atk);
     }
+
+    // chạy nước rút sang ngang: thân + đầu nghiêng về hướng chạy (fx.run.lean px), chân giữ nguyên
+    const RN = SFC_CONFIG.game.fx.run;
+    const lean = !ghost && !cp && !atk && p.state === 'normal' && RN && RN.lean && Math.abs(p.vx || 0) > RN.sprint ? Math.sign(p.vx) * RN.lean : 0;
+    if (lean) { ctx.save(); ctx.translate(lean, 0); }
 
     // thân
     const by = y - 10 + bob + (cp && cp.drop || 0);   // quỳ / xếp bằng / ngồi: thân hạ xuống
@@ -747,9 +759,10 @@ window.SFC = window.SFC || {};
       ctx.globalCompositeOperation = 'source-over';
     }
 
-    // đầu to kiểu Isaac
-    const hx = x;
-    const hy = by - 6 + (stunned ? Math.round(Math.sin(p.anim * 20)) : 0) + (cp && cp.headDy || 0);
+    // đầu to kiểu Isaac (đánh đầu: gật về hướng mặt)
+    const nod = atk && atk.nod;
+    const hx = x + (nod ? Math.round(fx * 2) : 0);
+    const hy = by - 6 + (stunned ? Math.round(Math.sin(p.anim * 20)) : 0) + (cp && cp.headDy || 0) + (nod ? 1 : 0);
     const back = fy < -0.35;
     // AURA FARMING: tóc hoá vàng + dựng ngược (thay kiểu tóc / mũ trong lúc hiệu lực)
     const aura = !ghost && p.auraFarmT > 0;
@@ -803,6 +816,7 @@ window.SFC = window.SFC || {};
         px(ctx, hx + Math.round(Math.cos(a) * 8), hy - 9 + Math.round(Math.sin(a) * 2), 2, 2, '#ffe14f');
       }
     }
+    if (lean) ctx.restore();
     ctx.globalAlpha = 1;
     return hy;
   }

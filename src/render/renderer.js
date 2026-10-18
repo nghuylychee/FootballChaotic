@@ -139,6 +139,9 @@ window.SFC = window.SFC || {};
       const pvCol = pv ? PASS_COLORS[pv.mode] : null;
       if (pv && pv.target) ringPx(ctx, pv.target.x, pv.target.y + 1, 9 + Math.round(Math.sin(t * 10)), pvCol);
 
+      // bụi chân khi chạy nước rút / phanh gấp + tiếng bước chân (fx.run) — vẽ sau vòng chân để không bị vòng che
+      this.runFeel(ctx, g);
+
       // điểm rơi bóng bổng (nằm trên mặt sân, dưới cầu thủ)
       this.landingMarker(ctx, g);
 
@@ -459,6 +462,64 @@ window.SFC = window.SFC || {};
       for (const q of list) S.drawFxParticle(ctx, q, g);
     },
 
+    // CẢM GIÁC CHẠY (fx.run): bụi chân mỗi bước chạy nước rút, nhúm bụi lúc bắt đầu chạy nước rút, bụi trượt khi phanh /
+    // bẻ lái gắt + tiếng bước chân của cầu thủ mình điều khiển. Chỉ ở máy vẽ, theo vx / vy (online: có trong snapshot).
+    // Bước nào cầu thủ không dời chỗ (tạm dừng, hitstop, khung hình không có bước mô phỏng) thì bỏ qua -> không tung bụi tại chỗ
+    runFeel(ctx, g) {
+      const R = SFC_CONFIG.game.fx.run, S = SP();
+      if (!R) return;
+      const now = performance.now();
+      const dt = Math.min(0.05, this.runT ? (now - this.runT) / 1000 : 0);
+      this.runT = now;
+      const list = this.dust || (this.dust = []);
+      if (this.dustFor !== g) { list.length = 0; this.dustFor = g; this.runSt = new WeakMap(); }
+      // at: px sau gót theo hướng chạy (bụi sinh ngay dưới chân bị sprite che mất)
+      const puff = (p, n, back, spread, life, at = 7) => {
+        const sp = Math.hypot(p.vx, p.vy) || 1, ux = p.vx / sp, uy = p.vy / sp;
+        for (let i = 0; i < n; i++) {
+          list.push({
+            k: 'run', shape: 'px', add: false, c: R.dust[Math.floor(Math.random() * R.dust.length)],
+            x: p.x - ux * at + (Math.random() - 0.5) * 4, y: p.y + 1 - uy * at * 0.6 + (Math.random() - 0.5) * 3, z: 0.5,
+            vx: -p.vx * back + (Math.random() - 0.5) * spread, vy: -p.vy * back * 0.6 + (Math.random() - 0.5) * spread * 0.5,
+            vz: 6 + Math.random() * 10, g: 40, drift: 0, phase: 0, t: life, max: life, s: Math.random() < 0.3 ? 1 : 2,
+          });
+        }
+      };
+      const me = !g.preview && g.state === 'play' ? g.controlled : null;
+      for (const p of g.players) {
+        let st = this.runSt.get(p);
+        if (!st) { st = { x: p.x, y: p.y, hist: [], stride: 0, cd: 0, run: false, ok: false }; this.runSt.set(p, st); }
+        const moved = p.x !== st.x || p.y !== st.y;
+        st.x = p.x; st.y = p.y;
+        if (!moved || dt <= 0) continue;
+        st.cd = Math.max(0, st.cd - dt);
+        const ok = p.state === 'normal' && !(p.airZ > 0) && !(p.ghostT > 0) && !p.celId;
+        const sp = Math.hypot(p.vx || 0, p.vy || 0);
+        // vận tốc ~0.08s trước (không lấy khung trước: online vx nhảy theo từng snapshot)
+        st.hist.push({ t: now, vx: p.vx || 0, vy: p.vy || 0 });
+        while (st.hist.length > 2 && now - st.hist[1].t > 80) st.hist.shift();
+        if (!ok || !st.ok) { st.ok = ok; st.run = sp > R.sprint; st.hist.length = 0; continue; }
+        const h = st.hist[0], span = (now - h.t) / 1000, hs = Math.hypot(h.vx, h.vy);
+        // phanh / bẻ lái: phần gia tốc ngược hướng chạy cũ
+        if (span > 0.05 && hs > R.sprint * 0.9 && st.cd <= 0) {
+          const brake = -((p.vx - h.vx) * h.vx + (p.vy - h.vy) * h.vy) / hs / span;
+          if (brake > R.brake) { puff({ x: p.x, y: p.y, vx: h.vx, vy: h.vy }, 7, -0.25, 34, 0.45, -7); st.cd = 0.35; st.hist.length = 0; }
+        }
+        if (sp > R.sprint) {
+          if (!st.run) { st.run = true; puff(p, 6, 0.35, 28, 0.45); st.stride = R.stride; }   // bắt đầu chạy nước rút
+          else if ((st.stride -= dt) <= 0) {
+            st.stride += R.stride;
+            puff(p, 2 + (Math.random() < 0.4 ? 1 : 0), 0.3, 12, 0.35);
+            if (p === me && R.stepVolume > 0) SFC.Audio.step(R.stepVolume);
+          }
+        } else if (sp < R.sprint * 0.8) st.run = false;
+      }
+      for (const q of list) S.stepFx(q, dt);
+      for (let i = list.length - 1; i >= 0; i--) if (list[i].t <= 0) list.splice(i, 1);
+      if (list.length > 200) list.splice(0, list.length - 200);
+      for (const q of list) S.drawFxParticle(ctx, q, g, 0.75);
+    },
+
     chargeBar(ctx, p, hy, g) {
       const { px, OUT } = SP();
       const K = SFC_CONFIG.game.kick;
@@ -531,6 +592,16 @@ window.SFC = window.SFC || {};
         ctx.fillStyle = `rgba(${col},${0.35 - i * 0.045})`;
         px(ctx, tp.x - 1, tp.y - tp.z - 4, 3, 3, ctx.fillStyle);
       });
+      // cú sút rất mạnh (fx.speedLines): 2 vệt tốc độ mảnh kéo dài sau bóng, lệch sang hai bên đường bóng
+      const sl = SFC_CONFIG.game.fx.speedLines, sp = b.speed;
+      if (!sl || sp < sl) return;
+      const k = Math.min(1, (sp - sl) / 120), ux = b.vx / sp, uy = b.vy / sp;
+      const len = 14 + Math.round(k * 12), by = b.y - b.z - 3;
+      ctx.fillStyle = `rgba(${col},${0.35 + k * 0.3})`;
+      for (const o of [-3, 3]) {
+        const ox = -uy * o, oy = ux * o;
+        for (let i = 4; i < len; i += 2) ctx.fillRect(Math.round(b.x + ox - ux * i), Math.round(by + oy - uy * i), 1, 1);
+      }
     },
 
     goal(ctx, g, side) {

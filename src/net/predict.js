@@ -38,7 +38,8 @@ window.SFC = window.SFC || {};
     step(g, p, mask, dt, now, rtt, newest) {
       const C = P();
       if (!p || C.enabled === false) { this.on = false; return; }
-      const ok = g.state === 'play' && p.state === 'normal' && !(p.airZ > 0) && dt > 0;
+      // đang chờ đá 1 chạm (thanh lực hiện mà không cầm bóng): máy chủ tự chạy tới điểm đón bóng, phím chỉ là hướng sút -> không dự đoán
+      const ok = g.state === 'play' && p.state === 'normal' && !(p.airZ > 0) && dt > 0 && !(p.charging && !p.hasBall);
       if (!ok) { this.stop(g, p, dt); return; }
       if (!this.on) this.start(p);
 

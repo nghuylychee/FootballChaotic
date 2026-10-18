@@ -119,6 +119,7 @@ SFC_CONFIG.controls = {
   rumble: {
     enabled: true,
     kick:   [0.35, 0.6, 110],   // sút (mạnh theo lực)
+    header: [0.45, 0.55, 100],  // đánh đầu (dứt điểm 1 chạm)
     hit:    [0.5, 0.9, 160],    // trúng đòn
     tackle: [0.3, 0.4, 80],
     punch:  [0.3, 0.4, 80],     // Light attack trúng người

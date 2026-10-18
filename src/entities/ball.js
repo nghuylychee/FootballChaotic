@@ -19,7 +19,7 @@ window.SFC = window.SFC || {};
         x, y, z: 0, vx: 0, vy: 0, vz: 0,
         owner: null, lastTouch: null, lastKickTeam: -1,
         passTarget: null, passPoint: null, sloppy: false, lob: false, kind: null, roll: 0, trailT: 0, skin: null,
-        netSide: 0, shieldChecked: false, woodT: 0, read: null,
+        netSide: 0, shieldChecked: false, woodT: 0, read: null, freezeT: 0, missT: 0, cross: false, kickN: 0,
       });
       this.noPickup.clear();
       this.trail.length = 0;
@@ -49,6 +49,7 @@ window.SFC = window.SFC || {};
       this.kind = null;
       this.skin = null;
       this.read = null;
+      this.cross = false;
       this.clearFx();
     }
 
@@ -66,6 +67,9 @@ window.SFC = window.SFC || {};
       this.kind = null;
       this.read = null;       // Đọc Cú Sút: {pid, grade, bonus} của thủ môn đã đọc cú sút này
       this.shieldChecked = false;
+      this.freezeT = 0;
+      this.cross = false;     // tạt cánh (game.firstTime.cross) — passTo bật lại sau khi đá
+      this.kickN++;           // số lần đá: AI quyết định dứt điểm 1 chạm 1 lần cho mỗi quả bóng
       this.clearFx();
     }
 
@@ -82,8 +86,11 @@ window.SFC = window.SFC || {};
         if (v - dt <= 0) this.noPickup.delete(k); else this.noPickup.set(k, v - dt);
       }
       this.woodT = Math.max(0, this.woodT - dt);
+      this.missT = Math.max(0, this.missT - dt);
 
-      if (this.owner) { this.follow(dt); this.trail.length = 0; return; }
+      if (this.owner) { this.freezeT = 0; this.follow(dt); this.trail.length = 0; return; }
+      // hitstop cục bộ của cú sút mạnh (fx.hitStop.shot): bóng nằm yên ở chân một nhịp rồi mới bay
+      if (this.freezeT > 0) { this.freezeT -= dt; return; }
 
       const spd = this.speed;
       if (this.curve && spd > 60) this.rotate(this.curve * dt);
@@ -177,7 +184,7 @@ window.SFC = window.SFC || {};
         if (!touching) continue;
         this.checkWoodwork(side);
 
-        if (!inMouth) { this.bounceSide(lineX, side); continue; }
+        if (!inMouth) { this.checkNearMiss(side); this.bounceSide(lineX, side); continue; }
 
         // đang đi vào khung thành -> kiểm tra khiên (Aegis Wall)
         if (!this.shieldChecked && this.vx * side > 0) {
@@ -198,6 +205,17 @@ window.SFC = window.SFC || {};
       this.woodT = 0.6;
       this.g.effects.text(this.x - side * 28, this.y - this.z - 12, 'WOODWORK', '#ffe14f');
       this.g.sfx('clang');
+    }
+
+    // cú sút đi ra ngoài sát cột dọc / sát xà (ball.nearMiss px) -> khán giả "ồồ" (không chữ). Chạm cột đã có WOODWORK
+    checkNearMiss(side) {
+      const f = this.g.field, N = SFC_CONFIG.game.ball.nearMiss;
+      if (!N || this.kind !== 'shot' || this.woodT > 0 || this.missT > 0 || this.vx * side <= 0) return;
+      const out = this.y < f.gTop ? f.gTop - this.y : this.y > f.gBot ? this.y - f.gBot : 0;
+      const near = out > 0 ? out <= N && this.z < f.goalHeight + N : this.z - f.goalHeight <= N;
+      if (!near) return;
+      this.missT = 1;
+      this.g.sfx('nearMiss');
     }
 
     constrainNet(side, lineX) {
