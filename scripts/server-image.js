@@ -4,7 +4,7 @@
  * Tag = phiên bản máy chủ trong server/package.json: <net.protocol>.<minor>.<patch> (vd. 5.1.0). Số đầu phải bằng net.protocol
  * (đổi định dạng gói tin -> tăng protocol -> phiên bản máy chủ lên <protocol mới>.0.0 hoặc .1.0). Ghi tag khác: npm run server:image -- 5.1.0-test
  * Chạy thử: bật container ở cổng tạm, chờ /healthz trả ok với đúng net.protocol của bản game hiện tại, rồi tắt.
- * Sau khi push: Render > service > Settings > Image -> đổi tag sang bản mới -> Deploy.
+ * Sau khi push: npm run server:deploy (deploy lên mọi service sfc-server* trên Render qua API).
  * Cần Docker (Docker Desktop / Docker Engine) và đã `docker login` (tài khoản team41sfc) nếu push.
  * Đổi tên image: SFC_IMAGE=user/repo npm run server:image -- 5
  */
@@ -93,5 +93,5 @@ function protocol() {
   }
   console.log(`[image] pushing ${ref}`);
   run(docker, ['push', ref]);
-  console.log(`[image] pushed ${ref}. On Render: Settings > Image > tag ${TAG} > Deploy`);
+  console.log(`[image] pushed ${ref}. Deploy to Render: npm run server:deploy${TAG === VERSION ? '' : ' -- ' + TAG}`);
 })().catch((e) => { console.error('[image]', e.message); process.exit(1); });

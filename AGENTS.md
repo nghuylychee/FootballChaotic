@@ -11,6 +11,7 @@ Street Football Chaos: a 3v3 top-down arcade football game in plain browser Java
 | Serve the game (http://localhost:8080) | `npm run serve` (`-- --port N`) |
 | Game + local dedicated match server (ws://localhost:8081, URL injected at serve time) | `npm run online` |
 | Desktop build in dev (Electron; Steam P2P if Steam is running, App ID 480 from `steam_appid.txt`) | `npm start` |
+| Deploy the server image to every Render service (only when asked) | `npm run server:deploy` (`-- --dry` lists services) |
 | Match server tests (server + client, no browser) | `npm run server:test` |
 | Single test file | `node server/test/room-test.js`, `client-test.js`, `hardening-test.js`, `reconnect-test.js`, `queue-test.js` or `compression-test.js` |
 | Translation check (missing keys, `{var}` / tag mismatches; exits 1 on errors) | `node scripts/i18n-check.js` |
@@ -92,10 +93,10 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
   - Server: `server/package.json` `version` is `<net.protocol>.<minor>.<patch>` (semver, e.g. `5.1.0`), and it's also the Docker image tag. The server refuses to start if the major doesn't equal `net.protocol`, so a protocol bump means the server goes to `<new protocol>.0.0` (or `.1.0`).
   - Client: the game's semver is `version` in the root `package.json`. The full client version is `<version>-<net.protocol>` (e.g. `1.1.0-5`; `NetCommon.clientVersion()`), shown on the SETTINGS heading. Dev runs show `dev-<protocol>`, because `config/build.config.js` has `SFC_VERSION_STRING = 'dev'` and `scripts/strip-debug.js` writes the real number when packaging.
   - The handshake carries both (`cv` from the client, `sv` in `room` / `err` replies), and the server logs which client version opened or joined each room. `/healthz` reports `version`.
-- **Live server deployment is manual.** The match server runs on Render (`wss://sfc-server.onrender.com`, the `net.server.url`) from the Docker Hub image `team41sfc/sfc-server:<tag>`.
+- **Live server deployment only happens on request.** The match server runs on Render as several web services named `sfc-server*` (one per region, e.g. `sfc-server`, `sfc-server-sg`; `net.server.url` points at one), all from the Docker Hub image `team41sfc/sfc-server:<tag>`.
   - `npm run server:image` builds and smoke-tests the image locally (tag = server version). That's all Claude does by default.
   - Pushing (`npm run server:image -- --push`) only happens when the user asks for it in chat; pushes to the hub are limited.
-  - The user switches the tag on Render and deploys by hand. Until then the live server keeps the old protocol, so a client with a newer `net.protocol` falls back to player-hosting / AI ranked.
+  - Deploying (`npm run server:deploy`, `-- --dry` to list, `-- --only <name,...>`) points every `sfc-server*` service at the tag through the Render API, waits for each deploy, and checks `/healthz` reports the version. Also only when the user asks. The API key comes only from the `RENDER_API_KEY` environment variable; never print it or write it to a file in the repo. The same steps run from GitHub as the manually triggered **Server deploy** workflow (`.github/workflows/server-deploy.yml`: tests, push, deploy; secrets `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `RENDER_API_KEY`). Until a deploy, the live servers keep the old protocol, so a client with a newer `net.protocol` falls back to player-hosting / AI ranked.
 - `server/README.md` covers server env vars, Docker (`docker build -f server/Dockerfile .`, built from the repo root) and the handshake.
 
 **Build flavors** (`config/build.config.js`):

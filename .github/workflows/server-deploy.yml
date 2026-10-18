@@ -1,0 +1,69 @@
+# Máy chủ trận: build + push image lên Docker Hub rồi deploy lên mọi service sfc-server* trên Render.
+# Chỉ chạy tay: GitHub > Actions > Server deploy > Run workflow (chọn nhánh, tag, bước). Không tự chạy theo commit.
+# Secrets (Settings > Secrets and variables > Actions): DOCKERHUB_USERNAME, DOCKERHUB_TOKEN (access token Docker Hub, quyền Read & Write), RENDER_API_KEY
+name: Server deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      push_image:
+        description: Build, test and push the image to Docker Hub (off = deploy a tag that is already pushed)
+        type: boolean
+        default: true
+      deploy:
+        description: Deploy to Render
+        type: boolean
+        default: true
+      tag:
+        description: Image tag (empty = server/package.json version)
+        type: string
+        default: ''
+      only:
+        description: Only these Render services, comma separated (empty = every sfc-server*)
+        type: string
+        default: ''
+
+# không cho 2 lần deploy chạy chồng nhau
+concurrency:
+  group: server-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TAG: ${{ inputs.tag }}
+      ONLY: ${{ inputs.only }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Server tests
+        if: inputs.push_image
+        run: |
+          npm ci --prefix server
+          npm run server:test
+
+      - name: Docker Hub login
+        if: inputs.push_image
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build, smoke-test and push image
+        if: inputs.push_image
+        run: node scripts/server-image.js $TAG --push
+
+      - name: Deploy to Render
+        if: inputs.deploy
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: node scripts/server-deploy.js $TAG ${ONLY:+--only "$ONLY"}
