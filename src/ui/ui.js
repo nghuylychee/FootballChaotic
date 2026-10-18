@@ -381,12 +381,35 @@ window.SFC = window.SFC || {};
       if (!game.draft || game.draft.picked[game.me]) return;
       this.draftSel = i;
       this.app.pickCore(i);
-      // Co-op / PvP: mình đã chọn xong nhưng đang chờ người khác trong cùng lượt
-      if (game.state === 'draft' && game.draft && game.draft.picked[game.me]) {
-        this.renderDraft(game);
-      } else if (game.state !== 'draft' && this.current === 'draft' && !this.draftMorphActive) {
-        this.morphDraftToAbar(game, () => this.show(null));
+      // chọn xong (kể cả Co-op / PvP còn người khác đang chọn): đóng màn chọn, khối YOUR BUILD bay về abar.
+      // Trận vẫn dừng ở 'draft' tới khi mọi người chọn xong; trong lúc đó updateHud hiện chữ chờ giữa màn (draftWaitView)
+      if (this.current === 'draft' && !this.draftMorphActive && !this.freshDraft(game)) this.closeDraft(game);
+    },
+
+    // đang có lượt chọn mới mà mình chưa chọn (chơi đơn: chọn xong lượt này thì lượt kế mở luôn)
+    freshDraft(game) { return game.state === 'draft' && !!game.draft && !game.draft.picked[game.me]; },
+    // đóng màn chọn: khối YOUR BUILD bay về abar rồi ẩn — trừ khi lượt mới đã mở trong lúc bay
+    closeDraft(game) { this.morphDraftToAbar(game, () => { if (!this.freshDraft(game)) this.show(null); }); },
+
+    // chữ "đang chờ người khác chọn" giữa màn: mình đã chọn, lượt chọn chưa xong, màn chọn đã đóng (gọi mỗi khung từ updateHud)
+    draftWaitView(game) {
+      const d = game.draft;
+      const on = game.state === 'draft' && !!d && !!d.picked[game.me] && !this.current && !this.draftMorphActive;
+      let el = this.el.draftWait;
+      if (!el) {
+        if (!on) return;
+        el = this.el.draftWait = document.createElement('div');
+        el.id = 'draftwait';
+        this.el.draft.insertAdjacentElement('afterend', el);
       }
+      el.classList.toggle('hidden', !on);
+      if (!on) return;
+      // cùng chữ với dòng chờ cũ trên màn chọn (không lộ đối thủ là người hay AI ở trận xếp hạng)
+      const text = game.seats.length > 2 || game.humans.length < 2 ? _t('Picked · waiting for other players...') : _t('Picked · waiting for opponent...');
+      const key = `${text}#${d.limit > 0 ? Math.ceil(Math.max(0, d.t)) : ''}`;
+      if (el.dataset.key === key) return;
+      el.dataset.key = key;
+      el.innerHTML = `<span>${esc(text)}</span>${d.limit > 0 ? `<b>${Math.ceil(Math.max(0, d.t))}s</b>` : ''}`;
     },
 
     // biến hình khối vuông YOUR BUILD 2x2 từ draft bay vào thanh trạng thái abar ở đáy màn hình
@@ -872,6 +895,7 @@ window.SFC = window.SFC || {};
     /* ================= HUD ================= */
     updateHud(game) {
       if (!game) return;
+      this.draftWaitView(game);
       const c = this.hudCache;
       const t0 = game.teams[0], t1 = game.teams[1];
       const training = !!(game.opts && game.opts.training);
@@ -1119,14 +1143,19 @@ window.SFC = window.SFC || {};
           this.renderDraft(game);
           if (!overlay) this.show('draft');
         }
-        if (e.type === 'draftWait' && game.draft) this.renderDraft(game);
+        // người khác chọn / đổi bài: không vẽ lại màn chọn của mình (vẽ lại = lá bài lật lại từ đầu).
+        // Chỉ lượt của chính mình: đổi bài -> vẽ 3 lá mới · bị chọn hộ khi hết giờ -> đóng màn chọn như tự chọn
+        if (e.type === 'draftWait' && game.draft && e.seat == game.me && this.current === 'draft' && !this.draftAnimActive && !this.draftMorphActive) {
+          if (!game.draft.picked[game.me]) this.renderDraft(game);
+          else this.closeDraft(game);
+        }
         // Tuyệt kỹ của bạn vừa đổi theo công thức: ghi sổ Tuyệt kỹ + banner (lần đầu khám phá / tiến hoá / đổi)
         if (e.type === 'ultUnlock') this.ultUnlocked(game, e);
         if (e.type === 'corePicked') {
           // Còn lượt chọn tiếp theo (tích nhiều lượt / trước FINAL PUSH) -> không đóng draft hay morph về abar
           const hasMoreDraft = game.state === 'draft' || !!game.draft || evs.some((x) => x.type === 'draft') || (typeof game.draftPending === 'function' && game.draftPending() > 0);
           if (!hasMoreDraft && this.current === 'draft' && !this.draftMorphActive) {
-            this.morphDraftToAbar(game, () => this.show(null));
+            this.closeDraft(game);
           }
           // đội mình: chỉ lá bạn vừa lấy (Core đồng đội ẩn cho gọn); đội kia: gộp 1 dòng các lá vừa lấy
           const me = game.controlled;

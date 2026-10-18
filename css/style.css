@@ -329,6 +329,12 @@ kbd { font-family: var(--vt); font-size: 11px; padding: 0 3px; }
 .draft-timer { font-family: var(--px); font-size: 8px; color: #ff5a6e; margin-left: 8px; }
 #draft.waiting .card { opacity: 0.35; transform: none; cursor: default; }
 #draft.waiting .card.chosen { opacity: 1; border-color: var(--c); box-shadow: 4px 4px 0 var(--ink), 0 0 0 1px var(--gold); }
+/* đã chọn Core, màn chọn đã đóng, đang chờ người khác chọn xong (UI.draftWaitView) */
+#draftwait { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 8px; pointer-events: none;
+  padding: 6px 12px 5px; background: rgba(10, 11, 14, 0.82); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); color: #e6dccb; font-size: 13px; white-space: nowrap; line-height: 1; }
+#draftwait span { animation: draftWaitPulse 1.2s steps(2) infinite; }
+#draftwait b { font-family: var(--px); font-size: 8px; font-weight: normal; color: #ff5a6e; }
+@keyframes draftWaitPulse { 50% { opacity: 0.55; } }
 .pause-note { font-size: 13px; color: var(--muted); margin: -6px 0 8px; }
 
 /* ---------- THANH KỸ NĂNG (giữa đáy, kiểu LoL): chân dung · Light / Hard / Lướt + thể lực · Core ---------- */

@@ -183,7 +183,9 @@
       this.screen = 'game';
       SFC.Store.gameplay(true);
       const g = this.game;
-      SFC.UI.show(g && g.state === 'draft' ? 'draft' : g && g.state === 'ended' ? 'end' : null);
+      // đang chọn Core mà mình đã chọn xong (chờ người khác): không mở lại màn chọn, chỉ chữ chờ giữa màn (UI.draftWaitView)
+      const draftOpen = g && g.state === 'draft' && !(g.draft && g.draft.picked[g.me]);
+      SFC.UI.show(draftOpen ? 'draft' : g && g.state === 'ended' ? 'end' : null);
     },
 
     pause() {
