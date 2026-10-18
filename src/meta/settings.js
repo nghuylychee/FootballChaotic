@@ -4,6 +4,7 @@
  *  - Cỡ cửa sổ: chỉ bản desktop (electron/preload.js -> window.SFC_DESKTOP). 'WxH' hoặc 'full'.
  *    Danh sách cỡ: game.config.js -> render.windowSizes, bỏ cỡ lớn hơn màn hình
  *  - NETWORK STATS: hiện ping + dung lượng gửi / nhận khi đang ở phòng online (src/ui/online.js)
+ *  - CONNECTION (PRIVATE MATCH): AUTO = tạo phòng trên máy chủ riêng trước · DIRECT = máy này làm host (Steam / PeerJS)
  *  - Ngôn ngữ: mã trong src/engine/i18n.js. null = chưa chọn -> popup chọn ngôn ngữ lúc mở game (src/ui/langpick.js)
  */
 window.SFC = window.SFC || {};
@@ -21,6 +22,7 @@ window.SFC = window.SFC || {};
     lastWindow: null,    // cỡ cửa sổ trước khi vào FULLSCREEN (F11 thoát ra thì về lại cỡ này)
     lang: null,          // ngôn ngữ đã chọn ('en', 'pt-BR'...) · null = chưa chọn
     netStats: false,     // hiện ping + KB/s khi online
+    roomDirect: false,   // PRIVATE MATCH › CONNECTION: false = AUTO (máy chủ riêng trước) · true = DIRECT (máy này làm host)
 
     load() {
       const raw = SFC.Storage.getJSON(KEY, {}) || {};
@@ -29,10 +31,11 @@ window.SFC = window.SFC || {};
       if (raw.res === FULL || /^\d+x\d+$/.test(raw.res)) this.res = raw.res;
       if (typeof raw.lang === 'string') this.lang = raw.lang;
       this.netStats = raw.netStats === true;
+      this.roomDirect = raw.roomDirect === true;
       return this;
     },
     save() {
-      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats });
+      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats, roomDirect: this.roomDirect });
     },
 
     get desktop() { return !!window.SFC_DESKTOP; },
@@ -53,6 +56,7 @@ window.SFC = window.SFC || {};
     volumeLabel(kind) { return this[kind] ? `${this[kind] * 10}%` : SFC.t('OFF'); },
 
     toggleNetStats() { this.netStats = !this.netStats; this.save(); },
+    toggleRoomDirect() { this.roomDirect = !this.roomDirect; this.save(); },
 
     // đổi ngôn ngữ (popup chọn ngôn ngữ): dịch lại config + lưu ngay
     setLang(id) {

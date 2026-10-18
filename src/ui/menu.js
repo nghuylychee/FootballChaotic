@@ -341,10 +341,13 @@ window.SFC = window.SFC || {};
           return list;
         }
         // PRIVATE MATCH (tab thứ 2 màn PLAY, vẽ ở renderPrivate): 2 ô CREATE / JOIN
+        // + CONNECTION (chỉ khi có máy chủ riêng): AUTO = máy chủ riêng trước · DIRECT = máy này làm host. Chữ không nhắc cách kết nối
         case 'online':
           return [
-            { kind: 'btn', label: _t('CREATE ROOM'), act: () => Session().createRoom() },
+            { kind: 'btn', label: _t('CREATE ROOM'), act: () => Session().createRoom({ direct: ST().roomDirect }) },
             { kind: 'btn', label: _t('JOIN ROOM'), act: () => this.go('join') },
+            ...(SFC.NetCommon.serverOn() ? [{ kind: 'pick', conn: true, label: _t('CONNECTION'),
+              value: ST().roomDirect ? SFC.tc('connection', 'DIRECT') : SFC.tc('connection', 'AUTO'), change: () => ST().toggleRoomDirect() }] : []),
           ];
         case 'join':
           return [{ kind: 'btn', label: _t('CONNECT'), main: true, act: () => this.submitCode() }];
@@ -920,9 +923,13 @@ window.SFC = window.SFC || {};
       const hint = (s) => `<div class="pt-hint">${esc(s)}</div>`;
       let sub = `<span class="pt-area">${esc(_t('Play with friends · no ELO'))}</span>`, body;
       if (this.page === 'online') {
-        const tiles = items.map((it, i) => `<button class="pt-tile ${sel(i)}" data-i="${i}"><b>${i ? '#' : '+'}</b>
-            <span class="pt-tlabel">${esc(it.label)}</span></button>`).join('');
-        body = `<div class="pt-slots">${tiles}</div>${msg}`;
+        const tiles = items.map((it, i) => (it.kind !== 'btn' ? '' : `<button class="pt-tile ${sel(i)}" data-i="${i}"><b>${i ? '#' : '+'}</b>
+            <span class="pt-tlabel">${esc(it.label)}</span></button>`)).join('');
+        // CONNECTION ◀▶ dưới 2 ô (cùng kiểu dòng PITCH trong phòng chờ) + 1 dòng gợi ý
+        const iC = items.findIndex((x) => x.conn);
+        const conn = iC < 0 ? '' : `<div class="pt-ground ${sel(iC)}" data-i="${iC}"><u>${esc(items[iC].label)}</u><button data-i="${iC}" data-d="-1">◀</button><span>${esc(items[iC].value)}</span><button data-i="${iC}" data-d="1">▶</button></div>
+          ${hint(ST().roomDirect ? _t('Can feel faster when your friends are nearby') : _t('Recommended for most players'))}`;
+        body = `<div class="pt-slots">${tiles}</div>${conn}${msg}`;
       } else if (this.page === 'join') {
         body = `<div class="pt-slots pt-joinbox"><div class="pt-jtitle">${esc(_t('JOIN ROOM'))}</div>${this.renderCode()}</div>
           ${msg}<div class="pt-acts">${btn(0)}</div>${hint(_t('Type the code · Enter connect · {back} back', { back }))}`;

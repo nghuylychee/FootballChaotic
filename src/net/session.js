@@ -100,11 +100,12 @@ window.SFC = window.SFC || {};
 
     /* ================= PHÒNG ================= */
     // máy chủ riêng trước (nếu có; đang ngủ thì chờ dậy), không được -> người chơi làm host (Steam / PeerJS)
-    createRoom() {
+    // opts.direct: người chơi chọn tự làm host (PRIVATE MATCH › CONNECTION: DIRECT) -> bỏ qua máy chủ riêng
+    createRoom(opts = {}) {
       if (this.status === 'busy') return;
       this.status = 'busy';
       this.emit('busy', { action: 'create' });
-      if (!NC().serverOn()) { this.hostLocally(); return; }
+      if (opts.direct || !NC().serverOn()) { this.hostLocally(); return; }
       this.waitingServer = true;
       this.use(SFC.NetServer).host(() => this.emit('waiting', { action: 'create' }))
         .then((code) => { this.waitingServer = false; this.enterAsGuest(code); })
