@@ -61,6 +61,7 @@ window.SFC = window.SFC || {};
           ${cls === 'soon' || cls === 'lock' ? `<span class="fs-lock">${PX().ui('lock', 'x2')}</span>` : ''}
           <b class="fs-name">${esc(s.name)}</b>
           <span class="fs-stars">${this.starRow(s)}</span>
+          ${s.tier ? `<span class="fs-tier" title="${esc(_t('DIFFICULTY'))}">${[1, 2, 3, 4].map((k) => `<i class="${k <= s.tier ? 'on' : ''}"></i>`).join('')}</span>` : ''}
           <em class="fs-st">${esc(st)}</em>
         </button>`;
       }).join('');
@@ -136,14 +137,15 @@ window.SFC = window.SFC || {};
         : kind === 'after' && who === 'opp' ? 'cupSad' : 'cupTalk');
       // trước trận: cảnh VS (tên vòng) trước câu đầu tiên của 2 đội
       let vs = kind === 'before';
-      if (kind === 'outro') out.push({ art: 'cupLift', dur: 2.2, lines: [{ at: 0.3, text: _t('CHAMPIONS'), style: 'title' }] });
+      if (kind === 'outro') out.push({ art: 'cupLift', theme: s.theme, trophy: s.trophy, dur: 2.2, lines: [{ at: 0.3, text: _t('CHAMPIONS'), style: 'title' }] });
       for (const l of lines || []) {
         if (vs && l.who !== 'host') {
           vs = false;
-          out.push({ art: 'cupFace', team, dur: 2.4, lines: [{ at: 0.35, text: _t('VS'), style: 'shout' }, { at: 0.7, text: CUP().roundName(CUP().run.round), style: 'sub' }] });
+          out.push({ art: 'cupFace', team, theme: s.theme, dur: 2.4, lines: [{ at: 0.35, text: _t('VS'), style: 'shout' }, { at: 0.7, text: CUP().roundName(CUP().run.round), style: 'sub' }] });
         }
         const art = l.art || def(l.who);
         out.push({ art, team: l.team || team, who: l.who, zoom: l.zoom, color: s.color, dur: l.dur || 1.6 + l.text.length * 0.035,
+          theme: s.theme, trophy: s.trophy, fillers: s.fillers,
           lines: [{ at: 0.25, who: l.who, text: l.text, style: 'caption' }] });
       }
       // cảnh liền nhau cùng khuôn + cùng người: hình chạy tiếp, chỉ đổi lời thoại

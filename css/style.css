@@ -2505,6 +2505,9 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .fs-stars { font-size: 12px; line-height: 1; letter-spacing: 2px; }
 .fs-stars i { font-style: normal; color: #3a3f4c; }
 .fs-stars i.on { color: var(--gold); text-shadow: 1px 1px 0 var(--ink); }
+.fs-tier { display: flex; justify-content: center; gap: 2px; }
+.fs-tier i { width: 6px; height: 3px; background: #3a3f4c; }
+.fs-tier i.on { background: #ff5a6e; }
 .fs-st { font-style: normal; font-size: 11px; line-height: 1; color: var(--muted); }
 .fs-card.won .fs-st { color: var(--gold); }
 .fs-card.new .fs-st { color: #6bff4f; }

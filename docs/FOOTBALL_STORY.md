@@ -135,7 +135,7 @@ chiếu lúc mở cup · trước mỗi trận · sau trận thắng · lúc nâ
 ## Đã làm (2026-10-18)
 
 - Story 1 **THE WARD CUP**: 4 đội riêng (The Uncles · Moped Boys · School Ghosts · boss Block Wardens với Giant Keeper), cut scene mở cup / trước trận / sau trận / nâng cúp (7 khuôn cảnh, `src/ui/story-cup.js`), 3 sao, costume vô địch **Ward Cup** (nồi cơm vàng, `noBox`).
-- 3 thẻ COMING SOON (Rooftop Night League · Night Market Cup · Grandpa's Legends) để người chơi thấy còn content.
+- 2026-10-19: làm nốt 3 Story Rooftop Night League · Night Market Cup · Grandpa's Legends (xem bảng dưới), cut scene có nền theo theme (alley · rooftop · market · stadium) + 2 kiểu cúp, thêm sao noGolden · goals · sweep.
 - Tab FOOTBALL STORY (thứ 2 màn PLAY), màn cup (đường đi 4 vòng · đối thủ kế · kết quả nhánh khác), màn bị loại / vô địch.
 - Trận: character đá ĐÁ CAO + 2 đồng đội AI cố định cả cup (đồng đội đang chọn + 1 người trong đội hình, thiếu thì 1 cầu thủ ngẫu nhiên), bàn thắng vàng không giới hạn, Pause chỉ có RESUME / FORFEIT (CUP OVER), màn giới thiệu đội ghi tên Story + vòng.
 - Thưởng: gold mỗi vòng thắng (dòng riêng ở màn kết quả), thống kê chung, 3 thành tích (`story` · `finals` · `stars`), demo `demo.stories: 1`.
@@ -146,7 +146,7 @@ chiếu lúc mở cup · trước mỗi trận · sau trận thắng · lúc nâ
 1. **Co-op online qua mã phòng** (chưa làm): loại phòng `story` trong `Room`, trạng thái cup (Story, vòng, bracket) trong `start{opts.cup}`, màn cup chung cho cả phòng (chủ phòng bấm KICK OFF, hội thoại chạy cùng lúc), người mới vào giữa 2 trận nhận ghế AI, chủ phòng thoát = hết cup. Bump `net.protocol`.
 2. Luật trận `mods` cho boss / đội đặc biệt.
 2b. Co-op online: cut scene chiếu cùng lúc ở mọi máy (như màn giới thiệu đội: chủ phòng chờ cả phòng xem xong).
-3. Story thứ 2 trở đi.
+3. Story thứ 5 trở đi (chỉ cần config + lời thoại; khuôn cảnh / theme mới khi muốn).
 
 ## MVP
 
@@ -158,14 +158,18 @@ chiếu lúc mở cup · trước mỗi trận · sau trận thắng · lúc nâ
 
 Chưa làm: tìm trận co-op với người lạ, luân lưu, cut scene procedural riêng cho Story.
 
-## Ý tưởng Story (để sau)
+## 4 Story hiện có (2026-10-19)
 
-| Story | Sân / không khí | Gimmick boss |
-|---|---|---|
-| The Ward Cup | hẻm phường, cup nhập môn (Story của demo) | đội bảo vệ chung cư, thủ môn chặn cả khung thành |
-| Rooftop Night League | sân thượng ban đêm | băng đảng ném pháo sáng làm loá màn hình |
-| Night Market Cup | chợ đêm, đèn neon, khán giả ồn nhất | (chưa nghĩ) |
-| Grandpa's Legends | đá với các huyền thoại già (đội `The Legends` có sẵn) | nối với cốt truyện heirloom đang ẩn |
+| # | Story | theme / cúp | Độ khó (Elo AI) | Đối thủ (1/8 → chung kết) | Sao | Costume vô địch |
+|---|---|---|---|---|---|---|
+| 1 | THE WARD CUP | alley · nồi cơm | 30 → 240 | The Uncles · Moped Boys · School Ghosts · **Block Wardens** | vô địch · chung kết sạch lưới · hat-trick | Ward Cup (nồi cơm vàng) |
+| 2 | ROOFTOP NIGHT LEAGUE | rooftop · cúp | 380 → 700 | Pigeon Gang · Sky Hoppers · Billboard Kids · **Night Owls** | vô địch · thắng chung kết cách 3 bàn · hat-trick | Night Owl Cap |
+| 3 | NIGHT MARKET CUP | market · cúp | 620 → 1150 | Lantern Crew · Noodle Kickers · Fortune Tellers · **Market Mamas** | vô địch · không cần bàn thắng vàng · 12 bàn cả cup | Lantern Hat |
+| 4 | GRANDPA'S LEGENDS | stadium · cúp | 1450 → 2700 | Rust Buckets · Retired Refs · Grandpa's Squad · **The Legends** | vô địch · chung kết sạch lưới · trận nào cũng thắng cách 2 bàn | Golden Laurel |
+
+- Đội in đậm = boss chung kết, cũng là đội kình địch (thắng đậm ở nhánh bên kia). Story 2–4 dùng lại 2 đội Main Path hợp chủ đề ở 2 vòng đầu, 2 vòng sau là đội riêng.
+- Mọi Story đều mở (không cần thắng Story trước); độ khó tăng dần theo thứ tự, thẻ có 1–4 vạch đỏ (`tier`). Story 4 rất khó với người chỉ có Core khởi đầu.
+- Thành tích: vô địch từng Story (4) · `Trophy Cabinet` vô địch cả 4 (thưởng Crown) · `finals` · `stars`.
 
 ## Câu hỏi còn mở
 

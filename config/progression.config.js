@@ -142,6 +142,9 @@ SFC_CONFIG.progression = {
     crown:     { slot: 'hair', name: 'Crown',          rarity: 'mythic', desc: 'Only for the kings of the street.' },
     // FOOTBALL STORY: chỉ có khi vô địch Story (config/stories.config.js -> reward.item), noBox = không ra từ hộp gacha
     ward_trophy: { slot: 'hair', name: 'Ward Cup',     rarity: 'legendary', noBox: true, desc: 'A dented rice pot painted gold. Ward Cup champions only.' },
+    moon_cap:    { slot: 'hair', name: 'Night Owl Cap', rarity: 'legendary', noBox: true, desc: 'A midnight cap with a golden moon. Rooftop champions only.' },
+    lantern_hat: { slot: 'hair', name: 'Lantern Hat',  rarity: 'legendary', noBox: true, desc: 'A paper lantern that never goes out. Night Market champions only.' },
+    laurel:      { slot: 'hair', name: 'Golden Laurel', rarity: 'mythic',   noBox: true, desc: 'The crown of the old greats. Legends champions only.' },
     /* ---------- MẶT ---------- */
     none:      { slot: 'face', name: 'Bare Face',      default: true, desc: 'No accessories.' },
     bandaid:   { slot: 'face', name: 'Band-Aid',       rarity: 'common', desc: 'Souvenir from a heated match.' },

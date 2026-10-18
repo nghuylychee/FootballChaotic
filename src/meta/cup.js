@@ -76,7 +76,8 @@ window.SFC = window.SFC || {};
       slots[0] = SFC_CONFIG.mainPath.playerTeam.id;
       OPP_SLOT.forEach((k, r) => { slots[k] = s.rounds[r].team; });
       for (let k = 0, f = 0; k < SIZE; k++) if (!slots[k]) slots[k] = fill[f++ % fill.length];
-      this.run = { id, round: 0, slots, results: [], out: false, champion: false, gold: 0, starsNew: [], mates: this.pickMates(s) };
+      this.run = { id, round: 0, slots, results: [], out: false, champion: false, gold: 0, starsNew: [], mates: this.pickMates(s),
+        scored: 0, minMargin: 99, golden: false };   // cho sao thử thách: tổng bàn ghi · cách biệt nhỏ nhất · đã có trận phải đá bàn thắng vàng
       const r = this.rec(id);
       r.plays++;
       PF().save();
@@ -145,8 +146,10 @@ window.SFC = window.SFC || {};
       const me = game.humanTeam, my = game.teams[me].score, op = game.teams[1 - me].score;
       const r = R.round, win = my > op, rec = this.rec(R.id), lines = [], starsNew = [];
       this.closeRound({ my, op });
-      const star = (kind) => {
-        for (const x of s.stars || []) if (x.kind === kind && !rec.stars.includes(x.id)) { rec.stars.push(x.id); starsNew.push(x.id); }
+      R.scored += my; R.minMargin = Math.min(R.minMargin, my - op); R.golden = R.golden || !!game.golden;
+      // sao: kind + điều kiện (x.n = số cần đạt nếu có)
+      const star = (kind, ok = () => true) => {
+        for (const x of s.stars || []) if (x.kind === kind && !rec.stars.includes(x.id) && ok(x)) { rec.stars.push(x.id); starsNew.push(x.id); }
       };
       // sao không phụ thuộc thắng thua: ghi 3 bàn trong 1 trận
       const p = game.controlled;
@@ -162,6 +165,9 @@ window.SFC = window.SFC || {};
           star('champ');
           if (op === 0) star('cleanFinal');
           if (my - op >= 3) star('bigWin');
+          if (!R.golden) star('noGolden');
+          star('goals', (x) => R.scored >= (x.n || 12));
+          if (R.minMargin >= 2) star('sweep');
           // costume vô địch: chỉ lần đầu
           if (!rec.wins && s.reward && s.reward.item && SFC_CONFIG.progression.items[s.reward.item]) {
             item = s.reward.item;

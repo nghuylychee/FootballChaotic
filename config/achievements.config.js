@@ -58,6 +58,10 @@ SFC_CONFIG.achievements = {
     { id: 'event_horizon',group: 'cores', name: 'Event Horizon',      desc: 'Unlock Black Hole Shot',       stat: 'core', core: 'black_hole', target: 1,     reward: { item: 'galaxy' } },
     /* ---------- FOOTBALL STORY ---------- */
     { id: 'ward_champ',   group: 'story', name: 'King of the Ward',   desc: 'Win THE WARD CUP',             stat: 'story', story: 'ward_cup', target: 1, reward: { box: 'party' } },
+    { id: 'rooftop_champ', group: 'story', name: 'King of the Rooftops', desc: 'Win the ROOFTOP NIGHT LEAGUE',  stat: 'story', story: 'rooftop_league', target: 1, reward: { box: 'party' } },
+    { id: 'market_champ', group: 'story', name: 'Market Royalty',     desc: 'Win the NIGHT MARKET CUP',      stat: 'story', story: 'market_cup', target: 1, reward: { box: 'legend' } },
+    { id: 'legends_champ', group: 'story', name: 'Living Legend',     desc: "Win GRANDPA'S LEGENDS",         stat: 'story', story: 'legends_cup', target: 1, reward: { box: 'legend', n: 2 } },
+    { id: 'every_cup',    group: 'story', name: 'Trophy Cabinet',     desc: 'Win every Football Story cup',  stat: 'cups', target: 4,    reward: { item: 'crown' } },
     { id: 'finalist',     group: 'story', name: 'Big Final Energy',   desc: 'Reach 3 cup finals',           stat: 'finals', target: 3,  reward: { box: 'street', n: 2 } },
     { id: 'star_chaser',  group: 'story', name: 'Star Chaser',        desc: 'Earn 3 story stars',           stat: 'stars', target: 3,   reward: { box: 'legend' } },
     /* ---------- phong cách ---------- */

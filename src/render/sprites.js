@@ -487,6 +487,37 @@ window.SFC = window.SFC || {};
         if (!back) { px(ctx, hx - 4 + side * 2, hy - 9, 2, 3, GL); px(ctx, hx + 2 + side, hy - 8, 2, 1, GD); }   // bóng sáng + vết méo
         break;
       }
+      case 'moon_cap': { // mũ Rooftop Night League (FOOTBALL STORY): mũ lưỡi trai xanh đêm, trăng khuyết vàng
+        const cap = '#1e2a50', brim = '#141a30';
+        capRows(ctx, hx, hy, cap, -6, -2);
+        if (back) px(ctx, hx - 2, hy - 3, 5, 1, '#ffd23f');
+        else if (side) { px(ctx, side > 0 ? hx + 3 : hx - 10, hy - 4, 8, 3, OUT); px(ctx, side > 0 ? hx + 4 : hx - 9, hy - 3, 6, 1, brim); }
+        else { px(ctx, hx - 7, hy - 3, 15, 3, OUT); px(ctx, hx - 6, hy - 2, 13, 1, brim); }
+        if (!back) { const mx = hx - 1 + side * 2; px(ctx, mx, hy - 6, 2, 3, '#ffd23f'); px(ctx, mx + 1, hy - 7, 1, 1, '#ffd23f'); px(ctx, mx + 1, hy - 5, 1, 1, cap); }
+        break;
+      }
+      case 'lantern_hat': { // mũ Night Market Cup (FOOTBALL STORY): đèn lồng giấy đỏ đội trên đầu
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
+        px(ctx, hx - 6, hy - 15, 13, 10, OUT);
+        px(ctx, hx - 5, hy - 14, 11, 8, '#e8322a');
+        px(ctx, hx - 3, hy - 13, 3, 5, '#ff7a5a');                         // chỗ sáng
+        px(ctx, hx - 1, hy - 14, 1, 8, '#b81e1a'); px(ctx, hx + 2, hy - 14, 1, 8, '#b81e1a');   // nan
+        px(ctx, hx - 4, hy - 15, 9, 1, '#ffd23f'); px(ctx, hx - 4, hy - 6, 9, 1, '#ffd23f');    // viền vàng
+        px(ctx, hx, hy - 17, 1, 2, '#ffd23f');
+        break;
+      }
+      case 'laurel': { // vòng nguyệt quế Grandpa's Legends (FOOTBALL STORY): lá vàng ôm quanh đầu
+        const G = '#ffd23f', GD = '#c9a020';
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
+        const leaf = (x, y, c) => { px(ctx, x - 1, y - 1, 3, 3, OUT); px(ctx, x, y, 2, 1, c); };
+        if (side) {
+          for (let k = 0; k < 5; k++) leaf(hx - side * 5 + side * k * 2, hy - 5 - (k % 2), k % 2 ? G : GD);
+        } else {
+          for (let k = 0; k < 4; k++) { leaf(hx - 7 + k * 2, hy - 3 - k, k % 2 ? G : GD); leaf(hx + 6 - k * 2, hy - 3 - k, k % 2 ? G : GD); }
+          if (!back) px(ctx, hx, hy - 8, 1, 1, '#fff3a8');
+        }
+        break;
+      }
       case 'flamehair': {
         capRows(ctx, hx, hy, '#ff6a1f', -6, back ? 3 : -3);
         ctx.globalCompositeOperation = 'lighter';
