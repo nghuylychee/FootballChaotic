@@ -311,8 +311,12 @@ function matchmake(now) {
 const server = http.createServer((req, res) => {
   if (req.url === '/healthz' || req.url === '/') {
     const matches = [...rooms.values()].filter((e) => e.room.status === 'playing').length;
-    res.writeHead(draining ? 503 : 200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ ok: !draining, rooms: rooms.size, matches, clients: wss.clients.size, protocol: NET.protocol, version: VERSION }));
+    // game đọc được từ trình duyệt (CORS): đo ping, bỏ qua máy chủ đầy, tìm trận ở máy chủ có người đang chờ (queue)
+    res.writeHead(draining ? 503 : 200, { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' });
+    res.end(JSON.stringify({
+      ok: !draining, rooms: rooms.size, matches, clients: wss.clients.size, queue: queue.size,
+      full: rooms.size >= ENV.MAX_ROOMS, protocol: NET.protocol, version: VERSION,
+    }));
     return;
   }
   res.writeHead(404);

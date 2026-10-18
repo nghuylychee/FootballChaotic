@@ -93,5 +93,10 @@ function protocol() {
   }
   console.log(`[image] pushing ${ref}`);
   run(docker, ['push', ref]);
+  // GitHub Actions: ghi vào trang tóm tắt của lần chạy
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const commit = (process.env.GITHUB_SHA || '').slice(0, 7);
+    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### 📦 Pushed \`${ref}\`\n\nServer ${VERSION} · protocol ${want}${commit ? ` · commit ${commit}` : ''}\n\n`);
+  }
   console.log(`[image] pushed ${ref}. Deploy to Render: npm run server:deploy${TAG === VERSION ? '' : ' -- ' + TAG}`);
 })().catch((e) => { console.error('[image]', e.message); process.exit(1); });

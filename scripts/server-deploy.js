@@ -3,6 +3,7 @@
  *   npm run server:deploy -- 10.0.1          -> tag khác
  *   npm run server:deploy -- --only sfc-server-sg,sfc-server   -> chỉ vài service
  *   npm run server:deploy -- --dry           -> chỉ liệt kê service + image đang chạy, không deploy
+ *   npm run server:deploy -- --force         -> deploy cả service đang chạy đúng tag này (mặc định bỏ qua; tag bị push đè thì cần)
  * Chỉ chạy khi người dùng yêu cầu (deploy thật lên máy chủ đang chạy). Image phải đã push (npm run server:image -- --push).
  * Khoá API: biến môi trường RENDER_API_KEY (GitHub Actions: secret cùng tên). Không ghi khoá vào file trong repo.
  * Mỗi service: POST /v1/services/{id}/deploys { imageUrl } -> chờ deploy live -> /healthz phải báo đúng phiên bản.
@@ -17,6 +18,7 @@ const IMAGE = process.env.SFC_IMAGE || 'team41sfc/sfc-server';
 const PREFIX = process.env.SFC_RENDER_PREFIX || 'sfc-server';
 const args = process.argv.slice(2);
 const DRY = args.includes('--dry');
+const FORCE = args.includes('--force');   // deploy cả máy chủ đang chạy đúng tag này (tag bị push đè bằng image mới)
 const onlyAt = args.indexOf('--only');
 const ONLY = onlyAt >= 0 ? (args[onlyAt + 1] || '').split(',').filter(Boolean) : null;
 const VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'server', 'package.json'), 'utf8')).version;
@@ -26,6 +28,15 @@ const DEPLOY_TIMEOUT = 10 * 60e3, HEALTH_TIMEOUT = 3 * 60e3;   // free plan: má
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const KEY = (process.env.RENDER_API_KEY || '').trim();
+
+// GitHub Actions: ghi bảng kết quả vào trang tóm tắt của lần chạy (chạy ở máy thì bỏ qua)
+const summary = (md) => { if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n'); };
+const tagOf = (img) => (img || '').split(':').pop() || '?';
+function summaryTable(title, rows) {
+  summary(`### ${title}\n\n| Server | Region | Before | After | Status |\n|---|---|---|---|---|`);
+  for (const r of rows) summary(`| [${r.s.name}](${r.s.serviceDetails.url}/healthz) | ${r.s.serviceDetails.region} | ${tagOf(r.s.imagePath)} | ${r.after} | ${r.status} |`);
+  summary('');
+}
 
 async function api(method, url, body) {
   const r = await fetch(API + url, {
@@ -57,6 +68,13 @@ const healthz = async (url) => {
   } catch (e) { return null; }
 };
 
+// deploy gần nhất đã live đúng image này -> bỏ qua (trừ --force)
+async function alreadyLive(s) {
+  const [last] = await api('GET', `/services/${s.id}/deploys?limit=1`);
+  const d = last && (last.deploy || last);
+  return !!d && d.status === 'live' && d.image && d.image.ref === IMAGE_URL;
+}
+
 const DONE = { live: 'ok', build_failed: 'fail', update_failed: 'fail', pre_deploy_failed: 'fail', canceled: 'fail', deactivated: 'fail' };
 
 async function deployOne(s) {
@@ -79,23 +97,46 @@ async function deployOne(s) {
     h = await healthz(url);
   }
   console.log(`${tag} live: ${url} version ${h.version}, protocol ${h.protocol}`);
+  return h;
 }
 
 (async () => {
   if (!KEY) { console.error('[deploy] no Render API key: set the RENDER_API_KEY environment variable'); process.exit(1); }
   if (!/^[\w.-]+$/.test(TAG) || (onlyAt >= 0 && !ONLY.length)) {
-    console.error('Usage: npm run server:deploy [-- <tag>] [--only name1,name2] [--dry]   (tag defaults to server/package.json version)');
+    console.error('Usage: npm run server:deploy [-- <tag>] [--only name1,name2] [--dry] [--force]   (tag defaults to server/package.json version)');
     process.exit(1);
   }
   const list = await services();
   if (ONLY) for (const n of ONLY) if (!list.some((s) => s.name === n)) { console.error(`[deploy] no image-backed web service named "${n}"`); process.exit(1); }
   if (!list.length) { console.error(`[deploy] no image-backed web services named ${PREFIX}*`); process.exit(1); }
-  for (const s of list) console.log(`[deploy] ${s.name} (${s.serviceDetails.region}${s.suspended === 'suspended' ? ', SUSPENDED' : ''}) runs ${s.imagePath}`);
-  if (DRY) { console.log(`[deploy] dry run: would deploy ${IMAGE_URL} to ${list.length} service(s)`); return; }
+  const current = new Set();
+  if (!FORCE) await Promise.all(list.map(async (s) => { if (await alreadyLive(s)) current.add(s); }));
+  for (const s of list) console.log(`[deploy] ${s.name} (${s.serviceDetails.region}${s.suspended === 'suspended' ? ', SUSPENDED' : ''}) runs ${s.imagePath}${current.has(s) ? ' (already live, skip)' : ''}`);
+  const skipNote = (s) => (s.suspended === 'suspended' ? 'suspended, skipped' : current.has(s) ? '⏭️ already live, skipped' : null);
+  if (DRY) {
+    console.log(`[deploy] dry run: would deploy ${IMAGE_URL} to ${list.filter((s) => !skipNote(s)).length} service(s)`);
+    summaryTable(`Dry run: would deploy \`${IMAGE_URL}\``, list.map((s) => ({ s, after: TAG, status: skipNote(s) || 'would deploy' })));
+    return;
+  }
 
-  const res = await Promise.allSettled(list.filter((s) => s.suspended !== 'suspended').map(deployOne));
+  const live = list.filter((s) => !skipNote(s));
+  if (!live.length) {
+    console.log(`[deploy] ${IMAGE_URL} is already live on every service (--force to redeploy)`);
+    summaryTable(`⏭️ \`${IMAGE_URL}\` already live everywhere, nothing deployed`, list.map((s) => ({ s, after: tagOf(s.imagePath), status: skipNote(s) })));
+    return;
+  }
+  const res = await Promise.allSettled(live.map(deployOne));
   const failed = res.filter((r) => r.status === 'rejected');
   for (const f of failed) console.error('[deploy]', f.reason.message);
+  // bảng tóm tắt: mỗi máy chủ 1 dòng (tag trước -> phiên bản /healthz sau deploy)
+  const rows = list.map((s) => {
+    const i = live.indexOf(s), r = res[i];
+    if (i < 0) return { s, after: tagOf(s.imagePath), status: skipNote(s) };
+    return r.status === 'fulfilled'
+      ? { s, after: r.value.version, status: `✅ live (protocol ${r.value.protocol})` }
+      : { s, after: '—', status: '❌ ' + r.reason.message.replace(/^\[[^\]]+\] /, '').replace(/\|/g, '/') };
+  });
+  summaryTable(`${failed.length ? '❌' : '✅'} Deployed \`${IMAGE_URL}\` to ${live.length - failed.length}/${live.length} server(s)`, rows);
   if (failed.length) process.exit(1);
   console.log(`[deploy] ${IMAGE_URL} live on ${res.length} service(s)`);
 })().catch((e) => { console.error('[deploy]', e.message); process.exit(1); });

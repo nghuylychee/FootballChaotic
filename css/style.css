@@ -234,13 +234,14 @@ kbd {
 .b-sub { font-size: 15px; margin-top: 6px; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
 
 /* NETWORK STATS: ping + dung lượng mạng khi ở phòng online (src/ui/online.js) */
-#netstats { position: absolute; right: 6px; top: 4px; font-size: 11px; color: #e6dccb; background: rgba(10, 11, 14,0.7); padding: 1px 5px; pointer-events: none; z-index: 30; white-space: nowrap; }
-#toasts { position: absolute; left: 8px; bottom: 8px; display: flex; flex-direction: column; gap: 3px; align-items: flex-start; pointer-events: none; z-index: 25; }
+#netstats { position: absolute; left: 8px; bottom: 4px; font-size: 11px; color: #e6dccb; background: rgba(10, 11, 14,0.7); padding: 1px 5px; pointer-events: none; z-index: 30; white-space: nowrap; }
+/* thông báo trong trận: góc dưới phải (góc dưới trái là ô PING) */
+#toasts { position: absolute; right: 8px; bottom: 8px; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; pointer-events: none; z-index: 25; }
 .toast {
   font-size: 12px; background: var(--panel); border: 1px solid var(--edge); padding: 1px 6px;
   display: flex; align-items: center; gap: 4px; transition: opacity 0.4s, transform 0.4s;
 }
-.toast.out { opacity: 0; transform: translateX(-10px); }
+.toast.out { opacity: 0; transform: translateX(10px); }
 .toast .dot { width: 5px; height: 5px; display: inline-block; }
 .toast b { color: var(--gold); font-weight: normal; }
 
@@ -2455,6 +2456,7 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .sb-row.me .sb-por { border-color: var(--gold); }
 .sb-name { font-weight: normal; color: #e6dccb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sb-row.me .sb-name { color: var(--gold); }
+.sb-ping { font-style: normal; font-size: 11px; line-height: 1; color: var(--muted); white-space: nowrap; flex: none; }   /* ping cả trận (online) */
 .sb-you { font-style: normal; font-family: var(--px); font-size: 4.5px; color: var(--ink); background: var(--gold); padding: 1px 2px; flex: none; }
 .sb-badge.mvp {
   display: inline-flex; align-items: center; gap: 2px;

@@ -8,6 +8,18 @@ window.SFC = window.SFC || {};
   const _t = SFC.t, _tn = SFC.tn;   // dịch theo ngôn ngữ đang chọn (engine/i18n.js)
 
   Object.assign(SFC.UI, {
+    // ô ping 1 người ở bảng tỉ số: của mình = đo tại máy này (mới nhất), người khác = bảng ping phòng gửi. Chưa có = để trống
+    pingText(q) {
+      const ms = q === this.app.game.controlled ? SFC.NetStats.matchPing() : SFC.Session.pings[q.id];
+      return ms == null ? '' : `${ms} ms`;   // như ô PING trong trận: đơn vị ms không dịch
+    },
+    // bảng ping mới (Session 'pings') khi màn kết quả đang mở: sửa tại chỗ, không vẽ lại
+    updatePings() {
+      if (!this.el.end || !this.app.game) return;
+      const byId = new Map(this.app.game.players.map((p) => [String(p.id), p]));
+      this.el.end.querySelectorAll('.sb-ping[data-pid]').forEach((el) => { const q = byId.get(el.dataset.pid); if (q) el.textContent = this.pingText(q); });
+    },
+
     /* ================= END (2 NHỊP: BEAT 1 ĂN MỪNG TRÊN SÂN → BEAT 2 BẢNG TỈ SỐ + TIẾN ĐỘ) ================= */
     endItems() {
       if (!this.roomMatch) {
@@ -92,6 +104,9 @@ window.SFC = window.SFC || {};
       const { win, mvp, msOf, cmp } = this.matchSummary(game);
       // đội thắng xếp trên (kiểu Rocket League); nếu hoà thì đội của bạn xếp trên
       const orderedTeams = win >= 0 ? [game.teams[win], game.teams[1 - win]] : [me, op];
+      // trận online (phòng riêng + xếp hạng online): ping trung vị cả trận của từng người (Session.pings, cập nhật tại chỗ: updatePings).
+      // Xếp hạng offline (người chơi giả) không có, như ô ping trong trận
+      const ping = this.online;
       const teamBlock = (t, ti) => {
         const isWin = win === t.index, isMine = t.index === game.humanTeam;
         const rows = t.players.slice().sort(cmp).map((q) => {
@@ -106,6 +121,7 @@ window.SFC = window.SFC || {};
               <b class="sb-name">${esc(q.name)}</b>
               ${mine ? `<em class="sb-you">${esc(_t('YOU'))}</em>` : ''}
               ${badge}
+              ${ping ? `<em class="sb-ping" data-pid="${q.id}">${esc(this.pingText(q))}</em>` : ''}
             </div>
             <div class="sb-cores">${chips}</div>
             <span class="sb-c">${ms.goals}</span>
@@ -142,8 +158,7 @@ window.SFC = window.SFC || {};
         ${devBar}
         <div class="end-head">
           <div class="end-title ${res[1]}">${esc(res[0])}</div>
-          <div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>
-        </div>
+          <div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>        </div>
         <div class="end-body ${game.reward ? 'has-rw' : 'only-sb'}">
           ${game.reward ? `<div class="end-left">${this.rewardPanel(game.reward)}</div>` : ''}
           <div class="sb-wrap">${orderedTeams.map((t, i) => teamBlock(t, i)).join('')}</div>

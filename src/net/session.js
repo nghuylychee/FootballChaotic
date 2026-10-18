@@ -4,7 +4,7 @@
  * Dữ liệu của game cần cho phòng (hồ sơ trận, Area đã tới) lấy qua Session.provide({ profile, area }).
  *
  * 2 mô hình, cùng 1 bản luật phòng (src/net/room.js):
- *  - Máy chủ riêng (net.server.url, transport-server.js): máy chủ chạy trận, người tạo phòng chỉ là khách có quyền chủ phòng.
+ *  - Máy chủ riêng (net.server.urls / url, transport-server.js; nhiều máy: chọn máy ping thấp nhất): máy chủ chạy trận, người tạo phòng chỉ là khách có quyền chủ phòng.
  *    TẠO PHÒNG thử máy chủ trước (đang ngủ thì chờ dậy); không được thì tự chuyển sang người chơi làm host.
  *  - Người chơi làm host (Steam / PeerJS): máy này chạy Room (ghế local 'host') và nối sao tới tối đa net.maxPlayers - 1 khách.
  *  VÀO PHÒNG: mã bắt đầu bằng net.server.codeFirst = phòng máy chủ riêng, còn lại = phòng người chơi làm host.
@@ -29,6 +29,7 @@
  * Gói tin:
  *   khách -> host : hello{v,pf,tok?} · pf{pf} (đổi đồng đội / chỉ số) · slot{s} (nhảy slot) · intro (xem xong màn giới thiệu) ·
  *                   i{d,p} (phím) · pick{i} · reroll · bye · begin{area} / toLobby / ground{a} (chủ phòng, phòng máy chủ riêng) · ka (giữ thức)
+ *   khách -> host : mp{ms} (ping trung vị từ đầu trận, mỗi net.pingShare giây + lúc hết trận) · host -> khách: pg{p:{id cầu thủ: ms}} (bảng ping)
  *   cả 2 chiều    : ping{c} -> pong{c} (đo ping mỗi net.pingEvery giây, c = giờ của bên gửi; SFC.NetStats)
  *   khách -> máy chủ (trước khi vào phòng): queue{v,elo,role,pf} · unqueue — xem transport-server.js
  *   host  -> khách: you{tok} (mã kết nối lại) · lobby{m:[{id,pf,slot}],o,g} (g = sân: chỉ số Area, -1 = ngẫu nhiên) · start{opts} · s{f,s,fx,sfx,ev} (snapshot) ·
@@ -64,6 +65,7 @@ window.SFC = window.SFC || {};
     room: null,          // host: SFC.Room
     lobby: { members: [], owner: null, ground: -1 },   // [{ id, pf, slot }] · ground = sân chủ phòng chọn (Area, -1 = ngẫu nhiên) · host: chính là room.lobby
     game: null,          // host: trận thật · khách: trận "gương"
+    pings: {},           // bảng ping trận đang đá { id cầu thủ: ms } (màn kết quả) — sự kiện 'pings' mỗi lần đổi
     NO_INPUT: null,      // phím rỗng (UI truyền vào tick khi đang mở menu / chọn Core / hết trận)
 
     /* ================= GHÉP VỚI GAME ================= */
@@ -82,6 +84,13 @@ window.SFC = window.SFC || {};
     // chủ phòng: được START / về phòng chờ (người chơi làm host, hoặc người tạo phòng máy chủ riêng)
     get isOwner() { return !!this.lobby.owner && this.lobby.owner === Net().id; },
     get onServer() { return Net() === SFC.NetServer; },
+    // tên ngắn nơi chạy trận (ô PING): máy chủ riêng = alias trong net.server.urls (RS, RO...; chưa đặt: ''),
+    // người chơi làm host = PS (Steam P2P) / PP (PeerJS) -> phòng nào cũng có tên, không lộ cách kết nối
+    get serverAlias() {
+      if (this.status === 'idle') return '';
+      if (this.onServer) return SFC.NetServer.home ? NC().serverAlias(SFC.NetServer.home.url) : '';
+      return Net() === SFC.NetSteam ? 'PS' : 'PP';
+    },
     // đang chờ kết nối (tạo / vào phòng) và huỷ được
     get cancellable() { return this.status === 'busy' && !!this.waitingServer; },
     // máy làm host đang giữ trận đứng yên chờ mọi người xem xong giới thiệu
@@ -184,8 +193,17 @@ window.SFC = window.SFC || {};
       clearInterval(this.pingT);
       SFC.NetStats.reset();
       const every = N().pingEvery || 0;
+      let n = 0, sentEnd = null;
       if (every > 0) this.pingT = setInterval(() => {
         if ((this.status === 'lobby' || this.status === 'playing') && !this.rejoining) Net().send({ t: 'ping', c: Math.round(performance.now()) });
+        // khách: báo ping trung vị cả trận mỗi pingShare giây + 1 lần ngay khi thấy hết trận (bảng ping cuối chính xác)
+        if (this.status !== 'playing' || this.isHost || this.rejoining || !this.game) return;
+        const ms = SFC.NetStats.matchPing(), end = this.game.state === 'ended';
+        if (ms == null) return;
+        if (end ? sentEnd !== this.game : ++n % Math.max(1, Math.round((N().pingShare || 5) / every)) === 0) {
+          if (end) sentEnd = this.game;
+          Net().send({ t: 'mp', ms });
+        }
       }, every * 1000);
     },
 
@@ -230,12 +248,14 @@ window.SFC = window.SFC || {};
       return {
         changed: () => this.emit('lobby'),
         pong: (id, c) => SFC.NetStats.pong(performance.now() - c),
+        myPing: () => SFC.NetStats.matchPing(),
+        pings: (p) => { this.pings = p; this.emit('pings'); },
         joined: (name) => this.emit('notice', { kind: 'joined', name }),
         left: (name) => this.emit('notice', { kind: 'left', name }),
         dropped: (name, away) => this.emit('player', { kind: away ? 'away' : 'left', name }),
         back: (name) => this.emit('player', { kind: 'back', name }),
         toLobby: () => { this.status = 'lobby'; this.game = null; this.emit('toLobby'); },
-        start: (game) => { this.game = game; this.status = 'playing'; this.emit('start', { game, resume: false }); },
+        start: (game) => { this.game = game; this.status = 'playing'; this.pings = {}; SFC.NetStats.matchStart(); this.emit('start', { game, resume: false }); },
         events: () => {},
         localRole: (role) => this.emit('role', { role }),
       };
@@ -378,6 +398,7 @@ window.SFC = window.SFC || {};
         case 'ping': if (typeof m.c === 'number') Net().send({ t: 'pong', c: m.c }); break;
         case 'pong': if (typeof m.c === 'number') SFC.NetStats.pong(performance.now() - m.c); break;
         case 'start': this.guestStart(m); break;
+        case 'pg': if (m.p && typeof m.p === 'object') { this.pings = this.cleanPings(m.p); this.emit('pings'); } break;
         case 's': if (this.status === 'playing') { this.buf.push(m); this.jitter(m.f); } break;
         case 'drop':
           if (typeof m.o === 'string') this.setOwner(m.o);
@@ -402,6 +423,13 @@ window.SFC = window.SFC || {};
         // phòng đóng hẳn (host rời / máy chủ đóng phòng): không thử kết nối lại
         case 'bye': this.tok = null; this.roomClosed = true; Net().close(); this.onPeerGone('host'); break;
       }
+    },
+
+    // bảng ping nhận qua mạng: chỉ số nguyên 0..9999, tối đa 12 người
+    cleanPings(p) {
+      const out = {};
+      for (const k of Object.keys(p).slice(0, 12)) if (typeof p[k] === 'number' && isFinite(p[k])) out[k] = clampInt(p[k], 0, 9999);
+      return out;
     },
 
     // chủ phòng đổi giữa trận (người chủ cũ rời / mất kết nối)
@@ -491,6 +519,7 @@ window.SFC = window.SFC || {};
       }
       this.rejoining = null;
       clearTimeout(this.retry);
+      if (!resume) { SFC.NetStats.matchStart(); this.pings = {}; }
       this.emit('start', { game: this.game, resume });
     },
 

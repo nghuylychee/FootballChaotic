@@ -1,6 +1,8 @@
 /* Kiểm tra phía người chơi (src/net/session.js + transport-server.js + Room làm host) không cần trình duyệt:
  * mỗi "máy" = 1 vm context nạp đúng các file game (menu / UI / vẽ thay bằng stub), P2P thay bằng mạng giả trong bộ nhớ.
  *  1. Phòng máy chủ riêng: A tạo phòng (mã 6 ký tự), B vào, A là chủ phòng, START, B nhận snapshot, A về phòng chờ
+ *  3. Nhiều máy chủ (net.server.urls): VÀO PHÒNG tìm đúng máy giữ phòng, kết nối lại đúng máy đó; 2 người chờ một mình ở 2 máy
+ *     -> người ở máy đứng sau chuyển sang máy trước, chung 1 trận; chờ một mình quá searchMax -> solo
  *  2. Máy chủ không tới được: A tạo phòng -> tự chuyển sang làm host (P2P giả), B vào bằng mã 7 ký tự, đá, về phòng chờ
  *  Cả 2: B rớt mạng giữa trận -> tự kết nối lại, lấy lại slot, A thấy RECONNECTED
  *  Mọi thông báo / banner người chơi thấy không được lộ cách kết nối (máy chủ riêng / làm host / Steam / PeerJS)
@@ -72,10 +74,11 @@ function fakePeer() {
 
 /* ---------- 1 máy người chơi ---------- */
 const MACHINES = [];
-function machine(name, serverUrl) {
+function machine(name, serverUrl, urls) {
   const ctx = vm.createContext({
     console, setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, performance, WebSocket, Intl, URL,
     DecompressionStream, TextDecoder,   // nén trong game (transport-server.js)
+    fetch, AbortSignal, AbortController,   // đo ping /healthz (nhiều máy chủ)
   });
   ctx.window = ctx;
   const mem = {};
@@ -88,6 +91,7 @@ function machine(name, serverUrl) {
   for (const f of FILES) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
   const SFC = ctx.SFC;
   ctx.SFC_CONFIG.net.server.url = serverUrl;
+  ctx.SFC_CONFIG.net.server.urls = urls || [];   // test: chỉ máy chủ của test (không đụng máy chủ thật trong config)
   ctx.SFC_CONFIG.net.server.keepAlive = 0.2;   // test: gói giữ thức mỗi 0,2 giây
   SFC.NetPeer = fakePeer();
   SFC.Profile.load();
@@ -148,6 +152,16 @@ async function dropAndRejoin(A, B, cut) {
   assert.ok(B.log.banners.some((b) => /CONNECTION LOST/.test(b)) && B.log.banners.some((b) => b === 'RECONNECTED'), 'the dropped player sees lost / reconnected');
 }
 
+// bảng ping cả trận: mỗi máy nhận ping của người kia (ms), n = số cầu thủ có ping (trận xếp hạng: cả người chơi giả)
+async function pingsShared(A, B, n) {
+  const pid = (m) => String(m.O.game.seatPlayer(m.O.game.me).id);
+  // máy làm host chạy Room trong vòng lặp game -> vừa chờ vừa chạy
+  const until2 = async (fn, what) => { const end = Date.now() + 9000; while (!fn()) { if (Date.now() > end) throw new Error("timeout: " + what); await play(200, A, B); } };
+  await until2(() => B.O.pings[pid(A)] != null && A.O.pings[pid(B)] != null, "match pings shared");
+  for (const m of [A, B]) for (const v of Object.values(m.O.pings)) assert.ok(Number.isInteger(v) && v >= 0, "ping is a whole number of ms");
+  if (n) await until2(() => Object.keys(A.O.pings).length === n, "every player has a ping");
+}
+
 async function serverRoom(url) {
   const A = machine('ALICE', url), B = machine('BOB', url);
   A.O.createRoom();
@@ -182,6 +196,7 @@ async function serverRoom(url) {
   const perSnap = B.SFC.NetStats.down / Math.max(1, B.O.game.time * 30);
   assert.ok(perSnap < 400, `compressed snapshots are small (${perSnap.toFixed(0)} B each)`);
   console.log(`in-game compression: ~${perSnap.toFixed(0)} B per snapshot on the wire`);
+  await pingsShared(A, B);
   await dropAndRejoin(A, B, () => B.SFC.NetServer.ws.close());   // rớt WebSocket
   A.O.backToLobby();
   await until(() => A.O.status === 'lobby' && B.O.status === 'lobby', 5000, 'back to lobby');
@@ -217,6 +232,7 @@ async function rankedSearch(url) {
   A.O.introDone(); B.O.introDone();
   await play(1200, A, B);
   assert.ok(B.O.buf.length > 0 || B.O.game.time > 0, 'ranked match runs');
+  await pingsShared(A, B, A.O.game.players.length);   // người chơi giả cũng có ping: không phân biệt được người thật
   const banners = A.log.banners.length;
   B.O.leave();
   await play(600, A);
@@ -228,6 +244,9 @@ async function rankedSearch(url) {
   C.O.queue();
   C.O.cancelQueue();
   assert.strictEqual(C.O.status, 'idle', 'cancel leaves the queue');
+  // huỷ lúc còn đang đo ping /healthz: không được kết nối tiếp để lại vé ma trong hàng chờ
+  await sleep(500);
+  assert.strictEqual((await (await fetch(url.replace(/^ws/, 'http') + '/healthz')).json()).queue, 0, 'cancel during the ping leaves no ticket behind');
   const D = machine('DAN', '');
   D.O.queue();
   assert.strictEqual(D.log.solo, 1, 'no server configured: solo at once');
@@ -237,6 +256,55 @@ async function rankedSearch(url) {
   await until(() => E.log.solo, 8000, 'unreachable: solo');
   assert.strictEqual(E.O.status, 'idle');
   console.log('ranked search: OK (matched on the server, own Main Path per machine, solo when no server, cancel)');
+}
+
+// nhiều máy chủ: thứ tự đo ping ép sẵn (2 máy cùng ở localhost nên ping gần như bằng nhau)
+function order(m, first, urls) {
+  const list = urls.map((url, index) => ({ url, index, ping: url === first ? 1 : 2, h: { ok: true, queue: 0 }, ok: true }));
+  list.sort((a, b) => a.ping - b.ping);
+  m.SFC.NetServer.probed = { at: Date.now(), list };
+}
+
+async function multiServer(urls) {
+  const [u1, u2] = urls;
+  // tạo phòng ở máy ping thấp nhất (u2), B đo ra u1 trước -> u1 báo không có phòng -> thử u2 -> vào được
+  const A = machine('ALICE', '', urls), B = machine('BOB', '', urls);
+  order(A, u2, urls); order(B, u1, urls);
+  A.O.createRoom();
+  await until(() => A.O.status === 'lobby', 5000, 'A in lobby on the closest server');
+  assert.strictEqual(A.SFC.NetServer.home.url, u2, 'room created on the lowest-ping server');
+  B.O.joinRoom(A.O.code);
+  await until(() => B.O.lobby.members.length === 2 && A.O.lobby.members.length === 2, 5000, 'B found the room on the other server');
+  assert.strictEqual(B.SFC.NetServer.home.url, u2, 'joined the server that holds the room');
+  A.O.startMatch();
+  await until(() => A.log.entered && B.log.entered, 5000, 'multi-server match start');
+  A.O.introDone(); B.O.introDone();
+  await play(600, A, B);
+  order(B, u1, urls);   // kết nối lại không đo ping lại: đúng máy cũ
+  await dropAndRejoin(A, B, () => B.SFC.NetServer.ws.close());
+  assert.strictEqual(B.SFC.NetServer.target, u2, 'reconnected to the same server');
+  A.O.leave(); B.O.leave();
+  console.log('multi-server rooms: OK (create on closest, join finds the room, reconnect to the same server)');
+
+  // C chờ một mình ở u1, D chờ một mình ở u2 -> D (máy đứng sau trong danh sách) chuyển sang u1 -> chung 1 trận
+  const C = machine('CARA', '', urls), D = machine('DAN', '', urls);
+  for (const m of [C, D]) m.SFC_CONFIG.net.server.hopEvery = 0.5;
+  order(C, u1, urls); order(D, u2, urls);
+  C.O.queue(); D.O.queue();
+  await until(() => D.SFC.NetServer.target === u1, 4000, 'D moved to the server where C waits');
+  assert.strictEqual(C.SFC.NetServer.target, u1, 'C (first server) stays');
+  await until(() => C.log.found && D.log.found, 15000, 'C and D matched');
+  C.O.leave(); D.O.leave();
+  // một mình ở cả 2 máy -> không chuyển, quá searchMax -> solo (người chơi giả)
+  const E = machine('EVE', '', urls);
+  E.SFC_CONFIG.net.server.hopEvery = 0.5;
+  E.SFC_CONFIG.net.server.searchMax = 2.5;
+  order(E, u2, urls);
+  E.O.queue();
+  await until(() => E.log.solo, 6000, 'alone everywhere: solo');
+  assert.strictEqual(E.SFC.NetServer.target, u2, 'no other server had anyone waiting: never moved');
+  assert.strictEqual(E.O.status, 'idle');
+  console.log('multi-server search: OK (lone players on two servers meet on one, alone everywhere -> solo)');
 }
 
 async function fallbackRoom() {
@@ -272,6 +340,7 @@ async function fallbackRoom() {
   // host đo ping tới khách, khách đo ping tới host
   // ping mỗi net.pingEvery giây: chờ lần đo đầu (khách có thể vừa vào phòng chưa tới 1 giây). Mạng P2P giả không đếm byte
   await until(() => A.SFC.NetStats.rtt != null && B.SFC.NetStats.rtt != null, 3000, 'p2p ping measured on both sides');
+  await pingsShared(A, B);
   await dropAndRejoin(A, B, () => B.SFC.NetPeer.sever());   // rớt kết nối P2P
   A.O.backToLobby();
   await until(() => A.O.status === 'lobby' && B.O.status === 'lobby', 5000, 'p2p back to lobby');
@@ -279,12 +348,17 @@ async function fallbackRoom() {
 }
 
 (async () => {
+  const start = async (port) => {
+    const p = spawn(process.execPath, [path.join(__dirname, '..', 'index.js')], { env: Object.assign({}, process.env, { PORT: String(port) }), stdio: ['ignore', 'pipe', 'inherit'] });
+    await new Promise((res) => p.stdout.once('data', res));
+    return p;
+  };
   const port = 20000 + Math.floor(Math.random() * 20000);
-  const proc = spawn(process.execPath, [path.join(__dirname, '..', 'index.js')], { env: Object.assign({}, process.env, { PORT: String(port) }), stdio: ['ignore', 'pipe', 'inherit'] });
-  await new Promise((res) => proc.stdout.once('data', res));
+  const proc = await start(port), proc2 = await start(port + 1);
   try {
     await serverRoom(`ws://localhost:${port}`);
     await rankedSearch(`ws://localhost:${port}`);
+    await multiServer([`ws://localhost:${port}`, `ws://localhost:${port + 1}`]);
     await fallbackRoom();
     // mã PeerJS ngẫu nhiên không bao giờ trùng dạng mã máy chủ riêng
     const NC = MACHINES[0].SFC.NetCommon;
@@ -314,6 +388,7 @@ async function fallbackRoom() {
     console.log('OK');
   } finally {
     proc.kill('SIGTERM');
+    proc2.kill('SIGTERM');
   }
   process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });

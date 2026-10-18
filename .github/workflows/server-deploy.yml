@@ -2,6 +2,11 @@
 # Chỉ chạy tay: GitHub > Actions > Server deploy > Run workflow (chọn nhánh, tag, bước). Không tự chạy theo commit.
 # Secrets (Settings > Secrets and variables > Actions): DOCKERHUB_USERNAME, DOCKERHUB_TOKEN (access token Docker Hub, quyền Read & Write), RENDER_API_KEY
 name: Server deploy
+# tên mỗi lần chạy trong danh sách Actions: "Push + deploy 10.0.1 → all servers"
+# (tag để trống = phiên bản trong server/package.json, chưa đọc được lúc đặt tên -> "server version")
+run-name: >-
+  ${{ inputs.deploy && (inputs.push_image && 'Push + deploy' || 'Deploy') || (inputs.push_image && 'Push' || 'Nothing') }}
+  ${{ inputs.tag || 'server version' }}${{ inputs.deploy && format(' → {0}', inputs.only || 'all servers') || '' }}
 
 on:
   workflow_dispatch:
@@ -14,6 +19,10 @@ on:
         description: Deploy to Render
         type: boolean
         default: true
+      force:
+        description: Redeploy servers already live on this tag (always on when pushing, since the tag may have new content)
+        type: boolean
+        default: false
       tag:
         description: Image tag (empty = server/package.json version)
         type: string
@@ -43,7 +52,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Server tests
         if: inputs.push_image
@@ -66,4 +75,6 @@ jobs:
         if: inputs.deploy
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-        run: node scripts/server-deploy.js $TAG ${ONLY:+--only "$ONLY"}
+          # vừa push = tag có thể đã mang image mới -> deploy cả máy chủ đang chạy đúng tag đó
+          FORCE: ${{ (inputs.push_image || inputs.force) && '--force' || '' }}
+        run: node scripts/server-deploy.js $TAG ${ONLY:+--only "$ONLY"} $FORCE

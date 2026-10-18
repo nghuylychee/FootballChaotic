@@ -1,7 +1,7 @@
 # Máy chủ riêng cho trận online. Build từ thư mục gốc repo (cần config/, src/ và scripts/manifest.js dùng chung với game):
 #   docker build -f server/Dockerfile -t sfc-server .
 #   docker run -p 8080:8080 sfc-server
-FROM node:22-alpine
+FROM node:24-alpine
 WORKDIR /app
 COPY server/package.json server/package-lock.json server/
 RUN cd server && npm ci --omit=dev && npm cache clean --force

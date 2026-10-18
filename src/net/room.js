@@ -10,6 +10,11 @@
  * (AI đá thay, gửi drop{seat,o,away}); hello{tok} trong hạn -> lấy lại slot, nhận start{opts.resume, opts.lobby}, mọi người nhận back{seat,o}.
  * Quá hạn -> rời hẳn như cũ. Máy chạy Room gọi expire(Date.now()) định kỳ.
  *
+ * Ping cả trận (màn kết quả): mỗi khách gửi mp{ms} (ping trung vị từ đầu trận) mỗi net.pingShare giây + lúc hết trận; Room phát
+ * pg{p:{id cầu thủ: ms}} cùng nhịp đó, lúc hết trận và mỗi lần nhận mp sau khi hết trận. Người chơi làm host: ping của mình qua hook myPing().
+ * Trận xếp hạng: người chơi giả cũng có ping (theo ping người thật trong trận, lệch ngẫu nhiên cố định) -> không phân biệt được người thật.
+ * Người rời / mất kết nối giữ ping cuối. Máy chủ cũ không biết mp (bỏ qua), khách cũ không biết pg (bỏ qua): không cần tăng protocol.
+ *
  * Trận xếp hạng (máy chủ riêng, ranked = Matchmaker.lineup): không phòng chờ, không chủ phòng. Ai trong đội hình hello thì vào
  * đúng ghế đã xếp; đủ người (hoặc quá net.queue.joinWait giây) là vào trận, ghế còn trống = người chơi giả. Người rời giữa trận:
  * AI đá thay, trận đá tới hết dù còn bao nhiêu người. start{opts} kèm ranked + mainPath{myElo, oppElo} của đội người nhận.
@@ -17,7 +22,7 @@
  * new SFC.Room({ send(msg, id?), drop(id), local?, snapshotEvery, ranked?, hooks? })
  *  - send: bỏ id = gửi mọi khách (bên gửi tự JSON 1 lần rồi phát cho từng người)
  *  - hooks (đều tuỳ chọn): changed() · joined(name) · left(name) · dropped(name, away) · back(name) · toLobby() · start(game) ·
- *    events(g) · localRole(role) · pong(id, c)
+ *    events(g) · localRole(role) · pong(id, c) · pings(bảng) · myPing() -> ms | null
  */
 window.SFC = window.SFC || {};
 
@@ -78,6 +83,8 @@ window.SFC = window.SFC || {};
       this.seatOf = {};
       this.frame = 0;
       this.endSent = false;
+      this.pings = {};                       // slot -> ping trung vị khách báo (mp)
+      this.botLag = {};                      // trận xếp hạng: id cầu thủ giả -> hệ số ping so với người thật
       this.introWait = new Set();
       this.introLeft = 0;
       this.myIntro = false;
@@ -198,6 +205,13 @@ window.SFC = window.SFC || {};
           break;
         case 'pong':
           if (typeof m.c === 'number') this.hook('pong', id, m.c);
+          break;
+        // ping trung vị của khách từ đầu trận -> bảng ping màn kết quả. Hết trận rồi vẫn nhận (lần báo cuối) -> phát lại ngay
+        case 'mp':
+          if (this.status === 'playing' && this.seatOf[id] != null && typeof m.ms === 'number') {
+            this.pings[this.seatOf[id]] = clampInt(m.ms, 0, 9999);
+            if (this.endSent) this.sharePings();
+          }
           break;
         case 'toLobby':
           if (id === L.owner && this.status === 'playing' && !this.ranked) this.backToLobby();
@@ -359,6 +373,11 @@ window.SFC = window.SFC || {};
       for (const id of this.seatIds) if (!this.isLocal(id)) this.remotes[id] = new (Sync().RemoteInput)();
       this.frame = 0;
       this.endSent = false;
+      this.pings = {};
+      // trận xếp hạng: mỗi cầu thủ không phải người thật có ping riêng = ping người thật * hệ số cố định cả trận
+      const human = new Set(this.game.seats.map((s) => s.p).filter(Boolean));
+      this.botLag = {};
+      if (this.ranked) for (const p of this.game.players) if (!human.has(p)) this.botLag[p.id] = 0.7 + Math.random() * 0.7;
       this.status = 'playing';
       // màn giới thiệu 2 đội: trận đứng yên tới khi mọi máy xem xong (hoặc quá giờ chờ)
       this.holdIntro(Room.wantsIntro(opts));
@@ -448,6 +467,22 @@ window.SFC = window.SFC || {};
         // hết trận: snapshot cuối đã gửi -> ngừng mô phỏng + gửi tới khi về phòng chờ
         if (ended) this.endSent = true;
       }
+      if (ended || this.frame % Math.round((N().pingShare || 5) * 60) === 0) this.sharePings();
+    }
+
+    // bảng ping { id cầu thủ: ms } -> mọi khách + máy này (hook pings). Không có số nào thì không gửi
+    sharePings() {
+      const g = this.game;
+      if (!g) return;
+      const mine = this.local ? this.hook('myPing') : null;
+      if (this.local && mine != null && this.seatOf[this.local.id] != null) this.pings[this.seatOf[this.local.id]] = clampInt(mine, 0, 9999);
+      const p = {}, real = [];
+      g.seats.forEach((s, i) => { if (s.p && this.pings[i] != null) { p[s.p.id] = this.pings[i]; real.push(this.pings[i]); } });
+      if (!real.length) return;
+      const base = real.slice().sort((a, b) => a - b)[Math.floor(real.length / 2)];
+      for (const id in this.botLag) if (p[id] == null) p[id] = clampInt(Math.max(12, base) * this.botLag[id], 8, 400);
+      this.send({ t: 'pg', p });
+      this.hook('pings', p);
     }
 
     /* ---------- tiện ích dùng chung (host, khách, máy chủ riêng) ---------- */

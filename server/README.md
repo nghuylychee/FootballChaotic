@@ -15,7 +15,21 @@ npm start                 # ws://localhost:8080 · http://localhost:8080/healthz
 npm test                  # server tests + client tests (no browser needed)
 ```
 
-To point the game at it, set `server.url: 'ws://localhost:8080'` in [config/net.config.js](../config/net.config.js). An empty `url` means player-hosted only, which is how the game behaved before.
+To point the game at it, set `server.url: 'ws://localhost:8080'` in [config/net.config.js](../config/net.config.js) (`npm run online` does this for you). A non-empty `url` means that one server only; otherwise the game uses the `server.urls` list, and an empty list means player-hosted only.
+
+## Several servers (regions)
+
+The game can use several servers at once (`server.urls`, e.g. one per region). Each server is independent: rooms and the ranked queue live in that server's memory, and servers never talk to each other. The client does the routing:
+
+- **Ping.** Opening the ONLINE or PLAY screen fetches `/healthz` from every server (twice; the faster one counts, since the first includes the TLS handshake). A server that doesn't answer within `probeTimeout` (2.5 s; usually asleep, though the request wakes it), is shutting down, or runs another protocol is skipped this time. A `full` server is skipped for creating rooms and searching. Results are kept for 15 s.
+- **Create room:** lowest-ping server first, then the next on failure; player-hosting if none works.
+- **Join:** room codes don't say which server holds the room, so JOIN tries the awake servers in ping order until one doesn't answer `room-missing` (then the ones that didn't answer the ping). A reconnect goes straight back to the server holding the room.
+- **Ranked search:** queue on the lowest-ping server. While alone there, every `hopEvery` s (3) the client reads the other servers' `queue` and moves to one where someone is waiting, lowest ping first. When two players each wait alone on different servers, only the one on the server listed later in `urls` moves, so they meet instead of swapping. When its server sends `solo`, the client moves to another server with someone waiting, or plays the AI match when nobody is waiting anywhere. `searchMax` (45 s) caps the whole search.
+- **No answers at all** (every server asleep, or servers older than 10.1.0 without CORS on `/healthz`): the game behaves as with one server and waits for the first server in the list to wake.
+
+**Match pings.** During a match each client sends `mp{ms}` (its median ping since kickoff) every `net.pingShare` seconds (5) and once at the final whistle. The room broadcasts `pg{p:{playerId: ms}}` on the same beat, at the end, and again whenever a late `mp` arrives after the end, so the result screen shows everyone's ping. In ranked rooms the AI fill-ins get believable pings derived from the real players' median.
+
+`/healthz` returns `{ ok, rooms, matches, clients, queue, full, protocol, version }` with `access-control-allow-origin: *` so the browser can read it. On free plans that sleep, keep in mind that every ping wakes every server, and each awake service uses instance hours.
 
 ## Docker
 

@@ -74,11 +74,25 @@ window.SFC = window.SFC || {};
     up: 0, down: 0,            // tổng byte từ lúc vào phòng
     upRate: 0, downRate: 0,    // byte / giây (đo mỗi giây)
     rtt: null,                 // ms · null = chưa đo được
+    match: [],                 // mọi lần đo ping (ms, chưa làm mượt) từ đầu trận -> màn kết quả hiện trung vị (matchPing)
     wu: 0, wd: 0, wt: 0,
     out(n) { this.up += n; this.wu += n; },
     in(n) { this.down += n; this.wd += n; },
     // giờ gửi trong ping làm tròn tới ms -> mạng rất nhanh có thể ra số âm nhỏ: coi là 0
-    pong(ms) { if (ms > -2 && ms < 60000) { ms = Math.max(0, ms); this.rtt = this.rtt == null ? ms : this.rtt * 0.7 + ms * 0.3; } },
+    pong(ms) {
+      if (!(ms > -2 && ms < 60000)) return;
+      ms = Math.max(0, ms);
+      this.rtt = this.rtt == null ? ms : this.rtt * 0.7 + ms * 0.3;
+      if (this.match.length < 7200) this.match.push(ms);   // 1 lần / giây: đủ cho trận dài nhất
+    },
+    // vào trận mới: đếm lại từ đầu (kết nối lại giữa trận thì giữ)
+    matchStart() { this.match = []; },
+    // ping trung vị của trận (ms, làm tròn) · null = chưa đo được lần nào
+    matchPing() {
+      const a = this.match.slice().sort((x, y) => x - y), n = a.length;
+      if (!n) return null;
+      return Math.round(n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2);
+    },
     // gọi trước khi đọc upRate / downRate
     roll(now = Date.now()) {
       if (!this.wt) this.wt = now;
@@ -87,7 +101,7 @@ window.SFC = window.SFC || {};
       this.upRate = (this.wu * 1000) / dt; this.downRate = (this.wd * 1000) / dt;
       this.wu = this.wd = 0; this.wt = now;
     },
-    reset() { this.up = this.down = this.upRate = this.downRate = this.wu = this.wd = this.wt = 0; this.rtt = null; },
+    reset() { this.up = this.down = this.upRate = this.downRate = this.wu = this.wd = this.wt = 0; this.rtt = null; this.match = []; },
   };
   // độ dài gói (backend nhận gói đã giải mã thành object: PeerJS)
   SFC.NetStats.size = (msg) => { try { return JSON.stringify(msg).length; } catch (e) { return 0; } };
@@ -95,8 +109,17 @@ window.SFC = window.SFC || {};
   let backend = null;
   // backend người chơi làm host
   SFC.NetCommon.p2p = () => (N().useSteam && SFC.NetSteam && SFC.NetSteam.available() ? SFC.NetSteam : SFC.NetPeer);
-  // có máy chủ riêng không (net.server.url trống = chỉ người chơi làm host)
-  SFC.NetCommon.serverOn = () => !!(N().server && N().server.url && SFC.NetServer);
+  // danh sách máy chủ riêng: net.server.url (1 máy, ưu tiên: npm run online / test) hoặc net.server.urls (nhiều vùng;
+  // mỗi mục là url hoặc { url, alias })
+  const serverList = () => {
+    const s = N().server || {};
+    return (s.url ? [s.url] : s.urls || []).map((e) => (typeof e === 'string' ? { url: e } : e || {})).filter((e) => typeof e.url === 'string' && e.url);
+  };
+  SFC.NetCommon.serverUrls = () => serverList().map((e) => e.url);
+  // tên ngắn của 1 máy chủ (alias trong net.server.urls, vd. RS) · không đặt = ''
+  SFC.NetCommon.serverAlias = (url) => { const e = serverList().find((x) => x.url === url); return (e && e.alias) || ''; };
+  // có máy chủ riêng không (không có url nào = chỉ người chơi làm host)
+  SFC.NetCommon.serverOn = () => !!(SFC.NetServer && SFC.NetCommon.serverUrls().length);
   SFC.NetCommon.use = (b) => { backend = b; };
   Object.defineProperty(SFC, 'Net', {
     get() {

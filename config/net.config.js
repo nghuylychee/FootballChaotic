@@ -11,10 +11,22 @@ SFC_CONFIG.net = {
   protocol: 10,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng (8: Tuyệt kỹ thiết kế lại, 9: Tuyệt kỹ đợt 3 — docs/ULT_REDESIGN.md, 10: chữ bật ra Effects.pop thay text / comic)
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
   pingEvery: 1,                // giây giữa 2 lần đo ping tới máy chạy trận (NETWORK STATS, 0 = tắt)
+  pingShare: 5,                // giây: khách báo ping trung vị cả trận (mp), máy chạy trận phát bảng ping (pg) -> màn kết quả hiện ping từng người
   // Máy chủ riêng (server/): máy chủ chạy trận, mọi người là khách. url trống = chỉ người chơi làm host (Steam / PeerJS).
   // TẠO PHÒNG thử máy chủ trước, không tới được thì tự chuyển sang người chơi làm host.
   server: {
-    url: 'wss://sfc-server-sg.onrender.com',   // máy chủ Render (bản free: ngủ sau 15 phút, ~1 phút để dậy) · chạy thử máy chủ trên máy này: npm run online (tự gắn url, không cần sửa ở đây)
+    // nhiều máy chủ (mỗi vùng 1 máy): game đo ping tới /healthz của từng máy -> TẠO PHÒNG / tìm trận ở máy ping thấp nhất,
+    // VÀO PHÒNG thử lần lượt các máy đang thức (phòng nằm ở máy nào thì vào máy đó), kết nối lại = đúng máy cũ.
+    // Thứ tự trong danh sách = thứ tự ưu tiên chung khi 2 người đang chờ một mình ở 2 máy (người ở máy sau chuyển sang máy trước)
+    // máy chủ Render (bản free: ngủ sau 15 phút, ~1 phút để dậy). alias = tên ngắn hiện ở ô PING (NETWORK STATS) khi đang ở phòng máy chủ đó
+    urls: [
+      { url: 'wss://sfc-server-sg.onrender.com', alias: 'RS' },   // Render Singapore
+      { url: 'wss://sfc-server.onrender.com', alias: 'RO' },      // Render Oregon
+    ],
+    url: '',                   // khác rỗng = chỉ dùng đúng máy này, bỏ qua urls (npm run online tự gắn máy chủ trên máy này vào đây)
+    probeTimeout: 2.5,         // giây chờ /healthz khi đo ping: không trả lời kịp (đang ngủ / quá xa) = bỏ qua lần này (vẫn bị đánh thức)
+    hopEvery: 3,               // giây: đang chờ một mình ở hàng tìm trận -> xem máy chủ khác có ai đang chờ không, có thì chuyển sang
+    searchMax: 45,             // giây tìm trận tối đa (cộng mọi lần chuyển máy chủ) rồi đá với người chơi giả
     codeFirst: '23456789',     // ký tự đầu của mã phòng máy chủ riêng (mã Steam luôn bắt đầu A-D, mã PeerJS tránh các ký tự này)
                                // -> mọi mã đều dài codeLength, người chơi không phân biệt được, VÀO PHÒNG tự biết phòng loại nào
     connectTimeout: 5,         // giây chờ 1 lần thử kết nối
