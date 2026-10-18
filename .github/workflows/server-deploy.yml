@@ -3,10 +3,10 @@
 # Secrets (Settings > Secrets and variables > Actions): DOCKERHUB_USERNAME, DOCKERHUB_TOKEN (access token Docker Hub, quyền Read & Write), RENDER_API_KEY
 name: Server deploy
 # tên mỗi lần chạy trong danh sách Actions: "Push + deploy 10.0.1 → all servers"
-# (tag để trống = phiên bản trong server/package.json, chưa đọc được lúc đặt tên -> "server version")
+# (GitHub đặt tên trước khi lấy code -> không đọc được server/package.json: tag bắt buộc nhập)
 run-name: >-
   ${{ inputs.deploy && (inputs.push_image && 'Push + deploy' || 'Deploy') || (inputs.push_image && 'Push' || 'Nothing') }}
-  ${{ inputs.tag || 'server version' }}${{ inputs.deploy && format(' → {0}', inputs.only || 'all servers') || '' }}
+  ${{ inputs.tag }}${{ inputs.deploy && format(' → {0}', inputs.only || 'all servers') || '' }}
 
 on:
   workflow_dispatch:
@@ -24,9 +24,9 @@ on:
         type: boolean
         default: false
       tag:
-        description: Image tag (empty = server/package.json version)
+        description: Image tag, e.g. 10.1.0 (when pushing it must be the server/package.json version, or that version plus -suffix)
         type: string
-        default: ''
+        required: true
       only:
         description: Only these Render services, comma separated (empty = every sfc-server*)
         type: string
@@ -53,6 +53,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+
+      # gõ nhầm tag lúc push = image mang tag khác phiên bản bên trong -> deploy xong /healthz báo sai. Dừng ngay từ đầu
+      - name: Check tag
+        if: inputs.push_image
+        run: |
+          VERSION=$(node -p "require('./server/package.json').version")
+          case "$TAG" in
+            "$VERSION"|"$VERSION"-*) echo "Tag $TAG matches server version $VERSION" ;;
+            *) echo "::error::Tag $TAG does not match server/package.json version $VERSION (use $VERSION or $VERSION-something)"; exit 1 ;;
+          esac
 
       - name: Server tests
         if: inputs.push_image
