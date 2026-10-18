@@ -1,4 +1,5 @@
-/* Story — cut scene kiểu anime (PROLOGUE). Kịch bản ở config/ftue.config.js -> scenes.
+/* Story — cut scene kiểu anime (PROLOGUE, FOOTBALL STORY). Kịch bản PROLOGUE ở config/ftue.config.js -> scenes;
+ * FOOTBALL STORY truyền thẳng danh sách cảnh (src/ui/cup.js) và vẽ bằng các cảnh đăng ký từ src/ui/story-cup.js (Story.addArt).
  * Hình vẽ procedural trên canvas 640x360 (mỗi cảnh 1 hàm trong ART), chữ là lớp DOM phía trên (gõ máy / đập xuống).
  * Enter / Space: gõ nốt dòng đang gõ, không thì sang cảnh kế · giữ Enter / Esc: bỏ qua cả cut scene.
  * Chạy bằng update(dt, input) từ vòng lặp chính (app.screen = 'story').
@@ -28,7 +29,10 @@ window.SFC = window.SFC || {};
   }
   // character phóng to kiểu pixel: vẽ vào canvas nhỏ rồi phóng lên (x = giữa chân, y = mặt đất)
   function hero(x, y, s, t, facing = Math.PI / 2, extra = null, alpha = 1) {
-    const look = SFC.Profile.lookOf(), kit = SFC_CONFIG.mainPath.playerTeam.kit;
+    figure(x, y, s, t, SFC.Profile.lookOf(), SFC_CONFIG.mainPath.playerTeam.kit, facing, extra, alpha);
+  }
+  // cầu thủ bất kỳ (look + kit) phóng to kiểu pixel — cảnh FOOTBALL STORY vẽ đối thủ
+  function figure(x, y, s, t, look, kit, facing = Math.PI / 2, extra = null, alpha = 1) {
     SFC.Sprites.drawAvatar(buf, look, kit, t, facing, extra);
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -673,14 +677,18 @@ window.SFC = window.SFC || {};
   const Story = {
     active: false,
 
-    // phát cut scene key (ftue.config.js -> scenes); xong / bỏ qua -> onDone. from = art của cảnh bắt đầu (vd. 'path')
-    play(key, onDone, from = null) {
+    // phát cut scene key (ftue.config.js -> scenes) hoặc 1 danh sách cảnh; xong / bỏ qua -> onDone. from = art của cảnh bắt đầu (vd. 'path')
+    // opts (FOOTBALL STORY): speaker(who, scene) -> { name, color } = nhãn người nói của dòng có who · music = nhạc menu vẫn phát
+    play(key, onDone, from = null, opts = {}) {
       const el = this.el || (this.el = document.getElementById('story'));
       if (!this.bound) {
         this.bound = true;
         el.addEventListener('click', () => { if (this.active) this.advance(); });
       }
-      this.scenes = CFG().scenes[key] || [];
+      this.scenes = Array.isArray(key) ? key : CFG().scenes[key] || [];
+      this.speaker = opts.speaker || null;
+      this.music = !!opts.music;
+      this.artT = 0;
       this.onDone = onDone;
       this.active = true;
       this.hold = 0;
@@ -696,10 +704,11 @@ window.SFC = window.SFC || {};
     },
 
     go(i) {
+      const prev = this.scenes[this.idx], sc = this.scenes[i];
       this.idx = i;
       this.t = 0;
-      this.cues = {};
-      const sc = this.scenes[i];
+      // keep: cảnh cùng art với cảnh trước -> hình chạy tiếp (không diễn lại từ đầu), chỉ đổi lời thoại
+      if (!(sc && sc.keep && prev && prev.art === sc.art && i > 0)) { this.artT = 0; this.cues = {}; }
       if (!sc) return this.finish();
       this.shown = [];
       this.textEl.innerHTML = sc.art === 'path' ? this.pathCard() : '';
@@ -737,6 +746,7 @@ window.SFC = window.SFC || {};
       if (!this.active) return;
       const sc = this.scenes[this.idx];
       this.t += dt;
+      this.artT += dt;
       // đang mở màn lật thẻ: phím thuộc về màn thẻ, cut scene chỉ vẽ nền
       if (sc && sc.reveal && SFC.Reveal.active) {
         SFC.Reveal.update(dt, input);
@@ -793,7 +803,9 @@ window.SFC = window.SFC || {};
       if (!sc) return;
       const art = ART[sc.art] || ART.black;
       ctx.save();
-      art(this.t, this.dur(sc) || 1);
+      // cảnh đăng ký thêm (addArt) nhận cả cảnh làm tham số; cảnh PROLOGUE giữ chữ ký cũ (tham số thứ 3 là zoom / dim)
+      if (ADDED.has(sc.art)) art(sc.keep ? this.artT : this.t, this.dur(sc) || 1, sc);
+      else art(this.t, this.dur(sc) || 1);
       ctx.restore();
       this.drawText(sc);
     },
@@ -804,12 +816,21 @@ window.SFC = window.SFC || {};
       (sc.lines || []).forEach((l, i) => {
         if (this.t < this.at(sc, l) || this.shown[i]) return;
         const text = l.text.replace('{name}', name);
-        const el = document.createElement('div');
-        el.className = 'st-line st-' + (l.style || 'caption');
+        const style = l.style || 'caption';
+        let el = document.createElement('div');
+        el.className = 'st-line st-' + style;
         // caption mới thay caption cũ
-        if (l.style === 'caption') this.textEl.querySelectorAll('.st-caption').forEach((c) => c.remove());
+        if (style === 'caption') this.textEl.querySelectorAll('.st-caption').forEach((c) => c.remove());
         this.textEl.appendChild(el);
-        const typed = l.style === 'caption';
+        // người nói (FOOTBALL STORY): nhãn tên màu trên hộp chữ, chữ gõ vào dòng dưới
+        const who = l.who && this.speaker ? this.speaker(l.who, sc) : null;
+        if (who) {
+          el.classList.add('has-who');
+          el.style.setProperty('--wc', who.color || '#ffe14f');
+          el.innerHTML = `<b class="st-who">${esc(who.name)}</b><span></span>`;
+          el = el.querySelector('span');
+        }
+        const typed = style === 'caption';
         this.shown[i] = { el, text, n: typed ? 0 : text.length, t0: this.t };
         el.textContent = typed ? '' : text;
       });
@@ -841,6 +862,14 @@ window.SFC = window.SFC || {};
       </div>`;
     },
   };
+
+  // FOOTBALL STORY (src/ui/story-cup.js): bộ hàm vẽ dùng chung + đăng ký cảnh mới. fn(t, d, scene, H)
+  Story.helpers = {
+    W, H, get ctx() { return ctx; }, rect, vgrad, glow, hero, figure, ball, rain, speedLines, crowd, beams, vignette, hash,
+    clamp01, easeOut, shade, INK,
+  };
+  const ADDED = new Set();
+  Story.addArt = (name, fn) => { ADDED.add(name); ART[name] = (t, d, sc) => fn(t, d, sc || {}, Story.helpers); };
 
   SFC.Story = Story;
 })();

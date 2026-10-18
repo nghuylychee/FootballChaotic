@@ -140,6 +140,8 @@ SFC_CONFIG.progression = {
     halo:      { slot: 'hair', name: 'Halo',           rarity: 'legendary', desc: 'A floating ring of light. Angel of the pitch.' },
     flamehair: { slot: 'hair', name: 'Flame Hair',     rarity: 'legendary', desc: 'Your hair is literally on fire.' },
     crown:     { slot: 'hair', name: 'Crown',          rarity: 'mythic', desc: 'Only for the kings of the street.' },
+    // FOOTBALL STORY: chỉ có khi vô địch Story (config/stories.config.js -> reward.item), noBox = không ra từ hộp gacha
+    ward_trophy: { slot: 'hair', name: 'Ward Cup',     rarity: 'legendary', noBox: true, desc: 'A dented rice pot painted gold. Ward Cup champions only.' },
     /* ---------- MẶT ---------- */
     none:      { slot: 'face', name: 'Bare Face',      default: true, desc: 'No accessories.' },
     bandaid:   { slot: 'face', name: 'Band-Aid',       rarity: 'common', desc: 'Souvenir from a heated match.' },

@@ -55,10 +55,31 @@
       });
     },
 
+    // FOOTBALL STORY (src/meta/cup.js): trận của vòng đang tới trong lượt chơi cup. Character đá ĐÁ CAO + 2 đồng đội AI cố định cả cup
+    // (Cup.pickMates), đối thủ = đội của vòng đó, độ khó AI cả 2 đội theo Elo của vòng (MainPath.aiProfile). Hoà hết giờ: bàn thắng vàng (knockout)
+    startCupMatch() {
+      const Cup = SFC.Cup, R = Cup.run, rd = Cup.current();
+      if (!rd) return this.toMenu('story');
+      const MP = SFC_CONFIG.mainPath, soloIdx = Math.max(0, C.roles.indexOf(this.myRole()));
+      const avatar = Object.assign(SFC.Profile.avatar(), { role: C.roles[soloIdx] }, this.avatarStats());
+      SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
+      const ai = SFC.MainPath.aiProfile(rd.elo), mateRoles = C.roles.filter((r, i) => i !== soloIdx);
+      this.startMatch({
+        home: MP.playerTeam.id, away: rd.team, difficulty: 'normal', aiProfile: ai, mateProfile: ai,
+        humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: SFC_CONFIG.arenas[rd.arena] ? rd.arena : undefined,
+        coreUnlocks: [SFC.Profile.unlockedCores(), null],
+        mates: [R.mates.map((m, i) => SFC.Mates.spec(m, mateRoles[i] || null)), null],
+        signature: [null, rd.signature || null],
+        knockout: true, cup: { id: R.id, round: R.round },
+      });
+    },
+
     // bỏ trận Main Path giữa chừng (Pause > FORFEIT, rời trận xếp hạng online): tính là thua
     forfeit() {
       const g = this.game, mp = g && g.opts.mainPath;
       let msg = '';
+      // FOOTBALL STORY: bỏ trận = thua = hết cup
+      if (g && g.opts.cup && g.state !== 'ended') { SFC.Cup.forfeit(g); return this.toMenu('cup'); }
       if (mp && g.state !== 'ended') {
         if (SFC_CONFIG.mainPath.forfeitCountsAsLoss) {
           const r = SFC.MainPath.record('lose', mp);
@@ -124,6 +145,7 @@
       // dịch lúc vào trận (đổi ngôn ngữ chỉ làm được ở menu)
       const _t = SFC.t;
       SFC.UI.pauseItems = opts.mainPath ? [['resume', _t('RESUME')], ['forfeit', _t('FORFEIT (LOSS)')]]
+        : opts.cup && this.mode !== 'online' ? [['resume', _t('RESUME')], ['forfeit', _t('FORFEIT (CUP OVER)')]]
         : this.mode === 'online' ? [['resume', _t('BACK TO MATCH')], ['leave', _t('LEAVE ROOM')]]
         : opts.tutorial ? [['resume', _t('RESUME')], ['skiptut', _t('SKIP PROLOGUE')]]
         : [['resume', _t('RESUME')], ['restart', _t('RESTART')], ['menu', _t('MAIN MENU')]];
@@ -140,6 +162,10 @@
           : _t('{home} vs {away}', { home: L[opts.home].name, away: L[opts.away].name });
         if (opts.tutorial) SFC.UI.banner(_t('THE DREAM'), _t('PROLOGUE'), '#b9a8ff', 2);
         else if (mp) SFC.UI.banner(_t('KICK OFF'), `${SFC.MainPath.area(mp.area).name} · ${vsAway}`, '#ffe14f', 1.6);
+        else if (opts.cup) {
+          const st = SFC.Cup.get(opts.cup.id);
+          SFC.UI.banner(SFC.Cup.roundName(opts.cup.round), `${st ? st.name : ''} · ${vsAway}`, st ? st.color : '#ffe14f', 1.8);
+        }
         else SFC.UI.banner(opts.training ? _t('TRAINING') : _t('KICK OFF'), vs, '#ffe14f', 1.4);
         SFC.Audio.upgrade();
       };
@@ -165,6 +191,7 @@
       }
       if (this.mode !== 'single') return;
       if (this.lastOpts && this.lastOpts.mainPath) this.startMainPath();
+      else if (this.lastOpts && this.lastOpts.cup) this.toMenu('cup');   // FOOTBALL STORY: không đá lại, về màn cup
       else this.startMatch(this.lastOpts);
     },
 
@@ -350,7 +377,7 @@
         if (app.screen !== 'menu') SFC.UI.updateHud(g);
       }
       // nhạc nền: chỉ phát ở ngoài trận (config/music.config.js)
-      if (draw) SFC.Music.update(app.screen === 'menu');
+      if (draw) SFC.Music.update(app.screen === 'menu' || (app.screen === 'story' && SFC.Story.active && SFC.Story.music));   // cut scene FOOTBALL STORY giữ nhạc
       // âm thanh khán giả của trận đang hiện (menu: im lặng; tạm dừng / menu online: nhỏ lại)
       if (draw) SFC.Crowd.sound(app.screen === 'menu' || app.screen === 'story' ? null : g, app.screen === 'pause' || (app.mode === 'online' && SFC.OnlineUI.overlay));
     }

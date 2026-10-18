@@ -455,7 +455,7 @@ window.SFC = window.SFC || {};
     static wantsIntro(opts) {
       const I = SFC_CONFIG.intro;
       if (!I || !I.enabled || opts.resume) return false;   // kết nối lại giữa trận: không chiếu lại
-      const mode = opts.online ? 'online' : opts.mainPath ? 'mainPath' : opts.training ? 'training' : 'single';
+      const mode = opts.online ? 'online' : opts.mainPath ? 'mainPath' : opts.cup ? 'story' : opts.training ? 'training' : 'single';
       return I.modes.includes(mode);
     }
 

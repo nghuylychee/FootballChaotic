@@ -32,6 +32,7 @@ const FILES = [
   ['config/namefilter.config.js', 'game sandbox itch'],     // lọc tên ở máy người chơi; máy chủ không lọc
   ['config/arenas.config.js', 'game sandbox itch server'],
   ['config/mainpath.config.js', 'game sandbox itch server'],
+  ['config/stories.config.js', 'game sandbox itch server'],   // FOOTBALL STORY (cup knockout co-op PvE) + đội riêng
   ['config/teammates.config.js', 'game sandbox itch server'],
   ['config/achievements.config.js', 'game'],
   ['config/intro.config.js', 'game itch server'],
@@ -61,6 +62,7 @@ const FILES = [
   ['src/meta/teammates.js', 'game sandbox itch server'],
   ['src/meta/profile.js', 'game sandbox itch server'],
   ['src/meta/mainpath.js', 'game sandbox itch server'],
+  ['src/meta/cup.js', 'game sandbox itch server'],         // FOOTBALL STORY: lượt chơi cup + tiến độ (Profile.data.story)
   ['src/meta/achievements.js', 'game'],
   ['src/meta/social.js', 'game'],                          // bạn bè giả + phòng chờ (placeholder), chỉ menu
   ['src/entities/ball.js', 'game sandbox itch server'],
@@ -108,9 +110,11 @@ const FILES = [
   ['src/ui/team.js', 'game'],
   ['src/ui/achievements.js', 'game'],
   ['src/ui/road.js', 'game'],
+  ['src/ui/cup.js', 'game'],                               // FOOTBALL STORY: tab PLAY + màn cup
   ['src/ui/intro.js', 'game'],
   ['src/ui/drill.js', 'game'],
   ['src/ui/story.js', 'game'],
+  ['src/ui/story-cup.js', 'game'],                         // FOOTBALL STORY: khuôn cảnh cut scene (Story.addArt)
   ['src/ui/langpick.js', 'game'],
   ['src/ui/menu.js', 'game'],
   ['src/ui/ulttest.js', 'game'],                           // phòng test Tuyệt kỹ (dev, SFC_DEBUG — bản đóng gói thành rỗng)

@@ -26,6 +26,7 @@ window.SFC = window.SFC || {};
       attrs: blankAttrs(),
       ultBook: [],                   // sổ Tuyệt kỹ: 'id:cấp' đã tự đạt công thức trong trận (docs/ULT_RECIPE.md) — ultEntries()
       ach: [],                       // id thành tích đã nhận thưởng (src/meta/achievements.js)
+      story: {},                     // FOOTBALL STORY: tiến độ từng Story (src/meta/cup.js)
       tut: { done: false, heirloom: false },   // PROLOGUE (src/game/tutorial.js) đã xem xong / bỏ qua · đã nhận bí kíp gia truyền (cut scene trao AURA FARMING)
     };
   }
@@ -73,6 +74,7 @@ window.SFC = window.SFC || {};
       const d = blank();
       d.path = SFC.MainPath.sanitize(raw && raw.path);   // tiến trình Main Path (src/meta/mainpath.js)
       d.team = SFC.Mates.sanitizeTeam(raw && raw.team);  // đồng đội + scout (src/meta/teammates.js)
+      d.story = SFC.Cup.sanitize(raw && raw.story);      // FOOTBALL STORY (src/meta/cup.js)
       if (!raw || typeof raw !== 'object') return d;
       const keys = this.ultEntries().map((e) => e.key), ren = SFC_CONFIG.cores.ults.renamed || {};
       // Tuyệt kỹ đã thay (docs/ULT_REDESIGN.md): 'id cũ:cấp' -> 'id mới:cấp' cùng ô công thức, vẫn tính là đã khám phá
@@ -256,9 +258,9 @@ window.SFC = window.SFC || {};
         return Object.keys(CORES()).filter((id) => SFC_CONFIG.cores.list[id] && b.odds[this.rarityOf('core', id)] != null)
           .map((id) => ({ kind: 'core', id, rarity: this.rarityOf('core', id) }));
       }
-      // Hộp Ăn Mừng (kind 'cel') chỉ ra động tác ăn mừng; hộp costume ra mọi slot còn lại
+      // Hộp Ăn Mừng (kind 'cel') chỉ ra động tác ăn mừng; hộp costume ra mọi slot còn lại. noBox: món chỉ có từ thưởng khác (vô địch FOOTBALL STORY)
       const slotOk = (it) => (b.kind === 'cel') === (it.slot === 'cel');
-      return Object.keys(ITEMS()).filter((id) => !ITEMS()[id].default && slotOk(ITEMS()[id]) && b.odds[ITEMS()[id].rarity] != null).map((id) => ({ kind: 'item', id, rarity: ITEMS()[id].rarity }));
+      return Object.keys(ITEMS()).filter((id) => !ITEMS()[id].default && !ITEMS()[id].noBox && slotOk(ITEMS()[id]) && b.odds[ITEMS()[id].rarity] != null).map((id) => ({ kind: 'item', id, rarity: ITEMS()[id].rarity }));
     },
 
     // tỉ lệ thực (%) theo độ hiếm — chỉ tính các độ hiếm thật sự có món trong hộp
@@ -532,6 +534,8 @@ window.SFC = window.SFC || {};
       const pvp = !mp && game.humans.length > 1;
       // online co-op: mọi người chơi cùng 1 đội đấu đội bot (rewards.coop)
       const coop = !mp && !pvp && !!game.opts.online;
+      // FOOTBALL STORY: thưởng như trận đơn, cộng gold theo vòng đã thắng (Cup.record), không nhân độ khó
+      const cupOpt = game.opts.cup || null;
       const cfg = pvp ? R.pvp : coop ? R.coop || R.single : R.single;
       const my = game.teams[me].score, op = game.teams[1 - me].score;
       const result = my > op ? 'win' : my < op ? 'lose' : 'draw';
@@ -543,12 +547,16 @@ window.SFC = window.SFC || {};
       if (goals > 0) lines.push({ label: _t('Goals ×{n}', { n: goals }), xp: cfg.goal.xp * goals, gold: cfg.goal.gold * goals });
       // Main Path: cộng / trừ Elo (lên / rớt Area, Tuyệt kỹ mở lần đầu tới Area hiện ở màn mở thẻ); thưởng nhân theo Area
       const path = mp ? SFC.MainPath.record(result, mp) : null;
+      const cup = cupOpt ? SFC.Cup.record(result, game) : null;
+      if (cup) lines.push(...cup.lines);
       let xp = lines.reduce((s, l) => s + l.xp, 0), gold = lines.reduce((s, l) => s + l.gold, 0);
       if (mp) {
         if (mp.reward !== 1) {
           lines.push({ label: `${SFC.MainPath.area(mp.area).name} ×${mp.reward}`, mult: mp.reward });
           xp = Math.round(xp * mp.reward); gold = Math.round(gold * mp.reward);
         }
+      } else if (cupOpt) {
+        // dòng tên Story + vòng (không cộng gì)
       } else if (coop) lines.push({ label: _t('Online co-op'), note: true });
       else if (!pvp) {
         const key = game.opts.difficulty, mult = (cfg.difficulty && cfg.difficulty[key]) || 1;
@@ -576,7 +584,7 @@ window.SFC = window.SFC || {};
         .concat(P().coreGacha ? Object.keys(d.cores).filter((id) => reached(this.coreLevel(id))).map((id) => 'Core ' + SFC_CONFIG.cores.list[id].name) : []);
 
       return {
-        result, lines, xp, gold, levelGold, levelUps: ups, eligible, path,
+        result, lines, xp, gold, levelGold, levelUps: ups, eligible, path, cup,
         before, after: bar(), capped: this.levelCapped(),
       };
     },

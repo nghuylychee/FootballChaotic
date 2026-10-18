@@ -5,7 +5,9 @@
  * Mỗi thành tích: { id, name, desc, stat, target, reward }
  *   stat   : matches (trận đã đá hết giờ) · wins · goals · boxes (hộp gacha đã mở) · level · elo (Elo cao nhất) ·
  *            area (Area cao nhất từng tới, 1..10) · cores (Core thường đã mở) · ults (Tuyệt kỹ đã sưu tập) ·
- *            outfits (số món costume khác nhau trong túi đồ) · core (đã mở Core `core` — target luôn 1)
+ *            outfits (số món costume khác nhau trong túi đồ) · core (đã mở Core `core` — target luôn 1) ·
+ *            FOOTBALL STORY (src/meta/cup.js): story (đã vô địch Story `story` — target luôn 1) · cups (số Story đã vô địch) ·
+ *            finals (số lần vào chung kết) · stars (tổng sao thử thách)
  *   target : số cần đạt · 'all' = toàn bộ (vd. mọi Core thường)
  *   reward : { item: id costume (progression.items) } — vào túi đồ ngay · { box: id hộp (progression.boxes), n } — hộp miễn phí ở SHOP
  * Thứ tự trong list = thứ tự nhóm khi chưa làm xong (UI xếp: nhận được trước · đang làm · đã nhận).
@@ -21,6 +23,7 @@ SFC_CONFIG.achievements = {
     rank:    { icon: 'ui-crown', color: '#c6ff3f' },
     cores:   { icon: 'ui-card', color: '#9d7bff' },
     style:   { icon: 'ui-gift', color: '#3ff6ff' },
+    story:   { icon: 'ui-trophy', color: '#ff9a3d' },
   },
   list: [
     /* ---------- trận đấu ---------- */
@@ -53,6 +56,10 @@ SFC_CONFIG.achievements = {
     { id: 'signature',    group: 'cores', name: 'Signature Move',     desc: 'Discover 3 Ultimates',          stat: 'ults', target: 3,   reward: { item: 'viking' } },
     { id: 'storm_chaser', group: 'cores', name: 'Storm Chaser',       desc: 'Unlock Light Cycle',           stat: 'core', core: 'light_cycle', target: 1, reward: { item: 'lightning' } },
     { id: 'event_horizon',group: 'cores', name: 'Event Horizon',      desc: 'Unlock Black Hole Shot',       stat: 'core', core: 'black_hole', target: 1,     reward: { item: 'galaxy' } },
+    /* ---------- FOOTBALL STORY ---------- */
+    { id: 'ward_champ',   group: 'story', name: 'King of the Ward',   desc: 'Win THE WARD CUP',             stat: 'story', story: 'ward_cup', target: 1, reward: { box: 'party' } },
+    { id: 'finalist',     group: 'story', name: 'Big Final Energy',   desc: 'Reach 3 cup finals',           stat: 'finals', target: 3,  reward: { box: 'street', n: 2 } },
+    { id: 'star_chaser',  group: 'story', name: 'Star Chaser',        desc: 'Earn 3 story stars',           stat: 'stars', target: 3,   reward: { box: 'legend' } },
     /* ---------- phong cách ---------- */
     { id: 'unboxer',      group: 'style', name: 'Unboxer',            desc: 'Open 10 boxes',                stat: 'boxes', target: 10,   reward: { box: 'legend' } },
     { id: 'drip',         group: 'style', name: 'Drip',               desc: 'Own 15 different outfit items', stat: 'outfits', target: 15, reward: { item: 'bucket' } },

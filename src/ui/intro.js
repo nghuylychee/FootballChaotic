@@ -84,6 +84,12 @@ window.SFC = window.SFC || {};
         comp = `${_t('MAIN PATH')} · ${MP.area(mp.area).name} · {stars}`;
         title = _t('RANKED MATCH');
         venue = A.name; venueIcon = PX().area(A.id) + ' ';
+      } else if (g.opts.cup) {
+        // FOOTBALL STORY: tên Story · tên vòng, sân của vòng đó (sân trùng sân 1 Area thì lấy tên Area)
+        const st = SFC.Cup.get(g.opts.cup.id), A = MP.areas().find((a) => a.arena === g.opts.arena);
+        comp = st ? st.name : _t('FOOTBALL STORY');
+        title = SFC.Cup.roundName(g.opts.cup.round);
+        if (A) { venue = A.name; venueIcon = PX().area(A.id) + ' '; }
       } else if (g.opts.training) { comp = _t('TRAINING'); title = _t('PRACTICE MATCH'); }
       else if (g.opts.online) {
         // co-op: mọi người chơi cùng 1 đội, đối thủ là đội bot

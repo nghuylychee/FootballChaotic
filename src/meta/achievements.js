@@ -36,6 +36,11 @@ window.SFC = window.SFC || {};
         case 'ults': return PF().data.ultBook.length;   // ô đã khám phá trong sổ Tuyệt kỹ
         case 'outfits': return Object.keys(d.items).filter((id) => d.items[id] > 0).length;
         case 'core': return PF().coreUnlocked(a.core) ? 1 : 0;
+        // FOOTBALL STORY (src/meta/cup.js)
+        case 'story': return SFC.Cup.won(a.story) ? 1 : 0;
+        case 'cups': return SFC.Cup.totals().cups;
+        case 'finals': return SFC.Cup.totals().finals;
+        case 'stars': return SFC.Cup.totals().stars;
         default: return 0;
       }
     },

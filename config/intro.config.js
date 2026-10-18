@@ -7,9 +7,9 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.intro = {
   enabled: true,
-  // chế độ có màn giới thiệu: mainPath (Main Path) · training (Luyện tập) · single (trận đơn khác) · online
+  // chế độ có màn giới thiệu: mainPath (Main Path) · story (FOOTBALL STORY) · training (Luyện tập) · single (trận đơn khác) · online
   // (online: 2 máy cùng chiếu, host giữ trận đứng yên tới khi cả 2 xem xong hoặc quá onlineWait giây)
-  modes: ['mainPath', 'online'],
+  modes: ['mainPath', 'story', 'online'],
   onlineWait: 4,          // online: host chờ máy kia xem xong thêm tối đa bấy nhiêu giây (sau duration + outro)
 
   duration: 6.2,          // tự đóng sau bấy nhiêu giây

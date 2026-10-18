@@ -31,6 +31,9 @@ SFC.I18n.fields = [
   // vùng scout (TEAM > SCOUT): save lưu chỉ số vùng (scout.ri) nên đổi ngôn ngữ giữa chừng vẫn đúng tên
   'teammates.regions.*',
   'game.ai.difficulty.*.label',
+  // FOOTBALL STORY (config/stories.config.js): tên vòng, tên Story, lời thoại, mục tiêu sao
+  'stories.roundNames.*', 'stories.host', 'stories.list.*.name', 'stories.list.*.blurb', 'stories.list.*.stars.*.desc',
+  'stories.list.*.intro.*.text', 'stories.list.*.outro.*.text', 'stories.list.*.rounds.*.before.*.text', 'stories.list.*.rounds.*.after.*.text',
   // thành tích (config/achievements.config.js)
   'achievements.list.*.name', 'achievements.list.*.desc',
   // chú thích nút trên sơ đồ tay cầm (SVG bề rộng cố định): dài hơn là bị cắt

@@ -32,7 +32,8 @@ window.SFC = window.SFC || {};
      *                (cả trận xếp hạng online: ranked = 1, seats[].avatar.elo = Elo người chơi),
      *         noDraft / noAI: tắt chọn Core / AI (ảnh xem trước Core),
      *         tutorial: trận mơ PROLOGUE (src/game/tutorial.js): không đồng hồ tới khi g.clockOn, lượt chọn Core do kịch bản mở,
-     *         noAiCores: cầu thủ AI không tự bốc Core ở lượt chọn }
+     *         noAiCores: cầu thủ AI không tự bốc Core ở lượt chọn,
+     *         cup: { id, round } — trận FOOTBALL STORY (src/meta/cup.js); knockout: hoà hết giờ = bàn thắng vàng không giới hạn }
      */
     constructor(opts) {
       const C = SFC_CONFIG.game;
@@ -461,7 +462,8 @@ window.SFC = window.SFC || {};
       if (this.opts.tutorial && !this.clockOn) return; // trận mơ: đồng hồ chỉ chạy ở bài cuối (tutorial.js)
       if (this.golden) {
         this.goldenT = (this.goldenT || 0) + dt;
-        if (this.goldenT >= M.goldenGoalMaxTime) this.end();
+        // knockout (FOOTBALL STORY): phải có đội thắng -> bàn thắng vàng không giới hạn thời gian
+        if (this.goldenT >= M.goldenGoalMaxTime && !this.opts.knockout) this.end();
         return;
       }
       this.elapsed += dt;
@@ -479,7 +481,7 @@ window.SFC = window.SFC || {};
         this.sfx('whistle');
       }
       if (this.elapsed >= M.duration) {
-        if (this.teams[0].score === this.teams[1].score && M.goldenGoal) {
+        if (this.teams[0].score === this.teams[1].score && (M.goldenGoal || this.opts.knockout)) {
           this.golden = true;
           this.emit('banner', { text: SFC.N_('GOLDEN GOAL'), sub: SFC.N_('Next goal wins'), color: '#ffd23f' });
           this.sfx('whistle');

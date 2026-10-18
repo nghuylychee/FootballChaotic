@@ -22,7 +22,8 @@ window.SFC = window.SFC || {};
   const G = () => SFC.Gacha;
   const TM = () => SFC.Team;          // NHÂN VẬT > TEAM: đội hình đồng đội + scout (ui/team.js)
   const AU = () => SFC.AchUI;         // ACHIEVEMENTS: nút cúp dưới SETTINGS ở trang chủ (ui/achievements.js)
-  const RD = () => SFC.RoadUI;        // GOAT PATH: toàn bộ hành trình xếp hạng, mở từ đầu màn RANKED (ui/road.js)
+  const RD = () => SFC.RoadUI;
+  const CU = () => SFC.CupUI;         // FOOTBALL STORY: tab thứ 2 màn PLAY (page 'story') + màn 1 lượt chơi cup (page 'cup'), ui/cup.js        // GOAT PATH: toàn bộ hành trình xếp hạng, mở từ đầu màn RANKED (ui/road.js)
   const coin = (n) => G().coin(n);
   const xpBar = (d) => G().xpBar(d);
   const CV = () => SFC.ControlsView;   // Settings > Controls (ui/controls.js)
@@ -53,8 +54,9 @@ window.SFC = window.SFC || {};
     </div>`;
   }
 
-  // màn PLAY: tab RANKED (page 'party') · PRIVATE MATCH (page 'online' / 'join' / 'lobby') — kiểu Rocket League
-  const PLAY_PAGES = ['party', 'online', 'join', 'lobby'];
+  // màn PLAY: tab RANKED (page 'party') · FOOTBALL STORY (page 'story') · PRIVATE MATCH (page 'online' / 'join' / 'lobby') — kiểu Rocket League
+  const PLAY_PAGES = ['party', 'story', 'online', 'join', 'lobby'];
+  const PLAY_TABS = ['party', 'story', 'online'];   // trang mở khi đổi sang từng tab (Q / E)
   // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, TÚI ĐỒ
   const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'privacy', 'controls', 'ach', 'road'];
   // trang không có logo, tiêu đề là 1 dòng ngang cả màn như SHOP (NHÂN VẬT thêm LV / XP / vàng bên phải)
@@ -343,7 +345,10 @@ window.SFC = window.SFC || {};
           list.push({ kind: 'btn', label: _t('START'), main: true, act: () => app.startTraining() });
           return list;
         }
-        // PRIVATE MATCH (tab thứ 2 màn PLAY, vẽ ở renderPrivate): 2 ô CREATE / JOIN
+        // FOOTBALL STORY (tab thứ 2 màn PLAY, ui/cup.js): thẻ các Story + START
+        case 'story':
+          return CU().storyItems(this);
+        // PRIVATE MATCH (tab thứ 3 màn PLAY, vẽ ở renderPrivate): 2 ô CREATE / JOIN
         // + CONNECTION (chỉ khi có máy chủ riêng): AUTO = máy chủ riêng trước · DIRECT = máy này làm host. Chữ không nhắc cách kết nối
         case 'online':
           return [
@@ -458,6 +463,8 @@ window.SFC = window.SFC || {};
       if (TM().pages.includes(this.page)) return TM().back(this);
       if (AU().pages.includes(this.page)) return AU().back(this);
       if (RD().pages.includes(this.page)) return RD().back(this);
+      if (CU().pages.includes(this.page)) return CU().back(this);
+      if (this.page === 'story') return this.go('home');
       if (this.page === 'attrs' || this.page === 'look' || this.page === 'ults') return this.go('char');
       if (this.page === 'party' && this.addTyping) return this.stopAddTyping();
       if (this.page === 'lobby' && this.matePop) return this.closeMatePop();
@@ -487,7 +494,7 @@ window.SFC = window.SFC || {};
         this.sel = start >= 0 ? start : Math.max(0, items.findIndex((x) => me && x.slot === me.slot));
       }
       if (this.sel >= items.length) this.sel = Math.max(0, items.length - 1);
-      this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || this.page === 'privacy' || G().pages.includes(this.page) || TM().pages.includes(this.page) || AU().pages.includes(this.page) || RD().pages.includes(this.page));
+      this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || this.page === 'privacy' || G().pages.includes(this.page) || TM().pages.includes(this.page) || AU().pages.includes(this.page) || RD().pages.includes(this.page) || CU().pages.includes(this.page));
       // class riêng của trang chủ / màn PLAY: bật / tắt cả 2 trước mọi nhánh return (sót class 'party' làm vỡ layout trang chủ)
       // PRIVATE MATCH dùng chung khung màn PLAY, không có khung bạn bè (bạn bè giả không vào phòng thật được)
       const play = PLAY_PAGES.includes(this.page);
@@ -499,6 +506,7 @@ window.SFC = window.SFC || {};
       this.el.classList.toggle('m-headed', HEAD_PAGES.includes(this.page));   // chừa chỗ trên cùng cho nút ◀ BACK   // danh sách Tuyệt kỹ dài: chữ nhỏ hơn
       if (this.page === 'home') { this.el.innerHTML = this.renderHome(items); this.bindAvatars(); return; }
       if (this.page === 'party') { this.partyItems = items; this.el.innerHTML = this.renderParty(items); this.bindAvatars(); this.scrollChat(); return; }
+      if (this.page === 'story') { this.el.innerHTML = CU().renderStory(this, items); this.bindAvatars(); CU().bind(this); return; }
       if (play) { this.el.innerHTML = this.renderPrivate(items); this.bindAvatars(); return; }
       if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); this.bindAvatars(); return; }
       if (this.page === 'privacy') { this.el.innerHTML = this.renderPrivacy(); this.addBack(); return; }
@@ -506,7 +514,8 @@ window.SFC = window.SFC || {};
       if (G().pages.includes(this.page)) { G().render(this); this.addBack(); this.bindAvatars(); return; }
       if (TM().pages.includes(this.page)) { TM().render(this); this.bindAvatars(); return; }
       if (AU().pages.includes(this.page)) { AU().render(this); this.addBack(); return; }
-      if (RD().pages.includes(this.page)) { RD().render(this); this.addBack(); this.bindAvatars(); return; }   // sân thu nhỏ trên đảo + nhân vật
+      if (RD().pages.includes(this.page)) { RD().render(this); this.addBack(); this.bindAvatars(); return; }
+      if (CU().pages.includes(this.page)) { CU().render(this); return; }   // sân thu nhỏ trên đảo + nhân vật
       // it.foot: mục nằm dưới đáy cột trái (ngay trên dòng gợi ý phím), thứ tự ↑↓ vẫn theo danh sách
       const list = this.page === 'ults' ? this.ultGrid(items) : items.map((it, i) => (it.foot ? '' : this.renderItem(it, i))).join('');
       const foot = items.map((it, i) => (it.foot ? this.renderItem(it, i) : '')).join('');
@@ -901,21 +910,22 @@ window.SFC = window.SFC || {};
       const txt = esc(next ? _tn('{n} star to unlock next area', '{n} stars to unlock next area', next.elo - st.elo) : _t('TOP AREA'));
       return `<div class="pt-next" style="--ac:${A.color}"><i class="pt-prog"><b style="width:${next ? pct : 100}%"></b></i><span>${txt}</span></div>`;
     },
-    // thanh tab đầu màn PLAY (kiểu Rocket League): RANKED · PRIVATE MATCH, Q / E (LB / RB) đổi tab; sub = dòng dưới (HTML)
+    // thanh tab đầu màn PLAY (kiểu Rocket League): RANKED · FOOTBALL STORY · PRIVATE MATCH, Q / E (LB / RB) đổi tab; sub = dòng dưới (HTML)
     playTabs(on, sub) {
       const K = (a, kb) => SFC.Input.key(a, kb);
       const tab = (id, label, page, lock) => `<button class="pt-tab ${on === id ? 'on' : ''}" data-ptab="${page}">${lock ? PX().ui('lock', 'sm') + ' ' : ''}${esc(label)}</button>`;
       return `<div class="pt-tabs">
-          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('ranked', _t('RANKED'), 'party')}${tab('private', _t('PRIVATE MATCH'), 'online', SFC_DEMO)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
+          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('ranked', _t('RANKED'), 'party')}${tab('story', _t('FOOTBALL STORY'), 'story')}${tab('private', _t('PRIVATE MATCH'), 'online', SFC_DEMO)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
           ${sub}
         </div>`;
     },
-    // đổi tab (d = -1 RANKED / +1 PRIVATE MATCH). Đang tìm trận / đang kết nối / đang trong phòng: rời trước mới đổi được
-    playTab(d) {
-      const cur = PRIVATE_PAGES.includes(this.page) ? 1 : 0, next = cur + d;
-      if (next < 0 || next > 1 || this.page === 'lobby' || this.search || Session().status === 'busy') return;
+    // đổi tab (d = -1 / +1 theo thứ tự PLAY_TABS). Đang tìm trận / đang kết nối / đang trong phòng: rời trước mới đổi được
+    playTab(d) { this.playTabTo(this.playTabIndex() + d); },
+    playTabIndex() { return PRIVATE_PAGES.includes(this.page) ? 2 : Math.max(0, PLAY_TABS.indexOf(this.page)); },
+    playTabTo(next) {
+      if (next < 0 || next >= PLAY_TABS.length || next === this.playTabIndex() || this.page === 'lobby' || this.search || Session().status === 'busy') return;
       SFC.Audio.menu();
-      this.go(next ? 'online' : 'party');
+      this.go(PLAY_TABS[next]);
     },
 
     /* ---------------- PRIVATE MATCH: phòng bằng mã (SFC.Session), cùng khung với màn PLAY ---------------- */
@@ -1431,6 +1441,7 @@ window.SFC = window.SFC || {};
       if (TM().pages.includes(this.page)) return TM().input(this, input);
       if (AU().pages.includes(this.page)) return AU().input(this, input);
       if (RD().pages.includes(this.page)) return RD().input(this, input);
+      if (CU().pages.includes(this.page)) return CU().input(this, input);
       if (this.page === 'name' && input.wasPressed('confirm')) return this.submitName();
       if (this.page === 'controls') return CV().input(this, input);
       if (this.page === 'privacy') {
@@ -1630,6 +1641,7 @@ window.SFC = window.SFC || {};
         if (TM().pages.includes(this.page) && TM().click(this, e)) return;
         if (AU().pages.includes(this.page) && AU().click(this, e)) return;
         if (RD().pages.includes(this.page) && RD().click(this, e)) return;
+        if (CU().pages.includes(this.page) && CU().click(this, e)) return;
         if (this.page === 'controls' && CV().click(this, e)) return;
         // Main Path: bấm 1 Area trên "con đường" để xem
         const pa = e.target.closest('[data-parea]');
@@ -1647,7 +1659,7 @@ window.SFC = window.SFC || {};
         if (tab) { this.tutPage = +tab.dataset.tab; SFC.Audio.menu(); this.render(); return; }
         // màn PLAY: tab RANKED / PRIVATE MATCH · BACK
         const ptab = PLAY_PAGES.includes(this.page) && e.target.closest('[data-ptab]');
-        if (ptab) return this.playTab(ptab.dataset.ptab === 'online' ? 1 : -1);
+        if (ptab) return this.playTabTo(PLAY_TABS.indexOf(ptab.dataset.ptab));
         if ((PLAY_PAGES.includes(this.page) || BACK_PAGES.includes(this.page)) && e.target.closest('[data-back]')) { SFC.Audio.menu(); return this.back(); }
         if (this.page === 'party') {
           const fa = e.target.closest('[data-fa]');

@@ -15,6 +15,8 @@ window.SFC = window.SFC || {};
         // thẻ drill bấm LATER: mở lại ở INVENTORY (không có nút ở đây)
         // bản DEMO hết Area đá được: restart -> màn WISHLIST (app.startMainPath)
         // trận Main Path: chỉ 1 nút về phòng chờ (bản DEMO hết Area: CONTINUE -> màn WISHLIST)
+        // FOOTBALL STORY: 1 nút về màn cup (vòng kế / bị loại / vô địch)
+        if (this.app.game && this.app.game.opts.cup) return [['cup', _t('CONTINUE')]];
         return mp ? (SFC.MainPath.demoOver() ? [['restart', _t('CONTINUE')]] : [['menu', _t('LOBBY')]]) : [['restart', _t('PLAY AGAIN')], ['menu', _t('MAIN MENU')]];
       }
       return SFC.Session.isOwner ? [['lobby', _t('BACK TO LOBBY')], ['leave', _t('LEAVE ROOM')]] : [['leave', _t('LEAVE ROOM')]];
@@ -361,6 +363,7 @@ window.SFC = window.SFC || {};
       if (act === 'forfeit') this.app.forfeit();
       // trận Main Path xong -> về trang Main Path
       if (act === 'menu') this.app.toMenu(this.app.game && this.app.game.opts.mainPath ? 'party' : 'home');
+      if (act === 'cup') this.app.toMenu('cup');
       if (act === 'leave') SFC.Session.leave();
       if (act === 'lobby') SFC.Session.backToLobby();
       if (act === 'reroll') this.app.rerollCore();

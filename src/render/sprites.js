@@ -475,6 +475,18 @@ window.SFC = window.SFC || {};
         ringFlat(ctx, hx, y, 5, 1.5, '#ffe98a');
         break;
       }
+      case 'ward_trophy': { // cúp Ward Cup (FOOTBALL STORY): nồi cơm méo sơn vàng đội trên đầu
+        const G = '#ffd23f', GD = '#c9a020', GL = '#fff3a8';
+        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
+        px(ctx, hx - 7, hy - 11, 15, 8, OUT);
+        px(ctx, hx - 6, hy - 10, 13, 6, G);
+        px(ctx, hx - 6, hy - 5, 13, 1, GD);
+        px(ctx, hx - 8, hy - 12, 17, 2, OUT); px(ctx, hx - 7, hy - 12, 15, 1, GL);   // miệng nồi
+        if (!side) { px(ctx, hx - 9, hy - 9, 2, 3, OUT); px(ctx, hx + 8, hy - 9, 2, 3, OUT); px(ctx, hx - 9, hy - 8, 1, 1, G); px(ctx, hx + 9, hy - 8, 1, 1, G); }   // 2 quai
+        else px(ctx, side > 0 ? hx - 9 : hx + 8, hy - 9, 2, 3, OUT);
+        if (!back) { px(ctx, hx - 4 + side * 2, hy - 9, 2, 3, GL); px(ctx, hx + 2 + side, hy - 8, 2, 1, GD); }   // bóng sáng + vết méo
+        break;
+      }
       case 'flamehair': {
         capRows(ctx, hx, hy, '#ff6a1f', -6, back ? 3 : -3);
         ctx.globalCompositeOperation = 'lighter';

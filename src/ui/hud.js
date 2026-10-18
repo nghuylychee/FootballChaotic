@@ -35,7 +35,9 @@ window.SFC = window.SFC || {};
         : next != null ? `<div class="hud-core">${esc(_t('✦ Next Core in {time}', { time: SFC.U.fmtTime(next) }))}</div>` : '';
       // Main Path: Area + Elo lúc vào trận
       const mp = game.opts && game.opts.mainPath;
+      const cupO = game.opts && game.opts.cup, cupS = cupO && SFC.Cup.get(cupO.id);
       const pathLine = game.opts && game.opts.tutorial ? `<div class="hud-path dream">${esc(_t('PROLOGUE · THE DREAM'))}</div>`
+        : cupS ? `<div class="hud-path" style="color:${cupS.color}">${esc(cupS.name)} · ${esc(SFC.Cup.roundName(cupO.round))}</div>`
         : !mp ? '' : `<div class="hud-path">${esc(SFC.MainPath.area(mp.area).name)} · ${PX().elo(mp.elo)}</div>`;
       const key = [t0.score, t1.score, dream ? 'dream' : time, phase, cores, coreLine, pathLine].join('#');
       if (c.key !== key) {
