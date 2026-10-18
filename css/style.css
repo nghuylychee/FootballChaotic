@@ -1138,56 +1138,56 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 @keyframes ultFloat { 0% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -14px); } }
 .ab-slot.ult { overflow: visible; }
 
-/* ---------- SETTINGS > CONTROLS: hình tay cầm có chú thích + bàn phím (ui/controls.js) ---------- */
-.ctl-body { display: flex; flex-direction: column; gap: 4px; }
-.ctl-body svg { display: block; width: 100%; height: auto; }
-.cv-body { fill: #242730; stroke: #525a6b; stroke-width: 2; }
-.cv-trig, .cv-bump { fill: #323742; stroke: #525a6b; stroke-width: 1; }
-.cv-pad { fill: #242730; stroke: #525a6b; stroke-width: 1; }
-.cv-home { fill: #121316; stroke: var(--gold); stroke-width: 1; }
-.cv-small { fill: #525a6b; }
-.cv-well { fill: #121316; }
-.cv-stick { fill: #323742; stroke: #7a6478; stroke-width: 1; }
-.cv-stick-top { fill: #3f4553; }
-.cv-dpad { fill: #323742; stroke: #7a6478; stroke-width: 1; }
-.cv-face { fill: #121316; stroke-width: 1.5; }
-.cv-face-t { font-family: var(--px); font-size: 7px; }
-.cv-lead { fill: none; stroke: var(--muted); stroke-width: 1; opacity: 0.55; }
-.cv-chip { fill: #242730; stroke: #525a6b; stroke-width: 1; }
-.cv-chip-t { font-family: var(--px); font-size: 5px; fill: var(--gold); }
-.cv-atk { font-family: var(--vt); font-size: 13px; fill: var(--paper); }
-.cv-atk.both { fill: #ff8a98; }
-.cv-def { font-family: var(--vt); font-size: 13px; fill: #8fbcff; }
-.cv-tag { font-size: 10px; }
-.cv-atk.both .cv-tag { fill: #ff5a6e; }
-.cv-def .cv-tag { fill: #5a9cff; }
+/* ---------- SETTINGS > CONTROLS: đổi phím — hình bàn phím / tay cầm + danh sách action 2 cột (ui/controls.js) ---------- */
+.ctl-body { display: flex; flex-direction: column; gap: 5px; }
+.ctl-body > svg { display: block; margin: 0 auto; }
+.ctl-body > svg.kv { width: 100%; max-width: 452px; height: auto; }
+.ctl-body > svg.cv { height: 124px; width: auto; }
+/* tay cầm nét trắng (kiểu Hollow Knight): mọi hình tô màu nền để hình vẽ sau che nét của hình trước (thân che chân cò / vai) */
+.cv-line { fill: #16181d; stroke: #e8ebf0; stroke-width: 4; stroke-linejoin: round; }
+.cv-line.thin { stroke-width: 3.5; }
+/* nút của action đang chọn: nét vàng nhấp nháy, nền ngả vàng */
+.cv .cv-line.sel, .cv .sel .cv-line { stroke: var(--gold); fill: #3a3420; animation: rmGlow 0.8s steps(2) infinite; }
+@keyframes rmGlow { 50% { stroke: #fff6c2; } }
 .cv-note { font-size: 12px; color: var(--muted); text-align: center; }
-.cv-note kbd { margin: 0 1px; }
+.cv-note kbd { margin: 0 1px; font-family: var(--vt); font-size: 11px; padding: 0 3px; }
+.cv-note.cap { color: var(--gold); font-size: 13px; animation: draftWaitPulse 1s steps(2) infinite; }
 
 .kk rect { fill: #1a1c22; stroke: #323742; stroke-width: 1; }
 .kk text { font-family: var(--vt); font-size: 12px; fill: #525a6b; }
-.kk.play rect { fill: rgba(255,225,79,0.16); stroke: var(--gold); }
-.kk.play text { fill: var(--gold); }
-.kk.sys rect { fill: rgba(200,190,214,0.08); stroke: #9a8fa8; }
-.kk.sys text { fill: #c8bed6; }
-.kv-key { display: flex; justify-content: center; gap: 14px; font-size: 12px; color: var(--muted); }
-.kv-key span::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 4px; vertical-align: -1px; border: 1px solid; }
-.kv-key .play::before { border-color: var(--gold); background: rgba(255,225,79,0.16); }
-.kv-key .sys::before { border-color: #9a8fa8; background: rgba(200,190,214,0.08); }
-.cv-chip-t.sym { font-family: var(--vt); font-size: 14px; }
-.kv-legend { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px 12px; background: var(--panel); border: 1px solid var(--edge); padding: 5px 10px; }
-.kl { display: flex; align-items: center; gap: 6px; min-height: 22px; }
-.kl-k { display: flex; gap: 2px; min-width: 44px; justify-content: flex-end; }
-.kl-k kbd { font-family: var(--vt); font-size: 12px; padding: 0 3px; }
-.kl-t { display: flex; flex-direction: column; font-size: 12px; line-height: 1; }
-.kl-t b { font-weight: normal; color: var(--paper); }
-.kl-t b.both { color: #ff8a98; }
-.kl-t i { font-style: normal; color: #8fbcff; }
-.kl-t em { font-style: normal; font-size: 10px; }
-.kl-t b.both em { color: #ff5a6e; }
-.kl-t i em { color: #5a9cff; }
-.cv-note kbd { font-family: var(--vt); font-size: 11px; padding: 0 3px; }
-.cv-face-t.sym { font-family: var(--vt); font-size: 13px; }
+.kk.play rect { fill: rgba(255,225,79,0.10); stroke: #8a7a3a; }
+.kk.play text { fill: #c9b45a; }
+.kk.sys rect { fill: rgba(200,190,214,0.06); stroke: #5d566a; }
+.kk.sys text { fill: #8f879c; }
+.kk.sel rect { fill: rgba(255,225,79,0.32); stroke: var(--gold); stroke-width: 2; animation: rmGlow 0.8s steps(2) infinite; }
+.kk.sel text { fill: #fff6c2; }
+
+.rm-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; background: var(--panel); border: 1px solid var(--edge); padding: 4px 8px; }
+.rm-col { display: flex; flex-direction: column; min-width: 0; }
+.rm-row { display: flex; align-items: center; gap: 6px; height: 18px; padding: 0 4px; border: 1px solid transparent; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.rm-row:hover { background: rgba(255,255,255,0.04); }
+.rm-row.sel { border-color: var(--gold); background: rgba(255,225,79,0.08); }
+.rm-row kbd { min-width: 34px; text-align: center; font-family: var(--vt); font-size: 12px; padding: 0 3px; }
+.rm-row kbd.sym { font-size: 14px; line-height: 12px; }
+/* icon nút PlayStation ✕ △ ○ □ (ui/helpers.js thay vào mọi <kbd>): cỡ theo chữ của kbd */
+.ps-ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.15em; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: miter; stroke-miterlimit: 10; stroke-linecap: butt; }
+#abar kbd .ps-ico { width: 6px; height: 6px; stroke-width: 2.6; vertical-align: -1px; }
+.rm-row b { font-weight: normal; color: var(--paper); }
+.rm-row i { font-style: normal; color: #8fbcff; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.rm-row i em { font-style: normal; font-size: 10px; color: #5a9cff; }
+/* phím đã đổi khỏi mặc định: chữ vàng */
+.rm-row.chg kbd { color: var(--gold); border-color: var(--gold); }
+/* đang chờ phím mới */
+.rm-row.cap kbd { color: var(--ink); background: var(--gold); border-color: var(--gold); animation: rmCap 0.6s steps(2) infinite; }
+@keyframes rmCap { 50% { background: transparent; color: var(--gold); } }
+.rm-row.lock { cursor: default; opacity: 0.55; }
+.rm-row.lock kbd { min-width: 0; }
+.rm-row.lock:hover { background: none; }
+.rm-reset { margin-top: auto; justify-content: center; }
+.rm-reset b { color: #525a6b; font-size: 12px; letter-spacing: 0.5px; }
+.rm-reset.on b { color: #ff8a98; }
+/* thông báo đổi phím: nằm trong lề dưới, không đẩy hình bàn phím co lại */
+#menu .rm-msg { position: absolute; left: 22px; right: 22px; bottom: 1px; margin: 0; text-align: center; }
 
 /* ---------- MAIN PATH (thẻ Area kiểu Clash Royale) ---------- */
 .path {
@@ -2153,9 +2153,10 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .hm-ach.hot x-px { animation: pulse 0.6s steps(2) infinite; }
 
 .ac-g { grid-template-columns: 1fr 236px; }
-.ac-sum { display: flex; align-items: center; gap: 4px; margin-left: 12px; font-size: 13px; color: var(--muted); }
+.ac-sum { display: flex; align-items: center; gap: 5px; margin-left: auto; font-size: 20px; color: var(--muted); }   /* bên phải tiêu đề (trang không hiện cấp / vàng) */
 .ac-sum b { font-weight: normal; color: var(--gold); }
-.ac-new { margin-left: 6px; padding: 1px 4px; font-size: 11px; color: var(--ink); background: var(--gold); animation: pulse 0.8s steps(2) infinite; }
+.ac-sum .pxi { width: 18px; height: 18px; vertical-align: middle; }
+.ac-new { margin-left: 8px; padding: 1px 5px; font-size: 13px; color: var(--ink); background: var(--gold); animation: pulse 0.8s steps(2) infinite; }
 .ac-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; min-height: 0; padding: 2px; scrollbar-width: thin; scrollbar-color: #525a6b transparent; }
 .ac-row { display: grid; grid-template-columns: 32px 1fr 44px 52px; align-items: center; gap: 8px; padding: 4px 8px 4px 6px; cursor: pointer;
   background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--gc); }

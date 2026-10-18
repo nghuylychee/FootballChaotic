@@ -289,8 +289,8 @@
 
   function fit() {
     const stage = document.getElementById('stage');
-    const s = Math.min(window.innerWidth / C.render.width, window.innerHeight / C.render.height);
-    const scale = s >= 1 ? Math.max(1, Math.floor(s * 4) / 4) : s;
+    // phóng đúng tỉ lệ cửa sổ (không làm tròn): chỉ còn viền đen khi cửa sổ khác 16:9
+    const scale = Math.min(window.innerWidth / C.render.width, window.innerHeight / C.render.height);
     stage.style.transform = `translate(-50%, -50%) scale(${scale})`;
   }
 

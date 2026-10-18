@@ -152,7 +152,7 @@ SFC_CONFIG.cores = {
     /* ---------- 🎯 SÁT THỦ ---------- */
     sniper_foot: {
       name: 'Sharpshooter', icon: '🎯', tags: ['striker'], role: 'base', rarity: 'common',
-      desc: 'Pinpoint shots. Hold D to aim with a laser.',
+      desc: 'Pinpoint shots. Hold shoot to aim with a laser.',
       mods: { accuracy: 1.6 },
       params: { frictionMult: 0.35, speedMult: 0.85, aiRangeMult: 1.5 },
       scale: { 'm.accuracy': 'mul' },
@@ -187,13 +187,13 @@ SFC_CONFIG.cores = {
     },
     phantom_step: {
       name: 'Phantom Step', icon: '🌀', tags: ['trickster'], role: 'gen', rarity: 'rare',
-      desc: 'Z teleports further and leaves a decoy that lures defenders.',
+      desc: 'Dash teleports further and leaves a decoy that lures defenders.',
       params: { distance: 34, illusion: 1.2, lureRadius: 60, lure: 0.4, lureCooldown: 4 },
       scale: { distance: 'pow', illusion: 'pow', lure: 'pow', lureCooldown: 'cd' },
     },
     fake_run: {
       name: 'Fake Run', icon: '🪞', tags: ['trickster'], role: 'gen', rarity: 'rare',
-      desc: 'Sprint or Z on the ball sends a fake running away.',
+      desc: 'Sprint or dash on the ball sends a fake running away.',
       params: { cooldown: 3.5, duration: 1.6, confuseRadius: 90, confuseTime: 1.2, angle: 0.8, momentum: 2 },
       scale: { cooldown: 'cd', duration: 'pow', confuseTime: 'pow' },
     },
@@ -361,7 +361,7 @@ SFC_CONFIG.cores = {
     /* ---------- 🌀 ẢO ẢNH ---------- */
     quick_feet: {
       name: 'Ninja Footwork', icon: '🥷', tags: ['trickster'], role: 'base', rarity: 'common',
-      desc: 'Shorter Z cooldown and a bigger dodge window.',
+      desc: 'Shorter dash cooldown and a bigger dodge window.',
       mods: { skillCooldown: 0.7 },
       params: { dodgeBonus: 0.15 },
       scale: { 'm.skillCooldown': 'mul', dodgeBonus: 'pow' },
@@ -374,7 +374,7 @@ SFC_CONFIG.cores = {
     },
     shadow_clone: {
       name: 'Shadow Clone', icon: '👥', tags: ['trickster'], role: 'gen', rarity: 'epic',
-      desc: 'Z spawns clones that block opponents and passing lanes.',
+      desc: 'Dash spawns clones that block opponents and passing lanes.',
       params: { count: 2, time: 2, speed: 170, spread: 0.7 },
       scale: { time: 'pow' },
     },

@@ -3,6 +3,7 @@
  * type: 'controls' = tự sinh bảng phím từ controls.config.js
  *       'cores'    = tự sinh danh sách Core từ cores.config.js
  * lines: các dòng giải thích; dòng bắt đầu bằng '#' là tiêu đề nhỏ.
+ *        {action} = phím đang gán cho action trong trận (theo phím người chơi đã đổi ở SETTINGS > CONTROLS)
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
@@ -15,16 +16,16 @@ SFC_CONFIG.tutorial = {
     {
       title: 'PASS & SHOOT',
       lines: [
-        '# Passing (S / W / A)',
-        'S = ground pass · W = through ball · A = lob. Hold to charge, release to pass. The ball follows the arrow you are holding.',
+        '# Passing ({pass} / {through} / {lob})',
+        '{pass} = ground pass · {through} = through ball · {lob} = lob. Hold to charge, release to pass. The ball follows the arrow you are holding.',
         'A teammate in that direction → the ball locks onto them. Nobody there → it rolls straight that way.',
         'A light tap is already enough to reach them. The white mark on the bar = default power; charge past it for a firmer ball.',
         'The receiver runs to meet the ball. When a pass comes to you, you run onto it automatically; press a direction to move yourself.',
         '# Through ball & lob',
-        'W: into the space ahead of your teammate. Hold longer → deeper.',
-        'A: lofted over the defender\'s head.',
+        '{through}: into the space ahead of your teammate. Hold longer → deeper.',
+        '{lob}: lofted over the defender\'s head.',
         '# Shooting',
-        'Hold D to charge, release to shoot. The ball goes where your arrow points when you release (no arrow → dead center). The power bar starts low; the longer you hold, the harder the shot.',
+        'Hold {shoot} to charge, release to shoot. The ball goes where your arrow points when you release (no arrow → dead center). The power bar starts low; the longer you hold, the harder the shot.',
         'Hold too long (red bar) → you shoot automatically, high and likely off target.',
         'Arrow pointing at the goal → accurate shot. Pointing wide of the post → it still goes to the nearest corner, but from an awkward stance: the wider you aim, the more likely it misses.',
       ],
@@ -34,10 +35,10 @@ SFC_CONFIG.tutorial = {
       lines: [
         '# Defensive moves',
         'There are no tackles. Want the ball? Hit someone.',
-        'D: LIGHT ATTACK. A short straight punch. Brief stun + knockback, may knock the ball loose. Short cooldown.',
-        'A: HARD ATTACK. Wind up your leg (red aura, you can still turn), then kick. Hit: the opponent flies across the pitch, long stun, always drops the ball. Miss: long recovery. Long cooldown.',
+        '{shoot}: LIGHT ATTACK. A short straight punch. Brief stun + knockback, may knock the ball loose. Short cooldown.',
+        '{lob}: HARD ATTACK. Wind up your leg (red aura, you can still turn), then kick. Hit: the opponent flies across the pitch, long stun, always drops the ball. Miss: long recovery. Long cooldown.',
         'Cooldowns show on the skill bar at the bottom center of the screen. Faded slot = you have the ball (you can\'t attack). When your teammate has it, you can still punch and kick.',
-        'Z (dash) at the right moment when they attack → DODGE.',
+        '{skill} (dash) at the right moment when they attack → DODGE.',
         'Intercepting: a pass that goes through your reach can be cut out. Slower passes and passes straight at you are easier to cut. Miss the cut → the ball clips you and keeps going.',
         'An AI teammate playing FORWARD presses the ball carrier to win it back. An AI teammate playing DEFENDER stays home and only steps up when you are far from the ball.',
         '# Guarding the goal',
@@ -45,11 +46,11 @@ SFC_CONFIG.tutorial = {
         'Catch the ball in your box → you can\'t be tackled for a few seconds. Dribbling into your box yourself gives no protection.',
         'An AI DEFENDER drops back to guard the goal when the opponent brings the ball close. An AI FORWARD only drops back when it is really dangerous: the opponent is right at goal and you are not in the box. Otherwise, the goal is your job!',
         'Harder shots and shots into the corners are harder to save.',
-        '# Catching a shot (W)',
-        'In your own box while the opponent has the ball: hold W to get ready, then release it the moment they kick. The closer your release is to the kick, the better your chance to catch it: GOOD → GREAT → PERFECT. GREAT or better also dives toward the ball.',
+        '# Catching a shot ({through})',
+        'In your own box while the opponent has the ball: hold {through} to get ready, then release it the moment they kick. The closer your release is to the kick, the better your chance to catch it: GOOD → GREAT → PERFECT. GREAT or better also dives toward the ball.',
         'Watch the shooter\'s power bar: the red mark is where they will shoot. The mark flashes just before the bar reaches it: that is when the kick comes.',
         'Stand on the line between the ball and your goal (your ring turns cyan) to save even more. Long shots give you more time to get set.',
-        'Released too early or too late → a short wait before you can try again. Still holding W when the ball arrives counts as too late.',
+        'Released too early or too late → a short wait before you can try again. Still holding {through} when the ball arrives counts as too late.',
       ],
     },
     {
@@ -58,7 +59,7 @@ SFC_CONFIG.tutorial = {
         '# Street football',
         'Three players per team, split attack / defense however you like. Matches last 2:30.',
         '# Your player',
-        'You control only your own character for the whole match; your teammate is AI. Call for the ball with S / W (D / A still attack). An AI FORWARD loves to dribble, shoot and press to win the ball; an AI DEFENDER stays home, marks and feeds you passes.',
+        'You control only your own character for the whole match; your teammate is AI. Call for the ball with {pass} / {through} ({shoot} / {lob} still attack). An AI FORWARD loves to dribble, shoot and press to win the ball; an AI DEFENDER stays home, marks and feeds you passes.',
         'The ball bounces off the walls like street futsal. No out of bounds.',
         '# Training',
         'Your team has 1 or 2 players, the opponent 0 or 2. No clock, no score, no Core draft, no rewards.',

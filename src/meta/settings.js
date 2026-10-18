@@ -6,6 +6,7 @@
  *  - NETWORK STATS: hiện ping + dung lượng gửi / nhận khi đang ở phòng online (src/ui/online.js)
  *  - FRAME RATE: giới hạn số khung hình vẽ mỗi giây (UNLIMITED / 60 / 30); mô phỏng + đọc phím vẫn 60 Hz
  *  - CONNECTION (PRIVATE MATCH): AUTO = tạo phòng trên máy chủ riêng trước · DIRECT = máy này làm host (Steam / PeerJS)
+ *  - ĐỔI PHÍM (SETTINGS > CONTROLS, ui/controls.js): binds = phím người chơi tự gán cho action trong trận, áp vào SFC.Input
  *  - Ngôn ngữ: mã trong src/engine/i18n.js. null = chưa chọn -> popup chọn ngôn ngữ lúc mở game (src/ui/langpick.js)
  */
 window.SFC = window.SFC || {};
@@ -17,6 +18,27 @@ window.SFC = window.SFC || {};
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const vol10 = (v, d) => (Number.isInteger(v) ? clamp(v, 0, 10) : d);
 
+  // ĐỔI PHÍM (controls.remap): phím của pause / mute không gán được; bàn phím bỏ Ctrl / Alt / Tab / F1-F12...; tay cầm chỉ nút trong padButtons
+  const reservedBy = (code) => SFC_CONFIG.controls.remap.reserved.find((a) => (SFC_CONFIG.controls.bindings[a] || []).includes(code)) || null;
+  const validCode = (dev, code) => {
+    const R = SFC_CONFIG.controls.remap;
+    if (typeof code !== 'string' || reservedBy(code)) return false;
+    if (dev === 'pad') return code.startsWith('Pad.') && R.padButtons.includes(code.slice(4));
+    return !code.startsWith('Pad.') && !code.startsWith('Tap2.') && !R.blocked.test(code);
+  };
+  // save cũ / sửa tay: bỏ action lạ, phím không hợp lệ, 2 action trùng phím (giữ action đầu)
+  function cleanBinds(raw) {
+    const R = SFC_CONFIG.controls.remap, out = { kb: {}, pad: {} };
+    for (const dev of ['kb', 'pad']) {
+      const src = (raw && raw[dev]) || {}, used = new Set();
+      for (const a of R[dev]) {
+        const c = src[a];
+        if (validCode(dev, c) && !used.has(c)) { out[dev][a] = c; used.add(c); }
+      }
+    }
+    return out;
+  }
+
   const Settings = {
     music: 10,
     sfx: 10,
@@ -26,6 +48,7 @@ window.SFC = window.SFC || {};
     netStats: false,     // hiện ping + KB/s khi online
     roomDirect: false,   // PRIVATE MATCH › CONNECTION: false = AUTO (máy chủ riêng trước) · true = DIRECT (máy này làm host)
     fps: 0,              // FRAME RATE: 0 = không giới hạn (theo tần số màn hình) · 60 · 30. Chỉ giới hạn số lần vẽ, mô phỏng vẫn 60 Hz (main.js)
+    binds: { kb: {}, pad: {} },   // ĐỔI PHÍM: { kb: { shoot: 'KeyJ' }, pad: { shoot: 'Pad.RB' } } — chỉ lưu phím khác mặc định (Input.applyBinds)
 
     load() {
       const raw = SFC.Storage.getJSON(KEY, {}) || {};
@@ -36,11 +59,39 @@ window.SFC = window.SFC || {};
       this.netStats = raw.netStats === true;
       this.roomDirect = raw.roomDirect === true;
       this.fps = FPS.includes(raw.fps) ? raw.fps : 0;
+      this.binds = cleanBinds(raw.binds);
       return this;
     },
     save() {
-      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats, roomDirect: this.roomDirect, fps: this.fps });
+      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats, roomDirect: this.roomDirect, fps: this.fps, binds: this.binds });
     },
+
+    /* ĐỔI PHÍM: gán code cho action trên thiết bị dev ('kb' | 'pad'). Phím đang thuộc action khác -> 2 action đổi phím cho nhau.
+     * Trả về { ok, swap: action bị đổi | null } · { err: 'reserved', by: action giữ phím (pause / mute) } · { err: 'blocked' } */
+    rebind(dev, action, code) {
+      const R = SFC_CONFIG.controls.remap, I = SFC.Input;
+      const by = reservedBy(code);
+      if (by) return { err: 'reserved', by };
+      if (!validCode(dev, code) || !R[dev].includes(action)) return { err: 'blocked' };
+      const old = I.codeOf(action, dev);
+      if (old === code) return { ok: true, swap: null };
+      const swap = R[dev].find((b) => b !== action && I.codeOf(b, dev) === code) || null;
+      const put = (a, c) => {
+        if (c === (I.defaults[a] || []).find((x) => x.startsWith('Pad.') === (dev === 'pad'))) delete this.binds[dev][a];
+        else this.binds[dev][a] = c;
+      };
+      if (swap) put(swap, old);
+      put(action, code);
+      I.applyBinds(this.binds);
+      this.save();
+      return { ok: true, swap };
+    },
+    resetBinds(dev) {
+      this.binds[dev] = {};
+      SFC.Input.applyBinds(this.binds);
+      this.save();
+    },
+    bindsChanged(dev) { return Object.keys(this.binds[dev]).length > 0; },
 
     get desktop() { return !!window.SFC_DESKTOP; },
 

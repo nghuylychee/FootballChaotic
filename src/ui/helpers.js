@@ -65,5 +65,32 @@ window.SFC = window.SFC || {};
   }
   const keyLabel = (action) => SFC.Input.label(action);
 
-  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel };
+  /* Nút PlayStation ✕ △ ○ □: chữ trong font lệch cỡ (○ □ nhỏ hơn ✕ △) -> icon SVG cùng khung 16x16, cùng độ dày nét.
+   * Tự thay trong mọi <kbd> (gợi ý phím ở menu / HUD / trang Controls in nhãn bằng chữ, không cần sửa từng chỗ) */
+  const PS_ICON = {
+    '✕': '<path d="M3.5 3.5 12.5 12.5M12.5 3.5 3.5 12.5"/>',
+    '△': '<path d="M8 2.5 13.75 12.75H2.25Z"/>',
+    '○': '<circle cx="8" cy="8" r="5.25"/>',
+    '□': '<rect x="3" y="3" width="10" height="10"/>',
+  };
+  const psIcon = (s) => `<svg class="ps-ico" viewBox="0 0 16 16" role="img" aria-label="${s}">${PS_ICON[s]}</svg>`;
+  const PS_RE = /[✕△○□]/;
+  // chỉ thay khi trong kbd toàn ký hiệu + dấu nối ("✕ / △"), chữ khác giữ nguyên
+  function psKbd(k) {
+    const t = k.textContent;
+    if (!PS_RE.test(t) || k.querySelector('svg') || !/^[✕△○□\s/+·]+$/.test(t)) return;
+    k.innerHTML = [...t].map((ch) => (PS_ICON[ch] ? psIcon(ch) : esc(ch))).join('');
+  }
+  function psScan(n) {
+    if (n.nodeType === 3) n = n.parentNode;
+    if (!n || n.nodeType !== 1) return;
+    if (n.tagName === 'KBD') return psKbd(n);
+    if (PS_RE.test(n.textContent)) n.querySelectorAll('kbd').forEach(psKbd);
+  }
+  if (document.body) {
+    new MutationObserver((ms) => { for (const m of ms) m.addedNodes.forEach(psScan); })
+      .observe(document.body, { childList: true, subtree: true });
+  }
+
+  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon };
 })();

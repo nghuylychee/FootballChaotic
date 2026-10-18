@@ -132,11 +132,12 @@ window.SFC = window.SFC || {};
       if (page === 'inv') this.keepVisible(menu.el.querySelector('.inv-grid'), menu.el.querySelector('.icard.sel'));
     },
 
-    header(title, mid = '') {
+    // wallet = false: không hiện cấp / vàng (vd. trang THÀNH TÍCH)
+    header(title, mid = '', wallet = true) {
       const d = PF().data;
       return `<div class="tut-head shop-head">
         <div class="m-title">${title}</div>${mid}
-        <div class="shop-wallet">${xpBar(d)}${coin(d.gold)}</div>
+        ${wallet ? `<div class="shop-wallet">${xpBar(d)}${coin(d.gold)}</div>` : ''}
       </div>`;
     },
 
@@ -220,7 +221,7 @@ window.SFC = window.SFC || {};
           <i class="reel-mark"></i>
         </div>
         ${reveal}
-        <!--msg--><div class="m-hint">${o.done ? _t('{ok} open another · {equip} equip · {dismantle} dismantle · {back} back to Shop', { ok: K('confirm', 'Enter'), equip: K('sprint', 'E'), dismantle: K('dismantle', 'X'), back: K('back', 'Esc') }) : _t('{ok} skip', { ok: K('confirm', 'Enter') })}</div>`;
+        <!--msg--><div class="m-hint">${o.done ? _t('{ok} open another · {equip} equip · {dismantle} dismantle · {back} back to Shop', { ok: K('confirm', 'Enter'), equip: K('equip', 'E'), dismantle: K('dismantle', 'X'), back: K('back', 'Esc') }) : _t('{ok} skip', { ok: K('confirm', 'Enter') })}</div>`;
     },
 
     revealHtml(o) {
@@ -241,7 +242,7 @@ window.SFC = window.SFC || {};
       const equipped = !isCore && PF().data.look[PROG().items[w.id].slot] === w.id;
       const acts = [
         `<span class="rv-act"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN ANOTHER')} ${PF().freeBoxes(o.boxId) ? `<span class="free">${PX().ui('gift', 'sm')} ${_t('FREE ×{n}', { n: PF().freeBoxes(o.boxId) })}</span>` : coin(b.price)}</span>`,
-        !isCore && e.count > 0 ? `<span class="rv-act ${equipped ? 'on' : ''}"><kbd>${K('sprint', 'E')}</kbd> ${equipped ? _t('EQUIPPED') : _t('EQUIP')}</span>` : '',
+        !isCore && e.count > 0 ? `<span class="rv-act ${equipped ? 'on' : ''}"><kbd>${K('equip', 'E')}</kbd> ${equipped ? _t('EQUIPPED') : _t('EQUIP')}</span>` : '',
         e.count > 0 && !o.dismantled ? `<span class="rv-act"><kbd>${K('dismantle', 'X')}</kbd> ${_t('DISMANTLE +{n}', { n: PF().dismantleValue(w.kind, w.id) })}</span>` : '',
         o.dismantled ? `<span class="rv-act ok">${_t('Dismantled {gold}', { gold: coin('+' + o.dismantled) })}</span>` : '',
       ].join('');
@@ -335,8 +336,8 @@ window.SFC = window.SFC || {};
         return `<div class="icard ${cls}" data-ic="${i}" style="--rc:${rc}">${iconHtml(e)}${badge}${cls.includes('eq') ? '<i class="ic-eq">E</i>' : ''}${e.locked ? PX().ui('lock', 'ic-lock') : ''}</div>`;
       }).join('') || `<div class="inv-empty">${empty}</div>`;
       const hint = [
-        _t('{a} / {b} switch tab', { a: K('switch', 'Q'), b: K('sprint', 'E') }),
-        filter ? (coreTab ? _t('{key} filter by archetype', { key: K('skill', 'Z') }) : _t('{key} filter by slot', { key: K('skill', 'Z') })) : '',
+        _t('{a} / {b} switch tab', { a: K('tabPrev', 'Q'), b: K('tabNext', 'E') }),
+        filter ? (coreTab ? _t('{key} filter by archetype', { key: K('filter', 'Z') }) : _t('{key} filter by slot', { key: K('filter', 'Z') })) : '',
         _t('←↑↓→ select'),
         drillTab ? (list.length ? _t('{key} open', { key: K('confirm', 'Enter') }) : '') : coreTab && !PROG().coreGacha ? ''
           : _t('{key} equip', { key: K('confirm', 'Enter') }) + ' · ' + _t('{key} dismantle', { key: K('dismantle', 'X') }),
@@ -476,7 +477,7 @@ window.SFC = window.SFC || {};
       if (!o) return;
       if (!o.done) { if (input.wasPressed('confirm')) o.t0 = performance.now() - o.dur * 1000; return; }
       if (input.wasPressed('confirm')) return this.openBox(menu, o.boxId);
-      if (input.wasPressed('sprint') && o.win.kind === 'item') { this.equipEntry(menu, entry('item', o.win.id)); menu.render(); }
+      if (input.wasPressed('equip') && o.win.kind === 'item') { this.equipEntry(menu, entry('item', o.win.id)); menu.render(); }
       if (input.wasPressed('dismantle') && !o.dismantled) {
         const e = entry(o.win.kind, o.win.id);
         const g = this.dismantleEntry(menu, e);
@@ -487,11 +488,11 @@ window.SFC = window.SFC || {};
     inputInv(menu, input) {
       const list = this.invEntries(), n = list.length;
       let moved = false;
-      if (input.wasPressed('switch')) { this.invTab = wrap(this.invTab - 1, INV_TABS().length); this.invSel = 0; moved = true; }
-      if (input.wasPressed('sprint')) { this.invTab = wrap(this.invTab + 1, INV_TABS().length); this.invSel = 0; moved = true; }
+      if (input.wasPressed('tabPrev')) { this.invTab = wrap(this.invTab - 1, INV_TABS().length); this.invSel = 0; moved = true; }
+      if (input.wasPressed('tabNext')) { this.invTab = wrap(this.invTab + 1, INV_TABS().length); this.invSel = 0; moved = true; }
       const tab = INV_TABS()[this.invTab][0];
-      if (input.wasPressed('skill') && tab === 'core') { this.invArch = wrap(this.invArch + 1, ARCH_KEYS().length); this.invSel = 0; moved = true; }
-      if (input.wasPressed('skill') && tab === 'wear') { this.invSlot = wrap(this.invSlot + 1, SLOT_KEYS().length); this.invSel = 0; moved = true; }
+      if (input.wasPressed('filter') && tab === 'core') { this.invArch = wrap(this.invArch + 1, ARCH_KEYS().length); this.invSel = 0; moved = true; }
+      if (input.wasPressed('filter') && tab === 'wear') { this.invSlot = wrap(this.invSlot + 1, SLOT_KEYS().length); this.invSel = 0; moved = true; }
       if (n) {
         if (input.wasPressed('left')) { this.invSel = Math.max(0, this.invSel - 1); moved = true; }
         if (input.wasPressed('right')) { this.invSel = Math.min(n - 1, this.invSel + 1); moved = true; }

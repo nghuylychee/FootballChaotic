@@ -56,7 +56,7 @@ window.SFC = window.SFC || {};
   // màn PLAY: tab RANKED (page 'party') · PRIVATE MATCH (page 'online' / 'join' / 'lobby') — kiểu Rocket League
   const PLAY_PAGES = ['party', 'online', 'join', 'lobby'];
   // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, TÚI ĐỒ
-  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'privacy', 'ach', 'road'];
+  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'privacy', 'controls', 'ach', 'road'];
   // trang không có logo, tiêu đề là 1 dòng ngang cả màn như SHOP (NHÂN VẬT thêm LV / XP / vàng bên phải)
   const HEAD_PAGES = ['char', 'ults', 'attrs', 'look', 'settings', 'display', 'test'];
   const WALLET_PAGES = ['char', 'ults', 'attrs', 'look'];
@@ -502,7 +502,7 @@ window.SFC = window.SFC || {};
       if (play) { this.el.innerHTML = this.renderPrivate(items); this.bindAvatars(); return; }
       if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); this.bindAvatars(); return; }
       if (this.page === 'privacy') { this.el.innerHTML = this.renderPrivacy(); this.addBack(); return; }
-      if (this.page === 'controls') { this.el.innerHTML = CV().render(); this.bindAvatars(); return; }
+      if (this.page === 'controls') { this.el.innerHTML = CV().render(); this.addBack(); return; }
       if (G().pages.includes(this.page)) { G().render(this); this.addBack(); this.bindAvatars(); return; }
       if (TM().pages.includes(this.page)) { TM().render(this); this.bindAvatars(); return; }
       if (AU().pages.includes(this.page)) { AU().render(this); this.addBack(); return; }
@@ -638,7 +638,9 @@ window.SFC = window.SFC || {};
       const tabs = pages.map((pg, i) => `<button class="tab ${i === this.tutPage ? 'sel' : ''}" data-tab="${i}">${esc(pg.title)}</button>`).join('');
       let body = '';
       if (p.lines) {
-        body += p.lines.map((l) => (l[0] === '#' ? `<h4>${esc(l.slice(1).trim())}</h4>` : `<p>${esc(l)}</p>`)).join('');
+        // {action} = phím đang gán (người chơi đổi phím ở SETTINGS > CONTROLS thì chữ hướng dẫn đổi theo)
+        const keys = (l) => l.replace(/\{(\w+)\}/g, (m, a) => (SFC.Input.bindings[a] ? SFC.Input.label(a) : m));
+        body += p.lines.map((l) => (l[0] === '#' ? `<h4>${esc(keys(l.slice(1).trim()))}</h4>` : `<p>${esc(keys(l))}</p>`)).join('');
       }
       if (p.type === 'controls') {
         const h = SFC.Input.helpSet();
@@ -904,7 +906,7 @@ window.SFC = window.SFC || {};
       const K = (a, kb) => SFC.Input.key(a, kb);
       const tab = (id, label, page, lock) => `<button class="pt-tab ${on === id ? 'on' : ''}" data-ptab="${page}">${lock ? PX().ui('lock', 'sm') + ' ' : ''}${esc(label)}</button>`;
       return `<div class="pt-tabs">
-          <div class="pt-tabrow"><kbd>${esc(K('switch', 'Q'))}</kbd>${tab('ranked', _t('RANKED'), 'party')}${tab('private', _t('PRIVATE MATCH'), 'online', SFC_DEMO)}<kbd>${esc(K('sprint', 'E'))}</kbd></div>
+          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('ranked', _t('RANKED'), 'party')}${tab('private', _t('PRIVATE MATCH'), 'online', SFC_DEMO)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
           ${sub}
         </div>`;
     },
@@ -1421,6 +1423,7 @@ window.SFC = window.SFC || {};
 
     input(input) {
       if (this.quitAsk) return this.quitInput(input);
+      if (this.page === 'controls' && CV().capturing) return CV().input(this, input);   // đang chờ phím mới: Esc / B là phím được gán
       // phòng chờ: chỉ Esc mới rời phòng (tránh bấm nhầm Backspace)
       const back = input.wasPressed('pause') || (this.page !== 'lobby' && input.wasPressed('back'));
       if (back) { SFC.Audio.menu(); return this.back(); }
@@ -1445,8 +1448,8 @@ window.SFC = window.SFC || {};
       if (!items.length) return;
       // màn PLAY: Q / E (LB / RB) đổi tab RANKED · PRIVATE MATCH (đang gõ mã phòng / chat: phím đi vào ô chữ, không tới đây)
       if (PLAY_PAGES.includes(this.page) && !SFC.Social.chatWith) {
-        if (input.wasPressed('switch')) return this.playTab(-1);
-        if (input.wasPressed('sprint')) return this.playTab(1);
+        if (input.wasPressed('tabPrev')) return this.playTab(-1);
+        if (input.wasPressed('tabNext')) return this.playTab(1);
       }
       if (PLAY_PAGES.includes(this.page)) return this.playInput(input, items);
       // SỔ TUYỆT KỸ: bảng ô -> ←↑↓→ đi theo vị trí trên màn hình

@@ -414,7 +414,6 @@ SFC.I18n.add({
     'Menus: {confirm} confirm · {back} back · {pick} pick Core · {reroll} reroll 3 Cores': 'Menús: {confirm} confirmar · {back} volver · {pick} elegir Core · {reroll} cambiar los 3 Cores',
     'Menus: D-pad / stick to move · {confirm} confirm · {back} back · Teammate on the ball: {call} call for a pass':
       'Menús: cruceta / stick para moverte · {confirm} confirmar · {back} volver · Compañero con el balón: {call} pedir el pase',
-    '←→ switch view · {back} back': '←→ cambiar vista · {back} volver',
     'Move': 'Moverse',
     'Sprint': 'Correr',
     'Ground pass': 'Pase raso',
@@ -429,6 +428,14 @@ SFC.I18n.add({
     'Hard attack · dropkick': 'Ataque fuerte · voladora',
     'Light attack · punch': 'Ataque ligero · puñetazo',
     'Dash': 'Embestida',
+    'RESET TO DEFAULT': 'RESTABLECER POR DEFECTO',
+    'Press a key for {action} · {cancel} cancel': 'Pulsa una tecla para {action} · {cancel} cancelar',
+    'Press a button for {action} · {cancel} cancel': 'Pulsa un botón para {action} · {cancel} cancelar',
+    'Swapped with {action}': 'Intercambiado con {action}',
+    '{key} is kept for {action}': '{key}: reservado para {action}',
+    'That key can\'t be used': 'No se puede usar esa tecla',
+    '↑↓←→ select · {ok} change key · {tabs} keyboard / controller · {back} back': '↑↓←→ elegir · {ok} cambiar tecla · {tabs} teclado / mando · {back} volver',
+    'Switch player': 'Cambiar jugador',
 
     /* ===== Chữ bay trong trận (dịch lúc vẽ; tiếng tượng thanh giữ nguyên) ===== */
     'WOODWORK': '¡AL PALO!',

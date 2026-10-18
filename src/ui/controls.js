@@ -1,132 +1,92 @@
-/* Controls view — trang Settings > Controls: hình tay cầm (Xbox / PlayStation) có chú thích từng nút,
- * và hình bàn phím tô màu các phím dùng trong game. Tự sinh từ controls.config.js (bindings + legend),
- * nên đổi phím trong config thì hình vẽ đổi theo.
+/* Controls view — trang Settings > Controls: ĐỔI PHÍM các action trong trận (bàn phím / tay cầm).
+ * Trên: hình bàn phím / tay cầm, phím của action đang chọn sáng lên. Dưới: danh sách action 2 cột, chọn + Enter (hoặc bấm chuột)
+ * rồi nhấn phím / nút mới. Phím đã thuộc action khác -> 2 action đổi phím cho nhau (Settings.rebind).
+ * Danh sách action đổi được: controls.remap · tên action: controls.legend. Phím menu (confirm, back, tabPrev...) cố định.
  */
 window.SFC = window.SFC || {};
 
 (function () {
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const CFG = () => SFC_CONFIG.controls;
-  const VIEWS = [['kb', 'KEYBOARD'], ['xbox', 'XBOX'], ['ps', 'PLAYSTATION']];   // tên tab: KEYBOARD dịch lúc vẽ, tên hãng giữ nguyên
+  const I = () => SFC.Input;
+  const TABS = ['kb', 'xbox', 'ps'];   // XBOX / PLAYSTATION: cùng 1 bộ phím tay cầm, chỉ khác nhãn nút
   const DIRS = ['up', 'down', 'left', 'right'];
+  const ARROW = { up: '↑', down: '↓', left: '←', right: '→' };
   const wrap = (v, n) => ((v % n) + n) % n;
+  const MSG_HIDE = 2500;   // (ms) thông báo đổi phím tự ẩn
 
-  // các action gán vào 1 mã phím / nút (chỉ những action có chú thích trong legend = dùng trong trận)
-  function actionsOf(codes) {
-    const B = CFG().bindings, L = CFG().legend, out = [];
-    if (DIRS.some((d) => (B[d] || []).some((c) => codes.includes(c)))) out.push('move');
-    for (const a of Object.keys(L)) if (a !== 'move' && (B[a] || []).some((c) => codes.includes(c))) out.push(a);
-    return out;
-  }
+  // 2 cột: di chuyển + chung | chuyền / sút / kỹ năng. 'move' = dòng khoá (tay cầm: cần analog / D-pad), 'reset' = về mặc định.
+  // Đổi người (switch) tạm ẩn: mọi trận hiện khoá người chơi vào 1 cầu thủ (opts.solo) nên phím không làm gì
+  const COLS = {
+    kb:  [['up', 'down', 'left', 'right', 'sprint', 'ultimate'], ['pass', 'through', 'lob', 'shoot', 'skill', 'reset']],
+    pad: [['move', 'sprint', 'skill', 'ultimate'], ['pass', 'through', 'lob', 'shoot', 'reset']],
+  };
+  const pickable = (id) => id !== 'move';
 
-  // dòng chú thích: [tấn công, phòng ngự]
-  function legendLines(acts) {
-    const L = CFG().legend;
-    const atk = acts.map((a) => L[a].atk).filter(Boolean).join(' / ');
-    const def = acts.map((a) => L[a].def).filter(Boolean).join(' / ');
-    return { atk, def };
+  // màu phím trên hình: sel = action đang chọn · play = dùng trong trận · sys = menu / hệ thống
+  function keyKind(code, sel) {
+    if (sel && code === sel) return 'sel';
+    const B = CFG().bindings, R = CFG().remap;
+    const acts = Object.keys(B).filter((a) => B[a].includes(code));
+    if (!acts.length) return '';
+    return acts.some((a) => R.kb.includes(a) || R.pad.includes(a)) ? 'play' : 'sys';
   }
 
   /* ================= TAY CẦM ================= */
-  // toạ độ trong khung tay cầm (228 x 150); vị trí cần / D-pad khác nhau giữa Xbox và PlayStation
-  const ANCHORS = {
-    xbox: { LS: [58, 58], DPAD: [84, 96], RS: [144, 96], VIEW: [96, 52], MENU: [132, 52], HOME: [114, 36] },
-    ps:   { DPAD: [56, 60], LS: [84, 98], RS: [144, 98], VIEW: [78, 38], MENU: [150, 38], HOME: [114, 78] },
+  // nét trắng trên nền tối (kiểu Hollow Knight): cần analog 2 vòng, D-pad chữ thập, nút mặt tròn trơn,
+  // vai (LB / RB) là dải ôm mép trên thân, cò (LT / RT) là mấu bo tròn ngồi trên vai. Toạ độ theo khung ~550 x 390
+  const GEO = {
+    xbox: {
+      view: '8 0 534 398',
+      body: 'M275 64 C240 64 220 56 190 54 C140 50 100 56 78 74 C52 96 36 150 28 210 C20 270 18 330 36 362 C52 390 92 392 112 368 C132 344 150 300 190 286 C220 276 250 270 275 270 C300 270 330 276 360 286 C400 300 418 344 438 368 C458 392 498 390 514 362 C532 330 530 270 522 210 C514 150 498 96 472 74 C450 56 410 50 360 54 C330 56 310 64 275 64 Z',
+      LB: 'M82 72 C96 46 130 33 172 33 C194 33 205 39 208 53 C176 50 134 50 108 58 C98 62 90 66 82 72 Z',
+      RB: 'M468 72 C454 46 420 33 378 33 C356 33 345 39 342 53 C374 50 416 50 442 58 C452 62 460 66 468 72 Z',
+      LT: 'M117 44 L120 18 C121 11 125 7 132 7 L146 7 C153 7 157 11 158 18 L161 40 Z',
+      RT: 'M433 44 L430 18 C429 11 425 7 418 7 L404 7 C397 7 393 11 392 18 L389 40 Z',
+      LS: [135, 128, 45, 27], RS: [338, 210, 46, 27], DPAD: [205, 212, 0, 24, 72],
+      VIEW: [220, 128], MENU: [322, 128], small: 'sq', HOME: [272, 130, 26], FACE: [408, 126, 18, 38],
+    },
+    ps: {
+      view: '4 0 542 398',
+      body: 'M275 58 L380 58 C440 56 480 70 500 100 C520 140 540 240 536 320 C534 370 500 392 470 372 C446 356 432 316 414 298 C402 290 384 286 360 286 L190 286 C166 286 148 290 136 298 C118 316 104 356 80 372 C50 392 16 370 14 320 C10 240 30 140 50 100 C70 70 110 56 170 58 L275 58 Z',
+      LB: 'M58 98 C72 62 106 40 160 38 L198 38 L198 58 L170 58 C116 57 80 68 58 98 Z',
+      RB: 'M492 98 C478 62 444 40 390 38 L352 38 L352 58 L380 58 C434 57 470 68 492 98 Z',
+      LT: 'M107 46 L110 18 C111 11 116 7 123 7 L147 7 C154 7 159 11 160 18 L163 40 Z',
+      RT: 'M443 46 L440 18 C439 11 434 7 427 7 L403 7 C396 7 391 11 390 18 L387 40 Z',
+      LS: [205, 214, 42, 25], RS: [345, 214, 42, 25], DPAD: [118, 138, 0, 26, 84],
+      VIEW: [176, 92], MENU: [374, 92], small: 'pill', HOME: [275, 196, 13], FACE: [430, 138, 19, 40], PAD: [196, 64, 158, 88],
+    },
   };
-  const FACE = [170, 60], FACE_GAP = 14;
-  const FACE_COLORS = {
-    xbox: { A: '#6cc24a', B: '#e2453c', X: '#3a8fe0', Y: '#f2c230' },
-    ps:   { A: '#8fb0f0', B: '#f0636b', X: '#e58ad1', Y: '#3fc6a4' },
-  };
-  // các nút có chú thích: id, mã phím ảo, toạ độ, vị trí nhãn (L / R = cột trái / phải · TL / TR = phía trên)
-  function padButtons(style) {
-    const A = ANCHORS[style];
-    const [fx, fy] = FACE;
-    return [
-      { id: 'LT', codes: ['Pad.LT'], at: [48, 6], side: 'L' },
-      { id: 'LB', codes: ['Pad.LB'], at: [50, 19], side: 'L' },
-      { id: 'Back', codes: ['Pad.Back'], at: A.VIEW, side: 'TL' },
-      { id: 'LS', codes: ['Pad.StickUp', 'Pad.StickDown', 'Pad.StickLeft', 'Pad.StickRight', 'Pad.LS'], at: A.LS, side: 'L', chip: style === 'ps' ? 'L' : 'LS' },
-      { id: 'DPAD', codes: ['Pad.Up', 'Pad.Down', 'Pad.Left', 'Pad.Right'], at: A.DPAD, side: 'L', chip: '✚' },
-      { id: 'RT', codes: ['Pad.RT'], at: [180, 6], side: 'R' },
-      { id: 'RB', codes: ['Pad.RB'], at: [178, 19], side: 'R' },
-      { id: 'Start', codes: ['Pad.Start'], at: A.MENU, side: 'TR' },
-      { id: 'Y', codes: ['Pad.Y'], at: [fx, fy - FACE_GAP], side: 'R', face: true },
-      { id: 'B', codes: ['Pad.B'], at: [fx + FACE_GAP, fy], side: 'R', face: true },
-      { id: 'X', codes: ['Pad.X'], at: [fx - FACE_GAP, fy], side: 'R', face: true },
-      { id: 'A', codes: ['Pad.A'], at: [fx, fy + FACE_GAP], side: 'R', face: true },
-      { id: 'RS', codes: ['Pad.RS'], at: A.RS, side: 'R', chip: style === 'ps' ? 'R' : 'RS' },
-    ];
-  }
 
-  const W = 596, H = 250;          // khung SVG (vừa thân trang 640x360)
-  const OX = 184, OY = 50;         // vị trí tay cầm trong khung
-  const BODY = 'M50 24 H178 C204 24 216 38 222 64 L230 114 C234 138 214 152 198 140 L172 114 H56 L30 140 C14 152 -6 138 -2 114 L6 64 C12 38 24 24 50 24 Z';
-
-  function padSvg(style) {
-    const P = SFC.Pad, A = ANCHORS[style], colors = FACE_COLORS[style];
-    const btns = padButtons(style).map((b) => Object.assign(b, { acts: actionsOf(b.codes) })).filter((b) => b.acts.length);
-
-    // nhãn: 2 cột trái / phải xếp theo y của nút (ít đường chéo nhau); View / Menu nhỏ ở giữa -> nhãn phía trên tay cầm
-    const lines = [], labels = [];
-    const label = (b, x, y, left) => {
-      const chip = b.chip || P.label('Pad.' + b.id, style);
-      const sym = /[^\x00-\x7f]/.test(chip);   // ✕ ○ □ △ ✚: font to hơn cho dễ nhìn
-      const cw = sym ? 18 : Math.max(16, chip.length * 5 + 8);
-      const cx = left ? x - cw : x;
-      const { atk, def } = legendLines(b.acts);
-      const fill = b.face ? colors[b.id] : null;
-      const tx = left ? cx - 4 : cx + cw + 4, anchor = left ? 'end' : 'start';
-      const two = atk && def;
-      const text = [
-        // nút 2 công dụng: ATK (đỏ) / DEF (xanh) mỗi dòng một; chỉ tấn công: chữ trắng không nhãn; chỉ phòng ngự: DEF (xanh)
-        atk ? `<text class="cv-atk${two ? ' both' : ''}" x="${tx}" y="${two ? y - 1 : y + 4}" text-anchor="${anchor}">${two ? `<tspan class="cv-tag">${esc(SFC.t('ATK'))} </tspan>` : ''}${esc(atk)}</text>` : '',
-        def ? `<text class="cv-def" x="${tx}" y="${two ? y + 10 : y + 4}" text-anchor="${anchor}"><tspan class="cv-tag">${esc(SFC.t('DEF'))} </tspan>${esc(def)}</text>` : '',
-      ].join('');
-      labels.push(`<g class="cv-label"><rect class="cv-chip" x="${cx}" y="${y - 7}" width="${cw}" height="14" rx="2"${fill ? ` style="stroke:${fill}"` : ''}/>
-        <text class="cv-chip-t${sym ? ' sym' : ''}" x="${cx + cw / 2}" y="${y + (sym ? 4 : 3)}" text-anchor="middle"${fill ? ` style="fill:${fill}"` : ''}>${esc(chip)}</text>${text}</g>`);
+  // sel = mã nút của action đang chọn ('Pad.X') -> nút đó sáng lên
+  function padSvg(style, sel) {
+    const G = GEO[style];
+    const k = (id) => keyKind('Pad.' + id, sel);
+    const shape = (id) => `<path class="cv-line ${k(id)}" d="${G[id]}"/>`;
+    const stick = (id) => {
+      const [x, y, r1, r2] = G[id];
+      return `<g class="${k(id)}"><circle class="cv-line" cx="${x}" cy="${y}" r="${r1}"/><circle class="cv-line thin" cx="${x}" cy="${y}" r="${r2}"/></g>`;
     };
-    for (const side of ['L', 'R']) {
-      // cùng độ cao: nút xa tâm hơn (B) xếp trước nút gần tâm (X)
-      const list = btns.filter((b) => b.side === side).sort((a, b) => a.at[1] - b.at[1] || b.at[0] - a.at[0]);
-      const top = 22, bottom = H - 14;
-      list.forEach((b, i) => {
-        const y = Math.round(top + ((bottom - top) * (i + 0.5)) / list.length);
-        const ax = OX + b.at[0], ay = OY + b.at[1];
-        const edge = side === 'L' ? 170 : W - 170;
-        lines.push(`<polyline class="cv-lead" points="${ax},${ay} ${edge + (side === 'L' ? 6 : -6)},${y} ${edge},${y}"/>`);
-        label(b, edge, y, side === 'L');
-      });
-    }
-    for (const b of btns.filter((x) => x.side[0] === 'T')) {
-      const ax = OX + b.at[0], ay = OY + b.at[1], y = 20, left = b.side === 'TL';
-      lines.push(`<polyline class="cv-lead" points="${ax},${ay} ${ax},${y + 7}"/>`);
-      label(b, left ? ax + 8 : ax - 8, y, left);
-    }
-
-    // thân tay cầm
-    const [fx, fy] = FACE;
-    const stick = ([x, y]) => `<circle class="cv-well" cx="${x}" cy="${y}" r="14"/><circle class="cv-stick" cx="${x}" cy="${y}" r="10"/><circle class="cv-stick-top" cx="${x}" cy="${y}" r="6"/>`;
-    const dpad = ([x, y]) => `<path class="cv-dpad" d="M${x - 4} ${y - 12} h8 v8 h8 v8 h-8 v8 h-8 v-8 h-8 v-8 h8 Z"/>`;
+    const [dx, dy, dr, arm, len] = G.DPAD, a = arm / 2, l = len / 2;
+    const cross = `<path class="cv-line thin" d="M${dx - a} ${dy - l} h${arm} v${l - a} h${l - a} v${arm} h${-(l - a)} v${l - a} h${-arm} v${-(l - a)} h${-(l - a)} v${-arm} h${l - a} Z"/>`;
+    const dpad = `<g class="play">${dr ? `<circle class="cv-line" cx="${dx}" cy="${dy}" r="${dr}"/>` : ''}${cross}</g>`;
+    const [fx, fy, fr, gap] = G.FACE;
     const face = ['Y', 'B', 'X', 'A'].map((id) => {
-      const [x, y] = { Y: [fx, fy - FACE_GAP], B: [fx + FACE_GAP, fy], X: [fx - FACE_GAP, fy], A: [fx, fy + FACE_GAP] }[id];
-      return `<circle class="cv-face" cx="${x}" cy="${y}" r="7" style="stroke:${colors[id]}"/><text class="cv-face-t${style === 'ps' ? ' sym' : ''}" x="${x}" y="${y + (style === 'ps' ? 4 : 3)}" text-anchor="middle" style="fill:${colors[id]}">${esc(P.label('Pad.' + id, style))}</text>`;
+      const [x, y] = { Y: [fx, fy - gap], B: [fx + gap, fy], X: [fx - gap, fy], A: [fx, fy + gap] }[id];
+      return `<circle class="cv-line ${k(id)}" cx="${x}" cy="${y}" r="${fr}"/>`;
     }).join('');
-    const small = ([x, y]) => `<rect class="cv-small" x="${x - 6}" y="${y - 3}" width="12" height="6" rx="3"/>`;
-    // vỏ (dưới đường chú thích) · nút bấm (trên đường chú thích, để đường như mọc ra từ dưới nút)
-    const shell = `
-      <rect class="cv-trig" x="30" y="0" width="40" height="16" rx="5"/><rect class="cv-trig" x="158" y="0" width="40" height="16" rx="5"/>
-      <path class="cv-bump" d="M24 26 C28 16 40 13 76 14 L78 24 Z"/><path class="cv-bump" d="M204 26 C200 16 188 13 152 14 L150 24 Z"/>
-      <path class="cv-body" d="${BODY}"/>
-      ${style === 'ps' ? '<rect class="cv-pad" x="92" y="28" width="44" height="30" rx="3"/>' : ''}
-      <circle class="cv-home" cx="${A.HOME[0]}" cy="${A.HOME[1]}" r="6"/>`;
-    const controls = `${small(A.VIEW)}${small(A.MENU)}${stick(A.LS)}${stick(A.RS)}${dpad(A.DPAD)}${face}`;
-
-    return `<svg class="cv" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-      <g transform="translate(${OX} ${OY})">${shell}</g>
-      ${lines.join('')}
-      <g transform="translate(${OX} ${OY})">${controls}</g>
-      ${labels.join('')}
+    // View / Menu (Xbox: ô vuông bo nhỏ) · Create / Options (PlayStation: nút dài dọc)
+    const small = (id) => {
+      const [x, y] = G[id === 'Back' ? 'VIEW' : 'MENU'];
+      return G.small === 'sq' ? `<rect class="cv-line thin ${k(id)}" x="${x - 9}" y="${y - 9}" width="18" height="18" rx="5"/>` : `<rect class="cv-line thin ${k(id)}" x="${x - 6}" y="${y - 13}" width="12" height="26" rx="6"/>`;
+    };
+    const [hx, hy, hr] = G.HOME;
+    const pad = G.PAD ? `<rect class="cv-line thin" x="${G.PAD[0]}" y="${G.PAD[1]}" width="${G.PAD[2]}" height="${G.PAD[3]}" rx="14"/>` : '';
+    return `<svg class="cv ${style}" viewBox="${G.view}" xmlns="http://www.w3.org/2000/svg">
+      ${shape('LT')}${shape('RT')}${shape('LB')}${shape('RB')}
+      <path class="cv-line" d="${G.body}"/>
+      ${pad}<circle class="cv-line" cx="${hx}" cy="${hy}" r="${hr}"/>${small('Back')}${small('Start')}
+      ${stick('LS')}${stick('RS')}${dpad}${face}
     </svg>`;
   }
 
@@ -141,105 +101,213 @@ window.SFC = window.SFC || {};
   ];
   const ARROWS = [['ArrowUp', '↑', 1, 3], ['ArrowLeft', '←', 0, 4], ['ArrowDown', '↓', 1, 4], ['ArrowRight', '→', 2, 4]];
   const U = 25, PITCH = 28, KH = 5 * PITCH;
-  const KB_LABEL = {};
-  for (const row of KB_ROWS) for (const [code, label] of row) KB_LABEL[code] = label;
-  for (const [code, label] of ARROWS) KB_LABEL[code] = label;
-  const kbName = (code) => KB_LABEL[code] || code.replace(/^(Key|Digit|Numpad)/, '');
-  const kbCodes = (a) => (CFG().bindings[a] || []).filter((c) => !c.startsWith('Pad.'));
-  const kbKeys = (a, n = 2) => kbCodes(a).slice(0, n).map((c) => `<kbd>${esc(kbName(c))}</kbd>`).join('');
+  const kbKeys = (a, n = 2) => (CFG().bindings[a] || []).filter((c) => !c.startsWith('Pad.')).slice(0, n).map((c) => `<kbd>${esc(I().keyName(c))}</kbd>`).join('');
 
-  // màu phím: play = dùng trong trận (tấn công hoặc phòng ngự) · sys = menu / hệ thống
-  function keyKind(code) {
-    const B = CFG().bindings, L = CFG().legend;
-    const acts = Object.keys(B).filter((a) => B[a].includes(code));
-    if (!acts.length) return { kind: '', acts };
-    const play = acts.filter((a) => DIRS.includes(a) || (L[a] && (L[a].atk || L[a].def) && !['pause', 'mute'].includes(a)));
-    if (play.length) return { kind: 'play', acts };
-    return { kind: 'sys', acts };
-  }
-
-  function kbSvg() {
+  function kbSvg(sel) {
     const kbW = 15 * PITCH + 0.5 * PITCH + 3 * PITCH;
-    const ox = Math.round((W - kbW) / 2), keys = [];
+    const keys = [];
     const key = (code, label, x, y, w) => {
-      const { kind, acts } = keyKind(code);
       const kw = w * PITCH - (PITCH - U);
-      keys.push(`<g class="kk ${kind}"><title>${esc(acts.length ? acts.join(', ') : label)}</title>
-        <rect x="${x}" y="${y}" width="${kw}" height="${U}" rx="2"/>
+      keys.push(`<g class="kk ${keyKind(code, sel)}"><rect x="${x}" y="${y}" width="${kw}" height="${U}" rx="2"/>
         <text x="${x + kw / 2}" y="${y + U / 2 + 4}" text-anchor="middle">${esc(label)}</text></g>`);
     };
     KB_ROWS.forEach((row, r) => {
-      let x = ox;
+      let x = 0;
       for (const [code, label, w = 1] of row) { key(code, label, x, r * PITCH + 2, w); x += w * PITCH; }
     });
-    const ax = ox + 15.5 * PITCH;
+    const ax = 15.5 * PITCH;
     for (const [code, label, c, r] of ARROWS) key(code, label, ax + c * PITCH, r * PITCH + 2, 1);
-    return `<svg class="kv" viewBox="${ox - 2} 0 ${kbW + 4} ${KH + 2}" xmlns="http://www.w3.org/2000/svg">${keys.join('')}</svg>`;
-  }
-
-  // chú thích bàn phím: cùng nội dung legend với tay cầm, mỗi action một ô (phím · tấn công · phòng ngự)
-  function kbLegend() {
-    const L = CFG().legend;
-    return Object.keys(L).map((a) => {
-      const keys = a === 'move' ? `<kbd>${DIRS.map((d) => esc(kbName(kbCodes(d)[0] || ''))).join('')}</kbd>` : kbKeys(a);
-      if (a !== 'move' && !kbCodes(a).length) return '';
-      const { atk, def } = legendLines([a]);
-      const ATK = esc(SFC.t('ATK')), DEF = esc(SFC.t('DEF'));
-      return `<div class="kl"><span class="kl-k">${keys}</span><span class="kl-t">${atk ? (def ? `<b class="both"><em>${ATK}</em> ${esc(atk)}</b>` : `<b>${esc(atk)}</b>`) : ''}${def ? `<i><em>${DEF}</em> ${esc(def)}</i>` : ''}</span></div>`;
-    }).join('');
+    return `<svg class="kv" viewBox="-2 0 ${kbW + 4} ${KH + 2}" xmlns="http://www.w3.org/2000/svg">${keys.join('')}</svg>`;
   }
 
   /* ================= TRANG ================= */
   SFC.ControlsView = {
     view: 'kb',
+    sel: 0,          // chỉ số trong order() (đọc theo cột: hết cột trái tới cột phải)
+    cap: null,       // đang chờ phím mới: action
+    msg: '', msgErr: false, msgAt: 0,
 
     // mở trang: hiện đúng thiết bị đang dùng
-    open() { this.view = SFC.Input.device === 'pad' ? SFC.Pad.style : 'kb'; },
-
-    render() {
-      const _t = SFC.t;
-      const tabs = VIEWS.map(([id, name]) => `<button class="tab ${id === this.view ? 'sel' : ''}" data-ctab="${id}">${id === 'kb' ? esc(_t('KEYBOARD')) : name}</button>`).join('');
-      let body;
-      if (this.view === 'kb') {
-        body = `${kbSvg()}
-          <div class="kv-key"><span class="play">${esc(_t('In match'))}</span><span class="sys">${esc(_t('Menus & system'))}</span></div>
-          <div class="kv-legend">${kbLegend()}
-            <div class="kl"><span class="kl-k">${kbKeys('pass', 1)}${kbKeys('through', 1)}${kbKeys('lob', 1)}</span><span class="kl-t"><b>${esc(_t('Teammate on the ball:'))}</b><b>${esc(_t('call for a pass'))}</b></span></div></div>
-          <div class="cv-note">${_t(SFC_CONFIG.cores.draft.rerollsPerRound ? 'Menus: {confirm} confirm · {back} back · {pick} pick Core · {reroll} reroll 3 Cores' : 'Menus: {confirm} confirm · {back} back · {pick} pick Core', {
-            confirm: kbKeys('confirm'), back: kbKeys('pause', 1) + kbKeys('back', 1), pick: kbKeys('pick1', 1) + kbKeys('pick2', 1) + kbKeys('pick3', 1), reroll: kbKeys('reroll') })}</div>`;
-      } else {
-        const lb = (a) => {
-          const c = (CFG().bindings[a] || []).find((x) => x.startsWith('Pad.'));
-          return `<kbd>${c ? esc(SFC.Pad.label(c, this.view)) : '?'}</kbd>`;
-        };
-        body = `${padSvg(this.view)}
-          <div class="cv-note">${_t('Menus: D-pad / stick to move · {confirm} confirm · {back} back · Teammate on the ball: {call} call for a pass', {
-            confirm: lb('confirm'), back: lb('back'), call: `${lb('pass')} ${lb('through')} ${lb('lob')}` })}</div>`;
-      }
-      return `
-        <div class="tut-head"><div class="m-title">${esc(_t('CONTROLS'))}</div><div class="tabs">${tabs}</div></div>
-        <div class="tut-body ctl-body">${body}</div>
-        <div class="m-hint">${_t('←→ switch view · {back} back', { back: SFC.Input.key('back', 'Esc') })}</div>`;
+    open() {
+      this.view = I().device === 'pad' ? 'pad' : 'kb';
+      this.padStyle = SFC.Pad.style || 'xbox';
+      this.sel = this.order().indexOf(this.view === 'pad' ? 'sprint' : 'up');
+      this.stop();
+      this.msg = '';
     },
 
+    order() { return COLS[this.view].flat(); },
+    // [cột, hàng] của 1 ô trong order()
+    cell(i) {
+      const [a] = COLS[this.view];
+      return i < a.length ? [0, i] : [1, i - a.length];
+    },
+    style() { return this.padStyle || 'xbox'; },
+    tab() { return this.view === 'kb' ? 'kb' : this.style(); },
+    // nhãn phím đang gán cho action trên thiết bị đang xem
+    keyLabel(a) {
+      const c = I().codeOf(a, this.view);
+      if (!c) return '—';
+      return this.view === 'pad' ? SFC.Pad.label(c, this.style()) : I().keyName(c);
+    },
+    actName(a) {
+      const L = CFG().legend;
+      return DIRS.includes(a) ? `${L.move.atk} ${ARROW[a]}` : L[a].atk;
+    },
+
+    row(id, i) {
+      const _t = SFC.t, sel = i === this.sel, cls = ['rm-row'];
+      if (sel) cls.push('sel');
+      if (id === 'reset') {
+        if (SFC.Settings.bindsChanged(this.view)) cls.push('on');
+        return `<div class="${cls.join(' ')} rm-reset" data-rm="${i}"><b>${esc(_t('RESET TO DEFAULT'))}</b></div>`;
+      }
+      if (id === 'move') {
+        return `<div class="rm-row lock"><kbd>${esc(this.style() === 'ps' ? 'L' : 'LS')}</kbd><kbd>✚</kbd><b>${esc(CFG().legend.move.atk)}</b></div>`;
+      }
+      const def = DIRS.includes(id) ? '' : CFG().legend[id].def;
+      const code = I().codeOf(id, this.view), dflt = (I().defaults[id] || []).find((c) => c.startsWith('Pad.') === (this.view === 'pad'));
+      if (code !== dflt) cls.push('chg');
+      if (this.cap === id) cls.push('cap');
+      const key = this.cap === id ? '…' : this.keyLabel(id);
+      return `<div class="${cls.join(' ')}" data-rm="${i}"><kbd${this.view === 'pad' && this.style() === 'ps' && /[^\x00-\x7f]/.test(key) ? ' class="sym"' : ''}>${esc(key)}</kbd><b>${esc(this.actName(id))}</b>${def ? `<i><em>${esc(_t('DEF'))}</em> ${esc(def)}</i>` : ''}</div>`;
+    },
+
+    render() {
+      const _t = SFC.t, K = (a, kb) => esc(I().key(a, kb));
+      const tabs = TABS.map((id) => `<button class="tab ${id === this.tab() ? 'sel' : ''}" data-ctab="${id}">${esc(id === 'kb' ? _t('KEYBOARD') : id === 'ps' ? 'PLAYSTATION' : 'XBOX')}</button>`).join('');
+      const order = this.order(), selId = order[this.sel];
+      const selCode = pickable(selId) && selId !== 'reset' ? I().codeOf(selId, this.view) : null;
+      let i = 0;
+      const cols = COLS[this.view].map((col) => `<div class="rm-col">${col.map((id) => this.row(id, i++)).join('')}</div>`).join('');
+      let pic, note;
+      if (this.view === 'kb') {
+        pic = kbSvg(selCode);
+        note = _t(SFC_CONFIG.cores.draft.rerollsPerRound ? 'Menus: {confirm} confirm · {back} back · {pick} pick Core · {reroll} reroll 3 Cores' : 'Menus: {confirm} confirm · {back} back · {pick} pick Core', {
+          confirm: kbKeys('confirm'), back: kbKeys('pause', 1) + kbKeys('back', 1), pick: kbKeys('pick1', 1) + kbKeys('pick2', 1) + kbKeys('pick3', 1), reroll: kbKeys('reroll') });
+      } else {
+        pic = padSvg(this.style(), selCode);
+        const lb = (a) => { const c = (CFG().bindings[a] || []).find((x) => x.startsWith('Pad.')); return `<kbd>${c ? esc(SFC.Pad.label(c, this.style())) : '?'}</kbd>`; };
+        note = _t('Menus: D-pad / stick to move · {confirm} confirm · {back} back · Teammate on the ball: {call} call for a pass', {
+          confirm: lb('confirm'), back: lb('back'), call: `${lb('pass')} ${lb('through')} ${lb('lob')}` });
+      }
+      // đang chờ phím mới: lời nhắc thay dòng phím menu (dòng m-hint bị ẩn ở mọi màn menu)
+      if (this.cap) {
+        const v = { action: esc(this.actName(this.cap)), cancel: `<kbd>${this.view === 'pad' ? esc(SFC.Pad.label('Pad.Start', this.style())) : 'Esc'}</kbd>` };
+        note = this.view === 'pad' ? _t('Press a button for {action} · {cancel} cancel', v) : _t('Press a key for {action} · {cancel} cancel', v);
+      }
+      const hint = _t('↑↓←→ select · {ok} change key · {tabs} keyboard / controller · {back} back',
+          { ok: K('confirm', 'Enter'), tabs: `${K('tabPrev', 'Q')} / ${K('tabNext', 'E')}`, back: K('back', 'Esc') });
+      const msg = this.msg ? `<div class="m-msg rm-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
+      return `
+        <div class="tut-head"><div class="m-title">${esc(_t('CONTROLS'))}</div><div class="tabs">${tabs}</div></div>
+        <div class="tut-body ctl-body ${this.view}">${pic}
+          <div class="rm-list">${cols}</div>
+          <div class="cv-note${this.cap ? ' cap' : ''}">${note}</div>
+        </div>
+        ${msg}<div class="m-hint">${hint}</div>`;
+    },
+
+    setMsg(menu, text, err = false) { this.msg = text; this.msgErr = err; this.msgAt = performance.now(); menu.render(); },
+
+    /* ---------- đổi phím ---------- */
+    start(menu, id) {
+      this.cap = id;
+      this.msg = '';
+      // bàn phím: bắt phím thô trước khi thành action (Input.textHandler); tay cầm: đọc nút trong input()
+      I().textHandler = (e) => {
+        if (e.repeat) return true;
+        if (e.code === 'Escape') this.stop(menu);
+        else if (this.view === 'kb') this.apply(menu, e.code);
+        return true;
+      };
+      SFC.Audio.menu();
+      menu.render();
+    },
+    stop(menu) {
+      if (I().textHandler && this.cap) I().textHandler = null;
+      this.cap = null;
+      if (menu) menu.render();
+    },
+    apply(menu, code) {
+      const _t = SFC.t, id = this.cap, r = SFC.Settings.rebind(this.view, id, code);
+      if (r.err === 'reserved') return this.setMsg(menu, _t('{key} is kept for {action}', { key: I().codeLabel(code, this.style()), action: CFG().legend[r.by].atk }), true);
+      if (r.err) return this.setMsg(menu, _t("That key can't be used"), true);
+      this.stop();
+      this.msg = '';
+      SFC.Audio.menu();
+      if (r.swap) this.setMsg(menu, _t('Swapped with {action}', { action: this.actName(r.swap) }));
+      else menu.render();
+    },
+    activate(menu, i) {
+      const id = this.order()[i];
+      if (!pickable(id)) return;
+      if (id === 'reset') {
+        if (!SFC.Settings.bindsChanged(this.view)) return;
+        SFC.Settings.resetBinds(this.view);
+        SFC.Audio.menu();
+        return menu.render();
+      }
+      this.start(menu, id);
+    },
+    // tab: 'kb' | 'xbox' | 'ps' — đổi giữa XBOX / PLAYSTATION giữ nguyên dòng đang chọn
+    setView(menu, tab) {
+      if (tab === this.tab()) return;
+      this.stop();
+      const v = tab === 'kb' ? 'kb' : 'pad';
+      if (tab !== 'kb') this.padStyle = tab;
+      if (v !== this.view) { this.view = v; this.sel = this.order().indexOf('sprint'); }
+      this.msg = '';
+      SFC.Audio.menu();
+      menu.render();
+    },
+
+    // gọi trước mọi xử lý phím của menu khi đang chờ phím (Esc / B không thoát trang)
+    get capturing() { return !!this.cap; },
+
     input(menu, input) {
-      const i = VIEWS.findIndex(([id]) => id === this.view);
-      let d = 0;
-      if (input.wasPressed('left')) d = -1;
-      if (input.wasPressed('right')) d = 1;
-      if (!d) return;
-      this.view = VIEWS[wrap(i + d, VIEWS.length)][0];
+      if (this.msg && performance.now() - this.msgAt > MSG_HIDE) { this.msg = ''; menu.render(); }
+      if (this.cap) {
+        if (this.view !== 'pad') return;   // bàn phím: textHandler
+        for (const c of input.pressed) {
+          if (!c.startsWith('Pad.')) continue;
+          if (c === 'Pad.Start') return this.stop(menu);
+          if (/^Pad\.(Stick)?(Up|Down|Left|Right)$/.test(c)) continue;
+          return this.apply(menu, c);
+        }
+        return;
+      }
+      const dt = (input.wasPressed('tabNext') ? 1 : 0) - (input.wasPressed('tabPrev') ? 1 : 0);
+      if (dt) return this.setView(menu, TABS[wrap(TABS.indexOf(this.tab()) + dt, TABS.length)]);
+      if (input.wasPressed('confirm')) return this.activate(menu, this.sel);
+      const order = this.order(), cols = COLS[this.view];
+      let [c, r] = this.cell(this.sel);
+      const dy = (input.wasPressed('down') ? 1 : 0) - (input.wasPressed('up') ? 1 : 0);
+      const dx = (input.wasPressed('right') ? 1 : 0) - (input.wasPressed('left') ? 1 : 0);
+      if (!dx && !dy) return;
+      if (dx) { c = wrap(c + dx, 2); r = Math.min(r, cols[c].length - 1); }
+      if (dy) r = wrap(r + dy, cols[c].length);
+      // dòng khoá (tay cầm: di chuyển) -> bỏ qua theo hướng đang đi
+      if (!pickable(cols[c][r])) r = wrap(r + (dy || 1), cols[c].length);
+      this.sel = c === 0 ? r : cols[0].length + r;
+      if (order[this.sel] == null) this.sel = 0;
       SFC.Audio.menu();
       menu.render();
     },
 
     click(menu, e) {
       const t = e.target.closest('[data-ctab]');
-      if (!t) return false;
-      this.view = t.dataset.ctab;
-      SFC.Audio.menu();
-      menu.render();
-      return true;
+      if (t) { this.setView(menu, t.dataset.ctab); return true; }
+      const row = e.target.closest('[data-rm]');
+      if (row) {
+        if (this.cap) this.stop();
+        this.sel = +row.dataset.rm;
+        this.activate(menu, this.sel);
+        menu.render();
+        return true;
+      }
+      if (this.cap) { this.stop(menu); return true; }
+      return false;
     },
   };
 })();

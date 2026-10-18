@@ -139,7 +139,7 @@ window.SFC = window.SFC || {};
         <div class="gacha-body tm-g"><div class="tm-list">${rows.join('')}</div>${detail}</div>
         <!--msg--><div class="m-hint">${CFG().scout === false
           ? _t('↑↓ select · {ok} set as teammate · {sell} sell · {back} back', { ok: K('confirm', 'Enter'), sell: K('dismantle', 'X'), back: K('back', 'Esc') })
-          : _t('{a} / {b} switch tab · ↑↓ select · {ok} set as teammate · {sell} sell · {back} back', { a: K('switch', 'Q'), b: K('sprint', 'E'), ok: K('confirm', 'Enter'), sell: K('dismantle', 'X'), back: K('back', 'Esc') })}</div>`;
+          : _t('{a} / {b} switch tab · ↑↓ select · {ok} set as teammate · {sell} sell · {back} back', { a: K('tabPrev', 'Q'), b: K('tabNext', 'E'), ok: K('confirm', 'Enter'), sell: K('dismantle', 'X'), back: K('back', 'Esc') })}</div>`;
     },
 
     /* ---------- SCOUT ---------- */
@@ -166,7 +166,7 @@ window.SFC = window.SFC || {};
           </div>
         </div>
         <!--msg--><div class="m-hint">${[
-          _t('{a} / {b} switch tab', { a: K('switch', 'Q'), b: K('sprint', 'E') }),
+          _t('{a} / {b} switch tab', { a: K('tabPrev', 'Q'), b: K('tabNext', 'E') }),
           ready ? _t('{key} view report', { key: K('confirm', 'Enter') }) : sc ? '' : _t('{key} start scouting', { key: K('confirm', 'Enter') }),
           _t('{key} upgrade station', { key: K('restart', 'R') }),
           _t('{key} back', { key: K('back', 'Esc') }),
@@ -278,7 +278,7 @@ window.SFC = window.SFC || {};
     /* ================= PHÍM ================= */
     input(menu, input) {
       if (menu.page === 'report') return this.inputReport(menu, input);
-      if (CFG().scout !== false && (input.wasPressed('switch') || input.wasPressed('sprint'))) { this.tab = 1 - this.tab; menu.msg = ''; SFC.Audio.menu(); return menu.render(); }
+      if (CFG().scout !== false && (input.wasPressed('tabPrev') || input.wasPressed('tabNext'))) { this.tab = 1 - this.tab; menu.msg = ''; SFC.Audio.menu(); return menu.render(); }
       if (this.tab === 0) return this.inputRoster(menu, input);
       return this.inputScout(menu, input);
     },

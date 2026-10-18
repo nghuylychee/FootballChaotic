@@ -59,7 +59,7 @@ window.SFC = window.SFC || {};
           ${state}
         </div>`;
       }).join('');
-      const head = G().header(esc(_t('ACHIEVEMENTS')), `<div class="ac-sum">${PX().ui('trophy', 'sm')} <b>${cnt.done}</b>/${cnt.total}${ready ? ` <span class="ac-new">${esc(_t('{n} TO CLAIM', { n: ready }))}</span>` : ''}</div>`);
+      const head = G().header(esc(_t('ACHIEVEMENTS')), `<div class="ac-sum">${PX().ui('trophy')} <b>${cnt.done}</b>/${cnt.total}${ready ? ` <span class="ac-new">${esc(_t('{n} TO CLAIM', { n: ready }))}</span>` : ''}</div>`, false);
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
       menu.el.innerHTML = `${head}
         <div class="gacha-body ac-g">

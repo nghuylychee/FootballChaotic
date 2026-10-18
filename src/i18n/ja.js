@@ -411,7 +411,6 @@ SFC.I18n.add({
     'call for a pass': 'パスを要求',
     'Menus: {confirm} confirm · {back} back · {pick} pick Core · {reroll} reroll 3 Cores': 'メニュー：{confirm} 決定 · {back} 戻る · {pick} コア選択 · {reroll} 3枚引き直す',
     'Menus: D-pad / stick to move · {confirm} confirm · {back} back · Teammate on the ball: {call} call for a pass': 'メニュー：十字キー / スティックで移動 · {confirm} 決定 · {back} 戻る · 相棒がボール保持中：{call} パスを要求',
-    '←→ switch view · {back} back': '←→ 表示切替 · {back} 戻る',
     'Move': '移動',
     'Sprint': 'ダッシュ',
     'Ground pass': 'グラウンダーパス',
@@ -426,6 +425,14 @@ SFC.I18n.add({
     'Hard attack · dropkick': '強攻撃 · ドロップキック',
     'Light attack · punch': '弱攻撃 · パンチ',
     'Dash': '突進',
+    'RESET TO DEFAULT': '初期設定に戻す',
+    'Press a key for {action} · {cancel} cancel': '{action}に割り当てるキーを押してください · {cancel} キャンセル',
+    'Press a button for {action} · {cancel} cancel': '{action}に割り当てるボタンを押してください · {cancel} キャンセル',
+    'Swapped with {action}': '{action}と入れ替えました',
+    '{key} is kept for {action}': '{key}は{action}専用です',
+    'That key can\'t be used': 'このキーは使えません',
+    '↑↓←→ select · {ok} change key · {tabs} keyboard / controller · {back} back': '↑↓←→ 選択 · {ok} キー変更 · {tabs} キーボード / コントローラー · {back} 戻る',
+    'Switch player': '操作キャラ切替',
 
     /* ===== Chữ bay trong trận (dịch lúc vẽ; tiếng tượng thanh giữ nguyên) ===== */
     'WOODWORK': 'ポスト直撃！',

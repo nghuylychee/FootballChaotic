@@ -20,8 +20,8 @@ SFC_CONFIG.controls = {
     through: ['KeyW', 'Pad.Y'],    // Chọc khe           | ĐỌC CÚ SÚT (trong vòng cấm nhà: giữ, thả đúng lúc đối phương sút)
     lob:     ['KeyA', 'Pad.B'],    // Chuyền bổng        | HARD ATTACK (gồng rồi vung chân đá bay đối thủ)
     shoot:   ['KeyD', 'Pad.X'],    // Sút (giữ để nạp) · sân nhà + còn đối phương phía trước: phá bóng | LIGHT ATTACK (đấm)
-    skill:   ['KeyZ', 'Pad.RT'],   // Skill move / lướt né
-    switch:  ['KeyQ', 'Pad.LB'],   // Đổi cầu thủ
+    skill:   ['KeyQ', 'Pad.RT'],   // Skill move / lướt né
+    switch:  ['KeyZ', 'Pad.LB'],   // Đổi cầu thủ
 
     pause:   ['Escape', 'KeyP', 'Pad.Start'],
     confirm: ['Enter', 'Space', 'Pad.A'],
@@ -34,35 +34,54 @@ SFC_CONFIG.controls = {
     dismantle: ['KeyX', 'Delete', 'Pad.X'], // túi đồ / mở hộp: phân rã món đang chọn
     ultimate: ['KeyX', 'Pad.LT'],    // trong trận: TUYỆT KỸ (khi thanh năng lượng đầy)
     reroll:  ['KeyR', 'Pad.Y'],     // màn DRILL: đổi cả 3 drill · màn chọn Core: đổi cả 3 lá (khi cores.draft.rerollsPerRound > 0)
+
+    // phím menu riêng: đổi phím trong trận không làm đổi điều hướng menu
+    tabPrev: ['KeyQ', 'Pad.LB'],    // đổi tab sang trái (PLAY, cửa hàng, đội)
+    tabNext: ['KeyE', 'Pad.RB'],    // đổi tab sang phải
+    filter:  ['KeyZ', 'Pad.RT'],    // túi đồ: đổi bộ lọc
+    equip:   ['KeyE', 'Pad.RB'],    // mở hộp: mặc đồ vừa ra
   },
 
-  // Bảng hướng dẫn hiển thị trong menu / pause
+  // ĐỔI PHÍM (SETTINGS > CONTROLS, lưu ở Settings.binds): action trong trận người chơi tự gán, mỗi thiết bị 1 phím / nút.
+  // Phím menu (confirm, back, tabPrev...) cố định. Tay cầm: di chuyển luôn là cần analog / D-pad
+  remap: {
+    // switch (đổi người) tạm bỏ: mọi trận hiện khoá người chơi vào 1 cầu thủ, phím không làm gì (thêm lại vào 2 danh sách khi cần)
+    kb:  ['up', 'down', 'left', 'right', 'sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'ultimate'],
+    pad: ['sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'ultimate'],
+    reserved: ['pause', 'mute'],   // phím của các action này không gán cho action khác được (vẫn dùng trong trận)
+    // phím không cho gán: Ctrl / Alt / Meta (tổ hợp phím của trình duyệt, vd. Ctrl+W đóng tab), Tab, F1-F12, Esc
+    blocked: /^(Control|Alt|Meta|OS|ContextMenu|Tab|CapsLock|Escape|F\d+$|NumLock|ScrollLock|Pause|PrintScreen)/,
+    padButtons: ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'LS', 'RS'],
+  },
+
+  // Bảng hướng dẫn hiển thị trong menu / pause (bàn phím). {action} = phím đang gán cho action đó (theo phím người chơi đã đổi),
+  // {action+} = mọi phím của action ('Esc / P'), {move} = cụm phím hướng
   help: {
     attack: [
-      ['← ↑ ↓ →', 'Move'],
-      ['E (hold)', 'Sprint'],
-      ['S (hold)', 'Ground pass'],
-      ['W (hold)', 'Through ball'],
-      ['A (hold)', 'Lob pass'],
-      ['D (hold)', 'Shoot · arrow = shot direction'],
-      ['Z', 'Skill move (dodge)'],
-      ['X', 'Ultimate (when fully charged)'],
+      ['{move}', 'Move'],
+      ['{sprint} (hold)', 'Sprint'],
+      ['{pass} (hold)', 'Ground pass'],
+      ['{through} (hold)', 'Through ball'],
+      ['{lob} (hold)', 'Lob pass'],
+      ['{shoot} (hold)', 'Shoot · arrow = shot direction'],
+      ['{skill}', 'Skill move (dodge)'],
+      ['{ultimate}', 'Ultimate (when fully charged)'],
     ],
     defense: [
-      ['D', 'Light attack (punch)'],
-      ['A', 'Hard attack (dropkick)'],
-      ['W (hold in own box)', 'Catch the shot · release as they kick'],
-      ['Z', 'Dash'],
+      ['{shoot}', 'Light attack (punch)'],
+      ['{lob}', 'Hard attack (dropkick)'],
+      ['{through} (hold in own box)', 'Catch the shot · release as they kick'],
+      ['{skill}', 'Dash'],
     ],
     teammateHasBall: [
-      ['S / W', 'Call for the ball (short/through)'],
-      ['D / A', 'Light / Hard attack still work'],
+      ['{pass} / {through}', 'Call for the ball (short/through)'],
+      ['{shoot} / {lob}', 'Light / Hard attack still work'],
     ],
     system: [
-      ['1 / 2 / 3', 'Pick Core'],
-      ['R', 'Reroll 3 Core cards (once per round)'],
-      [SFC_STORE === 'crazygames' ? 'P' : 'Esc / P', 'Pause'],   // khớp restrictedKeys bên dưới
-      ['M', 'Mute/unmute'],
+      ['{pick1} / {pick2} / {pick3}', 'Pick Core'],
+      ['{reroll}', 'Reroll 3 Core cards (once per round)'],
+      ['{pause+}', 'Pause'],   // CrazyGames: Esc bị gỡ (restrictedKeys) -> chỉ còn P
+      ['{mute}', 'Mute/unmute'],
     ],
   },
 
@@ -107,11 +126,15 @@ SFC_CONFIG.controls = {
     shoot:    { atk: 'Shoot', def: 'Light attack · punch' },
     skill:    { atk: 'Skill move', def: 'Dash' },
     ultimate: { atk: 'Ultimate' },
+    switch:   { atk: 'Switch player' },
     pause:    { atk: 'Pause' },
     mute:     { atk: 'Mute / unmute' },
   },
 
   // Cần analog trái: deadzone (bỏ qua rung tay), ngưỡng bật / tắt hướng số (menu, gửi online)
+  // 'Tap2.<mã phím>' = bấm đúp phím đó trong doubleTap giây (vd. lướt = bấm đúp phím chạy nhanh E)
+  doubleTap: 0.3,
+
   stick: { deadzone: 0.2, digitalOn: 0.5, digitalOff: 0.35 },
 
   // Rung tay cầm theo âm thanh trận đấu: [rung nhẹ 0..1, rung mạnh 0..1, ms]. Xóa dòng để tắt từng loại.
