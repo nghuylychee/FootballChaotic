@@ -23,6 +23,7 @@
 | 12 | Mạch truyện (2026-10-19) | **Mỗi Story gói gọn trong chính nó**, không có cốt truyện xuyên suốt các Story |
 | 13 | Đồng đội (2026-10-19) | Vẫn là đồng đội **mở** (`SFC.Mates`), không thành nhân vật cố định, vì hướng tới co-op |
 | 14 | Co-op online (2026-10-19) | Chạy **player-host** (người chơi làm chủ phòng), **không qua máy chủ riêng** |
+| 15 | Cốt truyện (2026-10-19) | **Mỗi Story một concept riêng** (tham khảo anime), không trùng mô-típ. Theme (sân, màu, đội, luật trận) giữ nguyên |
 
 ## Luồng chơi
 
@@ -119,7 +120,21 @@ Mỗi vòng có `mod` (id trong `stories.mods`, số liệu ở config) chạy b
 | | Bán kết | Grandpa's Squad | **BACK IN MY DAY** | "Hồi đó...": màn hình sepia, đội bạn chạy chậm như phim cũ | dày hơn |
 | | Chung kết | The Legends | **GOLDEN STAR** | 1 Legend thành STAR (sút mạnh, chạy nhanh). Cướp bóng từ STAR: bạn nhận GOLDEN BOOT | — |
 
-Kịch bản cả 4 Story viết lại theo cùng mạch, mỗi Story gói gọn trong chính nó: đội boss chung kết xuất hiện từ cảnh mở cup, sau các vòng lại thắng đậm hoặc cà khịa bạn (có lúc nhân vật chính chột dạ); host giải thích luật trước mỗi trận; các đội đã thua kéo nhau đi cổ vũ bạn ở chung kết.
+### 4 concept cốt truyện (user chốt 2026-10-19: không trùng mô-típ)
+Mỗi Story khác nhau ở **concept, người dẫn truyện, cách kể và vai của đội boss**. Người dẫn truyện = `stories.list[].narrator`
+(`name` hiện trên hộp chữ, `look` / `kit` vẽ trên khuôn cupHost, `horn: false` = không cầm loa, `art` = khuôn mặc định cho lời của họ;
+Legends có thêm `youngLook` / `youngKit` cho cảnh hồi tưởng).
+
+| Story | Concept (tham khảo) | Người dẫn truyện | Cách kể riêng | Đội boss |
+|---|---|---|---|---|
+| THE WARD CUP | **Mùa hè cuối cùng**: hẻm sắp bị giải toả làm bãi đỗ xe, đây là Ward Cup cuối (hoài niệm mùa hè, buồn mà ấm) | WARD LOUDSPEAKER (loa phường) | Đếm ngược "còn N ngày tới máy ủi" sau mỗi vòng, tờ giấy giải toả (cupItem notice) | Block Wardens = bảo vệ công trường, lạnh lùng; twist: đội trưởng lớn lên ở hẻm, chính anh vẽ khung thành trên tường → bỏ việc, bãi đỗ xe bị huỷ |
+| ROOFTOP NIGHT LEAGUE | **Thư mời / kỳ thi bí ẩn** (Hunter x Hunter): thiệp đen hình cú, giải đấu bí mật, 4 thử thách trước bình minh | THE VOICE (giọng nói từ loa, không thấy mặt: khuôn cupVoice) | Mỗi vòng là "TRIAL", đối thủ là người đã thi trượt / giám khảo | Night Owls; twist: đội trưởng chính là The Voice, sắp rời thành phố, đang tìm người kế nghiệp → trao mũ (Night Owl Cap) |
+| NIGHT MARKET CUP | **Đại chiến mì** (Food Wars, hài): cứu xe mì của Uncle Noodle bằng món Mì Nửa Đêm huyền thoại | UNCLE NOODLE (ông chủ xe mì, không cầm loa) | Mỗi trận thắng lấy 1 nguyên liệu (lửa · sợi mì · gia vị · "vị của trận chung kết"), cuộn công thức + tô mì (cupItem recipe / bowl) | Market Mamas = giám khảo nếm mì; không phải phản diện: nếm xong nhớ món mẹ nấu, cho xe ở lại |
+| GRANDPA'S LEGENDS | **Trận đấu dang dở** (bí ẩn kể bằng hồi tưởng, truyền thừa): 50 năm trước ông nội chấn thương ở chung kết rồi bỏ bóng đá | GRANDPA (kể chuyện, không cầm loa) | Hồi tưởng sepia (cupMemory), mỗi vòng lộ thêm 1 mảnh: thuỷ thủ chở ông về → trọng tài đã bỏ qua pha phạm lỗi → đồng đội cũ giận ông bỏ cuộc → đội trưởng Legends là người phạm lỗi | The Legends; muốn khép lại trận đấu 50 năm, cuối cùng ông nội có mặt trên khán đài |
+
+Khuôn cảnh mới cho các concept (`src/ui/story-cup.js`): `cupMemory` (hồi tưởng sepia, hạt phim; `young` = người dẫn truyện hồi trẻ, `fall` = ngã chấn thương),
+`cupVoice` (loa trên cột đèn + đôi mắt cú trong bóng tối), `cupItem` (`item`: notice · invite · recipe · bowl · boots). Lời thoại ghi `art` + các tham số này.
+Story mới sau này: chọn 1 concept chưa dùng (vd. hoán đổi thân xác, du hành thời gian, giải đấu của các sư phụ ẩn danh, đội bóng của người máy...), 1 người dẫn truyện riêng, 1 cách kể riêng.
 
 ### Câu chuyện = cut scene kiểu PROLOGUE (user chốt 2026-10-18)
 Cốt truyện kể bằng cut scene giống PROLOGUE (`src/ui/story.js`: cả màn là cảnh vẽ procedural, chữ gõ máy, chữ hét rung màn, giữ Enter để bỏ qua),

@@ -148,22 +148,23 @@ SFC_CONFIG.stories = {
   list: [
     {
       id: 'ward_cup', name: 'THE WARD CUP', color: '#ff9a3d', cover: 'alley', theme: 'alley', trophy: 'pot', tier: 1,
-      blurb: 'Win the neighbourhood cup and take the alley pitch back from the Block Wardens.',
+      blurb: 'The alley gets torn down at the end of summer. This is the last Ward Cup ever.',
+      narrator: { name: 'WARD LOUDSPEAKER' },
       rival: 3,
       rounds: [
         {
           // luật nhà: các chú được dẫn trước 1 bàn (score = tỉ số lúc giao bóng [đội bạn, đối thủ])
           team: 'ward_uncles', arena: 'village', elo: 30, mod: 'stools', score: [0, 1],
           before: [
-            { who: 'host', text: 'Round of sixteen! The Uncles have played this pitch for thirty years. They brought their own chairs.' },
-            { who: 'opp', text: 'House rules, kid. The elders start one goal up.' },
-            { who: 'you', text: 'One goal up?! That is not a rule!' },
-            { who: 'opp', text: 'It is now. And nobody touches the stools.' },
-            { who: 'host', text: 'The stools stay on the pitch. Bounce your passes off them, or smash them with a hard shot!' },
+            { who: 'host', text: 'Round of sixteen. The Uncles have played in this alley since before the lamp posts.' },
+            { who: 'opp', text: 'I scored my first goal against that wall. Thirty years ago.' },
+            { who: 'opp', text: 'So, house rules. The elders start one goal up. Last summer, last favour.' },
+            { who: 'you', text: 'One goal up?! ...Fine. Just this once.' },
+            { who: 'host', text: 'Their plastic stools are on the pitch. Pick one up and throw it, if you dare.' },
           ],
           after: [
-            { who: 'opp', text: 'My stool... my beautiful stool. Fine. Go beat those Wardens for us.' },
-            { who: 'host', art: 'cupRival', team: 'block_wardens', text: 'On the other side of the bracket, the Block Wardens won seven to nothing. They did not even sweat.' },
+            { who: 'opp', text: 'Ha. You kick like we used to. Make the alley proud, kid.' },
+            { who: 'host', art: 'cupItem', item: 'notice', text: 'Three days until the bulldozers.' },
           ],
           barks: {
             kickoff: ['Sit down, kids!', 'Respect your elders!'],
@@ -175,15 +176,15 @@ SFC_CONFIG.stories = {
         {
           team: 'moped_boys', arena: 'street', elo: 90, signature: 'speed_demon', mod: 'mopeds',
           before: [
-            { who: 'host', text: 'Quarter-final! The Moped Boys deliver noodles down this street all night, and they are not stopping for a match.' },
-            { who: 'opp', text: 'Deliveries do not wait. Stand in the lane and you get run over.' },
-            { who: 'you', text: 'You are going to ride THROUGH the match?' },
-            { who: 'opp', text: 'Every few seconds. Hot noodles, cold hearts.' },
+            { who: 'host', text: 'Quarter-final. The Moped Boys deliver lunch to the construction site every day.' },
+            { who: 'opp', text: 'Car park, alley, who cares? The boss pays us to deliver. So we deliver.' },
+            { who: 'you', text: 'Through the middle of a football match?' },
+            { who: 'opp', text: 'Especially through the middle of a football match.' },
             { who: 'host', text: 'When a lane flashes, get out of it! A moped that hits a Moped Boy only makes him faster.' },
           ],
           after: [
-            { who: 'opp', text: 'You dodged every delivery... Ever thought about a job in noodles?' },
-            { who: 'you', text: 'Ask me after the final.' },
+            { who: 'opp', text: 'Okay. Okay! No more lunches for the bulldozer guys. My mum learned to ride in this alley.' },
+            { who: 'host', art: 'cupItem', item: 'notice', text: 'Two days until the bulldozers.' },
           ],
           barks: {
             kickoff: ['Order up!', 'Express delivery!'],
@@ -195,17 +196,16 @@ SFC_CONFIG.stories = {
         {
           team: 'school_ghosts', arena: 'school', elo: 160, signature: 'phantom_step', mod: 'ghosts',
           before: [
-            { who: 'host', text: 'Semi-final, in the old school yard! Nobody knows who the School Ghosts are. Nobody has seen them leave.' },
-            { who: 'opp', text: 'You cannot mark what you cannot see.' },
+            { who: 'host', text: 'Semi-final, in the old school yard. The School Ghosts... nobody knows where they came from.' },
+            { who: 'opp', text: 'We played here every summer. Then summer ended, and we just... stayed.' },
             { who: 'you', text: '...Is it getting cold in here?' },
-            { who: 'host', text: 'Ghosts fade away when they are far from the ball. And when the school bell rings, they swap places!' },
+            { who: 'host', text: 'Ghosts fade away from the ball. When the school bell rings, they swap places!' },
           ],
           after: [
-            { who: 'opp', text: 'You saw us. Nobody sees us...' },
-            { who: 'you', text: 'Then come to class more often.' },
-            { who: 'host', art: 'cupRival', team: 'block_wardens', text: 'And the Block Wardens are in the final. Again. Nobody has scored on them all cup.' },
-            { who: 'opp', art: 'cupTalk', team: 'block_wardens', text: 'Enjoy the semi-final, kid. That is as far as you go.' },
-            { who: 'you', text: '...Nobody has scored on them. Not once.' },
+            { who: 'opp', text: 'One more summer. That is all we wanted. Win it for us.' },
+            { who: 'host', art: 'cupRival', team: 'block_wardens', text: 'In the final: the Block Wardens. The security crew guarding the construction site.' },
+            { who: 'opp', art: 'cupTalk', team: 'block_wardens', text: 'At dawn the machines come in. Play your little final. Then go home.' },
+            { who: 'host', art: 'cupItem', item: 'notice', text: 'One day until the bulldozers.' },
           ],
           barks: {
             kickoff: ['Booo...', 'Roll call!'],
@@ -217,17 +217,18 @@ SFC_CONFIG.stories = {
         {
           team: 'block_wardens', arena: 'alley', elo: 240, signature: 'giant_keeper', mod: 'giants',
           before: [
-            { who: 'host', text: 'THE FINAL! The Block Wardens, five-time champions. And tonight the whole ward came to watch.' },
-            { who: 'host', text: 'The Uncles, the Moped Boys, even the Ghosts. They are all chanting one name. Yours.' },
-            { who: 'opp', text: 'Look at you. Tiny. We eat kids like you for breakfast.' },
-            { who: 'you', text: 'Wait... were you always this BIG?!' },
-            { who: 'host', text: 'Light punches just bounce off the Wardens. Hit them with heavy attacks! And if they fall behind, they get angry. And bigger.' },
+            { who: 'host', text: 'THE LAST FINAL. The whole ward came out. Even the construction workers put down their tools to watch.' },
+            { who: 'opp', text: 'Rules are rules. Tomorrow this alley is gone.' },
+            { who: 'you', text: 'You wear the uniform. But you play like you grew up here.' },
+            { who: 'opp', text: '...Just play.' },
+            { who: 'host', text: 'The Wardens are giants! Light punches bounce off them. Use heavy attacks!' },
           ],
           after: [
-            { who: 'opp', text: 'Six years... it was supposed to be six years.' },
+            { who: 'opp', text: 'That goal painted on the wall... I painted it. When I was your age.' },
+            { who: 'opp', art: 'cupTalk', text: 'I am not guarding any bulldozers tomorrow. Let them find someone else.' },
           ],
           barks: {
-            kickoff: ['This is our block!', 'Stomp them!'],
+            kickoff: ['Rules are rules!', 'Stomp them!'],
             goal: ['Trespassers!', 'Off our block!'],
             conceded: ['Lock the gates!', 'GRRR!'],
             mod: ['That tickles.', 'Was that a punch?'],
@@ -243,35 +244,35 @@ SFC_CONFIG.stories = {
         { id: 'hattrick', kind: 'hattrick', desc: 'Score a hat-trick in one match' },
       ],
       intro: [
-        { who: 'host', text: 'Every summer the whole ward squeezes into one alley for the Ward Cup.' },
-        { who: 'host', art: 'cupAlley', zoom: 1, text: 'The prize: a dented rice pot painted gold. And the alley pitch, for a whole year.' },
-        { who: 'host', art: 'cupRival', team: 'block_wardens', text: 'Five years in a row, the Block Wardens have won it. Five years with no kids allowed on the pitch.' },
-        { who: 'opp', art: 'cupTalk', team: 'block_wardens', text: 'Kids? On OUR pitch? Go play in the car park.' },
-        { who: 'you', text: 'Four wins and that pitch is ours. Let us go.' },
+        { who: 'host', text: 'Attention, residents. This is your ward loudspeaker.' },
+        { who: 'host', art: 'cupItem', item: 'notice', text: 'At the end of this summer, the old alley will be torn down. A car park is coming.' },
+        { who: 'host', art: 'cupAlley', zoom: 1, text: 'So this is it. The last Ward Cup ever. One rice pot painted gold, for the last champion.' },
+        { who: 'you', text: 'Then the last champion is going to be me.' },
       ],
       outro: [
-        { who: 'host', text: 'UNBELIEVABLE! A new champion of the Ward Cup!' },
-        { who: 'host', text: 'The alley pitch is open again, and the kids are already running onto it!' },
-        { who: 'you', text: 'Put the pot on my head. The pitch belongs to everyone now.' },
+        { who: 'host', text: 'THE LAST WARD CUP HAS A CHAMPION!' },
+        { who: 'host', art: 'cupItem', item: 'notice', text: 'And news just in: the Wardens quit, the whole ward signed a letter, and the car park is CANCELLED!' },
+        { who: 'you', text: 'Put the pot on my head. Same time next summer?' },
       ],
     },
     /* ---------- Story 2: sân thượng, độ khó 2 (Elo 380 → 700) ---------- */
     {
       id: 'rooftop_league', name: 'ROOFTOP NIGHT LEAGUE', color: '#6ec8ff', cover: 'rooftop', theme: 'rooftop', trophy: 'cup', tier: 2,
-      blurb: 'Football above the city, under the eyes of the Night Owls.',
+      blurb: 'A black card with a golden owl. A secret league. Four trials before dawn.',
+      narrator: { name: 'THE VOICE', art: 'cupVoice' },
       rival: 3,
       rounds: [
         {
           team: 'pigeon_gang', arena: 'rooftop', elo: 380, mod: 'pigeons',
           before: [
-            { who: 'host', text: 'Round of sixteen! The Pigeon Gang has owned this ledge forever, and their friends are circling overhead.' },
+            { who: 'host', text: 'FIRST TRIAL: keep your footing. The Pigeon Gang guards the ledge.' },
             { who: 'opp', text: 'Coo. Coo. COO!' },
-            { who: 'you', text: 'Is that... a threat?' },
-            { who: 'host', text: 'Watch the sky! When the flock flies over, dodge the splats or you will slip.' },
+            { who: 'you', text: 'I am going to take that as a threat.' },
+            { who: 'host', text: 'Watch the sky. When the flock flies over, step around the splats.' },
           ],
           after: [
             { who: 'opp', text: 'Coo...' },
-            { who: 'host', text: 'Meanwhile, the Night Owls won without anyone seeing a single goal. Literally. The lights were off.', art: 'cupRival', team: 'night_owls' },
+            { who: 'host', text: 'First trial: passed. The roof is watching you now.' },
           ],
           barks: {
             kickoff: ['COO!', 'Coo coo!'],
@@ -283,15 +284,15 @@ SFC_CONFIG.stories = {
         {
           team: 'sky_hoppers', arena: 'rooftop', elo: 470, signature: 'flying_kick', mod: 'wind',
           before: [
-            { who: 'host', text: 'Quarter-final! The Sky Hoppers jump roof to roof just to get to practice.' },
-            { who: 'opp', text: 'Up here the wind is our fourth player. And it is on our side.' },
-            { who: 'you', text: 'You cannot pass to the wind.' },
-            { who: 'opp', text: 'No. But it can pass to us. Feel that?' },
-            { who: 'host', text: 'When the night wind blows, the ball drifts down the roof. The Hoppers ride it!' },
+            { who: 'host', text: 'SECOND TRIAL: read the wind. The Sky Hoppers jump roof to roof just to get here.' },
+            { who: 'opp', text: 'You got a card too? We got ours three years ago. We never got past the Owls.' },
+            { who: 'you', text: 'Then why are you still here?' },
+            { who: 'opp', text: 'Because up here, the wind is on our side. Feel that?' },
+            { who: 'host', text: 'When the night wind blows, the ball drifts down the roof. The Hoppers ride it.' },
           ],
           after: [
-            { who: 'opp', text: 'You played against the wind... and won?' },
-            { who: 'you', text: 'I just kicked harder.' },
+            { who: 'opp', text: 'Go on. Get further than we did.' },
+            { who: 'host', text: 'Second trial: passed. Nobody with a card has come this far in years.' },
           ],
           barks: {
             kickoff: ['Feel the breeze!', 'Up we go!'],
@@ -303,17 +304,15 @@ SFC_CONFIG.stories = {
         {
           team: 'billboard_kids', arena: 'plaza', elo: 580, signature: 'shadow_clone', mod: 'graffiti',
           before: [
-            { who: 'host', text: 'Semi-final, under the giant billboard! The Billboard Kids paint the whole city every night.' },
-            { who: 'opp', text: 'Every path to our goal? Painted shut. Smile for the wall.' },
-            { who: 'you', text: 'You painted a wall in the middle of a football pitch?' },
-            { who: 'opp', text: 'Art has no rules.' },
-            { who: 'host', text: 'Spray walls pop up between you and the goal! Go around them, or lift the ball over.' },
+            { who: 'host', text: 'THIRD TRIAL: find the way through. The Billboard Kids paint walls faster than you can run.' },
+            { who: 'opp', text: 'We painted the Voice once. Just a shadow with two owl eyes. Want to see it?' },
+            { who: 'you', text: 'After I win.' },
+            { who: 'host', text: 'Spray walls block your way to goal. Go around them, or lift the ball over.' },
           ],
           after: [
-            { who: 'opp', text: 'Fine. We will paint you winning. Just this once.' },
-            { who: 'host', text: 'And the Night Owls are in the final. Again. Their captain has not blinked all night.', art: 'cupRival', team: 'night_owls' },
-            { who: 'opp', text: 'We watched every pass you made. We know what you will do next.', art: 'cupTalk', team: 'night_owls' },
-            { who: 'you', text: 'Funny. I do not even know that.' },
+            { who: 'opp', text: 'Fine. We will paint you on the billboard. Winning.' },
+            { who: 'host', art: 'cupRival', team: 'night_owls', text: 'FINAL TRIAL. The Night Owls. They have not lost on this roof in three years.' },
+            { who: 'you', text: 'Wait. That voice... it is coming from their captain.' },
           ],
           barks: {
             kickoff: ['Smile!', 'Fresh paint!'],
@@ -325,14 +324,14 @@ SFC_CONFIG.stories = {
         {
           team: 'night_owls', arena: 'rooftop', elo: 700, signature: 'thunder_kick', mod: 'searchlight',
           before: [
-            { who: 'host', text: 'THE FINAL! Midnight on the highest roof in the city. The Night Owls switch on their searchlight.' },
-            { who: 'host', text: 'The Pigeon Gang, the Hoppers, the Billboard Kids... the whole league climbed up to watch.' },
-            { who: 'opp', text: 'In our light, nothing moves without us knowing. Hold the ball and you FREEZE.' },
-            { who: 'you', text: 'Then I will not hold it. I will pass it.' },
-            { who: 'host', text: 'Never hold the ball in the light! And if the Owls fall behind, a second light switches on.' },
+            { who: 'host', text: 'Step into the light.' },
+            { who: 'opp', text: 'Yes. I am the Voice. I sent you the card.' },
+            { who: 'opp', text: 'I leave the city at dawn. Somebody has to keep this roof alive. Show me it is you.' },
+            { who: 'you', text: 'Then watch closely.' },
+            { who: 'opp', text: 'Never hold the ball in my light. And if I fall behind, a second one switches on.' },
           ],
           after: [
-            { who: 'opp', text: 'Hoo... I did not see that coming.' },
+            { who: 'opp', text: 'Hoo... I did not see that coming. Good. Very good.' },
           ],
           barks: {
             kickoff: ['We see you.', 'Lights on!'],
@@ -351,36 +350,35 @@ SFC_CONFIG.stories = {
         { id: 'hattrick', kind: 'hattrick', desc: 'Score a hat-trick in one match' },
       ],
       intro: [
-        { who: 'host', text: 'When the city goes to sleep, the Rooftop Night League wakes up.' },
-        { who: 'host', text: 'Sixteen teams. One golden cup. And a very long way down.', art: 'cupAlley', zoom: 1 },
-        { who: 'host', text: 'The Night Owls have not lost up here in three years. They play every match in the dark.', art: 'cupRival', team: 'night_owls' },
-        { who: 'opp', text: 'We saw you climb the stairs, kid. We see everything.', art: 'cupTalk', team: 'night_owls' },
-        { who: 'you', text: 'Then you saw me coming. Good.' },
+        { who: 'host', art: 'cupItem', item: 'invite', text: 'You found my card. Good.' },
+        { who: 'host', art: 'cupAlley', zoom: 1, text: 'This is the Rooftop Night League. Sixteen teams. Four trials. One golden cup, and something more.' },
+        { who: 'you', text: 'Who are you?' },
+        { who: 'host', art: 'cupVoice', text: 'Win, and you will see my face. Lose, and you will forget this roof exists.' },
       ],
       outro: [
-        { who: 'host', text: 'A NEW KING OF THE ROOFTOPS! The whole city will hear about this in the morning!' },
-        { who: 'host', text: 'And for the first time in three years, the Night Owls blinked.' },
-        { who: 'you', text: 'Let them sleep. I will tell them tomorrow.' },
+        { who: 'host', text: 'The sun is coming up over the city. The roof is yours now.' },
+        { who: 'opp', art: 'cupTalk', team: 'night_owls', text: 'Keep the cap. Send the next card. Choose well.' },
+        { who: 'you', text: 'See you at midnight, Owl.' },
       ],
     },
     /* ---------- Story 3: chợ đêm, độ khó 3 (Elo 620 → 1150) ---------- */
     {
       id: 'market_cup', name: 'NIGHT MARKET CUP', color: '#ff3fb4', cover: 'market', theme: 'market', trophy: 'cup', tier: 3,
-      blurb: 'Neon, noodles, and the Market Mamas who never lose.',
+      blurb: 'Win four ingredients, cook one legendary bowl, and save the noodle cart.',
+      narrator: { name: 'UNCLE NOODLE', horn: false, look: { skin: '#e0a878', hair: '#1a1216', cut: 'bandana', face: 'mustache', shoes: 'slides', fx: 'smoke' }, kit: { shirt: '#f3ead7', shirtDark: '#c9b48a', shorts: '#3a2a20', accent: '#e8322a', hair: ['#1a1216'] } },
       rival: 3,
       rounds: [
         {
           team: 'lantern_crew', arena: 'market', elo: 620, mod: 'lanterns',
           before: [
-            { who: 'host', text: 'Round of sixteen! The Lantern Crew hung every lantern in this market. Not all of them very well.' },
-            { who: 'opp', text: 'Our lanterns are perfectly safe. Mostly.' },
-            { who: 'you', text: 'One just fell on your own head.' },
-            { who: 'opp', text: '...Mostly.' },
-            { who: 'host', text: 'Watch for a growing shadow on the pitch. A lantern is coming down!' },
+            { who: 'host', text: 'Ingredient one: the eternal flame! Only a Lantern Crew lantern burns hot enough for the broth.' },
+            { who: 'opp', text: 'You want our flame? Earn it. And mind your head.' },
+            { who: 'you', text: 'Why would I need to mind my... oh.' },
+            { who: 'host', text: 'When you see a growing shadow, MOVE! Those lanterns are not hung very well.' },
           ],
           after: [
-            { who: 'opp', text: 'We will hang them better next year. Probably.' },
-            { who: 'host', text: 'On the other side, the Market Mamas haggled their opponents down to zero. Again.', art: 'cupRival', team: 'market_mamas' },
+            { who: 'opp', text: 'Take the flame. Cook something worthy of it!' },
+            { who: 'host', art: 'cupItem', item: 'bowl', text: 'The broth is boiling! It smells like... VICTORY!' },
           ],
           barks: {
             kickoff: ['Lights up!', 'Mind your head!'],
@@ -392,13 +390,14 @@ SFC_CONFIG.stories = {
         {
           team: 'noodle_kickers', arena: 'street', elo: 780, signature: 'fire_shot', mod: 'hotball',
           before: [
-            { who: 'host', text: 'Quarter-final! The Noodle Kickers cook all night and play with a ball straight out of the pot.' },
-            { who: 'opp', text: 'Our hands are used to boiling water. Are yours?' },
-            { who: 'you', text: 'Wait, the BALL is hot?' },
-            { who: 'host', text: 'When the ball glows, pass it fast! Hold a hot ball too long and you get burned.' },
+            { who: 'host', text: 'Ingredient two: hand-pulled noodles. The Noodle Kickers pull them with their FEET.' },
+            { who: 'opp', text: 'Our noodles come out of a boiling pot. So does our ball. Catch!' },
+            { who: 'you', text: 'The BALL is hot?!' },
+            { who: 'host', text: 'When the ball glows, pass it fast! Hold it too long and you get burned.' },
           ],
           after: [
-            { who: 'opp', text: 'You passed like a real chef. Fast hands. Respect.' },
+            { who: 'opp', text: 'You pass like a real chef. Take the noodles. Take them!' },
+            { who: 'host', art: 'cupItem', item: 'recipe', text: 'Flame! Noodles! We are halfway to a legend!' },
           ],
           barks: {
             kickoff: ['Order up!', 'Fresh from the pot!'],
@@ -410,17 +409,16 @@ SFC_CONFIG.stories = {
         {
           team: 'fortune_tellers', arena: 'market', elo: 920, signature: 'loaded_dice', mod: 'fortune',
           before: [
-            { who: 'host', text: 'Semi-final! The Fortune Tellers say they already know the final score.' },
-            { who: 'opp', text: 'The cards say you lose. Shall I draw another?' },
-            { who: 'you', text: 'Draw as many as you like.' },
-            { who: 'opp', text: 'Careful what you wish for. Every card changes the match.' },
-            { who: 'host', text: 'When a card is drawn, read the banner. You might shrink, a storm might hit, or the Tellers might speed up!' },
+            { who: 'host', text: 'Ingredient three: the spice of fate. Only the Fortune Tellers know where it grows.' },
+            { who: 'opp', text: 'The cards say your noodles will be... interesting. Shall I draw another?' },
+            { who: 'you', text: 'Just give me the spice.' },
+            { who: 'host', text: 'When a card is drawn, read the banner. You might shrink, a storm might hit, or they might speed up!' },
           ],
           after: [
-            { who: 'opp', text: 'Impossible... the cards lied to me!' },
-            { who: 'host', text: 'And the Mamas are in the final. They already cleared a spot for the trophy on their noodle stall.', art: 'cupRival', team: 'market_mamas' },
-            { who: 'opp', text: 'You played well, sweetie. Now go home before you get hurt.', art: 'cupTalk', team: 'market_mamas' },
-            { who: 'you', text: 'She is scary. And she smells like dumplings.' },
+            { who: 'opp', text: 'The cards never lie... but tonight they looked nervous.' },
+            { who: 'host', art: 'cupItem', item: 'recipe', text: 'Flame, noodles, spice. Only the last ingredient is missing.' },
+            { who: 'you', text: 'What is the last ingredient?' },
+            { who: 'host', text: 'Nobody knows. The recipe just says: the taste of a hard-won final.' },
           ],
           barks: {
             kickoff: ['It is written.', 'Pick a card!'],
@@ -432,15 +430,15 @@ SFC_CONFIG.stories = {
         {
           team: 'market_mamas', arena: 'market', elo: 1150, signature: 'giant_fist', mod: 'stalls',
           before: [
-            { who: 'host', text: 'THE FINAL! The Market Mamas, champions of every Night Market Cup. Tonight the whole market stayed open to watch.' },
-            { who: 'host', text: 'The Lantern Crew, the Noodle Kickers, even the Fortune Tellers. They are all cheering for you.' },
-            { who: 'opp', text: 'This is our market. Our stalls go wherever we want. Even onto the pitch.' },
-            { who: 'you', text: 'You cannot just roll a stall into a football match!' },
-            { who: 'opp', text: 'Watch me, sweetie.' },
-            { who: 'host', text: 'The stalls push in from the sides and squeeze the pitch! If the Mamas fall behind, two come in at once.' },
+            { who: 'host', text: 'THE FINAL! The Market Mamas taste every bowl in this market. Win, and they taste ours!' },
+            { who: 'opp', text: 'Sweetie, nobody cooks in OUR market without our say. Watch the stalls.' },
+            { who: 'you', text: 'You cannot roll a stall onto a football pitch!' },
+            { who: 'opp', text: 'Watch me.' },
+            { who: 'host', text: 'The stalls push in from the sides and squeeze the pitch! If the Mamas fall behind, two come in at once!' },
           ],
           after: [
-            { who: 'opp', text: 'Hmph. Fine, take the cup. And take some dumplings, you look thin.' },
+            { who: 'opp', text: 'Hmph. Fine. Bring me the bowl.' },
+            { who: 'opp', art: 'cupItem', item: 'bowl', text: "...This taste. It is my mother's cooking. It is the market when I was a girl!" },
           ],
           barks: {
             kickoff: ['No discounts!', 'Move, sweetie!'],
@@ -459,35 +457,36 @@ SFC_CONFIG.stories = {
         { id: 'goals', kind: 'goals', n: 12, desc: 'Win the cup with 12 goals or more' },
       ],
       intro: [
-        { who: 'host', text: 'Every night after ten, the market turns into a football pitch.' },
-        { who: 'host', text: 'The prize: a golden cup and free noodles for a whole year.', art: 'cupAlley', zoom: 1 },
-        { who: 'host', text: 'And every single year, the Market Mamas take both. Nobody argues with the Mamas.', art: 'cupRival', team: 'market_mamas' },
-        { who: 'opp', text: 'Sweetie, you look hungry. Lose early and I will give you a free bowl.', art: 'cupTalk', team: 'market_mamas' },
-        { who: 'you', text: 'One bowl, or noodles for a year. I can do maths.' },
+        { who: 'host', art: 'cupHost', text: 'Kid! Bad news. The Market Mamas want my noodle cart out of the market. Tonight!' },
+        { who: 'opp', art: 'cupTalk', team: 'market_mamas', text: 'Your noodles are bland, old man. The market deserves better.' },
+        { who: 'host', art: 'cupItem', item: 'recipe', text: 'Unless... we cook the Midnight Noodle. The legendary recipe. Four ingredients, four teams.' },
+        { who: 'host', art: 'cupAlley', zoom: 1, text: 'Win the Night Market Cup, collect them all, and serve the bowl to the Mamas in the final!' },
+        { who: 'you', text: 'I came here to play football. Now I am a chef?' },
       ],
       outro: [
-        { who: 'host', text: 'THE NIGHT MARKET HAS A NEW CHAMPION! Free noodles for everyone!' },
-        { who: 'you', text: 'Everyone? Wait, those were MY noodles!' },
+        { who: 'host', text: 'The Midnight Noodle is back, and the cart stays!' },
+        { who: 'you', text: 'So I get free noodles for a year, right?' },
+        { who: 'host', text: 'For a WEEK. Do not push it, kid.' },
       ],
     },
     /* ---------- Story 4: sân vận động, độ khó 4 (Elo 1450 → 2700) ---------- */
     {
       id: 'legends_cup', name: "GRANDPA'S LEGENDS", color: '#ffd23f', cover: 'stadium', theme: 'stadium', trophy: 'cup', tier: 4,
-      blurb: 'The old greats are back for one last tournament.',
+      blurb: 'Fifty years ago, Grandpa never finished his final. You will.',
+      narrator: { name: 'GRANDPA', horn: false, look: { skin: '#d99a6c', hair: '#e8ecf5', cut: 'buzz', face: 'beard', shoes: 'slides', fx: 'nofx' }, kit: { shirt: '#8a5a30', shirtDark: '#5a3a1a', shorts: '#3a3a44', accent: '#f3ead7', hair: ['#e8ecf5'] }, youngLook: { skin: '#d99a6c', hair: '#1a1216', cut: 'bowl', face: 'blush', shoes: 'socks', fx: 'nofx' }, youngKit: { shirt: '#c9781a', shirtDark: '#7a4510', shorts: '#f3ead7', accent: '#f3ead7', hair: ['#1a1216'] } },
       rival: 3,
       rounds: [
         {
           team: 'rust_buckets', arena: 'harbor', elo: 1450, mod: 'tide',
           before: [
-            { who: 'host', text: "Welcome to Grandpa's Legends! First up: the Rust Buckets. Forty years at sea, and the tide is coming in." },
-            { who: 'opp', text: 'The sea always comes back, kid. And it is on our side.' },
-            { who: 'you', text: 'Can you even play football in water?' },
-            { who: 'opp', text: 'We have done it all our lives.' },
+            { who: 'host', text: 'The Rust Buckets. Sailors. After my injury, they carried me home on their boat.' },
+            { who: 'opp', text: 'Those boots... we know those boots. The tide always brings old things back.' },
+            { who: 'you', text: 'Then let it bring me a win.' },
             { who: 'host', text: 'When the tide rolls in, stay out of the water. It slows you down, but not the sailors!' },
           ],
           after: [
-            { who: 'opp', text: 'Heh. The tide has turned. Go on, sail.' },
-            { who: 'host', text: 'On the other side, The Legends won by six. They were not even trying.', art: 'cupRival', team: 'the_legends' },
+            { who: 'opp', text: 'Tell the old man the Rust Buckets said hello. And tell him it was not his fault.' },
+            { who: 'you', text: 'Not his fault? What does that mean?' },
           ],
           barks: {
             kickoff: ['Anchors up!', 'All hands!'],
@@ -499,14 +498,15 @@ SFC_CONFIG.stories = {
         {
           team: 'retired_refs', arena: 'plaza', elo: 1750, signature: 'aegis_wall', mod: 'refs',
           before: [
-            { who: 'host', text: 'Quarter-final! The Retired Refs spent their lives watching football. Now they finally get to play.' },
-            { who: 'opp', text: 'Forty years of whistles. Touch one of us and that is a card.' },
-            { who: 'you', text: 'Street football has no rules. Remember?' },
-            { who: 'opp', text: 'Not today. Today, WE are the rules.' },
+            { who: 'host', text: 'The Retired Refs. One of them refereed my final.' },
+            { who: 'opp', text: 'Forty years of whistles. On this pitch, we are the rules.' },
+            { who: 'you', text: 'Were you the referee fifty years ago?' },
+            { who: 'opp', text: '...Play first. Talk after.' },
             { who: 'host', text: 'Hit a Ref and you get a card. Two cards and you sit out! The Refs, of course, do whatever they want.' },
           ],
           after: [
-            { who: 'opp', text: 'No card for that? ...No card for that.' },
+            { who: 'opp', text: 'It was me. I saw that tackle, and I never blew the whistle. Fifty years I have regretted it.' },
+            { who: 'host', art: 'cupMemory', team: 'the_legends', young: true, text: 'The tackle came from their captain. The best player I ever faced.' },
           ],
           barks: {
             kickoff: ['Play fair!', 'By the book!'],
@@ -518,17 +518,16 @@ SFC_CONFIG.stories = {
         {
           team: 'grandpa_squad', arena: 'village', elo: 2150, signature: 'counter_attack', mod: 'flashback',
           before: [
-            { who: 'host', text: "Semi-final! Grandpa's old squad won this cup fifty years ago, with a ball made of rags." },
-            { who: 'opp', text: 'Your grandpa was our captain, kid. He never stops talking about you.' },
-            { who: 'you', text: 'He never stops talking about you either. Mostly your knees.' },
-            { who: 'opp', text: 'Ha! Back in my day...' },
+            { who: 'host', text: 'My old squad. I quit on them after that day. They never forgave me.' },
+            { who: 'opp', text: 'Those are his boots. He walked away from us. Why should you get to wear them?' },
+            { who: 'you', text: 'Because he never stopped talking about you. Every single day.' },
+            { who: 'opp', text: '...Ha! Then show us what he taught you. Back in my day...' },
             { who: 'host', text: 'When the old stories start, everything slows down for you. Not for them!' },
           ],
           after: [
-            { who: 'opp', text: 'He was right about you. Do not tell him we said that.' },
-            { who: 'host', text: 'And waiting in the final... The Legends. Not a single goal against them all cup.', art: 'cupRival', team: 'the_legends' },
-            { who: 'opp', text: 'Your grandpa needed a miracle to beat us. Do you have one?', art: 'cupTalk', team: 'the_legends' },
-            { who: 'you', text: 'I have something better. I have his stories.' },
+            { who: 'opp', text: 'You play just like him. Tell him... tell him to come and watch the final.' },
+            { who: 'host', art: 'cupRival', team: 'the_legends', text: 'And in the final... The Legends. With the same captain.' },
+            { who: 'opp', art: 'cupTalk', team: 'the_legends', text: 'Fifty years I have waited for that match to end properly. Bring the boots.' },
           ],
           barks: {
             kickoff: ['Back in my day!', 'Mind the knees!'],
@@ -540,14 +539,13 @@ SFC_CONFIG.stories = {
         {
           team: 'the_legends', arena: 'stadium', elo: 2700, signature: 'black_hole', mod: 'golden',
           before: [
-            { who: 'host', text: 'THE FINAL! The Legends have never lost. Not once. Not ever.' },
-            { who: 'host', text: 'The sailors, the Refs, Grandpa and his squad. The whole stadium is on its feet.' },
-            { who: 'opp', text: 'One of us is always the star. Try to keep up with a legend.' },
+            { who: 'host', art: 'cupMemory', team: 'the_legends', young: true, text: 'Fifty years ago, it was him and me. Today, it is you.' },
+            { who: 'opp', text: 'I never wanted to hurt your grandpa. I wanted to beat him. One of us is always the star.' },
             { who: 'you', text: 'Stars can be stolen.' },
-            { who: 'host', text: 'Steal the ball from the golden star and the golden boot is yours!' },
+            { who: 'host', text: 'Steal the ball from the golden star, and the golden boot is yours!' },
           ],
           after: [
-            { who: 'opp', text: 'The street game is in good hands now.' },
+            { who: 'opp', text: 'The match is finally over. Your grandpa... he is in the stands. Look.' },
           ],
           barks: {
             kickoff: ['Legends never die!', 'Showtime!'],
@@ -566,15 +564,16 @@ SFC_CONFIG.stories = {
         { id: 'sweep', kind: 'sweep', desc: 'Win every match by 2 goals or more' },
       ],
       intro: [
-        { who: 'host', text: 'Once every fifty years, the old greats come back for one last tournament.' },
-        { who: 'host', text: 'The golden cup of the Legends. Your grandpa lifted it once.', art: 'cupAlley', zoom: 1 },
-        { who: 'host', text: 'Waiting at the end: The Legends. Every great who ever played the street game, on one team.', art: 'cupRival', team: 'the_legends' },
-        { who: 'opp', text: 'Your grandpa beat us once, kid. It will not happen twice.', art: 'cupTalk', team: 'the_legends' },
-        { who: 'you', text: 'Now it is my turn.' },
+        { who: 'host', art: 'cupHost', text: 'Sit down, kid. I never told you why I stopped playing.' },
+        { who: 'host', art: 'cupMemory', young: true, text: 'Fifty years ago, my squad made it to the final of the Legends Cup.' },
+        { who: 'host', art: 'cupMemory', young: true, fall: true, text: 'Then, one tackle. My knee. I never played again.' },
+        { who: 'host', art: 'cupItem', item: 'boots', text: 'These are my old boots. The Legends Cup is back this year. Finish it for me.' },
+        { who: 'you', text: 'I will, Grandpa.' },
       ],
       outro: [
-        { who: 'host', text: 'A NEW LEGEND OF STREET FOOTBALL IS BORN!' },
-        { who: 'you', text: 'Grandpa... I did it. I am the GOAT.' },
+        { who: 'host', text: 'Fifty years. My match is finally over. And we won.' },
+        { who: 'you', text: 'Grandpa! You came!' },
+        { who: 'host', text: 'Of course I came. Now give me back my boots.' },
       ],
     },
   ],

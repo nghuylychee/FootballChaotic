@@ -73,6 +73,7 @@
         knockout: true, cup: { id: R.id, round: R.round },
         mod: rd.mod || null, barks: rd.barks || null, score: rd.score || null,   // luật trận + câu nói của đối thủ (src/systems/matchmods.js)
       });
+      if (SFC_DEBUG && SFC.StoryTest) SFC.StoryTest.onMatch(this);   // phòng test Story: phím tắt trong trận (src/ui/storytest.js)
     },
 
     // bỏ trận Main Path giữa chừng (Pause > FORFEIT, rời trận xếp hạng online): tính là thua
@@ -350,6 +351,9 @@
     // dev: index.html?ulttest[=id] vào thẳng phòng test Tuyệt kỹ (src/ui/ulttest.js)
     if (SFC_DEBUG && SFC.UltTest && /[?&]ulttest\b/.test(location.search)) {
       SFC.UltTest.start(app, new URLSearchParams(location.search).get('ulttest'));
+    } else if (SFC_DEBUG && SFC.StoryTest && /[?&]storytest\b/.test(location.search)) {
+      // dev: index.html?storytest mở trang test Story · ?storytest=<id Story>.<vòng 0..3> đá thẳng vòng đó (src/ui/storytest.js)
+      SFC.StoryTest.boot(app, new URLSearchParams(location.search).get('storytest'));
     } else if (langChosen) start();
     else {
       SFC.Menu.el.classList.add('hidden');

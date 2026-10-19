@@ -7,6 +7,11 @@
  *   cupSad    đối thủ vừa thua ngồi thất thần dưới đám mây mưa, bạn bỏ đi
  *   cupRival  đội kình địch (team) đè bẹp đối thủ ở nhánh bên kia: trời đỏ, sét, bảng tỉ số
  *   cupLift   nâng cúp: khán giả, đèn quét, pháo giấy, 2 đồng đội nhảy cẫng
+ *   cupMemory hồi tưởng ngày xưa: cảnh theme ngả sepia, hạt phim + vết xước; 1–2 người (team = đội trưởng đội đó, young = người dẫn truyện
+ *             hồi trẻ — narrator.youngLook / youngKit), fall = người trẻ ngã ôm chân (chấn thương)
+ *   cupVoice  "Giọng nói" trên sân thượng: loa trên cột đèn phát sóng âm, đôi mắt cú sáng trong bóng tối (không thấy mặt người nói)
+ *   cupItem   cận cảnh đồ vật (item: notice giấy giải toả · invite thiệp đen hình cú · recipe công thức · bowl tô mì · boots đôi giày cũ)
+ * Người dẫn truyện của từng Story (stories.list[].narrator, cup.js truyền vào sc.host): cupHost vẽ theo look / kit của họ.
  * Tham số chung: team (id đội trong teams.list), color (màu Story), who, theme (nền: alley · rooftop · market · stadium),
  * trophy (cúp: pot = nồi cơm vàng · cup = cúp vàng), fillers (đội lấp của Story: cupRival vẽ 2 đội bị đè bẹp).
  */
@@ -187,11 +192,11 @@ window.SFC = window.SFC || {};
 
   /* ---------- bình luận viên ---------- */
   S.addArt('cupHost', (t, d, sc, H) => {
-    const ctx = H.ctx, c = sc.color || '#ff9a3d';
+    const ctx = H.ctx, c = sc.color || '#ff9a3d', horn = !sc.host || sc.host.horn !== false;   // horn: false = người dẫn truyện không cầm loa (kể chuyện)
     burst(H, 170, 170, c, t);
     // sóng âm từ loa
-    ctx.strokeStyle = `rgba(${rgb(H.shade(c, 0.4))},0.7)`; ctx.lineWidth = 3;
-    for (let i = 0; i < 4; i++) {
+    if (horn) ctx.strokeStyle = `rgba(${rgb(H.shade(c, 0.4))},0.7)`; ctx.lineWidth = 3;
+    for (let i = 0; horn && i < 4; i++) {
       const r = ((t * 120 + i * 50) % 200) + 30;
       ctx.globalAlpha = 1 - r / 230;
       ctx.beginPath(); ctx.arc(300, 200, r, -0.6, 0.6); ctx.stroke();
@@ -199,11 +204,12 @@ window.SFC = window.SFC || {};
     ctx.globalAlpha = 1;
     // thùng gỗ + bình luận viên nhún theo nhịp
     H.rect(90, 296, 170, 64, H.INK); H.rect(94, 300, 162, 60, '#8a5a30'); H.rect(94, 322, 162, 3, '#6a4020');
-    const bob = Math.floor(t * 4) % 2, hx = 170, hy = 318 + bob, hs = 8;
-    H.figure(hx, hy, hs, t, HOST_LOOK, HOST_KIT, 0);
+    const bob = Math.floor(t * 4) % 2, hx = 170, hy = 318 + bob, hs = 8, N = sc.host || {}, look = N.look || HOST_LOOK;
+    H.figure(hx, hy, hs, t, look, N.kit || HOST_KIT, 0);
     // loa cầm tay trước miệng
     const mx = hx + 7 * hs, my = hy - (MOUTH - 2) * hs;
-    H.rect(mx - 14, my + 6, 12, 8, HOST_LOOK.skin);   // tay cầm loa
+    if (!horn) { H.vignette(0.5); return; }
+    H.rect(mx - 14, my + 6, 12, 8, look.skin);   // tay cầm loa
     ctx.fillStyle = H.INK; ctx.beginPath(); ctx.moveTo(mx - 4, my - 12); ctx.lineTo(mx + 66, my - 36); ctx.lineTo(mx + 66, my + 36); ctx.lineTo(mx - 4, my + 12); ctx.fill();
     ctx.fillStyle = '#e8ecf5'; ctx.beginPath(); ctx.moveTo(mx, my - 8); ctx.lineTo(mx + 62, my - 31); ctx.lineTo(mx + 62, my + 31); ctx.lineTo(mx, my + 8); ctx.fill();
     H.rect(mx + 56, my - 31, 6, 62, '#ff3d5a');
@@ -308,6 +314,120 @@ window.SFC = window.SFC || {};
     H.speedLines(320, 200, 40, t, 0.1, '255,120,120');
     H.vignette(0.7);
     if (S.cueOnce('boom', true)) SFC.Audio.hit();
+  });
+
+  /* ---------- hồi tưởng (sepia) ---------- */
+  S.addArt('cupMemory', (t, d, sc, H) => {
+    const ctx = H.ctx, N = sc.host || {}, op = sc.team ? captain(sc.team) : null, gy = backdrop(H, t * 0.3, sc.theme, 0.15);
+    // người dẫn truyện hồi trẻ (trái) + người của đội team (phải)
+    const k = H.clamp01(t / Math.max(1, d));
+    if (sc.young && N.youngLook) {
+      if (sc.fall) {
+        ctx.save(); ctx.translate(250, gy + 60); ctx.rotate(Math.PI / 2 * H.easeOut(H.clamp01(t / 0.6)));
+        H.figure(0, 0, 4, 0.1, N.youngLook, N.youngKit || HOST_KIT, Math.PI / 2, null, 1);
+        ctx.restore();
+      } else H.figure(250 - k * 10, gy + 60, 4, t, N.youngLook, N.youngKit || HOST_KIT, 0);
+    }
+    if (op) H.figure(sc.young ? 400 : 320, gy + 60, 4, t, op.look, op.kit, sc.young ? Math.PI : Math.PI / 2);
+    // ngả sepia + hạt phim + vết xước + khung tròn tối
+    ctx.save();
+    ctx.globalCompositeOperation = 'color'; H.rect(0, 0, H.W, H.H, '#9a7040');
+    ctx.globalCompositeOperation = 'multiply'; H.rect(0, 0, H.W, H.H, '#e8c890');
+    ctx.restore();
+    const f = Math.floor(t * 12);
+    for (let i = 0; i < 90; i++) H.rect(H.hash(i + f * 91) * H.W, H.hash(i * 3 + f * 17) * H.H, 2, 2, H.hash(i + f) > 0.5 ? 'rgba(255,240,210,0.25)' : 'rgba(40,24,10,0.3)');
+    for (let i = 0; i < 2; i++) if (H.hash(f + i * 7) > 0.4) H.rect(H.hash(f * 5 + i) * H.W, 0, 1, H.H, 'rgba(255,240,210,0.35)');
+    if (H.hash(f) > 0.85) H.rect(0, 0, H.W, H.H, 'rgba(255,240,210,0.08)');   // nhấp nháy đèn chiếu
+    H.vignette(0.85);
+    if (S.cueOnce('mem', true)) SFC.Audio.ult && SFC.Audio.ult('mod.record');
+  });
+
+  /* ---------- "Giọng nói" trên sân thượng ---------- */
+  S.addArt('cupVoice', (t, d, sc, H) => {
+    const ctx = H.ctx, c = sc.color || '#6ec8ff';
+    backdrop(H, t, 'rooftop', 0.55);
+    // cột đèn + loa
+    H.rect(196, 90, 8, 270, H.INK); H.rect(198, 90, 4, 270, '#2a3450');
+    ctx.fillStyle = H.INK; ctx.beginPath(); ctx.moveTo(200, 104); ctx.lineTo(268, 76); ctx.lineTo(268, 148); ctx.lineTo(200, 120); ctx.fill();
+    ctx.fillStyle = '#9aa3b5'; ctx.beginPath(); ctx.moveTo(204, 106); ctx.lineTo(264, 82); ctx.lineTo(264, 142); ctx.lineTo(204, 118); ctx.fill();
+    H.rect(262, 82, 4, 60, '#c7ccd6');
+    ctx.strokeStyle = `rgba(${rgb(c)},0.75)`; ctx.lineWidth = 3;
+    for (let i = 0; i < 4; i++) {
+      const r = ((t * 110 + i * 45) % 180) + 20;
+      ctx.globalAlpha = 1 - r / 200;
+      ctx.beginPath(); ctx.arc(268, 112, r, -0.5, 0.5); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // đôi mắt cú trong bóng tối (chớp mắt)
+    const blink = Math.floor(t * 1.3 + 0.3) % 4 === 3 && (t * 1.3) % 1 < 0.15;
+    if (!blink) [[470, 150], [520, 150]].forEach(([x, y]) => {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; H.glow(x, y, 26, '255,210,60', 0.6); ctx.restore();
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.ellipse(x, y, 14, 10, 0, 0, Math.PI * 2); ctx.fill();
+      H.rect(x - 3, y - 7, 6, 14, H.INK);
+    });
+    H.vignette(0.7);
+    if (S.cueOnce('voice', true)) SFC.Audio.ult && SFC.Audio.ult('mod.beep');
+  });
+
+  /* ---------- cận cảnh đồ vật ---------- */
+  S.addArt('cupItem', (t, d, sc, H) => {
+    const ctx = H.ctx, c = sc.color || GOLD, cx = 320, cy = 180, bob = Math.sin(t * 2) * 4;
+    burst(H, cx, cy, c, t, 0.75);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; H.glow(cx, cy, 150, rgb(c), 0.3); ctx.restore();
+    ctx.save(); ctx.translate(cx, cy + bob); ctx.rotate(Math.sin(t * 1.4) * 0.04);
+    const R = (x, y, w, h, col) => H.rect(x, y, w, h, col);
+    switch (sc.item) {
+      case 'notice':   // giấy giải toả: tờ giấy đóng đinh, dải đỏ trên cùng, hình máy ủi, dòng chữ gạch, dấu đỏ
+        R(-92, -112, 184, 224, H.INK); R(-88, -108, 176, 216, '#f3ead7'); R(-88, -108, 176, 34, '#e8322a');
+        R(-50, -50, 100, 40, H.INK); R(-46, -46, 60, 32, '#ffd23f'); R(14, -40, 30, 22, '#ffd23f'); R(-46, -18, 92, 10, H.INK);
+        R(-62, -12, 30, 8, '#ffd23f');   // lưỡi ủi
+        for (let i = 0; i < 5; i++) R(-70, 14 + i * 16, 140 - (i % 2) * 40, 5, '#9aa0a8');
+        ctx.strokeStyle = '#e8322a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(50, 82, 20, 0, Math.PI * 2); ctx.stroke();
+        R(-4, -104, 8, 8, '#5a5f6a');
+        break;
+      case 'invite':   // thiệp đen viền vàng, mặt cú vàng
+        R(-120, -76, 240, 152, H.INK); R(-114, -70, 228, 140, '#0c0a1a'); ctx.strokeStyle = GOLD; ctx.lineWidth = 3; ctx.strokeRect(-104, -60, 208, 120);
+        ctx.fillStyle = GOLD; ctx.beginPath(); ctx.moveTo(-34, -30); ctx.lineTo(-20, -44); ctx.lineTo(-8, -30); ctx.lineTo(8, -30); ctx.lineTo(20, -44); ctx.lineTo(34, -30); ctx.lineTo(30, 30); ctx.lineTo(-30, 30); ctx.fill();
+        ctx.fillStyle = '#0c0a1a'; ctx.beginPath(); ctx.arc(-14, -8, 10, 0, Math.PI * 2); ctx.arc(14, -8, 10, 0, Math.PI * 2); ctx.fill();
+        if (Math.floor(t * 1.5) % 3) { R(-17, -11, 6, 6, GOLD); R(11, -11, 6, 6, GOLD); }
+        ctx.fillStyle = '#c9a020'; ctx.beginPath(); ctx.moveTo(-5, 6); ctx.lineTo(5, 6); ctx.lineTo(0, 16); ctx.fill();
+        break;
+      case 'recipe':   // cuộn công thức cũ: giấy vàng, 4 ô nguyên liệu (1 ô đã có, 3 ô dấu ?)
+        R(-130, -90, 260, 180, H.INK); R(-124, -84, 248, 168, '#f0d9a0'); R(-134, -94, 16, 188, '#8a5a30'); R(118, -94, 16, 188, '#8a5a30');
+        for (let i = 0; i < 4; i++) {
+          const x = -100 + i * 52;
+          R(x, -30, 44, 44, '#c9a46a'); R(x + 2, -28, 40, 40, '#f8e8bc');
+          ctx.fillStyle = '#7a4510'; ctx.font = '20px "Press Start 2P"'; ctx.textAlign = 'center'; ctx.fillText('?', x + 22, 2);
+        }
+        ctx.textAlign = 'left';
+        for (let i = 0; i < 3; i++) R(-100, 34 + i * 14, 200 - i * 30, 4, '#b08a50');
+        R(-100, -66, 200, 6, '#7a4510');
+        break;
+      case 'bowl': {   // tô mì toả sáng, khói bốc
+        R(-90, -6, 180, 8, H.INK);
+        ctx.fillStyle = H.INK; ctx.beginPath(); ctx.moveTo(-96, -10); ctx.lineTo(96, -10); ctx.lineTo(60, 70); ctx.lineTo(-60, 70); ctx.fill();
+        ctx.fillStyle = '#e8322a'; ctx.beginPath(); ctx.moveTo(-90, -6); ctx.lineTo(90, -6); ctx.lineTo(56, 64); ctx.lineTo(-56, 64); ctx.fill();
+        R(-70, 20, 140, 6, '#ffd23f');
+        ctx.fillStyle = '#f3d27a'; ctx.beginPath(); ctx.ellipse(0, -8, 90, 16, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff3c0'; ctx.lineWidth = 2;
+        for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(i * 20, -14); ctx.quadraticCurveTo(i * 20 + 10, -4, i * 20 + 4, 2); ctx.stroke(); }
+        R(20, -18, 26, 10, '#c9781a'); R(-44, -16, 18, 8, '#6bff7a');
+        for (let i = 0; i < 6; i++) { const ph = (t * 0.7 + i / 6) % 1; R(-50 + i * 20 + Math.sin(t * 3 + i) * 6, -30 - ph * 80, 6, 10, `rgba(240,240,255,${0.5 * (1 - ph)})`); }
+        break;
+      }
+      case 'boots':   // đôi giày đá bóng cũ: da nâu sờn, dây buộc, ánh vàng lướt qua
+        [[-70, 0], [40, 10]].forEach(([x, y], i) => {
+          R(x - 4, y - 44, 42, 48, H.INK); R(x - 4, y - 8, 64, 32, H.INK); R(x, y - 40, 34, 40, '#7a4a22'); R(x, y - 4, 56, 24, '#7a4a22'); R(x, y + 16, 56, 6, '#3a2410');
+          for (let k = 0; k < 4; k++) R(x + 6, y - 34 + k * 8, 22, 2, '#f3ead7');
+          for (let k = 0; k < 4; k++) R(x + 4 + k * 14, y + 22, 4, 5, '#9aa0a8');   // đinh giày
+          R(x + 36, y - 2, 10, 4, '#a8703a');
+        });
+        { const sh = ((t * 0.8) % 1.6) - 0.3; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.5; R(-80 + sh * 200, -50, 14, 90, '#fff3a8'); ctx.restore(); }
+        break;
+    }
+    ctx.restore();
+    H.vignette(0.55);
+    if (S.cueOnce('item', true)) SFC.Audio.reveal ? SFC.Audio.reveal() : SFC.Audio.whoosh();
   });
 
   /* ---------- nâng cúp ---------- */

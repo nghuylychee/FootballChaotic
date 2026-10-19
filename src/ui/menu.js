@@ -58,9 +58,9 @@ window.SFC = window.SFC || {};
   const PLAY_PAGES = ['party', 'story', 'online', 'join', 'lobby'];
   const PLAY_TABS = ['party', 'story', 'online'];   // trang mở khi đổi sang từng tab (Q / E)
   // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, TÚI ĐỒ
-  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'privacy', 'controls', 'ach', 'road'];
+  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'storytest', 'privacy', 'controls', 'ach', 'road'];
   // trang không có logo, tiêu đề là 1 dòng ngang cả màn như SHOP (NHÂN VẬT thêm LV / XP / vàng bên phải)
-  const HEAD_PAGES = ['char', 'ults', 'attrs', 'look', 'settings', 'display', 'test'];
+  const HEAD_PAGES = ['char', 'ults', 'attrs', 'look', 'settings', 'display', 'test', 'storytest'];
   const WALLET_PAGES = ['char', 'ults', 'attrs', 'look'];
   const PRIVATE_PAGES = ['online', 'join', 'lobby'];
 
@@ -221,6 +221,8 @@ window.SFC = window.SFC || {};
               { kind: 'btn', label: 'END SCREEN TEST', sub: 'Preview 2-beat end screen · switch WIN / LOSE / PROMOTE / DEMOTE', danger: true, act: () => SFC.UI.devEndTest('win', true) },
               // PHÒNG TEST TUYỆT KỸ (src/ui/ulttest.js): thử từng Tuyệt kỹ, năng lượng tự đầy, [ ] đổi chiêu
               { kind: 'btn', label: 'ULT TEST ROOM', sub: 'Try every Ultimate · [ ] switch · \\ ★★ · O enemy ults', danger: true, act: () => SFC.UltTest.start(this.app) },
+              // PHÒNG TEST FOOTBALL STORY (src/ui/storytest.js): xem cut scene / đá thẳng vòng bất kỳ của Story bất kỳ
+              { kind: 'btn', label: 'STORY TEST', sub: 'Jump to any Story scene or round · rule cheats in match', danger: true, act: () => this.go('storytest') },
               // xem lại PROLOGUE (cut scene + trận mơ)
               { kind: 'btn', label: 'PROLOGUE', sub: 'Replay the intro & tutorial match', danger: true, act: () => SFC.Tutorial.begin(this.app) },
               { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drill cards · stats reset on close', danger: true, act: () => this.testDrill() },
@@ -233,6 +235,8 @@ window.SFC = window.SFC || {};
             ];
           }
           return [];
+        case 'storytest':
+          return SFC_DEBUG && SFC.StoryTest ? SFC.StoryTest.items(this) : [];
         case 'display':
           // SETTINGS > SOUND & DISPLAY: lưu ngay khi đổi (meta/settings.js)
           return [
@@ -479,6 +483,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'party') return this.go('home');
       if (this.page === 'path') return this.go('party');
       if (this.page === 'training') this.go('path');
+      else if (this.page === 'storytest') this.go('test');
       else if (['controls', 'display', 'test', 'privacy'].includes(this.page)) this.go('settings');
       else if (['path', 'online', 'tutorial', 'char', 'settings', 'wishlist'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go('online');
@@ -519,7 +524,7 @@ window.SFC = window.SFC || {};
       // it.foot: mục nằm dưới đáy cột trái (ngay trên dòng gợi ý phím), thứ tự ↑↓ vẫn theo danh sách
       const list = this.page === 'ults' ? this.ultGrid(items) : items.map((it, i) => (it.foot ? '' : this.renderItem(it, i))).join('');
       const foot = items.map((it, i) => (it.foot ? this.renderItem(it, i) : '')).join('');
-      const titles = { ults: _t('ULT BOOK'), path: _t('MAIN PATH'), training: _t('TRAINING'), settings: _t('SETTINGS'), display: _t('SOUND & DISPLAY'), test: 'TEST', name: _t('YOUR NAME'), char: _t('CHARACTER'), attrs: _t('STATS'), look: _t('APPEARANCE'),
+      const titles = { ults: _t('ULT BOOK'), path: _t('MAIN PATH'), training: _t('TRAINING'), settings: _t('SETTINGS'), display: _t('SOUND & DISPLAY'), test: 'TEST', storytest: 'TEST · STORY', name: _t('YOUR NAME'), char: _t('CHARACTER'), attrs: _t('STATS'), look: _t('APPEARANCE'),
         wishlist: MPATH().demoOver() ? _t('DEMO COMPLETE') : _t('FULL GAME') };
       const small = this.page !== 'home', headed = HEAD_PAGES.includes(this.page);
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';

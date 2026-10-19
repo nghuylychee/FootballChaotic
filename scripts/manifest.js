@@ -120,6 +120,7 @@ const FILES = [
   ['src/ui/langpick.js', 'game'],
   ['src/ui/menu.js', 'game'],
   ['src/ui/ulttest.js', 'game'],                           // phòng test Tuyệt kỹ (dev, SFC_DEBUG — bản đóng gói thành rỗng)
+  ['src/ui/storytest.js', 'game'],                         // phòng test FOOTBALL STORY (dev, SFC_DEBUG — bản đóng gói thành rỗng)
   ['src/ui/online.js', 'game'],
   ['src/main.js', 'game'],
 ];

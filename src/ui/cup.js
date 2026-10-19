@@ -133,7 +133,8 @@ window.SFC = window.SFC || {};
     // lời thoại config -> cảnh cut scene (mỗi dòng 1 cảnh). kind: intro · before · after · outro, team = đối thủ của vòng
     scenes(lines, kind, team = null) {
       const s = CUP().story(), out = [];
-      const def = (who) => (kind === 'outro' ? 'cupLift' : who === 'host' ? (kind === 'intro' ? 'cupAlley' : 'cupHost')
+      const N = s.narrator || {};   // người dẫn truyện riêng của Story (tên + look trên khuôn cupHost, art mặc định)
+      const def = (who) => (kind === 'outro' ? 'cupLift' : who === 'host' ? (kind === 'intro' ? 'cupAlley' : N.art || 'cupHost')
         : kind === 'after' && who === 'opp' ? 'cupSad' : 'cupTalk');
       // trước trận: cảnh VS (tên vòng) trước câu đầu tiên của 2 đội
       let vs = kind === 'before';
@@ -145,18 +146,19 @@ window.SFC = window.SFC || {};
         }
         const art = l.art || def(l.who);
         out.push({ art, team: l.team || team, who: l.who, zoom: l.zoom, color: s.color, dur: l.dur || 1.6 + l.text.length * 0.035,
-          theme: s.theme, trophy: s.trophy, fillers: s.fillers,
+          theme: s.theme, trophy: s.trophy, fillers: s.fillers, host: N, item: l.item, young: l.young, fall: l.fall,
           lines: [{ at: 0.25, who: l.who, text: l.text, style: 'caption' }] });
       }
       // cảnh liền nhau cùng khuôn + cùng người: hình chạy tiếp, chỉ đổi lời thoại
-      out.forEach((sc, i) => { const p = out[i - 1]; if (p && p.art === sc.art && p.who === sc.who && p.team === sc.team) sc.keep = true; });
+      out.forEach((sc, i) => { const p = out[i - 1]; if (p && p.art === sc.art && p.who === sc.who && p.team === sc.team && p.item === sc.item && p.young === sc.young) sc.keep = true; });
       return out;
     },
     // người nói trên hộp chữ cut scene: tên + màu
     speaker(who, sc) {
       if (who === 'you') return { name: SFC.Profile.data.name || 'PLAYER', color: '#ffe14f' };
       if (who === 'opp') { const t = TEAMS()[sc.team] || {}; return { name: (t.players || [])[2] || t.name || '', color: t.kit ? t.kit.shirt : '#fff' }; }
-      return { name: SFC_CONFIG.stories.host, color: (CUP().story() || {}).color || '#ffe14f' };
+      const s = CUP().story() || {};
+      return { name: (s.narrator && s.narrator.name) || SFC_CONFIG.stories.host, color: s.color || '#ffe14f' };
     },
     // chiếu cut scene (app.screen = 'story', nhạc menu vẫn phát); xong / bỏ qua -> then
     cut(scenes, then) {
