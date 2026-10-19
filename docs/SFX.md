@@ -86,6 +86,34 @@ the `ult` sound is the part that tells you which Ultimate it is. Loudness was ch
 | `whistle(true)` | Full time | Two long blasts | referee whistle final, long whistle | 1 |
 | `goal` | Goal scored | Rising 4-note jingle over a noise burst | goal jingle, victory stinger, retro fanfare | 1 |
 
+## FOOTBALL STORY pitch rules
+
+Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>')` from `src/systems/matchmods.js`.
+
+| Name | Plays when | Current sound |
+|---|---|---|
+| `mod.thunk` | Ball bounces off a plastic stool, or a thrown stool lands (The Uncles) | Short hollow plastic knock |
+| `mod.stool` | A stool breaks (hard shot, or a thrown stool hits) | Plastic crack + pieces clattering |
+| `mod.honk` | Delivery lane starts flashing (Moped Boys) | Two-tone moped horn, twice |
+| `mod.vroom` | A Moped Boy hitches a ride | Engine rev |
+| `mod.bell` | School bell, two ghosts swap (School Ghosts) | Electric school bell ring |
+| `mod.grab` | Someone picks up a stool | Plastic scrape |
+| `mod.stomp` | ANGRY GIANTS (Block Wardens fall behind) | Two deep stomps |
+| `mod.beep` | Searchlight starts locking onto your ball carrier (Night Owls) | Double alarm beep |
+| `mod.siren` | FREEZE, or LOCKDOWN switches on the second light | Rising-falling siren |
+| `mod.coo` | Pigeon flock flies over (Pigeon Gang) | Two coos + wing flaps |
+| `mod.splat` | A pigeon bomb lands | Wet low splat |
+| `mod.wind` | Night wind gust starts (Sky Hoppers, THE STORM card) | Long rising-falling howl |
+| `mod.spray` | Spray wall starts (Billboard Kids) | Can rattle + hiss |
+| `mod.fall` | A lantern starts falling (Lantern Crew) | Falling whistle |
+| `mod.crash` | Lantern hits the ground | Low boom + paper crack |
+| `mod.sizzle` | Ball heats up (Noodle Kickers) | Sizzle with pops |
+| `mod.card` | Fortune card drawn (Fortune Tellers) | Card flip + mystic chime |
+| `mod.cart` | Market stall rolls in (Market Mamas) | Rattling cart wheels |
+| `mod.wave` | Tide rolls in (Rust Buckets) | Rising wave rush |
+| `mod.record` | "Back in my day..." (Grandpa's Squad) | Vinyl crackle + old tune |
+| `mod.star` | Golden star / golden boot (The Legends) | Rising sparkle arpeggio |
+
 ## Crowd
 
 Crowd volume follows the arena's crowd level (`render/crowd.js`). The settings live under `audio.crowd` in `config/game.config.js`.

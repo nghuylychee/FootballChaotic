@@ -33,7 +33,8 @@ window.SFC = window.SFC || {};
      *         noDraft / noAI: tắt chọn Core / AI (ảnh xem trước Core),
      *         tutorial: trận mơ PROLOGUE (src/game/tutorial.js): không đồng hồ tới khi g.clockOn, lượt chọn Core do kịch bản mở,
      *         noAiCores: cầu thủ AI không tự bốc Core ở lượt chọn,
-     *         cup: { id, round } — trận FOOTBALL STORY (src/meta/cup.js); knockout: hoà hết giờ = bàn thắng vàng không giới hạn }
+     *         cup: { id, round } — trận FOOTBALL STORY (src/meta/cup.js); knockout: hoà hết giờ = bàn thắng vàng không giới hạn,
+     *         mod: id luật trận (stories.mods, src/systems/matchmods.js) · barks: câu nói trong trận của đối thủ · score: [đội 0, đội 1] tỉ số lúc đầu trận }
      */
     constructor(opts) {
       const C = SFC_CONFIG.game;
@@ -146,6 +147,9 @@ window.SFC = window.SFC || {};
       this.slowScale = 1;
       this.stopT = 0;       // VHS Rewind: còn bao lâu cả sân đứng yên (chỉ later() + stopTick của Tuyệt kỹ chạy)
       this.stopTick = null; // fn(dt) -> true = xong: Tuyệt kỹ tự diễn trong lúc cả sân đứng yên (VHS Rewind tua ngược)
+      // FOOTBALL STORY: luật trận + câu nói của đối thủ (src/systems/matchmods.js) · tỉ số lúc đầu trận (luật nhà của The Uncles)
+      this.mod = SFC.MatchMods ? SFC.MatchMods.create(this) : null;
+      if (opts.score) this.teams.forEach((t, i) => { t.score = opts.score[i] || 0; });
       this.kickoff(0);
       // lượt chọn Core khởi đầu (trước khi giao bóng đầu trận)
       if (!opts.noDraft && !opts.training && this.cfg.match.preKickoffDraft && this.cfg.match.maxUpgrades > 0) this.startDraft(true);
@@ -382,6 +386,7 @@ window.SFC = window.SFC || {};
       this.stopT = 0;
       this.stopTick = null;
       this.cores.kickoff();
+      if (this.mod) SFC.MatchMods.kickoff(this);
     }
 
     /* ---------- VFX Kit: hit-stop / slow-mo (ảnh hưởng mô phỏng) ---------- */
@@ -401,6 +406,7 @@ window.SFC = window.SFC || {};
       if (this.freezeT > 0) { this.freezeT -= dt; return; }
       if (this.slowT > 0) { this.slowT -= dt; dt *= this.slowScale; }
       this.time += dt;
+      if (this.mod && (this.state === 'kickoff' || this.state === 'play')) SFC.MatchMods.clock(this, dt);
       switch (this.state) {
         case 'kickoff':
           this.stateT -= dt;
@@ -454,6 +460,7 @@ window.SFC = window.SFC || {};
       this.updatePossession();
       this.effects.update(dt);
       this.cores.update(dt);
+      if (this.mod) SFC.MatchMods.update(this, dt);
     }
 
     tickClock(dt) {
@@ -614,6 +621,7 @@ window.SFC = window.SFC || {};
       const cel = SFC.Celebrate.start(this, own ? null : by);
       this.emit('goal', { team: scorer, value, scorer: by ? by.name : '', own, pid: cel ? by.id : -1, cel });
       this.cores.goalScored(scorer, by);
+      if (this.mod) SFC.MatchMods.goal(this, scorer, own);
       this.sfx('goal');
       return true;
     }

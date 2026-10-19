@@ -248,11 +248,12 @@ window.SFC = window.SFC || {};
       const t = TEAMS()[rd.team];
       if (!t) return '';
       const sig = rd.signature && CORES()[rd.signature];
+      const mod = rd.mod && SFC_CONFIG.stories.mods[rd.mod];   // luật trận của đội (src/systems/matchmods.js)
       return `<div class="cu-opp" style="--tc:${t.kit.shirt}">
           <div class="cu-opp-h"><span>${esc(_t('NEXT OPPONENT'))}</span><b>${esc(t.name)}</b><em>${esc(t.tagline || '')}</em></div>
           <div class="cu-opp-b">
             <div class="cu-pl">${[0, 1, 2].map((i) => `<canvas data-team="${rd.team}" data-idx="${i}"></canvas>`).join('')}</div>
-            <div class="cu-opp-d"><span>${esc(t.desc || '')}</span>${sig ? `<span class="cu-sig">${PX().core(rd.signature, 'sm')} ${esc(_t('Signature: {core}', { core: sig.name }))}</span>` : ''}</div>
+            <div class="cu-opp-d"><span>${esc(t.desc || '')}</span>${sig ? `<span class="cu-sig">${PX().core(rd.signature, 'sm')} ${esc(_t('Signature: {core}', { core: sig.name }))}</span>` : ''}${mod ? `<span class="cu-rule"><b>${esc(_t('PITCH RULE'))} · ${esc(mod.name)}</b>${esc(mod.hint)}</span>` : ''}</div>
           </div>
         </div>`;
     },

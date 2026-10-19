@@ -381,6 +381,7 @@ window.SFC = window.SFC || {};
       g.effects.burst(this.x, this.y, 14, '#fff6a0', 6, 60);
       g.effects.shake(SFC_CONFIG.game.fx.shakeHit);
       g.sfx('hit', opts.type);
+      if (g.mod) SFC.MatchMods.hitBy(g, this, opts);   // luật trận FOOTBALL STORY (trọng tài bắt lỗi)
       return true;
     }
   }

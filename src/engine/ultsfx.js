@@ -153,6 +153,46 @@ window.SFC = window.SFC || {};
     /* ---- 36. Mega Magnet: nam châm rơi rít xuống + tiếng ù từ trường suốt lúc hút ---- */
     'magnet.drop'() { T({ freq: 1200, to: 200, dur: 0.4, type: 'sine', vol: 0.13 }); },
     'magnet.hum'() { const p = P('mega_magnet'), t = (p.time || 2) + 0.2; T({ freq: 60, dur: t, type: 'sine', vol: 0.12, attack: 0.05 }); T({ freq: 120, dur: t, type: 'square', vol: 0.025, vib: 10, vibDepth: 3 }); },
+
+    /* ---- LUẬT TRẬN FOOTBALL STORY (src/systems/matchmods.js), cùng cách gọi g.sfx('ult', 'mod.<sự kiện>') ---- */
+    // ghế nhựa: bóng dội "bộp" rỗng · sút vỡ: nhựa nứt "rắc" + rơi lạch cạch
+    'mod.thunk'() { T({ freq: 260, to: 180, dur: 0.07, type: 'triangle', vol: 0.14 }); N({ dur: 0.04, vol: 0.08, freq: 1200, q: 1.5 }); },
+    'mod.stool'() { N({ dur: 0.12, vol: 0.22, freq: 2600, q: 0.8 }); T({ freq: 420, to: 140, dur: 0.12, type: 'square', vol: 0.08 }); [0.14, 0.22, 0.28].forEach((d) => T({ freq: R(300, 500), dur: 0.04, type: 'triangle', vol: 0.08, delay: d })); },
+    // nhặt ghế lên: nhựa cọ "sột"
+    'mod.grab'() { N({ dur: 0.06, vol: 0.1, freq: 1800, q: 1.2 }); T({ freq: 330, to: 440, dur: 0.06, type: 'triangle', vol: 0.08 }); },
+    // xe máy: còi "bíp bíp" 2 tiếng · quá giang: rồ ga
+    'mod.honk'() { [0, 0.16].forEach((d) => { T({ freq: 415, dur: 0.12, type: 'square', vol: 0.09, delay: d }); T({ freq: 523, dur: 0.12, type: 'square', vol: 0.06, delay: d }); }); },
+    'mod.vroom'() { T({ freq: 80, to: 240, dur: 0.4, type: 'sawtooth', vol: 0.1, vib: 25, vibDepth: 15 }); N({ dur: 0.35, vol: 0.06, freq: 400, type: 'lowpass' }); },
+    // chuông trường reo: chuông điện kêu reng reng
+    'mod.bell'() { for (let i = 0; i < 8; i++) { T({ freq: 1760, dur: 0.05, type: 'square', vol: 0.05, delay: i * 0.06 }); T({ freq: 2349, dur: 0.05, type: 'square', vol: 0.03, delay: i * 0.06 + 0.03 }); } },
+    // khổng lồ nổi giận: dậm đất trầm 2 nhịp
+    'mod.stomp'() { boom(0.35, 0.4); boom(0.3, 0.4, 0.28); },
+    /* Story 2–4 */
+    // bồ câu bay qua: "gù gù" + vỗ cánh · bãi phân rơi: "bẹp"
+    'mod.coo'() { [0, 0.18].forEach((d) => T({ freq: 420, to: 330, dur: 0.14, type: 'sine', vol: 0.1, vib: 18, vibDepth: 25, delay: d })); for (let i = 0; i < 5; i++) N({ dur: 0.03, vol: 0.05, freq: 1500, q: 1, delay: 0.3 + i * 0.05 }); },
+    'mod.splat'() { N({ dur: 0.08, vol: 0.14, freq: 600, type: 'lowpass' }); T({ freq: 180, to: 90, dur: 0.08, type: 'sine', vol: 0.12 }); },
+    // gió đêm: tiếng hú dài lên xuống
+    'mod.wind'() { N({ dur: 1.4, vol: 0.12, freq: 500, to: 1400, q: 3 }); N({ dur: 1.4, vol: 0.06, freq: 900, to: 400, q: 4, delay: 0.3 }); },
+    // bình sơn: lắc lạch cạch + xịt
+    'mod.spray'() { [0, 0.07].forEach((d) => T({ freq: 2200, dur: 0.03, type: 'square', vol: 0.05, delay: d })); N({ dur: 0.5, vol: 0.12, freq: 6000, q: 0.6, delay: 0.15 }); },
+    // đèn lồng: rít rơi xuống · vỡ: giấy + tre đổ "rắc" trầm
+    'mod.fall'() { T({ freq: 1400, to: 500, dur: 0.9, type: 'sine', vol: 0.07 }); },
+    'mod.crash'() { boom(0.25, 0.35); N({ dur: 0.2, vol: 0.18, freq: 2400, q: 0.7 }); },
+    // bóng nóng: xèo xèo
+    'mod.sizzle'() { N({ dur: 0.7, vol: 0.12, freq: 5000, q: 0.8 }); for (let i = 0; i < 6; i++) N({ dur: 0.02, vol: 0.08, freq: 7000, q: 2, delay: R(0, 0.6) }); },
+    // rút bài: lật bài "phạch" + chuông ngân huyền bí
+    'mod.card'() { N({ dur: 0.05, vol: 0.15, freq: 3000, q: 1 }); seq([988, 1318, 1760], 0.08, { type: 'sine', dur: 0.4, vol: 0.07, vib: 6, vibDepth: 10, delay: 0.06 }); },
+    // xe đẩy sạp chợ: bánh xe lạch cạch
+    'mod.cart'() { for (let i = 0; i < 6; i++) T({ freq: R(140, 200), dur: 0.04, type: 'square', vol: 0.06, delay: i * 0.09 }); },
+    // thuỷ triều: sóng ào lên
+    'mod.wave'() { N({ dur: 1.2, vol: 0.14, freq: 300, to: 1200, type: 'lowpass', attack: 0.4 }); },
+    // "hồi đó...": kim đĩa than sột soạt + nốt đàn cũ
+    'mod.record'() { for (let i = 0; i < 8; i++) N({ dur: 0.02, vol: 0.06, freq: 2500, q: 1, delay: R(0, 0.8) }); seq([392, 330, 294], 0.22, { type: 'triangle', dur: 0.3, vol: 0.07, delay: 0.1 }); },
+    // ngôi sao vàng: tiếng lấp lánh đi lên
+    'mod.star'() { seq([1046, 1318, 1568, 2093], 0.05, { type: 'square', dur: 0.12, vol: 0.06 }); N({ dur: 0.3, vol: 0.05, freq: 8000, q: 1, delay: 0.1 }); },
+    // đèn pha: bíp cảnh báo khi bị soi · FREEZE: còi báo động lên xuống
+    'mod.beep'() { T({ freq: 1320, dur: 0.06, type: 'square', vol: 0.07 }); T({ freq: 1320, dur: 0.06, type: 'square', vol: 0.07, delay: 0.12 }); },
+    'mod.siren'() { T({ freq: 660, to: 990, dur: 0.3, type: 'sawtooth', vol: 0.07 }); T({ freq: 990, to: 660, dur: 0.3, type: 'sawtooth', vol: 0.07, delay: 0.3 }); },
   };
 
   SFC.Audio.ult = function (key) { const f = LIB[key]; if (f) f(); };

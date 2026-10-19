@@ -117,6 +117,9 @@ window.SFC = window.SFC || {};
         return;
       }
 
+      // luật trận FOOTBALL STORY (ghế nhựa, src/systems/matchmods.js): đang cầm ghế -> phím ra đòn = ném ghế
+      if (p.carry && (pressed('shoot') || pressed('lob'))) { buf.shoot = buf.lob = 0; if (SFC.MatchMods.throwCarry(g, p, mx, my)) return; }
+
       if (!p.ot) p.charging = false;
       p.cancelPass();
 

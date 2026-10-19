@@ -19,6 +19,10 @@
 | 8 | Thống kê | Trận Story **tính vào** `matches` / `wins` / `goals` (achievement cũ, level) |
 | 9 | Độ khó | **Config theo từng Story**, người chơi không chọn |
 | 10 | Chủ phòng thoát giữa cup | **Kết thúc cup** cho cả phòng |
+| 11 | Luật trận (2026-10-19) | **Mỗi đối thủ một luật trận, được nặng tay** cho thấy rõ, nhưng **không lấy / cấm Core** (mất fun) |
+| 12 | Mạch truyện (2026-10-19) | **Mỗi Story gói gọn trong chính nó**, không có cốt truyện xuyên suốt các Story |
+| 13 | Đồng đội (2026-10-19) | Vẫn là đồng đội **mở** (`SFC.Mates`), không thành nhân vật cố định, vì hướng tới co-op |
+| 14 | Co-op online (2026-10-19) | Chạy **player-host** (người chơi làm chủ phòng), **không qua máy chủ riêng** |
 
 ## Luồng chơi
 
@@ -77,12 +81,45 @@ Mỗi Story là **1 mục config** (đề xuất `config/stories.config.js`), kh
 PvE được phép làm điều PvP không làm được: **đối thủ bất đối xứng**. Mỗi vòng nên có 1 nét riêng người chơi nhớ được:
 - **Đội** có kit, tên, cầu thủ, `coreWeights` / `aiStyle` riêng (đội chỉ đấm, đội chỉ chuyền, đội toàn thủ môn...).
 - **Core đặc trưng** (`signature`): có sẵn từ boss Main Path.
-- **Luật trận (`mods`, CHƯA LÀM)**, dùng lại status sẵn có trước khi làm cái mới. Ví dụ:
+- **Luật trận (`mods`, đã làm cho Ward Cup, xem mục "Luật trận" bên dưới)**, ưu tiên dùng lại status sẵn có. Ý tưởng cũ:
   - sân trơn: `slip` theo chu kỳ
   - đội AI to gấp đôi: ngược với `tiny`
   - bóng nặng
   - đối thủ có Tuyệt kỹ ngay từ đầu trận
 - **Boss chung kết**: 1 gimmick lớn, có thể có Tuyệt kỹ chỉ boss dùng được. Vẫn theo luật Tuyệt kỹ: có telegraph và né được bằng Z.
+
+### Luật trận (cả 4 Story, 2026-10-19)
+Mỗi vòng có `mod` (id trong `stories.mods`, số liệu ở config) chạy bởi `src/systems/matchmods.js` (`SFC.MatchMods`), hình ở `src/render/modsdraw.js`.
+- **Chủ luật = đội đối thủ:** luật chỉ đánh vào đội bạn, có khi còn giúp đội họ. **Không lấy / cấm Core** (user chốt).
+- Mỗi luật **báo trước bằng hình** (làn nhấp nháy, bóng đổ, vòng đếm ngược...) và **lướt (Z) né được** nếu là đòn trúng người. Có banner tên luật + 1 câu gợi ý lúc bóng lăn lần đầu, có dòng PITCH RULE ở thẻ đối thủ màn cup, và lời thoại trước trận giải thích luật.
+- **Leo thang khi đội chủ luật bị dẫn** (dày hơn, mạnh hơn): trận không dễ dần khi bạn đã dẫn.
+- Hình = `Effects.prop` / `pop`. Vật di chuyển (xe máy, đèn pha, ghế bay, đàn chim) có vị trí là hàm thuần của tuổi vật thể (`MatchMods.at`), nên khi làm co-op player-host thì khách vẽ được qua lệnh hiệu ứng sẵn có. Ma mờ tính lúc vẽ (`MatchMods.alpha`).
+- Hook trong code trận: `match.js` (create / kickoff / clock / update / goal), `human.js` (cầm ghế: phím ra đòn = ném), `actions.js` lightHit (khổng lồ: `shrug`), `player.js` hit (trọng tài: `hitBy`), AI qua `g.aiHook` (các chú đi nhặt ghế). Trạng thái dùng lại `SFC.CoreStat` (trơn té, teo nhỏ) của `cores-ult2.js`. Hệ số tốc độ liên tục dùng `keepSpeed` (1 buff mỗi người, không chồng).
+- Âm thanh riêng: `g.sfx('ult', 'mod.*')` (`src/engine/ultsfx.js`, danh sách ở `docs/SFX.md`).
+- **Câu nói trong trận** (`rounds[i].barks`: `kickoff` · `goal` · `conceded` · `mod`): bong bóng thoại trên đầu đội trưởng đối thủ (popup kind `talk`), cách nhau `stories.barkGap` giây.
+- **Biến tấu thể thức:** `rounds[i].score` = tỉ số lúc giao bóng (The Uncles được dẫn 1–0 theo "luật nhà").
+- Sao `modClean` (vô địch mà luật trận chung kết không trúng đội bạn lần nào, `g.mod.hits`) có sẵn, hiện chưa Story nào dùng.
+
+| Story | Vòng | Đội | Luật | Cách chơi | Khi họ bị dẫn |
+|---|---|---|---|---|---|
+| Ward Cup | 1/8 | The Uncles | **PLASTIC STOOLS** + bắt đầu thua 0–1 | Ghế nhựa trên sân: không cầm bóng mà đi vào là nhặt lên, ra đòn = ném. Ghế trúng người: choáng + rơi bóng (lướt né được). Các chú cũng đi nhặt ghế ném bạn (mỗi lúc 1 người). Ghế trên sân chặn người cầm bóng, bóng dội ra, sút mạnh vỡ ghế | (luật nhà: họ dẫn sẵn) |
+| | Tứ kết | Moped Boys | **DELIVERY LANE** | Làn dọc nhấp nháy rồi xe máy phóng qua: văng + choáng + rơi bóng. Moped Boys trúng thì được quá giang | xe dày hơn |
+| | Bán kết | School Ghosts | **NOW YOU SEE THEM** | Ma xa bóng mờ dần còn bóng hình. Chuông reo: 2 con ma đổi chỗ | chuông dày hơn |
+| | Chung kết | Block Wardens | **GIANT WARDENS** | Cả đội to x1.5, mạnh hơn, chậm hơn chút. Đấm nhẹ bật ra (TOO BIG!), phải dùng đòn nặng | ANGRY GIANTS: to x1.7 |
+| Rooftop | 1/8 | Pigeon Gang | **PIGEON BOMBS** | Đàn chim bay ngang thả "bom" (vòng báo chỗ rơi), bãi nằm lại: dẫm phải trơn té | thả dày hơn |
+| | Tứ kết | Sky Hoppers | **NIGHT WIND** | Gió dọc sân: bóng trôi theo gió, đội bạn bị đẩy, Hoppers xuôi gió chạy nhanh | gió hay thổi về khung thành bạn |
+| | Bán kết | Billboard Kids | **SPRAY WALLS** | Tường sơn mọc giữa bóng và khung thành bạn tấn công: chặn người + bóng thấp (lốp qua được), Kids đi xuyên | dày hơn |
+| | Chung kết | Night Owls | **SEARCHLIGHT** | Đèn pha quét sân, cầm bóng trong đèn đủ lâu = FREEZE (từ bản Ward Cup đầu, user chuyển sang đây) | LOCKDOWN: đèn thứ 2 |
+| Night Market | 1/8 | Lantern Crew | **FALLING LANTERNS** | Đèn lồng rơi gần bóng (bóng đổ to dần): choáng + văng | 2 cái một lúc |
+| | Tứ kết | Noodle Kickers | **HOT BALL** | Bóng nóng một lúc: cầm quá lâu (vòng cam) là bỏng, rơi bóng. Noodle Kickers cầm thoải mái | nóng dày hơn |
+| | Bán kết | Fortune Tellers | **FORTUNE CARDS** | Rút bài đổi trận vài giây: THE MOUSE (đội bạn teo nhỏ) · THE STORM (1 cơn gió) · THE STAR (Tellers chạy nhanh) | rút dày hơn |
+| | Chung kết | Market Mamas | **MARKET STALLS** | Sạp hàng đẩy ra từ mép trên / dưới, bóp sân: người bị đẩy, bóng dội | 2 sạp cùng lúc |
+| Legends | 1/8 | Rust Buckets | **HIGH TIDE** | Nước dâng từ mép trên / dưới: đội bạn lội chậm, bóng lăn nặng. Thuỷ thủ không sao | dâng dày hơn |
+| | Tứ kết | Retired Refs | **THE REFS** | Người chơi đánh choáng 1 Ref: thẻ vàng, lần 2 thẻ đỏ (đứng ngoài vài giây). Đồng đội AI không bị thẻ. Refs phạm lỗi thoải mái | — |
+| | Bán kết | Grandpa's Squad | **BACK IN MY DAY** | "Hồi đó...": màn hình sepia, đội bạn chạy chậm như phim cũ | dày hơn |
+| | Chung kết | The Legends | **GOLDEN STAR** | 1 Legend thành STAR (sút mạnh, chạy nhanh). Cướp bóng từ STAR: bạn nhận GOLDEN BOOT | — |
+
+Kịch bản cả 4 Story viết lại theo cùng mạch, mỗi Story gói gọn trong chính nó: đội boss chung kết xuất hiện từ cảnh mở cup, sau các vòng lại thắng đậm hoặc cà khịa bạn (có lúc nhân vật chính chột dạ); host giải thích luật trước mỗi trận; các đội đã thua kéo nhau đi cổ vũ bạn ở chung kết.
 
 ### Câu chuyện = cut scene kiểu PROLOGUE (user chốt 2026-10-18)
 Cốt truyện kể bằng cut scene giống PROLOGUE (`src/ui/story.js`: cả màn là cảnh vẽ procedural, chữ gõ máy, chữ hét rung màn, giữ Enter để bỏ qua),
@@ -127,7 +164,7 @@ chiếu lúc mở cup · trước mỗi trận · sau trận thắng · lúc nâ
   - Lineup co-op có sẵn, tất cả người ở đội 0.
   - Hết trận thì về màn BRACKET, **không gửi `lobby`**. Trạng thái cup (Story, vòng, kết quả bracket) đi trong `start{opts.story}`.
   - Vào lại giữa cup dùng cơ chế `resume` sẵn có.
-- **Máy chủ riêng:** chạy `Room` nên cần đọc `stories.config.js` (thêm target `server` trong `scripts/manifest.js`) và các đội mới. Bump `net.protocol`. Server phải redeploy, trước khi redeploy thì phòng Story rơi về player-hosting (vẫn chạy được).
+- **Chỉ player-host (user chốt 2026-10-19):** phòng Story do người chơi làm chủ (Steam P2P / PeerJS), không qua máy chủ riêng. Máy chủ vẫn nạp `stories.config.js` + `matchmods.js` (target `server`) nhưng không mở phòng Story.
 - **Luật không đổi:** người chơi không được biết phòng chạy kiểu nào (server / Steam / PeerJS). Mọi chữ trung tính.
 - **Demo:** `config/demo.config.js` thêm `stories: 1` (số Story chơi được). Story khoá bấm vào ra thông báo "full game", theo luật CrazyGames về link store.
 - **Mỗi luật trận mới, Core boss mới:** theo luật cũ, có hình trong `src/render/vfx.js` (không có Core vô hình), có SFX riêng nếu là Tuyệt kỹ.
@@ -144,7 +181,7 @@ chiếu lúc mở cup · trước mỗi trận · sau trận thắng · lúc nâ
 ## Việc tiếp theo
 
 1. **Co-op online qua mã phòng** (chưa làm): loại phòng `story` trong `Room`, trạng thái cup (Story, vòng, bracket) trong `start{opts.cup}`, màn cup chung cho cả phòng (chủ phòng bấm KICK OFF, hội thoại chạy cùng lúc), người mới vào giữa 2 trận nhận ghế AI, chủ phòng thoát = hết cup. Bump `net.protocol`.
-2. Luật trận `mods` cho boss / đội đặc biệt.
+2. Luật trận `mods`: cả 4 Story đã có (Ward Cup user duyệt 2026-10-19 sau 2 chỉnh sửa; Story 2–4 chờ user chơi thử). Bản dịch các chữ mới (tên luật, câu nói, lời thoại) làm sau khi user duyệt nội dung.
 2b. Co-op online: cut scene chiếu cùng lúc ở mọi máy (như màn giới thiệu đội: chủ phòng chờ cả phòng xem xong).
 3. Story thứ 5 trở đi (chỉ cần config + lời thoại; khuôn cảnh / theme mới khi muốn).
 
@@ -162,7 +199,7 @@ Chưa làm: tìm trận co-op với người lạ, luân lưu, cut scene procedu
 
 | # | Story | theme / cúp | Độ khó (Elo AI) | Đối thủ (1/8 → chung kết) | Sao | Costume vô địch |
 |---|---|---|---|---|---|---|
-| 1 | THE WARD CUP | alley · nồi cơm | 30 → 240 | The Uncles · Moped Boys · School Ghosts · **Block Wardens** | vô địch · chung kết sạch lưới · hat-trick | Ward Cup (nồi cơm vàng) |
+| 1 | THE WARD CUP | alley · nồi cơm | 30 → 240 | The Uncles · Moped Boys · School Ghosts · **Block Wardens** (mỗi đội 1 luật trận) | vô địch · chung kết sạch lưới · hat-trick | Ward Cup (nồi cơm vàng) |
 | 2 | ROOFTOP NIGHT LEAGUE | rooftop · cúp | 380 → 700 | Pigeon Gang · Sky Hoppers · Billboard Kids · **Night Owls** | vô địch · thắng chung kết cách 3 bàn · hat-trick | Night Owl Cap |
 | 3 | NIGHT MARKET CUP | market · cúp | 620 → 1150 | Lantern Crew · Noodle Kickers · Fortune Tellers · **Market Mamas** | vô địch · không cần bàn thắng vàng · 12 bàn cả cup | Lantern Hat |
 | 4 | GRANDPA'S LEGENDS | stadium · cúp | 1450 → 2700 | Rust Buckets · Retired Refs · Grandpa's Squad · **The Legends** | vô địch · chung kết sạch lưới · trận nào cũng thắng cách 2 bàn | Golden Laurel |

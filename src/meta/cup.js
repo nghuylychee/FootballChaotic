@@ -168,6 +168,7 @@ window.SFC = window.SFC || {};
           if (!R.golden) star('noGolden');
           star('goals', (x) => R.scored >= (x.n || 12));
           if (R.minMargin >= 2) star('sweep');
+          if (game.mod && game.mod.cfg && !game.mod.hits) star('modClean');   // luật trận chung kết không trúng đội bạn lần nào
           // costume vô địch: chỉ lần đầu
           if (!rec.wins && s.reward && s.reward.item && SFC_CONFIG.progression.items[s.reward.item]) {
             item = s.reward.item;

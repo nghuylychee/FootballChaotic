@@ -114,6 +114,8 @@ window.SFC = window.SFC || {};
       const rank = !!g.opts.mainPath, seatRing = (c) => c && (!rank || c === cp);
       // Smoke Bomb: người tàng hình (p.ghostT) — đối thủ của máy này không thấy gì (cả bóng ở chân), đội mình thấy bóng mờ
       const unseen = (p) => p.ghostT > 0 && g.humanTeam >= 0 && p.team !== g.humanTeam;
+      // luật trận School Ghosts (src/systems/matchmods.js): ma xa bóng mờ dần — vẫn còn bóng hình, chỉ mất vòng chân
+      const faint = (p) => (g.mod && SFC.MatchMods ? SFC.MatchMods.alpha(g, p) : 1);
 
       const drawFootRing = (cx, cy, r, thick, col) => {
         const OUT = SP().OUT;
@@ -125,7 +127,7 @@ window.SFC = window.SFC || {};
       if (!g.preview && g.humanTeam >= 0) {
         const FR = C.footRings || { me: { r: 8, thick: 1 }, other: { r: 7, thick: 1 } };
         for (const p of g.players) {
-          if (unseen(p)) continue;   // vòng chân không được làm lộ người đang tàng hình
+          if (unseen(p) || faint(p) < 0.6) continue;   // vòng chân không được làm lộ người đang tàng hình / ma đang mờ
           const isMe = p === cp;
           const isAlly = p.team === g.humanTeam;
           const col = isMe ? CC.me : isAlly ? CC.ally : CC.opp;
@@ -177,7 +179,7 @@ window.SFC = window.SFC || {};
           // hoảng sợ (Panic Ball): run lẩy bẩy
           const shiver = SFC.VFX.has(g, p, 'panic') ? (Math.floor(t * 30) % 2 ? 1 : -1) : 0;
           if (shiver) { ctx.save(); ctx.translate(shiver, 0); }
-          let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.28 + 0.08 * Math.sin(t * 18) : 1);
+          let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.28 + 0.08 * Math.sin(t * 18) : faint(p));
           ctx.globalAlpha = 1;
           if (shiver) ctx.restore();
           if (s !== 1) { ctx.restore(); hy = p.y + (hy - p.y) * s; }

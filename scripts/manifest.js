@@ -76,6 +76,7 @@ const FILES = [
   ['src/systems/effects.js', 'game sandbox itch server'],
   ['src/systems/vfxkit.js', 'game sandbox itch server'],
   ['src/systems/celebrate.js', 'game sandbox itch server'],   // ăn mừng bàn thắng: chọn động tác + di chuyển
+  ['src/systems/matchmods.js', 'game sandbox itch server'],   // FOOTBALL STORY: luật trận của từng đội + câu nói trong trận
   ['src/systems/ai.js', 'game sandbox itch server'],
   ['src/systems/human.js', 'game sandbox itch server'],
   ['src/game/match.js', 'game sandbox itch server'],
@@ -85,6 +86,7 @@ const FILES = [
   ['src/render/background.js', 'game sandbox itch'],
   ['src/render/crowd.js', 'game sandbox itch'],
   ['src/render/vfx.js', 'game sandbox itch'],
+  ['src/render/modsdraw.js', 'game sandbox itch'],   // FOOTBALL STORY: hình vật thể của luật trận
   ['src/render/renderer.js', 'game sandbox itch'],
   ['src/render/pixelicons.js', 'game itch'],
   ['src/net/transport.js', 'game server'],                 // máy chủ: NetCommon (mã phòng)

@@ -244,12 +244,12 @@ window.SFC = window.SFC || {};
 
   /* ---------- vật thể trên sân của Tuyệt kỹ (Effects.prop, docs/ULT_REDESIGN.md) ---------- */
   // FLOOR: nằm trên mặt sân, dưới cầu thủ · UPRIGHT: đứng trên sân, xếp chiều sâu cùng cầu thủ · TOP: vẽ trên cùng
-  const PROP_FLOOR = { trail: 1, puddle: 1, peel: 1, mark: 1, gaze: 1, magic: 1, moon: 1, dot: 1, chain: 1, stance: 1, magnet: 1, quake: 1, qring: 1, target: 1, rubble: 1 };
-  const PROP_TOP = { glove: 1, foot: 1, pips: 1, smoke: 1, boomer: 1, string: 1, qte: 1, mhand: 1 };   // khói phủ lên người (đối thủ trong khói vẫn thấy mờ mờ)
+  const PROP_FLOOR = { splatfall: 1, splat: 1, graffitiwarn: 1, stallwarn: 1, tide: 1, lane: 1, trail: 1, puddle: 1, peel: 1, mark: 1, gaze: 1, magic: 1, moon: 1, dot: 1, chain: 1, stance: 1, magnet: 1, quake: 1, qring: 1, target: 1, rubble: 1 };
+  const PROP_TOP = { flock: 1, wind: 1, hot: 1, card: 1, spot: 1, alarm: 1, glove: 1, foot: 1, pips: 1, smoke: 1, boomer: 1, string: 1, qte: 1, mhand: 1 };   // khói phủ lên người (đối thủ trong khói vẫn thấy mờ mờ)
   // vật thể bám theo cầu thủ (a = id cầu thủ)
-  const PROP_FOLLOW = { tornado: 1, hand: 1, stance: 1, hammer: 1, truck: 1, stone: 1, hypno: 1, magic: 1, pips: 1, ape: 1, ride: 1, qte: 1, chicken: 1, panic: 1, link: 1 };
+  const PROP_FOLLOW = { card: 1, star: 1, stoolheld: 1, alarm: 1, tornado: 1, hand: 1, stance: 1, hammer: 1, truck: 1, stone: 1, hypno: 1, magic: 1, pips: 1, ape: 1, ride: 1, qte: 1, chicken: 1, panic: 1, link: 1 };
   // vẽ SAU sprite của người được bám (phủ lên người): tượng đá, xe tải, búa, mắt thôi miên
-  const PROP_OVER = { stone: 1, truck: 1, hammer: 1, hypno: 1, panic: 1, ape: 1, ride: 1, chicken: 1, link: 1 };
+  const PROP_OVER = { star: 1, stoolheld: 1, stone: 1, truck: 1, hammer: 1, hypno: 1, panic: 1, ape: 1, ride: 1, chicken: 1, link: 1 };
   // vật thể tự vẽ nhân vật thay cho sprite thật (Renderer bỏ qua drawPlayer — VFX.hides): King Kong, đứng trên tảng đá, con gà
   const PROP_HIDE = { ape: 1, ride: 1, chicken: 1 };
   const byId = (g, id) => g.players.find((q) => q.id === id) || null;
@@ -257,6 +257,7 @@ window.SFC = window.SFC || {};
   function propAt(g, o) {
     if (PROP_FOLLOW[o.kind]) { const q = byId(g, o.a); return q ? { x: q.x, y: q.y } : { x: o.x, y: o.y }; }
     if (o.kind === 'magnet') return { x: g.ball.x, y: g.ball.y - g.ball.z };
+    if (SFC.ModDraw && SFC.ModDraw.kinds[o.kind]) { const m = SFC.MatchMods && SFC.MatchMods.at(g, o); if (m) return m; }   // luật trận FOOTBALL STORY
     return { x: o.x, y: o.y };
   }
 
@@ -833,6 +834,8 @@ window.SFC = window.SFC || {};
         }
         break;
       }
+      default:   // vật thể luật trận FOOTBALL STORY (render/modsdraw.js)
+        if (SFC.ModDraw && SFC.ModDraw.kinds[o.kind]) SFC.ModDraw.draw(ctx, g, o, c, k, el, fade);
     }
     ctx.globalAlpha = 1;
   }
@@ -1351,6 +1354,18 @@ window.SFC = window.SFC || {};
         ctx.translate(x, Math.round(c.y)); ctx.rotate(rot); ctx.scale(scale, scale);
         ctx.globalAlpha = Math.min(1, (c.t / c.max) * 3);
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+        if (s.bubble) {   // bong bóng thoại (câu nói của đối thủ): nền trắng, viền tối, gạch dưới màu áo đội, đuôi chỉ xuống người nói
+          const bw = Math.ceil(ctx.measureText(str).width / 2) + 4, bh = Math.ceil(s.px / 2) + 4;
+          ctx.fillStyle = OUT_C;
+          ctx.fillRect(-bw - 1, -bh - 1, bw * 2 + 2, bh * 2 + 2);
+          ctx.beginPath(); ctx.moveTo(-4, bh); ctx.lineTo(0, bh + 6); ctx.lineTo(4, bh); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(-bw, -bh, bw * 2, bh * 2);
+          ctx.beginPath(); ctx.moveTo(-3, bh - 1); ctx.lineTo(0, bh + 4); ctx.lineTo(3, bh - 1); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = c.color && c.color[0] === '#' ? c.color : '#ffe14f'; ctx.fillRect(-bw, bh - 2, bw * 2, 2);
+          ctx.fillStyle = s.color; ctx.fillText(str, 0, 0);
+          ctx.restore();
+          continue;
+        }
         ctx.strokeStyle = OUT_C; ctx.lineWidth = s.lw;
         if (s.shadow) { ctx.fillStyle = OUT_C; ctx.strokeText(str, s.shadow, s.shadow); ctx.fillText(str, s.shadow, s.shadow); }
         ctx.strokeText(str, 0, 0);

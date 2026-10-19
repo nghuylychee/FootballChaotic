@@ -34,6 +34,7 @@ SFC.I18n.fields = [
   // FOOTBALL STORY (config/stories.config.js): tên vòng, tên Story, lời thoại, mục tiêu sao
   'stories.roundNames.*', 'stories.host', 'stories.list.*.name', 'stories.list.*.blurb', 'stories.list.*.stars.*.desc',
   'stories.list.*.intro.*.text', 'stories.list.*.outro.*.text', 'stories.list.*.rounds.*.before.*.text', 'stories.list.*.rounds.*.after.*.text',
+  'stories.list.*.rounds.*.barks.*.*', 'stories.mods.*.name', 'stories.mods.*.hint', 'stories.mods.*.lockdown', 'stories.mods.*.lockdownHint', 'stories.mods.*.rage', 'stories.mods.*.rageHint', 'stories.mods.*.cards.*.name', 'stories.mods.*.cards.*.hint',
   // thành tích (config/achievements.config.js)
   'achievements.list.*.name', 'achievements.list.*.desc',
   // chú thích nút trên sơ đồ tay cầm (SVG bề rộng cố định): dài hơn là bị cắt

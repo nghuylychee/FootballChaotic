@@ -71,6 +71,7 @@
         mates: [R.mates.map((m, i) => SFC.Mates.spec(m, mateRoles[i] || null)), null],
         signature: [null, rd.signature || null],
         knockout: true, cup: { id: R.id, round: R.round },
+        mod: rd.mod || null, barks: rd.barks || null, score: rd.score || null,   // luật trận + câu nói của đối thủ (src/systems/matchmods.js)
       });
     },
 

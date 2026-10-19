@@ -2555,6 +2555,8 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .cu-pl canvas { width: 40px; height: 44px; image-rendering: pixelated; margin-right: -6px; }
 .cu-opp-d { display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.05; color: #e6dccb; }
 .cu-sig { display: flex; align-items: center; gap: 4px; color: var(--gold); }
+.cu-rule { display: flex; flex-direction: column; gap: 2px; padding: 3px 5px; background: rgba(255, 61, 90, 0.12); border-left: 2px solid var(--tc); color: #e6dccb; }
+.cu-rule b { font-family: var(--px); font-size: 5px; font-weight: normal; letter-spacing: 1px; color: var(--tc); }
 .cu-tick { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 6px 8px; background: rgba(10, 11, 14, 0.6); border: 1px solid var(--edge); font-size: 12px; line-height: 1; color: var(--muted); }
 .cu-tick-h { font-family: var(--px); font-size: 5px; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; }
 .cu-res { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; }

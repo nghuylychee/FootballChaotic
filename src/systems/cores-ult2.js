@@ -162,6 +162,8 @@ window.SFC = window.SFC || {};
       return true;
     },
   };
+  SFC.CoreStat = Stat;   // luật trận FOOTBALL STORY (src/systems/matchmods.js) dùng lại trơn té, teo nhỏ...
+
 
   Object.assign(B, {
     /* ================= TUYỆT KỸ GỐC ================= */

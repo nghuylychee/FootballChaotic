@@ -514,6 +514,7 @@ window.SFC = window.SFC || {};
       for (const o of this.inFront(g, p, range, big ? 100 : L.arc, C.has(p, 'juggle'))) {
         if (this.dodged(g, o)) continue;
         hit = true;
+        if (g.mod && SFC.MatchMods.shrug(g, p, o)) continue;   // luật trận khổng lồ (FOOTBALL STORY): đấm nhẹ không tác dụng
         const d = U.norm(o.x - p.x, o.y - p.y);
         o.freeze(punchStop);   // người trúng đòn khựng (cả khi trụ được bóng)
         // tia va chạm ở điểm nắm đấm chạm người
