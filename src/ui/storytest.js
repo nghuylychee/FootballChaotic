@@ -50,16 +50,16 @@ if (SFC_DEBUG) (function () {
       const s = this.setup(this.ri), UI = SFC.CupUI, rd = s.rounds[this.ri];
       let list;
       if (kind === 'intro') list = UI.scenes(s.intro, 'intro');
-      else if (kind === 'outro') { CUP().run.round = 3; list = UI.scenes(s.rounds[3].after, 'after', s.rounds[3].team).concat(UI.scenes(s.outro, 'outro')); }
-      else if (kind === 'after') list = UI.scenes(rd.after, 'after', rd.team);
+      else if (kind === 'outro') { CUP().run.round = 3; list = UI.scenes(s.rounds[3].after, 'after', s.rounds[3].team, 3).concat(UI.scenes(s.outro, 'outro')); }
+      else if (kind === 'after') list = UI.scenes(rd.after, 'after', rd.team, this.ri);
       else {
         list = UI.scenes(s.intro, 'intro');
-        s.rounds.forEach((r, i) => { CUP().run.round = i; list = list.concat(UI.scenes(r.before, 'before', r.team), UI.scenes(r.after, 'after', r.team)); });
+        s.rounds.forEach((r, i) => { CUP().run.round = i; list = list.concat(UI.scenes(r.before, 'before', r.team, i), UI.scenes(r.after, 'after', r.team, i)); });
         list = list.concat(UI.scenes(s.outro, 'outro'));
       }
       const app = SFC.Menu.app;
       app.screen = 'story';
-      SFC.Story.play(list, () => { CUP().abort(); app.screen = 'menu'; SFC.Menu.go('storytest'); }, null, { speaker: (w, sc) => UI.speaker(w, sc), music: true });
+      SFC.Story.play(list, () => { CUP().abort(); app.screen = 'menu'; SFC.Menu.go('storytest'); }, null, { speaker: (w, sc) => UI.speaker(w, sc), music: true, tell: s.tell });
     },
 
     // vào trận vòng đang chọn (withScenes: chiếu cut scene trước trận rồi mới đá, như bấm KICK OFF)

@@ -1470,10 +1470,41 @@ SFC.I18n.add({
     'A giant magnet drags opponents together into a heap.': 'Um íman gigante puxa os adversários e amontoa-os todos.',
     'First-time shots, volleys and headers hit at full power.': 'Remates de primeira, voleios e cabeceamentos saem com força máxima.',
 
+    /* ===== PHÒNG TRƯNG BÀY (src/ui/trophies.js) ===== */
+    'TROPHY ROOM': 'SALA DE TROFÉUS',
+    'PEAK': 'RECORDE',
+    'BEST AREA': 'MELHOR ÁREA',
+    'MATCHES': 'JOGOS',
+    'WINS': 'VITÓRIAS',
+    'First won: {date}': 'Primeiro título: {date}',
+    'Best final: {score}': 'Melhor final: {score}',
+    'Runs: {n}': 'Tentativas: {n}',
+    'CHAMPION REWARD': 'PRÉMIO DE CAMPEÃO',
+    'In your INVENTORY': 'No teu INVENTÁRIO',
+    'Win the cup to unlock': 'Vence a taça para desbloquear',
+    'PLAY THIS STORY': 'JOGAR ESTA HISTÓRIA',
+
+    /* ===== FOOTBALL STORY: co-op online (src/ui/cup.js page slobby, src/ui/endscreen.js) ===== */
+    'PLAY WITH FRIENDS': 'JOGAR COM AMIGOS',
+    'Solo or with up to 2 friends · 4 knockout matches · lose and you are out': 'Sozinho ou com até 2 amigos · 4 jogos a eliminar · perdes e estás fora',
+    'Get ready...': 'Prepara-te...',
+    'Waiting for the others to finish the scene...': 'À espera que os outros acabem a cena...',
+    'Leave? The cup ends for everyone in the room.': 'Sair? A taça acaba para todos na sala.',
+    'Leave the room? You will leave this cup.': 'Sair da sala? Vais sair desta taça.',
+    'CONFIRM LEAVE': 'CONFIRMAR SAÍDA',
+    'START CUP': 'COMEÇAR TAÇA',
+    'MOVE HERE': 'MUDAR PARA AQUI',
+    'COPY': 'COPIAR',
+    'Send this code to your friends. They join from FOOTBALL STORY › JOIN.': 'Envia este código aos teus amigos. Entram em FOOTBALL STORY › ENTRAR.',
+    'Waiting for {name} to start...': 'À espera que {name} comece...',
+    'Waiting for {name} to continue...': 'À espera que {name} continue...',
+
+    /* ===== FOOTBALL STORY: kiểu kể riêng từng Story (src/ui/cup.js) ===== */
+    'STORYTELLING': 'NARRATIVA',
+
     /* ===== FOOTBALL STORY (config/stories.config.js, src/ui/cup.js) ===== */
     'FOOTBALL STORY': 'FOOTBALL STORY',
     '{n}/{max} CUPS': '{n}/{max} TAÇAS',
-    'Co-op vs bots · 4 knockout matches · lose and you are out': 'Co-op contra bots · 4 jogos a eliminar · perdes e estás fora',
     'This story is coming soon.': 'Esta história chega em breve.',
     'This story is in the full game.': 'Esta história está no jogo completo.',
     'FULL GAME · WISHLIST': 'JOGO COMPLETO · LISTA',

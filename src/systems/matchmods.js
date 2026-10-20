@@ -796,8 +796,11 @@ window.SFC = window.SFC || {};
       const o = g.opts, c = o.mod && S().mods && S().mods[o.mod];
       if (!c && !o.barks) return null;
       const team = g.humanTeam >= 0 ? 1 - g.humanTeam : 1;
-      const M = { id: c ? o.mod : null, cfg: c || null, team, barks: o.barks || null, barkT: 0, hits: 0, shown: false, opened: false };
+      // opts.mirror: trận "gương" của máy khách online (co-op FOOTBALL STORY) — không tự chạy luật (vật thể / câu nói tới từ host
+      // qua lệnh hiệu ứng), chỉ giữ id + config để vẽ (ma mờ: alpha)
+      const M = { id: c ? o.mod : null, cfg: c || null, team, barks: o.barks || null, barkT: 0, hits: 0, shown: false, opened: false, mirror: !!o.mirror };
       g.mod = M;
+      if (M.mirror) return M;
       if (c && K[M.id].create) K[M.id].create(g, M, c);
       // luật có cách AI riêng (aiMove: true = đã điều khiển cầu thủ này bước này) -> qua móc g.aiHook của AI.update
       if (c && K[M.id].aiMove && !g.aiHook) g.aiHook = (p) => K[M.id].aiMove(g, M, c, p);
@@ -805,15 +808,15 @@ window.SFC = window.SFC || {};
     },
     kickoff(g) {
       const M = g.mod;
-      if (M && M.cfg && K[M.id].kickoff) K[M.id].kickoff(g, M, M.cfg);
+      if (M && M.cfg && !M.mirror && K[M.id].kickoff) K[M.id].kickoff(g, M, M.cfg);
     },
     clock(g, dt) {
       const M = g.mod;
-      if (M && M.cfg && K[M.id].clock) K[M.id].clock(g, M, M.cfg, dt);
+      if (M && M.cfg && !M.mirror && K[M.id].clock) K[M.id].clock(g, M, M.cfg, dt);
     },
     update(g, dt) {
       const M = g.mod;
-      if (!M) return;
+      if (!M || M.mirror) return;
       // bóng lăn lần đầu: banner tên luật + 1 câu nói mở màn
       if (!M.shown) {
         M.shown = true;

@@ -78,6 +78,8 @@ window.SFC = window.SFC || {};
           try { return orig.apply(this, a); } finally { depth--; }
         };
       }
+      // vật thể đã có trên sân trước khi bắt đầu ghi (luật trận đặt lúc dựng trận, vd. ghế nhựa của FOOTBALL STORY) -> gửi kèm gói đầu
+      for (const o of (E.V && E.V.props) || []) out.fx.push(['prop', o.id, o.kind, pk(o.x), pk(o.y), pk(o.a), pk(o.b), pk(o.t), o.color]);
       const oa = E.afterimage;
       E.afterimage = function (p, t) { out.fx.push(['afterimage', p.id, r1(p.x), r1(p.y), r2(p.facing), r2(p.anim), t || 0.3]); return oa.call(this, p, t); };
       const os = g.sfx;

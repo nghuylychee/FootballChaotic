@@ -31,7 +31,10 @@ window.SFC = window.SFC || {};
         if (this.app.game && this.app.game.opts.cup) return [['cup', _t('CONTINUE')]];
         return mp ? (SFC.MainPath.demoOver() ? [['restart', _t('CONTINUE')]] : [['menu', _t('LOBBY')]]) : [['restart', _t('PLAY AGAIN')], ['menu', _t('MAIN MENU')]];
       }
-      return SFC.Session.isOwner ? [['lobby', _t('BACK TO LOBBY')], ['leave', _t('LEAVE ROOM')]] : [['leave', _t('LEAVE ROOM')]];
+      // phòng FOOTBALL STORY: chủ phòng CONTINUE = cả phòng về màn cup (vòng kế / bị loại / vô địch); người khác chờ chủ phòng
+      const story = this.app.game && this.app.game.opts.cup;
+      if (SFC.Session.isOwner) return [['lobby', story ? _t('CONTINUE') : _t('BACK TO LOBBY')], ['leave', _t('LEAVE ROOM')]];
+      return [['leave', _t('LEAVE ROOM')]];
     },
 
     // tổng hợp thống kê trận: xếp hạng cầu thủ theo Bàn thắng → Kiến tạo → Cứu thua → Sút và chọn 1 MVP duy nhất

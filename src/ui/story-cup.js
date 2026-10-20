@@ -3,6 +3,7 @@
  *   cupAlley  nơi tổ chức cup (nền theo theme) + cúp trên thùng gỗ, khán giả (zoom: 1 = phóng dần vào cúp)
  *   cupHost   bình luận viên cầm loa trên thùng gỗ, sóng âm, tia màu Story
  *   cupFace   đối mặt VS: màn chia chéo 2 màu áo, character của bạn trái · đội trưởng đối thủ phải, tia sét giữa
+ *             (young: bên trái là người dẫn truyện hồi trẻ — vòng era 'past' của Legends)
  *   cupTalk   cận cảnh người nói (who: you / opp) trên nền tia màu áo
  *   cupSad    đối thủ vừa thua ngồi thất thần dưới đám mây mưa, bạn bỏ đi
  *   cupRival  đội kình địch (team) đè bẹp đối thủ ở nhánh bên kia: trời đỏ, sét, bảng tỉ số
@@ -54,7 +55,44 @@ window.SFC = window.SFC || {};
     const sh = Math.floor(t * 2) % 6;
     R(-6 + sh * 2, -18, 2, 7, GOLD_L);
   }
-  function trophy(H, kind, cx, by, s, t) { if (kind === 'cup') goldCup(H, cx, by, s * 0.8, t); else pot(H, cx, by, s, t); }
+  // tượng cú vàng trên đế đen (Rooftop Night League)
+  function owl(H, cx, by, s, t) {
+    const R = (x, y, w, h, c) => H.rect(cx + x * s, by + y * s, w * s, h * s, c);
+    R(-7, -4, 14, 4, H.INK); R(-6, -4, 12, 3, '#2a2a3a'); R(-6, -2, 12, 1, GOLD_D);                     // đế
+    R(-6, -17, 12, 13, H.INK); R(-5, -16, 10, 11, GOLD); R(-3, -10, 6, 4, GOLD_L);                     // thân + bụng
+    R(-2, -9, 1, 1, GOLD_D); R(1, -9, 1, 1, GOLD_D); R(-1, -7, 1, 1, GOLD_D);                          // lông bụng
+    R(-6, -20, 3, 4, H.INK); R(3, -20, 3, 4, H.INK); R(-5, -19, 1, 3, GOLD); R(4, -19, 1, 3, GOLD);    // 2 chỏm tai
+    R(-7, -13, 2, 7, H.INK); R(5, -13, 2, 7, H.INK);                                                   // 2 cánh khép
+    const blink = Math.floor(t * 0.7) % 5 === 0 && (t * 0.7) % 1 < 0.15;
+    R(-4, -15, 3, 3, GOLD_L); R(1, -15, 3, 3, GOLD_L);
+    if (blink) { R(-4, -14, 3, 1, H.INK); R(1, -14, 3, 1, H.INK); } else { R(-3, -14, 1, 1, H.INK); R(2, -14, 1, 1, H.INK); }
+    R(-1, -12, 2, 2, '#c9781a');                                                                         // mỏ
+    const sh = Math.floor(t * 2) % 6;
+    R(-5 + sh * 1.6, -16, 1.5, 9, 'rgba(255,248,200,0.7)');
+  }
+  // tô mì vàng có đôi đũa, khói bốc (Night Market Cup)
+  function bowl(H, cx, by, s, t) {
+    const R = (x, y, w, h, c) => H.rect(cx + x * s, by + y * s, w * s, h * s, c);
+    R(-4, -2, 8, 2, H.INK); R(-3, -2, 6, 1, GOLD_D);                                                   // chân tô
+    R(-10, -10, 20, 4, H.INK); R(-9, -6, 18, 2, H.INK); R(-8, -4, 16, 2, H.INK);                       // viền
+    R(-9, -9, 18, 1, '#f3ead7'); R(-9, -8, 18, 2, GOLD); R(-8, -6, 16, 2, GOLD); R(-7, -4, 14, 1, GOLD_D);
+    R(-8, -7, 16, 1, '#e8322a');                                                                         // vạch đỏ quanh tô
+    R(-6, -10, 3, 1, '#fff8e0'); R(-1, -10, 4, 1, '#fff8e0');                                           // sợi mì
+    R(3, -17, 1, 8, H.INK); R(5, -16, 1, 7, H.INK); R(3, -17, 1, 2, GOLD_L); R(5, -16, 1, 2, GOLD_L); // đôi đũa
+    for (let k = 0; k < 3; k++) {                                                                        // khói
+      const u = (t * 0.8 + k / 3) % 1;
+      R(-5 + k * 3 + Math.sin(t * 2 + k) * 1.2, -12 - u * 7, 1, 2, `rgba(240,240,250,${0.55 * (1 - u)})`);
+    }
+    const sh = Math.floor(t * 2) % 6;
+    R(-7 + sh * 2, -8, 2, 3, GOLD_L);
+  }
+  // cúp của Story (config stories.list[].trophy): pot (Ward Cup) · owl (Rooftop) · bowl (Night Market) · cup (Legends)
+  function trophy(H, kind, cx, by, s, t) {
+    if (kind === 'cup') goldCup(H, cx, by, s * 0.8, t);
+    else if (kind === 'owl') owl(H, cx, by, s * 0.85, t);
+    else if (kind === 'bowl') bowl(H, cx, by, s * 0.9, t);
+    else pot(H, cx, by, s, t);
+  }
   // dây đèn lồng tròn võng giữa 2 điểm (chợ đêm), nhấp nháy
   function lanterns(H, x0, y0, x1, y1, sag, t, n = 14) {
     const ctx = H.ctx;
@@ -219,7 +257,9 @@ window.SFC = window.SFC || {};
 
   /* ---------- đối mặt VS ---------- */
   S.addArt('cupFace', (t, d, sc, H) => {
-    const ctx = H.ctx, op = captain(sc.team), me = SFC_CONFIG.mainPath.playerTeam.kit;
+    // young (Legends, vòng năm 1976): bên trái là người dẫn truyện hồi trẻ (narrator.youngLook / youngKit) thay character của bạn
+    const N = sc.host || {}, young = sc.young && N.youngLook;
+    const ctx = H.ctx, op = captain(sc.team), me = young ? N.youngKit || HOST_KIT : SFC_CONFIG.mainPath.playerTeam.kit;
     const oc = op ? op.kit.shirt : '#888888', mc = me.accent || GOLD;
     // 2 nửa chéo
     ctx.save();
@@ -232,7 +272,7 @@ window.SFC = window.SFC || {};
     ctx.restore();
     // 2 người trượt vào từ 2 bên
     const k = H.easeOut(H.clamp01(t / 0.35));
-    H.figure(-80 + k * 240, 320, 9, t, SFC.Profile.lookOf(), me, 0);
+    H.figure(-80 + k * 240, 320, 9, t, young ? N.youngLook : SFC.Profile.lookOf(), me, 0);
     if (op) H.figure(720 - k * 240, 320, 9, t, op.look, op.kit, Math.PI);
     // tia sét dọc đường chéo
     if (t > 0.3) {
@@ -452,4 +492,7 @@ window.SFC = window.SFC || {};
     H.vignette(0.5);
     if (S.cueOnce('roar', true)) { SFC.Audio.goal(); SFC.Audio.crowdRoar(1); }
   });
+
+  // dùng ngoài cut scene: PHÒNG TRƯNG BÀY (src/ui/trophies.js) vẽ cúp của từng Story
+  SFC.StoryCup = { trophy, GOLD, GOLD_D, GOLD_L };
 })();

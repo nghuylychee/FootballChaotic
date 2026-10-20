@@ -105,6 +105,8 @@ window.SFC = window.SFC || {};
       const MP = SFC.MainPath;
       return Math.min(MP.areas().length - 1, MP.state.best);
     },
+    // phòng FOOTBALL STORY (máy làm host): lượt chơi cup gửi cả phòng (src/meta/cup.js share)
+    cup() { return SFC.Cup.share(); },
     // Main Path hiện tại (tìm trận xếp hạng + opts.mainPath): thưởng theo Area của mình như MainPath.matchmake
     rank() {
       const st = SFC.MainPath.state;
@@ -138,21 +140,42 @@ window.SFC = window.SFC || {};
   // bảng ping cả trận (màn kết quả)
   on('pings', () => { if (SFC.UI.updatePings) SFC.UI.updatePings(); });
 
-  on('busy', ({ action, code }) => {
-    if (action === 'create') Menu().go('online', TEXT.creating);
+  // phòng FOOTBALL STORY: trang phòng chờ riêng ('slobby', src/ui/cup.js) · đang có lượt chơi cup thì màn cup
+  const storyPage = () => (SFC.Cup.run ? 'cup' : 'slobby');
+  on('busy', ({ action, code, story }) => {
+    if (action === 'create' && story) Menu().setMsg(TEXT.creating);
+    else if (action === 'create') Menu().go('online', TEXT.creating);
     else Menu().setMsg(TEXT.connecting(code));
   });
+  // khách phòng Story: trạng thái cup của host -> bản sao (vào phòng giữa cup: bỏ qua cut scene của các vòng đã đá)
+  on('cup', ({ state }) => {
+    const r = SFC.Cup.mirror(state);
+    if (r.fresh && SFC.Cup.run && SFC.Cup.run.results.length) SFC.CupUI.skipTo();
+    if (r.fresh && SFC.Cup.run && !SFC.Cup.run.results.length) SFC.CupUI.reset();
+    if (app().screen !== 'menu') return;   // đang trong trận / cut scene: toLobby / cut scene xong tự vẽ lại
+    if (!SFC.Cup.run && Menu().page === 'cup') Menu().go('slobby');
+    else if (SFC.Cup.run && Menu().page === 'slobby') Menu().go('cup');
+    else if (Menu().page === 'cup') Menu().render();
+  });
+  // host chiếu cut scene trước trận -> khách chiếu cùng
+  on('scenes', ({ kind }) => SFC.CupUI.remoteScenes(kind));
   on('waiting', ({ action, code }) => Menu().setMsg((action === 'create' ? TEXT.creating : TEXT.connecting(code)) + TEXT.cancelHint()));
 
   on('lobby', ({ entered, pending }) => {
-    if (entered) { Menu().go('lobby', pending ? TEXT.waitingInfo : ''); return; }
+    const O_ = O();
+    if (O_.story) SFC.CupUI.roomStory = O_.story;   // nhớ lại lúc phòng đóng (Session đã xoá)
+    if (entered) { Menu().go(O_.story ? storyPage() : 'lobby', pending ? TEXT.waitingInfo : ''); return; }
+    // khách vừa biết đây là phòng Story (gói lobby đầu tiên): sang trang phòng Story
+    if (O_.story && Menu().page === 'lobby') { Menu().go(storyPage(), ''); return; }
     // nhận được danh sách phòng: bỏ chữ "đang chờ", giữ các chữ báo khác
-    if (Menu().page === 'lobby' && Menu().msg === TEXT.waitingInfo) Menu().go('lobby', '');
-    else Menu().render();
+    if (Menu().msg === TEXT.waitingInfo && (Menu().page === 'lobby' || Menu().page === 'slobby' || Menu().page === 'cup')) Menu().go(Menu().page, '');
+    else if (app().screen === 'menu') Menu().render();
   });
   on('notice', ({ kind, name }) => {
-    if (kind === 'joined') { Menu().go('lobby', TEXT.joined(name)); SFC.Audio.pick(); }
-    else Menu().go('lobby', TEXT.left(name), true);
+    // phòng Story: báo ở trang đang mở (phòng chờ / màn cup), không đổi trang
+    const page = O().story ? (Menu().page === 'cup' || Menu().page === 'slobby' ? Menu().page : storyPage()) : 'lobby';
+    if (kind === 'joined') { if (app().screen === 'menu') Menu().go(page, TEXT.joined(name)); SFC.Audio.pick(); }
+    else if (app().screen === 'menu') Menu().go(page, TEXT.left(name), true);
   });
   // nhảy slot -> vị trí character theo slot (menu Main Path cũng nhớ vị trí này)
   on('role', ({ role }) => {
@@ -164,11 +187,12 @@ window.SFC = window.SFC || {};
   on('solo', () => Menu().searchSolo());
   on('start', ({ game, resume }) => {
     OnlineUI.overlay = false;
+    if (SFC.Story && SFC.Story.active) SFC.Story.abort();   // phòng Story: khách còn đang xem cut scene thì vào trận luôn
     if (O().ranked && !resume) { Menu().searchFound(game); return; }
     app().enterOnline(game);
     if (resume) banner('RECONNECTED', 'Back in the match', GREEN, 1.4);
   });
-  on('toLobby', () => { OnlineUI.overlay = false; app().toMenu('lobby'); });
+  on('toLobby', () => { OnlineUI.overlay = false; app().toMenu(O().story ? storyPage() : 'lobby'); });
   on('getReady', () => banner('GET READY', 'Waiting for other players...', GREY, 1.4));
   on('reconnecting', () => banner('CONNECTION LOST', 'Reconnecting...', RED, 2));
   on('player', ({ kind, name }) => {
@@ -191,7 +215,11 @@ window.SFC = window.SFC || {};
       app().forfeit();
       return;
     }
-    app().toMenu(from === 'join' && reason !== 'left' ? 'join' : 'online');
+    // phòng Story: hết phòng = hết cup (lượt chơi nằm ở máy làm host) -> về tab FOOTBALL STORY
+    const CU = SFC.CupUI || {}, story = CU.roomStory;
+    CU.roomStory = null;
+    if (story) { SFC.Cup.abort(); CU.reset(); }
+    app().toMenu(story && reason === 'left' ? 'story' : from === 'join' && reason !== 'left' ? 'join' : story ? 'story' : 'online');
     if (reason !== 'left') Menu().setMsg(OnlineUI.reasonText(reason), true);
   });
 

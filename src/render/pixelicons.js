@@ -33,6 +33,15 @@ window.SFC = window.SFC || {};
     // cọc tập xanh lá: hình của thẻ DRILL (túi đồ, màn mở thẻ drill)
     // bánh răng: nút SETTINGS ở góc phải trang chủ
     'ui-gear': ['.....ll.....', '..l.llll.l..', '.llllllllll.', '..lllEElll..', '.lllE..Elll.', 'llllE..Ellll', 'eeeeE..Eeeee', '.eeeE..Eeee.', '..eeeEEeee..', '.eeeeeeeeee.', '..e.eeee.e..', '.....ee.....'],
+    // FOOTBALL STORY (src/ui/cup.js, src/ui/trophies.js): luật trận · số liệu phòng trưng bày · nhãn kiểu kể (nhật ký · TV · phim)
+    'ui-book': ['............', '.vvvvv.vvvvv', '.vwwwwvwwwwv', '.vwkkwvwkkwv', '.vwwwwvwwwwv', '.vwkkwvwkkwv', '.vwwwwvwwwwv', '.vwkkwvwkkwv', '.vwwwwvwwwwv', '.vvvvvvvvvvv', '......V.....', '............'],
+    'ui-tv': ['...l....l...', '....l..l....', '.....ll.....', 'eeeeeeeeeeee', 'ebbbbbbbbbEe', 'ebcbbbbbbbEe', 'ebbbbbbbbbEe', 'ebbbbbbbbbEe', 'ebbbbbbbbbre', 'eeeeeeeeeeee', '.E........E.', '............'],
+    'ui-film': ['nnnnnnnnnnnn', 'n.n.n.n.n.nn', 'nnnnnnnnnnnn', 'nyyyynyyyynn', 'nyYYynyYYynn', 'nyYYynyYYynn', 'nyyyynyyyynn', 'nnnnnnnnnnnn', 'n.n.n.n.n.nn', 'nnnnnnnnnnnn', '............', '............'],
+    'ui-target': ['....rrrr....', '..rrwwwwrr..', '.rwwrrrrwwr.', '.rwrrwwrrwr.', 'rwrrwwwwrrwr', 'rwrwwrrwwrwr', 'rwrwwrrwwrwr', 'rwrrwwwwrrwr', '.rwrrwwrrwr.', '.rwwrrrrwwr.', '..rrwwwwrr..', '....rrrr....'],
+    'ui-whistle': ['............', '.........ll.', '........l..l', '..llllllll.l', '.lwwwwwwl...', 'lwwwlllwl...', 'lwwlEElwl...', 'lwwlEElwl...', 'lwwwlllwl...', '.lwwwwwl....', '..lllll.....', '............'],
+    'ui-people': ['............', '..ss....ss..', '.ssss..ssss.', '.ssss..ssss.', '..ss....ss..', '.bbbb..bbbb.', 'bbbbbbbbbbbb', 'bbbbbbbbbbbb', 'bbbbbbbbbbbb', 'BBBBBBBBBBBB', '............', '............'],
+    'ui-calendar': ['..k......k..', '.rrrrrrrrrr.', '.rrrrrrrrrr.', '.wwwwwwwwww.', '.wkwkwkwkww.', '.wwwwwwwwww.', '.wkwkwkwkww.', '.wwwwwwwwww.', '.wkwkwkwrrw.', '.wwwwwwwrrw.', '.eeeeeeeeee.', '............'],
+    'ui-ball': ['....wwww....', '..wwkkkkww..', '.wwwkkkkwww.', '.wkwwwwwwkw.', 'wkkwwwwwwkkw', 'wkkwwkkwwkkw', 'wwwwkkkkwwww', 'wwwwwkkwwwww', '.wkwwwwwwkw.', '.wkkwwwwkkw.', '..wwkkkkww..', '....wwww....'],
     'ui-cone': ['.....gg.....', '.....gG.....', '....wwww....', '....ggGg....', '....ggGg....', '...wwwwww...', '...gggGgg...', '..ggggGggg..', '..wwwwwwww..', '..gggggGgg..', 'GGGGGGGGGGGG', '.GGGGGGGGGG.'],
 
     /* lọc slot costume (túi đồ -> APPEARANCE) */

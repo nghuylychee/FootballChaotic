@@ -674,11 +674,206 @@ window.SFC = window.SFC || {};
     return look.hair || '#1a1216';
   }
 
+  /* ---------- KIỂU KỂ (FOOTBALL STORY, stories.list[].tell; user 2026-10-20: mỗi Story kể theo 1 cách riêng) ----------
+   * Cảnh vẫn vẽ bằng khuôn như thường nhưng vào canvas phụ (off); kiểu kể ghép cảnh lên canvas chính theo khung riêng,
+   * chữ đổi kiểu bằng CSS (#story.st-tell-<kiểu>). Cảnh card (sc.card, src/ui/cup.js chèn đầu mỗi chặng) = trang / thẻ tên chặng (sc.stage).
+   *   diary  nhật ký mùa hè: giấy kẻ dòng + gáy lò xo, cảnh = ảnh dán băng keo hơi nghiêng, ngày viết tay ở đầu trang, chữ viết tay
+   *   manga  trang truyện tranh: cảnh đen trắng + chấm tram trong ô truyện, 3 ô mỗi trang (ô cũ đứng yên, đầy trang thì lật),
+   *          cảnh VS / kình địch / nâng cúp = 1 ô to cả trang; lời thoại = bóng thoại trong ô đang chạy, người dẫn truyện = khung tường thuật
+   *   tv     show trên TV: logo kênh, LIVE nhấp nháy, tên tập, chữ chạy cuối màn (sc.ticker), cắt cảnh có nhiễu; lời thoại = thanh tên kiểu TV
+   *   film   cuộn phim hồi tưởng: sepia + hạt + vết xước + nhấp nháy + rung khung, viền lỗ phim chạy; phụ đề phim cũ.
+   *          Dòng color: true (sc.vivid) = hết hồi tưởng, phim có màu lại */
+  let off = null;
+  const offCtx = () => {
+    if (!off) { off = document.createElement('canvas'); off.width = W; off.height = H; }
+    const c = off.getContext('2d');
+    c.imageSmoothingEnabled = false;
+    return c;
+  };
+  const cover = (w, h) => { const s = Math.max(w / W, h / H), sw = w / s, sh = h / s; return [(W - sw) / 2, (H - sh) * 0.45, sw, sh]; };
+  const txt = (s, x, y, font, color, align = 'center') => { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align; ctx.fillText(s, x, y); ctx.textAlign = 'left'; };
+  let dots = null;   // ô chấm tram (manga)
+  const TELL = {
+    diary: {
+      paper() {
+        rect(0, 0, W, H, '#f3ead2');
+        for (let y = 58; y < H; y += 20) rect(0, y, W, 1, 'rgba(70,110,200,0.33)');
+        rect(68, 0, 2, H, 'rgba(220,60,60,0.45)');
+        for (let y = 18; y < H; y += 34) {   // gáy lò xo
+          ctx.fillStyle = '#3a3040'; ctx.beginPath(); ctx.arc(30, y + 6, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#9aa0a8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(22, y + 6, 9, -1.2, 1.2); ctx.stroke();
+        }
+        // vẽ nguệch ngoạc bút chì ở lề: ngôi sao, quả bóng, trái tim
+        ctx.strokeStyle = 'rgba(60,60,90,0.55)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); for (let i = 0; i <= 5; i++) { const a = -Math.PI / 2 + i * 4 * Math.PI / 5; ctx.lineTo(600 + Math.cos(a) * 10, 300 + Math.sin(a) * 10); } ctx.stroke();
+        ctx.beginPath(); ctx.arc(612, 40, 9, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(606, 34); ctx.lineTo(618, 46); ctx.stroke();
+      },
+      draw(S, sc) {
+        this.paper();
+        if (sc.stage) { ctx.save(); ctx.translate(88, 40); ctx.rotate(-0.03); txt(sc.stage, 0, 0, '24px VT323', '#2a3a8a', 'left'); ctx.restore(); }
+        if (sc.card) {
+          txt(sc.stage || '', W / 2 + 16, 178, '48px VT323', '#2a3a8a');
+          ctx.strokeStyle = '#d7263d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(200, 192); ctx.quadraticCurveTo(352, 204, 500, 190); ctx.stroke();
+          return;
+        }
+        // ảnh dán: nghiêng nhẹ theo cảnh, rơi xuống trang lúc đổi cảnh
+        const a = (hash((sc.art || '').length * 13 + (sc.team || '').length * 7 + S.group) - 0.5) * 0.08;
+        const k = easeOut(clamp01(S.artT / 0.25)), w = 392, h = 214, cx = 352, cy = 166 - (1 - k) * 18;
+        ctx.save();
+        ctx.globalAlpha = k;
+        ctx.translate(cx, cy); ctx.rotate(a);
+        rect(-w / 2 - 6, -h / 2 - 4, w + 16, h + 18, 'rgba(60,40,20,0.25)');   // bóng ảnh
+        rect(-w / 2 - 8, -h / 2 - 8, w + 16, h + 16, '#fbf8f0');
+        ctx.filter = 'sepia(0.18) saturate(1.15)';
+        ctx.drawImage(off, 0, 0, W, H, -w / 2, -h / 2, w, h);
+        ctx.filter = 'none';
+        rect(-w / 2 - 22, -h / 2 - 14, 60, 16, 'rgba(255,230,140,0.6)');   // băng keo
+        rect(w / 2 - 38, h / 2 - 2, 60, 16, 'rgba(255,230,140,0.6)');
+        ctx.restore();
+      },
+    },
+    manga: {
+      rects: [[14, 14, 380, 168], [404, 14, 222, 168], [14, 192, 612, 154]], full: [14, 14, 612, 332],
+      splash(sc) { return !!sc && (sc.card || sc.art === 'cupFace' || sc.art === 'cupLift' || sc.art === 'cupRival'); },
+      slot(S, sc) { return this.splash(sc) ? this.full : this.rects[Math.min(2, S.page.length)]; },
+      // đổi cảnh: ô vừa xong đứng yên trên trang (cùng khuôn + cùng người nói = vẫn ô đó); đầy trang / ô to -> lật trang mới
+      leave(S, prev, next) {
+        if (!prev || !S.panel) return;
+        if (next && next.keep) return;
+        if (this.splash(prev) || this.splash(next) || S.page.length >= 2) { S.page = []; S.flip = true; return; }
+        const c = document.createElement('canvas'); c.width = S.panel.width; c.height = S.panel.height;
+        const cc = c.getContext('2d');
+        cc.drawImage(S.panel, 0, 0);
+        // ô đứng yên vẫn giữ bóng thoại của nó (vẽ thẳng vào ô)
+        const l = (prev.lines || []).filter((x) => (x.style || 'caption') === 'caption').pop();
+        if (l) this.balloon(cc, l, c.width, (l.text || '').replace('{name}', SFC.Profile.data.name || 'PLAYER'));
+        S.page.push({ r: this.slot(S, prev), img: c });
+        S.flip = false;
+      },
+      draw(S, sc) {
+        const r = this.slot(S, sc), [x, y, w, h] = r;
+        // ô đang chạy: đen trắng tương phản cao + chấm tram
+        if (!S.panel || S.panel.width !== w || S.panel.height !== h) { S.panel = document.createElement('canvas'); S.panel.width = w; S.panel.height = h; }
+        const p = S.panel.getContext('2d');
+        p.imageSmoothingEnabled = false;
+        if (sc.card) {
+          p.fillStyle = '#0c0c0e'; p.fillRect(0, 0, w, h);
+          p.strokeStyle = 'rgba(255,255,255,0.5)'; p.lineWidth = 1;
+          for (let i = 0; i < 60; i++) { const an = hash(i) * Math.PI * 2, r0 = 90 + hash(i + 9) * 40; p.beginPath(); p.moveTo(w / 2 + Math.cos(an) * r0, h / 2 + Math.sin(an) * r0); p.lineTo(w / 2 + Math.cos(an) * 400, h / 2 + Math.sin(an) * 400); p.stroke(); }
+        } else {
+          const [sx, sy, sw, sh] = cover(w, h);
+          p.filter = 'grayscale(1) contrast(1.6) brightness(1.08)';
+          p.drawImage(off, sx, sy, sw, sh, 0, 0, w, h);
+          p.filter = 'none';
+          if (!dots) {
+            const d = document.createElement('canvas'); d.width = d.height = 4;
+            const dc = d.getContext('2d'); dc.fillStyle = '#000'; dc.fillRect(1, 1, 1, 1);
+            dots = d;
+          }
+          p.save(); p.globalAlpha = 0.35; p.fillStyle = p.createPattern(dots, 'repeat'); p.fillRect(0, 0, w, h); p.restore();
+        }
+        // trang giấy + ô cũ + ô đang chạy (trang mới trượt vào từ phải)
+        const dx = S.flip ? Math.round((1 - easeOut(clamp01(S.artT / 0.3))) * W) : 0;
+        ctx.save(); ctx.translate(dx, 0);
+        rect(0, 0, W, H, '#f4f1ea');
+        for (const q of S.page) { ctx.drawImage(q.img, q.r[0], q.r[1]); ctx.strokeStyle = '#0c0c0e'; ctx.lineWidth = 3; ctx.strokeRect(q.r[0], q.r[1], q.r[2], q.r[3]); }
+        ctx.drawImage(S.panel, x, y);
+        ctx.strokeStyle = '#0c0c0e'; ctx.lineWidth = 3; ctx.strokeRect(x, y, w, h);
+        if (sc.card) txt(sc.stage || '', x + w / 2, y + h / 2 + 8, '18px "Press Start 2P"', '#ffffff');
+        ctx.restore();
+      },
+      // bóng thoại vẽ lên canvas (ô đã xong): cùng vị trí / kiểu với bóng thoại DOM ở text()
+      balloon(c, l, pw, text) {
+        const bw = Math.min(pw - 20, 300), font = '8px "Press Start 2P"', lh = 12;
+        c.font = font;
+        const words = text.split(' '), rows = [];
+        let cur = '';
+        for (const w of words) { const t = cur ? cur + ' ' + w : w; if (c.measureText(t).width > bw - 20 && cur) { rows.push(cur); cur = w; } else cur = t; }
+        if (cur) rows.push(cur);
+        const bh = rows.length * lh + 12, narr = l.who === 'host';
+        const x = l.who === 'opp' && pw > 300 ? pw - 10 - bw : 10, y = 10;
+        c.fillStyle = narr ? '#0c0c0e' : '#ffffff'; c.strokeStyle = narr ? '#ffffff' : '#0c0c0e'; c.lineWidth = 2;
+        c.beginPath();
+        if (narr || !c.roundRect) c.rect(x, y, bw, bh); else c.roundRect(x, y, bw, bh, 12);
+        c.fill(); c.stroke();
+        c.fillStyle = narr ? '#ffffff' : '#0c0c0e'; c.textBaseline = 'top';
+        rows.forEach((t, i) => c.fillText(t, x + 10, y + 7 + i * lh));
+      },
+      // bóng thoại nằm trong ô đang chạy (người dẫn truyện: khung tường thuật góc trên trái)
+      text(S, el, l, sc) {
+        if ((l.style || 'caption') !== 'caption') return;
+        const [x, y, w] = this.slot(S, sc);
+        el.style.left = (x + 10) + 'px';
+        el.style.top = (y + 10) + 'px';
+        el.style.width = Math.min(w - 20, 300) + 'px';
+        if (l.who === 'opp' && w > 300) { el.style.left = 'auto'; el.style.right = (W - x - w + 10) + 'px'; }
+      },
+    },
+    tv: {
+      draw(S, sc) {
+        if (sc.card) {   // thẻ tên tập: sọc màu thử sóng + băng tên
+          ['#e8e8e8', '#e8e830', '#30e8e8', '#30e830', '#e830e8', '#e83030', '#3030e8'].forEach((c, i) => rect(i * W / 7, 0, W / 7 + 1, 230, c));
+          rect(0, 230, W, H - 230, '#101018');
+          txt(sc.stage || '', W / 2, 296, '16px "Press Start 2P"', '#ffffff');
+        } else ctx.drawImage(off, 0, 0);
+        for (let y = 0; y < H; y += 3) rect(0, y, W, 1, 'rgba(0,0,0,0.1)');   // dòng quét
+        // cắt cảnh: nhiễu sóng thoáng qua
+        if (!sc.keep && S.artT < 0.1) for (let i = 0; i < 400; i++) rect(hash(i + S.clock * 77) * W, hash(i * 3 + S.clock * 31) * H, 3, 2, hash(i + 5) > 0.5 ? '#fff' : '#000');
+        // logo kênh + tên tập + LIVE
+        rect(12, 10, 86, 22, 'rgba(10,10,16,0.85)'); rect(12, 30, 86, 2, sc.color || '#ff3fb4');
+        txt(sc.channel || 'TV', 55, 26, '10px "Press Start 2P"', '#ffd23f');
+        if (sc.stage && !sc.card) { rect(12, 34, Math.min(300, 14 + sc.stage.length * 7), 14, 'rgba(10,10,16,0.75)'); txt(sc.stage, 18, 45, '7px "Press Start 2P"', '#ffffff', 'left'); }
+        if (Math.floor(S.clock * 2) % 2) { ctx.fillStyle = '#ff2a3a'; ctx.beginPath(); ctx.arc(W - 62, 21, 5, 0, Math.PI * 2); ctx.fill(); }
+        txt('LIVE', W - 34, 26, '10px "Press Start 2P"', '#ffffff');
+        // chữ chạy
+        if (sc.ticker) {
+          rect(0, H - 16, W, 16, 'rgba(10,10,16,0.92)'); rect(0, H - 16, 54, 16, '#e8322a');
+          txt('NEWS', 27, H - 5, '8px "Press Start 2P"', '#ffffff');
+          ctx.save(); ctx.beginPath(); ctx.rect(56, H - 16, W - 56, 16); ctx.clip();
+          ctx.font = '8px "Press Start 2P"';
+          const tw = ctx.measureText(sc.ticker).width + 80, x = W - ((S.clock * 60) % (tw + W - 56));
+          txt(sc.ticker, x, H - 5, '8px "Press Start 2P"', '#ffffff', 'left');
+          ctx.restore();
+        }
+      },
+    },
+    film: {
+      draw(S, sc) {
+        const f = Math.floor(S.clock * 24), dy = Math.round((hash(f) - 0.5) * 3);
+        rect(0, 0, W, H, '#0b0907');
+        const gx = 44, gy = 8 + dy, gw = 552, gh = 344;
+        if (sc.card) {   // thẻ chữ phim câm
+          rect(gx, gy, gw, gh, '#100c08');
+          ctx.strokeStyle = '#e8dcc0'; ctx.lineWidth = 2; ctx.strokeRect(gx + 30, gy + 30, gw - 60, gh - 60);
+          ctx.lineWidth = 1; ctx.strokeRect(gx + 38, gy + 38, gw - 76, gh - 76);
+          txt(sc.stage || '', W / 2, gy + gh / 2 + 6, '14px "Press Start 2P"', '#e8dcc0');
+        } else {
+          const [sx, sy, sw, sh] = cover(gw, gh);
+          ctx.filter = sc.vivid ? 'none' : 'sepia(0.9) contrast(1.15) brightness(0.92)';
+          ctx.drawImage(off, sx, sy, sw, sh, gx, gy, gw, gh);
+          ctx.filter = 'none';
+        }
+        // hạt phim + vết xước + nhấp nháy (không có khi phim có màu lại: sc.vivid)
+        if (!sc.vivid) {
+          for (let i = 0; i < 70; i++) rect(gx + hash(i + f * 1.7) * gw, gy + hash(i * 2 + f) * gh, 1 + (i % 2), 1, hash(i + f) > 0.5 ? 'rgba(255,245,220,0.5)' : 'rgba(0,0,0,0.5)');
+          if (hash(Math.floor(S.clock * 2)) > 0.4) rect(gx + hash(Math.floor(S.clock * 2) + 3) * gw, gy, 1, gh, 'rgba(255,245,220,0.25)');
+          rect(gx, gy, gw, gh, `rgba(255,240,200,${(0.02 + hash(f + 9) * 0.06).toFixed(3)})`);
+        }
+        // 2 dải lỗ phim chạy
+        rect(0, 0, 40, H, '#14100c'); rect(W - 40, 0, 40, H, '#14100c');
+        const o = (S.clock * 90) % 36;
+        for (let y = -36 + o; y < H; y += 36) { rect(13, y, 14, 10, '#5a5042'); rect(W - 27, y, 14, 10, '#5a5042'); }
+        vignette(0.55);
+      },
+    },
+  };
+
   const Story = {
     active: false,
 
     // phát cut scene key (ftue.config.js -> scenes) hoặc 1 danh sách cảnh; xong / bỏ qua -> onDone. from = art của cảnh bắt đầu (vd. 'path')
     // opts (FOOTBALL STORY): speaker(who, scene) -> { name, color } = nhãn người nói của dòng có who · music = nhạc menu vẫn phát
+    //   · tell = kiểu kể của Story (TELL ở trên: diary · manga · tv · film)
     play(key, onDone, from = null, opts = {}) {
       const el = this.el || (this.el = document.getElementById('story'));
       if (!this.bound) {
@@ -689,12 +884,15 @@ window.SFC = window.SFC || {};
       this.speaker = opts.speaker || null;
       this.music = !!opts.music;
       this.artT = 0;
+      this.tell = TELL[opts.tell] ? opts.tell : null;
+      this.page = []; this.panel = null; this.flip = true; this.group = 0; this.clock = 0;
       this.onDone = onDone;
       this.active = true;
       this.hold = 0;
       el.innerHTML = `<canvas width="${W}" height="${H}"></canvas><div class="st-text"></div>
         <div class="st-skip"><i></i><span>${SFC.t('{key} next · hold to skip', { key: `<kbd>${esc(SFC.Input.label('confirm'))}</kbd>` })}</span></div>`;
       el.classList.remove('hidden');
+      Object.keys(TELL).forEach((k) => el.classList.toggle('st-tell-' + k, k === this.tell));
       ctx = el.querySelector('canvas').getContext('2d');
       ctx.imageSmoothingEnabled = false;
       if (!buf) { buf = document.createElement('canvas'); buf.width = 40; buf.height = 44; }
@@ -705,10 +903,12 @@ window.SFC = window.SFC || {};
 
     go(i) {
       const prev = this.scenes[this.idx], sc = this.scenes[i];
+      const T = this.tell && TELL[this.tell];
+      if (T && T.leave && i > 0) T.leave(this, prev, sc);   // manga: ô vừa xong đứng yên trên trang
       this.idx = i;
       this.t = 0;
       // keep: cảnh cùng art với cảnh trước -> hình chạy tiếp (không diễn lại từ đầu), chỉ đổi lời thoại
-      if (!(sc && sc.keep && prev && prev.art === sc.art && i > 0)) { this.artT = 0; this.cues = {}; }
+      if (!(sc && sc.keep && prev && prev.art === sc.art && i > 0)) { this.artT = 0; this.cues = {}; this.group++; }
       if (!sc) return this.finish();
       this.shown = [];
       this.textEl.innerHTML = sc.art === 'path' ? this.pathCard() : '';
@@ -747,6 +947,7 @@ window.SFC = window.SFC || {};
       const sc = this.scenes[this.idx];
       this.t += dt;
       this.artT += dt;
+      this.clock += dt;   // đồng hồ không reset theo cảnh (chữ chạy TV, lỗ phim)
       // đang mở màn lật thẻ: phím thuộc về màn thẻ, cut scene chỉ vẽ nền
       if (sc && sc.reveal && SFC.Reveal.active) {
         SFC.Reveal.update(dt, input);
@@ -782,9 +983,8 @@ window.SFC = window.SFC || {};
     },
 
     finish() {
-      this.abort();
       const cb = this.onDone;
-      this.onDone = null;
+      this.abort();
       if (cb) cb();
     },
 
@@ -795,18 +995,24 @@ window.SFC = window.SFC || {};
         if (SFC.Reveal.active) { SFC.Reveal.onClose = null; SFC.Reveal.close(); }
       }
       this.active = false;
-      if (this.el) { this.el.classList.add('hidden'); this.el.innerHTML = ''; }
+      this.onDone = null;   // bị huỷ giữa chừng (vd. co-op: vào trận khi đang xem): không chạy callback cũ về sau
+      if (this.el) { this.el.classList.add('hidden'); this.el.innerHTML = ''; Object.keys(TELL).forEach((k) => this.el.classList.remove('st-tell-' + k)); }
     },
 
     draw() {
       const sc = this.scenes[this.idx];
       if (!sc) return;
       const art = ART[sc.art] || ART.black;
+      // kiểu kể (FOOTBALL STORY): vẽ cảnh vào canvas phụ rồi ghép khung lên canvas chính
+      const T = this.tell && TELL[this.tell], main = ctx;
+      if (T) ctx = offCtx();
       ctx.save();
       // cảnh đăng ký thêm (addArt) nhận cả cảnh làm tham số; cảnh PROLOGUE giữ chữ ký cũ (tham số thứ 3 là zoom / dim)
-      if (ADDED.has(sc.art)) art(sc.keep ? this.artT : this.t, this.dur(sc) || 1, sc);
+      if (sc.card) rect(0, 0, W, H, '#000');
+      else if (ADDED.has(sc.art)) art(sc.keep ? this.artT : this.t, this.dur(sc) || 1, sc);
       else art(this.t, this.dur(sc) || 1);
       ctx.restore();
+      if (T) { ctx = main; ctx.save(); T.draw(this, sc); ctx.restore(); }
       this.drawText(sc);
     },
 
@@ -824,6 +1030,8 @@ window.SFC = window.SFC || {};
         this.textEl.appendChild(el);
         // người nói (FOOTBALL STORY): nhãn tên màu trên hộp chữ, chữ gõ vào dòng dưới
         const who = l.who && this.speaker ? this.speaker(l.who, sc) : null;
+        el.dataset.who = l.who || '';
+        if (this.tell && TELL[this.tell].text) TELL[this.tell].text(this, el, l, sc);   // manga: đặt bóng thoại vào ô đang chạy
         if (who) {
           el.classList.add('has-who');
           el.style.setProperty('--wc', who.color || '#ffe14f');
@@ -870,6 +1078,14 @@ window.SFC = window.SFC || {};
   };
   const ADDED = new Set();
   Story.addArt = (name, fn) => { ADDED.add(name); ART[name] = (t, d, sc) => fn(t, d, sc || {}, Story.helpers); };
+  // vẽ bằng bộ hàm trên 1 canvas khác (640x360, vd. PHÒNG TRƯNG BÀY src/ui/trophies.js), xong trả ctx lại cho cut scene đang chạy
+  Story.paint = (cv, fn) => {
+    const keep = ctx;
+    ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    if (!buf) { buf = document.createElement('canvas'); buf.width = 40; buf.height = 44; }
+    try { fn(Story.helpers); } finally { ctx = keep; }
+  };
 
   SFC.Story = Story;
 })();

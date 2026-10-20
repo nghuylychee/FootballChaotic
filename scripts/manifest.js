@@ -111,6 +111,7 @@ const FILES = [
   ['src/ui/reveal.js', 'game'],
   ['src/ui/team.js', 'game'],
   ['src/ui/achievements.js', 'game'],
+  ['src/ui/trophies.js', 'game'],                          // PHÒNG TRƯNG BÀY: cúp Story + kỷ lục + lối vào ACHIEVEMENTS
   ['src/ui/road.js', 'game'],
   ['src/ui/cup.js', 'game'],                               // FOOTBALL STORY: tab PLAY + màn cup
   ['src/ui/intro.js', 'game'],

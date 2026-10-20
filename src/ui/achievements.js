@@ -1,4 +1,4 @@
-/* AchUI — trang ACHIEVEMENTS (nút cúp dưới SETTINGS ở trang chủ; dùng chung khung #menu như ui/gacha.js, Menu gọi vào khi page thuộc AchUI.pages).
+/* AchUI — trang ACHIEVEMENTS (nút ACHIEVEMENTS trong PHÒNG TRƯNG BÀY, src/ui/trophies.js; dùng chung khung #menu như ui/gacha.js, Menu gọi vào khi page thuộc AchUI.pages).
  *   trái: danh sách thành tích (nhận được thưởng lên đầu · đang làm · đã nhận xuống cuối), mỗi dòng: icon nhóm, tên, mô tả,
  *         thanh tiến độ, phần thưởng nhỏ, trạng thái (CLAIM / ✓)
  *   phải: thành tích đang chọn — phần thưởng to (costume vẽ trên character / hộp), tiến độ, Enter nhận thưởng
@@ -118,7 +118,7 @@ window.SFC = window.SFC || {};
       return true;
     },
 
-    back(menu) { this.order = null; menu.go('home'); },
+    back(menu) { this.order = null; menu.go('trophy'); },   // mở từ PHÒNG TRƯNG BÀY (src/ui/trophies.js)
   };
 
   SFC.AchUI = AchUI;

@@ -20,6 +20,8 @@
  *   reconnecting                            mình mất kết nối giữa trận, đang thử vào lại · getReady  xem xong giới thiệu, chờ người khác
  *   closed {reason, from: 'create'|'join'|'room', ranked}  hết phiên online. reason: left · closed · lost · cancelled · not-found ·
  *                                           full · started · version · busy · expired · rejoin-failed · unsupported · in-use · connect
+ *   cup {state}                             phòng FOOTBALL STORY: trạng thái cup của host vừa tới (khách; null = chưa / hết cup)
+ *   scenes {kind}                           phòng Story: host bắt đầu chiếu cut scene (kind: before) -> chiếu xong gọi scenesDone()
  *   solo                                    tìm trận xếp hạng không ghép được người thật (không ai đang tìm / không kết nối được /
  *                                           máy chủ bận): game tự ghép người chơi giả (MainPath.matchmake) như khi chơi một mình
  *
@@ -32,6 +34,8 @@
  *   khách -> host : mp{ms} (ping trung vị từ đầu trận, mỗi net.pingShare giây + lúc hết trận) · host -> khách: pg{p:{id cầu thủ: ms}} (bảng ping)
  *   cả 2 chiều    : ping{c} -> pong{c} (đo ping mỗi net.pingEvery giây, c = giờ của bên gửi; SFC.NetStats)
  *   khách -> máy chủ (trước khi vào phòng): queue{v,elo,role,pf} · unqueue — xem transport-server.js
+ *   Phòng FOOTBALL STORY (createRoom({ story }), chỉ người chơi làm host): lobby thêm k (id Story) + c (trạng thái cup, src/meta/cup.js share) ·
+ *                   host -> khách cs{k} (chiếu cut scene) · khách -> host csd (chiếu xong). Trận cup: start{opts.cup}, khách dựng lại luật trận theo config
  *   host  -> khách: you{tok} (mã kết nối lại) · lobby{m:[{id,pf,slot}],o,g} (g = sân: chỉ số Area, -1 = ngẫu nhiên) · start{opts} · s{f,s,fx,sfx,ev} (snapshot) ·
  *                   drop{seat,o,away?} (1 người rời / mất kết nối) · back{seat,o} (người đó kết nối lại) ·
  *                   full · started · expired · version · bye
@@ -73,7 +77,8 @@ window.SFC = window.SFC || {};
     emit(name, data) { for (const fn of listeners[name] || []) fn(data || {}); },
     // profile(): hồ sơ trận công khai của người chơi (vị trí đang chọn + đồng đội) · area(): Area cao nhất đã tới (đội bot / sân)
     // rank(): Main Path của người chơi { area, elo, reward } (tìm trận xếp hạng + opts.mainPath của trận xếp hạng)
-    provider: { profile: () => SFC.Profile.sanitizePublic({}), area: () => 0, rank: () => ({ area: 0, elo: 0, reward: 1 }) },
+    // cup(): trạng thái cup của máy làm host gửi cả phòng Story (null = chưa bắt đầu / đã hết)
+    provider: { profile: () => SFC.Profile.sanitizePublic({}), area: () => 0, rank: () => ({ area: 0, elo: 0, reward: 1 }), cup: () => null },
     provide(p) { Object.assign(this.provider, p); },
     myPf() { return this.provider.profile(); },
     // sắp vào online (mở menu ONLINE): khởi động trước những gì cần (máy chủ đang ngủ thì đánh thức)
@@ -110,11 +115,13 @@ window.SFC = window.SFC || {};
     /* ================= PHÒNG ================= */
     // máy chủ riêng trước (nếu có; đang ngủ thì chờ dậy), không được -> người chơi làm host (Steam / PeerJS)
     // opts.direct: người chơi chọn tự làm host (PRIVATE MATCH › CONNECTION: DIRECT) -> bỏ qua máy chủ riêng
+    // opts.story: phòng FOOTBALL STORY (id Story) — luôn người chơi làm host (máy chủ riêng không mở phòng Story)
     createRoom(opts = {}) {
       if (this.status === 'busy') return;
       this.status = 'busy';
-      this.emit('busy', { action: 'create' });
-      if (opts.direct || !NC().serverOn()) { this.hostLocally(); return; }
+      this.story = opts.story || null;
+      this.emit('busy', { action: 'create', story: this.story });
+      if (opts.direct || this.story || !NC().serverOn()) { this.hostLocally(); return; }
       this.waitingServer = true;
       this.use(SFC.NetServer).host(() => this.emit('waiting', { action: 'create' }))
         .then((code) => { this.waitingServer = false; this.enterAsGuest(code); })
@@ -223,6 +230,7 @@ window.SFC = window.SFC || {};
         drop: (id) => Net().drop(id),
         local: { id: 'host', pf: () => this.myPf() },
         snapshotEvery: N().snapshotEvery,
+        story: this.story,
         hooks: this.roomHooks(),
       });
       this.lobby = this.room.lobby;
@@ -258,6 +266,7 @@ window.SFC = window.SFC || {};
         start: (game) => { this.game = game; this.status = 'playing'; this.pings = {}; SFC.NetStats.matchStart(); this.emit('start', { game, resume: false }); },
         events: () => {},
         localRole: (role) => this.emit('role', { role }),
+        cupState: () => this.provider.cup(),
       };
     },
 
@@ -283,6 +292,8 @@ window.SFC = window.SFC || {};
 
     reset() {
       this.role = null; this.status = 'idle'; this.code = null; this.game = null; this.ranked = false;
+      this.story = null;           // phòng FOOTBALL STORY: id Story
+      this.cup = null;             // khách phòng Story: trạng thái cup host gửi (chưa kiểm tra — src/meta/cup.js mirror lọc)
       this.room = null;
       this.lobby = { members: [], owner: null, ground: -1 };
       this.roleSent = null;
@@ -353,6 +364,7 @@ window.SFC = window.SFC || {};
     requestSlot(s) {
       const me = this.mine;
       if (this.status !== 'lobby' || s < -1 || s >= this.nSlots || this.memberAt(s) || (me && me.slot === s)) return;
+      if (this.story && (s < 0 || this.slotTeam(s) !== 0)) return;
       if (this.isHost) this.room.moveMember('host', s);
       else Net().send({ t: 'slot', s });
     },
@@ -360,7 +372,8 @@ window.SFC = window.SFC || {};
     cycleSlot(d) {
       const me = this.mine;
       if (!me) return;
-      const list = [...Array(this.nSlots).keys(), -1], n = list.length, i = list.indexOf(me.slot);
+      // phòng Story: chỉ các vị trí của đội 0, không có GUEST
+      const list = this.story ? ROLES().map((r) => this.slotOf(0, r)) : [...Array(this.nSlots).keys(), -1], n = list.length, i = list.indexOf(me.slot);
       for (let k = 1; k < n; k++) {
         const s = list[(((i + d * k) % n) + n) % n];
         if (!this.memberAt(s)) return this.requestSlot(s);
@@ -379,6 +392,9 @@ window.SFC = window.SFC || {};
           this.lobby.members = this.sanitizeMembers(m.m);
           this.lobby.owner = typeof m.o === 'string' ? m.o : null;
           this.lobby.ground = clampInt(m.g == null ? -1 : m.g, -1, SFC.MainPath.areas().length - 1);
+          // phòng FOOTBALL STORY: id Story + trạng thái cup của host (báo trước toLobby để màn cup vẽ đúng vòng mới)
+          this.story = typeof m.k === 'string' ? m.k.slice(0, 40) : null;
+          if (this.story) { this.cup = m.c && typeof m.c === 'object' ? m.c : null; this.emit('cup', { state: this.cup }); }
           if (this.status === 'playing') {
             this.status = 'lobby'; this.game = null;
             this.emit('toLobby');
@@ -398,6 +414,7 @@ window.SFC = window.SFC || {};
         case 'ping': if (typeof m.c === 'number') Net().send({ t: 'pong', c: m.c }); break;
         case 'pong': if (typeof m.c === 'number') SFC.NetStats.pong(performance.now() - m.c); break;
         case 'start': this.guestStart(m); break;
+        case 'cs': if (this.story && this.status === 'lobby' && m.k === 'before') this.emit('scenes', { kind: 'before' }); break;
         case 'pg': if (m.p && typeof m.p === 'object') { this.pings = this.cleanPings(m.p); this.emit('pings'); } break;
         case 's': if (this.status === 'playing') { this.buf.push(m); this.jitter(m.f); } break;
         case 'drop':
@@ -491,6 +508,9 @@ window.SFC = window.SFC || {};
       const mp = o.ranked && o.mainPath && typeof o.mainPath === 'object' ? Object.assign({}, this.provider.rank(), {
         myElo: Math.max(0, +o.mainPath.myElo || 0), oppElo: Math.max(0, +o.mainPath.oppElo || 0),
       }) : undefined;
+      // trận FOOTBALL STORY: chỉ nhận id Story + vòng, luật trận / câu nói lấy từ config của máy này (không tin dữ liệu gửi tới)
+      const St = SFC_CONFIG.stories, cs = o.cup && St && St.list.find((x) => x.id === o.cup.id && !x.soon);
+      const cr = cs ? clampInt(o.cup.round, 0, cs.rounds.length - 1) : 0, rd = cs && cs.rounds[cr];
       // trận "gương": cùng đội hình / character / slot như host, nhưng góc nhìn slot của máy này
       this.game = new SFC.Game({
         home, away, online: true, me, humanTeam: seats[me].team, seats,
@@ -501,6 +521,8 @@ window.SFC = window.SFC || {};
         arena: SFC_CONFIG.arenas[o.arena] ? o.arena : undefined,
         resume: o.resume ? 1 : undefined,
         ranked: mp ? 1 : undefined, mainPath: mp,
+        cup: rd ? { id: cs.id, round: cr } : undefined, knockout: rd ? true : undefined,
+        mod: rd ? rd.mod || null : undefined, barks: rd ? rd.barks || null : undefined, mirror: 1,
       });
       this.game.events.length = 0;
       this.buf = [];
@@ -542,6 +564,18 @@ window.SFC = window.SFC || {};
       if (this.isHost) this.room.backToLobby();
       else if (this.isOwner) Net().send({ t: 'toLobby' });
     },
+
+    /* ================= PHÒNG FOOTBALL STORY ================= */
+    // host: trạng thái cup đổi (bắt đầu / thoát cup) -> gửi lại phòng chờ kèm trạng thái mới
+    shareCup() { if (this.isHost && this.room && this.status === 'lobby') this.room.sendLobby(); },
+    // host: chiếu cut scene trước trận cùng lúc ở mọi máy
+    cueScenes(kind) { if (this.isHost && this.room && this.status === 'lobby') this.room.cueScenes(kind); },
+    // host: còn khách chưa chiếu xong (chờ tối đa net.sceneWait giây)
+    get scenesPending() { return this.isHost && !!this.room && this.room.scenesPending; },
+    // khách: chiếu xong cut scene host yêu cầu
+    scenesDone() { if (!this.isHost && this.story && this.status === 'lobby') Net().send({ t: 'csd' }); },
+    // host: vào trận vòng hiện tại (o: xem Room.startStory)
+    startStory(o) { if (this.isHost && this.room && this.status === 'lobby') this.room.startStory(o); },
 
     /* ================= VÒNG LẶP (60 bước/giây) ================= */
     // đồng hồ của phòng (màn giới thiệu, người vắng mặt quá hạn) — chạy cả khi trận đang đứng yên

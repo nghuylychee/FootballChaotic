@@ -8,7 +8,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 10,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng (8: Tuyệt kỹ thiết kế lại, 9: Tuyệt kỹ đợt 3 — docs/ULT_REDESIGN.md, 10: chữ bật ra Effects.pop thay text / comic)
+  protocol: 11,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng (8: Tuyệt kỹ thiết kế lại, 9: Tuyệt kỹ đợt 3 — docs/ULT_REDESIGN.md, 10: chữ bật ra Effects.pop thay text / comic, 11: phòng FOOTBALL STORY co-op: lobby k / c, cs / csd)
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
   pingEvery: 1,                // giây giữa 2 lần đo ping tới máy chạy trận (NETWORK STATS, 0 = tắt)
   pingShare: 5,                // giây: khách báo ping trung vị cả trận (mp), máy chạy trận phát bảng ping (pg) -> màn kết quả hiện ping từng người
@@ -44,6 +44,7 @@ SFC_CONFIG.net = {
   codeLength: 7,               // Steam: mã = 32 bit của lobby id -> cần 7 ký tự (32 ký tự x 7 = 35 bit). PeerJS dùng chung độ dài
   codeChars: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', // bỏ ký tự dễ nhầm (I, O, 0, 1)
   connectTimeout: 12,          // giây chờ kết nối trước khi báo lỗi
+  sceneWait: 25,               // phòng FOOTBALL STORY: giây tối đa chủ phòng chờ cả phòng xem xong cut scene trước trận
   reconnectGrace: 30,          // giây giữ slot cho người mất kết nối giữa trận (AI đá thay, vào lại được). 0 = tắt
 
   // Phòng: slot = đội x vị trí (game.config.js -> roles). Người chơi tự nhảy qua lại giữa các slot trống.

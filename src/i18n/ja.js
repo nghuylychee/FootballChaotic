@@ -1410,10 +1410,41 @@ SFC.I18n.add({
     'A giant magnet drags opponents together into a heap.': '巨大マグネットが相手を引き寄せ、ひと山にする。',
     'First-time shots, volleys and headers hit at full power.': 'ダイレクトシュート・ボレー・ヘディングが常に全力で飛ぶ。',
 
+    /* ===== PHÒNG TRƯNG BÀY (src/ui/trophies.js) ===== */
+    'TROPHY ROOM': 'トロフィールーム',
+    'PEAK': '最高',
+    'BEST AREA': '最高エリア',
+    'MATCHES': '試合',
+    'WINS': '勝利',
+    'First won: {date}': '初優勝: {date}',
+    'Best final: {score}': '最高の決勝: {score}',
+    'Runs: {n}': '挑戦: {n}回',
+    'CHAMPION REWARD': '優勝賞品',
+    'In your INVENTORY': '持ち物にあり',
+    'Win the cup to unlock': '優勝で手に入る',
+    'PLAY THIS STORY': 'このストーリーをプレイ',
+
+    /* ===== FOOTBALL STORY: co-op online (src/ui/cup.js page slobby, src/ui/endscreen.js) ===== */
+    'PLAY WITH FRIENDS': 'フレンドとプレイ',
+    'Solo or with up to 2 friends · 4 knockout matches · lose and you are out': 'ひとりでも、フレンド2人までとでも · 4試合のトーナメント · 負けたら終わり',
+    'Get ready...': '準備して...',
+    'Waiting for the others to finish the scene...': 'ほかのプレイヤーがシーンを見終わるのを待っています...',
+    'Leave? The cup ends for everyone in the room.': '退出する？ルーム全員のカップが終わります。',
+    'Leave the room? You will leave this cup.': 'ルームを出る？このカップから抜けます。',
+    'CONFIRM LEAVE': '退出を確定',
+    'START CUP': 'カップ開始',
+    'MOVE HERE': 'ここに移動',
+    'COPY': 'コピー',
+    'Send this code to your friends. They join from FOOTBALL STORY › JOIN.': 'このコードをフレンドに送ろう。フットボールストーリー › 参加 から入れます。',
+    'Waiting for {name} to start...': '{name}の開始待ち...',
+    'Waiting for {name} to continue...': '{name}の進行待ち...',
+
+    /* ===== FOOTBALL STORY: kiểu kể riêng từng Story (src/ui/cup.js) ===== */
+    'STORYTELLING': '語り方',
+
     /* ===== FOOTBALL STORY (config/stories.config.js, src/ui/cup.js) ===== */
     'FOOTBALL STORY': 'フットボールストーリー',
     '{n}/{max} CUPS': '{n}/{max} カップ',
-    'Co-op vs bots · 4 knockout matches · lose and you are out': 'ボット相手に協力プレイ · 4試合のトーナメント · 負けたら終わり',
     'This story is coming soon.': 'このストーリーは近日公開！',
     'This story is in the full game.': 'このストーリーは製品版で遊べます。',
     'FULL GAME · WISHLIST': '製品版 · ウィッシュリスト',

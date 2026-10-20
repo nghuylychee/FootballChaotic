@@ -21,7 +21,8 @@ window.SFC = window.SFC || {};
   // Shop (hộp gacha) · mở hộp · túi đồ nằm ở ui/gacha.js
   const G = () => SFC.Gacha;
   const TM = () => SFC.Team;          // NHÂN VẬT > TEAM: đội hình đồng đội + scout (ui/team.js)
-  const AU = () => SFC.AchUI;         // ACHIEVEMENTS: nút cúp dưới SETTINGS ở trang chủ (ui/achievements.js)
+  const AU = () => SFC.AchUI;         // ACHIEVEMENTS: mở từ PHÒNG TRƯNG BÀY (ui/achievements.js)
+  const TR = () => SFC.TrophyUI;      // PHÒNG TRƯNG BÀY: nút cúp dưới SETTINGS ở trang chủ (ui/trophies.js)
   const RD = () => SFC.RoadUI;
   const CU = () => SFC.CupUI;         // FOOTBALL STORY: tab thứ 2 màn PLAY (page 'story') + màn 1 lượt chơi cup (page 'cup'), ui/cup.js        // GOAT PATH: toàn bộ hành trình xếp hạng, mở từ đầu màn RANKED (ui/road.js)
   const coin = (n) => G().coin(n);
@@ -58,7 +59,7 @@ window.SFC = window.SFC || {};
   const PLAY_PAGES = ['party', 'story', 'online', 'join', 'lobby'];
   const PLAY_TABS = ['party', 'story', 'online'];   // trang mở khi đổi sang từng tab (Q / E)
   // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, TÚI ĐỒ
-  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'storytest', 'privacy', 'controls', 'ach', 'road'];
+  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'storytest', 'privacy', 'controls', 'ach', 'trophy', 'road'];
   // trang không có logo, tiêu đề là 1 dòng ngang cả màn như SHOP (NHÂN VẬT thêm LV / XP / vàng bên phải)
   const HEAD_PAGES = ['char', 'ults', 'attrs', 'look', 'settings', 'display', 'test', 'storytest'];
   const WALLET_PAGES = ['char', 'ults', 'attrs', 'look'];
@@ -195,7 +196,7 @@ window.SFC = window.SFC || {};
             { kind: 'btn', nav: 2, label: _t('SHOP'), sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', gear: true, label: _t('SETTINGS'), sub: _t('Sound · display · controls'), act: () => this.go('settings') },
             // ACHIEVEMENTS: nút cúp ngay dưới bánh răng, số trên nút = thành tích chờ nhận thưởng
-            { kind: 'btn', ach: true, label: _t('ACHIEVEMENTS'), hot: SFC.Achievements.claimable().length > 0, act: () => AU().open(this) },
+            { kind: 'btn', ach: true, label: _t('TROPHY ROOM'), hot: SFC.Achievements.claimable().length > 0, act: () => TR().open(this) },
           ].map((it) => Object.assign(it, { sub: it.sub && it.sub.toUpperCase() }));
         }
         case 'settings':
@@ -357,7 +358,7 @@ window.SFC = window.SFC || {};
         case 'online':
           return [
             { kind: 'btn', label: _t('CREATE ROOM'), act: () => Session().createRoom({ direct: ST().roomDirect }) },
-            { kind: 'btn', label: _t('JOIN ROOM'), act: () => this.go('join') },
+            { kind: 'btn', label: _t('JOIN ROOM'), act: () => { this.joinFrom = 'online'; this.go('join'); } },
             ...(SFC.NetCommon.serverOn() ? [{ kind: 'pick', conn: true, label: _t('CONNECTION'),
               value: ST().roomDirect ? SFC.tc('connection', 'DIRECT') : SFC.tc('connection', 'AUTO'), change: () => ST().toggleRoomDirect() }] : []),
           ];
@@ -466,6 +467,7 @@ window.SFC = window.SFC || {};
       if (G().pages.includes(this.page)) return G().back(this);
       if (TM().pages.includes(this.page)) return TM().back(this);
       if (AU().pages.includes(this.page)) return AU().back(this);
+      if (TR().pages.includes(this.page)) return TR().back(this);
       if (RD().pages.includes(this.page)) return RD().back(this);
       if (CU().pages.includes(this.page)) return CU().back(this);
       if (this.page === 'story') return this.go('home');
@@ -486,7 +488,7 @@ window.SFC = window.SFC || {};
       else if (this.page === 'storytest') this.go('test');
       else if (['controls', 'display', 'test', 'privacy'].includes(this.page)) this.go('settings');
       else if (['path', 'online', 'tutorial', 'char', 'settings', 'wishlist'].includes(this.page)) this.go('home');
-      else if (this.page === 'join') this.go('online');
+      else if (this.page === 'join') this.go(this.joinFrom || 'online');   // vào từ tab FOOTBALL STORY › JOIN thì quay lại đó
     },
 
     /* ---------------- vẽ ---------------- */
@@ -499,7 +501,7 @@ window.SFC = window.SFC || {};
         this.sel = start >= 0 ? start : Math.max(0, items.findIndex((x) => me && x.slot === me.slot));
       }
       if (this.sel >= items.length) this.sel = Math.max(0, items.length - 1);
-      this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || this.page === 'privacy' || G().pages.includes(this.page) || TM().pages.includes(this.page) || AU().pages.includes(this.page) || RD().pages.includes(this.page) || CU().pages.includes(this.page));
+      this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || this.page === 'privacy' || G().pages.includes(this.page) || TM().pages.includes(this.page) || AU().pages.includes(this.page) || TR().pages.includes(this.page) || RD().pages.includes(this.page) || CU().pages.includes(this.page));
       // class riêng của trang chủ / màn PLAY: bật / tắt cả 2 trước mọi nhánh return (sót class 'party' làm vỡ layout trang chủ)
       // PRIVATE MATCH dùng chung khung màn PLAY, không có khung bạn bè (bạn bè giả không vào phòng thật được)
       const play = PLAY_PAGES.includes(this.page);
@@ -519,6 +521,7 @@ window.SFC = window.SFC || {};
       if (G().pages.includes(this.page)) { G().render(this); this.addBack(); this.bindAvatars(); return; }
       if (TM().pages.includes(this.page)) { TM().render(this); this.bindAvatars(); return; }
       if (AU().pages.includes(this.page)) { AU().render(this); this.addBack(); return; }
+      if (TR().pages.includes(this.page)) { TR().render(this); this.addBack(); return; }
       if (RD().pages.includes(this.page)) { RD().render(this); this.addBack(); this.bindAvatars(); return; }
       if (CU().pages.includes(this.page)) { CU().render(this); return; }   // sân thu nhỏ trên đảo + nhân vật
       // it.foot: mục nằm dưới đáy cột trái (ngay trên dòng gợi ý phím), thứ tự ↑↓ vẫn theo danh sách
@@ -1206,7 +1209,7 @@ window.SFC = window.SFC || {};
           </div>
           <div class="hm-right">
             <button class="hm-gear ${gi === this.sel ? 'sel' : ''}" data-i="${gi}" title="${esc(_t('SETTINGS'))}">${PX().ui('gear', 'x2')}</button>
-            <button class="hm-gear hm-ach ${ai === this.sel ? 'sel' : ''} ${ready ? 'hot' : ''}" data-i="${ai}" title="${esc(_t('ACHIEVEMENTS'))}">${PX().ui('trophy', 'x2')}${ready ? `<b>${ready}</b>` : ''}</button></div>
+            <button class="hm-gear hm-ach ${ai === this.sel ? 'sel' : ''} ${ready ? 'hot' : ''}" data-i="${ai}" title="${esc(_t('TROPHY ROOM'))}">${PX().ui('trophy', 'x2')}${ready ? `<b>${ready}</b>` : ''}</button></div>
         </div>
         <div class="hm-nav">${nav.map(tab).join('')}</div>
         ${this.quitAsk ? this.renderQuit() : ''}`;
@@ -1420,6 +1423,7 @@ window.SFC = window.SFC || {};
       this.animT = (this.animT || 0) + dt;
       G().tick(this); // dải quay hộp gacha
       TM().tick(this, dt); // bản đồ scout + đồng hồ
+      TR().tick(this, dt); // PHÒNG TRƯNG BÀY: vẽ lại căn phòng
       this.searchTick(dt); // tìm trận Main Path
       SFC.Social.tick(dt); // bạn bè giả: trả lời mời / chat, đổi trạng thái
       // phòng chờ: dòng thông báo (vào phòng, mời, kết bạn...) tự ẩn sau msgHide giây
@@ -1445,6 +1449,7 @@ window.SFC = window.SFC || {};
       if (G().pages.includes(this.page)) return G().input(this, input);
       if (TM().pages.includes(this.page)) return TM().input(this, input);
       if (AU().pages.includes(this.page)) return AU().input(this, input);
+      if (TR().pages.includes(this.page)) return TR().input(this, input);
       if (RD().pages.includes(this.page)) return RD().input(this, input);
       if (CU().pages.includes(this.page)) return CU().input(this, input);
       if (this.page === 'name' && input.wasPressed('confirm')) return this.submitName();
@@ -1645,6 +1650,7 @@ window.SFC = window.SFC || {};
         if (G().pages.includes(this.page) && G().click(this, e)) return;
         if (TM().pages.includes(this.page) && TM().click(this, e)) return;
         if (AU().pages.includes(this.page) && AU().click(this, e)) return;
+        if (TR().pages.includes(this.page) && TR().click(this, e)) return;
         if (RD().pages.includes(this.page) && RD().click(this, e)) return;
         if (CU().pages.includes(this.page) && CU().click(this, e)) return;
         if (this.page === 'controls' && CV().click(this, e)) return;

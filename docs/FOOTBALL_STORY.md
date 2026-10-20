@@ -1,6 +1,6 @@
 # FOOTBALL STORY — Cup knockout co-op PvE
 
-> Trạng thái: **ĐÃ CHỐT THIẾT KẾ + ĐÃ LÀM BẢN CHƠI MỘT MÌNH (2026-10-18)**. Chưa làm: co-op online (xem "Việc tiếp theo").
+> Trạng thái: **ĐÃ CHỐT THIẾT KẾ + ĐÃ LÀM BẢN CHƠI MỘT MÌNH (2026-10-18)**. 2026-10-20: mỗi Story 1 thể thức riêng + PHÒNG TRƯNG BÀY. Chưa làm: co-op online (xem "Việc tiếp theo").
 > Code: `config/stories.config.js` (nội dung) · `src/meta/cup.js` (`SFC.Cup`) · `src/ui/cup.js` (`SFC.CupUI`) · `app.startCupMatch` (main.js).
 > Mục tiêu: một mode cho người chơi không thích đá rank. Đá cùng bạn (hoặc bot) qua 1 cup knockout có câu chuyện riêng, gom đủ các Story để có động lực completion.
 
@@ -24,6 +24,40 @@
 | 13 | Đồng đội (2026-10-19) | Vẫn là đồng đội **mở** (`SFC.Mates`), không thành nhân vật cố định, vì hướng tới co-op |
 | 14 | Co-op online (2026-10-19) | Chạy **player-host** (người chơi làm chủ phòng), **không qua máy chủ riêng** |
 | 15 | Cốt truyện (2026-10-19) | **Mỗi Story một concept riêng** (tham khảo anime), không trùng mô-típ. Theme (sân, màu, đội, luật trận) giữ nguyên |
+| 16 | Cách kể (2026-10-20) | 4 Story kể cùng 1 kiểu là **không ổn**. Thử cho mỗi Story 1 thể thức chơi riêng thì user thấy **không ổn**, bỏ. Chốt: **cùng luật knockout 4 vòng + luật trận (gimmick) từng đối thủ**, khác nhau ở **cách kể**: mỗi Story 1 kiểu trình chiếu riêng (nhật ký · manga · show TV · cuộn phim hồi tưởng), concept không trùng |
+| 17 | Phòng trưng bày (2026-10-20) | Cúp vô địch của các Story trưng trong **TROPHY ROOM**: chỗ người chơi nhìn lại thành tựu. Nút cúp ở trang chủ mở phòng này, ACHIEVEMENTS thành 1 khu trong phòng. Mỗi Story 1 chiếc cúp riêng |
+
+## Cách kể riêng từng Story (2026-10-20)
+
+Luật chơi giống nhau (cup knockout 16 đội, 4 trận, thua là out, mỗi đối thủ 1 luật trận). Khác nhau ở **cách kể**: `stories.list[].tell` chọn 1 kiểu trình chiếu cut scene (`src/ui/story.js` `TELL`). Cảnh vẫn vẽ bằng các khuôn ở `src/ui/story-cup.js` nhưng vào canvas phụ, rồi kiểu kể ghép khung riêng + đổi kiểu chữ (CSS `#story.st-tell-<kiểu>`). Đầu mỗi chặng (`stages`: mở đầu · 4 vòng · kết) có 1 trang / thẻ tên chặng do `CupUI.scenes` chèn.
+
+| Story | `tell` | Trình chiếu | Lời thoại | Đầu chặng |
+|---|---|---|---|---|
+| THE WARD CUP | `diary` | **Nhật ký mùa hè** của bạn: giấy kẻ dòng + gáy lò xo, cảnh = ảnh dán băng keo hơi nghiêng (rơi xuống trang khi đổi cảnh), bút chì vẽ nguệch ngoạc ở lề | Chữ viết tay mực xanh, tên người nói bút đỏ; nhiều câu là bạn viết nhật ký ("Dear diary...") | Ngày tháng (JULY 28 → AUGUST 2) |
+| ROOFTOP NIGHT LEAGUE | `manga` | **Trang truyện tranh**: đen trắng tương phản + chấm tram, 3 ô mỗi trang (ô đã xong đứng yên kèm bóng thoại của nó), đầy trang thì lật; cảnh VS / kình địch / nâng cúp = 1 ô to cả trang | Bóng thoại trắng trong ô đang chạy, The Voice = khung tường thuật đen, chữ hiệu ứng `sfx` (FLAP FLAP, DOOM...) | Trang chương (CHAPTER 1 · THE CARD...) với tia tốc độ |
+| NIGHT MARKET CUP | `tv` | **Show nấu ăn trên TV** "Midnight Noodle Showdown", Uncle Noodle dẫn: logo kênh `channel`, LIVE nhấp nháy, tên tập, chữ chạy tin tức `ticker`, dòng quét, nhiễu sóng khi cắt cảnh | Thanh tên kiểu lower third | Thẻ tên tập trên sọc màu thử sóng (PILOT, EP.1...) |
+| GRANDPA'S LEGENDS | `film` | **Cuộn phim hồi tưởng** của ông nội: sepia, hạt phim, vết xước, nhấp nháy, khung rung, 2 dải lỗ phim chạy. Đoạn kết (`outroColor`) và câu cuối của King Leo (`color: true`) phim **có màu lại**: hết hồi tưởng | Phụ đề phim cũ (chữ kem viền đen) | Thẻ chữ phim câm (REEL ONE...) |
+
+- Story mới: chọn 1 kiểu kể chưa dùng (có thể thêm vào `TELL`: vd. tin nhắn điện thoại, video livestream, bản tin radio, truyện tranh 4 ô báo...), không lặp kiểu đã có.
+- Đã thử rồi bỏ (2026-10-20): mỗi Story 1 thể thức chơi riêng (kỳ thi điều kiện thắng khác nhau, tự chọn quầy + quà nguyên liệu, đá trong vai ông nội năm 1976). User: không ổn, giữ knockout.
+
+## Giao diện: hình là chính, ít chữ (user 2026-10-20)
+
+Màn FOOTBALL STORY, màn cup và TROPHY ROOM: thông tin hiện bằng icon pixel + số / chữ ngắn, câu dài để ở tooltip (`title`).
+- Thẻ Story: tiến độ = 4 ô + cúp (không ghi "Best: ..."), nhãn kiểu kể ngắn `tag` + `tagIcon` (SUMMER DIARY · MANGA · TV SHOW · OLD FILM).
+- Màn cup: thẻ vòng cao cố định (không nhảy chữ), chỉ tên Story ở đầu, thẻ đối thủ bỏ đoạn mô tả đội (ở tooltip), mỗi thông tin 1 dòng icon (luật trận · Core đặc trưng).
+- Phòng trưng bày: dữ kiện = icon + số, tường kỷ lục 1 hàng icon, nút ACHIEVEMENTS = icon + đếm.
+- Mô tả sao thử thách viết ngắn (vd. "Hat-trick in one match").
+
+## Phòng trưng bày (TROPHY ROOM, 2026-10-20)
+
+`src/ui/trophies.js` (`SFC.TrophyUI`, page `trophy`), mở bằng nút cúp dưới SETTINGS ở trang chủ.
+- Căn phòng vẽ pixel (canvas 640x360, dùng bộ hàm cut scene qua `SFC.Story.paint`): mỗi Story 1 tủ kính trên bục đá.
+  Đã vô địch: **cúp riêng của Story** (`stories.list[].trophy`: `pot` nồi cơm vàng · `owl` tượng cú vàng · `bowl` tô mì vàng · `cup` cúp vàng cổ, vẽ ở `src/ui/story-cup.js`, cũng là cúp trong cảnh nâng cúp) toả sáng.
+  Chưa vô địch: bục phủ vải nhung + dấu ? (vàng nếu đã từng chơi). Khoá (demo / COMING SOON): ổ khoá. Biển dưới bục: màu Story + 3 sao, vạch vàng = số lần vô địch. Character của bạn đứng ngắm tủ đang chọn.
+- Bảng phải: trạng thái, ngày vô địch đầu (`first`), tỉ số chung kết đẹp nhất (`fin`), số lần chơi, sao, costume vô địch, nút chơi Story đó.
+- Tường kỷ lục: Elo cao nhất, Area xa nhất, trận / thắng / bàn, ULT BOOK, nút ACHIEVEMENTS (Esc ở ACHIEVEMENTS quay về phòng).
+- Hơn 4 Story: phòng trượt theo tủ đang chọn (4 tủ mỗi lúc).
 
 ## Luồng chơi
 
@@ -118,19 +152,19 @@ Mỗi vòng có `mod` (id trong `stories.mods`, số liệu ở config) chạy b
 | Legends | 1/8 | Rust Buckets | **HIGH TIDE** | Nước dâng từ mép trên / dưới: đội bạn lội chậm, bóng lăn nặng. Thuỷ thủ không sao | dâng dày hơn |
 | | Tứ kết | Retired Refs | **THE REFS** | Người chơi đánh choáng 1 Ref: thẻ vàng, lần 2 thẻ đỏ (đứng ngoài vài giây). Đồng đội AI không bị thẻ. Refs phạm lỗi thoải mái | — |
 | | Bán kết | Grandpa's Squad | **BACK IN MY DAY** | "Hồi đó...": màn hình sepia, đội bạn chạy chậm như phim cũ | dày hơn |
-| | Chung kết | The Legends | **GOLDEN STAR** | 1 Legend thành STAR (sút mạnh, chạy nhanh). Cướp bóng từ STAR: bạn nhận GOLDEN BOOT | — |
+| | Chung kết | The Old Legends | **GOLDEN STAR** | 1 Legend thành STAR (sút mạnh, chạy nhanh). Cướp bóng từ STAR: bạn nhận GOLDEN BOOT | — |
 
 ### 4 concept cốt truyện (user chốt 2026-10-19: không trùng mô-típ)
 Mỗi Story khác nhau ở **concept, người dẫn truyện, cách kể và vai của đội boss**. Người dẫn truyện = `stories.list[].narrator`
 (`name` hiện trên hộp chữ, `look` / `kit` vẽ trên khuôn cupHost, `horn: false` = không cầm loa, `art` = khuôn mặc định cho lời của họ;
 Legends có thêm `youngLook` / `youngKit` cho cảnh hồi tưởng).
 
-| Story | Concept (tham khảo) | Người dẫn truyện | Cách kể riêng | Đội boss |
+| Story | Concept (tham khảo) | Người dẫn truyện | Kiểu kể | Đội boss |
 |---|---|---|---|---|
-| THE WARD CUP | **Mùa hè cuối cùng**: hẻm sắp bị giải toả làm bãi đỗ xe, đây là Ward Cup cuối (hoài niệm mùa hè, buồn mà ấm) | WARD LOUDSPEAKER (loa phường) | Đếm ngược "còn N ngày tới máy ủi" sau mỗi vòng, tờ giấy giải toả (cupItem notice) | Block Wardens = bảo vệ công trường, lạnh lùng; twist: đội trưởng lớn lên ở hẻm, chính anh vẽ khung thành trên tường → bỏ việc, bãi đỗ xe bị huỷ |
-| ROOFTOP NIGHT LEAGUE | **Thư mời / kỳ thi bí ẩn** (Hunter x Hunter): thiệp đen hình cú, giải đấu bí mật, 4 thử thách trước bình minh | THE VOICE (giọng nói từ loa, không thấy mặt: khuôn cupVoice) | Mỗi vòng là "TRIAL", đối thủ là người đã thi trượt / giám khảo | Night Owls; twist: đội trưởng chính là The Voice, sắp rời thành phố, đang tìm người kế nghiệp → trao mũ (Night Owl Cap) |
-| NIGHT MARKET CUP | **Đại chiến mì** (Food Wars, hài): cứu xe mì của Uncle Noodle bằng món Mì Nửa Đêm huyền thoại | UNCLE NOODLE (ông chủ xe mì, không cầm loa) | Mỗi trận thắng lấy 1 nguyên liệu (lửa · sợi mì · gia vị · "vị của trận chung kết"), cuộn công thức + tô mì (cupItem recipe / bowl) | Market Mamas = giám khảo nếm mì; không phải phản diện: nếm xong nhớ món mẹ nấu, cho xe ở lại |
-| GRANDPA'S LEGENDS | **Trận đấu dang dở** (bí ẩn kể bằng hồi tưởng, truyền thừa): 50 năm trước ông nội chấn thương ở chung kết rồi bỏ bóng đá | GRANDPA (kể chuyện, không cầm loa) | Hồi tưởng sepia (cupMemory), mỗi vòng lộ thêm 1 mảnh: thuỷ thủ chở ông về → trọng tài đã bỏ qua pha phạm lỗi → đồng đội cũ giận ông bỏ cuộc → đội trưởng Legends là người phạm lỗi | The Legends; muốn khép lại trận đấu 50 năm, cuối cùng ông nội có mặt trên khán đài |
+| THE WARD CUP | **Mùa hè cuối cùng**: hẻm sắp bị giải toả làm bãi đỗ xe, đây là Ward Cup cuối (hoài niệm mùa hè, buồn mà ấm) | WARD LOUDSPEAKER (loa phường) + chính bạn viết nhật ký | Nhật ký mùa hè, đếm ngược ngày tới máy ủi | Block Wardens = bảo vệ công trường; twist: đội trưởng lớn lên ở hẻm, chính anh vẽ khung thành trên tường → bỏ việc, bãi đỗ xe bị huỷ |
+| ROOFTOP NIGHT LEAGUE | **Thư mời / kỳ thi bí ẩn** (Hunter x Hunter): thiệp đen hình cú, giải bí mật, 4 thử thách trước bình minh | THE VOICE (giọng nói từ loa, không thấy mặt: khuôn cupVoice) | Manga shōnen: chương, bóng thoại, chữ hiệu ứng | Night Owls; đội trưởng chính là The Voice, sắp rời thành phố → bạn thành The Voice mới, gửi thiệp cho lứa sau |
+| NIGHT MARKET CUP | **Đại chiến mì** (Food Wars, hài): cứu xe mì của Uncle Noodle bằng món Mì Nửa Đêm | UNCLE NOODLE (dẫn show TV từ xe mì) | Show nấu ăn phát trực tiếp, mỗi vòng 1 tập, thắng = lấy 1 nguyên liệu | Market Mamas; Big Mama là **chị gái** Uncle Noodle, giành công thức của mẹ → hai chị em chia đôi 1 sạp |
+| GRANDPA'S LEGENDS | **Trận đấu dang dở** (hồi tưởng, truyền thừa): 50 năm trước ông nội chấn thương ở chung kết, trận bị bỏ dở | GRANDPA (chiếu cuộn phim cũ) | Phim hồi tưởng sepia, mỗi vòng 1 cuộn lộ thêm 1 mảnh: thuỷ thủ chở ông về → trọng tài thú nhận → đồng đội cũ → King Leo | The Legends (The Old Legends, King Leo); kết: ông nội trên khán đài, phim có màu lại |
 
 Khuôn cảnh mới cho các concept (`src/ui/story-cup.js`): `cupMemory` (hồi tưởng sepia, hạt phim; `young` = người dẫn truyện hồi trẻ, `fall` = ngã chấn thương),
 `cupVoice` (loa trên cột đèn + đôi mắt cú trong bóng tối), `cupItem` (`item`: notice · invite · recipe · bowl · boots). Lời thoại ghi `art` + các tham số này.
@@ -193,11 +227,23 @@ chiếu lúc mở cup · trước mỗi trận · sau trận thắng · lúc nâ
 - Thưởng: gold mỗi vòng thắng (dòng riêng ở màn kết quả), thống kê chung, 3 thành tích (`story` · `finals` · `stars`), demo `demo.stories: 1`.
 - Bản dịch pt-BR · pt-PT · es · ja (chưa qua người bản xứ duyệt).
 
+## Co-op online (đã làm 2026-10-20)
+
+Luồng: tab FOOTBALL STORY › chọn Story › **PLAY WITH FRIENDS** = tạo phòng Story (máy này làm host, PeerJS / Steam P2P, không qua máy chủ riêng) → trang phòng chờ Story (`slobby`): mã phòng to (bấm để chép), 3 ô vị trí DEF / MID / FWD. Bạn bè vào bằng mã: tab FOOTBALL STORY › **JOIN** (hoặc PRIVATE MATCH › JOIN ROOM). Chủ phòng **START CUP**.
+- **Mỗi người mang character của mình** (ngoại hình, chỉ số, Core đã mở) vào đúng vị trí đang đứng (Enter ô trống để đổi vị trí). Cả phòng 1 đội, tối đa 3 người; vị trí không có người = đồng đội AI cố định của lượt chơi (`Cup.run.mates` của host).
+- **Lượt chơi nằm ở máy host** (`SFC.Cup` thật: bracket, giả lập nhánh khác). Khách giữ bản sao: gói `lobby` của phòng Story mang `k` (id Story) + `c` (`Cup.share()`), khách `Cup.mirror(state)` (lọc dữ liệu, `run.mirror`). Màn cup giống nhau ở mọi máy; chỉ chủ phòng có KICK OFF / QUIT CUP / PLAY AGAIN, người khác thấy "Waiting for {name}..." + LEAVE ROOM.
+- **Cut scene chiếu cùng lúc:** mở cup + sau trận + nâng cúp: mỗi máy tự chiếu khi trạng thái cup đổi. Trước trận: chủ phòng bấm KICK OFF → `cs{k:'before'}` → mọi máy chiếu → khách xem xong gửi `csd` → host chờ cả phòng (tối đa `net.sceneWait` giây) rồi vào trận.
+- **Trận:** `Room.startStory` dựng trận đội 0 (người thật + AI) vs đội của vòng, opts giống trận một mình (`cup`, `knockout`, luật trận, câu nói, tỉ số đầu trận). Khách chỉ nhận id Story + vòng, tự lấy luật trận / câu nói từ config của mình; trận "gương" (`opts.mirror`) không tự chạy luật trận (`MatchMods` chỉ giữ id để vẽ, vật thể tới từ host — `Sync.capture` gửi kèm cả vật thể đã có trước khi bắt đầu ghi).
+- **Thưởng riêng từng người** (`Cup.pay`, mỗi vòng 1 lần): gold vòng thắng, vòng xa nhất, vô địch + costume lần đầu, sao hat-trick của chính mình. Sao của cả đội (vô địch, chung kết sạch lưới, không bàn thắng vàng...) host tính rồi gửi kèm `ts`.
+- Hết trận: chủ phòng bấm CONTINUE ở màn kết quả → cả phòng về màn cup (`backToLobby`, gói lobby mang trạng thái cup mới). Người mới vào được **giữa 2 trận** (ô còn trống), vào giữa cup thì bỏ qua cut scene các vòng trước.
+- **Rời phòng:** khách rời = hết cup với người đó (phòng đá tiếp, AI thế chỗ). Chủ phòng rời = phòng đóng, cả phòng về tab FOOTBALL STORY ("The room was closed.").
+- Bản DEMO: không có nút co-op (online khoá như PRIVATE MATCH). `net.protocol` 11, máy chủ riêng `11.0.0` (máy chủ không mở phòng Story nhưng phải cùng protocol).
+- Test: `node server/test/story-test.js` (ghế, gói lobby, cut scene, đá hết trận, người vào giữa cup, trận gương không tự đặt vật thể).
+
 ## Việc tiếp theo
 
-1. **Co-op online qua mã phòng** (chưa làm): loại phòng `story` trong `Room`, trạng thái cup (Story, vòng, bracket) trong `start{opts.cup}`, màn cup chung cho cả phòng (chủ phòng bấm KICK OFF, hội thoại chạy cùng lúc), người mới vào giữa 2 trận nhận ghế AI, chủ phòng thoát = hết cup. Bump `net.protocol`.
-2. Luật trận `mods`: cả 4 Story đã có (Ward Cup user duyệt 2026-10-19 sau 2 chỉnh sửa; Story 2–4 chờ user chơi thử). Bản dịch các chữ mới (tên luật, câu nói, lời thoại) làm sau khi user duyệt nội dung.
-2b. Co-op online: cut scene chiếu cùng lúc ở mọi máy (như màn giới thiệu đội: chủ phòng chờ cả phòng xem xong).
+1. Mời bạn qua Steam (overlay "Invite to game" + nhận lời mời khi game đang chạy). Hiện chỉ gửi mã phòng; callback lời mời của steamworks.js trả lobby id qua JSON bị làm tròn 64 bit (xem transport-steam.js) nên cần cách lấy mã chính xác.
+2. Luật trận `mods`: cả 4 Story đã có (Ward Cup user duyệt 2026-10-19 sau 2 chỉnh sửa; Story 2–4 chờ user chơi thử). Kiểu kể + thoại mới (2026-10-20) chờ user xem thử. Bản dịch các chữ mới (tên luật, câu nói, lời thoại, tên chặng, chữ hiệu ứng, chữ chạy TV) làm sau khi user duyệt nội dung; chữ giao diện (TROPHY ROOM, STORYTELLING...) đã dịch.
 3. Story thứ 5 trở đi (chỉ cần config + lời thoại; khuôn cảnh / theme mới khi muốn).
 
 ## MVP
@@ -215,11 +261,11 @@ Chưa làm: tìm trận co-op với người lạ, luân lưu, cut scene procedu
 | # | Story | theme / cúp | Độ khó (Elo AI) | Đối thủ (1/8 → chung kết) | Sao | Costume vô địch |
 |---|---|---|---|---|---|---|
 | 1 | THE WARD CUP | alley · nồi cơm | 30 → 240 | The Uncles · Moped Boys · School Ghosts · **Block Wardens** (mỗi đội 1 luật trận) | vô địch · chung kết sạch lưới · hat-trick | Ward Cup (nồi cơm vàng) |
-| 2 | ROOFTOP NIGHT LEAGUE | rooftop · cúp | 380 → 700 | Pigeon Gang · Sky Hoppers · Billboard Kids · **Night Owls** | vô địch · thắng chung kết cách 3 bàn · hat-trick | Night Owl Cap |
-| 3 | NIGHT MARKET CUP | market · cúp | 620 → 1150 | Lantern Crew · Noodle Kickers · Fortune Tellers · **Market Mamas** | vô địch · không cần bàn thắng vàng · 12 bàn cả cup | Lantern Hat |
-| 4 | GRANDPA'S LEGENDS | stadium · cúp | 1450 → 2700 | Rust Buckets · Retired Refs · Grandpa's Squad · **The Legends** | vô địch · chung kết sạch lưới · trận nào cũng thắng cách 2 bàn | Golden Laurel |
+| 2 | ROOFTOP NIGHT LEAGUE | rooftop · tượng cú | 380 → 700 | Pigeon Gang · Sky Hoppers · Billboard Kids · **Night Owls** | vô địch · thắng chung kết cách 3 bàn · hat-trick | Night Owl Cap |
+| 3 | NIGHT MARKET CUP | market · tô mì | 620 → 1150 | Lantern Crew · Noodle Kickers · Fortune Tellers · **Market Mamas** | vô địch · không cần bàn thắng vàng · 12 bàn cả cup | Lantern Hat |
+| 4 | GRANDPA'S LEGENDS | stadium · cúp | 1450 → 2700 | Rust Buckets · Retired Refs · Grandpa's Squad · **The Old Legends** | vô địch · chung kết sạch lưới · trận nào cũng thắng cách 2 bàn | Golden Laurel |
 
-- Đội in đậm = boss chung kết, cũng là đội kình địch (thắng đậm ở nhánh bên kia). Story 2–4 dùng lại 2 đội Main Path hợp chủ đề ở 2 vòng đầu, 2 vòng sau là đội riêng.
+- Đội in đậm = boss chung kết, cũng là đội kình địch (thắng đậm ở nhánh bên kia). Story 2–4 dùng lại 2 đội Main Path hợp chủ đề ở 2 vòng đầu, 2 vòng sau là đội riêng. `legends_76` (The Legends năm 1976) chỉ xuất hiện trong cảnh hồi tưởng.
 - Mọi Story đều mở (không cần thắng Story trước); độ khó tăng dần theo thứ tự, thẻ có 1–4 vạch đỏ (`tier`). Story 4 rất khó với người chỉ có Core khởi đầu.
 - Thành tích: vô địch từng Story (4) · `Trophy Cabinet` vô địch cả 4 (thưởng Crown) · `finals` · `stars`.
 
