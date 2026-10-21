@@ -6,7 +6,8 @@
  *                sau trận thắng · nâng cúp. KICK OFF -> cut scene trước trận -> main.js startCupMatch.
  *                Hết cup: màn bị loại (KNOCKED OUT) / vô địch (CHAMPIONS) + thưởng của lượt chơi.
  *   page 'slobby' (co-op online): phòng chờ của phòng Story — 3 ô vị trí (người trong phòng mang character của mình / ô trống = AI),
- *                mã phòng (bấm để chép), START CUP (chủ phòng). Bạn bè vào bằng mã: tab FOOTBALL STORY › JOIN (hoặc PRIVATE MATCH › JOIN).
+ *                mã phòng (bấm để chép), START CUP (chủ phòng). Bạn bè vào bằng mã: tab FOOTBALL STORY › JOIN (hoặc PRIVATE MATCH › JOIN),
+ *                hoặc INVITE FRIENDS (chỉ khi backend có bảng mời bạn bè: Steam) -> bạn nhận lời là tự vào phòng (OnlineUI.tryInvite).
  *                Trong phòng: chủ phòng (máy làm host) giữ lượt chơi + bấm KICK OFF; cut scene trước trận chiếu cùng lúc ở mọi máy
  *                (Session.cueScenes), khách xem màn cup theo bản sao host gửi (Cup.mirror). Thoát phòng = hết cup với máy đó.
  * Menu gọi: storyItems / renderStory (page 'story', đi phím bằng Menu.playInput) · render / input / click / back (page 'cup' · 'slobby')
@@ -428,10 +429,11 @@ window.SFC = window.SFC || {};
     },
 
     /* ================= page 'slobby' (phòng chờ co-op của 1 Story) ================= */
-    // mục chọn được: 3 ô vị trí (Enter ô trống = đứng vào đó) · START CUP (chủ phòng) · LEAVE ROOM
+    // mục chọn được: 3 ô vị trí (Enter ô trống = đứng vào đó) · START CUP (chủ phòng) · INVITE FRIENDS (chỉ khi mở được bảng mời bạn bè) · LEAVE ROOM
     lobbyItems() {
       const O = ON(), out = ROLES().map((role) => ({ k: 'slot', slot: O.slotOf(0, role), role }));
       if (O.isHost) out.push({ k: 'start', main: true, label: _t('START CUP') });
+      if (O.canInvite) out.push({ k: 'invite', label: _t('INVITE FRIENDS') });
       out.push({ k: 'leave', label: this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM'), danger: this.leaveArm });
       return out;
     },
@@ -442,6 +444,7 @@ window.SFC = window.SFC || {};
       if (it.k === 'leave') return this.leaveRoom(menu);
       this.leaveArm = false;
       if (it.k === 'slot') { if (!O.memberAt(it.slot)) O.requestSlot(it.slot); return menu.render(); }
+      if (it.k === 'invite') return O.invite() ? menu.render() : menu.setMsg(_t('Could not open your friend list. Share the room code instead.'), true);
       if (it.k === 'start') {
         const s = CUP().get(O.story);
         if (!O.isHost || !CUP().playable(s) || !CUP().start(s.id)) return;

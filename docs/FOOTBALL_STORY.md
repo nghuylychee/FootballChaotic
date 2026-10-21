@@ -239,10 +239,14 @@ Luồng: tab FOOTBALL STORY › chọn Story › **PLAY WITH FRIENDS** = tạo p
 - **Rời phòng:** khách rời = hết cup với người đó (phòng đá tiếp, AI thế chỗ). Chủ phòng rời = phòng đóng, cả phòng về tab FOOTBALL STORY ("The room was closed.").
 - Bản DEMO: không có nút co-op (online khoá như PRIVATE MATCH). `net.protocol` 11, máy chủ riêng `11.0.0` (máy chủ không mở phòng Story nhưng phải cùng protocol).
 - Test: `node server/test/story-test.js` (ghế, gói lobby, cut scene, đá hết trận, người vào giữa cup, trận gương không tự đặt vật thể).
+- **Mời bạn bè (Steam, 2026-10-21):** phòng Steam có nút **INVITE FRIENDS** (trang `slobby`, cả phòng chờ PRIVATE MATCH; chỉ hiện khi `Session.canInvite`: phòng player-host trên Steam, bản web / máy chủ riêng / itch desktop không có, chỉ dùng mã) → `lobby.openInviteDialog()` mở bảng mời của overlay Steam (`electron/main.js` bật `electronEnableSteamOverlay`). Bạn nhận lời:
+  - game đang chạy → callback `GameLobbyJoinRequested` (steamworks.js 0.4.0 build với napi6 nên lobby id tới dưới dạng **bigint chính xác**, không bị làm tròn như từng lo; id dạng number thì bỏ qua) → mã phòng = 32 bit thấp của lobby id;
+  - game chưa chạy → Steam mở game với `+connect_lobby <id>` (main đọc argv → preload `SFC_STEAM.launchLobby`).
+  - `Session` phát sự kiện `invite {code}` (không có UI); `OnlineUI.tryInvite` chờ lúc rảnh ở menu (hết trận: banner INVITE ACCEPTED, hết cut scene / PROLOGUE / đặt tên), bỏ tìm trận / rời phòng đang ở rồi `joinRoom(code)` như gõ mã. Test: `node server/test/invite-test.js` (steamworks giả).
 
 ## Việc tiếp theo
 
-1. Mời bạn qua Steam (overlay "Invite to game" + nhận lời mời khi game đang chạy). Hiện chỉ gửi mã phòng; callback lời mời của steamworks.js trả lobby id qua JSON bị làm tròn 64 bit (xem transport-steam.js) nên cần cách lấy mã chính xác.
+1. Mời bạn qua Steam: **đã làm 2026-10-21** (xem "Co-op online" › Mời bạn bè), test tự động bằng steamworks giả. Còn lại: chạy thử thật bản Electron (App ID 480) với 2 tài khoản Steam trên 2 máy — nút mở overlay, nhận lời lúc game đang chạy và lúc game chưa mở (`+connect_lobby`), overlay hiện được trên cửa sổ Electron (Windows / macOS).
 2. Luật trận `mods`: cả 4 Story đã có (Ward Cup user duyệt 2026-10-19 sau 2 chỉnh sửa; Story 2–4 chờ user chơi thử). Kiểu kể + thoại mới (2026-10-20) chờ user xem thử. Bản dịch các chữ mới (tên luật, câu nói, lời thoại, tên chặng, chữ hiệu ứng, chữ chạy TV) làm sau khi user duyệt nội dung; chữ giao diện (TROPHY ROOM, STORYTELLING...) đã dịch.
 3. Story thứ 5 trở đi (chỉ cần config + lời thoại; khuôn cảnh / theme mới khi muốn).
 

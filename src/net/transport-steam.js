@@ -3,8 +3,13 @@
  * Mã phòng = 32 bit thấp của lobby id (32 bit cao luôn là LOBBY_HIGH), mã hoá bằng codeChars (transport.js).
  * Giao diện chung: xem transport.js. id khách = steamId64 dạng chuỗi.
  *
- * Callback của steamworks.js đi qua JSON nên steamId 64 bit trong đó bị làm tròn -> không dùng id trong callback,
- * mỗi lần có callback thì đọc lại danh sách thành viên lobby (getMembers trả bigint chính xác).
+ * Callback phòng: không dùng id trong callback, mỗi lần có callback thì đọc lại danh sách thành viên lobby (getMembers trả bigint chính xác).
+ *
+ * Mời bạn bè (overlay Steam): invite() mở bảng mời của lobby đang ở. Bạn nhận lời:
+ *  - game đang chạy -> callback GameLobbyJoinRequested { lobby_steam_id, friend_steam_id }. steamworks.js 0.4.0 build với napi6:
+ *    số > 2^53 trong callback tới dưới dạng bigint (napi Number -> BigInt), nên lobby id chính xác -> ra mã phòng. Bản build nào trả
+ *    về number (đã bị làm tròn) thì bỏ qua lời mời (mã sẽ sai), không vào nhầm phòng.
+ *  - game chưa chạy -> Steam mở game với tham số +connect_lobby <id> (electron/main.js đọc, preload đưa vào SFC_STEAM.launchLobby).
  */
 window.SFC = window.SFC || {};
 
@@ -14,11 +19,20 @@ window.SFC = window.SFC || {};
   const LOBBY_HIGH = 0x01860000n;    // 32 bit cao của mọi Steam lobby id (universe public, loại chat, cờ lobby)
   const LOBBY_PUBLIC = 2;            // matchmaking.LobbyType.Public
   const SEND_RELIABLE = 2;           // networking.SendType.Reliable: đúng thứ tự, không mất gói (sync.js cần vậy)
-  const CB = { LobbyChatUpdate: 5, P2PSessionRequest: 6, P2PSessionConnectFail: 7 };   // callback.SteamCallback
+  const CB = { LobbyChatUpdate: 5, P2PSessionRequest: 6, P2PSessionConnectFail: 7, GameLobbyJoinRequested: 8 };   // callback.SteamCallback
   const POLL_MS = 4;
   const PENDING_MAX = 16;            // gói từ người chưa thấy trong lobby: giữ tạm tối đa bấy nhiêu gói / người
 
   const idOf = (p) => p.steamId64.toString();
+  // id 64 bit từ callback / tham số dòng lệnh -> bigint; number ngoài vùng số nguyên an toàn = đã bị làm tròn -> null
+  const toBig = (v) => {
+    if (typeof v === 'bigint') return v;
+    if (typeof v === 'string' && /^\d{1,20}$/.test(v)) return BigInt(v);
+    if (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0) return BigInt(v);
+    return null;
+  };
+  // lobby id -> mã phòng (null: không phải lobby id đúng định dạng)
+  const codeOf = (id) => (id != null && (id >> 32n) === LOBBY_HIGH ? SFC.NetCommon.encodeCode(Number(id & 0xffffffffn)) : null);
 
   const NetSteam = {
     lobby: null,
@@ -33,6 +47,7 @@ window.SFC = window.SFC || {};
     pending: new Map(),  // host: id chưa thấy trong lobby -> gói nhận sớm (lobby cập nhật chậm hơn P2P)
     timer: null,
     cbs: [],
+    inviteCb: null,      // callback GameLobbyJoinRequested (đăng ký 1 lần, không gỡ khi đóng phòng)
 
     available() { return !!(S() && S().client); },
     get client() { return S().client; },
@@ -60,7 +75,7 @@ window.SFC = window.SFC || {};
       }
       this.lobby = lobby;
       this.hosting = true;
-      this.code = SFC.NetCommon.encodeCode(Number(lobby.id & 0xffffffffn));
+      this.code = codeOf(lobby.id);
       this.start();
       return this.code;
     },
@@ -123,6 +138,31 @@ window.SFC = window.SFC || {};
         this.pending.delete(id);
         for (const m of msgs) this.receive(id, now.get(id), m);
       }
+    },
+
+    /* ---------- mời bạn bè ---------- */
+    // đang ở trong 1 lobby (host hay khách đều mời được: bạn nhận lời vào cùng lobby rồi tự nối tới host)
+    canInvite() { return !!this.lobby; },
+    // mở bảng mời bạn bè của overlay Steam -> false nếu không mở được
+    invite() {
+      if (!this.lobby) return false;
+      try { this.lobby.openInviteDialog(); return true; }
+      catch (e) { console.warn('[steam] openInviteDialog', e); return false; }
+    },
+    // fn(mã phòng): bạn nhận lời mời / bấm vào phòng của bạn bè lúc game đang chạy. Gọi 1 lần lúc mở game
+    onInvite(fn) {
+      if (this.inviteCb) this.inviteCb.disconnect();
+      this.inviteCb = this.client.callback.register(CB.GameLobbyJoinRequested, (v) => {
+        const code = codeOf(toBig(v && v.lobby_steam_id));
+        if (code) fn(code);
+        else console.warn('[steam] lời mời có lobby id không đọc được', v && v.lobby_steam_id);
+      });
+    },
+    // mở game bằng lời mời (+connect_lobby <id>) -> mã phòng, chỉ trả 1 lần
+    launchInvite() {
+      const raw = S().launchLobby;
+      S().launchLobby = null;
+      return codeOf(toBig(raw));
     },
 
     // khách: mất host (host rời lobby / phiên P2P hỏng)

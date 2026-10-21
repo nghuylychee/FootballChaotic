@@ -386,6 +386,8 @@ window.SFC = window.SFC || {};
           }
           list.push({ kind: 'btn', slot: -1, label: _t('GUEST'), act: () => O.requestSlot(-1) });
           list.push({ kind: 'btn', label: _t('LEAVE ROOM'), act: () => O.leave() });
+          // mời bạn bè (chỉ khi mở được bảng mời: Steam) — chữ không nhắc cách kết nối
+          if (O.canInvite) list.push({ kind: 'btn', invite: true, label: _t('INVITE FRIENDS'), act: () => { if (!O.invite()) this.setMsg(_t('Could not open your friend list. Share the room code instead.'), true); } });
           // sân (chủ phòng chọn, người khác chỉ xem): RANDOM rồi các Area đã tới
           if (O.isOwner) list.push({ kind: 'pick', ground: true, label: _t('PITCH'), change: (d) => O.setGround(wrap(O.lobby.ground + 1 + d, Session().provider.area() + 2) - 1) });
           if (O.isOwner) {
@@ -977,7 +979,8 @@ window.SFC = window.SFC || {};
           // LEAVE ROOM + START (chủ phòng). Bảng chọn đồng đội AI: chỉ khi ô AI vẫn là đồng đội của mình
           const team = this.matePop && O.mine ? O.byTeam()[O.slotTeam(this.matePop.slot)] : [];
           if (this.matePop && (O.memberAt(this.matePop.slot) || team.length !== 1 || team[0] !== O.mine)) this.matePop = null;
-          const iStart = items.findIndex((x) => x.main), iLeave = items.findIndex((x) => x.kind === 'btn' && !x.main && x.slot == null);
+          const iStart = items.findIndex((x) => x.main), iLeave = items.findIndex((x) => x.kind === 'btn' && !x.main && !x.invite && x.slot == null);
+          const iInvite = items.findIndex((x) => x.invite);
           // sân (ngay dưới ghế GUEST): chủ phòng ◀▶ đổi (←→ khi đang chọn) · người khác chỉ thấy tên
           const g = O.lobby.ground, iG = items.findIndex((x) => x.ground);
           const gName = g >= 0 ? `${PX().area(MPATH().area(g).id, 'sm')} ${esc(MPATH().area(g).name)}` : esc(_t('RANDOM'));
@@ -986,7 +989,7 @@ window.SFC = window.SFC || {};
             : `<div class="pt-ground ro"><u>${esc(_t('PITCH'))}</u><span>${gName}</span></div>`;
           body = `<div class="pt-slots pt-room">${roomTeam(0, nav)}<div class="pt-vs">${esc(_t('VS'))}</div>${roomTeam(1, nav)}</div>
             ${benchRow}${ground}${status}${msg}
-            <div class="pt-acts"><div class="pt-side-btns">${btn(iLeave)}</div>${btn(iStart)}</div>
+            <div class="pt-acts"><div class="pt-side-btns">${btn(iLeave)}${btn(iInvite)}</div>${btn(iStart)}</div>
             ${this.matePop ? this.renderMatePop() : ''}`;
         }
       }

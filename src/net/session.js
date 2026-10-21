@@ -22,6 +22,8 @@
  *                                           full · started · version · busy · expired · rejoin-failed · unsupported · in-use · connect
  *   cup {state}                             phòng FOOTBALL STORY: trạng thái cup của host vừa tới (khách; null = chưa / hết cup)
  *   scenes {kind}                           phòng Story: host bắt đầu chiếu cut scene (kind: before) -> chiếu xong gọi scenesDone()
+ *   invite {code}                           bạn bè mời vào phòng và mình đã nhận lời ở ngoài game (chỉ backend có bảng mời: Steam) -> UI chọn
+ *                                           lúc vào (rời phòng đang ở trước) rồi joinRoom(code). Mời: canInvite / invite()
  *   solo                                    tìm trận xếp hạng không ghép được người thật (không ai đang tìm / không kết nối được /
  *                                           máy chủ bận): game tự ghép người chơi giả (MainPath.matchmake) như khi chơi một mình
  *
@@ -148,6 +150,24 @@ window.SFC = window.SFC || {};
       this.use(server ? SFC.NetServer : NC().p2p()).join(code, opts)
         .then(() => { this.waitingServer = false; this.enterAsGuest(code); })
         .catch((e) => { this.waitingServer = false; this.fail(e, 'join'); });
+    },
+
+    /* ================= MỜI BẠN BÈ ================= */
+    // phòng đang ở mở được bảng mời bạn bè (backend người chơi làm host có invite: Steam; máy chủ riêng / PeerJS: không -> chỉ có mã phòng)
+    get canInvite() {
+      const net = Net();
+      return this.status === 'lobby' && !this.onServer && !!net && typeof net.invite === 'function' && net.canInvite();
+    },
+    invite() { return this.canInvite && Net().invite(); },
+    // nghe lời mời đã nhận ở ngoài game (gọi 1 lần lúc mở game): đang chạy -> sự kiện invite ngay;
+    // mở game bằng lời mời -> sự kiện invite ở lượt sau (UI đã gắn xong handler)
+    watchInvites() {
+      const st = SFC.NetSteam;
+      if (this.invitesOn || !N().useSteam || !st || !st.available()) return;
+      this.invitesOn = true;
+      st.onInvite((code) => this.emit('invite', { code }));
+      const code = st.launchInvite();
+      if (code) setTimeout(() => this.emit('invite', { code }), 0);
     },
 
     // huỷ tạo / vào phòng đang chờ kết nối

@@ -64,6 +64,13 @@ ipcMain.on('sfc-window', (e, mode) => {
 
 ipcMain.on('sfc-quit', () => app.quit());
 
+// mở game bằng lời mời của bạn bè khi game chưa chạy: Steam thêm tham số +connect_lobby <lobby id 64 bit> -> chuỗi số (null = không có)
+// (preload -> SFC_STEAM.launchLobby -> src/net/transport-steam.js launchInvite)
+ipcMain.on('sfc-launch-lobby', (e) => {
+  const i = process.argv.indexOf('+connect_lobby'), id = i >= 0 ? process.argv[i + 1] : null;
+  e.returnValue = typeof id === 'string' && /^\d{1,20}$/.test(id) ? id : null;
+});
+
 // ngôn ngữ ưu tiên của hệ điều hành (src/engine/i18n.js -> detect): navigator.languages trong cửa sổ bị khoá theo
 // electronLanguages của package.json nên không dùng được
 ipcMain.on('sfc-languages', (e) => {
@@ -84,3 +91,8 @@ ipcMain.on('sfc-save-dir', (e) => {
 
 app.whenReady().then(createWindow);
 app.on('window-all-closed', () => app.quit());
+
+// overlay Steam (bảng mời bạn bè, src/net/transport-steam.js invite) cần GPU chạy trong tiến trình chính — phải bật trước khi app sẵn sàng.
+// Bản không có steamworks.js (itch desktop) -> bỏ qua
+try { require('steamworks.js').electronEnableSteamOverlay(); }
+catch (e) { /* không có Steam */ }

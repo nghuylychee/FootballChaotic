@@ -89,6 +89,28 @@ window.SFC = window.SFC || {};
       const g = app().game;
       return app().mode === 'online' && g && g.opts.mainPath && g.state === 'ended' ? g : null;
     },
+
+    /* ================= MỜI BẠN BÈ ================= */
+    inviteCode: null,    // lời mời đã nhận ở ngoài game, chờ lúc vào được (Session 'invite')
+    // vào phòng được mời khi đang rảnh ở menu: hết trận / cut scene / màn giới thiệu, đã đặt tên + xem PROLOGUE, không mở popup ngôn ngữ.
+    // Đang tìm trận / ở phòng khác: bỏ tìm / rời phòng trước, lượt sau (Session đã idle, kết nối cũ đã đóng) mới vào
+    tryInvite() {
+      const code = this.inviteCode;
+      if (!code || !SFC.Menu) return;
+      const a = app(), M = Menu(), on = O();
+      if (!a || !M.el) return;
+      if (a.screen !== 'menu' || M.page === 'name' || !SFC.Profile.hasName || (SFC.LangPick && SFC.LangPick.active)) return;
+      if (SFC.Tutorial && SFC.Tutorial.wanted()) return;
+      if (on.status === 'busy') return;
+      if (on.active && on.code === code) { this.inviteCode = null; return; }   // đã ở trong phòng đó
+      if (M.search) { M.cancelSearch(); return; }
+      if (on.active) { on.leave(); return; }
+      this.inviteCode = null;
+      M.joinFrom = ['story', 'cup', 'slobby'].includes(M.page) ? 'story' : 'online';
+      M.go('join');
+      M.code = code;
+      on.joinRoom(code);
+    },
   };
 
   /* ================= DỮ LIỆU GAME CHO PHÒNG ================= */
@@ -182,6 +204,17 @@ window.SFC = window.SFC || {};
     const i = ROLES().indexOf(role);
     if (i >= 0) app().sel.ctrl = i + 1;
   });
+
+  // bạn bè mời (nhận lời ở ngoài game): đang đá -> báo sẽ vào sau trận; vào ngay khi rảnh (tryInvite, kiểm lại mỗi 0.5 giây)
+  on('invite', ({ code }) => {
+    if (SFC_DEMO) return;   // bản DEMO khoá online
+    OnlineUI.inviteCode = code;
+    const sc = app() && app().screen;
+    if (sc === 'game' || sc === 'pause') banner(SFC.t('INVITE ACCEPTED'), SFC.t('Joining after this match'), GREEN, 1.8);
+    OnlineUI.tryInvite();
+  });
+  setInterval(() => OnlineUI.tryInvite(), 500);
+  O().watchInvites();
 
   // tìm trận xếp hạng: ghép được -> MATCH FOUND trên phòng chờ PLAY (menu.js) rồi mới vào trận; không -> người chơi giả
   on('solo', () => Menu().searchSolo());
