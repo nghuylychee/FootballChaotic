@@ -5,7 +5,7 @@
  * Chỉ máy chạy mô phỏng (chơi đơn / chủ phòng) tính va chạm. Hình = Effects.prop / pop (lệnh hiệu ứng: khách online nhận qua sync.js);
  * vật di chuyển (xe máy, đèn pha) có vị trí là hàm thuần của tuổi vật thể (MatchMods.at) nên máy vẽ tự tính, không cần gói tin mới.
  * Hook từ match.js: create (dựng trận) · kickoff (sau khi xếp đội hình) · clock (mỗi bước lúc kickoff / play, kể cả lúc cả sân đứng yên)
- *   · update (mỗi bước mô phỏng lúc play) · goal (bàn thắng). Render đọc alpha(g, p) (ma mờ) — render/vfx.js vẽ các vật thể.
+ *   · update (mỗi bước mô phỏng lúc play) · goal (bàn thắng). Render đọc alpha(g, p) (ma tàng hình) — render/vfx.js vẽ các vật thể.
  * Câu nói trong trận: opts.barks { kickoff, goal (đội họ ghi), conceded (đội bạn ghi), mod (luật vừa ra tay) } -> bong bóng thoại (pop 'talk').
  * Đếm g.mod.hits = số lần luật trúng đội bạn (sao thử thách modClean, src/meta/cup.js).
  */
@@ -52,6 +52,7 @@ window.SFC = window.SFC || {};
 
   /* The Uncles — GHẾ NHỰA: ghế nằm trên sân, ai không cầm bóng đi vào là nhặt lên (giơ trên đầu), ra đòn = ném.
    * Ghế bay trúng đối thủ: choáng + rơi bóng (lướt né được), ghế vỡ, lát sau các chú đặt ghế mới. Bay hết tầm: rơi xuống thành ghế trên sân.
+   * Đập tường (mép sân): không vỡ, bật ngược lại một đoạn ngắn rồi rơi xuống ngay đó, nhặt ném tiếp được (user 2026-10-21).
    * Ghế trên sân vẫn là vật cản với người cầm bóng (bóng thấp dội ra), sút mạnh vỡ ghế. Người cầm ghế không nhận bóng được, bị choáng là rơi ghế. */
   K.stools = {
     create(g, M) { M.list = []; M.flying = []; },
@@ -105,7 +106,7 @@ window.SFC = window.SFC || {};
       p.carry = null;
       p.freeze(0.08);
       const life = c.throwRange / c.throwSpeed, id = newId(g);
-      M.flying.push({ x: p.x + d.x * 8, y: p.y + d.y * 8, d, t: 0, life, id, team: p.team, src: p });
+      M.flying.push({ x: p.x + d.x * 8, y: p.y + d.y * 8, d, t: 0, life, sp: c.throwSpeed, id, team: p.team, src: p });
       g.effects.prop(id, 'stoolthrow', p.x + d.x * 8, p.y + d.y * 8, p.facing, c.throwSpeed, life, c.color);
       g.sfx('swing');
       return true;
@@ -187,9 +188,10 @@ window.SFC = window.SFC || {};
       // ghế đang bay: trúng người đội kia = choáng + rơi bóng, ghế vỡ; hết tầm = rơi xuống sân
       const f = g.field;
       for (const fl of M.flying.slice()) {
-        const k = Math.min(fl.t, fl.life), x = fl.x + fl.d.x * c.throwSpeed * k, y = fl.y + fl.d.y * c.throwSpeed * k;
+        const k = Math.min(fl.t, fl.life), x = fl.x + fl.d.x * fl.sp * k, y = fl.y + fl.d.y * fl.sp * k;
         let done = false;
-        for (const o of g.teams[1 - fl.team].players) {
+        // ghế bật tường thì không còn trúng ai
+        if (!fl.bounced) for (const o of g.teams[1 - fl.team].players) {
           if (!grounded(o) || Math.hypot(o.x - x, o.y - y) > c.r + o.radius) continue;
           if (Act().dodged(g, o)) continue;
           done = true;
@@ -203,8 +205,22 @@ window.SFC = window.SFC || {};
           }
           break;
         }
-        const out = x < f.x + 6 || x > f.x + f.w - 6 || y < f.y + 6 || y > f.y + f.h - 6;
-        if (done || out) {
+        const outX = x < f.x + 6 || x > f.x + f.w - 6, outY = y < f.y + 6 || y > f.y + f.h - 6;
+        // chỗ ghế rơi: trong sân, cách mép đủ để không kẹt tường
+        const m = c.r + 6, lx = U.clamp(x, f.x + m, f.x + f.w - m), ly = U.clamp(y, f.y + m, f.y + f.h - m);
+        if (!done && (outX || outY)) {
+          M.flying.splice(M.flying.indexOf(fl), 1);
+          E.propOff(fl.id, 0.02);
+          E.burst(lx, ly, 6, '#ffffff', 6, 70, 0.3);
+          g.sfx('wall');
+          if (fl.bounced) { this.add(g, M, c, { x: lx, y: ly }); continue; }   // bật lần 2 (góc sân): rơi luôn
+          // bật tường: đổi chiều trục chạm tường, bay chậm một đoạn ngắn rồi rơi xuống thành ghế trên sân
+          const d = { x: outX ? -fl.d.x : fl.d.x, y: outY ? -fl.d.y : fl.d.y }, id = newId(g), life = c.bounceRange / c.bounceSpeed;
+          M.flying.push({ x: lx, y: ly, d, t: 0, life, sp: c.bounceSpeed, id, team: fl.team, src: fl.src, bounced: true });
+          E.prop(id, 'stoolthrow', lx, ly, Math.atan2(d.y, d.x), c.bounceSpeed, life, c.color);
+          continue;
+        }
+        if (done) {
           M.flying.splice(M.flying.indexOf(fl), 1);
           E.propOff(fl.id, 0.02);
           E.burst(x, y, 6, c.color, 14, 110, 0.5);
@@ -215,7 +231,7 @@ window.SFC = window.SFC || {};
           M.flying.splice(M.flying.indexOf(fl), 1);
           E.propOff(fl.id, 0.02);
           g.sfx('ult', 'mod.thunk');
-          this.add(g, M, c, { x, y });
+          this.add(g, M, c, { x: lx, y: ly });
         }
       }
     },
@@ -268,9 +284,12 @@ window.SFC = window.SFC || {};
           if (r.hits.has(q.id) || !grounded(q)) continue;
           if (Math.abs(q.x - pos.x) > c.r + q.radius || Math.abs(q.y - pos.y) > c.r + q.radius) continue;
           r.hits.add(q.id);
-          if (q.team === M.team) {   // Moped Boys quá giang: chạy nhanh hơn một lúc
+          if (q.team === M.team) {   // Moped Boys quá giang: chạy nhanh hơn một lúc — cả lúc đó có vệt tốc độ + khói xả + quầng vàng (prop 'vroom')
             q.buffs.push({ speed: c.boost, t: c.boostT });
-            E.burst(q.x, q.y, 2, '#ffd23f', 8, 60, 0.4);
+            E.prop(newId(g), 'vroom', q.x, q.y, q.id, 0, c.boostT, c.color);
+            E.burst(q.x, q.y, 2, '#ffd23f', 14, 110, 0.5);
+            E.burst(q.x, q.y, 2, '#ffffff', 6, 80, 0.3);
+            E.wave(q.x, q.y, 22, '#ffd23f', 0.3, 2);
             E.pop(q.x, q.y - 30, 'VROOM!', 'status', '#ffd23f');
             g.sfx('ult', 'mod.vroom');
             continue;
@@ -299,14 +318,56 @@ window.SFC = window.SFC || {};
     },
   };
 
-  /* School Ghosts — MA MỜ: render đọc alpha(); chuông trường reo thì 2 con ma đổi chỗ */
+  /* School Ghosts — MA TÀNG HÌNH (user 2026-10-21): mỗi lúc tối đa n con ma (không cầm bóng lúc biến) tàng hình + chạy nhanh x speed, tới khi bị lộ.
+   * Cách làm lộ: ra đòn nặng trúng 1 con ma KHÔNG tàng hình -> cả đội ma hiện hình, cooldown giây sau mới tàng hình lại được.
+   * Tàng hình = prop 'veil' bám người (khách online nhận qua lệnh hiệu ứng), render đọc alpha(). Chuông trường reo thì 2 con ma đổi chỗ.
+   * Họ bị dẫn: chuông + hồi tàng hình nhanh hơn (trailing). Hook: Player.hit -> MatchMods.hitBy */
   K.ghosts = {
-    create(g, M, c) { M.bell = c.first; },
+    create(g, M, c) { M.bell = c.first; M.next = c.first; M.veil = {}; },
+    kickoff(g, M, c) {
+      for (const id of Object.values(M.veil)) g.effects.propOff(id, 0.05);
+      M.veil = {}; M.next = c.first;
+    },
+    vanish(g, M, c) {
+      const E = g.effects, list = g.teams[M.team].players.filter((q) => !q.hasBall);
+      for (let i = 0; i < c.n && list.length; i++) {
+        const p = list.splice(Math.floor(Math.random() * list.length), 1)[0], id = newId(g);
+        M.veil[p.id] = id;
+        E.prop(id, 'veil', p.x, p.y, p.id, 0, 9999, '#9d7bff');
+        E.burst(p.x, p.y - 8, 6, '#9d7bff', 14, 70, 0.5);
+        E.burst(p.x, p.y - 8, 6, '#e8ecf5', 8, 50, 0.4);
+        E.pop(p.x, p.y - 30, 'VANISH!', 'status', '#9d7bff');
+      }
+      g.sfx('ult', 'mod.vanish');
+      bark(g, 'mod');
+    },
+    // cả đội ma hiện hình, đếm lại cooldown
+    reveal(g, M, c) {
+      const E = g.effects;
+      for (const p of g.teams[M.team].players) {
+        const id = M.veil[p.id];
+        if (!id) continue;
+        E.propOff(id, 0.25);
+        E.burst(p.x, p.y - 8, 6, '#e8ecf5', 14, 90, 0.5);
+        E.pop(p.x, p.y - 30, 'FOUND YOU!', 'good', '#9d7bff');
+      }
+      M.veil = {}; M.next = c.cooldown;
+      g.sfx('ult', 'mod.reveal');
+    },
+    hitBy(g, M, c, victim, opts) {
+      const p = opts.source;
+      if (victim.team !== M.team || opts.type !== 'hard' || !p || p.team === M.team || M.veil[victim.id] || !Object.keys(M.veil).length) return;
+      this.reveal(g, M, c);
+    },
     update(g, M, c, dt) {
-      if ((M.bell -= dt * (behind(g) ? c.trailing : 1)) > 0) return;
+      const E = g.effects, f = g.field, trail = behind(g) ? c.trailing : 1;
+      const tp = g.teams[M.team].players, hidden = tp.filter((q) => M.veil[q.id]);
+      for (const p of hidden) keepSpeed(p, c.speed);
+      if (!hidden.length && (M.next -= dt * trail) <= 0) this.vanish(g, M, c);
+      // chuông trường: 2 con ma (không cầm bóng) đổi chỗ
+      if ((M.bell -= dt * trail) > 0) return;
       M.bell = U.rand(c.bell[0], c.bell[1]);
-      const E = g.effects, f = g.field;
-      const list = g.teams[M.team].players.filter((q) => !q.hasBall && q.state === 'normal' && grounded(q));
+      const list = tp.filter((q) => !q.hasBall && q.state === 'normal' && grounded(q));
       g.sfx('ult', 'mod.bell');
       E.pop(f.cx, f.y - 6, 'RING RING!', 'info', '#e8ecf5');
       if (list.length < 2) return;
@@ -380,6 +441,117 @@ window.SFC = window.SFC || {};
     },
   };
 
+  /* Night Owls — MẮT CÚ "đèn xanh, đèn đỏ" (user 2026-10-22, thay SEARCHLIGHT). Con cú khổng lồ đậu trên khán đài suốt trận (prop 'owl', dựng lại
+   * mỗi lần giao bóng), bình thường nhắm mắt. Mỗi every giây: "HOO...", mắt mở dần warn giây (báo trước, giữ nguyên kể cả khi họ bị dẫn),
+   * rồi mở hẳn open giây (prop 'owleyes' a = warn, b = open: con cú đọc prop này để vẽ mắt). Lúc mắt mở hẳn:
+   *   - ai bên bạn đang CHẠY (đè phím chạy nhanh, hoặc đang lướt) bị tia ngắm khoá (prop 'gazelock': tia đỏ + vòng ngắm co dần);
+   *     đứng lại / đi bộ là tia nhả ra. Chạy tiếp đủ lockT giây -> mắt cú bắn 1 viên đạn sáng (prop 'owlbolt') đuổi theo người đó, bay boltT giây;
+   *   - lướt (Z) đúng lúc đạn tới là né được (Actions.dodged); trúng = HOÁ ĐÁ stone giây (user 2026-10-22, thay đóng băng): đá lan từ chân lên
+   *     thành tượng (prop 'petrify'), đứng chôn chân + rơi bóng, hết giờ tượng nứt rồi vỡ vụn. Mỗi người bị bắn tối đa 1 lần mỗi lượt mắt mở.
+   * Đi bộ / đứng im / sút / chuyền / đấm tại chỗ đều được; chuyển động do Core / Tuyệt kỹ (state recover) không tính. Ai phạm luật người đó chịu —
+   * kể cả đồng đội AI (mỗi lượt, mỗi AI tuân luật với xác suất aiObey: đi bộ suốt lúc đó). Owls đi lại thoải mái nhưng không ra đòn / sút / chuyền
+   * lúc mắt mở (noActT). Họ bị dẫn: mắt mở thường hơn (trailing) và lâu hơn (x trailOpen) */
+  K.owlgaze = {
+    create(g, M, c) { M.next = c.first; M.gaze = null; M.bolts = []; M.stone = []; },
+    kickoff(g, M, c) {
+      // clearHazards vừa xoá hết vật thể: đặt lại con cú, bỏ lượt mắt mở / đạn / tượng đá đang dở
+      M.gaze = null; M.bolts = []; M.stone = [];
+      g.effects.prop(newId(g), 'owl', g.field.cx, g.field.y, 0, 0, 99999, c.color);
+    },
+    start(g, M, c) {
+      const f = g.field, E = g.effects, len = c.open * (behind(g) ? c.trailOpen : 1), id = newId(g);
+      // đồng đội AI: tuân luật hay không quyết 1 lần mỗi lượt mắt mở
+      const obey = new Set(victims(g).filter((p) => !(p.isControlled && g.isHuman(p.team)) && Math.random() < c.aiObey).map((p) => p.id));
+      M.gaze = { t: -c.warn, len, id, locks: {}, shot: new Set(), obey, said: false };
+      E.prop(id, 'owleyes', f.cx, f.y, c.warn, len, c.warn + len + 0.3, c.color);
+      E.pop(f.cx, f.y + 14, 'HOO...', 'info', c.color);
+      g.sfx('ult', 'mod.hoo');
+    },
+    // đang chạy bằng chân mình: chạy nhanh (đè phím chạy) hoặc lướt (đổ người của thủ môn không tính)
+    running(p) {
+      return (p.state === 'normal' && p.sprinting) || (p.state === 'dash' && p.atkType !== 'diveU' && p.atkType !== 'diveD');
+    },
+    release(g, G, id) {
+      g.effects.propOff(G.locks[id].prop, 0.1);
+      delete G.locks[id];
+    },
+    fire(g, M, c, o) {
+      const E = g.effects, f = g.field, id = newId(g);
+      M.bolts.push({ p: o, t: 0, id });
+      E.prop(id, 'owlbolt', f.cx, f.y - 13, o.id, 0, c.boltT, '#ff3d5a');
+      E.pop(f.cx, f.y + 14, 'HOOT!', 'heavy', '#ff3d5a');
+      g.sfx('ult', 'mod.zap');
+    },
+    // đạn tới nơi: lướt đúng lúc = né, không thì hoá đá
+    land(g, M, c, b) {
+      const E = g.effects, o = b.p;
+      E.propOff(b.id, 0.02);
+      if (!grounded(o) || Act().dodged(g, o)) { E.burst(o.x, o.y - 10, 6, '#ff3d5a', 10, 90, 0.4); g.sfx('ult', 'mod.fizzle'); return; }
+      if (o.state === 'stun' || o.state === 'dash') { o.state = 'normal'; o.stateT = 0; }
+      o.hitImmune = 0;
+      if (!o.hit({ stun: c.stone, kbx: 0, kby: 0, type: 'hard', quiet: true })) return;
+      o.vx = o.vy = o.kbx = o.kby = 0;
+      M.hits++;
+      const id = newId(g);
+      M.stone.push({ p: o, x: o.x, y: o.y, t: o.stateT, id });
+      E.prop(id, 'petrify', o.x, o.y, o.id, 0, o.stateT, '#8a8f99');
+      E.burst(o.x, o.y - 4, 2, '#c7ccd6', 16, 90, 0.5);
+      E.burst(o.x, o.y - 12, 8, '#8a8f99', 10, 60, 0.6);
+      E.wave(o.x, o.y, 24, '#c7ccd6', 0.35, 2);
+      E.decal('crack', o.x, o.y, 0.8, 1.6, 0);
+      E.flash(0.2);
+      E.shake(SFC_CONFIG.game.fx.shakeHit);
+      E.pop(o.x, o.y - 34, 'STONE!', 'status', '#c7ccd6');
+      g.sfx('ult', 'mod.petrify');
+      bark(g, 'mod');
+    },
+    update(g, M, c, dt) {
+      const E = g.effects;
+      // người hoá đá: chôn chân tại chỗ tới khi hết; hết giờ thì tượng vỡ vụn (đá văng + bụi)
+      for (const I of M.stone.slice()) {
+        const o = I.p;
+        if ((I.t -= dt) > 0 && o.state === 'stun') { o.x = I.x; o.y = I.y; o.vx = o.vy = o.kbx = o.kby = 0; continue; }
+        M.stone.splice(M.stone.indexOf(I), 1);
+        E.propOff(I.id, 0.05);
+        E.burst(o.x, o.y - 10, 8, '#8a8f99', 16, 130, 0.5);
+        E.burst(o.x, o.y - 4, 2, '#c7ccd6', 12, 80, 0.6);
+        g.sfx('ult', 'mod.crumble');
+      }
+      // đạn đang bay (vẫn bay tiếp kể cả khi mắt đã nhắm)
+      for (const b of M.bolts.slice()) if ((b.t += dt) >= c.boltT) { M.bolts.splice(M.bolts.indexOf(b), 1); this.land(g, M, c, b); }
+      const G = M.gaze;
+      if (!G) { if (every(g, M, c, dt)) this.start(g, M, c); return; }
+      G.t += dt;
+      if (G.t >= G.len) {
+        for (const id of Object.keys(G.locks)) this.release(g, G, id);
+        M.gaze = null;
+        return;
+      }
+      for (const p of victims(g)) if (G.obey.has(p.id)) p.walkT = 0.1;
+      if (G.t < 0) return;
+      if (!G.said) { G.said = true; E.pop(g.field.cx, g.field.y + 14, "DON'T RUN!", 'info', '#ff3d5a'); }
+      for (const p of g.teams[M.team].players) p.noActT = Math.max(p.noActT || 0, 0.05);
+      // tia ngắm: chạy thì bị khoá, đứng lại / đi bộ thì nhả; khoá đủ lockT giây -> bắn
+      for (const o of victims(g)) {
+        const L = G.locks[o.id];
+        if (G.shot.has(o.id)) continue;
+        if (!grounded(o) || !this.running(o)) { if (L) this.release(g, G, o.id); continue; }
+        if (!L) {
+          const id = newId(g);
+          G.locks[o.id] = { t: 0, prop: id };
+          E.prop(id, 'gazelock', g.field.cx, g.field.y - 13, o.id, c.lockT, c.lockT + 0.2, '#ff3d5a');
+          E.pop(o.x, o.y - 30, 'SPOTTED!', 'status', '#ff3d5a');
+          g.sfx('ult', 'mod.spotted');
+          continue;
+        }
+        if ((L.t += dt) < c.lockT) continue;
+        this.release(g, G, o.id);
+        G.shot.add(o.id);
+        this.fire(g, M, c, o);
+      }
+    },
+  };
+
   /* ================= Story 2–4 (2026-10-19) ================= */
   const Stat = () => SFC.CoreStat;   // trạng thái dùng chung của Tuyệt kỹ (cores-ult2.js): trơn té, teo nhỏ
   const victims = (g) => g.teams[1 - g.mod.team].players;
@@ -434,7 +606,7 @@ window.SFC = window.SFC || {};
         if ((s.t -= dt) <= 0) { M.splats.splice(M.splats.indexOf(s), 1); continue; }
         for (const o of victims(g)) {
           if (!grounded(o) || o.state !== 'normal' || Math.hypot(o.x - s.x, (o.y - s.y) * 1.5) > c.r + o.radius) continue;
-          if (Stat().slip(g.cores, o, c.stun, null, c.slide)) {
+          if (Stat().slip(g.cores, o, c.stun, null, c.slide, null, 'mod.flop')) {
             M.hits++;
             E.propOff(s.id, 0.2);
             M.splats.splice(M.splats.indexOf(s), 1);
@@ -837,10 +1009,12 @@ window.SFC = window.SFC || {};
       const M = g.mod;
       return !!(M && M.id === 'stools' && p.carry && K.stools.throw(g, M, M.cfg, p, dx, dy));
     },
-    // Player.hit (sau khi người bị đánh choáng): luật trọng tài (Retired Refs) bắt lỗi
+    // Player.hit (sau khi người bị đánh choáng): luật trọng tài (Retired Refs) bắt lỗi · School Ghosts: đòn nặng trúng ma không tàng hình làm lộ cả đội
     hitBy(g, victim, opts) {
       const M = g.mod;
-      if (M && M.id === 'refs') K.refs.hitBy(g, M, M.cfg, victim, opts);
+      if (!M || M.mirror) return;
+      if (M.id === 'refs') K.refs.hitBy(g, M, M.cfg, victim, opts);
+      if (M.id === 'ghosts') K.ghosts.hitBy(g, M, M.cfg, victim, opts);
     },
     // Actions.lightHit: đấm nhẹ vào người khổng lồ (luật Block Wardens) -> không tác dụng, người đấm bật ra
     shrug(g, p, o) {
@@ -869,14 +1043,19 @@ window.SFC = window.SFC || {};
       }
       return null;
     },
-    // độ đậm khi vẽ cầu thủ p (School Ghosts: ma xa bóng mờ dần; vẫn còn bóng hình, không vô hình)
+    // độ đậm khi vẽ cầu thủ p (School Ghosts: ma có prop 'veil' bám người = đang tàng hình, chỉ còn chút bóng hình lung linh)
+    // đọc prop thay vì M.veil để máy khách online (trận gương) vẽ giống host
     alpha(g, p) {
       const M = g.mod;
       if (!M || M.id !== 'ghosts' || p.team !== M.team || g.humanTeam < 0 || p.team === g.humanTeam) return 1;
-      if (p.hasBall || p.state !== 'normal' || (g.state !== 'play' && g.state !== 'kickoff')) return 1;
-      const c = M.cfg, d = Math.hypot(p.x - g.ball.x, p.y - g.ball.y);
-      const k = U.clamp((d - c.near) / c.fade, 0, 1);
-      return 1 - k * (1 - c.alpha) + k * 0.05 * Math.sin(g.time * 7 + p.id);
+      if (g.state !== 'play' && g.state !== 'kickoff') return 1;
+      let v = 0;
+      for (const o of g.effects.V.props) {
+        if (o.kind !== 'veil' || o.a !== p.id || o.t <= 0) continue;
+        v = Math.min(1, (o.max - o.t) * 5) * (o.off ? o.t / o.max : 1);   // hiện dần lúc biến, rõ dần lúc lộ
+        break;
+      }
+      return 1 - v * (1 - M.cfg.alpha) + v * 0.04 * Math.sin(g.time * 7 + p.id);
     },
   };
 

@@ -77,6 +77,7 @@ the `ult` sound is the part that tells you which Ultimate it is. Loudness was ch
 | `pinball.flip` / `pinball.ding` | Pinball Kick · launch / each bounce | Flipper clack · bumper bell |
 | `panic.spook` / `panic.boo` | Panic Ball · ball released / someone panics | Spooky theremin · falling scream |
 | `magnet.drop` / `magnet.hum` | Mega Magnet · falls / pulls | Falling whistle · magnetic hum |
+| `stat.slip` | Shared slip status (`CoreStat.slip`): someone falls flat on their back | Shoe squeak + body thud (no punch `hit`: a slip is not a hit) |
 
 ## Match flow
 
@@ -97,12 +98,21 @@ Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>'
 | `mod.honk` | Delivery lane starts flashing (Moped Boys) | Two-tone moped horn, twice |
 | `mod.vroom` | A Moped Boy hitches a ride | Engine rev |
 | `mod.bell` | School bell, two ghosts swap (School Ghosts) | Electric school bell ring |
+| `mod.vanish` | Two School Ghosts turn invisible | Falling ghostly wail + fading hiss |
+| `mod.reveal` | A heavy hit on a visible ghost reveals them all | Pop + rising squeak |
 | `mod.grab` | Someone picks up a stool | Plastic scrape |
 | `mod.stomp` | ANGRY GIANTS (Block Wardens fall behind) | Two deep stomps |
-| `mod.beep` | Searchlight starts locking onto your ball carrier (Night Owls) | Double alarm beep |
+| `mod.hoo` | The giant owl starts opening its eyes (Night Owls) | Two low wobbly "hoo... hoo" |
+| `mod.spotted` | The owl's aim locks onto someone running | Shutter click + falling sting |
+| `mod.zap` | The owl fires its eye bolt | Falling laser "pew" |
+| `mod.fizzle` | The bolt is dodged | Short hiss |
+| `mod.petrify` | The bolt hits: turned to stone | Grinding crackle, then a heavy stone thud |
+| `mod.crumble` | The statue crumbles when it wears off | Rock crunch + falling pebbles |
+| `mod.beep` | Searchlight starts locking onto your ball carrier (rule kept for a later Story, unused now) | Double alarm beep |
 | `mod.siren` | FREEZE, or LOCKDOWN switches on the second light | Rising-falling siren |
 | `mod.coo` | Pigeon flock flies over (Pigeon Gang) | Two coos + wing flaps |
 | `mod.splat` | A pigeon bomb lands | Wet low splat |
+| `mod.flop` | You step in a splat and fall flat (replaces `stat.slip` here) | Squeak, then a wet "SPLAT" + body thud |
 | `mod.wind` | Night wind gust starts (Sky Hoppers, THE STORM card) | Long rising-falling howl |
 | `mod.spray` | Spray wall starts (Billboard Kids) | Can rattle + hiss |
 | `mod.fall` | A lantern starts falling (Lantern Crew) | Falling whistle |

@@ -36,7 +36,7 @@ SFC.I18n.fields = [
   'stories.list.*.intro.*.text', 'stories.list.*.outro.*.text', 'stories.list.*.rounds.*.before.*.text', 'stories.list.*.rounds.*.after.*.text',
   'stories.list.*.rounds.*.barks.*.*', 'stories.mods.*.name', 'stories.mods.*.hint', 'stories.mods.*.lockdown', 'stories.mods.*.lockdownHint', 'stories.mods.*.rage', 'stories.mods.*.rageHint', 'stories.mods.*.cards.*.name', 'stories.mods.*.cards.*.hint', 'stories.list.*.narrator.name',
   // kiểu kể riêng từng Story (2026-10-20): nhãn kiểu kể, tên chặng, chữ hiệu ứng, chữ chạy TV
-  'stories.list.*.tag', 'stories.list.*.stages.*', 'stories.list.*.rounds.*.before.*.sfx', 'stories.list.*.rounds.*.after.*.sfx', 'stories.list.*.intro.*.sfx', 'stories.list.*.ticker.*',
+  'stories.list.*.stages.*', 'stories.list.*.rounds.*.before.*.sfx', 'stories.list.*.rounds.*.after.*.sfx', 'stories.list.*.intro.*.sfx', 'stories.list.*.ticker.*',
   // thành tích (config/achievements.config.js)
   'achievements.list.*.name', 'achievements.list.*.desc',
   // chú thích nút trên sơ đồ tay cầm (SVG bề rộng cố định): dài hơn là bị cắt

@@ -154,7 +154,7 @@ window.SFC = window.SFC || {};
       for (const d of fx.decoys) list.push({ y: d.y, k: 'd', o: d });
       for (const a of fx.afterimages) list.push({ y: a.y - 0.1, k: 'a', o: a });
       for (const c of SFC.VFX.clones(g)) list.push({ y: c.y, k: 'cl', o: c });
-      for (const pr of SFC.VFX.props(g)) list.push({ y: pr.y, k: 'pr', o: pr.o });   // vật thể Tuyệt kỹ (cột đá, đe, gương...)
+      for (const pr of SFC.VFX.props(g)) list.push({ y: pr.y, k: 'pr', o: pr.o, part: pr.part });   // vật thể Tuyệt kỹ (cột đá, đe, gương...)
       list.sort((a, b) => a.y - b.y);
       const marks = [];
       let hidden = null;   // người đang điều khiển đang tàng hình (chữ HIDDEN trên đầu + viền màn hình)
@@ -221,7 +221,7 @@ window.SFC = window.SFC || {};
         } else if (e.k === 'cl') {
           SFC.VFX.drawClone(ctx, g, e.o);
         } else if (e.k === 'pr') {
-          SFC.VFX.drawProp(ctx, g, e.o);
+          SFC.VFX.drawProp(ctx, g, e.o, e.part);
         }
       }
 

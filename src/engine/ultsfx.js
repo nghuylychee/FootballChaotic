@@ -27,6 +27,10 @@ window.SFC = window.SFC || {};
     'cut.iron'() { T({ freq: 523, to: 505, dur: 0.6, type: 'triangle', vol: 0.12 }); T({ freq: 787, to: 770, dur: 0.45, type: 'triangle', vol: 0.07 }); N({ dur: 0.05, vol: 0.25, freq: 3000, q: 2 }); T({ freq: 98, dur: 0.35, type: 'square', vol: 0.08 }); },
     'cut.chaos'() { for (let i = 0; i < 5; i++) T({ freq: R(300, 1600), dur: 0.08, type: Math.random() < 0.5 ? 'square' : 'sawtooth', vol: 0.09, delay: i * 0.05 }); N({ dur: 0.3, vol: 0.08, freq: 2000, q: 0.5 }); },
 
+    /* ---- trạng thái dùng chung (cores-ult2.js Stat) ---- */
+    // trơn té: đế giày rít "kíttt" rồi người đập xuống sân "huỵch"
+    'stat.slip'() { T({ freq: 1200, to: 1900, dur: 0.1, type: 'square', vol: 0.05 }); T({ freq: 120, to: 50, dur: 0.16, type: 'sine', vol: 0.22, delay: 0.13 }); N({ dur: 0.1, vol: 0.14, freq: 300, type: 'lowpass', delay: 0.13 }); },
+
     /* ---- 1. Light Cycle: rồ máy điện rồi tường sét kêu rè rè ---- */
     'cycle.start'() { T({ freq: 70, to: 520, dur: 0.6, type: 'sawtooth', vol: 0.11, vib: 30, vibDepth: 8 }); N({ dur: 0.5, vol: 0.12, freq: 300, type: 'lowpass' }); },
     'cycle.zap'() { T({ freq: 120, dur: 0.25, type: 'sawtooth', vol: 0.14, vib: 60, vibDepth: 40 }); N({ dur: 0.08, vol: 0.18, freq: 4000, q: 2 }); },
@@ -165,11 +169,16 @@ window.SFC = window.SFC || {};
     'mod.vroom'() { T({ freq: 80, to: 240, dur: 0.4, type: 'sawtooth', vol: 0.1, vib: 25, vibDepth: 15 }); N({ dur: 0.35, vol: 0.06, freq: 400, type: 'lowpass' }); },
     // chuông trường reo: chuông điện kêu reng reng
     'mod.bell'() { for (let i = 0; i < 8; i++) { T({ freq: 1760, dur: 0.05, type: 'square', vol: 0.05, delay: i * 0.06 }); T({ freq: 2349, dur: 0.05, type: 'square', vol: 0.03, delay: i * 0.06 + 0.03 }); } },
+    // ma tàng hình: tiếng hú ma trượt xuống + gió rít mờ dần · bị lộ: "bụp" bật ra + tiếng ré lên
+    'mod.vanish'() { T({ freq: 900, to: 300, dur: 0.6, type: 'sine', vol: 0.09, vib: 7, vibDepth: 40 }); N({ dur: 0.5, vol: 0.05, freq: 2400, to: 600, q: 3 }); },
+    'mod.reveal'() { N({ dur: 0.06, vol: 0.16, freq: 900, q: 1 }); T({ freq: 300, to: 1100, dur: 0.18, type: 'triangle', vol: 0.1, delay: 0.03 }); T({ freq: 1500, to: 900, dur: 0.12, type: 'square', vol: 0.03, delay: 0.16 }); },
     // khổng lồ nổi giận: dậm đất trầm 2 nhịp
     'mod.stomp'() { boom(0.35, 0.4); boom(0.3, 0.4, 0.28); },
     /* Story 2–4 */
     // bồ câu bay qua: "gù gù" + vỗ cánh · bãi phân rơi: "bẹp"
     'mod.coo'() { [0, 0.18].forEach((d) => T({ freq: 420, to: 330, dur: 0.14, type: 'sine', vol: 0.1, vib: 18, vibDepth: 25, delay: d })); for (let i = 0; i < 5; i++) N({ dur: 0.03, vol: 0.05, freq: 1500, q: 1, delay: 0.3 + i * 0.05 }); },
+    // dẫm phải phân bồ câu ngã ngửa: trượt "xoẹt" rồi đập lưng xuống "BẸP" (ướt, nhão) + bụp người chạm đất
+    'mod.flop'() { T({ freq: 900, to: 1500, dur: 0.1, type: 'triangle', vol: 0.06 }); N({ dur: 0.12, vol: 0.2, freq: 900, to: 250, q: 1.2, delay: 0.12 }); T({ freq: 260, to: 70, dur: 0.14, type: 'square', vol: 0.09, delay: 0.12 }); T({ freq: 110, to: 45, dur: 0.18, type: 'sine', vol: 0.25, delay: 0.13 }); N({ dur: 0.06, vol: 0.08, freq: 2400, q: 2, delay: 0.2 }); },
     'mod.splat'() { N({ dur: 0.08, vol: 0.14, freq: 600, type: 'lowpass' }); T({ freq: 180, to: 90, dur: 0.08, type: 'sine', vol: 0.12 }); },
     // gió đêm: tiếng hú dài lên xuống
     'mod.wind'() { N({ dur: 1.4, vol: 0.12, freq: 500, to: 1400, q: 3 }); N({ dur: 1.4, vol: 0.06, freq: 900, to: 400, q: 4, delay: 0.3 }); },
@@ -192,6 +201,14 @@ window.SFC = window.SFC || {};
     'mod.star'() { seq([1046, 1318, 1568, 2093], 0.05, { type: 'square', dur: 0.12, vol: 0.06 }); N({ dur: 0.3, vol: 0.05, freq: 8000, q: 1, delay: 0.1 }); },
     // đèn pha: bíp cảnh báo khi bị soi · FREEZE: còi báo động lên xuống
     'mod.beep'() { T({ freq: 1320, dur: 0.06, type: 'square', vol: 0.07 }); T({ freq: 1320, dur: 0.06, type: 'square', vol: 0.07, delay: 0.12 }); },
+    // mắt cú: "hoo... hoo" trầm rung (báo trước) · tia ngắm khoá người chạy: "tách" màn trập + nốt chói đi xuống
+    // · bắn đạn: tia "piu" rít xuống · đạn bị né: xì tắt · trúng: đá lan rào rạo rồi "cộp" đông cứng · hết giờ: tượng vỡ vụn lạo xạo
+    'mod.zap'() { T({ freq: 1800, to: 300, dur: 0.3, type: 'sawtooth', vol: 0.08 }); T({ freq: 2400, to: 600, dur: 0.25, type: 'square', vol: 0.04 }); N({ dur: 0.2, vol: 0.06, freq: 3000, to: 800, q: 2 }); },
+    'mod.fizzle'() { N({ dur: 0.25, vol: 0.1, freq: 4000, to: 1200, q: 1.5 }); },
+    'mod.petrify'() { for (let i = 0; i < 8; i++) N({ dur: 0.04, vol: 0.09, freq: R(500, 1400), q: 2, delay: i * 0.035 }); T({ freq: 220, to: 70, dur: 0.3, type: 'square', vol: 0.06 }); T({ freq: 90, to: 50, dur: 0.15, type: 'sine', vol: 0.22, delay: 0.3 }); N({ dur: 0.08, vol: 0.14, freq: 700, q: 1.5, delay: 0.3 }); },
+    'mod.crumble'() { N({ dur: 0.12, vol: 0.2, freq: 900, q: 0.8 }); boom(0.12, 0.25); for (let i = 0; i < 7; i++) T({ freq: R(180, 420), dur: 0.05, type: 'triangle', vol: 0.07, delay: 0.05 + i * 0.045 }); },
+    'mod.hoo'() { [0, 0.4].forEach((d, i) => T({ freq: i ? 330 : 392, to: i ? 300 : 360, dur: 0.32, type: 'sine', vol: 0.14, vib: 6, vibDepth: 12, attack: 0.05, delay: d })); },
+    'mod.spotted'() { N({ dur: 0.04, vol: 0.2, freq: 3000, q: 1.5 }); N({ dur: 0.03, vol: 0.12, freq: 2000, q: 1.5, delay: 0.06 }); T({ freq: 1568, to: 784, dur: 0.25, type: 'square', vol: 0.06, delay: 0.05 }); },
     'mod.siren'() { T({ freq: 660, to: 990, dur: 0.3, type: 'sawtooth', vol: 0.07 }); T({ freq: 990, to: 660, dur: 0.3, type: 'sawtooth', vol: 0.07, delay: 0.3 }); },
   };
 

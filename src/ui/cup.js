@@ -101,7 +101,7 @@ window.SFC = window.SFC || {};
           ${menu.playTabs('story', sub)}
           <div class="fs-cards">${cards}</div>
           <div class="fs-info" style="--sc:${s.color}">
-            <div class="fs-blurb"><b>${esc(s.name)}${s.tag ? ` <em class="fs-tag" title="${esc(_t('STORYTELLING'))}">${s.tagIcon ? PX().ui(s.tagIcon, 'sm') : ''}${esc(s.tag)}</em>` : ''}</b><span>${esc(s.blurb || '')}</span></div>
+            <div class="fs-blurb"><b>${esc(s.name)}</b><span>${esc(s.blurb || '')}</span></div>
             ${goals}
           </div>
           ${msg}
@@ -474,7 +474,7 @@ window.SFC = window.SFC || {};
       const note = O.isHost ? _t('Send this code to your friends. They join from FOOTBALL STORY › JOIN.') : _t('Waiting for {name} to start...', { name: ownerName() });
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
       menu.el.innerHTML = `<div class="cu-page sl-page">
-          <div class="cu-head" style="--sc:${s.color}"><b>${esc(s.name)}</b>${s.tag ? `<em class="fs-tag">${s.tagIcon ? PX().ui(s.tagIcon, 'sm') : ''}${esc(s.tag)}</em>` : ''}</div>
+          <div class="cu-head" style="--sc:${s.color}"><b>${esc(s.name)}</b></div>
           <div class="sl-code" data-copy="${esc(code)}" title="${esc(_t('Click to copy'))}"><span>${esc(_t('ROOM CODE'))}</span><b>${esc(code)}</b><i>${esc(_t('COPY'))}</i></div>
           <div class="sl-seats">${seats}</div>
           <div class="pt-note">${esc(note)}</div>${msg}

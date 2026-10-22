@@ -20,7 +20,7 @@
  *     noGolden (vô địch không trận nào phải đá bàn thắng vàng) · goals (vô địch, đội ghi đủ n bàn cả cup) · sweep (vô địch, trận nào cũng thắng cách 2 bàn)
  *     · modClean (vô địch, luật trận chung kết không trúng đội bạn lần nào)
  *   tell: KIỂU KỂ của Story (src/ui/story.js TELL; user 2026-10-20: cùng luật knockout, mỗi Story kể 1 cách): diary · manga · tv · film
- *     · stages: 6 tên chặng (trang / thẻ đầu chặng) · tag / tagIcon: nhãn kiểu kể ở thẻ Story · channel / ticker (tv) · outroColor (film)
+ *     · stages: 6 tên chặng (trang / thẻ đầu chặng) · channel / ticker (tv) · outroColor (film)
  *   theme: nền cut scene (alley · rooftop · market · stadium, src/ui/story-cup.js) · trophy: cúp riêng của Story (cut scene nâng cúp + PHÒNG TRƯNG BÀY):
  *     pot (nồi cơm vàng) · owl (tượng cú vàng) · bowl (tô mì vàng) · cup (cúp vàng cổ điển)
  *   tier: độ khó 1..4 (chấm trên thẻ Story; độ khó thật = elo từng vòng)
@@ -41,11 +41,12 @@ SFC_CONFIG.stories = {
   mods: {
     // The Uncles: ghế nhựa đỏ trên sân. Không cầm bóng mà đi vào (cách pickPad px) là nhặt lên, ra đòn = ném (throwSpeed, bay tối đa throwRange px).
     // Trúng đối thủ: choáng stun giây + văng knock + rơi bóng (lướt né được), ghế vỡ, respawn giây sau đặt ghế mới. AI cầm ghế quá aiHold giây thì ném người gần; các chú (trừ người đang đuổi bóng) tự chạy đi nhặt ghế trong vòng aiSeek px, mỗi lúc 1 người, ném xong nghỉ aiGap giây.
-    // Ghế trên sân vẫn chặn người cầm bóng, bóng thấp (z < h) dội ra; sút mạnh (>= breakSpeed) vỡ ghế
+    // Ghế trên sân vẫn chặn người cầm bóng, bóng thấp (z < h) dội ra; sút mạnh (>= breakSpeed) vỡ ghế.
+    // Ghế ném đập tường không vỡ: bật ngược bounceRange px với tốc độ bounceSpeed rồi rơi xuống ngay đó (nhặt ném tiếp)
     stools: {
       name: 'PLASTIC STOOLS', hint: 'Walk into a stool to pick it up, attack to throw it',
       n: 5, r: 7, h: 14, gap: 70, pickPad: 3, breakSpeed: 250, respawn: 5,
-      throwSpeed: 330, throwRange: 210, stun: 1.0, knock: 200, aiHold: 1.2, aiSeek: 130, aiGap: 8, color: '#ff3d3d',
+      throwSpeed: 330, throwRange: 210, bounceSpeed: 150, bounceRange: 30, stun: 1.0, knock: 200, aiHold: 1.2, aiSeek: 130, aiGap: 8, color: '#ff3d3d',
     },
     // Moped Boys: làn giao hàng chạy dọc sân (gần bóng) nhấp nháy warn giây rồi xe máy phóng qua. Đội bạn trúng: văng + choáng + rơi bóng
     // (lướt né được). Moped Boys trúng: được "quá giang" — chạy nhanh x boost trong boostT giây. Họ bị dẫn: xe ra dày hơn (trailing)
@@ -54,11 +55,12 @@ SFC_CONFIG.stories = {
       first: 4, every: [6, 9], trailing: 1.6, warn: 1.3, speed: 460, r: 11, stun: 0.8, knock: 240, ballKick: 260,
       boost: 1.35, boostT: 2.5, color: '#ffd23f',
     },
-    // School Ghosts: ma ở xa bóng mờ dần (vẫn thấy bóng hình, không vô hình — docs/CORE_DESIGN.md), cầm bóng / gần bóng thì hiện rõ.
-    // Chuông trường reo mỗi bell giây: 2 con ma (không cầm bóng) đổi chỗ cho nhau. Họ bị dẫn: chuông reo dày hơn (trailing)
+    // School Ghosts (user 2026-10-21): sau first giây, n con ma (không cầm bóng) tàng hình (còn chút bóng hình độ đậm alpha) + chạy x speed, tới khi bị lộ.
+    // Đội bạn ra đòn nặng trúng 1 con ma không tàng hình -> cả đội ma hiện hình, cooldown giây sau mới tàng hình lại.
+    // Chuông trường reo mỗi bell giây: 2 con ma (không cầm bóng) đổi chỗ cho nhau. Họ bị dẫn: chuông + hồi tàng hình nhanh hơn (trailing)
     ghosts: {
-      name: 'NOW YOU SEE THEM', hint: 'Ghosts fade away from the ball and swap when the bell rings',
-      near: 60, fade: 50, alpha: 0.14, first: 6, bell: [9, 13], trailing: 1.5,
+      name: 'NOW YOU SEE THEM', hint: 'Two ghosts vanish and speed up. Heavy-hit a visible one to reveal them all',
+      n: 2, alpha: 0.1, speed: 1.3, first: 5, cooldown: 8, bell: [9, 13], trailing: 1.5,
     },
     // Block Wardens: cả đội khổng lồ (to scale lần, power / tackle x power, speed x speed). Đấm nhẹ không tác dụng (người đấm bật ra bounce px/s),
     // phải dùng đòn nặng. Bị dẫn: to thêm rageScale (banner rage)
@@ -139,7 +141,15 @@ SFC_CONFIG.stories = {
       name: 'GOLDEN STAR', hint: 'Steal the ball from the star to take the golden boot',
       first: 3, every: [4, 7], time: 10, bootTime: 8, power: 1.4, speed: 1.15,
     },
-    // Night Owls: đèn pha quét sân (đường Lissajous). Đội bạn cầm bóng trong đèn catchT giây -> FREEZE: choáng + rơi bóng, đèn dừng pause giây.
+    // Night Owls (user 2026-10-22, thay SEARCHLIGHT): con cú khổng lồ trên khán đài cả trận, bình thường nhắm mắt. "HOO..." rồi mắt mở dần warn giây (báo trước),
+    // mở hẳn open giây: ai bên bạn đang chạy nhanh (đè phím chạy) / lướt bị tia ngắm khoá, đứng lại / đi bộ thì nhả. Chạy tiếp đủ lockT giây -> bắn đạn
+    // bay boltT giây đuổi theo, lướt đúng lúc là né; trúng = hoá đá stone giây (đứng chôn chân + rơi bóng). Core / Tuyệt kỹ không tính.
+    // Đồng đội AI tuân luật với xác suất aiObey mỗi lần. Owls không ra đòn / sút / chuyền lúc mắt mở. Bị dẫn: mở thường hơn (trailing) + lâu hơn (x trailOpen)
+    owlgaze: {
+      name: "OWL'S GAZE", hint: 'When the owl opens its eyes, stop running or turn to stone',
+      first: 6, every: [7, 10], trailing: 1.4, warn: 1.0, open: 2.4, trailOpen: 1.35, lockT: 0.8, boltT: 0.45, stone: 1.5, aiObey: 0.85, color: '#ffd23f',
+    },
+    // (chưa dùng, để dành cho Story sau) đèn pha quét sân (đường Lissajous). Đội bạn cầm bóng trong đèn catchT giây -> FREEZE: choáng + rơi bóng, đèn dừng pause giây.
     // Lướt né được. Wardens bị dẫn: bật thêm 1 đèn (LOCKDOWN)
     searchlight: {
       name: 'SEARCHLIGHT', hint: 'Never hold the ball in the light',
@@ -151,14 +161,14 @@ SFC_CONFIG.stories = {
   /* 4 Story, cùng luật cup knockout 4 vòng + luật trận từng đối thủ, khác nhau ở CÁCH KỂ (user chốt 2026-10-20, src/ui/story.js TELL):
    *   ward_cup nhật ký mùa hè (diary) · rooftop_league manga · market_cup show TV (tv) · legends_cup cuộn phim hồi tưởng (film)
    * stages: tên 6 chặng [mở đầu, 1/8, tứ kết, bán kết, chung kết, kết] — trang / thẻ đầu mỗi chặng theo kiểu kể (ngày · chương · tập · cuộn)
-   * tag / tagIcon: nhãn kiểu kể ở thẻ Story · channel / ticker: logo kênh + chữ chạy (tv) · outroColor: phim có màu lại ở đoạn kết (film)
+   * Thẻ Story không ghi tên kiểu kể (user 2026-10-21) · channel / ticker: logo kênh + chữ chạy (tv) · outroColor: phim có màu lại ở đoạn kết (film)
    * Dòng thoại thêm: sfx (chữ hiệu ứng đập màn cùng câu, hợp manga) · color: true (film: cảnh có màu, hết hồi tưởng) */
   list: [
     /* ---------- Story 1: hẻm phường, độ khó 1 (Elo 30 → 240) · kể bằng NHẬT KÝ MÙA HÈ của bạn ---------- */
     {
       id: 'ward_cup', name: 'THE WARD CUP', color: '#ff9a3d', cover: 'alley', theme: 'alley', trophy: 'pot', tier: 1,
       blurb: 'The alley gets torn down at the end of summer. This is the last Ward Cup ever.',
-      tell: 'diary', tag: 'SUMMER DIARY', tagIcon: 'book',
+      tell: 'diary',
       stages: ['JULY 28', 'JULY 29', 'JULY 30', 'JULY 31', 'AUGUST 1', 'AUGUST 2'],
       narrator: { name: 'WARD LOUDSPEAKER' },
       rival: 3,
@@ -214,7 +224,7 @@ SFC_CONFIG.stories = {
             { who: 'opp', text: 'This school closed ten years ago. We never finished our last summer here.' },
             { who: 'you', text: '...Wait. Are you actual ghosts?' },
             { who: 'opp', text: 'Does it matter? The bell is about to ring.' },
-            { who: 'host', text: 'Ghosts fade away from the ball. When the school bell rings, they swap places!' },
+            { who: 'host', text: 'Two ghosts at a time turn invisible and run faster. Hit a visible one hard and they all show up!' },
           ],
           after: [
             { who: 'opp', text: 'Ha. We were never ghosts. Just kids who moved away. We came back for the last cup.' },
@@ -226,7 +236,7 @@ SFC_CONFIG.stories = {
             kickoff: ['Booo...', 'Roll call!'],
             goal: ['Spooky!', 'Did you see that? No.'],
             conceded: ['Impossible!', 'You saw me?!'],
-            mod: ['RING RING!', 'Change classes!'],
+            mod: ['RING RING!', 'Change classes!', "Now you don't!"],
           },
         },
         {
@@ -274,7 +284,7 @@ SFC_CONFIG.stories = {
     {
       id: 'rooftop_league', name: 'ROOFTOP NIGHT LEAGUE', color: '#6ec8ff', cover: 'rooftop', theme: 'rooftop', trophy: 'owl', tier: 2,
       blurb: 'A black card with a golden owl. A secret league. Four trials before dawn.',
-      tell: 'manga', tag: 'MANGA', tagIcon: 'boom',
+      tell: 'manga',
       stages: ['CHAPTER 1 · THE CARD', 'CHAPTER 2 · FIRST TRIAL', 'CHAPTER 3 · SECOND TRIAL', 'CHAPTER 4 · THIRD TRIAL', 'CHAPTER 5 · FINAL TRIAL', 'LAST CHAPTER · DAWN'],
       narrator: { name: 'THE VOICE', art: 'cupVoice' },
       rival: 3,
@@ -338,11 +348,11 @@ SFC_CONFIG.stories = {
           },
         },
         {
-          team: 'night_owls', arena: 'rooftop', elo: 700, signature: 'thunder_kick', mod: 'searchlight',
+          team: 'night_owls', arena: 'rooftop', elo: 700, signature: 'thunder_kick', mod: 'owlgaze',
           before: [
             { who: 'host', text: 'Step into the light.' },
             { who: 'opp', sfx: 'CLICK', text: 'Yes. I am the Voice. Every card on this roof came from me.' },
-            { who: 'opp', text: 'Never hold the ball in my light. Fall behind me, and a second one switches on.' },
+            { who: 'opp', sfx: 'HOO...', text: 'The final trial is simple. When my eyes open, nobody runs.' },
             { who: 'you', text: 'You talk a lot for an owl.' },
           ],
           after: [
@@ -350,10 +360,10 @@ SFC_CONFIG.stories = {
             { who: 'opp', art: 'cupTalk', text: 'I leave the city at dawn. This roof needs a new Voice.' },
           ],
           barks: {
-            kickoff: ['We see you.', 'Lights on!'],
+            kickoff: ['We see you.', 'Eyes open.'],
             goal: ['Saw it coming!', 'Hoo hoo!'],
             conceded: ['Who? WHO?!', 'Did not see that!'],
-            mod: ['FREEZE!', 'Gotcha!'],
+            mod: ['I saw that!', 'Gotcha!', 'No running!'],
           },
         },
       ],
@@ -381,7 +391,7 @@ SFC_CONFIG.stories = {
     {
       id: 'market_cup', name: 'NIGHT MARKET CUP', color: '#ff3fb4', cover: 'market', theme: 'market', trophy: 'bowl', tier: 3,
       blurb: 'Win four ingredients, cook one legendary bowl, and save the noodle cart. Live on TV.',
-      tell: 'tv', tag: 'TV SHOW', tagIcon: 'tv', channel: 'NMTV',
+      tell: 'tv', channel: 'NMTV',
       stages: ['PILOT', 'EP.1 · THE FLAME', 'EP.2 · THE NOODLES', 'EP.3 · THE SPICE', 'EP.4 · THE TASTING', 'SEASON FINALE'],
       ticker: ["UNCLE NOODLE'S CART FACES EVICTION", 'MARKET MAMAS: NO DISCOUNTS, EVER', 'LANTERN SAFETY CHECK FAILED AGAIN', 'FORTUNE TELLER PREDICTS RAIN, IT IS SUNNY'],
       narrator: { name: 'UNCLE NOODLE', horn: false, look: { skin: '#e0a878', hair: '#1a1216', cut: 'bandana', face: 'mustache', shoes: 'slides', fx: 'smoke' }, kit: { shirt: '#f3ead7', shirtDark: '#c9b48a', shorts: '#3a2a20', accent: '#e8322a', hair: ['#1a1216'] } },
@@ -493,7 +503,7 @@ SFC_CONFIG.stories = {
     {
       id: 'legends_cup', name: "GRANDPA'S LEGENDS", color: '#ffd23f', cover: 'stadium', theme: 'stadium', trophy: 'cup', tier: 4,
       blurb: 'Fifty years ago, Grandpa never finished his final. You will.',
-      tell: 'film', tag: 'OLD FILM', tagIcon: 'film', outroColor: true,
+      tell: 'film', outroColor: true,
       stages: ['REEL ONE', 'REEL TWO · THE HARBOR', 'REEL THREE · THE WHISTLE', 'REEL FOUR · THE OLD SQUAD', 'REEL FIVE · THE LEGENDS', 'THE END'],
       narrator: { name: 'GRANDPA', horn: false, look: { skin: '#d99a6c', hair: '#e8ecf5', cut: 'buzz', face: 'beard', shoes: 'slides', fx: 'nofx' }, kit: { shirt: '#8a5a30', shirtDark: '#5a3a1a', shorts: '#3a3a44', accent: '#f3ead7', hair: ['#e8ecf5'] }, youngLook: { skin: '#d99a6c', hair: '#1a1216', cut: 'bowl', face: 'blush', shoes: 'socks', fx: 'nofx' }, youngKit: { shirt: '#c9781a', shirtDark: '#7a4510', shorts: '#f3ead7', accent: '#f3ead7', hair: ['#1a1216'] } },
       rival: 3,

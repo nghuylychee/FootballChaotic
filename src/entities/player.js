@@ -290,7 +290,9 @@ window.SFC = window.SFC || {};
       if (len > 1) { mx /= len; my /= len; }
       const moving = len > 0.1;
 
-      const wantSprint = this.intent.sprint && moving;
+      // walkT: luật trận bắt đi bộ (OWL'S GAZE: đồng đội AI tuân luật khi mắt cú mở), MatchMods đặt lại mỗi bước
+      if (this.walkT > 0) this.walkT -= dt;
+      const wantSprint = this.intent.sprint && moving && !(this.walkT > 0);
       const was = this.sprinting;
       this.sprinting = wantSprint && this.stamina > (this.sprinting ? 0 : C.staminaMinToSprint);
       if (this.sprinting && !was) this.game.cores.dispatch(this.team, 'onSprintStart', this);
@@ -350,7 +352,7 @@ window.SFC = window.SFC || {};
     }
 
     /**
-     * Nhận đòn. opts: {stun, kbx, kby, source, type}
+     * Nhận đòn. opts: {stun, kbx, kby, source, type, quiet}
      * stun = 0 -> chỉ đẩy lùi, không mất bóng.
      */
     hit(opts) {
@@ -378,9 +380,12 @@ window.SFC = window.SFC || {};
       this.cancelPass();
       this.flash = 0.12;
       this.hitImmune = stun;
-      g.effects.burst(this.x, this.y, 14, '#fff6a0', 6, 60);
-      g.effects.shake(SFC_CONFIG.game.fx.shakeHit);
-      g.sfx('hit', opts.type);
+      // quiet: không phải bị đánh (trượt ngã...) -> bỏ tia lửa, rung màn, tiếng đấm; nơi gọi tự lo hình + tiếng
+      if (!opts.quiet) {
+        g.effects.burst(this.x, this.y, 14, '#fff6a0', 6, 60);
+        g.effects.shake(SFC_CONFIG.game.fx.shakeHit);
+        g.sfx('hit', opts.type);
+      }
       if (g.mod) SFC.MatchMods.hitBy(g, this, opts);   // luật trận FOOTBALL STORY (trọng tài bắt lỗi)
       return true;
     }

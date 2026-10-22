@@ -2586,7 +2586,6 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .fs-prog > i.on { background: var(--sc); }
 .fs-prog b { display: flex; align-items: center; gap: 1px; margin-left: 2px; font-weight: normal; font-size: 11px; color: var(--gold); filter: grayscale(1) brightness(0.45); }
 .fs-prog b.on { filter: none; }
-.fs-tag { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; padding: 1px 4px; font-style: normal; font-family: var(--px); font-size: 5px; color: #fff; background: rgba(255,255,255,0.08); border: 1px solid var(--edge); vertical-align: middle; }
 .fs-info { width: 536px; display: flex; gap: 12px; padding: 6px 8px; background: rgba(10, 11, 14, 0.6); border-left: 3px solid var(--sc); }
 .fs-blurb { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .fs-blurb b { font-family: var(--px); font-size: 7px; font-weight: normal; color: var(--sc); letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); }

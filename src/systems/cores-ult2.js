@@ -68,17 +68,29 @@ window.SFC = window.SFC || {};
    * trơn té: ngã sõng soài + trượt · hoá đá: đứng chết trân màu đá · thôi miên: đi lang thang, ai chạm là tỉnh · teo nhỏ: bé + chậm
    * đợt 4: hoá gà · hoảng sợ (đảo hướng di chuyển) · con rối (Puppet Master, Player.puppet) */
   const Stat = {
-    // trơn té: ngã, trượt theo d (mặc định hướng đang chạy) slide px/s, choáng t giây
-    slip(sys, o, t, src, slide = 200, d = null) {
+    // trơn té: ngã ngửa thật (prop 'fall' vẽ người nằm sõng soài thay sprite, chân về hướng trượt), trượt theo d (mặc định hướng đang chạy)
+    // slide px/s, choáng t giây. Không phải bị đánh nên không tia lửa / tiếng đấm (hit quiet), tiếng ngã riêng snd (g.sfx('ult', snd))
+    slip(sys, o, t, src, slide = 200, d = null, snd = 'stat.slip') {
       const g = sys.g, E = g.effects, sp = Math.hypot(o.vx, o.vy);
       d = d || (sp > 10 ? { x: o.vx / sp, y: o.vy / sp } : { x: U.rand(-1, 1), y: U.rand(-1, 1) });
       d = U.norm(d.x, d.y + 0.001);
       o.hitImmune = 0;
       if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; }
-      if (!o.hit({ stun: t, kbx: d.x * slide, kby: d.y * slide, source: src, type: 'hard' })) return false;
+      if (!o.hit({ stun: t, kbx: d.x * slide, kby: d.y * slide, source: src, type: 'hard', quiet: true })) return false;
+      const id = H.propId(g), T = o.stateT;
+      E.prop(id, 'fall', o.x, o.y, o.id, Math.atan2(d.y, d.x), T, '#ffe14f');
+      // hết choáng sớm (bị dựng dậy, bàn thắng...) thì đứng dậy luôn
+      let el = 0;
+      sys.task((dt) => {
+        if ((el += dt) >= T) return true;
+        if (g.state !== 'play' || o.state !== 'stun') { E.propOff(id, 0.15); return true; }
+        return false;
+      });
       E.decal('skid', o.x, o.y, 0.9, 2.5, Math.atan2(d.y, d.x));
-      E.burst(o.x, o.y, 2, '#ffe14f', 6, 60, 0.4);
+      E.burst(o.x, o.y, 2, '#e8ecf5', 8, 70, 0.4);
+      E.shake(SFC_CONFIG.game.fx.shakeHit * 0.5);
       E.pop(o.x, o.y - 30, 'SLIP!', 'status', '#ffe14f');
+      g.sfx('ult', snd);
       return true;
     },
     // hoá đá: choáng t giây, không bị đẩy đi (đứng chôn chân), hình tượng đá phủ lên người

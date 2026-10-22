@@ -1503,7 +1503,6 @@ SFC.I18n.add({
     'Waiting for {name} to continue...': 'Esperando {name} continuar...',
 
     /* ===== FOOTBALL STORY: kiểu kể riêng từng Story (src/ui/cup.js) ===== */
-    'STORYTELLING': 'NARRATIVA',
 
     /* ===== FOOTBALL STORY (config/stories.config.js, src/ui/cup.js) ===== */
     'FOOTBALL STORY': 'FOOTBALL STORY',

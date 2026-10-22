@@ -244,14 +244,14 @@ window.SFC = window.SFC || {};
 
   /* ---------- vật thể trên sân của Tuyệt kỹ (Effects.prop, docs/ULT_REDESIGN.md) ---------- */
   // FLOOR: nằm trên mặt sân, dưới cầu thủ · UPRIGHT: đứng trên sân, xếp chiều sâu cùng cầu thủ · TOP: vẽ trên cùng
-  const PROP_FLOOR = { splatfall: 1, splat: 1, graffitiwarn: 1, stallwarn: 1, tide: 1, lane: 1, trail: 1, puddle: 1, peel: 1, mark: 1, gaze: 1, magic: 1, moon: 1, dot: 1, chain: 1, stance: 1, magnet: 1, quake: 1, qring: 1, target: 1, rubble: 1 };
-  const PROP_TOP = { flock: 1, wind: 1, hot: 1, card: 1, spot: 1, alarm: 1, glove: 1, foot: 1, pips: 1, smoke: 1, boomer: 1, string: 1, qte: 1, mhand: 1 };   // khói phủ lên người (đối thủ trong khói vẫn thấy mờ mờ)
+  const PROP_FLOOR = { vroom: 1, splatfall: 1, splat: 1, graffitiwarn: 1, stallwarn: 1, tide: 1, lane: 1, trail: 1, puddle: 1, peel: 1, mark: 1, gaze: 1, magic: 1, moon: 1, dot: 1, chain: 1, stance: 1, magnet: 1, quake: 1, qring: 1, target: 1, rubble: 1 };
+  const PROP_TOP = { owl: 1, owleyes: 1, gazelock: 1, owlbolt: 1, flock: 1, wind: 1, hot: 1, card: 1, spot: 1, alarm: 1, glove: 1, foot: 1, pips: 1, smoke: 1, boomer: 1, string: 1, qte: 1, mhand: 1 };   // khói phủ lên người (đối thủ trong khói vẫn thấy mờ mờ)
   // vật thể bám theo cầu thủ (a = id cầu thủ)
-  const PROP_FOLLOW = { card: 1, star: 1, stoolheld: 1, alarm: 1, tornado: 1, hand: 1, stance: 1, hammer: 1, truck: 1, stone: 1, hypno: 1, magic: 1, pips: 1, ape: 1, ride: 1, qte: 1, chicken: 1, panic: 1, link: 1 };
+  const PROP_FOLLOW = { gazelock: 1, petrify: 1, fall: 1, vroom: 1, veil: 1, card: 1, star: 1, stoolheld: 1, alarm: 1, tornado: 1, hand: 1, stance: 1, hammer: 1, truck: 1, stone: 1, hypno: 1, magic: 1, pips: 1, ape: 1, ride: 1, qte: 1, chicken: 1, panic: 1, link: 1 };
   // vẽ SAU sprite của người được bám (phủ lên người): tượng đá, xe tải, búa, mắt thôi miên
-  const PROP_OVER = { star: 1, stoolheld: 1, stone: 1, truck: 1, hammer: 1, hypno: 1, panic: 1, ape: 1, ride: 1, chicken: 1, link: 1 };
-  // vật thể tự vẽ nhân vật thay cho sprite thật (Renderer bỏ qua drawPlayer — VFX.hides): King Kong, đứng trên tảng đá, con gà
-  const PROP_HIDE = { ape: 1, ride: 1, chicken: 1 };
+  const PROP_OVER = { petrify: 1, star: 1, stoolheld: 1, stone: 1, truck: 1, hammer: 1, hypno: 1, panic: 1, ape: 1, ride: 1, chicken: 1, link: 1 };
+  // vật thể tự vẽ nhân vật thay cho sprite thật (Renderer bỏ qua drawPlayer — VFX.hides): King Kong, đứng trên tảng đá, con gà, người ngã sõng soài, tượng đá (OWL'S GAZE)
+  const PROP_HIDE = { ape: 1, ride: 1, chicken: 1, fall: 1, petrify: 1 };
   const byId = (g, id) => g.players.find((q) => q.id === id) || null;
   // vị trí vật thể bám người (a = id cầu thủ) hoặc toạ độ riêng
   function propAt(g, o) {
@@ -261,7 +261,7 @@ window.SFC = window.SFC || {};
     return { x: o.x, y: o.y };
   }
 
-  function drawProp(ctx, g, o) {
+  function drawProp(ctx, g, o, part) {
     const { px, disc, ellipse, OUT } = SP(), t = g.time;
     const k = o.t / o.max, el = o.max - o.t;                  // k: 1 -> 0 · el: giây đã sống
     const fade = Math.min(1, k * 5, el * 8);
@@ -617,6 +617,37 @@ window.SFC = window.SFC || {};
         if (Math.random() < 0.4) px(ctx, gx + Math.round((Math.random() - 0.5) * 14), gy + Math.round((Math.random() - 0.5) * 10), 1, 1, '#ffe14f');
         break;
       }
+      case 'fall': {   // trơn té (CoreStat.slip): ngã ngửa thật — tung chân lên, đập lưng xuống nằm sõng soài (chân về hướng trượt b), sao quay trên đầu,
+                       // cuối lượt choáng lồm cồm đứng dậy (sprite thật bị ẩn — hides)
+        const q = byId(g, o.a);
+        if (!q) break;
+        const D = 0.14, UP = 0.22, side = Math.cos(o.b) >= 0 ? 1 : -1;
+        let k2 = el < D ? el / D : o.t < UP ? o.t / UP : 1;
+        k2 = 1 - (1 - k2) * (1 - k2);
+        const hop = el < D ? Math.sin(Math.PI * el / D) * 5 : 0;
+        const thud = el >= D && el < D + 0.07 ? 1 : 0;   // vừa đập lưng xuống: dẹp xuống 1px
+        ctx.globalAlpha = 1;
+        ellipse(ctx, x, y + 1, 6 + 6 * k2, 2.5, 'rgba(0,0,0,0.38)');
+        // bụi tung khi đang trượt trên sân
+        const sp = Math.hypot(q.vx || 0, q.vy || 0);
+        if (sp > 30 && k2 > 0.5) for (let i = 0; i < 3; i++) {
+          const ph = (t * 5 + i / 3) % 1;
+          ctx.globalAlpha = (1 - ph) * 0.6;
+          px(ctx, Math.round(x + side * (8 + ph * 6) - (q.vx / sp) * ph * 10), Math.round(y - 1 - ph * 5), 2, 2, '#d9cbb0');
+        }
+        ctx.globalAlpha = 1;
+        ctx.save();
+        ctx.translate(x, Math.round(y - 8 + 5 * k2 - hop + thud));
+        ctx.rotate(-side * Math.PI / 2 * k2);
+        SP().drawPlayer(ctx, Object.assign({}, q, { x: 0, y: 8, vx: 0, vy: 0, state: 'normal', atkType: null, celPose: null, keeper: false }), g, 0.999);
+        ctx.restore();
+        // nằm im: sao vàng quay quanh đầu (đầu ở phía ngược hướng trượt)
+        if (k2 > 0.8) for (let i = 0; i < 3; i++) {
+          const a2 = t * 7 + (i * Math.PI * 2) / 3;
+          px(ctx, Math.round(x - side * 14 + Math.cos(a2) * 6), Math.round(y - 9 + Math.sin(a2) * 2), 2, 2, i ? '#ffe14f' : '#ffffff');
+        }
+        break;
+      }
       case 'chicken': {   // Chicken Ray: con gà thay người (sprite thật bị ẩn — hides), khăn màu áo đội, chạy lon ton
         const q = byId(g, o.a);
         if (!q) break;
@@ -835,7 +866,7 @@ window.SFC = window.SFC || {};
         break;
       }
       default:   // vật thể luật trận FOOTBALL STORY (render/modsdraw.js)
-        if (SFC.ModDraw && SFC.ModDraw.kinds[o.kind]) SFC.ModDraw.draw(ctx, g, o, c, k, el, fade);
+        if (SFC.ModDraw && SFC.ModDraw.kinds[o.kind]) SFC.ModDraw.draw(ctx, g, o, c, k, el, fade, part);
     }
     ctx.globalAlpha = 1;
   }
@@ -889,13 +920,25 @@ window.SFC = window.SFC || {};
       for (const o of g.effects.V.props) if (o.kind === kind && o.a === p.id && o.t > 0) return true;
       return false;
     },
+    // đang có vật thể loại kind trên sân (bất kể bám ai)
+    anyProp(g, kind) {
+      for (const o of g.effects.V.props) if (o.kind === kind && o.t > 0) return true;
+      return false;
+    },
     hides(g, p) {
       for (const o of g.effects.V.props) if (PROP_HIDE[o.kind] && o.a === p.id && o.t > 0) return true;
       return false;
     },
     props(g) {
       const out = [];
-      for (const o of g.effects.V.props) if (!PROP_FLOOR[o.kind] && !PROP_TOP[o.kind]) out.push({ y: propAt(g, o).y + (PROP_OVER[o.kind] ? 0.3 : o.kind === 'hand' || o.kind === 'tornado' ? 0.2 : 0), o });
+      const MD = SFC.ModDraw;
+      for (const o of g.effects.V.props) {
+        if (PROP_FLOOR[o.kind] || PROP_TOP[o.kind]) continue;
+        // vật thể dài (tường graffiti): mỗi khúc xếp chiều sâu riêng (part = số thứ tự khúc, ModDraw.parts)
+        const parts = MD && MD.parts && MD.parts(o);
+        if (parts) { parts.forEach((pt, i) => out.push({ y: pt.d, o, part: i })); continue; }
+        out.push({ y: propAt(g, o).y + (PROP_OVER[o.kind] ? 0.3 : o.kind === 'hand' || o.kind === 'tornado' ? 0.2 : 0), o });
+      }
       return out;
     },
     drawProp,

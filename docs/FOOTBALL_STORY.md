@@ -44,7 +44,7 @@ Luật chơi giống nhau (cup knockout 16 đội, 4 trận, thua là out, mỗi
 ## Giao diện: hình là chính, ít chữ (user 2026-10-20)
 
 Màn FOOTBALL STORY, màn cup và TROPHY ROOM: thông tin hiện bằng icon pixel + số / chữ ngắn, câu dài để ở tooltip (`title`).
-- Thẻ Story: tiến độ = 4 ô + cúp (không ghi "Best: ..."), nhãn kiểu kể ngắn `tag` + `tagIcon` (SUMMER DIARY · MANGA · TV SHOW · OLD FILM).
+- Thẻ Story: tiến độ = 4 ô + cúp (không ghi "Best: ..."). Không ghi tên kiểu kể (SUMMER DIARY, MANGA...) trên UI (user 2026-10-21): người chơi tự cảm nhận qua cut scene.
 - Màn cup: thẻ vòng cao cố định (không nhảy chữ), chỉ tên Story ở đầu, thẻ đối thủ bỏ đoạn mô tả đội (ở tooltip), mỗi thông tin 1 dòng icon (luật trận · Core đặc trưng).
 - Phòng trưng bày: dữ kiện = icon + số, tường kỷ lục 1 hàng icon, nút ACHIEVEMENTS = icon + đếm.
 - Mô tả sao thử thách viết ngắn (vd. "Hat-trick in one match").
@@ -137,14 +137,14 @@ Mỗi vòng có `mod` (id trong `stories.mods`, số liệu ở config) chạy b
 
 | Story | Vòng | Đội | Luật | Cách chơi | Khi họ bị dẫn |
 |---|---|---|---|---|---|
-| Ward Cup | 1/8 | The Uncles | **PLASTIC STOOLS** + bắt đầu thua 0–1 | Ghế nhựa trên sân: không cầm bóng mà đi vào là nhặt lên, ra đòn = ném. Ghế trúng người: choáng + rơi bóng (lướt né được). Các chú cũng đi nhặt ghế ném bạn (mỗi lúc 1 người). Ghế trên sân chặn người cầm bóng, bóng dội ra, sút mạnh vỡ ghế | (luật nhà: họ dẫn sẵn) |
-| | Tứ kết | Moped Boys | **DELIVERY LANE** | Làn dọc nhấp nháy rồi xe máy phóng qua: văng + choáng + rơi bóng. Moped Boys trúng thì được quá giang | xe dày hơn |
-| | Bán kết | School Ghosts | **NOW YOU SEE THEM** | Ma xa bóng mờ dần còn bóng hình. Chuông reo: 2 con ma đổi chỗ | chuông dày hơn |
+| Ward Cup | 1/8 | The Uncles | **PLASTIC STOOLS** + bắt đầu thua 0–1 | Ghế nhựa trên sân: không cầm bóng mà đi vào là nhặt lên, ra đòn = ném. Ghế trúng người: choáng + rơi bóng (lướt né được). Các chú cũng đi nhặt ghế ném bạn (mỗi lúc 1 người). Ghế ném đập tường không vỡ: bật lại rồi rơi ngay đó, nhặt ném tiếp. Ghế trên sân chặn người cầm bóng, bóng dội ra, sút mạnh vỡ ghế | (luật nhà: họ dẫn sẵn) |
+| | Tứ kết | Moped Boys | **DELIVERY LANE** | Làn dọc nhấp nháy rồi xe máy phóng qua: văng + choáng + rơi bóng. Moped Boys trúng thì được quá giang: chạy nhanh một lúc, có quầng vàng + vệt tốc độ + khói xả suốt lúc đó | xe dày hơn |
+| | Bán kết | School Ghosts | **NOW YOU SEE THEM** | Tối đa 2 con ma tàng hình (còn chút bóng hình) + chạy nhanh hơn. Đòn nặng trúng con ma không tàng hình: cả đội lộ, chờ hồi mới tàng hình lại (user 2026-10-21). Chuông reo: 2 con ma đổi chỗ | chuông + hồi tàng hình nhanh hơn |
 | | Chung kết | Block Wardens | **GIANT WARDENS** | Cả đội to x1.5, mạnh hơn, chậm hơn chút. Đấm nhẹ bật ra (TOO BIG!), phải dùng đòn nặng | ANGRY GIANTS: to x1.7 |
-| Rooftop | 1/8 | Pigeon Gang | **PIGEON BOMBS** | Đàn chim bay ngang thả "bom" (vòng báo chỗ rơi), bãi nằm lại: dẫm phải trơn té | thả dày hơn |
+| Rooftop | 1/8 | Pigeon Gang | **PIGEON BOMBS** | Đàn chim bay ngang thả "bom" (vòng báo chỗ rơi), bãi nằm lại: dẫm phải ngã ngửa thật (nằm sõng soài, sao quay trên đầu, tiếng "bẹp"; không tia lửa / tiếng đấm như bị đánh — user 2026-10-22) | thả dày hơn |
 | | Tứ kết | Sky Hoppers | **NIGHT WIND** | Gió dọc sân: bóng trôi theo gió, đội bạn bị đẩy, Hoppers xuôi gió chạy nhanh | gió hay thổi về khung thành bạn |
-| | Bán kết | Billboard Kids | **SPRAY WALLS** | Tường sơn mọc giữa bóng và khung thành bạn tấn công: chặn người + bóng thấp (lốp qua được), Kids đi xuyên | dày hơn |
-| | Chung kết | Night Owls | **SEARCHLIGHT** | Đèn pha quét sân, cầm bóng trong đèn đủ lâu = FREEZE (từ bản Ward Cup đầu, user chuyển sang đây) | LOCKDOWN: đèn thứ 2 |
+| | Bán kết | Billboard Kids | **SPRAY WALLS** | Tường sơn mọc giữa bóng và khung thành bạn tấn công: chặn người + bóng thấp (lốp qua được), Kids đi xuyên. Hình (2026-10-22): bình xịt bay dọc đường báo trước, rồi dãy tấm bê tông dựng lên lần lượt + phun 1 dải sơn uốn lượn liền cả bức (tag trắng, sơn chảy) | dày hơn |
+| | Chung kết | Night Owls | **OWL'S GAZE** (user 2026-10-22, thay SEARCHLIGHT vì khó hiểu) | "Đèn xanh, đèn đỏ": con cú khổng lồ đậu giữa khán đài trên **cả trận**, bình thường nhắm mắt. "HOO..." rồi mắt mở dần ~1 giây, mở hẳn thì sân tối lại: ai bên bạn đang **chạy nhanh (đè phím chạy) hoặc lướt** bị **tia ngắm** khoá (2 tia đỏ + vòng ngắm co dần, SPOTTED!), đứng lại / đi bộ là tia nhả. Chạy tiếp đủ ~0,8 giây → mắt cú **bắn đạn** đuổi theo, **lướt đúng lúc là né**; trúng = **HOÁ ĐÁ** (user đổi từ đóng băng: đá lan từ chân lên thành tượng trên bệ đá, đứng chôn chân + rơi bóng, hết giờ tượng nứt rồi vỡ vụn). Đi bộ / đứng im / sút / chuyền / đấm tại chỗ đều được; Core / Tuyệt kỹ không tính. Ai phạm luật người đó chịu, kể cả đồng đội AI (thường tuân luật, đôi khi quên). Owls đi lại được nhưng không ra đòn / sút / chuyền lúc mắt mở → counter: dừng đúng chỗ trước khung thành rồi sút. Code SEARCHLIGHT giữ lại cho Story sau | mắt mở thường hơn + lâu hơn (báo trước giữ nguyên) |
 | Night Market | 1/8 | Lantern Crew | **FALLING LANTERNS** | Đèn lồng rơi gần bóng (bóng đổ to dần): choáng + văng | 2 cái một lúc |
 | | Tứ kết | Noodle Kickers | **HOT BALL** | Bóng nóng một lúc: cầm quá lâu (vòng cam) là bỏng, rơi bóng. Noodle Kickers cầm thoải mái | nóng dày hơn |
 | | Bán kết | Fortune Tellers | **FORTUNE CARDS** | Rút bài đổi trận vài giây: THE MOUSE (đội bạn teo nhỏ) · THE STORM (1 cơn gió) · THE STAR (Tellers chạy nhanh) | rút dày hơn |
