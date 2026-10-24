@@ -154,7 +154,22 @@ window.SFC = window.SFC || {};
       for (let i = 0; i < (f.w * f.h) / 60; i++) px(x, f.x + Math.floor(rnd() * f.w), f.y + Math.floor(rnd() * f.h), 1, 1, rnd() < 0.5 ? F.speckD : F.speckL);
       return;
     }
-    for (let ty = f.y; ty < f.y + f.h; ty += T) {
+    if (F.style === 'planks') {
+      // sàn ván tàu: ván ngang cao 8px, đầu ván so le (khe hắc ín + 2 đinh), vân gỗ
+      for (let ty = f.y; ty < f.y + f.h; ty += 8) {
+        const h = Math.min(8, f.y + f.h - ty);
+        for (let tx = f.x - Math.floor(rnd() * 40); tx < f.x + f.w;) {
+          const L = 40 + Math.floor(rnd() * 50), x0 = Math.max(f.x, tx), x1 = Math.min(f.x + f.w, tx + L);
+          px(x, x0, ty, x1 - x0, h, pick());
+          px(x, x0, ty + 1, x1 - x0, 1, 'rgba(255,255,255,0.05)');
+          for (let i = 0; i < 3; i++) px(x, x0 + Math.floor(rnd() * (x1 - x0)), ty + 2 + Math.floor(rnd() * (h - 3)), 4 + Math.floor(rnd() * 8), 1, rnd() < 0.5 ? F.speckD : F.speckL);
+          if (tx >= f.x) { px(x, tx, ty, 1, h, F.seam); px(x, tx + 2, ty + 2, 1, 1, F.nail); px(x, tx + 2, ty + h - 3, 1, 1, F.nail); }
+          tx += L;
+        }
+        px(x, f.x, ty, f.w, 1, F.seam);
+      }
+    }
+    if (F.style !== 'planks') for (let ty = f.y; ty < f.y + f.h; ty += T) {
       for (let tx = f.x; tx < f.x + f.w; tx += T) {
         const w = Math.min(T, f.x + f.w - tx), h = Math.min(T, f.y + f.h - ty);
         px(x, tx, ty, w, h, pick());
@@ -276,6 +291,23 @@ window.SFC = window.SFC || {};
         }
       });
       if (led) for (let yy = Y; yy < Y + H; yy += 2) px(x, X, yy, W, 1, 'rgba(0,0,0,0.35)');
+      return;
+    }
+    if (Wc.style === 'hull') {
+      // mạn tàu gỗ: ván ngang, 2 nẹp vàng, hàng ô pháo có nòng pháo thò ra, lan can dây thừng trên cùng
+      for (let yy = Y, i = 0; yy < Y + H; yy += 5, i++) {
+        px(x, X, yy, W, 5, Wc.colors[i % Wc.colors.length]);
+        px(x, X, yy, W, 1, 'rgba(0,0,0,0.35)');
+        for (let k = 0; k < 8; k++) px(x, X + Math.floor(rnd() * W), yy + 2, 3 + Math.floor(rnd() * 6), 1, 'rgba(255,255,255,0.05)');
+      }
+      px(x, X, Y + 4, W, 2, Wc.trim); px(x, X, Y + H - 8, W, 2, Wc.trim);
+      for (let cx = X + 44; cx < X + W - 30; cx += 64) {
+        const py = Y + 14;
+        px(x, cx - 8, py - 1, 16, 15, Wc.trim); px(x, cx - 7, py, 14, 13, Wc.port);
+        px(x, cx - 3, py + 4, 7, 7, Wc.cannon); px(x, cx - 2, py + 5, 5, 1, 'rgba(255,255,255,0.25)'); px(x, cx - 1, py + 7, 3, 3, '#000');
+      }
+      for (let cx = X; cx < X + W; cx += 4) px(x, cx, Y + (Math.floor(cx / 4) % 2), 3, 2, Wc.rope);
+      for (let cx = X + 8; cx < X + W; cx += 32) px(x, cx, Y, 2, 4, Wc.trim);
       return;
     }
     if (Wc.style === 'container') {
@@ -406,6 +438,31 @@ window.SFC = window.SFC || {};
       for (let i = 0; i < 6; i++) {
         const sx = 200 + i * 22, h = 4 + (i % 3) * 4;
         px(x, sx, wallTop - 10 - h, 20, h, ['#5a2a22', '#223f5a', '#5a4a22'][i % 3]);
+      }
+      return;
+    }
+    if (B.style === 'pirate') {
+      // biển đêm có trăng + 2 tàu cướp biển (buồm đen, cờ đầu lâu, đèn dầu trên mạn)
+      sky(x, W, wallTop, B.sky);
+      for (let i = 0; i < 24; i++) px(x, Math.floor(rnd() * W), Math.floor(rnd() * (wallTop - 14)), 1, 1, 'rgba(255,255,255,0.4)');
+      disc(x, W - 92, 11, 6, B.moon);
+      x.globalAlpha = 0.14; disc(x, W - 92, 11, 13, B.moon); x.globalAlpha = 1;
+      px(x, 0, wallTop - 10, W, 10, B.sea);
+      for (let i = 0; i < 40; i++) px(x, Math.floor(rnd() * W), wallTop - 9 + Math.floor(rnd() * 8), 2 + Math.floor(rnd() * 3), 1, 'rgba(160,200,255,0.18)');
+      for (let i = 0; i < 8; i++) px(x, W - 98 + Math.floor(rnd() * 12), wallTop - 9 + i, 2 + Math.floor(rnd() * 4), 1, 'rgba(243,234,215,0.3)');   // vệt trăng trên mặt biển
+      for (const [sx, s] of [[150, 1], [430, -1]]) {
+        const hy = wallTop - 13;
+        for (let k = 0; k < 6; k++) px(x, sx - 30 + k * 2, hy + k, 60 - k * 4, 1, B.ship);   // thân tàu thon dần xuống nước
+        px(x, sx - 32, hy - 2, 64, 2, B.ship);
+        px(x, sx - s * 32 - (s > 0 ? 0 : 10), hy - 6, 10, 4, B.ship);   // đuôi tàu cao
+        for (const [mx, mh] of [[sx - 11, 17], [sx + 9, 21]]) {
+          px(x, mx, hy - mh, 1, mh, B.ship);
+          px(x, mx - 7, hy - mh + 3, 15, 6, B.sail); px(x, mx - 6, hy - mh + 10, 13, 5, B.sail);
+          px(x, mx - 7, hy - mh + 3, 15, 1, 'rgba(255,255,255,0.08)');
+        }
+        const fx = sx + 10, fy = hy - 21;
+        px(x, fx, fy, 7, 5, B.flag); px(x, fx + 2, fy + 1, 3, 2, B.bone); px(x, fx + 3, fy + 3, 1, 1, B.bone);
+        for (const lx of [sx - 22, sx, sx + 20]) { px(x, lx, hy - 1, 1, 1, B.lamp); x.globalAlpha = 0.25; disc(x, lx, hy - 1, 3, B.lamp); x.globalAlpha = 1; }
       }
       return;
     }
@@ -637,6 +694,23 @@ window.SFC = window.SFC || {};
         px(x, X - 1, Y - 6, 3, 3, '#e0b030'); px(x, X - 4, Y - 13, 9, 7, '#ffd23f');
         px(x, X - 6, Y - 12, 2, 4, '#e0b030'); px(x, X + 5, Y - 12, 2, 4, '#e0b030'); px(x, X - 3, Y - 12, 1, 4, '#fff6c0');
         x.globalAlpha = 0.25; disc(x, X, Y - 9, 10, '#ffd23f'); x.globalAlpha = 1; break;
+      case 'cannon':   // pháo cướp biển trên bệ gỗ
+        px(x, X - 7, Y - 2, 14, 4, OUT); px(x, X - 6, Y - 1, 12, 2, '#5a3a20');
+        disc(x, X - 4, Y + 2, 2, OUT); disc(x, X + 4, Y + 2, 2, OUT); disc(x, X - 4, Y + 2, 1, '#6e4520'); disc(x, X + 4, Y + 2, 1, '#6e4520');
+        px(x, X - 6, Y - 8, 14, 6, OUT); px(x, X - 5, Y - 7, 12, 4, '#2a2e34'); px(x, X + 6, Y - 8, 2, 6, '#1a1d22');
+        px(x, X - 5, Y - 7, 11, 1, 'rgba(255,255,255,0.25)'); break;
+      case 'chest':    // rương kho báu hé nắp, vàng lấp lánh
+        px(x, X - 7, Y - 7, 14, 10, OUT); px(x, X - 6, Y - 4, 12, 6, '#8a5a2a'); px(x, X - 6, Y - 6, 12, 2, '#ffd23f');
+        px(x, X - 7, Y - 11, 14, 5, OUT); px(x, X - 6, Y - 10, 12, 3, '#6e4520'); px(x, X - 1, Y - 3, 2, 2, '#ffd23f');
+        px(x, X - 4, Y - 7, 1, 1, '#fff6c0'); px(x, X + 3, Y - 7, 1, 1, '#fff6c0');
+        x.globalAlpha = 0.2; disc(x, X, Y - 6, 9, '#ffd23f'); x.globalAlpha = 1; break;
+      case 'anchor':   // mỏ neo sắt
+        disc(x, X, Y - 13, 2, '#6a737c'); px(x, X, Y - 13, 1, 1, '#000');
+        px(x, X - 1, Y - 11, 2, 12, '#6a737c'); px(x, X - 4, Y - 9, 8, 1, '#6a737c');
+        px(x, X - 5, Y - 1, 11, 2, '#6a737c'); px(x, X - 6, Y - 4, 2, 3, '#6a737c'); px(x, X + 5, Y - 4, 2, 3, '#6a737c');
+        px(x, X - 1, Y - 11, 1, 10, 'rgba(255,255,255,0.2)'); break;
+      case 'rope':     // cuộn dây thừng
+        disc(x, X, Y - 2, 6, OUT); disc(x, X, Y - 2, 5, '#b8945a'); disc(x, X, Y - 2, 3, '#8a6a3a'); disc(x, X, Y - 2, 1, '#5a4024'); break;
       case 'plant':
         px(x, X - 4, Y - 3, 8, 6, OUT); px(x, X - 3, Y - 2, 6, 4, '#a0522d');
         disc(x, X, Y - 7, 5, '#2f8f2a'); disc(x, X - 2, Y - 9, 3, '#4fbf45'); break;

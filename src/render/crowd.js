@@ -71,12 +71,15 @@ window.SFC = window.SFC || {};
     } else if (p.glow) px(ctx, x + 3, y - 6, 1, 3, p.glow);
   }
 
-  // mũ của khán giả: nón lá (cone) · mũ lưỡi trai (cap) · mũ bảo hộ (hardhat)
+  // mũ của khán giả: nón lá (cone) · mũ lưỡi trai (cap) · mũ bảo hộ (hardhat) · mũ ba góc cướp biển (tricorn)
   function drawHat(ctx, x, y, col, shape) {
     const { px } = S();
     if (shape === 'cone') {
       px(ctx, x - 3, y - 8, 7, 1, col); px(ctx, x - 2, y - 9, 5, 1, col); px(ctx, x - 1, y - 10, 3, 1, col); px(ctx, x, y - 11, 1, 1, col);
       px(ctx, x - 3, y - 8, 7, 1, 'rgba(0,0,0,0.12)');
+    } else if (shape === 'tricorn') {
+      px(ctx, x - 3, y - 9, 7, 1, col); px(ctx, x - 2, y - 10, 5, 1, col); px(ctx, x - 3, y - 10, 1, 1, col); px(ctx, x + 3, y - 10, 1, 1, col);
+      px(ctx, x, y - 10, 1, 1, '#e8e4d8');
     } else if (shape === 'hardhat') {
       px(ctx, x - 2, y - 9, 5, 2, col); px(ctx, x - 1, y - 10, 3, 1, col); px(ctx, x - 2, y - 8, 5, 1, 'rgba(0,0,0,0.18)');
     } else {

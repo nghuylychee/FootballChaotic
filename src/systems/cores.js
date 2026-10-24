@@ -471,8 +471,8 @@ window.SFC = window.SFC || {};
     lightReach(p) { return this.has(p, 'rubber_arm') ? this.sp('rubber_arm', p).reach : 0; }
     // One-Two: dứt điểm 1 chạm (sút 1 chạm / vô-lê / đánh đầu, game.firstTime) luôn đầy lực, không bị phạt sai số
     volleyCharge(p) { return this.has(p, 'one_two') ? 1 : 0; }
-    // không thể bị cướp bóng: Xe Ủi (đang hoá to), Hoá Khổng Lồ
-    unstealable(o) { return o.titanT > 0 || o.bullT > 0; }
+    // không thể bị cướp bóng: Xe Ủi (đang hoá to), Hoá Khổng Lồ, boss luật trận đang có giáp (KING LEO 1976)
+    unstealable(o) { return o.titanT > 0 || o.bullT > 0 || !!(this.g.mod && SFC.MatchMods.armored(this.g, o)); }
     // Nắm Đấm Khổng Lồ: nắm tay sáng (hồi chiêu xong) -> cú đấm kế tiếp thành nắm đấm khổng lồ
     bigPunch(p) {
       const st = this.st(p, 'giant_fist');

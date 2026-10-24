@@ -214,8 +214,6 @@ window.SFC = window.SFC || {};
       return { x: this.teams[team].dir > 0 ? f.x + f.w : f.x, y: f.cy };
     }
     ownGoal(team) { return this.attackGoal(1 - team); }
-    // miệng khung thành phía side (-1 trái, 1 phải): { gTop, gBot } — luật HAGGLE (Market Mamas) thu hẹp / nới rộng từng khung
-    goalMouth(side) { return (this.mod && SFC.MatchMods.mouth(this, side)) || this.field; }
     inOwnHalf(p) { return (p.x - this.field.cx) * this.teams[p.team].dir < 0; }
     // "vai thủ môn": cầu thủ đứng trong vòng cấm nhà -> được bắt bóng / cứu thua / đổ người
     inKeeperZone(p) { return this.inBox(p.team, p); }

@@ -2,20 +2,21 @@
  * ARENAS CONFIG — giao diện sân (map) theo từng Area của Main Path. Vẽ ở src/render/background.js.
  * Game opts.arena = id ở đây (không có / không tồn tại -> 'street').
  * Mỗi arena ghép từ các lớp:
- *   floor    : mặt sân — style asphalt (ô nhựa đường / xi măng / cao su) · tiles (lát gạch, có ron) · plates (thép tấm, đinh tán) ·
+ *   floor    : mặt sân — style asphalt (ô nhựa đường / xi măng / cao su) · tiles (lát gạch, có ron) · plates (thép tấm, đinh tán) · planks (ván tàu) ·
  *              grid (sàn tối, lưới neon) · dirt (đất nện + mảng cỏ) · turf (cỏ sọc; checker = cắt cỏ ô bàn cờ)
  *   wall     : tường trên (mặt đứng) — style brick (gạch) · container (tôn sóng nhiều màu) · panel (tấm kim loại, khe neon) ·
- *              bamboo (hàng rào tre) · plaster (tường vôi + bảng đen) · cage (lưới thép + cột) · ads (bảng quảng cáo) · led (bảng LED)
+ *              bamboo (hàng rào tre) · plaster (tường vôi + bảng đen) · cage (lưới thép + cột) · ads (bảng quảng cáo) · led (bảng LED) · hull (mạn tàu gỗ + ô pháo)
  *   backdrop : dải phía trên tường — style fence (lưới B40) · skyline (nhà cao tầng đêm) · lanterns (dây đèn lồng) ·
- *              harbor (cần cẩu + biển) · screens (màn LED) · fields (ruộng lúa + núi, hoàng hôn) · school (dãy lớp học) ·
+ *              harbor (cần cẩu + biển) · pirate (tàu cướp biển + trăng) · screens (màn LED) · fields (ruộng lúa + núi, hoàng hôn) · school (dãy lớp học) ·
  *              dark (bóng tối, chỉ thấy khán giả) · stands (khán đài tạm + màn hình) · stadium (khán đài lớn + mái + màn hình)
+ *   venue    : (tuỳ chọn) tên sân ở màn giới thiệu đội, cho sân không thuộc Area nào (sân riêng FOOTBALL STORY)
  *   stands   : (tuỳ chọn) khán đài ở 2 bên + dưới sân (vùng tối ngoài tường) — { color: [2 màu bậc ghế], rail } — nơi khán giả đứng
  *   lights   : style street (đèn đường 2 góc) · neon (dải neon trên đỉnh tường) · sun (nắng xiên) · spot (1 đèn rọi giữa, tối xung quanh) ·
  *              flood (cột đèn pha: towers = 2 | 4) · none
  *   graffiti : chữ trên tường; {t0} / {t1} = tên viết tắt 2 đội (tags rỗng = không vẽ)
  *   props    : đồ vật ngoài mép sân: { t: loại, x: tỉ lệ bề ngang sân (0..1), dx, dy: lệch px (dy tính từ mép dưới sân) }
  *              loại: tire · can · cone · crate · barrel · lantern · ac · bollard · holo · plant · hay · sack · chicken · hoop · bag ·
- *              firebarrel · camera · trophy
+ *              firebarrel · camera · trophy · cannon · chest · anchor · rope
  *   crowd    : (tuỳ chọn) khán giả CHUYỂN ĐỘNG, vẽ mỗi khung hình (src/render/crowd.js):
  *              sound: độ ồn của tiếng khán giả 0..1 (config/game.config.js -> audio.crowd) ·
  *              regions: top (trên tường) · sides (2 bên) · bottom (hàng đầu, quay lưng) · rows: số hàng phía trên · density 0..1 ·
@@ -23,7 +24,7 @@
  *              (nửa trái đội 0, nửa phải đội 1) · cheer: độ náo nhiệt (0..1) · flashes: flash máy ảnh / giây ·
  *              scarves: tỉ lệ fan giơ khăn khi ăn mừng · glow: [màu que phát sáng] · fireworks: pháo hoa khi có bàn thắng ·
  *              shade: phủ tối vùng khán giả 0..1 (khán giả chìm trong bóng tối) ·
- *              hat: { shape: cone (nón lá) | cap (mũ lưỡi trai) | hardhat (mũ bảo hộ), chance: tỉ lệ đội mũ, colors }
+ *              hat: { shape: cone (nón lá) | cap (mũ lưỡi trai) | hardhat (mũ bảo hộ) | tricorn (mũ ba góc cướp biển), chance: tỉ lệ đội mũ, colors }
  * Màu viết dạng '#rrggbb' hoặc 'rgba(...)'; glow viết 'r,g,b' (không có ngoặc) để pha độ trong.
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
@@ -91,6 +92,23 @@ SFC_CONFIG.arenas = {
     net: 'rgba(255,230,210,0.35)', hole: '#170c0c',
     props: [{ t: 'lantern', x: 0, dx: -10, dy: 8 }, { t: 'lantern', x: 1, dx: 10, dy: 8 }, { t: 'crate', x: 0.2, dx: 0, dy: 9 }, { t: 'barrel', x: 0.8, dx: 0, dy: 8 }, { t: 'crate', x: 0.5, dx: 0, dy: 9 }],
     crowd: { sound: 0.45, regions: ['top'], rows: 1, density: 0.35, span: 'field', colors: ['#c94a3a', '#e8dcc0', '#3a5a7a', '#6a4a8a', '#d9a23a'], teamColors: 0.3, cheer: 0.5, flashes: 0.2 },
+  },
+
+  // FOOTBALL STORY — Story 4 vòng 1/8 (Rust Buckets): VỊNH CƯỚP BIỂN — sàn ván tàu, mạn tàu gỗ có ô pháo, tàu cướp biển treo cờ đầu lâu trên biển đêm
+  pirate_cove: {
+    venue: 'SKULL COVE',   // tên sân ở màn giới thiệu đội (sân không thuộc Area nào của Main Path)
+    void: '#05080c',
+    floor: { style: 'planks', colors: ['#6b4a2c', '#664629', '#71502f', '#5f4226'], seam: '#2e1e12', nail: '#a8a090', speckD: '#523822', speckL: '#86613c', crack: '#3a2716', cracks: 6, paint: 0.04 },
+    line: 'rgba(243,234,215,0.75)',
+    logo: 'SKULL COVE',
+    wall: { style: 'hull', colors: ['#4a2e1a', '#52331d', '#442a17'], trim: '#c9a13a', port: '#120b07', cannon: '#24282e', rope: '#b8945a', edge: '#140c08' },
+    rim: { base: '#2a1a0f', light: '#3a2616', dark: '#311f12' },
+    backdrop: { style: 'pirate', sky: ['#050a16', '#14223c'], sea: '#0b1a2e', moon: '#f3ead7', ship: '#07090d', sail: '#1e2128', flag: '#050505', bone: '#e8e4d8', lamp: '#ffc56b' },
+    lights: { style: 'street', pole: '#3a2616', lamp: '#ffc56b', glow: '255,190,110' },
+    graffiti: { tags: [] },
+    net: 'rgba(220,210,180,0.35)', hole: '#0f0a06',
+    props: [{ t: 'anchor', x: 0, dx: -10, dy: 9 }, { t: 'cannon', x: 0.2, dy: 9 }, { t: 'chest', x: 0.4, dy: 9 }, { t: 'barrel', x: 0.56, dy: 8 }, { t: 'rope', x: 0.66, dy: 9 }, { t: 'cannon', x: 0.84, dy: 9 }, { t: 'anchor', x: 1, dx: 10, dy: 9 }],
+    crowd: { sound: 0.3, regions: ['top'], rows: 1, density: 0.2, span: 'field', colors: ['#c93a3a', '#f3ead7', '#2a2a30', '#3a5a9a'], teamColors: 0.15, cheer: 0.6, flashes: 0, hat: { shape: 'tricorn', chance: 0.7, colors: ['#1a1a1e', '#3a2616', '#8a1f1f'] } },
   },
 
   // AREA 6 — Bến Cảng: thép tấm rỉ sét, vạch cảnh báo, tường container, cần cẩu trên biển đêm

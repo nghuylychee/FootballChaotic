@@ -90,6 +90,7 @@ window.SFC = window.SFC || {};
         comp = st ? st.name : _t('FOOTBALL STORY');
         title = SFC.Cup.roundName(g.opts.cup.round);
         if (A) { venue = A.name; venueIcon = PX().area(A.id) + ' '; }
+        else if (SFC_CONFIG.arenas[g.opts.arena] && SFC_CONFIG.arenas[g.opts.arena].venue) venue = SFC_CONFIG.arenas[g.opts.arena].venue;   // sân riêng của Story
       } else if (g.opts.training) { comp = _t('TRAINING'); title = _t('PRACTICE MATCH'); }
       else if (g.opts.online) {
         // co-op: mọi người chơi cùng 1 đội, đối thủ là đội bot

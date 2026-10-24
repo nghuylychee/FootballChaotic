@@ -244,14 +244,14 @@ window.SFC = window.SFC || {};
 
   /* ---------- vật thể trên sân của Tuyệt kỹ (Effects.prop, docs/ULT_REDESIGN.md) ---------- */
   // FLOOR: nằm trên mặt sân, dưới cầu thủ · UPRIGHT: đứng trên sân, xếp chiều sâu cùng cầu thủ · TOP: vẽ trên cùng
-  const PROP_FLOOR = { zoomies: 1, vroom: 1, splatfall: 1, splat: 1, graffitiwarn: 1, tide: 1, lane: 1, trail: 1, puddle: 1, peel: 1, mark: 1, gaze: 1, magic: 1, moon: 1, dot: 1, chain: 1, stance: 1, magnet: 1, quake: 1, qring: 1, target: 1, rubble: 1 };
-  const PROP_TOP = { owl: 1, owleyes: 1, gazelock: 1, owlbolt: 1, flock: 1, wind: 1, lassoswing: 1, lassofly: 1, tarot: 1, dark: 1, card: 1, spot: 1, alarm: 1, glove: 1, foot: 1, pips: 1, smoke: 1, boomer: 1, string: 1, qte: 1, mhand: 1 };   // khói phủ lên người (đối thủ trong khói vẫn thấy mờ mờ)
+  const PROP_FLOOR = { lateaim: 1, zoomies: 1, vroom: 1, splatfall: 1, splat: 1, graffitiwarn: 1, seawave: 1, surf: 1, lane: 1, trail: 1, puddle: 1, peel: 1, mark: 1, gaze: 1, magic: 1, moon: 1, dot: 1, chain: 1, stance: 1, magnet: 1, quake: 1, qring: 1, target: 1, rubble: 1 };
+  const PROP_TOP = { zapline: 1, mama: 1, chopaim: 1, chopstrike: 1, chopcarry: 1, owl: 1, owleyes: 1, gazelock: 1, owlbolt: 1, flock: 1, wind: 1, lassoswing: 1, lassofly: 1, tarot: 1, dark: 1, card: 1, spot: 1, alarm: 1, glove: 1, foot: 1, pips: 1, smoke: 1, boomer: 1, string: 1, qte: 1, mhand: 1 };   // khói phủ lên người (đối thủ trong khói vẫn thấy mờ mờ)
   // vật thể bám theo cầu thủ (a = id cầu thủ)
-  const PROP_FOLLOW = { gazelock: 1, petrify: 1, fall: 1, vroom: 1, veil: 1, card: 1, star: 1, stoolheld: 1, alarm: 1, tornado: 1, hand: 1, stance: 1, hammer: 1, truck: 1, stone: 1, hypno: 1, magic: 1, pips: 1, ape: 1, ride: 1, qte: 1, chicken: 1, panic: 1, link: 1, burn: 1, tied: 1, lassoswing: 1, carrotheld: 1, zoomies: 1 };
+  const PROP_FOLLOW = { gazelock: 1, petrify: 1, fall: 1, vroom: 1, veil: 1, card: 1, legend: 1, stoolheld: 1, alarm: 1, tornado: 1, hand: 1, stance: 1, hammer: 1, truck: 1, stone: 1, hypno: 1, magic: 1, pips: 1, ape: 1, ride: 1, qte: 1, chicken: 1, panic: 1, link: 1, burn: 1, tied: 1, lassoswing: 1, carrotheld: 1, zoomies: 1, surf: 1, flung: 1, chopaim: 1, chopcarry: 1, inpot: 1, fused: 1, fusetrail: 1 };
   // vẽ SAU sprite của người được bám (phủ lên người): tượng đá, xe tải, búa, mắt thôi miên
-  const PROP_OVER = { carrotheld: 1, petrify: 1, star: 1, stoolheld: 1, stone: 1, truck: 1, hammer: 1, hypno: 1, panic: 1, ape: 1, ride: 1, chicken: 1, link: 1 };
+  const PROP_OVER = { legend: 1, flung: 1, carrotheld: 1, petrify: 1, stoolheld: 1, stone: 1, truck: 1, hammer: 1, hypno: 1, panic: 1, ape: 1, ride: 1, chicken: 1, link: 1 };
   // vật thể tự vẽ nhân vật thay cho sprite thật (Renderer bỏ qua drawPlayer — VFX.hides): King Kong, đứng trên tảng đá, con gà, người ngã sõng soài, tượng đá (OWL'S GAZE)
-  const PROP_HIDE = { ape: 1, ride: 1, chicken: 1, fall: 1, petrify: 1, burn: 1, tied: 1, lassoswing: 1 };
+  const PROP_HIDE = { ape: 1, ride: 1, chicken: 1, fall: 1, petrify: 1, burn: 1, tied: 1, lassoswing: 1, inpot: 1, fused: 1 };
   const byId = (g, id) => g.players.find((q) => q.id === id) || null;
   // vị trí vật thể bám người (a = id cầu thủ) hoặc toạ độ riêng
   function propAt(g, o) {
@@ -949,7 +949,7 @@ window.SFC = window.SFC || {};
     under(ctx, g, p) {
       const { ellipse, drawPlayer, px } = SP(), t = g.time + p.id * 0.37, x = Math.round(p.x), y = Math.round(p.y);
       // Thiên Thạch Giáng: tâm ngắm đỏ co lại trên sân (người đang ở ngoài màn hình)
-      if (p.state === 'meteor') {
+      if (p.state === 'meteor' && !SFC.VFX.hides(g, p)) {   // (người đã nhập vào King Leo cũng ở state meteor nhưng bị ẩn: không vẽ tâm ngắm)
         const k = (g.time * 3) % 1, c = '#ff3d5a';
         ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.globalAlpha = 0.9;
         ctx.beginPath(); ctx.ellipse(x, y, 30 - k * 18, (30 - k * 18) * 0.45, 0, 0, Math.PI * 2); ctx.stroke();

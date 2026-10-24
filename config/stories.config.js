@@ -126,35 +126,53 @@ SFC_CONFIG.stories = {
         { id: 'wheel', name: 'THE WHEEL', hint: 'Everyone speeds up for a moment' },
       ],
     },
-    // Market Mamas (user 2026-10-23, thay MARKET STALLS): MẶC CẢ KHUNG THÀNH. Sạp hàng chắn 2 bên cột dọc của cả 2 khung, mỗi bên sâu start px
-    // (khung rộng 78px). Mỗi bàn thắng (đội nào ghi cũng vậy) + mỗi every giây các Mamas mặc cả: sạp khung họ lấn vào thêm step px (tối đa max),
-    // sạp khung bạn lùi ra step px (tối thiểu 0 = khung đủ rộng). Họ bị dẫn: trailStep. Sút mạnh (bóng nhanh hơn knockSpeed) trúng sạp khung họ:
-    // sạp lùi knock px (NO DEAL!). Thùng hàng là vật cản thật dày depth px phía trong sân (bóng + người dội ra). Sạp trượt slide giây. Vật thể vẽ phát lại mỗi refresh giây (khách online vào giữa trận vẫn thấy)
-    haggle: {
-      name: 'HAGGLE', hint: 'Their goal shrinks, yours grows. Smash their stalls back',
-      first: 14, every: [15, 21], trailing: 1.3, start: 12, step: 4, trailStep: 6, max: 24, knock: 5, knockSpeed: 200, depth: 12, slide: 0.5, refresh: 5,
+    // Market Mamas (user 2026-10-24, thay DÉP BAY): ĐŨA KHỔNG LỒ. 2 Big Mama trên khán đài, mỗi bà 1 bên, sau nồi mì khổng lồ. Mỗi every giây 1 bà vươn đôi đũa
+    // xuống sân, 2 bà lần lượt (FINAL PUSH: cả 2 bà cùng lúc, 2 người):
+    // warn giây đũa lơ lửng đi theo người bị nhắm (người cầm bóng bên bạn / gần bóng), rồi DỪNG đón đầu (chỗ người đó sắp chạy tới, x lead) lock giây
+    // và cắm xuống strike giây (đổi hướng / lướt là né,
+    // đồng đội AI tự né aiDodge). Trúng (bán kính r): bị gắp nhấc cao height, mang về nồi trong carry giây, ngồi trong nồi inPot giây, bật ra chỗ ngẫu nhiên
+    // (bay fly giây), đáp đất choáng land giây. Họ bị dẫn: gắp thường hơn (trailing)
+    chopsticks: {
+      name: 'GIANT CHOPSTICKS', hint: 'When the chopsticks stop, change direction or dash',
+      first: 6, every: [6, 9], trailing: 1.3, warn: 1.5, lock: 0.3, strike: 0.15, lead: 0.9, r: 13, height: 80, carry: 0.8, inPot: 1.8, fly: 0.7, land: 0.4, aiDodge: 0.3, color: '#ff8a3f',
     },
-    // Rust Buckets: nước dâng từ mép trên / dưới tới depth phần chiều cao sân (dâng warn giây, giữ len giây, rút recede giây).
-    // Đội bạn trong nước chạy x slow, bóng lăn trong nước giảm tốc thêm drag. Rust Buckets không sao
-    tide: {
-      name: 'HIGH TIDE', hint: 'Stay out of the water, it slows you down',
-      first: 5, every: [6, 9], trailing: 1.4, depth: 0.45, warn: 1.5, len: 5, recede: 1.2, slow: 0.55, drag: 4,
+    // Rust Buckets (user 2026-10-24, thay HIGH TIDE): SÓNG DỮ từ mép trên hoặc mép dưới sân (ngẫu nhiên mỗi con). Biển rút warn giây: vùng nước sắp tràn tới hiện trước
+    // (dải rộng 2 x hw px quanh bóng, sâu reach phần chiều cao sân, mép bọt trắng). Sóng ập vào rise giây, giữ hold, rút back giây.
+    // Đội bạn bị mép sóng quét qua: choáng stun giây + bị cuốn xuôi push (rơi bóng); lướt xuyên sóng là né. Bóng bị cuốn ballPush.
+    // Lúc sóng rút: ai bên bạn còn trong nước bị kéo về phía mép sóng tới pull px/s + lội chậm x slow, bóng bị kéo ballPull px/s².
+    // Rust Buckets bị sóng chạm thì lướt ván: chạy x surf trong surfT giây. Họ bị dẫn: sóng dày hơn (trailing) + rộng trailHw
+    waves: {
+      name: 'ROGUE WAVES', hint: 'When the sea pulls back, get out of the marked water or dash through the wave',
+      first: 5, every: [6, 9], trailing: 1.4, hw: 85, trailHw: 110, reach: 0.62, warn: 1.4, rise: 0.5, hold: 0.25, back: 1.1,
+      stun: 0.8, push: 230, ballPush: 260, pull: 60, slow: 0.6, ballPull: 300, surf: 1.35, surfT: 2.5, color: '#3fa8ff',
     },
-    // Retired Refs: người chơi (không tính đồng đội AI) ra đòn làm choáng 1 Ref = phạm lỗi. Lần lẻ: thẻ vàng (hiện yellowTime giây). Lần chẵn: thẻ đỏ, đứng ngoài redTime giây
+    // Retired Refs: người chơi (không tính đồng đội AI) ra đòn làm choáng 1 Ref = phạm lỗi. Lần lẻ: thẻ vàng (hiện yellowTime giây). Lần chẵn: thẻ đỏ, đứng ngoài redTime giây.
+    // Trúng thêm trong gap giây sau lỗi trước (1 pha vào bóng trúng 2 lần) không tính thẻ mới
     refs: {
       name: 'THE REFS', hint: 'Hit a Ref and you get a card. Two cards and you sit out',
-      yellowTime: 1.6, redTime: 4,
+      yellowTime: 1.6, redTime: 4, gap: 1.5,
     },
-    // Grandpa's Squad: báo trước warn giây (câu "Back in my day..."), rồi len giây màn hình sepia + đội bạn chạy x slow
-    flashback: {
-      name: 'BACK IN MY DAY', hint: 'When the old stories start, you slow down',
-      first: 6, every: [9, 13], trailing: 1.4, warn: 1.2, len: 3.5, slow: 0.55,
+    // Grandpa's Squad (user 2026-10-24, thay BACK IN MY DAY): LỐC CÁT. Mỗi every giây gió làng cuộn lên n cột lốc (họ bị dẫn: trailN · FINAL PUSH: pushN), xoáy cát dưới đất warn giây
+    // rồi thành phễu lang thang life giây (biên độ amp px, nhịp speed). Đội bạn chạm lốc (bán kính r, lướt né được): bị hất tung lên cao height px trong rise giây,
+    // lơ lửng xoay vòng tới hết air giây rồi rơi xuống, đáp đất choáng thêm land giây (rơi bóng). Bóng lỏng chạm lốc bị hất lên ballUp. Các cụ đi xuyên không sao
+    devils: {
+      name: 'DUST DEVILS', hint: 'Stay away from the whirlwinds or they throw you into the sky',
+      first: 5, every: [9, 12], trailing: 1.3, n: 3, trailN: 3, pushN: 6, warn: 1.0, life: 8, r: 13, amp: [150, 70], speed: [0.35, 0.55],
+      height: 62, rise: 0.4, air: 2.2, land: 0.35, ballUp: 230,
     },
-    // The Legends: sau first giây (rồi every giây sau khi STAR hết) 1 Legend thành STAR time giây: sút x power, chạy x speed.
-    // Đội bạn cướp bóng từ STAR: người cướp thành GOLDEN BOOT bootTime giây (cùng sức mạnh)
-    golden: {
-      name: 'GOLDEN STAR', hint: 'Steal the ball from the star to take the golden boot',
-      first: 3, every: [4, 7], time: 10, bootTime: 8, power: 1.4, speed: 1.15,
+    // The Old Legends (user 2026-10-24, thay GOLDEN STAR vì khó hiểu + chưa đủ wow): KING LEO 1976 — trận đánh boss. Mỗi every giây (lần đầu first) King Leo
+    // biến hình warn giây rồi time giây thành chàng trai năm 1976: to x scale, nhanh x speed, sút x power, giáp hp vạch (đòn trúng trừ 1 vạch thay vì choáng,
+    // mỗi người cách nhau hitGap giây; không cướp bóng được). Tự lấy bóng solo về khung bạn, cách khung shootRange px thì sút, húc bật người chắn đường
+    // (choáng bump, văng knock). Hết vạch: phim cháy, hắn choáng breakStun giây. Hết giờ: cú vào bóng muộn — ngắm aim giây rồi lao dash giây tốc độ dashSpeed,
+    // trúng (bán kính tackleR) = choáng tackleStun + văng tackleKnock, lướt né được; lúc ngắm hắn hết giáp. Họ bị dẫn: biến hình thường hơn (trailing).
+    // HỢP THỂ (user 2026-10-24): lúc biến hình 2 Legends còn lại bị hút vào hắn (warn giây) thành 1 nhân vật; tách ra (hết vạch / hết lượt) thì văng ra,
+    // choáng splitStun giây, văng splitKnock. Lúc hợp thể chạy như tia chớp: nhanh x fuseSpeed (thay speed).
+    // GIỮ KHUNG LÚC CAST (user 2026-10-24): chớp về trước khung nhà (cách vạch homeD px) rồi hợp thể ở đó; trong lúc cast (warn giây) cú sút sắp vào khung họ
+    // trong guardT giây thì chớp chắn (cách vạch blockD px), bóng chạm vạch khung họ thì dội ra. Hợp thể xong khung mở lại
+    leo: {
+      name: 'KING LEO 1976', hint: 'The Legends fuse into young King Leo. Hit him three times to split them, and dodge his late tackle',
+      first: 8, every: [12, 16], trailing: 1.3, warn: 1.3, time: 9, hp: 3, scale: 1.5, speed: 1.3, power: 1.4, hitGap: 0.35, splitStun: 0.6, splitKnock: 220, fuseSpeed: 2.1, homeD: 26, guardT: 0.45, blockD: 12,
+      bump: 0.5, knock: 200, breakStun: 2.2, shootRange: 130, aim: 0.9, dash: 0.32, dashSpeed: 520, tackleR: 12, tackleStun: 1.6, tackleKnock: 260, color: '#e0b86a',
     },
     // Night Owls (user 2026-10-22, thay SEARCHLIGHT): con cú khổng lồ trên khán đài cả trận, bình thường nhắm mắt. "HOO..." rồi mắt mở dần warn giây (báo trước),
     // mở hẳn open giây: ai bên bạn đang chạy nhanh (đè phím chạy) / lướt bị tia ngắm khoá, đứng lại / đi bộ thì nhả. Chạy tiếp đủ lockT giây -> bắn đạn
@@ -471,13 +489,13 @@ SFC_CONFIG.stories = {
           },
         },
         {
-          team: 'market_mamas', arena: 'market', elo: 1150, signature: 'giant_fist', mod: 'haggle',
+          team: 'market_mamas', arena: 'market', elo: 1150, signature: 'giant_fist', mod: 'chopsticks',
           before: [
             { who: 'host', text: 'THE BIG TASTING! Win, and my sister has to taste the bowl. Lose, and the cart goes in the river.' },
             { who: 'opp', text: 'Little brother. You are hiding behind a child now?' },
             { who: 'host', text: 'That is not a child. That is my HEAD CHEF.' },
             { who: 'you', text: 'I am your WHAT?' },
-            { who: 'host', text: 'Careful, the Mamas haggle the GOALS! Theirs shrinks, ours grows. Smash their stalls back, head chef!' },
+            { who: 'host', text: 'Careful! My sister and her best friend never play. They cook. With GIANT CHOPSTICKS. When they stop, change direction or dash, or you end up in a noodle pot!' },
           ],
           after: [
             { who: 'opp', text: 'Hmph. Bring me the bowl.' },
@@ -488,7 +506,7 @@ SFC_CONFIG.stories = {
             kickoff: ['No discounts!', 'Move, sweetie!'],
             goal: ['Bargain!', 'Sold!'],
             conceded: ['Daylight robbery!', 'I want a refund!'],
-            mod: ['Coming through!', 'Make room!'],
+            mod: ['Mama is hungry!', 'Into the pot, sweetie!'],
           },
         },
       ],
@@ -524,12 +542,13 @@ SFC_CONFIG.stories = {
       rival: 3,
       rounds: [
         {
-          team: 'rust_buckets', arena: 'harbor', elo: 1450, mod: 'tide',
+          team: 'rust_buckets', arena: 'pirate_cove', elo: 1450, mod: 'waves',
           before: [
             { who: 'host', art: 'cupMemory', young: true, text: 'After the tackle, the harbor sailors carried me home on their boat.' },
             { who: 'opp', text: 'Those boots... we know those boots. The tide always brings old things back.' },
             { who: 'you', text: 'Then let it bring me a win.' },
-            { who: 'host', text: 'When the tide rolls in, stay out of the water. It slows you down, never the sailors!' },
+            { who: 'host', text: 'When the sea pulls back, a big wave is coming. Get out of the water, or dash right through it!' },
+            { who: 'opp', text: 'Sailors do not fear the sea, kid. We surf it.' },
           ],
           after: [
             { who: 'opp', text: 'Tell the old man the Rust Buckets said hello. And tell him it was not his fault.' },
@@ -539,7 +558,7 @@ SFC_CONFIG.stories = {
             kickoff: ['Anchors up!', 'All hands!'],
             goal: ['Land ho!', 'Full steam!'],
             conceded: ['Man overboard!', 'Abandon ship!'],
-            mod: ['High tide!', 'Here comes the sea!'],
+            mod: ['Rogue wave!', 'Hold on to something!'],
           },
         },
         {
@@ -563,13 +582,13 @@ SFC_CONFIG.stories = {
           },
         },
         {
-          team: 'grandpa_squad', arena: 'village', elo: 2150, signature: 'counter_attack', mod: 'flashback',
+          team: 'grandpa_squad', arena: 'village', elo: 2150, signature: 'counter_attack', mod: 'devils',
           before: [
             { who: 'host', art: 'cupMemory', young: true, text: 'My old squad. I quit on them after that day. They never forgave me.' },
             { who: 'opp', text: 'Those are his boots. He walked away from us. Why should you get to wear them?' },
             { who: 'you', text: 'Because he never stopped talking about you. Every single day.' },
-            { who: 'opp', text: 'Ha! Then show us what he taught you. Back in my day...' },
-            { who: 'host', text: 'When the old stories start, you slow down. They do not!' },
+            { who: 'opp', text: 'Ha! Then show us what he taught you. Back in my day, we played inside the dust devils!' },
+            { who: 'host', text: 'The village wind is up! Stay away from the whirlwinds, or they throw you into the sky!' },
           ],
           after: [
             { who: 'opp', text: 'You play just like him. Tell him... tell him to come and watch the final.' },
@@ -580,16 +599,16 @@ SFC_CONFIG.stories = {
             kickoff: ['Back in my day!', 'Mind the knees!'],
             goal: ['Still got it!', 'Class of 76!'],
             conceded: ['My hip!', 'Kids today...'],
-            mod: ['Back in my day...', 'Let me tell you...'],
+            mod: ['Here comes the wind!', 'Back in my day, this was a breeze!'],
           },
         },
         {
-          team: 'old_legends', arena: 'stadium', elo: 2700, signature: 'black_hole', mod: 'golden',
+          team: 'old_legends', arena: 'stadium', elo: 2700, signature: 'black_hole', mod: 'leo',
           before: [
             { who: 'host', art: 'cupMemory', young: true, team: 'legends_76', text: 'Fifty years ago, it was him and me. Today, it is you.' },
-            { who: 'opp', text: 'One of us is always the star, kid. Tonight it is still me.' },
-            { who: 'you', text: 'Stars can be stolen.' },
-            { who: 'host', text: 'Steal the ball from the golden star, and the golden boot is yours!' },
+            { who: 'opp', text: 'For a few seconds at a time, I am twenty again. You will see, kid.' },
+            { who: 'you', text: 'Then we will knock you back to today.' },
+            { who: 'host', text: 'When he turns young, his old teammates FUSE into him! Hit him three times to split them apart, and watch his late tackle.' },
           ],
           after: [
             { who: 'opp', art: 'cupTalk', text: 'Fifty years, and I still lose to that family.' },
@@ -599,7 +618,7 @@ SFC_CONFIG.stories = {
             kickoff: ['Legends never die!', 'One more time!'],
             goal: ['Legendary!', 'Hall of fame!'],
             conceded: ['A new legend?', 'My knees...'],
-            mod: ['Star power!', 'Shine!'],
+            mod: ['1976!', 'Legends, FUSE!'],
           },
         },
       ],
@@ -657,12 +676,13 @@ SFC_CONFIG.stories = {
       kit: { shirt: '#ff8a3f', shirtDark: '#b35a14', shorts: '#3a2440', accent: '#fff3d6', hair: ['#9aa0a8', '#1a1216', '#3b2415'] },
       stats: { speed: 1.04, power: 1.16, pass: 1.06, tackle: 1.18, dribble: 1.02, accuracy: 1.08 },
       coreWeights: { brawler: 3, iron: 2 }, aiStyle: { light: 1.6, hard: 1.5 },
-      players: ['AUNTIE MAI', 'AUNTIE LAN', 'BIG MAMA'],
+      players: ['AUNTIE MAI', 'AUNTIE LAN', 'AUNTIE HOA'],   // 2 Big Mama không ra sân: ngồi trên khán đài gắp người bằng đũa (luật chopsticks)
       looks: [{ cut: 'bun', face: 'blush', shoes: 'slides', fx: 'smoke', skin: 2 }, { cut: 'longhair', face: 'nerd', shoes: 'clogs', fx: 'coins', skin: 1 }, { cut: 'bun', face: 'goldtooth', shoes: 'clogs', fx: 'fire', skin: 3 }],
     },
     retired_refs: {
       name: 'Retired Refs', short: 'REF', tagline: 'BY THE BOOK', desc: 'Forty years of whistles and cards. Now they finally get to play, and they still think they are in charge.',
-      kit: { shirt: '#1a1a1a', shirtDark: '#0a0a0a', shorts: '#1a1a1a', accent: '#ffd23f', hair: ['#e8ecf5', '#9aa0a8'] },
+      // áo trọng tài màu dạ quang (user 2026-10-24: áo đen không thấy được trên bảng tỉ số)
+      kit: { shirt: '#c8f03a', shirtDark: '#7a9a1a', shorts: '#1a1a1a', accent: '#1a1a1a', hair: ['#e8ecf5', '#9aa0a8'] },
       stats: { speed: 1.08, power: 1.12, pass: 1.14, tackle: 1.2, dribble: 1.06, accuracy: 1.12 },
       coreWeights: { iron: 3, playmaker: 1.5 }, aiStyle: { light: 1.4, hard: 1.3 },
       players: ['WHISTLE', 'RED CARD', 'VAR'],

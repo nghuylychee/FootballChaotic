@@ -204,15 +204,32 @@ window.SFC = window.SFC || {};
     'mod.lightsout'() { N({ dur: 0.03, vol: 0.2, freq: 2000, q: 2 }); T({ freq: 120, to: 40, dur: 0.5, type: 'sawtooth', vol: 0.08, delay: 0.03 }); },
     'mod.poof'() { N({ dur: 0.25, vol: 0.14, freq: 1800, to: 400, q: 0.7 }); T({ freq: 900, to: 1500, dur: 0.1, type: 'sine', vol: 0.06, delay: 0.05 }); },
     'mod.wheel'() { for (let i = 0; i < 9; i++) T({ freq: 1800, dur: 0.02, type: 'square', vol: 0.05, delay: i * (0.04 + i * 0.008) }); T({ freq: 1568, dur: 0.3, type: 'sine', vol: 0.08, delay: 0.7 }); },
-    // Market Mamas mặc cả: máy tính tiền "ka-ching" + đồng xu · sút vỡ sạp: thùng gỗ vỡ "rắc" + trái cây lăn lóc cóc
-    'mod.haggle'() { N({ dur: 0.05, vol: 0.12, freq: 2500, q: 1.5 }); T({ freq: 1976, dur: 0.25, type: 'square', vol: 0.06, delay: 0.06 }); T({ freq: 2637, dur: 0.3, type: 'square', vol: 0.05, delay: 0.12 }); for (let i = 0; i < 4; i++) T({ freq: R(3000, 4200), dur: 0.04, type: 'sine', vol: 0.05, delay: 0.2 + i * 0.05 }); },
-    'mod.smash'() { N({ dur: 0.14, vol: 0.22, freq: 1100, q: 0.8 }); boom(0.15, 0.25); for (let i = 0; i < 5; i++) T({ freq: R(200, 380), dur: 0.05, type: 'triangle', vol: 0.07, delay: 0.08 + i * 0.06 }); },
-    // thuỷ triều: sóng ào lên
-    'mod.wave'() { N({ dur: 1.2, vol: 0.14, freq: 300, to: 1200, type: 'lowpass', attack: 0.4 }); },
+    // giơ đũa lấy đà (cũng dùng cho cú vào bóng muộn của King Leo): "hừm!" + vút
+    'mod.windup'() { T({ freq: 220, to: 160, dur: 0.18, type: 'sawtooth', vol: 0.08 }); N({ dur: 0.9, vol: 0.08, freq: 500, to: 1800, q: 3, attack: 0.6, delay: 0.2 }); },
+    // đũa khổng lồ: gỗ kẽo kẹt vươn xuống sân · đũa dừng rồi lao xuống vút · cắm hụt "cạch cạch" · gắp trúng "kẹp!" · thả vào nồi nước dùng "ùm" · bật ra lò xo "boing"
+    'mod.chopup'() { for (let i = 0; i < 3; i++) T({ freq: R(160, 220), to: R(120, 150), dur: 0.12, type: 'square', vol: 0.05, delay: i * 0.12 }); N({ dur: 0.6, vol: 0.08, freq: 400, to: 1200, q: 2, delay: 0.1 }); },
+    'mod.whoosh'() { N({ dur: 0.25, vol: 0.16, freq: 600, to: 2600, q: 1.5 }); },
+    'mod.clack'() { [0, 0.07].forEach((d) => { N({ dur: 0.03, vol: 0.2, freq: 2200, q: 3, delay: d }); T({ freq: 900, dur: 0.04, type: 'square', vol: 0.06, delay: d }); }); },
+    'mod.pinch'() { N({ dur: 0.04, vol: 0.2, freq: 2400, q: 3 }); T({ freq: 700, to: 1100, dur: 0.12, type: 'square', vol: 0.06, delay: 0.03 }); seq([523, 659], 0.06, { type: 'triangle', dur: 0.08, vol: 0.05, delay: 0.12 }); },
+    'mod.plop'() { T({ freq: 400, to: 90, dur: 0.18, type: 'sine', vol: 0.22 }); N({ dur: 0.45, vol: 0.16, freq: 1400, to: 400, q: 0.8, delay: 0.05 }); for (let i = 0; i < 4; i++) T({ freq: R(500, 900), to: R(200, 300), dur: 0.06, type: 'sine', vol: 0.06, delay: 0.2 + i * 0.07 }); },
+    'mod.boing'() { T({ freq: 180, to: 720, dur: 0.35, type: 'sine', vol: 0.14, vib: 14, vibDepth: 60 }); N({ dur: 0.15, vol: 0.08, freq: 1200, q: 1 }); },
+    // sóng dữ: biển rút ầm ầm trầm dần lên (báo trước) · sóng đập vào sân · người bị sóng cuốn "ùm" · thuỷ thủ lướt ván vút qua
+    'mod.swell'() { N({ dur: 1.4, vol: 0.13, freq: 160, to: 700, type: 'lowpass', attack: 1.0 }); T({ freq: 50, to: 85, dur: 1.4, type: 'sine', vol: 0.12, attack: 0.9 }); },
+    'mod.surge'() { boom(0.3, 0.45); N({ dur: 1.0, vol: 0.22, freq: 2200, to: 500, q: 0.5 }); N({ dur: 0.7, vol: 0.08, freq: 6000, type: 'highpass', delay: 0.1 }); },
+    'mod.splash'() { N({ dur: 0.2, vol: 0.16, freq: 1500, to: 500, q: 0.8 }); T({ freq: 320, to: 110, dur: 0.12, type: 'sine', vol: 0.12 }); },
+    'mod.surf'() { N({ dur: 0.35, vol: 0.09, freq: 3200, to: 1200, q: 1.2 }); seq([660, 880], 0.07, { type: 'triangle', dur: 0.1, vol: 0.05, delay: 0.05 }); },
     // "hồi đó...": kim đĩa than sột soạt + nốt đàn cũ
     'mod.record'() { for (let i = 0; i < 8; i++) N({ dur: 0.02, vol: 0.06, freq: 2500, q: 1, delay: R(0, 0.8) }); seq([392, 330, 294], 0.22, { type: 'triangle', dur: 0.3, vol: 0.07, delay: 0.1 }); },
-    // ngôi sao vàng: tiếng lấp lánh đi lên
-    'mod.star'() { seq([1046, 1318, 1568, 2093], 0.05, { type: 'square', dur: 0.12, vol: 0.06 }); N({ dur: 0.3, vol: 0.05, freq: 8000, q: 1, delay: 0.1 }); },
+    // lốc cát: gió hú cuộn lên (lốc mọc) · bị hất tung: vút lên cao + cát rào rào
+    'mod.gust'() { N({ dur: 1.6, vol: 0.13, freq: 400, to: 1600, q: 4, attack: 0.5 }); N({ dur: 1.4, vol: 0.07, freq: 1200, to: 500, q: 5, delay: 0.3 }); },
+    'mod.toss'() { N({ dur: 0.5, vol: 0.16, freq: 600, to: 3000, q: 2 }); T({ freq: 300, to: 900, dur: 0.4, type: 'triangle', vol: 0.06 }); for (let i = 0; i < 6; i++) N({ dur: 0.03, vol: 0.06, freq: R(2500, 4500), q: 1.5, delay: 0.1 + i * 0.06 }); },
+    // KING LEO 1976: máy chiếu lạch cạch + kèn 3 nốt (biến hình) · hợp thể: bùng nổ + hợp âm đi lên · chạy tia chớp: điện rẹt · đòn trúng giáp: phim nứt "rắc" · hết vạch: phim cháy phừng + xì · cú vào bóng muộn: gầm giày cào đất
+    'mod.reel'() { for (let i = 0; i < 10; i++) N({ dur: 0.02, vol: 0.08, freq: 1800, q: 2, delay: i * 0.06 }); seq([392, 523, 784], 0.12, { type: 'square', dur: 0.2, vol: 0.07, delay: 0.3 }); },
+    'mod.fuse'() { boom(0.25, 0.4); seq([262, 392, 523, 784], 0.06, { type: 'sawtooth', dur: 0.25, vol: 0.06 }); N({ dur: 0.6, vol: 0.12, freq: 3000, to: 600, q: 1 }); },
+    'mod.bolt'() { N({ dur: 0.12, vol: 0.1, freq: 4000, to: 1500, q: 2 }); T({ freq: 1200, to: 300, dur: 0.1, type: 'sawtooth', vol: 0.04 }); },
+    'mod.crack'() { N({ dur: 0.05, vol: 0.22, freq: 3200, q: 1.2 }); for (let i = 0; i < 4; i++) N({ dur: 0.03, vol: 0.1, freq: R(2000, 5000), q: 2, delay: 0.04 + i * 0.03 }); T({ freq: 240, to: 120, dur: 0.1, type: 'square', vol: 0.08 }); },
+    'mod.burn'() { N({ dur: 0.9, vol: 0.2, freq: 800, to: 3000, q: 0.7, attack: 0.05 }); boom(0.25, 0.4); N({ dur: 0.6, vol: 0.08, freq: 5000, type: 'highpass', delay: 0.3 }); },
+    'mod.late'() { N({ dur: 0.35, vol: 0.18, freq: 900, to: 300, q: 0.8 }); T({ freq: 140, to: 60, dur: 0.3, type: 'sawtooth', vol: 0.08 }); },
     // đèn pha: bíp cảnh báo khi bị soi · FREEZE: còi báo động lên xuống
     'mod.beep'() { T({ freq: 1320, dur: 0.06, type: 'square', vol: 0.07 }); T({ freq: 1320, dur: 0.06, type: 'square', vol: 0.07, delay: 0.12 }); },
     // mắt cú: "hoo... hoo" trầm rung (báo trước) · tia ngắm khoá người chạy: "tách" màn trập + nốt chói đi xuống

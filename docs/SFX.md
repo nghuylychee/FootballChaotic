@@ -130,11 +130,26 @@ Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>'
 | `mod.wheel` | THE WHEEL: everyone speeds up | Wheel ticks slowing + ding |
 | `mod.chomp` | THE RABBITS: a rabbit bites | Snap + squeak |
 | `mod.munch` | THE RABBITS: someone grabs the carrot | Crunch crunch |
-| `mod.haggle` | Market Mamas haggle the goals (HAGGLE) | Cash register ka-ching + coins |
-| `mod.smash` | Hard shot knocks a stall back (NO DEAL!) | Wooden crate crack + rolling fruit |
-| `mod.wave` | Tide rolls in (Rust Buckets) | Rising wave rush |
-| `mod.record` | "Back in my day..." (Grandpa's Squad) | Vinyl crackle + old tune |
-| `mod.star` | Golden star / golden boot (The Legends) | Rising sparkle arpeggio |
+| `mod.windup` | Wind-up grunt (King Leo's late tackle) | Grunt + rising whoosh |
+| `mod.chopup` | Big Mama reaches down with her giant chopsticks (GIANT CHOPSTICKS) | Creaking wood + whoosh |
+| `mod.whoosh` | The chopsticks stop and plunge | Fast whoosh |
+| `mod.clack` | The chopsticks miss and clack on the ground | Two wooden clacks |
+| `mod.pinch` | The chopsticks grab a player (GOTCHA!) | Pinch + two-note jingle |
+| `mod.plop` | The player is dropped into the noodle pot | Deep plop + bubbling broth |
+| `mod.boing` | The player springs out of the pot | Spring boing |
+| `mod.swell` | The sea pulls back before a rogue wave (Rust Buckets) | Low rumble rising |
+| `mod.surge` | The wave crashes onto the pitch | Boom + long water rush |
+| `mod.splash` | A player is swept by the wave | Short splash + plop |
+| `mod.surf` | A Rust Bucket surfs the wave | Whoosh + two quick notes |
+| `mod.record` | Flashback scene in the Legends cut scenes | Vinyl crackle + old tune |
+| `mod.gust` | Dust devils rise (Grandpa's Squad) | Howling wind swelling up |
+| `mod.toss` | A player is thrown into the sky by a dust devil | Rising whoosh + sand rattle |
+| `mod.reel` | King Leo turns into his 1976 self | Projector clatter + 3-note fanfare |
+| `mod.fuse` | The other Legends fuse into King Leo (FUSION!) | Boom + rising power chord |
+| `mod.bolt` | Fused King Leo runs like lightning | Short electric zap |
+| `mod.crack` | A hit cracks King Leo's armor | Film crack + snap |
+| `mod.burn` | King Leo's armor breaks (FILM BURN!) | Fire whoosh + boom |
+| `mod.late` | King Leo's late tackle dash | Studs scraping the ground |
 
 ## Crowd
 

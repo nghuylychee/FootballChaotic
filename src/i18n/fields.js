@@ -19,7 +19,7 @@ SFC.I18n.fields = [
   'cores.list.*.name', 'cores.list.*.desc',
 
   // Main Path + đội (đội Main Path, đội riêng của người chơi, đội trong mơ đều nằm trong teams.list)
-  'mainPath.areas.*.name', 'mainPath.areas.*.sub',
+  'mainPath.areas.*.name', 'mainPath.areas.*.sub', 'arenas.*.venue',
   'teams.list.*.name', 'teams.list.*.tagline', 'teams.list.*.desc', 'teams.list.mp_player.short',
 
   // chỉ số character, độ hiếm, độ khó, chú thích nút (SETTINGS > CONTROLS)

@@ -360,6 +360,7 @@ window.SFC = window.SFC || {};
       const stun = (opts.stun || 0) * (opts.stun > 0 ? g.cores.stunTaken(this) : 1);   // Da Thép
       if (this.state === 'meteor') return false;   // đang ở ngoài màn hình (Thiên Thạch Giáng)
       if (stun > 0 && (this.hitImmune > 0 || this.state === 'stun')) return false;
+      if (stun > 0 && g.mod && SFC.MatchMods.armor(g, this, opts)) return false;   // luật trận FOOTBALL STORY: boss có giáp (KING LEO 1976)
       if (stun > 0 && g.cores.blockHit(this, opts)) {
         this.kbx += (opts.kbx || 0) * 0.3; this.kby += (opts.kby || 0) * 0.3;
         return false;

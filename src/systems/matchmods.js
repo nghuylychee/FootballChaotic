@@ -1074,135 +1074,255 @@ window.SFC = window.SFC || {};
     },
   };
 
-  /* Market Mamas — MẶC CẢ (user 2026-10-23): sạp hàng chắn 2 bên cột dọc của cả 2 khung thành, thu hẹp miệng khung (Game.goalMouth -> mouth).
-   * Mỗi bàn thắng + mỗi every giây các Mamas mặc cả: khung họ hẹp lại, khung bạn rộng ra (sạp trượt). Sút mạnh trúng sạp khung họ: sạp lùi lại (NO DEAL!).
-   * M.d[side] = độ sâu sạp mỗi bên cột của khung phía side (-1 trái, 1 phải). Vẽ: prop 'goalstall' (x = phía, y -> a = độ sâu trượt, b = 1 khung Mamas) */
-  K.haggle = {
-    create(g, M, c) {
-      M.next = c.first; M.d = { '-1': c.start, 1: c.start }; M.pid = {}; M.refresh = 0; M.knockT = 0; M.goals = 0;
-      M.home = g.ownGoal(M.team).x > g.field.cx ? 1 : -1;   // phía khung thành của Mamas
-    },
-    show(g, M, c, side, d0) {
-      if (M.pid[side]) g.effects.propOff(M.pid[side], 0.01);
-      M.pid[side] = newId(g);
-      g.effects.prop(M.pid[side], 'goalstall', side, d0, M.d[side], side === M.home ? 1 : 0, c.refresh + 2, '#ff8a3f');
-    },
+  /* Market Mamas — ĐŨA KHỔNG LỒ (user 2026-10-24, thay DÉP BAY): 2 Big Mama khổng lồ ngồi trên khán đài, mỗi bà 1 bên bảng tỉ số (i = 0 trái, 1 phải),
+   * mỗi bà sau 1 nồi mì khổng lồ ở mép trên sân. Định kỳ 1 bà vươn đôi đũa khổng lồ xuống sân (đũa nối từ tay bà tới chỗ gắp) — 2 bà LẦN LƯỢT
+   * (M.turn), vào FINAL PUSH thì CẢ 2 BÀ CÙNG LÚC (2 người):
+   *   aim warn giây: mũi đũa lơ lửng trên đầu người bị nhắm (người cầm bóng bên bạn / người gần bóng nhất), bóng đũa + vòng đỏ dưới chân, đi theo người đó;
+   *   strike lock + strike giây: đũa DỪNG đón đầu chỗ người đó sắp chạy tới rồi cắm xuống — đổi hướng hoặc lướt là né (đồng đội AI tự né aiDodge);
+   *   trúng: GOTCHA! bị gắp nhấc bổng lên cao height, mang về thả ùm vào nồi (carry giây), ngồi trong nồi inPot giây (chỉ ló đầu đội sợi mì),
+   *   rồi BOING! bật ra một chỗ ngẫu nhiên trên sân (fly giây), đáp đất choáng thêm land giây. Hụt: CLACK! đũa cắm xuống đất.
+   * Họ bị dẫn: gắp thường hơn (trailing). Người đang bị gắp / trong nồi / bay: state stun + airZ > 4 (không va chạm, không nhặt bóng, luật khác bỏ qua).
+   * Vị trí vật thể: bám người (aim, carry, inpot) hoặc toạ độ cố định (strike) — máy khách vẽ được qua lệnh hiệu ứng */
+  K.chopsticks = {
+    create(g, M, c) { M.next = c.first; M.grabs = []; M.turn = 1; },
     kickoff(g, M, c) {
-      // vừa có bàn thắng: mặc cả ngay lúc giao bóng lại
-      if (M.goals > 0) { M.goals = 0; this.haggle(g, M, c); }
-      else for (const sd of [-1, 1]) this.show(g, M, c, sd, M.d[sd]);
-      M.refresh = c.refresh;
+      // clearHazards vừa xoá hết vật thể: đặt lại 2 Big Mama + nồi mì, trả người đang bị gắp về sân
+      for (const G of M.grabs) this.free(g, G);
+      M.grabs = [];
+      for (const i of [0, 1]) { const st = this.seat(g, i); g.effects.prop(newId(g), 'mama', st.x, st.y, i, 0, 99999, c.color); }
     },
-    haggle(g, M, c) {
-      const st = behind(g) ? c.trailStep : c.step, home = M.home, away = -home;
-      const h0 = M.d[home], a0 = M.d[away];
-      M.d[home] = Math.min(c.max, h0 + st);
-      M.d[away] = Math.max(0, a0 - st);
-      if (M.d[home] === h0 && M.d[away] === a0) return;
-      this.show(g, M, c, home, h0); this.show(g, M, c, away, a0);
-      M.refresh = c.refresh;
-      const E = g.effects, f = g.field, cap = captain(g);
-      if (cap) E.pop(cap.x, cap.y - 34, 'HAGGLE!', 'move', '#ff8a3f');
-      for (const sd of [-1, 1]) E.burst(sd < 0 ? f.x : f.x + f.w, f.cy, 6, '#ffd23f', 10, 70, 0.5);
-      g.sfx('ult', 'mod.haggle');
+    clock(g, M, c, dt) { for (const G of M.grabs) G.t += dt; },
+    // chỗ Big Mama thứ i ngồi (mép trên sân, 1/4 và 3/4 bề ngang) · nồi mì ngay trước mặt bà · chỗ người trong nồi đứng (mép trên sân, dưới nồi)
+    seat(g, i) { return { x: Math.round(g.field.x + g.field.w * (i ? 0.76 : 0.24)), y: g.field.y }; },
+    pot(g, i) { const st = this.seat(g, i); return { x: st.x, y: g.field.y + 8 }; },
+    // q đang bị 1 lượt gắp khác (không tính lượt G) nhắm / gắp
+    busy(M, q, G = null) { return M.grabs.some((H) => H !== G && (H.p === q || H.v === q)); },
+    start(g, M, c) {
+      const b = g.ball, vs = victims(g).filter((q) => grounded(q) && q.state !== 'stun' && !this.busy(M, q));
+      if (!vs.length) { M.next = 1; return; }
+      vs.sort((p, q) => (q.hasBall - p.hasBall) || Math.hypot(p.x - b.x, p.y - b.y) - Math.hypot(q.x - b.x, q.y - b.y));
+      // bà nào gắp: lần lượt từng bà · FINAL PUSH: cả 2 bà cùng lúc, mỗi bà 1 người
+      const mamas = g.finalPush && vs.length > 1 ? [0, 1] : [(M.turn ^= 1)], E = g.effects;
+      mamas.forEach((i, k) => {
+        const G = { p: vs[k], i, phase: 'aim', t: 0, id: newId(g), x: 0, y: 0, v: null };
+        M.grabs.push(G);
+        E.prop(G.id, 'chopaim', G.p.x, G.p.y, G.p.id, i, c.warn, '#ff3d5a');
+        const st = this.seat(g, i);
+        E.pop(st.x, st.y + 18, mamas.length > 1 ? 'DOUBLE SERVING!' : 'ORDER UP!', 'info', '#ff3d5a');
+      });
+      g.sfx('ult', 'mod.chopup');
       M.barkT = 0;
       bark(g, 'mod');
     },
-    // các khối thùng hàng (vật cản thật, vẽ ở render/modsdraw.js crates): mỗi khung 2 khối sát vạch phía trong sân, rộng c.depth
-    boxes(g, M, c) {
-      const f = g.field, out = [];
-      for (const sd of [-1, 1]) {
-        const d = M.d[sd];
-        if (!(d >= 1)) continue;
-        const lx = sd < 0 ? f.x : f.x + f.w, x0 = sd > 0 ? lx - c.depth : lx;
-        out.push({ sd, x0, x1: x0 + c.depth, y0: f.gTop, y1: f.gTop + d }, { sd, x0, x1: x0 + c.depth, y0: f.gBot - d, y1: f.gBot });
-      }
-      return out;
+    // giữ người đang bị gắp ở trạng thái "ngoài cuộc": choáng, bất tử, lơ lửng (airZ > 4)
+    pin(q, z) {
+      q.state = 'stun'; q.stateT = Math.max(q.stateT, 0.3); q.hitImmune = Math.max(q.hitImmune, 0.3);
+      q.vx = q.vy = q.kbx = q.kby = 0; q.airZ = Math.max(5, z); q.airVz = 0;
     },
-    // đẩy hình tròn (x, y, r) ra khỏi khối theo mặt gần nhất (mặt phía vạch khung không tính) -> { nx, ny } hoặc null
-    push(q, r, B) {
-      if (q.x + r <= B.x0 || q.x - r >= B.x1 || q.y + r <= B.y0 || q.y - r >= B.y1) return null;
-      const faces = [[B.y0 - r - q.y, 0, -1], [B.y1 + r - q.y, 0, 1], B.sd > 0 ? [B.x0 - r - q.x, -1, 0] : [B.x1 + r - q.x, 1, 0]];
-      let best = faces[0];
-      for (const fc of faces) if (Math.abs(fc[0]) < Math.abs(best[0])) best = fc;
-      if (best[1]) q.x += best[0]; else q.y += best[0];
-      return { nx: best[1], ny: best[2] };
+    // giao bóng lại giữa chừng: trả người về đứng bình thường
+    free(g, G) {
+      g.effects.propOff(G.id, 0.05);
+      const q = G.v;
+      if (!q) return;
+      q.airZ = 0; q.airVz = 0;
+      if (q.state === 'stun') { q.state = 'normal'; q.stateT = 0; }
     },
     update(g, M, c, dt) {
-      M.knockT -= dt;
-      if (every(g, M, c, dt)) this.haggle(g, M, c);
-      const b = g.ball;
-      for (const B of this.boxes(g, M, c)) {
-        for (const p of g.players) if (grounded(p)) this.push(p, p.radius, B);
-        if (b.owner || b.z > g.field.goalHeight) continue;
-        const n = this.push(b, b.r, B);
-        if (!n) continue;
-        const dot = b.vx * n.nx + b.vy * n.ny;
-        if (dot >= 0) continue;
-        if (n.nx) this.hit(g, M, c, b, B.sd);
-        b.vx -= 1.7 * dot * n.nx; b.vy -= 1.7 * dot * n.ny;
-        if (dot < -80) g.sfx('wall');
+      if (!M.grabs.length && every(g, M, c, dt)) this.start(g, M, c);
+      const E = g.effects, f = g.field;
+      for (const G of M.grabs.slice()) {
+        const P = this.pot(g, G.i);
+        if (G.phase === 'aim') {
+          if (G.t < c.warn) continue;
+          // đũa dừng: khoá chỗ gắp đón đầu (chỗ người đó sắp chạy tới sau lock + strike giây, x lead) rồi cắm xuống
+          const q = G.p, ld = (c.lock + c.strike) * c.lead;
+          G.phase = 'strike'; G.t = 0;
+          G.x = U.clamp(q.x + q.vx * ld, f.x + 10, f.x + f.w - 10); G.y = U.clamp(q.y + q.vy * ld, f.y + 10, f.y + f.h - 10);
+          E.propOff(G.id, 0.01);
+          G.id = newId(g);
+          E.prop(G.id, 'chopstrike', G.x, G.y, G.i, 0, c.lock + c.strike + 0.45, c.color);
+          g.sfx('ult', 'mod.whoosh');
+          continue;
+        }
+        if (G.phase === 'strike') {
+          if (G.t < c.lock + c.strike) continue;
+          // cắm xuống: người bên bạn gần chỗ gắp nhất trong bán kính r
+          let v = null, best = c.r;
+          for (const q of victims(g)) {
+            if (!grounded(q) || q.state === 'stun' || this.busy(M, q, G)) continue;
+            const d = Math.hypot(q.x - G.x, (q.y - G.y) * 1.2) - q.radius;
+            if (d < best) { best = d; v = q; }
+          }
+          E.shake(2, 0.15);
+          const aiDodge = v && !(v.isControlled && g.isHuman(v.team)) && Math.random() < c.aiDodge;
+          if (!v || aiDodge || Act().dodged(g, v)) {
+            if (aiDodge) E.pop(v.x, v.y - 30, 'DODGE!', 'good', '#3ff6ff');
+            E.pop(G.x, G.y - 20, 'CLACK!', 'info', '#f3d08a');
+            E.burst(G.x, G.y, 0, '#c9b48a', 8, 70, 0.4);
+            g.sfx('ult', 'mod.clack');
+            M.grabs.splice(M.grabs.indexOf(G), 1);
+            continue;
+          }
+          v.hitImmune = 0;
+          if (v.state === 'stun') { v.state = 'normal'; v.stateT = 0; }
+          if (!v.hit({ stun: 9, kbx: 0, kby: 0, type: 'hard', quiet: true })) { M.grabs.splice(M.grabs.indexOf(G), 1); continue; }
+          M.hits++;
+          G.v = v; G.phase = 'carry'; G.t = 0; G.sx = v.x; G.sy = v.y;
+          E.propOff(G.id, 0.01);
+          G.id = newId(g);
+          E.prop(G.id, 'chopcarry', v.x, v.y, v.id, G.i, c.carry + 0.05, c.color);
+          E.pop(v.x, v.y - 34, 'GOTCHA!', 'heavy', '#ff8a3f');
+          E.burst(v.x, v.y - 10, 4, '#f3d08a', 10, 90, 0.4);
+          g.hitStop(0.06);
+          g.sfx('ult', 'mod.pinch');
+          continue;
+        }
+        const v = G.v;
+        if (G.phase === 'carry') {
+          // nhấc bổng lên, mang về nồi (cung tròn), thả ùm xuống
+          const k = Math.min(1, G.t / c.carry), e = k * k * (3 - 2 * k);
+          v.x = G.sx + (P.x - G.sx) * e; v.y = G.sy + (P.y - G.sy) * e;
+          this.pin(v, c.height * Math.sin(Math.PI * Math.min(1, k * 1.15)) + 30 * k);
+          v.facing += dt * 10;
+          if (k < 1) continue;
+          G.phase = 'pot'; G.t = 0;
+          E.propOff(G.id, 0.05);
+          G.id = newId(g);
+          E.prop(G.id, 'inpot', P.x, P.y, v.id, G.i, c.inPot + 0.1, c.color);
+          E.burst(P.x, f.y - 14, 10, '#f3d08a', 18, 130, 0.6);
+          E.burst(P.x, f.y - 14, 10, '#ffffff', 10, 90, 0.5);
+          E.pop(P.x, f.y - 30, 'PLOP!', 'heavy', '#f3d08a');
+          g.sfx('ult', 'mod.plop');
+          continue;
+        }
+        if (G.phase === 'pot') {
+          v.x = P.x; v.y = P.y;
+          this.pin(v, 5);
+          if (G.t < c.inPot) continue;
+          // bật ra chỗ ngẫu nhiên trên sân (xa nồi)
+          let lx = 0, ly = 0;
+          for (let k = 0; k < 20; k++) {
+            lx = U.rand(f.x + 40, f.x + f.w - 40); ly = U.rand(f.y + 40, f.y + f.h - 24);
+            if (Math.hypot(lx - P.x, ly - P.y) > 140) break;
+          }
+          G.phase = 'fly'; G.t = 0; G.lx = lx; G.ly = ly;
+          E.propOff(G.id, 0.02);
+          E.burst(P.x, f.y - 14, 10, '#f3d08a', 14, 120, 0.5);
+          E.pop(P.x, f.y - 30, 'BOING!', 'status', '#ff8a3f');
+          g.sfx('ult', 'mod.boing');
+          continue;
+        }
+        // fly: bay vòng cung từ nồi tới chỗ đáp
+        const k = Math.min(1, G.t / c.fly);
+        v.x = P.x + (G.lx - P.x) * k; v.y = P.y + (G.ly - P.y) * k;
+        this.pin(v, 5 + Math.sin(Math.PI * k) * 70);
+        v.facing += dt * 14;
+        if (k < 1) continue;
+        v.airZ = 6; v.airVz = -120;
+        v.stateT = c.land; v.hitImmune = c.land + 0.3;
+        M.grabs.splice(M.grabs.indexOf(G), 1);
       }
-      if ((M.refresh -= dt) <= 0) { M.refresh = c.refresh; for (const sd of [-1, 1]) this.show(g, M, c, sd, M.d[sd]); }
-    },
-    goal(g, M) { M.goals++; },
-    // bóng dội vào sạp trong miệng khung (Ball.collideWalls): khung Mamas + bóng đủ nhanh -> sạp lùi lại
-    hit(g, M, c, b, side) {
-      if (side !== M.home || M.knockT > 0 || b.speed < c.knockSpeed || !(M.d[side] > 0)) return;
-      M.knockT = 0.4;
-      const d0 = M.d[side];
-      M.d[side] = Math.max(0, d0 - c.knock);
-      this.show(g, M, c, side, d0);
-      M.refresh = c.refresh;
-      const E = g.effects;
-      E.pop(b.x - side * 20, b.y - 24, 'NO DEAL!', 'heavy', '#ff8a3f');
-      for (const col of ['#ff3d5a', '#ffd23f', '#6bff7a']) E.burst(b.x, b.y, 6, col, 5, 110, 0.5);
-      E.shake(2, 0.15);
-      g.sfx('ult', 'mod.smash');
-      bark(g, 'conceded');
     },
   };
 
-  /* Rust Buckets — THUỶ TRIỀU: nước dâng từ mép trên / dưới (dâng lên warn giây, giữ len giây, rút recede giây), sâu tới depth phần chiều cao sân.
-   * Đội bạn lội nước chạy chậm (slow), bóng lăn trong nước nặng hẳn (drag). Dân biển Rust Buckets không sao */
-  K.tide = {
-    create(g, M, c) { M.next = c.first; M.tide = null; },
-    kickoff(g, M) { M.tide = null; },
-    clock(g, M, c, dt) { if (M.tide) M.tide.t += dt; },
-    // mực nước (px tính từ mép) theo thời gian — sim + vẽ dùng chung (MatchMods.tideLevel)
-    level(c, t, f) {
-      const full = c.depth * f.h;
-      if (t < 0) return full * U.clamp(1 + t / c.warn, 0, 1);
-      if (t < c.len) return full;
-      return full * U.clamp(1 - (t - c.len) / c.recede, 0, 1);
+  /* Rust Buckets — SÓNG DỮ (user 2026-10-24, thay HIGH TIDE): sóng ập vào từ mép trên hoặc mép dưới sân (ngẫu nhiên mỗi con). Biển rút trước (vùng nước sắp tràn tới hiện ra,
+   * mép bọt trắng nhấp nháy), rồi sóng tràn vào: mép sóng quét qua ai bên bạn thì người đó choáng + bị cuốn xuôi (rơi bóng), lướt xuyên sóng là né.
+   * Sóng rút: ai còn trong nước bị kéo về phía biển, bóng cũng vậy. Thuỷ thủ thì lướt ván trên sóng (chạy nhanh một lúc).
+   * Mực sóng là hàm thuần của tuổi vật thể (front / depth) nên máy vẽ (cả khách online) tự tính. Họ bị dẫn: sóng dày hơn + rộng hơn */
+  K.waves = {
+    create(g, M, c) { M.next = c.first; M.runs = []; },
+    kickoff(g, M) { M.runs = []; },
+    clock(g, M, c, dt) { for (const r of M.runs) r.t += dt; },
+    life(c) { return c.warn + c.rise + c.hold + c.back; },
+    // độ tràn của sóng 0..1 theo giây t kể từ lúc báo trước (sim + vẽ dùng chung)
+    front(c, t) {
+      t -= c.warn;
+      if (t < 0) return 0;
+      if (t < c.rise) { const k = t / c.rise; return 1 - (1 - k) * (1 - k); }
+      if ((t -= c.rise) < c.hold) return 1;
+      return U.clamp(1 - (t - c.hold) / c.back, 0, 1);
+    },
+    // độ sâu nước (px tính từ mép sóng tới) ở vị trí u = (x - tâm) / hw trong [-1, 1]: lưỡi sóng hai đầu thấp hơn
+    depth(c, f, k, u) { return k * c.reach * f.h * (1 - 0.35 * u * u * u * u); },
+    spawn(g, M, c) {
+      const f = g.field, b = g.ball, hw = behind(g) ? c.trailHw : c.hw;
+      const x = U.clamp(b.x + U.rand(-40, 40), f.x + hw * 0.6, f.x + f.w - hw * 0.6);
+      // dir: 1 = từ mép trên tràn xuống · -1 = từ mép dưới xô lên
+      const r = { x, hw, dir: Math.random() < 0.5 ? 1 : -1, t: 0, hits: new Set(), id: newId(g) };
+      M.runs.push(r);
+      g.effects.prop(r.id, 'seawave', x, f.y, hw, r.dir, this.life(c), c.color);
+      g.sfx('ult', 'mod.swell');
+      bark(g, 'mod');
     },
     update(g, M, c, dt) {
-      const f = g.field, b = g.ball;
-      if (!M.tide) {
-        if (!every(g, M, c, dt)) return;
-        M.tide = { side: Math.random() < 0.5 ? -1 : 1, t: -c.warn };
-        g.effects.prop(newId(g), 'tide', M.tide.side, 0, 0, 0, c.warn + c.len + c.recede, '#3fa8ff');
-        g.sfx('ult', 'mod.wave');
-        bark(g, 'mod');
-        return;
+      if (every(g, M, c, dt)) this.spawn(g, M, c);
+      const f = g.field, b = g.ball, E = g.effects;
+      for (const r of M.runs) {
+        const k = this.front(c, r.t);
+        if (k <= 0) continue;
+        const rising = r.t < c.warn + c.rise + c.hold;
+        if (!r.crashed) { r.crashed = true; g.sfx('ult', 'mod.surge'); E.shake(2, 0.3); }
+        // (x, y) có nằm trong nước không (tính cả bán kính rr)
+        const wet = (x, y, rr) => {
+          const u = (x - r.x) / r.hw;
+          if (Math.abs(u) > 1) return false;
+          const d = this.depth(c, f, k, u);
+          return r.dir > 0 ? y < f.y + d + rr : y > f.y + f.h - d - rr;
+        };
+        for (const q of g.players) {
+          if (!grounded(q) || !wet(q.x, q.y, q.radius)) continue;
+          if (rising) {
+            if (r.hits.has(q.id)) continue;
+            r.hits.add(q.id);
+            if (q.team === M.team) {   // thuỷ thủ lướt ván trên sóng
+              q.buffs.push({ speed: c.surf, t: c.surfT });
+              E.prop(newId(g), 'surf', q.x, q.y, q.id, 0, c.surfT, '#ff9a3d');
+              E.burst(q.x, q.y, 2, '#e8f6ff', 10, 90, 0.4);
+              // chữ chỉ hiện ở người lướt đầu tiên mỗi con sóng (cả đội cùng lướt thì chữ chồng nhau rối mắt)
+              if (!r.surfed) { r.surfed = true; E.pop(q.x, q.y - 30, "SURF'S UP!", 'status', '#3fa8ff'); g.sfx('ult', 'mod.surf'); }
+              continue;
+            }
+            if (Act().dodged(g, q)) continue;
+            if (q.hit({ stun: c.stun, kbx: (q.x - r.x) * 0.6, kby: c.push * r.dir, type: 'hard', quiet: true })) {
+              M.hits++;
+              E.pop(q.x, q.y - 30, 'SPLASH!', 'heavy', c.color);
+              E.burst(q.x, q.y - 4, 6, '#e8f6ff', 14, 120, 0.5);
+              E.burst(q.x, q.y - 2, 2, c.color, 8, 80, 0.4);
+              g.hitStop(0.04);
+              g.sfx('ult', 'mod.splash');
+              bark(g, 'mod');
+            }
+          } else if (q.team !== M.team) {
+            // sóng rút: kéo về phía mép sóng tới, lội chậm
+            q.y = U.clamp(q.y - c.pull * r.dir * dt, f.y + q.radius, f.y + f.h - q.radius);
+            keepSpeed(q, c.slow);
+          }
+        }
+        // bóng trong nước: sóng tràn thì cuốn xuôi, sóng rút thì kéo về biển
+        if (!b.owner && b.z < 10 && wet(b.x, b.y, b.r)) {
+          if (rising && !r.ballHit) {
+            r.ballHit = true;
+            b.vx *= 0.5; b.vy = r.dir > 0 ? Math.max(b.vy, c.ballPush) : Math.min(b.vy, -c.ballPush); b.vz = 40;
+            b.lastKickTeam = -1;
+            E.burst(b.x, b.y, 2, '#e8f6ff', 8, 80, 0.3);
+          } else if (!rising) b.vy -= c.ballPull * r.dir * dt;
+        }
       }
-      const T = M.tide;
-      if (T.t >= c.len + c.recede) { M.tide = null; return; }
-      if (T.t < 0) return;   // đang dâng: chỉ báo trước, chưa làm chậm
-      const lv = this.level(c, T.t, f), wet = (y) => (T.side < 0 ? y < f.y + lv : y > f.y + f.h - lv);
-      for (const o of victims(g)) if (grounded(o) && wet(o.y)) keepSpeed(o, c.slow);
-      if (!b.owner && b.z < 4 && wet(b.y)) { b.vx = U.damp(b.vx, c.drag, dt); b.vy = U.damp(b.vy, c.drag, dt); }
+      M.runs = M.runs.filter((r) => r.t < this.life(c));
     },
   };
 
   /* Retired Refs — TRỌNG TÀI: người chơi (không tính đồng đội AI) ra đòn trúng (choáng) 1 Ref là phạm lỗi: lần lẻ thẻ vàng (cảnh cáo), lần chẵn thẻ đỏ = đứng ngoài redTime giây
    * (choáng tại chỗ, thẻ đỏ trên đầu). Các Ref thì phạm lỗi thoải mái. Hook: Player.hit -> MatchMods.hitBy */
   K.refs = {
-    create(g, M) { M.cards = {}; },
+    create(g, M) { M.cards = {}; M.lastFoul = {}; },
     hitBy(g, M, c, victim, opts) {
       const p = opts.source;
       // chỉ người do người chơi điều khiển bị thẻ (đồng đội AI không tự chọn được cách đá)
       if (victim.team !== M.team || !p || p.team === M.team || p.seat == null || !(opts.stun > 0)) return;
+      // 1 pha vào bóng có thể trúng 2 lần (user 2026-10-24: vẫn chỉ 1 thẻ): trong gap giây sau lỗi trước của cùng người thì bỏ qua
+      if (g.time - (M.lastFoul[p.id] ?? -99) < c.gap) return;
+      M.lastFoul[p.id] = g.time;
       const n = (M.cards[p.id] || 0) + 1, E = g.effects;
       M.cards[p.id] = n;
       g.sfx('whistle');
@@ -1226,68 +1346,388 @@ window.SFC = window.SFC || {};
     },
   };
 
-  /* Grandpa's Squad — "HỒI ĐÓ...": các cụ kể chuyện ngày xưa: báo trước warn giây (câu nói + chữ), rồi len giây màn hình ngả màu sepia
-   * và đội bạn chạy chậm như phim cũ (slow). Các cụ thì vẫn nhanh nhẹn trong ký ức */
-  K.flashback = {
-    create(g, M, c) { M.next = c.first; M.fb = null; },
-    kickoff(g, M) { M.fb = null; },
-    update(g, M, c, dt) {
-      const E = g.effects, f = g.field;
-      if (!M.fb) {
-        if (!every(g, M, c, dt)) return;
-        M.fb = { t: -c.warn, on: false };
-        M.barkT = 0;
-        bark(g, 'mod');
-        E.pop(f.cx, f.y - 6, 'BACK IN MY DAY...', 'info', '#d9b77a');
-        g.sfx('ult', 'mod.record');
-        return;
+  /* Grandpa's Squad — LỐC CÁT (user 2026-10-24, thay BACK IN MY DAY): định kỳ gió làng cuộn lên n cột lốc cát (đội các cụ bị dẫn: trailN, FINAL PUSH: pushN), mỗi cột
+   * xoáy cát dưới đất warn giây (báo trước) rồi dựng thành phễu, lang thang ngẫu nhiên trên sân life giây. Ai bên bạn chạm lốc (lướt né được):
+   * bị xoáy hất tung lên trời (rơi bóng), lơ lửng xoay vòng air giây rồi mới rơi xuống, đáp đất choáng thêm land giây. Bóng lỏng chạm lốc bị hất lên.
+   * Các cụ đi xuyên lốc không sao ("gió làng mình mà"). Đường đi của lốc là hàm thuần của tuổi vật thể (at) nên máy vẽ tự tính */
+  K.devils = {
+    create(g, M, c) { M.next = c.first; M.list = []; M.flung = []; },
+    kickoff(g, M) {
+      for (const d of M.list) g.effects.propOff(d.id);
+      M.list = [];
+      for (const h of M.flung.slice()) this.drop(g, M, h, false);
+      M.flung = [];
+    },
+    clock(g, M, c, dt) { for (const d of M.list) d.t += dt; },
+    // vị trí cột lốc tuổi el (o.x, o.y = chỗ mọc, o.a = hạt giống đường đi): 2 sóng sin mỗi trục, xuất phát đúng chỗ mọc, kẹp trong sân
+    at(o, el) {
+      const c = S().mods.devils, F = SFC_CONFIG.game.field, sd = o.a, w = c.speed[0] + (sd % 1) * (c.speed[1] - c.speed[0]);
+      const wave = (amp, w1, ph, k) => amp * (Math.sin(el * w1 + ph) - Math.sin(ph)) + amp * 0.35 * (Math.sin(el * w1 * k + ph * 3) - Math.sin(ph * 3));
+      const m = 14;
+      return {
+        x: U.clamp(o.x + wave(c.amp[0], w, sd, 2.3), F.x + m, F.x + F.w - m),
+        y: U.clamp(o.y + wave(c.amp[1], w * 1.27, sd * 1.9 + 1, 1.8), F.y + m, F.y + F.h - m),
+      };
+    },
+    spawn(g, M, c) {
+      const f = g.field;
+      for (let i = 0, n = g.finalPush ? c.pushN : behind(g) ? c.trailN : c.n; i < n; i++) {
+        let x = 0, y = 0;
+        // chỗ mọc: cách người + cách các lốc khác (nhiều lốc một lúc thì rải khắp sân)
+        for (let k = 0; k < 40; k++) {
+          x = U.rand(f.x + 40, f.x + f.w - 40); y = U.rand(f.y + 24, f.y + f.h - 24);
+          if (g.players.every((q) => Math.hypot(q.x - x, q.y - y) > 50) && M.list.every((d) => Math.hypot(d.x - x, d.y - y) > 60)) break;
+        }
+        const d = { x, y, a: U.rand(0, 6.28), t: 0, id: newId(g) };
+        M.list.push(d);
+        g.effects.prop(d.id, 'devil', x, y, d.a, 0, c.life, '#d9b77a');
       }
-      const F = M.fb;
-      if ((F.t += dt) < 0) return;
-      if (!F.on) { F.on = true; E.tint('#a0784a', c.len, 0.3); }
-      if (F.t >= c.len) { M.fb = null; return; }
-      for (const o of victims(g)) keepSpeed(o, c.slow);
+      g.sfx('ult', 'mod.gust');
+      bark(g, 'mod');
+    },
+    // hất tung người o lên trời
+    toss(g, M, c, o) {
+      o.hitImmune = 0;
+      if (!o.hit({ stun: c.air + c.land, kbx: 0, kby: 0, type: 'hard', quiet: true })) return;
+      M.hits++;
+      const h = { o, t: 0, x: o.x, y: o.y, spin: U.randSign(), id: newId(g) };
+      M.flung.push(h);
+      g.effects.prop(h.id, 'flung', o.x, o.y, o.id, 0, c.air + 0.2, '#d9b77a');
+      g.effects.burst(o.x, o.y, 4, '#d9b77a', 14, 110, 0.6);
+      g.effects.pop(o.x, o.y - 30, 'WHOOSH!', 'heavy', '#d9b77a');
+      g.sfx('ult', 'mod.toss');
+      bark(g, 'mod');
+    },
+    // hết giờ lơ lửng: thả rơi (Player.updateAir lo phần rơi + nảy + bụi), đáp đất còn choáng land giây. fall = false: đặt ngay xuống đất (giao bóng lại...)
+    drop(g, M, h, fall) {
+      const o = h.o;
+      M.flung.splice(M.flung.indexOf(h), 1);
+      g.effects.propOff(h.id, 0.1);
+      if (!fall) { o.airZ = 0; o.airVz = 0; if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; } return; }
+      o.airVz = -60;
+      if (o.state === 'stun') o.stateT = M.cfg.land;
+    },
+    update(g, M, c, dt) {
+      // vừa vào FINAL PUSH: cuộn lên ngay 1 lượt pushN cột lốc
+      if (g.finalPush && !M.pushed) { M.pushed = true; M.next = U.rand(c.every[0], c.every[1]); this.spawn(g, M, c); }
+      else if (every(g, M, c, dt)) this.spawn(g, M, c);
+      const b = g.ball, E = g.effects;
+      for (const d of M.list) {
+        if (d.t < c.warn || d.t > c.life - 0.3) continue;
+        const p = this.at(d, d.t);
+        if (Math.random() < dt * 8) E.burst(p.x + U.rand(-8, 8), p.y, 2, '#d9b77a', 2, 30, 0.5);
+        for (const o of victims(g)) {
+          if (!grounded(o) || o.state === 'stun' || Math.hypot(o.x - p.x, (o.y - p.y) * 1.3) > c.r + o.radius) continue;
+          if (Act().dodged(g, o)) continue;
+          this.toss(g, M, c, o);
+        }
+        // bóng lỏng chạm lốc: bị hất lên, văng ngẫu nhiên
+        if (!b.owner && b.z < 12 && Math.hypot(b.x - p.x, b.y - p.y) < c.r + b.r) {
+          const a = U.rand(0, Math.PI * 2);
+          b.vx = Math.cos(a) * 110; b.vy = Math.sin(a) * 70; b.vz = c.ballUp;
+          b.lastKickTeam = -1;
+          E.burst(b.x, b.y, 4, '#d9b77a', 8, 80, 0.4);
+        }
+      }
+      M.list = M.list.filter((d) => d.t < c.life);
+      // người đang bị hất tung: lên cao height trong rise giây rồi lơ lửng nhấp nhô + xoay vòng tại chỗ tới hết air giây
+      for (const h of M.flung.slice()) {
+        const o = h.o;
+        if (o.state !== 'stun' || g.state !== 'play') { this.drop(g, M, h, false); continue; }
+        h.t += dt;
+        const k = Math.min(1, h.t / c.rise);
+        o.x = h.x; o.y = h.y; o.vx = o.vy = o.kbx = o.kby = 0;
+        o.airZ = Math.max(1, c.height * (1 - (1 - k) * (1 - k)) + Math.sin(h.t * 5) * 3);
+        o.airVz = 0;
+        o.facing += dt * 16 * h.spin;
+        o.stateT = Math.max(o.stateT, c.land);
+        if (h.t >= c.air) this.drop(g, M, h, true);
+      }
     },
   };
 
-  /* The Legends — NGÔI SAO VÀNG: một Legend thành STAR (hào quang vàng): sút mạnh x power, chạy nhanh x speed trong time giây.
-   * Đội bạn cướp được bóng từ tay STAR: người cướp nhận GOLDEN BOOT (cùng sức mạnh) bootTime giây. Hết thì lát sau Legends có STAR mới */
-  K.golden = {
-    create(g, M, c) { M.next = c.first; M.star = null; M.lastOwner = null; },
-    kickoff(g, M, c) { this.clear(g, M); M.next = Math.min(M.next, c.first); M.lastOwner = null; },
-    clear(g, M) {
-      const st = M.star;
-      if (!st) return;
-      st.p.stats = Object.assign({}, st.p.stats, { power: st.base });
-      g.effects.propOff(st.id);
-      M.star = null;
+  /* The Old Legends — KING LEO 1976 (user 2026-10-24, thay GOLDEN STAR): trận đánh boss. Định kỳ King Leo (đội trưởng) hoá lại chàng trai năm 1976:
+   * warn giây đứng biến hình (phim nháy, chữ 1976!), rồi time giây to x scale, nhanh x speed, sút mạnh x power, có GIÁP hp vạch (thanh máu trên đầu):
+   * đòn trúng hắn không làm choáng mà trừ 1 vạch (mỗi người cách nhau ít nhất hitGap giây), không cướp bóng được. Hắn tự đi lấy bóng rồi solo thẳng về
+   * khung bạn, tới tầm shootRange thì sút; ai bên bạn đứng chắn đường bị húc bật (bump). Hết vạch = PHIM CHÁY: hết biến hình, hắn ngã choáng breakStun giây.
+   * Không ai phá được: hết giờ hắn tung CÚ VÀO BÓNG MUỘN — đứng ngắm aim giây (mũi tên đỏ tới người bên bạn gần nhất, dài đúng tầm lao), rồi lao
+   * vào bằng gầm giày dash giây; trúng = choáng tackleStun + văng, lướt né được, trọng tài không thổi còi. Lúc đứng ngắm hắn hết giáp: đánh choáng là huỷ cú lao.
+   * HỢP THỂ (user 2026-10-24: một mình Leo hơi OP): lúc biến hình, 2 Legends còn lại bị hút vào người hắn (vệt vàng), FUSION! — họ rời sân (state 'meteor',
+   * lơ lửng airZ cao, ẩn sprite bằng prop 'fused'), sân chỉ còn 1 nhân vật siêu mạnh chạy như tia chớp (x fuseSpeed, tàn ảnh + tia điện).
+   * Hết vạch giáp / hết lượt: SPLIT!, 2 người văng ra lại đá bình thường.
+   * GIỮ KHUNG LÚC CAST (user 2026-10-24: chỉ trong lúc cast): hắn chớp về trước khung thành nhà rồi hợp thể ở đó; trong warn giây đó cú sút sắp vào khung họ
+   * (trong guardT giây) thì hắn chớp chắn đường bóng (BLOCKED!), bóng chạm vạch khung họ cũng dội ra (Ball -> MatchMods.sealed). Hợp thể xong: khung mở lại.
+   * M.leo = { phase: warn | run | aim | dash, t, p, hp, base, mates [{ p, x0, y0, id }], id (prop 'legend'), aim (prop 'lateaim'), d (hướng lao), hits } */
+  K.leo = {
+    create(g, M, c) { M.next = c.first; M.leo = null; M.lastHit = {}; },
+    kickoff(g, M) { this.end(g, M, false, 0, true); },   // quiet: đội hình vừa xếp xong, trả 2 người về chỗ của họ
+    active(M) { return M.leo && (M.leo.phase === 'warn' || M.leo.phase === 'run' || M.leo.phase === 'dash'); },
+    // thanh máu + hào quang 1976: vẽ lại vật thể mỗi lần đổi số vạch (khách online thấy qua lệnh hiệu ứng)
+    aura(g, M, c, len) {
+      const L = M.leo;
+      if (L.id) g.effects.propOff(L.id, 0);
+      L.id = newId(g);
+      g.effects.prop(L.id, 'legend', L.p.x, L.p.y, L.p.id, L.hp, len, c.color);
     },
-    set(g, M, c, p, mine) {
-      this.clear(g, M);
-      const st = { p, mine, t: mine ? c.bootTime : c.time, base: p.stats.power, id: newId(g) };
+    // chớp (dịch chuyển tức thời) King Leo tới (x, y): tàn ảnh ở chỗ cũ, tia chớp nối 2 chỗ (prop 'zapline'), tia lửa điện ở chỗ mới
+    zap(g, p, x, y) {
+      const E = g.effects, f = g.field;
+      E.afterimage(p, 0.3);
+      const x0 = p.x, y0 = p.y;
+      p.x = U.clamp(x, f.x + p.radius, f.x + f.w - p.radius); p.y = U.clamp(y, f.y + p.radius, f.y + f.h - p.radius);
+      p.vx = p.vy = p.kbx = p.kby = 0;
+      E.prop(newId(g), 'zapline', x0, y0, p.x, p.y, 0.3, '#fff6a0');
+      E.burst(p.x, p.y - 12, 8, '#fff6a0', 14, 120, 0.35);
+      E.burst(p.x, p.y - 12, 8, '#7fe7ff', 8, 90, 0.3);
+      g.sfx('ult', 'mod.bolt');
+    },
+    // trước khung thành nhà của đội chủ luật (cách vạch khung d px), cao độ y
+    home(g, M, d, y) { const G = g.ownGoal(M.team), f = g.field; return { x: G.x + Math.sign(f.cx - G.x) * d, y: y ?? f.cy }; },
+    start(g, M, c) {
+      const p = captain(g);
+      if (!p || p.state !== 'normal' || !grounded(p)) { M.next = 0.5; return; }
+      // chớp về khung nhà rồi mới hợp thể ở đó (đang cầm bóng thì nhả ra)
+      if (p.hasBall) g.looseBall(p, U.rand(-1, 1), U.rand(-1, 1));
+      const h = this.home(g, M, c.homeD);
+      this.zap(g, p, h.x, h.y);
+      M.leo = { phase: 'warn', t: 0, p, hp: c.hp, base: Object.assign({}, p.stats), mates: [], guard: 0 };
       p.stats = Object.assign({}, p.stats, { power: p.stats.power * c.power });
-      M.star = st;
-      g.effects.prop(st.id, 'star', p.x, p.y, p.id, mine ? 1 : 0, st.t, '#ffd23f');
-      g.effects.pop(p.x, p.y - 34, mine ? 'GOLDEN BOOT!' : 'GOLDEN STAR!', 'move', '#ffd23f');
-      g.effects.burst(p.x, p.y - 10, 8, '#ffd23f', 20, 100, 0.6);
-      g.sfx('ult', 'mod.star');
+      this.aura(g, M, c, c.warn + c.time + c.aim + c.dash + 0.5);
+      const E = g.effects;
+      // đồng đội bị hút vào người hắn trong warn giây (vệt vàng nối tới King Leo)
+      for (const q of g.teams[M.team].players) {
+        if (q === p) continue;
+        if (q.hasBall) g.looseBall(q, U.rand(-1, 1), U.rand(-1, 1));
+        const m = { p: q, x0: q.x, y0: q.y, id: newId(g) };
+        M.leo.mates.push(m);
+        E.prop(m.id, 'fusetrail', q.x, q.y, q.id, p.id, c.warn + 0.1, c.color);
+      }
+      E.pop(p.x, p.y - 36, '1976!', 'move', c.color);
+      E.tint('#a0784a', c.warn, 0.25);
+      E.burst(p.x, p.y - 10, 8, c.color, 16, 110, 0.6);
+      g.sfx('ult', 'mod.reel');
+      M.barkT = 0;
+      bark(g, 'mod', p);
+    },
+    // hết lượt biến hình: trả cỡ người + chỉ số, xoá vật thể. stun > 0: hắn ngã choáng (phim cháy)
+    end(g, M, broke, stun = 0, quiet = false) {
+      const L = M.leo;
+      if (!L) return;
+      M.leo = null;
+      M.next = U.rand(M.cfg.every[0], M.cfg.every[1]);
+      const p = L.p, E = g.effects;
+      p.stats = L.base;
+      p.sizeTarget = 1; p.sizeT = 0;
+      if (L.id) E.propOff(L.id, 0.2);
+      if (L.aim) E.propOff(L.aim, 0.05);
+      this.split(g, M, L, quiet);
+      if (!broke) return;
+      E.pop(p.x, p.y - 36, 'FILM BURN!', 'huge', '#ff9a3d');
+      E.burst(p.x, p.y - 12, 10, '#ff9a3d', 24, 160, 0.7);
+      E.burst(p.x, p.y - 12, 10, '#f3ead7', 14, 120, 0.5);
+      E.flash(0.4);
+      E.shake(5, 0.3);
+      g.hitStop(0.1);
+      g.sfx('ult', 'mod.burn');
+      g.later(0.02, () => { if (g.state === 'play' && p.state !== 'stun') { p.hitImmune = 0; p.hit({ stun, kbx: 0, kby: 0, type: 'hard', quiet: true }); } });
+      M.barkT = 0;
+      bark(g, 'conceded', p);
+    },
+    // FUSION!: 2 đồng đội nhập vào người hắn — rời sân (không đá, không bị đánh, không nhặt bóng), ẩn sprite
+    absorb(g, M, c) {
+      const L = M.leo, p = L.p, E = g.effects;
+      for (const m of L.mates) {
+        E.propOff(m.id, 0.05);
+        m.id = newId(g);
+        E.prop(m.id, 'fused', p.x, p.y, m.p.id, 0, 99999, c.color);
+      }
+      this.hold(M);
+      E.pop(p.x, p.y - 40, 'FUSION!', 'huge', c.color);
+      E.burst(p.x, p.y - 14, 10, c.color, 24, 150, 0.7);
+      E.wave(p.x, p.y, 30, c.color, 0.4, 3);
+      E.flash(0.45);
+      E.shake(5, 0.3);
+      g.hitStop(0.08);
+      g.sfx('ult', 'mod.fuse');
+    },
+    // giữ 2 người đã nhập ở trong King Leo (bay cao airZ: không va chạm, không nhặt bóng, luật trận bỏ qua)
+    hold(M) {
+      const p = M.leo.p;
+      for (const { p: q } of M.leo.mates) {
+        q.x = p.x; q.y = p.y; q.vx = q.vy = q.kbx = q.kby = 0;
+        q.state = 'meteor'; q.stateT = 99; q.airZ = 300; q.airVz = 0;
+      }
+    },
+    // SPLIT!: 2 người văng ra khỏi King Leo (quiet: giao bóng lại — chỉ trả trạng thái, đội hình đã xếp)
+    split(g, M, L, quiet) {
+      if (!L.mates.length) return;
+      const p = L.p, E = g.effects, f = g.field;
+      L.mates.forEach((m, i) => {
+        const q = m.p;
+        E.propOff(m.id, 0.05);
+        q.airZ = 0; q.airVz = 0; q.vx = q.vy = 0;
+        q.state = 'normal'; q.stateT = 0;
+        if (quiet) return;
+        const a = (i ? 1 : -1) * Math.PI / 2 + U.rand(-0.4, 0.4) + (p.y > f.cy ? -0.3 : 0.3) * (i ? -1 : 1);
+        q.x = U.clamp(p.x + Math.cos(a) * 10, f.x + q.radius, f.x + f.w - q.radius);
+        q.y = U.clamp(p.y + Math.sin(a) * 10, f.y + q.radius, f.y + f.h - q.radius);
+        q.state = 'stun'; q.stateT = M.cfg.splitStun; q.hitImmune = M.cfg.splitStun + 0.3;
+        q.kbx = Math.cos(a) * M.cfg.splitKnock; q.kby = Math.sin(a) * M.cfg.splitKnock;
+        q.airZ = 0.5; q.airVz = 160;
+      });
+      L.mates = [];
+      if (quiet) return;
+      E.pop(p.x, p.y - 52, 'SPLIT!', 'heavy', '#f3ead7');
+      E.burst(p.x, p.y - 12, 10, '#f3ead7', 16, 140, 0.5);
+    },
+    // giữ khung: bóng lỏng đang lao vào khung nhà, tới vạch trong guardT giây và lọt miệng khung -> King Leo chớp về đứng chắn trên đường bóng, bóng dội ngược
+    guard(g, M, c, dt) {
+      const L = M.leo, p = L.p, b = g.ball, f = g.field, G = g.ownGoal(M.team), dir = Math.sign(G.x - f.cx);
+      if ((L.guard -= dt) > 0 || b.owner || p.state === 'stun' || b.vx * dir < 60) return;
+      const t = (G.x - b.x) / b.vx;
+      if (!(t > 0 && t < c.guardT)) return;
+      const yAt = b.y + b.vy * t;
+      if (Math.abs(yAt - f.cy) > f.goalWidth / 2 + 8 || b.z > f.goalHeight + 6) return;
+      L.guard = 0.4;
+      const bx = G.x - dir * c.blockD;
+      this.zap(g, p, Math.abs(b.x - G.x) < c.blockD + 6 ? b.x - dir * 6 : bx, yAt);
+      p.facing = dir > 0 ? Math.PI : 0;
+      this.block(g, M, b, dir);
+    },
+    // bóng bị King Leo / lớp khoá khung chặn lại: dội ngược ra sân
+    block(g, M, b, dir) {
+      const E = g.effects;
+      b.vx = -dir * Math.max(140, Math.abs(b.vx) * 0.5); b.vy = U.rand(-1, 1) * 120; b.vz = Math.max(b.vz, 60);
+      b.lastKickTeam = M.team;
+      E.pop(b.x, b.y - b.z - 16, 'BLOCKED!', 'heavy', '#fff6a0');
+      E.shake(3, 0.15);
+      g.hitStop(0.05);
+      g.sfx('block');
+    },
+    // Player.hit: đòn trúng King Leo đang có giáp -> trừ 1 vạch thay vì choáng
+    armor(g, M, c, victim, opts) {
+      const L = M.leo;
+      if (!this.active(M) || victim !== L.p) return false;
+      const src = opts.source, E = g.effects;
+      if (!src || src.team === M.team) return true;
+      if (g.time - (M.lastHit[src.id] ?? -99) < c.hitGap || L.phase === 'dash') { E.burst(victim.x, victim.y - 10, 4, c.color, 6, 60, 0.3); return true; }
+      M.lastHit[src.id] = g.time;
+      L.hp--;
+      victim.flash = 0.12;
+      victim.kbx += (opts.kbx || 0) * 0.25; victim.kby += (opts.kby || 0) * 0.25;
+      E.pop(victim.x, victim.y - 36, L.hp > 0 ? 'CRACK!' : 'BREAK!', 'heavy', '#f3ead7');
+      E.burst(victim.x, victim.y - 12, 8, '#f3ead7', 12, 120, 0.4);
+      E.shake(3, 0.15);
+      g.hitStop(0.06);
+      g.sfx('ult', 'mod.crack');
+      if (L.hp <= 0) { this.end(g, M, true, c.breakStun); return true; }
+      this.aura(g, M, c, c.time - (L.phase === 'run' ? L.t : 0) + c.aim + c.dash + 0.5);
+      return true;
+    },
+    // AI của King Leo lúc biến hình: đi lấy bóng, cầm bóng thì solo thẳng về khung bạn, tới tầm thì sút (true = đã điều khiển)
+    aiMove(g, M, c, p) {
+      const L = M.leo;
+      if (!L || p !== L.p) return false;
+      const it = p.intent;
+      if (L.phase !== 'run' || p.state !== 'normal') { it.mx = it.my = 0; it.sprint = false; return true; }
+      const b = g.ball, goal = g.attackGoal(p.team);
+      let tx, ty;
+      if (p.hasBall) {
+        tx = goal.x; ty = goal.y + U.clamp(p.y - goal.y, -30, 30) * 0.5;
+        if (Math.abs(goal.x - p.x) < c.shootRange && !p.charging) { Act().shoot(g, p, 1, U.rand(-0.7, 0.7)); return true; }
+      } else { const o = b.owner || b; tx = o.x; ty = o.y; }
+      const d = U.norm(tx - p.x, ty - p.y + 0.01);
+      it.mx = d.x; it.my = d.y; it.sprint = true;
+      return true;
     },
     update(g, M, c, dt) {
-      const b = g.ball, st = M.star;
-      if (!st) {
-        if ((M.next -= dt) <= 0) {
-          M.next = U.rand(c.every[0], c.every[1]);
-          const tp = g.teams[M.team].players;
-          this.set(g, M, c, b.owner && b.owner.team === M.team ? b.owner : tp.reduce((a, q) => (Math.hypot(q.x - b.x, q.y - b.y) < Math.hypot(a.x - b.x, a.y - b.y) ? q : a)), false);
-          bark(g, 'mod', M.star.p);
+      const L = M.leo, E = g.effects, f = g.field;
+      if (!L) { if ((M.next -= dt * (behind(g) ? c.trailing : 1)) <= 0) this.start(g, M, c); return; }
+      const p = L.p;
+      L.t += dt;
+      if (L.phase !== 'aim' || p.state !== 'stun') { p.sizeTarget = Math.max(p.sizeTarget, c.scale); p.sizeT = Math.max(p.sizeT, 0.2); }
+      if (L.phase === 'warn') this.guard(g, M, c, dt);
+      if (L.phase === 'warn') {
+        p.vx = p.vy = 0;
+        if (Math.random() < dt * 20) E.burst(p.x + U.rand(-10, 10), p.y - U.rand(0, 30), 2, c.color, 2, 40, 0.4);
+        // 2 đồng đội bị hút về phía hắn (nhanh dần), nảy nhẹ lên khỏi mặt đất
+        const e = Math.min(1, L.t / c.warn) ** 2;
+        for (const m of L.mates) {
+          const q = m.p;
+          q.x = m.x0 + (p.x - m.x0) * e; q.y = m.y0 + (p.y - m.y0) * e;
+          q.vx = q.vy = q.kbx = q.kby = 0;
+          q.state = 'recover'; q.stateT = 0.2; q.hitImmune = 0.2;
+          q.airZ = Math.max(0.5, Math.sin(Math.PI * e) * 18); q.airVz = 0;
         }
-      } else {
-        keepSpeed(st.p, c.speed);
-        if ((st.t -= dt) <= 0) this.clear(g, M);
-        // cướp bóng từ STAR: người cầm bóng mới thuộc đội bạn, người cầm trước đó là STAR
-        else if (!st.mine && b.owner && b.owner.team !== M.team && M.lastOwner === st.p) { this.set(g, M, c, b.owner, true); bark(g, 'conceded'); }
+        if (L.t >= c.warn) { L.phase = 'run'; L.t = 0; this.absorb(g, M, c); }
+        return;
       }
-      if (b.owner) M.lastOwner = b.owner;
+      this.hold(M);
+      if (L.phase === 'run') {
+        // hợp thể: chạy như TIA CHỚP (user 2026-10-24): nhanh x fuseSpeed, để lại tàn ảnh + tia điện, điện rẹt rẹt
+        const fused = L.mates.length > 0;
+        keepSpeed(p, fused ? c.fuseSpeed : c.speed);
+        if (fused && Math.hypot(p.vx, p.vy) > 60) {
+          if ((L.trail = (L.trail || 0) - dt) <= 0) { L.trail = 0.05; E.afterimage(p, 0.22); }
+          if (Math.random() < dt * 14) E.burst(p.x + U.rand(-8, 8), p.y - U.rand(4, 26), 4, Math.random() < 0.5 ? '#fff6a0' : '#7fe7ff', 3, 90, 0.25);
+          if ((L.zap = (L.zap || 0) - dt) <= 0) { L.zap = 0.45; g.sfx('ult', 'mod.bolt'); }
+        }
+        // húc bật người bên bạn đứng chắn đường (người đang ra đòn / lướt thì không: để còn đánh được hắn)
+        for (const o of victims(g)) {
+          if (!grounded(o) || o.state !== 'normal' || o.hitImmune > 0) continue;
+          if (Math.hypot(o.x - p.x, o.y - p.y) > p.radius * (p.sizeMul || 1) + o.radius) continue;
+          if (Act().dodged(g, o)) continue;
+          const n = U.norm(o.x - p.x || 0.1, o.y - p.y);
+          if (o.hit({ stun: c.bump, kbx: n.x * c.knock, kby: n.y * c.knock, type: 'hard', source: p })) {
+            M.hits++;
+            E.pop(o.x, o.y - 30, 'OUT OF MY WAY!', 'light', c.color);
+          }
+        }
+        if (L.t < c.time) return;
+        // hết giờ: chuẩn bị cú vào bóng muộn
+        if (p.hasBall) g.looseBall(p, Math.cos(p.facing), Math.sin(p.facing));
+        const vs = victims(g).filter(grounded);
+        if (!vs.length) { this.end(g, M, false); return; }
+        L.tgt = vs.reduce((a, o) => (Math.hypot(o.x - p.x, o.y - p.y) < Math.hypot(a.x - p.x, a.y - p.y) ? o : a));
+        L.phase = 'aim'; L.t = 0;
+        L.aim = newId(g);
+        E.prop(L.aim, 'lateaim', p.x, p.y, L.tgt.id, c.dashSpeed * c.dash, c.aim + 0.05, '#ff3d5a');
+        E.pop(p.x, p.y - 36, 'LATE TACKLE!', 'info', '#ff3d5a');
+        g.sfx('ult', 'mod.windup');
+        return;
+      }
+      if (L.phase === 'aim') {
+        // lúc ngắm hết giáp: bị đánh choáng là huỷ cú lao
+        if (p.state === 'stun') { E.pop(p.x, p.y - 36, 'DENIED!', 'good', '#3ff6ff'); this.end(g, M, false); return; }
+        p.vx = p.vy = 0; p.intent.mx = p.intent.my = 0;
+        const q = L.tgt;
+        p.facing = Math.atan2(q.y - p.y, q.x - p.x);
+        if (L.t < c.aim) return;
+        L.d = U.norm(q.x - p.x || 0.1, q.y - p.y);
+        L.phase = 'dash'; L.t = 0; L.hits = new Set();
+        E.propOff(L.aim, 0.05); L.aim = 0;
+        g.sfx('ult', 'mod.late');
+        return;
+      }
+      // dash: lao bằng gầm giày theo hướng đã khoá
+      const np = { x: U.clamp(p.x + L.d.x * c.dashSpeed * dt, f.x + p.radius, f.x + f.w - p.radius), y: U.clamp(p.y + L.d.y * c.dashSpeed * dt, f.y + p.radius, f.y + f.h - p.radius) };
+      p.x = np.x; p.y = np.y; p.vx = p.vy = 0;
+      if (Math.random() < dt * 30) { E.burst(p.x, p.y, 0, '#c9b48a', 3, 50, 0.4); E.afterimage(p, 0.2); }
+      for (const o of victims(g)) {
+        if (L.hits.has(o.id) || !grounded(o) || Math.hypot(o.x - p.x, o.y - p.y) > c.tackleR + o.radius) continue;
+        L.hits.add(o.id);
+        if (Act().dodged(g, o)) continue;
+        o.hitImmune = 0;
+        if (o.hit({ stun: c.tackleStun, kbx: L.d.x * c.tackleKnock, kby: L.d.y * c.tackleKnock, type: 'hard', source: p })) {
+          M.hits++;
+          E.pop(o.x, o.y - 30, 'LATE!', 'heavy', '#ff3d5a');
+          E.pop(f.cx, f.y + 14, 'NO WHISTLE?!', 'info', '#f3ead7');
+          E.shake(4, 0.25);
+          g.hitStop(0.08);
+        }
+      }
+      this.hold(M);
+      if (L.t >= c.dash) this.end(g, M, false);
     },
   };
 
@@ -1335,17 +1775,22 @@ window.SFC = window.SFC || {};
       bark(g, scorer === M.team ? 'goal' : 'conceded');
     },
 
-    // Game.goalMouth: miệng khung thành phía side bị sạp hàng chắn (luật HAGGLE) — null = khung bình thường (cả máy khách gương)
-    mouth(g, side) {
+    // Player.hit (trước khi choáng): true = đòn bị giáp chặn (boss KING LEO 1976 đang biến hình). Máy khách gương không mô phỏng
+    armor(g, victim, opts) {
       const M = g.mod;
-      if (!M || M.id !== 'haggle' || !M.d) return null;
-      const f = g.field, d = M.d[side] || 0;
-      return { gTop: f.gTop + d, gBot: f.gBot - d };
+      return !!(M && M.id === 'leo' && M.cfg && !M.mirror && K.leo.armor(g, M, M.cfg, victim, opts));
     },
-    // Ball.collideWalls: bóng dội vào sạp trong miệng khung
-    mouthHit(g, b, side) {
+    // Ball.collideWalls: bóng chạm vạch khung của đội defTeam — true = khung đang bị khoá (KING LEO 1976 đang cast), bóng dội ra
+    sealed(g, defTeam, b) {
       const M = g.mod;
-      if (M && M.id === 'haggle' && !M.mirror) K.haggle.hit(g, M, M.cfg, b, side);
+      if (!M || M.id !== 'leo' || M.mirror || !M.leo || M.leo.phase !== 'warn' || defTeam !== M.team) return false;
+      if (b.lastKickTeam !== M.team) K.leo.block(g, M, b, Math.sign(g.ownGoal(M.team).x - g.field.cx));
+      return true;
+    },
+    // CoreSystem.unstealable: boss đang có giáp thì không cướp bóng được
+    armored(g, p) {
+      const M = g.mod;
+      return !!(M && M.id === 'leo' && K.leo.active(M) && M.leo.p === p);
     },
     // Human.update: đang cầm ghế (luật ghế nhựa) mà bấm ra đòn -> ném ghế theo hướng mũi tên
     throwCarry(g, p, dx, dy) {
@@ -1381,6 +1826,7 @@ window.SFC = window.SFC || {};
       if (o.kind === 'lassofly') { const k = Math.min(el, o.max); return { x: o.x + Math.cos(o.a) * o.b * k, y: o.y + Math.sin(o.a) * o.b * k }; }
       if (o.kind === 'fakeball') return K.fortune.fakeAt(g, o, el);
       if (o.kind === 'rabbit') return K.fortune.hopAt(o, el);
+      if (o.kind === 'devil') return K.devils.at(o, el);
       if (o.kind === 'stoolthrow') { const k = Math.min(el, o.max); return { x: o.x + Math.cos(o.a) * o.b * k, y: o.y + Math.sin(o.a) * o.b * k }; }
       if (o.kind === 'spot' && o.a === 0) {
         const c = S().mods && S().mods.searchlight;
@@ -1392,6 +1838,9 @@ window.SFC = window.SFC || {};
     // đọc prop thay vì M.veil để máy khách online (trận gương) vẽ giống host
     alpha(g, p) {
       const M = g.mod;
+      // KING LEO 1976: người đã nhập vào King Leo (prop 'fused') không có vòng chân / bóng hình
+      // ĐŨA KHỔNG LỒ: người đang ngồi trong nồi mì (prop 'inpot') cũng vậy
+      if (M && (M.id === 'leo' || M.id === 'chopsticks') && g.effects.V.props.some((o) => (o.kind === 'fused' || o.kind === 'inpot') && o.a === p.id && o.t > 0)) return 0;
       if (!M || M.id !== 'ghosts' || p.team !== M.team || g.humanTeam < 0 || p.team === g.humanTeam) return 1;
       if (g.state !== 'play' && g.state !== 'kickoff') return 1;
       let v = 0;
