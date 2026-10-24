@@ -112,12 +112,113 @@ window.SFC = window.SFC || {};
     }
   }
 
+  // mặt sau lá bài tại (x, y), cỡ k, bề ngang sx (lật), nghiêng rot (rad): nền tím, viền vàng, con mắt + hoa văn
+  function tarotBack(ctx, x, y, k, sx, rot) {
+    const { px, ellipse, disc } = SP();
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    if (rot) ctx.rotate(rot);
+    ctx.scale(k * sx, k);
+    px(ctx, -14, -20, 28, 40, SP().OUT); px(ctx, -13, -19, 26, 38, '#ffd23f'); px(ctx, -12, -18, 24, 36, '#5a2a9a');
+    for (let i = -10; i <= 10; i += 5) for (let j = -15; j <= 15; j += 5) if ((i + j) % 10 === 0) px(ctx, i, j, 1, 1, '#9d7bff');
+    ellipse(ctx, 0, 0, 7, 4, '#ffd23f'); disc(ctx, 0, 0, 2, '#1c1238');
+    ctx.restore();
+  }
+  // hình trên mặt lá bài (THE MOON · THE MAGICIAN · THE RABBITS · THE WHEEL), gốc ở tâm lá, mặt trong 24x36
+  function tarotArt(ctx, id, el, t) {
+    const { px, disc } = SP(), OUT = SP().OUT;
+    if (id === 'moon') {
+      disc(ctx, 0, -3, 8, '#fff3b0'); disc(ctx, 4, -5, 7, '#1c1238');
+      for (const [sx, sy] of [[-8, -13], [7, 8], [-6, 10], [8, -14]]) { px(ctx, sx - 1, sy, 3, 1, '#ffffff'); px(ctx, sx, sy - 1, 1, 3, '#ffffff'); }
+    } else if (id === 'magician') {
+      px(ctx, -8, 2, 16, 2, OUT); px(ctx, -5, -10, 10, 13, OUT); px(ctx, -4, -9, 8, 11, '#2a2a3a'); px(ctx, -4, -2, 8, 2, '#d7263d');   // mũ ảo thuật
+      px(ctx, -9, 1, 18, 2, '#2a2a3a');
+      px(ctx, 4, 6, 8, 1, '#ffffff'); px(ctx, 11, 5, 2, 3, '#ffffff');   // đũa
+      for (let i = 0; i < 3; i++) { const a2 = t * 4 + i * 2.1; px(ctx, Math.round(Math.cos(a2) * 9), Math.round(-12 + Math.sin(a2) * 3), 2, 2, '#ffd23f'); }
+      for (const bx of [-7, 0, 7]) { disc(ctx, bx, 12, 2, '#ffffff'); }
+    } else if (id === 'rabbits') {
+      // đầu thỏ giận + củ cà rốt
+      px(ctx, -7, -16, 4, 10, OUT); px(ctx, -6, -15, 2, 8, '#ffb3c8'); px(ctx, 3, -16, 4, 10, OUT); px(ctx, 4, -15, 2, 8, '#ffb3c8');
+      disc(ctx, 0, -2, 8, OUT); disc(ctx, 0, -2, 7, '#ffffff');
+      px(ctx, -4, -4, 2, 2, '#ff2a3d'); px(ctx, 2, -4, 2, 2, '#ff2a3d'); px(ctx, -5, -6, 3, 1, OUT); px(ctx, 2, -6, 3, 1, OUT);
+      px(ctx, -1, 1, 2, 3, '#ffffff'); px(ctx, -2, 0, 4, 1, OUT);
+      px(ctx, -2, 9, 5, 7, OUT); px(ctx, -1, 9, 3, 5, '#ff8a3f'); px(ctx, -1, 7, 3, 2, '#6bff7a');
+    } else {
+      const a0 = el * 6;
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.stroke();
+      for (let i = 0; i < 4; i++) { const a2 = a0 + (i * Math.PI) / 4; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(Math.cos(a2) * 9, Math.sin(a2) * 9); ctx.lineTo(-Math.cos(a2) * 9, -Math.sin(a2) * 9); ctx.stroke(); }
+      disc(ctx, 0, 0, 2, '#d7263d');
+      px(ctx, -1, -15, 3, 4, '#d7263d');   // kim chỉ
+    }
+  }
+  // 1 lưỡi lửa pixel cao h (chân ở x, y): viền đỏ sẫm, thân cam, lõi vàng, đỉnh đung đưa theo thời gian
+  function flame(ctx, x, y, h, t, seed) {
+    const { px } = SP();
+    if (h < 2) return;
+    const sw = Math.round(Math.sin(t * 11 + seed * 2.3) * Math.min(2, h / 5)), w = h > 7 ? 5 : 3;
+    for (let j = 0; j < h; j++) {
+      const k = j / h, off = Math.round(sw * k * k), ww = Math.max(1, Math.round(w * (1 - k * 0.8)));
+      px(ctx, x - (ww >> 1) + off, y - j, ww, 1, k > 0.75 ? '#d7263d' : '#ff6a1f');
+      if (k < 0.7 && ww > 2) px(ctx, x - (ww >> 1) + off + 1, y - j, ww - 2, 1, k < 0.35 ? '#ffe14f' : '#ffb03d');
+    }
+    if (Math.floor(t * 9 + seed) % 5 === 0) px(ctx, x + sw, y - h - 2, 1, 1, '#ffd23f');   // tàn lửa bắn lên
+  }
+  // HAGGLE: hình học sạp chắn khung (độ sâu d đang trượt từ o.y tới o.a trong slide giây) — tính từ config để parts() dùng được
+  function stallGeo(o) {
+    const F = SFC_CONFIG.game.field, C = SFC_CONFIG.stories.mods.haggle, el = o.max - o.t;
+    const k = Math.min(1, el / C.slide), e = k * k * (3 - 2 * k), cy = F.y + F.h / 2;
+    return { lx: o.x < 0 ? F.x : F.x + F.w, top: cy - F.goalWidth / 2, bot: cy + F.goalWidth / 2, gw: F.goalWidth, gh: F.goalHeight, d: o.y + (o.a - o.y) * e };
+  }
+  // dãy thùng trái cây trên vạch khung thành từ y0 tới y1 (nhìn 3/4: mặt trên + mặt trước), thẻ giá ở đầu phía miệng khung (end: 1 = đầu dưới, -1 = đầu trên)
+  // (dãy thùng đặt phía trong sân sát vạch để lưới khung không che: side = phía khung)
+  function crates(ctx, lx, y0, y1, seed, end, side) {
+    const { px } = SP(), OUT = SP().OUT, FR = ['#ff3d5a', '#ffd23f', '#6bff7a', '#ff8a3f'];
+    if (y1 - y0 < 1) return;
+    const W = SFC_CONFIG.stories.mods.haggle.depth, x0 = Math.round(side > 0 ? lx - W : lx);
+    for (let yy = Math.round(y0), i = 0; yy < y1; yy += 6, i++) {
+      const h = Math.min(6, Math.round(y1 - yy));
+      px(ctx, x0 - 1, yy - 8, 14, h + 9, OUT);
+      px(ctx, x0, yy - 7, 12, 6, '#d39a52');                       // mặt trên
+      px(ctx, x0, yy - 1, 12, h + 1, '#9a5f24');                   // mặt trước
+      px(ctx, x0, yy + 1, 12, 1, '#7a4510');
+      const fc = FR[(seed + i) % FR.length];
+      for (let j = 0; j < 3; j++) px(ctx, x0 + 2 + j * 3, yy - 6 + (j % 2), 2, 2, fc);   // trái cây trên thùng
+      px(ctx, x0 + 3, yy - 6, 1, 1, '#ffffff');
+    }
+    // thẻ giá treo ở thùng sát miệng khung
+    const ty = end > 0 ? Math.round(y1) - 4 : Math.round(y0) - 4;
+    const tx = side > 0 ? x0 - 6 : x0 + 12;
+    px(ctx, tx, ty - 4, 6, 5, OUT); px(ctx, tx + 1, ty - 3, 4, 3, '#fff3d6'); px(ctx, tx + 1, ty - 3, 1, 1, '#d7263d');
+  }
+  // sợi mì dày (vàng mì trứng, viền tối, ánh sáng) theo các điểm pts [[x, y], ...]
+  function noodle(ctx, pts, col, t) {
+    for (const [w, c] of [[4, SP().OUT], [2, col], [1, '#fff3b0']]) {
+      ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      pts.forEach(([px2, py2], i) => (i ? ctx.lineTo(px2, py2 - (w === 1 ? 0.5 : 0)) : ctx.moveTo(px2, py2 - (w === 1 ? 0.5 : 0))));
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+  }
+  // vòng mì (thòng lọng) hình elip tâm (x, y), bán kính rx, ry, mép gợn sóng
+  function noodleRing(ctx, x, y, rx, ry, col, t) {
+    const pts = [];
+    for (let i = 0; i <= 20; i++) { const a = (i / 20) * Math.PI * 2, w = 1 + Math.sin(a * 5 + t * 10) * 0.08; pts.push([x + Math.cos(a) * rx * w, y + Math.sin(a) * ry * w]); }
+    noodle(ctx, pts, col, t);
+  }
+  let darkCv = null;
+  const U2 = { clamp: (v, a, b) => Math.max(a, Math.min(b, v)) };
+  const byId = (g, id) => g.players.find((q) => q.id === id) || null;
+
   const ModDraw = {
-    kinds: { flock: 1, splatfall: 1, splat: 1, wind: 1, graffitiwarn: 1, graffiti: 1, lantern: 1, hot: 1, stallwarn: 1, stall: 1, tide: 1, card: 1, star: 1,
+    kinds: { flock: 1, splatfall: 1, splat: 1, wind: 1, graffitiwarn: 1, graffiti: 1, lantern: 1, flames: 1, burn: 1, lassoswing: 1, lassofly: 1, tied: 1, fakeball: 1, dark: 1, tarot: 1, rabbit: 1, carrot: 1, carrotheld: 1, tophat: 1, zoomies: 1, goalstall: 1, tide: 1, card: 1, star: 1,
       stool: 1, stoolheld: 1, stoolthrow: 1, stoolfly: 1, lane: 1, moped: 1, vroom: 1, veil: 1, spot: 1, alarm: 1, owl: 1, owleyes: 1, gazelock: 1, owlbolt: 1, petrify: 1 },
     // vật thể dài chia khúc để xếp chiều sâu từng khúc với cầu thủ (render/vfx.js props): tường graffiti = 1 tấm mỗi ~8px,
     // luôn xếp từ trái sang phải (cùng chiều sâu thì vẽ theo thứ tự này: tấm sau phủ mép tấm trước)
     parts(o) {
+      // sạp HAGGLE: khúc trên (xếp ở mép trong) + khúc dưới (xếp ở cột dưới)
+      if (o.kind === 'goalstall') { const G = stallGeo(o); return [{ x: G.lx, y: G.top + G.d, d: G.top + G.d }, { x: G.lx, y: G.bot, d: G.bot }]; }
       if (o.kind !== 'graffiti') return null;
       const n = Math.max(3, Math.round(Math.hypot(o.a - o.x, o.b - o.y) / 8)), out = [];
       const [x0, y0, x1, y1] = o.a < o.x ? [o.a, o.b, o.x, o.y] : [o.x, o.y, o.a, o.b];
@@ -206,32 +307,275 @@ window.SFC = window.SFC || {};
           if (!broke) { px(ctx, x - 3, ly - 13, 6, 2, '#ffd23f'); px(ctx, x - 3, ly - 1, 6, 2, '#ffd23f'); ctx.globalAlpha = fade * 0.35; ellipse(ctx, x, ly - 6, 10, 10, '#ffe14f'); }
           break;
         }
-        case 'hot': {   // bóng nóng: quầng cam nhấp nháy quanh bóng + hơi bốc lên
-          const pul = 0.6 + 0.4 * Math.sin(t * 16);
+        /* ---- Story 3 (user 2026-10-23) ---- */
+        case 'flames': {   // đốm lửa đèn lồng để lại (a = bán kính): vệt cháy sém + lưỡi lửa bập bùng, nhỏ dần lúc sắp tắt
+          const r0 = o.a, s = Math.min(1, k * 4);
+          ctx.globalAlpha = fade * 0.55; ellipse(ctx, x, y, r0, r0 * 0.45, '#2a1408');
           ctx.globalCompositeOperation = 'lighter';
-          ctx.globalAlpha = fade * 0.45 * pul; ellipse(ctx, x, y - 2, 7, 6, o.color);
-          ctx.globalAlpha = fade * 0.25; ellipse(ctx, x, y - 2, 11, 9, '#ffe14f');
+          ctx.globalAlpha = fade * (0.3 + 0.1 * Math.sin(t * 13)); ellipse(ctx, x, y - 2, r0 + 3, r0 * 0.6, '#ff6a1f');
           ctx.globalCompositeOperation = 'source-over';
-          ctx.globalAlpha = fade * 0.7;
-          for (let i = 0; i < 3; i++) { const ph = (t * 1.5 + i / 3) % 1; px(ctx, Math.round(x - 3 + i * 3 + Math.sin(t * 6 + i) * 1.5), Math.round(y - 6 - ph * 14), 1, 2, '#e8ecf5'); }
+          ctx.globalAlpha = fade;
+          // 2 hàng lưỡi lửa (hàng sau thấp, hàng trước cao), mỗi lưỡi cao thấp riêng
+          for (const [row, dy, n0] of [[0, -2, 4], [1, 1, 5]]) {
+            for (let i = 0; i < n0; i++) {
+              const fx2 = Math.round(x - r0 + 3 + (i + (row ? 0 : 0.5)) * ((r0 * 2 - 6) / (n0 - 1 + (row ? 0 : 1)))), sd = i * 3 + row * 7;
+              const h = Math.round(s * ((row ? 8 : 6) + 4 * Math.abs(Math.sin(t * (7 + i) + sd)) - Math.abs(fx2 - x) * 0.25));
+              flame(ctx, fx2, Math.round(y + dy), h, t, sd);
+            }
+          }
+          if (Math.random() < 0.5) px(ctx, x + Math.round((Math.random() - 0.5) * r0 * 2), y - 10 - Math.round(Math.random() * 10), 1, 1, '#ffd23f');
           break;
         }
-        case 'stallwarn': {   // sạp chợ sắp đẩy ra: khung sọc cam nhấp nháy ở mép sân (b = phía: -1 trên, 1 dưới)
-          const S2 = SFC_CONFIG.stories.mods.stalls, y0 = o.b < 0 ? f.y : o.y, h2 = S2.depth;
-          ctx.globalAlpha = fade * (Math.floor(el * 10) % 2 ? 0.35 : 0.15);
-          ctx.fillStyle = o.color; ctx.fillRect(Math.round(o.x), y0, Math.round(o.a - o.x), h2);
-          ctx.globalAlpha = fade; ctx.strokeStyle = o.color; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
-          ctx.strokeRect(Math.round(o.x) + 0.5, y0 + 0.5, Math.round(o.a - o.x) - 1, h2 - 1);
-          ctx.setLineDash([]);
+        case 'burn': {   // bắt lửa: đứng lại phủi phủi dập lửa (2 tay đập luân phiên lên ngực / đùi, nhún nhảy), lửa trên người nhỏ dần (sprite thật bị ẩn — hides)
+          const q = byId(g, o.a);
+          if (!q) break;
+          const ph = Math.floor(el * 9) % 2, hop = Math.floor(el * 9) % 4 === 0 ? 1 : 0, heat = Math.max(0, 1 - el / Math.max(0.1, o.max - 0.3));
+          const arms = ph ? [[4, 1], [-1, 6]] : [[1, 6], [-4, 1]];
+          SP().drawPlayer(ctx, Object.assign({}, q, { x, y: y - hop, vx: 0, vy: 0, state: 'normal', atkType: null, keeper: false, charging: false,
+            celPose: { arms, eyes: 'closed', mouth: true } }), g, 0.999);
+          // lửa trên người: đỉnh đầu, vai, chỗ vừa phủi
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.globalAlpha = 0.35 * heat; ellipse(ctx, x, y - 12, 9, 10, '#ff6a1f');
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalAlpha = 1;
+          for (const [dx, dy, n, sd] of [[0, -22, 9, 1], [-4, -16, 6, 2], [4, -15, 7, 3], [ph ? 3 : -3, -8, 4, 4], [-2, -3, 4, 5]]) {
+            flame(ctx, x + dx, y + dy - hop, Math.round(n * heat * (0.75 + 0.25 * Math.abs(Math.sin(t * 15 + sd)))), t, sd);
+          }
+          // tay vừa phủi: bụi lửa bắn ra
+          if (Math.floor(el * 9) !== Math.floor((el - 1 / 60) * 9)) for (let i = 0; i < 3; i++) px(ctx, x + (ph ? 6 : -6) + Math.round((Math.random() - 0.5) * 6), y - 10 - Math.round(Math.random() * 6), 1, 1, '#ffd23f');
+          // khói bốc lên
+          for (let i = 0; i < 3; i++) {
+            const p2 = (el * 1.4 + i / 3) % 1;
+            ctx.globalAlpha = (1 - p2) * 0.6;
+            px(ctx, Math.round(x - 4 + i * 4 + Math.sin(t * 4 + i) * 2), Math.round(y - 28 - p2 * 16), 2, 2, '#9aa0a8');
+          }
+          ctx.globalAlpha = 1;
           break;
         }
-        case 'stall': {   // sạp hàng: mái bạt sọc + quầy gỗ + hàng hoá (b = phía)
-          const S2 = SFC_CONFIG.stories.mods.stalls, x0 = Math.round(o.x), w2 = Math.round(o.a - o.x), top = o.b < 0 ? f.y - 10 : o.y - 12, h2 = S2.depth + 10;
-          px(ctx, x0 - 1, top - 1, w2 + 2, h2 + 2, SP().OUT);
-          px(ctx, x0, top + 10, w2, h2 - 10, '#7a4510');
-          px(ctx, x0, top + 10, w2, 2, '#c9781a');
-          for (let i = 0; i < w2; i += 10) { px(ctx, x0 + i, top, 5, 10, o.color); px(ctx, x0 + i + 5, top, 5, 10, '#fff3d6'); }
-          for (let i = 6; i < w2 - 6; i += 12) { px(ctx, x0 + i, top + 14, 6, 5, ['#ff3d5a', '#ffd23f', '#6bff7a'][(i / 12 | 0) % 3]); }
+        case 'lassoswing': {   // Noodle Kicker đứng tấn (chân dạng), 1 tay bưng tô mì, tay kia giơ cao quay vòng mì to dần trên đầu (a = người quăng, b = người bị nhắm);
+                               // vạch ngắm nhấp nháy tới chân người bị nhắm, sắp quăng thì vòng mì loé trắng (sprite thật bị ẩn — hides)
+          const q = byId(g, o.a), v = byId(g, o.b), OUT = SP().OUT;
+          if (!q) break;
+          const sd = Math.cos(q.facing) >= 0 ? 1 : -1, sp = t * 14, late = o.t < 0.35;
+          const up = [sd, -6, sd * 2 + Math.round(Math.cos(sp) * 2), -13 + Math.round(Math.sin(sp))], bowl = [sd * 3, 1];
+          if (v && (late || Math.floor(t * 8) % 2)) {
+            ctx.globalAlpha = fade * 0.8; ctx.strokeStyle = late ? '#ffffff' : o.color; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.lineDashOffset = -t * 40;
+            ctx.beginPath(); ctx.moveTo(x, y - 8); ctx.lineTo(v.x, v.y - 6); ctx.stroke(); ctx.setLineDash([]);
+            ctx.globalAlpha = fade; ctx.strokeStyle = '#ff6a3d'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(Math.round(v.x), Math.round(v.y + 1), 11, 5, 0, 0, Math.PI * 2); ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+          SP().drawPlayer(ctx, Object.assign({}, q, { x, y, vx: 0, vy: 0, state: 'normal', atkType: null, keeper: false, charging: false,
+            celPose: { arms: sd > 0 ? [bowl, up] : [up, bowl], legs: 'split', mouth: late } }), g, 0.999);
+          // tô mì trên tay
+          const bx = x + (sd > 0 ? -5 : 5) + bowl[0], by2 = y - 6 + bowl[1];
+          px(ctx, bx - 4, by2 - 2, 9, 5, OUT); px(ctx, bx - 3, by2, 7, 2, '#d7263d'); px(ctx, bx - 3, by2 - 1, 7, 1, '#ffd86b');
+          // vòng mì quay trên tay giơ cao, to dần
+          const hx = x + (sd > 0 ? 5 : -5) + up[2], hy = y - 8 + up[3], rr = 5 + 9 * Math.min(1, el / 0.6), cy = hy - 5;
+          const ex = hx + Math.cos(sp) * rr, ey = cy + Math.sin(sp) * rr * 0.4;
+          noodle(ctx, [[hx, hy], [(hx + ex) / 2 + 1, (hy + ey) / 2 - 1], [ex, ey]], late ? '#ffffff' : o.color, t);
+          noodleRing(ctx, hx, cy, rr, rr * 0.4, late ? '#ffffff' : o.color, t);
+          for (let i = 1; i <= 3; i++) { const a2 = sp - i * 0.4; ctx.globalAlpha = 0.5 - i * 0.12; px(ctx, Math.round(hx + Math.cos(a2) * (rr + 3)), Math.round(cy + Math.sin(a2) * (rr + 3) * 0.4), 2, 1, '#ffffff'); }
+          ctx.globalAlpha = 1;
+          break;
+        }
+        case 'lassofly': {   // vòng mì đang bay (góc a, tốc độ b): vòng mì to + sợi mì dày uốn lượn kéo về phía người quăng, giọt nước dùng văng
+          const ux = Math.cos(o.a), uy = Math.sin(o.a), len = Math.min(80, Math.hypot(x - o.x, y - o.y)), pts = [];
+          for (let i = 0; i <= 12; i++) {
+            const d = (len * i) / 12, wv = Math.sin(i * 1.1 - t * 28) * 3 * (i / 12);
+            pts.push([x - ux * d - uy * wv, y - 16 - uy * d + ux * wv]);
+          }
+          noodle(ctx, pts, o.color, t);
+          noodleRing(ctx, x + ux * 7, y - 16 + uy * 7, 10, 5, o.color, t);
+          ctx.globalAlpha = fade * 0.3; ellipse(ctx, x + ux * 7, y + uy * 7, 10, 3, '#000000');
+          ctx.globalAlpha = fade;
+          if (Math.random() < 0.5) px(ctx, Math.round(x - ux * 10 + (Math.random() - 0.5) * 8), Math.round(y - 12 + Math.random() * 6), 1, 1, '#fff3b0');
+          break;
+        }
+        case 'tied': {   // bị trói mì: 2 tay ép sát người, 3 vòng mì quấn quanh thân, người nghiêng theo lần vùng gần nhất (hướng mặt), run run;
+                         // người chơi đang điều khiển người này: mũi tên ◀ ▶ nhấp nháy trên đầu nhắc vùng trái / phải (sprite thật bị ẩn — hides)
+          const q = byId(g, o.a), OUT = SP().OUT;
+          if (!q) break;
+          const sd = Math.cos(q.facing) >= 0 ? 1 : -1, jit = Math.sin(t * 40) * 0.05;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(sd * 0.2 + jit);
+          SP().drawPlayer(ctx, Object.assign({}, q, { x: 0, y: 0, vx: 0, vy: 0, state: 'normal', atkType: null, keeper: false, charging: false,
+            celPose: { arms: [[1, 5], [-1, 5]], eyes: 'closed', mouth: Math.floor(t * 6) % 2 === 0 } }), g, 0.999);
+          // 3 vòng mì dày quấn quanh thân (gợn sóng như sợi mì), 2 đầu sợi lòng thòng đung đưa
+          for (let i = 0; i < 3; i++) {
+            const cy = -13 + i * 4;
+            px(ctx, -8, cy - 1, 16, 4, OUT);
+            for (let xx = -7; xx < 8; xx++) { const w = Math.round(Math.sin(xx * 0.9 + i * 2) * 0.6); px(ctx, xx, cy + w, 1, 2, o.color); if ((xx + i) % 4 === 0) px(ctx, xx, cy + w, 1, 1, '#fff3b0'); }
+          }
+          noodle(ctx, [[7, -6], [9, -3 + Math.sin(t * 6)], [8, 1]], o.color, t);
+          noodle(ctx, [[-7, -9], [-10, -6 + Math.sin(t * 5 + 1)], [-9, -2]], o.color, t);
+          ctx.restore();
+          // mồ hôi
+          const sw = (t * 2) % 1;
+          ctx.globalAlpha = 1 - sw; px(ctx, x - sd * 8, Math.round(y - 22 + sw * 8), 1, 2, '#bdf4ff');
+          ctx.globalAlpha = 1;
+          if (q === g.controlled) {
+            const on = Math.floor(t * 8) % 2, ay = y - 40;
+            for (const s2 of [-1, 1]) {   // tam giác chĩa ra 2 bên
+              const ax = x + s2 * (on ? 13 : 11);
+              for (let i = 0; i < 4; i++) { const h = (3 - i) * 2 + 1; px(ctx, ax + s2 * i - 1, ay - (3 - i) - 1, 3, h + 2, OUT); }
+              for (let i = 0; i < 4; i++) { const h = (3 - i) * 2 + 1; px(ctx, ax + s2 * i, ay - (3 - i), 1, h, '#ffffff'); }
+            }
+          }
+          break;
+        }
+        case 'fakeball': {   // bóng giả (THE MAGICIAN): vẽ y hệt bóng thật (cùng skin / hiệu ứng), lăn theo MatchMods.at
+          const C = SFC_CONFIG.stories.mods.fortune.magician, v = o.b * Math.exp(-C.drag * el);
+          SP().drawBall(ctx, Object.assign({}, g.ball, { x: c.x, y: c.y, z: 0, vx: Math.cos(o.a) * v, vy: Math.sin(o.a) * v, owner: null, roll: el * v * 0.25 }), fade);
+          break;
+        }
+        case 'dark': {   // THE MOON: tắt đèn cả sân, chỉ còn vầng sáng quanh người đội bạn (a = đội) + quanh bóng; mắt Fortune Tellers (b) sáng trong tối
+          const C = SFC_CONFIG.stories.mods.fortune.moon, m = 40, W = f.w + m * 2, H = f.h + m * 2;
+          if (!darkCv) darkCv = document.createElement('canvas');
+          if (darkCv.width !== W || darkCv.height !== H) { darkCv.width = W; darkCv.height = H; }
+          const d = darkCv.getContext('2d'), ox = f.x - m, oy = f.y - m;
+          d.globalCompositeOperation = 'source-over';
+          d.clearRect(0, 0, W, H);
+          d.fillStyle = `rgba(5,4,12,${0.9 * fade})`; d.fillRect(0, 0, W, H);
+          d.globalCompositeOperation = 'destination-out';
+          const hole = (hx, hy, r) => {
+            const gr = d.createRadialGradient(hx - ox, hy - oy, r * 0.35, hx - ox, hy - oy, r);
+            gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+            d.fillStyle = gr; d.beginPath(); d.arc(hx - ox, hy - oy, r, 0, Math.PI * 2); d.fill();
+          };
+          for (const p2 of g.teams[o.a].players) hole(p2.x, p2.y - 10, C.light);
+          hole(g.ball.x, g.ball.y - g.ball.z, C.ballLight);
+          ctx.globalAlpha = 1;
+          ctx.drawImage(darkCv, ox, oy);
+          // trăng khuyết trên trời + mắt Tellers
+          ctx.globalAlpha = fade;
+          SP().disc(ctx, f.x + f.w - 24, f.y - 18, 7, '#fff3b0'); SP().disc(ctx, f.x + f.w - 21, f.y - 20, 6, '#05040c');
+          for (const p2 of g.teams[o.b].players) {
+            const ex = Math.round(p2.x) + (Math.cos(p2.facing) >= 0 ? 1 : -1), ey = Math.round(p2.y) - 17, blink = Math.floor(t * 3 + p2.id) % 7 === 0;
+            if (blink) continue;
+            ctx.globalCompositeOperation = 'lighter'; ellipse(ctx, ex, ey, 5, 2.5, 'rgba(255,210,63,0.25)'); ctx.globalCompositeOperation = 'source-over';
+            px(ctx, ex - 3, ey, 2, 1, '#ffe14f'); px(ctx, ex + 1, ey, 2, 1, '#ffe14f');
+          }
+          break;
+        }
+        case 'tarot': {   // Madame Fate rút bài (a = số thứ tự lá trong config): bộ bài bay từ tay bà lên giữa trên sân (0.3s), xào 2 lượt (1s: chia 2 nửa
+                          // rồi xen kẽ gộp lại), lá trên cùng nhấc lên + lật mặt (0.45s), các lá còn lại rơi xuống mờ đi; hiện tên + gợi ý tới hết
+          const C = SFC_CONFIG.stories.mods.fortune, card = C.cards[o.a] || C.cards[0];
+          const tx = f.cx, ty = f.y + 48, W2 = 26, H2 = 38, N = 6;
+          const FLY = 0.3, SH = 1.0, LIFT = 0.15, FLIP = 0.4, t1 = FLY + SH, t2 = t1 + LIFT, t3 = t2 + FLIP;
+          ctx.globalAlpha = fade;
+          if (el < FLY) {   // bộ bài bay lên, to dần
+            const k2 = el / FLY, e2 = 1 - (1 - k2) * (1 - k2);
+            const cx = o.x + (tx - o.x) * e2, cy = o.y - 20 + (ty - o.y + 20) * e2 - Math.sin(k2 * Math.PI) * 30;
+            for (let i = N - 1; i >= 0; i--) tarotBack(ctx, cx, cy - i, 0.45 + 0.55 * e2, 1, 0);
+            break;
+          }
+          if (el < t1) {   // xào: 2 lượt chia đôi rồi xen kẽ
+            const u = (el - FLY) / SH, ph = (u * 2) % 1, sp2 = Math.sin(ph * Math.PI) * 17;
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.globalAlpha = fade * 0.25; ellipse(ctx, tx, ty, 34, 26, '#9d7bff');
+            ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = fade;
+            const order = [...Array(N).keys()];
+            if (ph > 0.5) order.reverse();
+            for (const i of order) {
+              const side = i % 2 ? 1 : -1, rise = ph > 0.5 ? Math.round((ph - 0.5) * 2 * (i % 3)) : 0;
+              tarotBack(ctx, tx + side * sp2 * (0.6 + 0.08 * i), ty - i - rise, 1, 1, side * 0.18 * Math.sin(ph * Math.PI));
+            }
+            if (Math.floor(t * 20) % 2) px(ctx, tx + Math.round((Math.random() - 0.5) * 50), ty - 22 + Math.round(Math.random() * 6), 1, 1, '#ffd23f');
+            break;
+          }
+          // các lá còn lại tụt xuống, mờ dần
+          const rest = Math.max(0, 1 - (el - t1) / 0.5);
+          if (rest > 0) { ctx.globalAlpha = fade * rest; for (let i = N - 2; i >= 0; i--) tarotBack(ctx, tx, ty + (1 - rest) * 16 - i, 1, 1, 0); ctx.globalAlpha = fade; }
+          const lift = Math.min(1, (el - t1) / LIFT) * 10, fl = U2.clamp((el - t2) / FLIP, 0, 1), face = fl >= 0.5;
+          const sx = Math.max(0.08, Math.abs(Math.cos(fl * Math.PI))), bob = face ? Math.round(Math.sin(t * 3) * 1.5) : 0, cy = ty - lift + bob;
+          if (!face) { tarotBack(ctx, tx, cy, 1, sx, 0); break; }
+          ctx.save();
+          ctx.translate(tx, cy);
+          ctx.scale(sx, 1);
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.globalAlpha = fade * (0.25 + 0.1 * Math.sin(t * 6)); ellipse(ctx, 0, 0, 24, 28, '#9d7bff');
+          ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = fade;
+          px(ctx, -W2 / 2 - 1, -H2 / 2 - 1, W2 + 2, H2 + 2, SP().OUT);
+          px(ctx, -W2 / 2, -H2 / 2, W2, H2, '#ffd23f');
+          px(ctx, -W2 / 2 + 1, -H2 / 2 + 1, W2 - 2, H2 - 2, '#1c1238');
+          tarotArt(ctx, card.id, el, t);
+          ctx.restore();
+          if (el >= t3) {
+            SFC.VFX.text(ctx, card.name, tx, cy + H2 / 2 + 10, 12, '#ffd23f');
+            SFC.VFX.text(ctx, card.hint, tx, cy + H2 / 2 + 22, 9, '#ffffff');
+          }
+          break;
+        }
+        case 'rabbit': {   // thỏ hung dữ: nhảy vòng cung từ (x, y) tới (a, b) trong hop giây (MatchMods.at), tai dựng, mắt đỏ, nhe răng
+          if (o.off) break;
+          const HOP = SFC_CONFIG.stories.mods.fortune.rabbits.hop, k2 = Math.min(1, el / HOP), z = Math.round(Math.sin(k2 * Math.PI) * 7), OUT = SP().OUT;
+          const dir = o.a >= o.x ? 1 : -1, yy = y - z;
+          ctx.globalAlpha = 1;
+          ellipse(ctx, x, y + 1, 5 - z * 0.2, 2, 'rgba(0,0,0,0.35)');
+          px(ctx, x - 5, yy - 8, 10, 8, OUT); px(ctx, x - 4, yy - 7, 8, 6, '#f3f3f3');                        // thân
+          px(ctx, x - dir * 5 - 1, yy - 6, 3, 3, OUT); px(ctx, x - dir * 5, yy - 5, 1, 1, '#ffffff');           // đuôi bông
+          const hx = x + dir * 4;
+          px(ctx, hx - 3, yy - 13, 7, 7, OUT); px(ctx, hx - 2, yy - 12, 5, 5, '#ffffff');                       // đầu
+          const flop = k2 < 1 ? 1 : 0;
+          for (const ex of [-1, 1]) { px(ctx, hx + ex * 2 - 1 + (ex > 0 ? flop : 0), yy - 20, 3, 8, OUT); px(ctx, hx + ex * 2 + (ex > 0 ? flop : 0), yy - 19, 1, 6, '#ffb3c8'); }   // tai
+          px(ctx, hx + dir, yy - 11, 1, 1, '#ff2a3d');                                                         // mắt đỏ
+          px(ctx, hx - 1 + dir, yy - 11, 2, 1, Math.floor(t * 6 + o.id) % 2 ? '#ff2a3d' : OUT);                // lông mày giận
+          px(ctx, hx + dir * 2, yy - 8, 1, 1, '#ffffff'); px(ctx, hx + dir * 2 - dir, yy - 8, 1, 1, OUT);      // răng
+          break;
+        }
+        case 'carrot': case 'carrotheld': {   // củ cà rốt: nằm trên sân (nhảy nhẹ, vòng sáng cam) hoặc giơ trên đầu người cầm (a = id)
+          if (o.off) break;
+          const held = o.kind === 'carrotheld', q = held ? byId(g, o.a) : null, OUT = SP().OUT;
+          const cx = x, cy = held && q ? y - 34 * (q.sizeMul || 1) + Math.round(Math.sin(t * 8)) : y - 4 - Math.round(Math.abs(Math.sin(t * 4)) * 3);
+          ctx.globalAlpha = 1;
+          if (!held) {
+            ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.3 + 0.15 * Math.sin(t * 8); ellipse(ctx, x, y, 11, 5, '#ff8a3f');
+            ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+            ellipse(ctx, x, y + 1, 5, 2, 'rgba(0,0,0,0.35)');
+          }
+          px(ctx, cx - 3, cy - 3, 7, 10, OUT); px(ctx, cx - 2, cy - 2, 5, 3, '#ff8a3f'); px(ctx, cx - 1, cy + 1, 3, 3, '#ff8a3f'); px(ctx, cx, cy + 4, 1, 2, '#ff8a3f');
+          px(ctx, cx - 1, cy - 1, 1, 1, '#ffc08a'); px(ctx, cx, cy + 2, 2, 1, '#d4621f');
+          px(ctx, cx - 3, cy - 8, 7, 6, OUT); px(ctx, cx - 2, cy - 7, 1, 4, '#6bff7a'); px(ctx, cx, cy - 8, 1, 5, '#3fcf5a'); px(ctx, cx + 2, cy - 7, 1, 4, '#6bff7a');   // lá
+          break;
+        }
+        case 'tophat': {   // THE RABBITS: mũ ảo thuật bật ra dưới chân Madame Fate, thỏ nhảy ra rồi mũ tan
+          const OUT = SP().OUT, pop2 = Math.min(1, el / 0.15), hy = y - 4;
+          ellipse(ctx, x, y + 1, 9, 3, 'rgba(0,0,0,0.35)');
+          px(ctx, x - 9, hy - 1, 18, 4, OUT); px(ctx, x - 8, hy, 16, 2, '#2a2a3a');
+          const h2 = Math.round(10 * pop2);
+          px(ctx, x - 6, hy - h2 - 1, 12, h2 + 1, OUT); px(ctx, x - 5, hy - h2, 10, h2, '#2a2a3a'); px(ctx, x - 5, hy - 3, 10, 2, '#d7263d');
+          for (let i = 0; i < 4; i++) { const a2 = t * 5 + i * 1.6; px(ctx, Math.round(x + Math.cos(a2) * 12), Math.round(hy - 14 + Math.sin(a2) * 4), 1, 1, '#ffd23f'); }
+          break;
+        }
+        case 'zoomies': {   // THE WHEEL: vệt tốc độ vàng kéo sau người đang chạy nhanh (a = id)
+          const q = byId(g, o.a);
+          if (!q) break;
+          const sp = Math.hypot(q.vx || 0, q.vy || 0);
+          if (sp < 20) break;
+          const ux = q.vx / sp, uy = q.vy / sp;
+          for (let i = 0; i < 4; i++) {
+            const ph = (t * 6 + i / 4) % 1, ox = -uy * (i - 1.5) * 4, oy = ux * (i - 1.5) * 3;
+            ctx.globalAlpha = fade * (1 - ph) * 0.8;
+            px(ctx, Math.round(x - ux * (8 + ph * 14) + ox), Math.round(y - 8 - uy * (8 + ph * 14) + oy), Math.max(1, Math.round(Math.abs(ux) * 5)), Math.max(1, Math.round(Math.abs(uy) * 4)), o.color);
+          }
+          break;
+        }
+        case 'goalstall': {   // HAGGLE: thùng trái cây xếp chắn 2 bên cột dọc (x = phía khung, y -> a = độ sâu trượt, b = 1 khung Mamas) + bảng giá % trên xà
+          if (o.off) break;   // bản cũ vừa được thay: bản mới vẽ đè liền mạch (không mờ vào / ra)
+          ctx.globalAlpha = 1;
+          const G = stallGeo(o), lx = G.lx;
+          if (part === 0 || part == null) {
+            crates(ctx, lx, G.top, G.top + G.d, o.id, 1, o.x);
+            const pct = Math.round((100 * (G.gw - 2 * G.d)) / G.gw), ty = G.top - G.gh - 10, col = o.b ? '#d7263d' : '#2a9a3a', OUT = SP().OUT;
+            const tx = lx - o.x * 4;
+            px(ctx, tx - 21, ty - 7, 42, 14, OUT); px(ctx, tx - 20, ty - 6, 40, 12, col); px(ctx, tx - 20, ty - 6, 40, 1, '#ffffff');
+            px(ctx, tx - 17, ty - 2, 2, 2, OUT);   // lỗ xỏ dây của thẻ giá
+            px(ctx, tx, ty + 7, 1, 4, OUT);
+            SFC.VFX.text(ctx, pct + '%', tx + 3, ty + 1, 10, '#ffffff');
+          }
+          if (part === 1 || part == null) crates(ctx, lx, G.bot - G.d, G.bot, o.id + 7, -1, o.x);
           break;
         }
         case 'tide': {   // thuỷ triều: dải nước từ mép trên / dưới (o.x = phía), mực nước theo MatchMods tide.level, sóng lăn tăn ở mép

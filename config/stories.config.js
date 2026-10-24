@@ -89,35 +89,50 @@ SFC_CONFIG.stories = {
       first: 4, every: [5, 8], trailing: 1.5, ahead: 70, len: 64, warn: 0.9, life: 5,
       colors: ['#9dff3d', '#ff3fb4', '#3ff6ff', '#ffd23f'],
     },
-    // Lantern Crew: đèn lồng rơi quanh chỗ bóng sắp tới (spread px), bóng đổ to dần warn giây, đập xuống: đội bạn trong bán kính r choáng stun giây,
-    // văng knock (lướt né được). Lantern Crew không sao. Bị dẫn: rơi 2 cái
+    // Lantern Crew: đèn lồng rơi quanh chỗ bóng sắp tới (spread px), bóng đổ to dần warn giây, đập xuống thành đốm lửa (bán kính fireR) cháy fireLife giây.
+    // Đội bạn bị đèn rơi trúng (r) hoặc chạm đốm lửa là bắt lửa: đứng lại phủi lửa burn giây (rơi bóng), dập xong được miễn immune giây để bước ra.
+    // Lướt né được. Lantern Crew không sao. Bị dẫn: rơi 2 cái
     lanterns: {
-      name: 'FALLING LANTERNS', hint: 'Step away from a growing shadow',
-      first: 4, every: [3.5, 6], trailing: 1.4, spread: 45, warn: 1.1, r: 20, stun: 0.9, knock: 160,
+      name: 'FALLING LANTERNS', hint: 'Lanterns leave fire behind. Touch it and you stop to put yourself out',
+      first: 4, every: [3.5, 6], trailing: 1.4, spread: 45, warn: 1.1, r: 20, fireR: 14, fireLife: 5, burn: 1.3, immune: 0.8,
       colors: ['#ff3d5a', '#ffd23f', '#ff9a3d'],
     },
-    // Noodle Kickers: bóng nóng time giây; đội bạn cầm bóng nóng quá holdMax giây là bỏng (choáng stun giây, rơi bóng). Noodle Kickers cầm thoải mái
-    hotball: {
-      name: 'HOT BALL', hint: 'When the ball glows, pass it fast',
-      first: 5, every: [6, 9], trailing: 1.5, time: 6, holdMax: 1.2, stun: 0.8,
+    // Noodle Kickers (user 2026-10-23, thay HOT BALL): 1 Kicker đứng tấn, quay sợi mì trên đầu warn giây (vạch ngắm tới người đội bạn trong tầm range px) rồi quăng
+    // như cao bồi: vòng mì bay speed px/s, trúng (bán kính r, lướt né được) = bị trói (choáng, rơi bóng). Người chơi bấm trái / phải luân phiên mash lần
+    // để vùng ra, đồng đội AI tự vùng aiRate lần / giây, quá maxTie giây tự tuột. Thoát xong miễn immune giây
+    lasso: {
+      name: 'NOODLE LASSO', hint: 'Dodge the flying noodles. Caught? Wiggle left and right to break free',
+      first: 4, every: [4, 7], trailing: 1.5, range: 170, warn: 1.3, speed: 360, r: 9, maxTie: 3.5, mash: 8, aiRate: 3.2, immune: 1.2,
     },
-    // Fortune Tellers: rút 1 lá mỗi every giây, tác dụng time giây. mouse: đội bạn teo còn tinySize, chạy x tinySlow · storm: 1 cơn gió (mods.wind)
-    // · star: Fortune Tellers chạy x starSpeed. Không rút trùng lá vừa rồi
+    // Fortune Tellers: rút 1 lá mỗi every giây (không trùng lá vừa rồi). Diễn: bộ bài bay từ tay Madame Fate lên giữa trên sân, xào 2 lượt,
+    // rút lá trên cùng, lật mặt — reveal giây sau khi rút mới có tác dụng; lá hiện tên + gợi ý tới show giây (user 2026-10-23):
+    // moon: tắt đèn time giây, chỉ còn vầng sáng light px quanh người đội bạn + ballLight quanh bóng (mắt Fortune Tellers phát sáng trong tối)
+    // · magician: bóng tách ra fakes quả giả lăn đi (tốc độ speed, giảm tốc drag), ai chạm bóng giả là nó tan thành khói, hết time giây cũng tan
+    // · rabbits: mũ ảo thuật thả n con thỏ + 1 củ cà rốt ở chỗ ngẫu nhiên. Ai chạm cà rốt là cầm (giơ trên đầu); đội cầm cà rốt thì đàn thỏ
+    //   nhảy (mỗi bước hop giây, dài hopLen px, nghỉ rest) tới cắn người đội kia: choáng bite giây, người bị cắn miễn immune giây, thỏ nghỉ pause.
+    //   Người cầm bị choáng (đánh trúng) là rơi cà rốt văng ra, nhặt lại bằng cách chạy chạm (người vừa rơi chờ dropLock giây). Hết time giây thỏ biến mất
+    // · wheel: bánh xe quay, mọi cầu thủ cả 2 đội chạy nhanh x speed trong time giây
     fortune: {
       name: 'FORTUNE CARDS', hint: 'Every card changes the match for a while',
-      first: 5, every: [9, 12], trailing: 1.3, time: 7, tinySize: 0.7, tinySlow: 0.85, starSpeed: 1.3,
+      first: 5, every: [9, 12], trailing: 1.3, reveal: 1.85, show: 3.6,
+      moon: { time: 7, light: 30, ballLight: 16 },
+      magician: { time: 7, fakes: 2, speed: [170, 240], drag: 1.1 },
+      rabbits: { time: 9, n: 5, hop: 0.2, hopLen: 24, rest: 0.08, bite: 0.6, biteR: 8, immune: 1.4, pause: 0.5, carrotR: 8, dropLock: 0.6 },
+      wheel: { time: 3.5, speed: 1.5 },
       cards: [
-        { id: 'mouse', name: 'THE MOUSE', hint: 'Your team shrinks' },
-        { id: 'storm', name: 'THE STORM', hint: 'A gust sweeps the pitch' },
-        { id: 'star', name: 'THE STAR', hint: 'The Fortune Tellers speed up' },
+        { id: 'moon', name: 'THE MOON', hint: 'Lights out. Keep your eyes on the ball' },
+        { id: 'magician', name: 'THE MAGICIAN', hint: 'Two fake balls. Touch one and it vanishes' },
+        { id: 'rabbits', name: 'THE RABBITS', hint: 'Grab the carrot. The rabbits bite whoever does not have it' },
+        { id: 'wheel', name: 'THE WHEEL', hint: 'Everyone speeds up for a moment' },
       ],
     },
-    // Market Mamas: sạp rộng w px, sâu depth px đẩy ra từ mép trên / dưới gần bóng, báo trước warn giây, đứng life giây (người bị đẩy ra, bóng dội).
-    // Bị dẫn: 2 sạp cùng lúc (trên + dưới)
-    stalls: {
-      name: 'MARKET STALLS', hint: 'The market pushes into the pitch',
-      first: 5, every: [7, 10], trailing: 1.3, w: 150, depth: 55, warn: 1.2, life: 7,
-      colors: ['#ff3d5a', '#3fa8ff', '#6bff7a'],
+    // Market Mamas (user 2026-10-23, thay MARKET STALLS): MẶC CẢ KHUNG THÀNH. Sạp hàng chắn 2 bên cột dọc của cả 2 khung, mỗi bên sâu start px
+    // (khung rộng 78px). Mỗi bàn thắng (đội nào ghi cũng vậy) + mỗi every giây các Mamas mặc cả: sạp khung họ lấn vào thêm step px (tối đa max),
+    // sạp khung bạn lùi ra step px (tối thiểu 0 = khung đủ rộng). Họ bị dẫn: trailStep. Sút mạnh (bóng nhanh hơn knockSpeed) trúng sạp khung họ:
+    // sạp lùi knock px (NO DEAL!). Thùng hàng là vật cản thật dày depth px phía trong sân (bóng + người dội ra). Sạp trượt slide giây. Vật thể vẽ phát lại mỗi refresh giây (khách online vào giữa trận vẫn thấy)
+    haggle: {
+      name: 'HAGGLE', hint: 'Their goal shrinks, yours grows. Smash their stalls back',
+      first: 14, every: [15, 21], trailing: 1.3, start: 12, step: 4, trailStep: 6, max: 24, knock: 5, knockSpeed: 200, depth: 12, slide: 0.5, refresh: 5,
     },
     // Rust Buckets: nước dâng từ mép trên / dưới tới depth phần chiều cao sân (dâng warn giây, giữ len giây, rút recede giây).
     // Đội bạn trong nước chạy x slow, bóng lăn trong nước giảm tốc thêm drag. Rust Buckets không sao
@@ -402,7 +417,7 @@ SFC_CONFIG.stories = {
           before: [
             { who: 'host', text: "Episode one! Tonight's ingredient: the eternal flame of the Lantern Crew!" },
             { who: 'opp', text: 'One rule in our stall. Mind your head.' },
-            { who: 'host', text: 'Viewers at home: when a shadow grows under you, MOVE! Those lanterns were hung by amateurs!' },
+            { who: 'host', text: 'Viewers at home: when a shadow grows under you, MOVE! And stay off the fire!' },
             { who: 'opp', text: 'We heard that.' },
           ],
           after: [
@@ -417,22 +432,22 @@ SFC_CONFIG.stories = {
           },
         },
         {
-          team: 'noodle_kickers', arena: 'street', elo: 780, signature: 'fire_shot', mod: 'hotball',
+          team: 'noodle_kickers', arena: 'street', elo: 780, signature: 'fire_shot', mod: 'lasso',
           before: [
             { who: 'host', text: 'Episode two! The Noodle Kickers pull noodles with their FEET. Kids, do not try this at home.' },
-            { who: 'opp', text: 'Our noodles come straight out of a boiling pot. So does our ball. Catch!' },
-            { who: 'you', text: 'The ball is HOT?!' },
-            { who: 'host', text: 'When the ball glows, pass it fast! Hold it too long and you get burned.' },
+            { who: 'opp', text: 'Fresh noodles, extra long. Perfect for a lasso. Yeehaw!' },
+            { who: 'you', text: 'Did he just say YEEHAW?' },
+            { who: 'host', text: 'Dodge the flying noodles! If they tie you up, wiggle, kid, WIGGLE!' },
           ],
           after: [
-            { who: 'opp', text: 'You pass like a real chef. Fine. Take the noodles.' },
+            { who: 'opp', text: 'You wiggle like a real noodle. Fine. Take the noodles.' },
             { who: 'host', art: 'cupItem', item: 'bowl', text: 'Flame AND noodles! Our ratings just went through the roof!' },
           ],
           barks: {
             kickoff: ['Order up!', 'Fresh from the pot!'],
             goal: ['Served hot!', 'Extra spicy!'],
             conceded: ['Overcooked!', 'Too salty!'],
-            mod: ['Careful, hot!', 'Sizzle!'],
+            mod: ['Yeehaw!', 'Tied up!'],
           },
         },
         {
@@ -441,7 +456,7 @@ SFC_CONFIG.stories = {
             { who: 'host', text: 'Episode three! Madame Fate grows the spice of fate. Nobody knows where. Not even her.' },
             { who: 'opp', text: 'I see a bowl. I see... you losing. Shall I draw another card?' },
             { who: 'you', text: 'Draw all you want.' },
-            { who: 'host', text: 'Read every card! You might shrink, a storm might hit, or the Tellers speed up!' },
+            { who: 'host', text: 'Read every card! Lights out, fake balls, angry rabbits, or everybody goes turbo!' },
           ],
           after: [
             { who: 'opp', text: 'The cards never lie. Tonight they just... exaggerated.' },
@@ -456,13 +471,13 @@ SFC_CONFIG.stories = {
           },
         },
         {
-          team: 'market_mamas', arena: 'market', elo: 1150, signature: 'giant_fist', mod: 'stalls',
+          team: 'market_mamas', arena: 'market', elo: 1150, signature: 'giant_fist', mod: 'haggle',
           before: [
             { who: 'host', text: 'THE BIG TASTING! Win, and my sister has to taste the bowl. Lose, and the cart goes in the river.' },
             { who: 'opp', text: 'Little brother. You are hiding behind a child now?' },
             { who: 'host', text: 'That is not a child. That is my HEAD CHEF.' },
             { who: 'you', text: 'I am your WHAT?' },
-            { who: 'host', text: 'The stalls push in and squeeze the pitch! If the Mamas fall behind, two come in at once!' },
+            { who: 'host', text: 'Careful, the Mamas haggle the GOALS! Theirs shrinks, ours grows. Smash their stalls back, head chef!' },
           ],
           after: [
             { who: 'opp', text: 'Hmph. Bring me the bowl.' },

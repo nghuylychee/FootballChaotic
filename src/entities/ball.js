@@ -168,9 +168,9 @@ window.SFC = window.SFC || {};
         if (!this.g.cores.wallHit(this, 'bottom')) { this.y = f.y + f.h - r; this.vy = -Math.abs(this.vy) * C.wallBounce; this.onWall(); }
       }
 
-      // tường trái / phải + khung thành
-      const inMouth = this.y > f.gTop && this.y < f.gBot && this.z < f.goalHeight;
+      // tường trái / phải + khung thành (miệng khung từng phía: Game.goalMouth — luật HAGGLE thu hẹp / nới rộng)
       for (const side of [-1, 1]) {
+        const m = this.mouth(side), inMouth = this.y > m.gTop && this.y < m.gBot && this.z < f.goalHeight;
         const lineX = side < 0 ? f.x : f.x + f.w;
         const defTeam = side < 0 ? 0 : 1;
         const touching = side < 0 ? this.x - r < lineX : this.x + r > lineX;
@@ -184,7 +184,11 @@ window.SFC = window.SFC || {};
         if (!touching) continue;
         this.checkWoodwork(side);
 
-        if (!inMouth) { this.checkNearMiss(side); this.bounceSide(lineX, side); continue; }
+        if (!inMouth) {
+          // trúng sạp hàng chắn trong miệng khung (luật HAGGLE)
+          if (this.g.mod && this.y > f.gTop && this.y < f.gBot && this.z < f.goalHeight) SFC.MatchMods.mouthHit(this.g, this, side);
+          this.checkNearMiss(side); this.bounceSide(lineX, side); continue;
+        }
 
         // đang đi vào khung thành -> kiểm tra khiên (Aegis Wall)
         if (!this.shieldChecked && this.vx * side > 0) {
@@ -195,12 +199,14 @@ window.SFC = window.SFC || {};
       }
     }
 
+    mouth(side) { return this.g.goalMouth ? this.g.goalMouth(side) : this.g.field; }
+
     // bóng chạm cột dọc / xà ngang khi tới vạch vôi -> chữ WOODWORK (chỉ hiển thị, đường bóng giữ nguyên)
     checkWoodwork(side) {
-      const f = this.g.field, r = this.r;
+      const f = this.g.field, r = this.r, m = this.mouth(side);
       if (this.woodT > 0 || this.vx * side <= 0 || this.speed < 60) return;
-      const post = Math.min(Math.abs(this.y - f.gTop), Math.abs(this.y - f.gBot)) <= r + 1 && this.z < f.goalHeight + r;
-      const bar = this.y > f.gTop && this.y < f.gBot && Math.abs(this.z - f.goalHeight) <= r;
+      const post = Math.min(Math.abs(this.y - m.gTop), Math.abs(this.y - m.gBot)) <= r + 1 && this.z < f.goalHeight + r;
+      const bar = this.y > m.gTop && this.y < m.gBot && Math.abs(this.z - f.goalHeight) <= r;
       if (!post && !bar) return;
       this.woodT = 0.6;
       this.g.effects.pop(this.x - side * 28, this.y - this.z - 12, 'WOODWORK', 'info', '#ffe14f');
@@ -209,9 +215,9 @@ window.SFC = window.SFC || {};
 
     // cú sút đi ra ngoài sát cột dọc / sát xà (ball.nearMiss px) -> khán giả "ồồ" (không chữ). Chạm cột đã có WOODWORK
     checkNearMiss(side) {
-      const f = this.g.field, N = SFC_CONFIG.game.ball.nearMiss;
+      const f = this.g.field, N = SFC_CONFIG.game.ball.nearMiss, m = this.mouth(side);
       if (!N || this.kind !== 'shot' || this.woodT > 0 || this.missT > 0 || this.vx * side <= 0) return;
-      const out = this.y < f.gTop ? f.gTop - this.y : this.y > f.gBot ? this.y - f.gBot : 0;
+      const out = this.y < m.gTop ? m.gTop - this.y : this.y > m.gBot ? this.y - m.gBot : 0;
       const near = out > 0 ? out <= N && this.z < f.goalHeight + N : this.z - f.goalHeight <= N;
       if (!near) return;
       this.missT = 1;
@@ -219,11 +225,11 @@ window.SFC = window.SFC || {};
     }
 
     constrainNet(side, lineX) {
-      const f = this.g.field, r = this.r, C = SFC_CONFIG.game.ball;
+      const f = this.g.field, r = this.r, C = SFC_CONFIG.game.ball, m = this.mouth(side);
       const back = lineX + side * (f.goalDepth - r);
       if (side < 0 ? this.x < back : this.x > back) { this.x = back; this.vx = -this.vx * C.netDamp; }
-      if (this.y - r < f.gTop) { this.y = f.gTop + r; this.vy = Math.abs(this.vy) * C.netDamp; }
-      if (this.y + r > f.gBot) { this.y = f.gBot - r; this.vy = -Math.abs(this.vy) * C.netDamp; }
+      if (this.y - r < m.gTop) { this.y = m.gTop + r; this.vy = Math.abs(this.vy) * C.netDamp; }
+      if (this.y + r > m.gBot) { this.y = m.gBot - r; this.vy = -Math.abs(this.vy) * C.netDamp; }
       if (this.z > f.goalHeight - r) { this.z = f.goalHeight - r; this.vz = -Math.abs(this.vz) * 0.3; }
     }
 

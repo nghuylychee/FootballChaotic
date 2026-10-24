@@ -356,13 +356,19 @@ window.SFC = window.SFC || {};
      */
     shotAim(g, p, dx, dy) {
       const b = g.ball, f = g.field, dir = g.teams[p.team].dir;
-      const m = f.goalWidth / 2 - 6;
+      const m = this.aimHalf(g, dir);
       // quy về khung "tấn công sang phải": lật trục x theo dir
       const depth = Math.max(1, ((dir > 0 ? f.x + f.w : f.x) - b.x) * dir);
       const top = Math.atan2(f.cy - m - b.y, depth), bot = Math.atan2(f.cy + m - b.y, depth);
       const want = Math.atan2(dy, dx * dir);
       const a = U.clamp(want, top, bot);
       return { angle: dir > 0 ? a : Math.PI - a, off: Math.abs(want - a) };
+    },
+
+    // nửa bề rộng vùng nhắm của khung thành phía side (chừa 6px sát cột; khung bị luật HAGGLE thu hẹp thì nhắm hẹp theo)
+    aimHalf(g, side) {
+      const m = g.goalMouth ? g.goalMouth(side) : g.field;
+      return Math.max(2, (m.gBot - m.gTop) / 2 - 6);
     },
 
     // aim = hướng phím người chơi giữ lúc thả ({x, y}) hoặc null -> nhắm theo aimY (-1..1, 0 = giữa khung; AI dùng)
@@ -388,7 +394,7 @@ window.SFC = window.SFC || {};
         awk = K.awkwardSpread * U.clamp((s.off - a0) / (a1 - a0), 0, 1);
       } else {
         const gx = tm.dir > 0 ? f.x + f.w + 6 : f.x - 6;
-        const gy = f.cy + U.clamp(aimY || 0, -1, 1) * (f.goalWidth / 2 - 6);
+        const gy = f.cy + U.clamp(aimY || 0, -1, 1) * this.aimHalf(g, tm.dir);
         base = Math.atan2(gy - b.y, gx - b.x);
       }
 

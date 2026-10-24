@@ -120,7 +120,6 @@ if (SFC_DEBUG) (function () {
       if (!M) return;
       for (const k of ['next', 'bell', 'aiNext']) if (typeof M[k] === 'number') M[k] = 0.01;
       if (M.id === 'golden' && M.star) SFC.MatchMods.K.golden.clear(this.g, M);
-      if (M.id === 'hotball') M.hot = 0;
       if (M.id === 'stools') for (const p of this.g.players) if (p.carry && p.carry.t != null) p.carry.t = 99;
     },
     key(e) {

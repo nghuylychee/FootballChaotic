@@ -693,12 +693,70 @@ window.SFC = window.SFC || {};
     },
   };
 
-  /* Lantern Crew — ĐÈN LỒNG RƠI: đèn lồng rơi gần bóng (bóng đổ to dần warn giây), đập xuống: đội bạn trong vòng r choáng + văng + rơi bóng
-   * (lướt né được). Lantern Crew không sao (họ treo đèn mà). Họ bị dẫn: rơi 2 cái một lúc */
+  /* ---------- trạng thái riêng của Story 3 (user 2026-10-23): đứng phủi lửa · bị trói mì — sprite thật bị ẩn, prop 'burn' / 'tied' vẽ người ----------
+   * Lưu ở M.held [{ o, id, kind, t, x, y, ... }]: mỗi bước giữ choáng + đứng yên tại chỗ; hết giờ / thoát thì nhả. M.imm[id] = giây được miễn tới */
+  function holdUpdate(g, M, c, dt, tick) {
+    for (const h of M.held.slice()) {
+      const o = h.o;
+      // hết choáng sớm (bàn thắng, Tuyệt kỹ dựng dậy...) thì thôi
+      if (o.state !== 'stun') { release(g, M, h, false); continue; }
+      o.x = h.x; o.y = h.y; o.kbx = o.kby = 0; o.vx = o.vy = 0;
+      o.stateT = Math.max(o.stateT, 0.1);
+      if ((h.t -= dt) <= 0) { release(g, M, h, h.kind === 'tied'); continue; }
+      if (tick) tick(h);
+    }
+  }
+  function hold(g, M, o, kind, t, extra) {
+    if (o.state === 'stun' || (M.imm[o.id] || 0) > g.time) return null;
+    o.hitImmune = 0;
+    if (!o.hit({ stun: t, kbx: 0, kby: 0, type: 'hard', quiet: true })) return null;
+    M.hits++;
+    const h = Object.assign({ o, kind, t, x: o.x, y: o.y, id: newId(g) }, extra);
+    M.held.push(h);
+    g.effects.prop(h.id, kind, o.x, o.y, o.id, 0, t + 0.3, kind === 'burn' ? '#ff6a1f' : '#ffd86b');
+    return h;
+  }
+  function release(g, M, h, free) {
+    const o = h.o, E = g.effects;
+    M.held.splice(M.held.indexOf(h), 1);
+    E.propOff(h.id, 0.1);
+    M.imm[o.id] = g.time + (M.cfg.immune || 0);
+    if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; }
+    o.hitImmune = Math.max(o.hitImmune, 0.3);
+    if (!free || g.state !== 'play') return;
+    if (h.kind === 'burn') {
+      E.burst(o.x, o.y - 10, 6, '#8a8f99', 10, 50, 0.6);
+      E.pop(o.x, o.y - 30, 'PHEW!', 'info', '#c7ccd6');
+    } else {
+      E.burst(o.x, o.y - 8, 4, '#f3dfa0', 16, 110, 0.5);
+      E.pop(o.x, o.y - 30, 'FREE!', 'good', '#f3dfa0');
+      g.sfx('ult', 'mod.snap');
+    }
+  }
+  function heldKickoff(g, M) {
+    for (const h of (M.held || []).slice()) release(g, M, h, false);
+    M.held = []; M.imm = {};
+  }
+
+  /* Lantern Crew — ĐÈN LỒNG RƠI: đèn lồng rơi gần bóng (bóng đổ to dần warn giây), đập xuống thành đốm lửa cháy fireLife giây.
+   * Đội bạn bị đèn rơi trúng hoặc chạm đốm lửa là bắt lửa: đứng lại phủi phủi dập lửa burn giây (rơi bóng), lướt né được.
+   * Lantern Crew không sao (họ treo đèn mà). Họ bị dẫn: rơi 2 cái một lúc */
   K.lanterns = {
-    create(g, M, c) { M.next = c.first; M.falls = []; },
-    kickoff(g, M) { M.falls = []; },
+    create(g, M, c) { M.next = c.first; M.falls = []; M.fires = []; M.held = []; M.imm = {}; },
+    kickoff(g, M) {
+      M.falls = [];
+      for (const fi of M.fires) g.effects.propOff(fi.id);
+      M.fires = [];
+      heldKickoff(g, M);
+    },
     clock(g, M, c, dt) { for (const d of M.falls) d.t += dt; },
+    ignite(g, M, c, o) {
+      if (!hold(g, M, o, 'burn', c.burn)) return false;
+      g.effects.burst(o.x, o.y - 8, 6, '#ff6a1f', 12, 70, 0.5);
+      g.effects.pop(o.x, o.y - 30, 'ON FIRE!', 'status', '#ff6a1f');
+      g.sfx('ult', 'mod.ignite');
+      return true;
+    },
     update(g, M, c, dt) {
       const E = g.effects, b = g.ball;
       if (every(g, M, c, dt)) {
@@ -717,119 +775,391 @@ window.SFC = window.SFC || {};
         E.wave(d.x, d.y, c.r + 6, '#ff9a3d', 0.35, 2);
         E.shake(2, 0.15);
         g.sfx('ult', 'mod.crash');
+        const fi = { x: d.x, y: d.y, t: c.fireLife, id: newId(g) };
+        M.fires.push(fi);
+        E.prop(fi.id, 'flames', d.x, d.y, c.fireR, 0, c.fireLife, '#ff6a1f');
         let hit = false;
         for (const o of victims(g)) {
           if (!grounded(o) || Math.hypot(o.x - d.x, o.y - d.y) > c.r + o.radius || Act().dodged(g, o)) continue;
-          const n = U.norm(o.x - d.x || 0.1, o.y - d.y);
-          if (o.hit({ stun: c.stun, kbx: n.x * c.knock, kby: n.y * c.knock, type: 'hard' })) { M.hits++; hit = true; E.pop(o.x, o.y - 30, 'CRASH!', 'heavy', '#ff9a3d'); }
+          if (this.ignite(g, M, c, o)) hit = true;
         }
         if (!b.owner && b.z < 10 && Math.hypot(b.x - d.x, b.y - d.y) < c.r) { const n = U.norm(b.x - d.x || 0.1, b.y - d.y); b.vx = n.x * 180; b.vy = n.y * 180; b.vz = 60; }
         if (hit) bark(g, 'mod');
       }
+      // đốm lửa: ai bên bạn bước vào là bắt lửa (đang lướt thì qua được)
+      for (const fi of M.fires.slice()) {
+        if ((fi.t -= dt) <= 0) { M.fires.splice(M.fires.indexOf(fi), 1); continue; }
+        for (const o of victims(g)) {
+          if (!grounded(o) || o.state === 'stun' || Math.hypot(o.x - fi.x, (o.y - fi.y) * 1.4) > c.fireR + o.radius * 0.5) continue;
+          if (o.tackleImmune > 0 || g.isProtected(o)) continue;
+          if (this.ignite(g, M, c, o)) bark(g, 'mod');
+        }
+      }
+      holdUpdate(g, M, c, dt, (h) => { if (Math.random() < dt * 6) E.burst(h.o.x, h.o.y - 12, 8, '#ffd23f', 2, 40, 0.3); });
     },
   };
 
-  /* Noodle Kickers — BÓNG NÓNG: thỉnh thoảng bóng nóng rực time giây. Đội bạn cầm bóng nóng quá holdMax giây (vòng cam đếm ngược) là bỏng:
-   * choáng + rơi bóng. Noodle Kickers cầm thoải mái (dân nấu bếp). Bắt chuyền nhanh */
-  K.hotball = {
-    create(g, M, c) { M.next = c.first; M.hot = 0; M.held = 0; M.who = null; M.alarm = 0; },
-    kickoff(g, M) { M.hot = 0; M.held = 0; M.who = null; M.alarm = 0; },
+  /* Noodle Kickers — MÌ CAO BỒI: 1 Kicker quay sợi mì trên đầu (vạch ngắm tới người đội bạn) rồi quăng như cao bồi. Vòng mì bay thẳng tới chỗ người đó
+   * đứng lúc quăng (chạy khỏi chỗ / lướt là né), trúng = bị trói: đứng chôn chân, rơi bóng. Người chơi bấm trái / phải luân phiên để vùng ra
+   * (mỗi lần vùng: người nghiêng theo hướng bấm, vụn mì văng), đồng đội AI tự vùng. Họ bị dẫn: quăng dày hơn (trailing) */
+  K.lasso = {
+    create(g, M, c) { M.next = c.first; M.swing = null; M.loops = []; M.held = []; M.imm = {}; },
+    kickoff(g, M) {
+      if (M.swing) g.effects.propOff(M.swing.id);
+      for (const L of M.loops) g.effects.propOff(L.id, 0.01);
+      M.swing = null; M.loops = [];
+      heldKickoff(g, M);
+    },
+    free(o, g, M) { return grounded(o) && o.state !== 'stun' && !((M.imm[o.id] || 0) > g.time); },
+    // người quăng + người bị nhắm: cặp Kicker - người đội bạn gần nhau nhất trong tầm (ưu tiên người cầm bóng)
+    pick(g, M, c) {
+      let best = null, bd = Infinity;
+      for (const p of g.teams[M.team].players) {
+        if (!grounded(p) || p.state !== 'normal' || p.hasBall) continue;
+        for (const o of victims(g)) {
+          if (!this.free(o, g, M)) continue;
+          const d = U.dist(p, o) - (o.hasBall ? 60 : 0);
+          if (U.dist(p, o) < c.range && d < bd) { bd = d; best = { p, o }; }
+        }
+      }
+      return best;
+    },
     update(g, M, c, dt) {
-      const E = g.effects, b = g.ball;
-      if (!(M.hot > 0)) {
-        if (!every(g, M, c, dt)) return;
-        M.hot = c.time; M.hotId = newId(g);
-        E.prop(M.hotId, 'hot', b.x, b.y, 0, 0, c.time, '#ff6a3d');
-        E.pop(b.x, b.y - 18, 'HOT!', 'status', '#ff6a3d');
-        g.sfx('ult', 'mod.sizzle');
-        bark(g, 'mod');
-        return;
+      const E = g.effects;
+      if (!M.swing && every(g, M, c, dt)) {
+        const P = this.pick(g, M, c);
+        if (!P) M.next = 0.6;   // chưa ai trong tầm: lát nữa thử lại
+        else {
+          M.swing = { p: P.p, o: P.o, t: c.warn, id: newId(g), x: P.p.x, y: P.p.y };
+          E.prop(M.swing.id, 'lassoswing', P.p.x, P.p.y, P.p.id, P.o.id, c.warn + 0.1, '#ffd86b');
+          g.sfx('ult', 'mod.lasso');
+          bark(g, 'mod', P.p);
+        }
       }
-      if ((M.hot -= dt) <= 0) {
-        if (M.alarm) E.propOff(M.alarm);
-        M.alarm = 0; M.held = 0; M.who = null;
-        E.pop(b.x, b.y - 18, 'COOL', 'info', '#bfe8ff');
-        return;
+      const S1 = M.swing;
+      if (S1) {
+        if (S1.p.state !== 'normal') { E.propOff(S1.id); M.swing = null; }
+        else if ((S1.t -= dt) > 0) {
+          // đứng tấn quay mì: chôn chân tại chỗ, không ra đòn / sút, xoay mặt về phía người bị nhắm
+          const q = S1.p;
+          q.x = S1.x; q.y = S1.y; q.vx = q.vy = 0; q.noActT = Math.max(q.noActT || 0, 0.05);
+          q.facing = Math.atan2(S1.o.y - q.y, S1.o.x - q.x);
+        } else {
+          M.swing = null;
+          const a = Math.atan2(S1.o.y - S1.p.y, S1.o.x - S1.p.x), max = (c.range + 30) / c.speed;
+          const L = { x: S1.p.x, y: S1.p.y, a, el: 0, max, id: newId(g) };
+          M.loops.push(L);
+          E.prop(L.id, 'lassofly', L.x, L.y, a, c.speed, max, '#ffd86b');
+          g.sfx('ult', 'mod.whip');
+        }
       }
-      const o = b.owner, mine = o && o.team !== M.team;
-      if (!mine || o !== M.who) {
-        if (M.alarm) { E.propOff(M.alarm); M.alarm = 0; }
-        M.held = 0; M.who = mine ? o : null;
-        if (!mine) return;
-        M.alarm = newId(g);
-        E.prop(M.alarm, 'alarm', o.x, o.y, o.id, c.holdMax, c.holdMax + 0.3, '#ff6a3d');
+      for (const L of M.loops.slice()) {
+        L.el += dt;
+        const x = L.x + Math.cos(L.a) * c.speed * L.el, y = L.y + Math.sin(L.a) * c.speed * L.el;
+        let done = L.el >= L.max;
+        for (const o of victims(g)) {
+          if (done || !this.free(o, g, M) || Math.hypot(o.x - x, o.y - y) > c.r + o.radius) continue;
+          done = true;
+          if (Act().dodged(g, o)) break;
+          if (hold(g, M, o, 'tied', c.maxTie, { n: 0, last: 0, ai: 0 })) {
+            E.pop(o.x, o.y - 30, 'TIED UP!', 'status', '#f3dfa0');
+            E.burst(o.x, o.y - 8, 4, '#f3dfa0', 10, 60, 0.4);
+            g.sfx('ult', 'mod.tie');
+            bark(g, 'mod');
+          }
+        }
+        if (done) {
+          M.loops.splice(M.loops.indexOf(L), 1);
+          E.propOff(L.id, 0.01);
+          if (L.el >= L.max) E.burst(x, y, 1, '#f3dfa0', 6, 40, 0.3);
+        }
       }
-      if ((M.held += dt) < c.holdMax) return;
-      E.propOff(M.alarm); M.alarm = 0; M.held = 0; M.who = null;
-      o.hitImmune = 0;
-      if (o.hit({ stun: c.stun, kbx: U.rand(-1, 1) * 60, kby: U.rand(-1, 1) * 60, type: 'fire' })) {
-        M.hits++;
-        E.pop(o.x, o.y - 30, 'OUCH!', 'heavy', '#ff6a3d');
-        E.burst(o.x, o.y - 8, 6, '#ff6a3d', 12, 70, 0.5);
-        g.sfx('fire');
-      }
+      // vùng vẫy: người chơi đổi hướng trái <-> phải = 1 lần vùng · AI tự vùng aiRate lần / giây
+      holdUpdate(g, M, c, dt, (h) => {
+        const o = h.o;
+        let s = 0;
+        if (o.isControlled && g.isHuman(o.team)) {
+          const mx = o.intent.mx || 0;
+          if (Math.abs(mx) > 0.5 && Math.sign(mx) !== h.last) s = Math.sign(mx);
+        } else if ((h.ai += dt * c.aiRate) >= 1) { h.ai -= 1; s = h.last > 0 ? -1 : 1; }
+        if (!s) return;
+        h.last = s; h.n++;
+        o.facing = s > 0 ? 0 : Math.PI;
+        E.burst(o.x - s * 6, o.y - 10, 6, '#f3dfa0', 3, 60, 0.3);
+        g.sfx('ult', 'mod.wiggle');
+        if (h.n >= c.mash) release(g, M, h, true);
+      });
     },
   };
 
-  /* Fortune Tellers — LÁ BÀI: mỗi every giây rút 1 lá, tác dụng time giây (banner tên lá + gợi ý):
-   * THE MOUSE: đội bạn teo nhỏ (Stat.tiny) · THE STORM: 1 cơn gió (dùng lại K.wind với số liệu mods.wind) · THE STAR: Fortune Tellers chạy nhanh */
+  /* Fortune Tellers — LÁ BÀI: mỗi every giây Madame Fate rút 1 lá: bộ bài bay từ tay bà lên giữa trên sân, xào bài, rút lá trên cùng, lật mặt
+   * (reveal giây) rồi mới có tác dụng. THE MOON tắt đèn · THE MAGICIAN bóng giả · THE RABBITS đàn thỏ giành cà rốt · THE WHEEL cả sân tăng tốc (user 2026-10-23) */
   K.fortune = {
-    create(g, M, c) { M.next = c.first; M.card = null; M.gust = null; },
-    kickoff(g, M) { M.card = null; M.gust = null; },
+    create(g, M, c) { M.next = c.first; M.card = null; M.fakes = []; M.rab = null; },
+    kickoff(g, M) { this.end(g, M); M.card = null; },
+    // vị trí thỏ đang nhảy (prop 'rabbit': (x, y) -> (a, b) trong hop giây, sau đó ngồi yên ở đích)
+    hopAt(o, el) {
+      const k = Math.min(1, el / S().mods.fortune.rabbits.hop);
+      return { x: o.x + (o.a - o.x) * k, y: o.y + (o.b - o.y) * k };
+    },
+    // vị trí bóng giả (sim + vẽ dùng chung): lăn thẳng theo góc a, tốc độ v giảm dần, dừng ở mép sân
+    fakeAt(g, o, el) {
+      const C = S().mods.fortune.magician, f = g.field, d = (o.b * (1 - Math.exp(-C.drag * el))) / C.drag;
+      return { x: U.clamp(o.x + Math.cos(o.a) * d, f.x + 6, f.x + f.w - 6), y: U.clamp(o.y + Math.sin(o.a) * d, f.y + 6, f.y + f.h - 6) };
+    },
+    end(g, M) {
+      for (const F of M.fakes || []) g.effects.propOff(F.id, 0.01);
+      M.fakes = [];
+      const R = M.rab;
+      if (R) {
+        for (const r of R.list) { g.effects.propOff(r.id, 0.01); if (g.state === 'play') g.effects.burst(r.x, r.y - 4, 2, '#ffffff', 8, 60, 0.4); }
+        g.effects.propOff(R.carrot.id, 0.01);
+        M.rab = null;
+      }
+    },
+    // cà rốt: nằm trên sân (prop 'carrot') hoặc giơ trên đầu người cầm (prop 'carrotheld' bám người)
+    carrot(g, M, holder) {
+      const Cr = M.rab.carrot, E = g.effects;
+      E.propOff(Cr.id, 0.01);
+      Cr.id = newId(g); Cr.holder = holder;
+      if (holder) E.prop(Cr.id, 'carrotheld', holder.x, holder.y, holder.id, 0, M.rab.t + 0.3, '#ff8a3f');
+      else E.prop(Cr.id, 'carrot', Cr.x, Cr.y, 0, 0, M.rab.t + 0.3, '#ff8a3f');
+    },
+    // 1 bước nhảy của thỏ r tới (tx, ty), nghỉ thêm rest giây (cùng thời gian sống của prop để thỏ luôn có hình)
+    hop(g, M, C, r, tx, ty, rest) {
+      const d = Math.hypot(tx - r.x, ty - r.y), k = d > C.hopLen ? C.hopLen / d : 1, f = g.field;
+      const x1 = U.clamp(r.x + (tx - r.x) * k, f.x + 4, f.x + f.w - 4), y1 = U.clamp(r.y + (ty - r.y) * k, f.y + 4, f.y + f.h - 4);
+      g.effects.propOff(r.id, 0.01);
+      r.id = newId(g);
+      g.effects.prop(r.id, 'rabbit', r.x, r.y, x1, y1, C.hop + rest + 0.05, '#ffffff');
+      r.x = x1; r.y = y1; r.t = C.hop + rest;
+    },
+    rabbits(g, M, c, dt) {
+      const R = M.rab, C = c.rabbits, Cr = R.carrot, E = g.effects;
+      if ((R.t -= dt) <= 0) { this.end(g, M); return; }
+      // cà rốt: người cầm bị choáng / bay lên -> rơi văng ra · nằm trên sân: ai chạy chạm là cầm
+      const h = Cr.holder;
+      if (h) {
+        Cr.x = h.x; Cr.y = h.y;
+        if (h.state === 'stun' || !grounded(h)) {
+          const f = g.field;
+          Cr.x = U.clamp(h.x + U.rand(-26, 26), f.x + 10, f.x + f.w - 10); Cr.y = U.clamp(h.y + U.rand(-20, 20), f.y + 10, f.y + f.h - 10);
+          R.lock[h.id] = g.time + C.dropLock;
+          this.carrot(g, M, null);
+          E.pop(h.x, h.y - 30, 'DROP!', 'info', '#ff8a3f');
+          E.burst(Cr.x, Cr.y, 2, '#ff8a3f', 6, 60, 0.3);
+        }
+      } else {
+        for (const p of g.players) {
+          if (!grounded(p) || p.state === 'stun' || (R.lock[p.id] || 0) > g.time || Math.hypot(p.x - Cr.x, p.y - Cr.y) > p.radius + C.carrotR) continue;
+          this.carrot(g, M, p);
+          E.pop(p.x, p.y - 34, 'CARROT!', 'status', '#ff8a3f');
+          g.sfx('ult', 'mod.munch');
+          if (p.team === M.team) bark(g, 'mod', p);
+          break;
+        }
+      }
+      // thỏ: có người cầm cà rốt -> nhảy tới cắn người gần nhất của đội kia · chưa ai cầm -> lượn quanh cà rốt
+      const foes = Cr.holder ? g.teams[1 - Cr.holder.team].players.filter((o) => grounded(o) && o.state !== 'stun' && !((R.imm[o.id] || 0) > g.time)) : [];
+      for (const r of R.list) {
+        if ((r.t -= dt) > 0) continue;
+        let tgt = null, bd = Infinity;
+        for (const o of foes) { const d = Math.hypot(o.x - r.x, o.y - r.y); if (d < bd) { bd = d; tgt = o; } }
+        if (tgt && bd < C.biteR + tgt.radius + 2) {
+          // cắn
+          tgt.hitImmune = 0;
+          const n = U.norm(tgt.x - r.x || 0.1, tgt.y - r.y);
+          if (tgt.hit({ stun: C.bite, kbx: n.x * 90, kby: n.y * 90, type: 'light' })) {
+            if (tgt.team !== M.team) M.hits++;
+            R.imm[tgt.id] = g.time + C.immune;
+            E.pop(tgt.x, tgt.y - 30, 'CHOMP!', 'light', '#ffffff');
+            g.sfx('ult', 'mod.chomp');
+          }
+          this.hop(g, M, C, r, r.x, r.y, C.pause);
+          continue;
+        }
+        if (tgt) { this.hop(g, M, C, r, tgt.x, tgt.y, C.rest); continue; }
+        const a = r.ph + g.time * 1.3;
+        this.hop(g, M, C, r, Cr.x + Math.cos(a) * 18, Cr.y + Math.sin(a) * 10, C.rest * 3);
+      }
+    },
+    // AI (cả 2 đội): cà rốt đang nằm trên sân -> người gần nó nhất mỗi đội (không cầm bóng) chạy tới nhặt
+    aiMove(g, M, c, p) {
+      const R = M.rab;
+      if (!R || R.carrot.holder || p.hasBall || p.state !== 'normal' || (R.lock[p.id] || 0) > g.time) return false;
+      const Cr = R.carrot, mates = g.teams[p.team].players.filter((q) => !q.hasBall && q.state === 'normal');
+      const near = mates.reduce((a, q) => (Math.hypot(q.x - Cr.x, q.y - Cr.y) < Math.hypot(a.x - Cr.x, a.y - Cr.y) ? q : a), p);
+      if (near !== p) return false;
+      const d = U.norm(Cr.x - p.x, Cr.y - p.y);
+      p.intent.mx = d.x; p.intent.my = d.y; p.intent.sprint = true;
+      return true;
+    },
+    poof(g, M, F, pos) {
+      M.fakes.splice(M.fakes.indexOf(F), 1);
+      g.effects.propOff(F.id, 0.01);   // vật đi theo tuổi: tắt ngay (mờ dần sẽ nhảy về chỗ cũ)
+      g.effects.burst(pos.x, pos.y - 3, 2, '#c9b5ff', 14, 70, 0.5);
+      g.effects.pop(pos.x, pos.y - 18, 'FAKE!', 'info', '#c9b5ff');
+      g.sfx('ult', 'mod.poof');
+    },
+    start(g, M, c, id) {
+      const E = g.effects, b = g.ball;
+      if (id === 'moon') {
+        E.prop(newId(g), 'dark', g.field.cx, g.field.cy, 1 - M.team, M.team, c.moon.time, '#05040c');
+        g.sfx('ult', 'mod.lightsout');
+      }
+      if (id === 'magician') {
+        const C = c.magician, x = b.x, y = b.y, a0 = U.rand(0, Math.PI * 2);
+        // bóng thật đang lăn tự do cũng bị hất cùng kiểu, không nhìn đường lăn mà đoán được
+        for (let i = 0; i < C.fakes + 1; i++) {
+          const a = a0 + (i * Math.PI * 2) / (C.fakes + 1) + U.rand(-0.4, 0.4), v = U.rand(C.speed[0], C.speed[1]);
+          if (i === C.fakes) { if (!b.owner) { b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; } break; }
+          const F = { x, y, a, b: v, el: 0, id: newId(g) };
+          M.fakes.push(F);
+          E.prop(F.id, 'fakeball', x, y, a, v, C.time, '#ffffff');
+        }
+        E.burst(x, y - 3, 2, '#c9b5ff', 20, 90, 0.6);
+        E.pop(x, y - 20, 'POOF!', 'status', '#c9b5ff');
+        g.sfx('ult', 'mod.poof');
+      }
+      if (id === 'rabbits') {
+        const C = c.rabbits, f = g.field, cap = captain(g) || { x: f.cx, y: f.cy };
+        M.rab = { t: C.time, list: [], lock: {}, imm: {}, carrot: { x: U.rand(f.x + 50, f.x + f.w - 50), y: U.rand(f.y + 30, f.y + f.h - 30), holder: null, id: 0 } };
+        E.prop(newId(g), 'tophat', cap.x, cap.y, 0, 0, 1.2, '#2a2a3a');
+        E.burst(cap.x, cap.y - 10, 4, '#c9b5ff', 18, 90, 0.6);
+        for (let i = 0; i < C.n; i++) {
+          const r = { x: cap.x, y: cap.y, t: 0, id: 0, ph: (i * Math.PI * 2) / C.n };
+          this.hop(g, M, C, r, cap.x + Math.cos(r.ph) * 22, cap.y + Math.sin(r.ph) * 12, 0.1 + i * 0.06);
+          M.rab.list.push(r);
+        }
+        this.carrot(g, M, null);
+        E.burst(M.rab.carrot.x, M.rab.carrot.y, 2, '#ff8a3f', 10, 70, 0.5);
+        E.pop(M.rab.carrot.x, M.rab.carrot.y - 18, 'CARROT!', 'status', '#ff8a3f');
+        g.sfx('ult', 'mod.poof');
+      }
+      if (id === 'wheel') {
+        // mọi cầu thủ cả 2 đội chạy nhanh trong time giây (update giữ keepSpeed), vệt tốc độ bám người
+        for (const p of g.players) {
+          E.prop(newId(g), 'zoomies', p.x, p.y, p.id, 0, c.wheel.time, '#ffd23f');
+          E.burst(p.x, p.y - 8, 6, '#ffd23f', 8, 70, 0.4);
+        }
+        E.pop(g.field.cx, g.field.y - 6, 'TURBO!', 'move', '#ffd23f');
+        g.sfx('ult', 'mod.wheel');
+      }
+    },
     update(g, M, c, dt) {
-      const W = S().mods.wind;
-      if (M.card) {
-        if (M.card.id === 'storm') K.wind.tick(g, M, W, dt);
-        if (M.card.id === 'star') for (const p of g.teams[M.team].players) keepSpeed(p, c.starSpeed);
-        if ((M.card.t -= dt) <= 0) M.card = null;
+      // bóng giả: lăn theo fakeAt, ai chạm (cả 2 đội) là tan
+      for (const F of M.fakes.slice()) {
+        F.el += dt;
+        const pos = this.fakeAt(g, F, F.el);
+        if (F.el >= c.magician.time) { this.poof(g, M, F, pos); continue; }
+        if (g.players.some((p) => p.airZ <= 4 && Math.hypot(p.x - pos.x, p.y - pos.y) < p.radius + 4)) this.poof(g, M, F, pos);
+      }
+      if (M.rab) this.rabbits(g, M, c, dt);
+      const C1 = M.card;
+      if (C1) {
+        // lá vừa được rút khỏi bộ bài (hết bay + xào): tiếng lật bài
+        if (!C1.flip && C1.wait <= c.reveal - 1.3) { C1.flip = true; g.sfx('ult', 'mod.card'); }
+        if (!C1.on && (C1.wait -= dt) <= 0) { C1.on = true; this.start(g, M, c, C1.id); bark(g, 'mod'); }
+        if (C1.on && C1.id === 'wheel') for (const p of g.players) keepSpeed(p, c.wheel.speed);
+        if (C1.on && (C1.t -= dt) <= 0) M.card = null;
         return;
       }
       if (!every(g, M, c, dt)) return;
       const list = c.cards.filter((x) => x.id !== M.last), card = U.pick(list);
       M.last = card.id;
-      M.card = { id: card.id, t: c.time };
-      g.emit('banner', { text: card.name, sub: card.hint, color: '#9d7bff' });
-      g.sfx('ult', 'mod.card');
-      const cap = captain(g);
-      if (cap) g.effects.burst(cap.x, cap.y - 14, 8, '#9d7bff', 16, 80, 0.6);
-      bark(g, 'mod');
-      if (card.id === 'mouse') for (const o of victims(g)) Stat().tiny(g.cores, o, c.time, c.tinySize, c.tinySlow);
-      if (card.id === 'storm') K.wind.start(g, M, W, Math.random() < 0.5 ? 1 : -1, c.time);
-      if (card.id === 'star') for (const p of g.teams[M.team].players) { g.effects.burst(p.x, p.y - 10, 8, '#ffd23f', 12, 70, 0.5); g.effects.pop(p.x, p.y - 30, 'STAR!', 'status', '#ffd23f'); }
+      M.card = { id: card.id, wait: c.reveal, t: (c[card.id] && c[card.id].time) || 0.5, on: false };
+      const cap = captain(g) || { x: g.field.cx, y: g.field.cy };
+      g.effects.prop(newId(g), 'tarot', cap.x, cap.y, c.cards.indexOf(card), 0, c.show, '#9d7bff');
+      g.sfx('ult', 'mod.shuffle');
     },
   };
 
-  /* Market Mamas — SẠP CHỢ LẤN SÂN: sạp hàng đẩy ra từ mép trên / dưới (gần bóng), báo trước warn giây rồi thành khối đặc life giây:
-   * người bị đẩy ra, bóng dội lại. Họ bị dẫn: 2 sạp cùng lúc (trên + dưới) bóp sân lại */
-  K.stalls = {
-    create(g, M, c) { M.next = c.first; M.stalls = []; },
-    kickoff(g, M) { M.stalls = []; },
-    clock(g, M, c, dt) { for (const s of M.stalls) s.t += dt; },
+  /* Market Mamas — MẶC CẢ (user 2026-10-23): sạp hàng chắn 2 bên cột dọc của cả 2 khung thành, thu hẹp miệng khung (Game.goalMouth -> mouth).
+   * Mỗi bàn thắng + mỗi every giây các Mamas mặc cả: khung họ hẹp lại, khung bạn rộng ra (sạp trượt). Sút mạnh trúng sạp khung họ: sạp lùi lại (NO DEAL!).
+   * M.d[side] = độ sâu sạp mỗi bên cột của khung phía side (-1 trái, 1 phải). Vẽ: prop 'goalstall' (x = phía, y -> a = độ sâu trượt, b = 1 khung Mamas) */
+  K.haggle = {
+    create(g, M, c) {
+      M.next = c.first; M.d = { '-1': c.start, 1: c.start }; M.pid = {}; M.refresh = 0; M.knockT = 0; M.goals = 0;
+      M.home = g.ownGoal(M.team).x > g.field.cx ? 1 : -1;   // phía khung thành của Mamas
+    },
+    show(g, M, c, side, d0) {
+      if (M.pid[side]) g.effects.propOff(M.pid[side], 0.01);
+      M.pid[side] = newId(g);
+      g.effects.prop(M.pid[side], 'goalstall', side, d0, M.d[side], side === M.home ? 1 : 0, c.refresh + 2, '#ff8a3f');
+    },
+    kickoff(g, M, c) {
+      // vừa có bàn thắng: mặc cả ngay lúc giao bóng lại
+      if (M.goals > 0) { M.goals = 0; this.haggle(g, M, c); }
+      else for (const sd of [-1, 1]) this.show(g, M, c, sd, M.d[sd]);
+      M.refresh = c.refresh;
+    },
+    haggle(g, M, c) {
+      const st = behind(g) ? c.trailStep : c.step, home = M.home, away = -home;
+      const h0 = M.d[home], a0 = M.d[away];
+      M.d[home] = Math.min(c.max, h0 + st);
+      M.d[away] = Math.max(0, a0 - st);
+      if (M.d[home] === h0 && M.d[away] === a0) return;
+      this.show(g, M, c, home, h0); this.show(g, M, c, away, a0);
+      M.refresh = c.refresh;
+      const E = g.effects, f = g.field, cap = captain(g);
+      if (cap) E.pop(cap.x, cap.y - 34, 'HAGGLE!', 'move', '#ff8a3f');
+      for (const sd of [-1, 1]) E.burst(sd < 0 ? f.x : f.x + f.w, f.cy, 6, '#ffd23f', 10, 70, 0.5);
+      g.sfx('ult', 'mod.haggle');
+      M.barkT = 0;
+      bark(g, 'mod');
+    },
+    // các khối thùng hàng (vật cản thật, vẽ ở render/modsdraw.js crates): mỗi khung 2 khối sát vạch phía trong sân, rộng c.depth
+    boxes(g, M, c) {
+      const f = g.field, out = [];
+      for (const sd of [-1, 1]) {
+        const d = M.d[sd];
+        if (!(d >= 1)) continue;
+        const lx = sd < 0 ? f.x : f.x + f.w, x0 = sd > 0 ? lx - c.depth : lx;
+        out.push({ sd, x0, x1: x0 + c.depth, y0: f.gTop, y1: f.gTop + d }, { sd, x0, x1: x0 + c.depth, y0: f.gBot - d, y1: f.gBot });
+      }
+      return out;
+    },
+    // đẩy hình tròn (x, y, r) ra khỏi khối theo mặt gần nhất (mặt phía vạch khung không tính) -> { nx, ny } hoặc null
+    push(q, r, B) {
+      if (q.x + r <= B.x0 || q.x - r >= B.x1 || q.y + r <= B.y0 || q.y - r >= B.y1) return null;
+      const faces = [[B.y0 - r - q.y, 0, -1], [B.y1 + r - q.y, 0, 1], B.sd > 0 ? [B.x0 - r - q.x, -1, 0] : [B.x1 + r - q.x, 1, 0]];
+      let best = faces[0];
+      for (const fc of faces) if (Math.abs(fc[0]) < Math.abs(best[0])) best = fc;
+      if (best[1]) q.x += best[0]; else q.y += best[0];
+      return { nx: best[1], ny: best[2] };
+    },
     update(g, M, c, dt) {
-      const E = g.effects, f = g.field, b = g.ball;
-      if (every(g, M, c, dt)) {
-        const sides = behind(g) ? [-1, 1] : [Math.random() < 0.5 ? -1 : 1];
-        const x = U.clamp(b.x, f.x + c.w / 2 + 10, f.x + f.w - c.w / 2 - 10);
-        for (const side of sides) {
-          const edge = side < 0 ? f.y + c.depth : f.y + f.h - c.depth;
-          const s = { x0: x - c.w / 2, x1: x + c.w / 2, edge, side, t: -c.warn, on: false };
-          M.stalls.push(s);
-          E.prop(newId(g), 'stallwarn', s.x0, edge, s.x1, side, c.warn, '#ff8a3f');
-        }
-        g.sfx('ult', 'mod.cart');
-        bark(g, 'mod');
+      M.knockT -= dt;
+      if (every(g, M, c, dt)) this.haggle(g, M, c);
+      const b = g.ball;
+      for (const B of this.boxes(g, M, c)) {
+        for (const p of g.players) if (grounded(p)) this.push(p, p.radius, B);
+        if (b.owner || b.z > g.field.goalHeight) continue;
+        const n = this.push(b, b.r, B);
+        if (!n) continue;
+        const dot = b.vx * n.nx + b.vy * n.ny;
+        if (dot >= 0) continue;
+        if (n.nx) this.hit(g, M, c, b, B.sd);
+        b.vx -= 1.7 * dot * n.nx; b.vy -= 1.7 * dot * n.ny;
+        if (dot < -80) g.sfx('wall');
       }
-      for (const s of M.stalls.slice()) {
-        if (s.t < 0) continue;
-        if (!s.on) { s.on = true; E.prop(newId(g), 'stall', s.x0, s.edge, s.x1, s.side, c.life, U.pick(c.colors)); E.shake(2, 0.15); g.sfx('wall'); }
-        if (s.t >= c.life) { M.stalls.splice(M.stalls.indexOf(s), 1); continue; }
-        const inside = (x, y, r) => x > s.x0 - r && x < s.x1 + r && (s.side < 0 ? y < s.edge + r : y > s.edge - r);
-        for (const p of g.players) if (grounded(p) && inside(p.x, p.y, p.radius)) p.y = s.edge - s.side * p.radius;
-        if (!b.owner && b.z < 26 && inside(b.x, b.y, b.r)) {
-          b.y = s.edge - s.side * b.r;
-          if (b.vy * s.side > 0) b.vy = -b.vy * 0.8;
-        }
-      }
+      if ((M.refresh -= dt) <= 0) { M.refresh = c.refresh; for (const sd of [-1, 1]) this.show(g, M, c, sd, M.d[sd]); }
+    },
+    goal(g, M) { M.goals++; },
+    // bóng dội vào sạp trong miệng khung (Ball.collideWalls): khung Mamas + bóng đủ nhanh -> sạp lùi lại
+    hit(g, M, c, b, side) {
+      if (side !== M.home || M.knockT > 0 || b.speed < c.knockSpeed || !(M.d[side] > 0)) return;
+      M.knockT = 0.4;
+      const d0 = M.d[side];
+      M.d[side] = Math.max(0, d0 - c.knock);
+      this.show(g, M, c, side, d0);
+      M.refresh = c.refresh;
+      const E = g.effects;
+      E.pop(b.x - side * 20, b.y - 24, 'NO DEAL!', 'heavy', '#ff8a3f');
+      for (const col of ['#ff3d5a', '#ffd23f', '#6bff7a']) E.burst(b.x, b.y, 6, col, 5, 110, 0.5);
+      E.shake(2, 0.15);
+      g.sfx('ult', 'mod.smash');
+      bark(g, 'conceded');
     },
   };
 
@@ -1000,10 +1330,23 @@ window.SFC = window.SFC || {};
     goal(g, scorer, own) {
       const M = g.mod;
       if (!M) return;
+      if (M.cfg && !M.mirror && K[M.id].goal) K[M.id].goal(g, M, M.cfg, scorer);
       M.barkT = 0;
       bark(g, scorer === M.team ? 'goal' : 'conceded');
     },
 
+    // Game.goalMouth: miệng khung thành phía side bị sạp hàng chắn (luật HAGGLE) — null = khung bình thường (cả máy khách gương)
+    mouth(g, side) {
+      const M = g.mod;
+      if (!M || M.id !== 'haggle' || !M.d) return null;
+      const f = g.field, d = M.d[side] || 0;
+      return { gTop: f.gTop + d, gBot: f.gBot - d };
+    },
+    // Ball.collideWalls: bóng dội vào sạp trong miệng khung
+    mouthHit(g, b, side) {
+      const M = g.mod;
+      if (M && M.id === 'haggle' && !M.mirror) K.haggle.hit(g, M, M.cfg, b, side);
+    },
     // Human.update: đang cầm ghế (luật ghế nhựa) mà bấm ra đòn -> ném ghế theo hướng mũi tên
     throwCarry(g, p, dx, dy) {
       const M = g.mod;
@@ -1035,7 +1378,9 @@ window.SFC = window.SFC || {};
       const el = o.max - o.t;
       if (o.kind === 'moped') return mopedAt(o, el);
       if (o.kind === 'flock') { const k = U.clamp(el / o.max, 0, 1); return { x: o.x + (o.a - o.x) * k, y: o.y }; }
-      if (o.kind === 'hot') return { x: g.ball.x, y: g.ball.y - g.ball.z };
+      if (o.kind === 'lassofly') { const k = Math.min(el, o.max); return { x: o.x + Math.cos(o.a) * o.b * k, y: o.y + Math.sin(o.a) * o.b * k }; }
+      if (o.kind === 'fakeball') return K.fortune.fakeAt(g, o, el);
+      if (o.kind === 'rabbit') return K.fortune.hopAt(o, el);
       if (o.kind === 'stoolthrow') { const k = Math.min(el, o.max); return { x: o.x + Math.cos(o.a) * o.b * k, y: o.y + Math.sin(o.a) * o.b * k }; }
       if (o.kind === 'spot' && o.a === 0) {
         const c = S().mods && S().mods.searchlight;

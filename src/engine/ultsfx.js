@@ -187,12 +187,26 @@ window.SFC = window.SFC || {};
     // đèn lồng: rít rơi xuống · vỡ: giấy + tre đổ "rắc" trầm
     'mod.fall'() { T({ freq: 1400, to: 500, dur: 0.9, type: 'sine', vol: 0.07 }); },
     'mod.crash'() { boom(0.25, 0.35); N({ dur: 0.2, vol: 0.18, freq: 2400, q: 0.7 }); },
-    // bóng nóng: xèo xèo
-    'mod.sizzle'() { N({ dur: 0.7, vol: 0.12, freq: 5000, q: 0.8 }); for (let i = 0; i < 6; i++) N({ dur: 0.02, vol: 0.08, freq: 7000, q: 2, delay: R(0, 0.6) }); },
+    // đèn lồng: bắt lửa "phừng" + lách tách · Noodle Kickers: quay mì vù vù, quăng "vút", trói "xoạt" thắt nút, vùng "cót két", đứt "phựt"
+    'mod.ignite'() { N({ dur: 0.35, vol: 0.16, freq: 700, to: 2400, q: 0.8, attack: 0.03 }); for (let i = 0; i < 5; i++) N({ dur: 0.02, vol: 0.08, freq: 5000, q: 2, delay: 0.1 + R(0, 0.5) }); },
+    'mod.lasso'() { for (let i = 0; i < 4; i++) N({ dur: 0.12, vol: 0.07, freq: 900, to: 1600, q: 3, delay: i * 0.16 }); },
+    'mod.whip'() { N({ dur: 0.16, vol: 0.14, freq: 1200, to: 4000, q: 2 }); T({ freq: 600, to: 1400, dur: 0.12, type: 'triangle', vol: 0.05 }); },
+    'mod.tie'() { N({ dur: 0.18, vol: 0.14, freq: 1500, to: 500, q: 1.2 }); T({ freq: 330, to: 220, dur: 0.12, type: 'square', vol: 0.06, delay: 0.12 }); T({ freq: 220, dur: 0.06, type: 'square', vol: 0.06, delay: 0.26 }); },
+    'mod.wiggle'() { T({ freq: R(500, 700), to: R(350, 450), dur: 0.06, type: 'triangle', vol: 0.05 }); },
+    'mod.snap'() { N({ dur: 0.05, vol: 0.18, freq: 2500, q: 1.5 }); seq([523, 784], 0.06, { type: 'square', dur: 0.08, vol: 0.06, delay: 0.04 }); },
     // rút bài: lật bài "phạch" + chuông ngân huyền bí
     'mod.card'() { N({ dur: 0.05, vol: 0.15, freq: 3000, q: 1 }); seq([988, 1318, 1760], 0.08, { type: 'sine', dur: 0.4, vol: 0.07, vib: 6, vibDepth: 10, delay: 0.06 }); },
-    // xe đẩy sạp chợ: bánh xe lạch cạch
-    'mod.cart'() { for (let i = 0; i < 6; i++) T({ freq: R(140, 200), dur: 0.04, type: 'square', vol: 0.06, delay: i * 0.09 }); },
+    // THE MOON: công tắc "tách" + đèn tắt rè rè · THE MAGICIAN: khói ảo thuật "bụp" · THE WHEEL (cả sân tăng tốc): bánh xe quay tạch tạch chậm dần + "ting"
+    // xào bài: lá bài lật phành phạch liên tục · THE RABBITS: thỏ cắn "chóp" + nhặt cà rốt "rắc rắc"
+    'mod.shuffle'() { for (let i = 0; i < 14; i++) N({ dur: 0.025, vol: 0.07, freq: R(2500, 4500), q: 1.5, delay: 0.3 + i * 0.07 }); },
+    'mod.chomp'() { N({ dur: 0.04, vol: 0.14, freq: 1800, q: 1.2 }); T({ freq: 700, to: 300, dur: 0.06, type: 'square', vol: 0.06 }); },
+    'mod.munch'() { [0, 0.09, 0.18].forEach((d) => N({ dur: 0.04, vol: 0.12, freq: R(1500, 2500), q: 1.5, delay: d })); },
+    'mod.lightsout'() { N({ dur: 0.03, vol: 0.2, freq: 2000, q: 2 }); T({ freq: 120, to: 40, dur: 0.5, type: 'sawtooth', vol: 0.08, delay: 0.03 }); },
+    'mod.poof'() { N({ dur: 0.25, vol: 0.14, freq: 1800, to: 400, q: 0.7 }); T({ freq: 900, to: 1500, dur: 0.1, type: 'sine', vol: 0.06, delay: 0.05 }); },
+    'mod.wheel'() { for (let i = 0; i < 9; i++) T({ freq: 1800, dur: 0.02, type: 'square', vol: 0.05, delay: i * (0.04 + i * 0.008) }); T({ freq: 1568, dur: 0.3, type: 'sine', vol: 0.08, delay: 0.7 }); },
+    // Market Mamas mặc cả: máy tính tiền "ka-ching" + đồng xu · sút vỡ sạp: thùng gỗ vỡ "rắc" + trái cây lăn lóc cóc
+    'mod.haggle'() { N({ dur: 0.05, vol: 0.12, freq: 2500, q: 1.5 }); T({ freq: 1976, dur: 0.25, type: 'square', vol: 0.06, delay: 0.06 }); T({ freq: 2637, dur: 0.3, type: 'square', vol: 0.05, delay: 0.12 }); for (let i = 0; i < 4; i++) T({ freq: R(3000, 4200), dur: 0.04, type: 'sine', vol: 0.05, delay: 0.2 + i * 0.05 }); },
+    'mod.smash'() { N({ dur: 0.14, vol: 0.22, freq: 1100, q: 0.8 }); boom(0.15, 0.25); for (let i = 0; i < 5; i++) T({ freq: R(200, 380), dur: 0.05, type: 'triangle', vol: 0.07, delay: 0.08 + i * 0.06 }); },
     // thuỷ triều: sóng ào lên
     'mod.wave'() { N({ dur: 1.2, vol: 0.14, freq: 300, to: 1200, type: 'lowpass', attack: 0.4 }); },
     // "hồi đó...": kim đĩa than sột soạt + nốt đàn cũ

@@ -117,9 +117,21 @@ Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>'
 | `mod.spray` | Spray wall starts (Billboard Kids) | Can rattle + hiss |
 | `mod.fall` | A lantern starts falling (Lantern Crew) | Falling whistle |
 | `mod.crash` | Lantern hits the ground | Low boom + paper crack |
-| `mod.sizzle` | Ball heats up (Noodle Kickers) | Sizzle with pops |
-| `mod.card` | Fortune card drawn (Fortune Tellers) | Card flip + mystic chime |
-| `mod.cart` | Market stall rolls in (Market Mamas) | Rattling cart wheels |
+| `mod.ignite` | Player catches fire (Lantern Crew) | Whoosh up + crackles |
+| `mod.lasso` | Noodle twirled overhead (Noodle Kickers) | Repeating whirl |
+| `mod.whip` | Noodle lasso thrown | Rising swish |
+| `mod.tie` | Player tied up | Rope zip + knot |
+| `mod.wiggle` | One wiggle while tied | Short creak |
+| `mod.snap` | Breaks free | Snap + two-note pop |
+| `mod.shuffle` | Madame Fate shuffles the deck (Fortune Tellers) | Rapid card riffle |
+| `mod.card` | The drawn card flips (Fortune Tellers) | Card flip + mystic chime |
+| `mod.lightsout` | THE MOON: lights go out | Switch click + power-down buzz |
+| `mod.poof` | THE MAGICIAN: ball splits / a fake ball vanishes | Magic smoke puff |
+| `mod.wheel` | THE WHEEL: everyone speeds up | Wheel ticks slowing + ding |
+| `mod.chomp` | THE RABBITS: a rabbit bites | Snap + squeak |
+| `mod.munch` | THE RABBITS: someone grabs the carrot | Crunch crunch |
+| `mod.haggle` | Market Mamas haggle the goals (HAGGLE) | Cash register ka-ching + coins |
+| `mod.smash` | Hard shot knocks a stall back (NO DEAL!) | Wooden crate crack + rolling fruit |
 | `mod.wave` | Tide rolls in (Rust Buckets) | Rising wave rush |
 | `mod.record` | "Back in my day..." (Grandpa's Squad) | Vinyl crackle + old tune |
 | `mod.star` | Golden star / golden boot (The Legends) | Rising sparkle arpeggio |
