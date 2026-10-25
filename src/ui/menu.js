@@ -24,6 +24,7 @@ window.SFC = window.SFC || {};
   const AU = () => SFC.AchUI;         // ACHIEVEMENTS: mở từ PHÒNG TRƯNG BÀY (ui/achievements.js)
   const TR = () => SFC.TrophyUI;      // PHÒNG TRƯNG BÀY: nút cúp dưới SETTINGS ở trang chủ (ui/trophies.js)
   const RD = () => SFC.RoadUI;
+  const RU = () => SFC.RunUI;         // GOAT PATH: tab màn PLAY (page 'run') + màn map của run (page 'runmap'), ui/runmap.js
   const CU = () => SFC.CupUI;         // FOOTBALL STORY: tab thứ 2 màn PLAY (page 'story') + màn 1 lượt chơi cup (page 'cup'), ui/cup.js        // GOAT PATH: toàn bộ hành trình xếp hạng, mở từ đầu màn RANKED (ui/road.js)
   const coin = (n) => G().coin(n);
   const xpBar = (d) => G().xpBar(d);
@@ -56,8 +57,9 @@ window.SFC = window.SFC || {};
   }
 
   // màn PLAY: tab RANKED (page 'party') · FOOTBALL STORY (page 'story') · PRIVATE MATCH (page 'online' / 'join' / 'lobby') — kiểu Rocket League
-  const PLAY_PAGES = ['party', 'story', 'online', 'join', 'lobby'];
-  const PLAY_TABS = ['party', 'story', 'online'];   // trang mở khi đổi sang từng tab (Q / E)
+  // page 'story' (FOOTBALL STORY cũ) không còn tab, chỉ còn mở từ PHÒNG TRƯNG BÀY — thay bằng GOAT PATH (page 'run', docs/RUN_DESIGN.md)
+  const PLAY_PAGES = ['party', 'run', 'story', 'online', 'join', 'lobby'];
+  const PLAY_TABS = ['run', 'party', 'online'];   // trang mở khi đổi sang từng tab (Q / E) — GOAT PATH đầu tiên (chế độ chính)
   // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, TÚI ĐỒ
   const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'storytest', 'privacy', 'controls', 'ach', 'trophy', 'road'];
   // trang không có logo, tiêu đề là 1 dòng ngang cả màn như SHOP (NHÂN VẬT thêm LV / XP / vàng bên phải)
@@ -191,7 +193,8 @@ window.SFC = window.SFC || {};
           // Mục đầu (PLAY) được chọn sẵn. Dòng phụ viết in hoa
           const drills = PF().drillsPending();
           return [
-            { kind: 'btn', nav: 1, label: _t('PLAY'), sub: this.pathSub(), subHtml: this.pathSubHtml(), act: () => this.go('party') },
+            // GOAT PATH là chế độ chính (user 2026-10-25): PLAY mở tab GOAT PATH, RANKED thành tab phụ
+            { kind: 'btn', nav: 1, label: _t('PLAY'), sub: this.runSub(), subHtml: esc(this.runSub()), act: () => this.go('run') },
             { kind: 'btn', nav: 0, label: _t('CHARACTER'), sub: drills ? _tn('★ {n} drill card ready!', '★ {n} drill cards ready!', drills) : (PF().statsHidden() ? _t('ULT BOOK · APPEARANCE · INVENTORY') : _t('STATS · APPEARANCE · INVENTORY')), hot: drills > 0, act: () => this.go('char') },
             { kind: 'btn', nav: 2, label: _t('SHOP'), sub: this.shopSub(), hot: Object.values(PF().data.boxes).some((n) => n > 0), act: () => { G().shopBack = 'home'; this.go('shop'); } },
             { kind: 'btn', gear: true, label: _t('SETTINGS'), sub: _t('Sound · display · controls'), act: () => this.go('settings') },
@@ -318,9 +321,9 @@ window.SFC = window.SFC || {};
               : S ? { kind: 'btn', main: true, searching: true, label: _t('CANCEL'), act: () => this.cancelSearch() }
               : { kind: 'btn', main: true, label: _t('START'), act: () => this.startSearch() },
           ];
-          // GOAT PATH: cụm Area + thanh tiến độ ở đầu màn (↑ từ các ô người chơi). Đang tìm trận: không mở (rời màn lỡ MATCH FOUND).
+          // AREA MAP: cụm Area + thanh tiến độ ở đầu màn (↑ từ các ô người chơi). Đang tìm trận: không mở (rời màn lỡ MATCH FOUND).
           // Có cả khi tắt bạn bè (bản CrazyGames: social.enabled = false) -> đặt trước dòng return bên dưới
-          if (!S) list.push({ kind: 'btn', road: true, label: _t('GOAT PATH'), act: () => RD().open(this) });
+          if (!S) list.push({ kind: 'btn', road: true, label: _t('AREA MAP'), act: () => RD().open(this) });
           if (!SFC_CONFIG.social.enabled) return list;
           // ô nhỏ bên phải thẻ của bạn: MỜI BẠN (chọn bằng phím mũi tên / bấm -> nhảy tới bạn bè đầu tiên mời được)
           if (!SO.partyFull() && !S) list.push({ kind: 'btn', invite: true, label: _t('INVITE A FRIEND'), act: () => this.inviteFriend() });
@@ -353,6 +356,9 @@ window.SFC = window.SFC || {};
         // FOOTBALL STORY (tab thứ 2 màn PLAY, ui/cup.js): thẻ các Story + START
         case 'story':
           return CU().storyItems(this);
+        // GOAT PATH (tab thứ 2 màn PLAY, ui/runmap.js): START RUN / CONTINUE + FORFEIT RUN
+        case 'run':
+          return RU().tabItems(this);
         // PRIVATE MATCH (tab thứ 3 màn PLAY, vẽ ở renderPrivate): 2 ô CREATE / JOIN
         // + CONNECTION (chỉ khi có máy chủ riêng): AUTO = máy chủ riêng trước · DIRECT = máy này làm host. Chữ không nhắc cách kết nối
         case 'online':
@@ -472,7 +478,8 @@ window.SFC = window.SFC || {};
       if (TR().pages.includes(this.page)) return TR().back(this);
       if (RD().pages.includes(this.page)) return RD().back(this);
       if (CU().pages.includes(this.page)) return CU().back(this);
-      if (this.page === 'story') return this.go('home');
+      if (RU().pages.includes(this.page)) return RU().back(this);
+      if (this.page === 'story' || this.page === 'run') return this.go('home');
       if (this.page === 'attrs' || this.page === 'look' || this.page === 'ults') return this.go('char');
       if (this.page === 'party' && this.addTyping) return this.stopAddTyping();
       if (this.page === 'lobby' && this.matePop) return this.closeMatePop();
@@ -503,7 +510,7 @@ window.SFC = window.SFC || {};
         this.sel = start >= 0 ? start : Math.max(0, items.findIndex((x) => me && x.slot === me.slot));
       }
       if (this.sel >= items.length) this.sel = Math.max(0, items.length - 1);
-      this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || this.page === 'privacy' || G().pages.includes(this.page) || TM().pages.includes(this.page) || AU().pages.includes(this.page) || TR().pages.includes(this.page) || RD().pages.includes(this.page) || CU().pages.includes(this.page));
+      this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || this.page === 'privacy' || G().pages.includes(this.page) || TM().pages.includes(this.page) || AU().pages.includes(this.page) || TR().pages.includes(this.page) || RD().pages.includes(this.page) || CU().pages.includes(this.page) || RU().pages.includes(this.page));
       // class riêng của trang chủ / màn PLAY: bật / tắt cả 2 trước mọi nhánh return (sót class 'party' làm vỡ layout trang chủ)
       // PRIVATE MATCH dùng chung khung màn PLAY, không có khung bạn bè (bạn bè giả không vào phòng thật được)
       const play = PLAY_PAGES.includes(this.page);
@@ -516,6 +523,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'home') { this.el.innerHTML = this.renderHome(items); this.bindAvatars(); return; }
       if (this.page === 'party') { this.partyItems = items; this.el.innerHTML = this.renderParty(items); this.bindAvatars(); this.scrollChat(); return; }
       if (this.page === 'story') { this.el.innerHTML = CU().renderStory(this, items); this.bindAvatars(); CU().bind(this); return; }
+      if (this.page === 'run') { this.el.innerHTML = RU().renderTab(this, items); this.bindAvatars(); RU().bind(this); return; }
       if (play) { this.el.innerHTML = this.renderPrivate(items); this.bindAvatars(); return; }
       if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); this.bindAvatars(); return; }
       if (this.page === 'privacy') { this.el.innerHTML = this.renderPrivacy(); this.addBack(); return; }
@@ -525,7 +533,8 @@ window.SFC = window.SFC || {};
       if (AU().pages.includes(this.page)) { AU().render(this); this.addBack(); return; }
       if (TR().pages.includes(this.page)) { TR().render(this); this.addBack(); return; }
       if (RD().pages.includes(this.page)) { RD().render(this); this.addBack(); this.bindAvatars(); return; }
-      if (CU().pages.includes(this.page)) { CU().render(this); return; }   // sân thu nhỏ trên đảo + nhân vật
+      if (CU().pages.includes(this.page)) { CU().render(this); return; }
+      if (RU().pages.includes(this.page)) { RU().render(this); return; }   // sân thu nhỏ trên đảo + nhân vật
       // it.foot: mục nằm dưới đáy cột trái (ngay trên dòng gợi ý phím), thứ tự ↑↓ vẫn theo danh sách
       const list = this.page === 'ults' ? this.ultGrid(items) : items.map((it, i) => (it.foot ? '' : this.renderItem(it, i))).join('');
       const foot = items.map((it, i) => (it.foot ? this.renderItem(it, i) : '')).join('');
@@ -694,6 +703,12 @@ window.SFC = window.SFC || {};
 
     /* ---------------- Main Path ---------------- */
     // dòng phụ của nút MAIN PATH ở trang chủ: Area + Elo hiện tại
+    // dòng dưới nút PLAY trang chủ: run đang dở (act · tầng) hoặc GOAT PATH
+    runSub() {
+      const R = SFC.Run.run;
+      if (R && SFC.Run.active()) return `${_t('GOAT PATH')} · ${_t('ACT {n}', { n: R.act + 1 })} · ${SFC.Run.act(R.act).name}`;
+      return _t('GOAT PATH');
+    },
     pathSub() {
       const MP = MPATH(), st = MP.state;
       if (MP.demoOver()) return _t('DEMO COMPLETE · FULL GAME ON STEAM');
@@ -903,7 +918,7 @@ window.SFC = window.SFC || {};
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       return `<div class="pt-main">
           ${this.playTabs('ranked', iRoad < 0 ? `<span class="pt-area" style="color:${A.color}">${PX().area(A.id, 'sm')} ${esc(A.name)} · ${PX().elo(st.elo)}</span>${this.areaProgress()}`
-            : `<button class="pt-road ${sel(iRoad)}" data-i="${iRoad}" title="${esc(_t('GOAT PATH'))}"><span class="pt-area" style="color:${A.color}">${PX().area(A.id, 'sm')} ${esc(A.name)} · ${PX().elo(st.elo)}</span>${this.areaProgress()}<span class="pt-road-go">${PX().ui('trophy', 'sm')} ${esc(_t('GOAT PATH'))} ▸</span></button>`)}
+            : `<button class="pt-road ${sel(iRoad)}" data-i="${iRoad}" title="${esc(_t('AREA MAP'))}"><span class="pt-area" style="color:${A.color}">${PX().area(A.id, 'sm')} ${esc(A.name)} · ${PX().elo(st.elo)}</span>${this.areaProgress()}<span class="pt-road-go">${PX().ui('trophy', 'sm')} ${esc(_t('GOAT PATH'))} ▸</span></button>`)}
           ${toggle}
           <div class="pt-slots">${slots.join("")}</div>
           ${status}
@@ -925,7 +940,7 @@ window.SFC = window.SFC || {};
       const K = (a, kb) => SFC.Input.key(a, kb);
       const tab = (id, label, page, lock) => `<button class="pt-tab ${on === id ? 'on' : ''}" data-ptab="${page}">${lock ? PX().ui('lock', 'sm') + ' ' : ''}${esc(label)}</button>`;
       return `<div class="pt-tabs">
-          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('ranked', _t('RANKED'), 'party')}${tab('story', _t('FOOTBALL STORY'), 'story')}${tab('private', _t('PRIVATE MATCH'), 'online', SFC_DEMO)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
+          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('run', _t('GOAT PATH'), 'run')}${tab('ranked', _t('RANKED'), 'party')}${tab('private', _t('PRIVATE MATCH'), 'online', SFC_DEMO)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
           ${sub}
         </div>`;
     },
@@ -1455,6 +1470,7 @@ window.SFC = window.SFC || {};
       if (TR().pages.includes(this.page)) return TR().input(this, input);
       if (RD().pages.includes(this.page)) return RD().input(this, input);
       if (CU().pages.includes(this.page)) return CU().input(this, input);
+      if (RU().pages.includes(this.page)) return RU().input(this, input);
       if (this.page === 'name' && input.wasPressed('confirm')) return this.submitName();
       if (this.page === 'controls') return CV().input(this, input);
       if (this.page === 'privacy') {
@@ -1656,6 +1672,7 @@ window.SFC = window.SFC || {};
         if (TR().pages.includes(this.page) && TR().click(this, e)) return;
         if (RD().pages.includes(this.page) && RD().click(this, e)) return;
         if (CU().pages.includes(this.page) && CU().click(this, e)) return;
+        if (RU().pages.includes(this.page) && RU().click(this, e)) return;
         if (this.page === 'controls' && CV().click(this, e)) return;
         // Main Path: bấm 1 Area trên "con đường" để xem
         const pa = e.target.closest('[data-parea]');

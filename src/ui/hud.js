@@ -38,6 +38,7 @@ window.SFC = window.SFC || {};
       const cupO = game.opts && game.opts.cup, cupS = cupO && SFC.Cup.get(cupO.id);
       const pathLine = game.opts && game.opts.tutorial ? `<div class="hud-path dream">${esc(_t('PROLOGUE · THE DREAM'))}</div>`
         : cupS ? `<div class="hud-path" style="color:${cupS.color}">${esc(cupS.name)} · ${esc(SFC.Cup.roundName(cupO.round))}</div>`
+        : game.opts && game.opts.run ? this.runLine(game.opts.run)
         : !mp ? '' : `<div class="hud-path">${esc(SFC.MainPath.area(mp.area).name)} · ${PX().elo(mp.elo)}</div>`;
       const key = [t0.score, t1.score, dream ? 'dream' : time, phase, cores, coreLine, pathLine].join('#');
       if (c.key !== key) {
@@ -81,6 +82,12 @@ window.SFC = window.SFC || {};
         const s = Math.ceil(Math.max(0, game.draft.t)) + 's';
         if (el && el.textContent !== s) el.textContent = s;
       }
+    },
+
+    // GOAT PATH: dòng act · loại node dưới tỉ số
+    runLine(o) {
+      const A = SFC.Run.act(o.act) || {}, N = SFC.Run.node(o.kind) || {}, D = o.drill && SFC_CONFIG.run.drills[o.drill];
+      return `<div class="hud-path" style="color:${A.color || '#ffe14f'}">${esc(A.name || '')} · ${esc(D ? D.name : N.name || '')}</div>`;
     },
 
     // build trên HUD: đội của người chơi = tiến độ công thức Tuyệt kỹ kiểu TFT của cầu thủ mình;

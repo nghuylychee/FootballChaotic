@@ -149,6 +149,8 @@ window.SFC = window.SFC || {};
       this.stopTick = null; // fn(dt) -> true = xong: Tuyệt kỹ tự diễn trong lúc cả sân đứng yên (VHS Rewind tua ngược)
       // FOOTBALL STORY: luật trận + câu nói của đối thủ (src/systems/matchmods.js) · tỉ số lúc đầu trận (luật nhà của The Uncles)
       this.mod = SFC.MatchMods ? SFC.MatchMods.create(this) : null;
+      // GOAT PATH: SKILL GAME (opts.drill, src/systems/drills.js) — đồng hồ + điều kiện qua / hỏng riêng
+      this.drill = SFC.Drills ? SFC.Drills.create(this) : null;
       if (opts.score) this.teams.forEach((t, i) => { t.score = opts.score[i] || 0; });
       this.kickoff(0);
       // lượt chọn Core khởi đầu (trước khi giao bóng đầu trận)
@@ -229,7 +231,7 @@ window.SFC = window.SFC || {};
       const dir = this.teams[p.team].dir;
       return this.teams[1 - p.team].players.some((o) => !this.inKeeperZone(o) && (o.x - p.x) * dir > 0);
     }
-    get remaining() { return Math.max(0, this.cfg.match.duration - this.elapsed); }
+    get remaining() { return Math.max(0, (this.drill ? this.drill.time : this.cfg.match.duration) - this.elapsed); }
 
     formationPos(p) {
       const f = this.field, fm = this.cfg.formation[p.role];
@@ -461,11 +463,13 @@ window.SFC = window.SFC || {};
       this.effects.update(dt);
       this.cores.update(dt);
       if (this.mod) SFC.MatchMods.update(this, dt);
+      if (this.drill) SFC.Drills.update(this, dt);
     }
 
     tickClock(dt) {
       const M = this.cfg.match;
       if (this.opts.training) return; // luyện tập: không giờ trận, không Final Push / Golden Goal, không kết thúc
+      if (this.drill) return SFC.Drills.clock(this, dt);   // SKILL GAME: giờ của bài
       if (this.opts.tutorial && !this.clockOn) return; // trận mơ: đồng hồ chỉ chạy ở bài cuối (tutorial.js)
       if (this.golden) {
         this.goldenT = (this.goldenT || 0) + dt;
@@ -622,11 +626,13 @@ window.SFC = window.SFC || {};
       this.emit('goal', { team: scorer, value, scorer: by ? by.name : '', own, pid: cel ? by.id : -1, cel });
       this.cores.goalScored(scorer, by);
       if (this.mod) SFC.MatchMods.goal(this, scorer, own);
+      if (this.drill) SFC.Drills.goal(this, scorer);
       this.sfx('goal');
       return true;
     }
 
     afterGoal() {
+      if (this.drill) return SFC.Drills.afterGoal(this);   // SKILL GAME: đủ bàn = xong, chưa đủ = giao lại cho bạn
       if (this.golden || this.elapsed >= this.cfg.match.duration) return this.end();
       this.kickoff(1 - this.scoredBy);
       // bóng chết: xếp đội hình giao bóng xong thì mở các lượt chọn Core đã tích được (luyện tập: không chọn Core)

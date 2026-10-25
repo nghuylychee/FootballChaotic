@@ -24,6 +24,7 @@ SFC_CONFIG.achievements = {
     cores:   { icon: 'ui-card', color: '#9d7bff' },
     style:   { icon: 'ui-gift', color: '#3ff6ff' },
     story:   { icon: 'ui-trophy', color: '#ff9a3d' },
+    run:     { icon: 'ui-crown', color: '#e4ae39' },   // GOAT PATH
   },
   list: [
     /* ---------- trận đấu ---------- */
@@ -57,6 +58,12 @@ SFC_CONFIG.achievements = {
     { id: 'storm_chaser', group: 'cores', name: 'Storm Chaser',       desc: 'Unlock Light Cycle',           stat: 'core', core: 'light_cycle', target: 1, reward: { item: 'lightning' } },
     { id: 'event_horizon',group: 'cores', name: 'Event Horizon',      desc: 'Unlock Black Hole Shot',       stat: 'core', core: 'black_hole', target: 1,     reward: { item: 'galaxy' } },
     /* ---------- FOOTBALL STORY ---------- */
+    /* ---------- GOAT PATH (src/meta/run.js, Profile.data.runs) ---------- */
+    { id: 'path_first',   group: 'run', name: 'First Steps',        desc: 'Beat the boss of THE BLOCK',   stat: 'runAct', target: 1, reward: { box: 'street', n: 2 } },
+    { id: 'path_city',    group: 'run', name: 'City Lights',        desc: 'Beat the boss of NIGHT CITY',  stat: 'runAct', target: 2, reward: { box: 'legend' } },
+    { id: 'path_goat',    group: 'run', name: 'Greatest of All Time', desc: 'Win a GOAT PATH run',        stat: 'runWins', target: 1, reward: { box: 'legend', n: 2 } },
+    { id: 'path_walker',  group: 'run', name: 'Path Walker',        desc: 'Play 10 runs',                 stat: 'runs', target: 10, reward: { box: 'street', n: 2 } },
+    { id: 'path_hunter',  group: 'run', name: 'Boss Hunter',        desc: 'Beat 10 bosses',               stat: 'runBosses', target: 10, reward: { box: 'legend' } },
     { id: 'ward_champ',   group: 'story', name: 'King of the Ward',   desc: 'Win THE WARD CUP',             stat: 'story', story: 'ward_cup', target: 1, reward: { box: 'party' } },
     { id: 'rooftop_champ', group: 'story', name: 'King of the Rooftops', desc: 'Win the ROOFTOP NIGHT LEAGUE',  stat: 'story', story: 'rooftop_league', target: 1, reward: { box: 'party' } },
     { id: 'market_champ', group: 'story', name: 'Market Royalty',     desc: 'Win the NIGHT MARKET CUP',      stat: 'story', story: 'market_cup', target: 1, reward: { box: 'legend' } },

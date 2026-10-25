@@ -343,7 +343,12 @@ window.SFC = window.SFC || {};
       if (!list.length) return SFC.CoreScale.cfg().anchor;
       let sum = 0;
       for (const q of list) for (const st of stats) sum += SFC.CoreScale.ratingOf(q.stats, st);
-      return sum / (list.length * stats.length);
+      const r = sum / (list.length * stats.length);
+      // GOAT PATH (BADGE trường phái, src/meta/run.js): Core của trường phái đó mạnh hơn — chỉ character của người chơi
+      const boost = this.g.opts.coreBoost && this.g.opts.coreBoost[team];
+      if (!boost || !p || !p.avatar) return r;
+      const add = this.tagsOf(id).reduce((m, tag) => Math.max(m, boost[tag] || 0), 0);
+      return Math.min(SFC.CoreScale.cfg().max, r + add);
     }
     // params của Core id đã nhân theo chỉ số của who (cache theo trận); owner = cầu thủ sở hữu (null nếu who là đội)
     // Tuyệt kỹ tiến hoá (cấp who.ultLv >= 2): ghép list[id].evolve[cấp - 2] lên params gốc trước khi nhân theo chỉ số
@@ -660,7 +665,9 @@ window.SFC = window.SFC || {};
     // đổi Tuyệt kỹ giữ năng lượng. Trận mơ / không công thức: chỉ nạp khi đã có Tuyệt kỹ
     gainUlt(p, amt) {
       if (!isP(p) || (!this.ultOf(p) && !this.recipesOn())) return;
-      p.res.ult = Math.min(1, this.ultE(p) + amt);
+      // GOAT PATH (BADGE Energy Drink): character nạp nhanh hơn
+      const gain = this.g.opts.ultGain && p.avatar ? this.g.opts.ultGain[p.team] || 1 : 1;
+      p.res.ult = Math.min(1, this.ultE(p) + amt * gain);
     }
     ultReady(p) { return isP(p) && !!this.ultOf(p) && this.ultE(p) >= 1; }
     // khi nào dùng được Tuyệt kỹ (user chốt 2026-10-17, hiện ở ô X + ULT BOOK): 'ball' = chính mình đang cầm bóng (list[id].needsBall;
@@ -854,7 +861,10 @@ window.SFC = window.SFC || {};
       const lean = c.tags.reduce((m, tag) => Math.max(m, style[tag] || 1), 0);
       // boss cầm Core đặc trưng: nghiêng về trường phái của Core đó (đủ lá cho Cộng hưởng / Tuyệt kỹ)
       const sig = this.signature(p), sigLean = sig && c.tags.some((tag) => this.tagsOf(sig).includes(tag)) ? 2 : 1;
-      return (D.rarityWeight[c.rarity] || 1) * (1 + D.buildWeight * shared) * lean * sigLean;
+      // GOAT PATH (BADGE trường phái): Core của trường phái đó ra thường hơn ở lượt chọn của người chơi (vẫn ngẫu nhiên)
+      const bias = this.g.opts.draftBias && this.g.opts.draftBias[p.team] && this.isHumanOwner(p) ? this.g.opts.draftBias[p.team] : null;
+      const bLean = bias ? c.tags.reduce((m, tag) => Math.max(m, bias[tag] || 1), 1) : 1;
+      return (D.rarityWeight[c.rarity] || 1) * (1 + D.buildWeight * shared) * lean * sigLean * bLean;
     }
     // Core đặc trưng (boss trận thăng hạng): thuộc về ngôi sao của đội = cầu thủ ĐÁ CAO (không có thì người đầu)
     signature(p) {

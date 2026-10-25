@@ -76,12 +76,47 @@
       if (SFC_DEBUG && SFC.StoryTest) SFC.StoryTest.onMatch(this);   // phòng test Story: phím tắt trong trận (src/ui/storytest.js)
     },
 
+    // GOAT PATH (src/meta/run.js): trận của node đang chọn trên map. Character đá ĐÁ CAO + 2 đồng đội AI (Run.pickMates),
+    // đối thủ = đội trên node, độ khó AI cả 2 đội theo Elo của node (theo act + tầng). Hoà hết giờ: bàn thắng vàng. Thua = hết run
+    startRunMatch() {
+      const M = SFC.Run.match();
+      if (!M) return this.toMenu('runmap');
+      const MP = SFC_CONFIG.mainPath, soloIdx = Math.max(0, C.roles.indexOf(this.myRole()));
+      // chỉ số character = nền + BADGE trong run (Run.avatarStats), không dùng chỉ số ngoài run
+      const R = SFC.Run.ratings(), ovr = Math.round(Object.values(R).reduce((s, v) => s + v, 0) / Object.keys(R).length);
+      const avatar = Object.assign(SFC.Profile.avatar(), { role: C.roles[soloIdx], stats: SFC.Run.avatarStats(), ovr });
+      SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
+      const ai = SFC.MainPath.aiProfile(M.elo), mateRoles = C.roles.filter((r, i) => i !== soloIdx);
+      // SKILL GAME (src/systems/drills.js): đội bạn 1 người (character), không chọn Core, không luật trận, không màn giới thiệu
+      if (M.drill) {
+        const D = SFC_CONFIG.run.drills[M.drill];
+        return this.startMatch({
+          home: MP.playerTeam.id, away: M.team, difficulty: 'normal', aiProfile: ai, humanTeam: 0, solo: [0, null], avatars: [avatar, null],
+          arena: SFC_CONFIG.arenas[M.arena] ? M.arena : undefined, teamSize: D.teamSize.slice(), noDraft: true, drill: M.drill, run: M.info,
+        });
+      }
+      this.startMatch({
+        home: MP.playerTeam.id, away: M.team, difficulty: 'normal', aiProfile: ai, mateProfile: ai,
+        humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: SFC_CONFIG.arenas[M.arena] ? M.arena : undefined,
+        coreUnlocks: [SFC.Profile.unlockedCores(), null],
+        mates: [SFC.Run.pickMates(M.elo).map((m, i) => SFC.Cup.mateSpec(m, mateRoles[i] || null, { team: M.team })), null],   // chỉ số theo trình đối thủ (stories.mateStats)
+        signature: [null, M.signature],
+        knockout: true, run: M.info,
+        mod: M.mod, barks: M.barks,   // luật trận + câu nói của đối thủ (src/systems/matchmods.js); không có tỉ số khởi đầu
+        ...SFC.Run.matchOpts(),       // BADGE: coreBoost / draftBias / score (Home Crowd) / ultGain
+      });
+    },
+
     // bỏ trận Main Path giữa chừng (Pause > FORFEIT, rời trận xếp hạng online): tính là thua
     forfeit() {
       const g = this.game, mp = g && g.opts.mainPath;
       let msg = '';
       // FOOTBALL STORY: bỏ trận = thua = hết cup
       if (g && g.opts.cup && g.state !== 'ended') { SFC.Cup.forfeit(g); return this.toMenu('cup'); }
+      // GOAT PATH: SKILL GAME bỏ cuộc = hỏng bài (chấn thương), màn kết quả hiện như thường
+      if (g && g.opts.drill && g.state !== 'ended') { SFC.Drills.finish(g, false); return this.resume(); }
+      // GOAT PATH: bỏ trận = thua = hết run
+      if (g && g.opts.run && g.state !== 'ended') { SFC.Run.forfeit(); return this.toMenu('runmap'); }
       if (mp && g.state !== 'ended') {
         if (SFC_CONFIG.mainPath.forfeitCountsAsLoss) {
           const r = SFC.MainPath.record('lose', mp);
@@ -148,11 +183,14 @@
       const _t = SFC.t;
       SFC.UI.pauseItems = opts.mainPath ? [['resume', _t('RESUME')], ['forfeit', _t('FORFEIT (LOSS)')]]
         : opts.cup && this.mode !== 'online' ? [['resume', _t('RESUME')], ['forfeit', _t('FORFEIT (CUP OVER)')]]
+        : opts.drill ? [['resume', _t('RESUME')], ['forfeit', _t('GIVE UP')]]
+        : opts.run ? [['resume', _t('RESUME')], ['forfeit', _t('FORFEIT (RUN OVER)')]]
         : this.mode === 'online' ? [['resume', _t('BACK TO MATCH')], ['leave', _t('LEAVE ROOM')]]
         : opts.tutorial ? [['resume', _t('RESUME')], ['skiptut', _t('SKIP PROLOGUE')]]
         : [['resume', _t('RESUME')], ['restart', _t('RESTART')], ['menu', _t('MAIN MENU')]];
       // trận xếp hạng: lưu sẵn 1 trận thua tới khi có kết quả (tắt game / rớt mạng giữa trận vẫn tính thua)
       if (opts.mainPath && !opts.resume) SFC.MainPath.begin(opts.mainPath);
+      if (opts.run) SFC.Run.begin(opts.run);   // GOAT PATH: tắt game giữa trận = forfeit
       SFC.UI.clearToasts();
       SFC.UI.show(null);
       const L = SFC_CONFIG.teams.list, mp = opts.mainPath;
@@ -167,6 +205,14 @@
         else if (opts.cup) {
           const st = SFC.Cup.get(opts.cup.id);
           SFC.UI.banner(SFC.Cup.roundName(opts.cup.round), `${st ? st.name : ''} · ${vsAway}`, st ? st.color : '#ffe14f', 1.8);
+        }
+        else if (opts.drill) {
+          const D = SFC_CONFIG.run.drills[opts.drill];
+          SFC.UI.banner(D.name, D.desc, '#6bff4f', 2.4);
+        }
+        else if (opts.run) {
+          const A = SFC.Run.act(opts.run.act) || {}, N = SFC.Run.node(opts.run.kind) || {};
+          SFC.UI.banner(N.name || _t('KICK OFF'), `${A.name || ''} · ${vsAway}`, opts.run.kind === 'match' ? A.color : N.color, 1.8);
         }
         else SFC.UI.banner(opts.training ? _t('TRAINING') : _t('KICK OFF'), vs, '#ffe14f', 1.4);
         SFC.Audio.upgrade();
@@ -194,6 +240,7 @@
       if (this.mode !== 'single') return;
       if (this.lastOpts && this.lastOpts.mainPath) this.startMainPath();
       else if (this.lastOpts && this.lastOpts.cup) this.toMenu('cup');   // FOOTBALL STORY: không đá lại, về màn cup
+      else if (this.lastOpts && this.lastOpts.run) this.toMenu('runmap');   // GOAT PATH: không đá lại, về map
       else this.startMatch(this.lastOpts);
     },
 
@@ -327,6 +374,8 @@
     const langChosen = SFC.I18n.init();   // ngôn ngữ đã chọn / đoán theo máy -> dịch config trước khi vẽ bất cứ gì
     SFC.Profile.load();
     const forfeited = SFC.MainPath.settle();   // lần trước tắt game giữa trận xếp hạng -> tính thua
+    SFC.Run.settle();   // lần trước tắt game giữa trận GOAT PATH -> hết run (màn GOAT PATH hiện màn kết thúc)
+    SFC.Run.unlockRoad(false);   // CORE ROAD theo run: cấp bù Core tới tiến trình hiện tại (đổi config / hồ sơ cũ)
     SFC.Settings.apply();   // âm lượng + cỡ cửa sổ đã lưu (SETTINGS)
     Input.init(SFC_CONFIG.controls.bindings);
     SFC.Renderer.init(document.getElementById('game'));

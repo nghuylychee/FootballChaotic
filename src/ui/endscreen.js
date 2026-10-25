@@ -29,6 +29,7 @@ window.SFC = window.SFC || {};
         // trận Main Path: chỉ 1 nút về phòng chờ (bản DEMO hết Area: CONTINUE -> màn WISHLIST)
         // FOOTBALL STORY: 1 nút về màn cup (vòng kế / bị loại / vô địch)
         if (this.app.game && this.app.game.opts.cup) return [['cup', _t('CONTINUE')]];
+        if (this.app.game && this.app.game.opts.run) return [['runmap', _t('CONTINUE')]];   // GOAT PATH: về map (đi tiếp / hết run)
         return mp ? (SFC.MainPath.demoOver() ? [['restart', _t('CONTINUE')]] : [['menu', _t('LOBBY')]]) : [['restart', _t('PLAY AGAIN')], ['menu', _t('MAIN MENU')]];
       }
       // phòng FOOTBALL STORY: chủ phòng CONTINUE = cả phòng về màn cup (vòng kế / bị loại / vô địch); người khác chờ chủ phòng
@@ -71,9 +72,11 @@ window.SFC = window.SFC || {};
       const t0 = game.teams[0], t1 = game.teams[1];
       const wt = win >= 0 ? game.teams[win] : null;
       const h = game.humanTeam;
-      const resLabel = h < 0 ? (wt ? _t('WINNER') : _t('DRAW'))
+      // GOAT PATH SKILL GAME: qua / hỏng bài thay cho thắng / thua
+      const drill = game.drill && game.drill.ok != null ? game.drill.ok : null;
+      const resLabel = drill != null ? (drill ? _t('CLEAR!') : _t('FAILED')) : h < 0 ? (wt ? _t('WINNER') : _t('DRAW'))
         : win === h ? _t('VICTORY!') : win >= 0 ? _t('DEFEAT...') : _t('DRAW');
-      const resCls = h < 0 ? (wt ? 'win' : 'draw') : win === h ? 'win' : win >= 0 ? 'lose' : 'draw';
+      const resCls = drill != null ? (drill ? 'win' : 'lose') : h < 0 ? (wt ? 'win' : 'draw') : win === h ? 'win' : win >= 0 ? 'lose' : 'draw';
       const devBar = SFC_DEBUG && this._devEndMode ? this.devEndBar('outro') : '';
       this.el.end.innerHTML = `
         ${devBar}
@@ -103,7 +106,8 @@ window.SFC = window.SFC || {};
     renderEnd(game) {
       const h = game.humanTeam >= 0 ? game.humanTeam : 0;
       const me = game.teams[h], op = game.teams[1 - h];
-      const res = me.score > op.score ? [_t('VICTORY!'), 'win'] : me.score < op.score ? [_t('DEFEAT...'), 'lose'] : [_t('DRAW'), 'draw'];
+      const res = game.drill && game.drill.ok != null ? (game.drill.ok ? [_t('CLEAR!'), 'win'] : [_t('FAILED'), 'lose'])
+        : me.score > op.score ? [_t('VICTORY!'), 'win'] : me.score < op.score ? [_t('DEFEAT...'), 'lose'] : [_t('DRAW'), 'draw'];
       const { win, mvp, msOf, cmp } = this.matchSummary(game);
       // đội thắng xếp trên (kiểu Rocket League); nếu hoà thì đội của bạn xếp trên
       const orderedTeams = win >= 0 ? [game.teams[win], game.teams[1 - win]] : [me, op];
@@ -382,6 +386,7 @@ window.SFC = window.SFC || {};
       // trận Main Path xong -> về trang Main Path
       if (act === 'menu') this.app.toMenu(this.app.game && this.app.game.opts.mainPath ? 'party' : 'home');
       if (act === 'cup') this.app.toMenu('cup');
+      if (act === 'runmap') this.app.toMenu('runmap');
       if (act === 'leave') SFC.Session.leave();
       if (act === 'lobby') SFC.Session.backToLobby();
       if (act === 'reroll') this.app.rerollCore();

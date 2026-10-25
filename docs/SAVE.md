@@ -12,7 +12,7 @@ Không chuyển save cũ từ `localStorage` sang file: bản desktop chỉ đ�
 
 | Key | Nội dung | Xoá khi RESET DATA |
 |---|---|---|
-| `sfc_profile_v1` | hồ sơ: level, gold, túi đồ, Main Path, đồng đội, chỉ số, thành tích đã nhận (`ach`), tiến độ FOOTBALL STORY (`story`: `{ <id>: { best, plays, wins, finals, stars, first?, fin? } }`, src/meta/cup.js; `first` = ngày vô địch đầu, `fin` = tỉ số chung kết đẹp nhất, hiện ở PHÒNG TRƯNG BÀY) | ✅ |
+| `sfc_profile_v1` | hồ sơ: level, gold, túi đồ, Main Path, đồng đội, chỉ số, thành tích đã nhận (`ach`), tiến độ FOOTBALL STORY (`story`: `{ <id>: { best, plays, wins, finals, stars, first?, fin? } }`, src/meta/cup.js; `first` = ngày vô địch đầu, `fin` = tỉ số chung kết đẹp nhất, hiện ở PHÒNG TRƯNG BÀY), run GOAT PATH đang dở (`run`: map act hiện tại + node đã qua + `pending` lúc giao bóng, null = không có; src/meta/run.js) và thống kê mọi run (`runs`: `{ plays, wins, bestAct, bestFloor, bosses, road }`, `road` = tiến trình CORE ROAD theo run). Run đang dở giữ thêm tiền `cash`, túi BADGE `bag`, thưởng chờ chọn `offer`, phòng đang mở `room` (Shop / Locker Room / Skill game / sự kiện), cut-scene chờ chiếu `cue` / đã chiếu `seen` | ✅ |
 | `sfc_social_v1` | bạn bè giả (placeholder) + lịch sử chat + lời mời kết bạn đã gửi / nhận | ✅ |
 | `sfc_settings` | âm lượng, cỡ cửa sổ | — |
 | `sfc_fx` | Giảm nháy | — |

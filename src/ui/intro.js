@@ -91,6 +91,13 @@ window.SFC = window.SFC || {};
         title = SFC.Cup.roundName(g.opts.cup.round);
         if (A) { venue = A.name; venueIcon = PX().area(A.id) + ' '; }
         else if (SFC_CONFIG.arenas[g.opts.arena] && SFC_CONFIG.arenas[g.opts.arena].venue) venue = SFC_CONFIG.arenas[g.opts.arena].venue;   // sân riêng của Story
+      } else if (g.opts.run) {
+        // GOAT PATH: tên act · loại node (MATCHDAY / ELITE / BOSS), sân của đối thủ
+        const RA = SFC.Run.act(g.opts.run.act), N = SFC.Run.node(g.opts.run.kind), A = MP.areas().find((a) => a.arena === g.opts.arena);
+        comp = `${_t('GOAT PATH')} · ${RA ? RA.name : ''}`;
+        title = N ? N.name : _t('MATCHDAY');
+        if (A) { venue = A.name; venueIcon = PX().area(A.id) + ' '; }
+        else if (SFC_CONFIG.arenas[g.opts.arena] && SFC_CONFIG.arenas[g.opts.arena].venue) venue = SFC_CONFIG.arenas[g.opts.arena].venue;
       } else if (g.opts.training) { comp = _t('TRAINING'); title = _t('PRACTICE MATCH'); }
       else if (g.opts.online) {
         // co-op: mọi người chơi cùng 1 đội, đối thủ là đội bot

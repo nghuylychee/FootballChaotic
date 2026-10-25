@@ -1,5 +1,7 @@
 # FOOTBALL STORY — Cup knockout co-op PvE
 
+> **2026-10-25: đang thay bằng run 3 act kiểu Slay the Spire, xem `docs/RUN_DESIGN.md`.** 4 Story trong doc này sẽ bỏ; đối thủ, luật trận, cut-scene và co-op được dùng lại.
+
 > Trạng thái: **ĐÃ CHỐT THIẾT KẾ + ĐÃ LÀM BẢN CHƠI MỘT MÌNH (2026-10-18)**. 2026-10-20: mỗi Story 1 thể thức riêng + PHÒNG TRƯNG BÀY. Chưa làm: co-op online (xem "Việc tiếp theo").
 > Code: `config/stories.config.js` (nội dung) · `src/meta/cup.js` (`SFC.Cup`) · `src/ui/cup.js` (`SFC.CupUI`) · `app.startCupMatch` (main.js).
 > Mục tiêu: một mode cho người chơi không thích đá rank. Đá cùng bạn (hoặc bot) qua 1 cup knockout có câu chuyện riêng, gom đủ các Story để có động lực completion.

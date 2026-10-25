@@ -33,6 +33,7 @@ const FILES = [
   ['config/arenas.config.js', 'game sandbox itch server'],
   ['config/mainpath.config.js', 'game sandbox itch server'],
   ['config/stories.config.js', 'game sandbox itch server'],   // FOOTBALL STORY (cup knockout co-op PvE) + đội riêng
+  ['config/run.config.js', 'game sandbox itch server'],       // GOAT PATH: run 3 act kiểu Slay the Spire (đối thủ lấy từ stories)
   ['config/teammates.config.js', 'game sandbox itch server'],
   ['config/achievements.config.js', 'game'],
   ['config/intro.config.js', 'game itch server'],
@@ -63,6 +64,7 @@ const FILES = [
   ['src/meta/profile.js', 'game sandbox itch server'],
   ['src/meta/mainpath.js', 'game sandbox itch server'],
   ['src/meta/cup.js', 'game sandbox itch server'],         // FOOTBALL STORY: lượt chơi cup + tiến độ (Profile.data.story)
+  ['src/meta/run.js', 'game sandbox itch server'],         // GOAT PATH: sinh map + run đang dở (Profile.data.run)
   ['src/meta/achievements.js', 'game'],
   ['src/meta/social.js', 'game'],                          // bạn bè giả + phòng chờ (placeholder), chỉ menu
   ['src/entities/ball.js', 'game sandbox itch server'],
@@ -77,6 +79,7 @@ const FILES = [
   ['src/systems/vfxkit.js', 'game sandbox itch server'],
   ['src/systems/celebrate.js', 'game sandbox itch server'],   // ăn mừng bàn thắng: chọn động tác + di chuyển
   ['src/systems/matchmods.js', 'game sandbox itch server'],   // FOOTBALL STORY: luật trận của từng đội + câu nói trong trận
+  ['src/systems/drills.js', 'game'],                          // GOAT PATH: SKILL GAME (bài tập trên sân thật)
   ['src/systems/ai.js', 'game sandbox itch server'],
   ['src/systems/human.js', 'game sandbox itch server'],
   ['src/game/match.js', 'game sandbox itch server'],
@@ -114,6 +117,7 @@ const FILES = [
   ['src/ui/trophies.js', 'game'],                          // PHÒNG TRƯNG BÀY: cúp Story + kỷ lục + lối vào ACHIEVEMENTS
   ['src/ui/road.js', 'game'],
   ['src/ui/cup.js', 'game'],                               // FOOTBALL STORY: tab PLAY + màn cup
+  ['src/ui/runmap.js', 'game'],                            // GOAT PATH: tab PLAY + màn map
   ['src/ui/intro.js', 'game'],
   ['src/ui/drill.js', 'game'],
   ['src/ui/story.js', 'game'],

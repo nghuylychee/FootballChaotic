@@ -10,5 +10,6 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 SFC_CONFIG.demo = {
   areas: 2,                                                    // số Area đá được (Area 3 trở đi khoá)
   stories: 1,                                                  // số Story của FOOTBALL STORY chơi được
+  runActs: 1,                                                  // GOAT PATH: số act chơi được (hạ boss act cuối được chơi = DEMO COMPLETE)
   steamUrl: '',     // link trang Steam (https://store.steampowered.com/app/<APPID>/). Để trống: menu ghi COMING SOON TO STEAM, nút không mở gì
 };

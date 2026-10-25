@@ -43,6 +43,9 @@ window.SFC = window.SFC || {};
     'ui-calendar': ['..k......k..', '.rrrrrrrrrr.', '.rrrrrrrrrr.', '.wwwwwwwwww.', '.wkwkwkwkww.', '.wwwwwwwwww.', '.wkwkwkwkww.', '.wwwwwwwwww.', '.wkwkwkwrrw.', '.wwwwwwwrrw.', '.eeeeeeeeee.', '............'],
     'ui-ball': ['....wwww....', '..wwkkkkww..', '.wwwkkkkwww.', '.wkwwwwwwkw.', 'wkkwwwwwwkkw', 'wkkwwkkwwkkw', 'wwwwkkkkwwww', 'wwwwwkkwwwww', '.wkwwwwwwkw.', '.wkkwwwwkkw.', '..wwkkkkww..', '....wwww....'],
     'ui-cone': ['.....gg.....', '.....gG.....', '....wwww....', '....ggGg....', '....ggGg....', '...wwwwww...', '...gggGgg...', '..ggggGggg..', '..wwwwwwww..', '..gggggGgg..', 'GGGGGGGGGGGG', '.GGGGGGGGGG.'],
+    // GOAT PATH (src/ui/runmap.js): node SHOP (túi tiền) · LOCKER ROOM (áo treo)
+    'ui-shop': ['...NN..NN...', '....NNNN....', '.....nn.....', '...nnnnnn...', '..nnnyyynn..', '.nnnynnnnnn.', '.nnnnyynnnn.', '.nnnnnnynnn.', '.nnnyyynnnn.', '.nnnnnnnnnn.', '..NNNNNNNN..', '............'],
+    'ui-locker': ['..bbb..bbb..', '.bbbbwwbbbb.', 'bbbbbbbbbbbb', 'bbbbbbbbbbbb', 'BB.bwwwwb.BB', '...bbbbwb...', '...bbbwwb...', '...bbwbbb...', '...bwwwwb...', '...bbbbbb...', '...BBBBBB...', '............'],
 
     /* lọc slot costume (túi đồ -> APPEARANCE) */
     'slot-hair': ['............', '....rrrr....', '...rrrrrr...', '..rrwrrrrr..', '..rrrrrrrr..', '..RRRRRRRR..', '..RRRRRRRRrr', '.........rrr', '............', '............', '............', '............'],

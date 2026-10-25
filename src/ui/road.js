@@ -1,4 +1,4 @@
-/* RoadUI — trang GOAT PATH: hành trình xếp hạng dạng bản đồ biển trình bày ngang (kiểu Trophy Road của Clash Royale).
+/* RoadUI — trang AREA MAP (tên cũ GOAT PATH, nay là tên chế độ run — docs/RUN_DESIGN.md): hành trình xếp hạng dạng bản đồ biển trình bày ngang (kiểu Trophy Road của Clash Royale).
  *   Mở từ màn PLAY › RANKED: bấm cụm "Area + thanh tiến độ" ở đầu màn (hoặc ↑ chọn rồi Enter).
  *   Mỗi Area = 1 đảo pixel (màu Area, sân thu nhỏ của Area ở giữa, cờ tên phía trên, Tuyệt kỹ + Core vào Area phía dưới).
  *   Đảo nối nhau bằng đường đi zigzag; mốc ⅓ / ⅔ của Core Road = cột mốc trên đường (★Elo + Core mở ở đó).
@@ -129,7 +129,7 @@ window.SFC = window.SFC || {};
         <span>${esc(_t('ULT BOOK {n}/{total}', { n: PF().data.ultBook.length, total: PF().ultEntries().length }))}</span></div>`;
       const me = this.mePos(), W = PAD * 2 + (areas.length - 1) * STEP + STEP * 0.8;
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
-      menu.el.innerHTML = `${G().header(esc(_t('GOAT PATH')), sum)}
+      menu.el.innerHTML = `${G().header(esc(_t('AREA MAP')), sum)}
         <div class="rd-view"><div class="rd-world" style="width:${W}px;height:${H}px">
           ${this.path()}
           ${areas.map((A, a) => this.nodes(A, a)).join('')}

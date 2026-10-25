@@ -37,6 +37,11 @@ SFC.I18n.fields = [
   'stories.list.*.rounds.*.barks.*.*', 'stories.mods.*.name', 'stories.mods.*.hint', 'stories.mods.*.lockdown', 'stories.mods.*.lockdownHint', 'stories.mods.*.rage', 'stories.mods.*.rageHint', 'stories.mods.*.cards.*.name', 'stories.mods.*.cards.*.hint', 'stories.list.*.narrator.name',
   // kiểu kể riêng từng Story (2026-10-20): nhãn kiểu kể, tên chặng, chữ hiệu ứng, chữ chạy TV
   'stories.list.*.stages.*', 'stories.list.*.rounds.*.before.*.sfx', 'stories.list.*.rounds.*.after.*.sfx', 'stories.list.*.intro.*.sfx', 'stories.list.*.ticker.*',
+  // GOAT PATH (config/run.config.js): tên act, tên loại node
+  'run.acts.*.name', 'run.nodes.*.name', 'run.acts.*.stages.*', 'run.acts.*.intro.*.text', 'run.acts.*.bossTalk.*.text', 'run.acts.*.after.*.text',
+  'run.acts.*.intro.*.sfx', 'run.acts.*.bossTalk.*.sfx',
+  'run.badges.*.name', 'run.badges.*.desc', 'run.drills.*.name', 'run.drills.*.desc',
+  'run.events.*.title', 'run.events.*.text', 'run.events.*.choices.*.label',
   // thành tích (config/achievements.config.js)
   'achievements.list.*.name', 'achievements.list.*.desc',
   // chú thích nút trên sơ đồ tay cầm (SVG bề rộng cố định): dài hơn là bị cắt

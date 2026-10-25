@@ -109,8 +109,12 @@ window.SFC = window.SFC || {};
     },
     // hồ sơ cũ / đổi config: cấp bù mọi mốc Core Road tới Elo cao nhất từng đạt (không hiện màn mở thẻ)
     backfill(d) {
+      if (this.roadFromRuns()) return;   // GOAT PATH mở Core (Run.unlockRoad), Core đã mở vẫn giữ
       for (const x of this.roadAt(d.peak)) this.unlock(d, x.id, false);
     },
+    // GOAT PATH (run.coreRoad.fromRuns): CORE ROAD tính theo tiến trình run, Ranked không mở Core nữa
+    roadFromRuns() { return !!(SFC_CONFIG.run && SFC_CONFIG.run.coreRoad && SFC_CONFIG.run.coreRoad.fromRuns); },
+    roadLevel() { return this.roadFromRuns() ? ((SFC.Profile.data && SFC.Profile.data.runs) || {}).road || 0 : this.state.peak; },
 
     // nguồn mở khoá của 1 Core: { kind: starter | road (mốc Core Road) | none, area, elo }
     coreSource(id) {
@@ -125,6 +129,7 @@ window.SFC = window.SFC || {};
     // cách mở 1 Core còn khoá (túi đồ, ULTIMATE). Area chưa tới: không lộ tên Area (bản đồ đang hiện ???)
     unlockHint(id) {
       const src = this.coreSource(id), _t = SFC.t;
+      if (src.kind === 'road' && this.roadFromRuns()) return _t('GOAT PATH progress {n}/{max}', { n: this.roadLevel(), max: src.elo });
       if (src.kind === 'road') return _t('Reach {elo}', { elo: this.stars(src.elo) }) + (src.area <= this.state.best ? ' · ' + this.area(src.area).name : '');
       return _t('Not available yet');
     },
@@ -254,7 +259,7 @@ window.SFC = window.SFC || {};
       st.id = this.area(st.area).id;
       const event = st.area > before.area ? 'up' : st.area < before.area ? 'down' : null;
       const rewards = [];
-      for (const x of this.roadAt(st.peak)) {
+      if (!this.roadFromRuns()) for (const x of this.roadAt(st.peak)) {
         if (this.unlock(st, x.id)) rewards.push({ kind: 'core', id: x.id, src: x.step === 0 ? 'area' : 'road', area: x.area, elo: x.elo });
       }
       st.best = Math.max(st.best, st.area);
