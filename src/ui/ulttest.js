@@ -1,7 +1,7 @@
 /* PHÒNG TEST TUYỆT KỸ (chỉ bản dev, SFC_DEBUG): thử cảm giác từng Tuyệt kỹ thật nhanh, không cần đạt công thức.
  * Mở: SETTINGS › TEST › ULT TEST ROOM, hoặc index.html?ulttest (vào thẳng phòng test, ?ulttest=moon_stomp chọn sẵn chiêu).
  * Trận luyện tập 3v3 (không giờ, không chọn Core), năng lượng X tự nạp đầy, không ghi gì vào hồ sơ / sổ Tuyệt kỹ.
- * Phím: [ ] đổi chiêu · \ bật / tắt ★★ · O đối thủ cũng có Tuyệt kỹ mới · F đối thủ đứng yên (bia tập) · B bóng về chân · N giao bóng lại · H ẩn bảng.
+ * Phím: [ ] đổi chiêu · \ bật / tắt dạng thức tỉnh (X4) · O đối thủ cũng có Tuyệt kỹ mới · F đối thủ đứng yên (bia tập) · B bóng về chân · N giao bóng lại · H ẩn bảng.
  * Bản đóng gói: cả file thành rỗng (scripts/strip-debug.js xoá nhánh SFC_DEBUG, MARKERS có 'ULT TEST').
  */
 window.SFC = window.SFC || {};
@@ -63,7 +63,7 @@ if (SFC_DEBUG) (function () {
       this.give(p, this.cur(), this.lv);
       this.usedAt = -1;
       const d = CORES().list[this.cur()];
-      SFC.UI.banner(d.name.toUpperCase() + (this.lv > 1 ? ' ★★' : ''), 'ULT TEST', '#ffe14f', 1.1);
+      SFC.UI.banner(SFC.CoreSystem.ultName(this.cur(), this.lv).toUpperCase(), 'ULT TEST', '#ffe14f', 1.1);
       this.render();
     },
     setFreeze(on) {
@@ -112,10 +112,11 @@ if (SFC_DEBUG) (function () {
       this.el.innerHTML = this.hide
         ? `<span style="color:#ffe14f">ULT TEST</span> · H`
         : `<div style="color:#ffe14f">ULT ${this.idx + 1}/${ids.length}${isNew}</div>`
-        + `<div style="color:#fff">${esc(d.name)}${this.lv > 1 ? ' ★★' : ''}</div>`
+        + `<div style="color:#fff">${esc(SFC.CoreSystem.ultName(id, this.lv))}${SFC.CoreSystem.awaken(id, this.lv) ? ' <span style="color:#ffe14f">AWAKENED</span>' : ''}</div>`
         + `<div>${tags}</div>`
+        + (SFC.CoreSystem.awaken(id, this.lv) ? `<div style="color:#ffe14f">${esc(SFC.CoreSystem.ultDesc(id, this.lv))}</div>` : '')
         + `<div style="color:${d.needsBall ? '#ffe14f' : d.noBall ? '#ff8a9a' : '#6bff4f'}">${d.needsBall ? 'NEEDS YOUR BALL' : d.noBall ? 'ONLY WITHOUT BALL' : 'ANYTIME'}</div>`
-        + `<div style="margin-top:2px">[ ] \\★★ O:${this.opp ? 'ON' : 'off'} F:${this.freeze ? 'ON' : 'off'}</div>`
+        + `<div style="margin-top:2px">[ ] \\AWAKEN O:${this.opp ? 'ON' : 'off'} F:${this.freeze ? 'ON' : 'off'}</div>`
         + `<div>B:BALL N:RESET H:HIDE</div>`;
     },
 

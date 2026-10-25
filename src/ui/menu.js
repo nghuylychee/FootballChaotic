@@ -221,7 +221,7 @@ window.SFC = window.SFC || {};
               // xem nhanh màn kết thúc trận 2 nhịp (Beat 1 ăn mừng trên sân + Beat 2 bảng tỉ số & lên/rớt hạng)
               { kind: 'btn', label: 'END SCREEN TEST', sub: 'Preview 2-beat end screen · switch WIN / LOSE / PROMOTE / DEMOTE', danger: true, act: () => SFC.UI.devEndTest('win', true) },
               // PHÒNG TEST TUYỆT KỸ (src/ui/ulttest.js): thử từng Tuyệt kỹ, năng lượng tự đầy, [ ] đổi chiêu
-              { kind: 'btn', label: 'ULT TEST ROOM', sub: 'Try every Ultimate · [ ] switch · \\ ★★ · O enemy ults', danger: true, act: () => SFC.UltTest.start(this.app) },
+              { kind: 'btn', label: 'ULT TEST ROOM', sub: 'Try every Ultimate · [ ] switch · \\ awaken · O enemy ults', danger: true, act: () => SFC.UltTest.start(this.app) },
               // PHÒNG TEST FOOTBALL STORY (src/ui/storytest.js): xem cut scene / đá thẳng vòng bất kỳ của Story bất kỳ
               { kind: 'btn', label: 'STORY TEST', sub: 'Jump to any Story scene or round · rule cheats in match', danger: true, act: () => this.go('storytest') },
               // xem lại PROLOGUE (cut scene + trận mơ)
@@ -267,13 +267,13 @@ window.SFC = window.SFC || {};
           ].filter(Boolean);
         }
         case 'ults': {
-          // SỔ TUYỆT KỸ: mỗi ô = 1 công thức (gốc · ★★ mỗi trường phái, rồi lai). Chưa tự đạt trong trận: ??? (giấu cả công thức)
+          // SỔ TUYỆT KỸ: mỗi ô = 1 công thức (gốc · thức tỉnh mỗi trường phái, rồi lai). Chưa tự đạt trong trận: ??? (giấu cả công thức)
           const L = CORES().list;
           return PF().ultEntries().map((e) => {
             const known = PF().ultKnown(e.key);
             return {
               kind: 'btn', ult: e.id, entry: e, known, act: () => this.render(),
-              label: known ? L[e.id].name + (e.lv > 1 ? ' ' + '★'.repeat(e.lv) : '') : '???',
+              label: known ? SFC.CoreSystem.ultName(e.id, e.lv) : '???',
               sub: known ? this.recipeText(e) : _t('Undiscovered'),
             };
           });
@@ -1002,7 +1002,7 @@ window.SFC = window.SFC || {};
     // công thức: "🎯 STRIKER ×3" (lai: 2 trường phái nối bằng +)
     recipeText(e) { return e.tags.map((t, i) => `${CORES().archetypes[t].label} ×${e.need[i]}`).join(' + '); },
     // bảng trái: bảng ghép cặp 8x8 (8 trường phái, cả Hỗn loạn) hiện đủ MỌI ô của sổ cùng lúc. Hàng / cột = trường phái; đường chéo = Tuyệt kỹ gốc (X3),
-    // ô dưới đường chéo = Tuyệt kỹ lai của 2 trường phái hàng + cột (X2 + Y2), cột cuối = dạng nâng cấp ★★ (X4).
+    // ô dưới đường chéo = Tuyệt kỹ lai của 2 trường phái hàng + cột (X2 + Y2), cột cuối = dạng thức tỉnh (X4, icon vương miện).
     // Chưa khám phá: ô ??? (công thức vẫn giấu ở bảng phải)
     ultGrid(items) {
       const A = CORES().archetypes, tags = Object.keys(A).filter((t) => !A[t].noSet), at = {};
@@ -1015,7 +1015,7 @@ window.SFC = window.SFC || {};
         if (!it) return '<i class="ub-t ub-none"></i>';
         return `<button class="ub-t ${i === this.sel ? 'sel' : ''} ${it.known ? 'on' : 'lock'}" data-i="${i}" style="--c:${col}" title="${esc(it.label)}">${it.known ? PX().core(it.entry.id) : PX().ui('unknown')}</button>`;
       };
-      const head = `<span></span>${tags.map((t) => `<span class="ub-sch" style="--c:${A[t].color}" title="${esc(A[t].label)}">${PX().arch(t)}</span>`).join('')}<i></i><b>★★</b>`;
+      const head = `<span></span>${tags.map((t) => `<span class="ub-sch" style="--c:${A[t].color}" title="${esc(A[t].label)}">${PX().arch(t)}</span>`).join('')}<i></i><b title="${esc(_t('AWAKENED'))}">${PX().ui('crown', 'sm')}</b>`;
       const rows = tags.map((t, r) => {
         const cells = tags.map((u, c) => (c > r ? '<i></i>' : tile(at[r + ':' + c], c === r ? A[t].color : '#ffd23f'))).join('');
         return `<span class="ub-sch" style="--c:${A[t].color}" title="${esc(A[t].label)}">${PX().arch(t)}</span>${cells}<i class="ub-sep"></i>${tile(at[r + ':x'], A[t].color)}`;
@@ -1027,9 +1027,9 @@ window.SFC = window.SFC || {};
       if (!it || !it.entry) return '';
       const e = it.entry, key = `<kbd>${esc(SFC.Input.key('ultimate', 'X'))}</kbd>`;
       const total = PF().ultEntries().length, n = PF().data.ultBook.length;
-      const card = it.known ? G().coreCard(e.id, '', 150, 64) : '<div class="card static ul-hidden"><b>???</b></div>';
+      const card = it.known ? G().coreCard(e.id, '', 150, 64, e.lv) : '<div class="card static ul-hidden"><b>???</b></div>';
       const status = it.known
-        ? `<div class="ul-st on">${PX().ui('check', 'sm')} ${esc(this.recipeText(e))}${e.lv > 1 ? ` · ${'★'.repeat(e.lv)}` : ''}</div>`
+        ? `<div class="ul-st on">${PX().ui('check', 'sm')} ${esc(this.recipeText(e))}</div>`
         : `<div class="ul-st lock">${PX().ui('lock', 'sm')} ${esc(_t('Undiscovered'))}</div>`;
       // khi nào dùng được (CoreSystem.ultUse — đọc thẳng từ config, ngoài trận không có CoreSystem)
       const d = CORES().list[e.id], use = d.needsBall ? 'ball' : d.noBall ? 'noBall' : 'any';

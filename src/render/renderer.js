@@ -183,7 +183,7 @@ window.SFC = window.SFC || {};
           ctx.globalAlpha = 1;
           if (shiver) ctx.restore();
           if (s !== 1) { ctx.restore(); hy = p.y + (hy - p.y) * s; }
-          SFC.VFX.form(ctx, g, p);
+          SFC.VFX.form(ctx, g, p, swap || cel ? null : hy);
           SFC.VFX.arm(ctx, g, p);
           SFC.VFX.look(ctx, g, p, hy);
           if (p.charging) this.chargeBar(ctx, p, hy, g);
@@ -212,6 +212,7 @@ window.SFC = window.SFC || {};
         } else if (e.k === 'd') {
           const d = e.o, a = 0.5 + 0.3 * Math.sin(t * 20);
           // ảo ảnh Chạy Giả: áo tím, nhấp nháy
+          if (d.legion) { SFC.VFX.legion(ctx, g, d); continue; }   // Clone Legion: phân thân ở lại sân (không bóng)
           if (d.runner) drawPlayer(ctx, Object.assign({ x: d.x - Math.cos(d.runner.facing) * 9, y: d.y - Math.sin(d.runner.facing) * 8, vx: d.vx, vy: d.vy, state: 'normal', flash: 0 }, d.runner), g, a * 0.8, '#9d7bff');
           drawBall(ctx, { x: d.x, y: d.y, z: 0, roll: t * 20, fx: {} }, a);
         } else if (e.k === 'a') {

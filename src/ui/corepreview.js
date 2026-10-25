@@ -262,6 +262,38 @@ window.SFC = window.SFC || {};
       tick: (s) => { if (s.t > 1.3) { const d = U.norm(s.o1.x - s.me.x, s.o1.y - s.me.y); s.me.intent.mx = d.x; s.me.intent.my = d.y; } },
       focus: (s) => s.mid(s.me, s.o1),
     }),
+    /* ★★ DẠNG THỨC TỈNH (docs/ULT_AWAKEN.md): data-preview="id:2" — cảnh khoe nét mới (không có cảnh riêng thì dùng cảnh của id) */
+    'light_cycle:2': ult({
+      ball: false, len: 3.4, at: 0.2,
+      init: (s) => { s.place(s.me, A.x - 40, A.y, 0); s.place(s.o1, A.x + 10, A.y, PI); },
+      tick: (s) => {   // chạy một vòng quanh o1 để khép lồng sét
+        const dx = s.me.x - s.o1.x, dy = s.me.y - s.o1.y, r = Math.hypot(dx, dy) || 1, k = (r - 40) / 40;
+        s.me.intent.mx = -dy / r - (dx / r) * k; s.me.intent.my = dx / r - (dy / r) * k; s.me.intent.sprint = true; s.me.stamina = 100;
+      },
+      focus: (s) => s.o1,
+    }),
+    'meteor_strike:2': ult({
+      len: 3.4,
+      init: (s) => { s.place(s.me, G.x - 150, G.y + 10, 0); s.place(s.o1, G.x - 16, G.y, PI); },
+      tick: (s) => { if (s.t > 1.5) s.me.intent.shootTap = true; },
+      more: [[1.2, (s) => { const b = s.g.ball; if (!b.owner) { b.vx = -Math.abs(b.vx) * 0.35; b.vy *= 0.3; } }]],   // thủ môn đẩy ra
+      focus: (s) => (s.t > 0.8 ? s.g.ball : s.me),
+    }),
+    'hundred_fists:2': ult({ ball: false, len: 4.8, init: (s) => { s.place(s.o1, A.x + 10, A.y, PI); s.place(s.o2, A.x + 110, A.y + 30, PI); }, focus: (s) => s.me }),
+    'moon_stomp:2': ult({
+      ball: false, len: 3.8,
+      init: (s) => { s.place(s.o1, A.x + 10, A.y + 10, PI); s.place(s.o2, A.x + 90, A.y - 10, PI); s.give(s.o1); },
+      tick: (s) => { if (s.t > 1.1) { const d = U.norm(s.o2.x - s.me.x, s.o2.y - s.me.y); s.me.intent.mx = d.x; s.me.intent.my = d.y; } },
+      focus: (s) => s.me,
+    }),
+    'clone_army:2': ult({ ball: false, len: 3.8, init: (s) => { s.place(s.o1, A.x + 40, A.y, PI); s.place(s.o2, A.x + 70, A.y - 30, PI); s.give(s.o1); }, focus: (s) => s.o1 }),
+    'titan:2': ult({
+      len: 3.4, at: 0.3,
+      init: (s) => { s.place(s.o1, A.x + 4, A.y + 2, PI); s.place(s.o2, A.x + 80, A.y + 2, PI); },
+      more: [[1.0, (s) => { s.face(s.me, s.o1); SFC.CoreBehaviors.titan.grab(s.g.cores, 0, s.g.cores.sp('titan', s.me), s.me); }]],
+      focus: (s) => s.mid(s.me, s.o2),
+    }),
+    'chaos_roulette:2': ult({ ball: false, len: 4, init: (s) => { s.place(s.me, 140, A.y, 0); s.place(s.o1, 200, A.y - 10, PI); s.place(s.o2, 230, A.y + 20, PI); s.give(s.o1); }, focus: (s) => ({ x: 170, y: A.y }) }),
     bullet_time: ult({
       len: 3, at: 0.25,
       init: (s) => { s.place(s.me, G.x - 430, G.y + 20, 0); s.place(s.o2, G.x - 330, G.y + 14, PI); s.place(s.o1, G.x - 16, G.y, PI); },
@@ -399,12 +431,15 @@ window.SFC = window.SFC || {};
 
   /* ---------- một ảnh xem trước ---------- */
   class Preview {
-    constructor(cv, id) {
+    // key = id Core, hoặc 'id:2' = Tuyệt kỹ dạng thức tỉnh (cảnh riêng SCENES['id:2'] nếu có, không thì cảnh của id)
+    constructor(cv, key) {
       this.cv = cv;
       this.ctx = cv.getContext('2d');
       this.ctx.imageSmoothingEnabled = false;
+      const [id, lv] = String(key).split(':');
       this.id = id;
-      this.scn = SCENES[id] || FALLBACK;
+      this.lv = Number(lv) || 1;
+      this.scn = SCENES[key] || SCENES[id] || FALLBACK;
       this.reset();
     }
 
@@ -442,6 +477,7 @@ window.SFC = window.SFC || {};
       const team = this.scn.team || 0;
       // Core là của từng người: Core đang xem thuộc về nhân vật chính của cảnh (s.me); cảnh đội phòng thủ (team 1) -> cả đội đó
       const who = team === 0 ? s.me : team;
+      s.me.ultLv = this.lv;
       g.cores.add(who, this.id);
       for (const id of this.scn.cores || []) g.cores.add(who, id);
       for (const id of this.scn.opp || []) g.cores.add(1 - team, id);
@@ -520,7 +556,7 @@ window.SFC = window.SFC || {};
       root.querySelectorAll('canvas[data-preview]').forEach((cv) => {
         if (cv._preview) return;
         const id = cv.dataset.preview;
-        if (!SFC_CONFIG.cores.list[id]) return;
+        if (!SFC_CONFIG.cores.list[id.split(':')[0]]) return;
         try { cv._preview = new Preview(cv, id); live.push(cv._preview); } catch (e) { console.warn('CorePreview', id, e); }
       });
       if (live.length && !raf) { last = 0; raf = requestAnimationFrame(loop); }

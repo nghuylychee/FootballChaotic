@@ -677,6 +677,10 @@ window.SFC = window.SFC || {};
     recipesOn() { const o = this.g.opts || {}; return !o.tutorial && !o.noUlts && !this.g.preview; }
     // khoá công thức 'id:cấp' (sổ Tuyệt kỹ — Profile.data.ultBook)
     static ultKey(id, lv) { return id + ':' + (lv || 1); }
+    // dạng thức tỉnh (cấp >= 2, X4 — docs/ULT_AWAKEN.md): tên + mô tả riêng ở list[id].awaken (không hiện sao ★★ nữa)
+    static awaken(id, lv) { const d = DEF().list[id]; return (lv || 1) > 1 && d && d.awaken ? d.awaken : null; }
+    static ultName(id, lv) { const d = DEF().list[id], a = CoreSystem.awaken(id, lv); return a ? a.name : d ? d.name : ''; }
+    static ultDesc(id, lv) { const d = DEF().list[id], a = CoreSystem.awaken(id, lv); return a ? a.desc : d ? d.desc : ''; }
     // số Core từng trường phái của p (+ extra: lá giả định thêm vào — xem trước ở lượt chọn); bỏ Tuyệt kỹ + HỖN LOẠN
     schoolCounts(p, extra) {
       const n = {};
@@ -737,19 +741,23 @@ window.SFC = window.SFC || {};
       if (!id || this.ultE(p) < 1 || g.state !== 'play' || g.stopT > 0 || p.state !== 'normal' || p.airZ > 0 || p.noActT > 0 || this.ultBlocked(p)) return false;
       const team = p.team, def = this.def(id), U2 = DEF().ultimate, lv = p.ultLv || 1;
       const color = def.color || (ARCH()[def.tags[0]] ? ARCH()[def.tags[0]].color : '#ffe14f');
+      const aw = CoreSystem.awaken(id, lv), cut = aw ? U2.cutInAwaken || U2.cutIn : U2.cutIn;
       p.res.ult = 0;   // dùng xong nạp lại ngay từ 0 (khoá nạp sau khi dùng đã bỏ, user chốt 2026-10-18)
-      // cut-in: tên + sao tiến hoá (cut-in hiện tên Tuyệt kỹ của mọi người, kể cả đối thủ — người chơi thấy là muốn thử)
-      g.effects.cutIn(p.id, def.name.toUpperCase() + (lv > 1 ? ' ' + '★'.repeat(lv) : ''), color, U2.cutIn);
-      g.hitStop(U2.cutIn);
+      // cut-in: tên chiêu (dạng thức tỉnh: tên riêng + khung AWAKENED). Cut-in hiện tên Tuyệt kỹ của mọi người, kể cả đối thủ
+      g.effects.cutIn(p.id, CoreSystem.ultName(id, lv).toUpperCase(), color, cut, aw ? 'AWAKENED' : '');
+      g.hitStop(cut);
       g.sfx('ult', 'cut.' + def.tags[0]);   // câu nhạc cut-in theo trường phái (engine/ultsfx.js)
-      g.later(U2.cutIn, () => {
+      if (aw) g.sfx('ult', 'awaken');       // lớp âm thức tỉnh chồng lên
+      g.later(cut, () => {
         const bh = Behaviors[id];
         if (!bh || !bh.onUltimate || g.state !== 'play') return;
-        // dạng nâng cấp: thêm lớp hình (vòng sóng màu trường phái, chớp sáng, hào quang)
+        // dạng thức tỉnh: thêm lớp hình (vòng sóng + vết nứt sáng màu trường phái, chớp sáng, viền màn hình, hào quang)
         if (lv >= 2) {
           g.effects.wave(p.x, p.y, 34 + lv * 10, color, 0.5, lv);
           g.effects.burst(p.x, p.y, 10, color, 10 + lv * 6, 120, 0.6);
+          g.effects.decal('crack', p.x, p.y, 1.2, 3);
           g.effects.flash(0.3);
+          g.effects.tint(color, 0.6, 0.12);
           p.glow(color, 2);
         }
         bh.onUltimate(this, team, this.sp(id, p), p);

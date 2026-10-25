@@ -181,11 +181,11 @@ window.SFC = window.SFC || {};
     this.O.callouts = [{ str, color, t, max: t }];
   };
 
-  // cut-in kiểu anime: dải ngang có chân dung lớn của cầu thủ + tên chiêu
-  E.cutIn = function (pid, str, color = '#ffe14f', t = 0.8) {
+  // cut-in kiểu anime: dải ngang có chân dung lớn của cầu thủ + tên chiêu. sub: chữ nhỏ trên tên (dạng thức tỉnh: 'AWAKENED' -> khung vàng + tia toả)
+  E.cutIn = function (pid, str, color = '#ffe14f', t = 0.8, sub = '') {
     const p = player(this, pid);
     if (!p) return;
-    this.O.cutins = [Object.assign(snap(p), { str, color, t, max: t })];
+    this.O.cutins = [Object.assign(snap(p), { str, color, t, max: t, sub })];
   };
 
   // phủ màu toàn màn hình (sepia, tím né hoàn hảo...)
@@ -193,8 +193,8 @@ window.SFC = window.SFC || {};
 
   // băng VHS tua ngược: sọc nhiễu + chữ <<, lệch màu (VHS Rewind)
   E.vhs = function (t = 0.8) { this.O.vhs = { t, max: t }; };
-  // sân nghiêng về phía dir (-1 trái / 1 phải): khung hình xoay nhẹ + mũi tên trôi (Chaos Roulette)
-  E.tilt = function (dir, t = 3) { this.O.tilt = { dir, t, max: t }; };
+  // sân nghiêng về phía dir (-1 trái / 1 phải): khung hình xoay nhẹ + mũi tên trôi (Chaos Roulette). amt: độ nghiêng ×(Pitch Landslide)
+  E.tilt = function (dir, t = 3, amt = 1) { this.O.tilt = { dir, t, max: t, amt }; };
 
   // toàn bộ VFX Kit chỉ để nhìn -> máy chủ riêng bỏ qua (Effects.headless)
   SFC.Effects.COSMETIC.push('wave', 'decal', 'stretch', 'clone', 'popClone', 'projectile', 'beam', 'vortex', 'bolt', 'dragon', 'comic', 'combo',

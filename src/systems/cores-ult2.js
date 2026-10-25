@@ -176,6 +176,24 @@ window.SFC = window.SFC || {};
   };
   SFC.CoreStat = Stat;   // luật trận FOOTBALL STORY (src/systems/matchmods.js) dùng lại trơn té, teo nhỏ...
 
+  /* ---------- hình học cho Storm Cycle (vòng sét kín) ---------- */
+  // giao điểm 2 đoạn thẳng (null nếu không cắt)
+  function segHit(a, b) {
+    const rx = a.x1 - a.x0, ry = a.y1 - a.y0, sx = b.x1 - b.x0, sy = b.y1 - b.y0, den = rx * sy - ry * sx;
+    if (Math.abs(den) < 1e-6) return null;
+    const qx = b.x0 - a.x0, qy = b.y0 - a.y0, t = (qx * sy - qy * sx) / den, u = (qx * ry - qy * rx) / den;
+    return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? { x: a.x0 + rx * t, y: a.y0 + ry * t } : null;
+  }
+  const polyArea = (pts) => { let s = 0; pts.forEach((p, i) => { const q = pts[(i + 1) % pts.length]; s += p.x * q.y - q.x * p.y; }); return Math.abs(s) / 2; };
+  function inPoly(pts, x, y) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const a = pts[i], b = pts[j];
+      if ((a.y > y) !== (b.y > y) && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+    }
+    return inside;
+  }
+
 
   Object.assign(B, {
     /* ================= TUYỆT KỸ GỐC ================= */
@@ -189,28 +207,87 @@ window.SFC = window.SFC || {};
         return b.owner && b.owner.team !== team && U.dist(b.owner, me) < 170 ? me : null;
       },
       onUltimate(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects;
+        const g = sys.g, E = g.effects, f = g.field;
+        const aw = !!prm.cage;   // ★★ STORM CYCLE: vòng kín = lồng sét nổ
         pl.buffs.push({ speed: prm.speed, t: prm.time });
         pl.glow('#3ff6ff', prm.time);
         pl.stamina = SFC_CONFIG.game.player.staminaMax;
-        E.callout('LIGHT CYCLE!', '#3ff6ff', 0.9);
+        E.callout(aw ? 'STORM CYCLE!' : 'LIGHT CYCLE!', '#3ff6ff', 0.9);
         E.speedLines(0.4, pl.x, pl.y, '#bdf4ff');
         E.burst(pl.x, pl.y, 4, '#bdf4ff', 16, 120, 0.5);
         g.sfx('ult', 'cycle.start');
-        const segs = [], hitT = new Map();
-        let T = 0, k = 0, last = { x: pl.x, y: pl.y };
+        if (aw) E.prop(H.propId(g), 'grid', f.x, f.y, f.w, f.h, prm.time + prm.life * 0.5, '#3ff6ff');   // lưới neon phủ sân
+        const segs = [], hitT = new Map(), caged = new Map();
+        let T = 0, k = 0, last = { x: pl.x, y: pl.y }, orbit = null;
+        // lồng sét: vòng pts khép kín -> loé sáng, sét chạy từ mép vào tâm, đối thủ đứng trong vòng choáng
+        const cage = (pts) => {
+          const c = pts.reduce((m, p) => ({ x: m.x + p.x / pts.length, y: m.y + p.y / pts.length }), { x: 0, y: 0 });
+          const r = Math.max(...pts.map((p) => U.dist(p, c)));
+          E.prop(H.propId(g), 'cage', c.x, c.y, r, 0, 0.7, '#3ff6ff');
+          for (let i = 0; i < 7; i++) { const p = pts[Math.floor((i / 7) * pts.length)]; E.bolt(p.x, p.y - 6, c.x, c.y - 4, i % 2 ? '#ffffff' : '#bdf4ff', 0.45); }
+          E.flash(0.15);
+          E.shake(6, 0.35);
+          E.pop(c.x, c.y - 30, 'LOCKED!', 'move', '#3ff6ff');
+          g.sfx('ult', 'cycle.cage');
+          for (const o of g.teams[1 - team].players) {
+            if (!hittable(g, o) || o.state === 'dash' || (caged.get(o.id) || 0) > g.time || !inPoly(pts, o.x, o.y) || Act().dodged(g, o)) continue;
+            caged.set(o.id, g.time + 1.5);
+            const d = U.norm(c.x - o.x, c.y - o.y + 0.01);
+            o.hitImmune = 0;
+            if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; }
+            if (o.hit({ stun: prm.cage, kbx: d.x * prm.cageKnock, kby: d.y * prm.cageKnock, source: pl, type: 'hard' })) {
+              E.bolt(o.x, o.y - 26, o.x, o.y - 2, '#ffffff', 0.5);
+              E.burst(o.x, o.y, 8, '#bdf4ff', 16, 110, 0.6);
+              E.pop(o.x, o.y - 30, 'ZZZT!', 'heavy', '#7fe7ff');
+            }
+          }
+        };
+        // đoạn mới s cắt một đoạn cũ (chưa dùng, không tính 3 đoạn liền trước) -> vòng kín đủ to thì nổ lồng
+        const loop = (s) => {
+          const n = segs.length - 1;
+          for (let i = n - 4; i >= 0; i--) {
+            const o = segs[i];
+            if (o.used) break;
+            const P = segHit(o, s);
+            if (!P) continue;
+            const pts = [P];
+            for (let j = i + 1; j <= n; j++) pts.push({ x: segs[j].x0, y: segs[j].y0 });
+            if (polyArea(pts) < prm.minLoop) return;
+            for (let j = 0; j <= n; j++) segs[j].used = true;
+            cage(pts);
+            return;
+          }
+        };
         sys.task((dt) => {
           if (g.state !== 'play') return true;
           T += dt;
           const live = T < prm.time && pl.state !== 'stun';
           if (live) {
             pl.stamina = Math.max(pl.stamina, 40);   // chạy nước rút thoải mái suốt chiêu
+            // AI ★★: chạy một vòng quanh đối thủ gần nhất (người cầm bóng trước) để khép lồng
+            if (aw && !human(g, pl) && pl.state !== 'stun' && T < prm.time * 0.75) {
+              if (!orbit) {
+                const b = g.ball, tg = b.owner && b.owner.team !== team ? b.owner : H.nearestOpp(g, team, pl, (o) => hittable(g, o));
+                if (tg && U.dist(tg, pl) < 160) orbit = { tg, a: Math.atan2(pl.y - tg.y, pl.x - tg.x), turn: 0, dir: Math.random() < 0.5 ? 1 : -1 };
+                else orbit = { done: true };
+              }
+              if (!orbit.done && orbit.turn < TAU * 1.15) {
+                const sp = pl.maxSpeed() * dt, R = 38, da = (sp / R) * orbit.dir;
+                orbit.a += da; orbit.turn += Math.abs(da);
+                const p = clampIn(f, orbit.tg.x + Math.cos(orbit.a) * R, orbit.tg.y + Math.sin(orbit.a) * R * 0.8, 10);
+                H.hold(pl, dt * 2);
+                pl.facing = Math.atan2(p.y - pl.y, p.x - pl.x);
+                pl.x = p.x; pl.y = p.y;
+                if (g.ball.owner === pl) g.ball.follow(0);
+              } else if (!orbit.done) { orbit.done = true; H.unlock(pl); }
+            }
             if ((k += dt) >= prm.every && U.dist(pl, last) >= 3) {
               k = 0;
               const s = { x0: last.x, y0: last.y, x1: pl.x, y1: pl.y, t: prm.life, id: H.propId(g) };
               segs.push(s);
-              E.prop(s.id, 'trail', s.x0, s.y0, s.x1, s.y1, prm.life, '#3ff6ff');
+              E.prop(s.id, aw ? 'trail2' : 'trail', s.x0, s.y0, s.x1, s.y1, prm.life, '#3ff6ff');
               last = { x: pl.x, y: pl.y };
+              if (aw) loop(s);
             }
           }
           for (const s of segs) s.t -= dt;
@@ -263,20 +340,32 @@ window.SFC = window.SFC || {};
           E.wave(c.x, c.y, R, '#ffffff', 0.5, 3);
           E.decal('crack', c.x, c.y, 1.6, 4);
           E.burst(c.x, c.y, 2, '#a8e6ff', 24, 120, 0.8);
-          E.tint('#0a1830', prm.float, 0.22);
+          E.tint('#0a1830', prm.float, prm.follow ? 0.38 : 0.22);
           g.sfx('hit');
           g.sfx('ult', 'moon.stomp');
           g.sfx('ult', 'moon.float');
+          // ★★ FULL MOON STOMP: trăng tròn to trên trời + vòng trăng bám theo người dùng (thay vòng đứng yên)
+          let mid = zid;
+          if (prm.follow) {
+            E.propOff(zid, 0.2);
+            mid = H.propId(g);
+            E.prop(mid, 'moonf', pl.x, pl.y, pl.id, R, prm.float + 0.3, '#a8e6ff');
+            E.prop(H.propId(g), 'fullmoon', g.field.x + g.field.w * 0.78, 34, 0, 0, prm.float + 0.4, '#e8fbff');
+            E.callout('FULL MOON!', '#a8e6ff', 1);
+          }
           const fl = [];
-          for (const o of g.players) {
-            if (o === pl || U.dist(o, c) > R + o.radius || o.state === 'meteor' || g.isProtected(o)) continue;
-            if (o.team !== team && Act().dodged(g, o)) continue;
+          const lift = (o) => {
             o.hitImmune = 0;
             if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; }
             o.hit({ stun: 0.35, kbx: 0, kby: 0, source: pl, type: 'hard' });   // đang cầm bóng thì rơi bóng
             o.kbx *= 0.2; o.kby *= 0.2;
             o.floatPh = Math.random() * TAU;
             fl.push(o);
+          };
+          for (const o of g.players) {
+            if (o === pl || U.dist(o, c) > R + o.radius || o.state === 'meteor' || g.isProtected(o)) continue;
+            if (o.team !== team && Act().dodged(g, o)) continue;
+            lift(o);
           }
           const b = g.ball;
           let ball = !b.owner && U.dist(b, c) <= R + 6;
@@ -286,6 +375,16 @@ window.SFC = window.SFC || {};
             if (g.state !== 'play') return true;
             T += dt;
             const k = Math.min(1, T / 0.5);
+            // ★★: vòng đi theo người dùng — đối thủ / bóng lọt vào vòng cũng bị nhấc lên (né Z lúc vòng chạm tới là thoát)
+            if (prm.follow && pl.state !== 'stun') {
+              for (const o of g.teams[1 - team].players) {
+                if (fl.includes(o) || !hittable(g, o) || U.dist(o, pl) > R + o.radius || Act().dodged(g, o)) continue;
+                lift(o);
+                E.burst(o.x, o.y, 4, '#e8fbff', 10, 60, 0.6);
+                g.sfx('ult', 'moon.lift');
+              }
+              if (!ball && !b.owner && U.dist(b, pl) <= R && b.z < 20) ball = true;
+            }
             // AI dùng chiêu: tự lướt tới người lơ lửng gần nhất (người chơi tự chạy tới)
             if (!human(g, pl) && pl.state === 'normal') {
               const tgt = fl.filter((o) => o.team !== team && !gone.has(o)).sort((a, q) => U.dist(a, pl) - U.dist(q, pl))[0] || (ball ? b : null);
@@ -327,7 +426,7 @@ window.SFC = window.SFC || {};
           }, () => {
             for (const o of fl) if (!gone.has(o) && o.airZ > 0) o.airVz = -60;   // hết trọng lực: rơi xuống
             if (ball && !b.owner) b.vz = -40;
-            E.propOff(zid, 0.3);
+            E.propOff(mid, 0.3);
           });
         });
       },

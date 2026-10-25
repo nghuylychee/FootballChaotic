@@ -19,7 +19,7 @@ window.SFC = window.SFC || {};
   // (bắt đầu ngẫu nhiên, +1/giây) — máy khách tự đếm (session.js tick), lệch pha bước chân / tóc không ai thấy
   const PF = ['x', 'y', 'vx', 'vy', 'facing', 'state', 'stamina', 'charging', 'charge',
     'passMode', 'passCharge', 'passBase', 'flash', 'auraC', 'auraT', 'auraFarmT', 'atkType', 'atkT', 'airZ', 'sizeMul', 'bracing', 'shotTarget',
-    'surge', 'fistRdy', 'ultLv', 'ghostT'];   // trạng thái Core nhìn thấy được (TOÉ ĐIỆN, nắm tay sáng, tàng hình) + cấp Tuyệt kỹ (★)
+    'surge', 'fistRdy', 'ultLv', 'ghostT'];   // trạng thái Core nhìn thấy được (TOÉ ĐIỆN, nắm tay sáng, tàng hình) + cấp Tuyệt kỹ (dạng thức tỉnh)
   const P_BOOL = { charging: true, bracing: true, surge: true, fistRdy: true };
   // làm tròn riêng (đỡ băng thông, ~-21% sau nén): canvas 640x360 và cầu thủ vẽ ở pixel nguyên (Math.round) nên 0,1 px không thấy được;
   // vận tốc chỉ dùng để biết đang chạy (> 12 px/s) + hướng bụi; thanh thể lực rộng 12 px. Còn lại: 2 chữ số (pk)
@@ -114,7 +114,7 @@ window.SFC = window.SFC || {};
           f: E.fires.map((o) => [r1(o.x), r1(o.y), r2(o.t), o.max, o.r]),
           m: E.mines.map((o) => [r1(o.x), r1(o.y), o.team, r2(o.arm), o.r]),
           s: E.slashes.map((o) => [r1(o.x), r1(o.y), r2(o.dx), r2(o.dy), o.len, r2(o.t), o.max]),
-          d: E.decoys.map((o) => [r1(o.x), r1(o.y), r1(o.vx), r1(o.vy), o.srcId]),
+          d: E.decoys.map((o) => (o.legion ? [r1(o.x), r1(o.y), r1(o.vx), r1(o.vy), o.srcId, 1] : [r1(o.x), r1(o.y), r1(o.vx), r1(o.vy), o.srcId])),   // 1 = phân thân Clone Legion (không bóng)
         },
       };
       if (d) {
@@ -160,10 +160,10 @@ window.SFC = window.SFC || {};
       E.fires = h.f.map(([x, y, t, max, r]) => ({ x, y, t, max, r }));
       E.mines = h.m.map(([x, y, team, arm, r]) => ({ x, y, team, arm, r }));
       E.slashes = h.s.map(([x, y, dx, dy, len, t, max]) => ({ x, y, dx, dy, len, t, max }));
-      E.decoys = h.d.map(([x, y, vx, vy, srcId]) => {
+      E.decoys = h.d.map(([x, y, vx, vy, srcId, legion]) => {
         const src = g.players.find((p) => p.id === srcId);
         return {
-          x, y, vx, vy, alive: true,
+          x, y, vx, vy, alive: true, legion: !!legion,
           runner: src ? { team: src.team, role: src.role, look: src.look, facing: Math.atan2(vy, vx), anim: g.time * 1.3 } : null,
         };
       });

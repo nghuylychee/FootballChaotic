@@ -1,6 +1,6 @@
 /* RecipeFx — đoạn diễn ở màn chọn Core khi lá vừa chọn đạt công thức Tuyệt kỹ (docs/ULT_RECIPE.md):
  * các lá cùng trường phái lần lượt rơi vào ô công thức (lá vừa chọn rơi cuối, sáng nhất) -> nhóm lá loé sáng -> mũi tên ->
- * lá Tuyệt kỹ lật ra (chưa khám phá: lá úp ??? lật thành tên). Lai: 2 nhóm X + Y. Nâng cấp: 4 lá + dấu ★★ trên lá.
+ * lá Tuyệt kỹ lật ra (chưa khám phá: lá úp ??? lật thành tên). Lai: 2 nhóm X + Y. Thức tỉnh (X4): 4 lá, lá + tên dạng thức tỉnh.
  * Diễn TRƯỚC khi gửi lượt chọn (UI.pick): trận đang đứng ở trạng thái draft nên không lỡ pha bóng nào (online: chỉ diễn khi
  * đồng hồ chọn còn đủ giờ). Enter / click = bỏ qua. Xong -> onDone() gửi lượt chọn; banner "NEW ULTIMATE" không hiện lại.
  */
@@ -45,7 +45,6 @@ window.SFC = window.SFC || {};
       const tRev = 0.25 + STEP * k + 0.35;   // lúc lá Tuyệt kỹ lật ra
       // nâng cấp: luôn "EVOLVED" (thấy rõ là Tuyệt kỹ cũ mạnh lên) · lần đầu đạt công thức: "DISCOVERED"
       const title = evolved ? _t('ULTIMATE EVOLVED!') : fresh ? _t('NEW ULTIMATE DISCOVERED!') : _t('ULTIMATE UNLOCKED');
-      const stars = rc.lv > 1 ? `<div class="rfx-stars">${'★'.repeat(rc.lv)}</div>` : '';
       const keyHint = `<kbd>${esc(SFC.Input.key('ultimate', 'X'))}</kbd>`;
       const el = $('recipefx');
       el.innerHTML = `
@@ -56,10 +55,10 @@ window.SFC = window.SFC || {};
             <div class="rfx-arrow">➜</div>
             <div class="rfx-card">
               ${fresh ? '<div class="rfx-back"><b>???</b></div>' : ''}
-              <div class="rfx-front">${SFC.Gacha.coreCard(rc.id, '', 150, 64)}${stars}</div>
+              <div class="rfx-front">${SFC.Gacha.coreCard(rc.id, '', 150, 64, rc.lv)}</div>
             </div>
           </div>
-          <div class="rfx-name">${esc(def.name)}${rc.lv > 1 ? ' ' + '★'.repeat(rc.lv) : ''}</div>
+          <div class="rfx-name">${esc(SFC.CoreSystem.ultName(rc.id, rc.lv))}</div>
           <div class="rfx-note">${_t('Charge it, then fire it with {key}', { key: keyHint })}</div>
           <div class="rfx-skip">${esc(_t('{ok} skip', { ok: SFC.Input.key('confirm', 'Enter') }))}</div>
         </div>`;

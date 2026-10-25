@@ -24,10 +24,10 @@ window.SFC = window.SFC || {};
   // mốc công thức Tuyệt kỹ của số Core count: 0 (chưa) · 2 · 3 · 4 (cores.ults.tiers)
   const TIERS = () => CORES().ults.tiers;
   const tierOf = (count) => TIERS().reduce((t, m) => (count >= m ? m : t), 0);
-  // tên Tuyệt kỹ ở 1 mốc: đã khám phá (sổ Tuyệt kỹ) -> tên + ★, chưa -> ???
+  // tên Tuyệt kỹ ở 1 mốc: đã khám phá (sổ Tuyệt kỹ) -> tên (mốc X4: tên thức tỉnh), chưa -> ???
   function ultName(id, lv) {
     const c = CORES().list[id], known = SFC.Profile && SFC.Profile.data && SFC.Profile.ultKnown(id + ':' + lv);
-    return c && known ? c.name + (lv > 1 ? ' ' + '★'.repeat(lv) : '') : '???';
+    return c && known ? SFC.CoreSystem.ultName(id, lv) : '???';
   }
 
   // trường phái của 1 cầu thủ: icon + số Core (đạt mốc Tuyệt kỹ thì sáng lên)

@@ -56,17 +56,18 @@ window.SFC = window.SFC || {};
 
 
   // lá Core tĩnh (túi đồ, màn mở thẻ): trường phái, ảnh động, tên, chỉ số scale, mô tả. Viền lá = màu độ hiếm
-  function coreCard(id, cls = '', w = 132, h = 56) {
-    const c = CORE_LIST()[id], r = RAR(c.rarity);
+  // lv: cấp Tuyệt kỹ (2 = dạng thức tỉnh: tên, mô tả, ảnh động riêng — docs/ULT_AWAKEN.md)
+  function coreCard(id, cls = '', w = 132, h = 56, lv = 1) {
+    const c = CORE_LIST()[id], r = RAR(c.rarity), aw = SFC.CoreSystem.awaken(id, lv);
     // anyBuild (AURA FARMING): hợp mọi trường phái -> nhãn ANY BUILD thay cho trường phái gắn tạm
     const tags = c.anyBuild ? `<span style="--c:${c.color || r.color}">${PX().ui('star', 'sm')} ${_t('ANY BUILD')}</span>`
       : c.tags.map((t) => `<span style="--c:${ARCH()[t].color}">${PX().arch(t, 'sm')} ${ARCH()[t].label}</span>`).join('');
     return `<div class="card static ${c.role === 'ult' ? 'ult' : ''} ${cls}" style="--c:${r.color};--c2:${r.color};--t:${r.color}">
         <div class="card-tags">${tags}</div>
-        <div class="card-art">${SFC.CorePreview.html(id, w, h)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>
-        <div class="card-name">${esc(c.name)}</div>
+        <div class="card-art">${SFC.CorePreview.html(aw ? id + ':' + lv : id, w, h)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>
+        <div class="card-name">${esc(aw ? aw.name : c.name)}</div>
         ${SFC.CoreScale.statLine(id)}
-        <div class="card-desc">${SFC.CoreScale.describe(id)}</div></div>`;
+        <div class="card-desc">${aw ? esc(aw.desc) : SFC.CoreScale.describe(id)}</div></div>`;
   }
 
   // số tiền viết theo ngôn ngữ đang chọn (1,200 / 1.200)

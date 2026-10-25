@@ -23,7 +23,7 @@ window.SFC = window.SFC || {};
       this.stats = Object.assign({ speed: 1, power: 1, pass: 1, tackle: 1, dribble: 1, accuracy: 1, stamina: 1, knock: 1, keeper: 1 }, tcfg.stats);
       this.radius = SFC_CONFIG.game.player.radius;
       this.res = { ult: 0 };   // năng lượng Tuyệt kỹ (0..1)
-      this.ultLv = 1;         // cấp Tuyệt kỹ: 1 gốc · 2 / 3 = tiến hoá ★★ / ★★★ (cores.config.js -> ults)
+      this.ultLv = 1;         // cấp Tuyệt kỹ: 1 gốc · 2 = dạng thức tỉnh X4 (cores.config.js -> ults, list[id].awaken)
       // trạng thái Core nhìn thấy được (CoreSystem.updateStates): TOÉ ĐIỆN, nắm tay sáng (Nắm Đấm Khổng Lồ / Nắm Đấm Sắt),
       // Xe Ủi hoá to (giây còn lại), miễn choáng tới lúc (Nắm Đấm Sắt / Đội Trưởng), cú đấm trúng gần nhất + combo
       this.sprintT = 0; this.surge = false; this.fistRdy = false; this.ballT = 0; this.bullT = 0; this.armorT = 0;

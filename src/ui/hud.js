@@ -113,7 +113,7 @@ window.SFC = window.SFC || {};
       if (c.key !== key) {
         c.key = key;
         const kit = game.teams[p.team].cfg.kit;
-        const ult = game.cores.ultOf(p), names = SLOT_NAMES(), stars = (p.ultLv || 1) > 1 ? ' ' + '★'.repeat(p.ultLv) : '';
+        const ult = game.cores.ultOf(p), names = SLOT_NAMES(), ultName = ult ? SFC.CoreSystem.ultName(ult, p.ultLv) : '';
         // ô Core = số lượt chọn của trận (Tuyệt kỹ đã nằm ở ô X, không lặp lại ở đây)
         const cores = owned.filter((id) => CORES().list[id].role !== 'ult');
         const nItems = Math.max(SFC_CONFIG.game.match.maxUpgrades, cores.length);
@@ -127,8 +127,8 @@ window.SFC = window.SFC || {};
               <div class="ab-slot" data-k="${s.k}" title="${esc(names[s.k])}">
                 <i>${PX().ui(s.icon)}</i><div class="sw"></div><b></b><kbd>${esc(keyLabel(s.action))}</kbd>
               </div>`).join('')}${ult ? `
-              <div class="ab-slot ult lv${p.ultLv || 1}" data-k="ult" title="${esc(_t('ULTIMATE: {core}. Charges over time, plus extra when you concede, score, steal the ball or land punches', { core: CORES().list[ult].name + stars }))}">
-                <div class="ult-fill"></div><i>${PX().core(ult)}</i><b class="ult-pct"></b><kbd>${esc(keyLabel('ultimate'))}</kbd>${stars ? `<em class="ult-lv">${'★'.repeat(p.ultLv)}</em>` : ''}
+              <div class="ab-slot ult lv${p.ultLv || 1}" data-k="ult" title="${esc(_t('ULTIMATE: {core}. Charges over time, plus extra when you concede, score, steal the ball or land punches', { core: ultName }))}">
+                <div class="ult-fill"></div><i>${PX().core(ult)}</i><b class="ult-pct"></b><kbd>${esc(keyLabel('ultimate'))}</kbd>
               </div>` : ''}
             </div>
             <div class="ab-stam"><i></i></div>
@@ -230,7 +230,7 @@ window.SFC = window.SFC || {};
       const fresh = !game.opts.tutorial && SFC.Profile.data ? SFC.Profile.discoverUlt(e.id, e.lv) : false;
       // vừa diễn RecipeFx cho đúng công thức này: không hiện banner lặp lại
       if (SFC.RecipeFx.shown === e.id + ':' + e.lv) { SFC.RecipeFx.shown = null; return; }
-      const name = CORES().list[e.id].name + (e.lv > 1 ? ' ' + '★'.repeat(e.lv) : '');
+      const name = SFC.CoreSystem.ultName(e.id, e.lv);
       const title = fresh ? _t('NEW ULTIMATE DISCOVERED!') : e.evolved ? _t('ULTIMATE EVOLVED!') : _t('NEW ULTIMATE!');
       this.banner(title, name, '#ffd23f', 2.4);
       SFC.Audio.upgrade();

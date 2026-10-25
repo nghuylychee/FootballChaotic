@@ -16,7 +16,7 @@ SFC.I18n.fields = [
 
   // Core (config/cores.config.js)
   'cores.archetypes.*.label#archetype', 'cores.resources.*.label', 'cores.sets.*.*',
-  'cores.list.*.name', 'cores.list.*.desc',
+  'cores.list.*.name', 'cores.list.*.desc', 'cores.list.*.awaken.name', 'cores.list.*.awaken.desc',   // awaken: dạng thức tỉnh X4 (docs/ULT_AWAKEN.md)
 
   // Main Path + đội (đội Main Path, đội riêng của người chơi, đội trong mơ đều nằm trong teams.list)
   'mainPath.areas.*.name', 'mainPath.areas.*.sub', 'arenas.*.venue',

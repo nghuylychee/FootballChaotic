@@ -59,6 +59,30 @@ window.SFC = window.SFC || {};
     'titan.step'() { T({ freq: 70, to: 38, dur: 0.22, type: 'sine', vol: 0.25 }); N({ dur: 0.15, vol: 0.18, freq: 150, type: 'lowpass' }); },
     /* ---- 8. Pitch Tilt: sân nghiêng kêu cót két ---- */
     'tilt.creak'() { T({ freq: 62, to: 44, dur: 0.9, type: 'sawtooth', vol: 0.12, vib: 9, vibDepth: 6 }); N({ dur: 0.9, vol: 0.08, freq: 500, type: 'lowpass' }); T({ freq: 330, to: 250, dur: 0.6, type: 'triangle', vol: 0.04, vib: 14, vibDepth: 12, delay: 0.1 }); },
+    /* ---- ★★ DẠNG THỨC TỈNH (docs/ULT_AWAKEN.md): lớp âm chồng lên câu cut-in + tiếng riêng của từng nét mới ---- */
+    // thức tỉnh: tiếng gầm trầm trượt lên + chuông vàng ngân + quét gió
+    'awaken'() { T({ freq: 55, to: 165, dur: 0.7, type: 'sawtooth', vol: 0.1, vib: 6, vibDepth: 4 }); seq([1046, 1568, 2093], 0.09, { type: 'triangle', dur: 0.45, vol: 0.06, delay: 0.15 }); N({ dur: 0.6, vol: 0.08, freq: 600, to: 5000, q: 0.6 }); },
+    // Storm Cycle: lồng sét khép — nổ điện rền + rè rè đứt quãng
+    'cycle.cage'() { boom(0.22, 0.4); T({ freq: 90, dur: 0.5, type: 'sawtooth', vol: 0.14, vib: 45, vibDepth: 30 }); for (let i = 0; i < 5; i++) N({ dur: 0.05, vol: 0.14, freq: R(3000, 6000), q: 2, delay: i * 0.07 }); },
+    // Eternal Tiki-Taka: cả dây đàn rung một lượt (gảy hạc cầm đi lên)
+    'tiki.twang'() { seq([523, 659, 784, 988, 1175, 1568], 0.03, { type: 'triangle', dur: 0.6, vol: 0.07, vib: 7, vibDepth: 6 }); },
+    // Meteor Breaker: bóng bật ra bốc lửa — xèo + nốt cảnh báo
+    'meteor.rebound'() { N({ dur: 0.5, vol: 0.12, freq: 1500, to: 600, q: 0.8 }); T({ freq: 880, dur: 0.08, type: 'square', vol: 0.07 }); T({ freq: 1175, dur: 0.12, type: 'square', vol: 0.07, delay: 0.1 }); },
+    // Thousand Fists: gồng trước cú lướt — nắm tay siết rít lên
+    'fists.charge'() { T({ freq: 140, to: 420, dur: 0.3, type: 'sawtooth', vol: 0.1 }); N({ dur: 0.25, vol: 0.1, freq: 500, to: 2500, q: 1 }); },
+    // Full Moon Stomp: người lọt vào vòng trăng bị nhấc lên — "vút" theremin ngắn
+    'moon.lift'() { T({ freq: 520, to: 1040, dur: 0.3, type: 'sine', vol: 0.08, vib: 6, vibDepth: 20 }); },
+    // Clone Legion: phân thân đứng lại sân (chuông phép trầm 3 nốt) · phân thân vỡ ("bụp" khói)
+    'clone.legion'() { seq([392, 494, 587], 0.08, { type: 'sine', dur: 0.4, vol: 0.09, vib: 9, vibDepth: 14 }); N({ dur: 0.4, vol: 0.08, freq: 1200, q: 0.7 }); },
+    'clone.pop'() { N({ dur: 0.1, vol: 0.2, freq: 1400, q: 0.8 }); T({ freq: 988, to: 660, dur: 0.1, type: 'triangle', vol: 0.05 }); },
+    // Mega Titan: vươn tay túm (thép rít) · ném (gió vù trầm) · ky đổ (lốc cốc gỗ bowling)
+    'titan.grab'() { T({ freq: 300, to: 180, dur: 0.2, type: 'square', vol: 0.07 }); N({ dur: 0.05, vol: 0.2, freq: 2500, q: 2 }); },
+    'titan.throw'() { N({ dur: 0.45, vol: 0.18, freq: 300, to: 1500, q: 0.7 }); T({ freq: 110, to: 55, dur: 0.4, type: 'sawtooth', vol: 0.1 }); },
+    'titan.pin'() { for (let i = 0; i < 3; i++) T({ freq: R(500, 900), dur: 0.06, type: 'triangle', vol: 0.12, delay: i * 0.05 }); N({ dur: 0.08, vol: 0.18, freq: 1200, q: 1.5 }); },
+    // Pitch Landslide: biển cảnh báo (bíp kép) · đồ bắt đầu lăn (ầm ầm lạch cạch) · đồ đâm người ("keng" kim loại)
+    'tilt.warn'() { T({ freq: 1046, dur: 0.06, type: 'square', vol: 0.06 }); T({ freq: 784, dur: 0.06, type: 'square', vol: 0.06, delay: 0.1 }); },
+    'tilt.roll'() { N({ dur: 0.8, vol: 0.12, freq: 180, type: 'lowpass' }); for (let i = 0; i < 6; i++) N({ dur: 0.03, vol: 0.08, freq: R(1500, 3000), q: 2, delay: i * 0.12 }); },
+    'tilt.clang'() { T({ freq: 880, to: 840, dur: 0.3, type: 'square', vol: 0.07 }); T({ freq: 1320, to: 1250, dur: 0.25, type: 'triangle', vol: 0.06 }); N({ dur: 0.06, vol: 0.22, freq: 3000, q: 1.5 }); },
     /* ---- 9. Comet One-Two: 2 chạm "tích tắc" rồi xe đạp chổng ngược lấp lánh ---- */
     'comet.one'() { T({ freq: 660, dur: 0.05, type: 'square', vol: 0.09 }); },
     'comet.two'() { T({ freq: 880, dur: 0.05, type: 'square', vol: 0.09 }); },

@@ -42,7 +42,8 @@ SFC_CONFIG.cores = {
 
   // TUYỆT KỸ THEO CÔNG THỨC (docs/ULT_RECIPE.md, thay cho Cộng hưởng 2/3/4): đếm Core cùng trường phái của từng cầu thủ
   // (Tuyệt kỹ không tính). Đạt mốc tiers[i] của trường phái X -> Tuyệt kỹ base[X] cấp i+1
-  // (user chốt 2026-10-13: X3 = Tuyệt kỹ gốc, X4 = dạng nâng cấp ★★, tham số ở list[id].evolve[0]).
+  // (user chốt 2026-10-13: X3 = Tuyệt kỹ gốc, X4 = dạng thức tỉnh, tham số ở list[id].evolve[0]).
+  // Dạng thức tỉnh (docs/ULT_AWAKEN.md, 2026-10-25): tên + mô tả riêng ở list[id].awaken, thêm 1 nét mới bật bằng tham số chỉ có trong evolve[0]
   // hybrids: { id, tags: [X, Y] } = Tuyệt kỹ lai, mở khi đạt hybridTier Core của CẢ X và Y (X2 + Y2; đủ 28 cặp của 8 trường phái).
   // Nhiều công thức cùng thoả: công thức dùng nhiều Core hơn thắng; bằng nhau -> công thức vừa đạt (lá vừa chọn).
   // Chưa đạt công thức nào: start (null = chưa có Tuyệt kỹ, ô X ẩn; năng lượng vẫn nạp ngầm để vừa mở là dùng được).
@@ -138,7 +139,7 @@ SFC_CONFIG.cores = {
   // Năng lượng Tuyệt kỹ (X), 0..1: tự nạp theo thời gian gainTime / giây lúc đang đá (user chốt 2026-10-17; 0.02 = ~50s đầy nếu chỉ nạp theo thời gian) · bị thủng lưới ·
   // ghi bàn (bị thủng lưới nạp NHIỀU hơn ghi bàn — user đổi 2026-10-17, đội đang thua có chiêu gỡ) · cướp bóng (tối đa 1 lần / stealCooldown giây) ·
   // đấm trúng đối thủ bằng Light attack (tối đa 1 lần / lightHitCooldown giây). Dùng xong nạp lại ngay từ 0 (không còn khoá nạp)
-  ultimate: { gainTime: 0.02, gainGoal: 0.3, gainConceded: 0.5, gainSteal: 0.12, stealCooldown: 3, gainLightHit: 0.05, lightHitCooldown: 1, cutIn: 0.6, aiDelay: [0.5, 2.5] },
+  ultimate: { gainTime: 0.02, gainGoal: 0.3, gainConceded: 0.5, gainSteal: 0.12, stealCooldown: 3, gainLightHit: 0.05, lightHitCooldown: 1, cutIn: 0.6, cutInAwaken: 0.75, aiDelay: [0.5, 2.5] },
 
   // Chọn Core: trọng số = độ hiếm x (1 + buildWeight x số Core cùng trường phái đang có) x thiên hướng đội.
   // KHÔNG bảo đảm có lá cùng hướng (user bỏ 2026-10-13): ra đúng build phải là cảm giác may mắn, không phải chắc chắn.
@@ -252,7 +253,9 @@ SFC_CONFIG.cores = {
       name: 'Light Cycle', icon: '⚡', tags: ['runner'], role: 'ult', rarity: 'mythic',
       desc: 'Sprint as lightning, leaving a wall that zaps anyone crossing.',
       params: { time: 3, speed: 1.45, life: 2.2, every: 0.05, width: 5, stun: 0.9, knock: 130 },
-      evolve: [{ time: 4.2, speed: 1.55, life: 3, stun: 1.2 }],
+      // ★★ STORM CYCLE: vệt tự cắt lại chính nó (vòng kín diện tích >= minLoop px²) -> lồng sét nổ, đối thủ trong lồng choáng cage giây
+      evolve: [{ time: 3.6, speed: 1.5, life: 3, stun: 1.0, cage: 1.6, cageKnock: 120, minLoop: 1800 }],
+      awaken: { name: 'Storm Cycle', desc: 'Close a lightning loop to fry everyone trapped inside.' },
       scale: { time: 'pow', life: 'pow', stun: 'pow' },
     },
 
@@ -453,21 +456,29 @@ SFC_CONFIG.cores = {
       name: 'Endless Tiki-Taka', icon: '🎼', tags: ['playmaker'], role: 'ult', rarity: 'mythic', needsBall: true,
       desc: 'Opponents slow down while your team auto-passes, then shoots.',
       params: { passes: 4, gap: 0.12, passSpeed: 1.7, slow: 0.4, slowTime: 2.4, gk: 0.25 },   // passSpeed: đường chuyền thật nhưng nhanh hơn
-      evolve: [{ passes: 6, slow: 0.3, slowTime: 2.6, gk: 0.45 }],
+      // ★★ ETERNAL TIKI-TAKA: chuyền vòng cả 3 người, mỗi đường chuyền để lại dây đàn (strings giây, rộng width px);
+      // hết chuỗi dây rung: đối thủ đứng trên dây khựng freeze giây
+      evolve: [{ passes: 6, slow: 0.35, slowTime: 2.8, strings: 3.2, freeze: 0.9, width: 7 }],
+      awaken: { name: 'Eternal Tiki-Taka', desc: 'Three-way passing leaves harp strings that freeze opponents.' },
       scale: { slow: 'mul', slowTime: 'pow', gk: 'pow' },
     },
     meteor_strike: {
       name: 'Meteor Shot', icon: '🌟', tags: ['striker'], role: 'ult', rarity: 'mythic', needsBall: true,
       desc: 'Leap up and smash the ball down at max power.',
       params: { jump: 300, delay: 0.62, speed: 560, gk: 0.3 },
-      evolve: [{ jump: 340, speed: 680, gk: 0.5 }],
+      // ★★ METEOR BREAKER: bóng bị đỡ ra / chạm cột -> lơ lửng bốc lửa rebound giây; bấm sút = lao tới (rush px/s) đập lại (reboundSpeed)
+      evolve: [{ gk: 0.35, rebound: 1.1, rush: 520, reboundSpeed: 540 }],   // không tăng jump / speed: bóng tới khung lúc còn cao quá -> đập xà
+      awaken: { name: 'Meteor Breaker', desc: 'Meteor smash, and smash again if the ball rebounds.' },
       scale: { gk: 'pow' },
     },
     hundred_fists: {
       name: 'Hundred Fists', icon: '💢', tags: ['brawler'], role: 'ult', rarity: 'mythic',
       desc: 'Rush an opponent with a punch barrage, then blast them.',
       params: { range: 160, rush: 520, hits: 20, gap: 0.05, knock: 560, stun: 1.4 },   // rush: tốc độ lao tới (né Z được) · stun: choáng sau cú kết
-      evolve: [{ range: 220, hits: 36, knock: 720, stun: 2.0 }],
+      // ★★ THOUSAND FISTS: đấm xong lướt thẳng (báo trước chainWarn giây, chainRush px/s) tới đối thủ kế tiếp trong chainRange,
+      // tối đa chain lượt, mỗi lượt chainHits cú. Né Z / bước khỏi đường lướt = ngắt chuỗi
+      evolve: [{ range: 200, hits: 20, knock: 640, stun: 1.6, chain: 2, chainHits: 10, chainRange: 200, chainRush: 560, chainWarn: 0.3 }],
+      awaken: { name: 'Thousand Fists', desc: 'Punch barrage, then dash on to chain more victims.' },
       scale: { knock: 'pow', range: 'pow', stun: 'pow' },
     },
     // MOON STOMP (Tuyệt kỹ gốc VÕ SĨ ĐÁ, 2026-10-15): dậm đất (vòng báo trước telegraph giây) -> mọi người trong vòng (cả đồng đội, cả bóng)
@@ -476,14 +487,18 @@ SFC_CONFIG.cores = {
       name: 'Moon Stomp', icon: '🌙', tags: ['launcher'], role: 'ult', rarity: 'mythic',
       desc: 'Stomp the ground and everyone nearby floats helplessly.',
       params: { telegraph: 0.55, radius: 80, float: 2, lift: 60, knock: 520, launch: 260, stun: 1.2, volley: 1.1 },
-      evolve: [{ radius: 110, float: 2.6, knock: 620 }],
+      // ★★ FULL MOON STOMP: vòng trăng đi theo người dùng suốt float giây, đối thủ / bóng lọt vào vòng cũng bị nhấc lên
+      evolve: [{ radius: 80, float: 3.2, knock: 600, follow: 1 }],
+      awaken: { name: 'Full Moon Stomp', desc: 'Your moon zone follows you, lifting everyone nearby.' },
       scale: { radius: 'pow', float: 'pow', knock: 'pow' },
     },
     clone_army: {
       name: 'Clone Army', icon: '🎎', tags: ['trickster'], role: 'ult', rarity: 'mythic',
       desc: 'An army of clones steals the ball and fakes shots.',
       params: { time: 3, gkPenalty: 0.3, stun: 1.3, range: 170 },
-      evolve: [{ time: 4.6, gkPenalty: 0.46, stun: 1.9, range: 230 }],
+      // ★★ CLONE LEGION: legion phân thân ở lại sân stay giây (chạy ×cloneSpeed): đội mình cầm bóng -> chắn người, đối thủ cầm -> áp sát tắc bóng
+      evolve: [{ time: 4, gkPenalty: 0.3, stun: 1.5, range: 200, legion: 3, stay: 3.5, cloneSpeed: 0.85, steal: 0.6 }],
+      awaken: { name: 'Clone Legion', desc: 'Clones stay on the pitch to block and tackle.' },
       scale: { time: 'pow', gkPenalty: 'pow', stun: 'pow' },
     },
     // Tuyệt kỹ khởi đầu (bí kíp gia truyền, nhận ở cuối PROLOGUE — ftue.config.js): ai cũng mang từ đầu trận tới khi đạt công thức
@@ -500,14 +515,19 @@ SFC_CONFIG.cores = {
       name: 'Pitch Tilt', icon: '🎰', tags: ['chaos'], role: 'ult', rarity: 'mythic',
       desc: 'Tilt the pitch: everyone slides toward the enemy goal.',
       params: { time: 3.2, tilt: 70, ball: 170 },
-      evolve: [{ time: 4.2, tilt: 90 }],
+      // ★★ PITCH LANDSLIDE: thêm junk món đồ (thùng rác, lốp xe, xe đẩy) lăn từ mép sân phía mình xuống, báo trước junkWarn giây,
+      // quét ngã mọi người trên đường (trừ người dùng và thủ môn đang trong vòng cấm)
+      evolve: [{ time: 3.8, tilt: 90, junk: 4, junkWarn: 0.5, junkSpeed: 230, junkKnock: 260, junkStun: 1.0 }],
+      awaken: { name: 'Pitch Landslide', desc: 'Tilt so hard the street junk slides down too.' },
       scale: { time: 'pow' },
     },
     titan: {
       name: 'Titan', icon: '🗿', tags: ['iron'], role: 'ult', rarity: 'mythic',
       desc: 'Grow giant: stun-proof, untackleable, bowling everyone over.',
       params: { time: 5, scale: 2, knock: 360, launch: 220, stun: 1.0, shot: 1.35, slow: 0.85 },   // slow: chạy chậm hơn khi khổng lồ
-      evolve: [{ time: 8, scale: 2.6, knock: 440, shot: 1.5 }],
+      // ★★ MEGA TITAN: đòn mạnh = túm đối thủ trong tầm grab px (× cỡ khổng lồ × 0.75) rồi ném như bóng bowling (throw px/s), hồi grabCd giây
+      evolve: [{ time: 6, scale: 2.4, knock: 420, shot: 1.45, grab: 40, throw: 440, throwStun: 0.9, grabCd: 2 }],
+      awaken: { name: 'Mega Titan', desc: 'Grow giant, grab opponents and bowl them over.' },
       scale: { time: 'pow', knock: 'pow', launch: 'pow', stun: 'pow', shot: 'mul' },
     },
 

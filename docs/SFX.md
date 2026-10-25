@@ -49,6 +49,15 @@ the `ult` sound is the part that tells you which Ultimate it is. Loudness was ch
 | `clone.poof` / `clone.strike` | Clone Army | Four staggered puffs + chime · double blip |
 | `titan.grow` / `titan.step` | Titan · grow / each giant step | Bass sliding up + rising notes · footstep boom |
 | `tilt.creak` | Pitch Tilt | Creaking wobble |
+| `awaken` | Every awakened (X4) Ultimate · cut-in, layered over `cut.<school>` (`docs/ULT_AWAKEN.md`) | Low roar sliding up + golden bell notes + wind sweep |
+| `cycle.cage` | Storm Cycle · the lightning loop closes | Low blast + buzzing saw + crackles |
+| `tiki.twang` | Eternal Tiki-Taka · the harp strings ring at the end of the chain | Fast rising harp strum |
+| `meteor.rebound` | Meteor Breaker · the ball bounces back and floats on fire | Sizzle + two warning beeps |
+| `fists.charge` | Thousand Fists · wind-up before each chain dash | Rising saw + clenched-fist hiss |
+| `moon.lift` | Full Moon Stomp · someone gets lifted by the moving moon | Short rising theremin |
+| `clone.legion` / `clone.pop` | Clone Legion · clones stay on the pitch / a clone pops | Three low magic bell notes · puff |
+| `titan.grab` / `titan.throw` / `titan.pin` | Mega Titan · grab / throw / someone knocked down like a pin | Metal screech · deep whoosh · wooden bowling clatter |
+| `tilt.warn` / `tilt.roll` / `tilt.clang` | Pitch Landslide · warning sign / junk starts rolling / junk hits someone | Double beep · rumbling clatter · metal clang |
 | `comet.one` / `comet.two` / `comet.bike` / `comet.strike` | Comet One-Two | Two crisp ticks · spinning whoosh · sparkly strike |
 | `dragon.up` / `dragon.roar` | Rising Dragon · uppercut / dragon kick | Rising square sweep · growling roar |
 | `hurricane` | Hurricane Kick · whole spin (`params.time`) | Howling wind |
