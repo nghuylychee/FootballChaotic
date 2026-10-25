@@ -548,6 +548,28 @@ window.SFC = window.SFC || {};
       return true;
     },
 
+    // Phất bóng lên trời (thủ môn AI, ai.gkPunt): bóng vọt cao, rơi ở (tx, ty) ± kick.puntError thành bóng lỏng.
+    // Lực ngang tính ngược từ thời gian bay + airDrag để rơi đúng chỗ
+    punt(g, p, tx, ty) {
+      const b = g.ball, K = G().kick, B = G().ball;
+      if (b.owner !== p || p.noActT > 0) return false;
+      const e = U.rand(0, K.puntError), ea = U.rand(0, Math.PI * 2);
+      tx += Math.cos(ea) * e; ty += Math.sin(ea) * e;
+      const T = 2 * K.puntLift / B.gravity, k = B.airDrag;
+      const d = Math.hypot(tx - p.x, ty - p.y), n = U.norm(tx - p.x, ty - p.y);
+      const spd = d * k / (1 - Math.exp(-k * T));
+      b.kick(p, n.x * spd, n.y * spd, K.puntLift);
+      b.kind = 'clear';
+      p.facing = Math.atan2(n.y, n.x);
+      p.charging = false; p.charge = 0;
+      p.cancelPass();
+      this.startAttack(p, 'shoot');
+      g.effects.burst(b.x, b.y, 2, '#ffffff', 8, 80);
+      g.effects.shake(G().fx.shakeShot);
+      g.sfx('kick', 0.9);
+      return true;
+    },
+
     // Phá bóng: bóng bổng, mạnh, luôn về phía trước — ↑/↓ chỉ chỉnh góc (không phá ngược về khung thành nhà)
     clearance(g, p, dy) {
       const b = g.ball, K = G().kick;

@@ -289,6 +289,9 @@ SFC_CONFIG.game = {
     clearLift: 120,          // vz ban đầu -> bay ~0.57s, chạm đất ở ~155px, lăn tổng ~340px
     clearAngle: 0.8,         // ↑/↓ lệch góc phá bóng tối đa (~39°)
     clearSpread: 0.2,        // rad sai số ngẫu nhiên
+    // Phất bóng lên trời (thủ môn AI ôm bóng, ai.gkPunt): bóng vọt cao qua đầu mọi người, rơi xuống điểm đã chọn thành bóng lỏng
+    puntLift: 260,           // vz ban đầu -> bay ~1.24s, cao ~80px (không ai chạm được tới lúc rơi)
+    puntError: 20,           // (px) điểm rơi lệch ngẫu nhiên tối đa
   },
 
   // KỸ THUẬT NÂNG CAO (user 2026-10-25, cho người chơi hardcore, không có bài hướng dẫn) — tổ hợp phím lúc đang nạp (Human.update):
@@ -468,6 +471,29 @@ SFC_CONFIG.game = {
     hoof: {
       pressDist: 45,          // (px) đối phương gần hơn mức này = đang áp sát
       laneWidth: 16,          // (px) đối phương cách đường chuyền tới người chơi dưới mức này = bị chắn
+    },
+    // thủ môn AI ôm bóng (cả đội máy lẫn đồng đội AI): thay vì chuyền, phất bóng lên trời rơi xuống phía trên thành bóng lỏng
+    // (kick.puntLift). Hay dùng khi người nhận đang gặp nguy (đối phương áp sát, nhất là ở phần sân nhà) để không đẩy đồng đội vào thế mất bóng. null = tắt
+    gkPunt: {
+      chance: 0.15,           // người nhận an toàn: thỉnh thoảng vẫn phất cho đa dạng
+      dangerChance: 0.85,     // người nhận gặp nguy (hoặc không có ai để chuyền)
+      markDist: 30,           // (px) đối phương cách người nhận dưới mức này = gặp nguy
+      ownHalfMarkDist: 55,    // (px) như trên khi người nhận còn ở phần sân nhà (mất bóng ở đó là bị phản công ngay)
+      dist: [180, 290],       // (px) điểm rơi cách thủ môn theo hướng tấn công
+      edge: 30,               // (px) điểm rơi cách biên dọc tối thiểu
+      tries: 12,              // số điểm rơi thử: chọn chỗ đồng đội tới trước đối phương rõ nhất
+      noise: 30,              // (px) ngẫu nhiên cộng vào điểm số mỗi chỗ (không phất mãi một chỗ)
+    },
+    // BÓNG BẬT BẤT NGỜ (user 2026-10-25: trước đây AI đổi hướng đúng khung hình bóng bật ra -> luôn tranh được bóng bật ra từ thủ môn).
+    // Bóng lỏng đổi hướng đột ngột không do ai đá (thủ môn đẩy ra, chạm người, dội tường): mỗi cầu thủ AI giữ nguyên hướng chạy cũ
+    // (reactBase + reaction × reactMul + khoảng cách tới bóng × distMul + ngẫu nhiên 0..reactRand) giây, rồi mới đuổi theo với
+    // hướng bóng đoán lệch ±(errBase + (1 − shotAccuracy) × errMul) rad, đoán chuẩn dần trong errFade giây. null = tắt
+    scramble: {
+      turn: 0.6,              // (rad) hướng bóng đổi quá mức này trong 1 khung hình = bật bất ngờ
+      minSpeed: 40,           // (px/s) bóng chậm hơn: không tính
+      reactBase: 0.08, reactMul: 0.8, reactRand: 0.08,
+      distMul: 0.0006,        // (s/px) càng xa bóng phản ứng càng muộn (100px: +0.06s)
+      errBase: 0.2, errMul: 0.8, errFade: 0.5,
     },
     hardDistMin: 16,         // AI dùng Hard attack khi người cầm bóng cách trong khoảng này (px)
     hardDistMax: 44,

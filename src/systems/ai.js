@@ -56,6 +56,7 @@ window.SFC = window.SFC || {};
 
   const AI = {
     update(dt, g) {
+      this.watchBall(g);
       for (const p of g.players) {
         if (p.isControlled && g.isHuman(p.team)) continue;
         // trận mơ PROLOGUE: kịch bản điều khiển thay AI tuỳ bài (src/game/tutorial.js)
@@ -78,6 +79,17 @@ window.SFC = window.SFC || {};
         else if (own) this.defend(dt, g, p);
         else this.loose(dt, g, p);
       }
+    },
+
+    // bóng lỏng đổi hướng đột ngột không do cú đá (ai.scramble): đánh số lần bật (g.aiBall.n) + thời điểm, loose() đọc để trễ phản ứng
+    watchBall(g) {
+      const S = A().scramble, b = g.ball;
+      const w = g.aiBall || (g.aiBall = { n: 0, at: 0, hx: 0, hy: 0, k: -1, ok: false });
+      const spd = Math.hypot(b.vx, b.vy);
+      if (!S || b.owner || spd < S.minSpeed) { w.ok = false; return; }
+      const hx = b.vx / spd, hy = b.vy / spd;
+      if (w.ok && w.k === b.kickN && hx * w.hx + hy * w.hy < Math.cos(S.turn)) { w.n++; w.at = g.time; }
+      Object.assign(w, { hx, hy, k: b.kickN, ok: true });
     },
 
     /* ---------- có bóng ---------- */
@@ -110,7 +122,8 @@ window.SFC = window.SFC || {};
         stop(p);
         if (p.ai.holdT > cfg.gkHoldTime && !settling) {
           const t = Act().findPassTarget(g, p, g.teams[p.team].dir, 0);
-          if (this.shouldHoof(g, p, t)) this.hoof(g, p, t);
+          if (this.shouldPunt(g, p, t)) { const s = this.puntSpot(g, p); Act().punt(g, p, s.x, s.y); }
+          else if (this.shouldHoof(g, p, t)) this.hoof(g, p, t);
           else Act().passTo(g, p, t, t && !Act().laneClear(g, p, t.x, t.y, 12) ? 'lob' : 'ground');
         }
         return;
@@ -393,6 +406,36 @@ window.SFC = window.SFC || {};
       return opps.some((o) => U.segDist(o.x, o.y, p.x, p.y, t.x, t.y) < H.laneWidth);
     },
 
+    // Thủ môn AI ôm bóng: phất lên trời thay vì chuyền? (ai.gkPunt) Người nhận gặp nguy = đối phương áp sát
+    // (ở phần sân nhà tính rộng hơn) -> gần như luôn phất; an toàn thì thỉnh thoảng
+    shouldPunt(g, p, t) {
+      const P = A().gkPunt;
+      if (!P) return false;
+      let danger = !t;
+      if (t) {
+        const d = nearest(g.teams[1 - p.team].players, t, (o) => o.state !== 'stun').d;
+        danger = d < P.markDist || (g.inOwnHalf(t) && d < P.ownHalfMarkDist);
+      }
+      return Math.random() < (danger ? P.dangerChance : P.chance);
+    },
+
+    // điểm rơi khi phất bóng: thử vài chỗ phía trên, chọn chỗ đồng đội tới gần hơn đối phương rõ nhất (+ chút ngẫu nhiên)
+    puntSpot(g, p) {
+      const P = A().gkPunt, f = g.field, dir = g.teams[p.team].dir;
+      const mates = g.teams[p.team].players.filter((o) => o !== p && o.state !== 'stun');
+      const opps = g.teams[1 - p.team].players.filter((o) => o.state !== 'stun');
+      let best = null, bs = -Infinity;
+      for (let i = 0; i < P.tries; i++) {
+        const s = {
+          x: U.clamp(p.x + dir * U.rand(P.dist[0], P.dist[1]), f.x + P.edge, f.x + f.w - P.edge),
+          y: U.rand(f.y + P.edge, f.y + f.h - P.edge),
+        };
+        const score = nearest(opps, s).d - (mates.length ? nearest(mates, s).d : 0) + U.rand(0, P.noise);
+        if (score > bs) { bs = score; best = s; }
+      }
+      return best;
+    },
+
     // phất bóng lên phía trước: thử các góc trong kick.clearAngle, chọn góc thoáng đối phương nhất, nghiêng về phía người chơi
     hoof(g, p, t) {
       const K = SFC_CONFIG.game.kick, dir = g.teams[p.team].dir;
@@ -464,6 +507,19 @@ window.SFC = window.SFC || {};
         if (mate) p.intent.sprint = U.dist(p, ip) > 6 && (b.sloppy || !p.ai.recvWalk);
         return;
       }
+      // bóng vừa bật bất ngờ (ai.scramble): chưa kịp phản ứng thì giữ nguyên hướng chạy cũ; phản ứng rồi vẫn đoán lệch hướng bóng một lúc
+      const S = A().scramble, w = g.aiBall;
+      let err = 0;
+      if (S && w && w.n) {
+        if (p.ai.scrN !== w.n) {
+          const D = g.aiProfile(p.team);
+          p.ai.scrN = w.n;
+          p.ai.scrT = w.at + S.reactBase + D.reaction * S.reactMul + U.dist(p, b) * S.distMul + U.rand(0, S.reactRand);
+          p.ai.scrErr = U.rand(-1, 1) * (S.errBase + (1 - D.shotAccuracy) * S.errMul);
+        }
+        if (g.time < p.ai.scrT) return;
+        err = p.ai.scrErr * U.clamp(1 - (g.time - p.ai.scrT) / S.errFade, 0, 1);
+      }
       // bóng đang bay về khung thành nhà -> người gần khung nhất chặn trên đường bay
       // (đội máy / đồng đội AI ĐÁ LÙI: cú sút / phá bóng của đối phương; đồng đội AI ĐÁ CAO: chỉ khi là cú sút)
       const dir = tm.dir;
@@ -475,7 +531,12 @@ window.SFC = window.SFC || {};
       const ctl = mate ? g.ctrl[p.team] : null;
       let chaser = nearest(tm.players, pred, (o) => o.state === 'normal' && o !== ctl);
       if (ctl && U.dist(ctl, pred) < chaser.d) chaser = { p: null };
-      if (p === chaser.p && !passToMate) return moveTo(p, pred.x, pred.y, true, 1);
+      if (p === chaser.p && !passToMate) {
+        // người đuổi bóng chạy tới chỗ mình đoán (lệch err), còn việc ai đuổi thì cả đội vẫn chọn theo pred thật
+        if (!err) return moveTo(p, pred.x, pred.y, true, 1);
+        const c = Math.cos(err), s = Math.sin(err);
+        return moveTo(p, U.clamp(b.x + (b.vx * c - b.vy * s) * 0.3, f.x + 6, f.x + f.w - 6), U.clamp(b.y + (b.vx * s + b.vy * c) * 0.3, f.y + 6, f.y + f.h - 6), true, 1);
+      }
 
       // 1 người không đuổi bóng lùi về trông khung (người gần khung nhà nhất, trừ người đuổi bóng / người chơi đang điều khiển).
       // Đội máy / đồng đội AI ĐÁ LÙI: bóng lỏng ở phần sân nhà (hoặc đang bay về khung thành nhà).
