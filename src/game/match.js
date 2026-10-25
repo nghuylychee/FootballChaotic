@@ -686,6 +686,13 @@ window.SFC = window.SFC || {};
         let reach = p.radius + b.r + (gk ? (C.player.gkReach + (p.state === 'dash' ? 5 : 0)) * p.sizeMul : C.ball.pickupRange)
           + (b.passTarget === p ? C.pass.receiveRangeBonus : 0);
         let maxZ = gk ? C.player.gkCatchHeight : C.ball.pickupHeight;
+        // SÚT BỔNG (game.technique.chip): thủ môn đứng xa vạch vôi quá offLine lúc bóng rời chân mà bóng đã qua chỗ đó (rơi sau lưng)
+        // -> lùi về cũng chỉ với được bóng rất thấp. Thủ môn bám vạch lúc bị sút thì bắt như thường
+        if (gk && b.fx.chip && b.lastKickTeam !== p.team) {
+          const lx = this.ownGoal(p.team).x, CH = C.technique.chip;
+          const off = b.fx.chip.off && b.fx.chip.off[p.id] != null ? b.fx.chip.off[p.id] : Math.abs(p.x - lx);
+          if (off > CH.offLine && Math.abs(b.x - lx) < off) maxZ = Math.min(maxZ, CH.behindCatchZ);
+        }
         // đang chờ đá 1 chạm: với tới bóng ngang đầu (firstTime.maxZ). Ai gần bóng nhất chạm trước — kể cả thủ môn ra đón quả tạt
         if (p.ot) { reach = Math.max(reach, p.radius + b.r + FT.reach); maxZ = Math.max(maxZ, FT.maxZ); }
         const d = U.dist(p, b);
@@ -748,7 +755,10 @@ window.SFC = window.SFC || {};
         const reach = p.radius + b.r + (C.player.gkReach + (p.state === 'dash' ? 5 : 0)) * p.sizeMul;
         // khoảng cách vuông góc từ thủ môn tới đường bay của bóng
         const perp = Math.abs((p.x - b.x) * dir.y - (p.y - b.y) * dir.x);
-        const stretch = rd && rd.noStretch ? 0 : U.clamp(perp / reach, 0, 1);
+        // thủ môn AI: độ vươn tính thêm theo quãng phải lao ngang từ lúc thấy cú sút (ai.keeper) — đọc đúng chỗ vẫn khó bắt bóng góc
+        const gr = p.ai && p.ai.gkRead && p.ai.gkRead.n === b.kickN ? p.ai.gkRead : null;
+        const moveK = gr ? Math.abs(p.y - gr.y0) / C.ai.keeper.stretchMove : 0;
+        const stretch = rd && rd.noStretch ? 0 : U.clamp(Math.max(perp / reach, moveK), 0, 1);
         let chance = C.player.gkSaveBase - Math.max(0, spd - C.player.gkSpeedFree) / C.player.gkSpeedPenalty - stretch * C.player.gkStretchPenalty;
         if (b.fx.thunder) chance -= b.fx.thunder.gkPenalty;
         if (b.fx.fire) chance -= 0.15;

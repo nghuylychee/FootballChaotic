@@ -86,17 +86,21 @@ window.SFC = window.SFC || {};
         }
         if (p.passMode) {
           if (input.isDown(p.passKey)) {
+            // KỸ THUẬT (game.technique): đang nạp chuyền bổng bấm chuyền sệt = sút giả · đang nạp chọc khe bấm skill = chọc khe bổng
+            if (p.passMode === 'lob' && input.wasPressed('pass')) { Act.fakeShot(g, p, mx, my); return; }
+            if (p.passMode === 'through' && input.isDown('skill')) p.passLoft = true;
             p.passCharge = Math.min(1, p.passCharge + dt / P.chargeTime);
             // chỉ khóa đồng đội nằm trong vùng hướng mũi tên; không có ai -> null (chuyền theo hướng)
             p.passLock = Act.findPassTarget(g, p, mx, my, Act.targetBias(p.passCharge), p.passMode, p.passLock, P.coneAngle);
             p.passBase = Act.passBasePower(g, p, p.passLock, p.passMode);
             if (seat === g.me) g.passPreview = { from: p, target: p.passLock, mode: p.passMode };
           } else {
-            Act.pass(g, p, p.passMode, mx, my, p.passCharge);
+            Act.pass(g, p, p.passLoft && p.passMode === 'through' ? 'lobthrough' : p.passMode, mx, my, p.passCharge);
           }
           return;
         }
 
+        let techSkill = false;   // phím skill đã dùng cho kỹ thuật sút bổng ở bước này -> không lướt
         // vừa đấm cướp được bóng: chưa sút được (combat.light.stealShotLock), D giữ từ cú đấm phải thả ra rồi bấm lại
         if (p.shotHold && !input.isDown('shoot')) p.shotHold = false;
         const shotLocked = p.shotHold || p.shotLockT > 0;
@@ -106,14 +110,19 @@ window.SFC = window.SFC || {};
           if (input.wasPressed('shoot') && !shotLocked) { Act.clearance(g, p, my); return; }
         } else if (input.isDown('shoot')) {
           if (p.state === 'normal' && !(shotLocked && !p.charging)) {
-            if (!p.charging) { p.charging = true; p.charge = 0; p.shotTarget = 0; }
+            if (!p.charging) { p.charging = true; p.charge = 0; p.shotTarget = 0; p.shotStyle = null; }
+            // KỸ THUẬT (game.technique), chốt lúc đang nạp: giữ / bấm switch = cứa lòng · bấm skill = sút bổng (không lướt) ·
+            // bấm chuyền sệt = sút giả (huỷ cú sút)
+            if (input.wasPressed('pass')) { Act.fakeShot(g, p, mx, my); return; }
+            if (input.isDown('switch')) p.shotStyle = 'finesse';
+            if (input.wasPressed('skill')) { p.shotStyle = 'chip'; buf.skill = 0; techSkill = true; }
             p.charge += dt / g.chargeTime(p);
             if (p.charge >= K.maxOvercharge) Act.shoot(g, p, p.charge, 0, mx || my ? { x: mx, y: my } : null);
           }
         } else if (p.charging) {
           Act.shoot(g, p, p.charge, 0, mx || my ? { x: mx, y: my } : null);
         }
-        if (pressed('skill')) use('skill', Act.skill(g, p, mx, my));
+        if (!techSkill && pressed('skill')) use('skill', Act.skill(g, p, mx, my));
         return;
       }
 

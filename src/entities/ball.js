@@ -69,7 +69,7 @@ window.SFC = window.SFC || {};
       this.shieldChecked = false;
       this.freezeT = 0;
       this.cross = false;     // tạt cánh (game.firstTime.cross) — passTo bật lại sau khi đá
-      this.kickN++;           // số lần đá: AI quyết định dứt điểm 1 chạm 1 lần cho mỗi quả bóng
+      this.kickN++;           // số lần đá: AI quyết định dứt điểm 1 chạm 1 lần cho mỗi quả bóng · AI thủ môn đọc mỗi cú sút 1 lần (ai.keeper)
       this.clearFx();
     }
 

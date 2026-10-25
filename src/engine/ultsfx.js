@@ -208,6 +208,8 @@ window.SFC = window.SFC || {};
     'mod.wind'() { N({ dur: 1.4, vol: 0.12, freq: 500, to: 1400, q: 3 }); N({ dur: 1.4, vol: 0.06, freq: 900, to: 400, q: 4, delay: 0.3 }); },
     // bình sơn: lắc lạch cạch + xịt
     'mod.spray'() { [0, 0.07].forEach((d) => T({ freq: 2200, dur: 0.03, type: 'square', vol: 0.05, delay: d })); N({ dur: 0.5, vol: 0.12, freq: 6000, q: 0.6, delay: 0.15 }); },
+    // nhảy parkour qua tường: tay vỗ bê tông "bộp" + vút qua
+    'mod.vault'() { N({ dur: 0.04, vol: 0.16, freq: 1300, q: 1.5 }); T({ freq: 240, to: 150, dur: 0.05, type: 'triangle', vol: 0.08 }); N({ dur: 0.22, vol: 0.07, freq: 700, to: 2600, q: 1.5, delay: 0.05 }); },
     // đèn lồng: rít rơi xuống · vỡ: giấy + tre đổ "rắc" trầm
     'mod.fall'() { T({ freq: 1400, to: 500, dur: 0.9, type: 'sine', vol: 0.07 }); },
     'mod.crash'() { boom(0.25, 0.35); N({ dur: 0.2, vol: 0.18, freq: 2400, q: 0.7 }); },
@@ -262,6 +264,8 @@ window.SFC = window.SFC || {};
     'mod.fizzle'() { N({ dur: 0.25, vol: 0.1, freq: 4000, to: 1200, q: 1.5 }); },
     'mod.petrify'() { for (let i = 0; i < 8; i++) N({ dur: 0.04, vol: 0.09, freq: R(500, 1400), q: 2, delay: i * 0.035 }); T({ freq: 220, to: 70, dur: 0.3, type: 'square', vol: 0.06 }); T({ freq: 90, to: 50, dur: 0.15, type: 'sine', vol: 0.22, delay: 0.3 }); N({ dur: 0.08, vol: 0.14, freq: 700, q: 1.5, delay: 0.3 }); },
     'mod.crumble'() { N({ dur: 0.12, vol: 0.2, freq: 900, q: 0.8 }); boom(0.12, 0.25); for (let i = 0; i < 7; i++) T({ freq: R(180, 420), dur: 0.05, type: 'triangle', vol: 0.07, delay: 0.05 + i * 0.045 }); },
+    // tia laser mắt cú: nổ "choéo" + ù rung kéo dài
+    'mod.beam'() { N({ dur: 0.08, vol: 0.18, freq: 3500, q: 1 }); T({ freq: 2200, to: 900, dur: 0.12, type: 'square', vol: 0.05 }); T({ freq: 140, to: 110, dur: 0.75, type: 'sawtooth', vol: 0.07, vib: 28, vibDepth: 10 }); N({ dur: 0.7, vol: 0.05, freq: 2400, q: 3, delay: 0.05 }); },
     'mod.hoo'() { [0, 0.4].forEach((d, i) => T({ freq: i ? 330 : 392, to: i ? 300 : 360, dur: 0.32, type: 'sine', vol: 0.14, vib: 6, vibDepth: 12, attack: 0.05, delay: d })); },
     'mod.spotted'() { N({ dur: 0.04, vol: 0.2, freq: 3000, q: 1.5 }); N({ dur: 0.03, vol: 0.12, freq: 2000, q: 1.5, delay: 0.06 }); T({ freq: 1568, to: 784, dur: 0.25, type: 'square', vol: 0.06, delay: 0.05 }); },
     'mod.siren'() { T({ freq: 660, to: 990, dur: 0.3, type: 'sawtooth', vol: 0.07 }); T({ freq: 990, to: 660, dur: 0.3, type: 'sawtooth', vol: 0.07, delay: 0.3 }); },

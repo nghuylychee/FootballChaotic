@@ -68,7 +68,7 @@
         home: MP.playerTeam.id, away: rd.team, difficulty: 'normal', aiProfile: ai, mateProfile: ai,
         humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: SFC_CONFIG.arenas[rd.arena] ? rd.arena : undefined,
         coreUnlocks: [SFC.Profile.unlockedCores(), null],
-        mates: [R.mates.map((m, i) => SFC.Mates.spec(m, mateRoles[i] || null)), null],
+        mates: [R.mates.map((m, i) => SFC.Cup.mateSpec(m, mateRoles[i] || null, rd)), null],   // chỉ số theo trình đối thủ (stories.mateStats)
         signature: [null, rd.signature || null],
         knockout: true, cup: { id: R.id, round: R.round },
         mod: rd.mod || null, barks: rd.barks || null, score: rd.score || null,   // luật trận + câu nói của đối thủ (src/systems/matchmods.js)

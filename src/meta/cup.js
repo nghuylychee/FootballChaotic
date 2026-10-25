@@ -98,6 +98,15 @@ window.SFC = window.SFC || {};
       return R && s && !R.out && !R.champion ? s.rounds[R.round] : null;
     },
 
+    // đồng đội AI vào trận vòng rd: Mates.spec + chỉ số theo trình đội đối thủ (stories.mateStats) — chơi một mình (main.js) và co-op (ui/cup.js)
+    mateSpec(m, role, rd) {
+      const spec = SFC.Mates.spec(m, role), C = SFC_CONFIG.stories.mateStats;
+      const opp = rd && SFC_CONFIG.teams.list[rd.team] && SFC_CONFIG.teams.list[rd.team].stats;
+      if (!C || !opp) return spec;
+      for (const k in opp) spec.stats[k] = Math.max(C.min, Math.min(C.max, opp[k]));   // chép từng chỉ số (trung bình đều làm đội bạn nhanh hơn hẳn)
+      return spec;
+    },
+
     // 2 đồng đội AI của bạn (chơi một mình): đồng đội đang chọn + 1 người trong đội hình (thiếu thì 1 cầu thủ ngẫu nhiên cùng trình vòng đầu)
     pickMates(s) {
       const M = SFC.Mates, active = M.active(), roster = M.roster().filter((m) => m !== active);

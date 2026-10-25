@@ -300,7 +300,7 @@ window.SFC = window.SFC || {};
       if (!R || !rd || !isHost()) return;
       const O = ON(), taken = O.lobby.members.filter((m) => m.slot >= 0).map((m) => O.slotRole(m.slot));
       const free = ROLES().filter((r) => !taken.includes(r));
-      const mates = free.map((role, i) => (R.mates[i] ? SFC.Mates.spec(R.mates[i], role) : null)).filter(Boolean);
+      const mates = free.map((role, i) => (R.mates[i] ? CUP().mateSpec(R.mates[i], role, rd) : null)).filter(Boolean);
       const ai = SFC.MainPath.aiProfile(rd.elo);
       O.startStory({
         away: rd.team, mates,

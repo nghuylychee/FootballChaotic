@@ -1,8 +1,8 @@
 /* ModDraw — hình các vật thể của LUẬT TRẬN FOOTBALL STORY (src/systems/matchmods.js). render/vfx.js drawProp gọi draw() cho các kind ở đây.
- * graffiti (dãy tấm bê tông phun sơn, chia khúc parts) · stool (ghế nhựa) · stoolfly (ghế vỡ văng) · lane (làn giao hàng nhấp nháy) · moped (xe máy giao hàng) · vroom (Moped Boys đang được quá giang)
+ * graffiti (khối tường bê tông phun sơn, chia khúc parts) · vault (Billboard Kid nhảy parkour qua tường) · stool (ghế nhựa) · stoolfly (ghế vỡ văng) · lane (làn giao hàng nhấp nháy) · moped (xe máy giao hàng) · vroom (Moped Boys đang được quá giang)
  * · veil (School Ghosts đang tàng hình: không vẽ gì, render đọc MatchMods.alpha) · spot (đèn pha) · alarm (vòng đếm ngược bị soi)
  * · owl (con cú khổng lồ của Night Owls trên khán đài, mắt đọc từ prop owleyes) · owleyes (lượt mắt mở: không vẽ gì riêng)
- * · gazelock (tia ngắm khoá người chạy) · owlbolt (đạn mắt cú đuổi theo người) · petrify (người bị bắn trúng hoá tượng đá)
+ * · gazelock (tia ngắm khoá người chạy) · owlbolt (đạn mắt cú đuổi theo người) · owlbeam (tia laser xuyên người khi đạn tới nơi) · petrify (người bị bắn trúng hoá tượng đá)
  * Vị trí vật di chuyển lấy từ SFC.MatchMods.at (cùng hàm với mô phỏng).
  */
 window.SFC = window.SFC || {};
@@ -21,33 +21,74 @@ window.SFC = window.SFC || {};
     return `rgb(${m(n >> 16)},${m((n >> 8) & 255)},${m(n & 255)})`;
   }
 
-  // 1 tấm của tường graffiti (chân tại x, y): tấm bê tông dựng đứng, phun 1 dải sơn uốn lượn (tính theo toạ độ x của sân nên các tấm
-  // cạnh nhau nối thành 1 bức tranh liền), mép trên sáng kiểu chữ bong bóng, nét tag trắng, sơn chảy nhỏ giọt dài dần.
-  // i: khúc thứ i (dựng lần lượt từ đầu tường rồi phun sơn) · el: giây đã đứng · seed: hình riêng mỗi bức tường
-  // join: tấm giữa của tường nằm ngang -> phủ lên mép tấm trước (không vẽ viền trái) để cả dãy thành 1 bức tường liền
-  function panel(ctx, x, y, col, i, el, seed, join) {
-    const { px, ellipse, OUT } = SP();
-    const e0 = el - i * 0.025, rise = Math.max(0, Math.min(1, e0 / 0.08));
-    if (rise <= 0) return;
-    const H = Math.round(18 * rise), top = y - H;
-    ellipse(ctx, x, y + 1, 6, 2, 'rgba(0,0,0,0.35)');
-    const L = join ? -6 : -5;
-    px(ctx, x - 6, top - 1, 12, H + 2, OUT);
-    px(ctx, x + L, top, 5 - L, H, '#8e8a84');
-    px(ctx, x + L, top, 5 - L, 1, '#b9b4ab');
-    px(ctx, x + L, y - 2, 5 - L, 2, '#5f5b56');
-    if (rise < 1) return;
-    const paint = Math.min(1, (e0 - 0.08) / 0.12), lt = light(col, 0.55), dk = dark(col, 0.35), a = seed * 1.7;
-    for (let cx = L; cx < 5; cx++) {
-      if ((cx + 6) / 11 >= paint) break;
-      const wx = x + cx, h = (((wx * 7 + seed * 3) % 5) + 5) % 5;
-      const b0 = top + 4 + Math.round(1.6 * Math.sin(wx * 0.33 + a)), b1 = y - 4 + Math.round(1.2 * Math.sin(wx * 0.51 + a * 2));
-      if (h === 2) px(ctx, wx, b0 - 2, 1, 1, col);   // hạt sơn bắn lên trên
-      px(ctx, wx, b0, 1, b1 - b0, col);
-      px(ctx, wx, b0, 1, 1, lt);
-      px(ctx, wx, b1 - 2, 1, 2, dk);
-      px(ctx, wx, Math.round((b0 + b1) / 2 + 2 * Math.sin(wx * 0.7 + a)), 1, 1, '#ffffff');
-      if (h === 0) px(ctx, wx, b1, 1, Math.min(4, 1 + Math.floor(el * 2)), dk);   // sơn chảy dài dần
+  /* Tường graffiti (user 2026-10-25, thay dãy tấm rời vì tường chéo bị hở từng nấc): 1 khối bê tông liền dày WT px, cao WH px.
+   * Nhìn theo phối cảnh: ngọn tường ngả ra xa giữa sân (lean px / px chiều cao) nên tường dọc vẫn thấy 1 mặt bên có sơn.
+   * Chia khúc (ModDraw.parts) chỉ để xếp chiều sâu với cầu thủ: mỗi khúc vẽ đúng phần khối của nó, không viền giữa các khúc.
+   * Dải sơn uốn lượn tính theo s (px dọc tường) nên các khúc nối thành 1 bức tranh liền; mép trên sáng, nét tag trắng, sơn chảy dài dần. */
+  const WT = 5, WH = 17;
+  // khung tường: A = đầu trái, u = hướng dọc tường, n = pháp tuyến, lean = độ ngả (tường càng dọc càng ngả).
+  // Tường chéo ngả về phía làm mặt có sơn cao ra; tường gần dọc ngả ra xa giữa sân (lộ mặt hướng vào giữa sân)
+  function wallFrame(g, o) {
+    const [ax, ay, bx, by] = o.a < o.x ? [o.a, o.b, o.x, o.y] : [o.x, o.y, o.a, o.b];
+    const L = Math.hypot(bx - ax, by - ay) || 1, ux = (bx - ax) / L, uy = (by - ay) / L, f = g.field;
+    const sd = ux > 0.25 ? Math.sign(uy) : (ax + bx) / 2 >= f.cx ? 1 : -1;
+    return { ax, ay, L, ux, uy, nx: -uy, ny: ux, lean: sd * (0.14 + 0.42 * Math.abs(uy)) };
+  }
+  // 1 khúc [s0, s1] của tường (0 = đầu trái) — first / last: khúc đầu / cuối (vẽ mặt đầu tường)
+  function wallSlice(ctx, F, s0, s1, first, last, col, el, seed) {
+    const OUT = SP().OUT, rise = Math.min(1, el / 0.15), h = WH * rise * (2 - rise);
+    if (h < 0.5) return;
+    // điểm (s dọc tường, w ngang tường, z độ cao) -> toạ độ vẽ
+    const P = (s, w, z) => [F.ax + F.ux * s + F.nx * w + F.lean * z, F.ay + F.uy * s + F.ny * w - z];
+    const poly = (pts, fill) => { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (const q of pts) ctx.lineTo(q[0], q[1]); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); };
+    const edge = (a, b) => { ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); };
+    const e1 = last ? s1 : s1 + 0.6, hw = WT / 2;   // phủ lấn 0.6px sang khúc sau cho khỏi hở đường nối
+    // mặt hướng pháp tuyến (Nx, Ny) có thấy không (camera nhìn từ trên + phía dưới màn hình, lệch theo lean)
+    const seen = (Nx, Ny) => Ny - F.lean * Nx > 0.02;
+    // bóng đổ dưới chân
+    poly([P(s0, -hw, 0), P(e1, -hw, 0), P(e1, hw + 2, 0), P(s0, hw + 2, 0)].map(([x, y]) => [x + 2, y + 1]), 'rgba(0,0,0,0.3)');
+    const faces = [];
+    for (const w of [-hw, hw]) {
+      const N = Math.sign(w);
+      if (seen(F.nx * N, F.ny * N)) faces.push({ pts: [P(s0, w, 0), P(e1, w, 0), P(e1, w, h), P(s0, w, h)], w, long: true, front: F.ny * N > 0.5 });
+    }
+    if (first && seen(-F.ux, -F.uy)) faces.push({ pts: [P(0, -hw, 0), P(0, hw, 0), P(0, hw, h), P(0, -hw, h)] });
+    if (last && seen(F.ux, F.uy)) faces.push({ pts: [P(s1, -hw, 0), P(s1, hw, 0), P(s1, hw, h), P(s1, -hw, h)] });
+    for (const fc of faces) poly(fc.pts, fc.long ? (fc.front ? '#8e8a84' : '#7a766f') : '#67635d');
+    // sơn trên mặt dài nhìn thấy (sau khi dựng xong, phun dần từ đầu tường)
+    const paint = Math.min(1, (el - 0.15) / 0.3) * F.L;
+    if (rise >= 1 && paint > s0) {
+      const lt = light(col, 0.55), dk = dark(col, 0.35), a = seed * 1.7, pe = Math.min(e1, paint);
+      const zt = (s) => h - 4 - 1.6 * Math.sin(s * 0.33 + a), zb = (s) => 4 + 1.2 * Math.sin(s * 0.51 + a * 2);
+      const ss = [];
+      for (let s = s0; s < pe; s += 1) ss.push(s);
+      ss.push(pe);
+      for (const fc of faces) {
+        if (!fc.long || ss.length < 2) continue;
+        const w = fc.w;
+        poly(ss.map((s) => P(s, w, zt(s))).concat(ss.slice().reverse().map((s) => P(s, w, zb(s)))), col);
+        ctx.lineWidth = 1;
+        const line = (fz, c) => { ctx.strokeStyle = c; ctx.beginPath(); ss.forEach((s, j) => { const q = P(s, w, fz(s)); if (j) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }); ctx.stroke(); };
+        line((s) => zt(s) - 0.5, lt);
+        line((s) => zb(s) + 0.6, dk);
+        line((s) => (zt(s) + zb(s)) / 2 + 2 * Math.sin(s * 0.7 + a), '#ffffff');
+        // hạt sơn bắn lên trên + sơn chảy nhỏ giọt dài dần
+        for (let s = Math.ceil(s0); s < pe; s++) {
+          const k = (((s * 7 + seed * 3) % 5) + 5) % 5;
+          if (k === 2) { const q = P(s, w, zt(s) + 2); ctx.fillStyle = col; ctx.fillRect(Math.round(q[0]), Math.round(q[1]), 1, 1); }
+          if (k === 0) { const q0 = P(s, w, zb(s)), q1 = P(s, w, Math.max(0.5, zb(s) - Math.min(4, 1 + el * 2))); ctx.strokeStyle = dk; edge(q0, q1); }
+        }
+      }
+    }
+    // mặt trên (sáng) + viền ngoài: 2 mép dài của mặt trên, chân mặt dài, cạnh đứng + mặt trên ở 2 đầu tường
+    poly([P(s0, -hw, h), P(e1, -hw, h), P(e1, hw, h), P(s0, hw, h)], '#aca79e');
+    ctx.strokeStyle = OUT; ctx.lineWidth = 1;
+    edge(P(s0, -hw, h), P(e1, -hw, h)); edge(P(s0, hw, h), P(e1, hw, h));
+    for (const fc of faces) if (fc.long) edge(P(s0, fc.w, 0), P(e1, fc.w, 0));
+    for (const [s, on] of [[0, first], [s1, last]]) {
+      if (!on) continue;
+      edge(P(s, -hw, h), P(s, hw, h));
+      for (const w of [-hw, hw]) edge(P(s, w, 0), P(s, w, h));
     }
   }
 
@@ -212,7 +253,7 @@ window.SFC = window.SFC || {};
 
   const ModDraw = {
     kinds: { flock: 1, splatfall: 1, splat: 1, wind: 1, graffitiwarn: 1, graffiti: 1, lantern: 1, flames: 1, burn: 1, lassoswing: 1, lassofly: 1, tied: 1, fakeball: 1, dark: 1, tarot: 1, rabbit: 1, carrot: 1, carrotheld: 1, tophat: 1, zoomies: 1, mama: 1, chopaim: 1, chopstrike: 1, chopcarry: 1, inpot: 1, seawave: 1, surf: 1, devil: 1, flung: 1, legend: 1, lateaim: 1, fused: 1, fusetrail: 1, zapline: 1, card: 1,
-      stool: 1, stoolheld: 1, stoolthrow: 1, stoolfly: 1, lane: 1, moped: 1, vroom: 1, veil: 1, spot: 1, alarm: 1, owl: 1, owleyes: 1, gazelock: 1, owlbolt: 1, petrify: 1 },
+      stool: 1, stoolheld: 1, stoolthrow: 1, stoolfly: 1, lane: 1, moped: 1, vroom: 1, veil: 1, spot: 1, alarm: 1, owl: 1, owleyes: 1, gazelock: 1, owlbolt: 1, owlbeam: 1, petrify: 1, vault: 1 },
     // vật thể dài chia khúc để xếp chiều sâu từng khúc với cầu thủ (render/vfx.js props): tường graffiti = 1 tấm mỗi ~8px,
     // luôn xếp từ trái sang phải (cùng chiều sâu thì vẽ theo thứ tự này: tấm sau phủ mép tấm trước)
     parts(o) {
@@ -282,10 +323,28 @@ window.SFC = window.SFC || {};
           px(ctx, tx - 1, ty - 13 + wob, 3, 1, '#ffffff'); px(ctx, tx - 1, ty - 18 + wob, 3, 2, '#e8ecf5');
           break;
         }
-        case 'graffiti': {   // tường graffiti: dãy tấm bê tông phun sơn (panel), mỗi tấm xếp chiều sâu riêng (parts); không có part = vẽ cả dãy
-          const P = this.parts(o), flat = Math.abs(o.b - o.y) < Math.abs(o.a - o.x) * 0.3;
-          const one = (i) => panel(ctx, Math.round(P[i].x), Math.round(P[i].y), o.color, i, el, o.id, flat && i > 0);
-          if (part == null) { for (let i = 0; i < P.length; i++) one(i); break; }
+        case 'vault': {   // Billboard Kid nhảy parkour qua tường sơn (speed vault): bật lên cao b px, 1 tay chống xuống mép tường, chân co nghiêng người lướt qua,
+                          // đáp đất (sprite thật bị ẩn — VFX.hides). Vị trí = người (bám theo), x / y của prop = chỗ qua tường (chỉ để xếp chiều sâu)
+          const q = byId(g, o.a);
+          if (!q) break;
+          const k = Math.min(1, el / o.max), arc = Math.sin(Math.PI * k), lift = Math.round(o.b * arc), sd = Math.cos(q.facing) >= 0 ? 1 : -1;
+          const mid = k > 0.18 && k < 0.82;
+          ctx.globalAlpha = fade * 0.3; ellipse(ctx, x, y + 1, 6 - 2 * arc, 2.5 - arc, '#000000'); ctx.globalAlpha = fade;
+          // vệt gió sau lưng
+          for (let i = 0; i < 3; i++) px(ctx, x - sd * (8 + i * 3), y - lift - 14 + i * 4, 4 - i, 1, '#ffffff');
+          // tay chống (phía trước) duỗi xuống mép tường, tay kia giơ ra sau giữ thăng bằng
+          const plant = mid ? [sd * 2, 7] : [sd * 3, 3], back = mid ? [-sd * 4, -6] : [-sd * 3, 2];
+          ctx.save();
+          ctx.translate(x, y - lift - 10); ctx.rotate(sd * 0.5 * arc); ctx.translate(-x, -(y - 10));
+          SP().drawPlayer(ctx, Object.assign({}, q, { x, y, vx: 0, vy: 0, state: 'normal', atkType: null, charging: false, keeper: false,
+            celPose: { arms: sd > 0 ? [back, plant] : [plant, back], legs: mid ? 'cross' : null, run: !mid } }), g, 0.999);
+          ctx.restore();
+          break;
+        }
+        case 'graffiti': {   // tường graffiti: khối bê tông liền phun sơn (wallSlice), mỗi khúc xếp chiều sâu riêng (parts); không có part = vẽ cả bức
+          const F = wallFrame(g, o), n = this.parts(o).length;
+          const one = (i) => wallSlice(ctx, F, (F.L * i) / n, (F.L * (i + 1)) / n, i === 0, i === n - 1, o.color, el, o.id);
+          if (part == null) { for (let i = 0; i < n; i++) one(i); break; }
           one(part);
           break;
         }
@@ -972,7 +1031,7 @@ window.SFC = window.SFC || {};
             const e2 = ey.max - ey.t, warn = ey.a, len = ey.b, op0 = e2 < warn ? e2 / warn : e2 < warn + len ? 1 : Math.max(0, 1 - (e2 - warn - len) / 0.3);
             op = op0 * op0 * (3 - 2 * op0); full = e2 >= warn && e2 < warn + len;
           }
-          const mad = P.some((q) => (q.kind === 'gazelock' || q.kind === 'owlbolt') && q.t > 0);
+          const mad = P.some((q) => (q.kind === 'gazelock' || q.kind === 'owlbolt' || q.kind === 'owlbeam') && q.t > 0);
           if (op > 0) { ctx.globalAlpha = fade * 0.3 * op; ctx.fillStyle = '#0a0c1e'; ctx.fillRect(f.x, f.y, f.w, f.h); ctx.globalAlpha = fade; }
           const cx = Math.round(o.x), cy = Math.round(o.y - 13) + (op > 0 ? 0 : Math.round(Math.sin(t * 2) * 0.6));
           // thân + cánh khép (đậu trên mép khán đài), đầu, 2 chỏm tai, mỏ
@@ -1032,6 +1091,26 @@ window.SFC = window.SFC || {};
           ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = fade;
           SP().disc(ctx, Math.round(p0.x), Math.round(p0.y), 4, '#ffb0bc'); SP().disc(ctx, Math.round(p0.x), Math.round(p0.y), 2, '#ffffff');
           ellipse(ctx, Math.round(q.x), Math.round(q.y) + 1, 4 + 6 * kk, (4 + 6 * kk) * 0.45, 'rgba(255,61,90,0.35)');   // chỗ đạn sắp tới
+          break;
+        }
+        case 'owlbeam': {   // tia laser mắt cú: từ mắt (x, y - 13) thẳng qua người bị nhắm tới mép sân (a, b), xuyên qua mọi người.
+                            // Loé trắng lúc nổ, rung nhẹ, thu mảnh dần rồi tắt; tia lửa chạy dọc tia + vệt cháy dưới sân
+          const k2 = el / o.max, w = k2 < 0.08 ? 1.4 : 1 - 0.6 * Math.max(0, (k2 - 0.5) / 0.5), fl = 0.85 + 0.15 * Math.sin(t * 60);
+          const x0 = o.x, y0 = o.y - 13, x1 = o.a, y1 = o.b - 6;
+          ctx.globalAlpha = fade * 0.35; ctx.strokeStyle = '#000000'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.a, o.b); ctx.stroke();   // vệt cháy dưới sân
+          ctx.globalCompositeOperation = 'lighter';
+          for (const [lw, col, al] of [[9, o.color, 0.25], [5, o.color, 0.6], [2, '#ffd0d8', 0.9]]) {
+            ctx.globalAlpha = fade * al * fl; ctx.strokeStyle = col; ctx.lineWidth = Math.max(1, lw * w);
+            ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+          }
+          ctx.globalAlpha = fade; ctx.globalCompositeOperation = 'source-over';
+          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+          for (let i = 0; i < 6; i++) {
+            const u = (t * 2.2 + i / 6) % 1;
+            px(ctx, Math.round(x0 + (x1 - x0) * u) - 1, Math.round(y0 + (y1 - y0) * u) - 1 + ((i % 2) ? -2 : 2), 2, 2, i % 2 ? '#ffffff' : o.color);
+          }
           break;
         }
         case 'petrify': {   // hoá đá (OWL'S GAZE): 0.3 giây đầu đá lan từ chân lên đầu (phần chưa hoá vẽ sprite màu, không sao choáng),

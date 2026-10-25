@@ -440,6 +440,7 @@ SFC.I18n.add({
     'That key can\'t be used': 'Não é possível usar essa tecla',
     '↑↓←→ select · {ok} change key · {tabs} keyboard / controller · {back} back': '↑↓←→ selecionar · {ok} mudar tecla · {tabs} teclado / comando · {back} voltar',
     'Switch player': 'Trocar jogador',
+    'Finesse (+ Shoot)': 'Remate arco (+ Remate)',
 
     /* ===== Chữ bay trong trận (dịch lúc vẽ; tiếng tượng thanh giữ nguyên) ===== */
     'WOODWORK': 'NOS FERROS!',

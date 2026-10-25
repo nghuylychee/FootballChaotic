@@ -114,6 +114,7 @@ Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>'
 | `mod.hoo` | The giant owl starts opening its eyes (Night Owls) | Two low wobbly "hoo... hoo" |
 | `mod.spotted` | The owl's aim locks onto someone running | Shutter click + falling sting |
 | `mod.zap` | The owl fires its eye bolt | Falling laser "pew" |
+| `mod.beam` | The eye bolt bursts into a laser beam across the pitch (Night Owls) | Sharp crack + long buzzing hum |
 | `mod.fizzle` | The bolt is dodged | Short hiss |
 | `mod.petrify` | The bolt hits: turned to stone | Grinding crackle, then a heavy stone thud |
 | `mod.crumble` | The statue crumbles when it wears off | Rock crunch + falling pebbles |
@@ -124,6 +125,7 @@ Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>'
 | `mod.flop` | You step in a splat and fall flat (replaces `stat.slip` here) | Squeak, then a wet "SPLAT" + body thud |
 | `mod.wind` | Night wind gust starts (Sky Hoppers, THE STORM card) | Long rising-falling howl |
 | `mod.spray` | Spray wall starts (Billboard Kids) | Can rattle + hiss |
+| `mod.vault` | A Billboard Kid vaults over a spray wall | Hand slap on concrete + whoosh |
 | `mod.fall` | A lantern starts falling (Lantern Crew) | Falling whistle |
 | `mod.crash` | Lantern hits the ground | Low boom + paper crack |
 | `mod.ignite` | Player catches fire (Lantern Crew) | Whoosh up + crackles |

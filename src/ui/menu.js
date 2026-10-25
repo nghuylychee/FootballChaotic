@@ -664,7 +664,7 @@ window.SFC = window.SFC || {};
       if (p.type === 'controls') {
         const h = SFC.Input.helpSet();
         body += `<div class="help">
-          <div class="help-col"><h4>ATTACK</h4>${helpTable(h.attack)}</div>
+          <div class="help-col"><h4>ATTACK</h4>${helpTable(h.attack)}${h.advanced ? `<h4>ADVANCED</h4>${helpTable(h.advanced)}` : ''}</div>
           <div class="help-col"><h4>DEFENSE</h4>${helpTable(h.defense)}<h4>TEAMMATE ON THE BALL</h4>${helpTable(h.teammateHasBall)}</div>
           <div class="help-col"><h4>SYSTEM</h4>${helpTable(h.system)}</div>
         </div>`;

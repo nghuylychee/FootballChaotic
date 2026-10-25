@@ -18,6 +18,19 @@ window.SFC = window.SFC || {};
     return false;
   }
 
+  // điểm bóng có xoáy (cú cứa lòng, Ball.curve) cắt đường x = lineX: chạy thử từng bước 1/60s (tối đa 1.2s). null = không tới
+  function curveCross(b, lineX) {
+    const k = SFC_CONFIG.game.ball.groundFriction, dt = 1 / 60, ca = Math.cos(b.curve * dt), sa = Math.sin(b.curve * dt);
+    let x = b.x, y = b.y, vx = b.vx, vy = b.vy;
+    for (let i = 1; i <= 72; i++) {
+      const nx = vx * ca - vy * sa; vy = vx * sa + vy * ca; vx = nx;
+      x += vx * dt; y += vy * dt;
+      vx = U.damp(vx, k, dt); vy = U.damp(vy, k, dt);
+      if ((lineX - x) * (lineX - b.x) <= 0) return { y, t: i * dt };
+    }
+    return null;
+  }
+
   function nearest(list, pt, filter) {
     let best = null, bd = Infinity;
     for (const o of list) {
@@ -56,6 +69,8 @@ window.SFC = window.SFC || {};
           continue;
         }
         if (p.state !== 'normal') { stop(p); continue; }
+        // bị SÚT GIẢ lừa (Actions.fakeShot): khựng tại chỗ
+        if (p.ai.fakedT > 0) { p.ai.fakedT -= dt; stop(p); continue; }
         const own = g.ball.owner;
         if (!own) this.firstTime(g, p);
         if (own === p) this.carrier(dt, g, p);
@@ -484,11 +499,24 @@ window.SFC = window.SFC || {};
       let ty = U.clamp(f.cy + (b.y - f.cy) * 0.7, f.gTop + 3, f.gBot - 3);
       let sprint = false;
 
-      const incoming = !b.owner && b.vx * dir < -120;
+      const incoming = !b.owner && (b.vx * dir < -120 || (b.fx.chip && b.vx * dir < 0));   // sút bổng bay chậm vẫn tính là đang tới
       if (incoming) {
         const t = (lineX - b.x) / b.vx;
-        if (t > 0 && t < 1.2) {
-          const iy = U.clamp(b.y + b.vy * t, f.gTop - 8, f.gBot + 8);
+        // đọc cú sút (ai.keeper): mỗi cú bốc 1 lần độ trễ + sai số theo độ khó; chưa hết trễ thì đứng nguyên chỗ
+        const K = A().keeper, prof = g.aiProfile(p.team);
+        let gr = p.ai.gkRead;
+        if (!gr || gr.n !== b.kickN) {
+          const err = K.errBase + (1 - prof.shotAccuracy) * K.errMul;
+          gr = p.ai.gkRead = { n: b.kickN, y0: p.y, at: g.time + K.reactBase + prof.reaction * K.reactMul, err: U.rand(-err, err) };   // y0: chỗ đứng lúc thấy cú sút (độ vươn, Game.tryControl)
+        }
+        if (g.time < gr.at) { tx = p.x; ty = p.y; }
+        else if (b.fx.chip) { tx = p.x; ty = U.clamp(b.y + b.vy * Math.max(0, t), f.gTop, f.gBot); sprint = true; }   // bị lob: không kịp lùi về vạch, chỉ dịch ngang
+        else if (t > 0 && t < 1.2) {
+          let ry = b.y + b.vy * t;   // điểm bóng qua vạch thật -> đoán lệch theo tỉ lệ quãng phải đi
+          // cú cứa lòng (technique.finesse): đọc được đường cong theo shotAccuracy (Elo thấp đoán như bóng đi thẳng)
+          const cc = b.curve ? curveCross(b, lineX) : null;
+          if (cc) ry += (cc.y - ry) * U.clamp(prof.shotAccuracy * SFC_CONFIG.game.technique.finesseRead, 0, 1);
+          const iy = U.clamp(p.y + (ry - p.y) * (1 + gr.err), f.gTop - 8, f.gBot + 8);
           ty = iy; sprint = true;
           if (t < 0.35 && Math.abs(iy - p.y) > 8 && p.ai.t <= 0) {
             p.ai.t = 0.6;

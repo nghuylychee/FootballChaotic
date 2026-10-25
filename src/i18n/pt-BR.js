@@ -437,6 +437,7 @@ SFC.I18n.add({
     'That key can\'t be used': 'Não dá para usar essa tecla',
     '↑↓←→ select · {ok} change key · {tabs} keyboard / controller · {back} back': '↑↓←→ selecionar · {ok} trocar tecla · {tabs} teclado / controle · {back} voltar',
     'Switch player': 'Trocar jogador',
+    'Finesse (+ Shoot)': 'Chute colocado (+ Chute)',
 
     /* ===== Chữ bay trong trận (dịch lúc vẽ; tiếng tượng thanh giữ nguyên) ===== */
     'WOODWORK': 'NA TRAVE!',

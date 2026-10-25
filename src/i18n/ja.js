@@ -433,6 +433,7 @@ SFC.I18n.add({
     'That key can\'t be used': 'このキーは使えません',
     '↑↓←→ select · {ok} change key · {tabs} keyboard / controller · {back} back': '↑↓←→ 選択 · {ok} キー変更 · {tabs} キーボード / コントローラー · {back} 戻る',
     'Switch player': '操作キャラ切替',
+    'Finesse (+ Shoot)': '巻きシュート(+シュート)',
 
     /* ===== Chữ bay trong trận (dịch lúc vẽ; tiếng tượng thanh giữ nguyên) ===== */
     'WOODWORK': 'ポスト直撃！',

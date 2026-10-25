@@ -20,8 +20,8 @@ SFC_CONFIG.controls = {
     through: ['KeyW', 'Pad.Y'],    // Chọc khe           | ĐỌC CÚ SÚT (trong vòng cấm nhà: giữ, thả đúng lúc đối phương sút)
     lob:     ['KeyA', 'Pad.B'],    // Chuyền bổng        | HARD ATTACK (gồng rồi vung chân đá bay đối thủ)
     shoot:   ['KeyD', 'Pad.X'],    // Sút (giữ để nạp) · sân nhà + còn đối phương phía trước: phá bóng | LIGHT ATTACK (đấm)
-    skill:   ['KeyQ', 'Pad.RT'],   // Skill move / lướt né
-    switch:  ['KeyZ', 'Pad.LB'],   // Đổi cầu thủ
+    skill:   ['KeyQ', 'Pad.RT'],   // Skill move / lướt né · đang nạp sút: SÚT BỔNG · đang nạp chọc khe: CHỌC KHE BỔNG (game.technique)
+    switch:  ['KeyZ', 'Pad.LB'],   // giữ khi nạp sút: SÚT CỨA LÒNG (game.technique) · không cầm bóng: đổi cầu thủ (mọi trận hiện khoá 1 cầu thủ)
 
     pause:   ['Escape', 'KeyP', 'Pad.Start'],
     confirm: ['Enter', 'Space', 'Pad.A'],
@@ -45,9 +45,9 @@ SFC_CONFIG.controls = {
   // ĐỔI PHÍM (SETTINGS > CONTROLS, lưu ở Settings.binds): action trong trận người chơi tự gán, mỗi thiết bị 1 phím / nút.
   // Phím menu (confirm, back, tabPrev...) cố định. Tay cầm: di chuyển luôn là cần analog / D-pad
   remap: {
-    // switch (đổi người) tạm bỏ: mọi trận hiện khoá người chơi vào 1 cầu thủ, phím không làm gì (thêm lại vào 2 danh sách khi cần)
-    kb:  ['up', 'down', 'left', 'right', 'sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'ultimate'],
-    pad: ['sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'ultimate'],
+    // switch: phím cứa lòng (giữ + sút, game.technique) — đổi người không dùng vì mọi trận hiện khoá người chơi vào 1 cầu thủ
+    kb:  ['up', 'down', 'left', 'right', 'sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'switch', 'ultimate'],
+    pad: ['sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'switch', 'ultimate'],
     reserved: ['pause', 'mute'],   // phím của các action này không gán cho action khác được (vẫn dùng trong trận)
     // phím không cho gán: Ctrl / Alt / Meta (tổ hợp phím của trình duyệt, vd. Ctrl+W đóng tab), Tab, F1-F12, Esc
     blocked: /^(Control|Alt|Meta|OS|ContextMenu|Tab|CapsLock|Escape|F\d+$|NumLock|ScrollLock|Pause|PrintScreen)/,
@@ -76,6 +76,13 @@ SFC_CONFIG.controls = {
     teammateHasBall: [
       ['{pass} / {through}', 'Call for the ball (short/through)'],
       ['{shoot} / {lob}', 'Light / Hard attack still work'],
+    ],
+    // KỸ THUẬT NÂNG CAO (game.technique): chỉ liệt kê, không có bài hướng dẫn
+    advanced: [
+      ['{switch} + {shoot}', 'Finesse shot · curls into the corner'],
+      ['{shoot} (hold) + {skill}', 'Chip shot · beats a keeper off his line'],
+      ['{shoot} / {lob} (hold) + {pass}', 'Fake shot'],
+      ['{through} (hold) + {skill}', 'Lobbed through ball'],
     ],
     system: [
       ['{pick1} / {pick2} / {pick3}', 'Pick Core'],
@@ -107,6 +114,12 @@ SFC_CONFIG.controls = {
       ['{pass} / {through}', 'Call for the ball (short/through)'],
       ['{shoot} / {lob}', 'Light / Hard attack still work'],
     ],
+    advanced: [
+      ['{switch} + {shoot}', 'Finesse shot · curls into the corner'],
+      ['{shoot} (hold) + {skill}', 'Chip shot · beats a keeper off his line'],
+      ['{shoot} / {lob} (hold) + {pass}', 'Fake shot'],
+      ['{through} (hold) + {skill}', 'Lobbed through ball'],
+    ],
     system: [
       ['{move} + {confirm}', 'Pick Core'],
       // ['{reroll}', 'Reroll 3 Core cards (once per round)'],   // tạm bỏ đổi bài Core (cores.draft.rerollsPerRound = 0)
@@ -126,7 +139,7 @@ SFC_CONFIG.controls = {
     shoot:    { atk: 'Shoot', def: 'Light attack · punch' },
     skill:    { atk: 'Skill move', def: 'Dash' },
     ultimate: { atk: 'Ultimate' },
-    switch:   { atk: 'Switch player' },
+    switch:   { atk: 'Finesse (+ Shoot)' },
     pause:    { atk: 'Pause' },
     mute:     { atk: 'Mute / unmute' },
   },

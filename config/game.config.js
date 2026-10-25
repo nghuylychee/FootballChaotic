@@ -132,7 +132,7 @@ SFC_CONFIG.game = {
     gkStretchPenalty: 0.6,    // phạt tỉ lệ bắt bóng khi phải vươn người (bóng góc)
     gkSpeedFree: 340,         // bóng chậm hơn mức này: thủ môn bắt không bị phạt tốc độ (khớp với lực sút mặc định)
     gkSpeedPenalty: 700,      // mỗi (N px/s) vượt gkSpeedFree -> giảm 100% tỉ lệ bắt
-    gkParryShare: 0.6,        // khi bắt hụt: tỉ lệ đẩy được bóng ra, còn lại bóng lọt lưới
+    gkParryShare: 0.4,        // khi bắt hụt: tỉ lệ đẩy được bóng ra, còn lại bóng lọt lưới (0.6 -> 0.4, user 2026-10-25: thủ môn quá khó vượt)
     gkSpeedMult: 1.1,         // AI đứng trong vòng cấm nhà di chuyển nhanh hơn
     gkHoldProtect: 2.5,       // (s) bắt được bóng trong vòng cấm nhà -> miễn tắc/xoạc/va vai trong thời gian này (khi còn ở trong vòng cấm)
     gkDiveSpeed: 250,
@@ -256,7 +256,7 @@ SFC_CONFIG.game = {
 
   kick: {
     poseTime: 0.12,          // (s) giữ tư thế vung chân sút sau khi bóng rời chân (sút + phá bóng)
-    shotMinSpeed: 300,       // tốc độ bóng ứng với thanh lực 0% (đủ nhanh để chạm nhẹ vẫn có cú sút)
+    shotMinSpeed: 350,       // tốc độ bóng ứng với thanh lực 0% (300 -> 350, user 2026-10-25: cú sút nhẹ đi quá chậm)
     shotMaxSpeed: 460,
     chargeTime: 0.8,         // giây để đầy lực
     // Thanh lực bắt đầu từ mức nhỏ theo khoảng cách tới khung thành (gần -> shotBaseNear, xa -> shotBaseFar),
@@ -267,9 +267,9 @@ SFC_CONFIG.game = {
     shotBaseFarDist: 240,
     // Chạm nhẹ D (người chơi điều khiển): bóng chậm hơn mức đầu thanh lực, theo chỉ số SHOOTING (stats.power).
     // Giữ thêm tới shotTapWindow thì tăng dần về lực của thanh (giữ lâu hơn: y như cũ; AI không bị ảnh hưởng).
-    // Chạm nhẹ ~ SHO 60: 176 · 70: 198 · 80: 220 · 90: 242 · 99: 262 px/s (lăn tối đa ~170–250px, thủ môn bắt dễ)
-    // Đầu thanh cũ (lực mặc định ~0.1) ~ SHO 60: 237 · 80: 316 · 99: 391 · đầy lực ~ 60: 345 · 80: 460 · 99: 570
-    shotTapSpeed: 220,       // (px/s) chạm nhẹ ở SHOOTING 80 (hệ số 1.0)
+    // Chạm nhẹ ~ SHO 60: 216 · 70: 243 · 80: 270 · 90: 297 · 99: 322 px/s
+    // Đầu thanh (lực mặc định ~0.1) ~ SHO 60: 271 · 80: 361 · 99: 448 · đầy lực ~ 60: 345 · 80: 460 · 99: 570
+    shotTapSpeed: 270,       // (px/s) chạm nhẹ ở SHOOTING 80 (hệ số 1.0) — 220 -> 270 (2026-10-25)
     shotTapScale: 0.8,       // tốc độ chạm nhẹ đổi theo chỉ số: x (1 + (power − 1) x mức này)
     shotTapWindow: 0.25,     // (0..1 phần thanh đã giữ) 0 = chạm nhẹ, từ mức này trở lên = lực của thanh; 0 = tắt
     maxOvercharge: 1.25,     // giữ quá lâu -> bóng bay cao, lệch
@@ -289,6 +289,29 @@ SFC_CONFIG.game = {
     clearLift: 120,          // vz ban đầu -> bay ~0.57s, chạm đất ở ~155px, lăn tổng ~340px
     clearAngle: 0.8,         // ↑/↓ lệch góc phá bóng tối đa (~39°)
     clearSpread: 0.2,        // rad sai số ngẫu nhiên
+  },
+
+  // KỸ THUẬT NÂNG CAO (user 2026-10-25, cho người chơi hardcore, không có bài hướng dẫn) — tổ hợp phím lúc đang nạp (Human.update):
+  //   switch + shoot = SÚT CỨA LÒNG · shoot rồi bấm skill = SÚT BỔNG (chip) · đang nạp sút / chuyền bổng bấm pass = SÚT GIẢ ·
+  //   đang nạp chọc khe bấm skill = CHỌC KHE BỔNG. AI không tự dùng, chỉ phản ứng (bị lừa sút giả, thủ môn bị lob)
+  technique: {
+    // cứa lòng: tốc độ x speed, sai số x spread; bóng xuất phát chệch ra ngoài bend/2 rad rồi cong vào (tổng cong bend rad tới vạch vôi)
+    finesse: { speed: 0.84, spread: 0.5, bend: 1.0 },   // bend 0.55 -> 1.0 (user 2026-10-25: xoáy chưa đủ)
+    // sút bổng: bay timeMin..timeMax s theo khoảng cách (nạp đầy: nhanh hơn x(1 − quick)), rơi tới điểm sau vạch vôi depth px ở độ cao landZ (xà = field.goalHeight),
+    // sai số x spread. Thủ môn đứng cách vạch vôi quá offLine px mà bóng đã bay qua đầu (nằm sau lưng): chỉ với được bóng thấp hơn behindCatchZ
+    // (thủ môn bám vạch vẫn bắt được — sút bổng để trị thủ môn lao ra)
+    // (user 2026-10-25: bóng phải vồng thật cao — bay 1.25..1.6s, đỉnh ~90..145px)
+    chip: { timeMin: 1.25, timeMax: 1.6, quick: 0.2, landZ: 20, depth: 0, spread: 1.6, behindCatchZ: 9, offLine: 18 },
+    // thủ môn AI đọc đường cong của cú cứa lòng theo shotAccuracy (Elo): 0 = đoán như bóng đi thẳng, 1 = đoán đúng đường cong
+    finesseRead: 1,
+    // sút giả: đối thủ AI trong range px phía trước khựng freeze s (mỗi người miễn nhiễm immune s); thủ môn AI đổ người theo hướng giả
+    // với xác suất biteBase − shotAccuracy x biteAcc (Elo thấp dễ bị lừa). Hồi cooldown s.
+    // Diễn: gồng windup s (đứng, bóng dưới chân) -> vung chân (đối thủ cắn câu lúc này) -> lướt nhẹ glideTime s với glideSpeed px/s
+    // theo hướng phím (không giữ phím: bước ngang tránh người đứng gần nhất), bóng dính chân
+    fake: { range: 85, freeze: 0.45, immune: 1.5, cooldown: 0.8, biteBase: 1.1, biteAcc: 0.6, windup: 0.12, swing: 0.14, glideTime: 0.2, glideSpeed: 190 },
+    // chọc khe bổng: điểm rơi = điểm chọc khe thường + lead px (âm = nông hơn: bóng bổng bay lâu, người nhận cần kịp tới), bay timeMin..timeMax s
+    // theo khoảng cách (cao hơn chuyền bổng thường pass.lobTimeMin..Max — user 2026-10-25: phải vồng cao qua đầu)
+    lobThrough: { lead: -15, timeMin: 0.9, timeMax: 1.3 },
   },
 
   // DỨT ĐIỂM 1 CHẠM (Actions.firstTime): bóng đang tới mình (đường chuyền nhắm mình / bóng lỏng lăn về phía mình) -> giữ D để
@@ -409,6 +432,12 @@ SFC_CONFIG.game = {
     passPressure: 34,
     dribbleAvoid: 42,
     gkHoldTime: 0.6,
+    // THỦ MÔN AI đọc cú sút (user 2026-10-25: trước đây đoán đúng tuyệt đối điểm bóng qua vạch -> chạm mọi cú sút, sút góc vô nghĩa).
+    // Mỗi cú sút: chờ (reactBase + reaction × reactMul) giây mới bắt đầu chạy theo; đoán quãng phải di chuyển lệch ±(errBase + (1 − shotAccuracy) × errMul)
+    // (tỉ lệ: sút thẳng vào người thì gần như không lệch, sút góc mới dễ đoán hụt — đổ người quá đà / chưa tới).
+    // reaction / shotAccuracy lấy từ độ khó AI (Main Path / Story: theo Elo đối thủ) -> Elo thấp chậm + đoán lệch nhiều, Elo cao gần chuẩn
+    // stretchMove: lao ngang chừng này px để bắt = vươn tối đa (player.gkStretchPenalty) -> cú sút góc khó bắt kể cả khi đọc đúng
+    keeper: { reactBase: 0, reactMul: 0.15, errBase: 0.05, errMul: 0.25, stretchMove: 140 },
     supportAhead: 70,
     restDefenseFrom: 0.5,     // đồng đội cầm bóng vượt mốc này (tỉ lệ sân, 0.5 = giữa sân) -> người còn lại lùi chốt phía sau
     restDefenseDist: 110,     //   đứng sau người cầm bóng bao xa (px)

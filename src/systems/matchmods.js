@@ -446,16 +446,18 @@ window.SFC = window.SFC || {};
    * rồi mở hẳn open giây (prop 'owleyes' a = warn, b = open: con cú đọc prop này để vẽ mắt). Lúc mắt mở hẳn:
    *   - ai bên bạn đang CHẠY (đè phím chạy nhanh, hoặc đang lướt) bị tia ngắm khoá (prop 'gazelock': tia đỏ + vòng ngắm co dần);
    *     đứng lại / đi bộ là tia nhả ra. Chạy tiếp đủ lockT giây -> mắt cú bắn 1 viên đạn sáng (prop 'owlbolt') đuổi theo người đó, bay boltT giây;
-   *   - lướt (Z) đúng lúc đạn tới là né được (Actions.dodged); trúng = HOÁ ĐÁ stone giây (user 2026-10-22, thay đóng băng): đá lan từ chân lên
-   *     thành tượng (prop 'petrify'), đứng chôn chân + rơi bóng, hết giờ tượng nứt rồi vỡ vụn. Mỗi người bị bắn tối đa 1 lần mỗi lượt mắt mở.
+   *   - đạn tới nơi nổ thành TIA LASER thẳng từ mắt cú qua chỗ người đó tới mép sân, đứng beamT giây (prop 'owlbeam'). Tia xuyên qua mọi người
+   *     (user 2026-10-25): ai bên bạn chạm tia (người bị nhắm, người đứng chắn giữa đường, người chạy vào sau) đều trúng;
+   *   - lướt (Z) đúng lúc chạm tia là né được (Actions.dodged); trúng = HOÁ ĐÁ stone giây (user 2026-10-22, thay đóng băng): đá lan từ chân lên
+   *     thành tượng (prop 'petrify'), đứng chôn chân + rơi bóng, hết giờ tượng nứt rồi vỡ vụn. Mỗi người bị khoá + bắn tối đa 1 lần mỗi lượt mắt mở.
    * Đi bộ / đứng im / sút / chuyền / đấm tại chỗ đều được; chuyển động do Core / Tuyệt kỹ (state recover) không tính. Ai phạm luật người đó chịu —
    * kể cả đồng đội AI (mỗi lượt, mỗi AI tuân luật với xác suất aiObey: đi bộ suốt lúc đó). Owls đi lại thoải mái nhưng không ra đòn / sút / chuyền
    * lúc mắt mở (noActT). Họ bị dẫn: mắt mở thường hơn (trailing) và lâu hơn (x trailOpen) */
   K.owlgaze = {
-    create(g, M, c) { M.next = c.first; M.gaze = null; M.bolts = []; M.stone = []; },
+    create(g, M, c) { M.next = c.first; M.gaze = null; M.bolts = []; M.beams = []; M.stone = []; },
     kickoff(g, M, c) {
-      // clearHazards vừa xoá hết vật thể: đặt lại con cú, bỏ lượt mắt mở / đạn / tượng đá đang dở
-      M.gaze = null; M.bolts = []; M.stone = [];
+      // clearHazards vừa xoá hết vật thể: đặt lại con cú, bỏ lượt mắt mở / đạn / tia / tượng đá đang dở
+      M.gaze = null; M.bolts = []; M.beams = []; M.stone = [];
       g.effects.prop(newId(g), 'owl', g.field.cx, g.field.y, 0, 0, 99999, c.color);
     },
     start(g, M, c) {
@@ -482,11 +484,33 @@ window.SFC = window.SFC || {};
       E.pop(f.cx, f.y + 14, 'HOOT!', 'heavy', '#ff3d5a');
       g.sfx('ult', 'mod.zap');
     },
-    // đạn tới nơi: lướt đúng lúc = né, không thì hoá đá
+    // đạn tới nơi: nổ thành tia laser từ mắt cú (giữa mép trên sân) qua chỗ người bị nhắm, kéo dài tới mép sân
     land(g, M, c, b) {
-      const E = g.effects, o = b.p;
+      const E = g.effects, o = b.p, f = g.field, x0 = f.cx, y0 = f.y, d = U.norm(o.x - x0, Math.max(1, o.y - y0));
       E.propOff(b.id, 0.02);
-      if (!grounded(o) || Act().dodged(g, o)) { E.burst(o.x, o.y - 10, 6, '#ff3d5a', 10, 90, 0.4); g.sfx('ult', 'mod.fizzle'); return; }
+      let s = (f.y + f.h - y0) / d.y;
+      if (Math.abs(d.x) > 0.01) s = Math.min(s, ((d.x > 0 ? f.x + f.w : f.x) - x0) / d.x);
+      const B = { x0, y0, x1: x0 + d.x * s, y1: y0 + d.y * s, t: 0, id: newId(g), done: new Set() };
+      M.beams.push(B);
+      E.prop(B.id, 'owlbeam', B.x0, B.y0, B.x1, B.y1, c.beamT, '#ff3d5a');
+      E.burst(o.x, o.y - 10, 8, '#ff3d5a', 12, 110, 0.4);
+      E.shake(SFC_CONFIG.game.fx.shakeHit);
+      g.sfx('ult', 'mod.beam');
+      this.beam(g, M, c, B);
+    },
+    // tia đang đứng: ai bên bạn chạm tia (xét 1 lần mỗi người mỗi tia) -> lướt đúng lúc = né, không thì hoá đá. Tia không bị ai chắn
+    beam(g, M, c, B) {
+      for (const o of victims(g)) {
+        if (B.done.has(o.id) || !grounded(o) || U.segDist(o.x, o.y, B.x0, B.y0, B.x1, B.y1) > c.beamR + o.radius * 0.5) continue;
+        B.done.add(o.id);
+        if (M.stone.some((I) => I.p === o)) continue;
+        if (Act().dodged(g, o)) { g.effects.burst(o.x, o.y - 10, 6, '#ff3d5a', 10, 90, 0.4); g.sfx('ult', 'mod.fizzle'); continue; }
+        this.petrify(g, M, c, o);
+      }
+    },
+    // hoá đá người o
+    petrify(g, M, c, o) {
+      const E = g.effects;
       if (o.state === 'stun' || o.state === 'dash') { o.state = 'normal'; o.stateT = 0; }
       o.hitImmune = 0;
       if (!o.hit({ stun: c.stone, kbx: 0, kby: 0, type: 'hard', quiet: true })) return;
@@ -517,8 +541,9 @@ window.SFC = window.SFC || {};
         E.burst(o.x, o.y - 4, 2, '#c7ccd6', 12, 80, 0.6);
         g.sfx('ult', 'mod.crumble');
       }
-      // đạn đang bay (vẫn bay tiếp kể cả khi mắt đã nhắm)
+      // đạn đang bay + tia laser đang đứng (vẫn tiếp tục kể cả khi mắt đã nhắm)
       for (const b of M.bolts.slice()) if ((b.t += dt) >= c.boltT) { M.bolts.splice(M.bolts.indexOf(b), 1); this.land(g, M, c, b); }
+      for (const B of M.beams.slice()) { if ((B.t += dt) >= c.beamT) M.beams.splice(M.beams.indexOf(B), 1); else this.beam(g, M, c, B); }
       const G = M.gaze;
       if (!G) { if (every(g, M, c, dt)) this.start(g, M, c); return; }
       G.t += dt;
@@ -653,13 +678,51 @@ window.SFC = window.SFC || {};
   };
 
   /* Billboard Kids — TƯỜNG GRAFFITI: phun sơn 1 bức tường chắn ngang giữa bóng và khung thành bạn đang tấn công (báo trước warn giây),
-   * tường chặn bóng + chặn đội bạn trong life giây. Billboard Kids đi xuyên (họ biết lối) */
+   * tường chặn bóng + chặn đội bạn trong life giây. Billboard Kids chạy tới tường thì nhảy parkour qua (user 2026-10-25, thay đi xuyên):
+   * bật lên cao vaultH px, 1 tay chống mép tường, co chân lướt qua, đáp xuống phía bên kia sau vaultT giây (prop 'vault' vẽ người thay sprite);
+   * đang dẫn bóng thì bóng nảy qua tường cùng người */
   K.graffiti = {
-    create(g, M, c) { M.next = c.first; M.walls = []; },
-    kickoff(g, M) { M.walls = []; },
+    create(g, M, c) { M.next = c.first; M.walls = []; M.vaults = []; },
+    kickoff(g, M) {
+      for (const V of M.vaults) g.effects.propOff(V.id, 0.01);
+      M.walls = []; M.vaults = [];
+    },
     clock(g, M, c, dt) { for (const w of M.walls) w.t += dt; },
+    // điểm gần nhất trên đoạn tường w
+    close(w, x, y) {
+      const vx = w.x1 - w.x0, vy = w.y1 - w.y0, k = U.clamp(((x - w.x0) * vx + (y - w.y0) * vy) / (vx * vx + vy * vy), 0, 1);
+      return { x: w.x0 + vx * k, y: w.y0 + vy * k };
+    },
+    // Billboard Kid p chạy sát tường w -> bật nhảy qua: từ chỗ đứng sang điểm đối xứng bên kia tường
+    vault(g, M, c, p, w) {
+      const q = this.close(w, p.x, p.y), dx = q.x - p.x, dy = q.y - p.y, dd = Math.hypot(dx, dy);
+      const d = dd > 0.5 ? { x: dx / dd, y: dy / dd } : U.norm(p.vx, p.vy);
+      const id = newId(g), x1 = q.x + d.x * (p.radius + 5), y1 = q.y + d.y * (p.radius + 5);
+      M.vaults.push({ p, x0: p.x, y0: p.y, x1, y1, t: 0, id });
+      // prop: x = chỗ qua tường · y = chân tường gần camera nhất (giữa cú nhảy vẽ trước cả bức tường) · a = người · b = độ cao bật
+      g.effects.prop(id, 'vault', q.x, Math.max(w.y0, w.y1), p.id, c.vaultH, c.vaultT, w.col);
+      g.effects.burst(p.x, p.y, 2, '#c7ccd6', 5, 50, 0.3);
+      g.sfx('ult', 'mod.vault');
+    },
     update(g, M, c, dt) {
       const E = g.effects, f = g.field, b = g.ball;
+      // người đang nhảy qua tường: bay theo đường thẳng từ chỗ bật tới chỗ đáp, không ra đòn / sút / chuyền giữa chừng
+      for (const V of M.vaults.slice()) {
+        const p = V.p;
+        if (p.state === 'stun' || g.state !== 'play') { M.vaults.splice(M.vaults.indexOf(V), 1); E.propOff(V.id, 0.05); continue; }
+        V.t += dt;
+        const k = Math.min(1, V.t / c.vaultT);
+        p.x = V.x0 + (V.x1 - V.x0) * k; p.y = V.y0 + (V.y1 - V.y0) * k;
+        p.vx = (V.x1 - V.x0) / c.vaultT; p.vy = (V.y1 - V.y0) / c.vaultT;
+        p.noActT = Math.max(p.noActT || 0, 0.05);
+        if (b.owner === p) {
+          const a = Math.atan2(p.vy, p.vx), off = SFC_CONFIG.game.ball.dribbleOffset;
+          b.x = p.x + Math.cos(a) * off; b.y = p.y + Math.sin(a) * off * 0.85 + 1; b.z = c.vaultH * Math.sin(Math.PI * k) + 4;
+        }
+        if (k < 1) continue;
+        M.vaults.splice(M.vaults.indexOf(V), 1);
+        E.burst(p.x, p.y, 2, '#c7ccd6', 6, 60, 0.35);
+      }
       if (every(g, M, c, dt)) {
         const goal = g.attackGoal(1 - M.team), d = U.norm(goal.x - b.x, goal.y - b.y);
         const cx = U.clamp(b.x + d.x * c.ahead, f.x + 30, f.x + f.w - 30), cy = U.clamp(b.y + d.y * c.ahead, f.y + 20, f.y + f.h - 20);
@@ -673,11 +736,13 @@ window.SFC = window.SFC || {};
         if (w.t < 0) continue;
         if (!w.on) { w.on = true; w.id = newId(g); E.prop(w.id, 'graffiti', w.x0, w.y0, w.x1, w.y1, c.life, w.col); bark(g, 'mod'); }
         if (w.t >= c.life) { M.walls.splice(M.walls.indexOf(w), 1); continue; }
-        // điểm gần nhất trên đoạn tường
-        const close = (x, y) => {
-          const vx = w.x1 - w.x0, vy = w.y1 - w.y0, k = U.clamp(((x - w.x0) * vx + (y - w.y0) * vy) / (vx * vx + vy * vy), 0, 1);
-          return { x: w.x0 + vx * k, y: w.y0 + vy * k };
-        };
+        const close = (x, y) => this.close(w, x, y);
+        // Billboard Kids chạy về phía tường, sát tường -> nhảy parkour qua
+        for (const p of g.teams[M.team].players) {
+          if (!grounded(p) || (p.state !== 'normal' && p.state !== 'dash') || M.vaults.some((V) => V.p === p)) continue;
+          const q = close(p.x, p.y), dx = q.x - p.x, dy = q.y - p.y, dd = Math.hypot(dx, dy);
+          if (dd < p.radius + 3 && (dd < 0.5 || (p.vx * dx + p.vy * dy) / dd > 25)) this.vault(g, M, c, p, w);
+        }
         for (const o of victims(g)) {
           if (!grounded(o)) continue;
           const q = close(o.x, o.y), dx = o.x - q.x, dy = o.y - q.y, dd = Math.hypot(dx, dy), min = o.radius + 3;

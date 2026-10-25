@@ -436,6 +436,7 @@ SFC.I18n.add({
     'That key can\'t be used': 'No se puede usar esa tecla',
     '↑↓←→ select · {ok} change key · {tabs} keyboard / controller · {back} back': '↑↓←→ elegir · {ok} cambiar tecla · {tabs} teclado / mando · {back} volver',
     'Switch player': 'Cambiar jugador',
+    'Finesse (+ Shoot)': 'Rosca (+ Tiro)',
 
     /* ===== Chữ bay trong trận (dịch lúc vẽ; tiếng tượng thanh giữ nguyên) ===== */
     'WOODWORK': '¡AL PALO!',

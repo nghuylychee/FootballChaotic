@@ -5,7 +5,7 @@
  * Thưởng: gold mỗi trận thắng (reward.gold[vòng]) + costume khi vô địch lần đầu (reward.item) + sao thử thách (stars) + thành tích.
  *
  * Mỗi Story: { id, name, blurb, cover (id sân làm ảnh bìa), color, rounds[4], fillers, rival, reward, stars, intro, outro }
- *   rounds[i]: { team (id trong teams.list), arena, elo (độ khó AI = MainPath.aiProfile(elo), cả đồng đội AI của bạn),
+ *   rounds[i]: { team (id trong teams.list), arena, elo (độ khó AI = MainPath.aiProfile(elo), cả đồng đội AI của bạn; chỉ số đồng đội AI theo đội này: mateStats),
  *                signature (Core đặc trưng đội AI chắc chắn cầm), before / after: hội thoại trước trận / sau khi thắng,
  *                mod: id luật trận (mods bên dưới) · score: [bạn, đối thủ] tỉ số lúc giao bóng · barks: câu nói trong trận của đối thủ
  *                { kickoff, goal (họ ghi), conceded (bạn ghi), mod (luật vừa ra tay) } — chữ ngắn, hiện thành bong bóng thoại }
@@ -31,6 +31,9 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.stories = {
   roundNames: ['ROUND OF 16', 'QUARTER-FINAL', 'SEMI-FINAL', 'FINAL'],
+  // ĐỒNG ĐỘI AI theo trình đối thủ (user 2026-10-25): AI đồng đội đã dùng cùng độ khó với đối thủ (aiProfile(elo)); chỉ số của họ
+  // = chỉ số đội đối thủ vòng đó (teams.list[đội].stats, chép từng chỉ số), kẹp trong [min, max]. Character của người chơi không đổi
+  mateStats: { min: 0.85, max: 1.3 },
   host: 'ANNOUNCER',   // tên người nói của lời thoại who: 'host'
 
   /* LUẬT TRẬN (src/systems/matchmods.js, docs/FOOTBALL_STORY.md mục "Luật trận"): vòng nào có rounds[i].mod = id thì trận đó chạy luật đó.
@@ -83,10 +86,10 @@ SFC_CONFIG.stories = {
       first: 5, every: [7, 10], trailing: 1.3, warn: 1.2, len: 3.5, ballPush: 150, push: 28, boost: 1.25,
     },
     // Billboard Kids: tường sơn dài len px, đặt cách bóng ahead px về phía khung thành bạn đang tấn công, báo trước warn giây, đứng life giây.
-    // Chặn đội bạn + bóng thấp (lốp bóng qua được); Billboard Kids đi xuyên
+    // Chặn đội bạn + bóng thấp (lốp bóng qua được); Billboard Kids chạy tới thì nhảy parkour qua: bật cao vaultH px, đáp bên kia sau vaultT giây
     graffiti: {
       name: 'SPRAY WALLS', hint: 'Paint walls block your way to goal, lift the ball over them',
-      first: 4, every: [5, 8], trailing: 1.5, ahead: 70, len: 64, warn: 0.9, life: 5,
+      first: 4, every: [5, 8], trailing: 1.5, ahead: 70, len: 64, warn: 0.9, life: 5, vaultT: 0.42, vaultH: 22,
       colors: ['#9dff3d', '#ff3fb4', '#3ff6ff', '#ffd23f'],
     },
     // Lantern Crew: đèn lồng rơi quanh chỗ bóng sắp tới (spread px), bóng đổ to dần warn giây, đập xuống thành đốm lửa (bán kính fireR) cháy fireLife giây.
@@ -176,11 +179,12 @@ SFC_CONFIG.stories = {
     },
     // Night Owls (user 2026-10-22, thay SEARCHLIGHT): con cú khổng lồ trên khán đài cả trận, bình thường nhắm mắt. "HOO..." rồi mắt mở dần warn giây (báo trước),
     // mở hẳn open giây: ai bên bạn đang chạy nhanh (đè phím chạy) / lướt bị tia ngắm khoá, đứng lại / đi bộ thì nhả. Chạy tiếp đủ lockT giây -> bắn đạn
-    // bay boltT giây đuổi theo, lướt đúng lúc là né; trúng = hoá đá stone giây (đứng chôn chân + rơi bóng). Core / Tuyệt kỹ không tính.
+    // bay boltT giây đuổi theo, tới nơi nổ thành tia laser từ mắt cú qua người đó tới mép sân, đứng beamT giây, xuyên qua mọi người (user 2026-10-25):
+    // ai bên bạn chạm tia (trong beamR px) đều trúng, lướt đúng lúc là né; trúng = hoá đá stone giây (đứng chôn chân + rơi bóng). Core / Tuyệt kỹ không tính.
     // Đồng đội AI tuân luật với xác suất aiObey mỗi lần. Owls không ra đòn / sút / chuyền lúc mắt mở. Bị dẫn: mở thường hơn (trailing) + lâu hơn (x trailOpen)
     owlgaze: {
       name: "OWL'S GAZE", hint: 'When the owl opens its eyes, stop running or turn to stone',
-      first: 6, every: [7, 10], trailing: 1.4, warn: 1.0, open: 2.4, trailOpen: 1.35, lockT: 0.8, boltT: 0.45, stone: 1.5, aiObey: 0.85, color: '#ffd23f',
+      first: 6, every: [7, 10], trailing: 1.4, warn: 1.0, open: 3.6, trailOpen: 1.35, lockT: 0.8, boltT: 0.45, beamT: 0.8, beamR: 6, stone: 1.5, aiObey: 0.85, color: '#ffd23f',
     },
     // (chưa dùng, để dành cho Story sau) đèn pha quét sân (đường Lissajous). Đội bạn cầm bóng trong đèn catchT giây -> FREEZE: choáng + rơi bóng, đèn dừng pause giây.
     // Lướt né được. Wardens bị dẫn: bật thêm 1 đèn (LOCKDOWN)

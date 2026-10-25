@@ -70,6 +70,9 @@ window.SFC = window.SFC || {};
       this.ot = null;
       this.shotTarget = 0;    // AI đang nạp lực: mức lực sẽ sút (0..1) — vạch trên thanh lực để người chơi căn Đọc Cú Sút; 0 = không có
       this.passMode = null;   // đang nạp lực chuyền: ground | through | lob
+      this.passLoft = false;  // kỹ thuật: đang nạp chọc khe mà bấm skill -> chọc khe bổng (game.technique.lobThrough)
+      this.shotStyle = null;  // kỹ thuật: kiểu cú sút đang nạp: finesse (cứa lòng) | chip (sút bổng) | null (game.technique)
+      this.fakeCd = 0;        // hồi sút giả (giây)
       this.passCharge = 0;
       this.passKey = null;
       this.passLock = null;   // người nhận đang được chọn
@@ -143,6 +146,7 @@ window.SFC = window.SFC || {};
         this.buffs = this.buffs.filter((b) => b.t > 0);
       }
       if (this.confused) { this.confused.t -= dt; if (this.confused.t <= 0) this.confused = null; }
+      if (this.fakeCd > 0) this.fakeCd -= dt;
       if (this.noActT > 0) this.noActT = Math.max(0, this.noActT - dt);
       if (this.panicT > 0) this.panicT = Math.max(0, this.panicT - dt);
       if (this.chickenT > 0) this.chickenT = Math.max(0, this.chickenT - dt);
@@ -339,6 +343,7 @@ window.SFC = window.SFC || {};
 
     cancelPass() {
       this.passMode = null;
+      this.passLoft = false;
       this.passCharge = 0;
       this.passBase = 0;
       this.passKey = null;
