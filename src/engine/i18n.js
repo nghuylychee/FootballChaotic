@@ -152,17 +152,14 @@ window.SFC = window.SFC || {};
       }
     },
 
-    // ngôn ngữ đoán theo máy: Steam (ngôn ngữ đặt cho game, bỏ qua 'english' vì game chưa khai báo ngôn ngữ khác trên
-    // Steamworks thì Steam luôn trả english) -> hệ điều hành (bản desktop) -> trình duyệt. Không khớp -> English
+    // ngôn ngữ đoán theo máy: nền tảng (Steam: ngôn ngữ đặt cho game, SFC.Platform.gameLanguage; bỏ qua 'english' vì game chưa
+    // khai báo ngôn ngữ khác trên Steamworks thì Steam luôn trả english) -> máy (SFC.Target.languages: hệ điều hành / trình duyệt).
+    // Không khớp -> English
     detect() {
       const pick = (p) => p && p.id;
-      try {
-        const apps = window.SFC_STEAM && window.SFC_STEAM.client && window.SFC_STEAM.client.apps;
-        const st = apps && typeof apps.currentGameLanguage === 'function' && apps.currentGameLanguage();
-        if (st && st !== 'english') { const p = packs.find((x) => (x.steam || []).includes(st)); if (p) return pick(p); }
-      } catch (e) { /* Steam chưa chạy */ }
-      // bản desktop: navigator.languages bị khoá theo electronLanguages (package.json) -> lấy danh sách của hệ điều hành qua preload
-      const prefs = [].concat((window.SFC_DESKTOP && window.SFC_DESKTOP.languages) || [], navigator.languages || [navigator.language]);
+      const st = SFC.Platform && SFC.Platform.gameLanguage();
+      if (st && st !== 'english') { const p = packs.find((x) => (x.steam || []).includes(st)); if (p) return pick(p); }
+      const prefs = SFC.Target ? SFC.Target.languages() : [].concat(navigator.languages || [navigator.language]);
       for (const tag of prefs) {
         const id = this.match(tag);
         if (id) return id;
@@ -188,9 +185,9 @@ window.SFC = window.SFC || {};
       }
       const saved = SFC.Settings.lang;
       if (saved && byId[saved]) { this.set(saved); return true; }
-      // cửa hàng báo ngôn ngữ (CrazyGames: systemInfo.locale) và game có gói đó -> dùng luôn, không hỏi, không lưu
+      // nền tảng báo ngôn ngữ (CrazyGames: systemInfo.locale) và game có gói đó -> dùng luôn, không hỏi, không lưu
       // (lần sau vẫn theo cửa hàng). Không báo / không có gói -> popup chọn ngôn ngữ như thường
-      const store = SFC.Store && this.match(SFC.Store.locale());
+      const store = SFC.Platform && this.match(SFC.Platform.locale());
       if (store) { this.set(store); return true; }
       this.set(this.detect());
       return false;

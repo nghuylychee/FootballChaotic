@@ -20,6 +20,10 @@ SFC.Input = {
   deviceRev: 0,     // tăng mỗi lần đổi thiết bị -> UI vẽ lại nhãn
 
   init(bindings) {
+    // phím cửa hàng cấm (Platform.restrictedKeys, vd. CrazyGames: Escape): gỡ khỏi mọi action, sửa thẳng config ->
+    // SFC_CONFIG.controls.bindings vẫn là phím đang dùng
+    const cut = (SFC.Platform && SFC.Platform.restrictedKeys) || [];
+    for (const a in bindings) bindings[a] = bindings[a].filter((code) => !cut.includes(code));
     this.bindings = bindings;
     this.defaults = JSON.parse(JSON.stringify(bindings));   // phím gốc trong config (đổi phím = ghi đè lên bản này)
     if (SFC.Settings) this.applyBinds(SFC.Settings.binds);
@@ -145,7 +149,7 @@ SFC.Input = {
   },
 
   // chữ gợi ý phím: tay cầm -> nút của action, bàn phím -> giữ nguyên chữ viết sẵn ('Enter', 'Esc'...).
-  // Esc bị cấm ở cửa hàng này (controls.restrictedKeys) -> nhãn phím bàn phím của action (back -> Backspace)
+  // Esc bị cấm ở cửa hàng này (Platform.restrictedKeys) -> nhãn phím bàn phím của action (back -> Backspace)
   key(action, kb) {
     if (this.device === 'pad') return this.label(action);
     return kb === 'Esc' && !this.gameCodes.has('Escape') ? this.label(action) : kb;

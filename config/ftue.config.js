@@ -4,7 +4,7 @@
  * Luồng: đặt tên xong -> cut scene "intro" ("I have a dream...") -> DREAM MATCH (trận hướng dẫn có kịch bản:
  * di chuyển -> chuyền -> sút -> chọn Core -> đấm cướp bóng -> ghi bàn -> mở ULTIMATE -> dùng Ultimate -> đá tự do tới hết giờ)
  * -> cut scene "outro" (tỉnh dậy ở VILLAGE GREEN -> ông nội trao BÍ KÍP GIA TRUYỀN = Tuyệt kỹ AURA FARMING (màn lật thẻ)
- *    -> cảnh biến hình + thử chiêu -> thẻ giới thiệu MAIN PATH) -> trang Main Path.
+ *    -> cảnh biến hình + thử chiêu -> thẻ giới thiệu GOAT PATH) -> tab GOAT PATH (chế độ chính).
  * Hồ sơ cũ (đã xong PROLOGUE trước khi có bí kíp): lần mở game kế tiếp phát riêng cut scene "heirloom" 1 lần (Profile.data.tut.heirloom).
  * Core trong trận mơ chỉ là "mượn": hết mơ là mất, phải leo Main Path để mở khoá thật.
  * Hồ sơ lưu Profile.data.tut.done. SETTINGS > TEST > PROLOGUE: xem lại (chỉ bản dev).
@@ -61,7 +61,7 @@ SFC_CONFIG.ftue = {
       { art: 'wake', dur: 3.4, lines: [{ at: 0.2, text: 'RRRRING!', style: 'shout' }, { at: 1.4, text: '...and then I woke up.', style: 'caption' }] },
       { art: 'village', dur: 5.0, lines: [{ at: 0.3, text: 'No powers. No crowd. Just a muddy field...', style: 'caption' }, { at: 2.6, text: '...and a dream. Every legend starts somewhere.', style: 'caption' }] },
       ...(SFC_FTUE_HEIRLOOM_ON ? SFC_FTUE_HEIRLOOM : []),
-      { art: 'path', dur: 0 },   // thẻ giới thiệu MAIN PATH, chờ Enter
+      { art: 'path', dur: 0 },   // thẻ giới thiệu GOAT PATH, chờ Enter
     ],
     // hồ sơ cũ (đã xong PROLOGUE trước khi có bí kíp): chỉ phát đoạn bí kíp, 1 lần
     heirloom: [{ art: 'village', dur: 3.0, lines: [{ at: 0.3, text: 'Another morning on the muddy field...', style: 'caption' }] }, ...SFC_FTUE_HEIRLOOM],
@@ -71,15 +71,16 @@ SFC_CONFIG.ftue = {
   // enabled (SFC_FTUE_HEIRLOOM_ON) = false: TẠM ẨN cùng AURA FARMING (2026-10-13, Tuyệt kỹ chỉ có khi đạt công thức) — outro bỏ cảnh bí kíp
   heirloom: { enabled: SFC_FTUE_HEIRLOOM_ON, core: 'aura_farming', giver: 'Grandpa', band: "GRANDPA'S NOTEBOOK", stamp: 'FAMILY SECRET' },
 
-  // thẻ MAIN PATH (cảnh cuối outro)
+  // thẻ GOAT PATH (cảnh cuối outro, src/ui/story.js pathCard): dải act của run (run.config.js acts) + 3 dòng luật.
+  // icon = tên icon pixel ui-* (render/pixelicons.js) · {act} trong foot = tên act đầu
   pathCard: {
-    title: 'THE MAIN PATH',
+    title: 'GOAT PATH',
     lines: [
-      ['star', 'RANKED · WIN = + ★', 'Lose and your ★ drop. Every match pays gold & XP'],
-      ['crown', 'ENOUGH ★ = NEXT AREA', 'Each Area needs more ★, from the alleys to the World Stage'],
-      ['core', 'NEW AREA = NEW CORES', 'Stack one school in a match to awaken its Ultimate'],
+      ['ball', 'PICK YOUR ROUTE', 'Matches, shops and surprises on a branching map'],
+      ['card', 'WIN = A NEW BADGE', 'Lose a single match and the run is over'],
+      ['crown', 'BEAT EVERY BOSS', 'Every act ends with a boss. Beat them all to be the GOAT'],
     ],
-    foot: 'Your journey starts at the VILLAGE GREEN',
+    foot: 'Your journey starts on {act}',
   },
 
   /* ---------- DREAM MATCH ---------- */

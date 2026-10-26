@@ -10,7 +10,7 @@ window.SFC = window.SFC || {};
 (function () {
   const O = () => SFC.Session;
   const Menu = () => SFC.Menu;
-  const app = () => SFC.Menu.app;
+  const app = () => SFC.Menu && SFC.Menu.app;
   const ROLES = () => SFC_CONFIG.game.roles;
   // phím "quay lại" để hiện trong chữ báo (tay cầm / bàn phím)
   const backKey = () => (SFC.Input && SFC.Input.key ? SFC.Input.key('back', 'Esc') : 'Esc');
@@ -92,20 +92,43 @@ window.SFC = window.SFC || {};
 
     /* ================= MỜI BẠN BÈ ================= */
     inviteCode: null,    // lời mời đã nhận ở ngoài game, chờ lúc vào được (Session 'invite')
-    // vào phòng được mời khi đang rảnh ở menu: hết trận / cut scene / màn giới thiệu, đã đặt tên + xem PROLOGUE, không mở popup ngôn ngữ.
-    // Đang tìm trận / ở phòng khác: bỏ tìm / rời phòng trước, lượt sau (Session đã idle, kết nối cũ đã đóng) mới vào
+    instant: false,      // mở game để chơi cùng nhóm ngay (Platform.instant, CrazyGames): rảnh ở menu là tạo phòng riêng
+    // đang trên đường vào phòng của bạn bè / tạo phòng cho nhóm: người chơi mới bỏ qua PROLOGUE lần này (main.js, menu.js submitName)
+    get joining() { return !!this.inviteCode || this.instant; },
+
+    // nút INVITE FRIENDS (phòng chờ PRIVATE MATCH + phòng Story): dialog = bảng mời của nền tảng · link = chép link mời
+    invite(menu) {
+      const mode = O().inviteMode;
+      O().invite().then((r) => {
+        if (r === 'copied') menu.setMsg(SFC.t('Invite link copied. Send it to your friends.'));
+        else if (r) menu.render();
+        else if (mode === 'link') menu.setMsg(SFC.t('Could not copy the invite link. Share the room code instead.'), true);
+        else menu.setMsg(SFC.t('Could not open your friend list. Share the room code instead.'), true);
+      });
+    },
+
+    // vào phòng được mời khi đang rảnh ở menu: hết trận / cut scene / màn giới thiệu, đã đặt tên, không mở popup ngôn ngữ
+    // (người chơi mới được mời thì bỏ qua PROLOGUE: xem joining). Đang tìm trận / ở phòng khác: bỏ tìm / rời phòng trước,
+    // lượt sau (Session đã idle, kết nối cũ đã đóng) mới vào. Không có lời mời mà đang instant: tạo phòng riêng cho nhóm
     tryInvite() {
       const code = this.inviteCode;
-      if (!code || !SFC.Menu) return;
+      if ((!code && !this.instant) || !SFC.Menu) return;
       const a = app(), M = Menu(), on = O();
       if (!a || !M.el) return;
       if (a.screen !== 'menu' || M.page === 'name' || !SFC.Profile.hasName || (SFC.LangPick && SFC.LangPick.active)) return;
-      if (SFC.Tutorial && SFC.Tutorial.wanted()) return;
       if (on.status === 'busy') return;
+      if (!code) {
+        if (on.active || M.search) { this.instant = false; return; }   // đã tự vào phòng / tìm trận: thôi
+        this.instant = false;
+        M.go('online');
+        on.createRoom({ direct: SFC.Settings.roomDirect });
+        return;
+      }
       if (on.active && on.code === code) { this.inviteCode = null; return; }   // đã ở trong phòng đó
       if (M.search) { M.cancelSearch(); return; }
       if (on.active) { on.leave(); return; }
       this.inviteCode = null;
+      this.instant = false;   // lời mời của bạn bè thắng: vào phòng bạn, không tạo phòng mới
       M.joinFrom = ['story', 'cup', 'slobby'].includes(M.page) ? 'story' : 'online';
       M.go('join');
       M.code = code;
@@ -207,7 +230,7 @@ window.SFC = window.SFC || {};
 
   // bạn bè mời (nhận lời ở ngoài game): đang đá -> báo sẽ vào sau trận; vào ngay khi rảnh (tryInvite, kiểm lại mỗi 0.5 giây)
   on('invite', ({ code }) => {
-    if (SFC_DEMO) return;   // bản DEMO khoá online
+    if (SFC.Platform ? !SFC.Platform.privateMatch : SFC_DEMO) return;   // bản DEMO khoá phòng riêng (tuỳ nền tảng)
     OnlineUI.inviteCode = code;
     const sc = app() && app().screen;
     if (sc === 'game' || sc === 'pause') banner(SFC.t('INVITE ACCEPTED'), SFC.t('Joining after this match'), GREEN, 1.8);

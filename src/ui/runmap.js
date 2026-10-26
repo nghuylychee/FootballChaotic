@@ -404,8 +404,8 @@ window.SFC = window.SFC || {};
       switch (t.k) {
         case 'actgo': R.actNew = false; SFC.Profile.save(); break;
         case 'end': {
-          // bản DEMO hết act: sang màn WISHLIST (CrazyGames: link cửa hàng chỉ ở menu chính -> về tab)
-          const demo = R.demoEnd && SFC_STORE !== 'crazygames';
+          // bản DEMO hết act: sang màn WISHLIST (cửa hàng không cho tự mở: Platform.autoWishlist -> về tab)
+          const demo = R.demoEnd && SFC.Platform.autoWishlist;
           RUN().clear(); this.reset();
           return menu.go(demo ? 'wishlist' : 'run');
         }

@@ -1,5 +1,5 @@
 /* Tutorial — PROLOGUE cho người chơi mới (config/ftue.config.js).
- * begin(): cut scene "intro" -> DREAM MATCH -> cut scene "outro" (bí kíp gia truyền AURA FARMING + thẻ MAIN PATH) -> trang Main Path.
+ * begin(): cut scene "intro" -> DREAM MATCH -> cut scene "outro" (bí kíp gia truyền AURA FARMING + thẻ GOAT PATH) -> tab GOAT PATH.
  * Hồ sơ cũ đã xong PROLOGUE nhưng chưa nhận bí kíp: playHeirloom() phát riêng đoạn bí kíp 1 lần (main.js lúc mở game).
  * DREAM MATCH là trận thường (opts.tutorial) có kịch bản, chạy qua các bài theo thứ tự:
  *   move -> pass -> shoot -> (bàn thắng) chọn Core -> defend (đấm cướp bóng) -> attack (QTE: đối thủ lao vào đá, bấm Z né)
@@ -445,7 +445,7 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------------- kết thúc ---------------- */
-    // hết giờ trận mơ: còi, trắng xoá -> cut scene tỉnh dậy + thẻ MAIN PATH -> trang Main Path
+    // hết giờ trận mơ: còi, trắng xoá -> cut scene tỉnh dậy + thẻ GOAT PATH -> tab GOAT PATH
     onEnd(g) {
       if (g !== this.g) return;
       const t0 = g.teams[0], t1 = g.teams[1];
@@ -458,11 +458,11 @@ window.SFC = window.SFC || {};
         SFC.UI.show(null);
         SFC.UI.el.hud.classList.add('hidden');
         SFC.UI.el.abar.classList.add('hidden');
-        SFC.Story.play('outro', () => this.app.toMenu('path'));
+        SFC.Story.play('outro', () => this.app.toMenu('run'));
       }, 2200);
     },
 
-    // Pause > SKIP PROLOGUE: vẫn nhận bí kíp (màn lật thẻ -> biến hình) + xem thẻ MAIN PATH rồi vào trang Main Path
+    // Pause > SKIP PROLOGUE: vẫn nhận bí kíp (màn lật thẻ -> biến hình) + xem thẻ GOAT PATH rồi vào tab GOAT PATH (chế độ chính)
     skip() {
       this.markDone();
       this.cleanup();
@@ -472,7 +472,7 @@ window.SFC = window.SFC || {};
       SFC.UI.show(null);
       SFC.UI.el.hud.classList.add('hidden');
       SFC.UI.el.abar.classList.add('hidden');
-      SFC.Story.play('outro', () => app.toMenu('path'), 'reveal');
+      SFC.Story.play('outro', () => app.toMenu('run'), 'reveal');
     },
 
     cleanup() {

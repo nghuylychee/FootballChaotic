@@ -41,13 +41,15 @@ const FILES = [
   ['config/ftue.config.js', 'game itch server'],
   ['config/demo.config.js', 'game server'],
   ['config/social.config.js', 'game'],
-  ['config/store.config.js', 'game'],
+  ['config/platform.config.js', 'game'],
   ['config/privacy.config.js', 'game'],
 
   { comment: 'Engine', gap: true },
   ['src/engine/utils.js', 'game sandbox itch server'],
+  ['src/target/target.js', 'game sandbox itch'],            // web / desktop (Adapter): nơi lưu, cửa sổ, thoát, mở link
   ['src/engine/storage.js', 'game sandbox itch'],          // máy chủ: SFC.Storage giả (server/sim.js)
-  ['src/engine/store.js', 'game'],                         // tích hợp cửa hàng (SDK CrazyGames...)
+  ['src/platform/platform.js', 'game'],                    // dịch vụ nền tảng (Adapter): tài khoản, ngôn ngữ, mời bạn bè
+  ['src/platform/crazygames.js', 'game'],                  // adapter CrazyGames (SDK v3)
   ['src/engine/i18n.js', 'game sandbox server'],
   { comment: 'Bản dịch (thứ tự = thứ tự trong popup chọn ngôn ngữ) · trường config cần dịch' },
   ['src/i18n/fields.js', 'game'],
@@ -95,6 +97,7 @@ const FILES = [
   ['src/net/transport.js', 'game server'],                 // máy chủ: NetCommon (mã phòng)
   ['src/net/transport-peer.js', 'game'],
   ['src/net/transport-steam.js', 'game'],
+  ['src/platform/steam.js', 'game'],                       // adapter Steam (mời bạn bè qua overlay) — sau transport-steam
   ['src/net/transport-server.js', 'game'],
   ['src/net/sync.js', 'game server'],
   ['src/net/room.js', 'game server'],

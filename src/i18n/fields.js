@@ -7,7 +7,7 @@
  * Không đưa vào: id, tên người (ACE, SHADOW...), mã 3 chữ của đội, chữ vẽ trên sân (bảng quảng cáo, graffiti).
  */
 SFC.I18n.fields = [
-  // PROLOGUE (config/ftue.config.js): lời thoại cut scene, thẻ MAIN PATH, hộp gợi ý trận mơ
+  // PROLOGUE (config/ftue.config.js): lời thoại cut scene, thẻ GOAT PATH, hộp gợi ý trận mơ
   'ftue.scenes.*.*.lines.*.text',
   'ftue.heirloom.giver', 'ftue.heirloom.band', 'ftue.heirloom.stamp',
   'ftue.pathCard.title', 'ftue.pathCard.lines.*.1', 'ftue.pathCard.lines.*.2', 'ftue.pathCard.foot',

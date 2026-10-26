@@ -175,7 +175,7 @@
 
     beginMatch(opts) {
       this.screen = 'game';
-      SFC.Store.gameplay(true);
+      SFC.Platform.gameplay(true);
       SFC.Input.textHandler = null;
       SFC.UI.hudCache = {};
       // Main Path: không cho đá lại trận đang thua — chỉ tiếp tục hoặc bỏ trận (tính thua)
@@ -257,7 +257,7 @@
     resume() {
       if (this.mode === 'online') SFC.OnlineUI.overlay = false;
       this.screen = 'game';
-      SFC.Store.gameplay(true);
+      SFC.Platform.gameplay(true);
       const g = this.game;
       // đang chọn Core mà mình đã chọn xong (chờ người khác): không mở lại màn chọn, chỉ chữ chờ giữa màn (UI.draftWaitView)
       const draftOpen = g && g.state === 'draft' && !(g.draft && g.draft.picked[g.me]);
@@ -269,7 +269,7 @@
       else {
         this.screen = 'pause';
         // trận xếp hạng (cả offline) vẫn chạy khi mở menu tạm dừng -> vẫn là đang chơi
-        if (!(this.game && this.game.opts.mainPath)) SFC.Store.gameplay(false);
+        if (!(this.game && this.game.opts.mainPath)) SFC.Platform.gameplay(false);
       }
       SFC.UI.pauseSel = 0;
       SFC.UI.renderPause();
@@ -286,7 +286,7 @@
       SFC.Drill.close();
       this.game = null;
       this.screen = 'menu';
-      SFC.Store.gameplay(false);
+      SFC.Platform.gameplay(false);
       if (page !== 'lobby') this.mode = 'single';
       SFC.UI.clearToasts();
       SFC.UI.show('menu');
@@ -387,10 +387,19 @@
     // tới lúc người chơi bấm tìm trận / tạo phòng thì đã dậy
     SFC.Session.prepare();
     if (forfeited) SFC.Menu.setMsg(app.forfeitText(forfeited), true);
+    // nền tảng (SDK đã init): nghe lời mời + báo phòng · mở game bằng lời mời -> OnlineUI.inviteCode có ngay · chơi cùng nhóm ngay
+    SFC.Session.watchInvites();
+    SFC.OnlineUI.instant = SFC.Platform.instant;
     const start = () => {
+      // chưa có tên mà đã đăng nhập tài khoản nền tảng (CrazyGames): lấy tên tài khoản (bạn bè nhận ra nhau), bị lọc thì vẫn tự đặt
+      const acc = SFC.Platform.user();
+      if (!SFC.Profile.hasName && acc) SFC.Profile.setName(acc.name);
       // lần đầu chơi: đặt tên cho character trước khi vào trang chủ -> PROLOGUE.
-      // Đã đặt tên nhưng chưa xem xong PROLOGUE (tắt giữa chừng) -> xem lại từ đầu
+      // Đã đặt tên nhưng chưa xem xong PROLOGUE (tắt giữa chừng) -> xem lại từ đầu.
+      // Mở game để vào phòng bạn bè / chơi cùng nhóm (OnlineUI.joining): bỏ qua PROLOGUE lần này, vào phòng luôn
+      const joining = SFC.OnlineUI.joining;
       if (!SFC.Profile.hasName) SFC.Menu.go('name');
+      else if (joining) return;
       else if (SFC.Tutorial.wanted()) SFC.Tutorial.begin(app);
       // hồ sơ đã xong PROLOGUE từ trước khi có bí kíp gia truyền: phát đoạn ông nội trao AURA FARMING 1 lần
       else if (SFC.Tutorial.heirloomWanted()) SFC.Tutorial.playHeirloom(app);
@@ -474,5 +483,5 @@
       new Promise((r) => setTimeout(r, 1500)),
     ]).catch(() => {})
     : Promise.resolve();
-  Promise.all([fonts, SFC.Store.ready()]).finally(boot);
+  Promise.all([fonts, SFC.Platform.ready()]).finally(boot);
 })();

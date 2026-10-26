@@ -1,7 +1,7 @@
 /* Settings — cài đặt của máy: âm lượng nhạc / hiệu ứng, cỡ cửa sổ, ngôn ngữ. Lưu qua SFC.Storage, key 'sfc_settings'
  * (tách khỏi hồ sơ người chơi như FXSettings -> RESET DATA không xoá). Chỉnh ở SETTINGS > SOUND & DISPLAY (ui/menu.js).
  *  - Âm lượng: 0..10 (x10%) -> SFC.Audio.setVolume, nhân với âm lượng trong config
- *  - Cỡ cửa sổ: chỉ bản desktop (electron/preload.js -> window.SFC_DESKTOP). 'WxH' hoặc 'full'.
+ *  - Cỡ cửa sổ: chỉ khi target đổi được cỡ (SFC.Target.canResize: desktop). 'WxH' hoặc 'full'.
  *    Danh sách cỡ: game.config.js -> render.windowSizes, bỏ cỡ lớn hơn màn hình
  *  - NETWORK STATS: hiện ping + dung lượng gửi / nhận khi đang ở phòng online (src/ui/online.js)
  *  - FRAME RATE: giới hạn số khung hình vẽ mỗi giây (UNLIMITED / 60 / 30); mô phỏng + đọc phím vẫn 60 Hz
@@ -93,7 +93,7 @@ window.SFC = window.SFC || {};
     },
     bindsChanged(dev) { return Object.keys(this.binds[dev]).length > 0; },
 
-    get desktop() { return !!window.SFC_DESKTOP; },
+    get desktop() { return SFC.Target.canResize; },
 
     // lúc khởi động (main.js -> boot): đặt âm lượng + cỡ cửa sổ đã lưu
     apply() {
@@ -138,9 +138,9 @@ window.SFC = window.SFC || {};
     resLabel() { return this.res === FULL ? SFC.t('FULLSCREEN') : this.res.replace('x', ' x '); },
 
     applyRes() {
-      if (this.res === FULL) { window.SFC_DESKTOP.setWindow({ full: true }); return; }
+      if (this.res === FULL) { SFC.Target.setWindow({ full: true }); return; }
       const [w, h] = this.res.split('x').map(Number);
-      window.SFC_DESKTOP.setWindow({ w, h });
+      SFC.Target.setWindow({ w, h });
     },
 
     // F11 (electron/main.js) vào / thoát toàn màn hình: cập nhật lựa chọn cho khớp
@@ -154,5 +154,5 @@ window.SFC = window.SFC || {};
   };
 
   SFC.Settings = Settings.load();
-  if (window.SFC_DESKTOP) window.SFC_DESKTOP.onFullscreen((full) => Settings.onFullscreen(full));
+  SFC.Target.onFullscreen((full) => Settings.onFullscreen(full));
 })();

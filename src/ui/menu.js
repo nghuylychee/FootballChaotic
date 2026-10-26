@@ -141,10 +141,10 @@ window.SFC = window.SFC || {};
     },
 
     go(page, msg = '', err = false) {
-      // bản DEMO: ONLINE khoá -> màn WISHLIST. Đã tới Area bị khoá: lần đầu mở Main Path mỗi lần chạy game cũng ra màn WISHLIST.
+      // bản DEMO: PRIVATE MATCH khoá (trừ nền tảng mở sẵn: Platform.privateMatch) -> màn WISHLIST. Đã tới Area bị khoá: lần đầu mở Main Path mỗi lần chạy game cũng ra màn WISHLIST.
       // CrazyGames: link cửa hàng chỉ được ở menu chính / lúc hết demo -> ONLINE chỉ báo khoá, không tự mở WISHLIST ở Main Path
-      const promo = SFC_STORE !== 'crazygames';
-      if (SFC_DEMO && ['online', 'join', 'lobby'].includes(page)) {
+      const promo = SFC.Platform.autoWishlist;
+      if (!SFC.Platform.privateMatch && ['online', 'join', 'lobby'].includes(page)) {
         if (!promo) { this.setMsg(_t('PRIVATE MATCH is in the full game.'), true); return; }
         page = 'wishlist';
       }
@@ -322,9 +322,9 @@ window.SFC = window.SFC || {};
               : { kind: 'btn', main: true, label: _t('START'), act: () => this.startSearch() },
           ];
           // AREA MAP: cụm Area + thanh tiến độ ở đầu màn (↑ từ các ô người chơi). Đang tìm trận: không mở (rời màn lỡ MATCH FOUND).
-          // Có cả khi tắt bạn bè (bản CrazyGames: social.enabled = false) -> đặt trước dòng return bên dưới
+          // Có cả khi tắt bạn bè (Social.enabled = false, vd. bản CrazyGames) -> đặt trước dòng return bên dưới
           if (!S) list.push({ kind: 'btn', road: true, label: _t('AREA MAP'), act: () => RD().open(this) });
-          if (!SFC_CONFIG.social.enabled) return list;
+          if (!SFC.Social.enabled) return list;
           // ô nhỏ bên phải thẻ của bạn: MỜI BẠN (chọn bằng phím mũi tên / bấm -> nhảy tới bạn bè đầu tiên mời được)
           if (!SO.partyFull() && !S) list.push({ kind: 'btn', invite: true, label: _t('INVITE A FRIEND'), act: () => this.inviteFriend() });
           if (SO.party.length && !S) list.push({ kind: 'btn', side: true, label: _t('LEAVE PARTY'), act: () => SO.leaveParty() });
@@ -392,8 +392,8 @@ window.SFC = window.SFC || {};
           }
           list.push({ kind: 'btn', slot: -1, label: _t('GUEST'), act: () => O.requestSlot(-1) });
           list.push({ kind: 'btn', label: _t('LEAVE ROOM'), act: () => O.leave() });
-          // mời bạn bè (chỉ khi mở được bảng mời: Steam) — chữ không nhắc cách kết nối
-          if (O.canInvite) list.push({ kind: 'btn', invite: true, label: _t('INVITE FRIENDS'), act: () => { if (!O.invite()) this.setMsg(_t('Could not open your friend list. Share the room code instead.'), true); } });
+          // mời bạn bè (chỉ khi nền tảng có: Steam / CrazyGames, OnlineUI.invite) — chữ không nhắc cách kết nối
+          if (O.canInvite) list.push({ kind: 'btn', invite: true, label: _t('INVITE FRIENDS'), act: () => SFC.OnlineUI.invite(this) });
           // sân (chủ phòng chọn, người khác chỉ xem): RANDOM rồi các Area đã tới
           if (O.isOwner) list.push({ kind: 'pick', ground: true, label: _t('PITCH'), change: (d) => O.setGround(wrap(O.lobby.ground + 1 + d, Session().provider.area() + 2) - 1) });
           if (O.isOwner) {
@@ -470,7 +470,7 @@ window.SFC = window.SFC || {};
     back() {
       if (Session().status === 'busy') { Session().cancel(); return; }
       // trang chủ: hỏi thoát game. Trình duyệt không tự đóng tab được -> bản web không làm gì
-      if (this.page === 'home') { if (ST().desktop) this.askQuit(); return; }
+      if (this.page === 'home') { if (SFC.Target.canQuit) this.askQuit(); return; }
       if (this.page === 'name') { if (PF().hasName) this.go(this.nameBack); return; } // lần đầu: bắt buộc đặt tên
       if (G().pages.includes(this.page)) return G().back(this);
       if (TM().pages.includes(this.page)) return TM().back(this);
@@ -518,6 +518,7 @@ window.SFC = window.SFC || {};
       this.el.classList.toggle('party', play);
       this.el.classList.toggle('nofriends', play && (this.page !== 'party' || !this.friendsOpen));
       this.el.classList.toggle('ults-pg', this.page === 'ults');
+      this.el.classList.toggle('test-pg', this.page === 'test');   // trang TEST: nút trải cả bề ngang, 2 cột
       this.el.classList.toggle('has-back', BACK_PAGES.includes(this.page));
       this.el.classList.toggle('m-headed', HEAD_PAGES.includes(this.page));   // chừa chỗ trên cùng cho nút ◀ BACK   // danh sách Tuyệt kỹ dài: chữ nhỏ hơn
       if (this.page === 'home') { this.el.innerHTML = this.renderHome(items); this.bindAvatars(); return; }
@@ -591,7 +592,7 @@ window.SFC = window.SFC || {};
 
     quitPick(yes) {
       SFC.Audio.menu();
-      if (yes) { window.SFC_DESKTOP.quit(); return; }
+      if (yes) { SFC.Target.quit(); return; }
       this.quitAsk = false;
       this.render();
     },
@@ -865,11 +866,9 @@ window.SFC = window.SFC || {};
       </div>`;
     },
 
-    // trang Steam (config/demo.config.js): desktop mở bằng trình duyệt của máy (electron/preload.js), web mở tab mới
+    // trang Steam (config/demo.config.js): desktop mở bằng trình duyệt của máy, web mở tab mới (SFC.Target.openUrl)
     openSteam() {
-      const url = SFC_CONFIG.demo.steamUrl;
-      if (window.SFC_DESKTOP && window.SFC_DESKTOP.openUrl) window.SFC_DESKTOP.openUrl(url);
-      else window.open(url, '_blank', 'noopener');
+      SFC.Target.openUrl(SFC_CONFIG.demo.steamUrl);
       this.setMsg(_t('Steam page opened in your browser.'));
     },
 
@@ -902,7 +901,7 @@ window.SFC = window.SFC || {};
       }));
       // ô trống đầu tiên = mục MỜI BẠN (chọn bằng phím mũi tên, Enter = mở khung bạn bè chọn sẵn người mời được); ô trống sau chỉ bấm chuột
       const iInv = at((x) => x.invite);
-      while (SFC_CONFIG.social.enabled && others.length < SFC_CONFIG.social.partyMax - 1) {
+      while (SFC.Social.enabled && others.length < SFC_CONFIG.social.partyMax - 1) {
         const nav = others.some((o) => o.includes('data-invite')) || iInv < 0 ? '' : `data-i="${iInv}"`;
         others.push(`<button class="pt-card empty ${nav ? sel(iInv) : ''}" data-invite="1" ${nav}><b>+</b><span>${esc(_t('INVITE A FRIEND'))}</span></button>`);
       }
@@ -940,7 +939,7 @@ window.SFC = window.SFC || {};
       const K = (a, kb) => SFC.Input.key(a, kb);
       const tab = (id, label, page, lock) => `<button class="pt-tab ${on === id ? 'on' : ''}" data-ptab="${page}">${lock ? PX().ui('lock', 'sm') + ' ' : ''}${esc(label)}</button>`;
       return `<div class="pt-tabs">
-          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('run', _t('GOAT PATH'), 'run')}${tab('ranked', _t('RANKED'), 'party')}${tab('private', _t('PRIVATE MATCH'), 'online', SFC_DEMO)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
+          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('run', _t('GOAT PATH'), 'run')}${tab('ranked', _t('RANKED'), 'party')}${tab('private', _t('PRIVATE MATCH'), 'online', !SFC.Platform.privateMatch)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
           ${sub}
         </div>`;
     },
@@ -1395,8 +1394,8 @@ window.SFC = window.SFC || {};
       SFC.Audio.pick();
       const back = this.nameBack;
       this.nameBack = 'home';
-      // người chơi mới: đặt tên xong -> PROLOGUE (cut scene + trận hướng dẫn)
-      if (SFC.Tutorial.wanted()) { this.setTextMode(null); return SFC.Tutorial.begin(this.app); }
+      // người chơi mới: đặt tên xong -> PROLOGUE (cut scene + trận hướng dẫn). Đang vào phòng bạn bè mời: để PROLOGUE lần sau
+      if (SFC.Tutorial.wanted() && !SFC.OnlineUI.joining) { this.setTextMode(null); return SFC.Tutorial.begin(this.app); }
       this.go(back);
     },
 
@@ -1495,6 +1494,18 @@ window.SFC = window.SFC || {};
       // SỔ TUYỆT KỸ: bảng ô -> ←↑↓→ đi theo vị trí trên màn hình
       if (this.page === 'ults') {
         for (const d of ['up', 'down', 'left', 'right']) if (input.wasPressed(d)) return this.navMove(d);
+        return;
+      }
+      // trang TEST (lưới 2 cột): ←↑↓→ theo vị trí; ô chọn ◀▶ (JUMP TO AREA) thì ←→ đổi giá trị
+      if (this.page === 'test') {
+        const it = items[this.sel];
+        for (const d of ['up', 'down', 'left', 'right']) {
+          if (!input.wasPressed(d)) continue;
+          if (it && it.kind === 'pick' && (d === 'left' || d === 'right')) this.change(it, d === 'left' ? -1 : 1);
+          else this.navMove(d);
+          return;
+        }
+        if (input.wasPressed('confirm')) this.activate(it);
         return;
       }
       if (this.page !== 'home' && input.wasPressed('up')) { this.move(-1); }

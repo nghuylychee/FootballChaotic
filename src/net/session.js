@@ -22,8 +22,9 @@
  *                                           full · started · version · busy · expired · rejoin-failed · unsupported · in-use · connect
  *   cup {state}                             phòng FOOTBALL STORY: trạng thái cup của host vừa tới (khách; null = chưa / hết cup)
  *   scenes {kind}                           phòng Story: host bắt đầu chiếu cut scene (kind: before) -> chiếu xong gọi scenesDone()
- *   invite {code}                           bạn bè mời vào phòng và mình đã nhận lời ở ngoài game (chỉ backend có bảng mời: Steam) -> UI chọn
- *                                           lúc vào (rời phòng đang ở trước) rồi joinRoom(code). Mời: canInvite / invite()
+ *   invite {code}                           bạn bè mời vào phòng và mình đã nhận lời ở ngoài game (nền tảng có bạn bè: Steam / CrazyGames,
+ *                                           SFC.Platform) -> UI chọn lúc vào (rời phòng đang ở trước) rồi joinRoom(code).
+ *                                           Mời: inviteMode / canInvite / invite() · phòng đang ở báo cho nền tảng: presence
  *   solo                                    tìm trận xếp hạng không ghép được người thật (không ai đang tìm / không kết nối được /
  *                                           máy chủ bận): game tự ghép người chơi giả (MainPath.matchmake) như khi chơi một mình
  *
@@ -153,21 +154,29 @@ window.SFC = window.SFC || {};
     },
 
     /* ================= MỜI BẠN BÈ ================= */
-    // phòng đang ở mở được bảng mời bạn bè (backend người chơi làm host có invite: Steam; máy chủ riêng / PeerJS: không -> chỉ có mã phòng)
-    get canInvite() {
-      const net = Net();
-      return this.status === 'lobby' && !this.onServer && !!net && typeof net.invite === 'function' && net.canInvite();
+    // Mời / báo phòng đi qua nền tảng (SFC.Platform, src/platform/): Steam = overlay, chỉ ở lobby Steam · CrazyGames = thanh bạn bè +
+    // link mời, phòng nào cũng được · không có nền tảng: chỉ có mã phòng. Không có SFC.Platform (test Node): coi như không có
+    // phòng đang ở, báo cho nền tảng: lobby / trận của phòng riêng (xếp hạng không mời được). joinable = còn chỗ và chưa vào trận
+    get presence() {
+      if (this.ranked || !this.code || (this.status !== 'lobby' && this.status !== 'playing')) return null;
+      const cap = this.story ? ROLES().length : N().maxPlayers;   // phòng Story: cả phòng 1 đội
+      return { code: this.code, joinable: this.status === 'lobby' && this.lobby.members.length < cap, net: Net() };
     },
-    invite() { return this.canInvite && Net().invite(); },
-    // nghe lời mời đã nhận ở ngoài game (gọi 1 lần lúc mở game): đang chạy -> sự kiện invite ngay;
-    // mở game bằng lời mời -> sự kiện invite ở lượt sau (UI đã gắn xong handler)
+    // mời bạn kiểu gì ở phòng chờ này: 'dialog' (bảng mời của nền tảng) | 'link' (chép link mời) | null (chỉ có mã phòng)
+    get inviteMode() { return this.status === 'lobby' && SFC.Platform ? SFC.Platform.inviteMode(this.presence) : null; },
+    get canInvite() { return !!this.inviteMode; },
+    // -> Promise<'opened' | 'copied' | false>
+    invite() { return this.canInvite ? SFC.Platform.invite(this.presence) : Promise.resolve(false); },
+    // nghe lời mời đã nhận ở ngoài game + báo phòng đang ở cho nền tảng. Gọi lúc nạp online.js (Steam có ngay) và lúc boot
+    // sau Platform.ready() (SDK CrazyGames init xong); chỉ bật 1 lần. Mở game bằng lời mời -> sự kiện invite ngay
     watchInvites() {
-      const st = SFC.NetSteam;
-      if (this.invitesOn || !N().useSteam || !st || !st.available()) return;
+      const P = SFC.Platform;
+      if (this.invitesOn || !P || !P.live) return;
       this.invitesOn = true;
-      st.onInvite((code) => this.emit('invite', { code }));
-      const code = st.launchInvite();
-      if (code) setTimeout(() => this.emit('invite', { code }), 0);
+      P.onInvite((code) => this.emit('invite', { code }));
+      setInterval(() => P.room(this.presence), SFC_CONFIG.platform.presenceEvery * 1000);
+      const code = P.launchInvite();
+      if (code) this.emit('invite', { code });
     },
 
     // huỷ tạo / vào phòng đang chờ kết nối

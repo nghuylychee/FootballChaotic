@@ -15,6 +15,8 @@ window.SFC = window.SFC || {};
   const now = () => performance.now() / 1000;
 
   const Social = {
+    // bạn bè giả bật: config + cửa hàng cho phép (Platform.fakeSocial: CrazyGames tắt)
+    get enabled() { return C().enabled && (!SFC.Platform || SFC.Platform.fakeSocial); },
     data: null,
     status: {},        // id -> online | match | offline
     party: [],         // id bạn bè đang trong phòng (không tính bạn)
@@ -216,7 +218,7 @@ window.SFC = window.SFC || {};
 
     /* ---------- mỗi khung hình ---------- */
     tick(dt) {
-      if (!this.data || !C().enabled) return;
+      if (!this.data || !this.enabled) return;
       const t = now(), A = C().add;
       let dirty = false;
       for (const k in this.answers) if (t >= this.answers[k]) { this.answerRequest(k); dirty = true; }

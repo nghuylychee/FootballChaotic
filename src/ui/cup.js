@@ -46,8 +46,8 @@ window.SFC = window.SFC || {};
       const list = CUP().list();
       const items = list.map((s, i) => ({ kind: 'btn', card: true, sid: s.id, label: s.name, act: () => this.tryStart(menu, i) }));
       items.push({ kind: 'btn', main: true, label: _t('START'), act: () => this.tryStart(menu, this.pick) });
-      // co-op online (bản DEMO khoá online như PRIVATE MATCH): tạo phòng Story mời bạn bằng mã · vào phòng của bạn bằng mã
-      if (!SFC_DEMO) {
+      // co-op online (bản DEMO khoá như PRIVATE MATCH: Platform.privateMatch): tạo phòng Story mời bạn bằng mã · vào phòng của bạn bằng mã
+      if (SFC.Platform.privateMatch) {
         items.push({ kind: 'btn', coop: true, label: _t('PLAY WITH FRIENDS'), act: () => this.tryStart(menu, this.pick, true) });
         items.push({ kind: 'btn', joinRoom: true, label: _t('JOIN'), act: () => { menu.joinFrom = 'story'; menu.go('join'); } });
       }
@@ -134,8 +134,8 @@ window.SFC = window.SFC || {};
       if (!s) return;
       if (s.soon) return menu.setMsg(_t('This story is coming soon.'), true);
       if (CUP().demoLocked(s)) {
-        // CrazyGames: link cửa hàng chỉ ở menu chính / lúc hết demo -> chỉ báo khoá
-        if (SFC_STORE === 'crazygames') return menu.setMsg(_t('This story is in the full game.'), true);
+        // cửa hàng không cho tự mở WISHLIST (Platform.autoWishlist, vd. CrazyGames) -> chỉ báo khoá
+        if (!SFC.Platform.autoWishlist) return menu.setMsg(_t('This story is in the full game.'), true);
         return menu.go('wishlist');
       }
       if (coop) { this.roomStory = s.id; this.lsel = 0; this.leaveArm = false; return ON().createRoom({ story: s.id }); }
@@ -429,7 +429,7 @@ window.SFC = window.SFC || {};
     },
 
     /* ================= page 'slobby' (phòng chờ co-op của 1 Story) ================= */
-    // mục chọn được: 3 ô vị trí (Enter ô trống = đứng vào đó) · START CUP (chủ phòng) · INVITE FRIENDS (chỉ khi mở được bảng mời bạn bè) · LEAVE ROOM
+    // mục chọn được: 3 ô vị trí (Enter ô trống = đứng vào đó) · START CUP (chủ phòng) · INVITE FRIENDS (chỉ khi nền tảng mời được: OnlineUI.invite) · LEAVE ROOM
     lobbyItems() {
       const O = ON(), out = ROLES().map((role) => ({ k: 'slot', slot: O.slotOf(0, role), role }));
       if (O.isHost) out.push({ k: 'start', main: true, label: _t('START CUP') });
@@ -444,7 +444,7 @@ window.SFC = window.SFC || {};
       if (it.k === 'leave') return this.leaveRoom(menu);
       this.leaveArm = false;
       if (it.k === 'slot') { if (!O.memberAt(it.slot)) O.requestSlot(it.slot); return menu.render(); }
-      if (it.k === 'invite') return O.invite() ? menu.render() : menu.setMsg(_t('Could not open your friend list. Share the room code instead.'), true);
+      if (it.k === 'invite') return SFC.OnlineUI.invite(menu);
       if (it.k === 'start') {
         const s = CUP().get(O.story);
         if (!O.isHost || !CUP().playable(s) || !CUP().start(s.id)) return;

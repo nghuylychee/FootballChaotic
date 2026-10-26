@@ -10,8 +10,9 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.social = {
-  // false = ẩn hết bạn bè / mời / phòng (màn PLAY chỉ còn ô của bạn). CrazyGames: bạn bè giả trông như người thật -> tắt
-  enabled: SFC_STORE !== 'crazygames',
+  // false = ẩn hết bạn bè / mời / phòng (màn PLAY chỉ còn ô của bạn). Còn tuỳ cửa hàng: Platform.fakeSocial
+  // (CrazyGames: bạn bè giả trông như người thật -> tắt). Đọc qua SFC.Social.enabled
+  enabled: true,
   msgHide: 3.5,                // giây: dòng thông báo trên nút START (vào phòng, mời, kết bạn...) tự ẩn
   partyMax: 3,                  // số người tối đa trong phòng (bạn + 2 người bạn = cả đội 3v3)
   friends: 8,                   // số bạn bè giả sinh ra lần đầu

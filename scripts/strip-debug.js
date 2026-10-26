@@ -1,6 +1,6 @@
 /* afterPack (electron-builder): xoá code chỉ dùng khi dev khỏi bản đóng gói (không đụng file gốc), trong app.asar hoặc resources/app.
- *  - config/build.config.js -> `var SFC_DEBUG = false;` + SFC_STORE + SFC_DEMO. build-web.js truyền thẳng;
- *    afterPack (Electron) đọc env SFC_STORE / SFC_DEMO (build-itch.js đặt 'itch' / '1'; không đặt = bản steam)
+ *  - config/build.config.js -> `var SFC_DEBUG = false;` + SFC_STORE + SFC_DEMO theo bản build (scripts/targets.js).
+ *    Bản web: scripts/build.js truyền thẳng · afterPack (desktop): đọc env SFC_BUILD (build.js đặt; không đặt = bản steam)
  *  - file nào có SFC_DEBUG: chạy Terser với SFC_DEBUG = false -> nhánh `if (SFC_DEBUG)` / `SFC_DEBUG ? … : …` / `SFC_DEBUG && …` bị xoá,
  *    comment bị bỏ, tên biến giữ nguyên (không mangle), vẫn xuống dòng để lỗi còn đọc được
  *  - còn sót dấu vết cheat trong bất kỳ file nào -> báo lỗi, dừng build
@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { minify } = require('terser');
+const targets = require('./targets');
 
 const DIRS = ['config', 'src'];
 // sau khi xoá: file đã qua Terser (không còn comment) không được còn các chữ này. Mọi file khác chỉ kiểm SFC_DEBUG
@@ -21,7 +22,7 @@ function jsFiles(dir) {
 }
 
 async function strip(appDir, { store, demo = false } = {}) {
-  if (!['steam', 'itch', 'crazygames'].includes(store)) throw new Error(`strip-debug: cửa hàng không hợp lệ: ${store}`);
+  if (!targets.STORES[store]) throw new Error(`strip-debug: cửa hàng không hợp lệ: ${store}`);
   const flagFile = path.join(appDir, 'config', 'build.config.js');
   const files = DIRS.flatMap((d) => jsFiles(path.join(appDir, d))).filter((f) => f !== flagFile);
   const stripped = new Set();
@@ -57,7 +58,8 @@ async function strip(appDir, { store, demo = false } = {}) {
 exports.default = async (context) => {
   const res = path.join(context.appOutDir, 'resources');
   const asarFile = path.join(res, 'app.asar');
-  const opts = { store: process.env.SFC_STORE || 'steam', demo: process.env.SFC_DEMO === '1' };   // scripts/build-itch.js đặt env
+  const T = targets.get(process.env.SFC_BUILD || 'steam');   // scripts/build.js đặt env
+  const opts = { store: T.store, demo: T.demo };
   if (!fs.existsSync(asarFile)) return strip(path.join(res, 'app'), opts);
   const asar = require('@electron/asar');
   const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'sfc-asar-'));

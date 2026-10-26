@@ -1,8 +1,8 @@
 /* =========================================================
- * DEMO — bản itch.io (web + desktop). Bật bằng SFC_DEMO (config/build.config.js): scripts/build-web.js và
- * scripts/build-itch.js ghi SFC_DEMO = true khi đóng gói bản itch / crazygames; bản dev / steam để false. Dev: SETTINGS > TEST > DEMO MODE.
+ * DEMO — bản itch.io (web + desktop) và CrazyGames. Bật bằng SFC_DEMO (config/build.config.js): bản build nào là demo ghi ở
+ * scripts/targets.js (strip-debug.js ghi khi đóng gói); bản dev / steam để false. Dev: SETTINGS > TEST > DEMO MODE.
  *  - Main Path: chỉ đá được `areas` Area đầu. Thắng thăng hạng Area cuối của demo -> màn WISHLIST (src/ui/menu.js)
- *  - Nút ONLINE ở trang chủ bị khoá (bấm vào cũng ra màn WISHLIST)
+ *  - PRIVATE MATCH khoá (bấm vào ra màn WISHLIST), trừ cửa hàng có rules.demoPrivateMatch (config/platform.config.js)
  *  - FOOTBALL STORY: chỉ chơi được `stories` Story đầu (src/meta/cup.js -> demoLocked)
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};

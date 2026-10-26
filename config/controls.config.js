@@ -87,7 +87,7 @@ SFC_CONFIG.controls = {
     system: [
       ['{pick1} / {pick2} / {pick3}', 'Pick Core'],
       ['{reroll}', 'Reroll 3 Core cards (once per round)'],
-      ['{pause+}', 'Pause'],   // CrazyGames: Esc bị gỡ (restrictedKeys) -> chỉ còn P
+      ['{pause+}', 'Pause'],   // CrazyGames: Esc bị gỡ (Platform.restrictedKeys) -> chỉ còn P
       ['{mute}', 'Mute/unmute'],
     ],
   },
@@ -165,12 +165,6 @@ SFC_CONFIG.controls = {
     read:   [0.8, 0.5, 140],    // Đọc Cú Sút thành công (thủ thế W rồi thả đúng lúc)
   },
 
-  // phím cửa hàng cấm dùng (theo SFC_STORE): bị gỡ khỏi mọi action ngay dưới đây, gợi ý 'Esc' trên UI tự đổi sang phím còn lại
-  // (Input.key). CrazyGames: Esc = thoát toàn màn hình -> tạm dừng / quay lại chỉ còn P / Backspace
-  restrictedKeys: { crazygames: ['Escape'] },
+  // phím cửa hàng cấm dùng: config/platform.config.js rules[].restrictedKeys (Input.init gỡ khỏi mọi action;
+  // CrazyGames: Esc = thoát toàn màn hình -> tạm dừng / quay lại chỉ còn P / Backspace)
 };
-
-(function () {
-  const C = SFC_CONFIG.controls, cut = C.restrictedKeys[SFC_STORE] || [];
-  for (const a in C.bindings) C.bindings[a] = C.bindings[a].filter((code) => !cut.includes(code));
-})();

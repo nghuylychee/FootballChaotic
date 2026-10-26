@@ -8,11 +8,11 @@ Requirement pages: [technical](https://docs.crazygames.com/requirements/technica
 
 ## A. Required changes (done)
 
-1. **SDK.** `SFC.Store` (`src/engine/store.js`, `config/store.config.js`) loads SDK v3 at boot (waits up to 6 s, plays without it on failure). `gameplayStart` on match begin / resume, `gameplayStop` on single-player pause and back to menu (ranked pause keeps playing).
+1. **SDK.** The `crazygames` platform adapter (`src/platform/crazygames.js` behind `SFC.Platform`, `config/platform.config.js`) loads SDK v3 at boot (waits up to 6 s, plays without it on failure). `gameplayStart` on match begin / resume, `gameplayStop` on single-player pause and back to menu (ranked pause keeps playing).
 2. **Language.** A saved choice wins. Otherwise the SDK `systemInfo.locale`, if it maps to one of our packs, is used without the popup (not saved). No locale, unknown locale or SDK failure: language popup.
-3. **Escape removed** (restricted key, exits fullscreen): `controls.restrictedKeys`. Pause = P, back = Backspace / P; "Esc" hints show the remaining key.
-4. **Demo store links** only on the main menu / end of demo: PRIVATE MATCH shows "PRIVATE MATCH is in the full game." instead of WISHLIST; Main Path doesn't pop WISHLIST.
-5. **Fake Social hidden** (`social.enabled = false`): no fake friends, invites, party or chat.
+3. **Escape removed** (restricted key, exits fullscreen): `rules.crazygames.restrictedKeys` in `config/platform.config.js`, stripped by `Input.init`. Pause = P, back = Backspace / P; "Esc" hints show the remaining key.
+4. **Demo store links** only on the main menu / end of demo: Main Path doesn't pop WISHLIST. (PRIVATE MATCH is open on CrazyGames for now, see C; if the demo locks it again it shows "PRIVATE MATCH is in the full game." instead of WISHLIST.)
+5. **Fake Social hidden** (`rules.crazygames.fakeSocial = false`): no fake friends, invites, party or chat.
 6. **Name filter** (all stores, client side only): `config/namefilter.config.js`, `Profile.nameAllowed`. Typing a blocked name is refused; blocked names received from others show as `PLAYER`. The match server doesn't filter (no redeploy needed).
 7. **`-webkit-user-select: none`** etc. on `body` for Safari.
 8. **SETTINGS › PRIVACY NOTICE** (all stores): `config/privacy.config.js`, English only. Contact: team41.sfc@gmail.com. Update `updated` when the text changes. Risk: CrazyGames asks for a notice "for new players"; if review flags a settings-only entry, add a small link on the home screen or name step.
@@ -23,24 +23,39 @@ Requirement pages: [technical](https://docs.crazygames.com/requirements/technica
 - [ ] **Desktop only** when submitting (no touch controls).
 - [ ] **Upload to the Developer Portal preview** (private, submit for review whenever ready) and confirm there: `index.html` at zip root, SDK loads, `gameplayStart` registers, language follows their locale, match server and PeerJS reachable inside their iframe.
 
-## C. Friends through the CrazyGames SDK (not started)
+## C. Friends through the CrazyGames SDK (done, testing in the portal preview, not released)
 
-Goal: replace the fake Social with real CrazyGames friends.
+Requirements: [multiplayer](https://docs.crazygames.com/requirements/multiplayer/) (Online with Friends = Full implementation; we build it now to test). SDK: [game](https://docs.crazygames.com/sdk/game/), [user](https://docs.crazygames.com/sdk/user/). Code: `src/platform/crazygames.js` (adapter), `Session.presence` / `watchInvites`, `OnlineUI.invite` / `tryInvite`. Test: `server/test/invite-test.js` 7–10.
 
-SDK pieces ([user](https://docs.crazygames.com/sdk/user/), [game](https://docs.crazygames.com/sdk/game/)):
-- `user.listFriends({page, size})`: id, username, avatar; logged-in players only; no online status. Max 50 per page, 1 call / 250 ms.
-- `game.updateRoom({ roomId, isJoinable, inviteParams })` / `leftRoom()`: friends join or invite from the CrazyGames sidebar. `inviteLink(params)` for a copyable link.
-- Joiners arrive via `addJoinRoomListener(fn)` (already in game) or `game.inviteParams` at startup.
-- Guests: "Log in with CrazyGames" via `user.showAuthPrompt()`, never the main call to action, never automatic.
-- Friend requests and chat stay on CrazyGames.
+A party = a private room (PRIVATE MATCH or a Story co-op room); the owner presses START, and after the match everyone is back in the same lobby.
 
-Plan: party = a real private room (room code in `inviteParams`), leader presses START. A `Social` interface with one backend per store (`crazygames` SDK, `steam` later, none for itch); the fake-bot backend becomes debug-only or goes.
+| Requirement | How |
+|---|---|
+| Share room + status | `updateRoom({ roomId: <room code>, isJoinable, inviteParams: { room: <code> } })`, sent when it changes (checked every `platform.presenceEvery` s). Joinable = in the lobby with a free seat (6, Story 3); not joinable mid-match; `leftRoom()` on leave. Ranked rooms are never reported |
+| Join without reload | `addJoinRoomListener` → Session `invite {code}` → leaves the current room / search, joins (after the match if one is running) |
+| Opened from an invite | `game.inviteParams.room` at boot → joins once the menus are ready |
+| Skip onboarding for joiners | Opened from an invite / instant: PROLOGUE skipped that time (still offered next launch). Logged-in players with no name get their CrazyGames username, so no name step; guests type a name (one screen) |
+| Instant Multiplayer | `isInstantMultiplayer` → PRIVATE MATCH › CREATE ROOM as soon as the player is free in the menus |
+| Invite link (optional) | INVITE FRIENDS in the lobby copies `inviteLink({ room })` |
+| CrazyGames usernames | Only fills an empty name (a name the player chose is kept) |
+| Lobby size to submit | **6** (`net.maxPlayers`; Story co-op rooms hold 3) |
 
-**Open decisions**
-1. Ranked parties in v1 (server grouping + protocol bump), or party = private room + invites only?
-2. Replace the typed name with the CrazyGames username when logged in? (Full launch requires it.)
-3. PRIVATE MATCH is locked in the demo; friends need it unlocked, at least for invite-only rooms.
-4. Steam / itch: hide friends, or start Steam friends too?
+Every SDK call logs `[cg] …` in the console, for checking in the preview.
+
+**Preview test checklist** (two browsers, two CrazyGames accounts that are friends):
+- [ ] A creates a room → B sees "join" in the friends sidebar / gets an invite → joins without a reload.
+- [ ] B with a fresh profile, opened from the invite → lands in A's room, no PROLOGUE.
+- [ ] Copied invite link opens the game into the room.
+- [ ] Mid-match the room isn't joinable; after the match it is again.
+- [ ] Leaving clears the room (`leftRoom`).
+- [ ] Server rooms and DIRECT (PeerJS) rooms both work inside their iframe.
+
+**Still open**
+1. Friends list (`user.listFriends`): skipped; it has no online status and the SDK can't invite one specific friend (the sidebar does that).
+2. Always show the CrazyGames username when logged in (Full launch wants it), instead of only filling an empty name?
+3. Demo scope: PRIVATE MATCH is open on CrazyGames (`platform.crazygames.privateMatch`) only to test invites.
+4. Ranked parties (server grouping + protocol bump): not started.
+5. Fake Social (`fakeSocial` off here) could get a Steam / CrazyGames backend later through the same platform adapters.
 
 ## Not decided / parked
 
@@ -48,4 +63,4 @@ Plan: party = a real private room (room code in `inviteParams`), leader presses 
 
 ## Full launch (later)
 
-One click to gameplay for new players (skip language popup + name entry), `gameplayStop` everywhere / loading events, Data module for saves, CrazyGames username and avatar, Instant Multiplayer, ads.
+One click to gameplay for new players (skip language popup + name entry), `gameplayStop` everywhere / loading events, Data module for saves, CrazyGames avatar, ads. (Username and Instant Multiplayer: see C.)

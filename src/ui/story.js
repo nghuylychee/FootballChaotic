@@ -653,7 +653,7 @@ window.SFC = window.SFC || {};
       if (Story.cueOnce('net', hit)) { SFC.Audio.goal(); SFC.Audio.hit(); }
     },
 
-    // nền cho thẻ MAIN PATH (thẻ là DOM)
+    // nền cho thẻ GOAT PATH (thẻ là DOM)
     path(t) {
       ART.village(t + 5, 0, 0.72);
       if (Story.cueOnce('card', true)) SFC.Audio.reveal(3);
@@ -975,7 +975,7 @@ window.SFC = window.SFC || {};
     },
 
     skipAll() {
-      // bỏ qua: nhảy tới màn lật thẻ bí kíp / thẻ MAIN PATH kế tiếp nếu có (người chơi vẫn phải biết mình nhận Tuyệt kỹ
+      // bỏ qua: nhảy tới màn lật thẻ bí kíp / thẻ GOAT PATH kế tiếp nếu có (người chơi vẫn phải biết mình nhận Tuyệt kỹ
       // và Main Path là gì), không thì kết thúc
       const card = this.scenes.findIndex((s, i) => i > this.idx && (s.art === 'path' || s.reveal));
       if (card > this.idx) { this.hold = -99; return this.go(card); }
@@ -1053,19 +1053,19 @@ window.SFC = window.SFC || {};
       }
     },
 
+    // thẻ GOAT PATH cuối PROLOGUE (ftue.config.js pathCard): các act của run (act đầu sáng, còn lại ???) + luật
     pathCard() {
-      const P = CFG().pathCard, PX = SFC.PixelIcon, MP = SFC.MainPath;
+      const P = CFG().pathCard, PX = SFC.PixelIcon, acts = SFC_CONFIG.run.acts;
       // font pixel không có ký tự ★ -> vẽ bằng font VT323
       const star = (txt) => esc(txt).replace(/★/g, '<i class="st-s">★</i>');
-      const icon = (k) => k === 'star' ? PX.ui('star') : k === 'core' ? PX.core('thunder_kick') : PX.ui('crown');
-      const areas = MP.areas().slice(0, 4).map((a, i) => i === 0
-        ? `<div class="st-area on" style="--c:${a.color}">${PX.area(a.id)}<span>${esc(a.name)}</span></div>`
+      const strip = acts.map((a, i) => i === 0
+        ? `<div class="st-area on" style="--c:${a.color}">${PX.area(a.arena)}<span>${esc(a.name)}</span></div>`
         : '<div class="st-area"><b>?</b><span>???</span></div>').join('<em>›</em>');
       return `<div class="st-card">
         <div class="st-card-t">${esc(P.title)}</div>
-        <div class="st-areas">${areas}</div>
-        ${P.lines.map(([k, a, b], i) => `<div class="st-row" style="--d:${0.25 + i * 0.3}s"><span class="st-ic">${icon(k)}</span><div><b>${star(a)}</b><small>${esc(b)}</small></div></div>`).join('')}
-        <div class="st-card-f">${esc(P.foot)}</div>
+        <div class="st-areas">${strip}</div>
+        ${P.lines.map(([k, a, b], i) => `<div class="st-row" style="--d:${0.25 + i * 0.3}s"><span class="st-ic">${PX.ui(k)}</span><div><b>${star(a)}</b><small>${esc(b)}</small></div></div>`).join('')}
+        <div class="st-card-f">${esc(P.foot.replace('{act}', acts[0].name))}</div>
         <div class="st-card-go"><kbd>${esc(SFC.Input.label('confirm'))}</kbd> ${esc(SFC.t("LET'S GO"))}</div>
       </div>`;
     },

@@ -65,7 +65,7 @@ ipcMain.on('sfc-window', (e, mode) => {
 ipcMain.on('sfc-quit', () => app.quit());
 
 // mở game bằng lời mời của bạn bè khi game chưa chạy: Steam thêm tham số +connect_lobby <lobby id 64 bit> -> chuỗi số (null = không có)
-// (preload -> SFC_STEAM.launchLobby -> src/net/transport-steam.js launchInvite)
+// (preload -> SFC_STEAM.launchLobby -> src/platform/steam.js launchInvite)
 ipcMain.on('sfc-launch-lobby', (e) => {
   const i = process.argv.indexOf('+connect_lobby'), id = i >= 0 ? process.argv[i + 1] : null;
   e.returnValue = typeof id === 'string' && /^\d{1,20}$/.test(id) ? id : null;

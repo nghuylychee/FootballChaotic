@@ -1,6 +1,8 @@
 /* Preload — chạy trước game, dùng chung window (contextIsolation tắt).
- * - window.SFC_DESKTOP: đổi cỡ cửa sổ / toàn màn hình (src/meta/settings.js), gửi sang electron/main.js; ngôn ngữ của hệ điều hành
- * - Khởi động Steam; được thì gắn window.SFC_STEAM cho src/net/transport-steam.js (kèm lời mời đã mở game: launchLobby), không được thì game dùng PeerJS.
+ * - window.SFC_DESKTOP: nơi lưu file, cỡ cửa sổ / toàn màn hình, thoát, mở link, ngôn ngữ của hệ điều hành. Game chỉ dùng qua
+ *   SFC.Target (src/target/target.js: có SFC_DESKTOP = target desktop)
+ * - Khởi động Steam; được thì gắn window.SFC_STEAM cho src/net/transport-steam.js + src/platform/steam.js (kèm lời mời đã mở game:
+ *   launchLobby), không được thì game dùng PeerJS.
  *   App ID: Steam tự đưa khi mở game từ Steam; chạy ngoài Steam thì đọc steam_appid.txt ở thư mục đang chạy (dev: 480).
  */
 const { ipcRenderer } = require('electron');

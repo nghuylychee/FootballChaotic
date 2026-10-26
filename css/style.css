@@ -443,6 +443,13 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 #menu.ults-pg .mi-label { font-size: 16px; }
 #menu.ults-pg .mi-sub { font-size: 10px; }
 #menu.ults-pg .mi { padding-top: 1px; padding-bottom: 1px; }
+/* SETTINGS › TEST (dev): cột trái trải cả bề ngang, nút xếp lưới 2 cột (cột phải không có gì) */
+#menu.test-pg { background: rgba(10, 11, 14, 0.9); }   /* chữ trải sang nửa phải: che trận demo phía sau */
+#menu.test-pg .m-left { grid-column: 1 / -1; }
+#menu.test-pg .m-right { display: none; }
+#menu.test-pg .m-items { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; align-content: start; }
+#menu.test-pg .mi { padding-top: 3px; padding-bottom: 3px; }
+#menu.test-pg .mi-label { font-size: 18px; }
 /* bảng ghép cặp của sổ: hàng / cột = trường phái, đường chéo = Tuyệt kỹ gốc, dưới chéo = lai, cột cuối = ★★ */
 .ub { display: grid; grid-template-columns: 16px repeat(var(--n), 20px) 6px 20px; grid-auto-rows: 20px; gap: 2px; align-items: center; justify-items: center; padding: 2px 0 4px; }
 .ub > b { display: flex; justify-content: center; align-items: center; filter: drop-shadow(0 0 2px var(--gold)); }
