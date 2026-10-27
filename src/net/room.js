@@ -24,10 +24,16 @@
  * k = id Story. Giữa 2 trận phòng ở 'lobby' (người mới vào được, nhận ghế còn trống). Host dựng trận bằng startStory(o).
  * Cut scene trước trận chiếu cùng lúc: cueScenes(kind) gửi cs{k} -> khách chiếu xong gửi csd; host chờ (scenesPending) rồi mới vào trận.
  *
- * new SFC.Room({ send(msg, id?), drop(id), local?, snapshotEvery, ranked?, story?, hooks? })
+ * Phòng GOAT PATH co-op (run = true, chỉ người chơi làm host — docs/RUN_DESIGN.md "Co-op"): luật ghế như phòng Story (coop). Run nằm ở
+ * máy host (src/meta/run.js); gói lobby thêm rn = 1 + r (hook runState: bản sao run cho khách). Khách gửi ra{a,...} (bỏ phiếu, chọn BADGE,
+ * mua đồ...) -> hook runAction(id, m) (host áp vào run rồi gửi lobby mới). Cut scene: cueScenes('run:<act>:<intro|boss|after>').
+ * Skill game chỉ 1 người đá: startStory(o) với o.only = [id] -> những người còn lại nhận start{opts.watch} (me = -1, chỉ xem).
+ *
+ * new SFC.Room({ send(msg, id?), drop(id), local?, snapshotEvery, ranked?, story?, run?, hooks? })
  *  - send: bỏ id = gửi mọi khách (bên gửi tự JSON 1 lần rồi phát cho từng người)
  *  - hooks (đều tuỳ chọn): changed() · joined(name) · left(name) · dropped(name, away) · back(name) · toLobby() · start(game) ·
- *    events(g) · localRole(role) · pong(id, c) · pings(bảng) · myPing() -> ms | null · cupState() -> trạng thái cup (phòng Story)
+ *    events(g) · localRole(role) · pong(id, c) · pings(bảng) · myPing() -> ms | null · cupState() -> trạng thái cup (phòng Story) ·
+ *    runState() -> bản sao run (phòng run) · runAction(id, m) (phòng run, khách thao tác)
  */
 window.SFC = window.SFC || {};
 
@@ -85,6 +91,8 @@ window.SFC = window.SFC || {};
       this.hooks = o.hooks || {};
       this.ranked = o.ranked || null;        // trận xếp hạng: đội hình đã ghép (Matchmaker.lineup)
       this.story = o.story || null;          // phòng FOOTBALL STORY: id Story (co-op, chỉ người chơi làm host)
+      this.run = !!o.run;                    // phòng GOAT PATH co-op (chỉ người chơi làm host)
+      this.watchIds = [];                    // đang trong trận: người trong phòng không có ghế (chỉ xem — Skill game 1 người)
       this.csWait = new Set();               // phòng Story: khách chưa chiếu xong cut scene trước trận
       this.csUntil = 0;
       this.createdAt = Date.now();
@@ -108,6 +116,8 @@ window.SFC = window.SFC || {};
     }
 
     hook(name, ...a) { const h = this.hooks[name]; if (h) return h(...a); }
+    // phòng co-op 1 đội (Story / GOAT PATH): cả phòng đội 0, ghế trống = AI, vào được giữa 2 trận
+    get coop() { return !!this.story || this.run; }
     member(id) { return this.lobby.members.find((x) => x.id === id) || null; }
     // còn người vắng mặt chờ kết nối lại (máy chủ: chưa xoá phòng dù không còn kết nối nào)
     get hasAway() { return this.lobby.members.some((m) => m.away); }
@@ -125,6 +135,7 @@ window.SFC = window.SFC || {};
       if (this.ranked) return;   // trận xếp hạng không có phòng chờ
       const msg = { t: 'lobby', m: this.publicMembers(), o: L.owner, g: L.ground };
       if (this.story) { msg.k = this.story; msg.c = this.hook('cupState') || null; }
+      if (this.run) { msg.rn = 1; msg.r = this.hook('runState') || null; }
       this.send(msg);
     }
     // danh sách gửi đi: không kèm mã bí mật
@@ -139,9 +150,23 @@ window.SFC = window.SFC || {};
     moveMember(id, s) {
       const m = this.member(id);
       if (!m || this.status !== 'lobby' || s < -1 || s >= Slots.n() || Slots.memberAt(this.lobby, s)) return;
-      if (this.story && (s < 0 || Slots.team(s) !== 0)) return;   // phòng Story: cả phòng 1 đội, không ghế GUEST
+      if (this.coop && (s < 0 || Slots.team(s) !== 0)) return;   // phòng Story / run: cả phòng 1 đội, không ghế GUEST
+      if (this.run && this.isLocal(id)) return;   // phòng run: vị trí của host = vị trí character trong run (seatHost)
       m.slot = s;
       if (this.local && id === this.local.id && s >= 0) { this.hook('localRole', Slots.role(s)); m.pf = this.local.pf(); }
+      this.sendLobby();
+      this.hook('changed');
+    }
+
+    // phòng run: host đứng đúng vị trí của character trong run (người đang đứng đó dời sang ô trống khác)
+    seatHost(role) {
+      const L = this.lobby, me = this.local && this.member(this.local.id), s = Slots.of(0, role);
+      if (!me || !this.run || this.status !== 'lobby' || me.slot === s) return;
+      const other = Slots.memberAt(L, s);
+      if (other) other.slot = me.slot;
+      me.slot = s;
+      this.hook('localRole', role);
+      me.pf = this.local.pf();
       this.sendLobby();
       this.hook('changed');
     }
@@ -173,7 +198,7 @@ window.SFC = window.SFC || {};
           if (this.ranked) return this.rankedHello(id, pf);
           // người vào sau: mặc định sang đội kia (versus) đúng vị trí họ chọn; hết chỗ thì slot trống bất kỳ
           // (phòng Story: cùng đội 0, vào được cả giữa 2 trận của cup)
-          const slot = this.story ? Slots.coopFree(L, pf.role || 'FWD') : Slots.free(L, L.members.length ? 1 : 0, pf.role || 'FWD');
+          const slot = this.coop ? Slots.coopFree(L, pf.role || 'FWD') : Slots.free(L, L.members.length ? 1 : 0, pf.role || 'FWD');
           if (slot < 0) return this.refuse(id, 'full');
           if (!who) {
             const tok = token();
@@ -198,8 +223,11 @@ window.SFC = window.SFC || {};
         case 'intro':
           this.introWait.delete(id);
           break;
-        case 'csd':   // phòng Story: khách chiếu xong cut scene trước trận
+        case 'csd':   // phòng Story / run: khách chiếu xong cut scene
           this.csWait.delete(id);
+          break;
+        case 'ra':    // phòng run: khách thao tác trên run (bỏ phiếu, chọn BADGE, mua đồ...) — host kiểm tra + áp vào run
+          if (this.run && who && this.status === 'lobby') this.hook('runAction', id, m);
           break;
         case 'i': {
           const r = this.remotes[id];
@@ -214,7 +242,7 @@ window.SFC = window.SFC || {};
           break;
         // chủ phòng không phải máy chạy trận (máy chủ riêng): xin START / về phòng chờ
         case 'begin':
-          if (id === L.owner && this.status === 'lobby' && !this.ranked && !this.story) this.startMatch(m.area);
+          if (id === L.owner && this.status === 'lobby' && !this.ranked && !this.coop) this.startMatch(m.area);
           break;
         case 'ground':
           this.setGround(id, m.a);
@@ -278,7 +306,7 @@ window.SFC = window.SFC || {};
       const name = (m.pf && m.pf.name) || 'A player';
       if (this.status === 'playing') {
         // trận xếp hạng / Story luôn đá tới hết (AI đá thay); phòng thường: còn ít nhất 2 người thì đá tiếp, không thì về phòng chờ
-        const keep = !!this.ranked || !!this.story || L.members.length > 1;
+        const keep = !!this.ranked || this.coop || L.members.length > 1;
         // vắng mặt quá hạn: slot đã giao AI từ lúc mất kết nối -> không báo lại
         if (wasAway && keep) return;
         // AI đá thay người vừa rời, trận tiếp tục
@@ -338,17 +366,23 @@ window.SFC = window.SFC || {};
     /* ---------- phòng FOOTBALL STORY ---------- */
     // host dựng trận cup cho cả phòng. o (game dựng, src/ui/cup.js): { match: opts trận của vòng (đội đối thủ, độ khó, luật trận...),
     //   away: id đội đối thủ, mates: đồng đội AI cho các vị trí không có người (Mates.spec, đã gắn role) }
+    //   Phòng run thêm: seat: { vị trí: { stats, ovr, inj } } (chỉ số trong run của ô đội hình, đè lên hồ sơ người đứng đó) ·
+    //   only: [id] = chỉ những người này ra sân (Skill game 1 người), người còn lại xem (watch)
     startStory(o) {
       const L = this.lobby, roles = ROLES();
-      if (!this.story || this.status !== 'lobby' || !o) return;
+      if (!this.coop || this.status !== 'lobby' || !o) return;
       this.refreshLocal();
-      const ms = L.members.filter((m) => m.slot >= 0 && Slots.team(m.slot) === 0 && !m.away);
+      const here = L.members.filter((m) => m.slot >= 0 && Slots.team(m.slot) === 0 && !m.away);
+      const ms = Array.isArray(o.only) ? here.filter((m) => o.only.includes(m.id)) : here;
       if (!ms.length) return;
       // mỗi người mang character của mình (ngoại hình, chỉ số, Core đã mở) vào đúng vị trí đang đứng
-      const seats = ms.map((m) => {
-        const pf = m.pf || SFC.Profile.sanitizePublic({}), role = Slots.role(m.slot);
-        return { team: 0, idx: roles.indexOf(role), avatar: Object.assign({}, pf, { role, mate: undefined, cores: undefined }), cores: pf.cores || null };
+      // đội ít người hơn số vị trí (Skill game: teamSize) -> ghế theo thứ tự cầu thủ có trên sân thay vì theo vị trí
+      const size = o.match && o.match.teamSize ? o.match.teamSize[0] : roles.length;
+      const seats = ms.map((m, k) => {
+        const pf = m.pf || SFC.Profile.sanitizePublic({}), role = Slots.role(m.slot), patch = (o.seat && o.seat[role]) || {};
+        return { team: 0, idx: size < roles.length ? k : roles.indexOf(role), avatar: Object.assign({}, pf, { role, mate: undefined, cores: undefined }, patch), cores: pf.cores || null };
       });
+      this.watchIds = here.filter((m) => !ms.includes(m)).map((m) => m.id);
       const owner = this.member(L.owner) || ms[0];
       const mates = Array.isArray(o.mates) && o.mates.length ? o.mates : null;
       this.csWait.clear();
@@ -357,9 +391,9 @@ window.SFC = window.SFC || {};
       }));
     }
 
-    // chiếu cut scene cùng lúc: báo khách (kind: before = trước trận), chờ khách báo csd tối đa net.sceneWait giây
+    // chiếu cut scene cùng lúc: báo khách (kind: before = trước trận Story · run:<act>:<intro|boss|after>), chờ khách báo csd tối đa net.sceneWait giây
     cueScenes(kind) {
-      if (!this.story) return;
+      if (!this.coop) return;
       this.csWait = new Set(this.lobby.members.filter((m) => !m.away && !this.isLocal(m.id)).map((m) => m.id));
       this.csUntil = Date.now() + (N().sceneWait || 25) * 1000;
       this.send({ t: 'cs', k: kind });
@@ -416,7 +450,7 @@ window.SFC = window.SFC || {};
       this.seatOf = {};
       ids.forEach((id, i) => { this.seatOf[id] = i; });
       // máy chủ riêng không có góc nhìn: me = -1 (không slot nào là "tại máy này")
-      const me = this.local ? this.seatOf[this.local.id] : -1;
+      const me = this.local && this.seatOf[this.local.id] != null ? this.seatOf[this.local.id] : -1;   // host không ra sân (Skill game của người khác): chỉ xem
       this.game = new SFC.Game(Object.assign({ home, away, me, humanTeam: me >= 0 ? opts.seats[me].team : -1 }, opts));
       // máy chủ riêng: không ai xem -> bỏ hiệu ứng hình ảnh (vẫn ghi lại gửi khách). Phải trước capture
       if (!this.local) this.game.effects.headless();
@@ -434,6 +468,8 @@ window.SFC = window.SFC || {};
       // màn giới thiệu 2 đội: trận đứng yên tới khi mọi máy xem xong (hoặc quá giờ chờ)
       this.holdIntro(Room.wantsIntro(opts));
       for (const id of this.seatIds) if (!this.isLocal(id)) this.send({ t: 'start', opts: this.optsFor(id) }, id);
+      // không có ghế (Skill game 1 người của phòng run): xem trận, không gửi phím
+      for (const id of this.watchIds) if (!this.isLocal(id) && this.member(id)) this.send({ t: 'start', opts: Object.assign({}, this.startOpts, { me: -1, watch: 1 }) }, id);
       this.hook('start', this.game);
     }
 
@@ -478,6 +514,7 @@ window.SFC = window.SFC || {};
 
     toLobbyState() {
       this.status = 'lobby';
+      this.watchIds = [];
       this.game = null;
       this.introLeft = 0;
       this.hook('toLobby');
@@ -541,7 +578,7 @@ window.SFC = window.SFC || {};
     // giống SFC.Intro.wants (ui/intro.js gọi hàm này) — Room chạy được cả khi không có UI
     static wantsIntro(opts) {
       const I = SFC_CONFIG.intro;
-      if (!I || !I.enabled || opts.resume) return false;   // kết nối lại giữa trận: không chiếu lại
+      if (!I || !I.enabled || opts.resume || opts.drill) return false;   // kết nối lại giữa trận: không chiếu lại · SKILL GAME: không có màn giới thiệu
       const mode = opts.online ? 'online' : opts.mainPath ? 'mainPath' : opts.cup || (opts.run && !opts.drill) ? 'story' : opts.drill ? 'training' : opts.training ? 'training' : 'single';
       return I.modes.includes(mode);
     }

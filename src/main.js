@@ -81,29 +81,29 @@
     startRunMatch() {
       const M = SFC.Run.match();
       if (!M) return this.toMenu('runmap');
-      const MP = SFC_CONFIG.mainPath, soloIdx = Math.max(0, C.roles.indexOf(this.myRole()));
-      // chỉ số character = nền + BADGE trong run (Run.avatarStats), không dùng chỉ số ngoài run
-      const R = SFC.Run.ratings(), ovr = Math.round(Object.values(R).reduce((s, v) => s + v, 0) / Object.keys(R).length);
-      const avatar = Object.assign(SFC.Profile.avatar(), { role: C.roles[soloIdx], stats: SFC.Run.avatarStats(), ovr });
+      const MP = SFC_CONFIG.mainPath, RN = SFC.Run, roles = RN.squad().map((x) => x.role), soloIdx = Math.max(0, C.roles.indexOf(roles[0]));
+      // đội hình của run (Run.squad): chỉ số = nền theo vị trí + BADGE của từng người, không dùng chỉ số ngoài run; inj = chấn thương (băng + khoảnh khắc)
+      const avatar = Object.assign(SFC.Profile.avatar(), { role: roles[0], stats: RN.statsOf(0), ovr: RN.ovrOf(0), inj: RN.injuryIds(0) });
       SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
-      const ai = SFC.MainPath.aiProfile(M.elo), mateRoles = C.roles.filter((r, i) => i !== soloIdx);
-      // SKILL GAME (src/systems/drills.js): đội bạn 1 người (character), không chọn Core, không luật trận, không màn giới thiệu
+      const ai = SFC.MainPath.aiProfile(M.elo);
+      // SKILL GAME (src/systems/drills.js): đội bạn 1 người (character) hoặc cả đội hình (PASS CHAIN), không chọn Core, không luật trận, không màn giới thiệu
       if (M.drill) {
-        const D = SFC_CONFIG.run.drills[M.drill];
+        const size = M.teamSize.slice();
         return this.startMatch({
-          home: MP.playerTeam.id, away: M.team, difficulty: 'normal', aiProfile: ai, humanTeam: 0, solo: [0, null], avatars: [avatar, null],
-          arena: SFC_CONFIG.arenas[M.arena] ? M.arena : undefined, teamSize: D.teamSize.slice(), noDraft: true, drill: M.drill, run: M.info,
+          home: MP.playerTeam.id, away: M.team, difficulty: 'normal', aiProfile: ai, mateProfile: ai, humanTeam: 0, solo: [size[0] > 1 ? soloIdx : 0, null], avatars: [avatar, null],
+          mates: [size[0] > 1 ? RN.mateSpecs() : null, null],
+          arena: SFC_CONFIG.arenas[M.arena] ? M.arena : undefined, teamSize: size, noDraft: true, drill: M.drill, run: M.info,
         });
       }
       this.startMatch({
         home: MP.playerTeam.id, away: M.team, difficulty: 'normal', aiProfile: ai, mateProfile: ai,
         humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: SFC_CONFIG.arenas[M.arena] ? M.arena : undefined,
         coreUnlocks: [SFC.Profile.unlockedCores(), null],
-        mates: [SFC.Run.pickMates(M.elo).map((m, i) => SFC.Cup.mateSpec(m, mateRoles[i] || null, { team: M.team })), null],   // chỉ số theo trình đối thủ (stories.mateStats)
+        mates: [RN.mateSpecs(), null],
         signature: [null, M.signature],
         knockout: true, run: M.info,
         mod: M.mod, barks: M.barks,   // luật trận + câu nói của đối thủ (src/systems/matchmods.js); không có tỉ số khởi đầu
-        ...SFC.Run.matchOpts(),       // BADGE: coreBoost / draftBias / score (Home Crowd) / ultGain
+        ...RN.matchOpts(),            // BADGE: coreBoost / draftBias / score (Home Crowd) / ultGain
       });
     },
 
@@ -114,7 +114,7 @@
       // FOOTBALL STORY: bỏ trận = thua = hết cup
       if (g && g.opts.cup && g.state !== 'ended') { SFC.Cup.forfeit(g); return this.toMenu('cup'); }
       // GOAT PATH: SKILL GAME bỏ cuộc = hỏng bài (chấn thương), màn kết quả hiện như thường
-      if (g && g.opts.drill && g.state !== 'ended') { SFC.Drills.finish(g, false); return this.resume(); }
+      if (g && g.opts.drill && g.state !== 'ended') { SFC.Drills.finish(g, true); return this.resume(); }
       // GOAT PATH: bỏ trận = thua = hết run
       if (g && g.opts.run && g.state !== 'ended') { SFC.Run.forfeit(); return this.toMenu('runmap'); }
       if (mp && g.state !== 'ended') {

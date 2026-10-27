@@ -117,6 +117,9 @@ window.SFC = window.SFC || {};
           d: E.decoys.map((o) => (o.legion ? [r1(o.x), r1(o.y), r1(o.vx), r1(o.vy), o.srcId, 1] : [r1(o.x), r1(o.y), r1(o.vx), r1(o.vy), o.srcId])),   // 1 = phân thân Clone Legion (không bóng)
         },
       };
+      // GOAT PATH SKILL GAME (src/systems/drills.js): số đếm, cổng đang tới, bia, lượt người đuổi, mốc khi xong (-1 = chưa)
+      const D = g.drill;
+      if (D) s.sk = [r1(D.val), D.gi || 0, r1(D.ty || 0), r1(D.th || 0), D.wave || 1, D.ok == null ? -1 : D.tier];
       if (d) {
         const picked = {};
         for (const k in d.options) picked[k] = d.picked[k] ? 1 : 0;   // khóa = slot người chơi
@@ -168,6 +171,11 @@ window.SFC = window.SFC || {};
         };
       });
 
+      if (s.sk && g.drill) {
+        const D = g.drill, k = s.sk;
+        D.val = +k[0] || 0; D.gi = k[1] | 0; D.ty = +k[2] || 0; D.th = +k[3] || 0; D.wave = k[4] | 0;
+        if (k[5] >= 0 && D.ok == null) { D.tier = k[5] | 0; D.ok = D.tier > 0; }
+      }
       if (s.dr) {
         const prev = g.draft;
         g.draft = { options: s.dr.o, picked: Object.assign({}, s.dr.pk), round: s.dr.r, limit: s.dr.l, t: s.dr.t, aiPicks: [], pre: !!s.dr.pre, rerolls: s.dr.rr || {} };

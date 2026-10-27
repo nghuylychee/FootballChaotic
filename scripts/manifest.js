@@ -82,6 +82,7 @@ const FILES = [
   ['src/systems/celebrate.js', 'game sandbox itch server'],   // ăn mừng bàn thắng: chọn động tác + di chuyển
   ['src/systems/matchmods.js', 'game sandbox itch server'],   // FOOTBALL STORY: luật trận của từng đội + câu nói trong trận
   ['src/systems/drills.js', 'game'],                          // GOAT PATH: SKILL GAME (bài tập trên sân thật)
+  ['src/systems/hurt.js', 'game'],                            // GOAT PATH: chấn thương ra tay trong trận (khựng / đấm xịt / sút trượt)
   ['src/systems/ai.js', 'game sandbox itch server'],
   ['src/systems/human.js', 'game sandbox itch server'],
   ['src/game/match.js', 'game sandbox itch server'],
@@ -92,6 +93,7 @@ const FILES = [
   ['src/render/crowd.js', 'game sandbox itch'],
   ['src/render/vfx.js', 'game sandbox itch'],
   ['src/render/modsdraw.js', 'game sandbox itch'],   // FOOTBALL STORY: hình vật thể của luật trận
+  ['src/render/rundraw.js', 'game'],                 // GOAT PATH: bia / cổng của SKILL GAME + dấu chấn thương trên đầu
   ['src/render/renderer.js', 'game sandbox itch'],
   ['src/render/pixelicons.js', 'game itch'],
   ['src/net/transport.js', 'game server'],                 // máy chủ: NetCommon (mã phòng)

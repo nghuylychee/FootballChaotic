@@ -18,7 +18,8 @@ window.SFC = window.SFC || {};
      *         avatars: [{name, look, role?, stats?, ovr?} | null, ...] — character của người chơi, thay cầu thủ ở vị trí role
      *                  (DEF / FWD, mặc định FWD) của đội đó; stats = chỉ số riêng (Main Path / Luyện tập, không có thì dùng chỉ số đội),
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
-     *         mates: [{ name, ovr, stats, deck, look, role, elo?, fake? } | [..] | null, ...] — đồng đội của người chơi (thay cầu thủ AI không phải character);
+     *         mates: [{ name, ovr, stats, deck, look, role, elo?, fake?, inj? } | [..] | null, ...] — đồng đội của người chơi (thay cầu thủ AI không phải character);
+     *                inj (cả avatars[].inj): id chấn thương GOAT PATH (run.badges, src/systems/hurt.js);
      *                mảng = nhiều người (Main Path: 2 đối thủ giả); fake = người chơi giả do bot điều khiển (hiện như người chơi, kèm Elo),
      *         Tuyệt kỹ (không phải Core để chọn): mọi cầu thủ mang cores.ults.start từ đầu trận, đạt mốc Core cùng trường phái thì
      *                đổi / tiến hoá theo công thức (CoreSystem.bestRecipe, docs/ULT_RECIPE.md). noUlts / tutorial: không gán,
@@ -34,7 +35,8 @@ window.SFC = window.SFC || {};
      *         tutorial: trận mơ PROLOGUE (src/game/tutorial.js): không đồng hồ tới khi g.clockOn, lượt chọn Core do kịch bản mở,
      *         noAiCores: cầu thủ AI không tự bốc Core ở lượt chọn,
      *         cup: { id, round } — trận FOOTBALL STORY (src/meta/cup.js); knockout: hoà hết giờ = bàn thắng vàng không giới hạn,
-     *         mod: id luật trận (stories.mods, src/systems/matchmods.js) · barks: câu nói trong trận của đối thủ · score: [đội 0, đội 1] tỉ số lúc đầu trận }
+     *         mod: id luật trận (stories.mods, src/systems/matchmods.js) · barks: câu nói trong trận của đối thủ · score: [đội 0, đội 1] tỉ số lúc đầu trận,
+     *         statMul: [k0, k1] nhân chỉ số cả đội · drill / drillSeed: SKILL GAME GOAT PATH (src/systems/drills.js) }
      */
     constructor(opts) {
       const C = SFC_CONFIG.game;
@@ -80,6 +82,7 @@ window.SFC = window.SFC || {};
         p.look = Object.assign({}, av.look);
         p.avatar = true;
         if (av.stats) { p.stats = Object.assign({}, p.stats, av.stats); p.ovr = av.ovr; }
+        if (av.inj && av.inj.length) p.inj = av.inj.slice();   // GOAT PATH: chấn thương (src/systems/hurt.js, băng vẽ ở sprites.js)
       };
       (opts.avatars || []).forEach((av, t) => {
         if (!av || !this.teams[t]) return;
@@ -111,9 +114,15 @@ window.SFC = window.SFC || {};
           p.ovr = m.ovr;
           p.deck = m.deck && m.deck.length ? m.deck.slice() : null;
           p.mate = true;
+          if (m.inj && m.inj.length) p.inj = m.inj.slice();
           if (m.fake) { p.fake = true; p.elo = m.elo; }
         }
       });
+      // statMul: [k đội 0, k đội 1] nhân mọi chỉ số cầu thủ đội đó (GOAT PATH co-op: đối thủ mạnh lên theo số người chơi thật)
+      if (opts.statMul) for (const p of this.players) {
+        const k = +opts.statMul[p.team];
+        if (k > 0 && k !== 1) for (const key in p.stats) p.stats[key] *= k;
+      }
       // Tuyệt kỹ khởi đầu của mọi cầu thủ (cores.ults.start, null = chưa có); đạt công thức thì đổi (CoreSystem.add -> setUlt).
       // Trận mơ PROLOGUE tự trao Tuyệt kỹ theo kịch bản (src/game/tutorial.js) -> không gán ở đây
       if (!opts.tutorial && !opts.noUlts) {

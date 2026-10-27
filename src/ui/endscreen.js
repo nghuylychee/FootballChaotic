@@ -33,7 +33,7 @@ window.SFC = window.SFC || {};
         return mp ? (SFC.MainPath.demoOver() ? [['restart', _t('CONTINUE')]] : [['menu', _t('LOBBY')]]) : [['restart', _t('PLAY AGAIN')], ['menu', _t('MAIN MENU')]];
       }
       // phòng FOOTBALL STORY: chủ phòng CONTINUE = cả phòng về màn cup (vòng kế / bị loại / vô địch); người khác chờ chủ phòng
-      const story = this.app.game && this.app.game.opts.cup;
+      const story = this.app.game && (this.app.game.opts.cup || this.app.game.opts.run);
       if (SFC.Session.isOwner) return [['lobby', story ? _t('CONTINUE') : _t('BACK TO LOBBY')], ['leave', _t('LEAVE ROOM')]];
       return [['leave', _t('LEAVE ROOM')]];
     },
@@ -72,9 +72,9 @@ window.SFC = window.SFC || {};
       const t0 = game.teams[0], t1 = game.teams[1];
       const wt = win >= 0 ? game.teams[win] : null;
       const h = game.humanTeam;
-      // GOAT PATH SKILL GAME: qua / hỏng bài thay cho thắng / thua
+      // GOAT PATH SKILL GAME: mốc đạt được (ĐỒNG / BẠC / VÀNG / hỏng) thay cho thắng / thua
       const drill = game.drill && game.drill.ok != null ? game.drill.ok : null;
-      const resLabel = drill != null ? (drill ? _t('CLEAR!') : _t('FAILED')) : h < 0 ? (wt ? _t('WINNER') : _t('DRAW'))
+      const resLabel = drill != null ? this.drillWord(game.drill) : h < 0 ? (wt ? _t('WINNER') : _t('DRAW'))
         : win === h ? _t('VICTORY!') : win >= 0 ? _t('DEFEAT...') : _t('DRAW');
       const resCls = drill != null ? (drill ? 'win' : 'lose') : h < 0 ? (wt ? 'win' : 'draw') : win === h ? 'win' : win >= 0 ? 'lose' : 'draw';
       const devBar = SFC_DEBUG && this._devEndMode ? this.devEndBar('outro') : '';
@@ -83,12 +83,15 @@ window.SFC = window.SFC || {};
         <div class="outro-top ${resCls}" style="--c:${wt ? wt.cfg.kit.shirt : '#fff'}">
           <div class="ot-res">${esc(resLabel)}</div>
           <div class="ot-sub">
+            ${drill != null ? `<span class="ot-score">${SFC.Drills.shown(game.drill)}</span><b>${esc(this.drillUnit(game.drill))}</b>` : `
             ${wt ? `<span class="ot-win">${esc(_t('WINNER'))}</span><b style="color:${wt.cfg.kit.shirt}">${esc(wt.cfg.name)}</b>` : `<b>${esc(_t('DRAW'))}</b>`}
-            <span class="ot-score">${t0.score} - ${t1.score}</span>
+            <span class="ot-score">${t0.score} - ${t1.score}</span>`}
           </div>
         </div>
         <div class="outro-foot"><div class="outro-bar" style="--dur:${dur}s"></div></div>`;
     },
+
+    drillWord(D) { return [_t('FAILED'), _t('BRONZE!'), _t('SILVER!'), _t('GOLD!')][D.tier || 0]; },
 
     finishOutro() {
       if (!this.outroActive) return;
@@ -106,7 +109,7 @@ window.SFC = window.SFC || {};
     renderEnd(game) {
       const h = game.humanTeam >= 0 ? game.humanTeam : 0;
       const me = game.teams[h], op = game.teams[1 - h];
-      const res = game.drill && game.drill.ok != null ? (game.drill.ok ? [_t('CLEAR!'), 'win'] : [_t('FAILED'), 'lose'])
+      const res = game.drill && game.drill.ok != null ? [this.drillWord(game.drill), game.drill.ok ? 'win' : 'lose']
         : me.score > op.score ? [_t('VICTORY!'), 'win'] : me.score < op.score ? [_t('DEFEAT...'), 'lose'] : [_t('DRAW'), 'draw'];
       const { win, mvp, msOf, cmp } = this.matchSummary(game);
       // đội thắng xếp trên (kiểu Rocket League); nếu hoà thì đội của bạn xếp trên

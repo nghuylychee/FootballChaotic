@@ -141,6 +141,9 @@ window.SFC = window.SFC || {};
       const pvCol = pv ? PASS_COLORS[pv.mode] : null;
       if (pv && pv.target) ringPx(ctx, pv.target.x, pv.target.y + 1, 9 + Math.round(Math.sin(t * 10)), pvCol);
 
+      // GOAT PATH SKILL GAME: bia / cổng trên mặt sân (render/rundraw.js)
+      if (g.drill && SFC.RunDraw) SFC.RunDraw.floor(ctx, g);
+
       // bụi chân khi chạy nước rút / phanh gấp + tiếng bước chân (fx.run) — vẽ sau vòng chân để không bị vòng che
       this.runFeel(ctx, g);
 
@@ -186,6 +189,7 @@ window.SFC = window.SFC || {};
           SFC.VFX.form(ctx, g, p, swap || cel ? null : hy);
           SFC.VFX.arm(ctx, g, p);
           SFC.VFX.look(ctx, g, p, hy);
+          if (p.inj && SFC.RunDraw && !swap) SFC.RunDraw.hurt(ctx, g, p, hy);   // GOAT PATH: dấu chấn thương cạnh đầu
           if (p.charging) this.chargeBar(ctx, p, hy, g);
           if (p.passMode) this.passBar(ctx, p, hy);
           if (pv && pv.target === p) {
@@ -229,6 +233,7 @@ window.SFC = window.SFC || {};
       /* --- khung thành (vẽ sau để lưới phủ lên bóng) --- */
       this.goal(ctx, g, -1);
       this.goal(ctx, g, 1);
+      if (g.drill && SFC.RunDraw) SFC.RunDraw.top(ctx, g);   // GOAT PATH SKILL GAME: bia trên khung thành (phủ lên lưới)
 
       /* --- FX trên cao --- */
       // Cước Phong: lưỡi gió trăng khuyết + bụi bị thổi tung dọc đường

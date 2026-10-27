@@ -40,7 +40,7 @@ SFC.I18n.fields = [
   // GOAT PATH (config/run.config.js): tên act, tên loại node
   'run.acts.*.name', 'run.nodes.*.name', 'run.acts.*.stages.*', 'run.acts.*.intro.*.text', 'run.acts.*.bossTalk.*.text', 'run.acts.*.after.*.text',
   'run.acts.*.intro.*.sfx', 'run.acts.*.bossTalk.*.sfx',
-  'run.badges.*.name', 'run.badges.*.desc', 'run.drills.*.name', 'run.drills.*.desc',
+  'run.badges.*.name', 'run.badges.*.desc', 'run.drills.*.name', 'run.drills.*.desc', 'run.tiers.*.name',
   'run.events.*.title', 'run.events.*.text', 'run.events.*.choices.*.label',
   // thành tích (config/achievements.config.js)
   'achievements.list.*.name', 'achievements.list.*.desc',

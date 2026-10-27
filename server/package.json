@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node test/room-test.js && node test/client-test.js && node test/hardening-test.js && node test/reconnect-test.js && node test/queue-test.js && node test/compression-test.js && node test/story-test.js && node test/invite-test.js"
+    "test": "node test/room-test.js && node test/client-test.js && node test/hardening-test.js && node test/reconnect-test.js && node test/queue-test.js && node test/compression-test.js && node test/story-test.js && node test/run-coop-test.js && node test/invite-test.js"
   },
   "engines": {
     "node": ">=18"

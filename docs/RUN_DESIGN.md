@@ -107,9 +107,9 @@ Chấn thương = **BADGE xấu** nằm chung túi (viền đỏ), ví dụ tr�
 
 ### Cơ chế: dùng lại 6 chỉ số + CoreScale có sẵn
 - Run dùng 6 chỉ số PACE · SHOOTING · PASSING · DRIBBLE · FIGHT · KEEPER (`progression.attrs`). Hệ này đang ẩn ngoài trận thường (`attrs.hidden`, mọi người = `fixed` 80); **riêng run thì hiện**.
-- Character của bạn bắt đầu run ở **80** mọi chỉ số (= mức cân bằng gốc). BADGE cộng thêm, tối đa **99**.
+- ~~Character bắt đầu run ở 80~~ → từ 2026-10-26 nền **~62 lệch theo vị trí** (`run.squad.base`). BADGE cộng thêm, tối đa **99**.
 - `src/systems/corescale.js` đã nhân sức mạnh / hồi chiêu Core theo chỉ số của trường phái (80 → x1, 99 → power x1.5, hồi chiêu x0.7). Nên **+PACE tự làm Core SPEED mạnh hơn**, +FIGHT tự làm Core BRAWLER / KICKER mạnh hơn. Cùng 1 con số vừa buff chỉ số vừa buff Core, không cần hệ thứ hai.
-- **BADGE chỉ áp cho character của người chơi** (user chốt). Đồng đội AI giữ chỉ số theo act. Core vẫn áp cho cả đội, nhưng CoreScale tính theo chỉ số từng người, nên phần Core mạnh thêm chỉ có ở character của bạn. Co-op sau này: mỗi người 1 túi BADGE riêng.
+- ~~BADGE chỉ áp cho character của người chơi~~ → từ 2026-10-26 **BADGE gắn cho 1 trong 3 người của đội hình** (xem "Vòng chỉnh sửa 2026-10-26"). Core vẫn áp cho cả đội, nhưng CoreScale tính theo chỉ số từng người, nên phần Core mạnh thêm chỉ có ở character của bạn. Co-op sau này: mỗi người 1 túi BADGE riêng.
 - Không giới hạn ô: BADGE cộng dồn (như relic Slay the Spire). Trần 99 tự chặn cộng quá tay.
 
 ### Các loại BADGE (bản đầu)
@@ -150,14 +150,20 @@ Chấn thương = **BADGE xấu** nằm chung túi (viền đỏ), ví dụ tr�
 - Trận thường không có cut-scene, chỉ có câu nói trong trận (`barks`) + thẻ đối thủ trên MAP. Run phải nhanh.
 - Mạch 3 act nối nhau thành 1 hành trình (khu phố → thành phố → huyền thoại). Đây là chỗ đổi luật cũ "mỗi Story gói gọn".
 
-## Co-op (sau bản chơi một mình)
+## Co-op (đã làm 2026-10-26)
 
-Dùng lại mô hình co-op của cup: chủ phòng giữ `Run` thật, gửi bản sao trong gói `lobby`, khách giữ bản `mirror`. Cần chốt sau:
-- Chọn node trên MAP: chủ phòng chọn, hay cả phòng bình chọn
-- Mỗi người 1 túi BADGE riêng (BADGE chỉ áp cho character của chủ túi); màn chọn 1 trong 3 mỗi người tự chọn
-- Thưởng meta mỗi máy tự trả như `Cup.pay`
+Chốt với user: **bỏ phiếu, chốt bằng bốc ngẫu nhiên theo số phiếu** · **mỗi người 1 lượt chọn BADGE riêng, đối thủ mạnh lên theo số người thật** · **ví riêng** · **vào được giữa run, Skill game 1 người (xoay vòng)**.
 
-Dữ liệu run từ đầu nên tách được thành gói chia sẻ (không dính UI) để làm co-op không phải viết lại.
+- **Phòng**: tab GOAT PATH › PLAY WITH FRIENDS (mở phòng với run đang có, chưa có thì host chọn đội hình ngay trong phòng: mã phòng + INVITE trên thanh trên của BUILD YOUR SQUAD) · JOIN (mã phòng). Trước khi bắt đầu run, mọi người bấm ô vị trí để nhảy qua lại (ô có bạn bè đứng thì không vào được); ô bạn bè đứng vẫn có 1 đồng đội AI dự phòng (host chọn, hoặc ngẫu nhiên lúc START RUN). Giữa run vị trí cố định. Luôn người chơi làm host (`Session.createRoom({ run: true })`, Steam / PeerJS, không lên máy chủ riêng). Tối đa 3 người = 3 vị trí; ghế trống = đồng đội AI của run.
+- **Run là của host** (lưu ở hồ sơ host, chơi tiếp một mình được khi phòng đóng). Khách giữ bản sao (`Run.mirror`, `Run.mirrorOn`): run riêng của khách không bị đụng. Host gửi bản sao trong gói `lobby` (`rn` + `r`), khách gửi thao tác `ra{a,...}` → host kiểm tra + áp (`RunUI.apply`).
+- **Đội hình**: host đứng đúng vị trí character của mình (`Room.seatHost`); khách ngồi vào ô đồng đội AI cùng vị trí (`squad[i].h` = mã hồ sơ `Profile.data.uid`), dùng chỉ số + BADGE của ô đó. Khách rời: ô trở lại AI, BADGE giữ nguyên; ví khách giữ theo mã hồ sơ, vào lại là có lại.
+- **Bỏ phiếu** (node trên map · lựa chọn sự kiện ??? · Locker Room): mỗi người 1 phiếu (đổi được), chấm phiếu hiện trên node / nút / thẻ. Đủ phiếu người có mặt, hoặc quá `run.coop.voteTime` giây từ phiếu đầu → bốc 1 phiếu ngẫu nhiên (lựa chọn nhiều phiếu dễ trúng hơn). Chỉ bỏ phiếu đi tiếp khi mọi người đã chọn xong BADGE. Sự kiện: tiền tính cho cả nhóm (ai cũng trả / cùng nhận), BADGE của sự kiện về 1 người đã bầu lựa chọn đó.
+- **Thưởng**: thắng trận → mỗi người có mặt nhận tiền vào ví riêng + bộ 3 BADGE riêng (không trùng nhau, không trùng túi), gắn cho ai trong đội cũng được. Đối thủ mạnh lên theo số người thật ra sân (`run.coop.eloPer` Elo AI, `statPer` chỉ số — `opts.statMul`).
+- **Shop**: ví riêng, hàng chung (món đã mua hết với mọi người), mỗi người bấm DONE, mọi người xong thì Shop đóng.
+- **Skill game**: 1 người đá (xoay vòng trong số người có mặt, `R.room.player`), người khác xem trận (`start{watch}`, `me = -1`; host không ra sân cũng chỉ xem). Thưởng tiền / BADGE về người đá; hỏng thì chấn thương vào 1 người ngẫu nhiên của đội. Tiến độ bài đi trong snapshot (`sk`), cổng SLALOM theo `drillSeed`.
+- **Cut scene của act** (mở act / trước boss / hạ boss) chiếu cùng lúc (`cs{k:'run:<act>:<kind>'}`), trước trận boss host chờ cả phòng xem xong. Thẻ mở act / hết run: chỉ host bấm.
+- **Hết run**: gold meta + tiến trình CORE ROAD cộng cho từng máy (khách nhận khi bản sao báo hết run, 1 lần mỗi run).
+- Không tăng `net.protocol` (chỉ thêm trường / gói mới trong phòng người chơi làm host). Test: `server/test/run-coop-test.js`.
 
 ## Kỹ thuật (đại khái)
 
@@ -195,6 +201,15 @@ Dữ liệu run từ đầu nên tách được thành gói chia sẻ (không d�
 - **Meta** (giai đoạn 5): CORE ROAD tính theo run (`run.coreRoad`: tầng x15 + boss x60 vào `runs.road`, mở Core tới mốc Elo của các nấc cũ); **Ranked thôi mở Core** (Core đã mở vẫn giữ; gợi ý mở khoá ghi "GOAT PATH progress n/max"). Thẻ hết run hiện tiến trình + Core vừa mở. Nút PLAY trang chủ mở GOAT PATH, tab GOAT PATH đứng đầu (GOAT PATH · RANKED · PRIVATE MATCH). 5 thành tích mới (nhóm `run`). Bản DEMO: chỉ act 1 (`demo.runActs`), hạ boss act 1 = DEMO COMPLETE -> WISHLIST.
 - Chưa dịch chữ mới; PHÒNG TRƯNG BÀY vẫn là cúp 4 Story cũ; màn AREA MAP vẫn vẽ mốc CORE ROAD theo Elo.
 
+## Vòng chỉnh sửa 2026-10-26 (feedback user)
+
+| Feedback | Quyết định (user chốt) |
+|---|---|
+| Chỉ số ban đầu cao quá (80 = ngang đối thủ), BADGE chỉ số không có ý nghĩa | Nền run **~62, lệch theo vị trí** (`run.squad.base`: FWD sút / tốc độ, MID chuyền / rê, DEF đấm / bắt bóng). Số BADGE tăng (thường +8, hiếm +13 hoặc 2 chỉ số +7/+6, sử thi +4 tất cả / 2 chỉ số +10/+9). Chấn thương −12 (đùi −8/−8) |
+| Cần thấy rõ đội hình + BADGE + chỉ số | **BADGE gắn cho cả đội** (thay luật cũ "chỉ character"): mỗi BADGE nhận được (thưởng trận, Shop, sự kiện, Skill game) → thẻ **WHO GETS IT?** chọn 1 trong 3 người (xem trước chỉ số sau khi đeo). BADGE trường phái / nạp Tuyệt kỹ / Home Crowd gắn cho 1 người nhưng vẫn tác dụng cả đội. **Vị trí của bạn + đồng đội chọn lúc START RUN** (màn BUILD YOUR SQUAD: 3 ô vị trí FWD / MID / DEF, character đứng sẵn ô FWD, bấm ô khác để nhảy sang (đồng đội AI ở ô đó đổi chỗ), ứng viên lấp ô trống kế tiếp (danh sách luôn hiện, mờ khi đủ ô; ✕ trên ô AI = bỏ ra để chọn lại; START RUN giữa dưới khi đủ ô) — chỉ số nền theo vị trí; bỏ bước chọn vị trí riêng (user 2026-10-26): roster + cầu thủ đường phố ngẫu nhiên, mỗi người 1 sở trường), giữ cả run; chỉ số đồng đội = nền vị trí + nghiêng theo chỉ số riêng (`lean`) + chút theo OVR (`ovrLean`) + BADGE của họ (thôi chép chỉ số đối thủ). **Màn SQUAD**: 3 thẻ cầu thủ, thanh chỉ số chia phần nền / BADGE (xanh) / chấn thương (đỏ sọc), BADGE đang đeo. **Dải đội hình** luôn hiện trên thanh map (mặt + OVR + dấu ✚) = nút mở SQUAD |
+| Skill game chán, cần thấy tiến độ | Mỗi bài đếm 1 thứ, **3 mốc ĐỒNG / BẠC / VÀNG** (`run.drills[].tiers`), thanh tiến độ giữa trên HUD thay tỉ số. Thưởng theo mốc (`run.tierReward`): dưới ĐỒNG = chấn thương · ĐỒNG $ · BẠC $ + 1 BADGE · VÀNG $ + chọn 1 trong 3. 6 bài: FINISHING (bàn thắng) · TARGET PRACTICE (bàn vào bia sáng trôi trong khung) · SLALOM GATES (dẫn bóng qua cổng lần lượt, 2 người đấm) · PASS CHAIN (cả đội hình, chuỗi chuyền dài nhất, đồng đội AI trả bóng) · STREET BRAWL (hạ gục 1 vs 3) · HOT POTATO (giữ bóng, người đuổi vào thêm theo giây, mất bóng là hết) |
+| Chấn thương chưa thấy trong trận | Chấn thương rơi vào **1 người ngẫu nhiên** của đội. Trong trận: **băng trắng đúng chỗ** (cổ chân / cổ tay / đùi / ngón chân, `badges[].part`, `sprites.js`) + **dấu ✚ đỏ** nhấp nháy cạnh đầu (`render/rundraw.js`) + **khoảnh khắc ra tay** (`src/systems/hurt.js`, `run.hurt`): cổ chân / đùi → chạy nước rút thỉnh thoảng khựng lại (OUCH!) · cổ tay → cú đấm thỉnh thoảng xịt (POOF, không choáng) · ngón chân → cú sút thỉnh thoảng trượt chân lệch hướng (SHANK!) |
+
 ## Các giai đoạn
 
 | Giai đoạn | Nội dung |
@@ -204,7 +219,7 @@ Dữ liệu run từ đầu nên tách được thành gói chia sẻ (không d�
 | **3 · Node phụ** | Skill game (2–3 bài đầu) + chấn thương + `?` (sự kiện) + BADGE Trận |
 | **4 · Câu chuyện act** | Người dẫn truyện + cut-scene intro / boss / hạ boss cho 3 act |
 | **5 · Meta** | Mở Core theo XP run · hạ Ranked · TROPHY ROOM + achievement mới · bản demo chỉ chơi act 1 |
-| **6 · Co-op** | Run nhiều người, player-host |
+| **6 · Co-op** | Run nhiều người, player-host — đã làm 2026-10-26 (mục "Co-op") |
 | Sau | Màn Elite riêng · thêm đội cho act 3 · daily run (seed) · độ khó cao hơn sau khi vô địch (kiểu Ascension) |
 
 ## Câu hỏi còn mở

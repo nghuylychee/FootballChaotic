@@ -300,6 +300,7 @@ window.SFC = window.SFC || {};
       const was = this.sprinting;
       this.sprinting = wantSprint && this.stamina > (this.sprinting ? 0 : C.staminaMinToSprint);
       if (this.sprinting && !was) this.game.cores.dispatch(this.team, 'onSprintStart', this);
+      if (this.inj && SFC.Hurt) SFC.Hurt.move(this, dt);   // GOAT PATH: chấn thương cổ chân / đùi -> khựng lại khi chạy nước rút
       if (this.sprinting) this.stamina -= C.staminaDrain * dt;
       else this.stamina += C.staminaRegen * this.stats.stamina * this.game.cores.mod(this.team, 'sprintRegen', this) * dt;
       this.stamina = U.clamp(this.stamina, 0, C.staminaMax);
@@ -386,6 +387,7 @@ window.SFC = window.SFC || {};
       this.cancelPass();
       this.flash = 0.12;
       this.hitImmune = stun;
+      if (g.drill && SFC.Drills) SFC.Drills.hit(g, this, opts);   // GOAT PATH SKILL GAME (STREET BRAWL): đếm lần hạ gục
       // quiet: không phải bị đánh (trượt ngã...) -> bỏ tia lửa, rung màn, tiếng đấm; nơi gọi tự lo hình + tiếng
       if (!opts.quiet) {
         g.effects.burst(this.x, this.y, 14, '#fff6a0', 6, 60);

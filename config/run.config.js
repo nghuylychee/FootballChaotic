@@ -42,7 +42,7 @@ SFC_CONFIG.run = {
   /* ---------- tiền trong run ($, tiêu ở Shop; hết run là mất) + quy đổi gold meta lúc hết run ---------- */
   cash: {
     start: 50,
-    win: { match: [26, 36], elite: [45, 55], boss: [85, 100], skill: [16, 24] },   // [ít nhất, nhiều nhất]
+    win: { match: [26, 36], elite: [45, 55], boss: [85, 100] },   // [ít nhất, nhiều nhất] (Skill game: tierReward)
   },
   // hết run (thua / bỏ / vô địch): gold meta = tầng đã qua x perFloor + boss đã hạ x perBoss (+ champion nếu vô địch)
   meta: { perFloor: 6, perBoss: 60, champion: 250 },
@@ -51,11 +51,30 @@ SFC_CONFIG.run = {
   // (mainpath.config.js areas[].road, MainPath.roadAt). fromRuns: false = quay lại mở theo Elo Ranked
   coreRoad: { fromRuns: true, perFloor: 15, perBoss: 60 },
 
-  /* ---------- BADGE (docs/RUN_DESIGN.md): đồ trong run, chỉ áp cho character của người chơi, cộng dồn, không trùng ----------
-   * stats: { chỉ số: +rating } (progression.attrs, nền = attrs.fixed 80, tối đa attrs.max) · school + power: Core trường phái đó
-   * mạnh hơn (cộng rating chỉ để tính CoreScale) · bias: Core trường phái đó ra thường hơn (nhân trọng số bốc) ·
-   * score: tỉ số khởi đầu [bạn, đối thủ] · ultGain: nạp Tuyệt kỹ x · injury: chấn thương (từ Skill game hỏng / sự kiện), chỉ chữa ở
-   * Locker Room / Shop. Nâng cấp (Locker Room): số liệu x up.mult (noUp: không nâng được). icon: ui-* (pixelicons) hoặc trường phái. */
+  /* ---------- ĐỘI HÌNH (user 2026-10-26): character + 2 đồng đội chọn lúc START RUN, giữ nguyên cả run ----------
+   * Chỉ số trong run KHÔNG lấy từ ngoài run: nền theo vị trí (base, trung bình ~62 = hệ số ~0.78, thấp hơn đối thủ act 2-3 để BADGE
+   * có ý nghĩa) + nghiêng theo chỉ số riêng của đồng đội (lean x (rating - OVR), kẹp ±leanMax: mỗi người 1 sở trường) + chút theo OVR
+   * của họ (ovrLean x (OVR - ovrRef), kẹp ±ovrMax: đồng đội scout giỏi nhỉnh hơn) + BADGE của người đó.
+   * picks: số ứng viên ở màn chọn (đội hình trong roster trước, thiếu thì cầu thủ đường phố ngẫu nhiên cùng trình act 1). */
+  squad: {
+    base: {
+      FWD: { pace: 68, shooting: 72, passing: 60, dribble: 64, fight: 56, keeper: 52 },
+      MID: { pace: 62, shooting: 58, passing: 72, dribble: 68, fight: 58, keeper: 54 },
+      DEF: { pace: 58, shooting: 54, passing: 60, dribble: 56, fight: 72, keeper: 72 },
+    },
+    lean: 0.7, leanMax: 8,
+    ovrRef: 66, ovrLean: 0.2, ovrMax: 4,
+    min: 30,                // chỉ số thấp nhất (chấn thương chồng lên nhau)
+    picks: 6,
+  },
+
+  /* ---------- BADGE (docs/RUN_DESIGN.md): đồ trong run, gắn cho 1 trong 3 người của đội hình (user 2026-10-26), không trùng ----------
+   * stats: { chỉ số: +rating } của người đeo (tối đa attrs.max) · school + power: Core trường phái đó mạnh hơn (cộng rating chỉ để tính
+   * CoreScale) · bias: Core trường phái đó ra thường hơn (nhân trọng số bốc) · score: tỉ số khởi đầu [bạn, đối thủ] · ultGain: nạp
+   * Tuyệt kỹ x — school / score / ultGain vẫn tác dụng cho cả đội dù gắn cho ai. injury: chấn thương (Skill game hỏng / sự kiện, rơi
+   * vào 1 người ngẫu nhiên), chỉ chữa ở Locker Room / Shop; part: chỗ quấn băng trên người (render/sprites.js) · hurt: khoảnh khắc
+   * chấn thương ra tay trong trận (src/systems/hurt.js, số liệu run.hurt). Nâng cấp (Locker Room): số liệu x up.mult (noUp: không
+   * nâng được). icon: ui-* (pixelicons) hoặc trường phái. */
   up: { mult: 1.5 },
   rarityWeights: {
     match: { common: 60, rare: 32, epic: 8 },
@@ -67,22 +86,22 @@ SFC_CONFIG.run = {
   shop: { size: 5, price: { common: 40, rare: 70, epic: 110, legendary: 160 }, heal: 50 },
   badges: {
     // chỉ số (1 chỉ số)
-    spikes:   { name: 'Running Spikes', rarity: 'common', stats: { pace: 4 },     desc: 'Light spikes for a quicker first step.' },
-    laces:    { name: 'Lucky Laces',    rarity: 'common', stats: { shooting: 4 }, desc: 'Same laces since the first goal.' },
-    cones:    { name: 'Rondo Cones',    rarity: 'common', stats: { passing: 4 },  desc: 'Pass, move, pass again.' },
-    socks:    { name: 'Sticky Socks',   rarity: 'common', stats: { dribble: 4 },  desc: 'The ball just stays close.' },
-    tape:     { name: 'Wrist Tape',     rarity: 'common', stats: { fight: 4 },    desc: 'Taped up and ready to scrap.' },
-    gloves:   { name: 'Old Gloves',     rarity: 'common', stats: { keeper: 4 },   desc: 'Worn out, still safe hands.' },
+    spikes:   { name: 'Running Spikes', rarity: 'common', stats: { pace: 8 },     desc: 'Light spikes for a quicker first step.' },
+    laces:    { name: 'Lucky Laces',    rarity: 'common', stats: { shooting: 8 }, desc: 'Same laces since the first goal.' },
+    cones:    { name: 'Rondo Cones',    rarity: 'common', stats: { passing: 8 },  desc: 'Pass, move, pass again.' },
+    socks:    { name: 'Sticky Socks',   rarity: 'common', stats: { dribble: 8 },  desc: 'The ball just stays close.' },
+    tape:     { name: 'Wrist Tape',     rarity: 'common', stats: { fight: 8 },    desc: 'Taped up and ready to scrap.' },
+    gloves:   { name: 'Old Gloves',     rarity: 'common', stats: { keeper: 8 },   desc: 'Worn out, still safe hands.' },
     // chỉ số (mạnh / 2 chỉ số)
-    turbo:    { name: 'Turbo Shoes',    rarity: 'rare', stats: { pace: 7 },                  desc: 'Too fast for the street.' },
-    cannon:   { name: 'Cannon Boots',   rarity: 'rare', stats: { shooting: 7 },              desc: 'Every shot sounds like a door slam.' },
-    armband:  { name: "Captain's Armband", rarity: 'rare', stats: { passing: 4, fight: 3 },  desc: 'Lead the play, win it back.' },
-    counter:  { name: 'Counter Kit',    rarity: 'rare', stats: { pace: 4, dribble: 3 },      desc: 'Break forward with the ball glued on.' },
-    hammer:   { name: 'Hammer Laces',   rarity: 'rare', stats: { shooting: 4, fight: 3 },    desc: 'Hit the ball and anyone near it.' },
-    brick:    { name: 'Brick Wall',     rarity: 'rare', stats: { keeper: 5, fight: 2 },      desc: 'Nothing gets past. Nothing.' },
-    jersey:   { name: 'Lucky Jersey',   rarity: 'epic', stats: { pace: 2, shooting: 2, passing: 2, dribble: 2, fight: 2, keeper: 2 }, desc: 'Never washed. Never lost.' },
-    rocket:   { name: 'Rocket Boots',   rarity: 'epic', stats: { pace: 6, shooting: 5 },     desc: 'Run past them, shoot through them.' },
-    magnet:   { name: 'Magnet Boots',   rarity: 'epic', stats: { dribble: 6, passing: 5 },   desc: 'The ball goes where you want.' },
+    turbo:    { name: 'Turbo Shoes',    rarity: 'rare', stats: { pace: 13 },                  desc: 'Too fast for the street.' },
+    cannon:   { name: 'Cannon Boots',   rarity: 'rare', stats: { shooting: 13 },              desc: 'Every shot sounds like a door slam.' },
+    armband:  { name: "Captain's Armband", rarity: 'rare', stats: { passing: 7, fight: 6 },   desc: 'Lead the play, win it back.' },
+    counter:  { name: 'Counter Kit',    rarity: 'rare', stats: { pace: 7, dribble: 6 },       desc: 'Break forward with the ball glued on.' },
+    hammer:   { name: 'Hammer Laces',   rarity: 'rare', stats: { shooting: 7, fight: 6 },     desc: 'Hit the ball and anyone near it.' },
+    brick:    { name: 'Brick Wall',     rarity: 'rare', stats: { keeper: 9, fight: 4 },       desc: 'Nothing gets past. Nothing.' },
+    jersey:   { name: 'Lucky Jersey',   rarity: 'epic', stats: { pace: 4, shooting: 4, passing: 4, dribble: 4, fight: 4, keeper: 4 }, desc: 'Never washed. Never lost.' },
+    rocket:   { name: 'Rocket Boots',   rarity: 'epic', stats: { pace: 10, shooting: 9 },     desc: 'Run past them, shoot through them.' },
+    magnet:   { name: 'Magnet Boots',   rarity: 'epic', stats: { dribble: 10, passing: 9 },   desc: 'The ball goes where you want.' },
     // trường phái: Core của hệ đó mạnh hơn + ra thường hơn
     poster:   { name: 'Speed Poster',   rarity: 'rare', school: 'runner',    power: 8, bias: 1.6, desc: 'SPEED Cores come more often and hit harder.' },
     metronome:{ name: 'Metronome',      rarity: 'rare', school: 'playmaker', power: 8, bias: 1.6, desc: 'TIKI-TAKA Cores come more often and hit harder.' },
@@ -96,21 +115,49 @@ SFC_CONFIG.run = {
     crowd:    { name: 'Home Crowd',     rarity: 'legendary', score: [1, 0], noUp: true, icon: 'people', desc: 'Every match starts one goal up.' },
     drink:    { name: 'Energy Drink',   rarity: 'legendary', ultGain: 1.35, icon: 'boom',  desc: 'Your Ultimate charges faster.' },
     // chấn thương
-    ankle:    { name: 'Twisted Ankle',  injury: true, stats: { pace: -6 },               desc: 'Every step hurts.' },
-    wrist:    { name: 'Sore Wrist',     injury: true, stats: { fight: -6 },              desc: 'Punches feel like pillows.' },
-    hamstring:{ name: 'Tight Hamstring',injury: true, stats: { pace: -4, dribble: -4 },  desc: 'No sprinting, no tricks.' },
-    toe:      { name: 'Stubbed Toe',    injury: true, stats: { shooting: -6 },           desc: 'Shots come off the side of the boot.' },
+    ankle:    { name: 'Twisted Ankle',  injury: true, part: 'ankle', hurt: 'stumble', stats: { pace: -12 },              desc: 'Every step hurts.' },
+    wrist:    { name: 'Sore Wrist',     injury: true, part: 'wrist', hurt: 'weak',    stats: { fight: -12 },             desc: 'Punches feel like pillows.' },
+    hamstring:{ name: 'Tight Hamstring',injury: true, part: 'thigh', hurt: 'stumble', stats: { pace: -8, dribble: -8 },  desc: 'No sprinting, no tricks.' },
+    toe:      { name: 'Stubbed Toe',    injury: true, part: 'toe',   hurt: 'shank',   stats: { shooting: -12 },          desc: 'Shots come off the side of the boot.' },
+  },
+  // khoảnh khắc chấn thương trong trận (src/systems/hurt.js), chữ bật lên Effects.pop kind 'status' màu color
+  // stumble: chạy nước rút mỗi every giây có chance khựng lại (đi bộ walk giây) · weak: cú đấm chance xịt (lực đẩy x knock, không choáng)
+  // · shank: cú sút chance trượt chân (lệch thêm angle độ)
+  hurt: {
+    color: '#ff5a6e',
+    stumble: { every: 1.6, chance: 0.45, walk: 0.7 },
+    weak: { chance: 0.4, knock: 0.35 },
+    shank: { chance: 0.35, angle: 16 },
   },
 
-  /* ---------- SKILL GAME (giai đoạn 3, src/systems/drills.js): bài tập ngắn trên sân thật, đội bạn 1 người ----------
-   * teamSize: [bạn, đối thủ] · time: giây · goals: ghi đủ ngần này bàn trước khi hết giờ = qua · keep: giữ bóng tới hết giờ
-   * (đối thủ cướp được bóng = hỏng) · keeperOnly: đối thủ chỉ đứng trông khung. Qua: tiền (cash.win.skill) + 1 BADGE ngẫu nhiên
-   * (rarityWeights.match) · hỏng: 1 chấn thương. Độ khó AI theo Elo của act như trận cùng tầng. */
+  /* ---------- CO-OP (phòng GOAT PATH online, user 2026-10-26; src/meta/run.js) ----------
+   * voteTime: giây tối đa từ phiếu đầu tiên tới lúc chốt (đủ phiếu thì chốt luôn) · eloPer / statPer: mỗi người thật thêm ngoài người đầu,
+   * Elo AI đối thủ + eloPer và chỉ số đối thủ x (1 + statPer) (mỗi người nhận BADGE riêng nên đội mạnh lên nhanh hơn chơi một mình) */
+  coop: { voteTime: 15, eloPer: 120, statPer: 0.05 },
+
+  /* ---------- SKILL GAME (src/systems/drills.js, user 2026-10-26: mốc ĐỒNG / BẠC / VÀNG + thanh tiến độ trên HUD) ----------
+   * Bài tập ngắn trên sân thật. teamSize: [bạn, đối thủ] (bạn > 1 = có 2 đồng đội trong đội hình) · time: giây ·
+   * goal: thứ được đếm (goals bàn thắng · targets bàn vào đúng bia · gates cổng dẫn bóng qua · chain chuỗi chuyền dài nhất ·
+   * hits lần hạ gục đối thủ · hold giây giữ bóng — mất bóng là hết bài) · tiers: [ĐỒNG, BẠC, VÀNG] (đạt VÀNG là xong luôn) ·
+   * keeperOnly: đối thủ chỉ đứng khung · target: bia (size = phần khung thành, speed = vòng / giây) · gate: cổng (r px, gap px giữa 2 cổng)
+   * · waves: giây mỗi người đuổi vào cuộc (HOT POTATO). Độ khó AI theo Elo của act như trận cùng tầng.
+   * Thưởng theo mốc (tierReward): 0 = chấn thương · ĐỒNG tiền · BẠC tiền + 1 BADGE ngẫu nhiên · VÀNG tiền + chọn 1 trong 3 BADGE */
   drills: {
-    finish: { name: 'FINISHING',  icon: 'target', teamSize: [1, 1], time: 40, goals: 3, keeperOnly: true, desc: 'Beat the keeper 3 times before time runs out.' },
-    duel:   { name: '1 VS 2',     icon: 'fist',   teamSize: [1, 2], time: 45, goals: 2, desc: 'Score 2 goals past two defenders.' },
-    rondo:  { name: 'KEEP-AWAY',  icon: 'cone',   teamSize: [1, 2], time: 15, keep: true, desc: 'Do not let the two chasers take the ball.' },
+    finish: { name: 'FINISHING',       icon: 'ball',   teamSize: [1, 1], time: 40, goal: 'goals',   tiers: [2, 3, 5], keeperOnly: true, desc: 'Beat the keeper as many times as you can.' },
+    target: { name: 'TARGET PRACTICE', icon: 'target', teamSize: [1, 1], time: 45, goal: 'targets', tiers: [1, 2, 4], keeperOnly: true,
+      target: { size: 0.36, speed: 0.22 }, desc: 'Only goals inside the glowing target count.' },
+    gates:  { name: 'SLALOM GATES',    icon: 'cone',   teamSize: [1, 2], time: 40, goal: 'gates',   tiers: [3, 5, 8], gate: { r: 20, gap: 150 }, desc: 'Dribble through the gates, one after another.' },
+    chain:  { name: 'PASS CHAIN',      icon: 'people', teamSize: [3, 2], time: 40, goal: 'chain',   tiers: [4, 7, 10], desc: 'String passes together. Lose it and the chain restarts.' },
+    brawl:  { name: 'STREET BRAWL',    icon: 'fist',   teamSize: [1, 3], time: 35, goal: 'hits',    tiers: [3, 6, 10], desc: 'Knock down as many of them as you can.' },
+    potato: { name: 'HOT POTATO',      icon: 'boom',   teamSize: [1, 3], time: 30, goal: 'hold',    tiers: [8, 15, 25], waves: [0, 6, 13], desc: 'Keep the ball. More chasers keep coming.' },
   },
+  // màu + tên mốc (thanh tiến độ, màn kết quả)
+  tiers: [
+    { name: 'BRONZE', color: '#d08a4a' },
+    { name: 'SILVER', color: '#d4dbe8' },
+    { name: 'GOLD',   color: '#ffd23f' },
+  ],
+  tierReward: [null, { cash: [10, 16] }, { cash: [16, 24], badge: true }, { cash: [20, 28], offer: true }],
 
   /* ---------- ??? (giai đoạn 3): vào node mới biết là gì ---------- */
   mystery: { event: 55, treasure: 15, skill: 15, shop: 15 },

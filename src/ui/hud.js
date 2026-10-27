@@ -14,6 +14,8 @@ window.SFC = window.SFC || {};
     { k: 'skill', action: 'skill', icon: 'dash', max: () => SFC_CONFIG.game.skill.cooldown, act: ['dash'] },
   ];
   // tooltip ô kỹ năng ('attack|HARD' = đòn mạnh, khác độ khó HARD)
+  // đơn vị đếm của SKILL GAME (run.drills[].goal)
+  const DRILL_UNITS = () => ({ goals: _t('GOALS'), targets: _t('TARGETS'), gates: _t('GATES'), chain: _t('BEST CHAIN'), hits: _t('KNOCKDOWNS'), hold: _t('SECONDS') });
   const SLOT_NAMES = () => ({ light: SFC.tc('attack', 'LIGHT'), hard: SFC.tc('attack', 'HARD'), skill: _t('DASH') });
 
   Object.assign(SFC.UI, {
@@ -40,7 +42,9 @@ window.SFC = window.SFC || {};
         : cupS ? `<div class="hud-path" style="color:${cupS.color}">${esc(cupS.name)} · ${esc(SFC.Cup.roundName(cupO.round))}</div>`
         : game.opts && game.opts.run ? this.runLine(game.opts.run)
         : !mp ? '' : `<div class="hud-path">${esc(SFC.MainPath.area(mp.area).name)} · ${PX().elo(mp.elo)}</div>`;
-      const key = [t0.score, t1.score, dream ? 'dream' : time, phase, cores, coreLine, pathLine].join('#');
+      // GOAT PATH SKILL GAME: thanh tiến độ 3 mốc thay cho tỉ số
+      const D = game.drill, drillBox = D ? this.drillBox(game, D, time) : '';
+      const key = [t0.score, t1.score, dream ? 'dream' : time, phase, cores, coreLine, pathLine, drillBox].join('#');
       if (c.key !== key) {
         c.key = key;
         // nhãn người chơi theo slot: P1..P4 (co-op: 2 nhãn cùng 1 đội); người ở máy này tô vàng, cùng đội xanh, đối thủ đỏ
@@ -52,10 +56,10 @@ window.SFC = window.SFC || {};
             ${this.hudBuild(game, 0)}
             ${this.ultMeter(game, 0)}
           </div>
-          <div class="hud-mid">${pathLine}${training ? `<div class="hud-time">${esc(_t('TRAINING'))}</div>` : `
+          <div class="hud-mid">${pathLine}${drillBox || (training ? `<div class="hud-time">${esc(_t('TRAINING'))}</div>` : `
             <div class="hud-score"><b style="color:${t0.cfg.kit.shirt}">${t0.score}</b><span>-</span><b style="color:${t1.cfg.kit.shirt}">${t1.score}</b></div>
             <div class="hud-time ${game.finalPush || game.golden ? 'hot' : ''}">${esc(dream ? _t('DREAM') : time)}</div>
-            ${phase ? `<div class="hud-phase">${phase}</div>` : ''}`}
+            ${phase ? `<div class="hud-phase">${phase}</div>` : ''}`)}
             ${coreLine}
           </div>
           <div class="hud-team r" style="--c:${t1.cfg.kit.shirt}">
@@ -88,6 +92,19 @@ window.SFC = window.SFC || {};
     runLine(o) {
       const A = SFC.Run.act(o.act) || {}, N = SFC.Run.node(o.kind) || {}, D = o.drill && SFC_CONFIG.run.drills[o.drill];
       return `<div class="hud-path" style="color:${A.color || '#ffe14f'}">${esc(A.name || '')} · ${esc(D ? D.name : N.name || '')}</div>`;
+    },
+
+    // SKILL GAME: đồng hồ + thanh tiến độ (mốc ĐỒNG / BẠC / VÀNG = huy chương trên thanh, sáng lên khi đạt) + số đếm / mốc kế tiếp
+    drillUnit(D) { return DRILL_UNITS()[D.cfg.goal] || ''; },
+    drillBox(game, D, time) {
+      const T = D.cfg.tiers, TC = SFC_CONFIG.run.tiers, v = SFC.Drills.shown(D), max = T[2];
+      const next = T.find((x) => v < x), lbl = this.drillUnit(D);
+      const marks = T.map((x, i) => `<u class="${v >= x ? 'on' : ''}" style="left:${(x / max) * 100}%;--mc:${TC[i].color}" title="${esc(TC[i].name)}">${x}</u>`).join('');
+      return `<div class="hud-drill">
+          <div class="hd-time">${esc(time)}</div>
+          <div class="hd-bar"><i style="width:${Math.min(100, (v / max) * 100)}%"></i>${marks}</div>
+          <div class="hd-val"><b>${v}</b>${next != null ? ` / ${next}` : ''} <em>${esc(lbl)}</em></div>
+        </div>`;
     },
 
     // build trên HUD: đội của người chơi = tiến độ công thức Tuyệt kỹ kiểu TFT của cầu thủ mình;

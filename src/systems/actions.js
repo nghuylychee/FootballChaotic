@@ -417,6 +417,7 @@ window.SFC = window.SFC || {};
       if (style === 'finesse') spread *= TQ.finesse.spread;
       else if (style === 'chip') spread *= TQ.chip.spread;
       let ang = base + U.rand(-spread, spread);
+      if (p.inj && SFC.Hurt) ang += SFC.Hurt.shank(g, p);   // GOAT PATH: đau ngón chân -> thỉnh thoảng sút trượt chân
 
       let spd = U.lerp(K.shotMinSpeed, K.shotMaxSpeed, c) * p.stats.power;
       // người chơi chạm nhẹ D: bóng chậm hơn đầu thanh lực, theo SHOOTING; giữ thêm tới shotTapWindow thì về lực của thanh
@@ -642,11 +643,19 @@ window.SFC = window.SFC || {};
       const kb = L.knockback * p.stats.knock * C.mod(p.team, 'knockback', p) * (big ? GF.knock : 1);
       let hit = false;
       const punchStop = (G().fx.hitStop || {}).punch || 0;
+      const weak = !big && p.inj && SFC.Hurt ? SFC.Hurt.weak(g, p) : false;   // GOAT PATH: đau cổ tay -> cú đấm xịt
       for (const o of this.inFront(g, p, range, big ? 100 : L.arc, C.has(p, 'juggle'))) {
         if (this.dodged(g, o)) continue;
         hit = true;
         if (g.mod && SFC.MatchMods.shrug(g, p, o)) continue;   // luật trận khổng lồ (FOOTBALL STORY): đấm nhẹ không tác dụng
         const d = U.norm(o.x - p.x, o.y - p.y);
+        if (weak) {
+          // cú đấm xịt: chỉ đẩy nhẹ, không choáng, không làm rơi bóng (bụi xám thay tia lửa)
+          const wk = SFC_CONFIG.run.hurt.weak.knock;
+          o.hit({ stun: 0, kbx: d.x * kb * wk, kby: d.y * kb * wk, source: p, type: 'light' });
+          g.effects.burst((p.x + o.x) / 2, (p.y + o.y) / 2, 6, '#c7ccd6', 5, 40, 0.3);
+          continue;
+        }
         o.freeze(punchStop);   // người trúng đòn khựng (cả khi trụ được bóng)
         // tia va chạm ở điểm nắm đấm chạm người
         g.effects.burst((p.x + o.x) / 2, (p.y + o.y) / 2, 10, '#fff6a0', 7, 90, 0.35);

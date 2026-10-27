@@ -129,7 +129,7 @@ window.SFC = window.SFC || {};
       if (on.active) { on.leave(); return; }
       this.inviteCode = null;
       this.instant = false;   // lời mời của bạn bè thắng: vào phòng bạn, không tạo phòng mới
-      M.joinFrom = ['story', 'cup', 'slobby'].includes(M.page) ? 'story' : 'online';
+      M.joinFrom = ['story', 'cup', 'slobby'].includes(M.page) ? 'story' : ['run', 'runmap'].includes(M.page) ? 'run' : 'online';
       M.go('join');
       M.code = code;
       on.joinRoom(code);
@@ -152,6 +152,10 @@ window.SFC = window.SFC || {};
     },
     // phòng FOOTBALL STORY (máy làm host): lượt chơi cup gửi cả phòng (src/meta/cup.js share)
     cup() { return SFC.Cup.share(); },
+    // phòng GOAT PATH co-op (máy làm host): cập nhật ví / ô đội hình theo người trong phòng rồi gửi bản sao run (src/meta/run.js share)
+    runState() { SFC.RunUI.syncRoom(); return SFC.Run.share(); },
+    // khách thao tác trên run -> host áp (uid = mã hồ sơ của khách)
+    runAction(id, uid, m) { SFC.RunUI.apply(uid, m); },
     // Main Path hiện tại (tìm trận xếp hạng + opts.mainPath): thưởng theo Area của mình như MainPath.matchmake
     rank() {
       const st = SFC.MainPath.state;
@@ -187,8 +191,8 @@ window.SFC = window.SFC || {};
 
   // phòng FOOTBALL STORY: trang phòng chờ riêng ('slobby', src/ui/cup.js) · đang có lượt chơi cup thì màn cup
   const storyPage = () => (SFC.Cup.run ? 'cup' : 'slobby');
-  on('busy', ({ action, code, story }) => {
-    if (action === 'create' && story) Menu().setMsg(TEXT.creating);
+  on('busy', ({ action, code, story, run }) => {
+    if (action === 'create' && (story || run)) Menu().setMsg(TEXT.creating);
     else if (action === 'create') Menu().go('online', TEXT.creating);
     else Menu().setMsg(TEXT.connecting(code));
   });
@@ -202,14 +206,26 @@ window.SFC = window.SFC || {};
     else if (SFC.Cup.run && Menu().page === 'slobby') Menu().go('cup');
     else if (Menu().page === 'cup') Menu().render();
   });
-  // host chiếu cut scene trước trận -> khách chiếu cùng
-  on('scenes', ({ kind }) => SFC.CupUI.remoteScenes(kind));
+  // host chiếu cut scene trước trận -> khách chiếu cùng (phòng run: cut scene của act)
+  on('scenes', ({ kind }) => (kind.startsWith('run:') ? SFC.RunUI.remoteScenes(kind) : SFC.CupUI.remoteScenes(kind)));
+  // khách phòng GOAT PATH co-op: bản sao run của host -> vẽ lại map (đang trong trận / cut scene: lúc về menu tự vẽ)
+  on('run', ({ state }) => {
+    SFC.RunUI.roomRun = true;
+    SFC.Run.mirror(state);
+    if (app().screen !== 'menu') return;
+    if (Menu().page === 'runmap') Menu().render();
+    else if (Menu().page === 'lobby' || Menu().page === 'join') Menu().go('runmap', '');
+  });
   on('waiting', ({ action, code }) => Menu().setMsg((action === 'create' ? TEXT.creating : TEXT.connecting(code)) + TEXT.cancelHint()));
 
   on('lobby', ({ entered, pending }) => {
     const O_ = O();
     if (O_.story) SFC.CupUI.roomStory = O_.story;   // nhớ lại lúc phòng đóng (Session đã xoá)
-    if (entered) { Menu().go(O_.story ? storyPage() : 'lobby', pending ? TEXT.waitingInfo : ''); return; }
+    if (O_.run) SFC.RunUI.roomRun = true;
+    // phòng GOAT PATH co-op: host vào phòng với run đang có -> đứng đúng vị trí character trong run; mọi thứ ở màn map
+    if (O_.run && O_.isHost && SFC.Run.run) O_.seatHost(SFC.Run.run.squad[0].role);
+    if (entered) { Menu().go(O_.story ? storyPage() : O_.run ? 'runmap' : 'lobby', pending ? TEXT.waitingInfo : ''); return; }
+    if (O_.run) { if (app().screen === 'menu') Menu().go('runmap', Menu().msg === TEXT.waitingInfo ? '' : Menu().msg, Menu().msgErr); return; }
     // khách vừa biết đây là phòng Story (gói lobby đầu tiên): sang trang phòng Story
     if (O_.story && Menu().page === 'lobby') { Menu().go(storyPage(), ''); return; }
     // nhận được danh sách phòng: bỏ chữ "đang chờ", giữ các chữ báo khác
@@ -217,8 +233,8 @@ window.SFC = window.SFC || {};
     else if (app().screen === 'menu') Menu().render();
   });
   on('notice', ({ kind, name }) => {
-    // phòng Story: báo ở trang đang mở (phòng chờ / màn cup), không đổi trang
-    const page = O().story ? (Menu().page === 'cup' || Menu().page === 'slobby' ? Menu().page : storyPage()) : 'lobby';
+    // phòng Story: báo ở trang đang mở (phòng chờ / màn cup), không đổi trang · phòng run: màn map
+    const page = O().story ? (Menu().page === 'cup' || Menu().page === 'slobby' ? Menu().page : storyPage()) : O().run ? 'runmap' : 'lobby';
     if (kind === 'joined') { if (app().screen === 'menu') Menu().go(page, TEXT.joined(name)); SFC.Audio.pick(); }
     else if (app().screen === 'menu') Menu().go(page, TEXT.left(name), true);
   });
@@ -248,7 +264,7 @@ window.SFC = window.SFC || {};
     app().enterOnline(game);
     if (resume) banner('RECONNECTED', 'Back in the match', GREEN, 1.4);
   });
-  on('toLobby', () => { OnlineUI.overlay = false; app().toMenu(O().story ? storyPage() : 'lobby'); });
+  on('toLobby', () => { OnlineUI.overlay = false; app().toMenu(O().story ? storyPage() : O().run ? 'runmap' : 'lobby'); });
   on('getReady', () => banner('GET READY', 'Waiting for other players...', GREY, 1.4));
   on('reconnecting', () => banner('CONNECTION LOST', 'Reconnecting...', RED, 2));
   on('player', ({ kind, name }) => {
@@ -269,6 +285,17 @@ window.SFC = window.SFC || {};
       if (reason === 'left' || !g || app().mode !== 'online' || g.state === 'ended') return;
       // mất kết nối hẳn giữa trận: tính thua như FORFEIT
       app().forfeit();
+      return;
+    }
+    // phòng GOAT PATH co-op: khách thôi xem bản sao (run riêng của máy này còn nguyên), host giữ run để chơi tiếp một mình -> về tab GOAT PATH
+    const RU = SFC.RunUI;
+    if (RU && RU.roomRun) {
+      RU.roomRun = false;
+      if (!SFC.Run.mirrorOn && SFC.Run.run) { SFC.Run.syncRoom([]); SFC.Profile.save(); }   // host: khách đi hết, run chơi tiếp một mình
+      SFC.Run.leaveMirror();
+      RU.reset();
+      app().toMenu(from === 'join' && reason !== 'left' ? 'join' : 'run');
+      if (reason !== 'left') Menu().setMsg(OnlineUI.reasonText(reason), true);
       return;
     }
     // phòng Story: hết phòng = hết cup (lượt chơi nằm ở máy làm host) -> về tab FOOTBALL STORY

@@ -696,6 +696,21 @@ window.SFC = window.SFC || {};
   /* ---------- cầu thủ ---------- */
   // p cần: x, y, vx, vy, facing, anim, team, role, look, state
   // tint = tô 1 màu thay áo đấu · ghost = bóng mờ (không găng / tư thế ra đòn / hào quang), mặc định bật khi có tint
+  // băng trắng của chấn thương: cổ chân / ngón chân (chân phải), đùi (chân trái), cổ tay (tay trái). legsBusy: đang sút -> bỏ băng chân
+  const BANDAGE = '#f4efe2', BLOOD = '#e0475e';
+  function drawBandages(ctx, p, x, y, by, l, r, arm, legsBusy) {
+    const B = SFC_CONFIG.run && SFC_CONFIG.run.badges;
+    if (!B) return;
+    for (const id of p.inj) {
+      const part = B[id] && B[id].part;
+      if (part === 'wrist') { px(ctx, x - 7, by + 1 + arm, 3, 3, OUT); px(ctx, x - 6, by + 2 + arm, 2, 1, BANDAGE); px(ctx, x - 6, by + 3 + arm, 1, 1, BLOOD); }
+      if (legsBusy) continue;
+      if (part === 'ankle') { px(ctx, x, y + r - 4, 4, 2, BANDAGE); px(ctx, x + 1, y + r - 3, 1, 1, BLOOD); }
+      if (part === 'toe') { px(ctx, x, y + r - 2, 4, 1, BANDAGE); px(ctx, x + 2, y + r - 2, 1, 1, BLOOD); }
+      if (part === 'thigh') { px(ctx, x - 4, y + l - 5, 4, 2, BANDAGE); px(ctx, x - 3, y + l - 4, 1, 1, BLOOD); }
+    }
+  }
+
   function drawPlayer(ctx, p, g, alpha = 1, tint = null, ghost = !!tint) {
     const team = g.teams[p.team];
     const kit = team.cfg.kit;
@@ -795,6 +810,8 @@ window.SFC = window.SFC || {};
     if (diveArms || (cp && cp.arms)) { /* xem sau phần đầu */ } else if (!(punchArm && side < 0)) { px(ctx, x - 6, by + 1 + arm, 2, 4, OUT); px(ctx, x - 6, by + 2 + arm, 1, 2, hand); }
     if (!diveArms && !(cp && cp.arms) && !(punchArm && side > 0)) { px(ctx, x + 4, by + 1 - arm, 2, 4, OUT); px(ctx, x + 5, by + 2 - arm, 1, 2, hand); }
     if (punchArm) drawPunch(ctx, x, by, fx, fy, side, atk, hand);
+    // GOAT PATH: băng quấn đúng chỗ chấn thương (run.badges[].part; khoảnh khắc ra tay ở systems/hurt.js)
+    if (!ghost && !cp && p.inj) drawBandages(ctx, p, x, y, by, l, r, arm, !!(atk && (atk.shoot || kickLeg)));
     // Hard attack đang gồng: hào quang đỏ nhấp nháy
     if (p.state === 'windup') {
       ctx.globalCompositeOperation = 'lighter';

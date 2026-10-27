@@ -79,6 +79,8 @@ window.SFC = window.SFC || {};
       d.story = SFC.Cup.sanitize(raw && raw.story);      // FOOTBALL STORY (src/meta/cup.js)
       d.run = SFC.Run.sanitize(raw && raw.run);          // GOAT PATH (src/meta/run.js)
       d.runs = SFC.Run.sanitizeStats(raw && raw.runs);
+      // mã nhận diện cố định của hồ sơ (gửi kèm hồ sơ trận online): GOAT PATH co-op giữ ví / BADGE của khách theo mã này khi họ vào lại phòng
+      d.uid = raw && typeof raw.uid === 'string' && /^[a-z0-9]{8,16}$/.test(raw.uid) ? raw.uid : Math.random().toString(36).slice(2, 12).padEnd(8, '0');
       if (!raw || typeof raw !== 'object') return d;
       const keys = this.ultEntries().map((e) => e.key), ren = SFC_CONFIG.cores.ults.renamed || {};
       // Tuyệt kỹ đã thay (docs/ULT_REDESIGN.md): 'id cũ:cấp' -> 'id mới:cấp' cùng ô công thức, vẫn tính là đã khám phá
@@ -455,7 +457,7 @@ window.SFC = window.SFC || {};
     avatar() { return { name: this.data.name || 'PLAYER', level: this.data.level, look: this.lookOf() }; },
 
     // gửi cho đối thủ online (phòng chờ)
-    public() { return Object.assign(this.avatar(), { cores: this.unlockedCores() }); },
+    public() { return Object.assign(this.avatar(), { cores: this.unlockedCores(), uid: this.data.uid }); },
 
     // online (giống Main Path): kèm vị trí, chỉ số riêng + OVR của character và đồng đội đang chọn (Mates.spec)
     // role: 'DEF' / 'FWD' · mate: Mates.spec(...) hoặc null
@@ -485,7 +487,17 @@ window.SFC = window.SFC || {};
       if (stats) { out.stats = stats; out.ovr = clampInt(pub.ovr, 1, 99); }
       if (pub.mate !== undefined) out.mate = this.sanitizeMate(pub.mate);
       if (pub.elo != null) out.elo = clampInt(pub.elo, 0, 1e6);   // trận xếp hạng: Elo người chơi (Room gắn vào ghế)
+      if (typeof pub.uid === 'string' && /^[a-z0-9]{8,16}$/.test(pub.uid)) out.uid = pub.uid;   // mã hồ sơ (GOAT PATH co-op)
+      const inj = this.sanitizeInj(pub.inj);
+      if (inj) out.inj = inj;
       return out;
+    },
+    // chấn thương GOAT PATH gửi kèm ghế / đồng đội (băng + dấu ✚ ở máy khách): chỉ id chấn thương có thật
+    sanitizeInj(list) {
+      const B = SFC_CONFIG.run && SFC_CONFIG.run.badges;
+      if (!B || !Array.isArray(list)) return null;
+      const out = [...new Set(list.filter((id) => typeof id === 'string' && B[id] && B[id].injury))].slice(0, 8);
+      return out.length ? out : null;
     },
 
     sanitizeLook(lk) {
@@ -524,6 +536,8 @@ window.SFC = window.SFC || {};
       };
       // người chơi giả (trận xếp hạng): hiện kèm Elo như người chơi
       if (m.fake) { out.fake = true; out.elo = clampInt(m.elo, 0, 1e6); }
+      const inj = this.sanitizeInj(m.inj);
+      if (inj) out.inj = inj;
       return out;
     },
 
