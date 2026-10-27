@@ -34,6 +34,7 @@ const FILES = [
   ['config/mainpath.config.js', 'game sandbox itch server'],
   ['config/stories.config.js', 'game sandbox itch server'],   // FOOTBALL STORY (cup knockout co-op PvE) + đội riêng
   ['config/run.config.js', 'game sandbox itch server'],       // GOAT PATH: run 3 act kiểu Slay the Spire (đối thủ lấy từ stories)
+  ['config/elites.config.js', 'game sandbox itch server'],    // GOAT PATH: đội Elite riêng (pool act.elite) + luật trận của họ
   ['config/teammates.config.js', 'game sandbox itch server'],
   ['config/achievements.config.js', 'game'],
   ['config/intro.config.js', 'game itch server'],

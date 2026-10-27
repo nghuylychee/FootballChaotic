@@ -479,6 +479,7 @@ window.SFC = window.SFC || {};
       if (RD().pages.includes(this.page)) return RD().back(this);
       if (CU().pages.includes(this.page)) return CU().back(this);
       if (RU().pages.includes(this.page)) return RU().back(this);
+      if (this.page === 'run' && RU().joining) return RU().stopJoin(this);   // tab GOAT PATH: Esc thôi gõ mã phòng
       if (this.page === 'story' || this.page === 'run') return this.go('home');
       if (this.page === 'attrs' || this.page === 'look' || this.page === 'ults') return this.go('char');
       if (this.page === 'party' && this.addTyping) return this.stopAddTyping();

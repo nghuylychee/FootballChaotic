@@ -5,6 +5,8 @@
  * · INTRO / OUTRO · WHOLE STORY (mọi cut scene nối liền).
  * Trong trận test: 7 = luật trận ra tay ngay · 8 = bạn +1 bàn · 9 = đối thủ +1 bàn (thử leo thang khi bị dẫn) · 0 = thắng luôn
  * · - = đá lại vòng này. Kết quả trận ghi vào hồ sơ như trận thật (gold, sao, thành tích của Story).
+ * STORY cuối danh sách = GOAT PATH ELITES: đá thử 6 đội Elite (config/elites.config.js, ?storytest=elite.<0..5>), Elo = giữa act + eliteElo;
+ * trận thường (không ghi vào run).
  * Bản đóng gói: cả file thành rỗng (scripts/strip-debug.js xoá nhánh SFC_DEBUG, MARKERS có 'STORY TEST').
  */
 window.SFC = window.SFC || {};
@@ -13,12 +15,14 @@ if (SFC_DEBUG) (function () {
   const CUP = () => SFC.Cup;
   const wrap = (v, n) => ((v % n) + n) % n;
   const playable = () => CUP().list().filter((s) => !s.soon);
+  const elites = () => Object.keys(SFC_CONFIG.run.elites || {});
 
   const StoryTest = {
     si: 0, ri: 0,
     active: false,
 
     story() { return playable()[this.si]; },
+    elite() { return this.si >= playable().length; },   // mục cuối: GOAT PATH ELITES
     // lượt chơi giả đang ở vòng r (bracket thật, kết quả các vòng trước giả lập: bạn thắng 2-1)
     setup(r) {
       const s = this.story();
@@ -31,10 +35,18 @@ if (SFC_DEBUG) (function () {
 
     /* ---------- trang menu ---------- */
     items(menu) {
+      if (this.elite()) {
+        const id = elites()[this.ri % elites().length], o = SFC_CONFIG.run.elites[id], mod = SFC_CONFIG.stories.mods[o.mod];
+        return [
+          { kind: 'pick', label: 'STORY', value: 'GOAT PATH ELITES', danger: true, change: (d) => { this.si = wrap(this.si + d, playable().length + 1); this.ri = Math.min(this.ri, 3); } },
+          { kind: 'pick', label: 'ELITE', value: (SFC_CONFIG.teams.list[id] || {}).name || id, danger: true, change: (d) => { this.ri = wrap(this.ri + d, elites().length); } },
+          { kind: 'btn', label: 'MATCH', sub: `Kick off now · rule ${mod ? mod.name : '-'}`, danger: true, act: () => this.match(menu.app, false) },
+        ];
+      }
       const s = this.story(), rd = s.rounds[this.ri], team = SFC_CONFIG.teams.list[rd.team] || {};
       const mod = rd.mod && SFC_CONFIG.stories.mods[rd.mod];
       return [
-        { kind: 'pick', label: 'STORY', value: s.name, danger: true, change: (d) => { this.si = wrap(this.si + d, playable().length); this.ri = Math.min(this.ri, 3); } },
+        { kind: 'pick', label: 'STORY', value: s.name, danger: true, change: (d) => { this.si = wrap(this.si + d, playable().length + 1); this.ri = Math.min(this.ri, 3); } },
         { kind: 'pick', label: 'ROUND', value: `${CUP().roundName(this.ri)} · ${team.name || rd.team}`, danger: true, change: (d) => { this.ri = wrap(this.ri + d, 4); } },
         { kind: 'btn', label: 'MATCH', sub: mod ? `Kick off now · rule ${mod.name}` : 'Kick off now', danger: true, act: () => this.match(menu.app, false) },
         { kind: 'btn', label: 'BEFORE + MATCH', sub: 'Pre-match scenes, then kick off', danger: true, act: () => this.match(menu.app, true) },
@@ -64,15 +76,32 @@ if (SFC_DEBUG) (function () {
 
     // vào trận vòng đang chọn (withScenes: chiếu cut scene trước trận rồi mới đá, như bấm KICK OFF)
     match(app, withScenes) {
+      if (this.elite()) return this.eliteMatch(app);
       const s = this.setup(this.ri), rd = s.rounds[this.ri];
       this.armed = true;
       if (withScenes) return SFC.CupUI.cut(SFC.CupUI.scenes(rd.before, 'before', rd.team), 'kick');
       app.startCupMatch();
     },
 
+    // đội Elite đang chọn: trận thường dựng như trận GOAT PATH (luật trận + câu nói + Core đặc trưng), Elo giữa act + eliteElo
+    eliteMatch(app) {
+      const id = elites()[this.ri % elites().length], o = SFC_CONFIG.run.elites[id], RC = SFC_CONFIG.run, MP = SFC_CONFIG.mainPath;
+      const A = RC.acts.find((a) => (a.elite || []).includes(id)) || RC.acts[0], ai = SFC.MainPath.aiProfile((A.elo[0] + A.elo[1]) / 2 + RC.eliteElo);
+      const avatar = SFC.Profile.avatar();
+      this.armed = true;
+      app.startMatch({
+        home: MP.playerTeam.id, away: id, difficulty: 'normal', aiProfile: ai, mateProfile: ai,
+        humanTeam: 0, solo: [Math.max(0, SFC_CONFIG.game.roles.indexOf(app.myRole())), null], avatars: [avatar, null], arena: o.arena,
+        coreUnlocks: [SFC.Profile.unlockedCores(), null], signature: [null, o.signature || null],
+        knockout: true, mod: o.mod || null, barks: o.barks || null,
+      });
+      this.onMatch(app);
+    },
+
     // index.html?storytest[=id.vòng]: mở trang, hoặc đá thẳng
     boot(app, arg) {
       const [id, r] = String(arg || '').split('.');
+      if (id === 'elite') { this.si = playable().length; this.ri = Math.max(0, +r || 0) % elites().length; return this.match(app, false); }
       const i = playable().findIndex((s) => s.id === id);
       if (i >= 0) { this.si = i; this.ri = Math.max(0, Math.min(3, +r || 0)); return this.match(app, false); }
       SFC.Menu.go('storytest');

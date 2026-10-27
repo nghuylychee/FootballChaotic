@@ -18,9 +18,12 @@
         "scripts/serve.js",
         "--online",
         "--port",
-        "8080"
+        "8090",
+        "--server-port",
+        "8092"
       ],
-      "port": 8080
+      "port": 8090,
+      "autoPort": false
     },
     {
       "name": "game-mac",

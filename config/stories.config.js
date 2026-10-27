@@ -186,11 +186,15 @@ SFC_CONFIG.stories = {
       name: "OWL'S GAZE", hint: 'When the owl opens its eyes, stop running or turn to stone',
       first: 6, every: [7, 10], trailing: 1.4, warn: 1.0, open: 3.6, trailOpen: 1.35, lockT: 0.8, boltT: 0.45, beamT: 0.8, beamR: 6, stone: 1.5, aiObey: 0.85, color: '#ffd23f',
     },
-    // (chưa dùng, để dành cho Story sau) đèn pha quét sân (đường Lissajous). Đội bạn cầm bóng trong đèn catchT giây -> FREEZE: choáng + rơi bóng, đèn dừng pause giây.
-    // Lướt né được. Wardens bị dẫn: bật thêm 1 đèn (LOCKDOWN)
+    // Tower Guards (đội Elite GOAT PATH, config/elites.config.js): đèn pha bán kính r đi lang thang roam px/s (điểm ngẫu nhiên cách mép marginX / marginY);
+    // soi trúng ai đội bạn là khoá + đuổi chase px/s (đèn đổi màu chaseColor), người đó ra khỏi đèn liên tục forget giây thì đèn quên.
+    // Đèn đi theo từng đoạn seg giây. Đội bạn trong đèn nóng thêm heatUp / giây, ngoài đèn nguội cool / giây (đầy = 1). Nóng đầy = bốc cháy:
+    // đứng phủi lửa, đổi hướng trái <-> phải mash lần để dập (AI aiRate lần / giây), tối đa burn giây, dập xong miễn immune giây.
+    // Guards bị dẫn: bật thêm 1 đèn (LOCKDOWN)
     searchlight: {
-      name: 'SEARCHLIGHT', hint: 'Never hold the ball in the light',
-      r: 34, speedX: 0.42, speedY: 0.67, marginX: 70, marginY: 40, catchT: 0.6, stun: 1.0, pause: 1.6, color: '#fff3b0',
+      name: 'SEARCHLIGHT', hint: 'Once the light finds you it gives chase. Run out of it before you catch fire',
+      r: 46, roam: 70, chase: 80, forget: 2.5, seg: 0.25, marginX: 60, marginY: 34, heatUp: 0.75, cool: 0.35, burn: 4, mash: 6, aiRate: 2.5, immune: 1.0,
+      color: '#fff3b0', chaseColor: '#ffb08a',
       lockdown: 'LOCKDOWN', lockdownHint: 'A second light switches on',
     },
   },

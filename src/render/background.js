@@ -116,6 +116,15 @@ window.SFC = window.SFC || {};
         x.globalAlpha = 0.18; disc(x, lx, ly, 13, L.lamp); x.globalAlpha = 1;
       }
     }
+    if (L.style === 'lamps') {   // 3 đèn chao xanh treo dây từ trần
+      for (const k of [0.2, 0.5, 0.8]) {
+        const lx = Math.round(f.x + f.w * k);
+        px(x, lx, 0, 1, 7, L.cord);
+        px(x, lx - 5, 7, 11, 2, L.shade); px(x, lx - 8, 9, 17, 4, L.shade); px(x, lx - 8, 9, 17, 1, 'rgba(255,255,255,0.25)');
+        px(x, lx - 3, 13, 7, 1, '#fff3c0');
+        x.globalAlpha = 0.25; disc(x, lx, 14, 8, '#ffe0a0'); x.globalAlpha = 1;
+      }
+    }
     if (L.style === 'spot') {
       px(x, f.cx - 9, 0, 18, 4, '#2a2a30');
       px(x, f.cx - 7, 3, 14, 2, '#fffbe6');
@@ -154,6 +163,20 @@ window.SFC = window.SFC || {};
       for (let i = 0; i < (f.w * f.h) / 60; i++) px(x, f.x + Math.floor(rnd() * f.w), f.y + Math.floor(rnd() * f.h), 1, 1, rnd() < 0.5 ? F.speckD : F.speckL);
       return;
     }
+    if (F.style === 'felt') {
+      // nỉ bàn domino: nền 1 màu, sợi nỉ lấm tấm 2 tông, vân nỉ chéo rất mờ, vài vòng vết cốc trà
+      px(x, f.x, f.y, f.w, f.h, F.colors[0]);
+      for (let i = 0; i < (f.w * f.h) / 7; i++) px(x, f.x + Math.floor(rnd() * f.w), f.y + Math.floor(rnd() * f.h), 1, 1, rnd() < 0.5 ? F.speckD : F.speckL);
+      x.save(); x.beginPath(); x.rect(f.x, f.y, f.w, f.h); x.clip();
+      x.strokeStyle = 'rgba(0,0,0,0.05)'; x.lineWidth = 1;
+      for (let k = -f.h; k < f.w; k += 5) { x.beginPath(); x.moveTo(f.x + k, f.y); x.lineTo(f.x + k + f.h, f.y + f.h); x.stroke(); }
+      x.strokeStyle = F.ring; x.lineWidth = 2;
+      for (let i = 0; i < (F.rings || 0); i++) {
+        const rx = f.x + 30 + rnd() * (f.w - 60), ry = f.y + 20 + rnd() * (f.h - 40), r = 7 + rnd() * 4;
+        x.beginPath(); x.arc(rx, ry, r, rnd() * 2, rnd() * 2 + 4.5); x.stroke();
+      }
+      x.restore();
+    }
     if (F.style === 'planks') {
       // sàn ván tàu: ván ngang cao 8px, đầu ván so le (khe hắc ín + 2 đinh), vân gỗ
       for (let ty = f.y; ty < f.y + f.h; ty += 8) {
@@ -169,7 +192,7 @@ window.SFC = window.SFC || {};
         px(x, f.x, ty, f.w, 1, F.seam);
       }
     }
-    if (F.style !== 'planks') for (let ty = f.y; ty < f.y + f.h; ty += T) {
+    if (F.style !== 'planks' && F.style !== 'felt') for (let ty = f.y; ty < f.y + f.h; ty += T) {
       for (let tx = f.x; tx < f.x + f.w; tx += T) {
         const w = Math.min(T, f.x + f.w - tx), h = Math.min(T, f.y + f.h - ty);
         px(x, tx, ty, w, h, pick());
@@ -253,6 +276,26 @@ window.SFC = window.SFC || {};
         px(x, bx - 1, Y + 5, 48, 20, Wc.frame);
         px(x, bx, Y + 6, 46, 18, Wc.board);
         for (let l = 0; l < 3; l++) px(x, bx + 4, Y + 10 + l * 4, 10 + Math.floor(rnd() * 26), 1, 'rgba(255,255,255,0.35)');
+      }
+      return;
+    }
+    if (Wc.style === 'rail') {
+      // mép bàn domino: gỗ vecni (ván ngang + vân gỗ), dải sáng trên, nẹp đồng đinh tán dưới; dựng 1 hàng quân domino trên mép bàn
+      for (let yy = Y, i = 0; yy < Y + H; yy += 3, i++) px(x, X, yy, W, 3, Wc.colors[i % Wc.colors.length]);
+      for (let i = 0; i < 160; i++) px(x, X + rnd() * W, Y + rnd() * H, 6 + Math.floor(rnd() * 16), 1, 'rgba(0,0,0,0.12)');
+      px(x, X, Y, W, 2, 'rgba(255,230,190,0.18)');
+      px(x, X, Y + H - 8, W, 3, Wc.brass); px(x, X, Y + H - 8, W, 1, 'rgba(255,255,255,0.35)');
+      for (let sx = X + 6; sx < X + W; sx += 16) px(x, sx, Y + H - 7, 1, 1, '#fff3c0');
+      for (let cx = X + 22; cx < X + W - 26; cx += 13) {
+        if (rnd() < 0.12) continue;
+        const ty = Y + 8 + Math.floor(rnd() * 3);
+        px(x, cx - 1, ty - 1, 10, 18, 'rgba(0,0,0,0.5)');
+        px(x, cx, ty, 8, 16, Wc.tile); px(x, cx, ty, 8, 1, '#ffffff'); px(x, cx + 7, ty, 1, 16, 'rgba(0,0,0,0.18)');
+        px(x, cx + 1, ty + 7, 6, 1, Wc.pip);
+        for (const half of [0, 8]) {   // 2 nửa quân, mỗi nửa 0..6 chấm
+          const n = Math.floor(rnd() * 7), spots = [[], [[3, 3]], [[1, 1], [5, 5]], [[1, 1], [3, 3], [5, 5]], [[1, 1], [5, 1], [1, 5], [5, 5]], [[1, 1], [5, 1], [3, 3], [1, 5], [5, 5]], [[1, 1], [5, 1], [1, 3], [5, 3], [1, 5], [5, 5]]][n];
+          for (const sp of spots) px(x, cx + sp[0], ty + half + sp[1] + (half ? 1 : 0), 1, 1, Wc.pip);
+        }
       }
       return;
     }
@@ -518,6 +561,21 @@ window.SFC = window.SFC || {};
       x.fillStyle = grad; x.fillRect(0, 0, W, wallTop);
       return;
     }
+    if (B.style === 'parlor') {
+      // phòng câu lạc bộ domino: vách gỗ ốp (khe dọc), nẹp chân vách, 2 khung ảnh cũ viền đồng + bảng phấn ghi điểm giữa
+      px(x, 0, 0, W, wallTop, B.wall);
+      for (let sx = 0; sx < W; sx += 22) { px(x, sx, 0, 1, wallTop, B.seam); px(x, sx + 1, 0, 1, wallTop, 'rgba(255,255,255,0.04)'); }
+      px(x, 0, wallTop - 5, W, 5, B.trim); px(x, 0, wallTop - 5, W, 1, 'rgba(255,255,255,0.08)');
+      for (const k of [0.16, 0.84]) {
+        const fx = Math.round(W * k - 14);
+        px(x, fx - 1, 5, 30, 20, B.frame); px(x, fx + 1, 7, 26, 16, B.photo);
+        for (let i = 0; i < 3; i++) { px(x, fx + 5 + i * 7, 13, 4, 10, 'rgba(60,40,20,0.45)'); px(x, fx + 6 + i * 7, 10, 2, 3, 'rgba(60,40,20,0.45)'); }
+      }
+      const bw = 56, bx = Math.round(W / 2 - bw / 2);
+      px(x, bx - 2, 4, bw + 4, 22, B.trim); px(x, bx, 6, bw, 18, B.board);
+      for (let l = 0; l < 3; l++) for (let m = 0; m < 6; m++) if (rnd() < 0.8) px(x, bx + 4 + m * 9, 9 + l * 5, 1 + Math.floor(rnd() * 2) * 3, 1, 'rgba(255,255,255,0.4)');
+      return;
+    }
     if (B.style === 'stands') {
       // khán đài tạm dựng bằng giàn giáo
       sky(x, W, wallTop, B.sky);
@@ -581,6 +639,18 @@ window.SFC = window.SFC || {};
         const grad = x.createRadialGradient(lx, ly, 4, lx, ly, 430);
         grad.addColorStop(0, `rgba(${L.glow},0.16)`); grad.addColorStop(1, `rgba(${L.glow},0)`);
         x.fillStyle = grad; x.fillRect(0, 0, W, H);
+      }
+      return;
+    }
+    if (L.style === 'lamps') {
+      // 3 đèn chao treo trên sân (chao vẽ ở fixtures): xung quanh tối, 3 vầng sáng vàng ấm trên mặt sân
+      const dark = x.createRadialGradient(f.cx, f.cy, 90, f.cx, f.cy, 360);
+      dark.addColorStop(0, 'rgba(0,0,0,0)'); dark.addColorStop(1, `rgba(0,0,0,${L.dark || 0.35})`);
+      x.fillStyle = dark; x.fillRect(0, wallTop, W, H - wallTop);
+      for (const k of [0.2, 0.5, 0.8]) {
+        const lx = f.x + f.w * k, glow = x.createRadialGradient(lx, f.cy - 20, 6, lx, f.cy, 150);
+        glow.addColorStop(0, `rgba(${L.glow},0.13)`); glow.addColorStop(1, `rgba(${L.glow},0)`);
+        x.fillStyle = glow; x.fillRect(f.x, wallTop, f.w, f.y + f.h - wallTop);
       }
       return;
     }
@@ -711,6 +781,15 @@ window.SFC = window.SFC || {};
         px(x, X - 1, Y - 11, 1, 10, 'rgba(255,255,255,0.2)'); break;
       case 'rope':     // cuộn dây thừng
         disc(x, X, Y - 2, 6, OUT); disc(x, X, Y - 2, 5, '#b8945a'); disc(x, X, Y - 2, 3, '#8a6a3a'); disc(x, X, Y - 2, 1, '#5a4024'); break;
+      case 'tile':     // quân domino khổng lồ dựng ngoài mép sân
+        px(x, X - 5, Y - 17, 11, 19, OUT); px(x, X - 4, Y - 16, 9, 17, '#fdf6e3'); px(x, X - 4, Y - 16, 9, 1, '#ffffff');
+        px(x, X - 3, Y - 8, 7, 1, OUT);
+        for (const [dx, dy] of [[-2, -14], [2, -11], [-2, -5], [2, -5], [0, -2]]) px(x, X + dx, Y + dy, 1, 1, OUT);
+        break;
+      case 'teapot':   // ấm trà trên ghế đẩu
+        px(x, X - 4, Y - 2, 9, 4, OUT); px(x, X - 3, Y - 1, 7, 2, '#6a4a2a');
+        disc(x, X, Y - 7, 5, OUT); disc(x, X, Y - 7, 4, '#c9d8d0'); px(x, X + 4, Y - 9, 3, 1, OUT); px(x, X - 1, Y - 12, 3, 1, OUT);
+        break;
       case 'plant':
         px(x, X - 4, Y - 3, 8, 6, OUT); px(x, X - 3, Y - 2, 6, 4, '#a0522d');
         disc(x, X, Y - 7, 5, '#2f8f2a'); disc(x, X - 2, Y - 9, 3, '#4fbf45'); break;

@@ -211,10 +211,11 @@ window.SFC = window.SFC || {};
   // khách phòng GOAT PATH co-op: bản sao run của host -> vẽ lại map (đang trong trận / cut scene: lúc về menu tự vẽ)
   on('run', ({ state }) => {
     SFC.RunUI.roomRun = true;
+    SFC.RunUI.joining = false;
     SFC.Run.mirror(state);
     if (app().screen !== 'menu') return;
     if (Menu().page === 'runmap') Menu().render();
-    else if (Menu().page === 'lobby' || Menu().page === 'join') Menu().go('runmap', '');
+    else if (Menu().page === 'lobby' || Menu().page === 'join' || Menu().page === 'run') Menu().go('runmap', '');
   });
   on('waiting', ({ action, code }) => Menu().setMsg((action === 'create' ? TEXT.creating : TEXT.connecting(code)) + TEXT.cancelHint()));
 
@@ -224,7 +225,10 @@ window.SFC = window.SFC || {};
     if (O_.run) SFC.RunUI.roomRun = true;
     // phòng GOAT PATH co-op: host vào phòng với run đang có -> đứng đúng vị trí character trong run; mọi thứ ở màn map
     if (O_.run && O_.isHost && SFC.Run.run) O_.seatHost(SFC.Run.run.squad[0].role);
-    if (entered) { Menu().go(O_.story ? storyPage() : O_.run ? 'runmap' : 'lobby', pending ? TEXT.waitingInfo : ''); return; }
+    // vào phòng từ JOIN trên tab GOAT PATH: ở lại tab tới khi biết loại phòng (gói lobby đầu tiên)
+    const RJ = SFC.RunUI && SFC.RunUI.joining;
+    if (entered) { Menu().go(O_.story ? storyPage() : O_.run ? 'runmap' : RJ ? 'run' : 'lobby', pending ? TEXT.waitingInfo : ''); return; }
+    if (RJ && O_.lobby.members.length && !O_.run) { SFC.RunUI.joining = false; Menu().go(O_.story ? storyPage() : 'lobby', ''); return; }
     if (O_.run) { if (app().screen === 'menu') Menu().go('runmap', Menu().msg === TEXT.waitingInfo ? '' : Menu().msg, Menu().msgErr); return; }
     // khách vừa biết đây là phòng Story (gói lobby đầu tiên): sang trang phòng Story
     if (O_.story && Menu().page === 'lobby') { Menu().go(storyPage(), ''); return; }
@@ -289,8 +293,16 @@ window.SFC = window.SFC || {};
     }
     // phòng GOAT PATH co-op: khách thôi xem bản sao (run riêng của máy này còn nguyên), host giữ run để chơi tiếp một mình -> về tab GOAT PATH
     const RU = SFC.RunUI;
+    // vào phòng từ JOIN trên tab GOAT PATH không được: ở lại tab, giữ ô mã để gõ lại
+    if (RU && RU.joining && !RU.roomRun) {
+      RU.joining = from === 'join' && reason !== 'left';
+      app().toMenu('run');
+      if (reason !== 'left') Menu().setMsg(OnlineUI.reasonText(reason), true);
+      return;
+    }
     if (RU && RU.roomRun) {
       RU.roomRun = false;
+      RU.joining = false;
       if (!SFC.Run.mirrorOn && SFC.Run.run) { SFC.Run.syncRoom([]); SFC.Profile.save(); }   // host: khách đi hết, run chơi tiếp một mình
       SFC.Run.leaveMirror();
       RU.reset();

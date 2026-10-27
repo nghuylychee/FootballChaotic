@@ -118,8 +118,24 @@ Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>'
 | `mod.fizzle` | The bolt is dodged | Short hiss |
 | `mod.petrify` | The bolt hits: turned to stone | Grinding crackle, then a heavy stone thud |
 | `mod.crumble` | The statue crumbles when it wears off | Rock crunch + falling pebbles |
-| `mod.beep` | Searchlight starts locking onto your ball carrier (rule kept for a later Story, unused now) | Double alarm beep |
-| `mod.siren` | FREEZE, or LOCKDOWN switches on the second light | Rising-falling siren |
+| `mod.beep` | (unused since the 2026-10-27 SEARCHLIGHT rework) | Double alarm beep |
+| `mod.siren` | LOCKDOWN switches on the second searchlight (Tower Guards, GOAT PATH Elite) | Rising-falling siren |
+| `mod.sizzle` | You heat up one more notch in the searchlight | Short hiss |
+| `mod.scorch` | Too hot: you catch fire | Whoosh of flame + crackles |
+| `mod.pat` | One shake while putting the fire out | Soft pat |
+| `mod.tick` | DOUBLE DUTCH count-in beat, 3-2-1 (Rope Skippers, GOAT PATH Elite) | Short wood-block tick |
+| `mod.slap` | The giant rope starts a sweep across the pitch | Whip crack + low thud |
+| `mod.trip` | You trip on the rope (replaces `stat.slip` here) | Squeak, then a body thud |
+| `mod.squeak` | An auntie turns on the tap (WASH DAY, Wash Day Aunties) | Squeaky tap |
+| `mod.hose` | The water jet sweeps across the pitch | Long hiss of water |
+| `mod.douse` | The jet hits you | Splash + droplets |
+| `mod.neonwarn` | NEON ARROWS are about to switch (Neon Arcade) | 8-bit two-note blink |
+| `mod.neon` | The arrows switch direction | Rising 8-bit arpeggio |
+| `mod.domino` | A line of giant dominoes stands up (Domino Club) | Fast clatter of tiles |
+| `mod.tile` | A domino falls in the chain | Single wooden clack |
+| `mod.stance` | A Tai Chi Master starts charging his giant palm (QI PALM) | Ringing temple bell |
+| `mod.palm` | The giant palm shoots down its path | Rising whoosh + deep thud |
+| `mod.break` | A heavy hit breaks the charge | Crack + falling bell tone |
 | `mod.coo` | Pigeon flock flies over (Pigeon Gang) | Two coos + wing flaps |
 | `mod.splat` | A pigeon bomb lands | Wet low splat |
 | `mod.flop` | You step in a splat and fall flat (replaces `stat.slip` here) | Squeak, then a wet "SPLAT" + body thud |

@@ -3,8 +3,8 @@
  *
  * Mỗi act 1 map nhiều nhánh: floors tầng thường (tầng 0 luôn Matchday, tầng cuối luôn Locker Room) + 1 tầng boss.
  * Thua 1 trận (Matchday / Elite / Boss) = hết run (user chốt 2026-10-25). Core vẫn bốc lại mỗi trận như trận thường.
- * Đối thủ = các đội FOOTBALL STORY cũ: sân, Core đặc trưng, luật trận, câu nói trong trận lấy từ stories.list[].rounds theo id đội
- * (SFC.Run.opp). Elo AI tính theo act + tầng, không theo đội.
+ * Đối thủ Matchday / boss = các đội FOOTBALL STORY cũ: sân, Core đặc trưng, luật trận, câu nói trong trận lấy từ stories.list[].rounds theo id đội
+ * (SFC.Run.opp). Đối thủ Elite = đội riêng ở config/elites.config.js (run.elites). Elo AI tính theo act + tầng, không theo đội.
  * GIAI ĐOẠN 1: Skill game / Shop / Locker Room / ??? chưa có nội dung (vào là đi tiếp). BADGE + tiền trong run ở giai đoạn 2.
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
@@ -52,15 +52,15 @@ SFC_CONFIG.run = {
   coreRoad: { fromRuns: true, perFloor: 15, perBoss: 60 },
 
   /* ---------- ĐỘI HÌNH (user 2026-10-26): character + 2 đồng đội chọn lúc START RUN, giữ nguyên cả run ----------
-   * Chỉ số trong run KHÔNG lấy từ ngoài run: nền theo vị trí (base, trung bình ~62 = hệ số ~0.78, thấp hơn đối thủ act 2-3 để BADGE
-   * có ý nghĩa) + nghiêng theo chỉ số riêng của đồng đội (lean x (rating - OVR), kẹp ±leanMax: mỗi người 1 sở trường) + chút theo OVR
+   * Chỉ số trong run KHÔNG lấy từ ngoài run: nền theo vị trí (base, trung bình ~70 = hệ số ~0.88; user 2026-10-27: 62 đá không ổn,
+   * vẫn dưới 80 để BADGE có ý nghĩa) + nghiêng theo chỉ số riêng của đồng đội (lean x (rating - OVR), kẹp ±leanMax: mỗi người 1 sở trường) + chút theo OVR
    * của họ (ovrLean x (OVR - ovrRef), kẹp ±ovrMax: đồng đội scout giỏi nhỉnh hơn) + BADGE của người đó.
    * picks: số ứng viên ở màn chọn (đội hình trong roster trước, thiếu thì cầu thủ đường phố ngẫu nhiên cùng trình act 1). */
   squad: {
     base: {
-      FWD: { pace: 68, shooting: 72, passing: 60, dribble: 64, fight: 56, keeper: 52 },
-      MID: { pace: 62, shooting: 58, passing: 72, dribble: 68, fight: 58, keeper: 54 },
-      DEF: { pace: 58, shooting: 54, passing: 60, dribble: 56, fight: 72, keeper: 72 },
+      FWD: { pace: 76, shooting: 80, passing: 68, dribble: 72, fight: 64, keeper: 60 },
+      MID: { pace: 70, shooting: 66, passing: 80, dribble: 76, fight: 66, keeper: 62 },
+      DEF: { pace: 66, shooting: 62, passing: 68, dribble: 64, fight: 80, keeper: 80 },
     },
     lean: 0.7, leanMax: 8,
     ovrRef: 66, ovrLean: 0.2, ovrMax: 4,
@@ -176,15 +176,15 @@ SFC_CONFIG.run = {
       choices: [{ label: 'Thank you!', badge: 'any' }] },
   },
 
-  // 3 act (phương án B: mỗi act 1 vùng). teams = đối thủ Matchday / Elite · boss = bốc 1 lúc bắt đầu run
-  // elo = [tầng 0, tầng cuối] (nội suy) · bossElo · spareBoss: true = boss các act trước không được bốc đá Elite ở act này
+  // 3 act (phương án B: mỗi act 1 vùng). teams = đối thủ Matchday · elite = đối thủ Elite (pool riêng, dữ liệu ở run.elites; thiếu = bốc chung teams)
+  // boss = bốc 1 lúc bắt đầu run · elo = [tầng 0, tầng cuối] (nội suy) · bossElo · spareBoss: true = boss các act trước không được bốc đá Elite ở act này
   // Câu chuyện (giai đoạn 4, src/ui/runmap.js cutscene): mạch 3 act nối nhau thành 1 hành trình (khu phố -> thành phố -> huyền thoại).
   //   tell: kiểu kể (src/ui/story.js TELL) · narrator: id Story cũ lấy người dẫn truyện (tên + hình) · theme / trophy: khuôn cảnh
   //   src/ui/story-cup.js · stages: tên chặng [mở act, trước boss, hạ boss] · intro / bossTalk / after: lời thoại (who: host · you · opp;
   //   art: khuôn riêng; {boss} = tên đội boss của act). Chiếu: intro lúc vào act, bossTalk trước trận boss, after sau khi hạ boss.
   acts: [
     { id: 'block', name: 'THE BLOCK', color: '#ffd23f', arena: 'village',
-      teams: ['ward_uncles', 'moped_boys', 'school_ghosts', 'pigeon_gang'], boss: ['block_wardens'], elo: [30, 300], bossElo: 350,
+      teams: ['ward_uncles', 'moped_boys', 'school_ghosts', 'pigeon_gang'], elite: ['rope_skippers', 'wash_aunties'], boss: ['block_wardens'], elo: [30, 300], bossElo: 350,
       tell: 'diary', narrator: 'ward_cup', theme: 'alley', trophy: 'pot', stages: ['DAY 1', 'DAY 6', 'DAY 7'],
       intro: [
         { who: 'host', text: 'Attention, the whole block! Somebody here wants to walk the GOAT PATH.' },
@@ -200,7 +200,7 @@ SFC_CONFIG.run = {
         { who: 'you', text: 'Next stop: the city.' },
       ] },
     { id: 'night', name: 'NIGHT CITY', color: '#9d7bff', arena: 'rooftop',
-      teams: ['sky_hoppers', 'billboard_kids', 'lantern_crew', 'noodle_kickers', 'fortune_tellers'], boss: ['night_owls', 'market_mamas'], elo: [450, 1000], bossElo: 1150,
+      teams: ['sky_hoppers', 'billboard_kids', 'lantern_crew', 'noodle_kickers', 'fortune_tellers'], elite: ['tower_guards', 'neon_arcade'], boss: ['night_owls', 'market_mamas'], elo: [450, 1000], bossElo: 1150,
       tell: 'manga', narrator: 'rooftop_league', theme: 'rooftop', trophy: 'owl', stages: ['CHAPTER 1 · NIGHT CITY', 'CHAPTER 2 · THE CROWN', 'CHAPTER 3 · DAWN'],
       intro: [
         { who: 'host', text: 'So. The kid from the block made it to the city.' },
@@ -216,7 +216,7 @@ SFC_CONFIG.run = {
         { who: 'host', text: 'One road left. The old greats are waiting.' },
       ] },
     { id: 'legends', name: 'THE LEGENDS', color: '#e4ae39', arena: 'stadium',
-      teams: ['rust_buckets', 'retired_refs', 'grandpa_squad'], boss: ['old_legends'], spareBoss: true, elo: [1300, 2150], bossElo: 2700,
+      teams: ['rust_buckets', 'retired_refs', 'grandpa_squad'], elite: ['domino_club', 'taichi_masters'], boss: ['old_legends'], spareBoss: true, elo: [1300, 2150], bossElo: 2700,
       tell: 'film', narrator: 'legends_cup', theme: 'stadium', trophy: 'cup', stages: ['REEL ONE', 'REEL TWO · THE KING', 'THE END'],
       intro: [
         { who: 'host', art: 'cupMemory', text: 'Fifty years ago, I walked this same road.' },

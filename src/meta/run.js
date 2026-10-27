@@ -26,12 +26,13 @@ window.SFC = window.SFC || {};
   const TEAMS = () => SFC_CONFIG.teams.list;
   const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.floor(+v || 0)));
 
-  // dữ liệu đối thủ theo id đội: lấy từ vòng FOOTBALL STORY cũ có đội đó (sân, Core đặc trưng, luật trận, câu nói)
+  // dữ liệu đối thủ theo id đội: lấy từ vòng FOOTBALL STORY cũ có đội đó (sân, Core đặc trưng, luật trận, câu nói) + đội Elite (run.elites)
   let OPP = null;
   function oppTable() {
     if (OPP) return OPP;
     OPP = {};
     for (const s of SFC_CONFIG.stories.list) for (const rd of s.rounds || []) if (!OPP[rd.team]) OPP[rd.team] = rd;
+    Object.assign(OPP, C().elites || {});   // đội Elite riêng của GOAT PATH (run.elites)
     return OPP;
   }
 
@@ -273,13 +274,18 @@ window.SFC = window.SFC || {};
       // số trận trên mọi đường đi (tầng 0 -> tầng cuối)
       const play = (n) => !!C().nodes[n.kind].play;
       const spare = act.spareBoss ? R.spare.filter((id) => C().acts.findIndex((x) => x.boss.includes(id)) < a) : [];
-      // k = số trận · ke = số Elite (Matchday chỉ lấy đội của act, Elite có thêm boss dư) -> đủ đội khác nhau cho cả đường
-      const maxM = Math.min(M.maxMatches, act.teams.length + spare.length);
+      // 2 pool riêng: Matchday chỉ lấy act.teams, Elite chỉ lấy act.elite + boss dư. act chưa có đội Elite: Elite bốc chung act.teams + boss dư
+      const shared = !(act.elite && act.elite.length), elite = (shared ? act.teams : act.elite).concat(spare);
+      // k = số trận · ke = số Elite -> mỗi pool đủ đội khác nhau cho cả đường
       let bad = 0;
       const walk = (n, k, ke) => {
         k += play(n) ? 1 : 0;
         ke += n.kind === 'elite' ? 1 : 0;
-        if (!n.next.length) { if (k < M.minMatches || k > maxM || k - Math.min(ke, spare.length) > act.teams.length) bad++; return; }
+        if (!n.next.length) {
+          const over = shared ? k - Math.min(ke, spare.length) > act.teams.length : k - ke > act.teams.length || ke > elite.length;
+          if (k < M.minMatches || k > M.maxMatches || over) bad++;
+          return;
+        }
         n.next.forEach((id) => walk(cells.get(id), k, ke));
       };
       floors[0].forEach((n) => walk(n, 0, 0));
@@ -290,7 +296,7 @@ window.SFC = window.SFC || {};
         for (const p of parents(n)) { anc.get(p.id).forEach((x) => set.add(x)); if (p.team) set.add(p.team); }
         anc.set(n.id, set);
         if (!play(n)) continue;
-        const pool = n.kind === 'elite' ? act.teams.concat(spare) : act.teams;
+        const pool = n.kind === 'elite' ? elite : act.teams;
         const free = pool.filter((x) => !set.has(x));
         if (!free.length) bad++;
         n.team = (free.length ? free : pool)[Math.floor(rng() * (free.length || pool.length))];

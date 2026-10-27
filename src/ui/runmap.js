@@ -43,10 +43,17 @@ window.SFC = window.SFC || {};
     pick: null,        // màn BUILD YOUR SQUAD trước run: { me: vị trí của bạn, cands: [m], mates: { vị trí: chỉ số trong cands }, order: [vị trí theo thứ tự chọn] }
     leaveArm: false,   // LEAVE ROOM (co-op): bấm 2 lần
     roomRun: false,    // đang / vừa ở phòng GOAT PATH co-op (nhớ lại lúc phòng đóng — OnlineUI)
+    joining: false,    // tab 'run': đang gõ mã phòng để vào phòng bạn bè (JOIN ngay trên tab, không sang PRIVATE MATCH)
 
     /* ================= page 'run' (tab PLAY) ================= */
     tabItems(menu) {
       const R = RUN().run, live = RUN().active(), items = [];
+      // JOIN: ô mã phòng thay cho hàng nút (gõ mã, Enter = CONNECT, Esc / CANCEL = thôi)
+      if (this.joining) {
+        items.push({ kind: 'btn', main: true, label: _t('CONNECT'), act: () => menu.submitCode() });
+        items.push({ kind: 'btn', cancel: true, label: _t('CANCEL'), act: () => this.stopJoin(menu) });
+        return items;
+      }
       items.push({ kind: 'btn', main: true, label: R ? _t('CONTINUE') : _t('START RUN'), act: () => {
         if (!R) { this.reset(); this.newPick(); }
         menu.go('runmap');
@@ -54,8 +61,8 @@ window.SFC = window.SFC || {};
       if (live) items.push({ kind: 'btn', forfeit: true, label: this.quitArm ? _t('CONFIRM FORFEIT') : _t('FORFEIT RUN'), act: () => this.forfeit(menu) });
       // co-op online (khoá như PRIVATE MATCH: Platform.privateMatch): mở phòng với run đang có (hoặc run mới) · vào phòng của bạn bè bằng mã
       if (SFC.Platform.privateMatch) {
-        items.push({ kind: 'btn', coop: true, label: _t('PLAY WITH FRIENDS'), act: () => { this.reset(); this.roomRun = true; ON().createRoom({ run: true }); } });
-        items.push({ kind: 'btn', joinRoom: true, label: _t('JOIN'), act: () => { menu.joinFrom = 'run'; menu.go('join'); } });
+        items.push({ kind: 'btn', coop: true, label: _t('HOST'), act: () => { this.reset(); this.roomRun = true; ON().createRoom({ run: true }); } });
+        items.push({ kind: 'btn', joinRoom: true, label: _t('JOIN'), act: () => this.startJoin(menu) });
       }
       return items;
     },
@@ -67,8 +74,8 @@ window.SFC = window.SFC || {};
       const acts = RUN().acts().map((a, i) => {
         const boss = R ? R.bosses[i] : a.boss[0], seen = i <= reach || st.wins > 0, on = R && R.act === i && RUN().active();
         const done = R ? i < R.act || R.won : false, lock = SFC_DEMO && i >= ((SFC_CONFIG.demo && SFC_CONFIG.demo.runActs) || 1);
-        return `<div class="rt-act ${on ? 'on' : ''} ${done ? 'done' : ''} ${lock ? 'lock' : ''}" style="--ac:${a.color}" ${lock ? `title="${esc(_t('FULL GAME'))}"` : ''}>
-            <canvas data-ract="${i}" width="120" height="56"></canvas>
+        return `<div class="rt-act ${on ? 'on' : ''} ${done ? 'done' : ''} ${lock ? 'lock' : ''}" style="--ac:${a.color}">
+            <canvas data-ract="${i}" width="180" height="84"></canvas>
             <span class="rt-n">${esc(_t('ACT {n}', { n: i + 1 }))}</span>
             <b>${esc(a.name)}</b>
             <span class="rt-boss"><canvas data-team="${boss}" data-idx="2" ${seen ? '' : 'data-sil="1"'}></canvas>${PX().ui('crown', 'sm')}<em>${esc(seen ? TEAMS()[boss].name : '???')}</em></span>
@@ -85,14 +92,20 @@ window.SFC = window.SFC || {};
       return `<div class="pt-main pt-run">
           ${menu.playTabs('run', sub)}
           <div class="rt-acts">${acts}</div>
-          ${where}${msg}
-          <div class="pt-acts">${btn((x) => x.joinRoom)}${btn((x) => x.forfeit)}${btn((x) => x.main)}${btn((x) => x.coop)}</div>
-          <div class="pt-hint">${esc(_t('3 acts · pick your path · lose once and the run is over'))}</div>
+          ${where}
+          <div class="rt-bottom">${this.joining ? `<div class="pt-joinbox rt-join"><div class="pt-jtitle">${esc(_t('JOIN ROOM'))}</div>${menu.renderCode()}</div>` : ''}${msg}
+            ${!this.joining && items.some((x) => x.forfeit) ? `<div class="pt-acts">${btn((x) => x.forfeit)}</div>` : ''}
+            <div class="pt-acts">${this.joining ? btn((x) => x.cancel) + btn((x) => x.main)
+              : btn((x) => x.joinRoom) + btn((x) => x.main) + btn((x) => x.coop)}</div></div>
         </div>
         <button class="pt-back" data-back="1">◀ ${esc(_t('BACK'))}</button>`;
     },
+    // JOIN trên tab: bật / tắt ô gõ mã phòng (Menu.setTextMode 'join' = cùng ô mã của PRIVATE MATCH, Menu.submitCode)
+    startJoin(menu) { this.joining = true; menu.joinFrom = 'run'; menu.code = ''; menu.msg = ''; menu.sel = 0; menu.render(); },
+    stopJoin(menu) { this.joining = false; menu.code = ''; menu.msg = ''; menu.setTextMode(null); menu.sel = 0; menu.render(); },
     // ảnh sân của từng act (tab 'run')
     bind(menu) {
+      menu.setTextMode(this.joining ? 'join' : null);
       menu.el.querySelectorAll('canvas[data-ract]').forEach((cv) => {
         const a = RUN().act(+cv.dataset.ract), R = RUN().run;
         if (!a || !SFC_CONFIG.arenas[a.arena]) return;
@@ -186,7 +199,7 @@ window.SFC = window.SFC || {};
       const dots = RUN().acts().map((a, i) => `<i class="${i < R.act || R.won ? 'done' : i === R.act ? 'on' : ''}" style="--c:${a.color}"></i>`).join('');
       // dải đội hình luôn hiện (kể cả khi nút không chọn được vì đang có thẻ che): bấm = mở SQUAD
       const tb = T.find((t) => t.k === 'bag');
-      const strip = `<button class="pt-btn rm-strip ${tb && T.indexOf(tb) === this.sel ? 'sel' : ''}" ${tb ? `data-rt="${tb.key}"` : 'disabled'} title="${esc(_t('SQUAD'))}">${this.strip(R)}</button>`;
+      const strip = `<button class="pt-btn rm-strip ${tb && T.indexOf(tb) === this.sel ? 'sel' : ''}" ${tb ? `data-rt="${tb.key}"` : 'disabled'}>${this.strip(R)}</button>`;
       const bar = this.roomChip() + strip + T.filter((t) => ['forfeit', 'back', 'leaveroom', 'invite'].includes(t.k)).map((t) => this.btn(T, t,
         esc(t.k === 'forfeit' ? (this.quitArm ? _t('CONFIRM FORFEIT') : _t('FORFEIT RUN')) : t.k === 'invite' ? _t('INVITE') : t.k === 'leaveroom' ? (this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')) : _t('BACK')),
         (t.k === 'forfeit' && this.quitArm) || (t.k === 'leaveroom' && this.leaveArm) ? 'danger' : '')).join('');
@@ -265,7 +278,7 @@ window.SFC = window.SFC || {};
         const lost = R.over && !R.forfeit && last && last.act === R.act && last.node === n.id && last.kind !== 'skill';
         const icon = boss ? `<canvas data-team="${n.team}" data-idx="2"></canvas>` : PX().ui(n.got ? GOT[n.got] : N.icon, 'x2');
         return `<button class="rm-node k-${n.kind} ${st} ${lost ? 'lost' : ''} ${sel && sel.id === n.id ? 'sel' : ''}"
-            data-rn="${n.id}" style="left:${p.x}px;top:${p.y}px;--nc:${N.color}" title="${esc(N.name)}">${icon}${boss ? `<i class="rm-crown">${PX().ui('crown', 'sm')}</i>` : ''}${this.votes(R, 'node', n.id)}</button>`;
+            data-rn="${n.id}" style="left:${p.x}px;top:${p.y}px;--nc:${N.color}">${icon}${boss ? `<i class="rm-crown">${PX().ui('crown', 'sm')}</i>` : ''}${this.votes(R, 'node', n.id)}</button>`;
       }).join('');
       return `<div class="rm-inner" style="width:${width}px;height:${height}px">
           <svg class="rm-lines" width="${width}" height="${height}">${this.pitch(width, height)}${lines.join('')}</svg>${nodes}
@@ -294,7 +307,7 @@ window.SFC = window.SFC || {};
       const col = d.injury ? '#ff5a6e' : rar.color, sel = t && T.indexOf(t) === this.sel;
       const tag = extra.price != null ? `<u class="bd-price ${extra.poor ? 'poor' : ''}">$${extra.price}</u>` : extra.tag ? `<u class="bd-tag">${esc(extra.tag)}</u>` : '';
       const who = extra.who != null ? `<u class="bd-who">${esc(RUN().memberName(extra.who))}</u>` : '';
-      return `<button class="bd-card ${d.injury ? 'inj' : ''} ${extra.dis ? 'dis' : ''} ${sel ? 'sel' : ''}" ${t ? `data-rt="${t.key}"` : ''} style="--rc:${col}" title="${esc(d.desc)}">
+      return `<button class="bd-card ${d.injury ? 'inj' : ''} ${extra.dis ? 'dis' : ''} ${sel ? 'sel' : ''}" ${t ? `data-rt="${t.key}"` : ''} style="--rc:${col}">
           <span class="bd-ico">${this.badgeIcon(b.id)}</span>
           <b>${esc(d.name)}${b.up ? '+' : ''}</b>
           <span class="bd-fx">${this.chips(b)}</span>
@@ -391,7 +404,11 @@ window.SFC = window.SFC || {};
       const P = this.pick, T = this.targets(), me = this.pkMe(), next = this.pkNext(), room = inRoom();
       this.sel = Math.max(0, Math.min(T.length - 1, this.sel));
       const A = SFC_CONFIG.progression.attrs;
-      const mini = (mem) => { const r = RUN().baseOf(mem); return `<div class="pk-st">${A.order.map((s) => `<span style="--c:${A.list[s].color}"><i>${esc(A.list[s].short)}</i>${r[s]}</span>`).join('')}</div>`; };
+      // không hiện cả 6 chỉ số (rối): chỉ 2 chỉ số mạnh nhất của người đứng ô
+      const mini = (mem) => {
+        const r = RUN().baseOf(mem), top = A.order.slice().sort((a, b) => r[b] - r[a]).slice(0, 2);
+        return `<span class="bd-fx">${top.map((x) => `<i style="--c:${A.list[x].color}">${esc(A.list[x].short)} ${r[x]}</i>`).join('')}</span>`;
+      };
       const ovr = (mem) => { const v = Object.values(RUN().baseOf(mem)); return Math.round(v.reduce((a, b) => a + b, 0) / v.length); };
       const label = (t) => esc(t.k === 'invite' ? _t('INVITE') : room ? (this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')) : _t('BACK'));
       const btns = T.filter((t) => ['invite', 'cancel'].includes(t.k)).map((t) => this.btn(T, t, label(t), t.k === 'cancel' && this.leaveArm ? 'danger' : '')).join('');
@@ -404,7 +421,7 @@ window.SFC = window.SFC || {};
         else if (m) {
           const x = unpick(role);
           body = `${this.face(RUN().mateLook(m), false)}<b>${esc(m.name)}</b><span class="sq-ovr">${ovr({ role, m })}</span>${mini({ role, m })}<u class="pk-tag ai">AI</u>
-            <i class="pk-x ${T.indexOf(x) === this.sel ? 'sel' : ''}" data-rt="${x.key}" title="${esc(_t('Remove'))}">✕</i>`;
+            <i class="pk-x ${T.indexOf(x) === this.sel ? 'sel' : ''}" data-rt="${x.key}">✕</i>`;
         }
         else body = `<div class="pk-q">?</div>`;
         return `<button class="pk-slot ${role === next ? 'on' : ''} ${!m && !h && role !== me ? 'empty' : ''} ${role === me ? 'mine' : ''} ${sel}" data-rt="${t.key}"><em>${esc(role)}</em>${body}</button>`;
@@ -900,7 +917,7 @@ window.SFC = window.SFC || {};
     roomChip() {
       if (!inRoom()) return '';
       const code = ON().code || '';
-      return `<span class="rm-room" data-copy="${esc(code)}" title="${esc(_t('Click to copy'))}"><em>${esc(_t('ROOM CODE'))}</em><b>${esc(code)}</b></span>`;
+      return `<span class="rm-room" data-copy="${esc(code)}"><em>${esc(_t('ROOM CODE'))}</em><b>${esc(code)}</b></span>`;
     },
     // khách: host chưa bắt đầu run -> mã phòng + 3 ô vị trí (bấm ô trống = đổi sang đó) + chờ host
     renderWait(menu) {

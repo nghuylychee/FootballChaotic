@@ -42,6 +42,7 @@ SFC.I18n.fields = [
   'run.acts.*.intro.*.sfx', 'run.acts.*.bossTalk.*.sfx',
   'run.badges.*.name', 'run.badges.*.desc', 'run.drills.*.name', 'run.drills.*.desc', 'run.tiers.*.name',
   'run.events.*.title', 'run.events.*.text', 'run.events.*.choices.*.label',
+  'run.elites.*.barks.*.*',   // câu nói trong trận của đội Elite (config/elites.config.js; tên đội / luật trận đã gộp vào teams.list / stories.mods)
   // thành tích (config/achievements.config.js)
   'achievements.list.*.name', 'achievements.list.*.desc',
   // chú thích nút trên sơ đồ tay cầm (SVG bề rộng cố định): dài hơn là bị cắt

@@ -269,6 +269,29 @@ window.SFC = window.SFC || {};
     'mod.hoo'() { [0, 0.4].forEach((d, i) => T({ freq: i ? 330 : 392, to: i ? 300 : 360, dur: 0.32, type: 'sine', vol: 0.14, vib: 6, vibDepth: 12, attack: 0.05, delay: d })); },
     'mod.spotted'() { N({ dur: 0.04, vol: 0.2, freq: 3000, q: 1.5 }); N({ dur: 0.03, vol: 0.12, freq: 2000, q: 1.5, delay: 0.06 }); T({ freq: 1568, to: 784, dur: 0.25, type: 'square', vol: 0.06, delay: 0.05 }); },
     'mod.siren'() { T({ freq: 660, to: 990, dur: 0.3, type: 'sawtooth', vol: 0.07 }); T({ freq: 990, to: 660, dur: 0.3, type: 'sawtooth', vol: 0.07, delay: 0.3 }); },
+    /* ---- ĐỘI ELITE GOAT PATH (config/elites.config.js) ---- */
+    // Rope Skippers: đếm nhịp (tiếng gõ que) · dây đập đất (roi quất + bụi) · vấp dây ngã
+    'mod.tick'() { T({ freq: 1760, dur: 0.04, type: 'square', vol: 0.06 }); N({ dur: 0.02, vol: 0.08, freq: 3500, q: 3 }); },
+    'mod.slap'() { N({ dur: 0.06, vol: 0.2, freq: 1800, to: 600, q: 0.9 }); T({ freq: 160, to: 70, dur: 0.08, type: 'sine', vol: 0.16 }); N({ dur: 0.12, vol: 0.05, freq: 500, type: 'lowpass', delay: 0.04 }); },
+    'mod.trip'() { T({ freq: 700, to: 1100, dur: 0.07, type: 'triangle', vol: 0.06 }); N({ dur: 0.1, vol: 0.14, freq: 700, to: 200, q: 1, delay: 0.08 }); T({ freq: 120, to: 50, dur: 0.16, type: 'sine', vol: 0.22, delay: 0.09 }); },
+    // Wash Day Aunties: vặn vòi (rít) · tia nước xả · trúng tia nước
+    'mod.squeak'() { T({ freq: 1300, to: 1700, dur: 0.12, type: 'square', vol: 0.04, vib: 30, vibDepth: 60 }); T({ freq: 1500, to: 1100, dur: 0.1, type: 'square', vol: 0.03, delay: 0.14 }); },
+    'mod.hose'() { N({ dur: 1.5, vol: 0.14, freq: 2600, q: 0.6, attack: 0.05 }); N({ dur: 1.5, vol: 0.06, freq: 600, type: 'lowpass', attack: 0.1 }); },
+    'mod.douse'() { N({ dur: 0.3, vol: 0.2, freq: 2200, to: 700, q: 0.7 }); T({ freq: 260, to: 120, dur: 0.12, type: 'sine', vol: 0.12 }); for (let i = 0; i < 4; i++) T({ freq: R(900, 1600), to: R(400, 600), dur: 0.05, type: 'sine', vol: 0.05, delay: 0.1 + i * 0.05 }); },
+    // Neon Arcade: bảng mũi tên sắp đổi (tiếng máy game nhấp nháy) · đổi hướng (hợp âm 8-bit)
+    'mod.neonwarn'() { for (let i = 0; i < 6; i++) T({ freq: i % 2 ? 988 : 1319, dur: 0.07, type: 'square', vol: 0.05, delay: i * 0.12 }); },
+    'mod.neon'() { seq([523, 659, 784, 1047], 0.05, { type: 'square', dur: 0.08, vol: 0.06 }); N({ dur: 0.15, vol: 0.06, freq: 5000, type: 'highpass', delay: 0.18 }); },
+    // Domino Club: hàng domino mọc lên (lách cách dồn dập) · 1 quân đổ (cạch gỗ)
+    'mod.domino'() { for (let i = 0; i < 8; i++) N({ dur: 0.025, vol: 0.09, freq: R(1600, 2400), q: 4, delay: i * 0.045 }); T({ freq: 330, to: 440, dur: 0.3, type: 'triangle', vol: 0.04 }); },
+    'mod.tile'() { N({ dur: 0.03, vol: 0.16, freq: R(1300, 1700), q: 5 }); T({ freq: R(500, 600), dur: 0.03, type: 'square', vol: 0.04 }); },
+    // Tower Guards: nóng thêm 1 nấc (xèo) · bốc cháy (phừng lửa) · phủi lửa 1 cái
+    'mod.sizzle'() { N({ dur: 0.25, vol: 0.08, freq: 5000, q: 1.5, attack: 0.02 }); T({ freq: 900, to: 1300, dur: 0.12, type: 'triangle', vol: 0.03 }); },
+    'mod.scorch'() { N({ dur: 0.5, vol: 0.2, freq: 500, to: 2600, q: 0.7, attack: 0.02 }); boom(0.18, 0.3); for (let i = 0; i < 6; i++) N({ dur: 0.02, vol: 0.07, freq: 5500, q: 2, delay: 0.1 + R(0, 0.4) }); },
+    'mod.pat'() { N({ dur: 0.05, vol: 0.12, freq: R(700, 1000), q: 1.2 }); N({ dur: 0.08, vol: 0.05, freq: 3500, type: 'highpass', delay: 0.02 }); },
+    // Tai Chi Masters: bắt đầu gồng (chuông đồng ngân) · chưởng lao ra (gió rít + đập) · gồng bị phá (gãy chuông)
+    'mod.palm'() { N({ dur: 0.35, vol: 0.22, freq: 400, to: 2400, q: 0.9 }); boom(0.3, 0.4, 0.05); T({ freq: 196, to: 98, dur: 0.4, type: 'sawtooth', vol: 0.06 }); },
+    'mod.stance'() { T({ freq: 392, dur: 1.4, type: 'sine', vol: 0.12, attack: 0.01 }); T({ freq: 784, dur: 1.0, type: 'sine', vol: 0.05 }); T({ freq: 1176, dur: 0.6, type: 'sine', vol: 0.03, vib: 4, vibDepth: 6 }); },
+    'mod.break'() { N({ dur: 0.08, vol: 0.2, freq: 2500, q: 1 }); T({ freq: 392, to: 196, dur: 0.25, type: 'triangle', vol: 0.1 }); T({ freq: 466, to: 233, dur: 0.25, type: 'triangle', vol: 0.06 }); },
   };
 
   SFC.Audio.ult = function (key) { const f = LIB[key]; if (f) f(); };

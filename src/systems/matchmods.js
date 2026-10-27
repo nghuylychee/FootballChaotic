@@ -33,14 +33,6 @@ window.SFC = window.SFC || {};
   }
 
   /* ---------- đường đi thuần theo thời gian (sim + vẽ dùng chung) ---------- */
-  // đèn pha: Lissajous phủ gần hết sân
-  function lightAt(c, t, ph) {
-    const f = SFC_CONFIG.game.field;
-    return {
-      x: f.x + f.w / 2 + (f.w / 2 - c.marginX) * Math.sin(t * c.speedX + ph),
-      y: f.y + f.h / 2 + (f.h / 2 - c.marginY) * Math.sin(t * c.speedY + ph * 1.7),
-    };
-  }
   // xe máy: x cố định, y từ o.y tới o.a sau b giây cảnh báo
   function mopedAt(o, el) {
     const k = U.clamp((el - o.b) / Math.max(0.01, o.max - o.b), 0, 1);
@@ -380,64 +372,123 @@ window.SFC = window.SFC || {};
     },
   };
 
-  /* Block Wardens — ĐÈN PHA: đội bạn cầm bóng trong đèn đủ lâu thì FREEZE (choáng + rơi bóng); Wardens bị dẫn thì bật thêm 1 đèn */
+  /* Tower Guards (GOAT PATH Elite) — ĐÈN PHA NÓNG (user 2026-10-27): đèn pha đi lang thang trên sân (roam px/s, tới điểm ngẫu nhiên này rồi điểm khác).
+   * Soi trúng ai đội bạn là khoá người đó (đèn ngả đỏ, không hiện chữ) và đuổi theo chase px/s (chậm hơn chạy nhanh): người đó phải ra khỏi đèn liên tục
+   * forget giây thì đèn mới quên, quay lại đi lang thang. Ai đội bạn đứng trong đèn nóng dần (thanh nhiệt 4 nấc trên đầu + quầng đỏ: prop 'heat',
+   * b = nấc), ra chỗ tối thì nguội. Nóng đầy = BỐC CHÁY: đứng tại chỗ phủi lửa (prop 'burn'), đổi hướng trái <-> phải mash lần mới dập xong
+   * (AI tự dập aiRate lần / giây), quá burn giây tự tắt; người đang cháy thì đèn thôi đuổi. Đồng đội AI nóng quá nửa thì tự chạy ra khỏi đèn.
+   * Guards bị dẫn: bật thêm 1 đèn (LOCKDOWN). Đèn chạy theo từng đoạn thẳng seg giây: mỗi đoạn 1 prop 'spot' (x, y -> a, b), máy khách vẽ được */
   K.searchlight = {
-    create(g, M, c) { M.lights = [this.light(g, 0, U.rand(0, 20))]; },
-    light(g, ph, T) { return { ph, T, id: 0, pause: 0, held: 0, alarm: 0, who: null }; },
+    create(g, M, c) { M.lights = [this.light(g, c)]; M.heat = {}; M.held = []; M.imm = {}; },
+    // điểm ngẫu nhiên trong sân (cách mép)
+    spot(g, c) { const f = g.field; return { x: U.rand(f.x + c.marginX, f.x + f.w - c.marginX), y: U.rand(f.y + c.marginY, f.y + f.h - c.marginY) }; },
+    light(g, c, from) {
+      const p = from || this.spot(g, c), w = this.spot(g, c);
+      return { sx: p.x, sy: p.y, nx: p.x, ny: p.y, st: c.seg, cx: p.x, cy: p.y, wx: w.x, wy: w.y, target: null, lost: 0, id: 0 };
+    },
     kickoff(g, M, c) {
-      for (const L of M.lights) { L.pause = 0; L.held = 0; L.alarm = 0; L.who = null; this.show(g, M, c, L); }
+      heldKickoff(g, M);
+      M.heat = {};
+      for (const L of M.lights) { L.target = null; L.id = 0; this.step(g, M, c, L); }   // dựng lại đèn ngay (giao bóng vừa xoá hết vật thể)
     },
-    // đèn đang quét: prop 'spot' a = 0, (x, y) = (pha, mốc thời gian) -> MatchMods.at tính vị trí theo tuổi vật thể
-    show(g, M, c, L) {
+    clock(g, M, c, dt) { for (const L of M.lights) L.st += dt; },
+    // đoạn đường kế tiếp: từ chỗ đang đứng đi về phía người bị khoá (hoặc điểm lang thang) tối đa speed x seg px
+    step(g, M, c, L) {
+      const f = g.field, tg = L.target || { x: L.wx, y: L.wy }, sp = (L.target ? c.chase : c.roam) * c.seg;
+      L.sx = L.nx; L.sy = L.ny;
+      const dx = tg.x - L.sx, dy = tg.y - L.sy, d = Math.hypot(dx, dy);
+      if (!L.target && d < 6) { const w = this.spot(g, c); L.wx = w.x; L.wy = w.y; }
+      const k = d > sp ? sp / d : 1;
+      L.nx = U.clamp(L.sx + dx * k, f.x + 20, f.x + f.w - 20); L.ny = U.clamp(L.sy + dy * k, f.y + 14, f.y + f.h - 14);
+      L.st = 0;
+      if (L.id) g.effects.propOff(L.id, 0.001);
       L.id = newId(g);
-      g.effects.prop(L.id, 'spot', L.ph, L.T, 0, 0, 9999, c.color);
+      g.effects.prop(L.id, 'spot', L.sx, L.sy, L.nx, L.ny, c.seg + 0.5, L.target ? c.chaseColor : c.color);
     },
-    clock(g, M, c, dt) { for (const L of M.lights) if (!(L.pause > 0)) L.T += dt; },
+    // q có đang trong đèn nào không -> đèn đó
+    lit(M, c, q) {
+      for (const L of M.lights) if (Math.hypot((q.x - L.cx) * 0.9, (q.y - L.cy) * 1.6) < c.r) return L;
+      return null;
+    },
+    in(L, c, q) { return Math.hypot((q.x - L.cx) * 0.9, (q.y - L.cy) * 1.6) < c.r; },
+    // đổi nấc nhiệt hiển thị (0 = tắt)
+    level(g, H, o, lv, c) {
+      if (lv === H.lv) return;
+      if (H.id) g.effects.propOff(H.id, 0.15);
+      if (lv > H.lv) g.sfx('ult', 'mod.sizzle');
+      H.lv = lv; H.id = 0;
+      if (lv > 0) { H.id = newId(g); g.effects.prop(H.id, 'heat', o.x, o.y, o.id, lv, 9999, c.color); }
+    },
+    // đồng đội AI nóng quá nửa mà còn trong đèn: chạy ra xa tâm đèn
+    aiMove(g, M, c, p) {
+      if (p.team === M.team || p.state !== 'normal' || !((M.heat[p.id] || {}).v > 0.5)) return false;
+      const L = this.lit(M, c, p);
+      if (!L) return false;
+      const d = U.norm(p.x - L.cx || 0.1, p.y - L.cy);
+      p.intent.mx = d.x; p.intent.my = d.y; p.intent.sprint = true;
+      return true;
+    },
     update(g, M, c, dt) {
-      const E = g.effects, b = g.ball;
-      // Wardens bị dẫn: LOCKDOWN — bật đèn thứ 2 (1 lần mỗi trận)
+      const E = g.effects;
+      // Guards bị dẫn: LOCKDOWN — bật đèn thứ 2 (1 lần mỗi trận)
       if (behind(g) && M.lights.length < 2) {
-        const L = this.light(g, Math.PI, M.lights[0].T);   // pha lệch nửa vòng: đèn 2 quét đối xứng đèn 1 theo chiều ngang
-        M.lights.push(L);
-        this.show(g, M, c, L);
+        M.lights.push(this.light(g, c));
         g.emit('banner', { text: c.lockdown, sub: c.lockdownHint, color: '#ff3d5a' });
         g.sfx('ult', 'mod.siren');
       }
+      const burning = (o) => M.held.some((h) => h.o === o);
       for (const L of M.lights) {
-        if (L.pause > 0) {
-          if ((L.pause -= dt) <= 0) this.show(g, M, c, L);
-          continue;
+        const k = Math.min(1, L.st / c.seg);
+        L.cx = L.sx + (L.nx - L.sx) * k; L.cy = L.sy + (L.ny - L.sy) * k;
+        // khoá người: soi trúng ai đội bạn (không đang cháy) là đuổi theo người đó
+        if (!L.target) {
+          const o = victims(g).find((q) => grounded(q) && !burning(q) && this.in(L, c, q));
+          if (o) {
+            L.target = o; L.lost = 0; L.st = c.seg;   // đổi hướng ngay (không hiện chữ, chỉ đèn ngả đỏ, user 2026-10-27)
+            g.sfx('ult', 'mod.beep');
+          }
+        } else {
+          const o = L.target;
+          L.lost = this.in(L, c, o) && grounded(o) ? 0 : L.lost + dt;
+          if (L.lost >= c.forget || burning(o)) {   // thoát đủ lâu (hoặc đã bốc cháy): quên, đi lang thang tiếp
+            if (!burning(o)) E.pop(L.cx, L.cy - 10, 'LOST THEM', 'info', c.color);
+            L.target = null; L.st = c.seg;
+            const w = this.spot(g, c); L.wx = w.x; L.wy = w.y;
+          }
         }
-        const at = lightAt(c, L.T, L.ph), o = b.owner;
-        const inside = o && o.team !== M.team && grounded(o) && Math.hypot((o.x - at.x) * 0.9, (o.y - at.y) * 1.6) < c.r;
-        if (!inside || o !== L.who) {
-          if (L.alarm) { E.propOff(L.alarm); L.alarm = 0; }
-          L.held = 0; L.who = inside ? o : null;
-          if (!inside) continue;
-        }
-        if (!L.alarm) {   // bắt đầu bị soi: vòng đỏ đếm ngược quanh chân người cầm bóng
-          L.alarm = newId(g);
-          E.prop(L.alarm, 'alarm', o.x, o.y, o.id, c.catchT, c.catchT + 0.3, '#ff3d5a');
-          g.sfx('ult', 'mod.beep');
-        }
-        if ((L.held += dt) < c.catchT) continue;
-        // FREEZE: đèn đứng lại đỏ rực, người cầm bóng choáng + rơi bóng (lướt né được)
-        E.propOff(L.alarm); L.alarm = 0; L.held = 0; L.who = null;
-        E.propOff(L.id, 0.1);
-        L.pause = c.pause;
-        L.id = newId(g);
-        E.prop(L.id, 'spot', at.x, at.y, 1, 0, c.pause, '#ff3d5a');
-        g.sfx('whistle');
-        g.sfx('ult', 'mod.siren');
-        if (Act().dodged(g, o)) continue;
-        if (o.hit({ stun: c.stun, kbx: 0, kby: 0, type: 'hard' })) {
-          M.hits++;
-          E.pop(o.x, o.y - 30, 'FREEZE!', 'status', '#ff3d5a');
-          E.burst(o.x, o.y - 8, 6, '#bfe8ff', 12, 60, 0.5);
-          E.flash(0.25);
+        if (L.st >= c.seg) this.step(g, M, c, L);
+      }
+      for (const o of victims(g)) {
+        const H = M.heat[o.id] || (M.heat[o.id] = { v: 0, lv: 0, id: 0 });
+        if (burning(o)) { H.v = 0; this.level(g, H, o, 0, c); continue; }
+        const inside = grounded(o) && !!this.lit(M, c, o);
+        H.v = U.clamp(H.v + (inside ? c.heatUp : -c.cool) * dt, 0, 1);
+        this.level(g, H, o, Math.ceil(H.v * 4 - 0.001), c);
+        if (inside && Math.random() < dt * 6 * H.v) E.burst(o.x + U.rand(-5, 5), o.y - U.rand(8, 22), 3, '#c7ccd6', 2, 30, 0.5);   // hơi nóng bốc
+        if (H.v < 1 || o.state === 'stun') continue;
+        H.v = 0; this.level(g, H, o, 0, c);
+        if (hold(g, M, o, 'burn', c.burn, { n: 0, last: 0, ai: 0 })) {
+          E.pop(o.x, o.y - 30, 'ON FIRE!', 'status', '#ff6a1f');
+          E.burst(o.x, o.y - 8, 6, '#ff6a1f', 14, 80, 0.5);
+          g.sfx('ult', 'mod.scorch');
           bark(g, 'mod');
         }
       }
+      // dập lửa: người chơi đổi hướng trái <-> phải = 1 lần phủi · AI tự phủi aiRate lần / giây
+      holdUpdate(g, M, c, dt, (h) => {
+        const o = h.o;
+        let s = 0;
+        if (o.isControlled && g.isHuman(o.team)) {
+          const mx = o.intent.mx || 0;
+          if (Math.abs(mx) > 0.5 && Math.sign(mx) !== h.last) s = Math.sign(mx);
+        } else if ((h.ai += dt * c.aiRate) >= 1) { h.ai -= 1; s = h.last > 0 ? -1 : 1; }
+        if (!s) return;
+        h.last = s; h.n++;
+        o.facing = s > 0 ? 0 : Math.PI;
+        E.burst(o.x - s * 6, o.y - 10, 6, '#ffd23f', 4, 60, 0.3);
+        g.sfx('ult', 'mod.pat');
+        if (h.n >= c.mash) release(g, M, h, true);
+      });
     },
   };
 
@@ -1796,6 +1847,378 @@ window.SFC = window.SFC || {};
     },
   };
 
+  /* ================= ĐỘI ELITE GOAT PATH (config/elites.config.js, docs/RUN_DESIGN.md mục "Đội Elite") ================= */
+  // AI bên bạn (đồng đội AI) — người chơi tự điều khiển thì không đụng
+  const aiVictim = (g, o) => !(o.isControlled && g.isHuman(o.team));
+
+  /* Rope Skippers — DOUBLE DUTCH (user 2026-10-27: dây bao cả sân, quay như nhảy dây thật, 2 vòng): 1 sợi dây khổng lồ căng ngang hết bề dài sân,
+   * 2 cô bé đứng 2 mép trái / phải (ngang giữa sân) quay dây. count nhịp đếm (3-2-1, dây nằm chờ ở mép xuất phát), rồi quay turns vòng, mỗi vòng
+   * turn giây: phần ground đầu vòng dây quét sát đất từ mép xuất phát sang mép kia, phần còn lại dây vung lên cao vòng qua đầu về mép xuất phát.
+   * Dây cong hình cánh cung (2 đầu ở tay 2 cô bé). Dây quét qua chỗ ai đội bạn đứng mà người đó không lướt = vấp ngã.
+   * Rope Skippers tự bật nhảy qua dây, đồng đội AI tự lướt với xác suất aiJump.
+   * Prop 'rope' (dây + 2 cô bé): x = mép xuất phát (1 = trên, -1 = dưới), a = turn, b = turns — vị trí dây tính theo tuổi vật thể (ropeY / ropeAt) */
+  K.jumprope = {
+    create(g, M, c) { M.next = c.first; M.rope = null; },
+    kickoff(g, M) { M.rope = null; },
+    clock(g, M, c, dt) { if (M.rope) M.rope.t += dt; },
+    // giữa dây lúc el giây (tính từ lúc dựng prop) · dùng chung với hình (ModDraw):
+    // { y = chỗ dây chiếu xuống sân, z = độ cao, k = vòng (-1 đang đếm), ground = đang quét sát đất, dir = hướng quét (1 xuống), fr = pha vòng, done }
+    ropeY(g, c, side, turn, turns, el) {
+      const f = g.field, top = f.y - 4, bot = f.y + f.h + 4, pre = c.count * c.countBeat, y0 = side > 0 ? top : bot, y1 = side > 0 ? bot : top;
+      if (el < pre) return { y: y0, z: 0, k: -1, ground: false, dir: side, fr: 0, done: false };
+      const k = Math.min(turns - 1, Math.floor((el - pre) / turn)), fr = Math.min(1, (el - pre - k * turn) / turn), done = el >= pre + turns * turn;
+      if (fr < c.ground) return { y: y0 + (y1 - y0) * (fr / c.ground), z: 0, k, ground: true, dir: side, fr, done };
+      const u = (fr - c.ground) / (1 - c.ground);
+      return { y: y1 + (y0 - y1) * u, z: Math.sin(Math.PI * u) * c.lift, k, ground: false, dir: side, fr, done };
+    },
+    // dây tại cột x: 2 đầu ở tay 2 cô bé (giữa sân, cao c.hand), giữa dây theo ropeY -> { y chiếu xuống sân, z độ cao }
+    ropeAt(g, c, R, x) {
+      const f = g.field, xL = f.x - 10, xR = f.x + f.w + 10, s = U.clamp((x - xL) / (xR - xL), 0, 1), e = 1 - Math.pow(Math.abs(2 * s - 1), 4);
+      return { y: f.cy + (R.y - f.cy) * e, z: c.hand * (1 - e) + R.z * e };
+    },
+    start(g, M, c) {
+      const turn = behind(g) ? c.turnTrailing : c.turn, side = Math.random() < 0.5 ? 1 : -1;
+      M.rope = { side, t: -c.count * c.countBeat, turn, ci: 0, ai: {}, hop: {}, prev: null };   // t < 0: đang đếm nhịp · prev: dây bước trước
+      g.effects.prop(newId(g), 'rope', side, 0, turn, c.turns, c.count * c.countBeat + c.turns * turn + 0.5, c.color);
+      bark(g, 'mod');
+    },
+    update(g, M, c, dt) {
+      if (!M.rope) { if (every(g, M, c, dt)) this.start(g, M, c); return; }
+      const R = M.rope, E = g.effects, f = g.field;
+      while (R.ci < c.count && R.t >= -(c.count - R.ci) * c.countBeat) {   // đếm nhịp: 3, 2, 1
+        E.pop(f.cx, R.side > 0 ? f.y + 10 : f.y + f.h - 10, String(c.count - R.ci), 'info', c.color);
+        g.sfx('ult', 'mod.tick');
+        R.ci++;
+      }
+      const at = this.ropeY(g, c, R.side, R.turn, c.turns, R.t + c.count * c.countBeat);
+      if (at.done) { M.rope = null; return; }
+      if (!at.ground) { R.prev = null; return; }
+      if (R.k !== at.k) { R.k = at.k; g.sfx('ult', 'mod.slap'); }
+      const spd = (f.h + 8) / (R.turn * c.ground);
+      // dây sắp tới chỗ q trong s giây (dây quét sát đất ở cột của q)
+      const ahead = (q, s) => { const d = (q.y - this.ropeAt(g, c, at, q.x).y) * at.dir; return d > 0 && d < spd * s; };
+      for (const p of g.players) {
+        if (!grounded(p) || p.state === 'stun') continue;
+        const key = p.id + ':' + at.k;
+        if (p.team === M.team) {   // Rope Skippers: nhảy qua dây (diễn), mỗi vòng 1 lần
+          if (!R.hop[key] && ahead(p, 0.1)) { R.hop[key] = 1; p.airVz = c.hop; p.airZ = Math.max(p.airZ, 0.5); }
+        } else if (aiVictim(g, p) && !(key in R.ai) && ahead(p, 0.12)) {
+          R.ai[key] = Math.random() < c.aiJump;
+          if (R.ai[key]) Act().skill(g, p, Math.cos(p.facing), Math.sin(p.facing));
+        }
+      }
+      // dây quét qua: ai đội bạn có y nằm giữa chỗ dây bước trước và bước này (ở cột của họ, đoạn dây còn sát đất)
+      if (R.prev) {
+        for (const o of victims(g)) {
+          if (!grounded(o) || o.state === 'stun') continue;
+          const a = this.ropeAt(g, c, R.prev, o.x), b = this.ropeAt(g, c, at, o.x);
+          if (b.z > 6 || o.y < Math.min(a.y, b.y) - 3 || o.y > Math.max(a.y, b.y) + 3) continue;
+          if (Act().dodged(g, o)) continue;
+          if (Stat().slip(g.cores, o, c.stun, null, c.slide, { x: 0, y: at.dir }, 'mod.trip')) { M.hits++; bark(g, 'mod'); }
+        }
+        if (Math.random() < dt * 30) { const x = f.x + Math.random() * f.w; E.burst(x, this.ropeAt(g, c, at, x).y, 1, '#e8d8c0', 2, 40, 0.3); }
+      }
+      R.prev = { y: at.y, z: at.z };
+    },
+  };
+
+  /* Wash Day Aunties — WASH DAY: 1 bà đứng ngoài mép trên (ngang bóng) cầm vòi nước. Báo trước warn giây (vạch hình quạt tia nước sẽ quét),
+   * rồi tia nước quét từ góc a0 tới a1 trong sweep giây: trúng = bị đẩy văng theo tia + rơi bóng (lướt né được), bóng lỏng bị đẩy trôi.
+   * Tia quét tới đâu, vũng nước loang ra tới đó, rải khắp hình quạt nhưng chừa lối đi (user 2026-10-27): chạy nhanh qua vũng = trơn té (đi chậm thì không sao).
+   * Prop 'hose' (x, y = vòi; a, b = góc đầu / cuối; tia vẽ theo tuổi vật thể + warn / sweep trong config) · 'washpuddle' (vũng) */
+  K.hose = {
+    create(g, M, c) { M.next = c.first; M.jet = null; M.puddles = []; },
+    kickoff(g, M) { M.jet = null; M.puddles = []; },
+    clock(g, M, c, dt) { if (M.jet) M.jet.t += dt; },
+    // góc tia nước lúc t giây (tính từ lúc bắt đầu phun)
+    angle(J, c) { return J.a0 + (J.a1 - J.a0) * U.clamp(J.t / c.sweep, 0, 1); },
+    start(g, M, c) {
+      // bà luôn đứng ở mép trên (mép dưới bị thanh HUD che), tia dài đủ tới gần mép dưới
+      const f = g.field, b = g.ball;
+      const x = U.clamp(b.x + U.rand(-40, 40), f.x + 40, f.x + f.w - 40), y = f.y - 6;
+      const aim = Math.atan2(b.y - y, b.x - x), half = (c.arc * Math.PI) / 360, s = Math.random() < 0.5 ? 1 : -1;
+      M.jet = { x, y, a0: aim - half * s, a1: aim + half * s, t: -c.warn, hit: {}, wet: this.blobs(g, c, x, y, aim, half) };
+      g.effects.prop(newId(g), 'hose', x, y, M.jet.a0, M.jet.a1, c.warn + c.sweep + 0.25, c.color);
+      g.sfx('ult', 'mod.squeak');
+      bark(g, 'mod');
+    },
+    // vũng nước rải khắp hình quạt: từng vòng cách vòi puddleGap px, mỗi vòng rải đều theo cung (lệch ngẫu nhiên chút), giữ ngẫu nhiên puddleKeep
+    // phần (chừa lối đi qua, user 2026-10-27), bỏ chỗ ngoài sân.
+    // ang = góc của vũng -> vũng hiện ra lúc tia quét qua góc đó
+    blobs(g, c, x, y, aim, half) {
+      const f = g.field, out = [];
+      for (let d = c.puddleFrom; d <= c.range; d += c.puddleGap) {
+        const n = Math.max(1, Math.round((2 * half * d) / c.puddleGap));
+        for (let i = 0; i < n; i++) {
+          const ang = aim - half + (2 * half * (i + 0.5)) / n + U.rand(-0.04, 0.04), r = d + U.rand(-6, 6);
+          const px = x + Math.cos(ang) * r, py = y + Math.sin(ang) * r;
+          if (px < f.x + 10 || px > f.x + f.w - 10 || py < f.y + 8 || py > f.y + f.h - 8 || Math.random() > c.puddleKeep) continue;
+          out.push({ x: px, y: py, ang });
+        }
+      }
+      return out;
+    },
+    update(g, M, c, dt) {
+      const E = g.effects, f = g.field, b = g.ball;
+      if (!M.jet && every(g, M, c, dt)) this.start(g, M, c);
+      const J = M.jet;
+      if (J && J.t >= 0) {
+        if (!J.on) { J.on = true; g.sfx('ult', 'mod.hose'); }
+        const a = this.angle(J, c), dx = Math.cos(a), dy = Math.sin(a);
+        // khoảng cách điểm (x, y) tới tia: along = dọc tia từ vòi, perp = lệch ngang
+        const onJet = (x, y, r) => { const px = x - J.x, py = y - J.y, along = px * dx + py * dy; return along > 0 && along < c.range && Math.abs(px * dy - py * dx) < c.width + r; };
+        for (const o of victims(g)) {
+          if (J.hit[o.id] || !grounded(o) || o.state === 'stun' || !onJet(o.x, o.y, o.radius)) continue;
+          J.hit[o.id] = 1;
+          if (Act().dodged(g, o)) continue;
+          if (o.hit({ stun: c.stun, kbx: dx * c.push, kby: dy * c.push, type: 'hard', quiet: true })) {
+            M.hits++;
+            E.pop(o.x, o.y - 30, 'SPLASH!', 'heavy', c.color);
+            E.burst(o.x, o.y - 8, 6, c.color, 14, 90, 0.5);
+            g.sfx('ult', 'mod.douse');
+            bark(g, 'mod');
+          }
+        }
+        if (!b.owner && b.z < 12 && onJet(b.x, b.y, 4)) { b.vx += dx * c.ballPush * dt; b.vy += dy * c.ballPush * dt; }
+        // tia quét qua góc nào thì vũng ở góc đó loang ra
+        for (const W of J.wet.slice()) {
+          if ((W.ang - J.a0) * (J.a1 - J.a0) > (a - J.a0) * (J.a1 - J.a0)) continue;
+          J.wet.splice(J.wet.indexOf(W), 1);
+          const P = { x: W.x, y: W.y, t: c.puddleLife + U.rand(-1, 1), id: newId(g) };
+          M.puddles.push(P);
+          E.prop(P.id, 'washpuddle', P.x, P.y, c.puddleR * U.rand(0.8, 1.2), U.rand(0, 6), P.t, c.color);
+        }
+        if (J.t >= c.sweep + 0.25) M.jet = null;
+      }
+      for (const P of M.puddles.slice()) {
+        if ((P.t -= dt) <= 0) { M.puddles.splice(M.puddles.indexOf(P), 1); continue; }
+        for (const o of victims(g)) {
+          if (!grounded(o) || o.state !== 'normal' || Math.hypot(o.vx, o.vy) < c.slipSpeed) continue;
+          if (Math.hypot(o.x - P.x, (o.y - P.y) * 1.6) > c.puddleR + o.radius * 0.5) continue;
+          if (Stat().slip(g.cores, o, c.slipStun, null, c.slide, null, 'mod.flop')) {
+            M.hits++;
+            E.propOff(P.id, 0.2);
+            M.puddles.splice(M.puddles.indexOf(P), 1);
+            bark(g, 'mod');
+          }
+          break;
+        }
+      }
+    },
+  };
+
+  /* Neon Arcade — NEON ARROWS: lưới ô mũi tên neon giữa 2 vòng cấm (cả trận). Đội bạn đứng trong ô bị đẩy theo mũi tên, bóng lỏng trôi theo;
+   * Neon Arcade chạy xuôi mũi tên thì nhanh hơn. Mỗi every giây: nhấp nháy warn giây (thấy hướng mới) rồi cả bảng đổi hướng.
+   * Họ bị dẫn: phần lớn mũi tên chỉ về khung thành đội bạn. Prop 'neontile' (x, y = tâm ô, a = hướng 0..3 (x π/2), b = hướng sắp đổi / -1) */
+  K.neon = {
+    create(g, M, c) { M.next = c.first; M.tiles = []; M.flip = null; },
+    kickoff(g, M, c) {
+      const f = g.field, x0 = f.x + f.boxDepth + 10, w = f.w - 2 * (f.boxDepth + 10), y0 = f.y + 14, h = f.h - 28;
+      M.flip = null;
+      M.tiles = [];
+      for (let r = 0; r < c.rows; r++) for (let q = 0; q < c.cols; q++) {
+        const T = { x: x0 + (q + 0.5) * w / c.cols, y: y0 + (r + 0.5) * h / c.rows, d: 0, col: c.colors[(r * c.cols + q) % c.colors.length], id: 0 };
+        T.d = this.pick(g, M, c, -1);
+        M.tiles.push(T);
+        this.show(g, T, -1, 9999);
+      }
+    },
+    // hướng mới (khác hướng cũ): bị dẫn thì phần lớn chỉ về khung thành đội bạn
+    pick(g, M, c, old) {
+      const toYou = g.ownGoal(1 - M.team).x > g.field.cx ? 0 : 2;
+      if (behind(g) && old !== toYou && Math.random() < c.toYou) return toYou;
+      const opts = [0, 1, 2, 3].filter((d) => d !== old);
+      return opts[Math.floor(Math.random() * opts.length)];
+    },
+    show(g, T, nd, life) {
+      if (T.id) g.effects.propOff(T.id, 0.01);
+      T.id = newId(g);
+      g.effects.prop(T.id, 'neontile', T.x, T.y, T.d, nd, life, T.col);
+    },
+    clock(g, M, c, dt) { if (M.flip) M.flip.t -= dt; },
+    update(g, M, c, dt) {
+      const b = g.ball, E = g.effects;
+      if (!M.flip && every(g, M, c, dt)) {
+        M.flip = { t: c.warn, nd: M.tiles.map((T) => this.pick(g, M, c, T.d)) };
+        M.tiles.forEach((T, i) => this.show(g, T, M.flip.nd[i], c.warn + 0.05));
+        g.sfx('ult', 'mod.neonwarn');
+        bark(g, 'mod');
+      }
+      if (M.flip && M.flip.t <= 0) {
+        M.tiles.forEach((T, i) => { T.d = M.flip.nd[i]; this.show(g, T, -1, 9999); });
+        M.flip = null;
+        E.pop(g.field.cx, g.field.y - 6, 'SWITCH!', 'info', c.colors[0]);
+        g.sfx('ult', 'mod.neon');
+      }
+      for (const T of M.tiles) {
+        const dx = Math.cos(T.d * Math.PI / 2), dy = Math.sin(T.d * Math.PI / 2);
+        const inside = (q) => Math.abs(q.x - T.x) < c.w / 2 && Math.abs(q.y - T.y) < c.h / 2;
+        for (const p of g.players) {
+          if (!grounded(p) || !inside(p)) continue;
+          if (p.team === M.team) { if (p.vx * dx + p.vy * dy > 20) keepSpeed(p, c.boost); }
+          else { p.x += dx * c.push * dt; p.y += dy * c.push * dt; }
+        }
+        if (!b.owner && b.z < 6 && inside(b)) { b.vx += dx * c.ballPush * dt; b.vy += dy * c.ballPush * dt; }
+      }
+    },
+  };
+
+  /* Domino Club — DOMINOES: hàng domino khổng lồ mọc lên theo 1 đường thẳng cắt qua gần bóng, đứng chắn người stand giây (đầu hàng sắp bị đẩy
+   * nhấp nháy), rồi đổ dây chuyền: quân đổ trúng đội bạn = ngã văng + rơi bóng (lướt né được). Họ bị dẫn: 2 hàng chéo nhau.
+   * Prop 'domino' (x, y = đầu hàng đổ trước, a, b = cuối hàng): từng quân vẽ theo tuổi vật thể (rise / stand / speed / gap trong config),
+   * mỗi quân 1 khúc xếp chiều sâu (ModDraw.parts) */
+  K.domino = {
+    create(g, M, c) { M.next = c.first; M.lines = []; },
+    kickoff(g, M) { M.lines = []; },
+    clock(g, M, c, dt) { for (const L of M.lines) L.t += dt; },
+    // vị trí quân thứ i của hàng (dùng chung với hình: ModDraw)
+    pieces(o, c) {
+      const len = Math.hypot(o.a - o.x, o.b - o.y), n = Math.max(4, Math.round(len / c.gap) + 1), out = [];
+      for (let i = 0; i < n; i++) { const k = i / (n - 1); out.push({ x: o.x + (o.a - o.x) * k, y: o.y + (o.b - o.y) * k, s: len * k }); }
+      return out;
+    },
+    line(g, M, c, ang, cx, cy) {
+      const f = g.field, ux = Math.cos(ang), uy = Math.sin(ang), h = c.len / 2;
+      const cl = (x, y) => ({ x: U.clamp(x, f.x + 14, f.x + f.w - 14), y: U.clamp(y, f.y + 12, f.y + f.h - 12) });
+      let A = cl(cx - ux * h, cy - uy * h), B = cl(cx + ux * h, cy + uy * h);
+      if (Math.random() < 0.5) [A, B] = [B, A];
+      const o = { x: A.x, y: A.y, a: B.x, b: B.y };
+      const L = { o, P: this.pieces(o, c), t: 0, k: 0, id: newId(g) };
+      L.len = Math.hypot(B.x - A.x, B.y - A.y);
+      L.u = { x: (B.x - A.x) / (L.len || 1), y: (B.y - A.y) / (L.len || 1) };
+      M.lines.push(L);
+      g.effects.prop(L.id, 'domino', A.x, A.y, B.x, B.y, c.rise + c.stand + L.len / c.speed + c.lie, c.color);
+    },
+    start(g, M, c) {
+      const b = g.ball, p = near(g, b.x, b.y, 30, 40), ang = U.rand(0, Math.PI);
+      this.line(g, M, c, ang, p.x, p.y);
+      if (behind(g)) this.line(g, M, c, ang + Math.PI / 2 + U.rand(-0.3, 0.3), p.x, p.y);
+      g.sfx('ult', 'mod.domino');
+      bark(g, 'mod');
+    },
+    update(g, M, c, dt) {
+      const E = g.effects;
+      if (!M.lines.length && every(g, M, c, dt)) this.start(g, M, c);
+      for (const L of M.lines.slice()) {
+        const t0 = c.rise + c.stand;   // lúc quân đầu tiên đổ
+        if (L.t >= t0 && !L.pushed) { L.pushed = true; E.pop(L.o.x, L.o.y - 26, 'PUSH!', 'info', c.color); }
+        // quân còn đứng chắn người (mọi đội): đẩy ra khỏi quân
+        for (let i = L.k; i < L.P.length; i++) {
+          const D = L.P[i];
+          for (const p of g.players) {
+            if (!grounded(p)) continue;
+            const dx = p.x - D.x, dy = p.y - D.y, d = Math.hypot(dx, dy), m = 6 + p.radius;
+            if (d >= m || d < 0.01) continue;
+            p.x = D.x + (dx / d) * m; p.y = D.y + (dy / d) * m;
+          }
+        }
+        // đổ dây chuyền
+        while (L.k < L.P.length && L.t >= t0 + L.P[L.k].s / c.speed) {
+          const D = L.P[L.k++], hx = D.x + L.u.x * c.gap * 0.6, hy = D.y + L.u.y * c.gap * 0.6;
+          if (L.k % 2) g.sfx('ult', 'mod.tile');
+          E.burst(hx, hy, 1, '#c9b48a', 3, 40, 0.3);
+          for (const o of victims(g)) {
+            if (!grounded(o) || o.state === 'stun' || Math.hypot(o.x - hx, o.y - hy) > c.r + o.radius || Act().dodged(g, o)) continue;
+            if (o.hit({ stun: c.stun, kbx: L.u.x * c.knock, kby: L.u.y * c.knock, type: 'hard', source: null })) {
+              M.hits++;
+              E.pop(o.x, o.y - 30, 'CLACK!', 'heavy', c.color);
+              E.shake(3, 0.15);
+              bark(g, 'mod');
+            }
+          }
+        }
+        if (L.t >= t0 + L.len / c.speed + c.lie) M.lines.splice(M.lines.indexOf(L), 1);
+      }
+    },
+  };
+
+  /* Tai Chi Masters — QI PALM (user 2026-10-27, thay SLOW HANDS): 1 cụ (không cầm bóng, không đứng trong vòng cấm nhà, gần bóng nhất trừ người
+   * đang đuổi bóng) đứng tấn gồng charge giây: bàn tay khí khổng lồ mọc dần sau lưng, vạch đường chưởng dài len x rộng width trên sân nhắm người
+   * đội bạn gần cụ nhất lúc bắt đầu (không có thì nhắm bóng; khoá hướng). Hết gồng: bàn tay lao dọc vạch trong travel giây — ai đội bạn trong vạch bị đẩy bay xa + choáng, bóng bị hất theo.
+   * Lướt né được. Đang gồng: đòn nhẹ không lay được cụ (ROOTED!), đòn nặng trúng = huỷ chưởng. Họ bị dẫn: 2 cụ cùng lúc.
+   * Prop 'chizone' (vạch đường chưởng dưới sân) + 'chipalm' (bàn tay khí): x, y = chỗ cụ đứng, a = hướng (rad) — vẽ theo tuổi vật thể + charge / travel / len */
+  K.taichi = {
+    create(g, M, c) { M.next = c.first; M.palms = []; },
+    kickoff(g, M) { M.palms = []; },
+    clock(g, M, c, dt) { for (const P of M.palms) P.t += dt; },
+    // cụ p đang gồng
+    of(M, p) { return M.palms.find((P) => P.p === p && !P.fired) || null; },
+    start(g, M, c, n) {
+      const b = g.ball, tp = g.teams[M.team].players;
+      if (!tp.length) return;
+      const dist = (q) => Math.hypot(q.x - b.x, q.y - b.y);
+      const chaser = tp.reduce((a, q) => (dist(q) < dist(a) ? q : a));
+      // người đứng trong vòng cấm nhà (vai thủ môn) không gồng: đứng yên giữ khung thì hỏng luôn thủ môn của họ
+      const free = tp.filter((q) => q !== chaser && !q.hasBall && q.state === 'normal' && grounded(q) && !g.inKeeperZone(q) && !M.palms.some((P) => P.p === q)).sort((p, q) => dist(p) - dist(q));
+      for (const p of free.slice(0, n)) {
+        // nhắm người đội bạn đứng gần cụ nhất (trong tầm chưởng), không có thì nhắm bóng
+        const vs = victims(g).filter((o) => grounded(o) && Math.hypot(o.x - p.x, o.y - p.y) < c.len);
+        const tg = vs.length ? vs.reduce((a, o) => (Math.hypot(o.x - p.x, o.y - p.y) < Math.hypot(a.x - p.x, a.y - p.y) ? o : a)) : b;
+        const ang = Math.atan2(tg.y - p.y, tg.x - p.x + 0.01), life = c.charge + c.travel + 0.6;
+        const P = { p, x: p.x, y: p.y, ang, t: 0, hit: {}, ids: [newId(g), newId(g)] };
+        M.palms.push(P);
+        p.vx = p.vy = 0; p.facing = ang;
+        g.effects.prop(P.ids[0], 'chizone', p.x, p.y, ang, 0, life, c.color);
+        g.effects.prop(P.ids[1], 'chipalm', p.x, p.y, ang, 0, life, c.color);
+        g.effects.pop(p.x, p.y - 36, 'HAAA...', 'info', c.color);
+      }
+      if (free.length) { g.sfx('ult', 'mod.stance'); bark(g, 'mod', free[0]); }
+    },
+    cancel(g, M, P, broken) {
+      M.palms.splice(M.palms.indexOf(P), 1);
+      for (const id of P.ids) g.effects.propOff(id, 0.12);
+      if (!broken) return;
+      g.effects.pop(P.p.x, P.p.y - 36, 'STANCE BROKEN!', 'good', '#3ff6ff');
+      g.sfx('ult', 'mod.break');
+    },
+    // AI: cụ đang gồng đứng yên
+    aiMove(g, M, c, p) {
+      if (!this.of(M, p)) return false;
+      p.intent.mx = p.intent.my = 0; p.intent.sprint = false;
+      return true;
+    },
+    // Player.hit: đòn nhẹ vào cụ đang gồng = không lay được
+    armor(g, M, c, victim, opts) {
+      if (opts.type !== 'light' || !this.of(M, victim)) return false;
+      if (!(victim.rootedT > g.time)) { victim.rootedT = g.time + 0.4; g.effects.pop(victim.x, victim.y - 36, 'ROOTED!', 'info', c.color); g.sfx('block'); }
+      return true;
+    },
+    update(g, M, c, dt) {
+      const E = g.effects, b = g.ball, n = behind(g) ? 2 : 1;
+      if (M.palms.length < n && every(g, M, c, dt)) this.start(g, M, c, n - M.palms.length);
+      for (const P of M.palms.slice()) {
+        const p = P.p;
+        if (!P.fired) {
+          if (p.state === 'stun') { this.cancel(g, M, P, true); continue; }
+          if (p.hasBall || !grounded(p)) { this.cancel(g, M, P, false); continue; }
+          p.x = P.x; p.y = P.y; p.vx = p.vy = p.kbx = p.kby = 0; p.facing = P.ang;   // đứng tấn tại chỗ
+          if (P.t < c.charge) continue;
+          P.fired = true;
+          E.pop(p.x, p.y - 40, 'HA!', 'huge', c.color);
+          E.shake(4, 0.25);
+          g.sfx('ult', 'mod.palm');
+        }
+        // bàn tay lao tới: quét vạch từ chỗ cụ tới đầu bàn tay
+        const dx = Math.cos(P.ang), dy = Math.sin(P.ang), reach = c.len * Math.min(1, (P.t - c.charge) / c.travel);
+        const inPath = (q, r) => { const rx = q.x - P.x, ry = q.y - P.y, along = rx * dx + ry * dy; return along > -6 && along < reach && Math.abs(rx * dy - ry * dx) < c.width / 2 + r; };
+        for (const o of victims(g)) {
+          if (P.hit[o.id] || o.state === 'meteor' || !inPath(o, o.radius)) continue;
+          P.hit[o.id] = 1;
+          if (Act().dodged(g, o)) continue;
+          o.hitImmune = 0;
+          if (o.hit({ stun: c.stun, kbx: dx * c.knock, kby: dy * c.knock, launch: c.launch, type: 'hard' })) {
+            M.hits++;
+            E.pop(o.x, o.y - 30, 'WHOOSH!', 'heavy', c.color);
+            E.burst(o.x, o.y - 10, 8, c.color, 16, 110, 0.5);
+            g.hitStop(0.06);
+          }
+        }
+        if (!P.ball && !b.owner && b.z < 20 && inPath(b, 4)) { P.ball = true; b.vx = dx * c.ballSpeed; b.vy = dy * c.ballSpeed; }
+        if (P.t >= c.charge + c.travel + 0.4) M.palms.splice(M.palms.indexOf(P), 1);
+      }
+    },
+  };
+
   const MatchMods = {
     K,
     // Game constructor gọi trước giao bóng đầu tiên. Không có opts.mod / opts.barks -> null (trận thường)
@@ -1843,7 +2266,9 @@ window.SFC = window.SFC || {};
     // Player.hit (trước khi choáng): true = đòn bị giáp chặn (boss KING LEO 1976 đang biến hình). Máy khách gương không mô phỏng
     armor(g, victim, opts) {
       const M = g.mod;
-      return !!(M && M.id === 'leo' && M.cfg && !M.mirror && K.leo.armor(g, M, M.cfg, victim, opts));
+      if (!M || !M.cfg || M.mirror) return false;
+      if (M.id === 'taichi') return K.taichi.armor(g, M, M.cfg, victim, opts);   // Tai Chi Masters: cụ đang gồng không lay bởi đòn nhẹ
+      return M.id === 'leo' && K.leo.armor(g, M, M.cfg, victim, opts);
     },
     // Ball.collideWalls: bóng chạm vạch khung của đội defTeam — true = khung đang bị khoá (KING LEO 1976 đang cast), bóng dội ra
     sealed(g, defTeam, b) {
@@ -1893,9 +2318,9 @@ window.SFC = window.SFC || {};
       if (o.kind === 'rabbit') return K.fortune.hopAt(o, el);
       if (o.kind === 'devil') return K.devils.at(o, el);
       if (o.kind === 'stoolthrow') { const k = Math.min(el, o.max); return { x: o.x + Math.cos(o.a) * o.b * k, y: o.y + Math.sin(o.a) * o.b * k }; }
-      if (o.kind === 'spot' && o.a === 0) {
-        const c = S().mods && S().mods.searchlight;
-        return c ? lightAt(c, o.y + el, o.x) : null;
+      if (o.kind === 'spot') {   // đèn pha: đi thẳng (x, y) -> (a, b) trong seg giây rồi đứng đó (đoạn kế tiếp là prop mới)
+        const c = S().mods && S().mods.searchlight, k = c ? Math.min(1, el / c.seg) : 1;
+        return { x: o.x + (o.a - o.x) * k, y: o.y + (o.b - o.y) * k };
       }
       return null;
     },

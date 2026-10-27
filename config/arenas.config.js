@@ -3,20 +3,21 @@
  * Game opts.arena = id ở đây (không có / không tồn tại -> 'street').
  * Mỗi arena ghép từ các lớp:
  *   floor    : mặt sân — style asphalt (ô nhựa đường / xi măng / cao su) · tiles (lát gạch, có ron) · plates (thép tấm, đinh tán) · planks (ván tàu) ·
- *              grid (sàn tối, lưới neon) · dirt (đất nện + mảng cỏ) · turf (cỏ sọc; checker = cắt cỏ ô bàn cờ)
+ *              grid (sàn tối, lưới neon) · dirt (đất nện + mảng cỏ) · turf (cỏ sọc; checker = cắt cỏ ô bàn cờ) · felt (nỉ bàn domino, rings = vết cốc trà)
  *   wall     : tường trên (mặt đứng) — style brick (gạch) · container (tôn sóng nhiều màu) · panel (tấm kim loại, khe neon) ·
- *              bamboo (hàng rào tre) · plaster (tường vôi + bảng đen) · cage (lưới thép + cột) · ads (bảng quảng cáo) · led (bảng LED) · hull (mạn tàu gỗ + ô pháo)
+ *              bamboo (hàng rào tre) · plaster (tường vôi + bảng đen) · cage (lưới thép + cột) · ads (bảng quảng cáo) · led (bảng LED) · hull (mạn tàu gỗ + ô pháo) ·
+ *              rail (mép bàn gỗ vecni + nẹp đồng + hàng quân domino)
  *   backdrop : dải phía trên tường — style fence (lưới B40) · skyline (nhà cao tầng đêm) · lanterns (dây đèn lồng) ·
  *              harbor (cần cẩu + biển) · pirate (tàu cướp biển + trăng) · screens (màn LED) · fields (ruộng lúa + núi, hoàng hôn) · school (dãy lớp học) ·
- *              dark (bóng tối, chỉ thấy khán giả) · stands (khán đài tạm + màn hình) · stadium (khán đài lớn + mái + màn hình)
+ *              dark (bóng tối, chỉ thấy khán giả) · stands (khán đài tạm + màn hình) · stadium (khán đài lớn + mái + màn hình) · parlor (vách gỗ câu lạc bộ + khung ảnh)
  *   venue    : (tuỳ chọn) tên sân ở màn giới thiệu đội, cho sân không thuộc Area nào (sân riêng FOOTBALL STORY)
  *   stands   : (tuỳ chọn) khán đài ở 2 bên + dưới sân (vùng tối ngoài tường) — { color: [2 màu bậc ghế], rail } — nơi khán giả đứng
  *   lights   : style street (đèn đường 2 góc) · neon (dải neon trên đỉnh tường) · sun (nắng xiên) · spot (1 đèn rọi giữa, tối xung quanh) ·
- *              flood (cột đèn pha: towers = 2 | 4) · none
+ *              flood (cột đèn pha: towers = 2 | 4) · lamps (3 đèn chao treo trên sân, ánh ấm, xung quanh tối) · none
  *   graffiti : chữ trên tường; {t0} / {t1} = tên viết tắt 2 đội (tags rỗng = không vẽ)
  *   props    : đồ vật ngoài mép sân: { t: loại, x: tỉ lệ bề ngang sân (0..1), dx, dy: lệch px (dy tính từ mép dưới sân) }
  *              loại: tire · can · cone · crate · barrel · lantern · ac · bollard · holo · plant · hay · sack · chicken · hoop · bag ·
- *              firebarrel · camera · trophy · cannon · chest · anchor · rope
+ *              firebarrel · camera · trophy · cannon · chest · anchor · rope · tile (quân domino khổng lồ) · teapot (ấm trà)
  *   crowd    : (tuỳ chọn) khán giả CHUYỂN ĐỘNG, vẽ mỗi khung hình (src/render/crowd.js):
  *              sound: độ ồn của tiếng khán giả 0..1 (config/game.config.js -> audio.crowd) ·
  *              regions: top (trên tường) · sides (2 bên) · bottom (hàng đầu, quay lưng) · rows: số hàng phía trên · density 0..1 ·
@@ -208,6 +209,25 @@ SFC_CONFIG.arenas = {
     net: 'rgba(255,255,255,0.45)', hole: '#10131c',
     props: [{ t: 'camera', x: 0.5, dx: -80, dy: 8 }, { t: 'cone', x: 0.3, dx: 0, dy: 10 }, { t: 'cone', x: 0.7, dx: 0, dy: 10 }, { t: 'camera', x: 1, dx: 9, dy: 8 }],
     crowd: { sound: 0.9, regions: ['top', 'sides'], rows: 4, density: 0.85, colors: ['#e8ecf5', '#3a5a9a', '#9aa3b5', '#d9a23a', '#6a4a8a'], teamColors: 0.55, cheer: 0.9, flashes: 1.2, scarves: 0.3 },
+  },
+
+  // GOAT PATH Elite — Domino Club (act 3): mặt sân là nỉ xanh bàn domino, tường = mép bàn gỗ vecni có hàng quân domino dựng, phòng câu lạc bộ
+  // vách gỗ + 3 đèn chao xanh treo trên sân (ánh vàng ấm, xung quanh tối). Khán giả: các ông bạn domino đội mũ lưỡi trai
+  domino_hall: {
+    void: '#120c08',
+    venue: 'DOMINO HALL',
+    floor: { style: 'felt', colors: ['#2a6b46'], speckD: '#235a3a', speckL: '#337d52', rings: 6, ring: 'rgba(40,24,10,0.18)', crack: '#235a3a', cracks: 0, paint: 0.03 },
+    line: 'rgba(253,246,227,0.72)',
+    logo: 'DOUBLE SIX',
+    wall: { style: 'rail', colors: ['#5a3420', '#633a24', '#55311d', '#5e3722'], brass: '#c9a24a', tile: '#fdf6e3', pip: '#1a1a1a', edge: '#2a170c' },
+    rim: { base: '#3a2416', light: '#4a2f1d', dark: '#42291a' },
+    backdrop: { style: 'parlor', wall: '#2e1d14', seam: '#24160f', trim: '#4a2f1d', frame: '#c9a24a', photo: '#a08a64', board: '#1f2a24' },
+    stands: { color: ['#2a1a12', '#301e14'], rail: '#c9a24a' },
+    lights: { style: 'lamps', glow: '255,214,150', shade: '#2f6b3a', cord: '#1a120c', dark: 0.38 },
+    graffiti: { tags: [] },
+    net: 'rgba(253,246,227,0.45)', hole: '#140d08',
+    props: [{ t: 'tile', x: 0, dx: -9, dy: 8 }, { t: 'teapot', x: 0.28, dx: 0, dy: 10 }, { t: 'tile', x: 0.5, dx: -70, dy: 9 }, { t: 'tile', x: 0.5, dx: 70, dy: 9 }, { t: 'teapot', x: 0.74, dx: 0, dy: 10 }, { t: 'tile', x: 1, dx: 9, dy: 8 }],
+    crowd: { sound: 0.4, regions: ['top', 'sides'], rows: 2, density: 0.45, colors: ['#e8dcc0', '#5a4a3a', '#8a9aa8', '#a04a3a', '#f2f2e8'], teamColors: 0.2, cheer: 0.5, flashes: 0, hat: { shape: 'cap', chance: 0.45, colors: ['#3a3a44', '#6a5040', '#2f6b3a'] } },
   },
 
   // AREA 10 — Sân Khấu Thế Giới: cỏ sọc hoàn hảo, bảng LED, khán đài khổng lồ kín người, 4 cột đèn pha, flash, pháo hoa
