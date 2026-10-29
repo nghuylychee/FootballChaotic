@@ -91,7 +91,8 @@ window.SFC = window.SFC || {};
         <div class="outro-foot"><div class="outro-bar" style="--dur:${dur}s"></div></div>`;
     },
 
-    drillWord(D) { return [_t('FAILED'), _t('BRONZE!'), _t('SILVER!'), _t('GOLD!')][D.tier || 0]; },
+    // LEGEND TRIAL (D.trial): qua / hỏng thay cho mốc ĐỒNG / BẠC / VÀNG
+    drillWord(D) { return D.trial ? (D.tier ? _t('SIGNED!') : _t('TRIAL FAILED')) : [_t('FAILED'), _t('BRONZE!'), _t('SILVER!'), _t('GOLD!')][D.tier || 0]; },
 
     finishOutro() {
       if (!this.outroActive) return;

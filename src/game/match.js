@@ -36,7 +36,12 @@ window.SFC = window.SFC || {};
      *         noAiCores: cầu thủ AI không tự bốc Core ở lượt chọn,
      *         cup: { id, round } — trận FOOTBALL STORY (src/meta/cup.js); knockout: hoà hết giờ = bàn thắng vàng không giới hạn,
      *         mod: id luật trận (stories.mods, src/systems/matchmods.js) · barks: câu nói trong trận của đối thủ · score: [đội 0, đội 1] tỉ số lúc đầu trận,
-     *         statMul: [k0, k1] nhân chỉ số cả đội · drill / drillSeed: SKILL GAME GOAT PATH (src/systems/drills.js) }
+     *         statMul: [k0, k1] nhân chỉ số cả đội · drill / drillSeed: SKILL GAME GOAT PATH (src/systems/drills.js) ·
+     *         trial: id LEGEND — SKILL GAME là LEGEND TRIAL (mốc riêng) · drillEase: mốc bài giảm (phần, BADGE Training Bibs),
+     *         GOAT PATH (BADGE của đội, src/meta/run.js matchOpts; [đội 0, đội 1]): draftCards: thêm lá mỗi lượt chọn · rerollBonus: thêm
+     *         lượt đổi bài · draftBonus: thêm lượt chọn Core trước giao bóng (chỉ đội đó, AI đội kia không bốc thêm) · varCheck: [{ n, chance }
+     *         của đội bị thủng lưới] bàn thua đầu tiên được xem lại · addedTime: giây bù giờ khi đội đó đang thua lúc hết giờ (1 lần),
+     *         avatars / mates / seats[].avatar .legend: id LEGEND của cầu thủ (config/legends.config.js, src/systems/legends.js) }
      */
     constructor(opts) {
       const C = SFC_CONFIG.game;
@@ -83,6 +88,7 @@ window.SFC = window.SFC || {};
         p.avatar = true;
         if (av.stats) { p.stats = Object.assign({}, p.stats, av.stats); p.ovr = av.ovr; }
         if (av.inj && av.inj.length) p.inj = av.inj.slice();   // GOAT PATH: chấn thương (src/systems/hurt.js, băng vẽ ở sprites.js)
+        if (av.legend) p.legend = av.legend;                    // GOAT PATH: LEGEND (src/systems/legends.js)
       };
       (opts.avatars || []).forEach((av, t) => {
         if (!av || !this.teams[t]) return;
@@ -115,9 +121,14 @@ window.SFC = window.SFC || {};
           p.deck = m.deck && m.deck.length ? m.deck.slice() : null;
           p.mate = true;
           if (m.inj && m.inj.length) p.inj = m.inj.slice();
+          if (m.legend) p.legend = m.legend;
           if (m.fake) { p.fake = true; p.elo = m.elo; }
         }
       });
+      // LEGEND TRIAL (opts.trial): LEGEND cho người đá mượn kỹ thuật của mình trong bài (lent: không kèm nhược điểm, src/systems/legends.js)
+      if (opts.trial && opts.drill) for (const s of this.seats) if (s.p && s.team === 0) { s.p.legend = opts.trial; s.p.lent = true; }
+      // GOAT PATH: LEGEND trong trận (khoảnh khắc + nhược điểm; nghiêng chỉ số đã có sẵn trong stats)
+      if (SFC.Legends) SFC.Legends.setup(this);
       // statMul: [k đội 0, k đội 1] nhân mọi chỉ số cầu thủ đội đó (GOAT PATH co-op: đối thủ mạnh lên theo số người chơi thật)
       if (opts.statMul) for (const p of this.players) {
         const k = +opts.statMul[p.team];
@@ -161,7 +172,7 @@ window.SFC = window.SFC || {};
       // GOAT PATH: SKILL GAME (opts.drill, src/systems/drills.js) — đồng hồ + điều kiện qua / hỏng riêng
       this.drill = SFC.Drills ? SFC.Drills.create(this) : null;
       if (opts.score) this.teams.forEach((t, i) => { t.score = opts.score[i] || 0; });
-      this.kickoff(0);
+      this.kickoff(this.drill ? this.drill.kick : 0);   // LEGEND TRIAL foeBall: đối thủ giao bóng
       // lượt chọn Core khởi đầu (trước khi giao bóng đầu trận)
       if (!opts.noDraft && !opts.training && this.cfg.match.preKickoffDraft && this.cfg.match.maxUpgrades > 0) this.startDraft(true);
     }
@@ -324,6 +335,7 @@ window.SFC = window.SFC || {};
       const b = this.ball;
       // đường chuyền tới chân đồng đội (trước khi setOwner xoá thông tin bóng)
       const passer = b.kind === 'pass' && b.lastKickTeam === p.team && b.lastTouch && b.lastTouch !== p && b.lastTouch.team === p.team ? b.lastTouch : null;
+      const lofted = passer && b.legTech === 'lobthrough';   // LEGEND TRIAL (Pirlow): chuyền vượt tuyến bổng tới chân đồng đội
       const prevTeam = this.lastPossessionTeam;
       b.setOwner(p);
       SFC.Actions.disarm(p);   // đang chờ đá 1 chạm mà nhận bóng: thanh lực chờ không được thành lực sút khi đã cầm bóng
@@ -342,11 +354,13 @@ window.SFC = window.SFC || {};
       p.shotHold = stole;
       if (this.lastPossessionTeam !== -1 && this.lastPossessionTeam !== p.team) {
         this.cores.dispatch(p.team, 'onPossessionGained', p);
+        if (p.legend && SFC.Legends) SFC.Legends.on(this, 'win', p);   // GOAT PATH: khoảnh khắc LEGEND (giành bóng từ đối thủ)
       }
       this.lastPossessionTeam = p.team;
       if (passer) {
         this.lastPass = { from: passer, to: p, team: p.team, t: this.time };
         this.cores.passReceived(p, passer);
+        if (lofted && this.drill) SFC.Drills.combo(this, passer, 'lobthrough', p);
       } else if (this.lastPass && (this.lastPass.team !== p.team || this.lastPass.to !== p)) {
         this.lastPass = null;
       }
@@ -473,6 +487,7 @@ window.SFC = window.SFC || {};
       this.cores.update(dt);
       if (this.mod) SFC.MatchMods.update(this, dt);
       if (this.drill) SFC.Drills.update(this, dt);
+      if (SFC.Legends) SFC.Legends.update(this, dt);
     }
 
     tickClock(dt) {
@@ -501,6 +516,15 @@ window.SFC = window.SFC || {};
         this.sfx('whistle');
       }
       if (this.elapsed >= M.duration) {
+        // GOAT PATH (BADGE Referee's Watch): đội đang thua lúc hết giờ được bù giờ 1 lần (lùi đồng hồ)
+        const add = this.opts.addedTime, behind = this.teams[0].score < this.teams[1].score ? 0 : this.teams[1].score < this.teams[0].score ? 1 : -1;
+        if (add && behind >= 0 && add[behind] > 0 && !this.addedDone) {
+          this.addedDone = true;
+          this.elapsed -= add[behind];
+          this.emit('banner', { text: SFC.N_('ADDED TIME'), sub: SFC.N_('+{n} seconds'), vars: { n: add[behind] }, color: '#ffe14f' });
+          this.sfx('whistle');
+          return;
+        }
         if (this.teams[0].score === this.teams[1].score && (M.goldenGoal || this.opts.knockout)) {
           this.golden = true;
           this.emit('banner', { text: SFC.N_('GOLDEN GOAL'), sub: SFC.N_('Next goal wins'), color: '#ffd23f' });
@@ -534,16 +558,21 @@ window.SFC = window.SFC || {};
       while (this.draftPending() > 0 && this.state !== 'draft') this.startDraft();
     }
 
-    // Mở Core Upgrade lúc bóng chết: trước khi giao bóng đầu trận (pre) + sau bàn thắng (nếu có lượt đang chờ)
-    startDraft(pre = false) {
-      const n = this.cfg.match.upgradeChoices, C = this.cores;
-      this.upgradeIdx++;
+    // số lá mỗi lượt chọn của đội team (GOAT PATH BADGE Scouting Report: opts.draftCards) · lượt đổi bài (Referee's Coin: opts.rerollBonus)
+    draftChoices(team) { return this.cfg.match.upgradeChoices + ((this.opts.draftCards && this.opts.draftCards[team]) || 0); }
+    draftRerolls(team) { return SFC_CONFIG.cores.draft.rerollsPerRound + ((this.opts.rerollBonus && this.opts.rerollBonus[team]) || 0); }
+
+    // Mở Core Upgrade lúc bóng chết: trước khi giao bóng đầu trận (pre) + sau bàn thắng (nếu có lượt đang chờ).
+    // only: lượt chọn thêm của riêng 1 đội (GOAT PATH BADGE Pre-Season Camp: opts.draftBonus) — không tính vào upgradeIdx, đội kia không bốc
+    startDraft(pre = false, only = null) {
+      const C = this.cores, mine = (t) => only == null || t === only;
+      if (only == null) this.upgradeIdx++;
       // Core là của từng cầu thủ: mọi cầu thủ AI (đồng đội của người chơi + đối thủ) tự bốc 1 lá cho riêng mình
-      const aiPicks = this.opts.noAiCores ? [] : this.players.filter((p) => !C.isHumanOwner(p))
+      const aiPicks = this.opts.noAiCores ? [] : this.players.filter((p) => !C.isHumanOwner(p) && mine(p.team))
         .map((p) => ({ team: p.team, pid: p.id, id: C.aiPick(p) })).filter((x) => x.id);
       // người chơi (mỗi slot): 3 lá cho cầu thủ mình điều khiển — khóa theo chỉ số slot
       const options = {};
-      this.seats.forEach((s, i) => { const p = C.seatOwner(i); if (p) options[i] = C.rollOptions(p, n); });
+      this.seats.forEach((s, i) => { const p = C.seatOwner(i); if (p && mine(p.team)) options[i] = C.rollOptions(p, this.draftChoices(p.team)); });
       if (!Object.values(options).some((o) => o.length)) {
         if (aiPicks.length) this.emit('corePicked', { picks: aiPicks });
         return;
@@ -551,8 +580,8 @@ window.SFC = window.SFC || {};
       const limit = this.opts.draftTimeLimit || 0;
       this.state = 'draft';
       const rerolls = {};
-      for (const k in options) rerolls[k] = SFC_CONFIG.cores.draft.rerollsPerRound;
-      this.draft = { options, picked: {}, aiPicks, round: this.upgradeIdx, limit, t: limit, pre, rerolls };
+      for (const k in options) rerolls[k] = this.draftRerolls(this.seats[k].team);
+      this.draft = { options, picked: {}, aiPicks, round: this.upgradeIdx, limit, t: limit, pre, rerolls, bonus: only != null };
       this.releaseInputs();
       this.emit('draft', { round: this.upgradeIdx });
       this.sfx('upgrade');
@@ -578,6 +607,12 @@ window.SFC = window.SFC || {};
       this.draft = null;
       // còn lượt đang chờ (tích nhiều lượt / trước FINAL PUSH) -> chọn tiếp luôn
       this.state = 'kickoff';
+      // GOAT PATH (BADGE Pre-Season Camp): sau lượt trước giao bóng, đội có BADGE chọn thêm lượt riêng
+      if (d.pre && !d.bonus) this.bonusLeft = [0, 1].map((t) => (this.opts.draftBonus && this.opts.draftBonus[t]) || 0);
+      if (d.pre && this.bonusLeft) {
+        const t = this.bonusLeft.findIndex((x) => x > 0);
+        if (t >= 0) { this.bonusLeft[t]--; this.startDraft(true, t); if (this.state === 'draft') return; }
+      }
       this.runPendingDrafts();
       if (this.state === 'draft') return;
       // chọn xong -> đếm ngược giao bóng lại từ đầu
@@ -591,7 +626,7 @@ window.SFC = window.SFC || {};
       const d = this.draft;
       if (this.state !== 'draft' || !d || !d.options[seat] || d.picked[seat] || !(d.rerolls[seat] > 0)) return false;
       d.rerolls[seat]--;
-      d.options[seat] = this.cores.rollOptions(this.cores.seatOwner(seat), this.cfg.match.upgradeChoices, d.options[seat]);
+      d.options[seat] = this.cores.rollOptions(this.cores.seatOwner(seat), this.draftChoices(this.seats[seat].team), d.options[seat]);
       this.emit('draftWait', { seat });
       this.sfx('whoosh');
       return true;
@@ -608,6 +643,18 @@ window.SFC = window.SFC || {};
       if (b.x < f.x - b.r && b.netSide === -1) scorer = 1;
       else if (b.x > f.x + f.w + b.r && b.netSide === 1) scorer = 0;
       if (scorer < 0) return false;
+      // GOAT PATH (BADGE VAR Monitor): n bàn thua đầu tiên của đội có VAR được xem lại — trúng chance thì huỷ, giao bóng cho đội đó
+      const V = this.opts.varCheck && this.opts.varCheck[1 - scorer];
+      if (V && !this.drill && (this.varN || 0) < V.n) {
+        this.varN = (this.varN || 0) + 1;
+        if (Math.random() < V.chance) {
+          this.emit('banner', { text: SFC.N_('NO GOAL!'), sub: SFC.N_('VAR check'), color: '#3ff6ff' });
+          this.effects.flash(0.4);
+          this.sfx('whistle');
+          this.kickoff(1 - scorer);
+          return true;
+        }
+      }
 
       const value = this.finalPush && !this.golden ? this.cfg.match.finalPushGoalValue : 1;
       if (!this.opts.training) this.teams[scorer].score += value; // luyện tập: không tính tỉ số

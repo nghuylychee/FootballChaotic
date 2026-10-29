@@ -251,6 +251,10 @@ kbd {
 .draft-title span { font-size: 8px; color: var(--muted); }
 .draft-sub { font-size: 13px; color: var(--muted); margin: 5px 0 12px; }
 .cards { display: flex; gap: 12px; perspective: 900px; }
+/* GOAT PATH (BADGE Scouting Report): 4 lá mỗi lượt chọn -> lá hẹp lại cho vừa màn */
+.cards.n4 { gap: 8px; }
+.cards.n4 .card { width: 134px; }
+.cards .card:nth-child(4) { animation-delay: 0.26s; }
 .card {
   position: relative; width: 150px; height: 196px; background: #1a1c22; border: 2px solid var(--edge);
   box-shadow: 4px 4px 0 var(--ink); padding: 7px 9px 6px; cursor: pointer; text-align: center;
@@ -384,6 +388,55 @@ kbd { font-family: var(--vt); font-size: 11px; padding: 0 3px; }
 .ab-items { display: grid; grid-template-columns: repeat(2, 11px); grid-auto-rows: 11px; gap: 2px; align-content: center; }
 .ab-items .chip { width: 11px; height: 11px; font-size: 7px; }
 .ab-items .chip.empty { background: #121316; border-color: #323742; }
+/* GOAT PATH (2026-10-28): cánh trái = BADGE của cả đội (lưới 2 hàng, mỗi ô 11px như ô Core) · cánh phải = ô LEGEND của bạn */
+.ab-bds { display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, 11px); grid-auto-columns: 11px; gap: 2px; align-content: center;
+  padding-right: 3px; margin-right: 1px; border-right: 1px solid #3b3424; }
+.ab-bd { position: relative; width: 11px; height: 11px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  background: #1a1c22; border: 1px solid var(--rc); box-shadow: inset 0 0 0 1px var(--ink); }
+.ab-bd .pxi { transform: scale(0.62); flex: none; }
+.ab-bd.up::after { content: ''; position: absolute; right: 0; top: 0; border: 2px solid transparent; border-top-color: var(--gold); border-right-color: var(--gold); }
+.ab-bd.spent { opacity: 0.35; filter: grayscale(1); }
+.ab-bd.hit { animation: abBdHit 0.6s steps(3); }
+@keyframes abBdHit { 0%, 60% { box-shadow: inset 0 0 0 6px rgba(255, 255, 255, 0.85); } 100% { box-shadow: inset 0 0 0 1px var(--ink); } }
+.ab-leg { position: relative; width: 20px; height: 24px; box-sizing: border-box; margin-left: 2px; overflow: visible;
+  background: #1a1c22; border: 1px solid color-mix(in srgb, var(--lc) 60%, #3b4252); box-shadow: inset 0 0 0 1px var(--ink); }
+.ab-leg canvas { position: absolute; left: 0; top: 0; width: 18px; height: 18px; image-rendering: pixelated; }
+.ab-leg .sw { position: absolute; left: 0; top: 0; width: 18px; height: 18px; --p: 0;
+  background: conic-gradient(transparent calc((1 - var(--p)) * 360deg), rgba(10, 11, 14, 0.8) 0); }
+.ab-leg b { position: absolute; left: 0; top: 0; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+  font-family: var(--px); font-size: 5px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
+.ab-leg .lg-fill { position: absolute; left: 1px; right: 1px; bottom: 5px; height: 1px; transform-origin: left; transform: scaleX(var(--f, 0)); background: var(--lc); }
+.ab-leg .lg-pips { position: absolute; left: 0; right: 0; bottom: 1px; display: flex; justify-content: center; gap: 2px; }
+.ab-leg .lg-pips u { width: 3px; height: 3px; background: var(--lc); box-shadow: 0 0 0 1px var(--ink); }
+.ab-leg .lg-pips u.used { background: #3b4252; }
+.ab-leg .lg-fouls { position: absolute; left: 50%; top: -5px; transform: translateX(-50%); display: flex; gap: 1px; }
+.ab-leg .lg-fouls u { width: 3px; height: 4px; background: #2a1418; box-shadow: 0 0 0 1px var(--ink); }
+.ab-leg .lg-fouls u.on { background: #ff3d5a; }
+.ab-leg.on { border-color: var(--lc); box-shadow: inset 0 0 0 1px var(--ink), 0 0 5px var(--lc); animation: pulse 0.6s steps(2) infinite; }
+.ab-leg.cd canvas { filter: grayscale(0.7); }
+.ab-leg.out canvas { filter: grayscale(1) brightness(0.6); }
+.ab-leg.red { border-color: #ff3d5a; }
+.ab-leg.red canvas { filter: grayscale(1) brightness(0.5); }
+.ab-leg.red b { color: #ff3d5a; font-size: 9px; }
+.ab-leg.ready { animation: abReady 0.35s steps(3); }
+/* vừa ra kỹ thuật LEGEND: ô phóng to + loé trắng + tia toả kiểu anime, tên kỹ thuật bay lên trên thanh */
+.ab-leg.tech { animation: abLegTech 0.7s steps(7); z-index: 3; }
+.ab-leg.tech::before { content: ''; position: absolute; left: 50%; top: 45%; width: 64px; height: 64px; margin: -32px 0 0 -32px; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, var(--lc) 0 8deg, transparent 8deg 30deg);
+  -webkit-mask: radial-gradient(circle, transparent 28%, #000 30%, transparent 70%); mask: radial-gradient(circle, transparent 28%, #000 30%, transparent 70%);
+  animation: abLegRays 0.7s steps(7) forwards; }
+@keyframes abLegTech {
+  0% { transform: scale(1); box-shadow: inset 0 0 0 12px #fff, 0 0 0 var(--lc); }
+  20% { transform: scale(1.7) rotate(-6deg); box-shadow: inset 0 0 0 4px #fff, 0 0 10px var(--lc); }
+  45% { transform: scale(1.45) rotate(4deg); }
+  100% { transform: scale(1); box-shadow: inset 0 0 0 1px var(--ink), 0 0 4px var(--lc); }
+}
+@keyframes abLegRays { 0% { opacity: 1; transform: scale(0.4) rotate(0deg); } 100% { opacity: 0; transform: scale(1.4) rotate(40deg); } }
+.lg-tname { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  font-family: var(--px); font-size: 6px; color: var(--lc); text-shadow: 1px 1px 0 var(--ink), -1px -1px 0 var(--ink);
+  animation: lgTname 1.3s steps(10) forwards; }
+@keyframes lgTname { 0% { opacity: 0; transform: translate(-50%, 6px) scale(1.8); } 15% { opacity: 1; transform: translate(-50%, -4px) scale(1.2); }
+  75% { opacity: 1; transform: translate(-50%, -12px) scale(1); } 100% { opacity: 0; transform: translate(-50%, -16px) scale(1); } }
 
 /* ---------- META: level · XP · gold · character (trang chủ / nhân vật / shop / thưởng sau trận) ---------- */
 .gold { display: inline-flex; align-items: center; gap: 3px; font-family: var(--px); font-size: 7px; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; }
@@ -2751,6 +2804,17 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .rm-node.avail:hover { background: #3a3310; }
 .rm-node.sel { background: #3a3310; box-shadow: 0 0 0 2px var(--gold), 0 0 8px rgba(255, 225, 79, 0.7); }
 .rm-node.lost { border-color: #ff5a6e; background: #3a1018; opacity: 1; }
+/* khoanh phấn (user 2026-10-29): vòng cố định quanh node đang đứng · vòng vẽ dần khi vừa chọn node (svg phủ trên node) */
+.rm-ring path { fill: none; stroke: rgba(255, 255, 255, 0.88); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; filter: url(#rmChalk); }
+.rm-ring path.thin { stroke: rgba(255, 255, 255, 0.45); stroke-width: 1.6; }
+.rm-lines .rm-ring path { stroke: rgba(255, 255, 255, 0.55); stroke-width: 3; }
+.rm-lines .rm-ring path.thin { stroke: rgba(255, 255, 255, 0.25); }
+.rm-chalk { position: absolute; left: 0; top: 0; z-index: 1; pointer-events: none; overflow: visible; }
+.rm-ring.draw path { stroke-dasharray: 1 1; stroke-dashoffset: 1; animation: rmChalk 0.45s cubic-bezier(0.4, 0.1, 0.5, 1) forwards; }
+.rm-ring.draw path.thin { animation-delay: 0.04s; }
+.rm-chalk .dust { fill: rgba(255, 255, 255, 0.7); opacity: 0; animation: rmDust 0.4s steps(4) forwards; }
+@keyframes rmChalk { to { stroke-dashoffset: 0; } }
+@keyframes rmDust { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(8px); } }
 .run-msg { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 3; white-space: nowrap; padding: 3px 8px; background: rgba(7, 5, 10, 0.85); }
 .rm-page .m-msg { margin: 0; }
 .rm-actcard { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
@@ -2768,7 +2832,11 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .rm-tally { display: flex; gap: 14px; font-size: 15px; color: var(--gold); margin-bottom: 8px; }
 .rm-tally span { display: flex; align-items: center; gap: 4px; }
 /* GOAT PATH giai đoạn 2–3: tiền trong run, túi BADGE, thẻ chọn BADGE / SHOP / LOCKER ROOM / SKILL GAME / sự kiện ??? */
-.rm-cash { font-family: var(--px); font-size: 9px; color: #6bff4f; text-shadow: 1px 1px 0 var(--ink); }
+/* tiền trong run (user 2026-10-29): thẻ cùng khung với dải đội hình, túi tiền pixel + số vàng */
+.rm-cash { display: inline-flex; align-items: center; gap: 4px; height: 26px; box-sizing: border-box; padding: 0 8px 0 5px;
+  background: #1a1c22; border: 1px solid #4a4030; box-shadow: inset 1px 1px 0 #2e3140, 2px 2px 0 var(--ink); }
+.rm-cash .pxi { width: 16px; height: 16px; vertical-align: 0; }
+.rm-cash b { font-family: var(--px); font-size: 9px; font-weight: normal; color: var(--gold); text-shadow: 1px 1px 0 var(--ink), 2px 2px 0 #8a5a10; }
 .rm-acts .pt-btn { display: flex; align-items: center; gap: 4px; }
 .rm-acts u.inj { display: flex; align-items: center; gap: 2px; text-decoration: none; color: #ff5a6e; }
 .rm-sheet { gap: 6px; padding: 10px 14px; justify-content: flex-start; }
@@ -2815,7 +2883,7 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .rm-newcores span { padding: 2px; background: var(--panel); border: 1px solid #6bff4f; }
 .rt-act.lock > canvas { filter: grayscale(1) brightness(0.45); }
 .rt-act.lock::after { content: ''; position: absolute; inset: 0; background: rgba(7, 5, 10, 0.35); pointer-events: none; }
-/* GOAT PATH (user 2026-10-26): dải đội hình trên map · SQUAD · WHO GETS IT? · màn chọn đồng đội · mốc SKILL GAME */
+/* GOAT PATH (user 2026-10-26): dải đội hình trên map · SQUAD · màn chọn đồng đội · mốc SKILL GAME */
 .rm-strip { display: flex; align-items: center; gap: 6px; padding: 1px 6px; height: 26px; }
 .rm-strip:disabled { opacity: 1; cursor: default; }
 .rs-m { position: relative; display: flex; align-items: center; gap: 1px; }
@@ -2824,39 +2892,130 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .rs-m.hurt b { color: #ff8a9a; }
 .rs-x { position: absolute; top: -3px; left: 13px; font-style: normal; font-size: 10px; line-height: 1; color: #ff3d5a; text-shadow: 1px 1px 0 var(--ink); animation: pulse 0.8s steps(2) infinite; }
 .sq-row3 { display: flex; gap: 8px; justify-content: center; }
-.sq-card { position: relative; width: 176px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 5px 7px 6px; text-align: left;
-  background: var(--panel); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); color: inherit; font: inherit; }
+/* thẻ cầu thủ (user 2026-10-29): hình cầu thủ to ở giữa, chỉ số nhỏ 2 bên, OVR + vị trí góc trái, tên dưới hình */
+.sq-card { position: relative; width: 184px; box-sizing: border-box; display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 5px 6px 6px; text-align: left;
+  font: inherit; color: inherit; background: linear-gradient(180deg, #232733, #171a21 70%); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); }
+.sq-card.leg { border-color: color-mix(in srgb, var(--lc) 70%, var(--edge)); }
 .sq-card.you { border-top: 2px solid var(--gold); }
 button.sq-card { cursor: pointer; }
 button.sq-card.sel, button.sq-card:hover { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
-.sq-top { position: relative; display: flex; align-items: center; gap: 5px; }
-.sq-top canvas { width: 30px; height: 33px; image-rendering: pixelated; flex: none; }
-.sq-top .rs-x { left: 22px; top: -2px; }
-.sq-id { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.sq-id b { font-family: var(--px); font-size: 6px; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sq-id em { font-style: normal; font-family: var(--px); font-size: 5px; color: var(--muted); letter-spacing: 1px; }
+.sq-head { position: absolute; left: 7px; top: 5px; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.sq-head em { font-style: normal; font-family: var(--px); font-size: 5px; color: var(--muted); letter-spacing: 1px; }
+.sq-card > .rs-x { left: auto; right: 7px; top: 5px; font-size: 12px; }
 .sq-ovr { font-family: var(--px); font-size: 11px; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); }
 .sq-ovr.pre { color: #6bff4f; animation: pulse 0.6s steps(2) infinite; }
-.sq-stats { display: flex; flex-direction: column; gap: 2px; }
-.sq-row { display: flex; align-items: center; gap: 4px; }
-.sq-row i { width: 20px; font-style: normal; font-size: 11px; color: var(--c); }
-.sq-bar { position: relative; flex: 1; height: 5px; display: flex; background: #1a1c22; border: 1px solid var(--ink); overflow: hidden; }
-.sq-bar u { display: block; height: 100%; background: var(--c); opacity: 0.75; }
-.sq-bar s { display: block; height: 100%; text-decoration: none; }
-.sq-bar s.up { background: #6bff4f; }
-.sq-bar s.pre { background: #ffe14f; animation: pulse 0.6s steps(2) infinite; }
-.sq-bar s.dn { background: repeating-linear-gradient(135deg, #ff3d5a 0 2px, #5a1020 2px 4px); }
-.sq-row b { width: 16px; text-align: right; font-family: var(--px); font-size: 6px; font-weight: normal; color: #fff; }
-.sq-row b.up { color: #6bff4f; }
-.sq-row b.dn { color: #ff5a6e; }
-.sq-row b.pre { color: #ffe14f; }
-.sq-badges { display: flex; flex-wrap: wrap; gap: 2px; min-height: 18px; align-items: center; }
-.sq-badges em { font-style: normal; font-size: 11px; color: var(--muted); }
+.sq-ovr.dn { color: #ff5a6e; }
+.sq-body { display: flex; align-items: flex-end; gap: 2px; }
+.sq-art { position: relative; flex: 1; height: 92px; display: flex; align-items: flex-end; justify-content: center;
+  background: radial-gradient(ellipse 46% 60% at 50% 42%, color-mix(in srgb, var(--lc, #8fbcff) 26%, transparent), transparent 75%); }
+.sq-art::after { content: ''; position: absolute; left: 50%; bottom: 3px; width: 46px; height: 7px; margin-left: -23px; border-radius: 50%; background: rgba(0, 0, 0, 0.45); }
+/* khung vẽ 40x44 có khoảng trống trên đầu: phóng x2.6, kéo lên che khoảng trống đó */
+.sq-art canvas { position: relative; z-index: 1; width: 104px; height: 114px; margin: -22px -10px 0; image-rendering: pixelated; pointer-events: none; }
+.sq-col { width: 36px; flex: none; display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; }
+.sq-st { display: grid; grid-template-columns: auto 1fr; align-items: baseline; column-gap: 3px; }
+.sq-st i { font-style: normal; font-size: 10px; line-height: 1; color: var(--c); }
+.sq-st b { justify-self: end; font-family: var(--px); font-size: 6px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; }
+.sq-st b sup { font-size: 5px; vertical-align: 1px; }
+.sq-st u { grid-column: span 2; display: block; height: 2px; margin-top: 2px; background: #0f1116; }
+.sq-st u s { display: block; height: 100%; text-decoration: none; background: var(--c); opacity: 0.8; }
+.sq-st.up b { color: #6bff4f; }
+.sq-st.dn b { color: #ff5a6e; }
+.sq-st.pre b { color: #ffe14f; animation: pulse 0.6s steps(2) infinite; }
+.sq-name { display: flex; align-items: baseline; justify-content: center; gap: 5px; min-width: 0; }
+.sq-name b { font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sq-name em { flex: none; font-style: normal; font-family: var(--px); font-size: 5px; color: var(--ink); background: var(--gold); padding: 1px 2px 0; }
+/* màn SQUAD (user 2026-10-29): thẻ cao hơn cho hết khoảng trống — hình cầu thủ to hơn, chỉ số giãn ra theo chiều cao */
+.rm-sheet.squad .sq-card { width: 166px; height: 184px; justify-content: space-between; padding: 6px 6px 7px; }
+.rm-sheet.squad .sq-body { flex: 1; align-items: stretch; }
+.rm-sheet.squad .sq-art { height: auto; }
+.rm-sheet.squad .sq-art canvas { width: 137px; height: 150px; margin: -40px -32px 0; }
+.rm-sheet.squad .sq-art::after { width: 52px; height: 8px; margin-left: -26px; }
+.rm-sheet.squad .sq-col { justify-content: center; gap: 10px; padding: 16px 0 6px; }
+.rm-sheet.squad .sq-st i { font-size: 11px; }
+.rm-sheet.squad .sq-st b { font-size: 7px; }
+.rm-sheet.squad .sq-name b { font-size: 8px; }
+.sq-badges { display: flex; flex-wrap: wrap; gap: 2px; min-height: 18px; align-items: center; justify-content: center; }
 .sq-b { display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; background: #1a1c22; border: 1px solid var(--rc); }
 .sq-b.inj { background: rgba(255, 61, 90, 0.25); }
-.sq-give { display: flex; align-items: center; gap: 10px; }
-.sq-give p { margin: 0; font-size: 14px; color: #e6dccb; max-width: 150px; }
-.rm-sheet.assign, .rm-sheet.squad { justify-content: center; }
+.sq-b.empty { background: #14161c; border: 1px dashed #3a404d; }
+.sq-leg.none { padding: 1px 3px; background: rgba(0, 0, 0, 0.3); border: 1px dashed #4a5060; }
+.sq-leg.none canvas { width: 16px; height: 18px; filter: brightness(0); opacity: 0.85; }
+/* GOAT PATH (2026-10-28): BADGE luật (không có chip) hiện 1 dòng mô tả · hàng BADGE của cả đội ở SQUAD */
+.rm-sheet.squad { justify-content: center; }
+.bd-desc { font-size: 10px; line-height: 1; color: #c7ccd6; text-align: center; padding: 0 2px; overflow: hidden; max-height: 31px; }
+.sq-team { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 560px; margin-top: 4px; }
+.sq-team em { font-style: normal; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: var(--muted); margin-right: 4px; }
+.sq-team .sq-b { width: 20px; height: 20px; }
+/* LEGEND: chip trên thẻ cầu thủ · thẻ LEGEND (trial / xin vào đội) · node chân dung trên map */
+.sq-leg { display: flex; align-items: center; gap: 3px; padding: 1px 4px 1px 1px; background: color-mix(in srgb, var(--lc) 18%, #14161c); border: 1px solid var(--lc); }
+.sq-leg canvas { width: 14px; height: 16px; image-rendering: pixelated; }
+.sq-leg b { font-family: var(--px); font-size: 5px; font-weight: normal; color: var(--lc); white-space: nowrap; }
+.lg-pick { position: relative; }
+.lg-old { position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); text-decoration: none; white-space: nowrap; font-family: var(--px); font-size: 5px;
+  padding: 2px 4px; color: #fff; background: #5a1020; border: 1px solid #ff5a6e; z-index: 2; }
+.lg-pick > .rv { position: absolute; top: -6px; right: -4px; left: auto; bottom: auto; transform: none; }
+/* GOAT PATH LEGEND (user 2026-10-30, mockup tools/mockups/legend-ui.html): dải LEGEND dùng chung màn trial + màn nhận — chân dung to trên
+   hào quang màu LEGEND · danh hiệu · tên · chip COMBO (tên + keycap) · nhãn nhược điểm đỏ */
+.rm-sheet.lgx { justify-content: center; gap: 6px; background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--lc) 14%, #1c2030), #0e1016 75%); }
+.lg-kicker { font-style: normal; font-family: var(--px); font-size: 7px; color: var(--muted); letter-spacing: 3px; }
+.lg-hero { position: relative; display: flex; align-items: center; justify-content: center; gap: 14px; height: 104px; flex: none; }
+.lg-port { position: relative; width: 110px; height: 104px; flex: none; display: flex; align-items: flex-end; justify-content: center; }
+.lg-port::before { content: ''; position: absolute; inset: -6px -10px 0; background: radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--lc) 55%, transparent), transparent 62%); }
+.lg-rays { position: absolute; left: 50%; top: 55%; width: 0; height: 0; animation: lgSpin 24s linear infinite; }
+.lg-rays i { position: absolute; left: -1px; top: -60px; width: 2px; height: 26px; background: var(--lc); opacity: 0.55; transform-origin: 1px 60px; }
+@keyframes lgSpin { to { transform: rotate(360deg); } }
+.lg-port canvas { position: relative; width: 120px; height: 132px; margin-bottom: -6px; image-rendering: pixelated; }
+.lg-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lg-txt > b { font-family: var(--px); font-size: 15px; font-weight: normal; color: var(--lc); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--ink); }
+.lg-txt > u { text-decoration: none; font-size: 16px; color: #e6dccb; }
+.lg-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.lg-combo { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px 3px 5px; background: color-mix(in srgb, var(--lc) 22%, #14161c);
+  border: 1px solid var(--lc); box-shadow: 2px 2px 0 var(--ink); }
+.lg-combo > b { font-family: var(--px); font-size: 8px; font-weight: normal; color: #fff; letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; }
+.lg-keys { display: inline-flex; align-items: center; gap: 2px; font-family: var(--px); font-size: 6px; color: #9aa3b5; white-space: nowrap; }
+.lg-keys kbd { font-family: var(--px); font-size: 6px; padding: 2px 3px 1px; color: #111; background: #e6dccb; border: 0; box-shadow: 0 2px 0 #8a8070, 0 0 0 1px var(--ink); }
+.lg-keys span { font-family: var(--vt); font-size: 12px; color: #c7ccd6; }
+.lg-flaw { display: inline-flex; align-items: center; gap: 3px; padding: 3px 5px 2px; font-family: var(--px); font-size: 6px; color: #ff8a98; background: #3a1018; border: 1px solid #ff5a6e; cursor: help; }
+/* màn LEGEND TRIAL: "n× COMBO" + đồng hồ + 1 dòng */
+.tr-box { display: flex; align-items: center; gap: 18px; margin-top: 4px; padding: 12px 18px; background: rgba(0, 0, 0, 0.35); border: 1px solid #2e3140; box-shadow: 2px 2px 0 var(--ink); }
+.tr-goal { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tr-goal b { font-family: var(--px); font-size: 26px; font-weight: normal; color: var(--lc); text-shadow: 3px 3px 0 var(--ink); }
+.tr-goal em { font-style: normal; font-family: var(--px); font-size: 6px; color: var(--muted); letter-spacing: 1px; }
+.tr-sep { width: 1px; align-self: stretch; background: #2e3140; }
+.tr-time { display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: var(--px); font-size: 12px; color: #fff; }
+.tr-time .pxi { width: 22px; height: 22px; }
+.tr-line { font-size: 15px; color: #c7ccd6; }
+.rm-sheet.lgx .rm-sheet-foot { margin-top: 4px; }
+/* màn nhận LEGEND: 3 thẻ cầu thủ, trỏ = xem trước (▲▼ + bóng LEGEND sau lưng), bấm = hoạt cảnh (sign) */
+.sg-who { font-family: var(--px); font-size: 7px; color: var(--gold); letter-spacing: 3px; }
+.sg-row .sq-card { width: 160px; height: 168px; justify-content: space-between; padding: 6px 6px 7px; transition: opacity 0.25s; }
+.sg-row .sq-body { flex: 1; align-items: stretch; }
+.sg-row .sq-art { height: auto; position: relative; }
+.sg-row .sq-art > canvas { position: relative; z-index: 1; width: 120px; height: 132px; margin: -34px -26px 0; }
+.sg-row .sq-col { justify-content: center; gap: 8px; padding: 14px 0 4px; }
+.sg-row .sq-st i { font-size: 11px; }
+.sg-row .sq-st b { font-size: 7px; }
+.sg-row .sq-badges { min-height: 18px; }
+.sg-row .lg-pick.out { opacity: 0.25; }
+.lg-ghost { position: absolute; left: 50%; bottom: 0; width: 120px; height: 132px; margin-left: -60px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.lg-ghost canvas { width: 120px; height: 132px; margin: 0 !important; image-rendering: pixelated; filter: drop-shadow(0 0 4px var(--lc)); }
+.sq-card.peek .lg-ghost, .sq-card.got .lg-ghost { opacity: 0.35; }
+.sq-card.peek { border-color: var(--gold); }
+.sq-card.got { border-color: var(--lc) !important; box-shadow: 2px 2px 0 var(--ink), 0 0 0 2px var(--lc), 0 0 16px color-mix(in srgb, var(--lc) 60%, transparent) !important; }
+.lg-fly { position: absolute; z-index: 20; pointer-events: none; image-rendering: pixelated; }
+.lg-dpop { position: absolute; z-index: 21; font-family: var(--px); font-size: 8px; text-shadow: 1px 1px 0 var(--ink); pointer-events: none; animation: lgPop 0.9s ease-out forwards; }
+.lg-dpop.up { color: #6bff4f; } .lg-dpop.dn { color: #ff5a6e; }
+@keyframes lgPop { 0% { transform: translateY(4px) scale(0.6); opacity: 0; } 20% { transform: translateY(-4px) scale(1.2); opacity: 1; } 100% { transform: translateY(-18px) scale(1); opacity: 0; } }
+.sq-st.tick b { animation: lgTick 0.18s steps(2) 3; }
+@keyframes lgTick { 50% { transform: scale(1.35); } }
+.lg-stamp { position: absolute; left: 50%; top: 56%; z-index: 22; transform: translate(-50%, -50%) rotate(-6deg); display: flex; flex-direction: column; align-items: center; gap: 3px;
+  pointer-events: none; white-space: nowrap; animation: lgStamp 0.35s cubic-bezier(.2, 1.6, .5, 1) both; }
+.lg-stamp .lg-combo { box-shadow: 3px 3px 0 var(--ink), 0 0 12px color-mix(in srgb, var(--lc) 70%, transparent); }
+.lg-stamp > em { font-style: normal; font-family: var(--px); font-size: 6px; color: #111; background: var(--lc); padding: 2px 4px 1px; letter-spacing: 2px; }
+@keyframes lgStamp { from { transform: translate(-50%, -50%) rotate(-6deg) scale(2.6); opacity: 0; } to { transform: translate(-50%, -50%) rotate(-6deg) scale(1); opacity: 1; } }
+.rm-node.k-legend { border-color: var(--nc); background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--nc) 35%, #3a404d), #14161c 70%); overflow: visible; }
+.rm-node.k-legend canvas { width: 24px; height: 26px; image-rendering: pixelated; margin-top: 3px; }
+.rm-node.k-legend.past canvas, .rm-node.k-legend.done canvas { filter: grayscale(0.6); }
 .bd-who { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); text-decoration: none; font-family: var(--px); font-size: 5px; padding: 2px 4px; white-space: nowrap;
   color: #fff; background: #2a3040; border: 1px solid var(--edge); }
 .pk-page { gap: 8px; }
@@ -2948,3 +3107,98 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .pt-run .rt-boss em { font-size: 14px; max-width: 110px; }
 .rt-bottom { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-bottom: 6px; }
 .rt-join { display: flex; align-items: center; padding: 6px 14px; background: var(--panel); border: 1px solid var(--edge); }
+
+/* ---------- GOAT PATH · Shop = KIT VAN (src/ui/kitvan.js, user 2026-10-29) ----------
+   phủ hết khung 640x360: .rm-page nằm trong #menu (lề 20px 22px) nên lùi ra đúng chừng đó */
+.kv-page { position: absolute; left: -22px; top: -20px; width: 640px; height: 360px; z-index: 3; overflow: hidden; background: #120c16; }
+.kv-page, .kv-page * { cursor: var(--hand), pointer; }
+.kv-lo { position: absolute; left: 0; top: 0; width: 640px; height: 360px; image-rendering: pixelated; }
+.kv-hit { position: absolute; z-index: 1; padding: 0; margin: 0; border: 0; background: none; outline: none; }
+.kv-cash { position: absolute; right: 16px; top: 12px; z-index: 2; }
+.kv-foot { position: absolute; right: 16px; bottom: 14px; z-index: 2; }
+/* bong bóng thoại của tài xế: khung pixel (viền 2px, bóng cứng, đuôi bậc thang chỉ xuống cabin) */
+.kv-bubble { position: absolute; right: 26px; top: 46px; z-index: 2; width: 236px; box-sizing: border-box; padding: 6px 8px; color: #111; background: #fff;
+  box-shadow: 0 0 0 2px #111, 4px 4px 0 #111; pointer-events: none; }
+.kv-bubble::before, .kv-bubble::after { content: ''; position: absolute; background: #fff; box-shadow: 2px 0 0 #111, -2px 0 0 #111, 0 2px 0 #111; }
+.kv-bubble::before { left: 150px; bottom: -6px; width: 10px; height: 4px; }
+.kv-bubble::after { left: 154px; bottom: -10px; width: 4px; height: 4px; }
+.kv-bubble b { display: block; margin-bottom: 3px; font-family: var(--px); font-size: 7px; font-weight: normal; letter-spacing: 1px; color: #111; text-transform: uppercase; }
+.kv-bubble p { margin: 0; font-size: 15px; line-height: 1; color: #222; }
+
+/* ---------- GOAT PATH · màn chọn BADGE (user 2026-10-29, bố cục như SQUAD): 3 thẻ miếng vá + công dụng · hàng BADGE của đội ---------- */
+.rm-sheet.pick { justify-content: center; gap: 8px; }
+.pb-row { display: flex; gap: 12px; justify-content: center; }
+.pb-card { position: relative; width: 164px; height: 150px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 8px 8px;
+  font: inherit; color: inherit; cursor: pointer; background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 14%, #232733), #171a21 70%);
+  border: 1px solid var(--edge); border-top: 2px solid var(--rc); box-shadow: 2px 2px 0 var(--ink); transition: opacity 0.2s, transform 0.2s; }
+.pb-card.sel, .pb-card:hover { border-color: var(--gold); border-top-color: var(--rc); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); transform: translateY(-2px); }
+.pb-card.out { opacity: 0.3; }
+.pb-card.picked .pb-ico { visibility: hidden; }
+/* miếng vá: nền tối pha màu độ hiếm, chỉ khâu nét đứt màu độ hiếm */
+.pb-patch { position: relative; width: 60px; height: 62px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 14px 14px 24px 24px;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--rc) 40%, #2a2e38), #1a1c22 75%); box-shadow: 0 0 0 2px var(--ink), 3px 3px 0 var(--ink); }
+.pb-patch::after { content: ''; position: absolute; inset: 4px; border: 2px dashed var(--rc); border-radius: 10px 10px 20px 20px; pointer-events: none; }
+.pb-ico { display: flex; font-style: normal; }
+.pb-ico .pxi.x3, .pb-fly .pxi.x3 { width: 42px; height: 42px; }
+.pb-card > b { font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; text-align: center; line-height: 1.3; text-shadow: 1px 1px 0 var(--ink); }
+.pb-card > p { margin: 0; font-size: 13px; line-height: 1; color: #c7ccd6; text-align: center; }
+.pb-card > .rv { top: -6px; right: -4px; left: auto; bottom: auto; transform: none; }
+.pb-fly { position: absolute; z-index: 5; display: flex; align-items: center; justify-content: center; pointer-events: none; filter: drop-shadow(2px 2px 0 var(--ink)); }
+.sq-team .sq-b.new { animation: pbSew 0.38s steps(2) 1; box-shadow: 0 0 0 1px var(--gold), 0 0 8px var(--gold); }
+@keyframes pbSew { 0% { transform: scale(1.5); } 100% { transform: scale(1); } }
+
+
+
+/* ---------- GOAT PATH · BUILD YOUR SQUAD (user 2026-10-29: bố cục như SQUAD + kéo thả ứng viên từ băng ghế lên ô) ---------- */
+/* trường phái Core hay ra của đồng đội: góc phải trên thẻ cầu thủ (SQUAD + BUILD YOUR SQUAD) */
+.sq-sch { position: absolute; right: 6px; top: 6px; z-index: 1; display: flex; flex-direction: column; gap: 2px; }
+.sq-sch i { display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; font-style: normal; background: #14161c; border: 1px solid var(--c); }
+.sq-sch .pxi { width: 12px; height: 12px; vertical-align: 0; }
+.sq-card > .sq-sch ~ .rs-x { right: 26px; }
+.pk-page { gap: 6px; }
+.pk-top { position: relative; display: flex; align-items: center; justify-content: center; height: 22px; }
+.pk-top > b { font-family: var(--px); font-size: 14px; font-weight: normal; color: var(--gold); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--ink); }
+.pk-top > .rm-acts { position: absolute; right: 0; top: 0; }
+.pk-slots { gap: 10px; }
+.pk-card { width: 166px; height: 168px; justify-content: space-between; cursor: grab; }
+.pk-card .sq-body { flex: 1; align-items: stretch; }
+.pk-card .sq-art { height: auto; }
+.pk-card .sq-art canvas { width: 120px; height: 132px; margin: -34px -26px 0; }
+.pk-card .sq-col { justify-content: center; gap: 8px; padding: 14px 0 4px; }
+.pk-card .sq-badges { display: none; }
+.pk-card.sel, .pk-card:hover { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
+.pk-card.lock { cursor: default; }
+.pk-card .pk-x { left: auto; right: 26px; top: 6px; z-index: 2; }
+/* ô trống: viền nét đứt + bóng đen cầu thủ, ô cần chọn kế tiếp nhấp nháy viền xanh */
+.pk-empty { align-items: center; justify-content: center; cursor: pointer; background: rgba(0, 0, 0, 0.3); border: 1px dashed #4a5060; box-shadow: none; }
+.pk-empty .sq-head { left: 0; right: 0; }
+.pk-empty .sq-head em { font-size: 7px; color: var(--muted); }
+.pk-empty.next { border-color: #6bff4f; animation: pkNext 0.9s steps(2) infinite; }
+.pk-empty.next .sq-head em { color: #6bff4f; }
+@keyframes pkNext { 50% { border-color: #2f7a2a; } }
+.pk-sil canvas { width: 96px; height: 106px; image-rendering: pixelated; filter: brightness(0); opacity: 0.5; margin-top: 10px; }
+/* đang kéo: ô thả được sáng lên, ô đang trỏ viền vàng */
+.pk-page.dragging .pk-card:not(.lock), .pk-page.dragging .pk-bench { outline: 1px dashed rgba(255, 225, 79, 0.45); outline-offset: 2px; }
+.pk-page .over { outline: 2px solid var(--gold) !important; outline-offset: 2px; background-color: rgba(255, 225, 79, 0.08); }
+.pk-page .drag { opacity: 0.4; }
+.pk-mid { position: relative; display: flex; align-items: center; justify-content: center; height: 24px; }
+.pk-mid .pk-hint { font-size: 7px; }
+.pk-mid > .pt-btn { height: 24px; padding: 0 18px; font-size: 11px; }
+/* băng ghế ứng viên */
+.pk-bench { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 78px; padding: 4px 0; background: rgba(0, 0, 0, 0.2); border-top: 1px solid var(--edge); }
+.pk-bc { position: relative; width: 90px; height: 72px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 3px 4px; cursor: grab;
+  background: linear-gradient(180deg, #232733, #171a21 70%); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); }
+.pk-bc.sel, .pk-bc:hover { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
+.pk-bc.dis { opacity: 0.5; }
+.pk-cf canvas { width: 48px; height: 53px; margin: -14px 0 -8px; image-rendering: pixelated; }
+.pk-ci { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; width: 100%; }
+.pk-ci > b { max-width: 84px; font-family: var(--px); font-size: 5px; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pk-co { display: flex; align-items: baseline; gap: 4px; }
+.pk-co .sq-ovr { font-size: 7px; }
+.pk-co em { font-style: normal; font-family: var(--px); font-size: 5px; color: var(--muted); }
+.pk-ct { display: flex; gap: 4px; font-size: 10px; line-height: 1; }
+.pk-ct i { font-style: normal; color: var(--c); }
+.pk-bc .sq-sch { right: 3px; top: 3px; }
+.pk-bc .sq-sch i { width: 13px; height: 13px; }
+.pk-bc .sq-sch .pxi { width: 10px; height: 10px; }
+

@@ -52,10 +52,13 @@ window.SFC = window.SFC || {};
       this.el.draft.classList.toggle('waiting', picked);
       // lượt chọn có kịch bản (PROLOGUE): tiêu đề riêng, ghi chú dưới lá bài, lá ULTIMATE lộ diện
       this.el.draft.classList.toggle('ult-reveal', d.special === 'ult');
-      const title = d.title ? esc(d.title) : `${esc(d.pre ? _t('STARTING CORE') : _t('CORE UPGRADE'))} <span>${d.round}/${total}</span>`;
+      // lượt chọn thêm (GOAT PATH BADGE Pre-Season Camp, d.bonus): ô Core thêm 1, tiêu đề BONUS PICK
+      const nOwn = mp ? game.cores.coresOf(mp).filter((cid) => CORES().list[cid].role !== 'ult').length : 0;
+      const extra = d.bonus || nOwn >= total ? 1 : 0;
+      const title = d.title ? esc(d.title) : d.bonus ? `${esc(_t('BONUS PICK'))} <span>+1</span>` : `${esc(d.pre ? _t('STARTING CORE') : _t('CORE UPGRADE'))} <span>${d.round}/${total}</span>`;
 
-      // slots: các lượt chọn Core (tối đa 4) + ô Tuyệt kỹ
-      const maxSlots = total;
+      // slots: các lượt chọn Core (tối đa 4, thêm 1 khi có lượt chọn thêm) + ô Tuyệt kỹ
+      const maxSlots = total + extra;
       const owned = mp ? game.cores.coresOf(mp).filter((cid) => CORES().list[cid].role !== 'ult') : [];
       const ult = mp ? game.cores.coresOf(mp).find((cid) => CORES().list[cid].role === 'ult') : null;
       const targetSlot = owned.length;
@@ -76,7 +79,7 @@ window.SFC = window.SFC || {};
       this.el.draft.innerHTML = `
         <div class="draft-title">${title}${timer}</div>
         <div class="draft-sub">${sub}${reroll}</div>
-        <div class="cards">${cards}</div>
+        <div class="cards n${opts.length}">${cards}</div>
         ${d.note ? `<div class="draft-note">${esc(d.note).replace(/\*(.+?)\*/g, '<b>$1</b>')}</div>` : ''}
         <div class="draft-build">
           <div class="draft-build-row">

@@ -143,6 +143,7 @@ window.SFC = window.SFC || {};
 
       // GOAT PATH SKILL GAME: bia / cổng trên mặt sân (render/rundraw.js)
       if (g.drill && SFC.RunDraw) SFC.RunDraw.floor(ctx, g);
+      if (SFC.LegendDraw) SFC.LegendDraw.ballTrail(ctx, g);   // GOAT PATH: vệt bóng của kỹ thuật LEGEND
 
       // bụi chân khi chạy nước rút / phanh gấp + tiếng bước chân (fx.run) — vẽ sau vòng chân để không bị vòng che
       this.runFeel(ctx, g);
@@ -172,6 +173,7 @@ window.SFC = window.SFC || {};
           const ghost = p.ghostT > 0;
           if (ghost && p === cp && !g.preview) hidden = p;
           SFC.VFX.under(ctx, g, p);
+          if (p.legend && SFC.LegendDraw) SFC.LegendDraw.under(ctx, g, p);   // GOAT PATH: bóng mờ LEGEND sau lưng (khoảnh khắc LEGEND)
           if (s !== 1) { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(s, s); ctx.translate(-p.x, -p.y); }
           const dive = p.atkType === 'diveU' || p.atkType === 'diveD';
           // drawPlayer tự đặt globalAlpha theo tham số alpha
@@ -182,8 +184,11 @@ window.SFC = window.SFC || {};
           // hoảng sợ (Panic Ball): run lẩy bẩy
           const shiver = SFC.VFX.has(g, p, 'panic') ? (Math.floor(t * 30) % 2 ? 1 : -1) : 0;
           if (shiver) { ctx.save(); ctx.translate(shiver, 0); }
+          // GOAT PATH: kỹ thuật LEGEND đang diễn -> biến đổi quanh sprite (render/legenddraw.js)
+          const lx = !swap && !cel && SFC.LegendDraw ? SFC.LegendDraw.begin(ctx, g, p) : false;
           let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.28 + 0.08 * Math.sin(t * 18) : faint(p));
           ctx.globalAlpha = 1;
+          if (lx) { ctx.restore(); SFC.LegendDraw.after(ctx, g, p); }
           if (shiver) ctx.restore();
           if (s !== 1) { ctx.restore(); hy = p.y + (hy - p.y) * s; }
           SFC.VFX.form(ctx, g, p, swap || cel ? null : hy);
@@ -284,6 +289,7 @@ window.SFC = window.SFC || {};
       }
       // VFX Kit: phủ màu, tia tốc độ, cut-in, callout, impact frame (toạ độ màn hình)
       SFC.VFX.overlay(ctx, g);
+      if (SFC.LegendDraw) SFC.LegendDraw.overlay(ctx, g);   // GOAT PATH: cut-in LEGEND cạnh trái màn hình
     },
 
     // Smoke Bomb: mình đang tàng hình — mắt gạch chéo + chữ HIDDEN trên đầu
@@ -381,7 +387,7 @@ window.SFC = window.SFC || {};
       ctx.save();
       ctx.translate(Math.round(p.x), Math.round(cy));
       // bị đá bay (choáng) thì lộn vòng; tự nhảy (Dậm Đất, Thiên Thạch...) thì bay thẳng người
-      if (p.state === 'stun') ctx.rotate(dir * p.anim * 13);
+      if (p.state === 'stun' && !(SFC.LegendDraw && SFC.LegendDraw.flipping(g, p))) ctx.rotate(dir * p.anim * 13);   // bị XOẠC (LEGEND): lộn đúng 3 vòng ở legenddraw
       // Comet One-Two: móc xe đạp — lộn ngược ra sau (đầu chúc xuống lúc đá), xoay tiếp cho tròn vòng khi rơi
       else if (p.atkType === 'bicycle') ctx.rotate(-(Math.cos(p.facing) >= 0 ? 1 : -1) * Math.min(2, (p.atkT || 0) / 0.42) * Math.PI);
       drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, keeper: false }), g, 0.999);

@@ -82,18 +82,22 @@
       const M = SFC.Run.match();
       if (!M) return this.toMenu('runmap');
       const MP = SFC_CONFIG.mainPath, RN = SFC.Run, roles = RN.squad().map((x) => x.role), soloIdx = Math.max(0, C.roles.indexOf(roles[0]));
-      // đội hình của run (Run.squad): chỉ số = nền theo vị trí + BADGE của từng người, không dùng chỉ số ngoài run; inj = chấn thương (băng + khoảnh khắc)
-      const avatar = Object.assign(SFC.Profile.avatar(), { role: roles[0], stats: RN.statsOf(0), ovr: RN.ovrOf(0), inj: RN.injuryIds(0) });
+      // đội hình của run (Run.squad): chỉ số = nền theo vị trí + LEGEND + chấn thương của từng người, không dùng chỉ số ngoài run;
+      // inj = chấn thương (băng + khoảnh khắc) · legend = LEGEND (src/systems/legends.js)
+      const avatar = Object.assign(SFC.Profile.avatar(), { role: roles[0], stats: RN.statsOf(0), ovr: RN.ovrOf(0), inj: RN.injuryIds(0), legend: RN.legendOf(0) || undefined });
       SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
       const ai = SFC.MainPath.aiProfile(M.elo);
-      // SKILL GAME (src/systems/drills.js): đội bạn 1 người (character) hoặc cả đội hình (PASS CHAIN), không chọn Core, không luật trận, không màn giới thiệu
+      // SKILL GAME / LEGEND TRIAL (src/systems/drills.js): đội bạn 1 người (character) hoặc cả đội hình (PASS CHAIN), không chọn Core, không luật trận,
+      // không màn giới thiệu. trial: mốc riêng của LEGEND · drillEase: BADGE Training Bibs
       if (M.drill) {
         const size = M.teamSize.slice();
-        return this.startMatch({
+        this.startMatch({
           home: MP.playerTeam.id, away: M.team, difficulty: 'normal', aiProfile: ai, mateProfile: ai, humanTeam: 0, solo: [size[0] > 1 ? soloIdx : 0, null], avatars: [avatar, null],
           mates: [size[0] > 1 ? RN.mateSpecs() : null, null],
-          arena: SFC_CONFIG.arenas[M.arena] ? M.arena : undefined, teamSize: size, noDraft: true, drill: M.drill, run: M.info,
+          arena: SFC_CONFIG.arenas[M.arena] ? M.arena : undefined, teamSize: size, noDraft: true, drill: M.drill, trial: M.trial || undefined, drillEase: M.ease || 0, run: M.info,
         });
+        if (SFC_DEBUG && SFC.RunTest) SFC.RunTest.onMatch(this);   // phòng test GOAT PATH: phím tắt trong trận (src/ui/runtest.js)
+        return;
       }
       this.startMatch({
         home: MP.playerTeam.id, away: M.team, difficulty: 'normal', aiProfile: ai, mateProfile: ai,
@@ -103,8 +107,9 @@
         signature: [null, M.signature],
         knockout: true, run: M.info,
         mod: M.mod, barks: M.barks,   // luật trận + câu nói của đối thủ (src/systems/matchmods.js); không có tỉ số khởi đầu
-        ...RN.matchOpts(),            // BADGE: coreBoost / draftBias / score (Home Crowd) / ultGain
+        ...RN.matchOpts(),            // BADGE của đội: coreBoost / draftBias / draftCards / rerollBonus / draftBonus / score / ultGain / varCheck / addedTime
       });
+      if (SFC_DEBUG && SFC.RunTest) SFC.RunTest.onMatch(this);   // phòng test GOAT PATH: phím tắt trong trận (src/ui/runtest.js)
     },
 
     // bỏ trận Main Path giữa chừng (Pause > FORFEIT, rời trận xếp hạng online): tính là thua
@@ -207,8 +212,10 @@
           SFC.UI.banner(SFC.Cup.roundName(opts.cup.round), `${st ? st.name : ''} · ${vsAway}`, st ? st.color : '#ffe14f', 1.8);
         }
         else if (opts.drill) {
-          const D = SFC_CONFIG.run.drills[opts.drill];
-          SFC.UI.banner(D.name, D.desc, '#6bff4f', 2.4);
+          // LEGEND TRIAL: tên kỹ thuật cho mượn + số lần cần làm (màu LEGEND)
+          const D = SFC_CONFIG.run.drills[opts.drill], LG = opts.trial && SFC.Run.legend(opts.trial), K = LG && SFC_CONFIG.legends.techniques[LG.tech];
+          if (K) SFC.UI.banner(K.name, _t('Pull it off {n} times', { n: this.game && this.game.drill ? SFC.Drills.top(this.game.drill) : LG.trial.goal }), LG.color, 2.4);
+          else SFC.UI.banner(D.name, D.desc, '#6bff4f', 2.4);
         }
         else if (opts.run) {
           const A = SFC.Run.act(opts.run.act) || {}, N = SFC.Run.node(opts.run.kind) || {};
@@ -412,6 +419,9 @@
     } else if (SFC_DEBUG && SFC.StoryTest && /[?&]storytest\b/.test(location.search)) {
       // dev: index.html?storytest mở trang test Story · ?storytest=<id Story>.<vòng 0..3> đá thẳng vòng đó (src/ui/storytest.js)
       SFC.StoryTest.boot(app, new URLSearchParams(location.search).get('storytest'));
+    } else if (SFC_DEBUG && SFC.RunTest && /[?&]runtest\b/.test(location.search)) {
+      // dev: index.html?runtest mở trang test GOAT PATH · ?runtest=match | trial.<id LEGEND> | map (&badges= &legends= &act=; src/ui/runtest.js)
+      SFC.RunTest.boot(app, new URLSearchParams(location.search).get('runtest'));
     } else if (langChosen) start();
     else {
       SFC.Menu.el.classList.add('hidden');

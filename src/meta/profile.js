@@ -490,7 +490,14 @@ window.SFC = window.SFC || {};
       if (typeof pub.uid === 'string' && /^[a-z0-9]{8,16}$/.test(pub.uid)) out.uid = pub.uid;   // mã hồ sơ (GOAT PATH co-op)
       const inj = this.sanitizeInj(pub.inj);
       if (inj) out.inj = inj;
+      const leg = this.sanitizeLegend(pub.legend);
+      if (leg) out.legend = leg;
       return out;
+    },
+    // LEGEND GOAT PATH gửi kèm ghế / đồng đội (config/legends.config.js): chỉ id có thật
+    sanitizeLegend(id) {
+      const L = SFC_CONFIG.legends && SFC_CONFIG.legends.list;
+      return L && typeof id === 'string' && L[id] ? id : null;
     },
     // chấn thương GOAT PATH gửi kèm ghế / đồng đội (băng + dấu ✚ ở máy khách): chỉ id chấn thương có thật
     sanitizeInj(list) {
@@ -538,6 +545,8 @@ window.SFC = window.SFC || {};
       if (m.fake) { out.fake = true; out.elo = clampInt(m.elo, 0, 1e6); }
       const inj = this.sanitizeInj(m.inj);
       if (inj) out.inj = inj;
+      const leg = this.sanitizeLegend(m.legend);
+      if (leg) out.legend = leg;
       return out;
     },
 

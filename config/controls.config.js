@@ -22,6 +22,10 @@ SFC_CONFIG.controls = {
     shoot:   ['KeyD', 'Pad.X'],    // Sút (giữ để nạp) · sân nhà + còn đối phương phía trước: phá bóng | LIGHT ATTACK (đấm)
     skill:   ['KeyQ', 'Pad.RT'],   // Skill move / lướt né · đang nạp sút: SÚT BỔNG · đang nạp chọc khe: CHỌC KHE BỔNG (game.technique)
     switch:  ['KeyZ', 'Pad.LB'],   // giữ khi nạp sút: SÚT CỨA LÒNG (game.technique) · không cầm bóng: đổi cầu thủ (mọi trận hiện khoá 1 cầu thủ)
+    // kỹ thuật LEGEND (GOAT PATH, config/legends.config.js). Tay cầm không có nút riêng: power = skill + switch, trick = switch
+    // (cùng lúc giữ sprint; tổ hợp xử lý ở human.js — mỗi LEGEND chỉ 1 kỹ thuật nên không lẫn)
+    power:   ['KeyF'],             // giữ khi nạp sút: POWER SHOT (Balotello)
+    trick:   ['KeyC'],             // giữ khi nạp sút: TRIVELA (Carloss) · chạy nhanh khi dẫn bóng + bấm: BRUISER RUN (Haalandroid)
 
     pause:   ['Escape', 'KeyP', 'Pad.Start'],
     confirm: ['Enter', 'Space', 'Pad.A'],
@@ -46,7 +50,7 @@ SFC_CONFIG.controls = {
   // Phím menu (confirm, back, tabPrev...) cố định. Tay cầm: di chuyển luôn là cần analog / D-pad
   remap: {
     // switch: phím cứa lòng (giữ + sút, game.technique) — đổi người không dùng vì mọi trận hiện khoá người chơi vào 1 cầu thủ
-    kb:  ['up', 'down', 'left', 'right', 'sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'switch', 'ultimate'],
+    kb:  ['up', 'down', 'left', 'right', 'sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'switch', 'ultimate', 'power', 'trick'],
     pad: ['sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'switch', 'ultimate'],
     reserved: ['pause', 'mute'],   // phím của các action này không gán cho action khác được (vẫn dùng trong trận)
     // phím không cho gán: Ctrl / Alt / Meta (tổ hợp phím của trình duyệt, vd. Ctrl+W đóng tab), Tab, F1-F12, Esc

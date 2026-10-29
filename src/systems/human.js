@@ -73,9 +73,18 @@ window.SFC = window.SFC || {};
       // TUYỆT KỸ: phím X khi thanh năng lượng đầy
       if (input.wasPressed('ultimate') && g.cores.activateUltimate(team, p)) return;
 
+      // KỸ THUẬT (game.technique; GOAT PATH: theo LEGEND — SFC.Legends.tech): tech(id) = cầu thủ này dùng được kỹ thuật id
+      const LGS = SFC.Legends, tech = (id) => (LGS ? LGS.tech(g, p, id) : ['finesse', 'chip', 'fake', 'lobthrough'].includes(id));
+      // LƯỚT KHI CẦM BÓNG chỉ ra lúc NHẤC phím skill (user 2026-10-29): bấm skill trước rồi mới bấm D / W vẫn thành sút bổng / chọc khe
+      // bổng, không bị lướt mất. skillArm = phím skill được nhấn trong lúc cầm bóng và chưa dùng cho kỹ thuật
+      if (!has) p.skillArm = false;
       if (has) {
         // cầm bóng: D / A là sút / chuyền bổng (không đệm) -> bỏ phím đấm / Hard đã đệm từ lúc chưa có bóng
         buf.shoot = buf.lob = 0;
+        buf.skill = 0;
+        if (input.wasPressed('skill')) p.skillArm = true;
+        // BRUISER RUN (Haalandroid): đang dẫn bóng + giữ chạy nhanh, bấm trick (C) / switch (tay cầm LB) = giật chỏ
+        if (!p.passMode && !p.charging && tech('bruiser') && input.isDown('sprint') && (input.wasPressed('trick') || input.wasPressed('switch')) && LGS.bruiser(g, p)) return;
         // Chuyền: S (pass.quick) = chuyền ngay khi nhấn, tự chọn người nhận + lực.
         // W/A: nhấn bắt đầu nạp lực, giữ để tăng lực, thả để chuyền
         if (!p.passMode && !p.charging) {
@@ -87,20 +96,24 @@ window.SFC = window.SFC || {};
         if (p.passMode) {
           if (input.isDown(p.passKey)) {
             // KỸ THUẬT (game.technique): đang nạp chuyền bổng bấm chuyền sệt = sút giả · đang nạp chọc khe bấm skill = chọc khe bổng
-            if (p.passMode === 'lob' && input.wasPressed('pass')) { Act.fakeShot(g, p, mx, my); return; }
-            if (p.passMode === 'through' && input.isDown('skill')) p.passLoft = true;
+            // NEYMOR: phím sút giả = RAINBOW FLICK (hất bóng qua đầu)
+            if (p.passMode === 'lob' && input.wasPressed('pass') && tech('rainbow') && LGS.rainbow(g, p, mx, my)) return;
+            if (p.passMode === 'lob' && input.wasPressed('pass') && tech('fake')) { Act.fakeShot(g, p, mx, my); return; }
+            if (p.passMode === 'through' && p.skillArm && input.isDown('skill') && tech('lobthrough')) { p.passLoft = true; p.skillArm = false; }
             p.passCharge = Math.min(1, p.passCharge + dt / P.chargeTime);
             // chỉ khóa đồng đội nằm trong vùng hướng mũi tên; không có ai -> null (chuyền theo hướng)
             p.passLock = Act.findPassTarget(g, p, mx, my, Act.targetBias(p.passCharge), p.passMode, p.passLock, P.coneAngle);
             p.passBase = Act.passBasePower(g, p, p.passLock, p.passMode);
             if (seat === g.me) g.passPreview = { from: p, target: p.passLock, mode: p.passMode };
           } else {
-            Act.pass(g, p, p.passLoft && p.passMode === 'through' ? 'lobthrough' : p.passMode, mx, my, p.passCharge);
+            const loft = p.passLoft && p.passMode === 'through';
+            Act.pass(g, p, loft ? 'lobthrough' : p.passMode, mx, my, p.passCharge);
+            // PIRLOW (LOFTED THROUGH): diễn riêng
+            if (loft && LGS && p.legend && LGS.def(p) && LGS.def(p).tech === 'lobthrough') LGS.techFx(g, p, 'lobthrough');
           }
           return;
         }
 
-        let techSkill = false;   // phím skill đã dùng cho kỹ thuật sút bổng ở bước này -> không lướt
         // vừa đấm cướp được bóng: chưa sút được (combat.light.stealShotLock), D giữ từ cú đấm phải thả ra rồi bấm lại
         if (p.shotHold && !input.isDown('shoot')) p.shotHold = false;
         const shotLocked = p.shotHold || p.shotLockT > 0;
@@ -113,16 +126,28 @@ window.SFC = window.SFC || {};
             if (!p.charging) { p.charging = true; p.charge = 0; p.shotTarget = 0; p.shotStyle = null; }
             // KỸ THUẬT (game.technique), chốt lúc đang nạp: giữ / bấm switch = cứa lòng · bấm skill = sút bổng (không lướt) ·
             // bấm chuyền sệt = sút giả (huỷ cú sút)
-            if (input.wasPressed('pass')) { Act.fakeShot(g, p, mx, my); return; }
-            if (input.isDown('switch')) p.shotStyle = 'finesse';
-            if (input.wasPressed('skill')) { p.shotStyle = 'chip'; buf.skill = 0; techSkill = true; }
+            if (input.wasPressed('pass') && tech('rainbow') && LGS.rainbow(g, p, mx, my)) return;
+            if (input.wasPressed('pass') && tech('fake')) { Act.fakeShot(g, p, mx, my); return; }
+            // POWER SHOT (Balotello): phím power (F) · tay cầm: skill + switch. TRIVELA (Carloss): phím trick (C) · tay cầm: sprint + switch.
+            // Kiểm tra trước cứa lòng / sút bổng vì tổ hợp tay cầm dùng chung nút switch / skill (mỗi LEGEND chỉ có 1 kỹ thuật nên không lẫn)
+            const sw = input.isDown('switch');
+            if (tech('power') && (input.isDown('power') || (sw && input.isDown('skill')))) { p.shotStyle = 'power'; p.skillArm = false; }
+            else if (tech('trivela') && (input.isDown('trick') || (sw && input.isDown('sprint')))) p.shotStyle = 'trivela';
+            else if (sw && tech('finesse')) p.shotStyle = 'finesse';
+            if (p.skillArm && input.isDown('skill') && tech('chip')) { p.shotStyle = 'chip'; p.skillArm = false; }
             p.charge += dt / g.chargeTime(p);
             if (p.charge >= K.maxOvercharge) Act.shoot(g, p, p.charge, 0, mx || my ? { x: mx, y: my } : null);
           }
         } else if (p.charging) {
-          Act.shoot(g, p, p.charge, 0, mx || my ? { x: mx, y: my } : null);
+          // BALOTELLO: chạm sút thật nhanh (chưa kịp nạp) = sút mũi giày — bóng đi nhanh như đã nạp gần đầy
+          const poke = tech('toepoke') && LGS.toePoke(g, p);
+          Act.shoot(g, p, poke ? Math.max(p.charge, poke) : p.charge, 0, mx || my ? { x: mx, y: my } : null);
         }
-        if (!techSkill && pressed('skill')) use('skill', Act.skill(g, p, mx, my));
+        // nhấc phím skill (chưa dùng cho kỹ thuật) = lướt
+        if (p.skillArm && !input.isDown('skill')) {
+          p.skillArm = false;
+          Act.skill(g, p, mx, my);
+        }
         return;
       }
 
@@ -163,6 +188,9 @@ window.SFC = window.SFC || {};
         if (pressed('shoot')) use('shoot', Act.lightAttack(g, p));
         else if (pressed('lob')) use('lob', Act.hardAttack(g, p));
       } else {
+        // KANTAY (ENGINE PRESS): giữ chạy nhanh + D = tự đuổi bóng (không đấm), rút thể lực nhanh · RAMEN: chạy nhanh + A = XOẠC BÓNG
+        if (tech('engine') && input.isDown('sprint') && input.isDown('shoot') && LGS.engine(g, p, dt)) { buf.shoot = 0; return; }
+        if (tech('slide') && input.isDown('sprint') && pressed('lob') && LGS.slide(g, p, mx, my)) { buf.lob = 0; return; }
         // ĐỌC CÚ SÚT: trong vòng cấm nhà giữ W để thủ thế, thả đúng lúc đối phương sút
         const canBrace = RD.enabled && p.state === 'normal' && p.cd.read <= 0 && p.readAt < 0 && g.inKeeperZone(p);
         if (wasBracing ? input.isDown('through') && p.state === 'normal' : canBrace && input.wasPressed('through')) p.bracing = true;

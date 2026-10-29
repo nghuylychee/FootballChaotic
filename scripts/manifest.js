@@ -35,6 +35,7 @@ const FILES = [
   ['config/stories.config.js', 'game sandbox itch server'],   // FOOTBALL STORY (cup knockout co-op PvE) + đội riêng
   ['config/run.config.js', 'game sandbox itch server'],       // GOAT PATH: run 3 act kiểu Slay the Spire (đối thủ lấy từ stories)
   ['config/elites.config.js', 'game sandbox itch server'],    // GOAT PATH: đội Elite riêng (pool act.elite) + luật trận của họ
+  ['config/legends.config.js', 'game sandbox itch server'],   // GOAT PATH: LEGEND (huyền thoại gắn vào 1 người của đội hình)
   ['config/teammates.config.js', 'game sandbox itch server'],
   ['config/achievements.config.js', 'game'],
   ['config/intro.config.js', 'game itch server'],
@@ -84,6 +85,7 @@ const FILES = [
   ['src/systems/matchmods.js', 'game sandbox itch server'],   // FOOTBALL STORY: luật trận của từng đội + câu nói trong trận
   ['src/systems/drills.js', 'game'],                          // GOAT PATH: SKILL GAME (bài tập trên sân thật)
   ['src/systems/hurt.js', 'game'],                            // GOAT PATH: chấn thương ra tay trong trận (khựng / đấm xịt / sút trượt)
+  ['src/systems/legends.js', 'game'],                         // GOAT PATH: LEGEND trong trận (khoảnh khắc LEGEND + nhược điểm)
   ['src/systems/ai.js', 'game sandbox itch server'],
   ['src/systems/human.js', 'game sandbox itch server'],
   ['src/game/match.js', 'game sandbox itch server'],
@@ -95,6 +97,7 @@ const FILES = [
   ['src/render/vfx.js', 'game sandbox itch'],
   ['src/render/modsdraw.js', 'game sandbox itch'],   // FOOTBALL STORY: hình vật thể của luật trận
   ['src/render/rundraw.js', 'game'],                 // GOAT PATH: bia / cổng của SKILL GAME + dấu chấn thương trên đầu
+  ['src/render/legenddraw.js', 'game'],              // GOAT PATH: bóng mờ LEGEND sau lưng + cut-in chân dung bên cạnh màn hình
   ['src/render/renderer.js', 'game sandbox itch'],
   ['src/render/pixelicons.js', 'game itch'],
   ['src/net/transport.js', 'game server'],                 // máy chủ: NetCommon (mã phòng)
@@ -123,6 +126,7 @@ const FILES = [
   ['src/ui/trophies.js', 'game'],                          // PHÒNG TRƯNG BÀY: cúp Story + kỷ lục + lối vào ACHIEVEMENTS
   ['src/ui/road.js', 'game'],
   ['src/ui/cup.js', 'game'],                               // FOOTBALL STORY: tab PLAY + màn cup
+  ['src/ui/kitvan.js', 'game'],                            // GOAT PATH: Shop = KIT VAN (xe bán đồ pixel art, canvas 320x180)
   ['src/ui/runmap.js', 'game'],                            // GOAT PATH: tab PLAY + màn map
   ['src/ui/intro.js', 'game'],
   ['src/ui/drill.js', 'game'],
@@ -132,6 +136,7 @@ const FILES = [
   ['src/ui/menu.js', 'game'],
   ['src/ui/ulttest.js', 'game'],                           // phòng test Tuyệt kỹ (dev, SFC_DEBUG — bản đóng gói thành rỗng)
   ['src/ui/storytest.js', 'game'],                         // phòng test FOOTBALL STORY (dev, SFC_DEBUG — bản đóng gói thành rỗng)
+  ['src/ui/runtest.js', 'game'],                           // phòng test GOAT PATH: BADGE + LEGEND (dev, SFC_DEBUG — bản đóng gói thành rỗng)
   ['src/ui/online.js', 'game'],
   ['src/main.js', 'game'],
 ];

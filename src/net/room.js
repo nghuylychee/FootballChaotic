@@ -366,7 +366,7 @@ window.SFC = window.SFC || {};
     /* ---------- phòng FOOTBALL STORY ---------- */
     // host dựng trận cup cho cả phòng. o (game dựng, src/ui/cup.js): { match: opts trận của vòng (đội đối thủ, độ khó, luật trận...),
     //   away: id đội đối thủ, mates: đồng đội AI cho các vị trí không có người (Mates.spec, đã gắn role) }
-    //   Phòng run thêm: seat: { vị trí: { stats, ovr, inj } } (chỉ số trong run của ô đội hình, đè lên hồ sơ người đứng đó) ·
+    //   Phòng run thêm: seat: { vị trí: { stats, ovr, inj, legend } } (chỉ số trong run của ô đội hình, đè lên hồ sơ người đứng đó) ·
     //   only: [id] = chỉ những người này ra sân (Skill game 1 người), người còn lại xem (watch)
     startStory(o) {
       const L = this.lobby, roles = ROLES();

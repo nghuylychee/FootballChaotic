@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mockup · GOAT PATH legend trial + signing</title>
+  <!-- MOCKUP (2026-10-29, user duyệt 2026-10-30 — đã làm vào game: RunUI.hero / trialCard / joinCard / sign): màn LEGEND TRIAL + màn nhận LEGEND (bớt chữ, combo là chính, diễn cộng trừ chỉ số).
+       Trang tĩnh, nạp script game từ index.html (trừ main.js) để dùng đúng thẻ cầu thủ (RunUI.pcard), nhân vật, icon. Không vào bản build. -->
+  <link rel="stylesheet" href="../../css/style.css" />
+  <style>
+    html, body { margin: 0; height: auto; overflow: auto; background: #0b0c10; color: #fff; font-family: var(--vt); }
+    body { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0 40px; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .tabs button, .tabs select { font-family: var(--px); font-size: 9px; padding: 7px 10px; background: #1a1c22; color: #9aa3b5; border: 2px solid #2e3140; cursor: pointer; }
+    .tabs button.on { color: #111; background: #ffe14f; border-color: #ffe14f; }
+    .note { font-size: 16px; line-height: 1; color: #9aa3b5; max-width: 1240px; text-align: center; }
+    .wrap { position: relative; flex: none; overflow: hidden; box-shadow: 0 0 0 2px #2e3140; }
+    .stage { position: absolute; left: 0; top: 0; width: 640px; height: 360px; transform-origin: 0 0; overflow: hidden;
+      background: radial-gradient(ellipse at 50% 30%, #1c2030, #0e1016 75%); }
+    .scr { position: absolute; inset: 0; display: none; padding: 14px 22px; box-sizing: border-box; flex-direction: column; align-items: center; gap: 8px; }
+    .scr.on { display: flex; }
+    canvas { image-rendering: pixelated; }
+
+    /* ---------- dải LEGEND (dùng chung 2 màn): chân dung to trên hào quang màu LEGEND + danh hiệu + tên + combo + nhược điểm ---------- */
+    .lg-hero { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; height: 104px; flex: none; }
+    .lg-port { position: relative; width: 110px; height: 104px; flex: none; display: flex; align-items: flex-end; justify-content: center; }
+    .lg-port::before { content: ''; position: absolute; inset: -6px -10px 0; background: radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--lc) 55%, transparent), transparent 62%); }
+    .lg-port .rays { position: absolute; left: 50%; top: 55%; width: 0; height: 0; }
+    .lg-port .rays i { position: absolute; left: -1px; top: -60px; width: 2px; height: 26px; background: var(--lc); opacity: 0.55; transform-origin: 1px 60px; }
+    .lg-port canvas { position: relative; width: 120px; height: 132px; margin-bottom: -6px; }
+    .lg-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .lg-txt > b { font-family: var(--px); font-size: 15px; font-weight: normal; color: var(--lc); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--ink); }
+    .lg-txt > u { text-decoration: none; font-size: 16px; color: #e6dccb; }
+    .lg-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+    /* chip combo: ngôi sao + tên kỹ thuật + phím (keycap pixel) */
+    .combo { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px 3px 5px; background: color-mix(in srgb, var(--lc) 22%, #14161c);
+      border: 1px solid var(--lc); box-shadow: 2px 2px 0 var(--ink); }
+    .combo > b { font-family: var(--px); font-size: 8px; font-weight: normal; color: #fff; letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); }
+    .keys { display: inline-flex; align-items: center; gap: 2px; font-family: var(--px); font-size: 6px; color: #9aa3b5; }
+    .keys kbd { font-family: var(--px); font-size: 6px; padding: 2px 3px 1px; color: #111; background: #e6dccb; border: 0; box-shadow: 0 2px 0 #8a8070, 0 0 0 1px var(--ink); }
+    .keys span { font-family: var(--vt); font-size: 12px; color: #c7ccd6; }
+    .flaw { display: inline-flex; align-items: center; gap: 3px; padding: 3px 5px 2px; font-family: var(--px); font-size: 6px; color: #ff8a98; background: #3a1018; border: 1px solid #ff5a6e; cursor: help; }
+
+    /* ---------- 1. LEGEND TRIAL ---------- */
+    .tr-title { font-family: var(--px); font-size: 7px; color: var(--muted); letter-spacing: 3px; }
+    .tr-box { display: flex; align-items: center; gap: 18px; margin-top: 6px; padding: 12px 18px; background: rgba(0, 0, 0, 0.35); border: 1px solid #2e3140; box-shadow: 2px 2px 0 var(--ink); }
+    .tr-goal { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .tr-goal b { font-family: var(--px); font-size: 26px; font-weight: normal; color: var(--lc); text-shadow: 3px 3px 0 var(--ink); }
+    .tr-goal em { font-style: normal; font-family: var(--px); font-size: 6px; color: var(--muted); letter-spacing: 1px; }
+    .tr-sep { width: 1px; align-self: stretch; background: #2e3140; }
+    .tr-time { display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: var(--px); font-size: 12px; color: #fff; }
+    .tr-time .pxi { width: 22px; height: 22px; }
+    .tr-line { font-size: 15px; color: #c7ccd6; margin-top: 2px; }
+    .tr-foot { display: flex; gap: 10px; margin-top: auto; }
+
+    /* ---------- 2. KÝ HỢP ĐỒNG (LEGEND xin vào đội) ---------- */
+    .sg-who { font-family: var(--px); font-size: 7px; color: var(--gold); letter-spacing: 3px; margin-top: -2px; }
+    .sg-row { display: flex; gap: 10px; }
+    .sg-row .sq-card { width: 168px; height: 170px; justify-content: space-between; cursor: pointer; transition: opacity 0.25s; }
+    .sg-row .sq-card .sq-body { flex: 1; align-items: stretch; }
+    .sg-row .sq-card .sq-art { height: auto; }
+    .sg-row .sq-card .sq-art canvas { width: 120px; height: 132px; margin: -34px -26px 0; }
+    .sg-row .sq-card .sq-col { justify-content: center; gap: 8px; padding: 14px 0 4px; }
+    .sg-row .sq-card .sq-badges { min-height: 0; }
+    .sg-row .sq-card:hover, .sg-row .sq-card.sel { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
+    .sg-row.done .sq-card:not(.got) { opacity: 0.25; }
+    /* bóng LEGEND sau lưng cầu thủ đang trỏ (xem trước) / đã nhận */
+    .ghost { position: absolute; left: 50%; bottom: 6px; width: 120px; height: 132px; margin-left: -60px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .ghost canvas { width: 120px; height: 132px; filter: drop-shadow(0 0 4px var(--lc)); }
+    .sq-card:hover .ghost, .sq-card.sel .ghost, .sq-card.got .ghost { opacity: 0.35; }
+    .sq-art canvas.me { position: relative; z-index: 1; }
+    .sq-card.got { border-color: var(--lc) !important; box-shadow: 2px 2px 0 var(--ink), 0 0 0 2px var(--lc), 0 0 16px color-mix(in srgb, var(--lc) 60%, transparent) !important; }
+    /* hoạt cảnh: chân dung bay vào thẻ · số bật lên · combo đập xuống */
+    .fly { position: absolute; z-index: 20; pointer-events: none; }
+    .fly canvas { width: 100%; height: 100%; }
+    .dpop { position: absolute; z-index: 21; font-family: var(--px); font-size: 8px; text-shadow: 1px 1px 0 var(--ink); pointer-events: none; animation: dpop 0.9s ease-out forwards; }
+    .dpop.up { color: #6bff4f; } .dpop.dn { color: #ff5a6e; }
+    @keyframes dpop { 0% { transform: translateY(4px) scale(0.6); opacity: 0; } 20% { transform: translateY(-4px) scale(1.2); opacity: 1; } 100% { transform: translateY(-18px) scale(1); opacity: 0; } }
+    .sq-st.tick b { animation: tick 0.18s steps(2) 3; }
+    @keyframes tick { 50% { transform: scale(1.35); } }
+    .stamp { position: absolute; left: 50%; top: 56%; z-index: 22; transform: translate(-50%, -50%) rotate(-6deg); display: flex; flex-direction: column; align-items: center; gap: 3px;
+      pointer-events: none; white-space: nowrap; animation: stamp 0.35s cubic-bezier(.2, 1.6, .5, 1) both; }
+    .stamp .combo { box-shadow: 3px 3px 0 var(--ink), 0 0 12px color-mix(in srgb, var(--lc) 70%, transparent); }
+    .stamp > em { font-style: normal; font-family: var(--px); font-size: 6px; color: #111; background: var(--lc); padding: 2px 4px 1px; letter-spacing: 2px; }
+    @keyframes stamp { from { transform: translate(-50%, -50%) rotate(-6deg) scale(2.6); opacity: 0; } to { transform: translate(-50%, -50%) rotate(-6deg) scale(1); opacity: 1; } }
+    .sg-foot { display: flex; gap: 10px; margin-top: auto; }
+
+    /* ---------- bảng đề xuất trial ---------- */
+    table.prop { border-collapse: collapse; font-size: 16px; color: #c7ccd6; max-width: 1240px; }
+    table.prop th, table.prop td { border: 1px solid #2e3140; padding: 4px 8px; text-align: left; }
+    table.prop th { font-family: var(--px); font-size: 8px; color: #ffe14f; font-weight: normal; }
+    table.prop td b { color: var(--lc); font-weight: normal; }
+  </style>
+</head>
+<body>
+  <div class="tabs"><button data-s="tr" class="on">1 · LEGEND TRIAL</button><button data-s="sg">2 · SIGNING</button><select id="pick"></select><button id="replay">REPLAY</button></div>
+  <div class="note" id="note"></div>
+  <div class="wrap"><div class="stage"><div class="scr" id="tr"></div><div class="scr" id="sg"></div></div></div>
+  <div class="note">Proposed trials: each LEGEND lends you his combo for the trial, and the goal is to pull the combo off (one count per success).</div>
+  <table class="prop" id="prop"></table>
+
+  <script>
+  function fit() {
+    const k = Math.min(2, (innerWidth - 24) / 640, (innerHeight - 120) / 360), w = document.querySelector('.wrap');
+    w.style.width = 640 * k + 'px'; w.style.height = 360 * k + 'px';
+    document.querySelector('.stage').style.transform = `scale(${k})`;
+    window.K = k;
+  }
+  addEventListener('resize', fit); fit();
+  (async function () {
+    const html = await (await fetch('../../index.html', { cache: 'reload' })).text();
+    const srcs = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]).filter((s) => !/main\.js$/.test(s));
+    for (const s of srcs) await new Promise((ok) => { const el = document.createElement('script'); el.src = '../../' + s; el.onload = ok; el.onerror = ok; document.head.appendChild(el); });
+    boot();
+  })();
+
+  function boot() {
+    try { SFC.Input.init(SFC_CONFIG.controls.bindings); } catch (e) { /* bỏ qua */ }
+    const C = SFC_CONFIG, LG = C.legends.list, TQ = C.legends.techniques, RU = SFC.RunUI, PX = SFC.PixelIcon, A = C.progression.attrs;
+    const kit = C.mainPath.playerTeam.kit;
+    const look = (o) => SFC.Profile.lookOf(Object.assign({}, C.progression.defaultLook, o || {}));
+    // đề xuất trial khớp combo (số lần làm được combo trong thời gian)
+    const TRIAL = {
+      haalandroid: { n: 4, s: 35, what: 'Elbow off tacklers on the run', foes: '3 chasers' },
+      ibra:        { n: 2, s: 45, what: 'Score bicycle kicks from crosses', foes: 'keeper + crosser' },
+      balotello:   { n: 3, s: 40, what: 'Score power shots past the keeper', foes: 'keeper' },
+      neymor:      { n: 4, s: 35, what: 'Flick the ball over a defender', foes: '2 chasers' },
+      mecci:       { n: 3, s: 40, what: 'Curl finesse goals into the far corner', foes: 'keeper + 1' },
+      pirlow:      { n: 3, s: 40, what: 'Lofted through balls a runner reaches', foes: '2 defenders' },
+      kantay:      { n: 4, s: 35, what: 'Win the ball back with the press', foes: '3 dribblers' },
+      ramen:       { n: 4, s: 35, what: 'Wipe out attackers with a slide', foes: '3 attackers' },
+      neuermann:   { n: 3, s: 40, what: 'Catch a shot and launch a teammate', foes: '2 shooters' },
+      carloss:     { n: 2, s: 45, what: 'Bend trivela goals around the wall', foes: 'keeper + wall' },
+    };
+    const FLAW = { dive: 'DIVER', light: 'FEATHERWEIGHT', red: 'HOTHEAD', random: 'WILD CARD' };
+    const ids = Object.keys(LG);
+    const sel = document.getElementById('pick');
+    sel.innerHTML = ids.map((id) => `<option value="${id}">${LG[id].name}</option>`).join('');
+    sel.value = 'neuermann';
+
+    // vẽ mọi canvas data-mmlook / data-lg (ngoại hình) mỗi khung, xoay người như menu
+    let T = 0;
+    (function loop() {
+      T += 1 / 60;
+      document.querySelectorAll('canvas[data-mmlook]').forEach((cv) => {
+        if (!cv._lk) { cv.width = 40; cv.height = 44; try { cv._lk = JSON.parse(cv.dataset.mmlook); } catch (e) { cv._lk = look(); } }
+        SFC.Sprites.drawAvatar(cv, cv._lk, kit, T + (cv._o || 0), cv.dataset.still ? Math.PI / 2 : undefined);
+      });
+      requestAnimationFrame(loop);
+    })();
+    const face = (lk, still) => `<canvas data-mmlook='${JSON.stringify(lk).replace(/'/g, '&#39;')}' ${still ? 'data-still="1"' : ''}></canvas>`;
+    const keyHtml = (K) => {
+      const txt = SFC.Input.techKeys(K);
+      // "{a} + {b}" -> keycap từng phím, chữ thường (hold / tap / on a high ball) giữ nguyên nhỏ
+      return `<span class="keys">${txt.split(/\s*\+\s*/).map((part) => {
+        const m = part.match(/^(tap\s+)?(\S+)(.*)$/i);
+        return m ? `${m[1] ? `<span>${m[1].trim()}</span>` : ''}<kbd>${m[2]}</kbd>${m[3] ? `<span>${m[3].trim()}</span>` : ''}` : part;
+      }).join('<span>+</span>')}</span>`;
+    };
+    const hero = (L) => {
+      const K = TQ[L.tech], fl = L.flaw && FLAW[L.flaw.kind];
+      const rays = Array.from({ length: 12 }, (_, i) => `<i style="transform:rotate(${i * 30}deg)"></i>`).join('');
+      return `<div class="lg-hero"><div class="lg-port"><span class="rays">${rays}</span>${face(SFC.LegendDraw.lookOf(L), true)}</div>
+          <div class="lg-txt"><b>${L.title}</b><u>${L.name}</u>
+            <div class="lg-row"><span class="combo">${PX.ui('star', 'sm')}<b>${K.name}</b>${keyHtml(K)}</span>
+              ${fl ? `<span class="flaw" title="${L.flawDesc}">${PX.ui('boom', 'sm')}${fl}</span>` : ''}</div></div></div>`;
+    };
+
+    /* ---------- 1. TRIAL ---------- */
+    function renderTrial(id) {
+      const L = LG[id], K = TQ[L.tech], tr = TRIAL[id];
+      document.getElementById('tr').style.setProperty('--lc', L.color);
+      document.getElementById('tr').innerHTML = `<div class="tr-title">LEGEND TRIAL</div>${hero(L)}
+        <div class="tr-box"><div class="tr-goal"><b>${tr.n}×</b><em>${K.name}</em></div><span class="tr-sep"></span>
+          <div class="tr-time">${PX.ui('whistle', '')}${tr.s}s</div></div>
+        <div class="tr-line">He lends you his combo. Pull it off ${tr.n} times and he signs.</div>
+        <div class="tr-foot"><button class="pt-btn go">START</button><button class="pt-btn">SKIP</button></div>`;
+    }
+
+    /* ---------- 2. KÝ HỢP ĐỒNG ---------- */
+    // đội hình giả: bạn + 2 đồng đội (chỉ số theo vị trí sở trường, Run.baseOf)
+    const mates = [
+      { name: 'PuddleKing', ovr: 71, ratings: { pace: 66, shooting: 58, passing: 70, dribble: 66, fight: 80, keeper: 86 }, deck: ['iron_wall', 'shoulder_charge'].filter((x) => C.cores.list[x]), look: { hair: 'mohawk', hairColor: 2, skin: 3 } },
+      { name: 'SweatyBoots', ovr: 71, ratings: { pace: 70, shooting: 62, passing: 82, dribble: 80, fight: 70, keeper: 62 }, deck: [], look: { hair: 'spiky', skin: 2 } },
+    ];
+    mates.forEach((m) => { if (!m.deck.length) m.deck = Object.keys(C.cores.list).filter((x) => C.cores.list[x].role !== 'ult').slice(0, 3); });
+    const squad = [{ role: 'FWD', you: true }, { role: 'DEF', m: mates[0] }, { role: 'MID', m: mates[1] }];
+    const add = (r, st) => { const o = Object.assign({}, r); for (const s in st || {}) o[s] = Math.max(30, Math.min(A.max, o[s] + st[s])); return o; };
+    let busy = false;
+    function renderSign(id) {
+      const L = LG[id], el = document.getElementById('sg');
+      busy = false;
+      el.style.setProperty('--lc', L.color);
+      const cards = squad.map((s, i) => {
+        const r = SFC.Run.baseOf(s.m ? { m: s.m } : {});
+        const ovr = (x) => Math.round(Object.values(x).reduce((a, b) => a + b, 0) / 6);
+        return RU.pcard({ tag: 'div', attrs: `data-i="${i}"`, cls: s.you ? 'you' : '', role: s.role, ovr: ovr(r), face: face(s.you ? look() : look(s.m.look)),
+          fin: r, ref: r, name: s.you ? 'HUY' : s.m.name, who: s.you ? 'YOU' : '', schools: s.m ? SFC.Run.schoolsOf(s.m) : [],
+          foot: '', extra: `<span class="ghost">${face(SFC.LegendDraw.lookOf(L), true)}</span>` });
+      }).join('');
+      el.innerHTML = `${hero(L)}<div class="sg-who">WHO GETS HIM?</div><div class="sg-row" id="row">${cards}</div>
+        <div class="sg-foot"><button class="pt-btn">NO THANKS</button></div>`;
+      // bóng LEGEND nằm sau nhân vật trong thẻ
+      el.querySelectorAll('.sq-card').forEach((c) => { const art = c.querySelector('.sq-art'), g = c.querySelector('.ghost'); art.insertBefore(g, art.firstChild); art.querySelector('canvas:not(.ghost canvas)'); });
+      el.querySelectorAll('.sq-art > canvas').forEach((cv) => cv.classList.add('me'));
+      el.querySelectorAll('.sq-card').forEach((c) => {
+        const i = +c.dataset.i, s = squad[i], base = SFC.Run.baseOf(s.m ? { m: s.m } : {}), next = add(base, L.stats);
+        // trỏ vào = xem trước chỉ số (▲ / ▼ trên thẻ) + bóng LEGEND
+        const preview = (on) => {
+          if (busy) return;
+          const [l, r] = RU.statCols(base, base, on ? next : null);
+          const cols = c.querySelectorAll('.sq-col'); cols[0].outerHTML = l; c.querySelectorAll('.sq-col')[1].outerHTML = r;
+        };
+        c.addEventListener('mouseenter', () => { preview(true); if (!busy) c.classList.add('sel'); });
+        c.addEventListener('mouseleave', () => { preview(false); c.classList.remove('sel'); });
+        c.addEventListener('click', () => { if (!busy) sign(c, L, base, next); });
+      });
+    }
+    // hoạt cảnh nhận LEGEND: chân dung bay vào thẻ -> từng chỉ số đổi (số chạy + bật +n / -n) -> combo đập xuống thẻ
+    function sign(card, L, base, next) {
+      busy = true;
+      const st = document.querySelector('.stage'), k = window.K, rs = st.getBoundingClientRect();
+      const rel = (e) => { const r = e.getBoundingClientRect(); return { x: (r.left - rs.left) / k, y: (r.top - rs.top) / k, w: r.width / k, h: r.height / k }; };
+      // về trạng thái chưa xem trước
+      const [l0, r0] = RU.statCols(base, base, null);
+      card.querySelectorAll('.sq-col')[0].outerHTML = l0; card.querySelectorAll('.sq-col')[1].outerHTML = r0;
+      document.getElementById('row').classList.add('done');
+      card.classList.add('got');
+      const port = rel(document.querySelector('.lg-port canvas')), dst = rel(card.querySelector('.sq-art'));
+      const f = document.createElement('div');
+      f.className = 'fly';
+      f.style.cssText = `left:${port.x}px;top:${port.y}px;width:${port.w}px;height:${port.h}px`;
+      f.innerHTML = face(SFC.LegendDraw.lookOf(L), true);
+      st.appendChild(f);
+      f.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 },
+        { transform: `translate(${(dst.x + dst.w / 2 - port.x - port.w / 2) * 0.5}px, ${(dst.y - port.y) * 0.5 - 30}px) scale(1.1)`, opacity: 1, offset: 0.45 },
+        { transform: `translate(${dst.x + dst.w / 2 - port.x - port.w / 2}px, ${dst.y + 10 - port.y}px) scale(0.7)`, opacity: 0 }],
+      { duration: 650, easing: 'cubic-bezier(.45,0,.6,1)', fill: 'forwards' });
+      setTimeout(() => f.remove(), 700);
+      // từng chỉ số đổi, lần lượt
+      const changed = A.order.filter((s) => next[s] !== base[s]);
+      const cur = Object.assign({}, base);
+      changed.forEach((s, j) => setTimeout(() => {
+        const from = cur[s], to = next[s], steps = 6;
+        for (let q = 1; q <= steps; q++) setTimeout(() => {
+          cur[s] = Math.round(from + (to - from) * (q / steps));
+          const [l, r] = RU.statCols(cur, base, null);
+          card.querySelectorAll('.sq-col')[0].outerHTML = l; card.querySelectorAll('.sq-col')[1].outerHTML = r;
+          const cell = [...card.querySelectorAll('.sq-st')].find((x) => x.querySelector('i').textContent === A.list[s].short);
+          if (cell) cell.classList.add('tick');
+          if (q === steps && cell) {
+            const p = rel(cell), d = document.createElement('div');
+            d.className = 'dpop ' + (to > from ? 'up' : 'dn');
+            d.textContent = (to > from ? '+' : '') + (to - from);
+            d.style.left = p.x + p.w - 6 + 'px'; d.style.top = p.y - 6 + 'px';
+            st.appendChild(d); setTimeout(() => d.remove(), 950);
+          }
+        }, q * 45);
+      }, 700 + j * 380));
+      // combo đập xuống thẻ
+      setTimeout(() => {
+        const K = TQ[L.tech], s = document.createElement('div');
+        s.className = 'stamp';
+        s.innerHTML = `<em>NEW COMBO</em><span class="combo">${PX.ui('star', 'sm')}<b>${K.name}</b>${keyHtml(K)}</span>`;
+        card.appendChild(s);
+        card.querySelector('.sq-badges').innerHTML = `<span class="sq-leg" style="--lc:${L.color}">${face(SFC.LegendDraw.lookOf(L), true)}<b>${L.title}</b></span>`;
+      }, 700 + changed.length * 380 + 250);
+    }
+
+    // bảng đề xuất
+    document.getElementById('prop').innerHTML = '<tr><th>LEGEND</th><th>COMBO</th><th>TRIAL (new: count combo successes)</th><th>GOAL</th><th>VS</th><th>NOW</th></tr>'
+      + ids.map((id) => { const L = LG[id], t = TRIAL[id], D = C.run.drills[L.trial.drill];
+        return `<tr style="--lc:${L.color}"><td><b>${L.name}</b></td><td>${TQ[L.tech].name}</td><td>${t.what}</td><td>${t.n} in ${t.s}s</td><td>${t.foes}</td><td>${D.name} ${L.trial.goal} / ${L.trial.time}s</td></tr>`; }).join('');
+
+    const NOTES = {
+      tr: 'Trial intro: big portrait, title, name, the COMBO chip (name + keys), flaw as one red tag (full line in tooltip). The goal is shown as a number × the combo + timer. One short line only.',
+      sg: 'Signing: same hero strip on top, then the 3 player cards. Hover a card = preview (▲ ▼ on the card + the legend ghost behind the player). Click = portrait flies into the card, each changed stat ticks to its new value with +n / -n, then NEW COMBO stamps onto the card.',
+    };
+    let cur = 'tr';
+    const draw = () => { const id = sel.value; renderTrial(id); renderSign(id); };
+    const setScr = (k) => {
+      cur = k;
+      document.querySelectorAll('.scr').forEach((el) => el.classList.toggle('on', el.id === k));
+      document.querySelectorAll('.tabs button[data-s]').forEach((b) => b.classList.toggle('on', b.dataset.s === k));
+      document.getElementById('note').textContent = NOTES[k];
+    };
+    document.querySelectorAll('.tabs button[data-s]').forEach((b) => b.addEventListener('click', () => setScr(b.dataset.s)));
+    sel.addEventListener('change', draw);
+    document.getElementById('replay').addEventListener('click', draw);
+    draw();
+    setScr(new URLSearchParams(location.search).get('s') || 'tr');
+  }
+  </script>
+</body>
+</html>

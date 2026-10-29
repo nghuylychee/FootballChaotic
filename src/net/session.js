@@ -564,8 +564,10 @@ window.SFC = window.SFC || {};
       // trận GOAT PATH co-op: thông tin node (HUD) + Skill game (id bài + seed cổng); luật trận / câu nói của đối thủ lấy từ config theo đội
       const RC = SFC_CONFIG.run, ro = this.run && RC && o.run && typeof o.run === 'object' ? o.run : null;
       const drill = ro && RC.drills[o.drill] ? o.drill : undefined;
+      // LEGEND TRIAL: id LEGEND (mốc riêng) · drillEase: BADGE Training Bibs của đội
+      const trial = drill && SFC.Run && SFC.Run.legend(o.trial) ? o.trial : undefined;
       const run = ro ? { nonce: String(ro.nonce || '').slice(0, 12), act: clampInt(ro.act, 0, RC.acts.length - 1), node: String(ro.node || '').slice(0, 8),
-        kind: RC.nodes[ro.kind] ? ro.kind : 'match', drill, coop: 1 } : undefined;
+        kind: RC.nodes[ro.kind] ? ro.kind : 'match', drill, trial, coop: 1 } : undefined;
       const away0 = Array.isArray(o.clubs) && o.clubs[1] && o.clubs[1].id;
       const rrd = run && !drill && SFC.Run ? SFC.Run.opp(away0) : null;
       const rd = rd0 || rrd;
@@ -580,8 +582,8 @@ window.SFC = window.SFC || {};
         resume: o.resume ? 1 : undefined,
         ranked: mp ? 1 : undefined, mainPath: mp,
         cup: rd0 ? { id: cs.id, round: cr } : undefined, knockout: rd ? true : undefined,
-        run, drill, drillSeed: drill ? clampInt(o.drillSeed, 0, 2 ** 31) : undefined,
-        teamSize: drill ? RC.drills[drill].teamSize.slice() : undefined, noDraft: drill ? true : undefined,
+        run, drill, drillSeed: drill ? clampInt(o.drillSeed, 0, 2 ** 31) : undefined, trial, drillEase: drill ? Math.min(0.8, Math.max(0, +o.drillEase || 0)) : undefined,
+        teamSize: drill ? (SFC.Run ? SFC.Run.drillSize(drill, trial) : RC.drills[drill].teamSize.slice()) : undefined, noDraft: drill ? true : undefined,
         mod: rd ? rd.mod || null : undefined, barks: rd ? rd.barks || null : undefined, mirror: 1,
       });
       this.game.events.length = 0;

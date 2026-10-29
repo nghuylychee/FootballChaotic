@@ -40,6 +40,7 @@ window.SFC = window.SFC || {};
     setOwner(p) {
       this.owner = p;
       this.lastTouch = p;
+      this.legTech = null;
       this.vx = this.vy = this.vz = 0;
       this.z = 0;
       this.passTarget = null;
@@ -69,6 +70,7 @@ window.SFC = window.SFC || {};
       this.shieldChecked = false;
       this.freezeT = 0;
       this.cross = false;     // tạt cánh (game.firstTime.cross) — passTo bật lại sau khi đá
+      this.legTech = null;    // kỹ thuật LEGEND của cú đá này (power / trivela / finesse / bicycle / lobthrough) — LEGEND TRIAL đếm (drills.js)
       this.kickN++;           // số lần đá: AI quyết định dứt điểm 1 chạm 1 lần cho mỗi quả bóng · AI thủ môn đọc mỗi cú sút 1 lần (ai.keeper)
       this.clearFx();
     }

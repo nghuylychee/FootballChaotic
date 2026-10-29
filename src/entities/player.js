@@ -371,7 +371,7 @@ window.SFC = window.SFC || {};
         this.kbx += (opts.kbx || 0) * 0.3; this.kby += (opts.kby || 0) * 0.3;
         return false;
       }
-      const kt = g.cores.knockTaken(this);   // Da Thép
+      const kt = g.cores.knockTaken(this) * (this.legend && SFC.Legends ? SFC.Legends.knockMul(this) : 1);   // Da Thép · LEGEND nhỏ con: văng xa hơn
       this.kbx += (opts.kbx || 0) * kt;
       this.kby += (opts.kby || 0) * kt;
       if (stun <= 0) return true;
@@ -380,7 +380,7 @@ window.SFC = window.SFC || {};
       this.lastHitBy = opts.source || null;
       if (opts.launch) { this.airVz = opts.launch; this.airZ = Math.max(this.airZ, 0.5); }
       this.state = 'stun';
-      this.stateT = stun;
+      this.stateT = stun * (this.legend && SFC.Legends ? SFC.Legends.stunMul(this) : 1);   // GOAT PATH: LEGEND ăn vạ nằm lâu hơn
       this.charging = false;
       this.charge = 0;
       this.ot = null;

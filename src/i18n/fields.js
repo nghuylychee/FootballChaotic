@@ -41,6 +41,9 @@ SFC.I18n.fields = [
   'run.acts.*.name', 'run.nodes.*.name', 'run.acts.*.stages.*', 'run.acts.*.intro.*.text', 'run.acts.*.bossTalk.*.text', 'run.acts.*.after.*.text',
   'run.acts.*.intro.*.sfx', 'run.acts.*.bossTalk.*.sfx',
   'run.badges.*.name', 'run.badges.*.desc', 'run.drills.*.name', 'run.drills.*.desc', 'run.tiers.*.name',
+  // LEGEND (config/legends.config.js): tên là tên riêng (không dịch), danh hiệu + mô tả dịch
+  'legends.list.*.title', 'legends.list.*.desc', 'legends.list.*.flawDesc',
+  'legends.techniques.*.name', 'legends.techniques.*.keys', 'legends.techniques.*.desc',
   'run.events.*.title', 'run.events.*.text', 'run.events.*.choices.*.label',
   'run.elites.*.barks.*.*',   // câu nói trong trận của đội Elite (config/elites.config.js; tên đội / luật trận đã gộp vào teams.list / stories.mods)
   // thành tích (config/achievements.config.js)

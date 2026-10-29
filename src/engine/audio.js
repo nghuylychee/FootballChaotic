@@ -399,7 +399,23 @@ window.SFC = window.SFC || {};
       noise({ dur: 1.2, vol: 0.12, freq: 1500, q: 0.3, delay: 0.1 });
     },
     upgrade() { [392, 523, 659].forEach((f, i) => tone({ freq: f, dur: 0.12, type: 'triangle', vol: 0.2, delay: i * 0.07 })); },
+    // kỹ thuật LEGEND vừa ra (GOAT PATH): nốt vút lên + lấp lánh ngắn
+    legendTech() {
+      tone({ freq: 660, to: 1320, dur: 0.12, type: 'square', vol: 0.07 });
+      [1568, 2093].forEach((f, i) => tone({ freq: f, dur: 0.08, type: 'triangle', vol: 0.08, delay: 0.1 + i * 0.05 }));
+    },
+    // khoảnh khắc LEGEND (GOAT PATH, src/systems/legends.js): tiếng khán đài ồ lên + hợp âm kèn ngắn
+    legend() {
+      noise({ dur: 0.7, vol: 0.12, freq: 900, q: 0.6 });
+      [294, 440, 587].forEach((f, i) => tone({ freq: f, dur: 0.32, type: 'sawtooth', vol: 0.09, delay: 0.05 + i * 0.015 }));
+      tone({ freq: 880, to: 1175, dur: 0.22, type: 'square', vol: 0.06, delay: 0.3 });
+    },
     menu()    { tone({ freq: 660, dur: 0.04, vol: 0.12 }); },
+    // GOAT PATH: khoanh phấn quanh node vừa chọn — 3 nét cào phấn ngắn lên dần theo vòng tròn (dur = thời gian vẽ)
+    chalk(dur = 0.45) {
+      for (let i = 0; i < 3; i++) noise({ dur: dur / 3 + 0.03, vol: 0.07, freq: 2600 + i * 500, q: 2.2, delay: i * dur / 3, attack: 0.01 });
+      noise({ dur: 0.05, vol: 0.06, freq: 900, q: 0.8, type: 'lowpass', delay: dur });   // chấm phấn cuối nét
+    },
     // gacha: tiếng "tách" khi dải quay chạy qua mỗi ô · nhạc lộ đồ (r = bậc hiếm 0..4) · phân rã
     tick()    { tone({ freq: 1900, dur: 0.018, type: 'square', vol: 0.05 }); },
     reveal(r = 0) {

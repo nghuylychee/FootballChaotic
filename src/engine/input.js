@@ -167,6 +167,11 @@ SFC.Input = {
     return out;
   },
 
+  // chuỗi có {action} -> nhãn phím đang gán (thẻ kỹ thuật LEGEND của GOAT PATH: config/legends.config.js techniques[].keys)
+  keysText(s) { return String(s).replace(/\{(\w+)\}/g, (_, a) => this.label(a)); },
+  // tổ hợp phím của 1 kỹ thuật LEGEND theo thiết bị đang dùng (tay cầm: tech.pad nếu có — power / trivela không có nút riêng)
+  techKeys(K) { return this.keysText(this.device === 'pad' && K.pad ? K.pad : K.keys); },
+
   isDown(action) {
     const codes = this.bindings[action];
     return !!codes && codes.some((c) => this.down.has(c));

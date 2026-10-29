@@ -1,18 +1,22 @@
 /* Run — GOAT PATH (docs/RUN_DESIGN.md, config/run.config.js): run 3 act kiểu Slay the Spire. Không dính DOM (để sau này co-op chạy được).
  * Run đang dở lưu ở Profile.data.run (lưu sau mỗi node, thoát game vào lại vẫn tiếp), null = không có run:
  *   { seed, nonce, act, bosses: [id đội boss từng act], spare: [boss không được bốc], map, at, path, log, pending, over, won, started,
- *     cash ($ trong run), bag: [{ id, up, who }] (BADGE, up = đã nâng cấp, who = người đeo: số thứ tự trong squad),
- *     squad: [{ role, you: true } | { role, m: { name, look, deck, ratings, ovr } }] (0 = character, 1-2 = đồng đội chọn lúc START RUN),
- *     assign: { id } (BADGE vừa nhận, chờ chọn người đeo), offer: { ids, kind } (thưởng chọn 1 sau trận thắng),
- *     room: { kind: 'shop', items: [{ id, price, sold }], healed } | { kind: 'rest' } | { kind: 'skill', drill } | { kind: 'event', id }
- *           (đang đứng trong Shop / Locker Room / trước Skill game / trong sự kiện ???),
+ *     cash ($ trong run), bag: [{ id, up } | { id, up, who }] (BADGE của cả đội, up = đã nâng cấp; chấn thương thêm who = người bị:
+ *           số thứ tự trong squad — 2026-10-28: BADGE không gắn cho từng người nữa),
+ *     squad: [{ role, you: true, legend? } | { role, m: { name, look, deck, ratings, ovr }, legend? }] (0 = character, 1-2 = đồng đội chọn
+ *           lúc START RUN; legend = id LEGEND của người đó, config/legends.config.js),
+ *     offer: { ids, kind } (thưởng chọn 1 sau trận thắng — của cả đội, co-op bỏ phiếu) · join: { id } (LEGEND vừa qua trial, chờ chọn
+ *           người nhận — ai trong đội cũng được, user 2026-10-28 — hoặc từ chối) · guard: { act, n } (Shin Guards: số chấn thương đã chặn ở act này),
+ *     room: { kind: 'shop', items: [{ id, price, sold }], healed } | { kind: 'rest', left } | { kind: 'skill', drill } |
+ *           { kind: 'trial', legend, drill } | { kind: 'event', id } (đang đứng trong Shop / Locker Room (left: số việc còn làm được) /
+ *           trước Skill game / trước LEGEND TRIAL / trong sự kiện ???),
  *     floors (số node đã qua cả run), metaGold (gold meta đã quy đổi lúc hết run, null = chưa) }
  *   map = { floors: [[node]], boss: node } của act đang đá. node = { id 'f.c', f, c, kind, team?, elo?, next: [id], jx, jy }
  *   at = id node vừa xong (null = chưa vào node nào của act) · path = các node đã qua ở act này · log = các trận đã đá
  *   pending = id node đang đá dở (ghi lúc giao bóng): tắt game giữa trận -> lần chạy sau tính thua (settle), giống Main Path
  * Co-op (phòng GOAT PATH online, docs/RUN_DESIGN.md "Co-op"): run vẫn là run của máy host (lưu ở hồ sơ host). Người trong phòng ngồi vào ô
- * đồng đội AI cùng vị trí (squad[i].h = mã khách). Thêm vào R: guests: { uid: { name, look, cash, offer, assign, on } } (ví + lượt chọn
- * riêng của từng khách; host dùng luôn R.cash / R.offer / R.assign) · vote: { kind, ballots: { mã: lựa chọn }, t0 } (bỏ phiếu, bốc ngẫu
+ * đồng đội AI cùng vị trí (squad[i].h = mã khách). Thêm vào R: guests: { uid: { name, look, cash, on } } (ví riêng của từng khách; host
+ * dùng luôn R.cash) · vote: { kind, ballots: { mã: lựa chọn }, t0 } (bỏ phiếu, bốc ngẫu
  * nhiên theo số phiếu) · turn (lượt Skill game xoay vòng) · hostName / hostLook (khách vẽ host). Khách giữ bản sao mirror (Run.mirrorOn).
  * Thống kê mọi run: Profile.data.runs = { plays, wins, bestAct, bestFloor, bosses }
  * Thua 1 trận = hết run (over). Thắng boss act cuối = vô địch (won). Hết run vẫn giữ trong hồ sơ tới khi màn kết thúc đóng (clear).
@@ -82,7 +86,8 @@ window.SFC = window.SFC || {};
       if (bosses.length !== acts.length || !bosses.every((id, i) => acts[i].boss.includes(id))) return null;
       const m = raw.map;
       if (!m || !Array.isArray(m.floors) || m.floors.length !== C().map.floors || !m.boss) return null;
-      const ids = new Set(), okNode = (n) => n && typeof n === 'object' && typeof n.id === 'string' && kinds[n.kind] && (!n.team || T[n.team]);
+      const LG = SFC_CONFIG.legends.list;
+      const ids = new Set(), okNode = (n) => n && typeof n === 'object' && typeof n.id === 'string' && kinds[n.kind] && (!n.team || T[n.team]) && (!n.legend || LG[n.legend]);
       for (const fl of m.floors) {
         if (!Array.isArray(fl) || !fl.length || !fl.every(okNode)) return null;
         fl.forEach((n) => ids.add(n.id));
@@ -94,34 +99,40 @@ window.SFC = window.SFC || {};
       const B = C().badges, isB = (x) => typeof x === 'string' && !!B[x];
       const key = (k) => (typeof k === 'string' && /^(host|[a-z0-9]{8,16})$/.test(k) ? k : null);
       const offerOf = (o) => (o && Array.isArray(o.ids) && o.ids.every(isB) ? { ids: o.ids.slice(0, 5), kind: String(o.kind || 'match').slice(0, 12) } : null);
-      const assignOf = (a) => (a && isB(a.id) && !B[a.id].injury ? { id: a.id } : null);
-      const bag = (Array.isArray(raw.bag) ? raw.bag : []).filter((b) => b && isB(b.id))
-        .map((b) => ({ id: b.id, up: !!b.up && !B[b.id].noUp && !B[b.id].injury, who: clampInt(b.who, 0, 2) }));
+      // BADGE cả đội: không trùng · chấn thương: theo từng người (who), không trùng trên 1 người
+      const bag = [];
+      for (const b of Array.isArray(raw.bag) ? raw.bag : []) {
+        if (!b || !isB(b.id)) continue;
+        const d = B[b.id], who = clampInt(b.who, 0, 2);
+        if (d.injury ? bag.some((x) => x.id === b.id && x.who === who) : bag.some((x) => x.id === b.id)) continue;
+        bag.push(d.injury ? { id: b.id, up: false, who } : { id: b.id, up: !!b.up && !!d.up });
+      }
       const squad = this.sanitizeSquad(raw.squad);
-      const assign = assignOf(raw.assign);
       const offer = offerOf(raw.offer);
-      // co-op: ví + lượt chọn của khách (theo mã hồ sơ), phiếu đang bỏ
+      const join = raw.join && LG[raw.join.id] ? { id: raw.join.id } : null;
+      // co-op: ví của khách (theo mã hồ sơ), phiếu đang bỏ
       const guests = {};
       if (raw.guests && typeof raw.guests === 'object') for (const k of Object.keys(raw.guests).slice(0, 8)) {
         const x = raw.guests[k];
         if (!key(k) || k === 'host' || !x || typeof x !== 'object') continue;
-        guests[k] = { name: SFC.Profile.publicName(x.name), look: SFC.Profile.sanitizeLook(x.look), cash: clampInt(x.cash, 0, 99999),
-          offer: offerOf(x.offer), assign: assignOf(x.assign), on: !!x.on };
+        guests[k] = { name: SFC.Profile.publicName(x.name), look: SFC.Profile.sanitizeLook(x.look), cash: clampInt(x.cash, 0, 99999), on: !!x.on };
       }
-      const V = raw.vote, VK = ['node', 'choose', 'rest'];
+      const V = raw.vote, VK = ['node', 'choose', 'rest', 'pick', 'join'];
       const vote = V && VK.includes(V.kind) && V.ballots && typeof V.ballots === 'object' ? { kind: V.kind, t0: +V.t0 || 0, ballots: {} } : null;
       if (vote) for (const k of Object.keys(V.ballots).slice(0, 8)) if (key(k) && typeof V.ballots[k] === 'string') vote.ballots[k] = V.ballots[k].slice(0, 12);
       // ô đội hình có người thật đứng (chỉ mã có trong guests)
       if (squad) squad.forEach((x, i) => { const h = i && key(raw.squad[i].h); if (h && guests[h]) x.h = h; });
       const rm = raw.room, room = !rm || typeof rm !== 'object' ? null
-        : rm.kind === 'rest' ? { kind: 'rest' }
+        : rm.kind === 'rest' ? { kind: 'rest', left: clampInt(rm.left, 1, 2) }
         : rm.kind === 'skill' && C().drills[rm.drill] ? { kind: 'skill', drill: rm.drill, player: key(rm.player) || 'host' }
+        : rm.kind === 'trial' && LG[rm.legend] ? { kind: 'trial', legend: rm.legend, drill: LG[rm.legend].trial.drill, player: key(rm.player) || 'host' }
         : rm.kind === 'event' && C().events[rm.id] ? { kind: 'event', id: rm.id }
         : rm.kind === 'shop' && Array.isArray(rm.items) ? { kind: 'shop', healed: !!rm.healed, ready: (Array.isArray(rm.ready) ? rm.ready : []).map(key).filter(Boolean),
-          items: rm.items.filter((x) => x && isB(x.id)).map((x) => ({ id: x.id, price: clampInt(x.price, 0, 9999), sold: !!x.sold })) }
+          items: rm.items.filter((x) => x && isB(x.id)).map((x) => ({ id: x.id, price: clampInt(x.price, 0, 9999), sold: !!x.sold, hot: !!x.hot })) }
         : null;
       return {
-        cash: clampInt(raw.cash, 0, 99999), bag, squad, assign, offer, room, floors: clampInt(raw.floors, 0, 999),
+        cash: clampInt(raw.cash, 0, 99999), bag, squad, offer, join, room, floors: clampInt(raw.floors, 0, 999),
+        guard: raw.guard && typeof raw.guard === 'object' ? { act: clampInt(raw.guard.act, 0, acts.length - 1), n: clampInt(raw.guard.n, 0, 9) } : null,
         guests, vote, turn: clampInt(raw.turn, 0, 9999),
         hostName: raw.hostName == null ? null : SFC.Profile.publicName(raw.hostName), hostLook: raw.hostLook ? SFC.Profile.sanitizeLook(raw.hostLook) : null,
         cue: typeof raw.cue === 'string' && /^after:\d$/.test(raw.cue) ? raw.cue : null,
@@ -145,7 +156,7 @@ window.SFC = window.SFC || {};
       const spare = C().acts.flatMap((a, i) => a.boss.filter((b) => b !== bosses[i]));
       const R = { seed, nonce: Math.random().toString(36).slice(2, 10), act: 0, bosses, spare, map: null, at: null, path: [],
         log: [], pending: null, over: false, won: false, actNew: true, started: Date.now(),   // actNew: màn map chiếu thẻ mở act
-        cash: C().cash.start, bag: [], squad: this.makeSquad(mates, me), assign: null, offer: null, room: null, floors: 0, metaGold: null,
+        cash: C().cash.start, bag: [], squad: this.makeSquad(mates, me), offer: null, join: null, guard: null, room: null, floors: 0, metaGold: null,
         guests: {}, vote: null, turn: 0,
         cue: null, seen: [] };   // cue: cut-scene chờ chiếu ('after:<act>' sau khi hạ boss) · seen: cut-scene đã chiếu ('intro:0', 'boss:1'...)
       R.map = this.genAct(R, 0);
@@ -197,7 +208,7 @@ window.SFC = window.SFC || {};
       if (R && R.guests) this.syncRoom([], R);   // run co-op lần trước: lúc mở game chưa ai trong phòng
       if (!R || !R.pending || R.over || R.won) return false;
       // tắt game giữa Skill game: tính hỏng bài (chấn thương), không mất run
-      if (R.room && R.room.kind === 'skill') { this.drillDone(R, 0); PF().save(); return true; }
+      if (R.room && (R.room.kind === 'skill' || R.room.kind === 'trial')) { this.drillDone(R, 0); PF().save(); return true; }
       this.forfeit();
       return true;
     },
@@ -271,6 +282,13 @@ window.SFC = window.SFC || {};
         }
         n.kind = weighted(rng, w);
       }
+      // LEGEND TRIAL: mỗi node 1 LEGEND (hiện sẵn trên map), khác nhau, chưa có trong đội hình (hết thì cho lặp)
+      const owned = new Set((R.squad || []).map((x) => x.legend).filter(Boolean)), LG = Object.keys(SFC_CONFIG.legends.list);
+      let lpool = shuffle(rng, LG.filter((x) => !owned.has(x)));
+      for (const fl of floors) for (const n of fl) if (n.kind === 'legend') {
+        if (!lpool.length) lpool = shuffle(rng, LG.slice());
+        n.legend = lpool.shift();
+      }
       // số trận trên mọi đường đi (tầng 0 -> tầng cuối)
       const play = (n) => !!C().nodes[n.kind].play;
       const spare = act.spareBoss ? R.spare.filter((id) => C().acts.findIndex((x) => x.boss.includes(id)) < a) : [];
@@ -315,9 +333,22 @@ window.SFC = window.SFC || {};
       // ???: vào mới biết (run.mystery) — sự kiện / rương BADGE / Skill game / Shop. n.got = kết quả (map vẽ lại icon)
       let kind = n.kind;
       if (kind === 'event') kind = n.got = weighted(Math.random, C().mystery);
+      // LEGEND TRIAL: màn giới thiệu LEGEND + bài thử thách (R.room trial), qua node lúc đá xong / bỏ qua (recordDrill / skipTrial).
+      // LEGEND trên node đã vào đội hình (vừa chiêu mộ ở node khác) -> đổi sang 1 LEGEND chưa có
+      if (kind === 'legend') {
+        const owned = R.squad.map((x) => x.legend), LG = SFC_CONFIG.legends.list;
+        if (!LG[n.legend] || owned.includes(n.legend)) {
+          const free = Object.keys(LG).filter((x) => !owned.includes(x));
+          n.legend = free.length ? free[Math.floor(Math.random() * free.length)] : Object.keys(LG)[0];
+        }
+        R.next = id;
+        R.room = { kind: 'trial', legend: n.legend, drill: LG[n.legend].trial.drill, player: this.nextPlayer(R) };
+        PF().save();
+        return { room: 'trial', node: n };
+      }
       // Skill game: màn giới thiệu bài trước (R.room skill), qua node lúc đá xong (recordDrill)
       if (kind === 'skill') {
-        const ids = Object.keys(C().drills);
+        const ids = Object.keys(C().drills).filter((k) => !C().drills[k].trial);   // bài LEGEND TRIAL không bốc cho Skill game
         R.next = id;
         R.room = { kind: 'skill', drill: ids[Math.floor(Math.random() * ids.length)], player: this.nextPlayer(R) };
         PF().save();
@@ -325,9 +356,9 @@ window.SFC = window.SFC || {};
       }
       this.advance(R, n);
       if (kind === 'shop') R.room = this.openShop();
-      else if (kind === 'rest') R.room = { kind: 'rest' };
+      else if (kind === 'rest') R.room = this.openRest(R);
       else if (kind === 'event') { const ev = Object.keys(C().events); R.room = { kind: 'event', id: ev[Math.floor(Math.random() * ev.length)] }; }
-      else if (kind === 'treasure') R.offer = { ids: this.rollBadges(C().offer, C().rarityWeights.match), kind: 'treasure' };
+      else if (kind === 'treasure') R.offer = { ids: this.rollBadges(C().offer, C().rarityWeights.match, R), kind: 'treasure' };
       PF().save();
       return { room: R.room ? R.room.kind : null, node: n };
     },
@@ -338,15 +369,23 @@ window.SFC = window.SFC || {};
       const st = this.stats();
       if (R.act > st.bestAct || (R.act === st.bestAct && n.f > st.bestFloor)) { st.bestAct = R.act; st.bestFloor = n.f; }
     },
+    // đội hình [bạn, đối thủ] của SKILL GAME / LEGEND TRIAL (trial riêng: legends.list[].trial.size)
+    drillSize(drill, trial) {
+      const L = trial && this.legend(trial), D = C().drills[drill];
+      return ((L && L.trial.size) || (D && D.teamSize) || [1, 1]).slice();
+    },
     // trận của node đang chọn (R.next) -> dữ liệu dựng trận
     match() {
       const R = this.run, n = R && this.active() && R.next && this.find(R.next);
       if (!n) return null;
-      // Skill game: đối thủ = 1 đội ngẫu nhiên của act (chỉ để mặc áo), Elo như trận cùng tầng, sân của act
-      if (R.room && R.room.kind === 'skill') {
+      // Skill game / LEGEND TRIAL: đối thủ = 1 đội ngẫu nhiên của act (chỉ để mặc áo), Elo như trận cùng tầng, sân của act.
+      // trial: mốc + thời gian riêng của LEGEND (opts.trial) · drillEase: BADGE Training Bibs
+      if (R.room && (R.room.kind === 'skill' || R.room.kind === 'trial')) {
         const A = this.act(R.act), F = C().map.floors, team = A.teams[Math.floor(Math.random() * A.teams.length)];
         const elo = Math.round(A.elo[0] + (A.elo[1] - A.elo[0]) * Math.min(1, n.f / Math.max(1, F - 2)));
-        return { node: n, team, elo, arena: A.arena, drill: R.room.drill, teamSize: C().drills[R.room.drill].teamSize, info: { nonce: R.nonce, act: R.act, node: n.id, kind: 'skill', drill: R.room.drill } };
+        const trial = R.room.kind === 'trial' ? R.room.legend : null, ease = this.bmax('drillEase', R);
+        return { node: n, team, elo, arena: A.arena, drill: R.room.drill, trial, ease: ease || 0, teamSize: this.drillSize(R.room.drill, trial),
+          info: { nonce: R.nonce, act: R.act, node: n.id, kind: trial ? 'legend' : 'skill', drill: R.room.drill, trial } };
       }
       if (!C().nodes[n.kind].play) return null;
       const o = this.opp(n.team) || {};
@@ -378,14 +417,12 @@ window.SFC = window.SFC || {};
       this.advance(R, n);
       // tiền + thưởng chọn 1 trong 3 BADGE (hiện ở map, lưu trong run: tải lại không đổi được bộ khác).
       // Co-op: mỗi người trong phòng (host + khách đang có mặt) nhận tiền vào ví riêng + bộ 3 riêng (user 2026-10-26)
-      const cash = this.roll(C().cash.win[n.kind] || C().cash.win.match);
+      // BADGE của cả đội (2026-10-28): 1 bộ 3 chung, co-op bỏ phiếu · Shirt Sponsor: thêm tiền mỗi trận thắng
+      const cash = this.roll(C().cash.win[n.kind] || C().cash.win.match) + this.bsum('winCash', R);
       out.cash = cash;
       out.lines.push({ label: SFC.t('Run cash +${n}', { n: cash }), note: true });
-      for (const k of this.keys(R)) {
-        const P = this.pl(k, R);
-        P.cash += cash;
-        P.offer = { ids: this.rollBadges(C().offer, C().rarityWeights[n.kind] || C().rarityWeights.match, R), kind: n.kind };
-      }
+      for (const k of this.keys(R)) this.pl(k, R).cash += cash;
+      R.offer = { ids: this.rollBadges(C().offer, C().rarityWeights[n.kind] || C().rarityWeights.match, R), kind: n.kind };
       if (n.kind === 'boss') {
         this.stats().bosses++;
         out.actDone = true;
@@ -437,10 +474,28 @@ window.SFC = window.SFC || {};
       }
       return out;
     },
-    // sở trường của người mem ({ role, m }) so với nền vị trí: [{ s, d }] các chỉ số lệch >= 3, nhiều nhất trước
-    traits(mem) {
-      const b = this.baseOf(mem), base = C().squad.base[mem.role] || C().squad.base.MID;
-      return Object.keys(b).map((s) => ({ s, d: b[s] - base[s] })).filter((x) => Math.abs(x.d) >= 3).sort((p, q) => q.d - p.d);
+    // vị trí sở trường của đồng đội m: vị trí có nền (squad.base) khớp nhất với độ lệch chỉ số riêng của họ (rating - OVR).
+    // Chỉ số đều nhau (đồng đội khởi đầu) -> chọn theo tên cho cố định
+    natural(m) {
+      const S = C().squad, roles = SFC_CONFIG.game.roles.filter((r) => S.base[r]);
+      if (!m || !m.ratings || !roles.length) return roles[0] || 'MID';
+      let best = null, bestV = 0;
+      for (const r of roles) {
+        const b = S.base[r], mean = Object.values(b).reduce((s, x) => s + x, 0) / Object.keys(b).length;
+        let v = 0;
+        for (const id in b) v += ((m.ratings[id] || m.ovr) - m.ovr) * (b[id] - mean);
+        if (best == null || v > bestV) { best = r; bestV = v; }
+      }
+      if (bestV > 0) return best;
+      let h = 0;
+      for (const ch of String(m.name || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      return roles[h % roles.length];
+    },
+    // 2 trường phái Core hay ra nhất của đồng đội (deck: AI của họ bốc Core từ đó) -> [tag]
+    schoolsOf(m) {
+      const L = SFC_CONFIG.cores.list, n = {};
+      for (const id of (m && m.deck) || []) { const tg = ((L[id] && L[id].tags) || [])[0]; if (tg) n[tg] = (n[tg] || 0) + 1; }
+      return Object.keys(n).sort((a, b) => n[b] - n[a]).slice(0, 2);
     },
     // mates: { vị trí: đồng đội } (màn BUILD YOUR SQUAD) — vị trí chưa có thì lấy ứng viên ngẫu nhiên (co-op: ô bạn bè đang đứng vẫn cần
     // 1 đồng đội AI dự phòng khi họ rời phòng)
@@ -453,11 +508,17 @@ window.SFC = window.SFC || {};
         return { role: roles[i], m: m ? this.snap(m) : pool.shift() };
       }));
     },
-    // sai cấu trúc -> null (Run.run dựng đội hình mặc định lúc dùng tới, khi Mates / MainPath đã sẵn sàng)
+    // sai cấu trúc -> null (Run.run dựng đội hình mặc định lúc dùng tới, khi Mates / MainPath đã sẵn sàng).
+    // LEGEND: chỉ giữ khi có thật, không trùng trong đội (gắn lệch vị trí được — user 2026-10-28)
     sanitizeSquad(raw) {
       if (!Array.isArray(raw) || raw.length !== 3 || !raw[0] || !raw[1] || !raw[2] || !raw[1].m || !raw[2].m) return null;
-      const roles = this.roles(raw[0].role);
-      return [{ role: roles[0], you: true }, { role: roles[1], m: this.snap(raw[1].m) }, { role: roles[2], m: this.snap(raw[2].m) }];
+      const roles = this.roles(raw[0].role), LG = SFC_CONFIG.legends.list;
+      const out = [{ role: roles[0], you: true }, { role: roles[1], m: this.snap(raw[1].m) }, { role: roles[2], m: this.snap(raw[2].m) }];
+      out.forEach((x, i) => {
+        const id = raw[i].legend;
+        if (typeof id === 'string' && LG[id] && !out.some((y) => y.legend === id)) x.legend = id;
+      });
+      return out;
     },
     squad(R = this.run) { return R ? R.squad : []; },
     // co-op: ô có người thật (s.h) = tên / ngoại hình người đó; ô của host ở máy khách = hostName / hostLook
@@ -473,11 +534,11 @@ window.SFC = window.SFC || {};
       return s.you ? (R.mirror && R.hostLook ? R.hostLook : SFC.Profile.avatar().look) : g ? g.look : this.mateLook(s.m);
     },
     mateLook(m) { return PF().lookOf(Object.assign({}, SFC_CONFIG.progression.defaultLook, m.look)); },
-    // chỉ số nền của người i: theo vị trí + nghiêng nhẹ theo chỉ số riêng của đồng đội
+    // chỉ số nền của người i: theo vị trí sở trường của chính người đó (không theo ô đang đứng) + nghiêng theo chỉ số riêng
     baseRatings(i, R = this.run) { return this.baseOf(R.squad[i]); },
-    // mem = { role, m? } (cả ứng viên ở màn chọn đồng đội)
+    // mem = { m? } (cả ứng viên ở màn chọn đồng đội) · không có m = character (squad.you) · mem.role (ô đang đứng) không dùng
     baseOf(mem) {
-      const S = C().squad, A = SFC_CONFIG.progression.attrs, base = S.base[mem.role] || S.base.MID, out = {};
+      const S = C().squad, A = SFC_CONFIG.progression.attrs, base = mem.m ? S.base[this.natural(mem.m)] || S.base.MID : S.you || S.base.MID, out = {};
       const lift = mem.m ? Math.max(-S.ovrMax, Math.min(S.ovrMax, Math.round((mem.m.ovr - S.ovrRef) * S.ovrLean))) : 0;
       for (const id of A.order) {
         const lean = mem.m ? Math.max(-S.leanMax, Math.min(S.leanMax, Math.round((mem.m.ratings[id] - mem.m.ovr) * S.lean))) : 0;
@@ -485,16 +546,18 @@ window.SFC = window.SFC || {};
       }
       return out;
     },
-    // rating 6 chỉ số của người i trong run: nền + BADGE của người đó (gồm chấn thương), kẹp squad.min..attrs.max
-    ratingsOf(i, R = this.run) {
-      const A = SFC_CONFIG.progression.attrs, out = this.baseRatings(i, R);
-      for (const b of R.bag) if ((b.who || 0) === i) { const e = this.eff(b); for (const s in e.stats || {}) out[s] += e.stats[s]; }
+    // rating 6 chỉ số của người i trong run: nền + LEGEND (nghiêng chỉ số luôn bật) + chấn thương của người đó, kẹp squad.min..attrs.max.
+    // legend: thay LEGEND để xem trước (thẻ nhận LEGEND), undefined = LEGEND đang có
+    ratingsOf(i, R = this.run, legend) {
+      const A = SFC_CONFIG.progression.attrs, out = this.baseRatings(i, R), L = this.legend(legend === undefined ? R.squad[i].legend : legend);
+      for (const s in (L && L.stats) || {}) out[s] += L.stats[s];
+      for (const b of R.bag) if (b.who === i && this.badge(b.id).injury) for (const s in this.badge(b.id).stats || {}) out[s] += this.badge(b.id).stats[s];
       for (const id of A.order) out[id] = Math.max(C().squad.min, Math.min(A.max, out[id]));
       return out;
     },
     ratings(R = this.run) { return this.ratingsOf(0, R); },
-    ovrOf(i, R = this.run) {
-      const r = this.ratingsOf(i, R), v = Object.values(r);
+    ovrOf(i, R = this.run, legend) {
+      const r = this.ratingsOf(i, R, legend), v = Object.values(r);
       return Math.round(v.reduce((s, x) => s + x, 0) / v.length);
     },
     // Player.stats của người i (cùng công thức Profile.attrMult)
@@ -510,46 +573,71 @@ window.SFC = window.SFC || {};
       return [1, 2].map((i) => {
         const s = R.squad[i];
         return { name: s.m.name, ovr: this.ovrOf(i, R), stats: this.statsOf(i, R), deck: s.m.deck.filter((id) => L[id] && L[id].role !== 'ult'),
-          look: this.memberLook(i, R), role: s.role, inj: this.injuryIds(i, R) };
+          look: this.memberLook(i, R), role: s.role, inj: this.injuryIds(i, R), legend: s.legend || undefined };
       });
     },
-    injuryIds(i, R = this.run) { return R ? R.bag.filter((b) => (b.who || 0) === i && this.badge(b.id).injury).map((b) => b.id) : []; },
+    injuryIds(i, R = this.run) { return R ? R.bag.filter((b) => b.who === i && this.badge(b.id).injury).map((b) => b.id) : []; },
+
+    /* ---------- LEGEND (user 2026-10-28, config/legends.config.js): 1 người tối đa 1, ai cũng nhận được (lệch vị trí: tự sáng tạo),
+     * có được qua LEGEND TRIAL ---------- */
+    legend(id) { return (id && SFC_CONFIG.legends.list[id]) || null; },
+    legendOf(i, R = this.run) { return (R && R.squad[i] && R.squad[i].legend) || null; },
+    // người đứng vị trí role trong đội hình (-1 = không có)
+    roleIndex(role, R = this.run) { return R ? R.squad.findIndex((s) => s.role === role) : -1; },
+    // LEGEND vừa qua trial: who = người nhận (thay LEGEND cũ của người đó nếu có), null = từ chối. Co-op: kết quả bỏ phiếu (RunUI.resolve)
+    answerJoin(who, R = this.run) {
+      const J = R && R.join, s = J && who != null && R.squad[who];
+      if (!J || (who != null && !s)) return null;
+      R.join = null;
+      if (s) s.legend = J.id;
+      PF().save();
+      return s ? { id: J.id, who } : null;
+    },
   });
 
-  /* ---------- BADGE + tiền + Shop / Locker Room (giai đoạn 2) ---------- */
+  /* ---------- BADGE + tiền + Shop / Locker Room (giai đoạn 2; làm lại 2026-10-28: BADGE của cả đội, không cộng chỉ số) ---------- */
   Object.assign(Run, {
     badge(id) { return C().badges[id] || null; },
     roll([lo, hi]) { return lo + Math.floor(Math.random() * (hi - lo + 1)); },
-    // hiệu lực 1 BADGE trong túi (đã nâng cấp: số liệu x up.mult)
+    // hiệu lực 1 BADGE trong túi: số liệu gốc, đã nâng cấp thì ghép badges[id].up lên
     eff(b) {
-      const d = this.badge(b.id), k = b.up ? C().up.mult : 1, out = {};
-      if (!d) return out;
-      if (d.stats) { out.stats = {}; for (const s in d.stats) out.stats[s] = Math.round(d.stats[s] * k); }
-      if (d.school) { out.school = d.school; out.power = Math.round(d.power * k); out.bias = 1 + (d.bias - 1) * k; }
-      if (d.score) out.score = d.score.slice();
-      if (d.ultGain) out.ultGain = 1 + (d.ultGain - 1) * k;
-      return out;
+      const d = this.badge(b.id);
+      return !d ? {} : b.up && d.up ? Object.assign({}, d, d.up) : d;
     },
-    // opts trận từ BADGE (đội 0 = đội bạn; trường phái / tỉ số / nạp Tuyệt kỹ tác dụng cả đội dù gắn cho ai)
+    // BADGE tốt đang có (không tính chấn thương) -> hiệu lực
+    effs(R = this.run) { return ((R && R.bag) || []).filter((b) => !this.badge(b.id).injury).map((b) => this.eff(b)); },
+    bsum(k, R = this.run) { return this.effs(R).reduce((s, e) => s + (+e[k] || 0), 0); },
+    bmax(k, R = this.run) { return this.effs(R).reduce((m, e) => Math.max(m, +e[k] || 0), 0); },
+    bany(k, R = this.run) { return this.effs(R).some((e) => !!e[k]); },
+    // opts trận từ BADGE của đội (đội 0 = đội bạn): trường phái (coreBoost / draftBias), lượt chọn (draftCards / rerollBonus / draftBonus),
+    // tỉ số (Home Crowd), nạp Tuyệt kỹ (ultGain), VAR (varCheck theo đội bị thủng lưới), bù giờ (addedTime)
     matchOpts(R = this.run) {
       const boost = {}, bias = {}, o = {};
-      let score = null, gain = 1;
-      for (const b of (R && R.bag) || []) {
-        const e = this.eff(b);
+      let score = null, gain = 1, V = null;
+      for (const e of this.effs(R)) {
         if (e.school) { boost[e.school] = (boost[e.school] || 0) + e.power; bias[e.school] = Math.max(bias[e.school] || 1, e.bias); }
-        if (e.score) score = score ? [score[0] + e.score[0], score[1] + e.score[1]] : e.score;
+        if (e.score) score = score ? [score[0] + e.score[0], score[1] + e.score[1]] : e.score.slice();
         if (e.ultGain) gain *= e.ultGain;
+        if (e.varCheck && (!V || e.varCheck.chance > V.chance)) V = Object.assign({}, e.varCheck);
       }
       if (Object.keys(boost).length) { o.coreBoost = [boost, null]; o.draftBias = [bias, null]; }
       if (score) o.score = score;
       if (gain !== 1) o.ultGain = [gain, null];
+      const cards = this.bsum('draftCards', R), rr = this.bsum('rerolls', R), extra = this.bsum('draftBonus', R), add = this.bmax('addedTime', R);
+      if (cards) o.draftCards = [cards, 0];
+      if (rr) o.rerollBonus = [rr, 0];
+      if (extra) o.draftBonus = [extra, 0];
+      if (V) o.varCheck = [V, null];
+      if (add) o.addedTime = [add, 0];
       return o;
     },
-    // BADGE thường không trùng trong cả đội (chấn thương thì xét theo từng người: injured)
+    // BADGE tốt không trùng trong túi (chấn thương thì xét theo từng người: injured)
     has(id, R = this.run) { return !!R && R.bag.some((b) => b.id === id); },
-    injured(id, who, R = this.run) { return !!R && R.bag.some((b) => b.id === id && (b.who || 0) === who); },
+    injured(id, who, R = this.run) { return !!R && R.bag.some((b) => b.id === id && b.who === who); },
     // chấn thương trong túi: [{ b, k (vị trí trong túi) }]
     injuries(R = this.run) { return R ? R.bag.map((b, k) => ({ b, k })).filter((x) => this.badge(x.b.id).injury) : []; },
+    // BADGE nâng cấp được: [{ b, k }]
+    upgradable(R = this.run) { return R ? R.bag.map((b, k) => ({ b, k })).filter((x) => !x.b.up && this.badge(x.b.id).up && !this.badge(x.b.id).injury) : []; },
     // bốc n BADGE khác nhau chưa có trong túi (không có chấn thương), độ hiếm theo trọng số w
     rollBadges(n, w, R = this.run) {
       const B = C().badges, out = [];
@@ -563,20 +651,17 @@ window.SFC = window.SFC || {};
       }
       return out;
     },
-    give(id, who = 0, R = this.run) { if (this.badge(id) && !this.has(id, R)) R.bag.push({ id, up: false, who }); },
-    // BADGE vừa nhận -> chờ chọn người đeo (thẻ WHO GETS IT? ở map). key: người nhận (co-op; 'host' = máy này / chơi một mình)
-    hold(id, R = this.run, key = 'host') { const P = this.pl(key, R); if (id && P) P.assign = { id }; },
-    assign(who, key = 'host') {
-      const R = this.run, P = R && this.pl(key, R);
-      if (!P || !P.assign || !R.squad[who]) return null;
-      const id = P.assign.id;
-      P.assign = null;
-      this.give(id, who, R);
-      PF().save();
+    // BADGE vào túi của đội (Shop / sự kiện / thưởng): null = không có gì
+    give(id, R = this.run) {
+      if (!id || !this.badge(id) || this.badge(id).injury || this.has(id, R)) return null;
+      R.bag.push({ id, up: false });
       return id;
     },
-    // chấn thương ngẫu nhiên vào 1 người ngẫu nhiên của đội (Skill game hỏng / sự kiện) -> { id, who } | null
+    // chấn thương ngẫu nhiên vào 1 người ngẫu nhiên của đội (Skill game hỏng / sự kiện) -> { id, who } | { blocked: true } (Shin Guards) | null
     injure(R = this.run) {
+      const g = this.bsum('guard', R);
+      if (!R.guard || R.guard.act !== R.act) R.guard = { act: R.act, n: 0 };
+      if (R.guard.n < g) { R.guard.n++; return { blocked: true }; }
       const B = C().badges, opts = [];
       for (let who = 0; who < R.squad.length; who++) for (const id in B) if (B[id].injury && !this.injured(id, who, R)) opts.push({ id, who });
       if (!opts.length) return null;
@@ -584,64 +669,77 @@ window.SFC = window.SFC || {};
       R.bag.push({ id: x.id, up: false, who: x.who });
       return x;
     },
-    // thưởng sau trận: chọn i (null = bỏ qua) -> chờ chọn người đeo
-    pick(i, key = 'host') {
-      const R = this.run, P = R && this.pl(key, R);
-      if (!P || !P.offer || P.assign) return null;
-      const id = i == null ? null : P.offer.ids[i] || null;
-      P.offer = null;
-      this.hold(id, R, key);
+    // thưởng sau trận (của cả đội): chọn i (null = bỏ qua). Co-op: kết quả bỏ phiếu (RunUI.resolve)
+    pick(i) {
+      const R = this.run;
+      if (!R || !R.offer) return null;
+      const id = i == null ? null : R.offer.ids[i] || null;
+      R.offer = null;
+      this.give(id, R);
       PF().save();
       return id;
     },
 
-    // Shop: run.shop.size BADGE + chữa 1 chấn thương
-    openShop() {
-      const S = C().shop;
-      return { kind: 'shop', healed: false, items: this.rollBadges(S.size, C().rarityWeights.shop).map((id) => ({ id, price: S.price[this.badge(id).rarity] || 99, sold: false })) };
+    // Shop: run.shop.size BADGE (Season Ticket: rẻ hơn) + chữa 1 chấn thương · 1 món HOT ngẫu nhiên giá x run.shop.hot
+    openShop(R = this.run) {
+      const S = C().shop, off = Math.min(0.8, this.bmax('shopOff', R));
+      const items = this.rollBadges(S.size, C().rarityWeights.shop, R)
+        .map((id) => ({ id, price: Math.round((S.price[this.badge(id).rarity] || 99) * (1 - off)), sold: false }));
+      const hot = S.hot && items.length ? items[Math.floor(Math.random() * items.length)] : null;
+      if (hot) { hot.hot = true; hot.price = Math.round(hot.price * S.hot); }
+      return { kind: 'shop', healed: false, items };
+    },
+    healPrice(R = this.run) { return Math.round(C().shop.heal * (1 - Math.min(0.8, this.bmax('shopOff', R)))); },
+    // Locker Room: left = số việc làm được (Ice Bath: 2)
+    openRest(R = this.run) { return { kind: 'rest', left: this.bany('restTwice', R) ? 2 : 1 }; },
+    // xong 1 việc ở Locker Room: còn lượt thì ở lại
+    restUsed(R) {
+      if (R.room && R.room.kind === 'rest' && R.room.left > 1) R.room.left--;
+      else R.room = null;
     },
     buy(i, key = 'host') {
       const R = this.run, it = R && R.room && R.room.kind === 'shop' && R.room.items[i], P = R && this.pl(key, R);
-      if (!it || !P || it.sold || P.cash < it.price || this.has(it.id) || P.assign) return false;
+      if (!it || !P || it.sold || P.cash < it.price || this.has(it.id)) return false;
       P.cash -= it.price;
       it.sold = true;
-      this.hold(it.id, R, key);
+      this.give(it.id, R);
       PF().save();
       return true;
     },
-    // chữa chấn thương ở vị trí k trong túi (Shop: tốn tiền, 1 lần · Locker Room: miễn phí, xong phòng)
+    // chữa chấn thương ở vị trí k trong túi (Shop: tốn tiền, 1 lần · Locker Room: miễn phí, dùng 1 lượt của phòng)
     heal(k, key = 'host') {
       const R = this.run, room = R && R.room, b = R && R.bag[k], P = R && this.pl(key, R);
       if (!room || !b || !P || !this.badge(b.id).injury) return false;
       if (room.kind === 'shop') {
-        if (room.healed || P.cash < C().shop.heal) return false;
-        P.cash -= C().shop.heal;
+        if (room.healed || P.cash < this.healPrice(R)) return false;
+        P.cash -= this.healPrice(R);
         room.healed = true;
-      } else if (room.kind === 'rest') R.room = null;
+      } else if (room.kind === 'rest') this.restUsed(R);
       else return false;
       R.bag.splice(k, 1);
       PF().save();
       return true;
     },
-    // Locker Room: nâng cấp BADGE ở vị trí k trong túi (xong phòng)
+    // Locker Room: nâng cấp BADGE ở vị trí k trong túi (dùng 1 lượt của phòng)
     upgrade(k) {
       const R = this.run, b = R && R.bag[k], d = b && this.badge(b.id);
-      if (!R || !R.room || R.room.kind !== 'rest' || !b || b.up || d.noUp || d.injury) return false;
+      if (!R || !R.room || R.room.kind !== 'rest' || !b || b.up || !d.up || d.injury) return false;
       b.up = true;
-      R.room = null;
+      this.restUsed(R);
       PF().save();
       return true;
     },
-    // kết quả Skill game (Profile.awardMatch gọi thay cho thưởng trận) -> { tier, ok, cash, badge, injury, lines }
+    // kết quả Skill game / LEGEND TRIAL (Profile.awardMatch gọi thay cho thưởng trận) -> { tier, ok, cash, badge, injury, legend, lines }
     recordDrill(game) {
       const R = this.run, o = game.opts.run;
-      if (R && R.mirror) { const t = (game.drill && game.drill.tier) || 0; return { tier: t, ok: t > 0, lines: [], mirror: true }; }
-      if (!R || !o || o.nonce !== R.nonce || !R.room || R.room.kind !== 'skill') return null;
+      if (R && R.mirror) { const t = (game.drill && game.drill.tier) || 0; return { tier: t, ok: t > 0, trial: !!(o && o.trial), lines: [], mirror: true }; }
+      if (!R || !o || o.nonce !== R.nonce || !R.room || (R.room.kind !== 'skill' && R.room.kind !== 'trial')) return null;
       return this.drillDone(R, (game.drill && game.drill.tier) || 0);
     },
-    // tier: 0 = hỏng (chấn thương) · 1 ĐỒNG · 2 BẠC · 3 VÀNG — thưởng run.tierReward
+    // tier: 0 = hỏng (chấn thương) · 1 ĐỒNG · 2 BẠC · 3 VÀNG — thưởng run.tierReward. LEGEND TRIAL: trialDone
     drillDone(R, tier) {
-      // co-op: tiền + BADGE về người vừa đá bài (R.room.player), chấn thương vẫn rơi vào 1 người ngẫu nhiên của đội
+      if (R.room.kind === 'trial') return this.trialDone(R, tier);
+      // co-op: tiền về người vừa đá bài (R.room.player); BADGE vào túi cả đội; chấn thương rơi vào 1 người ngẫu nhiên của đội
       const n = this.find(R.next), drill = R.room.drill, rw = C().tierReward[tier], out = { tier, ok: tier > 0, lines: [] };
       const key = this.pl(R.room.player, R) ? R.room.player : 'host', P = this.pl(key, R);
       R.pending = null; R.next = null; R.room = null;
@@ -652,19 +750,41 @@ window.SFC = window.SFC || {};
         P.cash += out.cash;
         out.lines.push({ label: SFC.t('Run cash +${n}', { n: out.cash }), note: true });
         if (rw.badge) {
-          out.badge = this.rollBadges(1, C().rarityWeights.match, R)[0] || null;
-          this.hold(out.badge, R, key);
+          out.badge = this.give(this.rollBadges(1, C().rarityWeights.match, R)[0], R);
           if (out.badge) out.lines.push({ label: SFC.t('BADGE: {name}', { name: this.badge(out.badge).name }), note: true });
         }
         if (rw.offer) {
-          P.offer = { ids: this.rollBadges(C().offer, C().rarityWeights.match, R), kind: 'skill' };
+          R.offer = { ids: this.rollBadges(C().offer, C().rarityWeights.match, R), kind: 'skill' };
           out.lines.push({ label: SFC.t('Pick a badge on the map'), note: true });
         }
       } else {
         out.injury = this.injure(R);
-        if (out.injury) out.lines.push({ label: SFC.t('Injury: {name} · {who}', { name: this.badge(out.injury.id).name, who: this.memberName(out.injury.who, R) }), note: true });
+        if (out.injury && out.injury.blocked) out.lines.push({ label: SFC.t('Shin Guards blocked an injury!'), note: true });
+        else if (out.injury) out.lines.push({ label: SFC.t('Injury: {name} · {who}', { name: this.badge(out.injury.id).name, who: this.memberName(out.injury.who, R) }), note: true });
       }
       return out;
+    },
+    // LEGEND TRIAL xong: qua -> LEGEND xin vào đội (R.join: chọn người nhận / từ chối) · hỏng -> không mất gì
+    trialDone(R, tier) {
+      const n = this.find(R.next), id = R.room.legend, L = this.legend(id), out = { tier, ok: tier > 0, trial: true, legend: id, lines: [] };
+      R.pending = null; R.next = null; R.room = null;
+      if (n) this.advance(R, n);
+      R.log.push({ act: R.act, node: n ? n.id : null, kind: 'trial', legend: id, ok: tier > 0 });
+      if (tier > 0 && L) {
+        R.join = { id };
+        out.lines.push({ label: SFC.t('{name} wants to join!', { name: L.name }), note: true });
+      } else out.lines.push({ label: SFC.t('Trial failed. No harm done.'), note: true });
+      return out;
+    },
+    // bỏ qua LEGEND TRIAL (không đá): qua node, không được gì
+    skipTrial() {
+      const R = this.run, n = R && R.room && R.room.kind === 'trial' && this.find(R.next);
+      if (!n) return false;
+      R.next = null; R.room = null;
+      this.advance(R, n);
+      R.log.push({ act: R.act, node: n.id, kind: 'trial', legend: n.legend, ok: false, skip: true });
+      PF().save();
+      return true;
     },
     // sự kiện ???: lựa chọn i dùng được không (đủ tiền / có chấn thương để chữa)
     // co-op: tiền của sự kiện tính cho cả nhóm — mọi người có mặt cùng trả cost / cùng nhận tiền thắng, nên ai cũng phải đủ tiền
@@ -673,9 +793,8 @@ window.SFC = window.SFC || {};
       if (c.healAll && !this.injuries(R).length) return false;
       return true;
     },
-    // chọn lựa chọn i của sự kiện đang mở -> danh sách kết quả [{ kind: 'badge' | 'injury' | 'cash' | 'heal' | 'lost', id?, who?, n? }]
-    // voters: người đã bỏ phiếu cho lựa chọn này (co-op) — BADGE của sự kiện về 1 người ngẫu nhiên trong số đó (họ chọn người đeo)
-    choose(i, voters = ['host']) {
+    // chọn lựa chọn i của sự kiện đang mở -> danh sách kết quả [{ kind: 'badge' | 'injury' | 'blocked' | 'cash' | 'heal' | 'lost', id?, who?, n? }]
+    choose(i) {
       const R = this.run, ev = R && R.room && R.room.kind === 'event' && C().events[R.room.id], c = ev && ev.choices[i];
       if (!c || !this.canChoose(c)) return null;
       const out = [], keys = this.keys(R);
@@ -683,13 +802,15 @@ window.SFC = window.SFC || {};
       const won = c.chance == null || Math.random() < c.chance;
       if (c.badge) {
         const w = c.badge === 'any' ? C().rarityWeights.match : { [c.badge]: 1 };
-        const id = this.rollBadges(1, w)[0];
-        const vs = voters.filter((k) => this.pl(k, R)), to = vs.length ? vs[Math.floor(Math.random() * vs.length)] : 'host';
-        if (id) { this.hold(id, R, to); out.push({ kind: 'badge', id, to }); }
+        const id = this.give(this.rollBadges(1, w, R)[0], R);
+        if (id) out.push({ kind: 'badge', id });
       }
       if (c.win && won) { for (const k of keys) this.pl(k, R).cash += c.win.cash || 0; out.push({ kind: 'cash', n: c.win.cash }); }
       if (c.chance != null && !won) out.push({ kind: 'lost' });
-      if (c.injury && Math.random() < c.injury) { const x = this.injure(); if (x) out.push({ kind: 'injury', id: x.id, who: x.who }); }
+      if (c.injury && Math.random() < c.injury) {
+        const x = this.injure(R);
+        if (x && x.blocked) out.push({ kind: 'blocked' }); else if (x) out.push({ kind: 'injury', id: x.id, who: x.who });
+      }
       if (c.healAll) { R.bag = R.bag.filter((b) => !this.badge(b.id).injury); out.push({ kind: 'heal' }); }
       R.room = null;
       PF().save();
@@ -705,13 +826,14 @@ window.SFC = window.SFC || {};
 
   /* ---------- CO-OP (phòng GOAT PATH online, user 2026-10-26) ----------
    * Máy host gọi các hàm này (khách gửi thao tác qua mạng, src/ui/runmap.js -> Session.runAction -> host). key = 'host' | mã hồ sơ khách.
-   * Bỏ phiếu: đường đi trên map (node), lựa chọn sự kiện ??? (choose), Locker Room (rest) — đủ phiếu người có mặt hoặc quá coop.voteTime
-   * giây từ phiếu đầu thì bốc 1 phiếu ngẫu nhiên (lựa chọn nhiều phiếu dễ trúng hơn). Ví riêng, bộ 3 BADGE riêng, Shop ai mua người nấy trả.
+   * Bỏ phiếu: đường đi trên map (node), lựa chọn sự kiện ??? (choose), Locker Room (rest), thưởng chọn 1 trong 3 BADGE (pick, BADGE là của
+   * cả đội — 2026-10-28), người nhận LEGEND vừa qua trial (join: số thứ tự trong đội / no) — đủ phiếu người có mặt hoặc quá
+   * coop.voteTime giây từ phiếu đầu thì bốc 1 phiếu ngẫu nhiên (lựa chọn nhiều phiếu dễ trúng hơn). Ví riêng, Shop ai mua người nấy trả.
    * Skill game xoay vòng 1 người đá. Đối thủ mạnh lên theo số người thật (coopScale). */
   Object.assign(Run, {
     mirrorOn: false,   // máy này là khách phòng run: Run.run = mirrorR (bản sao host gửi)
     mirrorR: null,
-    // hồ sơ người chơi trong run: host = chính R (cash / offer / assign), khách = R.guests[mã]
+    // hồ sơ người chơi trong run (ví): host = chính R (cash), khách = R.guests[mã]
     pl(key, R = this.run) { return !R ? null : !key || key === 'host' ? R : (R.guests && R.guests[key]) || null; },
     // người đang có mặt: host + khách đang ở trong phòng
     keys(R = this.run) { return ['host'].concat(Object.keys((R && R.guests) || {}).filter((k) => R.guests[k].on)); },
@@ -720,19 +842,15 @@ window.SFC = window.SFC || {};
     myKey() { return this.mirrorOn ? PF().data.uid : 'host'; },
     // ô đội hình người có mã key đang đứng (-1 = không)
     seatOf(key, R = this.run) { return !R ? -1 : key === 'host' ? 0 : R.squad.findIndex((s, i) => i && s.h === key); },
-    // BADGE không được bốc lại: trong túi + đang chờ chọn / chờ gắn của mọi người
+    // BADGE không được bốc lại: trong túi + đang chờ chọn
     taken(R = this.run) {
       const set = new Set((R ? R.bag : []).map((b) => b.id));
-      for (const k of ['host'].concat(Object.keys((R && R.guests) || {}))) {
-        const P = this.pl(k, R);
-        if (P && P.offer) P.offer.ids.forEach((id) => set.add(id));
-        if (P && P.assign) set.add(P.assign.id);
-      }
+      if (R && R.offer) R.offer.ids.forEach((id) => set.add(id));
       return set;
     },
-    clearOffers(R) { for (const k of ['host'].concat(Object.keys(R.guests || {}))) { const P = this.pl(k, R); P.offer = null; } },
-    // còn người có mặt chưa chọn BADGE / chưa gắn BADGE -> chưa đi tiếp được
-    busy(R = this.run) { return this.keys(R).filter((k) => { const P = this.pl(k, R); return P.offer || P.assign; }); },
+    clearOffers(R) { R.offer = null; R.join = null; },
+    // đội còn đang chọn BADGE / trả lời LEGEND -> chưa đi tiếp được
+    busy(R = this.run) { return !!R && !!(R.offer || R.join); },
     // người đá Skill game tiếp theo (xoay vòng trong số người có mặt)
     nextPlayer(R) {
       const ks = this.keys(R);
@@ -747,7 +865,7 @@ window.SFC = window.SFC || {};
       for (const k in R.guests) R.guests[k].on = false;
       for (const m of members) {
         if (!m || !m.key || m.key === 'host') continue;
-        const g = R.guests[m.key] || (R.guests[m.key] = { cash: C().cash.start, offer: null, assign: null });
+        const g = R.guests[m.key] || (R.guests[m.key] = { cash: C().cash.start });
         Object.assign(g, { name: m.name, look: m.look, on: true });
       }
       R.squad.forEach((s, i) => {
@@ -762,11 +880,13 @@ window.SFC = window.SFC || {};
     // lựa chọn hợp lệ của 1 cuộc bỏ phiếu
     voteOptions(kind, R = this.run) {
       const rm = R.room;
-      if (kind === 'node') return !this.active() || rm || R.actNew || this.busy(R).length ? [] : this.available().map((n) => n.id);
+      if (kind === 'node') return !this.active() || rm || R.actNew || this.busy(R) ? [] : this.available().map((n) => n.id);
+      if (kind === 'pick') return R.offer ? R.offer.ids.map((x, i) => String(i)).concat(['skip']) : [];
+      if (kind === 'join') return R.join ? R.squad.map((x, i) => String(i)).concat(['no']) : [];
       if (kind === 'choose' && rm && rm.kind === 'event') return C().events[rm.id].choices.map((c, i) => (this.canChoose(c, R) ? String(i) : null)).filter((x) => x != null);
       if (kind === 'rest' && rm && rm.kind === 'rest') {
         const out = this.injuries(R).map((x) => 'heal:' + x.k);
-        R.bag.forEach((b, k) => { const d = this.badge(b.id); if (!b.up && !d.noUp && !d.injury) out.push('up:' + k); });
+        this.upgradable(R).forEach((x) => out.push('up:' + x.k));
         return out.concat(['leave']);
       }
       return [];

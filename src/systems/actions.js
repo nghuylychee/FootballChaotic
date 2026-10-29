@@ -206,7 +206,9 @@ window.SFC = window.SFC || {};
       const b = g.ball, F = G().firstTime, o = p.ot;
       if (!o) return;
       const ft = { kind: b.z >= F.headerZ ? 'header' : b.z >= F.volleyZ ? 'volley' : 'ground', z: b.z, vx: b.vx, vy: b.vy, spd: b.speed };
-      const aim = o.aim && Math.hypot(o.aim.x, o.aim.y) > 0.2 ? o.aim : null;
+      // GOAT PATH (LEGEND Ibrakadabra, kỹ thuật BICYCLE KICK): bóng cao -> bay lên móc xe đạp (tự nhắm khung thành, lực mạnh hơn)
+      if (SFC.Legends && p.legend && b.z >= SFC_CONFIG.legends.tuning.bicycle.minZ && SFC.Legends.tech(g, p, 'bicycle')) ft.kind = 'bicycle';
+      const aim = ft.kind === 'bicycle' ? null : o.aim && Math.hypot(o.aim.x, o.aim.y) > 0.2 ? o.aim : null;
       const charge = o.charge, aimY = o.aimY || 0;
       g.gainPossession(p);   // kiến tạo, chuỗi chuyền, Core khi nhận bóng... như nhận bóng thường (xoá p.ot)
       this.shoot(g, p, charge, aimY, aim, ft);
@@ -329,6 +331,7 @@ window.SFC = window.SFC || {};
       b.passPoint = plan.point;
       b.kind = 'pass';
       b.lob = mode === 'lob' || mode === 'lobthrough';
+      if (mode === 'lobthrough' && p.legend) b.legTech = 'lobthrough';   // LEGEND TRIAL (Pirlow): đồng đội đón được = 1 lần
       b.cross = !!plan.cross;
       // đồng đội AI của người chơi đón đường chuyền chuẩn: thỉnh thoảng đi bộ thay vì chạy nước rút (ai.mate)
       if (target) target.ai.recvWalk = Math.random() < G().ai.mate.receiveWalkChance;
@@ -414,8 +417,13 @@ window.SFC = window.SFC || {};
         spread *= ft.kind === 'header' ? F.header.spread : ft.kind === 'volley' ? F.volley.spread : F.spread;
         spread *= 1 + U.clamp((ft.spd - F.fastFrom) / F.fastRange, 0, 1) * F.fastSpread;
       }
+      // kỹ thuật LEGEND (config/legends.config.js tuning): power = POWER SHOT · trivela = TRIVELA · ft bicycle = BICYCLE KICK
+      const LT = SFC_CONFIG.legends && SFC_CONFIG.legends.tuning;
       if (style === 'finesse') spread *= TQ.finesse.spread;
       else if (style === 'chip') spread *= TQ.chip.spread;
+      else if (style === 'power') spread *= LT.power.spread;
+      else if (style === 'trivela') spread *= LT.trivela.spread;
+      if (ft && ft.kind === 'bicycle') spread *= LT.bicycle.spread;
       let ang = base + U.rand(-spread, spread);
       if (p.inj && SFC.Hurt) ang += SFC.Hurt.shank(g, p);   // GOAT PATH: đau ngón chân -> thỉnh thoảng sút trượt chân
 
@@ -428,18 +436,20 @@ window.SFC = window.SFC || {};
       spd *= g.cores.pmod(p, 'shotPower');
       let vz = U.lerp(K.shotLiftMin, K.shotLiftMax, c * c) + over * K.overchargeLift;
       let curve = 0;
-      if (style === 'finesse') {
+      if (style === 'power') { spd *= LT.power.speed; vz *= LT.power.lift; }
+      if (style === 'finesse' || style === 'trivela') {
         // CỨA LÒNG: bóng chậm hơn, xuất phát chệch ra ngoài rồi cong đều vào trong (cung tròn) — tới vạch vôi đúng hướng đã nhắm.
-        // Cong về phía góc nhắm (nhắm giữa khung: cong vào góc xa so với chỗ đứng)
-        spd *= TQ.finesse.speed;
+        // Cong về phía góc nhắm (nhắm giữa khung: cong vào góc xa so với chỗ đứng). TRIVELA (má ngoài): cong ngược phía, mạnh hơn
+        const tri = style === 'trivela';
+        spd *= tri ? LT.trivela.speed : TQ.finesse.speed;
         vz = K.shotLiftMin;
         const dirX = tm.dir, gx = dirX > 0 ? f.x + f.w : f.x;
         const dist = Math.max(20, Math.abs((gx - b.x) / Math.cos(ang)));
         const ty = b.y + Math.tan(ang) * (gx - b.x);
-        const side = Math.sign(ty - f.cy) || Math.sign(f.cy - b.y) || 1;
+        const side = (Math.sign(ty - f.cy) || Math.sign(f.cy - b.y) || 1) * (tri ? -1 : 1);
         const k = G().ball.groundFriction;
         const t = k * dist < spd * 0.95 ? -Math.log(1 - (k * dist) / spd) / k : dist / spd;
-        const bend = TQ.finesse.bend;
+        const bend = TQ.finesse.bend * (tri ? LT.trivela.bend : 1);
         ang += side * dirX * bend / 2;
         curve = -side * dirX * bend / t;
       } else if (style === 'chip') {
@@ -452,10 +462,11 @@ window.SFC = window.SFC || {};
       }
       if (ft && ft.kind === 'header') { spd = U.lerp(F.header.speedMin, F.header.speedMax, c) * p.stats.power * g.cores.pmod(p, 'shotPower'); vz = F.header.vz; }
       else if (ft && ft.kind === 'volley') { spd *= F.volley.power; vz *= F.volley.lift; }
+      else if (ft && ft.kind === 'bicycle') { spd *= F.volley.power * LT.bicycle.power; vz = K.shotLiftMin; }
       b.kick(p, Math.cos(ang) * spd, Math.sin(ang) * spd, vz);
       if (ft) b.z = Math.max(b.z, ft.z);   // vô-lê / đánh đầu: bóng đi từ độ cao lúc chạm
       b.kind = 'shot';
-      if (style === 'finesse') { b.curve = curve; b.fx.finesse = true; }
+      if (style === 'finesse' || style === 'trivela') { b.curve = curve; b.fx.finesse = true; }
       if (style === 'chip') {
         // thủ môn bị lob (Game.updatePossession): ghi khoảng cách tới vạch vôi của người trông khung lúc bóng rời chân
         const off = {}, lx = g.ownGoal(1 - p.team).x;
@@ -465,7 +476,12 @@ window.SFC = window.SFC || {};
       if (p.mstats && !g.opts.training) p.mstats.shots++;
       p.facing = ang;
       p.charging = false; p.charge = 0; p.shotTarget = 0;
-      this.startAttack(p, ft && ft.kind !== 'ground' ? ft.kind : 'shoot'); // tư thế vung chân sút (kick.poseTime) / vô-lê / đánh đầu
+      this.startAttack(p, ft && ft.kind !== 'ground' ? (ft.kind === 'bicycle' ? 'volley' : ft.kind) : 'shoot'); // tư thế vung chân sút (kick.poseTime) / vô-lê / đánh đầu
+      // GOAT PATH: kỹ thuật LEGEND vừa ra -> diễn riêng (src/systems/legends.js techFx, hình render/legenddraw.js)
+      if (SFC.Legends && p.legend) {
+        const tk = ft && ft.kind === 'bicycle' ? 'bicycle' : style, L = SFC.Legends.def(p);
+        if (tk && L && L.tech === tk) { SFC.Legends.techFx(g, p, tk); b.legTech = tk; }
+      }
       g.cores.dispatch(p.team, 'onShoot', p, b, held);
       if (held >= g.cores.chargedThreshold(p)) g.cores.chargedShot(p, b, held);
       p.volley = false;
@@ -646,6 +662,7 @@ window.SFC = window.SFC || {};
       const weak = !big && p.inj && SFC.Hurt ? SFC.Hurt.weak(g, p) : false;   // GOAT PATH: đau cổ tay -> cú đấm xịt
       for (const o of this.inFront(g, p, range, big ? 100 : L.arc, C.has(p, 'juggle'))) {
         if (this.dodged(g, o)) continue;
+        if (o.legend && SFC.Legends && SFC.Legends.parry(g, o, p)) continue;   // GOAT PATH: BRUISER RUN giật chỏ đúng lúc -> người đấm văng ngược
         hit = true;
         if (g.mod && SFC.MatchMods.shrug(g, p, o)) continue;   // luật trận khổng lồ (FOOTBALL STORY): đấm nhẹ không tác dụng
         const d = U.norm(o.x - p.x, o.y - p.y);
@@ -795,6 +812,7 @@ window.SFC = window.SFC || {};
         if (p.kickHits.has(o.id)) continue;
         p.kickHits.add(o.id);
         if (this.dodged(g, o)) continue;
+        if (o.legend && SFC.Legends && SFC.Legends.parry(g, o, p)) continue;   // GOAT PATH: BRUISER RUN giật chỏ đúng lúc -> người đá văng ngược
         p.hardLanded = true;
         // hướng văng: giữa hướng chân đá và hướng từ người đá tới nạn nhân
         const to = U.norm(o.x - p.x, o.y - p.y);
@@ -934,6 +952,8 @@ window.SFC = window.SFC || {};
         return;
       }
       b.read = { pid: p.id, grade: gr.id, bonus: gr.bonus + R.posBonus * pos, noStretch: !!gr.noStretch };
+      // GOAT PATH (LEGEND Neuermann, kỹ thuật SWEEPER SPIN): đọc trúng -> bắt được bóng trong ít giây tới thì xoay người phát động tấn công
+      if (p.legend && SFC.Legends && SFC.Legends.tech(g, p, 'sweeper')) p.sweepUntil = g.time + SFC_CONFIG.legends.tuning.sweeper.window;
       if (gr.dive) this.readDive(g, p);
       const x = p.x, y = p.y;
       if (gr.id === 'perfect') {

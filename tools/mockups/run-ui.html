@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mockup · GOAT PATH badge pick + shop</title>
+  <!-- MOCKUP (2026-10-29, chờ user duyệt): màn chọn BADGE "CROSSBAR CHALLENGE" + Shop "KIT VAN".
+       Trang tĩnh, nạp script game từ index.html (trừ main.js) để vẽ đúng nhân vật / icon pixel. Không vào bản build (tools/ bị bỏ qua). -->
+  <link rel="stylesheet" href="../../css/style.css" />
+  <style>
+    html, body { margin: 0; background: #0b0c10; color: #fff; font-family: var(--vt); }
+    body { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 14px 0 40px; }
+    .tabs { display: flex; gap: 8px; }
+    .tabs button { font-family: var(--px); font-size: 10px; padding: 8px 12px; background: #1a1c22; color: #9aa3b5; border: 2px solid #2e3140; cursor: pointer; }
+    .tabs button.on { color: #111; background: #ffe14f; border-color: #ffe14f; }
+    .note { font-size: 16px; color: #9aa3b5; max-width: 1280px; text-align: center; line-height: 1; }
+    .wrap { width: 1280px; height: 720px; position: relative; overflow: hidden; box-shadow: 0 0 0 2px #2e3140; }
+    .stage { position: absolute; left: 0; top: 0; width: 640px; height: 360px; transform: scale(2); transform-origin: 0 0; overflow: hidden; image-rendering: pixelated; }
+    .scr { position: absolute; inset: 0; display: none; }
+    .scr.on { display: block; }
+    canvas { image-rendering: pixelated; }
+    .px { font-family: var(--px); }
+
+    /* ================= CROSSBAR CHALLENGE ================= */
+    .cb { background: linear-gradient(180deg, #1b1630 0, #2a2040 30%, #3a2a3a 52%, #6a3b2e 52.2%, #5c3328 100%); }
+    /* tường gạch sau khung thành */
+    .cb .wall { position: absolute; left: 0; right: 0; top: 64px; height: 124px;
+      background:
+        repeating-linear-gradient(0deg, transparent 0 9px, rgba(0,0,0,0.35) 9px 10px),
+        repeating-linear-gradient(90deg, transparent 0 19px, rgba(0,0,0,0.3) 19px 20px),
+        linear-gradient(180deg, #7a3a2c, #5a2a22); }
+    .cb .wall::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 9px, rgba(0,0,0,0.3) 9px 10px, transparent 10px 20px);
+      -webkit-mask: repeating-linear-gradient(0deg, transparent 0 10px, #000 10px 20px); mask: repeating-linear-gradient(0deg, transparent 0 10px, #000 10px 20px); }
+    .cb .graffiti { position: absolute; left: 34px; top: 92px; font-family: var(--px); font-size: 14px; color: #ff5ad8; transform: rotate(-6deg); opacity: 0.55; text-shadow: 2px 2px 0 #3ff6ff; letter-spacing: 2px; }
+    .cb .graffiti.b { left: auto; right: 36px; top: 120px; color: #ffe14f; text-shadow: 2px 2px 0 #ff5a2e; transform: rotate(5deg); font-size: 11px; }
+    .cb .lamp { position: absolute; top: 0; width: 120px; height: 240px; background: radial-gradient(ellipse 50% 70% at 50% 0, rgba(255, 230, 160, 0.22), transparent 70%); }
+    /* mặt sân bê tông + vạch phấn */
+    .cb .ground { position: absolute; left: 0; right: 0; top: 188px; bottom: 0; background: repeating-linear-gradient(90deg, #4a4f5c 0 1px, #3c414c 1px 40px), #3c414c; }
+    .cb .ground::before { content: ''; position: absolute; left: 150px; right: 150px; top: 0; height: 62px; border: 2px solid rgba(255,255,255,0.5); border-top: none; }
+    .cb .ground::after { content: ''; position: absolute; left: 50%; top: 108px; width: 4px; height: 4px; margin-left: -2px; background: rgba(255,255,255,0.7); }
+    /* khung thành */
+    .goal { position: absolute; left: 170px; top: 72px; width: 300px; height: 118px; }
+    .goal .net { position: absolute; inset: 4px 4px 0; background:
+        repeating-linear-gradient(45deg, transparent 0 5px, rgba(255,255,255,0.18) 5px 6px),
+        repeating-linear-gradient(-45deg, transparent 0 5px, rgba(255,255,255,0.18) 5px 6px), rgba(0,0,0,0.25); }
+    .goal .bar { position: absolute; left: 0; right: 0; top: 0; height: 5px; background: #f4f4f4; box-shadow: 0 2px 0 #9aa3b5, 2px 2px 0 #111; }
+    .goal .post { position: absolute; top: 0; bottom: 0; width: 5px; background: #f4f4f4; box-shadow: 2px 0 0 #9aa3b5, 3px 2px 0 #111; }
+    .goal .post.l { left: 0; } .goal .post.r { right: 0; }
+    /* miếng vá BADGE treo bằng dây */
+    .patch { position: absolute; width: 62px; cursor: pointer; transform-origin: 50% -16px; animation: swing 2.4s ease-in-out infinite; z-index: 3; }
+    .patch::before { content: ''; position: absolute; left: 50%; top: -16px; width: 1px; height: 16px; background: #d8cfc0; }
+    .patch .cloth { position: relative; height: 62px; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--rc) 35%, #2a2e38), #1a1c22 75%);
+      border-radius: 16px 16px 26px 26px; box-shadow: 0 0 0 2px #111, 3px 3px 0 #111; }
+    .patch .cloth::after { content: ''; position: absolute; inset: 3px; border: 2px dashed var(--rc); border-radius: 13px 13px 22px 22px; }
+    .patch .cloth .pxi.x2 { width: 32px; height: 32px; }
+    .patch .tag { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); font-family: var(--px); font-size: 4px; letter-spacing: 1px; padding: 2px 3px 1px; white-space: nowrap; color: #111; background: var(--rc); box-shadow: 1px 1px 0 #111; }
+    .patch:nth-child(2n) { animation-delay: -0.8s; animation-duration: 2.8s; }
+    .patch:hover .cloth, .patch.sel .cloth { box-shadow: 0 0 0 2px #ffe14f, 0 0 12px rgba(255,225,79,0.6), 3px 3px 0 #111; }
+    .patch.sel { animation-duration: 0.9s; }
+    .patch.hit { animation: fall 0.9s cubic-bezier(.5,0,.8,.4) forwards; }
+    .patch.gone { opacity: 0; pointer-events: none; }
+    @keyframes swing { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+    @keyframes fall { 0% { transform: rotate(0); } 15% { transform: translateY(-6px) rotate(-14deg); } 100% { transform: translate(var(--fx), var(--fy)) rotate(-40deg) scale(0.25); opacity: 0.2; } }
+    /* nhân vật + bóng */
+    .kicker { position: absolute; left: 290px; top: 230px; width: 60px; height: 66px; z-index: 4; }
+    .kicker canvas { width: 60px; height: 66px; }
+    .kicker.kick { animation: kick 0.35s steps(3); }
+    @keyframes kick { 40% { transform: translate(4px, -4px) rotate(-6deg); } }
+    .ball { position: absolute; left: 314px; top: 290px; width: 10px; height: 10px; border-radius: 50%; z-index: 5;
+      background: radial-gradient(circle at 35% 35%, #fff 0 35%, #c9ced8 36% 60%, #222 61% 70%, #e8e8e8 71%); box-shadow: 1px 1px 0 #111; transition: left 0.32s ease-out, top 0.32s ease-out, transform 0.32s; }
+    .ball.wide { transition: left 0.5s ease-out, top 0.5s ease-out, transform 0.5s; }
+    .shadow { position: absolute; left: 300px; top: 292px; width: 40px; height: 8px; border-radius: 50%; background: rgba(0,0,0,0.4); }
+    /* tiêu đề + bảng mô tả kiểu bảng đen phấn */
+    .cb-title { position: absolute; left: 0; right: 0; top: 12px; text-align: center; font-family: var(--px); font-size: 16px; color: #ffe14f; letter-spacing: 2px; text-shadow: 3px 3px 0 #111, 4px 4px 0 #c99a12; }
+    .cb-title small { display: block; margin-top: 6px; font-size: 6px; color: #d8cfc0; letter-spacing: 2px; text-shadow: 1px 1px 0 #111; }
+    .chalk { position: absolute; left: 380px; top: 214px; width: 196px; min-height: 70px; padding: 7px 9px 8px; box-sizing: border-box; transform: rotate(1.5deg);
+      background: #1f3a2a; border: 4px solid #8a5a2e; box-shadow: inset 0 0 12px rgba(0,0,0,0.5), 3px 3px 0 #111; }
+    .chalk b { display: block; font-family: var(--px); font-size: 7px; font-weight: normal; color: #f4f4f4; letter-spacing: 1px; margin-bottom: 4px; }
+    .chalk p { margin: 0; font-size: 14px; line-height: 1; color: rgba(255,255,255,0.82); }
+    .chalk em { display: block; margin-top: 5px; font-style: normal; font-family: var(--px); font-size: 5px; color: var(--rc); letter-spacing: 1px; }
+    /* áo đội: BADGE đã có = patch khâu trên áo */
+    .shirt { position: absolute; left: 34px; top: 214px; width: 112px; height: 108px; }
+    .shirt .body { position: absolute; inset: 0; background: linear-gradient(180deg, #e63946, #b8202e); box-shadow: inset 0 -6px 0 rgba(0,0,0,0.18);
+      clip-path: polygon(30% 0, 40% 6%, 60% 6%, 70% 0, 100% 16%, 92% 40%, 80% 36%, 80% 100%, 20% 100%, 20% 36%, 8% 40%, 0 16%); }
+    .shirt .slots { position: absolute; left: 25px; right: 25px; top: 38px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; justify-items: center; }
+    .shirt .s { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px 4px 7px 7px; background: #1a1c22; box-shadow: 0 0 0 1px var(--rc, #111); }
+    .shirt .s.empty { background: rgba(0,0,0,0.25); box-shadow: none; outline: 1px dashed rgba(255,255,255,0.4); outline-offset: -1px; }
+    .shirt .s .pxi { width: 12px; height: 12px; }
+    .shirt .s.new { animation: sew 0.6s steps(3) 2; }
+    @keyframes sew { 50% { box-shadow: 0 0 0 2px #ffe14f, 0 0 8px #ffe14f; } }
+    .shirt .num { position: absolute; left: 0; right: 0; top: 12px; text-align: center; font-family: var(--px); font-size: 9px; color: rgba(255,255,255,0.9); text-shadow: 1px 1px 0 #7a1018; }
+    .skip { position: absolute; right: 16px; bottom: 14px; }
+    .pop { position: absolute; z-index: 9; font-family: var(--px); font-size: 9px; color: #ffe14f; text-shadow: 2px 2px 0 #111; pointer-events: none; animation: popUp 0.9s ease-out forwards; }
+    @keyframes popUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-22px); opacity: 0; } }
+
+    /* ================= KIT VAN (Shop) — pixel art thật: canvas 320x180 (1 pixel = 2x2 trên khung 640x360), khối màu cứng + dither ================= */
+    .kv { background: #120c16; }
+    .kv canvas.lo { position: absolute; left: 0; top: 0; width: 640px; height: 360px; image-rendering: pixelated; }
+    /* con trỏ bàn tay chỉ (tạo bằng canvas lúc chạy, xem handCursor) */
+    .kv, .kv * { cursor: var(--hand), pointer; }
+    .kv .hit { position: absolute; z-index: 2; }
+    .kv .cashchip { position: absolute; right: 16px; top: 12px; z-index: 3; }
+    .kv .leave { position: absolute; right: 16px; bottom: 14px; z-index: 3; }
+    /* bong bóng thoại của tài xế: khung pixel (viền 2px, bóng cứng, đuôi bậc thang) */
+    .bubble { position: absolute; right: 26px; top: 46px; z-index: 3; width: 236px; box-sizing: border-box; padding: 6px 8px 6px; color: #111; background: #fff;
+      box-shadow: 0 0 0 2px #111, 4px 4px 0 #111; }
+    .bubble::before, .bubble::after { content: ''; position: absolute; background: #fff; box-shadow: 2px 0 0 #111, -2px 0 0 #111, 0 2px 0 #111; }
+    .bubble::before { left: 150px; bottom: -6px; width: 10px; height: 4px; }
+    .bubble::after { left: 154px; bottom: -10px; width: 4px; height: 4px; }
+    .bubble b { display: block; font-family: var(--px); font-size: 7px; font-weight: normal; letter-spacing: 1px; margin-bottom: 3px; color: #111; }
+    .bubble p { margin: 0; font-size: 15px; line-height: 1; color: #222; }
+  </style>
+</head>
+<body>
+  <div class="tabs"><button data-s="cb" class="on">1 · PICK A BADGE — CROSSBAR CHALLENGE</button><button data-s="kv">2 · SHOP — KIT VAN</button></div>
+  <div class="note" id="note"></div>
+  <div class="wrap"><div class="stage">
+    <div class="scr cb on" id="cb"></div>
+    <div class="scr kv" id="kv"></div>
+  </div></div>
+
+  <script>
+  // vừa khung cửa sổ: khung 640x360 phóng theo bề ngang (tối đa x2)
+  function fit() {
+    const k = Math.min(2, (innerWidth - 24) / 640, (innerHeight - 110) / 360), w = document.querySelector('.wrap');
+    w.style.width = 640 * k + 'px'; w.style.height = 360 * k + 'px';
+    document.querySelector('.stage').style.transform = `scale(${k})`;
+  }
+  addEventListener('resize', fit); fit();
+  // nạp script game theo đúng thứ tự trong index.html (trừ main.js: không khởi động game)
+  (async function () {
+    const html = await (await fetch('../../index.html', { cache: 'reload' })).text();
+    const srcs = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]).filter((s) => !/main\.js$/.test(s));
+    for (const s of srcs) await new Promise((ok) => { const el = document.createElement('script'); el.src = '../../' + s; el.onload = ok; el.onerror = ok; document.head.appendChild(el); });
+    boot();
+  })();
+
+  function boot() {
+    const PX = SFC.PixelIcon, C = SFC_CONFIG, B = C.run.badges, RAR = C.progression.rarities;
+    const kit = C.mainPath.playerTeam.kit;
+    const look = (o) => SFC.Profile.lookOf(Object.assign({}, C.progression.defaultLook, o || {}));
+    const icon = (id, cls = 'x2') => { const d = B[id]; return d.icon ? PX.ui(d.icon, cls) : d.school ? PX.arch(d.school, cls) : PX.ui('card', cls); };
+    const rc = (id) => B[id].injury ? '#ff5a6e' : RAR[B[id].rarity].color;
+    const avatars = [];
+    const avatar = (el, lk, facing) => { const cv = document.createElement('canvas'); cv.width = 40; cv.height = 44; el.appendChild(cv); avatars.push({ cv, lk, facing }); };
+    let t = 0;
+    (function loop() { t += 1 / 60; for (const a of avatars) SFC.Sprites.drawAvatar(a.cv, a.lk, kit, t, a.facing); requestAnimationFrame(loop); })();
+    const note = document.getElementById('note');
+    const NOTES = {
+      cb: 'Pick 1 of 3 stays. Hover a patch = chalkboard shows name + 1 line. Click = your player shoots it down, it flies onto the TEAM SHIRT (bottom left: every badge you own is sewn on, empty slots dashed). SKIP = shot flies over the bar.',
+      kv: 'Shop = a kit van on the street, drawn as real pixel art. Point (hand cursor) at a badge = the driver explains it in his speech bubble. Click = your hand reaches up from the bottom, takes it off the hook and pulls it off screen. The van idles: a soft sway, exhaust smoke. First-aid kit on the counter = treat an injury. HOT sticker = half price (optional extra).',
+    };
+
+    /* ---------- 1. CROSSBAR CHALLENGE ---------- */
+    const cb = document.getElementById('cb');
+    const offer = ['gps', 'var', 'camp'];
+    const owned = ['coin', 'drink'];
+    cb.innerHTML = `
+      <div class="lamp" style="left:40px"></div><div class="lamp" style="right:40px"></div>
+      <div class="wall"></div><div class="graffiti">GOAT</div><div class="graffiti b">NO FEAR</div>
+      <div class="ground"></div>
+      <div class="cb-title">PICK A BADGE<small>SHOOT ONE DOWN</small></div>
+      <div class="goal"><div class="net"></div><div class="bar"></div><div class="post l"></div><div class="post r"></div></div>
+      ${offer.map((id, i) => `<div class="patch" data-id="${id}" style="--rc:${rc(id)};left:${[176, 289, 402][i]}px;top:${[96, 92, 96][i]}px"><div class="cloth">${icon(id)}</div><u class="tag">${RAR[B[id].rarity].label}</u></div>`).join('')}
+      <div class="shadow"></div><div class="kicker" id="kicker"></div><div class="ball" id="ball"></div>
+      <div class="shirt" id="shirt"><div class="body"></div><div class="num">10</div><div class="slots" id="slots"></div></div>
+      <div class="chalk" id="chalk"></div>
+      <button class="pt-btn skip" id="skip">SKIP</button>`;
+    avatar(document.getElementById('kicker'), look(), -Math.PI / 2);
+    const slots = document.getElementById('slots');
+    const drawShirt = (fresh) => {
+      slots.innerHTML = owned.map((id) => `<span class="s ${id === fresh ? 'new' : ''}" style="--rc:${rc(id)}">${icon(id, '')}</span>`).join('') + '<span class="s empty"></span>'.repeat(Math.max(0, 9 - owned.length));
+    };
+    drawShirt();
+    const chalk = document.getElementById('chalk');
+    const show = (id) => { const d = B[id]; chalk.style.setProperty('--rc', rc(id)); chalk.innerHTML = `<b>${d.name}</b><p>${d.desc}</p><em>${RAR[d.rarity].label}</em>`; };
+    show(offer[0]);
+    const ball = document.getElementById('ball'), kicker = document.getElementById('kicker');
+    let busy = false;
+    const reset = () => { ball.className = 'ball'; ball.style.left = '314px'; ball.style.top = '290px'; ball.style.transform = ''; busy = false; };
+    cb.querySelectorAll('.patch').forEach((p) => {
+      p.addEventListener('mouseenter', () => { if (busy) return; cb.querySelectorAll('.patch').forEach((q) => q.classList.toggle('sel', q === p)); show(p.dataset.id); });
+      p.addEventListener('click', () => {
+        if (busy || p.classList.contains('gone')) return;
+        busy = true;
+        kicker.classList.remove('kick'); void kicker.offsetWidth; kicker.classList.add('kick');
+        setTimeout(() => { ball.style.left = (p.offsetLeft + 26) + 'px'; ball.style.top = (p.offsetTop + 26) + 'px'; ball.style.transform = 'scale(0.6) rotate(360deg)'; }, 120);
+        setTimeout(() => {
+          p.style.setProperty('--fx', (60 - p.offsetLeft) + 'px'); p.style.setProperty('--fy', (260 - p.offsetTop) + 'px');
+          p.classList.add('hit');
+          const pop = document.createElement('div'); pop.className = 'pop'; pop.textContent = 'BADGE!'; pop.style.left = (p.offsetLeft + 6) + 'px'; pop.style.top = (p.offsetTop - 14) + 'px'; cb.appendChild(pop); setTimeout(() => pop.remove(), 900);
+          ball.style.top = '186px';
+        }, 450);
+        setTimeout(() => { p.classList.add('gone'); owned.push(p.dataset.id); drawShirt(p.dataset.id); }, 1350);
+        setTimeout(() => { reset(); cb.querySelectorAll('.patch').forEach((q) => { q.classList.remove('hit', 'gone', 'sel'); }); owned.pop(); drawShirt(); }, 3200);   // mockup: lặp lại để thử tiếp
+      });
+    });
+    document.getElementById('skip').addEventListener('click', () => {
+      if (busy) return; busy = true;
+      kicker.classList.remove('kick'); void kicker.offsetWidth; kicker.classList.add('kick');
+      setTimeout(() => { ball.classList.add('wide'); ball.style.left = '520px'; ball.style.top = '20px'; ball.style.transform = 'scale(0.5) rotate(540deg)'; }, 120);
+      setTimeout(reset, 1400);
+    });
+
+    /* ---------- 2. KIT VAN (pixel art trên canvas 320x180) ---------- */
+    const kv = document.getElementById('kv');
+    const stock = [{ id: 'sponsor', p: 70 }, { id: 'boot', p: 70 }, { id: 'crowd', p: 160, hot: true }, { id: 'ticket', p: 40 }, { id: 'icebath', p: 70 }];
+    stock.forEach((s, i) => { s.x = 50 + i * 36; s.price = s.hot ? s.p / 2 : s.p; });
+    const med = { x: 44, price: 50, used: false };
+    let cash = 240, hover = null;
+    kv.innerHTML = `<canvas class="lo" id="kvc" width="320" height="180"></canvas>
+      <span class="rm-cash cashchip" id="cash"></span>
+      <div class="bubble" id="bubble"></div>
+      ${stock.map((s, i) => `<div class="hit" data-i="${i}" style="left:${(s.x - 11) * 2}px;top:${46 * 2}px;width:44px;height:${42 * 2}px"></div>`).join('')}
+      <div class="hit" data-m="1" style="left:${(med.x - 10) * 2}px;top:${94 * 2}px;width:40px;height:${26 * 2}px"></div>
+      <button class="pt-btn go leave" id="leave">LEAVE</button>`;
+    const cv = document.getElementById('kvc'), L = cv.getContext('2d');
+    const O = '#120c16';
+    const P = (x, y, w, h, c) => { L.fillStyle = c; L.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+    const dith = (x0, y, x1, c, every = 2) => { L.fillStyle = c; for (let x = x0 + ((y + x0) % every); x < x1; x += every) L.fillRect(x, y, 1, 1); };
+    const disc = (cx, cy, r, c) => { for (let y = -r; y <= r; y++) { const h = Math.round(Math.sqrt(r * r - y * y)); P(cx - h, cy + y, h * 2 + 1, 1, c); } };
+    const hsh = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+
+    // chữ pixel 3x5 (bảng hiệu, thẻ giá): '#' = pixel
+    const FONT = {
+      0: ['###', '#.#', '#.#', '#.#', '###'], 1: ['.#.', '##.', '.#.', '.#.', '###'], 2: ['###', '..#', '###', '#..', '###'], 3: ['###', '..#', '.##', '..#', '###'],
+      4: ['#.#', '#.#', '###', '..#', '..#'], 5: ['###', '#..', '###', '..#', '###'], 6: ['###', '#..', '###', '#.#', '###'], 7: ['###', '..#', '.#.', '.#.', '.#.'],
+      8: ['###', '#.#', '###', '#.#', '###'], 9: ['###', '#.#', '###', '..#', '###'],
+      A: ['.#.', '#.#', '###', '#.#', '#.#'], D: ['##.', '#.#', '#.#', '#.#', '##.'], H: ['#.#', '#.#', '###', '#.#', '#.#'], I: ['###', '.#.', '.#.', '.#.', '###'],
+      K: ['#.#', '##.', '#..', '##.', '#.#'], L: ['#..', '#..', '#..', '#..', '###'], N: ['#..#', '##.#', '#.##', '#..#', '#..#'], O: ['###', '#.#', '#.#', '#.#', '###'],
+      S: ['###', '#..', '###', '..#', '###'], T: ['###', '.#.', '.#.', '.#.', '.#.'], V: ['#.#', '#.#', '#.#', '#.#', '.#.'], ' ': ['..', '..', '..', '..', '..'],
+    };
+    const textW = (s, k = 1) => [...s].reduce((w, ch) => w + (FONT[ch][0].length + 1) * k, -k);
+    const text = (s, x, y, c, k = 1) => {
+      for (const ch of s) { const g = FONT[ch]; g.forEach((row, j) => [...row].forEach((v, i) => { if (v === '#') P(x + i * k, y + j * k, k, k, c); })); x += (g[0].length + 1) * k; }
+    };
+    // icon pixel 12x12 của game + viền mực (giống PixelIcon.render), vẽ 1:1 lên canvas thấp
+    const ICON = {};
+    const iconKey = (id) => { const d = B[id]; return d.icon ? 'ui-' + d.icon : d.school ? 'arch-' + d.school : 'ui-card'; };
+    const grid = (key, depth = 0) => { const a = PX.ART[key]; if (!a || depth > 4) return null; if (Array.isArray(a)) return a; const b = grid(a.ref, depth + 1); return !b || !a.map ? b : b.map((r) => r.replace(/./g, (ch) => a.map[ch] || ch)); };
+    const iconCv = (key) => {
+      if (ICON[key]) return ICON[key];
+      const rows = grid(key), c = document.createElement('canvas'); c.width = 14; c.height = 14;
+      const x = c.getContext('2d'), on = (i, j) => i >= 0 && j >= 0 && i < 12 && j < 12 && rows[i][j] !== '.';
+      for (let i = -1; i <= 12; i++) for (let j = -1; j <= 12; j++) {
+        if (on(i, j)) { x.fillStyle = PX.PAL[rows[i][j]] || '#f0f'; x.fillRect(j + 1, i + 1, 1, 1); }
+        else if (on(i - 1, j) || on(i + 1, j) || on(i, j - 1) || on(i, j + 1)) { x.fillStyle = O; x.fillRect(j + 1, i + 1, 1, 1); }
+      }
+      return (ICON[key] = c);
+    };
+    const mix = (a, b, k) => { const h = (s) => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2), 16)); const A = h(a), Bc = h(b); return '#' + A.map((v, i) => Math.round(v + (Bc[i] - v) * k).toString(16).padStart(2, '0')).join(''); };
+
+    // miếng vá BADGE 20x22 (x, y = góc trên trái): viền mực, nền tối pha màu độ hiếm, đường chỉ khâu chấm cách 1 pixel màu độ hiếm, icon giữa
+    function patch(id, x, y, lit) {
+      const c = rc(id), base = mix('#1c1e28', c, 0.28), hi = mix('#1c1e28', c, 0.5);
+      const rows = 22;
+      for (let j = 0; j < rows; j++) {
+        const inset = j === 0 || j === rows - 1 ? 3 : j === 1 || j === rows - 2 ? 1 : 0;   // bo góc pixel; đáy tròn hơn
+        const extra = j >= rows - 4 ? (j - (rows - 5)) : 0;
+        P(x + inset + extra, y + j, 20 - (inset + extra) * 2, 1, lit ? '#ffe14f' : O);
+      }
+      for (let j = 1; j < rows - 1; j++) {
+        const inset = j === 1 || j === rows - 2 ? 2 : 1, extra = j >= rows - 4 ? (j - (rows - 5)) : 0;
+        P(x + inset + extra, y + j, 20 - (inset + extra) * 2, 1, j < 6 ? hi : base);
+      }
+      // chỉ khâu
+      for (let i = 3; i < 17; i += 2) { P(x + i, y + 2, 1, 1, c); if (i > 4 && i < 15) P(x + i, y + rows - 3, 1, 1, c); }
+      for (let j = 4; j < rows - 4; j += 2) { P(x + 2, y + j, 1, 1, c); P(x + 17, y + j, 1, 1, c); }
+      L.drawImage(iconCv(iconKey(id)), x + 3, y + 4);
+    }
+    // thẻ giá bìa cát-tông treo dây dưới miếng vá: đồng xu + số · HOT = thẻ đỏ · SOLD = dấu đỏ
+    function tag(cx, y, price, hot, sold) {
+      const label = sold ? 'SOLD' : String(price), w = textW(label) + (sold ? 4 : 8);
+      const x = cx - 2;
+      P(cx, y - 4, 1, 4, '#e8dcc4');
+      P(x, y, w, 9, '#3a2410'); P(x + 1, y + 1, w - 2, 7, hot && !sold ? '#ff3d5a' : '#d8b27a'); P(x + 1, y + 7, w - 2, 1, hot && !sold ? '#b8202e' : '#a8824a');
+      P(x + 2, y + 2, 1, 1, '#3a2410');   // lỗ xỏ dây
+      if (sold) return text(label, x + 2, y + 2, '#c8202e');
+      disc(x + 5, y + 4, 1, '#ffd23f'); P(x + 4, y + 3, 1, 1, '#fff3a8');
+      text(label, x + 8, y + 2, hot ? '#fff' : '#3a2410');
+    }
+    function hotSticker(x, y) {
+      P(x, y, 15, 9, O); P(x + 1, y + 1, 13, 7, '#ff3d5a'); P(x + 1, y + 7, 13, 1, '#b8202e');
+      if (Math.floor(T * 3) % 2) P(x + 1, y + 1, 13, 1, '#ff8a98');
+      text('HOT', x + 2, y + 2, '#fff');
+    }
+
+    // ---------- nền tĩnh (vẽ 1 lần): trời hoàng hôn dải màu + dither, mặt trời sọc, phố, vỉa hè, đường, xe ----------
+    const bg = document.createElement('canvas'); bg.width = 320; bg.height = 180;
+    // xe vẽ riêng để nhấp nhô theo máy nổ; bánh xe riêng, đứng yên trên mặt đường
+    const van = document.createElement('canvas'); van.width = 320; van.height = 180;
+    const wheels = document.createElement('canvas'); wheels.width = 320; wheels.height = 180;
+    (function paintBg() {
+      let X = bg.getContext('2d');
+      const p = (x, y, w, h, c) => { X.fillStyle = c; X.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+      const d = (x0, y, x1, c, every = 2) => { X.fillStyle = c; for (let x = x0 + ((y + x0) % every); x < x1; x += every) X.fillRect(x, y, 1, 1); };
+      const dc = (cx, cy, r, c) => { for (let y = -r; y <= r; y++) { const h = Math.round(Math.sqrt(r * r - y * y)); p(cx - h, cy + y, h * 2 + 1, 1, c); } };
+      const sky = ['#1e1430', '#2c1a3e', '#43224a', '#62294e', '#8a3450', '#b8484e', '#de6a4c', '#f29256'];
+      sky.forEach((c, i) => { const a = Math.round(i * 15), b = Math.round((i + 1) * 15); p(0, a, 320, b - a, c); if (i < sky.length - 1) { d(0, b - 1, 320, sky[i + 1]); d(0, b - 2, 320, sky[i + 1], 4); } });
+      // mặt trời sọc ngang kiểu retro
+      dc(238, 100, 20, '#ffb060'); dc(238, 100, 16, '#ffd27a');
+      [94, 101, 107, 112].forEach((y, k) => p(214, y, 48, 1 + k, '#de6a4c'));
+      // sao
+      for (let i = 0; i < 26; i++) { const x = Math.floor(hsh(i) * 320), y = Math.floor(hsh(i + 50) * 40); p(x, y, 1, 1, hsh(i + 9) > 0.5 ? '#f4e8ff' : '#9a86c0'); }
+      // phố xa (2 lớp)
+      for (let x = 0, k = 0; x < 320; k++) {
+        const w = 14 + Math.floor(hsh(k + 3) * 22), h = 22 + Math.floor(hsh(k + 7) * 34);
+        p(x, 118 - h, w, h, '#3a2040'); x += w;
+      }
+      for (let x = -6, k = 0; x < 320; k++) {
+        const w = 18 + Math.floor(hsh(k + 31) * 26), h = 14 + Math.floor(hsh(k + 17) * 30), top = 118 - h;
+        p(x, top, w, h, '#24142c'); p(x, top, w, 1, '#3e2448');
+        for (let yy = top + 4; yy < 114; yy += 5) for (let xx = x + 3; xx < x + w - 2; xx += 4) if (hsh(xx * 1.3 + yy * 7.1) > 0.6) p(xx, yy, 2, 2, hsh(xx + yy) > 0.3 ? '#ffcf6a' : '#a8603a');
+        if (hsh(k + 91) > 0.7) { p(x + 4, top - 8, 1, 8, '#24142c'); p(x + 3, top - 9, 3, 1, '#ff3d5a'); }
+        x += w + 2;
+      }
+      // cột đèn đường bên phải
+      p(306, 40, 3, 92, '#1a1020'); p(296, 38, 14, 3, '#1a1020'); p(296, 41, 6, 2, '#fff3a8');
+      for (let y = 43; y < 60; y++) d(290 - (y - 43) / 2, y, 308 + (y - 43) / 2, 'rgba(255,243,168,0.35)', 3);
+      // vỉa hè + bó vỉa
+      p(0, 118, 320, 15, '#6a5a6c'); p(0, 118, 320, 1, '#8e7e90');
+      for (let x = 6; x < 320; x += 18) p(x, 119, 1, 14, '#544656');
+      d(0, 131, 320, '#544656');
+      p(0, 133, 320, 3, '#9a8a9c'); p(0, 136, 320, 1, '#2a2030');
+      // đường nhựa + vạch
+      p(0, 137, 320, 43, '#2c2632');
+      for (let y = 139; y < 180; y += 3) d(0, y, 320, '#352e3c', 4);
+      for (let x = 10; x < 320; x += 40) p(x, 170, 18, 2, '#c8b890');
+
+      /* ----- xe tải nhỏ ----- */
+      const T1 = '#5fd6c8', T2 = '#2a9c94', T3 = '#1c726c', T4 = '#124a48';
+      // bóng dưới xe (trên nền, không nhấp nhô)
+      for (let y = 138; y < 146; y++) d(24 - (y - 138), y, 300 + (y - 138), '#0e0a12', y < 142 ? 1 : 2);
+      X = van.getContext('2d');
+      // ống xả sau đuôi xe
+      p(12, 130, 9, 5, O); p(13, 131, 8, 3, '#8a909e'); p(13, 131, 8, 1, '#c8ccd6'); p(12, 131, 1, 3, '#2a2630');
+      // thân sau
+      p(20, 30, 214, 110, O); p(21, 31, 212, 108, T2); p(21, 31, 212, 2, T1); p(21, 120, 212, 17, T3); p(21, 136, 212, 3, T4);
+      d(21, 119, 233, T3);
+      // giá nóc + bảng hiệu
+      p(30, 25, 186, 2, O); for (let x = 34; x < 216; x += 30) p(x, 27, 2, 3, O);
+      p(96, 9, 82, 17, O); p(97, 10, 80, 15, '#ffe14f'); p(97, 23, 80, 2, '#c99a12'); p(97, 10, 80, 1, '#fff3a8');
+      // ô cửa hông mở: bảng gỗ đục lỗ
+      p(30, 42, 192, 66, O); p(31, 43, 190, 64, '#a8784a');
+      for (let y = 46; y < 106; y += 4) for (let x = 33 + ((y / 4) % 2) * 2; x < 220; x += 4) p(x, y, 1, 1, '#6a4628');
+      for (let y = 43; y < 49; y++) d(31, y, 221, '#6a4628', y < 46 ? 1 : 2);
+      // mái bạt (cánh cửa lật lên) sọc vàng / trắng, mép dưới lượn
+      p(26, 35, 200, 9, O);
+      for (let x = 27, k = 0; x < 225; x += 8, k++) {
+        const c = k % 2 ? '#f4efe0' : '#ffe14f', sh = k % 2 ? '#c8c0ac' : '#c99a12';
+        p(x, 36, Math.min(8, 225 - x), 7, c); p(x, 42, Math.min(8, 225 - x), 1, sh);
+        p(x + 1, 44, 6, 2, O); p(x + 2, 44, 4, 1, c);
+      }
+      // quầy
+      p(26, 106, 200, 7, O); p(27, 107, 198, 3, '#e8dcc4'); p(27, 110, 198, 2, '#b8a688'); d(27, 113, 225, '#0e0a12');
+      // vạch trang trí thân + quả bóng decal
+      p(21, 118, 212, 1, '#ffe14f'); p(21, 121, 212, 1, '#ffe14f');
+      // cabin: kính chắn gió dốc
+      for (let y = 52; y < 140; y++) {
+        const r = y < 82 ? 280 + Math.floor((y - 52) * 0.6) : 298;
+        p(232, y, r - 232 + 1, 1, O); if (y > 52 && y < 139) p(233, y, r - 233 - 1 + 1, 1, y < 54 ? T1 : y > 120 ? T3 : T2);
+      }
+      d(233, 119, 298, T3);
+      // cửa kính cabin (tài xế vẽ đè, kính phản chiếu vẽ sau cùng)
+      p(238, 58, 44, 28, O);
+      for (let y = 59; y < 85; y++) { const r = Math.min(281, 279 + Math.floor((y - 59) * 0.6)); p(239, y, r - 239, 1, y < 66 ? '#a8e4f0' : y < 76 ? '#7ac4dc' : '#5aa4c4'); }
+      // gương, đèn pha, cản, tay nắm cửa, khe cửa
+      p(228, 62, 4, 7, O); p(229, 63, 2, 5, '#9aa0ae');
+      p(292, 100, 5, 6, O); p(293, 101, 3, 4, '#fff3a8');
+      p(230, 132, 70, 5, O); p(231, 133, 68, 2, '#c8ccd6'); p(231, 135, 68, 1, '#8a909e');
+      p(240, 88, 1, 44, O); p(276, 96, 6, 2, O);
+      // vòm bánh (thân xe) · bánh xe (canvas riêng)
+      [62, 262].forEach((wx) => { dc(wx, 140, 14, '#0c0810'); p(wx - 16, 139, 33, 1, O); });
+      X = wheels.getContext('2d');
+      [62, 262].forEach((wx) => { dc(wx, 141, 11, '#1e1a22'); dc(wx, 141, 6, '#9aa0ae'); dc(wx, 141, 2, '#d8dce6'); p(wx - 4, 137, 2, 1, '#c8ccd6'); });
+    })();
+    // chữ bảng hiệu (vẽ mỗi khung bằng chữ pixel 3x5 phóng x2)
+    const sign = 'KIT VAN', sw = textW(sign, 2);
+
+    // ---------- con trỏ bàn tay chỉ (pixel, phóng x2) ----------
+    (function handCursor() {
+      const rows = ['....OO.......', '...OSSO......', '...OSSO......', '...OSSO......', '...OSSOOO....', '...OSSOSSOOO.', 'OO.OSSOSSOSSO', 'OSOOSSSSSSSSO', 'OSSOSSSSSSSSO',
+        '.OSSSSSSSSSSO', '..OSSSSSSSSSO', '..OSSSSSSSSO.', '...OSSSSSSSO.', '...OSSSSSSO..', '....OSSSSSO..', '....OOOOOOO..'];
+      const c = document.createElement('canvas'); c.width = 26; c.height = 32; const x = c.getContext('2d');
+      rows.forEach((r, j) => [...r].forEach((v, i) => { if (v === '.') return; x.fillStyle = v === 'O' ? '#111' : '#f0c8a0'; x.fillRect(i * 2, j * 2, 2, 2); }));
+      x.fillStyle = '#c8946a'; rows.forEach((r, j) => { const last = r.lastIndexOf('S'); if (j > 6 && last > 0) x.fillRect(last * 2, j * 2, 2, 2); });
+      kv.style.setProperty('--hand', `url(${c.toDataURL()}) 9 1`);
+    })();
+
+    // ---------- bàn tay (góc nhìn người chơi: thò từ mép dưới lên, úp tay = thấy mu bàn tay + móng): gỡ món đồ khỏi móc,
+    // giật xuống 1 chút rồi rút xuống ra khỏi màn ----------
+    const SKIN = '#e8b888', SKIN_HI = '#f8d4ac', SKIN_SH = '#c08a5a', NAIL = '#f6dccc', SLEEVE = '#d8323e', SLEEVE_SH = '#9a1a26';
+    const hand = { x: 0, y: 220, mode: 'idle', t: 0, from: null, to: null, carry: null, then: null };
+    // x, y = đầu ngón tay (giữa, trên cùng) · grip: ngón co lại ôm mép dưới món đồ (không thấy móng)
+    function drawHand(x, y, grip) {
+      x = Math.round(x); y = Math.round(y);
+      // tay áo (áo đội) từ cổ tay xuống hết màn
+      P(x - 9, y + 22, 18, 200, O); P(x - 8, y + 23, 16, 200, SLEEVE); P(x + 4, y + 23, 4, 200, SLEEVE_SH);
+      P(x - 8, y + 22, 16, 3, '#f4efe0'); P(x - 8, y + 25, 16, 1, '#c8c0ac');
+      // mu bàn tay: đốt ngón nổi ở mép trên, tối dần xuống cổ tay
+      P(x - 9, y + 7, 18, 16, O); P(x - 8, y + 8, 16, 14, SKIN); P(x + 5, y + 8, 3, 14, SKIN_SH); P(x - 8, y + 19, 13, 3, SKIN_SH);
+      for (let k = 0; k < 4; k++) { const kx = x - 8 + k * 4; P(kx + 1, y + 9, 2, 1, SKIN_HI); P(kx + 3, y + 9, 1, 2, SKIN_SH); }
+      // ngón tay chĩa lên, móng ở đầu ngón
+      const len = grip ? [3, 4, 4, 3] : [6, 8, 8, 7];
+      for (let k = 0; k < 4; k++) {
+        const fx = x - 9 + k * 4 + (k > 1 ? 1 : 0), l = len[k], top = y + 8 - l;
+        P(fx, top - 1, 5, l + 2, O); P(fx + 1, top, 3, l + 1, SKIN); P(fx + 3, top, 1, l + 1, SKIN_SH);
+        if (grip) P(fx + 1, top, 3, 1, SKIN_HI);   // đốt ngón co lại
+        else { P(fx + 1, top, 3, 2, NAIL); P(fx + 1, top + 2, 3, 1, SKIN_SH); }
+      }
+      // ngón cái bên trái, chéo lên
+      if (grip) { P(x - 13, y + 7, 6, 9, O); P(x - 12, y + 8, 4, 7, SKIN); P(x - 12, y + 8, 4, 1, SKIN_HI); }
+      else { P(x - 15, y + 6, 6, 11, O); P(x - 14, y + 7, 4, 9, SKIN); P(x - 14, y + 7, 4, 2, NAIL); P(x - 14, y + 9, 4, 1, SKIN_SH); }
+    }
+    function medkit(x, y, lit) {
+      P(x, y, 18, 11, lit ? '#ffe14f' : O); P(x + 1, y + 1, 16, 9, '#f4f4f4'); P(x + 1, y + 8, 16, 2, '#c8ccd6');
+      P(x + 7, y + 2, 4, 6, '#ff3d5a'); P(x + 5, y + 4, 8, 2, '#ff3d5a');
+      P(x + 6, y - 3, 6, 1, O); P(x + 5, y - 2, 1, 2, O); P(x + 12, y - 2, 1, 2, O);
+    }
+    const lerp = (a, b, k) => a + (b - a) * k;
+    // target = chỗ đầu ngón tay chạm món đồ (đè lên mép trên)
+    function grab(target, item, then) {
+      if (hand.mode !== 'idle') return false;
+      Object.assign(hand, { mode: 'reach', t: 0, x: target.x + 8, y: 200, from: { x: target.x + 8, y: 200 }, to: target, carry: null, item, then });
+      return true;
+    }
+    // reach (với lên) -> grip (nắm) -> pull (giật khỏi móc) -> out (rút xuống ra khỏi màn, mang theo món đồ)
+    function stepHand(dt) {
+      if (hand.mode === 'idle' || window.FREEZE === hand.mode) return;
+      hand.t += dt;
+      const D = { reach: 0.3, grip: 0.12, pull: 0.12, out: 0.36 }[hand.mode], k = Math.min(1, hand.t / D);
+      const q = Math.floor(k * 8) / 8, e = hand.mode === 'out' ? q * q : 1 - (1 - q) * (1 - q);   // chuyển động theo bậc, 8 khung
+      if (hand.mode !== 'grip') { hand.x = lerp(hand.from.x, hand.to.x, e); hand.y = lerp(hand.from.y, hand.to.y, e); }
+      if (k < 1) return;
+      const next = (mode, to) => Object.assign(hand, { mode, t: 0, from: { x: hand.x, y: hand.y }, to: to || hand.to });
+      if (hand.mode === 'reach') { next('grip'); hand.carry = hand.item; hand.item.taken = true; }
+      else if (hand.mode === 'grip') next('pull', { x: hand.x, y: hand.y + 8 });
+      else if (hand.mode === 'pull') next('out', { x: hand.x + 6, y: 220 });
+      else { hand.mode = 'idle'; hand.carry = null; if (hand.then) hand.then(); }
+    }
+
+    // ---------- máy nổ: thân xe nhún nhẹ 1 pixel theo nhịp chậm + ống xả nhả khói ----------
+    const smoke = [];
+    let puffT = 0;
+    function engine(dt) {
+      puffT -= dt; if (puffT <= 0) { puffT = 0.32; smoke.push({ x: 11, y: 132, age: 0, life: 1.3 + Math.random() * 0.5, vx: -6 - Math.random() * 4, vy: -8 - Math.random() * 4 }); }
+      for (const m of smoke) { m.age += dt; m.x += m.vx * dt; m.y += m.vy * dt; m.vx *= 0.985; }
+      while (smoke.length && smoke[0].age > smoke[0].life) smoke.shift();
+      return (T % 1.4) < 0.2 ? -1 : 0;
+    }
+    function drawSmoke(dy) {
+      for (const m of smoke) {
+        if (m.age < 0) continue;
+        const k = m.age / m.life, sz = Math.round(4 + k * 10), x = Math.round(m.x - sz / 2), y = Math.round(m.y + dy - sz / 2);
+        const c = k < 0.3 ? '#f0eaf2' : k < 0.65 ? '#c4bacc' : '#948aa0';
+        if (k < 0.55) { P(x + 1, y, sz - 2, sz, c); P(x, y + 1, sz, sz - 2, c); }   // khối bo góc
+        else { L.fillStyle = c; for (let j = 0; j < sz; j++) for (let i = (j + Math.floor(m.age * 10)) % 2; i < sz; i += 2) L.fillRect(x + i, y + j, 1, 1); }
+      }
+    }
+
+    // ---------- tài xế + vẽ mỗi khung ----------
+    const drvLook = look({ hair: 'buzz', face: 'beard', skin: 3 });
+    const buf = document.createElement('canvas'); buf.width = 40; buf.height = 44;
+    let T = 0, last = performance.now();
+    function frame(now) {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now; T += dt;
+      stepHand(dt);
+      const dy = engine(dt);
+      L.imageSmoothingEnabled = false;
+      L.drawImage(bg, 0, 0);
+      L.drawImage(van, 0, dy);
+      L.drawImage(wheels, 0, 0);
+      drawSmoke(dy);
+      text(sign, 137 - sw / 2, 12 + dy, O, 2);
+      // tài xế trong cabin (cắt theo khung kính) + vệt kính phản chiếu
+      SFC.Sprites.drawAvatar(buf, drvLook, kit, T, Math.PI * 0.82);
+      L.save(); L.beginPath(); L.rect(239, 59 + dy, 42, 26); L.clip(); L.drawImage(buf, 240, 44 + dy); L.restore();
+      for (let k = 0; k < 6; k++) { P(268 - k, 60 + k * 2 + dy, 2, 2, 'rgba(255,255,255,0.45)'); P(276 - k, 60 + k * 2 + dy, 1, 2, 'rgba(255,255,255,0.3)'); }
+      // đèn đường nhấp nháy nhẹ
+      if (Math.floor(T * 8) % 23 === 0) P(296, 41, 6, 2, '#a89a6a');
+      // hàng treo
+      stock.forEach((s, i) => {
+        P(s.x - 1, 46 + dy, 3, 1, '#c9ced8'); P(s.x - 1, 47 + dy, 1, 3, '#c9ced8'); P(s.x + 1, 47 + dy, 1, 2, '#c9ced8');
+        const lit = hover === i && !s.taken, lift = (lit ? -1 : 0) + dy;
+        if (!s.taken) { patch(s.id, s.x - 10, 51 + lift, lit); if (s.hot) hotSticker(s.x + 3, 47 + lift); }
+        tag(s.x + 4, 79 + dy, s.price, s.hot, s.taken);
+      });
+      // hộp cứu thương trên quầy + thẻ giá treo mép quầy
+      if (!med.taken) medkit(med.x - 9, 96 + dy, hover === 'med');
+      tag(med.x, 117 + dy, med.price, false, med.taken);
+      // tay + món đồ đang kẹp (mép trên món đồ nằm dưới ngón tay)
+      if (hand.mode !== 'idle') {
+        if (hand.carry) { if (hand.carry.med) medkit(hand.x - 9, hand.y - 3); else patch(hand.carry.id, hand.x - 10, hand.y - 14, false); }
+        drawHand(hand.x, hand.y, hand.mode !== 'reach');
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    const cashEl = document.getElementById('cash');
+    const drawCash = () => { cashEl.innerHTML = `${PX.ui('shop', 'sm')}<b>${cash}</b>`; };
+    drawCash();
+    const bubble = document.getElementById('bubble');
+    const say = (title, line, color) => { bubble.style.setProperty('--rc', color || '#111'); bubble.innerHTML = (title ? `<b>${title}</b>` : '') + `<p>${line}</p>`; };
+    const idle = () => say('', 'Fresh kit! Point at anything, I\'ll tell you about it.');
+    idle();
+    const pop = (txt) => { const el = document.createElement('div'); el.className = 'pop'; el.textContent = txt; el.style.right = '40px'; el.style.top = '40px'; kv.appendChild(el); setTimeout(() => el.remove(), 900); };
+    kv.querySelectorAll('.hit').forEach((el) => {
+      const isMed = !!el.dataset.m, s = isMed ? null : stock[+el.dataset.i];
+      el.addEventListener('mouseenter', () => {
+        hover = isMed ? 'med' : +el.dataset.i;
+        if (isMed) return say(med.taken ? 'ALL PATCHED UP' : 'FIRST-AID KIT', med.taken ? 'No more injuries. Keep it that way!' : 'Fixes up an injured teammate. Ankle looks bad, mate.', '#ff3d5a');
+        if (s.taken) return say('', 'Sold! Sorry, that was the last one.');
+        say(B[s.id].name.toUpperCase(), B[s.id].desc + (s.hot ? ' Half price today!' : ''), rc(s.id));
+      });
+      el.addEventListener('mouseleave', () => { hover = null; idle(); });
+      el.addEventListener('click', () => {
+        const it = isMed ? med : s;
+        if (it.taken || hand.mode !== 'idle') return;
+        if (cash < it.price) return say('', 'Come back with more cash!');
+        const target = isMed ? { x: med.x, y: 99 } : { x: s.x, y: 65 };
+        grab(target, isMed ? Object.assign(med, { med: true }) : s, () => say('', ['Good choice!', 'That one\'s lucky.', 'Pleasure doing business.'][Math.floor(Math.random() * 3)]));
+        cash -= it.price; drawCash(); pop('-' + it.price);
+      });
+    });
+    document.getElementById('leave').addEventListener('mouseenter', () => say('', 'Leaving already? See you down the road!'));
+    document.getElementById('leave').addEventListener('mouseleave', idle);
+
+
+    // chuyển màn
+    const setScr = (k) => {
+      document.querySelectorAll('.scr').forEach((el) => el.classList.toggle('on', el.id === k));
+      document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.s === k));
+      note.textContent = NOTES[k];
+    };
+    document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => setScr(b.dataset.s)));
+    setScr(new URLSearchParams(location.search).get('s') || 'cb');
+  }
+  </script>
+</body>
+</html>

@@ -91,15 +91,20 @@ window.SFC = window.SFC || {};
     // GOAT PATH: dòng act · loại node dưới tỉ số
     runLine(o) {
       const A = SFC.Run.act(o.act) || {}, N = SFC.Run.node(o.kind) || {}, D = o.drill && SFC_CONFIG.run.drills[o.drill];
-      return `<div class="hud-path" style="color:${A.color || '#ffe14f'}">${esc(A.name || '')} · ${esc(D ? D.name : N.name || '')}</div>`;
+      const L = o.trial && SFC.Run.legend(o.trial);   // LEGEND TRIAL: tên LEGEND thay tên bài
+      return `<div class="hud-path" style="color:${A.color || '#ffe14f'}">${esc(A.name || '')} · ${esc(L ? _t('{name} TRIAL', { name: L.name }) : D ? D.name : N.name || '')}</div>`;
     },
 
     // SKILL GAME: đồng hồ + thanh tiến độ (mốc ĐỒNG / BẠC / VÀNG = huy chương trên thanh, sáng lên khi đạt) + số đếm / mốc kế tiếp
-    drillUnit(D) { return DRILL_UNITS()[D.cfg.goal] || ''; },
+    drillUnit(D) {
+      const K = D.tech && SFC_CONFIG.legends.techniques[D.tech];   // LEGEND TRIAL: tên kỹ thuật đang đếm
+      return K ? K.name : DRILL_UNITS()[D.cfg.goal] || '';
+    },
     drillBox(game, D, time) {
-      const T = D.cfg.tiers, TC = SFC_CONFIG.run.tiers, v = SFC.Drills.shown(D), max = T[2];
-      const next = T.find((x) => v < x), lbl = this.drillUnit(D);
-      const marks = T.map((x, i) => `<u class="${v >= x ? 'on' : ''}" style="left:${(x / max) * 100}%;--mc:${TC[i].color}" title="${esc(TC[i].name)}">${x}</u>`).join('');
+      const T = D.cfg.tiers, TC = SFC_CONFIG.run.tiers, v = SFC.Drills.shown(D), max = SFC.Drills.top(D);
+      const next = T.find((x) => v < x), lbl = this.drillUnit(D), L = D.trial && SFC.Run.legend(D.trial);
+      // LEGEND TRIAL: 1 mốc duy nhất màu của LEGEND
+      const marks = T.map((x, i) => `<u class="${v >= x ? 'on' : ''}" style="left:${(x / max) * 100}%;--mc:${L ? L.color : TC[i].color}" title="${esc(L ? L.name : TC[i].name)}">${x}</u>`).join('');
       return `<div class="hud-drill">
           <div class="hd-time">${esc(time)}</div>
           <div class="hd-bar"><i style="width:${Math.min(100, (v / max) * 100)}%"></i>${marks}</div>
@@ -126,6 +131,14 @@ window.SFC = window.SFC || {};
     },
 
     /* ================= THANH KỸ NĂNG (giữa đáy, kiểu LoL) ================= */
+    // GOAT PATH (user 2026-10-28): 2 cánh của thanh — trái = BADGE của cả đội (icon nhỏ, viền màu độ hiếm, mờ khi đã dùng hết trong trận:
+    // VAR / bù giờ; loé khi vừa ra tay) · phải = ô LEGEND của bạn (chân dung LEGEND, quét tối = đang nghỉ, viền sáng + vạch cạn = đang
+    // bật, chấm dưới = số lần còn trong trận, chấm đỏ trên = đòn nặng tới THẺ ĐỎ). Nằm trong dải đáy dưới vạch biên, không đè lên sân;
+    // 2 góc dưới đã có ô PING (trái) và thông báo (phải).
+    runBadges(game) {
+      const R = game.opts.run && SFC.Run && SFC.Run.run;
+      return R ? R.bag.filter((b) => { const d = SFC.Run.badge(b.id); return d && !d.injury; }) : [];
+    },
     updateBar(game) {
       const el = this.el.abar, p = game.controlled;
       el.classList.toggle('hidden', !p || this.current === 'menu' || this.current === 'end');
@@ -133,7 +146,8 @@ window.SFC = window.SFC || {};
       const c = this.hudCache.bar || (this.hudCache.bar = {});
       const owned = game.cores.coresOf(p);
       // đổi bàn phím <-> tay cầm: vẽ lại nhãn phím trên thanh kỹ năng
-      const key = p.id + '|' + owned.join() + '|' + (p.ultLv || 1) + '|' + SFC.Input.device + SFC.Pad.style;
+      const bds = this.runBadges(game), L = p.legend && SFC.Run && SFC.Run.legend(p.legend);
+      const key = p.id + '|' + owned.join() + '|' + (p.ultLv || 1) + '|' + SFC.Input.device + SFC.Pad.style + '|' + (p.legend || '') + '|' + bds.map((b) => b.id + (b.up ? '+' : '')).join();
       if (c.key !== key) {
         c.key = key;
         const kit = game.teams[p.team].cfg.kit;
@@ -144,7 +158,17 @@ window.SFC = window.SFC || {};
         const items = [];
         for (let i = 0; i < nItems; i++) items.push(cores[i] ? coreChip(cores[i]) : '<span class="chip empty"></span>');
         el.style.setProperty('--c', kit.shirt);
-        el.innerHTML = `
+        const RAR = SFC_CONFIG.progression.rarities;
+        const bdHtml = bds.length ? `<div class="ab-bds">${bds.map((b) => {
+          const d = SFC.Run.badge(b.id);
+          return `<span class="ab-bd ${b.up ? 'up' : ''}" data-b="${b.id}" style="--rc:${RAR[d.rarity].color}" title="${esc(d.name + (b.up ? '+' : '') + ' · ' + d.desc)}">${d.icon ? PX().ui(d.icon) : PX().arch(d.school)}</span>`;
+        }).join('')}</div>` : '';
+        const M = SFC_CONFIG.legends && SFC_CONFIG.legends.moment, F = (L && L.flaw) || {};
+        const TQ = L && L.tech && SFC_CONFIG.legends.techniques[L.tech];
+        const legHtml = L ? `<div class="ab-leg" style="--lc:${L.color}" title="${esc(L.name + ' · ' + L.title + (TQ ? ' · ' + TQ.name + ' (' + SFC.Input.techKeys(TQ) + ')' : '') + ' · ' + L.flawDesc)}">
+            <canvas width="18" height="18"></canvas><div class="sw"></div><i class="lg-fill"></i><b></b>
+            ${M.enabled ? `<span class="lg-pips">${'<u></u>'.repeat(M.max)}</span>` : ''}${F.kind === 'red' ? `<span class="lg-fouls">${'<u></u>'.repeat(F.hits)}</span>` : ''}</div>` : '';
+        el.innerHTML = `${bdHtml}
           <div class="ab-por"><canvas width="22" height="22"></canvas><div class="ab-name">${esc(p.name)}</div>${game.lockedPlayer(p.team) ? '' : `<kbd>${esc(keyLabel('switch'))}</kbd>`}</div>
           <div class="ab-mid">
             <div class="ab-slots">${SLOTS.map((s) => `
@@ -157,8 +181,16 @@ window.SFC = window.SFC || {};
             </div>
             <div class="ab-stam"><i></i></div>
           </div>
-          <div class="ab-items">${items.join('')}</div>`;
-        this.drawPortrait(el.querySelector('canvas'), p, game);
+          <div class="ab-items">${items.join('')}</div>${legHtml}`;
+        this.drawPortrait(el.querySelector('.ab-por canvas'), p, game);
+        c.leg = null;
+        if (L) {
+          const node = el.querySelector('.ab-leg');
+          this.drawPortrait(node.querySelector('canvas'), { team: p.team, role: p.role, look: SFC.LegendDraw.lookOf(L) }, game);
+          c.leg = { node, sw: node.querySelector('.sw'), fill: node.querySelector('.lg-fill'), txt: node.querySelector('b'),
+            pips: [...node.querySelectorAll('.lg-pips u')], fouls: [...node.querySelectorAll('.lg-fouls u')], key: '' };
+        }
+        c.bds = [...el.querySelectorAll('.ab-bd')].map((n) => ({ n, id: n.dataset.b, spent: false, hits: -1 }));
         c.slots = SLOTS.map((s) => {
           const node = el.querySelector(`[data-k="${s.k}"]`);
           return { s, node, sw: node.querySelector('.sw'), txt: node.querySelector('b'), last: -1, lastTxt: null, cls: '' };
@@ -169,6 +201,7 @@ window.SFC = window.SFC || {};
         c.lastUlt = -1;
       }
       this.updateBarExtras(game, p, c);
+      this.updateRunBar(game, p, c);
 
       // ô ra đòn chỉ mờ khi chính mình cầm bóng (đồng đội cầm bóng vẫn đánh được)
       const teamHas = game.ball.owner === p;
@@ -224,6 +257,51 @@ window.SFC = window.SFC || {};
             c.ult.classList.remove('drain'); void c.ult.offsetWidth; c.ult.classList.add('drain');
           }
         }
+      }
+    },
+
+    // ô LEGEND + dải BADGE (GOAT PATH). Ghi DOM chỉ khi đổi trạng thái
+    updateRunBar(game, p, c) {
+      const G = c.leg, h = G && SFC.Legends && SFC.Legends.hud(game, p);
+      if (h) {
+        const st = h.red ? 'red' : h.t > 0 ? 'on' : h.cd > 0 ? 'cd' : h.n >= h.max ? 'out' : 'ready';
+        const sweep = st === 'cd' ? Math.min(1, h.cd / h.cdMax) : 0, fill = st === 'on' ? (h.dur ? Math.min(1, h.t / h.dur) : 1) : 0;
+        const txt = st === 'cd' ? String(Math.ceil(h.cd)) : st === 'on' && h.dur ? String(Math.ceil(h.t)) : st === 'red' ? '✕' : '';
+        const key = [st, sweep.toFixed(2), fill.toFixed(2), txt, h.n, h.hits].join('|');
+        if (key !== G.key) {
+          // vừa hết nghỉ -> lóe sáng như ô kỹ năng
+          if (G.st === 'cd' && st === 'ready') { G.node.classList.remove('ready'); void G.node.offsetWidth; G.node.classList.add('ready'); }
+          G.key = key; G.st = st;
+          for (const k of ['on', 'cd', 'out', 'red']) G.node.classList.toggle(k, st === k);
+          G.sw.style.setProperty('--p', sweep.toFixed(3));
+          G.fill.style.setProperty('--f', fill.toFixed(3));
+          G.txt.textContent = txt;
+          G.pips.forEach((u, i) => u.classList.toggle('used', i < h.n));
+          G.fouls.forEach((u, i) => u.classList.toggle('on', i < h.hits));
+        }
+      }
+      // vừa ra kỹ thuật LEGEND (Effects.legendTech, seq mới): ô LEGEND diễn kiểu anime — phóng to + loé trắng + tia toả, tên kỹ thuật bay lên
+      const A = G && game.effects.V.legtech && game.effects.V.legtech[p.id];
+      if (G && A && A.seq !== G.seq && A.id !== 'flip') {
+        G.seq = A.seq;
+        const K = SFC_CONFIG.legends.techniques[A.id];
+        G.node.classList.remove('tech'); void G.node.offsetWidth; G.node.classList.add('tech');
+        if (K) {
+          const f = document.createElement('span');
+          f.className = 'lg-tname';
+          f.textContent = K.name;
+          G.node.appendChild(f);
+          setTimeout(() => f.remove(), 1300);
+        }
+      }
+      // BADGE dùng hết trong trận (VAR đã xem đủ bàn, bù giờ đã dùng) -> mờ; vừa ra tay -> lóe
+      const o = game.opts;
+      for (const b of c.bds || []) {
+        const hits = b.id === 'var' ? game.varN || 0 : b.id === 'watch' ? (game.addedDone ? 1 : 0) : 0;
+        const spent = b.id === 'var' ? !!(o.varCheck && o.varCheck[0] && hits >= o.varCheck[0].n) : b.id === 'watch' ? hits > 0 : false;
+        if (b.hits >= 0 && hits > b.hits) { b.n.classList.remove('hit'); void b.n.offsetWidth; b.n.classList.add('hit'); }
+        b.hits = hits;
+        if (spent !== b.spent) { b.spent = spent; b.n.classList.toggle('spent', spent); }
       }
     },
 

@@ -1,6 +1,6 @@
 # GOAT PATH — Football Story thành run kiểu Slay the Spire
 
-> Trạng thái: **GIAI ĐOẠN 1–5 ĐÃ LÀM (2026-10-25), chờ chơi thử.** Còn: co-op (giai đoạn 6), PHÒNG TRƯNG BÀY theo run. Đội Elite riêng: đã làm 2026-10-27 (mục "Đội Elite"). Số liệu là số khởi điểm.
+> Trạng thái: **GIAI ĐOẠN 1–5 ĐÃ LÀM (2026-10-25), chờ chơi thử.** Còn: co-op (giai đoạn 6), PHÒNG TRƯNG BÀY theo run. Đội Elite riêng: đã làm 2026-10-27 (mục "Đội Elite"). **BADGE làm lại + LEGEND: đã làm 2026-10-28** (mục "Lớp sức mạnh, BADGE mới và LEGEND" — thay các mục BADGE cũ bên dưới). Số liệu là số khởi điểm.
 > Code: `config/run.config.js` · `src/meta/run.js` (`SFC.Run`) · `src/ui/runmap.js` (`SFC.RunUI`, page `run` = tab PLAY, `runmap` = map) · `app.startRunMatch` (main.js).
 > Thay cho: cup knockout 4 trận của `docs/FOOTBALL_STORY.md`. 4 Story cũ (cốt truyện, người dẫn truyện, sao thử thách) **bỏ**;
 > giữ lại đối thủ, luật trận (`MatchMods`), câu nói trong trận, khuôn cut-scene và co-op player-host để dùng lại.
@@ -25,7 +25,7 @@
 | 12 | Tên chế độ | **GOAT PATH**. Tên này đang là màn bản đồ Area của RANKED (page `road`, `src/ui/road.js`) → màn đó phải đổi tên khi làm |
 | 13 | Tên item | **BADGE** |
 | 14 | Bỏ run | **Có nút FORFEIT** (bỏ run, tính như thua). Thoát giữa trận = forfeit = hết run |
-| 15 | Item áp cho ai | **Chỉ character của người chơi**, đồng đội AI không được cộng |
+| 15 | Item áp cho ai | ~~Chỉ character của người chơi~~ → 2026-10-26 gắn cho 1 người → **2026-10-28: BADGE của cả đội** (mục "Lớp sức mạnh, BADGE mới và LEGEND") |
 | 16 | Thưởng trận | Matchday / Elite / Boss: **chọn 1 trong 3 BADGE** |
 | 17 | Chấn thương | **Không tự hết**, phải chữa ở Locker Room hoặc Shop |
 
@@ -40,7 +40,7 @@ PLAY › GOAT PATH › bắt đầu run (hoặc TIẾP TỤC run đang dở)
 ```
 
 - Run lưu sau mỗi node (`Profile.data.run`), thoát game rồi vào lại thì tiếp ở MAP.
-- **FORFEIT** (bỏ run): nút ở MAP và ở menu tạm dừng trong trận, có hỏi xác nhận. Tính như thua: màn KẾT THÚC RUN, vẫn quy đổi thưởng theo tầng đã tới.
+- **FORFEIT** (bỏ run): nút ở tab GOAT PATH và ở menu tạm dừng trong trận (2026-10-29: bỏ khỏi MAP), có hỏi xác nhận. Tính như thua: màn KẾT THÚC RUN, vẫn quy đổi thưởng theo tầng đã tới.
 - Thoát game giữa trận = forfeit: ghi `pending` lúc giao bóng (như Main Path), vào lại thì run đã hết. Không cho thoát để đá lại trận đang thua.
 
 ## Cấu trúc act và map
@@ -118,6 +118,8 @@ Lấy ý tưởng từ 13 bài DRILL có sẵn (`progression.attrs.drills.list`)
 Chấn thương = **BADGE xấu** nằm chung túi (viền đỏ), ví dụ trừ PACE. **Không tự hết**, chỉ chữa ở Locker Room hoặc Shop (user chốt). Vì vậy đường đi qua Skill game có rủi ro thật: hỏng nhiều thì phải vòng qua Locker Room / Shop.
 
 ## Hệ item: BADGE
+
+> **Đã thay 2026-10-28** bằng mục "Lớp sức mạnh, BADGE mới và LEGEND" ở cuối file: BADGE chỉ số thuần bỏ, BADGE là của cả đội, không còn thẻ WHO GETS IT?. Phần dưới giữ để biết lịch sử.
 
 **Tên: BADGE** (user chốt; miếng huy hiệu may lên áo đấu). Cần tên riêng vì "item" trong config đã là costume (`progression.items`), "card" là lá Core, "DRILL" là hệ chỉ số cũ.
 
@@ -198,8 +200,8 @@ Chốt với user: **bỏ phiếu, chốt bằng bốc ngẫu nhiên theo số p
 - Màn ranked cũ tên GOAT PATH đổi thành **AREA MAP**. Page `story` cũ chỉ còn mở được từ PHÒNG TRƯNG BÀY.
 - **Sinh map** (`Run.genAct`, seed lưu trong run): lưới 5 cột x 7 tầng, 4 đường đi không cắt nhau; tầng 0 Matchday, tầng 6 Locker Room, tầng 1–5 theo trọng số; Elite / Locker Room từ tầng 3; Shop / Locker Room / Elite không liền nhau trên 1 đường. Mỗi đường 2–4 trận. Đối thủ gán lúc sinh map, **không trùng đội trên cùng 1 đường** (sinh lại tới 300 lần; thử 900 act: 0 lần trùng). Matchday chỉ bốc `teams`, Elite chỉ bốc `elite` + boss act trước không được bốc (act 3).
 - **Trận**: knockout (bàn thắng vàng), luật trận + câu nói của đội, **không có tỉ số khởi đầu**, Elo AI theo act + tầng (Elite +150). Thưởng = trận đơn (gold / XP), chưa có tiền trong run.
-- **Thua = hết run.** FORFEIT ở tab, ở map và ở menu tạm dừng (FORFEIT (RUN OVER)). Tắt game giữa trận: `pending` lúc giao bóng -> lần mở sau `Run.settle()` tính forfeit + 1 trận thua.
-- **Màn map**: thanh trên (ACT n + 3 vạch act + tên act · FORFEIT RUN / BACK), map rộng hết màn, cuộn dọc bằng lăn chuột / phím **không hiện thanh cuộn** (user 2026-10-25). Map là **sa bàn chiến thuật** (user 2026-10-25): mặt cỏ sọc trong khung nhôm, vạch phấn (biên, giữa sân, vòng tròn giữa, vòng cấm + khung thành 2 đầu), node như nam châm, đường đi nét phấn; tầng 0 ở vòng cấm nhà dưới cùng, boss đứng trong vòng cấm đối thủ trên cùng. Mỗi tầng cách nhau 66px, node **dàn đều theo bề ngang** (chia đều theo số node của tầng, giữ thứ tự cột nên đường không cắt nhau) thay vì theo cột lưới. Node icon pixel (mới: `ui-shop` túi tiền, `ui-locker` áo treo), boss = cầu thủ đội boss + vương miện, đường đã qua tô màu act. **Không hiện thông tin đối thủ trước trận** (user 2026-10-25: vào trận mới biết; node trận chỉ cho biết MATCHDAY / ELITE, boss đã lộ ở thẻ mở act). Thẻ mở act (đầu run, sau mỗi boss). Hết run: thẻ RUN OVER (đội loại bạn + tỉ số) / CHAMPIONS + số trận thắng, boss đã hạ; CONTINUE xoá run.
+- **Thua = hết run.** FORFEIT ở tab và ở menu tạm dừng (2026-10-29: map không còn nút này) (FORFEIT (RUN OVER)). Tắt game giữa trận: `pending` lúc giao bóng -> lần mở sau `Run.settle()` tính forfeit + 1 trận thua.
+- **Màn map**: thanh trên (~~ACT n + 3 vạch act + tên act · FORFEIT RUN / BACK~~ → 2026-10-29: chỉ dải đội hình bên trái + thẻ tiền (túi tiền pixel + số vàng) bên phải; co-op thêm INVITE / LEAVE ROOM; Esc = về tab GOAT PATH), map rộng hết màn, cuộn dọc bằng lăn chuột / phím **không hiện thanh cuộn** (user 2026-10-25). Map là **sa bàn chiến thuật** (user 2026-10-25): mặt cỏ sọc trong khung nhôm, vạch phấn (biên, giữa sân, vòng tròn giữa, vòng cấm + khung thành 2 đầu), node như nam châm, đường đi nét phấn; tầng 0 ở vòng cấm nhà dưới cùng, boss đứng trong vòng cấm đối thủ trên cùng. Mỗi tầng cách nhau 66px, node **dàn đều theo bề ngang** (chia đều theo số node của tầng, giữ thứ tự cột nên đường không cắt nhau) thay vì theo cột lưới. Node icon pixel (mới: `ui-shop` túi tiền, `ui-locker` áo treo), boss = cầu thủ đội boss + vương miện, đường đã qua tô màu act. **Không hiện thông tin đối thủ trước trận** (user 2026-10-25: vào trận mới biết; node trận chỉ cho biết MATCHDAY / ELITE, boss đã lộ ở thẻ mở act). Thẻ mở act (đầu run, sau mỗi boss). Hết run: thẻ RUN OVER (đội loại bạn + tỉ số) / CHAMPIONS + số trận thắng, boss đã hạ; CONTINUE xoá run.
 - Skill game / Shop / Locker Room / ??? **chưa có nội dung**: vào là đi qua (báo "coming soon").
 - Chưa dịch chữ mới (23 chuỗi), chưa có cut-scene act, chưa khoá act cho bản DEMO.
 
@@ -226,6 +228,97 @@ Chốt với user: **bỏ phiếu, chốt bằng bốc ngẫu nhiên theo số p
 | Skill game chán, cần thấy tiến độ | Mỗi bài đếm 1 thứ, **3 mốc ĐỒNG / BẠC / VÀNG** (`run.drills[].tiers`), thanh tiến độ giữa trên HUD thay tỉ số. Thưởng theo mốc (`run.tierReward`): dưới ĐỒNG = chấn thương · ĐỒNG $ · BẠC $ + 1 BADGE · VÀNG $ + chọn 1 trong 3. 6 bài: FINISHING (bàn thắng) · TARGET PRACTICE (bàn vào bia sáng trôi trong khung) · SLALOM GATES (dẫn bóng qua cổng lần lượt, 2 người đấm) · PASS CHAIN (cả đội hình, chuỗi chuyền dài nhất, đồng đội AI trả bóng) · STREET BRAWL (hạ gục 1 vs 3) · HOT POTATO (giữ bóng, người đuổi vào thêm theo giây, mất bóng là hết) |
 | Chấn thương chưa thấy trong trận | Chấn thương rơi vào **1 người ngẫu nhiên** của đội. Trong trận: **băng trắng đúng chỗ** (cổ chân / cổ tay / đùi / ngón chân, `badges[].part`, `sprites.js`) + **dấu ✚ đỏ** nhấp nháy cạnh đầu (`render/rundraw.js`) + **khoảnh khắc ra tay** (`src/systems/hurt.js`, `run.hurt`): cổ chân / đùi → chạy nước rút thỉnh thoảng khựng lại (OUCH!) · cổ tay → cú đấm thỉnh thoảng xịt (POOF, không choáng) · ngón chân → cú sút thỉnh thoảng trượt chân lệch hướng (SHANK!) |
 
+## Lớp sức mạnh, BADGE mới và LEGEND (user chốt + ĐÃ LÀM 2026-10-28)
+
+Vấn đề (user 2026-10-28): BADGE +chỉ số không đổi được gì thấy được trong trận (+8 trên nền ~70 = vài %, mà luật game là người chơi không đọc số); chọn BADGE cho đồng đội nào cũng không thú vị (lựa chọn tối ưu quá rõ, không thấy kết quả trên AI). Muốn đưa cảm giác bóng đá thật vào run.
+
+### 4 lớp sức mạnh, mỗi lớp 1 làn riêng
+
+| Lớp | Câu hỏi | Nhịp | Làm gì | Không bao giờ làm |
+|---|---|---|---|---|
+| **CORE** (giữ nguyên) | Trận này đá kiểu gì? | Reset mỗi trận | Chiêu trong trận: đánh, sút, chuyền, lướt + công thức Tuyệt kỹ | — |
+| **LEGEND** (mới) | Người này là ai? | Hiếm (node LEGEND TRIAL) | Làm người đeo giỏi hơn ở thứ đã có (chỉ số) theo phong cách huyền thoại + khoảnh khắc LEGEND + nhược điểm | Tạo chiêu mới |
+| **BADGE** (làm lại) | Đội mình bẻ luật nào? | Sau mỗi node | Bẻ cách Core ra, luật trận của đội, map / tiền / phòng của run | Hiệu ứng đánh / sút / chuyền · cộng chỉ số thuần |
+| **CHỈ SỐ** | Mạnh cỡ nào? | Nền | Nền vị trí + sở trường đồng đội + LEGEND + chấn thương | — |
+
+### BADGE mới: đồ bóng đá thật, của cả đội (`run.badges`)
+
+- **Của cả đội**: túi chung `R.bag` (chấn thương vẫn theo người: `who`). Bỏ thẻ WHO GETS IT? (`R.assign`). Thưởng chọn 1 trong 3 = **1 bộ chung** `R.offer`; co-op **bỏ phiếu** (`vote.kind = 'pick'`, lựa chọn `0..n-1` / `skip`). Shop: ví riêng, đồ mua vào túi chung.
+- **Chỉ số thuần bỏ khỏi pool**. Đồ bóng đá thật để người chơi thấy quen (user 2026-10-28).
+- Nâng cấp ở Locker Room: `badges[id].up` = số liệu sau nâng cấp (không có `up` = không nâng được).
+
+| Làn | BADGE | Hiệu lực (móc) |
+|---|---|---|
+| Bốc Core | GPS Vest · Tactics Board · Golden Boot · Derby Scarf · Steel Studs · Freestyle Ball · Captain's Armband · Vuvuzela (8 trường phái) | Core hệ đó ra thường hơn + mạnh hơn cho **cả đội** (`opts.draftBias` / `coreBoost`, bỏ điều kiện `p.avatar` / chủ ghế) |
+| Bốc Core | Scouting Report | +1 lá mỗi lượt chọn (`opts.draftCards`, màn chọn 4 lá `.cards.n4`); nâng cấp thêm 1 lượt đổi bài |
+| Bốc Core | Referee's Coin | +lượt đổi bài mỗi lượt chọn (`opts.rerollBonus`) |
+| Bốc Core | Pre-Season Camp | +1 lượt chọn trước giao bóng, chỉ đội bạn (`opts.draftBonus`; `startDraft(true, team)` không tính vào `upgradeIdx`, đối thủ không bốc thêm; màn chọn ghi BONUS PICK, thêm 1 ô Core) |
+| Trận | Energy Drink | Cả đội nạp Tuyệt kỹ nhanh hơn (`opts.ultGain`) |
+| Trận | Home Crowd | Mỗi trận bắt đầu 1–0 (`opts.score`) |
+| Trận | VAR Monitor | Bàn thua đầu tiên mỗi trận được xem lại, trúng `chance` thì huỷ (NO GOAL! · VAR check), giao bóng cho bạn (`opts.varCheck`, `checkGoal`) |
+| Trận | Referee's Watch | Đang thua lúc hết giờ: bù giờ 1 lần (ADDED TIME, lùi đồng hồ; `opts.addedTime`, `tickClock`) |
+| Run | Shirt Sponsor | Thêm tiền mỗi trận thắng (`winCash`) |
+| Run | Season Ticket | Shop rẻ hơn (`shopOff`, cả giá chữa) |
+| Run | Ice Bath | Locker Room làm được 2 việc (`room.left`) |
+| Run | Shin Guards | Chặn chấn thương đầu tiên mỗi act (`guard`, `R.guard`) |
+| Run | Training Bibs | Mốc Skill game / LEGEND TRIAL giảm (`drillEase` -> `opts.drillEase`) |
+
+Season Ticket kiểu "giữ 1 Core sang trận sau" đã được bàn rồi **bỏ** (đụng chốt #3: Core reset mỗi trận).
+
+### LEGEND (`config/legends.config.js`, `src/systems/legends.js`, `src/render/legenddraw.js`)
+
+- Huyền thoại bóng đá **tên nhái** (kiểu PES chưa bản quyền: không tên thật, không mặt, không số áo / CLB thật). Nhận ra qua **hành vi + danh hiệu**, không qua tên. Toàn bộ tên ở config để đổi nhanh nếu có vấn đề pháp lý (cần người có chuyên môn xem trước khi lên Steam).
+- **1 người tối đa 1 LEGEND** (`squad[i].legend`). **Ai trong đội cũng nhận được, gắn lệch vị trí được** (user 2026-10-28: để người chơi tự sáng tạo; `role` của LEGEND chỉ là vị trí sở trường để hiện). Người thật hay AI đều đeo được, nên co-op 3 người vẫn có lớp này.
+- **Có được**: node **LEGEND TRIAL** trên map (`nodes.legend`, trọng số `map.weights.legend`, từ tầng 1, không liền nhau). Node hiện sẵn chân dung LEGEND đang chờ (biết trước để chọn đường). Vào node: thẻ giới thiệu · START / SKIP. **Trial khớp combo** (user 2026-10-30): LEGEND **cho người đá mượn kỹ thuật của mình** trong bài (`match.js` gắn `p.legend` + `p.lent`: không kèm nhược điểm), bài SKILL GAME `combo` (`run.drills.combo`, không bốc cho Skill game thường) đếm **số lần làm được đúng kỹ thuật đó** (`trial.goal` lần trong `trial.time` giây, `opts.trial`; HUD 1 mốc màu LEGEND, đơn vị = tên kỹ thuật; banner tên kỹ thuật + "Pull it off n times"; kết thúc SIGNED! / TRIAL FAILED). Đội hình + cách chơi theo `trial` của từng LEGEND (bảng dưới): `size` [bạn, đối thủ] · `keepers` (số đối thủ trông khung) · `foeBall` (đối thủ cầm bóng tấn công, bạn giữ bóng lâu thì trả lại) · `feed` (đồng đội AI cầm bóng là chuyền trả bạn: `ground` / `lob` = tạt bổng). Đếm: kỹ thuật sút (power / trivela / finesse / bicycle) = bàn thắng mà cú đá cuối mang `ball.legTech` đúng kỹ thuật (sai kỹ thuật: chữ NO COMBO) · lofted through = đồng đội đón được (`match.js gainPossession`) · bruiser / slide / engine / sweeper / rainbow (hất qua đầu khi có đối thủ trong `tuning.rainbow.near` px) = `Legends` gọi `Drills.combo`. Qua → thẻ **"wants to join"** (`R.join = { id }`). Hỏng: không mất gì.
+- **UI** (user 2026-10-30, mockup `tools/mockups/legend-ui.html`: bớt chữ, combo là chính): cả 2 màn dùng **dải LEGEND** (`RunUI.hero`): chân dung to quay mặt ra trước trên hào quang + tia màu LEGEND · danh hiệu · tên · **chip COMBO** (ngôi sao + tên kỹ thuật + keycap từng phím, mô tả ở tooltip) · nhãn nhược điểm đỏ (DIVER / FEATHERWEIGHT / HOTHEAD / WILD CARD, câu đầy đủ ở tooltip; LEGEND chỉ đánh đổi chỉ số thì câu nằm ở tooltip tên). Màn trial: "LEGEND TRIAL" nhỏ + dải LEGEND + ô **"n×" + tên kỹ thuật | đồng hồ** + 1 dòng "He lends you his combo…" · START / SKIP. Màn nhận: dải LEGEND + "Who gets him?" + 3 thẻ cầu thủ (thẻ đang trỏ / chọn bằng phím = xem trước ▲▼ + OVR mới + bóng LEGEND sau lưng; nhãn "Replaces <danh hiệu>" nếu thay LEGEND cũ) · NO THANKS (`Run.answerJoin(who | null)`). **Bấm chọn = hoạt cảnh** (`RunUI.sign`, chơi một mình): chân dung bay vào thẻ → từng chỉ số đổi lần lượt (số chạy + bật +n / −n) → OVR mới + chip COMBO **NEW COMBO** đóng dấu lên thẻ + chip LEGEND dưới thẻ → mới vào đội. Co-op bỏ phiếu thì không diễn.
+- **Co-op**: trial 1 người đá (xoay vòng như Skill game). Người nhận LEGEND: **bỏ phiếu** (`vote.kind = 'join'`, lựa chọn `0` / `1` / `2` / `no`).
+- **Trong trận** (`p.legend`, gắn từ avatars / mates / seats; online gửi kèm ghế, `Profile.sanitizeLegend`):
+  - Nghiêng chỉ số luôn bật (`stats`, tính trong `Run.ratingsOf`) + Core trường phái của LEGEND ra thường hơn cho riêng người đeo (`legends.schoolBias`).
+  - **Khoảnh khắc LEGEND**: đúng tình huống của huyền thoại (`moment.on`: box · hold · final · longShot · longPass · steal · dodge · goal · hardHit · win) → cộng chỉ số mạnh trong `moment.dur` giây (final: tới hết trận), tối đa `moment.max` lần / trận, nghỉ `cooldown`. Hình: **cut-in chân dung cạnh trái màn hình** (LEGEND + danh hiệu + tên; không phủ tối, không dừng trận, cách nhau `cutGap`, không đè cut-in Tuyệt kỹ) + **bóng huyền thoại sau lưng** (viền màu + chính LEGEND mờ, to gấp rưỡi) + tiếng khán đài (`Audio.legend`). `Effects.legendCut` / `legendAura` đi qua `sync.js`.
+  - **Nhược điểm cơ chế** (áp như nhau cho người và AI): đánh đổi chỉ số (số âm trong `stats`) · `dive` (bị đánh nằm lâu hơn, DIVE!) · `light` (văng xa hơn) · `red` (đòn nặng đủ `hits` lần = RED CARD!: không ra đòn / sút / chuyền + đi bộ `time` giây) · `random` (mỗi trận 1 chỉ số lên, 1 xuống).
+
+| LEGEND (tên nhái) | Danh hiệu | Vị trí · trường phái | Khoảnh khắc (khi nào) | Nhược điểm | Trial (khớp combo, 2026-10-30) |
+|---|---|---|---|---|---|
+| Erling Haalandroid | THE CYBORG | FWD · STRIKER | cầm bóng vào vòng cấm đối thủ | chuyền / rê kém | BRUISER RUN: giật chỏ văng 4 người / 35s · 1 vs 3 người đuổi |
+| Zlatko Ibrakadabra | THE LION | FWD · KICKER | ra đòn nặng trúng | không chịu chuyền | BICYCLE KICK: 2 bàn / 45s · cả đội hình (đồng đội tạt bổng) vs 1 thủ môn |
+| Mario Balotello | WHY ALWAYS ME? | FWD · CHAOS | ghi bàn | mỗi trận 1 chỉ số lên, 1 xuống | POWER SHOT: 3 bàn / 40s · vs thủ môn |
+| Neymor Jr. | SAMBA STAR | FWD · ILLUSION | né đòn (lướt xuyên) | ăn vạ: nằm lâu hơn | RAINBOW FLICK: hất qua người 4 lần / 35s · 1 vs 2 người đuổi |
+| Leo Mecci | THE LITTLE MAGICIAN | MID · SPEED | giữ bóng lâu | nhỏ con: văng xa | FINESSE SHOT: 3 bàn / 40s · vs thủ môn + 1 hậu vệ |
+| Andrea Pirlow | THE ARCHITECT | MID · TIKI-TAKA | chuyền dài tới chân | chậm | LOFTED THROUGH: 3 đường đồng đội đón được / 40s · cả đội hình vs 2 |
+| N'Golo Kantay | THE ENGINE | MID · IRON | cướp bóng | sút kém | ENGINE PRESS: cướp 4 lần / 35s · 1 vs 3 (đối thủ cầm bóng) |
+| Sergio Ramen | MINUTE 93 | DEF · BRAWLER | FINAL PUSH / bàn thắng vàng (tới hết trận) | THẺ ĐỎ | SLIDE TACKLE: xoạc bay 4 người / 35s · 1 vs 3 (đối thủ cầm bóng) |
+| Manuel Neuermann | THE SWEEPER | DEF · IRON | giành bóng từ đối thủ | sút kém | SWEEPER SPIN: đọc + bắt 3 cú sút / 40s · 1 vs 2 người sút |
+| Roberto Carloss | THE CANNON | DEF · SPEED | gồng sút ở sân nhà | bỏ vị trí (thủ môn kém) | TRIVELA: 2 bàn / 45s · vs thủ môn + 1 hậu vệ |
+
+- **KỸ THUẬT ĐẶC TRƯNG** (user 2026-10-29, hướng A — tăng trần kỹ năng): mỗi LEGEND dạy người đeo 1 kỹ thuật nâng cao (`legends.techniques`, `tech` từng LEGEND). **Trong run, kỹ thuật nâng cao chỉ có qua LEGEND** (`gateInRun`; 4 kỹ thuật cũ cũng chuyển vào lớp này), ngoài run 4 kỹ thuật cũ vẫn mở cho mọi người như trước. AI không dùng kỹ thuật. Thẻ LEGEND / trial / ô LEGEND trên HUD hiện tên + tổ hợp phím (`Input.keysText`, theo phím người chơi đã đổi).
+
+Bản 3 (feedback user 2026-10-29, lần 2): **tạm tắt KHOẢNH KHẮC LEGEND** (tăng chỉ số theo tình huống + cut-in + bóng mờ: `legends.moment.enabled = false`, cơ chế vẫn giữ, bật lại được) — LEGEND chỉ còn kỹ thuật (combo) + nghiêng chỉ số luôn bật + nhược điểm; **bỏ mọi chữ bật lên trên đầu** do LEGEND (tên kỹ thuật, WIPEOUT!, STOLEN!, RED CARD!, DIVE!...) — tên kỹ thuật chỉ hiện ở ô LEGEND trên HUD; ô LEGEND hiện hồi chiêu của kỹ thuật (slide / bruiser...) thay cho hồi chiêu khoảnh khắc. Phím C đổi tên action thành `trick` (Trivela + Bruiser Run).
+
+Bản 2 (feedback user 2026-10-29): kỹ thuật hợp với hình ảnh từng huyền thoại + mỗi kỹ thuật có **diễn riêng** (tư thế trên người `Effects.legendTech`, vệt bóng `legendBall`, vẽ ở `src/render/legenddraw.js`; chữ tên kỹ thuật; ô LEGEND trên HUD phóng to + loé + tia toả, tên kỹ thuật bay lên). Phím mới `power` (F) và `trivela` (C) chỉ có trên bàn phím; tay cầm dùng tổ hợp (mỗi LEGEND chỉ 1 kỹ thuật nên không lẫn).
+
+| LEGEND | Kỹ thuật | Bàn phím | Tay cầm | Cơ chế | Diễn |
+|---|---|---|---|---|---|
+| Haalandroid | BRUISER RUN (bản 3) | dẫn bóng + giữ E, bấm C | giữ RB, bấm LB | Giật chỏ: đối thủ sát bên văng ra + choáng, vẫn giữ bóng. Trong 0.3s sau khi bấm, ai đấm / tắc vào bạn cũng văng ngược (bấm đúng lúc bị tắc) · nghỉ 1.1s | Vai xô, người bè ra, sóng va chạm 2 bên vai, khựng hình khi chặn được |
+| Balotello | POWER SHOT (bản 3) | F + D | Q + Z + D (RT + LB + X) | Bóng nhanh x1.35, chuẩn hơn, sệt hơn | Gồng ra sau rồi bung, người phình to, vết nứt + sóng dưới chân, khựng hình + rung, vệt bóng thiên thạch trắng cam |
+| Carloss | TRIVELA | C + D | E + Z + D (RB + LB + X) | Như cứa lòng nhưng **cong ngược phía**, cong mạnh hơn | Nghiêng người, cung quét má ngoài màu LEGEND, vệt bóng cong + lấp lánh |
+| Neymor | RAINBOW FLICK | phím sút giả (giữ D / A + S) | như vậy | Bóng cuộn lên sau gót, vòng qua đầu (đỉnh ~30px, 0.6s, không ai chạm được lúc bay) rồi **rơi ngay trước mặt** người đang chạy và về chân, dẫn bóng tiếp (bản 3) | Bật nhảy ngửa ra sau, vệt bóng **cầu vồng 7 màu** |
+| Mecci | FINESSE SHOT | Z + D | LB + X | Cứa lòng (cơ chế cũ) | Xoay người 1 vòng như vũ công, vòng sáng quanh người, vệt cong lấp lánh |
+| Ibrakadabra | BICYCLE KICK | D khi bóng cao tới | như vậy | Dứt điểm 1 chạm với bóng cao ≥ `minZ`: tự nhắm khung thành, lực x1.35 | Bay lên lộn ngược 1 vòng, khựng hình + tia tốc độ, vệt bóng tia chớp |
+| Kantay | ENGINE PRESS | giữ E + D (không cầm bóng) | giữ RB + X | Tự đuổi người cầm bóng / bóng lỏng, rút thể lực x2.2; chạm người cầm bóng = chọc bóng (STOLEN!) | Chúi người, tia tốc độ + khói động cơ phía sau suốt lúc giữ |
+| Ramen | SLIDE TACKLE | E + A (không cầm bóng) | RB + B | Nằm trượt theo hướng mũi tên; chạm đối thủ đầu tiên = họ bay **lộn đúng 3 vòng** (rơi bóng); hụt = nằm | Nằm ngang trượt + bụi cỏ, đối thủ lộn 3 vòng trên không (WIPEOUT!) |
+| Neuermann | SWEEPER SPIN | đọc cú sút (W trong vòng cấm) rồi bắt bóng | như vậy | Bắt được bóng trong 2.5s sau khi đọc trúng → xoay 1 vòng rồi chuyền cho người dâng cao nhất, người đó tăng tốc thoáng chốc (GO!) | Bật lên xoay 1 vòng, sóng màu LEGEND; người nhận có bóng huyền thoại |
+| Pirlow | LOFTED THROUGH | Q + W | RT + Y | Chọc khe bổng (cũ) | Ưỡn người như nhạc trưởng, vệt bóng lụa vàng |
+| ~~Balotello~~ | TOE POKE | chạm D thật nhanh | chạm X | Tạm không LEGEND nào dạy (Balotello đổi sang POWER SHOT) | Chọc chân tới trước, vệt ngắn |
+
+Ghi chú: Ibra BICYCLE KICK gần ý với hình móc xe đạp của Tuyệt kỹ Comet One-Two (cùng là xe đạp chổng ngược) — user chọn; diễn khác (tia chớp, màu LEGEND). Chip shot / Fake shot không còn LEGEND nào dạy trong run (vẫn mở cho mọi người ngoài run).
+
+- **Sửa phím** (user 2026-10-29): khi cầm bóng, lướt (Q) chỉ ra lúc **nhấc phím** và chưa dùng cho kỹ thuật (`p.skillArm`, `human.js`), nên bấm Q trước rồi D / W vẫn thành sút bổng / chọc khe bổng. Không cầm bóng: lướt vẫn ra ngay lúc bấm (né đòn).
+- **HUD trong trận** (`src/ui/hud.js`, user 2026-10-28: không làm rối sân): 2 cánh của thanh kỹ năng ở dải đáy dưới vạch biên (2 góc dưới đã có ô PING / thông báo). Trái = **BADGE của cả đội** (lưới 2 hàng icon 11px, viền màu độ hiếm, góc vàng = đã nâng cấp; VAR / Referee's Watch mờ khi dùng hết trong trận, loé khi vừa ra tay). Phải = **ô LEGEND của bạn** (chân dung LEGEND; sẵn sàng = sáng · đang bật = viền màu LEGEND nhấp nháy + vạch cạn dần + số giây · nghỉ = quét tối + số giây đếm lùi, loé khi xong · hết lượt = xám; 2 chấm dưới = số lần trong trận; Ramen: vạch đỏ trên đầu ô = đòn nặng tới THẺ ĐỎ, bị thẻ = ✕ đỏ). Máy khách online nhận trạng thái qua `Effects.legendHud` (sync.js) rồi tự đếm lùi; BADGE lấy từ bản sao run. LEGEND của đồng đội không có ô (thấy qua cut-in).
+- Ý tưởng HLV (Pep / Mourinho / Ferguson...) **không làm thành lớp riêng**: phần "cả đội" của họ thành BADGE (Referee's Watch ~ Fergie time), user gộp phần cá nhân vào LEGEND.
+- Chưa làm: hành vi AI riêng theo LEGEND (Haalandroid đứng chờ trong vòng cấm...), lương LEGEND (trừ tiền run mỗi trận), icon pixel riêng cho từng BADGE mới (đang dùng lại icon có sẵn), bản dịch chữ mới (pt-BR / pt-PT / es / ja).
+- Test: `server/test/run-coop-test.js` mục 3 (bỏ phiếu BADGE) + mục 6 (LEGEND: trial → join ai cũng được, lệch vị trí, bỏ phiếu co-op, chỉ số, khoảnh khắc, thẻ đỏ, BADGE -> opts trận).
+- **Thử nhanh (dev)**: SETTINGS › TEST › **RUN TEST** (`src/ui/runtest.js`) hoặc `index.html?runtest`: chọn act / đối thủ / vị trí / LEGEND từng người / BADGE (thêm từng món, tất cả, bản nâng cấp), rồi MATCH · LEGEND TRIAL · LEGEND JOIN CARD · MAP · PICK A BADGE · SHOP · LOCKER ROOM. Đường tắt: `?runtest=match&badges=var,report,camp&legends=ramen,haalandroid,` · `?runtest=trial.pirlow` · `?runtest=trialcard.pirlow` (thẻ giới thiệu trial) · `?runtest=join.pirlow` (thẻ nhận LEGEND) · `?runtest=map`. Trong trận: `[` `]` đổi LEGEND của bạn ngay (chỉ số + kỹ thuật) · `L` khoảnh khắc LEGEND của bạn ngay · `K` mọi LEGEND đội bạn · `8` / `9` / `0` / `-` như STORY TEST; bảng góc dưới trái hiện trạng thái LEGEND + BADGE đang bật. Run thử không đụng run thật (chạy qua `Run.mirrorOn`), END TEST RUN / tải lại trang là về run thật.
+
 ## Các giai đoạn
 
 | Giai đoạn | Nội dung |
@@ -241,3 +334,24 @@ Chốt với user: **bỏ phiếu, chốt bằng bốc ngẫu nhiên theo số p
 ## Câu hỏi còn mở
 
 1. Màn bản đồ Area của RANKED (đang tên GOAT PATH) đổi thành tên gì?
+
+## Vòng chỉnh UI 2026-10-29 (feedback user)
+
+- **Thanh trên map**: bỏ nút BACK, FORFEIT RUN, tên act + vạch act. Còn dải đội hình (trái) + thẻ tiền run (phải, cùng khung với dải đội hình; Shop dùng chung thẻ này: `RunUI.cash`). Esc trên map = về tab GOAT PATH (phòng co-op: ở lại).
+- **Khoanh phấn khi chọn node**: bấm node = 1 vòng phấn vẽ tay quanh node (elip nghiêng, méo, nét cuối chồng qua nét đầu, mép sần bằng filter SVG `#rmChalk`, bụi phấn rơi) trong 0.45s + tiếng cào phấn (`Audio.chalk`), xong mới vào node; khoá thao tác lúc vẽ (`RunUI.drawing`). Node đang đứng giữ 1 vòng phấn mờ cố định (seed theo id node nên không đổi hình). Co-op: khoanh xong mới gửi phiếu.
+- **Thẻ cầu thủ (SQUAD + thẻ LEGEND xin vào đội)**: hình cầu thủ to ở giữa (nền đèn sân, màu LEGEND nếu có / LEGEND đang xem trước), OVR + vị trí góc trái trên, ✚ chấn thương góc phải, chỉ số nhỏ 2 bên (3 trái · 3 phải, số + vạch mảnh; xanh = trên nền, đỏ = dưới nền, xem trước: vàng ▲ / đỏ ▼), tên + nhãn YOU / PLAYER dưới hình, hàng LEGEND + chấn thương dưới cùng (`RunUI.statCols` / `squadCard`).
+- **Thẻ cầu thủ: chỗ trống không dùng chữ** — chưa có LEGEND = ô nét đứt với bóng đen 1 huyền thoại, hàng BADGE của đội lấp ô trống nét đứt cho đủ 10 ô (`TEAM_SLOTS`); chữ "No legend yet" / "No badges" chỉ còn ở tooltip.
+- **Màn chọn BADGE** (user bỏ ý tưởng Crossbar Challenge, chọn bố cục như SQUAD): 3 thẻ to (miếng vá có chỉ khâu màu độ hiếm + tên + công dụng, **không ghi độ hiếm** — màu viền là đủ) · dưới là hàng **TEAM BADGES** (`RunUI.teamBar`, dùng chung với SQUAD). Chọn = icon BADGE bay theo đường cong vào ô trống đầu tiên của hàng, ô loé lên rồi mới nhận (`RunUI.fly`; có hẹn giờ dự phòng nếu trình duyệt không chạy hoạt cảnh). Co-op: bỏ phiếu như cũ (không bay).
+- **Shop = KIT VAN** (`src/ui/kitvan.js`, `SFC.KitVan`; mockup duyệt ở `tools/mockups/run-ui.html`): xe bán đồ đá bóng ven đường lúc hoàng hôn, **pixel art thật** trên canvas 320x180 (khối màu cứng + dither, chữ pixel 3x5 cho bảng hiệu / thẻ giá). BADGE treo móc trên bảng gỗ đục lỗ, thẻ giá bìa cát-tông (đồng xu + số; đã bán = SOLD đỏ); hộp cứu thương trên quầy = chữa 1 chấn thương (1 hộp / chấn thương, tối đa 4; chữa 1 lần mỗi Shop như cũ). **Tài xế** trong cabin giải thích món đang trỏ trong bong bóng thoại (tên + công dụng, không ghi độ hiếm) và nói kết quả (Good choice! / thiếu tiền / hết hàng). Con trỏ = bàn tay pixel chỉ. **Mua = bàn tay góc nhìn người chơi** (úp tay, tay áo sân nhà của đội) với từ mép dưới lên, nắm món đồ, giật khỏi móc rồi rút xuống ra khỏi màn. Xe nổ máy: thân xe nhún nhẹ 1 pixel mỗi 1.4 giây, bánh xe đứng yên, ống xả nhả khói pixel. Không còn title SHOP; tiền ở góc phải trên, LEAVE (co-op: DONE) góc phải dưới.
+- **Món HOT**: mỗi Shop 1 món ngẫu nhiên giá x `run.shop.hot` (0.5), sticker HOT đỏ + thẻ giá đỏ; lưu `items[].hot`.
+- Chưa dịch: 4 câu mới của tài xế (cùng phần chữ GOAT PATH chưa dịch).
+- **Màn SQUAD**: thẻ cầu thủ cao 204px (lấp khoảng trống), hình cầu thủ to hơn, chỉ số giãn theo chiều cao (chỉ màn SQUAD; thẻ LEGEND xin vào đội giữ cỡ cũ).
+- **Cheat dev** (chỉ bản dev, `src/ui/runtest.js`): trên map GOAT PATH bấm `0` = thắng ngay node trận đang chọn 3-0 (không đá), nhận tiền + bộ 3 BADGE như thắng thật.
+
+## Vòng chỉnh đội hình 2026-10-29 (feedback user)
+
+- **Chỉ số là của cầu thủ, không của ô** (user: xếp vào vị trí nào cũng giữ đúng chỉ số của người đó): nền = `run.squad.base[vị trí sở trường]` của chính người đó (`Run.natural(m)`: vị trí có nền khớp nhất với độ lệch chỉ số riêng rating − OVR; chỉ số đều nhau thì chọn theo tên cho cố định) + lean + ovrLean như cũ. Character: nền toàn diện `run.squad.you` (~70, trung bình 3 nền vị trí). `Run.traits` bỏ.
+- **Trường phái Core hay ra** của đồng đội (2 trường phái nhiều nhất trong deck, `Run.schoolsOf`): icon ở góc phải trên thẻ cầu thủ (SQUAD, thẻ LEGEND xin vào đội, BUILD YOUR SQUAD, băng ghế). Character / bạn bè co-op: không có.
+- **Thẻ cầu thủ dùng chung** `RunUI.pcard` (SQUAD · LEGEND xin vào đội · BUILD YOUR SQUAD). SQUAD: thẻ nhỏ lại ~10% (166x184).
+- **BUILD YOUR SQUAD làm lại** (bố cục như SQUAD): tiêu đề giữa trên (BACK / INVITE / LEAVE ROOM góc phải) · 3 ô vị trí = thẻ cầu thủ (ô trống: viền nét đứt + bóng đen, ô cần chọn kế tiếp nhấp nháy xanh, ✕ = bỏ đồng đội) · dòng gợi ý / START RUN · **băng ghế** ứng viên (mặt, tên, OVR, vị trí sở trường, 2 chỉ số mạnh nhất, trường phái). **Kéo thả** (HTML5 drag & drop, `RunUI.bindDrag` / `pkDrop`): ứng viên → ô (người đang ở đó về băng ghế; ô của bạn / bạn bè không nhận) · thẻ của bạn → ô khác = đổi chỗ · đồng đội giữa 2 ô = đổi chỗ · đồng đội → băng ghế = bỏ ra. Bấm / phím vẫn như cũ.
+

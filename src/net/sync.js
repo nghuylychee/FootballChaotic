@@ -6,7 +6,8 @@
 window.SFC = window.SFC || {};
 
 (function () {
-  const ACTIONS = ['up', 'down', 'left', 'right', 'sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'switch', 'ultimate'];
+  // power / trick: phím kỹ thuật LEGEND (thêm vào cuối -> bit cũ giữ nguyên, máy chủ cũ bỏ qua bit lạ)
+  const ACTIONS = ['up', 'down', 'left', 'right', 'sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'switch', 'ultimate', 'power', 'trick'];
   const BIT = {};
   ACTIONS.forEach((a, i) => (BIT[a] = 1 << i));
 
@@ -69,7 +70,7 @@ window.SFC = window.SFC || {};
       // hiệu ứng cơ bản + VFX Kit (systems/vfxkit.js) — tham số đều là giá trị nguyên thuỷ nên gửi thẳng được
       for (const m of ['burst', 'ring', 'shake', 'flash', 'wave', 'decal', 'stretch', 'clone', 'projectile', 'beam', 'vortex', 'bolt', 'dragon',
         'pop', 'combo', 'shield', 'portal', 'netFire', 'popClone', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint',
-        'prop', 'propOff', 'vhs', 'tilt']) {
+        'prop', 'propOff', 'vhs', 'tilt', 'legendAura', 'legendCut', 'legendHud', 'legendTech', 'legendBall']) {   // legend*: GOAT PATH LEGEND (src/systems/legends.js)
         const orig = E[m];
         // chỉ ghi lệnh ngoài cùng (combo -> comic, clone -> burst...) để máy khách không phát lại 2 lần
         E[m] = function (...a) {

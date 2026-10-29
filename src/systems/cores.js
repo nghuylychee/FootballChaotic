@@ -344,9 +344,9 @@ window.SFC = window.SFC || {};
       let sum = 0;
       for (const q of list) for (const st of stats) sum += SFC.CoreScale.ratingOf(q.stats, st);
       const r = sum / (list.length * stats.length);
-      // GOAT PATH (BADGE trường phái, src/meta/run.js): Core của trường phái đó mạnh hơn — chỉ character của người chơi
+      // GOAT PATH (BADGE trường phái, src/meta/run.js): Core của trường phái đó mạnh hơn — cả đội (BADGE là của cả đội, 2026-10-28)
       const boost = this.g.opts.coreBoost && this.g.opts.coreBoost[team];
-      if (!boost || !p || !p.avatar) return r;
+      if (!boost || !p) return r;
       const add = this.tagsOf(id).reduce((m, tag) => Math.max(m, boost[tag] || 0), 0);
       return Math.min(SFC.CoreScale.cfg().max, r + add);
     }
@@ -591,6 +591,7 @@ window.SFC = window.SFC || {};
           g.effects.ring(receiver.x, receiver.y - 6, '#ffd23f');
         }
         this.dispatchFor(passer, 'onPassReceived', receiver, passer);
+        if (passer.legend && SFC.Legends) SFC.Legends.on(g, 'longPass', passer, receiver);   // GOAT PATH: khoảnh khắc LEGEND (đường chuyền dài)
       }
     }
     // đội mất quyền kiểm soát bóng -> mất chuỗi chuyền
@@ -605,14 +606,20 @@ window.SFC = window.SFC || {};
       if (!(ul.cd > 0)) { ul.cd = U2.lightHitCooldown || 0; this.gainUlt(attacker, U2.gainLightHit || 0); }
       this.dispatch(attacker.team, 'onLightHit', attacker, victim);
     }
-    hardHit(attacker, victim) { this.dispatch(attacker.team, 'onHardHit', attacker, victim); }
+    hardHit(attacker, victim) {
+      this.dispatch(attacker.team, 'onHardHit', attacker, victim);
+      if (attacker.legend && SFC.Legends) SFC.Legends.on(this.g, 'hardHit', attacker);   // GOAT PATH: khoảnh khắc LEGEND / THẺ ĐỎ
+    }
     // bị hất văng vào tường: attacker = người gây ra (có thể null)
     wallBonk(victim, attacker) {
       const t = attacker ? attacker.team : 1 - victim.team;
       this.dispatch(t, 'onWallBonk', attacker, victim);
     }
     // Z xuyên qua đòn đánh
-    dodge(p) { this.dispatch(p.team, 'onDodge', p); }
+    dodge(p) {
+      this.dispatch(p.team, 'onDodge', p);
+      if (p.legend && SFC.Legends) SFC.Legends.on(this.g, 'dodge', p);   // GOAT PATH: khoảnh khắc LEGEND
+    }
     chargedShot(p, ball, held) { this.dispatch(p.team, 'onChargedShot', p, ball, held); }
     steal(p) {
       // năng lượng Tuyệt kỹ từ cướp bóng: tối đa 1 lần mỗi stealCooldown giây (mỗi người)
@@ -624,12 +631,14 @@ window.SFC = window.SFC || {};
         this.gainUlt(p, U2.gainSteal);
       }
       this.dispatch(p.team, 'onSteal', p);
+      if (p.legend && SFC.Legends) SFC.Legends.on(this.g, 'steal', p);   // GOAT PATH: khoảnh khắc LEGEND
     }
     goalScored(team, scorer) {
       const U2 = DEF().ultimate;
       for (const p of this.g.teams[team].players) this.gainUlt(p, U2.gainGoal);
       for (const p of this.g.teams[1 - team].players) this.gainUlt(p, U2.gainConceded || 0);   // đội bị thủng lưới cũng được nạp
       this.dispatch(team, 'onGoalScored', scorer);
+      if (scorer && scorer.team === team && scorer.legend && SFC.Legends) SFC.Legends.on(this.g, 'goal', scorer);   // GOAT PATH: khoảnh khắc LEGEND
     }
     kickoff() {
       this.endTasks();
@@ -665,8 +674,8 @@ window.SFC = window.SFC || {};
     // đổi Tuyệt kỹ giữ năng lượng. Trận mơ / không công thức: chỉ nạp khi đã có Tuyệt kỹ
     gainUlt(p, amt) {
       if (!isP(p) || (!this.ultOf(p) && !this.recipesOn())) return;
-      // GOAT PATH (BADGE Energy Drink): character nạp nhanh hơn
-      const gain = this.g.opts.ultGain && p.avatar ? this.g.opts.ultGain[p.team] || 1 : 1;
+      // GOAT PATH (BADGE Energy Drink): cả đội nạp nhanh hơn
+      const gain = this.g.opts.ultGain ? this.g.opts.ultGain[p.team] || 1 : 1;
       p.res.ult = Math.min(1, this.ultE(p) + amt * gain);
     }
     ultReady(p) { return isP(p) && !!this.ultOf(p) && this.ultE(p) >= 1; }
@@ -861,10 +870,13 @@ window.SFC = window.SFC || {};
       const lean = c.tags.reduce((m, tag) => Math.max(m, style[tag] || 1), 0);
       // boss cầm Core đặc trưng: nghiêng về trường phái của Core đó (đủ lá cho Cộng hưởng / Tuyệt kỹ)
       const sig = this.signature(p), sigLean = sig && c.tags.some((tag) => this.tagsOf(sig).includes(tag)) ? 2 : 1;
-      // GOAT PATH (BADGE trường phái): Core của trường phái đó ra thường hơn ở lượt chọn của người chơi (vẫn ngẫu nhiên)
-      const bias = this.g.opts.draftBias && this.g.opts.draftBias[p.team] && this.isHumanOwner(p) ? this.g.opts.draftBias[p.team] : null;
+      // GOAT PATH (BADGE trường phái): Core của trường phái đó ra thường hơn cho cả đội (vẫn ngẫu nhiên) · LEGEND: trường phái của
+      // LEGEND đó ra thường hơn cho riêng người đeo (legends.schoolBias)
+      const bias = this.g.opts.draftBias && this.g.opts.draftBias[p.team];
       const bLean = bias ? c.tags.reduce((m, tag) => Math.max(m, bias[tag] || 1), 1) : 1;
-      return (D.rarityWeight[c.rarity] || 1) * (1 + D.buildWeight * shared) * lean * sigLean * bLean;
+      const lg = p.legend && SFC_CONFIG.legends && SFC_CONFIG.legends.list[p.legend];
+      const lLean = lg && c.tags.includes(lg.school) ? SFC_CONFIG.legends.schoolBias || 1 : 1;
+      return (D.rarityWeight[c.rarity] || 1) * (1 + D.buildWeight * shared) * lean * sigLean * bLean * lLean;
     }
     // Core đặc trưng (boss trận thăng hạng): thuộc về ngôi sao của đội = cầu thủ ĐÁ CAO (không có thì người đầu)
     signature(p) {
