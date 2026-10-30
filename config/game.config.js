@@ -120,11 +120,12 @@ SFC_CONFIG.game = {
 
   player: {
     radius: 6,
-    speed: 86,
+    // 2026-10-30 (user: nhịp trận chậm lại chút): 86 -> 80, accel 720 -> 650; chuyền minSpeed / maxSpeed / arriveSpeed -5%; sút giữ nguyên
+    speed: 80,
     sprintMult: 1.5,
     dribbleSpeedMult: 0.9,
     chargeMoveMult: 0.55,
-    accel: 720,
+    accel: 650,
     decel: 950,
     turnRate: 16,             // rad/s
     staminaMax: 100,
@@ -225,9 +226,9 @@ SFC_CONFIG.game = {
     aimAssist: 1.0,           // 1 = hướng bóng căn chuẩn vào người nhận; 0 = đi theo hướng phím
     powerAssist: 0.3,         // phần lực thừa (vượt mặc định) bị giảm bớt: 0 = giữ nguyên, 1 = bỏ hẳn
     powerSensitivity: 0.7,    // lực thừa làm bóng nhanh thêm bao nhiêu
-    arriveSpeed: 180,         // tốc độ bóng khi tới chân người nhận (cao = luân chuyển nhanh, căng) — 150 -> 180 (2026-10-30: ban bật hay bị cắt)
-    minSpeed: 140,
-    maxSpeed: 480,
+    arriveSpeed: 170,         // tốc độ bóng khi tới chân người nhận (cao = luân chuyển nhanh, căng) — 150 -> 180 (2026-10-30: ban bật hay bị cắt)
+    minSpeed: 133,
+    maxSpeed: 455,
     showTargetHint: false,    // true = hiện vòng/mũi tên trên người nhận khi nạp lực (debug)
     spread: 0.015,            // sai số hướng (rad), chia cho chỉ số pass
     receiverLead: 0.7,        // mức đón đầu theo vận tốc hiện tại của người nhận
@@ -556,6 +557,10 @@ SFC_CONFIG.game = {
       sprintDist: 12, walkSpeed: 60,
       // bị vượt qua (đứng sau người cầm bóng, xa khung nhà hơn): đuổi thẳng tới chỗ người cầm bóng sẽ tới sau chaseLead s, đấm từ sau lưng
       chaseLead: 0.2,
+      // 2026-10-30 (user: act 1 bot tranh bóng quá gắt): mọi mức trên nhân theo k = aggression / fullAt (kẹp 0..1) của AI —
+      // counterTime x k, engage x k, counterReact / counterPunch / sprintDist nội suy từ mức thường tới mức trên, walkSpeed / k.
+      // aggression act 1 ~0.35–0.75 -> áp sát nhẹ; từ Area giữa trở lên (aggression >= 1) như cũ
+      fullAt: 1.0,
     },
     hardDistMin: 16,         // AI dùng Hard attack khi người cầm bóng cách trong khoảng này (px)
     hardDistMax: 44,

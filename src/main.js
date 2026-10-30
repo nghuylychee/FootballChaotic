@@ -102,6 +102,7 @@
       this.startMatch({
         home: MP.playerTeam.id, away: M.team, difficulty: 'normal', aiProfile: ai, mateProfile: ai,
         humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: SFC_CONFIG.arenas[M.arena] ? M.arena : undefined,
+        statMul: [1, M.stat || 1],    // act 1 nhẹ tay hơn (run.acts[].oppStat)
         coreUnlocks: [SFC.Profile.unlockedCores(), null],
         mates: [RN.mateSpecs(), null],
         signature: [null, M.signature],

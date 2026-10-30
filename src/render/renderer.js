@@ -111,7 +111,9 @@ window.SFC = window.SFC || {};
       const ctrlColor = (p) => (!g.preview && g.isHuman(p.team) && p.isControlled
         ? (p === cp ? CC.me : p.team === g.humanTeam ? CC.ally : CC.opp) : null);
       // trận xếp hạng (Main Path): chỉ dấu mũi tên của máy này — người thật khác không khác gì người chơi giả
-      const rank = !!g.opts.mainPath, seatRing = (c) => c && (!rank || c === cp);
+      // trận co-op (mọi người chơi thật cùng 1 đội: Story / GOAT PATH / phòng riêng đá với bot): cũng chỉ mũi tên của máy này (user 2026-10-31)
+      const coop = (g.seats || []).length > 1 && g.seats.every((s) => s.team === g.seats[0].team);
+      const rank = !!g.opts.mainPath || coop, seatRing = (c) => c && (!rank || c === cp);
       // Smoke Bomb: người tàng hình (p.ghostT) — đối thủ của máy này không thấy gì (cả bóng ở chân), đội mình thấy bóng mờ
       const unseen = (p) => p.ghostT > 0 && g.humanTeam >= 0 && p.team !== g.humanTeam;
       // luật trận School Ghosts (src/systems/matchmods.js): ma xa bóng mờ dần — vẫn còn bóng hình, chỉ mất vòng chân

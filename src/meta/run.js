@@ -405,7 +405,8 @@ window.SFC = window.SFC || {};
       }
       if (!C().nodes[n.kind].play) return null;
       const o = this.opp(n.team) || {};
-      return { node: n, team: n.team, elo: n.elo, arena: o.arena, signature: o.signature || null, mod: o.mod || null, barks: o.barks || null,
+      // stat: hệ số chỉ số đối thủ của act (run.acts[].oppStat, act 1 nhẹ tay hơn)
+      return { node: n, team: n.team, elo: n.elo, stat: this.act(R.act).oppStat || 1, arena: o.arena, signature: o.signature || null, mod: o.mod || null, barks: o.barks || null,
         info: { nonce: R.nonce, act: R.act, node: n.id, kind: n.kind } };
     },
     // giao bóng: lưu sẵn 1 trận thua (tắt game giữa trận = forfeit)

@@ -68,10 +68,11 @@ Mỗi act là 1 vùng: sân, màu MAP, người dẫn truyện, nhạc và pool 
 
 | Act | Vùng | Đối thủ thường | Boss | Elo AI (đề xuất) |
 |---|---|---|---|---|
-| 1 | **KHU PHỐ** (ban ngày: làng, phố, trường, hẻm) | Ward Uncles · Moped Boys · School Ghosts · Pigeon Gang | Block Wardens (PROTEIN SHAKE: mỗi pha bóng 1 người uống whey hoá khổng lồ) | 30 → 300 · boss 350 |
+| 1 | **KHU PHỐ** (ban ngày: làng, phố, trường, hẻm) | Ward Uncles · Moped Boys · School Ghosts · Pigeon Gang | Block Wardens (PROTEIN SHAKE: mỗi pha bóng 1 người uống whey hoá khổng lồ) | 0 → 220 · boss 280 (chỉ số đối thủ × 0.92, `oppStat`) |
 | 2 | **THÀNH PHỐ ĐÊM** (sân thượng, quảng trường, chợ đêm) | Sky Hoppers · Billboard Kids · Lantern Crew · Noodle Kickers · Fortune Tellers | ngẫu nhiên: Night Owls hoặc Market Mamas | 450 → 1000 · boss 1150 |
 | 3 | **HUYỀN THOẠI** (vịnh, quảng trường, làng xưa) | Rust Buckets · Retired Refs · Grandpa's Squad | The Old Legends (KING LEO 1976) | 1300 → 2150 · boss 2700 |
 
+- 2026-10-30 (user: act 1 bot tranh bóng quá gắt): act 1 hạ Elo (trước 30 → 300 · boss 350) + `acts[].oppStat` nhân mọi chỉ số đối thủ trận đấu của act; áp sát `ai.press` nhân theo aggression AI (`press.fullAt`) nên AI Elo thấp ít phản pressing / lao vào hơn.
 - Elo AI tính theo **act + tầng**, không theo đội. Đội giữ kit, cầu thủ, Core đặc trưng (`signature`), luật trận, câu nói trong trận.
 - Tỉ số khởi đầu (`score`, The Uncles dẫn 1–0): **đề xuất bỏ trong run**. Gặp ở tầng 1 mà thua là hết run thì quá gắt; giữ lại cho Elite / boss nếu cần.
 - Pool act 3 mỏng (3–4 đội). Thêm đội mới cho act 3 là việc content sau.

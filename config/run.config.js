@@ -213,14 +213,15 @@ SFC_CONFIG.run = {
   },
 
   // 3 act (phương án B: mỗi act 1 vùng). teams = đối thủ Matchday · elite = đối thủ Elite (pool riêng, dữ liệu ở run.elites; thiếu = bốc chung teams)
-  // boss = bốc 1 lúc bắt đầu run · elo = [tầng 0, tầng cuối] (nội suy) · bossElo · spareBoss: true = boss các act trước không được bốc đá Elite ở act này
+  // boss = bốc 1 lúc bắt đầu run · elo = [tầng 0, tầng cuối] (nội suy) · bossElo · oppStat: nhân mọi chỉ số đối thủ trận đấu của act (Matchday / Elite / boss;
+  // thiếu = 1; 2026-10-30 user: act 1 bot tranh bóng quá gắt, đội bạn OVR ~65 mà đội act 1 tackle 0.9–1.04) · spareBoss: true = boss các act trước không được bốc đá Elite ở act này
   // Câu chuyện (giai đoạn 4, src/ui/runmap.js cutscene): mạch 3 act nối nhau thành 1 hành trình (khu phố -> thành phố -> huyền thoại).
   //   tell: kiểu kể (src/ui/story.js TELL) · narrator: id Story cũ lấy người dẫn truyện (tên + hình) · theme / trophy: khuôn cảnh
   //   src/ui/story-cup.js · stages: tên chặng [mở act, trước boss, hạ boss] · intro / bossTalk / after: lời thoại (who: host · you · opp;
   //   art: khuôn riêng; {boss} = tên đội boss của act). Chiếu: intro lúc vào act, bossTalk trước trận boss, after sau khi hạ boss.
   acts: [
     { id: 'block', name: 'THE BLOCK', color: '#ffd23f', arena: 'village',
-      teams: ['ward_uncles', 'moped_boys', 'school_ghosts', 'pigeon_gang'], elite: ['rope_skippers', 'wash_aunties'], boss: ['block_wardens'], elo: [30, 300], bossElo: 350,
+      teams: ['ward_uncles', 'moped_boys', 'school_ghosts', 'pigeon_gang'], elite: ['rope_skippers', 'wash_aunties'], boss: ['block_wardens'], elo: [0, 220], bossElo: 280, oppStat: 0.92,   // 2026-10-30: 30–300 / boss 350 -> nhẹ tay hơn
       tell: 'diary', narrator: 'ward_cup', theme: 'alley', trophy: 'pot', stages: ['DAY 1', 'DAY 6', 'DAY 7'],
       intro: [
         { who: 'host', text: 'Attention, the whole block! Somebody here wants to walk the GOAT PATH.' },

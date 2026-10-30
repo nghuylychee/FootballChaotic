@@ -1334,7 +1334,7 @@ window.SFC = window.SFC || {};
       // đối thủ mạnh lên theo số người thật ra sân
       const sc = RUN().coopScale(playing.length), ai = SFC.MainPath.aiProfile(M.elo + sc.elo);
       const match = {
-        difficulty: 'normal', aiProfile: ai, mateProfile: ai, humanTeam: 0, statMul: [1, sc.statMul],
+        difficulty: 'normal', aiProfile: ai, mateProfile: ai, humanTeam: 0, statMul: [1, sc.statMul * (M.drill ? 1 : M.stat || 1)],
         arena: SFC_CONFIG.arenas[M.arena] ? M.arena : undefined, run: M.info,
       };
       if (M.drill) Object.assign(match, { drill: M.drill, trial: M.trial || undefined, drillEase: M.ease || 0, drillSeed: Math.floor(Math.random() * 2 ** 31), teamSize: M.teamSize.slice(), noDraft: true });

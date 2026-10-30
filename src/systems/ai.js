@@ -10,6 +10,8 @@ window.SFC = window.SFC || {};
   const LAI = () => SFC_CONFIG.legends && SFC_CONFIG.legends.ai;
   const legTech = (g, p, id) => !!LGS() && LGS().aiTech(g, p, id);
 
+  // độ gắt áp sát (ai.press) theo độ hung hăng AI: aggression >= press.fullAt -> đủ mức; AI non tay (Area đầu, act 1 GOAT PATH) nhẹ hẳn
+  function pressK(D, PR) { return U.clamp((D.aggression || 0) / (PR.fullAt || 1), 0, 1); }
   function stop(p) { p.intent.mx = 0; p.intent.my = 0; p.intent.sprint = false; }
 
   function moveTo(p, x, y, sprint, arrive = 4) {
@@ -414,12 +416,12 @@ window.SFC = window.SFC || {};
 
       // ÁP SÁT (ai.press): vừa mất bóng (phản pressing) hoặc người cầm bóng đi sát mình -> lao vào đánh, trừ người trông khung
       // đang trong vòng nguy hiểm. Không cả đội bu vào: chỉ khi ít hơn maxPressers đồng đội đang gần người cầm bóng hơn mình
-      const PR = cfg.press, protectedGK = g.isProtected(c);
+      const PR = cfg.press, protectedGK = g.isProtected(c), pk = PR ? pressK(D, PR) : 0;
       const counter = !!PR && p.ai.cpUntil > g.time && p !== ctl;
       if (PR && p !== presser && p !== ctl && !protectedGK && !(danger && p === keeper)) {
         const dc = U.dist(p, c);
         const closer = tm.players.filter((o) => o !== p && o.state !== 'stun' && U.dist(o, c) < dc).length;
-        if ((counter || dc < PR.engage) && closer < PR.maxPressers) presser = p;
+        if ((counter || dc < PR.engage * pk) && closer < PR.maxPressers) presser = p;
       }
 
       if (p === presser) {
@@ -433,16 +435,17 @@ window.SFC = window.SFC || {};
         const tv = Math.hypot(target.vx || 0, target.vy || 0);
         // bị vượt qua (mình ở phía xa khung nhà hơn người cầm bóng): đuổi thẳng tới chỗ người đó sắp tới, không chạy vòng lên trước
         const beaten = PR && !protectedGK && (p.x - target.x) * gd.x + (p.y - target.y) * gd.y < -4;
-        const sprint = PR ? d > PR.sprintDist || tv > PR.walkSpeed : d > 36;
+        // AI non tay (pk thấp): chỉ chạy nước rút khi còn xa / người cầm bóng chạy rất nhanh, như trước khi có ai.press
+        const sprint = PR ? d > U.lerp(36, PR.sprintDist, pk) || tv > PR.walkSpeed / Math.max(0.05, pk) : d > 36;
         if (beaten) moveTo(p, target.x + (target.vx || 0) * PR.chaseLead, target.y + (target.vy || 0) * PR.chaseLead, sprint, 1);
         else moveTo(p, target.x + gd.x * gap, target.y + gd.y * gap, sprint, 2);
         if (target !== c || p.ai.t > 0 || protectedGK) return;
-        p.ai.t = D.reaction * U.rand(0.8, 1.4) * (counter ? PR.counterReact : 1);
+        p.ai.t = D.reaction * U.rand(0.8, 1.4) * (counter ? U.lerp(1, PR.counterReact, pk) : 1);
         const dc = U.dist(p, c);
         p.facing = Math.atan2(c.y - p.y, c.x - p.x);
         const style = tm.cfg.aiStyle || { light: 1, hard: 1 };
         // đồng đội AI của người chơi: tỉ lệ đấm riêng (ai.mate.lightChance), không theo aiStyle của đội
-        const lightP = (humanTeam ? cfg.mate.lightChance * D.aggression : Math.min(0.9, 0.6 * D.aggression * style.light)) * (counter ? PR.counterPunch : 1);
+        const lightP = (humanTeam ? cfg.mate.lightChance * D.aggression : Math.min(0.9, 0.6 * D.aggression * style.light)) * (counter ? U.lerp(1, PR.counterPunch, pk) : 1);
         // Tay Cao Su: đấm được từ xa
         const reach = Math.max(C.light.range, g.cores.lightReach(p) * 0.8);
         if (dc < reach + p.radius * 2 && Math.random() < lightP) Act().lightAttack(g, p);
@@ -563,8 +566,9 @@ window.SFC = window.SFC || {};
     lostBall(g, p) {
       const PR = A().press;
       if (!PR) return;
+      const k = pressK(g.aiProfile(1 - p.team), PR);
       for (const o of g.teams[1 - p.team].players) {
-        if (o.state !== 'stun' && U.dist(o, p) < PR.counterDist) o.ai.cpUntil = g.time + PR.counterTime;
+        if (o.state !== 'stun' && U.dist(o, p) < PR.counterDist) o.ai.cpUntil = g.time + PR.counterTime * k;
       }
     },
 

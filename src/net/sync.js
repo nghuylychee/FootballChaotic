@@ -70,7 +70,9 @@ window.SFC = window.SFC || {};
       // hiệu ứng cơ bản + VFX Kit (systems/vfxkit.js) — tham số đều là giá trị nguyên thuỷ nên gửi thẳng được
       for (const m of ['burst', 'ring', 'shake', 'flash', 'wave', 'decal', 'stretch', 'clone', 'projectile', 'beam', 'vortex', 'bolt', 'dragon',
         'pop', 'combo', 'shield', 'portal', 'netFire', 'popClone', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint',
-        'prop', 'propOff', 'vhs', 'tilt', 'legendAura', 'legendCut', 'legendHud', 'legendTech', 'legendBall']) {   // legend*: GOAT PATH LEGEND (src/systems/legends.js)
+        'prop', 'propOff', 'vhs', 'tilt', 'legendAura', 'legendCut', 'legendHud', 'legendTech', 'legendBall',   // legend*: GOAT PATH LEGEND (src/systems/legends.js)
+        // clearHazards: host xoá vật thể mỗi lần giao bóng -> khách xoá theo, không thì vật thể luật trận (ghế nhựa...) cộng dồn mỗi pha bóng
+        'clearHazards']) {
         const orig = E[m];
         // chỉ ghi lệnh ngoài cùng (combo -> comic, clone -> burst...) để máy khách không phát lại 2 lần
         E[m] = function (...a) {
