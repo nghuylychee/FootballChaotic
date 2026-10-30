@@ -1,0 +1,14 @@
+# keep the pipeline (cap.py, comp.html, scenes, EDLs, audio.py, plans, share copy, logs .md); videos are archived outside git
+clips/work/**/frames/
+clips/work/**/render*/
+clips/work/**/stills*/
+clips/work/**/qa/
+clips/work/**/*.log
+clips/work/**/*.mbtree
+clips/work/**/*.png
+clips/work/**/*.jpg
+clips/work/**/*.wav
+*.mp4
+*.webm
+clips/*.jpg
+clips/*.png

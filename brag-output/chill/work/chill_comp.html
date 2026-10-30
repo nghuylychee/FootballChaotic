@@ -1,0 +1,333 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root { --cream: #fff4dc; --ink: #2a1c2c; --sun: #ffb36b; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: #2b2f62; }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  #world > * { position: absolute; left: 0; display: block; }
+  #sky { top: -2700px; width: 1920px; height: 2712px; }
+  #frame { top: 0; width: 1920px; height: 1080px; }
+  #glow { top: -2700px; width: 1920px; height: 2802px; mix-blend-mode: screen; }
+  #fg { top: 990px; width: 1920px; height: 1170px; }
+  #tac { top: 0; width: 1920px; height: 1080px; }
+  .px { image-rendering: pixelated; }
+  /* screen space */
+  #grade { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light;
+    background: linear-gradient(200deg, rgba(255,170,90,0.55) 0%, rgba(255,150,110,0.25) 45%, rgba(120,90,160,0.18) 100%); }
+  #vig { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 85% 70% at 50% 48%, rgba(20,10,30,0) 55%, rgba(20,10,30,0.42) 100%); }
+  #fade { position: absolute; inset: 0; background: #1c1630; opacity: 0; pointer-events: none; }
+  #txt { position: absolute; inset: 0; pointer-events: none; }
+  .cap { position: absolute; left: 0; right: 0; text-align: center; font-family: 'Pixelify Sans', monospace; color: var(--cream);
+    text-shadow: 0 3px 0 rgba(42,28,44,0.55), 0 0 24px rgba(255,170,100,0.35); letter-spacing: 1px; }
+  .cap .s { display: block; font-size: 0.74em; opacity: 0.92; margin-top: 18px; letter-spacing: 4px; }
+  .title { position: absolute; left: 0; right: 0; text-align: center; font-family: 'Press Start 2P', monospace; color: var(--cream); line-height: 1.5; }
+  .title .a { font-size: 40px; letter-spacing: 4px; text-shadow: 4px 4px 0 rgba(42,28,44,0.6); }
+  .title .b { font-size: 96px; color: #ffcf7a; text-shadow: 6px 6px 0 #c2564a, 10px 10px 0 rgba(42,28,44,0.55); margin-top: 18px; }
+  .title .c { font-family: 'Pixelify Sans', monospace; font-size: 40px; letter-spacing: 6px; margin-top: 40px; opacity: 0.9; text-shadow: 0 3px 0 rgba(42,28,44,0.55); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="world">
+    <canvas id="sky" class="px" width="1920" height="2712"></canvas>
+    <img id="frame">
+    <canvas id="glow" width="640" height="934"></canvas>
+    <canvas id="tac" width="1920" height="1080"></canvas>
+    <canvas id="fg" class="px" width="1920" height="1170"></canvas>
+  </div>
+  <div id="grade"></div>
+  <div id="vig"></div>
+  <div id="txt"></div>
+  <div id="fade"></div>
+</div>
+<script>
+const FPS = 30, W = 1080, H = 1920;
+const CLIP = 'sunday';
+// world in game px: sky y -900..0 · frame 0..360 · foreground 330..720
+const SKY_H = 900, FG_TOP = 330, FG_H = 390, WORLD = { x0: 0, x1: 640, y0: -SKY_H, y1: 510 };
+const DUR = 26.5;
+// edit: c = clip time. 0.5x slow motion on the shot so the net ripples on the bar-6 downbeat
+const EDL = [
+  { v0: 0, v1: 16.5, c0: 0, r: 1 },
+  { v0: 16.5, v1: 17.36, c0: 16.5, r: 0.5 },
+  { v0: 17.36, v1: 99, c0: 16.93, r: 1 },
+];
+const clipT = (v) => { const s = EDL.find((e) => v >= e.v0 && v < e.v1) || EDL[EDL.length - 1]; return s.c0 + (v - s.v0) * s.r; };
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const smooth = (k) => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
+const ease = (k) => { k = clamp(k, 0, 1); return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
+const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+let META = null;
+
+/* ---------------- sky (game px, drawn at 1:1 then x3) ---------------- */
+const skyBase = document.createElement('canvas'); skyBase.width = 640; skyBase.height = SKY_H;
+const skyOff = document.createElement('canvas'); skyOff.width = 640; skyOff.height = SKY_H;
+// horizon (row SKY_H-1) must equal the game's sky top colour (255,160,91)
+const STOPS = [[0, [255, 160, 91]], [90, [251, 142, 94]], [220, [238, 122, 106]], [360, [207, 107, 127]], [500, [154, 95, 142]], [650, [99, 79, 138]], [800, [60, 63, 120]], [900, [43, 47, 98]]];
+function skyCol(h) {   // h = height above horizon (game px)
+  for (let i = 0; i < STOPS.length - 1; i++) {
+    const [a, ca] = STOPS[i], [b, cb] = STOPS[i + 1];
+    if (h <= b) { const k = (h - a) / (b - a); return ca.map((v, j) => lerp(v, cb[j], k)); }
+  }
+  return STOPS[STOPS.length - 1][1];
+}
+const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+function buildSky() {
+  const x = skyBase.getContext('2d'), img = x.createImageData(640, SKY_H), d = img.data;
+  const STEP = 6;   // colour banding: quantise each channel to steps of 6, ordered dither between bands
+  for (let y = 0; y < SKY_H; y++) {
+    const c = skyCol(SKY_H - 1 - y);
+    for (let xx = 0; xx < 640; xx++) {
+      const th = (BAYER[y & 3][xx & 3] + 0.5) / 16, i = (y * 640 + xx) * 4;
+      for (let j = 0; j < 3; j++) { const q = c[j] / STEP, f = Math.floor(q); d[i + j] = Math.min(255, (q - f > th ? f + 1 : f) * STEP); }
+      d[i + 3] = 255;
+    }
+  }
+  // the last 4 rows: exact horizon colour so the seam with the game frame is invisible
+  for (let y = SKY_H - 4; y < SKY_H; y++) for (let xx = 0; xx < 640; xx++) { const i = (y * 640 + xx) * 4; d[i] = 255; d[i + 1] = 160; d[i + 2] = 91; }
+  x.putImageData(img, 0, 0);
+  // stars near the top
+  STARS.length = 0;
+  for (let i = 0; i < 70; i++) STARS.push({ x: Math.floor(hash(i) * 640), y: Math.floor(Math.pow(hash(i + 50), 1.6) * 330), ph: hash(i + 90) * 6.28, b: hash(i + 130) });
+}
+const STARS = [];
+// clouds: long low streaks lit from below by the setting sun
+const CLOUDS = [
+  { x: 40, h: 120, w: 150, t: 7, v: 2.2 }, { x: 330, h: 175, w: 210, t: 9, v: 1.6 }, { x: 520, h: 260, w: 120, t: 6, v: 2.8 },
+  { x: 120, h: 330, w: 240, t: 10, v: 1.2 }, { x: 430, h: 420, w: 170, t: 8, v: 1.9 }, { x: 60, h: 520, w: 130, t: 7, v: 2.4 },
+  { x: 300, h: 610, w: 200, t: 9, v: 1.4 }, { x: 560, h: 700, w: 110, t: 6, v: 2.0 },
+];
+function cloud(x, cx, cy, w, t, seed, h) {
+  // body = stack of horizontal pixel runs; underside lit, top in shade
+  const lit = h < 300 ? '#ffd29a' : h < 500 ? '#ffb48f' : '#e79a9a';
+  const body = h < 300 ? '#ffb27c' : h < 500 ? '#e9897f' : '#b0708f';
+  const top = h < 300 ? '#f2967a' : h < 500 ? '#c87182' : '#7f5c8c';
+  for (let r = 0; r < t; r++) {
+    const k = r / (t - 1);                         // 0 top .. 1 bottom
+    const half = (w / 2) * Math.sqrt(Math.max(0, 1 - Math.pow(1 - k * 0.9 - 0.05, 2) * 0.85)) * (0.65 + 0.35 * hash(seed + r));
+    const off = (hash(seed * 3 + r) - 0.5) * w * 0.25;
+    x.fillStyle = r === t - 1 ? lit : r < 2 ? top : body;
+    x.fillRect(Math.round(cx + off - half), Math.round(cy + r), Math.round(half * 2), 1);
+  }
+  x.fillStyle = lit; // a thin glowing rim on the belly
+  x.fillRect(Math.round(cx - w * 0.36), Math.round(cy + t), Math.round(w * 0.72), 1);
+}
+function bird(x, bx, by, ph) {
+  x.fillStyle = '#3a2840';
+  const up = Math.sin(ph) > 0;
+  x.fillRect(bx, by, 1, 1);
+  if (up) { x.fillRect(bx - 1, by - 1, 1, 1); x.fillRect(bx - 2, by - 2, 1, 1); x.fillRect(bx + 1, by - 1, 1, 1); x.fillRect(bx + 2, by - 2, 1, 1); }
+  else { x.fillRect(bx - 1, by, 1, 1); x.fillRect(bx - 2, by + 1, 1, 1); x.fillRect(bx + 1, by, 1, 1); x.fillRect(bx + 2, by + 1, 1, 1); }
+}
+const BIRDS = [{ x: 600, h: 150, v: -9, p: 0 }, { x: 612, h: 158, v: -9, p: 1.3 }, { x: 624, h: 145, v: -9, p: 2.1 }, { x: 250, h: 260, v: -6, p: 0.7 }, { x: 900, h: 90, v: -12, p: 0.2 }, { x: 914, h: 98, v: -12, p: 2.9 }];
+// the loop: sky motion is periodic over the whole video so the last frame flows into the first
+const wrap = (v, a, b) => a + ((((v - a) % (b - a)) + (b - a)) % (b - a));
+function drawSky(v) {
+  const x = skyOff.getContext('2d');
+  x.drawImage(skyBase, 0, 0);
+  const ph = v / DUR;   // 0..1 over the video
+  for (const s of STARS) {
+    const a = (0.35 + 0.65 * s.b) * (0.6 + 0.4 * Math.sin(ph * 6.28 * 3 + s.ph)) * (1 - s.y / 330);
+    x.fillStyle = `rgba(255,244,220,${a.toFixed(3)})`; x.fillRect(s.x, s.y, 1, 1);
+  }
+  CLOUDS.forEach((c, i) => {
+    const span = 640 + c.w;
+    const cx = wrap(c.x + ph * span * (c.v > 2 ? 1 : 0.5) * (i % 2 ? 1 : -1) * 0.18 * 2, -c.w / 2, 640 + c.w / 2);
+    cloud(x, cx, SKY_H - c.h, c.w, c.t, i + 1, c.h);
+  });
+  for (const b of BIRDS) {
+    const bx = Math.round(wrap(b.x + b.v * v, -40, 680));
+    const by = Math.round(SKY_H - b.h + Math.sin(v * 0.9 + b.p) * 3);
+    bird(x, bx, by, v * 7 + b.p);
+  }
+  const sx = document.getElementById('sky').getContext('2d');
+  sx.imageSmoothingEnabled = false;
+  sx.drawImage(skyOff, 0, 0, 1920, SKY_H * 3);
+  // 12 px tucked under the game frame: no seam where the two layers meet
+  sx.fillStyle = 'rgb(255,160,91)'; sx.fillRect(0, SKY_H * 3, 1920, 12);
+}
+
+/* ---------------- sun glow (game px, over sky + the game's sky band) ---------------- */
+const SUN = { x: 520, y: 20 };
+function drawGlow(v) {
+  const c = document.getElementById('glow'), x = c.getContext('2d');
+  x.clearRect(0, 0, 640, 934);
+  const sy = SKY_H + SUN.y, pulse = 1 + 0.03 * Math.sin(v * 1.3);
+  const g = x.createRadialGradient(SUN.x, sy, 4, SUN.x, sy, 330 * pulse);
+  g.addColorStop(0, 'rgba(255,214,150,0.55)'); g.addColorStop(0.18, 'rgba(255,170,110,0.32)');
+  g.addColorStop(0.5, 'rgba(255,130,100,0.12)'); g.addColorStop(1, 'rgba(255,120,100,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 640, 934);
+  // fade the glow out before the bamboo fence (game y 26..34)
+  x.globalCompositeOperation = 'destination-out';
+  const m = x.createLinearGradient(0, SKY_H + 18, 0, SKY_H + 34);
+  m.addColorStop(0, 'rgba(0,0,0,0)'); m.addColorStop(1, 'rgba(0,0,0,1)');
+  x.fillStyle = m; x.fillRect(0, SKY_H + 18, 640, 16);
+  x.globalCompositeOperation = 'source-over';
+}
+
+/* ---------------- foreground meadow (game px) ---------------- */
+const fgOff = document.createElement('canvas'); fgOff.width = 640; fgOff.height = FG_H;
+const BLADES = [], FLOWERS = [], MOTES = [];
+(function () {
+  for (let i = 0; i < 900; i++) {
+    const y = 22 + Math.pow(hash(i * 1.7), 0.8) * (FG_H - 22);
+    BLADES.push({ x: hash(i * 3.1) * 640, y, h: 3 + hash(i * 5.3) * (6 + (y / FG_H) * 16), c: Math.floor(hash(i * 7.7) * 4), ph: hash(i * 9.1) * 6.28 });
+  }
+  BLADES.sort((a, b) => a.y - b.y);
+  const FC = ['#f6f0dc', '#ffd75a', '#ff9ab0', '#c9b8ff'];
+  for (let i = 0; i < 70; i++) FLOWERS.push({ x: hash(i * 11.3) * 640, y: 40 + hash(i * 13.7) * (FG_H - 50), c: FC[Math.floor(hash(i * 17.1) * 4)], ph: hash(i * 19.3) * 6.28 });
+  for (let i = 0; i < 36; i++) MOTES.push({ x: hash(i * 23.1) * 640, y: hash(i * 29.3) * 560, v: 3 + hash(i * 31.7) * 5, ph: hash(i * 37.9) * 6.28 });
+})();
+const GR = ['#4b8435', '#58953e', '#66a447', '#3f7430'];
+function drawFg(v) {
+  const x = fgOff.getContext('2d');
+  x.clearRect(0, 0, 640, FG_H);
+  // ground: starts exactly at the game frame's void colour, darkens toward the camera
+  const gnd = x.createLinearGradient(0, 22, 0, FG_H);
+  gnd.addColorStop(0, '#3d6a2c'); gnd.addColorStop(0.45, '#35602a'); gnd.addColorStop(1, '#244420');
+  x.fillStyle = gnd; x.fillRect(0, 22, 640, FG_H - 22);
+  const wind = Math.sin(v * 0.7) * 0.5 + 0.5;
+  for (const b of BLADES) {
+    const sway = Math.sin(v * 1.7 + b.x * 0.045 + b.ph) * (0.6 + wind) * (b.h / 10);
+    const n = Math.round(b.h);
+    for (let k = 0; k < n; k++) {
+      const f = k / n, xx = Math.round(b.x + sway * f * f), yy = Math.round(b.y - k);
+      x.fillStyle = k >= n - 2 ? (b.c === 2 ? '#b9cf6a' : '#8fbf58') : GR[b.c];
+      x.fillRect(xx, yy, 1, 1);
+    }
+  }
+  for (const fl of FLOWERS) {
+    const sway = Math.round(Math.sin(v * 1.5 + fl.ph) * 1);
+    x.fillStyle = '#3f7430'; x.fillRect(Math.round(fl.x), Math.round(fl.y) - 3, 1, 4);
+    x.fillStyle = fl.c; x.fillRect(Math.round(fl.x) - 1 + sway, Math.round(fl.y) - 5, 3, 2); x.fillRect(Math.round(fl.x) + sway, Math.round(fl.y) - 6, 1, 1);
+  }
+  const c = document.getElementById('fg').getContext('2d');
+  c.imageSmoothingEnabled = false;
+  c.clearRect(0, 0, 1920, FG_H * 3);
+  c.drawImage(fgOff, 0, 0, 1920, FG_H * 3);
+}
+
+/* ---------------- tactics board overlay (frame px) ---------------- */
+const LINKS = [['GK', 'LB'], ['GK', 'RB'], ['LB', 'MID'], ['RB', 'MID'], ['MID', 'FWD'], ['LB', 'RB']];
+const TAC = { v0: 9.5, v1: 11.55 };
+function drawTac(v, fr) {
+  const c = document.getElementById('tac'), x = c.getContext('2d');
+  x.clearRect(0, 0, 1920, 1080);
+  if (v < TAC.v0 || v > TAC.v1 + 0.6 || !fr || !fr.pl) return;
+  const draw = smooth((v - TAC.v0) / 0.9), out = 1 - smooth((v - TAC.v1) / 0.6);
+  const pos = {}; for (const [t, r, px, py] of fr.pl) pos[t + r] = [px * 3, py * 3];
+  x.lineCap = 'round';
+  for (const t of [0, 1]) {
+    const col = t ? '220,240,255' : '255,226,214';
+    LINKS.forEach(([a, b], i) => {
+      const A = pos[t + a], B = pos[t + b]; if (!A || !B) return;
+      const k = clamp(draw * LINKS.length - i * 0.6, 0, 1); if (k <= 0) return;
+      const ex = lerp(A[0], B[0], k), ey = lerp(A[1], B[1], k);
+      x.strokeStyle = `rgba(${col},${0.62 * out})`; x.lineWidth = 5; x.setLineDash(i === 5 ? [6, 14] : [18, 12]);
+      x.beginPath(); x.moveTo(A[0], A[1] - 6); x.lineTo(ex, ey - 6); x.stroke();
+    });
+    x.setLineDash([]);
+    for (const r of ['GK', 'LB', 'RB', 'MID', 'FWD']) {
+      const P = pos[t + r]; if (!P) continue;
+      x.strokeStyle = `rgba(${col},${0.8 * out * draw})`; x.lineWidth = 4;
+      x.beginPath(); x.ellipse(P[0], P[1] + 2, 30, 12, 0, 0, Math.PI * 2); x.stroke();
+    }
+  }
+}
+
+/* ---------------- camera (game px, z = screen px per game px) ---------------- */
+const ZW = W / 640;   // 1.6875: full width
+const SHOTS = [
+  // [v_start, fn(v) -> target {cx, cy, z}, blend-in seconds]
+  [0, (v) => { const e = ease(v / 5.4); return { cx: 320, cy: lerp(-500, -60, e), z: lerp(2.4, ZW, e) }; }, 0],
+  [5.4, (v) => { const s = smooth((v - 5.4) / 5.0); return { cx: 320, cy: lerp(-60, 5, s), z: lerp(ZW, 1.9, s) }; }, 0],
+  [11.6, (v, f) => ({ cx: f.bx, cy: 196 + (f.by - 203) * 0.25, z: lerp(1.9, 2.45, smooth((v - 11.6) / 4.9)) }), 0.9],
+  [16.2, (v, f) => ({ cx: lerp(f.bx, 500, 0.5), cy: 210, z: lerp(2.45, 2.85, smooth((v - 16.2) / 1.2)) }), 0.6],
+  [17.6, (v, f) => ({ cx: f.sx, cy: f.sy - 10, z: lerp(2.85, 3.05, smooth((v - 17.6) / 2.6)) }), 0.8],
+  [20.5, (v) => { const e = ease((v - 20.5) / 2.4); return { cx: lerp(330, 320, e), cy: lerp(195, -60, e), z: lerp(2.6, ZW, e) }; }, 1.0],
+  [22.9, (v) => { const e = ease((v - 22.9) / 3.5); return { cx: 320, cy: lerp(-60, -500, e), z: lerp(ZW, 2.4, e) }; }, 0],
+];
+let CAM = [];
+function framePos(c) {
+  const fr = META.frames, f = fr[clamp(Math.round(c * FPS), 0, fr.length - 1)];
+  const fwd = f.pl.find((p) => p[0] === 0 && p[1] === 'FWD');
+  return { f, ball: f.ball, fwd };
+}
+function buildCam() {
+  const N = Math.ceil(DUR * FPS) + 1;
+  let bx = 320, by = 203, sx = 480, sy = 220;
+  const raw = [];
+  for (let i = 0; i < N; i++) {
+    const v = i / FPS, { ball, fwd } = framePos(clipT(v));
+    bx += (ball[0] - bx) * 0.06; by += (ball[1] - by) * 0.06;
+    sx += (fwd[2] - sx) * 0.08; sy += (fwd[3] - sy) * 0.08;
+    const F = { bx, by, sx, sy };
+    let k = 0; while (k + 1 < SHOTS.length && v >= SHOTS[k + 1][0]) k++;
+    let cam = SHOTS[k][1](v, F);
+    const bl = SHOTS[k][2];
+    if (k > 0 && bl > 0 && v < SHOTS[k][0] + bl) cam = mix(SHOTS[k - 1][1](v, F), cam, ease((v - SHOTS[k][0]) / bl));
+    raw.push(cam);
+  }
+  CAM = raw.map(clampCam);
+}
+const mix = (a, b, k) => ({ cx: lerp(a.cx, b.cx, k), cy: lerp(a.cy, b.cy, k), z: lerp(a.z, b.z, k) });
+function clampCam(c) {
+  const z = Math.max(c.z, ZW), hw = W / 2 / z, hh = H / 2 / z;
+  return { z, cx: clamp(c.cx, WORLD.x0 + hw, WORLD.x1 - hw), cy: clamp(c.cy, WORLD.y0 + hh, WORLD.y1 - hh) };
+}
+
+/* ---------------- text ---------------- */
+function fadeK(v, a, b, inT = 0.7, outT = 0.7) { if (v < a || v > b) return 0; return Math.min(smooth((v - a) / inT), smooth((b - v) / outT)); }
+function cap(html, v, a, b, top, size = 58) {
+  const k = fadeK(v, a, b); if (k <= 0) return '';
+  return `<div class="cap" style="top:${top}px;font-size:${size}px;opacity:${k};transform:translateY(${(1 - k) * 14}px)">${html}</div>`;
+}
+function texts(v) {
+  let h = '';
+  h += cap('sunday, 5:47 pm', v, 0.8, 4.7, 430, 62);
+  h += cap('the village pitch<span class="s">five a side</span>', v, 5.6, 9.2, 300, 58);
+  h += cap('1 - 2 - 1 - 1', v, 9.7, 11.5, 300, 58);
+  h += cap('1 - 0', v, 17.9, 20.4, 330, 72);
+  const k = fadeK(v, 23.9, 26.1, 0.9, 0.8);
+  if (k > 0) h += `<div class="title" style="top:520px;opacity:${k};transform:translateY(${(1 - k) * 16}px)">
+      <div class="a">STREET FOOTBALL</div><div class="b">CHAOS</div><div class="c">coming soon</div></div>`;
+  return h;
+}
+
+/* ---------------- render ---------------- */
+const $ = (id) => document.getElementById(id);
+let lastSrc = null;
+async function render(v) {
+  const c = clipT(v), fr = META.frames, idx = clamp(Math.round(c * FPS), 0, fr.length - 1);
+  const src = `frames/${CLIP}/${String(idx).padStart(4, '0')}.png`;
+  if (src !== lastSrc) { $('frame').src = src; await $('frame').decode(); lastSrc = src; }
+  const cam = CAM[clamp(Math.round(v * FPS), 0, CAM.length - 1)];
+  const s = cam.z / 3;
+  const tx = W / 2 - cam.cx * 3 * s, ty = H / 2 - cam.cy * 3 * s;
+  $('world').style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+  $('frame').style.imageRendering = s >= 0.98 ? 'pixelated' : 'auto';
+  drawSky(v); drawGlow(v); drawFg(v); drawTac(v, fr[idx]);
+  $('txt').innerHTML = texts(v);
+  // soft fade in from / out to the same dusk so the loop is seamless
+  $('fade').style.opacity = Math.max(1 - smooth(v / 0.5), smooth((v - (DUR - 0.5)) / 0.5)) * 0.0;
+}
+
+window.ready = (async () => {
+  META = await (await fetch(`frames/${CLIP}/meta.json`)).json();
+  buildSky(); buildCam();
+  await document.fonts.load('58px "Pixelify Sans"'); await document.fonts.load('40px "Press Start 2P"');
+  await document.fonts.ready;
+  await render(0);
+  return DUR;
+})();
+</script>
+</body>
+</html>

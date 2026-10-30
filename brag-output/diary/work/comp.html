@@ -1,0 +1,553 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family: 'PS2P'; src: url('/assets/fonts/PressStart2P-latin.woff2') format('woff2'); }
+  :root { --ink: #140c16; --gold: #ffe14f; --red: #ff3d5a; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--ink); }
+  #c { position: absolute; left: 0; top: 0; }
+  #txt { position: absolute; inset: 0; pointer-events: none; }
+  .logo { position: absolute; left: 0; right: 0; text-align: center; font-family: 'PS2P'; line-height: 1.2; }
+  .logo .l1 { font-size: 58px; color: #fff; text-shadow: 6px 6px 0 var(--ink); letter-spacing: 2px; }
+  .logo .l2 { font-size: 156px; color: var(--red); text-shadow: 9px 9px 0 var(--ink), 18px 18px 0 var(--gold); margin-top: 18px; letter-spacing: 4px; }
+  .logo .l3 { font-family: 'Pixelify Sans'; font-weight: 700; font-size: 48px; color: #fff; -webkit-text-stroke: 10px var(--ink); paint-order: stroke fill; margin-top: 46px; }
+  .logo .l4 { display: inline-block; font-size: 30px; color: var(--ink); background: var(--gold); border: 6px solid var(--ink); padding: 20px 26px 16px; margin-top: 34px; box-shadow: 8px 8px 0 var(--ink); }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<div id="txt"></div>
+<script>
+const W = 1080, H = 1920, FPS = 30, GW = 640, GH = 360;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const smooth = (k) => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
+const outBack = (k) => { k = clamp(k, 0, 1); const s = 1.7; return 1 + (s + 1) * Math.pow(k - 1, 3) + s * Math.pow(k - 1, 2); };
+const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const $ = (id) => document.getElementById(id);
+const cv = $('c'), cx = cv.getContext('2d');
+let E, TAKES = {}, CAM = [], DUR;
+const PORT = {}, PHOTO = {}, SNAP = new Map();
+
+/* ---------------- edit ---------------- */
+const segAt = (v) => E.segs.find((s) => v >= s.v0 && v < s.v1) || E.segs[E.segs.length - 1];
+const clipT = (s, v) => (s.r === 0 ? s.c0 : s.c0 + (v - s.v0) * s.r);
+const fidx = (take, c) => clamp(Math.round(c * FPS), 0, TAKES[take].frames.length - 1);
+const meta = (take, c) => TAKES[take].frames[fidx(take, c)];
+function pos(spec, f) {
+  if (spec === 'kid') return { x: f.kid[0], y: f.kid[1] - f.kid[2] };
+  if (spec === 'ball') return { x: f.ball[0], y: f.ball[1] - f.ball[2] };
+  const p = f.pl[spec.pl != null ? spec.pl : spec.i];
+  return { x: p[1], y: p[2] - Math.min(p[3], 40) };
+}
+function camRaw(s, v) {
+  const c = s.cam, ct = clipT(s, v), f = meta(s.take, ct);
+  let p;
+  if (c.t === 'pt') p = { x: c.x, y: c.y };
+  else if (c.t === 'path') {
+    // keyframes [clip time, x, y], eased between
+    const P = c.pts; let i = 0;
+    while (i < P.length - 2 && ct > P[i + 1][0]) i++;
+    const k = smooth((ct - P[i][0]) / (P[i + 1][0] - P[i][0]));
+    p = { x: lerp(P[i][1], P[i + 1][1], k), y: lerp(P[i][2], P[i + 1][2], k) };
+  }
+  else if (c.t === 'mix') { const a = pos(c.a, f), b = pos(c.b, f); p = { x: lerp(a.x, b.x, c.k), y: lerp(a.y, b.y, c.k) }; }
+  else if (c.t === 'pl') p = pos({ pl: c.i }, f);
+  else p = pos(c.t, f);
+  return { x: p.x, y: p.y + (c.dy || 0), z: c.z };
+}
+function clampCam(c) {
+  const hw = W / 2 / c.z, vh = H / 2 / c.z;
+  return { z: c.z, x: clamp(c.x, hw, GW - hw), y: vh <= GH / 2 ? clamp(c.y, vh, GH - vh) : GH / 2 };
+}
+function buildCam() {
+  const N = Math.ceil(DUR * FPS) + 1;
+  let cur = null, prev = null;
+  for (let i = 0; i < N; i++) {
+    const v = i / FPS, s = segAt(v);
+    if (!s.cam) { CAM.push(null); prev = s; cur = null; continue; }
+    const raw = camRaw(s, v);
+    const first = s !== prev;
+    if (!cur || (first && s.cut)) cur = Object.assign({}, raw);
+    else {
+      const a = s.a || clamp(2.2 / ((s.blend || 0.25) * FPS), 0.05, 1);
+      cur = { x: lerp(cur.x, raw.x, a), y: lerp(cur.y, raw.y, a), z: lerp(cur.z, raw.z, Math.min(1, a * 1.3)) };
+    }
+    CAM.push(clampCam(cur));
+    prev = s;
+  }
+}
+const toScreen = (cam, p) => ({ x: (p.x - cam.x) * cam.z + W / 2, y: (p.y - cam.y) * cam.z + H / 2 });
+
+/* ---------------- frames ---------------- */
+const IMG = new Map();
+function img(take, i) {
+  const src = `frames/${take}/${String(i).padStart(4, '0')}.png`;
+  if (!IMG.has(src)) { const im = new Image(); im.src = src; IMG.set(src, im.decode().then(() => im)); if (IMG.size > 40) IMG.delete(IMG.keys().next().value); }
+  return IMG.get(src);
+}
+const load = (src) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.src = src; });
+
+/* ---------------- the diary ---------------- */
+const PAPER = '#f3ead2', INK = '#22307a', RED = '#d7263d', PENCIL = '#4a5272';
+const FONT = (px) => `${px}px "Gochi Hand"`;
+const TX = 165, MAXW = 880, ROW0 = 1088, ROWH = 100, PX = 88;
+const PH = { cx: 560, cy: 640, w: 620, h: 720, img: 568, top: 26 };   // the taped polaroid
+// photo content: sprite (40x44 grid) at SS px per pixel, its origin inside the 568 px photo
+const SS = 16, SX0 = 284 - 20.5 * SS, SY0 = 548 - 43 * SS;
+// THE KID's battle damage, in sprite pixels: pigeon splat on the hat, then soot from King Leo's lightning
+const DMG = {
+  splat: [[15, 18, 6, 2, '#f6f6ee'], [17, 17, 3, 1, '#f6f6ee'], [16, 20, 2, 2, '#f6f6ee'], [20, 20, 1, 3, '#f6f6ee'], [16, 22, 1, 1, '#f6f6ee'],
+    [18, 18, 1, 1, '#a9b090'], [16, 19, 1, 1, '#d8d8cc'], [19, 19, 2, 1, '#d8d8cc']],
+  soot: [[13, 27, 3, 1, '#4a3a3e'], [24, 28, 3, 1, '#4a3a3e'], [20, 29, 2, 1, '#4a3a3e'], [12, 21, 3, 1, '#140c16'], [25, 20, 4, 1, '#140c16'],
+    [22, 18, 3, 1, '#2a2226'], [14, 32, 2, 2, '#3a3236'], [23, 33, 2, 1, '#3a3236']],
+};
+
+// when each char of a row is on the page (same timing as build_edl.py wdur)
+function charTimes(text, at, cps) {
+  const out = []; let t = at;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    t += ch === ' ' ? 0.5 / cps : 1 / cps;
+    out.push(t);
+    if ('.,!?'.includes(ch) && i < text.length - 1) t += 0.16;
+  }
+  return out;
+}
+const LAY = {};
+function layout(text) {
+  if (LAY[text]) return LAY[text];
+  let px = PX;
+  cx.font = FONT(px);
+  while (cx.measureText(text).width > MAXW && px > 50) { px -= 2; cx.font = FONT(px); }
+  const xs = [];
+  for (let i = 0; i <= text.length; i++) xs.push(cx.measureText(text.slice(0, i)).width);
+  return (LAY[text] = { px, xs });
+}
+const rowY = (r) => ROW0 + r * ROWH;
+
+let GRAIN = null;
+function grain() {
+  const c = document.createElement('canvas'); c.width = W + 120; c.height = H + 120;
+  const g = c.getContext('2d');
+  for (let i = 0; i < 9000; i++) {
+    g.fillStyle = hash(i * 1.7) > 0.5 ? 'rgba(120,90,50,0.05)' : 'rgba(255,255,255,0.12)';
+    g.fillRect(hash(i * 3.1) * c.width, hash(i * 5.3) * c.height, 3 + hash(i) * 4, 2 + hash(i * 2) * 3);
+  }
+  // fibres
+  g.strokeStyle = 'rgba(120,90,50,0.05)'; g.lineWidth = 2;
+  for (let i = 0; i < 160; i++) { const x = hash(i * 7.7) * c.width, y = hash(i * 9.1) * c.height, a = hash(i * 4.4) * 6; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * 40, y + Math.sin(a) * 40); g.stroke(); }
+  return c;
+}
+
+function paper(c, P, lt) {
+  c.fillStyle = PAPER; c.fillRect(-60, -60, W + 120, H + 120);
+  c.drawImage(GRAIN, -60, -60);
+  c.fillStyle = 'rgba(70,110,200,0.32)';
+  for (let y = ROW0 + 6 - ROWH * 10; y < H + 60; y += ROWH) if (y > 120) c.fillRect(-60, y, W + 120, 3);
+  c.fillStyle = 'rgba(220,60,60,0.5)'; c.fillRect(128, -60, 4, H + 120);
+  // spiral binding
+  c.fillStyle = 'rgba(0,0,0,0.07)'; c.fillRect(-60, -60, 84, H + 120);
+  for (let y = 30; y < H + 40; y += 92) {
+    c.fillStyle = '#2a2230'; c.beginPath(); c.arc(70, y + 14, 13, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#6d727a'; c.lineWidth = 9; c.beginPath(); c.arc(44, y + 14, 28, -1.15, 1.15); c.stroke();
+    c.strokeStyle = '#c3c8cf'; c.lineWidth = 4; c.beginPath(); c.arc(44, y + 12, 28, -1.0, 0.7); c.stroke();
+  }
+  // margin doodles: a ball and a star in pencil
+  c.save(); c.strokeStyle = 'rgba(74,82,114,0.55)'; c.lineWidth = 4; c.lineCap = 'round';
+  const d = P.day.length * 3 + P.cap.length;
+  c.translate(930, 190); c.rotate(hash(d) * 0.4);
+  c.beginPath(); c.arc(0, 0, 34, 0, Math.PI * 2); c.stroke();
+  c.beginPath(); for (let i = 0; i <= 5; i++) { const a = -Math.PI / 2 + i * 2 * Math.PI / 5; c.lineTo(Math.cos(a) * 13, Math.sin(a) * 13); } c.stroke();
+  c.restore();
+  c.save(); c.strokeStyle = 'rgba(74,82,114,0.5)'; c.lineWidth = 4; c.lineJoin = 'round';
+  c.translate(1000, 1640 + hash(d + 1) * 60); c.beginPath();
+  for (let i = 0; i <= 5; i++) { const a = -Math.PI / 2 + i * 4 * Math.PI / 5; c.lineTo(Math.cos(a) * 30, Math.sin(a) * 30); } c.stroke();
+  c.restore();
+}
+
+function heading(c, P) {
+  c.save(); c.translate(170, 208); c.rotate(-0.03);
+  c.font = FONT(108); c.fillStyle = RED; c.fillText(P.day, 0, 0);
+  const w = c.measureText(P.day).width;
+  c.strokeStyle = RED; c.lineWidth = 7; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-4, 26); c.quadraticCurveTo(w * 0.5, 36, w + 14, 20); c.stroke();
+  c.restore();
+}
+
+// the photo itself: their home pitch out of focus + the game's own standing sprite, a bit of flash and sepia
+async function buildPhoto(pid) {
+  const P = E.pages[pid], ph = P.photo;
+  const im = await load(`frames/${ph.take}/${String(ph.i).padStart(4, '0')}.png`);
+  const c = document.createElement('canvas'); c.width = c.height = PH.img;
+  const g = c.getContext('2d');
+  const sw = 760, sx = clamp(ph.x * 3 - sw / 2, 0, 1920 - sw), sy = clamp(ph.y * 3 - sw / 2, 0, 1080 - sw);
+  g.filter = 'blur(9px) brightness(0.95) saturate(1.05)';
+  g.drawImage(im, sx, sy, sw, sw, -30, -30, PH.img + 60, PH.img + 60);
+  g.filter = 'none';
+  g.imageSmoothingEnabled = false;
+  g.drawImage(PORT[ph.who].im, 0, 0, 40, 44, SX0, SY0, 40 * SS, 44 * SS);
+  const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(SX0 + x * SS), Math.round(SY0 + y * SS), Math.ceil(w * SS), Math.ceil(h * SS)); };
+  if (ph.dmg) { for (const r of DMG.splat) R(...r); if (ph.dmg === 'soot') for (const r of DMG.soot) R(...r); }
+  // flash falloff + warm print tint
+  const vg = g.createRadialGradient(PH.img * 0.45, PH.img * 0.4, PH.img * 0.2, PH.img / 2, PH.img / 2, PH.img * 0.78);
+  vg.addColorStop(0, 'rgba(255,250,235,0.10)'); vg.addColorStop(1, 'rgba(40,20,10,0.35)');
+  g.fillStyle = vg; g.fillRect(0, 0, PH.img, PH.img);
+  g.fillStyle = 'rgba(255,190,110,0.08)'; g.fillRect(0, 0, PH.img, PH.img);
+  PHOTO[pid] = c;
+}
+// photo-local -> page coordinates (the polaroid is tilted)
+function photoXf(c, P) { c.translate(PH.cx, PH.cy); c.rotate(P.photo.rot || 0); }
+const spriteToPhoto = (x, y) => ({ x: -PH.img / 2 + SX0 + x * SS, y: -PH.h / 2 + PH.top + SY0 + y * SS });
+function photo(c, P, pid, lt) {
+  c.save(); photoXf(c, P);
+  c.fillStyle = 'rgba(60,40,20,0.22)'; c.fillRect(-PH.w / 2 + 14, -PH.h / 2 + 18, PH.w, PH.h);
+  c.fillStyle = P.burnt ? '#efe6d4' : '#fbf8f0'; c.fillRect(-PH.w / 2, -PH.h / 2, PH.w, PH.h);
+  c.drawImage(PHOTO[pid], -PH.img / 2, -PH.h / 2 + PH.top, PH.img, PH.img);
+  c.strokeStyle = 'rgba(0,0,0,0.12)'; c.lineWidth = 2; c.strokeRect(-PH.img / 2, -PH.h / 2 + PH.top, PH.img, PH.img);
+  if (P.burnt) {
+    // singed print: brown scorch eating in from the top-right corner
+    const g = c.createRadialGradient(PH.w / 2, -PH.h / 2, 10, PH.w / 2, -PH.h / 2, 330);
+    g.addColorStop(0, 'rgba(30,14,6,0.95)'); g.addColorStop(0.35, 'rgba(70,35,12,0.6)'); g.addColorStop(1, 'rgba(90,50,20,0)');
+    c.fillStyle = g; c.fillRect(-PH.w / 2, -PH.h / 2, PH.w, PH.h);
+  }
+  // caption, in pencil
+  c.font = FONT(64); c.fillStyle = PENCIL; c.textAlign = 'center';
+  c.fillText(P.cap, 0, PH.h / 2 - 34);
+  c.textAlign = 'left';
+  // tape
+  c.fillStyle = 'rgba(255,230,140,0.66)';
+  for (const sd of [-1, 1]) { c.save(); c.translate(sd * (PH.w / 2 - 26), -PH.h / 2 + 6); c.rotate(sd * 0.62); c.fillRect(-78, -24, 156, 48); c.restore(); }
+  c.restore();
+}
+function capRange(P, sub) {
+  cx.font = FONT(64);
+  const full = cx.measureText(P.cap).width, i = P.cap.indexOf(sub);
+  const x0 = -full / 2 + cx.measureText(P.cap.slice(0, i)).width;
+  return { x0, x1: x0 + cx.measureText(sub).width, y: PH.h / 2 - 34 };
+}
+
+/* pen strokes (red marker horns, a scribble, double underline): polylines in page coords, drawn up to a length */
+function horns(P) {
+  const L = (pts) => pts.map(([x, y]) => spriteToPhoto(x, y));
+  return [
+    L([[15, 19.5], [12.5, 15.5], [12, 11.5], [15, 14.5], [17.5, 18]]),
+    L([[26, 19.5], [28.5, 15.5], [29, 11.5], [26, 14.5], [23.5, 18]]),
+    L([[15.5, 21.5], [19.5, 23.5]]),
+    L([[25.5, 21.5], [21.5, 23.5]]),
+  ];
+}
+function scribble(P) {
+  const r = capRange(P, '<3'), pts = [], n = 7, h = 26;
+  for (let i = 0; i <= n; i++) pts.push({ x: lerp(r.x0 - 10, r.x1 + 10, i / n), y: r.y - 22 + (i % 2 ? h : -h) });
+  return [pts, [{ x: r.x0 - 14, y: r.y - 10 }, { x: r.x1 + 16, y: r.y - 30 }]];
+}
+const plen = (pts) => { let l = 0; for (let i = 1; i < pts.length; i++) l += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); return l; };
+// draw strokes up to fraction k of their total length; returns the pen head
+function strokes(c, S, k, col, lw) {
+  const tot = S.reduce((a, p) => a + plen(p), 0);
+  let left = tot * clamp(k, 0, 1), head = null;
+  c.save(); c.strokeStyle = col; c.lineWidth = lw; c.lineCap = 'round'; c.lineJoin = 'round';
+  for (const pts of S) {
+    if (left <= 0) break;
+    c.beginPath(); c.moveTo(pts[0].x, pts[0].y); head = pts[0];
+    for (let i = 1; i < pts.length && left > 0; i++) {
+      const a = pts[i - 1], b = pts[i], l = Math.hypot(b.x - a.x, b.y - a.y), u = Math.min(1, left / l);
+      head = { x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u) };
+      c.lineTo(head.x, head.y); left -= l;
+    }
+    c.stroke();
+  }
+  c.restore();
+  return head;
+}
+function local(c, p) { const m = c.getTransform(); return { x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f }; }
+
+// a ballpoint pen / red marker, tip at (x, y)
+function pen(c, x, y, kind, a) {
+  if (a <= 0) return;
+  c.save(); c.globalAlpha = a; c.translate(x, y); c.rotate(-0.95);
+  const body = kind === 'marker' ? RED : '#2f47b0', len = kind === 'marker' ? 300 : 330, wd = kind === 'marker' ? 44 : 30;
+  c.save(); c.translate(26, 30); c.fillStyle = 'rgba(40,25,10,0.18)';
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(46, -wd / 2); c.lineTo(46 + len, -wd / 2); c.lineTo(46 + len, wd / 2); c.lineTo(46, wd / 2); c.closePath(); c.fill(); c.restore();
+  // tip
+  c.fillStyle = kind === 'marker' ? '#7a1020' : '#d9d2c0';
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(46, -wd / 2 + 4); c.lineTo(46, wd / 2 - 4); c.closePath(); c.fill();
+  c.fillStyle = kind === 'marker' ? RED : '#1a1a22'; c.fillRect(-2, -3, 9, 6);
+  // body
+  c.fillStyle = body; c.fillRect(46, -wd / 2, len, wd);
+  c.fillStyle = 'rgba(255,255,255,0.35)'; c.fillRect(46, -wd / 2 + 5, len, 6);
+  c.fillStyle = 'rgba(0,0,0,0.2)'; c.fillRect(46, wd / 2 - 7, len, 7);
+  if (kind === 'marker') { c.fillStyle = '#1a1216'; c.fillRect(46 + len - 70, -wd / 2 - 2, 70, wd + 4); }
+  else { c.fillStyle = '#1b2a70'; c.fillRect(46, -wd / 2, 70, wd); c.fillStyle = '#e8e8ee'; c.fillRect(46 + len - 8, -wd / 2, 14, wd); c.fillRect(46 + len - 120, -wd / 2 - 8, 110, 7); }
+  c.restore();
+}
+
+// the yellow card, taped onto the page
+function card(c, k) {
+  if (k <= 0) return;
+  const s = lerp(1.45, 1, outBack(k));
+  c.save(); c.translate(940, 845); c.rotate(0.24); c.scale(s, s); c.globalAlpha = clamp(k * 4, 0, 1);
+  c.fillStyle = 'rgba(40,25,10,0.25)'; c.fillRect(-82, -112, 180, 250);
+  c.fillStyle = '#ffd23f'; c.fillRect(-90, -125, 180, 250);
+  c.fillStyle = '#fff3a8'; c.fillRect(-76, -112, 26, 90);
+  c.fillStyle = '#c9a020'; c.fillRect(-90, 105, 180, 20);
+  c.fillStyle = 'rgba(255,230,140,0.7)'; c.save(); c.translate(0, -122); c.rotate(-0.08); c.fillRect(-70, -22, 140, 44); c.restore();
+  c.restore();
+}
+
+// Day 5: the page got singed. scorched corners, soot, embers, smoke
+function burn(c, lt) {
+  const E1 = [], E2 = [];
+  for (let i = 0; i <= 14; i++) { const u = i / 14; E1.push({ x: lerp(640, W + 60, u) + (hash(i) - 0.5) * 40, y: lerp(-60, 0, u) + Math.sin(u * Math.PI) * (210 + hash(i + 3) * 70) }); }
+  for (let i = 0; i <= 14; i++) { const u = i / 14; E2.push({ x: lerp(W + 60, 720, u) + (hash(i + 30) - 0.5) * 40, y: lerp(1640, H + 60, u) - Math.sin(u * Math.PI) * (-10 + hash(i + 33) * 60) - 0 }); }
+  for (const pts of [E1]) {
+    // scorch halo, char band, the hole (desk underneath)
+    c.save();
+    c.beginPath(); c.moveTo(pts[0].x, pts[0].y); for (const p of pts) c.lineTo(p.x, p.y); c.closePath();
+    c.shadowColor = 'rgba(90,45,10,0.9)'; c.shadowBlur = 90; c.fillStyle = '#2a1408'; c.fill();
+    c.shadowBlur = 24; c.shadowColor = 'rgba(20,8,2,1)'; c.fill();
+    c.restore();
+    c.save(); c.beginPath(); c.moveTo(pts[0].x, pts[0].y); for (const p of pts) c.lineTo(p.x, p.y); c.closePath();
+    c.fillStyle = '#140c0a'; c.fill(); c.restore();
+    // embers along the edge
+    for (let i = 0; i < pts.length - 1; i++) for (let j = 0; j < 3; j++) {
+      const u = hash(i * 7 + j), p = { x: lerp(pts[i].x, pts[i + 1].x, u), y: lerp(pts[i].y, pts[i + 1].y, u) };
+      const fl = 0.5 + 0.5 * Math.sin(lt * (5 + hash(i + j) * 6) + i * 3 + j);
+      c.fillStyle = `rgba(255,${120 + fl * 80 | 0},40,${0.35 + 0.55 * fl})`; c.fillRect(p.x - 5, p.y - 5, 10, 10);
+    }
+  }
+  // soot smudges
+  for (let i = 0; i < 5; i++) {
+    const x = 180 + hash(i * 3.3) * 820, y = 1180 + hash(i * 5.7) * 600, r = 40 + hash(i) * 90;
+    const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(40,28,24,0.14)'); g.addColorStop(1, 'rgba(40,28,24,0)');
+    c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+  // darkened edges
+  const g = c.createRadialGradient(540, 900, 600, 540, 900, 1250);
+  g.addColorStop(0, 'rgba(70,35,12,0)'); g.addColorStop(1, 'rgba(70,35,12,0.45)');
+  c.fillStyle = g; c.fillRect(-60, -60, W + 120, H + 120);
+}
+function smoke(c, lt) {
+  for (let i = 0; i < 18; i++) {
+    // drifts up and to the left, over the paper (over the burnt hole it would not show)
+    const src = [{ x: 690, y: 130 }, { x: 790, y: 235 }, { x: 610, y: 30 }][i % 3];
+    const u = (lt * 0.28 + i / 18) % 1, x = src.x - u * 250 + Math.sin(lt * 1.3 + i * 2.1) * 30 + (hash(i) - 0.5) * 70, y = src.y - u * 240;
+    const r = 44 + u * 110;
+    const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(62,56,64,${(0.95 * Math.min(1, u * 4) * (1 - u)).toFixed(3)})`); g.addColorStop(0.5, `rgba(62,56,64,${(0.45 * Math.min(1, u * 4) * (1 - u)).toFixed(3)})`); g.addColorStop(1, 'rgba(62,56,64,0)');
+    c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+}
+
+// one page at local time lt: paper, photo, rows, marks, pen
+function drawPage(c, s, lt) {
+  const P = E.pages[s.page], d = s.v1 - s.v0;
+  const f0 = s.flip || 0;
+  c.save();
+  const z = 1 + 0.035 * smooth((lt - f0) / (d - f0));   // slow push-in
+  c.translate(540, 980); c.scale(z, z); c.translate(-540, -980);
+  paper(c, P, lt);
+  heading(c, P);
+  photo(c, P, s.page, lt);
+  if (P.burnt) burn(c, lt);
+  let tip = null;
+  // marks
+  for (const m of s.marks || []) {
+    const k = (lt - m.at) / (m.dur || 0.5);
+    if (m.kind === 'card') { card(c, clamp(k, 0, 1)); continue; }
+    if (k <= 0) continue;
+    c.save(); photoXf(c, P);
+    const S = m.kind === 'horns' ? horns(P) : scribble(P);
+    const h = strokes(c, S, k, m.kind === 'horns' ? RED : INK, m.kind === 'horns' ? 13 : 8);
+    const hp = h && local(c, h);
+    c.restore();
+    if (hp && k < 1.35) tip = { x: hp.x, y: hp.y, kind: m.kind === 'horns' ? 'marker' : 'pen', a: clamp((1.35 - k) / 0.35, 0, 1) * clamp(k * 6, 0, 1) };
+  }
+  // handwriting
+  const pre = new Set(s.pre || []);
+  for (const [r, text] of Object.entries(P.rows)) {
+    const row = +r, Lw = (s.write || []).find((w) => w.row === row);
+    let n = 0, ts = null;
+    if (pre.has(row)) n = text.length;
+    else if (Lw) { ts = charTimes(text, Lw.at, Lw.cps); n = ts.filter((t) => lt >= t).length; }
+    if (!n && !Lw) continue;
+    const L = layout(text), y = rowY(row), shaky = !!P.burnt;
+    c.font = FONT(L.px); c.fillStyle = INK;
+    for (let i = 0; i < n; i++) {
+      const j = row * 97 + i * 13 + P.day.length;
+      const jy = (hash(j) - 0.5) * (shaky ? 13 : 3), jx = shaky ? (hash(j + 5) - 0.5) * 5 : 0, jr = (hash(j + 9) - 0.5) * (shaky ? 0.22 : 0.04);
+      c.save(); c.translate(TX + L.xs[i] + jx, y + jy); c.rotate(jr); c.fillText(text[i], 0, 0); c.restore();
+    }
+    if (Lw) {
+      const end = ts[ts.length - 1];
+      if (lt > Lw.at - 0.3 && lt < end + 0.45) {
+        // the pen glides from char to char, scribbling a little
+        let i = ts.findIndex((t) => lt < t); if (i < 0) i = text.length;
+        const t0 = i === 0 ? Lw.at : ts[i - 1], t1 = i < ts.length ? ts[i] : t0 + 1;
+        const xx = i >= text.length ? L.xs[text.length] : lerp(L.xs[i], L.xs[i + 1], clamp((lt - t0) / (t1 - t0), 0, 1));
+        const writing = lt >= Lw.at && lt < end;
+        const lift = clamp((lt - end) / 0.45, 0, 1);
+        tip = {
+          x: TX + xx + (writing ? Math.sin(lt * 47) * 4 : 0) + lift * 60,
+          y: y - 18 + (writing ? Math.sin(lt * 61) * 7 : -10) - lift * 80 + (shaky ? Math.sin(lt * 90) * 5 : 0),
+          kind: 'pen', a: clamp((lt - Lw.at + 0.3) / 0.2, 0, 1) * (1 - lift),
+        };
+      }
+    }
+  }
+  // double underline under a word
+  if (s.under && lt > s.under.at) {
+    const u = s.under, text = P.rows[u.row], L = layout(text), i = text.indexOf(u.word), y = rowY(u.row);
+    const a = TX + L.xs[i] - 6, b = TX + L.xs[i + u.word.length] + 8;
+    const S = [[{ x: a, y: y + 16 }, { x: b, y: y + 12 }], [{ x: a + 10, y: y + 32 }, { x: b + 4, y: y + 27 }]];
+    const k = (lt - u.at) / u.dur, h = strokes(c, S, k, RED, 9);
+    if (h && k < 1.4) tip = { x: h.x, y: h.y, kind: 'marker', a: clamp((1.4 - k) / 0.4, 0, 1) };
+  }
+  // lamp light from the top left
+  const lg = c.createRadialGradient(260, 260, 100, 420, 700, 1700);
+  lg.addColorStop(0, 'rgba(255,240,200,0.10)'); lg.addColorStop(1, 'rgba(40,24,10,0.30)');
+  c.fillStyle = lg; c.fillRect(-60, -60, W + 120, H + 120);
+  if (P.burnt) smoke(c, lt);
+  if (tip) pen(c, tip.x, tip.y, tip.kind, tip.a);
+  c.restore();
+}
+
+// page turn: the previous page swings away over the spine, uncovering this one
+function snap(prev) {
+  if (SNAP.has(prev)) return SNAP.get(prev);
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  drawPage(c.getContext('2d'), prev, prev.v1 - prev.v0 - 1e-3);
+  SNAP.set(prev, c);
+  return c;
+}
+function flipOver(s, lt) {
+  const prev = E.segs[E.segs.indexOf(s) - 1];
+  const k = smooth(lt / s.flip), w = Math.cos(k * Math.PI / 2) * W;
+  // shadow the turning page casts
+  const sw = 40 + 260 * Math.sin(k * Math.PI);
+  const g = cx.createLinearGradient(w, 0, w + sw, 0);
+  g.addColorStop(0, `rgba(20,12,6,${0.45 * Math.sin(k * Math.PI)})`); g.addColorStop(1, 'rgba(20,12,6,0)');
+  cx.fillStyle = g; cx.fillRect(w, 0, sw, H);
+  if (w < 2) return;
+  const lift = 1 + 0.05 * Math.sin(k * Math.PI);
+  cx.save(); cx.translate(0, H / 2); cx.scale(1, lift); cx.translate(0, -H / 2);
+  cx.drawImage(snap(prev), 0, 0, W, H, 0, 0, w, H);
+  const sh = cx.createLinearGradient(0, 0, w, 0);
+  sh.addColorStop(0, `rgba(20,12,6,${0.1 * k})`); sh.addColorStop(1, `rgba(20,12,6,${0.5 * k})`);
+  cx.fillStyle = sh; cx.fillRect(0, 0, w, H);
+  cx.restore();
+}
+
+function outro(s, lt) {
+  if (s.outro == null || lt < s.outro) return '';
+  const t = lt - s.outro, k = smooth(t / 0.4);
+  const gr = cx.createLinearGradient(0, 1170, 0, H);
+  gr.addColorStop(0, 'rgba(14,8,18,0)'); gr.addColorStop(0.18, `rgba(14,8,18,${0.86 * k})`); gr.addColorStop(1, `rgba(14,8,18,${0.94 * k})`);
+  cx.fillStyle = gr; cx.fillRect(0, 1170, W, H - 1170);
+  return `<div class="logo" style="top:1330px;opacity:${smooth(t / 0.3)};transform:scale(${lerp(1.3, 1, outBack(t / 0.35))})">
+    <div class="l1">STREET FOOTBALL</div><div class="l2">CHAOS</div>
+    <div class="l3" style="opacity:${smooth((t - 0.45) / 0.3)}">every team plays by its own rules</div>
+    <div class="l4" style="opacity:${smooth((t - 0.9) / 0.3)}">PLAYTEST SOON &middot; FOLLOW</div></div>`;
+}
+
+/* ---------------- gameplay ---------------- */
+function drawCrop(im, cam) {
+  const hw = W / 2 / cam.z;
+  const sx = (cam.x - hw) * 3, sw = 2 * hw * 3;
+  const y0 = (0 - cam.y) * cam.z + H / 2, y1 = (GH - cam.y) * cam.z + H / 2;
+  if (y0 > 0) {
+    // wide shot: the band sits on a blurred copy of itself, no black bars
+    cx.save(); cx.filter = 'blur(28px) brightness(0.42) saturate(0.85)';
+    cx.drawImage(im, sx, 0, sw, GH * 3, -220, -220, W + 440, H + 440); cx.restore();
+    cx.fillStyle = '#140c16'; cx.fillRect(0, y0 - 10, W, y1 - y0 + 20);
+  }
+  cx.imageSmoothingEnabled = false;
+  cx.drawImage(im, sx, 0, sw, GH * 3, 0, y0, W, y1 - y0);
+}
+// the yellow card, blown up over THE KID's head
+function bigCard(p, lt) {
+  const k = outBack(lt / 0.2), wob = Math.sin(lt * 18) * 0.05 * Math.exp(-lt * 3);
+  cx.save(); cx.translate(Math.min(p.x + 300, W - 120), p.y - 330); cx.rotate(0.2 + wob); cx.scale(k, k);
+  cx.fillStyle = '#140c16'; cx.fillRect(-78, -112, 156, 224);
+  cx.fillStyle = '#ffd23f'; cx.fillRect(-66, -100, 132, 200);
+  cx.fillStyle = '#fff3a8'; cx.fillRect(-56, -90, 20, 70);
+  cx.fillStyle = '#c9a020'; cx.fillRect(-66, 80, 132, 20);
+  cx.restore();
+}
+function drawGame(s, v, im) {
+  const cam = CAM[clamp(Math.round(v * FPS), 0, CAM.length - 1)];
+  const lt = v - s.v0;
+  drawCrop(im, cam);
+  if (s.card) {
+    const f = meta(s.take, clipT(s, v)), p = toScreen(cam, pos('kid', f));
+    const g = cx.createRadialGradient(p.x, p.y - 120, 160, p.x, p.y - 120, 760);
+    g.addColorStop(0, 'rgba(14,8,18,0)'); g.addColorStop(1, `rgba(14,8,18,${0.6 * smooth(lt / 0.15)})`);
+    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+    if (lt > 0.1) bigCard(p, lt - 0.1);
+  }
+  if (s.freeze && lt < 0.08) { cx.fillStyle = `rgba(255,255,255,${0.5 * (1 - lt / 0.08)})`; cx.fillRect(0, 0, W, H); }
+  return '';
+}
+
+/* ---------------- render ---------------- */
+async function render(v) {
+  const s = segAt(v);
+  cx.setTransform(1, 0, 0, 1, 0, 0); cx.globalAlpha = 1; cx.filter = 'none';
+  cx.fillStyle = '#140c16'; cx.fillRect(0, 0, W, H);
+  let h = '';
+  if (s.mode === 'page') {
+    const lt = v - s.v0;
+    drawPage(cx, s, lt);
+    if (s.flip && lt < s.flip) flipOver(s, lt);
+    h = outro(s, lt);
+  }
+  else h = drawGame(s, v, await img(s.take, fidx(s.take, clipT(s, v))));
+  $('txt').innerHTML = h;
+}
+
+// every sound-worthy moment on the pages (pen strokes, page turns, card slap), for audio.py
+function events() {
+  const out = [];
+  for (const s of E.segs) {
+    if (s.mode !== 'page') continue;
+    const P = E.pages[s.page];
+    if (s.flip) out.push({ t: s.v0, kind: 'flip' });
+    for (const w of s.write || []) {
+      const text = P.rows[w.row], ts = charTimes(text, w.at, w.cps);
+      ts.forEach((t, i) => { if (text[i] !== ' ') out.push({ t: s.v0 + t - 1 / w.cps, kind: 'char', ch: text[i], shaky: !!P.burnt }); });
+      out.push({ t: s.v0 + w.at, kind: 'rowStart', row: w.row, text });
+      out.push({ t: s.v0 + ts[ts.length - 1], kind: 'rowEnd', row: w.row, text });
+    }
+    for (const m of s.marks || []) out.push({ t: s.v0 + m.at, kind: m.kind, dur: m.dur });
+    if (s.under) out.push({ t: s.v0 + s.under.at, kind: 'under', dur: s.under.dur });
+    if (s.outro != null) out.push({ t: s.v0 + s.outro, kind: 'logo' });
+  }
+  return out;
+}
+
+window.ready = (async () => {
+  E = await (await fetch('edl.json')).json();
+  DUR = E.dur;
+  for (const t of new Set(E.segs.filter((s) => s.take).map((s) => s.take))) TAKES[t] = await (await fetch(`frames/${t}/meta.json`)).json();
+  await document.fonts.load('82px "Gochi Hand"'); await document.fonts.load('700 70px "Pixelify Sans"'); await document.fonts.load('40px PS2P');
+  await document.fonts.ready;
+  for (const who of new Set(Object.values(E.pages).map((p) => p.photo.who))) {
+    const im = await load(`portraits/${who}.png`);
+    const c = document.createElement('canvas'); c.width = 40; c.height = 44;
+    c.getContext('2d').drawImage(im, 0, 0);
+    PORT[who] = { im: c };
+  }
+  for (const pid of Object.keys(E.pages)) await buildPhoto(pid);
+  GRAIN = grain();
+  buildCam();
+  await render(0);
+  return DUR;
+})();
+window.render = render;
+window.events = events;
+</script>
+</body>
+</html>

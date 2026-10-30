@@ -1,0 +1,1604 @@
+[
+{
+"t": 0.2,
+"kind": "char",
+"ch": "F",
+"shaky": false
+},
+{
+"t": 0.25882352941176473,
+"kind": "char",
+"ch": "i",
+"shaky": false
+},
+{
+"t": 0.31764705882352945,
+"kind": "char",
+"ch": "r",
+"shaky": false
+},
+{
+"t": 0.37647058823529417,
+"kind": "char",
+"ch": "s",
+"shaky": false
+},
+{
+"t": 0.4352941176470589,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 0.5235294117647059,
+"kind": "char",
+"ch": "m",
+"shaky": false
+},
+{
+"t": 0.5823529411764706,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 0.6411764705882353,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 0.7000000000000001,
+"kind": "char",
+"ch": "c",
+"shaky": false
+},
+{
+"t": 0.7588235294117648,
+"kind": "char",
+"ch": "h",
+"shaky": false
+},
+{
+"t": 0.8470588235294119,
+"kind": "char",
+"ch": "v",
+"shaky": false
+},
+{
+"t": 0.9058823529411766,
+"kind": "char",
+"ch": "s",
+"shaky": false
+},
+{
+"t": 0.9941176470588236,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 1.0529411764705883,
+"kind": "char",
+"ch": "h",
+"shaky": false
+},
+{
+"t": 1.111764705882353,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 1.2,
+"kind": "char",
+"ch": "u",
+"shaky": false
+},
+{
+"t": 1.2588235294117647,
+"kind": "char",
+"ch": "n",
+"shaky": false
+},
+{
+"t": 1.3176470588235294,
+"kind": "char",
+"ch": "c",
+"shaky": false
+},
+{
+"t": 1.3764705882352941,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 1.4352941176470588,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 1.4941176470588236,
+"kind": "char",
+"ch": "s",
+"shaky": false
+},
+{
+"t": 1.5529411764705883,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 0.2,
+"kind": "rowStart",
+"row": 1,
+"text": "First match vs the uncles."
+},
+{
+"t": 1.611764705882353,
+"kind": "rowEnd",
+"row": 1,
+"text": "First match vs the uncles."
+},
+{
+"t": 1.912,
+"kind": "char",
+"ch": "T",
+"shaky": false
+},
+{
+"t": 1.9708235294117646,
+"kind": "char",
+"ch": "h",
+"shaky": false
+},
+{
+"t": 2.0296470588235294,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 2.088470588235294,
+"kind": "char",
+"ch": "y",
+"shaky": false
+},
+{
+"t": 2.1767058823529406,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 2.235529411764705,
+"kind": "char",
+"ch": "r",
+"shaky": false
+},
+{
+"t": 2.2943529411764696,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 2.3825882352941163,
+"kind": "char",
+"ch": "v",
+"shaky": false
+},
+{
+"t": 2.441411764705881,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 2.5002352941176453,
+"kind": "char",
+"ch": "r",
+"shaky": false
+},
+{
+"t": 2.55905882352941,
+"kind": "char",
+"ch": "y",
+"shaky": false
+},
+{
+"t": 2.6472941176470566,
+"kind": "char",
+"ch": "k",
+"shaky": false
+},
+{
+"t": 2.706117647058821,
+"kind": "char",
+"ch": "i",
+"shaky": false
+},
+{
+"t": 2.7649411764705856,
+"kind": "char",
+"ch": "n",
+"shaky": false
+},
+{
+"t": 2.82376470588235,
+"kind": "char",
+"ch": "d",
+"shaky": false
+},
+{
+"t": 2.8825882352941146,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 1.912,
+"kind": "rowStart",
+"row": 2,
+"text": "They are very kind."
+},
+{
+"t": 2.941411764705879,
+"kind": "rowEnd",
+"row": 2,
+"text": "They are very kind."
+},
+{
+"t": 10.211,
+"kind": "char",
+"ch": "P",
+"shaky": false
+},
+{
+"t": 10.269823529411765,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 10.48864705882353,
+"kind": "char",
+"ch": "S",
+"shaky": false
+},
+{
+"t": 10.547470588235294,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 10.79570588235294,
+"kind": "char",
+"ch": "T",
+"shaky": false
+},
+{
+"t": 10.854529411764705,
+"kind": "char",
+"ch": "h",
+"shaky": false
+},
+{
+"t": 10.91335294117647,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 10.972176470588234,
+"kind": "char",
+"ch": "y",
+"shaky": false
+},
+{
+"t": 11.060411764705881,
+"kind": "char",
+"ch": "h",
+"shaky": false
+},
+{
+"t": 11.119235294117646,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 11.17805882352941,
+"kind": "char",
+"ch": "v",
+"shaky": false
+},
+{
+"t": 11.236882352941175,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 11.325117647058821,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 11.413352941176468,
+"kind": "char",
+"ch": "s",
+"shaky": false
+},
+{
+"t": 11.472176470588233,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 11.530999999999997,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 11.589823529411762,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 11.648647058823526,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 11.70747058823529,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 10.211,
+"kind": "rowStart",
+"row": 4,
+"text": "P.S. They have a stool."
+},
+{
+"t": 11.766294117647055,
+"kind": "rowEnd",
+"row": 4,
+"text": "P.S. They have a stool."
+},
+{
+"t": 9.061,
+"kind": "horns",
+"dur": 0.95
+},
+{
+"t": 12.686,
+"kind": "flip"
+},
+{
+"t": 13.306000000000001,
+"kind": "char",
+"ch": "R",
+"shaky": false
+},
+{
+"t": 13.364823529411765,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 13.42364705882353,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 13.482470588235294,
+"kind": "char",
+"ch": "f",
+"shaky": false
+},
+{
+"t": 13.541294117647059,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 13.600117647058823,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 13.658941176470588,
+"kind": "char",
+"ch": "p",
+"shaky": false
+},
+{
+"t": 13.747176470588235,
+"kind": "char",
+"ch": "m",
+"shaky": false
+},
+{
+"t": 13.806000000000001,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 13.864823529411765,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 13.92364705882353,
+"kind": "char",
+"ch": "c",
+"shaky": false
+},
+{
+"t": 13.982470588235294,
+"kind": "char",
+"ch": "h",
+"shaky": false
+},
+{
+"t": 14.041294117647059,
+"kind": "char",
+"ch": "!",
+"shaky": false
+},
+{
+"t": 13.306,
+"kind": "rowStart",
+"row": 0,
+"text": "Rooftop match!"
+},
+{
+"t": 14.100117647058823,
+"kind": "rowEnd",
+"row": 0,
+"text": "Rooftop match!"
+},
+{
+"t": 14.4,
+"kind": "char",
+"ch": "N",
+"shaky": false
+},
+{
+"t": 14.458823529411765,
+"kind": "char",
+"ch": "i",
+"shaky": false
+},
+{
+"t": 14.51764705882353,
+"kind": "char",
+"ch": "c",
+"shaky": false
+},
+{
+"t": 14.576470588235294,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 14.66470588235294,
+"kind": "char",
+"ch": "v",
+"shaky": false
+},
+{
+"t": 14.723529411764705,
+"kind": "char",
+"ch": "i",
+"shaky": false
+},
+{
+"t": 14.78235294117647,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 14.841176470588234,
+"kind": "char",
+"ch": "w",
+"shaky": false
+},
+{
+"t": 14.899999999999999,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 15.148235294117645,
+"kind": "char",
+"ch": "L",
+"shaky": false
+},
+{
+"t": 15.20705882352941,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 15.265882352941174,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 15.324705882352939,
+"kind": "char",
+"ch": "s",
+"shaky": false
+},
+{
+"t": 15.412941176470586,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 15.47176470588235,
+"kind": "char",
+"ch": "f",
+"shaky": false
+},
+{
+"t": 15.559999999999997,
+"kind": "char",
+"ch": "p",
+"shaky": false
+},
+{
+"t": 15.618823529411761,
+"kind": "char",
+"ch": "i",
+"shaky": false
+},
+{
+"t": 15.677647058823526,
+"kind": "char",
+"ch": "g",
+"shaky": false
+},
+{
+"t": 15.73647058823529,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 15.795294117647055,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 15.85411764705882,
+"kind": "char",
+"ch": "n",
+"shaky": false
+},
+{
+"t": 15.912941176470584,
+"kind": "char",
+"ch": "s",
+"shaky": false
+},
+{
+"t": 15.97176470588235,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 14.4,
+"kind": "rowStart",
+"row": 1,
+"text": "Nice view. Lots of pigeons."
+},
+{
+"t": 16.030588235294115,
+"kind": "rowEnd",
+"row": 1,
+"text": "Nice view. Lots of pigeons."
+},
+{
+"t": 22.951,
+"kind": "char",
+"ch": "P",
+"shaky": false
+},
+{
+"t": 23.009823529411765,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 23.22864705882353,
+"kind": "char",
+"ch": "S",
+"shaky": false
+},
+{
+"t": 23.287470588235294,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 23.535705882352943,
+"kind": "char",
+"ch": "I",
+"shaky": false
+},
+{
+"t": 23.623941176470588,
+"kind": "char",
+"ch": "n",
+"shaky": false
+},
+{
+"t": 23.682764705882352,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 23.741588235294117,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 23.80041176470588,
+"kind": "char",
+"ch": "d",
+"shaky": false
+},
+{
+"t": 23.88864705882353,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 23.97688235294118,
+"kind": "char",
+"ch": "n",
+"shaky": false
+},
+{
+"t": 24.03570588235294,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 24.094529411764707,
+"kind": "char",
+"ch": "w",
+"shaky": false
+},
+{
+"t": 24.182764705882352,
+"kind": "char",
+"ch": "h",
+"shaky": false
+},
+{
+"t": 24.241588235294117,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 24.30041176470588,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 24.359235294117646,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 22.951,
+"kind": "rowStart",
+"row": 3,
+"text": "P.S. I need a new hat."
+},
+{
+"t": 24.41805882352941,
+"kind": "rowEnd",
+"row": 3,
+"text": "P.S. I need a new hat."
+},
+{
+"t": 22.201,
+"kind": "scribble",
+"dur": 0.55
+},
+{
+"t": 25.338,
+"kind": "flip"
+},
+{
+"t": 25.958000000000002,
+"kind": "char",
+"ch": "R",
+"shaky": false
+},
+{
+"t": 26.016823529411766,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 26.07564705882353,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 26.134470588235295,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 26.222705882352944,
+"kind": "char",
+"ch": "r",
+"shaky": false
+},
+{
+"t": 26.28152941176471,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 26.340352941176473,
+"kind": "char",
+"ch": "f",
+"shaky": false
+},
+{
+"t": 26.399176470588237,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 26.458000000000002,
+"kind": "char",
+"ch": "r",
+"shaky": false
+},
+{
+"t": 26.516823529411766,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 26.57564705882353,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 26.634470588235295,
+"kind": "char",
+"ch": "s",
+"shaky": false
+},
+{
+"t": 26.722705882352944,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 26.78152941176471,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 26.840352941176473,
+"kind": "char",
+"ch": "d",
+"shaky": false
+},
+{
+"t": 26.899176470588237,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 26.958000000000002,
+"kind": "char",
+"ch": "y",
+"shaky": false
+},
+{
+"t": 27.016823529411766,
+"kind": "char",
+"ch": "!",
+"shaky": false
+},
+{
+"t": 25.958000000000002,
+"kind": "rowStart",
+"row": 0,
+"text": "Real referees today!"
+},
+{
+"t": 27.07564705882353,
+"kind": "rowEnd",
+"row": 0,
+"text": "Real referees today!"
+},
+{
+"t": 27.376,
+"kind": "char",
+"ch": "F",
+"shaky": false
+},
+{
+"t": 27.434823529411766,
+"kind": "char",
+"ch": "i",
+"shaky": false
+},
+{
+"t": 27.49364705882353,
+"kind": "char",
+"ch": "n",
+"shaky": false
+},
+{
+"t": 27.552470588235295,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 27.61129411764706,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 27.670117647058824,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 27.728941176470588,
+"kind": "char",
+"ch": "y",
+"shaky": false
+},
+{
+"t": 27.787764705882353,
+"kind": "char",
+"ch": ",",
+"shaky": false
+},
+{
+"t": 28.035999999999998,
+"kind": "char",
+"ch": "f",
+"shaky": false
+},
+{
+"t": 28.094823529411762,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 28.153647058823527,
+"kind": "char",
+"ch": "i",
+"shaky": false
+},
+{
+"t": 28.21247058823529,
+"kind": "char",
+"ch": "r",
+"shaky": false
+},
+{
+"t": 28.30070588235294,
+"kind": "char",
+"ch": "f",
+"shaky": false
+},
+{
+"t": 28.359529411764704,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 28.41835294117647,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 28.477176470588233,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 28.535999999999998,
+"kind": "char",
+"ch": "b",
+"shaky": false
+},
+{
+"t": 28.594823529411762,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 28.653647058823527,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 28.71247058823529,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 28.771294117647056,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 27.376,
+"kind": "rowStart",
+"row": 1,
+"text": "Finally, fair football."
+},
+{
+"t": 28.83011764705882,
+"kind": "rowEnd",
+"row": 1,
+"text": "Finally, fair football."
+},
+{
+"t": 35.65,
+"kind": "char",
+"ch": "P",
+"shaky": false
+},
+{
+"t": 35.70882352941176,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 35.927647058823524,
+"kind": "char",
+"ch": "S",
+"shaky": false
+},
+{
+"t": 35.98647058823529,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 36.234705882352934,
+"kind": "char",
+"ch": "I",
+"shaky": false
+},
+{
+"t": 36.322941176470586,
+"kind": "char",
+"ch": "g",
+"shaky": false
+},
+{
+"t": 36.38176470588235,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 36.440588235294115,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 36.52882352941176,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 36.617058823529405,
+"kind": "char",
+"ch": "y",
+"shaky": false
+},
+{
+"t": 36.67588235294117,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 36.734705882352934,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 36.7935294117647,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 36.85235294117646,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 36.91117647058823,
+"kind": "char",
+"ch": "w",
+"shaky": false
+},
+{
+"t": 36.999411764705876,
+"kind": "char",
+"ch": "c",
+"shaky": false
+},
+{
+"t": 37.058235294117644,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 37.117058823529405,
+"kind": "char",
+"ch": "r",
+"shaky": false
+},
+{
+"t": 37.17588235294117,
+"kind": "char",
+"ch": "d",
+"shaky": false
+},
+{
+"t": 37.234705882352934,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 35.65,
+"kind": "rowStart",
+"row": 3,
+"text": "P.S. I got a yellow card."
+},
+{
+"t": 37.2935294117647,
+"kind": "rowEnd",
+"row": 3,
+"text": "P.S. I got a yellow card."
+},
+{
+"t": 37.74399999999999,
+"kind": "char",
+"ch": "I",
+"shaky": false
+},
+{
+"t": 37.832235294117645,
+"kind": "char",
+"ch": "d",
+"shaky": false
+},
+{
+"t": 37.891058823529406,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 37.949882352941174,
+"kind": "char",
+"ch": "n",
+"shaky": false
+},
+{
+"t": 38.008705882352935,
+"kind": "char",
+"ch": "'",
+"shaky": false
+},
+{
+"t": 38.0675294117647,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 38.15576470588235,
+"kind": "char",
+"ch": "k",
+"shaky": false
+},
+{
+"t": 38.21458823529411,
+"kind": "char",
+"ch": "n",
+"shaky": false
+},
+{
+"t": 38.27341176470588,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 38.33223529411764,
+"kind": "char",
+"ch": "w",
+"shaky": false
+},
+{
+"t": 38.42047058823529,
+"kind": "char",
+"ch": "w",
+"shaky": false
+},
+{
+"t": 38.47929411764705,
+"kind": "char",
+"ch": "h",
+"shaky": false
+},
+{
+"t": 38.53811764705882,
+"kind": "char",
+"ch": "y",
+"shaky": false
+},
+{
+"t": 38.59694117647058,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 37.744,
+"kind": "rowStart",
+"row": 4,
+"text": "I don't know why."
+},
+{
+"t": 38.65576470588235,
+"kind": "rowEnd",
+"row": 4,
+"text": "I don't know why."
+},
+{
+"t": 35.15,
+"kind": "card",
+"dur": 0.3
+},
+{
+"t": 39.575,
+"kind": "flip"
+},
+{
+"t": 40.195,
+"kind": "char",
+"ch": "O",
+"shaky": false
+},
+{
+"t": 40.25382352941176,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 40.31264705882353,
+"kind": "char",
+"ch": "d",
+"shaky": false
+},
+{
+"t": 40.400882352941174,
+"kind": "char",
+"ch": "m",
+"shaky": false
+},
+{
+"t": 40.45970588235294,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 40.5185294117647,
+"kind": "char",
+"ch": "n",
+"shaky": false
+},
+{
+"t": 40.606764705882355,
+"kind": "char",
+"ch": "t",
+"shaky": false
+},
+{
+"t": 40.665588235294116,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 40.724411764705884,
+"kind": "char",
+"ch": "d",
+"shaky": false
+},
+{
+"t": 40.783235294117645,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 40.84205882352941,
+"kind": "char",
+"ch": "y",
+"shaky": false
+},
+{
+"t": 40.900882352941174,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 40.195,
+"kind": "rowStart",
+"row": 0,
+"text": "Old men today."
+},
+{
+"t": 40.95970588235294,
+"kind": "rowEnd",
+"row": 0,
+"text": "Old men today."
+},
+{
+"t": 41.26,
+"kind": "char",
+"ch": "S",
+"shaky": false
+},
+{
+"t": 41.318823529411766,
+"kind": "char",
+"ch": "h",
+"shaky": false
+},
+{
+"t": 41.37764705882353,
+"kind": "char",
+"ch": "o",
+"shaky": false
+},
+{
+"t": 41.436470588235295,
+"kind": "char",
+"ch": "u",
+"shaky": false
+},
+{
+"t": 41.495294117647056,
+"kind": "char",
+"ch": "l",
+"shaky": false
+},
+{
+"t": 41.554117647058824,
+"kind": "char",
+"ch": "d",
+"shaky": false
+},
+{
+"t": 41.64235294117647,
+"kind": "char",
+"ch": "b",
+"shaky": false
+},
+{
+"t": 41.70117647058824,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 41.78941176470588,
+"kind": "char",
+"ch": "e",
+"shaky": false
+},
+{
+"t": 41.84823529411764,
+"kind": "char",
+"ch": "a",
+"shaky": false
+},
+{
+"t": 41.90705882352941,
+"kind": "char",
+"ch": "s",
+"shaky": false
+},
+{
+"t": 41.96588235294117,
+"kind": "char",
+"ch": "y",
+"shaky": false
+},
+{
+"t": 42.02470588235294,
+"kind": "char",
+"ch": ".",
+"shaky": false
+},
+{
+"t": 41.260000000000005,
+"kind": "rowStart",
+"row": 1,
+"text": "Should be easy."
+},
+{
+"t": 42.08352941176471,
+"kind": "rowEnd",
+"row": 1,
+"text": "Should be easy."
+},
+{
+"t": 48.15299999999999,
+"kind": "char",
+"ch": "I",
+"shaky": true
+},
+{
+"t": 48.27799999999999,
+"kind": "char",
+"ch": "s",
+"shaky": true
+},
+{
+"t": 48.36133333333333,
+"kind": "char",
+"ch": "t",
+"shaky": true
+},
+{
+"t": 48.44466666666666,
+"kind": "char",
+"ch": "i",
+"shaky": true
+},
+{
+"t": 48.52799999999999,
+"kind": "char",
+"ch": "l",
+"shaky": true
+},
+{
+"t": 48.61133333333333,
+"kind": "char",
+"ch": "l",
+"shaky": true
+},
+{
+"t": 48.73633333333333,
+"kind": "char",
+"ch": "w",
+"shaky": true
+},
+{
+"t": 48.81966666666666,
+"kind": "char",
+"ch": "a",
+"shaky": true
+},
+{
+"t": 48.90299999999999,
+"kind": "char",
+"ch": "n",
+"shaky": true
+},
+{
+"t": 48.98633333333333,
+"kind": "char",
+"ch": "t",
+"shaky": true
+},
+{
+"t": 49.11133333333333,
+"kind": "char",
+"ch": "t",
+"shaky": true
+},
+{
+"t": 49.19466666666666,
+"kind": "char",
+"ch": "o",
+"shaky": true
+},
+{
+"t": 48.153,
+"kind": "rowStart",
+"row": 0,
+"text": "I still want to"
+},
+{
+"t": 49.278,
+"kind": "rowEnd",
+"row": 0,
+"text": "I still want to"
+},
+{
+"t": 49.528,
+"kind": "char",
+"ch": "p",
+"shaky": true
+},
+{
+"t": 49.61133333333333,
+"kind": "char",
+"ch": "l",
+"shaky": true
+},
+{
+"t": 49.69466666666666,
+"kind": "char",
+"ch": "a",
+"shaky": true
+},
+{
+"t": 49.778,
+"kind": "char",
+"ch": "y",
+"shaky": true
+},
+{
+"t": 49.903,
+"kind": "char",
+"ch": "f",
+"shaky": true
+},
+{
+"t": 49.98633333333333,
+"kind": "char",
+"ch": "o",
+"shaky": true
+},
+{
+"t": 50.06966666666666,
+"kind": "char",
+"ch": "o",
+"shaky": true
+},
+{
+"t": 50.153,
+"kind": "char",
+"ch": "t",
+"shaky": true
+},
+{
+"t": 50.23633333333333,
+"kind": "char",
+"ch": "b",
+"shaky": true
+},
+{
+"t": 50.31966666666666,
+"kind": "char",
+"ch": "a",
+"shaky": true
+},
+{
+"t": 50.403,
+"kind": "char",
+"ch": "l",
+"shaky": true
+},
+{
+"t": 50.48633333333333,
+"kind": "char",
+"ch": "l",
+"shaky": true
+},
+{
+"t": 50.56966666666666,
+"kind": "char",
+"ch": ".",
+"shaky": true
+},
+{
+"t": 49.528,
+"kind": "rowStart",
+"row": 1,
+"text": "play football."
+},
+{
+"t": 50.653,
+"kind": "rowEnd",
+"row": 1,
+"text": "play football."
+},
+{
+"t": 51.003,
+"kind": "under",
+"dur": 0.5
+},
+{
+"t": 52.003,
+"kind": "logo"
+}
+]

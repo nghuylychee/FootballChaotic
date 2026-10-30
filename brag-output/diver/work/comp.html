@@ -1,0 +1,338 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family: 'PS2P'; src: url('/assets/fonts/PressStart2P-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'VCR'; src: url('/assets/fonts/VT323-latin.woff2') format('woff2'); }
+  :root { --ink: #140c16; --cream: #f3ead7; --gold: #ffe14f; --red: #ff3d5a; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--ink); }
+  #c { position: absolute; left: 0; top: 0; }
+  #txt { position: absolute; inset: 0; pointer-events: none; }
+  .cap { position: absolute; left: 40px; right: 40px; text-align: center; font-family: 'Pixelify Sans', monospace; font-weight: 700;
+    color: #fff; -webkit-text-stroke: 12px var(--ink); paint-order: stroke fill; line-height: 1.12; letter-spacing: 1px; }
+  .card { position: absolute; left: 0; right: 0; height: 330px; }
+  .card .slab { position: absolute; left: -60px; width: 1010px; top: 40px; height: 250px; background: var(--c);
+    border: 9px solid var(--ink); box-shadow: 16px 16px 0 var(--ink); transform: skewY(-4deg); transform-origin: 0 0; }
+  .card .tag { position: absolute; left: 56px; top: 0; font-family: 'PS2P'; font-size: 26px; color: var(--ink); background: #fff;
+    border: 6px solid var(--ink); padding: 12px 16px 10px; transform: rotate(-4deg); transform-origin: 0 0; }
+  .card .name { position: absolute; left: 60px; top: 104px; font-family: 'PS2P'; font-size: 72px; color: #fff; letter-spacing: 2px;
+    text-shadow: 7px 7px 0 var(--ink); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; transform: rotate(-4deg); transform-origin: 0 0; white-space: nowrap; }
+  .card .line { position: absolute; left: 64px; top: 196px; font-family: 'Pixelify Sans'; font-weight: 700; font-size: 52px; color: #fff;
+    -webkit-text-stroke: 10px var(--ink); paint-order: stroke fill; transform: rotate(-4deg); transform-origin: 0 0; white-space: nowrap; }
+  .stamp { position: absolute; font-family: 'PS2P'; font-size: 25px; line-height: 1.5; color: #e8322a; background: rgba(255, 250, 240, 0.95);
+    border: 7px solid #e8322a; padding: 16px 20px 12px; text-align: center; box-shadow: 8px 8px 0 var(--ink); }
+  .pill { position: absolute; left: 0; right: 0; text-align: center; }
+  .pill span { display: inline-block; font-family: 'PS2P'; font-size: 34px; color: #fff; background: var(--ink); border: 6px solid #fff;
+    padding: 18px 26px 14px; box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.45); }
+  .pill b { color: var(--gold); font-weight: normal; }
+  .osd { position: absolute; left: 70px; top: 300px; font-family: 'VCR'; font-size: 96px; color: #fff; text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.6); letter-spacing: 2px; }
+  .osd small { display: block; font-size: 64px; opacity: 0.9; }
+  .lt { position: absolute; left: 0; top: 290px; }
+  .lt .bar { display: inline-block; font-family: 'PS2P'; font-size: 34px; color: #fff; background: var(--c); border: 7px solid var(--ink);
+    padding: 20px 26px 16px 70px; box-shadow: 10px 10px 0 var(--ink); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+  .lt .sub { display: block; margin: 16px 0 0 70px; font-family: 'Pixelify Sans'; font-weight: 700; font-size: 46px; color: #fff; -webkit-text-stroke: 9px var(--ink); paint-order: stroke fill; }
+  .logo { position: absolute; left: 0; right: 0; text-align: center; font-family: 'PS2P'; line-height: 1.2; }
+  .logo .l1 { font-size: 66px; color: #fff; text-shadow: 7px 7px 0 var(--ink); letter-spacing: 2px; }
+  .logo .l2 { font-size: 186px; color: var(--red); text-shadow: 10px 10px 0 var(--ink), 20px 20px 0 var(--gold); margin-top: 24px; letter-spacing: 4px; }
+  .logo .l3 { font-family: 'Pixelify Sans'; font-weight: 700; font-size: 50px; color: #fff; -webkit-text-stroke: 10px var(--ink); paint-order: stroke fill; margin-top: 70px; }
+  .logo .l4 { display: inline-block; font-size: 30px; color: var(--ink); background: var(--gold); border: 6px solid var(--ink); padding: 20px 26px 16px; margin-top: 46px; box-shadow: 8px 8px 0 var(--ink); }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<div id="txt"></div>
+<script>
+const W = 1080, H = 1920, FPS = 30, GW = 640, GH = 360;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const smooth = (k) => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
+const outBack = (k) => { k = clamp(k, 0, 1); const s = 1.7; return 1 + (s + 1) * Math.pow(k - 1, 3) + s * Math.pow(k - 1, 2); };
+const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const $ = (id) => document.getElementById(id);
+const cv = $('c'), cx = cv.getContext('2d');
+let E, TAKES = {}, CAM = [], DUR;
+
+/* ---------------- edit ---------------- */
+const segAt = (v) => E.segs.find((s) => v >= s.v0 && v < s.v1) || E.segs[E.segs.length - 1];
+const clipT = (s, v) => (s.r === 0 ? s.c0 : s.c0 + (v - s.v0) * s.r);
+const fidx = (take, c) => clamp(Math.round(c * FPS), 0, TAKES[take].frames.length - 1);
+const meta = (take, c) => TAKES[take].frames[fidx(take, c)];
+function pos(spec, f) {
+  if (spec === 'kid') return { x: f.kid[0], y: f.kid[1] - f.kid[2] };
+  if (spec === 'ball') return { x: f.ball[0], y: f.ball[1] - f.ball[2] };
+  const p = f.pl[spec.pl != null ? spec.pl : spec.i];
+  return { x: p[1], y: p[2] - Math.min(p[3], 40) };
+}
+function camRaw(s, v) {
+  const c = s.cam, f = meta(s.take, clipT(s, v));
+  let p;
+  if (c.t === 'pt') p = { x: c.x, y: c.y };
+  else if (c.t === 'mix') { const a = pos(c.a, f), b = pos(c.b, f); p = { x: lerp(a.x, b.x, c.k), y: lerp(a.y, b.y, c.k) }; }
+  else if (c.t === 'pl') p = pos({ pl: c.i }, f);
+  else p = pos(c.t, f);
+  return { x: p.x, y: p.y + (c.dy || 0), z: c.z };
+}
+function clampCam(c) {
+  const hw = W / 2 / c.z, vh = H / 2 / c.z;
+  return { z: c.z, x: clamp(c.x, hw, GW - hw), y: vh <= GH / 2 ? clamp(c.y, vh, GH - vh) : GH / 2 };
+}
+function buildCam() {
+  const N = Math.ceil(DUR * FPS) + 1;
+  let cur = null, prev = null;
+  for (let i = 0; i < N; i++) {
+    const v = i / FPS, s = segAt(v);
+    if (!s.cam) { CAM.push(null); prev = s; continue; }
+    const raw = camRaw(s, v);
+    const first = s !== prev;
+    if (!cur || (first && s.cut)) cur = Object.assign({}, raw);
+    else {
+      const a = s.a || clamp(2.2 / ((s.blend || 0.25) * FPS), 0.05, 1);
+      cur = { x: lerp(cur.x, raw.x, a), y: lerp(cur.y, raw.y, a), z: lerp(cur.z, raw.z, Math.min(1, a * 1.3)) };
+    }
+    CAM.push(clampCam(cur));
+    prev = s;
+  }
+}
+const toScreen = (cam, p) => ({ x: (p.x - cam.x) * cam.z + W / 2, y: (p.y - cam.y) * cam.z + H / 2 });
+
+/* ---------------- frames ---------------- */
+const IMG = new Map();
+function img(take, i) {
+  const src = `frames/${take}/${String(i).padStart(4, '0')}.png`;
+  if (!IMG.has(src)) { const im = new Image(); im.src = src; IMG.set(src, im.decode().then(() => im)); if (IMG.size > 40) IMG.delete(IMG.keys().next().value); }
+  return IMG.get(src);
+}
+
+/* ---------------- drawing ---------------- */
+function drawCrop(im, cam) {
+  const hw = W / 2 / cam.z;
+  const sx = (cam.x - hw) * 3, sw = 2 * hw * 3;
+  const y0 = (0 - cam.y) * cam.z + H / 2, y1 = (GH - cam.y) * cam.z + H / 2;
+  cx.imageSmoothingEnabled = false;
+  cx.drawImage(im, sx, 0, sw, GH * 3, 0, y0, W, y1 - y0);
+}
+function drawBand(im, y, w = W, x = 0) {
+  cx.imageSmoothingEnabled = false;
+  cx.drawImage(im, 0, 0, 1920, 1080, x, y, w, w * 9 / 16);
+}
+function speedLines(v, cxp, cyp, n, col, w0) {
+  cx.save();
+  cx.fillStyle = col;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + hash(i) * 0.08, jit = hash(i * 7 + Math.floor(v * 24)) ;
+    const r0 = 260 + jit * 160, r1 = 1500, w = w0 * (0.4 + hash(i * 3) * 0.9);
+    cx.beginPath();
+    cx.moveTo(cxp + Math.cos(a - w) * r1, cyp + Math.sin(a - w) * r1);
+    cx.lineTo(cxp + Math.cos(a) * r0, cyp + Math.sin(a) * r0);
+    cx.lineTo(cxp + Math.cos(a + w) * r1, cyp + Math.sin(a + w) * r1);
+    cx.fill();
+  }
+  cx.restore();
+}
+function spotlight(sp, k) {
+  const g = cx.createRadialGradient(sp.x, sp.y, 120, sp.x, sp.y, 430);
+  g.addColorStop(0, 'rgba(14,8,18,0)');
+  g.addColorStop(1, `rgba(14,8,18,${(0.66 * k).toFixed(3)})`);
+  cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  // ring
+  cx.strokeStyle = `rgba(255,255,255,${(0.9 * k).toFixed(3)})`; cx.lineWidth = 8; cx.setLineDash([22, 16]);
+  cx.beginPath(); cx.arc(sp.x, sp.y, 118 + (1 - k) * 60, 0, Math.PI * 2); cx.stroke(); cx.setLineDash([]);
+}
+function vhs(v, k) {
+  // tracking bands + noise + tint
+  for (let b = 0; b < 5; b++) {
+    const y = Math.floor(hash(b * 13 + Math.floor(v * 30)) * H), h = 30 + hash(b * 5 + Math.floor(v * 30)) * 120, dx = (hash(b + Math.floor(v * 30) * 3) - 0.5) * 90 * k;
+    cx.drawImage(cv, 0, y, W, h, dx, y, W, h);
+  }
+  for (let i = 0; i < 260 * k; i++) { cx.fillStyle = hash(i + v * 91) > 0.5 ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.5)'; cx.fillRect(hash(i * 3 + v * 17) * W, hash(i * 7 + v * 29) * H, 2 + hash(i) * 24, 3); }
+  const ny = ((v * 1.7) % 1) * H;
+  cx.fillStyle = 'rgba(255,255,255,0.18)'; cx.fillRect(0, ny, W, 60);
+  cx.fillStyle = 'rgba(80,120,255,0.08)'; cx.fillRect(0, 0, W, H);
+}
+function scan(a) { cx.fillStyle = `rgba(0,0,0,${a})`; for (let y = 0; y < H; y += 6) cx.fillRect(0, y, W, 2); }
+function staticNoise(k) {
+  for (let i = 0; i < 2600 * k; i++) { cx.fillStyle = hash(i * 1.3 + k * 77) > 0.5 ? '#fff' : '#000'; cx.fillRect(hash(i * 3.1 + k * 9) * W, hash(i * 7.7 + k * 13) * H, 6, 4); }
+}
+function tvSet(im, v) {
+  cx.fillStyle = '#1b1220'; cx.fillRect(0, 0, W, H);
+  const g = cx.createRadialGradient(540, 940, 80, 540, 940, 900);
+  g.addColorStop(0, 'rgba(255,63,180,0.22)'); g.addColorStop(1, 'rgba(255,63,180,0)');
+  cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  // antenna
+  cx.strokeStyle = '#2a2230'; cx.lineWidth = 10; cx.lineCap = 'round';
+  cx.beginPath(); cx.moveTo(540, 600); cx.lineTo(380, 380); cx.moveTo(540, 600); cx.lineTo(720, 400); cx.stroke();
+  cx.fillStyle = '#ff3fb4'; cx.beginPath(); cx.arc(380, 380, 14, 0, 7); cx.arc(720, 400, 14, 0, 7); cx.fill();
+  // body
+  const bx = 18, by = 590, bw = 1044, bh = 760;
+  cx.fillStyle = '#140c16'; cx.fillRect(bx - 8, by - 8, bw + 16, bh + 16);
+  cx.fillStyle = '#7a4a2c'; cx.fillRect(bx, by, bw, bh);
+  cx.fillStyle = '#8f5a36'; cx.fillRect(bx, by, bw, 14);
+  cx.fillStyle = '#5a341e'; cx.fillRect(bx, by + bh - 16, bw, 16);
+  // screen
+  const sx = 50, sy = 624, sw = 980, sh = sw * 9 / 16;
+  cx.fillStyle = '#0a070c'; cx.fillRect(sx - 14, sy - 14, sw + 28, sh + 28);
+  drawBand(im, sy, sw, sx);
+  const gl = cx.createRadialGradient(sx + sw / 2, sy + sh / 2, sh * 0.35, sx + sw / 2, sy + sh / 2, sw * 0.62);
+  gl.addColorStop(0, 'rgba(0,0,0,0)'); gl.addColorStop(1, 'rgba(0,0,0,0.38)');
+  cx.fillStyle = gl; cx.fillRect(sx, sy, sw, sh);
+  cx.fillStyle = 'rgba(255,255,255,0.06)'; cx.fillRect(sx + 30, sy + 20, sw * 0.35, 30);
+  // speaker + knobs
+  const py = sy + sh + 40;
+  for (let i = 0; i < 9; i++) { cx.fillStyle = '#3e2414'; cx.fillRect(80 + i * 46, py + 20, 26, 150); }
+  for (const kx of [760, 900]) {
+    cx.fillStyle = '#140c16'; cx.beginPath(); cx.arc(kx, py + 95, 54, 0, 7); cx.fill();
+    cx.fillStyle = '#d9c9a8'; cx.beginPath(); cx.arc(kx, py + 95, 44, 0, 7); cx.fill();
+    cx.fillStyle = '#140c16'; cx.fillRect(kx - 5, py + 55, 10, 40);
+  }
+  // legs
+  cx.fillStyle = '#140c16'; cx.fillRect(120, by + bh + 8, 40, 90); cx.fillRect(W - 160, by + bh + 8, 40, 90);
+}
+
+/* ---------------- text ---------------- */
+function fade(v, a, b, i = 0.18, o = 0.18) { if (v < a || v > b) return 0; return Math.min(smooth((v - a) / i), smooth((b - v) / o)); }
+function cap(html, v, a, b, top, size = 68, pop = true) {
+  const k = fade(v, a, b, 0.12, 0.15); if (k <= 0) return '';
+  const s = pop ? lerp(1.25, 1, outBack((v - a) / 0.22)) : 1;
+  return `<div class="cap" style="top:${top}px;font-size:${size}px;opacity:${k};transform:scale(${s.toFixed(3)})">${html}</div>`;
+}
+const CARDS = {
+  kid: { c: '#ffe14f', tag: 'THIS IS', name: 'THE KID', line: 'just wants to play football.' },
+  uncles: { c: '#c9b48a', tag: 'OLD SCHOOL', name: 'THE UNCLES', line: 'thirty years on the same pitch.' },
+  pigeons: { c: '#8d86b8', tag: 'COO COO', name: 'PIGEON GANG', line: 'they have a game plan.' },
+};
+function card(id, v, a, b) {
+  if (v < a || v > b) return '';
+  const C = CARDS[id], t = v - a, out = smooth((v - (b - 0.16)) / 0.16);
+  const slab = lerp(-1150, 0, outBack(t / 0.26)) + out * 1300;
+  const nameS = lerp(1.6, 1, outBack((t - 0.08) / 0.25)), nameO = clamp((t - 0.08) / 0.06, 0, 1);
+  const lineO = clamp((t - 0.3) / 0.15, 0, 1) * (1 - out);
+  let h = `<div class="card" style="top:1010px;--c:${C.c}">
+    <div class="slab" style="transform:translateX(${slab}px) skewY(-4deg)"></div>
+    <div class="tag" style="opacity:${nameO * (1 - out)};transform:translateX(${slab * 0.6}px) rotate(-4deg)">${C.tag}</div>
+    <div class="name" style="opacity:${nameO * (1 - out)};transform:translateX(${out * 1300}px) rotate(-4deg) scale(${nameS})">${C.name}</div>
+    <div class="line" style="opacity:${lineO};transform:translateX(${out * 1300}px) rotate(-4deg)">${C.line}</div></div>`;
+  if (id === 'uncles') {
+    const st = t - 0.75, k = clamp(st / 0.12, 0, 1);
+    if (st > 0) h += `<div class="stamp" style="left:520px;top:800px;opacity:${k * (1 - out)};transform:rotate(-9deg) scale(${lerp(2.2, 1, smooth(st / 0.12))})">HOUSE RULE:<br>THEY START 1-0 UP</div>`;
+  }
+  return h;
+}
+function arrow(from, to, k) {
+  // hand-drawn arrow from the caption to the subject
+  const mx = (from.x + to.x) / 2 + 120, my = (from.y + to.y) / 2;
+  const tx = lerp(from.x, to.x, k), ty = lerp(from.y, to.y, k);
+  return `<svg width="${W}" height="${H}" style="position:absolute;left:0;top:0">
+    <path d="M${from.x},${from.y} Q${mx},${my} ${tx},${ty}" fill="none" stroke="#140c16" stroke-width="26" stroke-linecap="round"/>
+    <path d="M${from.x},${from.y} Q${mx},${my} ${tx},${ty}" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round"/>
+    ${k >= 1 ? (() => { const a = Math.atan2(to.y - my, to.x - mx), L = 48; const p = (s) => `${to.x + Math.cos(a + s) * -L},${to.y + Math.sin(a + s) * -L}`;
+      return `<path d="M${p(0.55)} L${to.x},${to.y} L${p(-0.55)}" fill="none" stroke="#140c16" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M${p(0.55)} L${to.x},${to.y} L${p(-0.55)}" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>`; })() : ''}
+  </svg>`;
+}
+function lowerThird(v, a, b, c, title, sub) {
+  const k = fade(v, a, b, 0.2, 0.2); if (k <= 0) return '';
+  return `<div class="lt" style="--c:${c};transform:translateX(${(1 - k) * -700}px)"><span class="bar">${title}</span><span class="sub">${sub}</span></div>`;
+}
+
+/* ---------------- render ---------------- */
+async function render(v) {
+  const s = segAt(v), c = clipT(s, v), i = fidx(s.take, c);
+  const im = await img(s.take, i);
+  const cam = CAM[clamp(Math.round(v * FPS), 0, CAM.length - 1)];
+  const lt = v - s.v0;
+  let h = '';
+  cx.globalAlpha = 1; cx.filter = 'none';
+  cx.fillStyle = '#140c16'; cx.fillRect(0, 0, W, H);
+
+  if (s.mode === 'tv') {
+    tvSet(im, v);
+    if (lt < 0.14) staticNoise(1 - lt / 0.14);
+  } else if (s.mode === 'film') {
+    // zoomed into the reel so grandpa and young King Leo read on a phone; our own sprocket strips
+    cx.fillStyle = '#0b0907'; cx.fillRect(0, 0, W, H);
+    const bh = W * 9 / 16, by = (H - bh) / 2 - 40, jit = Math.round((hash(Math.floor(v * 24)) - 0.5) * 6);
+    cx.imageSmoothingEnabled = false;
+    cx.drawImage(im, 120 * 3, 70 * 3, 400 * 3, 225 * 3, 0, by + jit, W, bh);
+    cx.fillStyle = '#14100c'; cx.fillRect(0, by - 70, W, 70); cx.fillRect(0, by + bh, W, 70);
+    const so = (v * 160) % 64;
+    for (let x = -64 + so; x < W; x += 64) { cx.fillStyle = '#5a5042'; cx.fillRect(x, by - 50, 30, 26); cx.fillRect(x, by + bh + 24, 30, 26); }
+    for (let k = 0; k < 40; k++) { cx.fillStyle = `rgba(255,240,200,${(0.04 + hash(k + Math.floor(v * 24)) * 0.06).toFixed(3)})`; cx.fillRect(hash(k * 3 + Math.floor(v * 24)) * W, hash(k * 5 + Math.floor(v * 24)) * H, 3, 3); }
+  } else if (s.mode === 'band') {
+    cx.fillStyle = '#f3ead7'; cx.fillRect(0, 0, W, H);
+    speedLines(v, W / 2, H / 2, 70, '#140c16', 0.022);
+    // two manga panels cut from the real cut-in banner: the face, then the move name
+    const panel = (sx, sy, sw, sh, dy, rot, k) => {
+      const dh = W * sh / sw;
+      cx.save(); cx.translate(W / 2, dy + dh / 2); cx.rotate(rot); cx.translate(lerp(W * 1.2, 0, outBack(k)) * (rot < 0 ? -1 : 1), 0);
+      cx.fillStyle = '#140c16'; cx.fillRect(-W / 2 - 30, -dh / 2 - 16, W + 60, dh + 32);
+      cx.imageSmoothingEnabled = false;
+      cx.drawImage(im, sx * 3, sy * 3, sw * 3, sh * 3, -W / 2, -dh / 2, W, dh);
+      cx.restore();
+    };
+    panel(80, 124, 192, 98, 470, -0.035, lt / 0.22);
+    panel(262, 136, 318, 76, 1060, 0.03, (lt - 0.12) / 0.22);
+  } else {
+    drawCrop(im, cam);
+    if (s.freeze && s.spot) {
+      const f = meta(s.take, c), sp = toScreen(cam, pos(s.spot, f));
+      sp.y -= 30;
+      spotlight(sp, smooth(lt / 0.15) * (1 - smooth((v - (s.v1 - 0.12)) / 0.12)));
+    }
+    if (s.freeze && !s.spot) { cx.fillStyle = `rgba(20,12,22,${0.18 * smooth(lt / 0.1)})`; cx.fillRect(0, 0, W, H); }
+    if (s.fx === 'outro') { cx.fillStyle = `rgba(20,12,22,${lerp(0.25, 0.72, smooth(lt / 0.5))})`; cx.fillRect(0, 0, W, H); }
+  }
+  // freeze punch: brief white flash on the freeze
+  if (s.freeze && lt < 0.08) { cx.fillStyle = `rgba(255,255,255,${0.5 * (1 - lt / 0.08)})`; cx.fillRect(0, 0, W, H); }
+  if (s.fx === 'rew') { vhs(v, 1); scan(0.22); h += `<div class="osd">&#9664;&#9664; REW<small>SP  -0:00:13</small></div>`; }
+  if (s.fx === 'ff') { scan(0.12); h += `<div class="osd" style="opacity:${Math.floor(v * 3) % 2 ? 1 : 0.85}">&#9654;&#9654; x2</div>`; }
+
+  /* text */
+  // 1 hook
+  if (v < 3.0) {
+    h += cap('yep. that\'s me.', v, 0.88, 3.0, 1090, 76);
+    h += cap('you\'re probably wondering<br>how I got here.', v, 1.55, 3.0, 290, 64);
+    // he is drawn in the chopsticks' grip (higher than his logged ground point), at this spot of the frozen frame
+    if (v >= 0.95) h += arrow({ x: 360, y: 1080 }, { x: 600, y: 950 }, smooth((v - 0.95) / 0.2));
+  }
+  if (s.card) h += card(s.card, v, s.v0, s.v1);
+  if (s.score) {
+    const k = fade(v, s.v0 + 0.1, s.v1, 0.15, 0.15);
+    const t = s.score === '0 - 1' ? 'YOU <b>0 - 1</b> UNCLES' : 'YOU <b>1 - 0</b> MAMAS';
+    if (k > 0) h += `<div class="pill" style="top:${lerp(150, 300, outBack((v - s.v0 - 0.1) / 0.3))}px;opacity:${k}"><span>${t}</span></div>`;
+  }
+  if (s.tag === 'mamas') h += lowerThird(v, s.v0 + 0.5, s.v1 - 0.25, '#ff8a3f', 'MARKET MAMAS', 'no discounts. ever.');
+  // TV + film: their own subtitles are too small on a phone, so the line is said big too
+  h += cap('"tonight\'s special..."', v, 15.62, 17.3, 300, 64);
+  h += cap('<span style="color:#ffe14f">YOU!</span>', v, 16.42, 17.3, 400, 150);
+  h += cap('"fifty years ago,<br>it was him and me."', v, 29.0, 30.8, 1380, 60);
+  h += cap('...and that\'s how<br>I got here.', v, 19.62, 21.3, 300, 70);
+  h += cap('(he\'s fine.)', v, 27.45, 28.5, 1450, 60);
+  h += cap('it gets worse.', v, 31.72, 32.95, 300, 78);
+  if (s.fx === 'outro') {
+    const k = smooth((v - 32.95) / 0.3);
+    if (k > 0) h += `<div class="logo" style="top:640px;opacity:${k};transform:scale(${lerp(1.3, 1, outBack((v - 32.95) / 0.35))})">
+      <div class="l1">STREET FOOTBALL</div><div class="l2">CHAOS</div>
+      <div class="l3">pixel street football<br>with superpowers</div>
+      <div class="l4" style="opacity:${smooth((v - 33.5) / 0.3)}">PLAYTEST SOON &middot; FOLLOW</div></div>`;
+  }
+  $('txt').innerHTML = h;
+}
+
+window.ready = (async () => {
+  E = await (await fetch('edl.json')).json();
+  DUR = E.dur;
+  for (const t of new Set(E.segs.map((s) => s.take))) TAKES[t] = await (await fetch(`frames/${t}/meta.json`)).json();
+  buildCam();
+  await document.fonts.load('70px "Pixelify Sans"'); await document.fonts.load('700 70px "Pixelify Sans"');
+  await document.fonts.load('40px PS2P'); await document.fonts.load('40px VCR');
+  await document.fonts.ready;
+  await render(0);
+  return DUR;
+})();
+window.render = render;
+</script>
+</body>
+</html>

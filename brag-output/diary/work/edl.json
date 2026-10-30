@@ -1,0 +1,443 @@
+{
+ "fps": 30,
+ "dur": 54.703,
+ "pages": {
+  "d1": {
+   "day": "Day 1",
+   "photo": {
+    "who": "uncle",
+    "take": "village",
+    "i": 0,
+    "x": 330,
+    "y": 180,
+    "rot": -0.035
+   },
+   "cap": "uncle Sau :)",
+   "rows": {
+    "0": "Dear diary,",
+    "1": "First match vs the uncles.",
+    "2": "They are very kind.",
+    "4": "P.S. They have a stool."
+   }
+  },
+  "d2": {
+   "day": "Day 2",
+   "photo": {
+    "who": "feathers",
+    "take": "rooftop",
+    "i": 0,
+    "x": 320,
+    "y": 180,
+    "rot": 0.03
+   },
+   "cap": "the pigeon gang <3",
+   "rows": {
+    "0": "Rooftop match!",
+    "1": "Nice view. Lots of pigeons.",
+    "3": "P.S. I need a new hat."
+   }
+  },
+  "d3": {
+   "day": "Day 3",
+   "photo": {
+    "who": "var",
+    "take": "refs",
+    "i": 0,
+    "x": 330,
+    "y": 180,
+    "rot": -0.025
+   },
+   "cap": "a REAL referee!",
+   "rows": {
+    "0": "Real referees today!",
+    "1": "Finally, fair football.",
+    "3": "P.S. I got a yellow card.",
+    "4": "I don't know why."
+   }
+  },
+  "d4": {
+   "day": "Day 4",
+   "photo": {
+    "who": "grandpa",
+    "take": "leo",
+    "i": 0,
+    "x": 400,
+    "y": 180,
+    "rot": 0.035
+   },
+   "cap": "the grandpas :)",
+   "rows": {
+    "0": "Old men today.",
+    "1": "Should be easy."
+   }
+  },
+  "d5": {
+   "day": "Day 5",
+   "photo": {
+    "who": "kid",
+    "take": "leo",
+    "i": 150,
+    "x": 250,
+    "y": 180,
+    "rot": -0.05,
+    "dmg": "soot"
+   },
+   "cap": "me",
+   "burnt": true,
+   "rows": {
+    "0": "I still want to",
+    "1": "play football."
+   }
+  }
+ },
+ "segs": [
+  {
+   "v0": 0.0,
+   "v1": 3.861,
+   "mode": "page",
+   "page": "d1",
+   "pre": [
+    0
+   ],
+   "write": [
+    {
+     "row": 1,
+     "at": 0.2,
+     "cps": 17
+    },
+    {
+     "row": 2,
+     "at": 1.912,
+     "cps": 17
+    }
+   ],
+   "marks": []
+  },
+  {
+   "v0": 3.861,
+   "v1": 8.811,
+   "take": "village",
+   "c0": 0.75,
+   "r": 1,
+   "cam": {
+    "t": "path",
+    "z": 5.8,
+    "pts": [
+     [
+      0.75,
+      212,
+      190
+     ],
+     [
+      1.9,
+      228,
+      190
+     ],
+     [
+      2.6,
+      285,
+      190
+     ],
+     [
+      3.02,
+      262,
+      190
+     ],
+     [
+      3.4,
+      236,
+      190
+     ],
+     [
+      5.7,
+      214,
+      190
+     ]
+    ]
+   },
+   "cut": true
+  },
+  {
+   "v0": 8.811,
+   "v1": 12.686,
+   "mode": "page",
+   "page": "d1",
+   "pre": [
+    0,
+    1,
+    2
+   ],
+   "write": [
+    {
+     "row": 4,
+     "at": 1.4,
+     "cps": 17
+    }
+   ],
+   "marks": [
+    {
+     "kind": "horns",
+     "dur": 0.95,
+     "at": 0.25
+    }
+   ]
+  },
+  {
+   "v0": 12.686,
+   "v1": 16.951,
+   "mode": "page",
+   "page": "d2",
+   "pre": [],
+   "write": [
+    {
+     "row": 0,
+     "at": 0.62,
+     "cps": 17
+    },
+    {
+     "row": 1,
+     "at": 1.714,
+     "cps": 17
+    }
+   ],
+   "marks": [],
+   "flip": 0.5
+  },
+  {
+   "v0": 16.951,
+   "v1": 19.551,
+   "take": "rooftop",
+   "c0": 0.6,
+   "r": 1,
+   "cam": {
+    "t": "pt",
+    "x": 290,
+    "y": 222,
+    "z": 6.0
+   },
+   "cut": true
+  },
+  {
+   "v0": 19.551,
+   "v1": 21.951,
+   "take": "rooftop",
+   "c0": 3.2,
+   "r": 1,
+   "cam": {
+    "t": "kid",
+    "dy": -6,
+    "z": 6.5
+   },
+   "blend": 0.5
+  },
+  {
+   "v0": 21.951,
+   "v1": 25.338,
+   "mode": "page",
+   "page": "d2",
+   "pre": [
+    0,
+    1
+   ],
+   "write": [
+    {
+     "row": 3,
+     "at": 1.0,
+     "cps": 17
+    }
+   ],
+   "marks": [
+    {
+     "kind": "scribble",
+     "dur": 0.55,
+     "at": 0.25
+    }
+   ]
+  },
+  {
+   "v0": 25.338,
+   "v1": 29.75,
+   "mode": "page",
+   "page": "d3",
+   "pre": [],
+   "write": [
+    {
+     "row": 0,
+     "at": 0.62,
+     "cps": 17
+    },
+    {
+     "row": 1,
+     "at": 2.038,
+     "cps": 17
+    }
+   ],
+   "marks": [],
+   "flip": 0.5
+  },
+  {
+   "v0": 29.75,
+   "v1": 32.15,
+   "take": "refs",
+   "c0": 0.3,
+   "r": 1,
+   "cam": {
+    "t": "mix",
+    "a": "kid",
+    "b": {
+     "pl": 5
+    },
+    "k": 0.4,
+    "z": 5.6
+   },
+   "cut": true,
+   "blend": 0.3
+  },
+  {
+   "v0": 32.15,
+   "v1": 33.55,
+   "take": "refs",
+   "c0": 3.45,
+   "r": 1,
+   "cam": {
+    "t": "mix",
+    "a": "kid",
+    "b": {
+     "pl": 5
+    },
+    "k": 0.35,
+    "z": 6.2
+   },
+   "cut": true
+  },
+  {
+   "v0": 33.55,
+   "v1": 34.9,
+   "take": "refs",
+   "c0": 4.85,
+   "r": 0,
+   "cam": {
+    "t": "kid",
+    "dy": -22,
+    "z": 7.6
+   },
+   "freeze": true,
+   "card": true,
+   "blend": 0.16
+  },
+  {
+   "v0": 34.9,
+   "v1": 39.575,
+   "mode": "page",
+   "page": "d3",
+   "pre": [
+    0,
+    1
+   ],
+   "write": [
+    {
+     "row": 3,
+     "at": 0.75,
+     "cps": 17
+    },
+    {
+     "row": 4,
+     "at": 2.844,
+     "cps": 17
+    }
+   ],
+   "marks": [
+    {
+     "kind": "card",
+     "dur": 0.3,
+     "at": 0.25
+    }
+   ]
+  },
+  {
+   "v0": 39.575,
+   "v1": 43.003,
+   "mode": "page",
+   "page": "d4",
+   "pre": [],
+   "write": [
+    {
+     "row": 0,
+     "at": 0.62,
+     "cps": 17
+    },
+    {
+     "row": 1,
+     "at": 1.685,
+     "cps": 17
+    }
+   ],
+   "marks": [],
+   "flip": 0.5
+  },
+  {
+   "v0": 43.003,
+   "v1": 45.103,
+   "take": "leo",
+   "c0": 0.55,
+   "r": 1,
+   "cam": {
+    "t": "pt",
+    "x": 462,
+    "y": 180,
+    "z": 3.2
+   },
+   "cut": true,
+   "wide": true
+  },
+  {
+   "v0": 45.103,
+   "v1": 47.553,
+   "take": "leo",
+   "c0": 2.65,
+   "r": 1,
+   "cam": {
+    "t": "pl",
+    "i": 5,
+    "dy": -12,
+    "z": 5.6
+   },
+   "cut": true,
+   "blend": 0.25
+  },
+  {
+   "v0": 47.553,
+   "v1": 54.703,
+   "mode": "page",
+   "page": "d5",
+   "pre": [],
+   "write": [
+    {
+     "row": 0,
+     "at": 0.6,
+     "cps": 12
+    },
+    {
+     "row": 1,
+     "at": 1.975,
+     "cps": 12
+    }
+   ],
+   "marks": [],
+   "under": {
+    "row": 0,
+    "word": "still",
+    "at": 3.45,
+    "dur": 0.5
+   },
+   "outro": 4.45
+  }
+ ],
+ "extra": [
+  {
+   "t": 16.981,
+   "name": "ult",
+   "arg": "mod.coo"
+  }
+ ]
+}

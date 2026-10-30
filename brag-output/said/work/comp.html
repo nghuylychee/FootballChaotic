@@ -1,0 +1,301 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family: 'PS2P'; src: url('/assets/fonts/PressStart2P-latin.woff2') format('woff2'); }
+  :root { --ink: #140c16; --cream: #f3ead7; --gold: #ffe14f; --red: #ff3d5a; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--ink); }
+  #c { position: absolute; left: 0; top: 0; }
+  #txt { position: absolute; inset: 0; pointer-events: none; }
+  .tag { position: absolute; left: 56px; top: 120px; font-family: 'PS2P'; font-size: 26px; color: #fff; letter-spacing: 1px;
+    text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55); }
+  .tag i { display: inline-block; width: 26px; height: 26px; border-radius: 50%; background: #ff3d3d; margin-right: 16px; vertical-align: -3px; box-shadow: 0 0 18px #ff3d3d; }
+  .lt3 { position: absolute; left: 0; top: 1130px; }
+  .lt3 .nm { display: inline-block; font-family: 'PS2P'; font-size: 54px; color: #fff; background: var(--ink); padding: 24px 34px 18px 60px;
+    letter-spacing: 2px; box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.45); }
+  .lt3 .sb { display: block; width: max-content; margin-top: 0; font-family: 'Pixelify Sans'; font-weight: 700; font-size: 42px; color: var(--ink);
+    background: var(--c); padding: 10px 30px 10px 60px; box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.45); }
+  .lt3 s { text-decoration-color: #e8322a; text-decoration-thickness: 7px; }
+  .lt3 .st { display: inline-block; color: #e8322a; font-size: 50px; }
+  .subt { position: absolute; left: 50px; right: 50px; top: 1420px; text-align: center; font-family: 'Pixelify Sans'; font-weight: 700; font-size: 84px;
+    color: #fff; -webkit-text-stroke: 14px var(--ink); paint-order: stroke fill; line-height: 1.12; }
+  .subt .h { visibility: hidden; }
+  .subt .dot { display: inline-block; width: 40px; height: 40px; margin: 40px 22px 0; background: #fff; box-shadow: 0 0 0 9px var(--ink); }
+  .pill { position: absolute; left: 0; right: 0; text-align: center; }
+  .pill span { display: inline-block; font-family: 'PS2P'; font-size: 34px; color: #fff; background: var(--ink); border: 6px solid #fff;
+    padding: 18px 26px 14px; box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.45); vertical-align: top; }
+  .pill b { color: var(--gold); font-weight: normal; }
+  .pill .clk { color: var(--ink); background: var(--gold); border-right: none; }
+  .logo { position: absolute; left: 0; right: 0; text-align: center; font-family: 'PS2P'; line-height: 1.2; }
+  .logo .l1 { font-size: 58px; color: #fff; text-shadow: 6px 6px 0 var(--ink); letter-spacing: 2px; }
+  .logo .l2 { font-size: 156px; color: var(--red); text-shadow: 9px 9px 0 var(--ink), 18px 18px 0 var(--gold); margin-top: 18px; letter-spacing: 4px; }
+  .logo .l3 { font-family: 'Pixelify Sans'; font-weight: 700; font-size: 48px; color: #fff; -webkit-text-stroke: 10px var(--ink); paint-order: stroke fill; margin-top: 46px; }
+  .logo .l4 { display: inline-block; font-size: 30px; color: var(--ink); background: var(--gold); border: 6px solid var(--ink); padding: 20px 26px 16px; margin-top: 34px; box-shadow: 8px 8px 0 var(--ink); }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<div id="txt"></div>
+<script>
+const W = 1080, H = 1920, FPS = 30, GW = 640, GH = 360;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const smooth = (k) => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
+const outBack = (k) => { k = clamp(k, 0, 1); const s = 1.7; return 1 + (s + 1) * Math.pow(k - 1, 3) + s * Math.pow(k - 1, 2); };
+const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const $ = (id) => document.getElementById(id);
+const cv = $('c'), cx = cv.getContext('2d');
+let E, TAKES = {}, CAM = [], DUR;
+const PORT = {}, BG = new Map();
+
+/* ---------------- edit ---------------- */
+const segAt = (v) => E.segs.find((s) => v >= s.v0 && v < s.v1) || E.segs[E.segs.length - 1];
+const clipT = (s, v) => (s.r === 0 ? s.c0 : s.c0 + (v - s.v0) * s.r);
+const fidx = (take, c) => clamp(Math.round(c * FPS), 0, TAKES[take].frames.length - 1);
+const meta = (take, c) => TAKES[take].frames[fidx(take, c)];
+function pos(spec, f) {
+  if (spec === 'kid') return { x: f.kid[0], y: f.kid[1] - f.kid[2] };
+  if (spec === 'ball') return { x: f.ball[0], y: f.ball[1] - f.ball[2] };
+  const p = f.pl[spec.pl != null ? spec.pl : spec.i];
+  return { x: p[1], y: p[2] - Math.min(p[3], 40) };
+}
+function camRaw(s, v) {
+  const c = s.cam, ct = clipT(s, v), f = meta(s.take, ct);
+  let p;
+  if (c.t === 'pt') p = { x: c.x, y: c.y };
+  else if (c.t === 'path') {
+    // keyframes [clip time, x, y], eased between
+    const P = c.pts; let i = 0;
+    while (i < P.length - 2 && ct > P[i + 1][0]) i++;
+    const k = smooth((ct - P[i][0]) / (P[i + 1][0] - P[i][0]));
+    p = { x: lerp(P[i][1], P[i + 1][1], k), y: lerp(P[i][2], P[i + 1][2], k) };
+  }
+  else if (c.t === 'mix') { const a = pos(c.a, f), b = pos(c.b, f); p = { x: lerp(a.x, b.x, c.k), y: lerp(a.y, b.y, c.k) }; }
+  else if (c.t === 'pl') p = pos({ pl: c.i }, f);
+  else p = pos(c.t, f);
+  return { x: p.x, y: p.y + (c.dy || 0), z: c.z };
+}
+function clampCam(c) {
+  const hw = W / 2 / c.z, vh = H / 2 / c.z;
+  return { z: c.z, x: clamp(c.x, hw, GW - hw), y: vh <= GH / 2 ? clamp(c.y, vh, GH - vh) : GH / 2 };
+}
+function buildCam() {
+  const N = Math.ceil(DUR * FPS) + 1;
+  let cur = null, prev = null;
+  for (let i = 0; i < N; i++) {
+    const v = i / FPS, s = segAt(v);
+    if (!s.cam) { CAM.push(null); prev = s; cur = null; continue; }
+    const raw = camRaw(s, v);
+    const first = s !== prev;
+    if (!cur || (first && s.cut)) cur = Object.assign({}, raw);
+    else {
+      const a = s.a || clamp(2.2 / ((s.blend || 0.25) * FPS), 0.05, 1);
+      cur = { x: lerp(cur.x, raw.x, a), y: lerp(cur.y, raw.y, a), z: lerp(cur.z, raw.z, Math.min(1, a * 1.3)) };
+    }
+    CAM.push(clampCam(cur));
+    prev = s;
+  }
+}
+const toScreen = (cam, p) => ({ x: (p.x - cam.x) * cam.z + W / 2, y: (p.y - cam.y) * cam.z + H / 2 });
+
+/* ---------------- frames ---------------- */
+const IMG = new Map();
+function img(take, i) {
+  const src = `frames/${take}/${String(i).padStart(4, '0')}.png`;
+  if (!IMG.has(src)) { const im = new Image(); im.src = src; IMG.set(src, im.decode().then(() => im)); if (IMG.size > 40) IMG.delete(IMG.keys().next().value); }
+  return IMG.get(src);
+}
+const load = (src) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.src = src; });
+
+/* ---------------- interview set ---------------- */
+// their home pitch, out of focus behind them (documentary shallow depth of field)
+async function bgCanvas(b) {
+  const key = `${b.take}:${b.i}:${b.x}`;
+  if (BG.has(key)) return BG.get(key);
+  const im = await load(`frames/${b.take}/${String(b.i).padStart(4, '0')}.png`);
+  const c = document.createElement('canvas'); c.width = W + 200; c.height = H + 200;
+  const g = c.getContext('2d');
+  const sw = 1080 * 0.5625 * 1.15, sx = clamp(b.x * 3 - sw / 2, 0, 1920 - sw);
+  g.filter = 'blur(22px) brightness(0.52) saturate(0.8)';
+  g.drawImage(im, sx, 0, sw, 1080, -60, -60, W + 320, H + 320);
+  BG.set(key, c);
+  return c;
+}
+// THE KID's battle damage, in sprite pixels (40x44 grid): pigeon splat on the hat, then soot from King Leo's lightning
+const DMG = {
+  splat: [[15, 18, 6, 2, '#f6f6ee'], [17, 17, 3, 1, '#f6f6ee'], [16, 20, 2, 2, '#f6f6ee'], [20, 20, 1, 3, '#f6f6ee'], [16, 22, 1, 1, '#f6f6ee'],
+    [18, 18, 1, 1, '#a9b090'], [16, 19, 1, 1, '#d8d8cc'], [19, 19, 2, 1, '#d8d8cc']],
+  soot: [[13, 27, 3, 1, '#4a3a3e'], [24, 28, 3, 1, '#4a3a3e'], [20, 29, 2, 1, '#4a3a3e'], [12, 21, 3, 1, '#140c16'], [25, 20, 4, 1, '#140c16'],
+    [22, 18, 3, 1, '#2a2226'], [14, 32, 2, 2, '#3a3236'], [23, 33, 2, 1, '#3a3236']],
+};
+function talkWords(s, lt) {
+  // index of the last word on screen (-1 = none) and when it came in
+  let last = -1, at = -9;
+  for (const L of s.say || []) {
+    const n = L.text.split(' ').length;
+    for (let i = 0; i < n; i++) { const t = L.at + i * L.rate; if (lt >= t) { last = i; at = t; } }
+  }
+  return { last, at };
+}
+async function drawTalk(s, v) {
+  const lt = v - s.v0, d = s.v1 - s.v0;
+  cx.drawImage(await bgCanvas(s.bg), -100 - lt * 8, -100);
+  // key light in their colour behind the head
+  const kl = cx.createRadialGradient(560, 560, 40, 560, 560, 720);
+  kl.addColorStop(0, s.c + '55'); kl.addColorStop(1, s.c + '00');
+  cx.fillStyle = kl; cx.fillRect(0, 0, W, H);
+  // the sprite: slow documentary push-in, a little hop on every word
+  const S = lerp(35, 37.5, smooth(lt / d));
+  const w = talkWords(s, lt), hop = w.last >= 0 ? -12 * Math.exp(-(lt - w.at) / 0.07) : 0;
+  const x0 = 540 - 20 * S, y0 = 600 - 23 * S + hop;
+  const P = PORT[s.who];
+  cx.imageSmoothingEnabled = false;
+  cx.drawImage(P.im, 0, 0, 40, 44, x0, y0, 40 * S, 44 * S);
+  const R = (x, y, w2, h2, c) => { cx.fillStyle = c; cx.fillRect(Math.round(x0 + x * S), Math.round(y0 + y * S), Math.ceil(w2 * S), Math.ceil(h2 * S)); };
+  if (s.who === 'kid') {
+    if (s.dmg === 'splat' || s.dmg === 'soot') for (const r of DMG.splat) R(...r);
+    if (s.dmg === 'soot') for (const r of DMG.soot) R(...r);
+    // deadpan blinks
+    const blinks = s.dmg === 'soot' ? [0.15, 1.25, 3.3] : [0.25, 1.65, 3.55];
+    if (blinks.some((b) => lt >= b && lt < b + 0.12)) { R(17, 24, 3, 2, P.skin); R(22, 24, 3, 2, P.skin); }
+    // sweat drop sliding down the side of the face
+    if (s.sweat && lt >= s.sweat[0] && lt < s.sweat[1]) {
+      const k = (lt - s.sweat[0]) / (s.sweat[1] - s.sweat[0]), dy = smooth(k) * 3;
+      R(27.5, 21.5 + dy, 2, 1, '#140c16'); R(27, 22.5 + dy, 3, 3, '#140c16');
+      R(28, 22 + dy, 1, 1, '#d8f2ff'); R(27.5, 23 + dy, 2, 2, '#7fd0ff'); R(28.5, 23 + dy, 1, 1, '#d8f2ff');
+    }
+    // still smoking from the lightning
+    if (s.dmg === 'soot') for (let i = 0; i < 7; i++) {
+      const u = (lt * 0.55 + i / 7) % 1, sx = 20 + Math.sin(lt * 2.2 + i * 1.7) * 2.2 + (i % 3 - 1) * 2;
+      cx.globalAlpha = 0.55 * (1 - u); R(sx, 16 - u * 9, 1.6 + u * 1.4, 1.6 + u * 1.4, '#9a96a0'); cx.globalAlpha = 1;
+    }
+  }
+  // vignette + grain
+  const vg = cx.createRadialGradient(540, 820, 380, 540, 820, 1250);
+  vg.addColorStop(0, 'rgba(10,6,12,0)'); vg.addColorStop(1, 'rgba(10,6,12,0.7)');
+  cx.fillStyle = vg; cx.fillRect(0, 0, W, H);
+  const fr = Math.floor(v * 24);
+  for (let i = 0; i < 160; i++) { cx.fillStyle = hash(i + fr * 7) > 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.08)'; cx.fillRect(hash(i * 3 + fr) * W, hash(i * 5 + fr * 3) * H, 4, 4); }
+  if (s.outro != null && lt > s.outro) {
+    const k = smooth((lt - s.outro) / 0.4);
+    const gr = cx.createLinearGradient(0, 1050, 0, H);
+    gr.addColorStop(0, 'rgba(14,8,18,0)'); gr.addColorStop(0.25, `rgba(14,8,18,${0.82 * k})`); gr.addColorStop(1, `rgba(14,8,18,${0.92 * k})`);
+    cx.fillStyle = gr; cx.fillRect(0, 1050, W, H - 1050);
+  }
+
+  /* text */
+  let h = '';
+  h += `<div class="tag" style="opacity:${smooth(lt / 0.1)}"><i style="opacity:${Math.floor(v * 2) % 2 ? 1 : 0.35}"></i>${s.tag}</div>`;
+  let sub = s.sub;
+  if (s.sub2 && lt > 1.45) {
+    const k = clamp((lt - 1.75) / 0.12, 0, 1);
+    sub = sub.replace(s.sub2[0], `<s>${s.sub2[0]}</s> <span class="st" style="transform:scale(${lerp(1.8, 1, outBack(k))});opacity:${k}">${s.sub2[1]}</span>`);
+  }
+  const lk = outBack(lt / 0.32);
+  h += `<div class="lt3" style="--c:${s.c};transform:translateX(${(1 - lk) * -900}px)"><span class="nm">${s.name}</span><span class="sb">${sub}</span></div>`;
+  if (s.outro == null || lt < s.outro) {
+    let line = '';
+    if (s.dots && (!s.say || lt < s.say[0].at)) {
+      const n = s.dots.filter((t) => lt >= t).length;
+      if (n) line = [0, 1, 2].map((i) => `<i class="dot${i < n ? '' : ' h'}"></i>`).join('');
+    }
+    for (const L of s.say || []) {
+      if (lt < L.at) continue;
+      const ws = L.text.split(' ');
+      line = ws.map((wd, i) => {
+        const on = lt >= L.at + i * L.rate, txt = (i === 0 ? '“' : '') + wd + (i === ws.length - 1 ? '”' : '');
+        return `<span class="${on ? '' : 'h'}">${txt}</span>`;
+      }).join(' ');
+    }
+    if (line) h += `<div class="subt">${line}</div>`;
+  } else {
+    const t = lt - s.outro, k = smooth(t / 0.3);
+    h += `<div class="logo" style="top:1330px;opacity:${k};transform:scale(${lerp(1.3, 1, outBack(t / 0.35))})">
+      <div class="l1">STREET FOOTBALL</div><div class="l2">CHAOS</div>
+      <div class="l3" style="opacity:${smooth((t - 0.45) / 0.3)}">every team plays by its own rules</div>
+      <div class="l4" style="opacity:${smooth((t - 0.9) / 0.3)}">PLAYTEST SOON &middot; FOLLOW</div></div>`;
+  }
+  return h;
+}
+
+/* ---------------- gameplay ---------------- */
+function drawCrop(im, cam) {
+  const hw = W / 2 / cam.z;
+  const sx = (cam.x - hw) * 3, sw = 2 * hw * 3;
+  const y0 = (0 - cam.y) * cam.z + H / 2, y1 = (GH - cam.y) * cam.z + H / 2;
+  if (y0 > 0) {
+    // wide shot: the band sits on a blurred copy of itself, no black bars
+    cx.save(); cx.filter = 'blur(28px) brightness(0.42) saturate(0.85)';
+    cx.drawImage(im, sx, 0, sw, GH * 3, -220, -220, W + 440, H + 440); cx.restore();
+    cx.fillStyle = '#140c16'; cx.fillRect(0, y0 - 10, W, y1 - y0 + 20);
+  }
+  cx.imageSmoothingEnabled = false;
+  cx.drawImage(im, sx, 0, sw, GH * 3, 0, y0, W, y1 - y0);
+}
+// the yellow card, blown up over THE KID's head
+function bigCard(p, lt) {
+  const k = outBack(lt / 0.2), wob = Math.sin(lt * 18) * 0.05 * Math.exp(-lt * 3);
+  cx.save(); cx.translate(Math.min(p.x + 300, W - 120), p.y - 330); cx.rotate(0.2 + wob); cx.scale(k, k);
+  cx.fillStyle = '#140c16'; cx.fillRect(-78, -112, 156, 224);
+  cx.fillStyle = '#ffd23f'; cx.fillRect(-66, -100, 132, 200);
+  cx.fillStyle = '#fff3a8'; cx.fillRect(-56, -90, 20, 70);
+  cx.fillStyle = '#c9a020'; cx.fillRect(-66, 80, 132, 20);
+  cx.restore();
+}
+function drawGame(s, v, im) {
+  const cam = CAM[clamp(Math.round(v * FPS), 0, CAM.length - 1)];
+  const lt = v - s.v0;
+  drawCrop(im, cam);
+  let h = '';
+  if (s.card) {
+    const f = meta(s.take, clipT(s, v)), p = toScreen(cam, pos('kid', f));
+    const g = cx.createRadialGradient(p.x, p.y - 120, 160, p.x, p.y - 120, 760);
+    g.addColorStop(0, 'rgba(14,8,18,0)'); g.addColorStop(1, `rgba(14,8,18,${0.6 * smooth(lt / 0.15)})`);
+    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+    if (lt > 0.1) bigCard(p, lt - 0.1);
+  }
+  if (s.freeze && lt < 0.08) { cx.fillStyle = `rgba(255,255,255,${0.5 * (1 - lt / 0.08)})`; cx.fillRect(0, 0, W, H); }
+  if (s.score === 'uncles') {
+    const k = smooth((lt - 0.05) / 0.15);
+    h += `<div class="pill" style="top:${lerp(130, 190, outBack(lt / 0.3))}px;opacity:${k}"><span class="clk">0:00</span><span>YOU <b>0 - 1</b> UNCLES</span></div>`;
+  }
+  return h;
+}
+
+/* ---------------- render ---------------- */
+async function render(v) {
+  const s = segAt(v);
+  cx.globalAlpha = 1; cx.filter = 'none';
+  cx.fillStyle = '#140c16'; cx.fillRect(0, 0, W, H);
+  let h;
+  if (s.mode === 'talk') h = await drawTalk(s, v);
+  else h = drawGame(s, v, await img(s.take, fidx(s.take, clipT(s, v))));
+  $('txt').innerHTML = h;
+}
+
+window.ready = (async () => {
+  E = await (await fetch('edl.json')).json();
+  DUR = E.dur;
+  for (const t of new Set(E.segs.filter((s) => s.take).map((s) => s.take))) TAKES[t] = await (await fetch(`frames/${t}/meta.json`)).json();
+  for (const who of new Set(E.segs.filter((s) => s.who).map((s) => s.who))) {
+    const im = await load(`portraits/${who}.png`);
+    const c = document.createElement('canvas'); c.width = 40; c.height = 44;
+    const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    const px = g.getImageData(16, 25, 1, 1).data;   // cheek colour, for the blinks
+    PORT[who] = { im: c, skin: `rgb(${px[0]},${px[1]},${px[2]})` };
+  }
+  for (const s of E.segs) if (s.bg) await bgCanvas(s.bg);
+  buildCam();
+  await document.fonts.load('70px "Pixelify Sans"'); await document.fonts.load('700 70px "Pixelify Sans"');
+  await document.fonts.load('40px PS2P');
+  await document.fonts.ready;
+  await render(0);
+  return DUR;
+})();
+window.render = render;
+</script>
+</body>
+</html>

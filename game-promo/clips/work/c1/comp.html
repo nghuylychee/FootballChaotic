@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family: 'PS2P'; src: url('/assets/fonts/PressStart2P-latin.woff2') format('woff2'); }
+  :root { --ink: #140c16; --cream: #f3ead7; --gold: #ffe14f; --red: #ff3d5a; --cyan: #7fe7ff; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--ink); }
+  #c { position: absolute; left: 0; top: 0; }
+  #txt { position: absolute; inset: 0; pointer-events: none; }
+  .cap { position: absolute; left: 60px; right: 60px; text-align: center; font-family: 'Pixelify Sans'; font-weight: 700; font-size: 96px;
+    line-height: 1.05; color: #fff; -webkit-text-stroke: 16px var(--ink); paint-order: stroke fill; letter-spacing: 1px; }
+  .cap b { color: var(--gold); font-weight: 700; }
+  .logo { position: absolute; left: 0; right: 0; text-align: center; font-family: 'PS2P'; line-height: 1.2; }
+  .logo .l1 { font-size: 62px; color: #fff; text-shadow: 6px 6px 0 var(--ink); letter-spacing: 2px; }
+  .logo .l2 { font-size: 170px; color: var(--red); text-shadow: 9px 9px 0 var(--ink), 18px 18px 0 var(--gold); margin-top: 22px; letter-spacing: 4px; }
+  .logo .l3 { font-family: 'Pixelify Sans'; font-weight: 700; font-size: 58px; color: #fff; -webkit-text-stroke: 12px var(--ink); paint-order: stroke fill; margin-top: 64px; }
+  .logo .l3 i { font-style: normal; color: var(--gold); }
+  .logo .l4 { display: inline-block; font-size: 34px; color: var(--ink); background: var(--gold); border: 6px solid var(--ink); padding: 24px 30px 20px;
+    margin-top: 46px; box-shadow: 10px 10px 0 var(--ink); }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<div id="txt"></div>
+<script>
+const W = 1080, H = 1920, FPS = 30, GW = 640, GH = 360;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const smooth = (k) => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
+const outBack = (k) => { k = clamp(k, 0, 1); const s = 1.7; return 1 + (s + 1) * Math.pow(k - 1, 3) + s * Math.pow(k - 1, 2); };
+const $ = (id) => document.getElementById(id);
+const cv = $('c'), cx = cv.getContext('2d');
+let E, TAKES = {}, CAM = [], DUR;
+
+/* ---------------- edit ---------------- */
+const segAt = (v) => E.segs.find((s) => v >= s.v0 && v < s.v1) || E.segs[E.segs.length - 1];
+const clipT = (s, v) => s.c0 + (v - s.v0) * s.r;
+const fidx = (take, c) => clamp(Math.round(c * FPS), 0, TAKES[take].frames.length - 1);
+const meta = (take, c) => TAKES[take].frames[fidx(take, c)];
+function pos(spec, f) {
+  if (spec === 'ball') return { x: f.ball[0], y: f.ball[1] - f.ball[2] };
+  const p = f.pl[spec.pl != null ? spec.pl : spec.i];
+  return { x: p[1], y: p[2] - Math.min(p[3], 40) };
+}
+function camRaw(s, v) {
+  const c = s.cam, f = meta(s.take, clipT(s, v));
+  let p;
+  if (c.t === 'pt') p = { x: c.x, y: c.y };
+  else if (c.t === 'mix') { const a = pos(c.a, f), b = pos(c.b, f); p = { x: lerp(a.x, b.x, c.k), y: lerp(a.y, b.y, c.k) }; }
+  else if (c.t === 'track') p = f.track && f.track.x > 0 && f.track.x < GW ? f.track : pos(c.fb, f);
+  else if (c.t === 'pl') p = pos({ pl: c.i }, f);
+  else p = pos(c.t, f);
+  return { x: p.x, y: p.y + (c.dy || 0), z: c.z };
+}
+function clampCam(c) {
+  const hw = W / 2 / c.z, vh = H / 2 / c.z;
+  return { z: c.z, x: clamp(c.x, hw, GW - hw), y: vh <= GH / 2 ? clamp(c.y, vh, GH - vh) : GH / 2 };
+}
+function buildCam() {
+  const N = Math.ceil(DUR * FPS) + 1;
+  let cur = null, prev = null;
+  for (let i = 0; i < N; i++) {
+    const v = i / FPS, s = segAt(v);
+    const raw = camRaw(s, v);
+    if (!cur || (s !== prev && s.cut)) cur = Object.assign({}, raw);
+    else {
+      const a = clamp(2.2 / ((s.blend || 0.25) * FPS), 0.05, 1);
+      cur = { x: lerp(cur.x, raw.x, a), y: lerp(cur.y, raw.y, a), z: lerp(cur.z, raw.z, Math.min(1, a * 1.3)) };
+    }
+    CAM.push(clampCam(cur));
+    prev = s;
+  }
+}
+
+/* ---------------- frames ---------------- */
+const IMG = new Map();
+function img(take, i) {
+  const src = `frames/${take}/${String(i).padStart(4, '0')}.png`;
+  if (!IMG.has(src)) { const im = new Image(); im.src = src; IMG.set(src, im.decode().then(() => im)); if (IMG.size > 40) IMG.delete(IMG.keys().next().value); }
+  return IMG.get(src);
+}
+function drawCrop(im, cam, dim) {
+  const hw = W / 2 / cam.z;
+  const sx = (cam.x - hw) * 3, sw = 2 * hw * 3;
+  const y0 = (0 - cam.y) * cam.z + H / 2, y1 = (GH - cam.y) * cam.z + H / 2;
+  if (y0 > 0) {
+    // band shorter than the frame: it sits on a blurred, darkened copy of itself (no black bars)
+    cx.save(); cx.filter = `blur(28px) brightness(${dim ? 0.3 : 0.42}) saturate(0.85)`;
+    cx.drawImage(im, sx, 0, sw, GH * 3, -220, -220, W + 440, H + 440); cx.restore();
+    cx.fillStyle = '#140c16'; cx.fillRect(0, y0 - 10, W, y1 - y0 + 20);
+  }
+  cx.imageSmoothingEnabled = false;
+  cx.drawImage(im, sx, 0, sw, GH * 3, 0, y0, W, y1 - y0);
+  return { y0, y1 };
+}
+
+/* ---------------- text ---------------- */
+function caps(v) {
+  let h = '';
+  for (const c of E.caps) {
+    if (v < c.v0 || v >= c.v1) continue;
+    const t = v - c.v0, k = outBack(t / 0.22), out = smooth((c.v1 - v) / 0.12);
+    h += `<div class="cap" style="top:${c.y}px;opacity:${Math.min(smooth(t / 0.08), out)};transform:scale(${lerp(1.35, 1, k)})">${c.text}</div>`;
+  }
+  return h;
+}
+function outro(s, v) {
+  const t = v - s.v0;
+  // dip: flash on the cut, then the logo slams in
+  if (t < 0.12) { cx.fillStyle = `rgba(255,255,255,${0.85 * (1 - t / 0.12)})`; cx.fillRect(0, 0, W, H); }
+  cx.fillStyle = `rgba(20,12,22,${0.55 * smooth(t / 0.25)})`; cx.fillRect(0, 0, W, H);
+  const k = outBack((t - 0.05) / 0.35);
+  return `<div class="logo" style="top:560px;opacity:${smooth((t - 0.05) / 0.12)};transform:scale(${lerp(1.6, 1, k)})">
+    <div class="l1">STREET FOOTBALL</div><div class="l2">CHAOS</div>
+    <div class="l3" style="opacity:${smooth((t - 0.6) / 0.25)}">3v3 &middot; <i>50</i> Cores &middot; <i>36</i> Ultimates</div>
+    <div class="l4" style="opacity:${smooth((t - 1.15) / 0.25)};transform:translateY(${(1 - outBack((t - 1.15) / 0.35)) * 40}px)">COMING SOON TO STEAM</div></div>`;
+}
+
+/* ---------------- render ---------------- */
+async function render(v) {
+  const s = segAt(v);
+  cx.globalAlpha = 1; cx.filter = 'none';
+  cx.fillStyle = '#140c16'; cx.fillRect(0, 0, W, H);
+  const cam = CAM[clamp(Math.round(v * FPS), 0, CAM.length - 1)];
+  const im = await img(s.take, fidx(s.take, clipT(s, v)));
+  if (s.outro) { cx.save(); cx.filter = 'blur(5px)'; drawCrop(im, cam, true); cx.restore(); }
+  else drawCrop(im, cam);
+  let h = s.outro ? outro(s, v) : '';
+  h += caps(v);
+  $('txt').innerHTML = h;
+}
+
+window.ready = (async () => {
+  E = await (await fetch('edl.json')).json();
+  DUR = E.dur;
+  for (const t of new Set(E.segs.map((s) => s.take))) TAKES[t] = await (await fetch(`frames/${t}/meta.json`)).json();
+  buildCam();
+  await document.fonts.load('700 96px "Pixelify Sans"');
+  await document.fonts.load('40px PS2P');
+  await document.fonts.ready;
+  await render(0);
+  return DUR;
+})();
+window.render = render;
+</script>
+</body>
+</html>

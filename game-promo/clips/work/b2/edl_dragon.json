@@ -1,0 +1,20 @@
+{
+  "fps": 30,
+  "dur": 10.4,
+  "bpm": 150,
+  "segs": [
+    { "v0": 0.00, "v1": 1.10, "take": "dragon", "c0": 1.10, "r": 1, "cam": { "t": "pl", "i": 4, "dy": -20, "z": 5.4 }, "cut": true },
+    { "v0": 1.10, "v1": 2.00, "take": "dragon", "c0": 2.20, "r": 1.5, "cam": { "t": "ball", "z": 4.2 }, "blend": 0.4 },
+    { "v0": 2.00, "v1": 3.20, "take": "dragon", "c0": 3.55, "r": 1, "cam": { "t": "pl", "i": 1, "dy": -10, "z": 4.8 }, "blend": 0.4 },
+
+    { "v0": 3.20, "v1": 3.80, "take": "hammer", "c0": 0.467, "r": 1, "cam": { "t": "pt", "x": 336, "y": 180, "z": 2.05 }, "cut": true, "cutin": true },
+    { "v0": 3.80, "v1": 6.40, "take": "hammer", "c0": 1.067, "r": 1, "cam": { "t": "mix", "a": { "pl": 2 }, "b": { "pl": 3 }, "k": 0.5, "dy": -10, "z": 3.0 }, "cut": true, "blend": 0.4 },
+
+    { "v0": 6.40, "v1": 10.40, "take": "hammer", "c0": 3.0, "r": 0.5, "cam": { "t": "pt", "x": 320, "y": 180, "z": 1.6875 }, "cut": true, "outro": true }
+  ],
+  "caps": [
+    { "v0": 0.30, "v1": 1.85, "y": 1170, "text": "NO REFEREE." },
+    { "v0": 1.95, "v1": 3.20, "y": 250, "text": "3V3 STREET FOOTBALL" },
+    { "v0": 3.20, "v1": 5.00, "y": 250, "text": "STACK CORES.<br>UNLOCK ULTIMATES." }
+  ]
+}

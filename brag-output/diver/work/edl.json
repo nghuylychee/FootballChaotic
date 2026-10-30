@@ -1,0 +1,48 @@
+{
+  "fps": 30,
+  "dur": 35.4,
+  "segs": [
+    { "v0": 0.00, "v1": 0.85, "take": "market", "c0": 1.75, "r": 1, "cam": { "t": "kid", "dy": -40, "z": 5.4 }, "cut": true },
+    { "v0": 0.85, "v1": 3.00, "take": "market", "c0": 2.60, "r": 0, "freeze": true, "cam": { "t": "pt", "x": 205, "y": 122, "z": 8.0 }, "blend": 0.18 },
+    { "v0": 3.00, "v1": 3.55, "take": "market", "c0": 2.60, "r": -4.2, "fx": "rew", "cam": { "t": "kid", "dy": -40, "z": 5.4 }, "blend": 0.2 },
+
+    { "v0": 3.55, "v1": 4.25, "take": "village", "c0": 0.30, "r": 1, "cam": { "t": "kid", "z": 5.8 }, "cut": true },
+    { "v0": 4.25, "v1": 5.85, "take": "village", "c0": 1.00, "r": 0, "freeze": true, "card": "kid", "spot": "kid", "cam": { "t": "kid", "dy": 22, "z": 7.4 }, "blend": 0.16 },
+
+    { "v0": 5.85, "v1": 6.20, "take": "village", "c0": 1.00, "r": 1, "cam": { "t": "pt", "x": 360, "y": 208, "z": 5.6 }, "blend": 0.3 },
+    { "v0": 6.20, "v1": 8.00, "take": "village", "c0": 1.35, "r": 0, "freeze": true, "card": "uncles", "spot": { "pl": 4 }, "cam": { "t": "pt", "x": 362, "y": 228, "z": 6.4 }, "blend": 0.16 },
+    { "v0": 8.00, "v1": 10.55, "take": "village", "c0": 1.35, "r": 1, "cam": { "t": "mix", "a": "kid", "b": { "pl": 4 }, "k": 0.35, "z": 5.4 }, "blend": 0.35, "score": "0 - 1" },
+
+    { "v0": 10.55, "v1": 11.70, "take": "rooftop", "c0": 0.40, "r": 2.0, "cam": { "t": "pt", "x": 318, "y": 200, "z": 4.6 }, "cut": true },
+    { "v0": 11.70, "v1": 13.10, "take": "rooftop", "c0": 2.70, "r": 0, "freeze": true, "card": "pigeons", "spot": { "pl": 5 }, "cam": { "t": "pt", "x": 330, "y": 205, "z": 5.6 }, "blend": 0.16 },
+    { "v0": 13.10, "v1": 14.10, "take": "rooftop", "c0": 2.70, "r": 1.4, "cam": { "t": "kid", "z": 5.8 }, "blend": 0.3 },
+    { "v0": 14.10, "v1": 15.05, "take": "rooftop", "c0": 4.10, "r": 1, "cam": { "t": "kid", "z": 6.6 }, "blend": 0.25 },
+
+    { "v0": 15.05, "v1": 17.30, "take": "tv", "c0": 0.55, "r": 1, "mode": "tv", "cut": true },
+
+    { "v0": 17.30, "v1": 19.65, "take": "market", "c0": 0.25, "r": 1, "cam": { "t": "kid", "dy": -40, "z": 5.0 }, "cut": true, "tag": "mamas" },
+    { "v0": 19.65, "v1": 20.35, "take": "market", "c0": 2.60, "r": 0, "freeze": true, "cam": { "t": "pt", "x": 205, "y": 122, "z": 8.0 }, "blend": 0.14 },
+    { "v0": 20.35, "v1": 21.25, "take": "market", "c0": 2.60, "r": 1, "cam": { "t": "pt", "x": 196, "y": 110, "z": 5.6 }, "blend": 0.3 },
+
+    { "v0": 21.25, "v1": 23.40, "take": "market", "c0": 4.85, "r": 1, "cam": { "t": "kid", "dy": -16, "z": 5.4 }, "cut": true, "a": 0.12 },
+    { "v0": 23.40, "v1": 23.60, "take": "market", "c0": 8.10, "r": 1, "cam": { "t": "mix", "a": "kid", "b": { "pl": 5 }, "k": 0.45, "z": 5.0 }, "cut": true },
+    { "v0": 23.60, "v1": 24.90, "take": "market", "c0": 8.45, "r": 0, "mode": "band", "fx": "cutin", "cut": true },
+    { "v0": 24.90, "v1": 25.55, "take": "market", "c0": 8.95, "r": 1, "cam": { "t": "mix", "a": "kid", "b": { "pl": 5 }, "k": 0.45, "z": 5.0 }, "cut": true },
+    { "v0": 25.55, "v1": 26.75, "take": "market", "c0": 9.60, "r": 2, "fx": "ff", "cam": { "t": "kid", "z": 5.4 }, "blend": 0.3 },
+    { "v0": 26.75, "v1": 28.50, "take": "market", "c0": 12.00, "r": 1, "cam": { "t": "mix", "a": "kid", "b": { "pl": 5 }, "k": 0.35, "dy": -10, "z": 5.6 }, "blend": 0.3, "score": "1 - 0" },
+
+    { "v0": 28.50, "v1": 30.80, "take": "film", "c0": 0.75, "r": 1, "mode": "film", "cut": true },
+    { "v0": 30.80, "v1": 32.40, "take": "leo", "c0": 1.30, "r": 1, "cam": { "t": "pl", "i": 5, "dy": -10, "z": 5.4 }, "cut": true },
+
+    { "v0": 32.40, "v1": 35.40, "take": "market", "c0": 14.40, "r": 0.3, "fx": "outro", "cam": { "t": "kid", "dy": -10, "z": 6.4 }, "cut": true }
+  ],
+  "cues": {
+    "hookStop": 0.85, "rew": 3.0, "groove": 3.55,
+    "cards": [4.25, 6.2, 11.7],
+    "bonk": 9.12, "slip": 14.13,
+    "tv": [15.05, 17.3],
+    "scratch2": 19.65, "resume2": 20.35, "plop": 20.98,
+    "cutin": 23.6, "beam": 25.18, "goal": 26.92, "snore": 27.3,
+    "film": 28.5, "fusion": 31.67, "outro": 32.4
+  }
+}

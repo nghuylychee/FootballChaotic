@@ -1,0 +1,31 @@
+Batch 3: all five use the same indie-gamedev framing (batch-2 D1 template). Only the publish time differs (T1 now / T2 EU evening).
+
+TAGS (all five)
+Street Football Chaos, indie game, gamedev, indie dev, game development, pixel art, pixel art game, indie game devlog
+
+DESCRIPTION TEMPLATE
+We're making Street Football Chaos: 3v3 pixel street football with no referee. Your tackle is a dropkick, and every goal lets you stack Cores into anime Ultimates like {A} and {B}.
+
+Coming soon to Steam.
+
+#indiegame #gamedev #indiedev #pixelart
+
+=== b3-rage.mp4 (T1 now)
+TITLE: Making a football game where you can go full ape 🕹️
+{A} Rage · {B} Moon Stomp
+
+=== b3-titan.mp4 (T1 now)
+TITLE: Making a football game where you can grow giant 🕹️
+{A} Titan · {B} Chicken Ray
+
+=== b3-fists.mp4 (T2, 2026-10-31 02:00 GMT+7)
+TITLE: Making a football game where a tackle is 20 punches 🕹️
+{A} Hundred Fists · {B} Thunderstorm
+
+=== b3-hurricane.mp4 (T2, 2026-10-31 02:40 GMT+7)
+TITLE: Making a football game where you can become a tornado 🕹️
+{A} Hurricane Kick · {B} Ghost Hands
+
+=== b3-magnet.mp4 (T2, 2026-10-31 03:20 GMT+7)
+TITLE: Making a football game with a giant magnet 🕹️
+{A} Mega Magnet · {B} Meteor Shot
