@@ -1,7 +1,8 @@
 /* Kiểm tra GOAT PATH co-op (src/net/room.js run + src/meta/run.js co-op): node server/test/run-coop-test.js
  * 1. Phòng run: cả phòng đội 0, gói lobby mang rn + bản sao run (hook runState), khách gửi ra -> hook runAction, host đứng đúng vị trí
  * 2. Skill game 1 người: only = [id] -> người đó ra sân, người còn lại nhận start{watch} (me = -1); host không ra sân thì chỉ xem
- * 3. Run co-op: khách ngồi vào ô đồng đội AI, ví riêng, 1 bộ 3 BADGE của cả đội sau trận thắng (bỏ phiếu, 2026-10-28)
+ * 3. Run co-op: khách ngồi vào ô đồng đội AI, ví riêng, trận thường: 1 bộ 3 GEAR (bỏ phiếu món -> người đeo -> món bỏ ra, 2026-10-30),
+ *    Elite / Boss: 1 bộ 3 BADGE của cả đội (bỏ phiếu)
  * 4. Bỏ phiếu: đủ phiếu thì chốt, lựa chọn bốc theo số phiếu, phiếu không hợp lệ bị bỏ; Shop đóng khi mọi người xong
  * 5. Bản sao khách: Run.run = bản sao, ghi kết quả không đụng run thật; rời phòng -> run riêng của khách trở lại
  * 6. LEGEND: qua LEGEND TRIAL -> chọn ai trong đội nhận (lệch vị trí được, co-op bỏ phiếu); chỉ số + đồng đội vào trận mang LEGEND;
@@ -108,19 +109,57 @@ function runLogic() {
   const before = [R.cash, R.guests.annaanna1.cash];
   Run.record('win', fake);
   assert.ok(R.cash > before[0] && R.guests.annaanna1.cash > before[1], 'everyone gets cash');
-  assert.strictEqual(R.offer.ids.length, RC.offer, 'one team offer');
-  assert.strictEqual(new Set(R.offer.ids).size, RC.offer, 'no badge offered twice');
+  // trận thường: 1 bộ 3 GEAR (user 2026-10-30) -> bỏ phiếu chọn món -> bỏ phiếu người đeo (đủ ô: bỏ phiếu món bỏ ra)
+  assert.ok(R.offer.gear && R.offer.gear.length === RC.offer, 'a normal match offers GEAR');
+  assert.strictEqual(new Set(R.offer.gear.map((g) => g.id)).size, RC.offer, 'no gear offered twice');
+  assert.ok(R.offer.gear.every((g) => Run.gearOk(g)), 'gear has a valid rarity');
   assert.ok(Run.busy(), 'nobody moves on before the team picks');
   assert.strictEqual(Run.voteOptions('node').length, 0, 'map vote locked while picking');
   assert.ok(!Run.castVote('host', 'pick', '7'), 'invalid pick refused');
+  const gpick = R.offer.gear[1];
+  for (const k of Run.keys()) Run.castVote(k, 'pick', '1');
+  let res = Run.voteRoll();
+  Run.pick(+res.v);
+  assert.strictEqual(R.offer.sel, 1, 'gear chosen, now who wears it');
+  assert.ok(!Run.castVote('host', 'pick', '0') && Run.castVote('host', 'wear', '1'), 'next vote is the wearer');
+  for (const k of Run.keys()) Run.castVote(k, 'wear', '1');
+  res = Run.voteRoll();
+  Run.wearGear(+res.v);
+  assert.ok(Run.gearOf(1).some((g) => g.id === gpick.id) && !R.offer && !Run.busy(), 'the voted player wears it');
+  const d = Run.gearDef(gpick.id);
+  if (d.stat) assert.strictEqual(Run.ratingsOf(1)[d.stat] - Run.baseRatings(1)[d.stat], RC.gear.amount[gpick.r], 'stat gear adds its rarity amount');
+  else assert.ok(Run.mateSpecs()[0].gearBoost[d.school] > 0, 'school gear boosts that school for the wearer only');
+  // đủ ô -> chọn món bỏ ra (Kit Bag: thêm 1 ô cho mọi người)
+  R.squad[2].gear = Run.rollGear(Run.slots(), RC.rarityWeights.gear, R).map((g) => Object.assign(g, { up: false }));
+  // món người đó chưa đeo (không đeo 2 món giống nhau)
+  const freeId = Object.keys(RC.gear.list).find((id) => RC.gear.list[id].stat && !Run.gearOf(2).some((x) => x.id === id));
+  R.offer = { gear: [{ id: freeId, r: 'rare' }], kind: 'match', sel: null, who: null };
+  const gi = 0;
+  Run.pick(gi);
+  assert.ok(Run.wearGear(2).full && R.offer.who === 2, 'a full player swaps one out');
+  const newId = R.offer.gear[gi].id;
+  // không đeo 2 món giống nhau
+  Run.gearOf(2).forEach((x) => assert.ok(!R.offer.gear.some((g, k) => k === gi && g.id === x.id)));
+  Run.swapGear(1);
+  assert.ok(Run.gearOf(2).length === RC.gear.slots && Run.gearOf(2)[1].id === newId && !R.offer, 'swapped into that slot');
+  R.bag.push({ id: 'kitbag', up: false });
+  assert.strictEqual(Run.slots(), RC.gear.slots + 1, 'Kit Bag: one more GEAR slot');
+  R.bag = R.bag.filter((b) => b.id !== 'kitbag');
+  // Elite / Boss: BADGE của cả đội, bỏ phiếu như cũ
+  R.offer = { ids: Run.rollBadges(RC.offer, RC.rarityWeights.elite, R), kind: 'elite' };
   const pick = R.offer.ids[1];
   for (const k of Run.keys()) Run.castVote(k, 'pick', '1');
-  const res = Run.voteRoll();
+  res = Run.voteRoll();
   assert.ok(res.kind === 'pick' && res.v === '1');
   Run.pick(+res.v);
   assert.ok(R.bag.some((b) => b.id === pick && b.who == null), 'the voted badge goes to the whole team');
   assert.ok(!Run.busy() && !R.offer);
-  console.log('3. rewards: OK (own wallet each, one team offer, picked by vote)');
+  // bản sao khách giữ GEAR + bước đang chọn
+  R.offer = { gear: Run.rollGear(3, RC.rarityWeights.gear, R), kind: 'match', sel: 2, who: null };
+  const cp = Run.sanitize(JSON.parse(JSON.stringify(R)));
+  assert.ok(cp.offer.gear.length === 3 && cp.offer.sel === 2 && cp.squad[2].gear.length === RC.gear.slots, 'gear survives save / mirror');
+  R.offer = null;
+  console.log('3. rewards: OK (own wallet each, GEAR after a match: pick, wearer, swap by vote · team BADGE from elites)');
 
   // Shop: ai mua người nấy trả, đóng khi mọi người xong
   R.room = Run.openShop();
@@ -232,10 +271,20 @@ function legendLogic() {
   assert.strictEqual(g2.draft.options[0].length, globalThis.SFC_CONFIG.game.match.upgradeChoices + 1, 'Scouting Report: one more card');
   assert.strictEqual(g2.draft.rerolls[0], globalThis.SFC_CONFIG.cores.draft.rerollsPerRound + 2, "Referee's Coin: more rerolls");
   g2.pickCore(0);
-  assert.ok(g2.draft && g2.draft.bonus, 'Pre-Season Camp: a bonus pick before kickoff');
+  assert.ok(g2.draft && g2.draft.bonus, 'Pre-Season Camp: the second pick comes before kickoff');
   g2.pickCore(0);
-  assert.strictEqual(g2.cores.coresOf(g2.seatPlayer(0)).filter((id) => globalThis.SFC_CONFIG.cores.list[id].role !== 'ult').length, 2, 'two Cores before kickoff');
-  assert.strictEqual(g2.upgradeIdx, 1, 'bonus pick does not eat a regular round');
+  const nonUlt = () => g2.cores.coresOf(g2.seatPlayer(0)).filter((id) => globalThis.SFC_CONFIG.cores.list[id].role !== 'ult').length;
+  assert.strictEqual(nonUlt(), 2, 'two Cores before kickoff');
+  assert.strictEqual(g2.upgradeIdx, 1, 'early pick does not eat a regular round');
+  // tối đa vẫn match.maxUpgrades Core (user 2026-10-30): lượt cuối của đội đó bị bỏ, đội kia vẫn bốc
+  const MAXU = globalThis.SFC_CONFIG.game.match.maxUpgrades, opp2 = g2.teams[1].players[0], oppN = () => g2.cores.coresOf(opp2).length;
+  for (let r = 2; r <= MAXU; r++) {
+    const before = oppN();
+    g2.startDraft();
+    if (g2.state === 'draft') g2.pickCore(0);
+    assert.ok(oppN() > before, 'the other team still picks every round');
+  }
+  assert.strictEqual(nonUlt(), MAXU, `Pre-Season Camp: still ${MAXU} Cores in total`);
   // KỸ THUẬT theo LEGEND: trong run chỉ kỹ thuật của LEGEND mình; ngoài run 4 kỹ thuật cũ như trước
   const Lg = SFC.Legends, run = { nonce: 'x', act: 0, node: '0.0', kind: 'match' };
   const g3 = new SFC.Game({ home: MP.playerTeam.id, away: rd.team, humanTeam: 0, solo: [2, null], silent: true, noDraft: true, run,

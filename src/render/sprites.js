@@ -70,11 +70,13 @@ window.SFC = window.SFC || {};
     }
     // sút / phá bóng: chân sút đưa ra trước (nhấc nhẹ), chân trụ lùi về sau — vẽ trong drawPlayer
     if (p.atkType === 'shoot') return { shoot: true };
-    // dứt điểm 1 chạm (game.firstTime): vô-lê = tư thế sút nhưng chân sút vung ngang hông · đánh đầu = bật nhảy (hop px) + gật đầu
+    // dứt điểm 1 chạm (game.firstTime): vô-lê = tư thế sút nhưng chân sút vung ngang hông
     if (p.atkType === 'volley') return { shoot: true, volley: true };
+    // đánh đầu: bật nhảy trước khi chạm bóng (Actions.headerJump) — đỉnh nhảy ở giữa cú nhảy. Lên: 2 tay vung lên lấy đà, co chân ·
+    // quanh đỉnh: gật đầu về hướng mặt (chạm bóng) · xuống: tay hạ dần
     if (p.atkType === 'header') {
       const H = SFC_CONFIG.game.firstTime.header, k = clamp01(t / H.pose);
-      return { header: true, hop: Math.sin(k * Math.PI) * H.hop, nod: k > 0.15 && k < 0.55 };
+      return { header: true, hop: Math.sin(k * Math.PI) * H.hop, nod: k > 0.42 && k < 0.72, armsUp: k > 0.04 && k < 0.6, tuck: k > 0.1 && k < 0.85 };
     }
     // thủ môn đổ người: hai tay duỗi qua đầu (người nghiêng + bay khỏi mặt đất vẽ ở Renderer.diving)
     if (p.atkType === 'diveU' || p.atkType === 'diveD') return { dive: true };
@@ -732,7 +734,9 @@ window.SFC = window.SFC || {};
     const side = fx >= 0 ? 1 : -1;
 
     ctx.globalAlpha = alpha;
-    if (alpha >= 1) ellipse(ctx, x, y0 + 1, 6, 2.5, 'rgba(0,0,0,0.38)');
+    // bóng đổ dưới chân: bật nhảy (đánh đầu) càng cao bóng đổ càng nhỏ
+    const sh = atk && atk.hop ? Math.max(0.5, 1 - atk.hop / 28) : 1;
+    if (alpha >= 1) ellipse(ctx, x, y0 + 1, 6 * sh, 2.5 * sh, 'rgba(0,0,0,0.38)');
     // hiệu ứng Hào quang vàng: vầng sáng dưới chân
     if (!ghost && p.look.fx === 'aura') {
       ctx.globalCompositeOperation = 'lighter';
@@ -768,8 +772,10 @@ window.SFC = window.SFC || {};
       drawLeg(ctx, x - 7, y, p.look, p.anim, 0);
       drawLeg(ctx, x + 3, y, p.look, p.anim, 1);
     } else {
-      if (!(kickLeg && side < 0)) drawLeg(ctx, x - 4, y + l, p.look, p.anim, 0);
-      if (!(kickLeg && side > 0)) drawLeg(ctx, x, y + r, p.look, p.anim, 1);
+      // bật nhảy đánh đầu: co chân (2 chân sát nhau, nhấc lên 1px)
+      const tk = atk && atk.tuck ? 1 : 0;
+      if (!(kickLeg && side < 0)) drawLeg(ctx, x - 4 + tk, y + (tk ? -1 : l), p.look, p.anim, 0);
+      if (!(kickLeg && side > 0)) drawLeg(ctx, x - tk, y + (tk ? -1 : r), p.look, p.anim, 1);
       if (kickLeg) drawKick(ctx, p, x, y, fx, fy, side, atk);
     }
 
@@ -806,9 +812,12 @@ window.SFC = window.SFC || {};
     const hand = gloves ? kit.accent : p.look.skin;
     const punchArm = atk && atk.fist != null;
     const diveArms = atk && atk.dive;
-    // đổ người: tay vươn qua đầu vẽ sau phần đầu (bên dưới); ở đây chỉ bỏ 2 tay buông thõng
-    if (diveArms || (cp && cp.arms)) { /* xem sau phần đầu */ } else if (!(punchArm && side < 0)) { px(ctx, x - 6, by + 1 + arm, 2, 4, OUT); px(ctx, x - 6, by + 2 + arm, 1, 2, hand); }
-    if (!diveArms && !(cp && cp.arms) && !(punchArm && side > 0)) { px(ctx, x + 4, by + 1 - arm, 2, 4, OUT); px(ctx, x + 5, by + 2 - arm, 1, 2, hand); }
+    // bật nhảy đánh đầu: 2 tay dang chéo lên ngang vai (lấy đà)
+    if (atk && atk.armsUp && !diveArms && !(cp && cp.arms)) {
+      px(ctx, x - 8, by - 3, 3, 5, OUT); px(ctx, x - 7, by - 2, 1, 3, hand);
+      px(ctx, x + 5, by - 3, 3, 5, OUT); px(ctx, x + 6, by - 2, 1, 3, hand);
+    } else if (diveArms || (cp && cp.arms)) { /* xem sau phần đầu */ } else if (!(punchArm && side < 0)) { px(ctx, x - 6, by + 1 + arm, 2, 4, OUT); px(ctx, x - 6, by + 2 + arm, 1, 2, hand); }
+    if (!diveArms && !(cp && cp.arms) && !(atk && atk.armsUp) && !(punchArm && side > 0)) { px(ctx, x + 4, by + 1 - arm, 2, 4, OUT); px(ctx, x + 5, by + 2 - arm, 1, 2, hand); }
     if (punchArm) drawPunch(ctx, x, by, fx, fy, side, atk, hand);
     // GOAT PATH: băng quấn đúng chỗ chấn thương (run.badges[].part; khoảnh khắc ra tay ở systems/hurt.js)
     if (!ghost && !cp && p.inj) drawBandages(ctx, p, x, y, by, l, r, arm, !!(atk && (atk.shoot || kickLeg)));

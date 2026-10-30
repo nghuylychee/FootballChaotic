@@ -87,6 +87,11 @@ window.SFC = window.SFC || {};
         if (!p.passMode && !p.charging && tech('bruiser') && input.isDown('sprint') && (input.wasPressed('trick') || input.wasPressed('switch')) && LGS.bruiser(g, p)) return;
         // Chuyền: S (pass.quick) = chuyền ngay khi nhấn, tự chọn người nhận + lực.
         // W/A: nhấn bắt đầu nạp lực, giữ để tăng lực, thả để chuyền
+        // CHUYỀN 1 CHẠM (pass.oneTouch): phím chuyền bấm lúc đang đón bóng -> vào thế chuyền ngay khi nhận
+        // (đã thả phím: bước dưới chuyền luôn với lực lý tưởng; còn giữ: nạp tiếp)
+        const pre = p.prePass;
+        p.prePass = null;
+        if (pre && !p.passMode && !p.charging && g.time - pre.t < P.oneTouch.expire) { p.cancelPass(); p.passMode = pre.mode; p.passKey = pre.key; }
         if (!p.passMode && !p.charging) {
           if (P.quick && P.quick.enabled && input.wasPressed('pass')) { Act.quickPass(g, p, mx, my); return; }
           for (const [key, mode] of PASS_KEYS) {
@@ -174,10 +179,19 @@ window.SFC = window.SFC || {};
         }
         // D khi bóng đang tới: chờ đá 1 chạm (sút 1 chạm / vô-lê / đánh đầu)
         if (!p.ot && pressed('shoot')) use('shoot', Act.armFirstTime(g, p));
+        // S / W / A khi bóng đang tới: chuyền 1 chạm (pass.oneTouch) — nhận bóng là chuyền luôn.
+        // Bóng bổng (tới chỗ đón trên tầm khống chế): ĐÁNH ĐẦU CHUYỀN / vô-lê chuyền (Actions.airPass), kể cả khi đang chờ sút
+        for (const [key, mode] of PASS_KEYS) {
+          if (!input.wasPressed(key)) continue;
+          if (p.ot) { p.ot.pass = mode; p.charging = false; }
+          else if (!(Act.highBall(g, p) && Act.armFirstTime(g, p, mode))) p.prePass = { key, mode, t: g.time };
+          break;
+        }
         if (pressed('skill')) use('skill', Act.skill(g, p, mx, my));
         return; // đang đón bóng: không kích hoạt tắc/xoạc
       }
       g.receiveLock[team] = false;
+      p.prePass = null;
 
       if (teamHas) {
         // đồng đội cầm bóng: S / W đòi bóng (sệt / chọc khe); D / A vẫn ra đòn (A không còn đòi bóng bổng)
@@ -197,7 +211,12 @@ window.SFC = window.SFC || {};
         else if (wasBracing && p.state === 'normal') Act.readRelease(g, p);
         if (!p.bracing) {
           // bóng lỏng đang tới mình (quả tạt / phá bóng của đối phương, bóng bật ra...): D = chờ đá 1 chạm thay vì đấm
-          if (p.ot) { buf.shoot = 0; this.meetBall(g, p); }
+          if (p.ot) {
+            buf.shoot = 0; this.meetBall(g, p);
+            if (input.wasPressed('pass')) { p.ot.pass = 'ground'; p.charging = false; }   // đổi sút 1 chạm thành chuyền 1 chạm
+          }
+          // bóng bổng lỏng đang tới mình (phất bóng, bóng bật...): S = đánh đầu chuyền / vô-lê chuyền
+          else if (input.wasPressed('pass') && Act.canFirstTime(g, p) && Act.highBall(g, p)) Act.armFirstTime(g, p, 'ground');
           else if (pressed('shoot') && Act.canFirstTime(g, p)) use('shoot', Act.armFirstTime(g, p));
           else if (pressed('shoot')) use('shoot', Act.lightAttack(g, p));
           else if (pressed('lob')) use('lob', Act.hardAttack(g, p));

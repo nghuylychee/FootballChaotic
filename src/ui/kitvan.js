@@ -13,7 +13,9 @@ window.SFC = window.SFC || {};
   const O = '#120c16';
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const B = () => SFC_CONFIG.run.badges;
-  const rc = (id) => (B()[id].injury ? '#ff5a6e' : SFC_CONFIG.progression.rarities[B()[id].rarity].color);
+  const GL = () => SFC_CONFIG.run.gear.list;
+  // món trên móc: BADGE (id) hoặc GEAR ({ id, g: true, r: độ hiếm }, run.gear)
+  const rc = (it) => (it.g ? SFC_CONFIG.progression.rarities[it.r].color : B()[it.id].injury ? '#ff5a6e' : SFC_CONFIG.progression.rarities[B()[it.id].rarity].color);
   const hsh = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
   const mix = (a, b, k) => {
     const h = (s) => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2), 16));
@@ -53,7 +55,7 @@ window.SFC = window.SFC || {};
 
   /* ---------- icon pixel 12x12 của game + viền mực (giống PixelIcon.render), vẽ 1:1 lên canvas thấp ---------- */
   const ICON = {};
-  const iconKey = (id) => { const d = B()[id]; return d.icon ? 'ui-' + d.icon : d.school ? 'arch-' + d.school : 'ui-card'; };
+  const iconKey = (it) => { if (it.g) return GL()[it.id].icon; const d = B()[it.id]; return d.icon ? 'ui-' + d.icon : d.school ? 'arch-' + d.school : 'ui-card'; };
   function grid(key, depth = 0) {
     const a = SFC.PixelIcon.ART[key];
     if (!a || depth > 4) return null;
@@ -75,8 +77,9 @@ window.SFC = window.SFC || {};
 
   /* ---------- đồ vật ---------- */
   // miếng vá BADGE 20x22 (x, y = góc trên trái): viền mực (trỏ vào = viền vàng), nền tối pha màu độ hiếm, chỉ khâu chấm màu độ hiếm, icon giữa
-  function patch(id, x, y, lit) {
-    const c = rc(id), base = mix('#1c1e28', c, 0.28), hi = mix('#1c1e28', c, 0.5), rows = 22;
+  function patch(it, x, y, lit) {
+    if (it.g) return gearTag(it, x, y, lit);
+    const c = rc(it), base = mix('#1c1e28', c, 0.28), hi = mix('#1c1e28', c, 0.5), rows = 22;
     for (let j = 0; j < rows; j++) {
       const inset = j === 0 || j === rows - 1 ? 3 : j === 1 || j === rows - 2 ? 1 : 0, extra = j >= rows - 4 ? j - (rows - 5) : 0;   // bo góc, đáy tròn hơn
       P(x + inset + extra, y + j, 20 - (inset + extra) * 2, 1, lit ? '#ffe14f' : O);
@@ -87,7 +90,19 @@ window.SFC = window.SFC || {};
     }
     for (let i = 3; i < 17; i += 2) { P(x + i, y + 2, 1, 1, c); if (i > 4 && i < 15) P(x + i, y + rows - 3, 1, 1, c); }
     for (let j = 4; j < rows - 4; j += 2) { P(x + 2, y + j, 1, 1, c); P(x + 17, y + j, 1, 1, c); }
-    L.drawImage(iconCv(iconKey(id)), x + 3, y + 4);
+    L.drawImage(iconCv(iconKey(it)), x + 3, y + 4);
+  }
+  // GEAR 20x22: thẻ treo góc trên vát (khác miếng vá tròn của BADGE), viền màu độ hiếm, lỗ xỏ dây, icon giữa
+  function gearTag(it, x, y, lit) {
+    const c = rc(it), base = mix('#1c1e28', c, 0.3), hi = mix('#1c1e28', c, 0.5);
+    for (let j = 0; j < 22; j++) {
+      const cut = Math.max(0, 4 - j);
+      P(x + cut, y + j, 20 - cut * 2, 1, lit ? '#ffe14f' : O);
+      if (j > 0 && j < 21) { const ci = Math.max(1, 5 - j); P(x + ci, y + j, 20 - ci * 2, 1, j < 3 ? c : j < 7 ? hi : base); P(x + ci, y + j, 1, 1, c); P(x + 19 - ci, y + j, 1, 1, c); }
+    }
+    P(x + 1, y + 20, 18, 1, c);
+    P(x + 9, y + 3, 2, 2, O);
+    L.drawImage(iconCv(iconKey(it)), x + 3, y + 6);
   }
   // thẻ giá bìa cát-tông treo dây: đồng xu + số · HOT = thẻ đỏ · đã bán = chữ SOLD đỏ
   function tag(cx, y, price, hot, sold) {
@@ -283,7 +298,7 @@ window.SFC = window.SFC || {};
       P(x - 1, 46 + dy, 3, 1, '#c9ced8'); P(x - 1, 47 + dy, 1, 3, '#c9ced8'); P(x + 1, 47 + dy, 1, 2, '#c9ced8');
       const onHook = !s.sold || (reaching && hand.item.kind === 'item' && hand.item.i === i);
       const lit = S.hover === s.key && !s.sold, lift = (lit ? -1 : 0) + dy;
-      if (onHook) { patch(s.id, x - 10, 51 + lift, lit); if (s.hot) hotSticker(x + 3, 47 + lift); }
+      if (onHook) { patch(s, x - 10, 51 + lift, lit); if (s.hot) hotSticker(x + 3, 47 + lift); }
       tag(x + 4, 79 + dy, s.price, s.hot, s.sold && !onHook);
     });
     // hộp cứu thương trên quầy + thẻ giá treo mép quầy
@@ -296,7 +311,7 @@ window.SFC = window.SFC || {};
     // tay + món đồ đang nắm
     if (hand.mode !== 'idle') {
       const c = hand.carry;
-      if (c) { if (c.kind === 'kit') medkit(hand.x - 9, hand.y - 3); else patch(c.id, hand.x - 10, hand.y - 14, false); }
+      if (c) { if (c.kind === 'kit') medkit(hand.x - 9, hand.y - 3); else patch(S.items[c.i] || { id: c.id }, hand.x - 10, hand.y - 14, false); }
       drawHand(hand.x, hand.y, hand.mode !== 'reach');
     }
     raf = requestAnimationFrame(frame);
@@ -304,7 +319,7 @@ window.SFC = window.SFC || {};
 
   const KitVan = {
     // khung toàn màn (640x360): canvas + vùng bấm (data-rt = mục của RunUI) + bong bóng thoại + tiền + chân (nút LEAVE / DONE)
-    // o: { items: [{ id, price, sold, hot, key, say: [tiêu đề, câu] }], kits: [{ key, say }], kitPrice, cash (html), foot (html),
+    // o: { items: [{ id, g?, r?, price, sold, hot, key, say: [tiêu đề, câu] }] (g = GEAR, r = độ hiếm), kits: [{ key, say }], kitPrice, cash (html), foot (html),
     //      sel: key đang chọn bằng phím, idle: câu chào }
     html(o) {
       S.items = o.items; S.kits = o.kits; S.kitPrice = o.kitPrice;

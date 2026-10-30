@@ -3,9 +3,10 @@
  *   { seed, nonce, act, bosses: [id đội boss từng act], spare: [boss không được bốc], map, at, path, log, pending, over, won, started,
  *     cash ($ trong run), bag: [{ id, up } | { id, up, who }] (BADGE của cả đội, up = đã nâng cấp; chấn thương thêm who = người bị:
  *           số thứ tự trong squad — 2026-10-28: BADGE không gắn cho từng người nữa),
- *     squad: [{ role, you: true, legend? } | { role, m: { name, look, deck, ratings, ovr }, legend? }] (0 = character, 1-2 = đồng đội chọn
- *           lúc START RUN; legend = id LEGEND của người đó, config/legends.config.js),
- *     offer: { ids, kind } (thưởng chọn 1 sau trận thắng — của cả đội, co-op bỏ phiếu) · join: { id } (LEGEND vừa qua trial, chờ chọn
+ *     squad: [{ role, you: true, legend?, gear? } | { role, m: { name, look, deck, ratings, ovr }, legend?, gear? }] (0 = character, 1-2 = đồng
+ *           đội chọn lúc START RUN; legend = id LEGEND của người đó, config/legends.config.js; gear = [{ id, r (độ hiếm), up }] GEAR đang đeo, run.gear),
+ *     offer: { ids, kind } (thưởng BADGE chọn 1 sau trận thắng — của cả đội, co-op bỏ phiếu) | { gear: [{ id, r }], kind, sel, who } (GEAR sau
+ *           trận thường / mua ở Shop: sel = món đã chọn (null = đang chọn), who = người đeo đã đủ ô, đang chọn món bỏ ra) · join: { id } (LEGEND vừa qua trial, chờ chọn
  *           người nhận — ai trong đội cũng được, user 2026-10-28 — hoặc từ chối) · guard: { act, n } (Shin Guards: số chấn thương đã chặn ở act này),
  *     room: { kind: 'shop', items: [{ id, price, sold }], healed } | { kind: 'rest', left } | { kind: 'skill', drill } |
  *           { kind: 'trial', legend, drill } | { kind: 'event', id } (đang đứng trong Shop / Locker Room (left: số việc còn làm được) /
@@ -98,7 +99,16 @@ window.SFC = window.SFC || {};
       const id = (x) => (typeof x === 'string' && ids.has(x) ? x : null);
       const B = C().badges, isB = (x) => typeof x === 'string' && !!B[x];
       const key = (k) => (typeof k === 'string' && /^(host|[a-z0-9]{8,16})$/.test(k) ? k : null);
-      const offerOf = (o) => (o && Array.isArray(o.ids) && o.ids.every(isB) ? { ids: o.ids.slice(0, 5), kind: String(o.kind || 'match').slice(0, 12) } : null);
+      const offerOf = (o) => {
+        // GEAR: bộ món + bước đang chọn (sel: món, who: người đeo đủ ô đang chọn món bỏ ra)
+        if (o && Array.isArray(o.gear)) {
+          const gear = o.gear.filter((g) => this.gearOk(g)).slice(0, 5).map((g) => ({ id: g.id, r: g.r }));
+          if (!gear.length) return null;
+          const sel = o.sel == null ? null : clampInt(o.sel, 0, gear.length - 1), who = sel == null || o.who == null ? null : clampInt(o.who, 0, 2);
+          return { gear, kind: String(o.kind || 'match').slice(0, 12), sel, who };
+        }
+        return o && Array.isArray(o.ids) && o.ids.every(isB) ? { ids: o.ids.slice(0, 5), kind: String(o.kind || 'match').slice(0, 12) } : null;
+      };
       // BADGE cả đội: không trùng · chấn thương: theo từng người (who), không trùng trên 1 người
       const bag = [];
       for (const b of Array.isArray(raw.bag) ? raw.bag : []) {
@@ -108,6 +118,11 @@ window.SFC = window.SFC || {};
         bag.push(d.injury ? { id: b.id, up: false, who } : { id: b.id, up: !!b.up && !!d.up });
       }
       const squad = this.sanitizeSquad(raw.squad);
+      // run lưu trước 2026-10-30: BADGE trường phái trong túi đội -> GEAR của character (còn ô thì đeo)
+      if (squad) for (const b of Array.isArray(raw.bag) ? raw.bag : []) {
+        const d = b && !B[b.id] && this.gearDef(b.id), g0 = squad[0].gear || (squad[0].gear = []);
+        if (d && d.school && g0.length < C().gear.slots && !g0.some((g) => g.id === b.id)) g0.push({ id: b.id, r: d.rarity, up: !!b.up && !!d.up });
+      }
       const offer = offerOf(raw.offer);
       const join = raw.join && LG[raw.join.id] ? { id: raw.join.id } : null;
       // co-op: ví của khách (theo mã hồ sơ), phiếu đang bỏ
@@ -117,7 +132,7 @@ window.SFC = window.SFC || {};
         if (!key(k) || k === 'host' || !x || typeof x !== 'object') continue;
         guests[k] = { name: SFC.Profile.publicName(x.name), look: SFC.Profile.sanitizeLook(x.look), cash: clampInt(x.cash, 0, 99999), on: !!x.on };
       }
-      const V = raw.vote, VK = ['node', 'choose', 'rest', 'pick', 'join'];
+      const V = raw.vote, VK = ['node', 'choose', 'rest', 'pick', 'join', 'wear', 'swap'];
       const vote = V && VK.includes(V.kind) && V.ballots && typeof V.ballots === 'object' ? { kind: V.kind, t0: +V.t0 || 0, ballots: {} } : null;
       if (vote) for (const k of Object.keys(V.ballots).slice(0, 8)) if (key(k) && typeof V.ballots[k] === 'string') vote.ballots[k] = V.ballots[k].slice(0, 12);
       // ô đội hình có người thật đứng (chỉ mã có trong guests)
@@ -128,7 +143,8 @@ window.SFC = window.SFC || {};
         : rm.kind === 'trial' && LG[rm.legend] ? { kind: 'trial', legend: rm.legend, drill: LG[rm.legend].trial.drill, player: key(rm.player) || 'host' }
         : rm.kind === 'event' && C().events[rm.id] ? { kind: 'event', id: rm.id }
         : rm.kind === 'shop' && Array.isArray(rm.items) ? { kind: 'shop', healed: !!rm.healed, ready: (Array.isArray(rm.ready) ? rm.ready : []).map(key).filter(Boolean),
-          items: rm.items.filter((x) => x && isB(x.id)).map((x) => ({ id: x.id, price: clampInt(x.price, 0, 9999), sold: !!x.sold, hot: !!x.hot })) }
+          items: rm.items.filter((x) => x && (x.g ? this.gearOk(x) : isB(x.id)))
+            .map((x) => Object.assign({ id: x.id, price: clampInt(x.price, 0, 9999), sold: !!x.sold, hot: !!x.hot }, x.g ? { g: true, r: x.r } : {})) }
         : null;
       return {
         cash: clampInt(raw.cash, 0, 99999), bag, squad, offer, join, room, floors: clampInt(raw.floors, 0, 999),
@@ -422,7 +438,9 @@ window.SFC = window.SFC || {};
       out.cash = cash;
       out.lines.push({ label: SFC.t('Run cash +${n}', { n: cash }), note: true });
       for (const k of this.keys(R)) this.pl(k, R).cash += cash;
-      R.offer = { ids: this.rollBadges(C().offer, C().rarityWeights[n.kind] || C().rarityWeights.match, R), kind: n.kind };
+      // trận thường: chọn 1 trong 3 GEAR rồi chọn người đeo (user 2026-10-30) · Elite / Boss: BADGE của đội
+      R.offer = n.kind === 'match' ? { gear: this.rollGear(C().offer, C().rarityWeights.gear, R), kind: 'match', sel: null, who: null }
+        : { ids: this.rollBadges(C().offer, C().rarityWeights[n.kind] || C().rarityWeights.match, R), kind: n.kind };
       if (n.kind === 'boss') {
         this.stats().bosses++;
         out.actDone = true;
@@ -517,6 +535,10 @@ window.SFC = window.SFC || {};
       out.forEach((x, i) => {
         const id = raw[i].legend;
         if (typeof id === 'string' && LG[id] && !out.some((y) => y.legend === id)) x.legend = id;
+        // GEAR đang đeo (ô thêm từ BADGE Kit Bag: giữ dư vài ô)
+        const gear = (Array.isArray(raw[i].gear) ? raw[i].gear : []).filter((g) => this.gearOk(g)).slice(0, C().gear.slots + 3)
+          .map((g) => ({ id: g.id, r: g.r, up: !!g.up }));
+        if (gear.length) x.gear = gear;
       });
       return out;
     },
@@ -546,18 +568,19 @@ window.SFC = window.SFC || {};
       }
       return out;
     },
-    // rating 6 chỉ số của người i trong run: nền + LEGEND (nghiêng chỉ số luôn bật) + chấn thương của người đó, kẹp squad.min..attrs.max.
-    // legend: thay LEGEND để xem trước (thẻ nhận LEGEND), undefined = LEGEND đang có
-    ratingsOf(i, R = this.run, legend) {
+    // rating 6 chỉ số của người i trong run: nền + LEGEND (nghiêng chỉ số luôn bật) + GEAR + chấn thương của người đó, kẹp squad.min..attrs.max.
+    // legend: thay LEGEND để xem trước (thẻ nhận LEGEND), undefined = LEGEND đang có · gear: thay bộ GEAR để xem trước (màn chọn người đeo)
+    ratingsOf(i, R = this.run, legend, gear) {
       const A = SFC_CONFIG.progression.attrs, out = this.baseRatings(i, R), L = this.legend(legend === undefined ? R.squad[i].legend : legend);
       for (const s in (L && L.stats) || {}) out[s] += L.stats[s];
+      for (const g of gear || this.gearOf(i, R)) { const d = this.gearDef(g.id); if (d && d.stat) out[d.stat] += this.gearStat(g); }
       for (const b of R.bag) if (b.who === i && this.badge(b.id).injury) for (const s in this.badge(b.id).stats || {}) out[s] += this.badge(b.id).stats[s];
       for (const id of A.order) out[id] = Math.max(C().squad.min, Math.min(A.max, out[id]));
       return out;
     },
     ratings(R = this.run) { return this.ratingsOf(0, R); },
-    ovrOf(i, R = this.run, legend) {
-      const r = this.ratingsOf(i, R, legend), v = Object.values(r);
+    ovrOf(i, R = this.run, legend, gear) {
+      const r = this.ratingsOf(i, R, legend, gear), v = Object.values(r);
       return Math.round(v.reduce((s, x) => s + x, 0) / v.length);
     },
     // Player.stats của người i (cùng công thức Profile.attrMult)
@@ -567,13 +590,14 @@ window.SFC = window.SFC || {};
       return out;
     },
     avatarStats(R = this.run) { return this.statsOf(0, R); },
-    // 2 đồng đội vào trận (opts.mates): chỉ số run, deck Core của họ, chấn thương (p.inj -> băng + khoảnh khắc trong trận)
+    // 2 đồng đội vào trận (opts.mates): chỉ số run, deck Core của họ, chấn thương (p.inj -> băng + khoảnh khắc trong trận),
+    // GEAR trường phái (gearBoost / gearBias -> p.gearBoost / p.gearBias, src/systems/cores.js)
     mateSpecs(R = this.run) {
       const L = SFC_CONFIG.cores.list;
       return [1, 2].map((i) => {
         const s = R.squad[i];
         return { name: s.m.name, ovr: this.ovrOf(i, R), stats: this.statsOf(i, R), deck: s.m.deck.filter((id) => L[id] && L[id].role !== 'ult'),
-          look: this.memberLook(i, R), role: s.role, inj: this.injuryIds(i, R), legend: s.legend || undefined };
+          look: this.memberLook(i, R), role: s.role, inj: this.injuryIds(i, R), legend: s.legend || undefined, ...this.gearCore(i, R) };
       });
     },
     injuryIds(i, R = this.run) { return R ? R.bag.filter((b) => b.who === i && this.badge(b.id).injury).map((b) => b.id) : []; },
@@ -609,18 +633,16 @@ window.SFC = window.SFC || {};
     bsum(k, R = this.run) { return this.effs(R).reduce((s, e) => s + (+e[k] || 0), 0); },
     bmax(k, R = this.run) { return this.effs(R).reduce((m, e) => Math.max(m, +e[k] || 0), 0); },
     bany(k, R = this.run) { return this.effs(R).some((e) => !!e[k]); },
-    // opts trận từ BADGE của đội (đội 0 = đội bạn): trường phái (coreBoost / draftBias), lượt chọn (draftCards / rerollBonus / draftBonus),
-    // tỉ số (Home Crowd), nạp Tuyệt kỹ (ultGain), VAR (varCheck theo đội bị thủng lưới), bù giờ (addedTime)
+    // opts trận từ BADGE của đội (đội 0 = đội bạn): lượt chọn (draftCards / rerollBonus / draftBonus), tỉ số (Home Crowd), nạp Tuyệt kỹ
+    // (ultGain), VAR (varCheck theo đội bị thủng lưới), bù giờ (addedTime). Trường phái Core: GEAR của từng người (gearCore)
     matchOpts(R = this.run) {
-      const boost = {}, bias = {}, o = {};
+      const o = {};
       let score = null, gain = 1, V = null;
       for (const e of this.effs(R)) {
-        if (e.school) { boost[e.school] = (boost[e.school] || 0) + e.power; bias[e.school] = Math.max(bias[e.school] || 1, e.bias); }
         if (e.score) score = score ? [score[0] + e.score[0], score[1] + e.score[1]] : e.score.slice();
         if (e.ultGain) gain *= e.ultGain;
         if (e.varCheck && (!V || e.varCheck.chance > V.chance)) V = Object.assign({}, e.varCheck);
       }
-      if (Object.keys(boost).length) { o.coreBoost = [boost, null]; o.draftBias = [bias, null]; }
       if (score) o.score = score;
       if (gain !== 1) o.ultGain = [gain, null];
       const cards = this.bsum('draftCards', R), rr = this.bsum('rerolls', R), extra = this.bsum('draftBonus', R), add = this.bmax('addedTime', R);
@@ -642,7 +664,7 @@ window.SFC = window.SFC || {};
     rollBadges(n, w, R = this.run) {
       const B = C().badges, out = [];
       const taken = this.taken(R);
-      const free = (rar) => Object.keys(B).filter((id) => !B[id].injury && (!rar || B[id].rarity === rar) && !taken.has(id) && !out.includes(id));
+      const free = (rar) => Object.keys(B).filter((id) => !B[id].injury && !B[id].off && (!rar || B[id].rarity === rar) && !taken.has(id) && !out.includes(id));
       while (out.length < n) {
         let list = free(weighted(Math.random, w));
         if (!list.length) list = free(null);
@@ -673,6 +695,15 @@ window.SFC = window.SFC || {};
     pick(i) {
       const R = this.run;
       if (!R || !R.offer) return null;
+      // GEAR: bước 1 chọn món (sel) -> chọn người đeo (wearGear). null = bỏ qua (món mua ở Shop không bỏ được)
+      if (R.offer.gear) {
+        if (i == null) { if (R.offer.kind !== 'shop') R.offer = null; PF().save(); return null; }
+        const g = R.offer.gear[i];
+        if (!g || R.offer.sel != null) return null;
+        R.offer.sel = i;
+        PF().save();
+        return g.id;
+      }
       const id = i == null ? null : R.offer.ids[i] || null;
       R.offer = null;
       this.give(id, R);
@@ -682,9 +713,10 @@ window.SFC = window.SFC || {};
 
     // Shop: run.shop.size BADGE (Season Ticket: rẻ hơn) + chữa 1 chấn thương · 1 món HOT ngẫu nhiên giá x run.shop.hot
     openShop(R = this.run) {
-      const S = C().shop, off = Math.min(0.8, this.bmax('shopOff', R));
-      const items = this.rollBadges(S.size, C().rarityWeights.shop, R)
-        .map((id) => ({ id, price: Math.round((S.price[this.badge(id).rarity] || 99) * (1 - off)), sold: false }));
+      const S = C().shop, off = Math.min(0.8, this.bmax('shopOff', R)), ng = Math.min(S.size, S.gear || 0);
+      const items = this.rollBadges(S.size - ng, C().rarityWeights.shop, R)
+        .map((id) => ({ id, price: Math.round((S.price[this.badge(id).rarity] || 99) * (1 - off)), sold: false }))
+        .concat(this.rollGear(ng, C().rarityWeights.shop, R).map((g) => ({ id: g.id, g: true, r: g.r, price: Math.round((S.price[g.r] || 99) * (1 - off)), sold: false })));
       const hot = S.hot && items.length ? items[Math.floor(Math.random() * items.length)] : null;
       if (hot) { hot.hot = true; hot.price = Math.round(hot.price * S.hot); }
       return { kind: 'shop', healed: false, items };
@@ -699,10 +731,12 @@ window.SFC = window.SFC || {};
     },
     buy(i, key = 'host') {
       const R = this.run, it = R && R.room && R.room.kind === 'shop' && R.room.items[i], P = R && this.pl(key, R);
-      if (!it || !P || it.sold || P.cash < it.price || this.has(it.id)) return false;
+      if (!it || !P || it.sold || P.cash < it.price || (it.g ? !!R.offer : this.has(it.id))) return false;
       P.cash -= it.price;
       it.sold = true;
-      this.give(it.id, R);
+      // GEAR: mua xong chọn người đeo (không bỏ qua được)
+      if (it.g) R.offer = { gear: [{ id: it.id, r: it.r }], kind: 'shop', sel: 0, who: null };
+      else this.give(it.id, R);
       PF().save();
       return true;
     },
@@ -845,7 +879,7 @@ window.SFC = window.SFC || {};
     // BADGE không được bốc lại: trong túi + đang chờ chọn
     taken(R = this.run) {
       const set = new Set((R ? R.bag : []).map((b) => b.id));
-      if (R && R.offer) R.offer.ids.forEach((id) => set.add(id));
+      if (R && R.offer && R.offer.ids) R.offer.ids.forEach((id) => set.add(id));
       return set;
     },
     clearOffers(R) { R.offer = null; R.join = null; },
@@ -881,12 +915,17 @@ window.SFC = window.SFC || {};
     voteOptions(kind, R = this.run) {
       const rm = R.room;
       if (kind === 'node') return !this.active() || rm || R.actNew || this.busy(R) ? [] : this.available().map((n) => n.id);
-      if (kind === 'pick') return R.offer ? R.offer.ids.map((x, i) => String(i)).concat(['skip']) : [];
+      const O = R.offer, G = O && O.gear, shop = O && O.kind === 'shop';
+      if (kind === 'pick') return !O || (G && O.sel != null) ? [] : (G || O.ids).map((x, i) => String(i)).concat(shop ? [] : ['skip']);
+      // GEAR: người đeo (back = chọn lại món) · người đeo đủ ô: món bỏ ra (back = chọn lại người)
+      if (kind === 'wear') return G && O.sel != null && O.who == null ? R.squad.map((x, i) => (this.canWear(i, R) ? String(i) : null)).filter((x) => x != null).concat(shop ? [] : ['back']) : [];
+      if (kind === 'swap') return G && O.who != null ? this.gearOf(O.who, R).map((x, k) => String(k)).concat(['back']) : [];
       if (kind === 'join') return R.join ? R.squad.map((x, i) => String(i)).concat(['no']) : [];
       if (kind === 'choose' && rm && rm.kind === 'event') return C().events[rm.id].choices.map((c, i) => (this.canChoose(c, R) ? String(i) : null)).filter((x) => x != null);
       if (kind === 'rest' && rm && rm.kind === 'rest') {
         const out = this.injuries(R).map((x) => 'heal:' + x.k);
         this.upgradable(R).forEach((x) => out.push('up:' + x.k));
+        this.upgradableGear(R).forEach((x) => out.push('gup:' + x.who + '.' + x.k));
         return out.concat(['leave']);
       }
       return [];
@@ -957,6 +996,92 @@ window.SFC = window.SFC || {};
     },
     // rời phòng: thôi xem bản sao (Run.run lại là run của máy này)
     leaveMirror() { this.mirrorOn = false; this.mirrorR = null; },
+  });
+
+  /* ---------- GEAR (user 2026-10-30, config/run.config.js run.gear): đồ cá nhân, 1 cầu thủ đeo ---------- */
+  Object.assign(Run, {
+    gearDef(id) { return (id && C().gear.list[id]) || null; },
+    // món hợp lệ { id, r }: GEAR chỉ số có độ hiếm bất kỳ trong gear.amount, GEAR trường phái đúng độ hiếm của nó
+    gearOk(g) { const d = g && this.gearDef(g.id); return !!d && (d.stat ? !!C().gear.amount[g.r] : g.r === d.rarity); },
+    // số ô GEAR mỗi người (+ BADGE Kit Bag)
+    slots(R = this.run) { return C().gear.slots + this.bsum('gearSlots', R); },
+    gearOf(i, R = this.run) { return (R && R.squad[i] && R.squad[i].gear) || []; },
+    // GEAR chỉ số: số cộng (nâng cấp: + gear.up) · GEAR trường phái: 0
+    gearStat(g) { const d = this.gearDef(g.id); return d && d.stat ? (C().gear.amount[g.r] || 0) + (g.up ? C().gear.up : 0) : 0; },
+    // hiệu lực GEAR trường phái (đã nâng cấp thì ghép up)
+    gearEff(g) { const d = this.gearDef(g.id); return !d ? {} : g.up && d.up ? Object.assign({}, d, d.up) : d; },
+    // GEAR trường phái của người i -> { gearBoost: { trường phái: power }, gearBias: { trường phái: bias } } (vào opts avatar / mates) | {}
+    gearCore(i, R = this.run) {
+      const boost = {}, bias = {};
+      for (const g of this.gearOf(i, R)) {
+        const e = this.gearEff(g);
+        if (e.school) { boost[e.school] = (boost[e.school] || 0) + e.power; bias[e.school] = Math.max(bias[e.school] || 1, e.bias); }
+      }
+      return Object.keys(boost).length ? { gearBoost: boost, gearBias: bias } : {};
+    },
+    // bốc n GEAR khác nhau: độ hiếm theo w (GEAR trường phái chỉ ra ở đúng độ hiếm của nó, không ra món trường phái đội đã có người đeo)
+    rollGear(n, w = C().rarityWeights.gear, R = this.run) {
+      const L = C().gear.list, out = [];
+      const worn = new Set((R ? R.squad : []).flatMap((s) => (s.gear || []).map((g) => g.id)).filter((id) => L[id] && L[id].school));
+      const free = (rar) => Object.keys(L).filter((id) => !out.some((g) => g.id === id) && !worn.has(id) && (!rar || L[id].stat || L[id].rarity === rar));
+      while (out.length < n) {
+        const rar = weighted(Math.random, w);
+        let list = free(rar);
+        if (!list.length) list = free(null);
+        if (!list.length) break;
+        const id = list[Math.floor(Math.random() * list.length)];
+        out.push({ id, r: L[id].stat ? (C().gear.amount[rar] ? rar : 'common') : L[id].rarity });
+      }
+      return out;
+    },
+    // bước 2: người đeo who. Còn ô: đeo luôn -> { id, who } · đủ ô: chờ chọn món bỏ ra (offer.who) -> { full: true, who }
+    wearGear(who, R = this.run) {
+      const O = R && R.offer;
+      if (!O || !O.gear || O.sel == null || O.who != null || !this.canWear(who, R)) return null;
+      if (this.gearOf(who, R).length >= this.slots(R)) { O.who = who; PF().save(); return { full: true, who }; }
+      return this.equip(R, who, null);
+    },
+    // người who đeo được món đang chọn (không đeo 2 món giống nhau)
+    canWear(who, R = this.run) {
+      const O = R && R.offer, g = O && O.gear && O.sel != null && O.gear[O.sel];
+      return !!g && !!R.squad[who] && !this.gearOf(who, R).some((x) => x.id === g.id);
+    },
+    // bước 3 (người đeo đủ ô): bỏ món ở ô k, đeo món mới vào đó
+    swapGear(k, R = this.run) {
+      const O = R && R.offer;
+      if (!O || !O.gear || O.who == null || !this.gearOf(O.who, R)[k]) return null;
+      return this.equip(R, O.who, k);
+    },
+    equip(R, who, k) {
+      const O = R.offer, g = O.gear[O.sel], s = R.squad[who], old = k == null ? null : s.gear[k];
+      s.gear = (s.gear || []).slice();
+      if (k == null) s.gear.push({ id: g.id, r: g.r, up: false }); else s.gear[k] = { id: g.id, r: g.r, up: false };
+      R.offer = null;
+      PF().save();
+      return { id: g.id, r: g.r, who, old: old ? old.id : null };
+    },
+    // lùi 1 bước: chọn lại người đeo · chọn lại món (món mua ở Shop: không lùi về bước chọn món)
+    gearBack(R = this.run) {
+      const O = R && R.offer;
+      if (!O || !O.gear) return;
+      if (O.who != null) O.who = null;
+      else if (O.kind !== 'shop') O.sel = null;
+      PF().save();
+    },
+    // Locker Room: GEAR nâng cấp được [{ who, k, g }] (GEAR chỉ số luôn được, GEAR trường phái khi có up)
+    upgradableGear(R = this.run) {
+      const out = [];
+      if (R) R.squad.forEach((s, who) => (s.gear || []).forEach((g, k) => { const d = this.gearDef(g.id); if (!g.up && d && (d.stat || d.up)) out.push({ who, k, g }); }));
+      return out;
+    },
+    upgradeGear(who, k) {
+      const R = this.run, g = R && this.gearOf(who, R)[k];
+      if (!R || !R.room || R.room.kind !== 'rest' || !g || !this.upgradableGear(R).some((x) => x.g === g)) return false;
+      g.up = true;
+      this.restUsed(R);
+      PF().save();
+      return true;
+    },
   });
 
   SFC.Run = Run;

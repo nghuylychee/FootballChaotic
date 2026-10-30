@@ -83,8 +83,8 @@
       if (!M) return this.toMenu('runmap');
       const MP = SFC_CONFIG.mainPath, RN = SFC.Run, roles = RN.squad().map((x) => x.role), soloIdx = Math.max(0, C.roles.indexOf(roles[0]));
       // đội hình của run (Run.squad): chỉ số = nền theo vị trí + LEGEND + chấn thương của từng người, không dùng chỉ số ngoài run;
-      // inj = chấn thương (băng + khoảnh khắc) · legend = LEGEND (src/systems/legends.js)
-      const avatar = Object.assign(SFC.Profile.avatar(), { role: roles[0], stats: RN.statsOf(0), ovr: RN.ovrOf(0), inj: RN.injuryIds(0), legend: RN.legendOf(0) || undefined });
+      // inj = chấn thương (băng + khoảnh khắc) · legend = LEGEND (src/systems/legends.js) · gearBoost / gearBias = GEAR trường phái (cores.js)
+      const avatar = Object.assign(SFC.Profile.avatar(), { role: roles[0], stats: RN.statsOf(0), ovr: RN.ovrOf(0), inj: RN.injuryIds(0), legend: RN.legendOf(0) || undefined }, RN.gearCore(0));
       SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
       const ai = SFC.MainPath.aiProfile(M.elo);
       // SKILL GAME / LEGEND TRIAL (src/systems/drills.js): đội bạn 1 người (character) hoặc cả đội hình (PASS CHAIN), không chọn Core, không luật trận,
@@ -107,7 +107,7 @@
         signature: [null, M.signature],
         knockout: true, run: M.info,
         mod: M.mod, barks: M.barks,   // luật trận + câu nói của đối thủ (src/systems/matchmods.js); không có tỉ số khởi đầu
-        ...RN.matchOpts(),            // BADGE của đội: coreBoost / draftBias / draftCards / rerollBonus / draftBonus / score / ultGain / varCheck / addedTime
+        ...RN.matchOpts(),            // BADGE của đội: draftCards / rerollBonus / draftBonus / score / ultGain / varCheck / addedTime
       });
       if (SFC_DEBUG && SFC.RunTest) SFC.RunTest.onMatch(this);   // phòng test GOAT PATH: phím tắt trong trận (src/ui/runtest.js)
     },

@@ -53,6 +53,15 @@ window.SFC = window.SFC || {};
   const Legends = {
     def,
     addRatings,
+    // cầu thủ AI (không ai điều khiển) có LEGEND dạy kỹ thuật id -> AI được dùng (legends.ai, src/systems/ai.js)
+    aiTech(g, p, id) {
+      const L = def(p);
+      return !!L && L.tech === id && !!LC().ai && !(g.isHuman(p.team) && p.isControlled) && !g.opts.mirror;
+    },
+    // thủ môn AI vừa bắt được cú sút (Game.tryControl): SWEEPER SPIN như người chơi đọc trúng cú sút
+    aiSave(g, p) {
+      if (this.aiTech(g, p, 'sweeper') && Math.random() < LC().ai.sweeper) p.sweepUntil = g.time + T().sweeper.window;
+    },
     // kỹ thuật nâng cao id dùng được không
     tech(g, p, id) {
       const L = def(p);

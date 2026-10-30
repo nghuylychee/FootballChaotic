@@ -344,10 +344,10 @@ window.SFC = window.SFC || {};
       let sum = 0;
       for (const q of list) for (const st of stats) sum += SFC.CoreScale.ratingOf(q.stats, st);
       const r = sum / (list.length * stats.length);
-      // GOAT PATH (BADGE trường phái, src/meta/run.js): Core của trường phái đó mạnh hơn — cả đội (BADGE là của cả đội, 2026-10-28)
-      const boost = this.g.opts.coreBoost && this.g.opts.coreBoost[team];
-      if (!boost || !p) return r;
-      const add = this.tagsOf(id).reduce((m, tag) => Math.max(m, boost[tag] || 0), 0);
+      // Core của trường phái đó mạnh hơn: opts.coreBoost (cả đội) + GOAT PATH GEAR trường phái của riêng người đeo (p.gearBoost, src/meta/run.js)
+      const boost = this.g.opts.coreBoost && this.g.opts.coreBoost[team], gb = p && p.gearBoost;
+      if (!p || (!boost && !gb)) return r;
+      const add = this.tagsOf(id).reduce((m, tag) => Math.max(m, ((boost && boost[tag]) || 0) + ((gb && gb[tag]) || 0)), 0);
       return Math.min(SFC.CoreScale.cfg().max, r + add);
     }
     // params của Core id đã nhân theo chỉ số của who (cache theo trận); owner = cầu thủ sở hữu (null nếu who là đội)
@@ -870,10 +870,10 @@ window.SFC = window.SFC || {};
       const lean = c.tags.reduce((m, tag) => Math.max(m, style[tag] || 1), 0);
       // boss cầm Core đặc trưng: nghiêng về trường phái của Core đó (đủ lá cho Cộng hưởng / Tuyệt kỹ)
       const sig = this.signature(p), sigLean = sig && c.tags.some((tag) => this.tagsOf(sig).includes(tag)) ? 2 : 1;
-      // GOAT PATH (BADGE trường phái): Core của trường phái đó ra thường hơn cho cả đội (vẫn ngẫu nhiên) · LEGEND: trường phái của
-      // LEGEND đó ra thường hơn cho riêng người đeo (legends.schoolBias)
-      const bias = this.g.opts.draftBias && this.g.opts.draftBias[p.team];
-      const bLean = bias ? c.tags.reduce((m, tag) => Math.max(m, bias[tag] || 1), 1) : 1;
+      // Core của trường phái đó ra thường hơn (vẫn ngẫu nhiên): opts.draftBias (cả đội) · GOAT PATH GEAR trường phái (p.gearBias, riêng người
+      // đeo) · LEGEND: trường phái của LEGEND đó ra thường hơn cho riêng người đeo (legends.schoolBias)
+      const bias = this.g.opts.draftBias && this.g.opts.draftBias[p.team], gb = p.gearBias;
+      const bLean = (bias ? c.tags.reduce((m, tag) => Math.max(m, bias[tag] || 1), 1) : 1) * (gb ? c.tags.reduce((m, tag) => Math.max(m, gb[tag] || 1), 1) : 1);
       const lg = p.legend && SFC_CONFIG.legends && SFC_CONFIG.legends.list[p.legend];
       const lLean = lg && c.tags.includes(lg.school) ? SFC_CONFIG.legends.schoolBias || 1 : 1;
       return (D.rarityWeight[c.rarity] || 1) * (1 + D.buildWeight * shared) * lean * sigLean * bLean * lLean;

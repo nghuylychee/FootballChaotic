@@ -325,8 +325,10 @@ window.SFC = window.SFC || {};
       o.miss = SFC.Actions.ballIncoming(g, this) ? 0 : o.miss + dt;
       const ok = (this.state === 'normal' || this.state === 'dash') && !(this.airZ > 0) && !(this.noActT > 0);
       if (!ok || !F.enabled || g.ball.owner || o.t > F.armTime || o.miss > F.missTime) { SFC.Actions.disarm(this); return; }
-      this.charging = true;
-      this.charge = o.charge;
+      // chờ chuyền 1 chạm (o.pass): không có thanh lực sút
+      this.charging = !o.pass;
+      this.charge = o.pass ? 0 : o.charge;
+      SFC.Actions.headerJump(g, this);
     }
 
     // hitstop cục bộ t giây (fx.hitStop): không cộng dồn, lấy mức dài hơn

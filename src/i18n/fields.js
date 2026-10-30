@@ -40,7 +40,7 @@ SFC.I18n.fields = [
   // GOAT PATH (config/run.config.js): tên act, tên loại node
   'run.acts.*.name', 'run.nodes.*.name', 'run.acts.*.stages.*', 'run.acts.*.intro.*.text', 'run.acts.*.bossTalk.*.text', 'run.acts.*.after.*.text',
   'run.acts.*.intro.*.sfx', 'run.acts.*.bossTalk.*.sfx',
-  'run.badges.*.name', 'run.badges.*.desc', 'run.drills.*.name', 'run.drills.*.desc', 'run.tiers.*.name',
+  'run.badges.*.name', 'run.badges.*.desc', 'run.gear.list.*.name', 'run.gear.list.*.desc', 'run.drills.*.name', 'run.drills.*.desc', 'run.tiers.*.name',
   // LEGEND (config/legends.config.js): tên là tên riêng (không dịch), danh hiệu + mô tả dịch
   'legends.list.*.title', 'legends.list.*.desc', 'legends.list.*.flawDesc',
   'legends.techniques.*.name', 'legends.techniques.*.keys', 'legends.techniques.*.desc',

@@ -5,6 +5,10 @@ window.SFC = window.SFC || {};
   const U = SFC.U;
   const A = () => SFC_CONFIG.game.ai;
   const Act = () => SFC.Actions;
+  // kỹ thuật LEGEND cho cầu thủ AI đeo LEGEND (legends.ai; legends.js chỉ nạp ở bản game, máy chủ không có)
+  const LGS = () => SFC.Legends;
+  const LAI = () => SFC_CONFIG.legends && SFC_CONFIG.legends.ai;
+  const legTech = (g, p, id) => !!LGS() && LGS().aiTech(g, p, id);
 
   function stop(p) { p.intent.mx = 0; p.intent.my = 0; p.intent.sprint = false; }
 
@@ -20,7 +24,7 @@ window.SFC = window.SFC || {};
 
   // điểm bóng có xoáy (cú cứa lòng, Ball.curve) cắt đường x = lineX: chạy thử từng bước 1/60s (tối đa 1.2s). null = không tới
   function curveCross(b, lineX) {
-    const k = SFC_CONFIG.game.ball.groundFriction, dt = 1 / 60, ca = Math.cos(b.curve * dt), sa = Math.sin(b.curve * dt);
+    const k = SFC_CONFIG.game.ball.groundFriction * b.frictionMult * b.shotFm(), dt = 1 / 60, ca = Math.cos(b.curve * dt), sa = Math.sin(b.curve * dt);
     let x = b.x, y = b.y, vx = b.vx, vy = b.vy;
     for (let i = 1; i <= 72; i++) {
       const nx = vx * ca - vy * sa; vy = vx * sa + vy * ca; vx = nx;
@@ -72,11 +76,13 @@ window.SFC = window.SFC || {};
         if (p.state !== 'normal') { stop(p); continue; }
         // bị SÚT GIẢ lừa (Actions.fakeShot): khựng tại chỗ
         if (p.ai.fakedT > 0) { p.ai.fakedT -= dt; stop(p); continue; }
+        // RAINBOW FLICK đang bay vòng qua đầu: cứ chạy tiếp hướng cũ, bóng tự rơi về chân (Legends.rainbowStep)
+        if (p.rainbow) { p.intent.mx = p.ai.dir.x; p.intent.my = p.ai.dir.y; p.intent.sprint = p.ai.sprint; continue; }
         const own = g.ball.owner;
         if (!own) this.firstTime(g, p);
         if (own === p) this.carrier(dt, g, p);
         else if (own && own.team === p.team) this.support(dt, g, p);
-        else if (own) this.defend(dt, g, p);
+        else if (own) { p.ai.runT = 0; this.defend(dt, g, p); }
         else this.loose(dt, g, p);
       }
     },
@@ -113,9 +119,11 @@ window.SFC = window.SFC || {};
       if (p.charging) {
         p.charge += dt / g.chargeTime(p);
         moveTo(p, goal.x, goal.y, false);
-        if (Act().shotPower(g, p, p.charge) >= p.ai.chargeTarget) Act().shoot(g, p, p.charge, p.ai.aimY);
+        if (Act().shotPower(g, p, p.charge) >= p.ai.chargeTarget) { this.legendShot(g, p); Act().shoot(g, p, p.charge, p.ai.aimY); }
         return;
       }
+      // BRUISER RUN: đối thủ sát bên đang ra đòn -> giật chỏ để phản (xét mỗi bước, không chờ lượt quyết định)
+      if (legTech(g, p, 'bruiser') && this.bruiserParry(g, p, opps)) return;
 
       // bắt được bóng trong vòng cấm nhà -> đứng ôm bóng rồi phát bóng như thủ môn
       if (g.isProtected(p)) {
@@ -188,12 +196,18 @@ window.SFC = window.SFC || {};
           return;
         }
 
+        // kỹ thuật LEGEND khi bị áp sát: RAINBOW FLICK qua đầu người chắn trước · BRUISER RUN giật chỏ lúc đang chạy nhanh
+        if (!settling && this.legendDribble(g, p, near)) return;
+
         if (!settling && (near.d < cfg.passPressure || p.ai.holdT > (M ? M.holdTime : 2.8))) {
           const t = Act().findPassTarget(g, p, goal.x - p.x, goal.y - p.y);
           if (t && Math.random() < (M ? M.passChance : 0.75)) {
-            const ahead = (t.x - p.x) * g.teams[p.team].dir > 20;
-            const mode = !Act().laneClear(g, p, t.x, t.y, 10) ? 'lob' : ahead && Math.random() < 0.4 ? 'through' : 'ground';
+            const ahead = (t.x - p.x) * g.teams[p.team].dir > 20, clearLane = Act().laneClear(g, p, t.x, t.y, 10);
+            let mode = !clearLane ? 'lob' : ahead && Math.random() < 0.4 ? 'through' : 'ground';
+            // LOFTED THROUGH (LEGEND): chọc khe bổng qua đầu — đường chuyền lên trên bị chắn: luôn dùng, chọc khe thường: thỉnh thoảng
+            if (ahead && legTech(g, p, 'lobthrough') && (mode === 'lob' || (mode === 'through' && Math.random() < LAI().lobthrough))) mode = 'lobthrough';
             Act().passTo(g, p, t, mode);
+            if (mode === 'lobthrough') LGS().techFx(g, p, 'lobthrough');
             return;
           }
         }
@@ -240,11 +254,13 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------- đồng đội có bóng ---------- */
-    support(dt, g, p) {
-      const f = g.field, c = g.ball.owner, dir = g.teams[p.team].dir;
+    // c = người cầm bóng; bóng đang chuyền cho đồng đội (loose) thì c = người nhận — đội hình di chuyển liền mạch qua đường chuyền
+    support(dt, g, p, c = g.ball.owner) {
+      const f = g.field, dir = g.teams[p.team].dir;
       if (p.ai.runT > 0 && p.ai.runTo) {
         p.ai.runT -= dt;
-        moveTo(p, p.ai.runTo.x, p.ai.runTo.y, true);
+        // tới nơi rồi: đứng chờ bóng (vẫn tính là đang chạy chỗ tới hết runT, người chơi kịp thấy mũi tên)
+        if (moveTo(p, p.ai.runTo.x, p.ai.runTo.y, true)) p.facing += U.angleDiff(p.facing, Math.atan2(c.y - p.y, c.x - p.x)) * 0.25;
         return;
       }
       const wob = Math.sin(g.time * 0.9 + p.id) * 14;
@@ -266,13 +282,16 @@ window.SFC = window.SFC || {};
         } else if (k === last) {
           tx = c.x + dir * A().supportAhead * (S.runnerAhead || 1.4);
           ty = (c.y < f.cy ? f.cy + f.h * 0.28 : f.cy - f.h * 0.28) + wob;
+          if (this.tryRun(g, p, c, 'behind', ty)) return;
         } else {
           tx = c.x + dir * A().supportAhead * (S.wideAhead || 0.4);
           ty = (c.y < f.cy ? f.y + f.h * 0.16 : f.y + f.h * 0.84) + wob;
+          if (this.tryRun(g, p, c, 'overlap', ty)) return;
         }
         tx = U.clamp(tx, f.x + 40, f.x + f.w - 40);
         ty = U.clamp(ty, f.y + 24, f.y + f.h - 24);
-        moveTo(p, tx, ty, U.dist(p, { x: tx, y: ty }) > 90, 6);
+        const sp = this.openSpot(g, p, c, tx, ty);
+        moveTo(p, sp.x, sp.y, U.dist(p, sp) > 90, 6);
         return;
       }
       // chỉ 1 người hỗ trợ (2v2: trận mơ / xem trước Core): người cầm bóng còn ở phần sân nhà -> băng lên làm phương án;
@@ -286,6 +305,90 @@ window.SFC = window.SFC || {};
       }
       tx = U.clamp(tx, f.x + 40, f.x + f.w - 40);
       moveTo(p, tx, ty, U.dist(p, { x: tx, y: ty }) > 90, 6);
+    },
+
+    // ĐIỂM ĐỨNG HỖ TRỢ (ai.openSpot): quanh điểm vai trò (rx, ry) chọn chỗ đường chuyền từ c thoáng + xa đối phương; giữ chỗ cũ nếu không kém nhiều
+    openSpot(g, p, c, rx, ry) {
+      const O = A().openSpot, f = g.field;
+      if (!O) return { x: rx, y: ry };
+      const opps = g.teams[1 - p.team].players.filter((o) => o.state !== 'stun');
+      const score = (x, y) => {
+        let lane = O.laneCap, space = O.spaceCap;
+        for (const o of opps) {
+          lane = Math.min(lane, U.segDist(o.x, o.y, c.x, c.y, x, y));
+          space = Math.min(space, Math.hypot(o.x - x, o.y - y));
+        }
+        return lane * O.lane + space * O.space - Math.hypot(x - rx, y - ry) * O.drift;
+      };
+      const S = p.ai.spot;
+      // điểm vai trò dịch theo người cầm bóng -> chỗ đã chọn đi theo dưới dạng độ lệch so với điểm vai trò
+      if (S && g.time < S.next) return { x: U.clamp(rx + S.ox, f.x + 30, f.x + f.w - 30), y: U.clamp(ry + S.oy, f.y + 18, f.y + f.h - 18) };
+      let best = { ox: 0, oy: 0, s: score(rx, ry) };
+      for (const r of O.radius) {
+        for (let i = 0; i < O.dirs; i++) {
+          const a = (i / O.dirs) * Math.PI * 2, ox = Math.cos(a) * r, oy = Math.sin(a) * r;
+          const x = rx + ox, y = ry + oy;
+          if (x < f.x + 30 || x > f.x + f.w - 30 || y < f.y + 18 || y > f.y + f.h - 18) continue;
+          const sc = score(x, y);
+          if (sc > best.s) best = { ox, oy, s: sc };
+        }
+      }
+      // giữ chỗ cũ (chống nhảy qua lại) trừ khi chỗ mới hơn hẳn
+      if (S) {
+        const old = score(rx + S.ox, ry + S.oy);
+        if (best.s < old + O.keep) best = { ox: S.ox, oy: S.oy, s: old };
+      }
+      p.ai.spot = { ox: best.ox, oy: best.oy, next: g.time + O.every };
+      return { x: U.clamp(rx + best.ox, f.x + 30, f.x + f.w - 30), y: U.clamp(ry + best.oy, f.y + 18, f.y + f.h - 18) };
+    },
+
+    // bắt đầu chạy chỗ (ai.runs): chạy nước rút tới (x, y) trong time s
+    startRun(g, p, x, y, time) {
+      const f = g.field;
+      p.ai.runTo = { x: U.clamp(x, f.x + 24, f.x + f.w - 24), y: U.clamp(y, f.y + 18, f.y + f.h - 18) };
+      p.ai.runT = time;
+      p.ai.spot = null;
+    },
+
+    // ĐI-TRẢ (ai.runs.giveGo): người vừa chuyền (AI) băng lên phía trước nhận lại — gọi từ Actions.passTo
+    giveGo(g, p) {
+      const R = A().runs && A().runs.giveGo, f = g.field, dir = g.teams[p.team].dir;
+      if (!R || p.state !== 'normal' || Math.random() >= R.chance) return;
+      const progress = ((p.x - f.x) / f.w - 0.5) * dir + 0.5;
+      if (progress < R.minProgress) return;
+      const o = nearest(g.teams[1 - p.team].players, p, (q) => q.state !== 'stun').p;
+      const side = o ? Math.sign(p.y - o.y) || 1 : Math.sign(f.cy - p.y) || 1;
+      this.startRun(g, p, p.x + dir * R.ahead, p.y + side * R.side, R.time);
+    },
+
+    // chạy sau lưng hậu vệ (behind, người BĂNG) / chạy chồng biên (overlap, người DẠT) — ai.runs. ly = làn dọc của người chạy
+    tryRun(g, p, c, kind, ly) {
+      const RS = A().runs, R = RS && RS[kind];
+      if (!R || g.ball.owner !== c || g.time < (p.ai.runNext || 0)) return false;
+      p.ai.runNext = g.time + RS.every;
+      if (g.time < (p.ai.runCd || 0)) return false;
+      const f = g.field, dir = g.teams[p.team].dir, goal = g.attackGoal(p.team);
+      if (Math.cos(c.facing) * dir < R.faceCos) return false;
+      if (kind === 'behind') {
+        const progress = ((c.x - f.x) / f.w - 0.5) * dir + 0.5;
+        if (progress < R.progress[0] || progress > R.progress[1]) return false;
+        // hậu vệ cuối = đối phương (không đứng trông khung) gần khung của họ nhất
+        let line = null;
+        for (const o of g.teams[1 - p.team].players) {
+          if (o.state === 'stun' || g.inKeeperZone(o)) continue;
+          if (line == null || o.x * dir > line * dir) line = o.x;
+        }
+        if (line == null) return false;
+        let tx = line + dir * R.depth;
+        if ((tx - (goal.x - dir * R.goalGap)) * dir > 0) tx = goal.x - dir * R.goalGap;
+        if ((tx - p.x) * dir < 20 || Math.random() >= R.chance) return false;
+        this.startRun(g, p, tx, ly, R.time);
+      } else {
+        if (Math.abs(c.y - f.cy) > f.h * R.mid || Math.random() >= R.chance) return false;
+        this.startRun(g, p, c.x + dir * R.ahead, ly, R.time);
+      }
+      p.ai.runCd = g.time + R.cooldown;
+      return true;
     },
 
     /* ---------- phòng ngự ---------- */
@@ -309,21 +412,37 @@ window.SFC = window.SFC || {};
       else if (ctl && this.helpPress(g, p, c, ctl, danger)) presser = p;
       else if (!ctl || (!danger && U.dist(ctl, c) > cfg.keeperPressDist)) presser = nearest(tm.players, c, (o) => o.state !== 'stun' && o !== ctl).p;
 
+      // ÁP SÁT (ai.press): vừa mất bóng (phản pressing) hoặc người cầm bóng đi sát mình -> lao vào đánh, trừ người trông khung
+      // đang trong vòng nguy hiểm. Không cả đội bu vào: chỉ khi ít hơn maxPressers đồng đội đang gần người cầm bóng hơn mình
+      const PR = cfg.press, protectedGK = g.isProtected(c);
+      const counter = !!PR && p.ai.cpUntil > g.time && p !== ctl;
+      if (PR && p !== presser && p !== ctl && !protectedGK && !(danger && p === keeper)) {
+        const dc = U.dist(p, c);
+        const closer = tm.players.filter((o) => o !== p && o.state !== 'stun' && U.dist(o, c) < dc).length;
+        if ((counter || dc < PR.engage) && closer < PR.maxPressers) presser = p;
+      }
+
       if (p === presser) {
         let target = c;
         if (p.confused && p.confused.decoy.alive) target = p.confused.decoy;
         const gd = U.norm(ownGoal.x - target.x, ownGoal.y - target.y);
         const d = U.dist(p, target);
-        const protectedGK = g.isProtected(c);
         const gap = protectedGK ? 40 : 7; // thủ môn ôm bóng: đứng chờ đón đường phát bóng
-        moveTo(p, target.x + gd.x * gap, target.y + gd.y * gap, d > 36, 2);
+        // kỹ thuật LEGEND khi áp sát: ENGINE PRESS tự đuổi + chọc bóng · SLIDE TACKLE xoạc từ xa
+        if (target === c && !protectedGK && this.legendPress(g, p, c, d, dt)) return;
+        const tv = Math.hypot(target.vx || 0, target.vy || 0);
+        // bị vượt qua (mình ở phía xa khung nhà hơn người cầm bóng): đuổi thẳng tới chỗ người đó sắp tới, không chạy vòng lên trước
+        const beaten = PR && !protectedGK && (p.x - target.x) * gd.x + (p.y - target.y) * gd.y < -4;
+        const sprint = PR ? d > PR.sprintDist || tv > PR.walkSpeed : d > 36;
+        if (beaten) moveTo(p, target.x + (target.vx || 0) * PR.chaseLead, target.y + (target.vy || 0) * PR.chaseLead, sprint, 1);
+        else moveTo(p, target.x + gd.x * gap, target.y + gd.y * gap, sprint, 2);
         if (target !== c || p.ai.t > 0 || protectedGK) return;
-        p.ai.t = D.reaction * U.rand(0.8, 1.4);
+        p.ai.t = D.reaction * U.rand(0.8, 1.4) * (counter ? PR.counterReact : 1);
         const dc = U.dist(p, c);
         p.facing = Math.atan2(c.y - p.y, c.x - p.x);
         const style = tm.cfg.aiStyle || { light: 1, hard: 1 };
         // đồng đội AI của người chơi: tỉ lệ đấm riêng (ai.mate.lightChance), không theo aiStyle của đội
-        const lightP = humanTeam ? cfg.mate.lightChance * D.aggression : Math.min(0.9, 0.6 * D.aggression * style.light);
+        const lightP = (humanTeam ? cfg.mate.lightChance * D.aggression : Math.min(0.9, 0.6 * D.aggression * style.light)) * (counter ? PR.counterPunch : 1);
         // Tay Cao Su: đấm được từ xa
         const reach = Math.max(C.light.range, g.cores.lightReach(p) * 0.8);
         if (dc < reach + p.radius * 2 && Math.random() < lightP) Act().lightAttack(g, p);
@@ -350,6 +469,43 @@ window.SFC = window.SFC || {};
       }
       const gd = U.norm(ownGoal.x - t.x, ownGoal.y - t.y);
       moveTo(p, t.x + gd.x * cfg.markDistance, t.y + gd.y * cfg.markDistance, U.dist(p, t) > 80, 5);
+    },
+
+    /* ---------- kỹ thuật LEGEND của cầu thủ AI (legends.ai, user 2026-10-30) ---------- */
+    // cú sút sắp ra: POWER SHOT / FINESSE SHOT / TRIVELA (Actions.shoot đọc p.shotStyle)
+    legendShot(g, p) {
+      const LA = LAI();
+      if (!LA) return;
+      for (const id of ['power', 'finesse', 'trivela']) if (legTech(g, p, id) && Math.random() < LA.shot) { p.shotStyle = id; return; }
+    },
+    // BRUISER RUN phản đòn: đối thủ trong tầm giật chỏ đang gồng / tung đòn
+    bruiserParry(g, p, opps) {
+      const B = SFC_CONFIG.legends.tuning.bruiser;
+      const hit = opps.some((o) => (o.state === 'jab' || o.state === 'windup') && Math.hypot(o.x - p.x, o.y - p.y) <= B.range + (o.radius || 6));
+      return hit && LGS().bruiser(g, p);
+    },
+    // cầm bóng bị áp sát (lượt quyết định): RAINBOW FLICK khi người chắn ở phía trước · BRUISER RUN khi đang chạy nhanh mà đối thủ sát bên
+    legendDribble(g, p, near) {
+      const LA = LAI(), o = near.p;
+      if (!LA || !o || p.shotLockT > 0) return false;
+      const ahead = (o.x - p.x) * g.teams[p.team].dir > 0;
+      if (legTech(g, p, 'rainbow') && ahead && near.d < LA.rainbow.near && Math.random() < LA.rainbow.chance) return LGS().rainbow(g, p);
+      const B = SFC_CONFIG.legends.tuning.bruiser;
+      if (legTech(g, p, 'bruiser') && p.ai.sprint && near.d <= B.range + (o.radius || 6) && Math.random() < LA.bruiser) return LGS().bruiser(g, p);
+      return false;
+    },
+    // người áp sát người cầm bóng c (cách d px): ENGINE PRESS (còn thể lực: tự đuổi + chọc bóng, hết thì đấm như thường)
+    // · SLIDE TACKLE (c trong [min, max] px: xoạc về chỗ c sắp tới). true = đã xử lý bước này
+    legendPress(g, p, c, d, dt) {
+      const LA = LAI();
+      if (!LA) return false;
+      if (legTech(g, p, 'engine') && p.stamina > LA.engine.stamina) return LGS().engine(g, p, dt);
+      const S = LA.slide;
+      if (legTech(g, p, 'slide') && d >= S.min && d <= S.max && g.time >= (p.ai.slideNext || 0)) {
+        p.ai.slideNext = g.time + S.every;
+        if (Math.random() < S.chance) return LGS().slide(g, p, c.x + (c.vx || 0) * 0.15 - p.x, c.y + (c.vy || 0) * 0.15 - p.y);
+      }
+      return false;
     },
 
     /* ---------- dứt điểm 1 chạm + tạt cánh (game.firstTime) ---------- */
@@ -384,17 +540,32 @@ window.SFC = window.SFC || {};
       p.ai.ftFor = b.kickN;
       const FA = F.ai, D = g.aiProfile(p.team), goal = g.attackGoal(p.team), dG = U.dist(p, goal);
       const opp = b.lastKickTeam >= 0 && b.lastKickTeam !== p.team;
-      let chance = 0;
+      let chance = 0, pass = null;
       if (opp) { if (b.cross && !g.inKeeperZone(p)) chance = FA.clearChance; }
       else if (b.passTarget === p && dG < FA.range) {
         if (b.cross) chance = FA.headerChance;
         else if (Act().laneClear(g, p, goal.x, goal.y, 12)) chance = FA.oneTouchChance;
       }
+      // BICYCLE KICK (LEGEND): bóng bổng tới mình trong tầm sút (rộng hơn) -> chờ đá, Actions.firstTime tự thành móc xe đạp
+      const LB = LAI() && LAI().bicycle;
+      if (!opp && !chance && legTech(g, p, 'bicycle') && dG < FA.range * LB.range && Act().highBall(g, p)) chance = LB.chance;
+      // đường chuyền bổng tới mình mà không sút: ĐÁNH ĐẦU CHUYỀN cho đồng đội (thay vì chờ bóng rơi xuống chân)
+      if (!opp && !chance && b.passTarget === p && FA.headerPassChance && Act().highBall(g, p)) { chance = FA.headerPassChance; pass = 'ground'; }
       if (!chance || Math.random() >= Math.min(0.95, chance * (0.6 + 0.4 * D.aggression))) return;
-      if (!Act().armFirstTime(g, p)) return;
+      if (!Act().armFirstTime(g, p, pass)) return;
+      if (pass) { p.ot.aim = { x: g.teams[p.team].dir, y: 0 }; return; }   // chuyền về phía khung đối phương
       p.ot.target = U.rand(FA.charge[0], FA.charge[1]);
       const f = g.field, gk = nearest(g.teams[1 - p.team].players, goal, (o) => g.inKeeperZone(o)).p;
       p.ot.aimY = (gk && gk.y > f.cy ? -1 : 1) * U.rand(0.3, 0.9);
+    },
+
+    // đội của p vừa giành được bóng: cầu thủ AI đội kia ở gần người cầm bóng mới -> phản pressing (ai.press.counterTime)
+    lostBall(g, p) {
+      const PR = A().press;
+      if (!PR) return;
+      for (const o of g.teams[1 - p.team].players) {
+        if (o.state !== 'stun' && U.dist(o, p) < PR.counterDist) o.ai.cpUntil = g.time + PR.counterTime;
+      }
     },
 
     // Đồng đội AI ĐÁ LÙI định chuyền cho người chơi (t) mà đang bị áp sát + đường chuyền bị chắn -> phất bóng lên (ai.hoof)
@@ -537,6 +708,8 @@ window.SFC = window.SFC || {};
         const c = Math.cos(err), s = Math.sin(err);
         return moveTo(p, U.clamp(b.x + (b.vx * c - b.vy * s) * 0.3, f.x + 6, f.x + f.w - 6), U.clamp(b.y + (b.vx * s + b.vy * c) * 0.3, f.y + 6, f.y + f.h - 6), true, 1);
       }
+      // bóng đang chuyền cho đồng đội: người còn lại hỗ trợ quanh người nhận (chạy chỗ, điểm đứng thoáng) thay vì về vị trí đội hình
+      if (passToMate) return this.support(dt, g, p, b.passTarget);
 
       // 1 người không đuổi bóng lùi về trông khung (người gần khung nhà nhất, trừ người đuổi bóng / người chơi đang điều khiển).
       // Đội máy / đồng đội AI ĐÁ LÙI: bóng lỏng ở phần sân nhà (hoặc đang bay về khung thành nhà).

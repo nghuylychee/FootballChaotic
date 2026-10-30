@@ -3143,6 +3143,48 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .pb-card > b { font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; text-align: center; line-height: 1.3; text-shadow: 1px 1px 0 var(--ink); }
 .pb-card > p { margin: 0; font-size: 13px; line-height: 1; color: #c7ccd6; text-align: center; }
 .pb-card > .rv { top: -6px; right: -4px; left: auto; bottom: auto; transform: none; }
+/* ---------- GEAR (GOAT PATH, đồ cá nhân — user 2026-10-30, mockup tools/mockups/gear.html): thẻ treo góc vát có lỗ xỏ dây,
+   khác miếng vá tròn của BADGE đội. Màu độ hiếm = viền (--rc), màu chỉ số / trường phái = chip + vạch đáy ô (--c) ---------- */
+.gr-card { position: relative; width: 164px; height: 156px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 8px 8px;
+  font: inherit; color: inherit; cursor: pointer; background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 14%, #232733), #171a21 70%);
+  border: 1px solid var(--edge); border-top: 2px solid var(--rc); box-shadow: 2px 2px 0 var(--ink); transition: transform 0.2s; }
+.gr-card.sel, .gr-card:hover { border-color: var(--gold); border-top-color: var(--rc); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); transform: translateY(-2px); }
+.gr-card > b { font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; text-align: center; line-height: 1.3; text-shadow: 1px 1px 0 var(--ink); }
+.gr-card > p { margin: 0; font-size: 13px; line-height: 1; color: #c7ccd6; text-align: center; }
+.gr-card > .rv { top: -6px; right: -4px; left: auto; bottom: auto; transform: none; }
+.gr-hang { position: relative; display: flex; flex-direction: column; align-items: center; }
+.gr-hang::before { content: ''; position: absolute; top: -2px; left: 50%; width: 1px; height: 14px; background: #c7ccd6; transform: rotate(18deg); transform-origin: top; z-index: 1; }
+.gr-tag { position: relative; width: 58px; height: 66px; flex: none; display: flex; align-items: center; justify-content: center; margin-top: 8px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 38%, #2a2e38), #1a1c22 80%);
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 14px); box-shadow: inset 0 0 0 2px var(--rc); }
+.gr-tag::before { content: ''; position: absolute; left: 50%; top: 5px; width: 6px; height: 6px; margin-left: -3px; background: #0b0c10; box-shadow: 0 0 0 1px var(--rc); }
+.gr-ico { margin-top: 6px; display: flex; font-style: normal; }
+.gr-ico .pxi.x3 { width: 42px; height: 42px; }
+.gr-chip { display: inline-flex; gap: 3px; font-family: var(--px); font-size: 7px; color: #fff; padding: 2px 4px 1px; background: #0f1116; border: 1px solid var(--c); text-shadow: 1px 1px 0 var(--ink); }
+.gr-chip i { font-style: normal; color: var(--c); }
+.pb-row.wrap { flex-wrap: wrap; max-width: 620px; }
+/* màn chọn người đeo: món đang chọn ở trên (như thẻ LEGEND) */
+.gr-hero { display: flex; align-items: center; gap: 10px; padding: 4px 10px; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--edge); }
+.gr-hero .gr-tag { width: 40px; height: 46px; margin: 0; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%, 0 10px); }
+.gr-hero .gr-ico .pxi.x2 { width: 28px; height: 28px; }
+.gr-hero b { font-family: var(--px); font-size: 8px; font-weight: normal; color: #fff; }
+.rm-sheet.gearwho .gr-hero { margin-top: 2px; }
+.rm-sheet.gearwho .lg-pick.dis { opacity: 0.35; filter: grayscale(0.6); }
+/* ô GEAR ở chân thẻ cầu thủ */
+.gr-slots { display: flex; gap: 2px; }
+.gr-s { position: relative; width: 16px; height: 18px; display: flex; align-items: center; justify-content: center; background: #1a1c22;
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 0 100%, 0 4px); box-shadow: inset 0 0 0 1px var(--rc); }
+.gr-s::after { content: ''; position: absolute; left: 2px; right: 2px; bottom: 1px; height: 2px; background: var(--c, transparent); }
+.gr-s .pxi { width: 12px; height: 12px; vertical-align: 0; }
+.gr-s.empty { --rc: #3a404d; background: #14161c; }
+.gr-s.new { animation: grBlink 0.6s steps(2) infinite; }
+@keyframes grBlink { 50% { opacity: 0.3; } }
+.gr-s.out { opacity: 0.35; }
+.gr-swap { font-family: var(--px); font-size: 5px; color: #ff9a3d; }
+/* dải đội hình trên thanh map: 1 vạch dưới OVR mỗi ô GEAR */
+.rs-g { position: absolute; left: 21px; bottom: -3px; display: flex; gap: 1px; }
+.rs-g i { width: 4px; height: 2px; background: #2a2e38; }
+.rs-g i.on { background: var(--rc); }
 .pb-fly { position: absolute; z-index: 5; display: flex; align-items: center; justify-content: center; pointer-events: none; filter: drop-shadow(2px 2px 0 var(--ink)); }
 .sq-team .sq-b.new { animation: pbSew 0.38s steps(2) 1; box-shadow: 0 0 0 1px var(--gold), 0 0 8px var(--gold); }
 @keyframes pbSew { 0% { transform: scale(1.5); } 100% { transform: scale(1); } }
@@ -3173,9 +3215,6 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .pk-empty { align-items: center; justify-content: center; cursor: pointer; background: rgba(0, 0, 0, 0.3); border: 1px dashed #4a5060; box-shadow: none; }
 .pk-empty .sq-head { left: 0; right: 0; }
 .pk-empty .sq-head em { font-size: 7px; color: var(--muted); }
-.pk-empty.next { border-color: #6bff4f; animation: pkNext 0.9s steps(2) infinite; }
-.pk-empty.next .sq-head em { color: #6bff4f; }
-@keyframes pkNext { 50% { border-color: #2f7a2a; } }
 .pk-sil canvas { width: 96px; height: 106px; image-rendering: pixelated; filter: brightness(0); opacity: 0.5; margin-top: 10px; }
 /* đang kéo: ô thả được sáng lên, ô đang trỏ viền vàng */
 .pk-page.dragging .pk-card:not(.lock), .pk-page.dragging .pk-bench { outline: 1px dashed rgba(255, 225, 79, 0.45); outline-offset: 2px; }

@@ -19,10 +19,11 @@ SFC_CONFIG.run = {
     maxMatches: 4,          // và nhiều nhất ngần này (không vượt số đội của act -> không gặp lại 1 đội)
     tries: 300,             // số lần sinh lại khi map phạm luật (act ít đội cần nhiều lần)
     first: 'match',         // tầng 0
-    last: 'rest',           // tầng cuối trước boss
+    last: 'shop',           // tầng cuối trước boss (2026-10-30: Locker Room ẩn -> Shop: chữa chấn thương + mua đồ trước boss)
     // trọng số loại node ở các tầng giữa · minFloor: tầng sớm nhất (tính từ 0) · noRepeat: không đứng liền nhau trên 1 đường
     // legend: LEGEND TRIAL (config/legends.config.js) — node hiện sẵn LEGEND đang chờ (chân dung), thắng bài thử thách là chiêu mộ được
-    weights: { match: 40, event: 20, skill: 13, shop: 10, elite: 8, legend: 9, rest: 5 },
+    // rest (LOCKER ROOM): 0 = ẩn (user 2026-10-30: thừa, rối) — code phòng vẫn giữ, đặt lại trọng số là có lại
+    weights: { match: 40, event: 20, skill: 13, shop: 10, elite: 8, legend: 9, rest: 0 },
     minFloor: { elite: 2, rest: 2, legend: 1 },
     noRepeat: ['shop', 'rest', 'elite', 'legend'],
   },
@@ -55,20 +56,22 @@ SFC_CONFIG.run = {
 
   /* ---------- ĐỘI HÌNH (user 2026-10-26): character + 2 đồng đội chọn lúc START RUN, giữ nguyên cả run ----------
    * Chỉ số trong run KHÔNG lấy từ ngoài run, và KHÔNG đổi theo ô được xếp (user 2026-10-29: xếp ai vào vị trí nào cũng giữ đúng chỉ số
-   * của người đó): nền theo VỊ TRÍ SỞ TRƯỜNG của chính người đó (base[pos], trung bình ~70 = hệ số ~0.88; pos của đồng đội = vị trí
+   * của người đó): nền theo VỊ TRÍ SỞ TRƯỜNG của chính người đó (base[pos], trung bình ~65 = hệ số ~0.81 — 70 -> 65, user 2026-10-30; pos của đồng đội = vị trí
    * khớp nhất với chỉ số riêng của họ, Run.natural) + nghiêng theo chỉ số riêng (lean x (rating - OVR), kẹp ±leanMax) + chút theo OVR
    * (ovrLean x (OVR - ovrRef), kẹp ±ovrMax: đồng đội scout giỏi nhỉnh hơn) + LEGEND của người đó (legends.list[].stats) + chấn thương.
    * you: nền của character (toàn diện, không theo vị trí). (2026-10-28: BADGE không còn cộng chỉ số, BADGE là của cả đội.)
    * picks: số ứng viên ở màn chọn (đội hình trong roster trước, thiếu thì cầu thủ đường phố ngẫu nhiên cùng trình act 1). */
   squad: {
     base: {
-      FWD: { pace: 76, shooting: 80, passing: 68, dribble: 72, fight: 64, keeper: 60 },
-      MID: { pace: 70, shooting: 66, passing: 80, dribble: 76, fight: 66, keeper: 62 },
-      DEF: { pace: 66, shooting: 62, passing: 68, dribble: 64, fight: 80, keeper: 80 },
+      // 2026-10-30: chênh giữa chỉ số mạnh / yếu thu hẹp (trước: mạnh 75, yếu 55; lean ±8, ovr ±4 -> có người lên 8x dù OVR 65):
+      // mạnh nhất 68, yếu nhất ~61, trung bình vẫn 65 -> chỉ số cao nhất của đồng đội mới ~68–73
+      FWD: { pace: 67, shooting: 68, passing: 63, dribble: 66, fight: 63, keeper: 63 },
+      MID: { pace: 65, shooting: 63, passing: 68, dribble: 67, fight: 64, keeper: 63 },
+      DEF: { pace: 64, shooting: 61, passing: 64, dribble: 63, fight: 68, keeper: 70 },
     },
-    you: { pace: 71, shooting: 70, passing: 72, dribble: 71, fight: 70, keeper: 67 },
-    lean: 0.7, leanMax: 8,
-    ovrRef: 66, ovrLean: 0.2, ovrMax: 4,
+    you: { pace: 66, shooting: 65, passing: 67, dribble: 66, fight: 65, keeper: 62 },
+    lean: 0.5, leanMax: 3,
+    ovrRef: 66, ovrLean: 0.2, ovrMax: 2,
     min: 30,                // chỉ số thấp nhất (chấn thương chồng lên nhau)
     picks: 6,
   },
@@ -76,38 +79,34 @@ SFC_CONFIG.run = {
   /* ---------- BADGE (docs/RUN_DESIGN.md, làm lại 2026-10-28): đồ bóng đá thật, buff CẢ ĐỘI trong run, không trùng ----------
    * Luật làn (user 2026-10-28): BADGE không bao giờ tạo hiệu ứng đánh / sút / chuyền (đó là Core) và không cộng chỉ số thuần (đã bỏ):
    * chỉ bẻ cách Core ra, luật trận của đội, và map / tiền / phòng của run. Chơi co-op: thưởng chọn 1 trong 3 = bỏ phiếu.
-   *   Bốc Core: school + power (Core hệ đó mạnh hơn: cộng rating khi tính CoreScale) + bias (ra thường hơn) · draftCards: thêm lá mỗi
-   *     lượt chọn · rerolls: thêm lượt đổi bài mỗi lượt chọn · draftBonus: thêm lượt chọn Core trước giao bóng (chỉ đội bạn)
+   *   Bốc Core: draftCards: thêm lá mỗi lượt chọn · rerolls: thêm lượt đổi bài mỗi lượt chọn · draftBonus: chọn Core sớm hơn n lượt
+   *     (thêm lượt trước giao bóng, bớt lượt cuối; tổng số Core không đổi — chỉ đội bạn). BADGE trường phái thành GEAR (2026-10-30)
    *   Trận: score: tỉ số khởi đầu [bạn, đối thủ] · ultGain: nạp Tuyệt kỹ x · varCheck: { n bàn thua đầu tiên mỗi trận được xem lại,
    *     chance bị huỷ } · addedTime: giây bù giờ khi đang thua lúc hết giờ (1 lần mỗi trận)
    *   Run: winCash: $ thêm mỗi trận thắng · shopOff: giảm giá Shop (phần) · restTwice: Locker Room làm được 2 việc · guard: chặn ngần
-   *     này chấn thương mỗi act · drillEase: mốc Skill game / LEGEND TRIAL giảm (phần)
-   * up: số liệu sau khi nâng cấp ở Locker Room (không có up = không nâng được). icon: ui-* (pixelicons) hoặc trường phái.
+   *     này chấn thương mỗi act · drillEase: mốc Skill game / LEGEND TRIAL giảm (phần) · gearSlots: thêm ô GEAR cho mỗi người
+   * up: số liệu sau khi nâng cấp ở Locker Room (không có up = không nâng được). icon: ui-* (pixelicons) hoặc trường phái. off: không bốc ra.
    * injury: chấn thương (Skill game hỏng / sự kiện, rơi vào 1 người ngẫu nhiên của đội), chỉ chữa ở Locker Room / Shop; stats: trừ
    * chỉ số người đó · part: chỗ quấn băng (render/sprites.js) · hurt: khoảnh khắc ra tay trong trận (src/systems/hurt.js, run.hurt). */
   rarityWeights: {
     match: { common: 50, rare: 38, epic: 12 },
+    gear: { common: 45, rare: 38, epic: 14, legendary: 3 },   // GEAR sau trận thường (run.gear)
     elite: { rare: 55, epic: 35, legendary: 10 },
     boss: { epic: 60, legendary: 40 },
     shop: { common: 40, rare: 38, epic: 17, legendary: 5 },
   },
   offer: 3,                 // thưởng sau trận: chọn 1 trong ngần này
   // hot: mỗi Shop 1 món HOT ngẫu nhiên, giá x hot (0 / bỏ = không có)
-  shop: { size: 5, price: { common: 40, rare: 70, epic: 110, legendary: 160 }, heal: 50, hot: 0.5 },
+  // gear: trong size món có ngần này GEAR (mua xong chọn người đeo)
+  shop: { size: 5, gear: 2, price: { common: 40, rare: 70, epic: 110, legendary: 160 }, heal: 50, hot: 0.5 },
   badges: {
-    // bốc Core: trường phái (Core của hệ đó ra thường hơn + mạnh hơn, mọi người trong đội)
-    gps:      { name: 'GPS Vest',       rarity: 'rare', school: 'runner',    power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'SPEED Cores come more often and hit harder.' },
-    board:    { name: 'Tactics Board',  rarity: 'rare', school: 'playmaker', power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'TIKI-TAKA Cores come more often and hit harder.' },
-    boot:     { name: 'Golden Boot',    rarity: 'rare', school: 'striker',   power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'STRIKER Cores come more often and hit harder.' },
-    scarf:    { name: 'Derby Scarf',    rarity: 'rare', school: 'brawler',   power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'BRAWLER Cores come more often and hit harder.' },
-    studs:    { name: 'Steel Studs',    rarity: 'rare', school: 'launcher',  power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'KICKER Cores come more often and hit harder.' },
-    freestyle:{ name: 'Freestyle Ball', rarity: 'rare', school: 'trickster', power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'ILLUSION Cores come more often and hit harder.' },
-    armband:  { name: "Captain's Armband", rarity: 'rare', school: 'iron',   power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'IRON Cores come more often and hit harder.' },
-    vuvuzela: { name: 'Vuvuzela',       rarity: 'rare', school: 'chaos',     power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'CHAOS Cores come more often and hit harder.' },
     // bốc Core: lượt chọn
     report:   { name: 'Scouting Report', rarity: 'rare', icon: 'book',   draftCards: 1, up: { draftCards: 1, rerolls: 1 }, desc: 'Every Core pick shows one more card.' },
     coin:     { name: "Referee's Coin",  rarity: 'common', icon: 'target', rerolls: 1, up: { rerolls: 2 }, desc: 'One more reroll on every Core pick.' },
-    camp:     { name: 'Pre-Season Camp', rarity: 'epic', icon: 'calendar', draftBonus: 1, desc: 'Every match starts with an extra Core pick.' },
+    // draftBonus: chọn Core sớm hơn 1 lượt (thêm 1 lượt trước giao bóng, bớt lượt cuối) — vẫn tối đa game.match.maxUpgrades Core (user 2026-10-30)
+    camp:     { name: 'Pre-Season Camp', rarity: 'epic', icon: 'calendar', draftBonus: 1, desc: 'Your second Core pick comes before kickoff.' },
+    // GEAR: thêm ô GEAR cho mọi người trong đội (run.gear.slots)
+    kitbag:   { name: 'Kit Bag',        rarity: 'epic', icon: 'kitbag', gearSlots: 1, desc: 'Every player can wear one more GEAR.' },
     // trận
     drink:    { name: 'Energy Drink',   rarity: 'epic', icon: 'boom', ultGain: 1.3, up: { ultGain: 1.5 }, desc: 'The whole team charges Ultimates faster.' },
     crowd:    { name: 'Home Crowd',     rarity: 'legendary', icon: 'people', score: [1, 0], desc: 'Every match starts one goal up.' },
@@ -116,7 +115,8 @@ SFC_CONFIG.run = {
     // run: tiền / phòng / chấn thương / bài tập
     sponsor:  { name: 'Shirt Sponsor',  rarity: 'rare', icon: 'shop', winCash: 12, up: { winCash: 20 }, desc: 'Every win pays extra cash.' },
     ticket:   { name: 'Season Ticket',  rarity: 'common', icon: 'card', shopOff: 0.2, up: { shopOff: 0.35 }, desc: 'Everything in the Shop costs less.' },
-    icebath:  { name: 'Ice Bath',       rarity: 'rare', icon: 'locker', restTwice: true, desc: 'The Locker Room lets you do two things.' },
+    // off: không bốc ra (Locker Room đang ẩn, 2026-10-30)
+    icebath:  { name: 'Ice Bath',       rarity: 'rare', icon: 'locker', restTwice: true, off: true, desc: 'The Locker Room lets you do two things.' },
     shin:     { name: 'Shin Guards',    rarity: 'common', icon: 'gear', guard: 1, up: { guard: 2 }, desc: 'Blocks the first injury of each act.' },
     bibs:     { name: 'Training Bibs',  rarity: 'common', icon: 'cone', drillEase: 0.2, up: { drillEase: 0.35 }, desc: 'Skill games and Legend trials get easier.' },
     // chấn thương
@@ -124,6 +124,34 @@ SFC_CONFIG.run = {
     wrist:    { name: 'Sore Wrist',     injury: true, part: 'wrist', hurt: 'weak',    stats: { fight: -12 },             desc: 'Punches feel like pillows.' },
     hamstring:{ name: 'Tight Hamstring',injury: true, part: 'thigh', hurt: 'stumble', stats: { pace: -8, dribble: -8 },  desc: 'No sprinting, no tricks.' },
     toe:      { name: 'Stubbed Toe',    injury: true, part: 'toe',   hurt: 'shank',   stats: { shooting: -12 },          desc: 'Shots come off the side of the boot.' },
+  },
+  /* ---------- GEAR (user 2026-10-30, mockup tools/mockups/gear.html): đồ cá nhân, 1 cầu thủ đeo (BADGE = đồ của cả đội) ----------
+   * Thắng trận thường (node match) = chọn 1 trong offer GEAR rồi chọn người đeo (BADGE đội: Elite / Boss / Treasure / Skill game / Shop).
+   * Mỗi người slots ô (+ BADGE gearSlots); đủ ô thì đổi 1 món ra. Co-op: bỏ phiếu từng bước như LEGEND.
+   *   stat: cộng amount[độ hiếm] vào 1 chỉ số; độ hiếm bốc theo rarityWeights.gear; nâng cấp ở Locker Room: + up
+   *   school: Core trường phái đó ra thường hơn (bias) + mạnh hơn (power: cộng rating khi tính CoreScale) cho riêng người đeo
+   *     (BADGE đội cũ, chuyển sang 2026-10-30); độ hiếm cố định rarity, up = số liệu sau nâng cấp
+   * icon: pixelicons.js (gear-* hoặc arch-<trường phái>) */
+  gear: {
+    slots: 3,
+    amount: { common: 4, rare: 6, epic: 9, legendary: 12 },
+    up: 3,
+    list: {
+      spikes:   { name: 'Running Spikes', icon: 'gear-spikes', stat: 'pace' },
+      boots:    { name: 'Power Boots',    icon: 'gear-boots',  stat: 'shooting' },
+      band:     { name: 'Play Wristband', icon: 'gear-band',   stat: 'passing' },
+      socks:    { name: 'Grip Socks',     icon: 'gear-socks',  stat: 'dribble' },
+      wraps:    { name: 'Hand Wraps',     icon: 'gear-wraps',  stat: 'fight' },
+      gloves:   { name: 'Keeper Gloves',  icon: 'gear-gloves', stat: 'keeper' },
+      gps:      { name: 'GPS Vest',       icon: 'gear-vest',      rarity: 'rare', school: 'runner',    power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'SPEED Cores come more often and hit harder.' },
+      board:    { name: 'Tactics Board',  icon: 'arch-playmaker', rarity: 'rare', school: 'playmaker', power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'TIKI-TAKA Cores come more often and hit harder.' },
+      boot:     { name: 'Golden Boot',    icon: 'arch-striker',   rarity: 'rare', school: 'striker',   power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'STRIKER Cores come more often and hit harder.' },
+      scarf:    { name: 'Derby Scarf',    icon: 'arch-brawler',   rarity: 'rare', school: 'brawler',   power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'BRAWLER Cores come more often and hit harder.' },
+      studs:    { name: 'Steel Studs',    icon: 'arch-launcher',  rarity: 'rare', school: 'launcher',  power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'KICKER Cores come more often and hit harder.' },
+      freestyle:{ name: 'Freestyle Ball', icon: 'arch-trickster', rarity: 'rare', school: 'trickster', power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'ILLUSION Cores come more often and hit harder.' },
+      armband:  { name: "Captain's Armband", icon: 'arch-iron',   rarity: 'rare', school: 'iron',      power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'IRON Cores come more often and hit harder.' },
+      vuvuzela: { name: 'Vuvuzela',       icon: 'arch-chaos',     rarity: 'rare', school: 'chaos',     power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'CHAOS Cores come more often and hit harder.' },
+    },
   },
   // khoảnh khắc chấn thương trong trận (src/systems/hurt.js), chữ bật lên Effects.pop kind 'status' màu color
   // stumble: chạy nước rút mỗi every giây có chance khựng lại (đi bộ walk giây) · weak: cú đấm chance xịt (lực đẩy x knock, không choáng)

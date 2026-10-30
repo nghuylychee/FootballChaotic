@@ -8,7 +8,7 @@ window.SFC = window.SFC || {};
   function facingVec(p) { return { x: Math.cos(p.facing), y: Math.sin(p.facing) }; }
 
   // mô phỏng trước quỹ đạo bóng (trọng lực, nảy, ma sát, dội tường) — dùng cho điểm đón bóng + điểm rơi
-  function flightState(b) { return { x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, fm: b.frictionMult }; }
+  function flightState(b) { return { x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, fm: b.frictionMult * b.shotFm(), shot: b.shotFm() < 1 }; }
   // 1 bước; trả về true nếu bước này bóng rơi chạm sân
   function flightStep(g, s, dt) {
     const B = G().ball, f = g.field, r = g.ball.r;
@@ -18,7 +18,7 @@ window.SFC = window.SFC || {};
     const landed = wasAir && s.z <= 0;
     if (s.z <= 0) {
       s.z = 0;
-      if (s.vz < -50) { s.vz = -s.vz * B.bounce; s.vx *= 0.78; s.vy *= 0.78; } else s.vz = 0;
+      if (s.vz < -50) { const kb = s.fm < 1 && s.shot ? B.shotBounceKeep : 0.78; s.vz = -s.vz * B.bounce; s.vx *= kb; s.vy *= kb; } else s.vz = 0;
     }
     const damp = Math.exp(-(s.z > B.airDragMinZ ? B.airDrag : B.groundFriction) * s.fm * dt);
     s.vx *= damp; s.vy *= damp;
@@ -56,6 +56,12 @@ window.SFC = window.SFC || {};
         s += (Math.min(oppD, 60) / 60) * 0.4;
         if (m === prev) s += P.switchMargin;
         if (s > bestS) { bestS = s; best = m; }
+      }
+      // TRẢ BÓNG (pass.returnPass): không ai trong vùng hướng mà người vừa chuyền cho mình nằm trong vùng rộng hơn -> trả lại người đó
+      const RP = P.returnPass, r = p.retFrom;
+      if (!best && cone != null && RP && r && r.team === p.team && r.state !== 'stun' && g.time - p.gotT < RP.window) {
+        const tx = r.x - p.x, ty = r.y - p.y, d = Math.hypot(tx, ty) || 1;
+        if (Math.acos(U.clamp((tx * dir.x + ty * dir.y) / d, -1, 1)) <= (RP.cone * Math.PI) / 180) best = r;
       }
       return best;
     },
@@ -188,11 +194,50 @@ window.SFC = window.SFC || {};
     },
 
     // bắt đầu chờ đá: thanh lực từ 0, nạp khi còn giữ D (Player.tickFirstTime)
-    armFirstTime(g, p) {
+    // pass = ground | through | lob -> chờ CHUYỀN 1 chạm (đánh đầu chuyền / vô-lê chuyền) thay vì sút, không có thanh lực
+    armFirstTime(g, p, pass = null) {
       if (!this.canFirstTime(g, p)) return false;
-      p.ot = { charge: 0, held: true, t: 0, miss: 0, aim: null, aimY: 0, target: null };
-      p.charging = true; p.charge = 0;
+      p.ot = { charge: 0, held: !pass, t: 0, miss: 0, aim: null, aimY: 0, target: null, pass };
+      p.charging = !pass; p.charge = 0;
       return true;
+    },
+
+    // bóng đang tới p sẽ tới chỗ đón ở trên tầm khống chế (ball.pickupHeight) -> phải đánh đầu / vô-lê
+    highBall(g, p) {
+      const F = G().firstTime;
+      return this.interceptPoint(g, p, 1.5, F.maxZ).z > G().ball.pickupHeight;
+    },
+
+    // BẬT NHẢY ĐÁNH ĐẦU (firstTime.header): đang chờ đá, bóng sẽ tới ở độ cao đánh đầu trong lead s -> nhảy trước khi chạm
+    // (Player.tickFirstTime gọi mỗi bước). Tư thế đồng bộ online qua atkType / atkT như mọi tư thế khác
+    headerJump(g, p) {
+      const F = G().firstTime, H = F.header;
+      if (!H.hop || p.atkType === 'header' || p.atkType === 'volley' || g.ball.owner) return;
+      const ip = this.interceptPoint(g, p, H.lead + 0.05, F.maxZ + H.jumpZ);
+      if (ip.t > H.lead || ip.z < F.headerZ - 3) return;
+      if (U.dist(p, ip) > p.radius + g.ball.r + F.reach + 8) return;
+      this.startAttack(p, 'header');
+      g.effects.burst(p.x, p.y, 0, '#d8d0c0', 5, 40);   // bụi lúc bật nhảy
+    },
+
+    // tư thế đánh đầu lúc chạm bóng: đang nhảy sẵn thì giữ cú nhảy (chạm sớm: lên tới gần đỉnh), chưa nhảy thì bật lên từ giữa đà
+    headerPose(p) {
+      const P = G().firstTime.header.pose;
+      if (p.atkType === 'header') p.atkT = Math.max(p.atkT, P * 0.42);
+      else { this.startAttack(p, 'header'); p.atkT = P * 0.3; }
+    },
+
+    // CHUYỀN 1 CHẠM bằng đầu / vô-lê (p.ot.pass): người nhận theo mũi tên lúc chạm (người chơi: trong pass.coneAngle, có trả bóng
+    // pass.returnPass; AI: đồng đội hợp nhất theo hướng tấn công), lực lý tưởng. Bóng rời đầu ở độ cao lúc chạm
+    airPass(g, p, mode, aim, ft) {
+      const human = g.isHuman(p.team) && p.isControlled;
+      const dx = aim ? aim.x : 0, dy = aim ? aim.y : 0;
+      const target = this.findPassTarget(g, p, dx, dy, null, mode, null, human && aim ? G().pass.coneAngle : null);
+      this.passTo(g, p, target, mode, dx, dy, null);
+      const b = g.ball;
+      b.z = Math.max(b.z, ft.z);
+      if (ft.kind === 'header') { this.headerPose(p); g.sfx('header'); } else if (ft.kind === 'volley') this.startAttack(p, 'volley');
+      g.effects.burst(b.x, b.y, ft.z, '#ffffff', 4, 50);
     },
 
     disarm(p) {
@@ -211,6 +256,7 @@ window.SFC = window.SFC || {};
       const aim = ft.kind === 'bicycle' ? null : o.aim && Math.hypot(o.aim.x, o.aim.y) > 0.2 ? o.aim : null;
       const charge = o.charge, aimY = o.aimY || 0;
       g.gainPossession(p);   // kiến tạo, chuỗi chuyền, Core khi nhận bóng... như nhận bóng thường (xoá p.ot)
+      if (o.pass) return this.airPass(g, p, o.pass, aim, ft);
       this.shoot(g, p, charge, aimY, aim, ft);
     },
 
@@ -299,10 +345,10 @@ window.SFC = window.SFC || {};
         flightStep(g, s, dt);
         if (s.z > top) continue;
         const need = Math.max(0, Math.hypot(s.x - p.x, s.y - p.y) - reach) / speed + 0.08;
-        if (need <= t) return { x: s.x, y: s.y, t };
-        if (s.z === 0 && Math.hypot(s.vx, s.vy) < 5) return { x: s.x, y: s.y, t: need };
+        if (need <= t) return { x: s.x, y: s.y, t, z: s.z };
+        if (s.z === 0 && Math.hypot(s.vx, s.vy) < 5) return { x: s.x, y: s.y, t: need, z: 0 };
       }
-      return { x: s.x, y: s.y, t: maxT };
+      return { x: s.x, y: s.y, t: maxT, z: s.z };
     },
 
     /** Điểm bóng bổng chạm sân lần đầu (vòng điểm rơi) — { x, y, t } hoặc null nếu không chạm trong maxT */
@@ -333,6 +379,7 @@ window.SFC = window.SFC || {};
       b.lob = mode === 'lob' || mode === 'lobthrough';
       if (mode === 'lobthrough' && p.legend) b.legTech = 'lobthrough';   // LEGEND TRIAL (Pirlow): đồng đội đón được = 1 lần
       b.cross = !!plan.cross;
+      b.oneTouch = !!target && g.time - (p.gotT == null ? -9 : p.gotT) < G().pass.oneTouch.window;
       // đồng đội AI của người chơi đón đường chuyền chuẩn: thỉnh thoảng đi bộ thay vì chạy nước rút (ai.mate)
       if (target) target.ai.recvWalk = Math.random() < G().ai.mate.receiveWalkChance;
       p.charging = false; p.charge = 0;
@@ -346,6 +393,8 @@ window.SFC = window.SFC || {};
         // (chế độ 1 cầu thủ / co-op: quyền điều khiển không chuyển sang người nhận -> không khóa)
         if (prev !== target && g.ctrl[p.team] === target) g.receiveLock[p.team] = true;
       }
+      // người chuyền giờ do AI đá: băng lên nhận lại (ai.runs.giveGo)
+      if (target && SFC.AI && !(g.isHuman(p.team) && p.isControlled)) SFC.AI.giveGo(g, p);
       g.sfx('pass');
     },
 
@@ -360,6 +409,30 @@ window.SFC = window.SFC || {};
     shotPower(g, p, charge) {
       const base = this.shotBasePower(g, p);
       return base + (1 - base) * Math.min(charge, 1);
+    },
+
+    // phần nạp quá đà (0..maxOvercharge − 1 − overGrace): thanh đầy rồi còn kick.overGrace mới bắt đầu tính
+    overcharge(charge) {
+      const K = G().kick;
+      return Math.max(0, charge - 1 - (K.overGrace || 0));
+    },
+
+    // Độ bổng cú sút (vz) theo khoảng cách tới vạch vôi (kick.loftFrom..shotLoft): lực nhỏ = bóng sệt, đầy lực = bóng qua vạch vôi
+    // ở shotLoft x xà dù đứng xa hay gần (xa thì vồng lên rồi chúc xuống), quá đà cộng overLoft x xà -> vọt xà
+    // z0 = độ cao bóng lúc chạm (vô-lê: bóng đi từ ngang hông)
+    shotLift(g, p, ang, spd, c, over, z0 = 0) {
+      const K = G().kick, B = G().ball, f = g.field;
+      const k = Math.pow(U.clamp((c - K.loftFrom) / (1 - K.loftFrom), 0, 1), K.loftPow);
+      if (k <= 0) return K.shotLiftMin;
+      const gx = g.teams[p.team].dir > 0 ? f.x + f.w : f.x, cos = Math.abs(Math.cos(ang));
+      const d = Math.max(20, Math.abs(gx - g.ball.x) / Math.max(0.2, cos));
+      // thời gian bóng bay tới vạch vôi (cản gió x ma sát riêng của cú sút)
+      const ka = B.airDrag * B.shotFriction, r = (ka * d) / Math.max(1, spd);
+      const t = r < 0.95 ? -Math.log(1 - r) / ka : (d / Math.max(1, spd)) * 1.5;
+      const om = K.maxOvercharge - 1 - (K.overGrace || 0), oq = om > 0 ? Math.min(1, over / om) : 0;
+      const h = f.goalHeight * U.lerp(K.shotLoft, K.overLoft, oq * oq) - z0;
+      const arc = Math.min(K.shotLiftCap, (h + (B.gravity * t * t) / 2) / t);
+      return U.lerp(K.shotLiftMin, Math.max(K.shotLiftMin, arc), k);
     },
 
     /**
@@ -394,7 +467,7 @@ window.SFC = window.SFC || {};
       const TQ = G().technique;
       const held = Math.min(charge, 1);   // phần người chơi thực sự giữ (Core Fire/Thunder dựa vào mức này)
       const c = this.shotPower(g, p, charge);
-      const over = Math.max(0, charge - 1);
+      const over = this.overcharge(charge);
 
       let base, awk = 0;
       if (aim) {
@@ -434,7 +507,7 @@ window.SFC = window.SFC || {};
         spd = U.lerp(Math.min(tap, spd), spd, held / K.shotTapWindow);
       }
       spd *= g.cores.pmod(p, 'shotPower');
-      let vz = U.lerp(K.shotLiftMin, K.shotLiftMax, c * c) + over * K.overchargeLift;
+      let vz = this.shotLift(g, p, ang, spd, c, over, ft ? ft.z : 0);
       let curve = 0;
       if (style === 'power') { spd *= LT.power.speed; vz *= LT.power.lift; }
       if (style === 'finesse' || style === 'trivela') {
@@ -447,7 +520,7 @@ window.SFC = window.SFC || {};
         const dist = Math.max(20, Math.abs((gx - b.x) / Math.cos(ang)));
         const ty = b.y + Math.tan(ang) * (gx - b.x);
         const side = (Math.sign(ty - f.cy) || Math.sign(f.cy - b.y) || 1) * (tri ? -1 : 1);
-        const k = G().ball.groundFriction;
+        const k = G().ball.groundFriction * G().ball.shotFriction;   // bóng sút: ma sát riêng (ball.shotFriction)
         const t = k * dist < spd * 0.95 ? -Math.log(1 - (k * dist) / spd) / k : dist / spd;
         const bend = TQ.finesse.bend * (tri ? LT.trivela.bend : 1);
         ang += side * dirX * bend / 2;
@@ -456,7 +529,7 @@ window.SFC = window.SFC || {};
         // SÚT BỔNG: vồng cao, rơi xuống sau vạch vôi (chip.depth) ở độ cao landZ (dưới xà). Bay lâu theo khoảng cách, nạp đầy thì nhanh hơn
         const gx = (tm.dir > 0 ? f.x + f.w : f.x) + tm.dir * TQ.chip.depth, d = Math.max(30, Math.abs((gx - b.x) / Math.cos(ang)));
         const T = U.lerp(TQ.chip.timeMin, TQ.chip.timeMax, U.clamp(d / 260, 0, 1)) * (1 - TQ.chip.quick * held);
-        const ka = G().ball.airDrag;
+        const ka = G().ball.airDrag * G().ball.shotFriction;
         spd = (ka * d) / (1 - Math.exp(-ka * T));
         vz = (TQ.chip.landZ + (G().ball.gravity * T * T) / 2) / T;
       }
@@ -476,7 +549,8 @@ window.SFC = window.SFC || {};
       if (p.mstats && !g.opts.training) p.mstats.shots++;
       p.facing = ang;
       p.charging = false; p.charge = 0; p.shotTarget = 0;
-      this.startAttack(p, ft && ft.kind !== 'ground' ? (ft.kind === 'bicycle' ? 'volley' : ft.kind) : 'shoot'); // tư thế vung chân sút (kick.poseTime) / vô-lê / đánh đầu
+      if (ft && ft.kind === 'header') this.headerPose(p);   // đánh đầu: giữ cú bật nhảy (headerJump)
+      else this.startAttack(p, ft && ft.kind !== 'ground' ? (ft.kind === 'bicycle' ? 'volley' : ft.kind) : 'shoot'); // tư thế vung chân sút (kick.poseTime) / vô-lê
       // GOAT PATH: kỹ thuật LEGEND vừa ra -> diễn riêng (src/systems/legends.js techFx, hình render/legenddraw.js)
       if (SFC.Legends && p.legend) {
         const tk = ft && ft.kind === 'bicycle' ? 'bicycle' : style, L = SFC.Legends.def(p);

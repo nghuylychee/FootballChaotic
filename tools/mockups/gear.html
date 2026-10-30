@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GEAR mockup</title>
+<!-- MOCKUP (chưa gắn vào game): GEAR = đồ cá nhân của 1 cầu thủ trong GOAT PATH. Dùng CSS + icon pixel thật của game,
+     hình nhân vật chụp từ game. Mở qua npm run serve: http://localhost:8080/tools/mockups/gear.html -->
+<link rel="stylesheet" href="../../css/style.css" />
+<style>
+  html, body { height: auto; overflow: auto; }
+  body { padding: 24px 0 60px; background: #050608; }
+  .mk { width: calc(640px * var(--s, 1.6)); max-width: calc(100vw - 24px); margin: 0 auto 40px; }
+  .mk h2 { font-family: var(--px); font-size: 12px; color: var(--gold); letter-spacing: 2px; margin: 0 0 6px; }
+  .mk p.note { font-family: var(--vt); font-size: 20px; line-height: 1.05; color: #c7ccd6; margin: 0 0 10px; }
+  .mk p.note b { color: #fff; font-weight: normal; }
+  .mk-wrap { position: relative; width: calc(640px * var(--s, 1.6)); height: calc(360px * var(--s, 1.6)); outline: 1px solid #2a2e38; }
+  .mk-stage { position: absolute; left: 0; top: 0; width: 640px; height: 360px; transform: scale(var(--s, 1.6)); transform-origin: 0 0; overflow: clip;
+    background: radial-gradient(ellipse at 50% 60%, #22402a, #0d1a11 70%); image-rendering: pixelated; }
+  .mk-stage #menu { display: flex; flex-direction: column; }
+  .head { width: calc(640px * var(--s, 1.6)); max-width: calc(100vw - 24px); margin: 0 auto 30px; font-family: var(--vt); font-size: 21px; color: #c7ccd6; line-height: 1.1; }
+  .head h1 { font-family: var(--px); font-size: 18px; color: #fff; letter-spacing: 3px; margin: 0 0 12px; }
+  .head table { border-collapse: collapse; margin-top: 8px; }
+  .head td, .head th { border: 1px solid #2a2e38; padding: 3px 8px; text-align: left; font-weight: normal; }
+  .head th { color: var(--gold); }
+
+  /* ---------- GEAR: thẻ treo (khác miếng vá tròn của BADGE đội) ---------- */
+  .gr-tag { position: relative; width: 58px; height: 66px; flex: none; display: flex; align-items: center; justify-content: center; margin-top: 8px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 38%, #2a2e38), #1a1c22 80%);
+    clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 14px);
+    box-shadow: inset 0 0 0 2px var(--rc); }
+  .gr-tag::before { content: ''; position: absolute; left: 50%; top: 5px; width: 6px; height: 6px; margin-left: -3px; background: #0b0c10; box-shadow: 0 0 0 1px var(--rc); }
+  .gr-hang { position: relative; display: flex; flex-direction: column; align-items: center; }
+  .gr-hang::before { content: ''; position: absolute; top: -2px; left: 50%; width: 1px; height: 14px; background: #c7ccd6; transform: rotate(18deg); transform-origin: top; z-index: 1; }
+  .gr-ico { margin-top: 6px; display: flex; }
+  .gr-ico .pxi.x3 { width: 42px; height: 42px; }
+  .gr-chip { display: inline-flex; gap: 3px; font-family: var(--px); font-size: 7px; color: #fff; padding: 2px 4px 1px; background: #0f1116; border: 1px solid var(--c); text-shadow: 1px 1px 0 var(--ink); }
+  .gr-chip i { font-style: normal; color: var(--c); }
+  .gr-card { position: relative; width: 164px; height: 156px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 8px 8px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 14%, #232733), #171a21 70%); border: 1px solid var(--edge); border-top: 2px solid var(--rc); box-shadow: 2px 2px 0 var(--ink); }
+  .gr-card.sel { border-color: var(--gold); border-top-color: var(--rc); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); transform: translateY(-2px); }
+  .gr-card > b { font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; text-align: center; line-height: 1.3; text-shadow: 1px 1px 0 var(--ink); }
+  .gr-card > p { margin: 0; font-size: 13px; line-height: 1; color: #c7ccd6; text-align: center; }
+  .gr-row { display: flex; gap: 12px; justify-content: center; }
+
+  /* ô GEAR trên thẻ cầu thủ: 3 ô dạng thẻ treo nhỏ (góc trên vát), viền độ hiếm, vạch màu chỉ số ở đáy */
+  .gr-slots { display: flex; gap: 2px; }
+  .gr-s { position: relative; width: 16px; height: 18px; display: flex; align-items: center; justify-content: center; background: #1a1c22;
+    clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 0 100%, 0 4px); box-shadow: inset 0 0 0 1px var(--rc); }
+  .gr-s::after { content: ''; position: absolute; left: 2px; right: 2px; bottom: 1px; height: 2px; background: var(--c, transparent); }
+  .gr-s .pxi { width: 12px; height: 12px; }
+  .gr-s.empty { --rc: #3a404d; background: #14161c; }
+  .gr-s.new { animation: pulse 0.6s steps(2) infinite; }
+  .gr-s.out { opacity: 0.35; }
+  .gr-swap { font-family: var(--px); font-size: 5px; color: #ff9a3d; }
+
+  /* màn ai đeo: GEAR đang chọn ở trên (như thẻ LEGEND hero) */
+  .gr-hero { display: flex; align-items: center; gap: 10px; padding: 4px 10px; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--edge); }
+  .gr-hero .gr-tag { width: 40px; height: 46px; margin: 0; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%, 0 10px); }
+  .gr-hero .gr-ico .pxi.x2 { width: 28px; height: 28px; }
+  .gr-hero b { font-family: var(--px); font-size: 8px; font-weight: normal; color: #fff; }
+
+  /* dải đội hình trên thanh map: 3 chấm GEAR dưới mỗi mặt */
+  .rs-m { flex-direction: column; align-items: center; gap: 0; }
+  .rs-row { display: flex; align-items: center; gap: 1px; }
+  .rs-g { display: flex; gap: 1px; margin-top: 1px; }
+  .rs-g i { width: 4px; height: 3px; background: #2a2e38; }
+  .rs-g i.on { background: var(--rc); }
+  .mk-strip .rm-strip { height: 32px; }
+
+  /* tooltip mô phỏng (game dùng title, ở đây vẽ ra để xem nội dung) */
+  .mk-tip { position: absolute; z-index: 9; font-family: var(--vt); font-size: 14px; line-height: 1; color: #fff; background: #0b0c10; border: 1px solid #525a6b; padding: 3px 5px; white-space: nowrap; }
+  .mk-tip i { font-style: normal; color: var(--c); }
+  .mk-arrow { position: absolute; z-index: 9; font-family: var(--px); font-size: 6px; color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>GEAR · MOCKUP</h1>
+  <b style="color:#fff">Tên gọi đề xuất: GEAR</b> (đồ cá nhân, 1 cầu thủ đeo) — đặt cạnh <b style="color:#fff">BADGE</b> (đồ của cả đội).
+  Ngoài đời là giày, găng, tất, băng tay... đúng luật “đồ bóng đá thật” của BADGE. Phương án khác: KIT · PERK · TRAIT.<br>
+  Hình khác BADGE: BADGE = miếng vá thêu tròn, GEAR = <b style="color:#fff">thẻ treo góc vát</b> có lỗ xỏ dây.
+  <table>
+    <tr><th>GEAR chỉ số (mới)</th><th>chỉ số</th><th>GEAR trường phái (chuyển từ BADGE đội)</th></tr>
+    <tr><td>Running Spikes</td><td>PAC</td><td>GPS Vest · SPEED</td></tr>
+    <tr><td>Power Boots</td><td>SHO</td><td>Tactics Board · TIKI-TAKA</td></tr>
+    <tr><td>Play Wristband</td><td>PAS</td><td>Golden Boot · STRIKER</td></tr>
+    <tr><td>Grip Socks</td><td>DRI</td><td>Derby Scarf · BRAWLER</td></tr>
+    <tr><td>Hand Wraps</td><td>FIG</td><td>Steel Studs · KICKER</td></tr>
+    <tr><td>Keeper Gloves</td><td>GK</td><td>Freestyle Ball · ILLUSION / Captain's Armband · IRON / Vuvuzela · CHAOS</td></tr>
+  </table>
+  <p style="margin:8px 0 0">Chỉ số theo độ hiếm: THƯỜNG +4 · HIẾM +6 · SỬ THI +9 · HUYỀN THOẠI +12 (1 chỉ số). GEAR trường phái: Core hệ đó ra thường hơn + mạnh hơn
+  <b style="color:#fff">chỉ cho người đeo</b>. Mỗi cầu thủ 3 ô GEAR; đầy thì đổi 1 món ra. Nâng cấp được ở Locker Room như BADGE.</p>
+</div>
+
+<div class="mk">
+  <h2>1 · SAU TRẬN (match node): PICK GEAR</h2>
+  <p class="note">Thắng trận thường = chọn 1 trong 3 <b>GEAR</b> (thay cho BADGE đội). BADGE đội để dành cho Elite / Boss / Treasure / Skill game VÀNG / Shop.
+  Thẻ: thẻ treo + tên + chip chỉ số (GEAR trường phái: chip trường phái + 1 dòng mô tả). Độ hiếm = màu viền, không ghi chữ.</p>
+  <div class="mk-wrap"><div class="mk-stage" id="s1"></div></div>
+</div>
+
+<div class="mk">
+  <h2>2 · AI ĐEO? (chọn người nhận)</h2>
+  <p class="note">Bố cục như màn nhận LEGEND: GEAR đang chọn ở trên, 3 thẻ cầu thủ bên dưới. Thẻ đang trỏ: chỉ số được cộng nhấp nháy vàng ▲, OVR mới,
+  ô GEAR trống kế tiếp nhấp nháy. Người đã đủ 3 món (PuddleKing): thẻ ghi <b>⇄</b>, bấm vào thì chọn món bỏ ra. BACK = quay lại chọn GEAR.
+  Co-op: bỏ phiếu như LEGEND.</p>
+  <div class="mk-wrap"><div class="mk-stage" id="s2"></div></div>
+</div>
+
+<div class="mk">
+  <h2>3 · SQUAD (thanh map › dải đội hình)</h2>
+  <p class="note">Chân mỗi thẻ: ô LEGEND + <b>3 ô GEAR</b> (vạch màu dưới mỗi ô = chỉ số nó cộng). Chỉ số được GEAR cộng hiện xanh như hiện nay.
+  Rê chuột lên ô GEAR: tên + hiệu lực. Hàng TEAM BADGES bên dưới không còn BADGE trường phái.</p>
+  <div class="mk-wrap"><div class="mk-stage" id="s3"></div></div>
+</div>
+
+<div class="mk">
+  <h2>4 · THANH MAP: dải đội hình</h2>
+  <p class="note">Dưới OVR mỗi người thêm 3 vạch nhỏ = 3 ô GEAR (màu độ hiếm khi có đồ, tối khi trống). Không chữ.</p>
+  <div class="mk-wrap"><div class="mk-stage" id="s4"></div></div>
+</div>
+
+<div class="head">
+  <b style="color:#fff">Chưa mockup (sẽ làm theo cùng kiểu khi gắn vào game):</b><br>
+  · KIT VAN: GEAR treo trên 1 thanh treo riêng cạnh móc BADGE, mua xong thì sang màn “AI ĐEO?”.<br>
+  · Locker Room: nâng cấp GEAR (+ như BADGE). · BUILD YOUR SQUAD: chưa có GEAR nên không hiện ô.<br>
+  · Trong trận: không hiện gì (GEAR chỉ là chỉ số / tỉ lệ ra Core).
+</div>
+
+<script>window.SFC = {};</script>
+<script src="../../src/render/pixelicons.js"></script>
+<script>
+(function () {
+  const PX = SFC.PixelIcon;
+  // icon GEAR 12x12 (bảng màu PAL của pixelicons.js)
+  Object.assign(PX.ART, {
+    'gear-spikes': ['............', '............', '.......cc...', '......cwcc..', '.....cccccc.', '..ccccwccccc', '.ccccccccccc', 'cccccccccccc', 'CCCCCCCCCCCC', '.l..l..l..l.', '.l..l..l..l.', '............'],
+    'gear-boots':  ['............', '..oooo......', '..oooo......', '..oooo......', '..ooooo.....', '..oowoooo...', '..ooooowooo.', '..oooooooooo', '..OOOOOOOOOO', '...k..k..k..', '............', '............'],
+    'gear-vest':   ['..cc....cc..', '..cc....cc..', '.cccc..cccc.', '.ccccwwcccc.', '.ccccwwcccc.', '.cccccccccc.', '.cccccccccc.', '.cccccccccc.', '.CCCCCCCCCC.', '.cccccccccc.', '.CCCCCCCCCC.', '............'],
+    'gear-band':   ['............', '............', '...yyyyyy...', '..yYYYYYYy..', '.yYwwwwwwYy.', '.yY......Yy.', '.yY......Yy.', '.yYwwwwwwYy.', '..yYYYYYYy..', '...yyyyyy...', '............', '............'],
+    'gear-socks':  ['...vvvvv....', '...wwwww....', '...vvvvv....', '...wwwww....', '...vvvvv....', '...vvvvv....', '...vvvvvv...', '...vvvvvvvv.', '...vvvvvvvvv', '...VwVwVwVwV', '............', '............'],
+    'gear-wraps':  { ref: 'ui-fist', map: { s: 'w', S: 'l', n: 'r', N: 'R' } },
+    'gear-gloves': ['.b.b.b......', '.b.b.b.b....', '.bbbbbbb....', '.bbbbbbb.b..', '.bwwwwbbbb..', '.bbbbbbbbb..', '.bbbbbbbb...', '..bbbbbb....', '..BBBBBB....', '..cccccc....', '............', '............'],
+  });
+  const RAR = { common: '#b0c3d9', rare: '#4b69ff', epic: '#8847ff', legendary: '#eb4b4b' };
+  const AMT = { common: 4, rare: 6, epic: 9, legendary: 12 };
+  const ATTR = [['pace', 'PAC', '#3ff6ff'], ['shooting', 'SHO', '#ff7a3d'], ['passing', 'PAS', '#ffd23f'], ['dribble', 'DRI', '#9d7bff'], ['fight', 'FIG', '#ff3d5a'], ['keeper', 'GK', '#6fa8dc']];
+  const COL = Object.fromEntries(ATTR.map((a) => [a[0], a[2]]));
+  const SHORT = Object.fromEntries(ATTR.map((a) => [a[0], a[1]]));
+  const SCHOOL = { runner: ['SPEED', '#3ff6ff'], playmaker: ['TIKI-TAKA', '#ffd23f'], iron: ['IRON', '#c7ccd6'] };
+  const GEAR = {
+    spikes: { name: 'Running Spikes', icon: 'gear-spikes', stat: 'pace' },
+    boots: { name: 'Power Boots', icon: 'gear-boots', stat: 'shooting' },
+    band: { name: 'Play Wristband', icon: 'gear-band', stat: 'passing' },
+    socks: { name: 'Grip Socks', icon: 'gear-socks', stat: 'dribble' },
+    wraps: { name: 'Hand Wraps', icon: 'gear-wraps', stat: 'fight' },
+    gloves: { name: 'Keeper Gloves', icon: 'gear-gloves', stat: 'keeper' },
+    gps: { name: 'GPS Vest', icon: 'gear-vest', school: 'runner', desc: 'SPEED Cores come more often and hit harder for this player.' },
+  };
+  // hình chụp từ game (40x44, phóng bằng CSS như thật)
+  const FACE = {
+    you: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAsCAYAAAAXb/p7AAABz0lEQVR4AeyUu0pDQRCGR4XYWIqIlhaSTp9BFPQV7HwIH0KwtfUpJIVY5QG8IAhBSyFEERWrYIz7CQNLOJfsjIGgK+dnZ2f+3fmcc8isTPlfBvS+oDzBPEHvBLzn8zeYJ+idgPd8/gbzBL0T8J7P3+DUTXBxYWnohYrP/8orBkrVaIhozBo3s8QuQAAQUCogNGaljshbZAbUpkBUNda6+qu8RTUz4FO7Kejxoil1woeKAOpyJkCmsbp1J6niXB3QaN0EOHrJJPf/BXByM/ybE3z+6M30+yKDr8HYws+51Fm7Jjj4nJNO67hW+FLB1G8G1GmsbR/qXYWr1tVfaKpImgH1zvbKugChIq8xK3srHGfNgPGPLpAqoDRmpUnsZZ8iM+DD+VFhH4WKi2Xe2FMWmwH1wrOXnlRJfdbVDMirpOnJ/FCqhEe9xKkyA6Z8+Cne0X/ADKgXvb+9SpXUZ11dgDqZ2/sbQQpBjNirh9giF2BZw+tOV1BZPSXvBdykGTCIGO3v7QgiDvrxhNX0eABpvEFXYBBxeKUHsUIOz25YTY8HcJmOMQwxuQJ1C3JjpTyArdDhKqjuwXNZZyqrewC5k8anIVBYYBB7RA1PsNiebwAAAP//e5GTIQAAAAZJREFUAwAfth1Db3LSMwAAAABJRU5ErkJggg==',
+    rookie: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAsCAYAAAAXb/p7AAABx0lEQVR4AeyUPUsDQRCGJ9ZaKRL8A7Za2wum18ZO/4E/QdTSv2Bv60dqC2s/EEERbY9gaR/3EYYssre5m7ki6B73snM77+48mV0yJzP+FEDvAZUOlg56O+BdX+5g6aC3A9715Q6WDno74F1f7uDMdXBpfnnshYrXd3LEQKlW+2PRmDEuZoldgAAgoFRAaMxIHjFvkRlQiwKRK6x59ee8qZwZkM20OHFOTX2pPUyAdKNtUfysS0Hk5kyAuQ27zv0XwK77Ntnvb3bw82vUe6l6crQ/aCz8rJv0plnk6uD28VBWFhemCp8YHzOgdmPj4DxbWvPqz5oTSTOg7vXxfiNAqJjXmJFvKxxrzYDxny6QKqA0ZqRI7OW7jcyAt6c7yToKFSfrvLGnLjYD6oZXlxeSk/qsoxmQo6To4cm15IRHvcRtZQZsc/HbeH//ADOgbjSqniUn9VlHF6B25untUZBCECO+1UNskQuwruDDayWoLt9m3gu4TjFgEDHaHWwKIg768YTR9HoAKbxGVWAQcTjSvVhhDs9WGE2vB7BPxRiGmLmEqsRcoykP4DBUuA+a9uK5m2aqy3sA2ZPCZyFQWGAQ34gcnmCxvd8AAAD//35N4VwAAAAGSURBVAMANrjsNHsQK+4AAAAASUVORK5CYII=',
+    puddle: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAsCAYAAAAXb/p7AAAB6UlEQVR4AeyVPUsDQRCGV2tLEbFQf4KC2GkZ0MpfYCGWYiWClhYKKcVesLCyix9gJzYigqkEG0ULCcHSPu5jGNnIXe525oogK/e6s7vv7DzOrcmwG/CfBGh9QamDqYPWDljz0x1MHbR2wJqf7mDqoLUD1vx0Bweug6MjYx0rVJhfySsGStQ4XXcSM4bFNLEJsL673EHbm3NOdHvX/I1ZYx9p4MiJBqQrovrhgysryWGkcFlFA3Lw0UHNaUV+jFSAGzvXTqsYOLzRgJ9f7SES3+5PXKzIk3ziMooGLHNolZ6KAKtE6j3rfwJyj6bmV937R7u08JPX25/imamDCytbbnJirFD4ilGyHWpA6QadyT66uyr74u+ulv+tBpQSry83DggR6xIzMtfCkasGDL+ygBQBJTEjRUIv8xipAfmQziokUOFenjf05MVqQDnw4rzh+kl82lENyKuk6N7+pesnPOIljpUaMObix3j//gFqQDmo3Xpy/SQ+7WgClM7wT4AEghgxFw+xRibAvIK1s0WH8vZj1q2AsxQDBhGj5/q0Q8RePx4/qh4LIIVnqAoMIvavdC2UX8Oz5EfVYwEcp2IIQ8xahloZa6WWLIBXvkLTq+jB81hkytu3AHImhY99ILDAIOaIPTzeonu+AQAA///HvMIrAAAABklEQVQDACGzV0Nz2zjFAAAAAElFTkSuQmCC',
+    leg: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAsCAYAAAAXb/p7AAAB8klEQVR4AeyUu0pDQRCGV2sFCxULUbG10cbGwk7QWhsFCx/FwtcQbC29thYi2HhBLEQiomAIFkLsdb/AkCU5lz0zpwjJkfOzs7P/7nzOLhl2Pf5XAVovqOpg1UFrB6z7qzdYddDaAev+6g32XAfHRyb/rFDh/tKuGDBUu95yjCgspI1LAQQGMAQIIyLP3KJSAC0AeXsHB3B07NN1Kq87MeumDvLGEO+t+TPt0MTCTWskJs86ioFJ8qgBpSgQ4cFpc/GH3phYDcjhnTDkkhTrS9qrAqQbRYviZ18SRFZOBZh1YNlrgwJYdt/a5/VnB79/G0PzK8fu46sZLfzsa/cmLjJ1cHXz0s3NbOcKXxxOt0sNKN2YXd7tPjXIyLr4g6WoUA0op7/VrhwQIvISMzLXwrFXDRj+6AIpAkpiRoqEXuZFpAZ8vz1KrCNQ4WKaN/SkxWpAOfDs9MRlSXzaUQ3IVVJ0/+DcZQmPeImLSg1Y5OEX8Xb+A2pAOahRf3ZZEp92NAFKZ55eHx0SCGLEXDzEGpkA0wo+vNQdSlsvkrcCLlEMGESMdjbWHCL2ann8qPosgBRepCowiNhf6V4on8Oz7kfVZwGcomIIQ0wuQfWEXFTKAnjhK9x75X147vJMaesWQM6k8KEPBBYYxByxhsdbdN8/AAAA//8Bp6VMAAAABklEQVQDAECREkNGhoFtAAAAAElFTkSuQmCC',
+  };
+  const canvas = (k) => `<canvas width="40" height="44" data-img="${k}"></canvas>`;
+  const ico = (key, cls) => PX.html(key, '', cls);
+
+  // đội hình (chỉ số nền run 65 chụp từ game)
+  const SQUAD = [
+    { name: 'PLAYER', role: 'FWD', face: 'you', base: { pace: 66, shooting: 65, passing: 67, dribble: 66, fight: 65, keeper: 62 } },
+    { name: 'ROOKIE', role: 'DEF', face: 'rookie', sch: ['playmaker'], base: { pace: 66, shooting: 62, passing: 76, dribble: 72, fight: 62, keeper: 58 } },
+    { name: 'PuddleKing', role: 'MID', face: 'puddle', sch: ['playmaker', 'iron'], base: { pace: 64, shooting: 60, passing: 81, dribble: 68, fight: 58, keeper: 58 } },
+  ];
+  const withGear = (base, gear) => {
+    const out = Object.assign({}, base);
+    for (const g of gear) { const d = GEAR[g.id]; if (d.stat) out[d.stat] += AMT[g.r]; }
+    return out;
+  };
+  const ovr = (r) => Math.round(Object.values(r).reduce((a, b) => a + b, 0) / 6);
+
+  // giống RunUI.statCols / pcard
+  function statCols(fin, ref, next) {
+    const cell = ([s, sh, c]) => {
+      const v = next ? next[s] : fin[s], r = next ? fin[s] : ref[s];
+      const cls = v > r ? (next ? 'pre' : 'up') : v < r ? 'dn' : '';
+      const arrow = next && v !== r ? `<sup>${v > r ? '▲' : '▼'}</sup>` : '';
+      return `<div class="sq-st ${cls}" style="--c:${c}"><i>${sh}</i><b>${v}${arrow}</b><u><s style="width:${(v / 99 * 100).toFixed(1)}%"></s></u></div>`;
+    };
+    return [ATTR.slice(0, 3), ATTR.slice(3)].map((col) => `<div class="sq-col">${col.map(cell).join('')}</div>`);
+  }
+  function slots(gear, ghost, swap) {
+    const s = [];
+    for (let i = 0; i < 3; i++) {
+      const g = gear[i];
+      if (g) {
+        const d = GEAR[g.id], c = d.stat ? COL[d.stat] : SCHOOL[d.school][1];
+        s.push(`<span class="gr-s ${swap ? 'out' : ''}" style="--rc:${RAR[g.r]};--c:${c}">${ico(d.icon, '')}</span>`);
+      } else if (ghost && !s.some((x) => x.includes('new'))) {
+        const d = GEAR[ghost.id];
+        s.push(`<span class="gr-s new" style="--rc:${RAR[ghost.r]};--c:${COL[d.stat]}">${ico(d.icon, '')}</span>`);
+      } else s.push('<span class="gr-s empty"></span>');
+    }
+    return `<span class="gr-slots">${s.join('')}</span>${swap ? '<span class="gr-swap">⇄</span>' : ''}`;
+  }
+  const legSlot = `<span class="sq-leg none">${canvas(FACE.leg)}</span>`;
+  function pcard(m, gear, o = {}) {
+    const fin = withGear(m.base, gear), next = o.ghost ? withGear(m.base, gear.concat(o.swapOut ? [] : [o.ghost])) : null;
+    if (next && o.swapOut) { const d = GEAR[o.swapOut.id]; next[d.stat] -= AMT[o.swapOut.r]; next[GEAR[o.ghost.id].stat] += AMT[o.ghost.r]; }
+    const [l, r] = statCols(fin, m.base, next);
+    const o1 = ovr(fin), o2 = next ? ovr(next) : o1;
+    const sch = (m.sch || []).map((t) => `<i style="--c:${({ playmaker: '#ffd23f', iron: '#c7ccd6' })[t]}">${ico('arch-' + t, '')}</i>`).join('');
+    return `<${o.btn ? 'button' : 'div'} class="sq-card ${m.face === 'you' ? 'you' : ''} ${o.sel ? 'sel' : ''}">
+        <div class="sq-head"><span class="sq-ovr ${o2 > o1 ? 'pre' : ''}">${o2}</span><em>${m.role}</em></div>
+        ${sch ? `<span class="sq-sch">${sch}</span>` : ''}
+        <div class="sq-body">${l}<div class="sq-art">${canvas(FACE[m.face])}</div>${r}</div>
+        <div class="sq-name"><b>${m.name}</b>${m.face === 'you' ? '<em>YOU</em>' : ''}</div>
+        <div class="sq-badges">${legSlot}${slots(gear, o.ghost && !o.full ? o.ghost : null, o.full)}</div>
+      </${o.btn ? 'button' : 'div'}>`;
+  }
+  function gearCard(id, r, sel) {
+    const d = GEAR[id];
+    const chip = d.stat ? `<span class="gr-chip" style="--c:${COL[d.stat]}"><i>${SHORT[d.stat]}</i>+${AMT[r]}</span>`
+      : `<span class="gr-chip" style="--c:${SCHOOL[d.school][1]}"><i>${SCHOOL[d.school][0]}</i>▲</span>`;
+    return `<button class="gr-card ${sel ? 'sel' : ''}" style="--rc:${RAR[r]}">
+        <span class="gr-hang"><span class="gr-tag"><i class="gr-ico">${ico(d.icon, 'x3')}</i></span></span>
+        <b>${d.name}</b>${chip}${d.desc ? `<p>${d.desc}</p>` : ''}</button>`;
+  }
+  const teamBar = (n) => `<div class="sq-team"><em>TEAM BADGES</em>
+      <span class="sq-b" style="--rc:#eb4b4b">${ico('ui-people', '')}</span><span class="sq-b" style="--rc:#4b69ff">${ico('ui-book', '')}</span>
+      ${'<span class="sq-b empty"></span>'.repeat(n)}</div>`;
+  const screen = (inner) => `<div id="menu" class="screen tut"><div class="rm-page">${inner}</div></div>`;
+
+  // trạng thái GEAR của đội trước / sau khi nhận Power Boots
+  const before = [[{ id: 'spikes', r: 'common' }], [{ id: 'gloves', r: 'epic' }, { id: 'gps', r: 'rare' }], [{ id: 'socks', r: 'rare' }, { id: 'band', r: 'common' }, { id: 'wraps', r: 'common' }]];
+  const NEW = { id: 'boots', r: 'rare' };
+  const after = [before[0].concat([NEW]), before[1], before[2]];
+
+  // 1 · PICK GEAR
+  document.getElementById('s1').innerHTML = screen(`<div class="rm-actcard rm-sheet pick"><b>PICK GEAR</b><span>One player wears it</span>
+      <div class="gr-row">${gearCard('boots', 'rare', true)}${gearCard('gloves', 'common')}${gearCard('gps', 'epic')}</div>
+      <div class="rm-sheet-foot"><button class="pt-btn">SKIP</button></div></div>`);
+
+  // 2 · AI ĐEO?
+  const d = GEAR[NEW.id];
+  document.getElementById('s2').innerHTML = screen(`<div class="rm-actcard rm-sheet squad">
+      <div class="gr-hero" style="--rc:${RAR.rare}"><span class="gr-tag"><i class="gr-ico">${ico(d.icon, 'x2')}</i></span><b>${d.name}</b>
+        <span class="gr-chip" style="--c:${COL.shooting}"><i>SHO</i>+6</span></div>
+      <div class="sg-who">Who wears it?</div>
+      <div class="sq-row3">${pcard(SQUAD[0], before[0], { ghost: NEW, sel: true, btn: true })}${pcard(SQUAD[1], before[1], { ghost: NEW, btn: true })}${pcard(SQUAD[2], before[2], { ghost: NEW, full: true, swapOut: before[2][2], btn: true })}</div>
+      <div class="rm-sheet-foot"><button class="pt-btn">BACK</button></div></div>`);
+
+  // 3 · SQUAD
+  document.getElementById('s3').innerHTML = screen(`<div class="rm-actcard rm-sheet squad"><b>SQUAD</b>
+      <div class="sq-row3">${SQUAD.map((m, i) => pcard(m, after[i])).join('')}</div>${teamBar(8)}
+      <div class="rm-sheet-foot"><button class="pt-btn go sel">CLOSE</button></div></div>
+      <div class="mk-tip" id="tip3"><i style="--c:#ff7a3d">Power Boots</i> · SHO +6</div>`);
+
+  // 4 · thanh map
+  const strip = SQUAD.map((m, i) => {
+    const pips = [0, 1, 2].map((k) => after[i][k] ? `<i class="on" style="--rc:${RAR[after[i][k].r]}"></i>` : '<i></i>').join('');
+    return `<span class="rs-m"><span class="rs-row">${canvas(FACE[m.face])}<b>${ovr(withGear(m.base, after[i]))}</b></span><span class="rs-g">${pips}</span></span>`;
+  }).join('');
+  document.getElementById('s4').innerHTML = screen(`<div class="rm-bar mk-strip"><button class="pt-btn rm-strip" disabled>${strip}</button>
+      <div class="rm-acts"><span class="rm-cash">${ico('ui-shop', 'sm')}<b>999</b></span></div></div>
+      <div class="mk-arrow" style="left:30px;top:44px">▲ 3 ô GEAR / người</div>`);
+
+  // vẽ hình chụp vào canvas (giữ đúng thẻ canvas để CSS của game áp vào)
+  const fit = () => document.documentElement.style.setProperty('--s', Math.min(1.6, (window.innerWidth - 24) / 640).toFixed(3));
+  fit(); window.addEventListener('resize', fit);
+  // tooltip đặt ngay dưới ô Power Boots của PLAYER (toạ độ trong khung 640x360)
+  const placeTip = () => {
+    const st = document.getElementById('s3'), slot = st.querySelector('.sq-card .gr-s:nth-child(2)'), tip = document.getElementById('tip3');
+    const k = st.getBoundingClientRect().width / 640, a = tip.offsetParent.getBoundingClientRect(), r = slot.getBoundingClientRect();
+    tip.style.left = ((r.left - a.left) / k - 4) + 'px'; tip.style.top = ((r.bottom - a.top) / k + 3) + 'px';
+  };
+  placeTip(); window.addEventListener('resize', placeTip);
+  document.querySelectorAll('canvas[data-img]').forEach((cv) => {
+    const im = new Image();
+    im.onload = () => { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(im, 0, 0); };
+    im.src = cv.dataset.img;
+  });
+})();
+</script>
+</body>
+</html>

@@ -19,7 +19,7 @@ window.SFC = window.SFC || {};
         x, y, z: 0, vx: 0, vy: 0, vz: 0,
         owner: null, lastTouch: null, lastKickTeam: -1,
         passTarget: null, passPoint: null, sloppy: false, lob: false, kind: null, roll: 0, trailT: 0, skin: null,
-        netSide: 0, shieldChecked: false, woodT: 0, read: null, freezeT: 0, missT: 0, cross: false, kickN: 0,
+        netSide: 0, shieldChecked: false, woodT: 0, read: null, freezeT: 0, missT: 0, cross: false, kickN: 0, endBounce: false,
       });
       this.noPickup.clear();
       this.trail.length = 0;
@@ -37,6 +37,9 @@ window.SFC = window.SFC || {};
 
     get speed() { return Math.hypot(this.vx, this.vy); }
 
+    // cú sút giữ tốc độ (ball.shotFriction) tới khi dội vạch cuối sân / có người chạm (setOwner, deflect xoá kind)
+    shotFm() { return this.kind === 'shot' && !this.endBounce ? SFC_CONFIG.game.ball.shotFriction || 1 : 1; }
+
     setOwner(p) {
       this.owner = p;
       this.lastTouch = p;
@@ -51,6 +54,8 @@ window.SFC = window.SFC || {};
       this.skin = null;
       this.read = null;
       this.cross = false;
+      this.endBounce = false;
+      this.oneTouch = false;
       this.clearFx();
     }
 
@@ -71,6 +76,8 @@ window.SFC = window.SFC || {};
       this.freezeT = 0;
       this.cross = false;     // tạt cánh (game.firstTime.cross) — passTo bật lại sau khi đá
       this.legTech = null;    // kỹ thuật LEGEND của cú đá này (power / trivela / finesse / bicycle / lobthrough) — LEGEND TRIAL đếm (drills.js)
+      this.oneTouch = false;  // đường chuyền 1 chạm (pass.oneTouch) — passTo bật lại sau khi đá
+      this.endBounce = false; // đã dội vạch cuối sân (bounceSide) -> hết ma sát riêng của cú sút (ball.shotFriction)
       this.kickN++;           // số lần đá: AI quyết định dứt điểm 1 chạm 1 lần cho mỗi quả bóng · AI thủ môn đọc mỗi cú sút 1 lần (ai.keeper)
       this.clearFx();
     }
@@ -113,11 +120,12 @@ window.SFC = window.SFC || {};
         if (this.vz < -50) {
           this.g.sfx('bounce', Math.min(1, -this.vz / 300));   // rơi càng mạnh tiếng càng to
           this.vz = -this.vz * C.bounce;
-          this.vx *= 0.78; this.vy *= 0.78;
+          const kb = this.shotFm() < 1 ? C.shotBounceKeep : 0.78;   // bóng sút nảy đất ít mất tốc độ hơn
+          this.vx *= kb; this.vy *= kb;
         } else this.vz = 0;
       }
 
-      const k = (this.z > C.airDragMinZ ? C.airDrag : C.groundFriction) * this.frictionMult;
+      const k = (this.z > C.airDragMinZ ? C.airDrag : C.groundFriction) * this.frictionMult * this.shotFm();
       this.vx = U.damp(this.vx, k, dt);
       this.vy = U.damp(this.vy, k, dt);
       if (this.z === 0 && this.speed < 4) { this.vx = this.vy = 0; }
@@ -157,6 +165,7 @@ window.SFC = window.SFC || {};
       const C = SFC_CONFIG.game.ball;
       this.x = lineX - side * this.r;
       this.vx = -side * Math.abs(this.vx) * C.wallBounce;
+      this.endBounce = true;
       this.onWall();
     }
 

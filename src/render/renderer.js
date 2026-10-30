@@ -197,6 +197,8 @@ window.SFC = window.SFC || {};
           if (p.inj && SFC.RunDraw && !swap) SFC.RunDraw.hurt(ctx, g, p, hy);   // GOAT PATH: dấu chấn thương cạnh đầu
           if (p.charging) this.chargeBar(ctx, p, hy, g);
           if (p.passMode) this.passBar(ctx, p, hy);
+          // đồng đội AI đang chạy chỗ (ai.runs): mũi tên đôi chỉ hướng chạy trên đầu -> người chơi kịp chuyền / chọc khe
+          if (p.ai && p.ai.runT > 0 && p.ai.runTo && !g.preview && g.isHuman(p.team) && !p.isControlled) this.runCue(ctx, p, hy, t);
           if (pv && pv.target === p) {
             const ay = hy - 13 + Math.round(Math.sin(t * 10));
             px(ctx, p.x - 3, ay, 7, 1, pvCol); px(ctx, p.x - 2, ay + 1, 5, 1, pvCol); px(ctx, p.x - 1, ay + 2, 3, 1, pvCol);
@@ -527,7 +529,7 @@ window.SFC = window.SFC || {};
       const K = SFC_CONFIG.game.kick;
       const w = 18, x = Math.round(p.x - w / 2), y = hy - 22;   // trên mũi tên điều khiển, không bị che
       const base = SFC.Actions.shotBasePower(g, p);
-      const c = SFC.Actions.shotPower(g, p, p.charge), over = Math.max(0, p.charge - 1) / (K.maxOvercharge - 1);
+      const c = SFC.Actions.shotPower(g, p, p.charge), over = SFC.Actions.overcharge(p.charge) / (K.maxOvercharge - 1 - (K.overGrace || 0));
       const col = over > 0 ? '#ff3d3d' : c > 0.85 ? '#ffb13d' : '#ffe14f';
       // Đọc Cú Sút: đối phương đang thủ thế đọc cú sút này -> viền xanh (tín hiệu cần nhìn)
       if (g.ball.owner === p && g.teams[1 - p.team].players.some((q) => q.bracing)) px(ctx, x - 2, y - 2, w + 4, 7, '#3ff6ff');
@@ -550,6 +552,18 @@ window.SFC = window.SFC || {};
         px(ctx, mx, y - 2, 1, 7, mc);
         px(ctx, mx - 1, y - 4, 3, 1, mc); px(ctx, mx, y - 3, 1, 1, mc);
         if (left < 0.2) px(ctx, mx - 2, y - 5, 5, 1, mc);
+      }
+    },
+
+    runCue(ctx, p, hy, t) {
+      const { px, OUT } = SP();
+      const s = p.ai.runTo.x >= p.x ? 1 : -1, y = Math.round(hy - 10 + Math.sin(t * 12));
+      const col = Math.floor(t * 8) % 2 ? '#ffffff' : '#ffe14f';
+      const pts = [[0, 0], [1, 1], [2, 2], [1, 3], [0, 4]];
+      for (const k of [0, 4]) {
+        const bx = Math.round(p.x) + s * (k - 4);
+        for (const [dx, dy] of pts) px(ctx, bx + s * dx, y + dy + 1, 1, 1, OUT);
+        for (const [dx, dy] of pts) px(ctx, bx + s * dx, y + dy, 1, 1, col);
       }
     },
 

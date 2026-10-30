@@ -72,6 +72,14 @@ SFC_CONFIG.legends = {
     sweeper: { window: 2.5, spin: 0.5, boost: 30, boostT: 1.8 },
     toepoke: { maxCharge: 0.16, power: 0.78 },
   },
+  // AI DÙNG KỸ THUẬT LEGEND (user 2026-10-30: đồng đội AI đeo LEGEND phải biết dùng): chỉ cầu thủ AI (không ai điều khiển) có LEGEND dạy
+  // đúng kỹ thuật đó (src/systems/ai.js). Tỉ lệ = mỗi lần AI ra quyết định trong tình huống hợp (~5 lần / giây):
+  //   shot: cú sút ra bằng POWER SHOT / FINESSE / TRIVELA · rainbow: đối thủ chắn phía trước gần hơn near px · bruiser: đang chạy nhanh, đối thủ
+  //   trong tầm giật chỏ (đối thủ đang ra đòn sát bên: luôn giật để phản, mỗi bước) · lobthrough: chọc khe (đường chuyền bị chắn: luôn bổng)
+  //   · slide: người áp sát, người cầm bóng cách [min, max] px (hỏi lại mỗi every s) · engine: người áp sát, thể lực trên stamina (hết thì
+  //   đấm như thường) · bicycle: bóng bổng tới mình trong tầm firstTime.ai.range x range · sweeper: thủ môn AI bắt được cú sút
+  ai: { shot: 0.7, rainbow: { chance: 0.5, near: 48 }, bruiser: 0.5, lobthrough: 0.6, slide: { chance: 0.5, min: 18, max: 46, every: 0.3 },
+    engine: { stamina: 35 }, bicycle: { chance: 0.85, range: 1.3 }, sweeper: 0.8 },
           // Core thuộc trường phái (school) của LEGEND ra thường hơn ở lượt chọn của người đeo (nhân trọng số bốc)
 
   list: {

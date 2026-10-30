@@ -94,6 +94,8 @@ Code: `config/elites.config.js` (đội → `teams.list`, luật → `stories.mo
 
 ## Các loại node
 
+> **2026-10-30 (user):** LOCKER ROOM **ẩn** (thừa, rối): `run.map.weights.rest = 0`, tầng sát boss đổi thành Shop (`map.last`), BADGE Ice Bath không bốc ra (`off`). Code phòng vẫn giữ (bật lại = đặt trọng số). Không còn chỗ nâng cấp BADGE / GEAR; chấn thương chữa ở Shop / sự kiện.
+
 | Node | Nội dung | Thắng / xong | Thua / hỏng |
 |---|---|---|---|
 | **Matchday** | 1 trận 3v3 bình thường với đội trên node, có luật trận của họ | Tiền + **chọn 1 trong 3 BADGE** | Hết run |
@@ -125,7 +127,7 @@ Chấn thương = **BADGE xấu** nằm chung túi (viền đỏ), ví dụ tr�
 
 ### Cơ chế: dùng lại 6 chỉ số + CoreScale có sẵn
 - Run dùng 6 chỉ số PACE · SHOOTING · PASSING · DRIBBLE · FIGHT · KEEPER (`progression.attrs`). Hệ này đang ẩn ngoài trận thường (`attrs.hidden`, mọi người = `fixed` 80); **riêng run thì hiện**.
-- ~~Character bắt đầu run ở 80~~ → từ 2026-10-26 nền lệch theo vị trí (`run.squad.base`), trung bình **~70** (2026-10-27, trước là ~62: user thấy đá không ổn). BADGE cộng thêm, tối đa **99**.
+- ~~Character bắt đầu run ở 80~~ → từ 2026-10-26 nền lệch theo vị trí (`run.squad.base`), trung bình **~65** (2026-10-30; 2026-10-27 là ~70, trước nữa ~62: user thấy đá không ổn). Cùng ngày: chênh giữa chỉ số mạnh / yếu thu hẹp (nền vị trí mạnh 68–70, yếu ~61; `lean` 0.5 ±3, `ovrMax` ±2) — đồng đội mới không còn chỉ số 8x, cao nhất ~71–74. BADGE cộng thêm, tối đa **99**.
 - `src/systems/corescale.js` đã nhân sức mạnh / hồi chiêu Core theo chỉ số của trường phái (80 → x1, 99 → power x1.5, hồi chiêu x0.7). Nên **+PACE tự làm Core SPEED mạnh hơn**, +FIGHT tự làm Core BRAWLER / KICKER mạnh hơn. Cùng 1 con số vừa buff chỉ số vừa buff Core, không cần hệ thứ hai.
 - ~~BADGE chỉ áp cho character của người chơi~~ → từ 2026-10-26 **BADGE gắn cho 1 trong 3 người của đội hình** (xem "Vòng chỉnh sửa 2026-10-26"). Core vẫn áp cho cả đội, nhưng CoreScale tính theo chỉ số từng người, nên phần Core mạnh thêm chỉ có ở character của bạn. Co-op sau này: mỗi người 1 túi BADGE riêng.
 - Không giới hạn ô: BADGE cộng dồn (như relic Slay the Spire). Trần 99 tự chặn cộng quá tay.
@@ -223,7 +225,7 @@ Chốt với user: **bỏ phiếu, chốt bằng bốc ngẫu nhiên theo số p
 
 | Feedback | Quyết định (user chốt) |
 |---|---|
-| Chỉ số ban đầu cao quá (80 = ngang đối thủ), BADGE chỉ số không có ý nghĩa | Nền run **~70, lệch theo vị trí** (2026-10-27, trước ~62) (`run.squad.base`: FWD sút / tốc độ, MID chuyền / rê, DEF đấm / bắt bóng). Số BADGE tăng (thường +8, hiếm +13 hoặc 2 chỉ số +7/+6, sử thi +4 tất cả / 2 chỉ số +10/+9). Chấn thương −12 (đùi −8/−8) |
+| Chỉ số ban đầu cao quá (80 = ngang đối thủ), BADGE chỉ số không có ý nghĩa | Nền run **~65, lệch theo vị trí** (2026-10-30; 2026-10-27 là ~70, trước ~62) (`run.squad.base`: FWD sút / tốc độ, MID chuyền / rê, DEF đấm / bắt bóng). Số BADGE tăng (thường +8, hiếm +13 hoặc 2 chỉ số +7/+6, sử thi +4 tất cả / 2 chỉ số +10/+9). Chấn thương −12 (đùi −8/−8) |
 | Cần thấy rõ đội hình + BADGE + chỉ số | **BADGE gắn cho cả đội** (thay luật cũ "chỉ character"): mỗi BADGE nhận được (thưởng trận, Shop, sự kiện, Skill game) → thẻ **WHO GETS IT?** chọn 1 trong 3 người (xem trước chỉ số sau khi đeo). BADGE trường phái / nạp Tuyệt kỹ / Home Crowd gắn cho 1 người nhưng vẫn tác dụng cả đội. **Vị trí của bạn + đồng đội chọn lúc START RUN** (màn BUILD YOUR SQUAD: 3 ô vị trí FWD / MID / DEF, character đứng sẵn ô FWD, bấm ô khác để nhảy sang (đồng đội AI ở ô đó đổi chỗ), ứng viên lấp ô trống kế tiếp (danh sách luôn hiện, mờ khi đủ ô; ✕ trên ô AI = bỏ ra để chọn lại; START RUN giữa dưới khi đủ ô) — chỉ số nền theo vị trí; bỏ bước chọn vị trí riêng (user 2026-10-26): roster + cầu thủ đường phố ngẫu nhiên, mỗi người 1 sở trường), giữ cả run; chỉ số đồng đội = nền vị trí + nghiêng theo chỉ số riêng (`lean`) + chút theo OVR (`ovrLean`) + BADGE của họ (thôi chép chỉ số đối thủ). **Màn SQUAD**: 3 thẻ cầu thủ, thanh chỉ số chia phần nền / BADGE (xanh) / chấn thương (đỏ sọc), BADGE đang đeo. **Dải đội hình** luôn hiện trên thanh map (mặt + OVR + dấu ✚) = nút mở SQUAD |
 | Skill game chán, cần thấy tiến độ | Mỗi bài đếm 1 thứ, **3 mốc ĐỒNG / BẠC / VÀNG** (`run.drills[].tiers`), thanh tiến độ giữa trên HUD thay tỉ số. Thưởng theo mốc (`run.tierReward`): dưới ĐỒNG = chấn thương · ĐỒNG $ · BẠC $ + 1 BADGE · VÀNG $ + chọn 1 trong 3. 6 bài: FINISHING (bàn thắng) · TARGET PRACTICE (bàn vào bia sáng trôi trong khung) · SLALOM GATES (dẫn bóng qua cổng lần lượt, 2 người đấm) · PASS CHAIN (cả đội hình, chuỗi chuyền dài nhất, đồng đội AI trả bóng) · STREET BRAWL (hạ gục 1 vs 3) · HOT POTATO (giữ bóng, người đuổi vào thêm theo giây, mất bóng là hết) |
 | Chấn thương chưa thấy trong trận | Chấn thương rơi vào **1 người ngẫu nhiên** của đội. Trong trận: **băng trắng đúng chỗ** (cổ chân / cổ tay / đùi / ngón chân, `badges[].part`, `sprites.js`) + **dấu ✚ đỏ** nhấp nháy cạnh đầu (`render/rundraw.js`) + **khoảnh khắc ra tay** (`src/systems/hurt.js`, `run.hurt`): cổ chân / đùi → chạy nước rút thỉnh thoảng khựng lại (OUCH!) · cổ tay → cú đấm thỉnh thoảng xịt (POOF, không choáng) · ngón chân → cú sút thỉnh thoảng trượt chân lệch hướng (SHANK!) |
@@ -249,10 +251,11 @@ Vấn đề (user 2026-10-28): BADGE +chỉ số không đổi được gì th�
 
 | Làn | BADGE | Hiệu lực (móc) |
 |---|---|---|
-| Bốc Core | GPS Vest · Tactics Board · Golden Boot · Derby Scarf · Steel Studs · Freestyle Ball · Captain's Armband · Vuvuzela (8 trường phái) | Core hệ đó ra thường hơn + mạnh hơn cho **cả đội** (`opts.draftBias` / `coreBoost`, bỏ điều kiện `p.avatar` / chủ ghế) |
+| ~~Bốc Core~~ | ~~GPS Vest · Tactics Board · Golden Boot · Derby Scarf · Steel Studs · Freestyle Ball · Captain's Armband · Vuvuzela~~ | **Chuyển thành GEAR (2026-10-30)**: Core hệ đó ra thường hơn + mạnh hơn cho **riêng người đeo** — xem "GEAR" bên dưới |
+| GEAR | Kit Bag (2026-10-30) | Mọi người trong đội thêm 1 ô GEAR (`gearSlots`) |
 | Bốc Core | Scouting Report | +1 lá mỗi lượt chọn (`opts.draftCards`, màn chọn 4 lá `.cards.n4`); nâng cấp thêm 1 lượt đổi bài |
 | Bốc Core | Referee's Coin | +lượt đổi bài mỗi lượt chọn (`opts.rerollBonus`) |
-| Bốc Core | Pre-Season Camp | +1 lượt chọn trước giao bóng, chỉ đội bạn (`opts.draftBonus`; `startDraft(true, team)` không tính vào `upgradeIdx`, đối thủ không bốc thêm; màn chọn ghi BONUS PICK, thêm 1 ô Core) |
+| Bốc Core | Pre-Season Camp | **Chọn Core sớm hơn 1 lượt** (user 2026-10-30): lượt thứ 2 dời lên trước giao bóng, đội đó bỏ lượt cuối — **tổng vẫn `match.maxUpgrades` Core** (`opts.draftBonus`; `startDraft(true, team)` không tính vào `upgradeIdx`, `startDraft()` bỏ đội đã chọn sớm ở `maxUpgrades − draftBonus` lượt cuối; đối thủ không bốc thêm) |
 | Trận | Energy Drink | Cả đội nạp Tuyệt kỹ nhanh hơn (`opts.ultGain`) |
 | Trận | Home Crowd | Mỗi trận bắt đầu 1–0 (`opts.score`) |
 | Trận | VAR Monitor | Bàn thua đầu tiên mỗi trận được xem lại, trúng `chance` thì huỷ (NO GOAL! · VAR check), giao bóng cho bạn (`opts.varCheck`, `checkGoal`) |
@@ -264,6 +267,18 @@ Vấn đề (user 2026-10-28): BADGE +chỉ số không đổi được gì th�
 | Run | Training Bibs | Mốc Skill game / LEGEND TRIAL giảm (`drillEase` -> `opts.drillEase`) |
 
 Season Ticket kiểu "giữ 1 Core sang trận sau" đã được bàn rồi **bỏ** (đụng chốt #3: Core reset mỗi trận).
+
+### GEAR: đồ cá nhân, 1 cầu thủ đeo (user duyệt mockup + ĐÃ LÀM 2026-10-30)
+
+Mockup đã duyệt: `tools/mockups/gear.html`. BADGE = đồ của cả đội (miếng vá thêu tròn), **GEAR = đồ của 1 người** (thẻ treo góc vát có lỗ xỏ dây). Config `run.gear`, logic `src/meta/run.js` (phần GEAR), UI `src/ui/runmap.js` (`gearCard`, `gearSlots`), icon `gear-*` trong `pixelicons.js`.
+
+- **Khi nào nhận:** thắng **trận thường** (node match) = chọn 1 trong 3 GEAR → **Who wears it?** (3 thẻ cầu thủ xem trước chỉ số ▲ / OVR mới, ô trống kế tiếp nhấp nháy) → người đã đủ ô: **Swap out which one?** (chọn món bỏ ra). BACK lùi 1 bước. Elite / Boss / Treasure / Skill game / sự kiện vẫn cho **BADGE đội**. KIT VAN: `shop.gear` món GEAR treo cạnh BADGE, mua xong chọn người đeo (không bỏ qua được).
+- **GEAR chỉ số** (6 món, 1 chỉ số mỗi món): Running Spikes PAC · Power Boots SHO · Play Wristband PAS · Grip Socks DRI · Hand Wraps FIG · Keeper Gloves GK. Độ hiếm bốc theo `rarityWeights.gear`: THƯỜNG +4 · HIẾM +6 · SỬ THI +9 · HUYỀN THOẠI +12 (`gear.amount`); nâng cấp ở Locker Room + `gear.up`. Chỉ số tính trong `Run.ratingsOf`.
+- **GEAR trường phái** (8 món, BADGE đội cũ chuyển sang): Core hệ đó ra thường hơn (`bias`) + mạnh hơn (`power`) **chỉ cho người đeo** — `Run.gearCore(i)` → `gearBoost` / `gearBias` trên spec avatar / đồng đội / ghế co-op → `p.gearBoost` / `p.gearBias` (`CoreSystem.rating` / `weight`). Không ra món trường phái mà đội đã có người đeo.
+- **Ô:** mỗi người `gear.slots` = 3 ô (+ BADGE Kit Bag). Đủ ô thì đổi 1 món ra.
+- **Hiển thị:** chân thẻ cầu thủ (SQUAD, thẻ LEGEND, màn chọn người đeo): ô LEGEND + ô GEAR (viền độ hiếm, vạch đáy = màu chỉ số / trường phái, tooltip tên + hiệu lực) · dải đội hình trên thanh map: 1 vạch dưới OVR mỗi ô GEAR.
+- **Co-op:** bỏ phiếu từng bước như LEGEND (`vote` kind `pick` → `wear` → `swap`, `back` = lùi). Bản sao khách mang `squad[i].gear` + `offer.gear / sel / who`.
+- **Run lưu từ trước:** BADGE trường phái trong túi đội tự thành GEAR của character (còn ô thì đeo).
 
 ### LEGEND (`config/legends.config.js`, `src/systems/legends.js`, `src/render/legenddraw.js`)
 
@@ -290,7 +305,7 @@ Season Ticket kiểu "giữ 1 Core sang trận sau" đã được bàn rồi **b
 | Manuel Neuermann | THE SWEEPER | DEF · IRON | giành bóng từ đối thủ | sút kém | SWEEPER SPIN: đọc + bắt 3 cú sút / 40s · 1 vs 2 người sút |
 | Roberto Carloss | THE CANNON | DEF · SPEED | gồng sút ở sân nhà | bỏ vị trí (thủ môn kém) | TRIVELA: 2 bàn / 45s · vs thủ môn + 1 hậu vệ |
 
-- **KỸ THUẬT ĐẶC TRƯNG** (user 2026-10-29, hướng A — tăng trần kỹ năng): mỗi LEGEND dạy người đeo 1 kỹ thuật nâng cao (`legends.techniques`, `tech` từng LEGEND). **Trong run, kỹ thuật nâng cao chỉ có qua LEGEND** (`gateInRun`; 4 kỹ thuật cũ cũng chuyển vào lớp này), ngoài run 4 kỹ thuật cũ vẫn mở cho mọi người như trước. AI không dùng kỹ thuật. Thẻ LEGEND / trial / ô LEGEND trên HUD hiện tên + tổ hợp phím (`Input.keysText`, theo phím người chơi đã đổi).
+- **KỸ THUẬT ĐẶC TRƯNG** (user 2026-10-29, hướng A — tăng trần kỹ năng): mỗi LEGEND dạy người đeo 1 kỹ thuật nâng cao (`legends.techniques`, `tech` từng LEGEND). **Trong run, kỹ thuật nâng cao chỉ có qua LEGEND** (`gateInRun`; 4 kỹ thuật cũ cũng chuyển vào lớp này), ngoài run 4 kỹ thuật cũ vẫn mở cho mọi người như trước. AI không dùng 4 kỹ thuật cũ; **cầu thủ AI đeo LEGEND tự dùng kỹ thuật của LEGEND đó** (user 2026-10-30, `legends.ai`: sút POWER / FINESSE / TRIVELA, RAINBOW khi người chắn phía trước, BRUISER giật chỏ (đối thủ ra đòn sát bên: phản ngay), LOFTED THROUGH khi chọc khe / đường chuyền bị chắn, ENGINE PRESS khi áp sát còn thể lực, SLIDE TACKLE từ 18–46px, BICYCLE với bóng bổng trong tầm sút, SWEEPER SPIN khi thủ môn AI bắt được cú sút). Thẻ LEGEND / trial / ô LEGEND trên HUD hiện tên + tổ hợp phím (`Input.keysText`, theo phím người chơi đã đổi).
 
 Bản 3 (feedback user 2026-10-29, lần 2): **tạm tắt KHOẢNH KHẮC LEGEND** (tăng chỉ số theo tình huống + cut-in + bóng mờ: `legends.moment.enabled = false`, cơ chế vẫn giữ, bật lại được) — LEGEND chỉ còn kỹ thuật (combo) + nghiêng chỉ số luôn bật + nhược điểm; **bỏ mọi chữ bật lên trên đầu** do LEGEND (tên kỹ thuật, WIPEOUT!, STOLEN!, RED CARD!, DIVE!...) — tên kỹ thuật chỉ hiện ở ô LEGEND trên HUD; ô LEGEND hiện hồi chiêu của kỹ thuật (slide / bruiser...) thay cho hồi chiêu khoảnh khắc. Phím C đổi tên action thành `trick` (Trivela + Bruiser Run).
 
@@ -350,7 +365,7 @@ Ghi chú: Ibra BICYCLE KICK gần ý với hình móc xe đạp của Tuyệt k�
 
 ## Vòng chỉnh đội hình 2026-10-29 (feedback user)
 
-- **Chỉ số là của cầu thủ, không của ô** (user: xếp vào vị trí nào cũng giữ đúng chỉ số của người đó): nền = `run.squad.base[vị trí sở trường]` của chính người đó (`Run.natural(m)`: vị trí có nền khớp nhất với độ lệch chỉ số riêng rating − OVR; chỉ số đều nhau thì chọn theo tên cho cố định) + lean + ovrLean như cũ. Character: nền toàn diện `run.squad.you` (~70, trung bình 3 nền vị trí). `Run.traits` bỏ.
+- **Chỉ số là của cầu thủ, không của ô** (user: xếp vào vị trí nào cũng giữ đúng chỉ số của người đó): nền = `run.squad.base[vị trí sở trường]` của chính người đó (`Run.natural(m)`: vị trí có nền khớp nhất với độ lệch chỉ số riêng rating − OVR; chỉ số đều nhau thì chọn theo tên cho cố định) + lean + ovrLean như cũ. Character: nền toàn diện `run.squad.you` (~65, trung bình 3 nền vị trí). `Run.traits` bỏ.
 - **Trường phái Core hay ra** của đồng đội (2 trường phái nhiều nhất trong deck, `Run.schoolsOf`): icon ở góc phải trên thẻ cầu thủ (SQUAD, thẻ LEGEND xin vào đội, BUILD YOUR SQUAD, băng ghế). Character / bạn bè co-op: không có.
 - **Thẻ cầu thủ dùng chung** `RunUI.pcard` (SQUAD · LEGEND xin vào đội · BUILD YOUR SQUAD). SQUAD: thẻ nhỏ lại ~10% (166x184).
 - **BUILD YOUR SQUAD làm lại** (bố cục như SQUAD): tiêu đề giữa trên (BACK / INVITE / LEAVE ROOM góc phải) · 3 ô vị trí = thẻ cầu thủ (ô trống: viền nét đứt + bóng đen, ô cần chọn kế tiếp nhấp nháy xanh, ✕ = bỏ đồng đội) · dòng gợi ý / START RUN · **băng ghế** ứng viên (mặt, tên, OVR, vị trí sở trường, 2 chỉ số mạnh nhất, trường phái). **Kéo thả** (HTML5 drag & drop, `RunUI.bindDrag` / `pkDrop`): ứng viên → ô (người đang ở đó về băng ghế; ô của bạn / bạn bè không nhận) · thẻ của bạn → ô khác = đổi chỗ · đồng đội giữa 2 ô = đổi chỗ · đồng đội → băng ghế = bỏ ra. Bấm / phím vẫn như cũ.

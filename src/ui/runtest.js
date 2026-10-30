@@ -57,6 +57,7 @@ if (SFC_DEBUG) (function () {
         { kind: 'btn', label: 'LEGEND JOIN CARD', sub: `${LG()[tl].name} wants to join · pick anyone`, danger: true, act: () => this.card('join', tl) },
         { kind: 'btn', label: 'MAP', sub: 'Floor 0 = legend · shop · locker room · skill · ???', danger: true, act: () => this.card('map') },
         { kind: 'btn', label: 'PICK A BADGE', sub: 'Reward card (pick 1 of 3)', danger: true, act: () => this.card('offer') },
+        { kind: 'btn', label: 'PICK GEAR', sub: 'Match reward: pick 1 of 3 GEAR · then who wears it (the last player starts full: swap)', danger: true, act: () => this.card('gear') },
         { kind: 'btn', label: 'SHOP', sub: 'Cash 999 · prices with Season Ticket', danger: true, act: () => this.card('shop') },
         { kind: 'btn', label: 'LOCKER ROOM', sub: 'With an injury to heal · Ice Bath = 2 actions', danger: true, act: () => this.card('rest') },
         { kind: 'btn', label: 'END TEST RUN', sub: RUN().mirrorOn && this.R ? 'Back to your real run' : 'No test run right now', danger: true, act: () => { this.end(); menu.render(); } },
@@ -116,6 +117,13 @@ if (SFC_DEBUG) (function () {
         const kinds = ['legend', 'shop', 'rest', 'skill', 'event'], free = Object.keys(LG()).filter((x) => !R.squad.some((s) => s.legend === x));
         R.map.floors[0].forEach((n, i) => { n.kind = kinds[i % kinds.length]; if (n.kind === 'legend') n.legend = free[i % free.length]; delete n.team; });
       } else if (kind === 'offer') R.offer = { ids: Run.rollBadges(RC().offer, RC().rarityWeights.boss, R), kind: 'boss' };
+      // GEAR: 1 GEAR sẵn cho character, người cuối đã đủ ô (thử bước đổi món)
+      else if (kind === 'gear') {
+        this.advance(R);
+        R.squad[0].gear = Run.rollGear(1, RC().rarityWeights.gear, R).map((g) => Object.assign(g, { up: false }));
+        R.squad[2].gear = Run.rollGear(Run.slots(R), RC().rarityWeights.gear, R).map((g) => Object.assign(g, { up: false }));
+        R.offer = { gear: Run.rollGear(RC().offer, RC().rarityWeights.gear, R), kind: 'match', sel: null, who: null };
+      }
       // Shop / Locker Room: thêm 1 chấn thương để thử chữa (Shin Guards không chặn)
       else if (kind === 'shop') { this.advance(R); R.guard = { act: R.act, n: 99 }; Run.injure(R); R.room = Run.openShop(R); }
       else if (kind === 'rest') { this.advance(R); R.guard = { act: R.act, n: 99 }; Run.injure(R); R.room = Run.openRest(R); }
@@ -178,7 +186,7 @@ if (SFC_DEBUG) (function () {
         const st = S.t > 0 ? `<span style="color:#6bff4f">ON ${S.t > 999 ? 'END' : S.t.toFixed(1)}</span>` : S.cd > 0 ? `CD ${S.cd.toFixed(1)}` : 'READY';
         return `<div><span style="color:${L.color}">${L.title}</span> ${st} · ${S.n}/${M.max}${S.rand ? ` · ${S.rand.up}+ ${S.rand.dn}-` : ''}</div>`;
       }).join('');
-      const o = g.opts, B = [o.draftCards && 'CARDS+' + o.draftCards[0], o.rerollBonus && 'REROLL+' + o.rerollBonus[0], o.draftBonus && 'BONUS PICK',
+      const o = g.opts, B = [o.draftCards && 'CARDS+' + o.draftCards[0], o.rerollBonus && 'REROLL+' + o.rerollBonus[0], o.draftBonus && 'EARLY PICK',
         o.varCheck && `VAR ${o.varCheck[0].chance * 100}% ${g.varN || 0}/${o.varCheck[0].n}`, o.addedTime && `+${o.addedTime[0]}s ${g.addedDone ? 'USED' : ''}`,
         o.ultGain && 'ULT x' + o.ultGain[0].toFixed(2), o.score && 'START ' + o.score.join('-'), o.drillEase && 'EASE ' + o.drillEase].filter(Boolean);
       const me = g.controlled, ML = me && me.legend && LG()[me.legend], TQ = ML && SFC_CONFIG.legends.techniques[ML.tech];

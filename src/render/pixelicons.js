@@ -33,6 +33,15 @@ window.SFC = window.SFC || {};
     // cọc tập xanh lá: hình của thẻ DRILL (túi đồ, màn mở thẻ drill)
     // bánh răng: nút SETTINGS ở góc phải trang chủ
     'ui-gear': ['.....ll.....', '..l.llll.l..', '.llllllllll.', '..lllEElll..', '.lllE..Elll.', 'llllE..Ellll', 'eeeeE..Eeeee', '.eeeE..Eeee.', '..eeeEEeee..', '.eeeeeeeeee.', '..e.eeee.e..', '.....ee.....'],
+    // GOAT PATH: túi đồ (BADGE Kit Bag) · GEAR đồ cá nhân (config/run.config.js run.gear)
+    'ui-kitbag': ['............', '....llll....', '...l....l...', '.bbbbbbbbbb.', 'bbwbbbbbbwbb', 'bbbbbbbbbbbb', 'bbbBBBBBBbbb', 'bbbbbbbbbbbb', 'bbbbbbbbbbbb', '.BBBBBBBBBB.', '............', '............'],
+    'gear-spikes': ['............', '............', '.......cc...', '......cwcc..', '.....cccccc.', '..ccccwccccc', '.ccccccccccc', 'cccccccccccc', 'CCCCCCCCCCCC', '.l..l..l..l.', '.l..l..l..l.', '............'],
+    'gear-boots':  ['............', '..oooo......', '..oooo......', '..oooo......', '..ooooo.....', '..oowoooo...', '..ooooowooo.', '..oooooooooo', '..OOOOOOOOOO', '...k..k..k..', '............', '............'],
+    'gear-band':   ['............', '............', '...yyyyyy...', '..yYYYYYYy..', '.yYwwwwwwYy.', '.yY......Yy.', '.yY......Yy.', '.yYwwwwwwYy.', '..yYYYYYYy..', '...yyyyyy...', '............', '............'],
+    'gear-socks':  ['...vvvvv....', '...wwwww....', '...vvvvv....', '...wwwww....', '...vvvvv....', '...vvvvv....', '...vvvvvv...', '...vvvvvvvv.', '...vvvvvvvvv', '...VwVwVwVwV', '............', '............'],
+    'gear-wraps':  { ref: 'ui-fist', map: { s: 'w', S: 'l', n: 'r', N: 'R' } },
+    'gear-gloves': ['.b.b.b......', '.b.b.b.b....', '.bbbbbbb....', '.bbbbbbb.b..', '.bwwwwbbbb..', '.bbbbbbbbb..', '.bbbbbbbb...', '..bbbbbb....', '..BBBBBB....', '..cccccc....', '............', '............'],
+    'gear-vest':   ['..cc....cc..', '..cc....cc..', '.cccc..cccc.', '.ccccwwcccc.', '.ccccwwcccc.', '.cccccccccc.', '.cccccccccc.', '.cccccccccc.', '.CCCCCCCCCC.', '.cccccccccc.', '.CCCCCCCCCC.', '............'],
     // FOOTBALL STORY (src/ui/cup.js, src/ui/trophies.js): luật trận · số liệu phòng trưng bày · nhãn kiểu kể (nhật ký · TV · phim)
     'ui-book': ['............', '.vvvvv.vvvvv', '.vwwwwvwwwwv', '.vwkkwvwkkwv', '.vwwwwvwwwwv', '.vwkkwvwkkwv', '.vwwwwvwwwwv', '.vwkkwvwkkwv', '.vwwwwvwwwwv', '.vvvvvvvvvvv', '......V.....', '............'],
     'ui-tv': ['...l....l...', '....l..l....', '.....ll.....', 'eeeeeeeeeeee', 'ebbbbbbbbbEe', 'ebcbbbbbbbEe', 'ebbbbbbbbbEe', 'ebbbbbbbbbEe', 'ebbbbbbbbbre', 'eeeeeeeeeeee', '.E........E.', '............'],
