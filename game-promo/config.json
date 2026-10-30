@@ -1,0 +1,27 @@
+{
+  "kill_switch": false,
+  "dry_run": true,
+  "game": {
+    "steam_app_id": "FILL_ME",
+    "campaign_start": "2026-11-XX",
+    "release_date": "2026-12-XX",
+    "goal_wishlists": 3000
+  },
+  "phases": {
+    "explore_days": [1, 7],
+    "focus_days": [8, 20],
+    "launch_push_days": [21, 30]
+  },
+  "channels": {
+    "youtube": { "enabled": true, "uploads_per_day": 10, "slots_vn": ["08:00", "02:00"] },
+    "x":       { "enabled": true, "posts_per_day": 3, "replies_per_day": 10, "comments_on_others_per_day": 5 },
+    "reddit":  { "enabled": true, "posts_per_week": 3, "comments_per_day": 5, "min_days_between_posts_same_sub": 7 },
+    "email":   { "enabled": true, "new_outreach_per_day": 20, "followups_per_day": 10 }
+  },
+  "approvals": {
+    "first_batch_outreach_emails": true,
+    "steam_key_sends": true,
+    "reddit_posts": false
+  },
+  "report": { "language": "vi", "discord": true }
+}

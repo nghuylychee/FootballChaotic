@@ -28,3 +28,6 @@ brag-output*/**/*.png
 # Electron build
 node_modules/
 dist/
+
+# secrets (Discord webhook for game-promo/scripts/send_report.py); .env.example stays tracked
+.env
