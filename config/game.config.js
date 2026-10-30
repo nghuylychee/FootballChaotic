@@ -28,8 +28,8 @@ SFC_CONFIG.game = {
     enabled: true,
     volume: 0.3,
     // Âm thanh khán giả (src/engine/audio.js + src/render/crowd.js). Độ ồn mỗi sân: arenas.config.js -> crowd.sound (0..1)
-    // User 2026-10-30: TẠM TẮT tiếng sân, "ồồ", vỗ tay (tổng hợp nghe chưa ổn; Story cũng không dùng tiếng khán giả). Chỉ còn hò reo khi
-    // có bàn trong trận. Bật lại: bed = true, ooh / applause > 0 (tiếng tắt thì không render)
+    // User 2026-10-30: TẠM TẮT mọi tiếng khán giả (tiếng sân, hò reo khi ghi bàn, "ồồ", vỗ tay; tổng hợp nghe chưa ổn; Story cũng không dùng).
+    // Bật lại: bed = true, goal / ooh / applause > 0 (tiếng tắt thì không render)
     crowd: {
       enabled: true,
       bed: false,          // TIẾNG SÂN cả trận (đám đông xa ngân dài)
@@ -37,7 +37,7 @@ SFC_CONFIG.game = {
       murmur: 0.4,         // độ dâng hạ chậm của tiếng sân (0 = đều đều)
       finalPush: 1.35,     // FINAL PUSH: ồn hơn
       paused: 0.35,        // tạm dừng / menu trong trận: nhỏ lại
-      goal: 1.1,           // hò reo khi có bàn thắng
+      goal: 0,             // hò reo + vỗ tay khi có bàn thắng (tắt 2026-10-30, user; bật: 1.1)
       ooh: 0,              // "ồồ" khi cứu thua / bóng dội cột (đang tắt; bật: 0.6)
       applause: 0,         // vỗ tay khi hết trận (đang tắt; bật: 1.0)
     },

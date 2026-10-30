@@ -230,7 +230,7 @@ window.SFC = window.SFC || {};
       menu.el.innerHTML = `<div class="rm-page ${inRoom() ? 'coop' : ''}" style="--ac:${A.color}">
           <div class="rm-bar">${strip}<div class="rm-acts">${room}${this.cash(P.cash)}</div></div>
           <div class="rm-map">${this.mapHtml(R, T)}</div>
-          ${msg}${this.overlay(R, T)}
+          ${this.legendBar(R)}${msg}${this.overlay(R, T)}
         </div>`;
       this.bindMap(menu);
       if (R.room && R.room.kind === 'shop') SFC.KitVan.bind(menu.el, (key) => { const i = this.targets().findIndex((t) => t.key === key); if (i >= 0) this.sel = i; });
@@ -312,6 +312,16 @@ window.SFC = window.SFC || {};
       box.insertAdjacentHTML('beforeend', `<svg class="rm-chalk" width="${box.offsetWidth}" height="${box.offsetHeight}">${this.chalkRing(n, id + ':' + Date.now(), 'draw')}${dust}</svg>`);
       SFC.Audio.chalk(dur);
       setTimeout(done, (dur + 0.25) * 1000);
+    },
+    // bảng chú thích dưới map (user 2026-10-30): icon + tên từng loại node có trên map của act này (theo thứ tự run.nodes; boss cuối)
+    legendBar(R) {
+      const has = new Set(R.map.floors.flat().map((n) => n.kind).concat(['boss']));
+      const ICON = { legend: 'star', boss: 'crown' };
+      const items = Object.keys(CFG().nodes).filter((k) => has.has(k)).map((k) => {
+        const N = RUN().node(k);
+        return `<span class="rm-lg" style="--nc:${N.color}"><i>${PX().ui(ICON[k] || N.icon, '')}</i>${esc(N.name)}</span>`;
+      }).join('');
+      return `<div class="rm-legend">${items}</div>`;
     },
     mapHtml(R, T) {
       const M = R.map, F = CFG().map.floors;

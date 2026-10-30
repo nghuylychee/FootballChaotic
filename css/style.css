@@ -2779,6 +2779,11 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
   border: 4px solid #aeb5c2; border-top-color: #d5dae3; border-left-color: #c3c9d4; border-bottom-color: #7d8494; border-right-color: #8e95a4;
   box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.45), 3px 3px 0 var(--ink); }
 .rm-map::-webkit-scrollbar { display: none; }
+/* chú thích loại node dưới map: icon trong ô viền màu node + tên */
+.rm-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; padding: 1px 0 2px; }
+.rm-lg { display: inline-flex; align-items: center; gap: 3px; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: #c7ccd6; }
+.rm-lg i { display: flex; align-items: center; justify-content: center; width: 13px; height: 13px; border: 1px solid var(--nc); background: #1a1c22; border-radius: 50%; }
+.rm-lg .pxi { width: 9px; height: 9px; vertical-align: 0; }
 .rm-inner { position: relative; margin: 0 auto; }
 .rm-lines { position: absolute; left: 0; top: 0; pointer-events: none; }
 .rm-pitch * { fill: none; stroke: rgba(255, 255, 255, 0.28); stroke-width: 2; }
