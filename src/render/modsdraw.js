@@ -1,5 +1,5 @@
 /* ModDraw — hình các vật thể của LUẬT TRẬN FOOTBALL STORY (src/systems/matchmods.js). render/vfx.js drawProp gọi draw() cho các kind ở đây.
- * graffiti (khối tường bê tông phun sơn, chia khúc parts) · vault (Billboard Kid nhảy parkour qua tường) · stool (ghế nhựa) · stoolfly (ghế vỡ văng) · lane (làn giao hàng nhấp nháy) · moped (xe máy giao hàng) · vroom (Moped Boys đang được quá giang)
+ * whey (Block Wardens uống whey rồi hoá khổng lồ) · graffiti (khối tường bê tông phun sơn, chia khúc parts) · vault (Billboard Kid nhảy parkour qua tường) · stool (ghế nhựa) · stoolfly (ghế vỡ văng) · lane (làn giao hàng nhấp nháy) · moped (xe máy giao hàng) · vroom (Moped Boys đang được quá giang)
  * · veil (School Ghosts đang tàng hình: không vẽ gì, render đọc MatchMods.alpha) · spot (đèn pha) · alarm (vòng đếm ngược bị soi)
  * · owl (con cú khổng lồ của Night Owls trên khán đài, mắt đọc từ prop owleyes) · owleyes (lượt mắt mở: không vẽ gì riêng)
  * · gazelock (tia ngắm khoá người chạy) · owlbolt (đạn mắt cú đuổi theo người) · owlbeam (tia laser xuyên người khi đạn tới nơi) · petrify (người bị bắn trúng hoá tượng đá)
@@ -129,6 +129,16 @@ window.SFC = window.SFC || {};
 
   /* ---------- đội Elite GOAT PATH (config/elites.config.js) ---------- */
   const MC = (id) => (SFC_CONFIG.stories.mods && SFC_CONFIG.stories.mods[id]) || {};
+  // bình shaker whey (Block Wardens): thân trắng từ đáy (x, y) dài theo hướng (ux, uy), băng nhãn vàng, nắp màu col ở đầu.
+  // Vẽ bằng ô vuông dọc hướng (nét pixel ở mọi góc nghiêng, không xoay canvas)
+  function shaker(ctx, x, y, ux, uy, col) {
+    const { px, OUT } = SP(), L = 9;
+    for (let pass = 0; pass < 2; pass++) for (let i = 0; i <= L; i++) {
+      const cx = Math.round(x + ux * i), cy = Math.round(y + uy * i);
+      if (pass === 0) px(ctx, cx - 3, cy - 3, 6, 6, OUT);
+      else px(ctx, cx - 2, cy - 2, 4, 4, i >= L - 2 ? col : i >= 3 && i <= 4 ? '#ffd23f' : '#f2f2f2');
+    }
+  }
   // áo đội chủ luật (máy khách gương cũng có g.mod)
   const ownKit = (g) => (g.mod && g.teams[g.mod.team] ? g.teams[g.mod.team].cfg.kit : { shirt: '#ffffff', shirtDark: '#9aa0a8', hair: ['#1a1216'] });
   // người tí hon đứng ngoài mép sân (cô bé quay dây, bà cầm vòi): chân, thân áo màu đội, đầu, búi tóc; tay vươn tới (hx, hy)
@@ -311,7 +321,7 @@ window.SFC = window.SFC || {};
   const byId = (g, id) => g.players.find((q) => q.id === id) || null;
 
   const ModDraw = {
-    kinds: { flock: 1, splatfall: 1, splat: 1, wind: 1, graffitiwarn: 1, graffiti: 1, lantern: 1, flames: 1, burn: 1, lassoswing: 1, lassofly: 1, tied: 1, fakeball: 1, dark: 1, tarot: 1, rabbit: 1, carrot: 1, carrotheld: 1, tophat: 1, zoomies: 1, mama: 1, chopaim: 1, chopstrike: 1, chopcarry: 1, inpot: 1, seawave: 1, surf: 1, devil: 1, flung: 1, legend: 1, lateaim: 1, fused: 1, fusetrail: 1, zapline: 1, card: 1,
+    kinds: { whey: 1, flock: 1, splatfall: 1, splat: 1, wind: 1, graffitiwarn: 1, graffiti: 1, lantern: 1, flames: 1, burn: 1, lassoswing: 1, lassofly: 1, tied: 1, fakeball: 1, dark: 1, tarot: 1, rabbit: 1, carrot: 1, carrotheld: 1, tophat: 1, zoomies: 1, mama: 1, chopaim: 1, chopstrike: 1, chopcarry: 1, inpot: 1, seawave: 1, surf: 1, devil: 1, flung: 1, legend: 1, lateaim: 1, fused: 1, fusetrail: 1, zapline: 1, card: 1,
       stool: 1, stoolheld: 1, stoolthrow: 1, stoolfly: 1, lane: 1, moped: 1, vroom: 1, veil: 1, spot: 1, alarm: 1, owl: 1, owleyes: 1, gazelock: 1, owlbolt: 1, owlbeam: 1, petrify: 1, vault: 1,
       rope: 1, hose: 1, washpuddle: 1, neontile: 1, domino: 1, chizone: 1, chipalm: 1, heat: 1 },   // đội Elite GOAT PATH
     // vật thể dài chia khúc để xếp chiều sâu từng khúc với cầu thủ (render/vfx.js props): tường graffiti = 1 tấm mỗi ~8px,
@@ -833,6 +843,37 @@ window.SFC = window.SFC || {};
             if (!rising) continue;
             px(ctx, xx, fy + (dir > 0 ? 0 : -1), 2, 1, '#bfe4ff');
             if (Math.random() < 0.15) px(ctx, xx, fy - 4 - Math.floor(Math.random() * 8), 1, 1, '#ffffff');   // bụi nước bắn lên
+          }
+          break;
+        }
+        case 'whey': {   // Block Wardens uống whey (a = id): lắc bình trước ngực -> ngửa cổ dốc bình (bọt chạy lên đáy bình) -> quăng bình xoay vòng
+          // + tia sáng toả quanh người đang phồng to (cỡ người: Player.sizeMul, mô phỏng ở matchmods.js K.giants)
+          const q = byId(g, o.a);
+          if (!q) break;
+          const C = MC('giants'), s = q.sizeMul || 1, sd = Math.cos(q.facing) >= 0 ? 1 : -1, head = y - 26 * s;
+          ctx.globalAlpha = 1;
+          if (el < C.shake) {
+            const j = Math.round(Math.sin(t * 60) * 2), hx = x + sd * 8 * s, cy = y - 8 * s + j;
+            shaker(ctx, hx, cy, 0, -1, o.color);
+            px(ctx, hx + sd * 5, cy - 8, 1, 3, '#ffffff'); px(ctx, hx - sd * 5, cy - 5, 1, 3, '#ffffff');   // vệt lắc
+          } else if (el < C.shake + C.drink) {
+            // đáy bình trên cao phía trước, miệng bình kề miệng: ngửa cổ dốc ngược
+            const bx = x + sd * 13 * s, by = y - 33 * s, ux = -sd * 0.5, uy = 0.86;   // nắp bình dừng ngay trước miệng (~y − 25)
+            shaker(ctx, bx, by, ux, uy, o.color);
+            const ph = ((el - C.shake) * 4) % 1;   // bọt khí chạy từ miệng lên đáy (đang ực)
+            px(ctx, Math.round(bx + ux * (7 - ph * 6)), Math.round(by + uy * (7 - ph * 6)), 1, 1, '#a8683a');
+            px(ctx, Math.round(bx + ux * (5 - ph * 4)) + 1, Math.round(by + uy * (5 - ph * 4)), 1, 1, '#a8683a');
+          } else {
+            const k = Math.min(1, (el - C.shake - C.drink) / C.grow), a = t * 22;
+            // bình quăng ra sau lưng, xoay vòng, rơi dần
+            shaker(ctx, x - sd * (6 + k * 26), head - 4 - k * 18 + k * k * 34, Math.cos(a), Math.sin(a), o.color);
+            ctx.globalAlpha = 1 - k * 0.6;
+            for (let i = 0; i < 8; i++) {
+              const ang = (i / 8) * Math.PI * 2, r0 = 12 * s + k * 10, r1 = r0 + 6;
+              const cx = x, cy = y - 12 * s;
+              for (let r = r0; r < r1; r += 1.5) px(ctx, Math.round(cx + Math.cos(ang) * r), Math.round(cy + Math.sin(ang) * r * 0.8), 1, 1, i % 2 ? '#ffd23f' : '#ffffff');
+            }
+            ctx.globalAlpha = 1;
           }
           break;
         }

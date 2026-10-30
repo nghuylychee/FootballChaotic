@@ -25,6 +25,7 @@ window.SFC = window.SFC || {};
       musicBus.gain.value = vol.music;
       musicBus.connect(master);
       loadSamples();
+      bakeCrowd();   // khán giả tổng hợp: render sẵn (không chặn khung hình)
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
@@ -118,58 +119,205 @@ window.SFC = window.SFC || {};
     return true;
   }
 
-  /* ---------- khán giả: tiếng rì rầm nền (vòng lặp) + hò reo / "ồồ" / vỗ tay theo sự kiện ---------- */
+  /* ---------- khán giả (làm lại 2026-10-30, user: tiếng rè rè khó chịu) ----------
+   * Không dùng ồn trắng nữa: GIỌNG NGƯỜI TỔNG HỢP = sóng răng cưa (thanh quản) qua 3 bộ lọc formant theo nguyên âm, mỗi âm tiết đổi nguyên
+   * âm + cao độ; nhiều giọng chồng lên nhau + vang sân (convolver). Render sẵn 1 lần bằng OfflineAudioContext lúc có AudioContext
+   * (chạy ở luồng âm thanh, không giật khung hình): hò reo (bàn thắng) + "ồồ" (cứu thua / dội cột) + vỗ tay (hết trận).
+   * Chưa render xong = im (không phát tiếng rè). User 2026-10-30: bỏ tiếng người nói chuyện (nghe không hợp) -> TIẾNG SÂN cả trận = đám đông
+   * ở xa: nhiều giọng ngân dài mờ đi qua lọc thấp + vang lớn thành 1 tiếng ầm ấm, vỗ tay lác đác xa xa, ù nền; dâng hạ chậm (murmur).
+   * To nhỏ theo độ ồn của sân (crowdLevel). */
   const CC = () => SFC_CONFIG.game.audio.crowd || {};
-  const crowd = { gain: null, lfoGain: null, level: 0 };
+  const crowd = { level: 0, gain: null, lfoGain: null, bed: false };
+  const CB = {};          // buffer đã render: amb (tiếng sân, lặp), roar, ooh, clap
+  let baking = false;
+  const SR = 24000;       // giọng người < 4 kHz: render ở tần số lấy mẫu thấp cho nhẹ (trình duyệt tự đổi khi phát)
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pickOf = (a) => a[Math.floor(Math.random() * a.length)];
+  // formant F1 / F2 / F3 (Hz) của vài nguyên âm
+  const VOWEL = { a: [730, 1090, 2440], e: [530, 1840, 2480], i: [300, 2200, 2900], o: [570, 840, 2410], u: [320, 800, 2240], uh: [640, 1190, 2390], oo: [440, 1020, 2240] };
+  const TALK = ['a', 'e', 'i', 'o', 'u', 'uh', 'oo'];
 
-  // tiếng ồn "nâu" (trầm, êm hơn ồn trắng) — nền cho tiếng đám đông
-  function brownBuffer(sec) {
-    const len = Math.floor(ctx.sampleRate * sec), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
-    let last = 0;
-    for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }
-    return buf;
+  function reverbIR(o, sec, decay) {
+    const len = Math.floor(o.sampleRate * sec), ir = o.createBuffer(1, len, o.sampleRate), d = ir.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    return ir;
   }
-
-  function crowdStart() {
-    if (crowd.gain) return;
-    const g = ctx.createGain(); g.gain.value = 0; g.connect(sfxBus);
-    // 2 lớp: tiếng ù đám đông (dải trầm) + tiếng nói lao xao (dải cao hơn, nhấp nhô nhanh hơn)
-    const layers = [[520, 0.55, 0.19], [1150, 1.4, 0.63]];
-    const lfoGain = ctx.createGain(); lfoGain.gain.value = 0; lfoGain.connect(g.gain);
-    for (const [freq, q, rate] of layers) {
-      const src = ctx.createBufferSource(); src.buffer = brownBuffer(4); src.loop = true;
-      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = q;
-      src.connect(bp); bp.connect(g);
-      src.start(ctx.currentTime + Math.random());
-      const lfo = ctx.createOscillator(); lfo.frequency.value = rate; lfo.connect(lfoGain); lfo.start();
+  // 1 giọng. syl: [{ t, len, v (nguyên âm), f (Hz), a (âm lượng), glide (cao độ cuối / đầu) }] · bright: lọc thấp (xa = tối hơn)
+  function voice(o, dest, syl, bright, vib = 0.012) {
+    const src = o.createOscillator(); src.type = 'sawtooth';
+    const lfo = o.createOscillator(), lg = o.createGain(); lfo.frequency.value = rnd(4.5, 6.5); lfo.connect(lg); lg.connect(src.frequency);
+    const env = o.createGain(); env.gain.value = 0;
+    const lp = o.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = bright;
+    const F = [0, 1, 2].map((k) => {
+      const f = o.createBiquadFilter(), g = o.createGain();
+      f.type = 'bandpass'; f.Q.value = [5, 9, 12][k]; g.gain.value = [1, 0.55, 0.25][k];
+      src.connect(f); f.connect(g); g.connect(env);
+      return f;
+    });
+    env.connect(lp); lp.connect(dest);
+    for (const s of syl) {
+      src.frequency.setTargetAtTime(s.f, s.t, 0.02);
+      if (s.glide) src.frequency.setTargetAtTime(s.f * s.glide, s.t + s.len * 0.3, s.len * 0.4);
+      lg.gain.setValueAtTime(s.f * vib, s.t);
+      const V = VOWEL[s.v], hi = s.f > 180 ? 1.12 : 1;   // giọng cao (nữ / trẻ): formant cao hơn chút
+      F.forEach((f, k) => f.frequency.setTargetAtTime(V[k] * hi * rnd(0.95, 1.05), s.t, 0.025));
+      env.gain.setTargetAtTime(s.a, s.t, 0.012);
+      env.gain.setTargetAtTime(0, s.t + s.len, 0.03);
     }
-    crowd.gain = g; crowd.lfoGain = lfoGain;
+    src.start(0); lfo.start(0);
+  }
+  const pitchOf = () => (Math.random() < 0.6 ? rnd(95, 150) : rnd(175, 260));   // nam / nữ
+  // hét: n người hét nguyên âm dài cùng lúc (bắt đầu lệch nhau trong spread giây), cao độ trượt glide
+  function shout(o, mix, n, { vowels, pitch, len, spread, glide = 1, loud = 0.06, far = [1600, 3000], twice = 0 }) {
+    for (let k = 0; k < n; k++) {
+      const f = pitchOf() * pitch, syl = [];
+      let t = rnd(0, spread);
+      const reps = Math.random() < twice ? 2 : 1;
+      for (let r = 0; r < reps; r++) {
+        const l = rnd(len[0], len[1]);
+        syl.push({ t, len: l, v: pickOf(vowels), f: f * rnd(0.9, 1.15), a: loud * rnd(0.6, 1), glide: glide * rnd(0.97, 1.03) });
+        t += l + rnd(0.05, 0.25);
+      }
+      voice(o, mix, syl, rnd(far[0], far[1]), 0.025);
+    }
+  }
+  // TIẾNG SÂN: đám đông ở xa ngân dài (không phải nói chuyện) — giọng trầm, nguyên âm mở, mỗi tiếng 1.5–4 s, chồng nhau dày
+  function hum(o, mix, n, sec) {
+    for (let k = 0; k < n; k++) {
+      const f = pitchOf() * rnd(0.9, 1.25), a = rnd(0.015, 0.04), syl = [];
+      for (let t = rnd(0, 3); t < sec; ) {
+        const l = rnd(1.5, 4);
+        syl.push({ t, len: l, v: pickOf(['a', 'o', 'uh', 'oo']), f: f * rnd(0.92, 1.1), a: a * rnd(0.6, 1), glide: rnd(0.96, 1.06) });
+        t += l + rnd(0.4, 2.5);
+      }
+      voice(o, mix, syl, rnd(450, 1000), 0.02);
+    }
+  }
+  // ồn "không khí" của đám đông (hơi thở / tiếng ồn lẫn): ồn lọc dải mềm, nhỏ, đi theo âm lượng của mix
+  function air(o, mix, sec, level, freq = 900) {
+    const len = Math.floor(o.sampleRate * sec), buf = o.createBuffer(1, len, o.sampleRate), d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) { last = 0.97 * last + 0.03 * (Math.random() * 2 - 1); d[i] = last * 6; }   // ồn hồng-nâu, không gắt
+    const s = o.createBufferSource(), f = o.createBiquadFilter(), g = o.createGain();
+    s.buffer = buf; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.5; g.gain.value = level;
+    s.connect(f); f.connect(g); g.connect(mix); s.start(0);
+  }
+  // VỖ TAY (làm lại 2026-10-30: bản cũ là chớp ồn 12 ms lọc hẹp + vang dày -> nghe như mưa rào): 1 tiếng vỗ = 3 gai chát rất ngắn liền
+  // nhau (2 bàn tay chạm nhiều điểm) + đuôi ngắn; mỗi người 1 "lòng bàn tay" (lọc dải rộng, cao độ riêng) + nhánh chát (lọc cao), vỗ
+  // rate lần / giây có lệch, nhanh dần lúc đầu rồi thưa dần (tay mỏi). Ít người, rõ từng tiếng thay vì 1 bức tường ồn
+  function claps(o, mix, n, sec, rate) {
+    const bl = Math.floor(o.sampleRate * 0.045), burst = o.createBuffer(1, bl, o.sampleRate), d = burst.getChannelData(0);
+    const spike = (at, amp, tau) => { const s0 = Math.floor(o.sampleRate * at), tn = o.sampleRate * tau; for (let i = s0; i < bl; i++) d[i] += (Math.random() * 2 - 1) * amp * Math.exp(-(i - s0) / tn); };
+    spike(0, 1, 0.0012); spike(0.0025, 0.7, 0.0012); spike(0.006, 0.45, 0.0015); spike(0, 0.22, 0.009);
+    for (let k = 0; k < n; k++) {
+      const body = o.createBiquadFilter(), crack = o.createBiquadFilter(), g = o.createGain(), gc = o.createGain();
+      body.type = 'bandpass'; body.frequency.value = rnd(800, 1900); body.Q.value = rnd(1.2, 2.4);
+      crack.type = 'highpass'; crack.frequency.value = rnd(2200, 3200);
+      g.gain.value = rnd(0.5, 1); gc.gain.value = rnd(0.15, 0.35);
+      body.connect(g); g.connect(mix); crack.connect(gc); gc.connect(mix);
+      const r0 = rnd(rate * 0.85, rate * 1.2);
+      for (let t = rnd(0, 0.25); t < sec; ) {
+        const s = o.createBufferSource(); s.buffer = burst; s.playbackRate.value = rnd(0.92, 1.08);
+        s.connect(body); s.connect(crack); s.start(t);
+        t += (1 / r0) * rnd(0.88, 1.12) * (1 + 0.35 * (t / sec));   // thưa dần về cuối
+      }
+    }
+  }
+  // render: build(o, mix) dựng các giọng vào mix -> lọc bỏ ù / chói -> khô + vang -> AudioBuffer (chuẩn hoá RMS về rms)
+  function bake(sec, build, { verb = 1.6, wet = 0.4, hp = 130, lp = 3400, rms = 0.2 } = {}) {
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const o = new OAC(1, Math.floor(SR * sec), SR);
+    const mix = o.createGain(), h = o.createBiquadFilter(), l = o.createBiquadFilter(), dry = o.createGain();
+    h.type = 'highpass'; h.frequency.value = hp; l.type = 'lowpass'; l.frequency.value = lp;
+    mix.connect(h); h.connect(l); dry.gain.value = 1; l.connect(dry); dry.connect(o.destination);
+    if (wet > 0) {
+      const cv = o.createConvolver(), wg = o.createGain();
+      cv.normalize = true; cv.buffer = reverbIR(o, verb, 3); wg.gain.value = wet;
+      l.connect(cv); cv.connect(wg); wg.connect(o.destination);
+    }
+    build(o, mix);
+    return o.startRendering().then((buf) => {
+      const d = buf.getChannelData(0);
+      let sum = 0, peak = 0;
+      for (let i = 0; i < d.length; i++) { sum += d[i] * d[i]; peak = Math.max(peak, Math.abs(d[i])); }
+      const k = Math.min(rms / Math.max(1e-6, Math.sqrt(sum / d.length)), 0.95 / Math.max(1e-6, peak));
+      for (let i = 0; i < d.length; i++) d[i] *= k;
+      return buf;
+    });
+  }
+  // vòng lặp liền mạch: render dài thêm x giây rồi trộn đuôi vào đầu
+  function loopable(buf, x) {
+    const d = buf.getChannelData(0), n = Math.floor(buf.sampleRate * x), len = d.length - n;
+    const out = ctx.createBuffer(1, len, buf.sampleRate), o = out.getChannelData(0);
+    for (let i = 0; i < len; i++) o[i] = d[i];
+    for (let i = 0; i < n; i++) { const k = i / n; o[i] = d[i] * Math.sqrt(k) + d[len + i] * Math.sqrt(1 - k); }
+    return out;
+  }
+  // âm lượng tổng của 1 sự kiện: tăng tới đỉnh ở at giây, giữ hold giây, tắt dần tới hết sec
+  function swell(o, mix, sec, at, hold) {
+    mix.gain.setValueAtTime(0.0001, 0);
+    mix.gain.linearRampToValueAtTime(1, at);
+    mix.gain.setValueAtTime(1, at + hold);
+    mix.gain.exponentialRampToValueAtTime(0.001, sec);
+  }
+  function bakeCrowd() {
+    if (baking || !(window.OfflineAudioContext || window.webkitOfflineAudioContext)) return;
+    baking = true;
+    // tiếng đang tắt trong config (audio.crowd: bed / goal / ooh / applause) thì không render
+    const C = CC(), jobs = [
+      // tiếng sân: 18 s lặp (+2 s trộn nối) — đám đông xa ngân + vỗ tay lác đác (nhỏ, mờ) + ù nền
+      ['amb', bake(20, (o, mix) => {
+        hum(o, mix, 70, 20);
+        const cg = o.createGain(); cg.gain.value = 0.06; cg.connect(mix);
+        claps(o, cg, 6, 20, 1.6);
+        air(o, mix, 20, 0.03, 350);
+      }, { verb: 3, wet: 0.8, hp: 110, lp: 1500 }), 2],
+      ['roar', bake(4.2, (o, mix) => {
+        swell(o, mix, 4.2, 0.3, 1.3);
+        shout(o, mix, 60, { vowels: ['a', 'e', 'o', 'uh'], pitch: 1.7, len: [0.9, 2.2], spread: 0.25, glide: 1.12, twice: 0.4 });
+        air(o, mix, 4.2, 0.12, 1100);
+        claps(o, mix, 25, 4.2, 4);
+      }, { verb: 2, wet: 0.55 })],
+      ['ooh', bake(1.9, (o, mix) => {
+        swell(o, mix, 1.9, 0.22, 0.35);
+        shout(o, mix, 40, { vowels: ['u', 'oo', 'o'], pitch: 1.05, len: [0.8, 1.2], spread: 0.12, glide: 0.85, loud: 0.07 });
+      }, { verb: 1.8, wet: 0.5 })],
+      ['clap', bake(4, (o, mix) => {
+        swell(o, mix, 4, 0.15, 1.8);
+        claps(o, mix, 18, 4, 5);
+        shout(o, mix, 8, { vowels: ['e', 'a', 'o'], pitch: 1.5, len: [0.4, 0.9], spread: 1.5, glide: 1.05, loud: 0.02, twice: 0.5 });
+      }, { verb: 0.9, wet: 0.18, hp: 400, lp: 6000, rms: 0.12 })],
+    ];
+    const on = { amb: C.bed !== false, roar: (C.goal || 0) > 0, ooh: (C.ooh || 0) > 0, clap: (C.applause || 0) > 0 };
+    for (const [name, job, loopX] of jobs.filter(([n]) => on[n])) job.then((buf) => { CB[name] = loopX ? loopable(buf, loopX) : buf; if (name === 'amb') ambStart(); }).catch(() => {});
   }
 
-  // 1 tiếng đám đông: ồn lọc dải, tần số trượt from -> to, âm lượng lên đỉnh ở `peakAt` giây rồi tắt dần hết `dur` giây
-  function crowdShot({ dur, peak, peakAt, from, to, q = 0.7, hold = 0, clap = false }) {
-    if (!enabled() || peak <= 0) return;
-    const t = ctx.currentTime, len = Math.floor(ctx.sampleRate * dur);
-    const buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
-    if (clap) {
-      // vỗ tay: rất nhiều tiếng "bép" ngắn chồng lên nhau
-      for (let i = 0; i < len; i++) d[i] = 0;
-      const claps = Math.floor(dur * 220);
-      for (let k = 0; k < claps; k++) {
-        const s0 = Math.floor(Math.random() * len), cl = Math.floor(ctx.sampleRate * 0.012);
-        for (let i = 0; i < cl && s0 + i < len; i++) d[s0 + i] += (Math.random() * 2 - 1) * (1 - i / cl) * 0.5;
-      }
-    } else for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    const src = ctx.createBufferSource(); src.buffer = buf;
-    const f = ctx.createBiquadFilter(); f.type = clap ? 'highpass' : 'bandpass'; f.Q.value = q;
-    f.frequency.setValueAtTime(from, t); f.frequency.linearRampToValueAtTime(to, t + peakAt + hold);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(peak, t + peakAt);
-    g.gain.setValueAtTime(peak, t + peakAt + hold);
-    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    src.connect(f); f.connect(g); g.connect(sfxBus);
-    src.start(t);
+  // tiếng sân cả trận: 1 vòng lặp dưới crowd.gain (âm lượng theo độ ồn sân), dâng hạ chậm qua LFO
+  function ambStart() {
+    if (crowd.bed || !CB.amb || !ctx || CC().bed === false) return;
+    if (!crowd.gain) {
+      const g = ctx.createGain(); g.gain.value = 0; g.connect(sfxBus);
+      const lfoGain = ctx.createGain(); lfoGain.gain.value = 0; lfoGain.connect(g.gain);
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 0.09; lfo.connect(lfoGain); lfo.start();
+      crowd.gain = g; crowd.lfoGain = lfoGain;
+    }
+    const s = ctx.createBufferSource(); s.buffer = CB.amb; s.loop = true; s.connect(crowd.gain);
+    s.start(ctx.currentTime, Math.random() * CB.amb.duration);
+    crowd.bed = true;
+    ambLevel();
+  }
+  function ambLevel() {
+    if (!crowd.gain) return;
+    const C = CC(), v = muted ? 0 : crowd.level * (C.volume || 0.35), t = ctx.currentTime;
+    crowd.gain.gain.setTargetAtTime(v, t, 0.4);
+    crowd.lfoGain.gain.setTargetAtTime(v * (C.murmur || 0) * 0.5, t, 0.4);
+  }
+  // phát 1 tiếng khán giả đã render (lệch tốc độ chút cho đỡ lặp)
+  function crowdPlay(name, gain) {
+    if (!enabled() || !CB[name] || gain <= 0) return;
+    const s = ctx.createBufferSource(), g = ctx.createGain();
+    s.buffer = CB[name]; s.playbackRate.value = rnd(0.96, 1.04); g.gain.value = gain;
+    s.connect(g); g.connect(sfxBus); s.start();
   }
 
   /* ---------- nhạc nền (config/music.config.js): bộ lên lịch nốt theo bước móc kép, đọc trước ~0.15s ---------- */
@@ -295,40 +443,28 @@ window.SFC = window.SFC || {};
       const bus = kind === 'music' ? musicBus : sfxBus;
       if (bus) bus.gain.setTargetAtTime(v, ctx.currentTime, 0.02);
     },
-    toggleMute() { muted = !muted; this.crowdLevel(crowd.level, true); return muted; },
+    toggleMute() { muted = !muted; if (ctx) ambLevel(); return muted; },
 
     // độ ồn nền của khán giả (0 = không có khán giả); gọi mỗi khung hình (render/crowd.js)
-    crowdLevel(level, force = false) {
+    // độ ồn tiếng sân (0 = không có khán giả); gọi mỗi khung hình (render/crowd.js). Cũng là độ to của "ồồ"
+    crowdLevel(level) {
       const C = CC();
-      if (!C.enabled || !SFC_CONFIG.game.audio.enabled) level = 0;
-      if (level === crowd.level && !force) return;
+      level = !C.enabled || !SFC_CONFIG.game.audio.enabled ? 0 : level;
+      if (level === crowd.level) return;
       crowd.level = level;
       if (!ctx && level <= 0) return;
       if (!ensure()) return;
-      if (level > 0) crowdStart();
-      if (!crowd.gain) return;
-      const v = muted ? 0 : level * (C.volume || 0.35);
-      crowd.gain.gain.setTargetAtTime(v, ctx.currentTime, 0.35);
-      crowd.lfoGain.gain.setTargetAtTime(v * (C.murmur || 0) * 0.5, ctx.currentTime, 0.35);
+      ambStart();
+      ambLevel();
     },
     // bàn thắng: hò reo vỡ sân (âm lượng theo độ ồn của sân)
-    crowdRoar(level) {
-      const p = level * (CC().goal || 1) * 0.55;
-      crowdShot({ dur: 3.4, peak: p, peakAt: 0.25, hold: 1.1, from: 600, to: 1050, q: 0.6 });
-      crowdShot({ dur: 2.8, peak: p * 0.6, peakAt: 0.3, hold: 0.8, from: 1400, to: 2100, q: 1.2 });
-    },
+    crowdRoar(level) { crowdPlay('roar', level * (CC().goal || 1)); },
     // cứu thua / dội cột: "ồồ"
-    crowdOoh() {
-      const p = crowd.level * (CC().ooh || 0.6) * 0.45;
-      crowdShot({ dur: 1.3, peak: p, peakAt: 0.35, from: 380, to: 620, q: 3 });
-      crowdShot({ dur: 1.1, peak: p * 0.5, peakAt: 0.3, from: 760, to: 1100, q: 3 });
-    },
+    crowdOoh() { crowdPlay('ooh', crowd.level * (CC().ooh || 0.6)); },
     // hết trận: vỗ tay + hò reo nhẹ
-    crowdApplause(level) {
-      const p = level * (CC().applause || 0.8);
-      crowdShot({ dur: 3.2, peak: p * 0.5, peakAt: 0.3, hold: 1.2, from: 1800, to: 2200, clap: true });
-      crowdShot({ dur: 2.6, peak: p * 0.25, peakAt: 0.4, hold: 0.6, from: 700, to: 900, q: 0.6 });
-    },
+    crowdApplause(level) { crowdPlay('clap', level * (CC().applause || 0.8)); },
+    // tiếng khán giả đã render xong (kiểm tra / trang nghe thử tools/audio/crowd.html)
+    crowdBuffers() { return Object.assign({}, CB); },
     get muted() { return muted; },
 
     touch()   { if (!sample('ballBounce')) tone({ freq: 220, to: 160, dur: 0.05, type: 'triangle', vol: 0.15 }); },

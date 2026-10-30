@@ -229,24 +229,85 @@ window.SFC = window.SFC || {};
     },
   };
 
-  /* Block Wardens — KHỔNG LỒ: cả đội to gấp scale lần, mạnh hơn, chậm hơn một chút. Đấm nhẹ không có tác dụng (bật ra, TOO BIG!),
-   * phải dùng đòn nặng. Bị dẫn: to thêm (rageScale). Hook từ actions.js lightHit -> MatchMods.shrug */
+  /* Block Wardens — PROTEIN SHAKE (làm lại 2026-10-30, user): mỗi pha bóng (giao bóng -> bàn thắng) chỉ 1 Warden ngẫu nhiên hoá khổng lồ
+   * (bị dẫn từ twoAt bàn: 2 người, banner double).
+   * Trong lúc chờ giao bóng người đó lắc bình whey (shake), ực (drink), rồi phồng người (grow: to vượt pump lần rồi về scale, chỉ số mạnh hơn).
+   * Mấy người kia về cỡ + chỉ số thường. Đấm nhẹ vào người khổng lồ không tác dụng (bật ra, TOO BIG!), phải dùng đòn nặng.
+   * Bị dẫn: người khổng lồ to thêm (rageScale). Hình: prop 'whey' bám người (render/modsdraw.js). Hook từ actions.js lightHit -> MatchMods.shrug */
   K.giants = {
-    create(g, M, c) {
-      for (const p of g.teams[M.team].players) {
+    create(g, M) {
+      M.base = {};
+      for (const p of g.teams[M.team].players) M.base[p.id] = Object.assign({}, p.stats);
+      M.giants = []; M.whey = [];
+    },
+    // số người khổng lồ pha này: Wardens bị dẫn từ twoAt bàn trở lên -> 2 người (user 2026-10-30), không thì 1
+    count(g, M, c) {
+      const gap = g.teams[1 - M.team].score - g.teams[M.team].score;
+      return c.twoAt && gap >= c.twoAt ? 2 : 1;
+    },
+    kickoff(g, M, c) {
+      const tp = g.teams[M.team].players;
+      // người khổng lồ pha trước về cỡ thường ngay (lúc chờ giao bóng Player không tự đổi cỡ)
+      for (const p of tp) { p.stats = Object.assign({}, M.base[p.id] || p.stats); p.sizeTarget = 1; p.sizeT = 0; p.sizeMul = 1; p.radius = SFC_CONFIG.game.player.radius; }
+      const n = Math.min(tp.length, this.count(g, M, c)), pool = tp.slice();
+      if (n > 1 && !M.double) { M.double = true; g.emit('banner', { text: c.double, sub: c.doubleHint, color: '#ffd23f' }); }
+      M.giants = []; M.whey = [];
+      for (let i = 0; i < n; i++) {
+        const p = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+        M.giants.push(p.id);
         p.stats = Object.assign({}, p.stats, { power: p.stats.power * c.power, tackle: p.stats.tackle * c.power, speed: p.stats.speed * c.speed });
+        // cảnh uống bắt đầu ở bước đồng hồ đầu tiên (clock): giao bóng đầu trận / sau bàn thắng còn qua màn giới thiệu, chọn Core.
+        // Người thứ 2 uống trễ chút (lag) cho khỏi đồng thanh
+        M.whey.push({ pid: p.id, t: -i * 0.12, on: false, gulp: false, grown: false });
+      }
+    },
+    isGiant(M, o) { return !!M.giants && M.giants.includes(o.id); },
+    clock(g, M, c, dt) {
+      for (const W of M.whey) this.drink(g, M, c, W, dt);
+      M.whey = M.whey.filter((W) => W.t < c.shake + c.drink + c.grow);
+    },
+    // cảnh uống whey của 1 người: lắc -> ực -> phồng người (grow)
+    drink(g, M, c, W, dt) {
+      W.t += dt;
+      const p = g.players.find((q) => q.id === W.pid);
+      if (!p) { W.t = 99; return; }
+      if (!W.on && W.t >= 0) {
+        W.on = true;
+        g.effects.prop(newId(g), 'whey', p.x, p.y, p.id, 0, c.shake + c.drink + c.grow + 0.1, g.teams[M.team].cfg.kit.shirt);
+        g.sfx('ult', 'mod.shake');
+      }
+      if (!W.on) return;
+      if (!W.gulp && W.t >= c.shake) { W.gulp = true; g.sfx('ult', 'mod.gulp'); }
+      if (!W.grown && W.t >= c.shake + c.drink) {
+        W.grown = true;
+        const E = g.effects;
+        E.burst(p.x, p.y - 14, 14, '#ffffff', 16, 120, 0.45);
+        E.wave(p.x, p.y, 34, '#ffd23f', 0.35, 3);
+        E.shake(4, 0.25);
+        E.pop(p.x, p.y - 44, 'PUMPED!', 'heavy', '#ffd23f');
+        g.sfx('ult', 'mod.pump');
+        bark(g, 'mod', p);
+      }
+      // phồng người lúc chờ giao bóng (cầu thủ đứng yên, Player không tự đổi cỡ): đặt thẳng cỡ — to vượt pump lần rồi về scale
+      if (W.grown) {
+        const k = Math.min(1, (W.t - c.shake - c.drink) / c.grow), sc = behind(g) ? c.rageScale : c.scale;
+        p.sizeMul = k < 0.5 ? 1 + (sc * c.pump - 1) * (k / 0.5) : sc * c.pump + (sc - sc * c.pump) * ((k - 0.5) / 0.5);
+        p.sizeTarget = sc; p.sizeT = Math.max(p.sizeT, 0.3);
+        p.radius = SFC_CONFIG.game.player.radius * p.sizeMul;
       }
     },
     update(g, M, c) {
-      const sc = behind(g) ? c.rageScale : c.scale;
+      const list = g.players.filter((q) => this.isGiant(M, q));
+      if (!list.length) return;
       if (behind(g) && !M.rage) {
         M.rage = true;
         g.emit('banner', { text: c.rage, sub: c.rageHint, color: '#ff3d5a' });
         g.sfx('ult', 'mod.stomp');
-        for (const p of g.teams[M.team].players) g.effects.burst(p.x, p.y - 10, 8, '#ff3d5a', 12, 80, 0.5);
+        for (const p of list) g.effects.burst(p.x, p.y - 10, 8, '#ff3d5a', 12, 80, 0.5);
       }
       // giữ cỡ to mỗi bước (Player.sizeT hết là về 1; Tuyệt kỹ teo nhỏ vẫn đè được trong lúc nó chạy)
-      for (const p of g.teams[M.team].players) if (!(p.sizeT > 0.25) || p.sizeTarget >= 1) { p.sizeTarget = Math.max(p.sizeTarget, sc); p.sizeT = Math.max(p.sizeT, 0.2); }
+      const sc = behind(g) ? c.rageScale : c.scale;
+      for (const p of list) if (!(p.sizeT > 0.25) || p.sizeTarget >= 1) { p.sizeTarget = Math.max(p.sizeTarget, sc); p.sizeT = Math.max(p.sizeT, 0.2); }
     },
   };
   /* Moped Boys — LÀN GIAO HÀNG: làn dọc sân gần bóng nhấp nháy rồi xe máy phóng qua */
@@ -2297,7 +2358,7 @@ window.SFC = window.SFC || {};
     // Actions.lightHit: đấm nhẹ vào người khổng lồ (luật Block Wardens) -> không tác dụng, người đấm bật ra
     shrug(g, p, o) {
       const M = g.mod;
-      if (!M || M.id !== 'giants' || o.team !== M.team) return false;
+      if (!M || M.id !== 'giants' || o.team !== M.team || !K.giants.isGiant(M, o)) return false;   // chỉ người đang khổng lồ
       const d = U.norm(o.x - p.x, o.y - p.y), E = g.effects;
       p.kbx -= d.x * M.cfg.bounce; p.kby -= d.y * M.cfg.bounce;
       o.freeze(0.04);

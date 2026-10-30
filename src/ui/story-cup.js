@@ -225,7 +225,6 @@ window.SFC = window.SFC || {};
     }
     ctx.restore();
     H.vignette(0.6);
-    if (S.cueOnce('crowd', true)) SFC.Audio.crowdApplause(0.5);
   });
 
   /* ---------- bình luận viên ---------- */
@@ -286,7 +285,7 @@ window.SFC = window.SFC || {};
     }
     if (t < 0.12 || (t > 0.32 && t < 0.4)) H.rect(0, 0, H.W, H.H, 'rgba(255,255,255,0.75)');
     H.vignette(0.45);
-    if (S.cueOnce('slam', t > 0.32)) { SFC.Audio.hit(); SFC.Audio.crowdRoar(0.6); }
+    if (S.cueOnce('slam', t > 0.32)) SFC.Audio.hit();   // không dùng tiếng khán giả trong Story (user 2026-10-30)
   });
 
   /* ---------- cận cảnh người nói ---------- */
@@ -490,7 +489,7 @@ window.SFC = window.SFC || {};
     trophy(H, sc.trophy, 320, 330 - HEAD * 6 - 4 - lift, 3, t);
     confetti(H, t, 110);
     H.vignette(0.5);
-    if (S.cueOnce('roar', true)) { SFC.Audio.goal(); SFC.Audio.crowdRoar(1); }
+    if (S.cueOnce('roar', true)) SFC.Audio.goal();
   });
 
   // dùng ngoài cut scene: PHÒNG TRƯNG BÀY (src/ui/trophies.js) vẽ cúp của từng Story

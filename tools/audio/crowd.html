@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Crowd audition</title>
+<!-- Nghe thử tiếng khán giả tổng hợp (src/engine/audio.js, làm lại 2026-10-30). Mở qua npm run serve:
+     http://localhost:8080/tools/audio/crowd.html — dùng đúng config/game.config.js + audio.js của game -->
+<base href="../../" />
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  html, body { height: auto; overflow: auto; }
+  body { padding: 24px; background: #0a0b0e; font-family: var(--vt); font-size: 20px; color: #c7ccd6; }
+  h1 { font-family: var(--px); font-size: 14px; color: var(--gold); letter-spacing: 2px; margin: 0 0 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0; }
+  button { font-family: var(--px); font-size: 10px; letter-spacing: 1px; padding: 8px 12px; color: #fff; background: #232733; border: 1px solid #525a6b; cursor: pointer; }
+  button:hover { border-color: var(--gold); color: var(--gold); }
+  button.on { background: var(--gold); color: #121316; }
+  input[type=range] { width: 260px; }
+  .st { color: var(--muted); }
+</style>
+</head>
+<body>
+  <h1>CROWD AUDITION</h1>
+  <div class="row"><button id="start">▶ START (bật âm)</button><span class="st" id="st">chưa bật</span></div>
+  <div class="row">Độ ồn sân (arenas crowd.sound): <input id="lv" type="range" min="0" max="1" step="0.05" value="0.3" /><b id="lvv">0.30</b>
+    <button data-lv="0.2">ĐƯỜNG PHỐ 0.2</button><button data-lv="0.45">SÂN VỪA 0.45</button><button data-lv="0.9">SÂN VẬN ĐỘNG 0.9</button><button data-lv="0">TẮT</button></div>
+  <div class="row"><button data-ev="roar">HÒ REO (bàn thắng)</button><button data-ev="ooh">"ỒỒ" (cứu thua)</button><button data-ev="clap">VỖ TAY (hết trận)</button></div>
+  <p class="st">Tiếng sân phát liên tục theo độ ồn (đám đông xa ngân dài + vỗ tay lác đác). Độ ồn sân cũng chỉnh âm lượng 3 tiếng sự kiện. Âm lượng: config/game.config.js → audio.crowd.</p>
+
+<script>window.SFC = {};</script>
+<script src="config/game.config.js"></script>
+<script src="src/engine/audio.js"></script>
+<script>
+(function () {
+  const A = SFC.Audio, st = document.getElementById('st'), lv = document.getElementById('lv'), lvv = document.getElementById('lvv');
+  let level = +lv.value, on = false;
+  const set = (v) => { level = v; lv.value = v; lvv.textContent = v.toFixed(2); if (on) A.crowdLevel(v); };
+  document.getElementById('start').onclick = (e) => {
+    A.unlock(); on = true; e.target.classList.add('on'); A.crowdLevel(level, true);
+    const tick = () => { const n = Object.keys(A.crowdBuffers()).length; st.textContent = n >= 4 ? 'sẵn sàng' : `đang render ${n}/4...`; if (n < 4) setTimeout(tick, 200); else A.crowdLevel(level, true); };
+    tick();
+  };
+  lv.oninput = () => set(+lv.value);
+  document.querySelectorAll('[data-lv]').forEach((b) => (b.onclick = () => set(+b.dataset.lv)));
+  document.querySelectorAll('[data-ev]').forEach((b) => (b.onclick = () => {
+    if (!on) return;
+    const k = b.dataset.ev, l = Math.max(level, 0.3);
+    if (k === 'roar') A.crowdRoar(l); else if (k === 'clap') A.crowdApplause(l); else { A.crowdLevel(Math.max(level, 0.05)); A.crowdOoh(); }
+  }));
+})();
+</script>
+</body>
+</html>

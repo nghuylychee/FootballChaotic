@@ -256,6 +256,17 @@ window.SFC = window.SFC || {};
     }
     get remaining() { return Math.max(0, (this.drill ? this.drill.time : this.cfg.match.duration) - this.elapsed); }
 
+    // giao bóng: p đứng sẵn ở vị trí thủ môn (match.kickoffKeeper) — người ĐÁ LÙI mỗi đội (đội đủ người) · Skill game: đối thủ trông khung
+    keeperAtKickoff(p) {
+      const K = this.cfg.match.kickoffKeeper;
+      if (K == null || this.opts.tutorial) return false;
+      if (this.drill) return p.team === 1 && this.drill.keepers > 0 && this.teams[1].players.indexOf(p) < this.drill.keepers;
+      return p.role === 'DEF' && this.teams[p.team].players.length > 1;
+    }
+    keeperSpot(p) {
+      const own = this.ownGoal(p.team);
+      return { x: own.x + this.teams[p.team].dir * this.cfg.match.kickoffKeeper, y: this.field.cy };
+    }
     formationPos(p) {
       const f = this.field, fm = this.cfg.formation[p.role];
       const dir = this.teams[p.team].dir;
@@ -395,15 +406,16 @@ window.SFC = window.SFC || {};
       const vary = !!V;
       const mirror = [0, 1].map(() => vary && Math.random() < (V.mirrorY || 0));
       for (const p of this.players) {
-        const pos = this.kickoffPos(p, vary, mirror[p.team]);
+        const pos = this.keeperAtKickoff(p) ? this.keeperSpot(p) : this.kickoffPos(p, vary, mirror[p.team]);
         Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null, bracing: false, readAt: -1, celId: null, noActT: 0, panicT: 0, chickenT: 0, puppet: null, puppetT: 0, ghostT: 0, walkT: 0 });
         p.facing = this.teams[p.team].dir > 0 ? 0 : Math.PI;
         p.intent.mx = p.intent.my = 0;
         p.ai.runT = 0; p.ai.requestedPass = null;
         p.stamina = this.cfg.player.staminaMax;
       }
-      // tiền đạo đội giao bóng đứng giữa sân
-      const fwd = this.teams[teamIdx].players.find((p) => p.role === 'FWD') || this.teams[teamIdx].players[0];
+      // tiền đạo đội giao bóng đứng giữa sân (không lấy người đang đứng khung, trừ khi đội chỉ có người đó)
+      const tp = this.teams[teamIdx].players, field = tp.filter((p) => !this.keeperAtKickoff(p));
+      const fwd = field.find((p) => p.role === 'FWD') || field[0] || tp[0];
       fwd.x = f.cx - this.teams[teamIdx].dir * 8;
       fwd.y = f.cy;
       this.lastPossessionTeam = -1;

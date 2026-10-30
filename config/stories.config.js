@@ -65,12 +65,17 @@ SFC_CONFIG.stories = {
       name: 'NOW YOU SEE THEM', hint: 'Two ghosts vanish and speed up. Heavy-hit a visible one to reveal them all',
       n: 2, alpha: 0.1, speed: 1.3, first: 5, cooldown: 8, bell: [9, 13], trailing: 1.5,
     },
-    // Block Wardens: cả đội khổng lồ (to scale lần, power / tackle x power, speed x speed). Đấm nhẹ không tác dụng (người đấm bật ra bounce px/s),
-    // phải dùng đòn nặng. Bị dẫn: to thêm rageScale (banner rage)
+    // Block Wardens (làm lại 2026-10-30, user): mỗi pha bóng (từ giao bóng tới khi có bàn) chỉ 1 Warden ngẫu nhiên uống whey rồi hoá khổng lồ
+    // (to scale lần, power / tackle x power, speed x speed); mấy người kia như thường. Uống trong lúc chờ giao bóng: lắc bình shake giây,
+    // ực drink giây, rồi phồng người grow giây (to vượt pump lần rồi về scale). Đấm nhẹ vào người khổng lồ không tác dụng (bật ra bounce px/s),
+    // phải dùng đòn nặng. Bị dẫn: người khổng lồ to thêm rageScale (banner rage); bị dẫn twoAt bàn: 2 người khổng lồ mỗi pha
     giants: {
-      name: 'GIANT WARDENS', hint: 'Light punches bounce off, use heavy attacks',
-      scale: 1.5, rageScale: 1.7, power: 1.15, speed: 0.92, bounce: 140,
-      rage: 'ANGRY GIANTS', rageHint: 'The Wardens grow even bigger',
+      name: 'PROTEIN SHAKE', hint: 'Each kickoff one Warden chugs whey and turns giant. Light punches bounce off him',
+      scale: 1.6, rageScale: 1.8, power: 1.2, speed: 0.92, bounce: 140,
+      shake: 0.3, drink: 0.55, grow: 0.35, pump: 1.15,
+      rage: 'ANGRY GIANT', rageHint: 'Their giant grows even bigger',
+      // bị dẫn từ twoAt bàn trở lên: mỗi pha bóng 2 Warden uống whey (banner double, 1 lần)
+      twoAt: 2, double: 'DOUBLE SHAKE', doubleHint: 'Two Wardens hit the whey',
     },
     /* ---- Story 2–4 (2026-10-19). Luật lặp lại: first = giây tới lần đầu, every = [min, max] giây giữa 2 lần, trailing = nhanh x lần khi đội chủ luật bị dẫn ---- */
     // Pigeon Gang: đàn bồ câu bay ngang (flySpeed) thả n "bom" quanh bóng (spread px), vòng báo trước fall giây, bãi nằm life giây.

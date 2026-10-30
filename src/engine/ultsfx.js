@@ -198,6 +198,10 @@ window.SFC = window.SFC || {};
     'mod.reveal'() { N({ dur: 0.06, vol: 0.16, freq: 900, q: 1 }); T({ freq: 300, to: 1100, dur: 0.18, type: 'triangle', vol: 0.1, delay: 0.03 }); T({ freq: 1500, to: 900, dur: 0.12, type: 'square', vol: 0.03, delay: 0.16 }); },
     // khổng lồ nổi giận: dậm đất trầm 2 nhịp
     'mod.stomp'() { boom(0.35, 0.4); boom(0.3, 0.4, 0.28); },
+    // Block Wardens uống whey (user 2026-10-30): lắc bình lạch cạch · ực ực 3 ngụm (bọt nước trượt xuống) · phồng người: "vùùm" lên + dậm
+    'mod.shake'() { for (let i = 0; i < 5; i++) { N({ dur: 0.04, vol: 0.09, freq: 2600, q: 1.5, delay: i * 0.07 }); T({ freq: 900, to: 700, dur: 0.03, type: 'triangle', vol: 0.04, delay: i * 0.07 + 0.02 }); } },
+    'mod.gulp'() { [0, 0.17, 0.34].forEach((d) => { T({ freq: 260, to: 120, dur: 0.11, type: 'sine', vol: 0.16, delay: d }); N({ dur: 0.05, vol: 0.05, freq: 500, type: 'lowpass', delay: d + 0.02 }); }); },
+    'mod.pump'() { T({ freq: 90, to: 260, dur: 0.32, type: 'sawtooth', vol: 0.09 }); T({ freq: 180, to: 520, dur: 0.32, type: 'square', vol: 0.04 }); boom(0.32, 0.45, 0.3); },
     /* Story 2–4 */
     // bồ câu bay qua: "gù gù" + vỗ cánh · bãi phân rơi: "bẹp"
     'mod.coo'() { [0, 0.18].forEach((d) => T({ freq: 420, to: 330, dur: 0.14, type: 'sine', vol: 0.1, vib: 18, vibDepth: 25, delay: d })); for (let i = 0; i < 5; i++) N({ dur: 0.03, vol: 0.05, freq: 1500, q: 1, delay: 0.3 + i * 0.05 }); },

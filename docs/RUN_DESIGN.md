@@ -68,7 +68,7 @@ Mỗi act là 1 vùng: sân, màu MAP, người dẫn truyện, nhạc và pool 
 
 | Act | Vùng | Đối thủ thường | Boss | Elo AI (đề xuất) |
 |---|---|---|---|---|
-| 1 | **KHU PHỐ** (ban ngày: làng, phố, trường, hẻm) | Ward Uncles · Moped Boys · School Ghosts · Pigeon Gang | Block Wardens (GIANT WARDENS) | 30 → 300 · boss 350 |
+| 1 | **KHU PHỐ** (ban ngày: làng, phố, trường, hẻm) | Ward Uncles · Moped Boys · School Ghosts · Pigeon Gang | Block Wardens (PROTEIN SHAKE: mỗi pha bóng 1 người uống whey hoá khổng lồ) | 30 → 300 · boss 350 |
 | 2 | **THÀNH PHỐ ĐÊM** (sân thượng, quảng trường, chợ đêm) | Sky Hoppers · Billboard Kids · Lantern Crew · Noodle Kickers · Fortune Tellers | ngẫu nhiên: Night Owls hoặc Market Mamas | 450 → 1000 · boss 1150 |
 | 3 | **HUYỀN THOẠI** (vịnh, quảng trường, làng xưa) | Rust Buckets · Retired Refs · Grandpa's Squad | The Old Legends (KING LEO 1976) | 1300 → 2150 · boss 2700 |
 

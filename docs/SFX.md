@@ -182,6 +182,10 @@ Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>'
 
 Crowd volume follows the arena's crowd level (`render/crowd.js`). The settings live under `audio.crowd` in `config/game.config.js`.
 
+**Currently OFF (user, 2026-10-30):** the stadium bed, "ooh" and applause are disabled in `audio.crowd` (`bed: false`, `ooh: 0`, `applause: 0`; disabled sounds are not rendered), and Story scenes no longer play any crowd sound. Only the in-match goal roar remains. Real crowd recordings are the likely way back.
+
+**Reworked 2026-10-30 (the old filtered-noise crowd hissed):** every crowd sound is now synthesized voices — sawtooth "vocal folds" through three vowel formant filters, a new vowel and pitch per syllable, many voices layered plus a stadium reverb (convolver). They are rendered once with an `OfflineAudioContext` when audio unlocks (~1 s on the audio thread, no frame hitch) in `src/engine/audio.js` (`bakeCrowd`): `roar`, `ooh` and `clap` (claps = three sharp micro-spikes + a short tail per clap, a broad palm resonance and a crack per clapper, ~18 clappers so single claps stay audible). The talking-voices murmur loop was dropped (user, same day: chatter did not fit). The match-long **stadium bed** (`amb`) is now a distant crowd: ~70 voices holding long open vowels (1.5–4 s each, no syllables) through a low lowpass and a big 3 s reverb, plus scattered distant claps and a soft rumble, an 18 s seamless loop with a slow swell; volume follows `crowdLevel`. Until they are ready the crowd stays silent instead of hissing. Audition page: `tools/audio/crowd.html` (via `npm run serve`).
+
 | Name | Plays when | Current sound | Look for | Variants |
 |---|---|---|---|---|
 | `crowdLevel` | Looping background during a match | Two layers of filtered noise murmuring | stadium crowd ambience loop, crowd murmur | 1 loop (seamless, 30s+) |

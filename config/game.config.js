@@ -28,15 +28,18 @@ SFC_CONFIG.game = {
     enabled: true,
     volume: 0.3,
     // Âm thanh khán giả (src/engine/audio.js + src/render/crowd.js). Độ ồn mỗi sân: arenas.config.js -> crowd.sound (0..1)
+    // User 2026-10-30: TẠM TẮT tiếng sân, "ồồ", vỗ tay (tổng hợp nghe chưa ổn; Story cũng không dùng tiếng khán giả). Chỉ còn hò reo khi
+    // có bàn trong trận. Bật lại: bed = true, ooh / applause > 0 (tiếng tắt thì không render)
     crowd: {
       enabled: true,
-      volume: 0.35,        // tiếng rì rầm nền ở sân ồn nhất (sound = 1)
-      murmur: 0.4,         // độ to nhỏ lên xuống của tiếng rì rầm (0 = đều đều)
+      bed: false,          // TIẾNG SÂN cả trận (đám đông xa ngân dài)
+      volume: 0.35,        // âm lượng tiếng sân ở sân ồn nhất (sound = 1)
+      murmur: 0.4,         // độ dâng hạ chậm của tiếng sân (0 = đều đều)
       finalPush: 1.35,     // FINAL PUSH: ồn hơn
       paused: 0.35,        // tạm dừng / menu trong trận: nhỏ lại
       goal: 1.1,           // hò reo khi có bàn thắng
-      ooh: 0.6,            // "ồồ" khi cứu thua / bóng dội cột
-      applause: 0.8,       // vỗ tay khi hết trận
+      ooh: 0,              // "ồồ" khi cứu thua / bóng dội cột (đang tắt; bật: 0.6)
+      applause: 0,         // vỗ tay khi hết trận (đang tắt; bật: 1.0)
     },
     // Tiếng thu sẵn (assets/sfx/<file>.wav, nguồn: docs/SFX.md): mỗi lần phát chọn ngẫu nhiên 1 file trong bộ.
     // Chưa nạp xong / nạp lỗi -> dùng tiếng tổng hợp như cũ
@@ -94,6 +97,9 @@ SFC_CONFIG.game = {
       y: 0.16,         // lệch tối đa theo chiều ngang sân (tỉ lệ chiều rộng sân, ~39px)
       mirrorY: 0.5,    // xác suất lật đội hình trên <-> dưới (tính riêng từng đội)
     },
+    // (px) lúc giao bóng người ĐÁ LÙI mỗi đội đứng sẵn ở vị trí thủ môn: trước vạch khung nhà chừng này, giữa khung
+    // (user 2026-10-30: không bắt chạy về) · Skill game: đối thủ trông khung cũng vậy. null = đứng theo đội hình
+    kickoffKeeper: 10,
     goalCelebration: 3.2,        // giây đứng hình sau bàn thắng = thời gian diễn động tác ăn mừng (celebration bên dưới)
     outroDuration: 3.0,          // giây đứng hình sau còi mãn cuộc (Beat 1: đội thắng ăn mừng / đội thua thất vọng tại chỗ trên sân)
     assistWindow: 6,             // (s) thời gian tính kiến tạo từ lúc đồng đội nhận đường chuyền tới lúc bóng vào lưới

@@ -360,7 +360,7 @@ window.SFC = window.SFC || {};
       }
       ctx.restore();
       vignette(0.55);
-      if (Story.cueOnce('roar', true)) { SFC.Audio.goal(); SFC.Audio.crowdRoar(1); }
+      if (Story.cueOnce('roar', true)) SFC.Audio.goal();   // không dùng tiếng khán giả trong Story (user 2026-10-30)
       if (Story.cueOnce('slam', t > 0.3)) SFC.Audio.hit();
       if (Story.cueOnce('slam2', t > 1.3)) SFC.Audio.upgrade();
     },
