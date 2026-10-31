@@ -231,6 +231,8 @@ window.SFC = window.SFC || {};
       for (const e of pack.ev) {
         if (e.type === 'goal') SFC.Celebrate.remote(g, e);   // động tác ăn mừng của người ghi bàn (src/systems/celebrate.js)
         if (e.type === 'end') SFC.Celebrate.remoteEnd(g, e); // thống kê trận + tư thế ăn mừng / thất vọng cuối trận
+        // số lần luật trận trúng đội bạn (sao modClean): máy giữ cup trên máy chủ riêng tính sao từ trận "gương"
+        if (e.type === 'end' && g.mod && typeof e.mh === 'number') g.mod.hits = e.mh | 0;
         g.events.push(e);
       }
     },

@@ -141,6 +141,11 @@ SFC_CONFIG.game = {
     gkSpeedFree: 380,         // bóng chậm hơn mức này: thủ môn bắt không bị phạt tốc độ
     gkSpeedPenalty: 1000,     // mỗi (N px/s) vượt gkSpeedFree -> giảm 100% tỉ lệ bắt
     gkParryShare: 0.4,        // khi bắt hụt: tỉ lệ đẩy được bóng ra, còn lại bóng lọt lưới (0.6 -> 0.4, user 2026-10-25: thủ môn quá khó vượt)
+    // PHẢN XẠ (user 2026-10-31: sút chéo góc tầm gần mà vẫn bắt được là vô lý): bóng tới thủ môn sau < full s kể từ lúc rời chân
+    // -> tỉ lệ bắt + tỉ lệ đẩy ra nhân thêm hệ số thấp nhất; từ none s trở lên không phạt (ở giữa: nội suy).
+    // Hệ số thấp nhất theo độ vươn: bóng thẳng vào người = straight (chắn bằng thân vẫn được), phải vươn tối đa = stretch.
+    // Đọc Cú Sút (read) đúng nhịp thì không bị phạt: đọc đúng chính là phản xạ trước
+    gkReflex: { full: 0.1, none: 0.3, straight: 0.8, stretch: 0.15 },
     // bắt hụt mà bóng lọt (thay chữ SLIP!, user 2026-10-31): wrong = tỉ lệ đổ người SAI phía (bay ngược hướng bóng), còn lại
     // đổ người ĐÚNG phía nhưng muộn late s (bóng đã qua người mới bay)
     gkBeat: { wrong: 0.5, late: 0.12 },
@@ -185,8 +190,10 @@ SFC_CONFIG.game = {
     wallBounce: 0.72,
     netDamp: 0.25,
     dribbleOffset: 9,
-    pickupRange: 4,
-    pickupHeight: 12,
+    // tầm khống chế bóng lỏng tính từ mép người + bóng. 4 -> 6, 12 -> 15 (user 2026-10-31: lại gần bóng mà không bắt dính):
+    // hình nhân vật cao ~30px nên bóng cách chân 13-15px trông như đã chạm người; bóng nảy ngang hông (z 12-15) cũng khống chế được
+    pickupRange: 6,
+    pickupHeight: 15,
     selfPickupDelay: 0.3,
     looseNoPickup: 0.4,
     landingMarker: true,     // bóng bổng (cao hơn pickupHeight): vẽ vòng điểm rơi trên sân

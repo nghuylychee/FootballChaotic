@@ -150,7 +150,7 @@ window.SFC = window.SFC || {};
       const MP = SFC.MainPath;
       return Math.min(MP.areas().length - 1, MP.state.best);
     },
-    // phòng FOOTBALL STORY (máy làm host): lượt chơi cup gửi cả phòng (src/meta/cup.js share)
+    // phòng FOOTBALL STORY (máy giữ cup: host / người tạo phòng trên máy chủ riêng): lượt chơi cup gửi cả phòng (src/meta/cup.js share)
     cup() { return SFC.Cup.share(); },
     // phòng GOAT PATH co-op (máy làm host): cập nhật ví / ô đội hình theo người trong phòng rồi gửi bản sao run (src/meta/run.js share)
     runState() { SFC.RunUI.syncRoom(); return SFC.Run.share(); },
@@ -224,7 +224,7 @@ window.SFC = window.SFC || {};
     if (O_.story) SFC.CupUI.roomStory = O_.story;   // nhớ lại lúc phòng đóng (Session đã xoá)
     if (O_.run) SFC.RunUI.roomRun = true;
     // phòng GOAT PATH co-op: host vào phòng với run đang có -> đứng đúng vị trí character trong run; mọi thứ ở màn map
-    if (O_.run && O_.isHost && SFC.Run.run) O_.seatHost(SFC.Run.run.squad[0].role);
+    if (O_.run && O_.isLead && SFC.Run.run) O_.seatHost(SFC.Run.run.squad[0].role);
     // vào phòng từ JOIN trên tab GOAT PATH: ở lại tab tới khi biết loại phòng (gói lobby đầu tiên)
     const RJ = SFC.RunUI && SFC.RunUI.joining;
     if (entered) { Menu().go(O_.story ? storyPage() : O_.run ? 'runmap' : RJ ? 'run' : 'lobby', pending ? TEXT.waitingInfo : ''); return; }

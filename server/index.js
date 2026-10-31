@@ -4,6 +4,8 @@
  * Nhẹ: 1 vòng lặp 60 bước/giây chung cho mọi phòng, chỉ chạy khi có trận đang đá; snapshot JSON 1 lần rồi phát cho cả phòng.
  *
  * Bắt tay (xem src/net/transport-server.js): create{v} / join{code,v} -> room{code,id} | err{e}; sau đó gói đi thẳng vào Room.
+ * create{v, story?, run?}: phòng co-op FOOTBALL STORY (id Story) / GOAT PATH — cup / run nằm ở máy người tạo phòng (chủ phòng),
+ * máy chủ chỉ chạy trận + chuyển trạng thái (src/net/room.js "Phòng co-op trên máy chủ riêng"). Chủ phòng rời = đóng phòng.
  * Tìm trận xếp hạng: queue{v,elo,role,pf} -> queued (đã vào hàng, src/net/matchmaker.js ghép mỗi giây) -> room{code,id}
  * (phòng xếp hạng đã ghép xong; gửi hello như vào phòng thường) | solo (không ghép được: game tự đá với người chơi giả) | err{e}.
  * unqueue = rời hàng (đóng kết nối cũng vậy).
@@ -168,11 +170,15 @@ function broadcast(entry, data, to) {
 }
 
 // ranked = đội hình trận xếp hạng (Matchmaker.lineup); không có = phòng thường (mã phòng, chủ phòng bấm START)
-function createRoom(ranked) {
+// coop = { story } | { run: true }: phòng co-op FOOTBALL STORY / GOAT PATH (đã kiểm ở handshake)
+function createRoom(ranked, coop) {
   const entry = { code: newCode(), clients: new Map(), touched: Date.now(), sent: 0, matchSent: 0, stepMs: 0, sendMs: 0, sendSync: 0, aiMs: 0, sendQ: [], z: null };
-  const mode = () => (ranked ? 'ranked' : SFC.Room.Slots.mode(entry.room.lobby));
+  const kind = coop ? (coop.story ? 'story' : 'run') : null;
+  const mode = () => (ranked ? 'ranked' : kind || SFC.Room.Slots.mode(entry.room.lobby));
   entry.room = new SFC.Room({
     ranked,
+    story: coop && coop.story ? coop.story : null,
+    run: !!(coop && coop.run),
     // JSON 1 lần, phát cho mọi THÀNH VIÊN phòng (đã hello), nén 1 lần (broadcast). Kết nối chưa được nhận vào phòng không nhận gì
     // ngoài gói gửi riêng (chữ)
     send: (msg, id) => {
@@ -192,10 +198,12 @@ function createRoom(ranked) {
       toLobby: () => { if (entry.startedAt && !entry.ended) log(entry, `match stopped before the end · sent ${kb(entry.matchSent)}`); entry.startedAt = 0; },
       dropped: (name, away) => { if (away) log(entry, `a player disconnected, seat held ${NET.reconnectGrace}s`); },
       back: () => log(entry, 'a player reconnected'),
+      // phòng co-op: chủ phòng (máy giữ cup / run) rời -> đóng phòng
+      close: () => { if (rooms.get(entry.code) === entry) closeRoom(entry, 'host left'); },
     },
   });
   rooms.set(entry.code, entry);
-  log(entry, ranked ? `created (ranked, ${ranked.seats.length} players)` : 'created');
+  log(entry, ranked ? `created (ranked, ${ranked.seats.length} players)` : kind ? `created (${kind})` : 'created');
   return entry;
 }
 
@@ -205,7 +213,7 @@ function roomFailed(entry, where, e) {
   if (rooms.get(entry.code) === entry) closeRoom(entry, 'error');
 }
 
-// reason: idle | error | shutdown (phòng hết người thì leave() tự xoá + ghi log)
+// reason: idle | error | shutdown | host left (phòng hết người thì leave() tự xoá + ghi log)
 function closeRoom(entry, reason) {
   rooms.delete(entry.code);
   log(entry, `closed (${reason}, ${entry.clients.size} connected) · sent ${kb(entry.sent)} in total`);
@@ -274,7 +282,11 @@ function handshake(c, msg) {
     if (msg.v !== NET.protocol) return err(c, 'version');
     if (draining) return err(c, 'server-closing');
     if (rooms.size >= ENV.MAX_ROOMS) return err(c, 'server-full');
-    return attach(c, createRoom());
+    // phòng co-op: id Story phải có thật (không phải Story "sắp ra")
+    const story = typeof msg.story === 'string' ? globalThis.SFC_CONFIG.stories.list.find((x) => x.id === msg.story && !x.soon) : null;
+    if (msg.story != null && !story) return err(c, 'bad-room');
+    const coop = story ? { story: story.id } : msg.run === 1 ? { run: true } : null;
+    return attach(c, createRoom(null, coop));
   }
   if (msg.t === 'join') {
     if (draining) return err(c, 'server-closing');
@@ -323,7 +335,8 @@ const server = http.createServer((req, res) => {
   res.end();
 });
 
-const wss = new WebSocketServer({ server, maxPayload: 16 * 1024, perMessageDeflate: false });   // nén: roomZ (trong game)
+// 32 KB: bản sao run của phòng GOAT PATH co-op (co{c}, máy giữ gửi lên) ~3-10 KB
+const wss = new WebSocketServer({ server, maxPayload: 32 * 1024, perMessageDeflate: false });   // nén: roomZ (trong game)
 
 wss.on('connection', (ws, req) => {
   const ip = clientIp(req), n = (perIp.get(ip) || 0) + 1;

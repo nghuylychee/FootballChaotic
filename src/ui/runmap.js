@@ -42,7 +42,7 @@ window.SFC = window.SFC || {};
   // phòng GOAT PATH co-op: đang ở trong phòng · máy này làm host (giữ run thật)
   const ON = () => SFC.Session;
   const inRoom = () => !!SFC.Session && ON().active && ON().run;
-  const isHost = () => !inRoom() || ON().isHost;
+  const isHost = () => !inRoom() || ON().isLead;   // máy giữ run (chơi một mình / host / người tạo phòng trên máy chủ riêng)
 
   const RunUI = {
     pages: ['runmap'],
@@ -209,14 +209,14 @@ window.SFC = window.SFC || {};
         return this.cutscene(R.act, 'intro', () => this.back2map());
       }
       const T = this.targets();
-      this.sel = Math.max(0, Math.min(T.length - 1, this.sel));
+      if (this.sel >= T.length) this.sel = this.firstSel(T);
       const P = RUN().pl(RUN().myKey(), R) || R;
       const gs = R.offer && R.offer.gear ? [R.offer.sel, R.offer.who].join('.') : '';   // bước chọn GEAR đổi -> chọn lại mục đầu
       const key = [R.act, R.at, R.over, R.won, R.actNew, !!R.offer, R.room && R.room.kind, this.bagOpen, !!R.join, gs].join(':');
       if (this.key !== key) {
         // trạng thái đổi (vừa xong 1 node / act mới / mở phòng / hết run): chọn mục đầu, cuộn về chỗ đang đứng
         const mapChanged = !this.key || this.key.split(':').slice(0, 2).join(':') !== key.split(':').slice(0, 2).join(':');
-        this.key = key; this.sel = 0; this.quitArm = false;
+        this.key = key; this.sel = this.firstSel(T); this.quitArm = false;
         if (mapChanged) this.scroll = null;
       }
       const A = RUN().act(R.act);
@@ -241,6 +241,9 @@ window.SFC = window.SFC || {};
     cash(n) {
       return `<span class="rm-cash" title="${esc(_t('Run cash'))}">${PX().ui('shop', 'sm')}<b>${SFC.I18n.num(n)}</b></span>`;
     },
+    // mục chọn sẵn khi màn đổi: mục đầu tiên không phải nút phòng (LEAVE ROOM / INVITE) — user 2026-10-31: Enter nhầm là rời phòng.
+    // Không còn mục nào khác (khách chờ host lúc hết run) -> -1 = không chọn gì, bấm mũi tên mới vào nút
+    firstSel(T) { return T.findIndex((t) => t.k !== 'leaveroom' && t.k !== 'invite'); },
     btn(T, t, html, cls = '') {
       return `<button class="pt-btn ${t.main ? 'go' : ''} ${cls} ${T.indexOf(t) === this.sel ? 'sel' : ''}" data-rt="${t.key}">${html}</button>`;
     },
@@ -1071,11 +1074,11 @@ window.SFC = window.SFC || {};
           <div class="rm-tally"><span><i class="coin"></i>+${R.metaGold || 0}</span>${R.roadGain ? `<span>${PX().ui('star', 'sm')} +${R.roadGain}</span>` : ''}</div>
           ${this.endBtn(T)}</div>`;
     },
-    // nút thẻ hết run: CONTINUE (chơi một mình / host) · khách co-op: LEAVE ROOM (host quyết định bắt đầu run mới)
+    // nút thẻ hết run: CONTINUE (chơi một mình / host) · khách co-op: không có nút (chờ host bắt đầu run mới; LEAVE ROOM ở thanh trên)
     endBtn(T) {
       const t = T[0];
-      if (!t) return '';
-      return t.k === 'leaveroom' ? this.btn(T, t, esc(this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')), this.leaveArm ? 'danger' : '') : this.btn(T, t, esc(_t('CONTINUE')));
+      if (!t || t.k === 'leaveroom') return '';
+      return this.btn(T, t, esc(_t('CONTINUE')));
     },
     // thẻ mở act: tên act + boss cuối act
     actCard(R, T) {
@@ -1281,6 +1284,7 @@ window.SFC = window.SFC || {};
       const nNode = T.filter((t) => t.k === 'node').length, onNode = this.sel < nNode;
       for (const d of ['left', 'right', 'up', 'down']) {
         if (!input.wasPressed(d)) continue;
+        if (this.sel < 0) { this.sel = 0; SFC.Audio.menu(); return menu.render(); }   // chưa chọn gì (firstSel): mũi tên đầu tiên vào nút đầu
         if (nNode) {
           // map: ←→ đi trong hàng (node / nút) · ↓ xuống nút · ↑ về node
           if (d === 'left' || d === 'right') {
@@ -1302,7 +1306,7 @@ window.SFC = window.SFC || {};
         menu.render();
         return this.reveal(menu);
       }
-      if (input.wasPressed('confirm')) this.act(menu, T[this.sel]);
+      if (input.wasPressed('confirm') && T[this.sel]) this.act(menu, T[this.sel]);
     },
     click(menu, e) {
       const T = this.targets();
@@ -1455,10 +1459,11 @@ window.SFC = window.SFC || {};
     // ô không có người = đồng đội AI của run). Skill game: chỉ người tới lượt ra sân, người khác xem
     startCoop() {
       const M = RUN().match(), R = RUN().run, O = ON();
-      if (!M || !R || !O.isHost) return;
+      if (!M || !R || !O.isLead) return;
       const S = SFC.Room.Slots, L = O.lobby, here = L.members.filter((m) => m.slot >= 0 && !m.away);
-      const idOf = (key) => { const m = key === 'host' ? O.room.member('host') : here.find((x) => x.pf && x.pf.uid === key); return m ? m.id : null; };
-      const only = M.drill ? [idOf(R.room.player) || 'host'] : null;
+      // key 'host' của run = máy giữ (id 'host' khi người chơi làm host, id chủ phòng trên máy chủ riêng)
+      const idOf = (key) => { const m = key === 'host' ? here.find((x) => x.id === O.leadId) : here.find((x) => x.pf && x.pf.uid === key); return m ? m.id : null; };
+      const only = M.drill ? [idOf(R.room.player) || O.leadId] : null;
       const playing = only ? here.filter((m) => only.includes(m.id)) : here;
       const roles = playing.map((m) => S.role(m.slot));
       const seat = {};
@@ -1485,7 +1490,7 @@ window.SFC = window.SFC || {};
       this.waitT = setInterval(() => { if (!ON().scenesPending || !inRoom()) done(); }, 250);
     },
     // host: báo cả phòng chiếu cut scene của act
-    cueRoom(act, kind) { if (inRoom() && ON().isHost) ON().cueScenes(`run:${act}:${kind}`); },
+    cueRoom(act, kind) { if (inRoom() && ON().isLead) ON().cueScenes(`run:${act}:${kind}`); },
     // khách: host báo chiếu cut scene -> chiếu cùng, xong báo lại
     remoteScenes(kind) {
       const [, a, k] = kind.split(':'), act = +a;
@@ -1495,9 +1500,9 @@ window.SFC = window.SFC || {};
     // host: phòng đổi người -> ví / ô đội hình của khách (gọi trước mỗi lần gửi bản sao)
     syncRoom() {
       const R = RUN().run, O = ON();
-      if (!R || R.mirror || !O.room) return;
+      if (!R || R.mirror || !O.isLead) return;
       const S = SFC.Room.Slots;
-      RUN().syncRoom(O.lobby.members.filter((m) => m.id !== 'host' && !m.away && m.slot >= 0 && m.pf)
+      RUN().syncRoom(O.lobby.members.filter((m) => m.id !== O.leadId && !m.away && m.slot >= 0 && m.pf)
         .map((m) => ({ key: m.pf.uid || m.id, name: m.pf.name, look: m.pf.look, role: S.role(m.slot) })));
     },
     // tên người có mã key (co-op)
@@ -1557,7 +1562,7 @@ window.SFC = window.SFC || {};
   const clampI = (v) => Math.max(-1, Math.min(99, Math.floor(+v || 0)));
   // host: hết giờ bỏ phiếu thì chốt (đủ phiếu đã chốt ngay lúc nhận phiếu)
   setInterval(() => {
-    if (inRoom() && ON().isHost && ON().status === 'lobby' && RUN().run && RUN().run.vote && SFC.Menu.app && SFC.Menu.app.screen === 'menu') RunUI.resolve();
+    if (inRoom() && ON().isLead && ON().status === 'lobby' && RUN().run && RUN().run.vote && SFC.Menu.app && SFC.Menu.app.screen === 'menu') RunUI.resolve();
   }, 400);
 
   const _tn = (...a) => SFC.tn(...a);

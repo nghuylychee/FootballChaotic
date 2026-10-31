@@ -78,6 +78,7 @@ window.SFC = window.SFC || {};
       this.legTech = null;    // kỹ thuật LEGEND của cú đá này (power / trivela / finesse / bicycle / lobthrough) — LEGEND TRIAL đếm (drills.js)
       this.oneTouch = false;  // đường chuyền 1 chạm (pass.oneTouch) — passTo bật lại sau khi đá
       this.endBounce = false; // đã dội vạch cuối sân (bounceSide) -> hết ma sát riêng của cú sút (ball.shotFriction)
+      this.flightT = 0;       // (s) bóng đã bay bao lâu từ lần chạm cuối — thủ môn cần thời gian phản xạ (player.gkReflex, Game.tryControl)
       this.kickN++;           // số lần đá: AI quyết định dứt điểm 1 chạm 1 lần cho mỗi quả bóng · AI thủ môn đọc mỗi cú sút 1 lần (ai.keeper)
       this.clearFx();
     }
@@ -98,6 +99,7 @@ window.SFC = window.SFC || {};
       this.missT = Math.max(0, this.missT - dt);
 
       if (this.owner) { this.freezeT = 0; this.follow(dt); this.trail.length = 0; return; }
+      this.flightT = (this.flightT || 0) + dt;
       // hitstop cục bộ của cú sút mạnh (fx.hitStop.shot): bóng nằm yên ở chân một nhịp rồi mới bay
       if (this.freezeT > 0) { this.freezeT -= dt; return; }
 

@@ -12,8 +12,6 @@ const assert = require('assert');
 const { load } = require('../sim');
 
 const { SFC } = load();
-// Skill game + chấn thương chỉ nạp ở bản game (phòng run luôn do người chơi làm host) -> test tự nạp
-for (const f of ['src/systems/drills.js', 'src/systems/hurt.js', 'src/systems/legends.js']) require('vm').runInThisContext(require('fs').readFileSync(require('path').join(__dirname, '../..', f), 'utf8'), { filename: f });
 const NET = globalThis.SFC_CONFIG.net, RC = globalThis.SFC_CONFIG.run;
 const pf = (name, role, uid) => ({ name, role, level: 1, look: {}, cores: null, mate: null, uid });
 

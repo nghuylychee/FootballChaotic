@@ -125,6 +125,7 @@ window.SFC = window.SFC || {};
           if (!game.reward && game.humanTeam >= 0 && SFC.Profile.data) game.reward = SFC.Profile.awardMatch(game);
           if (game.opts.mainPath && game.opts.mainPath.party) SFC.Social.afterMatch();   // người bạn trong phòng nhắn "gg! again?"
           this.endSel = 0;
+          this.leaveArm = false;
           if (this.app.game === game) this.beginOutro(game);
         }
       }

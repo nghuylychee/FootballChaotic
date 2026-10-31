@@ -32,10 +32,28 @@ window.SFC = window.SFC || {};
         if (this.app.game && this.app.game.opts.run) return [['runmap', _t('CONTINUE')]];   // GOAT PATH: về map (đi tiếp / hết run)
         return mp ? (SFC.MainPath.demoOver() ? [['restart', _t('CONTINUE')]] : [['menu', _t('LOBBY')]]) : [['restart', _t('PLAY AGAIN')], ['menu', _t('MAIN MENU')]];
       }
-      // phòng FOOTBALL STORY: chủ phòng CONTINUE = cả phòng về màn cup (vòng kế / bị loại / vô địch); người khác chờ chủ phòng
+      // phòng FOOTBALL STORY: chủ phòng CONTINUE = cả phòng về màn cup (vòng kế / bị loại / vô địch); người khác chờ chủ phòng.
+      // LEAVE ROOM không nằm ở đây (user 2026-10-31: bấm Enter liên tục qua màn thưởng là rời phòng nhầm): nút góc trên phải (leaveBtn)
       const story = this.app.game && (this.app.game.opts.cup || this.app.game.opts.run);
-      if (SFC.Session.isOwner) return [['lobby', story ? _t('CONTINUE') : _t('BACK TO LOBBY')], ['leave', _t('LEAVE ROOM')]];
-      return [['leave', _t('LEAVE ROOM')]];
+      if (SFC.Session.isOwner) return [['lobby', story ? _t('CONTINUE') : _t('BACK TO LOBBY')]];
+      return [];
+    },
+
+    // nút LEAVE ROOM góc trên phải màn kết quả (trận trong phòng): không bao giờ được chọn sẵn, bấm 2 lần (CONFIRM LEAVE).
+    // Phím: back (Esc / B) = bấm nút này. Không bấm lần 2 trong leaveArmTime giây -> về lại LEAVE ROOM
+    leaveBtn() {
+      return this.roomMatch ? `<button class="room-leave ${this.leaveArm ? 'danger' : ''}" data-act="leaveroom">${esc(this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM'))}</button>` : '';
+    },
+    leaveRoomAct() {
+      clearTimeout(this.leaveTimer);
+      if (this.leaveArm) { this.leaveArm = false; SFC.Session.leave(); return; }
+      this.leaveArm = true;
+      this.leaveTimer = setTimeout(() => { this.leaveArm = false; this.renderLeave(); }, 3000);
+      this.renderLeave();
+    },
+    renderLeave() {
+      const el = this.el.end && this.el.end.querySelector('.room-leave');
+      if (el) el.outerHTML = this.leaveBtn();
     },
 
     // tổng hợp thống kê trận: xếp hạng cầu thủ theo Bàn thắng → Kiến tạo → Cứu thua → Sút và chọn 1 MVP duy nhất
@@ -167,6 +185,7 @@ window.SFC = window.SFC || {};
       this.el.end.classList.toggle('rw-focus', this.rwFocus);
       this.el.end.innerHTML = `
         ${devBar}
+        ${this.leaveBtn()}
         <div class="end-head">
           <div class="end-title ${res[1]}">${esc(res[0])}</div>
           <div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>        </div>
@@ -229,6 +248,7 @@ window.SFC = window.SFC || {};
     renderEndItems() {
       const el = document.getElementById('end-items');
       this.endSel = Math.min(this.endSel, this.endItems().length - 1);
+      this.endSel = Math.max(0, this.endSel);
       if (el) el.innerHTML = this.endItems().map(([k, l], i) => `<button class="${i === this.endSel ? 'sel' : ''}" data-act="${k}">${esc(l)}</button>`).join('');
       this.showEndItems();
     },
@@ -376,7 +396,9 @@ window.SFC = window.SFC || {};
         }
         return;
       }
+      if (this.roomMatch && input.wasPressed('back')) { this.doAct('leaveroom'); return; }
       const n = this.endItems().length;
+      if (!n) return;   // khách trong phòng: không có nút nào chọn sẵn, chờ chủ phòng
       if (input.wasPressed('left') || input.wasPressed('up')) { this.endSel = (this.endSel + n - 1) % n; this.renderEndItems(); }
       if (input.wasPressed('right') || input.wasPressed('down')) { this.endSel = (this.endSel + 1) % n; this.renderEndItems(); }
       if (input.wasPressed('confirm')) this.doAct(this.endItems()[this.endSel][0]);
@@ -392,6 +414,7 @@ window.SFC = window.SFC || {};
       if (act === 'cup') this.app.toMenu('cup');
       if (act === 'runmap') this.app.toMenu('runmap');
       if (act === 'leave') SFC.Session.leave();
+      if (act === 'leaveroom') this.leaveRoomAct();
       if (act === 'lobby') SFC.Session.backToLobby();
       if (act === 'reroll') this.app.rerollCore();
       if (act === 'skiptut') SFC.Tutorial.skip();

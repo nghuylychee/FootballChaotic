@@ -24,7 +24,7 @@
 | 11 | Luật trận (2026-10-19) | **Mỗi đối thủ một luật trận, được nặng tay** cho thấy rõ, nhưng **không lấy / cấm Core** (mất fun) |
 | 12 | Mạch truyện (2026-10-19) | **Mỗi Story gói gọn trong chính nó**, không có cốt truyện xuyên suốt các Story |
 | 13 | Đồng đội (2026-10-19) | Vẫn là đồng đội **mở** (`SFC.Mates`), không thành nhân vật cố định, vì hướng tới co-op |
-| 14 | Co-op online (2026-10-19) | Chạy **player-host** (người chơi làm chủ phòng), **không qua máy chủ riêng** |
+| 14 | Co-op online (2026-10-19) | Chạy **player-host** (người chơi làm chủ phòng), **không qua máy chủ riêng** · 2026-10-31: lên máy chủ riêng khi ping ổn (`net.server.coopMaxPing`), không thì player-host |
 | 15 | Cốt truyện (2026-10-19) | **Mỗi Story một concept riêng** (tham khảo anime), không trùng mô-típ. Theme (sân, màu, đội, luật trận) giữ nguyên |
 | 16 | Cách kể (2026-10-20) | 4 Story kể cùng 1 kiểu là **không ổn**. Thử cho mỗi Story 1 thể thức chơi riêng thì user thấy **không ổn**, bỏ. Chốt: **cùng luật knockout 4 vòng + luật trận (gimmick) từng đối thủ**, khác nhau ở **cách kể**: mỗi Story 1 kiểu trình chiếu riêng (nhật ký · manga · show TV · cuộn phim hồi tưởng), concept không trùng |
 | 17 | Phòng trưng bày (2026-10-20) | Cúp vô địch của các Story trưng trong **TROPHY ROOM**: chỗ người chơi nhìn lại thành tựu. Nút cúp ở trang chủ mở phòng này, ACHIEVEMENTS thành 1 khu trong phòng. Mỗi Story 1 chiếc cúp riêng |
@@ -215,7 +215,7 @@ chiếu lúc mở cup · trước mỗi trận · sau trận thắng · lúc nâ
   - Lineup co-op có sẵn, tất cả người ở đội 0.
   - Hết trận thì về màn BRACKET, **không gửi `lobby`**. Trạng thái cup (Story, vòng, kết quả bracket) đi trong `start{opts.story}`.
   - Vào lại giữa cup dùng cơ chế `resume` sẵn có.
-- **Chỉ player-host (user chốt 2026-10-19):** phòng Story do người chơi làm chủ (Steam P2P / PeerJS), không qua máy chủ riêng. Máy chủ vẫn nạp `stories.config.js` + `matchmods.js` (target `server`) nhưng không mở phòng Story.
+- ~~Chỉ player-host (user chốt 2026-10-19)~~ → **2026-10-31 (user):** TẠO PHÒNG lên máy chủ riêng khi ping thấp nhất <= `net.server.coopMaxPing` (máy chủ đang ngủ / chậm -> player-host như cũ). Cup vẫn nằm ở máy người tạo phòng (máy giữ, `Session.isLead`), máy chủ chạy trận + chuyển trạng thái (src/net/room.js "Phòng co-op trên máy chủ riêng"). Người tạo phòng rời = phòng đóng.
 - **Luật không đổi:** người chơi không được biết phòng chạy kiểu nào (server / Steam / PeerJS). Mọi chữ trung tính.
 - **Demo:** `config/demo.config.js` thêm `stories: 1` (số Story chơi được). Story khoá bấm vào ra thông báo "full game", theo luật CrazyGames về link store.
 - **Mỗi luật trận mới, Core boss mới:** theo luật cũ, có hình trong `src/render/vfx.js` (không có Core vô hình), có SFX riêng nếu là Tuyệt kỹ.
@@ -239,7 +239,7 @@ Luồng: tab FOOTBALL STORY › chọn Story › **PLAY WITH FRIENDS** = tạo p
 - **Thưởng riêng từng người** (`Cup.pay`, mỗi vòng 1 lần): gold vòng thắng, vòng xa nhất, vô địch + costume lần đầu, sao hat-trick của chính mình. Sao của cả đội (vô địch, chung kết sạch lưới, không bàn thắng vàng...) host tính rồi gửi kèm `ts`.
 - Hết trận: chủ phòng bấm CONTINUE ở màn kết quả → cả phòng về màn cup (`backToLobby`, gói lobby mang trạng thái cup mới). Người mới vào được **giữa 2 trận** (ô còn trống), vào giữa cup thì bỏ qua cut scene các vòng trước.
 - **Rời phòng:** khách rời = hết cup với người đó (phòng đá tiếp, AI thế chỗ). Chủ phòng rời = phòng đóng, cả phòng về tab FOOTBALL STORY ("The room was closed.").
-- Bản DEMO: không có nút co-op (online khoá như PRIVATE MATCH). `net.protocol` 11, máy chủ riêng `11.0.0` (máy chủ không mở phòng Story nhưng phải cùng protocol).
+- Bản DEMO: không có nút co-op (online khoá như PRIVATE MATCH). `net.protocol` 12, máy chủ riêng `12.0.0` (12: phòng co-op trên máy chủ riêng).
 - Test: `node server/test/story-test.js` (ghế, gói lobby, cut scene, đá hết trận, người vào giữa cup, trận gương không tự đặt vật thể).
 - **Mời bạn bè (Steam, 2026-10-21):** phòng Steam có nút **INVITE FRIENDS** (trang `slobby`, cả phòng chờ PRIVATE MATCH; chỉ hiện khi `Session.canInvite`: phòng player-host trên Steam, bản web / máy chủ riêng / itch desktop không có, chỉ dùng mã) → `lobby.openInviteDialog()` mở bảng mời của overlay Steam (`electron/main.js` bật `electronEnableSteamOverlay`). Bạn nhận lời:
   - game đang chạy → callback `GameLobbyJoinRequested` (steamworks.js 0.4.0 build với napi6 nên lobby id tới dưới dạng **bigint chính xác**, không bị làm tròn như từng lo; id dạng number thì bỏ qua) → mã phòng = 32 bit thấp của lobby id;

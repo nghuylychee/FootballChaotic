@@ -2657,6 +2657,14 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 #end .end-note { margin-bottom: 2px; font-size: 12px; }
 #end .pause-items { margin-bottom: 0; }
 #end .pause-items button { padding: 2px 14px; font-size: 16px; }
+/* LEAVE ROOM góc trên phải (màn kết quả + phòng chờ / màn cup / map co-op, user 2026-10-31): không chọn sẵn, bấm 2 lần — tránh Enter nhầm rời phòng */
+.room-leave { position: absolute; top: 6px; right: 8px; z-index: 3; }
+#end .room-leave {
+  font-family: var(--vt); font-size: 14px; letter-spacing: 1px; padding: 1px 8px;
+  color: var(--muted); border: 1px solid var(--edge); background: rgba(10, 11, 14, 0.6);
+}
+#end .room-leave:hover { color: var(--ink); background: var(--gold); border-color: var(--gold); }
+#end .room-leave.danger { color: #ff5a6e; border-color: #ff5a6e; background: rgba(10, 11, 14, 0.85); }
 
 /* Thanh cheat đổi nhanh kịch bản màn kết thúc trận (SFC_DEBUG) */
 .dev-endbar {

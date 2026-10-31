@@ -95,12 +95,19 @@ window.SFC = window.SFC || {};
     get connected() { return this.joined && !!this.ws && this.ws.readyState === 1; },
     get id() { return this.myId; },
 
-    /** Tạo phòng trên máy chủ -> resolve(mã phòng). Chờ máy chủ dậy tới wakeTimeout giây, không được thì reject (session.js tự host) */
-    host(onWait) {
-      const first = { t: 'create', v: N().protocol };
+    /** Tạo phòng trên máy chủ -> resolve(mã phòng). Chờ máy chủ dậy tới wakeTimeout giây, không được thì reject (session.js tự host).
+     *  coop = { story, run, maxPing }: phòng co-op (FOOTBALL STORY / GOAT PATH) — chỉ máy đang thức có ping <= maxPing ms, không chờ máy
+     *  đang ngủ; không có máy nào đủ nhanh -> reject { type: 'slow' } (session.js tự host) */
+    host(onWait, coop = null) {
+      const first = Object.assign({ t: 'create', v: N().protocol }, coop ? { story: coop.story || undefined, run: coop.run ? 1 : undefined } : {});
       return this.guard(async (op) => {
         const live = (await this.probe()).filter(usable);
         if (op.dead) throw { type: 'cancelled' };
+        if (coop) {
+          const fast = live.filter((s) => s.ping <= coop.maxPing);
+          if (!fast.length) throw { type: 'slow' };
+          return this.tryEach(fast, first);
+        }
         // 1 máy / không máy nào trả lời đo ping: chờ máy (đầu danh sách) dậy như trước
         if (!live.length || this.urls().length === 1) { this.target = (live[0] || { url: this.urls()[0] }).url; return this.until(first, onWait); }
         return this.tryEach(live, first);   // ping thấp trước; đầy / lỗi -> máy kế

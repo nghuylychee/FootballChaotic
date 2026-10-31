@@ -27,7 +27,7 @@ window.SFC = window.SFC || {};
   const ROLES = () => SFC_CONFIG.game.roles;
   // đang ở phòng Story online · máy này là chủ phòng (máy làm host)
   const inRoom = () => ON().status !== 'idle' && !!ON().story;
-  const isHost = () => inRoom() && ON().isHost;
+  const isHost = () => inRoom() && ON().isLead;   // máy giữ cup (người chơi làm host / người tạo phòng trên máy chủ riêng)
   const ownerName = () => { const L = ON().lobby, m = L.members.find((x) => x.id === L.owner); return (m && m.pf && m.pf.name) || _t('HOST'); };
 
   const CupUI = {
@@ -225,8 +225,8 @@ window.SFC = window.SFC || {};
 
     // nút ở page 'cup' theo màn đang mở
     buttons() {
-      // phòng co-op: chủ phòng điều khiển cup, người khác chỉ rời phòng được
-      if (inRoom() && !isHost()) return [{ k: 'leave', label: this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM'), danger: this.leaveArm }];
+      // phòng co-op: chủ phòng điều khiển cup, người khác chờ — rời phòng bằng nút góc trên phải (leaveCorner), không chọn sẵn
+      if (inRoom() && !isHost()) return [];
       if (this.view === 'bracket') {
         return [
           { k: 'kick', main: true, label: _t('KICK OFF') },
@@ -312,6 +312,11 @@ window.SFC = window.SFC || {};
       });
     },
 
+    // LEAVE ROOM góc trên phải (user 2026-10-31: sau trận bấm Enter liên tục là rời phòng nhầm): không bao giờ chọn sẵn, bấm 2 lần
+    leaveCorner(sel = false, attr = 'data-cb="leave"') {
+      return `<button class="pt-btn room-leave ${this.leaveArm ? 'danger' : ''} ${sel ? 'sel' : ''}" ${attr}>${esc(this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM'))}</button>`;
+    },
+
     render(menu) {
       if (menu.page === 'slobby') return this.renderLobby(menu);
       const R = CUP().run, s = CUP().story();
@@ -329,7 +334,7 @@ window.SFC = window.SFC || {};
       else body = `${this.track(R, s)}<div class="cu-mid">${rd ? this.oppCard(rd) : ''}${this.ticker(R, s)}</div>`;
       menu.el.innerHTML = `<div class="cu-page">${head}${body}${msg}
           <div class="cu-acts">${btns}</div>
-        </div>`;
+        </div>${inRoom() && !isHost() ? this.leaveCorner() : ''}`;
       menu.bindAvatars();
     },
 
@@ -404,6 +409,7 @@ window.SFC = window.SFC || {};
     input(menu, input) {
       if (menu.page === 'slobby') return this.lobbyInput(menu, input);
       const n = this.buttons().length;
+      if (!n) return;   // khách co-op: không có nút chọn sẵn (rời phòng: Esc / nút góc)
       for (const d of ['left', 'right', 'up', 'down']) {
         if (!input.wasPressed(d)) continue;
         this.sel = (this.sel + (d === 'left' || d === 'up' ? n - 1 : 1)) % n;
@@ -416,7 +422,7 @@ window.SFC = window.SFC || {};
       if (menu.page === 'slobby') return this.lobbyClick(menu, e);
       const b = e.target.closest('[data-cb]');
       if (!b) return false;
-      this.sel = Math.max(0, this.buttons().findIndex((x) => x.k === b.dataset.cb));
+      this.sel = Math.max(0, this.buttons().findIndex((x) => x.k === b.dataset.cb));   // nút góc LEAVE ROOM không nằm trong buttons()
       this.act(menu, b.dataset.cb);
       return true;
     },
@@ -432,7 +438,7 @@ window.SFC = window.SFC || {};
     // mục chọn được: 3 ô vị trí (Enter ô trống = đứng vào đó) · START CUP (chủ phòng) · INVITE FRIENDS (chỉ khi nền tảng mời được: OnlineUI.invite) · LEAVE ROOM
     lobbyItems() {
       const O = ON(), out = ROLES().map((role) => ({ k: 'slot', slot: O.slotOf(0, role), role }));
-      if (O.isHost) out.push({ k: 'start', main: true, label: _t('START CUP') });
+      if (O.isLead) out.push({ k: 'start', main: true, label: _t('START CUP') });
       if (O.canInvite) out.push({ k: 'invite', label: _t('INVITE FRIENDS') });
       out.push({ k: 'leave', label: this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM'), danger: this.leaveArm });
       return out;
@@ -447,7 +453,7 @@ window.SFC = window.SFC || {};
       if (it.k === 'invite') return SFC.OnlineUI.invite(menu);
       if (it.k === 'start') {
         const s = CUP().get(O.story);
-        if (!O.isHost || !CUP().playable(s) || !CUP().start(s.id)) return;
+        if (!O.isLead || !CUP().playable(s) || !CUP().start(s.id)) return;
         this.reset();
         O.shareCup();
         menu.msg = '';
@@ -471,15 +477,15 @@ window.SFC = window.SFC || {};
       }).join('');
       const code = O.code || '-'.repeat(SFC_CONFIG.net.codeLength);
       const btn = (it) => { const i = items.indexOf(it); return `<button class="pt-btn ${it.main ? 'go' : ''} ${it.danger ? 'danger' : ''} ${i === this.lsel ? 'sel' : ''}" data-li="${i}">${esc(it.label)}</button>`; };
-      const note = O.isHost ? _t('Send this code to your friends. They join from FOOTBALL STORY › JOIN.') : _t('Waiting for {name} to start...', { name: ownerName() });
+      const note = O.isLead ? _t('Send this code to your friends. They join from FOOTBALL STORY › JOIN.') : _t('Waiting for {name} to start...', { name: ownerName() });
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
       menu.el.innerHTML = `<div class="cu-page sl-page">
           <div class="cu-head" style="--sc:${s.color}"><b>${esc(s.name)}</b></div>
           <div class="sl-code" data-copy="${esc(code)}" title="${esc(_t('Click to copy'))}"><span>${esc(_t('ROOM CODE'))}</span><b>${esc(code)}</b><i>${esc(_t('COPY'))}</i></div>
           <div class="sl-seats">${seats}</div>
           <div class="pt-note">${esc(note)}</div>${msg}
-          <div class="cu-acts">${items.filter((x) => x.k !== 'slot').map(btn).join('')}</div>
-        </div>`;
+          <div class="cu-acts">${items.filter((x) => x.k !== 'slot' && x.k !== 'leave').map(btn).join('')}</div>
+        </div>${this.leaveCorner(items[this.lsel] && items[this.lsel].k === 'leave', `data-li="${items.findIndex((x) => x.k === 'leave')}"`)}`;
       menu.bindAvatars();
     },
     lobbyInput(menu, input) {

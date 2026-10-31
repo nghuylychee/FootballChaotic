@@ -1912,7 +1912,7 @@ window.SFC = window.SFC || {};
   // AI bên bạn (đồng đội AI) — người chơi tự điều khiển thì không đụng
   const aiVictim = (g, o) => !(o.isControlled && g.isHuman(o.team));
 
-  /* Rope Skippers — DOUBLE DUTCH (user 2026-10-27: dây bao cả sân, quay như nhảy dây thật, 2 vòng): 1 sợi dây khổng lồ căng ngang hết bề dài sân,
+  /* Rope Skippers — DOUBLE DUTCH (user 2026-10-27: dây bao cả sân, quay như nhảy dây thật, 2 vòng; 2026-10-31: còn 1 vòng): 1 sợi dây khổng lồ căng ngang hết bề dài sân,
    * 2 cô bé đứng 2 mép trái / phải (ngang giữa sân) quay dây. count nhịp đếm (3-2-1, dây nằm chờ ở mép xuất phát), rồi quay turns vòng, mỗi vòng
    * turn giây: phần ground đầu vòng dây quét sát đất từ mép xuất phát sang mép kia, phần còn lại dây vung lên cao vòng qua đầu về mép xuất phát.
    * Dây cong hình cánh cung (2 đầu ở tay 2 cô bé). Dây quét qua chỗ ai đội bạn đứng mà người đó không lướt = vấp ngã.

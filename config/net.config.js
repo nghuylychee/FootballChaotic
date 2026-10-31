@@ -8,7 +8,7 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.net = {
-  protocol: 11,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng (8: Tuyệt kỹ thiết kế lại, 9: Tuyệt kỹ đợt 3 — docs/ULT_REDESIGN.md, 10: chữ bật ra Effects.pop thay text / comic, 11: phòng FOOTBALL STORY co-op: lobby k / c, cs / csd)
+  protocol: 12,                // tăng khi đổi định dạng gói tin -> 2 bản khác nhau không vào chung phòng (8: Tuyệt kỹ thiết kế lại, 9: Tuyệt kỹ đợt 3 — docs/ULT_REDESIGN.md, 10: chữ bật ra Effects.pop thay text / comic, 11: phòng FOOTBALL STORY co-op: lobby k / c, cs / csd, 12: phòng co-op Story / GOAT PATH trên máy chủ riêng: create{story,run}, co / cue / csr / story / seat, ra chuyển tiếp)
   useSteam: true,              // false = luôn dùng PeerJS, kể cả bản Electron đang có Steam
   pingEvery: 1,                // giây giữa 2 lần đo ping tới máy chạy trận (NETWORK STATS, 0 = tắt)
   pingShare: 5,                // giây: khách báo ping trung vị cả trận (mp), máy chạy trận phát bảng ping (pg) -> màn kết quả hiện ping từng người
@@ -30,6 +30,9 @@ SFC_CONFIG.net = {
     codeFirst: '23456789',     // ký tự đầu của mã phòng máy chủ riêng (mã Steam luôn bắt đầu A-D, mã PeerJS tránh các ký tự này)
                                // -> mọi mã đều dài codeLength, người chơi không phân biệt được, VÀO PHÒNG tự biết phòng loại nào
     connectTimeout: 5,         // giây chờ 1 lần thử kết nối
+    // phòng co-op (FOOTBALL STORY / GOAT PATH, user 2026-10-31): TẠO PHÒNG lên máy chủ riêng khi ping thấp nhất đo được <= mức này (ms);
+    // cao hơn / máy chủ đang ngủ / không trả lời -> người chơi làm host luôn (không chờ máy chủ dậy)
+    coopMaxPing: 150,
     wakeTimeout: 70,           // giây chờ máy chủ đang ngủ dậy (gói miễn phí ~1 phút) trước khi TẠO PHÒNG tự host; Esc bỏ chờ
     queueWake: 45,             // tìm trận xếp hạng lúc máy chủ đang ngủ: thử lại tới bấy nhiêu giây rồi mới đá với người chơi giả
     keepAlive: 60,             // giây giữa 2 gói giữ máy chủ thức khi đang ở phòng máy chủ riêng (0 = tắt)

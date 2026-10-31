@@ -731,7 +731,7 @@ window.SFC = window.SFC || {};
         const m = p.mstats || {};
         return [p.id, m.goals | 0, m.assists | 0, m.saves | 0, m.shots | 0];
       });
-      this.emit('end', { stats, cels });
+      this.emit('end', { stats, cels, mh: this.mod ? this.mod.hits : undefined });   // mh: luật trận trúng đội bạn (sao modClean, cả máy khách)
     }
 
     /* ---------- vật lý tương tác ---------- */
@@ -862,9 +862,13 @@ window.SFC = window.SFC || {};
         chance = U.clamp(chance * (0.7 + this.aiProfile(p.team).shotAccuracy * 0.35) * this.cores.pmod(p, 'keeperSave') * p.stats.keeper + (rd ? rd.bonus : 0), 0.15, 0.95);
         // thủ môn AI: saveMult của bộ chỉ số AI (trận mơ PROLOGUE hạ xuống lúc đang dạy sút)
         if (!(this.isHuman(p.team) && p.isControlled) && this.aiProfile(p.team).saveMult != null) chance *= this.aiProfile(p.team).saveMult;
+        // phản xạ (player.gkReflex): bóng tới quá nhanh sau khi rời chân -> khó bắt / khó đẩy, nhất là khi phải vươn người
+        const RX = C.player.gkReflex;
+        const reflex = rd || !RX ? 1 : U.lerp(U.lerp(RX.straight, RX.stretch, stretch), 1, U.clamp((b.flightT - RX.full) / (RX.none - RX.full), 0, 1));
+        chance *= reflex;
         const r = Math.random();
         if (r > chance) {
-          if (r < chance + (1 - chance) * C.player.gkParryShare) {
+          if (r < chance + (1 - chance) * C.player.gkParryShare * reflex) {
             this.keeperLunge(p);
             this.deflect(p, 0.45);
             if (p.mstats && !this.opts.training) p.mstats.saves++;

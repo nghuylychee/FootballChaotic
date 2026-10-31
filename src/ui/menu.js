@@ -155,6 +155,7 @@ window.SFC = window.SFC || {};
       // nhớ mục đang chọn của từng trang: quay lại trang cũ (Esc, hết trận...) con trỏ nằm đúng mục vừa rời đi
       if (page !== this.page) {
         this.lobbyFocus = page === 'lobby';
+        this.leaveArm = false;   // LEAVE ROOM bấm 2 lần: đổi trang là huỷ
         this.matePop = null;   // vào phòng: chọn sẵn START (chủ phòng) / ô của mình khi có danh sách phòng (render)
         this.resetArmed = false;   // RESET DATA: rời trang SETTINGS là huỷ xác nhận
         this.quitAsk = false;
@@ -397,7 +398,8 @@ window.SFC = window.SFC || {};
             }
           }
           list.push({ kind: 'btn', slot: -1, label: _t('GUEST'), act: () => O.requestSlot(-1) });
-          list.push({ kind: 'btn', label: _t('LEAVE ROOM'), act: () => O.leave() });
+          // LEAVE ROOM: nút góc trên phải, bấm 2 lần (user 2026-10-31: hay bấm nhầm rời phòng)
+          list.push({ kind: 'btn', leave: true, label: this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM'), act: () => this.leaveRoom() });
           // mời bạn bè (chỉ khi nền tảng có: Steam / CrazyGames, OnlineUI.invite) — chữ không nhắc cách kết nối
           if (O.canInvite) list.push({ kind: 'btn', invite: true, label: _t('INVITE FRIENDS'), act: () => SFC.OnlineUI.invite(this) });
           // sân (chủ phòng chọn, người khác chỉ xem): RANDOM rồi các Area đã tới
@@ -962,6 +964,15 @@ window.SFC = window.SFC || {};
       this.go(T[next]);
     },
 
+    // LEAVE ROOM ở phòng chờ PRIVATE MATCH: lần 1 = CONFIRM LEAVE, lần 2 = rời (quá 3 giây không bấm lại thì huỷ)
+    leaveRoom() {
+      clearTimeout(this.leaveTimer);
+      if (this.leaveArm) { this.leaveArm = false; Session().leave(); return; }
+      this.leaveArm = true;
+      this.leaveTimer = setTimeout(() => { if (this.leaveArm) { this.leaveArm = false; this.render(); } }, 3000);
+      this.render();
+    },
+
     /* ---------------- PRIVATE MATCH: phòng bằng mã (SFC.Session), cùng khung với màn PLAY ---------------- */
     // online: 2 ô CREATE / JOIN · join: ô nhập mã + CONNECT · lobby: 2 đội x 2 ô người chơi, ghế GUEST, SLOT / TEAMMATE, LEAVE / START
     renderPrivate(items) {
@@ -1003,7 +1014,7 @@ window.SFC = window.SFC || {};
           // LEAVE ROOM + START (chủ phòng). Bảng chọn đồng đội AI: chỉ khi ô AI vẫn là đồng đội của mình
           const team = this.matePop && O.mine ? O.byTeam()[O.slotTeam(this.matePop.slot)] : [];
           if (this.matePop && (O.memberAt(this.matePop.slot) || team.length !== 1 || team[0] !== O.mine)) this.matePop = null;
-          const iStart = items.findIndex((x) => x.main), iLeave = items.findIndex((x) => x.kind === 'btn' && !x.main && !x.invite && x.slot == null);
+          const iStart = items.findIndex((x) => x.main), iLeave = items.findIndex((x) => x.leave);
           const iInvite = items.findIndex((x) => x.invite);
           // sân (ngay dưới ghế GUEST): chủ phòng ◀▶ đổi (←→ khi đang chọn) · người khác chỉ thấy tên
           const g = O.lobby.ground, iG = items.findIndex((x) => x.ground);
@@ -1013,7 +1024,8 @@ window.SFC = window.SFC || {};
             : `<div class="pt-ground ro"><u>${esc(_t('PITCH'))}</u><span>${gName}</span></div>`;
           body = `<div class="pt-slots pt-room">${roomTeam(0, nav)}<div class="pt-vs">${esc(_t('VS'))}</div>${roomTeam(1, nav)}</div>
             ${benchRow}${ground}${status}${msg}
-            <div class="pt-acts"><div class="pt-side-btns">${btn(iLeave)}${btn(iInvite)}</div>${btn(iStart)}</div>
+            <div class="pt-acts"><div class="pt-side-btns">${btn(iInvite)}</div>${btn(iStart)}</div>
+            ${iLeave < 0 ? '' : `<button class="pt-btn room-leave ${sel(iLeave)} ${this.leaveArm ? 'danger' : ''}" data-i="${iLeave}">${esc(items[iLeave].label)}</button>`}
             ${this.matePop ? this.renderMatePop() : ''}`;
         }
       }
