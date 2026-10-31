@@ -15,7 +15,8 @@ window.SFC = window.SFC || {};
   ];
   // tooltip ô kỹ năng ('attack|HARD' = đòn mạnh, khác độ khó HARD)
   // đơn vị đếm của SKILL GAME (run.drills[].goal)
-  const DRILL_UNITS = () => ({ goals: _t('GOALS'), targets: _t('TARGETS'), gates: _t('GATES'), chain: _t('BEST CHAIN'), hits: _t('KNOCKDOWNS'), hold: _t('SECONDS') });
+  const DRILL_UNITS = () => ({ goals: _t('GOALS'), targets: _t('TARGETS'), gates: _t('GATES'), chain: _t('BEST CHAIN'), hits: _t('KNOCKDOWNS'), hold: _t('SECONDS'),
+    teamhold: _t('SECONDS'), assists: _t('ASSISTS'), coins: _t('COINS'), chickens: _t('CHICKENS') });
   const SLOT_NAMES = () => ({ light: SFC.tc('attack', 'LIGHT'), hard: SFC.tc('attack', 'HARD'), skill: _t('DASH') });
 
   Object.assign(SFC.UI, {
@@ -233,8 +234,9 @@ window.SFC = window.SFC || {};
     // thanh năng lượng Tuyệt kỹ (tài nguyên trường phái đã bỏ — docs/ULT_RECIPE.md)
     updateBarExtras(game, p, c) {
       if (c.ult) {
-        // Tuyệt kỹ cần bóng (needsBall) mà đội mình không cầm bóng: ô X mờ (bấm không ra chiêu)
-        const blocked = game.cores.ultBlocked(p);
+        // chưa dùng được (user 2026-10-31: tối hẳn, kể cả khi đầy, để không hiểu nhầm): sai luật cầm bóng (needsBall / noBall) ·
+        // đang choáng · đang bị khoá hành động (hoá gà, con rối...)
+        const blocked = game.cores.ultBlocked(p) || p.state === 'stun' || p.noActT > 0;
         if (blocked !== c.lastBlocked) { c.lastBlocked = blocked; c.ult.classList.toggle('off', blocked); }
         const v = Math.round(game.cores.ultE(p) * 100);
         if (v !== c.lastUlt) {

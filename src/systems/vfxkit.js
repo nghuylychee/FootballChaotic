@@ -26,7 +26,7 @@ window.SFC = window.SFC || {};
   SFC.FXSettings = FXSettings.load();
 
   const worldBlank = () => ({ waves: [], decals: [], arms: [], clones: [], shots: [], beams: [], vortexes: [], bolts: [], pops: [], shields: [], portals: [], netfires: [], dragons: [], props: [] });
-  const overlayBlank = () => ({ zoom: null, impact: 0, impactCd: 0, lines: null, callouts: [], cutins: [], tints: [], vhs: null, tilt: null });
+  const overlayBlank = () => ({ zoom: null, impact: 0, impactCd: 0, lines: null, callouts: [], cutins: [], sidecuts: [], tints: [], vhs: null, tilt: null });
 
   // trạng thái VFX (tạo lười, không cần sửa constructor)
   Object.defineProperty(E, 'V', {
@@ -182,10 +182,14 @@ window.SFC = window.SFC || {};
   };
 
   // cut-in kiểu anime: dải ngang có chân dung lớn của cầu thủ + tên chiêu. sub: chữ nhỏ trên tên (dạng thức tỉnh: 'AWAKENED' -> khung vàng + tia toả)
+  // Kèm bản nhỏ (sidecuts, cores.ultimate.sideCut giây): dải chân dung cạnh trái màn hình kiểu cut-in LEGEND. Renderer chọn theo người
+  // xem (render/vfx.js): chiêu của chính mình = cut-in lớn, của người khác (đồng đội, đối thủ, AI) = dải nhỏ
   E.cutIn = function (pid, str, color = '#ffe14f', t = 0.8, sub = '') {
     const p = player(this, pid);
     if (!p) return;
-    this.O.cutins = [Object.assign(snap(p), { str, color, t, max: t, sub })];
+    this.O.cutins = [Object.assign(snap(p), { pid, str, color, t, max: t, sub })];
+    const st = SFC_CONFIG.cores.ultimate.sideCut || t;
+    this.O.sidecuts = [Object.assign(snap(p), { pid, name: p.name, str, color, t: st, max: st, sub })];
   };
 
   // phủ màu toàn màn hình (sepia, tím né hoàn hảo...)
@@ -240,7 +244,7 @@ window.SFC = window.SFC || {};
     if (o.zoom && (o.zoom.t -= dt) <= 0) o.zoom = null;
     if (o.lines && (o.lines.t -= dt) <= 0) o.lines = null;
     for (const k of ['vhs', 'tilt']) if (o[k] && (o[k].t -= dt) <= 0) o[k] = null;
-    for (const k of ['callouts', 'cutins', 'tints']) {
+    for (const k of ['callouts', 'cutins', 'sidecuts', 'tints']) {
       for (const it of o[k]) it.t -= dt;
       o[k] = o[k].filter((it) => it.t > 0);
     }

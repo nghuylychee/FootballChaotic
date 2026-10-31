@@ -141,6 +141,9 @@ SFC_CONFIG.game = {
     gkSpeedFree: 380,         // bóng chậm hơn mức này: thủ môn bắt không bị phạt tốc độ
     gkSpeedPenalty: 1000,     // mỗi (N px/s) vượt gkSpeedFree -> giảm 100% tỉ lệ bắt
     gkParryShare: 0.4,        // khi bắt hụt: tỉ lệ đẩy được bóng ra, còn lại bóng lọt lưới (0.6 -> 0.4, user 2026-10-25: thủ môn quá khó vượt)
+    // bắt hụt mà bóng lọt (thay chữ SLIP!, user 2026-10-31): wrong = tỉ lệ đổ người SAI phía (bay ngược hướng bóng), còn lại
+    // đổ người ĐÚNG phía nhưng muộn late s (bóng đã qua người mới bay)
+    gkBeat: { wrong: 0.5, late: 0.12 },
     gkSpeedMult: 1.1,         // AI đứng trong vòng cấm nhà di chuyển nhanh hơn
     gkHoldProtect: 2.5,       // (s) bắt được bóng trong vòng cấm nhà -> miễn tắc/xoạc/va vai trong thời gian này (khi còn ở trong vòng cấm)
     gkDiveSpeed: 250,
@@ -224,6 +227,16 @@ SFC_CONFIG.game = {
     freeMaxDist: 300,         //                          quãng đường khi đầy lực (px)
     freeReceiverMaxTime: 1.6, // chuyền vào khoảng trống: đồng đội đón được bóng trong thời gian này -> thành người nhận
     aimAssist: 1.0,           // 1 = hướng bóng căn chuẩn vào người nhận; 0 = đi theo hướng phím
+    // HỖ TRỢ CHUYỀN (user 2026-10-31), chỉ người chơi, mạnh dần theo PASSING (stats.pass acc[0] -> acc[1]):
+    // cone: nửa góc vùng chọn người nhận quanh mũi tên (thay coneAngle) · fallback: chuyền sệt / bổng mà không ai trong vùng -> tìm tiếp
+    // trong vùng rộng này rồi mới phát vào khoảng trống (chọc khe vẫn phát vào khoảng trống) · laneWeight: trừ điểm người nhận có đường
+    // chuyền dễ bị cắt (Actions.laneRisk: đối thủ trong tầm với đường bóng, tính cả quãng họ kịp bước tới close px/s trong lúc bóng lăn
+    // ballSpeed px/s; giảm dần trong margin px) · shift: chuyền sệt có chân đối thủ chắn -> dịch điểm nhận bóng sang ngang tối đa chừng này px
+    // · zip: vẫn còn nguy cơ (sau khi dịch) -> chuyền căng hơn x (1 + nguy cơ x zip) (bóng nhanh khó bị cắt hơn, pass.intercept) ·
+    // power: phần lực thừa bị giảm (thay powerAssist). (Đã thử tự hất bổng qua đầu người chắn: không bớt bị cắt, bỏ.)
+    // Đo 300 tình huống 3v3 có 2 người chắn (2026-10-31): bị cắt 28–33% -> PASSING 60: 28% · 80: 19% · 99: 17%
+    assist: { enabled: true, acc: [0.75, 1.2], cone: [32, 45], fallback: [60, 80], laneWeight: [1.5, 3], shift: [6, 18], zip: [0.15, 0.6],
+      power: [0.3, 0.6], close: 70, ballSpeed: 260, margin: 10 },
     powerAssist: 0.3,         // phần lực thừa (vượt mặc định) bị giảm bớt: 0 = giữ nguyên, 1 = bỏ hẳn
     powerSensitivity: 0.7,    // lực thừa làm bóng nhanh thêm bao nhiêu
     arriveSpeed: 170,         // tốc độ bóng khi tới chân người nhận (cao = luân chuyển nhanh, căng) — 150 -> 180 (2026-10-30: ban bật hay bị cắt)
@@ -306,6 +319,11 @@ SFC_CONFIG.game = {
     overLoft: 1.45,
     shotLiftCap: 240,        // vz tối đa (sút sát khung / rất xa không vọt lên trời)
     shotSpread: 0.08,        // rad
+    // HỖ TRỢ NHẮM SÚT (user 2026-10-31: bàn phím chỉ có 8 hướng -> chỉ sút thẳng / chéo 45°), chỉ người chơi: mũi tên lên / xuống chọn
+    // phía khung (thành phần dọc >= side), thẳng / không bấm = phía thủ môn để trống hơn; máy chọn điểm trong khung theo SHOOTING
+    // (accuracy acc[0] -> acc[1]): cách cột inset[0] -> inset[1] px, kéo hướng sút về điểm đó strength[0] -> strength[1] (1 = trúng điểm),
+    // sai số nhân spread[0] -> spread[1]. Sút xe đạp (LEGEND) tự nhắm riêng, không qua đây
+    assist: { enabled: true, side: 0.3, acc: [0.75, 1.2], inset: [15, 4], strength: [0.5, 0.95], spread: [1, 0.8] },
     // Hướng sút = hướng phím giữ lúc thả, giới hạn trong khung thành (không giữ phím -> sút vào giữa khung).
     // Hướng phím chỉ ra ngoài khung thành -> tư thế gượng: sai số thêm tăng dần theo góc lệch ra ngoài cột dọc
     awkwardSpread: 0.15,     // rad sai số thêm tối đa (cũng chia cho accuracy)
@@ -347,7 +365,8 @@ SFC_CONFIG.game = {
   },
 
   // DỨT ĐIỂM 1 CHẠM (Actions.firstTime): bóng đang tới mình (đường chuyền nhắm mình / bóng lỏng lăn về phía mình) -> giữ D để
-  // "chờ đá": thanh lực nạp dần trong lúc bóng bay tới, thả D = chốt lực. Bóng chạm người là đá luôn, không khống chế.
+  // "chờ đá": thanh lực nạp dần trong lúc bóng bay tới, thả D = chốt lực. Bóng chạm người là đá luôn, không khống chế
+  // (người chơi còn giữ D lúc bóng sát đất chạm người: khống chế, nạp tiếp, thả D mới sút — Game.strike).
   // Kiểu cú đá theo độ cao bóng lúc chạm: sát đất = sút 1 chạm · ngang hông (volleyZ) = vô-lê · ngang đầu (headerZ) = đánh đầu.
   // Không bấm D: nhận bóng như cũ.
   firstTime: {
@@ -400,7 +419,7 @@ SFC_CONFIG.game = {
   combat: {
     // D — LIGHT ATTACK: cú đấm thẳng, ra đòn gần như tức thì, tầm ngắn, choáng ngắn, cooldown ngắn
     light: {
-      cooldown: 1.0,
+      cooldown: 1.2,          // 1.0 -> 1.2 (user 2026-10-31: đấm nhau loạn, bóng đổi chân liên tục)
       startup: 0.07,          // (s) kéo tay lấy đà trước khi nắm đấm chạm (anim: tay lùi về)
       recover: 0.2,           // (s) khựng sau cú đấm (anim: tay duỗi thẳng rồi thu về)
       lunge: 90,              // nhoài người về trước khi đấm (px/s)
@@ -418,6 +437,15 @@ SFC_CONFIG.game = {
       // buff sau khi cướp bóng (Core Counter Attack: 3.5s) vẫn kịp dùng
       stealShotLock: 0.35,    // (s) sau khi có bóng chưa sút được; D đang giữ từ cú đấm phải thả ra rồi bấm lại
       stealShotWindow: 0.8,   // (s) nhặt bóng bật ra trong khoảng này sau cú đấm cướp bóng cũng tính
+      // CHỐNG ĐẤM LOẠN (user 2026-10-31), áp dụng như nhau cho người chơi và AI:
+      // đấm hụt (không trúng ai / bị né): hồi chiêu thêm cooldown s + khựng recover s (thay light.recover) -> vung bừa là bị phạt
+      whiff: { cooldown: 0.6, recover: 0.4 },
+      // đấm dồn: ra đòn trong window s kể từ lúc vừa hồi chiêu xong = 1 nấc, mỗi nấc cộng add s vào hồi chiêu (tối đa max nấc);
+      // chờ quá window s mới đấm thì về 0
+      chain: { window: 1.0, add: 0.4, max: 3 },
+      // vừa giành được bóng từ đội kia (đấm rơi, cắt bóng...): chừng này giây cú đấm thường không làm rơi bóng (chỉ đẩy lùi, HOLD).
+      // Đòn chắc chắn rơi bóng (Nắm Đấm Khổng Lồ, Phản Đòn, Thiết Quyền, Long Quyền) vẫn cướp được
+      stealGuard: 0.8,
     },
     // A — HARD ATTACK: gồng co chân (đối thủ nhìn thấy được) rồi bước tới vung chân đá.
     // Trúng: đối thủ bị hất tung bay rất xa + choáng lâu + chắc chắn rơi bóng. Trượt: khựng lâu. Z (lướt) đúng lúc thì né được.

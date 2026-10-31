@@ -169,11 +169,14 @@ SFC_CONFIG.run = {
   coop: { voteTime: 15, eloPer: 120, statPer: 0.05 },
 
   /* ---------- SKILL GAME (src/systems/drills.js, user 2026-10-26: mốc ĐỒNG / BẠC / VÀNG + thanh tiến độ trên HUD) ----------
-   * Bài tập ngắn trên sân thật. teamSize: [bạn, đối thủ] (bạn > 1 = có 2 đồng đội trong đội hình) · time: giây ·
+   * Bài tập ngắn trên sân thật. teamSize: [bạn, đối thủ] (mỗi đội tối đa 3 = số vị trí; bạn > 1 = có đồng đội AI trong đội hình) · time: giây ·
    * goal: thứ được đếm (goals bàn thắng · targets bàn vào đúng bia · gates cổng dẫn bóng qua · chain chuỗi chuyền dài nhất ·
-   * hits lần hạ gục đối thủ · hold giây giữ bóng — mất bóng là hết bài) · tiers: [ĐỒNG, BẠC, VÀNG] (đạt VÀNG là xong luôn) ·
+   * hits lần hạ gục đối thủ (cả đội bạn đều tính) · hold giây giữ bóng — mất bóng là hết bài · teamhold giây cả đội giữ bóng ·
+   * assists bàn của đồng đội AI từ đường chuyền của bạn · coins xu nhặt được · chickens gà bắt được) · tiers: [ĐỒNG, BẠC, VÀNG] (đạt VÀNG là xong luôn) ·
    * keeperOnly: đối thủ chỉ đứng khung · target: bia (size = phần khung thành, speed = vòng / giây) · gate: cổng (r px, gap px giữa 2 cổng)
-   * · waves: giây mỗi người đuổi vào cuộc (HOT POTATO) · combo: số lần làm được kỹ thuật LEGEND (chỉ LEGEND TRIAL). Độ khó AI theo Elo của act như trận cùng tầng.
+   * · waves: giây mỗi người đuổi vào cuộc (HOT POTATO) · keepers: n đối thủ đầu chỉ đứng khung · foeBall: đối thủ cầm bóng (giữ bóng
+   * né bạn, không sút; bạn cầm bóng quá lâu thì bóng bật ra) · noBall: không ai chạm được bóng (bài không cần bóng) · coin: xu (r px, gap px
+   * giữa 2 xu, lần lượt như cổng) · chicken: speed x tốc độ gà, respawn giây sau khi bị bắt thì hiện lại chỗ khác · combo: số lần làm được kỹ thuật LEGEND (chỉ LEGEND TRIAL). Độ khó AI theo Elo của act như trận cùng tầng.
    * Thưởng theo mốc (tierReward): 0 = chấn thương · ĐỒNG tiền · BẠC tiền + 1 BADGE ngẫu nhiên · VÀNG tiền + chọn 1 trong 3 BADGE */
   drills: {
     finish: { name: 'FINISHING',       icon: 'ball',   teamSize: [1, 1], time: 40, goal: 'goals',   tiers: [2, 3, 5], keeperOnly: true, desc: 'Beat the keeper as many times as you can.' },
@@ -181,8 +184,18 @@ SFC_CONFIG.run = {
       target: { size: 0.36, speed: 0.22 }, desc: 'Only goals inside the glowing target count.' },
     gates:  { name: 'SLALOM GATES',    icon: 'cone',   teamSize: [1, 2], time: 40, goal: 'gates',   tiers: [3, 5, 8], gate: { r: 20, gap: 150 }, desc: 'Dribble through the gates, one after another.' },
     chain:  { name: 'PASS CHAIN',      icon: 'people', teamSize: [3, 2], time: 40, goal: 'chain',   tiers: [4, 7, 10], desc: 'String passes together. Lose it and the chain restarts.' },
-    brawl:  { name: 'STREET BRAWL',    icon: 'fist',   teamSize: [1, 3], time: 35, goal: 'hits',    tiers: [3, 6, 10], desc: 'Knock down as many of them as you can.' },
+    // 2026-10-31 (user): đối thủ cầm bóng — trước đây bạn cầm bóng nên phím đấm thành phím sút
+    brawl:  { name: 'STREET BRAWL',    icon: 'fist',   teamSize: [1, 3], time: 35, goal: 'hits',    tiers: [3, 6, 10], foeBall: true, desc: 'Knock down as many of them as you can.' },
     potato: { name: 'HOT POTATO',      icon: 'boom',   teamSize: [1, 3], time: 30, goal: 'hold',    tiers: [8, 15, 25], waves: [0, 6, 13], desc: 'Keep the ball. More chasers keep coming.' },
+    // bài ĐỒNG ĐỘI (user 2026-10-31): 2 đồng đội AI cùng làm
+    rondo:  { name: 'RONDO',           icon: 'people', teamSize: [3, 2], time: 35, goal: 'teamhold', tiers: [10, 17, 25], desc: 'Keep the ball as a team. Lose it and win it back.' },
+    assist: { name: 'ASSIST KING',     icon: 'star',   teamSize: [3, 2], time: 45, goal: 'assists', tiers: [1, 2, 4], keepers: 1, desc: 'Only teammate goals from your pass count.' },
+    gang:   { name: 'GANG FIGHT',      icon: 'fist',   teamSize: [3, 3], time: 35, goal: 'hits',    tiers: [4, 8, 13], foeBall: true, desc: 'Your whole crew brawls. Every knockdown counts.' },
+    // bài ĐIÊN (user 2026-10-31: không cần sát bài tập bóng đá)
+    coins:  { name: 'COIN RUSH',       icon: 'coin',   teamSize: [1, 3], time: 35, goal: 'coins',   tiers: [5, 9, 14], noBall: true, coin: { r: 9, gap: 110 },
+      desc: 'Grab the coins. The thugs want to flatten you.' },
+    chicken: { name: 'CHICKEN CATCH',  icon: 'chicken', teamSize: [1, 3], time: 35, goal: 'chickens', tiers: [3, 6, 10], noBall: true, chicken: { speed: 1.2, respawn: 0.8 },
+      desc: 'The chickens got out. Punch them to catch them.' },
     // LEGEND TRIAL (trial: chỉ dùng cho node LEGEND, không bốc cho Skill game): đếm số lần làm được kỹ thuật LEGEND cho mượn —
     // mốc / thời gian / đội hình / cách chơi theo legends.list[].trial
     combo:  { name: 'LEGEND TRIAL',    icon: 'star',   teamSize: [1, 1], time: 40, goal: 'combo',   tiers: [3], trial: true, desc: 'Pull off his combo.' },

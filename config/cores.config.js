@@ -139,7 +139,7 @@ SFC_CONFIG.cores = {
   // Năng lượng Tuyệt kỹ (X), 0..1: tự nạp theo thời gian gainTime / giây lúc đang đá (user chốt 2026-10-17; 0.02 = ~50s đầy nếu chỉ nạp theo thời gian) · bị thủng lưới ·
   // ghi bàn (bị thủng lưới nạp NHIỀU hơn ghi bàn — user đổi 2026-10-17, đội đang thua có chiêu gỡ) · cướp bóng (tối đa 1 lần / stealCooldown giây) ·
   // đấm trúng đối thủ bằng Light attack (tối đa 1 lần / lightHitCooldown giây). Dùng xong nạp lại ngay từ 0 (không còn khoá nạp)
-  ultimate: { gainTime: 0.02, gainGoal: 0.3, gainConceded: 0.5, gainSteal: 0.12, stealCooldown: 3, gainLightHit: 0.05, lightHitCooldown: 1, cutIn: 0.6, cutInAwaken: 0.75, aiDelay: [0.5, 2.5] },
+  ultimate: { gainTime: 0.02, gainGoal: 0.3, gainConceded: 0.5, gainSteal: 0.12, stealCooldown: 3, gainLightHit: 0.05, lightHitCooldown: 1, cutIn: 0.6, cutInAwaken: 0.75, sideCut: 1.4, sideScale: 0.5, aiDelay: [0.5, 2.5] },
 
   // Chọn Core: trọng số = độ hiếm x (1 + buildWeight x số Core cùng trường phái đang có) x thiên hướng đội.
   // KHÔNG bảo đảm có lá cùng hướng (user bỏ 2026-10-13): ra đúng build phải là cảm giác may mắn, không phải chắc chắn.

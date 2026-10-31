@@ -1197,6 +1197,10 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .ult-gain { position: absolute; left: 50%; top: -2px; z-index: 3; font-family: var(--vt); font-size: 11px; line-height: 1; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); transform: translateX(-50%); animation: ultFloat 1.1s steps(8) forwards; pointer-events: none; }
 @keyframes ultFloat { 0% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -14px); } }
 .ab-slot.ult { overflow: visible; }
+/* chưa dùng được (CoreSystem.ultBlocked, choáng, bị khoá hành động): tối hẳn, tắt rung + viền vàng kể cả khi đầy */
+.ab-slot.ult.off { opacity: 0.5; filter: brightness(0.55) grayscale(0.8); border-color: #4a4f5c; box-shadow: none; animation: none; }
+.ab-slot.ult.off i { filter: grayscale(1); opacity: 0.5; }
+.ab-slot.ult.off .ult-pct { color: #9aa3b5; }
 
 /* ---------- SETTINGS > CONTROLS: đổi phím — hình bàn phím / tay cầm + danh sách action 2 cột (ui/controls.js) ---------- */
 .ctl-body { display: flex; flex-direction: column; gap: 5px; }
@@ -3186,6 +3190,15 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 @keyframes grBlink { 50% { opacity: 0.3; } }
 .gr-s.out { opacity: 0.35; }
 .gr-swap { font-family: var(--px); font-size: 5px; color: #ff9a3d; }
+/* hoạt cảnh đeo GEAR (RunUI.wearFx): thẻ treo bay vào ô, ô loé lên khi tới; thẻ người khác mờ đi */
+.gr-fly { position: absolute; z-index: 20; margin: 0; pointer-events: none; transform-origin: 0 0; filter: drop-shadow(2px 2px 0 var(--ink)); }
+.gr-s.got { animation: grLand 0.42s steps(3) 1; }
+@keyframes grLand { 0% { transform: scale(1.8); filter: brightness(2.6); } 100% { transform: scale(1); filter: none; } }
+.rm-sheet.gearwho .lg-pick.out { opacity: 0.25; }
+.gr-card.out { opacity: 0.25; transition: opacity 0.2s; }
+.gr-tag.got { animation: grLandBig 0.42s steps(3) 1; }
+@keyframes grLandBig { 0% { transform: scale(1.18); filter: brightness(2.2); } 100% { transform: scale(1); filter: none; } }
+.lg-dpop.big { width: 48px; text-align: center; font-size: 9px; }
 /* dải đội hình trên thanh map: 1 vạch dưới OVR mỗi ô GEAR */
 .rs-g { position: absolute; left: 21px; bottom: -3px; display: flex; gap: 1px; }
 .rs-g i { width: 4px; height: 2px; background: #2a2e38; }

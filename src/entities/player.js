@@ -82,6 +82,9 @@ window.SFC = window.SFC || {};
       this.readAt = -1;       // lúc thả W (chờ cú sút trong cửa sổ đọc); -1 = không chờ
       this.hitImmune = 0;
       this.punchStealT = -99; // lúc đấm rơi bóng của đối phương gần nhất
+      this.punchN = 0;        // nấc đấm dồn hiện tại (combat.light.chain)
+      this.punchReady = -99;  // lúc cú đấm hồi chiêu xong (đấm dồn tính từ mốc này)
+      this.guardT = 0;        // tới lúc này: vừa giành bóng, cú đấm thường không làm rơi bóng (combat.light.stealGuard)
       this.shotLockT = 0;     // vừa đấm cướp được bóng: còn bao lâu chưa sút được (combat.light.stealShotLock)
       this.shotHold = false;  //   + D giữ từ cú đấm chưa thả ra
       this.recvT = -1;        // lúc nhận đường chuyền (Một-Hai, Chạm Một)

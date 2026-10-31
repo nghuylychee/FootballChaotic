@@ -295,7 +295,7 @@ window.SFC = window.SFC || {};
       fx.ring(p.x, p.y - 6, L.color);
       fx.burst(p.x, p.y - 10, 14, L.color, 30, 120, 0.5);
       // cut-in chân dung: không đè cut-in Tuyệt kỹ, 2 cut-in LEGEND cách nhau cutGap giây
-      if (!fx.O.cutins.length && g.time - (g.legCutAt == null ? -1e9 : g.legCutAt) >= M.cutGap) {
+      if (!fx.O.cutins.length && !(fx.O.sidecuts && fx.O.sidecuts.length) && g.time - (g.legCutAt == null ? -1e9 : g.legCutAt) >= M.cutGap) {
         g.legCutAt = g.time;
         fx.legendCut(p.id, p.legend, M.cutT);
       }

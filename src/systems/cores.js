@@ -747,7 +747,8 @@ window.SFC = window.SFC || {};
     // Tuyệt kỹ khởi đầu của mọi cầu thủ (chưa đạt công thức nào)
     startUlt() { const id = ULTS().start; return this.def(id) ? id : null; }
 
-    // ra Tuyệt kỹ: cut-in (dừng hình) rồi mới thực hiện. activateUltimate(p) hoặc activateUltimate(đội, p)
+    // ra Tuyệt kỹ: cut-in rồi cut giây sau mới thực hiện. activateUltimate(p) hoặc activateUltimate(đội, p)
+    // Không dừng hình (user 2026-10-31): trận chạy tiếp trong lúc cut-in, người bị nhắm vẫn thấy báo trước rồi mới tới đòn
     activateUltimate(a, b) {
       const p = isP(a) ? a : b;
       const g = this.g, id = p && this.ultOf(p);
@@ -761,7 +762,6 @@ window.SFC = window.SFC || {};
       p.res.ult = 0;   // dùng xong nạp lại ngay từ 0 (khoá nạp sau khi dùng đã bỏ, user chốt 2026-10-18)
       // cut-in: tên chiêu (dạng thức tỉnh: tên riêng + khung AWAKENED). Cut-in hiện tên Tuyệt kỹ của mọi người, kể cả đối thủ
       g.effects.cutIn(p.id, CoreSystem.ultName(id, lv).toUpperCase(), color, cut, aw ? 'AWAKENED' : '');
-      g.hitStop(cut);
       g.sfx('ult', 'cut.' + def.tags[0]);   // câu nhạc cut-in theo trường phái (engine/ultsfx.js)
       if (aw) g.sfx('ult', 'awaken');       // lớp âm thức tỉnh chồng lên
       g.later(cut, () => {

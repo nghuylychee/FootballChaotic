@@ -51,6 +51,8 @@ window.SFC = window.SFC || {};
     'ui-people': ['............', '..ss....ss..', '.ssss..ssss.', '.ssss..ssss.', '..ss....ss..', '.bbbb..bbbb.', 'bbbbbbbbbbbb', 'bbbbbbbbbbbb', 'bbbbbbbbbbbb', 'BBBBBBBBBBBB', '............', '............'],
     'ui-calendar': ['..k......k..', '.rrrrrrrrrr.', '.rrrrrrrrrr.', '.wwwwwwwwww.', '.wkwkwkwkww.', '.wwwwwwwwww.', '.wkwkwkwkww.', '.wwwwwwwwww.', '.wkwkwkwrrw.', '.wwwwwwwrrw.', '.eeeeeeeeee.', '............'],
     'ui-ball': ['....wwww....', '..wwkkkkww..', '.wwwkkkkwww.', '.wkwwwwwwkw.', 'wkkwwwwwwkkw', 'wkkwwkkwwkkw', 'wwwwkkkkwwww', 'wwwwwkkwwwww', '.wkwwwwwwkw.', '.wkkwwwwkkw.', '..wwkkkkww..', '....wwww....'],
+    'ui-coin': ['....yyyy....', '..yyYYYYyy..', '.yYyyyyyyYy.', '.yYywwyyyYy.', 'yYyywyyyyyYy', 'yYyywyyyyyYy', 'yYyyyyyyyyYy', 'yYyyyyyyyyYy', '.yYyyyyyyYy.', '.yYyyyyyyYy.', '..yyYYYYyy..', '....yyyy....'],
+    'ui-chicken': ['.....rr.....', '....rrr.....', '...wwww.....', '..wwkwww....', '..wwwwwoo...', '.wwwwwww....', 'wwwwwwwww...', 'wwwlwwwww...', '.wwwllwww...', '..wwwwww....', '...o..o.....', '..oo.oo.....'],
     'ui-cone': ['.....gg.....', '.....gG.....', '....wwww....', '....ggGg....', '....ggGg....', '...wwwwww...', '...gggGgg...', '..ggggGggg..', '..wwwwwwww..', '..gggggGgg..', 'GGGGGGGGGGGG', '.GGGGGGGGGG.'],
     // GOAT PATH (src/ui/runmap.js): node SHOP (túi tiền) · LOCKER ROOM (áo treo)
     'ui-shop': ['...NN..NN...', '....NNNN....', '.....nn.....', '...nnnnnn...', '..nnnyyynn..', '.nnnynnnnnn.', '.nnnnyynnnn.', '.nnnnnnynnn.', '.nnnyyynnnn.', '.nnnnnnnnnn.', '..NNNNNNNN..', '............'],

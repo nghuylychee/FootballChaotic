@@ -34,36 +34,69 @@ window.SFC = window.SFC || {};
      * cone (độ) -> chỉ xét đồng đội nằm trong vùng quanh hướng; không có ai -> null.
      */
     findPassTarget(g, p, dx, dy, power = null, mode = 'ground', prev = null, cone = null) {
-      const P = G().pass;
+      const P = G().pass, PA = P.assist;
       const dir = Math.hypot(dx, dy) > 0.2 ? U.norm(dx, dy) : facingVec(p);
-      const maxAng = cone == null ? Infinity : (cone * Math.PI) / 180;
+      // HỖ TRỢ CHUYỀN (pass.assist): người chơi chọn người nhận trong vùng rộng hơn theo PASSING, né đường chuyền dễ bị cắt
+      const human = this.passAssisted(g, p), k = human ? this.passSkill(g, p) : 0;
+      if (human && cone != null) cone = U.lerp(PA.cone[0], PA.cone[1], k);
       const pref = power == null ? null : U.lerp(P.minDist, P.maxDist, power);
-      const opps = g.teams[1 - p.team].players;
-      let best = null, bestS = -Infinity;
-      for (const m of g.teams[p.team].players) {
-        if (m === p || m.state === 'stun') continue;
-        const tx = m.x - p.x, ty = m.y - p.y;
-        const d = Math.hypot(tx, ty) || 1;
-        const ang = Math.acos(U.clamp((tx * dir.x + ty * dir.y) / d, -1, 1));
-        if (ang > maxAng) continue;
-        let s = -ang * P.angleWeight;
-        s -= pref == null ? d / 300 : (Math.abs(d - pref) / 200) * P.distWeight;
-        let oppD = Infinity;
-        for (const o of opps) {
-          oppD = Math.min(oppD, U.dist(o, m));
-          if (mode !== 'lob' && mode !== 'lobthrough' && U.segDist(o.x, o.y, p.x, p.y, m.x, m.y) < 10) s -= 0.5;
+      const opps = g.teams[1 - p.team].players, ground = mode !== 'lob' && mode !== 'lobthrough';
+      const laneW = human ? U.lerp(PA.laneWeight[0], PA.laneWeight[1], k) : 0;
+      const scan = (maxAng) => {
+        let best = null, bestS = -Infinity;
+        for (const m of g.teams[p.team].players) {
+          if (m === p || m.state === 'stun') continue;
+          const tx = m.x - p.x, ty = m.y - p.y;
+          const d = Math.hypot(tx, ty) || 1;
+          const ang = Math.acos(U.clamp((tx * dir.x + ty * dir.y) / d, -1, 1));
+          if (ang > maxAng) continue;
+          let s = -ang * P.angleWeight;
+          s -= pref == null ? d / 300 : (Math.abs(d - pref) / 200) * P.distWeight;
+          let oppD = Infinity;
+          for (const o of opps) {
+            oppD = Math.min(oppD, U.dist(o, m));
+            if (ground && !human && U.segDist(o.x, o.y, p.x, p.y, m.x, m.y) < 10) s -= 0.5;
+          }
+          if (ground && human) s -= this.laneRisk(g, p, m.x, m.y) * laneW;
+          s += (Math.min(oppD, 60) / 60) * 0.4;
+          if (m === prev) s += P.switchMargin;
+          if (s > bestS) { bestS = s; best = m; }
         }
-        s += (Math.min(oppD, 60) / 60) * 0.4;
-        if (m === prev) s += P.switchMargin;
-        if (s > bestS) { bestS = s; best = m; }
-      }
+        return best;
+      };
+      let best = scan(cone == null ? Infinity : (cone * Math.PI) / 180);
       // TRẢ BÓNG (pass.returnPass): không ai trong vùng hướng mà người vừa chuyền cho mình nằm trong vùng rộng hơn -> trả lại người đó
       const RP = P.returnPass, r = p.retFrom;
       if (!best && cone != null && RP && r && r.team === p.team && r.state !== 'stun' && g.time - p.gotT < RP.window) {
         const tx = r.x - p.x, ty = r.y - p.y, d = Math.hypot(tx, ty) || 1;
         if (Math.acos(U.clamp((tx * dir.x + ty * dir.y) / d, -1, 1)) <= (RP.cone * Math.PI) / 180) best = r;
       }
+      // vẫn không ai: chuyền sệt / bổng của người chơi tìm tiếp trong vùng rộng (fallback) trước khi phát vào khoảng trống
+      if (!best && human && cone != null && (mode === 'ground' || mode === 'lob')) best = scan((U.lerp(PA.fallback[0], PA.fallback[1], k) * Math.PI) / 180);
       return best;
+    },
+    // đường chuyền có hỗ trợ (pass.assist): người chơi đang điều khiển
+    passAssisted(g, p) { const PA = G().pass.assist; return !!PA && PA.enabled && p.isControlled && g.isHuman(p.team); },
+    // 0..1 theo PASSING (pass.assist.acc), gồm Core / BADGE chỉnh độ chuẩn chuyền
+    passSkill(g, p) {
+      const PA = G().pass.assist, acc = p.stats.pass * g.cores.mod(p.team, 'passAccuracy', p);
+      return U.clamp((acc - PA.acc[0]) / (PA.acc[1] - PA.acc[0]), 0, 1);
+    },
+    // 0..1: nguy cơ đường chuyền sệt từ bóng tới (x, y) bị cắt — đối thủ nào đứng trong tầm với của đường bóng, tính cả quãng họ kịp
+    // bước tới (pass.assist.close px/s) trong lúc bóng lăn tới chỗ đó (ballSpeed px/s). Bỏ qua người đứng sau lưng / sát chỗ nhận
+    laneRisk(g, p, x, y) {
+      const b = g.ball, PA = G().pass.assist, reach = p.radius + b.r + G().ball.pickupRange;
+      const L = Math.hypot(x - b.x, y - b.y) || 1, ux = (x - b.x) / L, uy = (y - b.y) / L;
+      let risk = 0;
+      for (const o of g.teams[1 - p.team].players) {
+        if (o.state === 'stun') continue;
+        const along = (o.x - b.x) * ux + (o.y - b.y) * uy;
+        if (along < 0 || along > L - 4) continue;
+        const perp = Math.abs((o.x - b.x) * uy - (o.y - b.y) * ux);
+        const gap = perp - reach - PA.close * (along / PA.ballSpeed);
+        risk = Math.max(risk, U.clamp(1 - gap / PA.margin, 0, 1));
+      }
+      return risk;
     },
 
     /**
@@ -77,10 +110,13 @@ window.SFC = window.SFC || {};
       const mult = p.stats.pass * g.cores.pmod(p, 'passSpeed');   // gồm Nhịp
       const clampPt = (pt) => ({ x: U.clamp(pt.x, f.x + 10, f.x + f.w - 10), y: U.clamp(pt.y, f.y + 10, f.y + f.h - 10) });
       const idealOf = (d) => U.clamp((d - P.minDist) / (P.maxDist - P.minDist), 0, 1);
+      // HỖ TRỢ CHUYỀN (pass.assist): người chơi — giảm lực thừa nhiều hơn + dịch điểm nhận né chân đối thủ, theo PASSING
+      const PA = P.assist, human = this.passAssisted(g, p), ak = human ? this.passSkill(g, p) : 0;
+      const pAssist = human ? U.lerp(PA.power[0], PA.power[1], ak) : P.powerAssist;
       // lực mặc định = lực lý tưởng theo khoảng cách; giữ vượt mức đó -> bóng căng hơn
       const powerFactor = (ideal) => {
         if (power == null || power <= ideal) return 1;
-        return 1 + (power - ideal) * (1 - P.powerAssist) * P.powerSensitivity;
+        return 1 + (power - ideal) * (1 - pAssist) * P.powerSensitivity;
       };
 
       // không có người nhận trong vùng hướng -> chuyền thẳng theo hướng mũi tên, lực = quãng đường
@@ -139,12 +175,30 @@ window.SFC = window.SFC || {};
         cross = !!X;
       } else {
         // chuyền sệt: v(x) = v0 - k*x  ->  v0 = tốc độ tới chân + k*d
+        const speedTo = (pt) => {
+          const d = U.dist(b, pt) || 1;
+          spd = U.clamp((P.arriveSpeed * mult + k * d) * powerFactor(idealOf(d)), P.minSpeed, P.maxSpeed * mult);
+          T = k * d < spd * 0.98 ? -Math.log(1 - (k * d) / spd) / k : 1.5;
+        };
         for (let i = 0; i < 4; i++) {
           point = clampPt({ x: target.x + target.vx * P.receiverLead * T, y: target.y + target.vy * P.receiverLead * T });
-          const d = U.dist(b, point) || 1;
-          spd = (P.arriveSpeed * mult + k * d) * powerFactor(idealOf(d));
-          spd = U.clamp(spd, P.minSpeed, P.maxSpeed * mult);
-          T = k * d < spd * 0.98 ? -Math.log(1 - (k * d) / spd) / k : 1.5;
+          speedTo(point);
+        }
+        // có chân đối thủ chắn đường bóng: thử dịch điểm nhận sang ngang (người nhận tự chạy đón), lấy chỗ ít nguy cơ nhất
+        const S = human ? U.lerp(PA.shift[0], PA.shift[1], ak) : 0;
+        if (S > 0) {
+          let r0 = this.laneRisk(g, p, point.x, point.y);
+          if (r0 > 0) {
+            const L = U.dist(b, point) || 1, nx = -(point.y - b.y) / L, ny = (point.x - b.x) / L;
+            let best = point;
+            for (const o of [S * 0.5, -S * 0.5, S, -S]) {
+              const q = clampPt({ x: point.x + nx * o, y: point.y + ny * o }), r = this.laneRisk(g, p, q.x, q.y);
+              if (r < r0 - 0.05) { r0 = r; best = q; }
+            }
+            if (best !== point) { point = best; speedTo(point); }
+            // vẫn còn nguy cơ: chuyền căng hơn (zip)
+            if (r0 > 0) spd = Math.min(P.maxSpeed * mult, spd * (1 + r0 * U.lerp(PA.zip[0], PA.zip[1], ak)));
+          }
         }
       }
 
@@ -451,6 +505,28 @@ window.SFC = window.SFC || {};
       return { angle: dir > 0 ? a : Math.PI - a, off: Math.abs(want - a) };
     },
 
+    // HỖ TRỢ NHẮM SÚT (kick.assist): chọn phía khung (mũi tên lên / xuống; thẳng / không bấm = phía thủ môn để trống hơn), điểm nhắm
+    // cách cột theo SHOOTING (k = 0..1), rồi kéo hướng sút raw về điểm đó theo strength. Trả về góc mới
+    assistAim(g, p, raw, aim, k) {
+      const AS = G().kick.assist, b = g.ball, f = g.field, dir = g.teams[p.team].dir;
+      const gx = dir > 0 ? f.x + f.w : f.x, m = f.goalWidth / 2 - 6;
+      let side = aim && Math.abs(aim.y) >= AS.side ? Math.sign(aim.y) : 0;
+      if (!side) {
+        // thủ môn đối phương (đứng trong vòng cấm của họ, gần khung nhất): sút về phía khoảng trống lớn hơn
+        let gk = null, bd = Infinity;
+        for (const o of g.teams[1 - p.team].players) {
+          if (!g.inKeeperZone(o)) continue;
+          const d = Math.abs(o.x - gx);
+          if (d < bd) { bd = d; gk = o; }
+        }
+        // không có ai trông khung: cột xa so với chỗ đứng
+        side = gk ? (gk.y - (f.cy - m) > f.cy + m - gk.y ? -1 : 1) : b.y > f.cy ? -1 : 1;
+      }
+      const ty = f.cy + side * (m - U.lerp(AS.inset[0], AS.inset[1], k));
+      const want = Math.atan2(ty - b.y, gx - b.x);
+      return raw + U.angleDiff(raw, want) * U.lerp(AS.strength[0], AS.strength[1], k);
+    },
+
     // aim = hướng phím người chơi giữ lúc thả ({x, y}) hoặc null -> nhắm theo aimY (-1..1, 0 = giữa khung; AI dùng)
     // ft = dứt điểm 1 chạm (Actions.firstTime): { kind: ground | volley | header, z, vx, vy, spd } của bóng lúc chạm
     shoot(g, p, charge, aimY, aim = null, ft = null) {
@@ -483,7 +559,13 @@ window.SFC = window.SFC || {};
       }
 
       const acc = p.stats.accuracy * g.cores.mod(p.team, 'accuracy', p);
+      // HỖ TRỢ NHẮM (kick.assist): người chơi, trừ sút xe đạp (ft bicycle tự nhắm)
+      const AS = K.assist, human = p.isControlled && g.isHuman(p.team);
+      const assist = !!AS && AS.enabled && human && !(ft && ft.kind === 'bicycle');
+      const ak = assist ? U.clamp((acc - AS.acc[0]) / (AS.acc[1] - AS.acc[0]), 0, 1) : 0;
+      if (assist) base = this.assistAim(g, p, base, aim, ak);
       let spread = (K.shotSpread + awk) / acc + over * K.overchargeSpread;
+      if (assist) spread *= U.lerp(AS.spread[0], AS.spread[1], ak);
       if (!p.isControlled) spread *= 2 - g.aiProfile(p.team).shotAccuracy;
       // dứt điểm 1 chạm: kém chuẩn hơn (vô-lê nhiều nhất, đánh đầu ít nhất), bóng tới càng nhanh càng khó
       if (ft && !volley) {
@@ -708,8 +790,12 @@ window.SFC = window.SFC || {};
     lightAttack(g, p) {
       const L = G().combat.light;
       if (p.cd.light > 0 || p.state !== 'normal' || p.airZ > 0 || p.noActT > 0) return false;
+      // đấm dồn (light.chain): ra đòn ngay khi vừa hồi chiêu xong -> thêm nấc, hồi chiêu lần này dài hơn
+      const CH = L.chain, n = CH && g.time - p.punchReady < CH.window ? Math.min(CH.max, p.punchN + 1) : 0;
+      p.punchN = n;
       // Phản Đòn sau khi né -> gần như không hồi chiêu
-      p.cd.light = p.counterT > g.time ? 0.15 : this.cooldown(g, p, 'light', L.cooldown * g.cores.mod(p.team, 'lightCooldown', p));
+      p.cd.light = p.counterT > g.time ? 0.15 : this.cooldown(g, p, 'light', (L.cooldown + (CH ? n * CH.add : 0)) * g.cores.mod(p.team, 'lightCooldown', p));
+      p.punchReady = g.time + p.cd.light;
       const fv = facingVec(p);
       p.state = 'jab'; p.stateT = L.startup;
       this.startAttack(p, 'light');
@@ -759,6 +845,12 @@ window.SFC = window.SFC || {};
           ? { stun, kbx: d.x * 40, kby: d.y * 40, launch: C.sp('uppercut', p).launch * C.pmod(p, 'launch'), source: p, type: 'light' }
           : { stun, kbx: d.x * kb, kby: d.y * kb, launch: big ? 150 : 0, source: p, type: 'light' };
         p.lastPunch = { big, upper, counter };
+        // vừa giành bóng (light.stealGuard): cú đấm thường chỉ đẩy lùi
+        if (o.hasBall && !(sure || upper) && o.guardT > g.time) {
+          o.hit({ stun: 0, kbx: d.x * kb * 0.6, kby: d.y * kb * 0.6, source: p, type: 'light' });
+          g.effects.pop(o.x, o.y - 30, 'HOLD', 'info', '#9aa3b5');
+          continue;
+        }
         if (o.hasBall) {
           let chance = L.stealChance * (p.stats.tackle / (o.stats.dribble * C.mod(o, 'dribble'))) * C.pmod(p, 'tackleChance');   // gồm Kiểm Soát Bóng của người bị đấm
           if (!p.isControlled) chance *= g.aiProfile(p.team).tackleMult;
@@ -796,7 +888,10 @@ window.SFC = window.SFC || {};
       if (counter) p.counterT = 0;
       p.lastPunch = null;
       if (hit) { g.sfx('punch'); g.effects.shake(G().fx.shakeHit * 0.6); p.freeze(punchStop); }
-      p.state = 'recover'; p.stateT = L.recover;
+      // đấm hụt (light.whiff): hồi chiêu thêm + khựng lâu hơn
+      const W = !hit && L.whiff;
+      if (W) { p.cd.light += W.cooldown; p.punchReady += W.cooldown; }
+      p.state = 'recover'; p.stateT = W ? W.recover : L.recover;
     },
 
     /* ---------- A — HARD ATTACK: gồng co chân rồi vung chân đá ---------- */

@@ -50,8 +50,10 @@ window.SFC = window.SFC || {};
       const b = g.ball;
       const has = b.owner === p;
       const teamHas = !!b.owner && b.owner.team === p.team;
-      // đang chờ đá 1 chạm (firstTime): thả D = chốt lực; hướng mũi tên lúc bóng chạm người = hướng sút
+      // đang chờ đá 1 chạm (firstTime): thả D = chốt lực; hướng mũi tên lúc bóng chạm người = hướng sút.
+      // human: người chơi chờ đá -> bóng sát đất chạm người mà còn giữ D thì khống chế, thả D mới sút (Game.strike)
       if (p.ot) {
+        p.ot.human = true;
         if (!input.isDown('shoot')) p.ot.held = false;
         p.ot.aim = { x: mx, y: my };
       }

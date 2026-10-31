@@ -188,7 +188,7 @@ window.SFC = window.SFC || {};
           if (shiver) { ctx.save(); ctx.translate(shiver, 0); }
           // GOAT PATH: kỹ thuật LEGEND đang diễn -> biến đổi quanh sprite (render/legenddraw.js)
           const lx = !swap && !cel && SFC.LegendDraw ? SFC.LegendDraw.begin(ctx, g, p) : false;
-          let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.28 + 0.08 * Math.sin(t * 18) : faint(p));
+          let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.3 : faint(p));
           ctx.globalAlpha = 1;
           if (lx) { ctx.restore(); SFC.LegendDraw.after(ctx, g, p); }
           if (shiver) ctx.restore();

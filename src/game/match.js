@@ -369,6 +369,7 @@ window.SFC = window.SFC || {};
       p.shotLockT = stole ? L.stealShotLock : 0;
       p.shotHold = stole;
       if (this.lastPossessionTeam !== -1 && this.lastPossessionTeam !== p.team) {
+        p.guardT = this.time + (L.stealGuard || 0);   // vừa giành bóng: chưa bị đấm rơi ngay (chống bóng đổi chân liên tục)
         if (SFC.AI) SFC.AI.lostBall(this, p);   // đội vừa mất bóng: người ở gần phản pressing (ai.press)
         this.cores.dispatch(p.team, 'onPossessionGained', p);
         if (p.legend && SFC.Legends) SFC.Legends.on(this, 'win', p);   // GOAT PATH: khoảnh khắc LEGEND (giành bóng từ đối thủ)
@@ -798,6 +799,15 @@ window.SFC = window.SFC || {};
         if (!plain || (this.inKeeperZone(p) && b.lob)) { SFC.Actions.disarm(p); return this.tryControl(p); }
         if (b.speed >= C.pass.intercept.minSpeed && !this.intercepts(p)) return;
       }
+      // NGƯỜI CHƠI còn giữ D lúc bóng sát đất chạm người (user 2026-10-31: thả D mới sút): khống chế bóng, thanh lực chờ nạp tiếp
+      // thành lực sút thường (Human.update) — thả D là sút. Bóng bổng (vô-lê cao / đánh đầu) không khống chế được: vẫn đá luôn
+      const o = p.ot;
+      if (o.human && o.held && !o.pass && b.z < C.ball.pickupHeight) {
+        const charge = o.charge;
+        this.gainPossession(p);
+        p.charging = true; p.charge = charge; p.shotTarget = 0; p.shotStyle = null;
+        return;
+      }
       SFC.Actions.firstTime(this, p);
     }
 
@@ -861,9 +871,9 @@ window.SFC = window.SFC || {};
             this.effects.pop(p.x, p.y - 30, 'PARRY', 'good', '#ffffff');
             this.sfx('save');
           } else {
-            // bóng quá mạnh, lọt tay thủ môn
+            // bóng lọt: thủ môn đổ người sai phía hoặc đúng phía mà muộn (player.gkBeat), không chạm được bóng nữa
             b.noPickup.set(p.id, 0.5);
-            this.effects.pop(p.x, p.y - 30, 'SLIP!', 'status', '#ff6a3d');
+            this.keeperBeaten(p);
           }
           return;
         }
@@ -925,6 +935,15 @@ window.SFC = window.SFC || {};
     keeperLunge(p) {
       const b = this.ball, dy = b.y - p.y;
       if (Math.abs(dy) > 3 && b.speed >= this.cfg.player.gkLungeMinSpeed) SFC.Actions.dive(this, p, dy);
+    }
+
+    // thủ môn bị đánh bại (player.gkBeat): đổ người sai phía (ngược đường bóng; bóng thẳng người = phía ngẫu nhiên) hoặc đúng phía
+    // nhưng muộn gkBeat.late s. Đổ người hết tầm (gkDiveTime) cho rõ là bay hụt
+    keeperBeaten(p) {
+      const b = this.ball, P = this.cfg.player, B = P.gkBeat, dy = b.y - p.y;
+      const sideToBall = Math.abs(dy) > 3 ? Math.sign(dy) : U.randSign(), full = P.gkDiveSpeed * P.gkDiveTime;
+      if (Math.random() < B.wrong) SFC.Actions.dive(this, p, -sideToBall * full);
+      else this.later(B.late, () => SFC.Actions.dive(this, p, sideToBall * full));
     }
 
     deflect(p, keep) {

@@ -1,6 +1,7 @@
 /* RunDraw — hình riêng của GOAT PATH trên sân (chỉ đọc trạng thái trận, renderer.js gọi):
  *   floor(ctx, g): vật trên mặt sân của SKILL GAME (src/systems/drills.js, g.drill) — cổng 2 cọc + vòng sáng (SLALOM GATES:
  *                  cổng đang tới sáng rõ, cổng kế mờ)
+ *                  · đồng xu xoay (COIN RUSH: xu đang tới sáng rõ, xu kế mờ)
  *   top(ctx, g): vẽ sau khung thành — bia sáng trôi lên xuống trong lưới (TARGET PRACTICE)
  *   hurt(ctx, g, p, hy): dấu thập đỏ nhấp nháy cạnh đầu cầu thủ có chấn thương (p.inj; băng quấn vẽ ở sprites.js)
  */
@@ -38,6 +39,27 @@ window.SFC = window.SFC || {};
           ctx.setLineDash([]);
           cone(ctx, G.x - r - 2, G.y + 1);
           cone(ctx, G.x + r + 2, G.y + 1);
+          ctx.globalAlpha = 1;
+        }
+      }
+      if (D.cfg.goal === 'coins' && D.gates) {
+        const r = D.cfg.coin.r;
+        for (let i = 1; i >= 0; i--) {
+          const G = D.gates[D.gi + i];
+          if (!G) continue;
+          const on = i === 0, bob = on ? Math.sin(t * 5) * 2 : 0, w = Math.max(1.5, r * Math.abs(Math.cos(t * 4)));
+          ctx.globalAlpha = on ? 1 : 0.35;
+          // bóng dưới đất + đồng xu dựng đứng xoay quanh trục dọc
+          ctx.fillStyle = 'rgba(0,0,0,0.35)';
+          ctx.beginPath(); ctx.ellipse(G.x, G.y + 1, r * 0.8, r * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+          const cy = G.y - r - 4 + bob;
+          ctx.fillStyle = '#7a4f00';
+          ctx.beginPath(); ctx.ellipse(G.x, cy, w + 1, r + 1, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ffd23f';
+          ctx.beginPath(); ctx.ellipse(G.x, cy, w, r, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#b8860b';
+          ctx.fillRect(Math.round(G.x - Math.min(w, 2) / 2), Math.round(cy - r * 0.5), Math.max(1, Math.round(Math.min(w, 2))), Math.round(r));
+          if (on && w > 4) { ctx.fillStyle = '#fff6c0'; ctx.fillRect(Math.round(G.x - w * 0.5), Math.round(cy - r * 0.6), 2, 2); }
           ctx.globalAlpha = 1;
         }
       }

@@ -840,6 +840,140 @@ window.SFC = window.SFC || {};
       cols[0].outerHTML = l;
       card.querySelectorAll('.sq-col')[1].outerHTML = r;
     },
+    // chỉ số trên thẻ đổi lần lượt base -> next (số chạy + nháy + bật +n / -n), bắt đầu sau t0 ms, mỗi chỉ số cách step ms.
+    // Hẹn giờ thường (tab ẩn vẫn chạy hết). Trả về số chỉ số đổi (nhận LEGEND, đeo GEAR)
+    tickStats(root, card, base, next, ref, t0, step) {
+      const A = SFC_CONFIG.progression.attrs, k = root.getBoundingClientRect().width / root.offsetWidth || 1, rs = root.getBoundingClientRect();
+      const changed = A.order.filter((s) => next[s] !== base[s]), cur = Object.assign({}, base);
+      changed.forEach((s, j) => setTimeout(() => {
+        const from = cur[s], to = next[s], steps = 6;
+        for (let q = 1; q <= steps; q++) setTimeout(() => {
+          cur[s] = Math.round(from + ((to - from) * q) / steps);
+          this.setCols(card, cur, ref, null);
+          const cell = [...card.querySelectorAll('.sq-st')].find((x) => x.querySelector('i').textContent === A.list[s].short);
+          if (cell) cell.classList.add('tick');
+          if (q < steps || !cell) return;
+          const r = cell.getBoundingClientRect(), d = document.createElement('div');
+          d.className = 'lg-dpop ' + (to > from ? 'up' : 'dn');
+          d.textContent = (to > from ? '+' : '') + (to - from);
+          d.style.left = (r.right - rs.left) / k - 6 + 'px'; d.style.top = (r.top - rs.top) / k - 6 + 'px';
+          root.appendChild(d);
+          setTimeout(() => d.remove(), 950);
+          SFC.Audio.menu();
+        }, q * 45);
+      }, t0 + j * step));
+      return changed.length;
+    },
+    // hoạt cảnh đeo GEAR (user 2026-10-31): thẻ treo bay từ món đang chọn vào ô GEAR trống kế tiếp trên thẻ người đeo -> ô loé ->
+    // GEAR chỉ số: chỉ số tăng (tickStats) + OVR -> done (mới đeo thật). Người đeo đủ ô (chọn món bỏ ra ở bước sau): không diễn
+    wearFx(menu, t, done) {
+      const R = RUN().run, O = R.offer, g = O && O.gear && O.gear[O.sel], root = menu.el.querySelector('.rm-sheet.gearwho');
+      const card = root && root.querySelector(`[data-rt="${t.key}"]`), slot = card && card.querySelector('.gr-s.new');
+      const tag = root && root.querySelector('.gr-hero .gr-tag');
+      if (!g || !card || !slot || !tag || !tag.animate) return done();
+      const k = root.getBoundingClientRect().width / root.offsetWidth || 1, rs = root.getBoundingClientRect();
+      const rel = (e) => { const r = e.getBoundingClientRect(); return { x: (r.left - rs.left) / k, y: (r.top - rs.top) / k, w: r.width / k, h: r.height / k }; };
+      const i = t.i, base = RUN().ratingsOf(i, R), ref = RUN().baseRatings(i, R), list = RUN().gearOf(i, R).concat([g]);
+      const next = RUN().ratingsOf(i, R, undefined, list), o0 = RUN().ovrOf(i, R), o1 = RUN().ovrOf(i, R, undefined, list);
+      // thẻ khác mờ đi; thẻ được chọn bỏ xem trước (chỉ số + OVR hiện tại, ô GEAR mới để trống chờ thẻ bay tới)
+      root.querySelectorAll('.lg-pick').forEach((el) => { if (!el.contains(card)) el.classList.add('out'); });
+      card.classList.add('got');
+      card.style.setProperty('--lc', SFC_CONFIG.progression.rarities[g.r].color);
+      this.setCols(card, base, ref, null);
+      const ov = card.querySelector('.sq-ovr');
+      ov.textContent = o0; ov.classList.remove('pre', 'dn');
+      slot.className = 'gr-s empty';
+      slot.innerHTML = '';
+      // thẻ treo bay theo đường cong, thu nhỏ đúng cỡ ô (gốc biến đổi: góc trên trái)
+      const a = rel(tag), b = rel(slot), sc = b.w / a.w, dx = b.x - a.x, dy = b.y - a.y;
+      const f = tag.cloneNode(true);
+      f.className = 'gr-tag gr-fly';
+      f.style.cssText = `left:${a.x}px;top:${a.y}px;width:${a.w}px;height:${a.h}px;--rc:${SFC_CONFIG.progression.rarities[g.r].color}`;
+      root.appendChild(f);
+      SFC.Audio.pick();
+      f.animate([
+        { transform: 'translate(0, 0) scale(1)' },
+        { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 40}px) scale(${(1 + sc) / 2 + 0.25})`, offset: 0.45 },
+        { transform: `translate(${dx}px, ${dy}px) scale(${sc})` },
+      ], { duration: 560, easing: 'cubic-bezier(0.45, 0, 0.6, 1)', fill: 'forwards' });
+      // onfinish + hẹn giờ dự phòng (tab ẩn / trình duyệt không chạy hoạt cảnh thì vẫn đeo)
+      let landed = false;
+      const land = () => {
+        if (landed) return;
+        landed = true;
+        f.remove();
+        slot.className = 'gr-s got';
+        slot.style.setProperty('--rc', SFC_CONFIG.progression.rarities[g.r].color);
+        slot.style.setProperty('--c', this.gearColor(g.id));
+        slot.innerHTML = this.gearIcon(g.id, '');
+        SFC.Audio.upgrade();
+        const T0 = 320, STEP = 380, n = this.tickStats(root, card, base, next, ref, T0, STEP), tEnd = T0 + n * STEP + (n ? 200 : 0);
+        setTimeout(() => { ov.textContent = o1; ov.classList.toggle('pre', o1 > o0); }, tEnd);
+        setTimeout(done, tEnd + (n ? 750 : 450));
+      };
+      f.getAnimations()[0].onfinish = land;
+      setTimeout(land, 760);
+    },
+    // hoạt cảnh đổi GEAR (người đeo đủ ô, màn Swap out which one?): thẻ treo cũ rơi khỏi thẻ, thẻ treo mới bay từ trên vào đúng chỗ,
+    // thẻ đổi tên + chip, rồi bật lần lượt chỉ số đổi (+n / -n) trên thẻ -> done (mới đổi thật)
+    swapFx(menu, t, done) {
+      const R = RUN().run, O = R.offer, g = O && O.gear && O.gear[O.sel], root = menu.el.querySelector('.rm-sheet.pick');
+      const card = root && root.querySelector(`[data-rt="${t.key}"]`), old = card && card.querySelector('.gr-tag');
+      const tag = root && root.querySelector('.gr-hero .gr-tag');
+      if (!g || !old || !tag || !tag.animate) return done();
+      const k = root.getBoundingClientRect().width / root.offsetWidth || 1, rs = root.getBoundingClientRect();
+      const rel = (e) => { const r = e.getBoundingClientRect(); return { x: (r.left - rs.left) / k, y: (r.top - rs.top) / k, w: r.width / k, h: r.height / k }; };
+      const who = O.who, list = RUN().gearOf(who, R).slice(), rc = SFC_CONFIG.progression.rarities[g.r].color;
+      list[t.i] = { id: g.id, r: g.r, up: false };
+      const base = RUN().ratingsOf(who, R), next = RUN().ratingsOf(who, R, undefined, list), A = SFC_CONFIG.progression.attrs;
+      root.querySelectorAll('.gr-card').forEach((c) => { if (c !== card) c.classList.add('out'); });
+      card.classList.add('sel');
+      // thẻ cũ rơi xuống, xoay, mờ dần (không fill: ẩn bằng visibility để giữ chỗ cho thẻ mới; thẻ mới tới trước thì huỷ luôn)
+      let landed = false;
+      const drop = old.animate([{ transform: 'translate(0, 0) rotate(0)', opacity: 1 }, { transform: 'translate(10px, 46px) rotate(28deg)', opacity: 0 }],
+        { duration: 380, easing: 'cubic-bezier(.5, 0, .9, .6)' });
+      drop.onfinish = () => { if (!landed) old.style.visibility = 'hidden'; };
+      const a = rel(tag), b = rel(old), sc = b.w / a.w, dx = b.x - a.x, dy = b.y - a.y;
+      const f = tag.cloneNode(true);
+      f.className = 'gr-tag gr-fly';
+      f.style.cssText = `left:${a.x}px;top:${a.y}px;width:${a.w}px;height:${a.h}px;--rc:${rc}`;
+      SFC.Audio.pick();
+      const land = () => {
+        if (landed) return;
+        landed = true;
+        f.remove();
+        drop.cancel();
+        card.style.setProperty('--rc', rc);
+        old.querySelector('.gr-ico').innerHTML = this.gearIcon(g.id, 'x3');
+        old.style.visibility = '';
+        old.classList.add('got');
+        const name = card.querySelector('b'), chip = card.querySelector('.gr-chip');
+        if (name) name.textContent = RUN().gearDef(g.id).name;
+        if (chip) chip.outerHTML = this.gearChip(g);
+        SFC.Audio.upgrade();
+        // chỉ số đổi: bật lần lượt "+9 PAC" / "-6 SHO" phía trên chip
+        const ch = A.order.filter((s) => next[s] !== base[s]), cb = rel(card);
+        ch.forEach((s, j) => setTimeout(() => {
+          const d = document.createElement('div'), n = next[s] - base[s];
+          d.className = 'lg-dpop big ' + (n > 0 ? 'up' : 'dn');
+          d.textContent = `${n > 0 ? '+' : ''}${n} ${A.list[s].short}`;
+          d.style.left = cb.x + cb.w / 2 - 24 + 'px'; d.style.top = cb.y + cb.h * 0.58 - j * 12 + 'px';
+          root.appendChild(d);
+          setTimeout(() => d.remove(), 950);
+          SFC.Audio.menu();
+        }, 300 + j * 380));
+        setTimeout(done, 300 + ch.length * 380 + (ch.length ? 700 : 300));
+      };
+      setTimeout(() => {
+        root.appendChild(f);
+        f.animate([
+          { transform: 'translate(0, 0) scale(1)' },
+          { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 30}px) scale(${(1 + sc) / 2 + 0.15})`, offset: 0.45 },
+          { transform: `translate(${dx}px, ${dy}px) scale(${sc})` },
+        ], { duration: 520, easing: 'cubic-bezier(0.45, 0, 0.6, 1)', fill: 'forwards' }).onfinish = land;
+      }, 180);
+      setTimeout(land, 900);
+    },
     // hoạt cảnh nhận LEGEND (user 2026-10-30): chân dung bay vào thẻ -> từng chỉ số đổi lần lượt (số chạy + bật +n / -n) -> chip COMBO
     // đóng dấu NEW COMBO lên thẻ -> done (mới vào đội). Hẹn giờ thường (không phụ thuộc hoạt cảnh) nên tab ẩn vẫn xong
     sign(menu, t, done) {
@@ -848,7 +982,7 @@ window.SFC = window.SFC || {};
       if (!card) return done();
       const k = root.getBoundingClientRect().width / root.offsetWidth || 1, rs = root.getBoundingClientRect();
       const rel = (e) => { const r = e.getBoundingClientRect(); return { x: (r.left - rs.left) / k, y: (r.top - rs.top) / k, w: r.width / k, h: r.height / k }; };
-      const base = RUN().ratingsOf(t.i, R), ref = RUN().baseRatings(t.i, R), next = RUN().ratingsOf(t.i, R, J.id), A = SFC_CONFIG.progression.attrs;
+      const base = RUN().ratingsOf(t.i, R), ref = RUN().baseRatings(t.i, R), next = RUN().ratingsOf(t.i, R, J.id);
       const o0 = RUN().ovrOf(t.i, R), o1 = RUN().ovrOf(t.i, R, J.id);
       // thẻ khác: mờ đi, bỏ xem trước
       root.querySelectorAll('.lg-pick').forEach((el) => {
@@ -881,26 +1015,9 @@ window.SFC = window.SFC || {};
       }
       SFC.Audio.pick();
       // từng chỉ số đổi, lần lượt
-      const changed = A.order.filter((s) => next[s] !== base[s]), cur = Object.assign({}, base), T0 = 700, STEP = 380;
-      changed.forEach((s, j) => setTimeout(() => {
-        const from = cur[s], to = next[s], steps = 6;
-        for (let q = 1; q <= steps; q++) setTimeout(() => {
-          cur[s] = Math.round(from + ((to - from) * q) / steps);
-          this.setCols(card, cur, ref, null);
-          const cell = [...card.querySelectorAll('.sq-st')].find((x) => x.querySelector('i').textContent === A.list[s].short);
-          if (cell) cell.classList.add('tick');
-          if (q < steps || !cell) return;
-          const p = rel(cell), d = document.createElement('div');
-          d.className = 'lg-dpop ' + (to > from ? 'up' : 'dn');
-          d.textContent = (to > from ? '+' : '') + (to - from);
-          d.style.left = p.x + p.w - 6 + 'px'; d.style.top = p.y - 6 + 'px';
-          root.appendChild(d);
-          setTimeout(() => d.remove(), 950);
-          SFC.Audio.menu();
-        }, q * 45);
-      }, T0 + j * STEP));
+      const T0 = 700, STEP = 380, changed = this.tickStats(root, card, base, next, ref, T0, STEP);
       // OVR + chip COMBO đóng dấu + chip LEGEND dưới thẻ
-      const tEnd = T0 + changed.length * STEP + 250;
+      const tEnd = T0 + changed * STEP + 250;
       setTimeout(() => {
         ov.textContent = o1;
         ov.classList.toggle('pre', o1 > o0); ov.classList.toggle('dn', o1 < o0);
@@ -1042,6 +1159,15 @@ window.SFC = window.SFC || {};
       if (t.k === 'pick' && !t.flown && !inRoom()) {
         this.drawing = true;
         return this.fly(menu, t, () => { this.drawing = false; if (menu.page === 'runmap') this.act(menu, Object.assign({}, t, { flown: true })); });
+      }
+      // đeo GEAR vào ô trống: diễn thẻ treo bay vào ô + chỉ số tăng rồi mới đeo (người đeo đủ ô: sang bước chọn món bỏ ra)
+      if (t.k === 'wear' && !t.dis && !t.worn && !inRoom() && RUN().gearOf(t.i).length < RUN().slots()) {
+        this.drawing = true;
+        return this.wearFx(menu, t, () => { this.drawing = false; if (menu.page === 'runmap') this.act(menu, Object.assign({}, t, { worn: true })); });
+      }
+      if (t.k === 'swap' && !t.worn && !inRoom()) {
+        this.drawing = true;
+        return this.swapFx(menu, t, () => { this.drawing = false; if (menu.page === 'runmap') this.act(menu, Object.assign({}, t, { worn: true })); });
       }
       if (t.k === 'joinwho' && !t.signed && !inRoom()) {
         this.drawing = true;

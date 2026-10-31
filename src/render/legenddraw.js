@@ -3,6 +3,7 @@
  *   under(ctx, g, p): bóng mờ huyền thoại to gấp rưỡi đứng sau lưng cầu thủ (màu của LEGEND, nhấp nháy nhẹ) + quầng sáng dưới chân
  *   overlay(ctx, g): cut-in LEGEND — dải chân dung trượt vào cạnh trái màn hình: chân dung pixel lớn + tên + danh hiệu. Không phủ tối
  *                    màn hình, không dừng trận (khác cut-in Tuyệt kỹ ở render/vfx.js)
+ *   sideCut(ctx, g, s): vẽ một dải chân dung cạnh trái màn hình (dùng chung: cut-in LEGEND + Tuyệt kỹ của người khác, render/vfx.js)
  *   begin(ctx, g, p) / after(ctx, g, p): KỸ THUẬT LEGEND đang diễn trên người (Effects.legendTech): begin đặt biến đổi canvas quanh
  *                    sprite (lộn ngược, nằm trượt, xoay vòng, gồng...) — true = đã ctx.save(), renderer restore sau khi vẽ người; after vẽ
  *                    thêm hiệu ứng riêng (vệt má ngoài, tia tốc độ, bụi trượt...). flipping: bị xoạc bay lộn (renderer.airborne bỏ xoay riêng)
@@ -178,38 +179,44 @@ window.SFC = window.SFC || {};
       for (const c of cuts) {
         const L = LG()[c.id];
         if (!L) continue;
-        const k = 1 - c.t / c.max;
-        const slide = k < 0.12 ? 1 - k / 0.12 : k > 0.86 ? (k - 0.86) / 0.14 : 0;
-        const wb = 292, hb = 74, yb = 92, off = -slide * (wb + 30);
-        ctx.save();
-        ctx.translate(off, 0);
-        // dải xiên: viền màu LEGEND + nền tối
-        const band = (x0, y0, w, h, col) => {
-          ctx.fillStyle = col;
-          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + w, y0); ctx.lineTo(x0 + w - 22, y0 + h); ctx.lineTo(x0, y0 + h); ctx.closePath(); ctx.fill();
-        };
-        band(0, yb - 3, wb + 4, hb + 6, L.color);
-        band(0, yb, wb, hb, '#140c16');
-        // sọc tốc độ trong dải
-        ctx.save();
-        ctx.beginPath(); ctx.moveTo(0, yb); ctx.lineTo(wb, yb); ctx.lineTo(wb - 22, yb + hb); ctx.lineTo(0, yb + hb); ctx.closePath(); ctx.clip();
-        const now = performance.now() / 1000;
-        ctx.globalAlpha = 0.3;
-        for (let i = 0; i < 10; i++) { ctx.fillStyle = i % 2 ? L.color : '#ffffff'; ctx.fillRect(((now * 700 + i * 83) % (wb + 160)) - 80, yb + 5 + i * 7, 40 + (i * 29) % 70, 1); }
-        ctx.globalAlpha = 1;
-        // chân dung pixel lớn (áo đội của người đeo)
-        ctx.translate(52, yb + hb + 34); ctx.scale(4, 4);
-        SP().drawPlayer(ctx, { x: 0, y: 0, vx: 0, vy: 0, facing: 0, anim: 0.3, state: 'normal', flash: 0, team: c.team, role: c.role, look: lookOf(L) }, g, 0.999);
-        ctx.restore();
-        // chữ: LEGEND · danh hiệu (to, màu LEGEND) · tên
-        text(ctx, SFC.t('LEGEND'), 104, yb + 13, 11, '#ffe14f', 3);
-        let fs = 30;
-        ctx.font = font(L.title, fs);
-        while (fs > 14 && ctx.measureText(L.title).width > wb - 130) ctx.font = font(L.title, (fs -= 2));
-        text(ctx, L.title, 104, yb + 37, fs, L.color, 5);
-        text(ctx, L.name, 104, yb + 60, 12, '#ffffff', 3);
-        ctx.restore();
+        this.sideCut(ctx, g, { k: 1 - c.t / c.max, color: L.color, team: c.team, role: c.role, look: lookOf(L), label: SFC.t('LEGEND'), title: L.title, name: L.name });
       }
+    },
+    // dải chân dung trượt vào cạnh trái màn hình. s = { k (0 -> 1 trong thời gian hiện), color, team, role, look, label (chữ nhỏ vàng),
+    // title (chữ to màu color), name (chữ trắng dưới), scale (thu nhỏ quanh mép trên trái của dải; mặc định 1) } — chữ đã dịch sẵn
+    sideCut(ctx, g, s) {
+      const k = s.k;
+      const slide = k < 0.12 ? 1 - k / 0.12 : k > 0.86 ? (k - 0.86) / 0.14 : 0;
+      const wb = 292, hb = 74, yb = 92, off = -slide * (wb + 30), sc = s.scale || 1;
+      ctx.save();
+      ctx.translate(0, yb); ctx.scale(sc, sc); ctx.translate(0, -yb);
+      ctx.translate(off, 0);
+      // dải xiên: viền màu + nền tối
+      const band = (x0, y0, w, h, col) => {
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + w, y0); ctx.lineTo(x0 + w - 22, y0 + h); ctx.lineTo(x0, y0 + h); ctx.closePath(); ctx.fill();
+      };
+      band(0, yb - 3, wb + 4, hb + 6, s.color);
+      band(0, yb, wb, hb, '#140c16');
+      // sọc tốc độ trong dải
+      ctx.save();
+      ctx.beginPath(); ctx.moveTo(0, yb); ctx.lineTo(wb, yb); ctx.lineTo(wb - 22, yb + hb); ctx.lineTo(0, yb + hb); ctx.closePath(); ctx.clip();
+      const now = performance.now() / 1000;
+      ctx.globalAlpha = 0.3;
+      for (let i = 0; i < 10; i++) { ctx.fillStyle = i % 2 ? s.color : '#ffffff'; ctx.fillRect(((now * 700 + i * 83) % (wb + 160)) - 80, yb + 5 + i * 7, 40 + (i * 29) % 70, 1); }
+      ctx.globalAlpha = 1;
+      // chân dung pixel lớn (áo đội của người đeo / người ra chiêu)
+      ctx.translate(52, yb + hb + 34); ctx.scale(4, 4);
+      SP().drawPlayer(ctx, { x: 0, y: 0, vx: 0, vy: 0, facing: 0, anim: 0.3, state: 'normal', flash: 0, team: s.team, role: s.role, look: s.look }, g, 0.999);
+      ctx.restore();
+      // chữ: nhãn · tên chính (to, màu dải) · tên phụ
+      text(ctx, s.label, 104, yb + 13, 11, '#ffe14f', 3);
+      let fs = 30;
+      ctx.font = font(s.title, fs);
+      while (fs > 14 && ctx.measureText(s.title).width > wb - 130) ctx.font = font(s.title, (fs -= 2));
+      text(ctx, s.title, 104, yb + 37, fs, s.color, 5);
+      if (s.name) text(ctx, s.name, 104, yb + 60, 12, '#ffffff', 3);
+      ctx.restore();
       ctx.globalAlpha = 1;
     },
   };

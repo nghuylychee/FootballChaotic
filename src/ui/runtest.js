@@ -1,6 +1,6 @@
 /* PHÒNG TEST GOAT PATH (chỉ bản dev, SFC_DEBUG): thử nhanh BADGE + LEGEND (docs/RUN_DESIGN.md "Lớp sức mạnh, BADGE mới và LEGEND")
  * mà không cần đá run từ đầu. Mở: SETTINGS › TEST › RUN TEST (trang menu 'runtest'), hoặc index.html?runtest (mở trang),
- * ?runtest=match (đá ngay) · ?runtest=trial.<id LEGEND> (vào LEGEND TRIAL) · trialcard.<id> / join.<id> (thẻ giới thiệu trial / thẻ nhận LEGEND) · ?runtest=map (map thử) — kèm &badges=var,report
+ * ?runtest=match (đá ngay) · ?runtest=trial.<id LEGEND> (vào LEGEND TRIAL) · ?runtest=skill.<id bài> (vào SKILL GAME, run.drills) · trialcard.<id> / join.<id> (thẻ giới thiệu trial / thẻ nhận LEGEND) · ?runtest=map (map thử) — kèm &badges=var,report
  * &legends=haalandroid,,ramen (LEGEND của [bạn, đồng đội 1, đồng đội 2], bỏ trống = không có) &act=0..2.
  * Trang: ACT · OPPONENT (Matchday / Elite / Boss của act) · YOU (vị trí) · LEGEND cho từng người (lệch vị trí được) · BADGE (◀▶ chọn,
  * TOGGLE BADGE thêm / bỏ, UPGRADED bật số liệu nâng cấp) · MATCH · LEGEND TRIAL · MAP · thẻ PICK A BADGE / SHOP / LOCKER ROOM /
@@ -110,6 +110,15 @@ if (SFC_DEBUG) (function () {
       this.armed = true;
       app.startRunMatch();
     },
+    // SKILL GAME id (run.drills) đá ngay
+    skill(app, id) {
+      const R = this.build(), n = this.first(R);
+      n.kind = 'skill';
+      R.next = n.id;
+      R.room = { kind: 'skill', drill: id, player: 'host' };
+      this.armed = true;
+      app.startRunMatch();
+    },
     // mở map thử với 1 thẻ / phòng đang mở
     card(kind, legend) {
       const R = this.build(), Run = RUN();
@@ -143,6 +152,7 @@ if (SFC_DEBUG) (function () {
       const [k, id] = String(arg || '').split('.');
       if (k === 'match') return this.match(app);
       if (k === 'trial' && LG()[id]) return this.trial(app, id);
+      if (k === 'skill' && RC().drills[id] && !RC().drills[id].trial) return this.skill(app, id);
       if ((k === 'trialcard' || k === 'join') && LG()[id]) return this.card(k === 'join' ? 'join' : 'trial', id);
       if (k === 'map') return this.card('map');
       SFC.Menu.go('runtest');

@@ -8,7 +8,11 @@
  * Móc trong match.js: create · clock (thay tickClock) · update (cuối simulate) · goal (checkGoal) · afterGoal; player.js hit (hits).
  *   goals: bàn thắng (đối thủ chỉ trông khung: keeperOnly) · targets: bàn vào đúng bia đang trôi trên khung thành
  *   gates: dẫn bóng qua cổng sáng (lần lượt) · chain: chuỗi chuyền dài nhất (đồng đội AI trả bóng cho bạn)
- *   hits: lần hạ gục đối thủ · hold: giây giữ bóng, người đuổi vào thêm theo waves, đối thủ cướp được = hết bài
+ *   hits: lần hạ gục đối thủ (cả đội bạn đều tính; foeBall: đối thủ cầm bóng chuyền né, bạn cầm lâu thì bóng bật ra)
+ *   hold: giây giữ bóng, người đuổi vào thêm theo waves, đối thủ cướp được = hết bài
+ *   (user 2026-10-31) teamhold: giây cả đội giữ bóng (RONDO, đội nào cầm cũng giữ bóng chuyền né, không sút) · assists: bàn của đồng đội
+ *     AI từ đường chuyền của bạn (g.lastPass) · coins: xu lần lượt như cổng (D.gates / D.gi), đối thủ đuổi đánh bạn · chickens: đối thủ
+ *     hoá gà (CoreStat.chicken) chạy loạn, đấm trúng = bắt, gà hiện lại chỗ khác. noBall: không ai chạm được bóng
  *   combo (chỉ LEGEND TRIAL, user 2026-10-30): số lần làm được kỹ thuật LEGEND đang cho mượn (match.js gắn p.legend + p.lent). Kỹ thuật
  *     sút (power / trivela / finesse / bicycle): bàn thắng mà cú đá cuối mang ball.legTech đúng kỹ thuật · còn lại: Legends gọi combo()
  *     (bruiser / slide / engine / sweeper / rainbow) · chuyền vượt tuyến bổng: match.js gainPossession. Cách chơi theo legends.list[].trial:
@@ -37,7 +41,8 @@ window.SFC = window.SFC || {};
       D.kick = cfg.foeBall ? 1 : 0;
       if (cfg.goal === 'combo' && L) { D.tech = L.tech; D.color = L.color; }
       // cổng sinh theo opts.drillSeed (co-op: máy xem dựng đúng chuỗi cổng của host)
-      if (cfg.goal === 'gates') { D.gates = this.genGates(g, cfg.gate, g.opts.drillSeed != null ? SFC.U.seeded(g.opts.drillSeed) : Math.random); D.gi = 0; }
+      // COIN RUSH: chuỗi xu dựng y như chuỗi cổng (D.gates / D.gi -> máy xem đồng bộ qua snapshot sk)
+      if (cfg.goal === 'gates' || cfg.goal === 'coins') { D.gates = this.genGates(g, cfg.gate || cfg.coin, g.opts.drillSeed != null ? SFC.U.seeded(g.opts.drillSeed) : Math.random); D.gi = 0; }
       // AI riêng của bài qua móc g.aiHook của AI.update (true = đã điều khiển cầu thủ này bước này)
       g.aiHook = (p, dt) => this.ai(g, D, p, dt);
       return D;
@@ -58,7 +63,86 @@ window.SFC = window.SFC || {};
         p.intent.mx = 0; p.intent.my = 0; p.intent.sprint = false;
         return true;
       }
+      const C = D.cfg, me = g.controlled;
+      // STREET BRAWL / GANG FIGHT (foeBall): đối thủ cầm bóng chuyền né · RONDO: đội nào cầm bóng cũng vậy (không sút)
+      if (o === p && p !== me && ((C.goal === 'hits' && C.foeBall && p.team === 1) || C.goal === 'teamhold')) return this.keepAway(g, p);
+      if (C.goal === 'assists' && p.team === 0 && o === p && p !== me) return this.assistRun(g, p, me);
+      if (C.goal === 'coins' && p.team === 1) return this.chase(g, p, me, dt);
+      // GANG FIGHT: đồng đội AI lao vào đánh người cầm bóng (không ai cầm: đối thủ gần nhất)
+      if (C.goal === 'hits' && C.foeBall && p.team === 0 && p !== me && o !== p) {
+        return this.chase(g, p, o && o.team === 1 ? o : this.nearest(g.teams[1].players.filter((q) => q.state !== 'stun'), p).q, dt);
+      }
+      if (C.goal === 'chickens' && p.team === 1) return this.flee(g, p, me, dt);
       return false;
+    },
+    // đi theo hướng (dx, dy) hết tốc (0 = đứng)
+    steer(p, dx, dy, sprint = false) {
+      const d = Math.hypot(dx, dy);
+      p.intent.mx = d > 1e-3 ? dx / d : 0; p.intent.my = d > 1e-3 ? dy / d : 0;
+      p.intent.sprint = !!sprint && p.stamina > 25;
+    },
+    // sát mép sân -> hướng kéo vào trong
+    inward(g, p, m = 40) {
+      const f = g.field;
+      return { x: p.x < f.x + m ? 1 : p.x > f.x + f.w - m ? -1 : 0, y: p.y < f.y + m ? 1 : p.y > f.y + f.h - m ? -1 : 0 };
+    },
+    nearest(list, p) {
+      let q = null, d = Infinity;
+      for (const o of list) { const k = Math.hypot(o.x - p.x, o.y - p.y); if (k < d) { d = k; q = o; } }
+      return { q, d };
+    },
+    // giữ bóng né đối phương; bị áp sát sau một nhịp (ngẫu nhiên mỗi lần có bóng) -> chuyền cho đồng đội thoáng nhất
+    keepAway(g, p) {
+      const foes = g.teams[1 - p.team].players, n = this.nearest(foes, p), A = p.ai;
+      if (A.kaFor !== p.gotT) { A.kaFor = p.gotT; A.kaWait = SFC.U.rand(0.6, 1.4); }
+      if (g.time - p.gotT > A.kaWait && n.d < 70) {
+        let best = null, bs = -1;
+        for (const m of g.teams[p.team].players) {
+          if (m === p || m.state === 'stun') continue;
+          const k = this.nearest(foes, m).d;
+          if (k > bs) { bs = k; best = m; }
+        }
+        if (best) { SFC.Actions.passTo(g, p, best, 'ground'); return true; }
+      }
+      const away = n.q ? SFC.U.norm(p.x - n.q.x, p.y - n.q.y) : { x: 0, y: 0 }, inn = this.inward(g, p);
+      this.steer(p, away.x + inn.x * 1.5, away.y + inn.y * 1.5, n.d < 60);
+      return true;
+    },
+    // ASSIST KING: nhận đường chuyền của bạn -> lao về khung, vào tầm (hoặc ôm bóng quá lâu) thì sút · bóng tới chân kiểu khác -> trả bạn
+    assistRun(g, p, me) {
+      const f = g.field, gx = g.teams[0].dir > 0 ? f.x + f.w : f.x, lp = g.lastPass, held = g.time - p.gotT;
+      if (lp && lp.from === me && lp.to === p) {
+        if (Math.hypot(gx - p.x, f.cy - p.y) < 150 || held > 1.6) SFC.Actions.shoot(g, p, SFC.U.rand(0.55, 0.85), SFC.U.rand(-0.75, 0.75));
+        else this.steer(p, gx - p.x, f.cy - p.y, true);
+        return true;
+      }
+      this.steer(p, 0, 0);
+      if (me && held > 0.4) SFC.Actions.passTo(g, p, me, 'ground');
+      return true;
+    },
+    // đuổi theo q, tới tầm thì đấm (nhịp ngẫu nhiên, hồi chiêu đấm như thường): COIN RUSH (đối thủ đuổi bạn) · GANG FIGHT (đồng đội AI)
+    chase(g, p, q, dt) {
+      if (!q) { this.steer(p, 0, 0); return true; }
+      const d = Math.hypot(q.x - p.x, q.y - p.y), A = p.ai;
+      this.steer(p, q.x - p.x, q.y - p.y, d > 90);
+      A.chT = (A.chT || 0) - dt;
+      if (d < SFC_CONFIG.game.combat.light.range + p.radius * 2 && A.chT <= 0) {
+        A.chT = SFC.U.rand(0.25, 0.55);
+        p.facing = Math.atan2(q.y - p.y, q.x - p.x);
+        SFC.Actions.lightAttack(g, p);
+      }
+      return true;
+    },
+    // CHICKEN CATCH: gà chạy lăng xăng đổi hướng liên tục, bạn tới gần thì chạy dạt ra
+    flee(g, p, me, dt) {
+      const A = p.ai;
+      if ((A.wT = (A.wT || 0) - dt) <= 0) { A.wT = SFC.U.rand(0.35, 0.9); A.wa = Math.random() * Math.PI * 2; }
+      let dx = Math.cos(A.wa), dy = Math.sin(A.wa);
+      const d = me ? Math.hypot(p.x - me.x, p.y - me.y) : Infinity;
+      if (d < 90) { const a = SFC.U.norm(p.x - me.x, p.y - me.y), k = (90 - d) / 30; dx += a.x * k; dy += a.y * k; }
+      const inn = this.inward(g, p);
+      this.steer(p, dx + inn.x * 2, dy + inn.y * 2, d < 50);
+      return true;
     },
     // chuỗi cổng: bắt đầu gần giữa sân, mỗi cổng cách cổng trước ít nhất gap px, tránh 2 vòng cấm
     genGates(g, G, rng) {
@@ -86,6 +170,11 @@ window.SFC = window.SFC || {};
       const D = g.drill, o = g.ball.owner, me = g.controlled, C = D.cfg;
       if (D.ok != null) return;
       const oppHas = o && o.team === 1;
+      // bài không cần bóng: bóng nằm yên, không ai chạm được (giao bóng xong thả ra luôn)
+      if (C.noBall) {
+        if (o) g.looseBall(o, 0, 1, 0);
+        for (const q of g.players) g.ball.noPickup.set(q.id, 0.2);
+      }
       switch (C.goal) {
         case 'goals': case 'targets':
           // thủ môn cầm bóng một lúc -> giao lại cho bạn
@@ -115,7 +204,26 @@ window.SFC = window.SFC || {};
           this.regain(g, D, dt, oppHas, 1.0);
           break;
         }
-        case 'hits': this.regain(g, D, dt, oppHas, 2.5); break;
+        case 'hits':
+          if (C.foeBall) this.popAway(g, D, dt, o);
+          else this.regain(g, D, dt, oppHas, 2.5);
+          break;
+        case 'teamhold':
+          if (o && o.team === 0) D.val += dt;
+          this.regain(g, D, dt, oppHas, 4);   // đối thủ giữ quá lâu (đội bạn không đoạt lại được) -> giao lại cho bạn
+          break;
+        case 'assists': this.regain(g, D, dt, oppHas, 1.0); break;
+        case 'coins': {
+          const G = D.gates[D.gi];
+          if (G && me && Math.hypot(me.x - G.x, me.y - G.y) <= C.coin.r + me.radius) {
+            D.val++; D.gi++;
+            g.effects.pop(G.x, G.y - 22, String(D.val), 'res', '#ffd23f');
+            g.effects.burst(G.x, G.y - 4, 4, '#ffd23f', 10, 70, 0.4);
+            g.sfx('pick');
+          }
+          break;
+        }
+        case 'chickens': this.chickens(g, D); break;
         case 'combo':
           // foeBall: bạn giữ bóng quá lâu -> đối thủ giao lại (bài là đi cướp / chặn) · còn lại: đối thủ giữ lâu -> giao lại cho bạn
           if (C.foeBall) {
@@ -136,6 +244,30 @@ window.SFC = window.SFC || {};
       }
       if (D.val >= top(D)) this.finish(g);
     },
+    // foeBall: đội bạn cầm bóng quá 0.8 giây -> bóng bật về phía đối thủ gần nhất, đội bạn tạm không chạm được (bài là đi đánh, không phải giữ bóng)
+    popAway(g, D, dt, o) {
+      if (!(o && o.team === 0)) { D.lossT = 0; return; }
+      if ((D.lossT += dt) < 0.8) return;
+      D.lossT = 0;
+      const foe = this.nearest(g.teams[1].players, o).q;
+      g.looseBall(o, foe ? foe.x - o.x : -g.teams[0].dir, foe ? foe.y - o.y : 0, 140);
+      for (const q of g.teams[0].players) g.ball.noPickup.set(q.id, 0.8);
+    },
+    // CHICKEN CATCH: đối thủ nào chưa là gà (đầu bài, sau giao bóng, vừa hiện lại) -> hoá gà tới hết bài
+    chickens(g, D) {
+      const S = SFC.CoreStat, C = D.cfg.chicken;
+      if (!S) return;
+      for (const p of g.teams[1].players) {
+        if (p.chickenT > 0 || p.state === 'stun' || p.cTeleT > g.time) continue;
+        this.unchick(g, p);
+        S.chicken(g.cores, p, 999, C.speed, null);
+      }
+    },
+    // gỡ hình con gà + buff tốc độ gà (để hoá lại không cộng dồn)
+    unchick(g, p) {
+      for (const o of g.effects.V.props) if (o.kind === 'chicken' && o.a === p.id && o.t > 0) g.effects.propOff(o.id, 0.05);
+      p.buffs = p.buffs.filter((b) => !(b.t > 500));
+    },
     // đối thủ giữ bóng quá t giây -> giao lại cho bạn (bài không tính mất bóng là hỏng)
     regain(g, D, dt, oppHas, t) {
       if (!oppHas) { D.lossT = 0; return; }
@@ -151,19 +283,50 @@ window.SFC = window.SFC || {};
         if (b.legTech === D.tech) this.combo(g, b.lastTouch, D.tech, b, true);
         else g.effects.pop(b.x, b.y - 24, 'NO COMBO', 'info');
       }
+      else if (C.goal === 'assists') {
+        // bàn của đồng đội AI ngay từ đường chuyền của bạn
+        const lp = g.lastPass, by = b.lastTouch, me = g.controlled;
+        if (by && me && by !== me && by.team === 0 && lp && lp.from === me && lp.to === by) {
+          D.val++;
+          g.effects.pop(b.x, b.y - 24, 'ASSIST!', 'good', '#6bff4f');
+        }
+      }
       else if (C.goal === 'targets') {
         if (Math.abs(b.y - D.ty) <= (D.th || 0) + b.r) { D.val++; g.effects.pop(b.x, b.y - 24, 'BULLSEYE!', 'good', '#6bff4f'); }
         else g.effects.pop(b.x, b.y - 24, 'MISS', 'info');
       }
     },
-    // player.js hit: bạn hạ gục 1 đối thủ (STREET BRAWL)
+    // player.js hit: đội bạn hạ gục 1 đối thủ (STREET BRAWL / GANG FIGHT) · bắt được 1 con gà (CHICKEN CATCH)
     hit(g, victim, opts) {
       const D = g.drill;
-      if (!D || D.cfg.goal !== 'hits' || D.ok != null || g.state !== 'play') return;
+      if (!D || (D.cfg.goal !== 'hits' && D.cfg.goal !== 'chickens') || D.ok != null || g.state !== 'play') return;
       const s = opts.source;
       if (!s || s.team !== 0 || victim.team !== 1) return;
+      if (D.cfg.goal === 'chickens') return this.catchChicken(g, D, victim);
       D.val++;
       g.effects.pop(victim.x, victim.y - 42, 'KO ' + D.val, 'heavy', '#ff3d5a');
+    },
+    // bắt được gà: +1, gà biến mất rồi respawn giây sau hiện lại chỗ xa bạn (Drills.chickens hoá gà lại)
+    catchChicken(g, D, p) {
+      if (!(p.chickenT > 0)) return;
+      D.val++;
+      g.effects.pop(p.x, p.y - 30, 'CAUGHT!', 'good', '#ffe14f');
+      g.effects.burst(p.x, p.y - 10, 8, '#ffffff', 16, 90, 0.5);
+      p.chickenT = 0; p.noActT = 0;
+      this.unchick(g, p);
+      const C = D.cfg.chicken;
+      p.cTeleT = g.time + C.respawn;
+      g.later(C.respawn, () => {
+        if (g.drill !== D || D.ok != null) return;
+        const f = g.field, me = g.controlled;
+        let x = p.x, y = p.y;
+        for (let i = 0; i < 12; i++) {
+          x = SFC.U.rand(f.x + 40, f.x + f.w - 40); y = SFC.U.rand(f.y + 30, f.y + f.h - 30);
+          if (!me || Math.hypot(x - me.x, y - me.y) > 120) break;
+        }
+        Object.assign(p, { x, y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', stateT: 0 });
+        g.effects.burst(x, y - 8, 6, '#ffffff', 14, 80, 0.5);
+      });
     },
     // LEGEND TRIAL: 1 lần làm được kỹ thuật id (p = người làm, at = chỗ hiện số). goal: đếm lúc thành bàn (Drills.goal, khi
     // g.state đã là 'goal')
@@ -195,7 +358,7 @@ window.SFC = window.SFC || {};
       g.end();
     },
     // số hiện trên HUD (hold: giây làm tròn xuống)
-    shown(D) { return D.cfg.goal === 'hold' ? Math.floor(D.val) : D.val; },
+    shown(D) { return D.cfg.goal === 'hold' || D.cfg.goal === 'teamhold' ? Math.floor(D.val) : D.val; },
     top,
   };
 

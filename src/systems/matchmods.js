@@ -2385,7 +2385,8 @@ window.SFC = window.SFC || {};
       }
       return null;
     },
-    // độ đậm khi vẽ cầu thủ p (School Ghosts: ma có prop 'veil' bám người = đang tàng hình, chỉ còn chút bóng hình lung linh)
+    // độ đậm khi vẽ cầu thủ p (School Ghosts: ma có prop 'veil' bám người = đang tàng hình, chỉ còn bóng mờ cố định — user 2026-10-31:
+    // không chớp)
     // đọc prop thay vì M.veil để máy khách online (trận gương) vẽ giống host
     alpha(g, p) {
       const M = g.mod;
@@ -2400,7 +2401,7 @@ window.SFC = window.SFC || {};
         v = Math.min(1, (o.max - o.t) * 5) * (o.off ? o.t / o.max : 1);   // hiện dần lúc biến, rõ dần lúc lộ
         break;
       }
-      return 1 - v * (1 - M.cfg.alpha) + v * 0.04 * Math.sin(g.time * 7 + p.id);
+      return 1 - v * (1 - M.cfg.alpha);
     },
   };
 

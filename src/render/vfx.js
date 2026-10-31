@@ -1706,8 +1706,18 @@ window.SFC = window.SFC || {};
       }
       // ảnh xem trước Core: chỉ một khúc sân -> bỏ cut-in / callout (tên chiêu đã in trên lá)
       if (g.preview) { if (O.impact > 0) this.impactOverlay(ctx); return; }
-      // cut-in: dải ngang có chân dung lớn + tên chiêu
+      // cut-in Tuyệt kỹ theo người xem: chiêu của chính mình (g.controlled) = dải ngang lớn phủ tối màn hình; của người khác (đồng đội,
+      // đối thủ, AI; trận AI-only / người xem: mọi chiêu) = dải chân dung nhỏ cạnh trái kiểu cut-in LEGEND, thu nhỏ còn
+      // cores.ultimate.sideScale cho đỡ che sân (Effects.cutIn ghi cả 2)
+      const mine = g.controlled ? g.controlled.id : null;
+      for (const c of O.sidecuts || []) {
+        if (c.pid === mine || !SFC.LegendDraw) continue;
+        SFC.LegendDraw.sideCut(ctx, g, { k: 1 - c.t / c.max, color: c.color, team: c.team, role: c.role, look: c.look,
+          label: SFC.t(c.sub || 'ULTIMATE'), title: c.str, name: c.name, scale: SFC_CONFIG.cores.ultimate.sideScale || 1 });
+      }
+      // cut-in lớn: dải ngang có chân dung lớn + tên chiêu
       for (const c of O.cutins) {
+        if (c.pid !== mine && SFC.LegendDraw) continue;
         const k = 1 - c.t / c.max;
         const slide = k < 0.15 ? 1 - k / 0.15 : k > 0.85 ? -(k - 0.85) / 0.15 : 0;
         const off = slide * W, yb = 128, hb = 92;
