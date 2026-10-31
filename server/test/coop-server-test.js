@@ -6,6 +6,8 @@
  * 2. Phòng run: seat{r} đưa chủ phòng về vị trí trong run · ra của khách -> chuyển cho chủ phòng (kèm id + mã hồ sơ) · Skill game
  *    chạy được trên máy chủ (drills.js nạp ở máy chủ) · chỉ số / GEAR / chấn thương của ô đội hình qua lọc
  * 3. Chủ phòng mất kết nối giữa trận vẫn là chủ phòng, kết nối lại (id mới) vẫn là chủ phòng · chủ phòng rời = đóng phòng (hook close)
+ * 4. SLALOM GATES / COIN RUSH của khách: máy chạy trận (me = -1) vẫn đếm cổng / xu cho người đang đá
+ * 5. ghế dự bị: đổi vị trí khi phòng đủ 3 người · vào trận thì người trên ghế về ô trống
  */
 const assert = require('assert');
 const { load } = require('../sim');
@@ -133,6 +135,60 @@ function runRoom() {
   console.log('3. lead away / back / leaving: OK');
 }
 
+// 5. ghế dự bị: phòng đủ 3 người, khách ngồi ghế (-1) cho trống ô, người khác đổi sang · máy giữ phòng run không ngồi được ·
+//    vào trận khi còn người trên ghế: về ô trống, đồng đội AI của ô đó bị bỏ
+function benchRoom() {
+  const s = C.stories.list.find((x) => !x.soon), rd = s.rounds[0];
+  const r = room({ story: s.id });
+  r.onData({ t: 'hello', v: NET.protocol, pf: pf('BEN', 'DEF', 'benbenben') }, 'b');
+  const slot = (id) => r.member(id).slot, A = slot('a'), B = slot('b');
+  r.onData({ t: 'slot', s: A }, 'b');
+  assert.strictEqual(slot('b'), B, 'full room: cannot take a friend\'s spot');
+  r.onData({ t: 'slot', s: -1 }, 'a');
+  assert.strictEqual(slot('a'), -1, 'guest sits on the bench');
+  r.onData({ t: 'slot', s: A }, 'b');
+  r.onData({ t: 'slot', s: B }, 'a');
+  assert.ok(slot('a') === B && slot('b') === A, 'swapped through the bench');
+  r.onData({ t: 'slot', s: -1 }, 'b');
+  const role = S.role(A), mate = { name: 'MATE', ovr: 70, stats: {}, deck: [], look: {}, role };
+  r.onData({ t: 'story', o: { away: rd.team, mates: [mate], match: { difficulty: 'normal', cup: { id: s.id, round: 0 } } } }, 'L');
+  assert.strictEqual(r.status, 'playing');
+  assert.strictEqual(slot('b'), A, 'benched player goes back to the free spot');
+  assert.strictEqual(r.game.seats.length, 3, 'all three on the pitch');
+  assert.ok(!r.startOpts.mates[0], 'the AI mate for that spot is dropped');
+
+  const q = room({ run: true });
+  q.onData({ t: 'slot', s: -1 }, 'L');
+  assert.ok(q.member('L').slot >= 0, 'run lead cannot sit on the bench');
+  console.log('5. bench: OK (swap through the bench, back on the pitch at kickoff)');
+}
+
+// 4. SLALOM GATES / COIN RUSH của khách: máy chạy trận không có người chơi tại máy (me = -1) vẫn đếm cổng / xu cho người đang đá
+function slalomRoom() {
+  for (const id of ['gates', 'coins']) {
+    const r = room({ run: true });
+    r.onData({ t: 'story', o: {
+      away: C.run.acts[0].teams[0], mates: [], only: ['a'],
+      match: { difficulty: 'normal', drill: id, drillSeed: 3, run: { nonce: 'x', act: 0, node: '0.0', kind: 'skill' } },
+    } }, 'L');
+    const g = r.game, D = g.drill, p = g.seatPlayer(0);
+    assert.ok(g.me === -1 && !g.controlled, 'the server has no local player');
+    for (let i = 0; i < 600 && g.state !== 'play'; i++) r.step(1 / 60, null);
+    assert.strictEqual(g.state, 'play', 'skill game kicks off');
+    for (let k = 0; k < 2; k++) {
+      const G = D.gates[D.gi];
+      if (id === 'gates' && g.ball.owner !== p) g.ball.setOwner(p);
+      Object.assign(p, { x: G.x, y: G.y });
+      r.step(1 / 60, null);
+    }
+    assert.strictEqual(D.val, 2, id + ': the guest\'s run counts on the server');
+    r.gone('L');
+  }
+  console.log('4. guest skill games on the server: OK (gates / coins count without a local player)');
+}
+
 storyRoom();
 runRoom();
+slalomRoom();
+benchRoom();
 console.log('OK');

@@ -47,15 +47,17 @@ window.SFC = window.SFC || {};
       g.aiHook = (p, dt) => this.ai(g, D, p, dt);
       return D;
     },
+    // người đá bài: Skill game chỉ có 1 ghế người (co-op: người khác xem, máy chạy trận có me = -1 nên g.controlled = null)
+    hero(g) { return g.controlled || g.seatPlayer(0); },
     ai(g, D, p, dt) {
       const o = g.ball.owner;
       // trông khung: đối thủ chỉ đứng khung thành khi chưa cầm bóng
       if (D.keepers && p.team === 1 && g.teams[1].players.indexOf(p) < D.keepers && !(o && o.team === 1)) { SFC.AI.goalkeeper(dt, g, p); return true; }
       // PASS CHAIN / LEGEND TRIAL feed: đồng đội AI cầm bóng một nhịp rồi chuyền trả bạn (lob = tạt bổng cho BICYCLE KICK)
-      if (D.feed && p.team === 0 && o === p && p !== g.controlled) {
+      if (D.feed && p.team === 0 && o === p && p !== this.hero(g)) {
         p.intent.mx = 0; p.intent.my = 0; p.intent.sprint = false;
         p.ai.holdT = (p.ai.holdT || 0) + dt;
-        if (p.ai.holdT > 0.35) { p.ai.holdT = 0; SFC.Actions.passTo(g, p, g.controlled, D.feed); }
+        if (p.ai.holdT > 0.35) { p.ai.holdT = 0; SFC.Actions.passTo(g, p, this.hero(g), D.feed); }
         return true;
       }
       // HOT POTATO: người đuổi chưa tới lượt đứng chờ
@@ -63,7 +65,7 @@ window.SFC = window.SFC || {};
         p.intent.mx = 0; p.intent.my = 0; p.intent.sprint = false;
         return true;
       }
-      const C = D.cfg, me = g.controlled;
+      const C = D.cfg, me = this.hero(g);
       // STREET BRAWL / GANG FIGHT (foeBall): đối thủ cầm bóng chuyền né · RONDO: đội nào cầm bóng cũng vậy (không sút)
       if (o === p && p !== me && ((C.goal === 'hits' && C.foeBall && p.team === 1) || C.goal === 'teamhold')) return this.keepAway(g, p);
       if (C.goal === 'assists' && p.team === 0 && o === p && p !== me) return this.assistRun(g, p, me);
@@ -167,7 +169,7 @@ window.SFC = window.SFC || {};
       if (D.ok == null && g.elapsed >= D.time) this.finish(g);
     },
     update(g, dt) {
-      const D = g.drill, o = g.ball.owner, me = g.controlled, C = D.cfg;
+      const D = g.drill, o = g.ball.owner, me = this.hero(g), C = D.cfg;
       if (D.ok != null) return;
       const oppHas = o && o.team === 1;
       // bài không cần bóng: bóng nằm yên, không ai chạm được (giao bóng xong thả ra luôn)
@@ -285,7 +287,7 @@ window.SFC = window.SFC || {};
       }
       else if (C.goal === 'assists') {
         // bàn của đồng đội AI ngay từ đường chuyền của bạn
-        const lp = g.lastPass, by = b.lastTouch, me = g.controlled;
+        const lp = g.lastPass, by = b.lastTouch, me = this.hero(g);
         if (by && me && by !== me && by.team === 0 && lp && lp.from === me && lp.to === by) {
           D.val++;
           g.effects.pop(b.x, b.y - 24, 'ASSIST!', 'good', '#6bff4f');
@@ -318,7 +320,7 @@ window.SFC = window.SFC || {};
       p.cTeleT = g.time + C.respawn;
       g.later(C.respawn, () => {
         if (g.drill !== D || D.ok != null) return;
-        const f = g.field, me = g.controlled;
+        const f = g.field, me = this.hero(g);
         let x = p.x, y = p.y;
         for (let i = 0; i < 12; i++) {
           x = SFC.U.rand(f.x + 40, f.x + f.w - 40); y = SFC.U.rand(f.y + 30, f.y + f.h - 30);

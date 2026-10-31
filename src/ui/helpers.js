@@ -1,5 +1,6 @@
 /* UIHelpers — hàm vẽ dùng chung cho giao diện trong trận (SFC.UI: ui/matchui.js · hud.js · draft.js · endscreen.js):
- * esc, ô Core (coreChip), tên Tuyệt kỹ, trường phái kiểu TFT (traitChips / traitList), lá Core nhỏ (miniCard), nhãn phím
+ * esc, ô Core (coreChip), tên Tuyệt kỹ, trường phái kiểu TFT (traitChips / traitList), lá Core nhỏ (miniCard), nhãn phím,
+ * ghế dự bị phòng co-op (coopBench, dùng ở menu: ui/cup.js · ui/runmap.js)
  */
 window.SFC = window.SFC || {};
 
@@ -119,5 +120,13 @@ window.SFC = window.SFC || {};
       .observe(document.body, { childList: true, subtree: true });
   }
 
-  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, navRect, navPick };
+  // ghế dự bị phòng co-op (Story / GOAT PATH, user 2026-10-31): phòng đủ 3 người thì ngồi đây cho trống ô để đổi vị trí.
+  // ms = người đang ngồi (mặt + tên) · attrs = thuộc tính nút (data-li / data-rt) · sel = đang chọn · off = chỉ xem (không ngồi được)
+  function coopBench(ms, meId, attrs, sel, off) {
+    const who = ms.map((m) => `<span class="cb-p ${m.id === meId ? 'me' : ''}"><canvas data-mmlook="${esc(JSON.stringify((m.pf && m.pf.look) || {}))}" data-mmaway="0"></canvas><b>${esc(m.pf ? m.pf.name : '')}</b></span>`).join('');
+    const tip = esc(_t('Sit out here to free your slot for a swap'));
+    return `<button class="co-bench ${sel ? 'sel' : ''} ${off ? 'off' : ''}" ${attrs || ''} title="${tip}"><u>${esc(_t('BENCH'))}</u>${who || `<span>${tip}</span>`}</button>`;
+  }
+
+  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, navRect, navPick, coopBench };
 })();

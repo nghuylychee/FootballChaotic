@@ -43,6 +43,9 @@ window.SFC = window.SFC || {};
   const ON = () => SFC.Session;
   const inRoom = () => !!SFC.Session && ON().active && ON().run;
   const isHost = () => !inRoom() || ON().isLead;   // máy giữ run (chơi một mình / host / người tạo phòng trên máy chủ riêng)
+  // ghế dự bị phòng co-op (trước khi run bắt đầu): phòng hết ô trống (đổi vị trí phải qua ghế) hoặc đang có người ngồi.
+  // Máy giữ không ngồi được (vị trí của nó = character trong run, Room.moveMember)
+  const benchOn = () => inRoom() && (ON().benched.length > 0 || POS().every((r) => ON().memberAt(ON().slotOf(0, r))));
 
   const RunUI = {
     pages: ['runmap'],
@@ -146,7 +149,7 @@ window.SFC = window.SFC || {};
       if (!R) {
         const inv = room && ON().canInvite ? [T('invite')] : [];
         // khách phòng co-op: host chưa bắt đầu run -> đổi sang ô vị trí còn trống / rời phòng
-        if (room && !host) return POS().map((r) => T('slot', { id: r })).concat(inv, [T('leaveroom')]);
+        if (room && !host) return POS().map((r) => T('slot', { id: r })).concat(benchOn() ? [T('bench')] : [], inv, [T('leaveroom')]);
         const P = this.pick;
         if (!P) return [];
         // 3 ô vị trí (bấm = nhảy sang ô đó; ✕ = bỏ đồng đội AI ở ô đó để chọn lại) · ứng viên lấp ô trống kế tiếp (đủ ô vẫn hiện, mờ)
@@ -544,7 +547,7 @@ window.SFC = window.SFC || {};
       const P = this.pick, me = this.pkMe();
       return POS().find((r) => r !== me && !this.pkHuman(r) && P.mates[r] == null) || null;
     },
-    pkReady() { return !!this.pick && !this.pkNext(); },
+    pkReady() { return !!this.pick && !this.pkNext() && !(inRoom() && ON().benched.length); },   // còn người trên ghế dự bị: chờ
     // nhảy sang ô role: đồng đội AI đang ở đó đổi sang ô cũ của mình
     pkMove(menu, role) {
       const P = this.pick, me = this.pkMe();
@@ -597,6 +600,7 @@ window.SFC = window.SFC || {};
       menu.el.innerHTML = `<div class="rm-page pk-page ${room ? 'coop' : ''}">
           <div class="pk-top"><b>${esc(_t('BUILD YOUR SQUAD'))}</b><div class="rm-acts">${this.roomChip()}${btns}</div></div>
           <div class="sq-row3 pk-slots">${slots}</div>
+          ${benchOn() ? `<div class="pk-cobench">${SFC.UIHelpers.coopBench(ON().benched, null, '', false, true)}</div>` : ''}
           <div class="pk-mid">${go ? this.btn(T, go, esc(_t('START RUN'))) : ''}</div>
           <div class="pk-bench" data-drop="bench">${cands}</div>${msg}
         </div>`;
@@ -1382,9 +1386,11 @@ window.SFC = window.SFC || {};
         // khách chưa có run: đổi sang ô còn trống trong phòng (host: nhảy ô ở màn BUILD YOUR SQUAD, xử lý chung với chơi một mình)
         case 'slot':
           if (host) return false;
-          if (this.pkHuman(t.id)) { menu.setMsg(_t('A friend is playing there.'), true); return true; }
+          if (this.pkHuman(t.id)) { menu.setMsg(benchOn() ? _t('A friend is playing there. Use the BENCH to swap.') : _t('A friend is playing there.'), true); return true; }
+          menu.msg = '';
           ON().requestSlot(ON().slotOf(0, t.id));
           return true;
+        case 'bench': menu.msg = ''; ON().requestSlot(-1); return true;
         case 'go': {
           const Pk = this.pick, mates = {};
           for (const r in Pk.mates) mates[r] = Pk.cands[Pk.mates[r]];
@@ -1536,23 +1542,28 @@ window.SFC = window.SFC || {};
       const code = ON().code || '';
       return `<span class="rm-room" data-copy="${esc(code)}"><em>${esc(_t('ROOM CODE'))}</em><b>${esc(code)}</b></span>`;
     },
-    // khách: host chưa bắt đầu run -> mã phòng + 3 ô vị trí (bấm ô trống = đổi sang đó) + chờ host
+    // ghế dự bị của khách (màn chờ host)
+    benchBtn(T) {
+      const t = T.find((x) => x.k === 'bench'), O = ON();
+      return t ? `<div class="pk-cobench">${SFC.UIHelpers.coopBench(O.benched, O.mine && O.mine.id, `data-rt="${t.key}"`, T.indexOf(t) === this.sel)}</div>` : '';
+    },
+    // khách: host chưa bắt đầu run -> mã phòng + 3 ô vị trí (bấm ô trống = đổi sang đó) + ghế dự bị (đổi vị trí khi phòng đủ người) + chờ host
     renderWait(menu) {
       const T = this.targets(), O = ON(), L = O.lobby;
       this.sel = Math.max(0, Math.min(T.length - 1, this.sel));
-      const me = this.pkMe();
+      const me = O.mine && O.mine.slot >= 0 ? O.slotRole(O.mine.slot) : null;   // trên ghế dự bị: không ô nào là của mình
       const slots = T.filter((t) => t.k === 'slot').map((t) => {
         const m = O.memberAt(O.slotOf(0, t.id)), sel = T.indexOf(t) === this.sel ? 'sel' : '';
         const body = m ? `${this.face(m.pf.look, false)}<b>${esc(m.pf.name)}</b><u class="pk-tag ${t.id === me ? 'me' : ''}">${esc(t.id === me ? _t('YOU') : m.id === L.owner ? _t('HOST') : _t('PLAYER'))}</u>`
           : `<div class="pk-q">AI</div>`;
         return `<button class="pk-slot ${m ? '' : 'empty'} ${t.id === me ? 'mine' : ''} ${sel}" data-rt="${t.key}"><em>${esc(t.id)}</em>${body}</button>`;
       }).join('');
-      const btns = T.filter((t) => t.k !== 'slot').map((t) => this.btn(T, t, esc(t.k === 'invite' ? _t('INVITE') : this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')), t.k === 'leaveroom' && this.leaveArm ? 'danger' : '')).join('');
+      const btns = T.filter((t) => t.k !== 'slot' && t.k !== 'bench').map((t) => this.btn(T, t, esc(t.k === 'invite' ? _t('INVITE') : this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')), t.k === 'leaveroom' && this.leaveArm ? 'danger' : '')).join('');
       const host = L.members.find((x) => x.id === L.owner);
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
       menu.el.innerHTML = `<div class="rm-page pk-page coop">
           <div class="rm-bar"><div class="rm-head"><b>GOAT PATH</b></div><div class="rm-acts">${this.roomChip()}${btns}</div></div>
-          <div class="pk-slots">${slots}</div>
+          <div class="pk-slots">${slots}</div>${this.benchBtn(T)}
           <div class="pk-hint">${esc(_t('Waiting for {name} to start the run...', { name: host ? host.pf.name : 'HOST' }))}</div>
           <div class="pk-sub">${esc(_t('Click a position to play there'))}</div>${msg}
         </div>`;

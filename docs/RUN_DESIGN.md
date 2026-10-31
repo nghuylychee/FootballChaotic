@@ -110,6 +110,8 @@ Code: `config/elites.config.js` (đội → `teams.list`, luật → `stories.mo
 Hoà hết giờ: **bàn thắng vàng** như cup hiện tại (`opts.knockout`).
 
 ### Skill game (thiết kế kỹ sau)
+
+Bài của node Skill game: `Run.pickDrill` (user 2026-10-31: 2 Skill game liền nhau không trùng bài) bốc trong các bài chưa đá ở run này; đá hết rồi thì bài nào cũng được trừ bài vừa đá.
 Lấy ý tưởng từ 13 bài DRILL có sẵn (`progression.attrs.drills.list`): mỗi bài dùng lại engine trận (`opts.training`) với 1 mục tiêu đo được. Ứng viên:
 - **Finishing**: ghi N bàn vào thủ môn AI trong 30 giây
 - **Cone Slalom**: dẫn bóng qua cọc trước khi hết giờ
@@ -181,7 +183,8 @@ Chốt với user: **bỏ phiếu, chốt bằng bốc ngẫu nhiên theo số p
 - **Bỏ phiếu** (node trên map · lựa chọn sự kiện ??? · Locker Room): mỗi người 1 phiếu (đổi được), chấm phiếu hiện trên node / nút / thẻ. Đủ phiếu người có mặt, hoặc quá `run.coop.voteTime` giây từ phiếu đầu → bốc 1 phiếu ngẫu nhiên (lựa chọn nhiều phiếu dễ trúng hơn). Chỉ bỏ phiếu đi tiếp khi mọi người đã chọn xong BADGE. Sự kiện: tiền tính cho cả nhóm (ai cũng trả / cùng nhận), BADGE của sự kiện về 1 người đã bầu lựa chọn đó.
 - **Thưởng**: thắng trận → mỗi người có mặt nhận tiền vào ví riêng + bộ 3 BADGE riêng (không trùng nhau, không trùng túi), gắn cho ai trong đội cũng được. Đối thủ mạnh lên theo số người thật ra sân (`run.coop.eloPer` Elo AI, `statPer` chỉ số — `opts.statMul`).
 - **Shop**: ví riêng, hàng chung (món đã mua hết với mọi người), mỗi người bấm DONE, mọi người xong thì Shop đóng.
-- **Skill game**: 1 người đá (xoay vòng trong số người có mặt, `R.room.player`), người khác xem trận (`start{watch}`, `me = -1`; host không ra sân cũng chỉ xem). Thưởng tiền / BADGE về người đá; hỏng thì chấn thương vào 1 người ngẫu nhiên của đội. Tiến độ bài đi trong snapshot (`sk`), cổng SLALOM theo `drillSeed`.
+- **Skill game**: 1 người đá (xoay vòng trong số người có mặt, `R.room.player`), người khác xem trận (`start{watch}`, `me = -1`; host không ra sân cũng chỉ xem). Thưởng tiền / BADGE về người đá; hỏng thì chấn thương vào 1 người ngẫu nhiên của đội. Tiến độ bài đi trong snapshot (`sk`), cổng SLALOM theo `drillSeed`. Máy chạy trận (host không ra sân / máy chủ riêng) có `me = -1`: bài đếm theo người đang đá `Drills.hero(g)` (ghế duy nhất), không theo `g.controlled` (lỗi cổng / xu không tính điểm, sửa 2026-10-31).
+- **Ghế dự bị** (user 2026-10-31): phòng đủ 3 người muốn đổi vị trí thì 1 người ngồi ghế (slot -1) cho trống ô, người khác nhảy sang. Chỉ ở màn trước run (BUILD YOUR SQUAD / màn chờ của khách); máy giữ không ngồi được; còn người trên ghế thì chưa START RUN.
 - **Cut scene của act** (mở act / trước boss / hạ boss) chiếu cùng lúc (`cs{k:'run:<act>:<kind>'}`), trước trận boss host chờ cả phòng xem xong. Thẻ mở act / hết run: chỉ host bấm.
 - **Hết run**: gold meta + tiến trình CORE ROAD cộng cho từng máy (khách nhận khi bản sao báo hết run, 1 lần mỗi run).
 - Không tăng `net.protocol` (chỉ thêm trường / gói mới trong phòng người chơi làm host). Test: `server/test/run-coop-test.js`.

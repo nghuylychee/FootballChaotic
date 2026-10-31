@@ -417,7 +417,7 @@ window.SFC = window.SFC || {};
     requestSlot(s) {
       const me = this.mine;
       if (this.status !== 'lobby' || s < -1 || s >= this.nSlots || this.memberAt(s) || (me && me.slot === s)) return;
-      if (this.coop && (s < 0 || this.slotTeam(s) !== 0)) return;
+      if (this.coop && s >= 0 && this.slotTeam(s) !== 0) return;   // phòng co-op: đội 0 + ghế dự bị (-1)
       if (this.isHost) this.room.moveMember('host', s);
       else Net().send({ t: 'slot', s });
     },

@@ -1,5 +1,5 @@
 /* Kiểm tra phòng FOOTBALL STORY co-op (src/net/room.js, story): node server/test/story-test.js
- * 1. Mọi người cùng đội 0, tối đa số vị trí, không nhảy sang đội 1 / ghế GUEST, người thứ 4 bị từ chối (full)
+ * 1. Mọi người cùng đội 0, tối đa số vị trí, không nhảy sang đội 1 (ghế GUEST = ghế dự bị để đổi vị trí), người thứ 4 bị từ chối (full)
  * 2. Gói lobby mang id Story (k) + trạng thái cup của host (c, hook cupState)
  * 3. Cut scene trước trận: cs gửi khách, chờ đủ csd
  * 4. startStory: trận đội 0 (người thật + đồng đội AI) vs đội của vòng, đá tới hết, CONTINUE -> phòng chờ kèm trạng thái cup mới
@@ -33,8 +33,12 @@ function storyRoom() {
   assert.ok(sent.some((x) => x.m.t === 'full' && x.id === 'c'), 'a fourth player is refused');
   const aSlot = room.member('a').slot;
   room.onData({ t: 'slot', s: S.of(1, 'FWD') }, 'a');
+  assert.strictEqual(room.member('a').slot, aSlot, 'no other team in a story room');
+  // ghế dự bị (user 2026-10-31): ngồi được để đổi vị trí khi phòng đủ người, rồi về ô cũ
   room.onData({ t: 'slot', s: -1 }, 'a');
-  assert.strictEqual(room.member('a').slot, aSlot, 'no other team, no GUEST seat in a story room');
+  assert.strictEqual(room.member('a').slot, -1, 'bench seat to swap positions');
+  room.onData({ t: 'slot', s: aSlot }, 'a');
+  assert.strictEqual(room.member('a').slot, aSlot);
   room.onData({ t: 'begin', area: 0 }, 'host');
   assert.strictEqual(room.status, 'lobby', 'the normal START does nothing in a story room');
   const lob = sent.filter((x) => x.m.t === 'lobby').pop();

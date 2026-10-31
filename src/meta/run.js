@@ -411,9 +411,8 @@ window.SFC = window.SFC || {};
       }
       // Skill game: màn giới thiệu bài trước (R.room skill), qua node lúc đá xong (recordDrill)
       if (kind === 'skill') {
-        const ids = Object.keys(C().drills).filter((k) => !C().drills[k].trial);   // bài LEGEND TRIAL không bốc cho Skill game
         R.next = id;
-        R.room = { kind: 'skill', drill: ids[Math.floor(Math.random() * ids.length)], player: this.nextPlayer(R) };
+        R.room = { kind: 'skill', drill: this.pickDrill(R), player: this.nextPlayer(R) };
         PF().save();
         return { room: 'skill', node: n };
       }
@@ -433,6 +432,15 @@ window.SFC = window.SFC || {};
       if (R.act > st.bestAct || (R.act === st.bestAct && n.f > st.bestFloor)) { st.bestAct = R.act; st.bestFloor = n.f; }
     },
     // đội hình [bạn, đối thủ] của SKILL GAME / LEGEND TRIAL (trial riêng: legends.list[].trial.size)
+    // bài cho node Skill game (user 2026-10-31: 2 Skill game liền nhau không trùng bài): bài chưa đá trong run này;
+    // đá hết rồi thì bài nào cũng được trừ bài vừa đá. Bài LEGEND TRIAL không bốc
+    pickDrill(R) {
+      const ids = Object.keys(C().drills).filter((k) => !C().drills[k].trial);
+      const done = R.log.filter((x) => x.kind === 'skill').map((x) => x.drill), last = done[done.length - 1];
+      const fresh = ids.filter((k) => !done.includes(k)), pool = fresh.length ? fresh : ids.filter((k) => k !== last);
+      const list = pool.length ? pool : ids;
+      return list[Math.floor(Math.random() * list.length)];
+    },
     drillSize(drill, trial) {
       const L = trial && this.legend(trial), D = C().drills[drill];
       return ((L && L.trial.size) || (D && D.teamSize) || [1, 1]).slice();

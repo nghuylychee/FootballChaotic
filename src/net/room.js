@@ -164,7 +164,7 @@ window.SFC = window.SFC || {};
     moveMember(id, s) {
       const m = this.member(id);
       if (!m || this.status !== 'lobby' || s < -1 || s >= Slots.n() || Slots.memberAt(this.lobby, s)) return;
-      if (this.coop && (s < 0 || Slots.team(s) !== 0)) return;   // phòng Story / run: cả phòng 1 đội, không ghế GUEST
+      if (this.coop && s >= 0 && Slots.team(s) !== 0) return;   // phòng Story / run: cả phòng 1 đội; ghế GUEST = ghế dự bị để đổi vị trí
       if (this.run && this.isLead(id)) return;   // phòng run: vị trí của máy giữ = vị trí character trong run (seatHost)
       m.slot = s;
       if (this.local && id === this.local.id && s >= 0) { this.hook('localRole', Slots.role(s)); m.pf = this.local.pf(); }
@@ -411,6 +411,8 @@ window.SFC = window.SFC || {};
       const L = this.lobby, roles = ROLES();
       if (!this.coop || this.status !== 'lobby' || !o) return;
       this.refreshLocal();
+      // còn người trên ghế dự bị: về ô vị trí còn trống (đồng đội AI máy giữ đã xếp cho ô đó bị bỏ)
+      for (const m of Slots.benched(L)) m.slot = Slots.coopFree(L, (m.pf && m.pf.role) || 'FWD');
       const here = L.members.filter((m) => m.slot >= 0 && Slots.team(m.slot) === 0 && !m.away);
       const ms = Array.isArray(o.only) ? here.filter((m) => o.only.includes(m.id)) : here;
       if (!ms.length) return;
@@ -423,7 +425,9 @@ window.SFC = window.SFC || {};
       });
       this.watchIds = here.filter((m) => !ms.includes(m)).map((m) => m.id);
       const owner = this.member(L.owner) || ms[0];
-      const mates = Array.isArray(o.mates) && o.mates.length ? o.mates : null;
+      const taken = ms.map((m) => Slots.role(m.slot));
+      const ok = Array.isArray(o.mates) ? o.mates.filter((x) => !(x && taken.includes(x.role))) : [];
+      const mates = ok.length ? ok : null;
       this.csWait.clear();
       this.launch(ms.map((m) => m.id), Object.assign({}, o.match, {
         online: true, seats, mates: [mates, null], clubs: [{ name: owner.pf.name }, { id: o.away }], draftTimeLimit: N().draftTimeLimit,

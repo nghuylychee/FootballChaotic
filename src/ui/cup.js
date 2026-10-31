@@ -28,6 +28,8 @@ window.SFC = window.SFC || {};
   // đang ở phòng Story online · máy này là chủ phòng (máy làm host)
   const inRoom = () => ON().status !== 'idle' && !!ON().story;
   const isHost = () => inRoom() && ON().isLead;   // máy giữ cup (người chơi làm host / người tạo phòng trên máy chủ riêng)
+  // ghế dự bị: phòng hết ô trống (đổi vị trí phải qua ghế) hoặc đang có người ngồi
+  const benchOn = () => { const O = ON(); return O.benched.length > 0 || ROLES().every((r) => O.memberAt(O.slotOf(0, r))); };
   const ownerName = () => { const L = ON().lobby, m = L.members.find((x) => x.id === L.owner); return (m && m.pf && m.pf.name) || _t('HOST'); };
 
   const CupUI = {
@@ -435,9 +437,11 @@ window.SFC = window.SFC || {};
     },
 
     /* ================= page 'slobby' (phòng chờ co-op của 1 Story) ================= */
-    // mục chọn được: 3 ô vị trí (Enter ô trống = đứng vào đó) · START CUP (chủ phòng) · INVITE FRIENDS (chỉ khi nền tảng mời được: OnlineUI.invite) · LEAVE ROOM
+    // mục chọn được: 3 ô vị trí (Enter ô trống = đứng vào đó) · ghế dự bị (phòng hết ô trống / có người đang ngồi: ngồi đây để đổi vị trí)
+    // · START CUP (chủ phòng) · INVITE FRIENDS (chỉ khi nền tảng mời được: OnlineUI.invite) · LEAVE ROOM
     lobbyItems() {
       const O = ON(), out = ROLES().map((role) => ({ k: 'slot', slot: O.slotOf(0, role), role }));
+      if (benchOn()) out.push({ k: 'bench' });
       if (O.isLead) out.push({ k: 'start', main: true, label: _t('START CUP') });
       if (O.canInvite) out.push({ k: 'invite', label: _t('INVITE FRIENDS') });
       out.push({ k: 'leave', label: this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM'), danger: this.leaveArm });
@@ -449,10 +453,17 @@ window.SFC = window.SFC || {};
       const O = ON();
       if (it.k === 'leave') return this.leaveRoom(menu);
       this.leaveArm = false;
-      if (it.k === 'slot') { if (!O.memberAt(it.slot)) O.requestSlot(it.slot); return menu.render(); }
+      if (it.k === 'slot') {
+        const m = O.memberAt(it.slot);
+        if (!m) { menu.msg = ''; O.requestSlot(it.slot); }
+        else if (!O.mine || m.id !== O.mine.id) menu.setMsg(_t('A friend is playing there. Use the BENCH to swap.'), true);
+        return menu.render();
+      }
+      if (it.k === 'bench') { menu.msg = ''; O.requestSlot(-1); return menu.render(); }
       if (it.k === 'invite') return SFC.OnlineUI.invite(menu);
       if (it.k === 'start') {
         const s = CUP().get(O.story);
+        if (O.benched.length) return menu.setMsg(_t('Everyone on the BENCH must take a position first.'), true);
         if (!O.isLead || !CUP().playable(s) || !CUP().start(s.id)) return;
         this.reset();
         O.shareCup();
@@ -475,6 +486,8 @@ window.SFC = window.SFC || {};
           <canvas class="avatar big" data-mmlook="${esc(JSON.stringify(m.pf.look))}" data-mmaway="0"></canvas>
           <b>${esc(m.pf.name)}</b><em>${tag ? esc(tag) : esc(_t('LV {n}', { n: m.pf.level }))}</em></button>`;
       }).join('');
+      const bi = items.findIndex((x) => x.k === 'bench');
+      const bench = bi < 0 ? '' : `<div class="sl-bench">${SFC.UIHelpers.coopBench(O.benched, meId, `data-li="${bi}"`, bi === this.lsel)}</div>`;
       const code = O.code || '-'.repeat(SFC_CONFIG.net.codeLength);
       const btn = (it) => { const i = items.indexOf(it); return `<button class="pt-btn ${it.main ? 'go' : ''} ${it.danger ? 'danger' : ''} ${i === this.lsel ? 'sel' : ''}" data-li="${i}">${esc(it.label)}</button>`; };
       const note = O.isLead ? _t('Send this code to your friends. They join from FOOTBALL STORY › JOIN.') : _t('Waiting for {name} to start...', { name: ownerName() });
@@ -482,22 +495,28 @@ window.SFC = window.SFC || {};
       menu.el.innerHTML = `<div class="cu-page sl-page">
           <div class="cu-head" style="--sc:${s.color}"><b>${esc(s.name)}</b></div>
           <div class="sl-code" data-copy="${esc(code)}" title="${esc(_t('Click to copy'))}"><span>${esc(_t('ROOM CODE'))}</span><b>${esc(code)}</b><i>${esc(_t('COPY'))}</i></div>
-          <div class="sl-seats">${seats}</div>
+          <div class="sl-seats">${seats}</div>${bench}
           <div class="pt-note">${esc(note)}</div>${msg}
-          <div class="cu-acts">${items.filter((x) => x.k !== 'slot' && x.k !== 'leave').map(btn).join('')}</div>
+          <div class="cu-acts">${items.filter((x) => !['slot', 'bench', 'leave'].includes(x.k)).map(btn).join('')}</div>
         </div>${this.leaveCorner(items[this.lsel] && items[this.lsel].k === 'leave', `data-li="${items.findIndex((x) => x.k === 'leave')}"`)}`;
       menu.bindAvatars();
     },
     lobbyInput(menu, input) {
-      const items = this.lobbyItems(), n = items.length;
+      const items = this.lobbyItems();
+      // hàng: ô vị trí · ghế dự bị · nút
+      const row = (it) => (it.k === 'slot' ? 0 : it.k === 'bench' ? 1 : 2);
       for (const d of ['left', 'right', 'up', 'down']) {
         if (!input.wasPressed(d)) continue;
-        const nSeat = ROLES().length, seat = this.lsel < nSeat;
-        // ←→ đi trong hàng (ô vị trí / nút) · ↑↓ đổi hàng
+        const r = row(items[this.lsel] || items[0]), idx = (k) => items.map((x, i) => (row(x) === k ? i : -1)).filter((i) => i >= 0);
+        // ←→ đi trong hàng · ↑↓ sang hàng có mục kế tiếp
         if (d === 'left' || d === 'right') {
-          const lo = seat ? 0 : nSeat, hi = seat ? nSeat : n, k = this.lsel - lo, len = hi - lo;
-          this.lsel = lo + ((k + (d === 'left' ? len - 1 : 1)) % len);
-        } else this.lsel = seat === (d === 'down') ? (seat ? nSeat : 0) : this.lsel;
+          const l = idx(r), k = l.indexOf(this.lsel);
+          this.lsel = l[(k + (d === 'left' ? l.length - 1 : 1)) % l.length];
+        } else {
+          const rows = [0, 1, 2].filter((k) => idx(k).length), ri = rows.indexOf(r), nr = rows[ri + (d === 'down' ? 1 : -1)];
+          if (nr == null) return;
+          this.lsel = idx(nr)[0];
+        }
         SFC.Audio.menu();
         return menu.render();
       }

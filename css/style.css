@@ -2772,6 +2772,19 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .sl-code i { font-style: normal; font-family: var(--px); font-size: 6px; padding: 3px 5px; color: var(--ink); background: var(--gold); }
 .sl-code:hover { border-style: solid; }
 .sl-seats { display: flex; gap: 10px; }
+/* ghế dự bị phòng co-op (UIHelpers.coopBench): ngồi đây cho trống ô để đổi vị trí */
+.co-bench { display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 240px; min-height: 34px; padding: 3px 12px; box-sizing: border-box;
+  background: rgba(10, 11, 14, 0.55); border: 1px dashed var(--edge); color: inherit; font: inherit; cursor: pointer; }
+.co-bench u { font-family: var(--px); font-size: 6px; text-decoration: none; color: var(--gold); letter-spacing: 1px; }
+.co-bench > span { font-size: 11px; color: var(--muted); }
+.co-bench .cb-p { display: flex; align-items: center; gap: 4px; }
+.co-bench .cb-p canvas { width: 24px; height: 26px; image-rendering: pixelated; }
+.co-bench .cb-p b { font-weight: normal; font-size: 13px; color: #fff; }
+.co-bench .cb-p.me b { color: var(--gold); }
+.co-bench.sel, .co-bench:hover { border: 1px solid var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.co-bench.off { cursor: default; }
+.co-bench.off:hover { border: 1px dashed var(--edge); box-shadow: none; }
+
 .sl-seat { position: relative; width: 112px; height: 132px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; padding: 6px 4px;
   background: var(--panel); border: 1px solid var(--edge); border-top: 3px solid #ffd23f; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
 .sl-seat canvas.avatar.big { width: 60px; height: 66px; image-rendering: pixelated; }
@@ -3299,6 +3312,7 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .pk-page .over { outline: 2px solid var(--gold) !important; outline-offset: 2px; background-color: rgba(255, 225, 79, 0.08); }
 .pk-page .drag { opacity: 0.4; }
 .pk-mid { position: relative; display: flex; align-items: center; justify-content: center; height: 24px; }
+.pk-cobench, .sl-bench { display: flex; justify-content: center; }
 .pk-mid .pk-hint { font-size: 7px; }
 .pk-mid > .pt-btn { height: 24px; padding: 0 18px; font-size: 11px; }
 /* băng ghế ứng viên */
