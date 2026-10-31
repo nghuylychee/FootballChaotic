@@ -212,7 +212,6 @@ window.SFC = window.SFC || {};
         pl.buffs.push({ speed: prm.speed, t: prm.time });
         pl.glow('#3ff6ff', prm.time);
         pl.stamina = SFC_CONFIG.game.player.staminaMax;
-        E.callout(aw ? 'STORM CYCLE!' : 'LIGHT CYCLE!', '#3ff6ff', 0.9);
         E.speedLines(0.4, pl.x, pl.y, '#bdf4ff');
         E.burst(pl.x, pl.y, 4, '#bdf4ff', 16, 120, 0.5);
         g.sfx('ult', 'cycle.start');
@@ -329,7 +328,6 @@ window.SFC = window.SFC || {};
         // báo trước: vòng xanh trăng + mặt trăng mờ trên sân -> ra khỏi vòng / lướt Z đúng lúc dậm
         E.wave(c.x, c.y, R, '#a8e6ff', prm.telegraph, 1);
         E.prop(zid, 'moon', c.x, c.y, R, 0, prm.telegraph + prm.float, '#a8e6ff');
-        E.pop(pl.x, pl.y - 30, 'MOON STOMP!', 'move', '#a8e6ff');
         g.sfx('whoosh');
         g.later(prm.telegraph, () => {
           if (g.state !== 'play' || pl.state === 'stun') { E.propOff(zid); return; }
@@ -351,7 +349,6 @@ window.SFC = window.SFC || {};
             mid = H.propId(g);
             E.prop(mid, 'moonf', pl.x, pl.y, pl.id, R, prm.float + 0.3, '#a8e6ff');
             E.prop(H.propId(g), 'fullmoon', g.field.x + g.field.w * 0.78, 34, 0, 0, prm.float + 0.4, '#e8fbff');
-            E.callout('FULL MOON!', '#a8e6ff', 1);
           }
           const fl = [];
           const lift = (o) => {
@@ -449,7 +446,6 @@ window.SFC = window.SFC || {};
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball, f = g.field, id = H.propId(g);
         E.prop(id, 'tornado', pl.x, pl.y, pl.id, 0, prm.time + 0.1, '#e8f0f5');
-        E.pop(pl.x, pl.y - 40, 'HURRICANE KICK!', 'move', '#b46bff');
         g.sfx('ult', 'hurricane');
         let T = 0, k = 0, ball = b.owner === pl;
         if (ball) b.owner = null;
@@ -529,7 +525,6 @@ window.SFC = window.SFC || {};
         pl.cd.skill = 0;
         this.pips(sys, pl, st);
         E.prop(H.propId(g), 'gate', pl.x, pl.y, -Math.PI / 2, 1, 0.5, '#9d7bff');
-        E.pop(pl.x, pl.y - 30, 'PHASE STEP!', 'move', '#9d7bff');
         g.sfx('ult', 'phase.blink');
         // hết giờ / hết lượt: tắt pip, Z về hồi chiêu thường
         sys.task(() => {
@@ -614,7 +609,6 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects, b = g.ball, f = g.field, id = H.propId(g);
         const x0 = pl.x, y0 = pl.y, th0 = Math.atan2((pl.y - f.cy) / (f.h / 2 - 24), (pl.x - f.cx) / (f.w / 2 - 34));
         E.prop(id, 'boomer', x0, y0, pl.id, th0, prm.time, '#ffd23f');
-        E.pop(pl.x, pl.y - 30, 'MEGA BOOMERANG!', 'move', '#ffd23f');
         Act().startAttack(pl, 'light');
         g.sfx('whoosh');
         g.sfx('ult', 'boomer.throw');
@@ -686,7 +680,6 @@ window.SFC = window.SFC || {};
           if (qte) { qteId = H.propId(g); E.prop(qteId, 'qte', pl.x, pl.y, pl.id, lv, prm.build + 0.5, '#ffe14f'); }
         };
         props(true);
-        E.pop(pl.x, pl.y - 44, 'BOULDER!', 'move', '#c7ccd6');
         E.burst(pl.x, pl.y, 2, '#8a7f70', 14, 90, 0.5);
         g.sfx('ult', 'boulder.summon');
         sys.task((dt) => {
@@ -821,7 +814,6 @@ window.SFC = window.SFC || {};
           E.burst(bx.x, bx.y, 4, '#ffd23f', 6, 50, 0.4);
           boxes.push(bx);
         }
-        E.pop(pl.x, pl.y - 30, 'JACK-IN-THE-BOX!', 'move', '#c63dff');
         g.sfx('ult', 'jack.crank');
         let T = 0;
         sys.task((dt) => {
@@ -877,7 +869,6 @@ window.SFC = window.SFC || {};
         const s = H.teamBall(sys, team);
         if (!s) return;
         const m = H.nearestMate(g, team, s);
-        E.callout('ONE-TWO!', '#ffb13d', 0.9);
         const beam = (a, c) => {
           E.beam(a.x, a.y - 4, Math.atan2(c.y - a.y, c.x - a.x), U.dist(a, c), 5, '#ffd23f', 0.6);
           E.burst(c.x, c.y, 10, '#ffd23f', 10, 70, 0.4);
@@ -959,7 +950,6 @@ window.SFC = window.SFC || {};
         H.hold(pl, prm.spin + 0.35);
         // b = thời gian xoay, c (màu) — búa vẽ ở render/vfx.js (case 'hammer'): xoay turns vòng rồi nện
         E.prop(id, 'hammer', pl.x, pl.y, pl.id, prm.spin, prm.spin + 0.45, '#c7ccd6');
-        E.pop(pl.x, pl.y - 40, 'IRON HAMMER!', 'move', '#c7ccd6');
         g.sfx('ult', 'hammer.spin');
         let T = 0, k = 0;
         sys.task((dt) => {   // xoay: người chơi chỉnh hướng nện theo phím, tiếng gió vù vù mỗi vòng
@@ -1052,7 +1042,6 @@ window.SFC = window.SFC || {};
           const base = o ? { x: o.x + o.vx * 0.45, y: o.y + o.vy * 0.45 } : { x: b.x + U.rand(-120, 120), y: b.y + U.rand(-80, 80) };
           spots.push(clampIn(f, base.x + U.rand(-14, 14), base.y + U.rand(-10, 10), 12));
         }
-        E.callout('THUNDERSTORM!', '#3ff6ff', 1);
         E.tint('#0a1830', prm.telegraph + prm.gap * prm.bolts + 0.4, 0.3);
         g.sfx('ult', 'storm.warn');
         spots.forEach((sp, i) => {
@@ -1110,7 +1099,6 @@ window.SFC = window.SFC || {};
         g.slowMo(prm.slow, prm.time + 0.1);
         E.tint(TINT, prm.time + 0.1, 0.22);
         E.speedLines(0.4, 320, 180, '#bfe4ff');
-        E.callout('BULLET TIME!', '#bfe4ff', 0.9);
         E.wave(s.x, s.y, 50, '#bfe4ff', 0.5, 2);
         g.sfx('ult', 'bullet.slow');
         H.hold(s, prm.time + 1);
@@ -1202,7 +1190,6 @@ window.SFC = window.SFC || {};
         E.beam(pl.x + d.x * 8, pl.y - 6 + d.y * 8, pl.facing, len, 2, '#ff7a3d', prm.windup + 0.1);
         pl.glow('#ff7a3d', prm.windup + 0.2);
         E.burst(pl.x + d.x * 8, pl.y - 6, 6, '#ff7a3d', 8, 50, prm.windup);   // tên lửa đang nạp: khói ở tay
-        E.pop(pl.x, pl.y - 30, 'ROCKET PUNCH!', 'move', '#ff7a3d');
         g.sfx('ult', 'rocket.ignite');
         g.later(prm.windup, () => {
           if (g.state !== 'play') return;
@@ -1261,7 +1248,6 @@ window.SFC = window.SFC || {};
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball, f = g.field, id = H.propId(g);
         E.prop(id, 'truck', pl.x, pl.y, pl.id, 0, prm.time + 0.1, '#ff3d5a');
-        E.callout('MONSTER TRUCK!', '#ff3d5a', 0.9);
         E.burst(pl.x, pl.y, 4, '#6a6470', 14, 90, 0.6);
         g.sfx('ult', 'truck.horn');
         g.sfx('ult', 'truck.engine');
@@ -1333,7 +1319,6 @@ window.SFC = window.SFC || {};
         E.prop(id, 'smoke', c.x, c.y, prm.radius, prm.squash, prm.time, '#4f4466');
         E.burst(c.x, c.y, 6, '#8a7f9a', 30, 170, 0.8);
         E.wave(c.x, c.y, prm.radius, '#b9a6d9', 0.4, 2);
-        E.pop(pl.x, pl.y - 30, 'SMOKE BOMB!', 'move', '#b9a6d9');
         E.shake(4, 0.2);
         g.sfx('ult', 'smoke.pop');
         const seen = new Map(), had = new Map();   // giây còn lộ hình · bước trước có cầm bóng không
@@ -1394,7 +1379,6 @@ window.SFC = window.SFC || {};
         pl.glow('#e8ecf5', prm.fly + prm.link);
         // 1. bắn dây: chỉ xám bay tới (render/vfx.js case 'string': màu #9aa3b5 = đang bay, vẽ dài dần theo fly)
         const ts = list.map((o) => { const id = H.propId(g); E.prop(id, 'string', o.x, o.y, pl.id, o.id, prm.fly + 0.02, '#9aa3b5'); return { o, id, cut: false }; });
-        E.pop(pl.x, pl.y - 30, 'PUPPET MASTER!', 'move', '#e8ecf5');
         g.sfx('ult', 'puppet.shoot');
         const cut = (c, snap) => {
           if (c.cut) return;
@@ -1473,7 +1457,6 @@ window.SFC = window.SFC || {};
         // ape: b = thời gian gầm (hình vẽ tự tính nhịp nhảy từ config)
         E.prop(id, 'ape', pl.x, pl.y, pl.id, prm.roar, total, '#3a2a22');
         H.hold(pl, total);
-        E.callout('RAGE!!!', '#ff3d5a', 1);
         E.burst(pl.x, pl.y - 20, 10, '#3a2a22', 24, 120, 0.6);
         E.shake(6, prm.roar);
         g.sfx('ult', 'rage.roar');
@@ -1543,7 +1526,6 @@ window.SFC = window.SFC || {};
         if (!chains.length) return;
         st.t = g.time + prm.time;
         for (const c of chains) E.prop(c.id, 'chain', pl.x, pl.y, pl.id, c.m.id, prm.time, '#c7ccd6');
-        E.callout('IRON CHAIN!', '#c7ccd6', 0.9);
         g.sfx('ult', 'chain.rattle');
         for (const p of [pl].concat(chains.map((c) => c.m))) { p.glow('#c7ccd6', prm.time); E.shield(p.x, p.y - 8, 12, '#c7ccd6', 0.4); }
         const hitT = new Map();
@@ -1583,7 +1565,6 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects, f = g.field;
         const list = H.targetsNear(g, team, pl, prm.range).slice(0, prm.targets);
         if (!list.length) return;
-        E.callout('GHOST HANDS!', '#9d7bff', 0.9);
         g.sfx('ult', 'ghost.rise');
         const spots = list.map((o) => {
           const at = clampIn(f, o.x + o.vx * prm.telegraph * 0.8, o.y + o.vy * prm.telegraph * 0.8, 10);
@@ -1635,7 +1616,6 @@ window.SFC = window.SFC || {};
         const list = H.targetsNear(g, team, pl, prm.range).slice(0, prm.targets);
         if (!list.length) return;
         H.hold(pl, prm.telegraph + prm.gap * list.length + 0.3);
-        E.callout('PORTAL KICKS!', '#c63dff', 0.9);
         list.forEach((o, i) => {
           g.later(prm.gap * i, () => {
             if (g.state !== 'play' || pl.state === 'stun') return;
@@ -1713,7 +1693,6 @@ window.SFC = window.SFC || {};
         const last = pts[pts.length - 1];
         E.beam(pts[0].x, pts[0].y, pl.facing, Math.hypot(last.x - pts[0].x, last.y - pts[0].y) + 4, 2, '#8a7f70', prm.telegraph + 0.1);
         pts.forEach((p, i) => g.later((prm.telegraph * i) / pts.length, () => { if (g.state === 'play') E.decal('crack', p.x, p.y, 0.8, prm.telegraph + prm.life); }));
-        E.pop(pl.x, pl.y - 30, 'EARTH SPIKE!', 'move', '#b46bff');
         const left = String(st.left) + 'x';   // còn mấy lượt (bấm X lại) — số, không cần dịch
         if (st.left > 0) E.pop(pl.x + 30, pl.y - 48, left, 'res', '#ffffff');
         g.sfx('wall');
@@ -1762,7 +1741,6 @@ window.SFC = window.SFC || {};
         H.hold(pl, prm.telegraph + 0.25);
         E.prop(H.propId(g), 'gaze', pl.x, pl.y, pl.facing, prm.range, prm.telegraph + 0.2, '#6bff4f');
         pl.glow('#6bff4f', prm.telegraph + 0.2);
-        E.pop(pl.x, pl.y - 30, 'MEDUSA GAZE!', 'move', '#6bff4f');
         g.sfx('ult', 'medusa.hiss');
         g.later(prm.telegraph, () => {
           if (g.state !== 'play' || pl.state === 'stun') return;
@@ -1800,7 +1778,6 @@ window.SFC = window.SFC || {};
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, E = g.effects, b = g.ball, st = sys.st(pl, 'vhs_rewind');
         E.vhs(prm.telegraph + prm.anim + 0.3);
-        E.callout('REWIND!', '#c63dff', 0.9);
         g.sfx('ult', 'vhs.stop');
         g.sfx('rewind');
         g.later(prm.telegraph, () => {
@@ -1877,7 +1854,6 @@ window.SFC = window.SFC || {};
         wps.forEach((w, i) => g.later(Math.max(0, times[i + 1] - 0.25), () => {
           if (g.state === 'play') E.prop(H.propId(g), 'mhand', w.x, w.y, w.y < f.cy ? Math.PI / 2 : -Math.PI / 2, 0.25, 0.6, '#ffffff');
         }));
-        E.pop(s.x, s.y - 30, 'MAGIC PASS!', 'move', '#ffe14f');
         s.facing = Math.atan2(wps[0].y - s.y, wps[0].x - s.x);
         Act().startAttack(s, 'shoot');
         b.kick(s, 0, 0, 0);
@@ -1928,7 +1904,6 @@ window.SFC = window.SFC || {};
         pl.facing = a;
         H.hold(pl, prm.telegraph + 0.15);
         E.beam(pl.x + d.x * 8, pl.y - 8, a, len, 2, '#ffe14f', prm.telegraph + 0.1);
-        E.pop(pl.x, pl.y - 30, 'CHICKEN RAY!', 'move', '#ffe14f');
         g.sfx('ult', 'chicken.ray');
         g.later(prm.telegraph, () => {
           if (g.state !== 'play' || pl.state === 'stun') return;
@@ -1967,7 +1942,6 @@ window.SFC = window.SFC || {};
         if (!s) return;
         const hit = new Set();
         let tgt = this.pick(sys, team, s, hit), T = 0, back = !tgt, head = s.facing;
-        E.pop(s.x, s.y - 30, 'PANIC BALL!', 'move', '#7fe7ff');
         E.burst(b.x, b.y, 6, '#7fe7ff', 12, 80, 0.4);
         Act().startAttack(s, 'shoot');
         b.kick(s, Math.cos(head) * prm.speed, Math.sin(head) * prm.speed, 20);
@@ -2032,7 +2006,6 @@ window.SFC = window.SFC || {};
         const c = clampIn(f, cx / w, cy / w, 24), id = H.propId(g);
         E.prop(id, 'bigmagnet', c.x, c.y, prm.telegraph, 0, prm.telegraph + prm.time + 0.3, '#ff3d5a');
         E.wave(c.x, c.y, prm.radius, '#ff3d5a', prm.telegraph, 1);
-        E.callout('MEGA MAGNET!', '#ff3d5a', 0.9);
         g.sfx('ult', 'magnet.drop');
         g.later(prm.telegraph, () => {
           if (g.state !== 'play') { E.propOff(id); return; }

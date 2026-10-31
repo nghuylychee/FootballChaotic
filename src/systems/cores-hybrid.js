@@ -121,7 +121,6 @@ window.SFC = window.SFC || {};
         E.dragon(o.x, o.y + 2, o.x, o.y - 115, 1.0, '#ff6a1f', 1.3, 16);
         E.wave(o.x, o.y, 26, '#ff6a1f', 0.4, 2);
         for (let i = 0; i < 8; i++) E.burst(o.x + Math.sin(i * 1.3) * 5, o.y, i * 8, i % 2 ? '#ff6a1f' : '#ffd23f', 4, 40, 0.6);
-        E.pop(o.x, o.y + 26, 'RISING DRAGON!', 'move', '#ff6a1f');   // chữ dưới chân, không che con rồng bay lên
         g.hitStop(0.08);
         E.shake(5, 0.3);
         g.sfx('hit');
@@ -168,7 +167,6 @@ window.SFC = window.SFC || {};
         if (!teamBall(sys, team)) return;
         const m = nearestMate(g, team, pl) || pl;   // không có đồng đội: tự bắn mình
         if (m !== pl) E.stretch(pl.id, m.x, m.y, prm.grab + 0.15);
-        E.pop(pl.x, pl.y - 30, 'SLINGSHOT!', 'move', '#ff8ac0');
         g.sfx('ult', 'sling.stretch');
         g.later(prm.grab, () => {
           if (g.state !== 'play' || m.state === 'stun') return;
@@ -223,7 +221,6 @@ window.SFC = window.SFC || {};
         if (!s) return;
         hold(s, prm.windup + 0.1);
         E.wave(s.x, s.y, 22, '#b46bff', prm.windup, 2);
-        E.pop(s.x, s.y - 30, 'CANNONBALL!', 'move', '#b46bff');
         g.sfx('whoosh');
         g.later(prm.windup, () => {
           if (g.state !== 'play' || b.owner !== s || s.state === 'stun') return;
@@ -326,7 +323,6 @@ window.SFC = window.SFC || {};
       onUltimate(sys, team, prm, pl) {
         const g = sys.g, o = targetsNear(g, team, pl, prm.range)[0];
         if (!o) return;
-        g.effects.pop(pl.x, pl.y - 30, 'PINBALL KICK!', 'move', '#c63dff');
         H.rush(sys, pl, o, prm.rush, U.dist(pl, o) / prm.rush + 0.15, () => {
           const E = g.effects, f = g.field;
           if (o.hasBall && !sys.unstealable(o)) { g.looseBall(o, pl.x - o.x, pl.y - o.y, 40); sys.steal(pl); }

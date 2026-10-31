@@ -14,6 +14,11 @@ window.SFC = window.SFC || {};
 (function () {
   const SP = () => SFC.Sprites;
   const W = 640, H = 360;
+  // tên Tuyệt kỹ trên đầu người ra chiêu (CoreSystem.activateUltimate): '@ult:<id>:<lv>' -> 'TÊN CHIÊU!' theo ngôn ngữ máy đang vẽ; khác -> null
+  const ultLabel = (s) => {
+    const m = /^@ult:(\w+):(\d+)$/.exec(s);
+    return m ? SFC.CoreSystem.ultName(m[1], +m[2]).toUpperCase() + '!' : null;
+  };
   // Press Start 2P (assets/fonts) có Latin-1: chữ có dấu kiểu á ç ñ ¡ vẫn dùng được; ngoài khoảng đó (dấu tiếng Việt...) -> VT323.
   // Chữ Nhật: font dự phòng DotGothic16 (vẽ theo lưới 16px) -> không nhỏ hơn 12px kẻo chữ Hán vỡ nét
   const latin1 = (s) => /^[\x00-\xFF]*$/.test(s);
@@ -1610,7 +1615,7 @@ window.SFC = window.SFC || {};
     pops(ctx, g) {
       const K = SFC_CONFIG.game.fx.popups.kinds, CL = SFC_CONFIG.cores.list, A = SFC_CONFIG.cores.archetypes;
       for (const c of g.effects.V.pops) {
-        const s = K[c.kind], k = 1 - c.t / c.max, str = SFC.t(c.str);
+        const s = K[c.kind], k = 1 - c.t / c.max, str = ultLabel(c.str) || SFC.t(c.str);
         // màu: '#rrggbb' của người gọi · id Core / tên trường phái -> màu trường phái · không có -> màu mặc định của loại
         const school = c.color && CL[c.color] ? CL[c.color].tags[0] : c.color;
         const color = c.color && c.color[0] === '#' ? c.color : A[school] ? A[school].color : s.color || '#ffe14f';
@@ -1706,9 +1711,9 @@ window.SFC = window.SFC || {};
       }
       // ảnh xem trước Core: chỉ một khúc sân -> bỏ cut-in / callout (tên chiêu đã in trên lá)
       if (g.preview) { if (O.impact > 0) this.impactOverlay(ctx); return; }
-      // cut-in Tuyệt kỹ theo người xem: chiêu của chính mình (g.controlled) = dải ngang lớn phủ tối màn hình; của người khác (đồng đội,
-      // đối thủ, AI; trận AI-only / người xem: mọi chiêu) = dải chân dung nhỏ ở mép phía đội ra chiêu, kiểu cut-in LEGEND, thu nhỏ còn
-      // cores.ultimate.sideScale cho đỡ che sân (Effects.cutIn ghi cả 2)
+      // cut-in Tuyệt kỹ theo người xem: chiêu của chính mình (g.controlled) = dải mắt trên khán đài + đèn rọi quanh người ra chiêu
+      // (cutInMine); của người khác (đồng đội, đối thủ, AI; trận AI-only / người xem: mọi chiêu) = dải chân dung nhỏ ở mép phía đội
+      // ra chiêu, kiểu cut-in LEGEND, thu nhỏ còn cores.ultimate.sideScale cho đỡ che sân (Effects.cutIn ghi cả 2)
       const mine = g.controlled ? g.controlled.id : null;
       for (const c of O.sidecuts || []) {
         if (c.pid === mine || !SFC.LegendDraw) continue;
@@ -1717,51 +1722,8 @@ window.SFC = window.SFC || {};
         SFC.LegendDraw.sideCut(ctx, g, { k: 1 - c.t / c.max, color: c.color, team: c.team, role: c.role, look: c.look, right,
           label: SFC.t(c.sub || 'ULTIMATE'), title: c.str, name: c.name, scale: SFC_CONFIG.cores.ultimate.sideScale || 1 });
       }
-      // cut-in lớn: dải ngang có chân dung lớn + tên chiêu
-      for (const c of O.cutins) {
-        if (c.pid !== mine && SFC.LegendDraw) continue;
-        const k = 1 - c.t / c.max;
-        const slide = k < 0.15 ? 1 - k / 0.15 : k > 0.85 ? -(k - 0.85) / 0.15 : 0;
-        const off = slide * W, yb = 128, hb = 92;
-        ctx.globalAlpha = 0.55 * Math.min(1, (1 - k) * 6, k * 10);
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-        ctx.globalAlpha = 1;
-        ctx.save();
-        ctx.translate(off, 0);
-        ctx.fillStyle = c.color; ctx.fillRect(0, yb - 4, W, hb + 8);
-        ctx.fillStyle = '#140c16'; ctx.fillRect(0, yb, W, hb);
-        // dạng thức tỉnh: viền vàng 2 lớp + tia toả màu trường phái sau tên chiêu
-        if (c.sub) {
-          ctx.fillStyle = '#ffe14f'; ctx.fillRect(0, yb - 8, W, 3); ctx.fillRect(0, yb + hb + 5, W, 3);
-          ctx.save();
-          ctx.beginPath(); ctx.rect(0, yb, W, hb); ctx.clip();
-          ctx.globalAlpha = 0.22; ctx.fillStyle = c.color;
-          const rx = 420, ry = yb + hb / 2;
-          for (let i = 0; i < 16; i++) {
-            const a0 = now * 0.8 + (i / 16) * Math.PI * 2, a1 = a0 + 0.12;
-            ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx + Math.cos(a0) * 400, ry + Math.sin(a0) * 400); ctx.lineTo(rx + Math.cos(a1) * 400, ry + Math.sin(a1) * 400); ctx.closePath(); ctx.fill();
-          }
-          ctx.restore();
-          ctx.globalAlpha = 1;
-        }
-        // sọc tốc độ trong dải
-        ctx.globalAlpha = 0.35;
-        for (let i = 0; i < 14; i++) { ctx.fillStyle = i % 2 ? c.color : '#ffffff'; ctx.fillRect(((now * 900 + i * 97) % (W + 200)) - 100, yb + 6 + i * 6, 60 + (i * 37) % 90, 1); }
-        ctx.globalAlpha = 1;
-        // chân dung pixel lớn
-        ctx.save();
-        ctx.beginPath(); ctx.rect(0, yb, W, hb); ctx.clip();
-        ctx.translate(150, yb + hb + 40); ctx.scale(5, 5);
-        SP().drawPlayer(ctx, { x: 0, y: 0, vx: 0, vy: 0, facing: 0, anim: 0.3, state: 'normal', flash: 0, team: c.team, role: c.role, look: c.look }, g, 0.999);
-        ctx.restore();
-        // tên dài (tên thức tỉnh, bản dịch) thu nhỏ cho vừa nửa phải dải
-        let fs = c.sub ? 42 : 46;
-        ctx.font = font(c.str, fs);
-        while (fs > 22 && ctx.measureText(c.str).width > 400) ctx.font = font(c.str, (fs -= 2));
-        if (c.sub) outlinedText(ctx, SFC.t(c.sub), 420, yb + 17, 14, '#ffe14f', '#140c16', 4);
-        outlinedText(ctx, c.str, 420, yb + hb / 2 + (c.sub ? 8 : 0), fs, c.color, '#140c16', 6);
-        ctx.restore();
-      }
+      // trận không dừng trong lúc cut-in (user 2026-10-31) -> cut-in của mình không che sân
+      for (const c of O.cutins) if (c.pid === mine || !SFC.LegendDraw) this.cutInMine(ctx, g, c, now);
       // callout chạy chéo
       for (const c of O.callouts) {
         const k = 1 - c.t / c.max;
@@ -1776,6 +1738,52 @@ window.SFC = window.SFC || {};
         ctx.restore();
       }
       if (O.impact > 0) this.impactOverlay(ctx);
+    },
+
+    // cut-in Tuyệt kỹ của chính mình (user chọn 2026-10-31: trận không dừng nên không được che sân):
+    // đèn rọi = tối dần ra mép màn hình, sáng quanh người ra chiêu + 2 vòng màu trường phái toả dưới chân;
+    // dải mắt kiểu anime có tên chiêu, ngang tầm mắt: lấn vào nửa trên sân (user 2026-10-31), ngang chỗ chữ GOAL!
+    // (#banner top 118px, css/style.css; bàn thắng và Tuyệt kỹ không trùng lúc).
+    // Dạng thức tỉnh (c.sub = 'AWAKENED'): thêm 2 viền vàng + chữ nhỏ trên tên
+    cutInMine(ctx, g, c, now) {
+      const k = 1 - c.t / c.max, p = g.players.find((q) => q.id === c.pid);
+      const fade = Math.min(1, k / 0.12, (1 - k) / 0.15);
+      if (p) {
+        // lỗ sáng co lại theo thời gian
+        const r0 = 34 + 40 * (1 - Math.min(1, k * 2.5)), grd = ctx.createRadialGradient(p.x, p.y - 10, r0, p.x, p.y - 10, r0 + 150);
+        grd.addColorStop(0, 'rgba(8,4,12,0)'); grd.addColorStop(1, 'rgba(8,4,12,0.62)');
+        ctx.globalAlpha = fade; ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = c.color;
+        for (let i = 0; i < 2; i++) {
+          const q = (k * 1.6 + i * 0.5) % 1;
+          ctx.globalAlpha = fade * (1 - q); ctx.lineWidth = 3 - q * 2;
+          ctx.beginPath(); ctx.ellipse(p.x, p.y, 10 + q * 46, (10 + q * 46) * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+      // dải mắt: mở ra từ giữa theo chiều dọc, chân dung + tên trượt nhẹ ngược chiều nhau
+      const yb = 90, hb = 44, open = Math.min(1, k / 0.1, (1 - k) / 0.12), h = Math.max(1, hb * open), y0 = yb + (hb - h) / 2;
+      ctx.fillStyle = c.color; ctx.fillRect(0, y0 - 3, W, h + 6);
+      ctx.fillStyle = '#140c16'; ctx.fillRect(0, y0, W, h);
+      if (c.sub) { ctx.fillStyle = '#ffe14f'; ctx.fillRect(0, y0 - 6, W, 2); ctx.fillRect(0, y0 + h + 4, W, 2); }
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, y0, W, h); ctx.clip();
+      // sọc tốc độ trong dải
+      ctx.globalAlpha = 0.35;
+      for (let i = 0; i < 7; i++) { ctx.fillStyle = i % 2 ? c.color : '#ffffff'; ctx.fillRect(((now * 900 + i * 131) % (W + 200)) - 100, y0 + 4 + i * 6, 50 + (i * 37) % 80, 1); }
+      ctx.globalAlpha = 1;
+      // chân dung pixel phóng 7 lần, chỉ lộ khúc mắt (mắt cao ~15.6 px trên chân nhân vật)
+      ctx.save();
+      ctx.translate(150 + k * 14, yb + hb / 2 + 15.6 * 7); ctx.scale(7, 7);
+      SP().drawPlayer(ctx, { x: 0, y: 0, vx: 0, vy: 0, facing: 0, anim: 0.3, state: 'normal', flash: 0, team: c.team, role: c.role, look: c.look }, g, 0.999);
+      ctx.restore();
+      // tên dài (tên thức tỉnh, bản dịch) thu nhỏ cho vừa nửa phải dải
+      let fs = c.sub ? 26 : 30;
+      ctx.font = font(c.str, fs);
+      while (fs > 14 && ctx.measureText(c.str).width > 330) ctx.font = font(c.str, (fs -= 2));
+      if (c.sub) outlinedText(ctx, SFC.t(c.sub), 440, y0 + 9, 9, '#ffe14f', '#140c16', 3);
+      outlinedText(ctx, c.str, 440 - k * 10, yb + hb / 2 + (c.sub ? 5 : 1), fs, c.color, '#140c16', 4);
+      ctx.restore();
     },
 
     // impact frame: đảo màu rồi bỏ bão hoà -> khung hình đen trắng kiểu anime

@@ -767,6 +767,9 @@ window.SFC = window.SFC || {};
       g.later(cut, () => {
         const bh = Behaviors[id];
         if (!bh || !bh.onUltimate || g.state !== 'play') return;
+        // tên chiêu trên đầu người ra chiêu, đúng lúc chiêu nổ (user 2026-10-31: thay callout / chữ tên riêng của từng Tuyệt kỹ).
+        // '@ult:<id>:<lv>' -> mỗi máy tự đổi ra tên theo ngôn ngữ của mình lúc vẽ (VFX.pops), khách online cũng vậy
+        g.effects.pop(p.x, p.y - 30, '@ult:' + id + ':' + lv, 'move', color);
         // dạng thức tỉnh: thêm lớp hình (vòng sóng + vết nứt sáng màu trường phái, chớp sáng, viền màn hình, hào quang)
         if (lv >= 2) {
           g.effects.wave(p.x, p.y, 34 + lv * 10, color, 0.5, lv);

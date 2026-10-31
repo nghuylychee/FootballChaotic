@@ -263,7 +263,6 @@ window.SFC = window.SFC || {};
         const ring = m2 ? [a, m, m2] : [a, m];
         const strings = [];
         E.tint('#704214', 2.4, 0.3);
-        E.callout(aw ? 'ETERNAL TIKI-TAKA!' : 'TIKI-TAKA!', '#ffd23f', 1.2);
         if (aw) E.prop(H.propId(g), 'staff', f.x, f.y, f.w, f.h, prm.slowTime + 0.6, '#ffd23f');   // khuông nhạc phủ sân
         g.sfx('ult', 'tiki.start');
         for (const o of g.teams[1 - team].players) { o.buffs.push({ speed: prm.slow, t: prm.slowTime }); o.charging = false; }
@@ -415,7 +414,6 @@ window.SFC = window.SFC || {};
         if (prm.rebound) {
           E.tint('#3a0800', prm.delay + 0.5, 0.32);
           E.prop(H.propId(g), 'skyfire', s.x, s.y, 0, 0, prm.delay + 0.6, '#ff6a1f');
-          E.callout('METEOR BREAKER!', '#ff6a1f', 1);
         }
         E.burst(s.x, s.y, 0, '#8a7f70', 14, 90);
         E.wave(s.x, s.y, 24, '#ffffff', 0.4, 2);
@@ -603,7 +601,6 @@ window.SFC = window.SFC || {};
           // hồn đấu sĩ khổng lồ đứng sau lưng suốt chuỗi
           c.stand = H.propId(g);
           E.prop(c.stand, 'stand', pl.x, pl.y, pl.id, 0, 8, '#ff3d5a');
-          E.callout('THOUSAND FISTS!', '#ff3d5a', 1);
         }
         const miss = () => { E.pop(pl.x, pl.y - 30, 'MISS', 'info', '#9aa3b5'); pl.state = 'recover'; pl.stateT = 0.5; this.chainEnd(sys, c); };
         rush(sys, pl, o, prm.rush, prm.range / prm.rush + 0.15, () => this.barrage(sys, team, prm, pl, o, c), c.left ? miss : null);
@@ -813,7 +810,6 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects, b = g.ball, dir = g.teams[team].dir;
         const cst = sys.st(team, 'clone_army');   // cả đội sút được hưởng (thủ môn bị lừa), lưu mức trừ theo chỉ số người ra chiêu
         cst.t = g.time + prm.time; cst.gk = prm.gkPenalty;
-        E.callout('CLONES!', '#9d7bff', 1.0);
         E.burst(pl.x, pl.y, 6, '#d8d0e0', 24, 120, 0.7);
         E.pop(pl.x, pl.y - 30, 'POOF!', 'light', '#d8d0e0');
         g.sfx('ult', 'clone.poof');
@@ -971,7 +967,6 @@ window.SFC = window.SFC || {};
         pl.titanT = prm.time;
         pl.sizeTarget = prm.scale; pl.sizeT = prm.time;
         E.burst(pl.x, pl.y, 8, '#ffffff', 14, 90);
-        E.callout(aw ? 'MEGA TITAN!' : 'GIANT!', '#ffd23f', 1.1);
         if (aw) { E.prop(H.propId(g), 'chrome', pl.x, pl.y, pl.id, 0, prm.time, '#e8ecf5'); sys.st(pl, 'titan').grabT = 0; }
         E.shake(6, 0.4);
         E.wave(pl.x, pl.y, 40, '#ffd23f', 0.5, 3);
@@ -1374,7 +1369,6 @@ window.SFC = window.SFC || {};
         const g = sys.g, E = g.effects, b = g.ball, dir = g.teams[team].dir;
         const aw = !!prm.junk;   // ★★ PITCH LANDSLIDE: nghiêng mạnh hơn + đồ trên phố lăn xuống
         E.tilt(dir, prm.time, aw ? 1.6 : 1);
-        E.callout(aw ? 'LANDSLIDE!' : 'PITCH TILT!', '#ffd23f', 1);
         E.burst(pl.x, pl.y - 10, 10, CHAOS, 20, 120, 0.6);
         E.shake(5, 0.5);
         g.sfx('ult', 'tilt.creak');
