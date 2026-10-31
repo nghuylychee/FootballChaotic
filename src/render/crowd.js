@@ -17,8 +17,9 @@ window.SFC = window.SFC || {};
     const rnd = SFC.U.seeded(4242), skins = SFC_CONFIG.teams.skins, fans = [];
     const kits = [0, 1].map((t) => g.teams[t].cfg.kit);
     const regions = C.regions || ['top'];
-    const add = (x, y, zone) => {
-      if (rnd() > C.density) return;
+    // d: mật độ riêng (khán giả đứng rải rác 2 bên, crowd.loose), không có = C.density
+    const add = (x, y, zone, d) => {
+      if (rnd() > (d != null ? d : C.density)) return;
       const side = zone === 'left' ? 0 : zone === 'right' ? 1 : x < W / 2 ? 0 : 1;
       const team = rnd() < (C.teamColors || 0) ? side : -1;
       const shirt = team >= 0 ? (rnd() < 0.75 ? kits[team].shirt : kits[team].accent) : C.colors[Math.floor(rnd() * C.colors.length)];
@@ -35,13 +36,15 @@ window.SFC = window.SFC || {};
     if (regions.includes('top')) {
       const x0 = C.span === 'field' ? f.x : 3, x1 = C.span === 'field' ? f.x + f.w : W - 3;
       for (let r = (C.rows || 3) - 1; r >= 0; r--) {
-        const y = wallTop - 2 - r * 6;
-        for (let xx = x0 + (r % 2 ? 2.5 : 0); xx < x1; xx += 5) add(xx + (rnd() - 0.5), y, 'top');
+        const y = wallTop - 2 - r * 8;   // mỗi hàng ngồi trên 1 bậc 8px (background.js tiers)
+        for (let xx = x0 + (r % 2 ? 3.5 : 0); xx < x1; xx += 7) add(xx + (rnd() - 0.5), y, 'top');
       }
     }
     if (regions.includes('sides')) {
       for (const [a, b, zone] of [[5, f.x - 21, 'left'], [f.x + f.w + 21, W - 5, 'right']]) {
-        for (let yy = wallTop + 8; yy < f.y + f.h + 16; yy += 7) for (let xx = a; xx <= b; xx += 6) add(xx + (rnd() - 0.5) * 2, yy, zone);
+        // loose: đứng rải rác trên mặt đất (sân không có khán đài, arena.apron) · mặc định: ngồi theo bậc khán đài 8px (background.js stands)
+        if (C.loose) { for (let yy = wallTop + 14; yy < f.y + f.h + 14; yy += 13) for (let xx = a + 2; xx <= b; xx += 11) add(xx + (rnd() - 0.5) * 6, yy + (rnd() - 0.5) * 6, zone, C.loose); }
+        else for (let yy = wallTop + 8; yy < f.y + f.h + 16; yy += 8) for (let xx = a + 1; xx <= b; xx += 8) add(xx + (rnd() - 0.5) * 2, yy, zone);
       }
     }
     if (regions.includes('bottom')) for (let xx = 6; xx < W; xx += 9) add(xx + (rnd() - 0.5) * 3, H + 1, 'bottom');
@@ -60,15 +63,16 @@ window.SFC = window.SFC || {};
       if (p.glow) px(ctx, x + (arms ? 6 : 4), y - (arms ? 17 : 9), 1, 4, p.glow);
       return;
     }
-    px(ctx, x - 2, y - 4, 5, 4, p.shirt);
-    px(ctx, x - 1, y - 7, 3, 3, p.skin);
-    px(ctx, x - 1, y - 8, 3, 1, p.hair);
-    if (p.hat) drawHat(ctx, x, y, p.hat, p.hatShape);
+    // áo 5x4 + đầu 3x4 + tóc 2 hàng, không viền; 1 cột tối bên phải áo / mặt cho có khối
+    px(ctx, x - 2, y - 4, 5, 4, p.shirt); px(ctx, x + 2, y - 4, 1, 4, 'rgba(0,0,0,0.25)');
+    px(ctx, x - 1, y - 8, 3, 4, p.skin); px(ctx, x + 1, y - 7, 1, 3, 'rgba(0,0,0,0.15)');
+    px(ctx, x - 1, y - 9, 3, 2, p.hair);
+    if (p.hat) drawHat(ctx, x, y - 1, p.hat, p.hatShape);
     if (arms) {
-      px(ctx, x - 3, y - 8, 1, 4, p.skin); px(ctx, x + 3, y - 8, 1, 4, p.skin);
-      if (p.scarf) px(ctx, x - 4, y - 10, 9, 2, p.scarf);
-      if (p.glow) px(ctx, x + 3, y - 11, 1, 3, p.glow);
-    } else if (p.glow) px(ctx, x + 3, y - 6, 1, 3, p.glow);
+      px(ctx, x - 3, y - 10, 1, 6, p.skin); px(ctx, x + 3, y - 10, 1, 6, p.skin);
+      if (p.scarf) px(ctx, x - 4, y - 12, 9, 2, p.scarf);
+      if (p.glow) px(ctx, x + 4, y - 13, 1, 3, p.glow);
+    } else if (p.glow) px(ctx, x + 4, y - 8, 1, 3, p.glow);
   }
 
   // mũ của khán giả: nón lá (cone) · mũ lưỡi trai (cap) · mũ bảo hộ (hardhat) · mũ ba góc cướp biển (tricorn)

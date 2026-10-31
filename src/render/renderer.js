@@ -622,29 +622,55 @@ window.SFC = window.SFC || {};
       }
     },
 
+    // khung thành: vẽ 1 lần vào canvas đệm (theo kích thước sân + bên), mỗi khung hình chỉ drawImage
     goal(ctx, g, side) {
-      const { px } = SP();
-      const f = g.field, H = f.goalHeight;
-      const lx = side < 0 ? f.x : f.x + f.w;
-      const bx = lx + side * f.goalDepth;
-      const post = '#f2f2f2', shade = '#9aa0ad';
-      // mái lưới
-      ctx.fillStyle = 'rgba(220,225,235,0.28)';
-      const x0 = Math.min(lx, bx), w = f.goalDepth;
-      for (let yy = f.gTop - H; yy <= f.gBot - H; yy += 3) ctx.fillRect(x0, yy, w, 1);
-      for (let xx = x0; xx <= x0 + w; xx += 3) ctx.fillRect(xx, f.gTop - H, 1, f.goalWidth);
-      // lưới hông
-      for (const gy of [f.gTop, f.gBot]) {
-        for (let k = 0; k <= H; k += 3) ctx.fillRect(x0, gy - k, w, 1);
+      const f = g.field, net = SFC.Background.theme(g).goalNet || '235,238,245';   // màu lưới theo sân ('r,g,b')
+      const key = [side, net, f.x, f.w, f.gTop, f.gBot, f.goalHeight, f.goalDepth].join(',');
+      const c = (this._goals || (this._goals = {}))[key] || (this._goals[key] = this.goalSprite(f, side, net));
+      ctx.drawImage(c.cv, c.x, c.y);
+    },
+
+    // lưới dốc xuống phía sau (khung sau thấp ~55% xà) -> mái lưới xiên + 2 lưới hông hình thang; mắt lưới hình thoi 4px;
+    // lưới hông gần camera rõ nhất, mái nhạt hơn, hông xa mờ, lòng khung tối; khung trước viền mực + mép sáng phía sân / tối phía lưới;
+    // chân cột trên sân; bóng xà đổ lên sân ngay trước vạch cầu môn
+    goalSprite(f, side, net) {
+      const { px, OUT } = SP();
+      const H = f.goalHeight, D = f.goalDepth, HB = Math.round(H * 0.55);
+      const lx = side < 0 ? f.x : f.x + f.w, bx = lx + side * D;
+      const ox = Math.min(lx, bx) - 7, oy = f.gTop - H - 2;
+      const cv = document.createElement('canvas');
+      cv.width = D + 15; cv.height = f.gBot - oy + 3;
+      const ctx = cv.getContext('2d');
+      ctx.translate(-ox, -oy);
+      const top = f.gTop, bot = f.gBot;
+      const hAt = (k) => Math.round(H - ((H - HB) * k) / D);   // chiều cao lưới tại cột k (0 = khung trước, D = khung sau)
+      const on = (y, k) => ((y + k) & 3) === 0 || ((y - k) & 3) === 0;
+      const dot = (X, y, c) => { ctx.fillStyle = c; ctx.fillRect(X, y, 1, 1); };
+      px(ctx, side < 0 ? lx + 2 : lx - 6, top + 3, 4, bot - top, 'rgba(0,0,0,0.22)');
+      for (let k = 1; k < D; k++) px(ctx, lx + side * k, top - hAt(k), 1, bot - top + hAt(k), 'rgba(0,0,0,0.3)');
+      for (let k = 1; k < D; k++) {
+        const X = lx + side * k, h = hAt(k);
+        for (let y = top - h; y <= top; y++) if (on(y, k)) dot(X, y, `rgba(${net},0.2)`);          // lưới hông xa
+        for (let y = top + 1; y < bot - h; y++) if (on(y, k)) dot(X, y, `rgba(${net},0.3)`);      // mái lưới
+        for (let y = bot - h; y <= bot; y++) if (on(y, k)) dot(X, y, `rgba(${net},0.62)`);        // lưới hông gần
       }
-      // khung sau
-      px(ctx, bx - 1, f.gTop - H, 2, f.goalWidth + 1, shade);
-      // cột dọc + xà ngang
-      px(ctx, lx - 1, f.gTop - H, 3, H + 1, post);
-      px(ctx, lx - 1, f.gBot - H, 3, H + 1, post);
-      px(ctx, lx - 1, f.gTop - H, 3, f.goalWidth + 1, post);
-      px(ctx, lx + (side < 0 ? 1 : -1), f.gTop - H, 1, f.goalWidth + H + 1, shade);
-      px(ctx, x0, f.gTop - H - 1, w + 1, 1, shade);
+      // dây lưới sát mặt sân ở 2 hông
+      px(ctx, Math.min(lx, bx), bot, D + 1, 1, `rgba(${net},0.8)`);
+      px(ctx, Math.min(lx, bx), top, D + 1, 1, `rgba(${net},0.4)`);
+      // khung sau + 2 cột sau + 2 thanh chống xiên nối góc xà
+      const back = `rgba(${net},0.85)`;
+      px(ctx, bx, top - HB, 1, bot - top + 1, back);
+      px(ctx, bx, top - HB, 1, HB + 1, back); px(ctx, bx, bot - HB, 1, HB + 1, back);
+      for (let k = 0; k <= D; k++) { const X = lx + side * k, h = hAt(k); px(ctx, X, top - h, 1, 1, back); px(ctx, X, bot - h, 1, 1, back); }
+      // chân cột
+      for (const gy of [top, bot]) { px(ctx, lx - 2, gy - 1, 5, 3, OUT); px(ctx, lx - 1, gy, 3, 1, '#5a5f6a'); }
+      // khung trước: xà + 2 cột (cùng 1 đường dọc trên màn hình)
+      px(ctx, lx - 2, top - H - 1, 5, bot - top + H + 2, OUT);
+      px(ctx, lx - 1, top - H, 3, bot - top + H, '#f4f4f6');
+      px(ctx, side < 0 ? lx + 1 : lx - 1, top - H, 1, bot - top + H, '#ffffff');
+      px(ctx, side < 0 ? lx - 1 : lx + 1, top - H, 1, bot - top + H, '#a9aebb');
+      for (const gy of [top - H, bot - H]) px(ctx, lx - 1, gy, 3, 1, '#c9cdd6');
+      return { cv, x: ox, y: oy };
     },
   };
 

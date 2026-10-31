@@ -12,9 +12,15 @@
  *              dark (bóng tối, chỉ thấy khán giả) · stands (khán đài tạm + màn hình) · stadium (khán đài lớn + mái + màn hình) · parlor (vách gỗ câu lạc bộ + khung ảnh)
  *   venue    : (tuỳ chọn) tên sân ở màn giới thiệu đội, cho sân không thuộc Area nào (sân riêng FOOTBALL STORY)
  *   stands   : (tuỳ chọn) khán đài ở 2 bên + dưới sân (vùng tối ngoài tường) — { color: [2 màu bậc ghế], rail } — nơi khán giả đứng
+ *   apron    : (tuỳ chọn, sân không có stands) mặt đất ngoài tường 2 bên + dưới, thay cho dải màu void trơn:
+ *              ground: pave (lát ô: size, slab [màu ô], joint, puddle, grass [màu cỏ dại]) · gravel / grass (speck [màu lấm tấm]) · sea (wave, foam) ·
+ *              base: màu nền · curb: viền sát tường · hazard: vạch vàng đen trên viền · parapet: lan can ngoài mép ·
+ *              bottom: ghi đè cho dải dưới (vd. { ground: 'sea', ... }) · top: { wall, window, lit } mặt tiền nhà phía sau hàng rào ·
+ *              props: [[loại, bên 0 trái | 1 phải, y]] (loại như props bên dưới)
  *   lights   : style street (đèn đường 2 góc) · neon (dải neon trên đỉnh tường) · sun (nắng xiên) · spot (1 đèn rọi giữa, tối xung quanh) ·
  *              flood (cột đèn pha: towers = 2 | 4) · lamps (3 đèn chao treo trên sân, ánh ấm, xung quanh tối) · none
  *   graffiti : chữ trên tường; {t0} / {t1} = tên viết tắt 2 đội (tags rỗng = không vẽ)
+ *   goalNet  : (tuỳ chọn) màu lưới khung thành 'r,g,b' (mặc định trắng xám '235,238,245'; khung trước luôn trắng) — vẽ ở render/renderer.js goalSprite
  *   props    : đồ vật ngoài mép sân: { t: loại, x: tỉ lệ bề ngang sân (0..1), dx, dy: lệch px (dy tính từ mép dưới sân) }
  *              loại: tire · can · cone · crate · barrel · lantern · ac · bollard · holo · plant · hay · sack · chicken · hoop · bag ·
  *              firebarrel · camera · trophy · cannon · chest · anchor · rope · tile (quân domino khổng lồ) · teapot (ấm trà)
@@ -25,6 +31,7 @@
  *              (nửa trái đội 0, nửa phải đội 1) · cheer: độ náo nhiệt (0..1) · flashes: flash máy ảnh / giây ·
  *              scarves: tỉ lệ fan giơ khăn khi ăn mừng · glow: [màu que phát sáng] · fireworks: pháo hoa khi có bàn thắng ·
  *              shade: phủ tối vùng khán giả 0..1 (khán giả chìm trong bóng tối) ·
+ *              loose: (sân có apron) mật độ khán giả đứng rải rác trên mặt đất 2 bên (cần 'sides' trong regions) ·
  *              hat: { shape: cone (nón lá) | cap (mũ lưỡi trai) | hardhat (mũ bảo hộ) | tricorn (mũ ba góc cướp biển), chance: tỉ lệ đội mũ, colors }
  * Màu viết dạng '#rrggbb' hoặc 'rgba(...)'; glow viết 'r,g,b' (không có ngoặc) để pha độ trong.
  * ========================================================= */
@@ -44,7 +51,8 @@ SFC_CONFIG.arenas = {
     graffiti: { tags: ['STREET', 'CHAOS', '{t0}', '{t1}', 'NO RULES', 'FC'], colors: null, splat: true },
     net: 'rgba(230,230,240,0.35)', hole: '#17141c',
     props: [{ t: 'tire', x: 0, dx: -10, dy: 9 }, { t: 'can', x: 1, dx: 8, dy: 6 }, { t: 'cone', x: 0.5, dx: -60, dy: 10 }, { t: 'cone', x: 0.5, dx: 60, dy: 10 }],
-    crowd: { sound: 0.22, regions: ['top'], rows: 1, density: 0.16, span: 'field', colors: ['#5a4a3a', '#3a3f48', '#6a3a5a', '#2a3a4a', '#6a6a5a'], teamColors: 0.35, cheer: 0.6, flashes: 0.1, hat: { shape: 'cap', chance: 0.3, colors: ['#1a1a1a', '#d7263d', '#2fb8ff'] } },
+    apron: { ground: 'pave', base: '#24222b', slab: ['#302e38', '#2c2a33', '#34323c'], joint: '#1c1a21', curb: '#4b4956', top: { wall: '#18141d', window: '#ffd98a', lit: 0.22 }, props: [['can', 0, 150], ['tire', 0, 262], ['cone', 1, 118], ['bag', 1, 236]] },
+    crowd: { sound: 0.22, regions: ['top', 'sides'], loose: 0.3, rows: 1, density: 0.16, span: 'field', colors: ['#5a4a3a', '#3a3f48', '#6a3a5a', '#2a3a4a', '#6a6a5a'], teamColors: 0.35, cheer: 0.6, flashes: 0.1, hat: { shape: 'cap', chance: 0.3, colors: ['#1a1a1a', '#d7263d', '#2fb8ff'] } },
   },
 
   // AREA 2 — Hẻm Sau: nhựa đường nứt nẻ, gạch cũ màu cam đất, đèn vàng
@@ -60,7 +68,8 @@ SFC_CONFIG.arenas = {
     graffiti: { tags: ['ALLEY', '{t0}', 'RAT RACE', '{t1}', 'NO RULES', 'MEOW'], colors: null, splat: true },
     net: 'rgba(230,225,210,0.35)', hole: '#171210',
     props: [{ t: 'tire', x: 0, dx: -10, dy: 9 }, { t: 'can', x: 1, dx: 8, dy: 6 }, { t: 'crate', x: 0.25, dx: 0, dy: 9 }, { t: 'cone', x: 0.5, dx: 40, dy: 10 }, { t: 'can', x: 0.78, dx: 0, dy: 6 }],
-    crowd: { sound: 0.2, regions: ['top'], rows: 1, density: 0.14, span: 'field', colors: ['#5a4a3a', '#3a3f48', '#7a3a2a', '#2a3a4a', '#6a6a5a'], teamColors: 0.2, cheer: 0.5, flashes: 0.05, hat: { shape: 'cap', chance: 0.3, colors: ['#1a1a1a', '#d7263d', '#2f6fb8'] } },
+    apron: { ground: 'pave', base: '#26201c', slab: ['#332b25', '#2e2722', '#382f28'], joint: '#1d1714', curb: '#4d4136', puddle: '#141a22', top: { wall: '#1d1410', window: '#ffc86a', lit: 0.16 }, props: [['crate', 0, 140], ['firebarrel', 0, 250], ['can', 1, 132], ['crate', 1, 278]] },
+    crowd: { sound: 0.2, regions: ['top', 'sides'], loose: 0.24, rows: 1, density: 0.14, span: 'field', colors: ['#5a4a3a', '#3a3f48', '#7a3a2a', '#2a3a4a', '#6a6a5a'], teamColors: 0.2, cheer: 0.5, flashes: 0.05, hat: { shape: 'cap', chance: 0.3, colors: ['#1a1a1a', '#d7263d', '#2f6fb8'] } },
   },
 
   // AREA 4 — Sân Thượng: sàn gạch xi măng, lan can bê tông, thành phố về đêm phía sau
@@ -76,7 +85,8 @@ SFC_CONFIG.arenas = {
     graffiti: { tags: ['SKY', '{t0}', 'HIGH', '{t1}'], colors: ['#6ec8ff', '#ffffff'], splat: false },
     net: 'rgba(230,240,255,0.4)', hole: '#12151e',
     props: [{ t: 'ac', x: 0, dx: -10, dy: 8 }, { t: 'ac', x: 1, dx: 10, dy: 8 }, { t: 'plant', x: 0.3, dx: 0, dy: 9 }, { t: 'plant', x: 0.7, dx: 0, dy: 9 }],
-    crowd: { sound: 0.2, regions: ['top'], rows: 1, density: 0.12, span: 'field', colors: ['#6ec8ff', '#e8ecf5', '#9d7bff', '#3a3f55', '#ff8ac0'], teamColors: 0.25, cheer: 0.6, flashes: 0.15, hat: { shape: 'cap', chance: 0.25, colors: ['#1a1a1a', '#e8ecf5'] } },
+    apron: { ground: 'gravel', base: '#30343e', speck: ['#262a33', '#3d424e', '#454a57'], curb: '#6d7282', parapet: '#8a8f9c', props: [['ac', 0, 130], ['ac', 0, 160], ['plant', 1, 120], ['ac', 1, 270]] },
+    crowd: { sound: 0.2, regions: ['top', 'sides'], loose: 0.26, rows: 1, density: 0.12, span: 'field', colors: ['#6ec8ff', '#e8ecf5', '#9d7bff', '#3a3f55', '#ff8ac0'], teamColors: 0.25, cheer: 0.6, flashes: 0.15, hat: { shape: 'cap', chance: 0.25, colors: ['#1a1a1a', '#e8ecf5'] } },
   },
 
   // AREA 5 — Chợ Đêm: gạch lát đỏ, sạp hàng, dây đèn lồng, bảng neon
@@ -92,7 +102,8 @@ SFC_CONFIG.arenas = {
     graffiti: { tags: ['NOODLE', '{t0}', 'OPEN 24H', '{t1}', 'DRAGON'], colors: ['#ff3fb4', '#3ff6ff', '#ffd23f'], splat: false },
     net: 'rgba(255,230,210,0.35)', hole: '#170c0c',
     props: [{ t: 'lantern', x: 0, dx: -10, dy: 8 }, { t: 'lantern', x: 1, dx: 10, dy: 8 }, { t: 'crate', x: 0.2, dx: 0, dy: 9 }, { t: 'barrel', x: 0.8, dx: 0, dy: 8 }, { t: 'crate', x: 0.5, dx: 0, dy: 9 }],
-    crowd: { sound: 0.45, regions: ['top'], rows: 1, density: 0.35, span: 'field', colors: ['#c94a3a', '#e8dcc0', '#3a5a7a', '#6a4a8a', '#d9a23a'], teamColors: 0.3, cheer: 0.5, flashes: 0.2 },
+    apron: { ground: 'pave', size: 8, base: '#3a1a18', slab: ['#5a2a26', '#532622', '#612e29'], joint: '#2c1312', curb: '#7a4a3a', props: [['lantern', 0, 110], ['crate', 0, 200], ['barrel', 0, 290], ['lantern', 1, 110], ['crate', 1, 210], ['sack', 1, 290]] },
+    crowd: { sound: 0.45, regions: ['top', 'sides'], loose: 0.5, rows: 1, density: 0.35, span: 'field', colors: ['#c94a3a', '#e8dcc0', '#3a5a7a', '#6a4a8a', '#d9a23a'], teamColors: 0.3, cheer: 0.5, flashes: 0.2 },
   },
 
   // FOOTBALL STORY — Story 4 vòng 1/8 (Rust Buckets): VỊNH CƯỚP BIỂN — sàn ván tàu, mạn tàu gỗ có ô pháo, tàu cướp biển treo cờ đầu lâu trên biển đêm
@@ -109,6 +120,7 @@ SFC_CONFIG.arenas = {
     graffiti: { tags: [] },
     net: 'rgba(220,210,180,0.35)', hole: '#0f0a06',
     props: [{ t: 'anchor', x: 0, dx: -10, dy: 9 }, { t: 'cannon', x: 0.2, dy: 9 }, { t: 'chest', x: 0.4, dy: 9 }, { t: 'barrel', x: 0.56, dy: 8 }, { t: 'rope', x: 0.66, dy: 9 }, { t: 'cannon', x: 0.84, dy: 9 }, { t: 'anchor', x: 1, dx: 10, dy: 9 }],
+    apron: { ground: 'sea', base: '#0b1a2e', wave: 'rgba(160,200,255,0.22)', foam: 'rgba(230,240,255,0.55)', props: [] },
     crowd: { sound: 0.3, regions: ['top'], rows: 1, density: 0.2, span: 'field', colors: ['#c93a3a', '#f3ead7', '#2a2a30', '#3a5a9a'], teamColors: 0.15, cheer: 0.6, flashes: 0, hat: { shape: 'tricorn', chance: 0.7, colors: ['#1a1a1e', '#3a2616', '#8a1f1f'] } },
   },
 
@@ -125,7 +137,8 @@ SFC_CONFIG.arenas = {
     graffiti: { tags: ['DOCK', '{t0}', 'HAZARD', '{t1}', 'CARGO'], colors: ['#ffffff', '#ffd23f'], splat: false },
     net: 'rgba(220,230,240,0.35)', hole: '#0f1418',
     props: [{ t: 'bollard', x: 0, dx: -10, dy: 8 }, { t: 'bollard', x: 1, dx: 10, dy: 8 }, { t: 'barrel', x: 0.3, dx: 0, dy: 8 }, { t: 'crate', x: 0.62, dx: 0, dy: 9 }, { t: 'barrel', x: 0.68, dx: 0, dy: 8 }],
-    crowd: { sound: 0.25, regions: ['top'], rows: 1, density: 0.16, span: 'field', colors: ['#ff7a1f', '#c9e636', '#3a4a5a', '#ff7a1f'], teamColors: 0.1, cheer: 0.55, flashes: 0.05, hat: { shape: 'hardhat', chance: 0.75, colors: ['#ffd23f', '#ffffff', '#ff7a1f'] } },
+    apron: { ground: 'pave', size: 16, base: '#22282d', slab: ['#2e353a', '#2a3136', '#323a40'], joint: '#1a1f23', curb: '#ffd23f', hazard: true, bottom: { ground: 'sea', base: '#0c1a2c', wave: 'rgba(160,200,255,0.2)', foam: 'rgba(220,235,255,0.5)' }, props: [['bollard', 0, 140], ['barrel', 0, 250], ['crate', 1, 150], ['bollard', 1, 270]] },
+    crowd: { sound: 0.25, regions: ['top', 'sides'], loose: 0.24, rows: 1, density: 0.16, span: 'field', colors: ['#ff7a1f', '#c9e636', '#3a4a5a', '#ff7a1f'], teamColors: 0.1, cheer: 0.55, flashes: 0.05, hat: { shape: 'hardhat', chance: 0.75, colors: ['#ffd23f', '#ffffff', '#ff7a1f'] } },
   },
 
   // AREA 9 — Đấu Trường Cyber: sàn tối lưới neon, tường tấm kim loại khe sáng, màn LED, khán giả cầm que phát sáng 2 bên
@@ -139,7 +152,7 @@ SFC_CONFIG.arenas = {
     backdrop: { style: 'screens', bg: '#07051a', screen: '#0d1030', bars: ['#3ff6ff', '#9d7bff', '#ff3fb4'] },
     lights: { style: 'neon', color: '#3ff6ff', glow: '63,246,255' },
     graffiti: { tags: ['APEX', '{t0}', 'VS', '{t1}', 'FINAL'], colors: ['#3ff6ff', '#9d7bff', '#ff3fb4'], splat: false },
-    net: 'rgba(63,246,255,0.4)', hole: '#08061a',
+    net: 'rgba(63,246,255,0.4)', hole: '#08061a', goalNet: '63,246,255',
     props: [{ t: 'holo', x: 0, dx: -10, dy: 8 }, { t: 'holo', x: 1, dx: 10, dy: 8 }, { t: 'holo', x: 0.5, dx: -70, dy: 9 }, { t: 'holo', x: 0.5, dx: 70, dy: 9 }],
     stands: { color: ['#0d0b1c', '#110e24'], rail: '#3ff6ff' },
     crowd: { sound: 0.85, regions: ['sides', 'bottom'], density: 0.8, colors: ['#1c1a33', '#2a2448', '#15122a'], teamColors: 0.4, cheer: 0.9, flashes: 0.8, glow: ['#3ff6ff', '#9d7bff', '#ff3fb4', '#9dff3d'] },
@@ -158,7 +171,8 @@ SFC_CONFIG.arenas = {
     graffiti: { tags: [] },
     net: 'rgba(240,235,220,0.4)', hole: '#2a1f14',
     props: [{ t: 'hay', x: 0, dx: -9, dy: 8 }, { t: 'sack', x: 1, dx: 9, dy: 8 }, { t: 'chicken', x: 0.3, dx: 0, dy: 10 }, { t: 'chicken', x: 0.34, dx: 0, dy: 12 }, { t: 'hay', x: 0.72, dx: 0, dy: 8 }, { t: 'chicken', x: 0.9, dx: 0, dy: 11 }],
-    crowd: { sound: 0.12, regions: ['top'], rows: 1, density: 0.12, span: 'field', colors: ['#e8dcc0', '#8a6a44', '#5a7aa0', '#b04a3a', '#f2f2e8'], teamColors: 0.1, cheer: 0.45, flashes: 0, hat: { shape: 'cone', chance: 0.55, colors: ['#f2e2a8', '#e8d49a'] } },
+    apron: { ground: 'grass', base: '#4a6a2a', speck: ['#3e5a22', '#5a7a32', '#6a8a3a'], curb: '#8a6a44', props: [['hay', 0, 130], ['chicken', 0, 230], ['sack', 1, 120], ['hay', 1, 250], ['chicken', 1, 300]] },
+    crowd: { sound: 0.12, regions: ['top', 'sides'], loose: 0.26, rows: 1, density: 0.12, span: 'field', colors: ['#e8dcc0', '#8a6a44', '#5a7aa0', '#b04a3a', '#f2f2e8'], teamColors: 0.1, cheer: 0.45, flashes: 0, hat: { shape: 'cone', chance: 0.55, colors: ['#f2e2a8', '#e8d49a'] } },
   },
 
   // AREA 3 — Sân Trường: xi măng kẻ vạch, tường vôi vàng + bảng đen, dãy lớp học + cột cờ. Vài học sinh đứng xem
@@ -174,7 +188,8 @@ SFC_CONFIG.arenas = {
     graffiti: { tags: ['CLASS 9A', '{t0}', 'NO RUNNING', '{t1}', 'GO!'], colors: ['#ffffff', '#f2f2e8'], splat: false },
     net: 'rgba(255,255,255,0.4)', hole: '#2a2a28',
     props: [{ t: 'hoop', x: 0, dx: -9, dy: 6 }, { t: 'bag', x: 0.3, dx: 0, dy: 10 }, { t: 'cone', x: 0.5, dx: 0, dy: 10 }, { t: 'bag', x: 0.66, dx: 0, dy: 10 }, { t: 'hoop', x: 1, dx: 9, dy: 6 }],
-    crowd: { sound: 0.3, regions: ['top'], rows: 1, density: 0.28, span: 'field', colors: ['#ffffff', '#e8ecf5', '#f2f2f2'], teamColors: 0.15, cheer: 0.6, flashes: 0 },
+    apron: { ground: 'pave', size: 12, base: '#6d737a', slab: ['#82888f', '#7c8289', '#888e95'], joint: '#5c6168', curb: '#b8bec4', grass: ['#4f8f3a', '#3f7a2e'], props: [['plant', 0, 120], ['bag', 0, 210], ['plant', 0, 290], ['hoop', 1, 160], ['plant', 1, 290]] },
+    crowd: { sound: 0.3, regions: ['top', 'sides'], loose: 0.42, rows: 1, density: 0.28, span: 'field', colors: ['#ffffff', '#e8ecf5', '#f2f2f2'], teamColors: 0.15, cheer: 0.6, flashes: 0 },
   },
 
   // AREA 7 — Lồng Sắt Ngầm: sàn cao su tối, tường lưới thép, 1 đèn rọi giữa, khán giả hò hét trong bóng tối
@@ -189,7 +204,7 @@ SFC_CONFIG.arenas = {
     stands: { color: ['#0c0b10', '#100e15'], rail: '#3a3f48' },
     lights: { style: 'spot', glow: '255,236,210', dark: 0.42 },
     graffiti: { tags: ['NO MERCY', '{t0}', 'CAGE', '{t1}', 'NO REFS'], colors: ['#ff3d3d', '#ffffff'], splat: true },
-    net: 'rgba(200,200,210,0.35)', hole: '#0a090c',
+    net: 'rgba(200,200,210,0.35)', hole: '#0a090c', goalNet: '255,70,70',
     props: [{ t: 'firebarrel', x: 0, dx: -9, dy: 7 }, { t: 'tire', x: 0.25, dx: 0, dy: 9 }, { t: 'firebarrel', x: 1, dx: 9, dy: 7 }, { t: 'tire', x: 0.8, dx: 0, dy: 9 }],
     crowd: { sound: 0.8, regions: ['top', 'sides'], rows: 4, density: 0.75, colors: ['#2a2530', '#3a3440', '#4a2a2a', '#23232b', '#5a1a1a'], teamColors: 0.25, cheer: 0.85, flashes: 0.6, shade: 0.5 },
   },

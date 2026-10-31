@@ -20,6 +20,8 @@ window.SFC = window.SFC || {};
     const { px, disc } = S();
 
     px(x, 0, 0, W, H, T.void);
+    // sân không có khán đài: mặt đất ngoài tường (2 bên + dưới) thay cho dải màu trơn
+    if (T.apron) apron(x, f, W, H, T.apron, rnd);
 
     /* --- mặt sân --- */
     floor(x, f, T.floor, rnd);
@@ -89,6 +91,8 @@ window.SFC = window.SFC || {};
 
     // đồ vật trang trí ngoài mép sân
     for (const p of T.props || []) prop(x, p.t, Math.round(f.x + f.w * p.x + (p.dx || 0)), Math.round(f.y + f.h + (p.dy || 0)));
+    // đồ vật trên mặt đất 2 bên: [loại, bên (0 trái / 1 phải), y]
+    if (T.apron) for (const [t, side, y] of T.apron.props || []) prop(x, t, side ? f.x + f.w + 30 : f.x - 30, y);
     fixtures(x, g);
     return c;
   }
@@ -138,16 +142,74 @@ window.SFC = window.SFC || {};
   }
 
   // khán đài 2 bên + hàng dưới (vùng tối ngoài tường) — khán giả đứng ở đây (render/crowd.js)
+  // bậc ngang cao 8px: mỗi hàng khán giả ngồi trên 1 bậc (khớp bước hàng 'sides' trong crowd.js)
   function stands(x, f, wallTop, W, H, St) {
     const { px } = S();
     const h = f.y + f.h + 18 - wallTop;
     for (const [a, b] of [[0, f.x - 17], [f.x + f.w + 17, W]]) {
-      for (let cx = a, i = 0; cx < b; cx += 6, i++) px(x, cx, wallTop, Math.min(6, b - cx), h, St.color[i % 2]);
+      for (let yy = wallTop, i = 0; yy < wallTop + h; yy += 8, i++) {
+        px(x, a, yy, b - a, Math.min(8, wallTop + h - yy), St.color[i % 2]);
+        px(x, a, yy, b - a, 1, 'rgba(255,255,255,0.07)');
+        px(x, a, yy + 6, b - a, 2, 'rgba(0,0,0,0.28)');
+      }
       px(x, a === 0 ? b - 2 : a, wallTop, 2, h, St.rail);
     }
     const by = f.y + f.h + 18;
     px(x, 0, by, W, H - by, St.color[0]);
     px(x, 0, by, W, 1, St.rail);
+  }
+
+  /* ---------------- mặt đất ngoài tường (arena.apron) ---------------- */
+  // 1 vùng mặt đất: pave (lát ô) · gravel (sỏi) · grass (cỏ) · sea (mặt nước). edge = phía sát tường: l | r | b (bó vỉa / bọt sóng / lan can)
+  function ground(x, X, Y, W, H, A, rnd, edge) {
+    const { px, disc } = S();
+    px(x, X, Y, W, H, A.base);
+    if (A.ground === 'pave') {
+      const T = A.size || 10;
+      for (let ty = Y - (Y % T); ty < Y + H; ty += T) for (let tx = X - (X % T); tx < X + W; tx += T) {
+        const x0 = Math.max(X, tx), y0 = Math.max(Y, ty), x1 = Math.min(X + W, tx + T), y1 = Math.min(Y + H, ty + T);
+        if (x1 <= x0 || y1 <= y0) continue;
+        px(x, x0, y0, x1 - x0, y1 - y0, A.slab[Math.floor(rnd() * A.slab.length)]);
+        px(x, x0, y0, x1 - x0, 1, A.joint); px(x, x0, y0, 1, y1 - y0, A.joint);
+        for (let i = 0; i < 3; i++) px(x, x0 + Math.floor(rnd() * (x1 - x0)), y0 + Math.floor(rnd() * (y1 - y0)), 1, 1, 'rgba(0,0,0,0.18)');
+      }
+      if (A.puddle) for (let i = 0; i < 3; i++) { x.globalAlpha = 0.7; disc(x, X + rnd() * W, Y + rnd() * H, 3 + Math.floor(rnd() * 4), A.puddle); x.globalAlpha = 1; }
+      if (A.grass) for (let i = 0; i < (W * H) / 40; i++) { const gx = X + rnd() * W, gy = Y + rnd() * H; if (rnd() < 0.5) px(x, gx, gy, 1, 2, A.grass[Math.floor(rnd() * A.grass.length)]); }
+    } else if (A.ground === 'gravel' || A.ground === 'grass') {
+      const grass = A.ground === 'grass';
+      for (let i = 0; i < (W * H) / (grass ? 5 : 3); i++) px(x, X + rnd() * W, Y + rnd() * H, 1, grass && rnd() < 0.4 ? 2 : 1, A.speck[Math.floor(rnd() * A.speck.length)]);
+    } else if (A.ground === 'sea') {
+      for (let i = 0; i < (W * H) / 50; i++) px(x, X + Math.floor(rnd() * W), Y + Math.floor(rnd() * H), 2 + Math.floor(rnd() * 4), 1, A.wave);
+    }
+    const sea = A.ground === 'sea', c = sea ? A.foam : A.curb;
+    if (c) {
+      if (edge === 'l') { px(x, X + W - 2, Y, 2, H, c); if (sea) for (let yy = Y; yy < Y + H; yy += 3) px(x, X + W - 3 - Math.floor(rnd() * 3), yy, 1 + Math.floor(rnd() * 2), 1, c); }
+      if (edge === 'r') { px(x, X, Y, 2, H, c); if (sea) for (let yy = Y; yy < Y + H; yy += 3) px(x, X + 2 + Math.floor(rnd() * 3), yy, 1 + Math.floor(rnd() * 2), 1, c); }
+      if (edge === 'b') { px(x, X, Y, W, 2, c); if (sea) for (let xx = X; xx < X + W; xx += 3) px(x, xx, Y + 2 + Math.floor(rnd() * 2), 2, 1, c); }
+      // vạch cảnh báo vàng đen dọc mép (bến cảng)
+      if (A.hazard) for (let k = 0; k < (edge === 'b' ? W : H); k += 4) {
+        if (!((k / 4) % 2)) continue;
+        if (edge === 'b') px(x, X + k, Y, 4, 2, '#1a1a1a'); else px(x, edge === 'l' ? X + W - 2 : X, Y + k, 2, 4, '#1a1a1a');
+      }
+    }
+    if (A.parapet) {   // lan can bê tông mép ngoài (sân thượng)
+      if (edge === 'l') { px(x, X, Y, 3, H, A.parapet); px(x, X + 3, Y, 1, H, 'rgba(0,0,0,0.35)'); }
+      if (edge === 'r') { px(x, X + W - 3, Y, 3, H, A.parapet); px(x, X + W - 4, Y, 1, H, 'rgba(0,0,0,0.35)'); }
+      if (edge === 'b') { px(x, X, Y + H - 3, W, 3, A.parapet); px(x, X, Y + H - 4, W, 1, 'rgba(0,0,0,0.35)'); }
+    }
+  }
+
+  // mặt đất 2 bên + dưới; top = mặt tiền nhà tối có cửa sổ sáng lác đác phía sau hàng rào (vẽ trước phông, phông đè lên phần dưới)
+  function apron(x, f, W, H, A, rnd) {
+    const { px } = S();
+    const L = f.x - 16, R = f.x + f.w + 16, B = f.y + f.h + 18, wallTop = f.y - 46;
+    if (A.top) {
+      px(x, 0, 0, W, wallTop, A.top.wall);
+      for (let wy = 2; wy < wallTop - 4; wy += 6) for (let wx = 3; wx < W - 4; wx += 7) px(x, wx, wy, 3, 3, rnd() < A.top.lit ? A.top.window : 'rgba(0,0,0,0.35)');
+    }
+    ground(x, 0, 0, L, H, A, rnd, 'l');
+    ground(x, R, 0, W - R, H, A, rnd, 'r');
+    ground(x, L, B, R - L, H - B, A.bottom ? Object.assign({}, A, A.bottom) : A, rnd, 'b');
   }
 
   /* ---------------- mặt sân ---------------- */
@@ -403,6 +465,16 @@ window.SFC = window.SFC || {};
     x.fillRect(0, 0, W, Y);
   }
 
+  // bậc khán đài phía trên tường: mỗi bậc cao 8px, đáy bậc = chân 1 hàng khán giả 'top' (wallTop − 2 − r·8, crowd.js)
+  function tiers(x, W, wallTop, y0, cols) {
+    const { px } = S();
+    for (let r = 0, yy = wallTop - 2; yy - 7 > y0; r++, yy -= 8) {
+      px(x, 0, yy - 7, W, 8, cols[r % 2]);
+      px(x, 0, yy - 7, W, 1, 'rgba(255,255,255,0.06)');
+      px(x, 0, yy - 1, W, 1, 'rgba(0,0,0,0.25)');
+    }
+  }
+
   function backdrop(x, f, wallTop, W, B, rnd) {
     const { px, disc } = S();
     if (B.style === 'fence') {
@@ -579,7 +651,8 @@ window.SFC = window.SFC || {};
     if (B.style === 'stands') {
       // khán đài tạm dựng bằng giàn giáo
       sky(x, W, wallTop, B.sky);
-      for (let ty = 7; ty < wallTop; ty += 6) px(x, 0, ty, W, 6, B.tiers[Math.floor(ty / 6) % 2]);
+      px(x, 0, 7, W, wallTop - 7, B.tiers[1]);
+      tiers(x, W, wallTop, 7, B.tiers);
       px(x, 0, 6, W, 2, B.pole);
       for (let sx = 0; sx < W; sx += 40) {
         px(x, sx, 6, 2, wallTop - 6, B.pole);
@@ -589,7 +662,8 @@ window.SFC = window.SFC || {};
     }
     if (B.style === 'stadium') {
       // khán đài lớn: bậc ghế, lối đi, mái có dải đèn
-      for (let ty = 4; ty < wallTop; ty += 6) px(x, 0, ty, W, 6, B.tiers[Math.floor(ty / 6) % 2]);
+      px(x, 0, 4, W, wallTop - 4, B.tiers[1]);
+      tiers(x, W, wallTop, 4, B.tiers);
       for (let ax = 60; ax < W; ax += 90) px(x, ax, 4, 3, wallTop - 4, '#0c1430');
       px(x, 0, 0, W, 4, B.roof);
       for (let lx = 4; lx < W; lx += 10) px(x, lx, 2, 4, 1, B.roofLight);
