@@ -1478,9 +1478,10 @@ window.SFC = window.SFC || {};
       const size = M.drill ? M.teamSize[0] : SFC_CONFIG.game.roles.length;
       const mates = size > playing.length ? RUN().mateSpecs().filter((x) => !roles.includes(x.role)).slice(0, size - playing.length) : [];
       // đối thủ mạnh lên theo số người thật ra sân
+      // đồng đội AI: độ khó như chơi một mình (phần mạnh lên theo số người chỉ dành cho đối thủ)
       const sc = RUN().coopScale(playing.length), ai = SFC.MainPath.aiProfile(M.elo + sc.elo);
       const match = {
-        difficulty: 'normal', aiProfile: ai, mateProfile: ai, humanTeam: 0, statMul: [1, sc.statMul * (M.drill ? 1 : M.stat || 1)],
+        difficulty: 'normal', aiProfile: ai, mateProfile: SFC.MainPath.aiProfile(M.elo), humanTeam: 0, statMul: [1, sc.statMul * (M.drill ? 1 : M.stat || 1)],
         arena: SFC_CONFIG.arenas[M.arena] ? M.arena : undefined, run: M.info,
       };
       if (M.drill) Object.assign(match, { drill: M.drill, trial: M.trial || undefined, drillEase: M.ease || 0, drillSeed: Math.floor(Math.random() * 2 ** 31), teamSize: M.teamSize.slice(), noDraft: true });

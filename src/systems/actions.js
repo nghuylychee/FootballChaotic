@@ -57,7 +57,8 @@ window.SFC = window.SFC || {};
             oppD = Math.min(oppD, U.dist(o, m));
             if (ground && !human && U.segDist(o.x, o.y, p.x, p.y, m.x, m.y) < 10) s -= 0.5;
           }
-          if (ground && human) s -= this.laneRisk(g, p, m.x, m.y) * laneW;
+          // chọc khe: bóng vào khoảng trống theo mũi tên, không tới chỗ người nhận đang đứng -> không trừ điểm đường chuyền tới họ
+          if (ground && human && mode !== 'through') s -= this.laneRisk(g, p, m.x, m.y) * laneW;
           s += (Math.min(oppD, 60) / 60) * 0.4;
           if (m === prev) s += P.switchMargin;
           if (s > bestS) { bestS = s; best = m; }
@@ -138,22 +139,32 @@ window.SFC = window.SFC || {};
 
       let point, spd, vz = 0, T = 0.5, cross = false;
       const k = B.groundFriction;
+      // điểm rơi chọc khe, depth px vào khoảng trống. AI / không bấm hướng: phía trước người nhận theo hướng tấn công.
+      // Người chơi có mũi tên (pass.throughAim, user 2026-10-31): bóng đi theo hướng mũi tên, sâu hơn người nhận depth px;
+      // người nhận chỉ kéo điểm rơi lệch ngang khỏi đường mũi tên (1 - throughAim) — ý đồ chuyền là của người chơi, không bám người
+      const throughPoint = (depth) => {
+        const aim = human && Math.hypot(dx, dy) > 0.2 ? U.norm(dx, dy) : null;
+        if (!aim) {
+          const goal = g.attackGoal(p.team);
+          const run = U.norm(g.teams[p.team].dir, U.clamp((goal.y - target.y) / 250, -0.6, 0.6));
+          return clampPt({ x: target.x + run.x * depth, y: target.y + run.y * depth });
+        }
+        const tx = target.x - b.x, ty = target.y - b.y;
+        const along = Math.max(0, tx * aim.x + ty * aim.y), keep = 1 - P.throughAim;
+        return clampPt({ x: b.x + aim.x * (along + depth) + (tx - aim.x * along) * keep, y: b.y + aim.y * (along + depth) + (ty - aim.y * along) * keep });
+      };
       if (mode === 'lobthrough') {
         // CHỌC KHE BỔNG (game.technique.lobThrough): điểm rơi như chọc khe (+ lead px, âm = nông hơn), bóng bay bổng qua đầu hậu vệ
-        const goal = g.attackGoal(p.team);
-        const run = U.norm(g.teams[p.team].dir, U.clamp((goal.y - target.y) / 250, -0.6, 0.6));
         const depth = U.lerp(P.throughLeadMin, P.throughLeadMax, power == null ? 0.5 : Math.max(P.throughBase, power)) + G().technique.lobThrough.lead;
-        point = clampPt({ x: target.x + run.x * depth, y: target.y + run.y * depth });
+        point = throughPoint(depth);
         const d = U.dist(b, point) || 1, ka = B.airDrag, LT = G().technique.lobThrough;
         T = U.lerp(LT.timeMin, LT.timeMax, idealOf(d));
         spd = (ka * d) / (1 - Math.exp(-ka * T));
         vz = (B.gravity * T) / 2;
       } else if (mode === 'through') {
         // bóng vào khoảng trống phía trước người nhận; lực quyết định độ sâu
-        const goal = g.attackGoal(p.team);
-        const run = U.norm(g.teams[p.team].dir, U.clamp((goal.y - target.y) / 250, -0.6, 0.6));
         const depth = U.lerp(P.throughLeadMin, P.throughLeadMax, power == null ? 0.5 : Math.max(P.throughBase, power));
-        point = clampPt({ x: target.x + run.x * depth, y: target.y + run.y * depth });
+        point = throughPoint(depth);
         const d = U.dist(b, point) || 1;
         // lực mặc định cao như chuyền sệt: bóng tới điểm nhận vẫn còn throughArriveSpeed,
         // người nhận chủ động băng lên đón (receiveMove) thay vì bóng lăn chậm chờ người

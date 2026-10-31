@@ -36,7 +36,7 @@ SFC_CONFIG.controls = {
     mute:    ['KeyM', 'Pad.Back'],
     restart: ['KeyR', 'Pad.Y'],     // túi đồ: phân rã toàn bộ đồ trùng (giữ 1)
     dismantle: ['KeyX', 'Delete', 'Pad.X'], // túi đồ / mở hộp: phân rã món đang chọn
-    ultimate: ['KeyX', 'Pad.LT'],    // trong trận: TUYỆT KỸ (khi thanh năng lượng đầy)
+    ultimate: ['Space', 'Pad.LT'],   // trong trận: TUYỆT KỸ (khi thanh năng lượng đầy)
     reroll:  ['KeyR', 'Pad.Y'],     // màn DRILL: đổi cả 3 drill · màn chọn Core: đổi cả 3 lá (khi cores.draft.rerollsPerRound > 0)
 
     // phím menu riêng: đổi phím trong trận không làm đổi điều hướng menu

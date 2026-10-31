@@ -165,8 +165,10 @@ SFC_CONFIG.run = {
 
   /* ---------- CO-OP (phòng GOAT PATH online, user 2026-10-26; src/meta/run.js) ----------
    * voteTime: giây tối đa từ phiếu đầu tiên tới lúc chốt (đủ phiếu thì chốt luôn) · eloPer / statPer: mỗi người thật thêm ngoài người đầu,
-   * Elo AI đối thủ + eloPer và chỉ số đối thủ x (1 + statPer) (mỗi người nhận BADGE riêng nên đội mạnh lên nhanh hơn chơi một mình) */
-  coop: { voteTime: 15, eloPer: 120, statPer: 0.05 },
+   * Elo AI đối thủ + eloPer và chỉ số đối thủ x (1 + statPer) (mỗi người nhận BADGE riêng nên đội mạnh lên nhanh hơn chơi một mình).
+   * eloPer = 0 (user 2026-10-31): +120 Elo ở act 1 (đường AI theo Elo dốc nhất ở Area đầu) làm AI đối thủ phản ứng nhanh hẳn
+   * (0.5 -> 0.33–0.4 giây), chạy nhanh hơn 6–11%, áp sát gấp đôi so với chơi một mình -> co-op chỉ tăng chỉ số, não AI như chơi một mình */
+  coop: { voteTime: 15, eloPer: 0, statPer: 0.05 },
 
   /* ---------- SKILL GAME (src/systems/drills.js, user 2026-10-26: mốc ĐỒNG / BẠC / VÀNG + thanh tiến độ trên HUD) ----------
    * Bài tập ngắn trên sân thật. teamSize: [bạn, đối thủ] (mỗi đội tối đa 3 = số vị trí; bạn > 1 = có đồng đội AI trong đội hình) · time: giây ·

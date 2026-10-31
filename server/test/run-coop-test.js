@@ -182,7 +182,7 @@ function runLogic() {
   assert.deepStrictEqual(Run.keys(), ['host', 'annaanna1']);
   assert.ok(!R.squad.some((s) => s.h === 'benbenben'), 'left seat goes back to the AI');
   assert.ok(R.guests.benbenben && !R.guests.benbenben.on, 'wallet kept for when they come back');
-  assert.ok(Run.coopScale(3).elo > 0 && Run.coopScale(3).statMul > 1 && Run.coopScale(1).statMul === 1, 'opponents scale with real players');
+  assert.ok(Run.coopScale(3).elo >= 0 && Run.coopScale(3).statMul > 1 && Run.coopScale(1).statMul === 1, 'opponents scale with real players');
 
   // bản sao khách: Run.run = bản sao, run riêng không đụng tới
   const share = JSON.parse(JSON.stringify(Run.share()));

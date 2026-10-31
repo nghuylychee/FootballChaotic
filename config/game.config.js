@@ -255,6 +255,8 @@ SFC_CONFIG.game = {
     throughLeadMin: 24,       // chọc khe: lực thấp -> bóng vào khoảng trống gần
     throughLeadMax: 95,       //           lực cao  -> bóng vào sâu
     throughBase: 0.35,        // độ sâu mặc định khi chỉ chạm nhẹ
+    throughAim: 0.65,         // chọc khe của người chơi có bấm hướng: 1 = bóng đi đúng đường mũi tên, 0 = điểm rơi ngay trước người nhận
+                              // (theo hướng mũi tên). Ở giữa: người nhận kéo điểm rơi lệch ngang khỏi đường mũi tên (1 - throughAim)
     throughArriveSpeed: 130,  // tốc độ bóng chọc khe khi tới điểm nhận (lực mặc định = tốc độ này + ma sát theo khoảng cách)
     freeThroughArrive: 80,    // chọc khe vào khoảng trống (không có người nhận): bóng vẫn còn lực khi qua điểm rơi
     lobTimeMin: 0.45,         // chuyền bổng: thời gian bay (s) theo khoảng cách
