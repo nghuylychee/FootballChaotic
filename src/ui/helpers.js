@@ -65,6 +65,33 @@ window.SFC = window.SFC || {};
   }
   const keyLabel = (action) => SFC.Input.label(action);
 
+  // khung + tâm của 1 phần tử trên màn hình (ẩn / chưa vẽ -> null) — dùng cho navPick
+  function navRect(el) {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    if (!r.width && !r.height) return null;
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+  }
+  // đi bằng phím hướng theo vị trí thật trên màn hình: chỉ số mục gần nhất theo hướng dir (up / down / left / right) tính từ khung cur.
+  // rects[i] = khung mục i (null = bỏ qua, kể cả mục đang đứng). Ưu tiên mục cùng hàng (←→) / cùng cột (↑↓), gần nhất theo hướng đi;
+  // không có thì mục lệch sang bên không quá xa (điểm = khoảng cách theo hướng đi + lệch sang bên x2). Không có mục nào phía đó: -1
+  function navPick(rects, cur, dir) {
+    const h = dir === 'left' || dir === 'right';
+    let best = -1, bestScore = Infinity;
+    rects.forEach((r, i) => {
+      if (!r) return;
+      const dx = r.x - cur.x, dy = r.y - cur.y;
+      const along = dir === 'left' ? -dx : dir === 'right' ? dx : dir === 'up' ? -dy : dy;
+      const across = h ? Math.abs(dy) : Math.abs(dx);
+      if (along <= 2) return;
+      const inLine = h ? r.top < cur.bottom && r.bottom > cur.top : r.left < cur.right && r.right > cur.left;
+      if (!inLine && across > along * 1.5) return;   // lệch quá xa sang bên: không tính là "phía này"
+      const score = inLine ? along + across * 0.5 : 1e4 + along + across * 2;
+      if (score < bestScore) { bestScore = score; best = i; }
+    });
+    return best;
+  }
+
   /* Nút PlayStation ✕ △ ○ □: chữ trong font lệch cỡ (○ □ nhỏ hơn ✕ △) -> icon SVG cùng khung 16x16, cùng độ dày nét.
    * Tự thay trong mọi <kbd> (gợi ý phím ở menu / HUD / trang Controls in nhãn bằng chữ, không cần sửa từng chỗ) */
   const PS_ICON = {
@@ -92,5 +119,5 @@ window.SFC = window.SFC || {};
       .observe(document.body, { childList: true, subtree: true });
   }
 
-  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon };
+  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, navRect, navPick };
 })();

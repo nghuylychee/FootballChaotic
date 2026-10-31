@@ -13,6 +13,9 @@ window.SFC = window.SFC || {};
   // 8 hướng của cần analog (mỗi góc 45°, bắt đầu từ phải, chiều kim đồng hồ vì trục y hướng xuống)
   const SECTORS = [['StickRight'], ['StickRight', 'StickDown'], ['StickDown'], ['StickDown', 'StickLeft'],
     ['StickLeft'], ['StickLeft', 'StickUp'], ['StickUp'], ['StickUp', 'StickRight']];
+  // 4 hướng cho menu (mỗi góc 90°, cùng thứ tự) + góc giữa của từng hướng
+  const CARDINALS = ['StickRight', 'StickDown', 'StickLeft', 'StickUp'];
+  const CARD_ANGLE = { StickRight: 0, StickDown: Math.PI / 2, StickLeft: Math.PI, StickUp: -Math.PI / 2 };
   // DualShock 4 trên Chrome chỉ báo "Wireless Controller (... Vendor: 054c ...)" -> nhận theo vendor Sony hoặc tên đầu chuỗi
   const PS_ID = /vendor: ?054c|^054c-|playstation|dualsense|dualshock|^wireless controller/i;
 
@@ -25,8 +28,9 @@ window.SFC = window.SFC || {};
     stickDigital: [],  // hướng số của cần analog (menu + gửi online)
     rstickY: 0,        // cần phải, trục dọc sau deadzone (-1..1) — cuộn bảng dài (màn Pause)
 
-    // trả về danh sách phím ảo đang giữ ('Pad.A', 'Pad.StickUp'...); moved = cần analog vượt deadzone
-    poll() {
+    // trả về danh sách phím ảo đang giữ ('Pad.A', 'Pad.StickUp'...); moved = cần analog vượt deadzone.
+    // nav = đang đi menu: cần analog ra 4 hướng (1 hướng mỗi lần đẩy); không = đang lái cầu thủ: 8 hướng (gửi online)
+    poll(nav = false) {
       const held = [];
       let sx = 0, sy = 0, ry = 0, moved = false;
       const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -58,7 +62,12 @@ window.SFC = window.SFC || {};
       const on = this.stickDigital.length ? S.digitalOff : S.digitalOn;
       if (mag > on) {
         const a = Math.atan2(sy, sx);
-        this.stickDigital = SECTORS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
+        if (nav) {
+          // giữ hướng đang bật khi cần còn trong 45° + navHold quanh nó; ngoài ra lấy hướng gần nhất
+          const cur = this.stickDigital.length === 1 ? this.stickDigital[0] : null;
+          const off = cur ? Math.abs(Math.atan2(Math.sin(a - CARD_ANGLE[cur]), Math.cos(a - CARD_ANGLE[cur]))) : Infinity;
+          if (off > Math.PI / 4 + (S.navHold || 0) * Math.PI / 180) this.stickDigital = [CARDINALS[((Math.round(a / (Math.PI / 2)) % 4) + 4) % 4]];
+        } else this.stickDigital = SECTORS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
       } else this.stickDigital = [];
       for (const d of this.stickDigital) held.push('Pad.' + d);
       return { held, moved };

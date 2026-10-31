@@ -371,6 +371,12 @@
     SFC.UI.consume(g);
   }
 
+  // cần analog đang lái cầu thủ (8 hướng) hay đang đi menu / UI (4 hướng): cùng điều kiện nhận phím trận như tick() và OnlineUI.tick
+  function steering() {
+    const g = app.game;
+    return app.screen === 'game' && !!g && g.state !== 'draft' && g.state !== 'ended' && !SFC.Drill.active && !SFC.OnlineUI.overlay;
+  }
+
   function fit() {
     const stage = document.getElementById('stage');
     // phóng đúng tỉ lệ cửa sổ (không làm tròn): chỉ còn viền đen khi cửa sổ khác 16:9
@@ -436,7 +442,7 @@
       acc += Math.min(0.1, (now - last) / 1000);
       last = now;
       while (acc >= STEP) {
-        Input.poll();
+        Input.poll(!steering());
         tick(STEP);
         Input.endFrame();
         acc -= STEP;

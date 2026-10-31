@@ -152,7 +152,9 @@ SFC_CONFIG.controls = {
   // 'Tap2.<mã phím>' = bấm đúp phím đó trong doubleTap giây (vd. lướt = bấm đúp phím chạy nhanh E)
   doubleTap: 0.3,
 
-  stick: { deadzone: 0.2, digitalOn: 0.5, digitalOff: 0.35 },
+  // navHold: menu đọc cần analog thành 4 hướng; hướng đang bật giữ nguyên tới khi cần lệch quá 45° + navHold độ
+  // (rung tay quanh góc chéo không nhảy sang hướng bên cạnh)
+  stick: { deadzone: 0.2, digitalOn: 0.5, digitalOff: 0.35, navHold: 15 },
 
   // Rung tay cầm theo âm thanh trận đấu: [rung nhẹ 0..1, rung mạnh 0..1, ms]. Xóa dòng để tắt từng loại.
   // Lưu ý: rung với mọi cầu thủ (cả đối thủ sút / trúng đòn), không chỉ cầu thủ của bạn.

@@ -48,6 +48,8 @@ SFC.Input = {
       this.untap(e.code);
     });
     window.addEventListener('blur', () => { this.down.clear(); this.padHeld.clear(); });
+    // di chuột thật (bỏ qua mousemove trình duyệt tự bắn khi bố cục đổi dưới con trỏ) -> hiện lại con trỏ đã ẩn khi dùng tay cầm
+    window.addEventListener('mousemove', (e) => { if (e.movementX || e.movementY) this.showCursor(true); });
     window.addEventListener('paste', (e) => {
       if (!this.pasteHandler) return;
       e.preventDefault();
@@ -83,10 +85,11 @@ SFC.Input = {
     return (this.bindings[action] || []).find((c) => c.startsWith('Pad.') === (dev === 'pad')) || null;
   },
 
-  // đọc tay cầm; gọi trước mỗi bước mô phỏng để pressed / released khớp với endFrame()
-  poll() {
+  // đọc tay cầm; gọi trước mỗi bước mô phỏng để pressed / released khớp với endFrame().
+  // nav = đang đi menu / UI (cần analog ra 4 hướng, xem Pad.poll)
+  poll(nav = false) {
     if (!SFC.Pad) return;
-    const { held, moved } = SFC.Pad.poll();
+    const { held, moved } = SFC.Pad.poll(nav);
     const now = new Set(held);
     let fresh = false;
     for (const c of now) {
@@ -103,7 +106,7 @@ SFC.Input = {
       this.untap(c);
     }
     this.padHeld = now;
-    if (fresh || moved) this.setDevice('pad');
+    if (fresh || moved) { this.setDevice('pad'); this.showCursor(false); }
     if (fresh) SFC.Audio && SFC.Audio.unlock();
   },
 
@@ -120,6 +123,11 @@ SFC.Input = {
   },
   untap(code) {
     if (this.down.delete('Tap2.' + code)) this.released.add('Tap2.' + code);
+  },
+
+  // ẩn / hiện con trỏ chuột (class pad-cursor trên <html>, css/style.css)
+  showCursor(on) {
+    document.documentElement.classList.toggle('pad-cursor', !on);
   },
 
   setDevice(d) {

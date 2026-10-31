@@ -3311,3 +3311,5 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .pk-bc .sq-sch i { width: 13px; height: 13px; }
 .pk-bc .sq-sch .pxi { width: 10px; height: 10px; }
 
+/* Đang dùng tay cầm: ẩn con trỏ chuột (kể cả con trỏ bàn tay của KIT VAN); di chuột là hiện lại (Input.poll / mousemove) */
+html.pad-cursor, html.pad-cursor * { cursor: none !important; }

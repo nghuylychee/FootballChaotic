@@ -1556,25 +1556,12 @@ window.SFC = window.SFC || {};
       this.activate(it);
     },
 
-    // đi tới mục gần nhất theo hướng dir (up / down / left / right) dựa trên vị trí thật trên màn hình:
-    // ưu tiên mục cùng hàng (←→) / cùng cột (↑↓), gần nhất theo hướng đi; không có thì mục lệch sang bên không quá xa
-    // (điểm = khoảng cách theo hướng đi + lệch sang bên x2). Không có mục nào phía đó: đứng yên
+    // đi tới mục gần nhất theo hướng dir (up / down / left / right) dựa trên vị trí thật trên màn hình (UIHelpers.navPick).
+    // Không có mục nào phía đó: đứng yên
     navMove(dir) {
-      const items = this.items(), cur = this.navRect(this.sel), h = dir === 'left' || dir === 'right';
+      const items = this.items(), cur = this.navRect(this.sel);
       if (!cur) return this.move(dir === 'up' || dir === 'left' ? -1 : 1);
-      let best = -1, bestScore = Infinity;
-      items.forEach((it, i) => {
-        const r = i === this.sel ? null : this.navRect(i);
-        if (!r) return;
-        const dx = r.x - cur.x, dy = r.y - cur.y;
-        const along = dir === 'left' ? -dx : dir === 'right' ? dx : dir === 'up' ? -dy : dy;
-        const across = h ? Math.abs(dy) : Math.abs(dx);
-        if (along <= 2) return;
-        const inLine = h ? r.top < cur.bottom && r.bottom > cur.top : r.left < cur.right && r.right > cur.left;
-        if (!inLine && across > along * 1.5) return;   // lệch quá xa sang bên: không tính là "phía này"
-        const score = inLine ? along + across * 0.5 : 1e4 + along + across * 2;
-        if (score < bestScore) { bestScore = score; best = i; }
-      });
+      const best = SFC.UIHelpers.navPick(items.map((it, i) => (i === this.sel ? null : this.navRect(i))), cur, dir);
       if (best < 0) return;
       this.removeArm = null;   // đổi mục = huỷ xác nhận xoá bạn
       this.sel = best;
@@ -1583,11 +1570,7 @@ window.SFC = window.SFC || {};
     },
     // khung + tâm của mục i trên màn hình (phần tử data-i đầu tiên, không tính nút ◀▶ của bộ chọn); không hiện -> null
     navRect(i) {
-      const el = this.el.querySelector(`[data-i="${i}"]:not([data-d])`);
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      if (!r.width && !r.height) return null;
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2, left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      return SFC.UIHelpers.navRect(this.el.querySelector(`[data-i="${i}"]:not([data-d])`));
     },
 
     move(d) {

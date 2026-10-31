@@ -1288,6 +1288,15 @@ window.SFC = window.SFC || {};
             if (len > 0) this.sel = lo + ((this.sel - lo + (d === 'left' ? len - 1 : 1)) % len);
           } else if (d === 'down' && onNode && n > nNode) this.sel = nNode;
           else if (d === 'up' && !onNode) this.sel = 0;
+        } else if (!R0()) {
+          // chưa có run (BUILD YOUR SQUAD / khách chờ host): ←↑↓→ đi theo vị trí trên màn hình (ô vị trí ↔ băng ghế ↔ nút trên)
+          const rect = (t) => SFC.UIHelpers.navRect(menu.el.querySelector(`[data-rt="${t.key}"]`)), cur = rect(T[this.sel]);
+          if (!cur) this.sel = (this.sel + (d === 'left' || d === 'up' ? n - 1 : 1)) % n;
+          else {
+            const best = SFC.UIHelpers.navPick(T.map((t, i) => (i === this.sel ? null : rect(t))), cur, d);
+            if (best < 0) return;
+            this.sel = best;
+          }
         } else this.sel = (this.sel + (d === 'left' || d === 'up' ? n - 1 : 1)) % n;   // thẻ che: đi lần lượt
         SFC.Audio.menu();
         menu.render();
