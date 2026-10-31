@@ -19,7 +19,10 @@
  * đồng đội AI cùng vị trí (squad[i].h = mã khách). Thêm vào R: guests: { uid: { name, look, cash, on } } (ví riêng của từng khách; host
  * dùng luôn R.cash) · vote: { kind, ballots: { mã: lựa chọn }, t0 } (bỏ phiếu, bốc ngẫu
  * nhiên theo số phiếu) · turn (lượt Skill game xoay vòng) · hostName / hostLook (khách vẽ host). Khách giữ bản sao mirror (Run.mirrorOn).
- * Thống kê mọi run: Profile.data.runs = { plays, wins, bestAct, bestFloor, bosses }
+ * Thống kê mọi run: Profile.data.runs = { plays, wins, bestAct, bestFloor, bosses, road,
+ *   (TROPHY ROOM, user 2026-10-31 — chỉ đếm từ lúc thêm vào) acts: [{ n, first }] số lần hạ boss từng act + lần đầu (ms) ·
+ *   seen: { legend, badge, gear, rival: { id: 1 } } đã từng ký / có / đeo / hạ (Elite + Boss) · hist: [{ d, won, out, act, f, by, my, op,
+ *   goals, secs, sq: [{ you, look, lg }] }] 12 run gần nhất (mới trước) · best: { goals, fast } nhiều bàn nhất 1 run, phá đảo nhanh nhất (giây) }
  * Thua 1 trận = hết run (over). Thắng boss act cuối = vô địch (won). Hết run vẫn giữ trong hồ sơ tới khi màn kết thúc đóng (clear).
  * Trận dựng ở main.js startRunMatch (opts.run), kết quả vào record() qua Profile.awardMatch. UI: src/ui/runmap.js.
  */
@@ -67,12 +70,55 @@ window.SFC = window.SFC || {};
     opp(team) { return oppTable()[team] || null; },
 
     /* ---------- hồ sơ ---------- */
-    blankStats() { return { plays: 0, wins: 0, bestAct: 0, bestFloor: 0, bosses: 0, road: 0 }; },   // road: tiến trình CORE ROAD (run.coreRoad)
+    // road: tiến trình CORE ROAD (run.coreRoad) · acts / seen / hist / best: TROPHY ROOM (src/ui/trophies.js)
+    blankStats() {
+      return { plays: 0, wins: 0, bestAct: 0, bestFloor: 0, bosses: 0, road: 0, acts: [], seen: { legend: {}, badge: {}, gear: {}, rival: {} }, hist: [], best: { goals: 0, fast: 0 } };
+    },
     sanitizeStats(raw) {
       const o = this.blankStats();
       if (!raw || typeof raw !== 'object') return o;
-      for (const k in o) o[k] = clampInt(raw[k], 0, 1e9);
+      for (const k of ['plays', 'wins', 'bestAct', 'bestFloor', 'bosses', 'road']) o[k] = clampInt(raw[k], 0, 1e9);
+      const acts = Array.isArray(raw.acts) ? raw.acts : [];
+      o.acts = C().acts.map((a, i) => ({ n: clampInt(acts[i] && acts[i].n, 0, 1e6), first: clampInt(acts[i] && acts[i].first, 0, 9e15) }));
+      // bộ sưu tập: chỉ giữ id còn trong config
+      const ok = { legend: SFC_CONFIG.legends.list, badge: C().badges, gear: C().gear.list, rival: TEAMS() };
+      for (const k in ok) for (const id in (raw.seen && raw.seen[k]) || {}) if (ok[k][id]) o.seen[k][id] = 1;
+      const look = (l) => {
+        if (!l || typeof l !== 'object') return null;
+        const out = {};
+        for (const k of Object.keys(l).slice(0, 16)) if (['string', 'number'].includes(typeof l[k])) out[k] = l[k];
+        return out;
+      };
+      o.hist = (Array.isArray(raw.hist) ? raw.hist : []).slice(0, 12).filter((h) => h && typeof h === 'object').map((h) => ({
+        d: clampInt(h.d, 0, 9e15), won: !!h.won, out: ['ko', 'won', 'forfeit', 'demo'].includes(h.out) ? h.out : h.won ? 'won' : 'ko',
+        act: clampInt(h.act, 0, C().acts.length - 1), f: clampInt(h.f, 0, 99), by: typeof h.by === 'string' && TEAMS()[h.by] ? h.by : null,
+        my: clampInt(h.my, 0, 99), op: clampInt(h.op, 0, 99), goals: clampInt(h.goals, 0, 9999), secs: clampInt(h.secs, 0, 1e7),
+        sq: (Array.isArray(h.sq) ? h.sq : []).slice(0, 3).map((q) => ({ you: !!(q && q.you), look: look(q && q.look), lg: q && SFC_CONFIG.legends.list[q.lg] ? q.lg : null })),
+      }));
+      o.best = { goals: clampInt(raw.best && raw.best.goals, 0, 9999), fast: clampInt(raw.best && raw.best.fast, 0, 1e7) };
       return o;
+    },
+    // đánh dấu đã có / đã gặp (bộ sưu tập TROPHY ROOM): kind = legend | badge | gear | rival
+    see(kind, id) {
+      const st = this.stats();
+      if (!st.seen) st.seen = this.blankStats().seen;
+      (st.seen[kind] || (st.seen[kind] = {}))[id] = 1;
+    },
+    // ghi 1 run vừa hết vào lịch sử (12 run gần nhất) + kỷ lục
+    remember(R) {
+      const st = this.stats(), last = R.log[R.log.length - 1];
+      const goals = R.log.reduce((a, x) => a + (x.my || 0), 0), secs = Math.round((Date.now() - (R.started || Date.now())) / 1000);
+      const out = R.won ? 'won' : R.forfeit ? 'forfeit' : R.demoEnd ? 'demo' : 'ko';
+      const lost = last && last.my <= last.op ? last : null;
+      const sq = R.squad.map((q) => {
+        const g = q.h && R.guests && R.guests[q.h];
+        return { you: !!q.you, look: q.you ? null : g ? g.look : q.m && q.m.look ? Object.assign({}, q.m.look) : null, lg: q.legend || null };
+      });
+      st.hist = [{ d: Date.now(), won: !!R.won, out, act: R.act, f: last ? last.f || 0 : 0, by: lost ? lost.team || null : null, my: last ? last.my : 0, op: last ? last.op : 0, goals, secs, sq }]
+        .concat(st.hist || []).slice(0, 12);
+      st.best = st.best || { goals: 0, fast: 0 };
+      st.best.goals = Math.max(st.best.goals, goals);
+      if (R.won && (!st.best.fast || secs < st.best.fast)) st.best.fast = secs;
     },
     stats() {
       const d = PF().data;
@@ -203,6 +249,7 @@ window.SFC = window.SFC || {};
       const M = C().meta, bosses = R.log.filter((x) => x.kind === 'boss' && x.my > x.op).length;
       R.metaGold = R.floors * M.perFloor + bosses * M.perBoss + (R.won ? M.champion : 0);
       PF().data.gold += R.metaGold;
+      this.remember(R);   // TROPHY ROOM: bảng ghim ảnh + kỷ lục
       // CORE ROAD theo run: cộng tiến trình, mở Core tới mốc mới (nhãn NEW ở lượt chọn Core như Ranked cũ)
       const CR = C().coreRoad;
       if (CR && CR.fromRuns) {
@@ -430,6 +477,15 @@ window.SFC = window.SFC || {};
       R.next = null;
       R.log.push({ act: R.act, node: n.id, f: n.f, kind: n.kind, team: n.team, my, op });
       const out = { win, kind: n.kind, act: R.act, actDone: false, won: false, over: false, lines: [] };
+      // TROPHY ROOM: hạ đội Elite / Boss -> trang RIVALS của album · hạ boss -> cúp act
+      if (win && (n.kind === 'elite' || n.kind === 'boss') && n.team) this.see('rival', n.team);
+      if (win && n.kind === 'boss') {
+        const st = this.stats();
+        st.acts = st.acts && st.acts.length ? st.acts : C().acts.map(() => ({ n: 0, first: 0 }));
+        const A = st.acts[R.act] || (st.acts[R.act] = { n: 0, first: 0 });
+        A.n++;
+        if (!A.first) A.first = Date.now();
+      }
       if (!win) { R.over = out.over = true; this.finish(R); PF().save(); return out; }
       this.advance(R, n);
       // tiền + thưởng chọn 1 trong 3 BADGE (hiện ở map, lưu trong run: tải lại không đổi được bộ khác).
@@ -614,7 +670,7 @@ window.SFC = window.SFC || {};
       const J = R && R.join, s = J && who != null && R.squad[who];
       if (!J || (who != null && !s)) return null;
       R.join = null;
-      if (s) s.legend = J.id;
+      if (s) { s.legend = J.id; this.see('legend', J.id); }
       PF().save();
       return s ? { id: J.id, who } : null;
     },
@@ -678,6 +734,7 @@ window.SFC = window.SFC || {};
     give(id, R = this.run) {
       if (!id || !this.badge(id) || this.badge(id).injury || this.has(id, R)) return null;
       R.bag.push({ id, up: false });
+      if (!R.mirror) this.see('badge', id);
       return id;
     },
     // chấn thương ngẫu nhiên vào 1 người ngẫu nhiên của đội (Skill game hỏng / sự kiện) -> { id, who } | { blocked: true } (Shin Guards) | null
@@ -1057,6 +1114,7 @@ window.SFC = window.SFC || {};
       const O = R.offer, g = O.gear[O.sel], s = R.squad[who], old = k == null ? null : s.gear[k];
       s.gear = (s.gear || []).slice();
       if (k == null) s.gear.push({ id: g.id, r: g.r, up: false }); else s.gear[k] = { id: g.id, r: g.r, up: false };
+      if (!R.mirror) this.see('gear', g.id);
       R.offer = null;
       PF().save();
       return { id: g.id, r: g.r, who, old: old ? old.id : null };

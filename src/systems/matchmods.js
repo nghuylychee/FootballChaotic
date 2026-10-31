@@ -2280,8 +2280,86 @@ window.SFC = window.SFC || {};
     },
   };
 
+  /* ---------- VÙNG NGUY HIỂM cho AI đội bạn né (user 2026-10-31: đồng đội AI không né được luật sân; AI.avoid trong src/systems/ai.js) ----------
+   * K[id].hazards(g, M, c, add): gọi add(h) cho từng vùng đang có / sắp có tác dụng lên đội bạn:
+   *   { c: [x, y], r } tròn · { s: [x1, y1, x2, y2], w } đoạn thẳng nửa bề rộng w · { b: [x0, y0, x1, y1] } chữ nhật
+   *   hit: true = sắp trúng / đang có hiệu lực (đứng trong thì lướt ra) · soft: true = chỉ tránh bước vào (vũng trơn, đèn nóng dần)
+   * Hình học lấy đúng từ luật bên trên (bán kính / bề rộng trúng đòn + chút lề) */
+  const seg = (x1, y1, x2, y2, w, hit) => ({ s: [x1, y1, x2, y2], w, hit });
+  K.mopeds.hazards = (g, M, c, add) => {
+    for (const r of M.runs) {
+      if (r.t < c.warn) { add(seg(r.x, r.y0, r.x, r.y1, c.r + 6, r.t > c.warn - 0.5)); continue; }
+      const pos = mopedAt({ x: r.x, y: r.y0, a: r.y1, b: c.warn, max: r.life }, r.t);
+      add(seg(r.x, pos.y, r.x, r.y1, c.r + 6, true));
+    }
+  };
+  K.pigeons.hazards = (g, M, c, add) => {
+    // bom rơi trúng chỗ đang đứng là trơn té ngay -> phải ra khỏi điểm rơi trước khi bom tới
+    for (const d of M.drops) if (-d.t < 1.4) add({ c: [d.x, d.y], r: c.r + 6, hit: -d.t < 0.35 });
+    for (const s of M.splats) add({ c: [s.x, s.y], r: c.r + 3, soft: true });
+  };
+  K.lanterns.hazards = (g, M, c, add) => {
+    for (const d of M.falls) add({ c: [d.x, d.y], r: c.r + 5, hit: -d.t < 0.4 });
+    for (const fi of M.fires) add({ c: [fi.x, fi.y], r: c.fireR + 3 });
+  };
+  K.waves.hazards = (g, M, c, add) => {
+    const f = g.field, d = c.reach * f.h;
+    for (const r of M.runs) {
+      if (r.t >= c.warn + c.rise + c.hold) continue;
+      add({ b: [r.x - r.hw, r.dir > 0 ? f.y - 10 : f.y + f.h - d - 4, r.x + r.hw, r.dir > 0 ? f.y + d + 4 : f.y + f.h + 10], hit: r.t > c.warn - 0.35 });
+    }
+  };
+  K.devils.hazards = (g, M, c, add) => {
+    for (const d of M.list) {
+      if (d.t > c.life - 0.3) continue;
+      const p = K.devils.at(d, d.t), q = K.devils.at(d, d.t + 0.45);
+      add({ c: [p.x, p.y], r: c.r + 7, hit: d.t > c.warn - 0.3 });
+      add({ c: [q.x, q.y], r: c.r + 4, soft: true });
+    }
+  };
+  K.hose.hazards = (g, M, c, add) => {
+    const J = M.jet;
+    if (J && J.t < c.sweep) {
+      const from = J.t < 0 ? 0 : J.t / c.sweep;
+      for (let k = from; k <= 1.001; k += 0.12) {
+        const a = J.a0 + (J.a1 - J.a0) * Math.min(1, k);
+        add(seg(J.x, J.y, J.x + Math.cos(a) * c.range, J.y + Math.sin(a) * c.range, c.width + 5, J.t > -0.4));
+      }
+    }
+    for (const P of M.puddles) add({ c: [P.x, P.y], r: c.puddleR + 2, soft: true });
+  };
+  K.domino.hazards = (g, M, c, add) => {
+    for (const L of M.lines) {
+      if (L.k >= L.P.length) continue;
+      const A = L.P[L.k], B = L.P[L.P.length - 1];
+      add(seg(A.x, A.y, B.x, B.y, c.r + 5, L.t > c.rise + c.stand - 0.4));
+    }
+  };
+  K.taichi.hazards = (g, M, c, add) => {
+    for (const P of M.palms) {
+      if (P.t >= c.charge + c.travel) continue;
+      add(seg(P.x, P.y, P.x + Math.cos(P.ang) * c.len, P.y + Math.sin(P.ang) * c.len, c.width / 2 + 5, P.t > c.charge - 0.4));
+    }
+  };
+  K.leo.hazards = (g, M, c, add) => {
+    const L = M.leo, p = L && L.p;
+    if (!p || (L.phase !== 'aim' && L.phase !== 'dash')) return;
+    const d = L.phase === 'dash' ? L.d : U.norm((L.tgt ? L.tgt.x : p.x + 1) - p.x || 0.1, (L.tgt ? L.tgt.y : p.y) - p.y);
+    const len = c.dashSpeed * (L.phase === 'dash' ? Math.max(0, c.dash - L.t) : c.dash);
+    add(seg(p.x, p.y, p.x + d.x * len, p.y + d.y * len, p.radius + 10, L.phase === 'dash' || L.t > c.aim - 0.35));
+  };
+  K.searchlight.hazards = (g, M, c, add) => { for (const L of M.lights) add({ c: [L.cx, L.cy], r: c.r / 1.3, soft: true }); };
+
   const MatchMods = {
     K,
+    // vùng nguy hiểm hiện tại của luật trận (cho AI.avoid) + đội chủ luật (đội kia mới là nạn nhân). null = không có
+    hazards(g) {
+      const M = g.mod, k = M && !M.mirror && M.cfg && K[M.id];
+      if (!k || !k.hazards || g.state !== 'play') return null;
+      const list = [];
+      k.hazards(g, M, M.cfg, (h) => list.push(h));
+      return list.length ? { team: M.team, list } : null;
+    },
     // Game constructor gọi trước giao bóng đầu tiên. Không có opts.mod / opts.barks -> null (trận thường)
     create(g) {
       const o = g.opts, c = o.mod && S().mods && S().mods[o.mod];

@@ -63,6 +63,8 @@ window.SFC = window.SFC || {};
   const AI = {
     update(dt, g) {
       this.watchBall(g);
+      // vùng nguy hiểm của luật trận (FOOTBALL STORY / Elite, src/systems/matchmods.js) — AI đội bị nhắm né (avoid)
+      const hz = g.mod && SFC.MatchMods ? SFC.MatchMods.hazards(g) : null;
       for (const p of g.players) {
         if (p.isControlled && g.isHuman(p.team)) continue;
         // trận mơ PROLOGUE: kịch bản điều khiển thay AI tuỳ bài (src/game/tutorial.js)
@@ -86,6 +88,58 @@ window.SFC = window.SFC || {};
         else if (own && own.team === p.team) this.support(dt, g, p);
         else if (own) { p.ai.runT = 0; this.defend(dt, g, p); }
         else this.loose(dt, g, p);
+        if (hz && p.team !== hz.team) this.avoid(dt, g, p, hz.list);
+      }
+    },
+
+    // NÉ LUẬT SÂN (ai.avoid): sửa p.intent vừa quyết xong. Khoảng cách có dấu tới vùng (âm = đang trong) + hướng ra ngoài (nx, ny)
+    hazardDist(h, x, y) {
+      if (h.c) {
+        const dx = x - h.c[0], dy = y - h.c[1], L = Math.hypot(dx, dy) || 0.001;
+        return { d: L - h.r, nx: dx / L, ny: dy / L };
+      }
+      if (h.s) {
+        const [x1, y1, x2, y2] = h.s, vx = x2 - x1, vy = y2 - y1, l2 = vx * vx + vy * vy || 1;
+        const k = U.clamp(((x - x1) * vx + (y - y1) * vy) / l2, 0, 1), cx = x1 + vx * k, cy = y1 + vy * k;
+        let dx = x - cx, dy = y - cy, L = Math.hypot(dx, dy);
+        // nằm đúng trên đường: thoát theo pháp tuyến
+        if (L < 0.001) { const n = U.norm(-vy, vx); dx = n.x; dy = n.y; L = 0.001; }
+        return { d: L - h.w, nx: dx / (L || 1), ny: dy / (L || 1) };
+      }
+      const [x0, y0, x1, y1] = h.b, inside = x > x0 && x < x1 && y > y0 && y < y1;
+      if (inside) {
+        // ra mép gần nhất
+        const e = [[x - x0, -1, 0], [x1 - x, 1, 0], [y - y0, 0, -1], [y1 - y, 0, 1]].reduce((a, b) => (b[0] < a[0] ? b : a));
+        return { d: -e[0], nx: e[1], ny: e[2] };
+      }
+      const cx = U.clamp(x, x0, x1), cy = U.clamp(y, y0, y1), dx = x - cx, dy = y - cy, L = Math.hypot(dx, dy) || 0.001;
+      return { d: L, nx: dx / L, ny: dy / L };
+    },
+    avoid(dt, g, p, list) {
+      const V = A().avoid;
+      if (!V || p.state !== 'normal' || p.airZ > 0) return;
+      let worst = null;
+      for (const h of list) { const r = this.hazardDist(h, p.x, p.y); if (!worst || r.d < worst.d) worst = Object.assign(r, { h }); }
+      if (!worst) return;
+      const it = p.intent, m = V.margin + p.radius;   // luật trúng đòn tính cả bán kính người
+      // đang đứng trong / sát vùng (không tính vùng soft: đi ra từ từ là được) -> chạy thẳng ra, vùng sắp trúng thì lướt
+      if (worst.d < m && !(worst.h.soft && worst.d > m - V.margin)) {
+        if (worst.h.hit && worst.d < p.radius && p.cd.skill <= 0 && Math.random() < V.dash * dt) Act().skill(g, p, worst.nx, worst.ny);
+        const n = U.norm(worst.nx + it.mx * 0.3, worst.ny + it.my * 0.3);
+        it.mx = n.x; it.my = n.y;
+        if (!worst.h.soft) it.sprint = p.stamina > 10;
+        return;
+      }
+      // nhìn trước dọc đường đi (4 điểm tới look s — 1 điểm thì nhảy qua mất vũng nhỏ): sắp bước vào vùng -> bỏ phần hướng đi vào, trượt dọc mép
+      const sp = SFC_CONFIG.game.player.speed * (it.sprint ? SFC_CONFIG.game.player.sprintMult : 1) * V.look;
+      for (const k of [0.25, 0.5, 0.75, 1]) {
+        const qx = p.x + it.mx * sp * k, qy = p.y + it.my * sp * k;
+        for (const h of list) {
+          const r = this.hazardDist(h, qx, qy);
+          if (r.d >= m) continue;
+          const into = it.mx * r.nx + it.my * r.ny;
+          if (into < 0) { it.mx -= into * r.nx; it.my -= into * r.ny; }
+        }
       }
     },
 
@@ -424,6 +478,9 @@ window.SFC = window.SFC || {};
         if ((counter || dc < PR.engage * pk) && closer < PR.maxPressers) presser = p;
       }
 
+      // HẬU VỆ CUỐI (ai.lastMan): đồng đội AI phải 1 chọi 1 khi người chơi đã bị vượt qua -> tắc luôn thay vì chạy về khung
+      if (humanTeam && p !== ctl && p !== presser && (p === keeper || (M && danger)) && this.lastMan(g, p, c)) presser = p;
+
       if (p === presser) {
         let target = c;
         if (p.confused && p.confused.decoy.alive) target = p.confused.decoy;
@@ -440,12 +497,14 @@ window.SFC = window.SFC || {};
         if (beaten) moveTo(p, target.x + (target.vx || 0) * PR.chaseLead, target.y + (target.vy || 0) * PR.chaseLead, sprint, 1);
         else moveTo(p, target.x + gd.x * gap, target.y + gd.y * gap, sprint, 2);
         if (target !== c || p.ai.t > 0 || protectedGK) return;
-        p.ai.t = D.reaction * U.rand(0.8, 1.4) * (counter ? U.lerp(1, PR.counterReact, pk) : 1);
+        p.ai.t = D.reaction * U.rand(0.8, 1.4) * (counter ? U.lerp(1, PR.counterReact, pk) : 1) * (p.ai.lastManAt === g.time ? 0.5 : 1);
         const dc = U.dist(p, c);
         p.facing = Math.atan2(c.y - p.y, c.x - p.x);
         const style = tm.cfg.aiStyle || { light: 1, hard: 1 };
         // đồng đội AI của người chơi: tỉ lệ đấm riêng (ai.mate.lightChance), không theo aiStyle của đội
-        const lightP = (humanTeam ? cfg.mate.lightChance * D.aggression : Math.min(0.9, 0.6 * D.aggression * style.light)) * (counter ? U.lerp(1, PR.counterPunch, pk) : 1);
+        // hậu vệ cuối (ai.lastMan): không còn ai chắn sau lưng -> tới tầm là ra đòn luôn
+        const last = p.ai.lastManAt === g.time;
+        const lightP = last ? 1 : (humanTeam ? cfg.mate.lightChance * D.aggression : Math.min(0.9, 0.6 * D.aggression * style.light)) * (counter ? U.lerp(1, PR.counterPunch, pk) : 1);
         // Tay Cao Su: đấm được từ xa
         const reach = Math.max(C.light.range, g.cores.lightReach(p) * 0.8);
         if (dc < reach + p.radius * 2 && Math.random() < lightP) Act().lightAttack(g, p);
@@ -625,6 +684,18 @@ window.SFC = window.SFC || {};
         if (s > bs) { bs = s; best = dy; }
       }
       Act().clearance(g, p, best);
+    },
+
+    // hậu vệ cuối: p ở gần người cầm bóng (lastMan.engage), đứng giữa bóng và khung nhà, và không đồng đội nào khác chắn gần khung hơn
+    lastMan(g, p, c) {
+      const L = A().lastMan, own = g.ownGoal(p.team);
+      const held = p.ai.lastManAt != null && g.time - p.ai.lastManAt < 0.3;   // vừa lao vào ở bước trước: giữ quyết định
+      if (!L || p.state !== 'normal' || g.isProtected(c) || U.dist(p, c) > L.engage * (held ? L.keep : 1)) return false;
+      const dc = U.dist(c, own);
+      if (U.dist(p, own) > dc + L.engage * 0.25) return false;   // bị bỏ lại phía sau: không đuổi từ sau lưng
+      if (g.teams[p.team].players.some((o) => o !== p && o.state !== 'stun' && U.dist(o, own) < dc - L.slack)) return false;
+      p.ai.lastManAt = g.time;
+      return true;
     },
 
     // Đồng đội AI ĐÁ LÙI kẹp người cầm bóng cùng người chơi: mình ở gần + người chơi đang áp sát (cả khi gần khung nhà),

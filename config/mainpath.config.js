@@ -12,6 +12,9 @@
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.mainPath = {
+  // tab RANKED trên màn PLAY (user 2026-10-31: tạm ẩn, chỉ còn GOAT PATH · PRIVATE MATCH). false = ẩn tab, Q / E bỏ qua,
+  // mọi lối vào trang 'party' chuyển sang GOAT PATH. Dữ liệu Elo / Area / Core Road giữ nguyên
+  tab: false,
   // Elo: điểm khởi đầu · hệ số k (thay đổi tối đa mỗi trận; 2 đội ngang Elo: thắng +k/2, thua -k/2) ·
   // minWin: thắng ít nhất bấy nhiêu điểm · lastSpan: độ rộng khoảng Elo của Area cuối (trần level đạt maxLevel khi vượt hết)
   elo: { start: 0, k: 40, minWin: 4, lastSpan: 600 },

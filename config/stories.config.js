@@ -142,7 +142,7 @@ SFC_CONFIG.stories = {
     // (bay fly giây), đáp đất choáng land giây. Họ bị dẫn: gắp thường hơn (trailing)
     chopsticks: {
       name: 'GIANT CHOPSTICKS', hint: 'When the chopsticks stop, change direction or dash',
-      first: 6, every: [6, 9], trailing: 1.3, warn: 1.5, lock: 0.3, strike: 0.15, lead: 0.9, r: 13, height: 80, carry: 0.8, inPot: 1.8, fly: 0.7, land: 0.4, aiDodge: 0.3, color: '#ff8a3f',
+      first: 6, every: [6, 9], trailing: 1.3, warn: 1.5, lock: 0.3, strike: 0.15, lead: 0.9, r: 13, height: 80, carry: 0.8, inPot: 1.8, fly: 0.7, land: 0.4, aiDodge: 0.75, color: '#ff8a3f',   // aiDodge 0.3 -> 0.75 (user 2026-10-31: đồng đội AI phải né được)
     },
     // Rust Buckets (user 2026-10-24, thay HIGH TIDE): SÓNG DỮ từ mép trên hoặc mép dưới sân (ngẫu nhiên mỗi con). Biển rút warn giây: vùng nước sắp tràn tới hiện trước
     // (dải rộng 2 x hw px quanh bóng, sâu reach phần chiều cao sân, mép bọt trắng). Sóng ập vào rise giây, giữ hold, rút back giây.
@@ -189,7 +189,7 @@ SFC_CONFIG.stories = {
     // Đồng đội AI tuân luật với xác suất aiObey mỗi lần. Owls không ra đòn / sút / chuyền lúc mắt mở. Bị dẫn: mở thường hơn (trailing) + lâu hơn (x trailOpen)
     owlgaze: {
       name: "OWL'S GAZE", hint: 'When the owl opens its eyes, stop running or turn to stone',
-      first: 6, every: [7, 10], trailing: 1.4, warn: 1.0, open: 3.6, trailOpen: 1.35, lockT: 0.8, boltT: 0.45, beamT: 0.8, beamR: 6, stone: 1.5, aiObey: 0.85, color: '#ffd23f',
+      first: 6, every: [7, 10], trailing: 1.4, warn: 1.0, open: 3.6, trailOpen: 1.35, lockT: 0.8, boltT: 0.45, beamT: 0.8, beamR: 6, stone: 1.5, aiObey: 0.97, color: '#ffd23f',   // aiObey 0.85 -> 0.97 (user 2026-10-31)
     },
     // Tower Guards (đội Elite GOAT PATH, config/elites.config.js): đèn pha bán kính r đi lang thang roam px/s (điểm ngẫu nhiên cách mép marginX / marginY);
     // soi trúng ai đội bạn là khoá + đuổi chase px/s (đèn đổi màu chaseColor), người đó ra khỏi đèn liên tục forget giây thì đèn quên.

@@ -59,7 +59,8 @@ window.SFC = window.SFC || {};
   // màn PLAY: tab RANKED (page 'party') · FOOTBALL STORY (page 'story') · PRIVATE MATCH (page 'online' / 'join' / 'lobby') — kiểu Rocket League
   // page 'story' (FOOTBALL STORY cũ) không còn tab, chỉ còn mở từ PHÒNG TRƯNG BÀY — thay bằng GOAT PATH (page 'run', docs/RUN_DESIGN.md)
   const PLAY_PAGES = ['party', 'run', 'story', 'online', 'join', 'lobby'];
-  const PLAY_TABS = ['run', 'party', 'online'];   // trang mở khi đổi sang từng tab (Q / E) — GOAT PATH đầu tiên (chế độ chính)
+  // trang mở khi đổi sang từng tab (Q / E) — GOAT PATH đầu tiên (chế độ chính); RANKED ẩn khi mainPath.tab = false
+  const PLAY_TABS = () => (SFC_CONFIG.mainPath.tab === false ? ['run', 'online'] : ['run', 'party', 'online']);
   // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, TÚI ĐỒ
   const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'storytest', 'runtest', 'privacy', 'controls', 'ach', 'trophy', 'road'];
   // trang không có logo, tiêu đề là 1 dòng ngang cả màn như SHOP (NHÂN VẬT thêm LV / XP / vàng bên phải)
@@ -149,6 +150,7 @@ window.SFC = window.SFC || {};
         page = 'wishlist';
       }
       if (promo && page === 'path' && MPATH().demoOver() && !this.wishSeen) page = 'wishlist';
+      if (page === 'party' && SFC_CONFIG.mainPath.tab === false) page = 'run';   // RANKED đang ẩn (mainPath.tab)
       if (page === 'wishlist') this.wishSeen = MPATH().demoOver();
       // nhớ mục đang chọn của từng trang: quay lại trang cũ (Esc, hết trận...) con trỏ nằm đúng mục vừa rời đi
       if (page !== this.page) {
@@ -485,6 +487,8 @@ window.SFC = window.SFC || {};
       if (RU().pages.includes(this.page)) return RU().back(this);
       if (this.page === 'run' && RU().joining) return RU().stopJoin(this);   // tab GOAT PATH: Esc thôi gõ mã phòng
       if (this.page === 'story' || this.page === 'run') return this.go('home');
+      // ULT BOOK mở từ album của TROPHY ROOM (TrophyUI.openPage): Esc quay về đó
+      if (this.page === 'ults' && this.ultsBack) { const b = this.ultsBack; this.ultsBack = null; return this.go(b); }
       if (this.page === 'attrs' || this.page === 'look' || this.page === 'ults') return this.go('char');
       if (this.page === 'party' && this.addTyping) return this.stopAddTyping();
       if (this.page === 'lobby' && this.matePop) return this.closeMatePop();
@@ -944,17 +948,18 @@ window.SFC = window.SFC || {};
       const K = (a, kb) => SFC.Input.key(a, kb);
       const tab = (id, label, page, lock) => `<button class="pt-tab ${on === id ? 'on' : ''}" data-ptab="${page}">${lock ? PX().ui('lock', 'sm') + ' ' : ''}${esc(label)}</button>`;
       return `<div class="pt-tabs">
-          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('run', _t('GOAT PATH'), 'run')}${tab('ranked', _t('RANKED'), 'party')}${tab('private', _t('PRIVATE MATCH'), 'online', !SFC.Platform.privateMatch)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
+          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('run', _t('GOAT PATH'), 'run')}${SFC_CONFIG.mainPath.tab === false ? '' : tab('ranked', _t('RANKED'), 'party')}${tab('private', _t('PRIVATE MATCH'), 'online', !SFC.Platform.privateMatch)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
           ${sub}
         </div>`;
     },
     // đổi tab (d = -1 / +1 theo thứ tự PLAY_TABS). Đang tìm trận / đang kết nối / đang trong phòng: rời trước mới đổi được
     playTab(d) { this.playTabTo(this.playTabIndex() + d); },
-    playTabIndex() { return PRIVATE_PAGES.includes(this.page) ? 2 : Math.max(0, PLAY_TABS.indexOf(this.page)); },
+    playTabIndex() { const T = PLAY_TABS(); return PRIVATE_PAGES.includes(this.page) ? T.indexOf('online') : Math.max(0, T.indexOf(this.page)); },
     playTabTo(next) {
-      if (next < 0 || next >= PLAY_TABS.length || next === this.playTabIndex() || this.page === 'lobby' || this.search || Session().status === 'busy') return;
+      const T = PLAY_TABS();
+      if (next < 0 || next >= T.length || next === this.playTabIndex() || this.page === 'lobby' || this.search || Session().status === 'busy') return;
       SFC.Audio.menu();
-      this.go(PLAY_TABS[next]);
+      this.go(T[next]);
     },
 
     /* ---------------- PRIVATE MATCH: phòng bằng mã (SFC.Session), cùng khung với màn PLAY ---------------- */
@@ -1706,7 +1711,7 @@ window.SFC = window.SFC || {};
         if (tab) { this.tutPage = +tab.dataset.tab; SFC.Audio.menu(); this.render(); return; }
         // màn PLAY: tab RANKED / PRIVATE MATCH · BACK
         const ptab = PLAY_PAGES.includes(this.page) && e.target.closest('[data-ptab]');
-        if (ptab) return this.playTabTo(PLAY_TABS.indexOf(ptab.dataset.ptab));
+        if (ptab) return this.playTabTo(PLAY_TABS().indexOf(ptab.dataset.ptab));
         if ((PLAY_PAGES.includes(this.page) || BACK_PAGES.includes(this.page)) && e.target.closest('[data-back]')) { SFC.Audio.menu(); return this.back(); }
         if (this.page === 'party') {
           const fa = e.target.closest('[data-fa]');

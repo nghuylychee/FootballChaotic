@@ -129,7 +129,7 @@ SFC_CONFIG.elites = {
     jumprope: {
       name: 'DOUBLE DUTCH', hint: 'The giant rope sweeps the whole pitch. Dash to jump it',
       first: 4, every: [7, 10], trailing: 1.4, count: 3, countBeat: 0.6, turns: 2, turn: 1.5, turnTrailing: 1.2, ground: 0.45, lift: 110, hand: 14,
-      stun: 0.9, slide: 90, hop: 120, aiJump: 0.55, color: '#ff6fb5',
+      stun: 0.9, slide: 90, hop: 120, aiJump: 0.85, color: '#ff6fb5',   // aiJump 0.55 -> 0.85 (user 2026-10-31)
     },
     // Wash Day Aunties: 1 bà đứng ngoài mép trên (cột x gần bóng) cầm vòi, báo trước warn giây (vạch cung tia nước sẽ quét),
     // rồi tia nước dài range px quét từ góc a0 tới a1 (cung arc độ) trong sweep giây. Tia trúng đội bạn (cách tia width px): bị đẩy push px/s

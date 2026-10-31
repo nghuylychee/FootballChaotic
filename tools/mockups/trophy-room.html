@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Trophy Room mockup</title>
+<!-- MOCKUP (chưa gắn vào game, user 2026-10-31): TROPHY ROOM làm lại theo hướng "phòng câu lạc bộ đường phố" — 3 góc: kệ cúp GOAT PATH ·
+     album sticker (bộ sưu tập) · bảng ghim ảnh các run. Nạp toàn bộ script của game (như legend-ui.html) để vẽ bằng hình thật: nhân vật,
+     chân dung LEGEND, cúp (SFC.StoryCup), icon BADGE / GEAR. Số liệu là dữ liệu giả. Mở qua npm run serve:
+     http://localhost:8080/tools/mockups/trophy-room.html -->
+<link rel="stylesheet" href="../../css/style.css" />
+<style>
+  html, body { height: auto; overflow: auto; }
+  body { margin: 0; padding: 18px 0 60px; background: #050608; color: #c7ccd6; font-family: var(--vt); }
+  .head { width: min(1024px, calc(100vw - 24px)); margin: 0 auto 12px; font-size: 21px; line-height: 1.1; }
+  .head h1 { font-family: var(--px); font-size: 16px; color: #fff; letter-spacing: 3px; margin: 0 0 8px; }
+  .head b { color: #fff; font-weight: normal; }
+  .tabs { width: min(1024px, calc(100vw - 24px)); margin: 0 auto 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tabs button { font-family: var(--px); font-size: 9px; padding: 7px 10px; background: #14161c; color: #9aa3b5; border: 1px solid #2a2e38; cursor: pointer; }
+  .tabs button.on { color: #14161c; background: var(--gold); border-color: var(--gold); }
+  .note { width: min(1024px, calc(100vw - 24px)); margin: 0 auto 8px; font-size: 20px; min-height: 44px; }
+  .note b { color: var(--gold); font-weight: normal; }
+  .mk-wrap { position: relative; margin: 0 auto; outline: 1px solid #2a2e38; }
+  .mk-stage { position: absolute; left: 0; top: 0; width: 640px; height: 360px; transform-origin: 0 0; overflow: hidden; image-rendering: pixelated; background: #0b0c10; }
+  .scr { position: absolute; inset: 0; display: none; }
+  .scr.on { display: block; }
+  canvas { image-rendering: pixelated; }
+  .px { font-family: var(--px); font-weight: normal; }
+  .ink { text-shadow: 1px 1px 0 #000; }
+
+  /* ---------- thanh trên cùng (chung) ---------- */
+  .tb { position: absolute; left: 0; right: 0; top: 0; height: 30px; display: flex; align-items: center; gap: 10px; padding: 0 12px;
+    background: linear-gradient(180deg, rgba(5,6,8,0.9), rgba(5,6,8,0)); z-index: 5; }
+  .tb .back { font-family: var(--px); font-size: 7px; color: #9aa3b5; }
+  .tb h2 { font-family: var(--px); font-size: 10px; color: var(--gold); margin: 0; letter-spacing: 2px; text-shadow: 1px 1px 0 #000; }
+  .tb .chips { margin-left: auto; display: flex; gap: 6px; }
+  .mk-chip { display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 6px; background: rgba(15,17,22,0.85); border: 1px solid #2a2e38;
+    font-family: var(--px); font-size: 8px; color: #fff; }
+  .mk-chip .pxi { width: 12px; height: 12px; }
+  .mk-chip i { font-style: normal; color: #9aa3b5; font-size: 6px; }
+  .hint { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-family: var(--px); font-size: 6px; color: #9aa3b5; z-index: 5; text-shadow: 1px 1px 0 #000; }
+  .hint kbd { font-family: var(--px); font-size: 6px; padding: 1px 3px; border: 1px solid #4a4f5c; color: #fff; background: #14161c; }
+
+  /* ---------- 1 · PHÒNG ---------- */
+  #room canvas.bg { position: absolute; inset: 0; width: 640px; height: 360px; }
+  .zone { position: absolute; top: 42px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; z-index: 4; transition: opacity 0.2s; }
+  .zone b { font-family: var(--px); font-size: 8px; color: #fff; background: rgba(10,11,15,0.88); border: 1px solid #4a4f5c; padding: 4px 6px 3px; text-shadow: 1px 1px 0 #000; white-space: nowrap; }
+  .zone em { font-family: var(--px); font-style: normal; font-size: 6px; color: #9aa3b5; }
+  .zone.on b { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 0 10px rgba(255,210,63,0.4); }
+  .zone.on::after { content: '▼'; font-size: 8px; color: var(--gold); animation: bob 0.6s steps(2) infinite; }
+  .zone:not(.on) { opacity: 0.55; }
+  @keyframes bob { 50% { transform: translateY(2px); } }
+
+  /* ---------- 2 · KỆ CÚP ---------- */
+  #shelf { background: linear-gradient(180deg, #1b1210, #0d0807); }
+  .cups { position: absolute; left: 16px; right: 16px; top: 66px; bottom: 24px; display: grid; grid-template-columns: 1fr 1fr 1.35fr 1fr; gap: 10px; align-items: end; }
+  .cup { position: relative; height: 245px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; padding: 6px 6px 8px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.25)); border: 1px solid #3a2a20; box-shadow: inset 0 -40px 40px rgba(0,0,0,0.35); }
+  .cup.goat { height: 270px; border-color: #6a5020; background: linear-gradient(180deg, rgba(255,210,63,0.07), rgba(0,0,0,0.3)); }
+  .cup.sel { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), inset 0 -40px 40px rgba(0,0,0,0.35); }
+  .cup canvas { width: 120px; height: 120px; }
+  .cup.goat canvas { width: 168px; height: 168px; }
+  .cup .act { font-family: var(--px); font-size: 6px; color: #9aa3b5; }
+  .cup .nm { font-family: var(--px); font-size: 8px; color: var(--c, #fff); text-shadow: 1px 1px 0 #000; text-align: center; }
+  .cup.goat .nm { font-size: 10px; }
+  .plaque { width: 100%; display: flex; justify-content: center; gap: 8px; padding: 4px 0 3px; background: #14100c; border: 1px solid #3a2a20; }
+  .plaque span { display: inline-flex; align-items: center; gap: 3px; font-family: var(--px); font-size: 8px; color: #fff; }
+  .plaque .pxi { width: 12px; height: 12px; }
+  .medals { display: flex; gap: 4px; }
+  .medals i { position: relative; width: 14px; height: 14px; border-radius: 50%; background: #22252e; box-shadow: inset 0 0 0 1px #3a404d; font-style: normal; }
+  .medals i.on { background: var(--m); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), 0 0 6px var(--m); }
+  .medals i u { position: absolute; left: 0; right: 0; top: 16px; text-align: center; font-family: var(--px); font-size: 5px; color: #9aa3b5; text-decoration: none; }
+  .cup .lock { position: absolute; top: 46%; font-family: var(--px); font-size: 7px; color: #6a7080; }
+  .oldcups { position: absolute; right: 16px; top: 32px; display: flex; align-items: center; gap: 4px; z-index: 6; }
+  .oldcups em { font-family: var(--px); font-style: normal; font-size: 6px; color: #9aa3b5; margin-right: 2px; }
+  .oldcups canvas { width: 30px; height: 30px; background: #14100c; border: 1px solid #3a2a20; }
+
+  /* ---------- 3 · ALBUM ---------- */
+  #album { background: radial-gradient(ellipse at 50% 40%, #2a1e14, #0e0a07 75%); }
+  .book { position: absolute; left: 22px; right: 22px; top: 36px; bottom: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    background: #e9dfc8; box-shadow: 0 0 0 3px #6a3a1a, 0 0 0 5px #2a160a, 6px 8px 0 rgba(0,0,0,0.5); }
+  .book::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 14px; margin-left: -7px; background: linear-gradient(90deg, rgba(0,0,0,0.05), rgba(0,0,0,0.28), rgba(0,0,0,0.05)); }
+  .page { position: relative; padding: 10px 14px 10px; color: #3a2a1e; }
+  .page h3 { font-family: var(--px); font-size: 9px; margin: 0 0 2px; color: #2a1a10; letter-spacing: 1px; }
+  .page .sub { font-size: 16px; line-height: 1; margin-bottom: 6px; color: #7a6450; }
+  .bar { height: 5px; background: #cbbd9f; margin: 2px 0 8px; } .bar b { display: block; height: 100%; background: var(--c, #c9a020); }
+  .stk { display: grid; gap: 6px; }
+  .stk.l5 { grid-template-columns: repeat(5, 1fr); }
+  .stk.l6 { grid-template-columns: repeat(6, 1fr); }
+  .st { position: relative; height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 3px;
+    background: #fff8e8; border: 1px solid #cbbd9f; box-shadow: 1px 1px 0 rgba(0,0,0,0.15); }
+  .st.got { background: linear-gradient(180deg, color-mix(in srgb, var(--c) 35%, #fff8e8), #fff8e8 70%); border-color: color-mix(in srgb, var(--c) 60%, #8a7a60); transform: rotate(var(--r, 0deg)); }
+  .st canvas { width: 40px; height: 44px; }
+  .st:not(.got) canvas { filter: brightness(0) opacity(0.22); }
+  .st b { font-family: var(--px); font-weight: normal; font-size: 5px; color: #3a2a1e; text-align: center; line-height: 1.2; }
+  .st:not(.got) b { color: #a8987c; }
+  .st .no { position: absolute; top: 2px; left: 3px; font-family: var(--px); font-size: 5px; color: #a8987c; }
+  .st.shiny::before { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.7) 45%, transparent 60%); background-size: 300% 100%; animation: shine 2.4s linear infinite; pointer-events: none; }
+  @keyframes shine { 0% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
+  .st.patch { height: 54px; }
+  .st.patch .ring { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #fff; box-shadow: 0 0 0 2px var(--c), 0 0 0 3px #3a2a1e; margin-bottom: 4px; }
+  .st.patch:not(.got) .ring { box-shadow: 0 0 0 2px #cbbd9f; background: #efe6d2; }
+  .st.patch:not(.got) .ring .pxi { filter: brightness(0) opacity(0.2); }
+  .st.patch .ring .pxi { width: 18px; height: 18px; }
+  .idx { display: flex; flex-direction: column; gap: 5px; }
+  .idx button { display: grid; grid-template-columns: 18px 1fr 52px; align-items: center; gap: 6px; padding: 4px 6px; text-align: left; cursor: pointer;
+    background: #f4ecd8; border: 1px solid #cbbd9f; color: #3a2a1e; font-family: var(--px); font-size: 7px; }
+  .idx button.on { background: #fff8e8; border-color: #6a3a1a; box-shadow: 2px 2px 0 #6a3a1a; }
+  .idx button .pxi { width: 16px; height: 16px; }
+  .idx button span { display: flex; flex-direction: column; gap: 2px; }
+  .idx button .bar { margin: 0; height: 4px; }
+  .idx button em { font-style: normal; text-align: right; font-size: 7px; color: #7a6450; }
+  .stamp { position: absolute; right: 14px; bottom: 10px; transform: rotate(-8deg); font-family: var(--px); font-size: 7px; color: #b8402a; border: 2px solid #b8402a; padding: 3px 5px; opacity: 0.8; }
+
+  /* ---------- 4 · BẢNG GHIM ---------- */
+  #board { background: #1a1210; }
+  .cork { position: absolute; left: 14px; top: 34px; width: 430px; bottom: 20px; background: #b07a44; box-shadow: inset 0 0 0 5px #6a4422, inset 0 0 0 7px #3a2412, 4px 6px 0 rgba(0,0,0,0.45);
+    background-image: radial-gradient(rgba(60,30,10,0.25) 1px, transparent 1.4px), radial-gradient(rgba(255,230,190,0.12) 1px, transparent 1.4px); background-size: 7px 7px, 11px 11px; }
+  .pol { position: absolute; width: 96px; padding: 5px 5px 4px; background: #f6f1e6; box-shadow: 2px 3px 0 rgba(0,0,0,0.35); transform: rotate(var(--r)); }
+  .pol::before { content: ''; position: absolute; left: 50%; top: -4px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--pin, #e0403a); box-shadow: 1px 1px 0 rgba(0,0,0,0.4); }
+  .pol .mk-ph { position: relative; height: 54px; background: linear-gradient(180deg, color-mix(in srgb, var(--ac) 45%, #1a1c22), #101218); display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+  .pol .mk-ph canvas { width: 30px; height: 33px; margin: 0 -3px; }
+  .pol .mk-ph canvas.lg { position: absolute; left: 2px; top: 2px; width: 18px; height: 20px; margin: 0; filter: drop-shadow(0 0 2px var(--lc)); }
+  .pol .res { position: absolute; right: 2px; top: 3px; transform: rotate(-10deg); font-family: var(--px); font-size: 6px; padding: 2px 3px; border: 1px solid; }
+  .pol .res.win { color: #ffd23f; border-color: #ffd23f; background: rgba(0,0,0,0.5); }
+  .pol .res.ko { color: #ff5a6e; border-color: #ff5a6e; background: rgba(0,0,0,0.5); }
+  .pol .cap { display: flex; justify-content: space-between; align-items: baseline; margin-top: 3px; font-family: var(--px); font-size: 6px; color: #3a2a1e; }
+  .pol .cap em { font-style: normal; color: var(--ac); text-shadow: 0 0 0 #000; filter: brightness(0.7); }
+  .pol .mk-path { display: flex; gap: 2px; margin-top: 3px; }
+  .pol .mk-path i { flex: 1; height: 3px; background: #d8cfbc; }
+  .pol .mk-path i.on { background: var(--ac); }
+  .pol .mk-path i.boss { background: #ffd23f; }
+  .pol.sel { box-shadow: 2px 3px 0 rgba(0,0,0,0.35), 0 0 0 2px var(--gold); z-index: 2; }
+  .chalk { position: absolute; left: 456px; right: 14px; top: 34px; bottom: 20px; background: #1d2a22; box-shadow: inset 0 0 0 4px #5a3a1e, inset 0 0 0 6px #2a1a0e, 4px 6px 0 rgba(0,0,0,0.45); padding: 14px 12px; }
+  .chalk h4 { font-family: var(--px); font-weight: normal; font-size: 8px; color: #e8ecf5; margin: 0 0 10px; opacity: 0.9; }
+  .rec { display: grid; grid-template-columns: 18px 1fr auto; gap: 6px; align-items: center; margin-bottom: 10px; color: #e8ecf5; }
+  .rec .pxi { width: 16px; height: 16px; filter: grayscale(0.3) brightness(1.2); }
+  .rec span { font-size: 16px; line-height: 1; opacity: 0.85; }
+  .rec b { font-family: var(--px); font-weight: normal; font-size: 10px; }
+  .detail { position: absolute; left: 456px; right: 14px; bottom: 20px; height: 120px; background: #f6f1e6; box-shadow: 3px 4px 0 rgba(0,0,0,0.45); padding: 8px; color: #3a2a1e; display: none; }
+  .tbl { width: min(1024px, calc(100vw - 24px)); margin: 16px auto 0; border-collapse: collapse; font-size: 19px; }
+  .tbl td, .tbl th { border: 1px solid #2a2e38; padding: 4px 8px; text-align: left; font-weight: normal; vertical-align: top; }
+  .tbl th { color: var(--gold); white-space: nowrap; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>TROPHY ROOM · CLUBHOUSE (mockup)</h1>
+    Phòng câu lạc bộ đường phố của bạn: <b>kệ cúp</b> (mục tiêu chính = cúp GOAT) · <b>album sticker</b> (bộ sưu tập để chơi nhiều run)
+    · <b>bảng ghim ảnh</b> (kỷ niệm từng run + kỷ lục). Hình thật của game, số liệu giả. ←→ / bấm để xem từng màn.
+  </div>
+  <div class="tabs" id="tabs">
+    <button data-s="room" class="on">1 · ROOM</button><button data-s="shelf">2 · TROPHY SHELF</button>
+    <button data-s="album">3 · STICKER ALBUM</button><button data-s="board">4 · RUN BOARD</button>
+  </div>
+  <div class="note" id="note"></div>
+  <div class="mk-wrap" id="mkwrap"><div class="mk-stage" id="mkstage">
+    <div class="scr on" id="room"></div><div class="scr" id="shelf"></div><div class="scr" id="album"></div><div class="scr" id="board"></div>
+  </div></div>
+  <table class="tbl">
+    <tr><th>Góc</th><th>Cho người chơi thấy</th><th>Dữ liệu cần lưu thêm (save)</th></tr>
+    <tr><td>Kệ cúp</td><td>3 cúp act + cúp GOAT. Mỗi cúp: số lần hạ boss / phá đảo, huy chương đồng · bạc · vàng (1 · 5 · 10 lần), ngày đầu tiên. Kệ phụ nhỏ giữ cúp FOOTBALL STORY cũ</td><td><code>runs.acts[i] = { n, first }</code> (hiện chỉ có <code>bosses</code> tổng + <code>wins</code>)</td></tr>
+    <tr><td>Album sticker</td><td>Trang LEGEND (10) · BADGE (13, không tính chấn thương) · GEAR (14) · RIVALS (đội Elite / Boss đã hạ) · ULTIMATES (= ULT BOOK) · ACHIEVEMENTS. Sticker vàng lấp lánh = lần đầu đạt mốc khó (vd. phá đảo khi có LEGEND đó)</td><td><code>runs.seen = { legend: {}, badge: {}, gear: {}, rival: {} }</code> — chỉ đếm từ lúc thêm vào</td></tr>
+    <tr><td>Bảng ghim</td><td>Polaroid 12 run gần nhất: đội hình 3 người + LEGEND, đường đi theo tầng (boss vàng), CHAMPIONS / KO bởi đội nào, tỉ số trận cuối. Bảng phấn: kỷ lục</td><td><code>runs.hist = [{ squad, legends, act, floor, by, score, date }]</code> (cắt còn 12) + <code>runs.best</code></td></tr>
+  </table>
+
+<script>
+  const NOTES = {
+    room: 'Vào phòng: character đứng ở góc đang chọn, <b>←→</b> đi giữa 3 góc, <b>Enter</b> mở góc đó. Thanh trên: <b>cúp GOAT · số run · % album</b> — 3 con số duy nhất cần nhớ.',
+    shelf: '<b>Kệ cúp</b>: 3 cúp act (hạ boss act đó) + cúp GOAT to ở giữa (phá đảo cả run). Huy chương dưới cúp sáng dần theo số lần (1 · 5 · 10). Cúp FOOTBALL STORY cũ thu nhỏ ở góc phải trên — không mất thành tích cũ.',
+    album: '<b>Album sticker</b>: mỗi trang 1 bộ sưu tập, chưa có = bóng mờ. Trang phải là mục lục + % từng bộ. Thêm trang ULTIMATES (gộp ULT BOOK) và ACHIEVEMENTS, khỏi cần nút riêng. Bấm mục lục để đổi trang.',
+    board: '<b>Bảng ghim</b>: mỗi run là 1 polaroid — đội hình + LEGEND (góc ảnh), vạch đường đi theo tầng (vàng = boss), dấu CHAMPIONS / KO. Bảng phấn bên phải: kỷ lục cá nhân.',
+  };
+  function fit() {
+    const k = Math.min(1.6, (innerWidth - 24) / 640), w = document.getElementById('mkwrap');
+    w.style.width = 640 * k + 'px'; w.style.height = 360 * k + 'px';
+    document.getElementById('mkstage').style.transform = `scale(${k})`;
+  }
+  addEventListener('resize', fit); fit();
+  (async function () {
+    const html = await (await fetch('../../index.html', { cache: 'reload' })).text();
+    const srcs = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]).filter((s) => !/main\.js$/.test(s));
+    for (const s of srcs) await new Promise((ok) => { const el = document.createElement('script'); el.src = '../../' + s; el.onload = ok; el.onerror = ok; document.head.appendChild(el); });
+    boot();
+  })();
+
+  function boot() {
+    try { SFC.Input.init(SFC_CONFIG.controls.bindings); } catch (e) { /* bỏ qua */ }
+    const C = SFC_CONFIG, R = C.run, TM = C.teams.list, LG = C.legends.list, PX = SFC.PixelIcon;
+    const kit = C.mainPath.playerTeam.kit;
+    const look = (o) => SFC.Profile.lookOf(Object.assign({}, C.progression.defaultLook, o || {}));
+    const ME = look();
+    const lgLook = (id) => SFC.LegendDraw.lookOf(LG[id]);
+    const teamLook = (id, i = 0) => look((TM[id].looks || [])[i] || {});
+    const avatar = (cv, lk, k2, facing = Math.PI / 2) => SFC.Sprites.drawAvatar(cv, lk, k2 || kit, 0.3, facing);
+    const cvs = (w, h, cls = '') => `<canvas width="${w}" height="${h}" class="${cls}"></canvas>`;
+    let rs = 11; const rnd = () => (rs = (rs * 16807) % 2147483647) / 2147483647;
+
+    /* ---------- dữ liệu giả ---------- */
+    const DATA = {
+      runs: 14, goat: 2, album: 0,
+      acts: [{ n: 9, first: '2026-10-27' }, { n: 4, first: '2026-10-29' }, { n: 2, first: '2026-10-30' }],
+      legends: ['haalandroid', 'pirlow', 'ramen', 'mecci'], shinyLegend: 'pirlow',
+      badgeGot: 0.75, gearGot: 0.6,
+      rivals: ['rope_skippers', 'wash_aunties', 'block_wardens', 'tower_guards', 'night_owls', 'neon_arcade'],
+      ults: 6, ach: 12,
+    };
+    const BADGES = Object.keys(R.badges).filter((id) => { const b = R.badges[id]; return !(b.injury || b.bad || b.kind === 'injury'); });
+    const GEARS = Object.keys(R.gear.list);
+    const RIVALS = R.acts.flatMap((a) => (a.elite || []).concat(a.boss || [])).filter((id) => TM[id]);
+    const ULTN = Object.keys(C.cores.list).filter((id) => C.cores.list[id].role === 'ult').length;
+    const ACHN = (C.achievements && C.achievements.list ? Object.keys(C.achievements.list).length : 40);
+    const pages = [
+      { id: 'legend', name: 'LEGENDS', icon: 'ui-star', c: '#c7a6ff', got: DATA.legends.length, n: Object.keys(LG).length },
+      { id: 'badge', name: 'BADGES', icon: 'ui-gift', c: '#ff7a3d', got: Math.round(BADGES.length * DATA.badgeGot), n: BADGES.length },
+      { id: 'gear', name: 'GEAR', icon: 'ui-kitbag', c: '#3ff6ff', got: Math.round(GEARS.length * DATA.gearGot), n: GEARS.length },
+      { id: 'rival', name: 'RIVALS', icon: 'ui-fist', c: '#ff5a6e', got: DATA.rivals.length, n: RIVALS.length },
+      { id: 'ult', name: 'ULTIMATES', icon: 'ui-book', c: '#ffd23f', got: DATA.ults, n: ULTN },
+      { id: 'ach', name: 'ACHIEVEMENTS', icon: 'ui-trophy', c: '#6bff4f', got: DATA.ach, n: ACHN },
+    ];
+    const albumPct = Math.round(pages.reduce((a, p) => a + p.got, 0) / pages.reduce((a, p) => a + p.n, 0) * 100);
+    const topBar = (title) => `<div class="tb"><span class="back">◀ BACK</span><h2>${title}</h2><span class="chips">
+        <span class="mk-chip" title="GOAT runs">${PX.html('ui-trophy', '', '')}${DATA.goat}</span>
+        <span class="mk-chip" title="Runs">${PX.html('ui-ball', '', '')}${DATA.runs}</span>
+        <span class="mk-chip" title="Album">${PX.html('ui-book', '', '')}${albumPct}%</span></span></div>`;
+
+    /* ================= 1 · PHÒNG ================= */
+    const ZONES = [{ x: 118, name: 'TROPHY SHELF', sub: '3 / 4 CUPS' }, { x: 318, name: 'STICKER ALBUM', sub: albumPct + '%' }, { x: 522, name: 'RUN BOARD', sub: DATA.runs + ' RUNS' }];
+    let zsel = 0, hx = ZONES[0].x;
+    const room = document.getElementById('room');
+    room.innerHTML = `<canvas class="bg" width="640" height="360"></canvas>${topBar('TROPHY ROOM')}
+      ${ZONES.map((z, i) => `<div class="zone ${i === zsel ? 'on' : ''}" data-z="${i}" style="left:${z.x}px"><b>${z.name}</b><em>${z.sub}</em></div>`).join('')}
+      <div class="hint"><kbd>←</kbd> <kbd>→</kbd> WALK · <kbd>ENTER</kbd> OPEN · <kbd>ESC</kbd> BACK</div>`;
+    room.querySelectorAll('.zone').forEach((el) => el.onclick = () => { zsel = +el.dataset.z; room.querySelectorAll('.zone').forEach((q, i) => q.classList.toggle('on', i === zsel)); });
+    const bg = room.querySelector('canvas.bg');
+    const kinds = ['pot', 'owl', 'bowl'];
+    function drawRoom(t) {
+      SFC.Story.paint(bg, (H) => {
+        // tường gạch garage + cửa cuốn khép hờ phía sau bảng ghim
+        H.rect(0, 0, 640, 250, H.vgrad(0, 250, ['#1a1416', '#2a1c1a', '#34221c']));
+        for (let y = 0; y < 240; y += 10) for (let x = (y / 10) % 2 ? -12 : 0; x < 640; x += 24) H.rect(x, y, 23, 9, 'rgba(255,190,150,0.035)');
+        H.rect(0, 240, 640, 4, '#140e0c');
+        // sàn bê tông + thảm sân cỏ cũ
+        H.rect(0, 244, 640, 116, H.vgrad(244, 360, ['#3a3430', '#1a1614']));
+        H.rect(180, 300, 280, 50, '#2f5a32'); H.rect(180, 300, 280, 2, '#4a8a4a'); H.rect(318, 302, 2, 46, 'rgba(255,255,255,0.5)');
+        H.rect(296, 316, 46, 18, 'rgba(0,0,0,0)');
+        // ---- kệ cúp (trái) ----
+        H.rect(14, 128, 208, 6, H.INK); H.rect(16, 128, 204, 4, '#7a5030');    // tầng trên
+        H.rect(14, 206, 208, 6, H.INK); H.rect(16, 206, 204, 4, '#7a5030');    // tầng dưới
+        H.rect(14, 60, 6, 190, '#4a3020'); H.rect(216, 60, 6, 190, '#4a3020');
+        H.rect(14, 244, 208, 6, '#4a3020');
+        // cúp GOAT trên tầng trên (giữa, sáng) · 3 cúp act tầng dưới
+        H.glow(118, 96, 62 + Math.sin(t * 2) * 4, '255,210,80', zsel === 0 ? 0.5 : 0.28);
+        SFC.StoryCup.trophy(H, 'cup', 118, 128, 1.9, t);
+        for (let i = 0; i < 3; i++) {
+          const x = 50 + i * 68, A = R.acts[i];
+          SFC.StoryCup.trophy(H, kinds[i], x, 206, 1.15, t);
+          H.rect(x - 18, 212, 36, 8, H.INK); H.rect(x - 17, 213, 34, 6, A.color);
+          // vạch số lần hạ boss dưới cúp (tối đa 5)
+          for (let k = 0; k < Math.min(5, DATA.acts[i].n); k++) H.rect(x - 12 + k * 5, 224, 3, 3, '#ffd23f');
+        }
+        // kệ phụ nhỏ dưới cùng: cúp FOOTBALL STORY cũ
+        ['pot', 'owl', 'bowl', 'cup'].forEach((k, i) => SFC.StoryCup.trophy(H, k, 46 + i * 48, 244, 0.5, t));
+        // ---- bàn + album (giữa) ----
+        H.glow(318, 170, 70, '255,230,160', zsel === 1 ? 0.35 : 0.18);
+        H.rect(262, 120, 4, 60, '#2a2a2a'); H.rect(250, 112, 30, 12, '#3a3a3a'); H.rect(254, 122, 22, 4, '#ffe9a8');   // đèn bàn
+        H.rect(236, 196, 166, 10, H.INK); H.rect(238, 196, 162, 8, '#6a4428'); H.rect(246, 206, 8, 44, '#4a2c18'); H.rect(384, 206, 8, 44, '#4a2c18');
+        H.rect(278, 174, 84, 24, H.INK); H.rect(280, 175, 39, 21, '#efe6d2'); H.rect(321, 175, 39, 21, '#e8dfc8');
+        for (let i = 0; i < 6; i++) { H.rect(284 + (i % 3) * 11, 178 + Math.floor(i / 3) * 9, 8, 7, ['#c7a6ff', '#ff7a3d', '#3ff6ff', '#ff5a6e', '#ffd23f', '#6bff4f'][i]); }
+        for (let i = 0; i < 6; i++) H.rect(325 + (i % 3) * 11, 178 + Math.floor(i / 3) * 9, 8, 7, i < 3 ? '#cbbd9f' : '#d8cfbc');
+        // ---- bảng ghim (phải) ----
+        H.rect(424, 52, 196, 150, H.INK); H.rect(426, 54, 192, 146, '#b07a44'); H.rect(426, 54, 192, 3, '#c89060');
+        for (let i = 0; i < 8; i++) {
+          const x = 436 + (i % 4) * 46, y = 64 + Math.floor(i / 4) * 66, w = i === 0 && zsel === 2 ? 1 : 0;
+          H.rect(x - w, y - w, 38 + w * 2, 50 + w * 2, i === 0 ? '#fff8e0' : '#f6f1e6');
+          H.rect(x + 3, y + 3, 32, 30, ['#4a3a1a', '#2a2244', '#3a2a14', '#2a3a2a'][i % 4]);
+          H.rect(x + 16, y - 2, 5, 5, ['#e0403a', '#3a8ae0', '#ffd23f'][i % 3]);
+          if (i === 1 || i === 5) H.rect(x + 8, y + 38, 22, 6, '#ffd23f');
+        }
+        // character đi tới góc đang chọn
+        hx += (ZONES[zsel].x - hx) * 0.08;
+        H.figure(hx, 350, 2.4, t, ME, kit, Math.abs(ZONES[zsel].x - hx) > 4 ? (ZONES[zsel].x > hx ? 0 : Math.PI) : -Math.PI / 2);
+        H.vignette(0.45);
+      });
+    }
+    const t0 = performance.now();
+    (function loop() { if (room.classList.contains('on')) drawRoom((performance.now() - t0) / 1000); requestAnimationFrame(loop); })();
+
+    /* ================= 2 · KỆ CÚP ================= */
+    const shelf = document.getElementById('shelf');
+    const MED = [['#d08a4a', 1], ['#d4dbe8', 5], ['#ffd23f', 10]];
+    const medals = (n) => `<span class="medals">${MED.map(([c, at]) => `<i class="${n >= at ? 'on' : ''}" style="--m:${c}"><u>${at}</u></i>`).join('')}</span>`;
+    const actCup = (i) => {
+      const A = R.acts[i], d = DATA.acts[i], boss = TM[A.boss[0]];
+      return `<div class="cup ${i === 0 ? 'sel' : ''}" style="--c:${A.color}"><span class="act">ACT ${i + 1}</span>
+          <canvas width="120" height="120" data-cup="${kinds[i]}"></canvas><span class="nm">${A.name}</span>
+          <div class="plaque"><span>${PX.html('ui-crown', '', '')}${d.n}</span><span style="color:#9aa3b5">${boss ? boss.short : ''}</span></div>${medals(d.n)}</div>`;
+    };
+    shelf.innerHTML = `${topBar('TROPHY SHELF')}
+      <div class="oldcups"><em>OLD CUPS</em>${['pot', 'owl', 'bowl', 'cup'].map((k) => `<canvas width="30" height="30" data-old="${k}"></canvas>`).join('')}</div>
+      <div class="cups">${actCup(0)}${actCup(1)}
+        <div class="cup goat" style="--c:#ffd23f"><span class="act">ALL 3 ACTS</span><canvas width="168" height="168" data-cup="cup"></canvas>
+          <span class="nm">THE GOAT</span><div class="plaque"><span>${PX.html('ui-trophy', '', '')}${DATA.goat}</span><span style="color:#9aa3b5">${DATA.runs} RUNS</span></div>${medals(DATA.goat)}</div>
+        ${actCup(2)}</div>
+      <div class="hint"><kbd>←</kbd> <kbd>→</kbd> CUP · <kbd>ESC</kbd> ROOM</div>`;
+    const drawCups = (t) => {
+      shelf.querySelectorAll('canvas[data-cup]').forEach((cv) => SFC.Story.paint(cv, (H) => {
+        H.ctx.clearRect(0, 0, cv.width, cv.height);
+        const s = cv.width / 120;
+        H.glow(cv.width / 2, cv.height * 0.45, cv.width * 0.45, '255,210,80', 0.25);
+        SFC.StoryCup.trophy(H, cv.dataset.cup, cv.width / 2, cv.height - 6, (cv.dataset.cup === 'cup' ? 2.4 : 2.0) * s, t);
+      }));
+      shelf.querySelectorAll('canvas[data-old]').forEach((cv) => SFC.Story.paint(cv, (H) => { H.ctx.clearRect(0, 0, 30, 30); SFC.StoryCup.trophy(H, cv.dataset.old, 15, 28, 0.5, t); }));
+    };
+
+    /* ================= 3 · ALBUM ================= */
+    const album = document.getElementById('album');
+    let page = 'legend';
+    const rot = () => `--r:${((rnd() - 0.5) * 6).toFixed(1)}deg`;
+    function albumHTML() {
+      const P = pages.find((p) => p.id === page);
+      let left = '';
+      if (page === 'legend') {
+        left = `<div class="stk l5">${Object.keys(LG).map((id, i) => {
+          const got = DATA.legends.includes(id), L = LG[id];
+          return `<div class="st ${got ? 'got' : ''} ${id === DATA.shinyLegend ? 'shiny' : ''}" style="--c:${L.color};${rot()}"><span class="no">${String(i + 1).padStart(2, '0')}</span>
+            ${cvs(40, 44)}<b>${got ? L.title : '???'}</b></div>`;
+        }).join('')}</div>`;
+      } else if (page === 'badge' || page === 'gear') {
+        const list = page === 'badge' ? BADGES : GEARS, gotN = P.got;
+        left = `<div class="stk l6">${list.map((id, i) => {
+          const d = page === 'badge' ? R.badges[id] : R.gear.list[id], rc = (C.progression.rarities[d.rarity || 'common'] || {}).color || '#9aa3b5';
+          const ic = page === 'badge' ? SFC.RunUI.badgeIcon(id, '') : PX.html(d.icon || 'ui-card', '', '');
+          return `<div class="st patch ${i < gotN ? 'got' : ''}" style="--c:${rc};${rot()}"><span class="ring">${ic}</span><b>${i < gotN ? d.name : '???'}</b></div>`;
+        }).join('')}</div>`;
+      } else if (page === 'rival') {
+        left = `<div class="stk l5">${RIVALS.map((id) => {
+          const got = DATA.rivals.includes(id), T = TM[id], boss = R.acts.some((a) => (a.boss || []).includes(id));
+          return `<div class="st ${got ? 'got' : ''}" style="--c:${T.kit.accent || '#ff5a6e'};${rot()}"><span class="no">${boss ? '★' : ''}</span>${cvs(40, 44)}<b>${got ? T.short + (boss ? ' · BOSS' : '') : '???'}</b></div>`;
+        }).join('')}</div>`;
+      } else {
+        left = `<div class="sub">${page === 'ult' ? 'The ULT BOOK moves in here: 8×8 school table, same as today.' : 'Achievement list moves in here, same rows as today.'}</div>
+          <div class="stk l6">${Array.from({ length: 18 }, (_, i) => `<div class="st patch ${i < (page === 'ult' ? 6 : 9) ? 'got' : ''}" style="--c:${P.c};${rot()}"><span class="ring">${PX.html(P.icon, '', '')}</span><b>${i < (page === 'ult' ? 6 : 9) ? '★' : '?'}</b></div>`).join('')}</div>`;
+      }
+      return `${topBar('STICKER ALBUM')}<div class="book">
+          <div class="page"><h3>${P.name}</h3><div class="bar" style="--c:${P.c}"><b style="width:${(P.got / P.n) * 100}%"></b></div>${left}</div>
+          <div class="page"><h3>MY ALBUM</h3><div class="sub">${albumPct}% · ${DATA.runs} runs</div>
+            <div class="idx">${pages.map((p) => `<button data-p="${p.id}" class="${p.id === page ? 'on' : ''}">${PX.html(p.icon, '', '')}<span>${p.name}<span class="bar" style="--c:${p.c}"><b style="width:${(p.got / p.n) * 100}%"></b></span></span><em>${p.got}/${p.n}</em></button>`).join('')}</div>
+            <div class="stamp">SHINY = FIRST GOAT WITH HIM</div></div>
+        </div><div class="hint"><kbd>Q</kbd> <kbd>E</kbd> PAGE · <kbd>ESC</kbd> ROOM</div>`;
+    }
+    function renderAlbum() {
+      rs = 11;
+      album.innerHTML = albumHTML();
+      album.querySelectorAll('.idx button').forEach((b) => b.onclick = () => { page = b.dataset.p; renderAlbum(); });
+      const sts = [...album.querySelectorAll('.st canvas')];
+      if (page === 'legend') Object.keys(LG).forEach((id, i) => sts[i] && avatar(sts[i], lgLook(id)));
+      if (page === 'rival') RIVALS.forEach((id, i) => sts[i] && avatar(sts[i], teamLook(id), TM[id].kit));
+    }
+    renderAlbum();
+
+    /* ================= 4 · BẢNG GHIM ================= */
+    const board = document.getElementById('board');
+    const LIDS = Object.keys(LG);
+    const RUNS = Array.from({ length: 8 }, (_, i) => {
+      const win = i === 1 || i === 5, act = win ? 2 : [0, 1, 0, 2, 1, 0, 1, 0][i], floor = win ? 7 : 2 + (i * 3) % 6;
+      const pool = R.acts[act].teams.concat(R.acts[act].elite || []);
+      return { no: DATA.runs - i, win, act, floor, by: win ? null : pool[i % pool.length], score: win ? '3-1' : ['1-2', '0-1', '2-3', '1-4', '0-2', '2-3'][i % 6],
+        lg: [LIDS[(i * 3) % LIDS.length], i % 2 ? LIDS[(i * 7 + 1) % LIDS.length] : null], mates: [pool[(i + 1) % pool.length], pool[(i + 2) % pool.length]] };
+    });
+    const POS = [[20, 22, -4], [124, 14, 3], [228, 24, -2], [324, 16, 4], [26, 176, 2], [130, 184, -3], [232, 172, 3], [326, 186, -5]];
+    board.innerHTML = `${topBar('RUN BOARD')}<div class="cork">${RUNS.map((r, i) => {
+      const A = R.acts[r.act], L = r.lg[0] && LG[r.lg[0]];
+      const path = Array.from({ length: 3 * 8 }, (_, k) => { const reached = k < r.act * 8 + r.floor; const boss = k % 8 === 7; return `<i class="${reached ? (boss ? 'boss' : 'on') : ''}"></i>`; }).join('');
+      return `<div class="pol ${i === 0 ? 'sel' : ''}" style="left:${POS[i][0]}px;top:${POS[i][1]}px;--r:${POS[i][2]}deg;--ac:${A.color};--pin:${['#e0403a', '#3a8ae0', '#ffd23f'][i % 3]}">
+          <div class="mk-ph">${L ? `<canvas width="40" height="44" class="lg" style="--lc:${L.color}"></canvas>` : ''}${cvs(40, 44)}${cvs(40, 44)}${cvs(40, 44)}
+            <span class="res ${r.win ? 'win' : 'ko'}">${r.win ? 'CHAMPIONS' : 'KO · ' + TM[r.by].short}</span></div>
+          <div class="cap"><span>#${r.no}</span><em>${r.win ? 'GOAT' : 'ACT ' + (r.act + 1)}</em><span>${r.score}</span></div>
+          <div class="mk-path">${path}</div></div>`;
+    }).join('')}</div>
+      <div class="chalk"><h4>RECORDS</h4>
+        <div class="rec">${PX.html('ui-trophy', '', '')}<span>GOAT runs</span><b>${DATA.goat}</b></div>
+        <div class="rec">${PX.html('ui-crown', '', '')}<span>Bosses beaten</span><b>15</b></div>
+        <div class="rec">${PX.html('ui-ball', '', '')}<span>Most goals in a run</span><b>31</b></div>
+        <div class="rec">${PX.html('ui-calendar', '', '')}<span>Fastest GOAT</span><b>38:12</b></div>
+        <div class="rec">${PX.html('ui-star', '', '')}<span>Fave LEGEND</span><b style="font-size:7px">THE ARCHITECT</b></div>
+        <div class="rec">${PX.html('ui-fist', '', '')}<span>Nemesis</span><b style="font-size:7px">NIGHT OWLS</b></div>
+      </div><div class="hint"><kbd>←</kbd> <kbd>→</kbd> PHOTO · <kbd>ESC</kbd> ROOM</div>`;
+    board.querySelectorAll('.pol').forEach((el, i) => {
+      const r = RUNS[i], c = el.querySelectorAll('canvas');
+      let k = 0;
+      if (r.lg[0]) avatar(c[k++], lgLook(r.lg[0]));
+      avatar(c[k++], teamLook(r.mates[0], 1)); avatar(c[k++], ME); avatar(c[k++], teamLook(r.mates[1], 2));
+      el.onclick = () => { board.querySelectorAll('.pol').forEach((q) => q.classList.remove('sel')); el.classList.add('sel'); };
+    });
+
+    /* ---------- chuyển màn ---------- */
+    const order = ['room', 'shelf', 'album', 'board'];
+    let cur = 'room';
+    function show(id) {
+      cur = id;
+      document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.s === id));
+      document.querySelectorAll('.scr').forEach((s) => s.classList.toggle('on', s.id === id));
+      document.getElementById('note').innerHTML = NOTES[id];
+      if (id === 'shelf') drawCups((performance.now() - t0) / 1000);
+    }
+    document.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => show(b.dataset.s));
+    addEventListener('keydown', (e) => {
+      if (cur === 'room' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        zsel = Math.max(0, Math.min(2, zsel + (e.key === 'ArrowRight' ? 1 : -1)));
+        room.querySelectorAll('.zone').forEach((q, i) => q.classList.toggle('on', i === zsel));
+      } else if (cur === 'room' && e.key === 'Enter') show(order[zsel + 1]);
+      else if (e.key === 'Escape') show('room');
+    });
+    setInterval(() => { if (cur === 'shelf') drawCups((performance.now() - t0) / 1000); }, 100);
+    show('room');
+  }
+</script>
+</body>
+</html>

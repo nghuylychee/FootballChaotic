@@ -528,6 +528,14 @@ SFC_CONFIG.game = {
     },
     keeperCoverDist: 420,     // đội máy: người cầm bóng đối phương cách khung thành nhà dưới mức này -> người gần khung nhất lùi về trông khung
     mateKeeperCoverDist: 300, // như trên, cho đồng đội AI ĐÁ LÙI của người chơi (sân rộng 528px: 420 -> trông khung ~64% thời gian phòng ngự, 220 -> ~17%)
+    // NÉ LUẬT SÂN (user 2026-10-31, AI.avoid; vùng từ MatchMods.hazards): AI đội bị luật nhắm nhìn trước look s theo hướng đang chạy, sắp bước
+    // vào vùng (cách mép dưới margin px) thì trượt dọc mép vùng; đang đứng trong vùng thì chạy thẳng ra; vùng sắp trúng (hit) mà còn
+    // đứng trong thì lướt ra với xác suất dash mỗi giây (lướt trúng lúc đòn tới = né, Actions.dodged)
+    avoid: { look: 0.4, margin: 4, dash: 4 },
+    // HẬU VỆ CUỐI (user 2026-10-31): đồng đội AI của người chơi đang lùi về trông khung mà người cầm bóng đã tới trong engage px và
+    // không còn đồng đội nào (kể cả người chơi) đứng gần khung hơn người cầm bóng quá slack px -> lao vào tắc luôn, không chạy về khung.
+    // Đã lao vào thì giữ tới keep x engage px (không đổi ý chạy về khung giữa chừng)
+    lastMan: { engage: 110, keep: 1.5, slack: 4 },
     keeperPressDist: 110,     // đồng đội AI ĐÁ LÙI: chưa tới mateKeeperCoverDist mà người chơi cách người cầm bóng xa hơn mức này -> lên áp sát (không thì kèm người)
     // đồng đội AI ĐÁ LÙI cùng người chơi kẹp người cầm bóng (thay vì chỉ kèm người / trông khung):
     helpPress: {
