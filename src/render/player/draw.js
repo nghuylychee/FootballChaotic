@@ -11,11 +11,16 @@ window.SFC = window.SFC || {};
   /* ---------- cầu thủ theo hướng mặt: đứng yên (đúng v2), chạy, ra đòn, ăn mừng ---------- */
   // o: { facing, skin, shirt, shirtD, shorts, sock, shoe, sole, hair, band, moving, anim, lean,
   //      atk (attackPose), cp (celPose), stun, windup, flash, glove (màu găng thủ môn), inj (chấn thương), cut (kiểu tóc / mũ, hair.js), face (phụ kiện mặt, face.js), shoes (giày, shoes.js), fx (hiệu ứng trang phục; aura vẽ ở đây, fx.js), hit (giây từ lúc bị đấm, hit.js), slam (0..1 giơ tay lúc nhảy slam), noShadow }
+  // góc nhìn theo hướng mặt: back (quay lưng) / diag (chéo xuống) / side (ngang) / front (nhìn xuống) · sd = hướng ngang (0 = nhìn thẳng) · m = nhìn trái (lật hình).
+  // player.js dùng để giữ góc nhìn khỏi nháy khi hướng mặt giật qua lại quanh ngưỡng
+  function viewOf(facing) {
+    const fx = Math.cos(facing), fy = Math.sin(facing);
+    const back = fy < -0.35, diag = !back && fy > 0.38 && fy < 0.92, sd = Math.abs(fx) > 0.5 ? Math.sign(fx) : 0;
+    return { fx, fy, back, diag, sd, m: fx < 0, view: back ? 'back' : sd ? (diag ? 'diag' : 'side') : 'front' };
+  }
   function draw(ctx, X, Y, o) {
     const pal = palette(o);
-    const fx = Math.cos(o.facing), fy = Math.sin(o.facing);
-    const back = fy < -0.35, diag = !back && fy > 0.38 && fy < 0.92;
-    const sd = Math.abs(fx) > 0.5 ? Math.sign(fx) : 0, side = fx >= 0 ? 1 : -1, m = side < 0;
+    const { fx, fy, back, diag, sd, m, view } = viewOf(o.facing);
     // giày (shoes.js): mẫu tô theo chân phải / trái của cầu thủ (chân phải = cột trái màn hình, quay lưng thì cột phải), ghi chỗ đế để vẽ đồ dưới đế
     if (Sprite.shoeBegin) Sprite.shoeBegin(X, o, back ? m : !m);
     const atk = o.atk || null, cp = o.cp || null, hand = o.glove || pal.S;
@@ -24,7 +29,7 @@ window.SFC = window.SFC || {};
     const f = o.moving && !o.fly && !(atk && (atk.header || atk.leg != null)) ? Math.floor(runT * 12) % 4 : -1;
     const B = BODY;
     // ra đòn: góc nhìn của tư thế · thân ngả / lao theo cú đấm, cú đá (px mịn; x theo hình nhìn phải)
-    const view = back ? 'back' : sd ? (diag ? 'diag' : 'side') : 'front', sideView = view === 'side' || view === 'diag';
+    const sideView = view === 'side' || view === 'diag';
     // bước riêng khi nhìn ngang / chéo (sprint.js): chạy nước rút / bước nặng · gfr = khung đang vẽ · gs = hướng ngang (lật khi nhìn trái)
     const gaitOn = !!o.gait && f >= 0 && !atk && !cp && !o.fly && sideView, G = gaitOn ? Sprite.GAITS[o.gait] : null;
     const gfr = gaitOn ? Sprite.gaitFrame(o.gait, o.gaitT || 0) : null, gs = m ? -1 : 1;
@@ -106,6 +111,10 @@ window.SFC = window.SFC || {};
     // giơ 2 tay (hit.js): bị đấm (o.hit) · nhảy Ground Slam (o.slam = độ giơ theo độ cao)
     const lift = !o.fly && !punchArm && !kickLeg && !hp && !(atk && atk.dive) && !(cp && cp.arms) ? Math.max(Sprite.hitLift(o.hit), o.slam || 0) : 0, hitOn = lift > 0.04;
     if (hitOn && view === 'diag') Sprite.liftArms(ctx, Xb, Yb, m, view, lift, pal, hand, true);
+    // chạy thường nhìn ngang / chéo: tay vung quanh vai như chạy nước rút, nhẹ hơn (run.js ARM_A) · rfr = khung tay cho gaitArms
+    const runArms = f >= 0 && sideView && !gaitOn && !o.fly && !(hp && !hp.rest) && !hitOn && !kArms && !punchArm && !(atk && atk.dive) && !(cp && (cp.arms || cp.ang));
+    const rfr = runArms ? Sprite.runArmFrame(f, m) : null;
+    if (runArms) Sprite.gaitArms(ctx, Xb, Yb, rfr, view, pal, hand, m, true);   // tay vung ra sau / tay xa (nhìn chéo): sau thân
     if (cp && cp.legs === 'kneel') Sprite.kneelLegs(ctx, Xb, Yb, pal);   // quỳ: 2 đầu gối dưới quần (celebrate.js)
     // thân chuyển động (torso.js) cho động tác mới: nghiêng theo thân, vặn vai, lai quần nhấc bên chân đang nhấc. Toạ độ màn hình -> nhìn trái đảo dấu / đổi bên
     let torso = back ? B.back : B.front;
@@ -138,8 +147,8 @@ window.SFC = window.SFC || {};
       headerArms(ctx, Xb, Yb, m, view, hp, pal, hand, false);
     } else if (hitOn) {
       /* giơ tay: vẽ sau đầu (dưới) */
-    } else if (gaitOn) {
-      Sprite.gaitArms(ctx, Xb, Yb, gfr, view, pal, hand, m, false);
+    } else if (gaitOn || runArms) {
+      Sprite.gaitArms(ctx, Xb, Yb, gaitOn ? gfr : rfr, view, pal, hand, m, false);
     } else if (kArms) {
       if (view !== 'diag') kickArm(ctx, Xb, Yb, m, view, atk, 1, pal, hand, false);
       kickArm(ctx, Xb, Yb, m, view, atk, 0, pal, hand, false);
@@ -168,7 +177,7 @@ window.SFC = window.SFC || {};
       const rightOnL = back ? m : !m, foot = feet[rightOnL ? 'L' : 'R'], other = feet[rightOnL ? 'R' : 'L'];
       for (const id of o.inj) {
         const part = parts && parts[id] && parts[id].part;
-        if (part === 'wrist' && !(dive || celArms || kArms || gaitOn || o.fly || hitOn || (hp && !hp.rest) || punchArm)) {
+        if (part === 'wrist' && !(dive || celArms || kArms || gaitOn || runArms || o.fly || hitOn || (hp && !hp.rest) || punchArm)) {
           if (diag) rectW(ctx, Xb, Yb + wy.bump, m, 6, B.bump.y + B.bump.rows.length - 2, 1, 1, BANDAGE);
           else {
             const wm = !pm, wY = Yb + (wm ? wy.R : wy.L);
@@ -219,5 +228,5 @@ window.SFC = window.SFC || {};
     }
   }
 
-  Object.assign(Sprite, { draw });
+  Object.assign(Sprite, { draw, viewOf });
 })();

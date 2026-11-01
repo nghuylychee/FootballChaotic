@@ -43,7 +43,8 @@ window.SFC = window.SFC || {};
 
     // bàn thắng: p = người ghi bàn (null / phản lưới = không ai ăn mừng). Trả về id động tác (gửi kèm sự kiện 'goal')
     start(g, p) {
-      for (const q of g.players) q.celId = null;
+      // nháy trắng (bị đấm ngay trước bàn thắng): trạng thái 'goal' không chạy Player.update nên không tự tắt -> tắt luôn, ăn mừng mặt thường
+      for (const q of g.players) { q.celId = null; q.flash = 0; }
       if (!p) return null;
       // character của người chơi: động tác đã trang bị (máy chủ cũ bỏ mất trường cel -> mặc định); AI: bốc 1 lần, giữ cả trận
       if (!this.valid(p.look.cel)) p.look.cel = p.avatar ? DEF() : this.pick();
@@ -60,7 +61,7 @@ window.SFC = window.SFC || {};
 
     // máy khách: sự kiện 'goal' từ host -> gắn động tác lên trận "gương" (+ dự phòng thống kê bàn thắng nếu máy chủ cũ chưa gửi stats)
     remote(g, e) {
-      for (const q of g.players) q.celId = null;
+      for (const q of g.players) { q.celId = null; q.flash = 0; }
       const p = e.pid >= 0 ? g.players.find((q) => q.id === e.pid) : null;
       if (p && !e.own && p.mstats) {
         p.mstats.goals++;
@@ -83,7 +84,7 @@ window.SFC = window.SFC || {};
           } else cid = '_lose';
         }
         Object.assign(p, {
-          celId: cid, celT: this.lead(cid), vx: 0, vy: 0, kbx: 0, kby: 0, airZ: 0, airVz: 0,
+          celId: cid, celT: this.lead(cid), vx: 0, vy: 0, kbx: 0, kby: 0, airZ: 0, airVz: 0, flash: 0,
           facing: FRONT, atkType: null, charging: false, charge: 0, bracing: false, state: 'normal',
         });
       }
@@ -104,7 +105,7 @@ window.SFC = window.SFC || {};
           const p = g.players.find((q) => q.id === id);
           if (p && cid) {
             Object.assign(p, {
-              celId: cid, celT: this.lead(cid), vx: 0, vy: 0, kbx: 0, kby: 0, airZ: 0, airVz: 0,
+              celId: cid, celT: this.lead(cid), vx: 0, vy: 0, kbx: 0, kby: 0, airZ: 0, airVz: 0, flash: 0,
               facing: FRONT, atkType: null, charging: false, charge: 0, bracing: false, state: 'normal',
             });
           }

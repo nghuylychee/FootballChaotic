@@ -416,7 +416,7 @@ window.SFC = window.SFC || {};
       const mirror = [0, 1].map(() => vary && Math.random() < (V.mirrorY || 0));
       for (const p of this.players) {
         const pos = this.keeperAtKickoff(p) ? this.keeperSpot(p) : this.kickoffPos(p, vary, mirror[p.team]);
-        Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null, bracing: false, readAt: -1, celId: null, noActT: 0, panicT: 0, chickenT: 0, puppet: null, puppetT: 0, ghostT: 0, walkT: 0 });
+        Object.assign(p, { x: pos.x, y: pos.y, vx: 0, vy: 0, kbx: 0, kby: 0, state: 'normal', charging: false, charge: 0, confused: null, keeperHold: 0, airZ: 0, airVz: 0, atkType: null, bracing: false, readAt: -1, diveKick: -1, celId: null, noActT: 0, panicT: 0, chickenT: 0, puppet: null, puppetT: 0, ghostT: 0, walkT: 0 });
         p.facing = this.teams[p.team].dir > 0 ? 0 : Math.PI;
         p.intent.mx = p.intent.my = 0;
         p.ai.runT = 0; p.ai.requestedPass = null;
@@ -905,6 +905,9 @@ window.SFC = window.SFC || {};
         }
         if (!this.intercepts(p)) return;
         this.cores.steal(p);
+        // bóng tới mạnh (pass.intercept.block): dội ra khỏi người thay vì dính chân (người cắt không chạm lại ngay, phải đuổi theo)
+        const I = C.pass.intercept;
+        if (!isGK && spd >= I.block) { this.deflect(p, I.blockKeep); b.noPickup.set(p.id, I.blockRetry); this.sfx('touch'); return; }
       } else if (opp && spd > C.ball.controlSpeed) {
         if (Math.random() > 0.35 * p.stats.dribble) { this.deflect(p, 0.4); return; }
       }

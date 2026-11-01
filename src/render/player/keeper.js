@@ -6,8 +6,8 @@ window.SFC = window.SFC || {};
 (function () {
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
   const { at, blockCells, drawCells, drawFine, easeIO, easeOut, fineBlock, fineLimb, lerp, limbCells, stamp } = Sprite;
-  // Game (Actions.dive): bay ≤ gkDiveTime 0.24 s (state dash, tuỳ quãng cần bay), rồi nằm gkDivePose 0.22 s (tới p.poseEnd), rồi đứng.
-  // attackPose trả: dk = tiến độ bay · ds = cất người (0.06 s đầu cú bay) · dl = chạm đất (0.05 s đầu lúc nằm) · dg = đứng dậy (0.1 s cuối lúc nằm).
+  // Game (Actions.dive): bay gkDiveMin 0.12 – gkDiveTime 0.24 s (state dash, tuỳ quãng cần bay, p.diveT), rồi nằm gkDivePose 0.22 s (tới p.poseEnd), rồi đứng.
+  // attackPose trả: dk = tiến độ bay · dh = độ cao vòng cung (diveT / gkDiveTime) · ds = cất người (0.06 s đầu cú bay) · dl = chạm đất (0.05 s đầu lúc nằm) · dg = đứng dậy (0.1 s cuối lúc nằm).
   // Tay giữ độ dài tay đứng (2.4 ô + găng 3 x 3) nên không vươn qua đầu được: vai nhô lên 2 ô và đầu rụt xuống 2 ô giữa 2 tay
   // (như thủ môn thật vùi đầu giữa 2 cánh tay) -> 2 găng kẹp 2 bên mặt. Tay vung lên trong 35% đầu cú bay, hạ xuống lúc đứng dậy.
   const P = Math.PI;
@@ -71,7 +71,7 @@ window.SFC = window.SFC || {};
   function diveXform(atk, flip, side) {
     const STAND = { rot: 0, sy: 1, up: 10, sh: [7, 2.5] };
     if (atk.flying) {
-      const s = easeOut(atk.ds || 0), lift = 9 * Math.sin(Math.min(1, atk.dk || 0) * P), sk = 1 - lift / 24;
+      const s = easeOut(atk.ds || 0), lift = 9 * (atk.dh || 1) * Math.sin(Math.min(1, atk.dk || 0) * P), sk = 1 - lift / 24;
       return { lift, rot: side * 0.22 * flip * s, sy: syLerp(STAND.sy, flip * 0.85, s), up: lerp(STAND.up, 2, s),
         shadow: [lerp(STAND.sh[0], 5 * sk, s), lerp(STAND.sh[1], 8 * sk, s)], streaks: s > 0.5 };
     }

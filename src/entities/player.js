@@ -94,6 +94,8 @@ window.SFC = window.SFC || {};
       this.auraFarmT = 0;     // AURA FARMING: còn bao lâu (tóc vàng + hào quang lửa, đồng bộ online)
       this.juggleN = 0;       // Tâng Người: số lần bị tâng trong 1 lần bay
       this.slamKind = null;   // đang nhảy: ground (Dậm Đất) | meteor (Thiên Thạch Giáng)
+      this.diveKick = -1;     // đã đổ người cho cú đá số mấy (ball.kickN; Actions.dive: 1 lần mỗi cú sút) · giao bóng đặt lại
+      this.diveT = 0;         // cú đổ người gần nhất bay bao lâu (s): vòng cung bay khớp lúc chạm đất (render/player/pose.js)
       this.auraC = '';      // hào quang Core (màu) — vẽ ở render/vfx.js, đồng bộ online
       this.auraT = 0;
       this.flash = 0;
@@ -210,8 +212,8 @@ window.SFC = window.SFC || {};
           }
           if (this.stateT <= 0) {
             this.state = 'normal'; this.trailLeft = 0; this.vx *= 0.5; this.vy *= 0.5;
-            // đổ người xong: nằm sõng soài thêm gkDivePose giây (chỉ là anim)
-            if (DIVE[this.atkType]) this.poseEnd = this.atkT + C.player.gkDivePose;
+            // đổ người xong: nằm sõng soài thêm gkDivePose giây (chỉ là anim), dừng ngay chỗ chạm đất (giữ nửa đà thì người nằm trượt thêm ~8 px)
+            if (DIVE[this.atkType]) { this.poseEnd = this.atkT + C.player.gkDivePose; this.vx = 0; this.vy = 0; }
           }
           break;
         case 'slam':

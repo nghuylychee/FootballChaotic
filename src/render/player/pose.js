@@ -95,12 +95,12 @@ window.SFC = window.SFC || {};
       const u = clamp01((t - K - BIKE.hit - BIKE.go) / BIKE.out);
       return u >= 1 ? {} : Object.assign(base, { kp: 'out', u: easeIO(u), kbx: -2 * (1 - easeIO(u)) });
     }
-    // thủ môn đổ người (keeper.js): dk = tiến độ bay · ds cất người · dl chạm đất · dg đứng dậy (0..1)
+    // thủ môn đổ người (keeper.js): dk = tiến độ bay · dh = độ cao vòng cung (bay ngắn thì thấp) · ds cất người · dl chạm đất · dg đứng dậy (0..1)
     if (p.atkType === 'diveU' || p.atkType === 'diveD') {
-      // nằm tới p.poseEnd (Player đặt lúc chạm đất; máy khách online không có -> coi như bay hết gkDiveTime)
-      const PL = SFC_CONFIG.game.player, D = Sprite.DIVE, flying = p.state === 'dash';
+      // bay p.diveT giây, nằm tới p.poseEnd (Player đặt cả hai; máy khách online không có -> coi như bay hết gkDiveTime)
+      const PL = SFC_CONFIG.game.player, D = Sprite.DIVE, flying = p.state === 'dash', fly = p.diveT || PL.gkDiveTime;
       const end = p.poseEnd != null ? p.poseEnd : PL.gkDiveTime + PL.gkDivePose, land = end - PL.gkDivePose;
-      return { dive: true, flying, dk: clamp01(t / PL.gkDiveTime), ds: flying ? clamp01(t / D.takeoff) : 1,
+      return { dive: true, flying, dk: clamp01(t / fly), dh: fly / PL.gkDiveTime, ds: flying ? clamp01(t / D.takeoff) : 1,
         dl: flying ? 0 : clamp01((t - land) / D.land), dg: flying ? 0 : clamp01((t - (end - D.getup)) / D.getup) };
     }
     return {};

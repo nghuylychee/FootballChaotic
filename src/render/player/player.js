@@ -22,22 +22,51 @@ window.SFC = window.SFC || {};
     for (let t = 0.04; hex(shorts) && dist(shorts, Sprite.INK) < 40 && t <= 0.5; t += 0.04) shorts = Sprite.mix(kit.shorts, '#ffffff', t);
     return { band: pick(kit.accent, look.hair, 70), glove: pick(kit.accent, look.skin, 60), shorts };
   }
+  // đang chạy nước rút (để vẽ bước sải): p.sprinting của máy mô phỏng (máy khách online không có -> nhanh hơn fx.run.sprint), giữ thêm fx.run.sprintHold giây
+  // sau lần cuối thấy. AI bật / tắt intent.sprint gần như mỗi khung quanh ngưỡng khoảng cách (tốc độ cũng nhảy theo quanh fx.run.sprint) -> không giữ thì
+  // hình đổi qua lại giữa bước sải và bước chạy thường (nháy). Đồng hồ = p.anim (máy khách cũng tự đếm); chỉ phía vẽ, không đổi mô phỏng
+  const sprintSeen = new WeakMap();
+  function sprintGait(p) {
+    const RN = SFC_CONFIG.game.fx.run, now = p.anim || 0;
+    if (p.sprinting || (RN && Math.hypot(p.vx || 0, p.vy || 0) > RN.sprint)) { sprintSeen.set(p, now); return true; }
+    const t = sprintSeen.get(p);
+    return t != null && now >= t && now - t < ((RN && RN.sprintHold) || 0);
+  }
+  // chạy / đứng thường: góc nhìn + lật trái phải (draw.js viewOf) + đứng / chạy (> 12 px/s) chỉ đổi khi trạng thái mới giữ được fx.run.viewHold giây.
+  // AI bẻ hướng / tốc độ giật qua lại quanh ngưỡng trong 1–3 khung -> hình nháy giữa 2 góc nhìn, giữa đứng và chạy. on = false (ra đòn, ăn mừng, choáng...):
+  // theo đúng trạng thái thật ngay. Trả { facing, moving } để vẽ
+  const steady = new WeakMap();
+  function steadyLook(p, on) {
+    const facing = p.facing, moving = Math.hypot(p.vx || 0, p.vy || 0) > 12, now = p.anim || 0;
+    const V = Sprite.viewOf(facing), k = V.view + (V.m ? 'L' : 'R') + (moving ? 1 : 0);
+    let s = steady.get(p);
+    if (!on || !s || now < s.t) { s = { facing, moving, k, nk: k, t: now }; steady.set(p, s); return s; }
+    if (k === s.k) { s.facing = facing; s.moving = moving; s.nk = k; return s; }
+    if (k !== s.nk) { s.nk = k; s.t = now; }
+    const RN = SFC_CONFIG.game.fx.run;
+    if (now - s.t >= ((RN && RN.viewHold) || 0)) { s.k = k; s.facing = facing; s.moving = moving; }
+    return s;
+  }
   function drawPlayer(ctx, p, g, alpha = 1, tint = null, ghost = !!tint) {
     const kit = g.teams[p.team].cfg.kit, look = p.look || {}, kc = kitColors(kit, look);
     const cp = (!ghost && p.celPose) || null;
     let atk = !ghost && (p.atkType || p.passMode) ? attackPose(p) : null;
     const RN = SFC_CONFIG.game.fx.run;
-    // bước riêng khi nhìn ngang / chéo (sprint.js): bước nặng đuổi bóng lúc lấy đà sút mạnh (attackPose trả gait) · chạy nước rút (p.sprinting của máy mô phỏng; máy khách online không có -> nhanh hơn fx.run.sprint)
+    // bước riêng khi nhìn ngang / chéo (sprint.js): bước nặng đuổi bóng lúc lấy đà sút mạnh (attackPose trả gait) · chạy nước rút (sprintGait)
     let gait = null, gaitT = 0;
+    // chỉ cầu thủ thật trong trận, lúc đang đá (state 'play'), mới giữ góc nhìn. Giao bóng / bàn thắng / chọn Core... không chạy Player.update nên p.anim
+    // đứng yên, còn kickoff() đặt thẳng hướng mặt -> giữ thì kẹt góc nhìn cũ cả lúc chờ giao bóng. Bản sao / ảnh xem trước vẽ thẳng theo hướng mặt
+    const live = !!(g && g.state === 'play' && g.players && g.players.includes(p));
+    const plain = !ghost && !cp && !atk && p.state === 'normal', st = steadyLook(p, plain && live);
     if (atk && atk.gait) { gait = atk.gait; gaitT = atk.gt; atk = null; }
-    else if (!ghost && !cp && !atk && p.state === 'normal' && Math.hypot(p.vx || 0, p.vy || 0) > 12 && (p.sprinting || (RN && Math.hypot(p.vx || 0, p.vy || 0) > RN.sprint))) { gait = 'sprint'; gaitT = p.anim || 0; }
+    else if (plain && st.moving && sprintGait(p)) { gait = 'sprint'; gaitT = p.anim || 0; }
     const o = {
-      facing: p.facing, skin: look.skin, hair: look.hair, band: kc.band,
+      facing: st.facing, skin: look.skin, hair: look.hair, band: kc.band,
       cut: !ghost && p.auraFarmT > 0 ? 'aura' : look.cut,   // AURA FARMING thay mọi kiểu tóc
       face: look.face, shoes: look.shoes, fx: ghost ? null : look.fx,
       shirt: tint || kit.shirt, shirtD: tint || kit.shirtDark, shorts: kc.shorts,
       sock: '#ecebe6', shoe: '#e8e8e8', sole: '#b9c2d0',
-      moving: cp ? !!cp.run : gait === 'heavy' || Math.hypot(p.vx || 0, p.vy || 0) > 12, anim: p.anim || 0, gait, gaitT,
+      moving: cp ? !!cp.run : gait === 'heavy' || st.moving, anim: p.anim || 0, gait, gaitT,
       lean: !ghost && !cp && !atk && !gait && p.state === 'normal' && RN && RN.lean && Math.abs(p.vx || 0) > RN.sprint ? 2 * Math.sign(p.vx) * RN.lean : 0,
       atk, cp, stun: p.state === 'stun', windup: p.state === 'windup', flash: p.flash > 0,
       glove: !ghost && p.keeper ? kc.glove : null, inj: !ghost && !cp && p.inj, noShadow: alpha < 1 || !!p.flyInner,
@@ -80,5 +109,5 @@ window.SFC = window.SFC || {};
     return y - (atk && atk.khop ? Math.round(atk.khop / 2) : 0) + ((cp && cp.drop) || 0) - 16;
   }
 
-  Object.assign(Sprite, { drawPlayer, kitColors });
+  Object.assign(Sprite, { drawPlayer, kitColors, sprintGait, steadyLook });
 })();

@@ -50,6 +50,11 @@ window.SFC = window.SFC || {};
   // vặn vai theo tay trái hình đang vung ra trước (+1) / ra sau (-1) · lai quần nhấc bên chân đang nhấc gối (hình nhìn phải)
   const gaitTwist = (fr) => (fr[3][0] <= P / 2 ? 1 : -1);
   const gaitHem = (fr) => [fr[0] < 0.3 * P, fr[1] < 0.3 * P];
+  // chạy thường nhìn ngang / chéo: khung tay cho gaitArms từ pha tay ARM_L / ARM_R của run.js (góc ARM_A). Tay trái hình = cột trái màn hình, nhìn trái thì cột phải
+  const runArmFrame = (f, mir) => {
+    const { ARM_A, ARM_L, ARM_R } = Sprite;
+    return [0, 0, 0, [ARM_A[(mir ? ARM_R : ARM_L)[f]]], [ARM_A[(mir ? ARM_L : ARM_R)[f]]]];
+  };
 
-  Object.assign(Sprite, { SPRINT, GAITS, gaitFrame, gaitLegs, gaitArms, gaitTwist, gaitHem });
+  Object.assign(Sprite, { SPRINT, GAITS, gaitFrame, gaitLegs, gaitArms, gaitTwist, gaitHem, runArmFrame });
 })();

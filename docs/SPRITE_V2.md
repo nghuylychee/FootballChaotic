@@ -18,7 +18,7 @@
 - **Cao 24 px như sprite hiện tại** (thân B): áo 3 hàng, không hàng đầu gối, tất ngay dưới quần. Đã bỏ: giữ đầu gối bằng quần 1 hàng; bớt áo 2 hàng.
 - **Tay chéo xuống.** Tay gần đủ + cục da tay xa (user chỉnh, đừng phá).
 - **Mũi giày.** Nhìn thẳng xuống / lên: không mũi. Chéo, ngang: cả 2 mũi theo hướng mặt.
-- **Chạy.** 4 khung, 12 khung / s như nhịp hiện tại: trụ trước · lướt qua · đá gót · nhấc gối. Thân nhấp nửa px, tay vung 1 và 2 px mịn, chạy ngang chân sải trước / sau.
+- **Chạy.** 4 khung, 12 khung / s như nhịp hiện tại: trụ trước · lướt qua · đá gót · nhấc gối. Thân nhấp nửa px, chạy ngang chân sải trước / sau. Tay: nhìn xuống / lên vung lên xuống 1 và 2 px mịn; nhìn ngang / chéo tay thẳng xoay quanh vai như chạy nước rút nhưng nhẹ hơn (góc `ARM_A`: ra trước / sau 1 ô, nước rút 2 ô; user 2026-11-01).
 - **Động tác: tay chân giữ đúng độ dài lúc đứng.** Tay = tay áo + 2 px cẳng tay + nắm tay 3 × 3; chân = 4.5 px từ hông tới bàn chân. Tầm với đến từ thân: ngả, lao tới, bước chân. Đã bỏ: chuyển thẳng tư thế hôm nay sang người mới (tay "dây thun" 12 px, chân 11 px).
 - **Cả người cùng ra đòn.** Không tay nào đứng yên khi ra đòn.
 

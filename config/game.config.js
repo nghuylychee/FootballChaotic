@@ -151,8 +151,11 @@ SFC_CONFIG.game = {
     gkBeat: { wrong: 0.5, late: 0.12 },
     gkSpeedMult: 1.1,         // AI đứng trong vòng cấm nhà di chuyển nhanh hơn
     gkHoldProtect: 2.5,       // (s) bắt được bóng trong vòng cấm nhà -> miễn tắc/xoạc/va vai trong thời gian này (khi còn ở trong vòng cấm)
+    // đổ người (Actions.dive): bay đúng quãng cần tới, xa thì gkDiveSpeed (px/s) trong tối đa gkDiveTime (s); gần thì chậm lại để cú bay dài
+    // ít nhất gkDiveMin (s) — bay ngắn mà vẫn hết tốc thì trông như bị giật văng đi. Vòng cung bay thấp dần theo cú bay ngắn (render/player/keeper.js)
     gkDiveSpeed: 250,
     gkDiveTime: 0.24,
+    gkDiveMin: 0.12,
     gkLungeMinSpeed: 220,     // (px/s) bắt / đẩy bóng lệch sang bên: bóng nhanh hơn mức này mới đổ người (chậm hơn: đứng bắt tại chỗ)
     gkDivePose: 0.22,         // (s) anim: đổ người xong nằm trên sân thêm chừng này (không ảnh hưởng di chuyển)
   },
@@ -300,6 +303,11 @@ SFC_CONFIG.game = {
       failSlow: 0.8,          // trượt: bóng còn 80% tốc độ
       failDeflect: 0.25,      // trượt: bóng lệch ngẫu nhiên tối đa (rad, ~14°)
       retry: 0.4,             // trượt: giây người đó không chạm lại được bóng
+      // cắt được mà bóng tới mạnh (>= block px/s, cả chuyền bổng; trừ thủ môn trong vòng cấm nhà): bóng dội ra khỏi người (Game.deflect, còn
+      // blockKeep tốc độ, tối thiểu 80) thay vì dính chân — người cắt chạm lại được sau blockRetry giây, ai tới trước thì được. Chậm hơn: khống chế gọn như cũ
+      block: 180,
+      blockKeep: 0.3,
+      blockRetry: 0.15,
       aiDelay: [0.45, 1.3],   // (s) AI (đội máy + đồng đội AI) cắt được đường chuyền / chặn được cú sút ngoài vòng cấm nhà:
                               //     vẫn rê bóng nhưng chưa chuyền / sút trong khoảng này (kèm chữ INTERCEPT)
       aiDelayMinSpeed: 100,   // (px/s) bóng chậm hơn mức này lúc cắt -> không tính (không khựng, không chữ INTERCEPT)
@@ -686,6 +694,8 @@ SFC_CONFIG.game = {
     run: {
       sprint: 105,       // (px/s) chạy nhanh hơn mức này = đang chạy nước rút (đi bộ 86, nước rút ~129)
       lean: 1,           // (px) nghiêng thân + đầu theo hướng chạy ngang khi chạy nước rút. 0 = tắt
+      sprintHold: 0.25,  // (s) bước sải nước rút (render/player/sprint.js) giữ thêm chừng này sau lần cuối đang chạy nước rút: AI bật / tắt gần như mỗi khung
+      viewHold: 0.05,    // (s) chạy / đứng thường: góc nhìn, lật trái phải, đứng / chạy mới phải giữ chừng này mới vẽ (hướng / tốc độ AI giật 1–3 khung)
       stride: 0.17,      // (s) mỗi bước chạy nước rút tung 1 nhúm bụi nhỏ
       // (px/s²) đang chạy nước rút mà giảm tốc / bẻ lái ngược hướng mạnh hơn mức này -> tung bụi trượt
       // (thả phím: giảm tốc 950 · quay ngược ~720 · rẽ vuông góc ~510 -> không tính)

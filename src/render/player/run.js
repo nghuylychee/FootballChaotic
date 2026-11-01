@@ -12,6 +12,8 @@ window.SFC = window.SFC || {};
   // pha tay ngược chân cùng bên: F vung ra trước (thấp xuống) · f nửa trước · b nửa sau · B vung ra sau (cao lên, khuất bàn tay)
   const ARM_L = ['B', 'b', 'F', 'f'], ARM_R = ['F', 'f', 'B', 'b'];
   const ARM_DY = { F: 2, f: 1, b: -1, B: -2 };   // (px mịn)
+  // nhìn ngang / chéo: tay thẳng xoay quanh vai như chạy nước rút (sprint.js) nhưng vung nhẹ hơn. Góc theo pha (0 trước, π/2 xuống, π sau)
+  const ARM_A = { F: Math.PI / 2 - 0.55, f: Math.PI / 2 - 0.2, b: Math.PI / 2 + 0.2, B: Math.PI / 2 + 0.6 };
   // 1 chân: hình + độ lệch ngang (px mịn) theo pha. sd = hướng ngang, k = bước ngang (ngang 2 · chéo 1 · xuống 0)
   function runLeg(B, phase, toe, back, sd, k) {
     const tp = (R, Lf, N) => toe > 0 ? R : toe < 0 ? Lf : N;
@@ -22,5 +24,5 @@ window.SFC = window.SFC || {};
     return [tp(B.TR, B.TL, B.TN), 0, 0];
   }
 
-  Object.assign(Sprite, { RUN_L, RUN_R, BOB, ARM_L, ARM_R, ARM_DY, runLeg });
+  Object.assign(Sprite, { RUN_L, RUN_R, BOB, ARM_L, ARM_R, ARM_DY, ARM_A, runLeg });
 })();

@@ -1130,14 +1130,23 @@ window.SFC = window.SFC || {};
     },
 
     // Đổ người (AI trông khung thành trong vòng cấm)
+    // 1 lần mỗi cú sút (p.diveKick = ball.kickN): đã đổ người đọc cú sút (AI / phím đọc) thì lúc chạm bóng (keeperLunge) hay bị đánh bại (keeperBeaten)
+    // không đổ thêm lần nữa ngay lúc vừa đáp đất — kết quả cứu / thủng lưới đã quyết ở tryControl, cú đổ thứ 2 chỉ là bay thêm
+    // Chỉ trong vòng cấm nhà (inKeeperZone): người trông khung đang chạy về mà bóng tới thì không đổ người giữa sân (ngoài vòng cấm cũng không bắt được).
+    // Bay tối đa tới mép ngang vòng cấm (đổ hết tầm sai phía ở keeperBeaten bay ra ngoài); sát mép, không còn chỗ bay thì thôi
     dive(g, p, dy) {
       const P = G().player;
-      if (p.state !== 'normal') return;
-      // thời gian đổ người tỉ lệ với khoảng cách cần bay (không bay quá đà)
+      if (p.state !== 'normal' || p.diveKick === g.ball.kickN || !g.inKeeperZone(p)) return;
+      const f = g.field, edge = f.boxWidth / 2 - p.radius;
+      dy = U.clamp(p.y + dy, f.cy - edge, f.cy + edge) - p.y;
+      if (Math.abs(dy) < 3) return;
+      p.diveKick = g.ball.kickN;
       p.state = 'dash';
       p.trailLeft = 0; // đổ người: chỉ 1 bóng mờ
-      p.stateT = U.clamp(Math.abs(dy) / P.gkDiveSpeed, 0.05, P.gkDiveTime);
-      p.dashX = 0; p.dashY = Math.sign(dy) * P.gkDiveSpeed;
+      // bay đúng quãng dy: xa thì gkDiveSpeed (tối đa gkDiveTime, không bay quá đà), gần thì chậm lại cho đủ gkDiveMin giây (không giật cục).
+      // diveT = thời gian bay: vòng cung bay khớp lúc chạm đất (render/player/pose.js; máy khách online không có -> coi như gkDiveTime)
+      p.stateT = p.diveT = U.clamp(Math.abs(dy) / P.gkDiveSpeed, P.gkDiveMin, P.gkDiveTime);
+      p.dashX = 0; p.dashY = Math.sign(dy) * Math.min(P.gkDiveSpeed, Math.abs(dy) / p.stateT);
       // anim bay người: diveU / diveD = bay lên / xuống màn hình (vẽ ở Renderer.diving, đồng bộ online qua atkType)
       this.startAttack(p, dy < 0 ? 'diveU' : 'diveD');
       g.effects.afterimage(p);
