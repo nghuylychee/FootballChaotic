@@ -1238,6 +1238,19 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .rm-row kbd { min-width: 34px; text-align: center; font-family: var(--vt); font-size: 12px; padding: 0 3px; }
 .rm-row kbd.sym { font-size: 14px; line-height: 12px; }
 /* icon nút PlayStation ✕ △ ○ □ (ui/helpers.js thay vào mọi <kbd>): cỡ theo chữ của kbd */
+/* tooltip của game (SFC.Tip, ui/helpers.js): bảng pixel cùng theme thay tooltip mặc định của trình duyệt */
+#gtip { position: absolute; z-index: 9999; display: none; max-width: 200px; padding: 5px 7px 6px; pointer-events: none;
+  background: #16171c; border: 1px solid #525a6b; box-shadow: 2px 2px 0 var(--ink), inset 0 1px 0 rgba(255,255,255,0.06);
+  font-family: var(--vt); font-size: 13px; line-height: 1.05; color: #c7ccd6; text-align: left; white-space: normal; }
+#gtip .gt-head { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+#gtip .gt-head:last-child { margin-bottom: 0; }
+#gtip .gt-head b { font-family: var(--px); font-size: 7px; font-weight: normal; line-height: 1.3; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); }
+#gtip .gt-head u { margin-left: auto; padding-left: 6px; text-decoration: none; font-family: var(--px); font-size: 5px; color: var(--tc); white-space: nowrap; }
+#gtip .gt-ico { display: flex; flex: none; font-style: normal; }
+#gtip .gt-ico .pxi { width: 14px; height: 14px; }
+#gtip p { margin: 0; }
+#gtip p + p { margin-top: 2px; }
+#gtip .gt-sub { color: var(--muted); font-size: 12px; }
 .ps-ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.15em; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: miter; stroke-miterlimit: 10; stroke-linecap: butt; }
 #abar kbd .ps-ico { width: 6px; height: 6px; stroke-width: 2.6; vertical-align: -1px; }
 .ps-ico.key-sp { width: 1.25em; }
@@ -1926,13 +1939,19 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .trait-row.t4 { box-shadow: inset 0 0 0 1px rgba(255,210,63,0.45); }
 
 /* ---------- Pause: build hiện tại ---------- */
-#pause { padding-top: 26px; }
-#pause .pause-title { margin-bottom: 8px; }
-.pause-build { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
-.pb-traits { width: 190px; max-height: 214px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #525a6b transparent; background: var(--panel); border: 1px solid var(--edge); padding: 5px 7px; display: flex; flex-direction: column; gap: 2px; }
+#pause { padding-top: 14px; }
+#pause .pause-title { margin-bottom: 14px; }
+/* mỗi người 1 hàng cao ROW (bạn + đồng đội), nút RESUME / FORFEIT giữa đáy màn */
+.pause-rows { display: flex; flex-direction: column; gap: 6px; }
+.pause-build { display: flex; gap: 10px; align-items: stretch; height: 74px; }
+#pause .pause-foot { position: absolute; left: 0; right: 0; bottom: 12px; justify-content: center; margin: 0; }
+.pb-traits h4 u { text-decoration: none; color: var(--muted); margin-right: 3px; }
+.pb-traits { width: 190px; max-height: 74px; overflow: hidden; scrollbar-width: thin; scrollbar-color: #525a6b transparent; background: var(--panel); border: 1px solid var(--edge); padding: 5px 7px; display: flex; flex-direction: column; gap: 2px; }
 .pb-traits h4 { font-size: 13px; color: var(--gold); letter-spacing: 1px; font-weight: normal; margin-bottom: 2px; }
 .pb-traits em { font-size: 12px; color: var(--muted); }
 .pb-traits .trait-row { height: 15px; font-size: 13px; background: none; }
+.pb-tl { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 4px; }
+.pb-tl .tr-name { display: none; }   /* tên trường phái ở tooltip */
 .pb-traits .tr-hex { width: 15px; height: 15px; }
 .tr-bonus { display: flex; flex-direction: column; gap: 1px; margin: 1px 0 4px 18px; }
 .tr-bonus div { font-size: 11px; line-height: 1.05; color: #5f5563; display: flex; gap: 4px; }
@@ -1940,15 +1959,13 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .tr-bonus div.on { color: #e6dccb; }
 .tr-bonus div.on b { color: var(--gold); }
 .pb-cards { display: flex; gap: 6px; }
-.mcard { position: relative; width: 80px; height: 118px; display: flex; flex-direction: column; align-items: center; padding: 5px 3px 3px; background: #1a1c22;
+.mcard { position: relative; width: 80px; height: 74px; display: flex; flex-direction: column; align-items: center; padding: 3px 3px 2px; background: #1a1c22;
   border: 2px solid var(--t); box-shadow: 3px 3px 0 var(--ink), 0 0 6px color-mix(in srgb, var(--t) 35%, transparent); }
 .mcard::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--t); }
 .mcard.ult { background: radial-gradient(circle at 50% 30%, #3a2710, #121316 70%); }
-.mc-tags { display: flex; gap: 2px; height: 11px; }
-.mc-art { position: relative; margin: 4px 0 3px; border: 1px solid var(--t); line-height: 0; box-shadow: 1px 1px 0 var(--ink); }
+.mc-art { position: relative; margin: 1px 0 3px; border: 1px solid var(--t); line-height: 0; box-shadow: 1px 1px 0 var(--ink); }
 .mc-art .card-emoji { left: -5px; top: -6px; }
 .mc-name { font-size: 13px; line-height: 1; color: #fff; text-align: center; text-shadow: 1px 1px 0 var(--ink); }
-.mc-stat { margin-top: auto; font-size: 10px; letter-spacing: 1px; color: var(--sc); }
 .mcard.empty { border: 2px dashed #323742; box-shadow: none; align-items: center; justify-content: center;
   background: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0 4px, transparent 4px 8px), #121316; }
 .mcard.empty::before { display: none; }

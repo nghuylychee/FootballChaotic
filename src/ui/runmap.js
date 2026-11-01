@@ -459,7 +459,7 @@ window.SFC = window.SFC || {};
       const leg = L ? `<span class="sq-leg" style="--lc:${L.color}" title="${esc(L.name + ' · ' + ((SFC_CONFIG.legends.techniques[L.tech] || {}).name || '') + ' · ' + L.flawDesc)}">${this.face(SFC.LegendDraw.lookOf(L), false)}<b>${esc(L.title)}</b></span>` : this.legendSlot();
       const hurt = inj.map((id) => {
         const d = RUN().badge(id);
-        return `<span class="sq-b inj" style="--rc:#ff5a6e" title="${esc(d.name + ' · ' + d.desc)}">${this.badgeIcon(id, '')}</span>`;
+        return `<span class="sq-b inj" style="--rc:#ff5a6e" data-tip="${esc(this.badgeTip(id))}">${this.badgeIcon(id, '')}</span>`;
       }).join('');
       return this.pcard({ tag: t ? 'button' : 'div', attrs: t ? `data-rt="${t.key}"` : '', cls: `${sel ? 'sel' : ''} ${who === _t('YOU') ? 'you' : ''}`,
         role: s.role, ovr: ovr2, ovrCls: ovr2 > ovr ? 'pre' : ovr2 < ovr ? 'dn' : '', face: this.face(RUN().memberLook(i, R), s.you && !R.mirror),
@@ -673,11 +673,17 @@ window.SFC = window.SFC || {};
         `<div class="pb-row">${cards}</div>${this.teamBar(R)}`, this.btn(T, T.find((t) => t.k === 'skip'), esc(_t('SKIP')) + this.votes(R, 'pick', 'skip')));
     },
     // hàng BADGE của cả đội (SQUAD + màn chọn BADGE): đã có + ô trống nét đứt cho đủ TEAM_SLOTS (chỗ trống không dùng chữ)
+    // bảng tooltip của game cho 1 BADGE (SFC.Tip): icon + tên (+ = đã nâng cấp) + độ hiếm / CHẤN THƯƠNG + mô tả
+    badgeTip(id, up) {
+      const d = RUN().badge(id), rar = SFC_CONFIG.progression.rarities[d.rarity] || {};
+      return SFC.UIHelpers.tip({ icon: this.badgeIcon(id, ''), name: d.name + (up ? '+' : ''), color: d.injury ? '#ff5a6e' : rar.color,
+        tag: d.injury ? _t('INJURY') : rar.label, tagColor: d.injury ? '#ff5a6e' : rar.color, desc: d.desc });
+    },
     teamBar(R) {
       const own = R.bag.filter((b) => !RUN().badge(b.id).injury);
       const team = own.map((b) => {
         const d = RUN().badge(b.id);
-        return `<span class="sq-b" style="--rc:${SFC_CONFIG.progression.rarities[d.rarity].color}" title="${esc(d.name + (b.up ? '+' : '') + ' · ' + d.desc)}">${this.badgeIcon(b.id, '')}</span>`;
+        return `<span class="sq-b" style="--rc:${SFC_CONFIG.progression.rarities[d.rarity].color}" data-tip="${esc(this.badgeTip(b.id, b.up))}">${this.badgeIcon(b.id, '')}</span>`;
       }).join('');
       const empty = '<span class="sq-b empty"></span>'.repeat(Math.max(1, TEAM_SLOTS - own.length));
       return `<div class="sq-team" ${own.length ? '' : `title="${esc(_t('No badges'))}"`}><em>${esc(_t('TEAM BADGES'))}</em>${team}${empty}</div>`;

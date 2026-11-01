@@ -58,20 +58,26 @@ window.SFC = window.SFC || {};
       const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${esc(l)}</button>`).join('');
       let build = '';
       if (g && me >= 0) {
+        // mỗi người 1 hàng (bạn trước, rồi đồng đội — user 2026-11-01): trường phái bên trái, lá Core bên phải.
         // ô Core = số lượt chọn của trận; Tuyệt kỹ (nếu đã mở) là lá riêng viền vàng ở cuối, không chiếm ô Core
-        const mp = g.cores.seatOwner(g.me), all = g.cores.coresOf(mp), owned = all.filter((id) => CORES().list[id].role !== 'ult');
-        const ult = all.find((id) => CORES().list[id].role === 'ult'), n = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
-        const slots = Array.from({ length: n }, (_, i) => miniCard(owned[i])).concat(ult ? [miniCard(ult)] : []);
-        build = `<div class="pause-build">
-          <div class="pb-traits"><h4>${esc(_t('YOUR BUILD'))}</h4>${traitList(g, mp, true) || `<em>${esc(_t('Stack Cores of one school to unlock an Ultimate'))}</em>`}</div>
-          <div class="pb-cards">${slots.join('')}</div>
-        </div>`;
+        const row = (q, head) => {
+          const all = g.cores.coresOf(q), owned = all.filter((id) => CORES().list[id].role !== 'ult');
+          const ult = all.find((id) => CORES().list[id].role === 'ult'), n = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
+          const slots = Array.from({ length: n }, (_, i) => miniCard(owned[i])).concat(ult ? [miniCard(ult)] : []);
+          const hint = q === mp ? `<em>${esc(_t('Stack Cores of one school to unlock an Ultimate'))}</em>` : '';
+          // trường phái gọn (user 2026-11-01): icon + số Core + các mốc, 2 cột, không ghi Tuyệt kỹ từng mốc -> không cần thanh cuộn
+          const tl = traitList(g, q);
+          return `<div class="pause-build"><div class="pb-traits"><h4>${head}</h4>${tl ? `<div class="pb-tl">${tl}</div>` : hint}</div><div class="pb-cards">${slots.join('')}</div></div>`;
+        };
+        const mp = g.cores.seatOwner(g.me), mates = mp ? g.teams[mp.team].players.filter((q) => q !== mp) : [];
+        build = `<div class="pause-rows">${[row(mp, esc(_t('YOUR BUILD')))].concat(mates.map((q) => row(q, `<u>${esc(q.role)}</u> ${esc(q.name)}`))).join('')}</div>`;
       }
+      // RESUME / FORFEIT: giữa đáy màn (user 2026-11-01)
       this.el.pause.innerHTML = `
         <div class="pause-title">${esc(this.online || this.ranked ? _t('MENU') : _t('PAUSED'))}</div>
         ${this.online || this.ranked ? `<div class="pause-note">${esc(_t('Online matches keep running'))}</div>` : ''}
         ${build}
-        <div class="pause-items row-items">${items}</div>`;
+        <div class="pause-items row-items pause-foot">${items}</div>`;
       SFC.CorePreview.scan(this.el.pause);
     },
 

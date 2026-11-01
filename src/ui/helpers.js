@@ -19,7 +19,13 @@ window.SFC = window.SFC || {};
   function coreChip(id) {
     const c = CORES().list[id];
     const a = ARCH(c.tags[0]), b = ARCH(c.tags[1] || c.tags[0]);
-    return `<span class="chip ${c.role === 'ult' ? 'ult' : ''}" style="--c:${a.color};--c2:${b.color}" title="${esc(c.name)} — ${esc(SFC.CoreScale.plain(id))}">${PX().core(id)}</span>`;
+    return `<span class="chip ${c.role === 'ult' ? 'ult' : ''}" style="--c:${a.color};--c2:${b.color}" data-tip="${esc(coreTip(id))}">${PX().core(id)}</span>`;
+  }
+  // bảng tooltip của 1 Core: icon + tên (màu độ hiếm) + trường phái + mô tả (không ghi mức sức mạnh theo chỉ số — user 2026-11-01)
+  function coreTip(id) {
+    const c = CORES().list[id], r = RARITY(c.rarity), a = ARCH(c.tags[0]);
+    return tip({ icon: PX().core(id), name: c.name, color: c.role === 'ult' ? '#ffe14f' : r.color, tag: c.tags.map((t) => ARCH(t).label).join(' + '), tagColor: a.color,
+      desc: SFC.CoreScale.plain(id) });
   }
 
   // mốc công thức Tuyệt kỹ của số Core count: 0 (chưa) · 2 · 3 · 4 (cores.ults.tiers)
@@ -48,7 +54,7 @@ window.SFC = window.SFC || {};
       const a = ARCH(t.tag), tier = tierOf(t.count), marks = TIERS();
       const steps = marks.map((m) => `<i class="${t.count >= m ? 'on' : ''}">${m}</i>`).join('<em>›</em>');
       const bonus = full && base[t.tag] ? `<div class="tr-bonus">${marks.map((m, i) => `<div class="${t.count >= m ? 'on' : ''}"><b>${m}</b><span>${esc(ultName(base[t.tag], i + 1))}</span></div>`).join('')}</div>` : '';
-      return `<div class="trait-row t${tier}" style="--c:${a.color};--tc:${TIER_COLOR[tier] || TIER_COLOR[0]}">
+      return `<div class="trait-row t${tier}" style="--c:${a.color};--tc:${TIER_COLOR[tier] || TIER_COLOR[0]}" title="${esc(a.label)}">
         <span class="tr-hex">${PX().arch(t.tag, 'sm')}</span><b class="tr-n">${t.count}</b><span class="tr-name">${esc(a.label)}</span><span class="tr-steps">${steps}</span></div>${bonus}`;
     }).join('');
   }
@@ -57,11 +63,10 @@ window.SFC = window.SFC || {};
   function miniCard(id) {
     if (!id) return '<div class="mcard empty"><b>???</b></div>';
     const c = CORES().list[id], r = RARITY(c.rarity);
-    return `<div class="mcard ${c.role === 'ult' ? 'ult' : ''}" style="--t:${r.color}" title="${esc(c.name)} — ${esc(SFC.CoreScale.plain(id))}">
-      <div class="mc-tags">${c.tags.map((t) => PX().arch(t, 'sm')).join('')}</div>
-      <div class="mc-art">${SFC.CorePreview.html(id, 72, 40)}<span class="card-emoji">${PX().core(id)}</span></div>
+    // gọn (user 2026-11-01): ảnh + tên, không có dòng mức sức mạnh / trường phái (xem ở tooltip)
+    return `<div class="mcard ${c.role === 'ult' ? 'ult' : ''}" style="--t:${r.color}" data-tip="${esc(coreTip(id))}">
+      <div class="mc-art">${SFC.CorePreview.html(id, 72, 34)}<span class="card-emoji">${PX().core(id)}</span></div>
       <div class="mc-name">${esc(c.name)}</div>
-      <div class="mc-stat" style="--sc:${SFC.CoreScale.color(id)}">${esc(SFC.CoreScale.label(id))}</div>
     </div>`;
   }
   const keyLabel = (action) => SFC.Input.label(action);
@@ -124,6 +129,90 @@ window.SFC = window.SFC || {};
       .observe(document.body, { childList: true, subtree: true });
   }
 
+  /* TOOLTIP CỦA GAME (user 2026-11-01): thay tooltip mặc định của trình duyệt bằng bảng popup cùng theme (#gtip trong #stage, co giãn theo khung
+   * game). Mọi phần tử có title tự dùng bảng này: title chuyển sang data-tip-text (trình duyệt không hiện bảng của nó nữa) — chuỗi
+   * "Tên · dòng · dòng" / "Tên — mô tả": phần đầu là tiêu đề, phần sau mỗi đoạn 1 dòng. Bảng giàu hơn (icon, màu, nhãn): data-tip = HTML
+   * dựng bằng tip({...}) (đã esc). Hiện sau TIP_DELAY ms, bám chuột, lật vào trong khi sát mép; ẩn khi rời / bấm / phần tử bị vẽ lại */
+  const TIP_DELAY = 180;
+  // icon: HTML icon (pixel) · name · color: màu tên · tag / tagColor: nhãn nhỏ (độ hiếm, trường phái...) · desc · lines: [chuỗi] (dòng phụ, mờ)
+  function tip(o) {
+    const head = `<div class="gt-head">${o.icon ? `<i class="gt-ico">${o.icon}</i>` : ''}<b${o.color ? ` style="color:${o.color}"` : ''}>${esc(o.name || '')}</b>${o.tag ? `<u style="--tc:${o.tagColor || '#9aa3b5'}">${esc(o.tag)}</u>` : ''}</div>`;
+    return head + (o.desc ? `<p>${esc(o.desc)}</p>` : '') + (o.lines || []).filter(Boolean).map((l) => `<p class="gt-sub">${esc(l)}</p>`).join('');
+  }
+  // chuỗi title thường -> HTML bảng: "A · B · C" / "A — B" (có từ 2 đoạn) = tiêu đề A + từng dòng; 1 đoạn = 1 đoạn chữ
+  function tipText(t) {
+    const parts = t.includes(' — ') ? [t.slice(0, t.indexOf(' — ')), t.slice(t.indexOf(' — ') + 3)] : t.split(' · ');
+    if (parts.length < 2) return `<p>${esc(t).replace(/\n/g, '<br>')}</p>`;
+    return `<div class="gt-head"><b>${esc(parts[0])}</b></div>` + parts.slice(1).map((x) => `<p>${esc(x).replace(/\n/g, '<br>')}</p>`).join('');
+  }
+  const Tip = {
+    el: null, target: null, timer: 0, mx: 0, my: 0,
+    init() {
+      if (this.el || !document.body) return;
+      document.addEventListener('mouseover', (e) => this.over(e), true);
+      document.addEventListener('mousemove', (e) => { this.mx = e.clientX; this.my = e.clientY; if (this.shown()) this.place(); }, true);
+      document.addEventListener('mousedown', () => this.hide(), true);
+      document.addEventListener('keydown', () => this.hide(), true);
+      document.addEventListener('wheel', () => this.hide(), true);
+    },
+    shown() { return this.el && this.el.style.display === 'block'; },
+    // phần tử có tooltip gần nhất dưới chuột; title -> data-tip-text (tắt bảng mặc định)
+    find(n) {
+      for (; n && n.nodeType === 1; n = n.parentNode) {
+        if (n.hasAttribute('title')) {
+          const t = n.getAttribute('title');
+          n.removeAttribute('title');
+          if (t) n.setAttribute('data-tip-text', t);
+        }
+        if (n.hasAttribute('data-tip') || n.hasAttribute('data-tip-text')) return n;
+      }
+      return null;
+    },
+    over(e) {
+      this.mx = e.clientX; this.my = e.clientY;
+      const t = this.find(e.target);
+      if (t === this.target) return;
+      this.hide();
+      if (!t) return;
+      this.target = t;
+      this.timer = setTimeout(() => this.show(), TIP_DELAY);
+    },
+    show() {
+      const t = this.target, stage = document.getElementById('stage');
+      if (!t || !t.isConnected || !stage) return this.hide();
+      const html = t.getAttribute('data-tip') || tipText(t.getAttribute('data-tip-text') || '');
+      if (!html) return;
+      if (!this.el || !this.el.isConnected) { this.el = document.createElement('div'); this.el.id = 'gtip'; stage.appendChild(this.el); }
+      this.el.innerHTML = html;
+      this.el.style.display = 'block';
+      this.place();
+      const loop = () => {   // phần tử bị vẽ lại / rời khỏi -> ẩn
+        if (!this.shown()) return;
+        if (!this.target || !this.target.isConnected || !this.target.matches(':hover')) return this.hide();
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    },
+    // vị trí trong toạ độ #stage (640x360, đang bị scale): cạnh dưới phải con trỏ, sát mép thì lật sang trái / lên trên
+    place() {
+      const stage = document.getElementById('stage'), r = stage.getBoundingClientRect(), k = r.width / stage.offsetWidth || 1;
+      const x = (this.mx - r.left) / k, y = (this.my - r.top) / k, w = this.el.offsetWidth, h = this.el.offsetHeight;
+      const W = stage.offsetWidth, H = stage.offsetHeight;
+      let left = x + 10, top = y + 14;
+      if (left + w > W - 4) left = Math.max(4, x - w - 8);
+      if (top + h > H - 4) top = Math.max(4, y - h - 8);
+      this.el.style.left = Math.round(left) + 'px';
+      this.el.style.top = Math.round(top) + 'px';
+    },
+    hide() {
+      clearTimeout(this.timer); this.timer = 0;
+      this.target = null;
+      if (this.el) this.el.style.display = 'none';
+    },
+  };
+  Tip.init();
+  SFC.Tip = Tip;
+
   // ghế dự bị phòng co-op (Story / GOAT PATH, user 2026-10-31): phòng đủ 3 người thì ngồi đây cho trống ô để đổi vị trí.
   // ms = người đang ngồi (mặt + tên) · attrs = thuộc tính nút (data-li / data-rt) · sel = đang chọn · off = chỉ xem (không ngồi được)
   function coopBench(ms, meId, attrs, sel, off) {
@@ -132,5 +221,5 @@ window.SFC = window.SFC || {};
     return `<button class="co-bench ${sel ? 'sel' : ''} ${off ? 'off' : ''}" ${attrs || ''} title="${tip}"><u>${esc(_t('BENCH'))}</u>${who || `<span>${tip}</span>`}</button>`;
   }
 
-  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, spaceIcon, navRect, navPick, coopBench };
+  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, spaceIcon, navRect, navPick, coopBench, tip, coreTip };
 })();
