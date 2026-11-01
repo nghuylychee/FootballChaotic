@@ -8,7 +8,11 @@ window.SFC = window.SFC || {};
   function facingVec(p) { return { x: Math.cos(p.facing), y: Math.sin(p.facing) }; }
 
   // mô phỏng trước quỹ đạo bóng (trọng lực, nảy, ma sát, dội tường) — dùng cho điểm đón bóng + điểm rơi
-  function flightState(b) { return { x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, fm: b.frictionMult * b.shotFm(), shot: b.shotFm() < 1 }; }
+  // pf / pp: đường chuyền giữ tốc độ (Ball.passFm) — qua điểm nhận pp thì bỏ hệ số pf
+  function flightState(b) {
+    const pf = b.passFm();
+    return { x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, fm: b.frictionMult * b.shotFm() * pf, shot: b.shotFm() < 1, pf, pp: pf < 1 ? b.passPoint : null };
+  }
   // 1 bước; trả về true nếu bước này bóng rơi chạm sân
   function flightStep(g, s, dt) {
     const B = G().ball, f = g.field, r = g.ball.r;
@@ -20,6 +24,7 @@ window.SFC = window.SFC || {};
       s.z = 0;
       if (s.vz < -50) { const kb = s.fm < 1 && s.shot ? B.shotBounceKeep : 0.78; s.vz = -s.vz * B.bounce; s.vx *= kb; s.vy *= kb; } else s.vz = 0;
     }
+    if (s.pp && (s.pp.x - s.x) * s.vx + (s.pp.y - s.y) * s.vy <= 0) { s.fm /= s.pf; s.pp = null; }
     const damp = Math.exp(-(s.z > B.airDragMinZ ? B.airDrag : B.groundFriction) * s.fm * dt);
     s.vx *= damp; s.vy *= damp;
     if (s.y < f.y + r || s.y > f.y + f.h - r) { s.vy = -s.vy * B.wallBounce; s.y = U.clamp(s.y, f.y + r, f.y + f.h - r); }
@@ -46,7 +51,9 @@ window.SFC = window.SFC || {};
         let best = null, bestS = -Infinity;
         for (const m of g.teams[p.team].players) {
           if (m === p || m.state === 'stun') continue;
-          const tx = m.x - p.x, ty = m.y - p.y;
+          // chọc khe: góc tính tới chỗ người đó sắp chạy tới (trước mặt lead px theo hướng chạy), không phải chỗ đang đứng
+          const ru = mode === 'through' ? this.runDir(g, m) : null, lead = ru ? P.through.lead : 0;
+          const tx = m.x + (ru ? ru.x * lead : 0) - p.x, ty = m.y + (ru ? ru.y * lead : 0) - p.y;
           const d = Math.hypot(tx, ty) || 1;
           const ang = Math.acos(U.clamp((tx * dir.x + ty * dir.y) / d, -1, 1));
           if (ang > maxAng) continue;
@@ -75,6 +82,34 @@ window.SFC = window.SFC || {};
       // vẫn không ai: chuyền sệt / bổng của người chơi tìm tiếp trong vùng rộng (fallback) trước khi phát vào khoảng trống
       if (!best && human && cone != null && (mode === 'ground' || mode === 'lob')) best = scan((U.lerp(PA.fallback[0], PA.fallback[1], k) * Math.PI) / 180);
       return best;
+    },
+    // hướng chạy của người nhận chọc khe (pass.through): đang chạy chỗ -> về điểm chạy chỗ; đang chạy -> theo vận tốc; đứng yên -> lên khung đối phương
+    runDir(g, m) {
+      const TH = G().pass.through;
+      if (m.ai && m.ai.runT > 0 && m.ai.runTo && U.dist(m, m.ai.runTo) > 8) return U.norm(m.ai.runTo.x - m.x, m.ai.runTo.y - m.y);
+      if (Math.hypot(m.vx, m.vy) > TH.movingMin) return U.norm(m.vx, m.vy);
+      const goal = g.attackGoal(m.team);
+      return U.norm(g.teams[m.team].dir, U.clamp((goal.y - m.y) / 250, -0.6, 0.6));
+    },
+    // điểm nhận chọc khe: giao điểm mũi tên aim (từ bóng) với đường chạy người nhận m — { point, t (px dọc đường chạy) }.
+    // aim null (AI / không bấm hướng): trước mặt lead px. Không cắt nhau: điểm trên đường chạy (runMin..runMax) lệch mũi tên ít nhất
+    throughMeet(g, m, aim) {
+      const TH = G().pass.through, b = g.ball, u = this.runDir(g, m);
+      const at = (t) => ({ point: { x: m.x + u.x * t, y: m.y + u.y * t }, t });
+      if (!aim) return at(TH.lead);
+      const cross = (v, w) => v.x * w.y - v.y * w.x;
+      const w = { x: m.x - b.x, y: m.y - b.y }, den = cross(aim, u);
+      // bóng + s.aim = người nhận + t.u -> s = (w x u) / (aim x u), t = (w x aim) / (aim x u)
+      if (Math.abs(den) > TH.parallel) {
+        const s = cross(w, u) / den, t = cross(w, aim) / den;
+        if (s > 0 && t >= 0) return at(U.clamp(t, TH.runMin, TH.runMax));
+      }
+      let best = TH.runMin, bc = -2;
+      for (let t = TH.runMin; t <= TH.runMax; t += 6) {
+        const x = m.x + u.x * t - b.x, y = m.y + u.y * t - b.y, c = (x * aim.x + y * aim.y) / (Math.hypot(x, y) || 1);
+        if (c > bc) { bc = c; best = t; }
+      }
+      return at(best);
     },
     // đường chuyền có hỗ trợ (pass.assist): người chơi đang điều khiển
     passAssisted(g, p) { const PA = G().pass.assist; return !!PA && PA.enabled && p.isControlled && g.isHuman(p.team); },
@@ -138,7 +173,8 @@ window.SFC = window.SFC || {};
       }
 
       let point, spd, vz = 0, T = 0.5, cross = false;
-      const k = B.groundFriction;
+      // chuyền sệt / chọc khe có người nhận: bóng giữ tốc độ tới điểm nhận (pass.friction, Ball.passFm)
+      const k = B.groundFriction * (P.friction || 1);
       // điểm rơi chọc khe, depth px vào khoảng trống. AI / không bấm hướng: phía trước người nhận theo hướng tấn công.
       // Người chơi có mũi tên (pass.throughAim, user 2026-10-31): bóng đi theo hướng mũi tên, sâu hơn người nhận depth px;
       // người nhận chỉ kéo điểm rơi lệch ngang khỏi đường mũi tên (1 - throughAim) — ý đồ chuyền là của người chơi, không bám người
@@ -162,13 +198,16 @@ window.SFC = window.SFC || {};
         spd = (ka * d) / (1 - Math.exp(-ka * T));
         vz = (B.gravity * T) / 2;
       } else if (mode === 'through') {
-        // bóng vào khoảng trống phía trước người nhận; lực quyết định độ sâu
-        const depth = U.lerp(P.throughLeadMin, P.throughLeadMax, power == null ? 0.5 : Math.max(P.throughBase, power));
-        point = throughPoint(depth);
+        // CHỌC KHE (pass.through): điểm nhận = mũi tên x đường chạy người nhận; bóng tới đó đúng lúc người nhận chạy tới
+        const TH = P.through, PL = G().player;
+        point = clampPt(this.throughMeet(g, target, human && Math.hypot(dx, dy) > 0.2 ? U.norm(dx, dy) : null).point);
         const d = U.dist(b, point) || 1;
-        // lực mặc định cao như chuyền sệt: bóng tới điểm nhận vẫn còn throughArriveSpeed,
-        // người nhận chủ động băng lên đón (receiveMove) thay vì bóng lăn chậm chờ người
-        spd = U.clamp(P.throughArriveSpeed * mult + k * d, P.minSpeed, P.maxSpeed * mult);
+        const tr = U.dist(target, point) / (PL.speed * target.stats.speed * PL.sprintMult * TH.runSpeed) + TH.react;
+        // bóng giữ tốc độ (ma sát k): đi d px trong tr s -> v0 = k.d / (1 - e^(-k.tr)); tốc độ khi tới điểm nhận = v0 - k.d
+        spd = Math.max((k * d) / (1 - Math.exp(-k * tr)), TH.minArrive * mult + k * d, P.minSpeed);
+        // giữ lực vượt mốc: bóng nhanh hơn nhịp chạy -> tới trước, lăn tiếp vào sâu
+        if (power != null && power > P.throughBase) spd *= 1 + TH.overSpeed * (power - P.throughBase) / (1 - P.throughBase);
+        spd = Math.min(spd, P.maxSpeed * mult);
         T = -Math.log(Math.max(0.02, 1 - (k * d) / spd)) / k;
       } else if (mode === 'lob') {
         // tạt cánh (firstTime.cross): bóng tới điểm đón ở độ cao ngang đầu (X.z) thay vì rơi xuống chân
@@ -378,6 +417,12 @@ window.SFC = window.SFC || {};
     // Người nhận chủ động đón bóng: chạy tới điểm đón sớm nhất trên quỹ đạo, đứng chờ thì quay mặt về bóng
     receiveMove(g, p) {
       const b = g.ball, F = G().firstTime;
+      // chọc khe: cứ chạy tiếp tới điểm nhận (bóng được canh tới đó đúng lúc), không quay về đón sớm — bóng qua điểm đó rồi thì đón như thường
+      if (b.through && b.keepPace && b.passTarget === p && b.passPoint && U.dist(p, b.passPoint) > 6) {
+        const dx = b.passPoint.x - p.x, dy = b.passPoint.y - p.y, d = Math.hypot(dx, dy);
+        p.intent.mx = dx / d; p.intent.my = dy / d; p.intent.sprint = true;
+        return { x: b.passPoint.x, y: b.passPoint.y, t: 0, z: 0 };
+      }
       // quả tạt / đang chờ đá: chạy tới chỗ đón bóng ở ngang đầu, không đợi bóng rơi xuống chân
       const ip = this.interceptPoint(g, p, 2, F && (p.ot || b.cross) ? F.headerZ + 6 : null);
       const dx = ip.x - p.x, dy = ip.y - p.y, d = Math.hypot(dx, dy);
@@ -427,6 +472,7 @@ window.SFC = window.SFC || {};
       const b = g.ball;
       if (b.owner !== p) return;
       const plan = this.passPlan(g, p, target, mode, power, dx, dy, false, err);
+      const aimed = !!target;
       b.kick(p, plan.vx, plan.vy, plan.vz);
       // chuyền vào khoảng trống: đồng đội đón được bóng sớm nhất trở thành người nhận
       if (!target) {
@@ -438,6 +484,9 @@ window.SFC = window.SFC || {};
         }
         target = best;
       }
+      // có người nhận ngay từ đầu (không phải chuyền vào khoảng trống) + bóng sệt: giữ tốc độ tới điểm nhận (pass.friction)
+      b.keepPace = aimed && (mode === 'ground' || mode === 'through');
+      b.through = aimed && mode === 'through';   // người nhận chạy thẳng tới điểm nhận (receiveMove)
       b.passTarget = target;
       b.passPoint = plan.point;
       b.kind = 'pass';

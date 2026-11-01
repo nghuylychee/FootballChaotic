@@ -426,6 +426,9 @@
     } else if (SFC_DEBUG && SFC.StoryTest && /[?&]storytest\b/.test(location.search)) {
       // dev: index.html?storytest mở trang test Story · ?storytest=<id Story>.<vòng 0..3> đá thẳng vòng đó (src/ui/storytest.js)
       SFC.StoryTest.boot(app, new URLSearchParams(location.search).get('storytest'));
+    } else if (SFC_DEBUG && SFC.PlayTest && /[?&]playtest\b/.test(location.search)) {
+      // dev: index.html?playtest vào thẳng phòng test gameplay (src/ui/playtest.js)
+      SFC.PlayTest.start(app);
     } else if (SFC_DEBUG && SFC.RunTest && /[?&]runtest\b/.test(location.search)) {
       // dev: index.html?runtest mở trang test GOAT PATH · ?runtest=match | trial.<id LEGEND> | map (&badges= &legends= &act=; src/ui/runtest.js)
       SFC.RunTest.boot(app, new URLSearchParams(location.search).get('runtest'));

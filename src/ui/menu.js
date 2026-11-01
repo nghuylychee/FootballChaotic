@@ -234,9 +234,8 @@ window.SFC = window.SFC || {};
               { kind: 'btn', label: 'RUN TEST', sub: 'Try any badges + legends · trial, cards, match · legend cheats', danger: true, act: () => this.go('runtest') },
               // xem lại PROLOGUE (cut scene + trận mơ)
               { kind: 'btn', label: 'PROLOGUE', sub: 'Replay the intro & tutorial match', danger: true, act: () => SFC.Tutorial.begin(this.app) },
-              { kind: 'btn', label: 'DRILL TEST', sub: 'Cheat · 5 drill cards · stats reset on close', danger: true, act: () => this.testDrill() },
-              // màn LEVEL UP sau trận (thẻ drill vừa nhận) -> lật thẻ -> chọn, không cần đá trận
-              { kind: 'btn', label: 'LEVEL UP TEST', sub: 'Cheat · level-up notice + 3 drill cards · stats reset on close', danger: true, act: () => this.testDrill(3, true) },
+              // PHÒNG TEST GAMEPLAY (src/ui/playtest.js): luyện tập không giờ, thêm / bớt đồng đội + đối thủ, số đo bóng
+              { kind: 'btn', label: 'GAMEPLAY TEST', sub: 'Training room · add / remove mates + opponents · ball readout', danger: true, act: () => SFC.PlayTest.start(this.app) },
               // nhảy thẳng tới Area bất kỳ của Main Path (hạng thấp nhất, 0 sao) để thử Area khó. Có ghi hồ sơ
               { kind: 'pick', label: 'JUMP TO AREA', value: this.testAreaLabel(), danger: true, change: (d) => this.testArea(d) },
               // xem thử bản DEMO itch.io (config/demo.config.js): khoá Area 3+ và ONLINE, đến khi tắt game
@@ -1323,22 +1322,8 @@ window.SFC = window.SFC || {};
       location.reload();
     },
 
-    // cheat DRILL TEST: mở màn DRILL với vài drill chờ, không cần đá trận. Hồ sơ không được ghi trong lúc thử,
-    // đóng màn thì trả chỉ số + drill chờ về như cũ. Bản Steam: bị xoá (SFC_DEBUG)
+    // Bản Steam: bị xoá (SFC_DEBUG)
     ...(SFC_DEBUG && {
-      // notice = true: mở từ màn LEVEL UP như sau trận (giả lập vừa lên n level)
-      testDrill(n = 5, notice = false) {
-        const pf = PF(), keep = JSON.parse(JSON.stringify(pf.data.attrs));
-        pf.sandbox = true;
-        pf.data.attrs.drills.pending = n;
-        pf.data.attrs.drills.offer = null;
-        const lv = pf.data.level;
-        SFC.Drill.open(() => {
-          pf.data.attrs = keep;
-          pf.sandbox = false;
-          this.render();
-        }, notice ? { notice: { earned: n, from: Math.max(1, lv - n), to: lv } } : {});
-      },
       // cheat JUMP TO AREA: đặt Elo về ngưỡng của Area. Tuyệt kỹ của các Area đã bỏ qua được cấp bù (backfill)
       testArea(d) {
         const MP = MPATH(), st = MP.state, a = wrap(st.area + d, MP.areas().length);

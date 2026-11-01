@@ -240,8 +240,16 @@ window.SFC = window.SFC || {};
     }
     ownGoal(team) { return this.attackGoal(1 - team); }
     inOwnHalf(p) { return (p.x - this.field.cx) * this.teams[p.team].dir < 0; }
-    // "vai thủ môn": cầu thủ đứng trong vòng cấm nhà -> được bắt bóng / cứu thua / đổ người
-    inKeeperZone(p) { return this.inBox(p.team, p); }
+    // "vai thủ môn": cầu thủ được giữ khung (canKeep) đứng trong vòng cấm nhà -> được bắt bóng / cứu thua / đổ người / đọc cú sút
+    inKeeperZone(p) { return this.canKeep(p) && this.inBox(p.team, p); }
+    // ai được giữ khung (user 2026-11-01): chỉ ĐÁ LÙI (DEF); FWD / MID chỉ được tắc bóng. Đội thiếu người không có DEF: vị trí lùi nhất
+    // còn lại (roles xếp từ lùi tới cao). Skill game có người trông khung (drill.keepers): đúng n đối thủ đầu
+    canKeep(p) {
+      const D = this.drill;
+      if (D && D.keepers && p.team === 1) return this.teams[1].players.indexOf(p) < D.keepers;
+      const pl = this.teams[p.team].players;
+      return p.role === this.cfg.roles.find((r) => pl.some((q) => q.role === r));
+    }
     // điểm pt ({x, y}) nằm trong vòng cấm nhà của đội team
     inBox(team, pt) {
       const f = this.field;

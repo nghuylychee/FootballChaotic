@@ -42,7 +42,8 @@ window.SFC = window.SFC || {};
     E.pop(player.x, player.y - 30, 'FAKE!', 'move', '#9d7bff');
   }
 
-  const PUNCH_WORDS = ['POW!', 'BAM!', 'WHAM!', 'BOP!'];
+  // không dùng 'POW!': chữ đó là cú đấm thường, đã tắt (game.fx.popups.hide)
+  const PUNCH_WORDS = ['WHACK!', 'BAM!', 'WHAM!', 'BOP!'];
   const CHAOS_SKINS = ['melon', 'bowling', 'chicken', 'wheel', 'cube'];
   const CHAOS_LABEL = { curve: 'CURVE!', rocket: 'ROCKET!', fire: 'FIRE!', thunder: 'ZAP!', split: 'x2!' };
 

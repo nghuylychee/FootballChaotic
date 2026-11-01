@@ -23,7 +23,8 @@ SFC_CONFIG.run = {
     // trọng số loại node ở các tầng giữa · minFloor: tầng sớm nhất (tính từ 0) · noRepeat: không đứng liền nhau trên 1 đường
     // legend: LEGEND TRIAL (config/legends.config.js) — node hiện sẵn LEGEND đang chờ (chân dung), thắng bài thử thách là chiêu mộ được
     // rest (LOCKER ROOM): 0 = ẩn (user 2026-10-30: thừa, rối) — code phòng vẫn giữ, đặt lại trọng số là có lại
-    weights: { match: 40, event: 20, skill: 13, shop: 10, elite: 8, legend: 9, rest: 0 },
+    // event (???): 0 = ẩn (user 2026-11-01: sự kiện chỉ là chữ, tạm chưa cần; trước 20) — run.mystery / run.events vẫn giữ
+    weights: { match: 40, event: 0, skill: 13, shop: 10, elite: 8, legend: 9, rest: 0 },
     minFloor: { elite: 2, rest: 2, legend: 1 },
     noRepeat: ['shop', 'rest', 'elite', 'legend'],
   },
@@ -63,13 +64,14 @@ SFC_CONFIG.run = {
    * picks: số ứng viên ở màn chọn (đội hình trong roster trước, thiếu thì cầu thủ đường phố ngẫu nhiên cùng trình act 1). */
   squad: {
     base: {
-      // 2026-10-30: chênh giữa chỉ số mạnh / yếu thu hẹp (trước: mạnh 75, yếu 55; lean ±8, ovr ±4 -> có người lên 8x dù OVR 65):
-      // mạnh nhất 68, yếu nhất ~61, trung bình vẫn 65 -> chỉ số cao nhất của đồng đội mới ~68–73
-      FWD: { pace: 67, shooting: 68, passing: 63, dribble: 66, fight: 63, keeper: 63 },
-      MID: { pace: 65, shooting: 63, passing: 68, dribble: 67, fight: 64, keeper: 63 },
-      DEF: { pace: 64, shooting: 61, passing: 64, dribble: 63, fight: 68, keeper: 70 },
+      // 2026-10-30: chênh giữa chỉ số mạnh / yếu thu hẹp (trước: mạnh 75, yếu 55; lean ±8, ovr ±4 -> có người lên 8x dù OVR 65).
+      // 2026-11-01 (user): đồng đội lên OVR 70 bằng character -> mỗi chỉ số +5 (mạnh nhất 73, yếu nhất ~66, trung bình 70)
+      FWD: { pace: 72, shooting: 73, passing: 68, dribble: 71, fight: 68, keeper: 68 },
+      MID: { pace: 70, shooting: 68, passing: 73, dribble: 72, fight: 69, keeper: 68 },
+      DEF: { pace: 69, shooting: 66, passing: 69, dribble: 68, fight: 73, keeper: 75 },
     },
-    you: { pace: 66, shooting: 65, passing: 67, dribble: 66, fight: 65, keeper: 62 },
+    // character: OVR 70 lúc bắt đầu run (user 2026-11-01; trước 65), bằng đồng đội
+    you: { pace: 71, shooting: 70, passing: 72, dribble: 71, fight: 70, keeper: 67 },
     lean: 0.5, leanMax: 3,
     ovrRef: 66, ovrLean: 0.2, ovrMax: 2,
     min: 30,                // chỉ số thấp nhất (chấn thương chồng lên nhau)

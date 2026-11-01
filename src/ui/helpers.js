@@ -102,18 +102,22 @@ window.SFC = window.SFC || {};
     '□': '<rect x="3" y="3" width="10" height="10"/>',
   };
   const psIcon = (s) => `<svg class="ps-ico" viewBox="0 0 16 16" role="img" aria-label="${s}">${PS_ICON[s]}</svg>`;
-  const PS_RE = /[✕△○□]/;
-  // chỉ thay khi trong kbd toàn ký hiệu + dấu nối ("✕ / △"), chữ khác giữ nguyên
+  // phím Space: icon thanh cách (user 2026-11-01: không in chữ "Space") — Input vẫn trả chữ 'Space' cho canvas / chỗ không phải <kbd>
+  const spaceIcon = () => '<svg class="ps-ico key-sp" viewBox="0 0 20 16" role="img" aria-label="Space"><path d="M2 6.5V11.5H18V6.5"/></svg>';
+  const PS_RE = /[✕△○□]|\bSpace\b/;
+  // ký hiệu PS chỉ thay khi trong kbd toàn ký hiệu + dấu nối ("✕ / △"), chữ khác giữ nguyên; "Space" thì luôn thay ("Shift + Space")
   function psKbd(k) {
     const t = k.textContent;
-    if (!PS_RE.test(t) || k.querySelector('svg') || !/^[✕△○□\s/+·]+$/.test(t)) return;
-    k.innerHTML = [...t].map((ch) => (PS_ICON[ch] ? psIcon(ch) : esc(ch))).join('');
+    if (!PS_RE.test(t) || k.querySelector('svg')) return;
+    const ps = /^[✕△○□\s/+·]+$/.test(t);
+    if (!ps && !/\bSpace\b/.test(t)) return;
+    k.innerHTML = t.split(/(\bSpace\b|[✕△○□])/).map((ch) => (ch === 'Space' ? spaceIcon() : ps && PS_ICON[ch] ? psIcon(ch) : esc(ch))).join('');
   }
   function psScan(n) {
     if (n.nodeType === 3) n = n.parentNode;
     if (!n || n.nodeType !== 1) return;
     if (n.tagName === 'KBD') return psKbd(n);
-    if (PS_RE.test(n.textContent)) n.querySelectorAll('kbd').forEach(psKbd);
+    if (/[✕△○□]|Space/.test(n.textContent)) n.querySelectorAll('kbd').forEach(psKbd);   // không dùng \b: chữ cạnh kbd dính liền ("FULLSpace")
   }
   if (document.body) {
     new MutationObserver((ms) => { for (const m of ms) m.addedNodes.forEach(psScan); })
@@ -128,5 +132,5 @@ window.SFC = window.SFC || {};
     return `<button class="co-bench ${sel ? 'sel' : ''} ${off ? 'off' : ''}" ${attrs || ''} title="${tip}"><u>${esc(_t('BENCH'))}</u>${who || `<span>${tip}</span>`}</button>`;
   }
 
-  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, navRect, navPick, coopBench };
+  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, spaceIcon, navRect, navPick, coopBench };
 })();

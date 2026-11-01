@@ -246,18 +246,30 @@ SFC_CONFIG.game = {
       power: [0.3, 0.6], close: 70, ballSpeed: 260, margin: 10 },
     powerAssist: 0.3,         // phần lực thừa (vượt mặc định) bị giảm bớt: 0 = giữ nguyên, 1 = bỏ hẳn
     powerSensitivity: 0.7,    // lực thừa làm bóng nhanh thêm bao nhiêu
-    arriveSpeed: 170,         // tốc độ bóng khi tới chân người nhận (cao = luân chuyển nhanh, căng) — 150 -> 180 (2026-10-30: ban bật hay bị cắt)
+    // BÓNG CHUYỀN KHÔNG CHẬM DẦN (user 2026-11-01: người chạy nhanh đuổi kịp bóng): chuyền sệt / chọc khe có người nhận chịu ma sát x friction
+    // tới khi bóng đi qua điểm nhận (qua rồi mà chưa ai chạm: lăn chậm dần như thường). Chuyền vào khoảng trống / chuyền bổng không đổi.
+    // Bóng gần như đi đều ở arriveSpeed (chọc khe: throughArriveSpeed) — nhanh hơn người chạy nước rút có buff (~200 px/s)
+    friction: 0.15,
+    arriveSpeed: 250,         // tốc độ bóng khi tới chân người nhận — 150 -> 180 (2026-10-30) -> 170 (-5%) -> 250 (2026-11-01, kèm friction)
     minSpeed: 133,
     maxSpeed: 455,
     showTargetHint: false,    // true = hiện vòng/mũi tên trên người nhận khi nạp lực (debug)
     spread: 0.015,            // sai số hướng (rad), chia cho chỉ số pass
     receiverLead: 0.7,        // mức đón đầu theo vận tốc hiện tại của người nhận
-    throughLeadMin: 24,       // chọc khe: lực thấp -> bóng vào khoảng trống gần
+    throughLeadMin: 24,       // chọc khe BỔNG (technique.lobThrough): lực thấp -> bóng vào khoảng trống gần
     throughLeadMax: 95,       //           lực cao  -> bóng vào sâu
-    throughBase: 0.35,        // độ sâu mặc định khi chỉ chạm nhẹ
-    throughAim: 0.65,         // chọc khe của người chơi có bấm hướng: 1 = bóng đi đúng đường mũi tên, 0 = điểm rơi ngay trước người nhận
+    throughBase: 0.35,        // chọc khe: mốc lực mặc định (chạm nhẹ = canh đúng nhịp; giữ vượt mốc = bóng nhanh hơn, through.overSpeed)
+    throughAim: 0.65,         // chọc khe BỔNG có bấm hướng: 1 = bóng đi đúng đường mũi tên, 0 = điểm rơi ngay trước người nhận
                               // (theo hướng mũi tên). Ở giữa: người nhận kéo điểm rơi lệch ngang khỏi đường mũi tên (1 - throughAim)
-    throughArriveSpeed: 130,  // tốc độ bóng chọc khe khi tới điểm nhận (lực mặc định = tốc độ này + ma sát theo khoảng cách)
+    // CHỌC KHE W có người nhận (user 2026-11-01): xác định người nhận + HƯỚNG CHẠY của họ (đang chạy chỗ ai.runTo -> về đó; đang chạy ->
+    // theo vận tốc; đứng yên -> lên phía khung đối phương). Điểm nhận = giao điểm của mũi tên người chơi (từ bóng) với đường chạy đó;
+    // mũi tên không cắt (song song / chĩa ra sau) -> điểm trên đường chạy gần mũi tên nhất. Tốc độ bóng canh để bóng tới điểm nhận
+    // đúng lúc người nhận chạy tới (Actions.throughMeet / passPlan); giữ lực vượt throughBase -> bóng nhanh hơn, tới trước rồi lăn tiếp vào sâu.
+    //   runMin / runMax: (px) điểm nhận cách người nhận trên đường chạy, ngoài khoảng thì kẹp · lead: (px) không bấm hướng (AI / không mũi tên)
+    //   runSpeed: tốc độ người nhận khi tính giờ (x tốc độ nước rút của họ) · react: (s) cộng thêm cho người nhận kịp tăng tốc
+    //   minArrive: tốc độ bóng thấp nhất khi tới điểm nhận (x chỉ số pass) · overSpeed: giữ lực đầy -> bóng nhanh thêm ngần này
+    //   movingMin: (px/s) người nhận chạy nhanh hơn mức này mới lấy hướng theo vận tốc · parallel: |sin góc| giữa 2 hướng dưới mức này = coi như song song
+    through: { runMin: 24, runMax: 150, lead: 60, runSpeed: 0.95, react: 0.15, minArrive: 120, overSpeed: 0.5, movingMin: 30, parallel: 0.15 },
     freeThroughArrive: 80,    // chọc khe vào khoảng trống (không có người nhận): bóng vẫn còn lực khi qua điểm rơi
     lobTimeMin: 0.45,         // chuyền bổng: thời gian bay (s) theo khoảng cách
     lobTimeMax: 1.0,
@@ -531,9 +543,15 @@ SFC_CONFIG.game = {
       giveGo: { chance: 0.75, time: 1.0, ahead: 80, side: 30, minProgress: 0.3 },
       // người BĂNG: người cầm bóng quay mặt lên (cos góc >= faceCos) ở tiến độ progress -> chạy sau lưng hậu vệ cuối depth px
       // (không quá vạch cách khung goalGap px)
-      behind: { chance: 0.3, time: 1.3, depth: 36, goalGap: 50, faceCos: 0.4, progress: [0.25, 0.85], cooldown: 2.5 },
+      behind: { chance: 0.45, time: 1.3, depth: 36, goalGap: 50, faceCos: 0.4, progress: [0.25, 0.85], cooldown: 2.0 },   // 0.3 -> 0.45 (2026-11-01)
       // người DẠT: người cầm bóng ở giữa sân (cách trục giữa < mid x chiều ngang sân) đang quay mặt lên -> chạy chồng biên vượt lên ahead px
-      overlap: { chance: 0.2, time: 1.1, ahead: 100, mid: 0.2, faceCos: 0.4, cooldown: 3 },
+      overlap: { chance: 0.3, time: 1.1, ahead: 100, mid: 0.2, faceCos: 0.4, cooldown: 2.5 },   // 0.2 -> 0.3 (2026-11-01)
+      // MỞ ĐƯỜNG CHUYỀN (user 2026-11-01): người cầm bóng quay mặt về phía mình (cos góc >= faceCos, cách <= maxDist px) -> chạy nước rút
+      // vào khoảng trống: thử các điểm cách dist px theo các góc angles (độ, 0 = thẳng lên khung đối phương), chọn điểm có đường chuyền
+      // từ người cầm bóng thoáng nhất (lane, kẹp laneCap px) + xa đối phương (space, kẹp spaceCap) + tiến lên (fwd / px). goalGap: không
+      // chạy quá vạch cách khung ngần này. Người CHỐT (vị trí thấp nhất, 3v3) không chạy
+      lane: { chance: 0.6, time: 1.0, faceCos: 0.6, maxDist: 220, dist: [60, 100], angles: [-75, -40, 0, 40, 75],
+        lane: 1.0, laneCap: 36, space: 0.4, spaceCap: 60, fwd: 0.15, goalGap: 40, cooldown: 1.6 },
     },
     keeperCoverDist: 420,     // đội máy: người cầm bóng đối phương cách khung thành nhà dưới mức này -> người gần khung nhất lùi về trông khung
     mateKeeperCoverDist: 300, // như trên, cho đồng đội AI ĐÁ LÙI của người chơi (sân rộng 528px: 420 -> trông khung ~64% thời gian phòng ngự, 220 -> ~17%)
@@ -685,6 +703,11 @@ SFC_CONFIG.game = {
       // chữ mới chạm chữ đang có (theo khung chữ thật, kể cả của người đứng cạnh) -> đẩy chữ cũ lên thay vì chồng lên nhau / xoá bớt
       stackPad: 2,     // (px) khoảng hở giữa 2 chữ xếp chồng
       max: 24,         // an toàn: quá số này mới bỏ chữ cũ nhất (bình thường không bao giờ chạm)
+      // BỚT CHỮ CHO SỰ KIỆN NHỎ (user 2026-11-01: trận quá loạn với người mới): các chữ này không hiện nữa (âm thanh / hiệu ứng vẫn giữ).
+      // MISS = đòn hụt · HOLD = đấm mà không rơi bóng · INTERCEPT = AI cắt bóng · TINK = đấm vào người có giáp · POW! = cú đấm thường trúng ·
+      // BONK! = người bị đánh dội tường · +ULT = được thêm năng lượng · TOO EARLY / TOO LATE = Đọc Cú Sút hụt.
+      // Giữ: '!' báo Hard attack (tín hiệu để né), SAVE / DODGE / PARRY / READ, tên Core / Tuyệt kỹ, va chạm mạnh, trạng thái
+      hide: ['MISS', 'HOLD', 'INTERCEPT', 'TINK', 'POW!', 'BONK!', '+ULT', 'TOO EARLY', 'TOO LATE'],
     },
   },
 

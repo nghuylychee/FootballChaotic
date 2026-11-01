@@ -47,10 +47,11 @@ window.SFC = window.SFC || {};
     return { p: best, d: bd };
   }
 
-  // người trông khung của đội: cầu thủ AI (không phải người đang được điều khiển) gần khung thành nhà nhất
+  // người trông khung của đội: cầu thủ AI được giữ khung (g.canKeep: chỉ ĐÁ LÙI, user 2026-11-01), không phải người đang được điều khiển.
+  // Người chơi đang điều khiển ĐÁ LÙI -> không AI nào về trông khung (FWD / MID chỉ tắc bóng)
   function keeperOf(g, team) {
     const ctl = g.isHuman(team) ? g.ctrl[team] : null;
-    return nearest(g.teams[team].players, g.ownGoal(team), (o) => o !== ctl && o.state !== 'stun').p;
+    return nearest(g.teams[team].players, g.ownGoal(team), (o) => o !== ctl && o.state !== 'stun' && g.canKeep(o)).p;
   }
 
   // lối chơi ai.mate: đồng đội AI của người chơi ở vị trí thuộc mate.roles (mặc định ĐÁ CAO) -> cấu hình mate; còn lại null.
@@ -325,6 +326,8 @@ window.SFC = window.SFC || {};
       // 3v3+: nhiều người không cầm bóng -> chia vai theo vị trí (roles): thấp nhất CHỐT sau lưng bóng, cao nhất BĂNG lên
       // phía cánh đối diện bóng, ở giữa dạt CÙNG cánh làm phương án gần (không ai đứng chồng lên nhau)
       const mates = g.teams[p.team].players.filter((o) => o !== c).sort((a, b) => a.idx - b.idx);
+      // người cầm bóng quay về phía mình: chạy vào khoảng trống mở đường chuyền (ai.runs.lane) — trừ người CHỐT khi đội có từ 2 người hỗ trợ
+      if ((mates.length < 2 || mates.indexOf(p) > 0) && this.laneRun(g, p, c)) return;
       if (mates.length > 1) {
         const k = mates.indexOf(p), last = mates.length - 1, S = A().support3 || {};
         if (k === 0) {
@@ -415,6 +418,36 @@ window.SFC = window.SFC || {};
       const o = nearest(g.teams[1 - p.team].players, p, (q) => q.state !== 'stun').p;
       const side = o ? Math.sign(p.y - o.y) || 1 : Math.sign(f.cy - p.y) || 1;
       this.startRun(g, p, p.x + dir * R.ahead, p.y + side * R.side, R.time);
+    },
+
+    // MỞ ĐƯỜNG CHUYỀN (ai.runs.lane): người cầm bóng c quay mặt về phía p -> p chạy nước rút tới khoảng trống có đường chuyền thoáng nhất
+    laneRun(g, p, c) {
+      const RS = A().runs, R = RS && RS.lane;
+      if (!R || g.ball.owner !== c || g.time < (p.ai.laneNext || 0)) return false;
+      p.ai.laneNext = g.time + RS.every;
+      if (g.time < (p.ai.runCd || 0)) return false;
+      const tx = p.x - c.x, ty = p.y - c.y, d = Math.hypot(tx, ty) || 1;
+      if ((tx * Math.cos(c.facing) + ty * Math.sin(c.facing)) / d < R.faceCos || d > R.maxDist || Math.random() >= R.chance) return false;
+      const f = g.field, dir = g.teams[p.team].dir, goal = g.attackGoal(p.team);
+      const opps = g.teams[1 - p.team].players.filter((o) => o.state !== 'stun');
+      let best = null, bs = -Infinity;
+      for (const r of R.dist) for (const deg of R.angles) {
+        const a = (deg * Math.PI) / 180;
+        let x = p.x + Math.cos(a) * dir * r, y = p.y + Math.sin(a) * r;
+        if ((x - (goal.x - dir * R.goalGap)) * dir > 0) x = goal.x - dir * R.goalGap;
+        if (x < f.x + 24 || x > f.x + f.w - 24 || y < f.y + 18 || y > f.y + f.h - 18) continue;
+        let lane = R.laneCap, space = R.spaceCap;
+        for (const o of opps) {
+          lane = Math.min(lane, U.segDist(o.x, o.y, c.x, c.y, x, y));
+          space = Math.min(space, Math.hypot(o.x - x, o.y - y));
+        }
+        const s = lane * R.lane + space * R.space + (x - p.x) * dir * R.fwd;
+        if (s > bs) { bs = s; best = { x, y }; }
+      }
+      if (!best) return false;
+      this.startRun(g, p, best.x, best.y, R.time);
+      p.ai.runCd = g.time + R.cooldown;
+      return true;
     },
 
     // chạy sau lưng hậu vệ (behind, người BĂNG) / chạy chồng biên (overlap, người DẠT) — ai.runs. ly = làn dọc của người chạy
@@ -514,7 +547,7 @@ window.SFC = window.SFC || {};
 
       // chỉ 1 người trông khung: người được chọn (keeperOf) — đồng đội AI lối chơi ai.mate tự xét (mateDanger: chưa ai đứng trong vòng cấm).
       // Người còn lại (3v3) đi kèm người bên dưới, không chạy về đứng chung khung thành
-      if (danger && (M || p === keeper)) return this.goalkeeper(dt, g, p);
+      if (danger && (M ? g.canKeep(p) : p === keeper)) return this.goalkeeper(dt, g, p);
 
       // kèm người: đứng giữa đối thủ được giao và khung thành. 3v3+: mỗi người kèm 1 đối thủ khác nhau — người kèm (không cầm quyền điều
       // khiển, không áp sát, không trông khung) xếp theo vị trí, đối thủ xếp theo độ nguy hiểm (gần khung nhà trước); thiếu đối thủ thì
@@ -789,11 +822,11 @@ window.SFC = window.SFC || {};
       // 1 người không đuổi bóng lùi về trông khung (người gần khung nhà nhất, trừ người đuổi bóng / người chơi đang điều khiển).
       // Đội máy / đồng đội AI ĐÁ LÙI: bóng lỏng ở phần sân nhà (hoặc đang bay về khung thành nhà).
       // Đồng đội AI ĐÁ CAO: chỉ khi bóng đã sát khung nhà và người chơi không đứng trong vòng cấm nhà. Người còn lại giữ vị trí đội hình
-      const keeper = nearest(tm.players, g.ownGoal(p.team), (o) => o !== ctl && o !== chaser.p && o.state !== 'stun').p;
+      const keeper = nearest(tm.players, g.ownGoal(p.team), (o) => o !== ctl && o !== chaser.p && o.state !== 'stun' && g.canKeep(o)).p;
       const cover = M
         ? U.dist(b, g.ownGoal(p.team)) < A().mate.dangerDist && !(ctl && g.inKeeperZone(ctl))
         : (b.x - f.cx) * dir < 0 || b.vx * dir < -120;
-      if (!passToMate && cover && (M || p === keeper)) return this.goalkeeper(dt, g, p);
+      if (!passToMate && cover && (M ? g.canKeep(p) : p === keeper)) return this.goalkeeper(dt, g, p);
 
       const home = g.formationPos(p);
       moveTo(p, home.x + (b.x - f.cx) * 0.35, home.y + (b.y - f.cy) * 0.25, false, 6);

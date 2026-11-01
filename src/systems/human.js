@@ -207,7 +207,7 @@ window.SFC = window.SFC || {};
         // KANTAY (ENGINE PRESS): giữ chạy nhanh + D = tự đuổi bóng (không đấm), rút thể lực nhanh · RAMEN: chạy nhanh + A = XOẠC BÓNG
         if (tech('engine') && input.isDown('sprint') && input.isDown('shoot') && LGS.engine(g, p, dt)) { buf.shoot = 0; return; }
         if (tech('slide') && input.isDown('sprint') && pressed('lob') && LGS.slide(g, p, mx, my)) { buf.lob = 0; return; }
-        // ĐỌC CÚ SÚT: trong vòng cấm nhà giữ W để thủ thế, thả đúng lúc đối phương sút
+        // ĐỌC CÚ SÚT: người giữ khung (chỉ ĐÁ LÙI, g.canKeep trong inKeeperZone) trong vòng cấm nhà giữ W để thủ thế, thả đúng lúc đối phương sút
         const canBrace = RD.enabled && p.state === 'normal' && p.cd.read <= 0 && p.readAt < 0 && g.inKeeperZone(p);
         if (wasBracing ? input.isDown('through') && p.state === 'normal' : canBrace && input.wasPressed('through')) p.bracing = true;
         else if (wasBracing && p.state === 'normal') Act.readRelease(g, p);

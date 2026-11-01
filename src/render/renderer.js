@@ -197,8 +197,10 @@ window.SFC = window.SFC || {};
           SFC.VFX.arm(ctx, g, p);
           SFC.VFX.look(ctx, g, p, hy);
           if (p.inj && SFC.RunDraw && !swap) SFC.RunDraw.hurt(ctx, g, p, hy);   // GOAT PATH: dấu chấn thương cạnh đầu
-          if (p.charging) this.chargeBar(ctx, p, hy, g);
-          if (p.passMode) this.passBar(ctx, p, hy);
+          // người của máy này (cp): thanh lực không có vạch trắng lực mặc định. Vạch đỏ AI sắp sút chỉ cho người giữ khung (g.canKeep: ĐÁ LÙI)
+          // thấy trên thanh của đối thủ — đồng đội của cp, hay cp là FWD / MID: không có (user 2026-11-01)
+          if (p.charging) this.chargeBar(ctx, p, hy, g, p === cp, !!cp && (p.team === cp.team || !g.canKeep(cp)));
+          if (p.passMode) this.passBar(ctx, p, hy, p === cp);
           // đồng đội AI đang chạy chỗ (ai.runs): mũi tên đôi chỉ hướng chạy trên đầu -> người chơi kịp chuyền / chọc khe
           if (p.ai && p.ai.runT > 0 && p.ai.runTo && !g.preview && g.isHuman(p.team) && !p.isControlled) this.runCue(ctx, p, hy, t);
           if (pv && pv.target === p) {
@@ -526,7 +528,8 @@ window.SFC = window.SFC || {};
       for (const q of list) S.drawFxParticle(ctx, q, g, 0.75);
     },
 
-    chargeBar(ctx, p, hy, g) {
+    // own = người của máy này: bỏ vạch trắng lực mặc định · noRead = bỏ vạch đỏ (chỉ để người giữ khung đọc cú sút đối thủ)
+    chargeBar(ctx, p, hy, g, own = false, noRead = false) {
       const { px, OUT } = SP();
       const K = SFC_CONFIG.game.kick;
       const w = 18, x = Math.round(p.x - w / 2), y = hy - 22;   // trên mũi tên điều khiển, không bị che
@@ -541,11 +544,11 @@ window.SFC = window.SFC || {};
       px(ctx, x, y, Math.round(w * base), 3, col);
       ctx.globalAlpha = 1;
       if (c > base + 0.01) px(ctx, x, y, Math.round(w * c), 3, col);
-      px(ctx, x + Math.round(w * base), y - 1, 1, 5, '#ffffff');
+      if (!own) px(ctx, x + Math.round(w * base), y - 1, 1, 5, '#ffffff');
       if (over > 0) px(ctx, x, y, Math.round(w * over), 1, '#ffffff');
       // AI: vạch lực sẽ sút (sút ngay khi thanh chạm vạch) -> người chơi có mốc để căn Đọc Cú Sút.
       // Phần còn phải nạp tô đỏ mờ; còn < 0.2s là sút: vạch loé trắng + mũi tên to hơn
-      const tg = p.shotTarget || 0;
+      const tg = noRead ? 0 : p.shotTarget || 0;
       if (tg > 0) {
         const mx = x + Math.min(w - 1, Math.round(w * tg)), fillX = x + Math.round(w * c);
         const left = (tg - c) * g.chargeTime(p) / Math.max(0.01, 1 - base);
@@ -569,7 +572,7 @@ window.SFC = window.SFC || {};
       }
     },
 
-    passBar(ctx, p, hy) {
+    passBar(ctx, p, hy, own = false) {
       const { px, OUT } = SP();
       const w = 18, x = Math.round(p.x - w / 2), y = hy - 22;   // trên mũi tên điều khiển, không bị che
       const col = PASS_COLORS[p.passMode];
@@ -580,7 +583,7 @@ window.SFC = window.SFC || {};
       px(ctx, x, y, Math.round(w * base), 3, col);
       ctx.globalAlpha = 1;
       if (p.passCharge > base) px(ctx, x, y, Math.round(w * p.passCharge), 3, col);
-      px(ctx, x + Math.round(w * base), y - 1, 1, 5, '#ffffff');
+      if (!own) px(ctx, x + Math.round(w * base), y - 1, 1, 5, '#ffffff');
     },
 
     // vòng điểm rơi: vòng sáng (dễ thấy trên sân tối) + tâm màu áo đội vừa đá (bóng lỏng: trắng);

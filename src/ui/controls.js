@@ -109,7 +109,8 @@ window.SFC = window.SFC || {};
     const key = (code, label, x, y, w) => {
       const kw = w * PITCH - (PITCH - U);
       keys.push(`<g class="kk ${keyKind(code, sel)}"><rect x="${x}" y="${y}" width="${kw}" height="${U}" rx="2"/>
-        <text x="${x + kw / 2}" y="${y + U / 2 + 4}" text-anchor="middle">${esc(label)}</text></g>`);
+        ${code === 'Space' ? `<path class="kk-sp" d="M${x + kw / 2 - 14} ${y + 9}V${y + 16}H${x + kw / 2 + 14}V${y + 9}"/>`   // thanh cách: icon, không in chữ
+          : `<text x="${x + kw / 2}" y="${y + U / 2 + 4}" text-anchor="middle">${esc(label)}</text>`}</g>`);
     };
     KB_ROWS.forEach((row, r) => {
       let x = 0;

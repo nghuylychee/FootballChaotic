@@ -1225,6 +1225,10 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .kk.sys text { fill: #8f879c; }
 .kk.sel rect { fill: rgba(255,225,79,0.32); stroke: var(--gold); stroke-width: 2; animation: rmGlow 0.8s steps(2) infinite; }
 .kk.sel text { fill: #fff6c2; }
+.kk .kk-sp { fill: none; stroke: #525a6b; stroke-width: 2; }
+.kk.play .kk-sp { stroke: #c9b45a; }
+.kk.sys .kk-sp { stroke: #8f879c; }
+.kk.sel .kk-sp { stroke: #fff6c2; }
 
 .rm-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; background: var(--panel); border: 1px solid var(--edge); padding: 4px 8px; }
 .rm-col { display: flex; flex-direction: column; min-width: 0; }
@@ -1236,6 +1240,8 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 /* icon nút PlayStation ✕ △ ○ □ (ui/helpers.js thay vào mọi <kbd>): cỡ theo chữ của kbd */
 .ps-ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.15em; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: miter; stroke-miterlimit: 10; stroke-linecap: butt; }
 #abar kbd .ps-ico { width: 6px; height: 6px; stroke-width: 2.6; vertical-align: -1px; }
+.ps-ico.key-sp { width: 1.25em; }
+#abar kbd .ps-ico.key-sp { width: 8px; height: 5px; vertical-align: top; }
 .rm-row b { font-weight: normal; color: var(--paper); }
 .rm-row i { font-style: normal; color: #8fbcff; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
 .rm-row i em { font-style: normal; font-size: 10px; color: #5a9cff; }

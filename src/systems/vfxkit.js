@@ -117,6 +117,7 @@ window.SFC = window.SFC || {};
   E.pop = function (x, y, str, kind = 'light', color = null) {
     const P = SFC_CONFIG.game.fx.popups, KS = P.kinds, K = KS[kind] ? kind : 'light', list = this.V.pops;
     str = String(str);
+    if (P.hide && P.hide.includes(str)) return;   // chữ của sự kiện nhỏ đã tắt (popups.hide)
     const t = KS[K].t, me = { x, y, str, kind: K, color, t, max: t, dir: popSeq++ % 2 ? 1 : -1 };
     // xếp chồng: font pixel đơn cách -> khung chữ = số ký tự x cỡ chữ (tính được cả ở máy chủ, không cần canvas).
     // Chữ mới đứng yên; chữ nào chạm chữ vừa dời / vừa hiện thì bị đẩy lên ngay trên nó, lan dây chuyền — chỉ dời lên nên luôn dừng, không xoá

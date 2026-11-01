@@ -39,6 +39,8 @@ window.SFC = window.SFC || {};
 
     // cú sút giữ tốc độ (ball.shotFriction) tới khi dội vạch cuối sân / có người chạm (setOwner, deflect xoá kind)
     shotFm() { return this.kind === 'shot' && !this.endBounce ? SFC_CONFIG.game.ball.shotFriction || 1 : 1; }
+    // đường chuyền sệt / chọc khe có người nhận giữ tốc độ (pass.friction) tới khi bóng đi qua điểm nhận (passPoint) / có người chạm
+    passFm() { return this.keepPace && this.passPoint && this.kind === 'pass' ? SFC_CONFIG.game.pass.friction || 1 : 1; }
 
     setOwner(p) {
       this.owner = p;
@@ -56,6 +58,8 @@ window.SFC = window.SFC || {};
       this.cross = false;
       this.endBounce = false;
       this.oneTouch = false;
+      this.keepPace = false;
+      this.through = false;
       this.clearFx();
     }
 
@@ -78,6 +82,8 @@ window.SFC = window.SFC || {};
       this.legTech = null;    // kỹ thuật LEGEND của cú đá này (power / trivela / finesse / bicycle / lobthrough) — LEGEND TRIAL đếm (drills.js)
       this.oneTouch = false;  // đường chuyền 1 chạm (pass.oneTouch) — passTo bật lại sau khi đá
       this.endBounce = false; // đã dội vạch cuối sân (bounceSide) -> hết ma sát riêng của cú sút (ball.shotFriction)
+      this.keepPace = false;  // đường chuyền giữ tốc độ (pass.friction) — passTo bật, bóng qua điểm nhận thì tắt
+      this.through = false;   // chọc khe có người nhận (passTo): người nhận chạy thẳng tới điểm nhận
       this.flightT = 0;       // (s) bóng đã bay bao lâu từ lần chạm cuối — thủ môn cần thời gian phản xạ (player.gkReflex, Game.tryControl)
       this.kickN++;           // số lần đá: AI quyết định dứt điểm 1 chạm 1 lần cho mỗi quả bóng · AI thủ môn đọc mỗi cú sút 1 lần (ai.keeper)
       this.clearFx();
@@ -127,7 +133,9 @@ window.SFC = window.SFC || {};
         } else this.vz = 0;
       }
 
-      const k = (this.z > C.airDragMinZ ? C.airDrag : C.groundFriction) * this.frictionMult * this.shotFm();
+      // bóng chuyền đã đi qua điểm nhận mà chưa ai chạm: hết giữ tốc độ, lăn chậm dần như bóng thường
+      if (this.keepPace && this.passPoint && (this.passPoint.x - this.x) * this.vx + (this.passPoint.y - this.y) * this.vy <= 0) this.keepPace = false;
+      const k = (this.z > C.airDragMinZ ? C.airDrag : C.groundFriction) * this.frictionMult * this.shotFm() * this.passFm();
       this.vx = U.damp(this.vx, k, dt);
       this.vy = U.damp(this.vy, k, dt);
       if (this.z === 0 && this.speed < 4) { this.vx = this.vy = 0; }

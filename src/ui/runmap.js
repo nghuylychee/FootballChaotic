@@ -37,6 +37,8 @@ window.SFC = window.SFC || {};
 
   // thứ tự vị trí ở bước chọn vị trí của bạn (tấn công -> phòng ngự), chỉ những vị trí có trong game.roles
   const POS = () => ['FWD', 'MID', 'DEF'].filter((r) => SFC_CONFIG.game.roles.includes(r));
+  // chỉ số người trong đội xếp theo vị trí FWD · MID · DEF (user 2026-11-01: thẻ cầu thủ ở màn chọn người đeo GEAR / nhận LEGEND / SQUAD)
+  const BYPOS = (R) => R.squad.map((s, i) => i).sort((a, b) => POS().indexOf(R.squad[a].role) - POS().indexOf(R.squad[b].role));
   // nhãn nhược điểm cơ chế của LEGEND (dải LEGEND; câu đầy đủ ở tooltip)
   const FLAW_TAGS = () => ({ dive: _t('DIVER'), light: _t('FEATHERWEIGHT'), red: _t('HOTHEAD'), random: _t('WILD CARD') });
   // phòng GOAT PATH co-op: đang ở trong phòng · máy này làm host (giữ run thật)
@@ -165,13 +167,13 @@ window.SFC = window.SFC || {};
       if (R.offer && R.offer.gear) {
         const O = R.offer, shop = O.kind === 'shop';
         if (O.sel == null) return O.gear.map((g, i) => T('gpick', { i })).concat([T('skip')]);
-        if (O.who == null) return R.squad.map((x, i) => T('wear', { i, dis: !RUN().canWear(i) })).concat(shop ? [] : [T('gback')]);
+        if (O.who == null) return BYPOS(R).map((i) => T('wear', { i, dis: !RUN().canWear(i) })).concat(shop ? [] : [T('gback')]);
         return RUN().gearOf(O.who).map((g, k) => T('swap', { i: k })).concat([T('gback')]);
       }
       // thưởng chọn 1 trong 3 BADGE của cả đội (co-op: bỏ phiếu)
       if (R.offer) return R.offer.ids.map((id, i) => T('pick', { i, id })).concat([T('skip')]);
       // LEGEND xin vào đội: chọn 1 trong 3 người nhận (lệch vị trí được) hoặc từ chối (co-op: bỏ phiếu)
-      if (R.join) return R.squad.map((x, i) => T('joinwho', { i })).concat([T('joinno')]);
+      if (R.join) return BYPOS(R).map((i) => T('joinwho', { i })).concat([T('joinno')]);
       const rm = R.room;
       if (rm && rm.kind === 'shop') {
         const heal = rm.healed ? [] : RUN().injuries().map((x) => T('heal', { i: x.k }));   // chữa ở Shop: tốn tiền
@@ -404,8 +406,8 @@ window.SFC = window.SFC || {};
     },
     // dải đội hình trên thanh map: mặt + OVR + dấu chấn thương từng người
     strip(R) {
-      return R.squad.map((s, i) => {
-        const inj = RUN().injuryIds(i, R).length;
+      return BYPOS(R).map((i) => {
+        const s = R.squad[i], inj = RUN().injuryIds(i, R).length;
         // dưới OVR: 1 vạch mỗi ô GEAR (màu độ hiếm khi có đồ, tối khi trống)
         const gear = RUN().gearOf(i, R), RAR = SFC_CONFIG.progression.rarities;
         const pips = Array.from({ length: RUN().slots(R) }, (x, k) => (gear[k] ? `<i class="on" style="--rc:${RAR[gear[k].r].color}"></i>` : '<i></i>')).join('');
@@ -519,7 +521,7 @@ window.SFC = window.SFC || {};
     },
     // SQUAD: 3 thẻ cầu thủ + hàng BADGE của cả đội (icon, mô tả ở tooltip)
     squadSheet(R, T) {
-      return this.sheet('squad', _t('SQUAD'), '', `<div class="sq-row3">${[0, 1, 2].map((i) => this.squadCard(R, i, T, null)).join('')}</div>${this.teamBar(R)}`,
+      return this.sheet('squad', _t('SQUAD'), '', `<div class="sq-row3">${BYPOS(R).map((i) => this.squadCard(R, i, T, null)).join('')}</div>${this.teamBar(R)}`,
         this.btn(T, T[0], esc(_t('CLOSE'))));
     },
     // ô LEGEND trống: bóng đen 1 huyền thoại trong khung nét đứt, không chữ (chữ ở tooltip)

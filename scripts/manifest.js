@@ -137,6 +137,7 @@ const FILES = [
   ['src/ui/ulttest.js', 'game'],                           // phòng test Tuyệt kỹ (dev, SFC_DEBUG — bản đóng gói thành rỗng)
   ['src/ui/storytest.js', 'game'],                         // phòng test FOOTBALL STORY (dev, SFC_DEBUG — bản đóng gói thành rỗng)
   ['src/ui/runtest.js', 'game'],                           // phòng test GOAT PATH: BADGE + LEGEND (dev, SFC_DEBUG — bản đóng gói thành rỗng)
+  ['src/ui/playtest.js', 'game'],                          // phòng test gameplay: thêm / bớt người, số đo bóng (dev, SFC_DEBUG — bản đóng gói thành rỗng)
   ['src/ui/online.js', 'game'],
   ['src/main.js', 'game'],
 ];
