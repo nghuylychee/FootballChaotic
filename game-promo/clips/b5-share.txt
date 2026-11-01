@@ -1,0 +1,23 @@
+Batch 5: Titan recipe, three nearby options. All three use the b3-titan metadata template; published directly Public (owner instruction).
+
+TAGS (all three)
+Street Football Chaos, indie game, gamedev, indie dev, game development, pixel art, pixel art game, indie game devlog
+
+DESCRIPTION TEMPLATE
+We're making Street Football Chaos: 3v3 pixel street football with no referee. Your tackle is a dropkick, and every goal lets you stack Cores into anime Ultimates like {A} and {B}.
+
+Coming soon to Steam.
+
+#indiegame #gamedev #indiedev #pixelart
+
+=== b5-boulder.mp4 (grow + bowl over)
+TITLE: Making a football game where you can ride a giant boulder 🕹️
+{A} Boulder Rider · {B} Comet One-Two
+
+=== b5-bullet.mp4 (run past all three)
+TITLE: Making a football game where you can slow down time 🕹️
+{A} Bullet Time · {B} Panic Ball
+
+=== b5-phase.mp4 (get through by trickery)
+TITLE: Making a football game where you can teleport through defenders 🕹️
+{A} Phase Step · {B} Clone Army

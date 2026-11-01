@@ -1,0 +1,19 @@
+Batch 4: both use the indie-gamedev framing (batch-2 D1 / batch-3 template). Only the first-2s hook differs (B setup-first / A impact-first).
+
+TAGS (both)
+Street Football Chaos, indie game, gamedev, indie dev, game development, pixel art, pixel art game, indie game devlog
+
+DESCRIPTION TEMPLATE
+We're making Street Football Chaos: 3v3 pixel street football with no referee. Your tackle is a dropkick, and every goal lets you stack Cores into anime Ultimates like {A} and {B}.
+
+Coming soon to Steam.
+
+#indiegame #gamedev #indiedev #pixelart
+
+=== b4-sling.mp4 (B setup-first, 2026-11-02 02:00 GMT+7)
+TITLE: Making a football game where you can slingshot your teammate 🕹️
+{A} Slingshot · {B} Light Cycle
+
+=== b4-cannon.mp4 (A impact-first, 2026-11-02 02:40 GMT+7)
+TITLE: Making a football game where the ball is a bomb 🕹️
+{A} Cannonball · {B} Mega Boomerang
