@@ -9,8 +9,10 @@ window.SFC = window.SFC || {};
   const R = {
     init(canvas) {
       const C = SFC_CONFIG.game.render;
-      canvas.width = C.width;
-      canvas.height = C.height;
+      // canvas gấp đôi (1280 x 720) cho sprite người chơi 2x (src/render/player): mọi thứ khác vẫn vẽ ở toạ độ 640 x 360, mỗi khung scale x2
+      // (render()); CSS giữ cỡ hiển thị 640 x 360 nên chuột / bố cục DOM không đổi
+      canvas.width = C.width * 2;
+      canvas.height = C.height * 2;
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d');
       this.ctx.imageSmoothingEnabled = false;
@@ -38,6 +40,8 @@ window.SFC = window.SFC || {};
       }
       const fx = g.effects, f = g.field, t = g.time;
 
+      ctx.setTransform(2, 0, 0, 2, 0, 0);
+      ctx.imageSmoothingEnabled = false;
       ctx.save();
       if (fx.shakeA > 0) ctx.translate(Math.round((Math.random() - 0.5) * fx.shakeA * 2), Math.round((Math.random() - 0.5) * fx.shakeA * 2));
       SFC.VFX.applyZoom(ctx, g);
@@ -375,13 +379,15 @@ window.SFC = window.SFC || {};
 
     // bị Hard attack đá bay: bóng đổ dưới đất, người lộn vòng trên không + vệt gió
     airborne(ctx, p, g) {
-      const { px, ellipse, drawPlayer } = SP();
+      const { px, ellipse, drawPlayer } = SP(), Sprite = SFC.PlayerSprite;
+      // bị đá bay (choáng): pha lộn / chạm đất / nằm theo dõi ở phía vẽ (PlayerSprite.flyState); nảy lúc đã nằm thì bóng nằm trên đất
+      const fs = p.state === 'stun' ? Sprite.flyState(p) : null, lsh = fs && Sprite.flyShadowSpec(fs);
       const k = Math.max(0.35, 1 - p.airZ / 70);
-      ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, 6 * k, 2.5 * k, 'rgba(0,0,0,0.38)');
+      if (lsh) { ctx.save(); ctx.scale(0.5, 0.5); Sprite.flyShadow(ctx, 2 * Math.round(p.x), 2 * Math.round(p.y), lsh); ctx.restore(); }
+      else ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, 6 * k, 2.5 * k, 'rgba(0,0,0,0.38)');
       const cy = p.y - p.airZ - 8;
-      const dir = (p.kbx || 0) >= 0 ? 1 : -1;
       const sp = Math.hypot(p.kbx || 0, p.kby || 0);
-      if (sp > 80) {
+      if (sp > 80 && (!fs || fs.phase === 'tumble')) {
         const n = U.norm(p.kbx, p.kby);
         ctx.globalAlpha = Math.min(0.8, sp / 400);
         for (let i = 0; i < 3; i++) {
@@ -392,11 +398,12 @@ window.SFC = window.SFC || {};
       }
       ctx.save();
       ctx.translate(Math.round(p.x), Math.round(cy));
-      // bị đá bay (choáng) thì lộn vòng; tự nhảy (Dậm Đất, Thiên Thạch...) thì bay thẳng người
-      if (p.state === 'stun' && !(SFC.LegendDraw && SFC.LegendDraw.flipping(g, p))) ctx.rotate(dir * p.anim * 13);   // bị XOẠC (LEGEND): lộn đúng 3 vòng ở legenddraw
+      // bị đá bay (choáng) thì lộn vòng theo PlayerSprite.flyRot; tự nhảy (Dậm Đất, Thiên Thạch...) thì bay thẳng người
+      if (fs && !(SFC.LegendDraw && SFC.LegendDraw.flipping(g, p))) ctx.rotate(Sprite.flyRot(fs, p.anim || 0));   // bị XOẠC (LEGEND): lộn đúng 3 vòng ở legenddraw
       // Comet One-Two: móc xe đạp — lộn ngược ra sau (đầu chúc xuống lúc đá), xoay tiếp cho tròn vòng khi rơi
       else if (p.atkType === 'bicycle') ctx.rotate(-(Math.cos(p.facing) >= 0 ? 1 : -1) * Math.min(2, (p.atkT || 0) / 0.42) * Math.PI);
-      drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, keeper: false }), g, 0.999);
+      // fly: drawPlayer vẽ bản sao này nên phải mang sẵn pha bay (không thì nó tự theo dõi trên bản sao)
+      drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, keeper: false, fly: fs }), g, 0.999);
       ctx.restore();
       return Math.round(cy) - 8;
     },
@@ -404,42 +411,34 @@ window.SFC = window.SFC || {};
     // thủ môn đổ người (Actions.dive): bay sang ngang dọc trục y (dọc vạch vôi), mặt vẫn nhìn về phía sân -> camera thấy
     // sườn người: thân dọc theo hướng bay (đầu đi trước), 1 tay vươn qua đầu (drawPlayer, atk.dive), 2 chân khép.
     // Bay xuống (về phía camera) = lật dọc hình bay lên. Lúc lao: bay theo cung; lao xong nằm nghiêng trên sân gkDivePose giây
+    // Biến hình (nâng theo cung, nghiêng, ép dẹt, lật, bóng đổ, vệt gió) lấy từ PlayerSprite.diveXform: cất người / chạm đất / đứng dậy chuyển dần
     diving(ctx, p, g) {
-      const { ellipse, drawPlayer } = SP();
-      const P = SFC_CONFIG.game.player;
+      const { ellipse, drawPlayer, px } = SP(), Sprite = SFC.PlayerSprite;
       const flip = p.atkType === 'diveU' ? 1 : -1;
       const side = Math.cos(p.facing) >= 0 ? 1 : -1;
-      const flying = p.state === 'dash';
-      const k = Math.min(1, (p.atkT || 0) / P.gkDiveTime);
-      const lift = flying ? 3 + Math.sin(k * Math.PI) * 6 : 0;
-      // ngả nhẹ đầu về phía sân (lúc bay nhiều hơn lúc nằm)
-      const rot = side * (flying ? 0.22 : 0.1) * flip;
-      // bóng đổ dài theo thân nằm dọc trục y, nhỏ lại khi bay cao
-      const sk = 1 - lift / 24;
-      ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, 5 * sk, 8 * sk, 'rgba(0,0,0,0.38)');
-      const cy = p.y - lift - 2;
-      // thân nằm dọc trục y nhìn từ camera trên cao -> ngắn lại theo phối cảnh (nằm sát đất ngắn hơn lúc bay)
-      const squash = flying ? 0.85 : 0.7;
+      const X = Sprite.diveXform(Sprite.attackPose(p), flip, side);
+      ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, X.shadow[0], X.shadow[1], 'rgba(0,0,0,0.38)');
+      const cy = p.y - X.lift - X.up, sq = Math.abs(X.sy);
       // vệt gió sau gót chân lúc bay
-      if (flying) {
-        const { px } = SP();
+      if (X.streaks) {
         ctx.globalAlpha = 0.7;
-        for (let i = 0; i < 3; i++) px(ctx, Math.round(p.x - 3 + i * 3), Math.round(cy - flip * (12 + i * 2) * squash + flip * 22), 1, 4 + (i % 2) * 2, '#ffffff');
+        for (let i = 0; i < 3; i++) px(ctx, Math.round(p.x - 3 + i * 3), Math.round(cy - flip * (12 + i * 2) * sq + flip * 22), 1, 4 + (i % 2) * 2, '#ffffff');
         ctx.globalAlpha = 1;
       }
-      // vẽ thẳng đứng vào bộ đệm rồi xoay cả ảnh (lấy mẫu điểm gần nhất) -> pixel vẫn sắc, không nhoè như xoay từng ô vẽ
+      // vẽ thẳng đứng vào bộ đệm gấp đôi (sprite 2x) rồi xoay cả ảnh (lấy mẫu điểm gần nhất) -> pixel vẫn sắc, không nhoè như xoay từng ô vẽ
       const N = 48, buf = this.diveBuf || (this.diveBuf = document.createElement('canvas'));
-      if (buf.width !== N) { buf.width = N; buf.height = N; }
+      if (buf.width !== N * 2) { buf.width = N * 2; buf.height = N * 2; }
       const bc = buf.getContext('2d');
+      bc.setTransform(2, 0, 0, 2, 0, 0);
       bc.clearRect(0, 0, N, N);
       // vx = vy = 0: không nhún chân / vung tay như đang chạy
       drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: g.inKeeperZone(p) }), g, 0.999);
       ctx.save();
       ctx.imageSmoothingEnabled = false;
       ctx.translate(Math.round(p.x), Math.round(cy));
-      ctx.rotate(rot);
-      ctx.scale(1, flip * squash);
-      ctx.drawImage(buf, -N / 2, -N / 2);
+      ctx.rotate(X.rot);
+      ctx.scale(1, X.sy);
+      ctx.drawImage(buf, -N / 2, -N / 2, N, N);
       ctx.restore();
       return Math.round(cy) - 14;
     },

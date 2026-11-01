@@ -88,7 +88,7 @@ window.SFC = window.SFC || {};
         p.look = Object.assign({}, av.look);
         p.avatar = true;
         if (av.stats) { p.stats = Object.assign({}, p.stats, av.stats); p.ovr = av.ovr; }
-        if (av.inj && av.inj.length) p.inj = av.inj.slice();   // GOAT PATH: chấn thương (src/systems/hurt.js, băng vẽ ở sprites.js)
+        if (av.inj && av.inj.length) p.inj = av.inj.slice();   // GOAT PATH: chấn thương (src/systems/hurt.js, băng vẽ ở src/render/player)
         if (av.legend) p.legend = av.legend;                    // GOAT PATH: LEGEND (src/systems/legends.js)
         if (av.gearBoost) { p.gearBoost = Object.assign({}, av.gearBoost); p.gearBias = Object.assign({}, av.gearBias); }   // GOAT PATH: GEAR trường phái (cores.js)
       };

@@ -3,7 +3,7 @@
  *   stumble (cổ chân / đùi): đang chạy nước rút thì thỉnh thoảng khựng lại, bắt đi bộ một lúc — chữ OUCH!
  *   weak (cổ tay): cú đấm thỉnh thoảng xịt — chỉ đẩy nhẹ, không choáng, không cướp được bóng — chữ POOF
  *   shank (ngón chân): cú sút thỉnh thoảng trượt chân, lệch hướng — chữ SHANK!
- * Băng quấn đúng chỗ (badges[].part) vẽ ở render/sprites.js, dấu thập đỏ trên đầu ở render/rundraw.js.
+ * Băng quấn đúng chỗ (badges[].part) vẽ ở render/player (sprite người chơi), dấu thập đỏ trên đầu ở render/rundraw.js.
  * Móc: player.js moveNormal (move) · actions.js lightHit (weak) · actions.js shoot (shank).
  */
 window.SFC = window.SFC || {};

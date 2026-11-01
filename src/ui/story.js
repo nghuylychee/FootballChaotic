@@ -33,11 +33,13 @@ window.SFC = window.SFC || {};
   }
   // cầu thủ bất kỳ (look + kit) phóng to kiểu pixel — cảnh FOOTBALL STORY vẽ đối thủ
   function figure(x, y, s, t, look, kit, facing = Math.PI / 2, extra = null, alpha = 1) {
+    // buf vẽ sprite 2x (gấp đôi độ phân giải, Sprites.hiRes) -> phóng theo cỡ logic 40 x 44
     SFC.Sprites.drawAvatar(buf, look, kit, t, facing, extra);
+    const bw = buf.width / 2, bh = buf.height / 2;
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(buf, Math.round(x - (buf.width / 2) * s), Math.round(y - (buf.height - 4) * s), buf.width * s, buf.height * s);
+    ctx.drawImage(buf, Math.round(x - (bw / 2) * s), Math.round(y - (bh - 4) * s), bw * s, bh * s);
     ctx.restore();
   }
   function ball(x, y, r) {
@@ -106,6 +108,7 @@ window.SFC = window.SFC || {};
   /* ---------- vẽ pixel art thật: canvas 160x90 (1 pixel = 4x4 trên màn), chỉ khối màu cứng + dither, phóng to không làm mượt ---------- */
   const LW = 160, LH = 90, LS = W / LW;
   let lo = null, lx = null;
+  const lbuf = document.createElement('canvas'); lbuf.width = 40; lbuf.height = 44;   // nhân vật 1x của canvas thấp (buf chung đã gấp đôi)
   function loBegin() {
     if (!lo) { lo = document.createElement('canvas'); lo.width = LW; lo.height = LH; lx = lo.getContext('2d'); }
     lx.clearRect(0, 0, LW, LH);
@@ -144,8 +147,8 @@ window.SFC = window.SFC || {};
   // nhân vật đúng 1x sprite gốc trên canvas thấp (mật độ pixel khớp cảnh)
   function loHero(x, y, t, facing = Math.PI / 2, extra = null) {
     const look = SFC.Profile.lookOf(), kit = SFC_CONFIG.mainPath.playerTeam.kit;
-    SFC.Sprites.drawAvatar(buf, look, kit, t, facing, extra);
-    lx.drawImage(buf, Math.round(x - buf.width / 2), Math.round(y - (buf.height - 4)));
+    SFC.Sprites.drawAvatar(lbuf, look, kit, t, facing, extra, true);   // flat: thu về lưới game cho khớp cảnh 1x
+    lx.drawImage(lbuf, Math.round(x - lbuf.width / 2), Math.round(y - (lbuf.height - 4)));
   }
   // quả bóng 3x3 trên canvas thấp (x, y = góc trên trái)
   function pBall(x, y) {

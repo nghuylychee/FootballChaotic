@@ -41,197 +41,6 @@ window.SFC = window.SFC || {};
   }
 
 
-  /* ---------- anim ra đòn ---------- */
-  const easeOut = (k) => 1 - (1 - k) * (1 - k);
-  const clamp01 = (k) => Math.max(0, Math.min(1, k));
-
-  // Tư thế theo thời gian ra đòn (p.atkT):
-  //  light: fist = độ vươn nắm đấm (px, âm = kéo về lấy đà), impact = đang chạm
-  //  hard : leg = góc chân so với hướng mặt (rad, π = sau lưng, 0 = trước mặt), sweep = góc bắt đầu vung (vẽ vệt)
-  function attackPose(p) {
-    const C = SFC_CONFIG.game.combat, t = p.atkT || 0;
-    if (p.atkType === 'light') {
-      const L = C.light, S = L.startup;
-      let fist;
-      if (t < S * 0.55) fist = -3 * (t / (S * 0.55));
-      else if (t < S) fist = -3 + 15 * easeOut((t - S * 0.55) / (S * 0.45));
-      else if (t < S + 0.08) fist = 12;
-      else fist = 12 * (1 - clamp01((t - S - 0.08) / Math.max(0.01, L.recover - 0.08)));
-      return { fist, streak: t > S * 0.55 && t < S + 0.05, impact: t >= S && t < S + 0.07 };
-    }
-    if (p.atkType === 'hard') {
-      const H = C.hard, W = H.windup;
-      if (t < W) return { leg: Math.PI * 0.85 * easeOut(clamp01(t / (W * 0.6))), lift: 3, sweep: null };
-      const k = clamp01((t - W) / H.kickTime);
-      if (k < 1) return { leg: Math.PI * 0.85 - (Math.PI * 0.85 + 0.45) * easeOut(k), lift: 3 + Math.sin(k * Math.PI) * 3, sweep: Math.PI * 0.85 };
-      // sau cú đá: chân hạ dần về
-      const back = clamp01((t - W - H.kickTime) / 0.15);
-      return back < 1 ? { leg: -0.45 * (1 - back), lift: 3 * (1 - back), sweep: null } : {};
-    }
-    // sút / phá bóng: chân sút đưa ra trước (nhấc nhẹ), chân trụ lùi về sau — vẽ trong drawPlayer
-    if (p.atkType === 'shoot') return { shoot: true };
-    // dứt điểm 1 chạm (game.firstTime): vô-lê = tư thế sút nhưng chân sút vung ngang hông
-    if (p.atkType === 'volley') return { shoot: true, volley: true };
-    // đánh đầu: bật nhảy trước khi chạm bóng (Actions.headerJump) — đỉnh nhảy ở giữa cú nhảy. Lên: 2 tay vung lên lấy đà, co chân ·
-    // quanh đỉnh: gật đầu về hướng mặt (chạm bóng) · xuống: tay hạ dần
-    if (p.atkType === 'header') {
-      const H = SFC_CONFIG.game.firstTime.header, k = clamp01(t / H.pose);
-      return { header: true, hop: Math.sin(k * Math.PI) * H.hop, nod: k > 0.42 && k < 0.72, armsUp: k > 0.04 && k < 0.6, tuck: k > 0.1 && k < 0.85 };
-    }
-    // thủ môn đổ người: hai tay duỗi qua đầu (người nghiêng + bay khỏi mặt đất vẽ ở Renderer.diving)
-    if (p.atkType === 'diveU' || p.atkType === 'diveD') return { dive: true };
-    return {};
-  }
-
-  // chi (tay / chân): chuỗi điểm 2px viền OUT từ (x0,y0) tới (x1,y1)
-  function limb(ctx, x0, y0, x1, y1, color) {
-    const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
-    for (let pass = 0; pass < 2; pass++) {
-      for (let i = 0; i <= n; i++) {
-        const cx = Math.round(x0 + ((x1 - x0) * i) / n), cy = Math.round(y0 + ((y1 - y0) * i) / n);
-        if (pass === 0) px(ctx, cx - 1, cy - 1, 4, 4, OUT);
-        else px(ctx, cx, cy, 2, 2, color);
-      }
-    }
-  }
-
-  // Light attack: tay thẳng từ vai, nắm đấm to + vệt gió + tia chạm
-  function drawPunch(ctx, x, by, fx, fy, side, atk, hand) {
-    const sx = x + side * 4, sy = by + 2;
-    const ex = Math.round(sx + fx * atk.fist), ey = Math.round(sy + fy * atk.fist * 0.6);
-    limb(ctx, sx, sy, ex, ey, hand);
-    if (atk.streak) {
-      ctx.globalAlpha *= 0.8;
-      for (let i = 1; i <= 3; i++) px(ctx, Math.round(ex - fx * (i * 3 + 2)), Math.round(ey - fy * (i * 2 + 1)) + (i % 2 ? -3 : 4), 3 - (i >> 1), 1, '#ffffff');
-      ctx.globalAlpha /= 0.8;
-    }
-    px(ctx, ex - 2, ey - 2, 6, 6, OUT);
-    px(ctx, ex - 1, ey - 1, 4, 4, hand);
-    px(ctx, ex - 1, ey - 1, 2, 1, '#ffffff');
-    if (atk.impact) {
-      const ix = Math.round(ex + fx * 5), iy = Math.round(ey + fy * 3);
-      px(ctx, ix - 4, iy, 9, 1, '#fff6a0'); px(ctx, ix, iy - 4, 1, 9, '#fff6a0');
-      px(ctx, ix - 2, iy - 2, 1, 1, '#ffffff'); px(ctx, ix + 2, iy - 2, 1, 1, '#ffffff');
-      px(ctx, ix - 2, iy + 2, 1, 1, '#ffffff'); px(ctx, ix + 2, iy + 2, 1, 1, '#ffffff');
-    }
-  }
-
-  // Hard attack: chân vung từ sau lưng ra trước mặt, vệt cung trắng-đỏ theo đường chân
-  function drawKick(ctx, p, x, y, fx, fy, side, atk) {
-    const hx = x + side * 2, hy = y - 5, LEN = 11;
-    // hướng chân = hướng mặt xoay góc a (chân phải: vòng từ sau lưng qua bên phải ra trước), trục y dẹt kiểu 2.5D
-    const at = (a) => {
-      const ang = p.facing + a;
-      return { x: hx + Math.cos(ang) * LEN, y: hy + Math.sin(ang) * LEN * 0.6 };
-    };
-    if (atk.sweep != null) {
-      ctx.globalCompositeOperation = 'lighter';
-      for (let a = atk.sweep; a > atk.leg; a -= 0.12) {
-        const q = at(a), k = 1 - (a - atk.leg) / (atk.sweep - atk.leg + 0.001);
-        px(ctx, Math.round(q.x), Math.round(q.y - atk.lift), 2, 2, `rgba(255,${120 + Math.round(k * 135)},${90 + Math.round(k * 165)},${0.25 + k * 0.6})`);
-      }
-      ctx.globalCompositeOperation = 'source-over';
-    }
-    const f = at(atk.leg);
-    const footX = Math.round(f.x), footY = Math.round(f.y - atk.lift);
-    limb(ctx, hx, hy, footX, footY, p.look.skin);
-    // giày
-    const { s: sh, main, sole } = shoeColors(p.look, p.anim, side > 0 ? 1 : 0);
-    px(ctx, footX - 2, footY - 2, 6, 5, OUT);
-    px(ctx, footX - 1, footY - 1, 4, 2, main);
-    px(ctx, footX - 1, footY + 1, 4, 1, sole);
-    if (sh.glow) { ctx.globalCompositeOperation = 'lighter'; px(ctx, footX - 2, footY - 2, 6, 5, sh.glow); ctx.globalCompositeOperation = 'source-over'; }
-  }
-
-  // Chân vẽ chéo từ hông (tư thế sút): deg = góc so với hướng mặt (0 = ra trước, âm = chúc xuống), side = 1 nhìn phải / -1 nhìn trái.
-  // Từ hông xuống: quần -> da -> tất, giày ở cuối
-  function drawDiagLeg(ctx, hx, hy, deg, len, side, look, kit, anim, which) {
-    const a = (deg * Math.PI) / 180;
-    const ex = Math.round(hx + Math.cos(a) * len * side), ey = Math.round(hy - Math.sin(a) * len);
-    const n = Math.max(1, Math.max(Math.abs(ex - hx), Math.abs(ey - hy)));
-    const pts = [];
-    for (let i = 0; i <= n; i++) pts.push([Math.round(hx + ((ex - hx) * i) / n), Math.round(hy + ((ey - hy) * i) / n)]);
-    const { s, main, sole } = shoeColors(look, anim, which);
-    const sock = s.sock === 'skin' ? look.skin : Array.isArray(s.sock) ? s.sock[0] : s.sock || '#e8e8e8';
-    // giày 3x2 (thân + đế), mũi giày về phía hướng mặt
-    const sx = side > 0 ? ex : ex - 1;
-    for (const [cx, cy] of pts) px(ctx, cx - 1, cy - 1, 4, 4, OUT);
-    px(ctx, sx - 1, ey - 1, 5, 4, OUT);
-    pts.forEach(([cx, cy], i) => { const t = i / n; px(ctx, cx, cy, 2, 2, t < 0.3 ? kit.shorts : t < 0.8 ? look.skin : sock); });
-    px(ctx, sx, ey, 3, 1, main);
-    px(ctx, sx, ey + 1, 3, 1, sole);
-    if (s.glow) { ctx.globalCompositeOperation = 'lighter'; px(ctx, sx - 1, ey - 1, 5, 4, s.glow); ctx.globalCompositeOperation = 'source-over'; }
-  }
-
-  /* ---------- giày (slot shoes) ---------- */
-  // main = thân giày, sole = đế, sock = tất (1 hàng, hoặc 2 màu sọc), skin = để lộ da (dép), glow = phát sáng
-  const SHOES = {
-    kicks:    { main: '#e8e8e8', sole: '#b9c2d0' },
-    slides:   { main: '#3b82f6', sole: '#2d5bd1', sock: 'skin' },
-    reds:     { main: '#d7263d', sole: '#e8e8e8' },
-    canvas:   { main: '#2f6fd1', sole: '#e8e8e8' },
-    boots:    { main: '#6b4423', sole: '#3b2415', sock: '#6b4423' },
-    barefoot: { main: 'skin', sole: 'skin', sock: 'skin', toes: true },
-    rainboot: { main: '#ffd23f', sole: '#c98a14', sock: '#ffd23f' },
-    socks:    { main: '#1a1216', sole: '#4a4f63', sock: ['#e8e8e8', '#d7263d'] },
-    hightop:  { main: '#262a36', sole: '#ff8a3f', sock: '#262a36' },
-    clogs:    { main: '#c7a26a', sole: '#8a6a3a', clog: true },
-    rollers:  { main: '#e8ecf5', sole: '#ff3d5a', wheels: true },
-    cleats:   { main: '#6bff4f', sole: '#1a1216', studs: true },
-    neonkick: { main: '#3ff6ff', sole: '#9d7bff', glow: 'rgba(63,246,255,0.25)' },
-    camo:     { main: '#4a5a2a', sole: '#262a36', sock: '#6b7a3a', camo: '#2e3a1a' },
-    rainbowkick: { main: '#ff3d5a', sole: '#e8e8e8', rainbow: true },
-    mismatch: { main: '#d7263d', sole: '#e8e8e8', right: '#2f6fd1' },
-    goldboot: { main: '#ffd23f', sole: '#c98a14', sparkle: true },
-    iceboot:  { main: '#bdf4ff', sole: '#7fe7ff', glow: 'rgba(127,231,255,0.2)', sparkle: true },
-    rocket:   { main: '#9aa3b5', sole: '#4a4f63', thrust: true },
-    flame:    { main: '#ff6a1f', sole: '#ffd23f', flame: true },
-  };
-  const RAINBOW = ['#ff3d5a', '#ff8a3f', '#ffe14f', '#6bff4f', '#3ff6ff', '#9d7bff'];
-
-  // màu thật của giày (đổi theo chân / thời gian): which = 0 chân trái, 1 chân phải
-  function shoeColors(look, anim = 0, which = 0) {
-    const s = SHOES[look.shoes] || SHOES.kicks;
-    const skin = look.skin;
-    let main = s.main === 'skin' ? skin : s.main;
-    if (s.rainbow) main = RAINBOW[(Math.floor(anim * 8) + which * 3) % RAINBOW.length];
-    if (s.right && which === 1) main = s.right;
-    return { s, main, sole: s.sole === 'skin' ? skin : s.sole };
-  }
-
-  // 1 chân: lx = mép trái, fy = đáy bàn chân. Hàng: bắp chân (da) · tất · giày · đế (+ phụ kiện dưới đế)
-  function drawLeg(ctx, lx, fy, look, anim = 0, which = 0) {
-    const { s, main, sole } = shoeColors(look, anim, which);
-    px(ctx, lx, fy - 5, 4, 6, OUT);
-    const sock = s.sock === 'skin' ? look.skin : s.sock;
-    if (Array.isArray(sock)) { px(ctx, lx + 1, fy - 4, 2, 1, sock[0]); px(ctx, lx + 1, fy - 3, 2, 1, sock[1]); }
-    else { px(ctx, lx + 1, fy - 4, 2, 1, look.skin); px(ctx, lx + 1, fy - 3, 2, 1, sock || '#e8e8e8'); }
-    const slide = s.sock === 'skin' && !s.toes;
-    px(ctx, lx + 1, fy - 2, 2, 1, slide ? look.skin : main);  // dép: lộ ngón chân
-    px(ctx, lx + 1, fy - 1, 2, 1, slide ? main : sole);
-    if (s.toes) { px(ctx, lx + 1, fy - 1, 1, 1, 'rgba(0,0,0,0.25)'); }
-    if (s.camo) { px(ctx, lx + 1 + (which & 1), fy - 2, 1, 1, s.camo); px(ctx, lx + 2 - (which & 1), fy - 3, 1, 1, s.camo); }
-    if (s.clog) { px(ctx, lx, fy, 4, 1, OUT); px(ctx, lx + 1, fy, 2, 1, sole); px(ctx, lx, fy + 1, 4, 1, OUT); }
-    if (s.wheels) { px(ctx, lx, fy + 1, 1, 1, '#1a1216'); px(ctx, lx + 3, fy + 1, 1, 1, '#1a1216'); px(ctx, lx, fy, 4, 1, '#9aa3b5'); }
-    if (s.studs) { px(ctx, lx, fy + 1, 1, 1, '#e8e8e8'); px(ctx, lx + 2, fy + 1, 1, 1, '#e8e8e8'); }
-    if (s.glow) { ctx.globalCompositeOperation = 'lighter'; px(ctx, lx, fy - 3, 4, 4, s.glow); ctx.globalCompositeOperation = 'source-over'; }
-    if (s.sparkle && Math.sin(anim * 6 + lx) > 0.8) px(ctx, lx + 2, fy - 2, 1, 1, '#ffffff');
-    if (s.thrust) {
-      const f = Math.floor(anim * 16 + which) % 2;
-      ctx.globalCompositeOperation = 'lighter';
-      px(ctx, lx + 1, fy + 1, 2, 1 + f, 'rgba(90,180,255,0.9)'); px(ctx, lx + 1, fy + 2 + f, 1, 1, 'rgba(200,240,255,0.8)');
-      ctx.globalCompositeOperation = 'source-over';
-    }
-    if (s.flame) {
-      const f = Math.floor(anim * 14 + lx) % 3;
-      ctx.globalCompositeOperation = 'lighter';
-      px(ctx, lx + 1 + (f === 1 ? 1 : 0), fy - 3 - f, 1, 1, '#ffd23f');
-      px(ctx, lx + 1, fy - 3, 2, 1, 'rgba(255,106,31,0.6)');
-      ctx.globalCompositeOperation = 'source-over';
-    }
-  }
-
-
   /* ---------- hiệu ứng khi chạy (slot fx) ----------
    * rate = hạt / giây khi chạy · life = thời gian sống · z = độ cao sinh ra [min, max] · vz = bay lên (âm = rơi xuống)
    * g = trọng lực · spread = toả ngang · still = đứng yên tại chỗ (vệt) · drift = lắc ngang · add = hoà sáng (lighter)
@@ -242,7 +51,7 @@ window.SFC = window.SFC || {};
     leaves:    { rate: 9, life: 0.9, colors: ['#6bff4f', '#2f8f2a', '#b4ff3f'], size: 2, z: [10, 16], vz: [-12, -6], drift: 10 },
     hearts:    { rate: 8, life: 0.8, colors: ['#ff5a9e', '#ff3d5a'], shape: 'heart', z: [6, 12], vz: [12, 20] },
     snow:      { rate: 16, life: 0.9, colors: ['#ffffff', '#e8ecf5'], size: 1, z: [12, 20], vz: [-14, -8], drift: 5, spread: 8 },
-    smoke:     { rate: 14, life: 0.7, colors: ['#6a6470', '#8a8490', '#524c58'], size: [2, 3], z: [0, 3], vz: [6, 12] },
+    smoke:     { rate: 14, life: 0.45, colors: ['#6a6470', '#8a8490', '#524c58'], size: [2, 3], z: [0, 3], vz: [6, 12] },
     dust:      { rate: 14, life: 0.45, colors: ['#8a7f70'], size: 2, vz: [10, 14], back: 0.1 },
     notes:     { rate: 7, life: 0.9, colors: ['#ffe14f', '#7fe7ff', '#ff8ac0'], shape: 'note', z: [8, 12], vz: [12, 18], drift: 4 },
     confetti:  { rate: 26, life: 0.7, colors: ['#ff3d5a', '#ffe14f', '#3ff6ff', '#9dff3d', '#c63dff'], size: [1, 2], z: [6, 12], vz: [18, 34], g: 70, spread: 5 },
@@ -284,28 +93,6 @@ window.SFC = window.SFC || {};
     q.z = Math.max(0, q.z + q.vz * dt);
   }
 
-  // vẽ 1 hạt (g cần cho shape ghost)
-  function drawFxParticle(ctx, q, g, alpha = 1) {
-    const k = Math.max(0, q.t / q.max);
-    const x = Math.round(q.x), y = Math.round(q.y - q.z), c = q.c;
-    ctx.globalCompositeOperation = q.add ? 'lighter' : 'source-over';
-    ctx.globalAlpha = alpha * (q.shape === 'ghost' ? k * 0.45 : Math.min(1, k * 1.6));
-    switch (q.shape) {
-      case 'star': px(ctx, x, y - 1, 1, 3, c); px(ctx, x - 1, y, 3, 1, c); break;
-      case 'heart': px(ctx, x - 1, y - 1, 1, 1, c); px(ctx, x + 1, y - 1, 1, 1, c); px(ctx, x - 1, y, 3, 1, c); px(ctx, x, y + 1, 1, 1, c); break;
-      case 'note': px(ctx, x + 1, y - 3, 1, 3, c); px(ctx, x + 2, y - 3, 1, 1, c); px(ctx, x, y, 2, 1, c); break;
-      case 'ring': px(ctx, x, y - 1, 1, 1, c); px(ctx, x - 1, y, 1, 1, c); px(ctx, x + 1, y, 1, 1, c); px(ctx, x, y + 1, 1, 1, c); break;
-      case 'coin': px(ctx, x, y, 2, 2, c); px(ctx, x, y, 1, 1, '#fff6a0'); break;
-      case 'bolt': px(ctx, x, y - 2, 1, 2, c); px(ctx, x + 1, y, 1, 1, c); px(ctx, x, y + 1, 1, 2, c); break;
-      case 'ghost':
-        if (g && q.ghost) drawPlayer(ctx, Object.assign({ x: q.x, y: q.y, vx: 0, vy: 0, state: 'normal', flash: 0 }, q.ghost), g, ctx.globalAlpha, c);
-        break;
-      default: px(ctx, x, y, q.s, q.s, c);
-    }
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
-  }
-
   // xem trước hiệu ứng quanh character đứng yên (menu / shop / túi đồ): hạt lặp theo chu kỳ, không cần mô phỏng
   function drawFxPreview(ctx, kind, cx, fy, t, g) {
     const d = FX[kind];
@@ -314,7 +101,9 @@ window.SFC = window.SFC || {};
     for (let i = 0; i < n; i++) {
       const ph = (t / (d.life * 2.2) + i / n) % 1;
       const ang = i * 2.39;
+      // k (loại hiệu ứng) + phase (pha riêng như spawnFx): PlayerSprite.drawFxParticle vẽ hình riêng theo loại (mây khói, lá lật, xu xoay...)
       const q = {
+        k: kind, phase: ang % (Math.PI * 2),
         shape: d.shape || 'px', add: !!d.add, c: d.colors[i % d.colors.length], s: Math.round(rnd(d.size || 1)),
         x: cx + Math.sin(ang) * (8 + (i % 3) * 3), y: fy - 1,
         z: d.still ? rnd(d.z || 0) + (i % 4) * 3 : Math.max(0, (d.z ? d.z[0] : 0) + (d.vz ? (rnd(d.vz)) * ph : 0) + (d.vz && d.vz[0] < 0 ? 16 : 0)),
@@ -324,570 +113,56 @@ window.SFC = window.SFC || {};
         if (i > 1) break;
         Object.assign(q, { x: cx - 7 - i * 6, y: fy, ghost: { team: 0, look: g.previewLook, facing: 0, anim: t, role: 'FWD' }, t: d.life * (0.8 - i * 0.3) });
       }
-      drawFxParticle(ctx, q, g);
+      SFC.PlayerSprite.drawFxParticle(ctx, q, g);
     }
   }
 
-  /* ---------- trang phục ---------- */
-  // tóc phủ đỉnh đầu (trong vòng tròn bán kính 6) từ hàng dy0 tới dy1
-  function capRows(ctx, hx, hy, color, dy0, dy1) {
-    ctx.fillStyle = color;
-    for (let dy = dy0; dy <= dy1; dy++) {
-      const w = Math.floor(Math.sqrt(36 - dy * dy) + 0.35);
-      ctx.fillRect(hx - w, hy + dy, w * 2 + 1, 1);
+  // canvas hiện trên trang (menu, thẻ, icon): gấp đôi độ phân giải để sprite 2x (src/render/player) hiện đủ px mịn, cỡ hiển thị giữ nguyên.
+  // Cỡ cũ = cỡ logic (w, h). CSS không đặt cỡ (cỡ hiển thị = cỡ canvas) thì ghim cỡ cũ bằng style. Người gọi đổi canvas.width -> tính lại
+  function hiRes(canvas) {
+    if (canvas.width !== canvas._hdW || canvas.height !== canvas._hdH) {
+      const w = canvas.width, h = canvas.height;
+      if (canvas.isConnected && !canvas.style.width && typeof getComputedStyle === 'function') {
+        const cs = getComputedStyle(canvas);
+        if (cs.width === w + 'px' && cs.height === h + 'px') { canvas.style.width = w + 'px'; canvas.style.height = h + 'px'; }
+      }
+      canvas.width = w * 2; canvas.height = h * 2;
+      canvas._hdW = canvas.width; canvas._hdH = canvas.height;
     }
+    return { w: canvas.width / 2, h: canvas.height / 2 };
   }
-
-  // vòng tròn pixel rỗng dẹt (vòng thánh, bong bóng...)
-  function ringFlat(ctx, cx, cy, rx, ry, c) {
-    ctx.fillStyle = c;
-    const n = Math.max(12, rx * 6);
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      ctx.fillRect(Math.round(cx + Math.cos(a) * rx), Math.round(cy + Math.sin(a) * ry), 1, 1);
-    }
-  }
-
-  // tô phần dưới / trên của mặt (hàng dy0..dy1 trong vòng tròn bán kính 6) — khăn che mặt, mặt nạ
-  const faceRows = capRows;
-
-  function drawHair(ctx, cut, hair, kit, hx, hy, fx, fy, back, anim = 0) {
-    const side = Math.abs(fx) > 0.5 ? Math.sign(fx) : 0; // nhìn sang trái / phải
-    switch (cut) {
-      case 'buzz':
-        capRows(ctx, hx, hy, hair, -6, back ? 2 : -4);
-        break;
-      case 'spiky':
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
-        for (const sx of [-5, -2, 1, 4]) {
-          px(ctx, sx < 0 ? hx + sx - 1 : hx + sx, hy - 10, 3, 4, OUT);
-          px(ctx, hx + sx, hy - 9, 1, 3, hair); px(ctx, hx + sx + (sx < 0 ? 0 : 0), hy - 7, 2, 1, hair);
-        }
-        break;
-      case 'mohawk':
-        capRows(ctx, hx, hy, 'rgba(20,12,22,0.28)', -6, back ? 2 : -4); // hai bên cạo sát
-        if (side) { px(ctx, hx - 6, hy - 11, 13, 5, OUT); px(ctx, hx - 5, hy - 10, 11, 4, hair); }
-        else { px(ctx, hx - 2, hy - 12, 5, 9, OUT); px(ctx, hx - 1, hy - 11, 3, 8, hair); }
-        break;
-      case 'afro':
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
-        break;
-      case 'cap': {
-        const cap = '#262a36', brim = '#161923';
-        capRows(ctx, hx, hy, cap, -6, -2);
-        if (back) px(ctx, hx - 2, hy - 3, 5, 1, kit.accent); // quai sau
-        else if (side) { px(ctx, side > 0 ? hx + 3 : hx - 10, hy - 4, 8, 3, OUT); px(ctx, side > 0 ? hx + 4 : hx - 9, hy - 3, 6, 1, brim); }
-        else { px(ctx, hx - 7, hy - 3, 15, 3, OUT); px(ctx, hx - 6, hy - 2, 13, 1, brim); }
-        if (!back) px(ctx, hx - 1 + side * 2, hy - 5, 2, 2, kit.accent); // logo
-        break;
-      }
-      case 'beanie':
-        capRows(ctx, hx, hy, '#d7263d', -6, -2);
-        px(ctx, hx - 6, hy - 3, 13, 2, '#ff5a6e');
-        disc(ctx, hx, hy - 8, 3, OUT); disc(ctx, hx, hy - 8, 2, '#f3ead7');
-        break;
-      case 'bandana':
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
-        px(ctx, hx - 6, hy - 4, 13, 2, '#d7263d');
-        px(ctx, hx - 4, hy - 4, 1, 1, '#ffffff'); px(ctx, hx + 2, hy - 3, 1, 1, '#ffffff');
-        if (side) { px(ctx, hx - side * 9, hy - 4, 3, 1, '#d7263d'); px(ctx, hx - side * 10, hy - 3, 2, 1, '#a81d30'); }
-        else if (back) px(ctx, hx - 1, hy - 5, 3, 3, '#a81d30'); // nút buộc
-        break;
-      case 'crown':
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
-        px(ctx, hx - 5, hy - 8, 11, 4, OUT);
-        for (const sx of [-4, 0, 4]) { px(ctx, hx + sx - 1, hy - 11, 3, 4, OUT); px(ctx, hx + sx, hy - 10, 1, 3, '#ffd23f'); }
-        px(ctx, hx - 4, hy - 7, 9, 2, '#ffd23f');
-        px(ctx, hx, hy - 7, 1, 1, '#ff3d5a');
-        break;
-      case 'bowl': // mái bằng
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -2);
-        if (!back) px(ctx, hx - 6, hy - 2, 13, 1, 'rgba(0,0,0,0.25)');
-        break;
-      case 'bun':
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
-        disc(ctx, hx, hy - 8, 3, OUT); disc(ctx, hx, hy - 8, 2, hair);
-        px(ctx, hx - 2, hy - 6, 5, 1, kit.accent);
-        break;
-      case 'longhair': // tóc dài buộc đuôi ngựa
-        capRows(ctx, hx, hy, hair, -6, back ? 4 : -3);
-        if (side) { px(ctx, hx - side * 9 - 1, hy - 4, 4, 8, OUT); px(ctx, hx - side * 9, hy - 3, 2, 6, hair); }
-        else if (back) { px(ctx, hx - 2, hy + 2, 5, 7, OUT); px(ctx, hx - 1, hy + 3, 3, 5, hair); }
-        else { px(ctx, hx - 8, hy - 4, 3, 8, OUT); px(ctx, hx + 6, hy - 4, 3, 8, OUT); px(ctx, hx - 7, hy - 3, 1, 6, hair); px(ctx, hx + 7, hy - 3, 1, 6, hair); }
-        break;
-      case 'bucket': {
-        const hat = '#c7b27a';
-        capRows(ctx, hx, hy, hat, -6, -3);
-        px(ctx, hx - 8, hy - 4, 17, 3, OUT); px(ctx, hx - 7, hy - 3, 15, 1, '#a8935c');
-        px(ctx, hx - 5, hy - 5, 11, 1, '#8a7a4a');
-        break;
-      }
-      case 'headphones':
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
-        // vòng đeo ôm sát đỉnh đầu, hai đầu nối xuống tai
-        px(ctx, hx - 5, hy - 9, 11, 3, OUT); px(ctx, hx - 4, hy - 8, 9, 1, '#4a4f63');
-        px(ctx, hx - 8, hy - 7, 3, 4, OUT); px(ctx, hx + 6, hy - 7, 3, 4, OUT);
-        px(ctx, hx - 7, hy - 7, 2, 1, '#4a4f63'); px(ctx, hx + 6, hy - 7, 2, 1, '#4a4f63');
-        px(ctx, hx - 7, hy - 6, 1, 2, '#4a4f63'); px(ctx, hx + 7, hy - 6, 1, 2, '#4a4f63');
-        if (side) { px(ctx, hx - 3, hy - 4, 6, 6, OUT); px(ctx, hx - 2, hy - 3, 4, 4, '#ff3d5a'); }
-        else { px(ctx, hx - 9, hy - 4, 4, 6, OUT); px(ctx, hx + 6, hy - 4, 4, 6, OUT); px(ctx, hx - 8, hy - 3, 2, 4, '#ff3d5a'); px(ctx, hx + 7, hy - 3, 2, 4, '#ff3d5a'); }
-        break;
-      case 'helmet': // mũ bảo hiểm nửa đầu
-        capRows(ctx, hx, hy, '#e8ecf5', -6, back ? 3 : -2);
-        px(ctx, hx, hy - 6, 1, 4, '#d7263d');
-        if (!back) { px(ctx, hx - 7, hy - 2, 2, 5, OUT); px(ctx, hx + 6, hy - 2, 2, 5, OUT); px(ctx, hx - 6, hy - 1, 1, 3, '#e8ecf5'); px(ctx, hx + 6, hy - 1, 1, 3, '#e8ecf5'); }
-        px(ctx, hx - 4, hy - 5, 2, 1, '#ffffff');
-        break;
-      case 'cowboy': {
-        const hat = '#8a5a2b';
-        capRows(ctx, hx, hy, hair, -5, back ? 3 : -3);
-        px(ctx, hx - 5, hy - 12, 11, 7, OUT); px(ctx, hx - 4, hy - 11, 9, 5, hat); px(ctx, hx, hy - 11, 1, 2, '#5e3b1a');
-        px(ctx, hx - 4, hy - 7, 9, 1, '#3b2415');
-        px(ctx, hx - 11, hy - 6, 23, 3, OUT); px(ctx, hx - 10, hy - 5, 21, 1, hat);
-        px(ctx, hx - 11, hy - 7, 2, 1, OUT); px(ctx, hx + 10, hy - 7, 2, 1, OUT);
-        break;
-      }
-      case 'santa':
-        // mũ nhọn đổ nghiêng sang phải, quả bông ở chóp
-        px(ctx, hx - 6, hy - 9, 12, 4, OUT); px(ctx, hx - 3, hy - 11, 9, 3, OUT); px(ctx, hx + 2, hy - 12, 6, 2, OUT);
-        capRows(ctx, hx, hy, '#d7263d', -6, -3);
-        px(ctx, hx - 5, hy - 8, 10, 3, '#d7263d'); px(ctx, hx - 2, hy - 10, 7, 2, '#d7263d'); px(ctx, hx + 3, hy - 11, 4, 1, '#d7263d');
-        px(ctx, hx - 4, hy - 8, 3, 1, '#ff5a6e');
-        disc(ctx, hx + 7, hy - 11, 2, OUT); disc(ctx, hx + 7, hy - 11, 1, '#f3ead7');
-        px(ctx, hx - 7, hy - 4, 15, 3, OUT); px(ctx, hx - 6, hy - 3, 13, 1, '#f3ead7');
-        break;
-      case 'viking': {
-        const metal = '#9aa3b5', bone = '#f3ead7';
-        capRows(ctx, hx, hy, metal, -6, -2);
-        px(ctx, hx - 6, hy - 3, 13, 1, '#6a7385'); px(ctx, hx, hy - 6, 1, 3, '#6a7385');
-        // sừng cong: mọc từ hai bên mũ, vươn ra ngoài rồi chĩa lên
-        const horn = [[6, -4], [7, -4], [7, -5], [8, -5], [8, -6], [9, -6], [9, -7], [9, -8], [9, -9]];
-        for (const s of [-1, 1]) for (const [dx, dy] of horn) px(ctx, hx + s * dx - 1, hy + dy - 1, 3, 3, OUT);
-        for (const s of [-1, 1]) for (const [dx, dy] of horn) px(ctx, hx + s * dx, hy + dy, 1, 1, bone);
-        for (const s of [-1, 1]) px(ctx, hx + s * 6, hy - 4, 1, 1, '#c7bca8');
-        px(ctx, hx - 3, hy - 5, 2, 1, '#ffffff');
-        break;
-      }
-      case 'halo': {
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
-        const y = hy - 11 + Math.round(Math.sin(anim * 3) * 1);
-        ctx.globalCompositeOperation = 'lighter';
-        ringFlat(ctx, hx, y, 6, 2, 'rgba(255,233,138,0.35)');
-        ctx.globalCompositeOperation = 'source-over';
-        ringFlat(ctx, hx, y, 5, 1.5, '#ffe98a');
-        break;
-      }
-      case 'ward_trophy': { // cúp Ward Cup (FOOTBALL STORY): nồi cơm méo sơn vàng đội trên đầu
-        const G = '#ffd23f', GD = '#c9a020', GL = '#fff3a8';
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
-        px(ctx, hx - 7, hy - 11, 15, 8, OUT);
-        px(ctx, hx - 6, hy - 10, 13, 6, G);
-        px(ctx, hx - 6, hy - 5, 13, 1, GD);
-        px(ctx, hx - 8, hy - 12, 17, 2, OUT); px(ctx, hx - 7, hy - 12, 15, 1, GL);   // miệng nồi
-        if (!side) { px(ctx, hx - 9, hy - 9, 2, 3, OUT); px(ctx, hx + 8, hy - 9, 2, 3, OUT); px(ctx, hx - 9, hy - 8, 1, 1, G); px(ctx, hx + 9, hy - 8, 1, 1, G); }   // 2 quai
-        else px(ctx, side > 0 ? hx - 9 : hx + 8, hy - 9, 2, 3, OUT);
-        if (!back) { px(ctx, hx - 4 + side * 2, hy - 9, 2, 3, GL); px(ctx, hx + 2 + side, hy - 8, 2, 1, GD); }   // bóng sáng + vết méo
-        break;
-      }
-      case 'moon_cap': { // mũ Rooftop Night League (FOOTBALL STORY): mũ lưỡi trai xanh đêm, trăng khuyết vàng
-        const cap = '#1e2a50', brim = '#141a30';
-        capRows(ctx, hx, hy, cap, -6, -2);
-        if (back) px(ctx, hx - 2, hy - 3, 5, 1, '#ffd23f');
-        else if (side) { px(ctx, side > 0 ? hx + 3 : hx - 10, hy - 4, 8, 3, OUT); px(ctx, side > 0 ? hx + 4 : hx - 9, hy - 3, 6, 1, brim); }
-        else { px(ctx, hx - 7, hy - 3, 15, 3, OUT); px(ctx, hx - 6, hy - 2, 13, 1, brim); }
-        if (!back) { const mx = hx - 1 + side * 2; px(ctx, mx, hy - 6, 2, 3, '#ffd23f'); px(ctx, mx + 1, hy - 7, 1, 1, '#ffd23f'); px(ctx, mx + 1, hy - 5, 1, 1, cap); }
-        break;
-      }
-      case 'lantern_hat': { // mũ Night Market Cup (FOOTBALL STORY): đèn lồng giấy đỏ đội trên đầu
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
-        px(ctx, hx - 6, hy - 15, 13, 10, OUT);
-        px(ctx, hx - 5, hy - 14, 11, 8, '#e8322a');
-        px(ctx, hx - 3, hy - 13, 3, 5, '#ff7a5a');                         // chỗ sáng
-        px(ctx, hx - 1, hy - 14, 1, 8, '#b81e1a'); px(ctx, hx + 2, hy - 14, 1, 8, '#b81e1a');   // nan
-        px(ctx, hx - 4, hy - 15, 9, 1, '#ffd23f'); px(ctx, hx - 4, hy - 6, 9, 1, '#ffd23f');    // viền vàng
-        px(ctx, hx, hy - 17, 1, 2, '#ffd23f');
-        break;
-      }
-      case 'laurel': { // vòng nguyệt quế Grandpa's Legends (FOOTBALL STORY): lá vàng ôm quanh đầu
-        const G = '#ffd23f', GD = '#c9a020';
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -4);
-        const leaf = (x, y, c) => { px(ctx, x - 1, y - 1, 3, 3, OUT); px(ctx, x, y, 2, 1, c); };
-        if (side) {
-          for (let k = 0; k < 5; k++) leaf(hx - side * 5 + side * k * 2, hy - 5 - (k % 2), k % 2 ? G : GD);
-        } else {
-          for (let k = 0; k < 4; k++) { leaf(hx - 7 + k * 2, hy - 3 - k, k % 2 ? G : GD); leaf(hx + 6 - k * 2, hy - 3 - k, k % 2 ? G : GD); }
-          if (!back) px(ctx, hx, hy - 8, 1, 1, '#fff3a8');
-        }
-        break;
-      }
-      case 'flamehair': {
-        capRows(ctx, hx, hy, '#ff6a1f', -6, back ? 3 : -3);
-        ctx.globalCompositeOperation = 'lighter';
-        for (let i = -5; i <= 4; i += 2) {
-          const h = 3 + ((i * 7 + Math.floor(anim * 12)) % 3 + 3) % 3;
-          px(ctx, hx + i, hy - 6 - h, 2, h, 'rgba(255,106,31,0.9)');
-          px(ctx, hx + i, hy - 6 - h, 1, 2, '#ffd23f');
-        }
-        disc(ctx, hx, hy - 7, 6, 'rgba(255,140,40,0.18)');
-        ctx.globalCompositeOperation = 'source-over';
-        break;
-      }
-      case 'aura': {   // AURA FARMING: tóc vàng dựng ngược kiểu siêu xay-da (mọi kiểu tóc / mũ đều bị thay)
-        const lit = '#fff6b0', dark = '#d9a514', flick = Math.floor(anim * 10) % 2;
-        // chỏm nhọn: [lệch x, cao, nghiêng]
-        const spikes = [[-6, 5, -1], [-3, 8, 0], [0, 10 + flick, 0], [3, 8, 0], [6, 5, 1]];
-        for (const pass of [0, 1]) {
-          for (const [sx, h, lean] of spikes) {
-            for (let k = 0; k < h; k++) {
-              const w = k < h * 0.45 ? 3 : k < h * 0.8 ? 2 : 1, ox = hx + sx + Math.round(lean * k * 0.4) - (w > 1 ? 1 : 0);
-              if (pass === 0) px(ctx, ox - 1, hy - 6 - k - 1, w + 2, 3, OUT);
-              else px(ctx, ox, hy - 6 - k, w, 1, k > h * 0.6 ? lit : hair);
-            }
-          }
-        }
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
-        if (!back) { px(ctx, hx - 4, hy - 3, 2, 2, hair); px(ctx, hx + 2, hy - 3, 2, 2, hair); px(ctx, hx - 1, hy - 2, 2, 2, hair); }   // tóc mái nhọn rủ xuống trán
-        px(ctx, hx - 4, hy - 6, 3, 1, lit); px(ctx, hx + 2, hy - 4, 3, 1, dark);
-        break;
-      }
-      default: // classic: tóc ngắn + băng đô màu đội
-        capRows(ctx, hx, hy, hair, -6, back ? 3 : -3);
-        px(ctx, hx - 6, hy - 3, 13, 1, kit.accent);
-    }
-  }
-
-  // phụ kiện mặt (chỉ vẽ khi nhìn về phía trước / ngang). cx, cy = tâm đầu đã lệch theo hướng nhìn
-  function drawFace(ctx, face, hair, cx, cy, look = {}, fx = 0, fy = 1, anim = 0) {
-    switch (face) {
-      case 'blush':
-        px(ctx, cx - 5, cy + 2, 2, 1, 'rgba(255,90,120,0.7)'); px(ctx, cx + 4, cy + 2, 2, 1, 'rgba(255,90,120,0.7)');
-        break;
-      case 'freckles':
-        for (const [dx, dy] of [[-4, 2], [-3, 3], [-2, 2], [2, 2], [3, 3], [4, 2]]) px(ctx, cx + dx, cy + dy, 1, 1, '#a0643c');
-        break;
-      case 'beard':
-        px(ctx, cx - 6, cy, 2, 3, hair); px(ctx, cx + 5, cy, 2, 3, hair);
-        px(ctx, cx - 5, cy + 2, 11, 3, hair); px(ctx, cx - 3, cy + 5, 7, 1, hair);
-        px(ctx, cx - 1, cy + 3, 2, 1, OUT);
-        break;
-      case 'nerd':
-        px(ctx, cx - 5, cy - 2, 5, 5, OUT); px(ctx, cx + 1, cy - 2, 5, 5, OUT);
-        px(ctx, cx - 4, cy - 1, 3, 3, 'rgba(210,235,255,0.55)'); px(ctx, cx + 2, cy - 1, 3, 3, 'rgba(210,235,255,0.55)');
-        px(ctx, cx - 4, cy - 1, 1, 1, OUT); px(ctx, cx + 2, cy - 1, 1, 1, OUT);
-        px(ctx, cx, cy - 1, 1, 1, OUT);
-        break;
-      case 'scar':
-        for (let i = 0; i < 5; i++) px(ctx, cx + 1 + (i & 1), cy - 3 + i, 1, 1, '#b8323f');
-        px(ctx, cx, cy - 1, 3, 1, '#b8323f');
-        break;
-      case 'clown':
-        disc(ctx, cx, cy + 1, 2, OUT); disc(ctx, cx, cy + 1, 1, '#ff3d3d'); px(ctx, cx - 1, cy, 1, 1, '#ffffff');
-        break;
-      case 'goldtooth':
-        px(ctx, cx - 2, cy + 3, 5, 2, OUT); px(ctx, cx - 1, cy + 3, 3, 1, '#f3ead7'); px(ctx, cx, cy + 3, 1, 1, '#ffd23f');
-        break;
-      case 'warpaint':
-        for (const s of [-1, 1]) { px(ctx, cx + s * 4 - 1, cy + 1, 3, 1, '#ff3d5a'); px(ctx, cx + s * 4 - 1, cy + 3, 3, 1, '#f3ead7'); }
-        break;
-      case 'monocle':
-        px(ctx, cx, cy - 2, 5, 5, '#ffd23f'); px(ctx, cx + 1, cy - 1, 3, 3, 'rgba(210,235,255,0.5)');
-        px(ctx, cx + 2, cy, 1, 1, OUT);
-        px(ctx, cx + 4, cy + 3, 1, 1, '#ffd23f'); px(ctx, cx + 5, cy + 4, 1, 2, '#ffd23f');
-        break;
-      case 'ninja':
-        faceRows(ctx, cx, cy, '#262a36', 1, 6);
-        px(ctx, cx - 6, cy - 4, 13, 2, '#262a36'); px(ctx, cx - 6, cy - 4, 13, 1, '#d7263d');
-        break;
-      case 'cyborg':
-        px(ctx, cx, cy - 3, 6, 6, OUT); px(ctx, cx + 1, cy - 2, 4, 4, '#4a4f63');
-        px(ctx, cx + 2, cy - 1, 2, 2, '#ff3d3d');
-        ctx.globalCompositeOperation = 'lighter'; px(ctx, cx + 1, cy - 2, 4, 4, `rgba(255,60,60,${0.25 + 0.2 * Math.sin(anim * 8)})`); ctx.globalCompositeOperation = 'source-over';
-        break;
-      case 'skull':
-        faceRows(ctx, cx, cy, '#e8ecf5', -4, 6);
-        px(ctx, cx - 4, cy - 1, 3, 3, OUT); px(ctx, cx + 1, cy - 1, 3, 3, OUT);
-        px(ctx, cx - 1, cy + 2, 2, 1, OUT);
-        px(ctx, cx - 3, cy + 4, 7, 1, OUT); px(ctx, cx - 2, cy + 4, 1, 1, '#e8ecf5'); px(ctx, cx + 1, cy + 4, 1, 1, '#e8ecf5');
-        break;
-      case 'lasereyes': {
-        px(ctx, cx - 4, cy - 1, 3, 3, '#ff2a2a'); px(ctx, cx + 1, cy - 1, 3, 3, '#ff2a2a');
-        px(ctx, cx - 3, cy, 1, 1, '#ffffff'); px(ctx, cx + 2, cy, 1, 1, '#ffffff');
-        ctx.globalCompositeOperation = 'lighter';
-        const len = 10 + Math.round(Math.sin(anim * 20) * 2);
-        for (const ex of [cx - 3, cx + 2]) for (let i = 2; i < len; i++) px(ctx, Math.round(ex + fx * i), Math.round(cy + fy * i * 0.6), 1, 1, `rgba(255,50,50,${0.9 - i / len * 0.7})`);
-        px(ctx, cx - 5, cy - 2, 11, 5, 'rgba(255,40,40,0.18)');
-        ctx.globalCompositeOperation = 'source-over';
-        break;
-      }
-      case 'shades':
-        px(ctx, cx - 5, cy - 1, 11, 3, OUT);
-        px(ctx, cx - 4, cy - 1, 3, 2, '#2a3350'); px(ctx, cx + 1, cy - 1, 3, 2, '#2a3350');
-        px(ctx, cx - 4, cy - 1, 1, 1, '#ffffff');
-        break;
-      case 'visor':
-        px(ctx, cx - 5, cy - 2, 11, 4, OUT);
-        px(ctx, cx - 4, cy - 1, 9, 2, '#3ff6ff');
-        px(ctx, cx - 4, cy - 1, 9, 1, '#c8fdff');
-        break;
-      case 'mask':
-        px(ctx, cx - 4, cy + 1, 9, 4, '#e8ecf5');
-        px(ctx, cx - 3, cy + 2, 7, 1, '#c7cbd6');
-        px(ctx, cx - 6, cy, 2, 1, '#e8ecf5'); px(ctx, cx + 5, cy, 2, 1, '#e8ecf5');
-        break;
-      case 'eyepatch':
-        px(ctx, cx - 5, cy - 2, 5, 4, OUT);
-        px(ctx, cx - 6, cy - 3, 13, 1, OUT);
-        break;
-      case 'mustache':
-        px(ctx, cx - 3, cy + 2, 7, 1, hair);
-        px(ctx, cx - 4, cy + 3, 1, 1, hair); px(ctx, cx + 4, cy + 3, 1, 1, hair);
-        break;
-      case 'bandaid':
-        px(ctx, cx + 2, cy + 2, 3, 1, '#f0c080'); px(ctx, cx + 3, cy + 1, 1, 3, '#f0c080');
-        break;
-    }
-  }
+  let flatBuf = null;
 
   // vẽ character đứng một mình (menu / shop / hồ sơ) — canvas nhỏ, CSS phóng to kiểu pixel
   // extra: ghi đè trạng thái vẽ (vd. { vx: 40 } = chạy, { atkType: 'shoot' | 'light', atkT } = tư thế ra đòn) — màn giới thiệu đội hình
-  function drawAvatar(canvas, look, kit, t = 0, facing = Math.PI / 2, extra = null) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const g = { teams: [{ cfg: { kit } }], previewLook: look };
-    const x = canvas.width / 2, y = canvas.height - 4;
-    // xem trước động tác ăn mừng (túi đồ / mở hộp): extra = { celId, celT }
-    if (extra && extra.celId && SFC.CelebrateDraw) {
-      SFC.CelebrateDraw.draw(ctx, Object.assign({ x, y: canvas.height - 6, vx: 0, vy: 0, facing: Math.PI / 2, anim: t, flash: 0, state: 'normal', team: 0, look, preview: true }, extra), g);
+  // flat: canvas là bộ đệm 1x ghép vào cảnh pixel (KIT VAN, cảnh Story, phòng trưng bày): vẽ 2x ra bộ đệm riêng rồi thu về lưới game (lấy mẫu điểm gần nhất)
+  function drawAvatar(canvas, look, kit, t = 0, facing = Math.PI / 2, extra = null, flat = false) {
+    if (flat) {
+      const w = canvas.width, h = canvas.height;
+      flatBuf = flatBuf || document.createElement('canvas');
+      flatBuf.width = w; flatBuf.height = h;
+      drawAvatar(flatBuf, look, kit, t, facing, extra);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(flatBuf, 0, 0, w, h);
       return;
     }
-    const behind = look.fx === 'shadow';
-    if (behind) drawFxPreview(ctx, look.fx, x, y, t, g);
-    drawPlayer(ctx, Object.assign({ x, y, vx: 0, vy: 0, facing, anim: t, flash: 0, state: 'normal', team: 0, look }, extra), g);
-    if (!behind && look.fx && FX[look.fx]) drawFxPreview(ctx, look.fx, x, y, t, g);
-  }
-
-  /* ---------- tư thế ăn mừng (src/render/celebrate-draw.js) ---------- */
-  // mắt 3x3 tại (x, y): happy = ^ · closed = gạch ngang · up = nhìn lên trời
-  function celEyes(ctx, kind, x, y) {
-    if (kind === 'happy') { px(ctx, x, y + 1, 1, 1, OUT); px(ctx, x + 1, y, 1, 1, OUT); px(ctx, x + 2, y + 1, 1, 1, OUT); return; }
-    if (kind === 'closed') { px(ctx, x, y + 1, 3, 1, OUT); return; }
-    px(ctx, x, y - 1, 3, 3, OUT); px(ctx, x + 1, y - 1, 1, 1, '#ffffff');
-  }
-  // 2 tay: arms = [trái, phải], mỗi tay [dx, dy] (bàn tay) hoặc [khuỷu dx, dy, bàn tay dx, dy] tính từ vai (x ∓ 5, by + 2)
-  function celArms(ctx, x, by, arms, hand) {
-    arms.forEach((a, i) => {
-      if (!a) return;
-      const sx = x + (i ? 5 : -5), sy = by + 2;
-      const pts = a.length > 2 ? [[sx, sy], [sx + a[0], sy + a[1]], [sx + a[2], sy + a[3]]] : [[sx, sy], [sx + a[0], sy + a[1]]];
-      for (let pass = 0; pass < 2; pass++) {
-        for (let k = 1; k < pts.length; k++) {
-          const [x0, y0] = pts[k - 1], [x1, y1] = pts[k];
-          const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
-          for (let j = 0; j <= n; j++) {
-            const cx = Math.round(x0 + ((x1 - x0) * j) / n), cy = Math.round(y0 + ((y1 - y0) * j) / n);
-            if (pass === 0) px(ctx, cx - 1, cy - 1, 3, 3, OUT); else px(ctx, cx, cy, 1, 1, hand);
-          }
-        }
-      }
-      const [hx, hy] = pts[pts.length - 1];
-      px(ctx, hx - 1, hy - 1, 4, 4, OUT);
-      px(ctx, hx, hy, 2, 2, hand);
-    });
-  }
-
-  /* ---------- cầu thủ ---------- */
-  // p cần: x, y, vx, vy, facing, anim, team, role, look, state
-  // tint = tô 1 màu thay áo đấu · ghost = bóng mờ (không găng / tư thế ra đòn / hào quang), mặc định bật khi có tint
-  // băng trắng của chấn thương: cổ chân / ngón chân (chân phải), đùi (chân trái), cổ tay (tay trái). legsBusy: đang sút -> bỏ băng chân
-  const BANDAGE = '#f4efe2', BLOOD = '#e0475e';
-  function drawBandages(ctx, p, x, y, by, l, r, arm, legsBusy) {
-    const B = SFC_CONFIG.run && SFC_CONFIG.run.badges;
-    if (!B) return;
-    for (const id of p.inj) {
-      const part = B[id] && B[id].part;
-      if (part === 'wrist') { px(ctx, x - 7, by + 1 + arm, 3, 3, OUT); px(ctx, x - 6, by + 2 + arm, 2, 1, BANDAGE); px(ctx, x - 6, by + 3 + arm, 1, 1, BLOOD); }
-      if (legsBusy) continue;
-      if (part === 'ankle') { px(ctx, x, y + r - 4, 4, 2, BANDAGE); px(ctx, x + 1, y + r - 3, 1, 1, BLOOD); }
-      if (part === 'toe') { px(ctx, x, y + r - 2, 4, 1, BANDAGE); px(ctx, x + 2, y + r - 2, 1, 1, BLOOD); }
-      if (part === 'thigh') { px(ctx, x - 4, y + l - 5, 4, 2, BANDAGE); px(ctx, x - 3, y + l - 4, 1, 1, BLOOD); }
-    }
-  }
-
-  function drawPlayer(ctx, p, g, alpha = 1, tint = null, ghost = !!tint) {
-    const team = g.teams[p.team];
-    const kit = team.cfg.kit;
-    const shirt = tint || kit.shirt;
-    const shirtDark = tint || kit.shirtDark;
-    const gloves = !ghost && p.keeper; // đứng trong vòng cấm nhà -> đeo găng thủ môn
-    const x = Math.round(p.x), y0 = Math.round(p.y);
-    // tư thế ăn mừng bàn thắng (CelebrateDraw.draw gắn vào): tay / chân / thân hạ / mắt / miệng riêng
-    const cp = !ghost && p.celPose;
-    const moving = cp ? !!cp.run : Math.hypot(p.vx || 0, p.vy || 0) > 12;
-    const step = moving ? Math.floor(p.anim * 12) % 2 : 0;
-    const stunned = p.state === 'stun';
-    const atk = !ghost && p.atkType ? attackPose(p) : null;
-    // đánh đầu: cả người bật lên khỏi mặt sân, bóng đổ dưới chân giữ nguyên
-    const y = y0 - (atk && atk.hop ? Math.round(atk.hop) : 0);
-    const bob = moving && step ? -1 : 0;
-    const fx = Math.cos(p.facing), fy = Math.sin(p.facing);
-    // tay / chân ra đòn nằm ở phía hướng mặt (nhìn sang phải -> tay/chân phải)
-    const side = fx >= 0 ? 1 : -1;
-
-    ctx.globalAlpha = alpha;
-    // bóng đổ dưới chân: bật nhảy (đánh đầu) càng cao bóng đổ càng nhỏ
-    const sh = atk && atk.hop ? Math.max(0.5, 1 - atk.hop / 28) : 1;
-    if (alpha >= 1) ellipse(ctx, x, y0 + 1, 6 * sh, 2.5 * sh, 'rgba(0,0,0,0.38)');
-    // hiệu ứng Hào quang vàng: vầng sáng dưới chân
-    if (!ghost && p.look.fx === 'aura') {
-      ctx.globalCompositeOperation = 'lighter';
-      ellipse(ctx, x, y0, 9, 4, `rgba(255,200,60,${0.25 + 0.12 * Math.sin((p.anim || 0) * 5)})`);
-      ellipse(ctx, x, y0, 5, 2, 'rgba(255,240,150,0.3)');
-      ctx.globalCompositeOperation = 'source-over';
-    }
-
-    // chân (đang đá: chỉ vẽ chân trụ, chân đá vẽ riêng)
-    const l = step ? -1 : 0, r = step ? 0 : -1;
-    const kickLeg = atk && atk.leg != null;
-    if (atk && atk.shoot && Math.abs(fx) >= 0.5) {
-      // tư thế sút (nhìn ngang): 2 chân chéo từ hông — chân sút -15° (ra trước, hơi chúc xuống), chân trụ -120° (chéo xuống ra sau)
-      const kickH = side > 0 ? x + 1 : x - 3, supH = side > 0 ? x - 3 : x + 1;
-      drawDiagLeg(ctx, supH, y - 5, atk.volley ? -105 : -120, 6, side, p.look, kit, p.anim, side > 0 ? 0 : 1);
-      drawDiagLeg(ctx, kickH, y - 5, atk.volley ? 12 : -15, atk.volley ? 8 : 7, side, p.look, kit, p.anim, side > 0 ? 1 : 0);
-    } else if (atk && atk.shoot) {
-      // tư thế sút (nhìn lên / xuống): chân trụ lùi 1px về sau đứng vững, chân sút (phía hướng mặt) đưa ra trước ~3px và nhấc khỏi đất
-      // (quay lưng lên trên: đưa ra ít hơn + nhấc ít hơn để chân không bị thân che mất)
-      const kickL = side > 0 ? x : x - 4, supL = side > 0 ? x - 4 : x;
-      const lift = (Math.abs(fy) > 0.7 ? 1 : 2) + (atk.volley ? 2 : 0);
-      drawLeg(ctx, supL - Math.round(fx), y - Math.round(fy), p.look, p.anim, side > 0 ? 0 : 1);
-      drawLeg(ctx, kickL + Math.round(fx * 3), y + Math.round(fy * (fy > 0 ? 2 : 1)) - lift, p.look, p.anim, side > 0 ? 1 : 0);
-    } else if (cp && cp.legs === 'cross') {
-      // ngồi xếp bằng: 2 ống chân nằm ngang trước người, giày ở 2 đầu
-      const { main } = shoeColors(p.look, p.anim, 0);
-      px(ctx, x - 9, y - 4, 18, 4, OUT);
-      px(ctx, x - 8, y - 3, 16, 2, p.look.skin);
-      px(ctx, x - 8, y - 3, 3, 2, main); px(ctx, x + 5, y - 3, 3, 2, main);
-    } else if (cp && cp.legs === 'sit') {
-      /* vẽ chân co gối sau thân để đùi + đầu gối nổi phía trước quần */
-    } else if (cp && cp.legs === 'split') {
-      drawLeg(ctx, x - 7, y, p.look, p.anim, 0);
-      drawLeg(ctx, x + 3, y, p.look, p.anim, 1);
+    const { w, h } = hiRes(canvas), ctx = canvas.getContext('2d');
+    ctx.setTransform(2, 0, 0, 2, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const g = { teams: [{ cfg: { kit } }], previewLook: look };
+    const x = w / 2, y = h - 4;
+    // xem trước động tác ăn mừng (túi đồ / mở hộp): extra = { celId, celT }
+    if (extra && extra.celId && SFC.CelebrateDraw) {
+      SFC.CelebrateDraw.draw(ctx, Object.assign({ x, y: h - 6, vx: 0, vy: 0, facing: Math.PI / 2, anim: t, flash: 0, state: 'normal', team: 0, look, preview: true }, extra), g);
     } else {
-      // bật nhảy đánh đầu: co chân (2 chân sát nhau, nhấc lên 1px)
-      const tk = atk && atk.tuck ? 1 : 0;
-      if (!(kickLeg && side < 0)) drawLeg(ctx, x - 4 + tk, y + (tk ? -1 : l), p.look, p.anim, 0);
-      if (!(kickLeg && side > 0)) drawLeg(ctx, x - tk, y + (tk ? -1 : r), p.look, p.anim, 1);
-      if (kickLeg) drawKick(ctx, p, x, y, fx, fy, side, atk);
+      const behind = look.fx === 'shadow';
+      if (behind) drawFxPreview(ctx, look.fx, x, y, t, g);
+      SFC.PlayerSprite.drawPlayer(ctx, Object.assign({ x, y, vx: 0, vy: 0, facing, anim: t, flash: 0, state: 'normal', team: 0, look }, extra), g);
+      if (!behind && look.fx && FX[look.fx]) drawFxPreview(ctx, look.fx, x, y, t, g);
     }
-
-    // chạy nước rút sang ngang: thân + đầu nghiêng về hướng chạy (fx.run.lean px), chân giữ nguyên
-    const RN = SFC_CONFIG.game.fx.run;
-    const lean = !ghost && !cp && !atk && p.state === 'normal' && RN && RN.lean && Math.abs(p.vx || 0) > RN.sprint ? Math.sign(p.vx) * RN.lean : 0;
-    if (lean) { ctx.save(); ctx.translate(lean, 0); }
-
-    // thân
-    const by = y - 10 + bob + (cp && cp.drop || 0);   // quỳ / xếp bằng / ngồi: thân hạ xuống
-    px(ctx, x - 5, by - 1, 10, 8, OUT);
-    px(ctx, x - 4, by, 8, 6, shirt);
-    px(ctx, x - 4, by + 4, 8, 2, kit.shorts);
-    px(ctx, x - 4, by + 3, 8, 1, shirtDark);
-    px(ctx, x - 1, by, 2, 1, kit.accent);
-    if (cp && cp.legs === 'sit') {
-      // ngồi bệt trên sân, co gối về phía trước (hướng side): đùi -> đầu gối nhô cao -> tất -> giày
-      const { s: sh, main, sole } = shoeColors(p.look, p.anim, 0);
-      const sock = sh.sock === 'skin' ? p.look.skin : Array.isArray(sh.sock) ? sh.sock[0] : sh.sock || '#e8e8e8';
-      const k0 = side > 0 ? x + 2 : x - 6;
-      const s0 = side > 0 ? x + 5 : x - 8;
-      const f0 = side > 0 ? x + 7 : x - 11;
-      px(ctx, k0 - 1, y - 6, 6, 7, OUT);
-      px(ctx, s0 - 1, y - 4, 5, 5, OUT);
-      px(ctx, f0 - 1, y - 3, 5, 4, OUT);
-      px(ctx, side > 0 ? x + 1 : x - 5, y - 3, 4, 3, kit.shorts);
-      px(ctx, side > 0 ? x + 4 : x - 6, y - 5, 2, 3, p.look.skin);
-      px(ctx, side > 0 ? x + 5 : x - 7, y - 3, 2, 2, sock);
-      px(ctx, f0, y - 2, 3, 1, main);
-      px(ctx, f0, y - 1, 3, 1, sole);
-    }
-    // tay (đang đấm: tay phía hướng mặt vẽ riêng)
-    const arm = moving ? (step ? 1 : -1) : 0;
-    const hand = gloves ? kit.accent : p.look.skin;
-    const punchArm = atk && atk.fist != null;
-    const diveArms = atk && atk.dive;
-    // bật nhảy đánh đầu: 2 tay dang chéo lên ngang vai (lấy đà)
-    if (atk && atk.armsUp && !diveArms && !(cp && cp.arms)) {
-      px(ctx, x - 8, by - 3, 3, 5, OUT); px(ctx, x - 7, by - 2, 1, 3, hand);
-      px(ctx, x + 5, by - 3, 3, 5, OUT); px(ctx, x + 6, by - 2, 1, 3, hand);
-    } else if (diveArms || (cp && cp.arms)) { /* xem sau phần đầu */ } else if (!(punchArm && side < 0)) { px(ctx, x - 6, by + 1 + arm, 2, 4, OUT); px(ctx, x - 6, by + 2 + arm, 1, 2, hand); }
-    if (!diveArms && !(cp && cp.arms) && !(atk && atk.armsUp) && !(punchArm && side > 0)) { px(ctx, x + 4, by + 1 - arm, 2, 4, OUT); px(ctx, x + 5, by + 2 - arm, 1, 2, hand); }
-    if (punchArm) drawPunch(ctx, x, by, fx, fy, side, atk, hand);
-    // GOAT PATH: băng quấn đúng chỗ chấn thương (run.badges[].part; khoảnh khắc ra tay ở systems/hurt.js)
-    if (!ghost && !cp && p.inj) drawBandages(ctx, p, x, y, by, l, r, arm, !!(atk && (atk.shoot || kickLeg)));
-    // Hard attack đang gồng: hào quang đỏ nhấp nháy
-    if (p.state === 'windup') {
-      ctx.globalCompositeOperation = 'lighter';
-      disc(ctx, x, by + 2, 9, `rgba(255,50,80,${0.4 + 0.25 * Math.sin(p.anim * 40)})`);
-      ctx.globalCompositeOperation = 'source-over';
-    }
-
-    // đầu to kiểu Isaac (đánh đầu: gật về hướng mặt)
-    const nod = atk && atk.nod;
-    const hx = x + (nod ? Math.round(fx * 2) : 0);
-    const hy = by - 6 + (stunned ? Math.round(Math.sin(p.anim * 20)) : 0) + (cp && cp.headDy || 0) + (nod ? 1 : 0);
-    const back = fy < -0.35;
-    // AURA FARMING: tóc hoá vàng + dựng ngược (thay kiểu tóc / mũ trong lúc hiệu lực)
-    const aura = !ghost && p.auraFarmT > 0;
-    const cut = aura ? 'aura' : p.look.cut || 'classic';
-    if (cut === 'afro') { disc(ctx, hx, hy - 3, 10, OUT); disc(ctx, hx, hy - 3, 9, p.look.hair); }
-    disc(ctx, hx, hy, 7, OUT);
-    disc(ctx, hx, hy, 6, p.look.skin);
-    // tóc / mũ (trang phục mua ở Shop)
-    drawHair(ctx, cut, aura ? '#ffe14f' : p.look.hair, kit, hx, hy, fx, fy, back, p.anim || 0);
-    // má hồng / bóng đổ đầu
-    px(ctx, hx - 5, hy + 3, 11, 1, 'rgba(0,0,0,0.12)');
-
-    // đổ người: nhìn từ sườn, không vẽ mắt / mặt (đầu chỉ còn tóc + da)
-    if (!back && !diveArms) {
-      const ex = Math.round(fx * 2);
-      const ey = fy > 0.4 ? 1 : 0;
-      if (stunned) {
-        px(ctx, hx - 4 + ex, hy + ey, 3, 1, OUT); px(ctx, hx + 1 + ex, hy + ey, 3, 1, OUT);
-      } else if (cp && cp.eyes) {
-        celEyes(ctx, cp.eyes, hx - 4 + ex, hy - 1 + ey);
-        celEyes(ctx, cp.eyes, hx + 1 + ex, hy - 1 + ey);
-      } else {
-        px(ctx, hx - 4 + ex, hy - 1 + ey, 3, 3, OUT); px(ctx, hx + 1 + ex, hy - 1 + ey, 3, 3, OUT);
-        px(ctx, hx - 4 + ex, hy - 1 + ey, 1, 1, '#ffffff'); px(ctx, hx + 1 + ex, hy - 1 + ey, 1, 1, '#ffffff');
-      }
-      if (cp && cp.mouth) { px(ctx, hx - 1 + ex, hy + 2 + ey, 3, 2, OUT); px(ctx, hx + ex, hy + 3 + ey, 1, 1, '#c0304a'); }
-      else px(ctx, hx - 1 + ex, hy + 3 + ey, 2, 1, stunned ? OUT : 'rgba(20,12,22,0.6)');
-      if (p.look.face) drawFace(ctx, p.look.face, p.look.hair, hx + ex, hy + ey, p.look, fx, fy, p.anim || 0);
-    }
-
-    if (cp && cp.arms) celArms(ctx, x, by, cp.arms, hand);
-    if (diveArms) {
-      // đổ người sang ngang (trục y): camera thấy sườn người — cánh tay trên vươn thẳng qua đầu, che mất mặt (phía sân);
-      // nách + sườn áo lộ ở vai, găng tay ở cuối
-      const ax = x + side * 2, top = by - 14;
-      px(ctx, ax - 3, by - 1, 4, 3, shirtDark);                 // nách / sườn áo lộ ra dưới cánh tay
-      px(ctx, ax - 2, top - 3, 5, by + 4 - top, OUT);           // cánh tay dày 3px (viền + da), đè lên đầu; chân tay liền vào áo (không viền đáy)
-      px(ctx, ax - 1, top + 1, 3, by + 1 - top, p.look.skin);
-      px(ctx, ax + (side > 0 ? 1 : -1), top + 1, 1, by + 1 - top, 'rgba(0,0,0,0.18)');   // bóng mép tay
-      px(ctx, ax - 1, top - 2, 3, 3, hand);                     // găng: bằng bề ngang cánh tay
-      px(ctx, ax - 1, top - 2, 1, 1, '#ffffff');
-    }
-    if (p.flash > 0) {
-      ctx.globalCompositeOperation = 'lighter';
-      disc(ctx, hx, hy, 6, 'rgba(255,255,255,0.6)');
-      ctx.globalCompositeOperation = 'source-over';
-    }
-    if (stunned) {
-      for (let i = 0; i < 3; i++) {
-        const a = p.anim * 6 + (i * Math.PI * 2) / 3;
-        px(ctx, hx + Math.round(Math.cos(a) * 8), hy - 9 + Math.round(Math.sin(a) * 2), 2, 2, '#ffe14f');
-      }
-    }
-    if (lean) ctx.restore();
-    ctx.globalAlpha = 1;
-    return hy;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   /* ---------- bóng: skin (VFX Kit BL) ---------- */
@@ -1005,44 +280,31 @@ window.SFC = window.SFC || {};
   }
 
   // icon costume trên ô item (hộp gacha / túi đồ): vẽ character mặc món đó rồi phóng to vùng liên quan
-  // (tóc & mặt -> cái đầu, giày -> bàn chân, hiệu ứng -> cả người). Vùng cắt tính trên avatar 40x44.
-  const ICON_CROP = { hair: [5, 6, 30, 30], face: [9, 13, 22, 22], shoes: [11, 33, 18, 9], fx: [4, 2, 32, 42] };
+  // (tóc & mặt -> cái đầu, giày -> bàn chân nhìn chéo cho thấy mũi + đồ quanh đế, hiệu ứng -> cả người). Vùng cắt tính trên avatar 40x44 (cỡ logic;
+  // avatar và canvas icon đều gấp đôi độ phân giải, xem hiRes)
+  const ICON_CROP = { hair: [5, 6, 30, 30], face: [9, 13, 22, 22], shoes: [10, 36, 20, 8], fx: [4, 2, 32, 42] };
   let iconBuf = null;
   function drawItemIcon(canvas, look, kit, slot) {
-    if (slot === 'cel' && SFC.CelebrateDraw) {
-      // động tác ăn mừng: character đứng đúng khoảnh khắc đặc trưng của động tác (CelebrateDraw.iconT), cả người
-      iconBuf = iconBuf || document.createElement('canvas');
-      iconBuf.width = 48; iconBuf.height = 52;
-      drawAvatar(iconBuf, look, kit, 0.3, Math.PI / 2, { celId: look.cel, celT: SFC.CelebrateDraw.iconT(look.cel), icon: true });
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = false;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(iconBuf, Math.round((canvas.width - 48) / 2), canvas.height - 50);
-      return;
-    }
-    if (slot === 'shoes') {
-      // giày: vẽ riêng đôi chân phóng to x3 cho dễ nhìn (bánh xe, đinh, lửa phụt dưới đế...)
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      ctx.translate(Math.round((canvas.width - 39) / 2), Math.round((canvas.height - 39) / 2));
-      ctx.scale(3, 3);
-      drawLeg(ctx, 1, 9, look, 0.3, 0);
-      drawLeg(ctx, 7, 9, look, 0.3, 1);
-      ctx.restore();
-      return;
-    }
+    const { w: cw, h: ch } = hiRes(canvas), ctx = canvas.getContext('2d');
     iconBuf = iconBuf || document.createElement('canvas');
-    iconBuf.width = 40; iconBuf.height = 44;
-    drawAvatar(iconBuf, look, kit, 0.3, slot === 'shoes' ? 0 : Math.PI / 2);
-    const [sx, sy, sw, sh] = ICON_CROP[slot] || ICON_CROP.fx;
-    const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const k = Math.max(1, Math.floor(Math.min(canvas.width / sw, canvas.height / sh) * 2) / 2);
+    if (slot === 'cel' && SFC.CelebrateDraw) {
+      // động tác ăn mừng: character đứng đúng khoảnh khắc đặc trưng của động tác (CelebrateDraw.iconT), cả người
+      iconBuf.width = 48; iconBuf.height = 52;
+      drawAvatar(iconBuf, look, kit, 0.3, Math.PI / 2, { celId: look.cel, celT: SFC.CelebrateDraw.iconT(look.cel), icon: true });
+      ctx.drawImage(iconBuf, 2 * Math.round((cw - 48) / 2), 2 * (ch - 50));
+      return;
+    }
+    iconBuf.width = 40; iconBuf.height = 44;
+    drawAvatar(iconBuf, look, kit, 0.3, slot === 'shoes' ? Math.PI / 4 : Math.PI / 2);
+    const [sx, sy, sw, sh] = ICON_CROP[slot] || ICON_CROP.fx;
+    const k = Math.max(1, Math.floor(Math.min(cw / sw, ch / sh) * 2) / 2);
     const w = sw * k, h = sh * k;
-    ctx.drawImage(iconBuf, sx, sy, sw, sh, Math.round((canvas.width - w) / 2), Math.round((canvas.height - h) / 2), w, h);
+    ctx.drawImage(iconBuf, 2 * sx, 2 * sy, 2 * sw, 2 * sh, 2 * Math.round((cw - w) / 2), 2 * Math.round((ch - h) / 2), 2 * w, 2 * h);
   }
 
-  SFC.Sprites = { OUT, px, disc, ellipse, ringPx, drawPlayer, drawBall, drawAvatar, drawItemIcon, FX, spawnFx, stepFx, drawFxParticle };
+  // người chơi + hạt trang phục vẽ bằng sprite 2x (SFC.PlayerSprite, src/render/player, nạp sau file này; bản 1x cũ đã xoá 2026-11-01)
+  const spritePlayer = (...a) => SFC.PlayerSprite.drawPlayer(...a), spriteFx = (...a) => SFC.PlayerSprite.drawFxParticle(...a);
+  SFC.Sprites = { OUT, px, disc, ellipse, ringPx, drawPlayer: spritePlayer, drawBall, drawAvatar, drawItemIcon, hiRes, FX, spawnFx, stepFx, drawFxParticle: spriteFx };
 })();

@@ -287,7 +287,7 @@ window.SFC = window.SFC || {};
     drawSmoke(dy);
     text('KIT VAN', 137 - textW('KIT VAN', 2) / 2, 12 + dy, O, 2);
     // tài xế trong cabin (cắt theo khung kính) + vệt kính phản chiếu
-    SFC.Sprites.drawAvatar(buf, driverLook, kit, T, Math.PI * 0.82);
+    SFC.Sprites.drawAvatar(buf, driverLook, kit, T, Math.PI * 0.82, null, true);   // flat: cảnh pixel 1x
     L.save(); L.beginPath(); L.rect(239, 59 + dy, 42, 26); L.clip(); L.drawImage(buf, 240, 44 + dy); L.restore();
     for (let k = 0; k < 6; k++) { P(268 - k, 60 + k * 2 + dy, 2, 2, 'rgba(255,255,255,0.45)'); P(276 - k, 60 + k * 2 + dy, 1, 2, 'rgba(255,255,255,0.3)'); }
     if (Math.floor(T * 8) % 23 === 0) P(296, 41, 6, 2, '#a89a6a');   // đèn đường chập chờn

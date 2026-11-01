@@ -1076,7 +1076,7 @@ window.SFC = window.SFC || {};
       },
     },
 
-    // AURA FARMING (Tuyệt kỹ khởi đầu): buff tốc độ chạy / chuyền / sút + tóc vàng dựng ngược, hào quang lửa vàng (vẽ ở sprites.js / vfx.js)
+    // AURA FARMING (Tuyệt kỹ khởi đầu): buff tốc độ chạy / chuyền / sút + tóc vàng dựng ngược, hào quang lửa vàng (vẽ ở src/render/player / vfx.js)
     aura_farming: {
       aiUse(sys, team, prm) {
         const b = sys.g.ball, me = prm.owner;

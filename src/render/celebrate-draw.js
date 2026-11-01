@@ -1,5 +1,5 @@
 /* CelebrateDraw — vẽ động tác ăn mừng bàn thắng (danh sách ở progression.config.js, slot 'cel'; di chuyển ở src/systems/celebrate.js)
- * Mỗi động tác: pose(t, p) -> tư thế cho drawPlayer (sprites.js đọc p.celPose):
+ * Mỗi động tác: pose(t, p) -> tư thế cho drawPlayer (sprite người chơi src/render/player đọc p.celPose; vẽ cả động tác: PlayerSprite.celDraw):
  *   lift (px nhấc khỏi đất) · rot (xoay cả người quanh hông) · face (hướng nhìn, thiếu = theo trận) · run (chân chạy)
  *   arms [trái, phải] ([dx, dy] bàn tay hoặc [khuỷu dx, dy, tay dx, dy] tính từ vai) · legs ('kneel' | 'cross' | 'split')
  *   drop (thân hạ xuống) · headDy · eyes ('happy' | 'closed' | 'up') · mouth (há miệng)
@@ -511,42 +511,9 @@ window.SFC = window.SFC || {};
     POSES,
     iconT(id) { return (POSES[id] || POSES.fistpump).icon || 0; },
 
-    // vẽ cầu thủ p đang ăn mừng (p.celId, p.celT). Trả về y của đầu (Renderer vẽ mũi tên / VFX theo đó)
-    draw(ctx, p, g) {
-      const D = POSES[p.celId] || POSES.fistpump, t = p.celT || 0;
-      const P = D.pose(t, p) || {};
-      const lift = Math.round((P.lift || 0) * (p.icon ? 0.4 : 1)), rot = P.rot || 0, drop = P.drop || 0, hd = P.headDy || 0;
-      const x = Math.round(p.x), y = Math.round(p.y), cx = x, cy = y - 8 - lift;
-      const cos = Math.cos(rot), sin = Math.sin(rot);
-      const n = Math.hypot(p.vx || 0, p.vy || 0);
-      const I = {
-        p, t, x, y, cx, cy, P,
-        mv: n > 5 ? { x: p.vx / n, y: p.vy / n } : null,
-        // điểm (lx, ly) trong hệ toạ độ của người (gốc ở hông, trước khi xoay) -> toạ độ sân
-        local(lx, ly) { return { x: cx + lx * cos - ly * sin, y: cy + lx * sin + ly * cos }; },
-        // bàn tay / khuỷu tay i (0 trái, 1 phải) theo P.arms
-        hand(i) { const a = (P.arms || DOWN)[i] || DOWN[i]; return this.local((i ? 5 : -5) + a[a.length - 2], drop + a[a.length - 1]); },
-        elbow(i) { const a = (P.arms || DOWN)[i] || DOWN[i]; return this.local((i ? 5 : -5) + a[0], drop + a[1]); },
-      };
-      I.head = I.local(0, -8 + drop + hd);
-      I.mouth = I.local(0, -5 + drop + hd);
-      const k = Math.max(0.4, 1 - Math.max(0, lift) / 50);
-      SP().ellipse(ctx, x, y + 1, (rot ? 9 : 6) * k, 2.5 * k, 'rgba(0,0,0,0.38)');
-      if (D.under) D.under(ctx, I);
-      ctx.save();
-      ctx.translate(cx, cy);
-      if (rot) ctx.rotate(rot);
-      SP().drawPlayer(ctx, Object.assign({}, p, {
-        x: 0, y: 8, vx: P.run ? 40 : 0, vy: 0, facing: P.face != null ? P.face : p.facing,
-        celPose: P, atkType: null, state: 'normal', keeper: false, charging: false,
-      }), g, 0.999);
-      ctx.restore();
-      ctx.globalAlpha = 1;
-      if (D.fx) D.fx(ctx, I);
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = 'source-over';
-      return Math.round(I.head.y);
-    },
+    // vẽ cầu thủ p đang ăn mừng (p.celId, p.celT). Trả về y của đầu (Renderer vẽ mũi tên / VFX theo đó).
+    // Sprite 2x: PlayerSprite.celDraw (src/render/player/celebrate.js) đọc POSES ở trên, đổi tay sang luật độ dài + điểm neo đạo cụ theo thân mới
+    draw(ctx, p, g) { return SFC.PlayerSprite.celDraw(ctx, p, g); },
   };
 
   SFC.CelebrateDraw = CelebrateDraw;

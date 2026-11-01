@@ -51,6 +51,7 @@ To add, remove or reorder a script, edit `FILES` there and run `npm run manifest
 - `meta/`: profile, mainpath, teammates, settings, social (progression and save data).
 - `entities/`, `systems/`, `game/`: the simulation.
 - `render/`, `ui/`: drawing and screens.
+  - The player sprite is `render/player/` (`SFC.PlayerSprite`, Sprite v2 on a 2x grid, one file per move; drawing rules in `docs/SPRITE_GUIDE.md`, decisions in `docs/SPRITE_V2.md`). `SFC.Sprites.drawPlayer` / `drawFxParticle` forward to it. The match canvas is 1280x720 and `Renderer.render` scales x2, so everything else still draws in 640x360 coordinates. Avatar canvases in the DOM get a 2x backing through `Sprites.hiRes` (`drawAvatar` does it; pass `flat` for 1x buffers composited into pixel scenes). Run `node tools/sprite-v2/check.cjs` after editing `render/player/`.
   - The in-match DOM UI is one object, `SFC.UI`, split by screen: `ui/matchui.js` is the core (`init`, `show`, pause, `consume` = match events → UI, mouse), and `hud.js` (HUD, skill bar, banners/toasts), `draft.js` (Core draft), `endscreen.js` (results) and `endtest.js` (dev, `SFC_DEBUG`) each add methods to it. Shared HTML helpers are in `ui/helpers.js` (`SFC.UIHelpers`). Out-of-match screens are `ui/menu.js`.
 - `net/`: online play.
 

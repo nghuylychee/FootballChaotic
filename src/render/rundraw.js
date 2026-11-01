@@ -3,7 +3,7 @@
  *                  cổng đang tới sáng rõ, cổng kế mờ)
  *                  · đồng xu xoay (COIN RUSH: xu đang tới sáng rõ, xu kế mờ)
  *   top(ctx, g): vẽ sau khung thành — bia sáng trôi lên xuống trong lưới (TARGET PRACTICE)
- *   hurt(ctx, g, p, hy): dấu thập đỏ nhấp nháy cạnh đầu cầu thủ có chấn thương (p.inj; băng quấn vẽ ở sprites.js)
+ *   hurt(ctx, g, p, hy): dấu thập đỏ nhấp nháy cạnh đầu cầu thủ có chấn thương (p.inj; băng quấn vẽ ở src/render/player)
  */
 window.SFC = window.SFC || {};
 
