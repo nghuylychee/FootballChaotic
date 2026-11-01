@@ -4,6 +4,7 @@
  *  - Cỡ cửa sổ: chỉ khi target đổi được cỡ (SFC.Target.canResize: desktop). 'WxH' hoặc 'full'.
  *    Danh sách cỡ: game.config.js -> render.windowSizes, bỏ cỡ lớn hơn màn hình
  *  - NETWORK STATS: hiện ping + dung lượng gửi / nhận khi đang ở phòng online (src/ui/online.js)
+ *  - SCREEN SHAKE & FLASH: ON = như cũ · OFF = tắt hết rung màn hình + nháy trắng (render/renderer.js)
  *  - FRAME RATE: giới hạn số khung hình vẽ mỗi giây (UNLIMITED / 60 / 30); mô phỏng + đọc phím vẫn 60 Hz
  *  - CONNECTION (PRIVATE MATCH): AUTO = tạo phòng trên máy chủ riêng trước · DIRECT = máy này làm host (Steam / PeerJS)
  *  - ĐỔI PHÍM (SETTINGS > CONTROLS, ui/controls.js): binds = phím người chơi tự gán cho action trong trận, áp vào SFC.Input
@@ -46,6 +47,7 @@ window.SFC = window.SFC || {};
     lastWindow: null,    // cỡ cửa sổ trước khi vào FULLSCREEN (F11 thoát ra thì về lại cỡ này)
     lang: null,          // ngôn ngữ đã chọn ('en', 'pt-BR'...) · null = chưa chọn
     netStats: false,     // hiện ping + KB/s khi online
+    screenFx: true,      // SCREEN SHAKE & FLASH: false = tắt hết rung màn hình + nháy trắng (src/render/renderer.js)
     roomDirect: false,   // PRIVATE MATCH › CONNECTION: false = AUTO (máy chủ riêng trước) · true = DIRECT (máy này làm host)
     fps: 0,              // FRAME RATE: 0 = không giới hạn (theo tần số màn hình) · 60 · 30. Chỉ giới hạn số lần vẽ, mô phỏng vẫn 60 Hz (main.js)
     binds: { kb: {}, pad: {} },   // ĐỔI PHÍM: { kb: { shoot: 'KeyJ' }, pad: { shoot: 'Pad.RB' } } — chỉ lưu phím khác mặc định (Input.applyBinds)
@@ -57,13 +59,14 @@ window.SFC = window.SFC || {};
       if (raw.res === FULL || /^\d+x\d+$/.test(raw.res)) this.res = raw.res;
       if (typeof raw.lang === 'string') this.lang = raw.lang;
       this.netStats = raw.netStats === true;
+      this.screenFx = raw.screenFx !== false;
       this.roomDirect = raw.roomDirect === true;
       this.fps = FPS.includes(raw.fps) ? raw.fps : 0;
       this.binds = cleanBinds(raw.binds);
       return this;
     },
     save() {
-      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats, roomDirect: this.roomDirect, fps: this.fps, binds: this.binds });
+      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats, screenFx: this.screenFx, roomDirect: this.roomDirect, fps: this.fps, binds: this.binds });
     },
 
     /* ĐỔI PHÍM: gán code cho action trên thiết bị dev ('kb' | 'pad'). Phím đang thuộc action khác -> 2 action đổi phím cho nhau.
@@ -111,6 +114,7 @@ window.SFC = window.SFC || {};
     volumeLabel(kind) { return this[kind] ? `${this[kind] * 10}%` : SFC.t('OFF'); },
 
     toggleNetStats() { this.netStats = !this.netStats; this.save(); },
+    toggleScreenFx() { this.screenFx = !this.screenFx; this.save(); },
     toggleRoomDirect() { this.roomDirect = !this.roomDirect; this.save(); },
     // FRAME RATE ◀▶: UNLIMITED -> 60 -> 30
     stepFps(d) { this.fps = FPS[(FPS.indexOf(this.fps) + d + FPS.length) % FPS.length]; this.save(); },

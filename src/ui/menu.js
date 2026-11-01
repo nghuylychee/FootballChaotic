@@ -258,6 +258,9 @@ window.SFC = window.SFC || {};
             ...(ST().desktop ? [{ kind: 'pick', label: _t('RESOLUTION'), value: ST().resLabel(), change: (d) => ST().stepRes(d) }] : []),
             // giới hạn số khung hình vẽ (máy yếu / tiết kiệm pin); mô phỏng vẫn 60 Hz (main.js)
             { kind: 'pick', label: _t('FRAME RATE'), value: ST().fpsLabel(), change: (d) => ST().stepFps(d) },
+            // rung màn hình + nháy trắng: OFF = tắt hết (meta/settings.js screenFx)
+            { kind: 'pick', label: _t('SCREEN SHAKE & FLASH'), value: ST().screenFx ? SFC.tc('switch', 'ON') : SFC.tc('switch', 'OFF'), change: () => ST().toggleScreenFx(),
+              tip: _t('SCREEN SHAKE & FLASH — OFF: no screen shake, no white flash') },
             // ping + dung lượng mạng góc trên phải khi ở phòng online (src/ui/online.js)
             { kind: 'pick', label: _t('NETWORK STATS'), value: ST().netStats ? SFC.tc('switch', 'ON') : SFC.tc('switch', 'OFF'), change: () => ST().toggleNetStats() },
           ];
@@ -624,7 +627,7 @@ window.SFC = window.SFC || {};
       if (it.kind === 'attr') return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label><div class="st-val">${it.bar}</div></div>`;
       if (it.kind === 'pick') {
         const val = it.swatch ? `<i class="swatch" style="background:${it.swatch}"></i>` : esc(it.value);
-        return `<div class="${cls}" data-i="${i}"><label>${esc(it.label)}</label>
+        return `<div class="${cls}" data-i="${i}"${it.tip ? ` title="${esc(it.tip)}"` : ''}><label>${esc(it.label)}</label>
           <div class="picker"><button data-i="${i}" data-d="-1">◀</button><span>${val}</span><button data-i="${i}" data-d="1">▶</button></div></div>`;
       }
       return `<button class="${cls}" data-i="${i}"><span class="mi-label">${esc(it.label)}</span>${it.subHtml || it.sub ? `<span class="mi-sub">${it.subHtml || esc(it.sub)}</span>` : ''}</button>`;

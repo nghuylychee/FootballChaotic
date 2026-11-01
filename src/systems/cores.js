@@ -45,7 +45,6 @@ window.SFC = window.SFC || {};
   // không dùng 'POW!': chữ đó là cú đấm thường, đã tắt (game.fx.popups.hide)
   const PUNCH_WORDS = ['WHACK!', 'BAM!', 'WHAM!', 'BOP!'];
   const CHAOS_SKINS = ['melon', 'bowling', 'chicken', 'wheel', 'cube'];
-  const CHAOS_LABEL = { curve: 'CURVE!', rocket: 'ROCKET!', fire: 'FIRE!', thunder: 'ZAP!', split: 'x2!' };
 
   const Behaviors = SFC.CoreBehaviors = {
     /* ---------- 🎯 SÁT THỦ ---------- */
@@ -226,11 +225,22 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------- 🎲 HỖN LOẠN ---------- */
-    // Bóng Hỗn Loạn: bóng biến hình + 1 hiệu ứng ngẫu nhiên mỗi cú đá
+    // Bóng Hỗn Loạn (làm lại user 2026-11-01): mỗi pha bóng (giao bóng tới khi có bàn) quay 1 loại bóng trên đầu người có Core (prop 'dice':
+    // các ô lướt qua rồi dừng ở loại trúng, b = chỉ số trong KINDS) -> cả pha mọi cú sút của người đó ra loại này; chuyền thì chỉ loại hợp
+    // với đường chuyền (cong / tên lửa / phân thân), lửa / sét thì chuyền như thường
     chaos_ball: {
-      roll(sys, team, p, pl, ball, isShot) {
-        const opts = isShot ? ['curve', 'rocket', 'fire', 'thunder', 'split'] : ['curve', 'rocket', 'split'];
-        const pick = U.pick(opts);
+      KINDS: ['curve', 'rocket', 'fire', 'thunder', 'split'],
+      onKickoff(sys, team, p) {
+        const g = sys.g, q = p.owner, st = sys.st(q, 'chaos_ball'), i = Math.floor(Math.random() * this.KINDS.length);
+        st.pick = this.KINDS[i];
+        if (st.dice) g.effects.propOff(st.dice, 0);
+        st.dice = SFC.CoreHelpers.propId(g);
+        g.effects.prop(st.dice, 'dice', q.x, q.y, q.id, i, 3.2, '#c63dff');
+        g.sfx('ult', 'chaos.roll');
+      },
+      apply(sys, team, p, pl, ball, isShot) {
+        const st = sys.st(pl, 'chaos_ball'), pick = st.pick;
+        if (!pick || (!isShot && (pick === 'fire' || pick === 'thunder'))) return;
         const lib = DEF().list;
         if (pick === 'curve') ball.curve = U.randSign() * p.curve;
         if (pick === 'rocket') { ball.vx *= p.rocketMult; ball.vy *= p.rocketMult; }
@@ -243,10 +253,9 @@ window.SFC = window.SFC || {};
         // lửa / sét giữ hình bóng nguyên tố, còn lại bóng biến thành đồ vật ngẫu nhiên
         if (pick !== 'fire' && pick !== 'thunder') ball.skin = U.pick(CHAOS_SKINS);
         sys.g.effects.burst(ball.x, ball.y, 4, '#c63dff', 8, 70, 0.4);
-        sys.g.effects.pop(pl.x, pl.y - 30, CHAOS_LABEL[pick], 'move', '#c63dff');
       },
-      onShoot(sys, team, p, pl, ball) { this.roll(sys, team, p, pl, ball, true); },
-      onPass(sys, team, p, pl) { if (Math.random() < 0.5) this.roll(sys, team, p, pl, sys.g.ball, false); },
+      onShoot(sys, team, p, pl, ball) { this.apply(sys, team, p, pl, ball, true); },
+      onPass(sys, team, p, pl) { this.apply(sys, team, p, pl, sys.g.ball, false); },
     },
     // Cổng Dịch Chuyển: cổng xoáy tím mở trên tường, bóng chui sang tường đối diện
     warp_walls: {

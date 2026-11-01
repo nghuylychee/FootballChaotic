@@ -454,8 +454,10 @@ SFC_CONFIG.cores = {
     /* ---------- TUYỆT KỸ mới ---------- */
     endless_tiki: {
       name: 'Endless Tiki-Taka', icon: '🎼', tags: ['playmaker'], role: 'ult', rarity: 'mythic', needsBall: true,
-      desc: 'Opponents slow down while your team auto-passes, then shoots.',
-      params: { passes: 4, gap: 0.12, passSpeed: 1.7, slow: 0.4, slowTime: 2.4, gk: 0.25 },   // passSpeed: đường chuyền thật nhưng nhanh hơn
+      desc: 'Hit the pass timing to chain one-touch passes, then shoot.',
+      // QTE (user 2026-11-01): người chơi cầm bóng bấm CHUYỀN khi kim chạy vào vùng xanh (qte giây, vùng zone[0]..zone[1]) -> người nhận tự băng
+      // lên run px trong runT giây rồi nhận đường chuyền thật (đối thủ vẫn cắt được). Bấm trượt / không bấm = chuỗi dừng, giữ bóng. AI: trúng aiHit
+      params: { passes: 4, gap: 0.12, passSpeed: 1.7, slow: 0.4, slowTime: 3.4, gk: 0.25, qte: 0.75, zone: [0.5, 0.85], run: 30, runT: 0.25, aiHit: 0.85 },   // passSpeed: đường chuyền thật nhưng nhanh hơn
       // ★★ ETERNAL TIKI-TAKA: chuyền vòng cả 3 người, mỗi đường chuyền để lại dây đàn (strings giây, rộng width px);
       // hết chuỗi dây rung: đối thủ đứng trên dây khựng freeze giây
       evolve: [{ passes: 6, slow: 0.35, slowTime: 2.8, strings: 3.2, freeze: 0.9, width: 7 }],
@@ -559,7 +561,7 @@ SFC_CONFIG.cores = {
     smoke_bomb: {
       name: 'Smoke Bomb', icon: '💨', tags: ['trickster', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Drop a smoke cloud that hides your whole team inside.',
-      params: { radius: 82, squash: 0.6, time: 5, reveal: 0.5 },
+      params: { radius: 125, squash: 0.6, time: 5, reveal: 0.5 },   // radius: user 2026-11-01 82 -> 125
       scale: { time: 'pow', radius: 'pow' },
     },
     // 🛡 + 🎼 — Iron Chain: xích thép nối người dùng với từng đồng đội trọn time giây (xích giãn theo người, không đứt):
@@ -593,21 +595,22 @@ SFC_CONFIG.cores = {
       params: { grab: 0.22, distance: 200, flight: 0.38, knock: 200, launch: 120, stun: 0.6 },
       scale: { distance: 'pow', knock: 'pow', stun: 'pow' },
     },
-    // 🏃 + 🎼 — Thunderstorm: gọi bolts tia sét đánh xuống sân (quanh đối thủ + ngẫu nhiên), mỗi tia có vòng cảnh báo telegraph giây để né
+    // 🏃 + 🎼 — Thunderstorm: gọi bolts tia sét, tia nào cũng nhắm 1 đối thủ (đón đầu đúng chỗ họ sẽ tới sau telegraph giây, lệch tối đa jitter px),
+    // vòng cảnh báo để né (đổi hướng / lướt Z). Trúng thì bị giật điện (người run bần bật, tia điện quanh người) shock giây
     thunderstorm: {
       name: 'Thunderstorm', icon: '⛈', tags: ['runner', 'playmaker'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'Summon lightning bolts all over the pitch; dodge the circles.',
-      params: { bolts: 9, telegraph: 0.5, gap: 0.14, radius: 18, stun: 1.0, knock: 120 },
+      desc: 'Lightning hunts down opponents; anyone struck gets electrocuted.',
+      params: { bolts: 14, telegraph: 0.5, gap: 0.12, radius: 18, jitter: 4, stun: 1.0, knock: 120 },   // bolts: user 2026-11-01 9 -> 14
       scale: { radius: 'pow', stun: 'pow' },
     },
-    // 🏃 + 🎯 — Bullet Time (kiểu Quicksilver, user chốt 2026-10-17): cả sân chạy chậm còn slow (×), người cầm bóng chạy siêu tốc speed px/s
-    // (thời gian thật) tối đa time giây, lái theo phím. Đối thủ bị lướt sát qua (touch px, không tính thủ môn trong vòng cấm) thì lúc thời gian
-    // chạy lại bị xoay mòng mòng rồi ngã (trơn té trip giây). Kết thúc bằng cú sút: bấm sút (hoặc hết giờ / tới cách khung shootAt px), lực x power, thủ môn dễ bắt hơn (gk âm)
+    // 🏃 + 🎯 — Bullet Time (làm lại user 2026-11-01): cả sân chạy chậm còn slow (×) kèm đoạn nhạc giao hưởng, bạn chạy tự do speed px/s
+    // (thời gian thật) time giây, chạm đối thủ (touch px) để đánh dấu (dấu ngắm đỏ trên người họ). Hết giờ: từng người bị đánh dấu bị sniper
+    // trên khán đài bắn — tia laser bám người aim giây, loé sáng rồi đạn bay tới (bullet px/s); lướt Z đúng lúc là né. Trúng: văng knock + choáng stun
     bullet_time: {
-      name: 'Bullet Time', icon: '⚡', tags: ['runner', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
-      desc: 'The world slows down while you sprint, then you shoot.',
-      params: { slow: 0.12, time: 1, speed: 280, touch: 20, trip: 1.1, power: 0.8, shootAt: 200, gk: -0.25 },
-      scale: { time: 'pow', trip: 'pow' },
+      name: 'Bullet Time', icon: '⚡', tags: ['runner', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Time slows; tag opponents and a sniper in the stands takes them out.',
+      params: { slow: 0.12, time: 2, speed: 260, touch: 16, aim: 0.55, gap: 0.3, bullet: 1600, hitR: 12, knock: 260, launch: 120, stun: 1.2 },
+      scale: { time: 'pow', stun: 'pow' },
     },
     // 🏃 + 🥊 — Rocket Punch: gồng windup giây (vạch thẳng ngang sân; bị đấm lúc gồng là huỷ), nắm đấm phóng ra như tên lửa bay speed px/s:
     // đối thủ đầu tiên trúng văng, bóng lỏng trên đường bị thổi về phía trước
@@ -681,8 +684,11 @@ SFC_CONFIG.cores = {
     // lần lượt cách nhau gap giây), chân thò ra từ cổng đá văng. Bị đấm giữa chừng thì các cú còn lại huỷ
     portal_kicks: {
       name: 'Portal Kicks', icon: '🌀', tags: ['launcher', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'Kick into portals; your foot strikes opponents from anywhere.',
-      params: { range: 200, targets: 3, telegraph: 0.5, gap: 0.22, reach: 54, knock: 320, launch: 200, stun: 1.0 },   // reach: chân vươn khỏi cổng
+      desc: 'Warp behind each opponent and time your kick as you appear.',
+      // làm lại user 2026-11-01: lặn vào cổng, cổng mở sau lưng từng đối thủ (tối đa targets người trong range px, báo trước telegraph giây),
+      // bạn chui ra sau lưng họ: QTE qte giây, bấm SÚT khi kim trong vùng zone -> cú đá (reach px). Đối thủ lướt Z để né, hoặc đấm trúng bạn
+      // (đang đứng sau lưng) là ngắt cả chiêu. AI: trúng aiHit
+      params: { range: 260, targets: 3, telegraph: 0.55, qte: 0.6, zone: [0.45, 0.8], behind: 16, reach: 30, knock: 320, launch: 200, stun: 1.0, aiHit: 0.75 },
       scale: { range: 'pow', knock: 'pow', stun: 'pow' },
     },
     // 🦵 + 🛡 — Earth Spike: vết nứt chạy thẳng ra trước (báo trước telegraph giây) -> hàng cột đá trồi lên hất tung người đứng trên;
@@ -697,8 +703,9 @@ SFC_CONFIG.cores = {
     // đứng chết trân, cầm bóng thì rơi bóng. Quay lưng / chạy ra khỏi nón / lướt Z lúc loé là thoát
     medusa_gaze: {
       name: 'Medusa Gaze', icon: '🐍', tags: ['trickster', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'Glare ahead: opponents in your gaze turn to stone.',
-      params: { telegraph: 0.5, range: 150, cone: 38, time: 2.2 },
+      desc: 'Glare ahead to turn foes to stone; dash into them to petrify.',
+      // dash (user 2026-11-01): trong dash giây kể từ lúc ra chiêu, lướt Z chạm đối thủ (touch px) cũng hoá đá họ; ra chiêu là hồi lướt ngay
+      params: { telegraph: 0.5, range: 150, cone: 38, time: 2.2, dash: 2.2, touch: 12 },
       scale: { range: 'pow', time: 'pow' },
     },
     // 🎲 + 🏃 — VHS Rewind: nhiễu băng báo trước telegraph giây, rồi mọi người trừ người dùng bị tua về chỗ đứng back giây trước.
@@ -724,13 +731,14 @@ SFC_CONFIG.cores = {
       params: { telegraph: 0.35, width: 22, time: 3, speed: 1.05 },
       scale: { time: 'pow' },
     },
-    // 🎲 + 🥊 — Jack-in-the-Box: đặt boxes hộp lò xo quanh mình (sẵn sàng sau arm giây, sống life giây); đối thủ tới gần radius
-    // thì găng đấm bật ra hất văng; đối thủ đấm / đá vào hộp thì phá được
+    // 🎲 + 🥊 — Lucky Knuckles (id cũ jack_in_box, làm lại user 2026-11-01, kiểu Sevika TFT): quay 5 cú đấm khác loại theo thứ tự ngẫu nhiên,
+    // 5 cú Light Attack tiếp theo (trong window giây) mỗi cú ra 1 loại: spring (găng lò xo vươn xa spring px) · upper (móc hàm hất tung) ·
+    // shock (giật điện, lan sang 1 đối thủ gần trong chain px) · boom (nổ quanh chỗ trúng radius px) · grab (kéo đối thủ về, chắc chắn cướp bóng)
     jack_in_box: {
-      name: 'Jack-in-the-Box', icon: '🎁', tags: ['chaos', 'brawler'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'Plant spring-loaded boxing gloves that punch passing opponents.',
-      params: { boxes: 3, spread: 34, arm: 0.4, life: 6, radius: 16, knock: 360, launch: 140, stun: 1.0 },
-      scale: { life: 'pow', knock: 'pow', stun: 'pow' },
+      name: 'Lucky Knuckles', icon: '🎰', tags: ['chaos', 'brawler'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Your next five punches each roll a different trick punch.',
+      params: { window: 10, roll: 0.7, spring: 64, chain: 80, radius: 34, knock: 330, launch: 140, upLaunch: 320, stun: 1.0, shock: 1.6 },
+      scale: { knock: 'pow', stun: 'pow', shock: 'pow' },
     },
     pinball_kick: {
       name: 'Pinball Kick', icon: '🕹', tags: ['chaos', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true,
@@ -738,12 +746,13 @@ SFC_CONFIG.cores = {
       params: { range: 150, rush: 520, speed: 420, bounces: 6, time: 2.4, knock: 220, launch: 160, stun: 1.0 },   // bounces: nảy tường tối đa
       scale: { speed: 'pow', knock: 'pow', stun: 'pow' },
     },
-    // 🎲 + 🌀 — Panic Ball (user chốt 2026-10-17): bóng hoá quái vật đuổi theo đối thủ (speed px/s, rẽ turn rad/s) tối đa targets người
-    // trong time giây; trúng ai thì người đó HOẢNG SỢ panic giây (mọi hướng di chuyển đảo ngược, rơi bóng). Né Z được. Xong thì bóng bay về chân bạn
+    // 🎲 + 🌀 — Panic Ghosts (id cũ panic_ball, làm lại user 2026-11-01): gọi ghosts hồn ma bay đuổi theo đối thủ (speed px/s, mỗi con 1 người)
+    // trong life giây. Đối thủ đấm trúng ma (Light / Hard attack, tầm reach px) là ma tan; ma chạm người (touch px) thì người đó HOẢNG SỢ panic giây
+    // (đảo hướng di chuyển, rơi bóng). Né Z xuyên qua được. seg: giây mỗi đoạn bay (hình vẽ nội suy theo đoạn, đồng bộ online)
     panic_ball: {
-      name: 'Panic Ball', icon: '👻', tags: ['chaos', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
-      desc: 'A spooky ball chases opponents and flips their controls.',
-      params: { speed: 240, turn: 4.5, targets: 3, time: 4, panic: 3, back: 320 },
+      name: 'Panic Ghosts', icon: '👻', tags: ['chaos', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Ghosts chase opponents; punch them away or panic on touch.',
+      params: { ghosts: 3, speed: 104, life: 6, panic: 3, reach: 26, touch: 8, seg: 0.2 },
       scale: { panic: 'pow' },
     },
     // 🎲 + 🛡 — Mega Magnet: nam châm khổng lồ hạ xuống giữa đám đối thủ (bóng đổ + vòng báo trước telegraph giây), hút mọi đối thủ trong radius
@@ -766,7 +775,8 @@ SFC_CONFIG.cores = {
     /* ---------- 🎲 HỖN LOẠN ---------- */
     chaos_ball: {
       name: 'Chaos Ball', icon: '🎲', tags: ['chaos'], role: 'wild', rarity: 'rare',
-      desc: 'Every shot or pass turns the ball into something random.',
+      // làm lại user 2026-11-01: mỗi pha bóng (giao bóng tới khi có bàn) quay 1 loại bóng trên đầu người có Core -> cả pha đá ra loại đó
+      desc: 'Each kickoff rolls what your shots turn into for that play.',
       params: { curve: 2.2, rocketMult: 1.3 },
       scale: { curve: 'pow', rocketMult: 'mul' },
     },

@@ -43,7 +43,9 @@ window.SFC = window.SFC || {};
       ctx.setTransform(2, 0, 0, 2, 0, 0);
       ctx.imageSmoothingEnabled = false;
       ctx.save();
-      if (fx.shakeA > 0) ctx.translate(Math.round((Math.random() - 0.5) * fx.shakeA * 2), Math.round((Math.random() - 0.5) * fx.shakeA * 2));
+      // SETTINGS › SCREEN SHAKE & FLASH = OFF (Settings.screenFx): không rung màn hình, không nháy trắng — chỉ ở bước vẽ, mô phỏng giữ nguyên
+      const calm = SFC.Settings && SFC.Settings.screenFx === false;
+      if (fx.shakeA > 0 && !calm) ctx.translate(Math.round((Math.random() - 0.5) * fx.shakeA * 2), Math.round((Math.random() - 0.5) * fx.shakeA * 2));
       SFC.VFX.applyZoom(ctx, g);
       this.goalCam(ctx, g);
       ctx.drawImage(this.bg, 0, 0);
@@ -187,8 +189,8 @@ window.SFC = window.SFC || {};
           const cel = p.celId && (g.state === 'goal' || g.state === 'ended') && !(p.airZ > 0);
           // King Kong / đứng trên tảng đá / con gà: vật thể Tuyệt kỹ tự vẽ nhân vật (render/vfx.js), bỏ sprite thật
           const swap = SFC.VFX.hides(g, p);
-          // hoảng sợ (Panic Ball): run lẩy bẩy
-          const shiver = SFC.VFX.has(g, p, 'panic') ? (Math.floor(t * 30) % 2 ? 1 : -1) : 0;
+          // hoảng sợ (Panic Ghosts) / giật điện (Stat.shock): run lẩy bẩy
+          const shiver = SFC.VFX.has(g, p, 'panic') || SFC.VFX.has(g, p, 'shock') ? (Math.floor(t * 30) % 2 ? 1 : -1) : 0;
           if (shiver) { ctx.save(); ctx.translate(shiver, 0); }
           // GOAT PATH: kỹ thuật LEGEND đang diễn -> biến đổi quanh sprite (render/legenddraw.js)
           const lx = !swap && !cel && SFC.LegendDraw ? SFC.LegendDraw.begin(ctx, g, p) : false;
@@ -293,7 +295,7 @@ window.SFC = window.SFC || {};
         ctx.strokeRect(2, 2, C.width - 4, C.height - 4);
         ctx.globalAlpha = 1;
       }
-      if (fx.flashA > 0) {
+      if (fx.flashA > 0 && !calm) {
         ctx.fillStyle = `rgba(255,255,255,${fx.flashA * (SFC.FXSettings.reduceFlash ? 0.12 : 0.5)})`;
         ctx.fillRect(0, 0, C.width, C.height);
       }

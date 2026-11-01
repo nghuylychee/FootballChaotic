@@ -293,15 +293,42 @@ window.SFC = window.SFC || {};
             }
           });
         };
-        // đường chuyền THẬT (Actions.passTo): đối thủ bị làm chậm nhưng đứng đúng chỗ vẫn cắt được -> cắt là dừng chuỗi
+        // QTE (user 2026-11-01): người cầm bóng bấm CHUYỀN khi kim trong vùng xanh -> người nhận tự băng lên chỗ trống rồi nhận đường chuyền.
+        // Trượt / không bấm: chuỗi dừng, người đó giữ bóng (không có cú sút kết). AI cầm bóng tự bấm (trúng aiHit)
         const step = (i) => {
           if (g.state !== 'play') return;
           const from = ring[i % ring.length], to = ring[(i + 1) % ring.length];
           if (b.owner !== from || to.state === 'stun') return finish();
-          // người nhận băng lên một nhịp -> các đường chuyền vẽ thành hình sao
+          H.hold(from, prm.qte + 0.3);
+          SFC.CoreQTE.start(sys, from, 'pass', prm.qte, prm.zone, prm.aiHit, (ok) => {
+            H.unlock(from);
+            if (g.state !== 'play') return;
+            if (b.owner !== from || to.state === 'stun') return finish();
+            if (!ok) { twang(); return; }
+            run(to, () => pass(i, from, to));
+          });
+        };
+        // người nhận băng lên runT giây (chạy thật, về phía khung đối thủ + hơi vào giữa) -> các đường chuyền vẽ thành hình sao
+        const run = (to, then) => {
+          const x1 = U.clamp(to.x + dir * prm.run, f.x + 12, f.x + f.w - 12);
+          const y1 = U.clamp(to.y + (f.cy - to.y) * 0.25 + U.rand(-10, 10), f.y + 12, f.y + f.h - 12);
+          const x0 = to.x, y0 = to.y;
+          let T = 0;
+          to.facing = Math.atan2(y1 - y0, x1 - x0);
+          sys.task((dt) => {
+            if (g.state !== 'play') return true;
+            const u = Math.min(1, (T += dt) / prm.runT);
+            if (to.state !== 'stun') { to.x = x0 + (x1 - x0) * u; to.y = y0 + (y1 - y0) * u; to.vx = (x1 - x0) / prm.runT; to.vy = (y1 - y0) / prm.runT; }
+            if (u < 1) return false;
+            then();
+            return true;
+          });
           E.afterimage(to, 0.4);
-          to.x = U.clamp(to.x + dir * 26, f.x + 12, f.x + f.w - 12);
-          to.y = U.clamp(to.y + (f.cy - to.y) * 0.25 + U.rand(-10, 10), f.y + 12, f.y + f.h - 12);
+        };
+        // đường chuyền THẬT (Actions.passTo): đối thủ bị làm chậm nhưng đứng đúng chỗ vẫn cắt được -> cắt là dừng chuỗi
+        const pass = (i, from, to) => {
+          if (g.state !== 'play') return;
+          if (b.owner !== from || to.state === 'stun') return finish();
           const ang = Math.atan2(to.y - from.y, to.x - from.x);
           E.beam(from.x, from.y - 4, ang, U.dist(from, to), 4, '#ffd23f', 1.2);
           if (aw) {

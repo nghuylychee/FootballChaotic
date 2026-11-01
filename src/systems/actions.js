@@ -888,6 +888,8 @@ window.SFC = window.SFC || {};
 
     // nắm đấm chạm tới: đánh mọi đối thủ trong vùng trước mặt
     lightHit(g, p) {
+      // Tuyệt kỹ Lucky Knuckles (cores-ult2.js jack_in_box): còn lượt cường hoá thì cú đấm tự xử lý (tầm / hiệu ứng riêng từng loại)
+      if (p.knuckles && SFC.CoreBehaviors.jack_in_box.punch(g, p)) return;
       const L = G().combat.light, C = g.cores;
       const fv = facingVec(p);
       const big = !!p.bigPunch;            // Nắm Đấm Khổng Lồ

@@ -29,6 +29,11 @@ window.SFC = window.SFC || {};
 
     /* ---- trạng thái dùng chung (cores-ult2.js Stat) ---- */
     // trơn té: đế giày rít "kíttt" rồi người đập xuống sân "huỵch"
+    // giật điện (Thunderstorm, Lucky Knuckles): rè rè điện cao thế rung nhanh
+    'stat.shock'() { T({ freq: 90, dur: 0.45, type: 'sawtooth', vol: 0.12, vib: 45, vibDepth: 30 }); N({ dur: 0.35, vol: 0.1, freq: 5000, q: 1.5 }); },
+    // QTE (Tiki-Taka, Portal Kicks): trúng = "ting" sáng, trượt = "bụp" trầm
+    'qte.hit'() { T({ freq: 1318, dur: 0.08, type: 'square', vol: 0.09 }); T({ freq: 1760, dur: 0.12, type: 'square', vol: 0.08, delay: 0.05 }); },
+    'qte.miss'() { T({ freq: 220, to: 150, dur: 0.15, type: 'square', vol: 0.09 }); },
     'stat.slip'() { T({ freq: 1200, to: 1900, dur: 0.1, type: 'square', vol: 0.05 }); T({ freq: 120, to: 50, dur: 0.16, type: 'sine', vol: 0.22, delay: 0.13 }); N({ dur: 0.1, vol: 0.14, freq: 300, type: 'lowpass', delay: 0.13 }); },
 
     /* ---- 1. Light Cycle: rồ máy điện rồi tường sét kêu rè rè ---- */
@@ -114,9 +119,19 @@ window.SFC = window.SFC || {};
     /* ---- 17. Thunderstorm: tiếng tít cảnh báo, sét nổ "đoàng" + sấm rền ---- */
     'storm.warn'() { T({ freq: 1200, dur: 0.06, type: 'sine', vol: 0.07 }); },
     'storm.bolt'() { N({ dur: 0.12, vol: 0.28, freq: 2000, type: 'highpass' }); N({ dur: 1.0, vol: 0.18, freq: 300, type: 'lowpass', delay: 0.05 }); T({ freq: 60, to: 30, dur: 0.5, type: 'sawtooth', vol: 0.08 }); },
-    /* ---- 18. Bullet Time: thế giới chậm lại "buuuum" + nhịp tim, kết bằng tiếng nổ siêu thanh ---- */
+    /* ---- 18. Bullet Time: thế giới chậm lại "buuuum" + đoạn dây giao hưởng chạy dưới nền, vỗ đánh dấu "tách",
+       sniper: tiếng bíp ngắm, phát súng xé gió, trúng "chát" ---- */
     'bullet.slow'() { T({ freq: 520, to: 60, dur: 1.0, type: 'sine', vol: 0.13 }); T({ freq: 60, dur: 0.12, type: 'sine', vol: 0.25, delay: 0.15 }); T({ freq: 55, dur: 0.12, type: 'sine', vol: 0.22, delay: 0.4 }); N({ dur: 1.0, vol: 0.05, freq: 1500, to: 300, q: 0.6 }); },
-    'bullet.boom'() { N({ dur: 0.05, vol: 0.25, freq: 3500, type: 'highpass' }); N({ dur: 0.45, vol: 0.28, freq: 400, type: 'lowpass' }); T({ freq: 200, to: 40, dur: 0.3, type: 'sawtooth', vol: 0.11 }); },
+    'bullet.symph'() {
+      // kèn dây giao hưởng (giọng Rê thứ, chậm, trang nghiêm) dài ~ time giây: bè trầm giữ nốt + giai điệu đi xuống
+      const t = P('bullet_time').time || 2;
+      [147, 220].forEach((f) => T({ freq: f, dur: t, type: 'sawtooth', vol: 0.035, attack: 0.25, vib: 5, vibDepth: 3 }));
+      seq([587, 523, 466, 440, 392, 440, 466, 440], t / 8, { type: 'triangle', dur: t / 8 + 0.08, vol: 0.09, attack: 0.04, vib: 5, vibDepth: 4 });
+    },
+    'bullet.tag'() { N({ dur: 0.04, vol: 0.16, freq: 3500, q: 2 }); T({ freq: 1760, dur: 0.05, type: 'square', vol: 0.06 }); },
+    'bullet.aim'() { T({ freq: 2093, dur: 0.05, type: 'sine', vol: 0.07 }); T({ freq: 2093, dur: 0.05, type: 'sine', vol: 0.07, delay: 0.25 }); },
+    'bullet.shot'() { N({ dur: 0.05, vol: 0.3, freq: 3000, type: 'highpass' }); N({ dur: 0.35, vol: 0.18, freq: 500, type: 'lowpass' }); T({ freq: 1800, to: 300, dur: 0.15, type: 'sawtooth', vol: 0.06 }); },
+    'bullet.hit'() { N({ dur: 0.06, vol: 0.25, freq: 1500, q: 1 }); T({ freq: 160, to: 60, dur: 0.15, type: 'square', vol: 0.1 }); },
     /* ---- 19. Rocket Punch: đánh lửa động cơ tên lửa rồi phụt đi ---- */
     'rocket.ignite'() { N({ dur: 0.45, vol: 0.26, freq: 500, type: 'lowpass', attack: 0.1 }); T({ freq: 200, to: 900, dur: 0.45, type: 'sawtooth', vol: 0.08 }); },
     'rocket.launch'() { N({ dur: 0.8, vol: 0.2, freq: 1200, to: 300, q: 0.6 }); T({ freq: 900, to: 400, dur: 0.6, type: 'sawtooth', vol: 0.04 }); },
@@ -153,6 +168,7 @@ window.SFC = window.SFC || {};
     'ghost.grab'() { N({ dur: 0.1, vol: 0.25, freq: 600 }); T({ freq: 180, to: 90, dur: 0.12, type: 'square', vol: 0.08 }); },
     /* ---- 27. Portal Kicks: cổng mở "vúp" + cú đá xuyên cổng ---- */
     'portal.open'() { T({ freq: 300, to: 1200, dur: 0.15, type: 'sine', vol: 0.08 }); N({ dur: 0.15, vol: 0.05, freq: 4000, q: 3 }); },
+    'portal.out'() { T({ freq: 1200, to: 300, dur: 0.12, type: 'sine', vol: 0.1 }); N({ dur: 0.08, vol: 0.06, freq: 4000, q: 3 }); },
     'portal.kick'() { T({ freq: 880, to: 440, dur: 0.08, type: 'square', vol: 0.11 }); N({ dur: 0.05, vol: 0.12, freq: 3000, q: 2 }); },
     /* ---- 28. Earth Spike: đá phun lên lạo xạo + nện đất ---- */
     'spike.erupt'() { N({ dur: 0.25, vol: 0.3, freq: 600, q: 0.7 }); T({ freq: 120, to: 50, dur: 0.25, type: 'sine', vol: 0.24 }); N({ dur: 0.1, vol: 0.12, freq: 2500, type: 'highpass' }); },
@@ -169,15 +185,22 @@ window.SFC = window.SFC || {};
     /* ---- 32. Chicken Ray: tia biến hình méo mó + gà kêu "cục ta cục tác" ---- */
     'chicken.ray'() { T({ freq: 600, to: 1200, dur: 0.3, type: 'sine', vol: 0.13, vib: 40, vibDepth: 200 }); T({ freq: 300, to: 600, dur: 0.3, type: 'square', vol: 0.03, vib: 40, vibDepth: 100 }); },
     'chicken.bawk'() { T({ freq: 900, to: 700, dur: 0.06, type: 'square', vol: 0.11 }); T({ freq: 1100, to: 800, dur: 0.05, type: 'square', vol: 0.11, delay: 0.08 }); T({ freq: 700, to: 1250, dur: 0.14, type: 'square', vol: 0.12, delay: 0.16 }); },
-    /* ---- 33. Jack-in-the-Box: hộp nhạc lên dây cót + lò xo "boing" bật ra ---- */
-    'jack.crank'() { seq([523, 587, 659, 784, 659, 523], 0.08, { type: 'triangle', dur: 0.1, vol: 0.12 }); },
-    'jack.pop'() { T({ freq: 200, to: 800, dur: 0.15, type: 'sine', vol: 0.15, vib: 30, vibDepth: 100 }); N({ dur: 0.05, vol: 0.12, freq: 2000 }); },
+    /* ---- 33. Lucky Knuckles (id jack_in_box): máy đánh bạc quay "lạch cạch" rồi "ting", mỗi loại cú đấm một tiếng ---- */
+    'knuckle.roll'() { for (let i = 0; i < 9; i++) T({ freq: 700 + (i % 3) * 180, dur: 0.04, type: 'square', vol: 0.07, delay: i * 0.07 }); T({ freq: 1568, dur: 0.25, type: 'triangle', vol: 0.12, delay: 0.66 }); },
+    'knuckle.spring'() { T({ freq: 200, to: 800, dur: 0.15, type: 'sine', vol: 0.15, vib: 30, vibDepth: 100 }); N({ dur: 0.05, vol: 0.12, freq: 2000 }); },
+    'knuckle.upper'() { T({ freq: 150, to: 900, dur: 0.18, type: 'square', vol: 0.09 }); N({ dur: 0.08, vol: 0.15, freq: 800 }); },
+    'knuckle.shock'() { T({ freq: 120, dur: 0.3, type: 'sawtooth', vol: 0.14, vib: 60, vibDepth: 40 }); N({ dur: 0.08, vol: 0.18, freq: 4000, q: 2 }); },
+    'knuckle.boom'() { boom(0.3, 0.5); N({ dur: 0.06, vol: 0.2, freq: 2500, type: 'highpass' }); },
+    'knuckle.grab'() { T({ freq: 900, to: 300, dur: 0.18, type: 'sine', vol: 0.1, vib: 20, vibDepth: 40 }); N({ dur: 0.06, vol: 0.15, freq: 600 }); },
     /* ---- 34. Pinball Kick: chuông nấm pinball "ding" + cần gạt "cạch" ---- */
     'pinball.flip'() { N({ dur: 0.03, vol: 0.2, freq: 3000, q: 2 }); T({ freq: 300, dur: 0.03, type: 'square', vol: 0.08 }); },
     'pinball.ding'() { T({ freq: 1568, dur: 0.14, type: 'square', vol: 0.11 }); T({ freq: 2093, dur: 0.12, type: 'square', vol: 0.08, delay: 0.02 }); },
-    /* ---- 35. Panic Ball: theremin ma quái khi bóng thả ra, trúng ai: tiếng hét "aaa" tụt xuống ---- */
+    /* ---- 35. Panic Ghosts (id panic_ball): theremin ma quái khi gọi ma, ma chạm ai: tiếng hét "aaa" tụt xuống, bị đấm tan: "phụt" ---- */
     'panic.spook'() { T({ freq: 700, to: 420, dur: 0.8, type: 'sine', vol: 0.08, vib: 8, vibDepth: 40 }); T({ freq: 466, to: 300, dur: 0.8, type: 'sine', vol: 0.04, vib: 7, vibDepth: 30, delay: 0.1 }); },
+    'ghost.poof'() { N({ dur: 0.25, vol: 0.14, freq: 1800, to: 600, q: 0.8 }); T({ freq: 600, to: 1200, dur: 0.12, type: 'sine', vol: 0.06 }); },
     'panic.boo'() { T({ freq: 900, to: 200, dur: 0.35, type: 'sawtooth', vol: 0.12, vib: 20, vibDepth: 30 }); N({ dur: 0.2, vol: 0.08, freq: 2000 }); },
+    /* ---- Chaos Ball (Core, cores.js): xúc xắc lăn lạch cạch đầu mỗi pha bóng rồi dừng ---- */
+    'chaos.roll'() { for (let i = 0; i < 8; i++) N({ dur: 0.03, vol: 0.12, freq: R(2000, 4000), q: 3, delay: i * 0.1 }); T({ freq: 1046, dur: 0.15, type: 'square', vol: 0.08, delay: 0.88 }); },
     /* ---- 36. Mega Magnet: nam châm rơi rít xuống + tiếng ù từ trường suốt lúc hút ---- */
     'magnet.drop'() { T({ freq: 1200, to: 200, dur: 0.4, type: 'sine', vol: 0.13 }); },
     'magnet.hum'() { const p = P('mega_magnet'), t = (p.time || 2) + 0.2; T({ freq: 60, dur: t, type: 'sine', vol: 0.12, attack: 0.05 }); T({ freq: 120, dur: t, type: 'square', vol: 0.025, vib: 10, vibDepth: 3 }); },

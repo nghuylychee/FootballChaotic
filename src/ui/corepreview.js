@@ -102,6 +102,16 @@ window.SFC = window.SFC || {};
     at: [[o.at || 0.4, (s) => { s.passed = true; Act().passTo(s.g, s.me, s.mate, o.mode || 'ground'); }]].concat(o.more || []),
   });
 
+  // QTE (SFC.CoreQTE, prop 'qtap'): người có thanh bấm phím đúng lúc kim tới giữa vùng xanh
+  const qteTap = (s) => {
+    const o = s.g.effects.V.props.find((x) => x.kind === 'qtap' && !x.off), q = o && s.g.players.find((p) => p.id === o.a);
+    if (!q) return;
+    const z0 = Math.floor(o.b / 1000) / 1000, z1 = (o.b % 1000) / 1000, c = SFC.CoreQTE.cursor(o.max - o.t, o.max);
+    if (c >= (z0 + z1) / 2) q.intent[o.color === 'pass' ? 'passTap' : 'shootTap'] = true;
+  };
+  // chạy về phía điểm t
+  const toward = (p, t, k = 1) => { const d = U.norm(t.x - p.x, t.y - p.y); p.intent.mx = d.x * k; p.intent.my = d.y * k; };
+
   // Tuyệt kỹ (bỏ cut-in: gọi thẳng hành vi)
   const ult = (o = {}) => ({
     len: o.len || 3, cores: o.cores, focus: o.focus,
@@ -141,7 +151,7 @@ window.SFC = window.SFC || {};
     }),
     phantom_pass: pass({ mode: 'through', init: (s) => { s.me.recvT = s.g.time; s.place(s.o1, A.x, A.y - 5, PI); } }),
     symphony: shot({ charge: 0.7, init: (s) => { s.g.passChain[0] = 4; } }),
-    endless_tiki: ult({ len: 3.4, init: (s) => { s.place(s.mate, A.x + 10, A.y - 34, 0); s.place(s.o1, A.x + 50, A.y + 20, PI); }, focus: (s) => s.g.ball }),
+    endless_tiki: ult({ len: 5.2, init: (s) => { s.place(s.mate, A.x + 10, A.y - 34, 0); s.place(s.o1, A.x + 50, A.y + 20, PI); }, tick: qteTap, focus: (s) => s.g.ball }),
     rubber_arm: punch({ dist: 45 }),
     // đồng đội chuyền, người vàng giữ D chờ (lực chờ nhỏ) -> bóng tới là sút 1 chạm, One-Two đẩy lên đầy lực
     one_two: shot({
@@ -163,7 +173,8 @@ window.SFC = window.SFC || {};
     energy_wave: shot({ lane: true, aimY: 0.3 }),
     black_hole: shot({ lane: true, len: 3, aimY: 0.3, init: (s) => s.place(s.o2, G.x - 60, G.y + 24, PI) }),
     meteor_strike: ult({ len: 3, init: (s) => { s.place(s.me, G.x - 150, G.y + 10, 0); s.place(s.o1, G.x - 16, G.y, PI); }, focus: (s) => (s.t > 0.8 ? s.g.ball : s.me) }),
-    chaos_ball: shot({ charge: 0.8 }),
+    // quay loại bóng của pha này trên đầu (như lúc giao bóng) rồi sút
+    chaos_ball: shot({ charge: 0.8, at: 1.4, len: 3, more: [[0.05, (s) => SFC.CoreBehaviors.chaos_ball.onKickoff(s.g.cores, 0, s.g.cores.sp('chaos_ball', s.me))]] }),
     ghost_ball: shot({ cores: ['shadow_clone'], at: 0.8, more: [[0.2, (s) => Act().skill(s.g, s.me, 0.3, -1)]], from: 0.5 }),
     scissor_kick: {
       len: 2.4, focus: (s) => (s.t > 0.5 ? s.g.ball : s.me),
@@ -294,11 +305,12 @@ window.SFC = window.SFC || {};
       focus: (s) => s.mid(s.me, s.o2),
     }),
     'chaos_roulette:2': ult({ ball: false, len: 4, init: (s) => { s.place(s.me, 140, A.y, 0); s.place(s.o1, 200, A.y - 10, PI); s.place(s.o2, 230, A.y + 20, PI); s.give(s.o1); }, focus: (s) => ({ x: 170, y: A.y }) }),
+    // slow motion: chạy chạm 2 đối thủ (dấu ngắm), hết giờ sniper trên khán đài bắn từng người
     bullet_time: ult({
-      len: 3, at: 0.25,
-      init: (s) => { s.place(s.me, G.x - 430, G.y + 20, 0); s.place(s.o2, G.x - 330, G.y + 14, PI); s.place(s.o1, G.x - 16, G.y, PI); },
-      tick: (s) => { s.me.intent.mx = 1; s.me.intent.my = s.t < 0.9 ? -0.2 : 0.1; },
-      focus: (s) => (s.t > 1.9 ? s.g.ball : s.me),
+      ball: false, len: 4.4, at: 0.2,
+      init: (s) => { s.place(s.o1, A.x + 40, A.y - 20, PI); s.place(s.o2, A.x + 100, A.y + 24, PI); },
+      tick: (s) => toward(s.me, s.t < 1.1 ? s.o1 : s.t < 2 ? s.o2 : { x: A.x + 160, y: A.y }),
+      focus: (s) => (s.t < 2.3 ? s.me : s.mid(s.o1, s.o2)),
     }),
     hurricane_kick: ult({
       ball: false, len: 3, init: (s) => { s.place(s.o1, A.x + 30, A.y + 6, PI); s.place(s.o2, A.x + 70, A.y - 10, PI); s.give(s.o1); },
@@ -322,13 +334,16 @@ window.SFC = window.SFC || {};
       focus: (s) => s.mid(s.me, s.mate),
     }),
     ghost_hands: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 40, A.y - 18, PI); s.place(s.o2, A.x + 55, A.y + 22, PI); s.give(s.o1); }, focus: (s) => s.mid(s.o1, s.o2) }),
+    // quay xổ 5 loại cú đấm trên đầu rồi đấm lần lượt (mỗi cú một loại)
     jack_in_box: ult({
-      ball: false, len: 3, at: 0.2,
-      init: (s) => { s.place(s.o1, A.x + 90, A.y, PI); s.give(s.o1); },
-      tick: (s) => { s.o1.intent.mx = -0.8; s.o1.intent.my = 0; },
-      focus: (s) => s.mid(s.me, s.o1),
+      ball: false, len: 4, at: 0.2,
+      init: (s) => { s.place(s.o1, A.x - 14, A.y, PI); s.place(s.o2, A.x + 6, A.y + 22, PI); s.give(s.o1); },
+      tick: (s) => { if (s.o1.state === 'normal' && U.dist(s.o1, s.me) > 26) toward(s.o1, s.me, 0.6); },
+      more: [1.0, 1.55, 2.1, 2.65, 3.2].map((t) => [t, (s) => { const o = U.dist(s.o1, s.me) < U.dist(s.o2, s.me) ? s.o1 : s.o2; s.face(s.me, o); s.me.cd.light = 0; Act().lightAttack(s.g, s.me); }]),
+      focus: (s) => s.me,
     }),
-    portal_kicks: ult({ ball: false, len: 2.8, init: (s) => { s.place(s.o1, A.x + 60, A.y - 20, PI); s.place(s.o2, A.x + 80, A.y + 24, PI); s.give(s.o1); }, focus: (s) => s.mid(s.o1, s.o2) }),
+    // chui cổng ra sau lưng từng đối thủ, bấm đúng lúc để đá
+    portal_kicks: ult({ ball: false, len: 3.8, init: (s) => { s.place(s.o1, A.x + 60, A.y - 20, PI); s.place(s.o2, A.x + 80, A.y + 24, PI); s.give(s.o1); }, tick: qteTap, focus: (s) => s.mid(s.o1, s.o2) }),
     earth_spike: ult({ ball: false, len: 3, init: (s) => { s.place(s.o1, A.x + 50, A.y, PI); s.give(s.o1); s.place(s.o2, A.x + 90, A.y + 6, PI); }, focus: (s) => s.mid(s.me, s.o1) }),
 
     /* đợt 4 (2026-10-17) */
@@ -376,11 +391,15 @@ window.SFC = window.SFC || {};
       tick: (s) => { if (s.t > 0.9) { s.o1.intent.mx = 0.6; s.o1.intent.my = Math.sin(s.t * 3); s.o2.intent.mx = -0.3; s.o2.intent.my = Math.cos(s.t * 3); } },
       focus: (s) => s.mid(s.o1, s.o2),
     }),
+    // ma đuổi theo đối thủ: người trên chạy -> bị dọa hoảng; người dưới quay lại đấm tan ma
     panic_ball: ult({
-      len: 3.6, at: 0.25, init: (s) => { s.place(s.o1, A.x + 40, A.y - 14, PI); s.place(s.o2, A.x + 70, A.y + 24, PI); },
-      // đối thủ cố chạy về phía bạn — trúng bóng rồi thì chạy ngược
-      tick: (s) => { for (const o of [s.o1, s.o2]) { const d = U.norm(s.me.x - o.x, s.me.y - o.y); o.intent.mx = d.x * 0.7; o.intent.my = d.y * 0.7; } },
-      focus: (s) => s.g.ball,
+      ball: false, len: 3.8, at: 0.25, init: (s) => { s.place(s.o1, A.x + 50, A.y - 18, PI); s.place(s.o2, A.x + 60, A.y + 26, PI); },
+      tick: (s) => {
+        s.o1.intent.mx = 0.5; s.o1.intent.my = -0.2;
+        const gh = s.g.effects.V.props.find((x) => x.kind === 'spook' && !x.off && U.dist({ x: x.a, y: x.b }, s.o2) < 30);   // a, b = điểm cuối đoạn bay
+        if (gh && s.o2.state === 'normal' && s.o2.cd.light <= 0) { s.face(s.o2, { x: gh.a, y: gh.b }); Act().lightAttack(s.g, s.o2); }
+      },
+      focus: (s) => s.mid(s.o1, s.o2),
     }),
 
     /* đợt 2 (2026-10-15) */
@@ -401,7 +420,12 @@ window.SFC = window.SFC || {};
       },
       focus: (s) => s.me,
     }),
-    medusa_gaze: ult({ ball: false, len: 3, init: (s) => { s.place(s.o1, A.x + 50, A.y, PI); s.place(s.o2, A.x + 80, A.y + 22, PI); s.give(s.o1); }, focus: (s) => s.mid(s.me, s.o1) }),
+    // nón mắt hoá đá người phía trước, rồi lướt vào người đứng lệch ra ngoài nón -> cũng hoá đá
+    medusa_gaze: ult({
+      ball: false, len: 3.2, init: (s) => { s.place(s.o1, A.x + 50, A.y, PI); s.place(s.o2, A.x - 22, A.y + 32, PI); s.give(s.o1); },
+      more: [[1.1, (s) => { s.me.cd.skill = 0; Act().skill(s.g, s.me, s.o2.x - s.me.x, s.o2.y - s.me.y); }]],
+      focus: (s) => s.mid(s.me, s.o1),
+    }),
     mega_magnet: ult({
       ball: false, len: 3.4, init: (s) => { s.place(s.o1, A.x + 40, A.y - 20, PI); s.place(s.o2, A.x + 80, A.y + 20, PI); s.give(s.o1); },
       focus: (s) => s.mid(s.o1, s.o2),

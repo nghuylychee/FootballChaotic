@@ -130,7 +130,7 @@ SFC_CONFIG.game = {
     turnRate: 16,             // rad/s
     staminaMax: 100,
     staminaDrain: 30,
-    staminaRegen: 20,
+    staminaRegen: 32,         // (/s, nhân chỉ số STAMINA) hồi khi không chạy nước rút — user 2026-11-01: 20 -> 32, hồi nhanh hơn
     staminaMinToSprint: 12,
     // Cơ chế thủ môn — áp dụng cho cầu thủ đang đứng trong vòng cấm nhà
     gkReach: 9,
