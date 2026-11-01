@@ -1379,7 +1379,7 @@ SFC.I18n.add({
     'Use it only without the ball': 'ボールを持っていない時だけ使える',
     'Use it anytime': 'いつでも使える',
     'Boulder Rider': 'ボルダーライダー',
-    'Grow a boulder in rhythm, then ride it over everyone.': 'リズムよく岩を育て、乗って全員を押しつぶす。',
+    'Hit the buttons to grow a boulder, then ride it over everyone.': 'ボタンを押して岩を育て、乗って全員を押しつぶす。',
     'Mega Boomerang': 'メガブーメラン',
     'MEGA BOOMERANG!': 'メガブーメラン！',
     'Hurl a giant boomerang that sweeps everyone, friend or foe.': '巨大ブーメランを投げ、敵も味方もまとめてなぎ払う。',

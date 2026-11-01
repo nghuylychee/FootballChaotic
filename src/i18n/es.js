@@ -1437,7 +1437,7 @@ SFC.I18n.add({
     'Use it only without the ball': 'Úsalo solo sin el balón',
     'Use it anytime': 'Úsalo cuando quieras',
     'Boulder Rider': 'Jinete de roca',
-    'Grow a boulder in rhythm, then ride it over everyone.': 'Haz crecer una roca al ritmo y arrolla a todos montado en ella.',
+    'Hit the buttons to grow a boulder, then ride it over everyone.': 'Pulsa los botones para agrandar una roca y arrolla a todos montado en ella.',
     'Mega Boomerang': 'Megabumerán',
     'MEGA BOOMERANG!': '¡MEGABUMERÁN!',
     'Hurl a giant boomerang that sweeps everyone, friend or foe.': 'Lanza un bumerán gigante que barre a todos, amigos o rivales.',

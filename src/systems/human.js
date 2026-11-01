@@ -42,9 +42,8 @@ window.SFC = window.SFC || {};
       p.intent.sprint = input.isDown('sprint');
       // bấm sút ở bước này (Tuyệt kỹ tự điều khiển người chơi đọc được, vd. QTE của Boulder Rider / Portal Kicks)
       p.intent.shootTap = input.wasPressed('shoot');
-      p.intent.passTap = input.wasPressed('pass');   // QTE chuyền (Endless Tiki-Taka, SFC.CoreQTE)
-      // đang làm QTE (SFC.CoreQTE, cores-ult2.js): phím chỉ dùng cho QTE — không chuyền / sút / đấm thật
-      if (p.qte) return;
+      // đang làm QTE (SFC.CoreQTE, cores-ult2.js): nút vừa bấm chỉ dùng cho QTE — không chuyền / sút / đấm thật
+      if (p.qte) { p.intent.qteKey = SFC.CoreQTE.KEYS.find((a) => input.wasPressed(a)) || p.intent.qteKey || null; return; }
       // hoảng sợ (Panic Ball): hướng nhắm cũng đảo (di chuyển đã đảo trong Player.moveNormal)
       if (p.panicT > 0) { mx = -mx; my = -my; }
       // hướng nhắm (chuyền / sút / lướt) luôn là vector đơn vị như phím mũi tên

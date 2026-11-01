@@ -251,10 +251,10 @@ window.SFC = window.SFC || {};
   // FLOOR: nằm trên mặt sân, dưới cầu thủ · UPRIGHT: đứng trên sân, xếp chiều sâu cùng cầu thủ · TOP: vẽ trên cùng
   const PROP_FLOOR = { washpuddle: 1, neontile: 1, chizone: 1, lateaim: 1, zoomies: 1, vroom: 1, splatfall: 1, splat: 1, graffitiwarn: 1, seawave: 1, surf: 1, lane: 1, trail: 1, puddle: 1, peel: 1, mark: 1, gaze: 1, magic: 1, moon: 1, dot: 1, chain: 1, stance: 1, magnet: 1, quake: 1, qring: 1, target: 1, rubble: 1,
     grid: 1, trail2: 1, cage: 1, staff: 1, harp: 1, harpz: 1, dashline: 1, moonf: 1 };   // ★★ thức tỉnh (docs/ULT_AWAKEN.md)
-  const PROP_TOP = { rope: 1, hose: 1, chipalm: 1, zapline: 1, mama: 1, chopaim: 1, chopstrike: 1, chopcarry: 1, owl: 1, owleyes: 1, gazelock: 1, owlbolt: 1, owlbeam: 1, flock: 1, wind: 1, lassoswing: 1, lassofly: 1, tarot: 1, dark: 1, card: 1, spot: 1, alarm: 1, glove: 1, foot: 1, pips: 1, smoke: 1, boomer: 1, string: 1, qte: 1, mhand: 1, skyfire: 1, rebound: 1, fullmoon: 1, junkwarn: 1,
+  const PROP_TOP = { rope: 1, hose: 1, chipalm: 1, zapline: 1, mama: 1, chopaim: 1, chopstrike: 1, chopcarry: 1, owl: 1, owleyes: 1, gazelock: 1, owlbolt: 1, owlbeam: 1, flock: 1, wind: 1, lassoswing: 1, lassofly: 1, tarot: 1, dark: 1, card: 1, spot: 1, alarm: 1, glove: 1, foot: 1, pips: 1, smoke: 1, boomer: 1, string: 1, mhand: 1, skyfire: 1, rebound: 1, fullmoon: 1, junkwarn: 1,
     qtap: 1, laser: 1, tracer: 1, knuckles: 1, dice: 1 };   // 2026-11-01: QTE, Bullet Time sniper, Lucky Knuckles, Chaos Ball   // khói phủ lên người (đối thủ trong khói vẫn thấy mờ mờ)
   // vật thể bám theo cầu thủ (a = id cầu thủ)
-  const PROP_FOLLOW = { whey: 1, heat: 1, vault: 1, gazelock: 1, petrify: 1, fall: 1, vroom: 1, veil: 1, card: 1, legend: 1, stoolheld: 1, alarm: 1, tornado: 1, hand: 1, stance: 1, hammer: 1, truck: 1, stone: 1, hypno: 1, magic: 1, pips: 1, ape: 1, ride: 1, qte: 1, chicken: 1, panic: 1, link: 1, burn: 1, tied: 1, lassoswing: 1, carrotheld: 1, zoomies: 1, surf: 1, flung: 1, chopaim: 1, chopcarry: 1, inpot: 1, fused: 1, fusetrail: 1, stand: 1, moonf: 1, chrome: 1,
+  const PROP_FOLLOW = { whey: 1, heat: 1, vault: 1, gazelock: 1, petrify: 1, fall: 1, vroom: 1, veil: 1, card: 1, legend: 1, stoolheld: 1, alarm: 1, tornado: 1, hand: 1, stance: 1, hammer: 1, truck: 1, stone: 1, hypno: 1, magic: 1, pips: 1, ape: 1, ride: 1, chicken: 1, panic: 1, link: 1, burn: 1, tied: 1, lassoswing: 1, carrotheld: 1, zoomies: 1, surf: 1, flung: 1, chopaim: 1, chopcarry: 1, inpot: 1, fused: 1, fusetrail: 1, stand: 1, moonf: 1, chrome: 1,
     shock: 1, qtap: 1, tag: 1, warp: 1, knuckles: 1, dice: 1 };
   // vẽ SAU sprite của người được bám (phủ lên người): tượng đá, xe tải, búa, mắt thôi miên
   const PROP_OVER = { shock: 1, tag: 1, heat: 1, chrome: 1, legend: 1, flung: 1, carrotheld: 1, petrify: 1, stoolheld: 1, stone: 1, truck: 1, hammer: 1, hypno: 1, panic: 1, ape: 1, ride: 1, chicken: 1, link: 1 };
@@ -797,19 +797,6 @@ window.SFC = window.SFC || {};
         SP().drawPlayer(ctx, Object.assign({}, q, { x: q.x + wob, y: cy - R + 3, vx: sp > 20 ? 0 : q.vx, vy: 0, state: 'normal', atkType: null }), g, 1);
         break;
       }
-      case 'qte': {   // Boulder Rider: thanh quicktime trên đầu (kim chạy qua lại, vùng giữa xanh lá; b = số lần trúng)
-        const q = byId(g, o.a);
-        if (!q) break;
-        const P = SFC_CONFIG.cores.list.boulder_shot.params, R = SFC.CoreBehaviors.boulder_shot.R(o.b), W = 50;
-        const bx = Math.round(x - W / 2), byy = Math.round(y - 2 * R - 44), zw = Math.round(W * P.zone);
-        const c = SFC.CoreBehaviors.boulder_shot.cursor(el, P.period), cx = Math.round(bx + c * (W - 1));
-        px(ctx, bx - 1, byy - 1, W + 2, 8, OUT); px(ctx, bx, byy, W, 6, '#3a3f4c');
-        px(ctx, bx + Math.round(W / 2 - zw / 2), byy, zw, 6, '#6bff4f');
-        px(ctx, cx - 1, byy - 3, 3, 12, OUT); px(ctx, cx, byy - 2, 1, 10, '#ffffff');
-        for (let i = 0; i < 3; i++) { disc(ctx, x - 6 + i * 6, byy + 11, 3, OUT); disc(ctx, x - 6 + i * 6, byy + 11, 2, i < o.b ? o.color : '#3a3f4c'); }
-        if (q === g.controlled && SFC.Input) outlinedText(ctx, SFC.Input.label('shoot'), bx - 9, byy + 3, 12, '#ffffff');
-        break;
-      }
       case 'rubble': {   // Boulder Rider: đá vỡ vụn — các mảnh đá văng quanh chỗ cũ rồi lún dần (a = bán kính tảng đá)
         const r = rng(o.id * 29), n = 5 + Math.round(o.a / 5);
         for (let i = 0; i < n; i++) {
@@ -1030,14 +1017,17 @@ window.SFC = window.SFC || {};
         ctx.globalCompositeOperation = 'source-over';
         break;
       }
-      case 'qtap': {   // QTE (SFC.CoreQTE): thanh trên đầu, kim chạy 1 lượt trái -> phải, vùng xanh = bấm đúng lúc; phím (color = action) chỉ hiện ở máy của người đó
+      case 'qtap': {   // QTE (SFC.CoreQTE): ô nút trên đầu (color = action, hiện phím theo máy đang xem) nảy nhẹ + thanh thời gian cạn dần
         const q = byId(g, o.a);
         if (!q) break;
-        const W = 44, bx = Math.round(x - W / 2), by = Math.round(y - 50), z0 = Math.floor(o.b / 1000) / 1000, z1 = (o.b % 1000) / 1000;
-        px(ctx, bx - 1, by - 1, W + 2, 8, OUT); px(ctx, bx, by, W, 6, '#3a3f4c');
-        px(ctx, bx + Math.round(z0 * W), by, Math.max(2, Math.round((z1 - z0) * W)), 6, '#6bff4f');
-        if (!o.off) { const cx = Math.round(bx + SFC.CoreQTE.cursor(el, o.max) * (W - 1)); px(ctx, cx - 1, by - 3, 3, 12, OUT); px(ctx, cx, by - 2, 1, 10, '#ffffff'); }
-        if (q === g.controlled && SFC.Input) outlinedText(ctx, SFC.Input.label(o.color), bx - 10, by + 3, 12, '#ffffff');
+        const by = Math.round(y - 54 - o.b - (o.off ? 0 : Math.abs(Math.sin(t * 10)) * 2)), W = 30;   // b: nâng lên (đứng trên tảng đá)
+        px(ctx, x - 9, by - 9, 19, 19, OUT); px(ctx, x - 8, by - 8, 17, 17, '#ffd23f'); px(ctx, x - 7, by - 7, 15, 15, '#2a2440');
+        if (SFC.Input) outlinedText(ctx, SFC.Input.label(o.color), x + 0.5, by + 0.5, 12, '#ffffff');
+        if (!o.off) {
+          const left = Math.max(0, 1 - el / o.max), bw = Math.round(W * left);
+          px(ctx, x - W / 2 - 1, by + 11, W + 2, 4, OUT); px(ctx, x - W / 2, by + 12, W, 2, '#3a3f4c');
+          px(ctx, x - W / 2, by + 12, bw, 2, left > 0.35 ? '#6bff4f' : '#ff3d5a');
+        }
         break;
       }
       case 'tag': {   // Bullet Time: dấu ngắm đỏ dán trên người bị đánh dấu (vòng + 4 vạch xoay chậm); lúc mới dán to ra rồi thu về

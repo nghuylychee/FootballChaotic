@@ -102,12 +102,10 @@ window.SFC = window.SFC || {};
     at: [[o.at || 0.4, (s) => { s.passed = true; Act().passTo(s.g, s.me, s.mate, o.mode || 'ground'); }]].concat(o.more || []),
   });
 
-  // QTE (SFC.CoreQTE, prop 'qtap'): người có thanh bấm phím đúng lúc kim tới giữa vùng xanh
+  // QTE (SFC.CoreQTE, prop 'qtap'): người có nút trên đầu bấm đúng nút đó sau một nhịp
   const qteTap = (s) => {
     const o = s.g.effects.V.props.find((x) => x.kind === 'qtap' && !x.off), q = o && s.g.players.find((p) => p.id === o.a);
-    if (!q) return;
-    const z0 = Math.floor(o.b / 1000) / 1000, z1 = (o.b % 1000) / 1000, c = SFC.CoreQTE.cursor(o.max - o.t, o.max);
-    if (c >= (z0 + z1) / 2) q.intent[o.color === 'pass' ? 'passTap' : 'shootTap'] = true;
+    if (q && o.max - o.t > 0.3) q.intent.qteKey = o.color;
   };
   // chạy về phía điểm t
   const toward = (p, t, k = 1) => { const d = U.norm(t.x - p.x, t.y - p.y); p.intent.mx = d.x * k; p.intent.my = d.y * k; };
@@ -369,12 +367,8 @@ window.SFC = window.SFC || {};
     boulder_shot: ult({
       ball: false, len: 5.4, at: 0.2,
       init: (s) => { s.place(s.o1, A.x + 80, A.y, PI); s.place(s.o2, A.x + 120, A.y + 22, PI); s.give(s.o1); },
-      // bấm sút đúng lúc kim nằm trong vùng giữa, rồi lái đá về phía đối thủ
-      tick: (s) => {
-        const o = s.g.effects.V.props.find((x) => x.kind === 'qte'), P = SFC_CONFIG.cores.list.boulder_shot.params;
-        s.me.intent.shootTap = !!o && Math.abs(SFC.CoreBehaviors.boulder_shot.cursor(o.max - o.t, P.period) - 0.5) < P.zone * 0.3;
-        s.me.intent.mx = 1; s.me.intent.my = Math.sin(s.t * 2) * 0.4;
-      },
+      // bấm đúng nút hiện trên đầu, rồi lái đá về phía đối thủ
+      tick: (s) => { qteTap(s); s.me.intent.mx = 1; s.me.intent.my = Math.sin(s.t * 2) * 0.4; },
       focus: (s) => s.me,
     }),
     magic_wall_pass: ult({

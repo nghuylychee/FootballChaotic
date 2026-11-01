@@ -1438,7 +1438,7 @@ SFC.I18n.add({
     'Use it only without the ball': 'Use só sem a bola',
     'Use it anytime': 'Use quando quiser',
     'Boulder Rider': 'Surfista de Pedra',
-    'Grow a boulder in rhythm, then ride it over everyone.': 'Faça uma pedra crescer no ritmo e passe por cima de todo mundo.',
+    'Hit the buttons to grow a boulder, then ride it over everyone.': 'Aperte os botões para a pedra crescer e passe por cima de todo mundo.',
     'Mega Boomerang': 'Mega Bumerangue',
     'MEGA BOOMERANG!': 'MEGA BUMERANGUE!',
     'Hurl a giant boomerang that sweeps everyone, friend or foe.': 'Arremesse um bumerangue gigante que acerta todo mundo, amigo ou rival.',

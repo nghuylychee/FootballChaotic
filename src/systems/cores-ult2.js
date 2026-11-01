@@ -185,23 +185,24 @@ window.SFC = window.SFC || {};
   SFC.CoreStat = Stat;   // luật trận FOOTBALL STORY (src/systems/matchmods.js) dùng lại trơn té, teo nhỏ...
 
   /* ---------- QTE (Endless Tiki-Taka, Portal Kicks — user 2026-11-01) ----------
-   * kim chạy 1 lượt trái -> phải trong dur giây, bấm phím key ('pass' | 'shoot') khi kim trong vùng zone [z0, z1] = trúng.
-   * Hình: prop 'qtap' bám người (render/vfx.js): b = vùng gói 2 số (QTE.pack), color = tên action để máy có người đó hiện phím.
-   * done(ok) gọi đúng 1 lần: bấm (trúng / trượt), hết giờ (trượt) hoặc giao bóng (trượt). AI bấm 1 lần trong vùng, trúng với tỉ lệ aiHit */
+   * hiện 1 nút ngẫu nhiên trong KEYS trên đầu, bấm ĐÚNG nút đó trước khi hết dur giây = trúng (không cần canh thời điểm);
+   * bấm nút khác trong KEYS / hết giờ / giao bóng = trượt. Phím bấm đọc qua p.intent.qteKey (Human.update: đang QTE thì phím chỉ dùng cho QTE).
+   * Hình: prop 'qtap' bám người (render/vfx.js): color = action của nút, b = nâng nút lên (px), thanh thời gian cạn dần. AI bấm sau một nhịp phản xạ, trúng với tỉ lệ aiHit */
   const QTE = {
-    cursor: (el, dur) => Math.min(1, el / dur),
-    pack: (zone) => Math.round(zone[0] * 1000) * 1000 + Math.round(zone[1] * 1000),
-    start(sys, p, key, dur, zone, aiHit, done) {
-      const g = sys.g, E = g.effects, id = H.propId(g), tap = key === 'pass' ? 'passTap' : 'shootTap';
-      E.prop(id, 'qtap', p.x, p.y, p.id, QTE.pack(zone), dur, key);
-      p.intent[tap] = false;
-      p.qte = true;   // Human.update: phím chỉ dùng cho QTE
-      const aiAt = U.rand(zone[0], zone[1]) * dur, aiOk = Math.random() < aiHit;
+    KEYS: ['shoot', 'pass', 'lob', 'through'],
+    // lift: nâng nút lên thêm (px) — vd. người đứng trên tảng đá Boulder Rider
+    start(sys, p, dur, aiHit, done, lift = 0) {
+      const g = sys.g, E = g.effects, id = H.propId(g), key = U.pick(QTE.KEYS);
+      E.prop(id, 'qtap', p.x, p.y, p.id, lift, dur, key);
+      p.qte = true;
+      p.intent.qteKey = null;
+      const aiAt = U.rand(0.25, 0.6) * dur, aiOk = Math.random() < aiHit;
       let T = 0, over = false;
       const end = (ok) => {
         if (over) return;
         over = true;
         p.qte = false;
+        p.intent.qteKey = null;
         E.propOff(id, 0.12);
         if (g.state === 'play') g.sfx('ult', ok ? 'qte.hit' : 'qte.miss');
         done(ok);
@@ -211,14 +212,14 @@ window.SFC = window.SFC || {};
         if (g.state !== 'play') { end(false); return true; }
         T += dt;
         if (human(g, p)) {
-          if (p.intent[tap]) { p.intent[tap] = false; const c = QTE.cursor(T, dur); end(c >= zone[0] && c <= zone[1]); return true; }
+          if (p.intent.qteKey) { end(p.intent.qteKey === key); return true; }
         } else if (T >= aiAt) { end(aiOk); return true; }
         if (T >= dur) { end(false); return true; }
         return false;
       }, () => end(false));
     },
   };
-  SFC.CoreQTE = QTE;   // Endless Tiki-Taka (cores-new.js), hình vẽ (render/vfx.js case 'qtap')
+  SFC.CoreQTE = QTE;   // Endless Tiki-Taka (cores-new.js), Portal Kicks, Boulder Rider, hình vẽ (render/vfx.js case 'qtap')
 
   /* ---------- hình học cho Storm Cycle (vòng sét kín) ---------- */
   // giao điểm 2 đoạn thẳng (null nếu không cắt)
@@ -698,12 +699,10 @@ window.SFC = window.SFC || {};
 
 
     /* 🎯 SÁT THỦ + 🛡 THÉP — Boulder Rider (id boulder_shot; user chốt 2026-10-17): chỉ dùng khi KHÔNG cầm bóng. Tự gọi tảng đá của mình
-       rồi đứng lên giữ thăng bằng: thanh quicktime (kim chạy qua lại, render/vfx.js case 'qte'), bấm sút khi kim trong vùng giữa -> đá to
-       GẤP ĐÔI; bấm trượt misses lần -> đá vỡ vụn, ngã choáng. Đủ 3 lần (hết build giây mà đã trúng ít nhất 1: cỡ đang có) -> cưỡi đá lái đi
+       rồi đứng lên giữ thăng bằng: QTE nối tiếp (SFC.CoreQTE, user 2026-11-01: bấm đúng nút hiện trên đầu, không cần canh), đúng -> đá to
+       GẤP ĐÔI; bấm sai nút / hết giờ nút misses lần -> đá vỡ vụn, ngã choáng. Đủ 3 lần (hết build giây mà đã trúng ít nhất 1: cỡ đang có) -> cưỡi đá lái đi
        time giây, cán bẹp MỌI người chạm phải (cả đồng đội), đá văng bóng lỏng. Lúc đứng / cưỡi đá không bị đánh choáng (armorT, ngắn) */
     boulder_shot: {
-      // vị trí kim (0..1) sau T giây kể từ lúc thanh bắt đầu chạy (hình vẽ dùng cùng công thức)
-      cursor(T, period) { const ph = (T % period) / period; return ph < 0.5 ? ph * 2 : 2 - ph * 2; },
       // bán kính tảng đá cỡ lv: gấp đôi mỗi cỡ (hình vẽ dùng cùng công thức)
       R(lv) { return SFC_CONFIG.cores.list.boulder_shot.params.r0 * Math.pow(2, lv); },
       aiUse(sys, team, prm) {
@@ -713,48 +712,44 @@ window.SFC = window.SFC || {};
         return H.targetsNear(g, team, me, 160).length >= 2 ? me : null;
       },
       onUltimate(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects;
+        const g = sys.g, E = g.effects, T0 = g.time;
         H.hold(pl, prm.build + 0.5);
         pl.armorT = g.time + prm.build;
-        let lv = 0, miss = 0, T = 0, T0 = 0, lock = 0, pass = -1, rideId = 0, qteId = 0;
-        const props = (qte) => {
-          if (rideId) E.propOff(rideId, 0); if (qteId) E.propOff(qteId, 0);
-          rideId = H.propId(g); qteId = 0;
+        let lv = 0, miss = 0, rideId = 0;
+        const rock = () => {
+          if (rideId) E.propOff(rideId, 0);
+          rideId = H.propId(g);
           E.prop(rideId, 'ride', pl.x, pl.y, pl.id, lv, prm.build + prm.time + 0.5, '#7a6e5f');
-          if (qte) { qteId = H.propId(g); E.prop(qteId, 'qte', pl.x, pl.y, pl.id, lv, prm.build + 0.5, '#ffe14f'); }
         };
-        props(true);
+        rock();
         E.burst(pl.x, pl.y, 2, '#8a7f70', 14, 90, 0.5);
         g.sfx('ult', 'boulder.summon');
-        sys.task((dt) => {
-          if (g.state !== 'play') { E.propOff(rideId, 0); E.propOff(qteId, 0); pl.armorT = 0; return true; }
-          T += dt; lock -= dt;
-          pl.stateT = Math.max(pl.stateT, 0.2);
-          const c = this.cursor(T - T0, prm.period), inZone = Math.abs(c - 0.5) < prm.zone / 2;
-          let press = false, good = false;
-          if (human(g, pl)) { if (pl.intent.shootTap && lock <= 0) { press = true; good = inZone; } pl.intent.shootTap = false; }
-          else {
-            // AI: mỗi lượt kim đi qua vùng giữa bấm 1 lần, trúng với tỉ lệ aiHit
-            const k = Math.floor((T - T0) / (prm.period / 2));
-            if (inZone && k !== pass) { pass = k; press = true; good = Math.random() < prm.aiHit; }
-          }
-          if (press && good) {
-            lv++; T0 = T;
-            props(lv < 3);
-            E.burst(pl.x, pl.y - 6, 2, '#b5a890', 10 + lv * 6, 100, 0.5);
-            E.pop(pl.x, pl.y - 30 - this.R(lv) * 2, lv >= 3 ? 'MAX!' : 'BIGGER!', 'move', '#ffe14f');
-            E.shake(3 + lv * 2, 0.25);
-            g.sfx('ult', 'boulder.grow' + lv);
-          } else if (press) {
-            miss++; lock = 0.35;
-            E.pop(pl.x, pl.y - 30 - this.R(lv) * 2, 'WOBBLE!', 'status', '#9aa3b5');
-            E.shake(2, 0.2);
-            g.sfx('ult', 'boulder.miss');
-          }
-          if (miss >= prm.misses || (T >= prm.build && lv === 0)) { E.propOff(qteId, 0); this.crumble(sys, prm, pl, rideId, lv); return true; }
-          if (lv >= 3 || T >= prm.build) { E.propOff(qteId, 0); this.ride(sys, team, prm, pl, rideId, lv); return true; }
-          return false;
-        });
+        // hỏi nút kế tiếp (nút nổi trên tảng đá: nâng 2R px) cho tới khi đủ 3 cỡ / hết build giây / trượt đủ misses lần
+        const ask = () => {
+          if (g.state !== 'play') { E.propOff(rideId, 0); pl.armorT = 0; return; }
+          const left = prm.build - (g.time - T0);
+          if (miss >= prm.misses || (left <= 0 && lv === 0)) return this.crumble(sys, prm, pl, rideId, lv);
+          if (lv >= 3 || left <= 0) return this.ride(sys, team, prm, pl, rideId, lv);
+          pl.stateT = Math.max(pl.stateT, left + 0.3);
+          QTE.start(sys, pl, Math.min(prm.press, left), prm.aiHit, (ok) => {
+            if (g.state !== 'play') { E.propOff(rideId, 0); pl.armorT = 0; return; }
+            if (ok) {
+              lv++;
+              rock();
+              E.burst(pl.x, pl.y - 6, 2, '#b5a890', 10 + lv * 6, 100, 0.5);
+              E.pop(pl.x, pl.y - 30 - this.R(lv) * 2, lv >= 3 ? 'MAX!' : 'BIGGER!', 'move', '#ffe14f');
+              E.shake(3 + lv * 2, 0.25);
+              g.sfx('ult', 'boulder.grow' + lv);
+            } else {
+              miss++;
+              E.pop(pl.x, pl.y - 30 - this.R(lv) * 2, 'WOBBLE!', 'status', '#9aa3b5');
+              E.shake(2, 0.2);
+              g.sfx('ult', 'boulder.miss');
+            }
+            g.later(0.15, ask);
+          }, Math.round(this.R(lv) * 2));
+        };
+        ask();
       },
       // đá vỡ vụn (đống đá vụn 'rubble'), người trên đá ngã xuống choáng fall giây
       crumble(sys, prm, pl, rideId, lv) {
@@ -1724,8 +1719,8 @@ window.SFC = window.SFC || {};
     },
 
     /* 🦵 VÕ SĨ ĐÁ + 🌀 ẢO ẢNH — Portal Kicks (làm lại user 2026-11-01): lặn vào cổng dưới chân, cổng mở sau lưng từng đối thủ (tối đa
-       targets người trong range px, gần trước; báo trước telegraph giây), bạn chui ra sau lưng người đó và bám theo: QTE (bấm SÚT khi kim trong
-       vùng) -> cú đá văng. Đối thủ lướt Z (lúc cổng mở hoặc lúc QTE) là thoát; đấm trúng bạn (đang đứng sau lưng) là ngắt cả chiêu.
+       targets người trong range px, gần trước; báo trước telegraph giây), bạn chui ra sau lưng người đó và bám theo: QTE (bấm đúng nút
+       hiện trên đầu) -> cú đá văng. Đối thủ lướt Z (lúc cổng mở hoặc lúc QTE) là thoát; đấm trúng bạn (đang đứng sau lưng) là ngắt cả chiêu.
        Lúc ở trong cổng không bị đánh (ẩn sprite, prop 'warp') */
     portal_kicks: {
       aiUse(sys, team, prm) {
@@ -1785,7 +1780,7 @@ window.SFC = window.SFC || {};
               pl.stateT = Math.max(pl.stateT, 0.3);
               return false;
             });
-            QTE.start(sys, pl, 'shoot', prm.qte, prm.zone, prm.aiHit, (ok) => {
+            QTE.start(sys, pl, prm.qte, prm.aiHit, (ok) => {
               qDone = true;
               E.propOff(pid, 0.2);
               if (g.state !== 'play' || pl.state === 'stun') return stop();   // bị đấm ngược: ngắt cả chiêu

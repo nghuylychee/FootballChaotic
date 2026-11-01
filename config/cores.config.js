@@ -455,9 +455,9 @@ SFC_CONFIG.cores = {
     endless_tiki: {
       name: 'Endless Tiki-Taka', icon: '🎼', tags: ['playmaker'], role: 'ult', rarity: 'mythic', needsBall: true,
       desc: 'Hit the pass timing to chain one-touch passes, then shoot.',
-      // QTE (user 2026-11-01): người chơi cầm bóng bấm CHUYỀN khi kim chạy vào vùng xanh (qte giây, vùng zone[0]..zone[1]) -> người nhận tự băng
-      // lên run px trong runT giây rồi nhận đường chuyền thật (đối thủ vẫn cắt được). Bấm trượt / không bấm = chuỗi dừng, giữ bóng. AI: trúng aiHit
-      params: { passes: 4, gap: 0.12, passSpeed: 1.7, slow: 0.4, slowTime: 3.4, gk: 0.25, qte: 0.75, zone: [0.5, 0.85], run: 30, runT: 0.25, aiHit: 0.85 },   // passSpeed: đường chuyền thật nhưng nhanh hơn
+      // QTE (user 2026-11-01): người chơi cầm bóng bấm đúng nút hiện trên đầu trong qte giây -> người nhận tự băng lên run px trong runT giây
+      // rồi nhận đường chuyền thật (đối thủ vẫn cắt được). Bấm sai nút / hết giờ = chuỗi dừng, giữ bóng. AI: trúng aiHit
+      params: { passes: 4, gap: 0.12, passSpeed: 1.7, slow: 0.4, slowTime: 4, gk: 0.25, qte: 1.1, run: 30, runT: 0.25, aiHit: 0.85 },   // passSpeed: đường chuyền thật nhưng nhanh hơn
       // ★★ ETERNAL TIKI-TAKA: chuyền vòng cả 3 người, mỗi đường chuyền để lại dây đàn (strings giây, rộng width px);
       // hết chuỗi dây rung: đối thủ đứng trên dây khựng freeze giây
       evolve: [{ passes: 6, slow: 0.35, slowTime: 2.8, strings: 3.2, freeze: 0.9, width: 7 }],
@@ -663,13 +663,13 @@ SFC_CONFIG.cores = {
       scale: { radius: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
     },
     // 🎯 + 🛡 — Boulder Rider (id cũ boulder_shot; user chốt 2026-10-17): chỉ dùng khi KHÔNG cầm bóng (noBall). Gọi tảng đá (bán kính r0)
-    // rồi đứng lên: thanh quicktime (1 lượt period giây, vùng giữa zone), bấm sút đúng vùng -> đá to gấp đôi; trượt misses lần (hoặc hết build
-    // giây mà chưa trúng lần nào) -> đá vỡ, ngã choáng fall giây. Đủ 3 lần (hết build giây: cỡ đang có) -> cưỡi đá lái time giây (speed px/s,
+    // rồi đứng lên: QTE nối tiếp (bấm đúng nút hiện trên đầu trong press giây, user 2026-11-01) -> đá to gấp đôi; bấm sai / hết giờ misses lần
+    // (hoặc hết build giây mà chưa trúng lần nào) -> đá vỡ, ngã choáng fall giây. Đủ 3 lần (hết build giây: cỡ đang có) -> cưỡi đá lái time giây (speed px/s,
     // rẽ turn rad/s), cán bẹp mọi người chạm phải, cả đồng đội. Đứng / cưỡi đá không bị đánh choáng
     boulder_shot: {
       name: 'Boulder Rider', icon: '🪨', tags: ['striker', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true, noBall: true,
-      desc: 'Grow a boulder in rhythm, then ride it over everyone.',
-      params: { r0: 5, period: 1.4, zone: 0.26, build: 6, misses: 3, fall: 1.5, aiHit: 0.6, time: 4, speed: 125, turn: 2.6, knock: 260, launch: 140, stun: 1.2 },
+      desc: 'Hit the buttons to grow a boulder, then ride it over everyone.',
+      params: { r0: 5, press: 1.2, build: 6, misses: 3, fall: 1.5, aiHit: 0.6, time: 4, speed: 125, turn: 2.6, knock: 260, launch: 140, stun: 1.2 },
       scale: { time: 'pow', stun: 'pow' },
     },
     // 🥊 + 🌀 — Ghost Hands: vũng bóng tím hiện dưới chân tối đa targets đối thủ (báo trước telegraph giây), bàn tay ma trồi lên
@@ -686,9 +686,9 @@ SFC_CONFIG.cores = {
       name: 'Portal Kicks', icon: '🌀', tags: ['launcher', 'trickster'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Warp behind each opponent and time your kick as you appear.',
       // làm lại user 2026-11-01: lặn vào cổng, cổng mở sau lưng từng đối thủ (tối đa targets người trong range px, báo trước telegraph giây),
-      // bạn chui ra sau lưng họ: QTE qte giây, bấm SÚT khi kim trong vùng zone -> cú đá (reach px). Đối thủ lướt Z để né, hoặc đấm trúng bạn
+      // bạn chui ra sau lưng họ: QTE qte giây, bấm đúng nút hiện trên đầu -> cú đá (reach px). Đối thủ lướt Z để né, hoặc đấm trúng bạn
       // (đang đứng sau lưng) là ngắt cả chiêu. AI: trúng aiHit
-      params: { range: 260, targets: 3, telegraph: 0.55, qte: 0.6, zone: [0.45, 0.8], behind: 16, reach: 30, knock: 320, launch: 200, stun: 1.0, aiHit: 0.75 },
+      params: { range: 260, targets: 3, telegraph: 0.55, qte: 0.9, behind: 16, reach: 30, knock: 320, launch: 200, stun: 1.0, aiHit: 0.75 },
       scale: { range: 'pow', knock: 'pow', stun: 'pow' },
     },
     // 🦵 + 🛡 — Earth Spike: vết nứt chạy thẳng ra trước (báo trước telegraph giây) -> hàng cột đá trồi lên hất tung người đứng trên;

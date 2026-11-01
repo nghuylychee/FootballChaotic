@@ -293,14 +293,14 @@ window.SFC = window.SFC || {};
             }
           });
         };
-        // QTE (user 2026-11-01): người cầm bóng bấm CHUYỀN khi kim trong vùng xanh -> người nhận tự băng lên chỗ trống rồi nhận đường chuyền.
+        // QTE (user 2026-11-01): người cầm bóng bấm đúng nút hiện trên đầu -> người nhận tự băng lên chỗ trống rồi nhận đường chuyền.
         // Trượt / không bấm: chuỗi dừng, người đó giữ bóng (không có cú sút kết). AI cầm bóng tự bấm (trúng aiHit)
         const step = (i) => {
           if (g.state !== 'play') return;
           const from = ring[i % ring.length], to = ring[(i + 1) % ring.length];
           if (b.owner !== from || to.state === 'stun') return finish();
           H.hold(from, prm.qte + 0.3);
-          SFC.CoreQTE.start(sys, from, 'pass', prm.qte, prm.zone, prm.aiHit, (ok) => {
+          SFC.CoreQTE.start(sys, from, prm.qte, prm.aiHit, (ok) => {
             H.unlock(from);
             if (g.state !== 'play') return;
             if (b.owner !== from || to.state === 'stun') return finish();

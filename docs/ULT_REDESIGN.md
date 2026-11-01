@@ -262,12 +262,13 @@ Bỏ skin bóng `boulder1..3` / `hide` và `noStealT` (chỉ bản Boulder trư�
 
 | Chiêu | Cũ | Mới |
 |---|---|---|
-| **Endless Tiki-Taka** | Tự chuyền 4 nhịp | Mỗi nhịp là một **QTE** (`SFC.CoreQTE`, thanh kim chạy trên đầu, prop `qtap`): người cầm bóng bấm CHUYỀN trong vùng xanh → người nhận tự băng lên rồi nhận đường chuyền thật (vẫn bị cắt được). Trượt = chuỗi dừng, giữ bóng. AI tự bấm (`aiHit`). Đang QTE thì phím chỉ dùng cho QTE (`p.qte`, `human.js`) |
+| **Endless Tiki-Taka** | Tự chuyền 4 nhịp | Mỗi nhịp là một **QTE** (`SFC.CoreQTE`, prop `qtap`: 1 nút ngẫu nhiên SÚT / CHUYỀN / CHUYỀN BỔNG / CHỌC KHE hiện trên đầu, không cần canh thời điểm): người cầm bóng bấm đúng nút trước khi hết giờ → người nhận tự băng lên rồi nhận đường chuyền thật (vẫn bị cắt được). Bấm sai nút / hết giờ = chuỗi dừng, giữ bóng. AI tự bấm (`aiHit`). Đang QTE thì phím chỉ dùng cho QTE (`p.qte` → `intent.qteKey`, `human.js`) |
 | **Smoke Bomb** | Bán kính 82 | 125 |
 | **Thunderstorm** | 9 tia, nửa đầu quanh đối thủ | 14 tia, **tia nào cũng nhắm 1 đối thủ** (xoay vòng, người cầm bóng trước), đón đầu đúng chỗ sau `telegraph` giây, lệch ≤ `jitter`. Trúng: **giật điện** (`Stat.shock`, prop `shock` + người run) |
 | **Bullet Time** | Quicksilver + cú sút | Slow motion + đoạn nhạc giao hưởng, **chạy tự do 2s chạm để đánh dấu** (dấu ngắm `tag`). Hết giờ: **sniper trên khán đài** bắn từng người bị đánh dấu (laser `laser` bám người 0.55s → đạn `tracer`), lướt Z đúng lúc là né. Dùng lúc nào cũng được |
-| **Portal Kicks** | Chân thò ra từ cổng cạnh đối thủ | Lặn vào cổng, **chui ra sau lưng từng đối thủ** (≤ 3, báo trước 0.55s, ẩn sprite `warp`), bám sau lưng + **QTE bấm SÚT** → cú đá. Đối thủ lướt Z để thoát, đấm trúng bạn là ngắt cả chiêu |
+| **Portal Kicks** | Chân thò ra từ cổng cạnh đối thủ | Lặn vào cổng, **chui ra sau lưng từng đối thủ** (≤ 3, báo trước 0.55s, ẩn sprite `warp`), bám sau lưng + **QTE bấm đúng nút** → cú đá. Đối thủ lướt Z để thoát, đấm trúng bạn là ngắt cả chiêu |
 | **Medusa Gaze** | Chỉ nón mắt | Thêm **lướt hoá đá**: 2.2s từ lúc ra chiêu, lướt Z chạm ai là hoá đá người đó (ra chiêu hồi lướt ngay) |
 | Jack-in-the-Box → **Lucky Knuckles** (id giữ `jack_in_box`) | Đặt hộp lò xo | Kiểu Sevika TFT: quay xổ 5 loại cú đấm (spring · upper · shock · boom · grab) thứ tự ngẫu nhiên (dải 5 ô `knuckles`), 5 Light Attack tiếp theo mỗi cú một loại (`Actions.lightHit` → `jack_in_box.punch`) |
 | Panic Ball → **Panic Ghosts** (id giữ `panic_ball`) | Bóng ma đuổi người | 3 **hồn ma** bay đuổi đối thủ (prop `spook`, bay theo đoạn `seg`). Đấm trúng ma là tan; ma chạm người → hoảng sợ. Lướt Z xuyên qua. Dùng lúc nào cũng được |
+| **Boulder Rider** | Thanh kim canh bấm vùng giữa | Cũng dùng **QTE bấm đúng nút** (`SFC.CoreQTE`, nút nổi trên tảng đá): đúng = đá to 1 cỡ, sai / hết giờ nút (`press` giây) = chao đảo; đủ `misses` lần thì vỡ |
 | Chaos Ball (Core) | Mỗi cú đá một loại ngẫu nhiên | **Mỗi pha bóng quay 1 loại** trên đầu (prop `dice`, `onKickoff`), cả pha sút ra loại đó |
