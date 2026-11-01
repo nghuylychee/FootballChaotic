@@ -192,9 +192,9 @@ window.SFC = window.SFC || {};
   // phòng FOOTBALL STORY: trang phòng chờ riêng ('slobby', src/ui/cup.js) · đang có lượt chơi cup thì màn cup
   const storyPage = () => (SFC.Cup.run ? 'cup' : 'slobby');
   on('busy', ({ action, code, story, run }) => {
-    if (action === 'create' && (story || run)) Menu().setMsg(TEXT.creating);
-    else if (action === 'create') Menu().go('online', TEXT.creating);
-    else Menu().setMsg(TEXT.connecting(code));
+    if (action === 'create' && (story || run)) Menu().setMsg(TEXT.creating, false, true);
+    else if (action === 'create') Menu().go('online', TEXT.creating, false, true);
+    else Menu().setMsg(TEXT.connecting(code), false, true);
   });
   // khách phòng Story: trạng thái cup của host -> bản sao (vào phòng giữa cup: bỏ qua cut scene của các vòng đã đá)
   on('cup', ({ state }) => {
@@ -217,7 +217,7 @@ window.SFC = window.SFC || {};
     if (Menu().page === 'runmap') Menu().render();
     else if (Menu().page === 'lobby' || Menu().page === 'join' || Menu().page === 'run') Menu().go('runmap', '');
   });
-  on('waiting', ({ action, code }) => Menu().setMsg((action === 'create' ? TEXT.creating : TEXT.connecting(code)) + TEXT.cancelHint()));
+  on('waiting', ({ action, code }) => Menu().setMsg((action === 'create' ? TEXT.creating : TEXT.connecting(code)) + TEXT.cancelHint(), false, true));
 
   on('lobby', ({ entered, pending }) => {
     const O_ = O();
@@ -227,9 +227,9 @@ window.SFC = window.SFC || {};
     if (O_.run && O_.isLead && SFC.Run.run) O_.seatHost(SFC.Run.run.squad[0].role);
     // vào phòng từ JOIN trên tab GOAT PATH: ở lại tab tới khi biết loại phòng (gói lobby đầu tiên)
     const RJ = SFC.RunUI && SFC.RunUI.joining;
-    if (entered) { Menu().go(O_.story ? storyPage() : O_.run ? 'runmap' : RJ ? 'run' : 'lobby', pending ? TEXT.waitingInfo : ''); return; }
+    if (entered) { Menu().go(O_.story ? storyPage() : O_.run ? 'runmap' : RJ ? 'run' : 'lobby', pending ? TEXT.waitingInfo : '', false, !!pending); return; }
     if (RJ && O_.lobby.members.length && !O_.run) { SFC.RunUI.joining = false; Menu().go(O_.story ? storyPage() : 'lobby', ''); return; }
-    if (O_.run) { if (app().screen === 'menu') Menu().go('runmap', Menu().msg === TEXT.waitingInfo ? '' : Menu().msg, Menu().msgErr); return; }
+    if (O_.run) { if (app().screen === 'menu') Menu().go('runmap', Menu().msg === TEXT.waitingInfo ? '' : Menu().msg, Menu().msgErr, Menu().msgSet !== Menu().msg); return; }
     // khách vừa biết đây là phòng Story (gói lobby đầu tiên): sang trang phòng Story
     if (O_.story && Menu().page === 'lobby') { Menu().go(storyPage(), ''); return; }
     // nhận được danh sách phòng: bỏ chữ "đang chờ", giữ các chữ báo khác

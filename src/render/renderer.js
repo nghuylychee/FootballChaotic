@@ -454,6 +454,8 @@ window.SFC = window.SFC || {};
       for (const p of g.players) {
         const kind = p.look.fx, d = S.FX[kind];
         if (!d || p.airZ > 0 || p.ghostT > 0) continue;   // tàng hình (Smoke Bomb): không để lại vệt trang phục
+        // ma đang tàng hình (School Ghosts): vệt trang phục (Phantom = bóng người tím, Smoke...) cứ vài nhịp lại làm lộ người -> chớp chớp (user 2026-11-01)
+        if (g.mod && SFC.MatchMods && SFC.MatchMods.alpha(g, p) < 0.6) continue;
         const sp = Math.hypot(p.vx || 0, p.vy || 0);
         if (sp < 40) continue;
         p.cosAcc = (p.cosAcc || 0) + d.rate * dt * (sp > 110 ? 1.6 : 1);
@@ -500,7 +502,8 @@ window.SFC = window.SFC || {};
         st.x = p.x; st.y = p.y;
         if (!moved || dt <= 0) continue;
         st.cd = Math.max(0, st.cd - dt);
-        const ok = p.state === 'normal' && !(p.airZ > 0) && !(p.ghostT > 0) && !p.celId;
+        // ma đang tàng hình (School Ghosts): không tung bụi chân, bụi làm lộ chỗ đứng
+        const ok = p.state === 'normal' && !(p.airZ > 0) && !(p.ghostT > 0) && !p.celId && !(g.mod && SFC.MatchMods && SFC.MatchMods.alpha(g, p) < 0.6);
         const sp = Math.hypot(p.vx || 0, p.vy || 0);
         // vận tốc ~0.08s trước (không lấy khung trước: online vx nhảy theo từng snapshot)
         st.hist.push({ t: now, vx: p.vx || 0, vy: p.vy || 0 });

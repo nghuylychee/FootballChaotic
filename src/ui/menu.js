@@ -141,7 +141,8 @@ window.SFC = window.SFC || {};
       this.render();
     },
 
-    go(page, msg = '', err = false) {
+    // stay = dòng thông báo trạng thái (đang tạo phòng, đang chờ...): không tự ẩn sau msgHide giây
+    go(page, msg = '', err = false, stay = false) {
       // bản DEMO: PRIVATE MATCH khoá (trừ nền tảng mở sẵn: Platform.privateMatch) -> màn WISHLIST. Đã tới Area bị khoá: lần đầu mở Main Path mỗi lần chạy game cũng ra màn WISHLIST.
       // CrazyGames: link cửa hàng chỉ được ở menu chính / lúc hết demo -> ONLINE chỉ báo khoá, không tự mở WISHLIST ở Main Path
       const promo = SFC.Platform.autoWishlist;
@@ -167,6 +168,7 @@ window.SFC = window.SFC || {};
       this.msg = msg;
       this.msgErr = err;
       this.msgAt = performance.now();
+      this.msgSet = stay ? null : msg;
       if (page === 'join' && !msg) this.code = '';
       // máy chủ riêng có thể đang ngủ: đánh thức lúc mở game (main.js); mở PRIVATE MATCH đánh thức thêm lần nữa (tối đa 1 lần / phút)
       // phòng khi người chơi ngồi ở menu quá lâu và máy chủ đã ngủ lại
@@ -179,7 +181,7 @@ window.SFC = window.SFC || {};
       this.render();
     },
 
-    setMsg(msg, err = false) { this.msg = msg; this.msgErr = err; this.msgAt = performance.now(); this.render(); },
+    setMsg(msg, err = false, stay = false) { this.msg = msg; this.msgErr = err; this.msgAt = performance.now(); this.msgSet = stay ? null : msg; this.render(); },
 
     options() {
       const order = TEAMS().order;
@@ -1450,8 +1452,9 @@ window.SFC = window.SFC || {};
       TR().tick(this, dt); // PHÒNG TRƯNG BÀY: vẽ lại căn phòng
       this.searchTick(dt); // tìm trận Main Path
       SFC.Social.tick(dt); // bạn bè giả: trả lời mời / chat, đổi trạng thái
-      // phòng chờ: dòng thông báo (vào phòng, mời, kết bạn...) tự ẩn sau msgHide giây
-      if (this.msg && this.page === 'party' && performance.now() - (this.msgAt || 0) > SFC_CONFIG.social.msgHide * 1000) { this.msg = ''; this.render(); }
+      // dòng thông báo (setMsg / go) tự ẩn sau msgHide giây ở mọi trang (user 2026-11-01: vd '{who} wears {name}' trên map GOAT PATH kẹt mãi).
+      // Chữ đỏ (lỗi / 'bấm lần nữa để xác nhận') giữ tới thao tác kế, trừ phòng chờ RANKED (như cũ). Chữ trạng thái chờ (stay, hoặc gán thẳng menu.msg) không tự ẩn
+      if (this.msg && this.msg === this.msgSet && (!this.msgErr || this.page === 'party') && performance.now() - (this.msgAt || 0) > SFC_CONFIG.social.msgHide * 1000) { this.msg = ''; this.render(); }
       if (!this.avatars.length) return;
       const dirs = [Math.PI / 2, 0, -Math.PI / 2, Math.PI];
       const facing = dirs[Math.floor(this.animT / 1.6) % 4];

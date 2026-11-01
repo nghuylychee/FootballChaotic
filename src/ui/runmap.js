@@ -1501,7 +1501,7 @@ window.SFC = window.SFC || {};
       clearInterval(this.waitT);
       const done = () => { clearInterval(this.waitT); SFC.Menu.msg = ''; go(); };
       if (!ON().scenesPending) return done();
-      SFC.Menu.setMsg(_t('Waiting for the others to finish the scene...'));
+      SFC.Menu.setMsg(_t('Waiting for the others to finish the scene...'), false, true);
       this.waitT = setInterval(() => { if (!ON().scenesPending || !inRoom()) done(); }, 250);
     },
     // host: báo cả phòng chiếu cut scene của act

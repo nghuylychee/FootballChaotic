@@ -292,7 +292,7 @@ window.SFC = window.SFC || {};
       clearInterval(this.kickT);
       const go = () => { clearInterval(this.kickT); this.kicking = false; SFC.Menu.msg = ''; this.startRoomMatch(); };
       if (!ON().scenesPending) return go();
-      SFC.Menu.setMsg(_t('Waiting for the others to finish the scene...'));
+      SFC.Menu.setMsg(_t('Waiting for the others to finish the scene...'), false, true);
       this.kickT = setInterval(() => { if (!ON().scenesPending || !inRoom()) go(); }, 250);
     },
     // chủ phòng dựng trận của vòng hiện tại cho cả phòng: mỗi người đá vị trí đang đứng với character của mình,

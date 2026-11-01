@@ -706,8 +706,13 @@ SFC_CONFIG.game = {
       // BỚT CHỮ CHO SỰ KIỆN NHỎ (user 2026-11-01: trận quá loạn với người mới): các chữ này không hiện nữa (âm thanh / hiệu ứng vẫn giữ).
       // MISS = đòn hụt · HOLD = đấm mà không rơi bóng · INTERCEPT = AI cắt bóng · TINK = đấm vào người có giáp · POW! = cú đấm thường trúng ·
       // BONK! = người bị đánh dội tường · +ULT = được thêm năng lượng · TOO EARLY / TOO LATE = Đọc Cú Sút hụt.
-      // Giữ: '!' báo Hard attack (tín hiệu để né), SAVE / DODGE / PARRY / READ, tên Core / Tuyệt kỹ, va chạm mạnh, trạng thái
+      // Giữ: '!' báo Hard attack (tín hiệu để né), SAVE / DODGE / PARRY / READ, va chạm mạnh (tên chiêu / trạng thái đã tắt theo loại: hideKinds bên dưới)
       hide: ['MISS', 'HOLD', 'INTERCEPT', 'TINK', 'POW!', 'BONK!', '+ULT', 'TOO EARLY', 'TOO LATE'],
+      // TẮT CẢ LOẠI CHỮ (user 2026-11-01: giới hạn chữ trên sân): mọi chữ thuộc các kind này không hiện (âm thanh / hiệu ứng vẫn giữ).
+      // Còn hiện: res (số đếm) · good (SAVE / DODGE / PARRY / READ) · heavy · huge
+      hideKinds: ['info', 'status', 'move', 'light', 'talk'],
+      // ngoại lệ: các chữ này vẫn hiện dù loại của nó đã tắt. '!' = báo Hard attack (tín hiệu để né)
+      keep: ['!'],
     },
   },
 

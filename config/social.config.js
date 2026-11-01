@@ -13,7 +13,7 @@ SFC_CONFIG.social = {
   // false = ẩn hết bạn bè / mời / phòng (màn PLAY chỉ còn ô của bạn). Còn tuỳ cửa hàng: Platform.fakeSocial
   // (CrazyGames: bạn bè giả trông như người thật -> tắt). Đọc qua SFC.Social.enabled
   enabled: true,
-  msgHide: 3.5,                // giây: dòng thông báo trên nút START (vào phòng, mời, kết bạn...) tự ẩn
+  msgHide: 3.5,                // giây: dòng thông báo của menu (vào phòng, mời, kết bạn, đeo GEAR...) tự ẩn, mọi trang (Menu.animate)
   partyMax: 3,                  // số người tối đa trong phòng (bạn + 2 người bạn = cả đội 3v3)
   friends: 8,                   // số bạn bè giả sinh ra lần đầu
   eloSpread: 250,               // Elo bạn bè giả: quanh Elo của bạn ± bấy nhiêu (không dưới 0)
