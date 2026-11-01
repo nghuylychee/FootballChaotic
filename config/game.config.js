@@ -209,6 +209,7 @@ SFC_CONFIG.game = {
   // Chuyền bóng: giữ S/W/A để nạp thanh lực, thả để chuyền.
   // Lực + hướng phím -> chọn người nhận; hướng bóng được tự căn vào người nhận.
   pass: {
+    poseTime: 0.4,            // (s) giữ tư thế chuyền (sệt / chọc khe / bổng) sau khi bóng rời chân; hình theo render/player/pass.js
     // S — chuyền sệt tự động: nhấn là chuyền ngay, tự chọn người nhận + lực (không cần giữ nạp lực).
     // Mũi tên chỉ vào một đồng đội (trong vùng aimCone) -> chuyền cho người đó, chuẩn (sai số spread thường).
     // Không bấm hướng / mũi tên không chỉ vào ai -> chuyền cho đồng đội gần nhất nhưng kém chuẩn (sloppy):
@@ -309,6 +310,15 @@ SFC_CONFIG.game = {
 
   kick: {
     poseTime: 0.12,          // (s) giữ tư thế vung chân sút sau khi bóng rời chân (sút + phá bóng)
+    // SÚT MẠNH (user 2026-11-01): thanh lực (lực thật, Actions.shotPower) qua powerPose lúc người chơi đang giữ phím (AI: định sút từ mức này) ->
+    // tư thế lấy đà tới lúc sút: đang chạy = chạm đẩy bóng rồi bước nặng · đứng = thu chân powerWind giây rồi giữ, người run dần. Chỉ là hình:
+    // di chuyển và lúc sút giữ nguyên (thả phím là sút ngay), trừ bóng của người chơi đang chạy nằm xa chân thêm powerPush. Cú sút từ mức này
+    // trở lên (cả AI) diễn tư thế sút mạnh powerPoseTime giây
+    powerPose: 0.6,
+    powerWind: 0.25,
+    powerPoseTime: 0.5,
+    powerPush: 7,            // (px) người chơi đang chạy lấy đà: bóng cách chân thêm bao nhiêu (Ball.follow), giữ tới lúc sút
+    powerPushK: 25,          // (1/s) bóng ra / về chỗ đó nhanh cỡ nào: 25 = ~0.12 s
     shotMinSpeed: 380,       // tốc độ bóng ứng với thanh lực 0% (300 -> 350, user 2026-10-25: cú sút nhẹ đi quá chậm · 380, 2026-10-30)
     shotMaxSpeed: 560,       // 460 -> 560 (2026-10-30): sút đầy lực phải là quả đại bác, nhanh hơn hẳn chuyền (pass.maxSpeed)
     chargeTime: 0.8,         // giây để đầy lực

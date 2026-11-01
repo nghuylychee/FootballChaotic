@@ -33,4 +33,4 @@ node tools/sprite-v2/grid.mjs z.png 4 2 tools/sprite-v2/out/pilot/pilot.png:312,
 
 - 3 script vẽ dùng cổng DevTools riêng (9361 / 9362 / 9363), chạy song song được.
 - `check.cjs --update` ghi lại baseline. Chỉ chạy khi user đã duyệt thay đổi ở phần đã duyệt (đứng, chạy, đấm, Hard attack, sút, vô-lê, đánh đầu, thủ môn đổ người, bị đá bay).
-- Trang xem đăng lên artifact Sprite v2: publish `out/site/sprites.html` kèm `out/site/sheets/*`.
+- Trang xem: mở `out/site/sprites.html` (ảnh trong `out/site/sheets/`).

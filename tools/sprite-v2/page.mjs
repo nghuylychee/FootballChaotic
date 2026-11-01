@@ -1,6 +1,5 @@
 // Trang xem sprite 2x -> out/site/sprites.html (+ out/site/sheets/*.png). Đọc ảnh của player.mjs (chạy) và pilot.mjs (ra đòn); chạy 2 script đó trước.
 // Gọn: phần đang làm (nhóm 'review' trong pilot.mjs) có vòng lặp + khung chính; phần đã duyệt chỉ 1 hàng vòng lặp mỗi động tác.
-// Đăng lên artifact: publish out/site/sprites.html kèm các file sheets/*
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, rmSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';

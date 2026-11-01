@@ -143,6 +143,7 @@ window.SFC = window.SFC || {};
             else if (sw && tech('finesse')) p.shotStyle = 'finesse';
             if (p.skillArm && input.isDown('skill') && tech('chip')) { p.shotStyle = 'chip'; p.skillArm = false; }
             p.charge += dt / g.chargeTime(p);
+            Act.powerCheck(g, p);
             if (p.charge >= K.maxOvercharge) Act.shoot(g, p, p.charge, 0, mx || my ? { x: mx, y: my } : null);
           }
         } else if (p.charging) {

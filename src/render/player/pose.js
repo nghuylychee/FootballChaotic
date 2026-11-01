@@ -8,6 +8,22 @@ window.SFC = window.SFC || {};
   const { clamp01, easeIO, easeOut, lerp } = Sprite;
   // móc xe đạp: chạm bóng lúc kick s (cores-ult2: bật lên ở lob - 0.4, đá ở lob) · vung chân wind s trước đó · khoá chạm bóng hit s · theo đà go s · về out s
   const BIKE = { kick: 0.4, wind: 0.3, hit: 0.05, go: 0.15, out: 0.3 };
+  // nhịp chung của chuyền / sút mạnh (pass.js, power.js): lấy đà w · giữ hold · vung s · giữ hết tầm f · về o (giây).
+  // cw khuỵu, lb ngả sau lúc lấy đà, lf lao tới, hop bật (px mịn) · calm = không tia sáng chạm bóng · hold = tiến độ giữ tư thế lấy đà
+  function kickTimeline(kt, t, d) {
+    const { w, hold = 0, s, f, o, cw = 0, lb = 0, lf = 0, hop = 0 } = d, base = { leg: 0, kt };
+    if (t < w) { const u = easeOut(clamp01(t / w)); return Object.assign(base, { kp: 'in', u, kc: cw * u, kbx: -lb * u, khop: 0 }); }
+    if (t < w + hold) return Object.assign(base, { kp: 'in', u: 1, kc: cw, kbx: -lb, khop: 0, hold: t - w });
+    const ts = t - w - hold;
+    if (ts < s + f) {
+      const u = easeOut(clamp01(ts / s));
+      return Object.assign(base, { kp: 'go', u, kc: cw * (1 - clamp01(ts / (s * 0.6))), kbx: lerp(-lb, lf, u), khop: hop * u, impact: !d.calm && ts >= s * 0.35 && ts < s + 0.06 });
+    }
+    const to = ts - s - f;
+    if (to >= o) return {};
+    const u = easeIO(clamp01(to / o)), fall = clamp01(to / (o * 0.6));
+    return Object.assign(base, { kp: 'out', u, kc: hop ? 2 * Math.max(0, 1 - Math.abs(to / o - 0.7) / 0.3) : 0, kbx: lf * (1 - u), khop: hop * (1 - fall * fall) });
+  }
   /* ---------- tư thế ra đòn theo thời gian (như sprite 1x cũ / v2) ---------- */
   function attackPose(p) {
     const C = SFC_CONFIG.game.combat, t = p.atkT || 0;
@@ -45,6 +61,24 @@ window.SFC = window.SFC || {};
       const u = easeIO(clamp01((k - 0.7) / 0.3));
       return Object.assign(base, { kp: 'out', u, kc: 0, kbx: (v ? -2 : 2) * (1 - u), khop: hop * (1 - u) });
     }
+    // chuyền (pass.js): bóng rời chân lúc thả phím -> vẽ từ đầu cú vung · đứng yên giữ phím nạp lực chuyền: tư thế lấy đà (đang chạy: vẫn chạy, chuyền không làm chậm người)
+    if (p.atkType === 'pass' || p.atkType === 'lob') { const T = Sprite.PASS_T[p.atkType]; return kickTimeline(p.atkType, t + T.w, T); }
+    if (!p.atkType && p.passMode && p.passCharge > 0 && Math.hypot(p.vx || 0, p.vy || 0) <= 12) {
+      const kt = p.passMode === 'lob' ? 'lob' : 'pass', T = Sprite.PASS_T[kt];
+      return kickTimeline(kt, Math.min(p.passCharge * SFC_CONFIG.game.pass.chargeTime, T.w * 0.999), T);
+    }
+    // sút mạnh (power.js, kick.powerPose): lấy đà 'pw' tới lúc sút, chọn hình theo vận tốc mỗi khung (game không khoá di chuyển).
+    // Đang chạy: mới vào đà = chạm đẩy bóng (bảng push), sau đó bước nặng (gait heavy, gt = giây bước; sprint.js vẽ khi nhìn ngang / chéo).
+    // Đứng: thu chân trong kick.powerWind rồi giữ, run dần (jx = lệch ngang px mịn, đổi chiều mỗi 1/30 s).
+    // Vung (power): Actions.shoot đặt atkT giữa cú vung lúc bóng rời chân
+    if (p.atkType === 'pw') {
+      const T = Sprite.POWER_T, U = Sprite.PASS_T.push, end = U.w + U.s + U.f + U.o;
+      if (Math.hypot(p.vx || 0, p.vy || 0) > 12) return t < end ? kickTimeline('push', t, U) : { gait: 'heavy', gt: t - end };
+      const a = kickTimeline('power', t, Object.assign({}, T, { w: SFC_CONFIG.game.kick.powerWind, hold: 99 }));
+      if (a.hold != null) a.jx = (Math.floor(t * 30) % 2 ? 1 : -1) * Math.round(clamp01(a.hold / T.shakeT) * T.shake);
+      return a;
+    }
+    if (p.atkType === 'power') return kickTimeline('power', t, Object.assign({}, Sprite.POWER_T, { w: 0, hold: 0 }));
     if (p.atkType === 'header') {
       // đánh đầu (header.js): hk = tiến độ cú nhảy · khop = độ cao (px mịn): đứng tới 12% (khuỵu lấy đà), bay 12% -> 88% (đỉnh 50%, cao H.hop px), rồi tiếp đất
       const H = SFC_CONFIG.game.firstTime.header, k = clamp01(t / H.pose), u = clamp01((k - 0.12) / 0.76);
@@ -72,5 +106,5 @@ window.SFC = window.SFC || {};
     return {};
   }
 
-  Object.assign(Sprite, { attackPose });
+  Object.assign(Sprite, { kickTimeline, attackPose });
 })();

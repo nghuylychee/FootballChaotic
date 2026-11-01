@@ -105,6 +105,7 @@ window.SFC = window.SFC || {};
       this.missT = Math.max(0, this.missT - dt);
 
       if (this.owner) { this.freezeT = 0; this.follow(dt); this.trail.length = 0; return; }
+      this.pushId = null;   // bóng rời chân: lần cầm sau bóng lấy đà sút mạnh (follow) bắt đầu từ 0
       this.flightT = (this.flightT || 0) + dt;
       // hitstop cục bộ của cú sút mạnh (fx.hitStop.shot): bóng nằm yên ở chân một nhịp rồi mới bay
       if (this.freezeT > 0) { this.freezeT -= dt; return; }
@@ -161,9 +162,13 @@ window.SFC = window.SFC || {};
     // bóng dính chân người giữ bóng
     follow(dt) {
       const p = this.owner, f = this.g.field;
-      const off = SFC_CONFIG.game.ball.dribbleOffset;
+      // người chơi đang chạy lấy đà sút mạnh (Actions.powerPushes): bóng ra xa chân thêm kick.powerPush px, ra / về mượt (powerPushK); đổi người cầm thì về 0
+      const K = SFC_CONFIG.game.kick, want = SFC.Actions.powerPushes(this.g, p) ? K.powerPush : 0;
+      if (this.pushId !== p.id) { this.pushId = p.id; this.pushGap = 0; }
+      this.pushGap += (want - this.pushGap) * (1 - Math.exp(-K.powerPushK * dt));
+      const push = this.pushGap, off = SFC_CONFIG.game.ball.dribbleOffset + push;
       const spd = Math.hypot(p.vx, p.vy);
-      const pulse = spd > 20 ? Math.abs(Math.sin(p.anim * 10)) * 2 : 0;
+      const pulse = spd > 20 && !(push > 0.5) ? Math.abs(Math.sin(p.anim * 10)) * 2 : 0;
       const cx = Math.cos(p.facing), cy = Math.sin(p.facing);
       this.x = U.clamp(p.x + cx * (off + pulse), f.x + this.r, f.x + f.w - this.r);
       this.y = U.clamp(p.y + cy * (off + pulse) * 0.85 + 1, f.y + this.r, f.y + f.h - this.r);

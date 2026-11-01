@@ -8,6 +8,7 @@ window.SFC = window.SFC || {};
 
   const ATTACK_STATES = { jab: 1, windup: 1, kick: 1, recover: 1 };
   const DIVE = { diveU: 1, diveD: 1 };
+  const PASS_POSE = { pass: 1, lob: 1 };   // tư thế chuyền (Actions.passTo)
   const FT_POSE = { volley: 1, header: 1 };   // tư thế dứt điểm 1 chạm (game.firstTime.volley / header .pose)   // thủ môn đổ người (Actions.dive): lên / xuống màn hình
 
   class Player {
@@ -235,7 +236,11 @@ window.SFC = window.SFC || {};
       }
       // hết đòn (hoặc bị ngắt) -> dừng anim ra đòn
       // tư thế sút: giữ kick.poseTime giây khi còn đứng bình thường · đổ người: suốt lúc bay + tư thế nằm (gkDivePose)
+      // sút mạnh (kick.powerPose): lấy đà còn khi cầm bóng + đang nạp / chờ sút · tư thế sút mạnh kick.powerPoseTime · chuyền pass.poseTime
       const keep = this.atkType === 'shoot' ? this.state === 'normal' && this.atkT < C.kick.poseTime
+        : this.atkType === 'pw' ? this.state === 'normal' && this.hasBall && this.charging
+        : this.atkType === 'power' ? this.state === 'normal' && this.atkT < C.kick.powerPoseTime
+        : PASS_POSE[this.atkType] ? this.state === 'normal' && this.atkT < C.pass.poseTime
         : FT_POSE[this.atkType] ? this.state === 'normal' && this.atkT < C.firstTime[this.atkType].pose
         : DIVE[this.atkType] ? this.state === 'dash' || (this.state === 'normal' && this.atkT < this.poseEnd)
         : ATTACK_STATES[this.state];

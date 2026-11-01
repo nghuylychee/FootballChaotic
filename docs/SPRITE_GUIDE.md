@@ -87,7 +87,7 @@ Nhân vật là bộ mặt của game. Mọi thay đổi phải nhẹ tay, khôn
 - **Đồ trong suốt thì trong.** Tròng kính cận không tô con ngươi đen bên trong.
 - **Màu suy từ màu gốc.** Sáng / tối của tóc từ màu tóc; đồ của đội dùng màu phụ của đội.
 - **Đồ phải có ở mọi tư thế.** Giày tô qua chữ màu của chân (O / G / g / J) nên có ở mọi tư thế; đồ gắn thêm bám theo chỗ đã tô (đế giày), không vẽ riêng cho từng động tác.
-- **Món nào khó thì cho chọn.** Ria trông lạ thì vẽ 5 kiểu cạnh nhau cho user chọn (chọn hải mã). Chọn xong thì xoá các kiểu kia.
+- **Món khó thì so nhiều kiểu.** Vẽ vài kiểu cạnh nhau trên trang duyệt rồi chọn 1 (ria: hải mã thắng 4 kiểu khác), xoá các kiểu còn lại.
 
 ## 6. Hiệu ứng
 
@@ -104,19 +104,16 @@ Nhân vật là bộ mặt của game. Mọi thay đổi phải nhẹ tay, khôn
   - quần gần đen -> nâng sáng tới khi tách khỏi viền mực.
 - Đội mới: xem trên bảng `kits` với đủ 5 màu da và màu tóc của đội. Kiểm: băng đô có thấy không, quần có dính viền không, găng trên da sáng.
 
-## 8. Cách làm với user
+## 8. Quy trình
 
-- **Thử trước, vẽ hết sau.** Làm 1 bản thử (1 hướng, 1 động tác) cho user xem hướng đi trước khi làm hết.
+- **Thử trước, vẽ hết sau.** Làm 1 bản thử (1 hướng, 1 động tác) để chốt hướng đi trước khi làm hết.
 - **Xem trên sân và đang chạy.** "Can't judge from just in place animation": thủ môn bay thật dọc vạch vôi, hạt hiệu ứng trôi như sân trôi, cầu thủ chạy như trong trận. Tốc độ thật của game, có nút chậm ¼×.
-- **Trang xem (artifact) theo đợt.**
-  - 4 hướng (xuống, chéo xuống, ngang, lên); khung khoá đặt cạnh vòng lặp.
-  - Theo đợt (ăn mừng 5 động tác / đợt; đồ thì cả nhóm, món chưa đạt làm lại ở đợt sau).
-  - User duyệt từng món: món duyệt xong chuyển xuống phần đã duyệt; phương án đã bỏ xoá khỏi trang.
-- **Tự soi trước khi đưa.** Phóng to từng khung, tìm ô lẻ, khối chữ nhật, vật dính nhau (ria dính mắt, chấm sáng thành "cặp mắt", sọc giày trông như tất), tương phản thấp trên da tối. Sửa rồi mới đưa, và ghi vào doc những gì đã tự sửa.
-- **Duyệt xong thì khoá.** Thêm ca vào `tools/sprite-v2/check.cjs` rồi `--update`; chỉ ghi lại baseline sau khi user duyệt. Sửa gì làm đổi phần đã duyệt thì phải đưa user xem lại.
-- **Code là sản phẩm.** Không xoá code sprite khi chưa hỏi. Thay bản nháp của chính mình thì được nhưng phải nói. Mỗi động tác 1 file trong `player/`.
+- **Duyệt trên trang duyệt** (`tools/sprite-v2/page.mjs`): 4 hướng (xuống, chéo xuống, ngang, lên), khung khoá cạnh vòng lặp; món duyệt xong chuyển xuống phần đã duyệt.
+- **Soi từng khung phóng to:** ô lẻ, khối chữ nhật, vật dính nhau (ria dính mắt, chấm sáng thành "cặp mắt", sọc giày trông như tất), tương phản thấp trên da tối.
+- **Duyệt xong thì khoá.** Thêm ca vào `tools/sprite-v2/check.cjs` rồi `--update`; chỉ ghi lại baseline cho thay đổi đã duyệt. Sửa gì làm đổi phần đã duyệt thì phải duyệt lại.
+- **Mỗi động tác 1 file** trong `src/render/player/` (thứ tự nạp trong `scripts/manifest.js`).
 - **Ghi lại quyết định ngay** vào `docs/SPRITE_V2.md` (gồm cả phương án đã bỏ, để không làm lại). Luật mới dùng chung được thì thêm vào file này.
-- **Vẽ nhanh.** Bảng xem vẽ từng ô vào canvas nháp rồi chép (vẽ thẳng lên canvas lớn chậm ~100 lần); `pilot.mjs --only <bảng>` khi chỉ sửa 1 bảng.
+- **Vẽ bảng nhanh.** Bảng xem vẽ từng ô vào canvas nháp rồi chép (vẽ thẳng lên canvas lớn chậm ~100 lần); `pilot.mjs --only <bảng>` khi chỉ sửa 1 bảng.
 
 ## 9. Kiểm tra nhanh cho thứ mới
 

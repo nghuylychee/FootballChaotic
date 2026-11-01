@@ -1,2 +1,32 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Always text, stored with LF. Naming them stops auto-detect from treating a file as binary
+# (a single stray carriage return is enough for that, and then line endings stop being normalized)
+*.js text
+*.cjs text
+*.mjs text
+*.json text
+*.html text
+*.css text
+*.md text
+*.txt text
+*.csv text
+*.py text
+*.yml text
+*.example text
+.gitignore text
+.gitattributes text
+.dockerignore text
+Dockerfile text
+LICENSE text
+
+# Run inside Linux containers / shells: keep LF in the working tree too
+*.sh text eol=lf
+
+# Binary
+*.png binary
+*.ico binary
+*.wav binary
+*.ttf binary
+*.woff2 binary

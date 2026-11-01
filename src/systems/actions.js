@@ -6,6 +6,7 @@ window.SFC = window.SFC || {};
   const G = () => SFC_CONFIG.game;
 
   function facingVec(p) { return { x: Math.cos(p.facing), y: Math.sin(p.facing) }; }
+  const FT_POSES = { header: 1, volley: 1, bicycle: 1 };   // tư thế dứt điểm / chuyền 1 chạm trên không: không đè bằng tư thế chuyền
 
   // mô phỏng trước quỹ đạo bóng (trọng lực, nảy, ma sát, dội tường) — dùng cho điểm đón bóng + điểm rơi
   // pf / pp: đường chuyền giữ tốc độ (Ball.passFm) — qua điểm nhận pp thì bỏ hệ số pf
@@ -499,6 +500,7 @@ window.SFC = window.SFC || {};
       p.charging = false; p.charge = 0;
       p.cancelPass();
       p.facing = Math.atan2(plan.vy, plan.vx);
+      if (!FT_POSES[p.atkType]) this.startAttack(p, b.lob ? 'lob' : 'pass');   // tư thế chuyền (pass.poseTime); chuyền 1 chạm bằng đầu / vô-lê giữ tư thế riêng
       g.cores.dispatch(p.team, 'onPass', p, target, mode === 'lobthrough' ? 'lob' : mode);
       if (target && g.isHuman(p.team) && p.isControlled) {
         const prev = g.ctrl[p.team];
@@ -691,7 +693,10 @@ window.SFC = window.SFC || {};
       if (p.mstats && !g.opts.training) p.mstats.shots++;
       p.facing = ang;
       p.charging = false; p.charge = 0; p.shotTarget = 0;
+      // sút mạnh: vừa lấy đà (pw) hoặc lực từ kick.powerPose trở lên -> tư thế sút mạnh (kick.powerPoseTime), bắt đầu giữa cú vung (bóng vừa rời chân)
+      const power = !ft && (p.atkType === 'pw' || c >= K.powerPose);
       if (ft && ft.kind === 'header') this.headerPose(p);   // đánh đầu: giữ cú bật nhảy (headerJump)
+      else if (power) { this.startAttack(p, 'power'); p.atkT = 0.03; }
       else this.startAttack(p, ft && ft.kind !== 'ground' ? (ft.kind === 'bicycle' ? 'volley' : ft.kind) : 'shoot'); // tư thế vung chân sút (kick.poseTime) / vô-lê
       // GOAT PATH: kỹ thuật LEGEND vừa ra -> diễn riêng (src/systems/legends.js techFx, hình render/legenddraw.js)
       if (SFC.Legends && p.legend) {
@@ -838,6 +843,20 @@ window.SFC = window.SFC || {};
     },
 
     startAttack(p, type) { p.atkType = type; p.atkT = 0; },
+
+    // SÚT MẠNH (kick.powerPose, người chơi đang giữ phím sút): lực thật qua ngưỡng -> tư thế lấy đà 'pw' tới lúc thả phím (thả là sút ngay).
+    // Chỉ là hình: không đổi di chuyển / lúc sút (render/player/pose.js chọn chạm đẩy + bước nặng hay đứng lấy đà theo vận tốc mỗi khung).
+    // AI: định sút từ ngưỡng trở lên (ai.chargeTarget) thì lấy đà ngay từ đầu lúc nạp (ai.js)
+    powerCheck(g, p) {
+      if (this.shotPower(g, p, p.charge) >= G().kick.powerPose) this.powerStart(g, p);
+    },
+    powerStart(g, p) {
+      if (p.atkType !== 'pw') this.startAttack(p, 'pw');
+    },
+    // người chơi đang chạy lấy đà sút mạnh: bóng nằm xa chân hơn thường (kick.powerPush, Ball.follow; user 2026-11-01). AI không đổi
+    powerPushes(g, p) {
+      return p.atkType === 'pw' && p.isControlled && g.isHuman(p.team) && Math.hypot(p.vx, p.vy) > 20;
+    },
 
     // hồi chiêu: đồng đội AI của người chơi hồi lâu hơn người chơi (ai.mate.cooldownMult)
     cooldown(g, p, key, base) {

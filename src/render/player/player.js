@@ -24,16 +24,21 @@ window.SFC = window.SFC || {};
   }
   function drawPlayer(ctx, p, g, alpha = 1, tint = null, ghost = !!tint) {
     const kit = g.teams[p.team].cfg.kit, look = p.look || {}, kc = kitColors(kit, look);
-    const cp = (!ghost && p.celPose) || null, atk = !ghost && p.atkType ? attackPose(p) : null;
+    const cp = (!ghost && p.celPose) || null;
+    let atk = !ghost && (p.atkType || p.passMode) ? attackPose(p) : null;
     const RN = SFC_CONFIG.game.fx.run;
+    // bước riêng khi nhìn ngang / chéo (sprint.js): bước nặng đuổi bóng lúc lấy đà sút mạnh (attackPose trả gait) · chạy nước rút (p.sprinting của máy mô phỏng; máy khách online không có -> nhanh hơn fx.run.sprint)
+    let gait = null, gaitT = 0;
+    if (atk && atk.gait) { gait = atk.gait; gaitT = atk.gt; atk = null; }
+    else if (!ghost && !cp && !atk && p.state === 'normal' && Math.hypot(p.vx || 0, p.vy || 0) > 12 && (p.sprinting || (RN && Math.hypot(p.vx || 0, p.vy || 0) > RN.sprint))) { gait = 'sprint'; gaitT = p.anim || 0; }
     const o = {
       facing: p.facing, skin: look.skin, hair: look.hair, band: kc.band,
       cut: !ghost && p.auraFarmT > 0 ? 'aura' : look.cut,   // AURA FARMING thay mọi kiểu tóc
       face: look.face, shoes: look.shoes, fx: ghost ? null : look.fx,
       shirt: tint || kit.shirt, shirtD: tint || kit.shirtDark, shorts: kc.shorts,
       sock: '#ecebe6', shoe: '#e8e8e8', sole: '#b9c2d0',
-      moving: cp ? !!cp.run : Math.hypot(p.vx || 0, p.vy || 0) > 12, anim: p.anim || 0,
-      lean: !ghost && !cp && !atk && p.state === 'normal' && RN && RN.lean && Math.abs(p.vx || 0) > RN.sprint ? 2 * Math.sign(p.vx) * RN.lean : 0,
+      moving: cp ? !!cp.run : gait === 'heavy' || Math.hypot(p.vx || 0, p.vy || 0) > 12, anim: p.anim || 0, gait, gaitT,
+      lean: !ghost && !cp && !atk && !gait && p.state === 'normal' && RN && RN.lean && Math.abs(p.vx || 0) > RN.sprint ? 2 * Math.sign(p.vx) * RN.lean : 0,
       atk, cp, stun: p.state === 'stun', windup: p.state === 'windup', flash: p.flash > 0,
       glove: !ghost && p.keeper ? kc.glove : null, inj: !ghost && !cp && p.inj, noShadow: alpha < 1 || !!p.flyInner,
       hit: ghost || p.flyInner ? null : hitState(p),   // bị đấm: giơ tay (hit.js); gọi mỗi khung để bắt lúc chuyển sang choáng
@@ -41,6 +46,7 @@ window.SFC = window.SFC || {};
       slam: !ghost && p.state === 'slam' ? Math.min(1, (p.airZ || 0) / 5) : 0,
     };
     const x = Math.round(p.x), y = Math.round(p.y);
+    const jx = (atk && atk.jx) || 0;   // đứng lấy đà sút mạnh: người run (px mịn)
     // bị đá bay (fly.js): pha theo dõi ở phía vẽ. Renderer.airborne truyền sẵn p.fly (nó vẽ bản sao của cầu thủ). Nằm / lăn dậy dưới đất:
     // tự xoay quanh giữa thân (bóng đổ vẽ riêng, không xoay)
     const fs = ghost ? null : p.fly !== undefined ? p.fly : p.state === 'stun' ? flyState(p) : null;
@@ -65,10 +71,10 @@ window.SFC = window.SFC || {};
       const W = 128, H = 128, oy = 100;
       if (!rotBuf) { rotBuf = document.createElement('canvas'); rotBuf.width = W; rotBuf.height = H; }
       const bc = rotBuf.getContext('2d'); bc.clearRect(0, 0, W, H);
-      draw(bc, W / 2, oy, o);
+      draw(bc, W / 2 + jx, oy, o);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(rotBuf, 2 * x - W / 2, 2 * y - oy);
-    } else draw(ctx, 2 * x, 2 * y, o);
+    } else draw(ctx, 2 * x + jx, 2 * y, o);
     ctx.restore();
     ctx.globalAlpha = 1;
     return y - (atk && atk.khop ? Math.round(atk.khop / 2) : 0) + ((cp && cp.drop) || 0) - 16;

@@ -175,6 +175,8 @@ window.SFC = window.SFC || {};
 
       if (p.charging) {
         p.charge += dt / g.chargeTime(p);
+        // cú sút mạnh (định nạp tới kick.powerPose trở lên): tư thế lấy đà như người chơi suốt lúc nạp. Chỉ là hình: di chuyển / lúc sút / vị trí bóng giữ nguyên
+        if (p.ai.chargeTarget >= SFC_CONFIG.game.kick.powerPose) Act().powerStart(g, p);
         moveTo(p, goal.x, goal.y, false);
         if (Act().shotPower(g, p, p.charge) >= p.ai.chargeTarget) { this.legendShot(g, p); Act().shoot(g, p, p.charge, p.ai.aimY); }
         return;
