@@ -91,8 +91,10 @@ window.SFC = window.SFC || {};
     drawFine(ctx, X, Y, cells, mir);
   }
   // tay khi đá: i 0 = tay trái, 1 = tay phải (hình nhìn phải), xoay quanh vai, giữ độ dài tay đứng · behind = tay xa nằm sau thân (da tối)
+  // bảng có armAt(atk, view, i) (thủ môn tung bóng, gkball.js): góc tay theo thời gian thay cho nội suy 3 khoá; trả null = theo khoá
   function kickArm(ctx, X, Y, mir, view, atk, i, pal, hand, behind) {
-    const K = kickTable(atk)[view], a = kv([Math.PI / 2, K.arms[0][i], K.arms[1][i]], atk.kp, atk.u);
+    const T = kickTable(atk), K = T[view], ov = T.armAt ? T.armAt(atk, view, i) : null;
+    const a = ov != null ? ov : kv([Math.PI / 2, K.arms[0][i], K.arms[1][i]], atk.kp, atk.u);
     armAt(ctx, X, Y, mir, i, a, pal, hand, behind, !(atk.u >= 1 && atk.kp !== 'out'));
   }
   // 1 cánh tay xoay quanh vai i (0 trái / 1 phải hình nhìn phải) góc a, dài như tay đứng. fine = khung chuyển động (lưới mịn), không = tư thế khoá

@@ -472,6 +472,8 @@ window.SFC = window.SFC || {};
     passTo(g, p, target, mode, dx = 0, dy = 0, power = null, err = null) {
       const b = g.ball;
       if (b.owner !== p) return;
+      const aim = target ? Math.atan2(target.y - p.y, target.x - p.x) : Math.hypot(dx, dy) > 0.2 ? Math.atan2(dy, dx) : null;
+      if (this.gkRelease(g, p, mode === 'lob' || mode === 'lobthrough' ? 'gkPunt' : 'gkVolley', aim, () => this.passTo(g, p, target, mode, dx, dy, power, err))) return;
       const plan = this.passPlan(g, p, target, mode, power, dx, dy, false, err);
       const aimed = !!target;
       b.kick(p, plan.vx, plan.vy, plan.vz);
@@ -594,6 +596,8 @@ window.SFC = window.SFC || {};
     shoot(g, p, charge, aimY, aim = null, ft = null) {
       const b = g.ball, K = G().kick, f = g.field, F = G().firstTime;
       if (b.owner !== p || p.noActT > 0) return;
+      const gl = g.attackGoal(p.team);
+      if (this.gkRelease(g, p, 'gkPunt', Math.atan2(gl.y - p.y, gl.x - p.x), () => this.shoot(g, p, charge, aimY, aim, ft))) return;
       const tm = g.teams[p.team];
       // One-Two: dứt điểm 1 chạm luôn đầy lực, không bị phạt sai số
       const volley = !!ft && g.cores.volleyCharge(p) > 0;
@@ -791,6 +795,7 @@ window.SFC = window.SFC || {};
     punt(g, p, tx, ty) {
       const b = g.ball, K = G().kick, B = G().ball;
       if (b.owner !== p || p.noActT > 0) return false;
+      if (this.gkRelease(g, p, 'gkPunt', Math.atan2(ty - p.y, tx - p.x), () => this.punt(g, p, tx, ty))) return true;
       const e = U.rand(0, K.puntError), ea = U.rand(0, Math.PI * 2);
       tx += Math.cos(ea) * e; ty += Math.sin(ea) * e;
       const T = 2 * K.puntLift / B.gravity, k = B.airDrag;
@@ -812,6 +817,7 @@ window.SFC = window.SFC || {};
     clearance(g, p, dy) {
       const b = g.ball, K = G().kick;
       if (b.owner !== p || p.noActT > 0) return;
+      if (this.gkRelease(g, p, 'gkPunt', Math.atan2(U.clamp(dy || 0, -1, 1) * K.clearAngle, g.teams[p.team].dir), () => this.clearance(g, p, dy))) return;
       const ang = Math.atan2(U.clamp(dy || 0, -1, 1) * K.clearAngle, g.teams[p.team].dir) + U.rand(-K.clearSpread, K.clearSpread);
       const spd = K.clearSpeed * p.stats.power;
       b.kick(p, Math.cos(ang) * spd, Math.sin(ang) * spd, K.clearLift);
@@ -844,6 +850,28 @@ window.SFC = window.SFC || {};
 
     startAttack(p, type) { p.atkType = type; p.atkT = 0; },
 
+    // THỦ MÔN ÔM BÓNG (atkType gkHold): chuyền / sút / phát bóng không đá ngay mà tung bóng lên bằng tay rồi đá (player.gkRelease):
+    // bóng rời chân sau w + s * 0.6 giây, thủ môn vẫn ôm bóng tới lúc đó. kind 'gkPunt' (sút, phá, phất, chuyền bổng) | 'gkVolley' (chuyền sệt /
+    // chọc khe) · ang = hướng đá (quay mặt luôn) · go = lệnh đá thật, chạy lại lúc chạm bóng. Trả true = đã nhận lệnh (người gọi dừng)
+    gkRelease(g, p, kind, ang, go) {
+      if (p.gkGo) return false;
+      if (p.atkType === 'gkPunt' || p.atkType === 'gkVolley') return true;   // đang tung bóng: bỏ lệnh lặp lại (AI gọi mỗi bước)
+      if (p.atkType !== 'gkHold' || g.ball.owner !== p) return false;
+      const R = G().player.gkRelease[kind === 'gkPunt' ? 'punt' : 'volley'];
+      this.startAttack(p, kind);
+      if (ang != null) p.facing = ang;
+      p.charging = false; p.charge = 0;
+      p.cancelPass();
+      g.later(R.w + R.s * 0.6, () => {
+        if (g.ball.owner !== p || p.atkType !== kind || p.state !== 'normal') return;   // bị ngắt (choáng / mất bóng) lúc đang tung bóng
+        const t = p.atkT;
+        p.gkGo = true;
+        try { go(); } finally { p.gkGo = false; }
+        p.atkType = kind; p.atkT = t;   // chuyền / sút đặt tư thế của chúng: giữ tư thế đá của thủ môn
+      });
+      return true;
+    },
+
     // SÚT MẠNH (kick.powerPose, người chơi đang giữ phím sút): lực thật qua ngưỡng -> tư thế lấy đà 'pw' tới lúc thả phím (thả là sút ngay).
     // Chỉ là hình: không đổi di chuyển / lúc sút (render/player/pose.js chọn chạm đẩy + bước nặng hay đứng lấy đà theo vận tốc mỗi khung).
     // AI: định sút từ ngưỡng trở lên (ai.chargeTarget) thì lấy đà ngay từ đầu lúc nạp (ai.js)
@@ -851,6 +879,7 @@ window.SFC = window.SFC || {};
       if (this.shotPower(g, p, p.charge) >= G().kick.powerPose) this.powerStart(g, p);
     },
     powerStart(g, p) {
+      if (p.atkType === 'gkHold') return;   // thủ môn ôm bóng: giữ tư thế ôm, cú sút thành tung bóng lên đá (gkRelease)
       if (p.atkType !== 'pw') this.startAttack(p, 'pw');
     },
     // người chơi đang chạy lấy đà sút mạnh: bóng nằm xa chân hơn thường (kick.powerPush, Ball.follow; user 2026-11-01). AI không đổi
@@ -1239,7 +1268,7 @@ window.SFC = window.SFC || {};
       const t = (p.x - b.x) / b.vx;
       if (t <= 0) return;
       const dy = b.y + b.vy * t - p.y;
-      if (Math.abs(dy) > 4) this.dive(g, p, dy);
+      if (Math.abs(dy) > G().player.gkStraight) this.dive(g, p, dy);   // bóng thẳng vào người: đứng bắt tại chỗ
     },
   };
 

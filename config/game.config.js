@@ -153,11 +153,26 @@ SFC_CONFIG.game = {
     gkHoldProtect: 2.5,       // (s) bắt được bóng trong vòng cấm nhà -> miễn tắc/xoạc/va vai trong thời gian này (khi còn ở trong vòng cấm)
     // đổ người (Actions.dive): bay đúng quãng cần tới, xa thì gkDiveSpeed (px/s) trong tối đa gkDiveTime (s); gần thì chậm lại để cú bay dài
     // ít nhất gkDiveMin (s) — bay ngắn mà vẫn hết tốc thì trông như bị giật văng đi. Vòng cung bay thấp dần theo cú bay ngắn (render/player/keeper.js)
+    // Tốc độ trong cú bay hình parabol (user 2026-11-01): chậm lúc bật, nhanh nhất giữa cú bay (1.5 x trung bình), chậm lại lúc chạm đất (Player, state dash)
     gkDiveSpeed: 250,
     gkDiveTime: 0.24,
     gkDiveMin: 0.12,
     gkLungeMinSpeed: 220,     // (px/s) bắt / đẩy bóng lệch sang bên: bóng nhanh hơn mức này mới đổ người (chậm hơn: đứng bắt tại chỗ)
-    gkDivePose: 0.22,         // (s) anim: đổ người xong nằm trên sân thêm chừng này (không ảnh hưởng di chuyển)
+    gkStraight: 8,            // (px) bóng tới lệch khỏi người trong khoảng này = sút thẳng vào người: không đổ người (bắt ôm / đẩy / lọt tại chỗ)
+    // ĐỠ BÓNG TẠI CHỖ (user 2026-11-01, atkType gkBlock): cú sút của đối thủ sắp tới thẳng người trông khung (lệch không quá gkStraight) ->
+    // lead s trước lúc tới thì dang rộng 2 tay (chữ V) + 2 chân; bắt được thì sang ôm bóng, đẩy ra / lọt lưới thì giữ hold s rồi hạ tay lower s (chỉ là hình)
+    gkBlock: { lead: 0.08, hold: 0.2, lower: 0.15 },
+    // (s) anim: chạm đất -> đứng dậy (không ảnh hưởng di chuyển) = tổng gkGetUp: đập xuống · nằm · bò 4 chân · nhổm lên · quỳ · khuỵu (render/player/gkball.js).
+    // Đang di chuyển thì cắt thẳng tới khúc khuỵu (Player) để người không trượt đi lúc đang nằm / quỳ
+    gkDivePose: 0.6,
+    gkGetUp: { land: 0.06, lie: 0.16, fours: 0.07, rise: 0.07, kneel: 0.14, crouch: 0.1 },
+    // THỦ MÔN ÔM BÓNG (bắt được bóng trong vòng cấm nhà, atkType gkHold): chuyền / sút / phát bóng thì tung bóng lên bằng tay rồi đá
+    // (user 2026-11-01: chậm hơn đá ngay một chút, vẫn ôm bóng tới lúc đó). Bóng rời chân lúc w + s * 0.6; toss = tay tung bóng tới đỉnh, w = lấy đà,
+    // s vung, f giữ hết tầm, o về (giây). punt = sút / phá / phất / chuyền bổng · volley = chuyền sệt / chọc khe
+    gkRelease: {
+      punt: { toss: 0.09, w: 0.12, s: 0.06, f: 0.14, o: 0.16 },
+      volley: { toss: 0.06, w: 0.085, s: 0.05, f: 0.08, o: 0.12 },
+    },
   },
 
   // ĐỌC CÚ SÚT: người chơi đứng trong vòng cấm nhà khi đối phương cầm bóng -> giữ W (thủ thế), thả đúng lúc đối phương sút.

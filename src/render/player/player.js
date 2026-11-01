@@ -51,6 +51,10 @@ window.SFC = window.SFC || {};
     const kit = g.teams[p.team].cfg.kit, look = p.look || {}, kc = kitColors(kit, look);
     const cp = (!ghost && p.celPose) || null;
     let atk = !ghost && (p.atkType || p.passMode) ? attackPose(p) : null;
+    // thủ môn cầm bóng / đứng dậy sau khi đổ người (gkball.js). Đổ người mà cầm bóng (bắt được giữa cú bay): tay ôm bóng thay tay vươn
+    // (dk 0 tắt tay đổ người + đầu rụt), chân / vòng cung vẫn theo cú bay thật. gkHolding: bản sao vẽ vào bộ đệm (Renderer.diving) mang theo cờ
+    const gk = ghost ? null : Sprite.gkState(p, atk, !!(p.gkHolding || (g && g.ball && g.ball.owner === p)));
+    if (gk && gk.kind === 'dive' && gk.ball) atk = Object.assign({}, atk, { dk: 0 });
     const RN = SFC_CONFIG.game.fx.run;
     // bước riêng khi nhìn ngang / chéo (sprint.js): bước nặng đuổi bóng lúc lấy đà sút mạnh (attackPose trả gait) · chạy nước rút (sprintGait)
     let gait = null, gaitT = 0;
@@ -68,7 +72,7 @@ window.SFC = window.SFC || {};
       sock: '#ecebe6', shoe: '#e8e8e8', sole: '#b9c2d0',
       moving: cp ? !!cp.run : gait === 'heavy' || st.moving, anim: p.anim || 0, gait, gaitT,
       lean: !ghost && !cp && !atk && !gait && p.state === 'normal' && RN && RN.lean && Math.abs(p.vx || 0) > RN.sprint ? 2 * Math.sign(p.vx) * RN.lean : 0,
-      atk, cp, stun: p.state === 'stun', windup: p.state === 'windup', flash: p.flash > 0,
+      atk, cp, gk, stun: p.state === 'stun', windup: p.state === 'windup', flash: p.flash > 0,
       glove: !ghost && p.keeper ? kc.glove : null, inj: !ghost && !cp && p.inj, noShadow: alpha < 1 || !!p.flyInner,
       hit: ghost || p.flyInner ? null : hitState(p),   // bị đấm: giơ tay (hit.js); gọi mỗi khung để bắt lúc chuyển sang choáng
       // nhảy Ground Slam / Thiên Thạch (state slam): tay giơ theo độ cao, hết lúc chạm 5 px -> tiếp đất là tay vung xuống

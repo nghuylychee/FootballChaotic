@@ -95,13 +95,24 @@ window.SFC = window.SFC || {};
       const u = clamp01((t - K - BIKE.hit - BIKE.go) / BIKE.out);
       return u >= 1 ? {} : Object.assign(base, { kp: 'out', u: easeIO(u), kbx: -2 * (1 - easeIO(u)) });
     }
-    // thủ môn đổ người (keeper.js): dk = tiến độ bay · dh = độ cao vòng cung (bay ngắn thì thấp) · ds cất người · dl chạm đất · dg đứng dậy (0..1)
+    // thủ môn đổ người (keeper.js): dk = tiến độ bay · dh = độ cao vòng cung (bay ngắn thì thấp) · ds cất người (0..1)
     if (p.atkType === 'diveU' || p.atkType === 'diveD') {
-      // bay p.diveT giây, nằm tới p.poseEnd (Player đặt cả hai; máy khách online không có -> coi như bay hết gkDiveTime)
+      // bay p.diveT giây, đứng dậy tới p.poseEnd (Player đặt cả hai; máy khách online không có -> coi như bay hết gkDiveTime)
       const PL = SFC_CONFIG.game.player, D = Sprite.DIVE, flying = p.state === 'dash', fly = p.diveT || PL.gkDiveTime;
-      const end = p.poseEnd != null ? p.poseEnd : PL.gkDiveTime + PL.gkDivePose, land = end - PL.gkDivePose;
-      return { dive: true, flying, dk: clamp01(t / fly), dh: fly / PL.gkDiveTime, ds: flying ? clamp01(t / D.takeoff) : 1,
-        dl: flying ? 0 : clamp01((t - land) / D.land), dg: flying ? 0 : clamp01((t - (end - D.getup)) / D.getup) };
+      if (flying) return { dive: true, flying, dk: clamp01(t / fly), dh: fly / PL.gkDiveTime, ds: clamp01(t / D.takeoff) };
+      // chạm đất rồi: tư thế đứng dậy thật trên lưới px (gkball.js, stage). nằm: tay vẫn vươn qua đầu (dk 1), chân khép · khuỵu: chân dạng khuỵu,
+      // tay đứng · bò / nhổm / quỳ: chân quỳ + tay riêng (gkGeom). Chân / khuỵu theo stage (keeper.js diveLegPose / diveCrouch)
+      const end = p.poseEnd != null ? p.poseEnd : PL.gkDiveTime + PL.gkDivePose, stage = Sprite.getUpStage(end - t);
+      return { dive: true, flying: false, stage, dk: stage === 'land' || stage === 'lie' ? 1 : 0, dh: 1, ds: 1 };
+    }
+    // thủ môn ôm bóng / đỡ bóng tại chỗ (gkball.js): tay (+ bóng) vẽ riêng theo atkT (gkGeom); ôm bóng thì chân như thường (đứng / chạy)
+    if (p.atkType === 'gkHold') return { gkHold: true };
+    if (p.atkType === 'gkBlock') return { gkBlock: true };
+    // thủ môn tung bóng lên đá: nhịp player.gkRelease, rt = giây từ lúc bắt đầu (góc tay theo thời gian, gkball.js)
+    if (p.atkType === 'gkPunt' || p.atkType === 'gkVolley') {
+      const a = kickTimeline(p.atkType, t, Sprite.gkTiming(p.atkType));
+      if (a.leg != null) a.rt = t;
+      return a;
     }
     return {};
   }

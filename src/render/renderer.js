@@ -224,6 +224,7 @@ window.SFC = window.SFC || {};
           }
         } else if (e.k === 'b') {
           if (g.ball.owner && unseen(g.ball.owner)) continue;
+          if (SFC.PlayerSprite.ballInHands(g)) continue;   // thủ môn ôm / tung bóng / đổ người bắt được: sprite thủ môn vẽ bóng trên tay
           const ghostBall = g.ball.owner && g.ball.owner.ghostT > 0;
           if (ghostBall) ctx.globalAlpha = 0.3;
           this.ballTrail(ctx, g.ball);
@@ -412,13 +413,34 @@ window.SFC = window.SFC || {};
 
     // thủ môn đổ người (Actions.dive): bay sang ngang dọc trục y (dọc vạch vôi), mặt vẫn nhìn về phía sân -> camera thấy
     // sườn người: thân dọc theo hướng bay (đầu đi trước), 1 tay vươn qua đầu (drawPlayer, atk.dive), 2 chân khép.
-    // Bay xuống (về phía camera) = lật dọc hình bay lên. Lúc lao: bay theo cung; lao xong nằm nghiêng trên sân gkDivePose giây
-    // Biến hình (nâng theo cung, nghiêng, ép dẹt, lật, bóng đổ, vệt gió) lấy từ PlayerSprite.diveXform: cất người / chạm đất / đứng dậy chuyển dần
+    // Bay xuống (về phía camera) = lật dọc hình bay lên. Lúc bay: nâng theo cung, nghiêng, ép dẹt, lật, bóng đổ, vệt gió (PlayerSprite.diveXform).
+    // Chạm đất rồi: tư thế đứng dậy thật trên lưới px (gkball.js, gkDivePose giây) vẽ thẳng như thường, không xoay / ép lẻ (px sắc khi gần như
+    // đứng yên); bay xuống mà còn nằm: lật đúng -1 quanh chỗ nằm. Thủ môn bắt được bóng: bản sao vẽ vào bộ đệm mang cờ gkHolding (ôm bóng)
     diving(ctx, p, g) {
       const { ellipse, drawPlayer, px } = SP(), Sprite = SFC.PlayerSprite;
       const flip = p.atkType === 'diveU' ? 1 : -1;
       const side = Math.cos(p.facing) >= 0 ? 1 : -1;
-      const X = Sprite.diveXform(Sprite.attackPose(p), flip, side);
+      const atk = Sprite.attackPose(p), holding = g.ball.owner === p;
+      const N = 48, buf = this.diveBuf || (this.diveBuf = document.createElement('canvas'));
+      if (buf.width !== N * 2) { buf.width = N * 2; buf.height = N * 2; }
+      const bc = buf.getContext('2d');
+      if (!atk.flying) {
+        if (flip > 0 || (atk.stage !== 'land' && atk.stage !== 'lie')) return drawPlayer(ctx, p, g);
+        // bay xuống, đang nằm (đầu về phía máy quay): vẽ đứng vào bộ đệm rồi lật đúng -1, toạ độ tròn · bóng đổ dài phủ cả thân
+        const ty = Math.round(p.y) - 9;
+        ellipse(ctx, Math.round(p.x) + side, ty + 3, 8, 11, 'rgba(0,0,0,0.4)');
+        bc.setTransform(2, 0, 0, 2, 0, 0);
+        bc.clearRect(0, 0, N, N);
+        drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: g.inKeeperZone(p), gkHolding: holding }), g, 0.999);
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.translate(Math.round(p.x), ty);
+        ctx.scale(1, -1);
+        ctx.drawImage(buf, -N / 2, -N / 2, N, N);
+        ctx.restore();
+        return ty + 14;
+      }
+      const X = Sprite.diveXform(atk, flip, side);
       ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, X.shadow[0], X.shadow[1], 'rgba(0,0,0,0.38)');
       const cy = p.y - X.lift - X.up, sq = Math.abs(X.sy);
       // vệt gió sau gót chân lúc bay
@@ -428,13 +450,10 @@ window.SFC = window.SFC || {};
         ctx.globalAlpha = 1;
       }
       // vẽ thẳng đứng vào bộ đệm gấp đôi (sprite 2x) rồi xoay cả ảnh (lấy mẫu điểm gần nhất) -> pixel vẫn sắc, không nhoè như xoay từng ô vẽ
-      const N = 48, buf = this.diveBuf || (this.diveBuf = document.createElement('canvas'));
-      if (buf.width !== N * 2) { buf.width = N * 2; buf.height = N * 2; }
-      const bc = buf.getContext('2d');
       bc.setTransform(2, 0, 0, 2, 0, 0);
       bc.clearRect(0, 0, N, N);
       // vx = vy = 0: không nhún chân / vung tay như đang chạy
-      drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: g.inKeeperZone(p) }), g, 0.999);
+      drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: g.inKeeperZone(p), gkHolding: holding }), g, 0.999);
       ctx.save();
       ctx.imageSmoothingEnabled = false;
       ctx.translate(Math.round(p.x), Math.round(cy));

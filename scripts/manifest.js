@@ -105,6 +105,7 @@ const FILES = [
   ['src/render/player/sprint.js', 'game sandbox itch'],
   ['src/render/player/header.js', 'game sandbox itch'],
   ['src/render/player/keeper.js', 'game sandbox itch'],
+  ['src/render/player/gkball.js', 'game sandbox itch'],
   ['src/render/player/fly.js', 'game sandbox itch'],
   ['src/render/player/hit.js', 'game sandbox itch'],
   ['src/render/player/celebrate.js', 'game sandbox itch'],

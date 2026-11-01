@@ -509,6 +509,7 @@ window.SFC = window.SFC || {};
       this.separate();
       this.ball.update(dt);
       if (this.checkGoal()) return;
+      this.keeperBrace();
       this.updatePossession();
       this.effects.update(dt);
       this.cores.update(dt);
@@ -912,8 +913,12 @@ window.SFC = window.SFC || {};
         if (Math.random() > 0.35 * p.stats.dribble) { this.deflect(p, 0.4); return; }
       }
       this.gainPossession(p);
-      // bắt bóng trong vòng cấm nhà (không phải đường chuyền của đồng đội) -> ôm bóng như thủ môn
-      if (isGK && b.lastKickTeam !== p.team) p.keeperHold = C.player.gkHoldProtect;
+      // bắt bóng trong vòng cấm nhà (không phải đường chuyền của đồng đội) -> ôm bóng như thủ môn: tư thế ôm bóng (gkHold, nhịp đầu = kéo bóng
+      // vào ngực). Đang đổ người thì giữ tư thế đổ người (renderer thấy thủ môn cầm bóng -> vẽ ôm bóng), đứng dậy xong mới sang gkHold (Player)
+      if (isGK && b.lastKickTeam !== p.team) {
+        p.keeperHold = C.player.gkHoldProtect;
+        if (p.atkType !== 'diveU' && p.atkType !== 'diveD') SFC.Actions.startAttack(p, 'gkHold');
+      }
       if (cut) {
         // AI vừa cắt được bóng: khựng một nhịp mới chuyền / sút (pass.intercept.aiDelay)
         p.ai.interceptT = U.rand(C.pass.intercept.aiDelay[0], C.pass.intercept.aiDelay[1]);
@@ -945,18 +950,33 @@ window.SFC = window.SFC || {};
       return false;
     }
 
-    // thủ môn chạm bóng (SAVE / PARRY) mà bóng lệch sang bên: đổ người về phía bóng (anim bay người, Actions.dive).
-    // Đang đổ người sẵn thì giữ nguyên; bóng đi thẳng vào người hoặc chậm (dưới gkLungeMinSpeed) thì bắt / đẩy tại chỗ
-    keeperLunge(p) {
-      const b = this.ball, dy = b.y - p.y;
-      if (Math.abs(dy) > 3 && b.speed >= this.cfg.player.gkLungeMinSpeed) SFC.Actions.dive(this, p, dy);
+    // ĐỠ BÓNG TẠI CHỖ (player.gkBlock): cú sút của đối thủ đang bay thẳng tới người trông khung trong vòng cấm nhà (đường bóng lệch khỏi người
+    // không quá gkStraight) và còn lead s nữa là chạm tới tầm với -> tư thế dang tay chân (atkType gkBlock, chỉ là hình).
+    // Bắt / đẩy / lọt vẫn xử lý ở tryControl: bắt được thì sang ôm bóng, đẩy ra / lọt lưới thì tư thế đỡ chạy hết
+    keeperBrace() {
+      const b = this.ball, P = this.cfg.player, s2 = b.vx * b.vx + b.vy * b.vy;
+      if (b.owner || b.kind !== 'shot' || s2 < 1) return;
+      const s = Math.sqrt(s2);
+      for (const p of this.players) {
+        if (p.team === b.lastKickTeam || p.state !== 'normal' || p.atkType === 'gkBlock' || p.atkType === 'diveU' || p.atkType === 'diveD' || !this.inKeeperZone(p)) continue;
+        const dx = p.x - b.x, dy = p.y - b.y, t = (dx * b.vx + dy * b.vy) / s2 - (p.radius + b.r + P.gkReach) / s;
+        if (t > 0 && t <= P.gkBlock.lead && Math.abs(dx * b.vy - dy * b.vx) / s <= P.gkStraight) SFC.Actions.startAttack(p, 'gkBlock');
+      }
     }
 
-    // thủ môn bị đánh bại (player.gkBeat): đổ người sai phía (ngược đường bóng; bóng thẳng người = phía ngẫu nhiên) hoặc đúng phía
-    // nhưng muộn gkBeat.late s. Đổ người hết tầm (gkDiveTime) cho rõ là bay hụt
+    // thủ môn chạm bóng (SAVE / PARRY) mà bóng lệch sang bên: đổ người về phía bóng (anim bay người, Actions.dive).
+    // Đang đổ người sẵn thì giữ nguyên; bóng đi thẳng vào người (lệch không quá gkStraight) hoặc chậm (dưới gkLungeMinSpeed) thì bắt / đẩy tại chỗ
+    keeperLunge(p) {
+      const b = this.ball, dy = b.y - p.y, P = this.cfg.player;
+      if (Math.abs(dy) > P.gkStraight && b.speed >= P.gkLungeMinSpeed) SFC.Actions.dive(this, p, dy);
+    }
+
+    // thủ môn bị đánh bại (player.gkBeat): đổ người sai phía (ngược đường bóng) hoặc đúng phía nhưng muộn gkBeat.late s.
+    // Đổ người hết tầm (gkDiveTime) cho rõ là bay hụt. Sút thẳng vào người (lệch không quá gkStraight): không đổ người, bóng lọt qua người
     keeperBeaten(p) {
       const b = this.ball, P = this.cfg.player, B = P.gkBeat, dy = b.y - p.y;
-      const sideToBall = Math.abs(dy) > 3 ? Math.sign(dy) : U.randSign(), full = P.gkDiveSpeed * P.gkDiveTime;
+      if (Math.abs(dy) <= P.gkStraight) return;
+      const sideToBall = Math.sign(dy), full = P.gkDiveSpeed * P.gkDiveTime;
       if (Math.random() < B.wrong) SFC.Actions.dive(this, p, -sideToBall * full);
       else this.later(B.late, () => SFC.Actions.dive(this, p, sideToBall * full));
     }

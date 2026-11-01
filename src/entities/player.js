@@ -10,6 +10,7 @@ window.SFC = window.SFC || {};
   const DIVE = { diveU: 1, diveD: 1 };
   const PASS_POSE = { pass: 1, lob: 1 };   // tư thế chuyền (Actions.passTo)
   const FT_POSE = { volley: 1, header: 1 };   // tư thế dứt điểm 1 chạm (game.firstTime.volley / header .pose)   // thủ môn đổ người (Actions.dive): lên / xuống màn hình
+  const GK_RELEASE = { gkPunt: 'punt', gkVolley: 'volley' };   // thủ môn ôm bóng tung lên đá (Actions.gkRelease) -> nhịp player.gkRelease
 
   class Player {
     constructor(game, team, role, idx) {
@@ -96,6 +97,7 @@ window.SFC = window.SFC || {};
       this.slamKind = null;   // đang nhảy: ground (Dậm Đất) | meteor (Thiên Thạch Giáng)
       this.diveKick = -1;     // đã đổ người cho cú đá số mấy (ball.kickN; Actions.dive: 1 lần mỗi cú sút) · giao bóng đặt lại
       this.diveT = 0;         // cú đổ người gần nhất bay bao lâu (s): vòng cung bay khớp lúc chạm đất (render/player/pose.js)
+      this.gkGo = false;      // đang chạy lệnh đá thật sau khi tung bóng (Actions.gkRelease) -> không hoãn lại lần nữa
       this.auraC = '';      // hào quang Core (màu) — vẽ ở render/vfx.js, đồng bộ online
       this.auraT = 0;
       this.flash = 0;
@@ -204,6 +206,9 @@ window.SFC = window.SFC || {};
         case 'dash':
           this.stateT -= dt;
           this.vx = this.dashX; this.vy = this.dashY;
+          // đổ người: tốc độ hình parabol 6u(1 - u) quanh tốc độ trung bình dashY (u = tiến độ bay giữa bước này) -> vị trí theo smoothstep,
+          // cùng quãng, cùng thời gian bay (player.gkDiveSpeed)
+          if (DIVE[this.atkType] && this.diveT > 0) { const u = U.clamp((this.diveT - this.stateT - dt / 2) / this.diveT, 0, 1); this.vy = this.dashY * 6 * u * (1 - u); }
           // lướt (Z): để lại bóng mờ dọc đường (skill.afterimages)
           if (this.trailLeft > 0 && (this.trailT -= dt) <= 0) {
             this.trailLeft--;
@@ -237,16 +242,26 @@ window.SFC = window.SFC || {};
           this.moveNormal(dt);
       }
       // hết đòn (hoặc bị ngắt) -> dừng anim ra đòn
-      // tư thế sút: giữ kick.poseTime giây khi còn đứng bình thường · đổ người: suốt lúc bay + tư thế nằm (gkDivePose)
+      // tư thế sút: giữ kick.poseTime giây khi còn đứng bình thường · đổ người: suốt lúc bay + tư thế đứng dậy (gkDivePose)
       // sút mạnh (kick.powerPose): lấy đà còn khi cầm bóng + đang nạp / chờ sút · tư thế sút mạnh kick.powerPoseTime · chuyền pass.poseTime
+      // thủ môn ôm bóng (gkHold): còn cầm bóng trong vòng cấm nhà · tung bóng lên đá (gkPunt / gkVolley): hết nhịp player.gkRelease ·
+      // đỡ bóng tại chỗ (gkBlock): dang tay chân + giữ + hạ tay (player.gkBlock)
+      const PL = C.player, GR = GK_RELEASE[this.atkType] && PL.gkRelease[GK_RELEASE[this.atkType]];
+      // đứng dậy sau khi đổ người mà đang di chuyển: cắt thẳng tới khúc khuỵu cuối (không trượt đi lúc nằm / quỳ)
+      if (DIVE[this.atkType] && this.state === 'normal' && this.poseEnd - this.atkT > PL.gkGetUp.crouch && Math.hypot(this.vx, this.vy) > 20) this.poseEnd = this.atkT + PL.gkGetUp.crouch;
       const keep = this.atkType === 'shoot' ? this.state === 'normal' && this.atkT < C.kick.poseTime
         : this.atkType === 'pw' ? this.state === 'normal' && this.hasBall && this.charging
         : this.atkType === 'power' ? this.state === 'normal' && this.atkT < C.kick.powerPoseTime
         : PASS_POSE[this.atkType] ? this.state === 'normal' && this.atkT < C.pass.poseTime
         : FT_POSE[this.atkType] ? this.state === 'normal' && this.atkT < C.firstTime[this.atkType].pose
         : DIVE[this.atkType] ? this.state === 'dash' || (this.state === 'normal' && this.atkT < this.poseEnd)
+        : this.atkType === 'gkHold' ? this.state === 'normal' && this.hasBall && g.inKeeperZone(this)
+        : this.atkType === 'gkBlock' ? this.state === 'normal' && this.atkT < PL.gkBlock.lead + PL.gkBlock.hold + PL.gkBlock.lower
+        : GR ? this.state === 'normal' && this.atkT < GR.w + GR.s + GR.f + GR.o
         : ATTACK_STATES[this.state];
-      if (this.atkType && !keep) this.atkType = null;
+      // đổ người bắt được bóng: đứng dậy xong vẫn cầm bóng trong vòng cấm -> ôm bóng (bỏ qua nhịp kéo bóng vào ngực)
+      if (DIVE[this.atkType] && !keep && this.hasBall && g.inKeeperZone(this)) { this.atkType = 'gkHold'; this.atkT = 1; }
+      else if (this.atkType && !keep) this.atkType = null;
 
       this.x += (this.vx + this.kbx) * dt;
       this.y += (this.vy + this.kby) * dt;
