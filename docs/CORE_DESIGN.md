@@ -218,7 +218,7 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 | `street_fighter` ♻️ | Võ Đường Phố | THƯỜNG · có sẵn | TẠO | Đấm tầm xa hơn, dễ cướp bóng; cướp được +1 Nộ. | Chữ comic **POW / BAM / WHAM** to; nắm tay bốc lửa đỏ lớn dần theo Nộ. | CO PT |
 | `fist_storm` 🆕 | Bão Đấm | HIẾM | TẠO | Đấm thành chuỗi 4 cú liên hoàn (đòn cuối đẩy lùi), mỗi cú trúng +Nộ. Hồi chiêu +20%. | Hàng chục tàn ảnh nắm đấm tuôn về phía trước như mưa, chữ **RẦM RẦM RẦM**. | TR CO |
 | `giant_fist` 🆕 | Nắm Đấm Khổng Lồ | SỬ THI | DÙNG | Đủ 5 Nộ, cú đấm kế tiếp: nắm tay to gấp 4, vùng đánh rộng, chắc chắn rơi bóng, hất văng. Tiêu hết Nộ. | Nắm tay phóng to che nửa người; hit-stop; impact frame; nạn nhân bay kèm vệt gió. | GI HS IF |
-| `hundred_fists` 🆕 | **Bách Quyền** | THẦN THOẠI | TUYỆT KỸ | Lao tới đối thủ gần nhất (≤ 80px), tung 20 cú đấm trong 1s (giữ họ tại chỗ); cú cuối hất văng xuyên sân, chắc chắn BONK. | Nền tối + tia tốc độ; hàng chục cánh tay tàn ảnh; bộ đếm **20 HIT!**; cú cuối slow-mo + impact frame; nạn nhân đập tường nứt toác. | SM CO TR IF DC |
+| `hundred_fists` 🆕 | **Bách Quyền** | THẦN THOẠI | TUYỆT KỸ | (2026-11-02) Người dùng không lao tới: **hồn đấu sĩ** đỏ hiện sau lưng, vạch đường 0.3s rồi lướt **bám theo** đối thủ gần nhất, luôn tới nơi, hitbox rộng (chỉ lướt Z đúng lúc mới né được), giữ nạn nhân tung 20 cú, cú cuối hất văng về tường, chắc chắn BONK. Người dùng tự do suốt chiêu. Không có hiệu ứng đổi cả màn hình. | Hồn đấu sĩ đỏ + vạch lướt; tràng nắm đấm của hồn; bộ đếm **20 HIT!**; vòng nổ đỏ ở cú cuối; nạn nhân đập tường nứt toác. | SM CO TR IF DC |
 
 ### 🦵 VÕ SĨ ĐÁ — Hất tung · BONK
 

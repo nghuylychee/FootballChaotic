@@ -261,11 +261,40 @@ window.SFC = window.SFC || {};
   // vật thể tự vẽ nhân vật thay cho sprite thật (Renderer bỏ qua drawPlayer — VFX.hides): King Kong, đứng trên tảng đá, con gà, người ngã sõng soài, tượng đá (OWL'S GAZE)
   const PROP_HIDE = { warp: 1, vault: 1, ape: 1, ride: 1, chicken: 1, fall: 1, petrify: 1, burn: 1, tied: 1, lassoswing: 1, inpot: 1, fused: 1 };
   const byId = (g, id) => g.players.find((q) => q.id === id) || null;
+  // hồn đấu sĩ khổng lồ đỏ trong suốt (Hundred Fists): chân ở (x, y), quay mặt f (1 phải / -1 trái), busy = đang tung tràng nắm đấm
+  function standGhost(ctx, x, y, f, busy, color, fade, t) {
+    const { px, disc } = SP(), bob = Math.round(Math.sin(t * 4) * 2);
+    ctx.globalCompositeOperation = 'lighter';
+    const sx = Math.round(x), sy = Math.round(y - 30 + bob);
+    ctx.globalAlpha = fade * 0.22;                            // quầng ngoài
+    disc(ctx, sx, sy - 15, 11, color); px(ctx, sx - 14, sy - 8, 28, 18, color); px(ctx, sx - 10, sy + 10, 20, 9, color);
+    ctx.globalAlpha = fade * 0.5;
+    disc(ctx, sx, sy - 15, 8, color);                         // đầu
+    px(ctx, sx - 11, sy - 6, 22, 14, color);                  // vai + ngực
+    px(ctx, sx - 7, sy + 8, 14, 8, color);
+    px(ctx, sx - 5, sy - 22, 10, 2, '#ffb0bc');               // tóc dựng sáng
+    ctx.globalAlpha = fade * 0.75;
+    px(ctx, sx - 4, sy - 17, 3, 2, '#ffffff'); px(ctx, sx + 2, sy - 17, 3, 2, '#ffffff');   // mắt
+    if (busy) for (let i = 0; i < 7; i++) {                  // tràng nắm đấm bay ra phía trước
+      const fx = Math.round(sx + f * (8 + Math.random() * 20)), fy = Math.round(sy - 2 + (Math.random() - 0.5) * 20);
+      ctx.globalAlpha = fade * (0.5 + Math.random() * 0.4);
+      disc(ctx, fx, fy, 4, color); disc(ctx, fx, fy, 2, '#ffffff');
+    }
+    else { ctx.globalAlpha = fade * 0.6; disc(ctx, sx + f * 12, sy, 4, color); disc(ctx, sx + f * 12, sy, 2, '#ffffff'); }   // nắm đấm thủ thế
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+
   // vị trí vật thể bám người (a = id cầu thủ) hoặc toạ độ riêng
   function propAt(g, o) {
     if (PROP_FOLLOW[o.kind]) { const q = byId(g, o.a); return q ? { x: q.x, y: q.y } : { x: o.x, y: o.y }; }
     if (o.kind === 'magnet' || o.kind === 'rebound') return { x: g.ball.x, y: g.ball.y - g.ball.z };
     if (o.kind === 'junk') return { x: o.x + o.a * (o.max - o.t), y: o.y };
+    // Hundred Fists: hồn lướt (x, y) -> chỗ đứng hiện tại của mục tiêu a, tới nơi đúng lúc hết đời (mô phỏng dùng cùng công thức)
+    if (o.kind === 'standdash') {
+      const q = byId(g, o.a), u = Math.min(1, 1 - o.t / o.max);
+      return q ? { x: o.x + (q.x - o.x) * u, y: o.y + (q.y - o.y) * u } : { x: o.x, y: o.y };
+    }
     // Panic Ghosts: hồn ma bay đoạn (x, y) -> (a, b) trong seg giây (mô phỏng dùng cùng công thức)
     if (o.kind === 'spook') { const u = o.off ? 1 : Math.min(1, (o.max - o.t) / SFC_CONFIG.cores.list.panic_ball.params.seg); return { x: o.x + (o.a - o.x) * u, y: o.y + (o.b - o.y) * u }; }   // Pitch Landslide: đồ lăn thẳng, a = vận tốc x
     if (SFC.ModDraw && SFC.ModDraw.kinds[o.kind]) { const m = SFC.MatchMods && SFC.MatchMods.at(g, o); if (m) return m; }   // luật trận FOOTBALL STORY
@@ -440,28 +469,16 @@ window.SFC = window.SFC || {};
         if (Math.floor(t * 8) % 2) outlinedText(ctx, '!', x, y - 22, 14, '#ffd23f');
         break;
       }
-      case 'stand': {   // Thousand Fists: hồn đấu sĩ khổng lồ đỏ trong suốt sau lưng người dùng, đấm cùng lúc tung chuỗi đấm
+      case 'stand': {   // Hundred Fists: hồn đấu sĩ đỏ đứng cạnh nạn nhân (a = id nạn nhân, -1 = đứng tại (x, y)) ở phía b, tung tràng đấm
         const q = byId(g, o.a);
-        if (!q) break;
-        const f = Math.cos(q.facing) >= 0 ? 1 : -1, busy = q.state === 'recover', bob = Math.round(Math.sin(t * 4) * 2);
-        ctx.globalCompositeOperation = 'lighter';
-        const sx = x - f * 7, sy = y - 30 + bob;
-        ctx.globalAlpha = fade * 0.22;                            // quầng ngoài
-        disc(ctx, sx, sy - 15, 11, o.color); px(ctx, sx - 14, sy - 8, 28, 18, o.color); px(ctx, sx - 10, sy + 10, 20, 9, o.color);
-        ctx.globalAlpha = fade * 0.5;
-        disc(ctx, sx, sy - 15, 8, o.color);                       // đầu
-        px(ctx, sx - 11, sy - 6, 22, 14, o.color);                // vai + ngực
-        px(ctx, sx - 7, sy + 8, 14, 8, o.color);
-        px(ctx, sx - 5, sy - 22, 10, 2, '#ffb0bc');               // tóc dựng sáng
-        ctx.globalAlpha = fade * 0.75;
-        px(ctx, sx - 4, sy - 17, 3, 2, '#ffffff'); px(ctx, sx + 2, sy - 17, 3, 2, '#ffffff');   // mắt
-        // tràng nắm đấm bay ra phía trước lúc đang đấm
-        if (busy) for (let i = 0; i < 6; i++) {
-          const fx = Math.round(sx + f * (12 + Math.random() * 20)), fy = Math.round(sy - 2 + (Math.random() - 0.5) * 20);
-          ctx.globalAlpha = fade * (0.5 + Math.random() * 0.4);
-          disc(ctx, fx, fy, 4, o.color); disc(ctx, fx, fy, 2, '#ffffff');
-        }
-        ctx.globalCompositeOperation = 'source-over';
+        standGhost(ctx, x + o.b * 16, y, -o.b, !!q && q.state === 'stun', o.color, fade, t);
+        break;
+      }
+      case 'standdash': {   // Hundred Fists: hồn lướt bám theo mục tiêu (a = id) + vệt tàn ảnh
+        const q = byId(g, o.a), tx = q ? q.x : o.x, ty = q ? q.y : o.y;
+        const f = tx >= o.x ? 1 : -1, d = SFC.U.norm(tx - o.x, ty - o.y + 0.01);
+        for (let i = 3; i >= 1; i--) standGhost(ctx, x - d.x * i * 10, y - d.y * i * 10, f, false, o.color, fade * (0.5 - i * 0.12), t);
+        standGhost(ctx, x, y, f, false, o.color, fade, t);
         break;
       }
       case 'chrome': {   // Mega Titan: da thép bóng loáng (vệt sáng quét dọc người) + mắt phát sáng, vẽ đè lên sprite khổng lồ
@@ -1248,7 +1265,7 @@ window.SFC = window.SFC || {};
         if (parts) { parts.forEach((pt, i) => out.push({ y: pt.d, o, part: i })); continue; }
         // nhảy parkour qua tường graffiti: lúc đang ở trên tường (giữa cú nhảy) vẽ trước cả bức tường (o.y = chân tường gần camera nhất)
         if (o.kind === 'vault') { const y = propAt(g, o).y, k = 1 - o.t / o.max; out.push({ y: k > 0.2 && k < 0.8 ? Math.max(y, o.y + 4) : y, o }); continue; }
-        out.push({ y: propAt(g, o).y + (PROP_OVER[o.kind] ? 0.3 : o.kind === 'hand' || o.kind === 'tornado' ? 0.2 : o.kind === 'stand' ? -0.5 : 0), o });
+        out.push({ y: propAt(g, o).y + (PROP_OVER[o.kind] ? 0.3 : o.kind === 'hand' || o.kind === 'tornado' ? 0.2 : o.kind === 'stand' || o.kind === 'standdash' ? 0.1 : 0), o });
       }
       return out;
     },

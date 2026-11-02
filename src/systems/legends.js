@@ -14,7 +14,7 @@
  *     không ra đòn / chuyền / sút được + đi bộ time giây — chữ RED CARD!). Đánh đổi chỉ số nằm sẵn trong stats của LEGEND.
  * KỸ THUẬT ĐẶC TRƯNG (user 2026-10-29): tech(g, p, id) = p dùng được kỹ thuật nâng cao id không (human.js hỏi trước mỗi kỹ thuật). Trong
  *   run (opts.run, legends.gateInRun) chỉ kỹ thuật của LEGEND p đang mang; ngoài run 4 kỹ thuật cũ (legends.base) như trước + kỹ thuật
- *   của LEGEND nếu có. Kiểu sút power / trivela / finesse, xe đạp chổng ngược (firstTime) ở actions.js; ở đây: toePoke · rainbow · engine
+ *   của LEGEND nếu có. Kiểu sút power / knuckle / finesse, xe đạp chổng ngược (firstTime) ở actions.js; ở đây: toePoke · rainbow · engine
  *   · slide (+ slideStep) · sweeper. Mỗi kỹ thuật ra là diễn riêng (techFx). Chỉ người chơi dùng, AI không dùng kỹ thuật (như cũ).
  * Móc: match.js (setup, update, win) · cores.js (steal, dodge, goalScored, hardHit, passReceived) · player.js hit (stunMul, knockMul).
  */
@@ -45,7 +45,7 @@ window.SFC = window.SFC || {};
   const T = () => LC().tuning;
   // thời gian diễn từng kỹ thuật (s) + vệt bóng (s, 0 = không)
   const ANIM = {
-    power: { t: 0.5, ball: 0.9 }, trivela: { t: 0.45, ball: 1.1 }, finesse: { t: 0.5, ball: 1.1 }, rainbow: { t: 0.6, ball: 0.75 }, bruiser: { t: 0.35 },
+    power: { t: 0.5, ball: 0.9 }, knuckle: { t: 0.55, ball: 1.5 }, finesse: { t: 0.5, ball: 1.1 }, rainbow: { t: 0.6, ball: 0.75 }, bruiser: { t: 0.35 },
     bicycle: { t: 0.6, ball: 0.8 }, engine: { t: 99 }, slide: { t: 0.5 }, sweeper: { t: 0.5 }, lobthrough: { t: 0.45, ball: 1.3 },
     toepoke: { t: 0.3, ball: 0.5 }, flip: { t: 0.9 },
   };
@@ -84,6 +84,7 @@ window.SFC = window.SFC || {};
         g.hitStop(0.05);
       } else if (id === 'bicycle') { g.hitStop(0.06); fx.speedLines(0.3, 320, 180, L.color); }
       else if (id === 'sweeper') fx.wave(p.x, p.y, 26, L.color, 0.4, 2);
+      else if (id === 'knuckle') { g.hitStop(0.04); fx.wave(p.x, p.y, 22, L.color, 0.3, 2); }   // vụt mu bàn chân: khựng 1 nhịp, sóng nhỏ
       g.sfx('legendTech');
     },
     // SÚT MŨI GIÀY: lúc thả phím sút mà lực nạp còn dưới maxCharge -> trả về lực sút thay thế (0 = không phải chạm nhanh)
@@ -152,11 +153,13 @@ window.SFC = window.SFC || {};
       g.effects.shake(3, 0.15);
       g.sfx('tackle');
     },
-    // ENGINE PRESS (giữ chạy nhanh + sút, không cầm bóng): tự đuổi người cầm bóng đối phương / bóng lỏng, rút thể lực x drain;
-    // chạm người cầm bóng = chọc bóng ra. Mỗi bước human.js gọi lại khi còn giữ phím; nhả phím -> update tắt hiệu ứng
+    // ENGINE PRESS (giữ chạy nhanh + sút, không cầm bóng): tự đuổi người cầm bóng đối phương / bóng lỏng, tiêu thể lực x drain so với
+    // chạy nhanh thường (drain < 1: ít hơn); chạm người cầm bóng = chọc bóng ra. Mỗi bước human.js gọi lại khi còn giữ phím; nhả phím ->
+    // update tắt hiệu ứng. Bắt đầu cần đủ thể lực chạy nhanh; đang chạy thì chạy tới cạn -> đứng lại thở dốc (winded)
     engine(g, p, dt) {
       const C = T().engine, P = SFC_CONFIG.game.player, b = g.ball, o = b.owner;
-      if (p.state !== 'normal' || p.noActT > 0 || p.stamina < P.staminaMinToSprint || (o && o.team === p.team)) return false;
+      if (p.engineOn && p.stamina <= 0.5 && p.state === 'normal') return this.winded(g, p);
+      if (p.state !== 'normal' || p.noActT > 0 || p.stamina < (p.engineOn ? 0 : P.staminaMinToSprint) || (o && o.team === p.team)) return false;
       const tg = o || b, dx = tg.x - p.x, dy = tg.y - p.y, d = Math.hypot(dx, dy) || 1;
       p.intent.mx = dx / d; p.intent.my = dy / d; p.intent.sprint = true;
       p.stamina = Math.max(0, p.stamina - P.staminaDrain * (C.drain - 1) * dt);
@@ -169,6 +172,16 @@ window.SFC = window.SFC || {};
         combo(g, p, 'engine', o);
         g.sfx('tackle');
       }
+      return true;
+    },
+    // cạn thể lực giữa ENGINE PRESS: đứng yên thở dốc breath s (Player.windT: không di chuyển, noActT: không ra đòn / chuyền / sút), thể lực
+    // hồi như thường. Hình: legendTech 'winded' (cúi người chống gối, phập phồng, hơi thở + mồ hôi — render/legenddraw.js), có ở máy khách
+    winded(g, p) {
+      const C = T().engine;
+      p.engineOn = false; p.intent.sprint = false;
+      p.windT = C.breath;
+      p.noActT = Math.max(p.noActT || 0, C.breath);
+      g.effects.legendTech(p.id, 'winded', C.breath);
       return true;
     },
     // XOẠC BÓNG (chạy nhanh + chuyền bổng, không cầm bóng): nằm xuống trượt theo hướng mũi tên (không bấm hướng: hướng mặt);

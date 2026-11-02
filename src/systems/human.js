@@ -137,11 +137,11 @@ window.SFC = window.SFC || {};
             // bấm chuyền sệt = sút giả (huỷ cú sút)
             if (input.wasPressed('pass') && tech('rainbow') && LGS.rainbow(g, p, mx, my)) return;
             if (input.wasPressed('pass') && tech('fake')) { Act.fakeShot(g, p, mx, my); return; }
-            // POWER SHOT (Balotello): phím power (F) · tay cầm: skill + switch. TRIVELA (Carloss): phím trick (C) · tay cầm: sprint + switch.
+            // POWER SHOT (Balotello): phím power (F) · tay cầm: skill + switch. KNUCKLEBALL (Ronaldough): phím trick (C) · tay cầm: sprint + switch.
             // Kiểm tra trước cứa lòng / sút bổng vì tổ hợp tay cầm dùng chung nút switch / skill (mỗi LEGEND chỉ có 1 kỹ thuật nên không lẫn)
             const sw = input.isDown('switch');
             if (tech('power') && (input.isDown('power') || (sw && input.isDown('skill')))) { p.shotStyle = 'power'; p.skillArm = false; }
-            else if (tech('trivela') && (input.isDown('trick') || (sw && input.isDown('sprint')))) p.shotStyle = 'trivela';
+            else if (tech('knuckle') && (input.isDown('trick') || (sw && input.isDown('sprint')))) p.shotStyle = 'knuckle';
             else if (sw && tech('finesse')) p.shotStyle = 'finesse';
             if (p.skillArm && input.isDown('skill') && tech('chip')) { p.shotStyle = 'chip'; p.skillArm = false; }
             p.charge += dt / g.chargeTime(p);

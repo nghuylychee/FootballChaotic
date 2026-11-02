@@ -475,12 +475,15 @@ SFC_CONFIG.cores = {
     },
     hundred_fists: {
       name: 'Hundred Fists', icon: '💢', tags: ['brawler'], role: 'ult', rarity: 'mythic',
-      desc: 'Rush an opponent with a punch barrage, then blast them.',
-      params: { range: 160, rush: 520, hits: 20, gap: 0.05, knock: 560, stun: 1.4 },   // rush: tốc độ lao tới (né Z được) · stun: choáng sau cú kết
-      // ★★ THOUSAND FISTS: đấm xong lướt thẳng (báo trước chainWarn giây, chainRush px/s) tới đối thủ kế tiếp trong chainRange,
-      // tối đa chain lượt, mỗi lượt chainHits cú. Né Z / bước khỏi đường lướt = ngắt chuỗi
-      evolve: [{ range: 200, hits: 20, knock: 640, stun: 1.6, chain: 2, chainHits: 10, chainRange: 200, chainRush: 560, chainWarn: 0.3 }],
-      awaken: { name: 'Thousand Fists', desc: 'Punch barrage, then dash on to chain more victims.' },
+      desc: 'A fist spirit dashes at a foe and pummels them.',
+      // 2026-11-02: hồn đấu sĩ hiện sau lưng người dùng, vạch đường warn giây rồi lướt BÁM THEO đối thủ gần nhất trong range
+      // (tốc độ dash px/s tính theo khoảng cách lúc lướt -> luôn tới nơi; chỉ lướt Z mới né được; hitbox: px quanh hồn, ai chắn đường
+      // dính trước), tung hits cú (gap giây / cú, nạn nhân bị giữ tại chỗ) · stun: choáng sau cú kết. Người dùng tự do suốt chiêu
+      params: { range: 160, warn: 0.3, dash: 560, hitbox: 20, hits: 20, gap: 0.05, knock: 560, stun: 1.4 },
+      // ★★ THOUSAND FISTS: đấm xong hồn lướt tiếp (cùng warn / dash) tới đối thủ kế tiếp trong chainRange, tối đa chain lượt,
+      // mỗi lượt chainHits cú. Né Z = ngắt chuỗi
+      evolve: [{ range: 200, hits: 20, knock: 640, stun: 1.6, chain: 2, chainHits: 10, chainRange: 200 }],
+      awaken: { name: 'Thousand Fists', desc: 'The fist spirit pummels, then dashes on to the next.' },
       scale: { knock: 'pow', range: 'pow', stun: 'pow' },
     },
     // MOON STOMP (Tuyệt kỹ gốc VÕ SĨ ĐÁ, 2026-10-15): dậm đất (vòng báo trước telegraph giây) -> mọi người trong vòng (cả đồng đội, cả bóng)

@@ -33,6 +33,7 @@ window.SFC = window.SFC || {};
       this.homing = null;    // {x, y, strength}
       this.frictionMult = 1;
       this.gkMod = 0;        // trừ tỉ lệ bắt bóng của thủ môn (Giao Hưởng, Bóng Ma, Sao Băng...)
+      this.knuckle = null;   // KNUCKLEBALL (LEGEND, Actions.shoot): { t, T, t1, t2, peak, g1, g3, sx, hx, sz, hz, ox, oz } — xem knuckleStep
     }
 
     get speed() { return Math.hypot(this.vx, this.vy); }
@@ -79,7 +80,7 @@ window.SFC = window.SFC || {};
       this.shieldChecked = false;
       this.freezeT = 0;
       this.cross = false;     // tạt cánh (game.firstTime.cross) — passTo bật lại sau khi đá
-      this.legTech = null;    // kỹ thuật LEGEND của cú đá này (power / trivela / finesse / bicycle / lobthrough) — LEGEND TRIAL đếm (drills.js)
+      this.legTech = null;    // kỹ thuật LEGEND của cú đá này (power / knuckle / finesse / bicycle / lobthrough) — LEGEND TRIAL đếm (drills.js)
       this.oneTouch = false;  // đường chuyền 1 chạm (pass.oneTouch) — passTo bật lại sau khi đá
       this.endBounce = false; // đã dội vạch cuối sân (bounceSide) -> hết ma sát riêng của cú sút (ball.shotFriction)
       this.keepPace = false;  // đường chuyền giữ tốc độ (pass.friction) — passTo bật, bóng qua điểm nhận thì tắt
@@ -122,7 +123,7 @@ window.SFC = window.SFC || {};
 
       this.x += this.vx * dt;
       this.y += this.vy * dt;
-      this.vz -= C.gravity * dt;
+      this.vz -= (this.knuckle ? this.knuckleStep(dt) : C.gravity) * dt;
       this.z += this.vz * dt;
       if (this.z <= 0) {
         this.z = 0;
@@ -157,6 +158,25 @@ window.SFC = window.SFC || {};
       }
       if (this.z === 0 && this.speed < 60 && (this.fx.fire || this.fx.thunder)) this.clearFx();
       else if (this.speed < 40) { delete this.fx.string; delete this.fx.spiral; delete this.fx.laser; delete this.fx.duo; delete this.fx.ghost; }
+    }
+
+    // KNUCKLEBALL (config/legends.config.js tuning.knuckle): bóng không xoáy, 3 đoạn: tới t1 vọt lên bằng trọng lực g1 (vừa tới đỉnh peak)
+    // -> t1..t2 lơ lửng (không trọng lực, giữ ở đỉnh) -> sau t2 cắm xuống bằng trọng lực g3 (gắt). Từ lúc bay tới t2 lượn theo trục X (dọc
+    // sân) và trục Z (độ cao): dời vị trí, biên độ to dần rồi về 0 đúng lúc t2 -> đường bóng tới khung vẫn như đã nhắm; không lượn theo
+    // trục Y. Trả về trọng lực bước này. Chạm đất / dội tường / quá giờ: về bóng thường
+    knuckleStep(dt) {
+      const N = this.knuckle, t0 = N.t;
+      N.t += dt;
+      const k = N.t / N.t2, env = k < 1 ? Math.sin(k * Math.PI) : 0, w = N.t * Math.PI * 2;
+      const ox = N.sx * env * Math.sin(w * N.hx), oz = N.sz * env * Math.sin(w * N.hz + 1.3);
+      this.x += ox - N.ox; this.z += oz - N.oz;
+      N.ox = ox; N.oz = oz;
+      // đổi đoạn: bỏ vận tốc dọc dư (sai số tích phân) -> lơ lửng đúng đỉnh, cắm xuống từ đứng yên
+      if (t0 < N.t1 && N.t >= N.t1) { this.vz = 0; this.z = N.peak + oz; }
+      if (t0 < N.t2 && N.t >= N.t2) this.vz = 0;
+      const g = N.t < N.t1 ? N.g1 : N.t < N.t2 ? 0 : N.g3;
+      if (N.t > N.T + 0.4 || (this.z <= 0 && N.t > 0.1)) this.knuckle = null;
+      return g;
     }
 
     // bóng dính chân người giữ bóng
@@ -256,6 +276,7 @@ window.SFC = window.SFC || {};
     }
 
     onWall() {
+      this.knuckle = null;
       if (this.speed > 120) {
         this.g.sfx('wall');
         this.g.effects.burst(this.x, this.y, this.z, '#d8d0c0', 3, 40);

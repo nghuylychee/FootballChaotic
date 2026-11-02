@@ -494,7 +494,8 @@ window.SFC = window.SFC || {};
     },
     // LEGEND GOAT PATH gửi kèm ghế / đồng đội (config/legends.config.js): chỉ id có thật
     sanitizeLegend(id) {
-      const L = SFC_CONFIG.legends && SFC_CONFIG.legends.list;
+      const L = SFC_CONFIG.legends && SFC_CONFIG.legends.list, RN = SFC_CONFIG.legends && SFC_CONFIG.legends.renamed;
+      if (RN && typeof id === 'string' && RN[id]) id = RN[id];   // id cũ (legends.renamed) từ bản trước
       return L && typeof id === 'string' && L[id] ? id : null;
     },
     // chấn thương GOAT PATH gửi kèm ghế / đồng đội (băng + dấu ✚ ở máy khách): chỉ id chấn thương có thật

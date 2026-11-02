@@ -74,7 +74,17 @@ window.SFC = window.SFC || {};
     blankStats() {
       return { plays: 0, wins: 0, bestAct: 0, bestFloor: 0, bosses: 0, road: 0, acts: [], seen: { legend: {}, badge: {}, gear: {}, rival: {} }, hist: [], best: { goals: 0, fast: 0 } };
     },
+    // id LEGEND đã đổi (legends.renamed, cũ -> mới): đổi trong dữ liệu đã lưu / nhận trước khi lọc (squad[].legend, node / room / log
+    // .legend, seen.legend, hist[].sq[].lg) — không thì id cũ bị lọc mất (mất LEGEND giữa run, mất sticker TROPHY ROOM)
+    renameLegends(raw) {
+      const RN = SFC_CONFIG.legends.renamed;
+      if (!raw || typeof raw !== 'object' || !RN) return raw;
+      let s = JSON.stringify(raw), hit = false;
+      for (const k in RN) if (s.includes(`"${k}"`)) { s = s.split(`"${k}"`).join(`"${RN[k]}"`); hit = true; }
+      return hit ? JSON.parse(s) : raw;
+    },
     sanitizeStats(raw) {
+      raw = this.renameLegends(raw);
       const o = this.blankStats();
       if (!raw || typeof raw !== 'object') return o;
       for (const k of ['plays', 'wins', 'bestAct', 'bestFloor', 'bosses', 'road']) o[k] = clampInt(raw[k], 0, 1e9);
@@ -127,6 +137,7 @@ window.SFC = window.SFC || {};
     // run đã lưu: sai cấu trúc / id không còn tồn tại -> bỏ (null)
     sanitize(raw) {
       if (!raw || typeof raw !== 'object') return null;
+      raw = this.renameLegends(raw);
       const acts = C().acts, kinds = C().nodes, T = TEAMS();
       const act = clampInt(raw.act, 0, acts.length - 1);
       const bosses = Array.isArray(raw.bosses) ? raw.bosses.slice(0, acts.length) : [];

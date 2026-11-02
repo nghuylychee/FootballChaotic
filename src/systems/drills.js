@@ -14,7 +14,7 @@
  *     AI từ đường chuyền của bạn (g.lastPass) · coins: xu lần lượt như cổng (D.gates / D.gi), đối thủ đuổi đánh bạn · chickens: đối thủ
  *     hoá gà (CoreStat.chicken) chạy loạn, đấm trúng = bắt, gà hiện lại chỗ khác. noBall: không ai chạm được bóng
  *   combo (chỉ LEGEND TRIAL, user 2026-10-30): số lần làm được kỹ thuật LEGEND đang cho mượn (match.js gắn p.legend + p.lent). Kỹ thuật
- *     sút (power / trivela / finesse / bicycle): bàn thắng mà cú đá cuối mang ball.legTech đúng kỹ thuật · còn lại: Legends gọi combo()
+ *     sút (power / knuckle / finesse / bicycle): bàn thắng mà cú đá cuối mang ball.legTech đúng kỹ thuật · còn lại: Legends gọi combo()
  *     (bruiser / slide / engine / sweeper / rainbow) · chuyền vượt tuyến bổng: match.js gainPossession. Cách chơi theo legends.list[].trial:
  *     keepers (số đối thủ trông khung) · foeBall (đối thủ cầm bóng tấn công) · feed (đồng đội AI chuyền trả: 'ground' / 'lob').
  */
@@ -24,7 +24,7 @@ window.SFC = window.SFC || {};
   const TIER_WORDS = [SFC.N_('FAILED'), SFC.N_('BRONZE!'), SFC.N_('SILVER!'), SFC.N_('GOLD!')];
   const TRIAL_WORDS = [SFC.N_('TRIAL FAILED'), SFC.N_('SIGNED!')];
   const top = (D) => D.cfg.tiers[D.cfg.tiers.length - 1];   // mốc cuối (VÀNG / mốc duy nhất của LEGEND TRIAL)
-  const SHOT_TECH = ['power', 'trivela', 'finesse', 'bicycle'];   // kỹ thuật sút: tính khi thành bàn
+  const SHOT_TECH = ['power', 'knuckle', 'finesse', 'bicycle'];   // kỹ thuật sút: tính khi thành bàn
 
   const Drills = {
     create(g) {

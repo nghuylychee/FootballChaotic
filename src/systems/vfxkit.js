@@ -165,18 +165,31 @@ window.SFC = window.SFC || {};
   E.combo = function (x, y, n) { this.pop(x, y, n + ' HIT!', n >= 10 ? 'huge' : n >= 5 ? 'heavy' : 'light', n >= 10 ? '#ff3d5a' : '#ffe14f'); };
 
   /* ================= OVERLAY (thời gian thật) ================= */
+  // NGƯỜI XEM: only([id cầu thủ...]) -> các hiệu ứng đổi cả màn hình gọi sau đó (zoom, impactFrame, speedLines, tint, shake, flash)
+  // chỉ hiện trên máy có người điều khiển (g.controlled) nằm trong danh sách; only(null) trả lại như cũ. Máy không điều khiển ai
+  // (trận AI-only, ảnh xem trước) vẫn thấy hết. Lệnh only cũng được ghi gửi khách online (sync.js) -> mỗi máy tự xét theo người của mình
+  E.only = function (ids) { this.scope = ids && ids.length ? ids : null; };
+  E.sees = function () {
+    const s = this.scope, c = s && this.g && this.g.controlled;
+    return !c || s.indexOf(c.id) >= 0;
+  };
+  for (const m of ['shake', 'flash']) {
+    const base = E[m];
+    E[m] = function (...a) { if (this.sees()) base.apply(this, a); };
+  }
+
   // ZM — phóng to nhẹ vào (x, y) rồi trả về
-  E.zoom = function (x, y, a = 0.15, t = 0.3) { this.O.zoom = { x, y, a, t, max: t }; };
+  E.zoom = function (x, y, a = 0.15, t = 0.3) { if (this.sees()) this.O.zoom = { x, y, a, t, max: t }; };
 
   // IF — impact frame đen trắng (bỏ qua khi bật Giảm nháy; không lặp dày hơn 0.5s)
   E.impactFrame = function (t = 0.07) {
     const o = this.O;
-    if (SFC.FXSettings.reduceFlash || o.impactCd > 0) return;
+    if (SFC.FXSettings.reduceFlash || o.impactCd > 0 || !this.sees()) return;
     o.impact = t; o.impactCd = 0.5;
   };
 
   // SL — tia tốc độ tập trung về (x, y) (toạ độ màn hình 640x360)
-  E.speedLines = function (t = 0.5, x = 320, y = 180, color = '#ffffff') { this.O.lines = { t, max: t, x, y, color }; };
+  E.speedLines = function (t = 0.5, x = 320, y = 180, color = '#ffffff') { if (this.sees()) this.O.lines = { t, max: t, x, y, color }; };
 
   // CO — tên chiêu chữ to chạy chéo màn hình
   E.callout = function (str, color = '#ffe14f', t = 1.1) {
@@ -195,7 +208,7 @@ window.SFC = window.SFC || {};
   };
 
   // phủ màu toàn màn hình (sepia, tím né hoàn hảo...)
-  E.tint = function (color, t = 1, a = 0.25) { this.O.tints.push({ color, t, max: t, a }); };
+  E.tint = function (color, t = 1, a = 0.25) { if (this.sees()) this.O.tints.push({ color, t, max: t, a }); };
 
   // băng VHS tua ngược: sọc nhiễu + chữ <<, lệch màu (VHS Rewind)
   E.vhs = function (t = 0.8) { this.O.vhs = { t, max: t }; };
@@ -204,7 +217,7 @@ window.SFC = window.SFC || {};
 
   // toàn bộ VFX Kit chỉ để nhìn -> máy chủ riêng bỏ qua (Effects.headless)
   SFC.Effects.COSMETIC.push('wave', 'decal', 'stretch', 'clone', 'popClone', 'projectile', 'beam', 'vortex', 'bolt', 'dragon', 'comic', 'combo',
-    'shield', 'portal', 'netFire', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint', 'prop', 'propOff', 'vhs', 'tilt');
+    'shield', 'portal', 'netFire', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint', 'prop', 'propOff', 'vhs', 'tilt', 'only');
 
   /* ================= UPDATE ================= */
   const baseClear = E.clearHazards;

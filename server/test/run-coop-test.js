@@ -338,13 +338,22 @@ function legendLogic() {
   assert.ok(Lg.slide(g3, r2, 1, 0), 'slide starts');
   for (let i = 0; i < 40 && g3.ball.owner === opp; i++) { r2.update(1 / 60); Lg.update(g3, 1 / 60); }
   assert.ok(g3.ball.owner !== opp && g3.effects.V.legtech[opp.id] && g3.effects.V.legtech[opp.id].id === 'flip', 'slide tackle: ball loose, victim flips');
-  // ENGINE PRESS (Kantay): tự đuổi bóng, rút thể lực nhanh hơn chạy nhanh thường
+  // ENGINE PRESS (Kantay): tự đuổi bóng, tốn thể lực ít hơn chạy nhanh thường (user 2026-11-02); cạn thể lực = đứng lại thở dốc
   const g5 = new SFC.Game({ home: MP.playerTeam.id, away: rd.team, humanTeam: 0, solo: [1, null], silent: true, noDraft: true, run,
     avatars: [{ name: 'K', look: {}, role: 'MID', legend: 'kantay' }, null] });
   const k5 = g5.seatPlayer(0), o5 = g5.teams[1].players[0];
   g5.state = 'play'; g5.ball.setOwner(o5); k5.state = 'normal'; k5.stamina = 100;
-  assert.ok(Lg.engine(g5, k5, 0.5) && k5.intent.sprint && k5.stamina < 100, 'engine press chases and drains stamina');
-  console.log('6. legends: OK (trial -> join anyone, off-position, vote, stats, moment, red card, team badges, techniques gate, dash on skill release, slide tackle)');
+  let chased = true;
+  for (let i = 0; i < 30; i++) { chased = chased && Lg.engine(g5, k5, 1 / 60) && k5.intent.sprint; k5.update(1 / 60); }
+  const used = 100 - k5.stamina, sprintUse = SFC_CONFIG.game.player.staminaDrain * 0.5;
+  assert.ok(chased && used > 0 && used < sprintUse * 0.75, 'engine press chases and drains less stamina than a sprint');
+  k5.stamina = 0; k5.engineOn = true;
+  assert.ok(Lg.engine(g5, k5, 1 / 60) && k5.windT > 0 && k5.noActT > 0 && g5.effects.V.legtech[k5.id].id === 'winded', 'engine press: empty stamina -> winded');
+  for (let i = 0; i < 15; i++) { k5.intent.mx = 1; k5.intent.my = 0; k5.update(1 / 60); }   // trượt nốt đà chạy rồi dừng
+  const wx = k5.x, wy = k5.y;
+  for (let i = 0; i < 30; i++) { k5.intent.mx = 1; k5.intent.my = 0; k5.update(1 / 60); }
+  assert.ok(Math.hypot(k5.x - wx, k5.y - wy) < 0.5, 'winded player stands still');
+  console.log('6. legends: OK (trial -> join anyone, off-position, vote, stats, moment, red card, team badges, techniques gate, dash on skill release, slide tackle, engine press + winded)');
 }
 
 runRoom();

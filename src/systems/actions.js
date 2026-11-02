@@ -638,12 +638,12 @@ window.SFC = window.SFC || {};
         spread *= ft.kind === 'header' ? F.header.spread : ft.kind === 'volley' ? F.volley.spread : F.spread;
         spread *= 1 + U.clamp((ft.spd - F.fastFrom) / F.fastRange, 0, 1) * F.fastSpread;
       }
-      // kỹ thuật LEGEND (config/legends.config.js tuning): power = POWER SHOT · trivela = TRIVELA · ft bicycle = BICYCLE KICK
+      // kỹ thuật LEGEND (config/legends.config.js tuning): power = POWER SHOT · knuckle = KNUCKLEBALL · ft bicycle = BICYCLE KICK
       const LT = SFC_CONFIG.legends && SFC_CONFIG.legends.tuning;
       if (style === 'finesse') spread *= TQ.finesse.spread;
       else if (style === 'chip') spread *= TQ.chip.spread;
       else if (style === 'power') spread *= LT.power.spread;
-      else if (style === 'trivela') spread *= LT.trivela.spread;
+      else if (style === 'knuckle') spread *= LT.knuckle.spread;
       if (ft && ft.kind === 'bicycle') spread *= LT.bicycle.spread;
       let ang = base + U.rand(-spread, spread);
       if (p.inj && SFC.Hurt) ang += SFC.Hurt.shank(g, p);   // GOAT PATH: đau ngón chân -> thỉnh thoảng sút trượt chân
@@ -658,21 +658,33 @@ window.SFC = window.SFC || {};
       let vz = this.shotLift(g, p, ang, spd, c, over, ft ? ft.z : 0);
       let curve = 0;
       if (style === 'power') { spd *= LT.power.speed; vz *= LT.power.lift; }
-      if (style === 'finesse' || style === 'trivela') {
+      let knuckle = null;
+      if (style === 'finesse') {
         // CỨA LÒNG: bóng chậm hơn, xuất phát chệch ra ngoài rồi cong đều vào trong (cung tròn) — tới vạch vôi đúng hướng đã nhắm.
-        // Cong về phía góc nhắm (nhắm giữa khung: cong vào góc xa so với chỗ đứng). TRIVELA (má ngoài): cong ngược phía, mạnh hơn
-        const tri = style === 'trivela';
-        spd *= tri ? LT.trivela.speed : TQ.finesse.speed;
+        // Cong về phía góc nhắm (nhắm giữa khung: cong vào góc xa so với chỗ đứng)
+        spd *= TQ.finesse.speed;
         vz = K.shotLiftMin;
         const dirX = tm.dir, gx = dirX > 0 ? f.x + f.w : f.x;
         const dist = Math.max(20, Math.abs((gx - b.x) / Math.cos(ang)));
         const ty = b.y + Math.tan(ang) * (gx - b.x);
-        const side = (Math.sign(ty - f.cy) || Math.sign(f.cy - b.y) || 1) * (tri ? -1 : 1);
+        const side = Math.sign(ty - f.cy) || Math.sign(f.cy - b.y) || 1;
         const k = G().ball.groundFriction * G().ball.shotFriction;   // bóng sút: ma sát riêng (ball.shotFriction)
         const t = k * dist < spd * 0.95 ? -Math.log(1 - (k * dist) / spd) / k : dist / spd;
-        const bend = TQ.finesse.bend * (tri ? LT.trivela.bend : 1);
+        const bend = TQ.finesse.bend;
         ang += side * dirX * bend / 2;
         curve = -side * dirX * bend / t;
+      } else if (style === 'knuckle') {
+        // KNUCKLEBALL: bay T s tới vạch vôi (+ depth): lên tới đỉnh peak px lúc t1 = rise x T, lơ lửng tới t2 = t1 + float x T, rồi cắm xuống
+        // tới landZ (dưới xà) đúng lúc tới vạch. g1 / g3 = trọng lực riêng lúc lên / lúc cắm (Ball.knuckleStep). Tốc ngang tính như sút bổng
+        const KN = LT.knuckle, gx = (tm.dir > 0 ? f.x + f.w : f.x) + tm.dir * KN.depth;
+        const d = U.clamp(Math.abs((gx - b.x) / Math.cos(ang)), 30, 700), kd = U.clamp((d - KN.near) / (KN.far - KN.near), 0, 1);
+        const T = U.lerp(KN.timeMin, KN.timeMax, kd) * (1 - KN.quick * held), peak = U.lerp(KN.peakMin, KN.peakMax, kd);
+        const t1 = T * KN.rise, t2 = t1 + T * KN.float, t3 = T - t2;
+        const ka = G().ball.airDrag * G().ball.shotFriction;
+        spd = (ka * d) / (1 - Math.exp(-ka * T));
+        vz = (2 * peak) / t1;
+        knuckle = { t: 0, T, t1, t2, peak, g1: (2 * peak) / (t1 * t1), g3: (2 * Math.max(0, peak - KN.landZ)) / (t3 * t3),
+          sx: KN.swayX, hx: KN.hzX, sz: KN.swayZ, hz: KN.hzZ, ox: 0, oz: 0 };
       } else if (style === 'chip') {
         // SÚT BỔNG: vồng cao, rơi xuống sau vạch vôi (chip.depth) ở độ cao landZ (dưới xà). Bay lâu theo khoảng cách, nạp đầy thì nhanh hơn
         const gx = (tm.dir > 0 ? f.x + f.w : f.x) + tm.dir * TQ.chip.depth, d = Math.max(30, Math.abs((gx - b.x) / Math.cos(ang)));
@@ -687,7 +699,8 @@ window.SFC = window.SFC || {};
       b.kick(p, Math.cos(ang) * spd, Math.sin(ang) * spd, vz);
       if (ft) b.z = Math.max(b.z, ft.z);   // vô-lê / đánh đầu: bóng đi từ độ cao lúc chạm
       b.kind = 'shot';
-      if (style === 'finesse' || style === 'trivela') { b.curve = curve; b.fx.finesse = true; }
+      if (style === 'finesse') { b.curve = curve; b.fx.finesse = true; }
+      if (knuckle) { b.knuckle = knuckle; b.gkMod += LT.knuckle.gk; }
       if (style === 'chip') {
         // thủ môn bị lob (Game.updatePossession): ghi khoảng cách tới vạch vôi của người trông khung lúc bóng rời chân
         const off = {}, lx = g.ownGoal(1 - p.team).x;

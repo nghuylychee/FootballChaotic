@@ -606,6 +606,9 @@ window.SFC = window.SFC || {};
         g.sfx('hit');
       },
     },
+    // 2026-11-02: người dùng không lao tới nữa — HỒN ĐẤU SĨ đỏ hiện cạnh người dùng, vạch đường báo trước warn giây rồi lướt thẳng
+    // tới đối thủ gần nhất (né Z / bước khỏi vạch = trượt), giữ nạn nhân tại chỗ tung chuỗi đấm, cú kết hất văng. Người dùng tự do
+    // suốt chiêu. Không có hiệu ứng đổi cả màn hình (tối màn, rung, zoom...) để mọi người vẫn nhìn rõ sân
     hundred_fists: {
       aiUse(sys, team, prm) {
         const g = sys.g;
@@ -616,104 +619,99 @@ window.SFC = window.SFC || {};
         }
         return null;
       },
-      // lao tới (nhìn thấy được, mục tiêu lướt Z kịp thì trượt) rồi mới tung chuỗi đấm
       onUltimate(sys, team, prm, pl) {
-        const g = sys.g, E = g.effects;
-        const o = nearestOpp(g, team, pl, targetable(g));
-        if (!o) return;
-        E.speedLines(0.3, pl.x, pl.y, '#ffcfcf');
-        // chuỗi đấm: hits cú / lượt, total = combo cộng dồn, left = số lượt lướt tiếp còn lại (★★ THOUSAND FISTS)
-        const c = { hits: prm.hits, total: 0, left: prm.chain || 0, done: new Set(), stand: 0 };
-        if (c.left) {
-          // hồn đấu sĩ khổng lồ đứng sau lưng suốt chuỗi
-          c.stand = H.propId(g);
-          E.prop(c.stand, 'stand', pl.x, pl.y, pl.id, 0, 8, '#ff3d5a');
-        }
-        const miss = () => { E.pop(pl.x, pl.y - 30, 'MISS', 'info', '#9aa3b5'); pl.state = 'recover'; pl.stateT = 0.5; this.chainEnd(sys, c); };
-        rush(sys, pl, o, prm.rush, prm.range / prm.rush + 0.15, () => this.barrage(sys, team, prm, pl, o, c), c.left ? miss : null);
+        // total = combo cộng dồn, left = số lượt lướt tiếp còn lại (★★ THOUSAND FISTS), at = chỗ hồn đứng
+        const c = { total: 0, left: prm.chain || 0, done: new Set(), stand: 0, at: null };
+        const o = nearestOpp(sys.g, team, pl, (q) => targetable(sys.g)(q) && q.airZ <= 0);
+        const dx = o ? (o.x >= pl.x ? 1 : -1) : (Math.cos(pl.facing) >= 0 ? 1 : -1);
+        c.at = { x: pl.x - dx * 14, y: pl.y };   // hồn hiện ngay sau lưng người dùng
+        this.dash(sys, team, prm, pl, c, prm.range);
       },
-      chainEnd(sys, c) { if (c.stand) sys.g.effects.propOff(c.stand, 0.3); },
-      // ★★: lướt THẲNG tới đối thủ kế tiếp — vạch đường báo trước chainWarn giây (người lướt đứng gồng), rồi lao theo đúng vạch đó.
-      // Đối thủ đầu tiên chạm phải dính chuỗi đấm mới; né Z đúng lúc / bước khỏi vạch = trượt, hết chuỗi
-      chainDash(sys, team, prm, pl, c) {
-        const g = sys.g, E = g.effects, f = g.field;
-        if (g.state !== 'play' || pl.state === 'stun') return this.chainEnd(sys, c);
-        const o = nearestOpp(g, team, pl, (q) => targetable(g)(q) && q.airZ <= 0 && !c.done.has(q.id) && U.dist(q, pl) <= prm.chainRange);
-        if (!o) return this.chainEnd(sys, c);
-        c.left--;
-        const aim = { x: o.x + o.vx * prm.chainWarn * 0.5, y: o.y + o.vy * prm.chainWarn * 0.5 };
-        const d = U.norm(aim.x - pl.x, aim.y - pl.y + 0.01), len = U.dist(aim, pl) + 30;
-        const end = { x: U.clamp(pl.x + d.x * len, f.x + 8, f.x + f.w - 8), y: U.clamp(pl.y + d.y * len, f.y + 8, f.y + f.h - 8) };
+      chainEnd(sys, c) { if (c.stand) sys.g.effects.propOff(c.stand, 0.3); c.stand = 0; },
+      // hồn lướt từ chỗ nó đứng (c.at) tới đối thủ gần nhất trong range: vạch đường báo trước warn giây, rồi BÁM THEO mục tiêu,
+      // tới nơi đúng T giây (khoảng cách lúc lướt / dash) -> luôn trúng. Né được duy nhất bằng lướt Z đúng lúc hồn chạm (hitbox rộng);
+      // đối thủ khác đứng chắn đường (trong hitbox) dính thay
+      dash(sys, team, prm, pl, c, range) {
+        const g = sys.g, E = g.effects, s = c.at;
+        if (g.state !== 'play' || !s) return this.chainEnd(sys, c);
+        const o = nearestOpp(g, team, s, (q) => targetable(g)(q) && q.airZ <= 0 && !c.done.has(q.id) && U.dist(q, s) <= range);
+        if (!o) {
+          if (!c.done.size) E.pop(pl.x, pl.y - 30, 'MISS', 'info', '#9aa3b5');
+          return this.chainEnd(sys, c);
+        }
         const lid = H.propId(g);
-        E.prop(lid, 'dashline', pl.x, pl.y, end.x, end.y, prm.chainWarn + 0.25, '#ff3d5a');
-        pl.facing = Math.atan2(d.y, d.x);
-        pl.state = 'recover'; pl.stateT = prm.chainWarn + len / prm.chainRush + 0.4;
-        E.pop(pl.x, pl.y - 30, '!', 'status', '#ff3d5a');
+        // hồn đứng gồng tại chỗ trong lúc vạch đường nhấp nháy (a = -1: không bám ai; hồn vẽ ở (x + b·16), quay mặt về -b)
+        const sb = o.x >= s.x ? -1 : 1;
+        if (c.stand) E.propOff(c.stand, 0.01);
+        c.stand = H.propId(g);
+        E.prop(c.stand, 'stand', s.x - sb * 16, s.y, -1, sb, prm.warn + 0.05, '#ff3d5a');
+        E.prop(lid, 'dashline', s.x, s.y, o.x, o.y, prm.warn + 0.1, '#ff3d5a');
+        if (!c.done.size) E.burst(s.x, s.y - 20, 12, '#ff3d5a', 14, 90, 0.5);   // hồn hiện ra
+        E.pop(o.x, o.y - 30, '!', 'status', '#ff3d5a');                          // báo người bị nhắm
         g.sfx('ult', 'fists.charge');
-        g.later(prm.chainWarn, () => {
-          if (g.state !== 'play' || pl.state === 'stun') { E.propOff(lid); return this.chainEnd(sys, c); }
+        g.later(prm.warn, () => {
+          if (g.state !== 'play') { E.propOff(lid); return this.chainEnd(sys, c); }
           g.sfx('whoosh');
-          let gone = 0, k = 0;
+          // hồn bay (x, y) -> vị trí hiện tại của mục tiêu a trong T giây (render/vfx.js propAt dùng cùng công thức)
+          const T = Math.max(0.12, U.dist(o, s) / prm.dash);
+          E.propOff(c.stand, 0.01);
+          c.stand = H.propId(g);
+          E.prop(c.stand, 'standdash', s.x, s.y, o.id, 0, T, '#ff3d5a');
+          let el = 0;
+          const at = { x: s.x, y: s.y };
           sys.task((dt) => {
-            if (g.state !== 'play' || pl.state === 'stun') { this.chainEnd(sys, c); return true; }
-            const st = prm.chainRush * dt;
-            pl.x = U.clamp(pl.x + d.x * st, f.x + 6, f.x + f.w - 6); pl.y = U.clamp(pl.y + d.y * st, f.y + 6, f.y + f.h - 6);
-            pl.vx = pl.vy = 0; gone += st;
-            if (g.ball.owner === pl) g.ball.follow(0);
-            if ((k += dt) >= 0.04) { k = 0; E.afterimage(pl, 0.25); }
-            for (const q of g.teams[1 - team].players) {
-              if (c.done.has(q.id) || q.airZ > 4 || U.dist(q, pl) > pl.radius + q.radius + 3) continue;
-              E.propOff(lid);
-              if (!targetable(g)(q) || Act().dodged(g, q)) {
-                E.pop(q.x, q.y - 30, 'DODGE!', 'good', '#ff3d5a');
-                pl.state = 'recover'; pl.stateT = 0.5;
-                this.chainEnd(sys, c);
-                return true;
-              }
-              this.barrage(sys, team, prm, pl, q, c);
+            if (g.state !== 'play') { E.propOff(lid); this.chainEnd(sys, c); return true; }
+            el += dt;
+            const u = Math.min(1, el / T);
+            at.x = s.x + (o.x - s.x) * u; at.y = s.y + (o.y - s.y) * u;
+            // tới nơi thì chắc chắn chạm mục tiêu; trên đường ai lọt vào hitbox thì dính trước
+            let q = u >= 1 ? o : null;
+            for (const r of g.teams[1 - team].players) {
+              if (q || c.done.has(r.id) || r.airZ > 4 || U.dist(r, at) > r.radius + prm.hitbox) continue;
+              q = r;
+            }
+            if (!q) return false;
+            E.propOff(lid);
+            E.propOff(c.stand, 0.01); c.stand = 0;
+            if (!targetable(g)(q) || Act().dodged(g, q)) {   // dodged() tự hiện DODGE!
+              E.burst(at.x, at.y - 20, 10, '#ff3d5a', 12, 90, 0.4);
               return true;
             }
-            if (gone >= len) { E.propOff(lid); E.pop(pl.x, pl.y - 30, 'MISS', 'info', '#9aa3b5'); pl.state = 'recover'; pl.stateT = 0.4; this.chainEnd(sys, c); return true; }
-            return false;
+            this.barrage(sys, team, prm, pl, q, c, q.x >= at.x ? -1 : 1);
+            return true;
           });
         });
       },
-      barrage(sys, team, prm, pl, o, c) {
+      // hồn đứng cạnh nạn nhân (phía side, phía nó lướt tới) tung hits cú, nạn nhân bị giữ tại chỗ; cú kết hất văng về tường gần nhất
+      barrage(sys, team, prm, pl, o, c, side) {
         const g = sys.g, E = g.effects, f = g.field;
-        c = c || { hits: prm.hits, total: 0, left: 0, done: new Set() };
-        const hits = c.done.size ? prm.chainHits : c.hits;
+        const hits = c.done.size ? prm.chainHits : prm.hits;
         c.done.add(o.id);
-        const side = pl.x < o.x ? -1 : 1;
-        pl.facing = side > 0 ? Math.PI : 0;
-        if (g.ball.owner === pl) g.ball.follow(0);
-        pl.state = 'recover'; pl.stateT = hits * prm.gap + 0.3;
-        if (o.hasBall) { g.looseBall(o, -side, 0, 30); sys.steal(pl); }
+        if (c.stand) E.propOff(c.stand, 0.01);
+        c.stand = H.propId(g);
+        // later() đếm theo bước 1/60s -> mỗi cú thực tế dài hơn gap tối đa một bước. Hồn sống dư, cú kết tự gỡ
+        E.prop(c.stand, 'stand', o.x, o.y, o.id, side, hits * (prm.gap + 1 / 60) + 1, '#ff3d5a');
+        if (o.hasBall) { g.looseBall(o, side, 0, 30); sys.steal(pl); }
         o.hitImmune = 0; o.hit({ stun: 1.6, source: pl, type: 'light' }); o.kbx = o.kby = 0;
         o.airZ = 0; o.airVz = 0;
-        E.tint('#300000', 1.3, 0.35);
-        E.speedLines(1.2, o.x, o.y - 8, '#ffcfcf');
         let n = 0;
         const punch = () => {
-          if (g.state !== 'play') return;
+          if (g.state !== 'play') return this.chainEnd(sys, c);
           n++;
-          E.stretch(pl.id, o.x + U.rand(-6, 6), o.y + U.rand(-8, 4), 0.1);
           E.burst(o.x + U.rand(-4, 4), o.y - 8 + U.rand(-6, 6), 8, '#fff6a0', 4, 60, 0.3);
           if (n % 4 === 0) E.combo(o.x, o.y - 30, c.total + n);
-          if (n % 3 === 0) E.shake(1.5, 0.05);
           g.sfx('ult', 'fists.pop');
           o.state = 'stun'; o.stateT = Math.max(o.stateT, 0.5); o.kbx = o.kby = 0;
-          pl.state = 'recover'; pl.stateT = Math.max(pl.stateT, 0.2);
           if (n < hits) g.later(prm.gap, punch); else g.later(0.08, finisher);
         };
         const finisher = () => {
-          if (g.state !== 'play') { if (c.stand) this.chainEnd(sys, c); return; }
+          if (g.state !== 'play') return this.chainEnd(sys, c);
           c.total += hits;
-          g.hitStop(0.14);
-          E.impactFrame();
+          c.at = { x: U.clamp(o.x + side * 16, f.x + 8, f.x + f.w - 8), y: o.y };
           E.combo(o.x, o.y - 30, c.total);
           sys.moment(team, 'hundred_fists', c.total + ' HIT!', 80);
-          E.zoom(o.x, o.y, 0.2, 0.35);
-          E.shake(8, 0.4);
+          E.ring(o.x, o.y - 10, '#ff3d5a');
+          E.burst(o.x, o.y - 10, 14, '#ff3d5a', 16, 120, 0.5);
           g.sfx('ult', 'fists.final');
           // văng về phía tường trên / dưới gần nhất -> chắc chắn BONK
           const toTop = o.y - f.y < f.y + f.h - o.y;
@@ -732,8 +730,11 @@ window.SFC = window.SFC || {};
             }
             return o.state !== 'stun';
           });
-          // ★★: còn lượt -> lướt tiếp sang người kế (chờ nạn nhân bay đi một nhịp)
-          if (c.left > 0) g.later(0.3, () => this.chainDash(sys, team, prm, pl, c));
+          // hồn ở lại chỗ cũ (không bám nạn nhân đang bay): ★★ còn lượt -> lướt tiếp sang người kế, không thì tan
+          E.propOff(c.stand, 0.01);
+          c.stand = H.propId(g);
+          E.prop(c.stand, 'stand', c.at.x - side * 16, c.at.y, -1, side, c.left > 0 ? 0.35 : 0.4, '#ff3d5a');
+          if (c.left > 0) { c.left--; g.later(0.3, () => this.dash(sys, team, prm, pl, c, prm.chainRange)); }
           else this.chainEnd(sys, c);
         };
         punch();

@@ -1725,10 +1725,19 @@ SFC.I18n.add({
     'Close a lightning loop to fry everyone trapped inside.': 'Cierra un círculo de rayos y fríe a quien quede dentro.',
     'Three-way passing leaves harp strings that freeze opponents.': 'Paredes a tres dejan cuerdas de arpa que congelan rivales.',
     'Meteor smash, and smash again if the ball rebounds.': 'Remate meteoro, y remata otra vez si el balón rebota.',
-    'Punch barrage, then dash on to chain more victims.': 'Ráfaga de puños, luego embiste para encadenar más víctimas.',
+    'A fist spirit dashes at a foe and pummels them.': 'Un espíritu de puños embiste a un rival y lo machaca.',
+    'The fist spirit pummels, then dashes on to the next.': 'El espíritu de puños golpea y luego embiste al siguiente.',
     'Your moon zone follows you, lifting everyone nearby.': 'Tu zona lunar te sigue y eleva a todos los cercanos.',
     'Clones stay on the pitch to block and tackle.': 'Los clones se quedan en la cancha para bloquear y robar.',
     'Tilt so hard the street junk slides down too.': 'Inclina tanto que la chatarra de la calle también rueda.',
     'Grow giant, grab opponents and bowl them over.': 'Hazte gigante, agarra rivales y úsalos como bolos.',
+
+    /* ===== LEGEND Cristiano Ronaldough + KNUCKLEBALL (2026-11-02, config/legends.config.js) ===== */
+    'KNUCKLEBALL': 'TIRO SIN ROTACIÓN',
+    'No spin. It climbs, wobbles, then drops like a stone.': 'Sin rotación. Sube, tiembla y cae como una piedra.',
+    'SIUUU!': '¡SIUUU!',
+    'Plants his feet from long range, puffs his chest, and lets it fly.': 'Se planta lejos, saca pecho y suelta el cañonazo.',
+    "Defending is somebody else's job.": 'Defender es trabajo de otro.',
+    'Hunt the ball down on autopilot. Run dry and he stops to breathe.': 'Persigue el balón en piloto automático. Si se vacía, se para a respirar.',
   },
 });

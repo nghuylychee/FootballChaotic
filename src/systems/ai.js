@@ -241,10 +241,14 @@ window.SFC = window.SFC || {};
           if (xt && Math.random() < FA.ai.crossChance) { Act().passTo(g, p, xt, 'lob'); return; }
         }
         // vừa đấm cướp được bóng: chưa sút (combat.light.stealShotLock)
-        const shoot = shotSettling || p.shotLockT > 0 ? false : M ? this.mateShoots(g, p, dG, clear) : dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25);
+        let shoot = shotSettling || p.shotLockT > 0 ? false : M ? this.mateShoots(g, p, dG, clear) : dG < range && (clear || dG < cfg.shootRangeGood || Math.random() < 0.25);
+        // KNUCKLEBALL: đứng xa khung ở phần sân đối thủ -> thỉnh thoảng dội từ xa (bóng vọt qua đầu người chắn, legendShot chọn kiểu sút)
+        const knuckle = !shoot && !shotSettling && !(p.shotLockT > 0) && this.longKnuckle(g, p, dG);
+        if (knuckle) shoot = true;
 
         if (shoot) {
           p.charging = true; p.charge = 0;
+          p.ai.knuckle = knuckle;
           p.ai.chargeTarget = U.clamp(0.4 + (dG / range) * 0.55 + U.rand(-0.1, 0.1), 0.35, 1.0);
           // đội có Core sút (Hoả Cầu, Lôi Cước, Lỗ Đen...): thường giữ đủ lực để kích hoạt
           const cc = g.cores.aiShotCharge(p);
@@ -569,11 +573,20 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------- kỹ thuật LEGEND của cầu thủ AI (legends.ai, user 2026-10-30) ---------- */
-    // cú sút sắp ra: POWER SHOT / FINESSE SHOT / TRIVELA (Actions.shoot đọc p.shotStyle)
+    // cú sút sắp ra: POWER SHOT / FINESSE SHOT / KNUCKLEBALL (Actions.shoot đọc p.shotStyle). KNUCKLEBALL chỉ khi đủ xa khung
+    // (knuckle.min px: bóng cần đường để vọt lên rồi cắm xuống); cú dội từ xa đã định (longKnuckle) thì luôn ra knuckle
     legendShot(g, p) {
-      const LA = LAI();
+      const LA = LAI(), long = p.ai.knuckle;
+      p.ai.knuckle = false;
       if (!LA) return;
-      for (const id of ['power', 'finesse', 'trivela']) if (legTech(g, p, id) && Math.random() < LA.shot) { p.shotStyle = id; return; }
+      for (const id of ['power', 'finesse']) if (legTech(g, p, id) && Math.random() < LA.shot) { p.shotStyle = id; return; }
+      if (legTech(g, p, 'knuckle') && (long || (this.goalDist(g, p) >= LA.knuckle.min && Math.random() < LA.shot))) p.shotStyle = 'knuckle';
+    },
+    goalDist(g, p) { const gl = g.attackGoal(p.team); return Math.hypot(gl.x - p.x, gl.y - p.y); },
+    // lượt quyết định khi chưa định sút: cầu thủ AI có KNUCKLEBALL đứng ở phần sân đối thủ, cách khung knuckle.min..max px -> knuckle.chance dội từ xa
+    longKnuckle(g, p, dG) {
+      const K = LAI() && LAI().knuckle;
+      return !!K && legTech(g, p, 'knuckle') && !g.inOwnHalf(p) && dG >= K.min && dG <= K.max && Math.random() < K.chance;
     },
     // BRUISER RUN phản đòn: đối thủ trong tầm giật chỏ đang gồng / tung đòn
     bruiserParry(g, p, opps) {

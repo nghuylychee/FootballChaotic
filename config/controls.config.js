@@ -25,7 +25,7 @@ SFC_CONFIG.controls = {
     // kỹ thuật LEGEND (GOAT PATH, config/legends.config.js). Tay cầm không có nút riêng: power = skill + switch, trick = switch
     // (cùng lúc giữ sprint; tổ hợp xử lý ở human.js — mỗi LEGEND chỉ 1 kỹ thuật nên không lẫn)
     power:   ['KeyF'],             // giữ khi nạp sút: POWER SHOT (Balotello)
-    trick:   ['KeyC'],             // giữ khi nạp sút: TRIVELA (Carloss) · chạy nhanh khi dẫn bóng + bấm: BRUISER RUN (Haalandroid)
+    trick:   ['KeyC'],             // giữ khi nạp sút: KNUCKLEBALL (Ronaldough) · chạy nhanh khi dẫn bóng + bấm: BRUISER RUN (Haalandroid)
 
     pause:   ['Escape', 'KeyP', 'Pad.Start'],
     confirm: ['Enter', 'Space', 'Pad.A'],

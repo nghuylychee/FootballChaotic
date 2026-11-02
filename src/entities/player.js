@@ -33,6 +33,7 @@ window.SFC = window.SFC || {};
       // trạng thái Tuyệt kỹ đợt 4 (cores-ult2.js Stat): không ra đòn / chuyền / sút / lướt được · hoảng sợ (phím di chuyển đảo ngược) ·
       // hoá gà · con rối (chạy theo hướng người giật dây: puppet = { by: Player })
       this.noActT = 0; this.panicT = 0; this.chickenT = 0; this.puppet = null; this.puppetT = 0;
+      this.windT = 0;         // ENGINE PRESS (LEGEND Kantay) cạn thể lực: giây còn đứng thở dốc (moveNormal không đi; legends.js winded)
       this.landT = -1; this.punchCombo = 0;
       this.lastHitBy = null;  // người vừa đánh trúng (tính BONK cho đúng đội)
       this.sizeMul = 1;       // VFX Kit khổng lồ: tỉ lệ vẽ + va chạm hiện tại
@@ -315,6 +316,8 @@ window.SFC = window.SFC || {};
       }
       // hoảng sợ (Panic Ball): mọi hướng di chuyển đảo ngược
       if (this.panicT > 0) { mx = -mx; my = -my; }
+      // thở dốc (ENGINE PRESS cạn thể lực): đứng yên
+      if (this.windT > 0) { this.windT -= dt; mx = my = 0; this.intent.sprint = false; }
       const len = Math.hypot(mx, my);
       if (len > 1) { mx /= len; my /= len; }
       const moving = len > 0.1;
