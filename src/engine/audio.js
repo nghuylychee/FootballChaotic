@@ -547,6 +547,8 @@ window.SFC = window.SFC || {};
       tone({ freq: 880, to: 1175, dur: 0.22, type: 'square', vol: 0.06, delay: 0.3 });
     },
     menu()    { tone({ freq: 660, dur: 0.04, vol: 0.12 }); },
+    // bấm thứ chưa dùng được (ô Tuyệt kỹ đang tối): 2 nốt trầm "bụp bụp" đi xuống
+    deny()    { tone({ freq: 220, dur: 0.06, type: 'square', vol: 0.09 }); tone({ freq: 156, dur: 0.09, type: 'square', vol: 0.09, delay: 0.07 }); },
     // GOAT PATH: khoanh phấn quanh node vừa chọn — 3 nét cào phấn ngắn lên dần theo vòng tròn (dur = thời gian vẽ)
     chalk(dur = 0.45) {
       for (let i = 0; i < 3; i++) noise({ dur: dur / 3 + 0.03, vol: 0.07, freq: 2600 + i * 500, q: 2.2, delay: i * dur / 3, attack: 0.01 });

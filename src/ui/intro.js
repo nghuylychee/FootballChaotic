@@ -129,7 +129,7 @@ window.SFC = window.SFC || {};
           <div class="in-venue" style="--d:${I.pitchAt}s">${venueIcon}${esc(venue)}</div>
         </div>
         ${this.side(g, 1, lists[1], delay, boss)}
-        <div class="in-foot"><span>${_t('{key} skip', { key: `<kbd>${esc(SFC.Input.key('confirm', 'Enter'))}</kbd>` })}</span><i class="in-timer" style="--dur:${I.duration}s"></i></div>
+        <div class="in-foot"><i class="in-timer" style="--dur:${I.duration}s"></i><span class="skip-hint">${_t('{key} skip', { key: `<kbd>${esc(SFC.Input.key('confirm', 'Enter'))}</kbd>` })}</span></div>
       </div>`;
     },
 

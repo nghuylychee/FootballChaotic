@@ -83,7 +83,7 @@ window.SFC = window.SFC || {};
         <div class="ac-rw">
           <div class="ac-rh">${PX().ui('gift', 'sm')} ${esc(_t('REWARD'))}</div>
           <div class="ac-rb">${this.rewardArt(rw, true)}<div><b style="color:${AC().rewardColor(rw)}">${esc(AC().rewardName(rw))}</b><span>${esc(rar || '')}</span>
-            <span>${esc(rw.item ? _t('Goes straight to your INVENTORY') : _t('Open it for free in the SHOP'))}</span></div></div>
+            <span>${esc(rw.item ? _t('Goes straight to your INVENTORY') : _t('Opens right away'))}</span></div></div>
         </div>
         ${act}`;
     },
@@ -93,10 +93,20 @@ window.SFC = window.SFC || {};
       if (!r.p.done) { SFC.Audio.menu(); menu.setMsg(_t('Not done yet'), true); return; }
       const rw = AC().claim(r.a.id);
       if (!rw) return;
+      this.toNext();   // chọn sẵn thưởng kế tiếp còn chờ nhận: Enter, Enter... nhận lần lượt hết
       // thưởng hộp: mở luôn (màn quay hộp của SHOP, Esc quay về đây; hộp còn lại vẫn mở tiếp được bằng OPEN ANOTHER)
       if (rw.box && PROG().boxes[rw.box]) { G().openBack = 'ach'; G().openBox(menu, rw.box); return; }
       SFC.Audio.upgrade();
       menu.setMsg(_t('Claimed: {reward}', { reward: AC().rewardName(rw) }));
+    },
+
+    // chuyển con trỏ tới dòng chờ nhận kế tiếp (sau dòng vừa nhận, hết thì vòng lên đầu) · không còn: đứng yên
+    toNext() {
+      const rows = this.rows(), n = rows.length;
+      for (let k = 1; k < n; k++) {
+        const i = (this.sel + k) % n;
+        if (rows[i].p.done && !rows[i].p.claimed) { this.sel = i; return; }
+      }
     },
 
     input(menu, input) {

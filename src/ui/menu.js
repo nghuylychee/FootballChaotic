@@ -61,12 +61,14 @@ window.SFC = window.SFC || {};
   const PLAY_PAGES = ['party', 'run', 'story', 'online', 'join', 'lobby'];
   // trang mở khi đổi sang từng tab (Q / E) — GOAT PATH đầu tiên (chế độ chính); RANKED ẩn khi mainPath.tab = false
   const PLAY_TABS = () => (SFC_CONFIG.mainPath.tab === false ? ['run', 'online'] : ['run', 'party', 'online']);
-  // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, TÚI ĐỒ
-  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'storytest', 'runtest', 'privacy', 'controls', 'ach', 'trophy', 'road'];
+  // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, MỞ HỘP (về SHOP / ACHIEVEMENTS), TÚI ĐỒ
+  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'open', 'inv', 'settings', 'display', 'test', 'storytest', 'runtest', 'privacy', 'controls', 'ach', 'trophy', 'road'];
   // trang không có logo, tiêu đề là 1 dòng ngang cả màn như SHOP (NHÂN VẬT thêm LV / XP / vàng bên phải)
   const HEAD_PAGES = ['char', 'ults', 'attrs', 'look', 'settings', 'display', 'test', 'storytest', 'runtest'];
   const WALLET_PAGES = ['char', 'ults', 'attrs', 'look'];
   const PRIVATE_PAGES = ['online', 'join', 'lobby'];
+  // trang "rê chuột = chọn" (Menu.hoverSel): danh sách / ô do Menu tự vẽ. Tab GOAT PATH ('run') và RANKED ('party') chưa bật
+  const HOVER_PAGES = ['home', 'settings', 'display', 'test', 'storytest', 'runtest', 'name', 'char', 'ults', 'look', 'attrs', 'path', 'training', 'wishlist', 'online', 'join', 'lobby'];
 
   // phòng online (PRIVATE MATCH): 1 ô người chơi theo slot (đội t, vị trí role) — người trong phòng / đồng đội AI của người duy nhất
   // trong đội / bot (đội không có người). Bấm / Enter ô không phải người để nhảy vào slot đó.
@@ -293,12 +295,13 @@ window.SFC = window.SFC || {};
           });
         }
         case 'look': {
-          // NGOẠI HÌNH: đổi tên + màu da / tóc (costume ở INVENTORY)
+          // NGOẠI HÌNH: đổi tên + màu da / tóc · COSTUMES = lối tắt sang INVENTORY mục trang phục (người muốn đổi mũ / ăn mừng tìm ở đây trước)
           const d = PF().data, look = d.look, P = PROG();
           return [
             { kind: 'btn', label: _t('RENAME'), sub: d.name, act: () => { this.nameBack = 'look'; this.go('name'); } },
             { kind: 'pick', label: _t('SKIN COLOR'), swatch: SFC_CONFIG.teams.skins[look.skin], change: (dd) => PF().setColor('skin', dd) },
             { kind: 'pick', label: _t('HAIR COLOR'), swatch: P.hairColors[look.hairColor], change: (dd) => PF().setColor('hairColor', dd) },
+            { kind: 'btn', label: _t('COSTUMES'), sub: _t('Hats · shoes · trail FX · celebrations'), act: () => G().openSlot(this, 'all', 'look') },
           ];
         }
         case 'attrs': {
@@ -719,11 +722,13 @@ window.SFC = window.SFC || {};
 
     /* ---------------- Main Path ---------------- */
     // dòng phụ của nút MAIN PATH ở trang chủ: Area + Elo hiện tại
-    // dòng dưới nút PLAY trang chủ: run đang dở (act · tầng) hoặc GOAT PATH
+    // dòng dưới nút PLAY trang chủ: kể đủ các chế độ trong màn PLAY (theo đúng các tab) để người chơi biết PRIVATE MATCH cũng nằm trong đó.
+    // Run đang dở: GOAT PATH kèm act. PRIVATE MATCH khoá (Platform.privateMatch) thì không nhắc tới
     runSub() {
       const R = SFC.Run.run;
-      if (R && SFC.Run.active()) return `${_t('GOAT PATH')} · ${_t('ACT {n}', { n: R.act + 1 })} · ${SFC.Run.act(R.act).name}`;
-      return _t('GOAT PATH');
+      const run = R && SFC.Run.active() ? `${_t('GOAT PATH')} ${_t('ACT {n}', { n: R.act + 1 })}` : _t('GOAT PATH');
+      const name = { run, party: _t('RANKED'), online: SFC.Platform.privateMatch ? _t('PRIVATE MATCH') : '' };
+      return PLAY_TABS().map((t) => name[t]).filter(Boolean).join(' · ');
     },
     pathSub() {
       const MP = MPATH(), st = MP.state;
@@ -949,12 +954,13 @@ window.SFC = window.SFC || {};
       const txt = esc(next ? _tn('{n} star to unlock next area', '{n} stars to unlock next area', next.elo - st.elo) : _t('TOP AREA'));
       return `<div class="pt-next" style="--ac:${A.color}"><i class="pt-prog"><b style="width:${next ? pct : 100}%"></b></i><span>${txt}</span></div>`;
     },
-    // thanh tab đầu màn PLAY (kiểu Rocket League): RANKED · FOOTBALL STORY · PRIVATE MATCH, Q / E (LB / RB) đổi tab; sub = dòng dưới (HTML)
+    // thanh tab đầu màn PLAY (kiểu Rocket League): GOAT PATH · RANKED · PRIVATE MATCH, Q / E (LB / RB) đổi tab; sub = dòng dưới (HTML)
+    // mỗi tab là 1 ô bấm được có icon riêng (vương miện / sao / 2 người); tab khoá: icon ổ khoá thay icon chế độ
     playTabs(on, sub) {
       const K = (a, kb) => SFC.Input.key(a, kb);
-      const tab = (id, label, page, lock) => `<button class="pt-tab ${on === id ? 'on' : ''}" data-ptab="${page}">${lock ? PX().ui('lock', 'sm') + ' ' : ''}${esc(label)}</button>`;
+      const tab = (id, label, page, icon, lock) => `<button class="pt-tab ${on === id ? 'on' : ''}" data-ptab="${page}">${PX().ui(lock ? 'lock' : icon)}<span>${esc(label)}</span></button>`;
       return `<div class="pt-tabs">
-          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('run', _t('GOAT PATH'), 'run')}${SFC_CONFIG.mainPath.tab === false ? '' : tab('ranked', _t('RANKED'), 'party')}${tab('private', _t('PRIVATE MATCH'), 'online', !SFC.Platform.privateMatch)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
+          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('run', _t('GOAT PATH'), 'run', 'crown')}${SFC_CONFIG.mainPath.tab === false ? '' : tab('ranked', _t('RANKED'), 'party', 'star')}${tab('private', _t('PRIVATE MATCH'), 'online', 'people', !SFC.Platform.privateMatch)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
           ${sub}
         </div>`;
     },
@@ -1000,15 +1006,20 @@ window.SFC = window.SFC || {};
       } else {
         const n = O.lobby.members.length, max = SFC_CONFIG.net.maxPlayers, coop = O.mode === 'coop';
         const code = O.code || '-'.repeat(SFC_CONFIG.net.codeLength);
-        // mã phòng (bấm để chép) · số người trong phòng
-        sub = `<span class="pt-area"><span class="pt-code" data-copy="${esc(code)}" title="${esc(_t('Click to copy'))}">${esc(_t('ROOM CODE'))} <b>${esc(code)}</b></span> · ${esc(_t('{n}/{max} players', { n, max }))}</span>`;
+        // phòng chưa đủ người để START (net.minPlayers): thiếu bấy nhiêu người -> nói rõ + nút COPY cạnh mã phòng nháy nhẹ
+        const need = n ? Math.max(0, (SFC_CONFIG.net.minPlayers || 2) - n) : 0;
+        // mã phòng (bấm để chép, có chữ COPY) · số người trong phòng
+        sub = `<span class="pt-area"><span class="pt-code ${need ? 'wait' : ''}" data-copy="${esc(code)}" title="${esc(_t('Click to copy'))}">${esc(_t('ROOM CODE'))} <b>${esc(code)}</b><i>${esc(_t('COPY'))}</i></span> · ${esc(_t('{n}/{max} players', { n, max }))}</span>`;
         if (!n) body = `<div class="pt-slots"><div class="pt-note">${esc(_t('Loading room...'))}</div></div>${msg}`;
         else {
           const bench = O.benched, meId = O.mine && O.mine.id;
           const note = (s, cls = '') => `<div class="pt-note ${cls}">${esc(s)}</div>`;
-          const status = bench.length ? note(_t('Players on GUEST must take a slot before the match starts'))
+          // bấm START khi còn khoá -> dòng lý do rung lên (Menu.activate đặt nudgeAt)
+          const nudge = performance.now() - (this.nudgeAt || 0) < 400 ? 'nudge' : '';
+          const status = bench.length ? note(_t('Players on GUEST must take a slot before the match starts'), nudge)
             : O.isOwner
-              ? (O.canStart ? note(coop ? _t('Ready to start CO-OP') : _t('Ready to start VERSUS'), 'ok') : '')
+              ? (O.canStart ? note(coop ? _t('Ready to start CO-OP') : _t('Ready to start VERSUS'), 'ok')
+                : need ? note(_tn('Need {n} more player · share the room code', 'Need {n} more players · share the room code', need), `need ${nudge}`) : '')
               : note(_t('Waiting for the host to start...'));
           // ô người chơi / ghế GUEST -> mục tương ứng (chọn bằng phím mũi tên, Enter = nhảy vào)
           const nav = (s) => { const i = items.findIndex((x) => x.slot === s); return { i, on: i === this.sel }; };
@@ -1065,7 +1076,7 @@ window.SFC = window.SFC || {};
     // bảng phải: ô đã khám phá = lá Tuyệt kỹ (ảnh động) + công thức; chưa khám phá = lá úp ???
     ultPanel(it) {
       if (!it || !it.entry) return '';
-      const e = it.entry, key = `<kbd>${esc(SFC.Input.key('ultimate', 'X'))}</kbd>`;
+      const e = it.entry, key = `<kbd>${esc(SFC.Input.label('ultimate'))}</kbd>`;   // phím đang gán (đổi phím ở CONTROLS / tay cầm)
       const total = PF().ultEntries().length, n = PF().data.ultBook.length;
       const card = it.known ? G().coreCard(e.id, '', 150, 64, e.lv) : '<div class="card static ul-hidden"><b>???</b></div>';
       const status = it.known
@@ -1592,7 +1603,9 @@ window.SFC = window.SFC || {};
     },
 
     activate(it) {
-      if (!it || it.disabled) return;
+      if (!it) return;
+      // START của phòng còn khoá: không im lặng — dòng lý do ngay trên nút rung lên (renderPrivate)
+      if (it.disabled) { if (it.main && this.page === 'lobby') { this.nudgeAt = performance.now(); this.render(); } return; }
       SFC.Audio.menu();
       if (it.kind === 'btn') it.act();
     },
@@ -1658,7 +1671,24 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------------- chuột ---------------- */
+    // rê chuột = chọn: mục dưới chuột thành mục đang chọn, cùng 1 ô sáng với phím (Enter làm đúng mục đó).
+    // Chỉ đổi class .sel tại chỗ, không dựng lại trang -> cú bấm không bị mất (như LangPick).
+    // Chỉ ở các trang Menu tự vẽ mục (data-i = chỉ số trong items()); trang của module riêng (SHOP, TROPHY ROOM...) tự lo chuột.
+    // Nút ◀▶ (data-d) cùng data-i với dòng của nó -> rê lên nút cũng là chọn dòng đó
+    hoverSel(e) {
+      if (!HOVER_PAGES.includes(this.page) || this.quitAsk || this.matePop) return;
+      const el = e.target.closest('[data-i]');
+      if (!el) return;
+      const i = +el.dataset.i;
+      if (i === this.sel || i < 0 || !this.items()[i]) return;
+      this.sel = i;
+      this.el.querySelectorAll('[data-i]:not([data-d])').forEach((x) => x.classList.toggle('sel', +x.dataset.i === i));
+      // ULT BOOK: bảng phải tả lá đang chọn -> vẽ lại riêng bảng đó (+ ảnh động)
+      const right = this.page === 'ults' && this.el.querySelector('.m-right');
+      if (right) { right.innerHTML = this.renderRight(); SFC.CorePreview.scan(right); }
+    },
     bindMouse() {
+      this.el.addEventListener('mousemove', (e) => this.hoverSel(e));
       this.el.addEventListener('click', (e) => {
         SFC.Audio.unlock();
         // hộp QUIT GAME?: chỉ nhận 2 nút của hộp
@@ -1681,6 +1711,9 @@ window.SFC = window.SFC || {};
         if (CU().pages.includes(this.page) && CU().click(this, e)) return;
         if (RU().pages.includes(this.page) && RU().click(this, e)) return;
         if (this.page === 'controls' && CV().click(this, e)) return;
+        // NHÂN VẬT: bấm 1 dòng đồ đang mặc -> INVENTORY mục COSTUMES lọc đúng slot đó
+        const eqs = this.page === 'char' && e.target.closest('[data-eqslot]');
+        if (eqs) { SFC.Audio.menu(); return G().openSlot(this, eqs.dataset.eqslot, 'char'); }
         // Main Path: bấm 1 Area trên "con đường" để xem
         const pa = e.target.closest('[data-parea]');
         if (pa) { this.pathView = +pa.dataset.parea; SFC.Audio.menu(); this.render(); return; }

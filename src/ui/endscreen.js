@@ -106,7 +106,12 @@ window.SFC = window.SFC || {};
             <span class="ot-score">${t0.score} - ${t1.score}</span>`}
           </div>
         </div>
-        <div class="outro-foot"><div class="outro-bar" style="--dur:${dur}s"></div></div>`;
+        <div class="outro-foot"><div class="outro-bar" style="--dur:${dur}s"></div>${this.skipHint()}</div>`;
+    },
+
+    // gợi ý bấm qua: cùng 1 kiểu (nền tối, CSS .skip-hint) với màn VS (ui/intro.js) — Beat 1 sau còi + lúc đếm thưởng ở Beat 2
+    skipHint(cls = '') {
+      return `<span class="skip-hint ${cls}">${_t('{key} skip', { key: `<kbd>${esc(SFC.Input.key('confirm', 'Enter'))}</kbd>` })}</span>`;
     },
 
     // LEGEND TRIAL (D.trial): qua / hỏng thay cho mốc ĐỒNG / BẠC / VÀNG
@@ -183,17 +188,23 @@ window.SFC = window.SFC || {};
       this.rwFocus = !!game.reward;
       this.el.end.classList.remove('outro', 'sb-shown');
       this.el.end.classList.toggle('rw-focus', this.rwFocus);
+      // GOAT PATH SKILL GAME / LEGEND TRIAL: không phải trận -> thay tỉ số bằng thanh 3 mốc + số đếm như HUD trong bài,
+      // bỏ bảng tỉ số (toàn 0), khung thưởng đứng giữa
+      const D = game.drill;
       this.el.end.innerHTML = `
         ${devBar}
         ${this.leaveBtn()}
         <div class="end-head">
           <div class="end-title ${res[1]}">${esc(res[0])}</div>
-          <div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>        </div>
-        <div class="end-body ${game.reward ? 'has-rw' : 'only-sb'}">
-          ${game.reward ? `<div class="end-left">${this.rewardPanel(game.reward)}</div>` : ''}
-          <div class="sb-wrap">${orderedTeams.map((t, i) => teamBlock(t, i)).join('')}</div>
+          ${D ? `<div class="end-drill">${this.drillTrack(D)}</div>`
+            : `<div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>`}
         </div>
-        <div class="end-act">${note}<div class="pause-items row-items" id="end-items"></div></div>`;
+        <div class="end-body ${D ? 'only-rw' : game.reward ? 'has-rw' : 'only-sb'}">
+          ${game.reward ? `<div class="end-left">${this.rewardPanel(game.reward)}</div>` : ''}
+          ${D ? '' : `<div class="sb-wrap">${orderedTeams.map((t, i) => teamBlock(t, i)).join('')}</div>`}
+        </div>
+        <div class="end-act">${note}<div class="pause-items row-items" id="end-items"></div></div>
+        ${game.reward ? this.skipHint('rw-skip') : ''}`;
       this.el.end.querySelectorAll('canvas.sb-por[data-pid]').forEach((cv) => {
         const p = game.players.find((q) => q.id === +cv.dataset.pid);
         if (p) this.drawPortrait(cv, p, game);
@@ -215,7 +226,7 @@ window.SFC = window.SFC || {};
       this.rwFocus = false;
       this.el.end.classList.remove('rw-focus');
       this.el.end.classList.add('sb-shown');
-      if (SFC.Audio && SFC.Audio.whoosh) SFC.Audio.whoosh();
+      if (SFC.Audio && SFC.Audio.whoosh && this.el.end.querySelector('.sb-wrap')) SFC.Audio.whoosh();   // Skill game: không có bảng trượt ra
       this.showEndItems();
     },
 
@@ -269,7 +280,7 @@ window.SFC = window.SFC || {};
       const lines = r.lines.map((l, i) => `<div class="rw-line" data-rw="${i}"><span>${esc(l.label)}</span>${
         l.mult || l.note ? '' : `<b class="x">+${l.xp} XP</b><b class="g"><i class="coin"></i>+${l.gold}</b>`}</div>`).join('');
       return `${r.path ? this.pathResult(r.path) : ''}
-        <div class="build reward">
+        <div class="build reward ${r.xp === 0 && r.gold === 0 && !r.levelGold ? 'no-tot' : ''}">
           <h4>${esc(_t('REWARDS'))}</h4>
           <div class="rw-lines">${lines}</div>
           <div class="rw-total"><span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>

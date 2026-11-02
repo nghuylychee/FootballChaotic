@@ -22,5 +22,6 @@
  "limits": "Người ghi bàn chạy sát mép trên sân (máy quay chạm biên) thì đầu nhân vật lên gần banner hơn, nhưng vẫn không đè trong các lần thử. Banner trên máy khách online cũng đổi theo (cùng hàm).",
  "videoNote": "Xem lúc 'GOAL!' hiện (giây ~1.5–3): bản trước chữ nằm trên đầu người ghi bàn, bản sau chữ ở sát dưới bảng tỉ số.",
  "before": "videos/match-10-before.mp4",
- "after": "videos/match-10-after.mp4"
+ "after": "videos/match-10-after.mp4",
+ "status": "dropped"
 }

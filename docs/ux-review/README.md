@@ -1,6 +1,6 @@
 # UX REVIEW 2026-11 — 39 vấn đề UX, mỗi cái có patch + video trước / sau
 
-> Trạng thái: **ĐANG CHỜ OWNER GÓP Ý** trên trang báo cáo. Chưa patch nào vào main.
+> Trạng thái: **ĐÃ CÓ GÓP Ý, ĐÃ ÁP** (38 giữ, `match-10` bỏ) lên nhánh `ux/review-2026-11`, chưa commit, chưa vào main. Xem Nhật ký.
 > Báo cáo + góp ý: https://claude.ai/artifact/EYNsTsNyUQthDuEF581yfe (artifact private của owner, cùng tài khoản claude.ai mới mở / đọc được)
 > Base của mọi patch: commit `1f2d1f3` (main ngày 2026-11-02).
 
@@ -22,6 +22,7 @@ Owner thấy UX cả game chưa được tút lại, nêu 6 chỗ (trang chủ 3
 ## Nhật ký
 
 - 2026-11-02 — Review + sửa thử + quay video + publish báo cáo. Chưa có góp ý.
+- 2026-11-02 — Góp ý của owner: 38 vấn đề `ok`, `match-10` `skip` (đã ghi `"status": "dropped"`), không có note. Áp 38 patch + `zz-integration` lên nhánh `ux/review-2026-11` (worktree `G:/FootballChaotic-ux`, chưa commit) ở máy khác máy tạo patch; build lại font ja; `node --check`, `i18n-check`, `manifest --check`, `npm run server:test` qua; mở thử trong Chrome headless (menu, TROPHY ROOM, ACHIEVEMENTS, map, mọi thẻ che, KIT VAN, trận `?runtest=match`, `?playtest`) không có lỗi JS. Báo cáo trên artifact chưa build lại (video không có ở máy này), nên `match-10` vẫn hiện trên trang.
 <!-- mỗi lần xử lý góp ý: thêm 1 dòng ở đây (ngày · vấn đề nào giữ / sửa lại / bỏ · đã áp vào đâu) -->
 
 ## Đọc góp ý của owner
@@ -57,6 +58,8 @@ Phụ thuộc (mỗi nhóm là 1 agent; patch trong nhóm làm nối tiếp nhau
 - Thẻ che / KIT VAN: `user-04 → run-01 → run-04 → run-03 → run-08 → run-10 → run-05 → run-06`, xếp chồng.
 - `zz-integration` chỉ khi giữ cả `match-02` và `match-08`.
 Bỏ 1 patch giữa nhóm xếp chồng: áp các patch sau bằng `--3way`, chỗ nào xung đột thì sửa tay (thường chỉ là ngữ cảnh lệch).
+
+**Áp ở máy khác máy tạo patch:** `--3way` cần các bản file trung gian của worktree agent, chỉ có ở máy đã tạo patch. Ở máy khác, nhóm KIT VAN (`run-03`, `run-08`, `run-10`, `run-06`) báo "repository lacks the necessary blob" rồi hỏng, vì nhóm map cũng sửa `runmap.js` / `style.css`. Cách đã dùng (2026-11-02, gộp không xung đột): commit tạm A = main + nhóm KIT VAN, commit tạm B = main + mọi patch còn lại (kể cả `zz-integration`), `git merge A` vào B, rồi lấy `git diff --binary main` làm kết quả. Bỏ `match-10` thì `match-11` vẫn áp sạch.
 
 Main đã đi tiếp so với `1f2d1f3` thì `--3way` vẫn thường áp được; xung đột thì sửa tay theo ý của patch (mỗi `issues/<id>.json` mô tả cách sửa bằng lời).
 

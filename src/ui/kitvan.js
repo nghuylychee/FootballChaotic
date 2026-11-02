@@ -27,6 +27,8 @@ window.SFC = window.SFC || {};
   const KIT_X = (k) => 44 + k * 22;
   // tài xế: ngoại hình riêng (không phải đồng đội)
   const DRIVER = { hair: 'buzz', face: 'beard', skin: 3 };
+  // tài xế ngồi: đỉnh bộ đệm 40x44 (chân ở y 40 trong bộ đệm) hạ xuống để bậu cửa (y 80) cắt ngang ngực
+  const SEAT_Y = 46;
 
   let cv = null, L = null, raf = 0, last = 0, T = 0;
   // trạng thái vẽ (KitVan.html cập nhật mỗi lần RunUI vẽ lại): items [{ id, price, sold, hot, key }] · kits [{ key }] · hover = key đang trỏ
@@ -105,14 +107,15 @@ window.SFC = window.SFC || {};
     L.drawImage(iconCv(iconKey(it)), x + 3, y + 6);
   }
   // thẻ giá bìa cát-tông treo dây: đồng xu + số · HOT = thẻ đỏ · đã bán = chữ SOLD đỏ
-  function tag(cx, y, price, hot, sold) {
-    const label = sold ? 'SOLD' : String(price), w = textW(label) + (sold ? 4 : 8), x = cx - 2;
+  // · không đủ tiền (poor, UX review 2026-11-02) = bìa xám tối, số đỏ, xu xám (món trên móc giữ nguyên màu để vẫn ngắm được)
+  function tag(cx, y, price, hot, sold, poor) {
+    const label = sold ? 'SOLD' : String(price), w = textW(label) + (sold ? 4 : 8), x = cx - 2, dim = poor && !sold;
     P(cx, y - 4, 1, 4, '#e8dcc4');
-    P(x, y, w, 9, '#3a2410'); P(x + 1, y + 1, w - 2, 7, hot && !sold ? '#ff3d5a' : '#d8b27a'); P(x + 1, y + 7, w - 2, 1, hot && !sold ? '#b8202e' : '#a8824a');
+    P(x, y, w, 9, '#3a2410'); P(x + 1, y + 1, w - 2, 7, dim ? '#5a5060' : hot && !sold ? '#ff3d5a' : '#d8b27a'); P(x + 1, y + 7, w - 2, 1, dim ? '#3e3646' : hot && !sold ? '#b8202e' : '#a8824a');
     P(x + 2, y + 2, 1, 1, '#3a2410');
     if (sold) return text(label, x + 2, y + 2, '#c8202e');
-    disc(x + 5, y + 4, 1, '#ffd23f'); P(x + 4, y + 3, 1, 1, '#fff3a8');
-    text(label, x + 8, y + 2, hot ? '#fff' : '#3a2410');
+    disc(x + 5, y + 4, 1, dim ? '#9a90a0' : '#ffd23f'); P(x + 4, y + 3, 1, 1, dim ? '#c8c0cc' : '#fff3a8');
+    text(label, x + 8, y + 2, dim ? '#ff5a6e' : hot ? '#fff' : '#3a2410');
   }
   function hotSticker(x, y) {
     P(x, y, 15, 9, O); P(x + 1, y + 1, 13, 7, '#ff3d5a'); P(x + 1, y + 7, 13, 1, '#b8202e');
@@ -272,6 +275,19 @@ window.SFC = window.SFC || {};
     }
   }
 
+  /* ---------- ghế lái sau lưng tài xế (tựa đầu + lưng ghế) · bậu cửa cabin che người từ ngực trở xuống + 2 bàn tay tì lên bậu ---------- */
+  function seat(dy) {
+    P(265, 63 + dy, 10, 7, O); P(266, 64 + dy, 8, 5, '#4a3a58'); P(266, 64 + dy, 8, 1, '#6a5a7c');   // tựa đầu
+    P(268, 70 + dy, 4, 2, O);
+    P(263, 72 + dy, 14, 9, O); P(264, 73 + dy, 12, 8, '#4a3a58'); P(264, 73 + dy, 12, 1, '#6a5a7c'); P(274, 73 + dy, 2, 8, '#2e2238');
+  }
+  function sill(dy) {
+    const y = 80 + dy, skin = driverLook.skin;
+    P(239, y, 42, 1, O); P(239, y + 1, 42, 4, '#2a9c94'); P(239, y + 1, 42, 1, '#5fd6c8');   // màu thân xe (paintStatic)
+    // 2 bàn tay đặt trên mép bậu (ngay dưới 2 cánh tay của sprite)
+    for (const hx of [252, 265]) { P(hx, y - 2, 5, 4, O); P(hx + 1, y - 1, 3, 2, skin); P(hx + 1, y - 1, 3, 1, mix(skin, '#ffffff', 0.25)); }
+  }
+
   /* ---------- vẽ mỗi khung ---------- */
   let buf = null, driverLook = null;
   function frame(now) {
@@ -286,10 +302,12 @@ window.SFC = window.SFC || {};
     L.drawImage(wheels, 0, 0);
     drawSmoke(dy);
     text('KIT VAN', 137 - textW('KIT VAN', 2) / 2, 12 + dy, O, 2);
-    // tài xế trong cabin (cắt theo khung kính) + vệt kính phản chiếu
+    // tài xế NGỒI trong cabin (UX review 2026-11-02): hạ thấp người, bậu cửa che từ ngực trở xuống, khuỷu tay gác lên bậu + vệt kính phản chiếu
     SFC.Sprites.drawAvatar(buf, driverLook, kit, T, Math.PI * 0.82, null, true);   // flat: cảnh pixel 1x
-    L.save(); L.beginPath(); L.rect(239, 59 + dy, 42, 26); L.clip(); L.drawImage(buf, 240, 44 + dy); L.restore();
+    seat(dy);
+    L.save(); L.beginPath(); L.rect(239, 59 + dy, 42, 21); L.clip(); L.drawImage(buf, 240, SEAT_Y + dy); L.restore();
     for (let k = 0; k < 6; k++) { P(268 - k, 60 + k * 2 + dy, 2, 2, 'rgba(255,255,255,0.45)'); P(276 - k, 60 + k * 2 + dy, 1, 2, 'rgba(255,255,255,0.3)'); }
+    sill(dy);
     if (Math.floor(T * 8) % 23 === 0) P(296, 41, 6, 2, '#a89a6a');   // đèn đường chập chờn
     // hàng treo: món đang bị tay với tới vẫn treo trên móc tới lúc nắm
     const reaching = hand.mode === 'reach' && hand.item;
@@ -299,13 +317,13 @@ window.SFC = window.SFC || {};
       const onHook = !s.sold || (reaching && hand.item.kind === 'item' && hand.item.i === i);
       const lit = S.hover === s.key && !s.sold, lift = (lit ? -1 : 0) + dy;
       if (onHook) { patch(s, x - 10, 51 + lift, lit); if (s.hot) hotSticker(x + 3, 47 + lift); }
-      tag(x + 4, 79 + dy, s.price, s.hot, s.sold && !onHook);
+      tag(x + 4, 79 + dy, s.price, s.hot, s.sold && !onHook, s.poor);
     });
     // hộp cứu thương trên quầy + thẻ giá treo mép quầy
     S.kits.forEach((k, i) => {
       if (hand.carry && hand.carry.kind === 'kit' && hand.carry.i === i) return;
       medkit(KIT_X(i) - 9, 96 + dy, S.hover === k.key);
-      tag(KIT_X(i), 117 + dy, S.kitPrice, false, false);
+      tag(KIT_X(i), 117 + dy, S.kitPrice, false, false, k.poor);
     });
     if (reaching && hand.item.kind === 'kit' && !S.kits[hand.item.i]) medkit(KIT_X(hand.item.i) - 9, 96 + dy, false);   // đã chữa (hết hộp) nhưng tay chưa tới
     // tay + món đồ đang nắm
@@ -319,13 +337,14 @@ window.SFC = window.SFC || {};
 
   const KitVan = {
     // khung toàn màn (640x360): canvas + vùng bấm (data-rt = mục của RunUI) + bong bóng thoại + tiền + chân (nút LEAVE / DONE)
-    // o: { items: [{ id, g?, r?, price, sold, hot, key, say: [tiêu đề, câu] }] (g = GEAR, r = độ hiếm), kits: [{ key, say }], kitPrice, cash (html), foot (html),
+    // o: { items: [{ id, g?, r?, price, sold, hot, poor, key, say: [tiêu đề, câu, nhãn loại, kiểu nhãn] }] (g = GEAR, r = độ hiếm, poor = không đủ tiền),
+    //      kits: [{ key, say, poor }], kitPrice, cash (html), foot (html),
     //      sel: key đang chọn bằng phím, idle: câu chào }
     html(o) {
       S.items = o.items; S.kits = o.kits; S.kitPrice = o.kitPrice;
       if (o.sel !== S.talkKey) S.talk = null;   // câu tài xế vừa nói chỉ giữ khi vẫn đang chọn món đó
       S.hover = o.sel || null;
-      const hit = (key, x, y, w, h, say) => `<button class="kv-hit" data-rt="${key}" data-sb="${esc(say[0] || '')}" data-sl="${esc(say[1] || '')}"
+      const hit = (key, x, y, w, h, say) => `<button class="kv-hit" data-rt="${key}" data-sb="${esc(say[0] || '')}" data-sl="${esc(say[1] || '')}" data-sk="${esc(say[2] || '')}" data-sc="${esc(say[3] || '')}"
           style="left:${x * 2}px;top:${y * 2}px;width:${w * 2}px;height:${h * 2}px"></button>`;
       const hits = o.items.map((s, i) => (s.key ? hit(s.key, HOOK_X(i) - 11, 46, 22, 42, s.say) : '')).join('')
         + o.kits.map((k, i) => hit(k.key, KIT_X(i) - 10, 93, 20, 26, k.say)).join('');
@@ -338,7 +357,8 @@ window.SFC = window.SFC || {};
           <div class="kv-cash">${o.cash}</div><div class="kv-foot">${o.foot}</div>
         </div>`;
     },
-    bubble(say) { return (say[0] ? `<b>${esc(say[0])}</b>` : '') + `<p>${esc(say[1] || '')}</p>`; },
+    // say = [tiêu đề, câu, nhãn loại món, kiểu nhãn 'badge' (cả đội, bo tròn như miếng vá) | 'gear' (1 người, góc vát như thẻ treo)]
+    bubble(say) { return (say[0] ? `<b>${esc(say[0])}</b>` : '') + `<p>${esc(say[1] || '')}</p>` + (say[2] ? `<em class="kv-kind ${esc(say[3] || '')}">${esc(say[2])}</em>` : ''); },
     // sau khi vẽ DOM: gắn canvas vào vòng vẽ, trỏ chuột vào vùng bấm = bong bóng giải thích (onHover: RunUI đổi mục đang chọn, không vẽ lại)
     bind(root, onHover) {
       const el = root.querySelector('.kv-page canvas.kv-lo');
@@ -349,7 +369,7 @@ window.SFC = window.SFC || {};
       if (!raf) { last = 0; raf = requestAnimationFrame(frame); }
       const bub = root.querySelector('.kv-bubble');
       root.querySelectorAll('.kv-hit').forEach((h) => {
-        h.addEventListener('mouseenter', () => { S.hover = h.dataset.rt; S.talk = null; bub.innerHTML = this.bubble([h.dataset.sb, h.dataset.sl]); if (onHover) onHover(h.dataset.rt); });
+        h.addEventListener('mouseenter', () => { S.hover = h.dataset.rt; S.talk = null; bub.innerHTML = this.bubble([h.dataset.sb, h.dataset.sl, h.dataset.sk, h.dataset.sc]); if (onHover) onHover(h.dataset.rt); });
         h.addEventListener('mouseleave', () => { if (S.hover === h.dataset.rt) S.hover = null; bub.innerHTML = this.bubble(S.talk || ['', S.idle]); });
       });
     },
@@ -364,6 +384,7 @@ window.SFC = window.SFC || {};
       if (this.busy()) return;
       const x = kind === 'kit' ? KIT_X(i) : HOOK_X(i), y = kind === 'kit' ? 99 : 65;
       Object.assign(hand, { mode: 'reach', t: 0, x: x + 8, y: 200, from: { x: x + 8, y: 200 }, to: { x, y }, carry: null, item: { kind, i, id }, at: performance.now() });
+      if (kind === 'item' && S.items[i]) S.items[i].sold = true;   // món đã mua: rời móc khi tay nắm (mua GEAR: RunUI giữ Shop, không vẽ lại ngay)
     },
     // tay đang lấy món (quá 1.5 giây = vòng vẽ bị dừng giữa chừng, coi như xong để không khoá Shop)
     busy() { return hand.mode !== 'idle' && performance.now() - hand.at < 1500; },

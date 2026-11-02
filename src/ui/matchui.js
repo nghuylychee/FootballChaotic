@@ -6,7 +6,7 @@
 window.SFC = window.SFC || {};
 
 (function () {
-  const { $, esc, CORES, coreChip, traitList, miniCard } = SFC.UIHelpers;
+  const { $, esc, CORES, PX, coreChip, traitList, miniCard } = SFC.UIHelpers;
   const _t = SFC.t;   // dịch theo ngôn ngữ đang chọn (engine/i18n.js)
 
   // nút Pause mặc định — main.js -> beginMatch đặt lại (đã dịch) mỗi lần vào trận
@@ -39,6 +39,7 @@ window.SFC = window.SFC || {};
         this.rwFocus = false;
         this.el.end.classList.remove('outro', 'rw-focus', 'sb-shown');
       }
+      if (name === 'draft' && this.current !== 'draft') this.draftArm();   // màn chọn hiện ra (cả lúc quay lại từ Pause): chặn phím chốc lát
       ['menu', 'draft', 'pause', 'end'].forEach((k) => this.el[k].classList.toggle('hidden', k !== name));
       this.el.hud.classList.toggle('hidden', name === 'menu' || name === 'end');
       if (name === 'menu' || name === 'end') this.el.abar.classList.add('hidden');
@@ -54,6 +55,8 @@ window.SFC = window.SFC || {};
     /* ================= PAUSE / MENU TRONG TRẬN ================= */
     // Pause: build hiện tại — bên trái Cộng hưởng đạt mốc mấy (kèm hiệu ứng), bên phải các lá Core đang có (ô trống: ???)
     renderPause() {
+      this.forfeitArm = false;   // mở Pause: FORFEIT luôn về bước 1
+      clearTimeout(this.forfeitTimer);
       const g = this.app.game, me = g ? g.humanTeam : -1;
       const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${esc(l)}</button>`).join('');
       let build = '';
@@ -78,7 +81,29 @@ window.SFC = window.SFC || {};
         ${this.online || this.ranked ? `<div class="pause-note">${esc(_t('Online matches keep running'))}</div>` : ''}
         ${build}
         <div class="pause-items row-items pause-foot">${items}</div>`;
+      // dải "trận này" ngay dưới bảng build (pauseMatch)
+      const rows = this.el.pause.querySelector('.pause-rows'), extra = rows && this.pauseMatch(g);
+      if (extra) rows.insertAdjacentHTML('afterend', extra);
       SFC.CorePreview.scan(this.el.pause);
+    },
+
+    // Pause · dải "trận này" (GOAT PATH / FOOTBALL STORY): luật sân của đối thủ (tên + gợi ý) · LEGEND của bạn (kỹ thuật + phím + nhược
+    // điểm) · BADGE của cả đội (icon, mô tả ở tooltip). Banner luật sân chỉ hiện 1 lần lúc bóng lăn và thanh kỹ năng không nhận chuột
+    // -> Pause là chỗ đọc lại. Không có gì thì không vẽ. Nằm riêng giữa bảng build và hàng nút, không đụng nút Pause
+    pauseMatch(g) {
+      const out = [], RU = SFC.RunUI, mod = g.opts.mod && SFC_CONFIG.stories.mods[g.opts.mod];
+      if (mod) {
+        const opp = g.teams[1 - g.humanTeam];
+        out.push(`<div class="pm-box pm-rule" style="--c:${opp.cfg.kit.shirt}"><p><b>${PX().ui('whistle', 'sm')}${esc(mod.name)}</b> ${esc(mod.hint)}</p></div>`);
+      }
+      const p = g.cores.seatOwner(g.me), L = p && p.legend && SFC.Run && SFC.Run.legend(p.legend);
+      if (L && RU) out.push(`<div class="pm-box pm-leg" style="--lc:${L.color}"><h5 title="${esc(L.title + ' · ' + L.flawDesc)}">${esc(L.name)}</h5><div>${RU.comboChip(L)}${RU.flawChip(L)}</div></div>`);
+      const bds = RU ? this.runBadges(g) : [], RAR = SFC_CONFIG.progression.rarities;
+      if (bds.length) {
+        const icons = bds.map((b) => `<span class="sq-b" style="--rc:${RAR[SFC.Run.badge(b.id).rarity].color}" data-tip="${esc(RU.badgeTip(b.id, b.up))}">${RU.badgeIcon(b.id, '')}</span>`).join('');
+        out.push(`<div class="pm-box pm-bds"><h5>${esc(_t('TEAM BADGES'))}</h5><div>${icons}</div></div>`);
+      }
+      return out.length ? `<div class="pause-match">${out.join('')}</div>` : '';
     },
 
     // đổi nút đang chọn mà không vẽ lại (giữ ảnh động của các lá Core)
@@ -90,11 +115,53 @@ window.SFC = window.SFC || {};
       // cần phải tay cầm: cuộn bảng build (chuột: con lăn, bảng có thanh cuộn)
       const ry = SFC.Pad ? SFC.Pad.rstickY : 0, box = ry && this.el.pause.querySelector('.pb-traits');
       if (box) box.scrollTop += ry * 5;
+      // không vòng quanh: trái ở RESUME thì đứng yên (không nhảy sang FORFEIT ở cuối hàng)
       const n = this.pauseItems.length;
-      if (input.wasPressed('up') || input.wasPressed('left')) { this.pauseSel = (this.pauseSel + n - 1) % n; this.setPauseSel(); }
-      if (input.wasPressed('down') || input.wasPressed('right')) { this.pauseSel = (this.pauseSel + 1) % n; this.setPauseSel(); }
+      if (input.wasPressed('up') || input.wasPressed('left')) { this.pauseSel = Math.max(0, this.pauseSel - 1); this.setPauseSel(); }
+      if (input.wasPressed('down') || input.wasPressed('right')) { this.pauseSel = Math.min(n - 1, this.pauseSel + 1); this.setPauseSel(); }
       if (input.wasPressed('pause') || input.wasPressed('back')) return this.app.resume();
-      if (input.wasPressed('confirm')) this.doAct(this.pauseItems[this.pauseSel][0]);
+      if (input.wasPressed('confirm')) this.pauseAct(this.pauseItems[this.pauseSel][0]);
+    },
+
+    // FORFEIT / GIVE UP trong Pause bấm 2 lần (như FORFEIT RUN ở tab GOAT PATH, LEAVE ROOM): lần 1 = CONFIRM FORFEIT đỏ
+    // + dòng hậu quả trên nút, 3 giây không bấm lại thì về như cũ; lần 2 mới bỏ trận
+    pauseAct(act) {
+      if (act === 'forfeit' && !this.forfeitArm) {
+        SFC.Audio.menu();
+        this.forfeitArm = true;
+        clearTimeout(this.forfeitTimer);
+        this.forfeitTimer = setTimeout(() => { this.forfeitArm = false; this.renderForfeit(); }, 3000);
+        this.renderForfeit();
+        return;
+      }
+      this.forfeitArm = false;
+      clearTimeout(this.forfeitTimer);
+      this.doAct(act);
+    },
+    // đổi nút FORFEIT + dòng cảnh báo tại chỗ (không vẽ lại cả Pause -> giữ ảnh động các lá Core)
+    renderForfeit() {
+      const i = this.pauseItems.findIndex(([k]) => k === 'forfeit');
+      const b = i >= 0 && this.el.pause.querySelectorAll('.pause-items button')[i];
+      if (!b) return;
+      // giữ bề rộng nút khi đổi chữ: chuột bấm lần 2 vẫn trúng nút, hàng nút không xô lệch
+      b.style.minWidth = this.forfeitArm ? b.offsetWidth + 'px' : '';
+      b.classList.toggle('danger', !!this.forfeitArm);
+      b.textContent = this.forfeitArm ? _t('CONFIRM FORFEIT') : this.pauseItems[i][1];
+      let w = this.el.pause.querySelector('.pause-warn');
+      const note = this.forfeitArm ? this.forfeitNote() : '';
+      if (!note) { if (w) w.remove(); return; }
+      if (!w) { w = document.createElement('div'); w.className = 'pause-warn'; this.el.pause.appendChild(w); }
+      w.textContent = note;
+    },
+    // bỏ trận thì mất gì (chuỗi có sẵn ở tab GOAT PATH / FOOTBALL STORY / trận xếp hạng)
+    forfeitNote() {
+      const o = (this.app.game && this.app.game.opts) || {};
+      if (o.mainPath) return _t('Forfeit counts as a loss.');
+      if (o.cup) return _t('Quit this cup? Your progress in this run will be lost.');
+      if (o.trial) return '';
+      if (o.drill) return `${_t('FAIL')} · ${_t('An injury')}`;
+      if (o.run) return _t('Forfeit this run? It counts as a loss.');
+      return '';
     },
 
     consume(game) {
@@ -159,10 +226,35 @@ window.SFC = window.SFC || {};
         }
         const btn = e.target.closest('[data-act],[data-pick]');
         if (!btn) return;
+        if (btn.dataset.act && btn.closest('#pause')) return this.pauseAct(btn.dataset.act);   // FORFEIT bấm 2 lần
         if (btn.dataset.pick != null && this.app.game) return this.pick(this.app.game, +btn.dataset.pick);
         if (this.pendingReveal && btn.closest('#end')) return this.openReveal();   // còn thẻ chưa mở
         this.doAct(btn.dataset.act);
       });
+      // rê chuột = chọn (lá Core ở màn chọn, nút Pause): chuột và phím dùng chung 1 lựa chọn, Enter lấy đúng cái đang trỏ.
+      // Chỉ khi chuột thật sự di chuyển: màn vừa mở dưới con trỏ đứng yên không cướp lựa chọn của phím / tay cầm
+      let mx = -1, my = -1;
+      document.addEventListener('mousemove', (e) => {
+        if (e.clientX === mx && e.clientY === my) return;
+        mx = e.clientX; my = e.clientY;
+        this.hoverSel(e.target);
+      });
+    },
+
+    hoverSel(el) {
+      if (!el || !el.closest) return;
+      const card = el.closest('#draft .card[data-pick]'), g = this.app.game;
+      if (card) {
+        const i = +card.dataset.pick, d = g && g.draft;
+        if (this.current !== 'draft' || !d || d.picked[g.me] || this.draftAnimActive || this.draftMorphActive || i === this.draftSel) return;
+        SFC.Audio.menu();
+        this.setDraftSel(i);
+        return;
+      }
+      const b = el.closest('#pause .pause-items button');
+      if (!b || this.current !== 'pause') return;
+      const i = [...b.parentNode.children].indexOf(b);
+      if (i >= 0 && i !== this.pauseSel) { this.pauseSel = i; this.setPauseSel(); }
     },
   };
 

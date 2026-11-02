@@ -213,9 +213,9 @@
           SFC.UI.banner(SFC.Cup.roundName(opts.cup.round), `${st ? st.name : ''} · ${vsAway}`, st ? st.color : '#ffe14f', 1.8);
         }
         else if (opts.drill) {
-          // LEGEND TRIAL: tên kỹ thuật cho mượn + số lần cần làm (màu LEGEND)
+          // LEGEND TRIAL: tên kỹ thuật cho mượn + số lần cần làm (màu LEGEND) + tổ hợp phím (theo phím đang gán, Input.techKeys)
           const D = SFC_CONFIG.run.drills[opts.drill], LG = opts.trial && SFC.Run.legend(opts.trial), K = LG && SFC_CONFIG.legends.techniques[LG.tech];
-          if (K) SFC.UI.banner(K.name, _t('Pull it off {n} times', { n: this.game && this.game.drill ? SFC.Drills.top(this.game.drill) : LG.trial.goal }), LG.color, 2.4);
+          if (K) SFC.UI.banner(K.name, _t('Pull it off {n} times', { n: this.game && this.game.drill ? SFC.Drills.top(this.game.drill) : LG.trial.goal }) + ' · ' + SFC.Input.techKeys(K), LG.color, 2.4);
           else SFC.UI.banner(D.name, D.desc, '#6bff4f', 2.4);
         }
         else if (opts.run) {
@@ -327,6 +327,8 @@
     if (app.screen === 'menu') {
       app.demo.update(dt, null);
       app.demo.events.length = 0;
+      // ngoài trang chủ: bỏ chữ bật ra của trận demo (SMASH!, SAVE!...) để chữ to không nhảy sau bảng / chữ menu
+      if (SFC.Menu.page !== 'home') app.demo.effects.V.pops.length = 0;
       if (app.demo.state === 'ended') app.newDemo();
       SFC.Menu.animate(dt);
       // popup chọn ngôn ngữ / màn DRILL mở trên menu (CHARACTER / STATS): nhận phím thay menu
@@ -364,6 +366,7 @@
       if (live && app.game === g && g.state === 'draft') g.update(dt, SFC.Sync.NULL_INPUT);   // đồng hồ chọn Core
     } else {
       if (Input.wasPressed('pause')) return app.pause();
+      if (Input.wasPressed('ultimate')) SFC.UI.ultDeny(g);   // ô Tuyệt kỹ đầy mà đang tối: báo vì sao (chỉ UI)
       g.update(dt, Input);
     }
     // trận mơ PROLOGUE: kịch bản đọc sự kiện trước khi UI lấy đi

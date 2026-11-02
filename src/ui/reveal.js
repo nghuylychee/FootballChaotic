@@ -189,7 +189,7 @@ window.SFC = window.SFC || {};
         : it.src === 'area' ? `<div class="rv3-s-line">${PX().area(MP().area(it.area).id, 'sm')} ${_t('Reached {area}', { area: `<b>${esc(MP().area(it.area).name)}</b>` })}</div>`
         : it.src === 'road' ? `<div class="rv3-s-line">${_t('Reached {elo} in {area}', { elo: PX().elo(it.elo), area: `<b>${esc(MP().area(it.area).name)}</b>` })}</div>`
         : `<div class="rv3-s-line">★ ${esc(_t('New star in {area}', { area: MP().area(it.area).name }))}</div>`;
-      const key = `<kbd>${K('ultimate', 'X')}</kbd>`;
+      const key = `<kbd>${esc(SFC.Input.label('ultimate'))}</kbd>`;   // phím đang gán, không phải chữ X viết sẵn
       // Tuyệt kỹ (chỉ còn bí kíp gia truyền AURA FARMING): ai cũng mang từ đầu trận tới khi đạt công thức, nạp đầy rồi bấm X
       const isUlt = c.role === 'ult';
       const ult = isUlt ? `<div class="rv3-s-note">${_t('SIGNATURE ULTIMATE · ready from kickoff once charged, fire it with {key}', { key })}</div>` : '';

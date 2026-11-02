@@ -45,7 +45,7 @@ window.SFC = window.SFC || {};
       const tRev = 0.25 + STEP * k + 0.35;   // lúc lá Tuyệt kỹ lật ra
       // nâng cấp: luôn "EVOLVED" (thấy rõ là Tuyệt kỹ cũ mạnh lên) · lần đầu đạt công thức: "DISCOVERED"
       const title = evolved ? _t('ULTIMATE EVOLVED!') : fresh ? _t('NEW ULTIMATE DISCOVERED!') : _t('ULTIMATE UNLOCKED');
-      const keyHint = `<kbd>${esc(SFC.Input.key('ultimate', 'X'))}</kbd>`;
+      const keyHint = `<kbd>${esc(SFC.Input.label('ultimate'))}</kbd>`;   // phím đang gán, không phải chữ X viết sẵn
       const el = $('recipefx');
       el.innerHTML = `
         <div class="rfx ${hybrid ? 'hybrid' : ''}" style="--rev:${tRev.toFixed(2)}s" data-act="rfxskip">

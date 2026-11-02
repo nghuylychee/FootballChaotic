@@ -102,15 +102,23 @@ window.SFC = window.SFC || {};
       return K ? K.name : DRILL_UNITS()[D.cfg.goal] || '';
     },
     drillBox(game, D, time) {
+      // LEGEND TRIAL: tổ hợp phím của kỹ thuật phải làm, theo phím đang gán / tay cầm (Input.techKeys), ngay dưới số đếm.
+      // Đổi bàn phím <-> tay cầm: chuỗi đổi -> khoá HUD đổi -> tự vẽ lại
+      const K = D.tech && SFC_CONFIG.legends.techniques[D.tech];
+      return `<div class="hud-drill">
+          <div class="hd-time">${esc(time)}</div>
+          ${this.drillTrack(D)}
+          ${K && SFC.RunUI ? `<div class="hd-keys">${SFC.RunUI.keyCaps(K)}</div>` : ''}
+        </div>`;
+    },
+    // thanh 3 mốc + "số đếm / mốc kế" (HUD trong bài + màn kết quả Skill game, endscreen.js)
+    drillTrack(D) {
       const T = D.cfg.tiers, TC = SFC_CONFIG.run.tiers, v = SFC.Drills.shown(D), max = SFC.Drills.top(D);
       const next = T.find((x) => v < x), lbl = this.drillUnit(D), L = D.trial && SFC.Run.legend(D.trial);
       // LEGEND TRIAL: 1 mốc duy nhất màu của LEGEND
       const marks = T.map((x, i) => `<u class="${v >= x ? 'on' : ''}" style="left:${(x / max) * 100}%;--mc:${L ? L.color : TC[i].color}" title="${esc(L ? L.name : TC[i].name)}">${x}</u>`).join('');
-      return `<div class="hud-drill">
-          <div class="hd-time">${esc(time)}</div>
-          <div class="hd-bar"><i style="width:${Math.min(100, (v / max) * 100)}%"></i>${marks}</div>
-          <div class="hd-val"><b>${v}</b>${next != null ? ` / ${next}` : ''} <em>${esc(lbl)}</em></div>
-        </div>`;
+      return `<div class="hd-bar"><i style="width:${Math.min(100, (v / max) * 100)}%"></i>${marks}</div>
+          <div class="hd-val"><b>${v}</b>${next != null ? ` / ${next}` : ''} <em>${esc(lbl)}</em></div>`;
     },
 
     // build trên HUD: đội của người chơi = tiến độ công thức Tuyệt kỹ kiểu TFT của cầu thủ mình;
@@ -260,6 +268,30 @@ window.SFC = window.SFC || {};
           }
         }
       }
+    },
+
+    // bấm phím Tuyệt kỹ lúc ô đầy mà đang tối (sai luật cầm bóng · choáng · bị khoá hành động): ô rung + tiếng "bụp" và, nếu là
+    // sai luật cầm bóng, 1 dòng nhỏ trên ô nói phải làm gì (~1.3 s). Chỉ lớp UI: main.js / OnlineUI.tick gọi lúc phím vừa nhấn,
+    // không đụng mô phỏng / sync (khách online đọc từ trận gương). Luật dùng không hiện thường trực trên HUD (user 2026-10-17)
+    ultDeny(game) {
+      const p = game && game.controlled, c = this.hudCache.bar, C = game && game.cores;
+      if (!p || !c || !c.ult || !C.ultOf(p) || C.ultE(p) < 1) return;
+      const rule = C.ultBlocked(p) && C.ultUse(C.ultOf(p));
+      if (!rule && p.state !== 'stun' && !(p.noActT > 0)) return;
+      c.ult.classList.remove('deny'); void c.ult.offsetWidth; c.ult.classList.add('deny');
+      const now = performance.now();
+      if (!(now - (c.denyAt || 0) < 250)) SFC.Audio.deny();   // bấm dồn: không chồng tiếng
+      c.denyAt = now;
+      if (c.why) { c.why.remove(); c.why = null; clearTimeout(c.whyT); }
+      if (!rule) return;
+      // dòng chữ nằm trong #abar (không trong ô: ô tối có filter / opacity sẽ làm mờ luôn chữ)
+      const w = document.createElement('span');
+      w.className = 'ult-why';
+      w.textContent = rule === 'ball' ? _t('Use it while you hold the ball') : _t('Use it only without the ball');
+      w.style.left = (c.ult.offsetLeft + c.ult.offsetWidth / 2) + 'px';
+      this.el.abar.appendChild(w);
+      c.why = w;
+      c.whyT = setTimeout(() => { w.remove(); if (c.why === w) c.why = null; }, 1300);
     },
 
     // ô LEGEND + dải BADGE (GOAT PATH). Ghi DOM chỉ khi đổi trạng thái

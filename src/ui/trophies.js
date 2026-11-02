@@ -118,6 +118,9 @@ window.SFC = window.SFC || {};
   };
   const clock = (s) => (s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '–');
   const storyCups = () => (SFC.Cup ? SFC.Cup.list().filter((s) => !s.soon && SFC.Cup.rec(s.id).wins > 0) : []);
+  // số thưởng ACHIEVEMENTS chờ nhận: cùng con số với nút cúp ở trang chủ, hiện lại ở mỗi bước tới nút CLAIM
+  const claimable = () => SFC.Achievements.claimable().length;
+  const dot = (n) => (n ? `<i class="tr2-new">${n}</i>` : '');
 
   const TrophyUI = {
     pages: ['trophy'],
@@ -126,6 +129,8 @@ window.SFC = window.SFC || {};
 
     open(menu) {
       this.view = 'room'; this.hx = null;
+      // có thưởng chờ nhận: đứng sẵn ở góc ALBUM, album mở sẵn trang ACHIEVEMENTS (Enter, Enter là tới danh sách)
+      if (claimable()) { this.zone = 1; this.page = 'ach'; }
       menu.msg = '';
       menu.go('trophy');
     },
@@ -149,7 +154,7 @@ window.SFC = window.SFC || {};
       const D = pageDef(), cups = [0, 1, 2].filter((i) => actRec(i).n).length + (stats().wins ? 1 : 0);
       const lab = [[_t('TROPHIES'), `${cups}/4`], [_t('ALBUM'), `${albumPct()}%`], [_t('RUNS'), String((stats().hist || []).length)]];
       void D;
-      return ZONES.map((z, i) => `<button class="tr2-zone ${i === this.zone ? 'on' : ''}" data-tz="${i}" style="left:${z.x * 2}px"><b>${esc(lab[i][0])}</b><em>${esc(lab[i][1])}</em></button>`).join('');
+      return ZONES.map((z, i) => `<button class="tr2-zone ${i === this.zone ? 'on' : ''}" data-tz="${i}" style="left:${z.x * 2}px"><b>${esc(lab[i][0])}</b><em>${esc(lab[i][1])}</em>${i === 1 ? dot(claimable()) : ''}</button>`).join('');
     },
     // kệ cúp: số lần + ngày đầu dưới mỗi cúp, cúp đang chọn có dòng chi tiết
     shelfDom() {
@@ -163,7 +168,8 @@ window.SFC = window.SFC || {};
         <div class="tr2-strip" style="--c:${sel.color}"><b>${esc(sel.name)}</b>
           <span title="${esc(sel.goat ? _t('GOAT runs') : _t('Bosses beaten'))}">${PX().ui(sel.goat ? 'trophy' : 'crown', 'sm')}${sel.n}</span>
           ${sel.first ? `<span title="${esc(_t('First'))}">${PX().ui('calendar', 'sm')}${esc(date(sel.first))}</span>` : ''}
-          <span class="tr2-med">${medals(sel.n)}</span></div>`;
+          <span class="tr2-med">${medals(sel.n)}</span>
+          ${sel.n ? '' : `<span class="tr2-how">${esc(sel.goat ? _t('Win a GOAT PATH run') : _t('Beat the boss of this act in GOAT PATH'))}</span>`}</div>`;
     },
     cupList() {
       const A = RC().acts, st = stats();
@@ -202,12 +208,14 @@ window.SFC = window.SFC || {};
         }).join('')}</div>`;
       } else {
         // ULTIMATES / ACHIEVEMENTS: số lớn + nút mở trang đầy đủ
+        const n = this.page === 'ach' ? claimable() : 0;
         left = `<div class="tr2-big" style="--c:${P0.c}">${PX().ui(P0.icon, 'x3')}<b>${P0.got}<em>/${P0.n}</em></b>
+          ${n ? `<span class="ac-new">${esc(_t('{n} TO CLAIM', { n }))}</span>` : ''}
           <button class="ac-act claim" data-topen="1">${esc(_t('OPEN'))}</button></div>`;
       }
       const idx = PAGES.map((k) => {
         const p = D[k];
-        return `<button class="tr2-idx ${k === this.page ? 'on' : ''}" data-tp="${k}" style="--c:${p.c}">${PX().ui(p.icon, 'sm')}<span>${esc(p.name)}<i><u style="width:${(p.got / Math.max(1, p.n)) * 100}%"></u></i></span><em>${p.got}/${p.n}</em></button>`;
+        return `<button class="tr2-idx ${k === this.page ? 'on' : ''}" data-tp="${k}" style="--c:${p.c}">${PX().ui(p.icon, 'sm')}<span>${esc(p.name)}<i><u style="width:${(p.got / Math.max(1, p.n)) * 100}%"></u></i></span><em>${p.got}/${p.n}</em>${k === 'ach' ? dot(claimable()) : ''}</button>`;
       }).join('');
       return `<div class="tr2-page l"><div class="tr2-ph" style="--c:${P0.c}"><b>${esc(P0.name)}</b><i><u style="width:${(P0.got / Math.max(1, P0.n)) * 100}%"></u></i></div>${left}</div>
         <div class="tr2-page r"><div class="tr2-ph"><b>${albumPct()}%</b></div>${idx}</div>`;
@@ -224,7 +232,7 @@ window.SFC = window.SFC || {};
         return `<button class="tr2-pol ${i === this.pol ? 'on' : ''}" data-tpol="${i}" style="--ac:${Ac.color}" title="${esc(date(h.d))}">
             <span class="tp-ph">${lg ? `<canvas class="lg" width="40" height="44" data-trlg="${lg}"></canvas>` : ''}${h.sq.map((q, qi) => `<canvas width="40" height="44" data-trsq="${i}.${qi}"></canvas>`).join('')}${res}</span>
             <span class="tp-cap"><b>${h.won ? 'GOAT' : esc(_t('ACT {n}', { n: h.act + 1 }))}</b><em>${h.my}-${h.op}</em></span><span class="tp-path">${path}</span></button>`;
-      }).join('') || `<div class="tr2-empty">${PX().ui('ball', 'x2')}</div>`;
+      }).join('') || `<div class="tr2-empty">${PX().ui('ball', 'x2')}<span class="tr2-note">${esc(_t('No runs yet · your GOAT PATH runs get pinned here'))}</span></div>`;
       // nemesis: đội loại bạn nhiều nhất · LEGEND hay dùng nhất (ô của bạn)
       const tally = (arr) => { const m = {}; for (const x of arr) if (x) m[x] = (m[x] || 0) + 1; return Object.keys(m).sort((a, b) => m[b] - m[a])[0] || null; };
       const nem = tally(H.map((h) => h.by)), fav = tally(H.map((h) => (h.sq.find((q) => q.you) || {}).lg));

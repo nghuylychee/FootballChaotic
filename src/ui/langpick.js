@@ -16,6 +16,7 @@ window.SFC = window.SFC || {};
     note: SFC.N_('You can change it anytime in SETTINGS.'),
     hintFirst: SFC.N_('↑↓ select · {ok} confirm'),
     hint: SFC.N_('↑↓ select · {ok} confirm · {back} back'),
+    back: SFC.N_('BACK'),
   };
 
   const LangPick = {
@@ -29,6 +30,7 @@ window.SFC = window.SFC || {};
       this.list = I().list();
       const want = this.first ? I().detect() : I().lang, now = I().lang;
       this.sel = Math.max(0, this.list.findIndex((l) => l.id === want));
+      this.home = this.sel;   // chuột rời danh sách -> quay về dòng này (hết xem trước)
       this.el = document.getElementById('langpick');
       if (!this.bound) this.bind();
       const rows = this.list.map((l, i) => `<button class="lp-row" data-lp="${i}" lang="${esc(l.id)}"><span>${esc(l.name)}</span>${
@@ -38,6 +40,7 @@ window.SFC = window.SFC || {};
           <div class="lp-list">${rows}</div>
           <div class="lp-note"></div>
           <div class="lp-hint"></div>
+          ${this.first ? '' : '<button class="lp-back" data-lpx="1"></button>'}
         </div>`;
       this.el.classList.remove('hidden');
       this.active = true;
@@ -56,6 +59,8 @@ window.SFC = window.SFC || {};
       this.el.querySelector('.lp-hint').innerHTML = this.first
         ? tr(TEXT.hintFirst, { ok: kbd('confirm', 'Enter') })
         : tr(TEXT.hint, { ok: kbd('confirm', 'Enter'), back: kbd('back', 'Esc') });
+      const b = this.el.querySelector('.lp-back');
+      if (b) { b.textContent = '◀ ' + tr(TEXT.back); b.setAttribute('lang', id); }
     },
 
     move(d) {
@@ -93,13 +98,19 @@ window.SFC = window.SFC || {};
       this.bound = true;
       this.el.addEventListener('click', (e) => {
         SFC.Audio.unlock();
+        if (!this.active) return;
+        // không phải lần đầu: nút ◀ BACK hoặc bấm ra ngoài khung = đóng, không đổi ngôn ngữ (như Esc)
+        if (!this.first && (e.target.closest('[data-lpx]') || !e.target.closest('.lp-box'))) { SFC.Audio.menu(); this.close(null); return; }
         const r = e.target.closest('[data-lp]');
-        if (r && this.active) this.pick(+r.dataset.lp);
+        if (r) this.pick(+r.dataset.lp);
       });
-      // rê chuột qua dòng nào thì xem trước dòng đó (không dựng lại các dòng -> cú bấm không bị mất)
+      // rê chuột qua dòng nào thì xem trước dòng đó (không dựng lại các dòng -> cú bấm không bị mất);
+      // chuột ra khỏi danh sách -> quay về dòng lúc mở (ngôn ngữ đang dùng) để không tưởng là đã đổi
       this.el.addEventListener('mousemove', (e) => {
+        if (!this.active) return;
         const r = e.target.closest('[data-lp]');
-        if (r && this.active && +r.dataset.lp !== this.sel) { this.sel = +r.dataset.lp; this.update(); }
+        const to = r ? +r.dataset.lp : e.target.closest('.lp-list') ? this.sel : this.home;
+        if (to !== this.sel) { this.sel = to; this.update(); }
       });
     },
   };

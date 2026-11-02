@@ -101,26 +101,37 @@ SFC_CONFIG.run = {
   // hot: mỗi Shop 1 món HOT ngẫu nhiên, giá x hot (0 / bỏ = không có)
   // gear: trong size món có ngần này GEAR (mua xong chọn người đeo)
   shop: { size: 5, gear: 2, price: { common: 40, rare: 70, epic: 110, legendary: 160 }, heal: 50, hot: 0.5 },
+  // upDesc: câu thay desc trên thẻ UPGRADE ở LOCKER ROOM + tooltip BADGE đã nâng cấp (UX review 2026-11-02: 1 dòng ngắn, không số,
+  // nói rõ bản + hơn bản thường chỗ nào)
   badges: {
     // bốc Core: lượt chọn
-    report:   { name: 'Scouting Report', rarity: 'rare', icon: 'book',   draftCards: 1, up: { draftCards: 1, rerolls: 1 }, desc: 'Every Core pick shows one more card.' },
-    coin:     { name: "Referee's Coin",  rarity: 'common', icon: 'target', rerolls: 1, up: { rerolls: 2 }, desc: 'One more reroll on every Core pick.' },
+    report:   { name: 'Scouting Report', rarity: 'rare', icon: 'book',   draftCards: 1, up: { draftCards: 1, rerolls: 1 }, desc: 'Every Core pick shows one more card.',
+                upDesc: 'One more card and a free reroll on every Core pick.' },
+    coin:     { name: "Referee's Coin",  rarity: 'common', icon: 'target', rerolls: 1, up: { rerolls: 2 }, desc: 'One more reroll on every Core pick.',
+                upDesc: 'Two more rerolls on every Core pick.' },
     // draftBonus: chọn Core sớm hơn 1 lượt (thêm 1 lượt trước giao bóng, bớt lượt cuối) — vẫn tối đa game.match.maxUpgrades Core (user 2026-10-30)
     camp:     { name: 'Pre-Season Camp', rarity: 'epic', icon: 'calendar', draftBonus: 1, desc: 'Your second Core pick comes before kickoff.' },
     // GEAR: thêm ô GEAR cho mọi người trong đội (run.gear.slots)
     kitbag:   { name: 'Kit Bag',        rarity: 'epic', icon: 'kitbag', gearSlots: 1, desc: 'Every player can wear one more GEAR.' },
     // trận
-    drink:    { name: 'Energy Drink',   rarity: 'epic', icon: 'boom', ultGain: 1.3, up: { ultGain: 1.5 }, desc: 'The whole team charges Ultimates faster.' },
+    drink:    { name: 'Energy Drink',   rarity: 'epic', icon: 'boom', ultGain: 1.3, up: { ultGain: 1.5 }, desc: 'The whole team charges Ultimates faster.',
+                upDesc: 'The whole team charges Ultimates even faster.' },
     crowd:    { name: 'Home Crowd',     rarity: 'legendary', icon: 'people', score: [1, 0], desc: 'Every match starts one goal up.' },
-    var:      { name: 'VAR Monitor',    rarity: 'legendary', icon: 'tv', varCheck: { n: 1, chance: 0.5 }, up: { varCheck: { n: 1, chance: 0.8 } }, desc: 'The first goal you concede each match may get ruled out.' },
-    watch:    { name: "Referee's Watch", rarity: 'rare', icon: 'whistle', addedTime: 20, up: { addedTime: 35 }, desc: 'Losing at the final whistle? Time gets added on.' },
+    var:      { name: 'VAR Monitor',    rarity: 'legendary', icon: 'tv', varCheck: { n: 1, chance: 0.5 }, up: { varCheck: { n: 1, chance: 0.8 } }, desc: 'The first goal you concede each match may get ruled out.',
+                upDesc: 'The first goal you concede likely gets ruled out.' },
+    watch:    { name: "Referee's Watch", rarity: 'rare', icon: 'whistle', addedTime: 20, up: { addedTime: 35 }, desc: 'Losing at the final whistle? Time gets added on.',
+                upDesc: 'Losing at the final whistle? Even more time gets added on.' },
     // run: tiền / phòng / chấn thương / bài tập
-    sponsor:  { name: 'Shirt Sponsor',  rarity: 'rare', icon: 'shop', winCash: 12, up: { winCash: 20 }, desc: 'Every win pays extra cash.' },
-    ticket:   { name: 'Season Ticket',  rarity: 'common', icon: 'card', shopOff: 0.2, up: { shopOff: 0.35 }, desc: 'Everything in the Shop costs less.' },
+    sponsor:  { name: 'Shirt Sponsor',  rarity: 'rare', icon: 'shop', winCash: 12, up: { winCash: 20 }, desc: 'Every win pays extra cash.',
+                upDesc: 'Every win pays even more cash.' },
+    ticket:   { name: 'Season Ticket',  rarity: 'common', icon: 'card', shopOff: 0.2, up: { shopOff: 0.35 }, desc: 'Everything in the Shop costs less.',
+                upDesc: 'Everything in the Shop costs much less.' },
     // off: không bốc ra (Locker Room đang ẩn, 2026-10-30)
     icebath:  { name: 'Ice Bath',       rarity: 'rare', icon: 'locker', restTwice: true, off: true, desc: 'The Locker Room lets you do two things.' },
-    shin:     { name: 'Shin Guards',    rarity: 'common', icon: 'gear', guard: 1, up: { guard: 2 }, desc: 'Blocks the first injury of each act.' },
-    bibs:     { name: 'Training Bibs',  rarity: 'common', icon: 'cone', drillEase: 0.2, up: { drillEase: 0.35 }, desc: 'Skill games and Legend trials get easier.' },
+    shin:     { name: 'Shin Guards',    rarity: 'common', icon: 'gear', guard: 1, up: { guard: 2 }, desc: 'Blocks the first injury of each act.',
+                upDesc: 'Blocks the first two injuries of each act.' },
+    bibs:     { name: 'Training Bibs',  rarity: 'common', icon: 'cone', drillEase: 0.2, up: { drillEase: 0.35 }, desc: 'Skill games and Legend trials get easier.',
+                upDesc: 'Skill games and Legend trials get much easier.' },
     // chấn thương
     ankle:    { name: 'Twisted Ankle',  injury: true, part: 'ankle', hurt: 'stumble', stats: { pace: -12 },              desc: 'Every step hurts.' },
     wrist:    { name: 'Sore Wrist',     injury: true, part: 'wrist', hurt: 'weak',    stats: { fight: -12 },             desc: 'Punches feel like pillows.' },

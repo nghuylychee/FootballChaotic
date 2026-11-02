@@ -204,6 +204,7 @@ Crowd volume follows the arena's crowd level (`render/crowd.js`). The settings l
 | `menu` | Move cursor, open or close panels | Tiny blip | UI click, menu select, retro blip | 1–2 |
 | `chalk` | GOAT PATH: a node is chalk-circled on the map | Three short scratchy noise strokes + a tap | chalk on board, chalk scribble, marker circle | 1–2 |
 | `pick` | Confirm a choice | Two-note confirm | UI confirm, accept | 1 |
+| `deny` | Ultimate pressed while its slot is dimmed (full but can't be used now) | Two low falling square blips | UI error, denied, buzzer short | 1 |
 | `upgrade` | Upgrade, level up, unlock | Rising 3-note arpeggio | level up, power up, upgrade | 1 |
 | `tick` | Gacha strip passing each slot, countdowns | Very short click | roulette tick, click short | 1 |
 | `reveal(r)` | Gacha / item reveal. `r` is rarity 0..4 | 2–6 note arpeggio; rarity 3+ adds a shimmer | loot reveal, item get, rare drop | 5 (one per rarity) or 2–3 tiers |

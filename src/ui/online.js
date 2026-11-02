@@ -72,6 +72,7 @@ window.SFC = window.SFC || {};
         else SFC.UI.endInput(input);
       }
       if (!on.game) return;   // vừa rời trận (FORFEIT / NEXT MATCH / LOBBY)
+      if (play === input && input.wasPressed('ultimate')) SFC.UI.ultDeny(g);   // ô Tuyệt kỹ đầy mà đang tối: báo vì sao
       on.tick(dt, play);
       // máy làm host: sự kiện trận (bàn thắng, banner...) sinh ra ở bước vừa chạy
       if (on.isHost && on.game) SFC.UI.consume(on.game);
