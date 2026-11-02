@@ -160,6 +160,9 @@ SFC_CONFIG.arenas = {
 
   // AREA 1 — Sân Làng: đất nện loang cỏ, hàng rào tre, ruộng lúa + núi xa lúc hoàng hôn. Lác đác vài người làng đội nón lá xem
   village: {
+    // vẽ bằng bộ cảnh SFC.Art.Village (src/render/art/village.js): trời, nhà, cây, người làng, tường, mặt sân, bóng đổ.
+    // Các trường màu sàn / tường / phông / đồ vật / khán giả bên dưới không còn được vẽ khi có scene; net, hole, goalNet, crowd.sound vẫn dùng
+    scene: 'Village',
     void: '#1c140c',
     floor: { style: 'dirt', size: 16, colors: ['#8a6a44', '#83643f', '#90704a', '#7d5f3b'], grass: ['#6b8f3a', '#7a9e44', '#5f8233'], grassPatches: 26, speckD: '#6e5232', speckL: '#a3825a', crack: '#6a4e30', cracks: 6, paint: 0.04 },
     line: 'rgba(250,245,225,0.62)',

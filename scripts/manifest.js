@@ -117,6 +117,10 @@ const FILES = [
   ['src/render/player/pose.js', 'game sandbox itch'],
   ['src/render/player/draw.js', 'game sandbox itch'],
   ['src/render/player/player.js', 'game sandbox itch'],
+  ['src/render/art/kit.js', 'game'],        // bộ cảnh vẽ bằng code: hàm vẽ chung (màu, hình, bóng đổ, chỉnh màu, viền tối)
+  ['src/render/art/npcs.js', 'game'],       // người làng + thú
+  ['src/render/art/props.js', 'game'],      // tường, nhà, cây, đồ vật
+  ['src/render/art/village.js', 'game'],    // cảnh Village (arena village, scene: 'Village')
   ['src/render/background.js', 'game sandbox itch'],
   ['src/render/crowd.js', 'game sandbox itch'],
   ['src/render/vfx.js', 'game sandbox itch'],

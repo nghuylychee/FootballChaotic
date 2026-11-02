@@ -94,7 +94,8 @@ window.SFC = window.SFC || {};
   const Crowd = {
     draw(ctx, g) {
       const C = crowdCfg(g);
-      if (!C || g.preview) return;   // ảnh động xem trước Core: không vẽ khán giả
+      // ảnh động xem trước Core: không vẽ khán giả. Arena có bộ cảnh: người làng đã vẽ trong cảnh (tiếng khán giả vẫn giữ)
+      if (!C || g.preview || SFC.Background.scene(g)) return;
       const s = g._crowd || (g._crowd = { fans: build(g, C), fx: [], rockets: [], sparks: [], booms: [], fwT: 0, last: performance.now() });
       const now = performance.now(), dt = Math.min(0.05, (now - s.last) / 1000);
       s.last = now;
@@ -214,7 +215,7 @@ window.SFC = window.SFC || {};
     // vẽ 1 lần (ảnh sân thu nhỏ ở menu): đứng yên, vài người giơ tay
     drawStatic(ctx, g) {
       const C = crowdCfg(g);
-      if (!C) return;
+      if (!C || SFC.Background.scene(g)) return;
       for (const p of build(g, C)) drawFan(ctx, p, 0, p.wave > 0.85);
       if (C.shade) this.shade(ctx, g, C);
       SFC.Background.fixtures(ctx, g);

@@ -9,6 +9,11 @@ window.SFC = window.SFC || {};
     const A = SFC_CONFIG.arenas;
     return A[g.opts && g.opts.arena] || A.street;
   }
+  // arena vẽ bằng bộ cảnh (src/render/art, arena.scene = tên cảnh trong SFC.Art): trả cảnh đó, không có thì null (vẽ theo màu như cũ)
+  function scene(g) {
+    const T = theme(g);
+    return (T.scene && SFC.Art && SFC.Art[T.scene]) || null;
+  }
 
   function build(g) {
     const W = SFC_CONFIG.game.render.width, H = SFC_CONFIG.game.render.height;
@@ -16,6 +21,9 @@ window.SFC = window.SFC || {};
     c.width = W; c.height = H;
     const x = c.getContext('2d');
     const f = g.field, T = theme(g);
+    // arena có bộ cảnh: sân khấu vẽ sẵn (trời, nhà, cây, người làng, tường, mặt sân, bóng đổ) thay cho mọi lớp bên dưới
+    const sc = scene(g);
+    if (sc) { x.drawImage(sc.stage(), 0, 0); return c; }
     const rnd = SFC.U.seeded(20260925);
     const { px, disc } = S();
 
@@ -870,8 +878,8 @@ window.SFC = window.SFC || {};
     }
   }
 
-  function vignette() {
-    const W = SFC_CONFIG.game.render.width, H = SFC_CONFIG.game.render.height;
+  // W x H: cỡ khung nhìn (mặc định màn 640 x 360; khung nhìn trận rộng hơn thì Renderer.setView dựng lại theo cỡ mới)
+  function vignette(W = SFC_CONFIG.game.render.width, H = SFC_CONFIG.game.render.height) {
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
     const x = c.getContext('2d');
@@ -896,5 +904,5 @@ window.SFC = window.SFC || {};
     return (thumbs[key] = c);
   }
 
-  SFC.Background = { build, vignette, thumb, theme, fixtures };
+  SFC.Background = { build, vignette, thumb, theme, scene, fixtures };
 })();

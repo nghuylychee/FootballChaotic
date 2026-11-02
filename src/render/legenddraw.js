@@ -242,7 +242,9 @@ window.SFC = window.SFC || {};
     // title (chữ to màu color), name (chữ trắng dưới), scale (thu nhỏ quanh góc trên của dải; mặc định 1), right (true = mép phải, lật gương:
     // Tuyệt kỹ của đội đứng nửa sân phải, user 2026-10-31) } — chữ đã dịch sẵn
     sideCut(ctx, g, s) {
-      const k = s.k, R = !!s.right, W = 640, X = (x) => (R ? W - x : x);
+      // bám mép trái / phải của khung nhìn (Renderer.setView: rộng hơn 640 thì mép ra ngoài màn 640 x 360)
+      const Sc = (SFC.Renderer && SFC.Renderer.screen) || { x: 0, w: 640 }, E = Sc.x + Sc.w;
+      const k = s.k, R = !!s.right, X = (x) => (R ? E - x : Sc.x + x);
       const slide = k < 0.12 ? 1 - k / 0.12 : k > 0.86 ? (k - 0.86) / 0.14 : 0;
       const wb = 292, hb = 74, yb = 92, off = (R ? 1 : -1) * slide * (wb + 30), sc = s.scale || 1;
       ctx.save();
@@ -260,7 +262,7 @@ window.SFC = window.SFC || {};
       ctx.globalAlpha = 0.3;
       for (let i = 0; i < 10; i++) {
         const x = ((now * 700 + i * 83) % (wb + 160)) - 80, w = 40 + (i * 29) % 70;
-        ctx.fillStyle = i % 2 ? s.color : '#ffffff'; ctx.fillRect(R ? W - x - w : x, yb + 5 + i * 7, w, 1);
+        ctx.fillStyle = i % 2 ? s.color : '#ffffff'; ctx.fillRect(R ? E - x - w : Sc.x + x, yb + 5 + i * 7, w, 1);
       }
       ctx.globalAlpha = 1;
       // chân dung pixel lớn (áo đội của người đeo / người ra chiêu), nhìn vào giữa màn hình

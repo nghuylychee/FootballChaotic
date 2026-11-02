@@ -9,6 +9,10 @@ SFC_CONFIG.game = {
   render: {
     width: 640,
     height: 360,
+    // khung nhìn tối đa (px game): cửa sổ khác 16:9 thì hiện thêm cảnh quanh sân theo tỉ lệ cửa sổ (sân giữ cỡ, nằm giữa) và UI (#stage)
+    // giãn ra mép màn hình; quá cỡ này thì viền đen. Cut scene, TROPHY ROOM, KIT VAN giữ khung 640 x 360 ở giữa.
+    // Cảnh sân vẽ đủ cỡ này (docs/art-direction/pixel-and-camera.md)
+    maxView: [880, 512],
     vignette: 0.6,          // độ tối viền màn hình kiểu Isaac
     // "SFC JP": kana / chữ Hán của tiếng Nhật (unicode-range trong css/style.css -> ngôn ngữ khác không tải font này)
     pixelFont: '"Press Start 2P", "SFC JP", monospace',

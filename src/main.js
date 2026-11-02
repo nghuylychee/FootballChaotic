@@ -377,11 +377,18 @@
     return app.screen === 'game' && !!g && g.state !== 'draft' && g.state !== 'ended' && !SFC.Drill.active && !SFC.OnlineUI.overlay;
   }
 
+  // phóng đúng tỉ lệ cửa sổ (không làm tròn) sao cho khung 640 x 360 luôn vừa. Khung nhìn (px game) theo tỉ lệ cửa sổ, tối đa render.maxView:
+  // cửa sổ rộng / cao hơn 16:9 thấy thêm cảnh quanh sân thay vì viền đen, và #stage (menu, HUD) giãn theo nên UI bám mép màn hình thật.
+  // #stage và canvas trận cùng cỡ, cùng phép phóng, cùng tâm; sân 640 x 360 luôn ở giữa
   function fit() {
-    const stage = document.getElementById('stage');
-    // phóng đúng tỉ lệ cửa sổ (không làm tròn): chỉ còn viền đen khi cửa sổ khác 16:9
-    const scale = Math.min(window.innerWidth / C.render.width, window.innerHeight / C.render.height);
-    stage.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    const R = C.render, s = Math.min(window.innerWidth / R.width, window.innerHeight / R.height);
+    const even = (v, min, max) => Math.max(min, Math.min(max, 2 * Math.floor(v / 2)));
+    const w = even(window.innerWidth / s, R.width, R.maxView[0]), h = even(window.innerHeight / s, R.height, R.maxView[1]);
+    const stage = document.getElementById('stage'), t = `translate(-50%, -50%) scale(${s})`;
+    stage.style.width = w + 'px'; stage.style.height = h + 'px';
+    stage.style.transform = t;
+    document.getElementById('game').style.transform = t;
+    SFC.Renderer.setView(w, h);
   }
 
   function boot() {

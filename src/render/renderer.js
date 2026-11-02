@@ -16,9 +16,26 @@ window.SFC = window.SFC || {};
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d');
       this.ctx.imageSmoothingEnabled = false;
+      this.screen = { x: 0, y: 0, w: C.width, h: C.height };
       this.vig = SFC.Background.vignette();
       this.bgFor = null;
       this.bg = null;
+    },
+
+    // khung nhìn trận w x h (px game, main.js theo tỉ lệ cửa sổ, tối đa render.maxView): sân 640 x 360 luôn nằm giữa, khung rộng / cao hơn
+    // thì canvas lớn hơn và thấy thêm cảnh quanh sân. this.screen = vùng màn hình theo toạ độ thế giới (x, y âm khi rộng hơn 640 x 360):
+    // lớp phủ toàn màn (viền tối, nháy trắng, phủ màu, cut-in) vẽ đủ vùng này. Không gọi (sandbox, trang itch) thì giữ 640 x 360
+    setView(w, h) {
+      const C = SFC_CONFIG.game.render;
+      w = Math.max(C.width, 2 * Math.floor(w / 2)); h = Math.max(C.height, 2 * Math.floor(h / 2));
+      const S = this.screen;
+      if (S.w === w && S.h === h) return;
+      this.canvas.width = w * 2; this.canvas.height = h * 2;
+      this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
+      this.ctx.imageSmoothingEnabled = false;
+      this.screen = { x: -(w - C.width) / 2, y: -(h - C.height) / 2, w, h };
+      this.vig = SFC.Background.vignette(w, h);
+      this.svig = null;
     },
 
     render(g) {
@@ -40,17 +57,27 @@ window.SFC = window.SFC || {};
       }
       const fx = g.effects, f = g.field, t = g.time;
 
-      ctx.setTransform(2, 0, 0, 2, 0, 0);
+      // gốc toạ độ thế giới = góc sân 640 x 360; khung nhìn rộng hơn thì dời vào giữa canvas
+      const S = this.screen;
+      ctx.setTransform(2, 0, 0, 2, -2 * S.x, -2 * S.y);
       ctx.imageSmoothingEnabled = false;
+      // ngoài ảnh nền (khung rộng hơn ảnh của arena): màu nền arena
+      ctx.fillStyle = SFC.Background.theme(g).void || '#000';
+      ctx.fillRect(S.x, S.y, S.w, S.h);
       ctx.save();
       // SETTINGS › SCREEN SHAKE & FLASH = OFF (Settings.screenFx): không rung màn hình, không nháy trắng — chỉ ở bước vẽ, mô phỏng giữ nguyên
       const calm = SFC.Settings && SFC.Settings.screenFx === false;
       if (fx.shakeA > 0 && !calm) ctx.translate(Math.round((Math.random() - 0.5) * fx.shakeA * 2), Math.round((Math.random() - 0.5) * fx.shakeA * 2));
       SFC.VFX.applyZoom(ctx, g);
       this.goalCam(ctx, g);
-      ctx.drawImage(this.bg, 0, 0);
+      // arena có bộ cảnh: vẽ đủ khung cảnh (rộng hơn màn 640 x 360) cho khung nhìn rộng; không thì ảnh nền 640 x 360
+      const sc = SFC.Background.scene(g);
+      if (sc && sc.frame) ctx.drawImage(sc.frame(), -sc.OX, -sc.OY);
+      else ctx.drawImage(this.bg, 0, 0);
       // khán giả chuyển động (arena.crowd) — đè lên ảnh nền, dưới mọi thứ trên sân
       SFC.Crowd.draw(ctx, g);
+      // arena có bộ cảnh: bóng cầu thủ cùng hướng nắng với cảnh (dưới mọi thứ trên sân)
+      if (sc && sc.shadows) sc.shadows(ctx, g);
       // VFX Kit: vết nứt / hố / cháy xém + vòng sóng chấn trên mặt sân
       SFC.VFX.floor(ctx, g);
 
@@ -288,17 +315,17 @@ window.SFC = window.SFC || {};
       if (hidden) this.hiddenMark(ctx, hidden, t);
       ctx.restore();
 
-      ctx.drawImage(this.vig, 0, 0);
+      ctx.drawImage(this.vig, S.x, S.y);
       if (hidden) this.stealthVignette(ctx, t);
       if (g.finalPush && g.state === 'play') {
         ctx.globalAlpha = 0.18 + Math.sin(t * 5) * 0.08;
         ctx.strokeStyle = '#ff3d5a'; ctx.lineWidth = 4;
-        ctx.strokeRect(2, 2, C.width - 4, C.height - 4);
+        ctx.strokeRect(S.x + 2, S.y + 2, S.w - 4, S.h - 4);
         ctx.globalAlpha = 1;
       }
       if (fx.flashA > 0 && !calm) {
         ctx.fillStyle = `rgba(255,255,255,${fx.flashA * (SFC.FXSettings.reduceFlash ? 0.12 : 0.5)})`;
-        ctx.fillRect(0, 0, C.width, C.height);
+        ctx.fillRect(S.x, S.y, S.w, S.h);
       }
       // VFX Kit: phủ màu, tia tốc độ, cut-in, callout, impact frame (toạ độ màn hình)
       SFC.VFX.overlay(ctx, g);
@@ -319,17 +346,17 @@ window.SFC = window.SFC || {};
     },
     // viền màn hình tím than khi mình đang tàng hình (toạ độ màn hình)
     stealthVignette(ctx, t) {
-      const C = SFC_CONFIG.game.render;
+      const S = this.screen;
       if (!this.svig) {
         const cv = document.createElement('canvas');
-        cv.width = C.width; cv.height = C.height;
-        const c2 = cv.getContext('2d'), gr = c2.createRadialGradient(C.width / 2, C.height / 2, C.height * 0.35, C.width / 2, C.height / 2, C.width * 0.62);
+        cv.width = S.w; cv.height = S.h;
+        const c2 = cv.getContext('2d'), gr = c2.createRadialGradient(S.w / 2, S.h / 2, S.h * 0.35, S.w / 2, S.h / 2, S.w * 0.62);
         gr.addColorStop(0, 'rgba(26,18,38,0)'); gr.addColorStop(1, 'rgba(26,18,38,0.85)');
-        c2.fillStyle = gr; c2.fillRect(0, 0, C.width, C.height);
+        c2.fillStyle = gr; c2.fillRect(0, 0, S.w, S.h);
         this.svig = cv;
       }
       ctx.globalAlpha = 0.8 + 0.15 * Math.sin(t * 3);
-      ctx.drawImage(this.svig, 0, 0);
+      ctx.drawImage(this.svig, S.x, S.y);
       ctx.globalAlpha = 1;
     },
 
