@@ -1,0 +1,33 @@
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+index 8e79066..3ab8646 100644
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -1342,7 +1342,27 @@ window.SFC = window.SFC || {};
+             if (best < 0) return;
+             this.sel = best;
+           }
+-        } else this.sel = (this.sel + (d === 'left' || d === 'up' ? n - 1 : 1)) % n;   // thẻ che: đi lần lượt
++        } else {
++          // thẻ che (UX review 2026-11-02): ←↑↓→ đi theo vị trí trên màn hình như BUILD YOUR SQUAD · hết hàng: ←→ vòng về đầu kia của hàng,
++          // ↑↓ tới mục gần nhất phía trên / dưới dù lệch xa (nút SKIP / LEAVE ở chân thẻ), không còn gì thì đứng yên
++          // · không đo được vị trí (chưa vẽ): đi lần lượt như cũ
++          const rect = (t) => SFC.UIHelpers.navRect(menu.el.querySelector(`[data-rt="${t.key}"]`)), cur = rect(T[this.sel]);
++          if (!cur) this.sel = (this.sel + (d === 'left' || d === 'up' ? n - 1 : 1)) % n;
++          else {
++            const rects = T.map((t, i) => (i === this.sel ? null : rect(t)));
++            let best = SFC.UIHelpers.navPick(rects, cur, d), score = Infinity;
++            if (best < 0 && (d === 'left' || d === 'right')) {
++              rects.forEach((r, i) => { if (r && r.top < cur.bottom && r.bottom > cur.top && (best < 0 || (d === 'right' ? r.x < rects[best].x : r.x > rects[best].x))) best = i; });
++            } else if (best < 0) {
++              rects.forEach((r, i) => {
++                const along = r ? (d === 'up' ? cur.y - r.y : r.y - cur.y) : 0, s = along + Math.abs(r ? r.x - cur.x : 0) * 2;
++                if (r && along > 2 && s < score) { score = s; best = i; }
++              });
++            }
++            if (best < 0) return;
++            this.sel = best;
++          }
++        }
+         this.kb = true;
+         SFC.Audio.menu();
+         menu.render();

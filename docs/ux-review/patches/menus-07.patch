@@ -1,0 +1,152 @@
+diff --git a/css/style.css b/css/style.css
+index 2d4c57b..67ef4fd 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -938,6 +938,9 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .inv-detail .sd-name { font-size: 20px; line-height: 1; }
+ .eq-list { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
+ .eq-row { display: flex; justify-content: space-between; gap: 4px; font-size: 12px; border-left: 2px solid var(--rc); padding-left: 3px; }
++button.eq-row { width: 100%; text-align: left; padding-right: 2px; }   /* bấm -> INVENTORY mục COSTUMES đúng slot */
++button.eq-row:hover { background: rgba(255,225,79,0.12); }
++button.eq-row:hover b { color: var(--gold); }
+ .eq-row span { color: var(--muted); }
+ .eq-row b { font-weight: normal; color: #e6dccb; white-space: nowrap; }
+ 
+diff --git a/src/i18n/es.js b/src/i18n/es.js
+index ad8eb85..66b5959 100644
+--- a/src/i18n/es.js
++++ b/src/i18n/es.js
+@@ -76,6 +76,8 @@ SFC.I18n.add({
+     'STATS': 'ATRIBUTOS',
+     'TEAM': 'EQUIPO',
+     'APPEARANCE': 'APARIENCIA',
++    'COSTUMES': 'ATUENDOS',
++    'Hats · shoes · trail FX · celebrations': 'Gorras · calzado · estela · celebraciones',
+     'INVENTORY': 'INVENTARIO',
+     'OVR {n}': 'MED {n}',
+     'OVR': 'MED',
+diff --git a/src/i18n/ja.js b/src/i18n/ja.js
+index 1f57d81..a021f2e 100644
+--- a/src/i18n/ja.js
++++ b/src/i18n/ja.js
+@@ -78,6 +78,8 @@ SFC.I18n.add({
+     'STATS': 'ステータス',
+     'TEAM': 'チーム',
+     'APPEARANCE': '見た目',
++    'COSTUMES': '衣装',
++    'Hats · shoes · trail FX · celebrations': '帽子 · 靴 · 軌跡 · セレブレーション',
+     'INVENTORY': '持ち物',
+     'OVR {n}': '総合 {n}',
+     'OVR': '総合',
+diff --git a/src/i18n/pt-BR.js b/src/i18n/pt-BR.js
+index 4b45ef3..111522c 100644
+--- a/src/i18n/pt-BR.js
++++ b/src/i18n/pt-BR.js
+@@ -77,6 +77,8 @@ SFC.I18n.add({
+     'STATS': 'ATRIBUTOS',
+     'TEAM': 'TIME',
+     'APPEARANCE': 'APARÊNCIA',
++    'COSTUMES': 'TRAJES',
++    'Hats · shoes · trail FX · celebrations': 'Bonés · calçado · rastro · comemorações',
+     'INVENTORY': 'INVENTÁRIO',
+     'OVR {n}': 'GER {n}',
+     'OVR': 'GER',
+diff --git a/src/i18n/pt-PT.js b/src/i18n/pt-PT.js
+index edcd960..ba6a36d 100644
+--- a/src/i18n/pt-PT.js
++++ b/src/i18n/pt-PT.js
+@@ -80,6 +80,8 @@ SFC.I18n.add({
+     'STATS': 'ATRIBUTOS',
+     'TEAM': 'EQUIPA',
+     'APPEARANCE': 'ASPETO',
++    'COSTUMES': 'TRAJES',
++    'Hats · shoes · trail FX · celebrations': 'Bonés · calçado · rasto · festejos',
+     'INVENTORY': 'INVENTÁRIO',
+     'OVR {n}': 'GER {n}',
+     'OVR': 'GER',
+diff --git a/src/ui/gacha.js b/src/ui/gacha.js
+index fcddedd..320372f 100644
+--- a/src/ui/gacha.js
++++ b/src/ui/gacha.js
+@@ -23,7 +23,8 @@ window.SFC = window.SFC || {};
+   // wear = costume (lọc theo slot) · core = Core (lọc theo trường phái) · drill = thẻ DRILL (mở -> chọn 1 trong 3, ui/drill.js)
+   // hệ chỉ số ẩn (progression.attrs.hidden): không có tab DRILL
+   const INV_TABS = () => (SFC_CONFIG.progression.attrs.hidden ? [['wear'], ['core']] : [['wear'], ['core'], ['drill']]);
+-  const INV_LABEL = () => ({ wear: _t('APPEARANCE'), core: _t('CORES'), drill: _t('DRILL CARDS') });   // dịch lúc vẽ (đổi ngôn ngữ khi đang chạy)
++  // wear = COSTUMES (không gọi APPEARANCE: trùng tên trang NHÂN VẬT > APPEARANCE chỉ có tên / màu da / màu tóc)
++  const INV_LABEL = () => ({ wear: _t('COSTUMES'), core: _t('CORES'), drill: _t('DRILL CARDS') });   // dịch lúc vẽ (đổi ngôn ngữ khi đang chạy)
+   const DRILL_COLOR = '#6bff4f';   // viền / ánh thẻ DRILL (cọc xanh lá)
+   const INV_COLS = 6;
+   const REEL_STEP = 56, REEL_CARD = 52, REEL_W = 560; // khớp CSS .rcard / .reel
+@@ -115,7 +116,7 @@ window.SFC = window.SFC || {};
+     invTab: 0,
+     invSel: 0,
+     invArch: 0,       // mục CORE: lọc theo trường phái (0 = tất cả)
+-    invSlot: 0,       // mục APPEARANCE: lọc theo slot costume (0 = tất cả)
++    invSlot: 0,       // mục COSTUMES: lọc theo slot costume (0 = tất cả)
+     opening: null,    // lượt quay hiện tại
+     confirm: null,    // { key, t } — phân rã món hiếm cần bấm 2 lần
+     shopBack: 'home',
+@@ -463,6 +464,18 @@ window.SFC = window.SFC || {};
+       menu.go('inv');
+     },
+ 
++    // mở mục COSTUMES lọc sẵn 1 slot ('all' = tất cả), chọn sẵn món đang mặc ở slot đó
++    // (NHÂN VẬT: bấm 1 dòng đồ đang mặc · APPEARANCE > COSTUMES)
++    openSlot(menu, slot, back) {
++      this.invTab = Math.max(0, INV_TABS().findIndex(([k]) => k === 'wear'));
++      this.invSlot = Math.max(0, SLOT_KEYS().indexOf(slot));
++      const on = PF().data.look[slot];
++      this.invSel = Math.max(0, this.invEntries().findIndex((e) => e.id === on));
++      this.invBack = back;
++      menu.msg = '';
++      menu.go('inv');
++    },
++
+     /* ================= PHÍM ================= */
+     input(menu, input) {
+       if (menu.page === 'shop') return this.inputShop(menu, input);
+@@ -590,12 +603,12 @@ window.SFC = window.SFC || {};
+       return false;
+     },
+ 
+-    // costume đang mặc (hiện ở trang NHÂN VẬT)
++    // costume đang mặc (hiện ở trang NHÂN VẬT) — mỗi dòng là nút: bấm -> COSTUMES lọc đúng slot đó (Menu.bindMouse, data-eqslot)
+     equippedHtml() {
+       const look = PF().data.look, P = PROG();
+       return Object.keys(P.slots).map((slot) => {
+         const id = look[slot], e = entry('item', id);
+-        return `<div class="eq-row" style="--rc:${RAR(e.rarity).color}"><span>${P.slots[slot].label}</span><b>${esc(P.items[id].name)}</b></div>`;
++        return `<button class="eq-row" data-eqslot="${slot}" style="--rc:${RAR(e.rarity).color}"><span>${P.slots[slot].label}</span><b>${esc(P.items[id].name)}</b></button>`;
+       }).join('');
+     },
+   };
+diff --git a/src/ui/menu.js b/src/ui/menu.js
+index 1685b25..c9761fa 100644
+--- a/src/ui/menu.js
++++ b/src/ui/menu.js
+@@ -293,12 +293,13 @@ window.SFC = window.SFC || {};
+           });
+         }
+         case 'look': {
+-          // NGOẠI HÌNH: đổi tên + màu da / tóc (costume ở INVENTORY)
++          // NGOẠI HÌNH: đổi tên + màu da / tóc · COSTUMES = lối tắt sang INVENTORY mục trang phục (người muốn đổi mũ / ăn mừng tìm ở đây trước)
+           const d = PF().data, look = d.look, P = PROG();
+           return [
+             { kind: 'btn', label: _t('RENAME'), sub: d.name, act: () => { this.nameBack = 'look'; this.go('name'); } },
+             { kind: 'pick', label: _t('SKIN COLOR'), swatch: SFC_CONFIG.teams.skins[look.skin], change: (dd) => PF().setColor('skin', dd) },
+             { kind: 'pick', label: _t('HAIR COLOR'), swatch: P.hairColors[look.hairColor], change: (dd) => PF().setColor('hairColor', dd) },
++            { kind: 'btn', label: _t('COSTUMES'), sub: _t('Hats · shoes · trail FX · celebrations'), act: () => G().openSlot(this, 'all', 'look') },
+           ];
+         }
+         case 'attrs': {
+@@ -1681,6 +1682,9 @@ window.SFC = window.SFC || {};
+         if (CU().pages.includes(this.page) && CU().click(this, e)) return;
+         if (RU().pages.includes(this.page) && RU().click(this, e)) return;
+         if (this.page === 'controls' && CV().click(this, e)) return;
++        // NHÂN VẬT: bấm 1 dòng đồ đang mặc -> INVENTORY mục COSTUMES lọc đúng slot đó
++        const eqs = this.page === 'char' && e.target.closest('[data-eqslot]');
++        if (eqs) { SFC.Audio.menu(); return G().openSlot(this, eqs.dataset.eqslot, 'char'); }
+         // Main Path: bấm 1 Area trên "con đường" để xem
+         const pa = e.target.closest('[data-parea]');
+         if (pa) { this.pathView = +pa.dataset.parea; SFC.Audio.menu(); this.render(); return; }

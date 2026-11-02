@@ -1,0 +1,89 @@
+diff --git a/css/style.css b/css/style.css
+--- a/css/style.css
++++ b/css/style.css
+@@ -1966,6 +1966,26 @@
+ .tr-bonus div.on { color: #e6dccb; }
+ .tr-bonus div.on b { color: var(--gold); }
+ .pb-cards { display: flex; gap: 6px; }
++/* Pause · dải "trận này" (matchui.js pauseMatch): luật sân · LEGEND · BADGE đội, 1 hàng gọn giữa bảng build và hàng nút */
++.pause-match { display: flex; gap: 6px; margin-top: 4px; width: 100%; max-width: 538px; align-items: stretch; }
++.pm-box { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; padding: 3px 6px 4px; background: var(--panel); border: 1px solid var(--edge); }
++.pm-box h5 { display: flex; align-items: center; gap: 4px; margin: 0; font-family: var(--px); font-size: 6px; font-weight: normal; line-height: 1; letter-spacing: 1px; color: var(--muted); white-space: nowrap; }
++.pm-box > div { display: flex; align-items: center; gap: 4px; }
++.pm-rule { flex: 1 1 0; border-left: 2px solid var(--c); }
++.pm-rule p { margin: 0; font-size: 12px; line-height: 1; color: #c7ccd6; }
++.pm-rule p b { font-family: var(--px); font-size: 6px; font-weight: normal; letter-spacing: 1px; color: var(--c); text-shadow: 1px 1px 0 var(--ink); margin-right: 2px; white-space: nowrap; }
++.pm-rule p b .pxi { vertical-align: -2px; margin-right: 3px; }
++/* phòng online (thêm dòng "Online matches keep running"): bớt khoảng trên để dải không chạm hàng nút */
++#pause:has(.pause-match):has(.pause-note) .pause-title { margin-bottom: 6px; }
++#pause:has(.pause-match) .pause-note { margin: -4px 0 4px; }
++.pm-leg { flex: none; border-left: 2px solid var(--lc); }
++.pm-leg h5 { color: var(--lc); text-shadow: 1px 1px 0 var(--ink); }
++.pm-leg .lg-combo { gap: 4px; padding: 2px 5px 1px 3px; box-shadow: 1px 1px 0 var(--ink); }
++.pm-leg .lg-combo > b { font-size: 6px; }
++.pm-leg .lg-flaw { padding: 2px 4px 1px; font-size: 5px; }
++.pm-bds { flex: none; }
++.pm-bds > div { flex-wrap: wrap; gap: 2px; max-width: 120px; }
++.pm-bds .sq-b { width: 14px; height: 14px; }
+ .mcard { position: relative; width: 80px; height: 74px; display: flex; flex-direction: column; align-items: center; padding: 3px 3px 2px; background: #1a1c22;
+   border: 2px solid var(--t); box-shadow: 3px 3px 0 var(--ink), 0 0 6px color-mix(in srgb, var(--t) 35%, transparent); }
+ .mcard::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--t); }
+diff --git a/src/ui/matchui.js b/src/ui/matchui.js
+--- a/src/ui/matchui.js
++++ b/src/ui/matchui.js
+@@ -6,7 +6,7 @@
+ window.SFC = window.SFC || {};
+ 
+ (function () {
+-  const { $, esc, CORES, coreChip, traitList, miniCard } = SFC.UIHelpers;
++  const { $, esc, CORES, PX, coreChip, traitList, miniCard } = SFC.UIHelpers;
+   const _t = SFC.t;   // dịch theo ngôn ngữ đang chọn (engine/i18n.js)
+ 
+   // nút Pause mặc định — main.js -> beginMatch đặt lại (đã dịch) mỗi lần vào trận
+@@ -78,9 +78,31 @@
+         ${this.online || this.ranked ? `<div class="pause-note">${esc(_t('Online matches keep running'))}</div>` : ''}
+         ${build}
+         <div class="pause-items row-items pause-foot">${items}</div>`;
++      // dải "trận này" ngay dưới bảng build (pauseMatch)
++      const rows = this.el.pause.querySelector('.pause-rows'), extra = rows && this.pauseMatch(g);
++      if (extra) rows.insertAdjacentHTML('afterend', extra);
+       SFC.CorePreview.scan(this.el.pause);
+     },
+ 
++    // Pause · dải "trận này" (GOAT PATH / FOOTBALL STORY): luật sân của đối thủ (tên + gợi ý) · LEGEND của bạn (kỹ thuật + phím + nhược
++    // điểm) · BADGE của cả đội (icon, mô tả ở tooltip). Banner luật sân chỉ hiện 1 lần lúc bóng lăn và thanh kỹ năng không nhận chuột
++    // -> Pause là chỗ đọc lại. Không có gì thì không vẽ. Nằm riêng giữa bảng build và hàng nút, không đụng nút Pause
++    pauseMatch(g) {
++      const out = [], RU = SFC.RunUI, mod = g.opts.mod && SFC_CONFIG.stories.mods[g.opts.mod];
++      if (mod) {
++        const opp = g.teams[1 - g.humanTeam];
++        out.push(`<div class="pm-box pm-rule" style="--c:${opp.cfg.kit.shirt}"><p><b>${PX().ui('whistle', 'sm')}${esc(mod.name)}</b> ${esc(mod.hint)}</p></div>`);
++      }
++      const p = g.cores.seatOwner(g.me), L = p && p.legend && SFC.Run && SFC.Run.legend(p.legend);
++      if (L && RU) out.push(`<div class="pm-box pm-leg" style="--lc:${L.color}"><h5 title="${esc(L.title + ' · ' + L.flawDesc)}">${esc(L.name)}</h5><div>${RU.comboChip(L)}${RU.flawChip(L)}</div></div>`);
++      const bds = RU ? this.runBadges(g) : [], RAR = SFC_CONFIG.progression.rarities;
++      if (bds.length) {
++        const icons = bds.map((b) => `<span class="sq-b" style="--rc:${RAR[SFC.Run.badge(b.id).rarity].color}" data-tip="${esc(RU.badgeTip(b.id, b.up))}">${RU.badgeIcon(b.id, '')}</span>`).join('');
++        out.push(`<div class="pm-box pm-bds"><h5>${esc(_t('TEAM BADGES'))}</h5><div>${icons}</div></div>`);
++      }
++      return out.length ? `<div class="pause-match">${out.join('')}</div>` : '';
++    },
++
+     // đổi nút đang chọn mà không vẽ lại (giữ ảnh động của các lá Core)
+     setPauseSel() {
+       this.el.pause.querySelectorAll('.pause-items button').forEach((b, i) => b.classList.toggle('sel', i === this.pauseSel));
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -786,6 +786,11 @@
+       const K = SFC_CONFIG.legends.techniques[L.tech];
+       return K ? `<span class="lg-combo" title="${esc(K.desc)}">${PX().ui('star', 'sm')}<b>${esc(K.name)}</b>${this.keyCaps(K)}</span>` : '';
+     },
++    // nhãn nhược điểm đỏ của LEGEND (câu đầy đủ ở tooltip); LEGEND không có nhược điểm cơ chế -> rỗng. Pause trong trận dùng (matchui.js)
++    flawChip(L) {
++      const fl = L.flaw && FLAW_TAGS()[L.flaw.kind];
++      return fl ? `<span class="lg-flaw" title="${esc(L.flawDesc)}">${PX().ui('boom', 'sm')}${esc(fl)}</span>` : '';
++    },
+     // dải LEGEND (màn trial + màn nhận): chân dung to trên hào quang màu LEGEND · danh hiệu · tên · chip COMBO · nhãn nhược điểm đỏ
+     // (câu đầy đủ ở tooltip; LEGEND không có nhược điểm cơ chế thì đánh đổi chỉ số nằm trong tooltip của tên)
+     hero(L) {

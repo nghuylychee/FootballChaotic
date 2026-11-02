@@ -1,0 +1,23 @@
+{
+  "id": "match-04",
+  "area": "match",
+  "screen": "CORE UPGRADE mở ra sau bàn thắng",
+  "source": "agent",
+  "severity": "high",
+  "title": "Bấm Space / A cho qua ăn mừng là tự lấy luôn lá Core 1, chưa kịp nhìn",
+  "problem": "CORE UPGRADE bật lên ngay khi hết ăn mừng, lá 1 được chọn sẵn và phím xác nhận có tác dụng từ frame đầu. Space (cũng là phím Ultimate) và nút A tay cầm đều là xác nhận, nên ai bấm liên tục cho qua ăn mừng sẽ thấy lá 1 đã bay vào YOUR BUILD trước khi đọc được 3 lá.",
+  "goal": "Lượt chọn Core luôn là quyết định có chủ ý: thấy 3 lá rồi phím mới có tác dụng.",
+  "why": "Mất 1 trong 4 lượt Core của trận vì 1 thói quen rất phổ biến trong game bóng đá (bấm cho qua ăn mừng), và không làm lại được.",
+  "fix": "Nửa giây đầu sau khi màn chọn hiện ra (đúng lúc 3 lá đang lật ra), phím xác nhận / số / đổi bài và click lá chưa có tác dụng; sau đó chọn bình thường. Kỹ thuật: UI.draftArm ghi mốc khi mở lượt mới (draftEvent) và khi màn chọn hiện lại (UI.show, cả lúc quay lại từ Pause); draftInput và pick bỏ qua khi draftLocked(). Thời gian nằm ở config: cores.draft.inputGrace = 0.5.",
+  "why_this": "Cùng kiểu chống bấm nhầm game đã dùng ở màn VS (skipAfter) và màn kết quả (450 ms); chỉ vài dòng, không đổi luồng chọn, và trong lúc chặn lá vẫn đang lật nên người chơi không thấy bị \"khựng\".",
+  "alternatives": [
+    "Không chọn sẵn lá nào tới khi bấm hướng / số — chặn được hẳn, nhưng tay cầm phải bấm thêm 1 lần mỗi lượt chọn.",
+    "Giữ phím để chọn (hold) — chắc nhất nhưng chậm và khác mọi màn chọn khác.",
+    "Chặn lâu hơn (1 s+) — an toàn hơn cho người bấm liên tục, nhưng người chơi nhanh sẽ thấy phím bị nuốt."
+  ],
+  "files": ["src/ui/draft.js", "src/ui/matchui.js", "config/cores.config.js"],
+  "limits": "Ai vẫn bấm liên tục quá nửa giây sau khi màn chọn hiện thì vẫn lấy lá đang chọn (chủ ý: chỉ chặn đúng lúc lá còn đang lật). Chưa thử trên tay cầm thật.",
+  "videoNote": "Ghi bàn rồi bấm Space liên tục qua ăn mừng, hết ăn mừng thì bấm thêm 1 lần: TRƯỚC lá 1 bay vào YOUR BUILD ngay; SAU 3 lá vẫn nằm đó, rồi chọn lá 2 bằng phím.",
+  "before": "videos/match-04-before.mp4",
+  "after": "videos/match-04-after.mp4"
+}

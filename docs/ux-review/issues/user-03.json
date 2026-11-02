@@ -1,0 +1,23 @@
+{
+  "id": "user-03",
+  "area": "match",
+  "screen": "Chọn Core (ranked / online)",
+  "source": "user",
+  "severity": "med",
+  "title": "Giờ chọn Core chỉ là chữ \"15s\" nhỏ xíu",
+  "problem": "Trong trận ranked / online, thời gian chọn Core chỉ là chữ đỏ 8px nằm cạnh \"1/4\". Người chơi đang đọc 3 lá bài nên không thấy giờ sắp hết, tới lúc bị chọn hộ mới biết.",
+  "goal": "Liếc qua là biết còn bao nhiêu thời gian, và mấy giây cuối thì không thể bỏ lỡ.",
+  "why": "Hết giờ là game tự lấy lá 1, người chơi mất lượt chọn Core mà không hiểu vì sao. Cảnh báo rõ giúp họ chủ động chọn.",
+  "fix": "Thay chữ bằng 1 thanh vàng rút dần ngay dưới tiêu đề, dài đúng bằng hàng lá bài (kiểu thanh ở màn VS nhưng dày hơn), số giây nhỏ ở đầu trái. 5 giây cuối thanh + số chuyển đỏ và nhấp nháy. Thanh cập nhật mỗi khung bằng 1 biến CSS (draftClockView trong draft.js), không vẽ lại lá bài; số 5 giây nằm ở config (net.draftTimeWarn), cạnh draftTimeLimit.",
+  "why_this": "Thanh dài ngay trên lá bài nằm đúng chỗ mắt đang nhìn và cùng kiểu với thanh màn VS người chơi đã quen; chỉ đỏ ở cuối nên không làm rối lúc còn nhiều giờ.",
+  "alternatives": [
+    "Viền quanh cả 3 lá rút dần — rất khó bỏ qua nhưng đè lên viền chọn / màu độ hiếm của lá, dễ rối.",
+    "Chỉ phóng to số giây + tiếng tích tắc 5 giây cuối — rẻ, nhưng số vẫn phải đọc, không liếc được như thanh; có thể thêm tiếng sau.",
+    "Thanh ở mép trên màn hình — gọn nhưng nằm ngoài chỗ mắt đang nhìn, lại đụng bảng tỉ số HUD."
+  ],
+  "files": ["src/ui/draft.js", "css/style.css", "config/net.config.js"],
+  "limits": "Trận thử offline không có giờ chọn, nên video đặt draft.limit = 15 bằng JS và cho đồng hồ chạy theo giờ thật (giống khách online nhận d.t từ máy chủ). Khách online: thanh đọc game.draft.t mà sync.js đã gửi sẵn, chưa thử trong phòng online thật. Màn chọn dài thêm ~8px khi có đồng hồ (vẫn vừa khung 360).",
+  "videoNote": "Nhìn dưới chữ STARTING CORE: TRƯỚC chỉ có \"9s\" nhỏ cạnh 1/4; SAU là thanh rút dần, 5 giây cuối đỏ nhấp nháy. Đổi lá bằng phím, thanh vẫn chạy mượt.",
+  "before": "videos/user-03-before.mp4",
+  "after": "videos/user-03-after.mp4"
+}

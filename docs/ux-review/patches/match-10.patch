@@ -1,0 +1,34 @@
+diff --git a/src/ui/hud.js b/src/ui/hud.js
+index 44a6e89..3c2680f 100644
+--- a/src/ui/hud.js
++++ b/src/ui/hud.js
+@@ -353,9 +353,12 @@ window.SFC = window.SFC || {};
+     },
+ 
+     /* ================= THÔNG BÁO ================= */
+-    banner(text, sub, color, dur = 1.8) {
+-      const el = this.el.banner;
++    // top = đẩy banner lên sát dưới bảng tỉ số giữa HUD (banner GOAL!: máy quay ăn mừng phóng to người ghi bàn ngay giữa màn,
++    // banner ở chỗ cũ sẽ đè lên). Bảng tỉ số cao thấp tuỳ trận (Skill game / LEGEND TRIAL có thêm thanh mốc, phím) -> đo lúc hiện
++    banner(text, sub, color, dur = 1.8, top = false) {
++      const el = this.el.banner, hm = top && this.el.hud.querySelector('.hud-mid');
+       el.innerHTML = `<div class="b-main" style="color:${color || '#fff'}">${esc(text)}</div>${sub ? `<div class="b-sub">${esc(sub)}</div>` : ''}`;
++      el.style.top = hm ? (hm.offsetTop + hm.offsetHeight + 4) + 'px' : '';
+       el.classList.remove('show');
+       void el.offsetWidth;
+       el.classList.add('show');
+diff --git a/src/ui/matchui.js b/src/ui/matchui.js
+index 944a79b..bd61095 100644
+--- a/src/ui/matchui.js
++++ b/src/ui/matchui.js
+@@ -126,7 +126,9 @@ window.SFC = window.SFC || {};
+       for (const e of evs) {
+         if (e.type === 'goal') {
+           const t = game.teams[e.team];
+-          this.banner(e.value > 1 ? _t('GOAL x{n}!', { n: e.value }) : _t('GOAL!'), e.own ? _t('Own goal!') : `${e.scorer} · ${t.cfg.name}`, t.cfg.kit.shirt, 2.2);
++          // máy quay ăn mừng (game.celebration.camera) đưa người ghi bàn vào giữa màn -> banner lên sát dưới HUD cho khỏi đè
++          const cam = !!(SFC_CONFIG.game.celebration && SFC_CONFIG.game.celebration.camera);
++          this.banner(e.value > 1 ? _t('GOAL x{n}!', { n: e.value }) : _t('GOAL!'), e.own ? _t('Own goal!') : `${e.scorer} · ${t.cfg.name}`, t.cfg.kit.shirt, 2.2, cam);
+         }
+         // banner của trận (match.js, chữ đánh dấu SFC.N_): dịch lúc hiện — online thì sự kiện đến từ máy host
+         if (e.type === 'banner') this.banner(_t(e.text, e.vars), e.sub && _t(e.sub, e.vars), e.color, 2.2);

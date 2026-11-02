@@ -1,0 +1,65 @@
+[
+  {
+    "id": "user-01", "source": "user", "area": "menus", "screen": "Home", "severity": "high",
+    "title": "Trang chủ: cụm PLAY vàng to nên không biết đang chọn nút nào",
+    "problem": "PLAY luôn là khối vàng to nổi lên. Khi rê chuột / bấm phím sang CHARACTER hoặc SHOP, khối vàng vẫn đứng ở PLAY, chỉ có chữ đổi vàng và một gạch mỏng dưới chân. Người chơi tưởng khối vàng là con trỏ chọn nên không biết mình đang đứng ở đâu.",
+    "evidence": ["C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/shots/home_key_right.png"],
+    "where": ["src/ui/menu.js:1248 (renderHome, .hm-nav / .hn-tab)", "css/style.css (search .hn-tab, .hm-nav)"],
+    "direction": "Selection must be the loudest signal and must MOVE: the focused tab gets the raised yellow block (or an equally strong treatment), and PLAY keeps its prominence by size / label but stops looking 'selected' when it isn't (e.g. dark fill with yellow outline). Mouse hover and keyboard must show the same thing. A short slide/pop when focus moves helps. Default focus stays on PLAY.",
+    "repro": "Default profile, home. Move mouse onto SHOP, then CHARACTER; then keyboard ArrowRight / ArrowLeft."
+  },
+  {
+    "id": "user-02", "source": "user", "area": "run", "screen": "GOAT PATH map", "severity": "high",
+    "title": "Map GOAT PATH: node đang chọn gần như không khác node khác",
+    "problem": "Cả 3 node đi được đều có vòng vàng. Node đang chọn chỉ to hơn chút xíu, nên bấm ←→ hay rê chuột đều khó biết mình đang trỏ vào node nào và Enter sẽ vào đâu.",
+    "evidence": ["C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/shots/map_c.png", "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/shots/map_d.png"],
+    "where": ["src/ui/runmap.js (map render, node classes; search 'data-rn')", "css/style.css (search .rm-node)"],
+    "direction": "Two clearly different states: 'reachable' (calm ring) vs 'focused' (strong: thicker pulsing white/gold pixel ring, a bouncing pointer / chevron above, and a small label naming the node type, e.g. MATCHDAY / SKILL GAME, plus the opponent if the design shows it before picking). Mouse hover must move the same focus (no second highlight). Keep pixel-art style.",
+    "repro": "profile=UX/profile_run_map.json (on the act 1 map). Press ArrowRight twice slowly, then move the mouse over the left node."
+  },
+  {
+    "id": "user-03", "source": "user", "area": "match", "screen": "Core draft (ranked / online)", "severity": "med",
+    "title": "Giờ chọn Core chỉ là chữ \"15s\" nhỏ xíu",
+    "problem": "Trong trận ranked / online, thời gian chọn Core chỉ là chữ đỏ 8px cạnh tiêu đề. Người chơi đang đọc 3 lá bài nên không thấy giờ sắp hết.",
+    "evidence": ["src/ui/draft.js:21", "css/style.css:334"],
+    "where": ["src/ui/draft.js:21 (draft-timer)", "css/style.css:334", "src/ui/intro.js (VS screen bar to match)"],
+    "direction": "A wide bar that drains (like the VS screen bar), placed where the eye already is (under the title or across the top of the cards), turning red and pulsing in the last few seconds; keep the seconds as small text if useful. Update it smoothly each frame without re-rendering the cards.",
+    "repro": "?runtest=match, wait for the STARTING CORE draft, then from JS set SFC.app.game.draft.limit = 15 and .t = 15 (match.js:482 ticks it down when limit > 0) and re-render (SFC.UI.renderDraft(SFC.app.game))."
+  },
+  {
+    "id": "user-04", "source": "user", "area": "run", "screen": "KIT VAN", "severity": "low",
+    "title": "Ông chú KIT VAN nhìn như đứng trên cửa sổ xe",
+    "problem": "Tài xế được vẽ cả người, chân chạm mép dưới cửa sổ cabin, nên nhìn như ổng đứng trên khung cửa chứ không phải ngồi trong xe.",
+    "evidence": ["C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/shots/van_b.png"],
+    "where": ["src/ui/kitvan.js (driver drawing)"],
+    "direction": "Draw him seated: only head, shoulders and arms show in the window, cut by the sill (window frame in front of his body), e.g. one elbow resting on the sill or hands on a wheel. Keep the 320x180 pixel art rules (hard colours, ink outline, no gradients) and his talking animation.",
+    "repro": "?runtest, then JS SFC.RunTest.card('shop'). Hold ~2 s on the van, then point at a couple of items so he talks."
+  },
+  {
+    "id": "user-05", "source": "user", "area": "menus", "screen": "PLAY screen", "severity": "high",
+    "title": "PRIVATE MATCH bị giấu, khó tìm",
+    "problem": "Muốn đá với bạn phải biết bấm PLAY rồi để ý dòng tab chữ mờ trên cùng (GOAT PATH · PRIVATE MATCH, chuyển bằng Q/E). Nút PLAY ở trang chủ chỉ ghi GOAT PATH nên không ai nghĩ PRIVATE MATCH nằm trong đó.",
+    "evidence": ["C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/shots/play_run.png", "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/shots/play_tab2.png"],
+    "where": ["src/ui/menu.js (PLAY tabs header, renderPrivate, home PLAY sub text)", "src/ui/runmap.js (the GOAT PATH tab page 'run' shares the header)"],
+    "direction": "Make the mode tabs read as real, clickable tabs (bigger, boxed, the inactive one still clearly legible, an icon each) and mention both modes on the home PLAY button sub text. Consider whether a visible 'PLAY WITH FRIENDS' entry is needed; don't break the Q/E switching or the CrazyGames privateMatch rule (demo builds may hide the tab).",
+    "repro": "Default profile: home → Enter (PLAY). Hold on the GOAT PATH tab ~1.5 s, then press E to show PRIVATE MATCH."
+  },
+  {
+    "id": "user-06", "source": "user", "area": "run", "screen": "PLAY › GOAT PATH tab", "severity": "high",
+    "title": "Tab GOAT PATH: 3 thẻ ACT trông như phải chọn 1 trong 3",
+    "problem": "3 thẻ ACT to bằng nhau, có ảnh sân và viền như thẻ chọn (thẻ 1 còn có viền vàng như đang được chọn), nên người chơi tưởng phải chọn act. Nút START RUN / CONTINUE ở dưới mới là việc cần làm nhưng dễ bị bỏ qua.",
+    "evidence": ["C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/shots/play_run.png"],
+    "where": ["src/ui/runmap.js (page 'run' render; search 'rm-act' / 'START RUN' / 'CONTINUE')", "css/style.css"],
+    "direction": "Show the 3 acts as one road / progress strip (Act 1 → 2 → 3 joined by a path, current act marked 'YOU ARE HERE' when a run is in progress, later acts dimmed / locked), clearly not selectable, and make START RUN / CONTINUE the one obvious action (focused by default, bigger, near the road). Check both states: no run, and a run in progress.",
+    "repro": "Default profile (no run): home → Enter. Also profile=UX/profile_run_map.json (run in progress, shows CONTINUE)."
+  },
+  {
+    "id": "run-12", "source": "agent", "area": "run", "screen": "BUILD YOUR SQUAD", "severity": "high",
+    "title": "BUILD YOUR SQUAD không nói phải làm gì, nút START RUN ẩn",
+    "problem": "Vào màn này, focus nằm trên thẻ của chính mình nên bấm Enter không có gì xảy ra. Không có chữ nào bảo phải xếp người vào MID và DEF, và nút START RUN chỉ hiện khi đã đủ người, nên người chơi không biết bước tiếp theo.",
+    "evidence": ["C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/shots/run_5.png"],
+    "where": ["src/ui/runmap.js:563 (renderPick)", "src/ui/runmap.js:1308 (input for the pick screen)"],
+    "direction": "One short instruction line (e.g. 'Pick your MID and DEF from the bench'), the next empty slot visibly waiting (pulsing dashed border + 'PICK' tag), first focus on the first bench candidate, and START RUN always visible but disabled with what is missing until ready, then focused when ready.",
+    "repro": "Default profile: home → Enter → Enter (START RUN) → the squad screen. Press Enter twice (nothing happens), then pick 2 candidates."
+  }
+]

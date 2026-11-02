@@ -1,0 +1,65 @@
+diff --git a/css/style.css b/css/style.css
+index 5d0446b..b023302 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -2918,10 +2918,18 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .rm-node.done .pxi { filter: none; opacity: 0.7; }
+ .rm-node.at { border-color: #fff; background: #2a3040; box-shadow: 0 0 0 2px var(--ac), 1px 1px 0 var(--ink); }
+ .rm-node.at .pxi { filter: none; }
+-.rm-node.avail { border-color: var(--gold); cursor: pointer; animation: pulse 1s steps(2) infinite; }
++/* node đi được = vòng vàng đứng yên · node đang chọn (phím hoặc rê chuột, UX user-02) = to hơn, vòng trắng + vàng nhấp nháy,
++   mũi tên nhún trên đầu, nhãn tên loại node bên dưới */
++.rm-node.avail { border-color: var(--gold); cursor: pointer; }
+ .rm-node.avail .pxi { filter: none; }
+-.rm-node.avail:hover { background: #3a3310; }
+-.rm-node.sel { background: #3a3310; box-shadow: 0 0 0 2px var(--gold), 0 0 8px rgba(255, 225, 79, 0.7); }
++.rm-node.sel { z-index: 2; transform: scale(1.18); background: #3a3310; border-color: #fff; box-shadow: 0 0 0 2px var(--gold), 0 0 0 3px var(--ink), 2px 3px 0 rgba(0, 0, 0, 0.5); animation: rmSel 0.8s steps(2) infinite; }
++@keyframes rmSel { 50% { border-color: var(--gold); box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--ink), 2px 3px 0 rgba(0, 0, 0, 0.5); } }
++.rm-node.sel::before, .rm-node.sel::after { content: ""; position: absolute; left: 50%; border-style: solid; border-color: transparent; border-bottom: 0; animation: rdBob 0.6s steps(2) infinite; pointer-events: none; }
++.rm-node.sel::before { bottom: calc(100% + 9px); margin-left: -7px; border-width: 8px 7px 0; border-top-color: var(--ink); }
++.rm-node.sel::after { bottom: calc(100% + 11px); margin-left: -5px; border-width: 5px 5px 0; border-top-color: var(--gold); }
++.rm-tip { display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; font-style: normal; font-family: var(--px);
++  font-size: 6px; letter-spacing: 1px; line-height: 1; color: var(--ink); background: var(--gold); padding: 3px 4px 2px; border: 1px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); }
++.rm-node.sel .rm-tip { display: block; }
+ .rm-node.lost { border-color: #ff5a6e; background: #3a1018; opacity: 1; }
+ /* khoanh phấn (user 2026-10-29): vòng cố định quanh node đang đứng · vòng vẽ dần khi vừa chọn node (svg phủ trên node) */
+ .rm-ring path { fill: none; stroke: rgba(255, 255, 255, 0.88); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; filter: url(#rmChalk); }
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+index dcffd93..d7a71dc 100644
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -364,8 +364,10 @@ window.SFC = window.SFC || {};
+         const L = n.kind === 'legend' && RUN().legend(n.legend);
+         const icon = boss ? `<canvas data-team="${n.team}" data-idx="2"></canvas>` : L ? this.face(SFC.LegendDraw.lookOf(L), false) : PX().ui(n.got ? GOT[n.got] : N.icon, 'x2');
+         const tag = boss ? `<i class="rm-crown">${PX().ui('crown', 'sm')}</i>` : L ? `<i class="rm-crown">${PX().ui('star', 'sm')}</i>` : '';
++        // node đi được: nhãn tên loại node, chỉ hiện khi đang chọn (UX user-02: + mũi tên nhún trên đầu, vòng sáng nhấp nháy)
++        const name = st === 'avail' ? `<em class="rm-tip">${esc(N.name)}</em>` : '';
+         return `<button class="rm-node k-${n.kind} ${st} ${lost ? 'lost' : ''} ${sel && sel.id === n.id ? 'sel' : ''}" ${L ? `title="${esc(L.name + ' · ' + L.title + ' · ' + L.role)}"` : ''}
+-            data-rn="${n.id}" style="left:${p.x}px;top:${p.y}px;--nc:${L ? L.color : N.color}">${icon}${tag}${this.votes(R, 'node', n.id)}</button>`;
++            data-rn="${n.id}" style="left:${p.x}px;top:${p.y}px;--nc:${L ? L.color : N.color}">${icon}${tag}${this.votes(R, 'node', n.id)}${name}</button>`;
+       }).join('');
+       return `<div class="rm-inner" style="width:${width}px;height:${height}px">
+           <svg class="rm-lines" width="${width}" height="${height}">${CHALK_DEFS}${this.pitch(width, height)}${lines.join('')}${R.at ? this.chalkRing(RUN().find(R.at), R.at) : ''}</svg>${nodes}
+@@ -1184,6 +1186,22 @@ window.SFC = window.SFC || {};
+         box.scrollTop = Math.max(0, this.pos(n).y - box.clientHeight * 0.7);
+       }
+       box.addEventListener('scroll', () => { this.scroll = box.scrollTop; });
++      // rê chuột lên node đi được = dời đúng mục đang chọn (UX user-02: chuột và phím chung 1 dấu chọn, không có dấu hover riêng).
++      // Chỉ tính khi chuột thật sự dời (vẽ lại màn dưới con trỏ đứng yên cũng bắn sự kiện chuột -> phím không đi được)
++      box.querySelectorAll('.rm-node.avail').forEach((el) => el.addEventListener('mousemove', (e) => {
++        if (this.hoverXY === e.clientX + ',' + e.clientY) return;
++        this.hoverXY = e.clientX + ',' + e.clientY;
++        this.hoverNode(menu, el.dataset.rn);
++      }));
++    },
++    // đổi dấu chọn tại chỗ (không vẽ lại cả màn: giữ canvas mặt cầu thủ + vị trí cuộn)
++    hoverNode(menu, id) {
++      const T = this.targets(), i = T.findIndex((t) => t.k === 'node' && t.id === id);
++      if (i < 0 || i === this.sel || this.drawing) return;
++      this.sel = i;
++      menu.el.querySelectorAll('.rm-page .sel').forEach((el) => el.classList.remove('sel'));
++      const el = menu.el.querySelector(`.rm-node[data-rn="${id}"]`);
++      if (el) el.classList.add('sel');
+     },
+     // phím: giữ mục đang chọn trong khung nhìn (node trên map / thẻ trong khung cuộn)
+     reveal(menu) {

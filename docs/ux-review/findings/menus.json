@@ -1,0 +1,309 @@
+[
+  {
+    "id": "menus-01",
+    "screen": "SHOP › OPEN BOX",
+    "title": "SHOP: chuột không mở hộp / mặc đồ / thoát được khỏi màn OPEN BOX",
+    "severity": "high",
+    "problem": "Dòng \"Enter OPEN BOX · 100\" trông như nút nhưng bấm vào không có gì; muốn mua phải bấm lần 2 vào ô hộp bên trái (đoán không ra, và double-click quen tay là mất gold ngay, không hỏi lại). Mở xong, ba chữ OPEN ANOTHER / EQUIP / DISMANTLE cũng chỉ là chữ, và màn OPEN BOX không có nút ◀ BACK — người chơi dùng chuột bị kẹt, chỉ thoát được bằng Esc.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/shop_click_open_text.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/shop_spin.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/shop_reveal.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/shop_reveal_click_equip.png"
+    ],
+    "where": [
+      "src/ui/gacha.js:184",
+      "src/ui/gacha.js:191",
+      "src/ui/gacha.js:244",
+      "src/ui/gacha.js:531",
+      "src/ui/gacha.js:476",
+      "src/ui/menu.js:65",
+      "css/style.css:793",
+      "css/style.css:920"
+    ],
+    "goal": "Mọi hành động trong SHOP / OPEN BOX đều có một nút bấm thấy được, dùng chuột hay phím đều như nhau, và luôn có đường quay lại.",
+    "fix": "1) Bảng phải SHOP: đổi div .sd-act \"OPEN BOX · giá\" thành <button data-open> (giữ <kbd> Input.key bên trong, style như nút vàng .ac-act.claim của ACHIEVEMENTS); Gacha.click bắt data-open -> activateBox. Bấm vào dòng hộp bên trái chỉ CHỌN hộp (bỏ nhánh 'bấm lần 2 = mua' ở gacha.js:535). 2) Màn OPEN BOX: ba span .rv-act thành <button data-ract=\"again|equip|dismantle\">, Gacha.click gọi đúng các nhánh đang có trong inputOpen; click lên .reel khi đang quay = skip. 3) Thêm 'open' vào BACK_PAGES (menu.js:65) để có ◀ BACK (về SHOP, hoặc ACHIEVEMENTS khi openBack = 'ach'). Không thêm chữ mới.",
+    "why_this": "Một nút dùng chung cho chuột và phím, đúng mẫu nút CLAIM REWARD đã có ở ACHIEVEMENTS, nên nhất quán và ít code; bỏ 'bấm 2 lần để mua' cũng chặn luôn mua nhầm vì double-click.",
+    "alternatives": [
+      "Giữ 'bấm lần 2 vào dòng hộp = mua', chỉ thêm tooltip — rẻ, nhưng vẫn không ai đoán ra và double-click vẫn mất gold",
+      "Chỉ thêm nút ◀ BACK cho màn OPEN BOX — hết kẹt, nhưng chuột vẫn không mặc / phân rã / mở tiếp được"
+    ],
+    "effort": "M",
+    "repro": "Default harness profile (640 gold). h.go('shop'); h.click('.box-detail .sd-act') -> nothing (page stays 'shop', gold 640). h.click('.boxrow', nth=0) (already selected row) -> reel spins at once, gold 540. h.wait(4500); h.click('.rv-act', nth=1) (EQUIP) -> nothing; h.click('.rv-act', nth=0) (OPEN ANOTHER) -> nothing; there is no '.pt-back' on page 'open', only Esc leaves. Script: UX/review/menus/shop1.py"
+  },
+  {
+    "id": "menus-02",
+    "screen": "TROPHY ROOM › ACHIEVEMENTS › claim box reward",
+    "title": "Nhận thưởng ACHIEVEMENTS bằng Enter liên tục là mất gold mua hộp",
+    "severity": "high",
+    "problem": "Bảng thưởng ghi \"Open it for free in the SHOP\", nhưng bấm CLAIM là nhảy thẳng sang màn OPEN BOX. Người chơi đang nhận 7 thưởng liên tiếp sẽ bấm Enter (nhận) → Enter (bỏ quay) → Enter (tưởng là tiếp) — và lần Enter thứ 3 là OPEN ANOTHER, tự trừ 100 gold mua hộp mới, không hỏi lại.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/ach_list.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/ach_claim_reveal.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/ach_mash_enter.png"
+    ],
+    "where": [
+      "src/ui/achievements.js:86",
+      "src/ui/achievements.js:97",
+      "src/ui/gacha.js:245",
+      "src/ui/gacha.js:480"
+    ],
+    "goal": "Nhịp 'nhận thưởng → xem → nhận tiếp' bằng một phím không bao giờ tiêu gold, và chữ mô tả thưởng nói đúng điều sẽ xảy ra.",
+    "fix": "Khi màn OPEN BOX được mở từ ACHIEVEMENTS (Gacha.openBack === 'ach'): hành động chính (Enter + nút đầu) trên màn kết quả là \"BACK TO ACHIEVEMENTS\" (quay về đúng dòng, để Enter tiếp theo nhận thưởng kế); OPEN ANOTHER chỉ hiện nếu còn hộp FREE cùng loại (thưởng ×2), không bao giờ hiện bản tốn gold ở ngữ cảnh này. Sửa dòng chữ ở achievements.js:86 cho hộp thành \"Opens right away\" (chuỗi mới, thêm vào mọi pack i18n). SHOP giữ nguyên vòng OPEN ANOTHER nhanh.",
+    "why_this": "Giữ được khoảnh khắc mở hộp vui khi nhận thưởng, chỉ đổi phím chính theo ngữ cảnh nên không làm chậm vòng mua liên tục ở SHOP.",
+    "alternatives": [
+      "Nhận thưởng chỉ cộng hộp FREE vào SHOP, không tự mở — khớp chữ hiện tại, nhưng mất khoảnh khắc mở hộp và người chơi phải tự đi SHOP",
+      "Bắt bấm 2 lần cho mọi OPEN ANOTHER tốn gold (dùng lại Gacha.confirmed như DISMANTLE) — an toàn nhất, nhưng làm chậm người đang cố ý mua liền tay ở SHOP"
+    ],
+    "effort": "S",
+    "repro": "Default harness profile (7 claimable achievements, 640 gold, no free boxes). h.js('SFC.AchUI.open(SFC.Menu)'); h.wait(800); h.key('Enter') (claim Kickoff -> OPEN BOX spins); h.key('Enter') (skip); h.key('Enter') -> SFC.Profile.data.gold 640 -> 540, a paid Street Box opens. Script: UX/review/menus/ach2.py"
+  },
+  {
+    "id": "menus-03",
+    "screen": "Home › TROPHY ROOM",
+    "title": "Số \"7\" trên nút cúp biến mất khi vào TROPHY ROOM, thưởng nằm sâu 4 bước",
+    "severity": "med",
+    "problem": "Nút cúp ở trang chủ hiện số 7 (thưởng chờ nhận), nhưng vào TROPHY ROOM thì không còn dấu gì: phải tự đoán đi tới ALBUM → Enter → xuống 5 trang tới ACHIEVEMENTS (vẫn ghi 0/40, không nói có 7 cái chờ) → OPEN mới thấy \"7 TO CLAIM\". Nhiều người sẽ bỏ cuộc và không bao giờ nhận hộp / trang phục miễn phí.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/ach_home_badge.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/ach_room.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/ach_album_achpage.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/ach_list.png"
+    ],
+    "where": [
+      "src/ui/menu.js:207",
+      "src/ui/menu.js:1255",
+      "src/ui/trophies.js:111",
+      "src/ui/trophies.js:127",
+      "src/ui/trophies.js:148",
+      "src/ui/trophies.js:208"
+    ],
+    "goal": "Từ số 7 ở trang chủ có một vệt dẫn đường liên tục tới nút CLAIM, mỗi bước đều thấy lại con số đó.",
+    "fix": "Đọc SFC.Achievements.claimable().length trong TrophyUI: (1) nhãn góc ALBUM trong phòng (roomDom) có ô số vàng giống badge ở trang chủ; (2) dòng ACHIEVEMENTS trong mục lục album (idx ở trophies.js:208) và trang lớn bên trái hiện \"{n} TO CLAIM\" (chuỗi đã có, đã dịch); (3) TrophyUI.open: nếu có thưởng chờ nhận thì chọn sẵn zone = ALBUM và page = 'ach', để Enter, Enter là tới danh sách.",
+    "why_this": "Giữ nguyên căn phòng owner đã duyệt, chỉ thêm badge và chọn sẵn đường đi, dùng lại chuỗi '{n} TO CLAIM' nên không phải dịch thêm.",
+    "alternatives": [
+      "Bấm nút cúp có badge thì mở thẳng trang ACHIEVEMENTS — nhanh nhất, nhưng người chơi ít khi thấy căn phòng và nút cúp đổi nghĩa theo trạng thái",
+      "Thêm ACHIEVEMENTS thành góc thứ 4 trong phòng — rõ ràng, nhưng phải vẽ thêm pixel art và đổi bố cục 3 góc"
+    ],
+    "effort": "S",
+    "repro": "Default harness profile (7 claimable). Home: '.hm-ach b' shows 7. h.click('.hm-ach') -> room, no number anywhere; h.key('ArrowRight'); h.key('Enter') -> album; h.key('ArrowDown') x5 -> ACHIEVEMENTS page shows 0/40 only; h.key('Enter') -> list shows '7 TO CLAIM'. Script: UX/review/menus/ach1.py (stop before its last Enter if you don't want to claim)."
+  },
+  {
+    "id": "menus-04",
+    "screen": "CHARACTER / SETTINGS / APPEARANCE / SOUND & DISPLAY / ULT BOOK / PRIVATE MATCH",
+    "title": "Chuột và bàn phím chọn 2 chỗ khác nhau, rê chuột không thấy gì",
+    "severity": "med",
+    "problem": "Ở các trang danh sách (CHARACTER, SETTINGS, APPEARANCE, SOUND & DISPLAY, ULT BOOK) rê chuột lên mục nào cũng không sáng gì, ô vàng vẫn nằm ở mục cũ. Ở PRIVATE MATCH thì ngược lại: rê lên JOIN ROOM làm nó sáng y hệt CREATE ROOM đang được chọn, thành 2 ô cùng sáng và bấm Enter lại tạo phòng. Người chơi không biết mình sắp bấm cái gì.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/settings_hover_lang.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/char_hover_inv.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/online_hover_join.png"
+    ],
+    "where": [
+      "src/ui/menu.js:623",
+      "src/ui/menu.js:1661",
+      "src/ui/menu.js:990",
+      "css/style.css:125",
+      "css/style.css:617",
+      "src/ui/langpick.js:99"
+    ],
+    "goal": "Luôn chỉ có một mục sáng, và đó chính là thứ Enter / cú bấm chuột sẽ làm.",
+    "fix": "Trong Menu.bindMouse thêm listener 'mousemove' trên #menu: phần tử [data-i] dưới chuột (bỏ qua nút ◀▶ có data-d) -> nếu khác this.sel thì đặt this.sel = i và chỉ đổi class .sel tại chỗ (không render lại cả trang để không mất cú bấm, đúng cách LangPick đang làm ở langpick.js:99-103); trang ULT BOOK thì vẽ lại riêng bảng phải. Bỏ .pt-tile:hover riêng (css:617-618) vì hover giờ chính là .sel. Áp dụng cho các trang danh sách / ô của Menu (kể cả PRIVATE MATCH, mục lục album TROPHY ROOM); với lưới đồ (SHOP, INVENTORY) chỉ cho hover xem trước, hành động đi qua nút thật (menus-01, menus-05).",
+    "why_this": "Một nguồn sự thật (sel) cho cả chuột lẫn phím: hết cảnh 2 ô cùng sáng và hết kiểu 'bấm lần 1 chỉ để chọn'; LangPick đã làm đúng mẫu này nên chỉ cần nhân rộng.",
+    "alternatives": [
+      "Chỉ thêm CSS :hover cho .mi — rẻ, nhưng vẫn 2 chỗ sáng khi người chơi dùng cả chuột lẫn phím",
+      "Ẩn ô sel của bàn phím khi đang dùng chuột (theo Input.device) — gọn mắt, nhưng phải theo dõi đổi thiết bị ở mọi màn và Enter vẫn làm mục ẩn"
+    ],
+    "effort": "M",
+    "repro": "Default harness profile. h.go('settings'); h.hover('.mi', nth=2) -> LANGUAGE gets no highlight, SOUND & DISPLAY stays selected (SFC.Menu.sel 0). h.go('char'); h.hover('.mi', nth=2) -> same. h.go('online'); h.hover('.pt-tile', nth=1) -> CREATE ROOM (.sel) and JOIN ROOM (:hover) both lit. Do NOT press Enter/click CREATE ROOM there: it opens a room on the live server (WebSocket is not blocked by page.route). Script: UX/review/menus/hover1.py"
+  },
+  {
+    "id": "menus-05",
+    "screen": "CHARACTER › INVENTORY",
+    "title": "INVENTORY: chuột không phân rã được, mặc đồ phải bấm 2 lần, phân rã đồ trùng bị giấu",
+    "severity": "med",
+    "problem": "\"Enter EQUIP\" và \"X DISMANTLE +140\" trong bảng chi tiết chỉ là chữ: bấm không có gì. Mặc đồ bằng chuột phải bấm lần 2 vào đúng ô đang chọn (không có gợi ý), còn phân rã thì chuột không làm được. Tính năng phân rã hết đồ trùng (phím R) và phím lọc chỉ nằm trong dòng gợi ý đã bị ẩn ở mọi màn, nên gần như không ai biết.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/inv_click1.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/inv_click_dismantle.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/inv_click_again.png"
+    ],
+    "where": [
+      "src/ui/gacha.js:397",
+      "src/ui/gacha.js:398",
+      "src/ui/gacha.js:545",
+      "src/ui/gacha.js:339",
+      "src/ui/gacha.js:507",
+      "css/style.css:459"
+    ],
+    "goal": "Mặc, phân rã, phân rã đồ trùng đều có nút thấy được và bấm được bằng chuột lẫn phím.",
+    "fix": "Hai dòng .sd-act trong invDetail thành <button data-iact=\"equip\"> / <button data-iact=\"dismantle\"> (giữ <kbd> Input.key, vẫn đi qua equipEntry / dismantleEntry nên giữ luật bấm 2 lần cho đồ hiếm). Thêm một nút \"DISMANTLE DUPLICATES (+gold)\" cạnh hàng chip lọc, chỉ hiện khi dupes().count > 0, bấm gọi dismantleDupes (giữ xác nhận 2 lần). Click vào thẻ chỉ chọn; bỏ 'bấm lần 2 vào thẻ = mặc' hoặc giữ làm phím tắt, miễn có nút EQUIP. Chuỗi mới cho nút đồ trùng cần thêm vào mọi pack i18n.",
+    "why_this": "Hành động nào cũng có chỗ bấm thấy được, dùng lại đúng các hàm đang có; nút đồ trùng chỉ hiện khi có việc để làm nên không rối màn.",
+    "alternatives": [
+      "Bật lại dòng .m-hint riêng cho INVENTORY — rẻ, nhưng chỉ là chữ, chuột vẫn không phân rã được",
+      "Menu chuột phải trên thẻ — quen với game PC, nhưng không ai đoán ra và không có trên tay cầm"
+    ],
+    "effort": "S",
+    "repro": "Give owned costumes first: h.js(\"['mohawk','crown','shades','neonkick','dust','neon'].forEach(id=>SFC.Profile.data.items[id]=2); SFC.Profile.save()\"); h.js(\"SFC.Gacha.invBack='char'\"); h.go('inv'). h.click('.icard', nth=1) -> only selects; h.click('.inv-detail .sd-act', nth=1) (DISMANTLE) -> nothing; h.click('.inv-detail .sd-act', nth=0) (EQUIP) -> nothing; h.click('.icard', nth=1) again -> equips ('Equipped: Neon Kicks'). Nothing on screen offers to dismantle the 6 duplicates. Script: UX/review/menus/inv1.py"
+  },
+  {
+    "id": "menus-06",
+    "screen": "CHARACTER › ULT BOOK",
+    "title": "ULT BOOK bảo bắn Ultimate bằng X, nhưng phím thật là Space",
+    "severity": "med",
+    "problem": "Ghi chú trong ULT BOOK viết \"Charge it, then fire it with X\", trong khi CONTROLS cho thấy Ultimate đang gán vào Space (mặc định). Người chơi mới học theo sách sẽ bấm X trong trận và tưởng Ultimate hỏng; ai đổi phím ở CONTROLS cũng vẫn thấy X.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/sw_ults.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/sw_controls.png"
+    ],
+    "where": [
+      "src/ui/menu.js:1068",
+      "src/engine/input.js:161",
+      "config/controls.config.js:39",
+      "src/ui/gacha.js:67",
+      "src/ui/gacha.js:236",
+      "src/ui/recipefx.js:48",
+      "src/ui/reveal.js:192"
+    ],
+    "goal": "Mọi chỗ nhắc phím Ultimate hiện đúng phím đang gán (theo bàn phím / tay cầm và theo phím người chơi đã đổi).",
+    "fix": "Thay SFC.Input.key('ultimate', 'X') bằng SFC.Input.label('ultimate') ở menu.js:1068 (ULT BOOK), gacha.js:67 và :236 (ô X trên lá Ultimate), recipefx.js:48 và reveal.js:192 (cùng lỗi, nằm ngoài vùng menu). Input.key chỉ hợp cho phím menu cố định: trên bàn phím nó trả nguyên chữ viết sẵn ('X'), còn Input.label đọc phím đang gán. Không cần chữ mới.",
+    "why_this": "Sửa tận gốc ở 5 dòng, tự đúng theo tay cầm và theo rebinding, đúng luật 'không in chữ phím cứng' của dự án.",
+    "alternatives": [
+      "Đổi chữ mặc định 'X' thành 'Space' — sửa nhanh nhưng sai lại ngay khi người chơi đổi phím",
+      "Sửa Input.key để luôn trả nhãn phím thật cho action trong trận — chỉ 1 chỗ, nhưng đổi hành vi của mọi dòng gợi ý menu đang cố ý dùng chữ cố định"
+    ],
+    "effort": "S",
+    "repro": "Default harness profile, default binds. h.go('ults') -> right panel note ends with 'fire it with [X]'. Then h.js('SFC.ControlsView.open()'); h.go('controls') -> the Ultimate row shows the Space bar icon. Script: UX/review/menus/sweep1.py"
+  },
+  {
+    "id": "menus-07",
+    "screen": "CHARACTER › APPEARANCE / INVENTORY",
+    "title": "Hai chỗ cùng tên APPEARANCE, muốn đổi mũ / ăn mừng không biết vào đâu",
+    "severity": "med",
+    "problem": "Trang CHARACTER liệt kê đồ đang mặc (HAIR & HATS, SHOES, CELEBRATION...) ngay cạnh nút APPEARANCE, nên ai muốn đổi mũ hay kiểu ăn mừng sẽ bấm APPEARANCE — nhưng ở đó chỉ có RENAME, SKIN COLOR, HAIR COLOR. Trang phục thật nằm ở INVENTORY, trong một tab cũng tên APPEARANCE. Bảng đồ đang mặc thì không bấm được.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/sw_char.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/sw_look.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/sw_inv.png"
+    ],
+    "where": [
+      "src/ui/menu.js:279",
+      "src/ui/menu.js:295",
+      "src/ui/menu.js:1288",
+      "src/ui/gacha.js:26",
+      "src/ui/gacha.js:556"
+    ],
+    "goal": "Người muốn đổi trang phục / ăn mừng đi theo lối tự nhiên nhất (CHARACTER › APPEARANCE hoặc bấm vào đồ đang mặc) đều tới đúng lưới trang phục.",
+    "fix": "1) Trang APPEARANCE (menu.js:295) thêm một dòng btn \"COSTUMES\" (sub: \"hats · shoes · trail FX · celebrations\") gọi G().openInv(this, 'wear', 'look'). 2) Đổi nhãn tab INVENTORY 'APPEARANCE' (gacha.js:26) thành 'COSTUMES' để hết trùng tên. 3) Mỗi dòng đồ đang mặc trong bảng phải CHARACTER (equippedHtml) thành nút mở INVENTORY tab trang phục, lọc sẵn đúng slot (Gacha.invSlot). Chuỗi mới cần thêm vào mọi pack i18n.",
+    "why_this": "Không dời tính năng nào, chỉ thêm lối vào ở đúng chỗ người chơi tìm và bỏ cái tên trùng, nên rẻ và không đụng logic mặc / phân rã.",
+    "alternatives": [
+      "Dời hẳn trang phục sang trang APPEARANCE (bỏ khỏi INVENTORY) — gọn nhất về khái niệm, nhưng phải viết lại lưới + bảng chi tiết và đường phân rã",
+      "Chỉ đổi tên tab thành COSTUMES — rẻ nhất, nhưng người vào APPEARANCE vẫn không thấy đường tới trang phục"
+    ],
+    "effort": "S",
+    "repro": "Default harness profile. h.go('char') -> APPEARANCE sub 'LONG · skin · hair color', right panel lists HAIR & HATS / SHOES / CELEBRATION. h.go('look') -> only RENAME / SKIN COLOR / HAIR COLOR. Costumes are at h.js(\"SFC.Gacha.invBack='char'\"); h.go('inv') (tab 'APPEARANCE'). Script: UX/review/menus/sweep1.py"
+  },
+  {
+    "id": "menus-08",
+    "screen": "PRIVATE MATCH › room (lobby), alone",
+    "title": "Phòng riêng một mình: START xám mà không nói vì sao",
+    "severity": "med",
+    "problem": "Tạo phòng xong, màn phòng trông như sẵn sàng đá (2 đồng đội AI, bên kia ghi \"??? RANDOM BOTS\") nhưng START xám, bấm không có gì và không có dòng nào nói cần thêm người. Người chơi tưởng game lỗi, không biết bước tiếp là gửi mã phòng cho bạn.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/lobby_alone.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/lobby_alone_click_start.png"
+    ],
+    "where": [
+      "src/ui/menu.js:411",
+      "src/ui/menu.js:986",
+      "src/ui/menu.js:1009",
+      "src/net/room.js:78",
+      "config/net.config.js:57"
+    ],
+    "goal": "Khi chưa START được, người chơi đọc ngay lý do và việc cần làm (mời thêm người bằng mã phòng).",
+    "fix": "Lý do đã được tính sẵn ('Waiting for players...' ở menu.js:413) nhưng btn() (menu.js:986) không vẽ sub và dòng trạng thái (menu.js:1010-1012) để trống cho chủ phòng. Khi O.isOwner && !O.canStart && !bench: hiện pt-note \"Need {n} more player · share the room code\" (n = net.minPlayers - số người), và cho mã phòng ở đầu màn nháy nhẹ / có chữ COPY. Chữ trung tính, không nhắc server / host / P2P (client-test.js kiểm). Chuỗi mới cần thêm vào mọi pack i18n.",
+    "why_this": "Dùng đúng chỗ báo trạng thái phòng đã có, ai cũng thấy (chuột, phím, tay cầm), và chỉ thẳng hành động tiếp theo.",
+    "alternatives": [
+      "Cho START khi chỉ có 1 người (đá với bot) — hết kẹt, nhưng là đổi luật phòng (net.minPlayers), ngoài phạm vi UX",
+      "Tooltip trên nút START — chuột thấy, nhưng bàn phím / tay cầm thì không"
+    ],
+    "effort": "S",
+    "repro": "NEVER use the live Render servers (page.route does not block WebSockets). Start a local match server from the repo: `PORT=8091 node server/index.js`. In steps: h.js(\"SFC_CONFIG.net.server.url='ws://localhost:8091'; SFC_CONFIG.net.server.urls=[{url:'ws://localhost:8091',alias:'LO'}]\"); h.go('online'); h.click('.pt-tile', nth=0) (CREATE ROOM); h.wait(2500) -> lobby, 1 player, START grey; h.click('.pt-btn.go') -> nothing, no message. Call SFC.Session.leave() at the end, then stop the local server. Script: UX/review/menus/lobby1.py"
+  },
+  {
+    "id": "menus-09",
+    "screen": "CHARACTER / ULT BOOK / SETTINGS / APPEARANCE (menu sub-pages)",
+    "title": "Trận demo phía sau lộ qua chữ menu, chữ SMASH! / SAVE! nhảy sau bảng",
+    "severity": "low",
+    "problem": "Ở các trang con, nền chỉ tối 35–80% nên trận demo vẫn chạy rõ phía sau: cầu thủ chạy ngang qua chữ SETTINGS, chữ popup to như SMASH! hiện ngay sau lá bài trong ULT BOOK. Mắt bị kéo đi và chữ khó đọc hơn, nhất là ở các bảng nằm bên phải.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/sw_ults.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/sw_settings.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/sw_look.png"
+    ],
+    "where": [
+      "css/style.css:103",
+      "css/style.css:500",
+      "src/main.js:25"
+    ],
+    "goal": "Trang chủ vẫn có trận demo sống động, còn trang đọc chữ thì nền đủ yên để chữ và bảng nổi lên.",
+    "fix": "Cho các trang con (#menu.has-back, đã có class) một lớp nền tối gần kín như #menu.test-pg đã làm (css:500, rgba(10,11,14,0.9)), hoặc giữ gradient nhưng nâng điểm cuối bên phải từ 0.35 lên ~0.85. Thêm: khi Menu.page !== 'home' thì tắt chữ popup của trận demo (Effects.pop) để không còn chữ to nhảy sau bảng.",
+    "why_this": "Đã có tiền lệ trong chính CSS (trang TEST), sửa 1–2 dòng, không đụng trang chủ.",
+    "alternatives": [
+      "Dừng hẳn trận demo khi rời trang chủ — nhẹ máy, nhưng nền đứng hình trông như treo",
+      "Làm mờ (blur) canvas nền — đẹp, nhưng không hợp phong cách pixel và tốn GPU"
+    ],
+    "effort": "S",
+    "repro": "Default harness profile. h.go('ults') then take 3–4 shots ~700 ms apart (popups are random): background words (SMASH!, SAVE!) and sprites show through behind the ULT BOOK card; h.go('settings') -> sprites cross the menu text. Script: UX/review/menus/sweep1.py"
+  },
+  {
+    "id": "menus-10",
+    "screen": "SETTINGS › LANGUAGE popup",
+    "title": "Popup LANGUAGE không đóng được bằng chuột",
+    "severity": "low",
+    "problem": "Mở LANGUAGE trong SETTINGS rồi muốn thôi thì chuột không có đường ra: không có nút đóng, bấm ra ngoài hay bấm chỗ BACK đều không có gì, chỉ Esc mới thoát. Rê chuột ngang qua danh sách còn làm cả popup đổi sang ngôn ngữ dòng đó (vd. tiếng Bồ), dễ tưởng đã đổi mất ngôn ngữ.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/lang_popup.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/lang_popup_click_outside.png"
+    ],
+    "where": [
+      "src/ui/langpick.js:34",
+      "src/ui/langpick.js:68",
+      "src/ui/langpick.js:92"
+    ],
+    "goal": "Khi không phải lần đầu mở game, popup ngôn ngữ đóng được bằng chuột như mọi popup khác, và rời chuột khỏi danh sách thì popup trở lại ngôn ngữ đang dùng.",
+    "fix": "Khi !this.first: thêm nút đóng (◀ BACK hoặc ✕) trong .lp-box và bắt click ra ngoài .lp-box = close(null). Thêm 'mouseleave' trên .lp-list: trả this.sel về dòng ngôn ngữ đang dùng rồi update(), để phần xem trước theo dòng hover chỉ có khi chuột đang nằm trên dòng đó. Dùng lại chuỗi 'BACK' đã dịch.",
+    "why_this": "Giữ ý đồ xem trước bằng ngôn ngữ của từng dòng (cho người không đọc được tiếng Anh), chỉ thêm lối thoát quen thuộc.",
+    "alternatives": [
+      "Chỉ cho bấm ra ngoài để đóng — không cần nút, nhưng người chơi không biết là bấm được",
+      "Bỏ hẳn xem trước khi rê chuột — hết rối, nhưng mất giúp đỡ cho người không đọc được tiếng Anh"
+    ],
+    "effort": "S",
+    "repro": "Default harness profile. h.go('settings'); h.click('.mi', nth=2) (LANGUAGE) -> popup; h.move(1150,650) then mouse down/up -> SFC.LangPick.active still true; h.move(60,40) (where BACK is) click -> still open. Moving across rows switches the title to the hovered language. Script: UX/review/menus/lp1.py"
+  },
+  {
+    "id": "menus-11",
+    "screen": "TROPHY ROOM › board / shelf (new player)",
+    "title": "TROPHY ROOM trống với người mới, không chữ nào nói cách lấp đầy",
+    "severity": "low",
+    "problem": "Người chơi chưa có run nào mở RUNS thì chỉ thấy một bảng ghim trống với icon quả bóng mờ ở giữa; kệ cúp toàn bóng đen, dòng dưới ghi \"THE BLOCK 0\" mà không nói THE BLOCK là gì hay làm sao để có cúp. Phòng này đẹp nhưng lần đầu vào không dẫn người chơi đi đâu cả.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/tr_board.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/menus/tr_shelf.png"
+    ],
+    "where": [
+      "src/ui/trophies.js:227",
+      "src/ui/trophies.js:163",
+      "css/style.css:2407"
+    ],
+    "goal": "Lần đầu vào, mỗi góc trống nói một câu ngắn về cách lấp đầy nó (vẫn giữ bảng phấn kỷ lục chỉ icon + số như owner đã chọn).",
+    "fix": "Bảng ghim trống (tr2-empty): thêm 1 dòng chữ dưới icon bóng, vd. \"No runs yet · finish a GOAT PATH run to pin it here\". Kệ cúp: khi cúp đang chọn có n = 0, dải tr2-strip hiện thêm \"Beat the act {n} boss in GOAT PATH\" (cúp GOAT: \"Clear all 3 acts\"). Chỉ hiện ở trạng thái trống, không đụng bảng phấn. Chuỗi mới cần thêm vào mọi pack i18n.",
+    "why_this": "Một dòng chữ ở đúng trạng thái trống là cách rẻ nhất để biến căn phòng thành mục tiêu, không đổi bố cục owner đã duyệt.",
+    "alternatives": [
+      "Polaroid mẫu mờ (ảnh giả) trên bảng ghim — trực quan, nhưng dễ bị tưởng là run thật",
+      "Không làm gì — phòng sẽ tự đầy khi chơi, nhưng lần đầu vào người chơi không biết vì sao nó trống"
+    ],
+    "effort": "S",
+    "repro": "Default harness profile (no GOAT PATH runs). h.js('SFC.TrophyUI.open(SFC.Menu)'); h.key('ArrowRight') x2; h.key('Enter') -> empty corkboard with a faint ball icon; h.key('Escape'); h.key('ArrowLeft') x2; h.key('Enter') -> shelf of silhouettes, strip 'THE BLOCK 0'. Script: UX/review/menus/trophy1.py"
+  }
+]

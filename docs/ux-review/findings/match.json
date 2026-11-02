@@ -1,0 +1,316 @@
+[
+  {
+    "id": "match-01",
+    "screen": "End screen (GOAT PATH win) · REWARDS",
+    "title": "Thắng 1 trận GOAT PATH: REWARDS hiện +NaN và mất sạch gold / XP",
+    "severity": "high",
+    "problem": "Thắng bất kỳ trận GOAT PATH nào, ô tổng REWARDS hiện \"+NaN\" gold và \"+NaN XP\", thanh XP đứng im. Tệ hơn: Profile.data.gold và xp thành NaN, lưu xuống thành null, tải lại game là gold / XP về 0 (đã thử với run thật đi từ map, không chỉ RUN TEST).",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a6_real_run_end_nan.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a4_end_beat2_a.png"
+    ],
+    "where": [
+      "src/meta/profile.js:588",
+      "src/meta/profile.js:609",
+      "src/meta/profile.js:611",
+      "src/meta/run.js:504",
+      "src/meta/run.js:851",
+      "src/ui/endscreen.js:269",
+      "src/ui/endscreen.js:335"
+    ],
+    "goal": "Thắng trận run thì REWARDS cộng đúng XP / gold như trận thường, dòng Run cash hiện riêng, không bao giờ ra NaN.",
+    "fix": "Ở Profile.awardMatch cộng an toàn: lines.reduce((s, l) => s + (l.xp || 0), 0) và tương tự cho gold (các dòng note của Run.record không có xp / gold). Thêm chốt Number.isFinite trước addXp và d.gold += để 1 dòng lạ không bao giờ phá save. rewardPanel giữ nguyên (dòng note chỉ có nhãn).",
+    "why_this": "Lỗi gốc là cộng undefined vào tổng; sửa đúng chỗ tính tổng chỉ 2 dòng, chữa cả màn hình lẫn save, không đụng UI.",
+    "alternatives": [
+      "Thêm xp: 0, gold: 0 vào mọi dòng note trong run.js / cup.js — chạy được, nhưng dòng note mới sau này quên là lỗi lại.",
+      "Chỉ lọc NaN ở endscreen.js — che triệu chứng trên màn hình nhưng save vẫn hỏng, không chấp nhận được."
+    ],
+    "effort": "S",
+    "repro": "Fast: index.html?runtest=match -> Enter (skip VS) -> Enter (pick Core) -> wait state 'play' -> press 0 (dev win) -> wait ~3.5 s: REWARDS totals read +NaN; SFC.Profile.data.gold is NaN. Real run: profile=profile_run_map.json, h.go('runmap'), Enter until the match starts, Enter, Enter, then JS g.teams[0].score=2; g.end() -> same +NaN; localStorage sfc_profile_v1 has gold/xp = null."
+  },
+  {
+    "id": "match-02",
+    "screen": "Pause menu (GOAT PATH / Story / Ranked)",
+    "title": "FORFEIT trong Pause bấm 1 phát là mất cả run, không hỏi lại",
+    "severity": "high",
+    "problem": "Pause chỉ có RESUME / FORFEIT (RUN OVER). Esc -> bấm mũi tên (trái hay phải đều sang FORFEIT vì điều hướng vòng quanh) -> Enter là RUN OVER ngay, không có bước xác nhận. Trong khi FORFEIT RUN ở tab GOAT PATH và LEAVE ROOM ở màn kết quả đều phải bấm 2 lần. Chuột đứng sẵn chỗ nút khi mở Pause cũng làm FORFEIT sáng y như đang được chọn.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a18_pause_forfeit_sel.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a18_after_one_enter.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a14_pause_with_legend.png"
+    ],
+    "where": [
+      "src/ui/matchui.js:89",
+      "src/ui/matchui.js:94",
+      "src/ui/endscreen.js:411",
+      "src/main.js:190",
+      "src/main.js:117",
+      "src/ui/runmap.js:136",
+      "src/ui/endscreen.js:44"
+    ],
+    "goal": "Bỏ run / cup / trận xếp hạng giữa chừng luôn cần 2 bước rõ ràng, giống mọi chỗ bỏ cuộc khác trong game.",
+    "fix": "Làm FORFEIT trong Pause thành 2 bước như leaveRoomAct: lần 1 đổi nhãn thành CONFIRM FORFEIT (class danger, đỏ) + dòng pause-note 'Forfeit this run? It counts as a loss.' (chuỗi đã có ở runmap.js), 3 s không bấm lại thì trở về như cũ; lần 2 mới gọi app.forfeit(). Áp dụng cho cả FORFEIT (CUP OVER) / (LOSS) / GIVE UP. Kèm theo: bỏ vòng quanh khi điều hướng Pause (trái ở RESUME thì đứng yên) và mỗi lần mở Pause luôn chọn RESUME.",
+    "why_this": "Dùng lại đúng mẫu bấm 2 lần đã có (LEAVE ROOM, FORFEIT RUN) nên người chơi chỉ gặp 1 kiểu, gần như không cần chuỗi mới.",
+    "alternatives": [
+      "Hộp thoại xác nhận YES / NO riêng — rõ nhưng thêm 1 lớp phủ và chuỗi mới, nặng hơn mẫu đang có.",
+      "Giữ phím để bỏ cuộc (hold to forfeit) — chống bấm nhầm tốt nhưng chuột khó làm và khác mọi chỗ khác trong game."
+    ],
+    "effort": "S",
+    "repro": "index.html?runtest=match (or profile_run_map.json + h.go('runmap') + Enter for a real run) -> Enter, Enter -> wait state 'play' -> Escape -> ArrowRight (or ArrowLeft) -> Enter -> lands on RUN OVER 'You forfeited the run.'; SFC.Run.run.over === true."
+  },
+  {
+    "id": "match-03",
+    "screen": "Core draft (STARTING CORE / CORE UPGRADE) + Pause",
+    "title": "Chuột trỏ lá này, phím chọn lá kia: 2 lá cùng nổi, Enter lấy lá không trỏ",
+    "severity": "high",
+    "problem": "Ở màn chọn Core, lá đang chọn bằng phím (.sel) và lá dưới chuột (:hover) cùng nổi lên + có viền màu, nhìn như có 2 lá được chọn. Rê chuột lên lá 3 rồi bấm Enter thì game lấy lá 1 (lá của phím) — mất đúng lá mình đang nhìn. Pause cũng vậy: RESUME và FORFEIT cùng nền vàng.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/c_draft_hover3_key1.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/c_draft_enter_picks_card1.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a4_pause_hover_vs_key.png"
+    ],
+    "where": [
+      "src/ui/draft.js:35",
+      "src/ui/draft.js:109",
+      "src/ui/draft.js:136",
+      "src/ui/matchui.js:58",
+      "src/ui/matchui.js:141",
+      "css/style.css:277",
+      "css/style.css:292"
+    ],
+    "goal": "Lúc nào cũng chỉ có 1 lá / 1 nút được chọn, chuột và phím dùng chung lựa chọn đó.",
+    "fix": "Rê chuột = chọn: thêm mouseenter (uỷ quyền trong bindMouse cho #draft .card[data-pick] và #pause .pause-items button) gọi setDraftSel(i) / đổi pauseSel + setPauseSel() (kèm Audio.menu khi đổi). Bỏ :hover khỏi 2 rule CSS (style.css:277 và :292) để chỉ .sel nổi. Phím mũi tên đổi .sel như cũ nên lá dưới chuột tự tắt.",
+    "why_this": "1 nguồn lựa chọn duy nhất, giống các màn khác trong game đang làm (KIT VAN, map dùng mouseenter); sửa nhỏ, không đổi hình lá bài.",
+    "alternatives": [
+      "Giữ :hover nhưng làm nhạt hơn (chỉ viền mảnh) — vẫn còn 2 điểm sáng, vẫn đoán sai Enter sẽ lấy lá nào.",
+      "Enter lấy lá dưới chuột — chuột nằm yên trên màn sẽ cướp lựa chọn của người dùng phím / tay cầm."
+    ],
+    "effort": "S",
+    "repro": "index.html?runtest=match -> Enter (skip VS) -> wait #draft visible -> h.hover('#draft .card[data-pick]', nth=2) -> screenshot (cards 1 and 3 both lifted) -> Enter -> card 1 flies into YOUR BUILD (compare SFC.app.game.draft.options with coresOf(controlled)). Pause: Escape -> h.hover('#pause button', nth=1)."
+  },
+  {
+    "id": "match-04",
+    "screen": "Core draft mở sau bàn thắng",
+    "title": "Bấm Space / A cho qua ăn mừng là tự chọn luôn lá Core 1, chưa kịp nhìn",
+    "severity": "high",
+    "problem": "CORE UPGRADE bật lên ngay khi hết 3.2 s ăn mừng, lá 1 được chọn sẵn và phím xác nhận có tác dụng từ frame đầu. Xác nhận = Enter / Space / Pad A, mà Space là phím Ultimate còn Pad A là phím chuyền. Ai bấm liên tục cho qua ăn mừng (thói quen game bóng đá) sẽ thấy lá 1 đã bay vào YOUR BUILD trước khi đọc được 3 lá.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a7_space_mash_draft.png"
+    ],
+    "where": [
+      "src/ui/draft.js:114",
+      "src/ui/draft.js:136",
+      "src/ui/draft.js:387",
+      "config/controls.config.js:19",
+      "config/controls.config.js:31",
+      "config/controls.config.js:39",
+      "src/ui/intro.js:49",
+      "src/ui/endscreen.js:379"
+    ],
+    "goal": "Lượt chọn Core luôn là quyết định có chủ ý: thấy đủ 3 lá rồi phím xác nhận mới có tác dụng.",
+    "fix": "Thêm khoảng chặn phím như VS intro (skipAfter 0.35 s) và outro (450 ms): ghi draftOpenAt khi sự kiện 'draft' mở màn (draftEvent), trong draftInput bỏ qua confirm / pick1-3 / reroll và click lá khi chưa qua SFC_CONFIG.cores.draft.inputGrace (vd 0.5 s, đặt trong config). Trong lúc chặn lá vẫn đang chia bài nên người chơi thấy là chưa bấm được.",
+    "why_this": "Cùng kiểu chống bấm nhầm game đã dùng ở intro và màn kết quả, chỉ vài dòng, không đổi luồng chọn.",
+    "alternatives": [
+      "Không chọn sẵn lá nào (sel = -1) tới khi bấm hướng / số — chặn được Enter nhưng người dùng tay cầm phải bấm thêm 1 lần mỗi lượt.",
+      "Giữ phím để chọn (hold) — chắc nhất nhưng chậm và khác mọi màn chọn khác."
+    ],
+    "effort": "S",
+    "repro": "index.html?runtest=match -> Enter, Enter (pick starting Core) -> wait 'play' -> JS SFC.app.game.elapsed = 31 (one pick pending) -> put the ball in the net (review/match/mlib.py GOAL_JS: ball.netSide=1, x past the goal line, lastTouch=controlled) -> press Space every 180 ms for ~6 s -> when #draft first shows, card 1 is already flying; coresOf(controlled) gained a Core with no deliberate pick."
+  },
+  {
+    "id": "match-05",
+    "screen": "LEGEND TRIAL HUD + ô LEGEND trên thanh kỹ năng",
+    "title": "LEGEND TRIAL bắt làm 3 lần LOFTED THROUGH nhưng trong trận không chỗ nào ghi phím",
+    "severity": "med",
+    "problem": "Phím của kỹ thuật (Q + W) chỉ hiện trên thẻ giới thiệu trước trial. Vào trận: banner chỉ ghi 'Pull it off 3 times', HUD chỉ ghi '0 / 3 LOFTED THROUGH', ô LEGEND trên thanh kỹ năng chỉ có chân dung. Tooltip của ô LEGEND (có phím) không bao giờ hiện vì #abar có pointer-events: none. Quên phím là trượt trial, mất LEGEND; trận run thường có LEGEND cũng vậy.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/c_trial_start_banner.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/c_trial_hud.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a10_trialcard.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/c_run_hover_legend_no_tip.png"
+    ],
+    "where": [
+      "src/ui/hud.js:104",
+      "src/ui/hud.js:112",
+      "src/ui/hud.js:169",
+      "src/main.js:218",
+      "css/style.css:351",
+      "src/engine/input.js:181"
+    ],
+    "goal": "Trong LEGEND TRIAL (và mọi trận run có LEGEND) người chơi luôn thấy tổ hợp phím của kỹ thuật, theo phím đang gán.",
+    "fix": "1) drillBox: khi D.tech có, thêm cụm phím vào dòng hd-val, vd '0 / 3 LOFTED THROUGH [Q]+[W]' bằng SFC.Input.techKeys(K) (đã theo thiết bị + phím đổi). 2) Banner mở trial (main.js:218): sub = chuỗi 'Pull it off {n} times' + ' · ' + techKeys. 3) Ô LEGEND trên #abar: thêm <kbd> tổ hợp phím nhỏ dưới chân dung giống 3 ô kỹ năng (khoá cache của updateBar đã có SFC.Input.device nên đổi tay cầm tự vẽ lại).",
+    "why_this": "Dùng đúng hàm techKeys đã có, không thêm chuỗi, và đặt phím ở chỗ người chơi đang nhìn (bảng tiến độ + thanh kỹ năng) thay vì tooltip không ai rê tới giữa trận.",
+    "alternatives": [
+      "Bật pointer-events cho #abar để tooltip hiện — giữa trận không ai rê chuột, tay cầm thì không có chuột.",
+      "Chỉ ghi phím trong Pause — có ích (xem match-08) nhưng trial chỉ 40 s, mở Pause để nhớ phím là quá chậm."
+    ],
+    "effort": "S",
+    "repro": "index.html?runtest=trial.pirlow -> hide the dev panel (SFC.RunTest.el.style.visibility='hidden') -> screenshot at 0.3 s (banner) and 3 s (HUD '0 / 3 LOFTED THROUGH', no keys). Compare index.html?runtest=trialcard.pirlow (card shows Q + W). Run match: index.html?runtest=match&legends=pirlow,, -> Enter, Enter -> h.hover('#abar .ab-leg') -> no tooltip (#gtip absent)."
+  },
+  {
+    "id": "match-06",
+    "screen": "RecipeFx (NEW ULTIMATE DISCOVERED) trong lượt chọn Core",
+    "title": "Màn mở Ultimate dạy 'fire it with X' trong khi phím Ultimate là Space",
+    "severity": "med",
+    "problem": "Đúng lúc game dạy cách dùng Ultimate mới, dòng 'Charge it, then fire it with [X]' và ô phím trên lá đều in X, còn thanh kỹ năng thì hiện phím Space. Bấm X giữa trận không có gì xảy ra. Nguyên nhân: Input.key(action, 'X') trên bàn phím luôn trả về chữ dự phòng chứ không đọc phím đang gán.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a16_rfx_5.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a8_ult_ready_withball_zoom.png"
+    ],
+    "where": [
+      "src/ui/recipefx.js:48",
+      "src/ui/recipefx.js:62",
+      "src/engine/input.js:161",
+      "src/ui/draft.js:41"
+    ],
+    "goal": "Mọi chỗ trong trận ghi phím Ultimate đều theo phím đang gán (mặc định Space, tay cầm LT, hoặc phím người chơi đổi).",
+    "fix": "recipefx.js:48 đổi SFC.Input.key('ultimate', 'X') thành keyLabel('ultimate') (SFC.Input.label, như draft.js:41 đang làm); ô kbd trên lá trong RecipeFx cũng vậy. Cùng gốc ngoài khu này: menu.js:1068 (ULT BOOK) và gacha.js:67 / 236 cũng gọi Input.key('ultimate','X') — sửa luôn cho đồng bộ. Có thể thêm dòng luật dùng (chuỗi đã có 'Use it while you hold the ball' / 'Use it only without the ball') ngay bên dưới vì đây là lúc dạy.",
+    "why_this": "Input.label là hàm chuẩn của dự án cho phím đổi được (AGENTS.md cấm in chữ phím cứng); sửa 1 dòng đúng khoảnh khắc người chơi học phím.",
+    "alternatives": [
+      "Sửa Input.key luôn trả label của action — gọn hơn nhưng đụng mọi màn menu đang cố ý dùng chữ dự phòng (Esc, Enter), dễ vỡ chỗ khác.",
+      "Bỏ hẳn dòng gợi ý phím — mất luôn lần dạy duy nhất."
+    ],
+    "effort": "S",
+    "repro": "index.html?runtest=match -> Enter -> wait #draft -> JS: const g=SFC.app.game,p=g.controlled; g.cores.add(p,'sniper_foot'); g.cores.add(p,'banana_kick'); g.draft.options[g.me]=['fire_shot','speed_demon','street_fighter']; SFC.UI.renderDraft(g) -> press 1 -> at ~2.5 s RecipeFx shows 'Charge it, then fire it with X' while the HUD ult slot shows the Space key."
+  },
+  {
+    "id": "match-07",
+    "screen": "HUD · ô Ultimate bị khoá (needsBall / noBall)",
+    "title": "Ultimate đầy mà bấm không ra, không có phản hồi gì, ô vẫn ghi FULL",
+    "severity": "med",
+    "problem": "Khi sai luật cầm bóng (vd Meteor Shot cần chính mình giữ bóng), ô Ultimate chỉ tối đi nhưng vẫn ghi FULL. Bấm phím Ultimate thì im lặng hoàn toàn: không âm, không rung ô, không chữ. Người chơi tưởng phím hỏng hay game lag, không biết phải giữ bóng / nhả bóng.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a8_ult_ready_withball_zoom.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a8_ult_blocked_press_300ms_zoom.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a8_ult_blocked_press_300ms.png"
+    ],
+    "where": [
+      "src/ui/hud.js:235",
+      "src/ui/hud.js:239",
+      "src/systems/cores.js:768",
+      "src/systems/human.js:78",
+      "src/main.js:369",
+      "css/style.css:1201"
+    ],
+    "goal": "Bấm Ultimate lúc chưa dùng được thì có phản hồi ngay và nói gọn vì sao.",
+    "fix": "Chỉ ở lớp UI (không đụng sim / sync): trong nhánh đang chơi của main.js tick (và OnlineUI.tick cho khách) nếu Input.wasPressed('ultimate') thì gọi UI.ultDeny(g); hàm này kiểm g.cores.ultE(p) >= 1 && ultBlocked(p): rung ô (class deny, steps), Audio.buzz, và hiện 1 nhãn nhỏ trên ô khoảng 1 s bằng chuỗi đã có 'Use it while you hold the ball' / 'Use it only without the ball'. Chưa đầy thì chỉ rung nhẹ. Khi ô đang off thì đổi chữ FULL thành icon khoá hoặc ẩn để không mâu thuẫn.",
+    "why_this": "Tôn trọng luật của user (không ghi luật dùng thường trực trên HUD), chỉ hiện khi người chơi thật sự bấm sai; chạy local nên khách online cũng thấy mà không cần thêm field vào sync.js.",
+    "alternatives": [
+      "Effects.pop chữ trên đầu cầu thủ — đúng quy ước popup nhưng phải thêm token dịch kiểu '@ult:' và cả sân (kể cả đối thủ) đều thấy.",
+      "Icon bóng / bóng gạch chéo thường trực trên ô — rõ nhất nhưng trái quyết định 2026-10-17 của user."
+    ],
+    "effort": "M",
+    "repro": "index.html?runtest=match -> Enter, Enter -> wait 'play' -> JS: const g=SFC.app.game,p=g.controlled; g.cores.add(p,'meteor_strike'); p.res.ult=1 -> press S (pass the ball away) -> JS p.res.ult=1 -> press Space -> nothing happens, energy stays 1, slot just greyed with 'FULL'."
+  },
+  {
+    "id": "match-08",
+    "screen": "Pause menu + banner luật sân lúc giao bóng",
+    "title": "Luật sân, LEGEND, BADGE chỉ lướt qua 1 lần, Pause không cho xem lại",
+    "severity": "med",
+    "problem": "Luật sân của đối thủ (vd PLASTIC STOOLS) chỉ hiện 1 banner 2.2 s đúng lúc bóng lăn, đè giữa sân ngay chỗ cầu thủ mình, cùng lúc với 2 toast 'gets Core'. Sau đó không xem lại được ở đâu: Pause chỉ có Core của 3 người, không có luật sân, LEGEND (kỹ thuật, điểm yếu) hay BADGE của đội; tooltip BADGE / LEGEND trên thanh kỹ năng thì chết vì #abar pointer-events: none.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a11_seq_07.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/c_run_pause_no_rule_legend_badges.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/c_run_hover_legend_no_tip.png"
+    ],
+    "where": [
+      "src/systems/matchmods.js:2390",
+      "src/ui/matchui.js:56",
+      "src/ui/matchui.js:76",
+      "src/ui/hud.js:163",
+      "src/ui/hud.js:169",
+      "css/style.css:351"
+    ],
+    "goal": "Mở Pause lúc nào cũng đọc lại được những gì đang ảnh hưởng trận này: luật sân, LEGEND của mình, BADGE của đội.",
+    "fix": "Thêm 1 dải 'THIS MATCH' trong renderPause (trên hàng nút): luật sân = tên + hint từ game.opts.mod / stories.mods (màu đội đối thủ); LEGEND của bạn = chân dung + tên kỹ thuật + Input.techKeys + flawDesc; BADGE = icon + tên, data-tip bằng RunUI.badgeTip (Pause không chặn chuột nên tooltip chạy). Nội dung đều có sẵn trong config; chỉ thêm 1-2 nhãn mục (vd 'PITCH RULE') vào mọi gói i18n. Tuỳ chọn: dời banner luật sân lên dải ngay dưới HUD để không đè cầu thủ lúc giao bóng.",
+    "why_this": "Pause là chỗ duy nhất người chơi dừng lại đọc được (trận đơn đứng hình) và đã là bảng build, thêm phần 'trận này' là đúng chỗ; không thêm gì thường trực lên HUD.",
+    "alternatives": [
+      "Chip luật sân thường trực dưới dòng act trên HUD — luôn thấy nhưng HUD chật thêm, và chỉ giải quyết luật sân.",
+      "Bật pointer-events cho #abar — tooltip chạy được nhưng giữa trận không ai rê chuột, tay cầm không dùng được."
+    ],
+    "effort": "M",
+    "repro": "index.html?runtest=match&legends=pirlow,,&badges=var,report -> hide the dev panel -> Enter, Enter -> screenshots every 250 ms after the draft closes: PLASTIC STOOLS banner over the ball carrier + toasts (~0.7 s into play) -> Escape -> Pause lists only Cores (no rule / LEGEND / BADGE). h.hover('#abar .ab-leg') shows no tooltip."
+  },
+  {
+    "id": "match-09",
+    "screen": "End screen sau Skill game",
+    "title": "Màn kết quả Skill game hiện như trận bóng 0 - 0, mất luôn kết quả thật",
+    "severity": "med",
+    "problem": "Beat 1 ghi đúng 'SILVER! 7 CHICKENS', nhưng sang Beat 2 thì dưới SILVER! lại là 'LONG FC 0 - 0 The Uncles', bảng GOALS / ASSISTS / SAVES / SHOTS toàn 0, ô thưởng '+0 gold +0 XP' và thanh LV. Con số thật (7 con gà, mốc 3 / 6 / 10) không còn ở đâu, người chơi không biết thiếu bao nhiêu để lên GOLD.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a22_chicken_outro.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a22_chicken_end.png"
+    ],
+    "where": [
+      "src/ui/endscreen.js:131",
+      "src/ui/endscreen.js:191",
+      "src/ui/endscreen.js:194",
+      "src/ui/endscreen.js:268",
+      "src/ui/endscreen.js:104",
+      "src/meta/profile.js:557"
+    ],
+    "goal": "Màn kết quả Skill game nói đúng thứ đã đếm: bao nhiêu, đạt mốc nào, mốc kế là bao nhiêu, và nhận gì cho run.",
+    "fix": "Trong renderEnd khi game.drill: thay end-score bằng số đếm + đơn vị (drillUnit) và thanh 3 mốc giống hud-drill (tái dùng markup drillBox, mốc sáng theo tier); bỏ bảng tỉ số (hoặc chỉ giữ hàng của bạn); ẩn dòng tổng gold / XP và thanh LV khi reward.xp === 0 && reward.gold === 0 (Skill game không bao giờ cho XP). Không cần chuỗi mới.",
+    "why_this": "Dùng lại đúng thanh mốc người chơi vừa nhìn suốt bài, Beat 2 nối liền Beat 1 thay vì đổi sang khung trận bóng.",
+    "alternatives": [
+      "Bỏ hẳn Beat 2 cho Skill game, CONTINUE ngay ở Beat 1 — nhanh nhưng mất chỗ hiện thưởng run (cash / BADGE).",
+      "Giữ bảng tỉ số, chỉ thêm 1 dòng kết quả — ít việc nhưng 0 - 0 và +0 XP vẫn gây hiểu nhầm."
+    ],
+    "effort": "M",
+    "repro": "index.html?runtest=skill.chicken -> hide the dev panel -> wait 1.5 s -> JS: SFC.app.game.drill.val = 7; SFC.app.game.drill.time = 0.05 -> Beat 1 'SILVER! 7 CHICKENS' (~1 s) -> wait ~5 s -> Beat 2 shows 0 - 0, all-zero scoreboard, +0 / +0 XP."
+  },
+  {
+    "id": "match-10",
+    "screen": "Bàn thắng · banner GOAL! + camera zoom ăn mừng",
+    "title": "Banner GOAL! đè lên đúng người ghi bàn mà camera đang zoom vào",
+    "severity": "low",
+    "problem": "Sau bàn thắng camera zoom x2 vào người ghi bàn ở giữa màn, nhưng banner GOAL! + tên người ghi bàn cũng nằm giữa màn (top 118px), nên chữ đè lên đầu / mặt người đang diễn động tác ăn mừng (thứ được bán trong Celebration Box).",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a3_goal_1.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a20_golden_hud.png"
+    ],
+    "where": [
+      "css/style.css:221",
+      "css/style.css:233",
+      "src/ui/matchui.js:107",
+      "src/render/renderer.js:365",
+      "config/game.config.js:767"
+    ],
+    "goal": "Vừa thấy rõ GOAL! vừa thấy trọn động tác ăn mừng.",
+    "fix": "Khi banner đến từ sự kiện 'goal', thêm class (vd #banner.goal) đặt banner sát dưới HUD (khoảng top 36px) hoặc ở 1/3 dưới màn phía trên thanh kỹ năng; goalCam luôn đưa người ghi bàn về giữa (lift 14) nên 2 dải đó trống. Banner khác giữ chỗ cũ.",
+    "why_this": "Chỉ dời chữ trong lúc zoom, không đụng nhịp ăn mừng hay camera đã chỉnh.",
+    "alternatives": [
+      "Hiện banner trước rồi mới zoom (trễ goalCam) — rõ cả hai nhưng kéo dài nhịp sau bàn thắng.",
+      "Thu nhỏ banner goal — đỡ che nhưng vẫn đè khi người ghi bàn ở giữa."
+    ],
+    "effort": "S",
+    "repro": "index.html?runtest=match -> Enter, Enter -> wait 'play' -> put the ball in the net with the controlled player near midfield (mlib.py GOAL_JS) -> screenshot ~1.2 s later: 'GOAL!' / 'LONG · LONG FC' overlaps the zoomed scorer. Same when the opponent scores from mid-range."
+  },
+  {
+    "id": "match-11",
+    "screen": "VS intro + Beat 1 outro + đếm thưởng",
+    "title": "Gợi ý 'Enter skip' ở màn VS gần như vô hình; outro và lúc đếm thưởng không có gợi ý",
+    "severity": "low",
+    "problem": "Ở màn VS, dòng '[Enter] skip' nằm góc dưới trái, chữ xám nhỏ trên nền màu áo đội nhà (đội áo sáng thì gần như không đọc được). Beat 1 sau còi (VICTORY trên sân, 3 s) và lúc đếm REWARDS cũng bấm qua được nhưng không ghi gì, chỉ 1 vạch chạy, người chơi không biết đang phải chờ hay bấm.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a1_intro_2s.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a1_intro_foot_zoom.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/match/a4_outro_1.png"
+    ],
+    "where": [
+      "src/ui/intro.js:132",
+      "css/style.css:1458",
+      "src/ui/endscreen.js:109",
+      "css/style.css:2560"
+    ],
+    "goal": "Màn nào bấm qua được thì gợi ý phím đọc rõ trên mọi màu áo, cùng 1 kiểu ở intro, outro và đếm thưởng.",
+    "fix": "Cho .in-foot span nền tối (rgba(10,11,14,.75)) + chữ #e6dccb, đặt giữa đáy hoặc góc phải (giống 'Enter skip' của RecipeFx); thêm cùng gợi ý '{key} skip' (chuỗi đã có) vào outro-foot của Beat 1 và khung REWARDS lúc rwFocus, phím lấy bằng Input.key('confirm','Enter') như intro.",
+    "why_this": "Chuỗi và kiểu gợi ý đã có (RecipeFx), chỉ đồng bộ vị trí + độ tương phản, không thêm luồng mới.",
+    "alternatives": [
+      "Bỏ gợi ý, để tự hết giờ — chạy được, nhưng người chơi lặp nhiều trận sẽ muốn bỏ qua nhanh mà không biết.",
+      "Nhấp nháy cả màn khi bấm được — ồn, trái với nét pixel gọn hiện tại."
+    ],
+    "effort": "S",
+    "repro": "index.html?runtest=match -> screenshot at ~2 s (VS screen; crop 0,640,700,720 to see the hint). Then Enter, Enter, wait 'play', press 0 -> screenshot at ~1.2 s (Beat 1, only a progress bar) and ~3.5 s (REWARDS counting, no hint)."
+  }
+]

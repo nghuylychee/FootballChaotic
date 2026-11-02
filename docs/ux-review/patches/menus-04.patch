@@ -1,0 +1,63 @@
+diff --git a/css/style.css b/css/style.css
+index 068622f..4d3f1c3 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -467,7 +467,7 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .hm-right { display: flex; align-items: flex-start; gap: 6px; }
+ .hm-gear { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; cursor: pointer;
+   background: var(--panel); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); }
+-.hm-gear:hover, .hm-gear.sel { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
++.hm-gear.sel { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
+ .hm-gear.sel x-px { animation: gearSpin 1.2s steps(4) infinite; }
+ @keyframes gearSpin { to { transform: rotate(90deg); } }
+ .hm-nav { display: flex; justify-content: center; align-items: flex-end; height: 50px; padding: 0 12px;
+@@ -624,8 +624,9 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+   background: var(--panel); border: 1px solid var(--edge); box-shadow: 3px 3px 0 var(--ink); cursor: pointer; }
+ .pt-tile b { font-family: var(--px); font-size: 28px; font-weight: normal; color: var(--gold); text-shadow: 2px 2px 0 var(--ink); line-height: 1; }
+ .pt-tlabel { font-family: var(--px); font-size: 8px; color: #fff; letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); }
+-.pt-tile.sel, .pt-tile:hover { border-color: var(--gold); box-shadow: 3px 3px 0 var(--ink), 0 0 0 1px var(--gold); }
+-.pt-tile.sel .pt-tlabel, .pt-tile:hover .pt-tlabel { color: var(--gold); }
++/* rê chuột = chọn (Menu.hoverSel) nên không còn :hover riêng — tránh 2 ô cùng sáng khi vừa rê chuột vừa bấm phím */
++.pt-tile.sel { border-color: var(--gold); box-shadow: 3px 3px 0 var(--ink), 0 0 0 1px var(--gold); }
++.pt-tile.sel .pt-tlabel { color: var(--gold); }
+ .pt-joinbox { flex-direction: column; gap: 8px; }
+ .pt-jtitle { font-family: var(--px); font-size: 8px; color: #fff; letter-spacing: 2px; text-shadow: 1px 1px 0 var(--ink); }
+ .pt-joinbox .code-in { margin: 0; }
+diff --git a/src/ui/menu.js b/src/ui/menu.js
+index a011197..83a0e79 100644
+--- a/src/ui/menu.js
++++ b/src/ui/menu.js
+@@ -67,6 +67,8 @@ window.SFC = window.SFC || {};
+   const HEAD_PAGES = ['char', 'ults', 'attrs', 'look', 'settings', 'display', 'test', 'storytest', 'runtest'];
+   const WALLET_PAGES = ['char', 'ults', 'attrs', 'look'];
+   const PRIVATE_PAGES = ['online', 'join', 'lobby'];
++  // trang "rê chuột = chọn" (Menu.hoverSel): danh sách / ô do Menu tự vẽ. Tab GOAT PATH ('run') và RANKED ('party') chưa bật
++  const HOVER_PAGES = ['home', 'settings', 'display', 'test', 'storytest', 'runtest', 'name', 'char', 'ults', 'look', 'attrs', 'path', 'training', 'wishlist', 'online', 'join', 'lobby'];
+ 
+   // phòng online (PRIVATE MATCH): 1 ô người chơi theo slot (đội t, vị trí role) — người trong phòng / đồng đội AI của người duy nhất
+   // trong đội / bot (đội không có người). Bấm / Enter ô không phải người để nhảy vào slot đó.
+@@ -1662,15 +1664,20 @@ window.SFC = window.SFC || {};
+ 
+     /* ---------------- chuột ---------------- */
+     // rê chuột = chọn: mục dưới chuột thành mục đang chọn, cùng 1 ô sáng với phím (Enter làm đúng mục đó).
+-    // Chỉ đổi class .sel tại chỗ, không dựng lại trang -> cú bấm không bị mất (như LangPick)
++    // Chỉ đổi class .sel tại chỗ, không dựng lại trang -> cú bấm không bị mất (như LangPick).
++    // Chỉ ở các trang Menu tự vẽ mục (data-i = chỉ số trong items()); trang của module riêng (SHOP, TROPHY ROOM...) tự lo chuột.
++    // Nút ◀▶ (data-d) cùng data-i với dòng của nó -> rê lên nút cũng là chọn dòng đó
+     hoverSel(e) {
+-      if (this.page !== 'home' || this.quitAsk) return;
++      if (!HOVER_PAGES.includes(this.page) || this.quitAsk || this.matePop) return;
+       const el = e.target.closest('[data-i]');
+-      if (!el || el.dataset.d) return;
++      if (!el) return;
+       const i = +el.dataset.i;
+       if (i === this.sel || i < 0 || !this.items()[i]) return;
+       this.sel = i;
+-      this.el.querySelectorAll('[data-i]').forEach((x) => x.classList.toggle('sel', +x.dataset.i === i));
++      this.el.querySelectorAll('[data-i]:not([data-d])').forEach((x) => x.classList.toggle('sel', +x.dataset.i === i));
++      // ULT BOOK: bảng phải tả lá đang chọn -> vẽ lại riêng bảng đó (+ ảnh động)
++      const right = this.page === 'ults' && this.el.querySelector('.m-right');
++      if (right) { right.innerHTML = this.renderRight(); SFC.CorePreview.scan(right); }
+     },
+     bindMouse() {
+       this.el.addEventListener('mousemove', (e) => this.hoverSel(e));

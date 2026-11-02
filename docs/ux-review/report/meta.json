@@ -1,0 +1,49 @@
+{
+ "title": "Rà soát UX toàn game",
+ "lede": "Mỗi vấn đề có 2 video quay cùng một kịch bản: TRƯỚC là bản main hiện tại, SAU là bản đã sửa thử trong một worktree riêng (main chưa bị đụng vào). Bấm \"Phát cả 2 từ đầu\" để so. Mỗi vấn đề có ô góp ý tự lưu: chọn Giữ / Cần chỉnh / Không sửa và ghi thêm nếu cần, Claude đọc lại được.",
+ "yoursIntro": "Mình đã mở game, chụp lại từng chỗ bạn nêu. Cả 6 ý đều đúng; riêng ý \"không biết đang hover ở đâu\" còn lặp lại ở nhiều màn khác hơn bạn kể.",
+ "yours": [
+  {
+   "claim": "3 nút ngoài trang chủ khó nhìn khi hover.",
+   "verdict": "yes",
+   "issue": "user-01",
+   "note": "PLAY luôn là khối vàng to, còn nút đang chọn chỉ có chữ vàng + gạch mỏng dưới chân. Chuột hay bàn phím đều vậy."
+  },
+  {
+   "claim": "Không biết đang hover ở đâu (map GOAT PATH và vài chỗ khác).",
+   "verdict": "yes",
+   "issue": "user-02",
+   "note": "Map: node đang chọn chỉ to hơn chút. Lỗi cùng kiểu còn ở lá Core lúc draft, nút Pause, thẻ thưởng GOAT PATH và các trang list: chuột trỏ một chỗ, bàn phím chọn chỗ khác, Enter lấy cái không trỏ."
+  },
+  {
+   "claim": "Giờ chọn Core nên là thanh rút dần thay vì số.",
+   "verdict": "yes",
+   "issue": "user-03",
+   "note": "Hiện chỉ là chữ đỏ 8px cạnh tiêu đề, và chỉ có ở trận ranked / online."
+  },
+  {
+   "claim": "Ông chú KIT VAN nhìn như đứng trên cửa sổ xe.",
+   "verdict": "yes",
+   "issue": "user-04",
+   "note": "Ổng được vẽ cả người, chân chạm mép dưới cửa sổ cabin."
+  },
+  {
+   "claim": "PRIVATE MATCH ẩn quá.",
+   "verdict": "yes",
+   "issue": "user-05",
+   "note": "Chỉ là chữ tab mờ trên cùng màn PLAY, nút PLAY ngoài trang chủ chỉ ghi GOAT PATH."
+  },
+  {
+   "claim": "3 thẻ ACT làm tưởng phải chọn 1 trong 3.",
+   "verdict": "yes",
+   "issue": "user-06",
+   "note": "Thẻ 1 còn có viền vàng như đang được chọn. Màn BUILD YOUR SQUAD ngay sau đó cũng không nói phải làm gì."
+  }
+ ],
+ "footer": [
+  "Mỗi vấn đề là một patch riêng, giữ hay bỏ từng cái đều được. Chưa có commit nào, nhánh main không đổi.",
+  "Muốn chơi thử bản đã sửa: áp các patch trong `docs/ux-review/patches` theo `ORDER.txt` lên một nhánh riêng rồi chạy `npm run serve`.",
+  "Video quay bằng Chrome headless 1280×720. Con trỏ chuột và tên phím bấm được vẽ thêm vào để dễ theo dõi.",
+  "Chưa thử trên tay cầm thật và trong phòng online / co-op thật. Bản dịch es / pt / ja của chữ mới là bản nháp, chưa ai duyệt."
+ ]
+}

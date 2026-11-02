@@ -1,0 +1,143 @@
+diff --git a/css/style.css b/css/style.css
+index d4c963e..ddd2355 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -2848,18 +2848,32 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ /* ===== GOAT PATH (src/ui/runmap.js): tab 'run' ở màn PLAY + màn map 'runmap' ===== */
+ .pt-run { gap: 8px; }
+ .rt-sum { display: flex; align-items: center; gap: 4px; }
+-.rt-acts { display: flex; align-items: center; margin-top: 4px; }
+-.rt-link { width: 10px; height: 2px; background: var(--edge); }
+-.rt-act { position: relative; width: 132px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 4px 5px;
+-  background: var(--panel); border: 1px solid var(--edge); border-top: 3px solid var(--ac); box-shadow: 2px 2px 0 var(--ink); }
+-.rt-act > canvas { display: block; width: 122px; height: 57px; image-rendering: pixelated; border: 1px solid var(--ink); }
+-.rt-act.on { border-color: var(--ac); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--ac); }
+-.rt-act.done > canvas { filter: saturate(0.4) brightness(0.8); }
+-.rt-n { font-family: var(--px); font-size: 5px; color: var(--muted); letter-spacing: 1px; }
+-.rt-act > b { font-family: var(--px); font-size: 7px; font-weight: normal; color: var(--ac); letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); }
+-.rt-boss { display: flex; align-items: center; gap: 3px; height: 30px; }
+-.rt-boss canvas { width: 27px; height: 30px; image-rendering: pixelated; }
+-.rt-boss em { font-style: normal; font-size: 12px; line-height: 1; color: #e6dccb; max-width: 74px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
++/* con đường 3 act (UX 2026-11-02): vạch xuất phát -> act -> act -> act -> cúp, không phải thẻ chọn (không khung / bóng nút, chuột thường) */
++.rt-road { display: flex; align-items: flex-start; width: 604px; margin-top: auto; padding: 24px 6px 2px; cursor: default; background: rgba(12, 13, 17, 0.8); border: 1px solid var(--ink); }
++.rt-link { flex: 1; min-width: 8px; height: 2px; margin-top: 34px; background: repeating-linear-gradient(90deg, #8a8f9c 0 4px, transparent 4px 8px); }
++.rt-link.on { height: 4px; margin-top: 33px; background: var(--gold); box-shadow: 0 1px 0 var(--ink); }
++.rt-end { position: relative; width: 24px; height: 70px; flex: none; display: flex; align-items: center; justify-content: center; }
++.rt-end .rt-me { position: absolute; left: -2px; bottom: 34px; }
++.rt-end.goal .rt-me { left: auto; right: 14px; }
++.rt-stop { position: relative; width: 142px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; }
++.rt-pic { position: relative; display: block; border: 2px solid var(--ink); background: var(--ink); }
++.rt-pic canvas { display: block; width: 138px; height: 64px; image-rendering: pixelated; }
++.rt-stop.done .rt-pic canvas { filter: saturate(0.5) brightness(0.8); }
++.rt-stop.ahead .rt-pic canvas { filter: grayscale(1) brightness(0.45); }
++.rt-stop.ahead > b, .rt-stop.ahead .rt-boss em { color: var(--muted); }
++.rt-ok { position: absolute; right: -5px; top: -5px; display: flex; padding: 2px; background: #121316; border: 1px solid var(--ink); }
++.rt-stop.done .rt-ok { border-color: #6bff4f; }
++/* YOU ARE HERE: nhân vật của bạn + nhãn vàng đứng trên ảnh act đang đá */
++.rt-here { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: -6px; display: flex; align-items: flex-end; gap: 1px; white-space: nowrap; z-index: 1; }
++.rt-here em { position: relative; margin-bottom: 9px; font-style: normal; font-family: var(--px); font-size: 6px; letter-spacing: 1px; line-height: 1; color: var(--ink); background: var(--gold);
++  padding: 3px 4px 2px; border: 1px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); animation: pulse 1s steps(2) infinite; }
++.rt-here em::after { content: ""; position: absolute; left: 3px; top: 100%; border: 3px solid transparent; border-top-color: var(--ink); }
++.rt-me { width: 27px; height: 30px; image-rendering: pixelated; }
++.rt-n { font-family: var(--px); font-size: 6px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
++.rt-stop > b { font-family: var(--px); font-size: 8px; font-weight: normal; color: var(--ac); letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); }
++.rt-boss { display: flex; align-items: center; gap: 3px; height: 32px; }
++.rt-boss canvas { width: 29px; height: 32px; image-rendering: pixelated; }
++.rt-boss em { font-style: normal; font-size: 13px; line-height: 1; color: #e6dccb; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ .rt-where { font-family: var(--px); font-size: 6px; color: var(--gold); letter-spacing: 1px; }
+ 
+ .rm-page { position: relative; flex: 1; display: flex; flex-direction: column; gap: 4px; min-height: 0; padding: 2px 8px 4px; }
+@@ -2986,8 +3000,6 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .rm-newcores { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+ .rm-newcores em { font-style: normal; font-family: var(--px); font-size: 6px; color: #6bff4f; letter-spacing: 1px; }
+ .rm-newcores span { padding: 2px; background: var(--panel); border: 1px solid #6bff4f; }
+-.rt-act.lock > canvas { filter: grayscale(1) brightness(0.45); }
+-.rt-act.lock::after { content: ''; position: absolute; inset: 0; background: rgba(7, 5, 10, 0.35); pointer-events: none; }
+ /* GOAT PATH (user 2026-10-26): dải đội hình trên map · SQUAD · màn chọn đồng đội · mốc SKILL GAME */
+ .rm-strip { display: flex; align-items: center; gap: 6px; padding: 1px 6px; height: 26px; }
+ .rm-strip:disabled { opacity: 1; cursor: default; }
+@@ -3200,17 +3212,10 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
+ .pk-x:hover, .pk-x.sel { background: #ff3d5a; box-shadow: 0 0 0 1px var(--gold); }
+ .pk-cand.dis { opacity: 0.45; }
+ .pk-go { display: flex; justify-content: center; margin-top: 2px; }
+-/* tab GOAT PATH (user 2026-10-27): thẻ act to hơn, không dòng mô tả, hàng nút sát đáy; JOIN gõ mã ngay trên tab */
++/* tab GOAT PATH: con đường + nút chính dồn giữa màn (UX 2026-11-02: START RUN / CONTINUE ngay dưới con đường, to hơn); JOIN gõ mã ngay trên tab */
+ .pt-run { height: 100%; box-sizing: border-box; }
+-.pt-run .rt-acts { margin-top: 8px; }
+-.pt-run .rt-act { width: 188px; gap: 4px; padding: 5px 5px 6px; }
+-.pt-run .rt-act > canvas { width: 178px; height: 84px; }
+-.pt-run .rt-n { font-size: 6px; }
+-.pt-run .rt-act > b { font-size: 9px; }
+-.pt-run .rt-boss { height: 36px; }
+-.pt-run .rt-boss canvas { width: 32px; height: 36px; }
+-.pt-run .rt-boss em { font-size: 14px; max-width: 110px; }
+-.rt-bottom { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-bottom: 6px; }
++.rt-bottom { margin: 4px 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-bottom: 6px; }
++.rt-go .pt-btn.go { font-size: 15px; padding: 11px 36px 10px; }
+ .rt-join { display: flex; align-items: center; padding: 6px 14px; background: var(--panel); border: 1px solid var(--edge); }
+ 
+ /* ---------- GOAT PATH · Shop = KIT VAN (src/ui/kitvan.js, user 2026-10-29) ----------
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+index 480ef0d..b2f1e47 100644
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -1,5 +1,5 @@
+ /* RunUI — GOAT PATH (docs/RUN_DESIGN.md). Logic: src/meta/run.js (SFC.Run), số liệu: config/run.config.js.
+- *   page 'run'    (tab màn PLAY, vẽ trong khung pt-* của Menu): 3 act (sân + boss) + kỷ lục · START RUN / CONTINUE · FORFEIT RUN
++ *   page 'run'    (tab màn PLAY, vẽ trong khung pt-* của Menu): con đường 3 act (sân + boss, YOU ARE HERE) + kỷ lục · START RUN / CONTINUE · FORFEIT RUN
+  *   page 'runmap' (màn 1 run): thanh trên (tên act + FORFEIT / BACK) + map của act đang đá rộng hết màn, cuộn dọc kiểu Slay the Spire
+  *                 (tầng 0 dưới cùng, boss trên cùng; lăn chuột, không hiện thanh cuộn). Node chỉ cho biết loại, đối thủ biết khi vào trận.
+  *                 Thẻ che map: thẻ mở act · thưởng chọn 1 trong 3 BADGE (của cả đội) · SHOP · LOCKER ROOM · SKILL GAME (giới thiệu bài)
+@@ -86,18 +86,25 @@ window.SFC = window.SFC || {};
+     renderTab(menu, items) {
+       const R = RUN().run, st = RUN().stats();
+       const sub = `<span class="pt-area rt-sum">${PX().ui('ball', 'sm')} ${esc(_t('{n} RUNS', { n: st.plays }))} · ${PX().ui('trophy', 'sm')} ${st.wins} · ${PX().ui('crown', 'sm')} ${st.bosses}</span>`;
+-      // 3 act: sân thu nhỏ + boss (act chưa từng tới: boss bóng đen)
+-      const reach = R ? Math.max(R.act, st.bestAct) : st.bestAct;
++      // 3 act = 1 con đường (UX 2026-11-02: 3 thẻ act to bằng nhau trông như phải chọn 1 trong 3): vạch xuất phát -> act 1 -> 2 -> 3 -> cúp,
++      // nối bằng vạch nét đứt (đoạn đã đi: vàng). Không phải nút: không khung / bóng nút, act phía trước mờ (boss chưa gặp: bóng đen),
++      // act đã qua có dấu ✔. Nhân vật của bạn đứng ở act đang đá (YOU ARE HERE) · chưa có run: ở vạch xuất phát · vô địch: cạnh cúp
++      const reach = R ? Math.max(R.act, st.bestAct) : st.bestAct, nAct = RUN().acts().length;
++      const at = R ? (R.won ? nAct : R.act) : -1;   // act đang đứng (-1 = vạch xuất phát, nAct = cúp)
++      const me = '<canvas class="rt-me" data-avatar="1"></canvas>', link = (on) => `<i class="rt-link ${on ? 'on' : ''}"></i>`;
+       const acts = RUN().acts().map((a, i) => {
+-        const boss = R ? R.bosses[i] : a.boss[0], seen = i <= reach || st.wins > 0, on = R && R.act === i && RUN().active();
+-        const done = R ? i < R.act || R.won : false, lock = SFC_DEMO && i >= ((SFC_CONFIG.demo && SFC_CONFIG.demo.runActs) || 1);
+-        return `<div class="rt-act ${on ? 'on' : ''} ${done ? 'done' : ''} ${lock ? 'lock' : ''}" style="--ac:${a.color}">
+-            <canvas data-ract="${i}" width="180" height="84"></canvas>
++        const boss = R ? R.bosses[i] : a.boss[0], seen = i <= reach || st.wins > 0;
++        const lock = SFC_DEMO && i >= ((SFC_CONFIG.demo && SFC_CONFIG.demo.runActs) || 1);
++        const cls = lock ? 'lock ahead' : i < at ? 'done' : i === at || (at < 0 && i === 0) ? 'on' : 'ahead';
++        const here = i === at && RUN().active() ? `<span class="rt-here">${me}<em>${esc(_t('YOU ARE HERE'))}</em></span>` : '';
++        return link(at >= i) + `<div class="rt-stop ${cls}" style="--ac:${a.color}">${here}
++            <span class="rt-pic"><canvas data-ract="${i}" width="180" height="84"></canvas>${i < at ? `<i class="rt-ok">${PX().ui('check', 'sm')}</i>` : lock ? `<i class="rt-ok">${PX().ui('lock', 'sm')}</i>` : ''}</span>
+             <span class="rt-n">${esc(_t('ACT {n}', { n: i + 1 }))}</span>
+             <b>${esc(a.name)}</b>
+             <span class="rt-boss"><canvas data-team="${boss}" data-idx="2" ${seen ? '' : 'data-sil="1"'}></canvas>${PX().ui('crown', 'sm')}<em>${esc(seen ? TEAMS()[boss].name : '???')}</em></span>
+           </div>`;
+-      }).join('<i class="rt-link"></i>');
++      }).join('') + link(at >= nAct);
++      const road = `<div class="rt-road"><span class="rt-end">${at < 0 ? me : ''}</span>${acts}<span class="rt-end goal">${R && R.won ? me : ''}${PX().ui('trophy', 'x2')}</span></div>`;
+       const btn = (f) => {
+         const i = items.findIndex(f);
+         if (i < 0) return '';
+@@ -106,14 +113,15 @@ window.SFC = window.SFC || {};
+       };
+       const where = R && RUN().active() ? `<div class="rt-where">${esc(_t('ACT {n}', { n: R.act + 1 }))} · ${esc(RUN().act(R.act).name)} · ${esc(_t('FLOOR {n}', { n: RUN().floor() + 2 }))}</div>` : '';
+       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
++      // nút chính START RUN / CONTINUE ngay dưới con đường (to, chọn sẵn) · FORFEIT RUN nhỏ bên dưới
+       return `<div class="pt-main pt-run">
+           ${menu.playTabs('run', sub)}
+-          <div class="rt-acts">${acts}</div>
++          ${road}
+           ${where}
+           <div class="rt-bottom">${this.joining ? `<div class="pt-joinbox rt-join"><div class="pt-jtitle">${esc(_t('JOIN ROOM'))}</div>${menu.renderCode()}</div>` : ''}${msg}
+-            ${!this.joining && items.some((x) => x.forfeit) ? `<div class="pt-acts">${btn((x) => x.forfeit)}</div>` : ''}
+-            <div class="pt-acts">${this.joining ? btn((x) => x.cancel) + btn((x) => x.main)
+-              : btn((x) => x.joinRoom) + btn((x) => x.main) + btn((x) => x.coop)}</div></div>
++            <div class="pt-acts rt-go">${this.joining ? btn((x) => x.cancel) + btn((x) => x.main)
++              : btn((x) => x.joinRoom) + btn((x) => x.main) + btn((x) => x.coop)}</div>
++            ${!this.joining && items.some((x) => x.forfeit) ? `<div class="pt-acts">${btn((x) => x.forfeit)}</div>` : ''}</div>
+         </div>
+         <button class="pt-back" data-back="1">◀ ${esc(_t('BACK'))}</button>`;
+     },

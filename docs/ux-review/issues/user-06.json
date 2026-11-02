@@ -1,0 +1,23 @@
+{
+  "id": "user-06",
+  "area": "run",
+  "screen": "PLAY › GOAT PATH tab",
+  "source": "user",
+  "severity": "high",
+  "title": "Tab GOAT PATH: 3 thẻ ACT trông như phải chọn 1 trong 3",
+  "problem": "3 thẻ ACT to bằng nhau, có khung + bóng giống hệt thẻ CREATE / JOIN ở tab PRIVATE MATCH, nên người chơi tưởng phải chọn act. Có run thì thẻ act 1 còn viền vàng như đang được chọn. Nút START RUN / CONTINUE nằm tít dưới đáy nên dễ bị bỏ qua.",
+  "goal": "Nhìn vào là hiểu 3 act là 1 con đường đi lần lượt (mình đang ở đâu), và việc cần làm duy nhất là bấm START RUN / CONTINUE.",
+  "why": "Đây là màn đầu tiên khi bấm PLAY. Người mới mà bấm thử vào thẻ act không thấy gì xảy ra thì dễ nghĩ game lỗi hoặc bị khoá.",
+  "fix": "3 thẻ act đổi thành 1 dải con đường: vạch xuất phát → act 1 → act 2 → act 3 → cúp, nối bằng vạch nét đứt (đoạn đã đi tô vàng). Không còn khung nút từng thẻ; act phía trước mờ xám, act đã qua có dấu ✔. Có run thì nhân vật của bạn đứng trên act đang đá với nhãn YOU ARE HERE (chưa có run: đứng ở vạch xuất phát, vô địch: đứng cạnh cúp). Nút START RUN / CONTINUE to hơn, kéo lên ngay dưới con đường và vẫn được chọn sẵn; FORFEIT RUN nhỏ xuống dưới nó. Kỹ thuật: RunUI.renderTab dựng .rt-road thay cho .rt-acts, CSS .rt-* mới; dùng lại chuỗi YOU ARE HERE có sẵn, không thêm chuỗi.",
+  "why_this": "Con đường + nhân vật đứng tại chỗ là đúng kiểu AREA MAP game đang dùng, nên không phải dạy thêm gì. Vẫn giữ ảnh sân + boss của từng act (thông tin người chơi thích xem) mà bỏ được cảm giác 'thẻ để chọn'.",
+  "alternatives": [
+    "Chỉ thu nhỏ 3 thẻ act + bỏ viền vàng — rẻ nhất, nhưng 3 ô cạnh nhau vẫn đọc như 3 lựa chọn",
+    "Bỏ hẳn ảnh act, chỉ còn 1 dòng chữ 'ACT 1 · THE BLOCK · FLOOR 1' + nút to — rất rõ nhưng mất phần nhìn trước boss / sân, tab trông trống",
+    "Chỉ hiện act đang đá thật to, 2 act kia thành chấm nhỏ trên thanh tiến độ — tập trung, nhưng mất cảm giác hành trình 3 chặng tới GOAT"
+  ],
+  "files": ["src/ui/runmap.js", "css/style.css"],
+  "limits": "Không đụng phần header tab (GOAT PATH · PRIVATE MATCH) vì agent khác làm. Act khoá ở bản DEMO dùng chung kiểu mờ + icon khoá, chưa xem trên bản build DEMO thật.",
+  "videoNote": "Cảnh 1 chưa có run, cảnh 2 về trang chủ rồi vào lại khi đang có run (CONTINUE + YOU ARE HERE). Để ý chuột rê qua 3 act không có phản hồi gì ở cả 2 bản.",
+  "before": "videos/user-06-before.mp4",
+  "after": "videos/user-06-after.mp4"
+}

@@ -1,0 +1,193 @@
+diff --git a/css/style.css b/css/style.css
+index 620afc8..879a81b 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -3024,6 +3024,16 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ /* GOAT PATH (user 2026-10-26): dải đội hình trên map · SQUAD · màn chọn đồng đội · mốc SKILL GAME */
+ .rm-strip { display: flex; align-items: center; gap: 6px; padding: 1px 6px; height: 26px; }
+ .rm-strip:disabled { opacity: 1; cursor: default; }
++/* dải đội hình (UX run-09): nhãn SQUAD + BADGE của đội (icon nhỏ viền màu độ hiếm, dư thì +n) — nhìn ra là nút mở SQUAD */
++.rs-l { display: flex; align-items: center; gap: 3px; font-style: normal; font-family: var(--px); font-size: 6px; letter-spacing: 1px; color: var(--gold); padding-right: 6px; border-right: 1px solid var(--edge); }
++.rs-l .pxi { width: 9px; height: 9px; }
++.rs-bs { display: flex; align-items: center; gap: 2px; padding-left: 6px; border-left: 1px solid var(--edge); }
++.rs-b { display: flex; align-items: center; justify-content: center; width: 13px; height: 13px; background: #1a1c22; border: 1px solid var(--rc); }
++.rs-b .pxi { width: 9px; height: 9px; }
++.rs-more { text-decoration: none; font-family: var(--px); font-size: 5px; color: #c7ccd6; margin-left: 1px; }
++/* SQUAD: mục BADGE / GEAR / LEGEND đang chọn bằng phím (bảng mô tả hiện kèm) */
++.rm-sheet.squad [data-rt^="info:"].sel { outline: 2px solid var(--gold); outline-offset: 1px; }
++.rm-sheet.squad .gr-s.sel { box-shadow: inset 0 0 0 2px var(--gold); background: #3a3310; }   /* thẻ treo GEAR bị clip-path cắt mất outline */
+ .rs-m { position: relative; display: flex; align-items: center; gap: 1px; }
+ .rs-m canvas { width: 20px; height: 22px; image-rendering: pixelated; }
+ .rs-m b { font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
+@@ -3322,8 +3332,8 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
+ @keyframes grLandBig { 0% { transform: scale(1.18); filter: brightness(2.2); } 100% { transform: scale(1); filter: none; } }
+ .lg-dpop.big { width: 48px; text-align: center; font-size: 9px; }
+ /* dải đội hình trên thanh map: 1 vạch dưới OVR mỗi ô GEAR */
+-.rs-g { position: absolute; left: 21px; bottom: -3px; display: flex; gap: 1px; }
+-.rs-g i { width: 4px; height: 2px; background: #2a2e38; }
++.rs-g { position: absolute; left: 21px; bottom: -1px; display: flex; gap: 1px; }   /* nằm gọn trong viền nút (UX run-09) */
++.rs-g i { width: 4px; height: 2px; background: #5a6070; }
+ .rs-g i.on { background: var(--rc); }
+ .pb-fly { position: absolute; z-index: 5; display: flex; align-items: center; justify-content: center; pointer-events: none; filter: drop-shadow(2px 2px 0 var(--ink)); }
+ .sq-team .sq-b.new { animation: pbSew 0.38s steps(2) 1; box-shadow: 0 0 0 1px var(--gold), 0 0 8px var(--gold); }
+diff --git a/src/ui/helpers.js b/src/ui/helpers.js
+index e86d385..5dbf000 100644
+--- a/src/ui/helpers.js
++++ b/src/ui/helpers.js
+@@ -149,10 +149,17 @@ window.SFC = window.SFC || {};
+     el: null, target: null, timer: 0, mx: 0, my: 0,
+     init() {
+       if (this.el || !document.body) return;
+-      document.addEventListener('mouseover', (e) => this.over(e), true);
+-      document.addEventListener('mousemove', (e) => { this.mx = e.clientX; this.my = e.clientY; if (this.shown()) this.place(); }, true);
++      // bảng hiện bằng phím (showFor): màn vẽ lại dưới con trỏ đứng yên cũng bắn sự kiện chuột -> chỉ tính khi chuột thật sự dời
++      const still = (e) => this.pinned && e.clientX === this.rx && e.clientY === this.ry;
++      document.addEventListener('mouseover', (e) => { if (!still(e)) this.over(e); }, true);
++      document.addEventListener('mousemove', (e) => {
++        if (still(e)) return;
++        this.rx = e.clientX; this.ry = e.clientY;
++        if (this.pinned) this.hide();
++        this.mx = e.clientX; this.my = e.clientY; if (this.shown()) this.place();
++      }, true);
+       document.addEventListener('mousedown', () => this.hide(), true);
+-      document.addEventListener('keydown', () => this.hide(), true);
++      document.addEventListener('keydown', () => { if (!this.pinned) this.hide(); }, true);   // bảng hiện bằng phím: tự ẩn khi phần tử bị vẽ lại
+       document.addEventListener('wheel', () => this.hide(), true);
+     },
+     shown() { return this.el && this.el.style.display === 'block'; },
+@@ -186,9 +193,9 @@ window.SFC = window.SFC || {};
+       this.el.innerHTML = html;
+       this.el.style.display = 'block';
+       this.place();
+-      const loop = () => {   // phần tử bị vẽ lại / rời khỏi -> ẩn
++      const loop = () => {   // phần tử bị vẽ lại / rời khỏi -> ẩn (hiện bằng phím: không cần chuột đang trỏ)
+         if (!this.shown()) return;
+-        if (!this.target || !this.target.isConnected || !this.target.matches(':hover')) return this.hide();
++        if (!this.target || !this.target.isConnected || (!this.pinned && !this.target.matches(':hover'))) return this.hide();
+         requestAnimationFrame(loop);
+       };
+       requestAnimationFrame(loop);
+@@ -204,9 +211,20 @@ window.SFC = window.SFC || {};
+       this.el.style.left = Math.round(left) + 'px';
+       this.el.style.top = Math.round(top) + 'px';
+     },
++    // hiện ngay bảng của phần tử el đang được chọn bằng phím / tay cầm (UX run-09: trước đây chỉ rê chuột mới đọc được),
++    // đặt cạnh dưới phải phần tử; ẩn khi bấm phím / chuột như thường hoặc khi el bị vẽ lại
++    showFor(el) {
++      const t = el && this.find(el);
++      if (!t) return this.hide();
++      const r = t.getBoundingClientRect();
++      clearTimeout(this.timer); this.timer = 0;
++      this.target = t; this.pinned = true;
++      this.mx = r.right - 2; this.my = r.bottom - 6;
++      this.show();
++    },
+     hide() {
+       clearTimeout(this.timer); this.timer = 0;
+-      this.target = null;
++      this.target = null; this.pinned = false;
+       if (this.el) this.el.style.display = 'none';
+     },
+   };
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+index 8c1ec5e..3151dd3 100644
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -31,6 +31,7 @@ window.SFC = window.SFC || {};
+   // sa bàn chiến thuật (user 2026-10-25): sân dọc, khung thành nhà dưới cùng (tầng 0), boss đứng trong khung thành đối thủ trên cùng
+   const MAP_W = 576, ROW_H = 66, PAD_X = 44, PAD_Y = 50;
+   const TEAM_SLOTS = 10;   // màn SQUAD: hàng BADGE của đội tối thiểu ngần này ô (thiếu = ô trống)
++  const STRIP_BADGES = 6;  // dải đội hình trên map: hiện tối đa ngần này icon BADGE của đội, dư thì "+n"
+   // mép phấn sần (vòng khoanh node): nhiễu nhỏ dời nét đi vài px
+   const CHALK_DEFS = '<defs><filter id="rmChalk" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3" result="n"/>'
+     + '<feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter></defs>';
+@@ -198,7 +199,8 @@ window.SFC = window.SFC || {};
+       if (rm && rm.kind === 'trial') return !room || host || rm.player === RUN().myKey() ? [T('drill', { main: true }), T('skiptrial')] : [];
+       if (rm && rm.kind === 'event') return CFG().events[rm.id].choices.map((c, i) => T('choose', { i }));
+       if (R.actNew) return host ? [T('actgo', { main: true })] : [];
+-      if (this.bagOpen) return [T('close', { main: true })];
++      // SQUAD: CLOSE + từng BADGE / GEAR / LEGEND / chấn thương trên màn (mục 'info': chọn bằng phím = hiện bảng mô tả như rê chuột, UX run-09)
++      if (this.bagOpen) return [T('close', { main: true })].concat(Array.from({ length: this.bagInfoN(R) }, (x, i) => T('info', { i })));
+       // co-op: chờ người khác chọn xong BADGE thì mới bỏ phiếu đi tiếp · thanh trên: INVITE / LEAVE ROOM
+       // (user 2026-10-29: bỏ nút BACK + FORFEIT RUN trên map; Esc vẫn về tab GOAT PATH, bỏ run ở tab / menu tạm dừng)
+       const nodes = RUN().busy(R) ? [] : RUN().available().map((n) => T('node', { id: n.id }));
+@@ -249,6 +251,7 @@ window.SFC = window.SFC || {};
+       if (R.room && R.room.kind === 'shop') SFC.KitVan.bind(menu.el, (key) => { const i = this.targets().findIndex((t) => t.key === key); if (i >= 0) this.sel = i; });
+       menu.bindAvatars();
+       if (R.join) this.bindJoin(menu);
++      if (T[0] && T[0].k === 'close') this.bindBag(menu, T);   // đang mở SQUAD
+     },
+     // tiền trong run: thẻ túi tiền pixel + số (cùng kiểu khung với dải đội hình), dùng ở thanh map + Shop
+     cash(n) {
+@@ -416,8 +419,15 @@ window.SFC = window.SFC || {};
+     face(look, you, still) {
+       return you ? '<canvas data-avatar="1"></canvas>' : `<canvas data-mmlook="${esc(JSON.stringify(look))}" ${still ? 'data-still="1"' : ''}></canvas>`;
+     },
+-    // dải đội hình trên thanh map: mặt + OVR + dấu chấn thương từng người
++    // dải đội hình trên thanh map: nhãn SQUAD + mặt + OVR + dấu chấn thương từng người + BADGE của đội (UX run-09: trước đây không chữ
++    // nào cho biết đây là nút mở SQUAD, BADGE của đội không thấy ở đâu trên map). Tối đa STRIP_BADGES icon, dư thì "+n"
+     strip(R) {
++      const own = R.bag.filter((b) => !RUN().badge(b.id).injury), RAR = SFC_CONFIG.progression.rarities;
++      const bs = own.slice(0, STRIP_BADGES).map((b) => `<i class="rs-b" style="--rc:${RAR[RUN().badge(b.id).rarity].color}">${this.badgeIcon(b.id, '')}</i>`).join('');
++      const more = own.length > STRIP_BADGES ? `<u class="rs-more">+${own.length - STRIP_BADGES}</u>` : '';
++      return `<em class="rs-l">${PX().ui('people', 'sm')}${esc(_t('SQUAD'))}</em>` + this.stripFaces(R) + (own.length ? `<span class="rs-bs">${bs}${more}</span>` : '');
++    },
++    stripFaces(R) {
+       return BYPOS(R).map((i) => {
+         const s = R.squad[i], inj = RUN().injuryIds(i, R).length;
+         // dưới OVR: 1 vạch mỗi ô GEAR (màu độ hiếm khi có đồ, tối khi trống)
+@@ -536,6 +546,21 @@ window.SFC = window.SFC || {};
+       return this.sheet('squad', _t('SQUAD'), '', `<div class="sq-row3">${BYPOS(R).map((i) => this.squadCard(R, i, T, null)).join('')}</div>${this.teamBar(R)}`,
+         this.btn(T, T[0], esc(_t('CLOSE'))));
+     },
++    // SQUAD: số mục có bảng mô tả (theo đúng thứ tự trên màn: từng thẻ cầu thủ = LEGEND + GEAR + chấn thương, rồi BADGE của đội)
++    BAG_INFO: '.rm-sheet.squad .sq-leg:not(.none), .rm-sheet.squad .gr-s:not(.empty), .rm-sheet.squad .sq-b.inj, .rm-sheet.squad .sq-team .sq-b:not(.empty)',
++    bagInfoN(R) {
++      let n = R.bag.filter((b) => !RUN().badge(b.id).injury).length;
++      R.squad.forEach((s, i) => { n += (s.legend ? 1 : 0) + RUN().gearOf(i, R).length + RUN().injuryIds(i, R).length; });
++      return n;
++    },
++    // gắn data-rt="info:k" theo thứ tự trên màn; mục đang chọn: viền vàng + hiện bảng mô tả ngay (SFC.Tip.showFor)
++    bindBag(menu, T) {
++      const cur = T[this.sel];
++      menu.el.querySelectorAll(this.BAG_INFO).forEach((el, k) => {
++        el.dataset.rt = 'info:' + k;
++        if (cur && cur.key === el.dataset.rt) { el.classList.add('sel'); SFC.Tip.showFor(el); }
++      });
++    },
+     // ô LEGEND trống: bóng đen 1 huyền thoại trong khung nét đứt, không chữ (chữ ở tooltip)
+     legendSlot() {
+       const L = Object.values(SFC_CONFIG.legends.list)[0];
+@@ -1301,6 +1326,7 @@ window.SFC = window.SFC || {};
+         }
+         case 'bag': this.bagOpen = true; break;
+         case 'close': this.bagOpen = false; break;
++        case 'info': break;   // SQUAD: mục chỉ để xem (bảng mô tả hiện khi chọn)
+         case 'pick': { const id = RUN().pick(t.i); if (id) menu.setMsg(_t('BADGE: {name}', { name: B(id).name })); break; }
+         // GEAR: chọn món · người đeo · món bỏ ra (người đeo đủ ô) · lùi 1 bước
+         case 'gpick': RUN().pick(t.i); break;
+@@ -1406,12 +1432,21 @@ window.SFC = window.SFC || {};
+           } else if (d === 'up' && onNode) return;   // đã ở đỉnh map
+           else if (d === 'down' && onNode && n > nNode) this.sel = nNode;
+           else if (d === 'up' && !onNode) this.sel = 0;
+-        } else if (!R0()) {
+-          // chưa có run (BUILD YOUR SQUAD / khách chờ host): ←↑↓→ đi theo vị trí trên màn hình (ô vị trí ↔ băng ghế ↔ nút trên)
++        } else if (!R0() || T[0].k === 'close') {
++          // chưa có run (BUILD YOUR SQUAD / khách chờ host) · SQUAD (CLOSE ↔ BADGE / GEAR / LEGEND): ←↑↓→ đi theo vị trí trên màn hình
+           const rect = (t) => SFC.UIHelpers.navRect(menu.el.querySelector(`[data-rt="${t.key}"]`)), cur = rect(T[this.sel]);
+           if (!cur) this.sel = (this.sel + (d === 'left' || d === 'up' ? n - 1 : 1)) % n;
+           else {
+-            const best = SFC.UIHelpers.navPick(T.map((t, i) => (i === this.sel ? null : rect(t))), cur, d);
++            const rs = T.map((t, i) => (i === this.sel ? null : rect(t)));
++            let best = SFC.UIHelpers.navPick(rs, cur, d);
++            // SQUAD: hàng BADGE ↔ ô GEAR / LEGEND lệch xa sang bên (ngoài góc của navPick) -> lấy mục gần nhất phía đó, không bị kẹt
++            if (best < 0 && T[0].k === 'close') {
++              let bd = Infinity;
++              rs.forEach((r, i) => {
++                const dx = r ? r.x - cur.x : 0, dy = r ? r.y - cur.y : 0, along = d === 'left' ? -dx : d === 'right' ? dx : d === 'up' ? -dy : dy;
++                if (r && along > 2 && dx * dx + dy * dy < bd) { bd = dx * dx + dy * dy; best = i; }
++              });
++            }
+             if (best < 0) return;
+             this.sel = best;
+           }

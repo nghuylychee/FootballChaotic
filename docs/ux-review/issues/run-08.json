@@ -1,0 +1,22 @@
+{
+  "id": "run-08",
+  "area": "run",
+  "screen": "Mọi thẻ che map (PICK A BADGE / PICK GEAR / LOCKER ROOM / KIT VAN / LEGEND)",
+  "source": "agent",
+  "severity": "med",
+  "title": "Mũi tên trong các thẻ che map đi tuần tự, không theo vị trí trên màn hình",
+  "problem": "Trong mọi thẻ che map, cả 4 phím mũi tên chỉ đi tới / lui theo danh sách: ↓ = mục kế, ↑ = mục trước. Ở LOCKER ROOM 2 hàng, ↓ từ thẻ góc trên trái lại nhảy sang thẻ bên phải; ở PICK A BADGE phải bấm ↓ 3 lần mới tới SKIP; ở KIT VAN ↓ chạy dọc hàng móc chứ không xuống hộp cứu thương / LEAVE. BUILD YOUR SQUAD thì đi theo vị trí, nên cảm giác điều khiển đổi giữa các màn.",
+  "goal": "Mũi tên luôn đi tới thứ nằm đúng hướng đó trên màn hình, giống BUILD YOUR SQUAD.",
+  "why": "Người chơi tay cầm / bàn phím phải đếm số lần bấm, dễ chọn nhầm thẻ và thấy menu 'lạ tay' so với các màn khác của run.",
+  "fix": "Giờ ↑↓←→ trong mọi thẻ che map đi theo vị trí thật: ↓ từ thẻ hàng trên xuống thẻ ngay dưới, ↓ ở hàng cuối xuống nút SKIP / LEAVE, KIT VAN ↓ từ móc xuống hộp cứu thương rồi LEAVE; hết hàng thì ←→ vòng về đầu kia của hàng. Kỹ thuật: RunUI.input (runmap.js) nhánh thẻ che dùng lại SFC.UIHelpers.navRect / navPick của BUILD YOUR SQUAD, thêm 2 luật phụ (vòng trong hàng, ↑↓ tới mục gần nhất dù lệch xa để nút chân thẻ luôn tới được); LOCKER ROOM vẫn tự cuộn tới thẻ đang chọn. Không thêm chữ mới.",
+  "why_this": "Code đã có và đang chạy ở BUILD YOUR SQUAD, sửa 1 nhánh là cả run đồng bộ, bố cục đổi sau này cũng tự đúng.",
+  "alternatives": [
+    "Giữ tuần tự nhưng thêm phím tắt nhảy thẳng tới SKIP / LEAVE — vá 1 chỗ, lưới LOCKER ROOM vẫn sai",
+    "Viết bảng điều hướng tay cho từng màn — chính xác tuyệt đối nhưng nhiều code, dễ lệch khi đổi bố cục"
+  ],
+  "files": ["src/ui/runmap.js"],
+  "limits": "Map (node) và BUILD YOUR SQUAD giữ nguyên cách đi cũ (phần việc khác). Từ nút LEAVE bấm ←→ có thể nhảy lên thẻ chéo phía trên (luật chung của navPick).",
+  "videoNote": "LOCKER ROOM ↓↓↑, PICK A BADGE ↓, KIT VAN ↓↓: trước = ô chọn chạy ngang theo danh sách; sau = đi xuống đúng thẻ / nút bên dưới.",
+  "before": "videos/run-08-before.mp4",
+  "after": "videos/run-08-after.mp4"
+}

@@ -1,0 +1,68 @@
+diff --git a/css/style.css b/css/style.css
+index 772e48e..c0b9ae9 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -274,7 +274,8 @@ kbd {
+ }
+ 
+ .card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--c); }
+-.card.sel, .card:hover { border-color: var(--c); transform: translateY(-5px); box-shadow: 4px 9px 0 var(--ink), 0 0 10px color-mix(in srgb, var(--c) 50%, transparent); }
++/* lá ở màn chọn (data-pick): rê chuột = chọn (UI.hoverSel) nên chỉ .sel nổi, không có lá thứ 2 sáng theo :hover */
++.card.sel, .card:not([data-pick]):hover { border-color: var(--c); transform: translateY(-5px); box-shadow: 4px 9px 0 var(--ink), 0 0 10px color-mix(in srgb, var(--c) 50%, transparent); }
+ .card-key { position: absolute; left: 5px; top: 6px; z-index: 5; font-family: var(--px); font-size: 6px; color: var(--ink); background: var(--gold); padding: 2px 4px; box-shadow: 1px 1px 0 var(--ink); }
+ .card-cat { font-family: var(--px); font-size: 5px; color: var(--c); margin-top: 3px; }
+ .card-icon { font-size: 30px; margin: 10px 0 6px; line-height: 1; }
+@@ -289,7 +290,8 @@ kbd {
+ .pause-items { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+ .pause-items.row-items { flex-direction: row; gap: 10px; }
+ .pause-items button { font-family: var(--px); font-size: 8px; padding: 5px 12px; color: var(--muted); border: 1px solid transparent; }
+-.pause-items button.sel, .pause-items button:hover { color: var(--ink); background: var(--gold); box-shadow: 2px 2px 0 var(--ink); }
++/* Pause (.pause-foot): rê chuột = chọn (UI.hoverSel) -> chỉ .sel sáng */
++.pause-items button.sel, .pause-items:not(.pause-foot) button:hover { color: var(--ink); background: var(--gold); box-shadow: 2px 2px 0 var(--ink); }
+ .help.small { grid-template-columns: 1fr 1fr 1fr; width: 560px; }
+ /* trang chủ: hộp QUIT GAME? (menu.js -> renderQuit) */
+ .quit-pop { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; background: rgba(10, 11, 14,0.72); }
+@@ -999,7 +1001,7 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+   0%, 100% { box-shadow: 4px 4px 0 var(--ink), 0 0 0 1px #8a6d3b, 0 0 6px rgba(255,210,63,0.25); }
+   50% { box-shadow: 4px 4px 0 var(--ink), 0 0 0 1px var(--gold), 0 0 12px rgba(255,210,63,0.6); }
+ }
+-.card.ult.sel, .card.ult:hover { transform: translateY(-4px); }
++.card.ult.sel, .card.ult:not([data-pick]):hover { transform: translateY(-4px); }
+ /* ô Tuyệt kỹ đầy: rung nhẹ */
+ .ab-slot.ult.ready { animation: ultShake 0.5s steps(4) infinite; }
+ @keyframes ultShake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-1px, 0); } 50% { transform: translate(0, -1px); } 75% { transform: translate(1px, 0); } }
+diff --git a/src/ui/matchui.js b/src/ui/matchui.js
+index c9f62be..8b4f504 100644
+--- a/src/ui/matchui.js
++++ b/src/ui/matchui.js
+@@ -163,6 +163,30 @@ window.SFC = window.SFC || {};
+         if (this.pendingReveal && btn.closest('#end')) return this.openReveal();   // còn thẻ chưa mở
+         this.doAct(btn.dataset.act);
+       });
++      // rê chuột = chọn (lá Core ở màn chọn, nút Pause): chuột và phím dùng chung 1 lựa chọn, Enter lấy đúng cái đang trỏ.
++      // Chỉ khi chuột thật sự di chuyển: màn vừa mở dưới con trỏ đứng yên không cướp lựa chọn của phím / tay cầm
++      let mx = -1, my = -1;
++      document.addEventListener('mousemove', (e) => {
++        if (e.clientX === mx && e.clientY === my) return;
++        mx = e.clientX; my = e.clientY;
++        this.hoverSel(e.target);
++      });
++    },
++
++    hoverSel(el) {
++      if (!el || !el.closest) return;
++      const card = el.closest('#draft .card[data-pick]'), g = this.app.game;
++      if (card) {
++        const i = +card.dataset.pick, d = g && g.draft;
++        if (this.current !== 'draft' || !d || d.picked[g.me] || this.draftAnimActive || this.draftMorphActive || i === this.draftSel) return;
++        SFC.Audio.menu();
++        this.setDraftSel(i);
++        return;
++      }
++      const b = el.closest('#pause .pause-items button');
++      if (!b || this.current !== 'pause') return;
++      const i = [...b.parentNode.children].indexOf(b);
++      if (i >= 0 && i !== this.pauseSel) { this.pauseSel = i; this.setPauseSel(); }
+     },
+   };
+ 

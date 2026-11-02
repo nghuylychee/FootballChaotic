@@ -1,0 +1,63 @@
+diff --git a/css/style.css b/css/style.css
+index dcca800..068622f 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -545,12 +545,15 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ #menu.m-headed > .tut-head { grid-column: 1 / -1; }
+ .m-ver { margin-left: auto; padding-bottom: 3px; font-size: 12px; color: var(--muted); }   /* phiên bản game (SETTINGS) */
+ .pt-tabs { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+-/* thanh tab RANKED · PRIVATE MATCH (kiểu Rocket League): Q / E (LB / RB) đổi tab */
+-.pt-tabrow { display: flex; align-items: center; gap: 4px; }
+-.pt-tabrow kbd { font-family: var(--px); font-size: 5px; color: var(--muted); padding: 2px 3px 1px; background: #1a1c22; border: 1px solid var(--edge); box-shadow: 1px 1px 0 var(--ink); }
+-.pt-tab { font-family: var(--px); font-size: 7px; color: var(--muted); letter-spacing: 1px; padding: 0 6px 4px; white-space: nowrap; border-bottom: 2px solid transparent; text-shadow: 1px 1px 0 var(--ink); cursor: pointer; }
++/* thanh tab GOAT PATH · RANKED · PRIVATE MATCH (kiểu Rocket League): mỗi tab là 1 ô bấm có icon riêng, tab đang đóng vẫn đọc rõ; Q / E (LB / RB) đổi tab */
++.pt-tabrow { display: flex; align-items: center; gap: 5px; }
++.pt-tabrow kbd { font-family: var(--px); font-size: 6px; color: var(--muted); padding: 3px 4px 2px; background: #1a1c22; border: 1px solid var(--edge); box-shadow: 1px 1px 0 var(--ink); }
++.pt-tab { display: flex; align-items: center; gap: 5px; font-family: var(--px); font-size: 8px; color: #c7ccd6; letter-spacing: 1px; padding: 5px 10px 4px 7px; white-space: nowrap; line-height: 1;
++  background: rgba(18, 20, 24, 0.92); border: 1px solid #4a4f5c; border-bottom-width: 3px; box-shadow: 2px 2px 0 var(--ink); text-shadow: 1px 1px 0 var(--ink); cursor: pointer; }
++.pt-tab .pxi { filter: saturate(0.4) brightness(0.8); }
+ .pt-tab:hover { color: var(--gold); }
+-.pt-tab.on { color: #fff; border-bottom-color: var(--gold); }
++.pt-tab:hover .pxi, .pt-tab.on .pxi { filter: none; }
++.pt-tab.on { color: #fff; background: #272b35; border-color: var(--gold); }
+ .pt-area { font-size: 12px; line-height: 1; }
+ /* RANKED: tiến độ tới Area kế (menu.js areaProgress) */
+ .pt-next { display: flex; align-items: center; gap: 5px; font-size: 10px; line-height: 1; color: var(--muted); }
+diff --git a/src/ui/menu.js b/src/ui/menu.js
+index 8f9507d..a011197 100644
+--- a/src/ui/menu.js
++++ b/src/ui/menu.js
+@@ -719,11 +719,13 @@ window.SFC = window.SFC || {};
+ 
+     /* ---------------- Main Path ---------------- */
+     // dòng phụ của nút MAIN PATH ở trang chủ: Area + Elo hiện tại
+-    // dòng dưới nút PLAY trang chủ: run đang dở (act · tầng) hoặc GOAT PATH
++    // dòng dưới nút PLAY trang chủ: kể đủ các chế độ trong màn PLAY (theo đúng các tab) để người chơi biết PRIVATE MATCH cũng nằm trong đó.
++    // Run đang dở: GOAT PATH kèm act. PRIVATE MATCH khoá (Platform.privateMatch) thì không nhắc tới
+     runSub() {
+       const R = SFC.Run.run;
+-      if (R && SFC.Run.active()) return `${_t('GOAT PATH')} · ${_t('ACT {n}', { n: R.act + 1 })} · ${SFC.Run.act(R.act).name}`;
+-      return _t('GOAT PATH');
++      const run = R && SFC.Run.active() ? `${_t('GOAT PATH')} ${_t('ACT {n}', { n: R.act + 1 })}` : _t('GOAT PATH');
++      const name = { run, party: _t('RANKED'), online: SFC.Platform.privateMatch ? _t('PRIVATE MATCH') : '' };
++      return PLAY_TABS().map((t) => name[t]).filter(Boolean).join(' · ');
+     },
+     pathSub() {
+       const MP = MPATH(), st = MP.state;
+@@ -949,12 +951,13 @@ window.SFC = window.SFC || {};
+       const txt = esc(next ? _tn('{n} star to unlock next area', '{n} stars to unlock next area', next.elo - st.elo) : _t('TOP AREA'));
+       return `<div class="pt-next" style="--ac:${A.color}"><i class="pt-prog"><b style="width:${next ? pct : 100}%"></b></i><span>${txt}</span></div>`;
+     },
+-    // thanh tab đầu màn PLAY (kiểu Rocket League): RANKED · FOOTBALL STORY · PRIVATE MATCH, Q / E (LB / RB) đổi tab; sub = dòng dưới (HTML)
++    // thanh tab đầu màn PLAY (kiểu Rocket League): GOAT PATH · RANKED · PRIVATE MATCH, Q / E (LB / RB) đổi tab; sub = dòng dưới (HTML)
++    // mỗi tab là 1 ô bấm được có icon riêng (vương miện / sao / 2 người); tab khoá: icon ổ khoá thay icon chế độ
+     playTabs(on, sub) {
+       const K = (a, kb) => SFC.Input.key(a, kb);
+-      const tab = (id, label, page, lock) => `<button class="pt-tab ${on === id ? 'on' : ''}" data-ptab="${page}">${lock ? PX().ui('lock', 'sm') + ' ' : ''}${esc(label)}</button>`;
++      const tab = (id, label, page, icon, lock) => `<button class="pt-tab ${on === id ? 'on' : ''}" data-ptab="${page}">${PX().ui(lock ? 'lock' : icon)}<span>${esc(label)}</span></button>`;
+       return `<div class="pt-tabs">
+-          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('run', _t('GOAT PATH'), 'run')}${SFC_CONFIG.mainPath.tab === false ? '' : tab('ranked', _t('RANKED'), 'party')}${tab('private', _t('PRIVATE MATCH'), 'online', !SFC.Platform.privateMatch)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
++          <div class="pt-tabrow"><kbd>${esc(K('tabPrev', 'Q'))}</kbd>${tab('run', _t('GOAT PATH'), 'run', 'crown')}${SFC_CONFIG.mainPath.tab === false ? '' : tab('ranked', _t('RANKED'), 'party', 'star')}${tab('private', _t('PRIVATE MATCH'), 'online', 'people', !SFC.Platform.privateMatch)}<kbd>${esc(K('tabNext', 'E'))}</kbd></div>
+           ${sub}
+         </div>`;
+     },

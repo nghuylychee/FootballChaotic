@@ -1,0 +1,48 @@
+diff --git a/src/ui/kitvan.js b/src/ui/kitvan.js
+index d9080aa..e378417 100644
+--- a/src/ui/kitvan.js
++++ b/src/ui/kitvan.js
+@@ -27,6 +27,8 @@ window.SFC = window.SFC || {};
+   const KIT_X = (k) => 44 + k * 22;
+   // tài xế: ngoại hình riêng (không phải đồng đội)
+   const DRIVER = { hair: 'buzz', face: 'beard', skin: 3 };
++  // tài xế ngồi: đỉnh bộ đệm 40x44 (chân ở y 40 trong bộ đệm) hạ xuống để bậu cửa (y 80) cắt ngang ngực
++  const SEAT_Y = 46;
+ 
+   let cv = null, L = null, raf = 0, last = 0, T = 0;
+   // trạng thái vẽ (KitVan.html cập nhật mỗi lần RunUI vẽ lại): items [{ id, price, sold, hot, key }] · kits [{ key }] · hover = key đang trỏ
+@@ -272,6 +274,19 @@ window.SFC = window.SFC || {};
+     }
+   }
+ 
++  /* ---------- ghế lái sau lưng tài xế (tựa đầu + lưng ghế) · bậu cửa cabin che người từ ngực trở xuống + 2 bàn tay tì lên bậu ---------- */
++  function seat(dy) {
++    P(265, 63 + dy, 10, 7, O); P(266, 64 + dy, 8, 5, '#4a3a58'); P(266, 64 + dy, 8, 1, '#6a5a7c');   // tựa đầu
++    P(268, 70 + dy, 4, 2, O);
++    P(263, 72 + dy, 14, 9, O); P(264, 73 + dy, 12, 8, '#4a3a58'); P(264, 73 + dy, 12, 1, '#6a5a7c'); P(274, 73 + dy, 2, 8, '#2e2238');
++  }
++  function sill(dy) {
++    const y = 80 + dy, skin = driverLook.skin;
++    P(239, y, 42, 1, O); P(239, y + 1, 42, 4, '#2a9c94'); P(239, y + 1, 42, 1, '#5fd6c8');   // màu thân xe (paintStatic)
++    // 2 bàn tay đặt trên mép bậu (ngay dưới 2 cánh tay của sprite)
++    for (const hx of [252, 265]) { P(hx, y - 2, 5, 4, O); P(hx + 1, y - 1, 3, 2, skin); P(hx + 1, y - 1, 3, 1, mix(skin, '#ffffff', 0.25)); }
++  }
++
+   /* ---------- vẽ mỗi khung ---------- */
+   let buf = null, driverLook = null;
+   function frame(now) {
+@@ -286,10 +301,12 @@ window.SFC = window.SFC || {};
+     L.drawImage(wheels, 0, 0);
+     drawSmoke(dy);
+     text('KIT VAN', 137 - textW('KIT VAN', 2) / 2, 12 + dy, O, 2);
+-    // tài xế trong cabin (cắt theo khung kính) + vệt kính phản chiếu
++    // tài xế NGỒI trong cabin (UX review 2026-11-02): hạ thấp người, bậu cửa che từ ngực trở xuống, khuỷu tay gác lên bậu + vệt kính phản chiếu
+     SFC.Sprites.drawAvatar(buf, driverLook, kit, T, Math.PI * 0.82, null, true);   // flat: cảnh pixel 1x
+-    L.save(); L.beginPath(); L.rect(239, 59 + dy, 42, 26); L.clip(); L.drawImage(buf, 240, 44 + dy); L.restore();
++    seat(dy);
++    L.save(); L.beginPath(); L.rect(239, 59 + dy, 42, 21); L.clip(); L.drawImage(buf, 240, SEAT_Y + dy); L.restore();
+     for (let k = 0; k < 6; k++) { P(268 - k, 60 + k * 2 + dy, 2, 2, 'rgba(255,255,255,0.45)'); P(276 - k, 60 + k * 2 + dy, 1, 2, 'rgba(255,255,255,0.3)'); }
++    sill(dy);
+     if (Math.floor(T * 8) % 23 === 0) P(296, 41, 6, 2, '#a89a6a');   // đèn đường chập chờn
+     // hàng treo: món đang bị tay với tới vẫn treo trên móc tới lúc nắm
+     const reaching = hand.mode === 'reach' && hand.item;

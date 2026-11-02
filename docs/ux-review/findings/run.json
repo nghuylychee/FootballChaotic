@@ -1,0 +1,327 @@
+[
+  {
+    "id": "run-01",
+    "screen": "PICK A BADGE / PICK GEAR / LOCKER ROOM / KIT VAN",
+    "title": "Esc / Backspace lặng lẽ bỏ phần thưởng và rời phòng",
+    "severity": "high",
+    "problem": "Ở PICK A BADGE, PICK GEAR, LOCKER ROOM và KIT VAN, bấm Esc (hoặc Backspace) là SKIP / LEAVE ngay, không hỏi lại, không có dòng báo nào. Người chơi đã quen Esc = 'quay lại' (trên map Esc về tab GOAT PATH) nên rất dễ mất BADGE của Elite / Boss, mất lượt chữa thương, hoặc rời Shop khi chưa mua gì, và không quay lại được.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a12_offer_before_esc.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a12_offer_after_esc.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a12_rest_after_esc.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a12_shop_after_esc.png"
+    ],
+    "where": [
+      "src/ui/runmap.js:1338-1345",
+      "src/ui/runmap.js:1247",
+      "src/ui/runmap.js:1263"
+    ],
+    "goal": "Esc không bao giờ tự làm mất thứ gì; muốn bỏ thì người chơi phải chủ động bấm SKIP / LEAVE.",
+    "fix": "Trong RunUI.back(): khi đang có thẻ thưởng (target 'skip') hoặc đang ở Shop / Locker Room (target 'leave'), Esc chỉ dời focus tới nút SKIP / LEAVE (this.sel = index nút đó, SFC.Audio.menu(), menu.render()) chứ không gọi act(). Nút đó vẫn cần Enter / click mới chạy. Giữ Esc = CLOSE ở SQUAD (đóng không mất gì) và Esc trên map = về tab như cũ. Co-op y hệt: Esc không gửi phiếu skip. Không có chuỗi mới.",
+    "why_this": "Đúng thói quen tay cầm / console (nút B kéo con trỏ về nút huỷ), không thêm hộp thoại hay chữ cần dịch, và sửa cả 4 màn chỉ trong 1 hàm.",
+    "alternatives": [
+      "Bấm 2 lần mới bỏ (như FORFEIT: lần đầu đổi nhãn thành 'SKIP?' + dòng báo) — an toàn, nhưng thêm chuỗi i18n và vẫn dễ bấm Esc 2 lần liền tay",
+      "Esc đóng thẻ để xem map, phần thưởng vẫn chờ (nút phần thưởng trên thanh map kiểu Slay the Spire) — hay nhất nhưng phải đổi luồng Run.offer / room, effort L",
+      "Chỉ thêm dòng báo 'đã bỏ qua' sau khi skip — có phản hồi nhưng đồ vẫn mất"
+    ],
+    "effort": "S",
+    "repro": "?runtest → h.js(\"SFC.RunTest.card('offer')\") → wait 1.3s → shot → h.key('Escape') → back on the map, SFC.Run.run.offer === null, SFC.Run.run.bag empty, no message. Same with card('gear') + Backspace, card('rest') + Escape (room null, injury not healed), card('shop') + Escape. Script: UX/review/run/a12_esc.py"
+  },
+  {
+    "id": "run-02",
+    "screen": "Run map",
+    "title": "Map không cuộn được bằng phím / tay cầm, nhìn không biết là còn phía trên",
+    "severity": "high",
+    "problem": "Map một act cao khoảng 2 lần khung nhìn; vào map chỉ thấy 2–3 tầng đầu, boss và nửa trên nằm ngoài khung. Chỉ lăn chuột mới cuộn được: ↑ / PageUp / Home không làm gì (scrollTop đứng yên ở 300, boss nằm ở y = -438). Không có thanh cuộn hay dấu nào báo map còn tiếp, hàng node trên cùng bị mép khung cắt nửa trông như lỗi vẽ. Người chơi phím / tay cầm không thể nhìn trước đường tới boss, mà đó là quyết định chính của kiểu Slay the Spire.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a13_map_open.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a13_map_after_up.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a1_map_scrolled_top.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a1_map_default.png"
+    ],
+    "where": [
+      "src/ui/runmap.js:1293-1306",
+      "src/ui/runmap.js:1150-1169",
+      "src/ui/runmap.js:334-365",
+      "css/style.css:2877-2881"
+    ],
+    "goal": "Ai cũng xem được cả map act (tới boss) trước khi chọn node, và nhìn vào là biết map cuộn được.",
+    "fix": "(1) Phím / tay cầm: khi đang ở hàng node, ↑ cuộn map lên 1 tầng (ROW_H) mỗi lần bấm tới hết đỉnh; ↓ cuộn ngược về chỗ đang đứng, chỉ khi đã về chỗ đang đứng thì ↓ mới xuống dải đội hình như bây giờ; ←→ vẫn đổi node và gọi reveal() để kéo map về node đang chọn. Nếu Input có cần analog phải thì gắn thêm vào cuộn. (2) Dấu hiệu: mũi tên pixel nhỏ ▲ kèm icon crown ở mép trên khung .rm-map (DOM, viền mực, màu cứng, không gradient), hiện khi phía trên còn node bị khuất; bấm = cuộn lên đỉnh. Tương tự ▼ ở mép dưới khi đã cuộn lên. Không có chuỗi mới (chỉ icon).",
+    "why_this": "Giữ nguyên bố cục sa bàn và cỡ node, chỉ thêm đường cho phím / tay cầm và 1 dấu hiệu nhỏ; ↑ ở hàng node hiện không làm gì nên không phá thói quen nào.",
+    "alternatives": [
+      "Thu nhỏ để cả map vừa 1 màn — thấy hết ngay nhưng node chỉ còn ~16px, icon khó đọc",
+      "Một phím giữ để xem toàn cảnh map — rõ, nhưng phải dạy thêm phím và thêm chữ hướng dẫn",
+      "Lần đầu vào act cho camera lia từ boss xuống chỗ đứng (như StS) — cho biết map dài, nhưng sau đó phím vẫn không cuộn lại được"
+    ],
+    "effort": "M",
+    "repro": "profile = UX/profile_run_map.json → h.key('Enter') (PLAY › GOAT PATH tab) → h.key('Enter') (CONTINUE) → map. Press ArrowUp, ArrowUp, PageUp, Home: document.querySelector('.rm-map').scrollTop stays 300 and .rm-node.k-boss getBoundingClientRect().top = -438. Mouse: h.move(640,360); pg.mouse.wheel(0,-2000) shows the boss. Scripts: UX/review/run/a13_mapkeys.py, a1_map.py"
+  },
+  {
+    "id": "run-03",
+    "screen": "PICK A BADGE / PICK GEAR / Who wears it / LEGEND join / LOCKER ROOM / map bar",
+    "title": "Chuột và phím chọn 2 thẻ khác nhau, Enter lấy thẻ không phải thẻ đang trỏ",
+    "severity": "med",
+    "problem": "Trên các thẻ chọn của run, rê chuột chỉ bật CSS :hover chứ không dời mục đang chọn (sel), nên 2 thẻ cùng có viền vàng y hệt nhau. Đã thử: phím đang ở Energy Drink, chuột trỏ Home Crowd, bấm Enter → nhận Energy Drink. Ở thẻ LEGEND xin vào đội còn rối hơn: chỉ số xem trước (▲▼) hiện ở thẻ chuột, nhưng Enter giao LEGEND cho thẻ của phím. Trên map, rê lên dải đội hình thì dải sáng vàng trong khi node vẫn sáng.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a15_offer_dual.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a15_offer_after_enter.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a7_join_hover3.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a2_strip_hover.png"
+    ],
+    "where": [
+      "css/style.css:3239",
+      "css/style.css:3256",
+      "css/style.css:2961",
+      "css/style.css:3006",
+      "src/ui/runmap.js:1323-1336",
+      "src/ui/runmap.js:830-850",
+      "src/ui/runmap.js:241",
+      "src/ui/kitvan.js:343-355"
+    ],
+    "goal": "Lúc nào cũng chỉ có đúng 1 thứ đang được chọn; chuột và phím dùng chung 1 con trỏ.",
+    "fix": "Làm như KIT VAN đã làm (KitVan.bind gọi onHover để đổi sel): trong RunUI.render gắn 1 listener mouseover ủy quyền trên .rm-page cho [data-rt] (và [data-rn] của node chọn được); chuột vào phần tử nào thì đặt this.sel = index target đó rồi chỉ chuyển class .sel trên DOM (bỏ .sel cũ, thêm .sel mới), không render lại; ở thẻ LEGEND join thì gọi lại show() theo sel mới. Bỏ :hover khỏi các rule .pb-card / .gr-card / .bd-card / button.sq-card (giữ cursor: pointer) để chỉ .sel tạo viền. Không có chuỗi mới.",
+    "why_this": "Một nguồn sự thật duy nhất (sel) cho mọi thẻ của run; đã có mẫu chạy sẵn trong KIT VAN nên ít rủi ro.",
+    "alternatives": [
+      "Đang dùng chuột thì ẩn viền của phím, bấm phím thì hiện lại — vẫn là 2 trạng thái, dễ lệch ở màn co-op có dấu phiếu",
+      "Cho hover một kiểu khác sel (viền trắng mờ) — hết nhìn nhầm nhưng Enter vẫn lấy thẻ không trỏ"
+    ],
+    "effort": "S",
+    "repro": "?runtest → h.js(\"SFC.RunTest.card('offer')\") → h.key('ArrowRight') (sel = 1) → h.hover('.pb-card', nth=2) → shot (2 gold cards) → h.key('Enter') → SFC.Run.run.bag[0].id === offer.ids[1], not ids[2]. Join card: h.js(\"SFC.RunTest.card('join','pirlow')\") → h.hover('.lg-pick', nth=2). Map bar: card('map') → h.hover('.rm-strip'). Scripts: UX/review/run/a15_dual.py, a7_join.py, a2_cards.py"
+  },
+  {
+    "id": "run-04",
+    "screen": "KIT VAN (Shop)",
+    "title": "KIT VAN: không biết món nào đủ tiền, cũng không biết món dùng cho cả đội hay 1 người",
+    "severity": "med",
+    "problem": "Thẻ giá ở KIT VAN trông y hệt nhau dù có đủ tiền hay không (còn 25 mà thẻ 40, 70, 160 vẫn giống hệt món 20); chỉ khi bấm vào mới nghe tài xế nói 'Not enough cash.'. Shop bán lẫn BADGE (cả đội) và GEAR (1 người đeo) nhưng bong bóng không nói chuyện đó; GEAR chỉ ghi 'SHO +4 Half price today!' (dính liền, đọc như 1 câu). Mua GEAR xong thì bị đẩy ngay sang 'Who wears it?' (không có BACK), bàn tay lấy đồ cũng không kịp diễn.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a14_van_poor.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a14_van_click_poor.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a14_van_hover_gear.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a4_shop_key1.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a4_shop_buy_gear.png"
+    ],
+    "where": [
+      "src/ui/kitvan.js:108-116",
+      "src/ui/kitvan.js:296-309",
+      "src/ui/runmap.js:730-748",
+      "src/ui/runmap.js:1249-1254"
+    ],
+    "goal": "Nhìn qua là biết món nào mua được và mua về thì ai dùng.",
+    "fix": "(1) shopCard truyền thêm poor = P.cash < price cho từng món và cho hộp cứu thương; KitVan.tag() vẽ thẻ giá 'không đủ tiền' bằng màu cứng: bìa xám tối (#5a5060), số đỏ (#ff5a6e), đồng xu xám; món trên móc giữ nguyên màu để vẫn ngắm được. Bấm món đó vẫn cho tài xế nói 'Not enough cash.' như cũ. (2) Bong bóng: thêm dòng loại món bằng chuỗi có sẵn — BADGE: _t('The whole team gets it'), GEAR: _t('One player wears it'); nối phần HOT bằng ' · ' thay cho dấu cách. (3) Khi mua GEAR: chờ bàn tay lấy đồ diễn xong (KitVan.busy() hết) rồi mới render sang 'Who wears it?'. Không có chuỗi mới.",
+    "why_this": "Đúng ngôn ngữ cảnh pixel (đổi màu thẻ giá, không phủ lớp mờ), không thêm chữ cần dịch, sửa đúng 2 thông tin cần để quyết định mua.",
+    "alternatives": [
+      "Làm mờ cả món không đủ tiền — rõ nhất nhưng che icon, người chơi không ngắm được món đắt để tính đường",
+      "Chia xe thành 2 khu (móc BADGE / giá GEAR) — rõ loại nhưng phải vẽ lại bố cục xe",
+      "Chỉ sửa câu tài xế — nhanh nhưng vẫn phải trỏ từng món mới biết"
+    ],
+    "effort": "S",
+    "repro": "?runtest → h.js(\"SFC.RunTest.card('shop')\") → h.js('SFC.Run.run.cash = 25; SFC.Menu.render()') → shot (all tags look the same) → h.click('.kv-hit', nth=0) → bubble 'Not enough cash.'; h.hover('.kv-hit', nth=<SFC.Run.run.room.items.findIndex(x=>x.g)>) → GEAR bubble without 'one player'. Shop items are random per test run. Script: UX/review/run/a14_van.py (buy GEAR: a4_rooms.py)"
+  },
+  {
+    "id": "run-05",
+    "screen": "LOCKER ROOM",
+    "title": "LOCKER ROOM: thẻ UPGRADE không nói nâng cấp được gì",
+    "severity": "med",
+    "problem": "Thẻ UPGRADE chỉ thêm dấu '+' vào tên, câu mô tả y như BADGE gốc (Scouting Report+ vẫn ghi 'Every Core pick shows one more card.' dù bản nâng cấp cho thêm 1 lá và 1 lần reroll). Ở LOCKER ROOM chỉ được làm 1 việc (chữa thương hay nâng cấp cái nào), mà người chơi không biết mỗi lựa chọn đổi được gì; chỉ BADGE có chip (ULT ▲) mới thấy chút khác biệt.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a5_rest.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a10_rest_all.png"
+    ],
+    "where": [
+      "src/ui/runmap.js:749-764",
+      "src/ui/runmap.js:390-401",
+      "config/run.config.js:104-123",
+      "src/i18n/fields.js"
+    ],
+    "goal": "Mỗi thẻ UPGRADE nói rõ bản '+' hơn bản cũ ở chỗ nào, không cần đọc số.",
+    "fix": "Thêm trường upDesc (1 câu ngắn, không số, cùng kiểu desc) cho mọi BADGE có up trong config/run.config.js và khai báo nó trong src/i18n/fields.js để dịch tại chỗ. Ví dụ: report 'Two more cards and a free reroll.', coin 'Two more rerolls on every Core pick.', drink 'Ultimates charge even faster.', var 'Gets goals ruled out more often.', watch 'Even more added time.', sponsor 'Wins pay even more.', ticket 'Shop prices drop even more.', shin 'Blocks the first two injuries of each act.', bibs 'Skill games and trials get much easier.'. card() hiện upDesc (chữ vàng, có ▲ nhỏ) thay cho desc khi thẻ mang tag UPGRADE; badgeTip dùng upDesc khi b.up (SQUAD, TEAM BADGES). GEAR UPGRADE đã có chip số nên giữ nguyên. Chuỗi mới: thêm vào mọi pack, chạy node scripts/i18n-check.js, build lại font ja.",
+    "why_this": "Theo đúng luật của dự án (mô tả 1 dòng, không số), đọc 1 câu là so được 2 bản; phần còn lại của thẻ giữ nguyên.",
+    "alternatives": [
+      "Tự sinh chip trước → sau từ up và số gốc (CARDS +1 → +2) — không cần viết chữ nhưng lộ số, trái quyết định 'người chơi không đọc số'",
+      "Hiện 2 thẻ nhỏ cạnh nhau (bản thường / bản +) — trực quan nhưng LOCKER ROOM vốn đã chật"
+    ],
+    "effort": "M",
+    "repro": "?runtest → h.js(\"SFC.RunTest.badges=['report','coin','ticket','shin']; SFC.RunTest.card('rest')\") → wait 1.5s → UPGRADE cards show exactly the base desc. Script: UX/review/run/a5_rooms.py (all badges: a10_more.py)"
+  },
+  {
+    "id": "run-06",
+    "screen": "??? event",
+    "title": "Sự kiện ???: gợi ý khó hiểu, focus rơi vào lựa chọn không dùng được, kết quả chỉ là 1 dòng nhỏ",
+    "severity": "med",
+    "problem": "Nút lựa chọn ghi tắt khó đoán: 'Train hard BADGE 💥?' (💥? nghĩa là có thể chấn thương), 'Bet -$25 $60?'. Không đủ tiền thì nút Bet mờ nhưng vẫn được chọn sẵn; Enter chỉ ra câu chung 'You cannot do that right now.' (không nói thiếu tiền). Chọn xong thẻ biến mất ngay, kết quả chỉ là 1 dòng nhỏ ở đáy map đè lên bảng chú thích: thắng thì 'Run cash +$60' (thực tế chỉ +35 vì đã trả 25), thua thì 'No luck.' và tiền tụt 25 không một lời giải thích.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a5_event_coach.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a5_event_bet_poor.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a5_event_bet_poor_enter.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a5_event_bet_result.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a17_event_bet_lost.png"
+    ],
+    "where": [
+      "src/ui/runmap.js:1056-1064",
+      "src/ui/runmap.js:1265-1269",
+      "src/ui/runmap.js:1286-1292",
+      "src/ui/runmap.js:251",
+      "src/ui/runmap.js:191"
+    ],
+    "goal": "Biết rõ mỗi lựa chọn được / mất gì trước khi chọn, và thấy rõ chuyện gì vừa xảy ra.",
+    "fix": "(1) Gợi ý thành chip màu cứng giống chip BADGE: tiền trả '-$25' đỏ, tiền có thể thắng '+$60?' xanh, BADGE = icon miếng vá nhỏ, rủi ro chấn thương = dấu ✚ đỏ + '?' (cùng dấu chấn thương ở dải đội hình), chữa hết = ✚ xanh. (2) targets() đánh dấu dis cho lựa chọn !canChoose và firstSel bỏ qua mục dis; Enter vào mục thiếu tiền nói _t('Not enough cash.') (chuỗi có sẵn). (3) Sau khi chọn, giữ thẻ ở trạng thái kết quả: icon kết quả to (đồng xu / BADGE vừa nhận / ✚ đỏ), câu từ sayEvent, tiền tính cả phần đã trả ('-$25 · +$60'), và nút CONTINUE (chuỗi có sẵn) mới về map. Co-op: host đặt trạng thái kết quả vào R.room để mọi máy cùng thấy. Chuỗi mới (nếu có) thêm vào mọi pack.",
+    "why_this": "??? là chỗ duy nhất người chơi đánh cược, nên kết quả phải là một khoảnh khắc nhìn thấy được; dùng lại chip, icon, chuỗi có sẵn nên ít việc dịch.",
+    "alternatives": [
+      "Chỉ viết lại câu gợi ý — rẻ, nhưng kết quả vẫn trôi qua trong 1 dòng nhỏ",
+      "Toast kết quả to giữa màn 2 giây — có cảm xúc nhưng không chờ người chơi đọc, co-op dễ lệch nhịp"
+    ],
+    "effort": "M",
+    "repro": "?runtest → h.js(\"SFC.RunTest.card('map'); const R=SFC.Run.run,n=R.map.floors[0][0]; R.at=n.id; R.path=[n.id]; R.room={kind:'event',id:'bet'}; SFC.RunUI.reset(); SFC.Menu.render()\") → h.js('SFC.Run.run.cash=10; SFC.Menu.render()') → shot (dimmed Bet is focused) → Enter → generic message. Then cash=100; force the outcome with h.js('Math.random=()=>0.1') (win) or 0.9 (lose) → Enter → card closes, tiny line at the bottom. Coach: id 'coach'. Scripts: UX/review/run/a5_rooms.py, a17_verify.py"
+  },
+  {
+    "id": "run-07",
+    "screen": "Act cut-scene",
+    "title": "Cut-scene: chuột không bỏ qua được, gợi ý bỏ qua gần như vô hình, còn hình ⊘ thì trông như nút",
+    "severity": "med",
+    "problem": "Cách duy nhất để bỏ qua cut-scene là giữ phím xác nhận; gợi ý 'Enter next · hold to skip' chữ nhỏ xám mờ trên nền giấy kem ở góc dưới phải, vòng tiến độ gần như không thấy. Người dùng chuột không có cách bỏ qua: giữ chuột 1.6 giây rồi thả chỉ sang 1 câu. Trong khi đó góc trên phải có hình ⊘ (vốn là quả bóng vẽ bút chì) đúng chỗ người ta tìm nút đóng / skip, bấm vào cũng chỉ sang 1 câu.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a9_cut_1.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a9_cut_hold.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/crop_cut_skip_hold.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/crop_cut_doodle.png"
+    ],
+    "where": [
+      "src/ui/story.js:884",
+      "src/ui/story.js:896",
+      "src/ui/story.js:960-965",
+      "src/ui/story.js:712",
+      "css/style.css:2133-2140",
+      "css/style.css:2109"
+    ],
+    "goal": "Ai muốn bỏ qua cut-scene cũng thấy ngay và bỏ qua được bằng chuột, phím hay tay cầm.",
+    "fix": "(1) Biến .st-skip thành nút thật đặt góc trên phải: pointer-events auto, nền mực tối, viền mực, chữ sáng (đủ tương phản trên cả 4 kiểu kể diary / manga / tv / film; bỏ các rule đổi màu mờ ở #story.st-tell-*), gồm vòng tiến độ có viền mực + nhãn _t('SKIP') (chuỗi có sẵn) + gợi ý giữ {key} như cũ (Input.label). Click nút = skipAll() ngay; giữ chuột ở bất kỳ đâu ≥ skipHold cũng bỏ qua (Story theo dõi mousedown / mouseup như input.isDown). Click chỗ khác vẫn = câu kế. (2) Sửa hình quả bóng bút chì ở story.js:712 (bỏ nét gạch chéo, vẽ ngũ giác giữa) hoặc dời xuống lề trái để không còn giống ⊘.",
+    "why_this": "Nút SKIP rõ ràng là chuẩn của mọi game có cut-scene; dùng lại chuỗi SKIP và hàm skipAll có sẵn, đổi ít mà người dùng chuột hết bị kẹt.",
+    "alternatives": [
+      "Chỉ tăng tương phản chữ gợi ý — rẻ, nhưng chuột vẫn không bỏ qua được",
+      "Esc bấm 1 lần là bỏ qua — nhanh cho phím nhưng dễ bỏ nhầm, chuột vẫn không có cách",
+      "Hỏi 'xem truyện không?' trước mỗi act — rõ nhưng chen thêm 1 màn"
+    ],
+    "effort": "S",
+    "repro": "Default harness profile (no run) → h.key('Enter') (PLAY) → h.key('Enter') (START RUN) → h.click('.pk-bc', nth=0) → h.click('.pk-bc', nth=3) → h.click('.pk-mid [data-rt]') → act 1 intro (diary). Shot after ~2s: ⊘ top-right, hint bottom-right. h.move(640,360); pg.mouse.down(); wait 1600; pg.mouse.up() → only one line advances (SFC.Story.idx +1). Script: UX/review/run/a9_cut.py"
+  },
+  {
+    "id": "run-08",
+    "screen": "Every overlay on the map (BADGE / GEAR pick, LOCKER ROOM, KIT VAN, LEGEND join)",
+    "title": "Mũi tên trong các thẻ che map đi tuần tự, không theo vị trí trên màn hình",
+    "severity": "med",
+    "problem": "Trong mọi thẻ che map, cả 4 phím mũi tên chỉ đi tới / lui theo danh sách: ↓ = mục kế, ↑ = mục trước. Ở LOCKER ROOM 2 hàng, ↓ từ thẻ góc trên trái lại nhảy sang thẻ bên phải; ở PICK A BADGE phải bấm ↓ 3 lần mới tới SKIP; ở KIT VAN ↓ chạy dọc hàng móc chứ không xuống hộp cứu thương / LEAVE. BUILD YOUR SQUAD thì lại đi theo vị trí, nên cảm giác điều khiển đổi giữa các màn của run.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a11_rest_start.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a11_rest_down.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a11_offer_start.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a11_offer_down3.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a11_shop_down.png"
+    ],
+    "where": [
+      "src/ui/runmap.js:1316",
+      "src/ui/runmap.js:1307-1315",
+      "src/ui/helpers.js:74-99"
+    ],
+    "goal": "Mũi tên luôn đi tới thứ nằm đúng hướng đó trên màn hình, giống BUILD YOUR SQUAD.",
+    "fix": "Ở RunUI.input, nhánh thẻ che (dòng 1316) dùng lại đoạn đi theo vị trí của BUILD YOUR SQUAD: rect = SFC.UIHelpers.navRect(phần tử [data-rt] của từng target), best = SFC.UIHelpers.navPick(...); không có mục nào theo hướng đó thì ←→ quay về đi tuần tự, ↑↓ đứng yên. KIT VAN có sẵn .kv-hit mang data-rt nên chạy luôn. Giữ reveal() để LOCKER ROOM cuộn tới thẻ đang chọn. Không có chuỗi mới.",
+    "why_this": "Code đã có và đang chạy ở BUILD YOUR SQUAD, sửa 1 nhánh là cả run đồng bộ.",
+    "alternatives": [
+      "Giữ tuần tự nhưng thêm phím tắt nhảy thẳng tới SKIP / LEAVE — vá 1 chỗ, lưới LOCKER ROOM vẫn sai",
+      "Viết bảng điều hướng tay cho từng màn — chính xác nhưng nhiều code, dễ lệch khi đổi bố cục"
+    ],
+    "effort": "S",
+    "repro": "?runtest → h.js(\"SFC.RunTest.badges=Object.keys(SFC_CONFIG.run.badges).filter(id=>!SFC_CONFIG.run.badges[id].injury); SFC.RunTest.card('rest')\") → h.key('ArrowDown') → SFC.RunUI.sel 0 → 1 (card to the right, not below). card('offer') → ArrowDown x3 to reach SKIP. card('shop') → ArrowDown walks along the hooks. Script: UX/review/run/a11_nav.py"
+  },
+  {
+    "id": "run-09",
+    "screen": "Run map top bar + SQUAD sheet",
+    "title": "Dải đội hình là nút ẩn; đọc BADGE / GEAR chỉ được bằng rê chuột",
+    "severity": "med",
+    "problem": "Chỗ duy nhất xem đội hình, BADGE và GEAR trên map là dải 3 khuôn mặt + OVR ở góc trên trái, nhưng dải này không có chữ hay icon nào cho biết đó là nút SQUAD; vạch GEAR dưới OVR màu #2a2e38 trên nền tối, gần như vô hình và lòi ra ngoài viền. Trên map không thấy BADGE của đội ở đâu. Mở SQUAD bằng phím / tay cầm thì chỉ có CLOSE chọn được; mô tả BADGE, GEAR, LEGEND chỉ hiện khi rê chuột, nên người chơi tay cầm không bao giờ đọc lại được BADGE mình đã nhặt.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a2_testmap.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/crop_strip_hover.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a2_squad_sheet.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a2_squad_badge_hover.png"
+    ],
+    "where": [
+      "src/ui/runmap.js:228-230",
+      "src/ui/runmap.js:408-416",
+      "src/ui/runmap.js:193",
+      "src/ui/runmap.js:523-526",
+      "src/ui/runmap.js:682-690",
+      "src/ui/helpers.js:148-213",
+      "css/style.css:2992-2997",
+      "css/style.css:3299-3301"
+    ],
+    "goal": "Trên map thấy ngay chỗ mở SQUAD và BADGE của đội; trong SQUAD đọc được mọi BADGE / GEAR / LEGEND bằng phím hay tay cầm.",
+    "fix": "(1) Thêm nhãn _t('SQUAD') (chuỗi có sẵn) nhỏ ở đầu dải đội hình và một hàng icon BADGE mini (tối đa ~6 icon + '+n') ngay sau, cùng nằm trong nút; ô GEAR trống đổi sang màu sáng hơn (#5a6070) và nằm gọn trong viền. (2) SQUAD: thêm target 'info' cho từng BADGE của đội và từng ô GEAR / LEGEND, đi bằng mũi tên theo vị trí (navPick); mục đang chọn mở đúng popup SFC.Tip như khi rê chuột — thêm SFC.Tip.showFor(el) bỏ qua kiểm tra :hover ở helpers.js. Enter trên mục info không làm gì; CLOSE vẫn là mục đầu.",
+    "why_this": "Dùng lại tooltip có sẵn cho phím / tay cầm thay vì làm màn mới; nhãn SQUAD và icon BADGE cho thấy ngay nút này có gì.",
+    "alternatives": [
+      "Trang SQUAD thêm cột chữ mô tả mọi BADGE — đọc được ngay nhưng nhiều chữ, trái hướng 'ui-image-first'",
+      "Panel BADGE luôn mở bên cạnh map — tiện nhưng chiếm chỗ của map vốn đã chật"
+    ],
+    "effort": "M",
+    "repro": "?runtest → h.js(\"SFC.RunTest.badges=['report','coin','ticket']; SFC.RunTest.card('map')\") → shot (strip has no label, badges not on the map) → h.key('ArrowDown') → h.key('Enter') (SQUAD) → SFC.RunUI.targets() is ['close'] only; badge text only via h.hover('.sq-team .sq-b'). Script: UX/review/run/a2_cards.py"
+  },
+  {
+    "id": "run-10",
+    "screen": "Who wears it / LOCKER ROOM / map messages",
+    "title": "Dòng báo đè lên nút BACK và bảng chú thích; LOCKER ROOM cắt mất tên người và nhãn thẻ; thẻ mờ không nói lý do",
+    "severity": "low",
+    "problem": "Dòng báo của run (.run-msg) luôn nằm giữa đáy màn: khi đang mở thẻ nó che đúng nút ở chân thẻ (chọn người đã đeo món giống hệt ở 'Who wears it?' thì 'Already wearing one.' che kín BACK), ngoài map thì che chữ SKILL GAME / SHOP / LOCKER ROOM của bảng chú thích. Thẻ người không đeo được chỉ bị làm mờ tới mức thấy node map xuyên qua, không ghi lý do cho tới khi bấm. Ở LOCKER ROOM, khung cuộn cắt mất tag tên người bị thương (ROOKIE còn nửa chữ), nhãn HEAL / UPGRADE khi cuộn, và dòng độ hiếm của hàng thẻ dưới.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a16_gear_who_dis.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a16_gear_dis_msg.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a15_offer_after_enter.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/crop_rest_heal.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a10_rest_all.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a10_rest_all_key6.png"
+    ],
+    "where": [
+      "css/style.css:2923",
+      "src/ui/runmap.js:233-238",
+      "src/ui/runmap.js:1213",
+      "src/ui/runmap.js:170",
+      "src/ui/runmap.js:514",
+      "css/style.css:3277",
+      "css/style.css:2957",
+      "css/style.css:2971",
+      "css/style.css:3124"
+    ],
+    "goal": "Không chữ hay nút nào bị che hoặc bị cắt ở 1280x720, và thẻ không chọn được thì nói luôn vì sao.",
+    "fix": "(1) Khi overlay() đang trả về thẻ, đưa dòng báo vào trong thẻ ngay trên .rm-sheet-foot (hoặc class .over-sheet đẩy .run-msg lên trên chân thẻ); ngoài map thì đặt nó phía trên .rm-legend thay vì chồng lên. (2) Thẻ dis ở 'Who wears it?': nền đặc + grayscale thay cho opacity 0.35 (không xuyên thấy map), thêm chip nhỏ 'Already wearing one.' (chuỗi có sẵn) lên thẻ; firstSel và điều hướng bỏ qua thẻ dis. (3) .bd-scroll thêm padding-top 10px và padding-bottom 10px (bằng phần thò ra của .bd-tag top:-9px và .bd-who bottom:-8px), trừ tương ứng vào max-height. Không có chuỗi mới.",
+    "why_this": "Toàn sửa CSS / vị trí, không đổi luồng, không thêm chữ, dọn hết các chỗ chồng đã thấy.",
+    "alternatives": [
+      "Đưa mọi dòng báo thành toast góc trên — không chồng nút nhưng xa chỗ mắt người chơi đang nhìn",
+      "Bỏ cuộn ở LOCKER ROOM, thu nhỏ thẻ — hết cắt nhưng chữ vốn 5–6px càng khó đọc"
+    ],
+    "effort": "S",
+    "repro": "?runtest → h.js(\"SFC.RunTest.card('gear'); const R=SFC.Run.run; R.squad[1].gear=[Object.assign({}, R.offer.gear[0], {up:false})]; SFC.Menu.render()\") → h.key('Enter') → move sel to SFC.RunUI.targets().findIndex(t=>t.k==='wear'&&t.dis) (ArrowRight) → h.key('Enter') → 'Already wearing one.' covers BACK. Locker Room: h.js(\"SFC.RunTest.card('rest')\") (heal card name tag clipped); all badges + ArrowRight x6 (top tags clipped). Scripts: UX/review/run/a16_gear_dis.py, a5_rooms.py, a10_more.py"
+  },
+  {
+    "id": "run-11",
+    "screen": "RUN OVER",
+    "title": "RUN OVER: phần mang về chỉ là icon + số, ★ +45 không ai hiểu",
+    "severity": "low",
+    "problem": "Màn RUN OVER tóm tắt bằng 1 hàng icon nhỏ: '0 wins · 👑 0 · 🪙 +48 · ★ +45'. ★ +45 là tiến độ Core Road nhưng chỉ rê chuột mới thấy tooltip, và không nói còn bao xa tới Core kế tiếp. Người vừa thua không thấy run này đã góp gì cho lần sau — đúng chỗ roguelite cần giữ chân người chơi.",
+    "evidence": [
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a10_end_ko.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a10_end_ko_hover_star.png",
+      "C:/Users/Long/AppData/Local/Temp/claude/e--FootballChaotic/98110d02-082d-4256-94a3-f044f98cc637/scratchpad/ux/review/run/a8_runover.png"
+    ],
+    "where": [
+      "src/ui/runmap.js:1067-1082"
+    ],
+    "goal": "Thua xong vẫn thấy rõ mình mang về được gì và còn bao xa tới mở khoá kế tiếp.",
+    "fix": "Mỗi mục tally thành chip có nhãn: gold → 'GOLD +48', ★ → 'CORE ROAD +45' kèm thanh tiến độ pixel nhỏ (màu cứng, viền mực) từ mốc trước tới mốc Core kế (Profile.data.runs.road so với nấc CORE ROAD, MainPath.roadAt), thanh chạy lên khi thẻ hiện; NEW CORES thêm tên Core dưới icon. Chuỗi mới ('GOLD', 'CORE ROAD' nếu chưa có) thêm vào mọi pack, chạy i18n-check, build font ja.",
+    "why_this": "Biến con số khó hiểu thành tiến độ nhìn thấy được bằng dữ liệu đã có (roadGain, runs.road), không đổi luồng.",
+    "alternatives": [
+      "Chỉ thêm nhãn chữ, không thanh tiến độ — rẻ nhưng vẫn không biết còn bao xa",
+      "Màn tổng kết riêng có đường Core Road chạy — đẹp nhưng effort L"
+    ],
+    "effort": "S",
+    "repro": "?runtest → h.js(\"SFC.RunTest.card('map'); const R=SFC.Run.run; R.offer=null; R.over=true; R.log.push({act:0,node:'0.0',kind:'match',team:'pigeon_gang',my:1,op:2}); R.metaGold=48; R.roadGain=45; R.newCores=['thunder_kick']; SFC.RunUI.reset(); SFC.Menu.render()\") → h.hover('.rm-tally span', nth=3). Real flow: profile_run_map.json → GOAT PATH tab → FORFEIT RUN → CONFIRM FORFEIT (a8_forfeit.py). Scripts: UX/review/run/a17_verify.py, a10_more.py"
+  }
+]

@@ -1,0 +1,70 @@
+diff --git a/css/style.css b/css/style.css
+index 1fdbfad..7928d82 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -1463,6 +1463,13 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .in-venue { font-size: 13px; color: #e6dccb; letter-spacing: 1px; text-align: center; animation: inFade 0.3s steps(3) var(--d) both; }
+ 
+ .in-foot { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
++.in-foot { position: relative; }   /* nằm trên 2 dải màu áo (.in-bg, absolute + sọc tối) thay vì bị phủ mờ */
++/* gợi ý bấm qua (màn VS, Beat 1 sau còi, lúc đếm thưởng — ui/intro.js, ui/endscreen.js skipHint): nền tối chữ sáng, đọc được trên mọi màu áo */
++.skip-hint { flex: none; padding: 1px 6px 2px; font-size: 12px; line-height: 1; color: #e6dccb; white-space: nowrap; pointer-events: none;
++  background: rgba(10, 11, 14, 0.82); border: 1px solid #3b4252; box-shadow: 1px 1px 0 var(--ink); }
++.skip-hint kbd { margin-right: 1px; }
++#end .rw-skip { position: absolute; right: 18px; bottom: 10px; display: none; }
++#end.rw-focus .rw-skip { display: block; }
+ .in-timer { flex: 1; height: 2px; background: var(--gold); opacity: 0.6; animation: inTimer var(--dur) linear both; transform-origin: left; }
+ 
+ @keyframes inBgL { from { transform: translateX(-100%); } to { transform: none; } }
+@@ -2584,8 +2591,8 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .ot-sub b { font-family: var(--px); font-size: 9px; font-weight: normal; text-shadow: 1px 1px 0 var(--ink); }
+ .ot-score { font-family: var(--px); font-size: 8px; color: #fff; background: rgba(18,20,24,0.85); border: 1px solid var(--edge); padding: 2px 5px 1px; }
+ 
+-.outro-foot { width: 100%; padding: 0 18px 6px; pointer-events: none; }
+-.outro-bar { height: 2px; background: var(--gold); opacity: 0.7; transform-origin: left; animation: inTimer var(--dur, 3s) linear both; }
++.outro-foot { width: 100%; padding: 0 18px 6px; pointer-events: none; display: flex; align-items: center; gap: 8px; }
++.outro-bar { flex: 1; height: 2px; background: var(--gold); opacity: 0.7; transform-origin: left; animation: inTimer var(--dur, 3s) linear both; }
+ 
+ /* Beat 2: Cột trái = Xếp hạng & Thưởng XP · Cột phải = Bảng tỉ số 2 đội (tối đa 5 Core/Ult + 4 cột chỉ số) */
+ #end:not(.outro) {
+diff --git a/src/ui/endscreen.js b/src/ui/endscreen.js
+index baff8eb..8722d3f 100644
+--- a/src/ui/endscreen.js
++++ b/src/ui/endscreen.js
+@@ -106,7 +106,12 @@ window.SFC = window.SFC || {};
+             <span class="ot-score">${t0.score} - ${t1.score}</span>`}
+           </div>
+         </div>
+-        <div class="outro-foot"><div class="outro-bar" style="--dur:${dur}s"></div></div>`;
++        <div class="outro-foot"><div class="outro-bar" style="--dur:${dur}s"></div>${this.skipHint()}</div>`;
++    },
++
++    // gợi ý bấm qua: cùng 1 kiểu (nền tối, CSS .skip-hint) với màn VS (ui/intro.js) — Beat 1 sau còi + lúc đếm thưởng ở Beat 2
++    skipHint(cls = '') {
++      return `<span class="skip-hint ${cls}">${_t('{key} skip', { key: `<kbd>${esc(SFC.Input.key('confirm', 'Enter'))}</kbd>` })}</span>`;
+     },
+ 
+     // LEGEND TRIAL (D.trial): qua / hỏng thay cho mốc ĐỒNG / BẠC / VÀNG
+@@ -198,7 +203,8 @@ window.SFC = window.SFC || {};
+           ${game.reward ? `<div class="end-left">${this.rewardPanel(game.reward)}</div>` : ''}
+           ${D ? '' : `<div class="sb-wrap">${orderedTeams.map((t, i) => teamBlock(t, i)).join('')}</div>`}
+         </div>
+-        <div class="end-act">${note}<div class="pause-items row-items" id="end-items"></div></div>`;
++        <div class="end-act">${note}<div class="pause-items row-items" id="end-items"></div></div>
++        ${game.reward ? this.skipHint('rw-skip') : ''}`;
+       this.el.end.querySelectorAll('canvas.sb-por[data-pid]').forEach((cv) => {
+         const p = game.players.find((q) => q.id === +cv.dataset.pid);
+         if (p) this.drawPortrait(cv, p, game);
+diff --git a/src/ui/intro.js b/src/ui/intro.js
+index 4b77f0b..a2a25fc 100644
+--- a/src/ui/intro.js
++++ b/src/ui/intro.js
+@@ -129,7 +129,7 @@ window.SFC = window.SFC || {};
+           <div class="in-venue" style="--d:${I.pitchAt}s">${venueIcon}${esc(venue)}</div>
+         </div>
+         ${this.side(g, 1, lists[1], delay, boss)}
+-        <div class="in-foot"><span>${_t('{key} skip', { key: `<kbd>${esc(SFC.Input.key('confirm', 'Enter'))}</kbd>` })}</span><i class="in-timer" style="--dur:${I.duration}s"></i></div>
++        <div class="in-foot"><i class="in-timer" style="--dur:${I.duration}s"></i><span class="skip-hint">${_t('{key} skip', { key: `<kbd>${esc(SFC.Input.key('confirm', 'Enter'))}</kbd>` })}</span></div>
+       </div>`;
+     },
+ 

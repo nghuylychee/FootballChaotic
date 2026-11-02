@@ -1,0 +1,22 @@
+{
+  "id": "menus-02",
+  "area": "menus",
+  "screen": "TROPHY ROOM › ACHIEVEMENTS › nhận thưởng hộp",
+  "source": "agent",
+  "severity": "high",
+  "title": "Nhận thưởng ACHIEVEMENTS bằng Enter liên tục là bị trừ gold mua hộp",
+  "problem": "Bảng thưởng ghi \"Open it for free in the SHOP\" nhưng bấm CLAIM là nhảy thẳng sang màn OPEN BOX. Người đang nhận 7 thưởng liền sẽ bấm Enter (nhận) → Enter (bỏ quay) → Enter (tưởng là tiếp) — và cú Enter thứ 3 là OPEN ANOTHER, tự trừ 100 gold mua hộp mới, không hỏi lại.",
+  "goal": "Nhịp 'nhận → xem → nhận tiếp' bằng một phím không bao giờ tiêu gold, và chữ trên bảng thưởng nói đúng điều sẽ xảy ra.",
+  "why": "Mất gold mà không hề muốn mua là kiểu lỗi làm người chơi bực và mất tin vào SHOP. Nó xảy ra đúng lúc người chơi đang vui vì được thưởng.",
+  "fix": "Khi hộp được mở từ ACHIEVEMENTS: nếu còn hộp FREE cùng loại (thưởng ×2) thì Enter = mở tiếp hộp FREE; hết hộp FREE thì Enter = BACK TO ACHIEVEMENTS. Ở chỗ này không bao giờ hiện OPEN ANOTHER tốn gold. Nhận xong một thưởng, con trỏ tự nhảy tới thưởng kế tiếp còn chờ, nên Enter, Enter... là nhận hết. Dòng chữ hộp thưởng đổi thành \"Opens right away\". Kỹ thuật: Gacha.revealHtml / openAct đọc openBack === 'ach'; AchUI.toNext(); 2 chuỗi mới ở mọi pack i18n.",
+  "why_this": "Giữ được khoảnh khắc mở hộp vui khi nhận thưởng, chỉ đổi phím chính theo ngữ cảnh, nên vòng mua liền tay ở SHOP không bị chậm đi.",
+  "alternatives": [
+    "Nhận thưởng chỉ cộng hộp FREE vào SHOP, không tự mở — khớp chữ cũ, nhưng mất khoảnh khắc mở hộp và phải tự đi SHOP",
+    "Bắt bấm 2 lần cho mọi OPEN ANOTHER tốn gold (như phân rã đồ hiếm) — an toàn nhất, nhưng làm chậm người cố ý mua liền tay ở SHOP"
+  ],
+  "files": ["src/ui/gacha.js", "src/ui/achievements.js", "src/i18n/es.js", "src/i18n/ja.js", "src/i18n/pt-BR.js", "src/i18n/pt-PT.js"],
+  "limits": "Bản dịch 2 chuỗi mới là bản nháp của Claude, chưa có người bản xứ duyệt (các chuỗi ACHIEVEMENTS khác cũng chưa dịch). Font tiếng Nhật cần build lại khi gộp patch.",
+  "videoNote": "Cùng 6 lần Enter từ 640 gold: bản cũ kết thúc ở 440 gold (2 hộp mua nhầm); bản mới quay về ACHIEVEMENTS, nhận tiếp Regular rồi Street Rat (×2 mở FREE), gold vẫn 640.",
+  "before": "videos/menus-02-before.mp4",
+  "after": "videos/menus-02-after.mp4"
+}

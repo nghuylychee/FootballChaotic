@@ -1,0 +1,13 @@
+diff --git a/css/style.css b/css/style.css
+index 2a6fb31..a620f10 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -2040,6 +2040,8 @@ button.eq-row:hover b { color: var(--gold); }
+ /* phòng online (thêm dòng "Online matches keep running"): bớt khoảng trên để dải không chạm hàng nút */
+ #pause:has(.pause-match):has(.pause-note) .pause-title { margin-bottom: 6px; }
+ #pause:has(.pause-match) .pause-note { margin: -4px 0 4px; }
++/* đang hỏi lại FORFEIT: dòng cảnh báo đỏ nằm đúng chỗ dải THIS MATCH -> ẩn dải đi cho tới khi hết hỏi */
++#pause:has(.pause-warn) .pause-match { visibility: hidden; }
+ .pm-leg { flex: none; border-left: 2px solid var(--lc); }
+ .pm-leg h5 { color: var(--lc); text-shadow: 1px 1px 0 var(--ink); }
+ .pm-leg .lg-combo { gap: 4px; padding: 2px 5px 1px 3px; box-shadow: 1px 1px 0 var(--ink); }

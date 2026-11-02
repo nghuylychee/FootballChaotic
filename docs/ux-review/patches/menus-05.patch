@@ -1,0 +1,87 @@
+diff --git a/css/style.css b/css/style.css
+index 4381d64..2d4c57b 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -1176,6 +1176,7 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .end-act .pause-items { margin-bottom: 0; }
+ .inv-left { display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+ .inv-left .arch-filter { margin-left: 2px; }
++.inv-dupes { flex: none; margin: 2px 0 0 2px; letter-spacing: 0; }   /* nút phân rã đồ trùng, ngay dưới lưới */
+ .inv-left .af { font-size: 12px; padding: 1px 3px; }
+ 
+ /* ---------- lượt chọn Core theo thời gian + năng lượng Tuyệt kỹ ---------- */
+diff --git a/src/ui/gacha.js b/src/ui/gacha.js
+index c794a85..fcddedd 100644
+--- a/src/ui/gacha.js
++++ b/src/ui/gacha.js
+@@ -338,6 +338,8 @@ window.SFC = window.SFC || {};
+       if (coreTab) filter = chips(ARCH_KEYS(), this.invArch, 'data-iarch', (k) => ARCH()[k] && { color: ARCH()[k].color, label: ARCH()[k].label, icon: PX().arch(k) });
+       else if (tab === 'wear') filter = chips(SLOT_KEYS(), this.invSlot, 'data-islot', (k) => PROG().slots[k] && { color: PROG().slots[k].color, label: PROG().slots[k].label, icon: PX().html(PROG().slots[k].icon) });
+       const dupes = this.dupes(list);
++      // có đồ trùng trong mục đang xem: nút phân rã hết dưới lưới (giữ lại 1 mỗi món, vẫn bấm 2 lần để chắc) — trước chỉ có phím trong dòng gợi ý đã ẩn
++      const dupBtn = dupes.count ? `<button class="g-btn inv-dupes" data-iact="dupes">${_tn('{key} dismantle {n} duplicate (+{gold})', '{key} dismantle {n} duplicates (+{gold})', dupes.count, { key: `<kbd>${K('restart', 'R')}</kbd>`, gold: dupes.gold })}</button>` : '';
+       const empty = drillTab ? _t('No drill cards yet. Level up to earn them!') : _t('Nothing here yet. Open a box in the SHOP!');
+       const cards = list.map((e, i) => {
+         const cls = [i === this.invSel ? 'sel' : '', this.isEquipped(e) && e.kind === 'item' ? 'eq' : '', e.def ? 'def' : '', e.locked ? 'lock' : ''].join(' ');
+@@ -356,13 +358,15 @@ window.SFC = window.SFC || {};
+       ].filter(Boolean).join(' · ');
+       return `${this.header(_t('INVENTORY'), tabs)}
+         <div class="gacha-body inv-g">
+-          <div class="inv-left">${filter}<div class="inv-grid">${cards}</div></div>
++          <div class="inv-left">${filter}<div class="inv-grid">${cards}</div>${dupBtn}</div>
+           <div class="inv-detail">${list[this.invSel] ? this.invDetail(list[this.invSel]) : ''}</div>
+         </div>
+         <!--msg--><div class="m-hint">${hint}</div>`;
+     },
+ 
+     invDetail(e) {
++      // nút hành động (chuột bấm = phím ghi trên nút), đi qua equipEntry / dismantleEntry như phím (giữ luật bấm 2 lần cho món hiếm)
++      const iBtn = (act, key, label, cls = '') => `<button class="sd-act g-btn ${cls}" data-iact="${act}"><kbd>${key}</kbd> ${label}</button>`;
+       if (e.kind === 'drill') {
+         const D = PROG().attrs.drills;
+         return `<div class="sd-preview inv-drill" style="--rc:${DRILL_COLOR}">${PX().ui('cone', 'x3')}</div>
+@@ -371,7 +375,7 @@ window.SFC = window.SFC || {};
+           <div class="sd-name">${_t('DRILL CARD')}</div>
+           <div class="sd-desc">${_tn('Open a card to pick 1 of {choices} drills. Each pick raises your stats for good. You earn {n} card every level.', 'Open a card to pick 1 of {choices} drills. Each pick raises your stats for good. You earn {n} cards every level.', D.perLevel, { choices: D.choices })}</div>
+           <div class="sd-req">${_t('Owned ×{n}', { n: e.count })}</div>
+-          <div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN')}</div>
++          ${iBtn('equip', K('confirm', 'Enter'), _t('OPEN'), 'main')}
+         </div>`;
+       }
+       const r = RAR(e.rarity), val = PF().dismantleValue(e.kind, e.id);
+@@ -394,7 +398,7 @@ window.SFC = window.SFC || {};
+         return `${coreCard(e.id, e.locked ? 'locked' : '')}
+           <div class="sd-side"><div class="sd-req">${e.locked ? _t('Locked') : count}</div><div class="sd-note">${status}</div>
+             ${sug ? `<div class="sug-h">${_t('OFTEN PAIRED WITH')}</div>${sug}` : ''}
+-            <div class="sd-act">${e.def ? '' : `<kbd>${K('dismantle', 'X')}</kbd> ${_t('DISMANTLE {gold}', { gold: coin('+' + val) })}`}</div></div>`;
++            ${e.def ? '' : iBtn('dismantle', K('dismantle', 'X'), _t('DISMANTLE {gold}', { gold: coin('+' + val) }))}</div>`;
+       }
+       const it = PROG().items[e.id], eq = this.isEquipped(e);
+       return `<div class="sd-preview"><canvas class="avatar big" data-avatar="spin" data-try="${e.id}"></canvas></div>
+@@ -403,8 +407,8 @@ window.SFC = window.SFC || {};
+           <div class="sd-name">${esc(it.name)}</div>
+           <div class="sd-desc">${esc(it.desc)}</div>
+           <div class="sd-req">${PROG().slots[it.slot].label} · ${count}</div>
+-          <div class="sd-act">${eq ? `<span class="on">${_t('EQUIPPED')}</span>` : `<kbd>${K('confirm', 'Enter')}</kbd> ${_t('EQUIP')}`}</div>
+-          ${e.def ? '' : `<div class="sd-act"><kbd>${K('dismantle', 'X')}</kbd> ${_t('DISMANTLE {gold}', { gold: coin('+' + val) })}</div>`}
++          ${eq ? `<div class="sd-act"><span class="on">${PX().ui('check', 'sm')} ${_t('EQUIPPED')}</span></div>` : iBtn('equip', K('confirm', 'Enter'), _t('EQUIP'), 'main')}
++          ${e.def ? '' : iBtn('dismantle', K('dismantle', 'X'), _t('DISMANTLE {gold}', { gold: coin('+' + val) }))}
+         </div>`;
+     },
+ 
+@@ -567,6 +571,15 @@ window.SFC = window.SFC || {};
+       if (sf) { this.invSlot = +sf.dataset.islot; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
+       const tab = e.target.closest('[data-itab]');
+       if (tab) { this.invTab = +tab.dataset.itab; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
++      // túi đồ: nút EQUIP / OPEN · DISMANTLE (món đang chọn) · phân rã đồ trùng
++      const ia = e.target.closest('[data-iact]');
++      if (ia) {
++        const list = this.invEntries(), act = ia.dataset.iact;
++        if (act === 'equip') this.equipEntry(menu, list[this.invSel]);
++        else if (act === 'dismantle') this.dismantleEntry(menu, list[this.invSel]);
++        else if (act === 'dupes') this.dismantleDupes(menu, list);
++        return true;
++      }
+       const ic = e.target.closest('[data-ic]');
+       if (ic) {
+         const i = +ic.dataset.ic;

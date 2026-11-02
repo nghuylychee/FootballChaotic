@@ -1,0 +1,23 @@
+{
+  "id": "menus-01",
+  "area": "menus",
+  "screen": "SHOP › OPEN BOX",
+  "source": "agent",
+  "severity": "high",
+  "title": "SHOP: dùng chuột thì không mở hộp, không mặc đồ, không thoát ra được",
+  "problem": "Dòng \"Enter OPEN BOX · 100\" trông như nút nhưng bấm vào không có gì. Muốn mua phải bấm lần 2 vào ô hộp bên trái, nên double-click quen tay là mất 100 gold luôn. Mở xong thì OPEN ANOTHER / EQUIP / DISMANTLE cũng chỉ là chữ, và màn OPEN BOX không có nút BACK: người dùng chuột bị kẹt, chỉ thoát được bằng Esc.",
+  "goal": "Mọi hành động trong SHOP / OPEN BOX có một nút bấm thấy được, chuột hay phím đều như nhau, và luôn có đường quay lại.",
+  "why": "SHOP là chỗ tiêu gold, nên vừa bấm không ăn vừa lỡ tay mua là hai lỗi tệ nhất ở đây. Người chơi web / Steam phần lớn dùng chuột ở menu.",
+  "fix": "OPEN BOX giờ là nút vàng thật (giống nút CLAIM REWARD ở ACHIEVEMENTS); bấm ô hộp bên trái chỉ CHỌN hộp, không mua nữa. Trên màn kết quả, OPEN ANOTHER / EQUIP / DISMANTLE là nút bấm được (OPEN ANOTHER mờ đi khi thiếu gold), lúc đang quay có nút skip và bấm vào dải quay cũng bỏ qua được, góc trên trái có ◀ BACK. Kỹ thuật: gacha.js đổi các span/div thành <button data-open / data-ract>, phím và chuột đi chung hàm Gacha.openAct; thêm 'open' vào BACK_PAGES (menu.js); class CSS .g-btn dùng chung. Không thêm chữ mới.",
+  "why_this": "Một nút dùng chung cho chuột và phím, theo đúng mẫu nút CLAIM REWARD đã có, nên nhất quán và ít code. Bỏ kiểu bấm 2 lần để mua là chặn tận gốc chuyện mua nhầm vì double-click.",
+  "alternatives": [
+    "Giữ 'bấm lần 2 vào ô hộp = mua', chỉ thêm tooltip — rẻ nhất, nhưng vẫn không ai đoán ra và double-click vẫn mất gold",
+    "Chỉ thêm ◀ BACK cho màn OPEN BOX — hết kẹt, nhưng chuột vẫn không mở / mặc / phân rã được",
+    "Hỏi xác nhận trước mỗi lần mua — chắc ăn nhất, nhưng làm chậm người đang mở liền tay"
+  ],
+  "files": ["src/ui/gacha.js", "src/ui/menu.js", "css/style.css"],
+  "limits": "Chưa thử trên tay cầm (phím không đổi nên chắc không ảnh hưởng). Câu xác nhận phân rã đồ hiếm vẫn ghi 'Press X again' — dùng chuột thì bấm lại nút DISMANTLE là được.",
+  "videoNote": "Cùng 4 cú bấm chuột: dòng OPEN BOX · ô hộp đang chọn · EQUIP · góc BACK. Bản cũ: cú 1 không ăn, cú 2 mua luôn, EQUIP không ăn, kẹt ở OPEN BOX. Bản mới: cú 1 mở hộp, cú 2 chỉ bỏ qua dải quay, EQUIP mặc đồ, BACK về SHOP.",
+  "before": "videos/menus-01-before.mp4",
+  "after": "videos/menus-01-after.mp4"
+}

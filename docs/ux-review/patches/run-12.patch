@@ -1,0 +1,196 @@
+diff --git a/css/style.css b/css/style.css
+index ddd2355..5d0446b 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -3335,6 +3335,20 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
+ .pk-empty .sq-head { left: 0; right: 0; }
+ .pk-empty .sq-head em { font-size: 7px; color: var(--muted); }
+ .pk-sil canvas { width: 96px; height: 106px; image-rendering: pixelated; filter: brightness(0); opacity: 0.5; margin-top: 10px; }
++/* ô cần chọn kế tiếp (UX run-12): viền nét đứt vàng nhấp nháy + nhãn PICK */
++.pk-empty.next { border-color: var(--gold); animation: pkWait 1s steps(2) infinite; }
++.pk-empty.next .sq-head em { color: var(--gold); }
++@keyframes pkWait { 50% { border-color: #8a7a2a; background-color: rgba(255, 225, 79, 0.08); } }
++.pk-wait { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); text-decoration: none; font-family: var(--px); font-size: 7px; letter-spacing: 1px; line-height: 1;
++  color: var(--ink); background: var(--gold); padding: 3px 5px 2px; border: 1px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); }
++/* dòng hướng dẫn cạnh START RUN · START RUN chưa đủ người: mờ + vị trí còn thiếu (ô nét đứt) */
++.pk-mid .pk-todo { color: var(--gold); letter-spacing: 1px; white-space: nowrap; }
++.pk-todo::before { content: "▼ "; }
++.pk-todo.nag { color: #ff5a6e; animation: pkNag 0.12s steps(2) 3; }
++@keyframes pkNag { 50% { transform: translateX(-3px); } }
++.pk-mid { gap: 12px; }
++.pk-miss { display: inline-flex; gap: 3px; margin-left: 8px; font-style: normal; }
++.pk-miss i { font-style: normal; font-size: 6px; padding: 2px 3px 1px; border: 1px dashed currentColor; letter-spacing: 1px; }
+ /* đang kéo: ô thả được sáng lên, ô đang trỏ viền vàng */
+ .pk-page.dragging .pk-card:not(.lock), .pk-page.dragging .pk-bench { outline: 1px dashed rgba(255, 225, 79, 0.45); outline-offset: 2px; }
+ .pk-page .over { outline: 2px solid var(--gold) !important; outline-offset: 2px; background-color: rgba(255, 225, 79, 0.08); }
+diff --git a/src/i18n/es.js b/src/i18n/es.js
+index f91687c..56a6c6a 100644
+--- a/src/i18n/es.js
++++ b/src/i18n/es.js
+@@ -198,6 +198,8 @@ SFC.I18n.add({
+     'BENCH': 'BANCA',
+     'A friend is playing there. Use the BENCH to swap.': 'Ahí juega un amigo. Usa la BANCA para cambiar.',
+     'Everyone on the BENCH must take a position first.': 'Todos en la BANCA deben tomar una posición primero.',
++    'Pick your {pos} from the bench': 'Elige tu {pos} de la banca',
++    'PICK': 'ELIGE',
+     '{n}/{max} players': '{n}/{max} jugadores',
+     'VS': 'VS',
+     'Click to copy': 'Haz clic para copiar',
+diff --git a/src/i18n/ja.js b/src/i18n/ja.js
+index 1aa27db..607fa3e 100644
+--- a/src/i18n/ja.js
++++ b/src/i18n/ja.js
+@@ -199,6 +199,8 @@ SFC.I18n.add({
+     'BENCH': 'ベンチ',
+     'A friend is playing there. Use the BENCH to swap.': 'そこは仲間がプレイ中。ベンチを使って入れ替えよう。',
+     'Everyone on the BENCH must take a position first.': 'ベンチにいる人は先にポジションについてね。',
++    'Pick your {pos} from the bench': 'ベンチから{pos}を選ぼう',
++    'PICK': '選択',
+     '{n}/{max} players': '{n}/{max}人',
+     'VS': 'VS',
+     'Click to copy': 'クリックでコピー',
+diff --git a/src/i18n/pt-BR.js b/src/i18n/pt-BR.js
+index 131174e..cfeb653 100644
+--- a/src/i18n/pt-BR.js
++++ b/src/i18n/pt-BR.js
+@@ -199,6 +199,8 @@ SFC.I18n.add({
+     'BENCH': 'BANCO',
+     'A friend is playing there. Use the BENCH to swap.': 'Um amigo está jogando aí. Use o BANCO para trocar.',
+     'Everyone on the BENCH must take a position first.': 'Todos no BANCO precisam assumir uma posição primeiro.',
++    'Pick your {pos} from the bench': 'Escolha seu {pos} no banco',
++    'PICK': 'ESCOLHA',
+     '{n}/{max} players': '{n}/{max} jogadores',
+     'VS': 'VS',
+     'Click to copy': 'Clique para copiar',
+diff --git a/src/i18n/pt-PT.js b/src/i18n/pt-PT.js
+index 22fca60..b7007f0 100644
+--- a/src/i18n/pt-PT.js
++++ b/src/i18n/pt-PT.js
+@@ -202,6 +202,8 @@ SFC.I18n.add({
+     'BENCH': 'BANCO',
+     'A friend is playing there. Use the BENCH to swap.': 'Está aí um amigo a jogar. Usa o BANCO para trocar.',
+     'Everyone on the BENCH must take a position first.': 'Todos no BANCO têm de ocupar uma posição primeiro.',
++    'Pick your {pos} from the bench': 'Escolhe o teu {pos} no banco',
++    'PICK': 'ESCOLHE',
+     '{n}/{max} players': '{n}/{max} jogadores',
+     'VS': 'VS',
+     'Click to copy': 'Clica para copiar',
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+index b2f1e47..dcffd93 100644
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -163,11 +163,11 @@ window.SFC = window.SFC || {};
+         const P = this.pick;
+         if (!P) return [];
+         // 3 ô vị trí (bấm = nhảy sang ô đó; ✕ = bỏ đồng đội AI ở ô đó để chọn lại) · ứng viên lấp ô trống kế tiếp (đủ ô vẫn hiện, mờ)
+-        // · START RUN giữa dưới khi đủ ô
++        // · START RUN giữa dưới (chưa đủ ô: mờ + các vị trí còn thiếu)
+         const used = Object.values(P.mates);
+         const unpick = POS().filter((r) => P.mates[r] != null).map((r) => T('unpick', { id: r }));
+         const cands = P.cands.map((m, i) => T('cand', { i })).filter((t) => !used.includes(t.i));
+-        const go = this.pkReady() ? [T('go', { main: true })] : [];
++        const go = [T('go', { main: true, dis: !this.pkReady() })];   // luôn hiện; mờ tới khi đủ người (UX run-12)
+         return POS().map((r) => T('slot', { id: r })).concat(unpick, cands, go, inv, [T('cancel')]);
+       }
+       if (!RUN().active()) return host ? [T('end', { main: true })] : [T('leaveroom')];
+@@ -540,7 +540,8 @@ window.SFC = window.SFC || {};
+     /* ---------- màn BUILD YOUR SQUAD (user 2026-10-26): 3 ô vị trí, bấm ô = character của bạn nhảy sang (đồng đội AI ở ô đó đổi chỗ
+      * với bạn), ứng viên lấp ô trống kế tiếp. Phòng co-op: ô có bạn bè đứng thì không nhảy vào được; vị trí của host = ô host đứng trong
+      * phòng (Room.seatHost), ô của bạn bè vẫn cần 1 đồng đội AI dự phòng (không chọn thì lấy ngẫu nhiên lúc START RUN). ---------- */
+-    newPick() { this.pick = { me: 'FWD', cands: RUN().candidates(), mates: {}, order: [] }; },
++    // fresh: lần vẽ đầu chọn sẵn ứng viên đầu tiên (UX run-12: trước đây chọn sẵn thẻ của bạn, bấm Enter không có gì xảy ra)
++    newPick() { this.pick = { me: 'FWD', cands: RUN().candidates(), mates: {}, order: [], fresh: true }; },
+     // vị trí của máy này: phòng co-op = ô đang đứng trong phòng
+     pkMe() {
+       const O = ON(), m = inRoom() && O.mine;
+@@ -558,6 +559,11 @@ window.SFC = window.SFC || {};
+       return POS().find((r) => r !== me && !this.pkHuman(r) && P.mates[r] == null) || null;
+     },
+     pkReady() { return !!this.pick && !this.pkNext() && !(inRoom() && ON().benched.length); },   // còn người trên ghế dự bị: chờ
++    // chọn sẵn ứng viên đứng sau ứng viên thứ i trên băng ghế (không còn thì ứng viên đầu); đủ người thì renderPick chuyển sang START RUN
++    pkFocus(i) {
++      const T = this.targets(), j = T.findIndex((x) => x.k === 'cand' && x.i > i);
++      this.sel = j >= 0 ? j : Math.max(0, T.findIndex((x) => x.k === 'cand'));
++    },
+     // nhảy sang ô role: đồng đội AI đang ở đó đổi sang ô cũ của mình
+     pkMove(menu, role) {
+       const P = this.pick, me = this.pkMe();
+@@ -573,7 +579,11 @@ window.SFC = window.SFC || {};
+     // kéo đồng đội giữa 2 ô = đổi chỗ · kéo đồng đội xuống băng ghế = bỏ ra. Bấm / phím vẫn dùng được như cũ (bấm ứng viên = lấp ô trống kế
+     // tiếp, bấm ô = bạn nhảy sang). Chỉ số là của chính người đó, xếp ô nào cũng không đổi (Run.baseOf)
+     renderPick(menu) {
+-      const P = this.pick, T = this.targets(), me = this.pkMe(), next = this.pkNext(), room = inRoom();
++      const P = this.pick, T = this.targets(), me = this.pkMe(), next = this.pkNext(), room = inRoom(), ready = this.pkReady();
++      // chọn sẵn (UX run-12): mới vào = ứng viên đầu tiên · vừa đủ người = START RUN
++      const iGo = T.findIndex((t) => t.k === 'go'), iCand = T.findIndex((t) => t.k === 'cand');
++      if (P.fresh || (ready && P.ready === false)) this.sel = ready || iCand < 0 ? iGo : iCand;
++      P.fresh = false; P.ready = ready;
+       this.sel = Math.max(0, Math.min(T.length - 1, this.sel));
+       const A = SFC_CONFIG.progression.attrs;
+       const ovr = (r) => { const v = Object.values(r); return Math.round(v.reduce((a, b) => a + b, 0) / v.length); };
+@@ -595,7 +605,9 @@ window.SFC = window.SFC || {};
+           return card({ attrs: `${drop} ${drag}`, ovr: ovr(r), face: this.face(RUN().mateLook(m), false), fin: r, ref: r, name: m.name, schools: RUN().schoolsOf(m),
+             extra: x ? `<i class="pk-x ${T.indexOf(x) === this.sel ? 'sel' : ''}" data-rt="${x.key}" title="${esc(_t('Remove'))}">✕</i>` : '' });
+         }
+-        return `<div class="sq-card pk-card pk-empty ${sel}" ${drop}><div class="sq-head"><em>${esc(role)}</em></div><span class="pk-sil">${sil}</span></div>`;
++        // ô trống kế tiếp: viền nét đứt vàng nhấp nháy + nhãn PICK (đang chờ chọn người từ băng ghế)
++        const wait = role === next ? `<u class="pk-wait">${esc(_t('PICK'))}</u>` : '';
++        return `<div class="sq-card pk-card pk-empty ${role === next ? 'next' : ''} ${sel}" ${drop}><div class="sq-head"><em>${esc(role)}</em></div><span class="pk-sil">${sil}</span>${wait}</div>`;
+       }).join('');
+       // băng ghế: mặt + tên + OVR + vị trí sở trường + 2 chỉ số mạnh nhất + trường phái Core hay ra
+       const cands = T.filter((t) => t.k === 'cand').map((t) => {
+@@ -607,11 +619,18 @@ window.SFC = window.SFC || {};
+             ${this.schoolIcons(RUN().schoolsOf(m))}</div>`;
+       }).join('');
+       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
++      // dòng hướng dẫn cạnh START RUN (UX run-12): còn ô trống = chọn ai cho vị trí nào · còn người trên ghế dự bị (co-op) = chờ họ.
++      // Chưa đủ: START RUN mờ + các vị trí còn thiếu
++      const miss = POS().filter((r) => r !== me && !this.pkHuman(r) && P.mates[r] == null);
++      const hint = next ? _t('Pick your {pos} from the bench', { pos: next }) : !ready ? _t('Everyone on the BENCH must take a position first.') : '';
++      const nag = this.pkNag ? 'nag' : '';   // vừa bấm START RUN khi chưa đủ: dòng hướng dẫn rung đỏ 1 lần
++      this.pkNag = false;
++      const goHtml = esc(_t('START RUN')) + (miss.length ? `<em class="pk-miss">${miss.map((r) => `<i>${esc(r)}</i>`).join('')}</em>` : '');
+       menu.el.innerHTML = `<div class="rm-page pk-page ${room ? 'coop' : ''}">
+           <div class="pk-top"><b>${esc(_t('BUILD YOUR SQUAD'))}</b><div class="rm-acts">${this.roomChip()}${btns}</div></div>
+           <div class="sq-row3 pk-slots">${slots}</div>
+           ${benchOn() ? `<div class="pk-cobench">${SFC.UIHelpers.coopBench(ON().benched, null, '', false, true)}</div>` : ''}
+-          <div class="pk-mid">${go ? this.btn(T, go, esc(_t('START RUN'))) : ''}</div>
++          <div class="pk-mid">${hint ? `<span class="pk-hint pk-todo ${nag}">${esc(hint)}</span>` : ''}${go ? this.btn(T, go, goHtml, go.dis ? 'dis' : '') : ''}</div>
+           <div class="pk-bench" data-drop="bench">${cands}</div>${msg}
+         </div>`;
+       this.bindDrag(menu);
+@@ -651,6 +670,7 @@ window.SFC = window.SFC || {};
+         if (dst === me) return menu.setMsg(_t('That is your spot. Drag yourself somewhere else first.'), true);
+         if (this.pkHuman(dst)) return menu.setMsg(_t('A friend is playing there.'), true);
+         set(dst, +src.slice(5));
++        this.pkFocus(+src.slice(5));
+       } else {
+         const from = src.slice(5);
+         if (dst === from) return;
+@@ -1200,6 +1220,13 @@ window.SFC = window.SFC || {};
+         this.drawing = true;
+         return this.chalk(menu, t.id, () => { this.drawing = false; if (menu.page === 'runmap') this.act(menu, Object.assign({}, t, { drawn: true })); });
+       }
++      // START RUN khi chưa đủ người (UX run-12): dòng hướng dẫn rung đỏ, chọn sẵn ứng viên đầu tiên
++      if (t.k === 'go' && t.dis) {
++        const ic = this.targets().findIndex((x) => x.k === 'cand');
++        if (this.pkNext() && ic >= 0) this.sel = ic;
++        this.pkNag = true; SFC.Audio.menu();
++        return menu.render();
++      }
+       SFC.Audio.menu();
+       const R = RUN().run, B = (id) => RUN().badge(id);
+       if (t.k !== 'leaveroom' && !(t.k === 'cancel' && inRoom())) menu.msg = '';
+@@ -1240,10 +1267,11 @@ window.SFC = window.SFC || {};
+           const r = this.pkNext();
+           if (!r) { menu.setMsg(_t('Remove a teammate to pick again.'), true); return; }
+           this.pick.mates[r] = t.i; this.pick.order.push(r);
++          this.pkFocus(t.i);   // UX run-12: chọn tiếp ứng viên kế bên (không rơi vào nút ✕ / ô vị trí)
+           break;
+         }
+         // bỏ đồng đội AI ở ô này (ô trống lại, chọn người khác)
+-        case 'unpick': delete this.pick.mates[t.id]; this.pick.order = this.pick.order.filter((r) => r !== t.id); break;
++        case 'unpick': delete this.pick.mates[t.id]; this.pick.order = this.pick.order.filter((r) => r !== t.id); this.pkFocus(-1); break;
+         case 'cancel': this.pick = null; return menu.go('run');
+         case 'go': {
+           const P = this.pick, mates = {};

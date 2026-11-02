@@ -1,0 +1,27 @@
+{
+ "id": "match-05",
+ "area": "match",
+ "screen": "LEGEND TRIAL · banner mở bài + bảng tiến độ trên HUD",
+ "source": "agent",
+ "severity": "med",
+ "title": "LEGEND TRIAL bắt làm kỹ thuật nhưng không chỗ nào ghi phím",
+ "problem": "Phím của kỹ thuật (vd LOFTED THROUGH = Q + W) chỉ có trên thẻ giới thiệu trước trial. Vào trận thì banner chỉ ghi 'Pull it off 3 times', HUD chỉ ghi '0 / 3 LOFTED THROUGH'. Tooltip ô LEGEND có phím nhưng không bao giờ hiện (thanh kỹ năng không nhận chuột). Quên phím là trượt trial, mất LEGEND.",
+ "goal": "Suốt LEGEND TRIAL người chơi luôn thấy tổ hợp phím của kỹ thuật, theo phím đang gán.",
+ "why": "Trial chỉ có ~40 s và là cửa duy nhất để có LEGEND. Đọc thẻ xong vào trận là quên phím, nhất là kỹ thuật lạ như BRUISER RUN (giữ chạy + tap phím trick); trượt vì quên phím thì rất ức.",
+ "fix": "Banner mở bài thêm phím sau số lần ('Pull it off 3 times · Q + W'), và bảng tiến độ trên HUD có thêm 1 hàng keycap ngay dưới '0 / 3 LOFTED THROUGH', giữ suốt bài. Phím lấy bằng Input.techKeys (theo phím đã đổi trong CONTROLS, tay cầm thì ra nút tay cầm), keycap vẽ bằng RunUI.keyCaps như thẻ LEGEND trên map. Không thêm chuỗi mới.",
+ "why_this": "Đặt phím đúng chỗ mắt đang nhìn để đếm tiến độ, cùng kiểu keycap người chơi vừa thấy trên thẻ trial nên nhận ra ngay; dùng lại hàm sẵn có nên đổi phím / đổi tay cầm tự đúng.",
+ "alternatives": [
+  "Bật chuột cho thanh kỹ năng để tooltip ô LEGEND hiện — giữa trận không ai rê chuột, tay cầm thì không có chuột.",
+  "Thêm keycap nhỏ dưới ô LEGEND trên thanh kỹ năng (cho cả trận run thường) — luôn thấy, nhưng ô chỉ rộng 20 px, combo dài như BRUISER RUN không vừa.",
+  "Chỉ ghi phím trong Pause — có ích (xem match-08) nhưng trial chỉ 40 s, mở Pause để nhớ phím là quá chậm."
+ ],
+ "files": [
+  "src/ui/hud.js",
+  "src/main.js",
+  "css/style.css"
+ ],
+ "limits": "Chỉ trong LEGEND TRIAL. Trận run thường có LEGEND: phím nằm trong Pause (match-08). Chưa thử với tay cầm thật (Input.techKeys đã có nhánh tay cầm).",
+ "videoNote": "Đầu video là banner mở bài, sau đó nhìn bảng tiến độ trên HUD: bản sau có [Q] + [W] dưới '0 / 3 LOFTED THROUGH'.",
+ "before": "videos/match-05-before.mp4",
+ "after": "videos/match-05-after.mp4"
+}

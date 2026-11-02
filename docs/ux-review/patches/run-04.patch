@@ -1,0 +1,144 @@
+diff --git a/css/style.css b/css/style.css
+index d4c963e..c6f1ef0 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -3228,7 +3228,12 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
+ .kv-bubble::before { left: 150px; bottom: -6px; width: 10px; height: 4px; }
+ .kv-bubble::after { left: 154px; bottom: -10px; width: 4px; height: 4px; }
+ .kv-bubble b { display: block; margin-bottom: 3px; font-family: var(--px); font-size: 7px; font-weight: normal; letter-spacing: 1px; color: #111; text-transform: uppercase; }
+-.kv-bubble p { margin: 0; font-size: 15px; line-height: 1; color: #222; }
++.kv-bubble p { margin: 0; font-size: 15px; line-height: 1; color: #222; white-space: pre-line; }
++/* nhãn loại món (UX review 2026-11-02): tem dán trên mép bong bóng (không làm bong bóng cao thêm, khỏi che móc cuối)
++   · BADGE = cả đội (bo tròn như miếng vá, vàng) · GEAR = 1 người đeo (góc vát như thẻ treo, xanh) */
++.kv-bubble .kv-kind { position: absolute; left: 8px; top: -11px; padding: 2px 6px 1px; font-style: normal; font-family: var(--px); font-size: 6px; letter-spacing: 1px;
++  text-transform: uppercase; white-space: nowrap; color: #111; background: #ffe14f; border: 1px solid #111; border-radius: 6px; }
++.kv-bubble .kv-kind.gear { background: #7ae0ff; border-radius: 0; clip-path: polygon(4px 0, 100% 0, 100% 100%, 0 100%, 0 4px); }
+ 
+ /* ---------- GOAT PATH · màn chọn BADGE (user 2026-10-29, bố cục như SQUAD): 3 thẻ miếng vá + công dụng · hàng BADGE của đội ---------- */
+ .rm-sheet.pick { justify-content: center; gap: 8px; }
+diff --git a/src/ui/kitvan.js b/src/ui/kitvan.js
+index e378417..bde492f 100644
+--- a/src/ui/kitvan.js
++++ b/src/ui/kitvan.js
+@@ -107,14 +107,15 @@ window.SFC = window.SFC || {};
+     L.drawImage(iconCv(iconKey(it)), x + 3, y + 6);
+   }
+   // thẻ giá bìa cát-tông treo dây: đồng xu + số · HOT = thẻ đỏ · đã bán = chữ SOLD đỏ
+-  function tag(cx, y, price, hot, sold) {
+-    const label = sold ? 'SOLD' : String(price), w = textW(label) + (sold ? 4 : 8), x = cx - 2;
++  // · không đủ tiền (poor, UX review 2026-11-02) = bìa xám tối, số đỏ, xu xám (món trên móc giữ nguyên màu để vẫn ngắm được)
++  function tag(cx, y, price, hot, sold, poor) {
++    const label = sold ? 'SOLD' : String(price), w = textW(label) + (sold ? 4 : 8), x = cx - 2, dim = poor && !sold;
+     P(cx, y - 4, 1, 4, '#e8dcc4');
+-    P(x, y, w, 9, '#3a2410'); P(x + 1, y + 1, w - 2, 7, hot && !sold ? '#ff3d5a' : '#d8b27a'); P(x + 1, y + 7, w - 2, 1, hot && !sold ? '#b8202e' : '#a8824a');
++    P(x, y, w, 9, '#3a2410'); P(x + 1, y + 1, w - 2, 7, dim ? '#5a5060' : hot && !sold ? '#ff3d5a' : '#d8b27a'); P(x + 1, y + 7, w - 2, 1, dim ? '#3e3646' : hot && !sold ? '#b8202e' : '#a8824a');
+     P(x + 2, y + 2, 1, 1, '#3a2410');
+     if (sold) return text(label, x + 2, y + 2, '#c8202e');
+-    disc(x + 5, y + 4, 1, '#ffd23f'); P(x + 4, y + 3, 1, 1, '#fff3a8');
+-    text(label, x + 8, y + 2, hot ? '#fff' : '#3a2410');
++    disc(x + 5, y + 4, 1, dim ? '#9a90a0' : '#ffd23f'); P(x + 4, y + 3, 1, 1, dim ? '#c8c0cc' : '#fff3a8');
++    text(label, x + 8, y + 2, dim ? '#ff5a6e' : hot ? '#fff' : '#3a2410');
+   }
+   function hotSticker(x, y) {
+     P(x, y, 15, 9, O); P(x + 1, y + 1, 13, 7, '#ff3d5a'); P(x + 1, y + 7, 13, 1, '#b8202e');
+@@ -316,13 +317,13 @@ window.SFC = window.SFC || {};
+       const onHook = !s.sold || (reaching && hand.item.kind === 'item' && hand.item.i === i);
+       const lit = S.hover === s.key && !s.sold, lift = (lit ? -1 : 0) + dy;
+       if (onHook) { patch(s, x - 10, 51 + lift, lit); if (s.hot) hotSticker(x + 3, 47 + lift); }
+-      tag(x + 4, 79 + dy, s.price, s.hot, s.sold && !onHook);
++      tag(x + 4, 79 + dy, s.price, s.hot, s.sold && !onHook, s.poor);
+     });
+     // hộp cứu thương trên quầy + thẻ giá treo mép quầy
+     S.kits.forEach((k, i) => {
+       if (hand.carry && hand.carry.kind === 'kit' && hand.carry.i === i) return;
+       medkit(KIT_X(i) - 9, 96 + dy, S.hover === k.key);
+-      tag(KIT_X(i), 117 + dy, S.kitPrice, false, false);
++      tag(KIT_X(i), 117 + dy, S.kitPrice, false, false, k.poor);
+     });
+     if (reaching && hand.item.kind === 'kit' && !S.kits[hand.item.i]) medkit(KIT_X(hand.item.i) - 9, 96 + dy, false);   // đã chữa (hết hộp) nhưng tay chưa tới
+     // tay + món đồ đang nắm
+@@ -336,13 +337,14 @@ window.SFC = window.SFC || {};
+ 
+   const KitVan = {
+     // khung toàn màn (640x360): canvas + vùng bấm (data-rt = mục của RunUI) + bong bóng thoại + tiền + chân (nút LEAVE / DONE)
+-    // o: { items: [{ id, g?, r?, price, sold, hot, key, say: [tiêu đề, câu] }] (g = GEAR, r = độ hiếm), kits: [{ key, say }], kitPrice, cash (html), foot (html),
++    // o: { items: [{ id, g?, r?, price, sold, hot, poor, key, say: [tiêu đề, câu, nhãn loại, kiểu nhãn] }] (g = GEAR, r = độ hiếm, poor = không đủ tiền),
++    //      kits: [{ key, say, poor }], kitPrice, cash (html), foot (html),
+     //      sel: key đang chọn bằng phím, idle: câu chào }
+     html(o) {
+       S.items = o.items; S.kits = o.kits; S.kitPrice = o.kitPrice;
+       if (o.sel !== S.talkKey) S.talk = null;   // câu tài xế vừa nói chỉ giữ khi vẫn đang chọn món đó
+       S.hover = o.sel || null;
+-      const hit = (key, x, y, w, h, say) => `<button class="kv-hit" data-rt="${key}" data-sb="${esc(say[0] || '')}" data-sl="${esc(say[1] || '')}"
++      const hit = (key, x, y, w, h, say) => `<button class="kv-hit" data-rt="${key}" data-sb="${esc(say[0] || '')}" data-sl="${esc(say[1] || '')}" data-sk="${esc(say[2] || '')}" data-sc="${esc(say[3] || '')}"
+           style="left:${x * 2}px;top:${y * 2}px;width:${w * 2}px;height:${h * 2}px"></button>`;
+       const hits = o.items.map((s, i) => (s.key ? hit(s.key, HOOK_X(i) - 11, 46, 22, 42, s.say) : '')).join('')
+         + o.kits.map((k, i) => hit(k.key, KIT_X(i) - 10, 93, 20, 26, k.say)).join('');
+@@ -355,7 +357,8 @@ window.SFC = window.SFC || {};
+           <div class="kv-cash">${o.cash}</div><div class="kv-foot">${o.foot}</div>
+         </div>`;
+     },
+-    bubble(say) { return (say[0] ? `<b>${esc(say[0])}</b>` : '') + `<p>${esc(say[1] || '')}</p>`; },
++    // say = [tiêu đề, câu, nhãn loại món, kiểu nhãn 'badge' (cả đội, bo tròn như miếng vá) | 'gear' (1 người, góc vát như thẻ treo)]
++    bubble(say) { return (say[0] ? `<b>${esc(say[0])}</b>` : '') + `<p>${esc(say[1] || '')}</p>` + (say[2] ? `<em class="kv-kind ${esc(say[3] || '')}">${esc(say[2])}</em>` : ''); },
+     // sau khi vẽ DOM: gắn canvas vào vòng vẽ, trỏ chuột vào vùng bấm = bong bóng giải thích (onHover: RunUI đổi mục đang chọn, không vẽ lại)
+     bind(root, onHover) {
+       const el = root.querySelector('.kv-page canvas.kv-lo');
+@@ -366,7 +369,7 @@ window.SFC = window.SFC || {};
+       if (!raf) { last = 0; raf = requestAnimationFrame(frame); }
+       const bub = root.querySelector('.kv-bubble');
+       root.querySelectorAll('.kv-hit').forEach((h) => {
+-        h.addEventListener('mouseenter', () => { S.hover = h.dataset.rt; S.talk = null; bub.innerHTML = this.bubble([h.dataset.sb, h.dataset.sl]); if (onHover) onHover(h.dataset.rt); });
++        h.addEventListener('mouseenter', () => { S.hover = h.dataset.rt; S.talk = null; bub.innerHTML = this.bubble([h.dataset.sb, h.dataset.sl, h.dataset.sk, h.dataset.sc]); if (onHover) onHover(h.dataset.rt); });
+         h.addEventListener('mouseleave', () => { if (S.hover === h.dataset.rt) S.hover = null; bub.innerHTML = this.bubble(S.talk || ['', S.idle]); });
+       });
+     },
+@@ -381,6 +384,7 @@ window.SFC = window.SFC || {};
+       if (this.busy()) return;
+       const x = kind === 'kit' ? KIT_X(i) : HOOK_X(i), y = kind === 'kit' ? 99 : 65;
+       Object.assign(hand, { mode: 'reach', t: 0, x: x + 8, y: 200, from: { x: x + 8, y: 200 }, to: { x, y }, carry: null, item: { kind, i, id }, at: performance.now() });
++      if (kind === 'item' && S.items[i]) S.items[i].sold = true;   // món đã mua: rời móc khi tay nắm (mua GEAR: RunUI giữ Shop, không vẽ lại ngay)
+     },
+     // tay đang lấy món (quá 1.5 giây = vòng vẽ bị dừng giữa chừng, coi như xong để không khoá Shop)
+     busy() { return hand.mode !== 'idle' && performance.now() - hand.at < 1500; },
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+index 0951705..2e41065 100644
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -213,6 +213,14 @@ window.SFC = window.SFC || {};
+         this.cueRoom(R.act, 'intro');
+         return this.cutscene(R.act, 'intro', () => this.back2map());
+       }
++      // KIT VAN: vừa mua GEAR (Run.buy mở bước chọn người đeo) -> giữ nguyên Shop tới khi bàn tay lấy món diễn xong mới sang
++      // 'Who wears it?' (UX review 2026-11-02); khoá thao tác trong lúc chờ
++      if (R.offer && R.offer.kind === 'shop' && R.room && R.room.kind === 'shop' && SFC.KitVan.busy() && menu.el.querySelector('.kv-page')) {
++        this.drawing = true;
++        clearTimeout(this.vanT);
++        this.vanT = setTimeout(() => { this.drawing = false; if (menu.page === 'runmap') menu.render(); }, 100);
++        return;
++      }
+       const T = this.targets();
+       if (this.sel >= T.length) this.sel = this.firstSel(T);
+       const P = RUN().pl(RUN().myKey(), R) || R;
+@@ -731,15 +739,16 @@ window.SFC = window.SFC || {};
+       const rm = R.room, P = RUN().pl(RUN().myKey(), R) || R, cur = T[this.sel];
+       const buy = new Map(T.filter((t) => t.k === 'buy').map((t) => [t.i, t]));
+       const items = rm.items.map((it, i) => {
+-        const t = buy.get(i), hot = it.hot ? ' ' + _t('Half price today!') : '';
+-        // GEAR: tài xế đọc tên + hiệu lực (chỉ số / trường phái)
++        const t = buy.get(i), hot = it.hot ? '\n' + _t('Half price today!') : '';   // HOT: xuống dòng riêng (bong bóng white-space: pre-line)
++        // GEAR: tài xế đọc tên + hiệu lực (chỉ số / trường phái) · nhãn loại: BADGE = cả đội, GEAR = 1 người đeo (UX review 2026-11-02)
+         const d = it.g ? RUN().gearDef(it.id) : RUN().badge(it.id), what = it.g ? this.gearTip(it).split(' · ').slice(1).join(' · ') : d.desc;
+-        return { id: it.id, g: !!it.g, r: it.r, price: it.price, sold: it.sold, hot: it.hot, key: t ? t.key : null,
+-          say: it.sold ? ['', _t('Sold out, mate.')] : [d.name, what + hot] };
++        const kind = it.g ? [_t('One player wears it'), 'gear'] : [_t('The whole team gets it'), 'badge'];
++        return { id: it.id, g: !!it.g, r: it.r, price: it.price, sold: it.sold, hot: it.hot, poor: P.cash < it.price, key: t ? t.key : null,
++          say: it.sold ? ['', _t('Sold out, mate.')] : [d.name, what + hot].concat(kind) };
+       });
+       const kits = T.filter((t) => t.k === 'heal').slice(0, 4).map((t) => {
+         const b = R.bag[t.i];
+-        return { key: t.key, say: [_t('Treat an injury'), RUN().badge(b.id).name + ' · ' + RUN().memberName(b.who || 0, R)] };
++        return { key: t.key, poor: P.cash < RUN().healPrice(R), say: [_t('Treat an injury'), RUN().badge(b.id).name + ' · ' + RUN().memberName(b.who || 0, R)] };
+       });
+       const lv = T.find((t) => t.k === 'leave');
+       return SFC.KitVan.html({ items, kits, kitPrice: RUN().healPrice(R), cash: this.cash(P.cash), sel: cur && cur.key,

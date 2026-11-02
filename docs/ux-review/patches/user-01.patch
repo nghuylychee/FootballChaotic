@@ -1,0 +1,72 @@
+diff --git a/css/style.css b/css/style.css
+index d4c963e..dcca800 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -472,25 +472,32 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ @keyframes gearSpin { to { transform: rotate(90deg); } }
+ .hm-nav { display: flex; justify-content: center; align-items: flex-end; height: 50px; padding: 0 12px;
+   background: rgba(14,16,20,0.92); border-top: 2px solid var(--ink); box-shadow: inset 0 1px 0 var(--edge); }
+-.hn-tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 150px; height: 48px; padding-bottom: 6px; cursor: pointer; line-height: 1; }
++.hn-tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 150px; height: 48px; padding-bottom: 6px; cursor: pointer; line-height: 1;
++  --stair: polygon(0 100%, 0 calc(100% - 4px), 4px calc(100% - 4px), 4px 12px, 8px 12px, 8px 8px, 12px 8px, 12px 4px, 16px 4px, 16px 0, calc(100% - 16px) 0, calc(100% - 16px) 4px, calc(100% - 12px) 4px, calc(100% - 12px) 8px, calc(100% - 8px) 8px, calc(100% - 8px) 12px, calc(100% - 4px) 12px, calc(100% - 4px) calc(100% - 4px), 100% calc(100% - 4px), 100% 100%); }
+ .hn-label { font-size: 21px; letter-spacing: 2px; color: #e6dccb; }
+ .hn-sub { font-size: 10px; color: var(--muted); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+ .hn-pip { position: absolute; bottom: 2px; width: 4px; height: 4px; background: var(--edge); }
+ .hn-tab.hot .hn-sub { color: var(--gold); }
+ .hn-tab.hot .hn-pip { background: var(--gold); animation: pulse 0.8s steps(2) infinite; }
+-.hn-tab:hover .hn-label, .hn-tab.sel .hn-label { color: var(--gold); }
+-.hn-tab.sel .hn-pip { width: 24px; height: 2px; background: var(--gold); }
+-/* PLAY: tab hình thang nhô lên khỏi thanh, góc bậc thang pixel, khối vàng đặc */
+-.hn-tab.play { width: 210px; height: 62px; margin: 0 14px; background: var(--ink); clip-path: polygon(0 100%, 0 calc(100% - 4px), 4px calc(100% - 4px), 4px 12px, 8px 12px, 8px 8px, 12px 8px, 12px 4px, 16px 4px, 16px 0, calc(100% - 16px) 0, calc(100% - 16px) 4px, calc(100% - 12px) 4px, calc(100% - 12px) 8px, calc(100% - 8px) 8px, calc(100% - 8px) 12px, calc(100% - 4px) 12px, calc(100% - 4px) calc(100% - 4px), 100% calc(100% - 4px), 100% 100%); }
+-.hn-tab.play::before { content: ""; position: absolute; inset: 2px 2px 0; background: var(--gold); clip-path: polygon(0 100%, 0 calc(100% - 4px), 4px calc(100% - 4px), 4px 12px, 8px 12px, 8px 8px, 12px 8px, 12px 4px, 16px 4px, 16px 0, calc(100% - 16px) 0, calc(100% - 16px) 4px, calc(100% - 12px) 4px, calc(100% - 12px) 8px, calc(100% - 8px) 8px, calc(100% - 8px) 12px, calc(100% - 4px) 12px, calc(100% - 4px) calc(100% - 4px), 100% calc(100% - 4px), 100% 100%);
+-  box-shadow: inset 0 -4px 0 #c99a12; }
++/* mục đang chọn (phím hay rê chuột đều là 1 ô này): khối vàng nhô lên, góc bậc thang pixel, viền trắng; đổi mục thì khối bật lên từ thanh */
++.hn-tab.sel { height: 56px; background: #fff; clip-path: var(--stair); animation: hnPop 0.2s steps(3); }
++.hn-tab.sel::before { content: ""; position: absolute; inset: 2px 2px 0; background: var(--gold); clip-path: var(--stair); box-shadow: inset 0 -4px 0 #c99a12; }
++.hn-tab.sel > * { position: relative; }
++.hn-tab.sel .hn-label { color: var(--ink); text-shadow: 2px 2px 0 #fff4b0; }
++.hn-tab.sel .hn-sub { color: #6a4a00; }
++.hn-tab.sel .hn-pip { display: none; }
++@keyframes hnPop { 0% { transform: translateY(8px); } 100% { transform: none; } }
++/* PLAY: vẫn to nhất (tab hình thang nhô cao), nhưng khi không chọn chỉ là khối tối viền vàng — khối vàng đặc chỉ dành cho mục đang chọn */
++.hn-tab.play { width: 210px; height: 62px; margin: 0 14px; background: var(--gold); clip-path: var(--stair); }
++.hn-tab.play::before { content: ""; position: absolute; inset: 2px 2px 0; background: #1b1d24; clip-path: var(--stair); box-shadow: inset 0 -4px 0 #121316; }
+ .hn-tab.play > * { position: relative; }
+-.hn-tab.play .hn-label { font-family: var(--px); font-size: 17px; letter-spacing: 4px; color: var(--ink); margin-top: 6px; text-shadow: 2px 2px 0 #fff4b0; }
+-.hn-tab.play .hn-sub { font-family: var(--px); font-size: 5px; color: #6a4a00; max-width: 180px; }
++.hn-tab.play .hn-label { font-family: var(--px); font-size: 17px; letter-spacing: 4px; color: var(--gold); margin-top: 6px; text-shadow: 2px 2px 0 var(--ink); }
++.hn-tab.play .hn-sub { font-family: var(--px); font-size: 5px; color: #c9a227; max-width: 180px; }
+ .hn-tab.play .hn-pip { display: none; }
+-.hn-tab.play:hover::before, .hn-tab.play.sel::before { background: #fff07a; }
+ .hn-tab.play.sel { background: #fff; }
+-.hn-tab.play.sel .hn-label { color: var(--ink); animation: pulse 0.8s steps(2) infinite; }
++.hn-tab.play.sel::before { background: var(--gold); box-shadow: inset 0 -4px 0 #c99a12; }
++.hn-tab.play.sel .hn-label { color: var(--ink); text-shadow: 2px 2px 0 #fff4b0; }
++.hn-tab.play.sel .hn-sub { color: #6a4a00; }
+ 
+ /* CHARACTER > ULTIMATE: lá Tuyệt kỹ (ảnh động) + trạng thái mang / cách mở */
+ #menu.ults-pg .mi-label { font-size: 16px; }
+diff --git a/src/ui/menu.js b/src/ui/menu.js
+index 3cfef1d..8f9507d 100644
+--- a/src/ui/menu.js
++++ b/src/ui/menu.js
+@@ -1658,7 +1658,19 @@ window.SFC = window.SFC || {};
+     },
+ 
+     /* ---------------- chuột ---------------- */
++    // rê chuột = chọn: mục dưới chuột thành mục đang chọn, cùng 1 ô sáng với phím (Enter làm đúng mục đó).
++    // Chỉ đổi class .sel tại chỗ, không dựng lại trang -> cú bấm không bị mất (như LangPick)
++    hoverSel(e) {
++      if (this.page !== 'home' || this.quitAsk) return;
++      const el = e.target.closest('[data-i]');
++      if (!el || el.dataset.d) return;
++      const i = +el.dataset.i;
++      if (i === this.sel || i < 0 || !this.items()[i]) return;
++      this.sel = i;
++      this.el.querySelectorAll('[data-i]').forEach((x) => x.classList.toggle('sel', +x.dataset.i === i));
++    },
+     bindMouse() {
++      this.el.addEventListener('mousemove', (e) => this.hoverSel(e));
+       this.el.addEventListener('click', (e) => {
+         SFC.Audio.unlock();
+         // hộp QUIT GAME?: chỉ nhận 2 nút của hộp

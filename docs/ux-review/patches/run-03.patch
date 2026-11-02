@@ -1,0 +1,87 @@
+diff --git a/css/style.css b/css/style.css
+index c6f1ef0..3d23b3d 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -2958,7 +2958,11 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .bd-scroll::-webkit-scrollbar { display: none; }
+ .bd-card { position: relative; width: 104px; height: 112px; box-sizing: border-box; flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px 5px;
+   background: var(--panel); border: 1px solid var(--edge); border-top: 3px solid var(--rc); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
+-.bd-card.sel, .bd-card[data-rt]:hover { border-color: var(--gold); border-top-color: var(--rc); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
++/* thẻ trong lớp che map: chỉ .sel mới sáng viền — rê chuột = dời .sel (RunUI.bindHover), không dùng :hover để không sáng 2 thẻ.
++   Vừa đi bằng phím (.kb): nút nằm dưới con trỏ đứng yên giữ dáng thường */
++.rm-actcard.kb .pt-btn:not(.sel):hover { color: #e6dccb; border-color: var(--edge); }
++.rm-actcard.kb .pt-btn.go:not(.sel):hover { color: var(--ink); background: var(--gold); outline: none; }
++.bd-card.sel { border-color: var(--gold); border-top-color: var(--rc); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
+ .bd-card:not([data-rt]) { cursor: default; }
+ .bd-card.dis { opacity: 0.45; }
+ .bd-card.inj { background: linear-gradient(180deg, rgba(255, 61, 90, 0.16), var(--panel)); }
+@@ -3003,7 +3007,7 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .sq-card.leg { border-color: color-mix(in srgb, var(--lc) 70%, var(--edge)); }
+ .sq-card.you { border-top: 2px solid var(--gold); }
+ button.sq-card { cursor: pointer; }
+-button.sq-card.sel, button.sq-card:hover { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
++button.sq-card.sel { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
+ .sq-head { position: absolute; left: 7px; top: 5px; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+ .sq-head em { font-style: normal; font-family: var(--px); font-size: 5px; color: var(--muted); letter-spacing: 1px; }
+ .sq-card > .rs-x { left: auto; right: 7px; top: 5px; font-size: 12px; }
+@@ -3241,7 +3245,7 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
+ .pb-card { position: relative; width: 164px; height: 150px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 8px 8px;
+   font: inherit; color: inherit; cursor: pointer; background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 14%, #232733), #171a21 70%);
+   border: 1px solid var(--edge); border-top: 2px solid var(--rc); box-shadow: 2px 2px 0 var(--ink); transition: opacity 0.2s, transform 0.2s; }
+-.pb-card.sel, .pb-card:hover { border-color: var(--gold); border-top-color: var(--rc); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); transform: translateY(-2px); }
++.pb-card.sel { border-color: var(--gold); border-top-color: var(--rc); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); transform: translateY(-2px); }
+ .pb-card.out { opacity: 0.3; }
+ .pb-card.picked .pb-ico { visibility: hidden; }
+ /* miếng vá: nền tối pha màu độ hiếm, chỉ khâu nét đứt màu độ hiếm */
+@@ -3258,7 +3262,7 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
+ .gr-card { position: relative; width: 164px; height: 156px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 8px 8px;
+   font: inherit; color: inherit; cursor: pointer; background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 14%, #232733), #171a21 70%);
+   border: 1px solid var(--edge); border-top: 2px solid var(--rc); box-shadow: 2px 2px 0 var(--ink); transition: transform 0.2s; }
+-.gr-card.sel, .gr-card:hover { border-color: var(--gold); border-top-color: var(--rc); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); transform: translateY(-2px); }
++.gr-card.sel { border-color: var(--gold); border-top-color: var(--rc); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); transform: translateY(-2px); }
+ .gr-card > b { font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; text-align: center; line-height: 1.3; text-shadow: 1px 1px 0 var(--ink); }
+ .gr-card > p { margin: 0; font-size: 13px; line-height: 1; color: #c7ccd6; text-align: center; }
+ .gr-card > .rv { top: -6px; right: -4px; left: auto; bottom: auto; transform: none; }
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+index 2e41065..8e79066 100644
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -246,10 +246,30 @@ window.SFC = window.SFC || {};
+           ${this.legendBar(R)}${msg}${this.overlay(R, T)}
+         </div>`;
+       this.bindMap(menu);
++      this.bindHover(menu);
+       if (R.room && R.room.kind === 'shop') SFC.KitVan.bind(menu.el, (key) => { const i = this.targets().findIndex((t) => t.key === key); if (i >= 0) this.sel = i; });
+       menu.bindAvatars();
+       if (R.join) this.bindJoin(menu);
+     },
++    // thẻ che map: chuột và phím dùng chung 1 mục chọn (UX review 2026-11-02, như KIT VAN): rê chuột lên mục (data-rt) = dời this.sel tới đó,
++    // chỉ chuyển class .sel (không vẽ lại; thẻ LEGEND xin vào đội: bindJoin tự đổi xem trước). Bắt mousemove (chuột thật di chuyển) chứ
++    // không mouseover: vẽ lại sau khi bấm phím mà con trỏ đứng yên thì không giật mục chọn về chỗ con trỏ
++    // · vừa đi bằng phím (kb): nút đang nằm dưới con trỏ đứng yên không sáng kiểu :hover (CSS .rm-actcard.kb), chuột nhúc nhích là thôi
++    bindHover(menu) {
++      const card = menu.el.querySelector('.rm-actcard');
++      if (!card) return;
++      card.classList.toggle('kb', !!this.kb);
++      card.addEventListener('mousemove', (e) => {
++        if (this.kb) { this.kb = false; card.classList.remove('kb'); }
++        const el = e.target.closest('[data-rt]');
++        if (!el || this.drawing) return;
++        const i = this.targets().findIndex((t) => t.key === el.dataset.rt);
++        if (i < 0 || i === this.sel) return;
++        this.sel = i;
++        card.querySelectorAll('[data-rt].sel').forEach((x) => x.classList.remove('sel'));
++        el.classList.add('sel');
++      });
++    },
+     // tiền trong run: thẻ túi tiền pixel + số (cùng kiểu khung với dải đội hình), dùng ở thanh map + Shop
+     cash(n) {
+       return `<span class="rm-cash" title="${esc(_t('Run cash'))}">${PX().ui('shop', 'sm')}<b>${SFC.I18n.num(n)}</b></span>`;
+@@ -1323,6 +1343,7 @@ window.SFC = window.SFC || {};
+             this.sel = best;
+           }
+         } else this.sel = (this.sel + (d === 'left' || d === 'up' ? n - 1 : 1)) % n;   // thẻ che: đi lần lượt
++        this.kb = true;
+         SFC.Audio.menu();
+         menu.render();
+         return this.reveal(menu);

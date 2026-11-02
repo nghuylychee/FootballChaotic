@@ -1,0 +1,74 @@
+diff --git a/src/ui/draft.js b/src/ui/draft.js
+index a6c4794..a6fbed8 100644
+--- a/src/ui/draft.js
++++ b/src/ui/draft.js
+@@ -73,7 +73,7 @@ window.SFC = window.SFC || {};
+       }).join('');
+       const isUltTarget = d.special === 'ult' || (targetSlot >= total && !ult);
+       const ultSlot = ult ? `<div class="d-slot ult filled" title="${esc(CORES().list[ult].name)}">${PX().core(ult, 'sm')}</div>`
+-        : `<div class="d-slot ult empty ${isUltTarget ? 'target' : ''}" title="${esc(_t('Ultimate'))}"><kbd>X</kbd></div>`;
++        : `<div class="d-slot ult empty ${isUltTarget ? 'target' : ''}" title="${esc(_t('Ultimate'))}"><kbd>${esc(keyLabel('ultimate'))}</kbd></div>`;
+       const traits = traitChips(game, mp);
+ 
+       this.el.draft.innerHTML = `
+diff --git a/src/ui/gacha.js b/src/ui/gacha.js
+index 02a6331..c794a85 100644
+--- a/src/ui/gacha.js
++++ b/src/ui/gacha.js
+@@ -64,7 +64,7 @@ window.SFC = window.SFC || {};
+       : c.tags.map((t) => `<span style="--c:${ARCH()[t].color}">${PX().arch(t, 'sm')} ${ARCH()[t].label}</span>`).join('');
+     return `<div class="card static ${c.role === 'ult' ? 'ult' : ''} ${cls}" style="--c:${r.color};--c2:${r.color};--t:${r.color}">
+         <div class="card-tags">${tags}</div>
+-        <div class="card-art">${SFC.CorePreview.html(aw ? id + ':' + lv : id, w, h)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>
++        <div class="card-art">${SFC.CorePreview.html(aw ? id + ':' + lv : id, w, h)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(SFC.Input.label('ultimate'))}</kbd>` : ''}</div>
+         <div class="card-name">${esc(aw ? aw.name : c.name)}</div>
+         ${SFC.CoreScale.statLine(id)}
+         <div class="card-desc">${aw ? esc(aw.desc) : SFC.CoreScale.describe(id)}</div></div>`;
+@@ -235,7 +235,7 @@ window.SFC = window.SFC || {};
+       if (isCore) {
+         const c = CORE_LIST()[w.id];
+         // mở hộp ra Core: phát luôn khoảnh khắc của Core đó
+-        art = `<div class="rv-core-art">${SFC.CorePreview.html(w.id, 150, 66)}<span class="card-emoji">${PX().core(w.id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>`;
++        art = `<div class="rv-core-art">${SFC.CorePreview.html(w.id, 150, 66)}<span class="card-emoji">${PX().core(w.id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(SFC.Input.label('ultimate'))}</kbd>` : ''}</div>`;
+         const lv = PF().coreLevel(w.id);
+         note = lv > PF().data.level ? `<span class="bad">${_t('Requires LV {n} to use in matches', { n: lv })}</span>` : _t('Added to your mid-match Core pool');
+       } else {
+diff --git a/src/ui/menu.js b/src/ui/menu.js
+index 09871b7..1685b25 100644
+--- a/src/ui/menu.js
++++ b/src/ui/menu.js
+@@ -1065,7 +1065,7 @@ window.SFC = window.SFC || {};
+     // bảng phải: ô đã khám phá = lá Tuyệt kỹ (ảnh động) + công thức; chưa khám phá = lá úp ???
+     ultPanel(it) {
+       if (!it || !it.entry) return '';
+-      const e = it.entry, key = `<kbd>${esc(SFC.Input.key('ultimate', 'X'))}</kbd>`;
++      const e = it.entry, key = `<kbd>${esc(SFC.Input.label('ultimate'))}</kbd>`;   // phím đang gán (đổi phím ở CONTROLS / tay cầm)
+       const total = PF().ultEntries().length, n = PF().data.ultBook.length;
+       const card = it.known ? G().coreCard(e.id, '', 150, 64, e.lv) : '<div class="card static ul-hidden"><b>???</b></div>';
+       const status = it.known
+diff --git a/src/ui/recipefx.js b/src/ui/recipefx.js
+index 68bba44..3a44d54 100644
+--- a/src/ui/recipefx.js
++++ b/src/ui/recipefx.js
+@@ -45,7 +45,7 @@ window.SFC = window.SFC || {};
+       const tRev = 0.25 + STEP * k + 0.35;   // lúc lá Tuyệt kỹ lật ra
+       // nâng cấp: luôn "EVOLVED" (thấy rõ là Tuyệt kỹ cũ mạnh lên) · lần đầu đạt công thức: "DISCOVERED"
+       const title = evolved ? _t('ULTIMATE EVOLVED!') : fresh ? _t('NEW ULTIMATE DISCOVERED!') : _t('ULTIMATE UNLOCKED');
+-      const keyHint = `<kbd>${esc(SFC.Input.key('ultimate', 'X'))}</kbd>`;
++      const keyHint = `<kbd>${esc(SFC.Input.label('ultimate'))}</kbd>`;   // phím đang gán, không phải chữ X viết sẵn
+       const el = $('recipefx');
+       el.innerHTML = `
+         <div class="rfx ${hybrid ? 'hybrid' : ''}" style="--rev:${tRev.toFixed(2)}s" data-act="rfxskip">
+diff --git a/src/ui/reveal.js b/src/ui/reveal.js
+index c83d47b..aa3d9a7 100644
+--- a/src/ui/reveal.js
++++ b/src/ui/reveal.js
+@@ -189,7 +189,7 @@ window.SFC = window.SFC || {};
+         : it.src === 'area' ? `<div class="rv3-s-line">${PX().area(MP().area(it.area).id, 'sm')} ${_t('Reached {area}', { area: `<b>${esc(MP().area(it.area).name)}</b>` })}</div>`
+         : it.src === 'road' ? `<div class="rv3-s-line">${_t('Reached {elo} in {area}', { elo: PX().elo(it.elo), area: `<b>${esc(MP().area(it.area).name)}</b>` })}</div>`
+         : `<div class="rv3-s-line">★ ${esc(_t('New star in {area}', { area: MP().area(it.area).name }))}</div>`;
+-      const key = `<kbd>${K('ultimate', 'X')}</kbd>`;
++      const key = `<kbd>${esc(SFC.Input.label('ultimate'))}</kbd>`;   // phím đang gán, không phải chữ X viết sẵn
+       // Tuyệt kỹ (chỉ còn bí kíp gia truyền AURA FARMING): ai cũng mang từ đầu trận tới khi đạt công thức, nạp đầy rồi bấm X
+       const isUlt = c.role === 'ult';
+       const ult = isUlt ? `<div class="rv3-s-note">${_t('SIGNATURE ULTIMATE · ready from kickoff once charged, fire it with {key}', { key })}</div>` : '';
