@@ -1,0 +1,96 @@
+diff --git a/css/style.css b/css/style.css
+index 57ee990..bf3d11c 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -2583,6 +2583,16 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .end-body { width: 100%; max-width: 612px; display: grid; gap: 8px; align-items: stretch; margin-top: 2px; }
+ .end-body.has-rw { grid-template-columns: 204px minmax(0, 1fr); }
+ .end-body.only-sb { grid-template-columns: minmax(0, 1fr); max-width: 460px; }
++/* Skill game / LEGEND TRIAL: thanh 3 mốc (hud.js drillTrack, to hơn bản HUD) thay tỉ số, khung thưởng đứng giữa, không có bảng tỉ số */
++.end-drill { display: flex; flex-direction: column; align-items: center; }
++.end-drill .hd-bar { width: 220px; height: 8px; margin: 8px 0 9px; }
++.end-drill .hd-bar u { top: -5px; width: 14px; height: 14px; margin-left: -8px; font-size: 6px; line-height: 14px; }
++.end-drill .hd-val { font-size: 8px; }
++.end-drill .hd-val b { font-size: 14px; }
++.end-drill .hd-val em { font-size: 7px; }
++.end-body.only-rw { grid-template-columns: 220px; justify-content: center; }
++#end.rw-focus .end-body.only-rw .end-left { transform: scale(1.04); }
++.build.reward.no-tot .rw-total, .build.reward.no-tot .lvrow { display: none; }
+ 
+ /* Cột trái: Xếp hạng Area + Thưởng & XP (ban đầu căn giữa trên #end.rw-focus, xong hoạt ảnh mới trượt sang trái) */
+ .end-left {
+diff --git a/src/ui/endscreen.js b/src/ui/endscreen.js
+index 6d3fa58..8346a22 100644
+--- a/src/ui/endscreen.js
++++ b/src/ui/endscreen.js
+@@ -183,15 +183,20 @@ window.SFC = window.SFC || {};
+       this.rwFocus = !!game.reward;
+       this.el.end.classList.remove('outro', 'sb-shown');
+       this.el.end.classList.toggle('rw-focus', this.rwFocus);
++      // GOAT PATH SKILL GAME / LEGEND TRIAL: không phải trận -> thay tỉ số bằng thanh 3 mốc + số đếm như HUD trong bài,
++      // bỏ bảng tỉ số (toàn 0), khung thưởng đứng giữa
++      const D = game.drill;
+       this.el.end.innerHTML = `
+         ${devBar}
+         ${this.leaveBtn()}
+         <div class="end-head">
+           <div class="end-title ${res[1]}">${esc(res[0])}</div>
+-          <div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>        </div>
+-        <div class="end-body ${game.reward ? 'has-rw' : 'only-sb'}">
++          ${D ? `<div class="end-drill">${this.drillTrack(D)}</div>`
++            : `<div class="end-score"><span style="color:${t0.cfg.kit.shirt}">${esc(t0.cfg.name)}</span> <b>${t0.score} - ${t1.score}</b> <span style="color:${t1.cfg.kit.shirt}">${esc(t1.cfg.name)}</span></div>`}
++        </div>
++        <div class="end-body ${D ? 'only-rw' : game.reward ? 'has-rw' : 'only-sb'}">
+           ${game.reward ? `<div class="end-left">${this.rewardPanel(game.reward)}</div>` : ''}
+-          <div class="sb-wrap">${orderedTeams.map((t, i) => teamBlock(t, i)).join('')}</div>
++          ${D ? '' : `<div class="sb-wrap">${orderedTeams.map((t, i) => teamBlock(t, i)).join('')}</div>`}
+         </div>
+         <div class="end-act">${note}<div class="pause-items row-items" id="end-items"></div></div>`;
+       this.el.end.querySelectorAll('canvas.sb-por[data-pid]').forEach((cv) => {
+@@ -215,7 +220,7 @@ window.SFC = window.SFC || {};
+       this.rwFocus = false;
+       this.el.end.classList.remove('rw-focus');
+       this.el.end.classList.add('sb-shown');
+-      if (SFC.Audio && SFC.Audio.whoosh) SFC.Audio.whoosh();
++      if (SFC.Audio && SFC.Audio.whoosh && this.el.end.querySelector('.sb-wrap')) SFC.Audio.whoosh();   // Skill game: không có bảng trượt ra
+       this.showEndItems();
+     },
+ 
+@@ -269,7 +274,7 @@ window.SFC = window.SFC || {};
+       const lines = r.lines.map((l, i) => `<div class="rw-line" data-rw="${i}"><span>${esc(l.label)}</span>${
+         l.mult || l.note ? '' : `<b class="x">+${l.xp} XP</b><b class="g"><i class="coin"></i>+${l.gold}</b>`}</div>`).join('');
+       return `${r.path ? this.pathResult(r.path) : ''}
+-        <div class="build reward">
++        <div class="build reward ${r.xp === 0 && r.gold === 0 && !r.levelGold ? 'no-tot' : ''}">
+           <h4>${esc(_t('REWARDS'))}</h4>
+           <div class="rw-lines">${lines}</div>
+           <div class="rw-total"><span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
+diff --git a/src/ui/hud.js b/src/ui/hud.js
+index e517bcd..d83ec08 100644
+--- a/src/ui/hud.js
++++ b/src/ui/hud.js
+@@ -102,15 +102,19 @@ window.SFC = window.SFC || {};
+       return K ? K.name : DRILL_UNITS()[D.cfg.goal] || '';
+     },
+     drillBox(game, D, time) {
++      return `<div class="hud-drill">
++          <div class="hd-time">${esc(time)}</div>
++          ${this.drillTrack(D)}
++        </div>`;
++    },
++    // thanh 3 mốc + "số đếm / mốc kế" (HUD trong bài + màn kết quả Skill game, endscreen.js)
++    drillTrack(D) {
+       const T = D.cfg.tiers, TC = SFC_CONFIG.run.tiers, v = SFC.Drills.shown(D), max = SFC.Drills.top(D);
+       const next = T.find((x) => v < x), lbl = this.drillUnit(D), L = D.trial && SFC.Run.legend(D.trial);
+       // LEGEND TRIAL: 1 mốc duy nhất màu của LEGEND
+       const marks = T.map((x, i) => `<u class="${v >= x ? 'on' : ''}" style="left:${(x / max) * 100}%;--mc:${L ? L.color : TC[i].color}" title="${esc(L ? L.name : TC[i].name)}">${x}</u>`).join('');
+-      return `<div class="hud-drill">
+-          <div class="hd-time">${esc(time)}</div>
+-          <div class="hd-bar"><i style="width:${Math.min(100, (v / max) * 100)}%"></i>${marks}</div>
+-          <div class="hd-val"><b>${v}</b>${next != null ? ` / ${next}` : ''} <em>${esc(lbl)}</em></div>
+-        </div>`;
++      return `<div class="hd-bar"><i style="width:${Math.min(100, (v / max) * 100)}%"></i>${marks}</div>
++          <div class="hd-val"><b>${v}</b>${next != null ? ` / ${next}` : ''} <em>${esc(lbl)}</em></div>`;
+     },
+ 
+     // build trên HUD: đội của người chơi = tiến độ công thức Tuyệt kỹ kiểu TFT của cầu thủ mình;

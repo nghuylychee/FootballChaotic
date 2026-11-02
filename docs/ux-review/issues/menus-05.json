@@ -1,0 +1,23 @@
+{
+  "id": "menus-05",
+  "area": "menus",
+  "screen": "CHARACTER › INVENTORY",
+  "source": "agent",
+  "severity": "med",
+  "title": "INVENTORY: chuột không mặc / phân rã được, phân rã đồ trùng bị giấu",
+  "problem": "\"Enter EQUIP\" và \"X DISMANTLE +140\" ở bảng chi tiết chỉ là chữ: bấm không có gì. Mặc đồ bằng chuột phải bấm lần 2 vào đúng ô đang chọn (không ai đoán ra), còn phân rã thì chuột không làm được. Phân rã hết đồ trùng chỉ có phím R, nằm trong dòng gợi ý đã bị ẩn, nên gần như không ai biết.",
+  "goal": "Mặc, phân rã, phân rã đồ trùng đều có nút thấy được, bấm được bằng chuột lẫn phím.",
+  "why": "Mở hộp nhiều là ra đồ trùng; không có đường đổi đồ trùng ra gold thì gold kẹt trong túi và vòng SHOP → mở hộp chậm lại. Người dùng chuột còn không tự mặc được đồ vừa có.",
+  "fix": "Bảng chi tiết có nút vàng EQUIP (hoặc OPEN với thẻ DRILL) và nút DISMANTLE thật; Core cũng có nút DISMANTLE khi phân rã được. Khi mục đang xem có đồ trùng, ngay dưới lưới hiện nút \"R dismantle 6 duplicates (+1630)\" (giữ lại 1 món mỗi loại, vẫn bấm 2 lần để xác nhận). Bấm ô vẫn chỉ chọn; bấm lần 2 vào ô vẫn mặc như trước (phím tắt, không bỏ). Kỹ thuật: gacha.js invDetail đổi .sd-act thành <button data-iact>, Gacha.click gọi đúng equipEntry / dismantleEntry / dismantleDupes như phím (giữ luật bấm 2 lần cho đồ hiếm); dùng lại chuỗi đã dịch của dòng gợi ý, không có chữ mới.",
+  "why_this": "Hành động nào cũng có chỗ bấm thấy được, dùng lại đúng các hàm và chuỗi đã có; nút đồ trùng chỉ hiện khi có việc để làm nên không làm rối màn.",
+  "alternatives": [
+    "Bật lại dòng gợi ý phím riêng cho INVENTORY — rẻ, nhưng chỉ là chữ, chuột vẫn không phân rã được",
+    "Menu chuột phải trên ô đồ — quen với game PC, nhưng không ai đoán ra và tay cầm không có",
+    "Đặt nút đồ trùng cạnh hàng chip lọc (như reviewer đề xuất) — gần chỗ lọc hơn, nhưng chữ dài tràn sang bảng phải nên đã chuyển xuống dưới lưới"
+  ],
+  "files": ["src/ui/gacha.js", "css/style.css"],
+  "limits": "Nhãn nút đồ trùng dùng lại chuỗi gợi ý cũ nên viết thường ('dismantle 6 duplicates'), khác các nút viết hoa khác. Câu xác nhận vẫn ghi 'Press X / R again' — dùng chuột thì bấm lại nút là được. Chưa thử tay cầm.",
+  "videoNote": "Cùng các cú bấm: chọn Neon Kicks · EQUIP · DISMANTLE · 2 lần ngay dưới lưới. Bản cũ không có gì thay đổi; bản mới mặc đồ, hỏi xác nhận phân rã, rồi phân rã 6 món trùng (+1630 gold).",
+  "before": "videos/menus-05-before.mp4",
+  "after": "videos/menus-05-after.mp4"
+}

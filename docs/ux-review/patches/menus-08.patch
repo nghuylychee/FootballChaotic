@@ -1,0 +1,115 @@
+diff --git a/css/style.css b/css/style.css
+index 4d3f1c3..bc7813d 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -637,6 +637,11 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .pt-roomhead .pt-code b { font-size: 11px; letter-spacing: 2px; }
+ .pt-code b { font-family: var(--px); font-size: 8px; font-weight: normal; color: var(--gold); letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); }
+ .pt-code:hover b { color: #fff; }
++/* chữ COPY cạnh mã phòng (cả dòng bấm được); phòng chưa đủ người: COPY nháy để chỉ việc cần làm */
++.pt-code i { font-style: normal; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: var(--ink); background: var(--gold); margin-left: 5px; padding: 2px 3px 1px; vertical-align: 2px; box-shadow: 1px 1px 0 var(--ink); }
++.pt-code:hover i { background: #fff; }
++.pt-code.wait i { animation: ptBlink 0.9s steps(2) infinite; }
++@keyframes ptBlink { 50% { background: #fff; } }
+ /* phòng: chọn sân (chủ phòng ◀▶, người khác chỉ xem) */
+ .pt-ground { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #e6dccb; padding: 3px 6px 2px; background: var(--panel); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); line-height: 1; }
+ .pt-ground u { text-decoration: none; color: var(--muted); margin-right: 2px; }
+@@ -684,6 +689,10 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .pt-bench span { font-size: 11px; color: var(--muted); }
+ .pt-note { font-size: 12px; color: var(--muted); text-align: center; line-height: 1; }
+ .pt-note.ok { color: #9dff3d; animation: pulse 0.8s steps(2) infinite; }
++/* chủ phòng chưa START được: lý do + việc cần làm (vàng); bấm START lúc đó -> rung */
++.pt-note.need { font-size: 13px; color: var(--gold); }
++.pt-note.nudge { animation: ptNudge 0.3s steps(4); }
++@keyframes ptNudge { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+ /* bảng chọn đồng đội AI (ô AI của mình trong phòng): đội hình + SWAP POSITION */
+ .pt-pop { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; background: rgba(10, 11, 14,0.55); }
+ .pt-popbox { width: 190px; display: flex; flex-direction: column; gap: 2px; padding: 6px; background: rgba(14,16,20,0.97); border: 1px solid var(--gold); box-shadow: 3px 3px 0 var(--ink); }
+diff --git a/src/i18n/es.js b/src/i18n/es.js
+index f91687c..966c66f 100644
+--- a/src/i18n/es.js
++++ b/src/i18n/es.js
+@@ -186,6 +186,7 @@ SFC.I18n.add({
+     'VERSUS': 'VERSUS',
+     'Everyone on GUEST must take a slot': 'Todos en la BANCA deben tomar un lugar',
+     'Waiting for players...': 'Esperando jugadores...',
++    'Need {n} more player · share the room code': { one: 'Falta {n} jugador · comparte el código de sala', other: 'Faltan {n} jugadores · comparte el código de sala' },
+     'LEAVE ROOM': 'SALIR DE LA SALA',
+     'TEAM {side}': 'EQUIPO {side}',
+     'Loading room...': 'Cargando sala...',
+diff --git a/src/i18n/ja.js b/src/i18n/ja.js
+index 1aa27db..721e1e3 100644
+--- a/src/i18n/ja.js
++++ b/src/i18n/ja.js
+@@ -187,6 +187,7 @@ SFC.I18n.add({
+     'VERSUS': '対戦',
+     'Everyone on GUEST must take a slot': 'ベンチの全員が枠に入る必要あり',
+     'Waiting for players...': 'プレイヤー待ち...',
++    'Need {n} more player · share the room code': 'あと{n}人必要・ルームコードを送ろう',
+     'LEAVE ROOM': 'ルームを出る',
+     'TEAM {side}': 'チーム{side}',
+     'Loading room...': 'ルーム読み込み中...',
+diff --git a/src/i18n/pt-BR.js b/src/i18n/pt-BR.js
+index 131174e..37ee936 100644
+--- a/src/i18n/pt-BR.js
++++ b/src/i18n/pt-BR.js
+@@ -187,6 +187,7 @@ SFC.I18n.add({
+     'VERSUS': 'VERSUS',
+     'Everyone on GUEST must take a slot': 'Quem está no BANCO precisa pegar uma vaga',
+     'Waiting for players...': 'Esperando jogadores...',
++    'Need {n} more player · share the room code': { one: 'Falta {n} jogador · compartilhe o código da sala', other: 'Faltam {n} jogadores · compartilhe o código da sala' },
+     'LEAVE ROOM': 'SAIR DA SALA',
+     'TEAM {side}': 'TIME {side}',
+     'Loading room...': 'Carregando sala...',
+diff --git a/src/i18n/pt-PT.js b/src/i18n/pt-PT.js
+index 22fca60..cb5a507 100644
+--- a/src/i18n/pt-PT.js
++++ b/src/i18n/pt-PT.js
+@@ -190,6 +190,7 @@ SFC.I18n.add({
+     'VERSUS': 'VERSUS',
+     'Everyone on GUEST must take a slot': 'Quem está no BANCO tem de ocupar um lugar',
+     'Waiting for players...': 'À espera de jogadores...',
++    'Need {n} more player · share the room code': { one: 'Falta {n} jogador · partilha o código da sala', other: 'Faltam {n} jogadores · partilha o código da sala' },
+     'LEAVE ROOM': 'SAIR DA SALA',
+     'TEAM {side}': 'EQUIPA {side}',
+     'Loading room...': 'A carregar a sala...',
+diff --git a/src/ui/menu.js b/src/ui/menu.js
+index 83a0e79..8169023 100644
+--- a/src/ui/menu.js
++++ b/src/ui/menu.js
+@@ -1005,15 +1005,20 @@ window.SFC = window.SFC || {};
+       } else {
+         const n = O.lobby.members.length, max = SFC_CONFIG.net.maxPlayers, coop = O.mode === 'coop';
+         const code = O.code || '-'.repeat(SFC_CONFIG.net.codeLength);
+-        // mã phòng (bấm để chép) · số người trong phòng
+-        sub = `<span class="pt-area"><span class="pt-code" data-copy="${esc(code)}" title="${esc(_t('Click to copy'))}">${esc(_t('ROOM CODE'))} <b>${esc(code)}</b></span> · ${esc(_t('{n}/{max} players', { n, max }))}</span>`;
++        // phòng chưa đủ người để START (net.minPlayers): thiếu bấy nhiêu người -> nói rõ + nút COPY cạnh mã phòng nháy nhẹ
++        const need = n ? Math.max(0, (SFC_CONFIG.net.minPlayers || 2) - n) : 0;
++        // mã phòng (bấm để chép, có chữ COPY) · số người trong phòng
++        sub = `<span class="pt-area"><span class="pt-code ${need ? 'wait' : ''}" data-copy="${esc(code)}" title="${esc(_t('Click to copy'))}">${esc(_t('ROOM CODE'))} <b>${esc(code)}</b><i>${esc(_t('COPY'))}</i></span> · ${esc(_t('{n}/{max} players', { n, max }))}</span>`;
+         if (!n) body = `<div class="pt-slots"><div class="pt-note">${esc(_t('Loading room...'))}</div></div>${msg}`;
+         else {
+           const bench = O.benched, meId = O.mine && O.mine.id;
+           const note = (s, cls = '') => `<div class="pt-note ${cls}">${esc(s)}</div>`;
+-          const status = bench.length ? note(_t('Players on GUEST must take a slot before the match starts'))
++          // bấm START khi còn khoá -> dòng lý do rung lên (Menu.activate đặt nudgeAt)
++          const nudge = performance.now() - (this.nudgeAt || 0) < 400 ? 'nudge' : '';
++          const status = bench.length ? note(_t('Players on GUEST must take a slot before the match starts'), nudge)
+             : O.isOwner
+-              ? (O.canStart ? note(coop ? _t('Ready to start CO-OP') : _t('Ready to start VERSUS'), 'ok') : '')
++              ? (O.canStart ? note(coop ? _t('Ready to start CO-OP') : _t('Ready to start VERSUS'), 'ok')
++                : need ? note(_tn('Need {n} more player · share the room code', 'Need {n} more players · share the room code', need), `need ${nudge}`) : '')
+               : note(_t('Waiting for the host to start...'));
+           // ô người chơi / ghế GUEST -> mục tương ứng (chọn bằng phím mũi tên, Enter = nhảy vào)
+           const nav = (s) => { const i = items.findIndex((x) => x.slot === s); return { i, on: i === this.sel }; };
+@@ -1597,7 +1602,9 @@ window.SFC = window.SFC || {};
+     },
+ 
+     activate(it) {
+-      if (!it || it.disabled) return;
++      if (!it) return;
++      // START của phòng còn khoá: không im lặng — dòng lý do ngay trên nút rung lên (renderPrivate)
++      if (it.disabled) { if (it.main && this.page === 'lobby') { this.nudgeAt = performance.now(); this.render(); } return; }
+       SFC.Audio.menu();
+       if (it.kind === 'btn') it.act();
+     },

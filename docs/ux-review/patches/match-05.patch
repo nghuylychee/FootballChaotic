@@ -1,0 +1,47 @@
+diff --git a/css/style.css b/css/style.css
+index bf3d11c..06abd20 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -3178,6 +3178,8 @@ button.sq-card.sel, button.sq-card:hover { border-color: var(--gold); box-shadow
+ .hd-val { font-family: var(--px); font-size: 6px; color: var(--muted); }
+ .hd-val b { font-size: 9px; font-weight: normal; color: #fff; }
+ .hd-val em { font-style: normal; font-size: 5px; letter-spacing: 1px; }
++/* LEGEND TRIAL: tổ hợp phím của kỹ thuật dưới số đếm (keycap như thẻ LEGEND trên map, RunUI.keyCaps) */
++.hd-keys { margin: 2px 0 1px; line-height: 1; }
+ .rm-sheet-foot:empty { display: none; }
+ .rm-sheet.assign { gap: 8px; }
+ .rm-sheet.assign .bd-card { height: 96px; }
+diff --git a/src/main.js b/src/main.js
+index 29e0720..fa61f33 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -213,9 +213,9 @@
+           SFC.UI.banner(SFC.Cup.roundName(opts.cup.round), `${st ? st.name : ''} · ${vsAway}`, st ? st.color : '#ffe14f', 1.8);
+         }
+         else if (opts.drill) {
+-          // LEGEND TRIAL: tên kỹ thuật cho mượn + số lần cần làm (màu LEGEND)
++          // LEGEND TRIAL: tên kỹ thuật cho mượn + số lần cần làm (màu LEGEND) + tổ hợp phím (theo phím đang gán, Input.techKeys)
+           const D = SFC_CONFIG.run.drills[opts.drill], LG = opts.trial && SFC.Run.legend(opts.trial), K = LG && SFC_CONFIG.legends.techniques[LG.tech];
+-          if (K) SFC.UI.banner(K.name, _t('Pull it off {n} times', { n: this.game && this.game.drill ? SFC.Drills.top(this.game.drill) : LG.trial.goal }), LG.color, 2.4);
++          if (K) SFC.UI.banner(K.name, _t('Pull it off {n} times', { n: this.game && this.game.drill ? SFC.Drills.top(this.game.drill) : LG.trial.goal }) + ' · ' + SFC.Input.techKeys(K), LG.color, 2.4);
+           else SFC.UI.banner(D.name, D.desc, '#6bff4f', 2.4);
+         }
+         else if (opts.run) {
+diff --git a/src/ui/hud.js b/src/ui/hud.js
+index d83ec08..44a6e89 100644
+--- a/src/ui/hud.js
++++ b/src/ui/hud.js
+@@ -102,9 +102,13 @@ window.SFC = window.SFC || {};
+       return K ? K.name : DRILL_UNITS()[D.cfg.goal] || '';
+     },
+     drillBox(game, D, time) {
++      // LEGEND TRIAL: tổ hợp phím của kỹ thuật phải làm, theo phím đang gán / tay cầm (Input.techKeys), ngay dưới số đếm.
++      // Đổi bàn phím <-> tay cầm: chuỗi đổi -> khoá HUD đổi -> tự vẽ lại
++      const K = D.tech && SFC_CONFIG.legends.techniques[D.tech];
+       return `<div class="hud-drill">
+           <div class="hd-time">${esc(time)}</div>
+           ${this.drillTrack(D)}
++          ${K && SFC.RunUI ? `<div class="hd-keys">${SFC.RunUI.keyCaps(K)}</div>` : ''}
+         </div>`;
+     },
+     // thanh 3 mốc + "số đếm / mốc kế" (HUD trong bài + màn kết quả Skill game, endscreen.js)

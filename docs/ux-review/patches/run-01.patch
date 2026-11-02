@@ -1,0 +1,22 @@
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+index 480ef0d..0951705 100644
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -1334,11 +1334,15 @@ window.SFC = window.SFC || {};
+       if (i >= 0) { this.sel = i; this.act(menu, T[i]); }
+       return true;
+     },
+-    // Esc: túi đồ = đóng · thưởng = bỏ qua · Shop / Locker Room = rời · thẻ khác = nút chính · map = về tab GOAT PATH
++    // Esc: túi đồ = đóng · GEAR (chọn người / món bỏ ra) = lùi 1 bước · thưởng / Shop / Locker Room / LEGEND = chỉ dời chọn tới nút
++    // SKIP / LEAVE / NO THANKS (UX review 2026-11-02: Esc không bao giờ tự bỏ thưởng, phải Enter / bấm nút đó) · thẻ khác = nút chính
++    // · map = về tab GOAT PATH
+     back(menu) {
+       const T = this.targets(), f = (k) => T.find((t) => t.k === k);
+       if (!RUN().run && this.pick) return this.act(menu, f('undo') || f('cancel'));
+-      const t = f('close') || f('skip') || f('leave') || (T.length === 1 && T[0].k !== 'drill' && T[0].k !== 'bag' ? T[0] : null);
++      const out = f('skip') || f('leave') || f('joinno') || f('skiptrial') || (inRoom() ? f('gback') : null);
++      if (out && T.length > 1) { if (T.indexOf(out) !== this.sel) { this.sel = T.indexOf(out); menu.render(); } return; }
++      const t = f('close') || f('gback') || out || (T.length === 1 && T[0].k !== 'drill' && T[0].k !== 'bag' ? T[0] : null);
+       if (t) return this.act(menu, t);
+       // map (không còn nút BACK): về tab GOAT PATH · phòng co-op: ở lại (rời phòng bằng LEAVE ROOM)
+       if (f('bag') && !inRoom()) { SFC.Audio.menu(); menu.go('run'); }

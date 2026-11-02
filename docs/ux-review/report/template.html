@@ -1,0 +1,356 @@
+<title>SFC UX Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Press+Start+2P&display=swap">
+<style>
+/* Bố cục: bảng "scout report" một cột: tổng quan → danh sách vấn đề, mỗi vấn đề = 2 video trước/sau cạnh nhau + giải thích + ô góp ý */
+:root {
+  --bg: #f3f1e8;          /* giấy kẻ phấn */
+  --surface: #fffdf6;
+  --surface-2: #ebe8dc;
+  --ink: #17181c;
+  --muted: #5d6272;
+  --line: #d6d2c2;
+  --gold: #b88a00;        /* vàng của game, tối lại để đọc được trên nền sáng */
+  --gold-fill: #ffe14f;
+  --pitch: #1f6b3a;
+  --hi: #c8313f;          /* nặng */
+  --med: #b8650a;         /* vừa */
+  --low: #4f6a8f;         /* nhẹ */
+  --ok: #1f7a46;
+  --warn: #b8650a;
+  --no: #8a8f9c;
+  --shadow: 0 1px 0 rgba(0,0,0,.04), 0 6px 18px -10px rgba(20,20,30,.25);
+  --f-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-px: "Press Start 2P", ui-monospace, monospace;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121316; --surface: #1a1c21; --surface-2: #23262d; --ink: #ecebe4; --muted: #9aa3b5; --line: #2e323b;
+  --gold: #ffe14f; --gold-fill: #ffe14f; --pitch: #3fae66; --hi: #ff5a6e; --med: #ffa53d; --low: #8fb0e0;
+  --ok: #4fd18b; --warn: #ffa53d; --no: #7d8494; --shadow: 0 1px 0 rgba(255,255,255,.03), 0 10px 24px -14px rgba(0,0,0,.8);
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121316; --surface: #1a1c21; --surface-2: #23262d; --ink: #ecebe4; --muted: #9aa3b5; --line: #2e323b;
+  --gold: #ffe14f; --gold-fill: #ffe14f; --pitch: #3fae66; --hi: #ff5a6e; --med: #ffa53d; --low: #8fb0e0;
+  --ok: #4fd18b; --warn: #ffa53d; --no: #7d8494; --shadow: 0 1px 0 rgba(255,255,255,.03), 0 10px 24px -14px rgba(0,0,0,.8);
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.px { font-family: var(--f-px); letter-spacing: .04em; }
+code, .mono { font-family: var(--f-mono); font-size: .86em; }
+
+/* ---------- đầu trang ---------- */
+header.top { display: grid; gap: 14px; }
+.eyebrow { font-family: var(--f-px); font-size: 10px; color: var(--gold); letter-spacing: .12em; }
+header.top h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; line-height: 1.15; }
+header.top .lede { color: var(--muted); max-width: 70ch; }
+.stats { display: flex; flex-wrap: wrap; gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; display: grid; gap: 2px; min-width: 120px; }
+.stat b { font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat span { color: var(--muted); font-size: 12px; }
+
+/* ---------- ý của bạn ---------- */
+.yours { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; display: grid; gap: 12px; box-shadow: var(--shadow); }
+.yours h2 { font-size: 18px; }
+.yours ol { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; }
+.yours li { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+.yours li > div { min-width: 0; }
+.verdict-chip { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap; margin-top: 2px; }
+.verdict-chip.yes { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.verdict-chip.part { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.yours a { color: inherit; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+
+/* ---------- thanh lọc ---------- */
+.filters { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.chip { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 5px 11px; border-radius: 999px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip:focus-visible, button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.filters .sep { width: 1px; height: 22px; background: var(--line); margin-inline: 4px; }
+.filters .count { margin-left: auto; color: var(--muted); font-size: 13px; }
+
+/* ---------- mục lục ---------- */
+.toc { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 18px; font-size: 14px; }
+.toc a { display: flex; gap: 8px; align-items: baseline; color: inherit; text-decoration: none; padding: 3px 0; border-bottom: 1px dashed transparent; min-width: 0; }
+.toc a:hover { border-bottom-color: var(--line); }
+.toc .n { font-family: var(--f-mono); color: var(--muted); font-size: 12px; flex: none; }
+.toc .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.toc .dot { margin-left: auto; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--line); align-self: center; }
+.toc .dot.ok { background: var(--ok); } .toc .dot.change { background: var(--warn); } .toc .dot.skip { background: var(--no); }
+
+/* ---------- thẻ vấn đề ---------- */
+.issues { display: grid; gap: 26px; }
+article.issue { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); display: grid; scroll-margin-top: 70px; overflow: hidden; }
+article.issue[hidden] { display: none; }
+.ih { padding: 16px 20px 12px; display: grid; gap: 8px; border-left: 5px solid var(--sev); }
+.ih .meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.ih .num { font-family: var(--f-px); font-size: 10px; color: var(--ink); }
+.tag { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font-weight: 600; }
+.tag.sev { border-color: transparent; color: #fff; background: var(--sev); }
+.tag.src-user { background: var(--gold-fill); color: #17181c; border-color: transparent; }
+.ih h3 { font-size: 20px; font-weight: 800; line-height: 1.3; }
+.ih .problem { color: var(--ink); max-width: 80ch; }
+
+.vids { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 4px 20px 14px; }
+.vid { display: grid; gap: 6px; min-width: 0; }
+.vid .lab { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.vid .lab i { width: 10px; height: 10px; display: inline-block; }
+.vid.before .lab i { background: var(--hi); } .vid.after .lab i { background: var(--ok); }
+.vid video { width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 4px; display: block; }
+.vid .none { aspect-ratio: 16 / 9; display: grid; place-items: center; background: var(--surface-2); border-radius: 4px; color: var(--muted); font-size: 13px; padding: 12px; text-align: center; }
+.vctl { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 20px 14px; align-items: center; }
+.btn { font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--gold-fill); color: #17181c; border-color: transparent; }
+.vctl .hint { color: var(--muted); font-size: 12px; }
+
+.detail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+.cell { padding: 14px 20px; display: grid; gap: 4px; align-content: start; border-bottom: 1px solid var(--line); min-width: 0; }
+.cell:nth-child(odd) { border-right: 1px solid var(--line); }
+.cell.wide { grid-column: 1 / -1; border-right: 0; }
+.cell h4 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.cell ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.cell .files { display: flex; flex-wrap: wrap; gap: 6px; }
+.cell .files code { background: var(--surface-2); padding: 1px 6px; border-radius: 3px; overflow-wrap: anywhere; }
+
+/* ---------- góp ý ---------- */
+.fb { padding: 14px 20px 18px; display: grid; gap: 10px; background: color-mix(in srgb, var(--gold-fill) 7%, var(--surface)); }
+.fb .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fb h4 { margin: 0 6px 0 0; font-size: 13px; }
+.vbtn { font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.vbtn[aria-pressed="true"][data-v="ok"] { background: var(--ok); color: #fff; border-color: transparent; }
+.vbtn[aria-pressed="true"][data-v="change"] { background: var(--warn); color: #fff; border-color: transparent; }
+.vbtn[aria-pressed="true"][data-v="skip"] { background: var(--no); color: #fff; border-color: transparent; }
+.fb textarea { width: 100%; min-height: 76px; resize: vertical; font: inherit; font-size: 14px; padding: 9px 11px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.fb .status { font-size: 12px; color: var(--muted); }
+.fb .status.err { color: var(--hi); }
+.offline { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font-size: 13px; color: var(--muted); }
+
+footer { color: var(--muted); font-size: 13px; display: grid; gap: 6px; }
+
+@media (max-width: 760px) {
+  .vids { grid-template-columns: 1fr; }
+  .detail { grid-template-columns: 1fr; }
+  .cell:nth-child(odd) { border-right: 0; }
+  .filters .count { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">STREET FOOTBALL CHAOS · UX REVIEW</div>
+    <h1 id="h1">Rà soát UX toàn game</h1>
+    <p class="lede" id="lede"></p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section class="yours" id="yours" aria-labelledby="yours-h"></section>
+
+  <div class="filters" role="toolbar" aria-label="Lọc vấn đề" id="filters"></div>
+
+  <nav class="toc" id="toc" aria-label="Mục lục"></nav>
+
+  <div id="dbnote" class="offline" hidden></div>
+
+  <section class="issues" id="issues"></section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script id="data" type="application/json">/*__DATA__*/</script>
+<script>
+(() => {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const ISS = D.issues;
+  const $ = (s, r = document) => r.querySelector(s);
+  const el = (tag, attrs = {}, ...kids) => {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v == null || v === false) continue;
+      if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k === 'html') e.innerHTML = v; else e.setAttribute(k, v);
+    }
+    for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(k));
+    return e;
+  };
+  // chữ có `code` -> <code>
+  const rich = (s) => { const f = document.createDocumentFragment(); String(s || '').split(/(`[^`]+`)/).forEach((p) => f.append(p.startsWith('`') && p.endsWith('`') && p.length > 2 ? el('code', { text: p.slice(1, -1) }) : document.createTextNode(p))); return f; };
+  const SEV = { high: ['Nặng', 'var(--hi)'], med: ['Vừa', 'var(--med)'], low: ['Nhẹ', 'var(--low)'] };
+  const VERD = { ok: 'Giữ cách này', change: 'Cần chỉnh', skip: 'Không sửa' };
+  const fb = {};   // id -> { verdict, note }
+
+  /* ---------- đầu trang ---------- */
+  $('#h1').textContent = D.title;
+  $('#lede').textContent = D.lede;
+  const areas = [...new Set(ISS.map((i) => i.areaLabel))];
+  const stats = [
+    [ISS.length, 'vấn đề có video'],
+    [ISS.filter((i) => i.source === 'user').length, 'từ danh sách của bạn'],
+    [ISS.filter((i) => i.severity === 'high').length, 'mức nặng'],
+  ];
+  const stEl = $('#stats');
+  stats.forEach(([n, l]) => stEl.append(el('div', { class: 'stat' }, el('b', { text: String(n) }), el('span', { text: l }))));
+  const fbStat = el('div', { class: 'stat' }, el('b', { id: 'fbcount', text: '0' }), el('span', { text: 'đã góp ý' }));
+  stEl.append(fbStat);
+
+  /* ---------- ý của bạn ---------- */
+  const yours = $('#yours');
+  yours.append(el('h2', { id: 'yours-h', text: 'Bạn nói vậy có đúng không?' }));
+  if (D.yoursIntro) yours.append(el('p', { text: D.yoursIntro }));
+  const ol = el('ol');
+  D.yours.forEach((y) => {
+    const link = y.issue ? el('a', { href: '#' + y.issue, text: ' Xem vấn đề →' }) : null;
+    ol.append(el('li', {}, el('span', { class: 'verdict-chip ' + y.verdict, text: y.verdict === 'yes' ? 'Đúng' : 'Đúng một phần' }),
+      el('div', {}, el('b', { text: y.claim }), ' ', rich(y.note), link)));
+  });
+  yours.append(ol);
+
+  /* ---------- lọc ---------- */
+  const F = { src: 'all', area: 'all', fb: 'all' };
+  const filters = $('#filters');
+  const group = (key, opts) => opts.map(([v, label]) => {
+    const b = el('button', { class: 'chip', type: 'button', 'aria-pressed': String(F[key] === v), 'data-k': key, 'data-v': v, text: label });
+    b.addEventListener('click', () => { F[key] = v; filters.querySelectorAll(`[data-k="${key}"]`).forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === v))); apply(); });
+    return b;
+  });
+  filters.append(...group('src', [['all', 'Tất cả'], ['user', 'Bạn nêu'], ['agent', 'Review tìm thêm']]), el('span', { class: 'sep' }),
+    ...group('area', [['all', 'Mọi khu vực']].concat(areas.map((a) => [a, a]))), el('span', { class: 'sep' }),
+    ...group('fb', [['all', 'Mọi trạng thái'], ['none', 'Chưa góp ý'], ['done', 'Đã góp ý']]),
+    el('span', { class: 'count', id: 'count' }));
+
+  /* ---------- mục lục + thẻ ---------- */
+  const toc = $('#toc'), list = $('#issues');
+  ISS.forEach((it, idx) => {
+    const sev = SEV[it.severity] || SEV.med;
+    toc.append(el('a', { href: '#' + it.id, 'data-id': it.id }, el('span', { class: 'n', text: String(idx + 1).padStart(2, '0') }), el('span', { class: 't', text: it.title }), el('span', { class: 'dot', id: 'tfb-' + it.id, title: 'Chưa góp ý' })));
+
+    const art = el('article', { class: 'issue', id: it.id, style: `--sev:${sev[1]}` });
+    art.append(el('div', { class: 'ih' },
+      el('div', { class: 'meta' }, el('span', { class: 'num', text: '#' + String(idx + 1).padStart(2, '0') }),
+        el('span', { class: 'tag sev', text: sev[0] }),
+        el('span', { class: 'tag ' + (it.source === 'user' ? 'src-user' : ''), text: it.source === 'user' ? 'Bạn nêu' : 'Review tìm thêm' }),
+        el('span', { class: 'tag', text: it.areaLabel }), el('span', { text: it.screen })),
+      el('h3', { text: it.title }),
+      el('p', { class: 'problem' }, rich(it.problem))));
+
+    const vid = (kind, src, label) => {
+      const box = el('div', { class: 'vid ' + kind }, el('div', { class: 'lab' }, el('i'), label));
+      if (src) box.append(el('video', { src, controls: '', muted: '', playsinline: '', preload: 'metadata', loop: '' }));
+      else box.append(el('div', { class: 'none', text: it.noVideo || 'Chưa có video' }));
+      return box;
+    };
+    const vids = el('div', { class: 'vids' }, vid('before', it.before, 'TRƯỚC'), vid('after', it.after, 'SAU'));
+    art.append(vids);
+    vids.querySelectorAll('video').forEach((v) => { v.muted = true; });
+    if (it.before && it.after) {
+      const both = el('button', { class: 'btn primary', type: 'button', text: '▶ Phát cả 2 từ đầu' });
+      const slow = el('button', { class: 'btn', type: 'button', 'aria-pressed': 'false', text: 'Chậm 0.5×' });
+      both.addEventListener('click', () => vids.querySelectorAll('video').forEach((v) => { v.currentTime = 0; v.play().catch(() => {}); }));
+      slow.addEventListener('click', () => { const on = slow.getAttribute('aria-pressed') !== 'true'; slow.setAttribute('aria-pressed', String(on)); slow.textContent = on ? 'Tốc độ 1×' : 'Chậm 0.5×'; vids.querySelectorAll('video').forEach((v) => { v.playbackRate = on ? 0.5 : 1; }); });
+      art.append(el('div', { class: 'vctl' }, both, slow, it.videoNote ? el('span', { class: 'hint', text: it.videoNote }) : null));
+    }
+
+    const cell = (h, body, wide) => el('div', { class: 'cell' + (wide ? ' wide' : '') }, el('h4', { text: h }), body);
+    const p = (s) => el('p', {}, rich(s));
+    const alts = el('ul'); (it.alternatives || []).forEach((a) => alts.append(el('li', {}, rich(a))));
+    const files = el('div', { class: 'files' }); (it.files || []).forEach((f) => files.append(el('code', { text: f })));
+    const det = el('div', { class: 'detail' },
+      cell('Mục tiêu', p(it.goal)), cell('Vì sao cần sửa', p(it.why)),
+      cell('Đã sửa thế nào', p(it.fix)), cell('Vì sao chọn cách này', p(it.why_this)),
+      cell('Các cách khác', (it.alternatives || []).length ? alts : p('Không có cách nào đáng cân nhắc khác.'), true));
+    if ((it.files || []).length || it.limits) det.append(cell('File đã đổi' + (it.limits ? ' · lưu ý' : ''), el('div', { style: 'display:grid;gap:6px' }, files, it.limits ? p(it.limits) : null), true));
+    art.append(det);
+
+    // góp ý
+    const ta = el('textarea', { id: 'note-' + it.id, placeholder: 'Góp ý của bạn cho vấn đề này (tự lưu)…', 'aria-label': 'Góp ý cho ' + it.title });
+    const status = el('span', { class: 'status', id: 'st-' + it.id });
+    const vb = Object.entries(VERD).map(([v, label]) => {
+      const b = el('button', { class: 'vbtn', type: 'button', 'data-v': v, 'aria-pressed': 'false', text: label });
+      b.addEventListener('click', () => { const cur = (fb[it.id] || {}).verdict; setFb(it.id, { verdict: cur === v ? null : v }); });
+      return b;
+    });
+    let tm = 0;
+    ta.addEventListener('input', () => { status.textContent = 'Đang gõ…'; status.classList.remove('err'); clearTimeout(tm); tm = setTimeout(() => setFb(it.id, { note: ta.value }), 900); });
+    ta.addEventListener('blur', () => { clearTimeout(tm); if ((fb[it.id] || {}).note !== ta.value) setFb(it.id, { note: ta.value }); });
+    art.append(el('div', { class: 'fb' }, el('div', { class: 'row' }, el('h4', { text: 'Góp ý' }), ...vb, status), ta));
+    list.append(art);
+  });
+
+  function paint(id) {
+    const f = fb[id] || {}, art = document.getElementById(id);
+    if (!art) return;
+    art.querySelectorAll('.vbtn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === f.verdict)));
+    const ta = document.getElementById('note-' + id);
+    if (ta && document.activeElement !== ta && f.note != null && ta.value !== f.note) ta.value = f.note;
+    const dot = document.getElementById('tfb-' + id);
+    dot.className = 'dot ' + (f.verdict || '');
+    dot.title = f.verdict ? VERD[f.verdict] : (f.note ? 'Có ghi chú' : 'Chưa góp ý');
+    if (!f.verdict && f.note) dot.className = 'dot change';
+    $('#fbcount').textContent = String(ISS.filter((i) => fb[i.id] && (fb[i.id].verdict || fb[i.id].note)).length);
+  }
+  function apply() {
+    let n = 0;
+    ISS.forEach((it) => {
+      const f = fb[it.id] || {}, done = !!(f.verdict || f.note);
+      const show = (F.src === 'all' || it.source === F.src) && (F.area === 'all' || it.areaLabel === F.area) && (F.fb === 'all' || (F.fb === 'done') === done);
+      document.getElementById(it.id).hidden = !show;
+      toc.querySelector(`[data-id="${it.id}"]`).style.display = show ? '' : 'none';
+      if (show) n++;
+    });
+    $('#count').textContent = `Đang hiện ${n}/${ISS.length}`;
+  }
+
+  /* ---------- lưu góp ý (db của artifact; không có thì giữ tạm trong trình duyệt) ---------- */
+  let db = null;
+  const LS = 'sfc-ux-fb';
+  const lsGet = () => { try { return JSON.parse(localStorage.getItem(LS) || '{}'); } catch (e) { return {}; } };
+  const lsSet = (o) => { try { localStorage.setItem(LS, JSON.stringify(o)); } catch (e) { /* bỏ qua */ } };
+  const queue = {};
+  async function setFb(id, patch) {
+    fb[id] = Object.assign({}, fb[id] || {}, patch);
+    paint(id); apply();
+    const st = document.getElementById('st-' + id);
+    if (!db) { const all = lsGet(); all[id] = fb[id]; lsSet(all); st.textContent = 'Đã lưu trong trình duyệt này'; return; }
+    st.textContent = 'Đang lưu…'; st.classList.remove('err');
+    // mỗi doc 1 lần ghi một lúc
+    queue[id] = (queue[id] || Promise.resolve()).then(async () => {
+      try {
+        await db.doc('feedback/' + id).set({ verdict: fb[id].verdict || null, note: fb[id].note || '', title: (ISS.find((i) => i.id === id) || {}).title || '', at: new Date().toISOString() });
+        st.textContent = 'Đã lưu';
+      } catch (e) {
+        st.textContent = 'Chưa lưu được (' + (e && e.code || 'lỗi') + '). Nội dung vẫn còn trong ô.'; st.classList.add('err');
+      }
+    });
+  }
+  ISS.forEach((it) => paint(it.id)); apply();
+
+  (async () => {
+    const note = $('#dbnote');
+    const local = lsGet();
+    try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
+    if (!db) {
+      Object.assign(fb, local); ISS.forEach((it) => paint(it.id)); apply();
+      note.hidden = false;
+      note.textContent = 'Góp ý đang lưu tạm trong trình duyệt này (không gửi được về cho Claude). Mở trang trên claude.ai khi đã đăng nhập để góp ý được lưu lại.';
+      return;
+    }
+    let loaded = false;
+    const t = setTimeout(() => { if (!loaded) { note.hidden = false; note.textContent = 'Chưa tải được góp ý đã lưu. Bạn vẫn có thể góp ý, trang sẽ thử lưu khi kết nối được.'; } }, 10000);
+    db.collection('feedback').onSnapshot((snap) => {
+      snap.docs.forEach((d) => { const v = d.data() || {}; fb[d.id] = { verdict: v.verdict || null, note: v.note || '' }; paint(d.id); });
+      apply();
+      if (!snap.metadata.fromCache) { loaded = true; clearTimeout(t); note.hidden = true; }
+    }, (e) => { clearTimeout(t); note.hidden = false; note.textContent = 'Không đọc được góp ý đã lưu (' + e.code + ').'; });
+  })();
+
+  /* ---------- chân trang ---------- */
+  const foot = $('#foot');
+  (D.footer || []).forEach((s) => foot.append(el('p', {}, rich(s))));
+})();
+</script>

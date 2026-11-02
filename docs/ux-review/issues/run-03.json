@@ -1,0 +1,22 @@
+{
+  "id": "run-03",
+  "area": "run",
+  "screen": "PICK A BADGE / PICK GEAR / Who wears it / LEGEND xin vào đội / LOCKER ROOM / ??? event",
+  "source": "agent",
+  "severity": "med",
+  "title": "Chuột và phím chọn 2 thẻ khác nhau, Enter lấy thẻ không phải thẻ đang trỏ",
+  "problem": "Trên các thẻ chọn của run, rê chuột chỉ làm thẻ sáng lên chứ không dời mục đang chọn của phím, nên có lúc 2 thẻ cùng viền vàng. Bấm Enter thì nhận thẻ của phím, không phải thẻ đang trỏ. Ở thẻ LEGEND xin vào đội còn rối hơn: chỉ số xem trước hiện ở thẻ chuột, nhưng Enter lại giao LEGEND cho người khác.",
+  "goal": "Lúc nào cũng chỉ 1 thứ đang được chọn; chuột và phím dùng chung 1 con trỏ.",
+  "why": "Giao nhầm LEGEND hay nhận nhầm BADGE là quyết định không hoàn tác được trong run; người chơi dùng cả chuột lẫn phím sẽ gặp ngay.",
+  "fix": "Giờ rê chuột lên thẻ / nút nào trong các thẻ che map thì mục chọn của phím nhảy theo luôn, chỉ còn 1 thẻ sáng; Enter lấy đúng thẻ đang trỏ. Bấm phím sau đó thì mục chọn đi tiếp từ đó, nút nằm dưới con trỏ đứng yên không sáng theo nữa. Kỹ thuật: runmap.js thêm RunUI.bindHover (bắt mousemove trên .rm-actcard, đặt this.sel + chuyển class .sel, không vẽ lại; làm như KIT VAN đã làm); CSS bỏ :hover khỏi .pb-card / .gr-card / .bd-card / button.sq-card, thêm lớp .kb cho nút khi vừa đi bằng phím. Không thêm chữ mới.",
+  "why_this": "Một nguồn sự thật duy nhất (sel) cho mọi thẻ của run, đúng mẫu KIT VAN đang chạy; dùng mousemove nên vẽ lại dưới con trỏ đứng yên không giật mục chọn về chỗ chuột.",
+  "alternatives": [
+    "Đang dùng chuột thì ẩn viền của phím, bấm phím thì hiện lại — vẫn là 2 trạng thái ngầm, dễ lệch ở màn co-op có dấu phiếu",
+    "Cho hover một kiểu khác sel (viền trắng mờ) — hết nhìn nhầm, nhưng Enter vẫn lấy thẻ không trỏ"
+  ],
+  "files": ["src/ui/runmap.js", "css/style.css"],
+  "limits": "Chỉ sửa các thẻ che map (KIT VAN đã đúng từ trước). Node trên map và dải đội hình trên thanh map do phần việc khác lo.",
+  "videoNote": "Phím đứng thẻ giữa, chuột trỏ thẻ phải rồi Enter: trước = 2 thẻ cùng sáng, nhận / giao LEGEND cho thẻ giữa; sau = chỉ thẻ phải sáng và nhận đúng thẻ phải.",
+  "before": "videos/run-03-before.mp4",
+  "after": "videos/run-03-after.mp4"
+}

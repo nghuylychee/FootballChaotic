@@ -1,0 +1,23 @@
+{
+  "id": "user-01",
+  "area": "menus",
+  "screen": "Trang chủ (thanh CHARACTER · PLAY · SHOP)",
+  "source": "user",
+  "severity": "high",
+  "title": "Trang chủ: khối vàng phải đi theo mục đang chọn",
+  "problem": "PLAY lúc nào cũng là khối vàng to, nên ai nhìn cũng tưởng đó là con trỏ chọn. Rê chuột hay bấm phím sang CHARACTER / SHOP thì khối vàng vẫn đứng ở PLAY, chỉ có chữ đổi màu và một gạch mỏng. Rê chuột còn không đổi mục đang chọn, nên bấm Enter có thể mở một chỗ khác chỗ chuột đang chỉ.",
+  "goal": "Nhìn một cái là biết đang đứng ở đâu: chỉ mục đang chọn mới là khối vàng, và chuột với phím luôn chỉ cùng một mục.",
+  "why": "Đây là màn đầu tiên người chơi thấy mỗi lần mở game. Không biết mình đang chọn gì thì bấm nhầm, và game trông như bị lỗi điều khiển.",
+  "fix": "Giờ mục nào đang chọn thì mục đó thành khối vàng nhô lên khỏi thanh, có viền trắng, khi đổi mục thì khối bật lên một nhịp. PLAY vẫn là tab to nhất ở giữa nhưng khi không chọn chỉ còn khối tối viền vàng, chữ vàng. Rê chuột lên mục nào là chọn luôn mục đó (giống bàn phím), nên Enter và cú bấm chuột luôn làm cùng một việc. Kỹ thuật: CSS .hn-tab.sel dùng chung hình bậc thang (biến --stair) cho mọi tab; Menu.hoverSel đổi class .sel tại chỗ khi mousemove, không dựng lại trang nên không mất cú bấm.",
+  "why_this": "Làm đúng hướng dẫn: thứ nổi nhất phải là thứ đang chọn và nó phải di chuyển. Giữ được độ nổi bật của PLAY nhờ kích thước và viền vàng, mà không còn giả làm con trỏ.",
+  "alternatives": [
+    "Giữ PLAY vàng đặc, chỉ thêm khung trắng dày quanh mục đang chọn — ít đổi giao diện, nhưng khối vàng vẫn là thứ to nhất màn hình nên mắt vẫn bị kéo về PLAY",
+    "Thanh gạch vàng to trượt dưới chân các tab (kiểu tab bar) — nhẹ nhàng, nhưng vẫn yếu hơn khối vàng PLAY nên không giải quyết gốc vấn đề",
+    "Bỏ kiểu tab hình thang, cho 3 mục cùng cỡ — rõ ràng nhất, nhưng mất điểm nhấn PLAY là việc chính của trang chủ"
+  ],
+  "files": ["css/style.css", "src/ui/menu.js"],
+  "limits": "Chưa thử trên tay cầm thật (cùng logic với bàn phím). Rê chuột không có tiếng tick (giống popup LANGUAGE).",
+  "videoNote": "Trước: rê chuột lên SHOP / CHARACTER thì khối vàng vẫn ở PLAY; sau: khối vàng đi theo chuột, rồi đi theo phím mũi tên.",
+  "before": "videos/user-01-before.mp4",
+  "after": "videos/user-01-after.mp4"
+}

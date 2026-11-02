@@ -1,0 +1,111 @@
+diff --git a/css/style.css b/css/style.css
+index 2ac354e..ed82124 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -2106,7 +2106,6 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ #story.st-tell-diary .st-who::after { content: ":"; }
+ #story.st-tell-diary .st-shout, #story.st-tell-diary .st-title { color: #c8283a; text-shadow: none; font-family: 'VT323', var(--px); font-size: 46px; top: 18px; }
+ #story.st-tell-diary .st-sub { color: #22307a; text-shadow: none; font-family: 'VT323', var(--px); font-size: 22px; top: 64px; }
+-#story.st-tell-diary .st-skip { color: rgba(34,48,122,0.6); }
+ /* manga: bóng thoại trắng viền đen trong ô đang chạy; người dẫn truyện = khung tường thuật đen; tên người nói ẩn (manga không ghi tên) */
+ #story.st-tell-manga .st-caption { bottom: auto; transform: none; min-height: 0; padding: 6px 10px; background: #fff; border: 2px solid #0c0c0e; border-radius: 14px;
+   box-shadow: none; font-size: 8px; line-height: 1.5; color: #0c0c0e; }
+@@ -2119,26 +2118,27 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ #story.st-tell-manga .st-who { display: none; }
+ #story.st-tell-manga .st-shout, #story.st-tell-manga .st-title { color: #fff; text-shadow: 3px 3px 0 #0c0c0e, -2px -2px 0 #0c0c0e, 2px -2px 0 #0c0c0e, -2px 2px 0 #0c0c0e; transform: rotate(-4deg); }
+ #story.st-tell-manga .st-sub { color: #0c0c0e; text-shadow: 1px 1px 0 #fff; }
+-#story.st-tell-manga .st-skip { color: rgba(12,12,14,0.55); }
+ /* TV: thanh tên kiểu lower third (dải màu người nói + chữ trên nền đen mờ), nằm trên dải chữ chạy */
+ #story.st-tell-tv .st-caption { left: 18px; right: auto; bottom: 26px; transform: none; width: 470px; background: linear-gradient(90deg, rgba(10,10,16,0.92) 80%, rgba(10,10,16,0)); border: none; border-left: 4px solid var(--wc, #ff3fb4); box-shadow: none; }
+ #story.st-tell-tv .st-who { left: -4px; top: -15px; box-shadow: none; }
+-#story.st-tell-tv .st-skip { bottom: auto; top: 34px; }
+ /* phim cũ: phụ đề chữ kem viền đen giữa khung, tên người nói nhỏ phía trên */
+ #story.st-tell-film .st-caption { bottom: 24px; width: 520px; text-align: center; background: none; border: none; box-shadow: none; padding: 0;
+   color: #f3e6c4; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; }
+ #story.st-tell-film .st-caption.has-who { padding-top: 14px; }
+ #story.st-tell-film .st-who { left: 50%; top: 0; transform: translateX(-50%); padding: 0; background: none; box-shadow: none; color: #d9b77a; text-shadow: 1px 1px 0 #000; }
+ #story.st-tell-film .st-shout, #story.st-tell-film .st-title { color: #f3e6c4; text-shadow: 3px 3px 0 #000; }
+-.st-skip {
+-  position: absolute; right: 10px; bottom: 6px; display: flex; align-items: center; gap: 5px;
+-  font-size: 12px; color: rgba(243,234,215,0.55); pointer-events: none;
+-}
++/* góc trên phải (UX run-07): nút SKIP ALL thật (bấm = bỏ qua, vòng tiến độ khi giữ Enter / chuột) + dòng gợi ý phím; nền mực viền kem,
++   giống nhau ở mọi kiểu kể (trước đây chữ xám mờ góc dưới phải, nhật ký / manga gần như không đọc được) */
++.st-skip { position: absolute; right: 8px; top: 8px; z-index: 2; display: flex; align-items: center; gap: 5px; padding: 4px 8px 3px 5px; cursor: pointer;
++  font-family: var(--px); font-size: 7px; letter-spacing: 1px; line-height: 1; color: #f3ead7; background: #0c0c0e; border: 1px solid #f3ead7; box-shadow: 2px 2px 0 rgba(0,0,0,0.6); }
++.st-skip:hover { color: var(--gold); border-color: var(--gold); }
++.st-skip b { font-weight: normal; }
+ .st-skip i {
+-  --k: 0; width: 10px; height: 10px; border-radius: 50%;
+-  background: conic-gradient(var(--gold) calc(var(--k) * 360deg), rgba(255,255,255,0.15) 0);
++  --k: 0; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1px #f3ead7;
++  background: conic-gradient(var(--gold) calc(var(--k) * 360deg), #3a3a44 0);
+ }
+-#story.on-card .st-skip { display: none; }
++.st-hint { position: absolute; right: 8px; top: 27px; z-index: 2; padding: 1px 5px; font-size: 11px; line-height: 1.2; color: #f3ead7; background: rgba(12,12,14,0.78); pointer-events: none; }
++#story.on-card .st-skip, #story.on-card .st-hint { display: none; }
+ #story.st-reveal { z-index: 25; }   /* màn lật thẻ bí kíp (#reveal, z 30) nằm trên cut scene */
+ .st-aura {
+   top: 40px; font-family: var(--px); font-size: 30px; color: #ffe14f; letter-spacing: 2px;
+diff --git a/src/ui/story.js b/src/ui/story.js
+index 4471242..34b4505 100644
+--- a/src/ui/story.js
++++ b/src/ui/story.js
+@@ -709,7 +709,12 @@ window.SFC = window.SFC || {};
+         // vẽ nguệch ngoạc bút chì ở lề: ngôi sao, quả bóng, trái tim
+         ctx.strokeStyle = 'rgba(60,60,90,0.55)'; ctx.lineWidth = 1.5;
+         ctx.beginPath(); for (let i = 0; i <= 5; i++) { const a = -Math.PI / 2 + i * 4 * Math.PI / 5; ctx.lineTo(600 + Math.cos(a) * 10, 300 + Math.sin(a) * 10); } ctx.stroke();
+-        ctx.beginPath(); ctx.arc(612, 40, 9, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(606, 34); ctx.lineTo(618, 46); ctx.stroke();
++        // quả bóng (UX run-07: trước là vòng tròn + 1 nét chéo ở góc trên phải, nhìn như dấu ⊘ / nút đóng): vòng tròn + ngũ giác tô giữa
++        // + đường may, dời xuống dưới nút SKIP ALL
++        const bx = 612, by = 84, pent = (r) => [0, 1, 2, 3, 4].map((i) => [bx + Math.cos(-Math.PI / 2 + i * 2 * Math.PI / 5) * r, by + Math.sin(-Math.PI / 2 + i * 2 * Math.PI / 5) * r]);
++        ctx.beginPath(); ctx.arc(bx, by, 9, 0, Math.PI * 2); ctx.stroke();
++        ctx.fillStyle = 'rgba(60,60,90,0.55)'; ctx.beginPath(); pent(3.5).forEach(([x, y]) => ctx.lineTo(x, y)); ctx.closePath(); ctx.fill();
++        pent(3.5).forEach(([x, y], i) => { const [x2, y2] = pent(9)[i]; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke(); });
+       },
+       draw(S, sc) {
+         this.paper();
+@@ -881,7 +886,15 @@ window.SFC = window.SFC || {};
+       const el = this.el || (this.el = document.getElementById('story'));
+       if (!this.bound) {
+         this.bound = true;
+-        el.addEventListener('click', () => { if (this.active) this.advance(); });
++        // bấm = câu kế · bấm nút SKIP ALL = bỏ qua ngay · giữ chuột ở đâu cũng được = như giữ Enter (UX run-07: trước đây chuột không bỏ qua được)
++        el.addEventListener('click', (e) => {
++          if (!this.active) return;
++          if (this.eatClick) { this.eatClick = false; return; }   // vừa giữ chuột tới lúc bỏ qua: lần nhả không tính là bấm
++          if (e.target.closest('.st-skip')) return this.skipAll();
++          this.advance();
++        });
++        el.addEventListener('mousedown', (e) => { this.eatClick = false; if (e.button === 0 && !e.target.closest('.st-skip')) this.mouseHeld = true; });
++        window.addEventListener('mouseup', () => { this.mouseHeld = false; });
+       }
+       this.scenes = Array.isArray(key) ? key : CFG().scenes[key] || [];
+       this.speaker = opts.speaker || null;
+@@ -892,8 +905,10 @@ window.SFC = window.SFC || {};
+       this.onDone = onDone;
+       this.active = true;
+       this.hold = 0;
++      // góc trên phải: nút SKIP ALL thật (vòng tiến độ khi giữ) + dòng gợi ý phím, nền mực để đọc được trên mọi kiểu kể
+       el.innerHTML = `<canvas width="${W}" height="${H}"></canvas><div class="st-text"></div>
+-        <div class="st-skip"><i></i><span>${SFC.t('{key} next · hold to skip', { key: `<kbd>${esc(SFC.Input.label('confirm'))}</kbd>` })}</span></div>`;
++        <button class="st-skip"><i></i><b>${esc(SFC.t('SKIP ALL'))}</b></button>
++        <div class="st-hint">${SFC.t('{key} next · hold to skip', { key: `<kbd>${esc(SFC.Input.label('confirm'))}</kbd>` })}</div>`;
+       el.classList.remove('hidden');
+       Object.keys(TELL).forEach((k) => el.classList.toggle('st-tell-' + k, k === this.tell));
+       ctx = el.querySelector('canvas').getContext('2d');
+@@ -957,11 +972,11 @@ window.SFC = window.SFC || {};
+         if (this.active && this.scenes[this.idx] === sc) this.draw();
+         return;
+       }
+-      // giữ Enter / Esc: bỏ qua cả cut scene
+-      const holding = input.isDown('confirm') || input.isDown('pause');
++      // giữ Enter / Esc / chuột: bỏ qua cả cut scene
++      const holding = input.isDown('confirm') || input.isDown('pause') || this.mouseHeld;
+       this.hold = holding ? this.hold + dt : 0;
+       if (this.skipEl) this.skipEl.style.setProperty('--k', clamp01(this.hold / CFG().skipHold).toFixed(2));
+-      if (this.hold >= CFG().skipHold && sc.art !== 'path') return this.skipAll();
++      if (this.hold >= CFG().skipHold && sc.art !== 'path') { if (this.mouseHeld) this.eatClick = true; return this.skipAll(); }
+       if (input.wasPressed('confirm')) this.advance();
+       else if (sc.dur > 0 && this.t >= this.dur(sc)) return this.go(this.idx + 1);
+       if (this.active) this.draw();

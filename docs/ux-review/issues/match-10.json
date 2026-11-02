@@ -1,0 +1,26 @@
+{
+ "id": "match-10",
+ "area": "match",
+ "screen": "Bàn thắng · banner GOAL! + máy quay ăn mừng",
+ "source": "agent",
+ "severity": "low",
+ "title": "Banner GOAL! đè lên người ghi bàn đúng lúc máy quay zoom vào",
+ "problem": "Sau bàn thắng máy quay zoom x2 vào người ghi bàn ở giữa màn, nhưng banner 'GOAL!' + 'LONG · LONG FC' cũng nằm giữa màn, nên chữ đè lên đầu / mặt người đang diễn động tác ăn mừng (thứ bán trong Celebration Box).",
+ "goal": "Vừa thấy rõ GOAL! vừa thấy trọn động tác ăn mừng.",
+ "why": "Khoảnh khắc ghi bàn là lúc người chơi khoe động tác ăn mừng đã mua; chữ che mất thì món hàng đó mất giá trị, và cảnh zoom đẹp bị phí.",
+ "fix": "Banner của bàn thắng giờ nằm sát ngay dưới bảng tỉ số trên HUD, còn khoảng giữa màn để trống cho người ghi bàn. Vị trí đo theo chiều cao bảng tỉ số lúc hiện (Skill game / LEGEND TRIAL có bảng cao hơn) nên không đè HUD. Banner khác (KICK OFF, luật sân...) giữ chỗ cũ. Kỹ thuật: UI.banner có thêm tham số top, consume() bật nó cho sự kiện goal khi game.celebration.camera đang bật.",
+ "why_this": "Chỉ dời chữ trong lúc zoom, không đụng nhịp ăn mừng hay máy quay đã chỉnh. Máy quay luôn đưa người ghi bàn về giữa (nhích lên 14 px) nên dải trên cùng là chỗ trống nhất.",
+ "alternatives": [
+  "Hiện banner trước rồi mới zoom (trễ goalCam) — rõ cả hai, nhưng kéo dài nhịp sau bàn thắng.",
+  "Đặt banner ở 1/3 dưới màn, trên thanh kỹ năng — cũng trống, nhưng đồng đội chạy tới ăn mừng hay đứng ở đó và gần thanh kỹ năng / toast.",
+  "Thu nhỏ banner bàn thắng — đỡ che, nhưng vẫn đè khi người ghi bàn ở giữa và mất cảm giác 'GOAL!' to."
+ ],
+ "files": [
+  "src/ui/hud.js",
+  "src/ui/matchui.js"
+ ],
+ "limits": "Người ghi bàn chạy sát mép trên sân (máy quay chạm biên) thì đầu nhân vật lên gần banner hơn, nhưng vẫn không đè trong các lần thử. Banner trên máy khách online cũng đổi theo (cùng hàm).",
+ "videoNote": "Xem lúc 'GOAL!' hiện (giây ~1.5–3): bản trước chữ nằm trên đầu người ghi bàn, bản sau chữ ở sát dưới bảng tỉ số.",
+ "before": "videos/match-10-before.mp4",
+ "after": "videos/match-10-after.mp4"
+}

@@ -1,0 +1,23 @@
+{
+  "id": "run-12",
+  "area": "run",
+  "screen": "BUILD YOUR SQUAD",
+  "source": "agent",
+  "severity": "high",
+  "title": "BUILD YOUR SQUAD không nói phải làm gì, nút START RUN ẩn",
+  "problem": "Vào màn này focus nằm trên thẻ của chính mình nên bấm Enter không có gì xảy ra. Không có chữ nào bảo phải xếp người vào MID và DEF, nút START RUN cũng chỉ hiện khi đủ người, nên người chơi đứng hình không biết bước tiếp theo.",
+  "goal": "Vào màn là biết ngay cần chọn ai cho ô nào, bấm Enter là chọn được, và luôn thấy nút START RUN còn thiếu gì.",
+  "why": "Đây là bước đầu tiên của mỗi run. Kẹt ở đây là người chơi chưa đá trận nào đã bỏ, nhất là người dùng tay cầm / phím.",
+  "fix": "Ô trống cần chọn kế tiếp giờ nhấp nháy viền vàng + nhãn PICK. Cạnh nút START RUN có 1 dòng hướng dẫn 'Pick your MID from the bench' (đổi theo ô đang thiếu). START RUN luôn hiện: chưa đủ người thì mờ và ghi các vị trí còn thiếu, bấm vào thì dòng hướng dẫn rung đỏ và focus nhảy xuống băng ghế. Mới vào màn focus nằm ở ứng viên đầu tiên, chọn xong focus sang ứng viên kế (trước đây rơi vào nút ✕ của người vừa chọn), đủ người thì focus nhảy lên START RUN. Kỹ thuật: RunUI.renderPick / targets ('go' luôn có, dis khi chưa đủ) / pkFocus; 2 chuỗi mới (đã thêm 4 pack).",
+  "why_this": "Giữ nguyên bố cục + kéo thả hiện có, chỉ thêm tín hiệu ngay chỗ mắt đang nhìn (ô trống, nút chính). Focus tự đi theo bước kế tiếp nên người dùng phím chỉ cần bấm Enter 3 lần là vào run.",
+  "alternatives": [
+    "Tự động xếp sẵn 2 đồng đội hợp vị trí, người chơi chỉ đổi nếu muốn — nhanh nhất, nhưng mất cảm giác tự chọn đội ở đầu run",
+    "Popup hướng dẫn lần đầu vào màn — rõ, nhưng thêm 1 lớp phải tắt và chỉ hiện 1 lần",
+    "Chọn theo từng bước (màn chọn MID rồi màn chọn DEF) — không thể nhầm, nhưng thêm màn và bỏ mất kéo thả"
+  ],
+  "files": ["src/ui/runmap.js", "css/style.css", "src/i18n/es.js", "src/i18n/pt-BR.js", "src/i18n/pt-PT.js", "src/i18n/ja.js"],
+  "limits": "Chưa thử trong phòng co-op thật (host có bạn bè đứng ô / ngồi ghế dự bị: dòng hướng dẫn dùng câu có sẵn 'Everyone on the BENCH must take a position first.'). Font ja chưa build lại cho chữ 選択.",
+  "videoNote": "Cả 2 bản cùng thao tác: bấm chuột giữa màn (chỗ nút START RUN) rồi Enter 2 lần. Bản cũ không có gì xảy ra; bản mới dòng hướng dẫn rung đỏ, 2 lần Enter xếp đủ MID + DEF và focus nhảy lên START RUN.",
+  "before": "videos/run-12-before.mp4",
+  "after": "videos/run-12-after.mp4"
+}

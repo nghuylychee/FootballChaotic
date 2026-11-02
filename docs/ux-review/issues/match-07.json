@@ -1,0 +1,30 @@
+{
+ "id": "match-07",
+ "area": "match",
+ "screen": "HUD · ô Ultimate (thanh kỹ năng giữa đáy)",
+ "source": "agent",
+ "severity": "med",
+ "title": "Ultimate đầy mà bấm không ra, không có phản hồi gì",
+ "problem": "Ultimate có luật cầm bóng (vd Meteor Shot phải tự mình giữ bóng). Lúc sai luật, ô chỉ tối đi mà vẫn ghi FULL; bấm phím Ultimate thì im re: không tiếng, không rung, không chữ. Người chơi tưởng phím hỏng hay game lag.",
+ "goal": "Bấm Ultimate lúc chưa dùng được thì có phản hồi ngay và biết phải làm gì.",
+ "why": "Ultimate là khoảnh khắc lớn nhất của trận, bấm hụt mà không hiểu vì sao rất cụt hứng. Luật cầm bóng không hiện thường trực trên HUD (đúng quyết định của anh) nên lúc bấm sai là lúc duy nhất để nói.",
+ "fix": "Khi ô Ultimate đầy mà đang tối và người chơi bấm phím Ultimate: ô giật ngang + viền đỏ chớp, kêu \"bụp bụp\" ngắn, và nếu là sai luật cầm bóng thì hiện 1 dòng nhỏ ngay trên ô khoảng 1.3 s: 'Use it while you hold the ball' hoặc 'Use it only without the ball' (chuỗi có sẵn trong ULT BOOK, đã dịch đủ). Bị choáng / bị khoá hành động thì chỉ rung + kêu, không chữ. Kỹ thuật: hàm mới SFC.UI.ultDeny(game) trong hud.js, main.js và OnlineUI.tick gọi khi phím Ultimate vừa nhấn; thêm SFC.Audio.deny(). Không đụng mô phỏng hay sync.js, khách online tự thấy từ trận gương.",
+ "why_this": "Chỉ hiện đúng lúc người chơi bấm sai nên không làm HUD rối thêm và không trái luật 'không ghi luật dùng trên HUD'. Chữ nằm ngay chỗ mắt đang nhìn (ô vừa bấm), dùng lại chuỗi đã dịch nên không thêm việc dịch.",
+ "alternatives": [
+  "Popup chữ trên đầu cầu thủ qua Effects.pop — đúng quy ước popup trong trận, nhưng phải đi qua mô phỏng + sync và cả sân (kể cả đối thủ) đều thấy lời nhắc riêng của mình.",
+  "Icon bóng / bóng gạch chéo thường trực trên ô — rõ nhất, không cần bấm mới biết, nhưng trái quyết định 2026-10-17 (không hiện luật dùng trên HUD).",
+  "Đổi chữ FULL thành icon khoá khi ô tối — hết mâu thuẫn 'FULL mà tối', nhưng vẫn không nói phải làm gì; có thể làm thêm sau nếu anh muốn."
+ ],
+ "files": [
+  "src/ui/hud.js",
+  "src/main.js",
+  "src/ui/online.js",
+  "src/engine/audio.js",
+  "css/style.css",
+  "docs/SFX.md"
+ ],
+ "limits": "Giữ nguyên chữ FULL trên ô tối (theo quyết định 2026-10-31). Chưa thử với tay cầm thật (cùng hành động 'ultimate' nên chạy y vậy). Âm 'deny' là tiếng synth tạm, đã ghi vào docs/SFX.md.",
+ "videoNote": "Đồng đội cầm bóng, ô Ultimate đầy nhưng tối; bấm Space 2 lần: bản trước im re, bản sau ô rung + dòng 'Use it while you hold the ball'. Cuối video tự cầm bóng, bấm lại thì ra Meteor Shot ở cả 2 bản.",
+ "before": "videos/match-07-before.mp4",
+ "after": "videos/match-07-after.mp4"
+}

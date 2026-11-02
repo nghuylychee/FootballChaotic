@@ -1,0 +1,23 @@
+{
+  "id": "run-04",
+  "area": "run",
+  "screen": "KIT VAN (Shop)",
+  "source": "agent",
+  "severity": "med",
+  "title": "KIT VAN: không biết món nào đủ tiền, cũng không biết món dùng cho cả đội hay 1 người",
+  "problem": "Thẻ giá ở KIT VAN trông y hệt nhau dù đủ tiền hay không, phải bấm vào mới nghe 'Not enough cash.'. Shop bán lẫn BADGE (cả đội) và GEAR (1 người đeo) nhưng bong bóng không nói gì; dòng HOT dính liền vào câu mô tả. Mua GEAR thì bị đá ngay sang 'Who wears it?', bàn tay lấy đồ chưa kịp diễn.",
+  "goal": "Nhìn qua là biết món nào mua được, mua về thì ai dùng, và mua món nào cũng thấy bàn tay lấy đồ.",
+  "why": "Shop là chỗ người chơi tính toán tiền của cả run; phải trỏ từng món mới biết mua được không thì vừa chậm vừa dễ bực, còn nhầm BADGE / GEAR thì mua sai món.",
+  "fix": "Thẻ giá không đủ tiền đổi thành bìa xám tối, số đỏ, đồng xu xám (món trên móc vẫn giữ màu để còn ngắm); bong bóng của tài xế có tem dán trên mép: BADGE = tem vàng bo tròn 'THE WHOLE TEAM GETS IT', GEAR = tem xanh góc vát 'ONE PLAYER WEARS IT' (cùng hình miếng vá / thẻ treo trong game); 'Half price today!' xuống dòng riêng. Mua GEAR: Shop đứng yên cho tới khi bàn tay nhấc món khỏi móc và rút xuống xong mới sang 'Who wears it?'. Kỹ thuật: kitvan.js tag() thêm cờ poor, bubble() thêm tem, grab() đánh dấu món đã bán; runmap.js shopCard truyền poor + nhãn loại, render() giữ màn Shop khi KitVan.busy(). Không thêm chữ mới (dùng lại chuỗi có sẵn).",
+  "why_this": "Đúng ngôn ngữ cảnh pixel (đổi màu thẻ giá chứ không phủ lớp mờ), tem dán không làm bong bóng cao thêm nên không che móc cuối, và không có chuỗi mới cần dịch.",
+  "alternatives": [
+    "Làm mờ cả món không đủ tiền — rõ nhất, nhưng che icon, người chơi không ngắm được món đắt để tính đường",
+    "Chia xe thành 2 khu (móc BADGE / giá GEAR) — rõ loại ngay từ xa, nhưng phải vẽ lại bố cục xe",
+    "Chỉ sửa câu tài xế — nhanh, nhưng vẫn phải trỏ từng món mới biết"
+  ],
+  "files": ["src/ui/kitvan.js", "src/ui/runmap.js", "css/style.css"],
+  "limits": "Hộp cứu thương cũng có thẻ giá xám khi không đủ tiền. Co-op: tem + thẻ giá theo ví riêng từng người; phần giữ Shop khi mua GEAR chạy cả khi bản sao run tới từ host, nhưng chưa thử phòng co-op thật.",
+  "videoNote": "Tiền = 75: thẻ 110 xám số đỏ (sau); trỏ BADGE HOT rồi GEAR để xem tem; cuối video bấm mua GEAR: trước = nhảy luôn sang 'Who wears it?', sau = bàn tay lấy món xong mới chuyển.",
+  "before": "videos/run-04-before.mp4",
+  "after": "videos/run-04-after.mp4"
+}

@@ -1,0 +1,72 @@
+diff --git a/css/style.css b/css/style.css
+index 67ef4fd..1d1bed4 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -2354,6 +2354,10 @@ button.eq-row:hover b { color: var(--gold); }
+ .tr2-zone em { font-family: var(--px); font-style: normal; font-size: 7px; color: var(--gold); }
+ .tr2-zone.on { opacity: 1; border-color: var(--gold); }
+ .tr2-zone.on::after { content: ''; position: absolute; left: 50%; top: -6px; margin-left: -3px; border: 3px solid transparent; border-bottom-color: var(--gold); }
++/* số thưởng ACHIEVEMENTS chờ nhận (góc ALBUM, dòng ACHIEVEMENTS trong mục lục) — giống số trên nút cúp trang chủ */
++.tr2-zone .tr2-new, .tr2-idx .tr2-new { position: absolute; right: -7px; top: -7px; flex: none; min-width: 13px; height: 13px; padding: 0 2px; display: flex; align-items: center; justify-content: center;
++  font-style: normal; font-family: var(--px); font-size: 6px; color: var(--ink); background: var(--gold); box-shadow: 1px 1px 0 var(--ink); animation: pulse 0.8s steps(2) infinite; }
++.tr2-zone:has(.tr2-new) { opacity: 1; }
+ /* kệ cúp: số dưới từng cúp (trên biển đồng) + dải chi tiết cúp đang chọn */
+ .tr2-cup { position: absolute; transform: translateX(-50%); z-index: 3; display: inline-flex; align-items: center; gap: 3px; padding: 0 4px; height: 14px; cursor: pointer;
+   background: rgba(18,12,22,0.85); border: 1px solid #4a3a2a; }
+@@ -2400,6 +2404,8 @@ button.eq-row:hover b { color: var(--gold); }
+ .tr2-idx span { display: flex; flex-direction: column; gap: 3px; }
+ .tr2-idx em { font-style: normal; text-align: right; color: #7a6450; }
+ .tr2-idx.on { background: #fff8e8; border-color: #6a3a1a; box-shadow: 2px 2px 0 #6a3a1a; }
++.tr2-idx { position: relative; }
++.tr2-big .ac-new { margin-left: 0; }
+ /* bảng ghim: polaroid lưới 3 x 2 trong khung gỗ bần (20..432 px) + bảng phấn (460..624 px) */
+ .tr2-cork { position: absolute; left: 26px; top: 58px; width: 398px; height: 280px; z-index: 3; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 10px; }
+ .tr2-pol { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 4px 4px 5px; cursor: pointer; text-align: left; background: #f4eee2; border: 0; box-shadow: 2px 2px 0 rgba(18,12,22,0.6); }
+diff --git a/src/ui/trophies.js b/src/ui/trophies.js
+index 8d6a173..6bcb896 100644
+--- a/src/ui/trophies.js
++++ b/src/ui/trophies.js
+@@ -118,6 +118,9 @@ window.SFC = window.SFC || {};
+   };
+   const clock = (s) => (s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '–');
+   const storyCups = () => (SFC.Cup ? SFC.Cup.list().filter((s) => !s.soon && SFC.Cup.rec(s.id).wins > 0) : []);
++  // số thưởng ACHIEVEMENTS chờ nhận: cùng con số với nút cúp ở trang chủ, hiện lại ở mỗi bước tới nút CLAIM
++  const claimable = () => SFC.Achievements.claimable().length;
++  const dot = (n) => (n ? `<i class="tr2-new">${n}</i>` : '');
+ 
+   const TrophyUI = {
+     pages: ['trophy'],
+@@ -126,6 +129,8 @@ window.SFC = window.SFC || {};
+ 
+     open(menu) {
+       this.view = 'room'; this.hx = null;
++      // có thưởng chờ nhận: đứng sẵn ở góc ALBUM, album mở sẵn trang ACHIEVEMENTS (Enter, Enter là tới danh sách)
++      if (claimable()) { this.zone = 1; this.page = 'ach'; }
+       menu.msg = '';
+       menu.go('trophy');
+     },
+@@ -149,7 +154,7 @@ window.SFC = window.SFC || {};
+       const D = pageDef(), cups = [0, 1, 2].filter((i) => actRec(i).n).length + (stats().wins ? 1 : 0);
+       const lab = [[_t('TROPHIES'), `${cups}/4`], [_t('ALBUM'), `${albumPct()}%`], [_t('RUNS'), String((stats().hist || []).length)]];
+       void D;
+-      return ZONES.map((z, i) => `<button class="tr2-zone ${i === this.zone ? 'on' : ''}" data-tz="${i}" style="left:${z.x * 2}px"><b>${esc(lab[i][0])}</b><em>${esc(lab[i][1])}</em></button>`).join('');
++      return ZONES.map((z, i) => `<button class="tr2-zone ${i === this.zone ? 'on' : ''}" data-tz="${i}" style="left:${z.x * 2}px"><b>${esc(lab[i][0])}</b><em>${esc(lab[i][1])}</em>${i === 1 ? dot(claimable()) : ''}</button>`).join('');
+     },
+     // kệ cúp: số lần + ngày đầu dưới mỗi cúp, cúp đang chọn có dòng chi tiết
+     shelfDom() {
+@@ -202,12 +207,14 @@ window.SFC = window.SFC || {};
+         }).join('')}</div>`;
+       } else {
+         // ULTIMATES / ACHIEVEMENTS: số lớn + nút mở trang đầy đủ
++        const n = this.page === 'ach' ? claimable() : 0;
+         left = `<div class="tr2-big" style="--c:${P0.c}">${PX().ui(P0.icon, 'x3')}<b>${P0.got}<em>/${P0.n}</em></b>
++          ${n ? `<span class="ac-new">${esc(_t('{n} TO CLAIM', { n }))}</span>` : ''}
+           <button class="ac-act claim" data-topen="1">${esc(_t('OPEN'))}</button></div>`;
+       }
+       const idx = PAGES.map((k) => {
+         const p = D[k];
+-        return `<button class="tr2-idx ${k === this.page ? 'on' : ''}" data-tp="${k}" style="--c:${p.c}">${PX().ui(p.icon, 'sm')}<span>${esc(p.name)}<i><u style="width:${(p.got / Math.max(1, p.n)) * 100}%"></u></i></span><em>${p.got}/${p.n}</em></button>`;
++        return `<button class="tr2-idx ${k === this.page ? 'on' : ''}" data-tp="${k}" style="--c:${p.c}">${PX().ui(p.icon, 'sm')}<span>${esc(p.name)}<i><u style="width:${(p.got / Math.max(1, p.n)) * 100}%"></u></i></span><em>${p.got}/${p.n}</em>${k === 'ach' ? dot(claimable()) : ''}</button>`;
+       }).join('');
+       return `<div class="tr2-page l"><div class="tr2-ph" style="--c:${P0.c}"><b>${esc(P0.name)}</b><i><u style="width:${(P0.got / Math.max(1, P0.n)) * 100}%"></u></i></div>${left}</div>
+         <div class="tr2-page r"><div class="tr2-ph"><b>${albumPct()}%</b></div>${idx}</div>`;

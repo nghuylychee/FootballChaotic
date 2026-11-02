@@ -1,0 +1,192 @@
+diff --git a/config/run.config.js b/config/run.config.js
+index fa9d832..5d5ae05 100644
+--- a/config/run.config.js
++++ b/config/run.config.js
+@@ -101,26 +101,37 @@ SFC_CONFIG.run = {
+   // hot: mỗi Shop 1 món HOT ngẫu nhiên, giá x hot (0 / bỏ = không có)
+   // gear: trong size món có ngần này GEAR (mua xong chọn người đeo)
+   shop: { size: 5, gear: 2, price: { common: 40, rare: 70, epic: 110, legendary: 160 }, heal: 50, hot: 0.5 },
++  // upDesc: câu thay desc trên thẻ UPGRADE ở LOCKER ROOM + tooltip BADGE đã nâng cấp (UX review 2026-11-02: 1 dòng ngắn, không số,
++  // nói rõ bản + hơn bản thường chỗ nào)
+   badges: {
+     // bốc Core: lượt chọn
+-    report:   { name: 'Scouting Report', rarity: 'rare', icon: 'book',   draftCards: 1, up: { draftCards: 1, rerolls: 1 }, desc: 'Every Core pick shows one more card.' },
+-    coin:     { name: "Referee's Coin",  rarity: 'common', icon: 'target', rerolls: 1, up: { rerolls: 2 }, desc: 'One more reroll on every Core pick.' },
++    report:   { name: 'Scouting Report', rarity: 'rare', icon: 'book',   draftCards: 1, up: { draftCards: 1, rerolls: 1 }, desc: 'Every Core pick shows one more card.',
++                upDesc: 'One more card and a free reroll on every Core pick.' },
++    coin:     { name: "Referee's Coin",  rarity: 'common', icon: 'target', rerolls: 1, up: { rerolls: 2 }, desc: 'One more reroll on every Core pick.',
++                upDesc: 'Two more rerolls on every Core pick.' },
+     // draftBonus: chọn Core sớm hơn 1 lượt (thêm 1 lượt trước giao bóng, bớt lượt cuối) — vẫn tối đa game.match.maxUpgrades Core (user 2026-10-30)
+     camp:     { name: 'Pre-Season Camp', rarity: 'epic', icon: 'calendar', draftBonus: 1, desc: 'Your second Core pick comes before kickoff.' },
+     // GEAR: thêm ô GEAR cho mọi người trong đội (run.gear.slots)
+     kitbag:   { name: 'Kit Bag',        rarity: 'epic', icon: 'kitbag', gearSlots: 1, desc: 'Every player can wear one more GEAR.' },
+     // trận
+-    drink:    { name: 'Energy Drink',   rarity: 'epic', icon: 'boom', ultGain: 1.3, up: { ultGain: 1.5 }, desc: 'The whole team charges Ultimates faster.' },
++    drink:    { name: 'Energy Drink',   rarity: 'epic', icon: 'boom', ultGain: 1.3, up: { ultGain: 1.5 }, desc: 'The whole team charges Ultimates faster.',
++                upDesc: 'The whole team charges Ultimates even faster.' },
+     crowd:    { name: 'Home Crowd',     rarity: 'legendary', icon: 'people', score: [1, 0], desc: 'Every match starts one goal up.' },
+-    var:      { name: 'VAR Monitor',    rarity: 'legendary', icon: 'tv', varCheck: { n: 1, chance: 0.5 }, up: { varCheck: { n: 1, chance: 0.8 } }, desc: 'The first goal you concede each match may get ruled out.' },
+-    watch:    { name: "Referee's Watch", rarity: 'rare', icon: 'whistle', addedTime: 20, up: { addedTime: 35 }, desc: 'Losing at the final whistle? Time gets added on.' },
++    var:      { name: 'VAR Monitor',    rarity: 'legendary', icon: 'tv', varCheck: { n: 1, chance: 0.5 }, up: { varCheck: { n: 1, chance: 0.8 } }, desc: 'The first goal you concede each match may get ruled out.',
++                upDesc: 'The first goal you concede likely gets ruled out.' },
++    watch:    { name: "Referee's Watch", rarity: 'rare', icon: 'whistle', addedTime: 20, up: { addedTime: 35 }, desc: 'Losing at the final whistle? Time gets added on.',
++                upDesc: 'Losing at the final whistle? Even more time gets added on.' },
+     // run: tiền / phòng / chấn thương / bài tập
+-    sponsor:  { name: 'Shirt Sponsor',  rarity: 'rare', icon: 'shop', winCash: 12, up: { winCash: 20 }, desc: 'Every win pays extra cash.' },
+-    ticket:   { name: 'Season Ticket',  rarity: 'common', icon: 'card', shopOff: 0.2, up: { shopOff: 0.35 }, desc: 'Everything in the Shop costs less.' },
++    sponsor:  { name: 'Shirt Sponsor',  rarity: 'rare', icon: 'shop', winCash: 12, up: { winCash: 20 }, desc: 'Every win pays extra cash.',
++                upDesc: 'Every win pays even more cash.' },
++    ticket:   { name: 'Season Ticket',  rarity: 'common', icon: 'card', shopOff: 0.2, up: { shopOff: 0.35 }, desc: 'Everything in the Shop costs less.',
++                upDesc: 'Everything in the Shop costs much less.' },
+     // off: không bốc ra (Locker Room đang ẩn, 2026-10-30)
+     icebath:  { name: 'Ice Bath',       rarity: 'rare', icon: 'locker', restTwice: true, off: true, desc: 'The Locker Room lets you do two things.' },
+-    shin:     { name: 'Shin Guards',    rarity: 'common', icon: 'gear', guard: 1, up: { guard: 2 }, desc: 'Blocks the first injury of each act.' },
+-    bibs:     { name: 'Training Bibs',  rarity: 'common', icon: 'cone', drillEase: 0.2, up: { drillEase: 0.35 }, desc: 'Skill games and Legend trials get easier.' },
++    shin:     { name: 'Shin Guards',    rarity: 'common', icon: 'gear', guard: 1, up: { guard: 2 }, desc: 'Blocks the first injury of each act.',
++                upDesc: 'Blocks the first two injuries of each act.' },
++    bibs:     { name: 'Training Bibs',  rarity: 'common', icon: 'cone', drillEase: 0.2, up: { drillEase: 0.35 }, desc: 'Skill games and Legend trials get easier.',
++                upDesc: 'Skill games and Legend trials get much easier.' },
+     // chấn thương
+     ankle:    { name: 'Twisted Ankle',  injury: true, part: 'ankle', hurt: 'stumble', stats: { pace: -12 },              desc: 'Every step hurts.' },
+     wrist:    { name: 'Sore Wrist',     injury: true, part: 'wrist', hurt: 'weak',    stats: { fight: -12 },             desc: 'Punches feel like pillows.' },
+diff --git a/css/style.css b/css/style.css
+index 1788299..8439c40 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -3055,6 +3055,7 @@ button.sq-card.sel { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink)
+ /* GOAT PATH (2026-10-28): BADGE luật (không có chip) hiện 1 dòng mô tả · hàng BADGE của cả đội ở SQUAD */
+ .rm-sheet.squad { justify-content: center; }
+ .bd-desc { font-size: 10px; line-height: 1; color: #c7ccd6; text-align: center; padding: 0 2px; overflow: hidden; max-height: 31px; }
++.bd-desc.up { color: var(--gold); }   /* thẻ UPGRADE: bản + hơn chỗ nào (upDesc) */
+ .sq-team { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 560px; margin-top: 4px; }
+ .sq-team em { font-style: normal; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: var(--muted); margin-right: 4px; }
+ .sq-team .sq-b { width: 20px; height: 20px; }
+diff --git a/src/i18n/es.js b/src/i18n/es.js
+index f91687c..3928142 100644
+--- a/src/i18n/es.js
++++ b/src/i18n/es.js
+@@ -1481,6 +1481,17 @@ SFC.I18n.add({
+     'A giant magnet drags opponents together into a heap.': 'Un imán gigante arrastra a los rivales y los amontona.',
+     'First-time shots, volleys and headers hit at full power.': 'Remates de primera, voleas y cabezazos salen con toda la potencia.',
+ 
++    /* ===== GOAT PATH: thẻ UPGRADE ở LOCKER ROOM (run.badges.*.upDesc, 2026-11-02, Claude — chưa duyệt) ===== */
++    'One more card and a free reroll on every Core pick.': 'Una carta más y un cambio gratis en cada elección de Core.',
++    'Two more rerolls on every Core pick.': 'Dos cambios más en cada elección de Core.',
++    'The whole team charges Ultimates even faster.': 'Todo el equipo carga las Definitivas aún más rápido.',
++    'The first goal you concede likely gets ruled out.': 'El primer gol que recibes probablemente se anula.',
++    'Losing at the final whistle? Even more time gets added on.': '¿Pierdes al final? Se agrega aún más tiempo.',
++    'Every win pays even more cash.': 'Cada victoria paga aún más dinero.',
++    'Everything in the Shop costs much less.': 'Todo en la Tienda cuesta mucho menos.',
++    'Blocks the first two injuries of each act.': 'Bloquea las dos primeras lesiones de cada acto.',
++    'Skill games and Legend trials get much easier.': 'Retos y pruebas de Leyenda mucho más fáciles.',
++
+     /* ===== PHÒNG TRƯNG BÀY (src/ui/trophies.js) ===== */
+     'TROPHY ROOM': 'SALA DE TROFEOS',
+     'PEAK': 'MÁXIMO',
+diff --git a/src/i18n/fields.js b/src/i18n/fields.js
+index 7ee973a..ff87274 100644
+--- a/src/i18n/fields.js
++++ b/src/i18n/fields.js
+@@ -40,7 +40,7 @@ SFC.I18n.fields = [
+   // GOAT PATH (config/run.config.js): tên act, tên loại node
+   'run.acts.*.name', 'run.nodes.*.name', 'run.acts.*.stages.*', 'run.acts.*.intro.*.text', 'run.acts.*.bossTalk.*.text', 'run.acts.*.after.*.text',
+   'run.acts.*.intro.*.sfx', 'run.acts.*.bossTalk.*.sfx',
+-  'run.badges.*.name', 'run.badges.*.desc', 'run.gear.list.*.name', 'run.gear.list.*.desc', 'run.drills.*.name', 'run.drills.*.desc', 'run.tiers.*.name',
++  'run.badges.*.name', 'run.badges.*.desc', 'run.badges.*.upDesc', 'run.gear.list.*.name', 'run.gear.list.*.desc', 'run.drills.*.name', 'run.drills.*.desc', 'run.tiers.*.name',
+   // LEGEND (config/legends.config.js): tên là tên riêng (không dịch), danh hiệu + mô tả dịch
+   'legends.list.*.title', 'legends.list.*.desc', 'legends.list.*.flawDesc',
+   'legends.techniques.*.name', 'legends.techniques.*.keys', 'legends.techniques.*.desc',
+diff --git a/src/i18n/ja.js b/src/i18n/ja.js
+index 1aa27db..f83af16 100644
+--- a/src/i18n/ja.js
++++ b/src/i18n/ja.js
+@@ -1423,6 +1423,17 @@ SFC.I18n.add({
+     'A giant magnet drags opponents together into a heap.': '巨大マグネットが相手を引き寄せ、ひと山にする。',
+     'First-time shots, volleys and headers hit at full power.': 'ダイレクトシュート・ボレー・ヘディングが常に全力で飛ぶ。',
+ 
++    /* ===== GOAT PATH: thẻ UPGRADE ở LOCKER ROOM (run.badges.*.upDesc, 2026-11-02, Claude — chưa duyệt) ===== */
++    'One more card and a free reroll on every Core pick.': 'コア選択でカードがもう一枚増え、引き直しも一回無料。',
++    'Two more rerolls on every Core pick.': 'コア選択の引き直しがさらに二回増える。',
++    'The whole team charges Ultimates even faster.': 'チーム全員の必殺技がさらに速くたまる。',
++    'The first goal you concede likely gets ruled out.': '最初の失点が高い確率で取り消される。',
++    'Losing at the final whistle? Even more time gets added on.': '試合終了時に負けていたら、さらに長くアディショナルタイム。',
++    'Every win pays even more cash.': '勝つたびにさらに多くの賞金。',
++    'Everything in the Shop costs much less.': 'ショップの品がもっと安くなる。',
++    'Blocks the first two injuries of each act.': '各アクトの最初の二回のケガを防ぐ。',
++    'Skill games and Legend trials get much easier.': 'スキルゲームとレジェンドの試練がずっと簡単に。',
++
+     /* ===== PHÒNG TRƯNG BÀY (src/ui/trophies.js) ===== */
+     'TROPHY ROOM': 'トロフィールーム',
+     'PEAK': '最高',
+diff --git a/src/i18n/pt-BR.js b/src/i18n/pt-BR.js
+index 131174e..b0774d1 100644
+--- a/src/i18n/pt-BR.js
++++ b/src/i18n/pt-BR.js
+@@ -1482,6 +1482,17 @@ SFC.I18n.add({
+     'A giant magnet drags opponents together into a heap.': 'Um ímã gigante puxa os adversários e amontoa todos.',
+     'First-time shots, volleys and headers hit at full power.': 'Chutes de primeira, voleios e cabeceios saem com força total.',
+ 
++    /* ===== GOAT PATH: thẻ UPGRADE ở LOCKER ROOM (run.badges.*.upDesc, 2026-11-02, Claude — chưa duyệt) ===== */
++    'One more card and a free reroll on every Core pick.': 'Uma carta a mais e uma troca grátis em cada escolha de Core.',
++    'Two more rerolls on every Core pick.': 'Duas trocas a mais em cada escolha de Core.',
++    'The whole team charges Ultimates even faster.': 'O time inteiro carrega as Supremas ainda mais rápido.',
++    'The first goal you concede likely gets ruled out.': 'O primeiro gol sofrido provavelmente será anulado.',
++    'Losing at the final whistle? Even more time gets added on.': 'Perdendo no apito final? Vêm ainda mais acréscimos.',
++    'Every win pays even more cash.': 'Cada vitória paga ainda mais dinheiro.',
++    'Everything in the Shop costs much less.': 'Tudo na Loja custa bem menos.',
++    'Blocks the first two injuries of each act.': 'Bloqueia as duas primeiras lesões de cada ato.',
++    'Skill games and Legend trials get much easier.': 'Desafios e provas de Lenda bem mais fáceis.',
++
+     /* ===== PHÒNG TRƯNG BÀY (src/ui/trophies.js) ===== */
+     'TROPHY ROOM': 'SALA DE TROFÉUS',
+     'PEAK': 'RECORDE',
+diff --git a/src/i18n/pt-PT.js b/src/i18n/pt-PT.js
+index 22fca60..cbc9192 100644
+--- a/src/i18n/pt-PT.js
++++ b/src/i18n/pt-PT.js
+@@ -1483,6 +1483,17 @@ SFC.I18n.add({
+     'A giant magnet drags opponents together into a heap.': 'Um íman gigante puxa os adversários e amontoa-os todos.',
+     'First-time shots, volleys and headers hit at full power.': 'Remates de primeira, voleios e cabeceamentos saem com força máxima.',
+ 
++    /* ===== GOAT PATH: thẻ UPGRADE ở LOCKER ROOM (run.badges.*.upDesc, 2026-11-02, Claude — chưa duyệt) ===== */
++    'One more card and a free reroll on every Core pick.': 'Mais uma carta e uma troca grátis em cada escolha de Core.',
++    'Two more rerolls on every Core pick.': 'Mais duas trocas em cada escolha de Core.',
++    'The whole team charges Ultimates even faster.': 'A equipa toda carrega as Supremas ainda mais depressa.',
++    'The first goal you concede likely gets ruled out.': 'O primeiro golo sofrido será provavelmente anulado.',
++    'Losing at the final whistle? Even more time gets added on.': 'A perder no apito final? Ainda mais tempo de compensação.',
++    'Every win pays even more cash.': 'Cada vitória paga ainda mais dinheiro.',
++    'Everything in the Shop costs much less.': 'Tudo na Loja custa muito menos.',
++    'Blocks the first two injuries of each act.': 'Bloqueia as duas primeiras lesões de cada ato.',
++    'Skill games and Legend trials get much easier.': 'Desafios e provas de Lenda muito mais fáceis.',
++
+     /* ===== PHÒNG TRƯNG BÀY (src/ui/trophies.js) ===== */
+     'TROPHY ROOM': 'SALA DE TROFÉUS',
+     'PEAK': 'RECORDE',
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+index 1188c69..68c184e 100644
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -423,10 +423,13 @@ window.SFC = window.SFC || {};
+       const col = d.injury ? '#ff5a6e' : rar.color, sel = t && T.indexOf(t) === this.sel;
+       const tag = extra.price != null ? `<u class="bd-price ${extra.poor ? 'poor' : ''}">$${extra.price}</u>` : extra.tag ? `<u class="bd-tag">${esc(extra.tag)}</u>` : '';
+       const who = extra.who != null ? `<u class="bd-who">${esc(RUN().memberName(extra.who))}</u>` : '';
++      // bản nâng cấp (b.up): câu upDesc vàng có ▲ = bản + hơn chỗ nào (UX review 2026-11-02), thay chip / mô tả gốc
++      const body = b.up && d.upDesc ? `<span class="bd-desc up">▲ ${esc(d.upDesc)}</span>`
++        : this.chips(b) ? `<span class="bd-fx">${this.chips(b)}</span>` : `<span class="bd-desc">${esc(d.desc)}</span>`;
+       return `<button class="bd-card ${d.injury ? 'inj' : ''} ${extra.dis ? 'dis' : ''} ${sel ? 'sel' : ''}" ${t ? `data-rt="${t.key}"` : ''} style="--rc:${col}">
+           <span class="bd-ico">${this.badgeIcon(b.id)}</span>
+           <b>${esc(d.name)}${b.up ? '+' : ''}</b>
+-          ${this.chips(b) ? `<span class="bd-fx">${this.chips(b)}</span>` : `<span class="bd-desc">${esc(d.desc)}</span>`}
++          ${body}
+           <em>${esc(d.injury ? _t('INJURY') : rar.label)}</em>${tag}${who}${extra.votes || ''}
+         </button>`;
+     },
+@@ -708,7 +711,7 @@ window.SFC = window.SFC || {};
+     badgeTip(id, up) {
+       const d = RUN().badge(id), rar = SFC_CONFIG.progression.rarities[d.rarity] || {};
+       return SFC.UIHelpers.tip({ icon: this.badgeIcon(id, ''), name: d.name + (up ? '+' : ''), color: d.injury ? '#ff5a6e' : rar.color,
+-        tag: d.injury ? _t('INJURY') : rar.label, tagColor: d.injury ? '#ff5a6e' : rar.color, desc: d.desc });
++        tag: d.injury ? _t('INJURY') : rar.label, tagColor: d.injury ? '#ff5a6e' : rar.color, desc: up && d.upDesc ? d.upDesc : d.desc });
+     },
+     teamBar(R) {
+       const own = R.bag.filter((b) => !RUN().badge(b.id).injury);

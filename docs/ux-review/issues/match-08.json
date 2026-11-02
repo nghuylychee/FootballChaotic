@@ -1,0 +1,27 @@
+{
+ "id": "match-08",
+ "area": "match",
+ "screen": "Pause trong trận GOAT PATH / FOOTBALL STORY",
+ "source": "agent",
+ "severity": "med",
+ "title": "Luật sân, LEGEND, BADGE chỉ lướt qua 1 lần, Pause không cho xem lại",
+ "problem": "Luật sân của đối thủ (vd PLASTIC STOOLS) chỉ hiện 1 banner ~2 s đúng lúc giao bóng, đè giữa sân, cùng lúc với toast 'gets Core'. Sau đó không xem lại được ở đâu: Pause chỉ có Core của 3 người; LEGEND (kỹ thuật, phím, nhược điểm) và BADGE đội cũng không có, tooltip trên thanh kỹ năng thì không bao giờ hiện vì thanh không nhận chuột.",
+ "goal": "Mở Pause lúc nào cũng đọc lại được những gì đang ảnh hưởng trận này: luật sân, LEGEND của mình, BADGE của đội.",
+ "why": "Luật sân đổi hẳn cách chơi (ghế bay, làn xe máy, ma tàng hình...). Lỡ banner là chơi cả trận mà không hiểu vì sao bị đánh văng. LEGEND có phím riêng và nhược điểm (vd HOTHEAD dễ ăn thẻ đỏ) mà người chơi cũng không có chỗ xem lại.",
+ "fix": "Pause có thêm 1 dải gọn ngay dưới bảng build: ô luật sân (còi + tên màu áo đối thủ + câu gợi ý), ô LEGEND của bạn (tên, chip kỹ thuật kèm keycap phím đang gán, nhãn nhược điểm đỏ; rê chuột ra danh hiệu + câu nhược điểm đầy đủ), ô TEAM BADGES (icon, rê chuột ra tooltip đầy đủ như trên map). Ô nào không có thì không vẽ, trận thường không có dải này. Kỹ thuật: SFC.UI.pauseMatch(g) trong matchui.js, chèn sau .pause-rows khi vẽ Pause (không đụng markup hàng nút); dùng lại RunUI.comboChip / badgeTip / badgeIcon và hàm mới RunUI.flawChip. Không thêm chuỗi mới.",
+ "why_this": "Pause là chỗ người chơi dừng lại đọc được (trận đơn đứng hình) và đã là bảng build, thêm phần 'trận này' là đúng chỗ; không thêm gì thường trực lên HUD. Dùng lại đúng chip / tooltip của map nên nhìn quen.",
+ "alternatives": [
+  "Chip luật sân thường trực dưới dòng act trên HUD — luôn thấy, không cần Pause, nhưng HUD chật thêm và chỉ giải quyết luật sân.",
+  "Bật chuột cho thanh kỹ năng để tooltip LEGEND / BADGE hiện — ít code, nhưng giữa trận không ai rê chuột, tay cầm thì không dùng được.",
+  "Dời banner luật sân lên sát dưới HUD và cho hiện lâu hơn — đỡ đè cầu thủ lúc giao bóng, nhưng vẫn là xem 1 lần."
+ ],
+ "files": [
+  "src/ui/matchui.js",
+  "src/ui/runmap.js",
+  "css/style.css"
+ ],
+ "limits": "Mô tả BADGE chỉ có ở tooltip (tay cầm chỉ thấy icon + tên luật / LEGEND / phím). Phòng online có thêm dòng 'Online matches keep running': đã bớt khoảng trên để dải không chạm hàng nút, nhưng sát (~3 px). Chưa dời banner luật sân lúc giao bóng.",
+ "videoNote": "Đầu video là banner PLASTIC STOOLS lúc giao bóng, rồi mở Pause: bản sau có dải luật sân / LEGEND / TEAM BADGES ở dưới, rê chuột ra tooltip LEGEND và BADGE.",
+ "before": "videos/match-08-before.mp4",
+ "after": "videos/match-08-after.mp4"
+}

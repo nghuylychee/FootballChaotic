@@ -1,0 +1,22 @@
+{
+  "id": "menus-03",
+  "area": "menus",
+  "screen": "Trang chủ › TROPHY ROOM › ALBUM › ACHIEVEMENTS",
+  "source": "agent",
+  "severity": "med",
+  "title": "Số \"7\" trên nút cúp biến mất khi vào TROPHY ROOM, thưởng nằm sâu 4 bước",
+  "problem": "Nút cúp ở trang chủ hiện số 7 (thưởng chờ nhận), nhưng vào TROPHY ROOM thì không còn dấu gì: phải tự đoán đi tới ALBUM → mở → lật tới trang ACHIEVEMENTS (vẫn chỉ ghi 0/40) → OPEN mới thấy \"7 TO CLAIM\". Nhiều người sẽ bỏ cuộc và không bao giờ nhận hộp / trang phục miễn phí.",
+  "goal": "Từ số 7 ở trang chủ có một vệt dẫn đường liên tục tới nút CLAIM, bước nào cũng thấy lại con số đó.",
+  "why": "Thưởng ACHIEVEMENTS là nguồn hộp / trang phục miễn phí; người chơi không tìm ra thì phí cả hệ thống thưởng và nút cúp nhấp nháy thành vô nghĩa.",
+  "fix": "Khi có thưởng chờ nhận: vào phòng là nhân vật đứng sẵn ở góc ALBUM, nhãn ALBUM có ô số vàng nhấp nháy giống nút cúp trang chủ; album mở sẵn trang ACHIEVEMENTS, trang lớn hiện \"7 TO CLAIM\" ngay trên nút OPEN, dòng ACHIEVEMENTS trong mục lục cũng có ô số vàng. Bàn phím: Enter, Enter là tới danh sách. Kỹ thuật: trophies.js đọc SFC.Achievements.claimable() (open chọn sẵn zone / page, roomDom + albumDom thêm badge), CSS .tr2-new; dùng lại chuỗi '{n} TO CLAIM' có sẵn, không có chữ mới.",
+  "why_this": "Giữ nguyên căn phòng owner đã duyệt, chỉ thêm badge và chọn sẵn đường đi; chỉ hiện khi thật sự có thưởng nên không làm rối phòng lúc bình thường.",
+  "alternatives": [
+    "Bấm nút cúp có badge thì mở thẳng trang ACHIEVEMENTS — nhanh nhất, nhưng người chơi ít khi thấy căn phòng và nút cúp đổi nghĩa theo trạng thái",
+    "Thêm ACHIEVEMENTS thành góc thứ 4 trong phòng — rõ ràng, nhưng phải vẽ thêm pixel art và đổi bố cục 3 góc đã duyệt"
+  ],
+  "files": ["src/ui/trophies.js", "css/style.css"],
+  "limits": "Chỉ đổi điểm xuất phát khi có thưởng chờ; không có thưởng thì phòng mở như cũ. Chưa thử tay cầm (đi bằng phím như bàn phím).",
+  "videoNote": "Cùng các cú bấm chuột: nút cúp · nhãn ALBUM ×2 · dòng ACHIEVEMENTS ×2. Bản cũ: trong phòng và album không thấy số 7, album mở ở LEGENDS. Bản mới: ALBUM có số 7, album mở ngay trang ACHIEVEMENTS với '7 TO CLAIM'.",
+  "before": "videos/menus-03-before.mp4",
+  "after": "videos/menus-03-after.mp4"
+}

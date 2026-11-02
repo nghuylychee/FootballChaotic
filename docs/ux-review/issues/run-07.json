@@ -1,0 +1,23 @@
+{
+  "id": "run-07",
+  "area": "run",
+  "screen": "Act cut-scene (dùng chung PROLOGUE / FOOTBALL STORY)",
+  "source": "agent",
+  "severity": "med",
+  "title": "Cut-scene: chuột không bỏ qua được, gợi ý bỏ qua gần như vô hình, hình ⊘ trông như nút",
+  "problem": "Muốn bỏ qua cut-scene chỉ có cách giữ phím xác nhận; dòng gợi ý 'Enter next · hold to skip' chữ xám nhỏ trên nền giấy kem ở góc dưới phải, gần như không thấy. Người dùng chuột giữ chuột bao lâu cũng chỉ sang 1 câu. Góc trên phải lại có hình ⊘ (thật ra là quả bóng vẽ bút chì) đúng chỗ người ta tìm nút đóng, bấm vào cũng chỉ sang 1 câu.",
+  "goal": "Ai muốn bỏ qua cut-scene cũng thấy ngay và bỏ qua được bằng chuột, phím hay tay cầm.",
+  "why": "Cut-scene chiếu mỗi act, trước boss và sau boss. Người chơi run thứ 2, thứ 3 muốn vào thẳng game; bị kẹt xem lại từng câu là khó chịu, dễ bỏ game.",
+  "fix": "Góc trên phải giờ có nút SKIP ALL thật (nền mực, viền kem, đọc rõ trên cả 4 kiểu kể nhật ký / manga / TV / phim và PROLOGUE), bấm là bỏ qua ngay; vòng tiến độ nằm trong nút, đầy dần khi giữ Enter. Dòng gợi ý phím nằm ngay dưới nút. Giữ chuột ở đâu trên màn cũng bỏ qua như giữ Enter; bấm thường vẫn là sang câu kế. Quả bóng bút chì ở trang nhật ký vẽ lại đúng hình quả bóng (ngũ giác giữa, bỏ nét chéo) và dời xuống dưới nút. Kỹ thuật: src/ui/story.js (mousedown / mouseup, eatClick để lần nhả chuột sau khi bỏ qua không tính là bấm), CSS .st-skip / .st-hint, bỏ các rule đổi màu mờ theo kiểu kể; dùng lại chuỗi SKIP ALL có sẵn.",
+  "why_this": "Nút SKIP rõ ràng ở góc trên là chuẩn của mọi game có cut-scene. Dùng lại hàm skipAll + chuỗi có sẵn nên đổi ít, mà người dùng chuột hết bị kẹt.",
+  "alternatives": [
+    "Chỉ tăng tương phản chữ gợi ý — rẻ nhất, nhưng chuột vẫn không bỏ qua được",
+    "Esc bấm 1 lần là bỏ qua — nhanh cho bàn phím, nhưng dễ bỏ nhầm và chuột vẫn không có cách",
+    "Hỏi 'xem truyện không?' trước mỗi act — rõ ràng, nhưng chen thêm 1 màn mỗi lần"
+  ],
+  "files": ["src/ui/story.js", "css/style.css"],
+  "limits": "Ảnh hưởng mọi cut-scene dùng SFC.Story (PROLOGUE, FOOTBALL STORY, act GOAT PATH): đã xem cả 4 kiểu kể + PROLOGUE, chưa xem cảnh lật thẻ bí kíp (heirloom, đang tắt). Nút vẫn ẩn ở thẻ GOAT PATH cuối PROLOGUE như cũ.",
+  "videoNote": "Lần 1 rê chuột lên góc trên phải rồi bấm (bản cũ: chỗ hình ⊘, chỉ sang 1 câu). Lần 2 chiếu lại và giữ chuột giữa màn 1.6 s (bản cũ: chỉ sang 1 câu; bản mới: về map).",
+  "before": "videos/run-07-before.mp4",
+  "after": "videos/run-07-after.mp4"
+}

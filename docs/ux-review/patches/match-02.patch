@@ -1,0 +1,93 @@
+diff --git a/css/style.css b/css/style.css
+index c0b9ae9..855ff09 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -1957,6 +1957,10 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .pause-rows { display: flex; flex-direction: column; gap: 6px; }
+ .pause-build { display: flex; gap: 10px; align-items: stretch; height: 74px; }
+ #pause .pause-foot { position: absolute; left: 0; right: 0; bottom: 12px; justify-content: center; margin: 0; }
++/* FORFEIT bấm lần 1 (UI.pauseAct): nút đỏ CONFIRM FORFEIT + dòng hậu quả ngay trên hàng nút */
++#pause .pause-items button.danger { color: #ff5a6e; border-color: #ff5a6e; background: none; }
++#pause .pause-items button.danger.sel { color: var(--ink); background: #ff5a6e; box-shadow: 2px 2px 0 var(--ink); }
++#pause .pause-warn { position: absolute; left: 0; right: 0; bottom: 42px; text-align: center; font-size: 13px; color: #ff5a6e; text-shadow: 1px 1px 0 var(--ink); }
+ .pb-traits h4 u { text-decoration: none; color: var(--muted); margin-right: 3px; }
+ .pb-traits { width: 190px; max-height: 74px; overflow: hidden; scrollbar-width: thin; scrollbar-color: #525a6b transparent; background: var(--panel); border: 1px solid var(--edge); padding: 5px 7px; display: flex; flex-direction: column; gap: 2px; }
+ .pb-traits h4 { font-size: 13px; color: var(--gold); letter-spacing: 1px; font-weight: normal; margin-bottom: 2px; }
+diff --git a/src/ui/matchui.js b/src/ui/matchui.js
+index 1e0d251..e7b8aea 100644
+--- a/src/ui/matchui.js
++++ b/src/ui/matchui.js
+@@ -55,6 +55,8 @@ window.SFC = window.SFC || {};
+     /* ================= PAUSE / MENU TRONG TRẬN ================= */
+     // Pause: build hiện tại — bên trái Cộng hưởng đạt mốc mấy (kèm hiệu ứng), bên phải các lá Core đang có (ô trống: ???)
+     renderPause() {
++      this.forfeitArm = false;   // mở Pause: FORFEIT luôn về bước 1
++      clearTimeout(this.forfeitTimer);
+       const g = this.app.game, me = g ? g.humanTeam : -1;
+       const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${esc(l)}</button>`).join('');
+       let build = '';
+@@ -91,11 +93,53 @@ window.SFC = window.SFC || {};
+       // cần phải tay cầm: cuộn bảng build (chuột: con lăn, bảng có thanh cuộn)
+       const ry = SFC.Pad ? SFC.Pad.rstickY : 0, box = ry && this.el.pause.querySelector('.pb-traits');
+       if (box) box.scrollTop += ry * 5;
++      // không vòng quanh: trái ở RESUME thì đứng yên (không nhảy sang FORFEIT ở cuối hàng)
+       const n = this.pauseItems.length;
+-      if (input.wasPressed('up') || input.wasPressed('left')) { this.pauseSel = (this.pauseSel + n - 1) % n; this.setPauseSel(); }
+-      if (input.wasPressed('down') || input.wasPressed('right')) { this.pauseSel = (this.pauseSel + 1) % n; this.setPauseSel(); }
++      if (input.wasPressed('up') || input.wasPressed('left')) { this.pauseSel = Math.max(0, this.pauseSel - 1); this.setPauseSel(); }
++      if (input.wasPressed('down') || input.wasPressed('right')) { this.pauseSel = Math.min(n - 1, this.pauseSel + 1); this.setPauseSel(); }
+       if (input.wasPressed('pause') || input.wasPressed('back')) return this.app.resume();
+-      if (input.wasPressed('confirm')) this.doAct(this.pauseItems[this.pauseSel][0]);
++      if (input.wasPressed('confirm')) this.pauseAct(this.pauseItems[this.pauseSel][0]);
++    },
++
++    // FORFEIT / GIVE UP trong Pause bấm 2 lần (như FORFEIT RUN ở tab GOAT PATH, LEAVE ROOM): lần 1 = CONFIRM FORFEIT đỏ
++    // + dòng hậu quả trên nút, 3 giây không bấm lại thì về như cũ; lần 2 mới bỏ trận
++    pauseAct(act) {
++      if (act === 'forfeit' && !this.forfeitArm) {
++        SFC.Audio.menu();
++        this.forfeitArm = true;
++        clearTimeout(this.forfeitTimer);
++        this.forfeitTimer = setTimeout(() => { this.forfeitArm = false; this.renderForfeit(); }, 3000);
++        this.renderForfeit();
++        return;
++      }
++      this.forfeitArm = false;
++      clearTimeout(this.forfeitTimer);
++      this.doAct(act);
++    },
++    // đổi nút FORFEIT + dòng cảnh báo tại chỗ (không vẽ lại cả Pause -> giữ ảnh động các lá Core)
++    renderForfeit() {
++      const i = this.pauseItems.findIndex(([k]) => k === 'forfeit');
++      const b = i >= 0 && this.el.pause.querySelectorAll('.pause-items button')[i];
++      if (!b) return;
++      // giữ bề rộng nút khi đổi chữ: chuột bấm lần 2 vẫn trúng nút, hàng nút không xô lệch
++      b.style.minWidth = this.forfeitArm ? b.offsetWidth + 'px' : '';
++      b.classList.toggle('danger', !!this.forfeitArm);
++      b.textContent = this.forfeitArm ? _t('CONFIRM FORFEIT') : this.pauseItems[i][1];
++      let w = this.el.pause.querySelector('.pause-warn');
++      const note = this.forfeitArm ? this.forfeitNote() : '';
++      if (!note) { if (w) w.remove(); return; }
++      if (!w) { w = document.createElement('div'); w.className = 'pause-warn'; this.el.pause.appendChild(w); }
++      w.textContent = note;
++    },
++    // bỏ trận thì mất gì (chuỗi có sẵn ở tab GOAT PATH / FOOTBALL STORY / trận xếp hạng)
++    forfeitNote() {
++      const o = (this.app.game && this.app.game.opts) || {};
++      if (o.mainPath) return _t('Forfeit counts as a loss.');
++      if (o.cup) return _t('Quit this cup? Your progress in this run will be lost.');
++      if (o.trial) return '';
++      if (o.drill) return `${_t('FAIL')} · ${_t('An injury')}`;
++      if (o.run) return _t('Forfeit this run? It counts as a loss.');
++      return '';
+     },
+ 
+     consume(game) {
+@@ -160,6 +204,7 @@ window.SFC = window.SFC || {};
+         }
+         const btn = e.target.closest('[data-act],[data-pick]');
+         if (!btn) return;
++        if (btn.dataset.act && btn.closest('#pause')) return this.pauseAct(btn.dataset.act);   // FORFEIT bấm 2 lần
+         if (btn.dataset.pick != null && this.app.game) return this.pick(this.app.game, +btn.dataset.pick);
+         if (this.pendingReveal && btn.closest('#end')) return this.openReveal();   // còn thẻ chưa mở
+         this.doAct(btn.dataset.act);

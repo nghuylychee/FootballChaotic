@@ -1,0 +1,27 @@
+{
+ "id": "match-09",
+ "area": "match",
+ "screen": "Màn kết quả sau Skill game (Beat 2)",
+ "source": "agent",
+ "severity": "med",
+ "title": "Màn kết quả Skill game trông như trận 0 - 0, mất kết quả thật",
+ "problem": "Beat 1 ghi đúng 'SILVER! 7 CHICKENS', nhưng sang Beat 2 thì dưới SILVER! lại là 'LONG FC 0 - 0 School Ghosts', bảng GOALS / ASSISTS / SAVES / SHOTS toàn 0, khung thưởng có '+0 gold +0 XP' và thanh LV. Con số thật (7 con gà, mốc 3 / 6 / 10) biến mất, người chơi không biết còn thiếu bao nhiêu để lên GOLD.",
+ "goal": "Màn kết quả Skill game nói đúng thứ đã đếm: được bao nhiêu, đạt mốc nào, mốc kế là bao nhiêu, nhận gì cho run.",
+ "why": "Skill game là node riêng trên map GOAT PATH, phần thưởng đi theo mốc. Thấy 0 - 0 với +0 XP làm người chơi tưởng mình hỏng bài hoặc game lỗi, và không học được lần sau cần bao nhiêu.",
+ "fix": "Beat 2 của Skill game (và LEGEND TRIAL) giờ giữ đúng thanh 3 mốc người chơi vừa nhìn suốt bài, to hơn, kèm '7 / 10 CHICKENS' ngay dưới SILVER!. Bỏ bảng tỉ số (toàn 0), khung REWARDS đứng giữa và ẩn dòng tổng gold / XP + thanh LV khi cả hai đều 0 (Skill game không bao giờ cho XP). Kỹ thuật: tách phần thanh + số đếm của drillBox ra hàm drillTrack (hud.js) để HUD và endscreen.js dùng chung; class only-rw / no-tot trong CSS. Không thêm chuỗi mới.",
+ "why_this": "Dùng lại đúng thanh mốc của HUD nên Beat 2 nối liền với lúc chơi, không phải học cách đọc mới, và không thêm chuỗi dịch.",
+ "alternatives": [
+  "Bỏ hẳn Beat 2 cho Skill game, hiện CONTINUE ngay ở Beat 1 — nhanh nhất, nhưng mất chỗ hiện thưởng run (cash / BADGE).",
+  "Giữ bảng tỉ số, chỉ thêm 1 dòng kết quả — ít đụng code, nhưng 0 - 0 và +0 XP vẫn còn đó gây hiểu nhầm.",
+  "Hiện 4 thẻ mốc như trên map (BRONZE / SILVER / GOLD / FAIL kèm thưởng từng mốc), sáng thẻ đã đạt — nhiều thông tin nhất nhưng to và lặp lại thẻ trên map."
+ ],
+ "files": [
+  "src/ui/endscreen.js",
+  "src/ui/hud.js",
+  "css/style.css"
+ ],
+ "limits": "Khung thưởng chỉ ẩn tổng gold / XP khi cả hai bằng 0, trận thường không đổi. Co-op (người xem lượt chơi của bạn) dùng cùng màn này, chưa thử trong phòng thật.",
+ "videoNote": "Bài CHICKEN CATCH, bắt 7 con (mốc 3 / 6 / 10). Xem Beat 2 (sau giây ~6): bản trước ghi 0 - 0 + bảng toàn 0, bản sau giữ thanh mốc với 7 / 10 CHICKENS.",
+ "before": "videos/match-09-before.mp4",
+ "after": "videos/match-09-after.mp4"
+}

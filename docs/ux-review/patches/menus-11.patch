@@ -1,0 +1,93 @@
+diff --git a/css/style.css b/css/style.css
+index 1d1bed4..bc40f2b 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -2423,7 +2423,12 @@ button.eq-row:hover b { color: var(--gold); }
+ .tr2-pol .tp-path i { flex: 1; height: 3px; background: linear-gradient(90deg, var(--ac) var(--w, 0%), #d8cfbc var(--w, 0%)); }
+ .tr2-pol .tp-path i.boss { background: #ffd23f; }
+ .tr2-pol .tp-path i:not(.on):not(.boss) { background: #d8cfbc; }
+-.tr2-empty { grid-column: 1 / -1; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; opacity: 0.4; }
++.tr2-empty { grid-column: 1 / -1; grid-row: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
++.tr2-empty > .pxi { opacity: 0.4; }
++/* bảng ghim trống / kệ cúp chưa có: 1 câu nói cách lấp đầy (chỉ hiện khi trống) */
++.tr2-note { position: relative; max-width: 220px; padding: 6px 10px 5px; font-size: 14px; line-height: 1.1; text-align: center; color: #3a2a1e; background: #f4eee2; box-shadow: 2px 2px 0 rgba(18,12,22,0.6); transform: rotate(-1.5deg); }
++.tr2-note::before { content: ''; position: absolute; left: 50%; top: -3px; width: 6px; height: 6px; margin-left: -3px; background: #e0403a; box-shadow: 1px 1px 0 var(--ink); }
++.tr2-strip > .tr2-how { font-size: 13px; color: var(--muted); }
+ .tr2-pg { position: absolute; right: 2px; top: -16px; font-family: var(--px); font-size: 6px; color: #f4eee2; }
+ .tr2-chalk { position: absolute; left: 466px; top: 62px; width: 152px; height: 270px; z-index: 3; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 8px; }
+ .tr2-rec { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 1px dashed rgba(232,236,245,0.25); }
+diff --git a/src/i18n/es.js b/src/i18n/es.js
+index 66b5959..cdd7415 100644
+--- a/src/i18n/es.js
++++ b/src/i18n/es.js
+@@ -1487,6 +1487,8 @@ SFC.I18n.add({
+ 
+     /* ===== PHÒNG TRƯNG BÀY (src/ui/trophies.js) ===== */
+     'TROPHY ROOM': 'SALA DE TROFEOS',
++    'No runs yet · your GOAT PATH runs get pinned here': 'Aún no hay partidas · aquí se clavan tus partidas de GOAT PATH',
++    'Beat the boss of this act in GOAT PATH': 'Vence al jefe de este acto en GOAT PATH',
+     'PEAK': 'MÁXIMO',
+     'BEST AREA': 'MEJOR ZONA',
+     'MATCHES': 'PARTIDOS',
+diff --git a/src/i18n/ja.js b/src/i18n/ja.js
+index a021f2e..25187d4 100644
+--- a/src/i18n/ja.js
++++ b/src/i18n/ja.js
+@@ -1429,6 +1429,8 @@ SFC.I18n.add({
+ 
+     /* ===== PHÒNG TRƯNG BÀY (src/ui/trophies.js) ===== */
+     'TROPHY ROOM': 'トロフィールーム',
++    'No runs yet · your GOAT PATH runs get pinned here': 'まだランがない · GOAT PATHのランはここに貼られる',
++    'Beat the boss of this act in GOAT PATH': 'GOAT PATHでこのACTのボスを倒そう',
+     'PEAK': '最高',
+     'BEST AREA': '最高エリア',
+     'MATCHES': '試合',
+diff --git a/src/i18n/pt-BR.js b/src/i18n/pt-BR.js
+index 111522c..ca00e2a 100644
+--- a/src/i18n/pt-BR.js
++++ b/src/i18n/pt-BR.js
+@@ -1488,6 +1488,8 @@ SFC.I18n.add({
+ 
+     /* ===== PHÒNG TRƯNG BÀY (src/ui/trophies.js) ===== */
+     'TROPHY ROOM': 'SALA DE TROFÉUS',
++    'No runs yet · your GOAT PATH runs get pinned here': 'Nenhuma run ainda · suas runs do GOAT PATH ficam presas aqui',
++    'Beat the boss of this act in GOAT PATH': 'Vença o chefão deste ato no GOAT PATH',
+     'PEAK': 'RECORDE',
+     'BEST AREA': 'MELHOR ÁREA',
+     'MATCHES': 'JOGOS',
+diff --git a/src/i18n/pt-PT.js b/src/i18n/pt-PT.js
+index ba6a36d..64db68d 100644
+--- a/src/i18n/pt-PT.js
++++ b/src/i18n/pt-PT.js
+@@ -1489,6 +1489,8 @@ SFC.I18n.add({
+ 
+     /* ===== PHÒNG TRƯNG BÀY (src/ui/trophies.js) ===== */
+     'TROPHY ROOM': 'SALA DE TROFÉUS',
++    'No runs yet · your GOAT PATH runs get pinned here': 'Ainda sem runs · as tuas runs do GOAT PATH ficam afixadas aqui',
++    'Beat the boss of this act in GOAT PATH': 'Vence o chefe deste ato no GOAT PATH',
+     'PEAK': 'RECORDE',
+     'BEST AREA': 'MELHOR ÁREA',
+     'MATCHES': 'JOGOS',
+diff --git a/src/ui/trophies.js b/src/ui/trophies.js
+index 6bcb896..4640e07 100644
+--- a/src/ui/trophies.js
++++ b/src/ui/trophies.js
+@@ -168,7 +168,8 @@ window.SFC = window.SFC || {};
+         <div class="tr2-strip" style="--c:${sel.color}"><b>${esc(sel.name)}</b>
+           <span title="${esc(sel.goat ? _t('GOAT runs') : _t('Bosses beaten'))}">${PX().ui(sel.goat ? 'trophy' : 'crown', 'sm')}${sel.n}</span>
+           ${sel.first ? `<span title="${esc(_t('First'))}">${PX().ui('calendar', 'sm')}${esc(date(sel.first))}</span>` : ''}
+-          <span class="tr2-med">${medals(sel.n)}</span></div>`;
++          <span class="tr2-med">${medals(sel.n)}</span>
++          ${sel.n ? '' : `<span class="tr2-how">${esc(sel.goat ? _t('Win a GOAT PATH run') : _t('Beat the boss of this act in GOAT PATH'))}</span>`}</div>`;
+     },
+     cupList() {
+       const A = RC().acts, st = stats();
+@@ -231,7 +232,7 @@ window.SFC = window.SFC || {};
+         return `<button class="tr2-pol ${i === this.pol ? 'on' : ''}" data-tpol="${i}" style="--ac:${Ac.color}" title="${esc(date(h.d))}">
+             <span class="tp-ph">${lg ? `<canvas class="lg" width="40" height="44" data-trlg="${lg}"></canvas>` : ''}${h.sq.map((q, qi) => `<canvas width="40" height="44" data-trsq="${i}.${qi}"></canvas>`).join('')}${res}</span>
+             <span class="tp-cap"><b>${h.won ? 'GOAT' : esc(_t('ACT {n}', { n: h.act + 1 }))}</b><em>${h.my}-${h.op}</em></span><span class="tp-path">${path}</span></button>`;
+-      }).join('') || `<div class="tr2-empty">${PX().ui('ball', 'x2')}</div>`;
++      }).join('') || `<div class="tr2-empty">${PX().ui('ball', 'x2')}<span class="tr2-note">${esc(_t('No runs yet · your GOAT PATH runs get pinned here'))}</span></div>`;
+       // nemesis: đội loại bạn nhiều nhất · LEGEND hay dùng nhất (ô của bạn)
+       const tally = (arr) => { const m = {}; for (const x of arr) if (x) m[x] = (m[x] || 0) + 1; return Object.keys(m).sort((a, b) => m[b] - m[a])[0] || null; };
+       const nem = tally(H.map((h) => h.by)), fav = tally(H.map((h) => (h.sq.find((q) => q.you) || {}).lg));

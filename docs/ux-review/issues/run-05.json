@@ -1,0 +1,23 @@
+{
+  "id": "run-05",
+  "area": "run",
+  "screen": "LOCKER ROOM",
+  "source": "agent",
+  "severity": "med",
+  "title": "LOCKER ROOM: thẻ UPGRADE không nói nâng cấp được gì",
+  "problem": "Thẻ UPGRADE chỉ thêm dấu '+' vào tên, câu mô tả y như BADGE gốc (Scouting Report+ vẫn ghi 'Every Core pick shows one more card.' dù bản nâng cấp cho thêm 1 lần reroll). LOCKER ROOM chỉ cho làm 1 việc, mà người chơi không biết mỗi lựa chọn đổi được gì; chỉ Energy Drink có chip ULT ▲ nhưng chip đó cũng y hệt bản thường.",
+  "goal": "Mỗi thẻ UPGRADE nói rõ bản '+' hơn bản cũ ở chỗ nào, không cần đọc số.",
+  "why": "LOCKER ROOM là 1 lựa chọn mất lượt (chữa thương hay nâng cấp cái nào); chọn mò thì người chơi thấy phí lượt và không hiểu BADGE của mình mạnh lên ra sao.",
+  "fix": "Thẻ UPGRADE giờ hiện 1 câu vàng có ▲ nói bản + làm được gì (vd. 'One more card and a free reroll on every Core pick.', 'Blocks the first two injuries of each act.'); tooltip của BADGE đã nâng cấp (TEAM BADGES ở SQUAD / PICK A BADGE) cũng dùng câu này. Kỹ thuật: thêm trường upDesc cho 9 BADGE có up trong config/run.config.js, khai báo 'run.badges.*.upDesc' trong src/i18n/fields.js, RunUI.card + badgeTip đọc upDesc khi b.up. 9 chuỗi mới đã thêm vào cả 4 pack (pt-BR, pt-PT, es, ja), i18n-check không lỗi.",
+  "why_this": "Theo đúng luật của dự án (mô tả 1 dòng, không số), đọc 1 câu là biết bản + hơn gì; phần còn lại của thẻ giữ nguyên.",
+  "alternatives": [
+    "Tự sinh chip trước → sau từ số trong config (CARDS +1 → +2) — không cần viết chữ, nhưng lộ số, trái quyết định 'người chơi không đọc số'",
+    "Hiện 2 dòng: mô tả gốc mờ + phần thêm vàng — so sánh rõ nhất, nhưng thẻ 104px chỉ đủ 3 dòng chữ, bản dịch dài sẽ bị cắt",
+    "Hiện 2 thẻ nhỏ cạnh nhau (bản thường / bản +) — trực quan, nhưng LOCKER ROOM vốn đã chật"
+  ],
+  "files": ["config/run.config.js", "src/i18n/fields.js", "src/ui/runmap.js", "css/style.css", "src/i18n/pt-BR.js", "src/i18n/pt-PT.js", "src/i18n/es.js", "src/i18n/ja.js"],
+  "limits": "Bản dịch do Claude viết, chưa người bản xứ duyệt (mô tả BADGE gốc của GOAT PATH cũng chưa được dịch). Font tiếng Nhật chưa build lại (coordinator build 1 lần khi gộp). GEAR UPGRADE giữ nguyên vì đã có chip số liệu sau nâng cấp.",
+  "videoNote": "Cùng 1 LOCKER ROOM 9 BADGE: trước = câu mô tả y bản gốc; sau = câu vàng ▲ nói phần hơn.",
+  "before": "videos/run-05-before.mp4",
+  "after": "videos/run-05-after.mp4"
+}

@@ -1,0 +1,2 @@
+# patch giữ nguyên LF như git diff đã xuất (đổi sang CRLF khi checkout thì git apply --3way không khớp)
+*.patch -text

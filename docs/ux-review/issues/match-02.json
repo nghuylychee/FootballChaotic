@@ -1,0 +1,23 @@
+{
+  "id": "match-02",
+  "area": "match",
+  "screen": "Pause trong trận (GOAT PATH / FOOTBALL STORY / Ranked / Skill game)",
+  "source": "agent",
+  "severity": "high",
+  "title": "FORFEIT trong Pause bấm 1 phát là mất cả run, không hỏi lại",
+  "problem": "Pause chỉ có RESUME / FORFEIT (RUN OVER). Esc → bấm mũi tên (trái hay phải đều sang FORFEIT vì điều hướng vòng quanh) → Enter là RUN OVER ngay, không có bước xác nhận. Trong khi FORFEIT RUN ở tab GOAT PATH và LEAVE ROOM ở màn kết quả đều phải bấm 2 lần.",
+  "goal": "Bỏ run / cup / trận xếp hạng giữa chừng luôn cần 2 bước rõ ràng, giống mọi chỗ bỏ cuộc khác trong game.",
+  "why": "1 lần lỡ tay là mất cả run GOAT PATH (có thể đã chơi 30+ phút), không có cách lấy lại. Đây là hành động nặng nhất trong trận mà lại dễ bấm nhất.",
+  "fix": "Lần bấm đầu FORFEIT đổi thành nút đỏ CONFIRM FORFEIT (giữ nguyên bề rộng để chuột bấm lần 2 vẫn trúng) + 1 dòng đỏ nói rõ mất gì (\"Forfeit this run? It counts as a loss.\"; cup / ranked / Skill game có câu riêng). 3 giây không bấm lại thì về như cũ; mở lại Pause cũng về bước 1. Thêm: điều hướng Pause không còn vòng quanh (trái ở RESUME thì đứng yên). Kỹ thuật: UI.pauseAct trong matchui.js chặn act 'forfeit' lần đầu (cả phím lẫn chuột), dùng lại chuỗi có sẵn nên không thêm chuỗi dịch mới.",
+  "why_this": "Dùng lại đúng mẫu bấm 2 lần đã có (FORFEIT RUN, LEAVE ROOM, QUIT CUP) nên người chơi chỉ gặp 1 kiểu; không thêm lớp phủ hay chuỗi mới.",
+  "alternatives": [
+    "Hộp thoại YES / NO riêng — rõ nhất, nhưng thêm 1 lớp phủ và chuỗi mới, nặng hơn mẫu đang có.",
+    "Giữ phím để bỏ cuộc (hold to forfeit) — chống lỡ tay tốt, nhưng chuột khó làm và khác mọi chỗ khác trong game.",
+    "Chỉ bỏ vòng quanh khi điều hướng — rẻ, nhưng vẫn 1 Enter là mất run."
+  ],
+  "files": ["src/ui/matchui.js", "css/style.css"],
+  "limits": "LEAVE ROOM trong Pause của phòng online (không phải ranked) vẫn 1 lần bấm như cũ. Skill game ghi \"FAIL · An injury\" ghép từ 2 chuỗi có sẵn; LEGEND TRIAL chỉ đổi nút, không có dòng chữ (bỏ cuộc không mất gì ngoài lượt thử). Các câu GOAT PATH này chưa có bản dịch trong gói ngôn ngữ (giống phần GOAT PATH còn lại).",
+  "videoNote": "Run thật: Pause → sang FORFEIT → Enter 1 lần. TRƯỚC: RUN OVER ngay. SAU: nút đỏ CONFIRM FORFEIT + dòng cảnh báo, Esc quay lại trận bình thường.",
+  "before": "videos/match-02-before.mp4",
+  "after": "videos/match-02-after.mp4"
+}

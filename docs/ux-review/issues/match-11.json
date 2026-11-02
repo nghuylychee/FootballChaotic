@@ -1,0 +1,27 @@
+{
+ "id": "match-11",
+ "area": "match",
+ "screen": "Màn VS trước trận · Beat 1 sau còi · lúc đếm REWARDS",
+ "source": "agent",
+ "severity": "low",
+ "title": "Gợi ý bỏ qua ở màn VS gần như vô hình, sau trận thì không có",
+ "problem": "Ở màn VS, dòng 'Enter skip' nằm góc dưới trái, chữ xám nhỏ lại bị dải màu áo đội nhà phủ mờ lên trên (gần như vô hình). Beat 1 sau còi (VICTORY trên sân, ~3 s) và lúc đếm REWARDS cũng bấm qua được nhưng không ghi gì, chỉ có 1 vạch chạy, người chơi không biết đang phải chờ hay bấm được.",
+ "goal": "Màn nào bấm qua được thì gợi ý phím đọc rõ trên mọi màu áo, cùng 1 kiểu ở màn VS, Beat 1 và lúc đếm thưởng.",
+ "why": "Sau vài chục trận, người chơi muốn lướt nhanh mấy màn chuyển cảnh này; không biết là bấm được thì mỗi trận mất thêm vài giây chờ, lâu dần thấy game lề mề.",
+ "fix": "Cả 3 chỗ giờ có cùng 1 ô nhỏ nền tối chữ sáng 'Enter skip' ở góc dưới phải (giống gợi ý của màn mở Tuyệt kỹ): màn VS (dời từ trái sang phải, cho nằm trên dải màu áo thay vì dưới), Beat 1 (cạnh vạch chạy) và Beat 2 lúc đang đếm thưởng (ẩn khi bảng tỉ số + CONTINUE hiện). Phím lấy bằng Input.key('confirm', 'Enter') như cũ (tay cầm ra nút tay cầm). Kỹ thuật: class .skip-hint dùng chung, UI.skipHint() trong endscreen.js; chuỗi '{key} skip' đã có, không thêm chuỗi mới.",
+ "why_this": "Chuỗi và kiểu gợi ý đã có sẵn, chỉ đồng bộ vị trí + độ tương phản, không thêm luồng mới. Gốc lỗi mờ ở màn VS là dải màu áo (absolute) vẽ đè lên dòng chữ, nên chỉ đổi màu chữ thì không đủ.",
+ "alternatives": [
+  "Bỏ gợi ý, để tự hết giờ — đỡ rối mắt, nhưng người chơi lặp nhiều trận sẽ không biết là bấm qua được.",
+  "Nhấp nháy cả màn / vạch chạy khi bấm được — ồn, trái với nét pixel gọn hiện tại.",
+  "Chỉ sửa độ tương phản ở màn VS, không thêm cho Beat 1 / đếm thưởng — ít đụng nhất, nhưng 2 chỗ kia vẫn im."
+ ],
+ "files": [
+  "src/ui/intro.js",
+  "src/ui/endscreen.js",
+  "css/style.css"
+ ],
+ "limits": "Chưa thử với tay cầm thật (Input.key tự đổi sang nút tay cầm). Chữ '+NaN' ở khung thưởng trong video là lỗi khác (profile.js), agent khác đang sửa.",
+ "videoNote": "Góc dưới phải: màn VS (0–2 s), Beat 1 VICTORY trên sân, rồi lúc đếm REWARDS. Bản trước chỉ có chữ mờ ở góc trái màn VS. Ô '⌨ ...' ở góc là phím đang bấm của bộ quay, không phải của game.",
+ "before": "videos/match-11-before.mp4",
+ "after": "videos/match-11-after.mp4"
+}

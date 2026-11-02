@@ -1,0 +1,134 @@
+diff --git a/css/style.css b/css/style.css
+index d4c963e..4381d64 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -916,8 +916,17 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .rv-rar { font-size: 14px; letter-spacing: 2px; color: var(--rc); text-shadow: 1px 1px 0 var(--ink); }
+ .rv-name { font-size: 26px; line-height: 1; color: #fff; letter-spacing: 1px; text-shadow: 2px 2px 0 var(--ink); }
+ .rv-sub { font-size: 13px; color: var(--muted); }
+-.rv-acts { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 3px; }
++.rv-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; margin-top: 3px; }
+ .rv-act { font-size: 14px; color: var(--gold); display: inline-flex; align-items: center; gap: 3px; }
++/* nút hành động SHOP / mở hộp / túi đồ: chuột bấm được như phím ghi trên nút · main = nút vàng như CLAIM REWARD */
++.g-btn { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; padding: 2px 6px; font-size: 14px; letter-spacing: 1px; color: var(--gold);
++  background: #1a1c22; border: 1px solid var(--gold); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; white-space: nowrap; }
++.g-btn:hover { background: #33301c; }
++.g-btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
++.g-btn.main { color: var(--ink); background: var(--gold); border-color: var(--ink); }
++.g-btn.main:hover { background: #fff08a; }
++.g-btn.main .gold, .g-btn.main .free { color: var(--ink); text-shadow: none; }
++.g-btn.off { filter: grayscale(0.8); opacity: 0.6; }
+ .rv-act.on { color: #9dff3d; }
+ .rv-act.ok { color: #9dff3d; }
+ .reveal.r-legendary .rv-name, .reveal.r-mythic .rv-name { animation: pulse 0.7s steps(2) infinite; }
+diff --git a/src/ui/gacha.js b/src/ui/gacha.js
+index bf2febb..d1761cf 100644
+--- a/src/ui/gacha.js
++++ b/src/ui/gacha.js
+@@ -181,14 +181,16 @@ window.SFC = window.SFC || {};
+         const e = entry(x.kind, x.id), own = e.count > 0;
+         return `<div class="icard mini ${own ? 'owned' : ''}" style="--rc:${RAR(x.rarity).color}" title="${esc(nameOf(e))}">${iconHtml(e)}${own ? `<b class="ic-count">×${e.count}</b>` : ''}</div>`;
+       }).join('');
+-      const act = c.free ? `<kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN FREE BOX')} <span class="free">${PX().ui('gift', 'sm')} ×${PF().freeBoxes(id)}</span>`
+-        : c.ok ? `<kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN BOX · {price}', { price: coin(b.price) })}` : c.reason === 'level' ? `<span class="bad">${PX().ui('lock', 'sm')} ${_t('Requires LV {n}', { n: b.level })}</span>` : `<span class="bad">${_t('Not enough gold ({price})', { price: coin(b.price) })}</span>`;
++      // mở được: nút bấm thật (chuột = phím Enter) · không mở được: chỉ là dòng chữ đỏ báo lý do
++      const act = c.free ? `<button class="sd-act g-btn main" data-open="1"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN FREE BOX')} <span class="free">${PX().ui('gift', 'sm')} ×${PF().freeBoxes(id)}</span></button>`
++        : c.ok ? `<button class="sd-act g-btn main" data-open="1"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN BOX · {price}', { price: coin(b.price) })}</button>`
++        : `<div class="sd-act">${c.reason === 'level' ? `<span class="bad">${PX().ui('lock', 'sm')} ${_t('Requires LV {n}', { n: b.level })}</span>` : `<span class="bad">${_t('Not enough gold ({price})', { price: coin(b.price) })}</span>`}</div>`;
+       return `${this.header(_t('SHOP'))}
+         <div class="gacha-body shop-g">
+           <div class="box-list">${rows}</div>
+           <div class="box-detail">
+             <div class="bd-top">${boxArt(b.color, true)}
+-              <div class="bd-info"><div class="sd-name">${esc(b.name)}</div><div class="sd-desc">${esc(b.desc)}</div><div class="sd-act">${act}</div></div>
++              <div class="bd-info"><div class="sd-name">${esc(b.name)}</div><div class="sd-desc">${esc(b.desc)}</div>${act}</div>
+             </div>
+             <div class="bd-odds">${odds}</div>
+             <div class="bd-pool">${pool}</div>
+@@ -215,7 +217,7 @@ window.SFC = window.SFC || {};
+     pageOpen() {
+       const o = this.opening, b = PROG().boxes[o.boxId];
+       const cards = o.reel.map((x) => `<div class="rcard" style="--rc:${RAR(x.rarity).color}">${iconHtml(entry(x.kind, x.id))}</div>`).join('');
+-      const reveal = o.done ? this.revealHtml(o) : `<div class="reveal wait"><span>${_t('Spinning...')}</span><span><kbd>${K('confirm', 'Enter')}</kbd> ${_t('skip')}</span></div>`;
++      const reveal = o.done ? this.revealHtml(o) : `<div class="reveal wait"><span>${_t('Spinning...')}</span><button class="g-btn" data-ract="skip"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('skip')}</button></div>`;
+       return `${this.header(_t('OPEN BOX'), `<div class="open-box">${boxArt(b.color)}<span>${esc(b.name)}</span></div>`)}
+         <div class="reel-wrap ${o.done ? 'done' : ''}" style="--rc:${RAR(o.win.rarity).color}">
+           <div class="reel"><div class="reel-strip" style="transform:translateX(${-(o.done ? o.dist : o.pos)}px)">${cards}</div></div>
+@@ -241,10 +243,13 @@ window.SFC = window.SFC || {};
+         note = PROG().slots[PROG().items[w.id].slot].label;
+       }
+       const equipped = !isCore && PF().data.look[PROG().items[w.id].slot] === w.id;
++      // mỗi hành động là 1 nút (chuột bấm = phím ghi trên nút) · hết gold: OPEN ANOTHER mờ đi (bấm vẫn báo lý do)
++      const btn = (act, key, label, cls = '') => `<button class="rv-act g-btn ${cls}" data-ract="${act}"><kbd>${key}</kbd> ${label}</button>`;
++      const free = PF().freeBoxes(o.boxId);
+       const acts = [
+-        `<span class="rv-act"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN ANOTHER')} ${PF().freeBoxes(o.boxId) ? `<span class="free">${PX().ui('gift', 'sm')} ${_t('FREE ×{n}', { n: PF().freeBoxes(o.boxId) })}</span>` : coin(b.price)}</span>`,
+-        !isCore && e.count > 0 ? `<span class="rv-act ${equipped ? 'on' : ''}"><kbd>${K('equip', 'E')}</kbd> ${equipped ? _t('EQUIPPED') : _t('EQUIP')}</span>` : '',
+-        e.count > 0 && !o.dismantled ? `<span class="rv-act"><kbd>${K('dismantle', 'X')}</kbd> ${_t('DISMANTLE +{n}', { n: PF().dismantleValue(w.kind, w.id) })}</span>` : '',
++        btn('again', K('confirm', 'Enter'), `${_t('OPEN ANOTHER')} ${free ? `<span class="free">${PX().ui('gift', 'sm')} ${_t('FREE ×{n}', { n: free })}</span>` : coin(b.price)}`, PF().canOpen(o.boxId).ok ? 'main' : 'main off'),
++        !isCore && e.count > 0 ? (equipped ? `<span class="rv-act on">${PX().ui('check', 'sm')} ${_t('EQUIPPED')}</span>` : btn('equip', K('equip', 'E'), _t('EQUIP'))) : '',
++        e.count > 0 && !o.dismantled ? btn('dismantle', K('dismantle', 'X'), _t('DISMANTLE +{n}', { n: PF().dismantleValue(w.kind, w.id) })) : '',
+         o.dismantled ? `<span class="rv-act ok">${_t('Dismantled {gold}', { gold: coin('+' + o.dismantled) })}</span>` : '',
+       ].join('');
+       return `<div class="reveal r-${w.rarity}" style="--rc:${r.color}">
+@@ -476,10 +481,20 @@ window.SFC = window.SFC || {};
+     inputOpen(menu, input) {
+       const o = this.opening;
+       if (!o) return;
+-      if (!o.done) { if (input.wasPressed('confirm')) o.t0 = performance.now() - o.dur * 1000; return; }
+-      if (input.wasPressed('confirm')) return this.openBox(menu, o.boxId);
+-      if (input.wasPressed('equip') && o.win.kind === 'item') { this.equipEntry(menu, entry('item', o.win.id)); menu.render(); }
+-      if (input.wasPressed('dismantle') && !o.dismantled) {
++      if (!o.done) { if (input.wasPressed('confirm')) this.openAct(menu, 'skip'); return; }
++      if (input.wasPressed('confirm')) return this.openAct(menu, 'again');
++      if (input.wasPressed('equip')) this.openAct(menu, 'equip');
++      if (input.wasPressed('dismantle')) this.openAct(menu, 'dismantle');
++    },
++
++    // hành động trên màn mở hộp — phím và nút bấm (data-ract) đi chung 1 đường
++    openAct(menu, act) {
++      const o = this.opening;
++      if (!o) return;
++      if (!o.done) { if (act === 'skip') o.t0 = performance.now() - o.dur * 1000; return; }
++      if (act === 'again') return this.openBox(menu, o.boxId);
++      if (act === 'equip' && o.win.kind === 'item') { this.equipEntry(menu, entry('item', o.win.id)); menu.render(); }
++      if (act === 'dismantle' && !o.dismantled) {
+         const e = entry(o.win.kind, o.win.id);
+         const g = this.dismantleEntry(menu, e);
+         if (g) { o.dismantled = g; menu.render(); }
+@@ -529,13 +544,18 @@ window.SFC = window.SFC || {};
+ 
+     /* ================= CHUỘT ================= */
+     click(menu, e) {
++      // bấm 1 hộp bên trái chỉ CHỌN hộp (không mua: double-click quen tay không mất gold) · mua bằng nút OPEN BOX
+       const box = e.target.closest('[data-box]');
+       if (box) {
+         const i = +box.dataset.box;
+-        if (i === this.boxSel) this.activateBox(menu);
+-        else { this.boxSel = i; menu.msg = ''; SFC.Audio.menu(); menu.render(); }
++        if (i !== this.boxSel) { this.boxSel = i; menu.msg = ''; SFC.Audio.menu(); menu.render(); }
+         return true;
+       }
++      if (e.target.closest('[data-open]')) { this.activateBox(menu); return true; }
++      const ra = e.target.closest('[data-ract]');
++      if (ra) { this.openAct(menu, ra.dataset.ract); return true; }
++      // đang quay: bấm vào dải quay = bỏ qua (như Enter)
++      if (menu.page === 'open' && this.opening && !this.opening.done && e.target.closest('.reel-wrap')) { this.openAct(menu, 'skip'); return true; }
+       const af = e.target.closest('[data-iarch]');
+       if (af) { this.invArch = +af.dataset.iarch; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
+       const sf = e.target.closest('[data-islot]');
+diff --git a/src/ui/menu.js b/src/ui/menu.js
+index 3cfef1d..09871b7 100644
+--- a/src/ui/menu.js
++++ b/src/ui/menu.js
+@@ -61,8 +61,8 @@ window.SFC = window.SFC || {};
+   const PLAY_PAGES = ['party', 'run', 'story', 'online', 'join', 'lobby'];
+   // trang mở khi đổi sang từng tab (Q / E) — GOAT PATH đầu tiên (chế độ chính); RANKED ẩn khi mainPath.tab = false
+   const PLAY_TABS = () => (SFC_CONFIG.mainPath.tab === false ? ['run', 'online'] : ['run', 'party', 'online']);
+-  // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, TÚI ĐỒ
+-  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'inv', 'settings', 'display', 'test', 'storytest', 'runtest', 'privacy', 'controls', 'ach', 'trophy', 'road'];
++  // trang có nút ◀ BACK góc trên trái giống màn PLAY: NHÂN VẬT + các trang con, SHOP, MỞ HỘP (về SHOP / ACHIEVEMENTS), TÚI ĐỒ
++  const BACK_PAGES = ['char', 'ults', 'attrs', 'look', 'shop', 'open', 'inv', 'settings', 'display', 'test', 'storytest', 'runtest', 'privacy', 'controls', 'ach', 'trophy', 'road'];
+   // trang không có logo, tiêu đề là 1 dòng ngang cả màn như SHOP (NHÂN VẬT thêm LV / XP / vàng bên phải)
+   const HEAD_PAGES = ['char', 'ults', 'attrs', 'look', 'settings', 'display', 'test', 'storytest', 'runtest'];
+   const WALLET_PAGES = ['char', 'ults', 'attrs', 'look'];

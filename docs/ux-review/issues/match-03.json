@@ -1,0 +1,23 @@
+{
+  "id": "match-03",
+  "area": "match",
+  "screen": "Chọn Core (STARTING CORE / CORE UPGRADE) + Pause",
+  "source": "agent",
+  "severity": "high",
+  "title": "Chuột trỏ lá này, phím chọn lá kia: 2 lá cùng nổi, Enter lấy lá không trỏ",
+  "problem": "Ở màn chọn Core, lá chọn bằng phím và lá dưới chuột cùng nổi lên, có viền màu, nhìn như có 2 lá được chọn. Rê chuột lên lá 3 rồi bấm Enter thì game lấy lá của phím, tức là mất đúng lá mình đang nhìn. Pause cũng vậy: RESUME và FORFEIT cùng nền vàng.",
+  "goal": "Lúc nào cũng chỉ 1 lá / 1 nút được chọn; chuột và phím dùng chung lựa chọn đó.",
+  "why": "Chọn nhầm Core là mất cả lượt build trong trận, không làm lại được. Ở Pause, 2 nút cùng vàng làm người chơi không biết Enter sẽ làm gì, mà 1 trong 2 là FORFEIT.",
+  "fix": "Rê chuột lên lá / nút nào thì lá / nút đó thành lựa chọn (giống bấm mũi tên), nên chỉ còn 1 thứ sáng và Enter lấy đúng cái đang trỏ. Kỹ thuật: 1 listener mousemove trong UI.bindMouse gọi hoverSel (setDraftSel / setPauseSel, có tiếng menu như phím ở màn chọn); CSS bỏ :hover cho lá có data-pick và nút Pause để chỉ .sel nổi. Chỉ đổi khi chuột thật sự di chuyển, nên mở Pause / màn chọn mà chuột đang đứng yên trên FORFEIT thì không tự chọn FORFEIT.",
+  "why_this": "1 nguồn lựa chọn duy nhất, giống các màn khác trong game đã làm (KIT VAN, map GOAT PATH); sửa nhỏ, không đổi hình lá bài.",
+  "alternatives": [
+    "Giữ :hover nhưng làm nhạt hơn (chỉ viền mảnh) — vẫn 2 điểm sáng, vẫn phải đoán Enter lấy lá nào.",
+    "Enter lấy lá dưới chuột — chuột nằm yên trên màn sẽ cướp lựa chọn của người dùng phím / tay cầm.",
+    "Ẩn hẳn chuột khi bấm phím — rõ ràng nhưng lạ với game trên web, và vẫn cần đồng bộ khi chuột quay lại."
+  ],
+  "files": ["src/ui/matchui.js", "css/style.css"],
+  "limits": "Màn kết quả (nút CONTINUE...) và hộp QUIT GAME? vẫn dùng :hover như cũ (endscreen.js do bên khác sửa); lá bài tĩnh ở ULT BOOK / SHOP không đổi.",
+  "videoNote": "Phím chọn lá 2, chuột rê lên lá 3 rồi Enter: TRƯỚC 2 lá cùng nổi và lá 2 bay vào YOUR BUILD; SAU chỉ lá 3 nổi và lá 3 bay vào. Cuối video: Pause, chuột lên FORFEIT.",
+  "before": "videos/match-03-before.mp4",
+  "after": "videos/match-03-after.mp4"
+}

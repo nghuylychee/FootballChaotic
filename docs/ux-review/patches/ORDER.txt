@@ -1,0 +1,9 @@
+Patch order (apply with: git apply --3way <file>):
+user-01 user-05 menus-04 menus-08 menus-09 menus-10
+menus-01 menus-02 menus-06 menus-05 menus-07 menus-03 menus-11
+match-01 user-03 match-03 match-04 match-02
+match-07 match-09 match-05 match-08 match-10 match-11
+user-06 run-12 user-02 run-02 run-07 run-09 run-11
+user-04 run-01 run-04 run-03 run-08 run-10 run-05 run-06
+zz-integration (only if both match-02 and match-08 are kept)
+Then: python scripts/build-ja-font.py (needs pip install fonttools)

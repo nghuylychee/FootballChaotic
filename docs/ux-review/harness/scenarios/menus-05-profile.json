@@ -1,0 +1,29 @@
+{
+ "v": 2,
+ "name": "LONG",
+ "level": 9,
+ "xp": 120,
+ "gold": 640,
+ "items": {
+  "mohawk": 2,
+  "crown": 2,
+  "shades": 2,
+  "neonkick": 2,
+  "dust": 2,
+  "neon": 2
+ },
+ "cores": {},
+ "boxes": {},
+ "tut": {
+  "done": true,
+  "heirloom": true
+ },
+ "stats": {
+  "matches": 31,
+  "wins": 18,
+  "draws": 4,
+  "losses": 9,
+  "goals": 57,
+  "boxes": 2
+ }
+}

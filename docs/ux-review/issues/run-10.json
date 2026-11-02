@@ -1,0 +1,23 @@
+{
+  "id": "run-10",
+  "area": "run",
+  "screen": "Who wears it / LOCKER ROOM / dòng báo trên map",
+  "source": "agent",
+  "severity": "low",
+  "title": "Dòng báo đè lên nút BACK và bảng chú thích; LOCKER ROOM cắt mất tên người và nhãn thẻ; thẻ mờ không nói lý do",
+  "problem": "Dòng báo của run luôn nằm giữa đáy màn: đang mở thẻ thì nó che đúng nút ở chân thẻ ('Already wearing one.' che kín BACK), ngoài map thì che chữ SHOP / LOCKER ROOM của bảng chú thích. Thẻ người không đeo được chỉ bị làm mờ tới mức thấy map xuyên qua, không ghi lý do cho tới khi bấm. Ở LOCKER ROOM, khung cuộn cắt mất tên người bị thương dưới thẻ, nhãn HEAL / UPGRADE khi cuộn, và dòng độ hiếm của hàng thẻ dưới.",
+  "goal": "Không chữ hay nút nào bị che hoặc bị cắt ở 1280x720, và thẻ không chọn được thì nói luôn vì sao.",
+  "why": "Chữ bị cắt / nút bị che làm game trông lỗi, còn thẻ mờ không lý do khiến người chơi bấm thử rồi mới hiểu.",
+  "fix": "Dòng báo giờ nằm ngay trên hàng nút của thẻ đang mở (không che BACK / SKIP), ngoài map thì nằm trên bảng chú thích. Thẻ người đã đeo món y hệt thành xám tối nền đặc (hết thấy map xuyên qua) và có nhãn đỏ 'Already wearing one.' ngay trên thẻ; phím mũi tên và mục chọn sẵn bỏ qua thẻ đó. LOCKER ROOM: khung cuộn chừa lề 10px trên / dưới cho nhãn và tên người, thẻ BADGE thấp lại 8px để 2 hàng vừa khít không bị cắt. Kỹ thuật: runmap.js render() chèn dòng báo vào .rm-sheet-foot, gearCard thêm nhãn .gr-dis, firstSel + điều hướng bỏ t.dis; CSS .run-msg / .bd-scroll / .bd-card. Không thêm chữ mới.",
+  "why_this": "Toàn sửa vị trí / CSS, không đổi luồng, dùng lại chuỗi có sẵn; dòng báo nằm ngay chỗ mắt đang nhìn (cạnh nút vừa bấm).",
+  "alternatives": [
+    "Đưa mọi dòng báo thành toast góc trên — không chồng nút nhưng xa chỗ mắt người chơi đang nhìn",
+    "Bỏ cuộn ở LOCKER ROOM, thu nhỏ hẳn thẻ cho vừa mọi trường hợp — hết cắt, nhưng chữ vốn 5–6px càng khó đọc",
+    "Ẩn hẳn thẻ người không đeo được — gọn, nhưng người chơi không hiểu sao chỉ còn 2 người"
+  ],
+  "files": ["src/ui/runmap.js", "css/style.css"],
+  "limits": "Khi có GEAR được nâng cấp (thẻ GEAR cao 156px) LOCKER ROOM vẫn phải cuộn như cũ, nhưng nhãn không còn bị cắt. Dòng báo nằm trên hàng nút có thể chạm mép dưới thẻ phía trên trong lúc hiện (nền tối, vẫn đọc được).",
+  "videoNote": "3 cảnh: bấm thẻ ROOKIE xám ở 'Who wears it?' (trước: dòng báo che BACK, thẻ trong suốt không lý do) · LOCKER ROOM 1 thẻ rồi 2 hàng (trước: tên ROOKIE + dòng độ hiếm hàng dưới bị cắt) · map có dòng 'BADGE: Kit Bag' (trước: đè chữ SHOP / LOCKER ROOM).",
+  "before": "videos/run-10-before.mp4",
+  "after": "videos/run-10-after.mp4"
+}

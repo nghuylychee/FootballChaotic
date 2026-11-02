@@ -1,0 +1,64 @@
+diff --git a/config/cores.config.js b/config/cores.config.js
+index baf43dc..a512ee5 100644
+--- a/config/cores.config.js
++++ b/config/cores.config.js
+@@ -147,6 +147,7 @@ SFC_CONFIG.cores = {
+     rarityWeight: { common: 3, rare: 2, epic: 1.2, legendary: 0.7, mythic: 0.5 },
+     buildWeight: 0.8,
+     rerollsPerRound: 1,      // mỗi lượt chọn được đổi cả 3 lá bao nhiêu lần (0 = ẩn nút REROLL) — bật lại 2026-10-13
++    inputGrace: 0.5,         // giây đầu sau khi màn chọn hiện ra: chưa nhận phím / click chọn lá (bấm liên tục cho qua ăn mừng không lấy nhầm lá 1)
+   },
+ 
+   list: {
+diff --git a/src/ui/draft.js b/src/ui/draft.js
+index 6ddd9b0..112a544 100644
+--- a/src/ui/draft.js
++++ b/src/ui/draft.js
+@@ -126,6 +126,8 @@ window.SFC = window.SFC || {};
+         }
+         return;
+       }
++      // màn chọn vừa hiện: lá còn đang chia, chưa nhận phím (draftLocked)
++      if (this.draftLocked()) return;
+       const d = game.draft;
+       if (!d || d.picked[game.me]) return;
+       const n = (d.options[game.me] || []).length;
+@@ -257,7 +259,7 @@ window.SFC = window.SFC || {};
+     // (online: chỉ diễn khi đồng hồ chọn còn đủ giờ, không thì gửi luôn — banner NEW ULTIMATE vẫn báo)
+     pick(game, i) {
+       const d = game.draft;
+-      if (!d || d.picked[game.me] || SFC.RecipeFx.active || this.draftAnimActive || this.draftMorphActive) return;
++      if (!d || d.picked[game.me] || SFC.RecipeFx.active || this.draftAnimActive || this.draftMorphActive || this.draftLocked()) return;
+       const id = (d.options[game.me] || [])[i], mp = game.cores.seatOwner(game.me);
+       const rc = id && mp && game.cores.recipesOn() ? game.cores.bestRecipe(mp, id) : null;
+       this.draftSel = i;
+@@ -399,11 +401,17 @@ window.SFC = window.SFC || {};
+       this.draftMorphTimer = setTimeout(finish, 380);
+     },
+ 
++    // vừa mở lượt chọn / màn chọn vừa hiện lại (UI.show): phím chọn, đổi bài và click lá chưa có tác dụng trong
++    // cores.draft.inputGrace giây -> bấm liên tục cho qua ăn mừng bàn thắng không tự lấy lá 1 khi chưa kịp nhìn
++    draftArm() { this.draftOpenAt = performance.now(); },
++    draftLocked() { return performance.now() - (this.draftOpenAt || 0) < (SFC_CONFIG.cores.draft.inputGrace || 0) * 1000; },
++
+     // sự kiện trận liên quan màn chọn (UI.consume gọi): draft = mở lượt mới · draftWait = có người chọn / đổi bài · corePicked = lượt xong
+     // overlay = đang mở Pause (lượt mới vẫn vẽ sẵn nhưng chưa hiện)
+     draftEvent(game, e, evs, overlay) {
+       if (e.type === 'draft') {
+         this.draftSel = 0;
++        this.draftArm();
+         this.el.draft.classList.remove('draft-fade-out');
+         const draftSquare = this.el.draft.querySelector('.draft-square');
+         if (draftSquare) draftSquare.style.visibility = '';
+diff --git a/src/ui/matchui.js b/src/ui/matchui.js
+index 8b4f504..1e0d251 100644
+--- a/src/ui/matchui.js
++++ b/src/ui/matchui.js
+@@ -39,6 +39,7 @@ window.SFC = window.SFC || {};
+         this.rwFocus = false;
+         this.el.end.classList.remove('outro', 'rw-focus', 'sb-shown');
+       }
++      if (name === 'draft' && this.current !== 'draft') this.draftArm();   // màn chọn hiện ra (cả lúc quay lại từ Pause): chặn phím chốc lát
+       ['menu', 'draft', 'pause', 'end'].forEach((k) => this.el[k].classList.toggle('hidden', k !== name));
+       this.el.hud.classList.toggle('hidden', name === 'menu' || name === 'end');
+       if (name === 'menu' || name === 'end') this.el.abar.classList.add('hidden');

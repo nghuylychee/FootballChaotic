@@ -1,0 +1,22 @@
+{
+  "id": "match-01",
+  "area": "match",
+  "screen": "Màn kết quả trận GOAT PATH · REWARDS",
+  "source": "agent",
+  "severity": "high",
+  "title": "Thắng trận GOAT PATH: REWARDS hiện +NaN và gold / XP trong save bị xoá",
+  "problem": "Thắng bất kỳ trận GOAT PATH nào, ô tổng REWARDS hiện \"+NaN\" gold và \"+NaN XP\", thanh XP đứng im. Tệ hơn: gold và XP của người chơi thành NaN (SHOP hiện NaN), lưu xuống thành null, tải lại game là về 0.",
+  "goal": "Thắng trận run thì REWARDS cộng đúng XP / gold như trận thường, dòng Run cash vẫn hiện riêng, save không bao giờ ra NaN.",
+  "why": "Mất sạch gold / XP sau 1 trận thắng là lỗi phá save, người chơi mất tiến độ thật và không biết vì sao. GOAT PATH lại là mode chính nên ai chơi cũng dính.",
+  "fix": "Thắng trận run giờ cộng đúng: Victory + Goals ra +45 gold / +68 XP, SHOP hiện 685 gold thay vì NaN. Gốc lỗi: Profile.awardMatch cộng l.xp / l.gold của mọi dòng, mà dòng note của run (Run cash, BADGE...) không có 2 trường này nên tổng thành NaN. Giờ dòng nào thiếu số thì tính là 0, và có thêm 1 chốt cuối: tổng không phải số hữu hạn thì không cộng gì, nên 1 dòng lạ sau này cũng không phá được save.",
+  "why_this": "Sửa đúng chỗ tính tổng, vài dòng, chữa cả màn hình lẫn save, không đụng UI hay dữ liệu run.",
+  "alternatives": [
+    "Thêm xp: 0, gold: 0 vào mọi dòng note trong run.js / cup.js — chạy được, nhưng dòng note mới sau này quên là lỗi lại.",
+    "Chỉ lọc NaN ở màn kết quả (endscreen.js) — màn hình đẹp lại nhưng save vẫn hỏng, không chấp nhận được."
+  ],
+  "files": ["src/meta/profile.js"],
+  "limits": "Save đã bị hỏng từ trước (gold / XP đã về 0) thì không lấy lại được; chỉ chặn từ giờ trở đi.",
+  "videoNote": "Run thật từ map: SHOP lúc đầu 640 gold → thắng 1-0 → ô tổng REWARDS và ví SHOP sau trận (TRƯỚC: NaN, SAU: 685).",
+  "before": "videos/match-01-before.mp4",
+  "after": "videos/match-01-after.mp4"
+}

@@ -1,0 +1,143 @@
+diff --git a/css/style.css b/css/style.css
+index 8439c40..c8c813d 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -2986,6 +2986,18 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
+ .bd-stats b.down { color: #ff5a6e; }
+ .rm-drill { display: flex; align-items: center; gap: 14px; max-width: 420px; }
+ .rm-drill p { margin: 0; font-size: 16px; line-height: 1.1; color: #e6dccb; }
++/* sự kiện ??? (UX review 2026-11-02): chip được / mất trên nút lựa chọn (trả tiền đỏ · thắng xanh · BADGE vàng bo tròn · ✚ chấn thương / chữa)
++   + thẻ kết quả: mỗi dòng 1 icon + kết quả */
++.ev-c { font-style: normal; font-family: var(--px); font-size: 6px; line-height: 1; padding: 2px 3px 1px; color: var(--ink); background: #c7ccd6; border: 1px solid var(--ink); }
++.ev-c.neg { background: #ff5a6e; }
++.ev-c.pos { background: #6bff4f; }
++.ev-c.badge { background: var(--gold); border-radius: 5px; }
++.ev-rows { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin: 8px 0 2px; }
++.ev-row { display: flex; align-items: center; gap: 10px; }
++.ev-row .ev-ico { width: 30px; display: flex; justify-content: center; }
++.ev-row b { font-family: var(--vt); font-weight: normal; font-size: 20px; line-height: 1; color: #fff; }
++.ev-row.bad b { color: #ff5a6e; }
++.ev-row .ev-c { font-size: 10px; padding: 3px 5px 2px; }
+ .rm-stakes { display: flex; flex-direction: column; gap: 3px; font-size: 13px; white-space: nowrap; }
+ .rm-drill { flex-wrap: wrap; justify-content: center; }
+ .rm-stakes .ok { color: #6bff4f; display: flex; align-items: center; gap: 4px; }
+diff --git a/src/ui/runmap.js b/src/ui/runmap.js
+index 68c184e..adfed61 100644
+--- a/src/ui/runmap.js
++++ b/src/ui/runmap.js
+@@ -188,7 +188,9 @@ window.SFC = window.SFC || {};
+       // co-op: người đá bài (hoặc host) bấm START
+       if (rm && rm.kind === 'skill') return !room || host || rm.player === RUN().myKey() ? [T('drill', { main: true })] : [];
+       if (rm && rm.kind === 'trial') return !room || host || rm.player === RUN().myKey() ? [T('drill', { main: true }), T('skiptrial')] : [];
+-      if (rm && rm.kind === 'event') return CFG().events[rm.id].choices.map((c, i) => T('choose', { i }));
++      // dis: lựa chọn chưa làm được (thiếu tiền / không có chấn thương để chữa) — chọn sẵn và phím bỏ qua
++      if (rm && rm.kind === 'event') return CFG().events[rm.id].choices.map((c, i) => T('choose', { i, dis: !RUN().canChoose(c) }));
++      if (this.evOn(R)) return [T('evok', { main: true })];   // thẻ kết quả sự kiện ??? (CONTINUE)
+       if (R.actNew) return host ? [T('actgo', { main: true })] : [];
+       if (this.bagOpen) return [T('close', { main: true })];
+       // co-op: chờ người khác chọn xong BADGE thì mới bỏ phiếu đi tiếp · thanh trên: INVITE / LEAVE ROOM
+@@ -295,6 +297,7 @@ window.SFC = window.SFC || {};
+       if (rm && rm.kind === 'skill') return this.drillCard(R, T);
+       if (rm && rm.kind === 'trial') return this.trialCard(R, T);
+       if (rm && rm.kind === 'event') return this.eventCard(R, T);
++      if (this.evOn(R)) return this.eventResult(R, T);
+       if (R.actNew) return this.actCard(R, T);
+       if (this.bagOpen) return this.bagCard(R, T);
+       return '';
+@@ -1088,15 +1091,36 @@ window.SFC = window.SFC || {};
+       }, tEnd);
+       setTimeout(done, tEnd + 1100);
+     },
++    // gợi ý được / mất (UX review 2026-11-02): chip màu cứng — trả tiền đỏ · có thể thắng tiền xanh + ? · BADGE vàng bo tròn (như miếng vá)
++    // · có thể chấn thương ✚ đỏ + ? (cùng dấu chấn thương ở dải đội hình) · chữa hết ✚ xanh
+     eventCard(R, T) {
+       const E = CFG().events[R.room.id];
+       const btns = T.map((t) => {
+-        const c = E.choices[t.i], ok = RUN().canChoose(c);
+-        const hint = [c.cost ? `-$${c.cost}` : '', c.badge ? 'BADGE' : '', c.injury ? `${PX().ui('boom', 'sm')}?` : '', c.win ? `$${c.win.cash}?` : '', c.healAll ? PX().ui('check', 'sm') : ''].filter(Boolean).join(' ');
+-        return this.btn(T, t, `${esc(c.label)}${hint ? ` <em>${hint}</em>` : ''}${this.votes(R, 'choose', String(t.i))}`, ok ? '' : 'dis');
++        const c = E.choices[t.i];
++        const hint = [c.cost ? `<i class="ev-c neg">-$${c.cost}</i>` : '', c.badge ? '<i class="ev-c badge">BADGE</i>' : '',
++          c.injury ? `<i class="ev-c neg" title="${esc(_t('An injury'))}">✚?</i>` : '', c.win ? `<i class="ev-c pos">+$${c.win.cash}?</i>` : '',
++          c.healAll ? `<i class="ev-c pos" title="${esc(_t('All injuries healed.'))}">✚</i>` : ''].join('');
++        return this.btn(T, t, `${esc(c.label)}${hint ? ` <em>${hint}</em>` : ''}${this.votes(R, 'choose', String(t.i))}`, t.dis ? 'dis' : '');
+       }).join('');
+       return this.sheet('event', E.title, '', `<div class="rm-drill">${PX().ui(E.icon, 'x3')}<p>${esc(E.text)}</p></div>`, btns);
+     },
++    // thẻ kết quả sự kiện ??? (UX review 2026-11-02): giữ thẻ tới khi bấm CONTINUE — mỗi dòng 1 icon + kết quả, tiền đã trả (đỏ) / thắng (xanh) riêng.
++    // Kết quả chỉ máy giữ run biết (this.ev, sayEvent); hết hiệu lực khi rời node / run khác
++    evOn(R) { const v = this.ev; return !!v && !!R && !R.room && !R.offer && !R.join && v.at === R.at && v.nonce === R.nonce && RUN().active(); },
++    eventResult(R, T) {
++      const v = this.ev, E = CFG().events[v.id], c = E.choices[v.i], B = (id) => RUN().badge(id);
++      const row = (ico, html, cls = '') => `<div class="ev-row ${cls}"><span class="ev-ico">${ico}</span><b>${html}</b></div>`;
++      const rows = c.cost ? [row(PX().ui('shop', 'x2'), `<i class="ev-c neg">-$${c.cost}</i>`)] : [];
++      for (const x of v.res) {
++        if (x.kind === 'badge') rows.push(row(this.badgeIcon(x.id), esc(_t('BADGE: {name}', { name: B(x.id).name }))));
++        else if (x.kind === 'cash') rows.push(row(PX().ui('shop', 'x2'), `<i class="ev-c pos">+$${x.n}</i>`));
++        else if (x.kind === 'injury') rows.push(row(this.badgeIcon(x.id), esc(_t('Injury: {name} · {who}', { name: B(x.id).name, who: RUN().memberName(x.who) })), 'bad'));
++        else if (x.kind === 'blocked') rows.push(row(this.badgeIcon('shin'), esc(_t('Shin Guards blocked an injury!'))));
++        else if (x.kind === 'heal') rows.push(row(PX().ui('check', 'x2'), esc(_t('All injuries healed.'))));
++        else if (x.kind === 'lost') rows.push(row(PX().ui(E.icon, 'x2'), esc(_t('No luck.')), 'bad'));
++      }
++      return this.sheet('event evres', E.title, c.label, `<div class="ev-rows">${rows.join('')}</div>`, T[0] ? this.btn(T, T[0], esc(_t('CONTINUE'))) : '');
++    },
+     bagCard(R, T) { return this.squadSheet(R, T); },
+     // hết run: CHAMPIONS / RUN OVER + trận đã thắng, boss đã hạ, gold quy đổi (thẻ che map như thẻ mở act)
+     endCard(R, T) {
+@@ -1230,6 +1254,11 @@ window.SFC = window.SFC || {};
+       SFC.Audio.menu();
+       const R = RUN().run, B = (id) => RUN().badge(id);
+       if (t.k !== 'leaveroom' && !(t.k === 'cancel' && inRoom())) menu.msg = '';
++      // ??? lựa chọn chưa làm được: nói lý do (thiếu tiền), không gửi phiếu
++      if (t.k === 'choose' && t.dis) {
++        const c = R.room && R.room.kind === 'event' && CFG().events[R.room.id].choices[t.i];
++        return menu.setMsg(c && c.cost ? _t('Not enough cash.') : _t('You cannot do that right now.'), true);
++      }
+       if (inRoom() && this.coopAct(menu, t)) return menu.render();
+       switch (t.k) {
+         case 'actgo': R.actNew = false; SFC.Profile.save(); break;
+@@ -1298,11 +1327,12 @@ window.SFC = window.SFC || {};
+         case 'leave': RUN().leaveRoom(); break;
+         case 'drill': return SFC.Menu.app.startRunMatch();
+         case 'choose': {
+-          const res = RUN().choose(t.i);
++          const id = R.room && R.room.id, res = RUN().choose(t.i);
+           if (!res) { menu.setMsg(_t('You cannot do that right now.'), true); return; }
+-          this.sayEvent(menu, res);
++          this.sayEvent(menu, res, id, t.i);
+           break;
+         }
++        case 'evok': this.ev = null; break;
+         case 'node': {
+           const r = RUN().enter(t.id);
+           if (!r) return;
+@@ -1317,13 +1347,12 @@ window.SFC = window.SFC || {};
+       }
+       menu.render();
+     },
+-    // kết quả sự kiện ??? -> dòng báo dưới map
+-    sayEvent(menu, res) {
+-      const B = (id) => RUN().badge(id);
+-      const say = res.map((x) => x.kind === 'badge' ? _t('BADGE: {name}', { name: B(x.id).name }) : x.kind === 'injury' ? _t('Injury: {name} · {who}', { name: B(x.id).name, who: RUN().memberName(x.who) })
+-        : x.kind === 'blocked' ? _t('Shin Guards blocked an injury!')
+-        : x.kind === 'cash' ? _t('Run cash +${n}', { n: x.n }) : x.kind === 'heal' ? _t('All injuries healed.') : x.kind === 'lost' ? _t('No luck.') : '').filter(Boolean);
+-      if (say.length) menu.setMsg(say.join(' · '), res.some((x) => x.kind === 'injury' || x.kind === 'lost'));
++    // kết quả sự kiện ??? (lựa chọn i của sự kiện id) -> thẻ kết quả (eventResult) tới khi bấm CONTINUE (UX review 2026-11-02, thay dòng báo nhỏ
++    // dưới map). Không trả tiền, không có gì xảy ra (bỏ đi) -> về map luôn
++    sayEvent(menu, res, id, i) {
++      const R = RUN().run, c = CFG().events[id] && CFG().events[id].choices[i];
++      if (!R || !c || (!res.length && !c.cost)) return;
++      this.ev = { id, i, res, at: R.at, nonce: R.nonce };
+     },
+     input(menu, input) {
+       const T = this.targets(), n = T.length;
+@@ -1508,7 +1537,8 @@ window.SFC = window.SFC || {};
+           return true;
+         }
+       } else if (res.kind === 'choose') {
+-        this.sayEvent(menu, RUN().choose(+res.v) || []);
++        const id = R.room && R.room.id;
++        this.sayEvent(menu, RUN().choose(+res.v) || [], id, +res.v);
+       } else if (res.kind === 'pick') RUN().pick(res.v === 'skip' ? null : +res.v);
+       else if (res.kind === 'join') RUN().answerJoin(res.v === 'no' ? null : +res.v);
+       else if (res.kind === 'wear') { if (res.v === 'back') RUN().gearBack(); else RUN().wearGear(+res.v); }

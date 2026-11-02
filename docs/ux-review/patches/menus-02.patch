@@ -1,0 +1,114 @@
+diff --git a/src/i18n/es.js b/src/i18n/es.js
+index f91687c..ad8eb85 100644
+--- a/src/i18n/es.js
++++ b/src/i18n/es.js
+@@ -1087,6 +1087,8 @@ SFC.I18n.add({
+     'Requires LV {n} to use in matches': 'Requiere NV {n} para usarlo en partidos',
+     'Added to your mid-match Core pool': 'Se suma a tus Cores para elegir en el partido',
+     'OPEN ANOTHER': 'ABRIR OTRA',
++    'BACK TO ACHIEVEMENTS': 'VOLVER A LOGROS',
++    'Opens right away': 'Se abre al instante',
+     'EQUIPPED': 'EQUIPADO',
+     'EQUIP': 'EQUIPAR',
+     'DISMANTLE +{n}': 'DESARMAR +{n}',
+diff --git a/src/i18n/ja.js b/src/i18n/ja.js
+index 1aa27db..1f57d81 100644
+--- a/src/i18n/ja.js
++++ b/src/i18n/ja.js
+@@ -1029,6 +1029,8 @@ SFC.I18n.add({
+     'Requires LV {n} to use in matches': '試合で使えるのはLv{n}から',
+     'Added to your mid-match Core pool': '試合中のコア候補に追加',
+     'OPEN ANOTHER': 'もう1回',
++    'BACK TO ACHIEVEMENTS': '実績に戻る',
++    'Opens right away': 'その場で開封',
+     'EQUIPPED': '装備中',
+     'EQUIP': '装備',
+     'DISMANTLE +{n}': '分解 +{n}',
+diff --git a/src/i18n/pt-BR.js b/src/i18n/pt-BR.js
+index 131174e..4b45ef3 100644
+--- a/src/i18n/pt-BR.js
++++ b/src/i18n/pt-BR.js
+@@ -1088,6 +1088,8 @@ SFC.I18n.add({
+     'Requires LV {n} to use in matches': 'Exige NV {n} para usar nas partidas',
+     'Added to your mid-match Core pool': 'Agora aparece entre os seus Cores na partida',
+     'OPEN ANOTHER': 'ABRIR OUTRA',
++    'BACK TO ACHIEVEMENTS': 'VOLTAR ÀS CONQUISTAS',
++    'Opens right away': 'Abre na hora',
+     'EQUIPPED': 'EQUIPADO',
+     'EQUIP': 'EQUIPAR',
+     'DISMANTLE +{n}': 'DESMONTAR +{n}',
+diff --git a/src/i18n/pt-PT.js b/src/i18n/pt-PT.js
+index 22fca60..edcd960 100644
+--- a/src/i18n/pt-PT.js
++++ b/src/i18n/pt-PT.js
+@@ -1091,6 +1091,8 @@ SFC.I18n.add({
+     'Requires LV {n} to use in matches': 'Exige NV {n} para usar nos jogos',
+     'Added to your mid-match Core pool': 'Juntou-se aos Cores que podem sair durante o jogo',
+     'OPEN ANOTHER': 'ABRIR OUTRA',
++    'BACK TO ACHIEVEMENTS': 'VOLTAR ÀS CONQUISTAS',
++    'Opens right away': 'Abre logo',
+     'EQUIPPED': 'EQUIPADO',
+     'EQUIP': 'EQUIPAR',
+     'DISMANTLE +{n}': 'DESMONTAR +{n}',
+diff --git a/src/ui/achievements.js b/src/ui/achievements.js
+index 14d8e52..43161e5 100644
+--- a/src/ui/achievements.js
++++ b/src/ui/achievements.js
+@@ -83,7 +83,7 @@ window.SFC = window.SFC || {};
+         <div class="ac-rw">
+           <div class="ac-rh">${PX().ui('gift', 'sm')} ${esc(_t('REWARD'))}</div>
+           <div class="ac-rb">${this.rewardArt(rw, true)}<div><b style="color:${AC().rewardColor(rw)}">${esc(AC().rewardName(rw))}</b><span>${esc(rar || '')}</span>
+-            <span>${esc(rw.item ? _t('Goes straight to your INVENTORY') : _t('Open it for free in the SHOP'))}</span></div></div>
++            <span>${esc(rw.item ? _t('Goes straight to your INVENTORY') : _t('Opens right away'))}</span></div></div>
+         </div>
+         ${act}`;
+     },
+@@ -93,12 +93,22 @@ window.SFC = window.SFC || {};
+       if (!r.p.done) { SFC.Audio.menu(); menu.setMsg(_t('Not done yet'), true); return; }
+       const rw = AC().claim(r.a.id);
+       if (!rw) return;
++      this.toNext();   // chọn sẵn thưởng kế tiếp còn chờ nhận: Enter, Enter... nhận lần lượt hết
+       // thưởng hộp: mở luôn (màn quay hộp của SHOP, Esc quay về đây; hộp còn lại vẫn mở tiếp được bằng OPEN ANOTHER)
+       if (rw.box && PROG().boxes[rw.box]) { G().openBack = 'ach'; G().openBox(menu, rw.box); return; }
+       SFC.Audio.upgrade();
+       menu.setMsg(_t('Claimed: {reward}', { reward: AC().rewardName(rw) }));
+     },
+ 
++    // chuyển con trỏ tới dòng chờ nhận kế tiếp (sau dòng vừa nhận, hết thì vòng lên đầu) · không còn: đứng yên
++    toNext() {
++      const rows = this.rows(), n = rows.length;
++      for (let k = 1; k < n; k++) {
++        const i = (this.sel + k) % n;
++        if (rows[i].p.done && !rows[i].p.claimed) { this.sel = i; return; }
++      }
++    },
++
+     input(menu, input) {
+       const rows = this.rows(), n = rows.length;
+       let to = this.sel;
+diff --git a/src/ui/gacha.js b/src/ui/gacha.js
+index d1761cf..02a6331 100644
+--- a/src/ui/gacha.js
++++ b/src/ui/gacha.js
+@@ -246,8 +246,12 @@ window.SFC = window.SFC || {};
+       // mỗi hành động là 1 nút (chuột bấm = phím ghi trên nút) · hết gold: OPEN ANOTHER mờ đi (bấm vẫn báo lý do)
+       const btn = (act, key, label, cls = '') => `<button class="rv-act g-btn ${cls}" data-ract="${act}"><kbd>${key}</kbd> ${label}</button>`;
+       const free = PF().freeBoxes(o.boxId);
++      const again = btn('again', K('confirm', 'Enter'), `${_t('OPEN ANOTHER')} ${free ? `<span class="free">${PX().ui('gift', 'sm')} ${_t('FREE ×{n}', { n: free })}</span>` : coin(b.price)}`, PF().canOpen(o.boxId).ok ? 'main' : 'main off');
++      // mở từ ACHIEVEMENTS (nhận thưởng hộp): không bao giờ có OPEN ANOTHER tốn gold. Còn hộp FREE cùng loại: Enter = mở tiếp (miễn phí),
++      // hết: Enter = về ACHIEVEMENTS -> bấm Enter liên tục để nhận thưởng không bao giờ tiêu gold
++      const toAch = (main) => btn(main ? 'again' : 'back', main ? K('confirm', 'Enter') : K('back', 'Esc'), _t('BACK TO ACHIEVEMENTS'), main ? 'main' : '');
+       const acts = [
+-        btn('again', K('confirm', 'Enter'), `${_t('OPEN ANOTHER')} ${free ? `<span class="free">${PX().ui('gift', 'sm')} ${_t('FREE ×{n}', { n: free })}</span>` : coin(b.price)}`, PF().canOpen(o.boxId).ok ? 'main' : 'main off'),
++        this.openBack !== 'ach' ? again : free ? again + toAch(false) : toAch(true),
+         !isCore && e.count > 0 ? (equipped ? `<span class="rv-act on">${PX().ui('check', 'sm')} ${_t('EQUIPPED')}</span>` : btn('equip', K('equip', 'E'), _t('EQUIP'))) : '',
+         e.count > 0 && !o.dismantled ? btn('dismantle', K('dismantle', 'X'), _t('DISMANTLE +{n}', { n: PF().dismantleValue(w.kind, w.id) })) : '',
+         o.dismantled ? `<span class="rv-act ok">${_t('Dismantled {gold}', { gold: coin('+' + o.dismantled) })}</span>` : '',
+@@ -492,6 +496,7 @@ window.SFC = window.SFC || {};
+       const o = this.opening;
+       if (!o) return;
+       if (!o.done) { if (act === 'skip') o.t0 = performance.now() - o.dur * 1000; return; }
++      if (act === 'back' || (act === 'again' && this.openBack === 'ach' && !PF().freeBoxes(o.boxId))) return this.back(menu);
+       if (act === 'again') return this.openBox(menu, o.boxId);
+       if (act === 'equip' && o.win.kind === 'item') { this.equipEntry(menu, entry('item', o.win.id)); menu.render(); }
+       if (act === 'dismantle' && !o.dismantled) {

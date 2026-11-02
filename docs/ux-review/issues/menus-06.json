@@ -1,0 +1,22 @@
+{
+  "id": "menus-06",
+  "area": "menus",
+  "screen": "CHARACTER › ULT BOOK (+ SHOP, màn thưởng, màn công thức Ultimate, ô Ultimate trong draft)",
+  "source": "agent",
+  "severity": "med",
+  "title": "ULT BOOK bảo bắn Ultimate bằng X, nhưng phím thật là Space",
+  "problem": "Ghi chú trong ULT BOOK viết \"Charge it, then fire it with X\" và góc lá Ultimate cũng in X, trong khi CONTROLS cho thấy Ultimate gán vào Space. Người mới học theo sách sẽ bấm X trong trận và tưởng Ultimate hỏng; ai đã đổi phím ở CONTROLS cũng vẫn thấy X.",
+  "goal": "Mọi chỗ nhắc phím Ultimate hiện đúng phím đang gán (theo bàn phím / tay cầm và theo phím người chơi đã đổi).",
+  "why": "Ultimate là khoảnh khắc lớn nhất của trận; chỉ sai phím là người chơi bỏ lỡ nó và nghĩ game lỗi. Dự án cũng có luật không in chữ phím cứng.",
+  "fix": "Các chỗ nhắc phím Ultimate giờ đọc phím đang gán, nên mặc định hiện icon thanh Space (giống CONTROLS), đổi phím thì đổi theo, cầm tay cầm thì hiện nút tay cầm. Kỹ thuật: thay SFC.Input.key('ultimate', 'X') bằng SFC.Input.label('ultimate') ở menu.js (ULT BOOK), gacha.js (góc lá Ultimate × 2), recipefx.js, reveal.js; và ô Ultimate trống trong draft.js (chỉ đúng dòng <kbd>X</kbd>, dùng keyLabel có sẵn của file). Input.key chỉ hợp cho phím menu cố định: trên bàn phím nó trả nguyên chữ viết sẵn. Không có chữ mới.",
+  "why_this": "Sửa tận gốc ở 6 dòng, tự đúng theo tay cầm và theo phím đã đổi, đúng luật 'không in chữ phím cứng' của dự án.",
+  "alternatives": [
+    "Đổi chữ mặc định 'X' thành 'Space' — nhanh, nhưng sai lại ngay khi người chơi đổi phím hoặc cầm tay cầm",
+    "Sửa Input.key để luôn trả phím thật cho mọi action trong trận — chỉ 1 chỗ, nhưng đổi hành vi của mọi dòng gợi ý menu đang cố ý dùng chữ cố định"
+  ],
+  "files": ["src/ui/menu.js", "src/ui/gacha.js", "src/ui/recipefx.js", "src/ui/reveal.js", "src/ui/draft.js"],
+  "limits": "Video chỉ quay ULT BOOK + CONTROLS. Ô Ultimate trống trong draft chỉ hiện ở lượt chọn có kịch bản (PROLOGUE); đã kiểm bằng ảnh chụp (ép draft.special = 'ult'), màn công thức Ultimate (recipefx) và màn thưởng (reveal) chỉ kiểm qua code. Chưa thử tay cầm.",
+  "videoNote": "Chuột chỉ vào phím ở góc lá Light Cycle và trong ghi chú: bản cũ ghi X, bản mới là icon thanh Space — khớp với dòng Ultimate ở CONTROLS cuối video.",
+  "before": "videos/menus-06-before.mp4",
+  "after": "videos/menus-06-after.mp4"
+}
