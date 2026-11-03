@@ -71,6 +71,17 @@ window.SFC = window.SFC || {};
   }
   const keyLabel = (action) => SFC.Input.label(action);
 
+  // "rê chuột = chọn" chỉ tính khi chuột thật sự dời: màn vẽ lại / cuộn dưới con trỏ đứng yên cũng bắn mousemove, khi đó không được
+  // cướp lựa chọn của phím / tay cầm. Dùng chung cho mọi màn (Menu, LangPick, MatchUI, RunUI); nhiều listener cùng nhận 1 sự kiện
+  // thì cùng 1 kết quả (nhớ sự kiện vừa xét)
+  let moveX = -1, moveY = -1, moveEv = null, moveRes = false;
+  function realMove(e) {
+    if (e === moveEv) return moveRes;
+    moveRes = e.clientX !== moveX || e.clientY !== moveY;
+    moveEv = e; moveX = e.clientX; moveY = e.clientY;
+    return moveRes;
+  }
+
   // khung + tâm của 1 phần tử trên màn hình (ẩn / chưa vẽ -> null) — dùng cho navPick
   function navRect(el) {
     if (!el) return null;
@@ -193,8 +204,10 @@ window.SFC = window.SFC || {};
       this.el.innerHTML = html;
       this.el.style.display = 'block';
       this.place();
+      // mỗi lần hiện chỉ 1 vòng theo dõi: showFor gọi lại show() không qua hide() -> vòng cũ tự dừng theo mã lượt
+      const run = this.loopId = (this.loopId || 0) + 1;
       const loop = () => {   // phần tử bị vẽ lại / rời khỏi -> ẩn (hiện bằng phím: không cần chuột đang trỏ)
-        if (!this.shown()) return;
+        if (run !== this.loopId || !this.shown()) return;
         if (!this.target || !this.target.isConnected || (!this.pinned && !this.target.matches(':hover'))) return this.hide();
         requestAnimationFrame(loop);
       };
@@ -239,5 +252,5 @@ window.SFC = window.SFC || {};
     return `<button class="co-bench ${sel ? 'sel' : ''} ${off ? 'off' : ''}" ${attrs || ''} title="${tip}"><u>${esc(_t('BENCH'))}</u>${who || `<span>${tip}</span>`}</button>`;
   }
 
-  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, spaceIcon, navRect, navPick, coopBench, tip, coreTip };
+  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, spaceIcon, realMove, navRect, navPick, coopBench, tip, coreTip };
 })();

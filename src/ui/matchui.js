@@ -232,13 +232,8 @@ window.SFC = window.SFC || {};
         this.doAct(btn.dataset.act);
       });
       // rê chuột = chọn (lá Core ở màn chọn, nút Pause): chuột và phím dùng chung 1 lựa chọn, Enter lấy đúng cái đang trỏ.
-      // Chỉ khi chuột thật sự di chuyển: màn vừa mở dưới con trỏ đứng yên không cướp lựa chọn của phím / tay cầm
-      let mx = -1, my = -1;
-      document.addEventListener('mousemove', (e) => {
-        if (e.clientX === mx && e.clientY === my) return;
-        mx = e.clientX; my = e.clientY;
-        this.hoverSel(e.target);
-      });
+      // Chỉ khi chuột thật sự di chuyển (UIHelpers.realMove): màn vừa mở dưới con trỏ đứng yên không cướp lựa chọn của phím / tay cầm
+      document.addEventListener('mousemove', (e) => { if (SFC.UIHelpers.realMove(e)) this.hoverSel(e.target); });
     },
 
     hoverSel(el) {

@@ -261,8 +261,9 @@ window.SFC = window.SFC || {};
           ${this.legendBar(R)}${msg}${over}
         </div>`;
       this.bindMap(menu);
-      this.bindHover(menu);
-      if (R.room && R.room.kind === 'shop') SFC.KitVan.bind(menu.el, (key) => { const i = this.targets().findIndex((t) => t.key === key); if (i >= 0) this.sel = i; });
+      const idx = new Map(T.map((t, i) => [t.key, i]));   // khoá mục -> chỉ số, dựng 1 lần mỗi lần vẽ (rê chuột không tính lại targets())
+      this.bindHover(menu, idx);
+      if (R.room && R.room.kind === 'shop') SFC.KitVan.bind(menu.el, (key) => { const i = idx.get(key); if (i != null) this.sel = i; });
       menu.bindAvatars();
       if (R.join) this.bindJoin(menu);
       if (T[0] && T[0].k === 'close') this.bindBag(menu, T);   // đang mở SQUAD
@@ -271,16 +272,17 @@ window.SFC = window.SFC || {};
     // chỉ chuyển class .sel (không vẽ lại; thẻ LEGEND xin vào đội: bindJoin tự đổi xem trước). Bắt mousemove (chuột thật di chuyển) chứ
     // không mouseover: vẽ lại sau khi bấm phím mà con trỏ đứng yên thì không giật mục chọn về chỗ con trỏ
     // · vừa đi bằng phím (kb): nút đang nằm dưới con trỏ đứng yên không sáng kiểu :hover (CSS .rm-actcard.kb), chuột nhúc nhích là thôi
-    bindHover(menu) {
+    bindHover(menu, idx) {
       const card = menu.el.querySelector('.rm-actcard');
       if (!card) return;
       card.classList.toggle('kb', !!this.kb);
       card.addEventListener('mousemove', (e) => {
+        if (!SFC.UIHelpers.realMove(e)) return;   // vẽ lại dưới con trỏ đứng yên: giữ mục phím đã chọn
         if (this.kb) { this.kb = false; card.classList.remove('kb'); }
         const el = e.target.closest('[data-rt]');
         if (!el || this.drawing) return;
-        const i = this.targets().findIndex((t) => t.key === el.dataset.rt);
-        if (i < 0 || i === this.sel) return;
+        const i = idx.get(el.dataset.rt);
+        if (i == null || i === this.sel) return;
         this.sel = i;
         card.querySelectorAll('[data-rt].sel').forEach((x) => x.classList.remove('sel'));
         el.classList.add('sel');
@@ -889,11 +891,11 @@ window.SFC = window.SFC || {};
     // dải LEGEND (màn trial + màn nhận): chân dung to trên hào quang màu LEGEND · danh hiệu · tên · chip COMBO · nhãn nhược điểm đỏ
     // (câu đầy đủ ở tooltip; LEGEND không có nhược điểm cơ chế thì đánh đổi chỉ số nằm trong tooltip của tên)
     hero(L) {
-      const fl = L.flaw && FLAW_TAGS()[L.flaw.kind];
+      const flaw = this.flawChip(L);
       const rays = Array.from({ length: 12 }, (_, i) => `<i style="transform:rotate(${i * 30}deg)"></i>`).join('');
       return `<div class="lg-hero"><div class="lg-port"><span class="lg-rays">${rays}</span>${this.face(SFC.LegendDraw.lookOf(L), false, true)}</div>
-          <div class="lg-txt"><b>${esc(L.title)}</b><u title="${esc(fl ? '' : L.flawDesc)}">${esc(L.name)}</u>
-            <div class="lg-row">${this.comboChip(L)}${fl ? `<span class="lg-flaw" title="${esc(L.flawDesc)}">${PX().ui('boom', 'sm')}${esc(fl)}</span>` : ''}</div></div></div>`;
+          <div class="lg-txt"><b>${esc(L.title)}</b><u title="${esc(flaw ? '' : L.flawDesc)}">${esc(L.name)}</u>
+            <div class="lg-row">${this.comboChip(L)}${flaw}</div></div></div>`;
     },
     // số lần cần làm của LEGEND TRIAL (BADGE Training Bibs giảm mốc, như drills.js)
     trialGoal(L, R) {
@@ -1305,9 +1307,7 @@ window.SFC = window.SFC || {};
       // rê chuột lên node đi được = dời đúng mục đang chọn (UX user-02: chuột và phím chung 1 dấu chọn, không có dấu hover riêng).
       // Chỉ tính khi chuột thật sự dời (vẽ lại màn dưới con trỏ đứng yên cũng bắn sự kiện chuột -> phím không đi được)
       box.querySelectorAll('.rm-node.avail').forEach((el) => el.addEventListener('mousemove', (e) => {
-        if (this.hoverXY === e.clientX + ',' + e.clientY) return;
-        this.hoverXY = e.clientX + ',' + e.clientY;
-        this.hoverNode(menu, el.dataset.rn);
+        if (SFC.UIHelpers.realMove(e)) this.hoverNode(menu, el.dataset.rn);
       }));
     },
     // đổi dấu chọn tại chỗ (không vẽ lại cả màn: giữ canvas mặt cầu thủ + vị trí cuộn)
@@ -1495,11 +1495,19 @@ window.SFC = window.SFC || {};
       menu.render();
     },
     // kết quả sự kiện ??? (lựa chọn i của sự kiện id) -> thẻ kết quả (eventResult) tới khi bấm CONTINUE (UX review 2026-11-02, thay dòng báo nhỏ
-    // dưới map). Không trả tiền, không có gì xảy ra (bỏ đi) -> về map luôn
+    // dưới map). Không trả tiền, không có gì xảy ra (bỏ đi) -> về map luôn.
+    // Co-op: chỉ máy giữ run biết kết quả, thẻ sẽ giữ máy đó lại trong lúc khách đã về map bỏ phiếu node -> dùng dòng báo như cũ
+    // (kèm tiền đã trả), không chặn ai
     sayEvent(menu, res, id, i) {
       const R = RUN().run, c = CFG().events[id] && CFG().events[id].choices[i];
       if (!R || !c || (!res.length && !c.cost)) return;
-      this.ev = { id, i, res, at: R.at, nonce: R.nonce };
+      if (!inRoom()) { this.ev = { id, i, res, at: R.at, nonce: R.nonce }; return; }
+      const B = (b) => RUN().badge(b);
+      const say = [c.cost ? `-$${c.cost}` : ''].concat(res.map((x) => x.kind === 'badge' ? _t('BADGE: {name}', { name: B(x.id).name })
+        : x.kind === 'injury' ? _t('Injury: {name} · {who}', { name: B(x.id).name, who: RUN().memberName(x.who) })
+        : x.kind === 'blocked' ? _t('Shin Guards blocked an injury!')
+        : x.kind === 'cash' ? _t('Run cash +${n}', { n: x.n }) : x.kind === 'heal' ? _t('All injuries healed.') : x.kind === 'lost' ? _t('No luck.') : '')).filter(Boolean);
+      if (say.length) menu.setMsg(say.join(' · '), res.some((x) => x.kind === 'injury' || x.kind === 'lost'));
     },
     input(menu, input) {
       const T = this.targets(), n = T.length;

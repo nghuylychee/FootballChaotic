@@ -1676,15 +1676,15 @@ window.SFC = window.SFC || {};
     // Chỉ ở các trang Menu tự vẽ mục (data-i = chỉ số trong items()); trang của module riêng (SHOP, TROPHY ROOM...) tự lo chuột.
     // Nút ◀▶ (data-d) cùng data-i với dòng của nó -> rê lên nút cũng là chọn dòng đó
     hoverSel(e) {
-      if (!HOVER_PAGES.includes(this.page) || this.quitAsk || this.matePop) return;
+      if (!HOVER_PAGES.includes(this.page) || this.quitAsk || this.matePop || !SFC.UIHelpers.realMove(e)) return;
       const el = e.target.closest('[data-i]');
       if (!el) return;
       const i = +el.dataset.i;
       if (i === this.sel || i < 0 || !this.items()[i]) return;
       this.sel = i;
       this.el.querySelectorAll('[data-i]:not([data-d])').forEach((x) => x.classList.toggle('sel', +x.dataset.i === i));
-      // ULT BOOK: bảng phải tả lá đang chọn -> vẽ lại riêng bảng đó (+ ảnh động)
-      const right = this.page === 'ults' && this.el.querySelector('.m-right');
+      // ULT BOOK (lá đang chọn) · STATS (chỉ số đang chọn): bảng phải tả mục đang chọn -> vẽ lại riêng bảng đó (+ ảnh động)
+      const right = (this.page === 'ults' || this.page === 'attrs') && this.el.querySelector('.m-right');
       if (right) { right.innerHTML = this.renderRight(); SFC.CorePreview.scan(right); }
     },
     bindMouse() {

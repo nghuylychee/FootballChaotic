@@ -103,12 +103,14 @@ window.SFC = window.SFC || {};
     },
     drillBox(game, D, time) {
       // LEGEND TRIAL: tổ hợp phím của kỹ thuật phải làm, theo phím đang gán / tay cầm (Input.techKeys), ngay dưới số đếm.
-      // Đổi bàn phím <-> tay cầm: chuỗi đổi -> khoá HUD đổi -> tự vẽ lại
+      // Đổi bàn phím <-> tay cầm: chuỗi đổi -> khoá HUD đổi -> tự vẽ lại. HTML phím dựng 1 lần mỗi kỹ thuật + thiết bị (hàm này chạy mỗi khung)
       const K = D.tech && SFC_CONFIG.legends.techniques[D.tech];
+      const kk = K && SFC.RunUI ? D.tech + ':' + SFC.Input.deviceRev : '';
+      if (kk !== (this.drillKeys || {}).k) this.drillKeys = { k: kk, html: kk ? `<div class="hd-keys">${SFC.RunUI.keyCaps(K)}</div>` : '' };
       return `<div class="hud-drill">
           <div class="hd-time">${esc(time)}</div>
           ${this.drillTrack(D)}
-          ${K && SFC.RunUI ? `<div class="hd-keys">${SFC.RunUI.keyCaps(K)}</div>` : ''}
+          ${this.drillKeys.html}
         </div>`;
     },
     // thanh 3 mốc + "số đếm / mốc kế" (HUD trong bài + màn kết quả Skill game, endscreen.js)
@@ -275,6 +277,8 @@ window.SFC = window.SFC || {};
     // không đụng mô phỏng / sync (khách online đọc từ trận gương). Luật dùng không hiện thường trực trên HUD (user 2026-10-17)
     ultDeny(game) {
       const p = game && game.controlled, c = this.hudCache.bar, C = game && game.cores;
+      // trận đang dừng (giao bóng, ăn mừng bàn thắng, cả sân đứng yên): lý do không phải luật cầm bóng -> không báo gì
+      if (!game || game.state !== 'play' || game.stopT > 0) return;
       if (!p || !c || !c.ult || !C.ultOf(p) || C.ultE(p) < 1) return;
       const rule = C.ultBlocked(p) && C.ultUse(C.ultOf(p));
       if (!rule && p.state !== 'stun' && !(p.noActT > 0)) return;

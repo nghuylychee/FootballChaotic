@@ -31,6 +31,7 @@ window.SFC = window.SFC || {};
       const want = this.first ? I().detect() : I().lang, now = I().lang;
       this.sel = Math.max(0, this.list.findIndex((l) => l.id === want));
       this.home = this.sel;   // chuột rời danh sách -> quay về dòng này (hết xem trước)
+      this.inList = false;    // chuột đang nằm trên danh sách (để biết lúc vừa rời ra)
       this.el = document.getElementById('langpick');
       if (!this.bound) this.bind();
       const rows = this.list.map((l, i) => `<button class="lp-row" data-lp="${i}" lang="${esc(l.id)}"><span>${esc(l.name)}</span>${
@@ -105,11 +106,13 @@ window.SFC = window.SFC || {};
         if (r) this.pick(+r.dataset.lp);
       });
       // rê chuột qua dòng nào thì xem trước dòng đó (không dựng lại các dòng -> cú bấm không bị mất);
-      // chuột ra khỏi danh sách -> quay về dòng lúc mở (ngôn ngữ đang dùng) để không tưởng là đã đổi
+      // chuột VỪA rời danh sách -> quay về dòng lúc mở (ngôn ngữ đang dùng) để không tưởng là đã đổi. Chọn bằng phím rồi nhích chuột
+      // ở ngoài danh sách thì giữ nguyên dòng phím đã chọn; chuột đứng yên mà màn vẽ lại (đổi chữ) cũng không tính (realMove)
       this.el.addEventListener('mousemove', (e) => {
-        if (!this.active) return;
-        const r = e.target.closest('[data-lp]');
-        const to = r ? +r.dataset.lp : e.target.closest('.lp-list') ? this.sel : this.home;
+        if (!this.active || !SFC.UIHelpers.realMove(e)) return;
+        const r = e.target.closest('[data-lp]'), inList = !!e.target.closest('.lp-list');
+        const to = r ? +r.dataset.lp : !inList && this.inList ? this.home : this.sel;
+        this.inList = inList;
         if (to !== this.sel) { this.sel = to; this.update(); }
       });
     },
