@@ -86,6 +86,7 @@ window.SFC = window.SFC || {};
       this.keepPace = false;  // đường chuyền giữ tốc độ (pass.friction) — passTo bật, bóng qua điểm nhận thì tắt
       this.through = false;   // chọc khe có người nhận (passTo): người nhận chạy thẳng tới điểm nhận
       this.flightT = 0;       // (s) bóng đã bay bao lâu từ lần chạm cuối — thủ môn cần thời gian phản xạ (player.gkReflex, Game.tryControl)
+      this.kickX = this.x; this.kickY = this.y;   // chỗ bóng rời chân — sút sát người thủ môn (Game.pointBlank)
       this.kickN++;           // số lần đá: AI quyết định dứt điểm 1 chạm 1 lần cho mỗi quả bóng · AI thủ môn đọc mỗi cú sút 1 lần (ai.keeper)
       this.clearFx();
     }

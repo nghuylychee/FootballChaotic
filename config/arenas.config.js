@@ -41,7 +41,7 @@ SFC_CONFIG.arenas = {
   // Sân mặc định (Luyện tập / Online / menu) — đường phố, lác đác người xem sau hàng rào
   street: {
     void: '#0d0a10',
-    floor: { style: 'asphalt', colors: ['#3b3a45', '#373640', '#403f4b', '#35343d'], speckD: '#2c2b33', speckL: '#4a4956', crack: '#26252c', cracks: 14, paint: 0.07 },
+    floor: { style: 'asphalt', colors: ['#3b3a45'], speckD: '#2c2b33', speckL: '#4a4956', crack: '#26252c', cracks: 14 },
     line: 'rgba(236,228,200,0.78)',
     logo: 'CHAOS',
     wall: { style: 'brick', colors: ['#5a3a3c', '#633f40', '#523537', '#6b4644'], mortar: '#2a1b20', w: 12, h: 6, edge: '#1a1116' },
@@ -58,7 +58,7 @@ SFC_CONFIG.arenas = {
   // AREA 2 — Hẻm Sau: nhựa đường nứt nẻ, gạch cũ màu cam đất, đèn vàng
   alley: {
     void: '#0e0a0a',
-    floor: { style: 'asphalt', colors: ['#44403c', '#3f3b37', '#48443f', '#3b3834'], speckD: '#302d2a', speckL: '#57524b', crack: '#2b2825', cracks: 22, paint: 0.06 },
+    floor: { style: 'asphalt', colors: ['#44403c'], speckD: '#302d2a', speckL: '#57524b', crack: '#2b2825', cracks: 22 },
     line: 'rgba(240,226,190,0.72)',
     logo: 'ALLEY',
     wall: { style: 'brick', colors: ['#7a4a33', '#6d412c', '#834f36', '#5f3a28'], mortar: '#2e1c14', w: 12, h: 6, edge: '#1c110c' },
@@ -75,7 +75,7 @@ SFC_CONFIG.arenas = {
   // AREA 4 — Sân Thượng: sàn gạch xi măng, lan can bê tông, thành phố về đêm phía sau
   rooftop: {
     void: '#070a14',
-    floor: { style: 'tiles', size: 16, colors: ['#5d6270', '#585d6a', '#626776', '#555a66'], joint: '#40444f', speckD: '#4a4e5a', speckL: '#6d7282', crack: '#3c404a', cracks: 6, paint: 0.05 },
+    floor: { style: 'tiles', size: 16, colors: ['#5d6270'], joint: '#40444f', speckD: '#4a4e5a', speckL: '#6d7282', crack: '#3c404a', cracks: 6 },
     line: 'rgba(255,255,255,0.75)',
     logo: 'SKY',
     wall: { style: 'brick', colors: ['#8a8f9c', '#80858f', '#939aa6', '#777c87'], mortar: '#4a4e58', w: 24, h: 10, edge: '#2a2d35' },
@@ -92,7 +92,7 @@ SFC_CONFIG.arenas = {
   // AREA 5 — Chợ Đêm: gạch lát đỏ, sạp hàng, dây đèn lồng, bảng neon
   market: {
     void: '#12070a',
-    floor: { style: 'tiles', size: 12, colors: ['#7a3b34', '#733630', '#823f37', '#6b322c'], joint: '#4a211d', speckD: '#5e2a25', speckL: '#94504a', crack: '#4a211d', cracks: 8, paint: 0.08 },
+    floor: { style: 'tiles', size: 12, colors: ['#7a3b34'], joint: '#4a211d', speckD: '#5e2a25', speckL: '#94504a', crack: '#4a211d', cracks: 8 },
     line: 'rgba(255,236,200,0.78)',
     logo: 'MARKET',
     wall: { style: 'brick', colors: ['#3b2a2a', '#433030', '#352525', '#4a3434'], mortar: '#1c1212', w: 12, h: 6, edge: '#140c0c' },
@@ -110,7 +110,7 @@ SFC_CONFIG.arenas = {
   pirate_cove: {
     venue: 'SKULL COVE',   // tên sân ở màn giới thiệu đội (sân không thuộc Area nào của Main Path)
     void: '#05080c',
-    floor: { style: 'planks', colors: ['#6b4a2c', '#664629', '#71502f', '#5f4226'], seam: '#2e1e12', nail: '#a8a090', speckD: '#523822', speckL: '#86613c', crack: '#3a2716', cracks: 6, paint: 0.04 },
+    floor: { style: 'planks', colors: ['#6b4a2c', '#664629', '#71502f', '#5f4226'], seam: '#2e1e12', nail: '#a8a090', speckD: '#523822', speckL: '#86613c', crack: '#3a2716', cracks: 6 },
     line: 'rgba(243,234,215,0.75)',
     logo: 'SKULL COVE',
     wall: { style: 'hull', colors: ['#4a2e1a', '#52331d', '#442a17'], trim: '#c9a13a', port: '#120b07', cannon: '#24282e', rope: '#b8945a', edge: '#140c08' },
@@ -127,7 +127,7 @@ SFC_CONFIG.arenas = {
   // AREA 6 — Bến Cảng: thép tấm rỉ sét, vạch cảnh báo, tường container, cần cẩu trên biển đêm
   harbor: {
     void: '#060a0e',
-    floor: { style: 'plates', size: 32, colors: ['#4a5258', '#465055', '#4f575d', '#434b50'], joint: '#2e3438', rivet: '#6a747b', rust: 'rgba(160,80,40,0.22)', speckD: '#3a4146', speckL: '#5c666c', crack: '#2e3438', cracks: 4, paint: 0.05, hazard: true },
+    floor: { style: 'plates', size: 32, colors: ['#4a5258'], joint: '#2e3438', rivet: '#6a747b', rust: 'rgba(160,80,40,0.22)', speckD: '#3a4146', speckL: '#5c666c', crack: '#2e3438', cracks: 4, hazard: true },
     line: 'rgba(255,214,90,0.8)',
     logo: 'DOCK 7',
     wall: { style: 'container', colors: ['#b8452f', '#2f6fb8', '#c9a13a', '#3f8f5a', '#8a3f8f'], rib: 3, edge: '#12161a' },
@@ -144,7 +144,7 @@ SFC_CONFIG.arenas = {
   // AREA 9 — Đấu Trường Cyber: sàn tối lưới neon, tường tấm kim loại khe sáng, màn LED, khán giả cầm que phát sáng 2 bên
   cyber: {
     void: '#05030c',
-    floor: { style: 'grid', size: 24, colors: ['#15122a', '#171430', '#131026', '#191634'], grid: 'rgba(157,123,255,0.28)', glow: 'rgba(63,246,255,0.5)', speckD: '#0f0d20', speckL: '#221e44', crack: '#0f0d20', cracks: 0, paint: 0.04 },
+    floor: { style: 'grid', size: 24, colors: ['#15122a'], grid: 'rgba(157,123,255,0.28)', glow: 'rgba(63,246,255,0.5)', speckD: '#0f0d20', speckL: '#221e44', crack: '#0f0d20', cracks: 0 },
     line: 'rgba(63,246,255,0.85)',
     logo: 'APEX',
     wall: { style: 'panel', colors: ['#1c1a33', '#22203d', '#1a1830'], seam: '#9d7bff', edge: '#08060f' },
@@ -164,7 +164,7 @@ SFC_CONFIG.arenas = {
     // Các trường màu sàn / tường / phông / đồ vật / khán giả bên dưới không còn được vẽ khi có scene; net, hole, goalNet, crowd.sound vẫn dùng
     scene: 'Village',
     void: '#1c140c',
-    floor: { style: 'dirt', size: 16, colors: ['#8a6a44', '#83643f', '#90704a', '#7d5f3b'], grass: ['#6b8f3a', '#7a9e44', '#5f8233'], grassPatches: 26, speckD: '#6e5232', speckL: '#a3825a', crack: '#6a4e30', cracks: 6, paint: 0.04 },
+    floor: { style: 'dirt', size: 16, colors: ['#8a6a44'], grass: ['#6b8f3a', '#7a9e44', '#5f8233'], grassPatches: 26, speckD: '#6e5232', speckL: '#a3825a', crack: '#6a4e30', cracks: 6 },
     line: 'rgba(250,245,225,0.62)',
     logo: 'VILLAGE',
     wall: { style: 'bamboo', colors: ['#b89a4a', '#a88a3c', '#c4a656', '#9c7f36'], node: '#7a5f24', rope: '#6b4a2a', edge: '#3a2a14' },
@@ -181,7 +181,7 @@ SFC_CONFIG.arenas = {
   // AREA 3 — Sân Trường: xi măng kẻ vạch, tường vôi vàng + bảng đen, dãy lớp học + cột cờ. Vài học sinh đứng xem
   school: {
     void: '#101418',
-    floor: { style: 'asphalt', colors: ['#9a9a94', '#94948e', '#a0a09a', '#8e8e88'], speckD: '#828279', speckL: '#b0b0a8', crack: '#7a7a72', cracks: 10, paint: 0.06 },
+    floor: { style: 'asphalt', colors: ['#9a9a94'], speckD: '#828279', speckL: '#b0b0a8', crack: '#7a7a72', cracks: 10 },
     line: 'rgba(255,255,255,0.88)',
     logo: 'SCHOOL',
     wall: { style: 'plaster', colors: ['#e6c65c'], band: '#c9a640', trim: '#f2dc8a', board: '#2f5a3a', frame: '#8a6a3a', edge: '#5a4a24' },
@@ -198,7 +198,7 @@ SFC_CONFIG.arenas = {
   // AREA 7 — Lồng Sắt Ngầm: sàn cao su tối, tường lưới thép, 1 đèn rọi giữa, khán giả hò hét trong bóng tối
   cage: {
     void: '#050407',
-    floor: { style: 'asphalt', colors: ['#26232b', '#2a2730', '#232028', '#2d2a33'], speckD: '#1c1a20', speckL: '#3a3640', crack: '#1a181e', cracks: 5, paint: 0.1 },
+    floor: { style: 'asphalt', colors: ['#26232b'], speckD: '#1c1a20', speckL: '#3a3640', crack: '#1a181e', cracks: 5 },
     line: 'rgba(255,70,70,0.72)',
     logo: 'NO REFS',
     wall: { style: 'cage', bg: '#141218', wire: 'rgba(170,175,190,0.5)', post: '#4a4f58', postL: '#6a707c', edge: '#08070a' },
@@ -215,7 +215,7 @@ SFC_CONFIG.arenas = {
   // AREA 8 — Cúp Quảng Trường: cỏ nhân tạo, bảng quảng cáo, khán đài tạm + màn hình lớn, đèn pha
   plaza: {
     void: '#0a0c14',
-    floor: { style: 'turf', stripe: 24, colors: ['#3f8a3a', '#468f40'], speckD: '#377a33', speckL: '#55a04d', crack: '#377a33', cracks: 0, paint: 0.05 },
+    floor: { style: 'turf', stripe: 24, colors: ['#3f8a3a', '#468f40'], speckD: '#377a33', speckL: '#55a04d', crack: '#377a33', cracks: 0 },
     line: 'rgba(255,255,255,0.9)',
     logo: 'PLAZA CUP',
     wall: { style: 'ads', edge: '#0c0e16', ads: [['STREET COLA', '#d7263d', '#ffffff'], ['KICKZ', '#111111', '#ffe14f'], ['METRO BANK', '#1f5fbf', '#ffffff'], ['NOODLE KING', '#ffcf3f', '#b3122e'], ['ZAP ENERGY', '#6bff4f', '#111111'], ['CITY FM', '#ff7a1f', '#ffffff']] },
@@ -234,7 +234,7 @@ SFC_CONFIG.arenas = {
   domino_hall: {
     void: '#120c08',
     venue: 'DOMINO HALL',
-    floor: { style: 'felt', colors: ['#2a6b46'], speckD: '#235a3a', speckL: '#337d52', rings: 6, ring: 'rgba(40,24,10,0.18)', crack: '#235a3a', cracks: 0, paint: 0.03 },
+    floor: { style: 'felt', colors: ['#2a6b46'], speckD: '#235a3a', speckL: '#337d52', rings: 6, ring: 'rgba(40,24,10,0.18)', crack: '#235a3a', cracks: 0 },
     line: 'rgba(253,246,227,0.72)',
     logo: 'DOUBLE SIX',
     wall: { style: 'rail', colors: ['#5a3420', '#633a24', '#55311d', '#5e3722'], brass: '#c9a24a', tile: '#fdf6e3', pip: '#1a1a1a', edge: '#2a170c' },
@@ -251,7 +251,7 @@ SFC_CONFIG.arenas = {
   // AREA 10 — Sân Khấu Thế Giới: cỏ sọc hoàn hảo, bảng LED, khán đài khổng lồ kín người, 4 cột đèn pha, flash, pháo hoa
   stadium: {
     void: '#04050b',
-    floor: { style: 'turf', stripe: 22, checker: true, colors: ['#2f8a36', '#3a9a40'], speckD: '#2a7a30', speckL: '#48a84e', crack: '#2a7a30', cracks: 0, paint: 0.03 },
+    floor: { style: 'turf', stripe: 22, checker: true, colors: ['#2f8a36', '#3a9a40'], speckD: '#2a7a30', speckL: '#48a84e', crack: '#2a7a30', cracks: 0 },
     line: 'rgba(255,255,255,0.97)',
     logo: 'WORLD STAGE',
     wall: { style: 'led', bg: '#07080f', edge: '#020308', ads: [['WORLD STAGE', '#ffd23f'], ['{t0}', '#ffffff'], ['LEGENDS', '#3ff6ff'], ['{t1}', '#ffffff'], ['STREET COLA', '#ff3d5a'], ['KICKZ', '#9dff3d']] },

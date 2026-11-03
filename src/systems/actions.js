@@ -1175,10 +1175,11 @@ window.SFC = window.SFC || {};
     // 1 lần mỗi cú sút (p.diveKick = ball.kickN): đã đổ người đọc cú sút (AI / phím đọc) thì lúc chạm bóng (keeperLunge) hay bị đánh bại (keeperBeaten)
     // không đổ thêm lần nữa ngay lúc vừa đáp đất — kết quả cứu / thủng lưới đã quyết ở tryControl, cú đổ thứ 2 chỉ là bay thêm
     // Chỉ trong vòng cấm nhà (inKeeperZone): người trông khung đang chạy về mà bóng tới thì không đổ người giữa sân (ngoài vòng cấm cũng không bắt được).
-    // Bay tối đa tới mép ngang vòng cấm (đổ hết tầm sai phía ở keeperBeaten bay ra ngoài); sát mép, không còn chỗ bay thì thôi
+    // Bay tối đa tới mép ngang vòng cấm (đổ hết tầm sai phía ở keeperBeaten bay ra ngoài); sát mép, không còn chỗ bay thì thôi.
+    // Sút sát người (Game.pointBlank) hoặc đã dang tay đỡ chính cú sút này (gkBlock, p.blockKick) thì không đổ người nữa: đỡ tại chỗ tới hết
     dive(g, p, dy) {
       const P = G().player;
-      if (p.state !== 'normal' || p.diveKick === g.ball.kickN || !g.inKeeperZone(p)) return;
+      if (p.state !== 'normal' || p.diveKick === g.ball.kickN || !g.inKeeperZone(p) || g.pointBlank(p) || (p.atkType === 'gkBlock' && p.blockKick === g.ball.kickN)) return;
       const f = g.field, edge = f.boxWidth / 2 - p.radius;
       dy = U.clamp(p.y + dy, f.cy - edge, f.cy + edge) - p.y;
       if (Math.abs(dy) < 3) return;

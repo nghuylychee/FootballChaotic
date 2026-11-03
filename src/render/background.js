@@ -32,28 +32,22 @@ window.SFC = window.SFC || {};
     if (T.apron) apron(x, f, W, H, T.apron, rnd);
 
     /* --- mặt sân --- */
-    floor(x, f, T.floor, rnd);
-    // vũng sơn màu đội (graffiti sàn)
-    [0, 1].forEach((t) => {
-      const col = g.teams[t].cfg.kit.shirt;
-      x.globalAlpha = T.floor.paint || 0;
-      const sx = t === 0 ? f.x + f.w * 0.25 : f.x + f.w * 0.75;
-      for (let i = 0; i < 6; i++) disc(x, sx + (rnd() - 0.5) * 90, f.cy + (rnd() - 0.5) * 120, 10 + Math.floor(rnd() * 16), col);
-      x.globalAlpha = 1;
-    });
+    // mặt sân dùng chuỗi ngẫu nhiên riêng: sửa sàn không xáo lại tường / phông phía sau
+    const frnd = SFC.U.seeded(20261103);
+    floor(x, f, T.floor, frnd);
 
-    /* --- vạch sân --- */
+    /* --- vạch sân --- (vòng cung vẽ từng pixel, cạnh sắc như mọi nét khác) */
     x.strokeStyle = T.line; x.fillStyle = T.line; x.lineWidth = 2;
     x.strokeRect(f.x + 3, f.y + 3, f.w - 6, f.h - 6);
     px(x, f.cx - 1, f.y + 3, 2, f.h - 6, T.line);
-    x.beginPath(); x.arc(f.cx, f.cy, f.centerCircle, 0, Math.PI * 2); x.stroke();
+    ring(x, f.cx, f.cy, f.centerCircle, T.line);
     disc(x, f.cx, f.cy, 2, T.line);
     [-1, 1].forEach((s) => {
       const gx = s < 0 ? f.x + 3 : f.x + f.w - 3;
       const bw = f.boxWidth, bd = f.boxDepth;
       x.strokeRect(s < 0 ? gx : gx - bd, f.cy - bw / 2, bd, bw);
       x.strokeRect(s < 0 ? gx : gx - 22, f.cy - f.goalWidth / 2 - 10, 22, f.goalWidth + 20);
-      x.beginPath(); x.arc(s < 0 ? gx + bd : gx - bd, f.cy, 20, s < 0 ? -Math.PI / 2 : Math.PI / 2, s < 0 ? Math.PI / 2 : Math.PI * 1.5); x.stroke();
+      ring(x, s < 0 ? gx + bd : gx - bd, f.cy, 20, T.line, s < 0 ? -Math.PI / 2 : Math.PI / 2, s < 0 ? Math.PI / 2 : Math.PI * 1.5);
       disc(x, gx - s * 44, f.cy, 1, T.line);
     });
     // logo giữa sân
@@ -63,12 +57,15 @@ window.SFC = window.SFC || {};
     x.fillText(T.logo || 'CHAOS', f.cx, f.cy + 3);
     x.globalAlpha = 1;
 
-    /* --- bóng đổ tường lên sàn --- */
-    for (let i = 0; i < 10; i++) {
-      px(x, f.x, f.y + i, f.w, 1, `rgba(0,0,0,${0.45 - i * 0.045})`);
-      px(x, f.x + i, f.y, 1, f.h, `rgba(0,0,0,${0.3 - i * 0.03})`);
-      px(x, f.x + f.w - 1 - i, f.y, 1, f.h, `rgba(0,0,0,${0.3 - i * 0.03})`);
-    }
+    /* --- bóng đổ tường lên sàn ---
+     * cạnh cứng, 1 lớp (chỗ chồng không đậm thêm): tường trên cao 46 -> bóng 10 px (0.21·h, docs/art-direction/palette-and-light.md);
+     * nắng lệch trái nên tường trái đổ 4 px vào sân, tường phải chỉ 1 px chân tường */
+    const [scv, sh] = layer(W, H);
+    sh.fillStyle = '#000';
+    sh.fillRect(f.x, f.y, f.w, 10);
+    sh.fillRect(f.x, f.y, 4, f.h);
+    sh.fillRect(f.x + f.w - 1, f.y, 1, f.h);
+    x.globalAlpha = 0.3; x.drawImage(scv, 0, 0); x.globalAlpha = 1;
 
     /* --- phông phía trên tường (hàng rào / thành phố / đèn lồng / cảng / màn LED) --- */
     const wallTop = f.y - 46;
@@ -220,32 +217,29 @@ window.SFC = window.SFC || {};
     ground(x, L, B, R - L, H - B, A.bottom ? Object.assign({}, A, A.bottom) : A, rnd, 'b');
   }
 
-  /* ---------------- mặt sân ---------------- */
+  /* ---------------- mặt sân ----------------
+   * Luật: docs/art-direction/palette-and-light.md (mặt sân): nền 1 màu phẳng, không ô màu ngẫu nhiên từng ô, không nhiễu từng pixel. */
   function floor(x, f, F, rnd) {
     const { px, disc } = S();
     const pick = () => F.colors[Math.floor(rnd() * F.colors.length)];
     const T = F.size || 16;
+    // hạt lấm tấm thưa (1 x 1 hoặc 2 x 1), mỗi `per` px² 1 hạt
+    const grit = (per) => { for (let i = 0; i < (f.w * f.h) / per; i++) px(x, f.x + Math.floor(rnd() * f.w), f.y + Math.floor(rnd() * f.h), rnd() < 0.3 ? 2 : 1, 1, rnd() < 0.6 ? F.speckD : F.speckL); };
+    x.save(); x.beginPath(); x.rect(f.x, f.y, f.w, f.h); x.clip();
     if (F.style === 'turf') {
       // cỏ sọc (checker: cắt cỏ ô bàn cờ)
       const sw = F.stripe || 24;
       for (let sx = f.x, i = 0; sx < f.x + f.w; sx += sw, i++) px(x, sx, f.y, Math.min(sw, f.x + f.w - sx), f.h, F.colors[i % 2]);
       if (F.checker) for (let sy = f.y, j = 0; sy < f.y + f.h; sy += sw, j++) if (j % 2) px(x, f.x, sy, f.w, Math.min(sw, f.y + f.h - sy), 'rgba(255,255,255,0.035)');
-      for (let i = 0; i < (f.w * f.h) / 60; i++) px(x, f.x + Math.floor(rnd() * f.w), f.y + Math.floor(rnd() * f.h), 1, 1, rnd() < 0.5 ? F.speckD : F.speckL);
-      return;
+      grit(240);
     }
     if (F.style === 'felt') {
       // nỉ bàn domino: nền 1 màu, sợi nỉ lấm tấm 2 tông, vân nỉ chéo rất mờ, vài vòng vết cốc trà
       px(x, f.x, f.y, f.w, f.h, F.colors[0]);
-      for (let i = 0; i < (f.w * f.h) / 7; i++) px(x, f.x + Math.floor(rnd() * f.w), f.y + Math.floor(rnd() * f.h), 1, 1, rnd() < 0.5 ? F.speckD : F.speckL);
-      x.save(); x.beginPath(); x.rect(f.x, f.y, f.w, f.h); x.clip();
+      for (let i = 0; i < (f.w * f.h) / 24; i++) px(x, f.x + Math.floor(rnd() * f.w), f.y + Math.floor(rnd() * f.h), 1, 1, rnd() < 0.5 ? F.speckD : F.speckL);
       x.strokeStyle = 'rgba(0,0,0,0.05)'; x.lineWidth = 1;
       for (let k = -f.h; k < f.w; k += 5) { x.beginPath(); x.moveTo(f.x + k, f.y); x.lineTo(f.x + k + f.h, f.y + f.h); x.stroke(); }
-      x.strokeStyle = F.ring; x.lineWidth = 2;
-      for (let i = 0; i < (F.rings || 0); i++) {
-        const rx = f.x + 30 + rnd() * (f.w - 60), ry = f.y + 20 + rnd() * (f.h - 40), r = 7 + rnd() * 4;
-        x.beginPath(); x.arc(rx, ry, r, rnd() * 2, rnd() * 2 + 4.5); x.stroke();
-      }
-      x.restore();
+      for (let i = 0; i < (F.rings || 0); i++) ring(x, Math.round(f.x + 30 + rnd() * (f.w - 60)), Math.round(f.y + 20 + rnd() * (f.h - 40)), 7 + Math.floor(rnd() * 4), F.ring, rnd() * 2, 4.5);
     }
     if (F.style === 'planks') {
       // sàn ván tàu: ván ngang cao 8px, đầu ván so le (khe hắc ín + 2 đinh), vân gỗ
@@ -262,12 +256,16 @@ window.SFC = window.SFC || {};
         px(x, f.x, ty, f.w, 1, F.seam);
       }
     }
-    if (F.style !== 'planks' && F.style !== 'felt') for (let ty = f.y; ty < f.y + f.h; ty += T) {
-      for (let tx = f.x; tx < f.x + f.w; tx += T) {
+    if (F.style === 'asphalt') {
+      // nhựa đường: nền 1 màu, hạt sỏi thưa
+      px(x, f.x, f.y, f.w, f.h, F.colors[0]);
+      grit(110);
+    }
+    if (F.style === 'tiles' || F.style === 'plates' || F.style === 'grid' || F.style === 'dirt') {
+      // lát ô: mọi ô cùng 1 màu nền; ron / đinh tán / lưới vẽ đều
+      px(x, f.x, f.y, f.w, f.h, F.colors[0]);
+      for (let ty = f.y; ty < f.y + f.h; ty += T) for (let tx = f.x; tx < f.x + f.w; tx += T) {
         const w = Math.min(T, f.x + f.w - tx), h = Math.min(T, f.y + f.h - ty);
-        px(x, tx, ty, w, h, pick());
-        const specks = F.style === 'grid' ? 2 : F.style === 'plates' ? 10 : 7;
-        for (let i = 0; i < specks; i++) px(x, tx + Math.floor(rnd() * w), ty + Math.floor(rnd() * h), 1, 1, rnd() < 0.5 ? F.speckD : F.speckL);
         if (F.style === 'tiles') {
           // ron gạch
           px(x, tx, ty, w, 1, F.joint); px(x, tx, ty, 1, h, F.joint);
@@ -276,9 +274,10 @@ window.SFC = window.SFC || {};
           px(x, tx + 1, ty + 1, w - 1, 1, 'rgba(255,255,255,0.05)');
           // đinh tán 4 góc
           for (const [rx, ry] of [[3, 3], [w - 4, 3], [3, h - 4], [w - 4, h - 4]]) if (rx > 0 && ry > 0) px(x, tx + rx, ty + ry, 1, 1, F.rivet);
-          if (rnd() < 0.3) { x.globalAlpha = 1; disc(x, tx + rnd() * w, ty + rnd() * h, 3 + Math.floor(rnd() * 5), F.rust); }
+          if (rnd() < 0.3) disc(x, tx + rnd() * w, ty + rnd() * h, 3 + Math.floor(rnd() * 5), F.rust);
         }
       }
+      grit(F.style === 'grid' ? 400 : 160);
     }
     if (F.style === 'grid') {
       // lưới neon + giao điểm sáng
@@ -313,6 +312,26 @@ window.SFC = window.SFC || {};
         cx += rnd() < 0.5 ? 1 : -1 + (rnd() < 0.6 ? 1 : 0);
         cy += rnd() < 0.5 ? 1 : 0;
       }
+    }
+    x.restore();
+  }
+
+  // lớp vẽ tạm W x H: vẽ đặc rồi phủ 1 lần với 1 độ trong -> [canvas, ctx]
+  function layer(W, H) {
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    return [c, c.getContext('2d')];
+  }
+
+  // vòng tròn pixel dày t px quanh tâm (cx, cy) bán kính r, chỉ phần góc a0..a1 (rad, như ctx.arc): cạnh sắc, không khử răng cưa
+  function ring(x, cx, cy, r, c, a0 = 0, a1 = Math.PI * 2, t = 2) {
+    x.fillStyle = c;
+    const R = Math.ceil(r + t / 2 + 1), TAU = Math.PI * 2;
+    for (let dy = -R; dy < R; dy++) for (let dx = -R; dx < R; dx++) {
+      const ex = dx + 0.5, ey = dy + 0.5, d = Math.hypot(ex, ey);
+      if (Math.abs(d - r) >= t / 2) continue;
+      if (a1 - a0 < TAU) { let a = Math.atan2(ey, ex) - a0; a -= Math.floor(a / TAU) * TAU; if (a > a1 - a0) continue; }
+      x.fillRect(cx + dx, cy + dy, 1, 1);
     }
   }
 

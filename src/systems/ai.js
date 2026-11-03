@@ -874,8 +874,11 @@ window.SFC = window.SFC || {};
           const cc = b.curve ? curveCross(b, lineX) : null;
           if (cc) ry += (cc.y - ry) * U.clamp(prof.shotAccuracy * SFC_CONFIG.game.technique.finesseRead, 0, 1);
           const iy = U.clamp(p.y + (ry - p.y) * (1 + gr.err), f.gTop - 8, f.gBot + 8);
-          ty = iy; sprint = true;
-          if (t < 0.35 && Math.abs(iy - p.y) > 8 && p.ai.t <= 0) {
+          // đường bóng đi thẳng vào người (lệch không quá gkStraight, cùng thước đo với Game.keeperBrace): đứng yên đỡ tại chỗ,
+          // không chạy theo điểm bóng qua vạch (thủ môn đứng trước vạch thì sút chéo góc vào người qua vạch lệch sang bên) và không đổ người
+          const hold = !cc && g.shotOffset(p).d <= SFC_CONFIG.game.player.gkStraight;
+          if (hold) { tx = p.x; ty = p.y; } else { ty = iy; sprint = true; }
+          if (!hold && t < 0.35 && Math.abs(iy - p.y) > 8 && p.ai.t <= 0) {
             p.ai.t = 0.6;
             if (Math.random() < g.aiProfile(p.team).shotAccuracy + 0.15) Act().dive(g, p, iy - p.y);
           }
