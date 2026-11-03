@@ -47,6 +47,12 @@ window.SFC = window.SFC || {};
     if (now - s.t >= ((RN && RN.viewHold) || 0)) { s.k = k; s.facing = facing; s.moving = moving; }
     return s;
   }
+  // arena có bộ cảnh tự vẽ bóng cầu thủ (Village.shadows, Renderer gọi mỗi khung): sprite không vẽ bóng riêng nữa, kẻo 2 bóng chồng nhau.
+  // Arena vẽ theo màu và ảnh xem trước ở menu (g giả, không có arena) vẫn vẽ bóng của sprite
+  function sceneShadow(g) {
+    const sc = g && SFC.Background && SFC.Background.scene(g);
+    return !!(sc && sc.shadows);
+  }
   function drawPlayer(ctx, p, g, alpha = 1, tint = null, ghost = !!tint) {
     const kit = g.teams[p.team].cfg.kit, look = p.look || {}, kc = kitColors(kit, look);
     const cp = (!ghost && p.celPose) || null;
@@ -73,7 +79,7 @@ window.SFC = window.SFC || {};
       moving: cp ? !!cp.run : gait === 'heavy' || st.moving, anim: p.anim || 0, gait, gaitT,
       lean: !ghost && !cp && !atk && !gait && p.state === 'normal' && RN && RN.lean && Math.abs(p.vx || 0) > RN.sprint ? 2 * Math.sign(p.vx) * RN.lean : 0,
       atk, cp, gk, stun: p.state === 'stun', windup: p.state === 'windup', flash: p.flash > 0,
-      glove: !ghost && p.keeper ? kc.glove : null, inj: !ghost && !cp && p.inj, noShadow: alpha < 1 || !!p.flyInner,
+      glove: !ghost && p.keeper ? kc.glove : null, inj: !ghost && !cp && p.inj, noShadow: alpha < 1 || !!p.flyInner || sceneShadow(g),
       hit: ghost || p.flyInner ? null : hitState(p),   // bị đấm: giơ tay (hit.js); gọi mỗi khung để bắt lúc chuyển sang choáng
       // nhảy Ground Slam / Thiên Thạch (state slam): tay giơ theo độ cao, hết lúc chạm 5 px -> tiếp đất là tay vung xuống
       slam: !ghost && p.state === 'slam' ? Math.min(1, (p.airZ || 0) / 5) : 0,
@@ -86,7 +92,7 @@ window.SFC = window.SFC || {};
     o.fly = fs && fs.phase ? fs : null;
     if (o.fly && !p.flyInner && !(p.airZ > 0)) {
       const rot = flyRot(fs, p.anim || 0);
-      ctx.save(); ctx.globalAlpha = alpha; ctx.scale(0.5, 0.5); if (alpha >= 1) flyShadow(ctx, 2 * x, 2 * y, flyShadowSpec(fs)); ctx.restore();
+      ctx.save(); ctx.globalAlpha = alpha; ctx.scale(0.5, 0.5); if (alpha >= 1 && !o.noShadow) flyShadow(ctx, 2 * x, 2 * y, flyShadowSpec(fs)); ctx.restore();
       ctx.save(); ctx.translate(x, y - 8); ctx.rotate(rot);
       drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, fly: fs, flyInner: true }), g, alpha, tint, ghost);
       ctx.restore(); ctx.globalAlpha = 1;
@@ -113,5 +119,30 @@ window.SFC = window.SFC || {};
     return y - (atk && atk.khop ? Math.round(atk.khop / 2) : 0) + ((cp && cp.drop) || 0) - 16;
   }
 
-  Object.assign(Sprite, { drawPlayer, kitColors, sprintGait, steadyLook });
+  // bóng dưới đất của cầu thủ lúc này, cho cảnh tự vẽ bóng (Village.shadows): cùng các trạng thái làm bóng sprite đổi.
+  // Trả { k, z } = bóng đứng thu nhỏ k lần, thân cao hơn đất z px (bóng ngả xa hơn theo hướng nắng), hoặc { lie: { dx, dy, rx, ry } } = elip nằm
+  // dưới thân (px thế giới tính từ chân, dx đã theo hướng), hoặc { rx, ry, z } = elip riêng (thủ môn đang bay đổ người)
+  const STAND_RX = 7;   // bóng đứng của sprite (body.js shadow): bán trục ngang 7 px
+  function groundShadow(p, g) {
+    const fs = p.state === 'stun' ? flyState(p) : null, lsh = flyShadowSpec(fs);
+    if (lsh && !(p.airZ > 0)) return { lie: lsh };   // nằm sau khi bị đá bay / đang lăn dậy
+    // ăn mừng: nhấc người thì bóng nhỏ lại, lộn vòng (rot) thì bóng dài ra như celDraw
+    if (p.celId && g && (g.state === 'goal' || g.state === 'ended') && !(p.airZ > 0) && Sprite.celPose) {
+      const cp = Sprite.celPose(p.celId, p.celT || 0, p), lift = Math.max(0, Math.round((cp.lift || 0) * (p.icon ? 0.4 : 1)));
+      return { k: Math.max(0.4, 1 - lift / 50), wide: cp.rot ? 10 / STAND_RX : 1, z: lift };
+    }
+    if (p.airZ > 0) return { k: Math.max(0.35, 1 - p.airZ / 70), z: p.airZ };   // bị hất tung / tự nhảy (Renderer.airborne)
+    const atk = p.atkType || p.passMode ? attackPose(p) : null;
+    if (atk && atk.dive) {
+      const flip = p.atkType === 'diveU' ? 1 : -1, side = Math.cos(p.facing) >= 0 ? 1 : -1;
+      if (atk.flying) { const X = Sprite.diveXform(atk, flip, side); return { rx: X.shadow[0], ry: X.shadow[1], z: X.lift + X.up }; }
+      // nằm sau khi đổ người: elip dài phủ cả thân (bay lên: lieShadow của gkball.js · bay xuống: Renderer.diving)
+      if (atk.stage === 'land' || atk.stage === 'lie') return { lie: { dx: side, dy: flip > 0 ? -10 : -6, rx: 8, ry: 11 } };
+    }
+    // sút / vô-lê / Hard attack / đánh đầu bật lên (khop px mịn): như bóng sprite ở draw.js
+    if (atk && atk.khop) return { k: atk.header ? Math.max(0.6, Math.round((1 - atk.khop / 60) * 10) / 10) : atk.khop >= 3 ? 0.85 : 1, z: atk.khop / 2 };
+    return { k: 1, z: 0 };
+  }
+
+  Object.assign(Sprite, { drawPlayer, groundShadow, kitColors, sceneShadow, sprintGait, steadyLook });
 })();

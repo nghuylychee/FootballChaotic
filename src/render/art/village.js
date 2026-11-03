@@ -445,16 +445,41 @@ window.SFC = window.SFC || {};
   };
 
   // bóng cầu thủ trong trận (gọi mỗi khung, toạ độ màn game): 1 vệt tròn dẹt ngả xuống dưới lệch phải như bóng cảnh,
-  // vẽ thẳng bằng elip (rẻ) thay vì ngả hình từng khung. Người tàng hình không có bóng
-  Village.shadows = (ctx, g) => {
-    const L = K.LIGHT;
+  // vẽ bằng elip (rẻ) thay vì ngả hình từng khung. Đổi theo trạng thái như bóng của sprite (PlayerSprite.groundShadow): bật nhảy / bay
+  // thì nhỏ lại và ngả xa hơn theo độ cao, nằm thì thành elip dưới cả thân, thủ môn bay đổ người thì dài theo thân.
+  // Người tàng hình không có bóng; người bị vật thể Tuyệt kỹ thay hình (VFX.hides: con gà, King Kong...) lấy bóng của vật thể đó.
+  // Bóng cầu thủ đen như bóng sprite cũ (không màu tím của bóng cảnh) và bám sát chân (user 2026-11-03): tâm bóng ngả theo nắng từ độ cao lift
+  // (thay vì giữa thân), bay / nhảy thì ngả thêm drift x độ cao
+  // Vẽ vào 1 lớp đệm 880 x 512 ở lưới px game rồi chép 1 lần lấy mẫu điểm gần nhất: camera zoom lẻ (goalCam, VFX.applyZoom) thì fillRect
+  // thẳng lên màn sẽ khử răng cưa mép bóng; chép ảnh thì px vẫn sắc như sprite / cảnh. Cả lớp phủ 1 độ mờ nên 2 bóng chồng nhau không đậm thêm
+  const PSH = { color: '#000000', alpha: 0.38, lift: 6, drift: 0.6 };
+  let shBuf = null;
+  Village.shadows = (screen, g) => {
+    const L = K.LIGHT, Sp = SFC.PlayerSprite;
+    if (!shBuf) shBuf = K.canvas(W, H);
+    const [bufCv, ctx] = shBuf;
+    ctx.clearRect(0, 0, W, H);
     ctx.save();
-    ctx.globalAlpha = L.alpha;
+    ctx.translate(OX, OY);
     for (const p of g.players) {
-      if (p.ghostT > 0) continue;
-      const h = 24 * (p.sizeMul || 1);
-      K.ellipse(ctx, p.x + Math.round(L.kx * h * 0.5), p.y + Math.round(L.ky * h * 0.5), Math.round(5 * (p.sizeMul || 1)), Math.max(2, Math.round(L.ky * h * 0.5)), L.color);
+      if (p.ghostT > 0 || (SFC.VFX && SFC.VFX.hides(g, p))) continue;
+      const m = p.sizeMul || 1, s = Sp && Sp.groundShadow ? Sp.groundShadow(p, g) : { k: 1, z: 0 };
+      if (s.lie) {
+        // thân nằm sát đất: bóng ngay dưới thân
+        K.ellipse(ctx, p.x + s.lie.dx, p.y + s.lie.dy, Math.round(s.lie.rx * m), Math.round(s.lie.ry * m), PSH.color);
+        continue;
+      }
+      const h = PSH.lift * m + (s.z || 0) * PSH.drift, x = p.x + Math.round(L.kx * h), y = p.y + Math.round(L.ky * h);
+      // thủ môn đang bay đổ người: elip riêng theo thân (đơn vị bóng sprite, bán trục ngang đứng = 7) quy về bóng cảnh (đứng = 5)
+      if (s.rx) { K.ellipse(ctx, x, y, Math.max(1, Math.round((s.rx * 5) / 7 * m)), Math.max(2, Math.round(s.ry * m)), PSH.color); continue; }
+      const k = s.k == null ? 1 : s.k;
+      K.ellipse(ctx, x, y, Math.max(1, Math.round(5 * m * k * (s.wide || 1))), Math.max(1, Math.round(Math.max(2, L.ky * 24 * m * 0.5) * k)), PSH.color);
     }
     ctx.restore();
+    screen.save();
+    screen.imageSmoothingEnabled = false;
+    screen.globalAlpha = PSH.alpha;
+    screen.drawImage(bufCv, -OX, -OY);
+    screen.restore();
   };
 })();

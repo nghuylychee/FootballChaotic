@@ -183,7 +183,7 @@ window.SFC = window.SFC || {};
     const local = (lx, ly) => ({ x: cx + lx * cos - ly * sin, y: cy + lx * sin + ly * cos }), L = (q) => local(q[0], q[1]);
     const I = { p, t, x, y, cx, cy, P: cp, mv: n > 5 ? { x: p.vx / n, y: p.vy / n } : null, local, hand: (i) => L(A.hand(i)), elbow: (i) => L(A.elbow(i)), head: L(A.head), mouth: L(A.mouth) };
     const k = Math.max(0.4, 1 - Math.max(0, lift) / 50);
-    SP.ellipse(ctx, x, y + 1, (rot ? 10 : 7) * k, 2.5 * k, 'rgba(0,0,0,0.38)');
+    if (!Sprite.sceneShadow(g)) SP.ellipse(ctx, x, y + 1, (rot ? 10 : 7) * k, 2.5 * k, 'rgba(0,0,0,0.38)');   // arena có bộ cảnh: bóng của cảnh (groundShadow)
     if (D.under) D.under(ctx, I);
     const fx = CEL_FX[p.celId] || D.fx;
     if (fx && CEL_FX_UNDER[p.celId]) fx(ctx, I);

@@ -413,8 +413,11 @@ window.SFC = window.SFC || {};
       // bị đá bay (choáng): pha lộn / chạm đất / nằm theo dõi ở phía vẽ (PlayerSprite.flyState); nảy lúc đã nằm thì bóng nằm trên đất
       const fs = p.state === 'stun' ? Sprite.flyState(p) : null, lsh = fs && Sprite.flyShadowSpec(fs);
       const k = Math.max(0.35, 1 - p.airZ / 70);
-      if (lsh) { ctx.save(); ctx.scale(0.5, 0.5); Sprite.flyShadow(ctx, 2 * Math.round(p.x), 2 * Math.round(p.y), lsh); ctx.restore(); }
-      else ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, 6 * k, 2.5 * k, 'rgba(0,0,0,0.38)');
+      // arena có bộ cảnh đã vẽ bóng cầu thủ (sc.shadows): không vẽ thêm bóng ở đây
+      if (!Sprite.sceneShadow(g)) {
+        if (lsh) { ctx.save(); ctx.scale(0.5, 0.5); Sprite.flyShadow(ctx, 2 * Math.round(p.x), 2 * Math.round(p.y), lsh); ctx.restore(); }
+        else ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, 6 * k, 2.5 * k, 'rgba(0,0,0,0.38)');
+      }
       const cy = p.y - p.airZ - 8;
       const sp = Math.hypot(p.kbx || 0, p.kby || 0);
       if (sp > 80 && (!fs || fs.phase === 'tumble')) {
@@ -455,7 +458,7 @@ window.SFC = window.SFC || {};
         if (flip > 0 || (atk.stage !== 'land' && atk.stage !== 'lie')) return drawPlayer(ctx, p, g);
         // bay xuống, đang nằm (đầu về phía máy quay): vẽ đứng vào bộ đệm rồi lật đúng -1, toạ độ tròn · bóng đổ dài phủ cả thân
         const ty = Math.round(p.y) - 9;
-        ellipse(ctx, Math.round(p.x) + side, ty + 3, 8, 11, 'rgba(0,0,0,0.4)');
+        if (!Sprite.sceneShadow(g)) ellipse(ctx, Math.round(p.x) + side, ty + 3, 8, 11, 'rgba(0,0,0,0.4)');   // arena có bộ cảnh: bóng của cảnh
         bc.setTransform(2, 0, 0, 2, 0, 0);
         bc.clearRect(0, 0, N, N);
         drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: g.inKeeperZone(p), gkHolding: holding }), g, 0.999);
@@ -468,7 +471,7 @@ window.SFC = window.SFC || {};
         return ty + 14;
       }
       const X = Sprite.diveXform(atk, flip, side);
-      ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, X.shadow[0], X.shadow[1], 'rgba(0,0,0,0.38)');
+      if (!Sprite.sceneShadow(g)) ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, X.shadow[0], X.shadow[1], 'rgba(0,0,0,0.38)');   // arena có bộ cảnh: bóng của cảnh
       const cy = p.y - X.lift - X.up, sq = Math.abs(X.sy);
       // vệt gió sau gót chân lúc bay
       if (X.streaks) {

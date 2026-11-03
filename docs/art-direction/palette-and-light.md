@@ -55,7 +55,7 @@ Shadows give the arena its depth.
 - **Shape: one simple blob per object.** The shadow follows the object's rough shape (an oval for a person, a rounded block for a house, a round crown for a tree), never its details (fingers, lattice mesh, wires). Edges are hard pixels.
 - **Colour:** `#2a2038` at 38%. All shadows sit in one layer, so where two overlap they don't get darker.
 - **Goals** cast the shadow of their frame and net, worked out from the real crossbar and back-frame heights.
-- **Players** get the same blob shadow, down and to the right. Their contact shadow, the ball's shadow and the landing marker stay directly under them, because gameplay needs them exact.
+- **Players** get a black blob shadow (38%, like the sprite's own shadow in other arenas) at their feet, nudged 1 px down and to the right, and only that one: in an arena with a scene the sprite doesn't draw its own shadow (`PlayerSprite.sceneShadow`). The blob follows the player's state like the old sprite shadow did (`PlayerSprite.groundShadow`): it shrinks and slides further out with jump height, becomes a long ellipse under a body lying on the ground, and stretches along a diving keeper. A player replaced by an Ultimate prop (chicken, King Kong) takes the prop's shadow. The ball's shadow and the landing marker stay directly under the ball, because gameplay needs them exact.
 
 ## Vignette
 
