@@ -709,7 +709,12 @@ window.SFC = window.SFC || {};
         // vẽ nguệch ngoạc bút chì ở lề: ngôi sao, quả bóng, trái tim
         ctx.strokeStyle = 'rgba(60,60,90,0.55)'; ctx.lineWidth = 1.5;
         ctx.beginPath(); for (let i = 0; i <= 5; i++) { const a = -Math.PI / 2 + i * 4 * Math.PI / 5; ctx.lineTo(600 + Math.cos(a) * 10, 300 + Math.sin(a) * 10); } ctx.stroke();
-        ctx.beginPath(); ctx.arc(612, 40, 9, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(606, 34); ctx.lineTo(618, 46); ctx.stroke();
+        // quả bóng (UX run-07: trước là vòng tròn + 1 nét chéo ở góc trên phải, nhìn như dấu ⊘ / nút đóng): vòng tròn + ngũ giác tô giữa
+        // + đường may, dời xuống dưới nút SKIP ALL
+        const bx = 612, by = 84, pent = (r) => [0, 1, 2, 3, 4].map((i) => [bx + Math.cos(-Math.PI / 2 + i * 2 * Math.PI / 5) * r, by + Math.sin(-Math.PI / 2 + i * 2 * Math.PI / 5) * r]);
+        ctx.beginPath(); ctx.arc(bx, by, 9, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = 'rgba(60,60,90,0.55)'; ctx.beginPath(); pent(3.5).forEach(([x, y]) => ctx.lineTo(x, y)); ctx.closePath(); ctx.fill();
+        pent(3.5).forEach(([x, y], i) => { const [x2, y2] = pent(9)[i]; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke(); });
       },
       draw(S, sc) {
         this.paper();
@@ -881,7 +886,15 @@ window.SFC = window.SFC || {};
       const el = this.el || (this.el = document.getElementById('story'));
       if (!this.bound) {
         this.bound = true;
-        el.addEventListener('click', () => { if (this.active) this.advance(); });
+        // bấm = câu kế · bấm nút SKIP ALL = bỏ qua ngay · giữ chuột ở đâu cũng được = như giữ Enter (UX run-07: trước đây chuột không bỏ qua được)
+        el.addEventListener('click', (e) => {
+          if (!this.active) return;
+          if (this.eatClick) { this.eatClick = false; return; }   // vừa giữ chuột tới lúc bỏ qua: lần nhả không tính là bấm
+          if (e.target.closest('.st-skip')) return this.skipAll();
+          this.advance();
+        });
+        el.addEventListener('mousedown', (e) => { this.eatClick = false; if (e.button === 0 && !e.target.closest('.st-skip')) this.mouseHeld = true; });
+        window.addEventListener('mouseup', () => { this.mouseHeld = false; });
       }
       this.scenes = Array.isArray(key) ? key : CFG().scenes[key] || [];
       this.speaker = opts.speaker || null;
@@ -892,8 +905,10 @@ window.SFC = window.SFC || {};
       this.onDone = onDone;
       this.active = true;
       this.hold = 0;
+      // góc trên phải: nút SKIP ALL thật (vòng tiến độ khi giữ) + dòng gợi ý phím, nền mực để đọc được trên mọi kiểu kể
       el.innerHTML = `<canvas width="${W}" height="${H}"></canvas><div class="st-text"></div>
-        <div class="st-skip"><i></i><span>${SFC.t('{key} next · hold to skip', { key: `<kbd>${esc(SFC.Input.label('confirm'))}</kbd>` })}</span></div>`;
+        <button class="st-skip"><i></i><b>${esc(SFC.t('SKIP ALL'))}</b></button>
+        <div class="st-hint">${SFC.t('{key} next · hold to skip', { key: `<kbd>${esc(SFC.Input.label('confirm'))}</kbd>` })}</div>`;
       el.classList.remove('hidden');
       Object.keys(TELL).forEach((k) => el.classList.toggle('st-tell-' + k, k === this.tell));
       ctx = el.querySelector('canvas').getContext('2d');
@@ -957,11 +972,11 @@ window.SFC = window.SFC || {};
         if (this.active && this.scenes[this.idx] === sc) this.draw();
         return;
       }
-      // giữ Enter / Esc: bỏ qua cả cut scene
-      const holding = input.isDown('confirm') || input.isDown('pause');
+      // giữ Enter / Esc / chuột: bỏ qua cả cut scene
+      const holding = input.isDown('confirm') || input.isDown('pause') || this.mouseHeld;
       this.hold = holding ? this.hold + dt : 0;
       if (this.skipEl) this.skipEl.style.setProperty('--k', clamp01(this.hold / CFG().skipHold).toFixed(2));
-      if (this.hold >= CFG().skipHold && sc.art !== 'path') return this.skipAll();
+      if (this.hold >= CFG().skipHold && sc.art !== 'path') { if (this.mouseHeld) this.eatClick = true; return this.skipAll(); }
       if (input.wasPressed('confirm')) this.advance();
       else if (sc.dur > 0 && this.t >= this.dur(sc)) return this.go(this.idx + 1);
       if (this.active) this.draw();

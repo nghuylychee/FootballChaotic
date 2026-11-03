@@ -1,22 +1,26 @@
 {
-  "id": "menus-04",
-  "area": "menus",
-  "screen": "CHARACTER / SETTINGS / APPEARANCE / SOUND & DISPLAY / ULT BOOK / PRIVATE MATCH",
-  "source": "agent",
-  "severity": "med",
-  "title": "Chuột và bàn phím chọn 2 chỗ khác nhau",
-  "problem": "Ở các trang danh sách (SETTINGS, CHARACTER, APPEARANCE, ULT BOOK...) rê chuột lên mục nào cũng không sáng gì, ô vàng vẫn nằm ở mục cũ. Ở PRIVATE MATCH thì ngược lại: rê lên JOIN ROOM làm nó sáng y như CREATE ROOM đang được chọn, thành 2 ô cùng sáng mà Enter lại tạo phòng. Người chơi không biết mình sắp bấm cái gì.",
-  "goal": "Lúc nào cũng chỉ có một mục sáng, và đó đúng là thứ Enter / cú bấm chuột sẽ làm.",
-  "why": "Người chơi PC hay vừa dùng chuột vừa dùng phím. Hai chỗ sáng (hoặc chuột không có phản hồi) làm họ bấm nhầm, vd. định vào phòng bạn mà lại tạo phòng mới.",
-  "fix": "Rê chuột lên mục nào thì mục đó thành mục đang chọn, giống hệt khi bấm phím mũi tên; bấm phím tiếp thì đi tiếp từ chỗ chuột vừa chọn. Ở ULT BOOK, bảng bên phải đổi theo ô đang rê. Ô CREATE / JOIN ROOM và nút SETTINGS / cúp ở trang chủ bỏ kiểu sáng riêng khi rê chuột (giờ rê chuột đã là chọn) nên hết cảnh 2 ô cùng sáng. Kỹ thuật: Menu.hoverSel (mousemove trên #menu, đã thêm ở user-01) mở rộng ra danh sách HOVER_PAGES = các trang Menu tự vẽ mục, chỉ đổi class .sel tại chỗ (không dựng lại trang, làm theo LangPick), ULT BOOK vẽ lại riêng .m-right; CSS bỏ .pt-tile:hover và .hm-gear:hover.",
-  "why_this": "Một nguồn sự thật (Menu.sel) cho cả chuột lẫn phím, đúng mẫu LangPick đã có sẵn trong game, nên chỉ cần nhân rộng chứ không làm cơ chế mới.",
-  "alternatives": [
-    "Chỉ thêm CSS :hover cho các dòng danh sách — rẻ nhất, nhưng vẫn 2 chỗ sáng khi dùng cả chuột lẫn phím, và Enter vẫn làm mục cũ",
-    "Ẩn ô chọn của bàn phím khi đang dùng chuột (theo thiết bị vừa dùng) — gọn mắt, nhưng phải theo dõi đổi thiết bị ở mọi màn và Enter vẫn làm một mục đang bị ẩn"
-  ],
-  "files": ["src/ui/menu.js", "css/style.css"],
-  "limits": "Chưa bật cho tab GOAT PATH ('run', đang được agent khác làm lại) và RANKED (đang ẩn); muốn bật chỉ cần thêm tên trang vào HOVER_PAGES. Các trang của module riêng (SHOP, INVENTORY, TROPHY ROOM...) không đụng tới, chúng tự lo chuột. Nút .pt-btn (START, LEAVE ROOM, CONNECT) vẫn giữ :hover chung vì dùng ở nhiều màn khác: nếu để chuột đứng yên trên một nút rồi bấm phím đi chỗ khác thì nút đó vẫn còn sáng nhẹ cho tới khi rê chuột.",
-  "videoNote": "SETTINGS: rê lên LANGUAGE rồi bấm ↓ (trước: nhảy về CONTROLS, sau: xuống PRIVACY NOTICE). PRIVATE MATCH: rê lên JOIN ROOM (trước: 2 ô cùng sáng).",
-  "before": "videos/menus-04-before.mp4",
-  "after": "videos/menus-04-after.mp4"
+ "id": "menus-04",
+ "area": "menus",
+ "screen": "CHARACTER / SETTINGS / APPEARANCE / SOUND & DISPLAY / ULT BOOK / PRIVATE MATCH",
+ "source": "agent",
+ "severity": "med",
+ "title": "Chuột và bàn phím chọn 2 chỗ khác nhau",
+ "problem": "Ở các trang danh sách (SETTINGS, CHARACTER, APPEARANCE, ULT BOOK...) rê chuột lên mục nào cũng không sáng gì, ô vàng vẫn nằm ở mục cũ. Ở PRIVATE MATCH thì ngược lại: rê lên JOIN ROOM làm nó sáng y như CREATE ROOM đang được chọn, thành 2 ô cùng sáng mà Enter lại tạo phòng. Người chơi không biết mình sắp bấm cái gì.",
+ "goal": "Lúc nào cũng chỉ có một mục sáng, và đó đúng là thứ Enter / cú bấm chuột sẽ làm.",
+ "why": "Người chơi PC hay vừa dùng chuột vừa dùng phím. Hai chỗ sáng (hoặc chuột không có phản hồi) làm họ bấm nhầm, vd. định vào phòng bạn mà lại tạo phòng mới.",
+ "fix": "Rê chuột lên mục nào thì mục đó thành mục đang chọn, giống hệt khi bấm phím mũi tên; bấm phím tiếp thì đi tiếp từ chỗ chuột vừa chọn. Ở ULT BOOK, bảng bên phải đổi theo ô đang rê. Ô CREATE / JOIN ROOM và nút SETTINGS / cúp ở trang chủ bỏ kiểu sáng riêng khi rê chuột (giờ rê chuột đã là chọn) nên hết cảnh 2 ô cùng sáng. Kỹ thuật: Menu.hoverSel (mousemove trên #menu, đã thêm ở user-01) mở rộng ra danh sách HOVER_PAGES = các trang Menu tự vẽ mục, chỉ đổi class .sel tại chỗ (không dựng lại trang, làm theo LangPick), ULT BOOK vẽ lại riêng .m-right; CSS bỏ .pt-tile:hover và .hm-gear:hover.",
+ "why_this": "Một nguồn sự thật (Menu.sel) cho cả chuột lẫn phím, đúng mẫu LangPick đã có sẵn trong game, nên chỉ cần nhân rộng chứ không làm cơ chế mới.",
+ "alternatives": [
+  "Chỉ thêm CSS :hover cho các dòng danh sách — rẻ nhất, nhưng vẫn 2 chỗ sáng khi dùng cả chuột lẫn phím, và Enter vẫn làm mục cũ",
+  "Ẩn ô chọn của bàn phím khi đang dùng chuột (theo thiết bị vừa dùng) — gọn mắt, nhưng phải theo dõi đổi thiết bị ở mọi màn và Enter vẫn làm một mục đang bị ẩn"
+ ],
+ "files": [
+  "src/ui/menu.js",
+  "css/style.css"
+ ],
+ "limits": "Chưa bật cho tab GOAT PATH ('run', đang được agent khác làm lại) và RANKED (đang ẩn); muốn bật chỉ cần thêm tên trang vào HOVER_PAGES. Các trang của module riêng (SHOP, INVENTORY, TROPHY ROOM...) không đụng tới, chúng tự lo chuột. Nút .pt-btn (START, LEAVE ROOM, CONNECT) vẫn giữ :hover chung vì dùng ở nhiều màn khác: nếu để chuột đứng yên trên một nút rồi bấm phím đi chỗ khác thì nút đó vẫn còn sáng nhẹ cho tới khi rê chuột.",
+ "videoNote": "SETTINGS: rê lên LANGUAGE rồi bấm ↓ (trước: nhảy về CONTROLS, sau: xuống PRIVACY NOTICE). PRIVATE MATCH: rê lên JOIN ROOM (trước: 2 ô cùng sáng).",
+ "before": "videos/menus-04-before.mp4",
+ "after": "videos/menus-04-after.mp4",
+ "status": "applied"
 }

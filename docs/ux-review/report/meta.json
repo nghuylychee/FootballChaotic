@@ -1,6 +1,6 @@
 {
  "title": "Rà soát UX toàn game",
- "lede": "Mỗi vấn đề có 2 video quay cùng một kịch bản: TRƯỚC là bản main hiện tại, SAU là bản đã sửa thử trong một worktree riêng (main chưa bị đụng vào). Bấm \"Phát cả 2 từ đầu\" để so. Mỗi vấn đề có ô góp ý tự lưu: chọn Giữ / Cần chỉnh / Không sửa và ghi thêm nếu cần, Claude đọc lại được.",
+ "lede": "Bạn đã góp ý xong: giữ 38 cách sửa, bỏ match-10 (banner GOAL!). 38 cái đó đã áp vào nhánh ux/review-2026-11 (đã cập nhật theo main, chưa merge vào main), nên trang này chỉ còn 38 vấn đề, mỗi cái gắn nhãn Đã áp. Video TRƯỚC là bản main cũ, SAU là bản đã sửa; bấm \"Phát cả 2 từ đầu\" để so. Ô góp ý vẫn dùng được nếu muốn chỉnh thêm.",
  "yoursIntro": "Mình đã mở game, chụp lại từng chỗ bạn nêu. Cả 6 ý đều đúng; riêng ý \"không biết đang hover ở đâu\" còn lặp lại ở nhiều màn khác hơn bạn kể.",
  "yours": [
   {

@@ -1,22 +1,30 @@
 {
-  "id": "menus-08",
-  "area": "menus",
-  "screen": "PRIVATE MATCH › phòng (lobby), mới có một mình",
-  "source": "agent",
-  "severity": "med",
-  "title": "Phòng riêng một mình: START xám mà không nói vì sao",
-  "problem": "Tạo phòng xong, màn phòng trông như sẵn sàng đá (2 đồng đội AI, bên kia là bot) nhưng START xám, bấm vào không có gì xảy ra và không có dòng nào nói cần thêm người. Người chơi tưởng game lỗi và không biết bước tiếp theo là gửi mã phòng cho bạn.",
-  "goal": "Khi chưa START được, người chơi đọc ngay lý do và việc cần làm: rủ thêm người bằng mã phòng.",
-  "why": "Đây là bước đầu tiên của chơi với bạn. Kẹt ở đây là người chơi bỏ luôn tính năng, nghĩ là game hỏng.",
-  "fix": "Ngay trên nút START có dòng vàng \"Need 1 more player · share the room code\". Cạnh mã phòng ở trên cùng có nhãn COPY nhấp nháy (bấm cả dòng là chép mã, như trước nhưng giờ nhìn thấy được). Bấm START lúc còn khoá thì dòng lý do rung lên thay vì im lặng. Kỹ thuật: renderPrivate tính số người còn thiếu theo net.minPlayers, hiện pt-note 'need' (chuỗi mới có số nhiều, đã thêm vào cả 4 pack); Menu.activate với nút START bị khoá đặt nudgeAt để vẽ lại có class rung; chữ trung tính, không nhắc cách kết nối.",
-  "why_this": "Dùng đúng dòng trạng thái phòng vốn đã có (chủ phòng thấy 'Ready to start...' ở chỗ đó), ai cũng thấy được dù dùng chuột, phím hay tay cầm, và chỉ thẳng vào hành động tiếp theo.",
-  "alternatives": [
-    "Cho START luôn khi chỉ có 1 người (đá cùng bot) — hết kẹt hẳn, nhưng là đổi luật phòng (net.minPlayers), nên để chủ game quyết",
-    "Chỉ thêm tooltip trên nút START — ít đổi giao diện, nhưng bàn phím / tay cầm không thấy, người chơi phải rê chuột mới biết"
-  ],
-  "files": ["src/ui/menu.js", "css/style.css", "src/i18n/es.js", "src/i18n/ja.js", "src/i18n/pt-BR.js", "src/i18n/pt-PT.js"],
-  "limits": "Chuỗi mới cần build lại font tiếng Nhật (coordinator làm khi ghép). Chép mã vẫn chỉ bằng chuột (bàn phím / tay cầm chưa có phím COPY). Video quay với máy chủ trận local (cổng 8091), không chạm máy chủ thật.",
-  "videoNote": "Trước: phòng một mình, bấm START 2 lần không có gì. Sau: dòng vàng ngay trên START + COPY nháy cạnh mã phòng; bấm START thì dòng đó rung.",
-  "before": "videos/menus-08-before.mp4",
-  "after": "videos/menus-08-after.mp4"
+ "id": "menus-08",
+ "area": "menus",
+ "screen": "PRIVATE MATCH › phòng (lobby), mới có một mình",
+ "source": "agent",
+ "severity": "med",
+ "title": "Phòng riêng một mình: START xám mà không nói vì sao",
+ "problem": "Tạo phòng xong, màn phòng trông như sẵn sàng đá (2 đồng đội AI, bên kia là bot) nhưng START xám, bấm vào không có gì xảy ra và không có dòng nào nói cần thêm người. Người chơi tưởng game lỗi và không biết bước tiếp theo là gửi mã phòng cho bạn.",
+ "goal": "Khi chưa START được, người chơi đọc ngay lý do và việc cần làm: rủ thêm người bằng mã phòng.",
+ "why": "Đây là bước đầu tiên của chơi với bạn. Kẹt ở đây là người chơi bỏ luôn tính năng, nghĩ là game hỏng.",
+ "fix": "Ngay trên nút START có dòng vàng \"Need 1 more player · share the room code\". Cạnh mã phòng ở trên cùng có nhãn COPY nhấp nháy (bấm cả dòng là chép mã, như trước nhưng giờ nhìn thấy được). Bấm START lúc còn khoá thì dòng lý do rung lên thay vì im lặng. Kỹ thuật: renderPrivate tính số người còn thiếu theo net.minPlayers, hiện pt-note 'need' (chuỗi mới có số nhiều, đã thêm vào cả 4 pack); Menu.activate với nút START bị khoá đặt nudgeAt để vẽ lại có class rung; chữ trung tính, không nhắc cách kết nối.",
+ "why_this": "Dùng đúng dòng trạng thái phòng vốn đã có (chủ phòng thấy 'Ready to start...' ở chỗ đó), ai cũng thấy được dù dùng chuột, phím hay tay cầm, và chỉ thẳng vào hành động tiếp theo.",
+ "alternatives": [
+  "Cho START luôn khi chỉ có 1 người (đá cùng bot) — hết kẹt hẳn, nhưng là đổi luật phòng (net.minPlayers), nên để chủ game quyết",
+  "Chỉ thêm tooltip trên nút START — ít đổi giao diện, nhưng bàn phím / tay cầm không thấy, người chơi phải rê chuột mới biết"
+ ],
+ "files": [
+  "src/ui/menu.js",
+  "css/style.css",
+  "src/i18n/es.js",
+  "src/i18n/ja.js",
+  "src/i18n/pt-BR.js",
+  "src/i18n/pt-PT.js"
+ ],
+ "limits": "Chuỗi mới cần build lại font tiếng Nhật (coordinator làm khi ghép). Chép mã vẫn chỉ bằng chuột (bàn phím / tay cầm chưa có phím COPY). Video quay với máy chủ trận local (cổng 8091), không chạm máy chủ thật.",
+ "videoNote": "Trước: phòng một mình, bấm START 2 lần không có gì. Sau: dòng vàng ngay trên START + COPY nháy cạnh mã phòng; bấm START thì dòng đó rung.",
+ "before": "videos/menus-08-before.mp4",
+ "after": "videos/menus-08-after.mp4",
+ "status": "applied"
 }

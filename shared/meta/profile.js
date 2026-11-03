@@ -586,7 +586,9 @@ window.SFC = window.SFC || {};
       if (cup) lines.push(...cup.lines);
       const run = runOpt ? SFC.Run.record(result, game) : null;
       if (run) lines.push(...run.lines);
-      let xp = lines.reduce((s, l) => s + l.xp, 0), gold = lines.reduce((s, l) => s + l.gold, 0);
+      // dòng note (Run cash, BADGE...) không có xp / gold: coi là 0, không để NaN lọt vào save
+      const num = (v) => (Number.isFinite(v) ? v : 0);
+      let xp = lines.reduce((s, l) => s + num(l.xp), 0), gold = lines.reduce((s, l) => s + num(l.gold), 0);
       if (mp) {
         if (mp.reward !== 1) {
           lines.push({ label: `${SFC.MainPath.area(mp.area).name} ×${mp.reward}`, mult: mp.reward });
@@ -607,6 +609,8 @@ window.SFC = window.SFC || {};
       // XP hiển thị trên thanh: chạm trần thì thanh đầy, không tràn
       const bar = () => ({ level: d.level, xp: Math.min(d.xp, this.xpToNext(d.level)), need: this.xpToNext(d.level) });
       const before = bar();
+      // chốt cuối: tổng lạ (NaN / Infinity) thì không cộng gì, save không bao giờ hỏng
+      xp = num(xp); gold = num(gold);
       const ups = this.addXp(xp);
       const levelGold = ups.length * P().levelUpGold;
       d.gold += gold + levelGold;

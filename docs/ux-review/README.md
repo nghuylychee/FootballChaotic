@@ -1,6 +1,6 @@
 # UX REVIEW 2026-11 — 39 vấn đề UX, mỗi cái có patch + video trước / sau
 
-> Trạng thái: **ĐANG CHỜ OWNER GÓP Ý** trên trang báo cáo. Chưa patch nào vào main.
+> Trạng thái: **XONG, ĐÃ VÀO MAIN (2026-11-04).** Owner giữ 38 / 39 (bỏ `match-10`); nhánh `ux/review-2026-11` (38 patch + merge main + sửa sau review code) đã merge vào main. Muốn chỉnh thêm UX: làm như việc mới, không cần áp patch ở đây nữa.
 > Báo cáo + góp ý: https://claude.ai/artifact/EYNsTsNyUQthDuEF581yfe (artifact private của owner, cùng tài khoản claude.ai mới mở / đọc được)
 > Base của mọi patch: commit `1f2d1f3` (main ngày 2026-11-02).
 
@@ -22,6 +22,10 @@ Owner thấy UX cả game chưa được tút lại, nêu 6 chỗ (trang chủ 3
 ## Nhật ký
 
 - 2026-11-02 — Review + sửa thử + quay video + publish báo cáo. Chưa có góp ý.
+- 2026-11-02 — Góp ý của owner: 38 vấn đề `ok`, `match-10` `skip` (đã ghi `"status": "dropped"`), không có note. Áp 38 patch + `zz-integration` lên nhánh `ux/review-2026-11` (worktree `G:/FootballChaotic-ux`, chưa commit) ở máy khác máy tạo patch; build lại font ja; `node --check`, `i18n-check`, `manifest --check`, `npm run server:test` qua; mở thử trong Chrome headless (menu, TROPHY ROOM, ACHIEVEMENTS, map, mọi thẻ che, KIT VAN, trận `?runtest=match`, `?playtest`) không có lỗi JS. Báo cáo trên artifact chưa build lại (video không có ở máy này), nên `match-10` vẫn hiện trên trang.
+- 2026-11-03 — Máy tạo patch: pull main mới (8 commit, có tách `shared/`), merge `origin/main` vào `ux/review-2026-11`: xung đột chỉ ở dòng chú thích đầu `src/ui/runmap.js` (gộp 2 bên) và font ja (build lại từ `ja.js` đã merge). Bản sửa NaN của `match-01` theo file sang `shared/meta/profile.js`. Đối chiếu trước merge: nhánh = bản gộp 39 patch trừ đúng `match-10`. `node --check`, `i18n-check`, `manifest --check`, `npm run server:test` (10 file) qua; chụp Chrome headless trang chủ, PLAY, map, KIT VAN, thẻ BADGE, VS, draft (thanh giờ), Pause: đúng. Ghi `"status": "applied"` cho 38 issue, báo cáo publish lại (nhãn Đã áp, bỏ `match-10`).
+- 2026-11-04 — Review code toàn bộ phần UX (owner hỏi code ai viết, đã soát chưa: code của 39 cách sửa do agent ở máy tạo patch viết, máy kia chỉ áp). Sửa 6 lỗi: popup LANGUAGE nhích chuột ngoài danh sách là mất lựa chọn bằng phím; STATS rê chuột không đổi bảng phải; `Tip.showFor` chồng vòng rAF; co-op: thẻ kết quả ??? giữ máy lead lại trong lúc khách bỏ phiếu node (co-op dùng lại dòng báo); `ultDeny` báo sai lý do lúc trận đang dừng; Menu đổi chọn khi chuột không dời (không tái hiện được, vẫn chặn). Gom 'rê chuột = chọn' về `SFC.UIHelpers.realMove` (Menu, LangPick, MatchUI, RunUI); `hero()` dùng `flawChip`; RunUI rê chuột không tính lại `targets()`; HUD dựng HTML phím LEGEND TRIAL 1 lần mỗi kỹ thuật + thiết bị. Kiểm: `node --check`, `i18n-check`, `npm run server:test`, test hành vi trong Chrome headless, quay lại run-03 / user-02 / match-03 trên bản sửa.
+- 2026-11-04 — Owner duyệt: merge `ux/review-2026-11` vào main và push.
 <!-- mỗi lần xử lý góp ý: thêm 1 dòng ở đây (ngày · vấn đề nào giữ / sửa lại / bỏ · đã áp vào đâu) -->
 
 ## Đọc góp ý của owner
@@ -57,6 +61,8 @@ Phụ thuộc (mỗi nhóm là 1 agent; patch trong nhóm làm nối tiếp nhau
 - Thẻ che / KIT VAN: `user-04 → run-01 → run-04 → run-03 → run-08 → run-10 → run-05 → run-06`, xếp chồng.
 - `zz-integration` chỉ khi giữ cả `match-02` và `match-08`.
 Bỏ 1 patch giữa nhóm xếp chồng: áp các patch sau bằng `--3way`, chỗ nào xung đột thì sửa tay (thường chỉ là ngữ cảnh lệch).
+
+**Áp ở máy khác máy tạo patch:** `--3way` cần các bản file trung gian của worktree agent, chỉ có ở máy đã tạo patch. Ở máy khác, nhóm KIT VAN (`run-03`, `run-08`, `run-10`, `run-06`) báo "repository lacks the necessary blob" rồi hỏng, vì nhóm map cũng sửa `runmap.js` / `style.css`. Cách đã dùng (2026-11-02, gộp không xung đột): commit tạm A = main + nhóm KIT VAN, commit tạm B = main + mọi patch còn lại (kể cả `zz-integration`), `git merge A` vào B, rồi lấy `git diff --binary main` làm kết quả. Bỏ `match-10` thì `match-11` vẫn áp sạch.
 
 Main đã đi tiếp so với `1f2d1f3` thì `--3way` vẫn thường áp được; xung đột thì sửa tay theo ý của patch (mỗi `issues/<id>.json` mô tả cách sửa bằng lời).
 

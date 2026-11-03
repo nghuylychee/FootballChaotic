@@ -71,6 +71,17 @@ window.SFC = window.SFC || {};
   }
   const keyLabel = (action) => SFC.Input.label(action);
 
+  // "rê chuột = chọn" chỉ tính khi chuột thật sự dời: màn vẽ lại / cuộn dưới con trỏ đứng yên cũng bắn mousemove, khi đó không được
+  // cướp lựa chọn của phím / tay cầm. Dùng chung cho mọi màn (Menu, LangPick, MatchUI, RunUI); nhiều listener cùng nhận 1 sự kiện
+  // thì cùng 1 kết quả (nhớ sự kiện vừa xét)
+  let moveX = -1, moveY = -1, moveEv = null, moveRes = false;
+  function realMove(e) {
+    if (e === moveEv) return moveRes;
+    moveRes = e.clientX !== moveX || e.clientY !== moveY;
+    moveEv = e; moveX = e.clientX; moveY = e.clientY;
+    return moveRes;
+  }
+
   // khung + tâm của 1 phần tử trên màn hình (ẩn / chưa vẽ -> null) — dùng cho navPick
   function navRect(el) {
     if (!el) return null;
@@ -149,10 +160,17 @@ window.SFC = window.SFC || {};
     el: null, target: null, timer: 0, mx: 0, my: 0,
     init() {
       if (this.el || !document.body) return;
-      document.addEventListener('mouseover', (e) => this.over(e), true);
-      document.addEventListener('mousemove', (e) => { this.mx = e.clientX; this.my = e.clientY; if (this.shown()) this.place(); }, true);
+      // bảng hiện bằng phím (showFor): màn vẽ lại dưới con trỏ đứng yên cũng bắn sự kiện chuột -> chỉ tính khi chuột thật sự dời
+      const still = (e) => this.pinned && e.clientX === this.rx && e.clientY === this.ry;
+      document.addEventListener('mouseover', (e) => { if (!still(e)) this.over(e); }, true);
+      document.addEventListener('mousemove', (e) => {
+        if (still(e)) return;
+        this.rx = e.clientX; this.ry = e.clientY;
+        if (this.pinned) this.hide();
+        this.mx = e.clientX; this.my = e.clientY; if (this.shown()) this.place();
+      }, true);
       document.addEventListener('mousedown', () => this.hide(), true);
-      document.addEventListener('keydown', () => this.hide(), true);
+      document.addEventListener('keydown', () => { if (!this.pinned) this.hide(); }, true);   // bảng hiện bằng phím: tự ẩn khi phần tử bị vẽ lại
       document.addEventListener('wheel', () => this.hide(), true);
     },
     shown() { return this.el && this.el.style.display === 'block'; },
@@ -186,9 +204,11 @@ window.SFC = window.SFC || {};
       this.el.innerHTML = html;
       this.el.style.display = 'block';
       this.place();
-      const loop = () => {   // phần tử bị vẽ lại / rời khỏi -> ẩn
-        if (!this.shown()) return;
-        if (!this.target || !this.target.isConnected || !this.target.matches(':hover')) return this.hide();
+      // mỗi lần hiện chỉ 1 vòng theo dõi: showFor gọi lại show() không qua hide() -> vòng cũ tự dừng theo mã lượt
+      const run = this.loopId = (this.loopId || 0) + 1;
+      const loop = () => {   // phần tử bị vẽ lại / rời khỏi -> ẩn (hiện bằng phím: không cần chuột đang trỏ)
+        if (run !== this.loopId || !this.shown()) return;
+        if (!this.target || !this.target.isConnected || (!this.pinned && !this.target.matches(':hover'))) return this.hide();
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
@@ -204,9 +224,20 @@ window.SFC = window.SFC || {};
       this.el.style.left = Math.round(left) + 'px';
       this.el.style.top = Math.round(top) + 'px';
     },
+    // hiện ngay bảng của phần tử el đang được chọn bằng phím / tay cầm (UX run-09: trước đây chỉ rê chuột mới đọc được),
+    // đặt cạnh dưới phải phần tử; ẩn khi bấm phím / chuột như thường hoặc khi el bị vẽ lại
+    showFor(el) {
+      const t = el && this.find(el);
+      if (!t) return this.hide();
+      const r = t.getBoundingClientRect();
+      clearTimeout(this.timer); this.timer = 0;
+      this.target = t; this.pinned = true;
+      this.mx = r.right - 2; this.my = r.bottom - 6;
+      this.show();
+    },
     hide() {
       clearTimeout(this.timer); this.timer = 0;
-      this.target = null;
+      this.target = null; this.pinned = false;
       if (this.el) this.el.style.display = 'none';
     },
   };
@@ -221,5 +252,5 @@ window.SFC = window.SFC || {};
     return `<button class="co-bench ${sel ? 'sel' : ''} ${off ? 'off' : ''}" ${attrs || ''} title="${tip}"><u>${esc(_t('BENCH'))}</u>${who || `<span>${tip}</span>`}</button>`;
   }
 
-  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, spaceIcon, navRect, navPick, coopBench, tip, coreTip };
+  SFC.UIHelpers = { $, esc, CORES, ARCH, PX, RARITY, coreChip, ultName, traitChips, traitList, miniCard, keyLabel, psIcon, spaceIcon, realMove, navRect, navPick, coopBench, tip, coreTip };
 })();

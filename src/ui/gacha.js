@@ -23,7 +23,8 @@ window.SFC = window.SFC || {};
   // wear = costume (lọc theo slot) · core = Core (lọc theo trường phái) · drill = thẻ DRILL (mở -> chọn 1 trong 3, ui/drill.js)
   // hệ chỉ số ẩn (progression.attrs.hidden): không có tab DRILL
   const INV_TABS = () => (SFC_CONFIG.progression.attrs.hidden ? [['wear'], ['core']] : [['wear'], ['core'], ['drill']]);
-  const INV_LABEL = () => ({ wear: _t('APPEARANCE'), core: _t('CORES'), drill: _t('DRILL CARDS') });   // dịch lúc vẽ (đổi ngôn ngữ khi đang chạy)
+  // wear = COSTUMES (không gọi APPEARANCE: trùng tên trang NHÂN VẬT > APPEARANCE chỉ có tên / màu da / màu tóc)
+  const INV_LABEL = () => ({ wear: _t('COSTUMES'), core: _t('CORES'), drill: _t('DRILL CARDS') });   // dịch lúc vẽ (đổi ngôn ngữ khi đang chạy)
   const DRILL_COLOR = '#6bff4f';   // viền / ánh thẻ DRILL (cọc xanh lá)
   const INV_COLS = 6;
   const REEL_STEP = 56, REEL_CARD = 52, REEL_W = 560; // khớp CSS .rcard / .reel
@@ -64,7 +65,7 @@ window.SFC = window.SFC || {};
       : c.tags.map((t) => `<span style="--c:${ARCH()[t].color}">${PX().arch(t, 'sm')} ${ARCH()[t].label}</span>`).join('');
     return `<div class="card static ${c.role === 'ult' ? 'ult' : ''} ${cls}" style="--c:${r.color};--c2:${r.color};--t:${r.color}">
         <div class="card-tags">${tags}</div>
-        <div class="card-art">${SFC.CorePreview.html(aw ? id + ':' + lv : id, w, h)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>
+        <div class="card-art">${SFC.CorePreview.html(aw ? id + ':' + lv : id, w, h)}<span class="card-emoji">${PX().core(id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(SFC.Input.label('ultimate'))}</kbd>` : ''}</div>
         <div class="card-name">${esc(aw ? aw.name : c.name)}</div>
         ${SFC.CoreScale.statLine(id)}
         <div class="card-desc">${aw ? esc(aw.desc) : SFC.CoreScale.describe(id)}</div></div>`;
@@ -115,7 +116,7 @@ window.SFC = window.SFC || {};
     invTab: 0,
     invSel: 0,
     invArch: 0,       // mục CORE: lọc theo trường phái (0 = tất cả)
-    invSlot: 0,       // mục APPEARANCE: lọc theo slot costume (0 = tất cả)
+    invSlot: 0,       // mục COSTUMES: lọc theo slot costume (0 = tất cả)
     opening: null,    // lượt quay hiện tại
     confirm: null,    // { key, t } — phân rã món hiếm cần bấm 2 lần
     shopBack: 'home',
@@ -181,14 +182,16 @@ window.SFC = window.SFC || {};
         const e = entry(x.kind, x.id), own = e.count > 0;
         return `<div class="icard mini ${own ? 'owned' : ''}" style="--rc:${RAR(x.rarity).color}" title="${esc(nameOf(e))}">${iconHtml(e)}${own ? `<b class="ic-count">×${e.count}</b>` : ''}</div>`;
       }).join('');
-      const act = c.free ? `<kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN FREE BOX')} <span class="free">${PX().ui('gift', 'sm')} ×${PF().freeBoxes(id)}</span>`
-        : c.ok ? `<kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN BOX · {price}', { price: coin(b.price) })}` : c.reason === 'level' ? `<span class="bad">${PX().ui('lock', 'sm')} ${_t('Requires LV {n}', { n: b.level })}</span>` : `<span class="bad">${_t('Not enough gold ({price})', { price: coin(b.price) })}</span>`;
+      // mở được: nút bấm thật (chuột = phím Enter) · không mở được: chỉ là dòng chữ đỏ báo lý do
+      const act = c.free ? `<button class="sd-act g-btn main" data-open="1"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN FREE BOX')} <span class="free">${PX().ui('gift', 'sm')} ×${PF().freeBoxes(id)}</span></button>`
+        : c.ok ? `<button class="sd-act g-btn main" data-open="1"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN BOX · {price}', { price: coin(b.price) })}</button>`
+        : `<div class="sd-act">${c.reason === 'level' ? `<span class="bad">${PX().ui('lock', 'sm')} ${_t('Requires LV {n}', { n: b.level })}</span>` : `<span class="bad">${_t('Not enough gold ({price})', { price: coin(b.price) })}</span>`}</div>`;
       return `${this.header(_t('SHOP'))}
         <div class="gacha-body shop-g">
           <div class="box-list">${rows}</div>
           <div class="box-detail">
             <div class="bd-top">${boxArt(b.color, true)}
-              <div class="bd-info"><div class="sd-name">${esc(b.name)}</div><div class="sd-desc">${esc(b.desc)}</div><div class="sd-act">${act}</div></div>
+              <div class="bd-info"><div class="sd-name">${esc(b.name)}</div><div class="sd-desc">${esc(b.desc)}</div>${act}</div>
             </div>
             <div class="bd-odds">${odds}</div>
             <div class="bd-pool">${pool}</div>
@@ -215,7 +218,7 @@ window.SFC = window.SFC || {};
     pageOpen() {
       const o = this.opening, b = PROG().boxes[o.boxId];
       const cards = o.reel.map((x) => `<div class="rcard" style="--rc:${RAR(x.rarity).color}">${iconHtml(entry(x.kind, x.id))}</div>`).join('');
-      const reveal = o.done ? this.revealHtml(o) : `<div class="reveal wait"><span>${_t('Spinning...')}</span><span><kbd>${K('confirm', 'Enter')}</kbd> ${_t('skip')}</span></div>`;
+      const reveal = o.done ? this.revealHtml(o) : `<div class="reveal wait"><span>${_t('Spinning...')}</span><button class="g-btn" data-ract="skip"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('skip')}</button></div>`;
       return `${this.header(_t('OPEN BOX'), `<div class="open-box">${boxArt(b.color)}<span>${esc(b.name)}</span></div>`)}
         <div class="reel-wrap ${o.done ? 'done' : ''}" style="--rc:${RAR(o.win.rarity).color}">
           <div class="reel"><div class="reel-strip" style="transform:translateX(${-(o.done ? o.dist : o.pos)}px)">${cards}</div></div>
@@ -233,7 +236,7 @@ window.SFC = window.SFC || {};
       if (isCore) {
         const c = CORE_LIST()[w.id];
         // mở hộp ra Core: phát luôn khoảnh khắc của Core đó
-        art = `<div class="rv-core-art">${SFC.CorePreview.html(w.id, 150, 66)}<span class="card-emoji">${PX().core(w.id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${K('ultimate', 'X')}</kbd>` : ''}</div>`;
+        art = `<div class="rv-core-art">${SFC.CorePreview.html(w.id, 150, 66)}<span class="card-emoji">${PX().core(w.id)}</span>${c.role === 'ult' ? `<kbd class="card-x">${esc(SFC.Input.label('ultimate'))}</kbd>` : ''}</div>`;
         const lv = PF().coreLevel(w.id);
         note = lv > PF().data.level ? `<span class="bad">${_t('Requires LV {n} to use in matches', { n: lv })}</span>` : _t('Added to your mid-match Core pool');
       } else {
@@ -241,10 +244,17 @@ window.SFC = window.SFC || {};
         note = PROG().slots[PROG().items[w.id].slot].label;
       }
       const equipped = !isCore && PF().data.look[PROG().items[w.id].slot] === w.id;
+      // mỗi hành động là 1 nút (chuột bấm = phím ghi trên nút) · hết gold: OPEN ANOTHER mờ đi (bấm vẫn báo lý do)
+      const btn = (act, key, label, cls = '') => `<button class="rv-act g-btn ${cls}" data-ract="${act}"><kbd>${key}</kbd> ${label}</button>`;
+      const free = PF().freeBoxes(o.boxId);
+      const again = btn('again', K('confirm', 'Enter'), `${_t('OPEN ANOTHER')} ${free ? `<span class="free">${PX().ui('gift', 'sm')} ${_t('FREE ×{n}', { n: free })}</span>` : coin(b.price)}`, PF().canOpen(o.boxId).ok ? 'main' : 'main off');
+      // mở từ ACHIEVEMENTS (nhận thưởng hộp): không bao giờ có OPEN ANOTHER tốn gold. Còn hộp FREE cùng loại: Enter = mở tiếp (miễn phí),
+      // hết: Enter = về ACHIEVEMENTS -> bấm Enter liên tục để nhận thưởng không bao giờ tiêu gold
+      const toAch = (main) => btn(main ? 'again' : 'back', main ? K('confirm', 'Enter') : K('back', 'Esc'), _t('BACK TO ACHIEVEMENTS'), main ? 'main' : '');
       const acts = [
-        `<span class="rv-act"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN ANOTHER')} ${PF().freeBoxes(o.boxId) ? `<span class="free">${PX().ui('gift', 'sm')} ${_t('FREE ×{n}', { n: PF().freeBoxes(o.boxId) })}</span>` : coin(b.price)}</span>`,
-        !isCore && e.count > 0 ? `<span class="rv-act ${equipped ? 'on' : ''}"><kbd>${K('equip', 'E')}</kbd> ${equipped ? _t('EQUIPPED') : _t('EQUIP')}</span>` : '',
-        e.count > 0 && !o.dismantled ? `<span class="rv-act"><kbd>${K('dismantle', 'X')}</kbd> ${_t('DISMANTLE +{n}', { n: PF().dismantleValue(w.kind, w.id) })}</span>` : '',
+        this.openBack !== 'ach' ? again : free ? again + toAch(false) : toAch(true),
+        !isCore && e.count > 0 ? (equipped ? `<span class="rv-act on">${PX().ui('check', 'sm')} ${_t('EQUIPPED')}</span>` : btn('equip', K('equip', 'E'), _t('EQUIP'))) : '',
+        e.count > 0 && !o.dismantled ? btn('dismantle', K('dismantle', 'X'), _t('DISMANTLE +{n}', { n: PF().dismantleValue(w.kind, w.id) })) : '',
         o.dismantled ? `<span class="rv-act ok">${_t('Dismantled {gold}', { gold: coin('+' + o.dismantled) })}</span>` : '',
       ].join('');
       return `<div class="reveal r-${w.rarity}" style="--rc:${r.color}">
@@ -329,6 +339,8 @@ window.SFC = window.SFC || {};
       if (coreTab) filter = chips(ARCH_KEYS(), this.invArch, 'data-iarch', (k) => ARCH()[k] && { color: ARCH()[k].color, label: ARCH()[k].label, icon: PX().arch(k) });
       else if (tab === 'wear') filter = chips(SLOT_KEYS(), this.invSlot, 'data-islot', (k) => PROG().slots[k] && { color: PROG().slots[k].color, label: PROG().slots[k].label, icon: PX().html(PROG().slots[k].icon) });
       const dupes = this.dupes(list);
+      // có đồ trùng trong mục đang xem: nút phân rã hết dưới lưới (giữ lại 1 mỗi món, vẫn bấm 2 lần để chắc) — trước chỉ có phím trong dòng gợi ý đã ẩn
+      const dupBtn = dupes.count ? `<button class="g-btn inv-dupes" data-iact="dupes">${_tn('{key} dismantle {n} duplicate (+{gold})', '{key} dismantle {n} duplicates (+{gold})', dupes.count, { key: `<kbd>${K('restart', 'R')}</kbd>`, gold: dupes.gold })}</button>` : '';
       const empty = drillTab ? _t('No drill cards yet. Level up to earn them!') : _t('Nothing here yet. Open a box in the SHOP!');
       const cards = list.map((e, i) => {
         const cls = [i === this.invSel ? 'sel' : '', this.isEquipped(e) && e.kind === 'item' ? 'eq' : '', e.def ? 'def' : '', e.locked ? 'lock' : ''].join(' ');
@@ -347,13 +359,15 @@ window.SFC = window.SFC || {};
       ].filter(Boolean).join(' · ');
       return `${this.header(_t('INVENTORY'), tabs)}
         <div class="gacha-body inv-g">
-          <div class="inv-left">${filter}<div class="inv-grid">${cards}</div></div>
+          <div class="inv-left">${filter}<div class="inv-grid">${cards}</div>${dupBtn}</div>
           <div class="inv-detail">${list[this.invSel] ? this.invDetail(list[this.invSel]) : ''}</div>
         </div>
         <!--msg--><div class="m-hint">${hint}</div>`;
     },
 
     invDetail(e) {
+      // nút hành động (chuột bấm = phím ghi trên nút), đi qua equipEntry / dismantleEntry như phím (giữ luật bấm 2 lần cho món hiếm)
+      const iBtn = (act, key, label, cls = '') => `<button class="sd-act g-btn ${cls}" data-iact="${act}"><kbd>${key}</kbd> ${label}</button>`;
       if (e.kind === 'drill') {
         const D = PROG().attrs.drills;
         return `<div class="sd-preview inv-drill" style="--rc:${DRILL_COLOR}">${PX().ui('cone', 'x3')}</div>
@@ -362,7 +376,7 @@ window.SFC = window.SFC || {};
           <div class="sd-name">${_t('DRILL CARD')}</div>
           <div class="sd-desc">${_tn('Open a card to pick 1 of {choices} drills. Each pick raises your stats for good. You earn {n} card every level.', 'Open a card to pick 1 of {choices} drills. Each pick raises your stats for good. You earn {n} cards every level.', D.perLevel, { choices: D.choices })}</div>
           <div class="sd-req">${_t('Owned ×{n}', { n: e.count })}</div>
-          <div class="sd-act"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('OPEN')}</div>
+          ${iBtn('equip', K('confirm', 'Enter'), _t('OPEN'), 'main')}
         </div>`;
       }
       const r = RAR(e.rarity), val = PF().dismantleValue(e.kind, e.id);
@@ -385,7 +399,7 @@ window.SFC = window.SFC || {};
         return `${coreCard(e.id, e.locked ? 'locked' : '')}
           <div class="sd-side"><div class="sd-req">${e.locked ? _t('Locked') : count}</div><div class="sd-note">${status}</div>
             ${sug ? `<div class="sug-h">${_t('OFTEN PAIRED WITH')}</div>${sug}` : ''}
-            <div class="sd-act">${e.def ? '' : `<kbd>${K('dismantle', 'X')}</kbd> ${_t('DISMANTLE {gold}', { gold: coin('+' + val) })}`}</div></div>`;
+            ${e.def ? '' : iBtn('dismantle', K('dismantle', 'X'), _t('DISMANTLE {gold}', { gold: coin('+' + val) }))}</div>`;
       }
       const it = PROG().items[e.id], eq = this.isEquipped(e);
       return `<div class="sd-preview"><canvas class="avatar big" data-avatar="spin" data-try="${e.id}"></canvas></div>
@@ -394,8 +408,8 @@ window.SFC = window.SFC || {};
           <div class="sd-name">${esc(it.name)}</div>
           <div class="sd-desc">${esc(it.desc)}</div>
           <div class="sd-req">${PROG().slots[it.slot].label} · ${count}</div>
-          <div class="sd-act">${eq ? `<span class="on">${_t('EQUIPPED')}</span>` : `<kbd>${K('confirm', 'Enter')}</kbd> ${_t('EQUIP')}`}</div>
-          ${e.def ? '' : `<div class="sd-act"><kbd>${K('dismantle', 'X')}</kbd> ${_t('DISMANTLE {gold}', { gold: coin('+' + val) })}</div>`}
+          ${eq ? `<div class="sd-act"><span class="on">${PX().ui('check', 'sm')} ${_t('EQUIPPED')}</span></div>` : iBtn('equip', K('confirm', 'Enter'), _t('EQUIP'), 'main')}
+          ${e.def ? '' : iBtn('dismantle', K('dismantle', 'X'), _t('DISMANTLE {gold}', { gold: coin('+' + val) }))}
         </div>`;
     },
 
@@ -450,6 +464,18 @@ window.SFC = window.SFC || {};
       menu.go('inv');
     },
 
+    // mở mục COSTUMES lọc sẵn 1 slot ('all' = tất cả), chọn sẵn món đang mặc ở slot đó
+    // (NHÂN VẬT: bấm 1 dòng đồ đang mặc · APPEARANCE > COSTUMES)
+    openSlot(menu, slot, back) {
+      this.invTab = Math.max(0, INV_TABS().findIndex(([k]) => k === 'wear'));
+      this.invSlot = Math.max(0, SLOT_KEYS().indexOf(slot));
+      const on = PF().data.look[slot];
+      this.invSel = Math.max(0, this.invEntries().findIndex((e) => e.id === on));
+      this.invBack = back;
+      menu.msg = '';
+      menu.go('inv');
+    },
+
     /* ================= PHÍM ================= */
     input(menu, input) {
       if (menu.page === 'shop') return this.inputShop(menu, input);
@@ -476,10 +502,21 @@ window.SFC = window.SFC || {};
     inputOpen(menu, input) {
       const o = this.opening;
       if (!o) return;
-      if (!o.done) { if (input.wasPressed('confirm')) o.t0 = performance.now() - o.dur * 1000; return; }
-      if (input.wasPressed('confirm')) return this.openBox(menu, o.boxId);
-      if (input.wasPressed('equip') && o.win.kind === 'item') { this.equipEntry(menu, entry('item', o.win.id)); menu.render(); }
-      if (input.wasPressed('dismantle') && !o.dismantled) {
+      if (!o.done) { if (input.wasPressed('confirm')) this.openAct(menu, 'skip'); return; }
+      if (input.wasPressed('confirm')) return this.openAct(menu, 'again');
+      if (input.wasPressed('equip')) this.openAct(menu, 'equip');
+      if (input.wasPressed('dismantle')) this.openAct(menu, 'dismantle');
+    },
+
+    // hành động trên màn mở hộp — phím và nút bấm (data-ract) đi chung 1 đường
+    openAct(menu, act) {
+      const o = this.opening;
+      if (!o) return;
+      if (!o.done) { if (act === 'skip') o.t0 = performance.now() - o.dur * 1000; return; }
+      if (act === 'back' || (act === 'again' && this.openBack === 'ach' && !PF().freeBoxes(o.boxId))) return this.back(menu);
+      if (act === 'again') return this.openBox(menu, o.boxId);
+      if (act === 'equip' && o.win.kind === 'item') { this.equipEntry(menu, entry('item', o.win.id)); menu.render(); }
+      if (act === 'dismantle' && !o.dismantled) {
         const e = entry(o.win.kind, o.win.id);
         const g = this.dismantleEntry(menu, e);
         if (g) { o.dismantled = g; menu.render(); }
@@ -529,19 +566,33 @@ window.SFC = window.SFC || {};
 
     /* ================= CHUỘT ================= */
     click(menu, e) {
+      // bấm 1 hộp bên trái chỉ CHỌN hộp (không mua: double-click quen tay không mất gold) · mua bằng nút OPEN BOX
       const box = e.target.closest('[data-box]');
       if (box) {
         const i = +box.dataset.box;
-        if (i === this.boxSel) this.activateBox(menu);
-        else { this.boxSel = i; menu.msg = ''; SFC.Audio.menu(); menu.render(); }
+        if (i !== this.boxSel) { this.boxSel = i; menu.msg = ''; SFC.Audio.menu(); menu.render(); }
         return true;
       }
+      if (e.target.closest('[data-open]')) { this.activateBox(menu); return true; }
+      const ra = e.target.closest('[data-ract]');
+      if (ra) { this.openAct(menu, ra.dataset.ract); return true; }
+      // đang quay: bấm vào dải quay = bỏ qua (như Enter)
+      if (menu.page === 'open' && this.opening && !this.opening.done && e.target.closest('.reel-wrap')) { this.openAct(menu, 'skip'); return true; }
       const af = e.target.closest('[data-iarch]');
       if (af) { this.invArch = +af.dataset.iarch; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
       const sf = e.target.closest('[data-islot]');
       if (sf) { this.invSlot = +sf.dataset.islot; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
       const tab = e.target.closest('[data-itab]');
       if (tab) { this.invTab = +tab.dataset.itab; this.invSel = 0; menu.msg = ''; SFC.Audio.menu(); menu.render(); return true; }
+      // túi đồ: nút EQUIP / OPEN · DISMANTLE (món đang chọn) · phân rã đồ trùng
+      const ia = e.target.closest('[data-iact]');
+      if (ia) {
+        const list = this.invEntries(), act = ia.dataset.iact;
+        if (act === 'equip') this.equipEntry(menu, list[this.invSel]);
+        else if (act === 'dismantle') this.dismantleEntry(menu, list[this.invSel]);
+        else if (act === 'dupes') this.dismantleDupes(menu, list);
+        return true;
+      }
       const ic = e.target.closest('[data-ic]');
       if (ic) {
         const i = +ic.dataset.ic;
@@ -552,12 +603,12 @@ window.SFC = window.SFC || {};
       return false;
     },
 
-    // costume đang mặc (hiện ở trang NHÂN VẬT)
+    // costume đang mặc (hiện ở trang NHÂN VẬT) — mỗi dòng là nút: bấm -> COSTUMES lọc đúng slot đó (Menu.bindMouse, data-eqslot)
     equippedHtml() {
       const look = PF().data.look, P = PROG();
       return Object.keys(P.slots).map((slot) => {
         const id = look[slot], e = entry('item', id);
-        return `<div class="eq-row" style="--rc:${RAR(e.rarity).color}"><span>${P.slots[slot].label}</span><b>${esc(P.items[id].name)}</b></div>`;
+        return `<button class="eq-row" data-eqslot="${slot}" style="--rc:${RAR(e.rarity).color}"><span>${P.slots[slot].label}</span><b>${esc(P.items[id].name)}</b></button>`;
       }).join('');
     },
   };

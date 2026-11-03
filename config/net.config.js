@@ -88,5 +88,6 @@ SFC_CONFIG.net = {
   jitterPct: 0.95,
   jitterPad: 0.015,
   draftTimeLimit: 15,          // giây tối đa để chọn Core trong trận online
+  draftTimeWarn: 5,            // còn bấy nhiêu giây: thanh giờ chọn Core đỏ + nhấp nháy (src/ui/draft.js)
   difficulty: 'normal',        // độ khó AI đồng đội trong trận online
 };

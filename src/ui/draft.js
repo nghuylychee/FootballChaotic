@@ -18,7 +18,9 @@ window.SFC = window.SFC || {};
       const picked = !!d.picked[me];
       const mp = game.cores.seatOwner(me);   // Core là của riêng cầu thủ người chơi điều khiển
       const ownedTags = new Set(game.cores.coresOf(mp).flatMap((id) => CORES().list[id].tags));
-      const timer = d.limit > 0 ? `<span id="draft-timer" class="draft-timer">${Math.ceil(Math.max(0, d.t))}s</span>` : '';
+      // giờ chọn (ranked / online): thanh rút dần ngang hàng lá bài + số giây nhỏ (#draft-timer: chữ do updateHud cập nhật,
+      // thanh do draftClockView chạy mỗi khung)
+      const clock = d.limit > 0 ? `<div class="draft-clock n${opts.length}"><i></i><b id="draft-timer">${Math.ceil(Math.max(0, d.t))}s</b></div>` : '';
       const cards = opts.map((id, i) => {
         const c = CORES().list[id];
         const rar = RARITY(c.rarity);
@@ -73,11 +75,12 @@ window.SFC = window.SFC || {};
       }).join('');
       const isUltTarget = d.special === 'ult' || (targetSlot >= total && !ult);
       const ultSlot = ult ? `<div class="d-slot ult filled" title="${esc(CORES().list[ult].name)}">${PX().core(ult, 'sm')}</div>`
-        : `<div class="d-slot ult empty ${isUltTarget ? 'target' : ''}" title="${esc(_t('Ultimate'))}"><kbd>X</kbd></div>`;
+        : `<div class="d-slot ult empty ${isUltTarget ? 'target' : ''}" title="${esc(_t('Ultimate'))}"><kbd>${esc(keyLabel('ultimate'))}</kbd></div>`;
       const traits = traitChips(game, mp);
 
       this.el.draft.innerHTML = `
-        <div class="draft-title">${title}${timer}</div>
+        <div class="draft-title">${title}</div>
+        ${clock}
         <div class="draft-sub">${sub}${reroll}</div>
         <div class="cards n${opts.length}">${cards}</div>
         ${d.note ? `<div class="draft-note">${esc(d.note).replace(/\*(.+?)\*/g, '<b>$1</b>')}</div>` : ''}
@@ -96,6 +99,9 @@ window.SFC = window.SFC || {};
           ${traits ? `<div class="draft-traits-row">${traits}</div>` : ''}
         </div>`;
       SFC.CorePreview.scan(this.el.draft);
+      this.draftClock = this.el.draft.querySelector('.draft-clock');
+      this.draftClockK = -1;
+      this.draftClockView(game);
 
       // âm thanh chia bài khi lá mới xuất hiện
       const roundKey = `${d.round}:${d.pre ? 'pre' : ''}:${d.special || ''}`;
@@ -120,6 +126,8 @@ window.SFC = window.SFC || {};
         }
         return;
       }
+      // màn chọn vừa hiện: lá còn đang chia, chưa nhận phím (draftLocked)
+      if (this.draftLocked()) return;
       const d = game.draft;
       if (!d || d.picked[game.me]) return;
       const n = (d.options[game.me] || []).length;
@@ -251,7 +259,7 @@ window.SFC = window.SFC || {};
     // (online: chỉ diễn khi đồng hồ chọn còn đủ giờ, không thì gửi luôn — banner NEW ULTIMATE vẫn báo)
     pick(game, i) {
       const d = game.draft;
-      if (!d || d.picked[game.me] || SFC.RecipeFx.active || this.draftAnimActive || this.draftMorphActive) return;
+      if (!d || d.picked[game.me] || SFC.RecipeFx.active || this.draftAnimActive || this.draftMorphActive || this.draftLocked()) return;
       const id = (d.options[game.me] || [])[i], mp = game.cores.seatOwner(game.me);
       const rc = id && mp && game.cores.recipesOn() ? game.cores.bestRecipe(mp, id) : null;
       this.draftSel = i;
@@ -288,8 +296,21 @@ window.SFC = window.SFC || {};
     // đóng màn chọn: khối YOUR BUILD bay về abar rồi ẩn — trừ khi lượt mới đã mở trong lúc bay
     closeDraft(game) { this.morphDraftToAbar(game, () => { if (!this.freshDraft(game)) this.show(null); }); },
 
+    // thanh giờ chọn Core: rút theo d.t / d.limit (khách online: d.t theo snapshot, net/sync.js), đỏ + nhấp nháy ở mấy giây cuối
+    // (net.draftTimeWarn). Gọi lúc vẽ màn chọn và mỗi khung qua draftWaitView; chỉ đổi style khi giá trị đổi, không vẽ lại lá bài
+    draftClockView(game) {
+      const el = this.draftClock, d = game && game.draft;
+      if (!el || !el.isConnected || !d || !(d.limit > 0)) return;
+      const k = Math.round(Math.max(0, Math.min(1, d.t / d.limit)) * 1000);
+      if (k === this.draftClockK) return;
+      this.draftClockK = k;
+      el.style.setProperty('--k', (k / 1000).toFixed(3));
+      el.classList.toggle('warn', d.t <= (SFC_CONFIG.net.draftTimeWarn || 0));
+    },
+
     // chữ "đang chờ người khác chọn" giữa màn: mình đã chọn, lượt chọn chưa xong, màn chọn đã đóng (gọi mỗi khung từ updateHud)
     draftWaitView(game) {
+      this.draftClockView(game);
       const d = game.draft;
       const on = game.state === 'draft' && !!d && !!d.picked[game.me] && !this.current && !this.draftMorphActive;
       let el = this.el.draftWait;
@@ -380,11 +401,17 @@ window.SFC = window.SFC || {};
       this.draftMorphTimer = setTimeout(finish, 380);
     },
 
+    // vừa mở lượt chọn / màn chọn vừa hiện lại (UI.show): phím chọn, đổi bài và click lá chưa có tác dụng trong
+    // cores.draft.inputGrace giây -> bấm liên tục cho qua ăn mừng bàn thắng không tự lấy lá 1 khi chưa kịp nhìn
+    draftArm() { this.draftOpenAt = performance.now(); },
+    draftLocked() { return performance.now() - (this.draftOpenAt || 0) < (SFC_CONFIG.cores.draft.inputGrace || 0) * 1000; },
+
     // sự kiện trận liên quan màn chọn (UI.consume gọi): draft = mở lượt mới · draftWait = có người chọn / đổi bài · corePicked = lượt xong
     // overlay = đang mở Pause (lượt mới vẫn vẽ sẵn nhưng chưa hiện)
     draftEvent(game, e, evs, overlay) {
       if (e.type === 'draft') {
         this.draftSel = 0;
+        this.draftArm();
         this.el.draft.classList.remove('draft-fade-out');
         const draftSquare = this.el.draft.querySelector('.draft-square');
         if (draftSquare) draftSquare.style.visibility = '';

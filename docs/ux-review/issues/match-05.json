@@ -23,5 +23,6 @@
  "limits": "Chỉ trong LEGEND TRIAL. Trận run thường có LEGEND: phím nằm trong Pause (match-08). Chưa thử với tay cầm thật (Input.techKeys đã có nhánh tay cầm).",
  "videoNote": "Đầu video là banner mở bài, sau đó nhìn bảng tiến độ trên HUD: bản sau có [Q] + [W] dưới '0 / 3 LOFTED THROUGH'.",
  "before": "videos/match-05-before.mp4",
- "after": "videos/match-05-after.mp4"
+ "after": "videos/match-05-after.mp4",
+ "status": "applied"
 }

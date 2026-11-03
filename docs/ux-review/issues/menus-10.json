@@ -1,22 +1,26 @@
 {
-  "id": "menus-10",
-  "area": "menus",
-  "screen": "SETTINGS › popup LANGUAGE",
-  "source": "agent",
-  "severity": "low",
-  "title": "Popup LANGUAGE không đóng được bằng chuột",
-  "problem": "Mở LANGUAGE trong SETTINGS rồi muốn thôi thì chuột không có đường ra: không có nút đóng, bấm ra ngoài cũng không có gì, chỉ Esc mới thoát. Rê chuột ngang qua danh sách còn làm cả popup đổi sang ngôn ngữ của dòng đó (vd. tiếng Tây Ban Nha) và giữ nguyên như vậy, dễ tưởng mình đã lỡ đổi ngôn ngữ.",
-  "goal": "Khi không phải lần đầu mở game, popup ngôn ngữ đóng được bằng chuột như mọi popup khác, và rời chuột khỏi danh sách thì popup trở lại ngôn ngữ đang dùng.",
-  "why": "Người chơi dùng chuột bị kẹt trong popup, phải đoán phím Esc. Chữ đổi sang tiếng lạ làm họ hoảng, tưởng đã đổi mất ngôn ngữ.",
-  "fix": "Popup có thêm nút ◀ BACK ở dưới (chữ cũng đổi theo dòng đang xem trước), và bấm ra ngoài khung là đóng, không đổi gì (giống Esc). Chuột rời khỏi danh sách thì tiêu đề / ghi chú quay về ngôn ngữ đang dùng; xem trước bằng ngôn ngữ của từng dòng vẫn còn khi chuột nằm trên dòng đó. Lần đầu mở game vẫn bắt buộc chọn như cũ (không có BACK, bấm ra ngoài không đóng). Kỹ thuật: langpick.js thêm .lp-back (dùng lại chuỗi 'BACK' đã dịch qua I18n.tIn), click ngoài .lp-box = close(null), mousemove ngoài .lp-list trả sel về dòng lúc mở.",
-  "why_this": "Giữ được ý đồ hay của popup (người không đọc được tiếng Anh vẫn thấy chữ bằng tiếng của mình khi rê lên dòng đó), chỉ thêm lối thoát quen thuộc và bỏ cảm giác 'đã đổi rồi'.",
-  "alternatives": [
-    "Chỉ cho bấm ra ngoài để đóng, không thêm nút — gọn, nhưng người chơi không biết là bấm ra ngoài được",
-    "Bỏ hẳn xem trước khi rê chuột — hết rối, nhưng mất đi phần giúp người không đọc được tiếng Anh"
-  ],
-  "files": ["src/ui/langpick.js", "css/style.css"],
-  "limits": "Nút ◀ BACK chỉ bấm bằng chuột (bàn phím / tay cầm vẫn dùng phím back như trước). Chưa thử trên màn đầu tiên khi mở game lần đầu ngoài việc đọc code (nhánh first giữ nguyên).",
-  "videoNote": "Trước: rê qua danh sách rồi ra ngoài thì popup kẹt ở tiếng Tây Ban Nha, bấm ra ngoài / bấm lại không thoát. Sau: rời danh sách là về tiếng Anh, bấm ra ngoài thì đóng, mở lại rồi bấm ◀ BACK cũng đóng.",
-  "before": "videos/menus-10-before.mp4",
-  "after": "videos/menus-10-after.mp4"
+ "id": "menus-10",
+ "area": "menus",
+ "screen": "SETTINGS › popup LANGUAGE",
+ "source": "agent",
+ "severity": "low",
+ "title": "Popup LANGUAGE không đóng được bằng chuột",
+ "problem": "Mở LANGUAGE trong SETTINGS rồi muốn thôi thì chuột không có đường ra: không có nút đóng, bấm ra ngoài cũng không có gì, chỉ Esc mới thoát. Rê chuột ngang qua danh sách còn làm cả popup đổi sang ngôn ngữ của dòng đó (vd. tiếng Tây Ban Nha) và giữ nguyên như vậy, dễ tưởng mình đã lỡ đổi ngôn ngữ.",
+ "goal": "Khi không phải lần đầu mở game, popup ngôn ngữ đóng được bằng chuột như mọi popup khác, và rời chuột khỏi danh sách thì popup trở lại ngôn ngữ đang dùng.",
+ "why": "Người chơi dùng chuột bị kẹt trong popup, phải đoán phím Esc. Chữ đổi sang tiếng lạ làm họ hoảng, tưởng đã đổi mất ngôn ngữ.",
+ "fix": "Popup có thêm nút ◀ BACK ở dưới (chữ cũng đổi theo dòng đang xem trước), và bấm ra ngoài khung là đóng, không đổi gì (giống Esc). Chuột rời khỏi danh sách thì tiêu đề / ghi chú quay về ngôn ngữ đang dùng; xem trước bằng ngôn ngữ của từng dòng vẫn còn khi chuột nằm trên dòng đó. Lần đầu mở game vẫn bắt buộc chọn như cũ (không có BACK, bấm ra ngoài không đóng). Kỹ thuật: langpick.js thêm .lp-back (dùng lại chuỗi 'BACK' đã dịch qua I18n.tIn), click ngoài .lp-box = close(null), mousemove ngoài .lp-list trả sel về dòng lúc mở.",
+ "why_this": "Giữ được ý đồ hay của popup (người không đọc được tiếng Anh vẫn thấy chữ bằng tiếng của mình khi rê lên dòng đó), chỉ thêm lối thoát quen thuộc và bỏ cảm giác 'đã đổi rồi'.",
+ "alternatives": [
+  "Chỉ cho bấm ra ngoài để đóng, không thêm nút — gọn, nhưng người chơi không biết là bấm ra ngoài được",
+  "Bỏ hẳn xem trước khi rê chuột — hết rối, nhưng mất đi phần giúp người không đọc được tiếng Anh"
+ ],
+ "files": [
+  "src/ui/langpick.js",
+  "css/style.css"
+ ],
+ "limits": "Nút ◀ BACK chỉ bấm bằng chuột (bàn phím / tay cầm vẫn dùng phím back như trước). Chưa thử trên màn đầu tiên khi mở game lần đầu ngoài việc đọc code (nhánh first giữ nguyên).",
+ "videoNote": "Trước: rê qua danh sách rồi ra ngoài thì popup kẹt ở tiếng Tây Ban Nha, bấm ra ngoài / bấm lại không thoát. Sau: rời danh sách là về tiếng Anh, bấm ra ngoài thì đóng, mở lại rồi bấm ◀ BACK cũng đóng.",
+ "before": "videos/menus-10-before.mp4",
+ "after": "videos/menus-10-after.mp4",
+ "status": "applied"
 }

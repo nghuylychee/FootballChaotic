@@ -23,5 +23,6 @@
  "limits": "Chưa thử với tay cầm thật (Input.key tự đổi sang nút tay cầm). Chữ '+NaN' ở khung thưởng trong video là lỗi khác (profile.js), agent khác đang sửa.",
  "videoNote": "Góc dưới phải: màn VS (0–2 s), Beat 1 VICTORY trên sân, rồi lúc đếm REWARDS. Bản trước chỉ có chữ mờ ở góc trái màn VS. Ô '⌨ ...' ở góc là phím đang bấm của bộ quay, không phải của game.",
  "before": "videos/match-11-before.mp4",
- "after": "videos/match-11-after.mp4"
+ "after": "videos/match-11-after.mp4",
+ "status": "applied"
 }

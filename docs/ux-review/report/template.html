@@ -95,6 +95,7 @@ article.issue[hidden] { display: none; }
 .tag { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font-weight: 600; }
 .tag.sev { border-color: transparent; color: #fff; background: var(--sev); }
 .tag.src-user { background: var(--gold-fill); color: #17181c; border-color: transparent; }
+.tag.applied { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); border-color: transparent; }
 .ih h3 { font-size: 20px; font-weight: 800; line-height: 1.3; }
 .ih .problem { color: var(--ink); max-width: 80ch; }
 
@@ -193,6 +194,7 @@ footer { color: var(--muted); font-size: 13px; display: grid; gap: 6px; }
     [ISS.length, 'vấn đề có video'],
     [ISS.filter((i) => i.source === 'user').length, 'từ danh sách của bạn'],
     [ISS.filter((i) => i.severity === 'high').length, 'mức nặng'],
+    [ISS.filter((i) => i.status === 'applied').length, 'đã áp vào game'],
   ];
   const stEl = $('#stats');
   stats.forEach(([n, l]) => stEl.append(el('div', { class: 'stat' }, el('b', { text: String(n) }), el('span', { text: l }))));
@@ -235,6 +237,7 @@ footer { color: var(--muted); font-size: 13px; display: grid; gap: 6px; }
       el('div', { class: 'meta' }, el('span', { class: 'num', text: '#' + String(idx + 1).padStart(2, '0') }),
         el('span', { class: 'tag sev', text: sev[0] }),
         el('span', { class: 'tag ' + (it.source === 'user' ? 'src-user' : ''), text: it.source === 'user' ? 'Bạn nêu' : 'Review tìm thêm' }),
+        it.status === 'applied' ? el('span', { class: 'tag applied', text: 'Đã áp' }) : null,
         el('span', { class: 'tag', text: it.areaLabel }), el('span', { text: it.screen })),
       el('h3', { text: it.title }),
       el('p', { class: 'problem' }, rich(it.problem))));

@@ -1,23 +1,27 @@
 {
-  "id": "user-05",
-  "area": "menus",
-  "screen": "Trang chủ (nút PLAY) + màn PLAY (thanh tab)",
-  "source": "user",
-  "severity": "high",
-  "title": "PRIVATE MATCH bị giấu sau dòng tab chữ mờ",
-  "problem": "Muốn đá với bạn thì phải đoán là bấm PLAY, rồi để ý một dòng chữ mờ nhỏ xíu trên cùng (GOAT PATH · PRIVATE MATCH). Nút PLAY ở trang chủ chỉ ghi GOAT PATH, nên không ai nghĩ PRIVATE MATCH nằm trong đó. Tab đang đóng có màu xám gần như chìm vào nền.",
-  "goal": "Từ trang chủ đã đọc được là PLAY có cả PRIVATE MATCH, và trong màn PLAY các chế độ trông như những tab bấm được thật.",
-  "why": "Chơi với bạn là lý do lớn để người ta quay lại game và rủ thêm người. Nếu không tìm thấy thì coi như tính năng không tồn tại.",
-  "fix": "Dòng nhỏ dưới chữ PLAY ở trang chủ giờ kể đủ các chế độ: \"GOAT PATH · PRIVATE MATCH\" (đang có run thì \"GOAT PATH ACT 1 · PRIVATE MATCH\"). Ở màn PLAY, mỗi chế độ là một ô tab có khung, chữ to hơn, có icon riêng (vương miện cho GOAT PATH, 2 người cho PRIVATE MATCH); tab đang mở có viền vàng chữ trắng, tab đang đóng vẫn đọc rõ chữ xám sáng. Kỹ thuật: Menu.playTabs thêm icon PixelIcon cho từng tab (tab khoá thì hiện ổ khoá), CSS .pt-tab thành ô có viền; Menu.runSub ghép tên các chế độ theo đúng PLAY_TABS, bỏ PRIVATE MATCH khi bản build khoá nó (Platform.privateMatch).",
-  "why_this": "Sửa đúng 2 chỗ người chơi nhìn để tìm chế độ (nút PLAY và thanh tab), dùng lại chuỗi đã dịch nên không thêm chữ mới, và giữ nguyên Q/E, luật khoá PRIVATE MATCH của bản demo.",
-  "alternatives": [
-    "Thêm hẳn nút PLAY WITH FRIENDS riêng ở trang chủ — dễ thấy nhất, nhưng thanh đáy thêm mục, chia sự chú ý của PLAY và trùng với HOST / JOIN đã có trong GOAT PATH",
-    "Đặt nút PRIVATE MATCH cạnh START RUN trong tab GOAT PATH — gần chỗ người chơi nhìn, nhưng đụng vào phần thân GOAT PATH đang được làm lại song song",
-    "Chỉ làm sáng chữ tab, không thêm khung / icon — sửa ít nhất, nhưng vẫn trông như một dòng chữ, không giống chỗ bấm được"
-  ],
-  "files": ["css/style.css", "src/ui/menu.js"],
-  "limits": "Thanh tab cao thêm khoảng 14px nên phần thân màn PLAY bị đẩy xuống một chút (phần thân GOAT PATH đang được agent khác làm lại, cần xem lại khi ghép). Chữ phụ dưới PLAY vẫn là cỡ nhỏ như cũ. Khi có tab RANKED (mainPath.tab bật) dòng phụ dài hơn, có thể bị cắt '…'.",
-  "videoNote": "Nhìn dòng nhỏ dưới PLAY ở trang chủ, rồi thanh tab trên cùng màn PLAY trước và sau khi đổi tab bằng phím.",
-  "before": "videos/user-05-before.mp4",
-  "after": "videos/user-05-after.mp4"
+ "id": "user-05",
+ "area": "menus",
+ "screen": "Trang chủ (nút PLAY) + màn PLAY (thanh tab)",
+ "source": "user",
+ "severity": "high",
+ "title": "PRIVATE MATCH bị giấu sau dòng tab chữ mờ",
+ "problem": "Muốn đá với bạn thì phải đoán là bấm PLAY, rồi để ý một dòng chữ mờ nhỏ xíu trên cùng (GOAT PATH · PRIVATE MATCH). Nút PLAY ở trang chủ chỉ ghi GOAT PATH, nên không ai nghĩ PRIVATE MATCH nằm trong đó. Tab đang đóng có màu xám gần như chìm vào nền.",
+ "goal": "Từ trang chủ đã đọc được là PLAY có cả PRIVATE MATCH, và trong màn PLAY các chế độ trông như những tab bấm được thật.",
+ "why": "Chơi với bạn là lý do lớn để người ta quay lại game và rủ thêm người. Nếu không tìm thấy thì coi như tính năng không tồn tại.",
+ "fix": "Dòng nhỏ dưới chữ PLAY ở trang chủ giờ kể đủ các chế độ: \"GOAT PATH · PRIVATE MATCH\" (đang có run thì \"GOAT PATH ACT 1 · PRIVATE MATCH\"). Ở màn PLAY, mỗi chế độ là một ô tab có khung, chữ to hơn, có icon riêng (vương miện cho GOAT PATH, 2 người cho PRIVATE MATCH); tab đang mở có viền vàng chữ trắng, tab đang đóng vẫn đọc rõ chữ xám sáng. Kỹ thuật: Menu.playTabs thêm icon PixelIcon cho từng tab (tab khoá thì hiện ổ khoá), CSS .pt-tab thành ô có viền; Menu.runSub ghép tên các chế độ theo đúng PLAY_TABS, bỏ PRIVATE MATCH khi bản build khoá nó (Platform.privateMatch).",
+ "why_this": "Sửa đúng 2 chỗ người chơi nhìn để tìm chế độ (nút PLAY và thanh tab), dùng lại chuỗi đã dịch nên không thêm chữ mới, và giữ nguyên Q/E, luật khoá PRIVATE MATCH của bản demo.",
+ "alternatives": [
+  "Thêm hẳn nút PLAY WITH FRIENDS riêng ở trang chủ — dễ thấy nhất, nhưng thanh đáy thêm mục, chia sự chú ý của PLAY và trùng với HOST / JOIN đã có trong GOAT PATH",
+  "Đặt nút PRIVATE MATCH cạnh START RUN trong tab GOAT PATH — gần chỗ người chơi nhìn, nhưng đụng vào phần thân GOAT PATH đang được làm lại song song",
+  "Chỉ làm sáng chữ tab, không thêm khung / icon — sửa ít nhất, nhưng vẫn trông như một dòng chữ, không giống chỗ bấm được"
+ ],
+ "files": [
+  "css/style.css",
+  "src/ui/menu.js"
+ ],
+ "limits": "Thanh tab cao thêm khoảng 14px nên phần thân màn PLAY bị đẩy xuống một chút (phần thân GOAT PATH đang được agent khác làm lại, cần xem lại khi ghép). Chữ phụ dưới PLAY vẫn là cỡ nhỏ như cũ. Khi có tab RANKED (mainPath.tab bật) dòng phụ dài hơn, có thể bị cắt '…'.",
+ "videoNote": "Nhìn dòng nhỏ dưới PLAY ở trang chủ, rồi thanh tab trên cùng màn PLAY trước và sau khi đổi tab bằng phím.",
+ "before": "videos/user-05-before.mp4",
+ "after": "videos/user-05-after.mp4",
+ "status": "applied"
 }

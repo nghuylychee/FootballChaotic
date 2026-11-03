@@ -1,26 +1,27 @@
 {
-  "id": "run-02",
-  "area": "run",
-  "screen": "Run map",
-  "source": "agent",
-  "severity": "high",
-  "title": "Map không cuộn được bằng phím / tay cầm, nhìn không biết là còn phía trên",
-  "problem": "Map một act cao khoảng 2 lần khung nhìn, vào map chỉ thấy 2–3 tầng đầu, boss nằm ngoài khung. Chỉ lăn chuột mới cuộn được: ↑ / ↓ không làm gì. Không có dấu nào báo map còn tiếp, hàng node trên cùng bị mép khung cắt nửa trông như lỗi vẽ.",
-  "goal": "Ai cũng xem được cả map act (tới boss) trước khi chọn node, và nhìn vào là biết map còn phía trên.",
-  "why": "Nhìn trước đường tới boss (Shop ở đâu, Elite ở đâu) là quyết định chính của kiểu Slay the Spire. Người chơi phím / tay cầm hiện chọn mù.",
-  "fix": "Đang ở hàng node: ↑ cuộn map lên 1 tầng mỗi lần bấm (mượt) tới tận boss; ↓ cuộn ngược về chỗ đang đứng, về tới nơi thì ↓ xuống dải đội hình như cũ; ←→ vẫn đổi node và kéo map về node đang chọn. Cần analog phải của tay cầm cũng cuộn map. Mép trên khung có dấu ▲ + vương miện boss khi phía trên còn khuất, mép dưới có ▼ khi đã cuộn lên; bấm ▲ = cuộn lên boss, bấm ▼ = về chỗ đang đứng; dấu tự ẩn khi có thẻ che map (SQUAD, thưởng, Shop...). Kỹ thuật: RunUI.mapStep / mapJump / homeScroll, dấu .rm-more dính mép (position: sticky, cao 0 nên không đổi bố cục), không thêm chuỗi.",
-  "why_this": "Giữ nguyên bố cục sa bàn và cỡ node, chỉ thêm đường cho phím / tay cầm và 1 dấu hiệu nhỏ. ↑ ở hàng node trước đây không làm gì nên không phá thói quen nào.",
-  "alternatives": [
-    "Thu nhỏ để cả map vừa 1 màn — thấy hết ngay nhưng node chỉ còn ~16px, icon khó đọc",
-    "1 phím giữ để xem toàn cảnh map — rõ, nhưng phải dạy thêm phím và thêm chữ hướng dẫn",
-    "Lần đầu vào act cho camera lia từ boss xuống chỗ đứng (như StS) — cho biết map dài, nhưng sau đó phím vẫn không cuộn lại được (có thể làm thêm sau, không đụng nhau)"
-  ],
-  "files": [
-    "src/ui/runmap.js",
-    "css/style.css"
-  ],
-  "limits": "Cần analog phải chưa thử với tay cầm thật (dùng SFC.Pad.rstickY như bảng build ở màn Pause). Dấu ▲ ở giữa mép trên có thể đè lên nửa node bị cắt ở hàng trên cùng (node đó chưa đi được nên không vướng).",
-  "videoNote": "↑ 5 lần rồi ↓ 5 lần. Bản cũ map đứng yên, ↓ nhảy xuống dải đội hình; bản mới map cuộn tới boss rồi về, để ý dấu ▲ / ▼ ở mép khung.",
-  "before": "videos/run-02-before.mp4",
-  "after": "videos/run-02-after.mp4"
+ "id": "run-02",
+ "area": "run",
+ "screen": "Run map",
+ "source": "agent",
+ "severity": "high",
+ "title": "Map không cuộn được bằng phím / tay cầm, nhìn không biết là còn phía trên",
+ "problem": "Map một act cao khoảng 2 lần khung nhìn, vào map chỉ thấy 2–3 tầng đầu, boss nằm ngoài khung. Chỉ lăn chuột mới cuộn được: ↑ / ↓ không làm gì. Không có dấu nào báo map còn tiếp, hàng node trên cùng bị mép khung cắt nửa trông như lỗi vẽ.",
+ "goal": "Ai cũng xem được cả map act (tới boss) trước khi chọn node, và nhìn vào là biết map còn phía trên.",
+ "why": "Nhìn trước đường tới boss (Shop ở đâu, Elite ở đâu) là quyết định chính của kiểu Slay the Spire. Người chơi phím / tay cầm hiện chọn mù.",
+ "fix": "Đang ở hàng node: ↑ cuộn map lên 1 tầng mỗi lần bấm (mượt) tới tận boss; ↓ cuộn ngược về chỗ đang đứng, về tới nơi thì ↓ xuống dải đội hình như cũ; ←→ vẫn đổi node và kéo map về node đang chọn. Cần analog phải của tay cầm cũng cuộn map. Mép trên khung có dấu ▲ + vương miện boss khi phía trên còn khuất, mép dưới có ▼ khi đã cuộn lên; bấm ▲ = cuộn lên boss, bấm ▼ = về chỗ đang đứng; dấu tự ẩn khi có thẻ che map (SQUAD, thưởng, Shop...). Kỹ thuật: RunUI.mapStep / mapJump / homeScroll, dấu .rm-more dính mép (position: sticky, cao 0 nên không đổi bố cục), không thêm chuỗi.",
+ "why_this": "Giữ nguyên bố cục sa bàn và cỡ node, chỉ thêm đường cho phím / tay cầm và 1 dấu hiệu nhỏ. ↑ ở hàng node trước đây không làm gì nên không phá thói quen nào.",
+ "alternatives": [
+  "Thu nhỏ để cả map vừa 1 màn — thấy hết ngay nhưng node chỉ còn ~16px, icon khó đọc",
+  "1 phím giữ để xem toàn cảnh map — rõ, nhưng phải dạy thêm phím và thêm chữ hướng dẫn",
+  "Lần đầu vào act cho camera lia từ boss xuống chỗ đứng (như StS) — cho biết map dài, nhưng sau đó phím vẫn không cuộn lại được (có thể làm thêm sau, không đụng nhau)"
+ ],
+ "files": [
+  "src/ui/runmap.js",
+  "css/style.css"
+ ],
+ "limits": "Cần analog phải chưa thử với tay cầm thật (dùng SFC.Pad.rstickY như bảng build ở màn Pause). Dấu ▲ ở giữa mép trên có thể đè lên nửa node bị cắt ở hàng trên cùng (node đó chưa đi được nên không vướng).",
+ "videoNote": "↑ 5 lần rồi ↓ 5 lần. Bản cũ map đứng yên, ↓ nhảy xuống dải đội hình; bản mới map cuộn tới boss rồi về, để ý dấu ▲ / ▼ ở mép khung.",
+ "before": "videos/run-02-before.mp4",
+ "after": "videos/run-02-after.mp4",
+ "status": "applied"
 }

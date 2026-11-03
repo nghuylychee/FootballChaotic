@@ -4,7 +4,9 @@ Video: chỉ chép những file đang có trong harness/videos/ (vừa quay lạ
 thì vẫn giữ đường dẫn videos/<id>-before.mp4: bản cũ đã nằm trên artifact, publish lại cùng url thì file không gửi được giữ nguyên.
 In ra map `files` (chỉ video mới) để đưa vào Artifact publish (url = README.md, root = report/out).
 """
-import json, os, glob, shutil
+import json, os, glob, shutil, sys
+
+sys.stdout.reconfigure(encoding='utf-8')   # console Windows (cp1252) không in được tiếng Việt
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # docs/ux-review
 R = os.path.join(ROOT, 'report')

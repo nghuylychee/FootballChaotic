@@ -1,5 +1,5 @@
 /* RunUI — GOAT PATH (docs/RUN_DESIGN.md). Logic: shared/meta/run.js (SFC.Run), số liệu: config/run.config.js.
- *   page 'run'    (tab màn PLAY, vẽ trong khung pt-* của Menu): 3 act (sân + boss) + kỷ lục · START RUN / CONTINUE · FORFEIT RUN
+ *   page 'run'    (tab màn PLAY, vẽ trong khung pt-* của Menu): con đường 3 act (sân + boss, YOU ARE HERE) + kỷ lục · START RUN / CONTINUE · FORFEIT RUN
  *   page 'runmap' (màn 1 run): thanh trên (tên act + FORFEIT / BACK) + map của act đang đá rộng hết màn, cuộn dọc kiểu Slay the Spire
  *                 (tầng 0 dưới cùng, boss trên cùng; lăn chuột, không hiện thanh cuộn). Node chỉ cho biết loại, đối thủ biết khi vào trận.
  *                 Thẻ che map: thẻ mở act · thưởng chọn 1 trong 3 BADGE (của cả đội) · SHOP · LOCKER ROOM · SKILL GAME (giới thiệu bài)
@@ -31,6 +31,7 @@ window.SFC = window.SFC || {};
   // sa bàn chiến thuật (user 2026-10-25): sân dọc, khung thành nhà dưới cùng (tầng 0), boss đứng trong khung thành đối thủ trên cùng
   const MAP_W = 576, ROW_H = 66, PAD_X = 44, PAD_Y = 50;
   const TEAM_SLOTS = 10;   // màn SQUAD: hàng BADGE của đội tối thiểu ngần này ô (thiếu = ô trống)
+  const STRIP_BADGES = 6;  // dải đội hình trên map: hiện tối đa ngần này icon BADGE của đội, dư thì "+n"
   // mép phấn sần (vòng khoanh node): nhiễu nhỏ dời nét đi vài px
   const CHALK_DEFS = '<defs><filter id="rmChalk" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3" result="n"/>'
     + '<feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter></defs>';
@@ -86,18 +87,25 @@ window.SFC = window.SFC || {};
     renderTab(menu, items) {
       const R = RUN().run, st = RUN().stats();
       const sub = `<span class="pt-area rt-sum">${PX().ui('ball', 'sm')} ${esc(_t('{n} RUNS', { n: st.plays }))} · ${PX().ui('trophy', 'sm')} ${st.wins} · ${PX().ui('crown', 'sm')} ${st.bosses}</span>`;
-      // 3 act: sân thu nhỏ + boss (act chưa từng tới: boss bóng đen)
-      const reach = R ? Math.max(R.act, st.bestAct) : st.bestAct;
+      // 3 act = 1 con đường (UX 2026-11-02: 3 thẻ act to bằng nhau trông như phải chọn 1 trong 3): vạch xuất phát -> act 1 -> 2 -> 3 -> cúp,
+      // nối bằng vạch nét đứt (đoạn đã đi: vàng). Không phải nút: không khung / bóng nút, act phía trước mờ (boss chưa gặp: bóng đen),
+      // act đã qua có dấu ✔. Nhân vật của bạn đứng ở act đang đá (YOU ARE HERE) · chưa có run: ở vạch xuất phát · vô địch: cạnh cúp
+      const reach = R ? Math.max(R.act, st.bestAct) : st.bestAct, nAct = RUN().acts().length;
+      const at = R ? (R.won ? nAct : R.act) : -1;   // act đang đứng (-1 = vạch xuất phát, nAct = cúp)
+      const me = '<canvas class="rt-me" data-avatar="1"></canvas>', link = (on) => `<i class="rt-link ${on ? 'on' : ''}"></i>`;
       const acts = RUN().acts().map((a, i) => {
-        const boss = R ? R.bosses[i] : a.boss[0], seen = i <= reach || st.wins > 0, on = R && R.act === i && RUN().active();
-        const done = R ? i < R.act || R.won : false, lock = SFC_DEMO && i >= ((SFC_CONFIG.demo && SFC_CONFIG.demo.runActs) || 1);
-        return `<div class="rt-act ${on ? 'on' : ''} ${done ? 'done' : ''} ${lock ? 'lock' : ''}" style="--ac:${a.color}">
-            <canvas data-ract="${i}" width="180" height="84"></canvas>
+        const boss = R ? R.bosses[i] : a.boss[0], seen = i <= reach || st.wins > 0;
+        const lock = SFC_DEMO && i >= ((SFC_CONFIG.demo && SFC_CONFIG.demo.runActs) || 1);
+        const cls = lock ? 'lock ahead' : i < at ? 'done' : i === at || (at < 0 && i === 0) ? 'on' : 'ahead';
+        const here = i === at && RUN().active() ? `<span class="rt-here">${me}<em>${esc(_t('YOU ARE HERE'))}</em></span>` : '';
+        return link(at >= i) + `<div class="rt-stop ${cls}" style="--ac:${a.color}">${here}
+            <span class="rt-pic"><canvas data-ract="${i}" width="180" height="84"></canvas>${i < at ? `<i class="rt-ok">${PX().ui('check', 'sm')}</i>` : lock ? `<i class="rt-ok">${PX().ui('lock', 'sm')}</i>` : ''}</span>
             <span class="rt-n">${esc(_t('ACT {n}', { n: i + 1 }))}</span>
             <b>${esc(a.name)}</b>
             <span class="rt-boss"><canvas data-team="${boss}" data-idx="2" ${seen ? '' : 'data-sil="1"'}></canvas>${PX().ui('crown', 'sm')}<em>${esc(seen ? TEAMS()[boss].name : '???')}</em></span>
           </div>`;
-      }).join('<i class="rt-link"></i>');
+      }).join('') + link(at >= nAct);
+      const road = `<div class="rt-road"><span class="rt-end">${at < 0 ? me : ''}</span>${acts}<span class="rt-end goal">${R && R.won ? me : ''}${PX().ui('trophy', 'x2')}</span></div>`;
       const btn = (f) => {
         const i = items.findIndex(f);
         if (i < 0) return '';
@@ -106,14 +114,15 @@ window.SFC = window.SFC || {};
       };
       const where = R && RUN().active() ? `<div class="rt-where">${esc(_t('ACT {n}', { n: R.act + 1 }))} · ${esc(RUN().act(R.act).name)} · ${esc(_t('FLOOR {n}', { n: RUN().floor() + 2 }))}</div>` : '';
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
+      // nút chính START RUN / CONTINUE ngay dưới con đường (to, chọn sẵn) · FORFEIT RUN nhỏ bên dưới
       return `<div class="pt-main pt-run">
           ${menu.playTabs('run', sub)}
-          <div class="rt-acts">${acts}</div>
+          ${road}
           ${where}
           <div class="rt-bottom">${this.joining ? `<div class="pt-joinbox rt-join"><div class="pt-jtitle">${esc(_t('JOIN ROOM'))}</div>${menu.renderCode()}</div>` : ''}${msg}
-            ${!this.joining && items.some((x) => x.forfeit) ? `<div class="pt-acts">${btn((x) => x.forfeit)}</div>` : ''}
-            <div class="pt-acts">${this.joining ? btn((x) => x.cancel) + btn((x) => x.main)
-              : btn((x) => x.joinRoom) + btn((x) => x.main) + btn((x) => x.coop)}</div></div>
+            <div class="pt-acts rt-go">${this.joining ? btn((x) => x.cancel) + btn((x) => x.main)
+              : btn((x) => x.joinRoom) + btn((x) => x.main) + btn((x) => x.coop)}</div>
+            ${!this.joining && items.some((x) => x.forfeit) ? `<div class="pt-acts">${btn((x) => x.forfeit)}</div>` : ''}</div>
         </div>
         <button class="pt-back" data-back="1">◀ ${esc(_t('BACK'))}</button>`;
     },
@@ -155,11 +164,11 @@ window.SFC = window.SFC || {};
         const P = this.pick;
         if (!P) return [];
         // 3 ô vị trí (bấm = nhảy sang ô đó; ✕ = bỏ đồng đội AI ở ô đó để chọn lại) · ứng viên lấp ô trống kế tiếp (đủ ô vẫn hiện, mờ)
-        // · START RUN giữa dưới khi đủ ô
+        // · START RUN giữa dưới (chưa đủ ô: mờ + các vị trí còn thiếu)
         const used = Object.values(P.mates);
         const unpick = POS().filter((r) => P.mates[r] != null).map((r) => T('unpick', { id: r }));
         const cands = P.cands.map((m, i) => T('cand', { i })).filter((t) => !used.includes(t.i));
-        const go = this.pkReady() ? [T('go', { main: true })] : [];
+        const go = [T('go', { main: true, dis: !this.pkReady() })];   // luôn hiện; mờ tới khi đủ người (UX run-12)
         return POS().map((r) => T('slot', { id: r })).concat(unpick, cands, go, inv, [T('cancel')]);
       }
       if (!RUN().active()) return host ? [T('end', { main: true })] : [T('leaveroom')];
@@ -188,9 +197,12 @@ window.SFC = window.SFC || {};
       // co-op: người đá bài (hoặc host) bấm START
       if (rm && rm.kind === 'skill') return !room || host || rm.player === RUN().myKey() ? [T('drill', { main: true })] : [];
       if (rm && rm.kind === 'trial') return !room || host || rm.player === RUN().myKey() ? [T('drill', { main: true }), T('skiptrial')] : [];
-      if (rm && rm.kind === 'event') return CFG().events[rm.id].choices.map((c, i) => T('choose', { i }));
+      // dis: lựa chọn chưa làm được (thiếu tiền / không có chấn thương để chữa) — chọn sẵn và phím bỏ qua
+      if (rm && rm.kind === 'event') return CFG().events[rm.id].choices.map((c, i) => T('choose', { i, dis: !RUN().canChoose(c) }));
+      if (this.evOn(R)) return [T('evok', { main: true })];   // thẻ kết quả sự kiện ??? (CONTINUE)
       if (R.actNew) return host ? [T('actgo', { main: true })] : [];
-      if (this.bagOpen) return [T('close', { main: true })];
+      // SQUAD: CLOSE + từng BADGE / GEAR / LEGEND / chấn thương trên màn (mục 'info': chọn bằng phím = hiện bảng mô tả như rê chuột, UX run-09)
+      if (this.bagOpen) return [T('close', { main: true })].concat(Array.from({ length: this.bagInfoN(R) }, (x, i) => T('info', { i })));
       // co-op: chờ người khác chọn xong BADGE thì mới bỏ phiếu đi tiếp · thanh trên: INVITE / LEAVE ROOM
       // (user 2026-10-29: bỏ nút BACK + FORFEIT RUN trên map; Esc vẫn về tab GOAT PATH, bỏ run ở tab / menu tạm dừng)
       const nodes = RUN().busy(R) ? [] : RUN().available().map((n) => T('node', { id: n.id }));
@@ -213,6 +225,14 @@ window.SFC = window.SFC || {};
         this.cueRoom(R.act, 'intro');
         return this.cutscene(R.act, 'intro', () => this.back2map());
       }
+      // KIT VAN: vừa mua GEAR (Run.buy mở bước chọn người đeo) -> giữ nguyên Shop tới khi bàn tay lấy món diễn xong mới sang
+      // 'Who wears it?' (UX review 2026-11-02); khoá thao tác trong lúc chờ
+      if (R.offer && R.offer.kind === 'shop' && R.room && R.room.kind === 'shop' && SFC.KitVan.busy() && menu.el.querySelector('.kv-page')) {
+        this.drawing = true;
+        clearTimeout(this.vanT);
+        this.vanT = setTimeout(() => { this.drawing = false; if (menu.page === 'runmap') menu.render(); }, 100);
+        return;
+      }
       const T = this.targets();
       if (this.sel >= T.length) this.sel = this.firstSel(T);
       const P = RUN().pl(RUN().myKey(), R) || R;
@@ -231,16 +251,42 @@ window.SFC = window.SFC || {};
       const room = this.roomChip() + T.filter((t) => ['leaveroom', 'invite'].includes(t.k)).map((t) => this.btn(T, t,
         esc(t.k === 'invite' ? _t('INVITE') : this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')), t.k === 'leaveroom' && this.leaveArm ? 'danger' : '')).join('');
       const note = menu.msg || this.waitNote(R);
-      const msg = note ? `<div class="m-msg run-msg ${menu.msg && menu.msgErr ? 'err' : ''}">${esc(note)}</div>` : '';
+      let msg = note ? `<div class="m-msg run-msg ${menu.msg && menu.msgErr ? 'err' : ''}">${esc(note)}</div>` : '', over = this.overlay(R, T);
+      // dòng báo (UX review 2026-11-02): thẻ che có chân thẻ -> nằm ngay trên hàng nút của thẻ (không che BACK / SKIP); map -> trên bảng chú thích (CSS)
+      const FT = '<div class="rm-sheet-foot">', foot = over.lastIndexOf(FT) + FT.length;
+      if (msg && foot >= FT.length) { over = over.slice(0, foot) + msg + over.slice(foot); msg = ''; }
       menu.el.innerHTML = `<div class="rm-page ${inRoom() ? 'coop' : ''}" style="--ac:${A.color}">
           <div class="rm-bar">${strip}<div class="rm-acts">${room}${this.cash(P.cash)}</div></div>
           <div class="rm-map">${this.mapHtml(R, T)}</div>
-          ${this.legendBar(R)}${msg}${this.overlay(R, T)}
+          ${this.legendBar(R)}${msg}${over}
         </div>`;
       this.bindMap(menu);
-      if (R.room && R.room.kind === 'shop') SFC.KitVan.bind(menu.el, (key) => { const i = this.targets().findIndex((t) => t.key === key); if (i >= 0) this.sel = i; });
+      const idx = new Map(T.map((t, i) => [t.key, i]));   // khoá mục -> chỉ số, dựng 1 lần mỗi lần vẽ (rê chuột không tính lại targets())
+      this.bindHover(menu, idx);
+      if (R.room && R.room.kind === 'shop') SFC.KitVan.bind(menu.el, (key) => { const i = idx.get(key); if (i != null) this.sel = i; });
       menu.bindAvatars();
       if (R.join) this.bindJoin(menu);
+      if (T[0] && T[0].k === 'close') this.bindBag(menu, T);   // đang mở SQUAD
+    },
+    // thẻ che map: chuột và phím dùng chung 1 mục chọn (UX review 2026-11-02, như KIT VAN): rê chuột lên mục (data-rt) = dời this.sel tới đó,
+    // chỉ chuyển class .sel (không vẽ lại; thẻ LEGEND xin vào đội: bindJoin tự đổi xem trước). Bắt mousemove (chuột thật di chuyển) chứ
+    // không mouseover: vẽ lại sau khi bấm phím mà con trỏ đứng yên thì không giật mục chọn về chỗ con trỏ
+    // · vừa đi bằng phím (kb): nút đang nằm dưới con trỏ đứng yên không sáng kiểu :hover (CSS .rm-actcard.kb), chuột nhúc nhích là thôi
+    bindHover(menu, idx) {
+      const card = menu.el.querySelector('.rm-actcard');
+      if (!card) return;
+      card.classList.toggle('kb', !!this.kb);
+      card.addEventListener('mousemove', (e) => {
+        if (!SFC.UIHelpers.realMove(e)) return;   // vẽ lại dưới con trỏ đứng yên: giữ mục phím đã chọn
+        if (this.kb) { this.kb = false; card.classList.remove('kb'); }
+        const el = e.target.closest('[data-rt]');
+        if (!el || this.drawing) return;
+        const i = idx.get(el.dataset.rt);
+        if (i == null || i === this.sel) return;
+        this.sel = i;
+        card.querySelectorAll('[data-rt].sel').forEach((x) => x.classList.remove('sel'));
+        el.classList.add('sel');
+      });
     },
     // tiền trong run: thẻ túi tiền pixel + số (cùng kiểu khung với dải đội hình), dùng ở thanh map + Shop
     cash(n) {
@@ -248,7 +294,7 @@ window.SFC = window.SFC || {};
     },
     // mục chọn sẵn khi màn đổi: mục đầu tiên không phải nút phòng (LEAVE ROOM / INVITE) — user 2026-10-31: Enter nhầm là rời phòng.
     // Không còn mục nào khác (khách chờ host lúc hết run) -> -1 = không chọn gì, bấm mũi tên mới vào nút
-    firstSel(T) { return T.findIndex((t) => t.k !== 'leaveroom' && t.k !== 'invite'); },
+    firstSel(T) { return T.findIndex((t) => t.k !== 'leaveroom' && t.k !== 'invite' && !t.dis); },   // dis: thẻ không chọn được (Who wears it?)
     btn(T, t, html, cls = '') {
       return `<button class="pt-btn ${t.main ? 'go' : ''} ${cls} ${T.indexOf(t) === this.sel ? 'sel' : ''}" data-rt="${t.key}">${html}</button>`;
     },
@@ -264,6 +310,7 @@ window.SFC = window.SFC || {};
       if (rm && rm.kind === 'skill') return this.drillCard(R, T);
       if (rm && rm.kind === 'trial') return this.trialCard(R, T);
       if (rm && rm.kind === 'event') return this.eventCard(R, T);
+      if (this.evOn(R)) return this.eventResult(R, T);
       if (R.actNew) return this.actCard(R, T);
       if (this.bagOpen) return this.bagCard(R, T);
       return '';
@@ -356,12 +403,16 @@ window.SFC = window.SFC || {};
         const L = n.kind === 'legend' && RUN().legend(n.legend);
         const icon = boss ? `<canvas data-team="${n.team}" data-idx="2"></canvas>` : L ? this.face(SFC.LegendDraw.lookOf(L), false) : PX().ui(n.got ? GOT[n.got] : N.icon, 'x2');
         const tag = boss ? `<i class="rm-crown">${PX().ui('crown', 'sm')}</i>` : L ? `<i class="rm-crown">${PX().ui('star', 'sm')}</i>` : '';
+        // node đi được: nhãn tên loại node, chỉ hiện khi đang chọn (UX user-02: + mũi tên nhún trên đầu, vòng sáng nhấp nháy)
+        const name = st === 'avail' ? `<em class="rm-tip">${esc(N.name)}</em>` : '';
         return `<button class="rm-node k-${n.kind} ${st} ${lost ? 'lost' : ''} ${sel && sel.id === n.id ? 'sel' : ''}" ${L ? `title="${esc(L.name + ' · ' + L.title + ' · ' + L.role)}"` : ''}
-            data-rn="${n.id}" style="left:${p.x}px;top:${p.y}px;--nc:${L ? L.color : N.color}">${icon}${tag}${this.votes(R, 'node', n.id)}</button>`;
+            data-rn="${n.id}" style="left:${p.x}px;top:${p.y}px;--nc:${L ? L.color : N.color}">${icon}${tag}${this.votes(R, 'node', n.id)}${name}</button>`;
       }).join('');
-      return `<div class="rm-inner" style="width:${width}px;height:${height}px">
+      // dấu ▲ (kèm vương miện boss) / ▼ dính mép trên / dưới khung map, hiện khi phía đó còn khuất (bindMap bật lớp more-up / more-dn), bấm = cuộn
+      return `<div class="rm-more up"><i data-mapscroll="-1"><b></b>${PX().ui('crown', 'sm')}</i></div>
+        <div class="rm-inner" style="width:${width}px;height:${height}px">
           <svg class="rm-lines" width="${width}" height="${height}">${CHALK_DEFS}${this.pitch(width, height)}${lines.join('')}${R.at ? this.chalkRing(RUN().find(R.at), R.at) : ''}</svg>${nodes}
-        </div>`;
+        </div><div class="rm-more dn"><i data-mapscroll="1"><b></b></i></div>`;
     },
 
     /* ---------- BADGE: thẻ + chip hiệu lực (icon + số, không câu dài — ui-image-first) ---------- */
@@ -392,10 +443,13 @@ window.SFC = window.SFC || {};
       const col = d.injury ? '#ff5a6e' : rar.color, sel = t && T.indexOf(t) === this.sel;
       const tag = extra.price != null ? `<u class="bd-price ${extra.poor ? 'poor' : ''}">$${extra.price}</u>` : extra.tag ? `<u class="bd-tag">${esc(extra.tag)}</u>` : '';
       const who = extra.who != null ? `<u class="bd-who">${esc(RUN().memberName(extra.who))}</u>` : '';
+      // bản nâng cấp (b.up): câu upDesc vàng có ▲ = bản + hơn chỗ nào (UX review 2026-11-02), thay chip / mô tả gốc
+      const body = b.up && d.upDesc ? `<span class="bd-desc up">▲ ${esc(d.upDesc)}</span>`
+        : this.chips(b) ? `<span class="bd-fx">${this.chips(b)}</span>` : `<span class="bd-desc">${esc(d.desc)}</span>`;
       return `<button class="bd-card ${d.injury ? 'inj' : ''} ${extra.dis ? 'dis' : ''} ${sel ? 'sel' : ''}" ${t ? `data-rt="${t.key}"` : ''} style="--rc:${col}">
           <span class="bd-ico">${this.badgeIcon(b.id)}</span>
           <b>${esc(d.name)}${b.up ? '+' : ''}</b>
-          ${this.chips(b) ? `<span class="bd-fx">${this.chips(b)}</span>` : `<span class="bd-desc">${esc(d.desc)}</span>`}
+          ${body}
           <em>${esc(d.injury ? _t('INJURY') : rar.label)}</em>${tag}${who}${extra.votes || ''}
         </button>`;
     },
@@ -404,8 +458,15 @@ window.SFC = window.SFC || {};
     face(look, you, still) {
       return you ? '<canvas data-avatar="1"></canvas>' : `<canvas data-mmlook="${esc(JSON.stringify(look))}" ${still ? 'data-still="1"' : ''}></canvas>`;
     },
-    // dải đội hình trên thanh map: mặt + OVR + dấu chấn thương từng người
+    // dải đội hình trên thanh map: nhãn SQUAD + mặt + OVR + dấu chấn thương từng người + BADGE của đội (UX run-09: trước đây không chữ
+    // nào cho biết đây là nút mở SQUAD, BADGE của đội không thấy ở đâu trên map). Tối đa STRIP_BADGES icon, dư thì "+n"
     strip(R) {
+      const own = R.bag.filter((b) => !RUN().badge(b.id).injury), RAR = SFC_CONFIG.progression.rarities;
+      const bs = own.slice(0, STRIP_BADGES).map((b) => `<i class="rs-b" style="--rc:${RAR[RUN().badge(b.id).rarity].color}">${this.badgeIcon(b.id, '')}</i>`).join('');
+      const more = own.length > STRIP_BADGES ? `<u class="rs-more">+${own.length - STRIP_BADGES}</u>` : '';
+      return `<em class="rs-l">${PX().ui('people', 'sm')}${esc(_t('SQUAD'))}</em>` + this.stripFaces(R) + (own.length ? `<span class="rs-bs">${bs}${more}</span>` : '');
+    },
+    stripFaces(R) {
       return BYPOS(R).map((i) => {
         const s = R.squad[i], inj = RUN().injuryIds(i, R).length;
         // dưới OVR: 1 vạch mỗi ô GEAR (màu độ hiếm khi có đồ, tối khi trống)
@@ -510,8 +571,8 @@ window.SFC = window.SFC || {};
       const g = O.gear[O.sel], rc = SFC_CONFIG.progression.rarities[g.r].color;
       const hero = `<div class="gr-hero" style="--rc:${rc}"><span class="gr-tag"><i class="gr-ico">${this.gearIcon(g.id, 'x2')}</i></span><b>${esc(RUN().gearDef(g.id).name)}</b>${this.gearChip(g)}</div>`;
       if (O.who == null) {
-        // người đã đeo món giống hệt: thẻ mờ, không chọn được
-        const cards = T.filter((t) => t.k === 'wear').map((t) => `<div class="lg-pick ${t.dis ? 'dis' : ''}">${this.squadCard(R, t.i, T, t, null, null, t.dis ? null : g)}${vote ? this.votes(R, 'wear', String(t.i)) : ''}</div>`).join('');
+        // người đã đeo món giống hệt: thẻ xám (nền đặc, không thấy map xuyên qua) + nhãn lý do, không chọn được (phím bỏ qua thẻ này)
+        const cards = T.filter((t) => t.k === 'wear').map((t) => `<div class="lg-pick ${t.dis ? 'dis' : ''}">${this.squadCard(R, t.i, T, t, null, null, t.dis ? null : g)}${t.dis ? `<u class="gr-dis">${esc(_t('Already wearing one.'))}</u>` : ''}${vote ? this.votes(R, 'wear', String(t.i)) : ''}</div>`).join('');
         return `<div class="rm-actcard rm-sheet squad gearwho">${hero}<div class="sg-who">${esc(vote ? _t('Vote: who wears it?') : _t('Who wears it?'))}</div>
             <div class="sq-row3">${cards}</div><div class="rm-sheet-foot">${back ? this.btn(T, back, esc(_t('BACK')) + this.votes(R, 'wear', 'back')) : ''}</div></div>`;
       }
@@ -524,6 +585,21 @@ window.SFC = window.SFC || {};
       return this.sheet('squad', _t('SQUAD'), '', `<div class="sq-row3">${BYPOS(R).map((i) => this.squadCard(R, i, T, null)).join('')}</div>${this.teamBar(R)}`,
         this.btn(T, T[0], esc(_t('CLOSE'))));
     },
+    // SQUAD: số mục có bảng mô tả (theo đúng thứ tự trên màn: từng thẻ cầu thủ = LEGEND + GEAR + chấn thương, rồi BADGE của đội)
+    BAG_INFO: '.rm-sheet.squad .sq-leg:not(.none), .rm-sheet.squad .gr-s:not(.empty), .rm-sheet.squad .sq-b.inj, .rm-sheet.squad .sq-team .sq-b:not(.empty)',
+    bagInfoN(R) {
+      let n = R.bag.filter((b) => !RUN().badge(b.id).injury).length;
+      R.squad.forEach((s, i) => { n += (s.legend ? 1 : 0) + RUN().gearOf(i, R).length + RUN().injuryIds(i, R).length; });
+      return n;
+    },
+    // gắn data-rt="info:k" theo thứ tự trên màn; mục đang chọn: viền vàng + hiện bảng mô tả ngay (SFC.Tip.showFor)
+    bindBag(menu, T) {
+      const cur = T[this.sel];
+      menu.el.querySelectorAll(this.BAG_INFO).forEach((el, k) => {
+        el.dataset.rt = 'info:' + k;
+        if (cur && cur.key === el.dataset.rt) { el.classList.add('sel'); SFC.Tip.showFor(el); }
+      });
+    },
     // ô LEGEND trống: bóng đen 1 huyền thoại trong khung nét đứt, không chữ (chữ ở tooltip)
     legendSlot() {
       const L = Object.values(SFC_CONFIG.legends.list)[0];
@@ -532,7 +608,8 @@ window.SFC = window.SFC || {};
     /* ---------- màn BUILD YOUR SQUAD (user 2026-10-26): 3 ô vị trí, bấm ô = character của bạn nhảy sang (đồng đội AI ở ô đó đổi chỗ
      * với bạn), ứng viên lấp ô trống kế tiếp. Phòng co-op: ô có bạn bè đứng thì không nhảy vào được; vị trí của host = ô host đứng trong
      * phòng (Room.seatHost), ô của bạn bè vẫn cần 1 đồng đội AI dự phòng (không chọn thì lấy ngẫu nhiên lúc START RUN). ---------- */
-    newPick() { this.pick = { me: 'FWD', cands: RUN().candidates(), mates: {}, order: [] }; },
+    // fresh: lần vẽ đầu chọn sẵn ứng viên đầu tiên (UX run-12: trước đây chọn sẵn thẻ của bạn, bấm Enter không có gì xảy ra)
+    newPick() { this.pick = { me: 'FWD', cands: RUN().candidates(), mates: {}, order: [], fresh: true }; },
     // vị trí của máy này: phòng co-op = ô đang đứng trong phòng
     pkMe() {
       const O = ON(), m = inRoom() && O.mine;
@@ -550,6 +627,11 @@ window.SFC = window.SFC || {};
       return POS().find((r) => r !== me && !this.pkHuman(r) && P.mates[r] == null) || null;
     },
     pkReady() { return !!this.pick && !this.pkNext() && !(inRoom() && ON().benched.length); },   // còn người trên ghế dự bị: chờ
+    // chọn sẵn ứng viên đứng sau ứng viên thứ i trên băng ghế (không còn thì ứng viên đầu); đủ người thì renderPick chuyển sang START RUN
+    pkFocus(i) {
+      const T = this.targets(), j = T.findIndex((x) => x.k === 'cand' && x.i > i);
+      this.sel = j >= 0 ? j : Math.max(0, T.findIndex((x) => x.k === 'cand'));
+    },
     // nhảy sang ô role: đồng đội AI đang ở đó đổi sang ô cũ của mình
     pkMove(menu, role) {
       const P = this.pick, me = this.pkMe();
@@ -565,7 +647,11 @@ window.SFC = window.SFC || {};
     // kéo đồng đội giữa 2 ô = đổi chỗ · kéo đồng đội xuống băng ghế = bỏ ra. Bấm / phím vẫn dùng được như cũ (bấm ứng viên = lấp ô trống kế
     // tiếp, bấm ô = bạn nhảy sang). Chỉ số là của chính người đó, xếp ô nào cũng không đổi (Run.baseOf)
     renderPick(menu) {
-      const P = this.pick, T = this.targets(), me = this.pkMe(), next = this.pkNext(), room = inRoom();
+      const P = this.pick, T = this.targets(), me = this.pkMe(), next = this.pkNext(), room = inRoom(), ready = this.pkReady();
+      // chọn sẵn (UX run-12): mới vào = ứng viên đầu tiên · vừa đủ người = START RUN
+      const iGo = T.findIndex((t) => t.k === 'go'), iCand = T.findIndex((t) => t.k === 'cand');
+      if (P.fresh || (ready && P.ready === false)) this.sel = ready || iCand < 0 ? iGo : iCand;
+      P.fresh = false; P.ready = ready;
       this.sel = Math.max(0, Math.min(T.length - 1, this.sel));
       const A = SFC_CONFIG.progression.attrs;
       const ovr = (r) => { const v = Object.values(r); return Math.round(v.reduce((a, b) => a + b, 0) / v.length); };
@@ -587,7 +673,9 @@ window.SFC = window.SFC || {};
           return card({ attrs: `${drop} ${drag}`, ovr: ovr(r), face: this.face(RUN().mateLook(m), false), fin: r, ref: r, name: m.name, schools: RUN().schoolsOf(m),
             extra: x ? `<i class="pk-x ${T.indexOf(x) === this.sel ? 'sel' : ''}" data-rt="${x.key}" title="${esc(_t('Remove'))}">✕</i>` : '' });
         }
-        return `<div class="sq-card pk-card pk-empty ${sel}" ${drop}><div class="sq-head"><em>${esc(role)}</em></div><span class="pk-sil">${sil}</span></div>`;
+        // ô trống kế tiếp: viền nét đứt vàng nhấp nháy + nhãn PICK (đang chờ chọn người từ băng ghế)
+        const wait = role === next ? `<u class="pk-wait">${esc(_t('PICK'))}</u>` : '';
+        return `<div class="sq-card pk-card pk-empty ${role === next ? 'next' : ''} ${sel}" ${drop}><div class="sq-head"><em>${esc(role)}</em></div><span class="pk-sil">${sil}</span>${wait}</div>`;
       }).join('');
       // băng ghế: mặt + tên + OVR + vị trí sở trường + 2 chỉ số mạnh nhất + trường phái Core hay ra
       const cands = T.filter((t) => t.k === 'cand').map((t) => {
@@ -599,11 +687,18 @@ window.SFC = window.SFC || {};
             ${this.schoolIcons(RUN().schoolsOf(m))}</div>`;
       }).join('');
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
+      // dòng hướng dẫn cạnh START RUN (UX run-12): còn ô trống = chọn ai cho vị trí nào · còn người trên ghế dự bị (co-op) = chờ họ.
+      // Chưa đủ: START RUN mờ + các vị trí còn thiếu
+      const miss = POS().filter((r) => r !== me && !this.pkHuman(r) && P.mates[r] == null);
+      const hint = next ? _t('Pick your {pos} from the bench', { pos: next }) : !ready ? _t('Everyone on the BENCH must take a position first.') : '';
+      const nag = this.pkNag ? 'nag' : '';   // vừa bấm START RUN khi chưa đủ: dòng hướng dẫn rung đỏ 1 lần
+      this.pkNag = false;
+      const goHtml = esc(_t('START RUN')) + (miss.length ? `<em class="pk-miss">${miss.map((r) => `<i>${esc(r)}</i>`).join('')}</em>` : '');
       menu.el.innerHTML = `<div class="rm-page pk-page ${room ? 'coop' : ''}">
           <div class="pk-top"><b>${esc(_t('BUILD YOUR SQUAD'))}</b><div class="rm-acts">${this.roomChip()}${btns}</div></div>
           <div class="sq-row3 pk-slots">${slots}</div>
           ${benchOn() ? `<div class="pk-cobench">${SFC.UIHelpers.coopBench(ON().benched, null, '', false, true)}</div>` : ''}
-          <div class="pk-mid">${go ? this.btn(T, go, esc(_t('START RUN'))) : ''}</div>
+          <div class="pk-mid">${hint ? `<span class="pk-hint pk-todo ${nag}">${esc(hint)}</span>` : ''}${go ? this.btn(T, go, goHtml, go.dis ? 'dis' : '') : ''}</div>
           <div class="pk-bench" data-drop="bench">${cands}</div>${msg}
         </div>`;
       this.bindDrag(menu);
@@ -643,6 +738,7 @@ window.SFC = window.SFC || {};
         if (dst === me) return menu.setMsg(_t('That is your spot. Drag yourself somewhere else first.'), true);
         if (this.pkHuman(dst)) return menu.setMsg(_t('A friend is playing there.'), true);
         set(dst, +src.slice(5));
+        this.pkFocus(+src.slice(5));
       } else {
         const from = src.slice(5);
         if (dst === from) return;
@@ -677,7 +773,7 @@ window.SFC = window.SFC || {};
     badgeTip(id, up) {
       const d = RUN().badge(id), rar = SFC_CONFIG.progression.rarities[d.rarity] || {};
       return SFC.UIHelpers.tip({ icon: this.badgeIcon(id, ''), name: d.name + (up ? '+' : ''), color: d.injury ? '#ff5a6e' : rar.color,
-        tag: d.injury ? _t('INJURY') : rar.label, tagColor: d.injury ? '#ff5a6e' : rar.color, desc: d.desc });
+        tag: d.injury ? _t('INJURY') : rar.label, tagColor: d.injury ? '#ff5a6e' : rar.color, desc: up && d.upDesc ? d.upDesc : d.desc });
     },
     teamBar(R) {
       const own = R.bag.filter((b) => !RUN().badge(b.id).injury);
@@ -731,15 +827,16 @@ window.SFC = window.SFC || {};
       const rm = R.room, P = RUN().pl(RUN().myKey(), R) || R, cur = T[this.sel];
       const buy = new Map(T.filter((t) => t.k === 'buy').map((t) => [t.i, t]));
       const items = rm.items.map((it, i) => {
-        const t = buy.get(i), hot = it.hot ? ' ' + _t('Half price today!') : '';
-        // GEAR: tài xế đọc tên + hiệu lực (chỉ số / trường phái)
+        const t = buy.get(i), hot = it.hot ? '\n' + _t('Half price today!') : '';   // HOT: xuống dòng riêng (bong bóng white-space: pre-line)
+        // GEAR: tài xế đọc tên + hiệu lực (chỉ số / trường phái) · nhãn loại: BADGE = cả đội, GEAR = 1 người đeo (UX review 2026-11-02)
         const d = it.g ? RUN().gearDef(it.id) : RUN().badge(it.id), what = it.g ? this.gearTip(it).split(' · ').slice(1).join(' · ') : d.desc;
-        return { id: it.id, g: !!it.g, r: it.r, price: it.price, sold: it.sold, hot: it.hot, key: t ? t.key : null,
-          say: it.sold ? ['', _t('Sold out, mate.')] : [d.name, what + hot] };
+        const kind = it.g ? [_t('One player wears it'), 'gear'] : [_t('The whole team gets it'), 'badge'];
+        return { id: it.id, g: !!it.g, r: it.r, price: it.price, sold: it.sold, hot: it.hot, poor: P.cash < it.price, key: t ? t.key : null,
+          say: it.sold ? ['', _t('Sold out, mate.')] : [d.name, what + hot].concat(kind) };
       });
       const kits = T.filter((t) => t.k === 'heal').slice(0, 4).map((t) => {
         const b = R.bag[t.i];
-        return { key: t.key, say: [_t('Treat an injury'), RUN().badge(b.id).name + ' · ' + RUN().memberName(b.who || 0, R)] };
+        return { key: t.key, poor: P.cash < RUN().healPrice(R), say: [_t('Treat an injury'), RUN().badge(b.id).name + ' · ' + RUN().memberName(b.who || 0, R)] };
       });
       const lv = T.find((t) => t.k === 'leave');
       return SFC.KitVan.html({ items, kits, kitPrice: RUN().healPrice(R), cash: this.cash(P.cash), sel: cur && cur.key,
@@ -786,14 +883,19 @@ window.SFC = window.SFC || {};
       const K = SFC_CONFIG.legends.techniques[L.tech];
       return K ? `<span class="lg-combo" title="${esc(K.desc)}">${PX().ui('star', 'sm')}<b>${esc(K.name)}</b>${this.keyCaps(K)}</span>` : '';
     },
+    // nhãn nhược điểm đỏ của LEGEND (câu đầy đủ ở tooltip); LEGEND không có nhược điểm cơ chế -> rỗng. Pause trong trận dùng (matchui.js)
+    flawChip(L) {
+      const fl = L.flaw && FLAW_TAGS()[L.flaw.kind];
+      return fl ? `<span class="lg-flaw" title="${esc(L.flawDesc)}">${PX().ui('boom', 'sm')}${esc(fl)}</span>` : '';
+    },
     // dải LEGEND (màn trial + màn nhận): chân dung to trên hào quang màu LEGEND · danh hiệu · tên · chip COMBO · nhãn nhược điểm đỏ
     // (câu đầy đủ ở tooltip; LEGEND không có nhược điểm cơ chế thì đánh đổi chỉ số nằm trong tooltip của tên)
     hero(L) {
-      const fl = L.flaw && FLAW_TAGS()[L.flaw.kind];
+      const flaw = this.flawChip(L);
       const rays = Array.from({ length: 12 }, (_, i) => `<i style="transform:rotate(${i * 30}deg)"></i>`).join('');
       return `<div class="lg-hero"><div class="lg-port"><span class="lg-rays">${rays}</span>${this.face(SFC.LegendDraw.lookOf(L), false, true)}</div>
-          <div class="lg-txt"><b>${esc(L.title)}</b><u title="${esc(fl ? '' : L.flawDesc)}">${esc(L.name)}</u>
-            <div class="lg-row">${this.comboChip(L)}${fl ? `<span class="lg-flaw" title="${esc(L.flawDesc)}">${PX().ui('boom', 'sm')}${esc(fl)}</span>` : ''}</div></div></div>`;
+          <div class="lg-txt"><b>${esc(L.title)}</b><u title="${esc(flaw ? '' : L.flawDesc)}">${esc(L.name)}</u>
+            <div class="lg-row">${this.comboChip(L)}${flaw}</div></div></div>`;
     },
     // số lần cần làm của LEGEND TRIAL (BADGE Training Bibs giảm mốc, như drills.js)
     trialGoal(L, R) {
@@ -1053,14 +1155,35 @@ window.SFC = window.SFC || {};
       }, tEnd);
       setTimeout(done, tEnd + 1100);
     },
+    // gợi ý được / mất (UX review 2026-11-02): chip màu cứng — trả tiền đỏ · có thể thắng tiền xanh + ? · BADGE vàng bo tròn (như miếng vá)
+    // · có thể chấn thương ✚ đỏ + ? (cùng dấu chấn thương ở dải đội hình) · chữa hết ✚ xanh
     eventCard(R, T) {
       const E = CFG().events[R.room.id];
       const btns = T.map((t) => {
-        const c = E.choices[t.i], ok = RUN().canChoose(c);
-        const hint = [c.cost ? `-$${c.cost}` : '', c.badge ? 'BADGE' : '', c.injury ? `${PX().ui('boom', 'sm')}?` : '', c.win ? `$${c.win.cash}?` : '', c.healAll ? PX().ui('check', 'sm') : ''].filter(Boolean).join(' ');
-        return this.btn(T, t, `${esc(c.label)}${hint ? ` <em>${hint}</em>` : ''}${this.votes(R, 'choose', String(t.i))}`, ok ? '' : 'dis');
+        const c = E.choices[t.i];
+        const hint = [c.cost ? `<i class="ev-c neg">-$${c.cost}</i>` : '', c.badge ? '<i class="ev-c badge">BADGE</i>' : '',
+          c.injury ? `<i class="ev-c neg" title="${esc(_t('An injury'))}">✚?</i>` : '', c.win ? `<i class="ev-c pos">+$${c.win.cash}?</i>` : '',
+          c.healAll ? `<i class="ev-c pos" title="${esc(_t('All injuries healed.'))}">✚</i>` : ''].join('');
+        return this.btn(T, t, `${esc(c.label)}${hint ? ` <em>${hint}</em>` : ''}${this.votes(R, 'choose', String(t.i))}`, t.dis ? 'dis' : '');
       }).join('');
       return this.sheet('event', E.title, '', `<div class="rm-drill">${PX().ui(E.icon, 'x3')}<p>${esc(E.text)}</p></div>`, btns);
+    },
+    // thẻ kết quả sự kiện ??? (UX review 2026-11-02): giữ thẻ tới khi bấm CONTINUE — mỗi dòng 1 icon + kết quả, tiền đã trả (đỏ) / thắng (xanh) riêng.
+    // Kết quả chỉ máy giữ run biết (this.ev, sayEvent); hết hiệu lực khi rời node / run khác
+    evOn(R) { const v = this.ev; return !!v && !!R && !R.room && !R.offer && !R.join && v.at === R.at && v.nonce === R.nonce && RUN().active(); },
+    eventResult(R, T) {
+      const v = this.ev, E = CFG().events[v.id], c = E.choices[v.i], B = (id) => RUN().badge(id);
+      const row = (ico, html, cls = '') => `<div class="ev-row ${cls}"><span class="ev-ico">${ico}</span><b>${html}</b></div>`;
+      const rows = c.cost ? [row(PX().ui('shop', 'x2'), `<i class="ev-c neg">-$${c.cost}</i>`)] : [];
+      for (const x of v.res) {
+        if (x.kind === 'badge') rows.push(row(this.badgeIcon(x.id), esc(_t('BADGE: {name}', { name: B(x.id).name }))));
+        else if (x.kind === 'cash') rows.push(row(PX().ui('shop', 'x2'), `<i class="ev-c pos">+$${x.n}</i>`));
+        else if (x.kind === 'injury') rows.push(row(this.badgeIcon(x.id), esc(_t('Injury: {name} · {who}', { name: B(x.id).name, who: RUN().memberName(x.who) })), 'bad'));
+        else if (x.kind === 'blocked') rows.push(row(this.badgeIcon('shin'), esc(_t('Shin Guards blocked an injury!'))));
+        else if (x.kind === 'heal') rows.push(row(PX().ui('check', 'x2'), esc(_t('All injuries healed.'))));
+        else if (x.kind === 'lost') rows.push(row(PX().ui(E.icon, 'x2'), esc(_t('No luck.')), 'bad'));
+      }
+      return this.sheet('event evres', E.title, c.label, `<div class="ev-rows">${rows.join('')}</div>`, T[0] ? this.btn(T, T[0], esc(_t('CONTINUE'))) : '');
     },
     bagCard(R, T) { return this.squadSheet(R, T); },
     // hết run: CHAMPIONS / RUN OVER + trận đã thắng, boss đã hạ, gold quy đổi (thẻ che map như thẻ mở act)
@@ -1074,17 +1197,37 @@ window.SFC = window.SFC || {};
       const score = !R.won && !R.forfeit && last ? `<em class="rm-score">${last.my} - ${last.op}</em>` : '';
       return `<div class="rm-actcard rm-end ${R.won ? 'champ' : 'out'}">
           <b>${esc(R.won ? _t('CHAMPIONS') : _t('RUN OVER'))}</b><span>${esc(line)}</span>${score}
-          <div class="rm-tally"><span>${PX().ui('ball', 'sm')} ${esc(_tn('{n} win', '{n} wins', wins.length))}</span><span>${PX().ui('crown', 'sm')} ${bosses}</span>
-            ${R.metaGold ? `<span><i class="coin"></i>+${R.metaGold}</span>` : ''}${R.roadGain ? `<span title="${esc(_t('Core Road progress'))}">${PX().ui('star', 'sm')} +${R.roadGain}</span>` : ''}</div>
-          ${(R.newCores || []).length ? `<div class="rm-newcores"><em>${esc(_t('NEW CORES'))}</em>${R.newCores.map((id) => `<span title="${esc(SFC_CONFIG.cores.list[id].name)}">${PX().core(id, 'x2')}</span>`).join('')}</div>` : ''}
+          <div class="rm-tally"><span>${PX().ui('ball', 'sm')} ${esc(_tn('{n} win', '{n} wins', wins.length))}</span><span>${PX().ui('crown', 'sm')} ${bosses}</span></div>
+          ${this.bring(R)}
+          ${(R.newCores || []).length ? `<div class="rm-newcores"><em>${esc(_t('NEW CORES'))}</em>${R.newCores.map((id) => `<span class="rn-c"><i>${PX().core(id, 'x2')}</i><b>${esc(SFC_CONFIG.cores.list[id].name)}</b></span>`).join('')}</div>` : ''}
           ${this.endBtn(T)}
         </div>`;
     },
     // bản DEMO: hạ boss act cuối được chơi
     demoCard(R, T) {
       return `<div class="rm-actcard rm-end champ"><b>${esc(_t('DEMO COMPLETE'))}</b><span>${esc(_t('The full game has two more acts.'))}</span>
-          <div class="rm-tally"><span><i class="coin"></i>+${R.metaGold || 0}</span>${R.roadGain ? `<span>${PX().ui('star', 'sm')} +${R.roadGain}</span>` : ''}</div>
+          ${this.bring(R)}
           ${this.endBtn(T)}</div>`;
+    },
+    // phần mang về sau run (UX run-11: trước đây chỉ là icon + số, ★ +45 không ai hiểu): chip có nhãn GOLD · CORE ROAD + thanh tiến độ
+    // từ mốc Core trước tới mốc Core kế (phần run này góp tô vàng, chạy lên khi thẻ hiện) + còn bao nhiêu tới Core kế
+    bring(R) {
+      const gold = R.metaGold ? `<span class="rb-chip"><i class="coin"></i><em>${esc(_t('GOLD'))}</em><b>+${R.metaGold}</b></span>` : '';
+      if (!R.roadGain) return gold ? `<div class="rm-bring">${gold}</div>` : '';
+      const v = RUN().stats().road, sp = this.roadSpan(v);
+      const pct = (x) => (sp.b == null ? 100 : Math.max(0, Math.min(100, ((x - sp.a) / (sp.b - sp.a)) * 100)));
+      const p0 = pct(v - R.roadGain), p1 = pct(v);
+      const road = `<span class="rb-chip road" title="${esc(_t('Core Road progress'))}">${PX().ui('star', 'sm')}<em>${esc(_t('CORE ROAD'))}</em><b>+${R.roadGain}</b>
+          <u class="rb-bar"><s style="width:${p0.toFixed(1)}%"></s><s class="new" style="left:${p0.toFixed(1)}%;width:${(p1 - p0).toFixed(1)}%"></s></u>
+          ${sp.b != null ? `<small>${esc(_t('Next Core in {n}', { n: sp.b - v }))} ${PX().ui('star', 'sm')}</small>` : ''}</span>`;
+      return `<div class="rm-bring">${gold}${road}</div>`;
+    },
+    // mốc CORE ROAD (mainPath areas[].road, nấc có Core) quanh tiến trình v: a = mốc đã qua gần nhất, b = mốc kế (null = đã mở hết)
+    roadSpan(v) {
+      const MP = SFC.MainPath, es = [];
+      MP.areas().forEach((A, a) => (A.road || []).forEach((ids, i) => { if (ids.some((id) => SFC_CONFIG.cores.list[id])) es.push(MP.roadElo(a, i)); }));
+      const b = es.filter((e) => e > v).sort((x, y) => x - y)[0];
+      return { a: Math.max(0, ...es.filter((e) => e <= v)), b: b == null ? null : b };
     },
     // nút thẻ hết run: CONTINUE (chơi một mình / host) · khách co-op: không có nút (chờ host bắt đầu run mới; LEAVE ROOM ở thanh trên)
     endBtn(T) {
@@ -1151,11 +1294,65 @@ window.SFC = window.SFC || {};
       const box = menu.el.querySelector('.rm-map');
       if (!box) return;
       if (this.scroll != null) box.scrollTop = this.scroll;
-      else {
-        const n = RUN().run.at ? RUN().find(RUN().run.at) : RUN().run.map.floors[0][0];
-        box.scrollTop = Math.max(0, this.pos(n).y - box.clientHeight * 0.7);
+      else box.scrollTop = this.homeScroll(box);
+      // đang cuộn mượt bằng phím (mapStep) mà màn bị vẽ lại: cuộn tiếp tới đích
+      if (this.mapGoal != null && performance.now() - this.mapGoalT < 500) box.scrollTo({ top: this.mapGoal, behavior: 'smooth' });
+      // dấu ▲ / ▼ ở mép khung map khi phía trên / dưới còn bị khuất (UX run-02)
+      const more = () => {
+        box.classList.toggle('more-up', box.scrollTop > 6);
+        box.classList.toggle('more-dn', box.scrollTop < box.scrollHeight - box.clientHeight - 6);
+      };
+      more();
+      box.addEventListener('scroll', () => { this.scroll = box.scrollTop; more(); });
+      // rê chuột lên node đi được = dời đúng mục đang chọn (UX user-02: chuột và phím chung 1 dấu chọn, không có dấu hover riêng).
+      // Chỉ tính khi chuột thật sự dời (vẽ lại màn dưới con trỏ đứng yên cũng bắn sự kiện chuột -> phím không đi được)
+      box.querySelectorAll('.rm-node.avail').forEach((el) => el.addEventListener('mousemove', (e) => {
+        if (SFC.UIHelpers.realMove(e)) this.hoverNode(menu, el.dataset.rn);
+      }));
+    },
+    // đổi dấu chọn tại chỗ (không vẽ lại cả màn: giữ canvas mặt cầu thủ + vị trí cuộn)
+    hoverNode(menu, id) {
+      const T = this.targets(), i = T.findIndex((t) => t.k === 'node' && t.id === id);
+      if (i < 0 || i === this.sel || this.drawing) return;
+      this.sel = i;
+      menu.el.querySelectorAll('.rm-page .sel').forEach((el) => el.classList.remove('sel'));
+      const el = menu.el.querySelector(`.rm-node[data-rn="${id}"]`);
+      if (el) el.classList.add('sel');
+    },
+    // vị trí cuộn mặc định: node đang đứng (chưa đi node nào: tầng đầu) ở khoảng 70% chiều cao khung
+    homeScroll(box) {
+      const R = RUN().run, n = R.at ? RUN().find(R.at) : R.map.floors[0][0];
+      return Math.max(0, Math.min(box.scrollHeight - box.clientHeight, this.pos(n).y - box.clientHeight * 0.7));
+    },
+    // ↑ / ↓ trên hàng node (UX run-02: trước đây chỉ lăn chuột mới xem được đường tới boss): ↑ cuộn map lên 1 tầng tới đỉnh.
+    // ↓ cuộn ngược về khi node đang chọn còn khuất dưới khung; về tới nơi thì ↓ xuống dải đội hình như cũ. true = đã cuộn
+    mapStep(menu, dir) {
+      const box = menu.el.querySelector('.rm-map'), el = box && box.querySelector('.rm-node.sel');
+      if (!box) return false;
+      const h = box.clientHeight, max = box.scrollHeight - h, now = performance.now();
+      const base = this.mapGoal != null && now - this.mapGoalT < 500 ? this.mapGoal : box.scrollTop;   // bấm liên tục: tính từ đích đang cuộn tới
+      let top;
+      if (dir < 0) {
+        if (base <= 0) return false;
+        top = Math.max(0, base - ROW_H);
+      } else {
+        if (!el) return false;
+        const want = Math.min(max, Math.max(0, el.offsetTop - h * 0.6));   // chỗ reveal() đặt node đang chọn
+        if (el.offsetTop <= base + h - 40 || base >= want) return false;
+        top = Math.min(want, base + ROW_H);
       }
-      box.addEventListener('scroll', () => { this.scroll = box.scrollTop; });
+      this.mapGoal = top; this.mapGoalT = now;
+      box.scrollTo({ top, behavior: 'smooth' });
+      return true;
+    },
+    // bấm dấu ▲ = cuộn lên đỉnh (boss) · ▼ = về chỗ đang đứng (đã ở đó: xuống đáy)
+    mapJump(menu, dir) {
+      const box = menu.el.querySelector('.rm-map');
+      if (!box) return;
+      const home = this.homeScroll(box), top = dir < 0 ? 0 : home > box.scrollTop + 4 ? home : box.scrollHeight - box.clientHeight;
+      this.mapGoal = top; this.mapGoalT = performance.now();
+      SFC.Audio.menu();
+      box.scrollTo({ top, behavior: 'smooth' });
     },
     // phím: giữ mục đang chọn trong khung nhìn (node trên map / thẻ trong khung cuộn)
     reveal(menu) {
@@ -1192,9 +1389,21 @@ window.SFC = window.SFC || {};
         this.drawing = true;
         return this.chalk(menu, t.id, () => { this.drawing = false; if (menu.page === 'runmap') this.act(menu, Object.assign({}, t, { drawn: true })); });
       }
+      // START RUN khi chưa đủ người (UX run-12): dòng hướng dẫn rung đỏ, chọn sẵn ứng viên đầu tiên
+      if (t.k === 'go' && t.dis) {
+        const ic = this.targets().findIndex((x) => x.k === 'cand');
+        if (this.pkNext() && ic >= 0) this.sel = ic;
+        this.pkNag = true; SFC.Audio.menu();
+        return menu.render();
+      }
       SFC.Audio.menu();
       const R = RUN().run, B = (id) => RUN().badge(id);
       if (t.k !== 'leaveroom' && !(t.k === 'cancel' && inRoom())) menu.msg = '';
+      // ??? lựa chọn chưa làm được: nói lý do (thiếu tiền), không gửi phiếu
+      if (t.k === 'choose' && t.dis) {
+        const c = R.room && R.room.kind === 'event' && CFG().events[R.room.id].choices[t.i];
+        return menu.setMsg(c && c.cost ? _t('Not enough cash.') : _t('You cannot do that right now.'), true);
+      }
       if (inRoom() && this.coopAct(menu, t)) return menu.render();
       switch (t.k) {
         case 'actgo': R.actNew = false; SFC.Profile.save(); break;
@@ -1206,6 +1415,7 @@ window.SFC = window.SFC || {};
         }
         case 'bag': this.bagOpen = true; break;
         case 'close': this.bagOpen = false; break;
+        case 'info': break;   // SQUAD: mục chỉ để xem (bảng mô tả hiện khi chọn)
         case 'pick': { const id = RUN().pick(t.i); if (id) menu.setMsg(_t('BADGE: {name}', { name: B(id).name })); break; }
         // GEAR: chọn món · người đeo · món bỏ ra (người đeo đủ ô) · lùi 1 bước
         case 'gpick': RUN().pick(t.i); break;
@@ -1232,10 +1442,11 @@ window.SFC = window.SFC || {};
           const r = this.pkNext();
           if (!r) { menu.setMsg(_t('Remove a teammate to pick again.'), true); return; }
           this.pick.mates[r] = t.i; this.pick.order.push(r);
+          this.pkFocus(t.i);   // UX run-12: chọn tiếp ứng viên kế bên (không rơi vào nút ✕ / ô vị trí)
           break;
         }
         // bỏ đồng đội AI ở ô này (ô trống lại, chọn người khác)
-        case 'unpick': delete this.pick.mates[t.id]; this.pick.order = this.pick.order.filter((r) => r !== t.id); break;
+        case 'unpick': delete this.pick.mates[t.id]; this.pick.order = this.pick.order.filter((r) => r !== t.id); this.pkFocus(-1); break;
         case 'cancel': this.pick = null; return menu.go('run');
         case 'go': {
           const P = this.pick, mates = {};
@@ -1263,11 +1474,12 @@ window.SFC = window.SFC || {};
         case 'leave': RUN().leaveRoom(); break;
         case 'drill': return SFC.Menu.app.startRunMatch();
         case 'choose': {
-          const res = RUN().choose(t.i);
+          const id = R.room && R.room.id, res = RUN().choose(t.i);
           if (!res) { menu.setMsg(_t('You cannot do that right now.'), true); return; }
-          this.sayEvent(menu, res);
+          this.sayEvent(menu, res, id, t.i);
           break;
         }
+        case 'evok': this.ev = null; break;
         case 'node': {
           const r = RUN().enter(t.id);
           if (!r) return;
@@ -1282,38 +1494,81 @@ window.SFC = window.SFC || {};
       }
       menu.render();
     },
-    // kết quả sự kiện ??? -> dòng báo dưới map
-    sayEvent(menu, res) {
-      const B = (id) => RUN().badge(id);
-      const say = res.map((x) => x.kind === 'badge' ? _t('BADGE: {name}', { name: B(x.id).name }) : x.kind === 'injury' ? _t('Injury: {name} · {who}', { name: B(x.id).name, who: RUN().memberName(x.who) })
+    // kết quả sự kiện ??? (lựa chọn i của sự kiện id) -> thẻ kết quả (eventResult) tới khi bấm CONTINUE (UX review 2026-11-02, thay dòng báo nhỏ
+    // dưới map). Không trả tiền, không có gì xảy ra (bỏ đi) -> về map luôn.
+    // Co-op: chỉ máy giữ run biết kết quả, thẻ sẽ giữ máy đó lại trong lúc khách đã về map bỏ phiếu node -> dùng dòng báo như cũ
+    // (kèm tiền đã trả), không chặn ai
+    sayEvent(menu, res, id, i) {
+      const R = RUN().run, c = CFG().events[id] && CFG().events[id].choices[i];
+      if (!R || !c || (!res.length && !c.cost)) return;
+      if (!inRoom()) { this.ev = { id, i, res, at: R.at, nonce: R.nonce }; return; }
+      const B = (b) => RUN().badge(b);
+      const say = [c.cost ? `-$${c.cost}` : ''].concat(res.map((x) => x.kind === 'badge' ? _t('BADGE: {name}', { name: B(x.id).name })
+        : x.kind === 'injury' ? _t('Injury: {name} · {who}', { name: B(x.id).name, who: RUN().memberName(x.who) })
         : x.kind === 'blocked' ? _t('Shin Guards blocked an injury!')
-        : x.kind === 'cash' ? _t('Run cash +${n}', { n: x.n }) : x.kind === 'heal' ? _t('All injuries healed.') : x.kind === 'lost' ? _t('No luck.') : '').filter(Boolean);
+        : x.kind === 'cash' ? _t('Run cash +${n}', { n: x.n }) : x.kind === 'heal' ? _t('All injuries healed.') : x.kind === 'lost' ? _t('No luck.') : '')).filter(Boolean);
       if (say.length) menu.setMsg(say.join(' · '), res.some((x) => x.kind === 'injury' || x.kind === 'lost'));
     },
     input(menu, input) {
       const T = this.targets(), n = T.length;
       if (!n || this.drawing) return;
       const nNode = T.filter((t) => t.k === 'node').length, onNode = this.sel < nNode;
+      // cần phải tay cầm: cuộn map (UX run-02)
+      const box = nNode && menu.el.querySelector('.rm-map'), ry = SFC.Pad ? SFC.Pad.rstickY : 0;
+      if (box && ry) { box.scrollTop += ry * 6; this.mapGoal = null; }
       for (const d of ['left', 'right', 'up', 'down']) {
         if (!input.wasPressed(d)) continue;
         if (this.sel < 0) { this.sel = 0; SFC.Audio.menu(); return menu.render(); }   // chưa chọn gì (firstSel): mũi tên đầu tiên vào nút đầu
         if (nNode) {
-          // map: ←→ đi trong hàng (node / nút) · ↓ xuống nút · ↑ về node
+          // map: ←→ đi trong hàng (node / nút) · ↑ / ↓ trên hàng node: cuộn map (mapStep), hết cuộn thì ↓ xuống nút · ↑ ở nút: về node
+          if ((d === 'up' || d === 'down') && onNode && this.mapStep(menu, d === 'up' ? -1 : 1)) return SFC.Audio.menu();
           if (d === 'left' || d === 'right') {
             const lo = onNode ? 0 : nNode, len = onNode ? nNode : n - nNode;
             if (len > 0) this.sel = lo + ((this.sel - lo + (d === 'left' ? len - 1 : 1)) % len);
-          } else if (d === 'down' && onNode && n > nNode) this.sel = nNode;
+            this.mapGoal = null;
+          } else if (d === 'up' && onNode) return;   // đã ở đỉnh map
+          else if (d === 'down' && onNode && n > nNode) this.sel = nNode;
           else if (d === 'up' && !onNode) this.sel = 0;
-        } else if (!R0()) {
-          // chưa có run (BUILD YOUR SQUAD / khách chờ host): ←↑↓→ đi theo vị trí trên màn hình (ô vị trí ↔ băng ghế ↔ nút trên)
+        } else if (!R0() || T[0].k === 'close') {
+          // chưa có run (BUILD YOUR SQUAD / khách chờ host) · SQUAD (CLOSE ↔ BADGE / GEAR / LEGEND): ←↑↓→ đi theo vị trí trên màn hình
           const rect = (t) => SFC.UIHelpers.navRect(menu.el.querySelector(`[data-rt="${t.key}"]`)), cur = rect(T[this.sel]);
           if (!cur) this.sel = (this.sel + (d === 'left' || d === 'up' ? n - 1 : 1)) % n;
           else {
-            const best = SFC.UIHelpers.navPick(T.map((t, i) => (i === this.sel ? null : rect(t))), cur, d);
+            const rs = T.map((t, i) => (i === this.sel ? null : rect(t)));
+            let best = SFC.UIHelpers.navPick(rs, cur, d);
+            // SQUAD: hàng BADGE ↔ ô GEAR / LEGEND lệch xa sang bên (ngoài góc của navPick) -> lấy mục gần nhất phía đó, không bị kẹt
+            if (best < 0 && T[0].k === 'close') {
+              let bd = Infinity;
+              rs.forEach((r, i) => {
+                const dx = r ? r.x - cur.x : 0, dy = r ? r.y - cur.y : 0, along = d === 'left' ? -dx : d === 'right' ? dx : d === 'up' ? -dy : dy;
+                if (r && along > 2 && dx * dx + dy * dy < bd) { bd = dx * dx + dy * dy; best = i; }
+              });
+            }
             if (best < 0) return;
             this.sel = best;
           }
-        } else this.sel = (this.sel + (d === 'left' || d === 'up' ? n - 1 : 1)) % n;   // thẻ che: đi lần lượt
+        } else {
+          // thẻ che (UX review 2026-11-02): ←↑↓→ đi theo vị trí trên màn hình như BUILD YOUR SQUAD · hết hàng: ←→ vòng về đầu kia của hàng,
+          // ↑↓ tới mục gần nhất phía trên / dưới dù lệch xa (nút SKIP / LEAVE ở chân thẻ), không còn gì thì đứng yên
+          // · không đo được vị trí (chưa vẽ): đi lần lượt như cũ
+          const rect = (t) => SFC.UIHelpers.navRect(menu.el.querySelector(`[data-rt="${t.key}"]`)), cur = rect(T[this.sel]);
+          if (!cur) this.sel = (this.sel + (d === 'left' || d === 'up' ? n - 1 : 1)) % n;
+          else {
+            const rects = T.map((t, i) => (i === this.sel || t.dis ? null : rect(t)));   // bỏ qua thẻ không chọn được
+            let best = SFC.UIHelpers.navPick(rects, cur, d), score = Infinity;
+            if (best < 0 && (d === 'left' || d === 'right')) {
+              rects.forEach((r, i) => { if (r && r.top < cur.bottom && r.bottom > cur.top && (best < 0 || (d === 'right' ? r.x < rects[best].x : r.x > rects[best].x))) best = i; });
+            } else if (best < 0) {
+              rects.forEach((r, i) => {
+                const along = r ? (d === 'up' ? cur.y - r.y : r.y - cur.y) : 0, s = along + Math.abs(r ? r.x - cur.x : 0) * 2;
+                if (r && along > 2 && s < score) { score = s; best = i; }
+              });
+            }
+            if (best < 0) return;
+            this.sel = best;
+          }
+        }
+        this.kb = true;
         SFC.Audio.menu();
         menu.render();
         return this.reveal(menu);
@@ -1322,6 +1577,8 @@ window.SFC = window.SFC || {};
     },
     click(menu, e) {
       const T = this.targets();
+      const ms = e.target.closest('[data-mapscroll]');   // dấu ▲ / ▼ ở mép khung map
+      if (ms) { this.mapJump(menu, +ms.dataset.mapscroll); return true; }
       const nb = e.target.closest('[data-rn]');
       if (nb) {
         const i = T.findIndex((t) => t.k === 'node' && t.id === nb.dataset.rn);
@@ -1334,11 +1591,15 @@ window.SFC = window.SFC || {};
       if (i >= 0) { this.sel = i; this.act(menu, T[i]); }
       return true;
     },
-    // Esc: túi đồ = đóng · thưởng = bỏ qua · Shop / Locker Room = rời · thẻ khác = nút chính · map = về tab GOAT PATH
+    // Esc: túi đồ = đóng · GEAR (chọn người / món bỏ ra) = lùi 1 bước · thưởng / Shop / Locker Room / LEGEND = chỉ dời chọn tới nút
+    // SKIP / LEAVE / NO THANKS (UX review 2026-11-02: Esc không bao giờ tự bỏ thưởng, phải Enter / bấm nút đó) · thẻ khác = nút chính
+    // · map = về tab GOAT PATH
     back(menu) {
       const T = this.targets(), f = (k) => T.find((t) => t.k === k);
       if (!RUN().run && this.pick) return this.act(menu, f('undo') || f('cancel'));
-      const t = f('close') || f('skip') || f('leave') || (T.length === 1 && T[0].k !== 'drill' && T[0].k !== 'bag' ? T[0] : null);
+      const out = f('skip') || f('leave') || f('joinno') || f('skiptrial') || (inRoom() ? f('gback') : null);
+      if (out && T.length > 1) { if (T.indexOf(out) !== this.sel) { this.sel = T.indexOf(out); menu.render(); } return; }
+      const t = f('close') || f('gback') || out || (T.length === 1 && T[0].k !== 'drill' && T[0].k !== 'bag' ? T[0] : null);
       if (t) return this.act(menu, t);
       // map (không còn nút BACK): về tab GOAT PATH · phòng co-op: ở lại (rời phòng bằng LEAVE ROOM)
       if (f('bag') && !inRoom()) { SFC.Audio.menu(); menu.go('run'); }
@@ -1448,7 +1709,8 @@ window.SFC = window.SFC || {};
           return true;
         }
       } else if (res.kind === 'choose') {
-        this.sayEvent(menu, RUN().choose(+res.v) || []);
+        const id = R.room && R.room.id;
+        this.sayEvent(menu, RUN().choose(+res.v) || [], id, +res.v);
       } else if (res.kind === 'pick') RUN().pick(res.v === 'skip' ? null : +res.v);
       else if (res.kind === 'join') RUN().answerJoin(res.v === 'no' ? null : +res.v);
       else if (res.kind === 'wear') { if (res.v === 'back') RUN().gearBack(); else RUN().wearGear(+res.v); }

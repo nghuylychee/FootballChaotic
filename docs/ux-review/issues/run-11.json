@@ -1,23 +1,31 @@
 {
-  "id": "run-11",
-  "area": "run",
-  "screen": "RUN OVER",
-  "source": "agent",
-  "severity": "low",
-  "title": "RUN OVER: phần mang về chỉ là icon + số, ★ +45 không ai hiểu",
-  "problem": "Màn RUN OVER tóm tắt bằng 1 hàng icon nhỏ: '0 wins · 👑 0 · 🪙 +48 · ★ +45'. ★ +45 là tiến độ Core Road nhưng chỉ rê chuột mới thấy chữ, và không nói còn bao xa tới Core kế tiếp. Core mới mở chỉ có icon, không có tên.",
-  "goal": "Thua xong vẫn thấy rõ mình mang về được gì và còn bao xa tới lần mở khoá kế tiếp.",
-  "why": "Đây là lúc người chơi vừa thua — đúng chỗ roguelite cần cho thấy 'run này vẫn có ích' để họ bấm chơi tiếp thay vì tắt game.",
-  "fix": "Phần mang về tách ra thành 2 chip có nhãn: GOLD +48 và CORE ROAD +45. Chip CORE ROAD có thanh tiến độ pixel từ mốc Core trước tới mốc Core kế (phần run này góp tô vàng, chạy lên khi thẻ hiện) và dòng 'Next Core in 15 ★'. NEW CORES có thêm tên Core dưới icon. Thẻ DEMO COMPLETE dùng chung 2 chip này. Kỹ thuật: RunUI.bring / roadSpan (mốc lấy từ mainPath areas[].road như MainPath.roadAt, tiến trình = Run.stats().road), CSS .rm-bring / .rb-*; 3 chuỗi mới (GOLD, CORE ROAD, Next Core in {n}) đã thêm 4 pack.",
-  "why_this": "Biến con số khó hiểu thành tiến độ nhìn thấy được bằng dữ liệu có sẵn (roadGain, runs.road), không đổi luồng hay thêm màn.",
-  "alternatives": [
-    "Chỉ thêm nhãn chữ, không thanh tiến độ — rẻ, nhưng vẫn không biết còn bao xa tới Core kế",
-    "Màn tổng kết riêng có con đường Core Road chạy như AREA MAP — đẹp và rõ nhất, nhưng tốn công (effort L)",
-    "Hiện luôn icon Core kế tiếp sẽ mở ở cuối thanh — tạo động lực hơn, nhưng lộ trước Core (cần hỏi ý chủ game về spoil)"
-  ],
-  "files": ["src/ui/runmap.js", "css/style.css", "src/i18n/es.js", "src/i18n/pt-BR.js", "src/i18n/pt-PT.js", "src/i18n/ja.js"],
-  "limits": "Hàng '⚽ 0 wins · 👑 0' giữ nguyên (chưa thêm nhãn cho số boss). Khách phòng co-op: thanh tính theo tiến trình Core Road của chính máy đó. Đã mở hết Core: thanh đầy, không có dòng 'Next Core'. Font ja chưa build lại cho chữ mới.",
-  "videoNote": "Thẻ RUN OVER dựng sẵn bằng ?runtest (thua 1-2, +48 gold, +45 Core Road, mở Thunder Kick). Rê chuột lên ★ rồi lên icon Core mới.",
-  "before": "videos/run-11-before.mp4",
-  "after": "videos/run-11-after.mp4"
+ "id": "run-11",
+ "area": "run",
+ "screen": "RUN OVER",
+ "source": "agent",
+ "severity": "low",
+ "title": "RUN OVER: phần mang về chỉ là icon + số, ★ +45 không ai hiểu",
+ "problem": "Màn RUN OVER tóm tắt bằng 1 hàng icon nhỏ: '0 wins · 👑 0 · 🪙 +48 · ★ +45'. ★ +45 là tiến độ Core Road nhưng chỉ rê chuột mới thấy chữ, và không nói còn bao xa tới Core kế tiếp. Core mới mở chỉ có icon, không có tên.",
+ "goal": "Thua xong vẫn thấy rõ mình mang về được gì và còn bao xa tới lần mở khoá kế tiếp.",
+ "why": "Đây là lúc người chơi vừa thua — đúng chỗ roguelite cần cho thấy 'run này vẫn có ích' để họ bấm chơi tiếp thay vì tắt game.",
+ "fix": "Phần mang về tách ra thành 2 chip có nhãn: GOLD +48 và CORE ROAD +45. Chip CORE ROAD có thanh tiến độ pixel từ mốc Core trước tới mốc Core kế (phần run này góp tô vàng, chạy lên khi thẻ hiện) và dòng 'Next Core in 15 ★'. NEW CORES có thêm tên Core dưới icon. Thẻ DEMO COMPLETE dùng chung 2 chip này. Kỹ thuật: RunUI.bring / roadSpan (mốc lấy từ mainPath areas[].road như MainPath.roadAt, tiến trình = Run.stats().road), CSS .rm-bring / .rb-*; 3 chuỗi mới (GOLD, CORE ROAD, Next Core in {n}) đã thêm 4 pack.",
+ "why_this": "Biến con số khó hiểu thành tiến độ nhìn thấy được bằng dữ liệu có sẵn (roadGain, runs.road), không đổi luồng hay thêm màn.",
+ "alternatives": [
+  "Chỉ thêm nhãn chữ, không thanh tiến độ — rẻ, nhưng vẫn không biết còn bao xa tới Core kế",
+  "Màn tổng kết riêng có con đường Core Road chạy như AREA MAP — đẹp và rõ nhất, nhưng tốn công (effort L)",
+  "Hiện luôn icon Core kế tiếp sẽ mở ở cuối thanh — tạo động lực hơn, nhưng lộ trước Core (cần hỏi ý chủ game về spoil)"
+ ],
+ "files": [
+  "src/ui/runmap.js",
+  "css/style.css",
+  "src/i18n/es.js",
+  "src/i18n/pt-BR.js",
+  "src/i18n/pt-PT.js",
+  "src/i18n/ja.js"
+ ],
+ "limits": "Hàng '⚽ 0 wins · 👑 0' giữ nguyên (chưa thêm nhãn cho số boss). Khách phòng co-op: thanh tính theo tiến trình Core Road của chính máy đó. Đã mở hết Core: thanh đầy, không có dòng 'Next Core'. Font ja chưa build lại cho chữ mới.",
+ "videoNote": "Thẻ RUN OVER dựng sẵn bằng ?runtest (thua 1-2, +48 gold, +45 Core Road, mở Thunder Kick). Rê chuột lên ★ rồi lên icon Core mới.",
+ "before": "videos/run-11-before.mp4",
+ "after": "videos/run-11-after.mp4",
+ "status": "applied"
 }

@@ -147,6 +147,7 @@ SFC_CONFIG.cores = {
     rarityWeight: { common: 3, rare: 2, epic: 1.2, legendary: 0.7, mythic: 0.5 },
     buildWeight: 0.8,
     rerollsPerRound: 1,      // mỗi lượt chọn được đổi cả 3 lá bao nhiêu lần (0 = ẩn nút REROLL) — bật lại 2026-10-13
+    inputGrace: 0.5,         // giây đầu sau khi màn chọn hiện ra: chưa nhận phím / click chọn lá (bấm liên tục cho qua ăn mừng không lấy nhầm lá 1)
   },
 
   list: {
