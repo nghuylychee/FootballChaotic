@@ -211,7 +211,26 @@ SFC_CONFIG.game = {
     bounce: 0.5,
     wallBounce: 0.72,
     netDamp: 0.25,
-    dribbleOffset: 9,
+    dribbleOffset: 6,        // (px) bóng trước chân theo hướng mặt — 9 -> 6 (user 2026-11-03: bóng xa chân quá, nhìn xuống thì như tách khỏi chân)
+    // dẫn bóng (Ball.follow, user 2026-11-03: bóng quay theo hướng mặt như dính keo): bóng có vị trí riêng quanh chân, không dán vào hướng mặt
+    dribble: {
+      turnRate: 11,         // (rad/s) bóng xoay quanh chân chậm hơn người (player.turnRate) -> đổi hướng thì bóng trễ một nhịp (7 trễ quá: người quay lưng mà bóng còn trước mặt)
+      sprintOffset: 9,      // (px) chạy nước rút: bóng xa chân hơn dribbleOffset (user 2026-11-03: chạy thường / đổi hướng bóng sát chân, nước rút xa được)
+      // đổi hướng (cả lúc chạy nước rút): bóng về khoảng cách chạy thường (dribbleOffset) rồi kéo vào sát chân, khoảng cách còn (1 - turnTuck) x —
+      // đổi hướng bóng gọn trong chân. Kéo hết khi bóng trễ hướng mặt từ turnFull x 90° trở lên
+      turnTuck: 0.3,
+      turnFull: 0.5,
+      reach: 25,            // (/s) độ nhanh bóng vào gần chân (đổi hướng, nhận bóng)
+      release: 8,           // (/s) độ nhanh bóng ra xa chân lại (sau khi đổi hướng, bắt đầu chạy nước rút) — chậm: người đẩy bóng ra lại từ từ
+      dragAngle: 2.0,       // (rad, ~115°) hướng chạy ngược phía bóng quá mức này -> kéo bóng bằng gầm giày: bóng đi thẳng qua chân sang phía mới
+      dragSpeed: 110,       // (px/s) tốc độ bóng lúc kéo
+      // chạy nước rút: chạy được tapEvery px thì chạm bóng 1 lần, bóng ra xa chân thêm tối đa tapLead px (x tốc độ / player.speed, tối đa 1,5) rồi lăn về;
+      // đang đổi hướng thì nhỏ dần về 0. Chạy thường không chạm: bóng giữ sát chân (user 2026-11-03)
+      tapEvery: 30,
+      tapLead: 3,
+      tapRise: 0.2,         // phần đầu nhịp chạm: bóng ra xa, phần còn lại: người đuổi kịp bóng
+      turnSlow: 0.35,       // bóng đang trễ hướng mặt / đang kéo: tốc độ người cầm bóng giảm tới chừng này (đổi hướng gắt mất đà)
+    },
     // tầm khống chế bóng lỏng tính từ mép người + bóng. 4 -> 6, 12 -> 15 (user 2026-10-31: lại gần bóng mà không bắt dính):
     // hình nhân vật cao ~30px nên bóng cách chân 13-15px trông như đã chạm người; bóng nảy ngang hông (z 12-15) cũng khống chế được
     pickupRange: 6,

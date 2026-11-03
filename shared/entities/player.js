@@ -124,7 +124,10 @@ window.SFC = window.SFC || {};
     maxSpeed() {
       const C = SFC_CONFIG.game, g = this.game, cores = g.cores;
       let s = C.player.speed * this.stats.speed * cores.pmod(this, 'speed');   // gồm Đà
-      if (this.hasBall) s *= C.player.dribbleSpeedMult * (0.85 + this.stats.dribble * cores.mod(this, 'dribble') * 0.15);   // Kiểm Soát Bóng
+      if (this.hasBall) {
+        s *= C.player.dribbleSpeedMult * (0.85 + this.stats.dribble * cores.mod(this, 'dribble') * 0.15);   // Kiểm Soát Bóng
+        s *= 1 - C.ball.dribble.turnSlow * (g.ball.dribbleLag || 0);   // bóng đang trễ hướng mặt / đang kéo bóng (Ball.follow)
+      }
       else s *= cores.mod(this.team, 'offBallSpeed', this);
       if (this.sprinting) s *= C.player.sprintMult;
       if (this.charging && this.hasBall) s *= C.player.chargeMoveMult;   // chờ đá 1 chạm (không có bóng): không chậm lại
@@ -341,6 +344,7 @@ window.SFC = window.SFC || {};
       if (dl <= a) { this.vx = tx; this.vy = ty; }
       else { this.vx += (dvx / dl) * a; this.vy += (dvy / dl) * a; }
 
+      this.runAng = moving ? Math.atan2(my, mx) : null;   // Ball.follow: chạy ngược phía bóng -> kéo bóng
       if (moving) this.turnTo(Math.atan2(my, mx), dt);
     }
 

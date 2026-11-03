@@ -61,6 +61,7 @@ window.SFC = window.SFC || {};
       this.oneTouch = false;
       this.keepPace = false;
       this.through = false;
+      this.dribbleLag = 0;
       this.clearFx();
     }
 
@@ -180,19 +181,53 @@ window.SFC = window.SFC || {};
       return g;
     }
 
-    // bóng dính chân người giữ bóng
+    // bóng ở chân người giữ bóng (ball.dribble). Vị trí bóng so với chân (rx, ry; trục y chưa ép 0.85) có quán tính riêng:
+    // xoay quanh chân chậm hơn người, trễ nhiều thì kéo vào sát chân · chạy ngược phía bóng -> kéo bóng đi thẳng qua chân · chạy thì chạm bóng từng nhịp,
+    // chạy nước rút thì bóng xa chân hơn (sprintOffset).
+    // follow(0) (Core dời người tức thì): bóng về ngay trước mặt như cũ
     follow(dt) {
-      const p = this.owner, f = this.g.field;
+      const p = this.owner, f = this.g.field, C = SFC_CONFIG.game.ball, D = C.dribble;
       // người chơi đang chạy lấy đà sút mạnh (Actions.powerPushes): bóng ra xa chân thêm kick.powerPush px, ra / về mượt (powerPushK); đổi người cầm thì về 0
       const K = SFC_CONFIG.game.kick, want = SFC.Actions.powerPushes(this.g, p) ? K.powerPush : 0;
-      if (this.pushId !== p.id) { this.pushId = p.id; this.pushGap = 0; }
+      if (this.pushId !== p.id) {
+        // người cầm mới: khung chạm bóng bóng còn nằm chỗ chạm, đầu khung sau Game.step gọi follow(0) -> nhánh !dt dưới đây đặt bóng ngay trước mặt
+        this.pushId = p.id; this.pushGap = 0; this.tapD = 0; this.drag = false; this.dribbleLag = 0;
+        this.rx = this.x - p.x; this.ry = (this.y - p.y - 1) / 0.85;
+      }
       this.pushGap += (want - this.pushGap) * (1 - Math.exp(-K.powerPushK * dt));
-      const push = this.pushGap, off = SFC_CONFIG.game.ball.dribbleOffset + push;
+      const push = this.pushGap, base = (p.sprinting ? D.sprintOffset : C.dribbleOffset) + push;
       const spd = Math.hypot(p.vx, p.vy);
-      const pulse = spd > 20 && !(push > 0.5) ? Math.abs(Math.sin(p.anim * 10)) * 2 : 0;
-      const cx = Math.cos(p.facing), cy = Math.sin(p.facing);
-      this.x = U.clamp(p.x + cx * (off + pulse), f.x + this.r, f.x + f.w - this.r);
-      this.y = U.clamp(p.y + cy * (off + pulse) * 0.85 + 1, f.y + this.r, f.y + f.h - this.r);
+      let lag = 0;
+      if (!dt) {
+        this.rx = Math.cos(p.facing) * base; this.ry = Math.sin(p.facing) * base; this.drag = false;
+      } else {
+        const ra = Math.atan2(this.ry, this.rx), rl = Math.hypot(this.rx, this.ry);
+        // hướng người đang muốn chạy (Player.moveNormal) — phản ứng nhanh hơn hướng mặt
+        const run = p.state === 'normal' && p.runAng != null ? p.runAng : p.facing;
+        if (!this.drag && rl > 2 && Math.abs(U.angleDiff(ra, run)) > D.dragAngle) this.drag = true;
+        if (this.drag) {
+          const near = C.dribbleOffset + push;   // kéo xong bóng ở khoảng cách chạy thường (cả lúc nước rút), release đẩy ra lại sau
+          const tx = Math.cos(run) * near - this.rx, ty = Math.sin(run) * near - this.ry, d = Math.hypot(tx, ty), step = D.dragSpeed * dt;
+          if (d <= step) { this.rx += tx; this.ry += ty; this.drag = false; } else { this.rx += tx / d * step; this.ry += ty / d * step; }
+          lag = 1;
+        } else {
+          const a = ra + U.clamp(U.angleDiff(ra, p.facing), -D.turnRate * dt, D.turnRate * dt);
+          lag = Math.min(1, Math.abs(U.angleDiff(a, p.facing)) / (Math.PI / 2));
+          // đổi hướng: bỏ khoảng cách nước rút về khoảng cách chạy thường rồi kéo vào sát chân (hết mức khi trễ từ turnFull trở lên)
+          const w = Math.min(1, lag / D.turnFull), want = U.lerp(base, C.dribbleOffset + push, w) * (1 - D.turnTuck * w);
+          const len = rl + (want - rl) * (1 - Math.exp(-(want < rl ? D.reach : D.release) * dt));
+          this.rx = Math.cos(a) * len; this.ry = Math.sin(a) * len;
+        }
+      }
+      this.dribbleLag = lag;   // Player.moveNormal: đổi hướng gắt -> chậm lại
+      // nhịp chạm bóng khi chạy nước rút: bóng ra xa chân rồi người đuổi kịp (không chạm lúc đang kéo / lấy đà sút mạnh; đang đổi hướng thì nhỏ dần)
+      this.tapD = (this.tapD || 0) + spd * dt;
+      const ph = (this.tapD % D.tapEvery) / D.tapEvery;
+      const tap = p.sprinting && spd > 20 && !this.drag && !(push > 0.5)
+        ? D.tapLead * U.clamp(spd / SFC_CONFIG.game.player.speed, 0, 1.5) * (1 - Math.min(1, lag / D.turnFull)) * (ph < D.tapRise ? ph / D.tapRise : 1 - (ph - D.tapRise) / (1 - D.tapRise)) : 0;
+      const rl = Math.hypot(this.rx, this.ry) || 1, k = 1 + tap / rl;
+      this.x = U.clamp(p.x + this.rx * k, f.x + this.r, f.x + f.w - this.r);
+      this.y = U.clamp(p.y + this.ry * k * 0.85 + 1, f.y + this.r, f.y + f.h - this.r);
       this.z = 0;
       this.roll += spd * dt;
     }

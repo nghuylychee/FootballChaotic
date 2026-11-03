@@ -500,6 +500,10 @@ window.SFC = window.SFC || {};
         return;
       }
       this.passPreview = null;
+      // bóng vừa vào chân ở khung trước (khung đó còn vẽ bóng ở chỗ chạm): khung này về ngay chỗ dẫn bóng trước mặt (user 2026-11-03),
+      // trước khi người chơi / AI ra lệnh -> cú đá ngay khung này đá từ đúng chỗ (Ball.follow: pushId = người cầm đã đặt bóng)
+      const bo = this.ball.owner;
+      if (bo && this.ball.pushId !== bo.id) this.ball.follow(0);
       for (let i = 0; i < this.seats.length; i++) {
         const inp = input && !this.seats[i].gone && this.inputFor(i, input);
         if (inp) SFC.Human.update(dt, this, inp, i);
