@@ -151,9 +151,9 @@ window.SFC = window.SFC || {};
       const MP = SFC.MainPath;
       return Math.min(MP.areas().length - 1, MP.state.best);
     },
-    // phòng FOOTBALL STORY (máy giữ cup: host / người tạo phòng trên máy chủ riêng): lượt chơi cup gửi cả phòng (src/meta/cup.js share)
+    // phòng FOOTBALL STORY (máy giữ cup: host / người tạo phòng trên máy chủ riêng): lượt chơi cup gửi cả phòng (shared/meta/cup.js share)
     cup() { return SFC.Cup.share(); },
-    // phòng GOAT PATH co-op (máy làm host): cập nhật ví / ô đội hình theo người trong phòng rồi gửi bản sao run (src/meta/run.js share)
+    // phòng GOAT PATH co-op (máy làm host): cập nhật ví / ô đội hình theo người trong phòng rồi gửi bản sao run (shared/meta/run.js share)
     runState() { SFC.RunUI.syncRoom(); return SFC.Run.share(); },
     // khách thao tác trên run -> host áp (uid = mã hồ sơ của khách)
     runAction(id, uid, m) { SFC.RunUI.apply(uid, m); },

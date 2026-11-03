@@ -29,8 +29,9 @@ window.SFC = window.SFC || {};
     { k: [1, 1], c: 0, bx: 0, hx: 0, hy: 0, legs: 'stand', side: [P / 2, P / 2], front: [P / 2, P / 2] },
   ];
   // tư thế lúc tiến độ k: số nội suy, kiểu chân lấy theo tư thế gần hơn, held = đang ở tư thế khoá
+  // chéo lên: như nhìn ngang, đổi 2 tay (thấy lưng: tay phải của cầu thủ là tay bên phải hình)
   function headerPose(view, k) {
-    const side = view === 'side' || view === 'diag', arms = (K) => (side ? K.side : K.front);
+    const side = view === 'side' || view === 'diag' || view === 'bdiag', arms = (K) => (view === 'bdiag' ? [K.side[1], K.side[0]] : side ? K.side : K.front);
     let i = 0;
     while (i < KEYS.length - 1 && k >= KEYS[i + 1].k[0]) i++;
     const A = KEYS[i], B = KEYS[Math.min(i + 1, KEYS.length - 1)];
@@ -45,7 +46,7 @@ window.SFC = window.SFC || {};
   // chân theo kiểu (hình nhìn phải, lật theo mir): bend = đứng rộng · tuck = co gót (ngang: gót ra sau thấy đế; xuống: gối nhấc; lên: đế về máy quay)
   // reach = duỗi xuống, nhìn ngang hơi đưa ra trước. stand vẽ ở draw.js như đứng thường
   function headerLegs(ctx, X, Y, mir, view, legs, toe, B, pal) {
-    const side = view === 'side' || view === 'diag';
+    const side = view === 'side' || view === 'diag' || view === 'bdiag';
     if (legs === 'bend') { stamp(ctx, X, Y, at(toe, -5), pal, mir); stamp(ctx, X, Y, at(toe, 2), pal, mir); return; }
     if (legs === 'tuck') {
       const part = side ? B.KICK_F : view === 'back' ? B.KICK_B : B.LIFT, dx = side ? -1 : 0;
@@ -54,8 +55,9 @@ window.SFC = window.SFC || {};
     stamp(ctx, X, Y, at(toe, side ? -3 : -4), pal, mir); stamp(ctx, X, Y, at(toe, side ? 2 : 1, -1), pal, mir);
   }
   function headerArms(ctx, X, Y, mir, view, hp, pal, hand, behindOnly) {
-    // nhìn chéo: tay bên phải hình là tay xa, nằm sau thân (vẽ trước thân, da tối)
-    if (view === 'diag') { if (behindOnly) armAt(ctx, X, Y, mir, 1, hp.arms[1], pal, hand, true, !hp.held); else armAt(ctx, X, Y, mir, 0, hp.arms[0], pal, hand, false, !hp.held); return; }
+    // nhìn chéo: tay xa (chéo xuống: bên phải hình · chéo lên: bên trái hình) nằm sau thân (vẽ trước thân, da tối)
+    const far = Sprite.farArm(view);
+    if (far >= 0) { const near = 1 - far; if (behindOnly) armAt(ctx, X, Y, mir, far, hp.arms[far], pal, hand, true, !hp.held); else armAt(ctx, X, Y, mir, near, hp.arms[near], pal, hand, false, !hp.held); return; }
     if (behindOnly) return;
     armAt(ctx, X, Y, mir, 0, hp.arms[0], pal, hand, false, !hp.held); armAt(ctx, X, Y, mir, 1, hp.arms[1], pal, hand, false, !hp.held);
   }

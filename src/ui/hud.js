@@ -316,7 +316,7 @@ window.SFC = window.SFC || {};
       }
       // vừa ra kỹ thuật LEGEND (Effects.legendTech, seq mới): ô LEGEND diễn kiểu anime — phóng to + loé trắng + tia toả, tên kỹ thuật bay lên
       const A = G && game.effects.V.legtech && game.effects.V.legtech[p.id];
-      if (G && A && A.seq !== G.seq && A.id !== 'flip') {
+      if (G && A && A.seq !== G.seq && A.id !== 'flip' && A.id !== 'winded') {   // bị xoạc bay / thở dốc: không phải ra kỹ thuật
         G.seq = A.seq;
         const K = SFC_CONFIG.legends.techniques[A.id];
         G.node.classList.remove('tech'); void G.node.offsetWidth; G.node.classList.add('tech');

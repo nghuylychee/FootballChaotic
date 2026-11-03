@@ -1,4 +1,4 @@
-# Máy chủ riêng cho trận online. Build từ thư mục gốc repo (cần config/, src/ và scripts/manifest.js dùng chung với game):
+# Máy chủ riêng cho trận online. Build từ thư mục gốc repo (cần config/, shared/ và scripts/manifest.js dùng chung với game; src/ chỉ là code máy người chơi, không chép):
 #   docker build -f server/Dockerfile -t sfc-server .
 #   docker run -p 8080:8080 sfc-server
 FROM node:24-alpine
@@ -7,7 +7,7 @@ COPY server/package.json server/package-lock.json server/
 RUN cd server && npm ci --omit=dev && npm cache clean --force
 COPY scripts/manifest.js scripts/
 COPY config/ config/
-COPY src/ src/
+COPY shared/ shared/
 COPY server/*.js server/
 ENV NODE_ENV=production PORT=8080
 EXPOSE 8080

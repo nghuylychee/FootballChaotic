@@ -137,7 +137,7 @@ VFX (luật "no invisible Cores") · cảnh xem trước (`corepreview.js SCENES
 
 ## 8. Đã làm
 
-- Hành vi 19 chiêu mới: `src/systems/cores-ult2.js` (Chaos Roulette mới ở `cores-new.js`). Config: `cores.config.js` (`ults.base`, `ults.hybrids`,
+- Hành vi 19 chiêu mới: `shared/systems/cores-ult2.js` (Chaos Roulette mới ở `cores-new.js`). Config: `cores.config.js` (`ults.base`, `ults.hybrids`,
   `ults.renamed` = id cũ → id mới). Gỡ 20 chiêu cũ khỏi `cores.js` / `cores-new.js` / `cores-hybrid.js`.
 - Viên gạch mới: `Effects.prop / propOff` (vật thể trên sân, `render/vfx.js → drawProp`), lớp phủ `vhs / dark / tilt`, skin bóng `boulder` / `ghost`,
   chiêu bay `fist`. Đồng bộ online qua `sync.js capture`. Trạng thái trận: `Game.stopT` (Time Stop Strike), `Game.pitchIce` + `CoreSystem.slip` (SÂN BĂNG),

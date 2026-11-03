@@ -12,11 +12,13 @@ window.SFC = window.SFC || {};
   //  twist -1 / 0 / 1: mép tối của áo đổi bên / dày ra, khe ống quần lệch ngược chiều (nhìn lên: chỉ khe quần)
   //  hemL / hemR: lai quần bên đó nhấc lên 1 px mịn (đùi đang nhấc)
   const cache = new Map();
-  function torsoPart(back, lean = 0, twist = 0, hemL = false, hemR = false) {
-    const id = [back ? 1 : 0, lean, twist, hemL ? 1 : 0, hemR ? 1 : 0].join();
+  //  turn (chéo lên, thấy lưng): 1 = nhìn phải, -1 = nhìn trái -> cổ áo sau lệch 1 cột ngược hướng mặt như BODY.bdiag / bdiagL
+  function torsoPart(back, lean = 0, twist = 0, hemL = false, hemR = false, turn = 0) {
+    const id = [back ? 1 : 0, lean, twist, hemL ? 1 : 0, hemR ? 1 : 0, turn].join();
     let part = cache.get(id);
     if (part) return part;
     let shirt = SHIRT(back);
+    if (back && turn) shirt = [turn > 0 ? 'KTtttttTTtK' : 'KTTTttttttK'].concat(shirt.slice(1));
     if (!back && twist > 0) shirt = shirt.map(() => 'KTTTTTTTttK');
     if (!back && twist < 0) shirt = shirt.map(() => 'KtTTTTTTTTK');
     const slit = twist > 0 ? 'KPPPKPPPPPK' : twist < 0 ? 'KPPPPPKPPPK' : 'KPPPPKPPPPK';

@@ -71,7 +71,7 @@ ipcMain.on('sfc-launch-lobby', (e) => {
   e.returnValue = typeof id === 'string' && /^\d{1,20}$/.test(id) ? id : null;
 });
 
-// ngôn ngữ ưu tiên của hệ điều hành (src/engine/i18n.js -> detect): navigator.languages trong cửa sổ bị khoá theo
+// ngôn ngữ ưu tiên của hệ điều hành (shared/engine/i18n.js -> detect): navigator.languages trong cửa sổ bị khoá theo
 // electronLanguages của package.json nên không dùng được
 ipcMain.on('sfc-languages', (e) => {
   try { e.returnValue = app.getPreferredSystemLanguages(); } catch (err) { e.returnValue = [app.getLocale()]; }

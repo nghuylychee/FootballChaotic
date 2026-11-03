@@ -15,8 +15,10 @@ window.SFC = window.SFC || {};
   // nhìn ngang / chéo: tay thẳng xoay quanh vai như chạy nước rút (sprint.js) nhưng vung nhẹ hơn. Góc theo pha (0 trước, π/2 xuống, π sau)
   const ARM_A = { F: Math.PI / 2 - 0.55, f: Math.PI / 2 - 0.2, b: Math.PI / 2 + 0.2, B: Math.PI / 2 + 0.6 };
   // 1 chân: hình + độ lệch ngang (px mịn) theo pha. sd = hướng ngang, k = bước ngang (ngang 2 · chéo 1 · xuống 0)
-  function runLeg(B, phase, toe, back, sd, k) {
+  // bd = chéo lên: bước chéo như chéo xuống (chân trụ về hướng mặt, mũi giày theo hướng mặt) nhưng gót đá / chân nhấc thấy đế như sau lưng
+  function runLeg(B, phase, toe, back, sd, k, bd = false) {
     const tp = (R, Lf, N) => toe > 0 ? R : toe < 0 ? Lf : N;
+    if (bd) return phase === 'P' ? [tp(B.PTR, B.PTL, B.PTN), sd * k, 0] : phase === 'K' ? [B.KICK_B, -sd * k, -1] : phase === 'L' ? [B.LIFT_B, sd, 0] : [tp(B.TR, B.TL, B.TN), 0, 0];
     if (back) return phase === 'K' ? [B.KICK_B, 0, 0] : phase === 'L' ? [B.LIFT_B, 0, 0] : phase === 'P' ? [B.TN, 0, -1] : [B.TN, 0, 0];
     if (phase === 'P') return [k === 2 ? tp(B.TR, B.TL, B.TN) : tp(B.PTR, B.PTL, B.PTN), sd * k, 0];
     if (phase === 'K') return [B.KICK_F, -sd * k, -1];

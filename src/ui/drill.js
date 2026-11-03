@@ -13,7 +13,7 @@
  *   shown: chờ Enter -> lật thẻ kế tiếp / đóng (gọi onClose)
  * drills.upScreen = false: fill + pop chạy luôn trên bảng YOU, rồi tự sang thẻ kế.
  * Khi active, main.js gọi Drill.update(dt, input) mỗi bước (vẽ character + nhận phím).
- * Số liệu drill ở config/progression.config.js -> attrs.drills; bốc / lưu / cộng ở src/meta/profile.js.
+ * Số liệu drill ở config/progression.config.js -> attrs.drills; bốc / lưu / cộng ở shared/meta/profile.js.
  */
 window.SFC = window.SFC || {};
 

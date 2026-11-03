@@ -18,11 +18,11 @@ window.SFC = window.SFC || {};
   ];
   // kiểu bước: khung, khung / s, thân ngả tới + đầu dẫn trước thân (px mịn) theo góc nhìn
   const GAITS = {
-    sprint: { frames: SPRINT, fps: 12, lean: { side: 3, diag: 2 }, head: { side: 4, diag: 2 } },
-    heavy: { frames: Sprite.HEAVY, fps: 9, lean: { side: 2, diag: 1 }, head: { side: 2, diag: 1 } },
+    sprint: { frames: SPRINT, fps: 12, lean: { side: 3, diag: 2, bdiag: 2 }, head: { side: 4, diag: 2, bdiag: 2 } },
+    heavy: { frames: Sprite.HEAVY, fps: 9, lean: { side: 2, diag: 1, bdiag: 1 }, head: { side: 2, diag: 1, bdiag: 1 } },
   };
-  // nhìn chéo: tầm với ngang của chân / tay co lại (chạy chếch về phía máy quay), 2 hông sát nhau hơn
-  const DIAG_REACH = 0.6, HIPS = { side: [-3, 2], diag: [-3, 1] };
+  // nhìn chéo (xuống / lên): tầm với ngang của chân / tay co lại (chạy chếch về phía / ra xa máy quay), 2 hông sát nhau hơn
+  const DIAG_REACH = 0.6, HIPS = { side: [-3, 2], diag: [-3, 1], bdiag: [-3, 1] };
   const gaitFrame = (kind, t) => { const G = GAITS[kind], fr = G.frames; return fr[Math.floor(t * G.fps) % fr.length]; };
   // 1 chân: hông (hx, -5) -> đầu ống chân dài KLEN theo góc a + bàn chân như legPose của kick.js (lưới thế giới)
   function gaitLeg(ctx, X, Y, hx, a, pal, mir, reach) {
@@ -33,15 +33,16 @@ window.SFC = window.SFC || {};
   }
   // 2 chân (vẽ trước thân). Khung bay (nhấp ≤ -3) nhấc cả chân theo thân, còn lại chân chạm đất ở Y
   function gaitLegs(ctx, X, Y, fr, view, pal, mir) {
-    const [aL, aR, bob] = fr, Yl = bob <= -3 ? Y + bob : Y, [h0, h1] = HIPS[view], r = view === 'diag' ? DIAG_REACH : 1;
+    const [aL, aR, bob] = fr, Yl = bob <= -3 ? Y + bob : Y, [h0, h1] = HIPS[view], r = view === 'diag' || view === 'bdiag' ? DIAG_REACH : 1;
     gaitLeg(ctx, X, Yl, h0, aL, pal, mir, r);
     gaitLeg(ctx, X, Yl, h1, aR, pal, mir, r);
   }
-  // tay: behind = lượt vẽ sau thân (tay đang vung ra sau, góc > π/2; nhìn chéo: tay xa luôn sau thân, da tối) · còn lại = lượt vẽ trước thân
+  // tay: behind = lượt vẽ sau thân (tay đang vung ra sau, góc > π/2; nhìn chéo: tay xa luôn sau thân, da tối) · còn lại = lượt vẽ trước thân.
+  // Tay xa: chéo xuống = tay phải hình (cột phải màn hình) · chéo lên = tay trái hình (thấy lưng: vai bên hướng mặt gần máy quay hơn)
   function gaitArms(ctx, X, Y, fr, view, pal, hand, mir, behind) {
-    const diag = view === 'diag';
+    const diag = view === 'diag' || view === 'bdiag', far = view === 'bdiag' ? 0 : 1;
     [fr[3], fr[4]].forEach(([a], i) => {
-      const back = a > P / 2 || (diag && i === 1);
+      const back = a > P / 2 || (diag && i === far);
       if (back !== behind) return;
       const ad = diag ? Math.atan2(Math.sin(a), Math.cos(a) * DIAG_REACH) : a;
       armAt(ctx, X, Y, mir, i, ad, pal, hand, back, false);

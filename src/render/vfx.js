@@ -14,6 +14,8 @@ window.SFC = window.SFC || {};
 (function () {
   const SP = () => SFC.Sprites;
   const W = 640, H = 360;
+  // vùng màn hình theo toạ độ thế giới (Renderer.setView: khung nhìn trận rộng / cao hơn 640 x 360 thì x, y âm)
+  const SCR = () => (SFC.Renderer && SFC.Renderer.screen) || { x: 0, y: 0, w: W, h: H };
   // tên Tuyệt kỹ trên đầu người ra chiêu (CoreSystem.activateUltimate): '@ult:<id>:<lv>' -> 'TÊN CHIÊU!' theo ngôn ngữ máy đang vẽ; khác -> null
   const ultLabel = (s) => {
     const m = /^@ult:(\w+):(\d+)$/.exec(s);
@@ -261,11 +263,40 @@ window.SFC = window.SFC || {};
   // vật thể tự vẽ nhân vật thay cho sprite thật (Renderer bỏ qua drawPlayer — VFX.hides): King Kong, đứng trên tảng đá, con gà, người ngã sõng soài, tượng đá (OWL'S GAZE)
   const PROP_HIDE = { warp: 1, vault: 1, ape: 1, ride: 1, chicken: 1, fall: 1, petrify: 1, burn: 1, tied: 1, lassoswing: 1, inpot: 1, fused: 1 };
   const byId = (g, id) => g.players.find((q) => q.id === id) || null;
+  // hồn đấu sĩ khổng lồ đỏ trong suốt (Hundred Fists): chân ở (x, y), quay mặt f (1 phải / -1 trái), busy = đang tung tràng nắm đấm
+  function standGhost(ctx, x, y, f, busy, color, fade, t) {
+    const { px, disc } = SP(), bob = Math.round(Math.sin(t * 4) * 2);
+    ctx.globalCompositeOperation = 'lighter';
+    const sx = Math.round(x), sy = Math.round(y - 30 + bob);
+    ctx.globalAlpha = fade * 0.22;                            // quầng ngoài
+    disc(ctx, sx, sy - 15, 11, color); px(ctx, sx - 14, sy - 8, 28, 18, color); px(ctx, sx - 10, sy + 10, 20, 9, color);
+    ctx.globalAlpha = fade * 0.5;
+    disc(ctx, sx, sy - 15, 8, color);                         // đầu
+    px(ctx, sx - 11, sy - 6, 22, 14, color);                  // vai + ngực
+    px(ctx, sx - 7, sy + 8, 14, 8, color);
+    px(ctx, sx - 5, sy - 22, 10, 2, '#ffb0bc');               // tóc dựng sáng
+    ctx.globalAlpha = fade * 0.75;
+    px(ctx, sx - 4, sy - 17, 3, 2, '#ffffff'); px(ctx, sx + 2, sy - 17, 3, 2, '#ffffff');   // mắt
+    if (busy) for (let i = 0; i < 7; i++) {                  // tràng nắm đấm bay ra phía trước
+      const fx = Math.round(sx + f * (8 + Math.random() * 20)), fy = Math.round(sy - 2 + (Math.random() - 0.5) * 20);
+      ctx.globalAlpha = fade * (0.5 + Math.random() * 0.4);
+      disc(ctx, fx, fy, 4, color); disc(ctx, fx, fy, 2, '#ffffff');
+    }
+    else { ctx.globalAlpha = fade * 0.6; disc(ctx, sx + f * 12, sy, 4, color); disc(ctx, sx + f * 12, sy, 2, '#ffffff'); }   // nắm đấm thủ thế
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+
   // vị trí vật thể bám người (a = id cầu thủ) hoặc toạ độ riêng
   function propAt(g, o) {
     if (PROP_FOLLOW[o.kind]) { const q = byId(g, o.a); return q ? { x: q.x, y: q.y } : { x: o.x, y: o.y }; }
     if (o.kind === 'magnet' || o.kind === 'rebound') return { x: g.ball.x, y: g.ball.y - g.ball.z };
     if (o.kind === 'junk') return { x: o.x + o.a * (o.max - o.t), y: o.y };
+    // Hundred Fists: hồn lướt (x, y) -> chỗ đứng hiện tại của mục tiêu a, tới nơi đúng lúc hết đời (mô phỏng dùng cùng công thức)
+    if (o.kind === 'standdash') {
+      const q = byId(g, o.a), u = Math.min(1, 1 - o.t / o.max);
+      return q ? { x: o.x + (q.x - o.x) * u, y: o.y + (q.y - o.y) * u } : { x: o.x, y: o.y };
+    }
     // Panic Ghosts: hồn ma bay đoạn (x, y) -> (a, b) trong seg giây (mô phỏng dùng cùng công thức)
     if (o.kind === 'spook') { const u = o.off ? 1 : Math.min(1, (o.max - o.t) / SFC_CONFIG.cores.list.panic_ball.params.seg); return { x: o.x + (o.a - o.x) * u, y: o.y + (o.b - o.y) * u }; }   // Pitch Landslide: đồ lăn thẳng, a = vận tốc x
     if (SFC.ModDraw && SFC.ModDraw.kinds[o.kind]) { const m = SFC.MatchMods && SFC.MatchMods.at(g, o); if (m) return m; }   // luật trận FOOTBALL STORY
@@ -440,28 +471,16 @@ window.SFC = window.SFC || {};
         if (Math.floor(t * 8) % 2) outlinedText(ctx, '!', x, y - 22, 14, '#ffd23f');
         break;
       }
-      case 'stand': {   // Thousand Fists: hồn đấu sĩ khổng lồ đỏ trong suốt sau lưng người dùng, đấm cùng lúc tung chuỗi đấm
+      case 'stand': {   // Hundred Fists: hồn đấu sĩ đỏ đứng cạnh nạn nhân (a = id nạn nhân, -1 = đứng tại (x, y)) ở phía b, tung tràng đấm
         const q = byId(g, o.a);
-        if (!q) break;
-        const f = Math.cos(q.facing) >= 0 ? 1 : -1, busy = q.state === 'recover', bob = Math.round(Math.sin(t * 4) * 2);
-        ctx.globalCompositeOperation = 'lighter';
-        const sx = x - f * 7, sy = y - 30 + bob;
-        ctx.globalAlpha = fade * 0.22;                            // quầng ngoài
-        disc(ctx, sx, sy - 15, 11, o.color); px(ctx, sx - 14, sy - 8, 28, 18, o.color); px(ctx, sx - 10, sy + 10, 20, 9, o.color);
-        ctx.globalAlpha = fade * 0.5;
-        disc(ctx, sx, sy - 15, 8, o.color);                       // đầu
-        px(ctx, sx - 11, sy - 6, 22, 14, o.color);                // vai + ngực
-        px(ctx, sx - 7, sy + 8, 14, 8, o.color);
-        px(ctx, sx - 5, sy - 22, 10, 2, '#ffb0bc');               // tóc dựng sáng
-        ctx.globalAlpha = fade * 0.75;
-        px(ctx, sx - 4, sy - 17, 3, 2, '#ffffff'); px(ctx, sx + 2, sy - 17, 3, 2, '#ffffff');   // mắt
-        // tràng nắm đấm bay ra phía trước lúc đang đấm
-        if (busy) for (let i = 0; i < 6; i++) {
-          const fx = Math.round(sx + f * (12 + Math.random() * 20)), fy = Math.round(sy - 2 + (Math.random() - 0.5) * 20);
-          ctx.globalAlpha = fade * (0.5 + Math.random() * 0.4);
-          disc(ctx, fx, fy, 4, o.color); disc(ctx, fx, fy, 2, '#ffffff');
-        }
-        ctx.globalCompositeOperation = 'source-over';
+        standGhost(ctx, x + o.b * 16, y, -o.b, !!q && q.state === 'stun', o.color, fade, t);
+        break;
+      }
+      case 'standdash': {   // Hundred Fists: hồn lướt bám theo mục tiêu (a = id) + vệt tàn ảnh
+        const q = byId(g, o.a), tx = q ? q.x : o.x, ty = q ? q.y : o.y;
+        const f = tx >= o.x ? 1 : -1, d = SFC.U.norm(tx - o.x, ty - o.y + 0.01);
+        for (let i = 3; i >= 1; i--) standGhost(ctx, x - d.x * i * 10, y - d.y * i * 10, f, false, o.color, fade * (0.5 - i * 0.12), t);
+        standGhost(ctx, x, y, f, false, o.color, fade, t);
         break;
       }
       case 'chrome': {   // Mega Titan: da thép bóng loáng (vệt sáng quét dọc người) + mắt phát sáng, vẽ đè lên sprite khổng lồ
@@ -1248,7 +1267,7 @@ window.SFC = window.SFC || {};
         if (parts) { parts.forEach((pt, i) => out.push({ y: pt.d, o, part: i })); continue; }
         // nhảy parkour qua tường graffiti: lúc đang ở trên tường (giữa cú nhảy) vẽ trước cả bức tường (o.y = chân tường gần camera nhất)
         if (o.kind === 'vault') { const y = propAt(g, o).y, k = 1 - o.t / o.max; out.push({ y: k > 0.2 && k < 0.8 ? Math.max(y, o.y + 4) : y, o }); continue; }
-        out.push({ y: propAt(g, o).y + (PROP_OVER[o.kind] ? 0.3 : o.kind === 'hand' || o.kind === 'tornado' ? 0.2 : o.kind === 'stand' ? -0.5 : 0), o });
+        out.push({ y: propAt(g, o).y + (PROP_OVER[o.kind] ? 0.3 : o.kind === 'hand' || o.kind === 'tornado' ? 0.2 : o.kind === 'stand' || o.kind === 'standdash' ? 0.1 : 0), o });
       }
       return out;
     },
@@ -1741,7 +1760,7 @@ window.SFC = window.SFC || {};
         ctx.font = popFont(str, s.px);
         // gần mép sân: dời vào trong cho chữ không bị cắt (tên chiêu dài)
         const half = (ctx.measureText(str).width * scale) / 2 + s.lw;
-        const x = Math.round(Math.max(half, Math.min(W - half, c.x)));
+        const S = SCR(), x = Math.round(Math.max(S.x + half, Math.min(S.x + S.w - half, c.x)));
         ctx.translate(x, Math.round(c.y)); ctx.rotate(rot); ctx.scale(scale, scale);
         ctx.globalAlpha = Math.min(1, (c.t / c.max) * 3);
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
@@ -1778,15 +1797,15 @@ window.SFC = window.SFC || {};
     },
 
     overlay(ctx, g) {
-      const O = g.effects.O, now = performance.now() / 1000;
+      const O = g.effects.O, now = performance.now() / 1000, S = SCR();
       // phủ màu
       for (const tn of O.tints) {
         const k = tn.t / tn.max, ramp = Math.min(1, (1 - k) * 8, k * 4);
         ctx.globalAlpha = tn.a * ramp;
-        ctx.fillStyle = tn.color; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = tn.color; ctx.fillRect(S.x, S.y, S.w, S.h);
         // viền đậm hơn
         ctx.globalAlpha = tn.a * ramp * 1.6;
-        ctx.fillRect(0, 0, W, 6); ctx.fillRect(0, H - 6, W, 6); ctx.fillRect(0, 0, 6, H); ctx.fillRect(W - 6, 0, 6, H);
+        ctx.fillRect(S.x, S.y, S.w, 6); ctx.fillRect(S.x, S.y + S.h - 6, S.w, 6); ctx.fillRect(S.x, S.y, 6, S.h); ctx.fillRect(S.x + S.w - 6, S.y, 6, S.h);
       }
       ctx.globalAlpha = 1;
       // tia tốc độ tập trung
@@ -1804,12 +1823,12 @@ window.SFC = window.SFC || {};
       // băng VHS tua ngược: sọc nhiễu chạy dọc, lệch màu, chữ << góc trên
       if (O.vhs) {
         const k = O.vhs.t / O.vhs.max, a = Math.min(1, (1 - k) * 8, k * 4);
-        ctx.globalAlpha = 0.18 * a; ctx.fillStyle = '#c63dff'; ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 0.18 * a; ctx.fillStyle = '#c63dff'; ctx.fillRect(S.x, S.y, S.w, S.h);
         for (let i = 0; i < 9; i++) {
-          const yy = ((now * 260 + i * 53) % (H + 40)) - 20;
+          const yy = S.y + ((now * 260 + i * 53) % (S.h + 40)) - 20;
           ctx.globalAlpha = 0.35 * a; ctx.fillStyle = i % 3 ? '#ffffff' : '#3ff6ff';
-          ctx.fillRect(0, yy, W, 1 + (i % 2));
-          ctx.globalAlpha = 0.12 * a; ctx.fillRect(Math.sin(now * 30 + i) * 6, yy + 3, W, 4);
+          ctx.fillRect(S.x, yy, S.w, 1 + (i % 2));
+          ctx.globalAlpha = 0.12 * a; ctx.fillRect(S.x + Math.sin(now * 30 + i) * 6, yy + 3, S.w, 4);
         }
         ctx.globalAlpha = a;
         if (Math.floor(now * 4) % 2) outlinedText(ctx, '<< REW', 70, 30, 22, '#ffffff', '#140c16', 4);
@@ -1819,8 +1838,9 @@ window.SFC = window.SFC || {};
       if (O.tilt) {
         const k = O.tilt.t / O.tilt.max, a = Math.min(1, (1 - k) * 6, k * 4), d = O.tilt.dir;
         ctx.globalAlpha = 0.55 * a; ctx.fillStyle = '#ffd23f';
-        for (let i = 0; i < 6; i++) for (const yy of [14, H - 14]) {
-          const xx = (((now * 90 * d + i * 120) % (W + 60)) + W + 60) % (W + 60) - 30;
+        const n = Math.ceil((S.w + 60) / 120);
+        for (let i = 0; i < n; i++) for (const yy of [S.y + 14, S.y + S.h - 14]) {
+          const xx = S.x + ((((now * 90 * d + i * 120) % (S.w + 60)) + S.w + 60) % (S.w + 60)) - 30;
           ctx.beginPath(); ctx.moveTo(xx + d * 8, yy); ctx.lineTo(xx - d * 4, yy - 6); ctx.lineTo(xx - d * 4, yy + 6); ctx.closePath(); ctx.fill();
         }
         ctx.globalAlpha = 1;
@@ -1862,13 +1882,13 @@ window.SFC = window.SFC || {};
     // (#banner top 118px, css/style.css; bàn thắng và Tuyệt kỹ không trùng lúc).
     // Dạng thức tỉnh (c.sub = 'AWAKENED'): thêm 2 viền vàng + chữ nhỏ trên tên
     cutInMine(ctx, g, c, now) {
-      const k = 1 - c.t / c.max, p = g.players.find((q) => q.id === c.pid);
+      const k = 1 - c.t / c.max, p = g.players.find((q) => q.id === c.pid), S = SCR();
       const fade = Math.min(1, k / 0.12, (1 - k) / 0.15);
       if (p) {
         // lỗ sáng co lại theo thời gian
         const r0 = 34 + 40 * (1 - Math.min(1, k * 2.5)), grd = ctx.createRadialGradient(p.x, p.y - 10, r0, p.x, p.y - 10, r0 + 150);
         grd.addColorStop(0, 'rgba(8,4,12,0)'); grd.addColorStop(1, 'rgba(8,4,12,0.62)');
-        ctx.globalAlpha = fade; ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = fade; ctx.fillStyle = grd; ctx.fillRect(S.x, S.y, S.w, S.h);
         ctx.strokeStyle = c.color;
         for (let i = 0; i < 2; i++) {
           const q = (k * 1.6 + i * 0.5) % 1;
@@ -1878,15 +1898,16 @@ window.SFC = window.SFC || {};
         ctx.globalAlpha = 1;
       }
       // dải mắt: mở ra từ giữa theo chiều dọc, chân dung + tên trượt nhẹ ngược chiều nhau
+      // dải chạy hết bề ngang khung nhìn; chân dung + tên giữ chỗ trong màn 640 x 360 (giữa khung nhìn)
       const yb = 90, hb = 44, open = Math.min(1, k / 0.1, (1 - k) / 0.12), h = Math.max(1, hb * open), y0 = yb + (hb - h) / 2;
-      ctx.fillStyle = c.color; ctx.fillRect(0, y0 - 3, W, h + 6);
-      ctx.fillStyle = '#140c16'; ctx.fillRect(0, y0, W, h);
-      if (c.sub) { ctx.fillStyle = '#ffe14f'; ctx.fillRect(0, y0 - 6, W, 2); ctx.fillRect(0, y0 + h + 4, W, 2); }
+      ctx.fillStyle = c.color; ctx.fillRect(S.x, y0 - 3, S.w, h + 6);
+      ctx.fillStyle = '#140c16'; ctx.fillRect(S.x, y0, S.w, h);
+      if (c.sub) { ctx.fillStyle = '#ffe14f'; ctx.fillRect(S.x, y0 - 6, S.w, 2); ctx.fillRect(S.x, y0 + h + 4, S.w, 2); }
       ctx.save();
-      ctx.beginPath(); ctx.rect(0, y0, W, h); ctx.clip();
+      ctx.beginPath(); ctx.rect(S.x, y0, S.w, h); ctx.clip();
       // sọc tốc độ trong dải
       ctx.globalAlpha = 0.35;
-      for (let i = 0; i < 7; i++) { ctx.fillStyle = i % 2 ? c.color : '#ffffff'; ctx.fillRect(((now * 900 + i * 131) % (W + 200)) - 100, y0 + 4 + i * 6, 50 + (i * 37) % 80, 1); }
+      for (let i = 0; i < 7; i++) { ctx.fillStyle = i % 2 ? c.color : '#ffffff'; ctx.fillRect(S.x + ((now * 900 + i * 131) % (S.w + 200)) - 100, y0 + 4 + i * 6, 50 + (i * 37) % 80, 1); }
       ctx.globalAlpha = 1;
       // chân dung pixel phóng 7 lần, chỉ lộ khúc mắt (mắt cao ~15.6 px trên chân nhân vật)
       ctx.save();
@@ -1904,10 +1925,11 @@ window.SFC = window.SFC || {};
 
     // impact frame: đảo màu rồi bỏ bão hoà -> khung hình đen trắng kiểu anime
     impactOverlay(ctx) {
+      const S = SCR();
       ctx.globalCompositeOperation = 'difference';
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(S.x, S.y, S.w, S.h);
       ctx.globalCompositeOperation = 'saturation';
-      ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#000000'; ctx.fillRect(S.x, S.y, S.w, S.h);
       ctx.globalCompositeOperation = 'source-over';
     },
   };

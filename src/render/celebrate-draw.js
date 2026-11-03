@@ -1,4 +1,4 @@
-/* CelebrateDraw — vẽ động tác ăn mừng bàn thắng (danh sách ở progression.config.js, slot 'cel'; di chuyển ở src/systems/celebrate.js)
+/* CelebrateDraw — vẽ động tác ăn mừng bàn thắng (danh sách ở progression.config.js, slot 'cel'; di chuyển ở shared/systems/celebrate.js)
  * Mỗi động tác: pose(t, p) -> tư thế cho drawPlayer (sprite người chơi src/render/player đọc p.celPose; vẽ cả động tác: PlayerSprite.celDraw):
  *   lift (px nhấc khỏi đất) · rot (xoay cả người quanh hông) · face (hướng nhìn, thiếu = theo trận) · run (chân chạy)
  *   arms [trái, phải] ([dx, dy] bàn tay hoặc [khuỷu dx, dy, tay dx, dy] tính từ vai) · legs ('kneel' | 'cross' | 'split')
@@ -84,7 +84,8 @@ window.SFC = window.SFC || {};
       pose(t) {
         if (t < lead('kneeslide')) return { run: true };
         const sh = Math.round(S(t * 30) * 0.6);
-        return { legs: 'kneel', drop: 4, arms: [[-5, -8 + sh], [5, -8 - sh]], eyes: 'happy', mouth: true, face: FRONT };
+        // không ép quay mặt về máy quay: trượt theo hướng mặt của người (4 hướng chéo về khán đài, systems/celebrate.js); xem trước ở menu vẫn nhìn xuống
+        return { legs: 'kneel', drop: 4, arms: [[-5, -8 + sh], [5, -8 - sh]], eyes: 'happy', mouth: true };
       },
       fx(ctx, I) { dust(ctx, I.x, I.y, I.t - lead('kneeslide'), 8, 12, I.mv); },
     },

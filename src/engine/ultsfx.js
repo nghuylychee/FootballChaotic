@@ -205,7 +205,7 @@ window.SFC = window.SFC || {};
     'magnet.drop'() { T({ freq: 1200, to: 200, dur: 0.4, type: 'sine', vol: 0.13 }); },
     'magnet.hum'() { const p = P('mega_magnet'), t = (p.time || 2) + 0.2; T({ freq: 60, dur: t, type: 'sine', vol: 0.12, attack: 0.05 }); T({ freq: 120, dur: t, type: 'square', vol: 0.025, vib: 10, vibDepth: 3 }); },
 
-    /* ---- LUẬT TRẬN FOOTBALL STORY (src/systems/matchmods.js), cùng cách gọi g.sfx('ult', 'mod.<sự kiện>') ---- */
+    /* ---- LUẬT TRẬN FOOTBALL STORY (shared/systems/matchmods.js), cùng cách gọi g.sfx('ult', 'mod.<sự kiện>') ---- */
     // ghế nhựa: bóng dội "bộp" rỗng · sút vỡ: nhựa nứt "rắc" + rơi lạch cạch
     'mod.thunk'() { T({ freq: 260, to: 180, dur: 0.07, type: 'triangle', vol: 0.14 }); N({ dur: 0.04, vol: 0.08, freq: 1200, q: 1.5 }); },
     'mod.stool'() { N({ dur: 0.12, vol: 0.22, freq: 2600, q: 0.8 }); T({ freq: 420, to: 140, dur: 0.12, type: 'square', vol: 0.08 }); [0.14, 0.22, 0.28].forEach((d) => T({ freq: R(300, 500), dur: 0.04, type: 'triangle', vol: 0.08, delay: d })); },

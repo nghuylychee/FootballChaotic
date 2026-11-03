@@ -244,12 +244,21 @@ window.SFC = window.SFC || {};
   }
 
   /* ---------- bóng ---------- */
+  // lưới vẽ vị trí như cầu thủ (Renderer.posGrid, PlayerSprite.drawPlayer): canvas trận x2 -> nửa px thế giới = 1 px màn hình. Vẽ ở ô nguyên rồi
+  // dời cả canvas phần lẻ (px / disc cắt toạ độ về số nguyên). Canvas 1x (ảnh xem trước): giữ lưới px nguyên, nửa px sẽ nhoè
   function drawBall(ctx, b, alpha = 1) {
-    const x = Math.round(b.x), y = Math.round(b.y);
+    const T = ctx.getTransform(), R = SFC.Renderer, fine = R && Math.abs(T.a) >= 2 && Math.abs(T.d) >= 2;
+    const snap = (v) => (fine ? R.snap(v) : Math.round(v));
+    const hx = snap(b.x), hby = snap(b.y - b.z - 3), ox = hx - Math.floor(hx), oy = hby - Math.floor(hby);
+    if (ox || oy) { ctx.save(); ctx.translate(ox, oy); }
+    drawBallAt(ctx, b, Math.floor(hx), snap(b.y) - oy, Math.floor(hby), alpha);
+    if (ox || oy) ctx.restore();
+  }
+  // (x, by) = tâm bóng ở ô nguyên, y = mặt đất (đã trừ phần dời dọc), canvas đã dời phần nửa px
+  function drawBallAt(ctx, b, x, y, by, alpha) {
     const s = Math.max(1.2, 3.2 - b.z * 0.05);
     ctx.globalAlpha = alpha;
     ellipse(ctx, x, y + 1, s + 0.5, s * 0.5 + 0.3, 'rgba(0,0,0,0.4)');
-    const by = Math.round(y - b.z - 3);
     const fx = b.fx || {};
     // VFX Kit BL: bóng đổi hình (lỗ đen, bom, cầu lửa, dưa hấu...)
     if (b.skin && drawBallSkin(ctx, b, x, by)) { ctx.globalAlpha = 1; return; }

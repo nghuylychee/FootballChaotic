@@ -1,0 +1,242 @@
+/* Sync — đóng gói / áp trạng thái trận giữa host và máy khách (online PvP)
+ * - Host: snapshot(g) mỗi N bước + các lệnh hiệu ứng / âm thanh / sự kiện phát sinh (capture)
+ * - Khách: apply(g, snap) lên một Game "gương" (không tự mô phỏng), nội suy vị trí giữa 2 snapshot
+ * - Phím khách gửi dạng bitmask (RemoteInput ở host giả lập lại SFC.Input)
+ */
+window.SFC = window.SFC || {};
+
+(function () {
+  // power / trick: phím kỹ thuật LEGEND (thêm vào cuối -> bit cũ giữ nguyên, máy chủ cũ bỏ qua bit lạ)
+  const ACTIONS = ['up', 'down', 'left', 'right', 'sprint', 'pass', 'through', 'lob', 'shoot', 'skill', 'switch', 'ultimate', 'power', 'trick'];
+  const BIT = {};
+  ACTIONS.forEach((a, i) => (BIT[a] = 1 << i));
+
+  const r1 = (v) => Math.round(v * 10) / 10;
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const pk = (v) => (typeof v === 'number' ? r2(v) : typeof v === 'boolean' ? (v ? 1 : 0) : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  // các trường cầu thủ cần để vẽ (sprites + renderer). Không gửi anim: chỉ là đồng hồ hoạt ảnh riêng từng cầu thủ
+  // (bắt đầu ngẫu nhiên, +1/giây) — máy khách tự đếm (session.js tick), lệch pha bước chân / tóc không ai thấy
+  const PF = ['x', 'y', 'vx', 'vy', 'facing', 'state', 'stamina', 'charging', 'charge',
+    'passMode', 'passCharge', 'passBase', 'flash', 'auraC', 'auraT', 'auraFarmT', 'atkType', 'atkT', 'airZ', 'sizeMul', 'bracing', 'shotTarget',
+    'surge', 'fistRdy', 'ultLv', 'ghostT'];   // trạng thái Core nhìn thấy được (TOÉ ĐIỆN, nắm tay sáng, tàng hình) + cấp Tuyệt kỹ (dạng thức tỉnh)
+  const P_BOOL = { charging: true, bracing: true, surge: true, fistRdy: true };
+  // làm tròn riêng (đỡ băng thông, ~-21% sau nén): canvas 640x360 và cầu thủ vẽ ở pixel nguyên (Math.round) nên 0,1 px không thấy được;
+  // vận tốc chỉ dùng để biết đang chạy (> 12 px/s) + hướng bụi; thanh thể lực rộng 12 px. Còn lại: 2 chữ số (pk)
+  const num = (f) => (v) => (typeof v === 'number' ? f(v) : v);
+  // hướng nhìn: đưa về -π..π trước (cầu thủ xoay nhiều vòng thì số cứ lớn dần), máy khách chỉ dùng sin / cos / angleDiff
+  const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  const PQ = { x: num(r1), y: num(r1), vx: num(Math.round), vy: num(Math.round), stamina: num(Math.round), facing: num((v) => r2(wrapA(v))) };
+  // cooldown kỹ năng (thanh kỹ năng HUD của người chơi tại máy khách)
+  const CD = ['light', 'hard', 'skill'];
+  // năng lượng Tuyệt kỹ của từng cầu thủ (HUD máy khách)
+  const RS = ['ult'];
+  // cờ hiệu ứng của bóng (bitmask) — lửa / sét có tác dụng gameplay, còn lại chỉ để vẽ
+  const BFX = ['fire', 'thunder', 'string', 'spiral', 'laser', 'duo', 'ghost', 'meteor'];
+
+  /** Phím của người chơi ở máy khách, được host dùng thay cho SFC.Input */
+  class RemoteInput {
+    constructor() { this.down = 0; this.pressed = 0; this.pending = 0; }
+    receive(down, pressed) { this.down = down | 0; this.pending |= pressed | 0; }
+    beginFrame() { this.pressed = this.pending; this.pending = 0; }
+    // nhấn-thả nhanh giữa 2 gói tin vẫn tính là đang giữ ở bước đó (để sút/chuyền chạm nhẹ)
+    isDown(a) { return !!((this.down | this.pressed) & BIT[a]); }
+    wasPressed(a) { return !!(this.pressed & BIT[a]); }
+    wasReleased() { return false; }
+    endFrame() { this.pressed = 0; }
+    reset() { this.down = this.pressed = this.pending = 0; }
+  }
+
+  const NULL_INPUT = { isDown: () => false, wasPressed: () => false, wasReleased: () => false, endFrame() {} };
+
+  const Sync = {
+    ACTIONS,
+    RemoteInput,
+    NULL_INPUT,
+
+    encode(fn) {
+      let m = 0;
+      for (const a of ACTIONS) if (fn(a)) m |= BIT[a];
+      return m;
+    },
+
+    /* ---------------- HOST ---------------- */
+    // Ghi lại mọi hiệu ứng / âm thanh phát sinh để gửi kèm snapshot
+    capture(g) {
+      const out = (g.netOut = { fx: [], sfx: [], ev: [] });
+      let depth = 0;
+      const E = g.effects;
+      // hiệu ứng cơ bản + VFX Kit (systems/vfxkit.js) — tham số đều là giá trị nguyên thuỷ nên gửi thẳng được
+      for (const m of ['burst', 'ring', 'shake', 'flash', 'wave', 'decal', 'stretch', 'clone', 'projectile', 'beam', 'vortex', 'bolt', 'dragon',
+        'pop', 'combo', 'shield', 'portal', 'netFire', 'popClone', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint',
+        'prop', 'propOff', 'vhs', 'tilt', 'only', 'legendAura', 'legendCut', 'legendHud', 'legendTech', 'legendBall',   // legend*: GOAT PATH LEGEND (shared/systems/legends.js)
+        // clearHazards: host xoá vật thể mỗi lần giao bóng -> khách xoá theo, không thì vật thể luật trận (ghế nhựa...) cộng dồn mỗi pha bóng
+        'clearHazards']) {
+        const orig = E[m];
+        // chỉ ghi lệnh ngoài cùng (combo -> comic, clone -> burst...) để máy khách không phát lại 2 lần
+        E[m] = function (...a) {
+          if (!depth) out.fx.push([m].concat(a.map(pk)));
+          depth++;
+          try { return orig.apply(this, a); } finally { depth--; }
+        };
+      }
+      // vật thể đã có trên sân trước khi bắt đầu ghi (luật trận đặt lúc dựng trận, vd. ghế nhựa của FOOTBALL STORY) -> gửi kèm gói đầu
+      for (const o of (E.V && E.V.props) || []) out.fx.push(['prop', o.id, o.kind, pk(o.x), pk(o.y), pk(o.a), pk(o.b), pk(o.t), o.color]);
+      const oa = E.afterimage;
+      E.afterimage = function (p, t) { out.fx.push(['afterimage', p.id, r1(p.x), r1(p.y), r2(p.facing), r2(p.anim), t || 0.3]); return oa.call(this, p, t); };
+      const os = g.sfx;
+      g.sfx = function (n, a) { out.sfx.push(a === undefined ? [n] : [n, pk(a)]); return os.call(this, n, a); };
+    },
+
+    // gom sự kiện trận (goal, banner, draft...) trước khi UI tiêu thụ
+    collectEvents(g) {
+      for (const e of g.events) g.netOut.ev.push(e);
+    },
+
+    drain(g) {
+      const o = g.netOut, res = { fx: o.fx, sfx: o.sfx, ev: o.ev };
+      g.netOut.fx = []; g.netOut.sfx = []; g.netOut.ev = [];
+      return res;
+    },
+
+    snapshot(g) {
+      const b = g.ball, E = g.effects, d = g.draft;
+      const s = {
+        st: g.state, sT: r2(g.stateT), tm: r2(g.time), el: r2(g.elapsed), gT: r2(g.goldenT || 0),
+        fp: g.finalPush ? 1 : 0, gg: g.golden ? 1 : 0,
+        sc: [g.teams[0].score, g.teams[1].score],
+        ct: g.ctrl.map((p) => (p ? p.id : -1)),
+        p: g.players.map((p) => PF.map((k) => (PQ[k] ? PQ[k](p[k]) : pk(p[k]))).concat(CD.map((k) => r2(p.cd[k])), RS.map((k) => p.res[k]))),
+        ux: g.upgradeIdx,
+        b: [r1(b.x), r1(b.y), r1(b.z), r1(b.vx), r1(b.vy), r1(b.vz), r1(b.roll), b.owner ? b.owner.id : -1,
+          BFX.reduce((m, k, i) => (b.fx[k] ? m | (1 << i) : m), 0), b.skin || 0],
+        co: g.cores.own,   // id cầu thủ -> Core của người đó
+        ae: [0, 1].map((t) => (g.cores.shieldReady(t) ? 1 : 0)),
+        hz: {
+          f: E.fires.map((o) => [r1(o.x), r1(o.y), r2(o.t), o.max, o.r]),
+          m: E.mines.map((o) => [r1(o.x), r1(o.y), o.team, r2(o.arm), o.r]),
+          s: E.slashes.map((o) => [r1(o.x), r1(o.y), r2(o.dx), r2(o.dy), o.len, r2(o.t), o.max]),
+          d: E.decoys.map((o) => (o.legion ? [r1(o.x), r1(o.y), r1(o.vx), r1(o.vy), o.srcId, 1] : [r1(o.x), r1(o.y), r1(o.vx), r1(o.vy), o.srcId])),   // 1 = phân thân Clone Legion (không bóng)
+        },
+      };
+      // GOAT PATH SKILL GAME (shared/systems/drills.js): số đếm, cổng đang tới, bia, lượt người đuổi, mốc khi xong (-1 = chưa)
+      const D = g.drill;
+      if (D) s.sk = [r1(D.val), D.gi || 0, r1(D.ty || 0), r1(D.th || 0), D.wave || 1, D.ok == null ? -1 : D.tier];
+      if (d) {
+        const picked = {};
+        for (const k in d.options) picked[k] = d.picked[k] ? 1 : 0;   // khóa = slot người chơi
+        s.dr = { o: d.options, pk: picked, r: d.round, l: d.limit, t: r1(d.t), pre: d.pre ? 1 : 0, rr: d.rerolls };
+      }
+      return s;
+    },
+
+    /* ---------------- KHÁCH ---------------- */
+    apply(g, s) {
+      g.state = s.st; g.stateT = s.sT; g.time = s.tm; g.elapsed = s.el; g.goldenT = s.gT;
+      g.finalPush = !!s.fp; g.golden = !!s.gg;
+      g.teams[0].score = s.sc[0]; g.teams[1].score = s.sc[1];
+      if (s.ux != null) g.upgradeIdx = s.ux;
+      g.ctrl = s.ct.map((id) => g.players.find((p) => p.id === id) || null);
+
+      s.p.forEach((row, i) => {
+        const p = g.players[i];
+        PF.forEach((k, j) => { p[k] = P_BOOL[k] ? !!row[j] : row[j]; });
+        CD.forEach((k, j) => { p.cd[k] = row[PF.length + j]; });
+        RS.forEach((k, j) => { p.res[k] = row[PF.length + CD.length + j]; });
+      });
+
+      const b = g.ball, bb = s.b;
+      [b.x, b.y, b.z, b.vx, b.vy, b.vz, b.roll] = bb;
+      b.owner = bb[7] >= 0 ? g.players.find((p) => p.id === bb[7]) : null;
+      b.fx = {};
+      BFX.forEach((k, i) => { if (bb[8] & (1 << i)) b.fx[k] = {}; });
+      b.skin = bb[9] || null;
+
+      // Core của từng cầu thủ: theo đúng host (trận gương tự bốc Core cho AI lúc khởi tạo -> bỏ, không để lệch)
+      for (const pid in g.cores.own) if (!s.co[pid]) delete g.cores.own[pid];
+      for (const pid in s.co) {
+        const own = g.cores.own[pid] || (g.cores.own[pid] = []);
+        own.length = 0;
+        own.push(...s.co[pid]);
+      }
+      for (let t = 0; t < 2; t++) g.cores.st(t, 'aegis_wall').ready = !!s.ae[t];
+
+      const E = g.effects, h = s.hz;
+      E.fires = h.f.map(([x, y, t, max, r]) => ({ x, y, t, max, r }));
+      E.mines = h.m.map(([x, y, team, arm, r]) => ({ x, y, team, arm, r }));
+      E.slashes = h.s.map(([x, y, dx, dy, len, t, max]) => ({ x, y, dx, dy, len, t, max }));
+      E.decoys = h.d.map(([x, y, vx, vy, srcId, legion]) => {
+        const src = g.players.find((p) => p.id === srcId);
+        return {
+          x, y, vx, vy, alive: true, legion: !!legion,
+          runner: src ? { team: src.team, role: src.role, look: src.look, facing: Math.atan2(vy, vx), anim: g.time * 1.3 } : null,
+        };
+      });
+
+      if (s.sk && g.drill) {
+        const D = g.drill, k = s.sk;
+        D.val = +k[0] || 0; D.gi = k[1] | 0; D.ty = +k[2] || 0; D.th = +k[3] || 0; D.wave = k[4] | 0;
+        if (k[5] >= 0 && D.ok == null) { D.tier = k[5] | 0; D.ok = D.tier > 0; }
+      }
+      if (s.dr) {
+        const prev = g.draft;
+        g.draft = { options: s.dr.o, picked: Object.assign({}, s.dr.pk), round: s.dr.r, limit: s.dr.l, t: s.dr.t, aiPicks: [], pre: !!s.dr.pre, rerolls: s.dr.rr || {} };
+        // khách vừa chọn nhưng host chưa xác nhận -> giữ trạng thái đã chọn
+        if (prev && prev.round === s.dr.r && prev.localPick != null) {
+          g.draft.localPick = prev.localPick;
+          g.draft.picked[g.me] = 1;
+        }
+      } else g.draft = null;
+    },
+
+    // nội suy vị trí giữa snapshot a (đã apply) và b
+    blend(g, a, b, t) {
+      if (!b || t <= 0) return;
+      const sameOwner = a.b[7] === b.b[7];
+      a.p.forEach((row, i) => {
+        const p = g.players[i], nb = b.p[i];
+        // bỏ qua nếu dịch chuyển quá xa (giao bóng lại, dịch chuyển tức thời)
+        if (Math.abs(nb[0] - row[0]) + Math.abs(nb[1] - row[1]) > 40) return;
+        p.x = lerp(row[0], nb[0], t);
+        p.y = lerp(row[1], nb[1], t);
+        p.facing = row[4] + SFC.U.angleDiff(row[4], nb[4]) * t;
+      });
+      const ball = g.ball;
+      if (sameOwner && Math.abs(b.b[0] - a.b[0]) + Math.abs(b.b[1] - a.b[1]) < 60) {
+        ball.x = lerp(a.b[0], b.b[0], t);
+        ball.y = lerp(a.b[1], b.b[1], t);
+        ball.z = lerp(a.b[2], b.b[2], t);
+      }
+    },
+
+    // vệt bóng tính tại máy khách theo vị trí đã vẽ
+    trail(g) {
+      const b = g.ball;
+      if (b.owner) { b.trail.length = 0; return; }
+      b.trail.unshift({ x: b.x, y: b.y, z: b.z });
+      if (b.trail.length > SFC_CONFIG.game.ball.trailLength) b.trail.pop();
+    },
+
+    replay(g, pack) {
+      for (const f of pack.fx) {
+        const [m, ...a] = f;
+        if (m === 'afterimage') {
+          const p = g.players.find((q) => q.id === a[0]);
+          if (p) g.effects.afterimage({ x: a[1], y: a[2], facing: a[3], team: p.team, role: p.role, look: p.look, anim: a[4] }, a[5] || 0.3);
+        } else if (g.effects[m]) g.effects[m](...a);
+      }
+      // âm thanh + rung tay cầm phát qua đúng đường của trận (Game.sfx), giống chơi đơn — mã online không gọi thẳng âm thanh
+      for (const [n, a] of pack.sfx) g.sfx(n, a);
+      for (const e of pack.ev) {
+        if (e.type === 'goal') SFC.Celebrate.remote(g, e);   // động tác ăn mừng của người ghi bàn (shared/systems/celebrate.js)
+        if (e.type === 'end') SFC.Celebrate.remoteEnd(g, e); // thống kê trận + tư thế ăn mừng / thất vọng cuối trận
+        // số lần luật trận trúng đội bạn (sao modClean): máy giữ cup trên máy chủ riêng tính sao từ trận "gương"
+        if (e.type === 'end' && g.mod && typeof e.mh === 'number') g.mod.hits = e.mh | 0;
+        g.events.push(e);
+      }
+    },
+  };
+
+  SFC.Sync = Sync;
+})();

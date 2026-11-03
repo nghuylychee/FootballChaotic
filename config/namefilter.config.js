@@ -1,6 +1,6 @@
 /* =========================================================
  * NAME FILTER — chặn tên character tục tĩu / xúc phạm (tên hiện cho người lạ ở trận online: MATCH FOUND, intro, HUD, kết quả).
- * Code: SFC.Profile.nameAllowed (src/meta/profile.js)
+ * Code: SFC.Profile.nameAllowed (shared/meta/profile.js)
  *  - đặt tên / đổi tên: tên bị chặn thì không nhận, báo người chơi chọn tên khác
  *  - nhận hồ sơ người khác (Profile.sanitizePublic: thành viên phòng, ghế trong trận; tên CLB ở Session.guestStart): tên bị chặn -> fallback.
  *    Chỉ lọc ở máy người chơi: máy chủ riêng không nạp file này (scripts/manifest.js), không cần deploy lại khi sửa danh sách

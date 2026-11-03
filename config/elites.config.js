@@ -3,7 +3,7 @@
  * Pool Elite riêng từng act: run.acts[i].elite (config/run.config.js). Matchday giữ các đội Story cũ.
  *   run.elites[đội]: dữ liệu đối thủ như 1 vòng Story (SFC.Run.opp): arena · signature (Core đặc trưng) · mod (luật trận) · barks (câu nói)
  *   elites.teams: đội (khuôn giống mainPath.teams) -> gộp vào teams.list
- *   elites.mods: số liệu luật trận (src/systems/matchmods.js) -> gộp vào stories.mods (MatchMods đọc chung 1 chỗ)
+ *   elites.mods: số liệu luật trận (shared/systems/matchmods.js) -> gộp vào stories.mods (MatchMods đọc chung 1 chỗ)
  * Luật chỉ đánh vào đội bạn, không lấy / cấm Core (user 2026-10-19). Thời gian giây, khoảng cách px, tốc độ px/s.
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};

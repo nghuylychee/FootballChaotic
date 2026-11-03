@@ -3,6 +3,7 @@
  *   npm run server:image -- --push       -> như trên rồi push lên Docker Hub (chỉ khi đã chốt deploy: hạn chế số lần push)
  * Tag = phiên bản máy chủ trong server/package.json: <net.protocol>.<minor>.<patch> (vd. 5.1.0). Số đầu phải bằng net.protocol
  * (đổi định dạng gói tin -> tăng protocol -> phiên bản máy chủ lên <protocol mới>.0.0 hoặc .1.0). Ghi tag khác: npm run server:image -- 5.1.0-test
+ * Code máy chủ (config/, shared/, server/) đổi mà chưa npm run server:bump -> dừng (scripts/server-stamp.js).
  * Chạy thử: bật container ở cổng tạm, chờ /healthz trả ok với đúng net.protocol của bản game hiện tại, rồi tắt.
  * Sau khi push: npm run server:deploy (deploy lên mọi service sfc-server* trên Render qua API).
  * Cần Docker (Docker Desktop / Docker Engine) và đã `docker login` (tài khoản team41sfc) nếu push.
@@ -71,6 +72,8 @@ function protocol() {
   const ref = `${IMAGE}:${TAG}`;
 
   run(process.execPath, [path.join(ROOT, 'scripts', 'manifest.js'), '--check']);
+  // code máy chủ đổi mà chưa tăng phiên bản -> không đóng gói (tag = phiên bản phải nói đúng code bên trong)
+  run(process.execPath, [path.join(ROOT, 'scripts', 'server-stamp.js'), '--check']);
   console.log(`[image] building ${ref}`);
   run(docker, ['build', '-f', 'server/Dockerfile', '-t', ref, '.']);
 

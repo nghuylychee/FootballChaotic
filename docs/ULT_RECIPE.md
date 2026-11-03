@@ -51,7 +51,7 @@ Tuyệt kỹ lai (X2 + Y2) sẽ đỡ phần "kẹt Aura Farming" — cần làm
 Đã kiểm (giả lập ngầm): đối thủ cầm bóng → 5 chiêu needsBall không bấm được, không ai giật bóng; 6 chiêu trúng chắc trước đây giờ trượt khi mục tiêu lướt Z đúng lúc.
 
 ### Tuyệt kỹ lai — ĐÃ DUYỆT + ĐÃ LÀM cả 8 (2026-10-13)
-Hành vi: `src/systems/cores-hybrid.js` · config: `cores.list` (`hybrid: true`) + `ults.hybrids` · cảnh xem trước: `corepreview.js` · icon: mượn hình Core cầu nối, đổi màu.
+Hành vi: `shared/systems/cores-hybrid.js` · config: `cores.list` (`hybrid: true`) + `ults.hybrids` · cảnh xem trước: `corepreview.js` · icon: mượn hình Core cầu nối, đổi màu.
 Trạng thái mới: Steel Formation = `CoreSystem.passGuarded(team)` + `p.armorT` cho cả đội · Mirage Sprint = `p.ghostT` (tàng hình: `Game.isProtected`, vẽ mờ người + bóng, đồng bộ online qua `PF`).
 Giả lập 60 trận AI vs AI sau khi có lai: cầu thủ cả trận không có Tuyệt kỹ giảm 42% → 24%.
 Rising Dragon có hình rồng lửa thật: viên gạch VFX mới `E.dragon(x0, y0, x1, y1, t, color, coil, amp)` (`systems/vfxkit.js`, vẽ ở `render/vfx.js → drawDragon`, đồng bộ online qua `sync.js` capture) — rồng cuộn xoắn bay lên lúc móc hàm, rồng thứ hai lao bổ theo cú đá.

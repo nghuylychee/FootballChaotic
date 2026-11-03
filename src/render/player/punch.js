@@ -15,6 +15,9 @@ window.SFC = window.SFC || {};
     diag:  { rest: [6, -8], back: [3, -10], full: [8, -7], lean: [[-1, 0], [2, 1]] },
     front: { rest: [6, -8], back: [6, -11], full: [1, -8], lean: [[0, -1], [0, 1]], big: true },
     back:  { rest: [6, -8], back: [6, -6], full: [7, -15], lean: [[0, 1], [0, -1]] },
+    // chéo lên: tay trái (đấm) là tay xa, bên trái màn hình -> thủ thế cạnh vai xa, thu về thấp ra sau, đấm vươn qua sau lưng ra trước:
+    // chỉ thấy nắm tay (cánh tay khuất sau thân, draw.js vẽ trước thân), duỗi hết thì nắm tay ló ra trước vai gần
+    bdiag: { rest: [-8, -8], back: [-7, -6], full: [8, -12], lean: [[-1, 0], [2, 0]], hidden: true },
   };
   function punchLean(view, e) { const L = PUNCH[view].lean[e < 0 ? 0 : 1], k = Math.abs(e); return [Math.round(L[0] * k), Math.round(L[1] * k)]; }
   // tay kia khi đấm (tay trái của hình nhìn phải): chuyển động ngược tay đấm để cả người cùng ra đòn.
@@ -29,6 +32,9 @@ window.SFC = window.SFC || {};
     diag:  { root: [-6, -9], fwd: [1, -6], back: [-10, -8], behind: [false, false] },
     front: { root: [-5, -9], fwd: [-7, -5], back: [-7, -8], behind: [false, true] },
     back:  { root: [-7, -9], fwd: [-7, -11], back: [-9, -4], behind: [false, false] },
+    // chéo lên: tay kia là tay gần (tay phải, bên hướng mặt). Toạ độ hình lật (draw.js gọi với mir ngược hướng mặt): x âm = về hướng mặt.
+    // Thu tay đấm = vươn ra trước · đấm = vung ngược ra sau, hạ xuống cạnh thân (giữ độ dài tay đứng, user 2026-11-03: vắt qua thân thì tay dài quá)
+    bdiag: { root: [-6, -9], fwd: [-9, -8], back: [-4, -6], behind: [false, false] },
   };
   // dưới ngưỡng (hoặc góc nhìn không có tư thế cho pha này): tay đứng bình thường
   const offOn = (e, view) => e != null && Math.abs(e) >= 0.2 && !!OFF[view][e < 0 ? 'fwd' : 'back'];
@@ -54,11 +60,11 @@ window.SFC = window.SFC || {};
   const FIST3 = ['WHH', 'HHH', 'HHH'], FIST4 = ['WHHH', 'HHHH', 'HHHH', 'HHHH'];
   // khung chuyển động của cú đấm (lưới mịn): cánh tay chéo mượt; lúc lao tới thì nắm tay nhoè lại dọc đường vừa đi (đuôi sáng dần)
   function punchFine(ctx, X, Y, mir, view, e, atk, pal, hand) {
-    const P = PUNCH[view], side = view === 'side' || view === 'diag';
+    const P = PUNCH[view], side = view === 'side' || view === 'diag' || view === 'bdiag';
     const at2 = (ee) => { const t = ee < 0 ? P.back : P.full, kk = Math.abs(ee); return [Math.round(2 * lerp(P.rest[0], t[0], kk)), Math.round(2 * lerp(P.rest[1], t[1], kk))]; };
     const [fx, fy] = at2(e), big = P.big && e > 0.6, F = big ? FIST4 : FIST3;
     const cells = new Map();
-    if (!(side && fx < 12)) fineLimb([[12, -18], [fx, fy + 2]], (kk, i) => (i < 2 ? pal.t : pal.S), cells);
+    if (!P.hidden && !(side && fx < 12)) fineLimb([[12, -18], [fx, fy + 2]], (kk, i) => (i < 2 ? pal.t : pal.S), cells);
     if (atk.streak && e > 0) {
       const [x0, y0] = at2(Math.max(0, e - 0.7)), steps = Math.max(1, Math.abs(fx - x0), Math.abs(fy - y0));
       for (let j = 0; j < steps; j++) {
@@ -68,7 +74,7 @@ window.SFC = window.SFC || {};
     }
     fineBlock(cells, fx, fy, F, { W: '#ffffff', H: hand });
     drawFine(ctx, X, Y, cells, mir);
-    if (Math.abs(e) >= 0.3 && !(side && fx < 12)) shoulderPush(ctx, X, Y, mir, view, pal);
+    if (!P.hidden && Math.abs(e) >= 0.3 && !(side && fx < 12)) shoulderPush(ctx, X, Y, mir, view, pal);
   }
   function punch(ctx, X, Y, mir, view, e, atk, pal, hand) {
     const P = PUNCH[view], to = e < 0 ? P.back : P.full, k = Math.abs(e);
@@ -77,7 +83,7 @@ window.SFC = window.SFC || {};
     const fxF = Math.round(2 * lerp(P.rest[0], to[0], k)), fyF = Math.round(2 * lerp(P.rest[1], to[1], k));
     const fx = fxF >> 1, fy = fyF >> 1, ox = mir ? -(fxF & 1) : fxF & 1, oy = fyF & 1;   // ô thế giới + lệch nửa px (khung giữa)
     const n = P.big && e > 0.6 ? 4 : 3;   // đấm thẳng vào máy quay: nắm tay gần hơn nên to hơn
-    const side = view === 'side' || view === 'diag';
+    const side = view === 'side' || view === 'diag' || view === 'bdiag';
     // vệt gió lúc lao tới (nhìn ngang / chéo): 2 vạch ngắn trên và dưới cánh tay, sát sau nắm tay
     if (atk.streak && e > 0 && side) {
       ctx.globalAlpha *= 0.8;
@@ -86,10 +92,10 @@ window.SFC = window.SFC || {};
     }
     const cells = new Map();
     // cánh tay từ vai (6, -9) tới nắm tay; thu tay ra sau vai (nhìn ngang / chéo) thì cánh tay khuất sau thân, chỉ thấy nắm tay
-    if (!(side && fx < 6)) limbCells([[6, -9], [fx, fy + 1]], (kk, i) => (i === 0 ? pal.t : pal.S), cells);
+    if (!P.hidden && !(side && fx < 6)) limbCells([[6, -9], [fx, fy + 1]], (kk, i) => (i === 0 ? pal.t : pal.S), cells);
     blockCells(cells, fx, fy, n === 4 ? FIST4 : FIST3, { W: '#ffffff', H: hand });
     drawCells(ctx, X + ox, Y + oy, cells, mir);
-    if (k >= 0.3 && !(side && fx < 6)) shoulderPush(ctx, X, Y, mir, view, pal);
+    if (!P.hidden && k >= 0.3 && !(side && fx < 6)) shoulderPush(ctx, X, Y, mir, view, pal);
     // trúng: tia sáng hình + ở đầu nắm tay (ngang: trước nắm tay · xuống: ngay trên nắm tay, phía máy quay · lên: trên)
     if (atk.impact) {
       const [ix, iy] = view === 'front' ? [fx + 2, fy + 2] : view === 'back' ? [fx + 1, fy - 3] : [fx + n + 2, fy + 1];

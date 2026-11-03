@@ -1,4 +1,4 @@
-/* CupUI — FOOTBALL STORY (docs/FOOTBALL_STORY.md). Logic: src/meta/cup.js (SFC.Cup), nội dung: config/stories.config.js.
+/* CupUI — FOOTBALL STORY (docs/FOOTBALL_STORY.md). Logic: shared/meta/cup.js (SFC.Cup), nội dung: config/stories.config.js.
  *   page 'story' (tab thứ 2 màn PLAY, vẽ trong khung pt-* của Menu): thẻ các Story (ảnh bìa, sao, kết quả xa nhất) + tổng completion · START
  *   page 'cup'   (màn của 1 lượt chơi): đường đi 4 vòng tới cúp + đối thủ kế tiếp + kết quả các nhánh khác + hội thoại
  *                Cốt truyện = cut scene kiểu PROLOGUE (SFC.Story, khuôn cảnh ở src/ui/story-cup.js), trình chiếu theo kiểu kể riêng
@@ -361,7 +361,7 @@ window.SFC = window.SFC || {};
       const t = TEAMS()[rd.team];
       if (!t) return '';
       const sig = rd.signature && CORES()[rd.signature];
-      const mod = rd.mod && SFC_CONFIG.stories.mods[rd.mod];   // luật trận của đội (src/systems/matchmods.js)
+      const mod = rd.mod && SFC_CONFIG.stories.mods[rd.mod];   // luật trận của đội (shared/systems/matchmods.js)
       // bớt chữ (user 2026-10-20): không còn đoạn mô tả đội (ở tooltip); mỗi thông tin = 1 dòng icon + chữ ngắn
       const chip = (cls, icon, name, hint) => `<span class="cu-chip ${cls}" title="${esc(hint || name)}">${icon}<b>${esc(name)}</b>${hint ? `<em>${esc(hint)}</em>` : ''}</span>`;
       return `<div class="cu-opp" style="--tc:${t.kit.shirt}" title="${esc(t.desc || '')}">

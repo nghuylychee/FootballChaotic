@@ -3,16 +3,16 @@
  * Huyền thoại bóng đá (tên nhái, không dùng tên thật / mặt / số áo / CLB thật) gắn vào 1 người trong đội hình run, mỗi người tối đa 1.
  * role = vị trí sở trường (chỉ để hiện); ai trong đội cũng nhận được, gắn lệch vị trí để người chơi tự sáng tạo (user 2026-10-28).
  * Có LEGEND = thắng LEGEND TRIAL của họ trên map (node 'legend'), rồi chọn người nhận.
- * Logic run: src/meta/run.js · trong trận: src/systems/legends.js (SFC.Legends) · hình: src/render/legenddraw.js · UI: src/ui/runmap.js.
+ * Logic run: shared/meta/run.js · trong trận: shared/systems/legends.js (SFC.Legends) · hình: src/render/legenddraw.js · UI: src/ui/runmap.js.
  * Luật làn (user 2026-10-28): LEGEND chỉ làm người đeo giỏi hơn ở thứ đã có (chỉ số) — không bao giờ tạo chiêu mới (đó là việc của Core).
  *   stats: nghiêng chỉ số luôn bật (rating cộng / trừ, tính vào Run.ratingsOf) · school: trường phái Core của người đó ra thường hơn
- *   moment: KHOẢNH KHẮC LEGEND — on: tình huống kích hoạt (danh sách ở src/systems/legends.js), stats: rating cộng thêm trong
+ *   moment: KHOẢNH KHẮC LEGEND — on: tình huống kích hoạt (danh sách ở shared/systems/legends.js), stats: rating cộng thêm trong
  *     moment.dur giây (on 'final': tới hết trận) + cut-in chân dung bên cạnh màn hình (không dừng trận) + bóng mờ huyền thoại sau lưng
  *   flaw: nhược điểm cơ chế (áp như nhau cho người và AI): dive (bị đánh nằm lâu hơn) · light (bị đánh văng xa hơn) · red (ra đòn
  *     nặng quá hits lần = THẺ ĐỎ: đứng ngoài cuộc time giây) · random (mỗi trận 1 chỉ số tăng up, 1 chỉ số giảm dn). Đánh đổi chỉ số
  *     thì nằm luôn trong stats (số âm).
  *   trial: LEGEND TRIAL (user 2026-10-30: khớp combo) = bài SKILL GAME 'combo' (run.drills.combo): LEGEND cho người đá MƯỢN kỹ thuật của
- *     mình trong bài (không kèm nhược điểm), đếm số lần làm được kỹ thuật đó (src/systems/drills.js combo): đạt goal lần trong time giây
+ *     mình trong bài (không kèm nhược điểm), đếm số lần làm được kỹ thuật đó (shared/systems/drills.js combo): đạt goal lần trong time giây
  *     = qua. Hỏng: không mất gì. size: [bạn, đối thủ] (bạn 3 = cả đội hình) · keepers: số đối thủ chỉ đứng khung · foeBall: đối thủ cầm
  *     bóng tấn công (bạn giữ bóng lâu thì trả lại họ) · feed: đồng đội AI cầm bóng là chuyền trả bạn ('ground' sệt / 'lob' bổng để tạt).
  *   look: ngoại hình (chân dung cut-in, bóng mờ, node map) — chỉ gợi ý kiểu tóc / râu, không vẽ giống người thật.
@@ -30,7 +30,7 @@ SFC_CONFIG.legends = {
   schoolBias: 1.5,
   // KỸ THUẬT: gateInRun = trong run chỉ người có LEGEND mới dùng được (đúng kỹ thuật của LEGEND đó) · base = kỹ thuật ai cũng có ngoài run
   // keys: tổ hợp phím ({action} = nhãn phím, như controls.help) · name / desc: hiện trên thẻ LEGEND (desc không ghi số).
-  // Số liệu kỹ thuật cũ ở game.technique; kỹ thuật mới ở tuning (src/systems/legends.js).
+  // Số liệu kỹ thuật cũ ở game.technique; kỹ thuật mới ở tuning (shared/systems/legends.js).
   gateInRun: true,
   base: ['finesse', 'chip', 'fake', 'lobthrough'],   // ngoài run: 4 kỹ thuật cũ cho mọi người (mọi trận không phải GOAT PATH)
   techniques: {
@@ -41,25 +41,33 @@ SFC_CONFIG.legends = {
     lobthrough: { name: 'LOFTED THROUGH', keys: '{skill} + {through}',          desc: 'A through ball that sails over every head.' },
     finesse:    { name: 'FINESSE SHOT',   keys: '{switch} + {shoot}',           desc: 'A curler that bends into the far corner.' },
     power:      { name: 'POWER SHOT',     keys: '{power} + {shoot}',            pad: '{skill} + {switch} + {shoot}', desc: 'Pure strength. The ball leaves a crater.' },
-    trivela:    { name: 'TRIVELA',        keys: '{trick} + {shoot}',            pad: '{sprint} + {switch} + {shoot}', desc: 'Outside of the boot: it bends the other way.' },
+    knuckle:    { name: 'KNUCKLEBALL',    keys: '{trick} + {shoot}',            pad: '{sprint} + {switch} + {shoot}', desc: 'No spin. It climbs, wobbles, then drops like a stone.' },
     bruiser:    { name: 'BRUISER RUN',    keys: '{sprint} (hold) + tap {trick}', pad: '{sprint} (hold) + tap {switch}', desc: 'Elbow them away on the run. Time it on a tackle and they bounce off.' },
     rainbow:    { name: 'RAINBOW FLICK',  keys: '{shoot} (hold) + {pass}',      desc: 'Flick the ball over your own head and theirs.' },
     bicycle:    { name: 'BICYCLE KICK',   keys: '{shoot} on a high ball',       desc: 'A high ball coming? Fly up and kick it upside down.' },
-    engine:     { name: 'ENGINE PRESS',   keys: '{sprint} + {shoot} (hold)',    desc: 'Hunt the ball down on autopilot. Burns stamina fast.' },
+    engine:     { name: 'ENGINE PRESS',   keys: '{sprint} + {shoot} (hold)',    desc: 'Hunt the ball down on autopilot. Run dry and he stops to breathe.' },
     slide:      { name: 'SLIDE TACKLE',   keys: '{sprint} + {lob}',             desc: 'Slide in. Whoever you catch flips three times.' },
     sweeper:    { name: 'SWEEPER SPIN',   keys: '{through} save in your box',   desc: 'Read a shot, catch it, spin and launch a teammate.' },
     toepoke:    { name: 'TOE POKE',       keys: 'tap {shoot}',                  desc: 'A shot with no backlift that still flies.' },   // tạm không LEGEND nào dạy
   },
-  // số liệu kỹ thuật LEGEND (src/systems/legends.js, src/systems/actions.js; hình src/render/legenddraw.js):
-  //   power: bóng nhanh x speed, sai số x spread, bổng x lift · trivela: như cứa lòng nhưng cong ngược phía, cong x bend, tốc x speed
+  // số liệu kỹ thuật LEGEND (shared/systems/legends.js, shared/systems/actions.js; hình src/render/legenddraw.js):
+  //   power: bóng nhanh x speed, sai số x spread, bổng x lift
   //   bicycle: bóng cao >= minZ (px)
-  //   lúc chạm, nhảy jump px/s, lực x power, sai số x spread · engine: tự đuổi bóng, tiêu thể lực x drain (so với chạy nhanh), chạm người
-  //   cầm bóng trong reach px = chọc bóng (nghỉ cd s) · slide: trượt time s speed px/s, chạm trong reach px = đối thủ bay lộn flips vòng
+  //   lúc chạm, nhảy jump px/s, lực x power, sai số x spread · engine: tự đuổi bóng, tiêu thể lực x drain (so với chạy nhanh; user
+  //   2026-11-02: 2.2 -> 0.5, ít hơn chạy nhanh thường một nửa), chạm người cầm bóng trong reach px = chọc bóng (nghỉ cd s); chạy tới cạn
+  //   thể lực = đứng lại thở dốc breath s (không đi, không ra đòn; hình 'winded' ở render/legenddraw.js) · slide: trượt time s speed px/s, chạm trong reach px = đối thủ bay lộn flips vòng
   //   (cao launch px/s, choáng stun s), hụt = nằm miss s, nghỉ cd s · sweeper: sau khi đọc trúng cú sút (W), bắt được bóng trong window s
   //   -> xoay spin s rồi chuyền cho người dâng cao nhất, người đó tăng tốc pace +boost trong boostT s · toepoke: lực nạp < maxCharge -> power
   tuning: {
     power: { speed: 1.35, spread: 0.6, lift: 0.5 },
-    trivela: { speed: 0.95, bend: 1.3, spread: 0.6 },
+    // knuckle (KNUCKLEBALL, user 2026-11-02 thay TRIVELA): bóng không xoáy, 3 đoạn: vọt lên đỉnh peak px (gần: peakMin, xa từ far px:
+    // peakMax) trong rise x thời gian bay -> lơ lửng float x thời gian bay ở độ cao đó -> khúc cuối cắm xuống gắt (trọng lực riêng, tính để
+    // chạm vạch vôi + depth px ở độ cao landZ, dưới xà). Từ lúc bay tới lúc bắt đầu cắm: lượn theo trục X (dọc sân, swayX px, hzX lần / s)
+    // và trục Z (độ cao, swayZ px, hzZ lần / s) — không lượn ngang trục Y (user 2026-11-02: trên màn hình trông như lượn lên xuống).
+    // Bay timeMin..timeMax s theo khoảng cách (near..far px), nạp đầy nhanh hơn x(1 − quick). Sai số x spread, thủ môn bắt khó hơn gk
+    // (cộng ball.gkMod). Đường bay ở shared/entities/ball.js (knuckleStep), lên kế hoạch ở Actions.shoot
+    knuckle: { timeMin: 0.45, timeMax: 0.7, quick: 0.15, near: 60, far: 300, peakMin: 40, peakMax: 70, rise: 0.38, float: 0.34, landZ: 14,
+      depth: 4, swayX: 8, hzX: 3.6, swayZ: 6, hzZ: 5, spread: 0.7, gk: 0.45 },
     // rainbow: bóng bay vòng qua đầu time s, đỉnh cao peak px, rơi xuống ahead px trước mặt người đang chạy rồi về chân (dẫn bóng tiếp)
     // near: LEGEND TRIAL chỉ tính lần hất khi có đối thủ trong near px lúc hất
     rainbow: { time: 0.6, peak: 30, ahead: 12, behind: 6, near: 60 },
@@ -67,20 +75,24 @@ SFC_CONFIG.legends = {
     // window s sau khi bấm, ai tắc / đấm vào bạn cũng bị văng ngược (parry) · nghỉ cd s
     bruiser: { range: 26, knock: 260, stun: 0.5, window: 0.3, cd: 1.1 },
     bicycle: { minZ: 9, jump: 150, power: 1.35, spread: 0.6 },
-    engine: { drain: 2.2, reach: 15, cd: 0.9 },
+    engine: { drain: 0.5, reach: 15, cd: 0.9, breath: 1.8 },
     slide: { time: 0.42, speed: 290, reach: 16, flips: 3, launch: 230, stun: 1.0, miss: 0.55, cd: 2.5 },
     sweeper: { window: 2.5, spin: 0.5, boost: 30, boostT: 1.8 },
     toepoke: { maxCharge: 0.16, power: 0.78 },
   },
   // AI DÙNG KỸ THUẬT LEGEND (user 2026-10-30: đồng đội AI đeo LEGEND phải biết dùng): chỉ cầu thủ AI (không ai điều khiển) có LEGEND dạy
-  // đúng kỹ thuật đó (src/systems/ai.js). Tỉ lệ = mỗi lần AI ra quyết định trong tình huống hợp (~5 lần / giây):
-  //   shot: cú sút ra bằng POWER SHOT / FINESSE / TRIVELA · rainbow: đối thủ chắn phía trước gần hơn near px · bruiser: đang chạy nhanh, đối thủ
+  // đúng kỹ thuật đó (shared/systems/ai.js). Tỉ lệ = mỗi lần AI ra quyết định trong tình huống hợp (~5 lần / giây):
+  //   shot: cú sút ra bằng POWER SHOT / FINESSE / KNUCKLEBALL (knuckle: chỉ khi cách khung từ knuckle.min px; đứng ở phần sân đối thủ cách
+  //   khung knuckle.min..max px thì mỗi lượt quyết định có thêm knuckle.chance tự dội knuckle từ xa, kể cả khi đường sút bị chắn) · rainbow: đối thủ chắn phía trước gần hơn near px · bruiser: đang chạy nhanh, đối thủ
   //   trong tầm giật chỏ (đối thủ đang ra đòn sát bên: luôn giật để phản, mỗi bước) · lobthrough: chọc khe (đường chuyền bị chắn: luôn bổng)
   //   · slide: người áp sát, người cầm bóng cách [min, max] px (hỏi lại mỗi every s) · engine: người áp sát, thể lực trên stamina (hết thì
   //   đấm như thường) · bicycle: bóng bổng tới mình trong tầm firstTime.ai.range x range · sweeper: thủ môn AI bắt được cú sút
-  ai: { shot: 0.7, rainbow: { chance: 0.5, near: 48 }, bruiser: 0.5, lobthrough: 0.6, slide: { chance: 0.5, min: 18, max: 46, every: 0.3 },
+  ai: { shot: 0.7, knuckle: { min: 110, max: 300, chance: 0.18 }, rainbow: { chance: 0.5, near: 48 }, bruiser: 0.5, lobthrough: 0.6, slide: { chance: 0.5, min: 18, max: 46, every: 0.3 },
     engine: { stamina: 35 }, bicycle: { chance: 0.85, range: 1.3 }, sweeper: 0.8 },
           // Core thuộc trường phái (school) của LEGEND ra thường hơn ở lượt chọn của người đeo (nhân trọng số bốc)
+
+  // id LEGEND đã đổi: cũ -> mới (run đã lưu, bộ sưu tập TROPHY ROOM, ghế online của bản cũ đọc qua Run.legendId / Profile.sanitizeLegend)
+  renamed: { carloss: 'ronaldough' },   // 2026-11-02: Roberto Carloss (TRIVELA) -> Cristiano Ronaldough (KNUCKLEBALL)
 
   list: {
     /* ---------- FWD ---------- */
@@ -121,6 +133,15 @@ SFC_CONFIG.legends = {
       desc: 'Slip past a hit and the samba starts.', flawDesc: 'Stays down far too long when hit.',
       tech: 'rainbow',
       trial: { drill: 'combo', goal: 4, time: 35, size: [1, 2] },
+    },
+    ronaldough: {
+      name: 'Cristiano Ronaldough', title: 'SIUUU!', role: 'FWD', school: 'runner', color: '#ffd23f',
+      look: { hair: 'spiky', hairColor: 0, skin: 1, face: 'none', shoes: 'goldboot' },
+      stats: { shooting: 10, pace: 4, keeper: -12 },
+      moment: { on: 'longShot', stats: { shooting: 26, pace: 6 } },
+      desc: 'Plants his feet from long range, puffs his chest, and lets it fly.', flawDesc: 'Defending is somebody else\'s job.',
+      tech: 'knuckle',
+      trial: { drill: 'combo', goal: 2, time: 45, size: [1, 2], keepers: 1 },
     },
     /* ---------- MID ---------- */
     mecci: {
@@ -170,15 +191,6 @@ SFC_CONFIG.legends = {
       desc: 'Wins the ball and starts the attack himself.', flawDesc: 'Cannot hit a barn door.',
       tech: 'sweeper',
       trial: { drill: 'combo', goal: 3, time: 40, size: [1, 2], foeBall: true },
-    },
-    carloss: {
-      name: 'Roberto Carloss', title: 'THE CANNON', role: 'DEF', school: 'runner', color: '#ffd23f',
-      look: { hair: 'buzz', hairColor: 0, skin: 3, face: 'none', shoes: 'boots' },
-      stats: { pace: 8, shooting: 6, keeper: -12 },
-      moment: { on: 'longShot', stats: { shooting: 30 } },
-      desc: 'Lines up a shot from his own half and the ground shakes.', flawDesc: 'Forgets to stay back.',
-      tech: 'trivela',
-      trial: { drill: 'combo', goal: 2, time: 45, size: [1, 2], keepers: 1 },
     },
   },
 };

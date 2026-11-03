@@ -4,7 +4,7 @@ Every sound in the game is synthesized at runtime in `src/engine/audio.js`. Ther
 This is the shopping list for replacing them with recorded or generated files.
 
 Gameplay code plays a sound with `g.sfx('<name>', arg)`, which calls `SFC.Audio[<name>]`. UI code calls `SFC.Audio.<name>()` directly.
-Online matches send the sound name to the other player (`src/net/sync.js`), so keep the names when you swap in files.
+Online matches send the sound name to the other player (`shared/net/sync.js`), so keep the names when you swap in files.
 
 Columns:
 - **Name**: the `SFC.Audio` method
@@ -102,7 +102,7 @@ the `ult` sound is the part that tells you which Ultimate it is. Loudness was ch
 
 ## FOOTBALL STORY pitch rules
 
-Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>')` from `src/systems/matchmods.js`.
+Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>')` from `shared/systems/matchmods.js`.
 
 | Name | Plays when | Current sound |
 |---|---|---|
@@ -227,7 +227,7 @@ Source: Universal Sound FX (Imphenzia), in `E:/projects/tool-mvps/Assets/Univers
 | Name | Files | Notes |
 |---|---|---|
 | `touch` | `SPORTS/Soccer/SOCCER_Bounce_Ball_01..04_mono.wav`, random | |
-| `bounce` (new) | Same files as `touch`, random | Ball hitting the ground by itself (`src/entities/ball.js`). Louder the harder it lands |
+| `bounce` (new) | Same files as `touch`, random | Ball hitting the ground by itself (`shared/entities/ball.js`). Louder the harder it lands |
 | `wall` | Same files as `touch`, random | |
 | `pass` | `SPORTS/Soccer/SOCCER_Kick_Ball_03..05_mono.wav`, random | |
 | `kick(p)` | `SOCCER_Kick_Ball_09` (weak), `_08` (mid), `_07` (strong) | Power 0..1 split in thirds: below 1/3 weak, below 2/3 mid, else strong |

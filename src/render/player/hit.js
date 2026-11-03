@@ -29,11 +29,12 @@ window.SFC = window.SFC || {};
     return s.out;
   }
   const hitLift = (t) => (t == null || t < 0 || t >= HIT.down ? 0 : t < HIT.up ? easeOut(t / HIT.up) : t < HIT.hold ? 1 : 1 - easeIO((t - HIT.hold) / (HIT.down - HIT.hold)));
-  // giơ 2 tay theo độ L: giơ hết = tư thế khoá (lưới thế giới), đang lên / xuống = lưới mịn. Nhìn chéo: tay xa (i 1) nằm sau thân, vẽ trước thân (behindOnly)
+  // giơ 2 tay theo độ L: giơ hết = tư thế khoá (lưới thế giới), đang lên / xuống = lưới mịn. Nhìn chéo: tay xa (chéo xuống i 1, chéo lên i 0)
+  // nằm sau thân, vẽ trước thân (behindOnly)
   function liftArms(ctx, X, Y, mir, view, L, pal, hand, behindOnly) {
-    const fine = L < 1, ang = (i) => lerp(P / 2, UP[i], L);
+    const fine = L < 1, ang = (i) => lerp(P / 2, UP[i], L), far = Sprite.farArm(view);
     Y += Math.round(2 * SHRUG * L);
-    if (view === 'diag') { if (behindOnly) armAt(ctx, X, Y, mir, 1, ang(1), pal, hand, true, fine); else armAt(ctx, X, Y, mir, 0, ang(0), pal, hand, false, fine); return; }
+    if (far >= 0) { const i = behindOnly ? far : 1 - far; armAt(ctx, X, Y, mir, i, ang(i), pal, hand, behindOnly, fine); return; }
     if (behindOnly) return;
     armAt(ctx, X, Y, mir, 0, ang(0), pal, hand, false, fine); armAt(ctx, X, Y, mir, 1, ang(1), pal, hand, false, fine);
   }

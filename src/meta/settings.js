@@ -8,7 +8,7 @@
  *  - FRAME RATE: giới hạn số khung hình vẽ mỗi giây (UNLIMITED / 60 / 30); mô phỏng + đọc phím vẫn 60 Hz
  *  - CONNECTION (PRIVATE MATCH): AUTO = tạo phòng trên máy chủ riêng trước · DIRECT = máy này làm host (Steam / PeerJS)
  *  - ĐỔI PHÍM (SETTINGS > CONTROLS, ui/controls.js): binds = phím người chơi tự gán cho action trong trận, áp vào SFC.Input
- *  - Ngôn ngữ: mã trong src/engine/i18n.js. null = chưa chọn -> popup chọn ngôn ngữ lúc mở game (src/ui/langpick.js)
+ *  - Ngôn ngữ: mã trong shared/engine/i18n.js. null = chưa chọn -> popup chọn ngôn ngữ lúc mở game (src/ui/langpick.js)
  */
 window.SFC = window.SFC || {};
 

@@ -540,7 +540,7 @@ window.SFC = window.SFC || {};
       tone({ freq: 660, to: 1320, dur: 0.12, type: 'square', vol: 0.07 });
       [1568, 2093].forEach((f, i) => tone({ freq: f, dur: 0.08, type: 'triangle', vol: 0.08, delay: 0.1 + i * 0.05 }));
     },
-    // khoảnh khắc LEGEND (GOAT PATH, src/systems/legends.js): tiếng khán đài ồ lên + hợp âm kèn ngắn
+    // khoảnh khắc LEGEND (GOAT PATH, shared/systems/legends.js): tiếng khán đài ồ lên + hợp âm kèn ngắn
     legend() {
       noise({ dur: 0.7, vol: 0.12, freq: 900, q: 0.6 });
       [294, 440, 587].forEach((f, i) => tone({ freq: f, dur: 0.32, type: 'sawtooth', vol: 0.09, delay: 0.05 + i * 0.015 }));

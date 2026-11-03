@@ -1,4 +1,4 @@
-/* RunUI — GOAT PATH (docs/RUN_DESIGN.md). Logic: src/meta/run.js (SFC.Run), số liệu: config/run.config.js.
+/* RunUI — GOAT PATH (docs/RUN_DESIGN.md). Logic: shared/meta/run.js (SFC.Run), số liệu: config/run.config.js.
  *   page 'run'    (tab màn PLAY, vẽ trong khung pt-* của Menu): con đường 3 act (sân + boss, YOU ARE HERE) + kỷ lục · START RUN / CONTINUE · FORFEIT RUN
  *   page 'runmap' (màn 1 run): thanh trên (tên act + FORFEIT / BACK) + map của act đang đá rộng hết màn, cuộn dọc kiểu Slay the Spire
  *                 (tầng 0 dưới cùng, boss trên cùng; lăn chuột, không hiện thanh cuộn). Node chỉ cho biết loại, đối thủ biết khi vào trận.

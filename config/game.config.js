@@ -9,6 +9,10 @@ SFC_CONFIG.game = {
   render: {
     width: 640,
     height: 360,
+    // khung nhìn tối đa (px game): cửa sổ khác 16:9 thì hiện thêm cảnh quanh sân theo tỉ lệ cửa sổ (sân giữ cỡ, nằm giữa) và UI (#stage)
+    // giãn ra mép màn hình; quá cỡ này thì viền đen. Cut scene, TROPHY ROOM, KIT VAN giữ khung 640 x 360 ở giữa.
+    // Cảnh sân vẽ đủ cỡ này (docs/art-direction/pixel-and-camera.md)
+    maxView: [880, 512],
     vignette: 0.6,          // độ tối viền màn hình kiểu Isaac
     // "SFC JP": kana / chữ Hán của tiếng Nhật (unicode-range trong css/style.css -> ngôn ngữ khác không tải font này)
     pixelFont: '"Press Start 2P", "SFC JP", monospace',
@@ -207,7 +211,26 @@ SFC_CONFIG.game = {
     bounce: 0.5,
     wallBounce: 0.72,
     netDamp: 0.25,
-    dribbleOffset: 9,
+    dribbleOffset: 6,        // (px) bóng trước chân theo hướng mặt — 9 -> 6 (user 2026-11-03: bóng xa chân quá, nhìn xuống thì như tách khỏi chân)
+    // dẫn bóng (Ball.follow, user 2026-11-03: bóng quay theo hướng mặt như dính keo): bóng có vị trí riêng quanh chân, không dán vào hướng mặt
+    dribble: {
+      turnRate: 11,         // (rad/s) bóng xoay quanh chân chậm hơn người (player.turnRate) -> đổi hướng thì bóng trễ một nhịp (7 trễ quá: người quay lưng mà bóng còn trước mặt)
+      sprintOffset: 9,      // (px) chạy nước rút: bóng xa chân hơn dribbleOffset (user 2026-11-03: chạy thường / đổi hướng bóng sát chân, nước rút xa được)
+      // đổi hướng (cả lúc chạy nước rút): bóng về khoảng cách chạy thường (dribbleOffset) rồi kéo vào sát chân, khoảng cách còn (1 - turnTuck) x —
+      // đổi hướng bóng gọn trong chân. Kéo hết khi bóng trễ hướng mặt từ turnFull x 90° trở lên
+      turnTuck: 0.3,
+      turnFull: 0.5,
+      reach: 25,            // (/s) độ nhanh bóng vào gần chân (đổi hướng, nhận bóng)
+      release: 8,           // (/s) độ nhanh bóng ra xa chân lại (sau khi đổi hướng, bắt đầu chạy nước rút) — chậm: người đẩy bóng ra lại từ từ
+      dragAngle: 2.0,       // (rad, ~115°) hướng chạy ngược phía bóng quá mức này -> kéo bóng bằng gầm giày: bóng đi thẳng qua chân sang phía mới
+      dragSpeed: 110,       // (px/s) tốc độ bóng lúc kéo
+      // chạy nước rút: chạy được tapEvery px thì chạm bóng 1 lần, bóng ra xa chân thêm tối đa tapLead px (x tốc độ / player.speed, tối đa 1,5) rồi lăn về;
+      // đang đổi hướng thì nhỏ dần về 0. Chạy thường không chạm: bóng giữ sát chân (user 2026-11-03)
+      tapEvery: 30,
+      tapLead: 3,
+      tapRise: 0.2,         // phần đầu nhịp chạm: bóng ra xa, phần còn lại: người đuổi kịp bóng
+      turnSlow: 0.35,       // bóng đang trễ hướng mặt / đang kéo: tốc độ người cầm bóng giảm tới chừng này (đổi hướng gắt mất đà)
+    },
     // tầm khống chế bóng lỏng tính từ mép người + bóng. 4 -> 6, 12 -> 15 (user 2026-10-31: lại gần bóng mà không bắt dính):
     // hình nhân vật cao ~30px nên bóng cách chân 13-15px trông như đã chạm người; bóng nảy ngang hông (z 12-15) cũng khống chế được
     pickupRange: 6,
@@ -732,7 +755,7 @@ SFC_CONFIG.game = {
         light:  { px: 10, lw: 4, shadow: 1, t: 0.5, rise: 10, pop: 1,   tilt: 0.12, color: '#ffffff' },   // tiếng va chạm nhẹ: POW!, BONK!, ZZT!
         heavy:  { px: 13, lw: 4, shadow: 1, t: 0.6, rise: 10, pop: 1,   tilt: 0.1,  color: '#ffe14f' },   // va chạm mạnh: SMASH!, CRASH!, KAPOW!
         huge:   { px: 17, lw: 5, shadow: 2, t: 0.8, rise: 10, pop: 1,   tilt: 0.1,  color: '#ff3d5a' },   // va chạm cực mạnh: KABOOM!, BONK!!
-        // câu nói trong trận của đối thủ FOOTBALL STORY (src/systems/matchmods.js): bong bóng thoại trắng, chữ tối; color = màu viền (áo đội)
+        // câu nói trong trận của đối thủ FOOTBALL STORY (shared/systems/matchmods.js): bong bóng thoại trắng, chữ tối; color = màu viền (áo đội)
         talk:   { px: 6,  lw: 0, shadow: 0, t: 1.9, rise: 4,  pop: 0.3, tilt: 0,    color: '#1a1216', bubble: true },
       },
       // chữ mới chạm chữ đang có (theo khung chữ thật, kể cả của người đứng cạnh) -> đẩy chữ cũ lên thay vì chồng lên nhau / xoá bớt
@@ -755,7 +778,7 @@ SFC_CONFIG.game = {
   // thì phím được giữ chừng này, hết khựng là ra đòn ngay thay vì bị nuốt mất. 0 = tắt
   input: { buffer: 0.13 },
 
-  // ĂN MỪNG BÀN THẮNG (src/systems/celebrate.js, vẽ ở src/render/celebrate-draw.js): người ghi bàn diễn động tác trong slot
+  // ĂN MỪNG BÀN THẮNG (shared/systems/celebrate.js, vẽ ở src/render/celebrate-draw.js): người ghi bàn diễn động tác trong slot
   // costume 'cel' (progression.config.js, bán trong Hộp Ăn Mừng); đồng đội chạy tới chúc mừng. Phản lưới nhà: không ăn mừng.
   // botWeights: cầu thủ AI / người chơi giả bốc 1 động tác theo độ hiếm (default = động tác mặc định), giữ nguyên cả trận.
   // runSpeed / slideSpeed: px/s khi chạy về khán đài / trượt gối · mateSpeed: đồng đội chạy tới · mateGap: đứng cách người ghi bàn

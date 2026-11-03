@@ -1,4 +1,4 @@
-/* LegendDraw — hình KHOẢNH KHẮC LEGEND của GOAT PATH (src/systems/legends.js, config/legends.config.js). Chỉ đọc trạng thái hiệu ứng
+/* LegendDraw — hình KHOẢNH KHẮC LEGEND của GOAT PATH (shared/systems/legends.js, config/legends.config.js). Chỉ đọc trạng thái hiệu ứng
  * (Effects.legendAura / legendCut, có cả ở máy khách online qua sync.js), renderer.js gọi:
  *   under(ctx, g, p): bóng mờ huyền thoại to gấp rưỡi đứng sau lưng cầu thủ (màu của LEGEND, nhấp nháy nhẹ) + quầng sáng dưới chân
  *   overlay(ctx, g): cut-in LEGEND — dải chân dung trượt vào cạnh trái màn hình: chân dung pixel lớn + tên + danh hiệu. Không phủ tối
@@ -6,8 +6,10 @@
  *   sideCut(ctx, g, s): vẽ một dải chân dung cạnh trái / phải màn hình (dùng chung: cut-in LEGEND + Tuyệt kỹ của người khác, render/vfx.js)
  *   begin(ctx, g, p) / after(ctx, g, p): KỸ THUẬT LEGEND đang diễn trên người (Effects.legendTech): begin đặt biến đổi canvas quanh
  *                    sprite (lộn ngược, nằm trượt, xoay vòng, gồng...) — true = đã ctx.save(), renderer restore sau khi vẽ người; after vẽ
- *                    thêm hiệu ứng riêng (vệt má ngoài, tia tốc độ, bụi trượt...). flipping: bị xoạc bay lộn (renderer.airborne bỏ xoay riêng)
- *   ballTrail(ctx, g): vệt bóng của kỹ thuật (Effects.legendBall): cầu vồng · thiên thạch · cong màu LEGEND · lụa vàng · tia chớp
+ *                    thêm hiệu ứng riêng (vệt má ngoài, tia tốc độ, bụi trượt...). 'winded' = ENGINE PRESS cạn thể lực: cúi người
+ *                    chống gối, lưng phập phồng + hơi thở phả ra + mồ hôi văng. flipping: bị xoạc bay lộn (renderer.airborne bỏ xoay riêng)
+ *   ballTrail(ctx, g): vệt bóng của kỹ thuật (Effects.legendBall): cầu vồng · thiên thạch · cong màu LEGEND · lụa vàng · tia chớp ·
+ *                    knuckle (dải zigzag theo lúc bóng lắc + vạch rơi dựng đứng trên bóng lúc cắm xuống)
  * Tên LEGEND là tên riêng (không dịch); danh hiệu đã dịch tại chỗ (src/i18n/fields.js) -> mỗi máy hiện đúng ngôn ngữ của mình.
  */
 window.SFC = window.SFC || {};
@@ -53,7 +55,13 @@ window.SFC = window.SFC || {};
           ctx.scale(sc, sc);
           break;
         }
-        case 'trivela': ctx.rotate(dir * -0.32 * Math.sin(k * Math.PI)); ctx.translate(dir * 2 * Math.sin(k * Math.PI), 0); break;   // nghiêng người, chân quét má ngoài
+        case 'knuckle': {   // đứng tấn dang chân, ưỡn ngực ngả ra sau, rồi vụt mu bàn chân thẳng tắp + bật nhẹ lên (bóng không xoáy)
+          const w = k < 0.3 ? k / 0.3 : Math.max(0, 1 - (k - 0.3) / 0.7);
+          ctx.translate(0, -Math.sin(Math.min(1, k / 0.7) * Math.PI) * 4);
+          ctx.rotate(dir * (k < 0.3 ? -0.2 * w : 0.14 * w));
+          ctx.scale(1 + 0.06 * w, 1 + 0.1 * w);
+          break;
+        }
         case 'finesse': ctx.rotate(dir * ease(Math.min(1, k / 0.6)) * Math.PI * 2); break;                                   // xoay người 1 vòng như vũ công
         case 'rainbow': ctx.translate(0, -Math.sin(k * Math.PI) * 9); ctx.rotate(-dir * 0.45 * Math.sin(k * Math.PI)); break;     // bật nhảy ngửa ra sau, gót hất bóng
         case 'bicycle': {   // bay lên, lộn ngửa đầu chúc xuống lúc chạm bóng, rồi xoay tiếp cho tròn vòng khi rơi
@@ -63,6 +71,13 @@ window.SFC = window.SFC || {};
         }
         case 'engine': ctx.rotate(dir * 0.22); ctx.translate((g.time * 60) % 2 > 1 ? 1 : 0, 0); break;                              // chúi người lao như máy
         case 'slide': ctx.translate(0, 6); ctx.rotate(dir * Math.PI / 2); break;                                                   // nằm xuống trượt
+        case 'winded': {   // thở dốc: cúi gập người ra trước (chống gối), lưng phập phồng nhanh; đứng thẳng dần ở cuối
+          const w = Math.min(1, a.t / 0.3, (a.max - a.t) / 0.12), s = Math.sin((a.max - a.t) * 10);
+          ctx.translate(dir * 2 * w, 3 * w + s * 0.6 * w);
+          ctx.rotate(dir * 0.32 * w);
+          ctx.scale(1 + 0.05 * s * w, 1 - 0.06 * w - 0.05 * s * w);
+          break;
+        }
         case 'flip': ctx.rotate(dir * Math.PI * 2 * 3 * ease(k)); break;                                                           // bị xoạc: lộn đúng 3 vòng
         case 'sweeper': ctx.translate(0, -Math.sin(k * Math.PI) * 10); ctx.rotate(dir * Math.PI * 2 * ease(k)); break;            // bật lên xoay 1 vòng
         case 'lobthrough': { const sc = 1 + 0.15 * Math.sin(k * Math.PI); ctx.scale(sc, sc); break; }                              // ưỡn người như nhạc trưởng
@@ -79,14 +94,23 @@ window.SFC = window.SFC || {};
       const c = colorOf(g, p), k = a.id === 'engine' ? 0 : 1 - a.t / a.max, dir = Math.cos(p.facing || 0) >= 0 ? 1 : -1, t = g.time;
       const fx = Math.cos(p.facing || 0), fy = Math.sin(p.facing || 0);
       ctx.save();
-      if (a.id === 'trivela' || a.id === 'finesse') {
-        // vệt quét của chân: cung sáng màu LEGEND (trivela: quét ra ngoài má ngoài · finesse: vòng tròn quanh người khi xoay)
+      if (a.id === 'finesse') {
+        // vệt quét của chân: vòng tròn sáng màu LEGEND quanh người khi xoay
         ctx.globalAlpha = 0.85 * (1 - k);
         ctx.strokeStyle = c; ctx.lineWidth = 2;
-        ctx.beginPath();
-        if (a.id === 'trivela') ctx.arc(p.x + fx * 6, p.y - 2, 10, p.facing - dir * 1.8, p.facing + dir * 0.6, dir < 0);
-        else ctx.arc(p.x, p.y - 8, 13, 0, Math.PI * 2 * Math.min(1, k / 0.6));
-        ctx.stroke();
+        ctx.beginPath(); ctx.arc(p.x, p.y - 8, 13, 0, Math.PI * 2 * Math.min(1, k / 0.6)); ctx.stroke();
+      } else if (a.id === 'knuckle') {
+        // vụt thẳng: tiếng "bụp" ở mu bàn chân (vòng nén khí dẹt) + tia thẳng phía trước (không cong, không xoáy) + 2 vạch tấn dưới chân
+        const bx = p.x + fx * 8, by = p.y - 3 + fy * 4;
+        ctx.globalAlpha = 0.9 * (1 - k); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(bx, by, 3 + k * 12, 2 + k * 6, p.facing, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = c; ctx.lineWidth = 1.5;
+        for (let i = -1; i <= 1; i++) {
+          const r0 = 8 + k * 18, r1 = r0 + 7 - Math.abs(i) * 3, ox = -fy * i * 4, oy = fx * i * 4;
+          ctx.beginPath(); ctx.moveTo(bx + fx * r0 + ox, by + fy * r0 + oy); ctx.lineTo(bx + fx * r1 + ox, by + fy * r1 + oy); ctx.stroke();
+        }
+        ctx.globalAlpha = 0.7 * (1 - k); ctx.fillStyle = c;
+        for (const s of [-1, 1]) ctx.fillRect(Math.round(p.x - fy * s * 5 - 2), Math.round(p.y + 2 + fx * s * 2), 4, 1);
       } else if (a.id === 'power') {
         // vòng sóng dưới chân + tia bùng phía trước
         ctx.globalAlpha = 0.7 * (1 - k);
@@ -100,6 +124,22 @@ window.SFC = window.SFC || {};
         for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(p.x - fx * (12 + i * 5) + (i - 1.5) * fy * 5), Math.round(p.y - 8 - fy * (12 + i * 5) - (i - 1.5) * fx * 4), 6 - i, 1);
         ctx.globalAlpha = 0.45; ctx.fillStyle = '#c7ccd6';
         for (let i = 0; i < 3; i++) { const ph = (t * 6 + i / 3) % 1; ctx.beginPath(); ctx.arc(p.x - fx * (6 + ph * 14), p.y - fy * (6 + ph * 14), 1.5 + ph * 3, 0, Math.PI * 2); ctx.fill(); }
+      } else if (a.id === 'winded') {
+        // hơi thở: cụm khói trắng phả ra trước mặt theo nhịp thở, bay lên to dần rồi tan · mồ hôi: giọt xanh văng khỏi đầu
+        const el = a.max - a.t, fade = Math.min(1, a.t / 0.3), mx = p.x + dir * 7, my = p.y - 13;
+        for (let i = 0; i < 2; i++) {
+          const ph = (el / 0.45 + i * 0.5) % 1;
+          ctx.globalAlpha = 0.75 * (1 - ph) * fade; ctx.fillStyle = '#ffffff';
+          const r = 1 + ph * 3, x = mx + dir * ph * 9, y = my - ph * 5;
+          ctx.fillRect(Math.round(x - r), Math.round(y - r / 2), Math.round(r * 2), Math.max(1, Math.round(r)));
+          ctx.fillRect(Math.round(x - r / 2), Math.round(y - r), Math.max(1, Math.round(r)), Math.round(r * 2));
+        }
+        ctx.fillStyle = '#9fe6ff';
+        for (const sd of [-1, 1]) {
+          const ph = (el / 0.6 + (sd > 0 ? 0.5 : 0)) % 1;
+          ctx.globalAlpha = 0.9 * (1 - ph) * fade;
+          ctx.fillRect(Math.round(p.x + sd * (4 + ph * 7)), Math.round(p.y - 22 - ph * 6 + ph * ph * 12), 1, 2);
+        }
       } else if (a.id === 'slide') {
         // bụi cỏ tung sau lưng lúc trượt
         ctx.globalAlpha = 0.6 * (1 - k); ctx.fillStyle = '#d8c8a0';
@@ -120,7 +160,7 @@ window.SFC = window.SFC || {};
       const B = g.effects.V.legball, b = g.ball;
       if (!B) return;
       const pts = B.pts, last = pts[pts.length - 1], y = b.y - (b.z || 0);
-      if (!last || Math.hypot(last.x - b.x, last.y - y) > 1.5) { pts.push({ x: b.x, y }); if (pts.length > 26) pts.shift(); }
+      if (!last || Math.hypot(last.x - b.x, last.y - y) > 1.5) { pts.push({ x: b.x, y }); if (pts.length > (B.id === 'knuckle' ? 44 : 26)) pts.shift(); }
       if (pts.length < 2) return;
       const fade = Math.min(1, B.t / (B.max * 0.4)), id = B.id, owner = b.lastTouch, c = owner ? colorOf(g, owner) : '#ffe14f';
       ctx.save();
@@ -140,8 +180,24 @@ window.SFC = window.SFC || {};
       } else if (id === 'lobthrough') {
         ctx.globalAlpha = 0.55 * fade; ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; path();
         ctx.globalAlpha = 0.9 * fade; ctx.strokeStyle = '#fff6c8'; ctx.lineWidth = 1; path();
+      } else if (id === 'knuckle') {
+        // KNUCKLEBALL: dải màu LEGEND + lõi trắng theo đúng đường lắc (zigzag tự hiện vì bóng lắc thật) + chấm "rung" 2 bên đường bóng.
+        // Bóng đang cắm xuống (độ cao giảm nhanh): vạch rơi dựng đứng phía trên bóng. Chỉ đọc vị trí bóng -> máy khách online thấy y hệt
+        ctx.globalAlpha = 0.45 * fade; ctx.strokeStyle = c; ctx.lineWidth = 4; path();
+        ctx.globalAlpha = 0.9 * fade; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; path();
+        ctx.fillStyle = c;
+        for (let i = 2; i < pts.length; i += 3) {
+          const a = pts[i - 2], q = pts[i], dx = q.x - a.x, dy = q.y - a.y, l = Math.hypot(dx, dy) || 1, s = (i + Math.floor(g.time * 16)) % 2 ? 4 : -4;
+          ctx.globalAlpha = 0.7 * fade; ctx.fillRect(Math.round(q.x - (dy / l) * s) - 1, Math.round(q.y + (dx / l) * s) - 1, 2, 2);
+        }
+        const z = b.z || 0, dz = B.z != null ? B.z - z : 0;
+        B.z = z;
+        if (!b.owner && z > 4 && dz > 3.5) {   // ngưỡng trên mức lượn trục Z: chỉ hiện lúc cắm xuống thật
+          ctx.globalAlpha = Math.min(1, dz / 6) * fade; ctx.fillStyle = '#ffffff';
+          for (const ox of [-4, 0, 4]) { const h = ox ? 7 : 11; ctx.fillRect(Math.round(b.x + ox), Math.round(y - 5 - h - (ox ? 2 : 0)), 1, h); }
+        }
       } else {
-        // finesse / trivela / toe poke: vệt màu LEGEND + lấp lánh
+        // finesse / toe poke: vệt màu LEGEND + lấp lánh
         ctx.globalAlpha = 0.6 * fade; ctx.strokeStyle = c; ctx.lineWidth = id === 'toepoke' ? 2 : 3; path();
         ctx.fillStyle = '#ffffff';
         for (let i = 0; i < pts.length; i += 4) { ctx.globalAlpha = fade * (0.4 + 0.6 * ((i + Math.floor(g.time * 20)) % 2)); ctx.fillRect(Math.round(pts[i].x) - 1, Math.round(pts[i].y) - 1, 2, 2); }
@@ -186,7 +242,9 @@ window.SFC = window.SFC || {};
     // title (chữ to màu color), name (chữ trắng dưới), scale (thu nhỏ quanh góc trên của dải; mặc định 1), right (true = mép phải, lật gương:
     // Tuyệt kỹ của đội đứng nửa sân phải, user 2026-10-31) } — chữ đã dịch sẵn
     sideCut(ctx, g, s) {
-      const k = s.k, R = !!s.right, W = 640, X = (x) => (R ? W - x : x);
+      // bám mép trái / phải của khung nhìn (Renderer.setView: rộng hơn 640 thì mép ra ngoài màn 640 x 360)
+      const Sc = (SFC.Renderer && SFC.Renderer.screen) || { x: 0, w: 640 }, E = Sc.x + Sc.w;
+      const k = s.k, R = !!s.right, X = (x) => (R ? E - x : Sc.x + x);
       const slide = k < 0.12 ? 1 - k / 0.12 : k > 0.86 ? (k - 0.86) / 0.14 : 0;
       const wb = 292, hb = 74, yb = 92, off = (R ? 1 : -1) * slide * (wb + 30), sc = s.scale || 1;
       ctx.save();
@@ -204,7 +262,7 @@ window.SFC = window.SFC || {};
       ctx.globalAlpha = 0.3;
       for (let i = 0; i < 10; i++) {
         const x = ((now * 700 + i * 83) % (wb + 160)) - 80, w = 40 + (i * 29) % 70;
-        ctx.fillStyle = i % 2 ? s.color : '#ffffff'; ctx.fillRect(R ? W - x - w : x, yb + 5 + i * 7, w, 1);
+        ctx.fillStyle = i % 2 ? s.color : '#ffffff'; ctx.fillRect(R ? E - x - w : Sc.x + x, yb + 5 + i * 7, w, 1);
       }
       ctx.globalAlpha = 1;
       // chân dung pixel lớn (áo đội của người đeo / người ra chiêu), nhìn vào giữa màn hình

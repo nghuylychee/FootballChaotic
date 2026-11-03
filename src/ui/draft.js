@@ -165,7 +165,7 @@ window.SFC = window.SFC || {};
         const stage = document.getElementById('stage') || this.el.stage || this.el.draft;
         const getStageBox = (el) => {
           const sRect = stage.getBoundingClientRect(), eRect = el.getBoundingClientRect();
-          const scale = sRect.width / 640;
+          const scale = sRect.width / stage.offsetWidth;
           return {
             x: (eRect.left - sRect.left) / scale,
             y: (eRect.top - sRect.top) / scale,
@@ -345,7 +345,7 @@ window.SFC = window.SFC || {};
 
       const getStageBox = (el) => {
         const sRect = stage.getBoundingClientRect(), eRect = el.getBoundingClientRect();
-        const scale = sRect.width / 640;
+        const scale = sRect.width / stage.offsetWidth;
         return {
           x: (eRect.left - sRect.left) / scale,
           y: (eRect.top - sRect.top) / scale,

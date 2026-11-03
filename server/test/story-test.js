@@ -1,4 +1,4 @@
-/* Kiểm tra phòng FOOTBALL STORY co-op (src/net/room.js, story): node server/test/story-test.js
+/* Kiểm tra phòng FOOTBALL STORY co-op (shared/net/room.js, story): node server/test/story-test.js
  * 1. Mọi người cùng đội 0, tối đa số vị trí, không nhảy sang đội 1 (ghế GUEST = ghế dự bị để đổi vị trí), người thứ 4 bị từ chối (full)
  * 2. Gói lobby mang id Story (k) + trạng thái cup của host (c, hook cupState)
  * 3. Cut scene trước trận: cs gửi khách, chờ đủ csd

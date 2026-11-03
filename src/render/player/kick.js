@@ -30,6 +30,10 @@ window.SFC = window.SFC || {};
       arms: [[Math.PI - 1.2, -1.0], [Math.PI + 0.6, Math.PI / 2]] },
   };
   KICK.diag = KICK.side;
+  // chéo lên (bdiag): chân như nhìn ngang (chân phải thu ra sau = về phía máy quay bên trái màn hình rồi vung lên trước);
+  // thấy lưng nên tay phải của cầu thủ là tay bên phải hình (i 1, tay gần) -> đổi 2 tay của bảng nhìn ngang. Tay xa (i 0) vẽ sau thân
+  const bdiagOf = (side) => Object.assign({}, side, { arms: side.arms.map(([a, b]) => [b, a]) });
+  KICK.bdiag = bdiagOf(KICK.side);
   // plant = cột chân trụ khi nhìn ngang / chéo (đứng: 1) · tuck = chân trụ co lên lúc trên không
   // inBack = tư thế đầu (lấy đà) nằm sau thân
   KICK.plant = 2; KICK.tuck = true; KICK.inBack = true;
@@ -49,7 +53,8 @@ window.SFC = window.SFC || {};
       const a = kv(K.ang, kp, u), hx = kv(K.hip, kp, u), hy = -5;
       // hất ra trước: đế quay ra trước · dưới hông: giày nằm, mũi về trước · thu ra sau: gót nhấc, đế quay ra sau
       const foot = a < 0.25 * Math.PI ? [1, -1, ['GG', 'Gg', 'Gg']] : a <= 0.6 * Math.PI ? [0, 1, ['GGG', 'ggg']] : [-1, 0, ['gG', 'gG']];
-      return { hx, hy, ex: hx + KLEN * Math.cos(a), ey: hy + KLEN * Math.sin(a), foot, over: !(kp === 'in' && T.inBack) && a <= 0.6 * Math.PI };
+      // chéo lên: chân đá vung ra trước = ra xa máy quay -> luôn vẽ sau thân, thân che đùi (user 2026-11-03)
+      return { hx, hy, ex: hx + KLEN * Math.cos(a), ey: hy + KLEN * Math.sin(a), foot, over: view !== 'bdiag' && !(kp === 'in' && T.inBack) && a <= 0.6 * Math.PI };
     }
     return { hx: kv(K.hip, kp, u), hy: -5, ex: kv(K.end.map((q) => q[0]), kp, u), ey: kv(K.end.map((q) => q[1]), kp, u), foot: kn(K.foot, kp, u), over: kn(K.over, kp, u) };
   }
@@ -90,6 +95,8 @@ window.SFC = window.SFC || {};
     fineBlock(cells, ex + 2 * fdx, ey + 2 * fdy, rows, pal);
     drawFine(ctx, X, Y, cells, mir);
   }
+  // tay xa (vẽ sau thân, da tối) theo góc nhìn: chéo xuống = i 1 · chéo lên = i 0 · còn lại không có (-1)
+  const farArm = (view) => (view === 'diag' ? 1 : view === 'bdiag' ? 0 : -1);
   // tay khi đá: i 0 = tay trái, 1 = tay phải (hình nhìn phải), xoay quanh vai, giữ độ dài tay đứng · behind = tay xa nằm sau thân (da tối)
   // bảng có armAt(atk, view, i) (thủ môn tung bóng, gkball.js): góc tay theo thời gian thay cho nội suy 3 khoá; trả null = theo khoá
   function kickArm(ctx, X, Y, mir, view, atk, i, pal, hand, behind) {
@@ -105,5 +112,5 @@ window.SFC = window.SFC || {};
     else drawFine(ctx, X, Y, fineLimb([[2 * rx, 2 * ry], [Math.round(2 * ex), Math.round(2 * ey)]], (k, j, n) => col(k, j < 2 ? 0 : j, n)), mir);
   }
 
-  Object.assign(Sprite, { KLEN, ALEN, ARM_ROOT, KICK, KICKS, kickTable, kv, kn, kickRest, kickArmsOn, legPose, drawKickLeg, kickArm, armAt });
+  Object.assign(Sprite, { KLEN, ALEN, ARM_ROOT, KICK, KICKS, bdiagOf, farArm, kickTable, kv, kn, kickRest, kickArmsOn, legPose, drawKickLeg, kickArm, armAt });
 })();

@@ -27,7 +27,7 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 /* Press Start 2P ép chữ hoa có dấu thấp như chữ thường (MUéVETE). Font phụ vẽ lại đủ cao, dấu nhô lên trên ô chữ 1/4 cỡ chữ
-   (scripts/build-accent-caps.py). Chỉ dùng khi <html> có class accent-caps = ngôn ngữ khai báo accentCaps (src/engine/i18n.js) */
+   (scripts/build-accent-caps.py). Chỉ dùng khi <html> có class accent-caps = ngôn ngữ khai báo accentCaps (shared/engine/i18n.js) */
 @font-face {
   font-family: 'SFC Accent Caps'; font-style: normal; font-weight: 400; font-display: swap;
   src: url(../assets/fonts/SFCAccentCaps.woff2) format('woff2');
@@ -87,7 +87,13 @@ body { font-family: var(--vt); color: var(--paper); -webkit-user-select: none; -
   image-rendering: pixelated;
   overflow: clip;
 }
-#game { display: block; width: 640px; height: 360px; image-rendering: pixelated; image-rendering: crisp-edges; }
+/* canvas trận nằm ngoài #stage, cùng cỡ khung nhìn (main.js fit: 640 x 360 tới render.maxView theo tỉ lệ màn hình), cùng phép phóng, cùng tâm */
+#game {
+  position: absolute; left: 50%; top: 50%;
+  display: block; width: 640px; height: 360px;
+  transform-origin: center center;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+}
 .hidden { display: none !important; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 
@@ -1974,7 +1980,7 @@ button.eq-row:hover b { color: var(--gold); }
 /* túi đồ: ô chi tiết thẻ DRILL (gacha.js -> invDetail) */
 .sd-preview.inv-drill { justify-content: center; min-height: 110px; background: radial-gradient(circle, color-mix(in srgb, var(--rc) 30%, transparent) 0%, transparent 62%); }
 
-/* ---------- Core scale theo chỉ số (src/systems/corescale.js) ---------- */
+/* ---------- Core scale theo chỉ số (shared/systems/corescale.js) ---------- */
 .card-stat { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 11px; line-height: 1; color: var(--muted); margin: -1px 0 4px; letter-spacing: 0.5px; }
 .card-stat b { font-weight: normal; color: var(--sc); letter-spacing: 1px; }
 .card-desc .sv { font-weight: normal; color: #fff; }
@@ -2164,7 +2170,9 @@ button.eq-row:hover b { color: var(--gold); }
 /* =========================================================
  * PROLOGUE (config/ftue.config.js): cut scene (src/ui/story.js) · hộp gợi ý trong trận mơ (src/game/tutorial.js)
  * ========================================================= */
-#story { z-index: 40; background: #0a0b0e; overflow: hidden; }
+/* cut scene là ảnh 640 x 360 (chữ đặt theo px): giữ khung 640 x 360 ở giữa #stage (#stage giãn theo tỉ lệ màn hình), phần ngoài tô nền */
+#story { z-index: 40; background: #0a0b0e; overflow: hidden;
+  inset: auto; left: calc(50% - 320px); top: calc(50% - 180px); width: 640px; height: 360px; box-shadow: 0 0 0 100vmax #0a0b0e; }
 #story canvas { position: absolute; inset: 0; width: 640px; height: 360px; image-rendering: pixelated; }
 .st-text { position: absolute; inset: 0; pointer-events: none; }
 .st-line { position: absolute; left: 0; right: 0; text-align: center; }
@@ -2418,7 +2426,9 @@ button.eq-row:hover b { color: var(--gold); }
 .ac-act.claim kbd { color: var(--ink); border-color: var(--ink); }
 
 /* ---------- PHÒNG TRƯNG BÀY (src/ui/trophies.js, làm lại 2026-10-31): canvas pixel 320x180 phóng x2 phủ cả khung + chữ / số DOM ---------- */
-.tr2 { position: absolute; inset: 0; overflow: hidden; background: #120c16; }
+/* phòng vẽ pixel 640 x 360 (vùng bấm đặt theo px): khung 640 x 360 ở giữa #menu (#stage giãn theo tỉ lệ màn hình), phần ngoài tô nền */
+.tr2 { position: absolute; left: calc(50% - 320px); top: calc(50% - 180px); width: 640px; height: 360px; overflow: hidden; background: #120c16;
+  box-shadow: 0 0 0 100vmax #120c16; }
 .tr2-cv { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; cursor: pointer; }
 .tr2-top { position: absolute; left: 0; right: 0; top: 0; height: 30px; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 74px; z-index: 3; }
 .tr2-top .m-title { font-size: 12px; text-shadow: 2px 2px 0 var(--ink); }
@@ -3400,8 +3410,10 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .rt-join { display: flex; align-items: center; padding: 6px 14px; background: var(--panel); border: 1px solid var(--edge); }
 
 /* ---------- GOAT PATH · Shop = KIT VAN (src/ui/kitvan.js, user 2026-10-29) ----------
-   phủ hết khung 640x360: .rm-page nằm trong #menu (lề 20px 22px) nên lùi ra đúng chừng đó */
-.kv-page { position: absolute; left: -22px; top: -20px; width: 640px; height: 360px; z-index: 3; overflow: hidden; background: #120c16; }
+   khung 640x360 ở giữa #stage (#stage giãn theo tỉ lệ màn hình), phần ngoài tô nền: .rm-page nằm trong khung nội dung của #menu
+   (lề 20px 22px 14px) nên căn giữa theo khung đó rồi bù lệch lề trên / dưới (3px) */
+.kv-page { position: absolute; left: calc((100% - 640px) / 2); top: calc((100% - 360px) / 2 - 3px); width: 640px; height: 360px; z-index: 3;
+  overflow: hidden; background: #120c16; box-shadow: 0 0 0 100vmax #120c16; }
 .kv-page, .kv-page * { cursor: var(--hand), pointer; }
 .kv-lo { position: absolute; left: 0; top: 0; width: 640px; height: 360px; image-rendering: pixelated; }
 .kv-hit { position: absolute; z-index: 1; padding: 0; margin: 0; border: 0; background: none; outline: none; }

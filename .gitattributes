@@ -23,6 +23,7 @@ LICENSE text
 
 # Run inside Linux containers / shells: keep LF in the working tree too
 *.sh text eol=lf
+.githooks/* text eol=lf
 
 # Binary
 *.png binary

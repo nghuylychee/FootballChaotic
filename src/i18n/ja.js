@@ -1690,10 +1690,19 @@ SFC.I18n.add({
     'Close a lightning loop to fry everyone trapped inside.': '雷の輪を閉じて、中にいる全員を感電させる。',
     'Three-way passing leaves harp strings that freeze opponents.': '3人パスの軌跡が竪琴の弦になり、相手を止める。',
     'Meteor smash, and smash again if the ball rebounds.': 'メテオで叩き込み、弾かれたらもう一度叩く。',
-    'Punch barrage, then dash on to chain more victims.': '連打のあと突進して、次の相手へ連鎖する。',
+    'A fist spirit dashes at a foe and pummels them.': '拳の霊が相手へ突進し、連打する。',
+    'The fist spirit pummels, then dashes on to the next.': '拳の霊が連打し、次の相手へ突進する。',
     'Your moon zone follows you, lifting everyone nearby.': '月の輪が自分についてきて、近くの相手を浮かせる。',
     'Clones stay on the pitch to block and tackle.': '分身がピッチに残り、ブロックとタックルをする。',
     'Tilt so hard the street junk slides down too.': '強く傾けて、路地のガラクタまで転がり落とす。',
     'Grow giant, grab opponents and bowl them over.': '巨大化して相手をつかみ、ボウリングのように投げる。',
+
+    /* ===== LEGEND Cristiano Ronaldough + KNUCKLEBALL (2026-11-02, config/legends.config.js) ===== */
+    'KNUCKLEBALL': '無回転シュート',
+    'No spin. It climbs, wobbles, then drops like a stone.': '回転なし。高く上がり、揺れて、石のように落ちる。',
+    'SIUUU!': 'SIUUU!',
+    'Plants his feet from long range, puffs his chest, and lets it fly.': '遠くでどっしり構え、胸を張って、ぶち込む。',
+    "Defending is somebody else's job.": '守備は誰か他の人の仕事。',
+    'Hunt the ball down on autopilot. Run dry and he stops to breathe.': '自動でボールを追い回す。スタミナが尽きると立ち止まって息をつく。',
   },
 });

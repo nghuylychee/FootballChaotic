@@ -1,4 +1,4 @@
-/* Reveal — màn mở thẻ kiểu TCG cho phần thưởng Main Path (src/meta/mainpath.js -> record):
+/* Reveal — màn mở thẻ kiểu TCG cho phần thưởng Main Path (shared/meta/mainpath.js -> record):
  *   Tuyệt kỹ mở lần đầu tới 1 Area (src: area — dải màu Area + dấu NEW AREA) · Core / hộp costume (src: star / boss, bản cũ, vẫn vẽ được)
  *   · Tuyệt kỹ bí kíp gia truyền (src: heirloom — cut scene PROLOGUE, src/ui/story.js; dải DEFEATED thành FAMILY SECRET).
  * Nhịp mỗi phần thưởng (thuộc tính data-phase trên .rv3, hoạt ảnh ở CSS):

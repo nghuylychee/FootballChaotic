@@ -1,12 +1,12 @@
 /* Máy chủ riêng cho trận online: HTTP (/healthz) + WebSocket trên cùng 1 cổng. Không phụ thuộc nhà cung cấp:
  * chỉ cần Node (hoặc Docker), cổng PORT và cho phép WebSocket. Phụ thuộc duy nhất: ws.
- * Mỗi phòng = 1 SFC.Room (src/net/room.js, cùng bản luật với người chơi làm host), không có ghế local.
+ * Mỗi phòng = 1 SFC.Room (shared/net/room.js, cùng bản luật với người chơi làm host), không có ghế local.
  * Nhẹ: 1 vòng lặp 60 bước/giây chung cho mọi phòng, chỉ chạy khi có trận đang đá; snapshot JSON 1 lần rồi phát cho cả phòng.
  *
  * Bắt tay (xem src/net/transport-server.js): create{v} / join{code,v} -> room{code,id} | err{e}; sau đó gói đi thẳng vào Room.
  * create{v, story?, run?}: phòng co-op FOOTBALL STORY (id Story) / GOAT PATH — cup / run nằm ở máy người tạo phòng (chủ phòng),
- * máy chủ chỉ chạy trận + chuyển trạng thái (src/net/room.js "Phòng co-op trên máy chủ riêng"). Chủ phòng rời = đóng phòng.
- * Tìm trận xếp hạng: queue{v,elo,role,pf} -> queued (đã vào hàng, src/net/matchmaker.js ghép mỗi giây) -> room{code,id}
+ * máy chủ chỉ chạy trận + chuyển trạng thái (shared/net/room.js "Phòng co-op trên máy chủ riêng"). Chủ phòng rời = đóng phòng.
+ * Tìm trận xếp hạng: queue{v,elo,role,pf} -> queued (đã vào hàng, shared/net/matchmaker.js ghép mỗi giây) -> room{code,id}
  * (phòng xếp hạng đã ghép xong; gửi hello như vào phòng thường) | solo (không ghép được: game tự đá với người chơi giả) | err{e}.
  * unqueue = rời hàng (đóng kết nối cũng vậy).
  * Biến môi trường: xem ENV bên dưới + server/README.md.

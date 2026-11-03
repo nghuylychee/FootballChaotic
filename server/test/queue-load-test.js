@@ -1,4 +1,4 @@
-/* Thử tải hàng chờ trận xếp hạng (src/net/matchmaker.js + server/index.js). Chạy tay, không nằm trong npm test.
+/* Thử tải hàng chờ trận xếp hạng (shared/net/matchmaker.js + server/index.js). Chạy tay, không nằm trong npm test.
  *   node server/test/queue-load-test.js [tốc độ1,tốc độ2,...]   (người vào hàng / giây, mặc định 5,20,50,100,200)
  * 1. Đo riêng bước ghép (Matchmaker.tick, máy chủ chạy 1 lần / giây) theo số vé đang chờ, kể cả trường hợp xấu nhất
  *    (không ai hợp ai: mỗi vé so với mọi vé khác) + dựng đội hình 1 trận (lineup: sinh người chơi giả)

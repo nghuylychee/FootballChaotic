@@ -1,4 +1,4 @@
-/* ModDraw — hình các vật thể của LUẬT TRẬN FOOTBALL STORY (src/systems/matchmods.js). render/vfx.js drawProp gọi draw() cho các kind ở đây.
+/* ModDraw — hình các vật thể của LUẬT TRẬN FOOTBALL STORY (shared/systems/matchmods.js). render/vfx.js drawProp gọi draw() cho các kind ở đây.
  * whey (Block Wardens uống whey rồi hoá khổng lồ) · graffiti (khối tường bê tông phun sơn, chia khúc parts) · vault (Billboard Kid nhảy parkour qua tường) · stool (ghế nhựa) · stoolfly (ghế vỡ văng) · lane (làn giao hàng nhấp nháy) · moped (xe máy giao hàng) · vroom (Moped Boys đang được quá giang)
  * · veil (School Ghosts đang tàng hình: không vẽ gì, render đọc MatchMods.alpha) · spot (đèn pha) · alarm (vòng đếm ngược bị soi)
  * · owl (con cú khổng lồ của Night Owls trên khán đài, mắt đọc từ prop owleyes) · owleyes (lượt mắt mở: không vẽ gì riêng)

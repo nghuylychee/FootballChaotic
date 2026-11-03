@@ -360,7 +360,22 @@ window.SFC = window.SFC || {};
     return ops;
   }
 
-  // o: { back, fx, fy (hướng mặt), anim, eyes (kiểu mắt như face()), mouth (há miệng), pal (bảng màu người), hair, skin }
+  // chéo lên (user 2026-11-03): như tóc (hair.js turn), lớp sau lưng giữ chỗ ô, chi tiết dịch 1 cột ngược hướng mặt (s = 1 nhìn phải), bỏ ô ở dải má;
+  // dải má (CHEEK, lật khi nhìn trái) lấy đúng phần của bản nhìn ngang rơi vào đó (gọng kính, má hồng, râu, dây buộc), không viền mực
+  const CHEEK = Sprite.BDIAG_CHEEK;
+  const onCheek = (x, y, s) => CHEEK.has(s * x + ',' + y);
+  function turnOp(op, s) {
+    const k = op.fine ? 2 : 1, cell = (x, y) => (op.fine ? [Math.floor(x / 2), Math.floor(y / 2)] : [x, y]);
+    const at = new Map(op.cells.map(([x, y, ch]) => [x + ',' + y, ch]));
+    const cells = op.cells.filter(([x, y]) => !onCheek(...cell(x, y), s)).map(([x, y, ch]) => [x, y, at.get((x + s * k) + ',' + y) || ch]);
+    return Object.assign({}, op, { cells });
+  }
+  // dải má lấy từ bản nhìn phải rồi lật khi nhìn trái (nhìn trái = hình lật; bản nhìn ngang trái lệch mặt ít hơn nên cắt ra khác)
+  const cheekOp = (op, mir) => Object.assign({}, op, { ink: false, cells: op.cells
+    .filter(([x, y]) => onCheek(...(op.fine ? [Math.floor(x / 2), Math.floor(y / 2)] : [x, y]), 1))
+    .map(([x, y, ch]) => (mir ? [op.fine ? 1 - x : -x, y, ch] : [x, y, ch])) });
+
+  // o: { back, bd (chéo lên), fx, fy (hướng mặt), anim, eyes (kiểu mắt như face()), mouth (há miệng), pal (bảng màu người), hair, skin }
   function drawFace(ctx, X, Y, id, o) {
     const it = ITEMS[id];
     if (!it) return;
@@ -373,7 +388,12 @@ window.SFC = window.SFC || {};
     const ops = back ? (it.back ? it.back(c) : []) : it.draw(c);
     const hp = Object.assign({ K: INK, W: '#ffffff', H: o.hair, h: shade(o.hair, 0.3), L: shade(o.hair, -0.35), S: o.pal.S, s: o.pal.s },
       typeof it.pal === 'function' ? it.pal(c) : it.pal || {});
-    for (const op of ops) paint(ctx, X, Y, op, hp, back);
+    if (o.bd) {
+      // bản nhìn ngang sang phải (mặt lệch hết về hướng mặt) cho dải má
+      const cs = Object.assign({}, c, { back: false, fx: 1, fy: 0, ex: 2, sd: 1, m: false, s: 1, view: 'side', EL: -2, ER: 3, PR: -2, PL: 3 });
+      for (const op of ops) paint(ctx, X, Y, turnOp(op, c.s), hp, true);
+      for (const op of it.draw(cs)) paint(ctx, X, Y, cheekOp(op, m), hp, false);
+    } else for (const op of ops) paint(ctx, X, Y, op, hp, back);
     if (it.fx) it.fx(ctx, X, Y, c);
   }
 

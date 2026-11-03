@@ -4,7 +4,8 @@
  *      game    = index.html (bản web + Electron)
  *      sandbox = sandbox.html (trang thử VFX / Core)
  *      itch    = tools/itch-page/generate.html (tạo ảnh trang itch.io)
- *      server  = máy chủ trận riêng (server/sim.js nạp thẳng từ đây, không qua HTML) — chỉ code mô phỏng, không vẽ / UI / âm thanh
+ *      server  = máy chủ trận riêng (server/sim.js nạp thẳng từ đây, không qua HTML) — chỉ code mô phỏng, không vẽ / UI / âm thanh.
+ *                File code có 'server' phải nằm ở shared/, file chỉ máy người chơi nạp nằm ở src/ (--check báo lỗi nếu lệch)
  *  - Thứ tự trong FILES = thứ tự nạp ở mọi nơi. File sau dùng được SFC.* của file trước lúc nạp, không dùng được file sau.
  *  - Trang HTML: các thẻ nằm giữa <!-- scripts:begin --> và <!-- scripts:end --> là do file này ghi, đừng sửa tay.
  *    Script riêng của trang (src/dev/sandbox.js, generate.js) đặt sau scripts:end.
@@ -47,12 +48,12 @@ const FILES = [
   ['config/privacy.config.js', 'game'],
 
   { comment: 'Engine', gap: true },
-  ['src/engine/utils.js', 'game sandbox itch server'],
+  ['shared/engine/utils.js', 'game sandbox itch server'],
   ['src/target/target.js', 'game sandbox itch'],            // web / desktop (Adapter): nơi lưu, cửa sổ, thoát, mở link
   ['src/engine/storage.js', 'game sandbox itch'],          // máy chủ: SFC.Storage giả (server/sim.js)
   ['src/platform/platform.js', 'game'],                    // dịch vụ nền tảng (Adapter): tài khoản, ngôn ngữ, mời bạn bè
   ['src/platform/crazygames.js', 'game'],                  // adapter CrazyGames (SDK v3)
-  ['src/engine/i18n.js', 'game sandbox server'],
+  ['shared/engine/i18n.js', 'game sandbox server'],
   { comment: 'Bản dịch (thứ tự = thứ tự trong popup chọn ngôn ngữ) · trường config cần dịch' },
   ['src/i18n/fields.js', 'game'],
   ['src/i18n/pt-BR.js', 'game'],
@@ -64,31 +65,31 @@ const FILES = [
   ['src/engine/audio.js', 'game sandbox itch'],
   ['src/engine/ultsfx.js', 'game sandbox itch'],   // tiếng riêng của từng Tuyệt kỹ (SFC.Audio.ult)
   ['src/meta/settings.js', 'game itch'],
-  ['src/meta/teammates.js', 'game sandbox itch server'],
-  ['src/meta/profile.js', 'game sandbox itch server'],
-  ['src/meta/mainpath.js', 'game sandbox itch server'],
-  ['src/meta/cup.js', 'game sandbox itch server'],         // FOOTBALL STORY: lượt chơi cup + tiến độ (Profile.data.story)
-  ['src/meta/run.js', 'game sandbox itch server'],         // GOAT PATH: sinh map + run đang dở (Profile.data.run)
+  ['shared/meta/teammates.js', 'game sandbox itch server'],
+  ['shared/meta/profile.js', 'game sandbox itch server'],
+  ['shared/meta/mainpath.js', 'game sandbox itch server'],
+  ['shared/meta/cup.js', 'game sandbox itch server'],         // FOOTBALL STORY: lượt chơi cup + tiến độ (Profile.data.story)
+  ['shared/meta/run.js', 'game sandbox itch server'],         // GOAT PATH: sinh map + run đang dở (Profile.data.run)
   ['src/meta/achievements.js', 'game'],
   ['src/meta/social.js', 'game'],                          // bạn bè giả + phòng chờ (placeholder), chỉ menu
-  ['src/entities/ball.js', 'game sandbox itch server'],
-  ['src/entities/player.js', 'game sandbox itch server'],
-  ['src/systems/actions.js', 'game sandbox itch server'],
-  ['src/systems/corescale.js', 'game sandbox itch server'],
-  ['src/systems/cores.js', 'game sandbox itch server'],
-  ['src/systems/cores-new.js', 'game sandbox itch server'],
-  ['src/systems/cores-hybrid.js', 'game sandbox itch server'],
-  ['src/systems/cores-ult2.js', 'game sandbox itch server'],
-  ['src/systems/effects.js', 'game sandbox itch server'],
-  ['src/systems/vfxkit.js', 'game sandbox itch server'],
-  ['src/systems/celebrate.js', 'game sandbox itch server'],   // ăn mừng bàn thắng: chọn động tác + di chuyển
-  ['src/systems/matchmods.js', 'game sandbox itch server'],   // FOOTBALL STORY: luật trận của từng đội + câu nói trong trận
-  ['src/systems/drills.js', 'game server'],                   // GOAT PATH: SKILL GAME (bài tập trên sân thật)
-  ['src/systems/hurt.js', 'game server'],                     // GOAT PATH: chấn thương ra tay trong trận (khựng / đấm xịt / sút trượt)
-  ['src/systems/legends.js', 'game server'],                  // GOAT PATH: LEGEND trong trận (khoảnh khắc LEGEND + nhược điểm)
-  ['src/systems/ai.js', 'game sandbox itch server'],
-  ['src/systems/human.js', 'game sandbox itch server'],
-  ['src/game/match.js', 'game sandbox itch server'],
+  ['shared/entities/ball.js', 'game sandbox itch server'],
+  ['shared/entities/player.js', 'game sandbox itch server'],
+  ['shared/systems/actions.js', 'game sandbox itch server'],
+  ['shared/systems/corescale.js', 'game sandbox itch server'],
+  ['shared/systems/cores.js', 'game sandbox itch server'],
+  ['shared/systems/cores-new.js', 'game sandbox itch server'],
+  ['shared/systems/cores-hybrid.js', 'game sandbox itch server'],
+  ['shared/systems/cores-ult2.js', 'game sandbox itch server'],
+  ['shared/systems/effects.js', 'game sandbox itch server'],
+  ['shared/systems/vfxkit.js', 'game sandbox itch server'],
+  ['shared/systems/celebrate.js', 'game sandbox itch server'],   // ăn mừng bàn thắng: chọn động tác + di chuyển
+  ['shared/systems/matchmods.js', 'game sandbox itch server'],   // FOOTBALL STORY: luật trận của từng đội + câu nói trong trận
+  ['shared/systems/drills.js', 'game server'],                   // GOAT PATH: SKILL GAME (bài tập trên sân thật)
+  ['shared/systems/hurt.js', 'game server'],                     // GOAT PATH: chấn thương ra tay trong trận (khựng / đấm xịt / sút trượt)
+  ['shared/systems/legends.js', 'game server'],                  // GOAT PATH: LEGEND trong trận (khoảnh khắc LEGEND + nhược điểm)
+  ['shared/systems/ai.js', 'game sandbox itch server'],
+  ['shared/systems/human.js', 'game sandbox itch server'],
+  ['shared/game/match.js', 'game sandbox itch server'],
   ['src/game/tutorial.js', 'game itch'],
   ['src/render/sprites.js', 'game sandbox itch'],
   ['src/render/celebrate-draw.js', 'game sandbox itch'],     // ăn mừng bàn thắng: tư thế + đạo cụ
@@ -117,6 +118,10 @@ const FILES = [
   ['src/render/player/pose.js', 'game sandbox itch'],
   ['src/render/player/draw.js', 'game sandbox itch'],
   ['src/render/player/player.js', 'game sandbox itch'],
+  ['src/render/art/kit.js', 'game'],        // bộ cảnh vẽ bằng code: hàm vẽ chung (màu, hình, bóng đổ, chỉnh màu, viền tối)
+  ['src/render/art/npcs.js', 'game'],       // người làng + thú
+  ['src/render/art/props.js', 'game'],      // tường, nhà, cây, đồ vật
+  ['src/render/art/village.js', 'game'],    // cảnh Village (arena village, scene: 'Village')
   ['src/render/background.js', 'game sandbox itch'],
   ['src/render/crowd.js', 'game sandbox itch'],
   ['src/render/vfx.js', 'game sandbox itch'],
@@ -125,14 +130,14 @@ const FILES = [
   ['src/render/legenddraw.js', 'game'],              // GOAT PATH: bóng mờ LEGEND sau lưng + cut-in chân dung bên cạnh màn hình
   ['src/render/renderer.js', 'game sandbox itch'],
   ['src/render/pixelicons.js', 'game itch'],
-  ['src/net/transport.js', 'game server'],                 // máy chủ: NetCommon (mã phòng)
+  ['shared/net/transport.js', 'game server'],                 // máy chủ: NetCommon (mã phòng)
   ['src/net/transport-peer.js', 'game'],
   ['src/net/transport-steam.js', 'game'],
   ['src/platform/steam.js', 'game'],                       // adapter Steam (mời bạn bè qua overlay) — sau transport-steam
   ['src/net/transport-server.js', 'game'],
-  ['src/net/sync.js', 'game server'],
-  ['src/net/room.js', 'game server'],
-  ['src/net/matchmaker.js', 'server'],                     // hàng chờ trận xếp hạng (chỉ máy chủ riêng)
+  ['shared/net/sync.js', 'game server'],
+  ['shared/net/room.js', 'game server'],
+  ['shared/net/matchmaker.js', 'server'],                     // hàng chờ trận xếp hạng (chỉ máy chủ riêng)
   ['src/net/predict.js', 'game'],                          // dự đoán cầu thủ của mình ở máy khách
   ['src/net/session.js', 'game'],
   ['src/ui/corepreview.js', 'game'],
@@ -224,6 +229,9 @@ function check() {
     if (!Array.isArray(e)) continue;
     if (!fs.existsSync(path.join(ROOT, e[0]))) errs.push(`missing file: ${e[0]}`);
     for (const t of e[1].split(/\s+/)) if (!TARGETS.includes(t)) errs.push(`${e[0]}: unknown target "${t}"`);
+    // code máy chủ chạy nằm ở shared/ (đổi = phải tăng phiên bản máy chủ, scripts/server-stamp.js), src/ chỉ là máy người chơi
+    if (e[0].startsWith('src/') && has(e, 'server')) errs.push(`${e[0]}: the server loads it, so it belongs in shared/`);
+    if (e[0].startsWith('shared/') && !has(e, 'server')) errs.push(`${e[0]}: the server doesn't load it, so it belongs in src/`);
   }
   for (const page of PAGES) {
     const r = render(page);

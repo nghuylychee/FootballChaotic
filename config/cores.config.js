@@ -13,7 +13,7 @@
  *           dribble (giữ bóng: tốc độ dẫn bóng + khó bị đấm rơi bóng), keeperSave (tỉ lệ bắt bóng trong vòng cấm nhà)
  *  boost  : (Core chỉ số) id chỉ số trong progression.attrs.list — chỉ để vẽ dấu "+" màu chỉ số trên người (src/render/vfx.js)
  *  desc   : 1 câu ngắn 7–10 chữ, KHÔNG ghi số / {param} (user chốt 2026-10-11: người chơi không đọc số)
- *  params : tham số cho hành vi riêng (code ở src/systems/cores.js, map theo id)
+ *  params : tham số cho hành vi riêng (code ở shared/systems/cores.js, map theo id)
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
@@ -29,7 +29,7 @@ SFC_CONFIG.cores = {
     iron:      { label: 'IRON',      icon: '🛡', color: '#c7ccd6', stat: 'keeper' },
     chaos:     { label: 'CHAOS',  icon: '🎲', color: '#c63dff', stat: 'ovr' },
   },
-  // Core scale theo chỉ số (src/systems/corescale.js): rating min -> anchor -> max = độ mạnh / hồi chiêu (nội suy từng đoạn).
+  // Core scale theo chỉ số (shared/systems/corescale.js): rating min -> anchor -> max = độ mạnh / hồi chiêu (nội suy từng đoạn).
   // anchor = rating của đồng đội / đội AI chỉ số 1.0 (mức cân bằng gốc của Core). stat của trường phái ở archetypes[].stat
   statScale: { min: 60, anchor: 80, max: 99, power: [0.5, 1, 1.5], cooldown: [1.3, 1, 0.7] },
   roleLabels: { gen: 'ACTIVE', use: 'ACTIVE', base: 'PASSIVE', ult: 'ULTIMATE', wild: 'WILD' },   // chỉ hiện ở sandbox
@@ -99,7 +99,7 @@ SFC_CONFIG.cores = {
       shrink_ray: 'chicken_ray',
       shell_game: 'panic_ball',
     },
-    // Tuyệt kỹ lai (user duyệt 2026-10-13): 7 cặp từng có Core cầu nối + Slingshot, rồi 13 cặp còn lại. Hành vi ở src/systems/cores-hybrid.js
+    // Tuyệt kỹ lai (user duyệt 2026-10-13): 7 cặp từng có Core cầu nối + Slingshot, rồi 13 cặp còn lại. Hành vi ở shared/systems/cores-hybrid.js
     hybrids: [
       { id: 'comet_onetwo', tags: ['striker', 'playmaker'] },
       { id: 'rising_dragon', tags: ['brawler', 'launcher'] },
@@ -260,7 +260,7 @@ SFC_CONFIG.cores = {
       scale: { time: 'pow', life: 'pow', stun: 'pow' },
     },
 
-    /* ================= Giai đoạn 3 — Core mới (hành vi ở src/systems/cores-new.js) ================= */
+    /* ================= Giai đoạn 3 — Core mới (hành vi ở shared/systems/cores-new.js) ================= */
     /* ---------- 🏃 TỐC ĐỘ ---------- */
     burst_start: {
       name: 'Arrow Start', icon: '🏹', tags: ['runner'], role: 'gen', rarity: 'rare',
@@ -476,12 +476,15 @@ SFC_CONFIG.cores = {
     },
     hundred_fists: {
       name: 'Hundred Fists', icon: '💢', tags: ['brawler'], role: 'ult', rarity: 'mythic',
-      desc: 'Rush an opponent with a punch barrage, then blast them.',
-      params: { range: 160, rush: 520, hits: 20, gap: 0.05, knock: 560, stun: 1.4 },   // rush: tốc độ lao tới (né Z được) · stun: choáng sau cú kết
-      // ★★ THOUSAND FISTS: đấm xong lướt thẳng (báo trước chainWarn giây, chainRush px/s) tới đối thủ kế tiếp trong chainRange,
-      // tối đa chain lượt, mỗi lượt chainHits cú. Né Z / bước khỏi đường lướt = ngắt chuỗi
-      evolve: [{ range: 200, hits: 20, knock: 640, stun: 1.6, chain: 2, chainHits: 10, chainRange: 200, chainRush: 560, chainWarn: 0.3 }],
-      awaken: { name: 'Thousand Fists', desc: 'Punch barrage, then dash on to chain more victims.' },
+      desc: 'A fist spirit dashes at a foe and pummels them.',
+      // 2026-11-02: hồn đấu sĩ hiện sau lưng người dùng, vạch đường warn giây rồi lướt BÁM THEO đối thủ gần nhất trong range
+      // (tốc độ dash px/s tính theo khoảng cách lúc lướt -> luôn tới nơi; chỉ lướt Z mới né được; hitbox: px quanh hồn, ai chắn đường
+      // dính trước), tung hits cú (gap giây / cú, nạn nhân bị giữ tại chỗ) · stun: choáng sau cú kết. Người dùng tự do suốt chiêu
+      params: { range: 160, warn: 0.3, dash: 560, hitbox: 20, hits: 20, gap: 0.05, knock: 560, stun: 1.4 },
+      // ★★ THOUSAND FISTS: đấm xong hồn lướt tiếp (cùng warn / dash) tới đối thủ kế tiếp trong chainRange, tối đa chain lượt,
+      // mỗi lượt chainHits cú. Né Z = ngắt chuỗi
+      evolve: [{ range: 200, hits: 20, knock: 640, stun: 1.6, chain: 2, chainHits: 10, chainRange: 200 }],
+      awaken: { name: 'Thousand Fists', desc: 'The fist spirit pummels, then dashes on to the next.' },
       scale: { knock: 'pow', range: 'pow', stun: 'pow' },
     },
     // MOON STOMP (Tuyệt kỹ gốc VÕ SĨ ĐÁ, 2026-10-15): dậm đất (vòng báo trước telegraph giây) -> mọi người trong vòng (cả đồng đội, cả bóng)

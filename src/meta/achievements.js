@@ -36,12 +36,12 @@ window.SFC = window.SFC || {};
         case 'ults': return PF().data.ultBook.length;   // ô đã khám phá trong sổ Tuyệt kỹ
         case 'outfits': return Object.keys(d.items).filter((id) => d.items[id] > 0).length;
         case 'core': return PF().coreUnlocked(a.core) ? 1 : 0;
-        // FOOTBALL STORY (src/meta/cup.js)
+        // FOOTBALL STORY (shared/meta/cup.js)
         case 'story': return SFC.Cup.won(a.story) ? 1 : 0;
         case 'cups': return SFC.Cup.totals().cups;
         case 'finals': return SFC.Cup.totals().finals;
         case 'stars': return SFC.Cup.totals().stars;
-        // GOAT PATH (src/meta/run.js): runAct = act xa nhất đã hạ boss (bestAct + 1 khi đã qua tầng boss)
+        // GOAT PATH (shared/meta/run.js): runAct = act xa nhất đã hạ boss (bestAct + 1 khi đã qua tầng boss)
         case 'runs': return (d.runs || {}).plays || 0;
         case 'runWins': return (d.runs || {}).wins || 0;
         case 'runBosses': return (d.runs || {}).bosses || 0;

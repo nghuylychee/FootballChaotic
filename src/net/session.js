@@ -3,7 +3,7 @@
  * trung tính; giao diện (src/ui/online.js) tự quyết trang nào, chữ gì, banner nào -> sửa UI thoải mái không đụng tới online.
  * Dữ liệu của game cần cho phòng (hồ sơ trận, Area đã tới) lấy qua Session.provide({ profile, area }).
  *
- * 2 mô hình, cùng 1 bản luật phòng (src/net/room.js):
+ * 2 mô hình, cùng 1 bản luật phòng (shared/net/room.js):
  *  - Máy chủ riêng (net.server.urls / url, transport-server.js; nhiều máy: chọn máy ping thấp nhất): máy chủ chạy trận, người tạo phòng chỉ là khách có quyền chủ phòng.
  *    TẠO PHÒNG thử máy chủ trước (đang ngủ thì chờ dậy); không được thì tự chuyển sang người chơi làm host.
  *  - Người chơi làm host (Steam / PeerJS): máy này chạy Room (ghế local 'host') và nối sao tới tối đa net.maxPlayers - 1 khách.
@@ -30,7 +30,7 @@
  *   solo                                    tìm trận xếp hạng không ghép được người thật (không ai đang tìm / không kết nối được /
  *                                           máy chủ bận): game tự ghép người chơi giả (MainPath.matchmake) như khi chơi một mình
  *
- * Tìm trận xếp hạng (Main Path, chỉ máy chủ riêng): queue() -> máy chủ ghép (src/net/matchmaker.js) -> vào phòng xếp hạng như khách
+ * Tìm trận xếp hạng (Main Path, chỉ máy chủ riêng): queue() -> máy chủ ghép (shared/net/matchmaker.js) -> vào phòng xếp hạng như khách
  * (không có phòng chờ, không sự kiện lobby) -> start {game} như trận thường (opts.ranked + opts.mainPath) | solo. cancelQueue() = bỏ tìm.
  *
  * Gói tin:
@@ -39,7 +39,7 @@
  *   khách -> host : mp{ms} (ping trung vị từ đầu trận, mỗi net.pingShare giây + lúc hết trận) · host -> khách: pg{p:{id cầu thủ: ms}} (bảng ping)
  *   cả 2 chiều    : ping{c} -> pong{c} (đo ping mỗi net.pingEvery giây, c = giờ của bên gửi; SFC.NetStats)
  *   khách -> máy chủ (trước khi vào phòng): queue{v,elo,role,pf} · unqueue — xem transport-server.js
- *   Phòng FOOTBALL STORY (createRoom({ story })): lobby thêm k (id Story) + c (trạng thái cup, src/meta/cup.js share) ·
+ *   Phòng FOOTBALL STORY (createRoom({ story })): lobby thêm k (id Story) + c (trạng thái cup, shared/meta/cup.js share) ·
  *                   host -> khách cs{k} (chiếu cut scene) · khách -> host csd (chiếu xong). Trận cup: start{opts.cup}, khách dựng lại luật trận theo config
  *   Phòng GOAT PATH co-op (createRoom({ run: true })): lobby thêm rn = 1 + r (bản sao run) · khách -> host
  *                   ra{a,...} (thao tác run: runAction) · Skill game 1 người: người không ra sân nhận start{opts.watch} (me = -1, chỉ xem)
@@ -341,9 +341,9 @@ window.SFC = window.SFC || {};
       this.role = null; this.status = 'idle'; this.code = null; this.game = null; this.ranked = false;
       this.story = null;           // phòng FOOTBALL STORY: id Story
       this.run = false;            // phòng GOAT PATH co-op
-      this.runState = null;        // khách phòng run: bản sao run host gửi (chưa kiểm tra — src/meta/run.js mirror lọc)
+      this.runState = null;        // khách phòng run: bản sao run host gửi (chưa kiểm tra — shared/meta/run.js mirror lọc)
       this.watching = false;       // đang xem trận không có ghế (Skill game 1 người của phòng run)
-      this.cup = null;             // khách phòng Story: trạng thái cup host gửi (chưa kiểm tra — src/meta/cup.js mirror lọc)
+      this.cup = null;             // khách phòng Story: trạng thái cup host gửi (chưa kiểm tra — shared/meta/cup.js mirror lọc)
       this.leading = false;        // phòng co-op trên máy chủ riêng do máy này tạo: máy này giữ cup / run (isLead)
       this.leadSig = null;         // máy giữ: danh sách người lúc gửi bản sao run gần nhất (đổi người -> gửi lại)
       this.csUntil = 0;            // máy giữ trên máy chủ riêng: chờ cả phòng xem xong cut scene tới lúc này (0 = không chờ / đã xong: csr)
