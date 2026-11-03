@@ -20,7 +20,9 @@
     "server": "node server/index.js",
     "server:test": "npm test --prefix server",
     "server:image": "node scripts/server-image.js",
-    "server:deploy": "node scripts/server-deploy.js"
+    "server:deploy": "node scripts/server-deploy.js",
+    "server:bump": "node scripts/server-stamp.js --bump",
+    "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "dependencies": {
     "steamworks.js": "0.4.0"
@@ -41,6 +43,7 @@
       "index.html",
       "css/**",
       "config/**",
+      "shared/**",
       "src/**",
       "!src/dev/**",
       "assets/**",

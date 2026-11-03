@@ -64,7 +64,7 @@ window.SFC = window.SFC || {};
   const AI = {
     update(dt, g) {
       this.watchBall(g);
-      // vùng nguy hiểm của luật trận (FOOTBALL STORY / Elite, src/systems/matchmods.js) — AI đội bị nhắm né (avoid)
+      // vùng nguy hiểm của luật trận (FOOTBALL STORY / Elite, shared/systems/matchmods.js) — AI đội bị nhắm né (avoid)
       const hz = g.mod && SFC.MatchMods ? SFC.MatchMods.hazards(g) : null;
       for (const p of g.players) {
         if (p.isControlled && g.isHuman(p.team)) continue;

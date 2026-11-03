@@ -1,6 +1,6 @@
 /* =========================================================
  * PROGRESSION CONFIG — meta ngoài trận: level, XP, gold, hộp gacha (costume + Core), túi đồ.
- * Dữ liệu người chơi lưu ở localStorage của trình duyệt (src/meta/profile.js).
+ * Dữ liệu người chơi lưu ở localStorage của trình duyệt (shared/meta/profile.js).
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
@@ -107,7 +107,7 @@ SFC_CONFIG.progression = {
   hairColors: ['#1a1216', '#3b2415', '#8a4b22', '#f2d16b', '#e8ecf5', '#ff3d5a', '#3ff6ff', '#9d7bff', '#6bff4f'],
 
   // Costume, phối tự do. slot: hair (tóc / mũ) · face (mặt) · shoes (giày) · fx (hiệu ứng khi chạy) ·
-  // cel (động tác ăn mừng bàn thắng: chỉ ra từ Hộp Ăn Mừng, diễn ở src/systems/celebrate.js + src/render/celebrate-draw.js)
+  // cel (động tác ăn mừng bàn thắng: chỉ ra từ Hộp Ăn Mừng, diễn ở shared/systems/celebrate.js + src/render/celebrate-draw.js)
   // default: true = có sẵn, không nằm trong hộp, không phân rã được. Hình vẽ ở src/render/sprites.js (theo id).
   // icon / color: nút lọc slot ở túi đồ (APPEARANCE), icon pixel ở render/pixelicons.js
   slots: {

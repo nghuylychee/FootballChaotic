@@ -1,4 +1,4 @@
-/* Kiểm tra phòng co-op (FOOTBALL STORY / GOAT PATH) trên máy chủ riêng (src/net/room.js "Phòng co-op trên máy chủ riêng"):
+/* Kiểm tra phòng co-op (FOOTBALL STORY / GOAT PATH) trên máy chủ riêng (shared/net/room.js "Phòng co-op trên máy chủ riêng"):
  * Room không có ghế local, máy giữ cup / run = chủ phòng (người tạo phòng, khách của Room). node server/test/coop-server-test.js
  * 1. Phòng Story: co{c} của chủ phòng -> gói lobby mang c (khách khác gửi co: bỏ qua) · cue -> cs cho người khác, xem xong -> csr cho
  *    chủ phòng · story{o}: lọc lại (luật trận / câu nói của đối thủ lấy từ config, trường lạ bỏ đi), Story khác phòng -> không vào trận ·

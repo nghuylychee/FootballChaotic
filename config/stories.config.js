@@ -1,6 +1,6 @@
 /* =========================================================
  * STORIES CONFIG — FOOTBALL STORY (docs/FOOTBALL_STORY.md): cup knockout co-op PvE, 4 trận 1/8 → tứ kết → bán kết → chung kết.
- * Logic: src/meta/cup.js (SFC.Cup) · UI: src/ui/cup.js (SFC.CupUI, tab thứ 2 màn PLAY).
+ * Logic: shared/meta/cup.js (SFC.Cup) · UI: src/ui/cup.js (SFC.CupUI, tab thứ 2 màn PLAY).
  * Thua là out. Core reset mỗi trận như trận thường. Hoà hết giờ: bàn thắng vàng tới khi có bàn (knockout).
  * Thưởng: gold mỗi trận thắng (reward.gold[vòng]) + costume khi vô địch lần đầu (reward.item) + sao thử thách (stars) + thành tích.
  *
@@ -36,7 +36,7 @@ SFC_CONFIG.stories = {
   mateStats: { min: 0.85, max: 1.3 },
   host: 'ANNOUNCER',   // tên người nói của lời thoại who: 'host'
 
-  /* LUẬT TRẬN (src/systems/matchmods.js, docs/FOOTBALL_STORY.md mục "Luật trận"): vòng nào có rounds[i].mod = id thì trận đó chạy luật đó.
+  /* LUẬT TRẬN (shared/systems/matchmods.js, docs/FOOTBALL_STORY.md mục "Luật trận"): vòng nào có rounds[i].mod = id thì trận đó chạy luật đó.
    * Luật chỉ đánh vào đội bạn (đội đối thủ là "chủ luật"). User chốt 2026-10-19: nặng tay cho thấy rõ, nhưng không lấy / cấm Core.
    * name / hint: banner lúc bóng lăn lần đầu + dòng PITCH RULE ở màn cup (chữ ngắn, không số). Thời gian giây, khoảng cách px, tốc độ px/s.
    * barkGap: giây tối thiểu giữa 2 câu nói của đối thủ trong trận (rounds[i].barks). */

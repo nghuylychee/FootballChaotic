@@ -354,7 +354,7 @@ window.SFC = window.SFC || {};
       let sum = 0;
       for (const q of list) for (const st of stats) sum += SFC.CoreScale.ratingOf(q.stats, st);
       const r = sum / (list.length * stats.length);
-      // Core của trường phái đó mạnh hơn: opts.coreBoost (cả đội) + GOAT PATH GEAR trường phái của riêng người đeo (p.gearBoost, src/meta/run.js)
+      // Core của trường phái đó mạnh hơn: opts.coreBoost (cả đội) + GOAT PATH GEAR trường phái của riêng người đeo (p.gearBoost, shared/meta/run.js)
       const boost = this.g.opts.coreBoost && this.g.opts.coreBoost[team], gb = p && p.gearBoost;
       if (!p || (!boost && !gb)) return r;
       const add = this.tagsOf(id).reduce((m, tag) => Math.max(m, ((boost && boost[tag]) || 0) + ((gb && gb[tag]) || 0)), 0);

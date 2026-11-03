@@ -7,7 +7,7 @@
  * Hook từ match.js: create (dựng trận) · kickoff (sau khi xếp đội hình) · clock (mỗi bước lúc kickoff / play, kể cả lúc cả sân đứng yên)
  *   · update (mỗi bước mô phỏng lúc play) · goal (bàn thắng). Render đọc alpha(g, p) (ma tàng hình) — render/vfx.js vẽ các vật thể.
  * Câu nói trong trận: opts.barks { kickoff, goal (đội họ ghi), conceded (đội bạn ghi), mod (luật vừa ra tay) } -> bong bóng thoại (pop 'talk').
- * Đếm g.mod.hits = số lần luật trúng đội bạn (sao thử thách modClean, src/meta/cup.js).
+ * Đếm g.mod.hits = số lần luật trúng đội bạn (sao thử thách modClean, shared/meta/cup.js).
  */
 window.SFC = window.SFC || {};
 
@@ -2280,7 +2280,7 @@ window.SFC = window.SFC || {};
     },
   };
 
-  /* ---------- VÙNG NGUY HIỂM cho AI đội bạn né (user 2026-10-31: đồng đội AI không né được luật sân; AI.avoid trong src/systems/ai.js) ----------
+  /* ---------- VÙNG NGUY HIỂM cho AI đội bạn né (user 2026-10-31: đồng đội AI không né được luật sân; AI.avoid trong shared/systems/ai.js) ----------
    * K[id].hazards(g, M, c, add): gọi add(h) cho từng vùng đang có / sắp có tác dụng lên đội bạn:
    *   { c: [x, y], r } tròn · { s: [x1, y1, x2, y2], w } đoạn thẳng nửa bề rộng w · { b: [x0, y0, x1, y1] } chữ nhật
    *   hit: true = sắp trúng / đang có hiệu lực (đứng trong thì lướt ra) · soft: true = chỉ tránh bước vào (vũng trơn, đèn nóng dần)

@@ -182,7 +182,7 @@ window.SFC = window.SFC || {};
     g.sfx('ult', 'stat.shock');
     return true;
   };
-  SFC.CoreStat = Stat;   // luật trận FOOTBALL STORY (src/systems/matchmods.js) dùng lại trơn té, teo nhỏ...
+  SFC.CoreStat = Stat;   // luật trận FOOTBALL STORY (shared/systems/matchmods.js) dùng lại trơn té, teo nhỏ...
 
   /* ---------- QTE (Endless Tiki-Taka, Portal Kicks — user 2026-11-01) ----------
    * hiện 1 nút ngẫu nhiên trong KEYS trên đầu, bấm ĐÚNG nút đó trước khi hết dur giây = trúng (không cần canh thời điểm);

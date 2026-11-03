@@ -715,7 +715,7 @@ window.SFC = window.SFC || {};
       if (ft && ft.kind === 'header') this.headerPose(p);   // đánh đầu: giữ cú bật nhảy (headerJump)
       else if (power) { this.startAttack(p, 'power'); p.atkT = 0.03; }
       else this.startAttack(p, ft && ft.kind !== 'ground' ? (ft.kind === 'bicycle' ? 'volley' : ft.kind) : 'shoot'); // tư thế vung chân sút (kick.poseTime) / vô-lê
-      // GOAT PATH: kỹ thuật LEGEND vừa ra -> diễn riêng (src/systems/legends.js techFx, hình render/legenddraw.js)
+      // GOAT PATH: kỹ thuật LEGEND vừa ra -> diễn riêng (shared/systems/legends.js techFx, hình render/legenddraw.js)
       if (SFC.Legends && p.legend) {
         const tk = ft && ft.kind === 'bicycle' ? 'bicycle' : style, L = SFC.Legends.def(p);
         if (tk && L && L.tech === tk) { SFC.Legends.techFx(g, p, tk); b.legTech = tk; }

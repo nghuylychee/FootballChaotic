@@ -3,7 +3,7 @@
 > **2026-10-25: đang thay bằng run 3 act kiểu Slay the Spire, xem `docs/RUN_DESIGN.md`.** 4 Story trong doc này sẽ bỏ; đối thủ, luật trận, cut-scene và co-op được dùng lại.
 
 > Trạng thái: **ĐÃ CHỐT THIẾT KẾ + ĐÃ LÀM BẢN CHƠI MỘT MÌNH (2026-10-18)**. 2026-10-20: mỗi Story 1 thể thức riêng + PHÒNG TRƯNG BÀY. Chưa làm: co-op online (xem "Việc tiếp theo").
-> Code: `config/stories.config.js` (nội dung) · `src/meta/cup.js` (`SFC.Cup`) · `src/ui/cup.js` (`SFC.CupUI`) · `app.startCupMatch` (main.js).
+> Code: `config/stories.config.js` (nội dung) · `shared/meta/cup.js` (`SFC.Cup`) · `src/ui/cup.js` (`SFC.CupUI`) · `app.startCupMatch` (main.js).
 > Mục tiêu: một mode cho người chơi không thích đá rank. Đá cùng bạn (hoặc bot) qua 1 cup knockout có câu chuyện riêng, gom đủ các Story để có động lực completion.
 
 ## Quyết định đã chốt (user, 2026-10-18)
@@ -126,7 +126,7 @@ PvE được phép làm điều PvP không làm được: **đối thủ bất �
 - **Boss chung kết**: 1 gimmick lớn, có thể có Tuyệt kỹ chỉ boss dùng được. Vẫn theo luật Tuyệt kỹ: có telegraph và né được bằng Z.
 
 ### Luật trận (cả 4 Story, 2026-10-19)
-Mỗi vòng có `mod` (id trong `stories.mods`, số liệu ở config) chạy bởi `src/systems/matchmods.js` (`SFC.MatchMods`), hình ở `src/render/modsdraw.js`.
+Mỗi vòng có `mod` (id trong `stories.mods`, số liệu ở config) chạy bởi `shared/systems/matchmods.js` (`SFC.MatchMods`), hình ở `src/render/modsdraw.js`.
 - **Chủ luật = đội đối thủ:** luật chỉ đánh vào đội bạn, có khi còn giúp đội họ. **Không lấy / cấm Core** (user chốt).
 - Mỗi luật **báo trước bằng hình** (làn nhấp nháy, bóng đổ, vòng đếm ngược...) và **lướt (Z) né được** nếu là đòn trúng người. Có banner tên luật + 1 câu gợi ý lúc bóng lăn lần đầu, có dòng PITCH RULE ở thẻ đối thủ màn cup, và lời thoại trước trận giải thích luật.
 - **Leo thang khi đội chủ luật bị dẫn** (dày hơn, mạnh hơn): trận không dễ dần khi bạn đã dẫn.
@@ -215,7 +215,7 @@ chiếu lúc mở cup · trước mỗi trận · sau trận thắng · lúc nâ
   - Lineup co-op có sẵn, tất cả người ở đội 0.
   - Hết trận thì về màn BRACKET, **không gửi `lobby`**. Trạng thái cup (Story, vòng, kết quả bracket) đi trong `start{opts.story}`.
   - Vào lại giữa cup dùng cơ chế `resume` sẵn có.
-- ~~Chỉ player-host (user chốt 2026-10-19)~~ → **2026-10-31 (user):** TẠO PHÒNG lên máy chủ riêng khi ping thấp nhất <= `net.server.coopMaxPing` (máy chủ đang ngủ / chậm -> player-host như cũ). Cup vẫn nằm ở máy người tạo phòng (máy giữ, `Session.isLead`), máy chủ chạy trận + chuyển trạng thái (src/net/room.js "Phòng co-op trên máy chủ riêng"). Người tạo phòng rời = phòng đóng.
+- ~~Chỉ player-host (user chốt 2026-10-19)~~ → **2026-10-31 (user):** TẠO PHÒNG lên máy chủ riêng khi ping thấp nhất <= `net.server.coopMaxPing` (máy chủ đang ngủ / chậm -> player-host như cũ). Cup vẫn nằm ở máy người tạo phòng (máy giữ, `Session.isLead`), máy chủ chạy trận + chuyển trạng thái (shared/net/room.js "Phòng co-op trên máy chủ riêng"). Người tạo phòng rời = phòng đóng.
 - **Luật không đổi:** người chơi không được biết phòng chạy kiểu nào (server / Steam / PeerJS). Mọi chữ trung tính.
 - **Demo:** `config/demo.config.js` thêm `stories: 1` (số Story chơi được). Story khoá bấm vào ra thông báo "full game", theo luật CrazyGames về link store.
 - **Mỗi luật trận mới, Core boss mới:** theo luật cũ, có hình trong `src/render/vfx.js` (không có Core vô hình), có SFX riêng nếu là Tuyệt kỹ.

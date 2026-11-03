@@ -14,7 +14,7 @@ const targets = require('./targets');
 const ROOT = path.join(__dirname, '..');
 const pkg = require(path.join(ROOT, 'package.json'));
 const FOLDER = 'Street Football Chaos';
-const WEB_COPY = ['index.html', 'css', 'config', 'src', 'assets', 'lib'];
+const WEB_COPY = ['index.html', 'css', 'config', 'shared', 'src', 'assets', 'lib'];
 const WEB_SKIP = [path.join('src', 'dev')];
 
 // tar của Windows (bsdtar) nén được zip, đường dẫn trong zip dùng '/'

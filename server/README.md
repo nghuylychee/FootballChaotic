@@ -2,7 +2,7 @@
 
 This server runs online matches so that no player has to host. It's an alternative to player-hosted rooms (Steam P2P / PeerJS); the game tries the server first and falls back to player-hosting if the server can't be reached.
 
-- It uses the same room rules as player-hosted rooms (`src/net/room.js`) and the same match code (`src/game`, `src/entities`, `src/systems`), loaded from the repo by `sim.js` (the file list is the `server` entries in `scripts/manifest.js`).
+- It uses the same room rules as player-hosted rooms (`shared/net/room.js`) and the same match code (`shared/`), loaded from the repo by `sim.js` (the file list is the `server` entries in `scripts/manifest.js`).
 - It's provider-independent: plain Node plus one dependency (`ws`). It runs anywhere that can run a Docker image or Node 18+ with WebSockets.
 - It's light: about 0.04 ms of CPU per room per tick (60 ticks/s), around 8–10 MB of heap when idle, and nothing runs while no match is in progress. Each player receives about 3 KB/s (snapshots at 30/s, compressed from about 25 KB/s).
 
@@ -33,7 +33,7 @@ The game can use several servers at once (`server.urls`, e.g. one per region). E
 
 ## Docker
 
-Build from the repo root, because the image needs `config/`, `src/` and `scripts/manifest.js`:
+Build from the repo root, because the image needs `config/`, `shared/` and `scripts/manifest.js` (not `src/`, which is client-only):
 
 ```sh
 docker build -f server/Dockerfile -t sfc-server .
@@ -66,6 +66,8 @@ Behind a provider's proxy or load balancer, the player's address is read from th
 
 The server's version is `version` in `server/package.json`: `<net.protocol>.<minor>.<patch>` (semver, e.g. `5.1.0`). The major is always the protocol, so a message-format change (protocol bump) starts a new major. Minor and patch are server-only changes. The version is also the Docker image tag (`npm run server:image` builds `team41sfc/sfc-server:<version>`, `-- --push` publishes it). The server exits at startup if the major doesn't equal `net.protocol`, and `/healthz` reports `version` and `protocol`.
 
+Each version also records a fingerprint of the code the server runs (`stamp` in `server/package.json`, computed by `scripts/server-stamp.js` with comments and whitespace ignored). After changing anything under `shared/`, a server-loaded `config/` file or `server/`, run `npm run server:bump` from the repo root. The pre-commit hook, `server:image` and `server:deploy` refuse a fingerprint that doesn't match its version, so every image tag names exactly one version of the code.
+
 The game's version is `<package.json version>-<net.protocol>` (e.g. `1.1.0-5`). Clients send it as `cv` in `create`, `join` and `queue`, and the server logs it (`[room ABC1234] opened by client 1.1.0-5`). Replies carry the server version as `sv` (`room{code,id,sv}`, `err{e,sv}`).
 
 ## Protocol
@@ -76,7 +78,7 @@ Ranked search uses a third handshake, `queue{v,elo,role,pf}`. The server answers
 
 ## Matchmaking (ranked Main Path)
 
-PLAY › START with no friend in the party searches for real players. The queue lives in [src/net/matchmaker.js](../src/net/matchmaker.js) and is tuned by `net.queue` in `config/net.config.js`. The server matches the queue once a second, oldest ticket first:
+PLAY › START with no friend in the party searches for real players. The queue lives in [shared/net/matchmaker.js](../shared/net/matchmaker.js) and is tuned by `net.queue` in `config/net.config.js`. The server matches the queue once a second, oldest ticket first:
 
 - **Elo window:** starts at ±`range[0]` (100) and widens to ±`range[1]` (400) over `widen` seconds (15). After `anyAfter` seconds (20) a ticket accepts any Elo, so two players online at the same time always meet. Two tickets fit when their gap is within the larger of their two windows.
 - **When a match starts:** 4 tickets that fit start at once. 2–3 tickets start once the oldest has waited `gather` seconds (5), in case a 3rd or 4th player arrives.

@@ -10,7 +10,7 @@ const path = require('path');
 const { minify } = require('terser');
 const targets = require('./targets');
 
-const DIRS = ['config', 'src'];
+const DIRS = ['config', 'shared', 'src'];
 // sau khi xoá: file đã qua Terser (không còn comment) không được còn các chữ này. Mọi file khác chỉ kiểm SFC_DEBUG
 const MARKERS = ['SFC_DEBUG', 'GAMEPLAY TEST', 'Replay the intro', 'testArea', 'JUMP TO AREA', 'ULT TEST', 'STORY TEST', 'RUN TEST'];
 

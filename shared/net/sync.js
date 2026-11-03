@@ -70,7 +70,7 @@ window.SFC = window.SFC || {};
       // hiệu ứng cơ bản + VFX Kit (systems/vfxkit.js) — tham số đều là giá trị nguyên thuỷ nên gửi thẳng được
       for (const m of ['burst', 'ring', 'shake', 'flash', 'wave', 'decal', 'stretch', 'clone', 'projectile', 'beam', 'vortex', 'bolt', 'dragon',
         'pop', 'combo', 'shield', 'portal', 'netFire', 'popClone', 'zoom', 'impactFrame', 'speedLines', 'callout', 'cutIn', 'tint',
-        'prop', 'propOff', 'vhs', 'tilt', 'only', 'legendAura', 'legendCut', 'legendHud', 'legendTech', 'legendBall',   // legend*: GOAT PATH LEGEND (src/systems/legends.js)
+        'prop', 'propOff', 'vhs', 'tilt', 'only', 'legendAura', 'legendCut', 'legendHud', 'legendTech', 'legendBall',   // legend*: GOAT PATH LEGEND (shared/systems/legends.js)
         // clearHazards: host xoá vật thể mỗi lần giao bóng -> khách xoá theo, không thì vật thể luật trận (ghế nhựa...) cộng dồn mỗi pha bóng
         'clearHazards']) {
         const orig = E[m];
@@ -120,7 +120,7 @@ window.SFC = window.SFC || {};
           d: E.decoys.map((o) => (o.legion ? [r1(o.x), r1(o.y), r1(o.vx), r1(o.vy), o.srcId, 1] : [r1(o.x), r1(o.y), r1(o.vx), r1(o.vy), o.srcId])),   // 1 = phân thân Clone Legion (không bóng)
         },
       };
-      // GOAT PATH SKILL GAME (src/systems/drills.js): số đếm, cổng đang tới, bia, lượt người đuổi, mốc khi xong (-1 = chưa)
+      // GOAT PATH SKILL GAME (shared/systems/drills.js): số đếm, cổng đang tới, bia, lượt người đuổi, mốc khi xong (-1 = chưa)
       const D = g.drill;
       if (D) s.sk = [r1(D.val), D.gi || 0, r1(D.ty || 0), r1(D.th || 0), D.wave || 1, D.ok == null ? -1 : D.tier];
       if (d) {
@@ -229,7 +229,7 @@ window.SFC = window.SFC || {};
       // âm thanh + rung tay cầm phát qua đúng đường của trận (Game.sfx), giống chơi đơn — mã online không gọi thẳng âm thanh
       for (const [n, a] of pack.sfx) g.sfx(n, a);
       for (const e of pack.ev) {
-        if (e.type === 'goal') SFC.Celebrate.remote(g, e);   // động tác ăn mừng của người ghi bàn (src/systems/celebrate.js)
+        if (e.type === 'goal') SFC.Celebrate.remote(g, e);   // động tác ăn mừng của người ghi bàn (shared/systems/celebrate.js)
         if (e.type === 'end') SFC.Celebrate.remoteEnd(g, e); // thống kê trận + tư thế ăn mừng / thất vọng cuối trận
         // số lần luật trận trúng đội bạn (sao modClean): máy giữ cup trên máy chủ riêng tính sao từ trận "gương"
         if (e.type === 'end' && g.mod && typeof e.mh === 'number') g.mod.hits = e.mh | 0;

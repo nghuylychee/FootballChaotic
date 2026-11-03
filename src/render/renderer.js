@@ -149,7 +149,7 @@ window.SFC = window.SFC || {};
       const rank = !!g.opts.mainPath || coop, seatRing = (c) => c && (!rank || c === cp);
       // Smoke Bomb: người tàng hình (p.ghostT) — đối thủ của máy này không thấy gì (cả bóng ở chân), đội mình thấy bóng mờ
       const unseen = (p) => p.ghostT > 0 && g.humanTeam >= 0 && p.team !== g.humanTeam;
-      // luật trận School Ghosts (src/systems/matchmods.js): ma xa bóng mờ dần — vẫn còn bóng hình, chỉ mất vòng chân
+      // luật trận School Ghosts (shared/systems/matchmods.js): ma xa bóng mờ dần — vẫn còn bóng hình, chỉ mất vòng chân
       const faint = (p) => (g.mod && SFC.MatchMods ? SFC.MatchMods.alpha(g, p) : 1);
 
       const drawFootRing = (cx, cy, r, thick, col) => {

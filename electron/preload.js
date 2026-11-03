@@ -43,7 +43,7 @@ window.SFC_DESKTOP = {
   quit: () => ipcRenderer.send('sfc-quit'),
   // mở link https bằng trình duyệt của máy (bản DEMO: trang Steam, src/ui/menu.js -> openSteam)
   openUrl: (url) => ipcRenderer.send('sfc-open-url', url),
-  // ngôn ngữ ưu tiên của hệ điều hành ['pt-BR', 'en-US'...] — đoán ngôn ngữ lần đầu mở game (src/engine/i18n.js)
+  // ngôn ngữ ưu tiên của hệ điều hành ['pt-BR', 'en-US'...] — đoán ngôn ngữ lần đầu mở game (shared/engine/i18n.js)
   languages: (() => { try { return ipcRenderer.sendSync('sfc-languages') || []; } catch (e) { return []; } })(),
 };
 

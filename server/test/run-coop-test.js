@@ -1,4 +1,4 @@
-/* Kiểm tra GOAT PATH co-op (src/net/room.js run + src/meta/run.js co-op): node server/test/run-coop-test.js
+/* Kiểm tra GOAT PATH co-op (shared/net/room.js run + shared/meta/run.js co-op): node server/test/run-coop-test.js
  * 1. Phòng run: cả phòng đội 0, gói lobby mang rn + bản sao run (hook runState), khách gửi ra -> hook runAction, host đứng đúng vị trí
  * 2. Skill game 1 người: only = [id] -> người đó ra sân, người còn lại nhận start{watch} (me = -1); host không ra sân thì chỉ xem
  * 3. Run co-op: khách ngồi vào ô đồng đội AI, ví riêng, trận thường: 1 bộ 3 GEAR (bỏ phiếu món -> người đeo -> món bỏ ra, 2026-10-30),
@@ -197,7 +197,7 @@ function runLogic() {
   console.log('5. guest copy: OK');
 }
 
-// LEGEND (config/legends.config.js, src/systems/legends.js)
+// LEGEND (config/legends.config.js, shared/systems/legends.js)
 function legendLogic() {
   const PF = SFC.Profile, Run = SFC.Run, LG = globalThis.SFC_CONFIG.legends.list;
   PF.data = PF.sanitize(null);

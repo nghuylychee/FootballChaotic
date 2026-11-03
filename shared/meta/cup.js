@@ -6,7 +6,7 @@
  * Bracket: 16 ô, bạn ở ô 0. Đối thủ vòng r đứng ở ô 1 · 2 · 4 · 8 (luôn thắng nhánh của mình tới khi gặp bạn);
  * các ô khác là đội lấp (fillers). Trận không có bạn: giả lập ra tỉ số; đội kình địch (rival) luôn thắng đậm.
  * UI: src/ui/cup.js · thưởng cộng trong Profile.awardMatch (record) · trận dựng ở main.js (startCupMatch).
- * Co-op online (phòng Story, src/net/room.js): máy làm host giữ lượt chơi thật (bracket, giả lập nhánh khác) và gửi share() cho cả phòng;
+ * Co-op online (phòng Story, shared/net/room.js): máy làm host giữ lượt chơi thật (bracket, giả lập nhánh khác) và gửi share() cho cả phòng;
  * khách giữ bản sao mirror(state) (run.mirror = true). Thưởng tính riêng từng máy (pay: gold vòng thắng, best, vô địch, costume, sao hat-trick
  * của chính mình); sao của cả đội (vô địch, chung kết sạch lưới...) máy host tính rồi gửi kèm (ts), khách nhận khi đồng bộ.
  */

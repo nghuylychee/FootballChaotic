@@ -3,16 +3,16 @@
  * Huyền thoại bóng đá (tên nhái, không dùng tên thật / mặt / số áo / CLB thật) gắn vào 1 người trong đội hình run, mỗi người tối đa 1.
  * role = vị trí sở trường (chỉ để hiện); ai trong đội cũng nhận được, gắn lệch vị trí để người chơi tự sáng tạo (user 2026-10-28).
  * Có LEGEND = thắng LEGEND TRIAL của họ trên map (node 'legend'), rồi chọn người nhận.
- * Logic run: src/meta/run.js · trong trận: src/systems/legends.js (SFC.Legends) · hình: src/render/legenddraw.js · UI: src/ui/runmap.js.
+ * Logic run: shared/meta/run.js · trong trận: shared/systems/legends.js (SFC.Legends) · hình: src/render/legenddraw.js · UI: src/ui/runmap.js.
  * Luật làn (user 2026-10-28): LEGEND chỉ làm người đeo giỏi hơn ở thứ đã có (chỉ số) — không bao giờ tạo chiêu mới (đó là việc của Core).
  *   stats: nghiêng chỉ số luôn bật (rating cộng / trừ, tính vào Run.ratingsOf) · school: trường phái Core của người đó ra thường hơn
- *   moment: KHOẢNH KHẮC LEGEND — on: tình huống kích hoạt (danh sách ở src/systems/legends.js), stats: rating cộng thêm trong
+ *   moment: KHOẢNH KHẮC LEGEND — on: tình huống kích hoạt (danh sách ở shared/systems/legends.js), stats: rating cộng thêm trong
  *     moment.dur giây (on 'final': tới hết trận) + cut-in chân dung bên cạnh màn hình (không dừng trận) + bóng mờ huyền thoại sau lưng
  *   flaw: nhược điểm cơ chế (áp như nhau cho người và AI): dive (bị đánh nằm lâu hơn) · light (bị đánh văng xa hơn) · red (ra đòn
  *     nặng quá hits lần = THẺ ĐỎ: đứng ngoài cuộc time giây) · random (mỗi trận 1 chỉ số tăng up, 1 chỉ số giảm dn). Đánh đổi chỉ số
  *     thì nằm luôn trong stats (số âm).
  *   trial: LEGEND TRIAL (user 2026-10-30: khớp combo) = bài SKILL GAME 'combo' (run.drills.combo): LEGEND cho người đá MƯỢN kỹ thuật của
- *     mình trong bài (không kèm nhược điểm), đếm số lần làm được kỹ thuật đó (src/systems/drills.js combo): đạt goal lần trong time giây
+ *     mình trong bài (không kèm nhược điểm), đếm số lần làm được kỹ thuật đó (shared/systems/drills.js combo): đạt goal lần trong time giây
  *     = qua. Hỏng: không mất gì. size: [bạn, đối thủ] (bạn 3 = cả đội hình) · keepers: số đối thủ chỉ đứng khung · foeBall: đối thủ cầm
  *     bóng tấn công (bạn giữ bóng lâu thì trả lại họ) · feed: đồng đội AI cầm bóng là chuyền trả bạn ('ground' sệt / 'lob' bổng để tạt).
  *   look: ngoại hình (chân dung cut-in, bóng mờ, node map) — chỉ gợi ý kiểu tóc / râu, không vẽ giống người thật.
@@ -30,7 +30,7 @@ SFC_CONFIG.legends = {
   schoolBias: 1.5,
   // KỸ THUẬT: gateInRun = trong run chỉ người có LEGEND mới dùng được (đúng kỹ thuật của LEGEND đó) · base = kỹ thuật ai cũng có ngoài run
   // keys: tổ hợp phím ({action} = nhãn phím, như controls.help) · name / desc: hiện trên thẻ LEGEND (desc không ghi số).
-  // Số liệu kỹ thuật cũ ở game.technique; kỹ thuật mới ở tuning (src/systems/legends.js).
+  // Số liệu kỹ thuật cũ ở game.technique; kỹ thuật mới ở tuning (shared/systems/legends.js).
   gateInRun: true,
   base: ['finesse', 'chip', 'fake', 'lobthrough'],   // ngoài run: 4 kỹ thuật cũ cho mọi người (mọi trận không phải GOAT PATH)
   techniques: {
@@ -50,7 +50,7 @@ SFC_CONFIG.legends = {
     sweeper:    { name: 'SWEEPER SPIN',   keys: '{through} save in your box',   desc: 'Read a shot, catch it, spin and launch a teammate.' },
     toepoke:    { name: 'TOE POKE',       keys: 'tap {shoot}',                  desc: 'A shot with no backlift that still flies.' },   // tạm không LEGEND nào dạy
   },
-  // số liệu kỹ thuật LEGEND (src/systems/legends.js, src/systems/actions.js; hình src/render/legenddraw.js):
+  // số liệu kỹ thuật LEGEND (shared/systems/legends.js, shared/systems/actions.js; hình src/render/legenddraw.js):
   //   power: bóng nhanh x speed, sai số x spread, bổng x lift
   //   bicycle: bóng cao >= minZ (px)
   //   lúc chạm, nhảy jump px/s, lực x power, sai số x spread · engine: tự đuổi bóng, tiêu thể lực x drain (so với chạy nhanh; user
@@ -65,7 +65,7 @@ SFC_CONFIG.legends = {
     // chạm vạch vôi + depth px ở độ cao landZ, dưới xà). Từ lúc bay tới lúc bắt đầu cắm: lượn theo trục X (dọc sân, swayX px, hzX lần / s)
     // và trục Z (độ cao, swayZ px, hzZ lần / s) — không lượn ngang trục Y (user 2026-11-02: trên màn hình trông như lượn lên xuống).
     // Bay timeMin..timeMax s theo khoảng cách (near..far px), nạp đầy nhanh hơn x(1 − quick). Sai số x spread, thủ môn bắt khó hơn gk
-    // (cộng ball.gkMod). Đường bay ở src/entities/ball.js (knuckleStep), lên kế hoạch ở Actions.shoot
+    // (cộng ball.gkMod). Đường bay ở shared/entities/ball.js (knuckleStep), lên kế hoạch ở Actions.shoot
     knuckle: { timeMin: 0.45, timeMax: 0.7, quick: 0.15, near: 60, far: 300, peakMin: 40, peakMax: 70, rise: 0.38, float: 0.34, landZ: 14,
       depth: 4, swayX: 8, hzX: 3.6, swayZ: 6, hzZ: 5, spread: 0.7, gk: 0.45 },
     // rainbow: bóng bay vòng qua đầu time s, đỉnh cao peak px, rơi xuống ahead px trước mặt người đang chạy rồi về chân (dẫn bóng tiếp)
@@ -81,7 +81,7 @@ SFC_CONFIG.legends = {
     toepoke: { maxCharge: 0.16, power: 0.78 },
   },
   // AI DÙNG KỸ THUẬT LEGEND (user 2026-10-30: đồng đội AI đeo LEGEND phải biết dùng): chỉ cầu thủ AI (không ai điều khiển) có LEGEND dạy
-  // đúng kỹ thuật đó (src/systems/ai.js). Tỉ lệ = mỗi lần AI ra quyết định trong tình huống hợp (~5 lần / giây):
+  // đúng kỹ thuật đó (shared/systems/ai.js). Tỉ lệ = mỗi lần AI ra quyết định trong tình huống hợp (~5 lần / giây):
   //   shot: cú sút ra bằng POWER SHOT / FINESSE / KNUCKLEBALL (knuckle: chỉ khi cách khung từ knuckle.min px; đứng ở phần sân đối thủ cách
   //   khung knuckle.min..max px thì mỗi lượt quyết định có thêm knuckle.chance tự dội knuckle từ xa, kể cả khi đường sút bị chắn) · rainbow: đối thủ chắn phía trước gần hơn near px · bruiser: đang chạy nhanh, đối thủ
   //   trong tầm giật chỏ (đối thủ đang ra đòn sát bên: luôn giật để phản, mỗi bước) · lobthrough: chọc khe (đường chuyền bị chắn: luôn bổng)

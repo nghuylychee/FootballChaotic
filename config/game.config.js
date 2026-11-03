@@ -736,7 +736,7 @@ SFC_CONFIG.game = {
         light:  { px: 10, lw: 4, shadow: 1, t: 0.5, rise: 10, pop: 1,   tilt: 0.12, color: '#ffffff' },   // tiếng va chạm nhẹ: POW!, BONK!, ZZT!
         heavy:  { px: 13, lw: 4, shadow: 1, t: 0.6, rise: 10, pop: 1,   tilt: 0.1,  color: '#ffe14f' },   // va chạm mạnh: SMASH!, CRASH!, KAPOW!
         huge:   { px: 17, lw: 5, shadow: 2, t: 0.8, rise: 10, pop: 1,   tilt: 0.1,  color: '#ff3d5a' },   // va chạm cực mạnh: KABOOM!, BONK!!
-        // câu nói trong trận của đối thủ FOOTBALL STORY (src/systems/matchmods.js): bong bóng thoại trắng, chữ tối; color = màu viền (áo đội)
+        // câu nói trong trận của đối thủ FOOTBALL STORY (shared/systems/matchmods.js): bong bóng thoại trắng, chữ tối; color = màu viền (áo đội)
         talk:   { px: 6,  lw: 0, shadow: 0, t: 1.9, rise: 4,  pop: 0.3, tilt: 0,    color: '#1a1216', bubble: true },
       },
       // chữ mới chạm chữ đang có (theo khung chữ thật, kể cả của người đứng cạnh) -> đẩy chữ cũ lên thay vì chồng lên nhau / xoá bớt
@@ -759,7 +759,7 @@ SFC_CONFIG.game = {
   // thì phím được giữ chừng này, hết khựng là ra đòn ngay thay vì bị nuốt mất. 0 = tắt
   input: { buffer: 0.13 },
 
-  // ĂN MỪNG BÀN THẮNG (src/systems/celebrate.js, vẽ ở src/render/celebrate-draw.js): người ghi bàn diễn động tác trong slot
+  // ĂN MỪNG BÀN THẮNG (shared/systems/celebrate.js, vẽ ở src/render/celebrate-draw.js): người ghi bàn diễn động tác trong slot
   // costume 'cel' (progression.config.js, bán trong Hộp Ăn Mừng); đồng đội chạy tới chúc mừng. Phản lưới nhà: không ăn mừng.
   // botWeights: cầu thủ AI / người chơi giả bốc 1 động tác theo độ hiếm (default = động tác mặc định), giữ nguyên cả trận.
   // runSpeed / slideSpeed: px/s khi chạy về khán đài / trượt gối · mateSpeed: đồng đội chạy tới · mateGap: đứng cách người ghi bàn

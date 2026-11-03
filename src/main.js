@@ -55,7 +55,7 @@
       });
     },
 
-    // FOOTBALL STORY (src/meta/cup.js): trận của vòng đang tới trong lượt chơi cup. Character đá ĐÁ CAO + 2 đồng đội AI cố định cả cup
+    // FOOTBALL STORY (shared/meta/cup.js): trận của vòng đang tới trong lượt chơi cup. Character đá ĐÁ CAO + 2 đồng đội AI cố định cả cup
     // (Cup.pickMates), đối thủ = đội của vòng đó, độ khó AI cả 2 đội theo Elo của vòng (MainPath.aiProfile). Hoà hết giờ: bàn thắng vàng (knockout)
     startCupMatch() {
       const Cup = SFC.Cup, R = Cup.run, rd = Cup.current();
@@ -71,23 +71,23 @@
         mates: [R.mates.map((m, i) => SFC.Cup.mateSpec(m, mateRoles[i] || null, rd)), null],   // chỉ số theo trình đối thủ (stories.mateStats)
         signature: [null, rd.signature || null],
         knockout: true, cup: { id: R.id, round: R.round },
-        mod: rd.mod || null, barks: rd.barks || null, score: rd.score || null,   // luật trận + câu nói của đối thủ (src/systems/matchmods.js)
+        mod: rd.mod || null, barks: rd.barks || null, score: rd.score || null,   // luật trận + câu nói của đối thủ (shared/systems/matchmods.js)
       });
       if (SFC_DEBUG && SFC.StoryTest) SFC.StoryTest.onMatch(this);   // phòng test Story: phím tắt trong trận (src/ui/storytest.js)
     },
 
-    // GOAT PATH (src/meta/run.js): trận của node đang chọn trên map. Character đá ĐÁ CAO + 2 đồng đội AI (Run.pickMates),
+    // GOAT PATH (shared/meta/run.js): trận của node đang chọn trên map. Character đá ĐÁ CAO + 2 đồng đội AI (Run.pickMates),
     // đối thủ = đội trên node, độ khó AI cả 2 đội theo Elo của node (theo act + tầng). Hoà hết giờ: bàn thắng vàng. Thua = hết run
     startRunMatch() {
       const M = SFC.Run.match();
       if (!M) return this.toMenu('runmap');
       const MP = SFC_CONFIG.mainPath, RN = SFC.Run, roles = RN.squad().map((x) => x.role), soloIdx = Math.max(0, C.roles.indexOf(roles[0]));
       // đội hình của run (Run.squad): chỉ số = nền theo vị trí + LEGEND + chấn thương của từng người, không dùng chỉ số ngoài run;
-      // inj = chấn thương (băng + khoảnh khắc) · legend = LEGEND (src/systems/legends.js) · gearBoost / gearBias = GEAR trường phái (cores.js)
+      // inj = chấn thương (băng + khoảnh khắc) · legend = LEGEND (shared/systems/legends.js) · gearBoost / gearBias = GEAR trường phái (cores.js)
       const avatar = Object.assign(SFC.Profile.avatar(), { role: roles[0], stats: RN.statsOf(0), ovr: RN.ovrOf(0), inj: RN.injuryIds(0), legend: RN.legendOf(0) || undefined }, RN.gearCore(0));
       SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
       const ai = SFC.MainPath.aiProfile(M.elo);
-      // SKILL GAME / LEGEND TRIAL (src/systems/drills.js): đội bạn 1 người (character) hoặc cả đội hình (PASS CHAIN), không chọn Core, không luật trận,
+      // SKILL GAME / LEGEND TRIAL (shared/systems/drills.js): đội bạn 1 người (character) hoặc cả đội hình (PASS CHAIN), không chọn Core, không luật trận,
       // không màn giới thiệu. trial: mốc riêng của LEGEND · drillEase: BADGE Training Bibs
       if (M.drill) {
         const size = M.teamSize.slice();
@@ -107,7 +107,7 @@
         mates: [RN.mateSpecs(), null],
         signature: [null, M.signature],
         knockout: true, run: M.info,
-        mod: M.mod, barks: M.barks,   // luật trận + câu nói của đối thủ (src/systems/matchmods.js); không có tỉ số khởi đầu
+        mod: M.mod, barks: M.barks,   // luật trận + câu nói của đối thủ (shared/systems/matchmods.js); không có tỉ số khởi đầu
         ...RN.matchOpts(),            // BADGE của đội: draftCards / rerollBonus / draftBonus / score / ultGain / varCheck / addedTime
       });
       if (SFC_DEBUG && SFC.RunTest) SFC.RunTest.onMatch(this);   // phòng test GOAT PATH: phím tắt trong trận (src/ui/runtest.js)

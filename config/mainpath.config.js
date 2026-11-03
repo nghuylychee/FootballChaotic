@@ -1,5 +1,5 @@
 /* =========================================================
- * MAIN PATH CONFIG — đường tiến trình chính kiểu Clash Royale, xếp theo ELO (logic ở src/meta/mainpath.js).
+ * MAIN PATH CONFIG — đường tiến trình chính kiểu Clash Royale, xếp theo ELO (logic ở shared/meta/mainpath.js).
  *
  * Mỗi trận là 3v3 "người chơi": máy chủ riêng ghép người thật khi có (net.config.js -> queue), ghế còn trống / không ghép được
  * = bot đóng vai người chơi (xem matchmaking).
@@ -24,7 +24,7 @@ SFC_CONFIG.mainPath = {
    * do bot điều khiển. foundHold / searchTime[0] dùng chung cho trận có người thật (MATCH FOUND hiện giống hệt).
    * searchTime: [min, max] giây chờ giả · range: [lúc đầu, tối đa] độ lệch Elo của người chơi giả, nới dần theo thời gian chờ ·
    * sameArea: tỉ lệ người chơi giả nằm cùng Area với bạn (ưu tiên cùng Area) · foundHold: giây hiện màn "ĐÃ TÌM THẤY" trước khi vào trận.
-   * Người chơi giả: tên trong names, ngoại hình theo Area của họ (src/meta/teammates.js -> generate), pool Core = Core Road ở Elo của họ,
+   * Người chơi giả: tên trong names, ngoại hình theo Area của họ (shared/meta/teammates.js -> generate), pool Core = Core Road ở Elo của họ,
    * OVR ngang 1 character thật ở Elo đó: base + perLevel x (trần level ở Elo đó - 1) + offset, lệch ngẫu nhiên ±spread
    * (base / perLevel ~ progression.attrs: rating khởi đầu 60, ~0.86 OVR mỗi level).
    * Độ khó AI cả 2 đội bot theo Elo trung bình (areas[].ai, nội suy trong Area). */

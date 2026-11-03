@@ -1,5 +1,5 @@
 /* RunDraw — hình riêng của GOAT PATH trên sân (chỉ đọc trạng thái trận, renderer.js gọi):
- *   floor(ctx, g): vật trên mặt sân của SKILL GAME (src/systems/drills.js, g.drill) — cổng 2 cọc + vòng sáng (SLALOM GATES:
+ *   floor(ctx, g): vật trên mặt sân của SKILL GAME (shared/systems/drills.js, g.drill) — cổng 2 cọc + vòng sáng (SLALOM GATES:
  *                  cổng đang tới sáng rõ, cổng kế mờ)
  *                  · đồng xu xoay (COIN RUSH: xu đang tới sáng rõ, xu kế mờ)
  *   top(ctx, g): vẽ sau khung thành — bia sáng trôi lên xuống trong lưới (TARGET PRACTICE)

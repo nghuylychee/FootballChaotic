@@ -26,7 +26,7 @@ window.SFC = window.SFC || {};
   const def = (p) => (p && p.legend && LC().list[p.legend]) || null;
   // nhược điểm cơ chế (LEGEND TRIAL: LEGEND chỉ cho mượn kỹ thuật -> p.lent, không có nhược điểm)
   const flaw = (p) => (p && !p.lent && (def(p) || {}).flaw) || null;
-  // LEGEND TRIAL: 1 lần làm được kỹ thuật (src/systems/drills.js combo; ngoài trial không làm gì). at = chỗ hiện số
+  // LEGEND TRIAL: 1 lần làm được kỹ thuật (shared/systems/drills.js combo; ngoài trial không làm gì). at = chỗ hiện số
   const combo = (g, p, id, at) => { if (g.drill && SFC.Drills) SFC.Drills.combo(g, p, id, at); };
   const E = SFC.Effects.prototype;
 
@@ -53,7 +53,7 @@ window.SFC = window.SFC || {};
   const Legends = {
     def,
     addRatings,
-    // cầu thủ AI (không ai điều khiển) có LEGEND dạy kỹ thuật id -> AI được dùng (legends.ai, src/systems/ai.js)
+    // cầu thủ AI (không ai điều khiển) có LEGEND dạy kỹ thuật id -> AI được dùng (legends.ai, shared/systems/ai.js)
     aiTech(g, p, id) {
       const L = def(p);
       return !!L && L.tech === id && !!LC().ai && !(g.isHuman(p.team) && p.isControlled) && !g.opts.mirror;

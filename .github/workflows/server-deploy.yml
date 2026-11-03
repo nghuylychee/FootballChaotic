@@ -64,6 +64,10 @@ jobs:
             *) echo "::error::Tag $TAG does not match server/package.json version $VERSION (use $VERSION or $VERSION-something)"; exit 1 ;;
           esac
 
+      # terser cho scripts/server-stamp.js (server:image / server:deploy kiểm code máy chủ khớp phiên bản); bỏ script = không tải Electron
+      - name: Install tools
+        run: npm ci --ignore-scripts
+
       - name: Server tests
         if: inputs.push_image
         run: |

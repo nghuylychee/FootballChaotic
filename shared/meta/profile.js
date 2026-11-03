@@ -22,12 +22,12 @@ window.SFC = window.SFC || {};
       boxes: {},                     // hộp gacha được tặng (thưởng lên hạng Main Path): id -> số hộp, mở miễn phí
       look: Object.assign({}, P().defaultLook),
       stats: { matches: 0, wins: 0, draws: 0, losses: 0, goals: 0, boxes: 0 },
-      team: SFC.Mates.blankTeam(),   // đồng đội: đội hình + trạm scout (src/meta/teammates.js)
+      team: SFC.Mates.blankTeam(),   // đồng đội: đội hình + trạm scout (shared/meta/teammates.js)
       attrs: blankAttrs(),
       ultBook: [],                   // sổ Tuyệt kỹ: 'id:cấp' đã tự đạt công thức trong trận (docs/ULT_RECIPE.md) — ultEntries()
       ach: [],                       // id thành tích đã nhận thưởng (src/meta/achievements.js)
-      story: {},                     // FOOTBALL STORY: tiến độ từng Story (src/meta/cup.js)
-      run: null,                     // GOAT PATH: run đang dở (src/meta/run.js), null = không có
+      story: {},                     // FOOTBALL STORY: tiến độ từng Story (shared/meta/cup.js)
+      run: null,                     // GOAT PATH: run đang dở (shared/meta/run.js), null = không có
       runs: null,                    // GOAT PATH: thống kê mọi run (Run.blankStats)
       tut: { done: false, heirloom: false },   // PROLOGUE (src/game/tutorial.js) đã xem xong / bỏ qua · đã nhận bí kíp gia truyền (cut scene trao AURA FARMING)
     };
@@ -72,10 +72,10 @@ window.SFC = window.SFC || {};
     // dữ liệu hỏng / phiên bản cũ -> ghép với hồ sơ trống, bỏ id không còn tồn tại
     sanitize(raw) {
       const d = blank();
-      d.path = SFC.MainPath.sanitize(raw && raw.path);   // tiến trình Main Path (src/meta/mainpath.js)
-      d.team = SFC.Mates.sanitizeTeam(raw && raw.team);  // đồng đội + scout (src/meta/teammates.js)
-      d.story = SFC.Cup.sanitize(raw && raw.story);      // FOOTBALL STORY (src/meta/cup.js)
-      d.run = SFC.Run.sanitize(raw && raw.run);          // GOAT PATH (src/meta/run.js)
+      d.path = SFC.MainPath.sanitize(raw && raw.path);   // tiến trình Main Path (shared/meta/mainpath.js)
+      d.team = SFC.Mates.sanitizeTeam(raw && raw.team);  // đồng đội + scout (shared/meta/teammates.js)
+      d.story = SFC.Cup.sanitize(raw && raw.story);      // FOOTBALL STORY (shared/meta/cup.js)
+      d.run = SFC.Run.sanitize(raw && raw.run);          // GOAT PATH (shared/meta/run.js)
       d.runs = SFC.Run.sanitizeStats(raw && raw.runs);
       // mã nhận diện cố định của hồ sơ (gửi kèm hồ sơ trận online): GOAT PATH co-op giữ ví / BADGE của khách theo mã này khi họ vào lại phòng
       d.uid = raw && typeof raw.uid === 'string' && /^[a-z0-9]{8,16}$/.test(raw.uid) ? raw.uid : Math.random().toString(36).slice(2, 12).padEnd(8, '0');

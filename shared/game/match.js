@@ -19,7 +19,7 @@ window.SFC = window.SFC || {};
      *                  (DEF / FWD, mặc định FWD) của đội đó; stats = chỉ số riêng (Main Path / Luyện tập, không có thì dùng chỉ số đội),
      *         coreUnlocks: [[id...] | null, ...] — Core đội đó được bốc khi chọn Core (null = tất cả),
      *         mates: [{ name, ovr, stats, deck, look, role, elo?, fake?, inj? } | [..] | null, ...] — đồng đội của người chơi (thay cầu thủ AI không phải character);
-     *                inj (cả avatars[].inj): id chấn thương GOAT PATH (run.badges, src/systems/hurt.js);
+     *                inj (cả avatars[].inj): id chấn thương GOAT PATH (run.badges, shared/systems/hurt.js);
      *                mảng = nhiều người (Main Path: 2 đối thủ giả); fake = người chơi giả do bot điều khiển (hiện như người chơi, kèm Elo),
      *         Tuyệt kỹ (không phải Core để chọn): mọi cầu thủ mang cores.ults.start từ đầu trận, đạt mốc Core cùng trường phái thì
      *                đổi / tiến hoá theo công thức (CoreSystem.bestRecipe, docs/ULT_RECIPE.md). noUlts / tutorial: không gán,
@@ -34,15 +34,15 @@ window.SFC = window.SFC || {};
      *         noDraft / noAI: tắt chọn Core / AI (ảnh xem trước Core),
      *         tutorial: trận mơ PROLOGUE (src/game/tutorial.js): không đồng hồ tới khi g.clockOn, lượt chọn Core do kịch bản mở,
      *         noAiCores: cầu thủ AI không tự bốc Core ở lượt chọn,
-     *         cup: { id, round } — trận FOOTBALL STORY (src/meta/cup.js); knockout: hoà hết giờ = bàn thắng vàng không giới hạn,
-     *         mod: id luật trận (stories.mods, src/systems/matchmods.js) · barks: câu nói trong trận của đối thủ · score: [đội 0, đội 1] tỉ số lúc đầu trận,
-     *         statMul: [k0, k1] nhân chỉ số cả đội · drill / drillSeed: SKILL GAME GOAT PATH (src/systems/drills.js) ·
+     *         cup: { id, round } — trận FOOTBALL STORY (shared/meta/cup.js); knockout: hoà hết giờ = bàn thắng vàng không giới hạn,
+     *         mod: id luật trận (stories.mods, shared/systems/matchmods.js) · barks: câu nói trong trận của đối thủ · score: [đội 0, đội 1] tỉ số lúc đầu trận,
+     *         statMul: [k0, k1] nhân chỉ số cả đội · drill / drillSeed: SKILL GAME GOAT PATH (shared/systems/drills.js) ·
      *         trial: id LEGEND — SKILL GAME là LEGEND TRIAL (mốc riêng) · drillEase: mốc bài giảm (phần, BADGE Training Bibs),
-     *         GOAT PATH (BADGE của đội, src/meta/run.js matchOpts; [đội 0, đội 1]): draftCards: thêm lá mỗi lượt chọn · rerollBonus: thêm
+     *         GOAT PATH (BADGE của đội, shared/meta/run.js matchOpts; [đội 0, đội 1]): draftCards: thêm lá mỗi lượt chọn · rerollBonus: thêm
      *         lượt đổi bài · draftBonus: chọn Core sớm hơn n lượt (thêm lượt trước giao bóng, bỏ n lượt cuối — tổng số Core vẫn là
      *         match.maxUpgrades; chỉ đội đó, AI đội kia không bốc thêm) · varCheck: [{ n, chance }
      *         của đội bị thủng lưới] bàn thua đầu tiên được xem lại · addedTime: giây bù giờ khi đội đó đang thua lúc hết giờ (1 lần),
-     *         avatars / mates / seats[].avatar .legend: id LEGEND của cầu thủ (config/legends.config.js, src/systems/legends.js) }
+     *         avatars / mates / seats[].avatar .legend: id LEGEND của cầu thủ (config/legends.config.js, shared/systems/legends.js) }
      */
     constructor(opts) {
       const C = SFC_CONFIG.game;
@@ -88,8 +88,8 @@ window.SFC = window.SFC || {};
         p.look = Object.assign({}, av.look);
         p.avatar = true;
         if (av.stats) { p.stats = Object.assign({}, p.stats, av.stats); p.ovr = av.ovr; }
-        if (av.inj && av.inj.length) p.inj = av.inj.slice();   // GOAT PATH: chấn thương (src/systems/hurt.js, băng vẽ ở src/render/player)
-        if (av.legend) p.legend = av.legend;                    // GOAT PATH: LEGEND (src/systems/legends.js)
+        if (av.inj && av.inj.length) p.inj = av.inj.slice();   // GOAT PATH: chấn thương (shared/systems/hurt.js, băng vẽ ở src/render/player)
+        if (av.legend) p.legend = av.legend;                    // GOAT PATH: LEGEND (shared/systems/legends.js)
         if (av.gearBoost) { p.gearBoost = Object.assign({}, av.gearBoost); p.gearBias = Object.assign({}, av.gearBias); }   // GOAT PATH: GEAR trường phái (cores.js)
       };
       (opts.avatars || []).forEach((av, t) => {
@@ -107,7 +107,7 @@ window.SFC = window.SFC || {};
         if (p && s.cores) p.unlocks = s.cores.slice();
         return { team: s.team, p, gone: false };
       });
-      // đồng đội của người chơi (Main Path / Luyện tập, src/meta/teammates.js): thay 1 cầu thủ AI không phải character —
+      // đồng đội của người chơi (Main Path / Luyện tập, shared/meta/teammates.js): thay 1 cầu thủ AI không phải character —
       // tên, ngoại hình, chỉ số riêng, deck Core (mỗi lượt chọn Core tự bốc 1 lá trong deck)
       (opts.mates || []).forEach((ms, t) => {
         if (!ms || !this.teams[t]) return;
@@ -128,7 +128,7 @@ window.SFC = window.SFC || {};
           if (m.fake) { p.fake = true; p.elo = m.elo; }
         }
       });
-      // LEGEND TRIAL (opts.trial): LEGEND cho người đá mượn kỹ thuật của mình trong bài (lent: không kèm nhược điểm, src/systems/legends.js)
+      // LEGEND TRIAL (opts.trial): LEGEND cho người đá mượn kỹ thuật của mình trong bài (lent: không kèm nhược điểm, shared/systems/legends.js)
       if (opts.trial && opts.drill) for (const s of this.seats) if (s.p && s.team === 0) { s.p.legend = opts.trial; s.p.lent = true; }
       // GOAT PATH: LEGEND trong trận (khoảnh khắc + nhược điểm; nghiêng chỉ số đã có sẵn trong stats)
       if (SFC.Legends) SFC.Legends.setup(this);
@@ -170,9 +170,9 @@ window.SFC = window.SFC || {};
       this.slowScale = 1;
       this.stopT = 0;       // VHS Rewind: còn bao lâu cả sân đứng yên (chỉ later() + stopTick của Tuyệt kỹ chạy)
       this.stopTick = null; // fn(dt) -> true = xong: Tuyệt kỹ tự diễn trong lúc cả sân đứng yên (VHS Rewind tua ngược)
-      // FOOTBALL STORY: luật trận + câu nói của đối thủ (src/systems/matchmods.js) · tỉ số lúc đầu trận (luật nhà của The Uncles)
+      // FOOTBALL STORY: luật trận + câu nói của đối thủ (shared/systems/matchmods.js) · tỉ số lúc đầu trận (luật nhà của The Uncles)
       this.mod = SFC.MatchMods ? SFC.MatchMods.create(this) : null;
-      // GOAT PATH: SKILL GAME (opts.drill, src/systems/drills.js) — đồng hồ + điều kiện qua / hỏng riêng
+      // GOAT PATH: SKILL GAME (opts.drill, shared/systems/drills.js) — đồng hồ + điều kiện qua / hỏng riêng
       this.drill = SFC.Drills ? SFC.Drills.create(this) : null;
       if (opts.score) this.teams.forEach((t, i) => { t.score = opts.score[i] || 0; });
       this.kickoff(this.drill ? this.drill.kick : 0);   // LEGEND TRIAL foeBall: đối thủ giao bóng
@@ -472,7 +472,7 @@ window.SFC = window.SFC || {};
           break;
         case 'goal':
           this.stateT -= dt;
-          SFC.Celebrate.update(this, dt);   // người ghi bàn ăn mừng, đồng đội chạy lại (src/systems/celebrate.js)
+          SFC.Celebrate.update(this, dt);   // người ghi bàn ăn mừng, đồng đội chạy lại (shared/systems/celebrate.js)
           this.ball.update(dt);
           this.effects.update(dt);
           if (this.stateT <= 0) this.afterGoal();

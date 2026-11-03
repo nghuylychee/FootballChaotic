@@ -1,0 +1,3 @@
+#!/bin/sh
+# code máy chủ (config/, shared/, server/) đổi mà chưa tăng phiên bản máy chủ -> chặn commit (scripts/server-stamp.js)
+exec node scripts/server-stamp.js --check --staged

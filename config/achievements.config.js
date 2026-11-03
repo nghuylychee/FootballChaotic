@@ -6,7 +6,7 @@
  *   stat   : matches (trận đã đá hết giờ) · wins · goals · boxes (hộp gacha đã mở) · level · elo (Elo cao nhất) ·
  *            area (Area cao nhất từng tới, 1..10) · cores (Core thường đã mở) · ults (Tuyệt kỹ đã sưu tập) ·
  *            outfits (số món costume khác nhau trong túi đồ) · core (đã mở Core `core` — target luôn 1) ·
- *            FOOTBALL STORY (src/meta/cup.js): story (đã vô địch Story `story` — target luôn 1) · cups (số Story đã vô địch) ·
+ *            FOOTBALL STORY (shared/meta/cup.js): story (đã vô địch Story `story` — target luôn 1) · cups (số Story đã vô địch) ·
  *            finals (số lần vào chung kết) · stars (tổng sao thử thách)
  *   target : số cần đạt · 'all' = toàn bộ (vd. mọi Core thường)
  *   reward : { item: id costume (progression.items) } — vào túi đồ ngay · { box: id hộp (progression.boxes), n } — hộp miễn phí ở SHOP
@@ -58,7 +58,7 @@ SFC_CONFIG.achievements = {
     { id: 'storm_chaser', group: 'cores', name: 'Storm Chaser',       desc: 'Unlock Light Cycle',           stat: 'core', core: 'light_cycle', target: 1, reward: { item: 'lightning' } },
     { id: 'event_horizon',group: 'cores', name: 'Event Horizon',      desc: 'Unlock Black Hole Shot',       stat: 'core', core: 'black_hole', target: 1,     reward: { item: 'galaxy' } },
     /* ---------- FOOTBALL STORY ---------- */
-    /* ---------- GOAT PATH (src/meta/run.js, Profile.data.runs) ---------- */
+    /* ---------- GOAT PATH (shared/meta/run.js, Profile.data.runs) ---------- */
     { id: 'path_first',   group: 'run', name: 'First Steps',        desc: 'Beat the boss of THE BLOCK',   stat: 'runAct', target: 1, reward: { box: 'street', n: 2 } },
     { id: 'path_city',    group: 'run', name: 'City Lights',        desc: 'Beat the boss of NIGHT CITY',  stat: 'runAct', target: 2, reward: { box: 'legend' } },
     { id: 'path_goat',    group: 'run', name: 'Greatest of All Time', desc: 'Win a GOAT PATH run',        stat: 'runWins', target: 1, reward: { box: 'legend', n: 2 } },

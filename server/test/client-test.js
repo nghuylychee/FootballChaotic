@@ -8,7 +8,7 @@
  *     chờ cả phòng (csr), vào trận, về phòng chờ với vòng mới, người tạo rời = phòng đóng · ping cao hơn coopMaxPing -> tự làm host
  *  Cả 2: B rớt mạng giữa trận -> tự kết nối lại, lấy lại slot, A thấy RECONNECTED
  *  Mọi thông báo / banner người chơi thấy không được lộ cách kết nối (máy chủ riêng / làm host / Steam / PeerJS)
- *  Mã online (src/net/) không được gọi tới giao diện (Menu / UI / Audio / Intro / Input): UI sửa thoải mái không ảnh hưởng online
+ *  Mã online (shared/net/ + src/net/) không được gọi tới giao diện (Menu / UI / Audio / Intro / Input): UI sửa thoải mái không ảnh hưởng online
  *  Máy giả chạy đúng như game: main.js -> SFC.OnlineUI.tick / view (src/ui/online.js) -> SFC.Session
  * node server/test/client-test.js
  */
@@ -422,14 +422,15 @@ async function fallbackRoom() {
     assert.deepStrictEqual(texts.filter((t) => LEAK.test(t)), [], 'UI texts reveal the network model');
     console.log(`neutral texts: OK (${seen.length} messages/banners seen + all UI texts checked)`);
     // mã online không gọi tới giao diện
-    const NET_DIR = path.join(ROOT, 'src', 'net');
-    for (const f of fs.readdirSync(NET_DIR)) {
-      // bỏ chú thích (/* */ và //) — chỉ kiểm code thật
-      const src = fs.readFileSync(path.join(NET_DIR, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
-      const hit = src.match(/SFC\.(Menu|UI|OnlineUI|Audio|Intro|Input|Renderer)\b/);
-      assert.ok(!hit, `src/net/${f} uses ${hit && hit[0]}: online code must not depend on the UI`);
+    for (const dir of ['shared/net', 'src/net']) {
+      for (const f of fs.readdirSync(path.join(ROOT, dir))) {
+        // bỏ chú thích (/* */ và //) — chỉ kiểm code thật
+        const src = fs.readFileSync(path.join(ROOT, dir, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
+        const hit = src.match(/SFC\.(Menu|UI|OnlineUI|Audio|Intro|Input|Renderer)\b/);
+        assert.ok(!hit, `${dir}/${f} uses ${hit && hit[0]}: online code must not depend on the UI`);
+      }
     }
-    console.log('online/UI separation: OK (src/net/ has no UI references)');
+    console.log('online/UI separation: OK (shared/net/ + src/net/ have no UI references)');
     console.log('OK');
   } finally {
     proc.kill('SIGTERM');

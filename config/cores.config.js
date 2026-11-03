@@ -13,7 +13,7 @@
  *           dribble (giữ bóng: tốc độ dẫn bóng + khó bị đấm rơi bóng), keeperSave (tỉ lệ bắt bóng trong vòng cấm nhà)
  *  boost  : (Core chỉ số) id chỉ số trong progression.attrs.list — chỉ để vẽ dấu "+" màu chỉ số trên người (src/render/vfx.js)
  *  desc   : 1 câu ngắn 7–10 chữ, KHÔNG ghi số / {param} (user chốt 2026-10-11: người chơi không đọc số)
- *  params : tham số cho hành vi riêng (code ở src/systems/cores.js, map theo id)
+ *  params : tham số cho hành vi riêng (code ở shared/systems/cores.js, map theo id)
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
@@ -29,7 +29,7 @@ SFC_CONFIG.cores = {
     iron:      { label: 'IRON',      icon: '🛡', color: '#c7ccd6', stat: 'keeper' },
     chaos:     { label: 'CHAOS',  icon: '🎲', color: '#c63dff', stat: 'ovr' },
   },
-  // Core scale theo chỉ số (src/systems/corescale.js): rating min -> anchor -> max = độ mạnh / hồi chiêu (nội suy từng đoạn).
+  // Core scale theo chỉ số (shared/systems/corescale.js): rating min -> anchor -> max = độ mạnh / hồi chiêu (nội suy từng đoạn).
   // anchor = rating của đồng đội / đội AI chỉ số 1.0 (mức cân bằng gốc của Core). stat của trường phái ở archetypes[].stat
   statScale: { min: 60, anchor: 80, max: 99, power: [0.5, 1, 1.5], cooldown: [1.3, 1, 0.7] },
   roleLabels: { gen: 'ACTIVE', use: 'ACTIVE', base: 'PASSIVE', ult: 'ULTIMATE', wild: 'WILD' },   // chỉ hiện ở sandbox
@@ -99,7 +99,7 @@ SFC_CONFIG.cores = {
       shrink_ray: 'chicken_ray',
       shell_game: 'panic_ball',
     },
-    // Tuyệt kỹ lai (user duyệt 2026-10-13): 7 cặp từng có Core cầu nối + Slingshot, rồi 13 cặp còn lại. Hành vi ở src/systems/cores-hybrid.js
+    // Tuyệt kỹ lai (user duyệt 2026-10-13): 7 cặp từng có Core cầu nối + Slingshot, rồi 13 cặp còn lại. Hành vi ở shared/systems/cores-hybrid.js
     hybrids: [
       { id: 'comet_onetwo', tags: ['striker', 'playmaker'] },
       { id: 'rising_dragon', tags: ['brawler', 'launcher'] },
@@ -259,7 +259,7 @@ SFC_CONFIG.cores = {
       scale: { time: 'pow', life: 'pow', stun: 'pow' },
     },
 
-    /* ================= Giai đoạn 3 — Core mới (hành vi ở src/systems/cores-new.js) ================= */
+    /* ================= Giai đoạn 3 — Core mới (hành vi ở shared/systems/cores-new.js) ================= */
     /* ---------- 🏃 TỐC ĐỘ ---------- */
     burst_start: {
       name: 'Arrow Start', icon: '🏹', tags: ['runner'], role: 'gen', rarity: 'rare',

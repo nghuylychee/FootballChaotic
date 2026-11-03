@@ -1,9 +1,8 @@
-# Chỉ dùng cho server/Dockerfile: chỉ gửi những gì máy chủ cần
+# Chỉ dùng cho server/Dockerfile: chỉ gửi những gì máy chủ cần (src/ là code máy người chơi, máy chủ không nạp)
 *
 !scripts/manifest.js
 !config/
-!src/
+!shared/
 !server/
-src/dev/
 server/node_modules/
 server/test/

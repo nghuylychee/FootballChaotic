@@ -3,7 +3,7 @@
  * Mô hình host-authoritative: máy chủ phòng chạy toàn bộ mô phỏng,
  * các máy khách gửi phím và vẽ lại trạng thái nhận được (host nối sao tới từng khách).
  * Kết nối: Steam (lobby + relay, bản Electron có Steam) hoặc WebRTC qua PeerJS (bản web / không có Steam),
- * xem src/net/transport.js. PeerJS server chỉ dùng để "bắt tay" lúc vào phòng.
+ * xem shared/net/transport.js. PeerJS server chỉ dùng để "bắt tay" lúc vào phòng.
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
@@ -59,7 +59,7 @@ SFC_CONFIG.net = {
   // độ khó AI = độ khó ở 1 mức Elo ngẫu nhiên trong Area đó (span: phần khoảng Elo, 0 = đầu Area, 1 = cuối Area), sân = sân của Area đó
   bots: { span: [0, 1] },
 
-  // Tìm trận xếp hạng Main Path (PLAY > START khi không có bạn trong phòng) trên máy chủ riêng: src/net/matchmaker.js.
+  // Tìm trận xếp hạng Main Path (PLAY > START khi không có bạn trong phòng) trên máy chủ riêng: shared/net/matchmaker.js.
   // Người thật thay người chơi giả; ghế còn trống = người chơi giả (bot). Không có máy chủ / không tới được / máy chủ bận /
   // không ai để ghép -> game tự ghép người chơi giả như chơi một mình (mainPath.matchmaking), người chơi không thấy khác gì.
   queue: {

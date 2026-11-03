@@ -1,4 +1,4 @@
-/* LegendDraw — hình KHOẢNH KHẮC LEGEND của GOAT PATH (src/systems/legends.js, config/legends.config.js). Chỉ đọc trạng thái hiệu ứng
+/* LegendDraw — hình KHOẢNH KHẮC LEGEND của GOAT PATH (shared/systems/legends.js, config/legends.config.js). Chỉ đọc trạng thái hiệu ứng
  * (Effects.legendAura / legendCut, có cả ở máy khách online qua sync.js), renderer.js gọi:
  *   under(ctx, g, p): bóng mờ huyền thoại to gấp rưỡi đứng sau lưng cầu thủ (màu của LEGEND, nhấp nháy nhẹ) + quầng sáng dưới chân
  *   overlay(ctx, g): cut-in LEGEND — dải chân dung trượt vào cạnh trái màn hình: chân dung pixel lớn + tên + danh hiệu. Không phủ tối

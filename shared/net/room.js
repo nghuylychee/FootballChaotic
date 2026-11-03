@@ -20,12 +20,12 @@
  * AI đá thay, trận đá tới hết dù còn bao nhiêu người. start{opts} kèm ranked + mainPath{myElo, oppElo} của đội người nhận.
  *
  * Phòng FOOTBALL STORY (story = id Story — docs/FOOTBALL_STORY.md "Co-op online"): mọi người cùng đội 0
- * (tối đa số vị trí), ghế trống = đồng đội AI. Trạng thái cup (lượt chơi của host, src/meta/cup.js) đi trong gói lobby: c (hook cupState),
+ * (tối đa số vị trí), ghế trống = đồng đội AI. Trạng thái cup (lượt chơi của host, shared/meta/cup.js) đi trong gói lobby: c (hook cupState),
  * k = id Story. Giữa 2 trận phòng ở 'lobby' (người mới vào được, nhận ghế còn trống). Host dựng trận bằng startStory(o).
  * Cut scene trước trận chiếu cùng lúc: cueScenes(kind) gửi cs{k} -> khách chiếu xong gửi csd; host chờ (scenesPending) rồi mới vào trận.
  *
  * Phòng GOAT PATH co-op (run = true — docs/RUN_DESIGN.md "Co-op"): luật ghế như phòng Story (coop). Run nằm ở
- * máy host (src/meta/run.js); gói lobby thêm rn = 1 + r (hook runState: bản sao run cho khách). Khách gửi ra{a,...} (bỏ phiếu, chọn BADGE,
+ * máy host (shared/meta/run.js); gói lobby thêm rn = 1 + r (hook runState: bản sao run cho khách). Khách gửi ra{a,...} (bỏ phiếu, chọn BADGE,
  * mua đồ...) -> hook runAction(id, m) (host áp vào run rồi gửi lobby mới). Cut scene: cueScenes('run:<act>:<intro|boss|after>').
  * Skill game chỉ 1 người đá: startStory(o) với o.only = [id] -> những người còn lại nhận start{opts.watch} (me = -1, chỉ xem).
  *

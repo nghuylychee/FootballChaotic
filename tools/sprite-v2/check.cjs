@@ -9,7 +9,7 @@ require('../../config/run.config.js');   // chỗ quấn băng chấn thương (
 // ăn mừng: dữ liệu động tác của game (CelebrateDraw.POSES, lead() của Celebrate)
 global.SFC = {};
 require('../../config/progression.config.js');
-require('../../src/systems/celebrate.js');
+require('../../shared/systems/celebrate.js');
 require('../../src/render/celebrate-draw.js');
 // sprite 2x: các file src/render/player/*.js theo thứ tự trong scripts/manifest.js
 for (const f of require('../../scripts/manifest.js').files('game').filter((f) => f.startsWith('src/render/player/'))) require('../../' + f);

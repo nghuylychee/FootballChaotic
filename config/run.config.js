@@ -1,5 +1,5 @@
 /* =========================================================
- * RUN CONFIG — GOAT PATH (docs/RUN_DESIGN.md): run 3 act kiểu Slay the Spire. Logic: src/meta/run.js (SFC.Run), màn: src/ui/runmap.js.
+ * RUN CONFIG — GOAT PATH (docs/RUN_DESIGN.md): run 3 act kiểu Slay the Spire. Logic: shared/meta/run.js (SFC.Run), màn: src/ui/runmap.js.
  *
  * Mỗi act 1 map nhiều nhánh: floors tầng thường (tầng 0 luôn Matchday, tầng cuối luôn Locker Room) + 1 tầng boss.
  * Thua 1 trận (Matchday / Elite / Boss) = hết run (user chốt 2026-10-25). Core vẫn bốc lại mỗi trận như trận thường.
@@ -89,7 +89,7 @@ SFC_CONFIG.run = {
    *     này chấn thương mỗi act · drillEase: mốc Skill game / LEGEND TRIAL giảm (phần) · gearSlots: thêm ô GEAR cho mỗi người
    * up: số liệu sau khi nâng cấp ở Locker Room (không có up = không nâng được). icon: ui-* (pixelicons) hoặc trường phái. off: không bốc ra.
    * injury: chấn thương (Skill game hỏng / sự kiện, rơi vào 1 người ngẫu nhiên của đội), chỉ chữa ở Locker Room / Shop; stats: trừ
-   * chỉ số người đó · part: chỗ quấn băng (render/sprites.js) · hurt: khoảnh khắc ra tay trong trận (src/systems/hurt.js, run.hurt). */
+   * chỉ số người đó · part: chỗ quấn băng (render/sprites.js) · hurt: khoảnh khắc ra tay trong trận (shared/systems/hurt.js, run.hurt). */
   rarityWeights: {
     match: { common: 50, rare: 38, epic: 12 },
     gear: { common: 45, rare: 38, epic: 14, legendary: 3 },   // GEAR sau trận thường (run.gear)
@@ -155,7 +155,7 @@ SFC_CONFIG.run = {
       vuvuzela: { name: 'Vuvuzela',       icon: 'arch-chaos',     rarity: 'rare', school: 'chaos',     power: 8, bias: 1.6, up: { power: 12, bias: 1.9 }, desc: 'CHAOS Cores come more often and hit harder.' },
     },
   },
-  // khoảnh khắc chấn thương trong trận (src/systems/hurt.js), chữ bật lên Effects.pop kind 'status' màu color
+  // khoảnh khắc chấn thương trong trận (shared/systems/hurt.js), chữ bật lên Effects.pop kind 'status' màu color
   // stumble: chạy nước rút mỗi every giây có chance khựng lại (đi bộ walk giây) · weak: cú đấm chance xịt (lực đẩy x knock, không choáng)
   // · shank: cú sút chance trượt chân (lệch thêm angle độ)
   hurt: {
@@ -165,14 +165,14 @@ SFC_CONFIG.run = {
     shank: { chance: 0.35, angle: 16 },
   },
 
-  /* ---------- CO-OP (phòng GOAT PATH online, user 2026-10-26; src/meta/run.js) ----------
+  /* ---------- CO-OP (phòng GOAT PATH online, user 2026-10-26; shared/meta/run.js) ----------
    * voteTime: giây tối đa từ phiếu đầu tiên tới lúc chốt (đủ phiếu thì chốt luôn) · eloPer / statPer: mỗi người thật thêm ngoài người đầu,
    * Elo AI đối thủ + eloPer và chỉ số đối thủ x (1 + statPer) (mỗi người nhận BADGE riêng nên đội mạnh lên nhanh hơn chơi một mình).
    * eloPer = 0 (user 2026-10-31): +120 Elo ở act 1 (đường AI theo Elo dốc nhất ở Area đầu) làm AI đối thủ phản ứng nhanh hẳn
    * (0.5 -> 0.33–0.4 giây), chạy nhanh hơn 6–11%, áp sát gấp đôi so với chơi một mình -> co-op chỉ tăng chỉ số, não AI như chơi một mình */
   coop: { voteTime: 15, eloPer: 0, statPer: 0.05 },
 
-  /* ---------- SKILL GAME (src/systems/drills.js, user 2026-10-26: mốc ĐỒNG / BẠC / VÀNG + thanh tiến độ trên HUD) ----------
+  /* ---------- SKILL GAME (shared/systems/drills.js, user 2026-10-26: mốc ĐỒNG / BẠC / VÀNG + thanh tiến độ trên HUD) ----------
    * Bài tập ngắn trên sân thật. teamSize: [bạn, đối thủ] (mỗi đội tối đa 3 = số vị trí; bạn > 1 = có đồng đội AI trong đội hình) · time: giây ·
    * goal: thứ được đếm (goals bàn thắng · targets bàn vào đúng bia · gates cổng dẫn bóng qua · chain chuỗi chuyền dài nhất ·
    * hits lần hạ gục đối thủ (cả đội bạn đều tính) · hold giây giữ bóng — mất bóng là hết bài · teamhold giây cả đội giữ bóng ·

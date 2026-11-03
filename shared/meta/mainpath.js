@@ -4,7 +4,7 @@
  *   best = Area cao nhất từng tới (mở Tuyệt kỹ, sân online, scout); cores = Core + Tuyệt kỹ đã mở bằng Main Path (Core Road);
  *   fresh = Core vừa mở, chưa hiện ở lượt chọn Core nào (lá có nhãn NEW, được ưu tiên bốc) / Tuyệt kỹ vừa mở chưa xem (NEW ở ULTIMATE);
  *   pending = { myElo, oppElo } trận xếp hạng đang đá dở (begin): tắt game / mất kết nối giữa trận -> lần chạy sau tính thua (settle)
- * Tìm trận: máy chủ riêng ghép người thật (src/net/matchmaker.js) khi có; không thì matchmake() sinh 3 người chơi giả (bot)
+ * Tìm trận: máy chủ riêng ghép người thật (shared/net/matchmaker.js) khi có; không thì matchmake() sinh 3 người chơi giả (bot)
  * quanh Elo của bạn, ưu tiên cùng Area.
  */
 window.SFC = window.SFC || {};

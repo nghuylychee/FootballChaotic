@@ -3,7 +3,7 @@
  * scripts/targets.js (strip-debug.js ghi khi đóng gói); bản dev / steam để false. Dev: SETTINGS > TEST > DEMO MODE.
  *  - Main Path: chỉ đá được `areas` Area đầu. Thắng thăng hạng Area cuối của demo -> màn WISHLIST (src/ui/menu.js)
  *  - PRIVATE MATCH khoá (bấm vào ra màn WISHLIST), trừ cửa hàng có rules.demoPrivateMatch (config/platform.config.js)
- *  - FOOTBALL STORY: chỉ chơi được `stories` Story đầu (src/meta/cup.js -> demoLocked)
+ *  - FOOTBALL STORY: chỉ chơi được `stories` Story đầu (shared/meta/cup.js -> demoLocked)
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 

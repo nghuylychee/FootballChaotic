@@ -11,6 +11,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const API = 'https://api.render.com/v1';
@@ -106,6 +107,8 @@ async function deployOne(s) {
     console.error('Usage: npm run server:deploy [-- <tag>] [--only name1,name2] [--dry] [--force]   (tag defaults to server/package.json version)');
     process.exit(1);
   }
+  // deploy phiên bản hiện tại: code máy chủ phải khớp dấu của phiên bản đó (đổi mà chưa tăng = image mang code khác số phiên bản)
+  if (!DRY && TAG === VERSION && spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'server-stamp.js'), '--check'], { stdio: 'inherit' }).status !== 0) process.exit(1);
   const list = await services();
   if (ONLY) for (const n of ONLY) if (!list.some((s) => s.name === n)) { console.error(`[deploy] no image-backed web service named "${n}"`); process.exit(1); }
   if (!list.length) { console.error(`[deploy] no image-backed web services named ${PREFIX}*`); process.exit(1); }

@@ -1,4 +1,4 @@
-/* CelebrateDraw — vẽ động tác ăn mừng bàn thắng (danh sách ở progression.config.js, slot 'cel'; di chuyển ở src/systems/celebrate.js)
+/* CelebrateDraw — vẽ động tác ăn mừng bàn thắng (danh sách ở progression.config.js, slot 'cel'; di chuyển ở shared/systems/celebrate.js)
  * Mỗi động tác: pose(t, p) -> tư thế cho drawPlayer (sprite người chơi src/render/player đọc p.celPose; vẽ cả động tác: PlayerSprite.celDraw):
  *   lift (px nhấc khỏi đất) · rot (xoay cả người quanh hông) · face (hướng nhìn, thiếu = theo trận) · run (chân chạy)
  *   arms [trái, phải] ([dx, dy] bàn tay hoặc [khuỷu dx, dy, tay dx, dy] tính từ vai) · legs ('kneel' | 'cross' | 'split')

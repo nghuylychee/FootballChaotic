@@ -27,7 +27,7 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 /* Press Start 2P ép chữ hoa có dấu thấp như chữ thường (MUéVETE). Font phụ vẽ lại đủ cao, dấu nhô lên trên ô chữ 1/4 cỡ chữ
-   (scripts/build-accent-caps.py). Chỉ dùng khi <html> có class accent-caps = ngôn ngữ khai báo accentCaps (src/engine/i18n.js) */
+   (scripts/build-accent-caps.py). Chỉ dùng khi <html> có class accent-caps = ngôn ngữ khai báo accentCaps (shared/engine/i18n.js) */
 @font-face {
   font-family: 'SFC Accent Caps'; font-style: normal; font-weight: 400; font-display: swap;
   src: url(../assets/fonts/SFCAccentCaps.woff2) format('woff2');
@@ -1915,7 +1915,7 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 /* túi đồ: ô chi tiết thẻ DRILL (gacha.js -> invDetail) */
 .sd-preview.inv-drill { justify-content: center; min-height: 110px; background: radial-gradient(circle, color-mix(in srgb, var(--rc) 30%, transparent) 0%, transparent 62%); }
 
-/* ---------- Core scale theo chỉ số (src/systems/corescale.js) ---------- */
+/* ---------- Core scale theo chỉ số (shared/systems/corescale.js) ---------- */
 .card-stat { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 11px; line-height: 1; color: var(--muted); margin: -1px 0 4px; letter-spacing: 0.5px; }
 .card-stat b { font-weight: normal; color: var(--sc); letter-spacing: 1px; }
 .card-desc .sv { font-weight: normal; color: #fff; }

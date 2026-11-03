@@ -76,7 +76,7 @@ chọn đội + độ khó). Không giờ trận, không Final Push / Golden Goa
 vào lưới vẫn ăn mừng rồi giao bóng lại (không có đối thủ thì luôn giao bóng cho bạn). Esc → ĐÁ LẠI / VỀ MENU. Engine: `SFC.Game` opts `training` + `teamSize`.
 
 ## Meta progression (level · XP · gold · gacha · túi đồ)
-- Hồ sơ lưu ở `localStorage` của trình duyệt (`src/meta/profile.js`, key `sfc_profile_v1`). Lần đầu mở game phải đặt tên.
+- Hồ sơ lưu ở `localStorage` của trình duyệt (`shared/meta/profile.js`, key `sfc_profile_v1`). Lần đầu mở game phải đặt tên.
 - **Character**: mang tên + costume của bạn, vào sân thay 1 cầu thủ của đội mình (đối thủ online thấy được). Chơi đơn `1 CẦU THỦ`: chọn
   character đá ĐÁ LÙI hay ĐÁ CAO, cầu thủ AI của đội đá vị trí còn lại; `CẢ ĐỘI` và online: character đá ĐÁ CAO.
 - **Thưởng sau trận** (chỉ khi đá hết trận): thắng / hòa / thua + theo số bàn, nhân độ khó ở chơi đơn; online thưởng cao hơn.
@@ -125,7 +125,7 @@ vào lưới vẫn ăn mừng rồi giao bóng lại (không có đối thủ th
   Core thường ai cũng dùng được ngay; Tuyệt kỹ mở qua Area vào bộ sưu tập, chọn 1 cái mang vào trận ở CHARACTER → ULTIMATE (Aura Farming có sẵn).
   Area 9–10 chưa có Tuyệt kỹ (chờ Tuyệt kỹ mới).
 - Trần level character theo Elo cao nhất từng đạt (`areas[].levelCap`). Hồ sơ cũ (Area > hạng > sao) tự đổi sang Elo khi mở game.
-- Số liệu: `config/mainpath.config.js` (`elo`, `matchmaking`, `areas[].elo / ult / ai / levelCap`). Logic: `src/meta/mainpath.js`; tìm trận: `src/ui/menu.js` (phòng chờ `party`).
+- Số liệu: `config/mainpath.config.js` (`elo`, `matchmaking`, `areas[].elo / ult / ai / levelCap`). Logic: `shared/meta/mainpath.js`; tìm trận: `src/ui/menu.js` (phòng chờ `party`).
   Cheat: SETTINGS → TEST → JUMP TO AREA (đặt Elo về ngưỡng Area).
 
 ## Online PvP (1 vs 1)
@@ -204,7 +204,7 @@ src/
 2. Nếu chỉ cần chỉ số thụ động: dùng `mods` (speed, offBallSpeed, shotPower, passSpeed,
    tackleRange / tackleChance (tầm / tỉ lệ cướp bóng của Light attack), knockback, chargeTime, accuracy, sprintRegen, momentumGain...).
    Theo luật "không Core vô hình" (docs/CORE_DESIGN.md), Core chỉ số vẫn nên có hình ở `src/render/vfx.js`.
-3. Nếu cần hành vi riêng: thêm object cùng `id` vào `Behaviors` trong `src/systems/cores.js` (Core cũ) hoặc `src/systems/cores-new.js` (Core Giai đoạn 3)
+3. Nếu cần hành vi riêng: thêm object cùng `id` vào `Behaviors` trong `shared/systems/cores.js` (Core cũ) hoặc `shared/systems/cores-new.js` (Core Giai đoạn 3)
    với các hook: `onShoot`, `onChargedShot`, `onPass`, `onPassReceived`, `onSkillMove`, `onSprintStart`, `onHardAttack`, `onTackle`,
    `onTackleWin`, `onLightHit`, `onHardHit`, `onWallBonk`, `onDodge`, `onSteal`, `onGoalScored`, `onKickoff`, `onPossessionGained`,
    `onHit`, `onGoalLine`, `onWallHit`, `update`; Tuyệt kỹ: `onUltimate` + `aiUse` (danh sách đầy đủ ở đầu file).
@@ -219,7 +219,7 @@ src/
   Đồng đội / người chơi giả / bạn bè giả có Tuyệt kỹ riêng (người giả: theo Area của họ); cầu thủ AI không được giao thì lấy theo `coreWeights` của đội
   (`CoreSystem.defaultUlt`, cố định để trận online "gương" khớp). Tuyệt kỹ hiện trên thẻ ở phòng chờ, dòng MATCH FOUND và màn giới thiệu trận.
 - **Chọn Core**: 5 lượt — 1 trước khi giao bóng, sau đó cứ `match.draftEvery` giây (mặc định 24s) tích +1 lượt, **chỉ mở khi có bàn thắng**
-  (tích nhiều thì chọn liền); tới FINAL PUSH mà còn lượt thì tạm dừng trận để chọn nốt. Mỗi lượt được **đổi 3 lá 1 lần (phím R)**; trọng số theo build, từ lượt 2 luôn có ít nhất 1 lá cùng trường phái. Logic ở `src/systems/cores.js` (`CoreSystem`).
+  (tích nhiều thì chọn liền); tới FINAL PUSH mà còn lượt thì tạm dừng trận để chọn nốt. Mỗi lượt được **đổi 3 lá 1 lần (phím R)**; trọng số theo build, từ lượt 2 luôn có ít nhất 1 lá cùng trường phái. Logic ở `shared/systems/cores.js` (`CoreSystem`).
 - **Không Core vô hình**: tài nguyên hiện trên người cầu thủ (tia điện dưới chân = Đà, nắm tay bốc lửa = Nộ, ánh bạc + khiên nhỏ = Giáp,
   nốt nhạc quanh đội = Nhịp), bóng mang vệt theo Core (`ball.fx`: dây đàn vàng, xoắn rồng, laser, sét), hào quang cầu thủ (`player.glow`).
   Vẽ ở `src/render/vfx.js` (`under` / `look` / `ballFx`).
@@ -232,7 +232,7 @@ src/
 Mở `http://localhost:8080/sandbox.html` — trang thử **VFX Kit** (Giai đoạn 0 của `docs/CORE_DESIGN.md`): nút cho từng viên gạch
 (hit-stop, slow-mo, zoom, impact frame, callout, cut-in, sóng chấn, vết nứt / hố, tay co giãn, phân thân, lưỡi gió, luồng tia, lỗ đen,
 khổng lồ, skin bóng, khiên lục giác, cổng xoáy, lưới cháy...) và 12 "khoảnh khắc" ghép sẵn (phím 1–9, 0).
-Mục **CORE THẬT** bật / tắt từng Core của `cores.config.js` cho đội vàng (kèm nút đầy tài nguyên / đầy Tuyệt kỹ) để xem hành vi thật trong trận. Viên gạch ở `src/systems/vfxkit.js` (gắn vào `Effects`, tự đồng bộ online),
+Mục **CORE THẬT** bật / tắt từng Core của `cores.config.js` cho đội vàng (kèm nút đầy tài nguyên / đầy Tuyệt kỹ) để xem hành vi thật trong trận. Viên gạch ở `shared/systems/vfxkit.js` (gắn vào `Effects`, tự đồng bộ online),
 hình vẽ ở `src/render/vfx.js`, hit-stop / slow-mo ở `Game.hitStop / slowMo`. Tuỳ chọn *Giảm nháy* lưu ở `localStorage` (`sfc_fx`).
 
 ### Debug

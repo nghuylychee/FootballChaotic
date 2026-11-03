@@ -667,7 +667,7 @@ window.SFC = window.SFC || {};
     },
     avatarStats(R = this.run) { return this.statsOf(0, R); },
     // 2 đồng đội vào trận (opts.mates): chỉ số run, deck Core của họ, chấn thương (p.inj -> băng + khoảnh khắc trong trận),
-    // GEAR trường phái (gearBoost / gearBias -> p.gearBoost / p.gearBias, src/systems/cores.js)
+    // GEAR trường phái (gearBoost / gearBias -> p.gearBoost / p.gearBias, shared/systems/cores.js)
     mateSpecs(R = this.run) {
       const L = SFC_CONFIG.cores.list;
       return [1, 2].map((i) => {
