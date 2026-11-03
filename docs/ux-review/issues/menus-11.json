@@ -1,22 +1,30 @@
 {
-  "id": "menus-11",
-  "area": "menus",
-  "screen": "TROPHY ROOM › kệ cúp / bảng ghim (người chơi chưa có run nào)",
-  "source": "agent",
-  "severity": "low",
-  "title": "TROPHY ROOM trống với người mới, không chữ nào nói cách lấp đầy",
-  "problem": "Người chưa chơi run nào mở RUNS thì chỉ thấy bảng ghim trống với một quả bóng mờ ở giữa; kệ cúp toàn bóng đen, dải dưới ghi \"THE BLOCK 0\" mà không nói THE BLOCK là gì hay làm sao để có cúp. Phòng đẹp nhưng lần đầu vào không dẫn người chơi đi đâu cả.",
-  "goal": "Lần đầu vào, mỗi góc trống nói một câu ngắn về cách lấp đầy nó (bảng phấn kỷ lục vẫn chỉ icon + số như owner đã chọn).",
-  "why": "Căn phòng là nơi khoe tiến độ; nếu nó biến thành mục tiêu ('hạ boss act 1 để có cúp này') thì kéo người chơi vào GOAT PATH thay vì chỉ là màn trống.",
-  "fix": "Bảng ghim trống có một tờ giấy ghim (cùng kiểu polaroid) ghi \"No runs yet · your GOAT PATH runs get pinned here\". Ở kệ cúp, cúp đang chọn chưa có lần nào thì dải dưới thêm 1 câu xám: cúp act = \"Beat the boss of this act in GOAT PATH\", cúp GOAT = \"Win a GOAT PATH run\" (dùng lại chuỗi của ACHIEVEMENTS). Chỉ hiện ở trạng thái trống, không đụng bảng phấn. Kỹ thuật: trophies.js shelfDom / boardDom, CSS .tr2-note / .tr2-how; 2 chuỗi mới ở mọi pack i18n.",
-  "why_this": "Một dòng chữ ở đúng trạng thái trống là cách rẻ nhất biến căn phòng thành mục tiêu, không đổi bố cục owner đã duyệt và tự biến mất khi đã có cúp / run.",
-  "alternatives": [
-    "Polaroid mẫu mờ (ảnh giả) trên bảng ghim — trực quan, nhưng dễ bị tưởng là run thật",
-    "Không làm gì — phòng tự đầy khi chơi, nhưng lần đầu vào người chơi không biết vì sao nó trống"
-  ],
-  "files": ["src/ui/trophies.js", "css/style.css", "src/i18n/es.js", "src/i18n/ja.js", "src/i18n/pt-BR.js", "src/i18n/pt-PT.js"],
-  "limits": "Bản dịch 2 câu mới là bản nháp chưa duyệt (cả hệ GOAT PATH chưa được dịch trong các pack, nên chữ 'run' chưa có thuật ngữ chốt). Video tắt sẵn số thưởng chờ nhận để phòng mở ở góc TROPHIES như người chơi mới.",
-  "videoNote": "Cùng phím: Enter vào kệ cúp, ↑ lên cúp GOAT, Esc, → → Enter sang bảng ghim. Bản mới có câu hướng dẫn ở dải dưới kệ và tờ giấy ghim trên bảng trống. Bản mới bắt đầu chậm hơn ~2 s do lúc tải.",
-  "before": "videos/menus-11-before.mp4",
-  "after": "videos/menus-11-after.mp4"
+ "id": "menus-11",
+ "area": "menus",
+ "screen": "TROPHY ROOM › kệ cúp / bảng ghim (người chơi chưa có run nào)",
+ "source": "agent",
+ "severity": "low",
+ "title": "TROPHY ROOM trống với người mới, không chữ nào nói cách lấp đầy",
+ "problem": "Người chưa chơi run nào mở RUNS thì chỉ thấy bảng ghim trống với một quả bóng mờ ở giữa; kệ cúp toàn bóng đen, dải dưới ghi \"THE BLOCK 0\" mà không nói THE BLOCK là gì hay làm sao để có cúp. Phòng đẹp nhưng lần đầu vào không dẫn người chơi đi đâu cả.",
+ "goal": "Lần đầu vào, mỗi góc trống nói một câu ngắn về cách lấp đầy nó (bảng phấn kỷ lục vẫn chỉ icon + số như owner đã chọn).",
+ "why": "Căn phòng là nơi khoe tiến độ; nếu nó biến thành mục tiêu ('hạ boss act 1 để có cúp này') thì kéo người chơi vào GOAT PATH thay vì chỉ là màn trống.",
+ "fix": "Bảng ghim trống có một tờ giấy ghim (cùng kiểu polaroid) ghi \"No runs yet · your GOAT PATH runs get pinned here\". Ở kệ cúp, cúp đang chọn chưa có lần nào thì dải dưới thêm 1 câu xám: cúp act = \"Beat the boss of this act in GOAT PATH\", cúp GOAT = \"Win a GOAT PATH run\" (dùng lại chuỗi của ACHIEVEMENTS). Chỉ hiện ở trạng thái trống, không đụng bảng phấn. Kỹ thuật: trophies.js shelfDom / boardDom, CSS .tr2-note / .tr2-how; 2 chuỗi mới ở mọi pack i18n.",
+ "why_this": "Một dòng chữ ở đúng trạng thái trống là cách rẻ nhất biến căn phòng thành mục tiêu, không đổi bố cục owner đã duyệt và tự biến mất khi đã có cúp / run.",
+ "alternatives": [
+  "Polaroid mẫu mờ (ảnh giả) trên bảng ghim — trực quan, nhưng dễ bị tưởng là run thật",
+  "Không làm gì — phòng tự đầy khi chơi, nhưng lần đầu vào người chơi không biết vì sao nó trống"
+ ],
+ "files": [
+  "src/ui/trophies.js",
+  "css/style.css",
+  "src/i18n/es.js",
+  "src/i18n/ja.js",
+  "src/i18n/pt-BR.js",
+  "src/i18n/pt-PT.js"
+ ],
+ "limits": "Bản dịch 2 câu mới là bản nháp chưa duyệt (cả hệ GOAT PATH chưa được dịch trong các pack, nên chữ 'run' chưa có thuật ngữ chốt). Video tắt sẵn số thưởng chờ nhận để phòng mở ở góc TROPHIES như người chơi mới.",
+ "videoNote": "Cùng phím: Enter vào kệ cúp, ↑ lên cúp GOAT, Esc, → → Enter sang bảng ghim. Bản mới có câu hướng dẫn ở dải dưới kệ và tờ giấy ghim trên bảng trống. Bản mới bắt đầu chậm hơn ~2 s do lúc tải.",
+ "before": "videos/menus-11-before.mp4",
+ "after": "videos/menus-11-after.mp4",
+ "status": "applied"
 }

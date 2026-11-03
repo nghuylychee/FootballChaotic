@@ -23,5 +23,6 @@
  "limits": "Khung thưởng chỉ ẩn tổng gold / XP khi cả hai bằng 0, trận thường không đổi. Co-op (người xem lượt chơi của bạn) dùng cùng màn này, chưa thử trong phòng thật.",
  "videoNote": "Bài CHICKEN CATCH, bắt 7 con (mốc 3 / 6 / 10). Xem Beat 2 (sau giây ~6): bản trước ghi 0 - 0 + bảng toàn 0, bản sau giữ thanh mốc với 7 / 10 CHICKENS.",
  "before": "videos/match-09-before.mp4",
- "after": "videos/match-09-after.mp4"
+ "after": "videos/match-09-after.mp4",
+ "status": "applied"
 }

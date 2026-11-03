@@ -1,23 +1,27 @@
 {
-  "id": "user-02",
-  "area": "run",
-  "screen": "GOAT PATH map",
-  "source": "user",
-  "severity": "high",
-  "title": "Map GOAT PATH: node đang chọn gần như không khác node khác",
-  "problem": "Cả 3 node đi được đều có vòng vàng và cùng nhún nhún. Node đang chọn chỉ to hơn chút xíu, nên bấm ←→ khó biết mình đang trỏ vào node nào. Rê chuột lên node khác thì dấu chọn vẫn đứng ở node cũ, Enter sẽ vào node cũ.",
-  "goal": "Liếc 1 cái là biết node nào đang được chọn và nó là loại gì; chuột hay phím đều dời cùng 1 dấu chọn.",
-  "why": "Chọn node là quyết định chính của mỗi tầng trong run. Vào nhầm node (vd. Elite thay vì Shop) là mất máu / mất tiền oan, người chơi sẽ thấy game 'tự chọn bậy'.",
-  "fix": "Node đi được giờ chỉ có vòng vàng đứng yên (bỏ nhún). Node đang chọn thì to hơn hẳn, vòng trắng + vàng nhấp nháy, có mũi tên vàng nhún trên đầu và nhãn tên loại node bên dưới (MATCHDAY / SKILL GAME / SHOP...). Rê chuột lên node đi được là dời luôn dấu chọn sang đó (không còn hiệu ứng hover riêng), sau đó bấm phím đi tiếp từ chỗ đó. Kỹ thuật: CSS .rm-node.sel mới + .rm-tip, RunUI.hoverNode đổi class tại chỗ (không vẽ lại), chỉ nhận khi chuột thật sự di chuyển để màn vẽ lại dưới con trỏ đứng yên không giành lại dấu chọn của phím.",
-  "why_this": "Dùng lại tên loại node có sẵn trong config (đã dịch), không thêm chuỗi. Nhãn chỉ hiện ở node đang chọn nên map không bị rối chữ, và không lộ đối thủ (đúng luật 'đối thủ biết khi vào trận').",
-  "alternatives": [
-    "Chỉ làm node chọn to hơn / sáng hơn, không nhãn — rẻ, nhưng vẫn phải nhìn bảng chú thích dưới map để biết icon là gì",
-    "Panel thông tin cố định ở góc (tên node + mô tả + phần thưởng) — nhiều thông tin hơn, nhưng mắt phải chạy ra góc và tốn chỗ của map",
-    "Làm mờ các node đi được còn lại thay vì làm nổi node chọn — tương phản rõ, nhưng người chơi dễ tưởng node mờ là không đi được"
-  ],
-  "files": ["src/ui/runmap.js", "css/style.css"],
-  "limits": "Phòng co-op: chấm bỏ phiếu (.rv) nằm ngay dưới node, nhãn tên nằm dưới chấm phiếu, chưa thử với phòng thật. Node boss khi chọn: mũi tên sát mép trên khung map.",
-  "videoNote": "→ → bằng phím, rồi rê chuột qua node trái và node phải, cuối cùng ←. Bản cũ: chuột ở node trái nhưng dấu chọn vẫn ở node phải.",
-  "before": "videos/user-02-before.mp4",
-  "after": "videos/user-02-after.mp4"
+ "id": "user-02",
+ "area": "run",
+ "screen": "GOAT PATH map",
+ "source": "user",
+ "severity": "high",
+ "title": "Map GOAT PATH: node đang chọn gần như không khác node khác",
+ "problem": "Cả 3 node đi được đều có vòng vàng và cùng nhún nhún. Node đang chọn chỉ to hơn chút xíu, nên bấm ←→ khó biết mình đang trỏ vào node nào. Rê chuột lên node khác thì dấu chọn vẫn đứng ở node cũ, Enter sẽ vào node cũ.",
+ "goal": "Liếc 1 cái là biết node nào đang được chọn và nó là loại gì; chuột hay phím đều dời cùng 1 dấu chọn.",
+ "why": "Chọn node là quyết định chính của mỗi tầng trong run. Vào nhầm node (vd. Elite thay vì Shop) là mất máu / mất tiền oan, người chơi sẽ thấy game 'tự chọn bậy'.",
+ "fix": "Node đi được giờ chỉ có vòng vàng đứng yên (bỏ nhún). Node đang chọn thì to hơn hẳn, vòng trắng + vàng nhấp nháy, có mũi tên vàng nhún trên đầu và nhãn tên loại node bên dưới (MATCHDAY / SKILL GAME / SHOP...). Rê chuột lên node đi được là dời luôn dấu chọn sang đó (không còn hiệu ứng hover riêng), sau đó bấm phím đi tiếp từ chỗ đó. Kỹ thuật: CSS .rm-node.sel mới + .rm-tip, RunUI.hoverNode đổi class tại chỗ (không vẽ lại), chỉ nhận khi chuột thật sự di chuyển để màn vẽ lại dưới con trỏ đứng yên không giành lại dấu chọn của phím.",
+ "why_this": "Dùng lại tên loại node có sẵn trong config (đã dịch), không thêm chuỗi. Nhãn chỉ hiện ở node đang chọn nên map không bị rối chữ, và không lộ đối thủ (đúng luật 'đối thủ biết khi vào trận').",
+ "alternatives": [
+  "Chỉ làm node chọn to hơn / sáng hơn, không nhãn — rẻ, nhưng vẫn phải nhìn bảng chú thích dưới map để biết icon là gì",
+  "Panel thông tin cố định ở góc (tên node + mô tả + phần thưởng) — nhiều thông tin hơn, nhưng mắt phải chạy ra góc và tốn chỗ của map",
+  "Làm mờ các node đi được còn lại thay vì làm nổi node chọn — tương phản rõ, nhưng người chơi dễ tưởng node mờ là không đi được"
+ ],
+ "files": [
+  "src/ui/runmap.js",
+  "css/style.css"
+ ],
+ "limits": "Phòng co-op: chấm bỏ phiếu (.rv) nằm ngay dưới node, nhãn tên nằm dưới chấm phiếu, chưa thử với phòng thật. Node boss khi chọn: mũi tên sát mép trên khung map.",
+ "videoNote": "→ → bằng phím, rồi rê chuột qua node trái và node phải, cuối cùng ←. Bản cũ: chuột ở node trái nhưng dấu chọn vẫn ở node phải.",
+ "before": "videos/user-02-before.mp4",
+ "after": "videos/user-02-after.mp4",
+ "status": "applied"
 }

@@ -1,22 +1,31 @@
 {
-  "id": "menus-07",
-  "area": "menus",
-  "screen": "CHARACTER › APPEARANCE / INVENTORY",
-  "source": "agent",
-  "severity": "med",
-  "title": "Hai chỗ cùng tên APPEARANCE, muốn đổi mũ / ăn mừng không biết vào đâu",
-  "problem": "Trang CHARACTER liệt kê đồ đang mặc (HAIR & HATS, SHOES, CELEBRATION...) ngay cạnh nút APPEARANCE, nên ai muốn đổi mũ hay kiểu ăn mừng sẽ bấm APPEARANCE — nhưng trong đó chỉ có RENAME, SKIN COLOR, HAIR COLOR. Trang phục thật nằm ở INVENTORY, trong một tab cũng tên APPEARANCE. Bảng đồ đang mặc thì không bấm được.",
-  "goal": "Người muốn đổi trang phục / ăn mừng đi theo lối tự nhiên nhất (CHARACTER › APPEARANCE, hoặc bấm vào đồ đang mặc) đều tới đúng lưới trang phục.",
-  "why": "Kiểu ăn mừng và trang phục là phần thưởng chính của SHOP và ACHIEVEMENTS; không tìm ra chỗ mặc thì phần thưởng mất giá trị.",
-  "fix": "Trang APPEARANCE có thêm dòng COSTUMES (\"Hats · shoes · trail FX · celebrations\") dẫn thẳng tới lưới trang phục. Tab trang phục trong INVENTORY đổi tên từ APPEARANCE thành COSTUMES, hết trùng tên. Mỗi dòng đồ đang mặc ở bảng phải CHARACTER giờ bấm được: mở COSTUMES lọc sẵn đúng slot đó và chọn sẵn món đang mặc. Kỹ thuật: Gacha.openSlot(menu, slot, back) mới; menu.js thêm 1 dòng ở trang 'look' và 3 dòng trong bindMouse (data-eqslot); 2 chuỗi mới ở mọi pack i18n.",
-  "why_this": "Không dời tính năng nào, chỉ thêm lối vào ở đúng chỗ người chơi tìm và bỏ cái tên trùng, nên rẻ và không đụng logic mặc / phân rã.",
-  "alternatives": [
-    "Dời hẳn trang phục sang trang APPEARANCE (bỏ khỏi INVENTORY) — gọn nhất về khái niệm, nhưng phải viết lại lưới + bảng chi tiết + đường phân rã",
-    "Chỉ đổi tên tab thành COSTUMES — rẻ nhất, nhưng người vào APPEARANCE vẫn không thấy đường tới trang phục"
-  ],
-  "files": ["src/ui/gacha.js", "src/ui/menu.js", "css/style.css", "src/i18n/es.js", "src/i18n/ja.js", "src/i18n/pt-BR.js", "src/i18n/pt-PT.js"],
-  "limits": "Dòng đồ đang mặc ở CHARACTER chỉ bấm được bằng chuột (bàn phím / tay cầm đi qua APPEARANCE › COSTUMES). menu.js bindMouse có agent khác cũng sửa — 3 dòng thêm ở ngay sau dòng CV().click, có thể cần gộp tay. Bản dịch mới là bản nháp chưa duyệt.",
-  "videoNote": "Bản cũ: APPEARANCE chỉ có tên / màu, bấm dòng CELEBRATION không có gì, tab INVENTORY cũng tên APPEARANCE. Bản mới: APPEARANCE có COSTUMES dẫn tới lưới trang phục, bấm CELEBRATION mở đúng lưới ăn mừng, tab tên COSTUMES.",
-  "before": "videos/menus-07-before.mp4",
-  "after": "videos/menus-07-after.mp4"
+ "id": "menus-07",
+ "area": "menus",
+ "screen": "CHARACTER › APPEARANCE / INVENTORY",
+ "source": "agent",
+ "severity": "med",
+ "title": "Hai chỗ cùng tên APPEARANCE, muốn đổi mũ / ăn mừng không biết vào đâu",
+ "problem": "Trang CHARACTER liệt kê đồ đang mặc (HAIR & HATS, SHOES, CELEBRATION...) ngay cạnh nút APPEARANCE, nên ai muốn đổi mũ hay kiểu ăn mừng sẽ bấm APPEARANCE — nhưng trong đó chỉ có RENAME, SKIN COLOR, HAIR COLOR. Trang phục thật nằm ở INVENTORY, trong một tab cũng tên APPEARANCE. Bảng đồ đang mặc thì không bấm được.",
+ "goal": "Người muốn đổi trang phục / ăn mừng đi theo lối tự nhiên nhất (CHARACTER › APPEARANCE, hoặc bấm vào đồ đang mặc) đều tới đúng lưới trang phục.",
+ "why": "Kiểu ăn mừng và trang phục là phần thưởng chính của SHOP và ACHIEVEMENTS; không tìm ra chỗ mặc thì phần thưởng mất giá trị.",
+ "fix": "Trang APPEARANCE có thêm dòng COSTUMES (\"Hats · shoes · trail FX · celebrations\") dẫn thẳng tới lưới trang phục. Tab trang phục trong INVENTORY đổi tên từ APPEARANCE thành COSTUMES, hết trùng tên. Mỗi dòng đồ đang mặc ở bảng phải CHARACTER giờ bấm được: mở COSTUMES lọc sẵn đúng slot đó và chọn sẵn món đang mặc. Kỹ thuật: Gacha.openSlot(menu, slot, back) mới; menu.js thêm 1 dòng ở trang 'look' và 3 dòng trong bindMouse (data-eqslot); 2 chuỗi mới ở mọi pack i18n.",
+ "why_this": "Không dời tính năng nào, chỉ thêm lối vào ở đúng chỗ người chơi tìm và bỏ cái tên trùng, nên rẻ và không đụng logic mặc / phân rã.",
+ "alternatives": [
+  "Dời hẳn trang phục sang trang APPEARANCE (bỏ khỏi INVENTORY) — gọn nhất về khái niệm, nhưng phải viết lại lưới + bảng chi tiết + đường phân rã",
+  "Chỉ đổi tên tab thành COSTUMES — rẻ nhất, nhưng người vào APPEARANCE vẫn không thấy đường tới trang phục"
+ ],
+ "files": [
+  "src/ui/gacha.js",
+  "src/ui/menu.js",
+  "css/style.css",
+  "src/i18n/es.js",
+  "src/i18n/ja.js",
+  "src/i18n/pt-BR.js",
+  "src/i18n/pt-PT.js"
+ ],
+ "limits": "Dòng đồ đang mặc ở CHARACTER chỉ bấm được bằng chuột (bàn phím / tay cầm đi qua APPEARANCE › COSTUMES). menu.js bindMouse có agent khác cũng sửa — 3 dòng thêm ở ngay sau dòng CV().click, có thể cần gộp tay. Bản dịch mới là bản nháp chưa duyệt.",
+ "videoNote": "Bản cũ: APPEARANCE chỉ có tên / màu, bấm dòng CELEBRATION không có gì, tab INVENTORY cũng tên APPEARANCE. Bản mới: APPEARANCE có COSTUMES dẫn tới lưới trang phục, bấm CELEBRATION mở đúng lưới ăn mừng, tab tên COSTUMES.",
+ "before": "videos/menus-07-before.mp4",
+ "after": "videos/menus-07-after.mp4",
+ "status": "applied"
 }

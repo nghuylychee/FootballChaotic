@@ -23,5 +23,6 @@
  "limits": "Mô tả BADGE chỉ có ở tooltip (tay cầm chỉ thấy icon + tên luật / LEGEND / phím). Phòng online có thêm dòng 'Online matches keep running': đã bớt khoảng trên để dải không chạm hàng nút, nhưng sát (~3 px). Chưa dời banner luật sân lúc giao bóng.",
  "videoNote": "Đầu video là banner PLASTIC STOOLS lúc giao bóng, rồi mở Pause: bản sau có dải luật sân / LEGEND / TEAM BADGES ở dưới, rê chuột ra tooltip LEGEND và BADGE.",
  "before": "videos/match-08-before.mp4",
- "after": "videos/match-08-after.mp4"
+ "after": "videos/match-08-after.mp4",
+ "status": "applied"
 }

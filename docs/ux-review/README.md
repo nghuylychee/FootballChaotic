@@ -23,6 +23,7 @@ Owner thấy UX cả game chưa được tút lại, nêu 6 chỗ (trang chủ 3
 
 - 2026-11-02 — Review + sửa thử + quay video + publish báo cáo. Chưa có góp ý.
 - 2026-11-02 — Góp ý của owner: 38 vấn đề `ok`, `match-10` `skip` (đã ghi `"status": "dropped"`), không có note. Áp 38 patch + `zz-integration` lên nhánh `ux/review-2026-11` (worktree `G:/FootballChaotic-ux`, chưa commit) ở máy khác máy tạo patch; build lại font ja; `node --check`, `i18n-check`, `manifest --check`, `npm run server:test` qua; mở thử trong Chrome headless (menu, TROPHY ROOM, ACHIEVEMENTS, map, mọi thẻ che, KIT VAN, trận `?runtest=match`, `?playtest`) không có lỗi JS. Báo cáo trên artifact chưa build lại (video không có ở máy này), nên `match-10` vẫn hiện trên trang.
+- 2026-11-03 — Máy tạo patch: pull main mới (8 commit, có tách `shared/`), merge `origin/main` vào `ux/review-2026-11`: xung đột chỉ ở dòng chú thích đầu `src/ui/runmap.js` (gộp 2 bên) và font ja (build lại từ `ja.js` đã merge). Bản sửa NaN của `match-01` theo file sang `shared/meta/profile.js`. Đối chiếu trước merge: nhánh = bản gộp 39 patch trừ đúng `match-10`. `node --check`, `i18n-check`, `manifest --check`, `npm run server:test` (10 file) qua; chụp Chrome headless trang chủ, PLAY, map, KIT VAN, thẻ BADGE, VS, draft (thanh giờ), Pause: đúng. Ghi `"status": "applied"` cho 38 issue, báo cáo publish lại (nhãn Đã áp, bỏ `match-10`).
 <!-- mỗi lần xử lý góp ý: thêm 1 dòng ở đây (ngày · vấn đề nào giữ / sửa lại / bỏ · đã áp vào đâu) -->
 
 ## Đọc góp ý của owner

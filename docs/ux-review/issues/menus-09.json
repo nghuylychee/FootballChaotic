@@ -1,23 +1,27 @@
 {
-  "id": "menus-09",
-  "area": "menus",
-  "screen": "CHARACTER / ULT BOOK / SETTINGS / APPEARANCE (trang con của menu)",
-  "source": "agent",
-  "severity": "low",
-  "title": "Trận demo phía sau lộ qua chữ menu, chữ SMASH! / SAVE! nhảy sau bảng",
-  "problem": "Ở các trang con, nền chỉ tối một phần nên trận demo vẫn chạy rõ phía sau: cầu thủ chạy ngang qua chữ, chữ bật ra to như SMASH! hiện ngay sau lá bài ULT BOOK hay bảng nhân vật. Mắt bị kéo đi và chữ khó đọc hơn, nhất là các bảng nằm bên phải.",
-  "goal": "Trang chủ vẫn có trận demo sống động, còn trang để đọc thì nền đủ yên để chữ và bảng nổi lên.",
-  "why": "Đây là các trang người chơi phải đọc kỹ (Ultimate, đồ, cài đặt). Thứ chuyển động sau chữ làm mệt mắt và trông lộn xộn.",
-  "fix": "Các trang con có dòng tiêu đề (CHARACTER, ULT BOOK, STATS, APPEARANCE, SETTINGS, SOUND & DISPLAY, các trang TEST) giờ có nền tối gần kín cả bề ngang; trận demo chỉ còn thấp thoáng. Ngoài trang chủ, chữ bật ra của trận demo (SMASH!, SAVE!, POW!...) bị tắt hẳn. Kỹ thuật: CSS nền riêng cho #menu.m-headed (gradient 0.95 → 0.84, cách trang TEST đã làm); main.js xoá effects.V.pops của trận demo mỗi khung khi Menu.page khác 'home'.",
-  "why_this": "Sửa 2 dòng, theo tiền lệ có sẵn (trang TEST), không đụng trang chủ và không đụng các trang của module khác (SHOP, TROPHY ROOM...).",
-  "alternatives": [
-    "Dừng hẳn trận demo khi rời trang chủ — nhẹ máy, nhưng nền đứng hình trông như game bị treo",
-    "Làm mờ (blur) canvas nền — đẹp kiểu game hiện đại, nhưng không hợp phong cách pixel và tốn GPU",
-    "Chỉ tối hơn nửa phải, giữ chữ bật ra — ít đổi nhất, nhưng chữ to vẫn nhảy sau bảng"
-  ],
-  "files": ["css/style.css", "src/main.js"],
-  "limits": "Chữ bật ra bị tắt ở mọi trang ngoài trang chủ, kể cả màn PLAY (nền ở đó không đổi). Các trang SHOP / INVENTORY / TROPHY ROOM không đổi nền (của agent khác).",
-  "videoNote": "Chữ SMASH! / SAVE! / POW! trong video được script gọi thêm cho chắc chắn hiện (trận demo thật cũng bật ra ngẫu nhiên như vậy); bản sau không còn chữ nào và nền tối hơn.",
-  "before": "videos/menus-09-before.mp4",
-  "after": "videos/menus-09-after.mp4"
+ "id": "menus-09",
+ "area": "menus",
+ "screen": "CHARACTER / ULT BOOK / SETTINGS / APPEARANCE (trang con của menu)",
+ "source": "agent",
+ "severity": "low",
+ "title": "Trận demo phía sau lộ qua chữ menu, chữ SMASH! / SAVE! nhảy sau bảng",
+ "problem": "Ở các trang con, nền chỉ tối một phần nên trận demo vẫn chạy rõ phía sau: cầu thủ chạy ngang qua chữ, chữ bật ra to như SMASH! hiện ngay sau lá bài ULT BOOK hay bảng nhân vật. Mắt bị kéo đi và chữ khó đọc hơn, nhất là các bảng nằm bên phải.",
+ "goal": "Trang chủ vẫn có trận demo sống động, còn trang để đọc thì nền đủ yên để chữ và bảng nổi lên.",
+ "why": "Đây là các trang người chơi phải đọc kỹ (Ultimate, đồ, cài đặt). Thứ chuyển động sau chữ làm mệt mắt và trông lộn xộn.",
+ "fix": "Các trang con có dòng tiêu đề (CHARACTER, ULT BOOK, STATS, APPEARANCE, SETTINGS, SOUND & DISPLAY, các trang TEST) giờ có nền tối gần kín cả bề ngang; trận demo chỉ còn thấp thoáng. Ngoài trang chủ, chữ bật ra của trận demo (SMASH!, SAVE!, POW!...) bị tắt hẳn. Kỹ thuật: CSS nền riêng cho #menu.m-headed (gradient 0.95 → 0.84, cách trang TEST đã làm); main.js xoá effects.V.pops của trận demo mỗi khung khi Menu.page khác 'home'.",
+ "why_this": "Sửa 2 dòng, theo tiền lệ có sẵn (trang TEST), không đụng trang chủ và không đụng các trang của module khác (SHOP, TROPHY ROOM...).",
+ "alternatives": [
+  "Dừng hẳn trận demo khi rời trang chủ — nhẹ máy, nhưng nền đứng hình trông như game bị treo",
+  "Làm mờ (blur) canvas nền — đẹp kiểu game hiện đại, nhưng không hợp phong cách pixel và tốn GPU",
+  "Chỉ tối hơn nửa phải, giữ chữ bật ra — ít đổi nhất, nhưng chữ to vẫn nhảy sau bảng"
+ ],
+ "files": [
+  "css/style.css",
+  "src/main.js"
+ ],
+ "limits": "Chữ bật ra bị tắt ở mọi trang ngoài trang chủ, kể cả màn PLAY (nền ở đó không đổi). Các trang SHOP / INVENTORY / TROPHY ROOM không đổi nền (của agent khác).",
+ "videoNote": "Chữ SMASH! / SAVE! / POW! trong video được script gọi thêm cho chắc chắn hiện (trận demo thật cũng bật ra ngẫu nhiên như vậy); bản sau không còn chữ nào và nền tối hơn.",
+ "before": "videos/menus-09-before.mp4",
+ "after": "videos/menus-09-after.mp4",
+ "status": "applied"
 }

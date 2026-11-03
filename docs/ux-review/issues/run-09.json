@@ -1,23 +1,28 @@
 {
-  "id": "run-09",
-  "area": "run",
-  "screen": "Run map top bar + SQUAD sheet",
-  "source": "agent",
-  "severity": "med",
-  "title": "Dải đội hình là nút ẩn; đọc BADGE / GEAR chỉ được bằng rê chuột",
-  "problem": "Chỗ duy nhất xem đội hình, BADGE và GEAR trên map là dải 3 khuôn mặt + OVR ở góc trên trái, nhưng không có chữ hay icon nào cho biết đó là nút SQUAD; vạch GEAR dưới OVR màu tối gần như vô hình và lòi ra ngoài viền. Trên map không thấy BADGE của đội ở đâu. Mở SQUAD bằng phím / tay cầm thì chỉ chọn được CLOSE, mô tả BADGE / GEAR / LEGEND chỉ hiện khi rê chuột.",
-  "goal": "Trên map thấy ngay chỗ mở SQUAD và BADGE của đội; trong SQUAD đọc được mọi BADGE / GEAR / LEGEND bằng phím hay tay cầm.",
-  "why": "BADGE là thứ người chơi nhặt cả run để build đội. Không nhìn lại được (nhất là người chơi tay cầm) thì lựa chọn BADGE / GEAR sau đó thành chọn mù.",
-  "fix": "Dải đội hình giờ có nhãn SQUAD (icon người + chữ) ở đầu và hàng icon BADGE của đội ở cuối (tối đa 6, dư thì +n), vạch GEAR trống sáng hơn và nằm gọn trong viền. Trong SQUAD, ←↑↓→ đi theo vị trí trên màn qua CLOSE, từng LEGEND / GEAR / chấn thương của 3 cầu thủ và từng BADGE của đội; món đang chọn có viền vàng và hiện luôn bảng mô tả y như khi rê chuột. CLOSE vẫn được chọn sẵn, Enter trên món chỉ để xem. Kỹ thuật: RunUI.strip / bagInfoN / bindBag (mục 'info'), SFC.Tip.showFor(el) mới trong helpers.js (bảng hiện bằng phím, không cần chuột đang trỏ); không thêm chuỗi (dùng lại SQUAD).",
-  "why_this": "Dùng lại đúng bảng tooltip đã có cho phím / tay cầm thay vì làm màn mới; nhãn SQUAD + icon BADGE cho thấy ngay nút này mở ra cái gì mà không tốn chỗ trên map.",
-  "alternatives": [
-    "Trang SQUAD thêm cột chữ mô tả mọi BADGE — đọc được ngay không cần chọn, nhưng nhiều chữ, trái hướng 'hình là chính'",
-    "Panel BADGE luôn mở bên cạnh map — tiện, nhưng chiếm chỗ của map vốn đã chật",
-    "Giữ 1 phím trên map để xem nhanh BADGE (peek) — nhanh, nhưng thêm phím phải dạy"
-  ],
-  "files": ["src/ui/runmap.js", "src/ui/helpers.js", "css/style.css"],
-  "limits": "Đổi chung SFC.Tip (helpers.js) nhưng chỉ có tác dụng khi gọi showFor; tooltip rê chuột ở mọi màn khác giữ nguyên. Hàng ô trống (LEGEND chưa có, GEAR trống) không chọn được bằng phím. Đi phím trong SQUAD dùng chung nhánh 'theo vị trí' với BUILD YOUR SQUAD — agent làm điều hướng thẻ che (run-08) có thể đụng cùng đoạn input().",
-  "videoNote": "Rê chuột qua dải đội hình, rồi ↓ Enter mở SQUAD và ↑ → ↑ ←. Bản cũ phím không đi đâu (luôn CLOSE); bản mới từng BADGE / GEAR / LEGEND sáng lên kèm bảng mô tả. Đội hình random do dùng ?runtest.",
-  "before": "videos/run-09-before.mp4",
-  "after": "videos/run-09-after.mp4"
+ "id": "run-09",
+ "area": "run",
+ "screen": "Run map top bar + SQUAD sheet",
+ "source": "agent",
+ "severity": "med",
+ "title": "Dải đội hình là nút ẩn; đọc BADGE / GEAR chỉ được bằng rê chuột",
+ "problem": "Chỗ duy nhất xem đội hình, BADGE và GEAR trên map là dải 3 khuôn mặt + OVR ở góc trên trái, nhưng không có chữ hay icon nào cho biết đó là nút SQUAD; vạch GEAR dưới OVR màu tối gần như vô hình và lòi ra ngoài viền. Trên map không thấy BADGE của đội ở đâu. Mở SQUAD bằng phím / tay cầm thì chỉ chọn được CLOSE, mô tả BADGE / GEAR / LEGEND chỉ hiện khi rê chuột.",
+ "goal": "Trên map thấy ngay chỗ mở SQUAD và BADGE của đội; trong SQUAD đọc được mọi BADGE / GEAR / LEGEND bằng phím hay tay cầm.",
+ "why": "BADGE là thứ người chơi nhặt cả run để build đội. Không nhìn lại được (nhất là người chơi tay cầm) thì lựa chọn BADGE / GEAR sau đó thành chọn mù.",
+ "fix": "Dải đội hình giờ có nhãn SQUAD (icon người + chữ) ở đầu và hàng icon BADGE của đội ở cuối (tối đa 6, dư thì +n), vạch GEAR trống sáng hơn và nằm gọn trong viền. Trong SQUAD, ←↑↓→ đi theo vị trí trên màn qua CLOSE, từng LEGEND / GEAR / chấn thương của 3 cầu thủ và từng BADGE của đội; món đang chọn có viền vàng và hiện luôn bảng mô tả y như khi rê chuột. CLOSE vẫn được chọn sẵn, Enter trên món chỉ để xem. Kỹ thuật: RunUI.strip / bagInfoN / bindBag (mục 'info'), SFC.Tip.showFor(el) mới trong helpers.js (bảng hiện bằng phím, không cần chuột đang trỏ); không thêm chuỗi (dùng lại SQUAD).",
+ "why_this": "Dùng lại đúng bảng tooltip đã có cho phím / tay cầm thay vì làm màn mới; nhãn SQUAD + icon BADGE cho thấy ngay nút này mở ra cái gì mà không tốn chỗ trên map.",
+ "alternatives": [
+  "Trang SQUAD thêm cột chữ mô tả mọi BADGE — đọc được ngay không cần chọn, nhưng nhiều chữ, trái hướng 'hình là chính'",
+  "Panel BADGE luôn mở bên cạnh map — tiện, nhưng chiếm chỗ của map vốn đã chật",
+  "Giữ 1 phím trên map để xem nhanh BADGE (peek) — nhanh, nhưng thêm phím phải dạy"
+ ],
+ "files": [
+  "src/ui/runmap.js",
+  "src/ui/helpers.js",
+  "css/style.css"
+ ],
+ "limits": "Đổi chung SFC.Tip (helpers.js) nhưng chỉ có tác dụng khi gọi showFor; tooltip rê chuột ở mọi màn khác giữ nguyên. Hàng ô trống (LEGEND chưa có, GEAR trống) không chọn được bằng phím. Đi phím trong SQUAD dùng chung nhánh 'theo vị trí' với BUILD YOUR SQUAD — agent làm điều hướng thẻ che (run-08) có thể đụng cùng đoạn input().",
+ "videoNote": "Rê chuột qua dải đội hình, rồi ↓ Enter mở SQUAD và ↑ → ↑ ←. Bản cũ phím không đi đâu (luôn CLOSE); bản mới từng BADGE / GEAR / LEGEND sáng lên kèm bảng mô tả. Đội hình random do dùng ?runtest.",
+ "before": "videos/run-09-before.mp4",
+ "after": "videos/run-09-after.mp4",
+ "status": "applied"
 }

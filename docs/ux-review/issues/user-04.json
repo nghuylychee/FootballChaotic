@@ -1,23 +1,26 @@
 {
-  "id": "user-04",
-  "area": "run",
-  "screen": "KIT VAN",
-  "source": "user",
-  "severity": "low",
-  "title": "Ông chú KIT VAN nhìn như đứng trên cửa sổ xe",
-  "problem": "Tài xế được vẽ nguyên người, giày chạm mép dưới cửa kính cabin, nên nhìn như ổng đang đứng trên khung cửa chứ không phải ngồi lái xe.",
-  "goal": "Nhìn qua là thấy tài xế đang ngồi trong cabin, chỉ ló đầu và vai qua cửa kính.",
-  "why": "KIT VAN là cảnh pixel vẽ tay, chi tiết sai tỉ lệ như vậy làm cảnh trông lỗi và mất chất 'xe bán đồ ven đường'.",
-  "fix": "Giờ tài xế ngồi: có ghế lái (tựa đầu + lưng ghế) sau lưng, bậu cửa màu thân xe che từ ngực trở xuống, 2 bàn tay tì lên mép bậu. Kỹ thuật: trong kitvan.js hạ sprite tài xế 2px (SEAT_Y), cắt khung kính ngắn lại tới bậu, thêm 2 hàm vẽ pixel seat() và sill() (màu cứng, viền mực, không gradient); chuyển động thở / nhún theo máy xe vẫn giữ.",
-  "why_this": "Giữ nguyên sprite nhân vật dùng chung, chỉ thêm vài khối pixel quanh nó nên ít rủi ro và đúng luật vẽ của KIT VAN.",
-  "alternatives": [
-    "Một khuỷu tay gác ra ngoài cửa kiểu tài xế xe tải — có hồn hơn, nhưng sprite chibi tay rất ngắn nên vẽ tay dài ra trông như cây gậy (đã thử, xấu)",
-    "Tay cầm vô lăng ở góc phải cửa kính — đúng chất 'đang lái', nhưng tài xế đang quay mặt về phía quầy nên tay và vô lăng chồng lên nhau, khó đọc ở cỡ 1px = 4px màn hình",
-    "Vẽ riêng 1 sprite tài xế nửa người — đẹp nhất, nhưng phải vẽ tay cả khung hình mới thay cho sprite dùng chung, tốn công"
-  ],
-  "files": ["src/ui/kitvan.js"],
-  "limits": "Chỉ đổi phần cabin; nếu sau này đổi ngoại hình tài xế (DRIVER) thì vị trí 2 bàn tay có thể cần chỉnh lại vài px.",
-  "videoNote": "Nửa sau video phóng to vào cabin: trước = thấy cả giày đứng trên khung kính; sau = ghế lái + bậu cửa che người.",
-  "before": "videos/user-04-before.mp4",
-  "after": "videos/user-04-after.mp4"
+ "id": "user-04",
+ "area": "run",
+ "screen": "KIT VAN",
+ "source": "user",
+ "severity": "low",
+ "title": "Ông chú KIT VAN nhìn như đứng trên cửa sổ xe",
+ "problem": "Tài xế được vẽ nguyên người, giày chạm mép dưới cửa kính cabin, nên nhìn như ổng đang đứng trên khung cửa chứ không phải ngồi lái xe.",
+ "goal": "Nhìn qua là thấy tài xế đang ngồi trong cabin, chỉ ló đầu và vai qua cửa kính.",
+ "why": "KIT VAN là cảnh pixel vẽ tay, chi tiết sai tỉ lệ như vậy làm cảnh trông lỗi và mất chất 'xe bán đồ ven đường'.",
+ "fix": "Giờ tài xế ngồi: có ghế lái (tựa đầu + lưng ghế) sau lưng, bậu cửa màu thân xe che từ ngực trở xuống, 2 bàn tay tì lên mép bậu. Kỹ thuật: trong kitvan.js hạ sprite tài xế 2px (SEAT_Y), cắt khung kính ngắn lại tới bậu, thêm 2 hàm vẽ pixel seat() và sill() (màu cứng, viền mực, không gradient); chuyển động thở / nhún theo máy xe vẫn giữ.",
+ "why_this": "Giữ nguyên sprite nhân vật dùng chung, chỉ thêm vài khối pixel quanh nó nên ít rủi ro và đúng luật vẽ của KIT VAN.",
+ "alternatives": [
+  "Một khuỷu tay gác ra ngoài cửa kiểu tài xế xe tải — có hồn hơn, nhưng sprite chibi tay rất ngắn nên vẽ tay dài ra trông như cây gậy (đã thử, xấu)",
+  "Tay cầm vô lăng ở góc phải cửa kính — đúng chất 'đang lái', nhưng tài xế đang quay mặt về phía quầy nên tay và vô lăng chồng lên nhau, khó đọc ở cỡ 1px = 4px màn hình",
+  "Vẽ riêng 1 sprite tài xế nửa người — đẹp nhất, nhưng phải vẽ tay cả khung hình mới thay cho sprite dùng chung, tốn công"
+ ],
+ "files": [
+  "src/ui/kitvan.js"
+ ],
+ "limits": "Chỉ đổi phần cabin; nếu sau này đổi ngoại hình tài xế (DRIVER) thì vị trí 2 bàn tay có thể cần chỉnh lại vài px.",
+ "videoNote": "Nửa sau video phóng to vào cabin: trước = thấy cả giày đứng trên khung kính; sau = ghế lái + bậu cửa che người.",
+ "before": "videos/user-04-before.mp4",
+ "after": "videos/user-04-after.mp4",
+ "status": "applied"
 }

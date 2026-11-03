@@ -26,5 +26,6 @@
  "limits": "Giữ nguyên chữ FULL trên ô tối (theo quyết định 2026-10-31). Chưa thử với tay cầm thật (cùng hành động 'ultimate' nên chạy y vậy). Âm 'deny' là tiếng synth tạm, đã ghi vào docs/SFX.md.",
  "videoNote": "Đồng đội cầm bóng, ô Ultimate đầy nhưng tối; bấm Space 2 lần: bản trước im re, bản sau ô rung + dòng 'Use it while you hold the ball'. Cuối video tự cầm bóng, bấm lại thì ra Meteor Shot ở cả 2 bản.",
  "before": "videos/match-07-before.mp4",
- "after": "videos/match-07-after.mp4"
+ "after": "videos/match-07-after.mp4",
+ "status": "applied"
 }

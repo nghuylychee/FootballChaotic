@@ -1,23 +1,27 @@
 {
-  "id": "run-06",
-  "area": "run",
-  "screen": "??? event",
-  "source": "agent",
-  "severity": "med",
-  "title": "Sự kiện ???: gợi ý khó hiểu, chọn sẵn lựa chọn không dùng được, kết quả chỉ là 1 dòng nhỏ",
-  "problem": "Nút lựa chọn ghi tắt khó đoán ('Train hard BADGE 💥?', 'Bet -$25 $60?'). Không đủ tiền thì nút Bet mờ nhưng vẫn được chọn sẵn, Enter chỉ ra câu chung 'You cannot do that right now.'. Chọn xong thẻ biến mất ngay, kết quả chỉ là 1 dòng nhỏ ở đáy map đè lên bảng chú thích: thắng thì 'Run cash +$60' (thực ra chỉ lời 35 vì đã trả 25), thua thì 'No luck.' và tiền tụt mà không giải thích.",
-  "goal": "Biết rõ mỗi lựa chọn được / mất gì trước khi chọn, và thấy rõ chuyện gì vừa xảy ra.",
-  "why": "??? là chỗ duy nhất người chơi đánh cược trong run; kết quả trôi qua trong 1 dòng nhỏ thì mất hết cảm giác hồi hộp, còn số tiền sai làm người chơi thấy game ăn gian.",
-  "fix": "Nút lựa chọn giờ có chip màu: tiền trả đỏ '-$25', tiền có thể thắng xanh '+$60?', BADGE vàng bo tròn, có thể chấn thương ✚? đỏ, chữa hết ✚ xanh. Lựa chọn chưa làm được không còn được chọn sẵn (phím bỏ qua), bấm vào thì nói đúng lý do 'Not enough cash.'. Chọn xong thẻ đứng lại ở trạng thái kết quả: mỗi dòng 1 icon + kết quả (tiền đã trả đỏ, tiền thắng xanh, BADGE nhận được, chấn thương đỏ...), bấm CONTINUE mới về map; chọn 'bỏ đi' (không có gì xảy ra) thì về map luôn. Kỹ thuật: runmap.js targets() đánh dấu dis theo Run.canChoose, eventCard vẽ chip, sayEvent lưu kết quả vào RunUI.ev, thẻ mới eventResult + mục 'evok'. Không thêm chữ mới.",
-  "why_this": "Dùng lại chip / icon / chuỗi có sẵn nên không phải dịch thêm; kết quả thành 1 khoảnh khắc nhìn thấy được mà không đổi luật hay dữ liệu run.",
-  "alternatives": [
-    "Chỉ viết lại câu gợi ý — rẻ, nhưng kết quả vẫn trôi qua trong 1 dòng nhỏ",
-    "Toast kết quả to giữa màn 2 giây — có cảm xúc, nhưng không chờ người chơi đọc và co-op dễ lệch nhịp",
-    "Lưu kết quả vào dữ liệu run (R.room) để cả phòng co-op cùng thấy — đúng nhất cho co-op, nhưng phải sửa Run (lọc dữ liệu bản sao) + có thể cả máy chủ, việc lớn hơn nhiều"
-  ],
-  "files": ["src/ui/runmap.js", "css/style.css"],
-  "limits": "Co-op: thẻ kết quả chỉ hiện ở máy giữ run (host); khách vẫn chỉ thấy map như trước (trước đây khách cũng không thấy gì). Lựa chọn 'Get treated' khi không ai bị thương vẫn nói câu chung 'You cannot do that right now.' (chưa có chuỗi riêng). Ký hiệu ✚ trong font pixel hiện thành dấu +.",
-  "videoNote": "3 cảnh: tiền 10 bấm Bet (trước: Bet mờ mà vẫn đang được chọn, câu chung chung; sau: chọn sẵn Pass, nói 'Not enough cash.') · cược thắng · OLD COACH được BADGE + chấn thương (trước: 1 dòng nhỏ dưới map; sau: thẻ kết quả + CONTINUE).",
-  "before": "videos/run-06-before.mp4",
-  "after": "videos/run-06-after.mp4"
+ "id": "run-06",
+ "area": "run",
+ "screen": "??? event",
+ "source": "agent",
+ "severity": "med",
+ "title": "Sự kiện ???: gợi ý khó hiểu, chọn sẵn lựa chọn không dùng được, kết quả chỉ là 1 dòng nhỏ",
+ "problem": "Nút lựa chọn ghi tắt khó đoán ('Train hard BADGE 💥?', 'Bet -$25 $60?'). Không đủ tiền thì nút Bet mờ nhưng vẫn được chọn sẵn, Enter chỉ ra câu chung 'You cannot do that right now.'. Chọn xong thẻ biến mất ngay, kết quả chỉ là 1 dòng nhỏ ở đáy map đè lên bảng chú thích: thắng thì 'Run cash +$60' (thực ra chỉ lời 35 vì đã trả 25), thua thì 'No luck.' và tiền tụt mà không giải thích.",
+ "goal": "Biết rõ mỗi lựa chọn được / mất gì trước khi chọn, và thấy rõ chuyện gì vừa xảy ra.",
+ "why": "??? là chỗ duy nhất người chơi đánh cược trong run; kết quả trôi qua trong 1 dòng nhỏ thì mất hết cảm giác hồi hộp, còn số tiền sai làm người chơi thấy game ăn gian.",
+ "fix": "Nút lựa chọn giờ có chip màu: tiền trả đỏ '-$25', tiền có thể thắng xanh '+$60?', BADGE vàng bo tròn, có thể chấn thương ✚? đỏ, chữa hết ✚ xanh. Lựa chọn chưa làm được không còn được chọn sẵn (phím bỏ qua), bấm vào thì nói đúng lý do 'Not enough cash.'. Chọn xong thẻ đứng lại ở trạng thái kết quả: mỗi dòng 1 icon + kết quả (tiền đã trả đỏ, tiền thắng xanh, BADGE nhận được, chấn thương đỏ...), bấm CONTINUE mới về map; chọn 'bỏ đi' (không có gì xảy ra) thì về map luôn. Kỹ thuật: runmap.js targets() đánh dấu dis theo Run.canChoose, eventCard vẽ chip, sayEvent lưu kết quả vào RunUI.ev, thẻ mới eventResult + mục 'evok'. Không thêm chữ mới.",
+ "why_this": "Dùng lại chip / icon / chuỗi có sẵn nên không phải dịch thêm; kết quả thành 1 khoảnh khắc nhìn thấy được mà không đổi luật hay dữ liệu run.",
+ "alternatives": [
+  "Chỉ viết lại câu gợi ý — rẻ, nhưng kết quả vẫn trôi qua trong 1 dòng nhỏ",
+  "Toast kết quả to giữa màn 2 giây — có cảm xúc, nhưng không chờ người chơi đọc và co-op dễ lệch nhịp",
+  "Lưu kết quả vào dữ liệu run (R.room) để cả phòng co-op cùng thấy — đúng nhất cho co-op, nhưng phải sửa Run (lọc dữ liệu bản sao) + có thể cả máy chủ, việc lớn hơn nhiều"
+ ],
+ "files": [
+  "src/ui/runmap.js",
+  "css/style.css"
+ ],
+ "limits": "Co-op: thẻ kết quả chỉ hiện ở máy giữ run (host); khách vẫn chỉ thấy map như trước (trước đây khách cũng không thấy gì). Lựa chọn 'Get treated' khi không ai bị thương vẫn nói câu chung 'You cannot do that right now.' (chưa có chuỗi riêng). Ký hiệu ✚ trong font pixel hiện thành dấu +.",
+ "videoNote": "3 cảnh: tiền 10 bấm Bet (trước: Bet mờ mà vẫn đang được chọn, câu chung chung; sau: chọn sẵn Pass, nói 'Not enough cash.') · cược thắng · OLD COACH được BADGE + chấn thương (trước: 1 dòng nhỏ dưới map; sau: thẻ kết quả + CONTINUE).",
+ "before": "videos/run-06-before.mp4",
+ "after": "videos/run-06-after.mp4",
+ "status": "applied"
 }

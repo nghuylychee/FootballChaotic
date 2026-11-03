@@ -1,23 +1,26 @@
 {
-  "id": "run-01",
-  "area": "run",
-  "screen": "PICK A BADGE / PICK GEAR / LOCKER ROOM / KIT VAN / LEGEND",
-  "source": "agent",
-  "severity": "high",
-  "title": "Esc / Backspace lặng lẽ bỏ phần thưởng và rời phòng",
-  "problem": "Ở PICK A BADGE, PICK GEAR, LOCKER ROOM và KIT VAN, bấm Esc (hoặc Backspace) là SKIP / LEAVE luôn, không hỏi, không báo gì. Người chơi quen Esc = 'quay lại' nên rất dễ mất BADGE của Elite / Boss, mất lượt chữa thương hoặc rời Shop khi chưa mua gì, và không quay lại được. Bấm thêm 1 lần nữa là văng luôn ra tab GOAT PATH.",
-  "goal": "Esc không bao giờ tự làm mất thứ gì; muốn bỏ thì người chơi phải tự bấm SKIP / LEAVE.",
-  "why": "Mất phần thưởng Boss / Elite chỉ vì 1 phím quen tay là lỗi gây ức chế nhất trong 1 run kiểu roguelike, và không có cách lấy lại.",
-  "fix": "Giờ Esc / Backspace trên các thẻ đó chỉ đưa ô chọn tới nút SKIP / LEAVE / NO THANKS (viền sáng lên); muốn bỏ thật thì Enter hoặc bấm nút. Bước 'Who wears it?' / 'Swap out which one?' của GEAR thì Esc = BACK lùi 1 bước như cũ (không mất gì); SQUAD vẫn Esc = đóng; map vẫn Esc = về tab. Kỹ thuật: sửa 1 hàm RunUI.back() trong runmap.js; co-op cũng vậy (Esc không gửi phiếu skip). Không thêm chữ mới.",
-  "why_this": "Giống thói quen tay cầm / console (nút B kéo con trỏ về nút huỷ), không thêm hộp thoại hay chữ cần dịch, sửa cả 5 màn chỉ trong 1 hàm.",
-  "alternatives": [
-    "Bấm 2 lần mới bỏ (lần đầu đổi nhãn thành 'SKIP?' + dòng báo, như FORFEIT) — an toàn, nhưng thêm chuỗi i18n và vẫn dễ bấm Esc 2 lần liền tay",
-    "Esc đóng thẻ để xem map, phần thưởng vẫn chờ (nút phần thưởng trên thanh map kiểu Slay the Spire) — hay nhất, nhưng phải đổi luồng Run.offer / phòng co-op, việc lớn",
-    "Giữ như cũ, chỉ thêm dòng báo 'đã bỏ qua' — có phản hồi nhưng đồ vẫn mất"
-  ],
-  "files": ["src/ui/runmap.js"],
-  "limits": "Nút SKIP / LEAVE khi được chọn chỉ sáng viền, chưa có hiệu ứng 'rung' riêng cho lần Esc; chưa thử trên tay cầm thật (nút B đi cùng đường Esc).",
-  "videoNote": "Mỗi màn bấm Esc 2 lần: trước = thẻ BADGE biến mất rồi văng ra tab GOAT PATH; sau = ô chọn nhảy xuống SKIP / LEAVE và đứng yên.",
-  "before": "videos/run-01-before.mp4",
-  "after": "videos/run-01-after.mp4"
+ "id": "run-01",
+ "area": "run",
+ "screen": "PICK A BADGE / PICK GEAR / LOCKER ROOM / KIT VAN / LEGEND",
+ "source": "agent",
+ "severity": "high",
+ "title": "Esc / Backspace lặng lẽ bỏ phần thưởng và rời phòng",
+ "problem": "Ở PICK A BADGE, PICK GEAR, LOCKER ROOM và KIT VAN, bấm Esc (hoặc Backspace) là SKIP / LEAVE luôn, không hỏi, không báo gì. Người chơi quen Esc = 'quay lại' nên rất dễ mất BADGE của Elite / Boss, mất lượt chữa thương hoặc rời Shop khi chưa mua gì, và không quay lại được. Bấm thêm 1 lần nữa là văng luôn ra tab GOAT PATH.",
+ "goal": "Esc không bao giờ tự làm mất thứ gì; muốn bỏ thì người chơi phải tự bấm SKIP / LEAVE.",
+ "why": "Mất phần thưởng Boss / Elite chỉ vì 1 phím quen tay là lỗi gây ức chế nhất trong 1 run kiểu roguelike, và không có cách lấy lại.",
+ "fix": "Giờ Esc / Backspace trên các thẻ đó chỉ đưa ô chọn tới nút SKIP / LEAVE / NO THANKS (viền sáng lên); muốn bỏ thật thì Enter hoặc bấm nút. Bước 'Who wears it?' / 'Swap out which one?' của GEAR thì Esc = BACK lùi 1 bước như cũ (không mất gì); SQUAD vẫn Esc = đóng; map vẫn Esc = về tab. Kỹ thuật: sửa 1 hàm RunUI.back() trong runmap.js; co-op cũng vậy (Esc không gửi phiếu skip). Không thêm chữ mới.",
+ "why_this": "Giống thói quen tay cầm / console (nút B kéo con trỏ về nút huỷ), không thêm hộp thoại hay chữ cần dịch, sửa cả 5 màn chỉ trong 1 hàm.",
+ "alternatives": [
+  "Bấm 2 lần mới bỏ (lần đầu đổi nhãn thành 'SKIP?' + dòng báo, như FORFEIT) — an toàn, nhưng thêm chuỗi i18n và vẫn dễ bấm Esc 2 lần liền tay",
+  "Esc đóng thẻ để xem map, phần thưởng vẫn chờ (nút phần thưởng trên thanh map kiểu Slay the Spire) — hay nhất, nhưng phải đổi luồng Run.offer / phòng co-op, việc lớn",
+  "Giữ như cũ, chỉ thêm dòng báo 'đã bỏ qua' — có phản hồi nhưng đồ vẫn mất"
+ ],
+ "files": [
+  "src/ui/runmap.js"
+ ],
+ "limits": "Nút SKIP / LEAVE khi được chọn chỉ sáng viền, chưa có hiệu ứng 'rung' riêng cho lần Esc; chưa thử trên tay cầm thật (nút B đi cùng đường Esc).",
+ "videoNote": "Mỗi màn bấm Esc 2 lần: trước = thẻ BADGE biến mất rồi văng ra tab GOAT PATH; sau = ô chọn nhảy xuống SKIP / LEAVE và đứng yên.",
+ "before": "videos/run-01-before.mp4",
+ "after": "videos/run-01-after.mp4",
+ "status": "applied"
 }
