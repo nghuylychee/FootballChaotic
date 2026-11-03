@@ -20,7 +20,12 @@ window.SFC = window.SFC || {};
   // đợt 1 (2026-11-01). fistpump / airplane: tự đổi đã đẹp. airplane: vệt gió sau 2 bàn tay vắt qua ngực khi tay ngắn -> vẽ dưới người
   // kneeslide: quỳ hạ thân 2 (game 4: thân thụt xuống đất như đứng trong hố) · skypoint: 2 tay chữ V cao, ngón trỏ chĩa trời
   // shush: tay phải đưa ngang về phía miệng (vai nhô), ngón trỏ dựng lên cạnh môi
-  CEL.kneeslide = (t, B) => (B.legs === 'kneel' ? { drop: 2 } : {});
+  // hướng trượt = hướng mặt của người (systems/celebrate.js), 4 hướng chéo: nhìn chéo thì ngả người ra sau 2 px mịn (ngược hướng trượt)
+  CEL.kneeslide = (t, B, p) => {
+    if (B.legs !== 'kneel') return {};
+    const fx = p ? Math.cos(p.facing) : 0;
+    return { drop: 2, lean: Math.abs(fx) > 0.5 ? -2 * Math.sign(fx) : 0 };
+  };
   CEL.skypoint = () => ({ ang: [-P / 2 - 0.5, -P / 2 + 0.5], shrug: [1, 1], point: ['up', 'up'] });
   CEL.shush = (t, B) => (B.run ? {} : { ang: [null, P + 0.3], shrug: [0, 1], point: [null, 'up'] });
   // đợt 2: flex / robot / dab tay gập khuỷu (bend) như game
@@ -172,7 +177,17 @@ window.SFC = window.SFC || {};
   // chân quỳ: 2 đầu gối (viền, tất, viền) ngay dưới quần, theo thân đã hạ (Y = Yb)
   // user 2026-11-01: thêm da ở đầu gối (hàng 2 ô da) rồi tới tất
   const KNEE = { x: 0, y: -4, scale: 2, rows: ['KKKK', 'KJJK', 'KOOK', 'KKKK'] };
-  function kneelLegs(ctx, X, Y, pal) { stamp(ctx, X, Y, at(KNEE, -4), pal); stamp(ctx, X, Y, at(KNEE, 1), pal); }
+  // trượt gối 4 hướng chéo (user 2026-11-03; hình nhìn phải, lật khi nhìn trái). Ống chân nằm trên đất kéo ra sau (ngược hướng trượt):
+  //  chéo xuống: 2 gối chạm đất như nhìn xuống, ống chân chĩa ra xa máy quay -> khuất sau đùi, chỉ đế giày ló ra sau gối bên kia (FEET_BACK)
+  //  chéo lên: thấy lưng, ống chân nằm trên đất chạy về phía máy quay = đi xuống màn hình từ gối, thấp hơn chân người 2 hàng, chéo dần ra sau
+  //  (ngược hướng trượt); cuối ống chân là đế giày quay về máy quay (KNEE_BD). User: đế xoè ngang cạnh gối thì sai
+  const KNEE_BD = { x: 0, y: -4, scale: 2, rows: ['.KJJK', '.KJJK', 'KJJK.', 'KOOK.', 'KggK.', 'KKKK.'] };
+  const FEET_BACK = { x: 0, y: -4, scale: 2, rows: ['KKKK.', 'KggKK', 'KKggK', '.KKKK'] };
+  function kneelLegs(ctx, X, Y, pal, view = null, mir = false) {
+    if (view === 'bdiag') { stamp(ctx, X, Y, at(KNEE_BD, -5), pal, mir); stamp(ctx, X, Y, at(KNEE_BD, 0), pal, mir); return; }
+    if (view === 'diag') stamp(ctx, X, Y, at(FEET_BACK, -8, -1), pal, mir);
+    stamp(ctx, X, Y, at(KNEE, -4), pal); stamp(ctx, X, Y, at(KNEE, 1), pal);
+  }
 
   // vẽ cả động tác như CelebrateDraw.draw (bóng, under, người, fx) nhưng người = sprite 2x, đạo cụ theo điểm neo mới. Trả y của đầu
   function celDraw(ctx, p, g) {

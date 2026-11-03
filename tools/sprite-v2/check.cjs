@@ -183,6 +183,14 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
 
 if (process.argv.includes('--update')) { fs.writeFileSync(BASE, JSON.stringify(cases, null, 1)); console.log('baseline written:', Object.keys(cases).length, 'cases'); process.exit(0); }
 const base = JSON.parse(fs.readFileSync(BASE, 'utf8'));
+// --accept <ca,ca,...> (hoặc tiền tố kết thúc bằng *): chỉ ghi lại các ca đã duyệt, giữ nguyên phần còn lại của baseline
+const acc = process.argv.indexOf('--accept');
+if (acc > 0) {
+  const pats = (process.argv[acc + 1] || '').split(',').filter(Boolean), hit = (k) => pats.some((p) => (p.endsWith('*') ? k.startsWith(p.slice(0, -1)) : k === p));
+  const keys = Object.keys(cases).filter(hit);
+  for (const k of keys) base[k] = cases[k];
+  fs.writeFileSync(BASE, JSON.stringify(base, null, 1)); console.log('accepted', keys.length, 'cases'); process.exit(0);
+}
 const diff = Object.keys(Object.assign({}, base, cases)).filter((k) => base[k] !== cases[k]);
 if (diff.length) { console.log('CHANGED', diff.length, 'of', Object.keys(cases).length, ':', diff.slice(0, 20).join(' ')); process.exit(1); }
 console.log('ok', Object.keys(cases).length, 'cases unchanged (stand, run, punch, hard kick, shoot, volley, header, keeper dive, knocked flying, states, celebrations, hair, face, shoes, fx, kit colours)');

@@ -147,7 +147,8 @@ window.SFC = window.SFC || {};
         }
         case 'slide':
           if (t < m.t) toward(C.slideSpeed);
-          else { const k = Math.exp(-2.6 * (t - m.t)); vx = d.x * C.slideSpeed * k; vy = d.y * C.slideSpeed * k; }
+          // trượt gối (user 2026-11-03): mặt giữ theo hướng trượt (1 trong 4 hướng chéo về khán đài) thay vì quay về máy quay
+          else { const k = Math.exp(-2.6 * (t - m.t)); vx = d.x * C.slideSpeed * k; vy = d.y * C.slideSpeed * k; face = Math.atan2(d.y, d.x); }
           break;
         case 'back': {   // moonwalk: mặt nhìn ngang, trượt lùi về phía khán đài
           const sx = d.x >= 0 ? 1 : -1;

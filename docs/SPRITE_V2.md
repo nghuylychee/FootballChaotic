@@ -10,7 +10,7 @@
 
 Đừng làm lại phương án đã bỏ.
 
-- **Kiểu.** Key art, 2 góc nhìn như hiện tại: mặt cho mọi hướng trừ lên, sau lưng khi nhìn lên. Mặt trượt ngang theo hướng nhìn.
+- **Kiểu.** Key art: mặt khi nhìn xuống / chéo xuống / ngang, lưng khi nhìn lên / chéo lên. Mặt trượt ngang theo hướng nhìn. Chéo lên có hình riêng từ 2026-11-03 (mục 2e).
 - **Lưới 2x.** 1 px mịn = nửa px game; game sẽ vẽ ở 1280 × 720 thay 640 × 360. Tư thế đứng = sprite v2 1x nhân đôi đúng từng px (viền 2 px mịn = 1 px game).
 - **Không bo, không thêm chi tiết ở tư thế khoá.** Bản 2x vẽ lại mượt + thêm chi tiết đã bị bỏ. Tư thế đứng và tư thế khoá của động tác ở lưới game, bậc 1 px game.
 - **Khung chuyển động được dùng lưới mịn** (user 2026-11-01): khung giữa các tư thế khoá cho tự nhiên, không cần bó theo kiểu hiện tại: góc chi mượt từng px mịn, nhoè (smear), viền mịn.
@@ -68,6 +68,30 @@ Duyệt trên trang xem (`tools/sprite-v2/keeper.mjs`, bản nháp `drafts/keepe
 - **Tốc độ đổ người** (user chọn bản giữa): tốc độ hình parabol `6u(1 − u)` quanh tốc độ trung bình, cùng quãng, cùng thời gian bay (`Player`, state `dash`).
 - **Đổ người bắt được bóng**: renderer thấy thủ môn đang đổ người mà cầm bóng (`g.ball.owner`, có trong snapshot) → tay ôm bóng thay tay vươn; nằm / quỳ / khuỵu vẫn ôm; đứng dậy xong chuyển `gkHold`.
 - **Đứng dậy** (`gkDivePose` 0.6 s = tổng `gkGetUp`): sau khi chạm đất là tư thế thật trên lưới px, không xoay / ép lẻ (user: hình ép / nhoè chỉ ổn lúc đang bay nhanh): đập xuống → nằm (tư thế đổ người, thân hạ 1 ô, ngả 1 ô, bóng đổ đậm phủ cả thân; hạ thân nhiều thì chân khuất hết, trông như lún xuống đất) → bò 4 chân, 2 găng chống đất → nhổm lên → quỳ, găng trên đùi → khuỵu → đứng. Bay xuống: nằm = đúng tư thế đó lật −1 (không xoay, px vẫn sắc). Giai đoạn tính ngược từ `p.poseEnd`; đang di chuyển thì `Player` cắt `poseEnd` còn khúc khuỵu (không trượt đi lúc nằm / quỳ). Nghiêng lúc bay theo hướng mặt, không theo chiều bay (user: bay xuống mà nhân thêm chiều lật thì đầu ngả ngược).
+
+## 2e. Chéo lên (`bdiag`, duyệt hết 2026-11-03)
+
+User 2026-11-03: thiếu hình chéo lên (trước đó lên-trái / lên / lên-phải cùng 1 hình sau lưng thẳng). Làm cho mọi động tác và mọi món đồ, theo đợt như Sprite v2.
+
+- **Góc nhìn**: `viewOf` trả `bdiag` khi thấy lưng (`fy < -0.35`) và có hướng ngang (`|fx| > 0.5`). `back` vẫn đúng (không vẽ mặt, chân / tay phải bên phải màn hình). Hình nhìn phải; nhìn trái = lật.
+- **Bật theo từng phần** (`bdiagOn` trong `draw.js`, làm theo đợt): phần không vẽ chéo lên (giờ chỉ còn bị đá bay) dùng hình sau lưng thẳng (`view` hạ về `back`).
+- **Đã duyệt 2026-11-03: đứng, chạy, chạy nước rút.**
+  - Đầu (`HEAD_A.bdiag`): nút băng đô lệch 1 cột ngược hướng mặt; bên hướng mặt lộ dải má + quai hàm 2 cột dưới chân tóc (tóc mai che hàng ngay dưới băng đô). Không vẽ tai (tai lòi ra ngoài viền đầu).
+  - Thân (`BODY.bdiag` / `bdiagL`, `torsoPart(..., turn)`): cổ áo sau lệch 1 cột ngược hướng mặt; mép phải vẫn tối.
+  - Tay: như chéo xuống nhưng đổi bên: tay gần bên hướng mặt, cục da tay xa bên kia. Chạy / chạy nước rút: tay thẳng xoay quanh vai như chéo xuống, tay xa (tay trái hình) sau thân.
+  - Chân: bước chéo như chéo xuống (chân trụ về hướng mặt, mũi giày theo hướng mặt); gót đá ra sau / chân nhấc thấy đế như sau lưng (`runLeg(..., bd)`). Chạy nước rút: như chéo xuống (`HIPS`, tầm với 0.6).
+- **Đã duyệt 2026-11-03: ra đòn** (đấm, Hard attack, sút, vô-lê, chuyền sệt / bổng, chạm đẩy bóng, sút mạnh, móc xe đạp, đánh đầu).
+  - Chân như nhìn ngang (`bdiagOf` trong `kick.js` thêm `bdiag` cho mọi bảng KICKS): chân phải thu ra sau = về phía máy quay bên trái màn hình rồi vung lên trước. Thứ tự vẽ (user): chân đá → chân trụ → thân, tức thân che đùi chân đá và chân trụ che chân đá (chân đá vung ra xa máy quay). `legPose` trả `over: false`.
+  - Tay: thấy lưng nên tay phải của cầu thủ là tay bên phải hình (i 1, tay gần) -> `bdiagOf` đổi 2 tay của bảng nhìn ngang; tay xa (i 0) vẽ sau thân (`farArm`). Đánh đầu cũng vậy (`headerPose`).
+  - Đấm (`PUNCH.bdiag`, `OFF.bdiag`): vẫn tay trái = tay xa bên trái màn hình. Thủ thế / thu tay: nắm tay sát mép thân bên xa; đấm: cánh tay khuất sau thân (vẽ trước thân, `hidden`), chỉ nắm tay + tia sáng ló ra trước vai gần. Tay gần: thu = vươn ra trước, đấm = vung ra sau hạ xuống cạnh hông, giữ độ dài tay đứng (vắt qua thân thì dài quá, user bỏ).
+- **Đã duyệt 2026-11-03: thủ môn.** Ôm / đón bóng, đỡ tại chỗ, tung bóng đá dùng tư thế nhìn ngang (`holdKey`), riêng ôm bóng có `HOLD.bdiag`: bóng trước ngực = sau thân, lệch 2 ô về hướng mặt để mép ngoài lộ ra ngoài tay gần (bản dùng thẳng `HOLD.side` thì bóng khuất hết). Tay xa + bóng vẽ ở lượt `behind` của `gkDraw` (`G.far`); bóng tung lên còn đè lên thân thì vẫn sau thân. Đổ người / đứng dậy: như cũ, đầu chéo lên.
+- **Đã duyệt 2026-11-03: bị đấm, nhảy Ground Slam** (`liftArms`: tay xa sau thân theo `farArm`). Bị đá bay giữ hình sau lưng thẳng (user bỏ qua).
+- **Đã duyệt 2026-11-03: tóc / mũ.** Suy từ lớp sau lưng (`turn` trong `hair.js`, như đầu A chéo lên suy từ đầu A sau lưng): giữ nguyên đường viền ngoài, chi tiết bên trong dịch 1 cột ngược hướng mặt, tóc ở dải má (`CHEEK`) bỏ đi, không viền mực lên dải má. Mũ giữ ô (vành, mũ bảo hiểm che má). 4 kiểu vẽ bằng code cũ (beanie, bandana, bun, halo): vẽ như sau lưng rồi tô lại dải má. Vẽ riêng (`st.bdiag`): cap / moon_cap thêm mũi lưỡi trai ló ra bên hướng mặt (vẽ sau đầu); headphones xoay giữa sau lưng và nhìn ngang (vòng hẹp vắt chéo, chụp gần dịch vào chỗ tai, chụp xa khuất sau đầu chỉ lộ mép; user: vòng đeo đứng yên như sau lưng là sai).
+- **Đã duyệt 2026-11-03: phụ kiện mặt** (`drawFace`, `o.bd`): lớp sau lưng (dây, băng, nút) giữ chỗ ô, chi tiết dịch 1 cột ngược hướng mặt như tóc; dải má (`BDIAG_CHEEK`, body.js, dùng chung với tóc) lấy đúng phần của bản nhìn ngang sang phải rơi vào đó, nhìn trái là hình lật (bản nhìn ngang trái lệch mặt ít hơn nên cắt ra khác). Râu / ria / răng vàng / mũi hề / băng cá nhân không lộ ra (user: trong trận không ai thấy).
+- **Đã duyệt 2026-11-03: ăn mừng.** Phần lớn động tác ép quay mặt về máy quay nên không đổi; chéo lên chỉ hiện ở khúc chạy đà, airplane, lúc spinjump xoay qua.
+  - **Trượt gối 4 hướng chéo** (user): hướng trượt sẵn là chéo về khán đài gần (`celDir`); `systems/celebrate.js` giữ mặt theo hướng trượt cả lúc trượt, pose kneeslide bỏ `face: FRONT` (xem trước ở menu vẫn nhìn xuống; máy chủ chưa deploy thì máy khách thấy quỳ nhìn xuống). Nhìn chéo ngả người ra sau 2 px mịn (`cp.lean`). Chéo xuống: 2 gối + đế giày ló ra sau gối bên kia (`FEET_BACK`). Chéo lên (`KNEE_BD`, user chọn A trong 4 kiểu): ống chân nằm trên đất chạy về máy quay = đi xuống màn hình dưới chân người 2 hàng, chéo dần ra sau, cuối là đế giày. Đã bỏ: đế giày xoè ngang cạnh gối (user: sai), chỉ thấy gối, đế cao 2 hàng, chân chữ V. Thủ môn quỳ lúc đứng dậy giữ gối như cũ.
+- **Không làm:** bị đá bay (user bỏ qua) vẫn vẽ hình sau lưng thẳng (`bdiagOn`). Giày, hiệu ứng, băng chấn thương theo chân / tay nên tự có.
+- `check.cjs --accept <ca,...>` ghi lại riêng các ca đã duyệt (baseline còn 772 khung chạy đổi từ trước, chưa ghi lại).
 
 ## 3. Toạ độ (thân B, đầu A)
 

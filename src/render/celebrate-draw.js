@@ -84,7 +84,8 @@ window.SFC = window.SFC || {};
       pose(t) {
         if (t < lead('kneeslide')) return { run: true };
         const sh = Math.round(S(t * 30) * 0.6);
-        return { legs: 'kneel', drop: 4, arms: [[-5, -8 + sh], [5, -8 - sh]], eyes: 'happy', mouth: true, face: FRONT };
+        // không ép quay mặt về máy quay: trượt theo hướng mặt của người (4 hướng chéo về khán đài, systems/celebrate.js); xem trước ở menu vẫn nhìn xuống
+        return { legs: 'kneel', drop: 4, arms: [[-5, -8 + sh], [5, -8 - sh]], eyes: 'happy', mouth: true };
       },
       fx(ctx, I) { dust(ctx, I.x, I.y, I.t - lead('kneeslide'), 8, 12, I.mv); },
     },

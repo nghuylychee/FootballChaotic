@@ -5,10 +5,10 @@ window.SFC = window.SFC || {};
 
 (function () {
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
-  const { KICKS } = Sprite;
+  const { KICKS, bdiagOf } = Sprite;
   const P = Math.PI;
   // bảng như KICK: keys = [đứng, lấy đà, hết tầm] · nhìn lên dùng bảng Hard attack · chân trụ cột 2, đứng trên đất suốt
-  const table = (side, front) => ({ side, diag: side, front, back: KICKS.hard.back, plant: 2, tuck: false, inBack: true });
+  const table = (side, front) => ({ side, diag: side, bdiag: bdiagOf(side), front, back: KICKS.hard.back, plant: 2, tuck: false, inBack: true });
   // P2 chuyền sệt / chọc khe: nhẹ hơn chuyền bổng, vung vừa, theo đà dừng ngang ống quyển, tay đung đưa nhẹ, không bật
   const PASS = table(
     { hip: [-3, -3, 2], ang: [P / 2, 0.7 * P, 0.28 * P], arms: [[-0.6, 1.4], [P - 1.1, 0.3]] },

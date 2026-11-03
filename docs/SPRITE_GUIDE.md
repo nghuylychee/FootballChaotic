@@ -11,7 +11,7 @@ Nhân vật là bộ mặt của game. Mọi thay đổi phải nhẹ tay, khôn
 - **Cỡ trong trận giữ nguyên.** Vấn đề là độ phân giải quá thấp, không phải cỡ. Lưới 2x (1 px mịn = nửa px game) có là để chuyển động có chỗ, không phải để vẽ thêm chi tiết.
 - **Cao 24 px game** như sprite cũ. Đầu A 15 × 13 tròn, mắt vuông 3 × 3. Thân B: áo 3 hàng ăn vào quần, không hàng đầu gối, tất ngắn ngay dưới quần, 2 chân sát nhau.
 - **Viền mực 1 px game quanh cả người** (= 2 px mịn), như viền đầu. Riêng chỗ tay áo nối thân thì không viền (liền màu tối).
-- **2 góc nhìn**: thấy mặt ở mọi hướng trừ nhìn lên; nhìn lên thấy lưng. Mặt trượt ngang theo hướng nhìn. Không có hình nghiêng hẳn, không 3/4 lên.
+- **Thấy mặt / thấy lưng**: thấy mặt khi nhìn xuống, chéo xuống, ngang; thấy lưng khi nhìn lên và chéo lên. Mặt trượt ngang theo hướng nhìn. Chéo lên (`bdiag`, user 2026-11-03; trước đó chéo lên dùng hình sau lưng thẳng) là lưng xoay về 1 bên: nút băng đô và cổ áo sau lệch 1 cột ngược hướng mặt, bên hướng mặt lộ dải má 2 cột, tay gần bên hướng mặt + cục da tay xa bên kia (ngược chéo xuống). Không có hình nghiêng hẳn.
 - **Nhìn trái = lật hình nhìn phải.** Đừng "sửa" cho đúng tay chân (xem mục 3).
 - **Mũi giày**: nhìn thẳng xuống / lên không có mũi; chéo và ngang thì cả 2 mũi theo hướng mặt.
 - **Quần đứng yên.** Ống quần theo đùi đã thử rồi bỏ.
@@ -108,7 +108,7 @@ Nhân vật là bộ mặt của game. Mọi thay đổi phải nhẹ tay, khôn
 
 - **Thử trước, vẽ hết sau.** Làm 1 bản thử (1 hướng, 1 động tác) để chốt hướng đi trước khi làm hết.
 - **Xem trên sân và đang chạy.** "Can't judge from just in place animation": thủ môn bay thật dọc vạch vôi, hạt hiệu ứng trôi như sân trôi, cầu thủ chạy như trong trận. Tốc độ thật của game, có nút chậm ¼×.
-- **Duyệt trên trang duyệt** (`tools/sprite-v2/page.mjs`): 4 hướng (xuống, chéo xuống, ngang, lên), khung khoá cạnh vòng lặp; món duyệt xong chuyển xuống phần đã duyệt.
+- **Duyệt trên trang duyệt** (`tools/sprite-v2/page.mjs`): 5 hướng (xuống, chéo xuống, ngang, chéo lên, lên), khung khoá cạnh vòng lặp; món duyệt xong chuyển xuống phần đã duyệt.
 - **Soi từng khung phóng to:** ô lẻ, khối chữ nhật, vật dính nhau (ria dính mắt, chấm sáng thành "cặp mắt", sọc giày trông như tất), tương phản thấp trên da tối.
 - **Duyệt xong thì khoá.** Thêm ca vào `tools/sprite-v2/check.cjs` rồi `--update`; chỉ ghi lại baseline cho thay đổi đã duyệt. Sửa gì làm đổi phần đã duyệt thì phải duyệt lại.
 - **Mỗi động tác 1 file** trong `src/render/player/` (thứ tự nạp trong `scripts/manifest.js`).

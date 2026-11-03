@@ -8,7 +8,7 @@ window.SFC = window.SFC || {};
 
 (function () {
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
-  const { KICKS, limbCells, blockCells, drawCells, armAt, lerp, easeOut, easeIO, clamp01 } = Sprite;
+  const { KICKS, bdiagOf, limbCells, blockCells, drawCells, armAt, lerp, easeOut, easeIO, clamp01 } = Sprite;
   const P = Math.PI;
   const PL = () => SFC_CONFIG.game.player;
   const GLOVE = ['WHH', 'HHH', 'HHH'];
@@ -21,6 +21,9 @@ window.SFC = window.SFC || {};
   const HOLD = {
     side: { ball: [6, -7], arms: [[[-4, -10], [-1, -7], [3, -9]], [[6, -9], [6, -5], [8, -4]]] },
     front: { ball: [0, -7], arms: [[[-7, -9], [-7, -6], [-4, -5]], [[6, -9], [6, -6], [3, -5]]] },
+    // chéo lên: bóng trước ngực = sau thân, đẩy ra bên hướng mặt 2 ô để mép ngoài lộ ra ngoài tay gần; tay xa (sau thân) ôm trên-sau bóng,
+    // tay gần đỡ dưới bóng
+    bdiag: { ball: [8, -8], arms: [[[-4, -10], [-1, -8], [5, -11]], [[6, -9], [6, -6], [9, -4]]] },
   };
   // đón bóng (lúc chạm bóng): 2 tay đưa ra trước, găng mở ra đón bóng ngang ngực -> kéo về HOLD trong catchPull giây
   const REACH = {
@@ -33,14 +36,16 @@ window.SFC = window.SFC || {};
   const STAR = { side: [P + 0.75, -0.75], front: [P + 0.6, -0.6] };
   // bắt bóng: kéo bóng vào ngực catchPull s · khuỵu 1 ô đỡ lực tới absorb s rồi đứng lên dần tới settle s · sau đó thở nhẹ (nhấp nửa ô mỗi breath s)
   const CATCH = { pull: 0.1, absorb: 0.05, settle: 0.25, breath: 0.5 };
-  const holdKey = (view) => (view === 'side' || view === 'diag' ? 'side' : 'front');
+  // chéo lên dùng tư thế nhìn ngang: bóng / găng trước ngực nằm sau thân (ló ra bên hướng mặt), tay xa (tay trái hình) vẽ sau thân
+  const holdKey = (view) => (view === 'bdiag' ? 'bdiag' : view === 'side' || view === 'diag' ? 'side' : 'front');
+  REACH.bdiag = REACH.side; STAR.bdiag = STAR.side;
   const lerpPose = (A, B, k) => ({
     ball: [lerp(A.ball[0], B.ball[0], k), lerp(A.ball[1], B.ball[1], k)],
     arms: A.arms.map((pts, i) => pts.map(([x, y], j) => [lerp(x, B.arms[i][j][0], k), lerp(y, B.arms[i][j][1], k)])),
   });
 
   /* ---------- tung bóng + đá ---------- */
-  const table = (side, front) => ({ side, diag: side, front, back: KICKS.hard.back, plant: 2, tuck: false, inBack: true });
+  const table = (side, front) => ({ side, diag: side, bdiag: bdiagOf(side), front, back: KICKS.hard.back, plant: 2, tuck: false, inBack: true });
   // K1 phát bóng bổng: chân thu cao ra sau, vung lên quá hông (đế giày to khi nhìn xuống), người ngả sau + bật nhẹ
   const PUNT = table(
     { hip: [-3, -4, 3], ang: [P / 2, 0.85 * P, -0.3 * P], arms: [[P / 2, P / 2], [P / 2, P / 2]] },
@@ -70,6 +75,8 @@ window.SFC = window.SFC || {};
   function armAtTime(kt, atk, view, i) {
     if (view === 'back' || atk.rt == null) return null;
     const M = marks(kt), at = { 0: 0, toss: M.toss, hit: M.hit, mid: (M.hit + M.end) / 2, end: M.end };
+    // chéo lên: tay trái của cầu thủ (tay tung bóng) là tay bên trái hình -> đổi 2 tay của bảng nhìn ngang
+    if (view === 'bdiag') i = 1 - i;
     const keys = ARMS[kt][holdKey(view)], t = atk.rt;
     if (t <= 0) return keys[0][1 + i];
     for (let k = 1; k < keys.length; k++) {
@@ -78,6 +85,7 @@ window.SFC = window.SFC || {};
     }
     return keys[keys.length - 1][1 + i];
   }
+  for (const kt of ['gkPunt', 'gkVolley']) { ARMS[kt].bdiag = ARMS[kt].side; TOSS[kt].bdiag = TOSS[kt].side; }
   PUNT.armAt = (atk, view, i) => armAtTime('gkPunt', atk, view, i);
   VOLLEY.armAt = (atk, view, i) => armAtTime('gkVolley', atk, view, i);
   Object.assign(KICKS, { gkPunt: PUNT, gkVolley: VOLLEY });
@@ -96,7 +104,7 @@ window.SFC = window.SFC || {};
   // hình học cho draw.js theo góc nhìn: { arms (tay gập), angles (tay thẳng), ball [x, y] (ô), ballBehind, drop (ô), lean (px mịn, màn hình),
   // legs 'kneel' | 'wide', shadow 'long' }. m = nhìn trái
   function gkGeom(st, view, m) {
-    const hk = holdKey(view), side = m ? -1 : 1, G = { ballBehind: view === 'back' };
+    const hk = holdKey(view), side = m ? -1 : 1, G = { ballBehind: view === 'back' || view === 'bdiag', far: Sprite.farArm(view) === 0 ? 0 : -1 };
     const held = (pose, drop) => Object.assign(G, { arms: pose.arms, ball: pose.ball, drop: drop || 0 });
     if (st.kind === 'block') {
       // dang tay chân trong lead s (tay từ buông lên chữ V, chân dạng từ 30%), giữ hold s, hạ tay lower s (chân khép lại khi tay hạ quá 60%)
@@ -118,7 +126,8 @@ window.SFC = window.SFC || {};
       let b;
       if (t < M.toss) { const k = easeOut(t / M.toss); b = [lerp(B0[0], B1[0], k), lerp(B0[1], B1[1], k)]; }
       else { const k = clamp01((t - M.toss) / (M.hit - M.toss)); b = [lerp(B1[0], B2[0], k * k), lerp(B1[1], B2[1], k * k)]; }
-      return Object.assign(G, { ball: b, arms: t < 0.02 ? HOLD[hk].arms : null, ballBehind: false });
+      // chéo lên: bóng còn đè lên thân (mới rời ngực) thì vẫn nằm sau thân như lúc ôm, ra khỏi mép thân thì vẽ trên cùng
+      return Object.assign(G, { ball: b, arms: t < 0.02 ? HOLD[hk].arms : null, ballBehind: view === 'bdiag' && b[0] < 9 });
     }
     // đổ người: stage null = đang bay mà cầm bóng (Renderer.diving vẽ vào bộ đệm rồi xoay / ép) · còn lại = đứng dậy
     const s = st.stage;
@@ -165,14 +174,16 @@ window.SFC = window.SFC || {};
   }
   // part 'behind' (trước thân: bóng sau lưng khi nhìn lên) · 'front' (sau thân, thay tay đứng: tay gập -> bóng -> găng, hoặc tay thẳng có găng) ·
   // 'last' (sau đầu: bóng không nằm trong tay — đang tung lên / rơi xuống chân)
+  // G.far = tay xa (chéo lên: 0) vẽ ở lượt 'behind' cùng bóng: tay -> bóng -> găng, da tối như tay xa khi chạy
   function gkDraw(ctx, X, Y, mir, G, pal, hand, part) {
-    const own = G.arms || G.angles;
-    if (part === 'behind') { if (G.ball && G.ballBehind) heldBall(ctx, X, Y, mir, G.ball[0], G.ball[1]); return; }
+    const own = G.arms || G.angles, far = G.far != null ? G.far : -1, mine = (i) => (part === 'behind' ? i === far : i !== far);
     if (part === 'last') { if (G.ball && !G.ballBehind && !own) heldBall(ctx, X, Y, mir, G.ball[0], G.ball[1]); return; }
-    if (G.arms) G.arms.forEach((pts, i) => bentArm(ctx, X, Y, mir, i, pts, pal, hand, 'limb'));
-    if (G.ball && !G.ballBehind) heldBall(ctx, X, Y, mir, G.ball[0], G.ball[1]);
-    if (G.arms) G.arms.forEach((pts, i) => bentArm(ctx, X, Y, mir, i, pts, pal, hand, 'glove'));
-    if (G.angles) G.angles.forEach((a, i) => armAt(ctx, X, Y, mir, i, a, pal, hand, false, false));
+    const ballNow = G.ball && (part === 'behind' ? G.ballBehind : !G.ballBehind);
+    const dark = part === 'behind' ? Object.assign({}, pal, { S: pal.s }) : pal;
+    if (G.arms) G.arms.forEach((pts, i) => { if (mine(i)) bentArm(ctx, X, Y, mir, i, pts, dark, hand, 'limb'); });
+    if (ballNow) heldBall(ctx, X, Y, mir, G.ball[0], G.ball[1]);
+    if (G.arms) G.arms.forEach((pts, i) => { if (mine(i)) bentArm(ctx, X, Y, mir, i, pts, dark, hand, 'glove'); });
+    if (G.angles) G.angles.forEach((a, i) => { if (mine(i)) armAt(ctx, X, Y, mir, i, a, pal, hand, part === 'behind', false); });
   }
   // bóng đổ người nằm: elip đậm phủ cả thân (nằm dọc màn hình nhìn từ trên thì dài gần bằng đứng — dấu hiệu "nằm" là bóng đổ, không phải thân ngắn lại).
   // Px mịn quanh chân (X, Y); bay xuống thì Renderer.diving lật cả người lẫn bóng đổ

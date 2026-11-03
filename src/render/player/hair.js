@@ -14,7 +14,9 @@ window.SFC = window.SFC || {};
   const HY = -19;
   // đầu hói (vẽ trước kiểu tóc): tóc / băng đô / nút buộc của đầu A thành da
   const BALD = {};
-  for (const k of ['front', 'back']) BALD[k] = Object.assign({}, HEAD_A[k], { rows: HEAD_A[k].rows.map((r) => r.replace(/[HB]/g, 'S').replace(/b/g, 's')) });
+  for (const k of ['front', 'back', 'bdiag']) BALD[k] = Object.assign({}, HEAD_A[k], { rows: HEAD_A[k].rows.map((r) => r.replace(/[HB]/g, 'S').replace(/b/g, 's')) });
+  // chéo lên (bdiag, user 2026-11-03; hình nhìn phải): dải má lộ ra bên hướng mặt (body.js)
+  const CHEEK = Sprite.BDIAG_CHEEK;
   // tô ô trong viền của đầu hói, hàng dy0..dy1 (dy tính từ tâm cũ: hàng đầu A = dy + 6)
   function cap(ctx, X, Y, back, c, d0, d1) {
     const head = BALD[back ? 'back' : 'front'];
@@ -347,6 +349,19 @@ window.SFC = window.SFC || {};
     for (let y = y0; y <= y1; y++) { let row = ''; for (let x = x0; x <= x1; x++) row += m.get(x + ',' + y) || '.'; rows.push(row); }
     return { x: x0, y: y0, rows, ink: true };
   }
+  // lớp chéo lên suy từ lớp sau lưng, như đầu A chéo lên suy từ đầu A sau lưng: giữ nguyên đường viền ngoài (không ô nào lòi ra ngoài đầu),
+  // chi tiết bên trong (nút buộc, quai, đuôi tóc, đá quý) dịch 1 cột ngược hướng mặt, tóc ở dải má (CHEEK) bỏ đi cho da má lộ ra
+  function turn(L) {
+    const at = (i, j) => (L.rows[j] && L.rows[j][i] && L.rows[j][i] !== '.' ? L.rows[j][i] : null);
+    const rows = L.rows.map((r, j) => r.split('').map((c, i) => {
+      if (c === '.') return '.';
+      if (CHEEK.has((L.x + i) + ',' + (L.y + j)) && 'HhLzY'.includes(c)) return '.';
+      return at(i + 1, j) || c;
+    }).join(''));
+    return Object.assign({}, L, { rows });
+  }
+  const turned = new WeakMap();
+  const turnOf = (L) => { let t = turned.get(L); if (!t) turned.set(L, (t = turn(L))); return t; };
   const STYLES = {
     // cạo sát (duyệt 2026-11-01): tóc lấm tấm (chấm tối thưa; xen kẽ đều thì thành ô bàn cờ) phủ đỉnh, tóc mai lấm tấm 2 bên; sau lưng phủ tới gáy, gáy nhạt dần
     buzz: {
@@ -466,6 +481,8 @@ window.SFC = window.SFC || {};
         '.HHhHHHHHHHHhHHH.',
         '.HHHHHHHHHHHHHHH.',
         '..hHHHHHHHHHHHh..'] }],
+      // chéo lên (user 2026-11-03): mũi lưỡi trai ló ra ngoài đầu bên hướng mặt (lưỡi ở phía trước đầu = xa máy quay -> vẽ sau đầu)
+      bdiag: (back) => [{ x: 8, y: -22, ink: true, under: true, rows: ['DDD', 'dd.'] }].concat(back.map(turnOf)),
     },
     // tóc dài buộc đuôi ngựa (user: đuôi thiếu chi tiết, cho cong; nhìn trước tóc ôm sát đầu, không thấy đuôi): mái lệch 1 bên, dây buộc màu đội, đuôi cong chữ S
     // nhìn trước: không thấy đuôi (user: đuôi nằm sau gáy, bị đầu che) · nhìn ngang: đuôi sau gáy cong xuống · sau lưng: đuôi rủ giữa lưng, đè lên tóc
@@ -567,6 +584,17 @@ window.SFC = window.SFC || {};
                'dRd.............dRd',
                'drd.............drd',
                'ddd.............ddd'] }],
+      // chéo lên (user 2026-11-03: vòng đeo phải xoay theo đầu, không đứng yên như sau lưng): giữa sau lưng và nhìn ngang. Vòng hẹp lại, vắt chéo
+      // qua đỉnh; chụp tai gần (bên hướng mặt) dịch vào chỗ tai, hình chụp như nhìn ngang; chụp tai xa khuất sau đầu, chỉ lộ mép ngoài
+      bdiag: (back) => [turnOf(back[0]),
+        { x: -9, y: -22, ink: true, under: true, rows: ['ddd', 'dRd', 'dRd', 'drd', 'ddd'] },
+        { x: -8, y: -27, ink: true, rows: [
+          '....DDDDDDDD....',
+          '..DDDDDDDDDDDD..',
+          '.DD.........DD..',
+          'DD...........D..',
+          'D............D..'] },
+        { x: 3, y: -23, ink: true, rows: ['.dddd.', 'ddRRdd', 'dRrrRd', 'dRrrRd', 'ddRRdd', '.dddd.'] }],
     },
     // mũ bảo hiểm (user: đội lên đầu nên to hơn đầu; rồi: nhỏ lại chút, tròn hơn, sau lưng không lộ tóc): vỏ trắng rộng 17 (đầu 15), cao hơn đầu 3,
     // đỉnh bo tròn, sọc đỏ giữa (nhìn ngang chạy dọc đỉnh), chấm sáng, viền đáy tối, 2 tai mũ rủ xuống má; sau lưng vỏ trùm kín tới gáy
@@ -763,6 +791,7 @@ window.SFC = window.SFC || {};
         '.HHhHHHHHHHHhHHH.',
         '.HHHHHHHHHHHHHHH.',
         '..hHHHHHHHHHHHh..'] }],
+      bdiag: (back) => [{ x: 8, y: -22, ink: true, under: true, rows: ['DDD', 'dd.'] }].concat(back.map(turnOf)),
     },
     // mũ Night Market Cup (FOOTBALL STORY): đèn lồng giấy đỏ đội trên đầu: nan tối dọc, nửa trái sáng như có lửa trong, nắp trên / dưới vàng, móc treo
     lantern_hat: {
@@ -818,7 +847,7 @@ window.SFC = window.SFC || {};
   const INSIDE = { front: new Set(), back: new Set() };
   for (const k of ['front', 'back']) BALD[k].rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] !== '.' && r[i] !== 'K') INSIDE[k].add((BALD[k].x + i) + ',' + (BALD[k].y + j)); });
   // vẽ 1 lớp: ink = viền mực 4 hướng quanh khối trừ lên mặt (nhìn sau lưng không có mặt); lớp phẳng chỉ tô trong viền đầu
-  function layer(ctx, X, Y, L, hp, mir, back) {
+  function layer(ctx, X, Y, L, hp, mir, back, bd = false) {
     const cells = new Map(), inside = INSIDE[back ? 'back' : 'front'];
     L.rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] !== '.' && (L.ink || inside.has((L.x + i) + ',' + (L.y + j)))) cells.set((L.x + i) + ',' + (L.y + j), [L.x + i, L.y + j, hp[r[i]] || r[i]]); });
     const cx = (x) => (mir ? X - 2 * x : X + 2 * x);
@@ -826,28 +855,31 @@ window.SFC = window.SFC || {};
       ctx.fillStyle = typeof L.ink === 'string' ? L.ink : INK;   // ink = màu: viền màu riêng (tóc lửa viền đỏ thẫm)
       for (const [x, y] of cells.values()) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const k = (x + dx) + ',' + (y + dy);
-        if (cells.has(k) || (!back && FACE.has(k))) continue;
+        if (cells.has(k) || (!back && FACE.has(k)) || (bd && CHEEK.has(k))) continue;   // chéo lên: không viền mực lên dải má
         ctx.fillRect(cx(x + dx), Y + 2 * (y + dy), 2, 2);
       }
     }
     for (const [x, y, c] of cells.values()) { ctx.fillStyle = c; ctx.fillRect(cx(x), Y + 2 * y, 2, 2); }
   }
 
-  // đầu có kiểu tóc (thay cho stamp đầu A ở draw.js). o: hair (màu tóc), skin, band (màu phụ của đội = kit.accent), anim
-  function drawHead(ctx, X, Y, back, cut, o, pal, fx, fy) {
-    const st = STYLES[cut];
-    if (!st) {   // chưa vẽ lại: bản chuyển thẳng
+  // đầu có kiểu tóc (thay cho stamp đầu A ở draw.js). o: hair (màu tóc), skin, band (màu phụ của đội = kit.accent), anim · bd = chéo lên
+  function drawHead(ctx, X, Y, back, cut, o, pal, fx, fy, bd = false) {
+    const st = STYLES[cut], bald = BALD[bd ? 'bdiag' : back ? 'back' : 'front'];
+    if (!st) {   // chưa vẽ lại: bản chuyển thẳng. Chéo lên: vẽ như sau lưng rồi tô lại dải má
       if (cut === 'afro') { discW(ctx, X, Y, 0, HY - 3, 10, OUT); discW(ctx, X, Y, 0, HY - 3, 9, o.hair); }
-      stamp(ctx, X, Y, BALD[back ? 'back' : 'front'], pal);
+      stamp(ctx, X, Y, bald, pal, bd && fx < 0);
       cutDraw(ctx, X, Y, cut, o.hair, { accent: o.band }, fx, fy, back, o.anim || 0);
+      if (bd) for (const [k, c] of CHEEK) { const [x, y] = k.split(',').map(Number); rectW(ctx, X, Y, fx < 0, x, y, 1, 1, pal[c]); }
       return;
     }
-    const side = !back && Math.abs(fx) > 0.5, v0 = back ? st.back : (side && st.side) || st.front, mir = side && !!st.side && fx < 0;
-    const view = typeof v0 === 'function' ? v0(o.anim || 0) : v0;   // tóc lửa / aura: lớp đổi theo anim
+    const side = !back && Math.abs(fx) > 0.5, v0 = back ? st.back : (side && st.side) || st.front, mir = bd ? fx < 0 : side && !!st.side && fx < 0;
+    const raw = typeof v0 === 'function' ? v0(o.anim || 0) : v0;   // tóc lửa / aura: lớp đổi theo anim
+    // chéo lên: kiểu có bản vẽ riêng (st.bdiag, nhận lớp sau lưng) dùng bản đó, còn lại suy từ lớp sau lưng (turn)
+    const view = bd ? (st.bdiag ? st.bdiag(raw) : raw.map(turnOf)) : raw;
     const hp = Object.assign({ H: o.hair, h: shade(o.hair, 0.3), L: shade(o.hair, -0.35), z: mix(o.skin || pal.S, o.hair, 0.45), A: o.band }, st.pal || {});
-    for (const L of view) if (L.under) layer(ctx, X, Y, L, hp, mir, back);
-    stamp(ctx, X, Y, BALD[back ? 'back' : 'front'], pal);
-    for (const L of view) if (!L.under) layer(ctx, X, Y, L, hp, mir, back);
+    for (const L of view) if (L.under) layer(ctx, X, Y, L, hp, mir, back, bd);
+    stamp(ctx, X, Y, bald, pal, bd && fx < 0);
+    for (const L of view) if (!L.under) layer(ctx, X, Y, L, hp, mir, back, bd);
     // quầng sáng (tóc lửa): đĩa px mờ cộng sáng quanh đỉnh đầu
     if (st.glow) { const g = st.glow(o.anim || 0); ctx.globalCompositeOperation = 'lighter'; discW(ctx, X, Y, g.x, g.y, g.r, g.c); ctx.globalCompositeOperation = 'source-over'; }
   }

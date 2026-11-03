@@ -52,6 +52,9 @@ window.SFC = window.SFC || {};
       PTR: noKnee(PLANT_TR), PTL: noKnee(PLANT_TL), PTN: noKnee(PLANT_TN),
       LIFT: noKnee(LIFT), KICK_F: noKnee(KICK_F), KICK_B: noKnee(KICK_B), LIFT_B: noKnee(LIFT_B),
       front: torso(false), back: torso(true),
+      // chéo lên (bdiag, hình nhìn phải): lưng xoay theo người nên cổ áo sau lệch 1 cột về phía ngược hướng mặt; mép phải vẫn tối (nắng bên trái)
+      bdiag: Object.assign(torso(true), { rows: torso(true).rows.map((r, j) => (j === 1 ? 'KTtttttTTtK' : r)) }),
+      bdiagL: Object.assign(torso(true), { rows: torso(true).rows.map((r, j) => (j === 1 ? 'KTTTttttttK' : r)) }),
       // tay gần như v2 armFull(): góc bo, 1 điểm tay áo, cẳng tay da 2 px (cột trong tối); cột phải là viền thân. Bàn tay chạm hàng quần cuối
       arm: { x: -8, y: top + 1, scale: 2, rows: ['.KK', 'KKt'].concat(rep('KSs', arm), ['.KK']) },
       // chạy: tay vung ra sau -> bàn tay khuất sau thân, ngắn 1 hàng
@@ -94,8 +97,29 @@ window.SFC = window.SFC || {};
       '..KKsssssssKK..',
       '....KKKKKKK....',
     ] },
+    // chéo lên (bdiag, hình nhìn phải; nhìn trái = lật): sau gáy xoay theo người -> nút băng đô lệch 1 cột ngược hướng mặt,
+    // bên hướng mặt lộ dải má + quai hàm 2 cột dưới chân tóc (tóc mai che hàng đầu dưới băng đô)
+    bdiag: { x: -7, y: -25, scale: 2, rows: [
+      '....KKKKKKK....',
+      '..KKHHHHHHHKK..',
+      '.KHHHHHHHHHHHK.',
+      'KBBBBBBBBBBBBBK',
+      'KHHHHHbbHHHHHHK',
+      'KHHHHHbbHHHHHSK',
+      'KHHHHHHHHHHHSsK',
+      'KHHHHHHHHHHHSsK',
+      'KHHHHHHHHHHHSsK',
+      'KKHHHHHHHHHHSKK',
+      '.KKSSSSSSSSsKK.',
+      '..KKsssssssKK..',
+      '....KKKKKKK....',
+    ] },
   };
-  const headOf = (back) => (back ? HEAD_A.back : HEAD_A.front);
+  const headOf = (back, bd = false) => (bd ? HEAD_A.bdiag : back ? HEAD_A.back : HEAD_A.front);
+  // chéo lên (hình nhìn phải): ô da má lộ ra bên hướng mặt = ô da của đầu A chéo lên mà sau lưng là tóc / băng đô ('x,y' -> 'S' | 's').
+  // Tóc / mũ (hair.js) bỏ tóc ở đây, phụ kiện mặt (face.js) chỉ vẽ phần nhìn ngang rơi vào đây
+  const BDIAG_CHEEK = new Map();
+  HEAD_A.bdiag.rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if ('Ss'.includes(r[i]) && 'HBb'.includes(HEAD_A.back.rows[j][i])) BDIAG_CHEEK.set((HEAD_A.bdiag.x + i) + ',' + (HEAD_A.bdiag.y + j), r[i]); });
 
   // mặt, lệch ex px thế giới theo hướng nhìn: mắt vuông 3 x 3 như đầu tròn hiện tại, đáy mắt / mũi / miệng ở hàng -17 / -16 / -15
   // (tính trước khi hạ theo thân, xem BODY.dy)
@@ -136,5 +160,5 @@ window.SFC = window.SFC || {};
   // bảng màu chớp trắng: mọi màu trừ viền
   const FLASH = new Proxy({}, { get: (t, k) => (k === 'K' ? 'rgba(0,0,0,0)' : 'rgba(255,255,255,0.6)') });
 
-  Object.assign(Sprite, { palette, LEG_TR, LEG_TL, LEG_TN, at, PLANT_TR, PLANT_TL, PLANT_TN, LIFT, KICK_F, KICK_B, LIFT_B, SHIRT, rep, noKnee, BODY, HEAD_A, headOf, face, shadow, rowOf, BANDAGE, BLOOD, FLASH });
+  Object.assign(Sprite, { palette, LEG_TR, LEG_TL, LEG_TN, at, PLANT_TR, PLANT_TL, PLANT_TN, LIFT, KICK_F, KICK_B, LIFT_B, SHIRT, rep, noKnee, BODY, HEAD_A, headOf, BDIAG_CHEEK, face, shadow, rowOf, BANDAGE, BLOOD, FLASH });
 })();

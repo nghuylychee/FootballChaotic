@@ -5,7 +5,7 @@ window.SFC = window.SFC || {};
 
 (function () {
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
-  const { KICKS } = Sprite;
+  const { KICKS, bdiagOf } = Sprite;
   // Game chỉ vẽ tư thế sút SAU khi bóng rời chân (sút: kick.poseTime 0.12 s ≈ 8 khung · vô-lê: firstTime.volley.pose 0.22 s ≈ 13 khung),
   // nên không có lấy đà: chạm bóng (tư thế khoá, tia sáng ở mũi giày) -> vung theo đà lên cao (tư thế khoá) -> về đứng.
   // Pha như Hard attack: 'in' u = 1 = chạm bóng · 'go' chạm bóng -> theo đà · 'out' theo đà -> đứng. keys = [đứng, chạm bóng, theo đà]
@@ -31,14 +31,14 @@ window.SFC = window.SFC || {};
       arms: [[P + 0.4, P / 2], [P + 0.7, P / 2]] },
   };
   // chân trụ: sút đặt lùi 1 ô (bàn chân sút chạm bóng ngay trước, không đè lên) · vô-lê đứng tại chỗ
-  for (const T of [SHOOT, VOLLEY]) { T.diag = T.side; T.tuck = false; }
+  for (const T of [SHOOT, VOLLEY]) { T.diag = T.side; T.bdiag = bdiagOf(T.side); T.tuck = false; }
   SHOOT.plant = 0; VOLLEY.plant = 1;
   KICKS.shoot = SHOOT; KICKS.volley = VOLLEY;
   // móc xe đạp (Comet One-Two, atkType 'bicycle'): tư thế vô-lê, renderer lộn ngược cả người lúc chạm bóng. Đang bay nên chân trụ co suốt (tuck 'always').
   // 2 tay giơ hẳn lên suốt cú đá (user 2026-11-01): chữ V như ARMS_UP của hit.js (ở đây không nhô vai: renderer lộn ngược cả người nên tay đã rõ)
   const BICYCLE = Object.assign({}, VOLLEY, { tuck: 'always' }), UP = [P + 0.9, -0.9];
   for (const v of ['side', 'front', 'back']) BICYCLE[v] = Object.assign({}, VOLLEY[v], { arms: [UP, UP] });
-  BICYCLE.diag = BICYCLE.side;
+  BICYCLE.diag = BICYCLE.side; BICYCLE.bdiag = bdiagOf(BICYCLE.side);
   KICKS.bicycle = BICYCLE;
 
   Object.assign(Sprite, { SHOOT, VOLLEY, BICYCLE });

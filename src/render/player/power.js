@@ -6,7 +6,7 @@ window.SFC = window.SFC || {};
 
 (function () {
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
-  const { KICKS } = Sprite;
+  const { KICKS, bdiagOf } = Sprite;
   const P = Math.PI;
   // lấy đà: chân thu cao ra sau (gót gần ngang hông), tay phải vung ra trước, tay trái ra sau · hết tầm: chân vung lên quá hông, bật cao, người lao tới
   const POWER = {
@@ -15,7 +15,7 @@ window.SFC = window.SFC || {};
       arms: [[P + 1.1, 1.3], [P - 1.3, -0.9]] },
     back: KICKS.hard.back, plant: 2, tuck: false, inBack: true,
   };
-  POWER.diag = POWER.side;
+  POWER.diag = POWER.side; POWER.bdiag = bdiagOf(POWER.side);
   KICKS.power = POWER;
   // nhịp (giây, Sprite.kickTimeline): lấy đà w (đứng: kick.powerWind) · vung s · giữ hết tầm f · về o · khuỵu cw, ngả sau lb, lao tới lf, bật hop (px mịn)
   // shake = run tối đa (px mịn) sau shakeT giây giữ tư thế lấy đà
