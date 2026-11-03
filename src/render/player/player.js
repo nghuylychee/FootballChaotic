@@ -84,7 +84,8 @@ window.SFC = window.SFC || {};
       // nhảy Ground Slam / Thiên Thạch (state slam): tay giơ theo độ cao, hết lúc chạm 5 px -> tiếp đất là tay vung xuống
       slam: !ghost && p.state === 'slam' ? Math.min(1, (p.airZ || 0) / 5) : 0,
     };
-    const x = Math.round(p.x), y = Math.round(p.y);
+    // lưới vẽ vị trí: Renderer.posGrid (mặc định nửa px, user 2026-11-03): sprite vẽ ở lưới mịn (2 x, 2 y) nên nửa px thế giới vẫn là 1 ô mịn trọn
+    const R = SFC.Renderer, x = R ? R.snap(p.x) : Math.round(p.x), y = R ? R.snap(p.y) : Math.round(p.y);
     const jx = (atk && atk.jx) || 0;   // đứng lấy đà sút mạnh: người run (px mịn)
     // bị đá bay (fly.js): pha theo dõi ở phía vẽ. Renderer.airborne truyền sẵn p.fly (nó vẽ bản sao của cầu thủ). Nằm / lăn dậy dưới đất:
     // tự xoay quanh giữa thân (bóng đổ vẽ riêng, không xoay)

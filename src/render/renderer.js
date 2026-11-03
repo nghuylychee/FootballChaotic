@@ -7,6 +7,11 @@ window.SFC = window.SFC || {};
   const PASS_COLORS = { ground: '#7fe7ff', through: '#9dff3d', lob: '#ffb13d' };
 
   const R = {
+    // lưới vẽ vị trí cầu thủ + bóng trên canvas trận x2 (px thế giới): 0.5 = nửa px (1 px canvas, sắc nét), 1 = px nguyên. Không vẽ ở toạ độ số thực:
+    // mép từng hàng ô bị pha màu -> sọc ngang + viền nhoè khi chạy (đã thử 2026-11-03). PlayerSprite.drawPlayer, Sprites.drawBall đọc
+    posGrid: 0.5,
+    snap(v) { return Math.round(v / this.posGrid) * this.posGrid; },
+
     init(canvas) {
       const C = SFC_CONFIG.game.render;
       // canvas gấp đôi (1280 x 720) cho sprite người chơi 2x (src/render/player): mọi thứ khác vẫn vẽ ở toạ độ 640 x 360, mỗi khung scale x2
