@@ -1,0 +1,17 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "pt-btn go  sel",
+  "txt": "CONTINUE",
+  "x": 464,
+  "y": 548,
+  "w": 352,
+  "h": 62
+ },
+ "order": [
+  "end"
+ ],
+ "id": "runover",
+ "title": "RUN OVER",
+ "moving_pct": 0.0
+}

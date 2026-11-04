@@ -1,0 +1,152 @@
+{
+  "id": "map",
+  "order": 4,
+  "title": "Map GOAT PATH",
+  "where": "PLAY › GOAT PATH › map · trang runmap · src/ui/runmap.js (render, mapHtml, strip, legendBar) · css/style.css .rm-*",
+  "goal": "Chọn node đi tiếp. Mục tiêu dài hơn: vạch đường tới boss (ghé Shop, né hoặc tìm Elite, ghé LEGEND TRIAL) theo tình trạng của đội.",
+  "freq": "Mỗi act 7 lần chọn + boss, cả run khoảng 24 lần. Đây là màn ngoài trận gặp nhiều nhất, nên xét theo người đã quen: phải liếc là hiểu.",
+  "lens": "người đã quen",
+  "level": "chỉnh",
+  "wireNote": "vẽ trên đúng map act 1 ở ảnh giữa act",
+  "questions": [
+    "Mình đang ở đâu?",
+    "Đi được những node nào?",
+    "Node đang trỏ là gì?",
+    "Phía trước có gì (Shop, Elite, LEGEND, boss) để tính đường?",
+    "Đội đang thế nào: tiền, ai bị đau?"
+  ],
+  "states": [
+    { "id": "map-start", "label": "Đầu act 1", "note": "Chưa đi node nào, 3 Matchday chọn được, đang trỏ Matchday trái." },
+    { "id": "map-mid", "label": "Giữa act 1", "note": "Đã qua Matchday → Skill game → LEGEND TRIAL. Đi tiếp được Skill game (đang trỏ) hoặc Elite. Có 3 BADGE, 2 GEAR, 1 chấn thương." }
+  ],
+  "keep": [
+    "Node đang trỏ đứng hạng 1 ở cả 3 phép thử (gốc, nheo mắt, xám). Thứ động trên nó (vòng sáng, mũi tên nhún) đặt đúng chỗ.",
+    "Loại node đọc được bằng hình icon, không dựa vào màu: ảnh xám vẫn phân biệt bóng, nắm đấm, cọc, túi tiền, chân dung.",
+    "Đường vàng đã đi (giữa act) là thứ dễ đọc nhất trên map, kể cả khi nheo mắt.",
+    "Bảng chú thích dưới map: agent mắt mới cần nó (không có thì đọc cọc Skill game thành cây thông), và trong ảnh mờ nó lùi đúng chỗ. Giữ, khớp quyết định 2026-10-30.",
+    "Không lộ đối thủ trước trận (quyết định 2026-10-25): map không thiếu thông tin vì chuyện này."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "nặng", "kind": "trạng thái",
+      "title": "Node đi được chỉ khác node khác ở 1 viền vàng mảnh",
+      "body": "Ngoài node đang trỏ, các node đi được chỉ có viền --gold dày 2px. Nheo mắt ở đầu act: 2 Matchday đi được ở hàng dưới và 2 Matchday chưa tới ở tầng trên đều thành đốm trắng như nhau. Ảnh xám: mất hẳn. Agent mắt mới chỉ đoán được node nào đi được (\"guess\").",
+      "evidence": ["nheo mắt", "xám", "mắt mới"],
+      "pins": [ { "s": "map-start", "x": 636, "y": 600 }, { "s": "map-start", "x": 962, "y": 605 }, { "s": "map-mid", "x": 250, "y": 376 } ]
+    },
+    {
+      "n": 2, "sev": "nặng", "kind": "trạng thái",
+      "title": "Ở act 1 và act 3, node đã qua trông như node đi được",
+      "body": "Node đã qua lấy viền màu act (.rm-node.done, --ac), node đi được lấy viền --gold. Act 1 là #ffd23f, act 3 là #e4ae39, còn --gold là #ffe14f, gần như cùng một màu. Ảnh giữa act: Skill game đã qua (dưới) và Elite đi được (trái) cùng viền vàng. Agent mắt mới: \"Yellow / orange / gold rings mean three things: reachable, done, and LEGEND TRIAL colour.\"",
+      "evidence": ["code: css/style.css .rm-node.done / .avail", "mắt mới"],
+      "pins": [ { "s": "map-mid", "x": 470, "y": 590 } ]
+    },
+    {
+      "n": 3, "sev": "vừa", "kind": "mã hoá màu",
+      "title": "Viền LEGEND TRIAL đổi màu theo từng LEGEND, viền đỏ trông như ELITE",
+      "body": "Node LEGEND TRIAL tô viền bằng màu riêng của LEGEND (runmap.js mapHtml: --nc = L.color), trong khi bảng chú thích vẽ LEGEND TRIAL màu cam. LEGEND đỏ trông như ELITE. Nheo mắt ở đầu act: đốm đỏ to nhất màn là một LEGEND TRIAL, và nó giành mắt với node đang trỏ. Agent mắt mới: \"the red node competes with it\", \"the purple ring isn't in the legend\".",
+      "evidence": ["nheo mắt", "mắt mới", "code"],
+      "pins": [ { "s": "map-start", "x": 960, "y": 380 }, { "s": "map-start", "x": 684, "y": 236 } ]
+    },
+    {
+      "n": 4, "sev": "vừa", "kind": "vị trí",
+      "title": "Không có dấu \"bạn đang ở đây\"",
+      "body": "Đầu act không có gì đánh dấu vị trí của mình. Mũi tên vàng trên node đang trỏ đọc như con trỏ (\"Where am I: no idea\"). Giữa act, vòng phấn là vị trí của bạn, nhưng nằm sát ngay dưới nhãn của node đang trỏ, nên 2 điểm nhấn dính thành một khối (\"'me' and 'next pick' merge into one central blob\").",
+      "evidence": ["mắt mới", "nheo mắt"],
+      "pins": [ { "s": "map-start", "x": 270, "y": 466 }, { "s": "map-mid", "x": 560, "y": 500 } ]
+    },
+    {
+      "n": 5, "sev": "vừa", "kind": "chồng lấn",
+      "title": "Nhãn node đang trỏ đè lên node đang đứng",
+      "body": "Nhãn SKILL GAME luôn nằm dưới node đang trỏ. Khi node đó ở ngay trên chỗ bạn đứng, nhãn che ngôi sao của node LEGEND đang đứng và đoạn đường nối 2 node. Trong ảnh mờ, thứ sáng nhất là cái nhãn chứ không phải node.",
+      "evidence": ["ảnh gốc", "nheo mắt", "mắt mới"],
+      "pins": [ { "s": "map-mid", "x": 760, "y": 425 } ]
+    },
+    {
+      "n": 6, "sev": "vừa", "kind": "đọc đường",
+      "title": "Đường nối lẫn vào vạch sân, nheo mắt là mất cấu trúc đường đi",
+      "body": "Đường nét đứt có cùng màu và cùng độ đậm với vạch sân (vòng giữa sân, vòng cấm). Nheo mắt ở đầu act thì đường biến mất, chỉ còn các đốm rời, không biết node nào nối node nào (\"the dashed paths vanish, so the route structure vanishes\"). Đường vàng đã đi ở giữa act thì vẫn còn, tức là đường đậm hơn thì đọc được.",
+      "evidence": ["nheo mắt", "mắt mới"],
+      "pins": [ { "s": "map-start", "x": 520, "y": 470 } ]
+    },
+    {
+      "n": 7, "sev": "vừa", "kind": "tầm nhìn",
+      "title": "Chỉ thấy khoảng nửa act, boss và Shop cuối luôn khuất",
+      "body": "Map cao 562 đơn vị, khung nhìn khoảng 270 (đơn vị 640x360), nên mỗi lúc chỉ thấy khoảng 3,5 trong 8 hàng. Đầu act không thấy boss, cũng không thấy 3 Shop ở tầng cuối. Muốn vạch đường thì phải cuộn. Màn 16:9 nhưng map chạy dọc theo chiều ngắn. Node bị cắt ở mép trên trông như lỗi. Agent mắt mới (giữa act): \"I've lost the overall picture of how far I am from the boss.\"",
+      "evidence": ["code: MAP_W / ROW_H", "mắt mới"],
+      "pins": [ { "s": "map-start", "x": 1030, "y": 128 }, { "s": "map-mid", "x": 1030, "y": 128 } ]
+    },
+    {
+      "n": 8, "sev": "nhẹ", "kind": "tương phản",
+      "title": "Node Skill game chìm vào sân",
+      "body": "Cọc xanh lá #6bff4f nằm trên sân xanh lá. Khi nheo mắt, đây là node chìm nhất (\"green skill-game cones vanish, green on a green pitch\").",
+      "evidence": ["nheo mắt", "mắt mới"],
+      "pins": [ { "s": "map-start", "x": 360, "y": 392 } ]
+    },
+    {
+      "n": 9, "sev": "nhẹ", "kind": "chuyển động",
+      "title": "Chip cuộn ▲ / ▼ nhấp nháy ngang node đang trỏ, còn đè node",
+      "body": "Theo bản đồ chuyển động, ngoài node đang trỏ thì 2 chip cuộn ▲👑 / ▼ nhấp nháy mạnh nhất màn. Thông tin hạng 3 lại động ngang hạng 1. Chip ▲👑 còn đè lên node ở mép trên. 3 nhân vật nhỏ trên dải SQUAD và dấu ✚ cũng động nhẹ.",
+      "evidence": ["chuyển động", "ảnh gốc"],
+      "pins": [ { "s": "map-mid", "x": 720, "y": 132 }, { "s": "map-start", "x": 720, "y": 132 } ]
+    },
+    {
+      "n": 10, "sev": "nhẹ", "kind": "thông tin phụ",
+      "title": "Thanh trên: đúng là phụ, nhưng 3 thứ đọc sai",
+      "body": "Khi nheo mắt, dải SQUAD và tiền gần như biến mất. Đúng mức, vì đây là thông tin phụ. Nhưng có 3 thứ đọc sai: dấu ✚ đỏ trông như nút nâng cấp; vạch nhỏ dưới mỗi người (ô GEAR) không đoán được là gì; 3 icon BADGE viền xanh dương là thứ nổi nhất thanh dù không giúp chọn node.",
+      "evidence": ["mắt mới", "nheo mắt"],
+      "pins": [ { "s": "map-mid", "x": 348, "y": 22 }, { "s": "map-mid", "x": 510, "y": 112 } ]
+    }
+  ],
+  "inventory": [
+    ["Node đang trỏ + nhãn", "Node đang trỏ là gì", "cần ngay", "1", "Đúng hạng. Nhãn đè node đang đứng (#5)."],
+    ["Các node đi được khác", "Đi được đâu", "cần ngay", "ngang node chưa tới", "Thiếu: chỉ có 1 viền 2px (#1, #2)."],
+    ["Vị trí của bạn", "Đang ở đâu", "cần ngay", "đầu act: không có", "Thiếu (#4)."],
+    ["Đường nối", "Node nào nối node nào", "cần khi tính đường", "mất khi nheo mắt", "Lẫn vạch sân (#6)."],
+    ["Node xa hơn (loại node)", "Phía trước có gì", "cần khi tính đường", "vừa; LEGEND đỏ nổi quá", "Khuất nửa act (#3, #7)."],
+    ["Boss", "Còn bao xa", "cần khi tính đường", "chỉ là chip ▲👑", "Khuất (#7)."],
+    ["Tiền", "Đủ mua ở Shop không", "đôi khi", "thấp", "Đúng mức."],
+    ["OVR từng người", "Đội mạnh cỡ nào", "đôi khi", "thấp", "Đúng mức."],
+    ["✚ chấn thương", "Ai đau, có nên ghé Locker Room", "cần khi tính đường", "thấp", "Hình dễ đọc nhầm (#10)."],
+    ["Vạch ô GEAR", "—", "không cần ở map", "thấp", "Không ai đoán ra; để ở SQUAD là đủ."],
+    ["Icon BADGE", "—", "không cần để chọn node", "nổi nhất thanh", "Để ở SQUAD / rê chuột là đủ."],
+    ["Bảng chú thích", "Icon này là gì (người mới)", "cần (người mới)", "thấp", "Giữ."],
+    ["Vạch sân", "— (không khí)", "trang trí", "ngang đường nối", "Giảm độ đậm (#6)."]
+  ],
+  "fresh": [
+    "Can go now: the three yellow-ringed balls on the bottom row (guess, fairly confident). Where am I: no idea. There's no token for me.",
+    "Without the legend I'd never have read the green cone as SKILL GAME (it looks like a Christmas tree).",
+    "The red node competes with [the selected node]. The purple ring isn't in the legend.",
+    "There are two highlights at once (chalk circle vs big yellow ring), so cursor vs position is unclear.",
+    "The red 70 with a '+' could mean injured, or 'upgrade available'.",
+    "Scrolled mid-map, I've lost the overall picture of how far I am from the boss."
+  ],
+  "verdict": "Chỉnh thứ bậc (phương án A) làm được ngay. Tổ chức lại (phương án B) đáng làm thử thành bản bấm được rồi mới quyết.",
+  "options": [
+    {
+      "id": "A", "name": "Giữ map dọc, sửa trạng thái và thứ bậc", "wire": "map.wire-a.svg",
+      "notes": [
+        "Node đi được: nền sáng, viền vàng dày, đường nối từ chỗ bạn tới nó vàng liền. Mọi node chưa tới giảm sáng khoảng một nửa. Trạng thái mang bằng độ sáng nên còn nguyên khi nheo mắt hay chuyển xám.",
+        "Node đã qua: nền tối, viền xám, có dấu ✓ phấn. Bỏ viền màu act.",
+        "Dấu BẠN: mặt nhân vật của bạn ngay dưới node đang đứng (đầu act: ở khung thành nhà, dưới cùng). Nhãn node đang trỏ đặt phía trên node, không đè chỗ bạn.",
+        "LEGEND TRIAL: viền cam như bảng chú thích. Màu riêng của LEGEND chỉ còn ở chân dung bên trong.",
+        "Đường nét đứt sáng hơn vạch sân, vạch sân giảm độ đậm. Cọc Skill game đặt trên nền node tối, không để xanh trên xanh.",
+        "Chip ▲ / ▼ đứng yên, chỉ hiện khi phía đó còn khuất, và không đè node."
+      ],
+      "gain": "Rẻ: phần lớn là CSS (.rm-node.*, .rm-lines, .rm-more) cộng vài dòng runmap.js (mapHtml: --nc của LEGEND, vị trí nhãn, dấu BẠN). Giữ nguyên bố cục m đã duyệt, sửa #1–#6, #8, #9.",
+      "cost": "Vẫn chỉ thấy khoảng nửa act, boss khuất, muốn tính đường vẫn phải cuộn (#7 còn nguyên)."
+    },
+    {
+      "id": "B", "name": "Map ngang, cả act trong 1 màn", "wire": "map.wire-b.svg",
+      "notes": [
+        "Sân nằm ngang như sân trong trận: xuất phát ở khung thành nhà bên trái, boss ở khung thành bên phải. Đi từ trái sang phải là tấn công.",
+        "8 cột (7 tầng + boss) trên 576 đơn vị bề ngang: đầu act đã thấy boss, các Elite và 3 Shop cuối. Không cuộn, bỏ chip ▲ / ▼ và phần code cuộn.",
+        "Node nhỏ lại từ 34 xuống khoảng 26 đơn vị. Áp dụng thêm mọi sửa trạng thái của A.",
+        "Phím đổi trục: → / ← tiến lùi theo cột, ↑ / ↓ chọn giữa các node cùng tầng."
+      ],
+      "gain": "Trả lời được \"phía trước có gì / còn bao xa\" trong 1 lần nhìn. Khớp chiều màn 16:9 và chiều sân trong trận. Bỏ được cả nhóm code cuộn (bindMap, homeScroll, cuộn trong mapStep).",
+      "cost": "Viết lại pos() + pitch() + điều hướng phím. Node và nhãn nhỏ hơn; chip bỏ phiếu co-op trên node chật hơn (tầng 5 node: mỗi làn chỉ khoảng 43 đơn vị). Đổi hình ảnh \"boss ở khung thành trên\" m đã chọn."
+    }
+  ],
+  "pick": "Làm A trước: rẻ, sửa được phần lớn vấn đề, không đổi bố cục. Chọn B chỉ khi m thấy vạch đường là phần chơi quan trọng của GOAT PATH; lúc đó t làm B thành bản chạy được (?runtest=map) để m bấm thử trước khi quyết."
+}

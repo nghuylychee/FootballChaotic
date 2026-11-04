@@ -1,0 +1,15 @@
+{
+ "page": "run",
+ "sel": {
+  "cls": "pt-btn go  sel",
+  "txt": "CONTINUE",
+  "x": 420,
+  "y": 512,
+  "w": 440,
+  "h": 80
+ },
+ "order": [],
+ "id": "tab-run",
+ "title": "PLAY › GOAT PATH · đang có run",
+ "moving_pct": 6.8
+}

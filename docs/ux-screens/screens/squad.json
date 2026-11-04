@@ -1,0 +1,116 @@
+{
+  "id": "squad",
+  "order": 3,
+  "title": "BUILD YOUR SQUAD",
+  "where": "PLAY › GOAT PATH › START RUN › BUILD YOUR SQUAD · trang runmap (chưa có run, RunUI.pick) · src/ui/runmap.js (newPick, pk*, renderPick, pcard, bindDrag, pkDrop) · shared/meta/run.js (candidates, natural, makeSquad) · css/style.css .pk-*, .sq-*",
+  "goal": "Chọn 2 đồng đội AI (và vị trí của mình) cho cả run, rồi bắt đầu.",
+  "freq": "Mỗi run 1 lần, trước trận đầu. Đội hình giữ suốt run nên đây là quyết định đáng đọc kỹ, nhất là vài run đầu.",
+  "lens": "người mới",
+  "level": "chỉnh",
+  "questions": [
+    "Phải làm gì ở đây?",
+    "Ô nào đang thiếu người?",
+    "Ai hợp ô này? Người này mạnh gì, mang Core gì?",
+    "Mình đá vị trí nào, đổi được không?",
+    "Xong chưa, bắt đầu ở đâu?"
+  ],
+  "states": [
+    { "id": "squad-empty", "label": "Vừa vào", "note": "Bạn ở ô FWD, MID và DEF trống. Ô MID nhấp nháy + nhãn PICK. Chọn sẵn ứng viên đầu (ROOKIE). START RUN mờ kèm [MID][DEF]." },
+    { "id": "squad-ready", "label": "Đủ người", "note": "Cùng phiên với ảnh trước, sau 2 lần Enter: MID = ROOKIE, DEF = Sh4dowStep (2 ứng viên đầu băng ghế). START RUN sáng và được chọn. Băng ghế mờ. Nhân vật của bạn xoay người khoe đồ (Menu.animate) nên ảnh đầu chụp lúc quay lưng, không phải lỗi." }
+  ],
+  "keep": [
+    "Ô cần chọn kế tiếp nhấp nháy viền vàng + nhãn PICK, cùng dòng \"Pick your MID from the bench\" (run-12). Mắt mới nói đúng việc của màn ngay câu đầu.",
+    "Chọn sẵn ứng viên đầu tiên, Enter 2 lần là đủ đội, đủ người thì START RUN tự được chọn. Người vội không bị kẹt.",
+    "START RUN luôn hiện ở giữa (run-12) và sáng lên khi đủ người. Ảnh squad-ready nheo mắt chỉ còn START RUN + 3 khuôn mặt, đúng hạng.",
+    "Thẻ cầu thủ dùng chung khuôn SQUAD (quyết định 2026-10-29): người chơi gặp lại đúng thẻ này ở dải đội hình và màn SQUAD, học 1 lần.",
+    "Kéo thả, bấm chuột và phím đều làm được cùng một việc."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "hỗ trợ quyết định",
+      "title": "Băng ghế không giúp ghép người với ô đang chờ",
+      "body": "Dòng hướng dẫn nói \"Pick your MID\", nhưng băng ghế xếp theo roster rồi tới người ngẫu nhiên (Run.candidates), trộn FWD / MID / DEF. Vị trí sở trường là chữ 5px màu mờ cạnh OVR (.pk-co em). Mắt mới hỏi: \"can a FWD [...] play in my MID slot? The prompt says 'Pick your MID', so offering a FWD is confusing.\" Lệch vị trí được phép (chỉ số đi theo người), nhưng không vô hại: DEF là người giữ goal (Game.canKeep), và nền chỉ số DEF có GK 75 trong khi FWD 68 (run.config.js squad.base). Thẻ băng ghế chỉ hiện 2 chỉ số mạnh nhất, nên lúc chọn DEF không thấy GK của ai.",
+      "evidence": ["mắt mới", "code: run.js candidates / natural, runmap.js renderPick (.pk-co, .pk-ct)", "config: run.squad.base"],
+      "pins": [ { "s": "squad-empty", "x": 600, "y": 614 }, { "s": "squad-empty", "x": 792, "y": 614 } ]
+    },
+    {
+      "n": 2, "sev": "vừa", "kind": "khám phá",
+      "title": "Đổi vị trí của chính mình là lựa chọn thật, nhưng màn không nói",
+      "body": "Bạn mặc định đứng FWD. Bấm ô MID / DEF hoặc kéo thẻ của mình sang là đổi chỗ (pkMove), và chọn DEF nghĩa là bạn giữ goal cả run. Không chữ nào nói chuyện này: dòng hướng dẫn chỉ nói chọn từ băng ghế, thẻ của bạn không có dấu kéo hay đổi. Mắt mới tả việc của màn là chọn người \"to play next to me, the FWD\", tức coi vị trí của mình là cố định.",
+      "evidence": ["mắt mới", "code: runmap.js renderPick (hint), pkMove, targets 'slot'"],
+      "pins": [ { "s": "squad-empty", "x": 200, "y": 142 }, { "s": "squad-ready", "x": 200, "y": 142 } ]
+    },
+    {
+      "n": 3, "sev": "nhẹ", "kind": "trạng thái",
+      "title": "START RUN mờ vẫn là khối sáng thứ 2 khi nheo mắt, [MID][DEF] trông như phím",
+      "body": "Nút mờ dùng grayscale + brightness 0.7 trên nền vàng (.pt-btn.go.dis), ra một khối xám sáng to. Ảnh nheo mắt: nó chỉ sau tiêu đề, sáng hơn băng ghế là chỗ đang cần làm. Mắt mới: \"the grey START RUN bar is surprisingly strong for a disabled button\". Các vị trí còn thiếu vẽ trong ô nét đứt (.pk-miss i) giống phím bấm: \"The [MID][DEF] tags on the greyed START RUN look like key prompts.\" Giữ quyết định run-12 (nút luôn hiện), chỉ hạ độ nổi.",
+      "evidence": ["nheo mắt", "mắt mới", "code: css .pt-btn.go.dis, .pk-miss i"],
+      "pins": [ { "s": "squad-empty", "x": 1146, "y": 472 } ]
+    },
+    {
+      "n": 4, "sev": "nhẹ", "kind": "trạng thái",
+      "title": "Đủ người thì băng ghế mờ như bị khoá, nút ✕ lẫn vào icon trường phái",
+      "body": "Đủ 2 người thì cả băng ghế mờ 50% (.pk-bc.dis). Nhìn như khoá, nhưng kéo một ứng viên lên ô vẫn thay người được (pkDrop), còn bấm thì hiện \"Remove a teammate to pick again.\" (case 'cand'). Mắt mới: \"The dimmed bench reads as disabled: can I still swap players?\". Nút ✕ bỏ người là ô vuông 12px đỏ đứng sát các ô icon trường phái cùng cỡ (.pk-card .pk-x): \"looks like one of them\".",
+      "evidence": ["mắt mới", "ảnh gốc", "code: css .pk-bc.dis, .pk-card .pk-x; runmap.js pkDrop, case 'cand'"],
+      "pins": [ { "s": "squad-ready", "x": 702, "y": 126 }, { "s": "squad-ready", "x": 234, "y": 590 } ]
+    },
+    {
+      "n": 5, "sev": "nhẹ", "kind": "chú thích",
+      "title": "Icon trường phái Core không có tên, mà lại nổi nhất trên băng ghế",
+      "body": "Mỗi ứng viên có 2 ô màu là 2 trường phái Core họ hay ra (Run.schoolsOf). Tên trường phái chỉ nằm ở title (rê chuột), bàn phím và tay cầm không thấy. Ảnh nheo mắt: trên băng ghế, các ô màu này nổi hơn mặt, tên và OVR. Mắt mới: \"There is no legend for the coloured icons on the bench cards (music note, glove, boot, dice, shield...).\"",
+      "evidence": ["nheo mắt", "mắt mới", "code: runmap.js schoolIcons"],
+      "pins": [ { "s": "squad-empty", "x": 229, "y": 503 } ]
+    }
+  ],
+  "inventory": [
+    ["Tiêu đề BUILD YOUR SQUAD", "Màn gì", "cần (lần đầu)", "1", "Nổi hơn cần một chút, không giành việc."],
+    ["Thẻ của bạn (FWD)", "Mình là ai, đá đâu", "đôi khi", "2", "Không có dấu đổi vị trí (#2)."],
+    ["Ô MID trống nhấp nháy + PICK", "Ô nào đang thiếu", "cần ngay", "3, động mạnh nhất", "Đúng chỗ."],
+    ["Ô DEF trống", "Còn thiếu gì", "cần khi chọn tiếp", "thấp", "Đúng mức."],
+    ["Dòng \"Pick your MID from the bench\"", "Phải làm gì", "cần (người mới)", "mất khi nheo mắt", "Ô nhấp nháy đã gánh việc này."],
+    ["START RUN mờ + [MID][DEF]", "Xong chưa", "cần khi đủ người", "2 (quá nổi)", "#3."],
+    ["Thẻ băng ghế: mặt + tên + OVR", "Có những ai", "cần ngay", "vừa", "Đúng."],
+    ["Vị trí sở trường trên thẻ băng ghế", "Ai hợp ô này", "cần ngay", "rất thấp (5px)", "#1."],
+    ["2 chỉ số mạnh nhất", "Người này mạnh gì", "cần ngay", "thấp", "Thiếu GK lúc chọn DEF (#1)."],
+    ["Icon trường phái Core", "Mang Core gì", "đôi khi", "nổi nhất băng ghế", "Không có tên (#5)."],
+    ["✕ trên thẻ đồng đội", "Bỏ người này", "cần khi đổi ý", "thấp", "Lẫn vào icon (#4)."],
+    ["BACK", "Quay lại tab", "đôi khi", "thấp", "Đúng mức."]
+  ],
+  "fresh": [
+    "Pick a MID and a DEF from the bench to play next to me, the FWD.",
+    "The bench mixes positions: can a FWD like ZizouSpin play in my MID slot? The prompt says \"Pick your MID\", so offering a FWD is confusing.",
+    "There is no legend for the coloured icons on the bench cards (music note, glove, boot, dice, shield...).",
+    "The [MID][DEF] tags on the greyed START RUN look like key prompts.",
+    "The red X (remove, I guess) sits right next to the ability icons and looks like one of them.",
+    "The dimmed bench reads as disabled: can I still swap players?"
+  ],
+  "verdict": "Màn làm tốt việc chính: biết phải chọn, chọn nhanh. Thiếu phần giúp chọn đúng (ai hợp ô nào, mình đổi chỗ được không). Chỉnh trong bố cục hiện có (A) là đủ.",
+  "wireNote": "vẽ lúc đã chọn MID, đang chờ DEF (giữa 2 ảnh); tên và số liệu trên băng ghế là minh hoạ",
+  "options": [
+    {
+      "id": "A", "name": "Giữ bố cục, đánh dấu người hợp ô và nói được đổi chỗ", "wire": "squad.wire-a.svg",
+      "notes": [
+        "Thẻ băng ghế: vị trí sở trường thành chip to. Người hợp ô đang chờ (Run.natural = DEF) có chip vàng, người khác chip xám. Không xếp lại thứ tự để thẻ không nhảy chỗ khi đang chọn.",
+        "Ô DEF ghi KEEPS GOAL dưới chữ DEF. Lúc đang chờ DEF, dòng chỉ số trên thẻ băng ghế luôn có GK.",
+        "Thẻ của bạn có chip ⇄ SWAP. Đủ người thì dòng hướng dẫn đổi thành \"Drag cards to swap positions. The DEF keeps goal.\"",
+        "START RUN mờ chỉ còn viền + chữ tối, không còn khối xám sáng. Vị trí còn thiếu ghi bằng chữ: NEED DEF.",
+        "✕ thành chip chữ \"✕ BENCH\" ở chân thẻ, xa cụm icon trường phái. Đủ người thì băng ghế giữ sáng, vì thả lên ô vẫn thay được người.",
+        "Ứng viên đang trỏ hiện tên 2 trường phái ở dòng dưới băng ghế (\"RabonaRita · brings IRON + TIKI-TAKA Cores\"). Icon trường phái nhỏ và mờ bớt."
+      ],
+      "gain": "Sửa đủ #1–#5 trong renderPick + CSS .pk-*, không đổi luồng hay bố cục m duyệt 2026-10-29. Run.natural đã có sẵn để tô chip.",
+      "cost": "4–5 chữ mới phải dịch + build font ja. Thẻ băng ghế 90x72 đã chật: chip vị trí to hơn + GK phải bớt chỗ khác (tên dài bị cắt sớm hơn)."
+    },
+    {
+      "id": "B", "name": "Xem trước trong ô: trỏ ứng viên là thấy đủ thẻ của họ ở ô đang chờ", "wire": "squad.wire-b.svg",
+      "notes": [
+        "Trỏ (phím hoặc rê chuột) vào ứng viên nào thì thẻ đầy đủ của người đó hiện trong ô đang chờ, viền nét đứt: đủ 6 chỉ số có GK, vị trí sở trường, tên 2 trường phái. So sánh ngay tại chỗ người đó sẽ đứng.",
+        "Nhãn ô nói ô cần gì: \"DEF · KEEPS GOAL\". Người lệch vị trí thì chip vị trí trên thẻ xem trước đổi màu cảnh báo.",
+        "Thẻ băng ghế chỉ còn mặt, tên, OVR, chip vị trí. Chi tiết nằm ở thẻ xem trước.",
+        "START RUN mờ, ✕ BENCH, ⇄ SWAP sửa như A."
+      ],
+      "gain": "Chọn người bằng thẻ to đủ chỉ số, không phải đọc chữ 5px. Băng ghế gọn hơn. pcard đã có sẵn chỉ số xem trước (statCols với next), như ở màn LEGEND xin vào đội.",
+      "cost": "Thêm trạng thái xem trước trong renderPick (ứng viên đang trỏ → ô kế tiếp). renderPick vẽ lại cả trang, nên mỗi lần trỏ là vẽ lại; lúc kéo thả phải tắt xem trước. Việc nhiều khoảng gấp đôi A."
+    }
+  ],
+  "pick": "A trước: rẻ, sửa đủ 5 vấn đề. B đáng làm nếu sau vài run thử m thấy người chơi vẫn chọn đồng đội theo mặt."
+}

@@ -1,0 +1,20 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "rm-node k-match avail  sel",
+  "txt": "MATCHDAY",
+  "x": 288,
+  "y": 500,
+  "w": 80,
+  "h": 80
+ },
+ "order": [
+  "node:0.0",
+  "node:0.2",
+  "node:0.3",
+  "bag"
+ ],
+ "id": "map-start",
+ "title": "Map GOAT PATH · đầu act",
+ "moving_pct": 0.5
+}

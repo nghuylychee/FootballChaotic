@@ -1,0 +1,41 @@
+{
+  "intro": "Đo bằng cách chạy thật trên bản main (docs/ux-screens/journeys.py), bấm phím như người đã quen tay: chọn mặc định, bỏ qua mọi thứ bỏ qua được (giữ phím để bỏ qua cut-scene, Enter qua VS). Số giây gồm cả hoạt cảnh không bỏ qua được. Ô viền đỏ là bước t thấy thừa với người đã quen. Hành trình chơi với bạn đếm từ code vì không mở phòng online thật khi đo.",
+  "items": [
+    {
+      "title": "Bắt đầu run mới",
+      "count": "7 lần bấm · 8,4 giây · 6 màn (run thứ 2 trở đi)",
+      "steps": [{ "t": "trang chủ" }, { "t": "tab GOAT PATH" }, { "t": "BUILD YOUR SQUAD (3 lần bấm)" }, { "t": "cut-scene act 1", "x": true }, { "t": "thẻ mở act", "x": true }, { "t": "map" }],
+      "note": "Cut-scene act 1 và thẻ mở act chiếu lại ở mọi run mới, vì danh sách cảnh đã xem (seen) nằm trong từng run (shared/meta/run.js, Run.start tạo seen: []). Run thứ 10 vẫn phải giữ phím bỏ qua đúng cảnh đó. Thẻ mở act ở act 1 chỉ nhắc lại boss mà tab GOAT PATH vừa hiện (act 1 luôn là Block Wardens). Đề xuất: nhớ cảnh đã xem qua mọi run (Profile.data.runs), run đầu vẫn chiếu đủ; ở act 1 bỏ thẻ mở act. Từ run thứ 2 còn 5 lần bấm, khoảng 5 giây."
+    },
+    {
+      "title": "Tiếp tục run đang dở",
+      "count": "2 lần bấm · 2,1 giây · 3 màn",
+      "steps": [{ "t": "trang chủ" }, { "t": "tab GOAT PATH (CONTINUE)" }, { "t": "map" }],
+      "note": "Ngắn. CONTINUE được chọn sẵn, không có bước thừa."
+    },
+    {
+      "title": "Từ map vào trận",
+      "count": "3 lần bấm · 5,2 giây · 4 màn",
+      "steps": [{ "t": "map (vòng phấn 0,7 s)" }, { "t": "VS" }, { "t": "chọn Core đầu trận" }, { "t": "giao bóng" }],
+      "note": "Ổn. VS chặn bấm 0,35 giây đầu để khỏi bấm nhầm (intro.skipAfter); Enter bấm sớm hơn thì bị nuốt, phải bấm lại. Chọn Core xong còn khoảng 2,3 giây (lá bay vào YOUR BUILD) trước khi giao bóng."
+    },
+    {
+      "title": "Hết trận thắng, về map",
+      "count": "7 lần bấm · 10 giây · 5 màn",
+      "steps": [{ "t": "kết quả nhịp 1 (trên sân)" }, { "t": "kết quả nhịp 2 (đếm thưởng, CONTINUE)" }, { "t": "chọn GEAR" }, { "t": "chọn người đeo" }, { "t": "map" }],
+      "note": "Chuỗi dài nhất của một vòng chơi: 4 lần bấm và 5,7 giây chỉ để qua 2 nhịp kết quả, rồi tới 2 bước của GEAR. GEAR 2 bước (chọn món, chọn người) là đúng thiết kế. Có thể rút bằng cách gộp nhịp đếm thưởng vào màn chọn GEAR, nhưng t chưa đưa thành phương án: việc đó đổi nhịp kết thúc trận, cần m muốn trước."
+    },
+    {
+      "title": "Mua 1 món ở KIT VAN rồi đi",
+      "count": "3 lần bấm · 3,9 giây",
+      "steps": [{ "t": "KIT VAN: mua món đang chọn" }, { "t": "Esc (con trỏ tới LEAVE)" }, { "t": "Enter: rời" }, { "t": "map" }],
+      "note": "Ngắn. Esc chỉ đưa con trỏ tới LEAVE, Enter mới rời (quyết định run-01 của review 2026-11-02, để khỏi lỡ tay rời van). Mua xong con trỏ vẫn đứng trên món vừa bán."
+    },
+    {
+      "title": "Chơi GOAT PATH với bạn",
+      "count": "chủ phòng: 2 lần bấm + 1 mũi tên · bạn: 3 lần bấm + 1 mũi tên + gõ 7 ký tự (đếm từ code)",
+      "steps": [{ "t": "trang chủ" }, { "t": "tab GOAT PATH: HOST / JOIN" }, { "t": "đọc mã phòng cho bạn", "x": true }, { "t": "BUILD YOUR SQUAD trong phòng" }, { "t": "START RUN" }],
+      "note": "HOST / JOIN nằm ngay trên tab, không phải sang PRIVATE MATCH (RunUI.tabItems). Chỗ chậm là đọc mã 7 ký tự cho bạn qua kênh khác; trên Steam / CrazyGames phòng có INVITE FRIENDS. Phía game đổi được ít, nên chỉ ghi nhận."
+    }
+  ]
+}

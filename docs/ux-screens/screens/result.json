@@ -1,0 +1,85 @@
+{
+  "id": "result",
+  "order": 9,
+  "title": "Kết quả trận",
+  "where": "Còi mãn cuộc › #end: nhịp 1 trên sân (3 s) → nhịp 2 thưởng + bảng tỉ số · src/ui/endscreen.js (renderOutro, renderEnd, rewardPanel, playReward) · shared/meta/profile.js awardMatch · shared/meta/run.js record · css/style.css .outro-* / .rw-* / .sb-*",
+  "goal": "Biết thắng / thua, tỉ số, nhận được gì, rồi CONTINUE về map.",
+  "freq": "Mỗi trận 1 lần. Người đã quen bấm qua nhịp 1, liếc nhịp 2 rồi CONTINUE.",
+  "lens": "người đã quen",
+  "level": "chỉnh",
+  "questions": [
+    "Thắng hay thua, mấy bàn?",
+    "Trong run: được bao nhiêu tiền run để tiêu ở KIT VAN?",
+    "XP / gold ngoài run được bao nhiêu, lên cấp chưa?",
+    "Ai ghi bàn, ai hay nhất?",
+    "Đi tiếp ở đâu?"
+  ],
+  "states": [
+    { "id": "result-1", "label": "Nhịp 1: trên sân", "note": "Giây 2,2 trong 3 s (outroDuration). Đội thắng ăn mừng tại chỗ, ảnh tĩnh không thấy động tác. Thắng bằng phím dev nên không có bàn thắng thật; ảnh chuyển động có cả nhịp 2 trượt vào cuối khung." },
+    { "id": "result-2", "label": "Nhịp 2: thưởng + bảng tỉ số", "note": "Bảng thống kê toàn 0, MVP 0 điểm và dòng Goals ×1 là do thắng bằng phím dev (tỉ số được đặt thẳng). Ảnh chụp lại: hàng LONG có Maestro như ở Pause (ảnh cũ ghi \"—\" vì phím thắng dev bấm lúc lá Core đầu chưa kịp chọn, đã kiểm lại trong game)." }
+  ],
+  "keep": [
+    "Hai nhịp: 3 s trên sân rồi mới tới bảng. Không bắt đọc ngay sau còi.",
+    "VICTORY! và CONTINUE là 2 thứ nổi nhất nhịp 2 ở cả 3 phép thử, CONTINUE được chọn sẵn. Mắt mới: \"VICTORY and CONTINUE being the most visible is right\".",
+    "Số thưởng đếm lên rồi bảng tỉ số trượt ra; Enter tua nhanh (match-11).",
+    "Hàng của bạn sáng trong bảng, MVP có nhãn."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "thứ bậc",
+      "title": "Tiền run, thứ tiêu ngay trong run, là 1 dòng chữ trắng và không vào ô tổng",
+      "body": "Dòng Run cash +$30 là dòng note (Run.record: note: true), nên rewardPanel không vẽ cột số: con số nằm luôn trong nhãn, cùng màu chữ nhãn. Ô tổng ở đáy chỉ có gold và XP (.rw-total). Trong khi đó XP và gold, đồ ngoài run, có số xanh / vàng to và thanh LV. Trong GOAT PATH, tiền run mới là thứ quyết định ở KIT VAN sắp tới. Nheo mắt: số XP xanh và thanh LV còn, dòng Run cash mất. Mắt mới: \"There are three currencies ... Run cash isn't in the totals at the bottom.\"",
+      "evidence": ["code: src/ui/endscreen.js rewardPanel", "code: shared/meta/run.js record (note: true)", "nheo mắt", "mắt mới"],
+      "pins": [ { "s": "result-2", "x": 230, "y": 295 }, { "s": "result-2", "x": 230, "y": 520 } ]
+    },
+    {
+      "n": 2, "sev": "nhẹ", "kind": "lặp",
+      "title": "Nhịp 1: WINNER LONG FC lặp lại VICTORY, tỉ số nhỏ và mất khi nheo mắt",
+      "body": "Dưới VICTORY! là nhãn WINNER + tên đội + ô tỉ số cỡ 8 (renderOutro: .ot-win, .ot-score). Với người chơi, WINNER chỉ nhắc lại VICTORY; tỉ số là thông tin mới duy nhất mà nhỏ nhất dòng. Nheo mắt: còn mỗi vệt vàng VICTORY, tỉ số mất; ghế đỏ và sân lại là thứ sáng nhất. Mắt mới: \"The 'WINNER' tag repeats what VICTORY already says.\"",
+      "evidence": ["nheo mắt", "code: src/ui/endscreen.js renderOutro", "mắt mới"],
+      "pins": [ { "s": "result-1", "x": 440, "y": 90 }, { "s": "result-1", "x": 835, "y": 90 } ]
+    },
+    {
+      "n": 3, "sev": "nhẹ", "kind": "căn hàng",
+      "title": "Tỉ số đội trong bảng đứng trên cột Core, đọc như tiêu đề cột",
+      "body": "Số 1 / 0 của từng đội nằm ở đầu bảng, đẩy sang phải khối tên đội (.sb-tscore margin-left: auto), đúng trên cột icon Core. Cột Core cũng không có tiêu đề, khác 4 cột số bên phải. Mắt mới: \"The team scores '1' and '0' sit at the top of that icon column, so they read like column headers.\"",
+      "evidence": ["ảnh gốc", "code: css/style.css .sb-tscore", "mắt mới"],
+      "pins": [ { "s": "result-2", "x": 916, "y": 162 } ]
+    }
+  ],
+  "inventory": [
+    ["VICTORY! (nhịp 1 + 2)", "Thắng hay thua", "cần ngay", "1", "Giữ."],
+    ["WINNER + tên đội (nhịp 1)", "— (lặp)", "không cần khi có người chơi", "mất khi nheo mắt", "#2."],
+    ["Tỉ số", "Mấy bàn", "cần ngay", "nhịp 1: nhỏ, mất khi nheo mắt", "#2."],
+    ["Thanh giờ + Enter skip (nhịp 1)", "Bao giờ sang bảng", "đôi khi", "thấp", "Giữ (match-11)."],
+    ["Dòng thưởng Victory / Goals", "Được gì", "đôi khi", "cao (số xanh)", "Đúng mức."],
+    ["Run cash", "Tiền run cho KIT VAN", "cần ngay (trong run)", "thấp", "#1."],
+    ["Tổng gold / XP + thanh LV", "Lên cấp chưa", "đôi khi", "cao", "Nổi hơn giá trị của nó trong run, chấp nhận được."],
+    ["Bảng tỉ số: tên, MVP, 4 cột số", "Ai hay nhất", "đôi khi", "vừa", "Giữ."],
+    ["Cột Core", "Ai có Core gì", "đôi khi", "thấp", "Không tiêu đề, số tỉ số đứng trên (#3)."],
+    ["CONTINUE", "Đi tiếp", "cần ngay", "2", "Giữ."]
+  ],
+  "fresh": [
+    "The \"WINNER\" tag repeats what VICTORY already says.",
+    "Blur: VICTORY stays as a yellow smear on the dark top band. WINNER and the 1-0 disappear.",
+    "There are three currencies: XP, gold coins and \"Run cash $30\". How are they different? Run cash isn't in the totals at the bottom.",
+    "The team scores \"1\" and \"0\" sit at the top of that icon column, so they read like column headers.",
+    "VICTORY and CONTINUE being the most visible is right, and losing the score is fine because it was shown just before."
+  ],
+  "verdict": "Hai nhịp đúng, nút đúng. Trong run, tiền run cần đứng ngang XP / gold; nhịp 1 nên cho tỉ số to thay chữ WINNER. Chỉnh (A).",
+  "wireNote": "Wireframe vẽ nhịp 2 trong ảnh (thắng 1-0, $ +27, +45 gold, +68 XP), đơn vị 640x360. Ghi chú 1 nói về nhịp 1.",
+  "options": [
+    {
+      "id": "A", "name": "Tiền run thành dòng thưởng thật, tỉ số to ở nhịp 1", "wire": "result.wire-a.svg",
+      "notes": [
+        "Nhịp 1 (trận có người chơi): bỏ WINNER + tên đội, tỉ số 1 - 0 to ngay dưới VICTORY! (khoảng gấp đôi hiện nay). Trận AI với AI giữ WINNER.",
+        "Run cash là dòng đầu, có cột số như các dòng khác ($ +27, màu tiền run) và đếm lên cùng gold / XP.",
+        "Ô tổng thêm $ +27 cạnh gold và XP (chỉ trong run).",
+        "Tỉ số đội đặt sát tên đội (LONG FC 1); cột Core có tiêu đề CORES."
+      ],
+      "gain": "Rẻ: endscreen.js (renderOutro, rewardPanel, playReward đếm thêm 1 số) + CSS .ot-* / .rw-* / .sb-*. Trong run trả lời được \"đủ tiền mua gì ở KIT VAN chưa\" ngay ở đây. Chữ CORES đã có trong gói dịch.",
+      "cost": "Dòng Run cash cần số riêng: Run.record đã có out.cash, chỉ chưa đưa ra dòng thưởng (thêm trường cash vào dòng, awardMatch vẫn coi là 0 XP / 0 gold như bản sửa NaN của match-01). Ô tổng thêm 1 số: chật hơn ở bản tiếng Nhật / Bồ Đào Nha, cần thử."
+    }
+  ],
+  "pick": "A. Màn đúng nhịp, chỉ lệch thứ bậc trong run. Nếu chỉ làm 1 cái thì làm Run cash (#1)."
+}

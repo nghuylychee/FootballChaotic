@@ -1,0 +1,97 @@
+{
+  "id": "hud",
+  "order": 7,
+  "title": "HUD trong trận",
+  "where": "Trong trận · #hud (tỉ số, giờ, trường phái) + #abar (thanh kỹ năng) + canvas sân · src/ui/hud.js (updateHud, hudBuild, updateBar, updateRunBar) · src/render/renderer.js (vòng chân) · src/render/modsdraw.js stool · src/render/art/village.js · config/game.config.js ctrlColors",
+  "goal": "Đá bóng. HUD chỉ trả lời nhanh tỉ số, giờ, hồi chiêu khi liếc; mắt phải ở bóng và cầu thủ.",
+  "freq": "Suốt trận: 2,5 phút x khoảng 20 trận mỗi run. Tiêu chí ngược: HUD càng ít giành mắt càng tốt, và trên sân thì cầu thủ + bóng phải nổi nhất.",
+  "lens": "người đã quen",
+  "level": "chỉnh",
+  "questions": [
+    "Bóng ở đâu, ai cầm?",
+    "Mình là ai trên sân, ai là đồng đội, ai là đối thủ?",
+    "Cái gì trên sân nhặt được / phải né?",
+    "Tỉ số, còn bao lâu, bao giờ có Core mới?",
+    "Đòn nào hồi xong, kỹ thuật LEGEND bấm gì?"
+  ],
+  "states": [
+    { "id": "hud", "label": "Giây thứ 5 sau giao bóng", "note": "Act 1 gặp The Uncles (luật PLASTIC STOOLS). Thủ môn vừa cứu thua và đang ôm bóng, nên bóng chỉ là vài pixel trong tay. Mắt mới không tìm ra bóng: đúng với khung này, nhưng 1 ảnh tĩnh chưa đủ để kết luận chung về bóng." }
+  ],
+  "keep": [
+    "HUD lùi đúng chỗ: nheo mắt chỉ còn khung tỉ số tối ở giữa trên; 2 góc trên và thanh kỹ năng gần như biến mất. Ảnh chuyển động: trong HUD chỉ có đồng hồ đổi. Mắt mới: \"Only the timers move in the HUD, so the side panels won't distract.\"",
+    "Khung tỉ số gọn 3 tầng: act · node, tỉ số + giờ, Next Core in. Mắt mới thấy dòng đếm ngược Core có ích.",
+    "Thanh kỹ năng ở giữa đáy, ngoài vạch biên, gần chỗ đá; phím lấy từ Input.label.",
+    "Mũi tên + vòng xanh trên người bạn là thứ sáng thứ 2 trong ảnh chuyển động: dễ tìm mình.",
+    "Không có use rule Ultimate trên HUD, popup qua Effects.pop (SAVE! xanh): đúng quyết định."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "thứ bậc trên sân",
+      "title": "Ghế nhựa đỏ nổi hơn cầu thủ và bóng, lại cùng màu với vòng đối thủ",
+      "body": "Nheo mắt: 3 ghế đỏ là thứ rõ nhất trên sân; cầu thủ chỉ còn đốm mờ, vòng chân mất màu, bóng mất hẳn. Ghế màu #ff3d3d (stories.mods.stools.color), vòng chân đối thủ #ff4757 (ctrlColors.opp): gần như một màu, nên ghế đọc như đồ của đối thủ, trong khi ai cũng nhặt được. Ghế nằm yên sáng ngang ghế đang bay (stool() trong modsdraw.js dùng 1 màu cho mọi trạng thái), nên thứ nguy hiểm (ghế bay) không nổi hơn thứ đứng yên. Mắt mới: \"The stools are the most visible thing, not the players or the ball. That's the wrong priority.\"",
+      "evidence": ["nheo mắt", "code: config/stories.config.js stools.color · config/game.config.js ctrlColors", "code: src/render/modsdraw.js stool", "mắt mới"],
+      "pins": [ { "s": "hud", "x": 745, "y": 200 }, { "s": "hud", "x": 855, "y": 318 } ]
+    },
+    {
+      "n": 2, "sev": "vừa", "kind": "nhận diện",
+      "title": "Ô LEGEND trông như chân dung đối thủ, và là ô duy nhất không có phím",
+      "body": "Cánh phải thanh kỹ năng là chân dung LEGEND (Sergio Ramen) viền màu LEGEND; Ramen màu #ff3d5a, gần màu đối thủ. 3 ô ra đòn bên cạnh có phím D / A / Q, ô LEGEND thì không: tổ hợp E + A của SLIDE TACKLE chỉ có trong tooltip (không rê chuột được lúc đá) và ở Pause. Trong run, kỹ thuật nâng cao chỉ có qua LEGEND, nên đây là phím người chơi cần nhớ nhất. Mắt mới: \"the dark bearded portrait on its right (opponent? boss?)\".",
+      "evidence": ["code: src/ui/hud.js updateBar (legHtml)", "code: config/legends.config.js ramen.color", "mắt mới"],
+      "pins": [ { "s": "hud", "x": 850, "y": 668 } ]
+    },
+    {
+      "n": 3, "sev": "nhẹ", "kind": "nhầm lẫn",
+      "title": "Bảng phấn 2-1 cạnh sân đọc như tỉ số",
+      "body": "Cảnh làng có 1 bảng phấn ghi 2-1 ngay mép phải sân (village.js: P.scoreboard text '2-1'). Tỉ số thật đang 0-0. Mắt mới: \"The chalkboard reading '2-1' next to the pitch looks like a score while the real score is 0-0.\"",
+      "evidence": ["ảnh gốc", "code: src/render/art/village.js (scoreboard)", "mắt mới"],
+      "pins": [ { "s": "hud", "x": 1195, "y": 525 } ]
+    },
+    {
+      "n": 4, "sev": "nhẹ", "kind": "nhận diện",
+      "title": "Áo 2 đội cùng tông kem / be, chỉ vòng chân 1px phân biệt",
+      "body": "Áo đội bạn #f3ead7 (kem), áo The Uncles #c9b48a (be), trên nền đất nâu. Ảnh xám: 2 đội cùng một màu xám, chỉ còn vòng chân, mà vòng chân dày 1 (footRings thick: 1) nên mất khi nheo mắt. Game đã có áo sân khách xanh (playerTeam.awayKit) nhưng chỉ dùng khi 2 CLB của người chơi gặp nhau (online / Ranked), không dùng khi trùng tông với đội đối thủ có sẵn.",
+      "evidence": ["xám", "nheo mắt", "code: config/mainpath.config.js playerTeam.kit / awayKit", "code: config/stories.config.js The Uncles kit"],
+      "pins": [ { "s": "hud", "x": 400, "y": 455 } ]
+    }
+  ],
+  "inventory": [
+    ["Bóng", "Bóng ở đâu", "cần ngay", "mất khi nheo mắt (khung này: thủ môn ôm)", "1 ảnh tĩnh chưa đủ để kết luận."],
+    ["Cầu thủ + vòng chân", "Ai là ai", "cần ngay", "đốm mờ; vòng 1px mất màu", "#1, #4."],
+    ["Mũi tên + vòng xanh của bạn", "Mình đâu", "cần ngay", "rõ nhất trong nhóm cầu thủ", "Giữ."],
+    ["Ghế nhựa (luật sân)", "Cái gì nhặt / né", "cần khi đá", "1 trên sân", "Nổi quá (#1)."],
+    ["Popup SAVE!", "Vừa xảy ra gì", "cần ngay (thoáng qua)", "cao", "Đúng."],
+    ["Khung tỉ số: act · node, tỉ số, giờ", "Tỉ số, còn bao lâu", "cần khi liếc", "khối HUD duy nhất còn khi nheo mắt", "Đúng mức."],
+    ["Next Core in 0:25", "Bao giờ có Core", "đôi khi", "thấp, động", "Giữ."],
+    ["Góc trái: trường phái của bạn (1 TIKI-TAKA 3›4)", "Còn mấy Core tới Ultimate", "đôi khi", "thấp", "Mắt mới không hiểu 3›4; người chơi run học qua nhãn → NEW ULTIMATE trên lá. Để vậy."],
+    ["Góc phải: Core từng đối thủ", "Đối thủ đang gom gì", "đôi khi", "thấp", "Đúng mức."],
+    ["Thanh kỹ năng: 3 ô + phím", "Đòn nào hồi xong", "cần khi liếc", "thấp", "Giữ."],
+    ["Thanh kỹ năng: BADGE (trái)", "BADGE nào vừa ra tay (VAR, bù giờ)", "đôi khi", "thấp", "Giữ: loé khi dùng, mờ khi hết."],
+    ["Thanh kỹ năng: ô LEGEND (phải)", "Kỹ thuật LEGEND bấm gì, hồi xong chưa", "cần khi muốn dùng", "thấp", "Đọc nhầm, thiếu phím (#2)."],
+    ["Thanh xanh dưới các ô", "Thể lực", "đôi khi", "thấp", "Mắt mới đoán đúng (stamina)."],
+    ["Bảng phấn 2-1", "—", "trang trí", "thấp", "Đọc nhầm thành tỉ số (#3)."]
+  ],
+  "fresh": [
+    "Honestly, I can't find the ball in this frame. Maybe the keeper has it?",
+    "The stools are the most visible thing, not the players or the ball. That's the wrong priority.",
+    "Are the red stools obstacles, decoration or pickups?",
+    "I don't know ... the dark bearded portrait on its right (opponent? boss?)",
+    "The chalkboard reading \"2-1\" next to the pitch looks like a score while the real score is 0-0.",
+    "Only the timers move in the HUD, so the side panels won't distract."
+  ],
+  "verdict": "HUD lùi đúng chỗ, không giành mắt. Chỗ cần sửa nằm trên sân: đạo cụ luật sân nổi hơn cầu thủ, 2 đội cùng tông áo, và ô LEGEND đọc nhầm. Chỉnh (A).",
+  "wireNote": "Wireframe vẽ đúng khung trong ảnh (giây 5, thủ môn ôm bóng), đơn vị 640x360. Đội bạn tô đặc = áo sân khách.",
+  "options": [
+    {
+      "id": "A", "name": "HUD giữ nguyên, sửa thứ bậc trên sân + ô LEGEND", "wire": "hud.wire-a.svg",
+      "notes": [
+        "Ghế nằm yên trên sân: đỏ trầm, tối hơn vòng đối thủ, bỏ chấm sáng. Ghế đang bị cầm / đang bay giữ đỏ tươi, vì lúc đó nó mới nguy hiểm.",
+        "Ô LEGEND: tổ hợp phím dưới ô như 3 ô ra đòn (Input.techKeys, giống HUD LEGEND TRIAL của match-05). Viền ngoài trung tính như các ô khác, màu LEGEND chỉ ở vạch trong.",
+        "Bảng phấn trong cảnh làng: đổi chữ 2-1 thành thứ không giống tỉ số (vd giá trà đá).",
+        "Đội bạn mặc áo sân khách (awayKit xanh, đã có) khi áo trùng tông với đối thủ."
+      ],
+      "gain": "Mắt về lại cầu thủ và bóng khi nheo mắt; ô LEGEND đọc là của mình và nhắc phím đúng lúc cần; bỏ 1 chỗ đọc nhầm tỉ số. Không đổi luật chơi hay cân bằng.",
+      "cost": "modsdraw.js stool (màu theo trạng thái) + hud.js updateBar (thêm phím dưới .ab-leg, CSS) + village.js (1 chữ) + chỗ chọn kit (main.js startRunMatch / startCupMatch, thêm hàm so tông màu áo). Ghế trầm hơn thì người mới có thể thấy ghế muộn hơn: cần thử trong trận. Áo sân khách đổi màu đội bạn ở 1 số trận: ảnh nhân vật trên VS / kết quả cũng theo."
+    }
+  ],
+  "pick": "A. Không đụng HUD m đã duyệt, chỉ hạ thứ không cần nổi và thêm phím còn thiếu. Nếu chỉ làm 1 cái thì làm phím dưới ô LEGEND (#2): rẻ nhất và đúng phím người chơi run cần nhất."
+}

@@ -1,0 +1,20 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "sq-card sel  ",
+  "txt": "71\nMID\nPAC\n71\nSHO\n80\nPAS\n68\nDRI\n70\nFIG\n72\nGK\n67\nNacho10\n⇄",
+  "x": 474,
+  "y": 214,
+  "w": 332,
+  "h": 368
+ },
+ "order": [
+  "wear:0",
+  "wear:2",
+  "wear:1",
+  "gback"
+ ],
+ "id": "gear-who",
+ "title": "GEAR: chọn người đeo",
+ "moving_pct": 1.4
+}

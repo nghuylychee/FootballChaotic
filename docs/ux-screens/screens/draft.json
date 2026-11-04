@@ -1,0 +1,104 @@
+{
+  "id": "draft",
+  "order": 6,
+  "title": "Chọn Core",
+  "where": "Sau VS (lượt đầu) hoặc sau bàn thắng có lượt mới › lớp phủ #draft · src/ui/draft.js (renderDraft, draftInput, playPickAnim) · src/ui/matchui.js (hoverSel) · src/ui/corepreview.js · config/controls.config.js · css/style.css .card / .draft-*",
+  "goal": "Chọn 1 Core trong 3–4 lá cho cầu thủ của mình. Mục tiêu dài hơn: gom đủ Core cùng trường phái để mở Ultimate.",
+  "freq": "4 lượt mỗi trận (1 trước giao bóng + 3 trong trận), khoảng 80 lần mỗi run. Màn quyết định gặp nhiều nhất trong trận, xét theo người đã quen.",
+  "lens": "người đã quen",
+  "level": "chỉnh",
+  "questions": [
+    "Lá nào hợp build, đưa mình tới Ultimate?",
+    "Lá này làm gì?",
+    "Chọn bằng phím nào, đổi bài được không?",
+    "Lượt đầu: đối thủ có gì để chọn cho hợp?",
+    "Còn mấy lượt nữa?"
+  ],
+  "states": [
+    { "id": "draft", "label": "STARTING CORE, lượt 1/4", "note": "Run có BADGE Scouting Report nên 4 lá thay vì 3. GOAT PATH chơi đơn không có đồng hồ chọn (draftTimeLimit chỉ có ở Ranked và online)." }
+  ],
+  "keep": [
+    "Thứ bậc khi nheo mắt đúng cho người đã quen: tiêu đề, rồi nhãn trường phái màu, rồi lá đang chọn (khung sáng). Người đã quen chọn theo trường phái để gom Ultimate, nên trường phái nổi hơn mô tả là đúng. Mắt mới: \"I'd end up choosing by colour\", và với game này đó là cách chọn đúng.",
+    "Ảnh xem trước là thứ động duy nhất (ảnh chuyển động) và nằm đúng trong từng lá: cho thấy Core làm gì thay cho số.",
+    "Mô tả 1 câu ngắn, không số (quyết định mô tả Core).",
+    "YOUR BUILD 2x2 có ô đích sáng: biết lá sẽ vào ô nào và còn mấy lượt; lá bay vào ô rồi cả khối bay về thanh kỹ năng.",
+    "Nhãn MATCH và → NEW ULTIMATE trên lá ở các lượt sau trả lời đúng câu hỏi 1 (lượt đầu chưa có Core nên không hiện).",
+    "Thanh giờ (user-03), chuột và phím chung 1 lựa chọn (match-03), khoá phím 0,5 s khi lượt mới mở (match-04): giữ."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "phím",
+      "title": "Lá 4 có số 4 nhưng phím 4 không chọn được",
+      "body": "Mỗi lá có huy hiệu số vàng 1–4 (card-key = i + 1). Nhưng phím chỉ có pick1–pick3 (Digit1–3, controls.config.js) và draftInput cũng chỉ đọc pick1–pick3. Có BADGE Scouting Report là 4 lá: bấm 4 không có gì xảy ra, phải dùng mũi tên hoặc chuột. Mắt mới: \"Click a card or press 1–4.\"",
+      "evidence": ["code: config/controls.config.js pick1–pick3", "code: src/ui/draft.js draftInput", "mắt mới"],
+      "pins": [ { "s": "draft", "x": 985, "y": 145 } ]
+    },
+    {
+      "n": 2, "sev": "nhẹ", "kind": "chữ",
+      "title": "REROLL 3 (1 left) trong khi bấm là đổi cả 4 lá",
+      "body": "Số 3 viết cứng trong chữ (renderDraft: _tn('REROLL 3 ({n} left)')), còn rerollDraft đổi toàn bộ lá theo draftChoices (4 khi có Scouting Report). Hai con số 3 và 1 đứng cạnh nhau đọc như mâu thuẫn. Mắt mới: \"does a reroll cost 3, or did I have 3 and 1 is left?\"",
+      "evidence": ["code: src/ui/draft.js renderDraft (reroll)", "code: shared/game/match.js rerollDraft", "mắt mới"],
+      "pins": [ { "s": "draft", "x": 800, "y": 128 } ]
+    },
+    {
+      "n": 3, "sev": "nhẹ", "kind": "thiếu thông tin",
+      "title": "Lượt đầu chọn Core mà không thấy đối thủ và luật sân",
+      "body": "Lượt STARTING CORE mở ngay sau VS. Người đã quen bấm qua VS từ giây 0,35 nên chưa kịp đọc gì, còn luật sân chỉ hiện khi bóng lăn (xem màn VS #1). Có luật đổi hẳn cách đá (ghế ném được, ma tàng hình bị đòn nặng làm lộ), nên lượt đầu là lúc cần biết nó nhất. Màn chọn không có dòng nào nói đang gặp ai. Banner giao bóng (MATCHDAY · THE BLOCK · vs The Uncles, 1,8 s) chạy đúng lúc màn chọn đang mở, mà #banner nằm trước #draft trong index.html nên bị lớp phủ và hàng lá che mất.",
+      "evidence": ["code: src/main.js beginMatch (kickoff banner)", "code: index.html thứ tự #banner / #draft", "code: shared/systems/matchmods.js update", "code: config/intro.config.js skipAfter"],
+      "pins": [ { "s": "draft", "x": 925, "y": 92 } ]
+    },
+    {
+      "n": 4, "sev": "nhẹ", "kind": "nhầm lẫn",
+      "title": "Chữ CHAOS giữa sân trong ảnh xem trước đọc như tên trường phái",
+      "body": "Ảnh xem trước dùng nền sân mặc định có logo CHAOS ở vòng giữa (background.js: T.logo || 'CHAOS'). Máy quay ảnh xem trước thường đứng giữa sân, nên chữ CHAOS nằm ngay giữa lá Maestro (TIKI-TAKA) và Speed Demon (SPEED). CHAOS cũng là tên 1 trường phái. Ở Pause, lá nhỏ chỉ còn vòng giữa và chữ CHAOS. Mắt mới: \"'CHAOS' printed in each preview's centre circle: is it a label or pitch art?\"",
+      "evidence": ["code: src/render/background.js (logo giữa sân)", "ảnh gốc (draft, pause)", "mắt mới"],
+      "pins": [ { "s": "draft", "x": 285, "y": 262 } ]
+    },
+    {
+      "n": 5, "sev": "nhẹ", "kind": "khoảng trống",
+      "title": "Lá cao hơn nội dung, YOUR BUILD bị đẩy xuống đè thanh kỹ năng",
+      "body": "Lá có min-height 196 (.card), giữ chỗ cho dòng SCALES WITH đã tắt cùng hệ chỉ số ẩn (CoreScale.statLine trả rỗng). Dưới mô tả trống khoảng 50 đơn vị. YOUR BUILD vì thế nằm sát đáy, chồng lên thanh kỹ năng vẫn bật phía sau: tên LONG, chân dung và BADGE ló ra 2 bên ô 2x2. Mắt mới: \"There's a lot of empty space under each description.\"",
+      "evidence": ["ảnh gốc", "code: css/style.css .card min-height", "code: shared/systems/corescale.js statLine", "mắt mới"],
+      "pins": [ { "s": "draft", "x": 213, "y": 505 }, { "s": "draft", "x": 440, "y": 688 } ]
+    }
+  ],
+  "inventory": [
+    ["Tiêu đề STARTING CORE 1/4", "Lượt mấy", "đôi khi", "1", "To nhất màn; đủ, không cần to hơn."],
+    ["Nhãn trường phái màu", "Lá nào hợp build", "cần ngay", "2", "Đúng hạng."],
+    ["Lá đang chọn (khung sáng)", "Đang trỏ lá nào", "cần ngay", "3", "Giữ."],
+    ["Số 1–4 góc lá", "Bấm phím nào", "cần khi dùng phím", "3 (vàng)", "Số 4 không bấm được (#1)."],
+    ["Ảnh xem trước", "Lá làm gì", "cần khi chưa quen lá", "thứ động duy nhất", "Giữ; chữ CHAOS gây nhầm (#4)."],
+    ["Tên Core", "Lá gì", "cần ngay", "mất khi nheo mắt", "Đủ với người quen (nhớ tên)."],
+    ["Mô tả", "Lá làm gì", "cần khi chưa quen lá", "thấp", "Đúng mức."],
+    ["Viền trên màu độ hiếm", "Lá hiếm cỡ nào", "đôi khi", "thấp", "Không giải thích, nhưng không cản quyết định."],
+    ["REROLL", "Đổi bài được không", "đôi khi", "thấp", "Chữ sai số (#2)."],
+    ["YOUR BUILD 2x2", "Lá vào ô nào, còn mấy lượt", "đôi khi", "thấp (ô đích vàng)", "Đè thanh kỹ năng (#5)."],
+    ["Dòng đối thủ / luật sân", "Lượt đầu: chọn cho hợp", "cần ở lượt đầu", "không có", "#3."],
+    ["HUD mờ phía sau (đối thủ đã có 1 Core)", "Đối thủ bốc gì", "đôi khi", "thấp", "AI bốc ngay khi mở lượt (match.js startDraft). Mắt mới hỏi \"Did they pick already?\": đúng là rồi. Để vậy."]
+  ],
+  "fresh": [
+    "STARTING CORE, then the coloured school tags (TIKI-TAKA / IRON / STRIKER / SPEED), then the highlighted card 1, Maestro.",
+    "Click a card or press 1–4.",
+    "\"REROLL 3 (1 left)\" reads as a contradiction.",
+    "\"CHAOS\" printed in each preview's centre circle: is it a label or pitch art?",
+    "There's a lot of empty space under each description.",
+    "I'd end up choosing by colour, not by what the card does. The selected frame stays clear, which is good."
+  ],
+  "verdict": "Thứ bậc đúng cho người đã quen (trường phái trước, mô tả sau). Chỉ cần sửa vài chỗ nhỏ: phím 4, chữ REROLL, chữ CHAOS, lá thừa chiều cao, và 1 dòng đối thủ ở lượt đầu.",
+  "wireNote": "Wireframe vẽ lượt STARTING CORE trong ảnh (4 lá do Scouting Report), đơn vị 640x360.",
+  "options": [
+    {
+      "id": "A", "name": "Giữ bố cục, sửa chi tiết", "wire": "draft.wire-a.svg",
+      "notes": [
+        "Thêm phím pick4 / pick5 (Digit4 / Digit5, Numpad4 / 5) và đọc trong draftInput, để số in trên lá luôn bấm được.",
+        "Chữ REROLL ({n} left), bỏ số 3 viết cứng.",
+        "Riêng lượt STARTING CORE: 1 dòng nhỏ dưới tiêu đề, vs The Uncles · PLASTIC STOOLS (màu áo đối thủ). Các lượt sau không cần.",
+        "Ảnh xem trước dùng nền sân không logo, vòng giữa trống.",
+        "Lá thấp lại vừa nội dung (bỏ min-height 196 khi không có dòng SCALES WITH); YOUR BUILD nhích lên; thanh kỹ năng ẩn tới lúc khối build bay về."
+      ],
+      "gain": "Rẻ: controls.config.js (2 phím) + draft.js (draftInput, chữ REROLL, dòng đối thủ) + corepreview.js / background.js (logo) + CSS .card. Không đổi cách chọn m đã duyệt. Phím pick1–3 không nằm trong danh sách đổi phím (controls.remap), pick4–5 cũng vậy.",
+      "cost": "Chữ REROLL ({n}) đã có sẵn trong gói dịch (đang dùng ở chỗ khác), chỉ đổi key; nếu cần số nhiều thì thêm key mới cho 4 gói + font ja. Ẩn thanh kỹ năng lúc chọn: morphDraftToAbar đã tự bật lại thanh trước khi bay, cần kiểm lượt chọn liền nhau (FINAL PUSH, BONUS PICK)."
+    }
+  ],
+  "pick": "A. Màn này đang đúng thứ bậc; các sửa đều nhỏ và độc lập, làm cái nào cũng được. Nếu chỉ làm 1 cái thì làm phím 4 (#1)."
+}

@@ -1,0 +1,114 @@
+{
+  "id": "vs",
+  "order": 5,
+  "title": "Màn VS",
+  "where": "Map › chọn node trận › màn VS trước trận (#intro) · src/ui/intro.js (html, side, card, drawPitch) · config/intro.config.js · css/style.css .intro / .in-*",
+  "goal": "Cho biết trận sắp đá: gặp ai, ở sân nào, có gì khác thường, rồi vào chọn Core đầu trận. Màn để xem, tự đóng sau 6,2 s, bấm qua được từ giây 0,35.",
+  "freq": "Mỗi trận 1 lần: khoảng 20 trận mỗi run GOAT PATH, cộng Story, Ranked, online. Người đã quen bấm qua sau 1 s, nên thứ cần biết phải đọc được ngay trong giây đầu.",
+  "lens": "người đã quen",
+  "level": "chỉnh",
+  "questions": [
+    "Gặp đội nào?",
+    "Đội này có gì khác thường (luật sân, Elite, Boss)?",
+    "Mình đá vị trí nào, ai giữ khung?",
+    "Sân nào?",
+    "Bao giờ vào trận, bỏ qua thế nào?"
+  ],
+  "states": [
+    { "id": "vs", "label": "Trận Matchday act 1 gặp The Uncles", "note": "Chụp ở giây 1,6: thẻ UNCLE SAU ra sau cùng (cardGap 0,22 s) nên còn đang trượt vào, sáng hơn và lệch 3px. Đó là nhịp hiện thẻ, không tính là vấn đề." }
+  ],
+  "keep": [
+    "3 thẻ mỗi bên có nhân vật chạy vào rồi tạo dáng: đúng chất màn giới thiệu kiểu TV. Thẻ YOU viền vàng nổi đúng chỗ.",
+    "Sân mini có chấm vàng nhấp nháy ở chỗ bạn đứng: cách duy nhất trên màn cho biết vị trí của bạn, và nó đọc được.",
+    "Nhãn YOU / MATE còn rõ khi nheo mắt.",
+    "Không hiện OVR và thanh chỉ số khi hệ chỉ số đang ẩn (Profile.statsHidden): khớp quyết định chỉ số ẩn.",
+    "Gợi ý Enter skip + thanh giờ ở đáy (match-11): giữ như cũ."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "thiếu thông tin",
+      "title": "Luật sân của đối thủ không có ở VS, lần đầu hiện là lúc bóng đã lăn",
+      "body": "Dưới tên đối thủ chỉ có khẩu hiệu OLD SCHOOL. Luật sân (PLASTIC STOOLS) là thứ làm trận này khác trận trước, nhưng nó hiện lần đầu bằng banner 2,2 s khi bóng lăn (MatchMods.update, cờ M.shown). Thứ tự trong code là VS → lượt chọn Core đầu trận → giao bóng → banner luật, tức là người chơi chọn Core xong mới biết luật, và đọc luật lúc mắt đang ở trên bóng. Muốn đọc lại phải mở Pause (match-08). Mắt mới đọc dòng luật ở Pause: \"the most useful line here ... I wanted it at kickoff\".",
+      "evidence": ["code: shared/systems/matchmods.js update (banner lúc bóng lăn)", "code: src/main.js beginMatch (VS → chọn Core → giao bóng)", "mắt mới (Pause)"],
+      "pins": [ { "s": "vs", "x": 985, "y": 243 } ]
+    },
+    {
+      "n": 2, "sev": "vừa", "kind": "thứ bậc",
+      "title": "Chữ VS và MATCHDAY to nhất, tên 2 đội nhỏ và mất khi nheo mắt",
+      "body": "Chữ VS cỡ 30, MATCHDAY cỡ 14, tên đội chỉ cỡ 8 (.in-vs / .in-title / .in-tn b, đơn vị 640x360). Nheo mắt: còn MATCHDAY, VS, sân mini và nhãn MATE; tên The Uncles và tên cầu thủ biến mất. Chữ VS giống nhau mọi trận nên không nói gì mới, còn câu hỏi số 1 (gặp ai) lại nằm ở chữ nhỏ nhất. Mắt mới: \"Who's playing whom is what matters here, and it's the part that disappears.\"",
+      "evidence": ["nheo mắt", "code: css/style.css .in-vs / .in-title / .in-tn b", "mắt mới"],
+      "pins": [ { "s": "vs", "x": 740, "y": 262 }, { "s": "vs", "x": 1000, "y": 205 } ]
+    },
+    {
+      "n": 3, "sev": "nhẹ", "kind": "mã hoá",
+      "title": "Số nổi nhất mỗi thẻ là số áo, không ai đoán ra; vị trí thì không ghi",
+      "body": "Góc mỗi thẻ là số vàng 10 / 4 / 7 / 9: số áo theo vị trí (intro.config numbers: DEF 4, FWD 9, MID mặc định 7, bạn luôn 10). Mắt mới không biết đó là số áo, cấp hay chỉ số. Bạn luôn mang số 10 dù đá vị trí nào, nên số áo cũng không suy ra được vị trí. Trong khi đó từ 2026-11-01 chỉ DEF giữ khung, Pause đã ghi DEF / MID, còn VS không ghi vị trí của ai (nhãn .in-pos bị bỏ từ khi chuyển sang 3v3).",
+      "evidence": ["code: src/ui/intro.js card (in-num)", "code: config/intro.config.js numbers", "mắt mới"],
+      "pins": [ { "s": "vs", "x": 856, "y": 300 } ]
+    },
+    {
+      "n": 4, "sev": "nhẹ", "kind": "khoảng trống",
+      "title": "Nửa dưới mỗi thẻ trống",
+      "body": "Thẻ cao 150 (.intro.n3 .in-card), nội dung chỉ tới tên cầu thủ. Phần dưới xưa để dòng Ultimate, vị trí và thanh chỉ số. Giờ card() không còn vẽ .in-ult / .in-pos, statsHidden tắt .in-stats, nhưng chiều cao thẻ giữ nguyên. Mắt mới: \"The bottom half of every card is empty, as if stats didn't load.\"",
+      "evidence": ["ảnh gốc", "code: css/style.css .intro.n3 .in-card", "mắt mới"],
+      "pins": [ { "s": "vs", "x": 252, "y": 540 } ]
+    },
+    {
+      "n": 5, "sev": "nhẹ", "kind": "nền",
+      "title": "Màn chọn Core và HUD lộ qua nền, ảnh động phía sau chạy suốt",
+      "body": "Lượt chọn Core đầu trận mở ngay lúc dựng trận (match.js startDraft(true)), nên màn chọn đã nằm sẵn dưới VS, cùng HUD. Nền VS chỉ đục 80% ở giữa (.intro background), nên dòng Next Core in 0:25 hiện mờ sau MATCHDAY, thanh kỹ năng mờ ở đáy, và ảnh chuyển động thấy rõ 4 khung lá Core với ảnh xem trước đang chạy (99,5% khung hình đổi). Mắt mới đọc như lỗi vẽ: \"It looks like a rendering glitch.\"",
+      "evidence": ["ảnh gốc", "chuyển động", "code: shared/game/match.js constructor (startDraft(true))", "code: css/style.css .intro", "mắt mới"],
+      "pins": [ { "s": "vs", "x": 440, "y": 668 }, { "s": "vs", "x": 830, "y": 96 } ]
+    }
+  ],
+  "inventory": [
+    ["GOAT PATH · THE BLOCK / MATCHDAY", "Trận gì (act, loại node)", "cần ngay", "1 (MATCHDAY)", "Đúng chỗ. Elite / Boss đổi chữ MATCHDAY, đủ."],
+    ["Chữ VS", "— (không khí)", "trang trí", "2", "To nhất màn mà không nói gì mới (#2)."],
+    ["Tên đội đối thủ + khẩu hiệu", "Gặp ai", "cần ngay", "mất khi nheo mắt", "Quá nhỏ (#2)."],
+    ["Luật sân", "Có gì khác thường", "cần ngay", "không có", "Thiếu (#1)."],
+    ["Thẻ cầu thủ (nhân vật + tên)", "Gặp ai, đội mình gồm ai", "cần ngay (đối thủ) / đôi khi (đội mình, cố định cả run)", "3", "Giữ."],
+    ["Số áo góc thẻ", "—", "không cần ở đây", "nổi nhất mỗi thẻ", "Thay bằng vị trí (#3)."],
+    ["Nhãn YOU / MATE", "Ai là mình", "cần ngay", "rõ", "Giữ."],
+    ["Sân mini + chấm vàng", "Mình đứng đâu", "cần khi mới vào", "3", "Giữ."],
+    ["Tên sân (VILLAGE GREEN)", "Sân nào", "đôi khi", "thấp", "Đúng mức. Tên của Area, mặt sân thật là đất nên mắt mới thấy lệch; nhẹ, không xử lý."],
+    ["Thanh giờ + Enter skip", "Bao giờ vào trận", "đôi khi", "thấp", "Giữ (match-11)."],
+    ["Nửa dưới thẻ", "—", "trống", "—", "#4."],
+    ["Màn chọn Core + HUD phía sau", "—", "không cần ở đây", "thấp, nhưng động", "#5."]
+  ],
+  "fresh": [
+    "Who's playing whom is what matters here, and it's the part that disappears.",
+    "I can't tell if 10 / 4 / 7 / 9 are shirt numbers, levels or ratings.",
+    "\"OLD SCHOOL\" could be a style, a difficulty or a tagline.",
+    "The bottom half of every card is empty, as if stats didn't load.",
+    "Faded UI shows through the background ... It looks like a rendering glitch.",
+    "Blur: MATCHDAY, VS, the green pitch and the cyan MATE tags stay. Team names, player names and \"Enter skip\" disappear."
+  ],
+  "verdict": "Màn đẹp, đúng chất TV, nhưng thứ mới mỗi trận (đối thủ, luật sân) nhỏ hoặc không có. Chỉnh thứ bậc và thêm luật sân (A) là đủ.",
+  "wireNote": "Wireframe vẽ trên đúng trận trong ảnh (LONG FC gặp The Uncles, luật PLASTIC STOOLS), đơn vị 640x360.",
+  "options": [
+    {
+      "id": "A", "name": "Giữ bố cục, đổi thứ bậc và thêm luật sân", "wire": "vs.wire-a.svg",
+      "notes": [
+        "Dưới tên đối thủ: khung luật sân (tên + 1 dòng gợi ý, vạch màu áo đối thủ) thay khẩu hiệu. Trận không có luật thì giữ khẩu hiệu.",
+        "Tên 2 đội to lên cỡ MATCHDAY (14), chữ VS nhỏ lại khoảng một nửa. Nheo mắt còn lại tên đối thủ và khung luật.",
+        "Góc trên thẻ ghi vị trí FWD / MID / DEF thay số áo.",
+        "Thẻ thấp lại vừa nội dung (khoảng 110), cả khối căn giữa theo chiều dọc.",
+        "Nền VS đặc hẳn, hoặc ẩn HUD và màn chọn Core trong lúc VS chạy, để không lộ chữ và ảnh động phía sau."
+      ],
+      "gain": "Rẻ: intro.js (side: khung luật lấy từ SFC_CONFIG.stories.mods[g.opts.mod]; card: p.role thay số áo) + CSS .in-tn / .in-vs / .in-card / .intro. Trả lời được câu 1–3 trong giây đầu, kể cả với người bấm qua nhanh. Tên và gợi ý luật đã có sẵn, đã dịch (stories.mods name / hint), không thêm chữ mới.",
+      "cost": "Nhãn vị trí là đổi quyết định 2026-10-10 của m (bỏ nhãn vị trí khi chuyển 3v3). Từ 2026-11-01 vị trí lại có nghĩa (chỉ DEF giữ khung) và Pause đã ghi DEF / MID, nên t nghĩ nên mở lại. Ẩn HUD / màn chọn trong lúc VS: kiểm lại online (2 máy cùng chiếu, host chờ introDone)."
+    },
+    {
+      "id": "B", "name": "VS của GOAT PATH: đội mình gọn, đối thủ chiếm chỗ", "wire": "vs.wire-b.svg",
+      "notes": [
+        "Đội bạn thu thành 1 dải nhỏ bên trái: mặt + vị trí + tên. Đội cố định cả run, người chơi đã biết.",
+        "Bên phải to: tên đối thủ + 3 thẻ đối thủ có vị trí.",
+        "Dưới thẻ đối thủ: khung luật sân to, là thứ to thứ 2 sau tên đối thủ.",
+        "Sân mini và chấm vàng của bạn giữ, chuyển sang cột trái."
+      ],
+      "gain": "VS trả lời đúng thứ mới mỗi trận (đối thủ + luật), bỏ phần lặp lại 20 lần mỗi run. Trước Elite / Boss có chỗ cho đối thủ thành nhân vật chính.",
+      "cost": "Thêm 1 nhánh html() cho run (và Story nếu muốn); Ranked / online giữ 2 bên đều nhau vì ở đó đội mình đổi mỗi trận và có Elo. Hai kiểu VS theo chế độ, làm lại CSS .in-side. Nhiều việc hơn A mà người quen vẫn bấm qua sau 1 s."
+    }
+  ],
+  "pick": "A. Rẻ, sửa được cả 5 vấn đề, giữ một kiểu VS cho mọi chế độ. B chỉ đáng làm nếu m muốn VS trong run thành màn giới thiệu đối thủ hẳn hoi (vd riêng cho Elite / Boss)."
+}

@@ -1,0 +1,143 @@
+{
+  "id": "gear",
+  "order": 10,
+  "title": "Thưởng GEAR",
+  "where": "Thắng Matchday › thẻ che trên map (trang runmap): PICK GEAR → Who wears it? → (người đủ ô) Swap out which one? · src/ui/runmap.js (gearCard, gearBig, gearChip, squadCard, gearSlots, wearFx, swapFx, firstSel) · shared/meta/run.js (rollGear, canWear, wearGear, swapGear, ratingsOf, ovrOf) · config/run.config.js gear · css/style.css .gr-*, .sq-*",
+  "goal": "Chọn 1 trong 3 GEAR rồi chọn ai trong đội đeo nó (đủ ô thì bỏ 1 món ra). GEAR là đồ của 1 người, nên câu thật sự là \"món nào, cho ai\".",
+  "freq": "Sau mỗi trận Matchday thắng: khoảng 4 lần mỗi act, cả run khoảng 12 lần. Từ act 2 các ô bắt đầu đầy nên bước đổi món hay gặp. Màn thưởng gặp nhiều nhất, xét theo người đã quen.",
+  "lens": "người đã quen",
+  "level": "chỉnh",
+  "questions": [
+    "Mỗi món làm gì, mạnh cỡ nào?",
+    "Ai hợp đeo món này nhất (chỉ số đang yếu, vị trí, Core hay ra)?",
+    "Người đó còn ô không, đeo vào thì phải bỏ món nào?",
+    "Đeo xong chỉ số đổi thế nào?",
+    "Enter / bấm sẽ lấy thẻ nào?"
+  ],
+  "states": [
+    { "id": "gear-pick", "label": "Bước 1 · PICK GEAR", "note": "3 món: Grip Socks DRI +4 (thường, đang chọn), Keeper Gloves GK +4 (thường), Vuvuzela CHAOS ▲ (hiếm). Tiền 999 và map phía sau là của run thử." },
+    { "id": "gear-who", "label": "Bước 2 · Who wears it?", "note": "Đang đưa Grip Socks. LONG (bạn) đã đeo 1 đôi nên xám. Nacho10 đủ 3 ô (trang test cố ý làm đầy để thử bước đổi món) và đang được chọn sẵn. ROOKIE còn ô. Thẻ của bạn thiếu nhãn YOU vì run thử chạy ở chế độ mirror (Run.mirrorOn); run thật có nhãn." }
+  ],
+  "keep": [
+    "Phụ đề \"One player wears it\" ngay dưới tiêu đề và hình thẻ treo góc vát. Agent mắt mới chỉ xem ảnh vẫn đoán đúng GEAR là đồ 1 người, BADGE là đồ cả đội (\"GEAR is personal. One player wears it\"). Phân biệt cốt lõi của run đang truyền đạt tốt.",
+    "Bước 2 giữ món đang đưa ở trên cùng (thẻ treo + tên + chip DRI +4): không phải nhớ mình vừa chọn gì, và đã nói luôn \"+4 DRI\" cho mọi người.",
+    "Người không đeo được (đã có món y hệt) xám tối, có lý do \"Already wearing one.\", phím bỏ qua thẻ đó (run-10).",
+    "Ô trống kế tiếp hiện món sắp đeo: nói \"đeo vào đâu\" mà không cần chữ.",
+    "BACK lùi đúng 1 bước, bước 1 có SKIP: không bước nào khoá người chơi."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "trạng thái",
+      "title": "Xem trước nhấp nháy ở thẻ không được chọn",
+      "body": "Bước 2 vẽ xem trước trên mọi thẻ còn ô cùng lúc (gearCard truyền món cho cả 3 squadCard), và cả 3 phần xem trước đều nhấp nháy (.sq-st.pre, .sq-ovr.pre, .gr-s.new). Trong ảnh, thẻ đang chọn là Nacho10 (đủ ô, không có xem trước). ROOKIE không được chọn lại là chỗ duy nhất động ngoài nhân vật thở: OVR 72, DRI 77▲ và ô GEAR mới. Mắt mới: \"The preview shows on ROOKIE while the yellow selection is on Nacho10. Which one is active?\" Khi cả 3 người còn ô thì cả 3 thẻ cùng nhấp nháy. Màn nhận LEGEND trông y hệt nhưng chỉ xem trước ở thẻ đang trỏ (bindJoin), nên 2 màn giống nhau lại cư xử khác nhau.",
+      "evidence": ["chuyển động", "mắt mới", "code: runmap.js gearCard / squadCard, css .sq-st.pre / .sq-ovr.pre / .gr-s.new"],
+      "pins": [ { "s": "gear-who", "x": 1195, "y": 316 }, { "s": "gear-who", "x": 930, "y": 236 } ]
+    },
+    {
+      "n": 2, "sev": "vừa", "kind": "trạng thái",
+      "title": "Chọn người đã đủ ô là phải bỏ 1 món, thẻ gần như không nói",
+      "body": "Người đủ ô chỉ có 3 ô mờ (opacity 0.35) và dấu ⇄ cam cỡ 5px (gearSlots, .gr-swap). Không chữ nào nói chọn người này là sang bước \"Swap out which one?\". Mắt mới phải đoán: \"does picking him swap something out?\". Mục chọn sẵn lại rơi đúng vào người này: firstSel lấy người đầu tiên đeo được theo thứ tự FWD → MID → DEF, không xét ai còn ô. Enter ngay là sang bước bỏ món. Có BACK nên không mất gì, nhưng thêm 1 vòng đi lại ở màn gặp khoảng 12 lần mỗi run.",
+      "evidence": ["ảnh gốc", "mắt mới", "code: runmap.js gearSlots / firstSel / targets (wear)"],
+      "pins": [ { "s": "gear-who", "x": 765, "y": 545 } ]
+    },
+    {
+      "n": 3, "sev": "vừa", "kind": "mã hoá màu",
+      "title": "Xanh lá vừa là \"đang được cộng\" vừa là \"sẽ tăng\"",
+      "body": "Trên thẻ cầu thủ, số xanh lá là cao hơn nền nhờ đồ đang đeo (.sq-st.up): SHO 80, FIG 72 của Nacho10. Xem trước của chỉ số là vàng ▲ (.sq-st.pre: DRI 77▲ của ROOKIE), đúng quy ước RUN_DESIGN (\"xem trước: vàng ▲ / đỏ ▼\"). Riêng OVR xem trước lại tô xanh lá nhấp nháy (.sq-ovr.pre: 72 của ROOKIE). Mắt mới: \"Green numbers (SHO 80, FIG 72) on Nacho10: are those bonuses or a preview?\" Thêm nữa, OVR là trung bình 6 chỉ số làm tròn (Run.ovrOf): cùng +4 mà có người lên 1, có người đứng yên, trông như món hợp người này hơn người kia.",
+      "evidence": ["ảnh gốc", "mắt mới", "code: css .sq-ovr.pre / .sq-st.up / .sq-st.pre, run.js ovrOf"],
+      "pins": [ { "s": "gear-who", "x": 572, "y": 392 } ]
+    },
+    {
+      "n": 4, "sev": "vừa", "kind": "thứ bậc",
+      "title": "Thẻ đang chọn yếu hơn thẻ hiếm",
+      "body": "Độ hiếm tô cả thẻ: nền pha màu độ hiếm, khung thẻ treo, mép trên 2px. Thẻ đang chọn chỉ thêm viền vàng 1px + bóng 1px và nhích lên 2px, mép trên vẫn giữ màu độ hiếm (.gr-card.sel border-top-color: var(--rc)), nên khung vàng hở một cạnh và mép trên trông y hệt thẻ thường bên cạnh. Nheo mắt: Vuvuzela (hiếm, xanh dương) là khối sáng nhất, Grip Socks đang chọn chỉ còn 1 viền vàng mờ. Mắt mới: \"Two highlight styles (yellow outline on the left, blue frame on the right) make it unclear which card is selected.\" Màn BADGE dùng cùng kiểu thẻ và bị y như vậy.",
+      "evidence": ["nheo mắt", "mắt mới", "code: css .gr-card / .gr-card.sel"],
+      "pins": [ { "s": "gear-pick", "x": 92, "y": 175 }, { "s": "gear-pick", "x": 1192, "y": 172 } ]
+    },
+    {
+      "n": 5, "sev": "nhẹ", "kind": "thông tin",
+      "title": "Thẻ GEAR chỉ số trống nửa dưới, hiệu lực là chữ nhỏ nhất thẻ",
+      "body": "GEAR chỉ số chỉ có tên + chip \"DRI +4\" cỡ 7px, nửa dưới thẻ để trống (gearBig chỉ in mô tả khi món có desc, tức GEAR trường phái). Nheo mắt thì \"+4\" mất trước tiên, còn câu mô tả của Vuvuzela lại nổi, nên thẻ trường phái trông như thẻ \"có nội dung\". Mắt mới không biết \"+4\" là nhiều hay ít (\"I can't tell whether +4 is a lot on a scale of about 70\") và hỏi Keeper Gloves có chỉ giúp thủ môn không. Câu giải thích từng chỉ số đã có sẵn, đã dịch (progression.attrs.list[].desc, ví dụ KEEPER: \"Save chance while standing in your own box.\").",
+      "evidence": ["nheo mắt", "mắt mới", "code: runmap.js gearBig, config progression.attrs.list"],
+      "pins": [ { "s": "gear-pick", "x": 288, "y": 410 }, { "s": "gear-pick", "x": 722, "y": 356 } ]
+    },
+    {
+      "n": 6, "sev": "nhẹ", "kind": "đường đi",
+      "title": "Lúc chọn món không thấy đội",
+      "body": "Bước 1 che cả thanh trên: dải SQUAD chỉ còn mờ sau lớp che và bị khoá (render: không có mục 'bag'). Muốn biết ai còn ô, ai đã có món này, DEF đang yếu GK không, Core của ai là CHAOS để đeo Vuvuzela, phải chọn đại rồi sang bước 2 xem, không hợp thì BACK. Món chỉ có giá trị khi đặt cạnh đội, mà bước chọn món không có thông tin nào về đội.",
+      "evidence": ["ảnh gốc", "code: runmap.js gearCard (O.sel == null), render (dải đội hình disabled khi có thẻ che)"],
+      "pins": [ { "s": "gear-pick", "x": 300, "y": 110 } ]
+    },
+    {
+      "n": 7, "sev": "nhẹ", "kind": "mã hoá",
+      "title": "GEAR trường phái: hình, tên và người hợp đeo không nối với nhau",
+      "body": "7 trong 8 GEAR trường phái lấy luôn icon trường phái làm hình (run.config.js gear.list: Vuvuzela = arch-chaos, cái xúc xắc). Mắt mới: \"The Vuvuzela icon is a die, not a vuvuzela.\" Cũng icon đó nằm ở góc thẻ cầu thủ để nói đồng đội hay ra Core trường phái nào (schoolIcons, chỉ có tooltip): Nacho10 có xúc xắc ở góc, tức đeo Vuvuzela là hợp nhất. Đó là thông tin quyết định ở bước 2 với GEAR trường phái, nhưng không có chữ và không sáng lên khi đang đưa món cùng trường phái (\"I don't understand ... the corner icons (target, die, note, glove)\"). Tên cũng có lúc chỉ ngược loại: Vuvuzela nghe như đồ của khán giả nhưng lại là GEAR 1 người, Shin Guards nghe như đồ 1 người đeo nhưng lại là BADGE cả đội (\"The names don't help, and sometimes they point the wrong way\").",
+      "evidence": ["mắt mới", "code: run.config.js gear.list / badges.shin, runmap.js schoolIcons"],
+      "pins": [ { "s": "gear-pick", "x": 1092, "y": 240 }, { "s": "gear-who", "x": 725, "y": 268 } ]
+    },
+    {
+      "n": 8, "sev": "nhẹ", "kind": "chồng lấn",
+      "title": "Map xuyên qua lớp che, ô món đè dải SQUAD",
+      "body": "Lớp che chỉ tối 86% (.rm-actcard rgba(7, 5, 10, 0.86)), nên dải SQUAD, tiền và bảng chú thích map vẫn hiện mờ phía sau. Ô món ở bước 2 đè đúng số OVR thứ ba của dải SQUAD, SKIP / BACK đè lên chữ GAME của SKILL GAME trong bảng chú thích. Mắt mới: \"SKIP covers part of the map key behind it.\" Những thứ phía sau đều đang khoá, chỉ thêm nhiễu.",
+      "evidence": ["ảnh gốc", "mắt mới", "code: css .rm-actcard"],
+      "pins": [ { "s": "gear-who", "x": 395, "y": 122 }, { "s": "gear-pick", "x": 560, "y": 692 } ]
+    }
+  ],
+  "inventory": [
+    ["PICK GEAR + \"One player wears it\"", "Màn gì, món cho 1 người hay cả đội", "cần (người mới); người quen chỉ cần phụ đề", "1", "Phụ đề là chỗ phân biệt GEAR / BADGE, giữ."],
+    ["Thẻ treo + tên món", "Món gì", "cần ngay", "2 (hình), tên thấp", "Hình GEAR trường phái là icon trường phái (#7)."],
+    ["Chip hiệu lực (DRI +4 / CHAOS ▲)", "Món làm gì, mạnh cỡ nào", "cần ngay", "thấp, +4 mất khi nheo mắt", "Thứ quyết định mà nhỏ nhất thẻ (#5)."],
+    ["Mô tả (chỉ GEAR trường phái)", "Món làm gì", "cần ngay", "cao (chữ trắng to)", "GEAR chỉ số không có (#5)."],
+    ["Màu độ hiếm (nền, khung thẻ treo, mép trên)", "Món quý cỡ nào", "đôi khi", "cao nhất ở thẻ hiếm", "Át thẻ đang chọn (#4)."],
+    ["Viền thẻ đang chọn", "Enter lấy thẻ nào", "cần ngay", "thấp", "#4."],
+    ["SKIP", "Bỏ qua được không", "đôi khi", "thấp", "Đúng mức."],
+    ["Đội (ai còn ô, ai đã có món, Core của ai)", "Ai hợp đeo", "cần khi chọn món", "không có ở bước 1", "#6."],
+    ["Ô món đang đưa (bước 2, trên cùng)", "Đang đưa món gì, +mấy", "cần ngay", "vừa", "Đúng mức."],
+    ["Hình nhân vật to", "Ai là ai", "cần ngay", "1", "Thẻ cầu thủ \"hình là chính\" (2026-10-29), giữ."],
+    ["Xem trước (chỉ số ▲, OVR, ô nhấp nháy)", "Đeo xong đổi thế nào", "cần ngay", "mất khi nheo mắt; động ở thẻ không chọn", "#1, #3."],
+    ["Ô GEAR mờ + ⇄ (người đủ ô)", "Có phải bỏ món nào không", "cần khi đủ ô", "rất thấp", "#2."],
+    ["Thẻ xám + \"Already wearing one.\"", "Vì sao không chọn được", "cần khi trùng món", "2 (nhãn đỏ)", "Đúng (run-10), hơi che 2 chỉ số."],
+    ["Icon trường phái góc thẻ", "Core của ai hợp GEAR trường phái", "cần khi đưa GEAR trường phái", "thấp", "Không chữ, không nối với món (#7)."],
+    ["Số xanh lá (cao hơn nền)", "Đồ đang đeo cộng gì", "đôi khi", "vừa", "Trùng màu với OVR xem trước (#3)."],
+    ["Ô LEGEND (bóng đen nét đứt)", "Người này có LEGEND chưa", "không cần ở đây", "thấp", "Đúng mức."],
+    ["BACK", "Đổi món khác", "đôi khi", "thấp", "Đúng mức."],
+    ["Map, dải SQUAD, bảng chú thích phía sau", "—", "không cần ở đây", "thấp", "Nhiễu, bị đè (#8)."]
+  ],
+  "fresh": [
+    "I'd click Grip Socks because it looks selected. I expect to be asked which player gets it.",
+    "Two highlight styles (yellow outline on the left, blue frame on the right) make it unclear which card is selected.",
+    "I can't tell whether +4 is a lot on a scale of about 70.",
+    "The preview shows on ROOKIE while the yellow selection is on Nacho10. Which one is active?",
+    "Nacho10 has 3 items plus an orange ⇄ icon: does picking him swap something out?",
+    "Every stat change disappears, so the actual consequence of the choice is invisible."
+  ],
+  "verdict": "Luồng 2 bước đúng và phân biệt GEAR / BADGE đã rõ. Chỉnh trạng thái ở bước 2 (xem trước, đổi món, màu) và thẻ đang chọn ở bước 1 (A). Gộp 2 bước thành 1 màn có đội (B) chỉ đáng thử nếu m muốn chọn món theo đội.",
+  "wireNote": "A vẽ 2 bước cạnh nhau, thu nhỏ một nửa (trái PICK GEAR, phải Who wears it?). B vẽ 1 màn, đang trỏ Vuvuzela.",
+  "options": [
+    {
+      "id": "A", "name": "Giữ 2 bước, sửa trạng thái và thứ bậc", "wire": "gear.wire-a.svg",
+      "notes": [
+        "Thẻ đang chọn: khung vàng 2px đủ 4 cạnh (cả mép trên), nhích lên 4px. Độ hiếm chỉ còn ở khung thẻ treo và 1 vạch mảnh mép trên, bỏ nền pha màu cả thẻ. Dùng chung cho thẻ BADGE.",
+        "GEAR chỉ số: chip to gấp đôi, dưới chip 1 dòng mô tả chỉ số lấy từ progression.attrs.list[].desc (đã dịch, không thêm chữ). Thẻ nào cũng có 1 dòng mô tả, 3 thẻ cân nhau.",
+        "Bước 2: 3 thẻ vẫn xem trước cùng lúc như mockup m duyệt, nhưng đứng yên. Chỉ thẻ đang chọn mới nhấp nháy ô mới và chỉ số ▲. OVR xem trước dùng vàng ▲ như chỉ số.",
+        "Người đủ ô: nhãn SWAP trên thẻ thay dấu ⇄ 5px (ô vẫn mờ). Mục chọn sẵn = người đầu tiên còn ô; ai cũng đủ ô thì mới chọn người đầu.",
+        "Đưa GEAR trường phái: icon trường phái trùng ở góc thẻ sáng lên, để thấy ngay Core của ai hợp món.",
+        "Có thẻ che thì ẩn dải SQUAD, tiền và bảng chú thích map (đang khoá, chỉ là nhiễu)."
+      ],
+      "gain": "Rẻ: phần lớn là CSS (.gr-card.sel, .pb-card.sel, .sq-ovr.pre, .gr-s.new, .rm-actcard) + vài dòng runmap.js (gearBig thêm mô tả chỉ số, squadCard chỉ nhấp nháy khi đang chọn, firstSel ưu tiên người còn ô, gearSlots nhãn SWAP, schoolIcons thêm lớp trùng trường phái). Sửa #1–#5, #7 (phần icon góc), #8. Giữ đúng luồng 3 bước m duyệt 2026-10-30.",
+      "cost": "SWAP là chữ mới (5 gói ngôn ngữ + build lại font ja). Bước chọn món vẫn không thấy đội (#6 còn nguyên). Đổi tên Vuvuzela / Shin Guards là việc nội dung riêng, không nằm trong A."
+    },
+    {
+      "id": "B", "name": "Một màn: món ở trên, đội ở dưới", "wire": "gear.wire-b.svg",
+      "notes": [
+        "Hàng trên: 3 GEAR thành thẻ ngang thấp (thẻ treo bên trái; tên, chip, 1 dòng mô tả bên phải).",
+        "Hàng dưới: 3 thẻ cầu thủ luôn hiện. Trỏ món nào thì thẻ cầu thủ nói ngay với món đó: còn ô (ô mới hiện mờ), SWAP, đã có (xám), trùng trường phái (icon góc sáng).",
+        "Enter / bấm món = chốt món, mục chọn xuống hàng dưới. Món đã chốt giữ khung vàng, 2 món kia mờ. ↑ hoặc BACK = chọn lại món.",
+        "Ở hàng dưới, thẻ đang chọn mới xem trước chỉ số ▲ (như A). Bước \"Swap out which one?\" giữ như bây giờ."
+      ],
+      "gain": "Chọn món khi đang nhìn đội: biết ngay ai còn ô, ai đã có, Core của ai hợp, khỏi đi rồi BACK. Bớt 1 lần chuyển màn ở màn gặp khoảng 12 lần mỗi run. Trạng thái run giữ nguyên (O.sel / O.who, bỏ phiếu co-op pick → wear → swap không đổi), chỉ đổi cách vẽ.",
+      "cost": "Viết lại gearCard thành bố cục 2 hàng + CSS thẻ GEAR ngang; phím đi 2 hàng; wearFx bay từ thẻ món đã chốt thay vì ô món trên cùng; GEAR mua ở KIT VAN (không có bước chọn món) cần nhánh riêng. Thẻ nhỏ lại, mô tả dài phải cắt còn 1 dòng. Đổi bố cục mockup GEAR m duyệt 2026-10-30."
+    }
+  ],
+  "pick": "Làm A: sửa được các chỗ gây hiểu sai ở bước 2 mà giữ luồng m đã duyệt. B chỉ đáng làm khi m thấy chọn món theo đội là phần chơi chính của GEAR; khi đó t dựng B thành bản bấm thử (?runtest › PICK GEAR) trước khi quyết. Riêng tên: nếu m đồng ý thì đổi tên Vuvuzela và Shin Guards cho khớp loại (chỉ đổi name trong config + 5 gói chữ, id giữ nguyên nên save không sao)."
+}
