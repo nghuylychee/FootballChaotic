@@ -1772,5 +1772,10 @@ SFC.I18n.add({
     'Plants his feet from long range, puffs his chest, and lets it fly.': 'Se planta de longe, estufa o peito e solta a bomba.',
     "Defending is somebody else's job.": 'Defender é trabalho dos outros.',
     'Hunt the ball down on autopilot. Run dry and he stops to breathe.': 'Caça a bola no piloto automático. Se o fôlego acaba, ele para pra respirar.',
+
+    /* ===== GOAT PATH: KIT VAN (UX màn hình 2026-11: giá + nút mua trên bong bóng, hộp cứu thương SOLD; Claude — chưa duyệt) ===== */
+    'BUY': 'COMPRAR',
+    'HEAL': 'CURAR',
+    'One treatment per visit.': 'Só um tratamento por visita.',
   },
 });

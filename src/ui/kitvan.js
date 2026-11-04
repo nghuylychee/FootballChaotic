@@ -22,19 +22,20 @@ window.SFC = window.SFC || {};
     const A = h(a), C = h(b);
     return '#' + A.map((v, i) => Math.round(v + (C[i] - v) * k).toString(16).padStart(2, '0')).join('');
   };
-  // toạ độ trên canvas thấp: móc treo (x giữa từng món, tối đa 5 móc) · hộp cứu thương trên quầy (x giữa, tối đa 4)
+  // toạ độ trên canvas thấp: móc treo (x giữa từng món, tối đa 5 móc) · hộp cứu thương trên quầy (x giữa, tối đa 4;
+  // UX màn hình 2026-11: bên phải mỗi hộp có thẻ giá dựng trên quầy + thẻ tên người được chữa nên các hộp cách xa hơn)
   const HOOK_X = (i) => 50 + i * 36;
-  const KIT_X = (k) => 44 + k * 22;
+  const KIT_X = (k) => 42 + k * 46;
   // tài xế: ngoại hình riêng (không phải đồng đội)
   const DRIVER = { hair: 'buzz', face: 'beard', skin: 3 };
   // tài xế ngồi: đỉnh bộ đệm 40x44 (chân ở y 40 trong bộ đệm) hạ xuống để bậu cửa (y 80) cắt ngang ngực
   const SEAT_Y = 46;
 
   let cv = null, L = null, raf = 0, last = 0, T = 0;
-  // trạng thái vẽ (KitVan.html cập nhật mỗi lần RunUI vẽ lại): items [{ id, price, sold, hot, key }] · kits [{ key }] · hover = key đang trỏ
-  const S = { items: [], kits: [], kitPrice: 0, hover: null, talk: null };
+  // trạng thái vẽ (KitVan.html cập nhật mỗi lần RunUI vẽ lại): items [{ id, price, was, sold, hot, key }] · kits [{ key, sold, gone }]
+  // · hover = key đang trỏ · kb = đang đi bằng phím / tay cầm (vẽ bàn tay chỉ lên canvas) · info: key -> { say, buy } cho bong bóng
+  const S = { items: [], kits: [], kitPrice: 0, hover: null, talk: null, kb: false, info: {} };
   const P = (x, y, w, h, c) => { L.fillStyle = c; L.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
-  const disc = (cx, cy, r, c) => { for (let y = -r; y <= r; y++) { const h = Math.round(Math.sqrt(r * r - y * y)); P(cx - h, cy + y, h * 2 + 1, 1, c); } };
 
   /* ---------- chữ pixel 3x5 (bảng hiệu, thẻ giá): '#' = pixel ---------- */
   const FONT = {
@@ -78,14 +79,23 @@ window.SFC = window.SFC || {};
   }
 
   /* ---------- đồ vật ---------- */
+  // bóng (hình bao) của miếng vá BADGE / thẻ treo GEAR 20x22, tô 1 màu: viền ngoài của món · viền vàng 2 pixel khi đang trỏ (vẽ lệch 4 hướng)
+  function shape(it, x, y, c) {
+    for (let j = 0; j < 22; j++) {
+      if (it.g) { const cut = Math.max(0, 4 - j); P(x + cut, y + j, 20 - cut * 2, 1, c); continue; }
+      const inset = j === 0 || j === 21 ? 3 : j === 1 || j === 20 ? 1 : 0, extra = j >= 18 ? j - 17 : 0;   // bo góc, đáy tròn hơn
+      P(x + inset + extra, y + j, 20 - (inset + extra) * 2, 1, c);
+    }
+  }
+  // món đang trỏ (UX màn hình 2026-11): viền vàng dày 2 pixel (viền ngoài vàng + 1 vòng vàng nữa bên ngoài), nheo mắt vẫn thấy
+  function glow(it, x, y) { [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dx, dy]) => shape(it, x + dx, y + dy, '#ffe14f')); }
   // miếng vá BADGE 20x22 (x, y = góc trên trái): viền mực (trỏ vào = viền vàng), nền tối pha màu độ hiếm, chỉ khâu chấm màu độ hiếm, icon giữa
+  // · nền pha màu độ hiếm đậm hơn (UX màn hình 2026-11: 5 món trước đây thành 5 đốm xanh giống nhau khi nheo mắt)
   function patch(it, x, y, lit) {
     if (it.g) return gearTag(it, x, y, lit);
-    const c = rc(it), base = mix('#1c1e28', c, 0.28), hi = mix('#1c1e28', c, 0.5), rows = 22;
-    for (let j = 0; j < rows; j++) {
-      const inset = j === 0 || j === rows - 1 ? 3 : j === 1 || j === rows - 2 ? 1 : 0, extra = j >= rows - 4 ? j - (rows - 5) : 0;   // bo góc, đáy tròn hơn
-      P(x + inset + extra, y + j, 20 - (inset + extra) * 2, 1, lit ? '#ffe14f' : O);
-    }
+    const c = rc(it), base = mix('#1c1e28', c, 0.4), hi = mix('#1c1e28', c, 0.62), rows = 22;
+    if (lit) glow(it, x, y);
+    shape(it, x, y, lit ? '#ffe14f' : O);
     for (let j = 1; j < rows - 1; j++) {
       const inset = j === 1 || j === rows - 2 ? 2 : 1, extra = j >= rows - 4 ? j - (rows - 5) : 0;
       P(x + inset + extra, y + j, 20 - (inset + extra) * 2, 1, j < 6 ? hi : base);
@@ -96,33 +106,45 @@ window.SFC = window.SFC || {};
   }
   // GEAR 20x22: thẻ treo góc trên vát (khác miếng vá tròn của BADGE), viền màu độ hiếm, lỗ xỏ dây, icon giữa
   function gearTag(it, x, y, lit) {
-    const c = rc(it), base = mix('#1c1e28', c, 0.3), hi = mix('#1c1e28', c, 0.5);
-    for (let j = 0; j < 22; j++) {
-      const cut = Math.max(0, 4 - j);
-      P(x + cut, y + j, 20 - cut * 2, 1, lit ? '#ffe14f' : O);
-      if (j > 0 && j < 21) { const ci = Math.max(1, 5 - j); P(x + ci, y + j, 20 - ci * 2, 1, j < 3 ? c : j < 7 ? hi : base); P(x + ci, y + j, 1, 1, c); P(x + 19 - ci, y + j, 1, 1, c); }
+    const c = rc(it), base = mix('#1c1e28', c, 0.42), hi = mix('#1c1e28', c, 0.62);
+    if (lit) glow(it, x, y);
+    shape(it, x, y, lit ? '#ffe14f' : O);
+    for (let j = 1; j < 21; j++) {
+      const ci = Math.max(1, 5 - j);
+      P(x + ci, y + j, 20 - ci * 2, 1, j < 3 ? c : j < 7 ? hi : base); P(x + ci, y + j, 1, 1, c); P(x + 19 - ci, y + j, 1, 1, c);
     }
     P(x + 1, y + 20, 18, 1, c);
     P(x + 9, y + 3, 2, 2, O);
     L.drawImage(iconCv(iconKey(it)), x + 3, y + 6);
   }
-  // thẻ giá bìa cát-tông treo dây: đồng xu + số · HOT = thẻ đỏ · đã bán = chữ SOLD đỏ
+  // đồng xu tròn 5x5 (UX màn hình 2026-11: đĩa bán kính 1 cũ ra đúng hình dấu + 3x3, giá đọc thành "+70"): vành sẫm, ruột vàng, 1 điểm sáng
+  const COIN = ['.ddd.', 'dhyyd', 'dyyyd', 'dyyyd', '.ddd.'];
+  function coin(x, y, dim) {
+    const c = dim ? { d: '#5e5666', y: '#9a90a0', h: '#c8c0cc' } : { d: '#a8760c', y: '#ffd23f', h: '#fff3a8' };
+    COIN.forEach((r, j) => [...r].forEach((v, i) => { if (v !== '.') P(x + i, y + j, 1, 1, c[v]); }));
+  }
+  // thẻ giá bìa cát-tông treo dây: đồng xu + số · HOT = thẻ đỏ, giá cũ nhỏ gạch ngang đứng trước giá mới (o.was) · đã bán = chữ SOLD đỏ
   // · không đủ tiền (poor, UX review 2026-11-02) = bìa xám tối, số đỏ, xu xám (món trên móc giữ nguyên màu để vẫn ngắm được)
-  function tag(cx, y, price, hot, sold, poor) {
-    const label = sold ? 'SOLD' : String(price), w = textW(label) + (sold ? 4 : 8), x = cx - 2, dim = poor && !sold;
-    P(cx, y - 4, 1, 4, '#e8dcc4');
-    P(x, y, w, 9, '#3a2410'); P(x + 1, y + 1, w - 2, 7, dim ? '#5a5060' : hot && !sold ? '#ff3d5a' : '#d8b27a'); P(x + 1, y + 7, w - 2, 1, dim ? '#3e3646' : hot && !sold ? '#b8202e' : '#a8824a');
-    P(x + 2, y + 2, 1, 1, '#3a2410');
-    if (sold) return text(label, x + 2, y + 2, '#c8202e');
-    disc(x + 5, y + 4, 1, dim ? '#9a90a0' : '#ffd23f'); P(x + 4, y + 3, 1, 1, dim ? '#c8c0cc' : '#fff3a8');
-    text(label, x + 8, y + 2, dim ? '#ff5a6e' : hot ? '#fff' : '#3a2410');
+  // · o.loose: thẻ dựng trên quầy cạnh hộp cứu thương (không dây treo, không lỗ xỏ dây)
+  function tag(cx, y, o) {
+    const sold = o.sold, dim = o.poor && !sold, hot = o.hot && !sold, label = sold ? 'SOLD' : String(o.price);
+    const was = hot && o.was ? String(o.was) : '', ww = was ? textW(was) + 3 : 0, x = cx - 2, w = sold ? textW(label) + 6 : 12 + ww + textW(label);
+    if (!o.loose) P(cx, y - 4, 1, 4, '#e8dcc4');
+    P(x, y, w, 9, '#3a2410'); P(x + 1, y + 1, w - 2, 7, dim ? '#5a5060' : hot ? '#ff3d5a' : '#d8b27a'); P(x + 1, y + 7, w - 2, 1, dim ? '#3e3646' : hot ? '#b8202e' : '#a8824a');
+    if (!o.loose) P(x + 2, y + 2, 1, 1, '#3a2410');
+    if (sold) return text(label, x + 4, y + 2, '#c8202e');
+    coin(x + 4, y + 2, dim);
+    if (was) { text(was, x + 10, y + 2, dim ? '#8a8094' : '#ffc4cc'); P(x + 10, y + 4, ww - 2, 1, dim ? '#3e3646' : '#7a0e1c'); }
+    text(label, x + 10 + ww, y + 2, dim ? '#ff5a6e' : hot ? '#fff' : '#3a2410');
   }
   function hotSticker(x, y) {
     P(x, y, 15, 9, O); P(x + 1, y + 1, 13, 7, '#ff3d5a'); P(x + 1, y + 7, 13, 1, '#b8202e');
     if (Math.floor(T * 3) % 2) P(x + 1, y + 1, 13, 1, '#ff8a98');
     text('HOT', x + 2, y + 2, '#fff');
   }
+  // hộp cứu thương 18x11 (+ quai 3 pixel trên) · đang trỏ: viền vàng 2 pixel
   function medkit(x, y, lit) {
+    if (lit) { P(x - 1, y - 1, 20, 13, '#ffe14f'); P(x + 5, y - 4, 8, 1, '#ffe14f'); P(x + 4, y - 3, 1, 2, '#ffe14f'); P(x + 13, y - 3, 1, 2, '#ffe14f'); }
     P(x, y, 18, 11, lit ? '#ffe14f' : O); P(x + 1, y + 1, 16, 9, '#f4f4f4'); P(x + 1, y + 8, 16, 2, '#c8ccd6');
     P(x + 7, y + 2, 4, 6, '#ff3d5a'); P(x + 5, y + 4, 8, 2, '#ff3d5a');
     P(x + 6, y - 3, 6, 1, O); P(x + 5, y - 2, 1, 2, O); P(x + 12, y - 2, 1, 2, O);
@@ -174,10 +196,10 @@ window.SFC = window.SFC || {};
     // giá nóc + bảng hiệu (chữ vẽ mỗi khung)
     p(30, 25, 186, 2, O); for (let x = 34; x < 216; x += 30) p(x, 27, 2, 3, O);
     p(96, 9, 82, 17, O); p(97, 10, 80, 15, '#ffe14f'); p(97, 23, 80, 2, '#c99a12'); p(97, 10, 80, 1, '#fff3a8');
-    // ô cửa hông mở: bảng gỗ đục lỗ
-    p(30, 42, 192, 66, O); p(31, 43, 190, 64, '#a8784a');
-    for (let y = 46; y < 106; y += 4) for (let x = 33 + ((y / 4) % 2) * 2; x < 220; x += 4) p(x, y, 1, 1, '#6a4628');
-    for (let y = 43; y < 49; y++) d(31, y, 221, '#6a4628', y < 46 ? 1 : 2);
+    // ô cửa hông mở: bảng gỗ đục lỗ (UX màn hình 2026-11: tối đi 1 bậc cho hàng treo nổi lên)
+    p(30, 42, 192, 66, O); p(31, 43, 190, 64, '#8e6239');
+    for (let y = 46; y < 106; y += 4) for (let x = 33 + ((y / 4) % 2) * 2; x < 220; x += 4) p(x, y, 1, 1, '#573a1f');
+    for (let y = 43; y < 49; y++) d(31, y, 221, '#573a1f', y < 46 ? 1 : 2);
     // mái bạt (cánh cửa lật lên) sọc vàng / trắng, mép dưới lượn
     p(26, 35, 200, 9, O);
     for (let x = 27, k = 0; x < 225; x += 8, k++) {
@@ -206,17 +228,23 @@ window.SFC = window.SFC || {};
   }
 
   /* ---------- con trỏ bàn tay chỉ (pixel, phóng x2) ---------- */
+  // 13x16, đầu ngón trỏ ở cột 4-5 hàng 0 · cạnh phải lòng bàn tay (từ hàng 7) tô sẫm
+  const HAND = ['....OO.......', '...OSSO......', '...OSSO......', '...OSSO......', '...OSSOOO....', '...OSSOSSOOO.', 'OO.OSSOSSOSSO', 'OSOOSSSSSSSSO', 'OSSOSSSSSSSSO',
+    '.OSSSSSSSSSSO', '..OSSSSSSSSSO', '..OSSSSSSSSO.', '...OSSSSSSSO.', '...OSSSSSSO..', '....OSSSSSO..', '....OOOOOOO..'];
+  const handPx = (fn) => HAND.forEach((r, j) => { const e = r.lastIndexOf('S'); [...r].forEach((v, i) => { if (v !== '.') fn(i, j, v === 'O' ? '#111' : j > 6 && i === e ? '#c8946a' : '#f0c8a0'); }); });
   let cursor = '';
   function handCursor() {
-    const rows = ['....OO.......', '...OSSO......', '...OSSO......', '...OSSO......', '...OSSOOO....', '...OSSOSSOOO.', 'OO.OSSOSSOSSO', 'OSOOSSSSSSSSO', 'OSSOSSSSSSSSO',
-      '.OSSSSSSSSSSO', '..OSSSSSSSSSO', '..OSSSSSSSSO.', '...OSSSSSSSO.', '...OSSSSSSO..', '....OSSSSSO..', '....OOOOOOO..'];
     const c = document.createElement('canvas');
     c.width = 26; c.height = 32;
     const x = c.getContext('2d');
-    rows.forEach((r, j) => [...r].forEach((v, i) => { if (v === '.') return; x.fillStyle = v === 'O' ? '#111' : '#f0c8a0'; x.fillRect(i * 2, j * 2, 2, 2); }));
-    x.fillStyle = '#c8946a';
-    rows.forEach((r, j) => { const e = r.lastIndexOf('S'); if (j > 6 && e > 0) x.fillRect(e * 2, j * 2, 2, 2); });
+    handPx((i, j, col) => { x.fillStyle = col; x.fillRect(i * 2, j * 2, 2, 2); });
     return `url(${c.toDataURL()}) 9 1`;
+  }
+  // đi bằng phím / tay cầm (UX màn hình 2026-11): không có con trỏ chuột -> vẽ đúng bàn tay đó lên canvas, đầu ngón chỉ vào (fx, fy),
+  // nhấp 1 pixel như đang gõ nhẹ
+  function pointer(fx, fy) {
+    const x0 = Math.round(fx) - 4, y0 = Math.round(fy) + (Math.floor(T * 2.5) % 2);
+    handPx((i, j, col) => P(x0 + i, y0 + j, 1, 1, col));
   }
 
   /* ---------- bàn tay của bạn (góc nhìn người chơi: thò từ mép dưới lên, úp tay = thấy mu bàn tay + móng) ----------
@@ -309,23 +337,34 @@ window.SFC = window.SFC || {};
     for (let k = 0; k < 6; k++) { P(268 - k, 60 + k * 2 + dy, 2, 2, 'rgba(255,255,255,0.45)'); P(276 - k, 60 + k * 2 + dy, 1, 2, 'rgba(255,255,255,0.3)'); }
     sill(dy);
     if (Math.floor(T * 8) % 23 === 0) P(296, 41, 6, 2, '#a89a6a');   // đèn đường chập chờn
-    // hàng treo: món đang bị tay với tới vẫn treo trên móc tới lúc nắm
+    // hàng treo: món đang bị tay với tới vẫn treo trên móc tới lúc nắm · món đang trỏ nhấc khỏi móc 3 pixel (UX màn hình 2026-11)
     const reaching = hand.mode === 'reach' && hand.item;
+    let point = null;   // chỗ bàn tay chỉ khi đi bằng phím: đầu ngón ở góc phải dưới món / bên trái hộp cứu thương
     S.items.forEach((s, i) => {
       const x = HOOK_X(i);
       P(x - 1, 46 + dy, 3, 1, '#c9ced8'); P(x - 1, 47 + dy, 1, 3, '#c9ced8'); P(x + 1, 47 + dy, 1, 2, '#c9ced8');
       const onHook = !s.sold || (reaching && hand.item.kind === 'item' && hand.item.i === i);
-      const lit = S.hover === s.key && !s.sold, lift = (lit ? -1 : 0) + dy;
+      const lit = S.hover === s.key && !s.sold, lift = (lit ? -3 : 0) + dy;
       if (onHook) { patch(s, x - 10, 51 + lift, lit); if (s.hot) hotSticker(x + 3, 47 + lift); }
-      tag(x + 4, 79 + dy, s.price, s.hot, s.sold && !onHook, s.poor);
+      tag(x + 4, 79 + dy, { price: s.price, was: s.was, hot: s.hot, sold: s.sold && !onHook, poor: s.poor });
+      if (s.key && S.hover === s.key) point = { x: x + 5, y: 66 + lift };
     });
-    // hộp cứu thương trên quầy + thẻ giá treo mép quầy
+    // hộp cứu thương trên quầy + thẻ giá dựng ngay bên phải (UX màn hình 2026-11: trước đây thẻ treo dưới mép quầy, cách hộp 1 tấm quầy)
+    // · thẻ tên người được chữa là DOM (.kv-who) dưới thẻ giá · đã chữa 1 người ở lần ghé này: hộp khác vẫn đứng, thẻ SOLD
+    // · gone = chỗ của hộp vừa lấy (để trống, các hộp khác không dời chỗ)
     S.kits.forEach((k, i) => {
-      if (hand.carry && hand.carry.kind === 'kit' && hand.carry.i === i) return;
-      medkit(KIT_X(i) - 9, 96 + dy, S.hover === k.key);
-      tag(KIT_X(i), 117 + dy, S.kitPrice, false, false, k.poor);
+      if (k.gone || (hand.carry && hand.carry.kind === 'kit' && hand.carry.i === i)) return;
+      const lit = S.hover === k.key, ky = 96 + dy - (lit ? 2 : 0);
+      medkit(KIT_X(i) - 9, ky, lit);
+      tag(KIT_X(i) + 13, 97 + dy, { price: S.kitPrice, sold: k.sold, poor: k.poor, loose: true });
+      if (lit) point = { x: KIT_X(i) - 3, y: ky + 6 };
     });
-    if (reaching && hand.item.kind === 'kit' && !S.kits[hand.item.i]) medkit(KIT_X(hand.item.i) - 9, 96 + dy, false);   // đã chữa (hết hộp) nhưng tay chưa tới
+    const k0 = reaching && hand.item.kind === 'kit' && S.kits[hand.item.i];
+    if (reaching && hand.item.kind === 'kit' && (!k0 || k0.gone)) medkit(KIT_X(hand.item.i) - 9, 96 + dy, false);   // đã chữa (hết hộp) nhưng tay chưa tới
+    if (S.kb && point && hand.mode === 'idle') pointer(point.x, point.y);
+    // thẻ tên (DOM) nhún cùng thân xe
+    const pg = cv.parentNode;
+    if (pg && pg._dy !== dy) { pg._dy = dy; pg.style.setProperty('--vdy', dy * 2 + 'px'); }
     // tay + món đồ đang nắm
     if (hand.mode !== 'idle') {
       const c = hand.carry;
@@ -336,31 +375,42 @@ window.SFC = window.SFC || {};
   }
 
   const KitVan = {
-    // khung toàn màn (640x360): canvas + vùng bấm (data-rt = mục của RunUI) + bong bóng thoại + tiền + chân (nút LEAVE / DONE)
-    // o: { items: [{ id, g?, r?, price, sold, hot, poor, key, say: [tiêu đề, câu, nhãn loại, kiểu nhãn] }] (g = GEAR, r = độ hiếm, poor = không đủ tiền),
-    //      kits: [{ key, say, poor }], kitPrice, cash (html), foot (html),
-    //      sel: key đang chọn bằng phím, idle: câu chào }
+    // khung toàn màn (640x360): canvas + vùng bấm (data-rt = mục của RunUI) + bong bóng thoại + tiền + thẻ tên dưới hộp cứu thương + chân (nút LEAVE / DONE)
+    // o: { items: [{ id, g?, r?, price, was?, sold, hot, poor, key, say: [tiêu đề, câu, nhãn loại, kiểu nhãn], buy? }] (g = GEAR, r = độ hiếm,
+    //        was = giá cũ của món HOT, poor = không đủ tiền),
+    //      kits: [{ key, say, poor, sold, name, face (html), buy? } | { gone: true }], kitPrice, cash (html), foot (html),
+    //      sel: key đang chọn bằng phím, kb: đang đi bằng phím / tay cầm, idle: câu chào }
+    //   buy: { price, was?, poor, verb, key } = dòng giá + nút mua trên bong bóng (key = nhãn phím xác nhận)
     html(o) {
-      S.items = o.items; S.kits = o.kits; S.kitPrice = o.kitPrice;
+      S.items = o.items; S.kits = o.kits; S.kitPrice = o.kitPrice; S.kb = !!o.kb;
       if (o.sel !== S.talkKey) S.talk = null;   // câu tài xế vừa nói chỉ giữ khi vẫn đang chọn món đó
       S.hover = o.sel || null;
-      const hit = (key, x, y, w, h, say) => `<button class="kv-hit" data-rt="${key}" data-sb="${esc(say[0] || '')}" data-sl="${esc(say[1] || '')}" data-sk="${esc(say[2] || '')}" data-sc="${esc(say[3] || '')}"
-          style="left:${x * 2}px;top:${y * 2}px;width:${w * 2}px;height:${h * 2}px"></button>`;
-      const hits = o.items.map((s, i) => (s.key ? hit(s.key, HOOK_X(i) - 11, 46, 22, 42, s.say) : '')).join('')
-        + o.kits.map((k, i) => hit(k.key, KIT_X(i) - 10, 93, 20, 26, k.say)).join('');
-      const sel = o.items.concat(o.kits).find((x) => x.key && x.key === o.sel);
-      const say = S.talk || (sel ? sel.say : ['', o.idle]);
+      S.info = {};
+      o.items.concat(o.kits).forEach((x) => { if (x.key) S.info[x.key] = { say: x.say, buy: x.buy }; });
+      const hit = (key, x, y, w, h) => `<button class="kv-hit" data-rt="${key}" style="left:${x * 2}px;top:${y * 2}px;width:${w * 2}px;height:${h * 2}px"></button>`;
+      // vùng bấm hộp cứu thương: hộp + thẻ giá + thẻ tên bên phải
+      const hits = o.items.map((s, i) => (s.key ? hit(s.key, HOOK_X(i) - 11, 46, 22, 42) : '')).join('')
+        + o.kits.map((k, i) => (k.key ? hit(k.key, KIT_X(i) - 10, 91, 44, 23) : '')).join('');
+      const who = o.kits.map((k, i) => (k.gone || !k.name ? '' : `<span class="kv-who" style="left:${(KIT_X(i) + 11) * 2}px;top:${107 * 2}px"><i>${k.face || ''}</i><b>${esc(k.name)}</b></span>`)).join('');
+      const sel = S.info[o.sel];
       S.idle = o.idle;
       return `<div class="kv-page" style="--hand:${cursor || (cursor = handCursor())}">
-          <canvas class="kv-lo" width="${LW}" height="${LH}"></canvas>${hits}
-          <div class="kv-bubble">${this.bubble(say)}</div>
+          <canvas class="kv-lo" width="${LW}" height="${LH}"></canvas>${hits}${who}
+          <div class="kv-bubble">${S.talk ? this.bubble(S.talk) : sel ? this.bubble(sel.say, sel.buy) : this.bubble(['', o.idle])}</div>
           <div class="kv-cash">${o.cash}</div><div class="kv-foot">${o.foot}</div>
         </div>`;
     },
     // say = [tiêu đề, câu, nhãn loại món, kiểu nhãn 'badge' (cả đội, bo tròn như miếng vá) | 'gear' (1 người, góc vát như thẻ treo)]
-    bubble(say) { return (say[0] ? `<b>${esc(say[0])}</b>` : '') + `<p>${esc(say[1] || '')}</p>` + (say[2] ? `<em class="kv-kind ${esc(say[3] || '')}">${esc(say[2])}</em>` : ''); },
+    // · buy: giá + nút mua trên dòng tiêu đề (UX màn hình 2026-11: mọi thứ về món đang trỏ ở 1 chỗ; thiếu tiền = khối giá xám số đỏ, nút mờ)
+    bubble(say, buy) {
+      const price = buy ? `<span class="kv-buy ${buy.poor ? 'poor' : ''}"><span class="kv-price">${SFC.PixelIcon.ui('coin', 'sm')}${buy.was ? `<s>${buy.was}</s>` : ''}<u>${buy.price}</u></span>`
+        + `<span class="kv-go"><kbd>${esc(buy.key)}</kbd>${esc(buy.verb)}</span></span>` : '';
+      return (say[0] || price ? `<div class="kv-top">${say[0] ? `<b>${esc(say[0])}</b>` : ''}${price}</div>` : '') + `<p>${esc(say[1] || '')}</p>`
+        + (say[2] ? `<em class="kv-kind ${esc(say[3] || '')}">${esc(say[2])}</em>` : '');
+    },
     // sau khi vẽ DOM: gắn canvas vào vòng vẽ, trỏ chuột vào vùng bấm = bong bóng giải thích (onHover: RunUI đổi mục đang chọn, không vẽ lại)
-    bind(root, onHover) {
+    // · chuột nhúc nhích (thật) = thôi chế độ phím: bỏ bàn tay vẽ trên canvas (onMouse: RunUI bỏ cờ kb)
+    bind(root, onHover, onMouse) {
       const el = root.querySelector('.kv-page canvas.kv-lo');
       if (!el) return;
       if (!bg) { paintStatic(); buf = document.createElement('canvas'); buf.width = 40; buf.height = 44; }
@@ -368,8 +418,14 @@ window.SFC = window.SFC || {};
       cv = el; L = cv.getContext('2d');
       if (!raf) { last = 0; raf = requestAnimationFrame(frame); }
       const bub = root.querySelector('.kv-bubble');
+      el.parentNode.addEventListener('mousemove', (e) => {
+        if (!S.kb || !SFC.UIHelpers.realMove(e)) return;
+        S.kb = false;
+        if (onMouse) onMouse();
+      });
       root.querySelectorAll('.kv-hit').forEach((h) => {
-        h.addEventListener('mouseenter', () => { S.hover = h.dataset.rt; S.talk = null; bub.innerHTML = this.bubble([h.dataset.sb, h.dataset.sl, h.dataset.sk, h.dataset.sc]); if (onHover) onHover(h.dataset.rt); });
+        const inf = S.info[h.dataset.rt] || { say: [] };
+        h.addEventListener('mouseenter', () => { S.hover = h.dataset.rt; S.talk = null; bub.innerHTML = this.bubble(inf.say, inf.buy); if (onHover) onHover(h.dataset.rt); });
         h.addEventListener('mouseleave', () => { if (S.hover === h.dataset.rt) S.hover = null; bub.innerHTML = this.bubble(S.talk || ['', S.idle]); });
       });
     },

@@ -189,9 +189,11 @@ window.SFC = window.SFC || {};
       if (R.join) return BYPOS(R).map((i) => T('joinwho', { i })).concat([T('joinno')]);
       const rm = R.room;
       if (rm && rm.kind === 'shop') {
-        const heal = rm.healed ? [] : RUN().injuries().map((x) => T('heal', { i: x.k }));   // chữa ở Shop: tốn tiền
+        // chữa ở Shop: tốn tiền, 1 lần mỗi lần ghé. Đã chữa (UX màn hình 2026-11): hộp còn lại vẫn chọn được (sold), tài xế nói chỉ chữa 1 lần
+        const heal = RUN().injuries().map((x) => T('heal', { i: x.k, sold: !!rm.healed }));
         const done = room && (rm.ready || []).includes(RUN().myKey());
-        return (done ? [] : rm.items.map((x, i) => T('buy', { i, id: x.id })).concat(heal)).concat(done ? [] : [T('leave', { main: true })]);
+        // LEAVE là nút thường (UX màn hình 2026-11: nút vàng to kéo mắt khỏi hàng hoá)
+        return (done ? [] : rm.items.map((x, i) => T('buy', { i, id: x.id })).concat(heal)).concat(done ? [] : [T('leave')]);
       }
       if (rm && rm.kind === 'rest') {
         const up = RUN().upgradable().map((x) => T('up', { i: x.k }));
@@ -265,7 +267,7 @@ window.SFC = window.SFC || {};
       this.bindMap(menu);
       const idx = new Map(T.map((t, i) => [t.key, i]));   // khoá mục -> chỉ số, dựng 1 lần mỗi lần vẽ (rê chuột không tính lại targets())
       this.bindHover(menu, idx);
-      if (R.room && R.room.kind === 'shop') SFC.KitVan.bind(menu.el, (key) => { const i = idx.get(key); if (i != null) this.sel = i; });
+      if (R.room && R.room.kind === 'shop') SFC.KitVan.bind(menu.el, (key) => { const i = idx.get(key); if (i != null) this.sel = i; }, () => { this.kb = false; });
       menu.bindAvatars();
       if (R.join) this.bindJoin(menu);
       if (T[0] && T[0].k === 'close') this.bindBag(menu, T);   // đang mở SQUAD
@@ -915,24 +917,51 @@ window.SFC = window.SFC || {};
     // Shop = KIT VAN (src/ui/kitvan.js, user 2026-10-29): xe bán đồ pixel, BADGE treo móc, hộp cứu thương trên quầy = chữa 1 chấn thương,
     // tài xế giải thích món đang trỏ trong bong bóng. Co-op: ví riêng; bấm DONE = xong mua sắm, Shop đóng khi mọi người xong
     shopCard(R, T) {
-      const rm = R.room, P = RUN().pl(RUN().myKey(), R) || R, cur = T[this.sel];
+      const rm = R.room, P = RUN().pl(RUN().myKey(), R) || R, cur = T[this.sel], hp = RUN().healPrice(R);
       const buy = new Map(T.filter((t) => t.k === 'buy').map((t) => [t.i, t]));
+      // dòng giá + nút mua trên bong bóng (UX màn hình 2026-11): nhãn phím xác nhận theo thiết bị đang dùng
+      const deal = (verb, price, was, poor) => ({ verb, price, was, poor, key: SFC.Input.label('confirm') });
       const items = rm.items.map((it, i) => {
         const t = buy.get(i), hot = it.hot ? '\n' + _t('Half price today!') : '';   // HOT: xuống dòng riêng (bong bóng white-space: pre-line)
         // GEAR: tài xế đọc tên + hiệu lực (chỉ số / trường phái) · nhãn loại: BADGE = cả đội, GEAR = 1 người đeo (UX review 2026-11-02)
         const d = it.g ? RUN().gearDef(it.id) : RUN().badge(it.id), what = it.g ? this.gearTip(it).split(' · ').slice(1).join(' · ') : d.desc;
         const kind = it.g ? [_t('One player wears it'), 'gear'] : [_t('The whole team gets it'), 'badge'];
-        return { id: it.id, g: !!it.g, r: it.r, price: it.price, sold: it.sold, hot: it.hot, poor: P.cash < it.price, key: t ? t.key : null,
-          say: it.sold ? ['', _t('Sold out, mate.')] : [d.name, what + hot].concat(kind) };
+        const was = it.hot ? this.shopWas(it, R) : 0, poor = P.cash < it.price;
+        return { id: it.id, g: !!it.g, r: it.r, price: it.price, was, sold: it.sold, hot: it.hot, poor, key: t ? t.key : null,
+          say: it.sold ? ['', _t('Sold out, mate.')] : [d.name, what + hot].concat(kind), buy: t && !it.sold ? deal(_t('BUY'), it.price, was, poor) : null };
       });
-      const kits = T.filter((t) => t.k === 'heal').slice(0, 4).map((t) => {
-        const b = R.bag[t.i];
-        return { key: t.key, poor: P.cash < RUN().healPrice(R), say: [_t('Treat an injury'), RUN().badge(b.id).name + ' · ' + RUN().memberName(b.who || 0, R)] };
+      // hộp cứu thương: 1 hộp mỗi chấn thương còn lại + thẻ tên (mặt + tên) người sẽ khỏi. Đã chữa 1 người ở lần ghé này (rm.healed):
+      // hộp còn lại vẫn đứng, thẻ SOLD (UX màn hình 2026-11: trước đây biến mất không lời nào); chỗ hộp vừa lấy để trống (kitGone)
+      const heal = new Map(T.filter((t) => t.k === 'heal').map((t) => [t.i, t]));
+      const kits = RUN().injuries(R).map((x) => {
+        const t = heal.get(x.k), who = x.b.who || 0, name = RUN().memberName(who, R), hurt = RUN().badge(x.b.id).name;
+        // mặt đứng yên quay ra trước (kể cả bạn: không dùng avatar xoay người)
+        return { key: t ? t.key : null, sold: !!rm.healed, poor: P.cash < hp, name, face: this.face(RUN().memberLook(who, R), false, true),
+          say: rm.healed ? [hurt + ' · ' + name, _t('One treatment per visit.')] : [_t('Treat an injury'), hurt + ' · ' + name],
+          buy: t && !rm.healed ? deal(_t('HEAL'), hp, 0, P.cash < hp) : null };
       });
+      const g = this.kitGone;
+      if (rm.healed && g && g.at === R.act + ':' + R.at && g.i <= kits.length) kits.splice(g.i, 0, { gone: true });
       const lv = T.find((t) => t.k === 'leave');
-      return SFC.KitVan.html({ items, kits, kitPrice: RUN().healPrice(R), cash: this.cash(P.cash), sel: cur && cur.key,
+      return SFC.KitVan.html({ items, kits: kits.slice(0, 4), kitPrice: hp, cash: this.cash(P.cash), sel: cur && cur.key, kb: !!this.kb,
         idle: lv ? _t('Fresh kit! Have a look.') : _t('Waiting for the others to finish shopping...'),
         foot: lv ? this.btn(T, lv, esc(inRoom() ? _t('DONE') : _t('LEAVE'))) : '' });
+    },
+    // giá cũ của món HOT (giá HOT = giá thường x run.shop.hot, Run.openShop): tính lại từ bảng giá; không khớp (giảm giá Shop đổi giữa chừng) thì chia ngược
+    shopWas(it, R) {
+      const S = CFG().shop, off = Math.min(0.8, RUN().bmax('shopOff', R)), rar = it.g ? it.r : RUN().badge(it.id).rarity;
+      const full = Math.round((S.price[rar] || 99) * (1 - off));
+      return Math.round(full * S.hot) === it.price ? full : Math.round(it.price / (S.hot || 1));
+    },
+    // KIT VAN: chữa xong 1 người -> nhớ chỗ hộp vừa lấy (hộp khác không dời chỗ), chọn hộp còn lại gần nhất (SOLD) / món đầu chưa bán / LEAVE,
+    // tài xế nói kết quả + chỉ chữa 1 lần mỗi lần ghé ngay trên mục đó (trước đây mục chọn trôi sang LEAVE, câu "Healed" mất ngay)
+    kitHealed(kit, line) {
+      const R = RUN().run;
+      this.kitGone = { at: R.act + ':' + R.at, i: kit };
+      const T = this.targets(), left = T.filter((x) => x.k === 'heal');
+      const nxt = left[Math.min(kit, left.length - 1)] || T.find((x) => x.k === 'buy' && !R.room.items[x.i].sold) || T.find((x) => x.k === 'leave');
+      if (nxt) this.sel = T.indexOf(nxt);
+      if (line) SFC.KitVan.say(line + (left.length ? '\n' + _t('One treatment per visit.') : ''), nxt && nxt.key);
     },
     restCard(R, T) {
       // co-op: bỏ phiếu (dấu phiếu trên thẻ)
@@ -1561,8 +1590,9 @@ window.SFC = window.SFC || {};
         }
         case 'heal': {
           const id = R.bag[t.i].id, shop = R.room && R.room.kind === 'shop', kit = this.targets().filter((x) => x.k === 'heal').findIndex((x) => x.key === t.key);
+          if (shop && t.sold) { SFC.KitVan.say(_t('One treatment per visit.'), t.key); return; }   // đã chữa 1 người ở lần ghé này
           if (!RUN().heal(t.i)) { if (shop) SFC.KitVan.say(_t('Not enough cash.'), t.key); else menu.setMsg(_t('Not enough cash.'), true); return; }
-          if (shop) { SFC.KitVan.grab('kit', kit); SFC.KitVan.say(_t('Healed: {name}', { name: B(id).name }), t.key); }
+          if (shop) { SFC.KitVan.grab('kit', kit); this.kitHealed(kit, _t('Healed: {name}', { name: B(id).name })); }
           else menu.setMsg(_t('Healed: {name}', { name: B(id).name }));
           break;
         }
@@ -1716,8 +1746,13 @@ window.SFC = window.SFC || {};
         case 'up': send({ a: 'vote', k: 'rest', v: 'up:' + t.i }); return true;
         case 'heal':
           if (rm && rm.kind === 'rest') send({ a: 'vote', k: 'rest', v: 'heal:' + t.i });
+          else if (t.sold) SFC.KitVan.say(_t('One treatment per visit.'), t.key);
           else if (P.cash < RUN().healPrice(R)) SFC.KitVan.say(_t('Not enough cash.'), t.key);
-          else { SFC.KitVan.grab('kit', this.targets().filter((x) => x.k === 'heal').findIndex((x) => x.key === t.key)); send({ a: 'heal', k: t.i }); }
+          else {
+            const kit = this.targets().filter((x) => x.k === 'heal').findIndex((x) => x.key === t.key);
+            SFC.KitVan.grab('kit', kit); send({ a: 'heal', k: t.i });
+            this.kitGone = { at: R.act + ':' + R.at, i: kit };   // hộp khác giữ chỗ khi bản run mới về
+          }
           return true;
         case 'leave':
           if (rm && rm.kind === 'rest') send({ a: 'vote', k: 'rest', v: 'leave' });

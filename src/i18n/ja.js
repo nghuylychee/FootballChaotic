@@ -1713,5 +1713,10 @@ SFC.I18n.add({
     'Plants his feet from long range, puffs his chest, and lets it fly.': '遠くでどっしり構え、胸を張って、ぶち込む。',
     "Defending is somebody else's job.": '守備は誰か他の人の仕事。',
     'Hunt the ball down on autopilot. Run dry and he stops to breathe.': '自動でボールを追い回す。スタミナが尽きると立ち止まって息をつく。',
+
+    /* ===== GOAT PATH: KIT VAN (UX màn hình 2026-11: giá + nút mua trên bong bóng, hộp cứu thương SOLD; Claude — chưa duyệt) ===== */
+    'BUY': '買う',
+    'HEAL': '治療',
+    'One treatment per visit.': '治療は1回の来店につき1回だけ。',
   },
 });
