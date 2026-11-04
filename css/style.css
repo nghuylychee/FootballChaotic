@@ -3481,6 +3481,39 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .gr-hero .gr-ico .pxi.x2 { width: 28px; height: 28px; }
 .gr-hero b { font-family: var(--px); font-size: 8px; font-weight: normal; color: #fff; }
 .rm-sheet.gearwho .gr-hero { margin-top: 2px; }
+/* màn GEAR 1 màn 2 hàng (owner 2026-11-05, phương án B): thanh bước 1 ▶ 2 · 3 món ngang thấp ở trên · 3 thẻ cầu thủ ở dưới · dòng phím.
+   Hàng đang làm sáng, hàng còn lại lùi: bước 1 thẻ cầu thủ chỉ là xem trước (mờ nhẹ), bước 2 hai món chưa chốt mờ */
+.rm-sheet.gearwho { gap: 4px; }
+.rm-sheet.gearwho .sq-card { height: 168px; }
+.gr-steps { display: flex; align-items: center; gap: 8px; font-family: var(--px); font-size: 7px; letter-spacing: 2px; color: #5a6070; }
+.gr-steps span { display: flex; align-items: center; gap: 5px; }
+.gr-steps i { display: flex; align-items: center; justify-content: center; width: 12px; height: 12px; font-style: normal; font-size: 6px; letter-spacing: 0; color: #121316; background: #5a6070; }
+.gr-steps .on { color: var(--gold); }
+.gr-steps .on i { background: var(--gold); }
+.gr-steps .done { color: #9aa3b5; }
+.gr-steps u { text-decoration: none; font-size: 6px; }
+.gr-sub { font-size: 12px; line-height: 1; color: var(--muted); margin-top: -2px; }
+.gr-row { display: flex; gap: 8px; justify-content: center; }
+.gr-card.row { width: 166px; height: 52px; flex-direction: row; align-items: center; gap: 6px; padding: 3px 5px 3px 4px; }   /* rộng bằng thẻ cầu thủ bên dưới */
+.gr-card.row .gr-hang::before { display: none; }
+.gr-card.row .gr-tag { width: 34px; height: 40px; margin: 0; clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%, 0 9px); }
+.gr-card.row .gr-tag::before { top: 3px; width: 4px; height: 4px; margin-left: -2px; }
+.gr-card.row .gr-ico { margin-top: 5px; }
+.gr-card.row .gr-ico .pxi.x2 { width: 24px; height: 24px; }
+.gr-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; text-align: left; }
+.gr-txt b { font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; white-space: nowrap; text-shadow: 1px 1px 0 var(--ink); }
+.gr-txt p { margin: 0; font-size: 10px; line-height: 1; color: #c7ccd6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* món đang trỏ / đã chốt: khung vàng 2px đủ 4 cạnh, nhích lên (dùng chung kiểu thẻ BADGE đang chọn) */
+.gr-card.sel, .gr-card.row.peek, .gr-card.row.locked { border: 2px solid var(--gold); box-shadow: 2px 2px 0 var(--ink); transform: translateY(-3px); }
+.gr-card.row.alt { opacity: 0.45; }
+.gr-card.row.alt.sel { opacity: 0.85; }
+.rm-sheet.gearwho.step1 .sq-row3 { opacity: 0.8; }
+.rm-sheet.gearwho.step1 .sq-card { cursor: default; }
+/* thẻ cầu thủ không được chọn: ô GEAR mới đứng yên, mờ (chỉ thẻ đang chọn nhấp nháy ô mới + chỉ số ▲) */
+.rm-sheet.gearwho .lg-pick:not(.on) .gr-s.new { animation: none; opacity: 0.55; }
+/* GEAR trường phái: icon trường phái trùng ở góc thẻ cầu thủ sáng lên */
+.sq-sch i.hit { border-color: #fff; box-shadow: 0 0 0 1px var(--c), 0 0 6px var(--c); }
+.rm-sheet.gearwho .rm-sheet-foot { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 /* người đã đeo món giống hệt: thẻ xám tối nền đặc (không thấy map xuyên qua) + nhãn lý do giữa thẻ */
 .rm-sheet.gearwho .lg-pick.dis .sq-card { filter: grayscale(1) brightness(0.5); cursor: default; }
 .gr-dis { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); z-index: 2; text-decoration: none; white-space: nowrap; pointer-events: none;
@@ -3495,7 +3528,7 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .gr-s.new { animation: grBlink 0.6s steps(2) infinite; }
 @keyframes grBlink { 50% { opacity: 0.3; } }
 .gr-s.out { opacity: 0.35; }
-.gr-swap { font-family: var(--px); font-size: 5px; color: #ff9a3d; }
+.gr-swap { font-family: var(--px); font-size: 5px; letter-spacing: 1px; line-height: 1; color: #ff9a3d; padding: 2px 3px 1px; border: 1px solid #ff9a3d; white-space: nowrap; }   /* người đủ ô: chọn = bỏ 1 món ra */
 /* hoạt cảnh đeo GEAR (RunUI.wearFx): thẻ treo bay vào ô, ô loé lên khi tới; thẻ người khác mờ đi */
 .gr-fly { position: absolute; z-index: 20; margin: 0; pointer-events: none; transform-origin: 0 0; filter: drop-shadow(2px 2px 0 var(--ink)); }
 .gr-s.got { animation: grLand 0.42s steps(3) 1; }

@@ -177,7 +177,9 @@ window.SFC = window.SFC || {};
       if (R.offer && R.offer.gear) {
         const O = R.offer, shop = O.kind === 'shop';
         if (O.sel == null) return O.gear.map((g, i) => T('gpick', { i })).concat([T('skip')]);
-        if (O.who == null) return BYPOS(R).map((i) => T('wear', { i, dis: !RUN().canWear(i) })).concat(shop ? [] : [T('gback')]);
+        // bước 2 (phương án B): 3 thẻ cầu thủ + 3 món ở hàng trên (bấm món khác = đổi món, bấm món đã chốt = chọn lại) + BACK
+        if (O.who == null) return BYPOS(R).map((i) => T('wear', { i, dis: !RUN().canWear(i), full: RUN().gearOf(i).length >= RUN().slots() }))
+          .concat(shop ? [] : O.gear.map((g, i) => T('gswitch', { i })).concat([T('gback')]));
         return RUN().gearOf(O.who).map((g, k) => T('swap', { i: k })).concat([T('gback')]);
       }
       // thưởng chọn 1 trong 3 BADGE của cả đội (co-op: bỏ phiếu)
@@ -293,7 +295,11 @@ window.SFC = window.SFC || {};
     },
     // mục chọn sẵn khi màn đổi: mục đầu tiên không phải nút phòng (LEAVE ROOM / INVITE) — user 2026-10-31: Enter nhầm là rời phòng.
     // Không còn mục nào khác (khách chờ host lúc hết run) -> -1 = không chọn gì, bấm mũi tên mới vào nút
-    firstSel(T) { return T.findIndex((t) => t.k !== 'leaveroom' && t.k !== 'invite' && !t.dis); },   // dis: thẻ không chọn được (Who wears it?)
+    // dis: thẻ không chọn được (Who wears it?) · bước chọn người đeo GEAR: ưu tiên người còn ô (người đủ ô = sang bước bỏ món)
+    firstSel(T) {
+      const ok = (t) => t.k !== 'leaveroom' && t.k !== 'invite' && !t.dis, free = T.findIndex((t) => ok(t) && t.k === 'wear' && !t.full);
+      return free >= 0 ? free : T.findIndex(ok);
+    },
     btn(T, t, html, cls = '') {
       return `<button class="pt-btn ${t.main ? 'go' : ''} ${cls} ${T.indexOf(t) === this.sel ? 'sel' : ''}" data-rt="${t.key}">${html}</button>`;
     },
@@ -498,9 +504,10 @@ window.SFC = window.SFC || {};
       return [A.order.slice(0, half), A.order.slice(half)].map((col) => `<div class="sq-col">${col.map(cell).join('')}</div>`);
     },
     // icon trường phái Core hay ra của đồng đội (góc phải trên thẻ; tên trường phái ở tooltip)
-    schoolIcons(tags) {
+    // hit: trường phái của GEAR trường phái đang đưa -> icon trùng sáng lên (thấy ngay Core của ai hợp món)
+    schoolIcons(tags, hit) {
       const AR = SFC_CONFIG.cores.archetypes;
-      return tags.length ? `<span class="sq-sch">${tags.map((t) => `<i style="--c:${AR[t].color}" title="${esc(AR[t].label)}">${PX().arch(t, '')}</i>`).join('')}</span>` : '';
+      return tags.length ? `<span class="sq-sch">${tags.map((t) => `<i class="${t === hit ? 'hit' : ''}" style="--c:${AR[t].color}" title="${esc(AR[t].label)}">${PX().arch(t, '')}</i>`).join('')}</span>` : '';
     },
     // thẻ cầu thủ dùng chung (SQUAD · thẻ LEGEND xin vào đội · BUILD YOUR SQUAD; user 2026-10-29: hình cầu thủ là chính):
     // OVR + vị trí góc trái · trường phái Core góc phải · hình to giữa (nền đèn sân, màu LEGEND nếu có) · chỉ số nhỏ 2 bên · tên + nhãn
@@ -510,7 +517,7 @@ window.SFC = window.SFC || {};
       const [left, right] = this.statCols(o.fin, o.ref, o.next);
       return `<${o.tag || 'div'} class="sq-card ${o.cls || ''} ${o.glow ? 'leg' : ''}" ${o.glow ? `style="--lc:${o.glow}"` : ''} ${o.attrs || ''}>
           <div class="sq-head"><span class="sq-ovr ${o.ovrCls || ''}">${o.ovr}</span><em>${esc(o.role)}</em>${o.roleSub ? `<u class="sq-rsub">${esc(o.roleSub)}</u>` : ''}</div>
-          ${this.schoolIcons(o.schools || [])}${o.hurt ? `<i class="rs-x">✚</i>` : ''}
+          ${this.schoolIcons(o.schools || [], o.hit)}${o.hurt ? `<i class="rs-x">✚</i>` : ''}
           <div class="sq-body">${left}<div class="sq-art">${o.behind || ''}${o.face}</div>${right}</div>
           <div class="sq-name"><b>${esc(o.name)}</b>${o.who ? `<em>${esc(o.who)}</em>` : ''}</div>
           <div class="sq-badges">${o.foot || ''}</div>${o.extra || ''}
@@ -518,9 +525,10 @@ window.SFC = window.SFC || {};
     },
     // thẻ 1 cầu thủ của run. preview: id LEGEND xem trước (thẻ LEGEND xin vào đội) · gear: món GEAR xem trước { id, r } (màn chọn người đeo:
     // còn ô = món mới nhấp nháy ở ô trống kế tiếp, đủ ô = các ô mờ + ⇄; chỉ số xem trước khi còn ô)
-    squadCard(R, i, T, t, preview, behind, gear) {
+    // quiet: GEAR chỉ hiện ô mới (đứng yên), không xem trước chỉ số — thẻ cầu thủ không được chọn ở màn GEAR (chỉ thẻ đang chọn mới nhấp nháy ▲)
+    squadCard(R, i, T, t, preview, behind, gear, quiet) {
       const s = R.squad[i], sel = t && T.indexOf(t) === this.sel, inj = RUN().injuryIds(i, R);
-      const full = gear && RUN().gearOf(i, R).length >= RUN().slots(R), list = gear && !full ? RUN().gearOf(i, R).concat([gear]) : null;
+      const full = gear && RUN().gearOf(i, R).length >= RUN().slots(R), list = gear && !full && !quiet ? RUN().gearOf(i, R).concat([gear]) : null;
       const ovr = RUN().ovrOf(i, R), ovr2 = preview ? RUN().ovrOf(i, R, preview) : list ? RUN().ovrOf(i, R, undefined, list) : ovr;
       const L = RUN().legend(s.legend), P = preview ? RUN().legend(preview) : null;
       const who = RUN().seatOf(RUN().myKey(), R) === i ? _t('YOU') : s.h || (s.you && R.mirror) ? _t('PLAYER') : '';
@@ -532,7 +540,7 @@ window.SFC = window.SFC || {};
       return this.pcard({ tag: t ? 'button' : 'div', attrs: t ? `data-rt="${t.key}"` : '', cls: `${sel ? 'sel' : ''} ${who === _t('YOU') ? 'you' : ''}`,
         role: s.role, ovr: ovr2, ovrCls: ovr2 > ovr ? 'pre' : ovr2 < ovr ? 'dn' : '', face: this.face(RUN().memberLook(i, R), s.you && !R.mirror),
         fin: RUN().ratingsOf(i, R), ref: RUN().baseRatings(i, R), next: preview ? RUN().ratingsOf(i, R, preview) : list ? RUN().ratingsOf(i, R, undefined, list) : null,
-        name: RUN().memberName(i, R), who, schools: s.m && !s.h ? RUN().schoolsOf(s.m) : [], glow: (P || L || {}).color, hurt: inj.length,
+        name: RUN().memberName(i, R), who, schools: s.m && !s.h ? RUN().schoolsOf(s.m) : [], hit: gear && RUN().gearDef(gear.id).school, glow: (P || L || {}).color, hurt: inj.length,
         foot: leg + this.gearSlots(R, i, gear && !full ? gear : null, full) + hurt, behind });
     },
     /* ---------- GEAR (user 2026-10-30, mockup tools/mockups/gear.html): thẻ treo góc vát — khác miếng vá tròn của BADGE ---------- */
@@ -558,7 +566,7 @@ window.SFC = window.SFC || {};
         else if (ghost) { out.push(`<span class="gr-s new" style="--rc:${RAR[ghost.r].color};--c:${this.gearColor(ghost.id)}">${this.gearIcon(ghost.id, '')}</span>`); ghost = null; }
         else out.push('<span class="gr-s empty"></span>');
       }
-      return `<span class="gr-slots">${out.join('')}</span>${full ? '<span class="gr-swap">⇄</span>' : ''}`;
+      return `<span class="gr-slots">${out.join('')}</span>${full ? `<span class="gr-swap">⇄ ${esc(_t('SWAP'))}</span>` : ''}`;
     },
     // thẻ GEAR to (màn chọn): thẻ treo + tên + chip (GEAR trường phái: + 1 dòng mô tả). Độ hiếm = màu viền, không ghi chữ
     gearBig(T, t, g, extra = '') {
@@ -567,25 +575,51 @@ window.SFC = window.SFC || {};
           <span class="gr-hang"><span class="gr-tag"><i class="gr-ico">${this.gearIcon(g.id, 'x3')}</i></span></span>
           <b>${esc(d.name)}${g.up ? '+' : ''}</b>${this.gearChip(g)}${d.desc ? `<p>${esc(d.desc)}</p>` : ''}${extra}</button>`;
     },
-    // 3 bước: PICK GEAR (chọn món) · Who wears it? (thẻ cầu thủ xem trước) · Swap out which one? (người đeo đủ ô: chọn món bỏ ra)
+    // thẻ GEAR ngang thấp (màn GEAR, phương án B): thẻ treo bên trái · tên, chip, 1 dòng mô tả bên phải (GEAR chỉ số: mô tả của chỉ số đó).
+    // st: peek = đang trỏ ở bước 1 · locked = món đã chốt ở bước 2 · alt = 2 món còn lại ở bước 2 (mờ, bấm = đổi sang món đó)
+    gearRow(T, t, g, st, extra = '') {
+      const d = RUN().gearDef(g.id), rc = SFC_CONFIG.progression.rarities[g.r].color, A = SFC_CONFIG.progression.attrs;
+      const desc = d.desc || (d.stat && A.list[d.stat].desc) || '';
+      return `<button class="gr-card row ${st} ${t && T.indexOf(t) === this.sel ? 'sel' : ''}" ${t ? `data-rt="${t.key}"` : ''} style="--rc:${rc}">
+          <span class="gr-hang"><span class="gr-tag"><i class="gr-ico">${this.gearIcon(g.id, 'x2')}</i></span></span>
+          <span class="gr-txt"><b>${esc(d.name)}${g.up ? '+' : ''}</b>${this.gearChip(g)}${desc ? `<p>${esc(desc)}</p>` : ''}</span>${extra}</button>`;
+    },
+    // GEAR (owner 2026-11-05, phương án B; owner sợ người chơi không biết đang chọn gì, chọn cho ai): 1 màn 2 hàng — 3 món ở trên, 3 thẻ cầu thủ
+    // luôn hiện ở dưới, thanh bước "1 PICK GEAR ▶ 2 Who wears it?" + dòng phím. Bước 1: món đang trỏ -> thẻ cầu thủ nói ngay với món đó
+    // (ô mới mờ / SWAP khi đủ ô / đã có = xám / trùng trường phái = icon góc sáng). Chốt món (O.sel) -> mục chọn xuống hàng cầu thủ, món đã chốt
+    // giữ khung vàng, 2 món kia mờ (bấm = đổi món). Thẻ cầu thủ đang chọn mới xem trước chỉ số ▲. Bước 3 "Swap out which one?" giữ như cũ.
+    // Món mua ở KIT VAN: chỉ 1 món, đã chốt sẵn, không có SKIP / BACK
     gearCard(R, T, O) {
-      const vote = inRoom(), back = T.find((t) => t.k === 'gback');
-      if (O.sel == null) {
-        const cards = T.filter((t) => t.k === 'gpick').map((t) => this.gearBig(T, t, O.gear[t.i], this.votes(R, 'pick', String(t.i)))).join('');
-        return this.sheet('pick gear', _t('PICK GEAR'), vote ? _t('Vote for one · one player wears it') : _t('One player wears it'),
-          `<div class="pb-row">${cards}</div>`, this.btn(T, T.find((t) => t.k === 'skip'), esc(_t('SKIP')) + this.votes(R, 'pick', 'skip')));
+      const vote = inRoom(), back = T.find((t) => t.k === 'gback'), cur = T[this.sel];
+      const kbd = (a, kb) => `<kbd>${esc(SFC.Input.key(a, kb))}</kbd>`;
+      if (O.who != null) {
+        const g = O.gear[O.sel], rc = SFC_CONFIG.progression.rarities[g.r].color;
+        const hero = `<div class="gr-hero" style="--rc:${rc}"><span class="gr-tag"><i class="gr-ico">${this.gearIcon(g.id, 'x2')}</i></span><b>${esc(RUN().gearDef(g.id).name)}</b>${this.gearChip(g)}</div>`;
+        const cards = T.filter((t) => t.k === 'swap').map((t) => this.gearBig(T, t, RUN().gearOf(O.who, R)[t.i], this.votes(R, 'swap', String(t.i)))).join('');
+        return this.sheet('pick gear', RUN().memberName(O.who, R), vote ? _t('Vote: swap out which one?') : _t('Swap out which one?'),
+          hero + `<div class="pb-row wrap">${cards}</div>`, this.btn(T, back, esc(_t('BACK')) + this.votes(R, 'swap', 'back')));
       }
-      const g = O.gear[O.sel], rc = SFC_CONFIG.progression.rarities[g.r].color;
-      const hero = `<div class="gr-hero" style="--rc:${rc}"><span class="gr-tag"><i class="gr-ico">${this.gearIcon(g.id, 'x2')}</i></span><b>${esc(RUN().gearDef(g.id).name)}</b>${this.gearChip(g)}</div>`;
-      if (O.who == null) {
-        // người đã đeo món giống hệt: thẻ xám (nền đặc, không thấy map xuyên qua) + nhãn lý do, không chọn được (phím bỏ qua thẻ này)
-        const cards = T.filter((t) => t.k === 'wear').map((t) => `<div class="lg-pick ${t.dis ? 'dis' : ''}">${this.squadCard(R, t.i, T, t, null, null, t.dis ? null : g)}${t.dis ? `<u class="gr-dis">${esc(_t('Already wearing one.'))}</u>` : ''}${vote ? this.votes(R, 'wear', String(t.i)) : ''}</div>`).join('');
-        return `<div class="rm-actcard rm-sheet squad gearwho">${hero}<div class="sg-who">${esc(vote ? _t('Vote: who wears it?') : _t('Who wears it?'))}</div>
-            <div class="sq-row3">${cards}</div><div class="rm-sheet-foot">${back ? this.btn(T, back, esc(_t('BACK')) + this.votes(R, 'wear', 'back')) : ''}</div></div>`;
-      }
-      const cards = T.filter((t) => t.k === 'swap').map((t) => this.gearBig(T, t, RUN().gearOf(O.who, R)[t.i], this.votes(R, 'swap', String(t.i)))).join('');
-      return this.sheet('pick gear', RUN().memberName(O.who, R), vote ? _t('Vote: swap out which one?') : _t('Swap out which one?'),
-        hero + `<div class="pb-row wrap">${cards}</div>`, this.btn(T, back, esc(_t('BACK')) + this.votes(R, 'swap', 'back')));
+      const step1 = O.sel == null;
+      if (step1 && cur && cur.k === 'gpick') this.gearPeek = cur.i;
+      const gi = step1 ? (O.gear[this.gearPeek] ? this.gearPeek : 0) : O.sel, g = O.gear[gi];
+      const gears = O.gear.map((x, i) => {
+        if (!step1 && O.kind === 'shop' && i !== O.sel) return '';
+        const t = T.find((y) => (y.k === 'gpick' || y.k === 'gswitch') && y.i === i);
+        return this.gearRow(T, t, x, step1 ? (i === gi ? 'peek' : '') : i === O.sel ? 'locked' : 'alt', step1 ? this.votes(R, 'pick', String(i)) : '');
+      }).join('');
+      const cards = BYPOS(R).map((i) => {
+        const t = !step1 && T.find((x) => x.k === 'wear' && x.i === i), has = RUN().gearOf(i, R).some((x) => x.id === g.id), on = t && T.indexOf(t) === this.sel;
+        return `<div class="lg-pick ${has ? 'dis' : ''} ${on ? 'on' : ''}">${this.squadCard(R, i, T, t || null, null, null, has ? null : g, !on)}${has ? `<u class="gr-dis">${esc(_t('Already wearing one.'))}</u>` : ''}${vote && t ? this.votes(R, 'wear', String(i)) : ''}</div>`;
+      }).join('');
+      const steps = `<div class="gr-steps"><span class="${step1 ? 'on' : 'done'}"><i>1</i>${esc(_t('PICK GEAR'))}</span><u>▶</u><span class="${step1 ? '' : 'on'}"><i>2</i>${esc(vote ? _t('Vote: who wears it?') : _t('Who wears it?'))}</span></div>`;
+      const sub = step1 ? (vote ? _t('Vote for one · one player wears it') : _t('One player wears it')) : '';
+      // dòng phím: phím xác nhận + việc nó làm với mục đang chọn · bước 2: phím lùi = chọn lại món
+      const does = !cur ? '' : cur.k === 'gpick' ? _t('PICK') : cur.k === 'skip' ? _t('SKIP') : cur.k === 'wear' ? (cur.dis ? '' : cur.full ? _t('SWAP') : _t('EQUIP'))
+        : cur.k === 'gswitch' || cur.k === 'gback' ? _t('BACK') : '';
+      const keys = `<div class="pk-keys"><span>${esc(_t('←↑↓→ select'))}</span>${does ? `<span>${kbd('confirm', 'Enter')}${esc(does)}</span>` : ''}${back ? `<span>${kbd('back', 'Esc')}${esc(_t('BACK'))}</span>` : ''}</div>`;
+      const foot = step1 ? this.btn(T, T.find((t) => t.k === 'skip'), esc(_t('SKIP')) + this.votes(R, 'pick', 'skip')) : back ? this.btn(T, back, esc(_t('BACK')) + this.votes(R, 'wear', 'back')) : '';
+      return `<div class="rm-actcard rm-sheet squad gearwho ${step1 ? 'step1' : 'step2'}">${steps}${sub ? `<div class="gr-sub">${esc(sub)}</div>` : ''}
+          <div class="gr-row">${gears}</div><div class="sq-row3">${cards}</div><div class="rm-sheet-foot">${foot}${keys}</div></div>`;
     },
     // SQUAD: 3 thẻ cầu thủ + hàng BADGE của cả đội (icon, mô tả ở tooltip)
     squadSheet(R, T) {
@@ -1032,7 +1066,7 @@ window.SFC = window.SFC || {};
     wearFx(menu, t, done) {
       const R = RUN().run, O = R.offer, g = O && O.gear && O.gear[O.sel], root = menu.el.querySelector('.rm-sheet.gearwho');
       const card = root && root.querySelector(`[data-rt="${t.key}"]`), slot = card && card.querySelector('.gr-s.new');
-      const tag = root && root.querySelector('.gr-hero .gr-tag');
+      const tag = root && root.querySelector('.gr-card.locked .gr-tag');
       if (!g || !card || !slot || !tag || !tag.animate) return done();
       const k = root.getBoundingClientRect().width / root.offsetWidth || 1, rs = root.getBoundingClientRect();
       const rel = (e) => { const r = e.getBoundingClientRect(); return { x: (r.left - rs.left) / k, y: (r.top - rs.top) / k, w: r.width / k, h: r.height / k }; };
@@ -1432,6 +1466,8 @@ window.SFC = window.SFC || {};
           break;
         }
         case 'gback': RUN().gearBack(); break;
+        // bước 2 bấm 1 món ở hàng trên: món đã chốt = chọn lại món · món khác = đổi sang món đó (vẫn ở bước chọn người)
+        case 'gswitch': { const was = R.offer.sel; RUN().gearBack(); if (t.i !== was) RUN().pick(t.i); break; }
         case 'gup': {
           const [w, k] = t.id.split('.').map(Number), g = RUN().gearOf(w)[k];
           if (g && RUN().upgradeGear(w, k)) menu.setMsg(_t('Upgraded: {name}', { name: RUN().gearDef(g.id).name + '+' }));
@@ -1651,6 +1687,7 @@ window.SFC = window.SFC || {};
         case 'wear': if (!t.dis) send({ a: 'vote', k: 'wear', v: String(t.i) }); return true;
         case 'swap': send({ a: 'vote', k: 'swap', v: String(t.i) }); return true;
         case 'gback': send({ a: 'vote', k: R.offer && R.offer.who != null ? 'swap' : 'wear', v: 'back' }); return true;
+        case 'gswitch': send({ a: 'vote', k: 'wear', v: 'back' }); return true;   // co-op: bấm món ở bước 2 = phiếu chọn lại món
         case 'gup': send({ a: 'vote', k: 'rest', v: 'gup:' + t.id }); return true;
         case 'skip': send({ a: 'vote', k: 'pick', v: 'skip' }); return true;
         // người nhận LEGEND: bỏ phiếu
