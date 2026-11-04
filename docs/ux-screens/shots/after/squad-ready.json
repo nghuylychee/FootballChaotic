@@ -1,0 +1,27 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "pt-btn go  sel",
+  "txt": "START RUN",
+  "x": 474,
+  "y": 432,
+  "w": 332,
+  "h": 48
+ },
+ "order": [
+  "slot:FWD",
+  "slot:MID",
+  "slot:DEF",
+  "unpick:MID",
+  "unpick:DEF",
+  "cand:2",
+  "cand:3",
+  "cand:4",
+  "cand:5",
+  "go",
+  "cancel"
+ ],
+ "id": "squad-ready",
+ "title": "BUILD YOUR SQUAD · đủ người",
+ "moving_pct": 1.8
+}

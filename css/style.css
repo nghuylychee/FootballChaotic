@@ -3581,6 +3581,32 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .pk-bc .sq-sch { right: 3px; top: 3px; }
 .pk-bc .sq-sch i { width: 13px; height: 13px; }
 .pk-bc .sq-sch .pxi { width: 10px; height: 10px; }
+/* UX màn hình (owner 2026-11-05, phương án B): xem trước ứng viên ngay tại ô đang chờ · chip vị trí trên băng ghế · dòng phím */
+.sq-rsub { text-decoration: none; font-family: var(--px); font-size: 5px; color: #8fc8ff; white-space: nowrap; }
+.pk-empty .sq-rsub { font-size: 5px; }
+.pk-prev { cursor: pointer; border: 1px dashed var(--gold); box-shadow: none; background: linear-gradient(180deg, rgba(255, 225, 79, 0.1), rgba(0, 0, 0, 0.35) 60%); }
+.pk-prev { padding-bottom: 15px; }   /* chừa chỗ cho nhãn PICK vắt qua viền dưới, không che dòng trường phái */
+.pk-prev .sq-badges { display: flex; justify-content: center; min-height: 0; }
+.pk-prev .sq-art canvas { opacity: 0.75; }   /* bóng mờ: mới xem trước, chưa vào đội */
+.pk-schn { font-family: var(--px); font-size: 5px; color: var(--muted); letter-spacing: 1px; white-space: nowrap; }
+.pk-prev.off .sq-name em { background: #ff9f43; }   /* lệch vị trí sở trường: được, nhưng báo trước */
+/* nhãn dưới chân thẻ (vắt qua viền): PICK có phím xác nhận · ✕ BENCH · ⇄ SWAP */
+.pk-card > .pk-wait, .pk-card > .pk-x, .pk-card > .pk-swap { top: auto; left: 50%; right: auto; bottom: -7px; transform: translateX(-50%); z-index: 2; white-space: nowrap; }
+.pk-wait kbd { margin-right: 4px; color: #fff; background: var(--ink); border-color: #525a6b; }
+.pk-card > .pk-x { width: auto; height: auto; padding: 2px 4px 1px; font-family: var(--px); font-size: 6px; line-height: 1; letter-spacing: 1px;
+  color: #ff8a9a; background: #1b1d24; border-color: #6a2a36; }   /* việc phụ: tối, chỉ đỏ khi trỏ vào */
+.pk-card > .pk-x:hover, .pk-card > .pk-x.sel { color: #fff; background: #ff3d5a; border-color: #ff5a6e; }
+.pk-swap { position: absolute; text-decoration: none; font-family: var(--px); font-size: 6px; letter-spacing: 1px; line-height: 1; padding: 2px 4px 1px; pointer-events: none;
+  color: var(--muted); background: #1b1d24; border: 1px solid var(--edge); }
+.pk-co em { padding: 1px 2px 0; border: 1px solid #4a5060; }
+.pk-co em.fit { color: var(--ink); background: var(--gold); border-color: var(--gold); }
+.pk-bc { justify-content: center; gap: 3px; }
+.pk-ci > b { font-size: 6px; }
+/* START RUN chưa đủ người: chỉ còn viền + chữ tối (không còn khối xám sáng giành mắt), vị trí còn thiếu ghi bằng chữ */
+.pk-mid .pt-btn.go.dis { filter: none; color: #5a6070; background: transparent; border: 2px solid #3a4050; box-shadow: none; outline: none; }
+.pk-mid .pt-btn.go.dis .pk-miss { font-size: 6px; letter-spacing: 1px; margin-left: 10px; }
+.pk-keys { display: flex; justify-content: center; gap: 16px; font-size: 11px; color: var(--muted); }
+.pk-keys span { display: flex; align-items: center; gap: 4px; }
 
 /* Đang dùng tay cầm: ẩn con trỏ chuột (kể cả con trỏ bàn tay của KIT VAN); di chuột là hiện lại (Input.poll / mousemove) */
 html.pad-cursor, html.pad-cursor * { cursor: none !important; }
