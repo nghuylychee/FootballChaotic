@@ -21,7 +21,7 @@ These terms are **mandatory**. Use the same translation every time it appears. I
 | archetype | The family a Core belongs to (Speed, Tiki-Taka, Striker...) | arquétipo / arquétipos | arquétipo / arquétipos | arquetipo / arquetipos | ✓ | |
 | synergy | Bonus for holding several Cores of the same archetype | sinergia / sinergias | sinergia / sinergias | sinergia / sinergias | | |
 | Signature Core | The boss's special Core, won by beating the boss | Core exclusivo | Core exclusivo | Core exclusivo | | |
-| reroll | Swap the 3 offered Cores for 3 new ones | trocar | trocar | cambiar | | "REROLL 3" → TROCAR AS 3 / CAMBIAR LAS 3. Kept over the gamer forms ("rolar de novo" in Vampire Survivors, "renovar" in Balatro): plain words that football fans who rarely play roguelites understand. |
+| reroll | Swap every offered Core (3, or 4–5 with Scouting Report) for new ones | trocar | trocar | cambiar | | "REROLL ({n} left)" → TROCAR (resta {n}) / CAMBIAR (queda {n}). Kept over the gamer forms ("rolar de novo" in Vampire Survivors, "renovar" in Balatro): plain words that football fans who rarely play roguelites understand. |
 | ANY BUILD | Core that fits every archetype | QUALQUER BUILD | QUALQUER BUILD | CUALQUIER BUILD | | |
 | SCALES WITH (stat) | Core card line: the Core gets stronger as this stat rises | CRESCE COM | CRESCE COM | CRECE CON | | Avoid the gamer calque "escala com / escala con". In Brazilian football Portuguese "escalar" means picking the lineup (escalação), so it reads wrong. |
 
@@ -162,7 +162,7 @@ Japanese has its own table so the tables above stay readable. The `ja` column is
 | build | ビルド | ✓ | |
 | archetype | タイプ | ✓ | |
 | synergy | シナジー | | |
-| reroll | 引き直し / 引き直す | | REROLL 3 → 3枚引き直す |
+| reroll | 引き直し / 引き直す | | REROLL ({n} left) → 引き直す（残り{n}） |
 | SCALES WITH | 強化元 | | Card label followed by the stat name. |
 | Archetypes: SPEED / TIKI-TAKA / STRIKER / BRAWLER / KICKER / ILLUSION / IRON / CHAOS | スピード / ティキタカ / ストライカー / ケンカ屋 / 飛び蹴り / 幻影 / 鉄壁 / カオス | | KICKER is named after the flying kick. "キッカー" means a set-piece taker in Japanese football. |
 | Momentum | 勢い | ✓ | Replaced by an icon: exact form. Don't use 勢い for anything else. |

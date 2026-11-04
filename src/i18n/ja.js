@@ -318,7 +318,7 @@ SFC.I18n.add({
     'ANY BUILD': 'どのビルドでも',
     'NEW': 'NEW',
     'MATCH': '相性◎',
-    'REROLL 3 ({n} left)': '3枚引き直す（残り{n}）',
+    'REROLL ({n} left)': '引き直す（残り{n}）',
     'Picked · waiting for other players...': '選択済み · 他のプレイヤー待ち...',
     'Picked · waiting for opponent...': '選択済み · 相手待ち...',
     'Your build:': 'きみのビルド：',

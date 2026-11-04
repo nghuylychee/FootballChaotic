@@ -318,7 +318,7 @@ SFC.I18n.add({
     'ANY BUILD': 'CUALQUIER BUILD',
     'NEW': 'NUEVO',
     'MATCH': 'COMBINA',
-    'REROLL 3 ({n} left)': { zero: 'CAMBIAR LAS 3 (sin cambios)', one: 'CAMBIAR LAS 3 (queda {n})', other: 'CAMBIAR LAS 3 (quedan {n})' },
+    'REROLL ({n} left)': { zero: 'CAMBIAR (sin cambios)', one: 'CAMBIAR (queda {n})', other: 'CAMBIAR (quedan {n})' },
     'Picked · waiting for other players...': 'Elegido · esperando a los demás jugadores...',
     'Picked · waiting for opponent...': 'Elegido · esperando al rival...',
     'Your build:': 'Tu build:',
