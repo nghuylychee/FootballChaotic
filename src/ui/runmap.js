@@ -1309,10 +1309,12 @@ window.SFC = window.SFC || {};
       const b = es.filter((e) => e > v).sort((x, y) => x - y)[0];
       return { a: Math.max(0, ...es.filter((e) => e <= v)), b: b == null ? null : b };
     },
-    // nút thẻ hết run: CONTINUE (chơi một mình / host) · khách co-op: không có nút (chờ host bắt đầu run mới; LEAVE ROOM ở thanh trên)
+    // nút thẻ hết run: CONTINUE (chơi một mình / host) · khách co-op: LEAVE ROOM ngay trên thẻ (chờ host bắt đầu run mới hoặc rời phòng;
+    // thanh trên bị ẩn khi có thẻ che — UX màn hình 2026-11)
     endBtn(T) {
       const t = T[0];
-      if (!t || t.k === 'leaveroom') return '';
+      if (!t) return '';
+      if (t.k === 'leaveroom') return this.btn(T, t, esc(this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')), this.leaveArm ? 'danger' : '');
       return this.btn(T, t, esc(_t('CONTINUE')));
     },
     // thẻ mở act: tên act + boss cuối act

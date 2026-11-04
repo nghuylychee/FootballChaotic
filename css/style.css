@@ -3146,6 +3146,10 @@ button.eq-row:hover b { color: var(--gold); }
 .rm-page .m-msg { margin: 0; }
 .rm-actcard { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   background: rgba(7, 5, 10, 0.86); }
+/* có thẻ che map (UX màn hình 2026-11, BADGE phương án A): dải SQUAD, tiền run và bảng chú thích phía sau đều đang khoá -> ẩn hẳn, khỏi
+   xuyên qua lớp che / đè tiêu đề và nút của thẻ. visibility (không display:none): giữ chỗ, khung map không đổi cỡ nên không vẽ lại map.
+   Dòng báo của run (.run-msg) và nút của chính thẻ vẫn hiện */
+.rm-page:has(> .rm-actcard) > .rm-bar, .rm-page:has(> .rm-actcard) > .rm-legend { visibility: hidden; }
 .rm-actcard > span { font-family: var(--px); font-size: 8px; color: var(--muted); letter-spacing: 3px; }
 .rm-actcard > b { font-family: var(--px); font-size: 20px; font-weight: normal; color: var(--ac); letter-spacing: 3px; text-shadow: 3px 3px 0 var(--ink); }
 .rm-actboss { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 4px 0 8px; }
@@ -3498,15 +3502,19 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 /* ---------- GOAT PATH · màn chọn BADGE (user 2026-10-29, bố cục như SQUAD): 3 thẻ miếng vá + công dụng · hàng BADGE của đội ---------- */
 .rm-sheet.pick { justify-content: center; gap: 8px; }
 .pb-row { display: flex; gap: 12px; justify-content: center; }
+/* UX màn hình 2026-11 (phương án A): thẻ Enter sẽ lấy phải rõ hơn màu độ hiếm -> nền thẻ trung tính (bỏ nền pha màu độ hiếm),
+   độ hiếm chỉ còn ở vạch mảnh mép trên (::before) + chỉ khâu miếng vá; thẻ đang chọn = khung vàng 2px đủ 4 cạnh (viền 1px + vòng 1px,
+   không đổi cỡ nội dung) và nhích lên 4px. Không ghi chữ độ hiếm (owner 2026-10-29) */
 .pb-card { position: relative; width: 164px; height: 150px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 8px 8px;
-  font: inherit; color: inherit; cursor: pointer; background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 14%, #232733), #171a21 70%);
-  border: 1px solid var(--edge); border-top: 2px solid var(--rc); box-shadow: 2px 2px 0 var(--ink); transition: opacity 0.2s, transform 0.2s; }
-.pb-card.sel { border-color: var(--gold); border-top-color: var(--rc); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); transform: translateY(-2px); }
+  font: inherit; color: inherit; cursor: pointer; background: linear-gradient(180deg, #232733, #171a21 70%);
+  border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); transition: opacity 0.2s, transform 0.2s; }
+.pb-card::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--rc); pointer-events: none; }
+.pb-card.sel { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 3px 3px 0 var(--ink); transform: translateY(-4px); }
 .pb-card.out { opacity: 0.3; }
 .pb-card.picked .pb-ico { visibility: hidden; }
-/* miếng vá: nền tối pha màu độ hiếm, chỉ khâu nét đứt màu độ hiếm */
+/* miếng vá: nền tối trung tính, chỉ khâu nét đứt màu độ hiếm */
 .pb-patch { position: relative; width: 60px; height: 62px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 14px 14px 24px 24px;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--rc) 40%, #2a2e38), #1a1c22 75%); box-shadow: 0 0 0 2px var(--ink), 3px 3px 0 var(--ink); }
+  background: radial-gradient(circle at 35% 30%, #3a3f4c, #1a1c22 75%); box-shadow: 0 0 0 2px var(--ink), 3px 3px 0 var(--ink); }
 .pb-patch::after { content: ''; position: absolute; inset: 4px; border: 2px dashed var(--rc); border-radius: 10px 10px 20px 20px; pointer-events: none; }
 .pb-ico { display: flex; font-style: normal; }
 .pb-ico .pxi.x3, .pb-fly .pxi.x3 { width: 42px; height: 42px; }
