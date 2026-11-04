@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(HERE, '..', 'ux-review', 'harness'))
 import ux   # noqa: E402  (bộ chụp của review 2026-11-02)
 
 BASE = os.environ.get('UX_BASE', 'http://localhost:8730')
-OUT = os.path.join(HERE, 'shots')
+OUT = os.environ.get('UX_OUT') or os.path.join(HERE, 'shots')   # UX_OUT=shots/after: ảnh sau khi sửa, giữ nguyên ảnh gốc
 RUN_MAP = json.load(open(os.path.join(HERE, '..', 'ux-review', 'harness', 'profile_run_map.json'), encoding='utf-8'))
 
 # chặn hẳn máy chủ thật (*.onrender.com): không bao giờ mở phòng thật khi chụp (xem docs/ux-review/README.md, An toàn)

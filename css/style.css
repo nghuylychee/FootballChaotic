@@ -497,9 +497,15 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
   --stair: polygon(0 100%, 0 calc(100% - 4px), 4px calc(100% - 4px), 4px 12px, 8px 12px, 8px 8px, 12px 8px, 12px 4px, 16px 4px, 16px 0, calc(100% - 16px) 0, calc(100% - 16px) 4px, calc(100% - 12px) 4px, calc(100% - 12px) 8px, calc(100% - 8px) 8px, calc(100% - 8px) 12px, calc(100% - 4px) 12px, calc(100% - 4px) calc(100% - 4px), 100% calc(100% - 4px), 100% 100%); }
 .hn-label { font-size: 21px; letter-spacing: 2px; color: #e6dccb; }
 .hn-sub { font-size: 10px; color: var(--muted); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hn-pip { position: absolute; bottom: 2px; width: 4px; height: 4px; background: var(--edge); }
+/* chấm báo chỉ hiện khi có gì mới (hộp miễn phí, thẻ drill); lúc thường ẩn hẳn, không thì trông như chấm phân trang */
+.hn-pip { position: absolute; bottom: 4px; width: 4px; height: 4px; display: none; }
 .hn-tab.hot .hn-sub { color: var(--gold); }
-.hn-tab.hot .hn-pip { background: var(--gold); animation: pulse 0.8s steps(2) infinite; }
+.hn-tab.hot .hn-pip { display: block; background: var(--gold); animation: pulse 0.8s steps(2) infinite; }
+/* CHARACTER / SHOP lúc không chọn: khối nút tối viền xám, cùng dáng bậc thang với PLAY, có gờ đáy -> trông bấm được (owner 2026-11-05) */
+.hn-tab:not(.play):not(.sel) { background: #565c6b; clip-path: var(--stair); }
+.hn-tab:not(.play):not(.sel)::before { content: ""; position: absolute; inset: 2px 2px 0; background: #23262e; clip-path: var(--stair); box-shadow: inset 0 -4px 0 #15171c; }
+.hn-tab:not(.play) > span { position: relative; }
+.hn-tab.hot:not(.play):not(.sel) { background: var(--gold); }
 /* mục đang chọn (phím hay rê chuột đều là 1 ô này): khối vàng nhô lên, góc bậc thang pixel, viền trắng; đổi mục thì khối bật lên từ thanh */
 .hn-tab.sel { height: 56px; background: #fff; clip-path: var(--stair); animation: hnPop 0.2s steps(3); }
 .hn-tab.sel::before { content: ""; position: absolute; inset: 2px 2px 0; background: var(--gold); clip-path: var(--stair); box-shadow: inset 0 -4px 0 #c99a12; }

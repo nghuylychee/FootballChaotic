@@ -64,6 +64,7 @@ Xong thì thêm 1 dòng vào Nhật ký. Commit / merge / push chỉ khi owner b
 - 2026-11-04 — Owner: mẫu ổn (`format` = ok), "chạy đi". Chụp 15 màn còn lại (23 trạng thái), 3 agent mắt mới, 4 agent phân tích theo `BRIEF.md`, đo 6 hành trình (`journeys.py`). Trang báo cáo thêm bảng tóm tắt + phần đường đi.
 - 2026-11-04 — Soát 15 màn của agent (đối chiếu code: phím pick4, màu ghế / vòng đối thủ, xem trước GEAR ở mọi thẻ, LOCKER ROOM + ??? đang tắt, "Trial failed. No harm done."); chụp lại squad (2 trạng thái trong 1 phiên) và result (ảnh cũ thiếu Core do bấm thắng dev quá sớm). Publish bản 2: 16 màn, 77 vấn đề (3 nặng, 34 vừa, 40 nhẹ), 6 hành trình.
 - 2026-11-04 — Owner: đẩy báo cáo + chat lên nhánh riêng để làm tiếp ở máy khác. Nhánh `ux/screens-2026-11`, thêm `CHAT.md`, đưa `shots/` vào git. Chat gốc (35 MB, phần lớn là ảnh) không đẩy vì repo public.
+- 2026-11-05 — `home` (other: "CHARACTER / SHOP trông bấm được hơn"): 2 tab thành khối nút tối viền xám, cùng dáng bậc thang + gờ đáy như PLAY; có đồ mới thì viền vàng. Chấm báo ẩn khi không có gì mới (#2). #1 (chữ phụ PLAY 5px) chưa làm, owner không nhắc. Ảnh sau: `shots/after/home.*`.
 <!-- mỗi lần xử lý góp ý: thêm 1 dòng ở đây (ngày · màn nào · phương án · đã làm gì) -->
 
 ## Chưa kiểm / còn hở
