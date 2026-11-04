@@ -5,11 +5,11 @@ window.SFC = window.SFC || {};
 
 (function () {
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
-  const { blockCells, drawCells, drawFine, fineBlock, fineLimb, lerp, limbCells, rectW, shade } = Sprite;
+  const { blockCells, drawCells, lerp, limbCells, rectW, shade } = Sprite;
   // Hard attack (user 2026-11-01): 2 bước, cả người cùng ra đòn.
   // 1) lấy đà: khuỵu gối, hạ người 1 px, chân đá thu ra sau chân trụ, tay phải giơ lên, tay trái buông.
   // 2) tung cú đá: bật nhảy nhẹ, chân đá vung từ sau chân trụ ra trước tới hết tầm (đế giày ra trước), tay vung ngược chiều, rồi tiếp đất khuỵu nhẹ.
-  // Pha (attackPose -> atk.kp): 'in' đứng -> lấy đà · 'go' lấy đà -> hết tầm · 'out' hết tầm -> đứng; atk.u 0..1 (u = 1 ở 'in' / 'go' là tư thế khoá, lưới thế giới).
+  // Pha (attackPose -> atk.kp): 'in' đứng -> lấy đà · 'go' lấy đà -> hết tầm · 'out' hết tầm -> đứng; atk.u 0..1 (u = 1 ở 'in' / 'go' là tư thế khoá).
   // Chân / tay giữ độ dài lúc đứng (ống chân từ hông 2.5 ô + bàn chân, tay 2.4 ô + nắm tay); tầm với đến từ thân: xoay hông, lao tới, bật nhảy.
   // keys = [đứng, lấy đà, hết tầm], toạ độ theo thân (hình nhìn phải), góc: 0 trước, π/2 xuống, π sau
   // tay ngược chân (user 2026-11-01): lấy đà (chân phải thu về) = tay phải giơ lên, tay trái buông · hết tầm (chân phải đá ra) = tay phải buông, tay trái vung ra trước / lên. arms[k][i]: tay phải = i 0 khi nhìn xuống / chéo / ngang, i 1 khi nhìn lên
@@ -59,41 +59,38 @@ window.SFC = window.SFC || {};
     return { hx: kv(K.hip, kp, u), hy: -5, ex: kv(K.end.map((q) => q[0]), kp, u), ey: kv(K.end.map((q) => q[1]), kp, u), foot: kn(K.foot, kp, u), over: kn(K.over, kp, u) };
   }
   // vẽ chân đá quanh gốc thân (X, Y): đùi màu quần (lúc nhấc lên trước thân) -> đầu gối da -> tất -> giày.
-  // Đang vung: lưới mịn, cung sáng mảnh theo đường bàn chân + 2 bóng bàn chân tối dần (nhoè) · tư thế khoá: lưới thế giới
+  // Đang vung: cung sáng theo đường bàn chân + 2 bóng bàn chân tối dần (nhoè), cùng lưới thế giới với tư thế khoá
   function drawKickLeg(ctx, X, Y, mir, view, atk, L, pal) {
     const T = kickTable(atk);
     const col = (k, i, n) => (i / n < 0.22 ? pal.P : i / n < 0.42 ? pal.J : pal.O), [fdx, fdy, rows] = L.foot;
-    if (atk.u >= 1 && atk.kp !== 'out') {
-      const ex = Math.round(L.ex), ey = Math.round(L.ey);
-      drawCells(ctx, X, Y, blockCells(limbCells([[L.hx, L.hy], [ex, ey]], col), ex + fdx, ey + fdy, rows, pal), mir);
-      // trúng: tia sáng hình + như cú đấm, ở mép trước bàn chân (nhìn xuống: góc trên đế giày)
-      if (atk.impact) {
-        const fx = ex + fdx, fy = ey + fdy, w = rows[0].length;
-        const [ix, iy] = view === 'front' ? [fx + w, fy - 1] : [fx + w + 2, fy + 1];
-        rectW(ctx, X, Y, mir, ix - 3, iy, 7, 1, '#fff6a0'); rectW(ctx, X, Y, mir, ix, iy - 3, 1, 7, '#fff6a0');
-        for (const [a, b] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) rectW(ctx, X, Y, mir, ix + a, iy + b, 1, 1, '#ffffff');
-      }
-      return;
-    }
-    const cells = new Map(), ex = Math.round(2 * L.ex), ey = Math.round(2 * L.ey);
-    if (atk.kp === 'go') {
-      ctx.globalCompositeOperation = 'lighter';
+    const hx = Math.round(L.hx), ex = Math.round(L.ex), ey = Math.round(L.ey), cells = new Map();
+    if (atk.kp === 'go' && atk.u < 1) {
+      // cung sáng: 1 ô mỗi chỗ giữa bàn chân đã đi qua (ô đi qua nhiều lần chỉ tô 1 lần, lấy lần mới nhất), sáng dần về phía bàn chân
+      const arc = new Map();
       for (let uu = Math.max(0, atk.u - 0.5); uu < atk.u; uu += 0.025) {
-        const q = legPose(view, 'go', uu, T), k = 1 - (atk.u - uu) / 0.5;
-        const qx = Math.round(2 * (q.ex + q.foot[0]) + q.foot[2][0].length), qy = Math.round(2 * (q.ey + q.foot[1]) + q.foot[2].length);
-        ctx.fillStyle = `rgba(255,${120 + Math.round(k * 135)},${90 + Math.round(k * 165)},${0.25 + k * 0.6})`;
-        ctx.fillRect(mir ? X + 1 - qx : X + qx, Y + qy, 1, 1);
+        const q = legPose(view, 'go', uu, T);
+        arc.set(Math.round(q.ex + q.foot[0] + q.foot[2][0].length / 2) + ',' + Math.round(q.ey + q.foot[1] + q.foot[2].length / 2), 1 - (atk.u - uu) / 0.5);
+      }
+      ctx.globalCompositeOperation = 'lighter';
+      for (const [kk, k] of arc) {
+        const [qx, qy] = kk.split(',').map(Number);
+        rectW(ctx, X, Y, mir, qx, qy, 1, 1, `rgba(255,${120 + Math.round(k * 135)},${90 + Math.round(k * 165)},${0.25 + k * 0.6})`);
       }
       ctx.globalCompositeOperation = 'source-over';
       for (const [d, dk] of [[0.3, -0.6], [0.15, -0.3]]) {
         if (atk.u - d <= 0) continue;
         const q = legPose(view, 'go', atk.u - d, T);
-        fineBlock(cells, Math.round(2 * q.ex) + 2 * q.foot[0], Math.round(2 * q.ey) + 2 * q.foot[1], q.foot[2].map((r) => r.replace(/g/g, 'G')), { G: shade(pal.G, dk) });
+        blockCells(cells, Math.round(q.ex) + q.foot[0], Math.round(q.ey) + q.foot[1], q.foot[2].map((r) => r.replace(/g/g, 'G')), { G: shade(pal.G, dk) });
       }
     }
-    fineLimb([[Math.round(2 * L.hx), 2 * L.hy], [ex, ey]], col, cells);
-    fineBlock(cells, ex + 2 * fdx, ey + 2 * fdy, rows, pal);
-    drawFine(ctx, X, Y, cells, mir);
+    drawCells(ctx, X, Y, blockCells(limbCells([[hx, L.hy], [ex, ey]], col, cells), ex + fdx, ey + fdy, rows, pal), mir);
+    // trúng (tư thế khoá hết tầm): tia sáng hình + như cú đấm, ở mép trước bàn chân (nhìn xuống: góc trên đế giày)
+    if (atk.u >= 1 && atk.kp !== 'out' && atk.impact) {
+      const fx = ex + fdx, fy = ey + fdy, w = rows[0].length;
+      const [ix, iy] = view === 'front' ? [fx + w, fy - 1] : [fx + w + 2, fy + 1];
+      rectW(ctx, X, Y, mir, ix - 3, iy, 7, 1, '#fff6a0'); rectW(ctx, X, Y, mir, ix, iy - 3, 1, 7, '#fff6a0');
+      for (const [a, b] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) rectW(ctx, X, Y, mir, ix + a, iy + b, 1, 1, '#ffffff');
+    }
   }
   // tay xa (vẽ sau thân, da tối) theo góc nhìn: chéo xuống = i 1 · chéo lên = i 0 · còn lại không có (-1)
   const farArm = (view) => (view === 'diag' ? 1 : view === 'bdiag' ? 0 : -1);
@@ -102,14 +99,13 @@ window.SFC = window.SFC || {};
   function kickArm(ctx, X, Y, mir, view, atk, i, pal, hand, behind) {
     const T = kickTable(atk), K = T[view], ov = T.armAt ? T.armAt(atk, view, i) : null;
     const a = ov != null ? ov : kv([Math.PI / 2, K.arms[0][i], K.arms[1][i]], atk.kp, atk.u);
-    armAt(ctx, X, Y, mir, i, a, pal, hand, behind, !(atk.u >= 1 && atk.kp !== 'out'));
+    armAt(ctx, X, Y, mir, i, a, pal, hand, behind);
   }
-  // 1 cánh tay xoay quanh vai i (0 trái / 1 phải hình nhìn phải) góc a, dài như tay đứng. fine = khung chuyển động (lưới mịn), không = tư thế khoá
-  function armAt(ctx, X, Y, mir, i, a, pal, hand, behind, fine) {
+  // 1 cánh tay xoay quanh vai i (0 trái / 1 phải hình nhìn phải) góc a, dài như tay đứng; bàn tay làm tròn tới ô thế giới
+  function armAt(ctx, X, Y, mir, i, a, pal, hand, behind) {
     const [rx, ry] = ARM_ROOT[i], ex = rx + ALEN * Math.cos(a), ey = ry + ALEN * Math.sin(a), skin = behind ? pal.s : pal.S;
     const col = (k, j, n) => (j === 0 ? pal.t : j === n && hand !== pal.S ? hand : skin);
-    if (!fine) drawCells(ctx, X, Y, limbCells([[rx, ry], [Math.round(ex), Math.round(ey)]], col), mir);
-    else drawFine(ctx, X, Y, fineLimb([[2 * rx, 2 * ry], [Math.round(2 * ex), Math.round(2 * ey)]], (k, j, n) => col(k, j < 2 ? 0 : j, n)), mir);
+    drawCells(ctx, X, Y, limbCells([[rx, ry], [Math.round(ex), Math.round(ey)]], col), mir);
   }
 
   Object.assign(Sprite, { KLEN, ALEN, ARM_ROOT, KICK, KICKS, bdiagOf, farArm, kickTable, kv, kn, kickRest, kickArmsOn, legPose, drawKickLeg, kickArm, armAt });

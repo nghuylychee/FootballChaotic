@@ -40,17 +40,16 @@ window.SFC = window.SFC || {};
     }
     return lerp(lie, 0, easeIO(fs.k));
   }
-  // tư thế (hình đứng thẳng, trước khi xoay): tay [i 0, i 1] (góc quanh vai), kiểu chân, khuỵu (px mịn), há miệng
+  // tư thế (hình đứng thẳng, trước khi xoay): tay [i 0, i 1] (góc quanh vai), kiểu chân, khuỵu (px), há miệng
   function flyPose(fs) {
     if (fs.phase === 'tumble') return { arms: [P + 0.9, -0.9], legs: 'split', c: 0, mouth: true };
     if (fs.phase === 'sprawl') return { arms: [P + 0.25, -0.25], legs: 'wide', c: 0, mouth: false };
     const e = easeIO(fs.k);
-    return { arms: [lerp(P + 0.25, P - 0.6, e), lerp(-0.25, 0.6, e)], legs: 'bend', c: Math.round(2 * Math.sin(P * Math.min(1, e * 1.4))), mouth: false };
+    return { arms: [lerp(P + 0.25, P - 0.6, e), lerp(-0.25, 0.6, e)], legs: 'bend', c: Math.round(Math.sin(P * Math.min(1, e * 1.4))), mouth: false };
   }
-  // tay: tư thế khoá (bay, nằm) lưới thế giới · lúc dậy lưới mịn
   function flyArms(ctx, X, Y, mir, fs, pal, hand) {
-    const fp = flyPose(fs), fine = fs.phase === 'rise';
-    armAt(ctx, X, Y, mir, 0, fp.arms[0], pal, hand, false, fine); armAt(ctx, X, Y, mir, 1, fp.arms[1], pal, hand, false, fine);
+    const fp = flyPose(fs);
+    armAt(ctx, X, Y, mir, 0, fp.arms[0], pal, hand, false); armAt(ctx, X, Y, mir, 1, fp.arms[1], pal, hand, false);
   }
   // chân (hình nhìn phải, lật theo mir). Lúc văng / nằm 2 mũi giày chĩa ra 2 phía (user 2026-11-01: không cùng 1 hướng):
   // split = 2 chân dạng, chân phải hình nhấc cao hơn 1 hàng (văng loạn) · wide = dạng rộng (nằm) · bend = khuỵu, mũi theo hướng mặt
@@ -71,7 +70,7 @@ window.SFC = window.SFC || {};
     const e = fs.phase === 'rise' ? easeIO(fs.k) : 0;
     return { dx: fs.dir * lerp(LIE_SH.dx, STAND_SH.dx, e), dy: lerp(LIE_SH.dy, STAND_SH.dy, e), rx: lerp(LIE_SH.rx, STAND_SH.rx, e), ry: lerp(LIE_SH.ry, STAND_SH.ry, e) };
   }
-  // vẽ elip ở lưới thế giới rồi nhân đôi (mép px như bóng đứng) · X, Y = chân ở px mịn
+  // vẽ elip ở lưới thế giới (mép px như bóng đứng) · X, Y = chân (px game)
   const shImgs = {};
   function flyShadow(ctx, X, Y, sh) {
     if (typeof document === 'undefined' || !sh) return;
@@ -83,7 +82,7 @@ window.SFC = window.SFC || {};
       const c = img.getContext('2d'); c.fillStyle = 'rgba(0,0,0,0.38)'; c.beginPath(); c.ellipse(w / 2, h / 2, rx, ry, 0, 0, Math.PI * 2); c.fill();
     }
     const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(img, Math.round(X + 2 * (sh.dx || 0) - w), Math.round(Y + 2 * sh.dy - h), w * 2, h * 2);
+    ctx.drawImage(img, X + Math.round(sh.dx || 0) - w / 2, Y + Math.round(sh.dy) - h / 2, w, h);
     ctx.imageSmoothingEnabled = sm;
   }
 

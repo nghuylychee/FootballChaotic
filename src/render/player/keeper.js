@@ -5,7 +5,7 @@ window.SFC = window.SFC || {};
 
 (function () {
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
-  const { at, blockCells, drawCells, drawFine, easeOut, fineBlock, fineLimb, lerp, limbCells, stamp } = Sprite;
+  const { at, blockCells, drawCells, easeOut, lerp, limbCells, snapPx, stamp } = Sprite;
   // Game (Actions.dive): bay gkDiveMin 0.12 – gkDiveTime 0.24 s (state dash, tuỳ quãng cần bay, p.diveT), rồi đứng dậy gkDivePose giây (tới p.poseEnd).
   // attackPose trả: dk = tiến độ bay · dh = độ cao vòng cung (diveT / gkDiveTime) · ds = cất người (0.06 s đầu cú bay) · stage = giai đoạn đứng dậy
   // sau khi chạm đất (tư thế thật trên lưới px, gkball.js). Tay giữ độ dài tay đứng (2.4 ô + găng 3 x 3) nên không vươn qua đầu được: vai nhô lên
@@ -15,12 +15,10 @@ window.SFC = window.SFC || {};
   const GLOVE = ['WHH', 'HHH', 'HHH'];
   // độ vươn của tay (0 = buông như đứng, 1 = vươn hết): lên theo cú bay, giữ lúc nằm (dk 1), tắt ở các tư thế đứng dậy khác (dk 0)
   const diveArmK = (atk) => { const u = Math.min(1, (atk.dk || 0) / DIVE.swing); return u * u * (3 - 2 * u); };
-  // tay đang khoá (lưới thế giới) hay đang vung (lưới mịn)
-  const diveHeld = (atk) => (atk.dk || 0) >= DIVE.swing;
-  // đầu rụt xuống theo tay (px mịn)
-  const diveHeadDy = (atk) => Math.round(2 * DIVE.tuck * diveArmK(atk));
-  // khuỵu (px mịn): đạp đất lúc cất người, khuỵu ở giai đoạn crouch lúc đứng dậy
-  const diveCrouch = (atk) => (atk.flying ? 2 * (1 - (atk.ds || 0)) : atk.stage === 'crouch' ? 1 : 0);
+  // đầu rụt xuống theo tay (nguyên ô)
+  const diveHeadDy = (atk) => Math.round(DIVE.tuck * diveArmK(atk));
+  // khuỵu (nguyên ô): đạp đất lúc cất người, khuỵu ở giai đoạn crouch lúc đứng dậy
+  const diveCrouch = (atk) => (atk.flying ? snapPx(1 - (atk.ds || 0)) : atk.stage === 'crouch' ? 1 : 0);
   // kiểu chân (user: chú ý chân ở 2 đoạn chuyển). Cất người: bend (khuỵu, 2 chân rộng) -> push (1 chân duỗi đạp đất, chân kia co gối lên) ->
   // together (khép duỗi lúc bay). Đứng dậy: together lúc nằm, bend lúc khuỵu, còn lại stand (bò / nhổm / quỳ: chân quỳ vẽ riêng, gkball.js)
   function diveLegPose(atk) {
@@ -30,20 +28,15 @@ window.SFC = window.SFC || {};
 
   // i 0 / 1 = tay bên trái / phải hình. Găng: khối 3 x 3 màu găng (chấm sáng góc trên ngoài) ở đầu cánh tay
   function diveArms(ctx, X, Y, mir, atk, pal, hand) {
-    const e = diveArmK(atk), held = diveHeld(atk);
+    const e = diveArmK(atk);
     for (let i = 0; i < 2; i++) {
       const [rx, ry0] = DIVE.root[i], ry = ry0 + DIVE.shrug * e, a = lerp(P / 2, DIVE.up[i], e);
       const ex = rx + DIVE.len * Math.cos(a), ey = ry + DIVE.len * Math.sin(a);
       // găng neo theo đầu cánh tay: tay trái hình lùi 1 ô sang trái để găng nằm ngoài đường cánh tay
       const gx = i ? 0 : -1, G = i ? GLOVE.map((r) => r.split('').reverse().join('')) : GLOVE, gp = { W: '#ffffff', H: hand };
       const col = (k, j) => (j === 0 ? pal.t : pal.S);
-      if (held) {
-        const cx = Math.round(ex), cy = Math.round(ey), cells = limbCells([[rx, Math.round(ry)], [cx, cy]], col);
-        drawCells(ctx, X, Y, blockCells(cells, cx + gx, cy - 1, G, gp), mir);
-      } else {
-        const cx = Math.round(2 * ex), cy = Math.round(2 * ey), cells = fineLimb([[2 * rx, Math.round(2 * ry)], [cx, cy]], (k, j) => col(k, j < 2 ? 0 : j));
-        drawFine(ctx, X, Y, fineBlock(cells, cx + 2 * gx, cy - 2, G, gp), mir);
-      }
+      const cx = Math.round(ex), cy = Math.round(ey), cells = limbCells([[rx, Math.round(ry)], [cx, cy]], col);
+      drawCells(ctx, X, Y, blockCells(cells, cx + gx, cy - 1, G, gp), mir);
     }
   }
   // chân theo kiểu (hình nhìn phải, lật theo mir). together: khép duỗi, không mũi giày (mũi chỉ thẳng theo thân) · bend: đứng rộng khuỵu

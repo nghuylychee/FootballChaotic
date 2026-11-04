@@ -17,14 +17,14 @@ window.SFC = window.SFC || {};
   };
   POWER.diag = POWER.side; POWER.bdiag = bdiagOf(POWER.side);
   KICKS.power = POWER;
-  // nhịp (giây, Sprite.kickTimeline): lấy đà w (đứng: kick.powerWind) · vung s · giữ hết tầm f · về o · khuỵu cw, ngả sau lb, lao tới lf, bật hop (px mịn)
-  // shake = run tối đa (px mịn) sau shakeT giây giữ tư thế lấy đà
-  const POWER_T = { w: 0.25, s: 0.07, f: 0.2, o: 0.2, cw: 2, lb: 2, lf: 3, hop: 6, shake: 1.5, shakeT: 0.4 };
-  // bước nặng lúc chạy đuổi bóng: 4 khung, 9 khung / s · [góc chân trái hình, góc chân phải hình, nhấp thân (px mịn, dương = hạ người lúc đặt chân), tay trái hình, tay phải hình]
+  // nhịp (giây, Sprite.kickTimeline): lấy đà w (đứng: kick.powerWind) · vung s · giữ hết tầm f · về o · khuỵu cw, ngả sau lb, lao tới lf, bật hop (px)
+  // shake = run tối đa (px) sau shakeT giây giữ tư thế lấy đà
+  const POWER_T = { w: 0.25, s: 0.07, f: 0.2, o: 0.2, cw: 1, lb: 1, lf: 1.5, hop: 3, shake: 0.75, shakeT: 0.4 };
+  // bước nặng lúc chạy đuổi bóng: 4 khung, 9 khung / s · [góc chân trái hình, góc chân phải hình, nhấp thân (px, dương = hạ người lúc đặt chân), tay trái hình, tay phải hình]
   const HEAVY = [
-    [0.8 * P, 0.32 * P, 2, [0.9], [P - 0.5]],
+    [0.8 * P, 0.32 * P, 1, [0.9], [P - 0.5]],
     [0.5 * P, 0.56 * P, 0, [P / 2 - 0.1], [P / 2 + 0.1]],
-    [0.32 * P, 0.8 * P, 2, [P - 0.5], [0.9]],
+    [0.32 * P, 0.8 * P, 1, [P - 0.5], [0.9]],
     [0.56 * P, 0.5 * P, 0, [P / 2 + 0.1], [P / 2 - 0.1]],
   ];
 

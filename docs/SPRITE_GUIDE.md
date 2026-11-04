@@ -8,9 +8,9 @@ Luật user đặt ra trong lúc làm Sprite v2 (2026-10-31 → 2026-11-01), gom
 
 Nhân vật là bộ mặt của game. Mọi thay đổi phải nhẹ tay, không làm lại từ đầu.
 
-- **Cỡ trong trận giữ nguyên.** Vấn đề là độ phân giải quá thấp, không phải cỡ. Lưới 2x (1 px mịn = nửa px game) có là để chuyển động có chỗ, không phải để vẽ thêm chi tiết.
+- **Cỡ trong trận giữ nguyên.** Canvas trận 1x (1 px canvas = 1 px game, 2026-11-04); code sprite tính bằng px game, chỉ vẽ px game nguyên (mục 2).
 - **Cao 24 px game** như sprite cũ. Đầu A 15 × 13 tròn, mắt vuông 3 × 3. Thân B: áo 3 hàng ăn vào quần, không hàng đầu gối, tất ngắn ngay dưới quần, 2 chân sát nhau.
-- **Viền mực 1 px game quanh cả người** (= 2 px mịn), như viền đầu. Riêng chỗ tay áo nối thân thì không viền (liền màu tối).
+- **Viền mực 1 px game quanh cả người**, như viền đầu. Riêng chỗ tay áo nối thân thì không viền (liền màu tối).
 - **Thấy mặt / thấy lưng**: thấy mặt khi nhìn xuống, chéo xuống, ngang; thấy lưng khi nhìn lên và chéo lên. Mặt trượt ngang theo hướng nhìn. Chéo lên (`bdiag`, user 2026-11-03; trước đó chéo lên dùng hình sau lưng thẳng) là lưng xoay về 1 bên: nút băng đô và cổ áo sau lệch 1 cột ngược hướng mặt, bên hướng mặt lộ dải má 2 cột, tay gần bên hướng mặt + cục da tay xa bên kia (ngược chéo xuống). Không có hình nghiêng hẳn.
 - **Nhìn trái = lật hình nhìn phải.** Đừng "sửa" cho đúng tay chân (xem mục 3).
 - **Mũi giày**: nhìn thẳng xuống / lên không có mũi; chéo và ngang thì cả 2 mũi theo hướng mặt.
@@ -22,11 +22,18 @@ Nhân vật là bộ mặt của game. Mọi thay đổi phải nhẹ tay, khôn
 - Người cao hơn (vai xấu), thân 26 px, giữ đầu gối.
 - Đầu v2 / đầu B, mắt to.
 
-## 2. Hai lưới: lúc nào dùng lưới nào
+## 2. Một lưới: chỉ px game
 
-- **Tư thế đứng và tư thế khoá** của động tác (nghỉ, lấy đà, hết tầm, giữ): lưới game, bậc 1 px game, khối chắc. Không bo, không thêm chi tiết.
-- **Khung chuyển động** giữa 2 tư thế khoá: dùng lưới mịn thoải mái. Góc chi mượt từng px mịn, nhoè (smear) dọc đường vừa đi, viền mịn. Không cần bó theo kiểu cũ.
-- **Đồ nhỏ trên mặt / người** (ria, băng cá nhân, mũi hề…): chi tiết tới từng px mịn (lớp `fine`). Mặt nhỏ nên đồ vẽ ở lưới game trông lạ.
+- **Mọi khung chỉ vẽ px game** (user 2026-11-04 bỏ nửa px): tư thế đứng, tư thế khoá, khung chuyển động, nhoè, vị trí trên sân. Mục tiêu: chụp ở bất kỳ lúc nào, cỡ màn hình nào, px cũng đều nhau.
+  - Lý do: lúc chạy nhanh mắt không thấy px mịn, chỉ thấy viền dày / mỏng thất thường; canvas bị phóng không tròn số thì px mịn còn lệch thêm.
+  - Code: 1 đơn vị = 1 px game. Độ lệch số thực (ngả, nhấp, khuỵu, bật nhảy, đầu dẫn) qua `snapPx` (base.js, làm tròn đối xứng quanh 0). Chi tự do dùng `limbCells` / `blockCells` / `drawCells`. Gốc sprite = vị trí làm tròn về px game (`drawPlayer`).
+  - Kiểm: mọi lệnh vẽ ở toạ độ nguyên; ảnh chụp ở mức phóng nguyên k thì mọi khối k × k cùng 1 màu.
+- **Khung chuyển động**: chuyển động đến từ tư thế và nhoè vẽ bằng ô px game (bản tối của nắm tay / bàn chân dọc đường vừa đi), không từ bước nửa px.
+- **Đồ nhỏ trên mặt / người** (ria, băng cá nhân, mũi hề…), mẫu giày và hạt hiệu ứng cũng chỉ px game (2026-11-04). Giày chỉ 2 - 3 ô mỗi hàng nên mỗi hàng 1 màu; mẫu theo toạ độ ô (sọc từng hàng) thì nháy khi chạy lên xuống, đừng dùng.
+- **Không có double** (user 2026-11-04). Double = bậc thang của đường viền nối với bậc kế bằng cạnh (chữ L) thay vì chỉ chạm góc, làm đường dày thêm ở chỗ bậc, trông đậm và rối.
+  - Bậc thang 1 px game chỉ chạm góc.
+  - Ô viền chỉ chạm màu bên trong ở góc chéo (góc ngoài của hình) cũng là chữ L: bỏ ô đó (góc bo). Đã sửa ở hàm, vai, viền đáy quần, đáy giày.
+  - Chỗ 2 bộ phận vẽ riêng gặp nhau (tay vung lên chạm góc vai, bàn chân nhấc dưới góc lai quần) vẫn còn chữ L (2026-11-04, chưa sửa).
 - **Không có hình chữ nhật trơn.** Khung hình còn khối chữ nhật là dấu hiệu thiếu chỗ hoặc vẽ lười: chóp mũ phẳng, quầng sáng hình hộp, lưng tóc thành 1 khối.
 
 ## 3. Trái / phải và trục
@@ -117,7 +124,7 @@ Nhân vật là bộ mặt của game. Mọi thay đổi phải nhẹ tay, khôn
 
 ## 9. Kiểm tra nhanh cho thứ mới
 
-1. Tư thế khoá ở lưới game, khung chuyển động ở lưới mịn?
+1. Mọi khung (cả khung chuyển động) chỉ ở px game nguyên?
 2. Tay chân đúng độ dài đứng? Tầm với lấy từ thân?
 3. Cả người cùng chuyển động? Tay ngược chân?
 4. Đúng tay / chân của cầu thủ theo mục 3? Nhìn trái là hình lật?

@@ -1,6 +1,6 @@
 // Ghép nhiều vùng cắt (px sắc) thành 1 ảnh để soi khung hình bằng Chrome headless.
 // node tools/sprite-v2/grid.mjs <out.png> <phóng> <số cột> <ảnh>:<x>,<y>,<w>,<h> ...
-// Ví dụ (khung 3 của cú đấm 2x nhìn phải trong bảng pilot, ô 104 x 96): node grid.mjs z.png 4 1 out/pilot/pilot.png:312,96,104,96
+// Ví dụ (khung 3 của cú đấm sprite v2 nhìn phải trong bảng pilot, ô 104 x 96): node grid.mjs z.png 4 1 out/pilot/pilot.png:312,96,104,96
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve, join } from 'node:path';

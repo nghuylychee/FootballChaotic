@@ -303,7 +303,7 @@ window.SFC = window.SFC || {};
     drawSmoke(dy);
     text('KIT VAN', 137 - textW('KIT VAN', 2) / 2, 12 + dy, O, 2);
     // tài xế NGỒI trong cabin (UX review 2026-11-02): hạ thấp người, bậu cửa che từ ngực trở xuống, khuỷu tay gác lên bậu + vệt kính phản chiếu
-    SFC.Sprites.drawAvatar(buf, driverLook, kit, T, Math.PI * 0.82, null, true);   // flat: cảnh pixel 1x
+    SFC.Sprites.drawAvatar(buf, driverLook, kit, T, Math.PI * 0.82);
     seat(dy);
     L.save(); L.beginPath(); L.rect(239, 59 + dy, 42, 21); L.clip(); L.drawImage(buf, 240, SEAT_Y + dy); L.restore();
     for (let k = 0; k < 6; k++) { P(268 - k, 60 + k * 2 + dy, 2, 2, 'rgba(255,255,255,0.45)'); P(276 - k, 60 + k * 2 + dy, 1, 2, 'rgba(255,255,255,0.3)'); }

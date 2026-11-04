@@ -8,7 +8,7 @@ window.SFC = window.SFC || {};
   const { HEAD_A, INK, discW, rectW, stamp } = Sprite;
   const OUT = INK;
   // Đầu A (15 x 13, hàng -25..-13 tính từ gốc đầu Yh) khớp gần đúng đầu tròn bán kính 7 của sprite hôm nay: tâm đầu cũ (hy) = hàng 6 của đầu A
-  // (thế giới -19). Code drawHair cũ (đã xoá) chạy nguyên ở toạ độ thế giới tính từ tâm đó (px / disc -> rectW / discW ở lưới 2x), chỉ đổi:
+  // (thế giới -19). Code drawHair cũ (đã xoá) chạy nguyên ở toạ độ thế giới tính từ tâm đó (px / disc -> rectW / discW), chỉ đổi:
   //  capRows (tô đỉnh đầu trong vòng tròn bán kính 6, hàng dy0..dy1) -> cap: tô các ô trong viền của đầu A (đầu hói) hàng dy + 6 -> khớp đúng hình đầu mới.
   // Kiểu classic (mặc định) vẫn là đầu A đã duyệt (tóc 2 hàng + băng đô màu đội), không qua đây.
   const HY = -19;
@@ -850,16 +850,16 @@ window.SFC = window.SFC || {};
   function layer(ctx, X, Y, L, hp, mir, back, bd = false) {
     const cells = new Map(), inside = INSIDE[back ? 'back' : 'front'];
     L.rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] !== '.' && (L.ink || inside.has((L.x + i) + ',' + (L.y + j)))) cells.set((L.x + i) + ',' + (L.y + j), [L.x + i, L.y + j, hp[r[i]] || r[i]]); });
-    const cx = (x) => (mir ? X - 2 * x : X + 2 * x);
+    const cx = (x) => (mir ? X - x : X + x);
     if (L.ink) {
       ctx.fillStyle = typeof L.ink === 'string' ? L.ink : INK;   // ink = màu: viền màu riêng (tóc lửa viền đỏ thẫm)
       for (const [x, y] of cells.values()) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const k = (x + dx) + ',' + (y + dy);
         if (cells.has(k) || (!back && FACE.has(k)) || (bd && CHEEK.has(k))) continue;   // chéo lên: không viền mực lên dải má
-        ctx.fillRect(cx(x + dx), Y + 2 * (y + dy), 2, 2);
+        ctx.fillRect(cx(x + dx), Y + y + dy, 1, 1);
       }
     }
-    for (const [x, y, c] of cells.values()) { ctx.fillStyle = c; ctx.fillRect(cx(x), Y + 2 * y, 2, 2); }
+    for (const [x, y, c] of cells.values()) { ctx.fillStyle = c; ctx.fillRect(cx(x), Y + y, 1, 1); }
   }
 
   // đầu có kiểu tóc (thay cho stamp đầu A ở draw.js). o: hair (màu tóc), skin, band (màu phụ của đội = kit.accent), anim · bd = chéo lên

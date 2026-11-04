@@ -36,7 +36,9 @@ const res = await ev(`(() => {
   for (const [name, w, h] of SCREENS) {
     const [vw, vh] = view(w, h);
     R.setView(vw, vh); R.render(g);
-    out['aspect-' + name] = cv.toDataURL();
+    const x2 = document.createElement('canvas'); x2.width = cv.width * 2; x2.height = cv.height * 2;   // canvas trận 1x -> ảnh x2 cho dễ xem
+    const xc = x2.getContext('2d'); xc.imageSmoothingEnabled = false; xc.drawImage(cv, 0, 0, x2.width, x2.height);
+    out['aspect-' + name] = x2.toDataURL();
     sizes.push(name + ' ' + R.screen.w + 'x' + R.screen.h);
   }
   return { out, sizes };

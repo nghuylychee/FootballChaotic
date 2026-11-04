@@ -513,7 +513,7 @@ window.SFC = window.SFC || {};
     iconT(id) { return (POSES[id] || POSES.fistpump).icon || 0; },
 
     // vẽ cầu thủ p đang ăn mừng (p.celId, p.celT). Trả về y của đầu (Renderer vẽ mũi tên / VFX theo đó).
-    // Sprite 2x: PlayerSprite.celDraw (src/render/player/celebrate.js) đọc POSES ở trên, đổi tay sang luật độ dài + điểm neo đạo cụ theo thân mới
+    // Sprite v2: PlayerSprite.celDraw (src/render/player/celebrate.js) đọc POSES ở trên, đổi tay sang luật độ dài + điểm neo đạo cụ theo thân mới
     draw(ctx, p, g) { return SFC.PlayerSprite.celDraw(ctx, p, g); },
   };
 

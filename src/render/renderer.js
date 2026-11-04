@@ -7,18 +7,15 @@ window.SFC = window.SFC || {};
   const PASS_COLORS = { ground: '#7fe7ff', through: '#9dff3d', lob: '#ffb13d' };
 
   const R = {
-    // lưới vẽ vị trí cầu thủ + bóng trên canvas trận x2 (px thế giới): 0.5 = nửa px (1 px canvas, sắc nét), 1 = px nguyên. Không vẽ ở toạ độ số thực:
-    // mép từng hàng ô bị pha màu -> sọc ngang + viền nhoè khi chạy (đã thử 2026-11-03). PlayerSprite.drawPlayer, Sprites.drawBall đọc
-    posGrid: 0.5,
-    snap(v) { return Math.round(v / this.posGrid) * this.posGrid; },
-
     init(canvas) {
       const C = SFC_CONFIG.game.render;
-      // canvas gấp đôi (1280 x 720) cho sprite người chơi 2x (src/render/player): mọi thứ khác vẫn vẽ ở toạ độ 640 x 360, mỗi khung scale x2
-      // (render()); CSS giữ cỡ hiển thị 640 x 360 nên chuột / bố cục DOM không đổi
-      canvas.width = C.width * 2;
-      canvas.height = C.height * 2;
-      this.canvas = canvas;
+      // canvas 1 px = 1 px game (640 x 360; user 2026-11-04 bỏ canvas gấp đôi: mọi ảnh chụp, mọi cỡ màn hình px phải đều nhau). Phóng lên màn hình
+      // ở CSS (main.js fit) hoặc qua present()
+      canvas.width = C.width;
+      canvas.height = C.height;
+      this.canvas = canvas;   // canvas đang vẽ trận (canvas hiện, hoặc canvas phụ khi present K > 1)
+      this.out = canvas;      // canvas hiện trên màn hình
+      this.outK = 0;
       this.ctx = canvas.getContext('2d');
       this.ctx.imageSmoothingEnabled = false;
       this.screen = { x: 0, y: 0, w: C.width, h: C.height };
@@ -30,17 +27,32 @@ window.SFC = window.SFC || {};
     // khung nhìn trận w x h (px game, main.js theo tỉ lệ cửa sổ, tối đa render.maxView): sân 640 x 360 luôn nằm giữa, khung rộng / cao hơn
     // thì canvas lớn hơn và thấy thêm cảnh quanh sân. this.screen = vùng màn hình theo toạ độ thế giới (x, y âm khi rộng hơn 640 x 360):
     // lớp phủ toàn màn (viền tối, nháy trắng, phủ màu, cut-in) vẽ đủ vùng này. Không gọi (sandbox, trang itch) thì giữ 640 x 360
-    setView(w, h) {
+    setView(w, h, force = false) {
       const C = SFC_CONFIG.game.render;
       w = Math.max(C.width, 2 * Math.floor(w / 2)); h = Math.max(C.height, 2 * Math.floor(h / 2));
       const S = this.screen;
-      if (S.w === w && S.h === h) return;
-      this.canvas.width = w * 2; this.canvas.height = h * 2;
-      this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
+      if (!force && S.w === w && S.h === h) return;
+      this.canvas.width = w; this.canvas.height = h;
+      const K = this.outK || 1;
+      this.out.width = w * K; this.out.height = h * K;
+      this.out.style.width = w + 'px'; this.out.style.height = h + 'px';
       this.ctx.imageSmoothingEnabled = false;
       this.screen = { x: -(w - C.width) / 2, y: -(h - C.height) / 2, w, h };
       this.vig = SFC.Background.vignette(w, h);
       this.svig = null;
+    },
+
+    // màn hình phóng lẻ (main.js fit): vẽ trận vào canvas phụ 1x như thường, cuối render() chép sang canvas hiện K px thiết bị / px game
+    // (K = số px làm tròn lên) bằng điểm gần nhất, CSS phóng mượt K -> số lẻ. Mọi px game thành khối K x K đều nhau, chỉ mép pha 1 px
+    // ("sharp bilinear"). K = 0 (phóng nguyên): vẽ thẳng canvas hiện, CSS phóng điểm gần nhất, không chép
+    present(K) {
+      K = K > 1 ? K : 0;
+      if (K === this.outK) return;
+      this.outK = K;
+      if (K && !this.work) this.work = document.createElement('canvas');
+      this.canvas = K ? this.work : this.out;
+      this.ctx = this.canvas.getContext('2d');
+      this.setView(this.screen.w, this.screen.h, true);
     },
 
     render(g) {
@@ -64,7 +76,7 @@ window.SFC = window.SFC || {};
 
       // gốc toạ độ thế giới = góc sân 640 x 360; khung nhìn rộng hơn thì dời vào giữa canvas
       const S = this.screen;
-      ctx.setTransform(2, 0, 0, 2, -2 * S.x, -2 * S.y);
+      ctx.setTransform(1, 0, 0, 1, -S.x, -S.y);
       ctx.imageSmoothingEnabled = false;
       // ngoài ảnh nền (khung rộng hơn ảnh của arena): màu nền arena
       ctx.fillStyle = SFC.Background.theme(g).void || '#000';
@@ -335,6 +347,11 @@ window.SFC = window.SFC || {};
       // VFX Kit: phủ màu, tia tốc độ, cut-in, callout, impact frame (toạ độ màn hình)
       SFC.VFX.overlay(ctx, g);
       if (SFC.LegendDraw) SFC.LegendDraw.overlay(ctx, g);   // GOAT PATH: cut-in LEGEND cạnh trái màn hình
+      if (this.outK) {   // present(): chép canvas phụ 1x sang canvas hiện K x
+        const o = this.out.getContext('2d');
+        o.imageSmoothingEnabled = false;
+        o.drawImage(this.canvas, 0, 0, this.out.width, this.out.height);
+      }
     },
 
     // Smoke Bomb: mình đang tàng hình — mắt gạch chéo + chữ HIDDEN trên đầu
@@ -420,7 +437,7 @@ window.SFC = window.SFC || {};
       const k = Math.max(0.35, 1 - p.airZ / 70);
       // arena có bộ cảnh đã vẽ bóng cầu thủ (sc.shadows): không vẽ thêm bóng ở đây
       if (!Sprite.sceneShadow(g)) {
-        if (lsh) { ctx.save(); ctx.scale(0.5, 0.5); Sprite.flyShadow(ctx, 2 * Math.round(p.x), 2 * Math.round(p.y), lsh); ctx.restore(); }
+        if (lsh) Sprite.flyShadow(ctx, Math.round(p.x), Math.round(p.y), lsh);
         else ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, 6 * k, 2.5 * k, 'rgba(0,0,0,0.38)');
       }
       const cy = p.y - p.airZ - 8;
@@ -457,14 +474,14 @@ window.SFC = window.SFC || {};
       const side = Math.cos(p.facing) >= 0 ? 1 : -1;
       const atk = Sprite.attackPose(p), holding = g.ball.owner === p;
       const N = 48, buf = this.diveBuf || (this.diveBuf = document.createElement('canvas'));
-      if (buf.width !== N * 2) { buf.width = N * 2; buf.height = N * 2; }
+      if (buf.width !== N) { buf.width = N; buf.height = N; }
       const bc = buf.getContext('2d');
       if (!atk.flying) {
         if (flip > 0 || (atk.stage !== 'land' && atk.stage !== 'lie')) return drawPlayer(ctx, p, g);
         // bay xuống, đang nằm (đầu về phía máy quay): vẽ đứng vào bộ đệm rồi lật đúng -1, toạ độ tròn · bóng đổ dài phủ cả thân
         const ty = Math.round(p.y) - 9;
         if (!Sprite.sceneShadow(g)) ellipse(ctx, Math.round(p.x) + side, ty + 3, 8, 11, 'rgba(0,0,0,0.4)');   // arena có bộ cảnh: bóng của cảnh
-        bc.setTransform(2, 0, 0, 2, 0, 0);
+        bc.setTransform(1, 0, 0, 1, 0, 0);
         bc.clearRect(0, 0, N, N);
         drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: g.inKeeperZone(p), gkHolding: holding }), g, 0.999);
         ctx.save();
@@ -484,8 +501,8 @@ window.SFC = window.SFC || {};
         for (let i = 0; i < 3; i++) px(ctx, Math.round(p.x - 3 + i * 3), Math.round(cy - flip * (12 + i * 2) * sq + flip * 22), 1, 4 + (i % 2) * 2, '#ffffff');
         ctx.globalAlpha = 1;
       }
-      // vẽ thẳng đứng vào bộ đệm gấp đôi (sprite 2x) rồi xoay cả ảnh (lấy mẫu điểm gần nhất) -> pixel vẫn sắc, không nhoè như xoay từng ô vẽ
-      bc.setTransform(2, 0, 0, 2, 0, 0);
+      // vẽ thẳng đứng vào bộ đệm rồi xoay cả ảnh (lấy mẫu điểm gần nhất) -> pixel vẫn sắc, không nhoè như xoay từng ô vẽ
+      bc.setTransform(1, 0, 0, 1, 0, 0);
       bc.clearRect(0, 0, N, N);
       // vx = vy = 0: không nhún chân / vung tay như đang chạy
       drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: g.inKeeperZone(p), gkHolding: holding }), g, 0.999);

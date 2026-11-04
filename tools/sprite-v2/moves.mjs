@@ -1,5 +1,5 @@
-// Mọi động tác khác cho sprite hiện tại (1x phóng đôi) và sprite 2x, chạy bằng code game (thủ môn đổ người, bị đá bay, ăn mừng) -> out/moves/
-// states: 6 trạng thái x (hôm nay nhìn xuống + 2x 6 hướng) · loops: choáng / gồng · anims: 17 ra đòn x 30 khung (1 s) · cel_<id>: mỗi động tác ăn mừng 32 khung (10 / s)
+// Mọi động tác khác cho sprite hiện tại (1x phóng đôi) và sprite v2, chạy bằng code game (thủ môn đổ người, bị đá bay, ăn mừng) -> out/moves/
+// states: 6 trạng thái x (hôm nay nhìn xuống + v2 6 hướng) · loops: choáng / gồng · anims: 17 ra đòn x 30 khung (1 s) · cel_<id>: mỗi động tác ăn mừng 32 khung (10 / s)
 // Đấm + Hard attack ở đây là bản pilot (xem pilot.mjs); sút, vô-lê, đánh đầu, thủ môn, bị đá bay, ăn mừng vẫn là bản chuyển thẳng từ tư thế hôm nay, chờ làm lại
 import { join } from 'node:path';
 import { openGame, save, OUT, PAGE_COMMON } from './cdp.mjs';
@@ -20,7 +20,7 @@ const res = await ev(`(async () => {
   const CEL_OLD = SFC.CelebrateDraw; new Function(celNew)(); const CEL_NEW = SFC.CelebrateDraw; SFC.CelebrateDraw = CEL_OLD;
   const R = SFC.Renderer;
   const withNew = (fn) => { const ks = SFC.Sprites, kc = SFC.CelebrateDraw; SFC.Sprites = NEW; SFC.CelebrateDraw = CEL_NEW; try { return fn(); } finally { SFC.Sprites = ks; SFC.CelebrateDraw = kc; } };
-  // thủ môn đổ người cho sprite 2x: như Renderer.diving nhưng bộ đệm gấp đôi (96 px mịn), vẽ lại về 48 đơn vị 1x
+  // thủ môn đổ người cho sprite v2: như Renderer.diving nhưng bộ đệm gấp đôi (96 px ảnh = 48 px game), vẽ lại về 48 đơn vị 1x
   const diving2 = (ctx, p, g) => {
     const PL = GC.player, flip = p.atkType === 'diveU' ? 1 : -1, side = Math.cos(p.facing) >= 0 ? 1 : -1, flying = p.state === 'dash';
     const k = Math.min(1, (p.atkT || 0) / PL.gkDiveTime), lift = flying ? 3 + Math.sin(k * Math.PI) * 6 : 0;
@@ -37,7 +37,7 @@ const res = await ev(`(async () => {
   const sheetNew = (cols, rows, cw, ch, cell, base) => sheet(cols, rows, cw, ch, (k, r) => { const c = cell(k, r); return c && (c[0] ? c : [false, (x, cx, cy) => withNew(() => c[1](x, cx, cy)), c[2]]); }, base);
   const out = {};
 
-  /* 1. trạng thái: cột 0 = hôm nay (nhìn xuống), cột 1..6 = 2x 6 hướng */
+  /* 1. trạng thái: cột 0 = hôm nay (nhìn xuống), cột 1..6 = v2 6 hướng */
   const STATES = [
     ['Stunned', { state: 'stun', anim: 0.31 }], ['Hard attack charge', { state: 'windup', anim: 0.02 }], ['Keeper', { keeper: true }],
     ['Hit flash', { flash: 0.2 }], ['Dash ghost', { alpha: 0.5, tint: HOME.shirt, ghost: true }], ['Injured', { inj: ['wrist', 'ankle', 'toe', 'hamstring'] }],
@@ -47,7 +47,7 @@ const res = await ev(`(async () => {
     return k === 0 ? [true, (c, x, y) => draw1(OLD, c, Object.assign({ x, y }, o))] : [false, (c, x, y) => draw1(NEW, c, Object.assign({ x, y, facing: DIRS[FAC[k - 1]] }, o))];
   }) };
 
-  /* 2. ra đòn 30 khung (1 s): hàng chẵn = hôm nay, hàng lẻ = 2x. f(t) -> tham số người */
+  /* 2. ra đòn 30 khung (1 s): hàng chẵn = hôm nay, hàng lẻ = v2. f(t) -> tham số người */
   const N = 30, L = GC.combat.light, H = GC.combat.hard, HD = GC.firstTime.header, PL = GC.player;
   const poseT = (GC.kick && GC.kick.poseTime) || 0.22;
   const at = (t, a, b) => t >= a && t < b;
@@ -85,7 +85,7 @@ const res = await ev(`(async () => {
     return [!(r & 1), (c, x, y) => draw1(r & 1 ? NEW : OLD, c, Object.assign({ x, y }, o))];
   }) };
 
-  /* 4. ăn mừng: mỗi động tác 1 ảnh, 32 khung (10 / s), hàng 0 hôm nay / hàng 1 2x */
+  /* 4. ăn mừng: mỗi động tác 1 ảnh, 32 khung (10 / s), hàng 0 hôm nay / hàng 1 v2 */
   const names = Object.fromEntries(Object.entries(PR.items).filter(([, it]) => it.slot === 'cel').map(([i, it]) => [i, it.name]));
   const ids = Object.keys(CEL_NEW.POSES), CN = 32;
   const extra = { _win2: 'Winning team (2nd move)', _lose: 'Losing team', _draw: 'Draw' };

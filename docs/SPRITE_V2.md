@@ -11,9 +11,9 @@
 Đừng làm lại phương án đã bỏ.
 
 - **Kiểu.** Key art: mặt khi nhìn xuống / chéo xuống / ngang, lưng khi nhìn lên / chéo lên. Mặt trượt ngang theo hướng nhìn. Chéo lên có hình riêng từ 2026-11-03 (mục 2e).
-- **Lưới 2x.** 1 px mịn = nửa px game; game sẽ vẽ ở 1280 × 720 thay 640 × 360. Tư thế đứng = sprite v2 1x nhân đôi đúng từng px (viền 2 px mịn = 1 px game).
+- **Lưới 2x.** 1 px mịn = nửa px game; game sẽ vẽ ở 1280 × 720 thay 640 × 360. Tư thế đứng = sprite v2 1x nhân đôi đúng từng px (viền 2 px mịn = 1 px game). Thay 2026-11-04 (mục dưới): canvas trận về lại 1x (640 × 360), code sprite tính bằng px game (bỏ `scale(0.5)`, `scale: 2`, `snap2`; ảnh ra y hệt).
 - **Không bo, không thêm chi tiết ở tư thế khoá.** Bản 2x vẽ lại mượt + thêm chi tiết đã bị bỏ. Tư thế đứng và tư thế khoá của động tác ở lưới game, bậc 1 px game.
-- **Khung chuyển động được dùng lưới mịn** (user 2026-11-01): khung giữa các tư thế khoá cho tự nhiên, không cần bó theo kiểu hiện tại: góc chi mượt từng px mịn, nhoè (smear), viền mịn.
+- **Chỉ lưới game, không nửa px** (user 2026-11-04, thay quyết định 2026-11-01 cho khung chuyển động dùng lưới mịn): mọi khung, cả khung chuyển động, chỉ vẽ ở px game. Nửa px lẫn với px game làm nét viền dày mỏng lung tung cả trong khung đứng yên, và ảnh chụp ở mọi cỡ màn hình không còn px đều nhau. Khung chuyển động / nhoè giữ, làm bằng ô px game (`snap2` trong `base.js`, `Renderer.posGrid = 1`). Phụ kiện mặt (ria, băng cá nhân, mũi hề), mẫu giày, hạt hiệu ứng và Golden Aura vẽ lại ở px game cùng ngày: chi tiết trong ô của bản px mịn (dây giày, chấm sáng, viền ria, lỗ băng) bỏ đi; sọc tất thành ống trắng cổ đỏ; viền chấm xen kẽ của Aura thành dải nhạt liền (bàn cờ thô).
 - **Đầu A.** 15 × 13, tròn hơn đầu v2, mắt vuông 3 × 3 như sprite hiện tại. Nhìn trái lệch mặt 1 px (không 2) để mắt trái không dính viền.
 - **Cao 24 px như sprite hiện tại** (thân B): áo 3 hàng, không hàng đầu gối, tất ngay dưới quần. Đã bỏ: giữ đầu gối bằng quần 1 hàng; bớt áo 2 hàng.
 - **Tay chéo xuống.** Tay gần đủ + cục da tay xa (user chỉnh, đừng phá).
@@ -37,7 +37,7 @@
   - Xuống: lúc đấm vung ra sau lưng (user: không giơ lên), từ máy quay thấy tay ngắn, bàn tay khuất sau hông.
   - Lên: vung xuống phía máy quay.
 - **Vai áo** (`shoulderPush`): tay ra khỏi vai thì vai áo nhô 1 ô theo tay; chỗ tay áo nối thân liền màu tối, không viền.
-- **Khung chuyển động** (`punchFine`): lưới mịn; khung giữa thu và duỗi nhoè nắm tay dọc đường vừa đi, đuôi sáng dần.
+- **Khung chuyển động**: lưới game (2026-11-04); khung giữa thu và duỗi nhoè nắm tay dọc đường vừa đi (bản sao nắm tay tối hơn), đuôi sáng dần.
 
 ## 2b. Hard attack (đã duyệt 2026-11-01)
 
@@ -47,7 +47,7 @@ User yêu cầu: 1) lấy đà: khuỵu gối, hạ người · 2) cú đá: vun
 - **Lấy đà**: thân hạ 1 px, ngả sau nửa px; chân trụ bước rộng 1 ô; chân đá thu ra sau chân trụ, gót nhấc (thấy đế); tay phải giơ cao, tay trái buông (tay ngược chân, user 2026-11-01). Ngược cả trước / sau: nhìn ngang / chéo, lấy đà = tay phải vung lên phía TRƯỚC (vắt qua ngực về hướng mặt), hết tầm = tay phải vung thấp ra SAU.
 - **Đá**: bật nhảy 2 px (bóng thu nhỏ), thân lao 1 px; chân đá vung từ sau, qua dưới hông, ra hết tầm (đế ra trước); chân trụ co lại tại chỗ trên không, không đổi bên (user: thu chân phải lấy đà thì chân phải phải là chân đá; co sang chỗ chân đá vừa rời thì trông như 2 chân đổi nhau); tay bên chân đá vung ra sau, tay kia ra trước / lên; đầu ngả sau nửa px; tia sáng ở bàn chân 4 khung đầu lúc hết tầm.
 - **Theo hướng** (`KICK`): ngang / chéo: chân sau xoay quanh hông, hông trượt từ sau ra trước (−4 → 3). Xuống: đế giày 4 × 4 (mũi rộng, gót hẹp) đè lên trước thân. Luôn đá bằng chân phải của cầu thủ: hình `KICK.front` vẽ chân đá bên phải màn hình nên nhìn xuống lật riêng chân (`km`). Lên: đá chếch ra cạnh người (đá thẳng ra xa thì thân che hết).
-- Ống chân từ hông 2.5 ô + bàn chân (= chân đứng); tay 2.4 ô từ vai. Tư thế khoá ở lưới thế giới, khung vung ở lưới mịn (cung sáng + 2 bóng bàn chân).
+- Ống chân từ hông 2.5 ô + bàn chân (= chân đứng); tay 2.4 ô từ vai. Mọi khung ở lưới thế giới (2026-11-04; trước là khung vung ở lưới mịn): cung sáng mỗi vị trí 1 ô + 2 bóng bàn chân.
 - Hào quang gồng đỏ vẽ sau người (trước đây đè lên, che tư thế lấy đà).
 
 ## 2c. Chuyền, sút mạnh, chạy nước rút (2026-11-01, đang thử trong game)
@@ -99,7 +99,7 @@ User 2026-11-03: thiếu hình chéo lên (trước đó lên-trái / lên / lê
 - **Trục cục bộ kiểu Unity** (user duyệt 2026-11-01): +Y lên, +Z = hướng mặt, +X = bên phải của cầu thủ (hệ tay trái: nhìn từ trên, X = Z xoay 90° theo chiều kim đồng hồ).
 - **Tay / chân phải nằm bên nào màn hình**: thân là hình nhìn thẳng trượt theo hướng mặt, nên nhìn xuống, chéo xuống, ngang (cả trái lẫn phải) -> tay / chân phải của cầu thủ bên **trái** màn hình; nhìn lên, chéo lên (thấy lưng) -> bên **phải**. Lật hình nhìn phải thành nhìn trái là đổi tay / chân với nhau. Hướng nhìn trái giữ nguyên là hình lật của nhìn phải (user chốt 2026-11-01): nhìn trái đấm bằng tay phải, đá bằng chân trái, băng chấn thương cũng lật theo.
 - Hard attack luôn đá bằng chân phải, cú đấm luôn bằng tay trái (mọi hướng).
-- Gốc mịn (X, Y) = 2 × gốc thế giới (giữa dưới chân). Lật ngang: cột thế giới x ↔ −x; px mịn u ↔ 1 − u.
+- Gốc (X, Y) = gốc thế giới (giữa dưới chân), 1 đơn vị = 1 px game. Lật ngang: cột x ↔ −x.
 - Thân hàng −11..−4 (cột −5..5). Chân −4..0. Đầu −23..−11 (cột −7..7). Tay đứng cột −8..−6 hàng −10..−5, vai (∓6, −9).
 - Mặt: mắt hàng −17..−15 (cột −4 và 1, lệch theo hướng nhìn), mũi −14, miệng −13.
 - Bộ phận là bản đồ chữ: K viền · S/s da · T/t áo · P quần · O tất · G/g giày / đế · H tóc · B/b băng đô · W trắng.
@@ -110,7 +110,7 @@ Classic script như game (không module): mỗi file là 1 IIFE, lấy hàm dùn
 
 | File | Việc |
 |---|---|
-| `base.js` | màu (`INK`, `shade`), đóng dấu bộ phận (`stamp`), chi lưới thế giới (`limbCells` / `drawCells`) và lưới mịn (`fineLimb` / `drawFine`), nội suy |
+| `base.js` | màu (`INK`, `shade`), đóng dấu bộ phận (`stamp`), chi lưới thế giới (`limbCells` / `blockCells` / `drawCells`), làm tròn về px game (`snapPx`), nội suy |
 | `body.js` | bảng màu, bộ phận chân / thân / tay (`BODY`), đầu (`HEAD_A`), mặt, bóng, băng quấn, chớp trắng |
 | `run.js` | chạy 4 khung |
 | `punch.js` | cú đấm |
@@ -133,10 +133,10 @@ Classic script như game (không module): mỗi file là 1 IIFE, lấy hàm dùn
 
 Động tác mới: thêm 1 file (vd. `shoot.js`) trước `pose.js` trong `order.json`, chuyển phần của nó khỏi `ported.js`, gọi từ `draw.js`.
 
-- `draw(ctx, X, Y, o)` vẽ ở px mịn. `o` = màu + `facing`, `moving`, `anim`, `lean`, `atk` (attackPose), `cp` (celPose), `stun`, `windup`, `flash`, `glove`, `inj`, `noShadow`.
-- `drawPlayer(ctx, p, g, alpha, tint, ghost)` thay được `SFC.Sprites.drawPlayer`: ctx ở toạ độ 1x (renderer scale x2), bên trong scale 0.5; ctx đang xoay thì vẽ vào bộ đệm rồi xoay cả ảnh (px sắc).
+- `draw(ctx, X, Y, o)` vẽ ở px game. `o` = màu + `facing`, `moving`, `anim`, `lean`, `atk` (attackPose), `cp` (celPose), `stun`, `windup`, `flash`, `glove`, `inj`, `noShadow`.
+- `drawPlayer(ctx, p, g, alpha, tint, ghost)` thay được `SFC.Sprites.drawPlayer`: ctx ở toạ độ thế giới, bên trong scale 0.5; ctx đang xoay thì vẽ vào bộ đệm rồi xoay cả ảnh (px sắc).
 - `attackPose(p)` như sprites.js, thêm `e` (pha đấm) và cho Hard attack: `kp` / `u` (pha `in` / `go` / `out` + tiến độ), `kc` (khuỵu), `kbx` (lao tới), `khop` (bật nhảy), `impact` (mục 2b).
-- Chi tự do ở tư thế khoá: `limbCells` + `drawCells` (lưới thế giới, viền 4 hướng nên góc ngoài tự bo như tay đứng). Khung chuyển động: `fineLimb` + `drawFine` (lưới mịn, viền 2 px mịn).
+- Chi tự do ở tư thế khoá: `limbCells` + `drawCells` (lưới thế giới, viền 4 hướng nên góc ngoài tự bo như tay đứng). Khung chuyển động cũng vậy (2026-11-04; trước là `fineLimb` + `drawFine` ở lưới mịn).
 - Một kiểu thân (`BODY`) và một kiểu đầu (`HEAD_A`). Các biến thể đã bỏ (đầu v2 / B, thân cao 26) đã xoá khỏi code 2026-11-01 (user đồng ý).
 
 ## 5. Tình trạng
@@ -267,7 +267,7 @@ Phần B xong.
 
 ### D. Đưa vào game — xong 2026-11-01
 
-16. ~~Renderer 1280 × 720~~ (xong): `Renderer.init` đặt canvas 1280 x 720, `render()` mở mỗi khung bằng `setTransform(2, …)` -> mọi thứ khác vẫn vẽ ở toạ độ 640 x 360 và trông y hệt (nền, vignette, `goalCam`, VFX); CSS `#game` giữ 640 x 360 nên `fit()` và chuột không đổi. Chữ vẽ trong canvas nét hơn (font vẽ ở 2x). Đo trong Chrome headless: 1 khung trận demo 6 người ~2.7 ms (ngân sách 16.7 ms); chưa đo trên máy yếu / bản web thật.
+16. ~~Renderer 1280 × 720~~ (xong; bỏ 2026-11-04: canvas trận, avatar DOM, `Sprites.hiRes`, bộ đệm thủ môn / tượng đá về lại 1x): `Renderer.init` đặt canvas 1280 x 720, `render()` mở mỗi khung bằng `setTransform(2, …)` -> mọi thứ khác vẫn vẽ ở toạ độ 640 x 360 và trông y hệt (nền, vignette, `goalCam`, VFX); CSS `#game` giữ 640 x 360 nên `fit()` và chuột không đổi. Chữ vẽ trong canvas nét hơn (font vẽ ở 2x). Đo trong Chrome headless: 1 khung trận demo 6 người ~2.7 ms (ngân sách 16.7 ms); chưa đo trên máy yếu / bản web thật.
 17. ~~`player/*.js` vào `src/render/`~~ (xong): `src/render/player/` (`SFC.PlayerSprite`), 19 dòng trong `scripts/manifest.js` (game, sandbox, itch) ngay sau `celebrate-draw.js`. Không cờ test. `Renderer.diving` bộ đệm 96 + `PlayerSprite.diveXform`; `Renderer.airborne` lộn theo `PlayerSprite.flyRot`, bóng nằm `flyShadow`, truyền `fly` vào bản sao. `tools/sprite-v2` đọc sprite từ chỗ mới (`check.cjs` lấy thứ tự từ manifest, `cdp.mjs` không nạp nữa); cột "hôm nay" trong các bảng giờ cũng là sprite mới.
 18. ~~Online~~ (xong, không đổi giao thức): sprite mới đọc cùng các trường bản cũ đã đọc. Riêng `poseEnd` (thủ môn đứng dậy) không đồng bộ như đã ghi ở mục 4: máy khách đứng dậy hơi trễ khi cú bay ngắn.
 19. Thành mặc định: xong. Phần vẽ người 1x cũ đã xoá 2026-11-01 (user đồng ý): trong `sprites.js` `attackPose`, `limb`, `drawPunch`, `drawKick`, `drawDiagLeg`, `SHOES`, `RAINBOW`, `shoeColors`, `drawLeg`, `drawFxParticle` (cũ), `capRows`, `ringFlat`, `drawHair`, `drawFace`, `celEyes`, `celArms`, `BANDAGE` / `BLOOD`, `drawBandages`, `drawPlayer` (cũ); trong `celebrate-draw.js` `CelebrateDraw.draw1x`. (`sprites.js` 1068 -> 310 dòng; còn lại hình vẽ chung, hạt trang phục `FX` / `spawnFx` / `stepFx` / `drawFxPreview`, bóng, `drawAvatar`, `drawItemIcon`, `hiRes`).

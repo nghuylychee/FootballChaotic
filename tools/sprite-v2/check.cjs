@@ -1,4 +1,4 @@
-// Giữ phần đã duyệt không bị đổi ngoài ý muốn: đứng, chạy (kể cả nghiêng khi chạy nước rút), cú đấm, Hard attack, sút, vô-lê, đánh đầu, thủ môn đổ người, bị đá bay, trạng thái của sprite 2x (src/render/player/).
+// Giữ phần đã duyệt không bị đổi ngoài ý muốn: đứng, chạy (kể cả nghiêng khi chạy nước rút), cú đấm, Hard attack, sút, vô-lê, đánh đầu, thủ môn đổ người, bị đá bay, trạng thái của sprite v2 (src/render/player/).
 // Băm lệnh vẽ từng trường hợp rồi so với baseline.json. Không cần trình duyệt (bỏ qua bóng đổ).
 //   node tools/sprite-v2/check.cjs           so sánh, khác thì liệt kê và thoát mã 1
 //   node tools/sprite-v2/check.cjs --update  ghi lại baseline (chỉ sau khi user duyệt thay đổi)
@@ -11,7 +11,7 @@ global.SFC = {};
 require('../../config/progression.config.js');
 require('../../shared/systems/celebrate.js');
 require('../../src/render/celebrate-draw.js');
-// sprite 2x: các file src/render/player/*.js theo thứ tự trong scripts/manifest.js
+// sprite v2: các file src/render/player/*.js theo thứ tự trong scripts/manifest.js
 for (const f of require('../../scripts/manifest.js').files('game').filter((f) => f.startsWith('src/render/player/'))) require('../../' + f);
 const Sprite = global.SFC.PlayerSprite;
 const BASE = path.join(__dirname, 'baseline.json');
@@ -27,23 +27,23 @@ function record(fn) {
 const cases = {};
 for (let a = 0; a < 16; a++) {
   const facing = (a * Math.PI) / 8;
-  cases['stand/' + a] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing }, LOOK)));
-  for (let f = 0; f < 4; f++) for (const lean of [0, 2]) cases[`run/${a}/${f}/${lean}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, moving: true, anim: f / 12 + 0.001, lean }, LOOK)));
+  cases['stand/' + a] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing }, LOOK)));
+  for (let f = 0; f < 4; f++) for (const lean of [0, 1]) cases[`run/${a}/${f}/${lean}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, moving: true, anim: f / 12 + 0.001, lean }, LOOK)));
 }
 const C = SFC_CONFIG.game.combat.light;
 for (const [name, facing] of [['right', 0], ['downright', Math.PI / 4], ['down', Math.PI / 2], ['downleft', Math.PI * 0.75], ['left', Math.PI], ['up', -Math.PI / 2]])
   for (let i = 0; i * (1 / 60) < C.startup + C.recover; i++) {
     const atk = Sprite.attackPose({ atkType: 'light', atkT: i / 60 });
-    cases[`punch/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, atk }, LOOK)));
-    cases[`punch-keeper/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, atk, glove: '#ffd23f' }, LOOK)));
+    cases[`punch/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, atk }, LOOK)));
+    cases[`punch-keeper/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, atk, glove: '#ffd23f' }, LOOK)));
   }
 // Hard attack (duyệt 2026-11-01): gồng (hào quang đỏ) -> vung -> về, mọi hướng, có / không găng thủ môn
 const H = SFC_CONFIG.game.combat.hard;
 for (const [name, facing] of [['right', 0], ['downright', Math.PI / 4], ['down', Math.PI / 2], ['downleft', Math.PI * 0.75], ['left', Math.PI], ['up', -Math.PI / 2], ['upright', -Math.PI / 4]])
   for (let i = 0; i * (1 / 60) < H.windup + H.kickTime + 0.15; i++) {
     const t = i / 60, atk = Sprite.attackPose({ atkType: 'hard', atkT: t }), st = { facing, atk, windup: t < H.windup, anim: t };
-    cases[`hard/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign(st, LOOK)));
-    cases[`hard-keeper/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, st, { glove: '#ffd23f' }, LOOK)));
+    cases[`hard/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign(st, LOOK)));
+    cases[`hard-keeper/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, st, { glove: '#ffd23f' }, LOOK)));
   }
 
 // sút + vô-lê (duyệt 2026-11-01): suốt thời gian tư thế, mọi hướng, có / không găng thủ môn
@@ -51,8 +51,8 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
   for (const [name, facing] of [['right', 0], ['downright', Math.PI / 4], ['down', Math.PI / 2], ['downleft', Math.PI * 0.75], ['left', Math.PI], ['up', -Math.PI / 2], ['upright', -Math.PI / 4]])
     for (let i = 0; i * (1 / 60) < D; i++) {
       const st = { facing, atk: Sprite.attackPose({ atkType: type, atkT: i / 60 }) };
-      cases[`${type}/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, st, LOOK)));
-      cases[`${type}-keeper/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, st, { glove: '#ffd23f' }, LOOK)));
+      cases[`${type}/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, st, LOOK)));
+      cases[`${type}-keeper/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, st, { glove: '#ffd23f' }, LOOK)));
     }
 
 // đánh đầu (duyệt 2026-11-01): suốt cú nhảy, mọi hướng, có / không găng thủ môn
@@ -61,8 +61,8 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
   for (const [name, facing] of [['right', 0], ['downright', Math.PI / 4], ['down', Math.PI / 2], ['downleft', Math.PI * 0.75], ['left', Math.PI], ['up', -Math.PI / 2], ['upright', -Math.PI / 4]])
     for (let i = 0; i * (1 / 60) < D; i++) {
       const st = { facing, atk: Sprite.attackPose({ atkType: 'header', atkT: i / 60 }) };
-      cases[`header/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, st, LOOK)));
-      cases[`header-keeper/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, st, { glove: '#ffd23f' }, LOOK)));
+      cases[`header/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, st, LOOK)));
+      cases[`header-keeper/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, st, { glove: '#ffd23f' }, LOOK)));
     }
 }
 
@@ -73,7 +73,7 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
   for (const d of ['diveU', 'diveD']) for (const [name, facing] of [['right', 0], ['left', Math.PI], ['down', Math.PI / 2], ['up', -Math.PI / 2]])
     for (let i = 0; i * (1 / 60) < D; i++) {
       const t = i / 60, p = { atkType: d, atkT: t, state: t < F ? 'dash' : 'normal' }, atk = Sprite.attackPose(p), gk = Sprite.gkState(p, atk, false);
-      cases[`dive/${d}/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, atk, gk, glove: '#ffd23f' }, LOOK)));
+      cases[`dive/${d}/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, atk, gk, glove: '#ffd23f' }, LOOK)));
       if (!atk.flying) continue;
       const X = Sprite.diveXform(atk, d === 'diveU' ? 1 : -1, Math.cos(facing) >= 0 ? 1 : -1);
       cases[`divex/${d}/${name}/${i}`] = crypto.createHash('sha1').update(JSON.stringify(X, (k, v) => (typeof v === 'number' ? +v.toFixed(4) : v))).digest('hex').slice(0, 16);
@@ -87,7 +87,7 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
     for (const [phase, ks] of [['tumble', [0]], ['sprawl', [0, 0.1, 0.5, 1]], ['rise', [0, 0.25, 0.5, 0.75, 1]]])
       for (const k of ks) for (const dir of [1, -1]) {
         const fs = { phase, k, t: phase === 'sprawl' ? k * Sprite.FLY.sprawl : Sprite.FLY.sprawl + k * Sprite.FLY.rise, dir, rot0: 2.3 * dir };
-        cases[`fly/${name}/${phase}/${k}/${dir}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, stun: true, fly: fs, anim: 0.4 }, LOOK)));
+        cases[`fly/${name}/${phase}/${k}/${dir}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, stun: true, fly: fs, anim: 0.4 }, LOOK)));
         cases[`flyx/${name}/${phase}/${k}/${dir}`] = num([Sprite.flyRot(fs, 0.4), Sprite.flyShadowSpec(fs)]);
       }
 }
@@ -97,21 +97,21 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
 {
   const inj = ['wrist', 'ankle', 'toe', 'hamstring'];
   for (const [name, facing] of [['right', 0], ['downright', Math.PI / 4], ['down', Math.PI / 2], ['downleft', Math.PI * 0.75], ['left', Math.PI], ['up', -Math.PI / 2]]) {
-    for (let k = 0; k < 8; k++) cases[`stun/${name}/${k}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, stun: true, anim: k * 0.13 }, LOOK)));
+    for (let k = 0; k < 8; k++) cases[`stun/${name}/${k}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, stun: true, anim: k * 0.13 }, LOOK)));
     for (let f = -1; f < 4; f++) {
       const mv = f < 0 ? {} : { moving: true, anim: f / 12 + 0.001 };
-      cases[`keeper/${name}/${f}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, glove: '#ffd23f' }, mv, LOOK)));
-      cases[`injured/${name}/${f}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, inj }, mv, LOOK)));
-      cases[`ghost/${name}/${f}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, LOOK, { facing, shirt: '#9d7bff', shirtD: '#9d7bff', noShadow: true }, mv)));
+      cases[`keeper/${name}/${f}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, glove: '#ffd23f' }, mv, LOOK)));
+      cases[`injured/${name}/${f}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, inj }, mv, LOOK)));
+      cases[`ghost/${name}/${f}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, LOOK, { facing, shirt: '#9d7bff', shirtD: '#9d7bff', noShadow: true }, mv)));
     }
     // giơ 2 tay (duyệt 2026-11-01): bị đấm (o.hit = giây từ lúc bị đánh) · nhảy Ground Slam (o.slam) · móc xe đạp (attackPose 'bicycle')
-    for (let i = 0; i * (1 / 60) < Sprite.HIT.down; i++) cases[`hit/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, stun: true, hit: i / 60, anim: 0.3 + i / 60 }, LOOK)));
-    for (const k of [0.1, 0.3, 0.6, 1]) cases[`slam/${name}/${k}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, slam: k }, LOOK)));
-    for (let i = 0; i < 60; i++) { const atk = Sprite.attackPose({ atkType: 'bicycle', atkT: i / 60 }); cases[`bicycle/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing, atk }, LOOK))); }
+    for (let i = 0; i * (1 / 60) < Sprite.HIT.down; i++) cases[`hit/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, stun: true, hit: i / 60, anim: 0.3 + i / 60 }, LOOK)));
+    for (const k of [0.1, 0.3, 0.6, 1]) cases[`slam/${name}/${k}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, slam: k }, LOOK)));
+    for (let i = 0; i < 60; i++) { const atk = Sprite.attackPose({ atkType: 'bicycle', atkT: i / 60 }); cases[`bicycle/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, atk }, LOOK))); }
   }
 }
 
-// ăn mừng (duyệt theo đợt, A6): tư thế 2x (celPose) + điểm neo đạo cụ (celAnchors) + nâng / xoay, 3.2 s ở 30 khung / s, nhìn xuống như xem trước
+// ăn mừng (duyệt theo đợt, A6): tư thế sprite v2 (celPose) + điểm neo đạo cụ (celAnchors) + nâng / xoay, 3.2 s ở 30 khung / s, nhìn xuống như xem trước
 {
   const num = (v) => crypto.createHash('sha1').update(JSON.stringify(v, (k, x) => (typeof x === 'number' ? +x.toFixed(4) : x))).digest('hex').slice(0, 16);
   // [tên case, id động tác, thêm vào người]: _lose ngồi bệt = cầu thủ id lẻ
@@ -120,7 +120,7 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
   for (const [name, id, extra] of ids)
     for (let i = 0; i < 96; i++) {
       const t = i / 30, p = Object.assign({ celId: id, celT: t, facing: Math.PI / 2, preview: true, vx: 0, vy: 0 }, extra), cp = Sprite.celPose(id, t, p), A = Sprite.celAnchors(cp);
-      cases[`cel/${name}/${i}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({ facing: cp.face != null ? cp.face : Math.PI / 2, moving: !!cp.run, anim: t, cp }, LOOK)));
+      cases[`cel/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing: cp.face != null ? cp.face : Math.PI / 2, moving: !!cp.run, anim: t, cp }, LOOK)));
       cases[`celx/${name}/${i}`] = num([cp.lift || 0, cp.rot || 0, A.hand(0), A.hand(1), A.elbow(0), A.elbow(1), A.head, A.mouth]);
     }
 }
@@ -129,7 +129,7 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
 {
   for (const cut of ['classic', 'buzz', 'bowl', 'beanie', 'bun', 'bandana', 'halo', 'bucket', 'headphones', 'mohawk', 'helmet', 'afro', 'spiky', 'longhair', 'cap', 'santa', 'ward_trophy', 'moon_cap', 'lantern_hat', 'cowboy', 'viking', 'crown', 'laurel', 'flamehair', 'aura'])
     for (const [name, facing] of [['right', 0], ['downright', Math.PI / 4], ['down', Math.PI / 2], ['left', Math.PI], ['up', -Math.PI / 2]])
-      for (const hair of ['#1a1216', '#8a4b22']) cases[`hair/${cut}/${name}/${hair}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, LOOK, { facing, cut, hair, anim: 0.3 })));
+      for (const hair of ['#1a1216', '#8a4b22']) cases[`hair/${cut}/${name}/${hair}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, LOOK, { facing, cut, hair, anim: 0.3 })));
 }
 
 // phụ kiện mặt (duyệt theo đợt, B9): 5 hướng đứng + ăn mừng (mắt ^ ^, há miệng), 2 nhịp anim (món chuyển động), tóc đen + vàng, da sáng + tối
@@ -137,7 +137,7 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
   for (const face of ['mustache', 'bandaid', 'clown', 'nerd', 'blush', 'freckles', 'beard', 'scar', 'shades', 'mask', 'goldtooth', 'warpaint', 'eyepatch', 'monocle', 'ninja', 'cyborg', 'visor', 'skull', 'lasereyes'])
     for (const [name, facing, cp] of [['right', 0], ['downright', Math.PI / 4], ['down', Math.PI / 2], ['left', Math.PI], ['up', -Math.PI / 2], ['cheer', Math.PI / 2, { eyes: 'happy', mouth: true }]])
       for (const anim of [0.1, 0.9]) for (const [hair, skin] of [['#1a1216', '#f1c7a0'], ['#f2d16b', '#6e4428']])
-        cases[`face/${face}/${name}/${anim}/${hair}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, LOOK, { facing, face, hair, skin, anim, cp: cp || null })));
+        cases[`face/${face}/${name}/${anim}/${hair}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, LOOK, { facing, face, hair, skin, anim, cp: cp || null })));
 }
 
 // giày (duyệt hết 2026-11-01, B10): đứng 5 hướng, chạy (2 khung), Hard attack + sút (3 nhịp), 2 nhịp anim (giày đổi theo anim: cầu vồng, lửa, phản lực, lấp lánh...)
@@ -146,13 +146,13 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
     for (const [name, facing] of [['right', 0], ['downright', Math.PI / 4], ['down', Math.PI / 2], ['left', Math.PI], ['up', -Math.PI / 2]])
       for (const anim of [0.1, 0.7]) {
         const L = Object.assign({}, LOOK, { facing, shoes, anim });
-        cases[`shoes/${shoes}/${name}/${anim}/stand`] = record((c) => Sprite.draw(c, 50, 80, L));
-        for (const f of [0, 2]) cases[`shoes/${shoes}/${name}/${anim}/run${f}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, L, { moving: true, anim: f / 12 + anim })));
-        for (const [type, t] of [['hard', 0.3], ['hard', 0.45], ['shoot', 0.1]]) cases[`shoes/${shoes}/${name}/${anim}/${type}${t}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, L, { atk: Sprite.attackPose({ atkType: type, atkT: t }) })));
+        cases[`shoes/${shoes}/${name}/${anim}/stand`] = record((c) => Sprite.draw(c, 25, 40, L));
+        for (const f of [0, 2]) cases[`shoes/${shoes}/${name}/${anim}/run${f}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, L, { moving: true, anim: f / 12 + anim })));
+        for (const [type, t] of [['hard', 0.3], ['hard', 0.45], ['shoot', 0.1]]) cases[`shoes/${shoes}/${name}/${anim}/${type}${t}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, L, { atk: Sprite.attackPose({ atkType: type, atkT: t }) })));
       }
 }
 
-// hiệu ứng trang phục (duyệt theo đợt, B11): hình hạt ở lưới mịn (fx.js) theo 4 tuổi + Golden Aura trong sprite (đứng / chạy, 2 nhịp).
+// hiệu ứng trang phục (duyệt theo đợt, B11): hình hạt ở px game (fx.js) theo 4 tuổi + Golden Aura trong sprite (đứng / chạy, 2 nhịp).
 // Hạt giả lập tay (hình / màu như Sprites.FX của game, không nạp sprites.js); Phantom vẽ bằng drawPlayer (đã giữ ở phần đứng / chạy)
 {
   const FXQ = { sparkle: ['star', 1, '#ffffff'], bubbles: ['ring', 0, '#9fe8ff'], leaves: ['px', 0, '#6bff4f'], hearts: ['heart', 0, '#ff5a9e'], snow: ['px', 0, '#ffffff'],
@@ -163,7 +163,7 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
     for (const k of [1, 0.7, 0.4, 0.15]) for (const phase of [1.3, 4.1])
       cases[`fx/${kind}/${k}/${phase}`] = record((ctx) => { ctx.save = ctx.restore = ctx.scale = () => {}; Sprite.drawFxParticle(ctx, { k: kind, shape, add: !!add, c, x: 30, y: 40, z: 6, t: k, max: 1, s: 1, phase }, null); });
   for (const anim of [0.1, 0.7]) for (const moving of [false, true])
-    cases[`fx/aura/${anim}/${moving}`] = record((c) => Sprite.draw(c, 50, 80, Object.assign({}, LOOK, { facing: Math.PI / 2, fx: 'aura', anim, moving })));
+    cases[`fx/aura/${anim}/${moving}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({}, LOOK, { facing: Math.PI / 2, fx: 'aura', anim, moving })));
 }
 
 // màu đội ra màu vẽ (B12, duyệt 2026-11-01): kitColors trong player.js. Ca lấy từ config đội thật (băng đô trùng tóc, găng trùng da, quần gần đen, ca thường)

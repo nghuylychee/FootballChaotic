@@ -1,11 +1,11 @@
-/* PlayerSprite · draw.js — Ghép cầu thủ theo hướng mặt: draw(ctx, X, Y, o) ở px mịn (đứng, chạy, ra đòn, ăn mừng, trạng thái).
+/* PlayerSprite · draw.js — Ghép cầu thủ theo hướng mặt: draw(ctx, X, Y, o) ở px game (đứng, chạy, ra đòn, ăn mừng, trạng thái).
  * Nạp theo thứ tự trong scripts/manifest.js (classic script, không module): mỗi file gắn hàm vào SFC.PlayerSprite.
  */
 window.SFC = window.SFC || {};
 
 (function () {
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
-  const { ARM_DY, ARM_L, ARM_R, BANDAGE, BLOOD, BOB, BODY, FLASH, INK, RUN_L, RUN_R, at, crossLegs, lerp,
+  const { ARM_DY, ARM_L, ARM_R, BANDAGE, BLOOD, BOB, BODY, FLASH, INK, RUN_L, RUN_R, at, crossLegs, lerp, snapPx,
     discW, drawKickLeg, face, headOf, kickArm, kickArmsOn, kickRest, kickTable, legPose, offArm, offBehind,
     offOn, palette, punch, punchLean, rectW, rowOf, runLeg, shadow, sitLegs, stamp, headerPose, headerLegs, headerArms, headerImpact, diveArms, diveLegs, diveHeadDy, diveArmK, diveCrouch, diveLegPose, flyArms, flyLegs, flyPose } = Sprite;
   /* ---------- cầu thủ theo hướng mặt: đứng yên (đúng v2), chạy, ra đòn, ăn mừng ---------- */
@@ -33,7 +33,7 @@ window.SFC = window.SFC || {};
     const runT = o.gait === 'heavy' ? (o.gaitT || 0) * 0.75 : o.anim || 0;
     const f = o.moving && !o.fly && !(atk && (atk.header || atk.leg != null)) ? Math.floor(runT * 12) % 4 : -1;
     const B = BODY;
-    // ra đòn: góc nhìn của tư thế · thân ngả / lao theo cú đấm, cú đá (px mịn; x theo hình nhìn phải)
+    // ra đòn: góc nhìn của tư thế · thân ngả / lao theo cú đấm, cú đá (px; x theo hình nhìn phải)
     const sideView = view === 'side' || view === 'diag' || bd;
     // bước riêng khi nhìn ngang / chéo (sprint.js): chạy nước rút / bước nặng · gfr = khung đang vẽ · gs = hướng ngang (lật khi nhìn trái)
     const gaitOn = !!o.gait && f >= 0 && !atk && !cp && !o.fly && sideView, G = gaitOn ? Sprite.GAITS[o.gait] : null;
@@ -43,18 +43,18 @@ window.SFC = window.SFC || {};
     // Hard attack đá bằng chân phải của cầu thủ (user 2026-11-01). Hình chân trong KICK: chân đá bên trái màn hình khi nhìn ngang (đúng chân phải),
     // bên phải màn hình khi nhìn xuống / lên -> nhìn xuống (cầu thủ quay mặt vào máy quay, chân phải ở bên trái màn hình) lật riêng chân
     const km = view === 'front' ? !m : m;
-    // Hard attack: thân lao tới (chỉ nhìn ngang / chéo) + khuỵu xuống (px mịn)
-    const [lx, ly] = pe != null ? punchLean(view, pe) : kickLeg ? [sideView ? Math.round(atk.kbx) : 0, Math.round(atk.kc)] : hp ? [Math.round(hp.bx), Math.round(hp.c)] : atk && atk.dive ? [0, Math.round(diveCrouch(atk))] : o.fly ? [0, flyPose(o.fly).c] : [0, 0];
+    // Hard attack: thân lao tới (chỉ nhìn ngang / chéo) + khuỵu xuống (nguyên ô: mọi độ lệch qua snapPx)
+    const [lx, ly] = pe != null ? punchLean(view, pe) : kickLeg ? [sideView ? snapPx(atk.kbx) : 0, snapPx(atk.kc)] : hp ? [snapPx(hp.bx), snapPx(hp.c)] : atk && atk.dive ? [0, diveCrouch(atk)] : o.fly ? [0, flyPose(o.fly).c] : [0, 0];
     const step = pe != null && pe > 0.5 && sideView;   // đấm duỗi quá nửa: chân trước bước tới 1 ô, gót chân sau nhấc lên
     const punchArm = atk && atk.fist != null, off = punchArm && offOn(pe, view);   // đấm: tay kia vẽ riêng (offArm) thay cho tay đứng
     // đấm bằng tay trái của cầu thủ (user 2026-11-01): hình đấm vẽ tay bên phải màn hình = tay trái khi nhìn xuống / ngang,
     // nhưng nhìn lên (thấy lưng) bên phải màn hình là tay phải -> nhìn lên lật riêng 2 tay
     // chéo lên: hình đấm vẽ nắm tay ra trước (bên phải hình) như nhìn ngang, tay kia (tay gần bên hướng mặt) vẽ lật (om)
     const pm = view === 'back' ? !m : m, om = bd ? !m : pm;
-    // bật nhảy: khop (px mịn: Hard attack, sút, vô-lê, đánh đầu). Bóng thu nhỏ theo độ cao (đánh đầu: theo bậc 0.1)
-    const khop = kickLeg || hp ? Math.round(atk.khop) : 0, Yf = Y - khop;
+    // bật nhảy: khop (px: Hard attack, sút, vô-lê, đánh đầu). Bóng thu nhỏ theo độ cao (đánh đầu: theo bậc 0.1)
+    const khop = kickLeg || hp ? snapPx(atk.khop) : 0, Yf = Y - khop;
     if (!o.noShadow && gk && gk.shadow === 'long') Sprite.lieShadow(ctx, X, Y, m ? -1 : 1);   // nằm sau khi đổ người: bóng đổ phủ cả thân
-    else if (!o.noShadow) shadow(ctx, X, Y, hp ? Math.max(0.6, Math.round((1 - khop / 60) * 10) / 10) : khop >= 3 ? 0.85 : 1);
+    else if (!o.noShadow) shadow(ctx, X, Y, hp ? Math.max(0.6, Math.round((1 - khop / 30) * 10) / 10) : khop >= 2 ? 0.85 : 1);
     if (o.fx === 'aura') Sprite.drawAura(ctx, X, Y, o.anim || 0);   // Golden Aura (fx.js): quầng vàng dưới chân, trên bóng, dưới chân
     // Hard attack đang gồng: hào quang đỏ nhấp nháy giữa thân, vẽ sau người (không che tư thế lấy đà)
     if (o.windup) {
@@ -101,19 +101,19 @@ window.SFC = window.SFC || {};
       feet.L = [step ? (m ? at(toePart(tl), -5) : at(B.KICK_F, -4)) : at(toePart(tl), -4), X, Yf]; stamp(ctx, X, Yf, feet.L[0], pal);
       feet.R = [step ? (m ? at(B.KICK_F, 1) : at(toePart(tr), 2)) : at(toePart(tr), 1, -1), X, Yf]; stamp(ctx, X, Yf, feet.R[0], pal);
     } else {
-      const k = sd ? (diag || bd ? 1 : 2) : 0;
+      const k = sd ? (diag || bd ? 0.5 : 1) : 0;
       const legs = [[RUN_L[f], tl, -4], [RUN_R[f], tr, 1]];
       // chân nhấc / đá sau vẽ trước, chân chạm đất đè lên
       legs.sort((a, b) => ('KL'.includes(b[0]) ? 1 : 0) - ('KL'.includes(a[0]) ? 1 : 0));
       for (const [ph, toe, L] of legs) {
-        const [part, dx, dy] = runLeg(B, ph, toe, back, sd, k, bd), pt = at(part, L);
+        const [part, dx0, dy0] = runLeg(B, ph, toe, back, sd, k, bd), pt = at(part, L), dx = snapPx(dx0), dy = snapPx(dy0);
         stamp(ctx, X + dx, Yf + dy, pt, pal);
         feet[L === 1 ? 'R' : 'L'] = [pt, X + dx, Yf + dy];
       }
     }
-    const lean = gaitOn ? gs * G.lean[view] : (o.lean || 0) + ((gk && gk.lean) || 0) + ((cp && cp.lean) || 0), drop = (cp && cp.drop) || (gk && gk.drop) || 0;
-    const heavyDrop = o.gait === 'heavy' && !gaitOn && f >= 0 && f % 2 === 0 ? 2 : 0;
-    const Yb = Yf + (gaitOn ? gfr[2] : f < 0 ? 0 : BOB[f]) + drop * 2 + heavyDrop + ly, Xb = X + lean + (m ? -lx : lx);
+    const lean = snapPx(gaitOn ? gs * G.lean[view] : (o.lean || 0) + ((gk && gk.lean) || 0) + ((cp && cp.lean) || 0)), drop = (cp && cp.drop) || (gk && gk.drop) || 0;
+    const heavyDrop = o.gait === 'heavy' && !gaitOn && f >= 0 && f % 2 === 0 ? 1 : 0;
+    const Yb = Yf + snapPx((gaitOn ? gfr[2] : f < 0 ? 0 : BOB[f]) + drop) + heavyDrop + ly, Xb = X + lean + (m ? -lx : lx);
     const kLeg = kickLeg && !kickRest(atk) ? legPose(view, atk.kp, atk.u, kickTable(atk)) : null, kArms = kickLeg && kickArmsOn(atk);
     if (off && offBehind(pe, view)) offArm(ctx, Xb, Yb, om, view, pe, pal, hand);   // tay kia nằm sau thân
     if (kLeg && !kLeg.over) drawKickLeg(ctx, Xb, Yb, km, view, atk, kLeg, pal);   // chân đá sau thân (thu ra sau / đá ra xa máy quay)
@@ -144,10 +144,10 @@ window.SFC = window.SFC || {};
     }
     stamp(ctx, Xb, Yb, torso, pal);
     if (cp && cp.legs === 'sit') sitLegs(ctx, X, Yf, m, pal);
-    if (cp && cp.legs === 'cross') crossLegs(ctx, X, Yf + 4, pal);   // xếp bằng: 2 ống chân vắt trước quần, che quần, hạ 2 ô cho giày 2 đầu nằm dưới tay (user 2026-11-01)
+    if (cp && cp.legs === 'cross') crossLegs(ctx, X, Yf + 2, pal);   // xếp bằng: 2 ống chân vắt trước quần, che quần, hạ 2 ô cho giày 2 đầu nằm dưới tay (user 2026-11-01)
     if (kLeg && kLeg.over) drawKickLeg(ctx, Xb, Yb, km, view, atk, kLeg, pal);   // chân đá vung qua trước thân
 
-    // tay: chéo xuống = tay gần đủ + cục da tay xa (lật khi chéo trái) · còn lại 2 tay đủ. Chạy: vung lên xuống nửa px, tay sau ngắn lại
+    // tay: chéo xuống = tay gần đủ + cục da tay xa (lật khi chéo trái) · còn lại 2 tay đủ. Chạy: vung lên xuống 1 px, tay sau ngắn lại
     // thủ môn: 2 hàng da cuối của bàn tay thành găng (chấm sáng góc trên ngoài)
     // đổ người: tay vẽ riêng tới khi gần buông hẳn lúc đứng dậy (lúc đó vẽ tay đứng thường cho khớp khung đứng)
     const dive = atk && atk.dive && diveArmK(atk) >= 0.08, celArms = cp && (cp.arms || cp.ang);
@@ -219,12 +219,13 @@ window.SFC = window.SFC || {};
       }
     }
 
-    // đầu: choáng = lắc ngang · ăn mừng = headDy · đấm = đầu dẫn trước thân nửa px (nhìn xuống: cúi nửa px)
+    // đầu: choáng = lắc ngang · ăn mừng = headDy · đấm = đầu dẫn trước thân 1 px (nhìn xuống: cúi 1 px)
     const hxo = o.stun && !o.fly ? Math.round(Math.sin((o.anim || 0) * 20)) : 0;
-    // đá hết tầm (nhìn ngang / chéo): đầu ngả ra sau nửa px, ngược chiều chân
+    // đá hết tầm (nhìn ngang / chéo): đầu ngả ra sau 1 px, ngược chiều chân
     const hlx = punchArm && pe > 0.5 && sideView ? (m ? -1 : 1) : kickLeg && sideView && atk.kp === 'go' && atk.u > 0.5 ? (m ? 1 : -1) : 0, hly = punchArm && pe > 0.5 && view === 'front' ? 1 : 0;
-    // đánh đầu: đầu ngả sau ở đỉnh nhảy rồi lao tới / cúi xuống lúc gật (px mịn)
-    const Xh = Xb + hxo * 2 + hlx + (hp ? Math.round(m ? -hp.hx : hp.hx) : 0) + (gaitOn ? gs * G.head[view] : 0), Yh = Yb + B.dy + ((cp && cp.headDy) || 0) * 2 + hly + (hp ? Math.round(hp.hy) : 0) + (atk && atk.dive ? diveHeadDy(atk) : 0);
+    // đánh đầu: đầu ngả sau ở đỉnh nhảy rồi lao tới / cúi xuống lúc gật (nguyên ô)
+    const hhx = hp ? snapPx(hp.hx) : 0;
+    const Xh = Xb + hxo + hlx + (m ? -hhx : hhx) + (gaitOn ? gs * G.head[view] : 0), Yh = Yb + B.dy + snapPx((cp && cp.headDy) || 0) + hly + (hp ? snapPx(hp.hy) : 0) + (atk && atk.dive ? diveHeadDy(atk) : 0);
     if (celArms && cp.armsBehind) Sprite.celArms(ctx, Xb, Yb, cp, pal, hand);   // tay ra sau đầu (đội thua ôm đầu): vẽ trước đầu
     // tóc / mũ (hair.js): classic (mặc định) = đầu A đã duyệt, kiểu khác = đầu hói + kiểu tóc
     if (o.cut && o.cut !== 'classic') Sprite.drawHead(ctx, Xh, Yh, back, o.cut, o, pal, fx, fy, bd);

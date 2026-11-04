@@ -7,7 +7,7 @@
   const S = SFC.PlayerSprite, P = Math.PI;
   const { KICKS, BODY, BOB, limbCells, blockCells, drawCells, kickTimeline, kickArmsOn, lerp, easeOut, easeIO, clamp01 } = S;
   const GLOVE = ['WHH', 'HHH', 'HHH'];
-  const EMPTY = { x: 0, y: 0, scale: 2, rows: [] };
+  const EMPTY = { x: 0, y: 0, rows: [] };
 
   /* ---------- ôm bóng ---------- */
   // bóng (tâm, ô thế giới = px game, tính từ gốc chân, hình nhìn phải) + 2 tay gập [vai, khuỷu, bàn tay]; tay 0 = bên trái hình
@@ -35,10 +35,10 @@
     const G = i ? GLOVE.map((r) => r.split('').reverse().join('')) : GLOVE;
     drawCells(ctx, X, Y, blockCells(new Map(), hx + (i ? 0 : -1), hy - 1, G, { W: '#ffffff', H: glove }), mir);
   }
-  // bóng đang ôm (như drawBall của game, không bóng đổ), vẽ ở lưới mịn để nhấp theo thân nửa px · (bx, by) tâm theo ô thế giới
+  // bóng đang ôm (như drawBall của game, không bóng đổ), nhấp theo thân cả nửa px (bảng vẽ gấp đôi) · (bx, by) tâm theo ô thế giới
   function heldBall(ctx, X, Y, mir, bx, by) {
-    const cx = mir ? X - 2 * Math.round(bx) : X + 2 * Math.round(bx), cy = Y + 2 * Math.round(by);
-    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + 2 * x, cy + 2 * y, 2 * w, 2 * h); };
+    const cx = mir ? X - Math.round(bx) : X + Math.round(bx), cy = Y + Math.round(by);
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + x, cy + y, w, h); };
     const disc = (r, c) => { const r2 = r * r + r / 2; for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r2 - dy * dy)); px(-w, dy, 2 * w + 1, 1, c); } };
     disc(4, '#140c16'); disc(3, '#f4f4f4');
     px(1, 1, 2, 2, '#c7c7d2'); px(2, 0, 1, 1, '#222'); px(-2, 0, 1, 1, '#222'); px(-1, -2, 1, 1, '#ffffff');
@@ -62,7 +62,7 @@
   // arms = khoá góc 2 tay [t, tay 0, tay 1] (0 trước / phải, π/2 xuống, π sau / trái)
   const RELEASE = {
     gkPunt: {
-      T: { w: 0.24, s: 0.08, f: 0.18, o: 0.2, cw: 1, lb: 1, lf: -1, hop: 3, calm: true }, toss: 0.15,
+      T: { w: 0.24, s: 0.08, f: 0.18, o: 0.2, cw: 0.5, lb: 0.5, lf: -0.5, hop: 1.5, calm: true }, toss: 0.15,
       // đỉnh cú tung nằm trước mặt (ngang) / cạnh đầu (xuống): đầu to, tung thẳng lên thì bóng che mặt
       b: { side: [[10, -13], [9, -8]], front: [[10, -13], [-2, -6]] },
       fly: { side: (u) => [120 * u, 0, 300 * u - 320 * u * u], front: (u) => [-10 * u, 160 * u, 260 * u - 300 * u * u] },
@@ -70,7 +70,7 @@
         front: [[0, 0.9, P - 0.9], [0.15, P / 2 - 0.2, -0.7], [0.29, P - 1.0, -0.9], [0.5, P - 1.2, -0.8], [0.7, P / 2, P / 2]] },
     },
     gkVolley: {
-      T: { w: 0.18, s: 0.06, f: 0.1, o: 0.14, lf: 1, calm: true }, toss: 0.11,
+      T: { w: 0.18, s: 0.06, f: 0.1, o: 0.14, lf: 0.5, calm: true }, toss: 0.11,
       b: { side: [[9, -11], [9, -5]], front: [[9, -11], [-2, -3]] },
       fly: { side: (u) => [280 * u, 0, 40 * u - 160 * u * u], front: (u) => [0, 230 * u, 30 * u - 160 * u * u] },
       arms: { side: [[0, 0.4, 0.5], [0.11, P / 2 + 0.2, -0.3], [0.22, P - 0.8, 0.1], [0.45, P / 2, P / 2]],
@@ -101,15 +101,15 @@
   //       ball: { x, y } bóng đang ôm (ô, theo hình nhìn phải) | { x, gy, z, roll } bóng bay (px game, có bóng đổ) }
   //       cp: thân hạ theo cp.drop nhưng tay vẫn như game (tay đổ người / tay đứng) — không tắt tay
   function figure(c, x, y, face, base, st) {
-    const m = Math.cos(face) < 0, X = 2 * x, Y = 2 * y, drop = st.cp ? st.cp.drop || 0 : st.drop || 0, own = !st.natural && !st.cp;
+    const m = Math.cos(face) < 0, X = x, Y = y, drop = st.cp ? st.cp.drop || 0 : st.drop || 0, own = !st.natural && !st.cp;
     const o = Object.assign({}, base, st.o || {}, { facing: face });
     if (st.cp) o.cp = st.cp;
     else if (own) o.cp = { ang: [null, null], drop, legs: st.legs };   // tay đứng tắt (celArms vẽ tay trống) · khuỵu theo drop
-    // tay / bóng vẽ riêng bám thân: thân nhấp theo bước chạy, hạ theo drop, ngả ngang theo o.lean (px mịn, như draw.js)
-    const pal = S.palette(o), bob = o.moving ? BOB[Math.floor((o.anim || 0) * 12) % 4] : 0, Yb = Y + bob + drop * 2, Xa = X + (o.lean || 0);
+    // tay / bóng vẽ riêng bám thân: thân nhấp theo bước chạy, hạ theo drop, ngả ngang theo o.lean (px, như draw.js; không làm tròn)
+    const pal = S.palette(o), bob = o.moving ? BOB[Math.floor((o.anim || 0) * 12) % 4] : 0, Yb = Y + bob + drop, Xa = X + (o.lean || 0);
     const flyBall = () => SFC.Sprites.drawBall(c, { x: x + (m ? -st.ball.x : st.ball.x), y: y + st.ball.gy, z: Math.max(0, st.ball.z), roll: st.ball.roll || 0, fx: {} });
     if (st.ballFirst && st.ball && st.ball.gy != null) flyBall();   // bóng bay sau lưng người (vẽ trước người)
-    c.save(); c.scale(0.5, 0.5);
+    c.save();
     const keep = [BODY.arm, BODY.armBack, BODY.bump];
     if (own) { BODY.arm = EMPTY; BODY.armBack = EMPTY; BODY.bump = EMPTY; }
     try { S.draw(c, X, Y, o); } finally { [BODY.arm, BODY.armBack, BODY.bump] = keep; }
@@ -248,13 +248,13 @@
     let q = r - fly;
     if (q < G.land + G.lie) {
       // nằm (bóng đổ dài theo thân; bay xuống thì thân nằm 2 phía chỗ chạm đất, đầu về phía máy quay)
-      const st = { cp: { drop: q < G.land / 2 ? 2 : 1 }, o: { atk: { dive: true, flying: false, dk: 1, stage: 'lie' }, lean: side * 2, noShadow: true } };
+      const st = { cp: { drop: q < G.land / 2 ? 2 : 1 }, o: { atk: { dive: true, flying: false, dk: 1, stage: 'lie' }, lean: side, noShadow: true } };
       SFC.Sprites.ellipse(c, Math.round(x + side), Math.round(up ? y - 10 : y - 6), 8, 11, 'rgba(0,0,0,0.4)');
       return up ? figure(c, x, y, face, base, st) : drawFlip(c, x, y - 9, face, base, st);
     }
     q -= G.land + G.lie;
-    if (q < G.fours) return figure(c, x, y, face, base, { legs: 'kneel', drop: 3, angles: [1.1, 0.8], o: { lean: side * 3 } });
-    if ((q -= G.fours) < G.rise) return figure(c, x, y, face, base, { legs: 'kneel', drop: 2, angles: [1.35, 1.15], o: { lean: side } });
+    if (q < G.fours) return figure(c, x, y, face, base, { legs: 'kneel', drop: 3, angles: [1.1, 0.8], o: { lean: side * 1.5 } });
+    if ((q -= G.fours) < G.rise) return figure(c, x, y, face, base, { legs: 'kneel', drop: 2, angles: [1.35, 1.15], o: { lean: side / 2 } });
     if ((q -= G.rise) < G.kneel) return figure(c, x, y, face, base, { legs: 'kneel', drop: 2, pose: KNEEL_ARMS });
     // khuỵu: chân dạng khuỵu (dg 0.85 -> 'bend'), thân hạ 1 ô, tay đứng có găng
     if ((q -= G.kneel) < G.crouch) return figure(c, x, y, face, base, { cp: { drop: 1 }, o: { atk: { dive: true, flying: false, dk: 0, stage: 'crouch' } } });

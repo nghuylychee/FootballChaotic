@@ -59,7 +59,7 @@ window.SFC = window.SFC || {};
   // nhân vật 40x44 1:1 (chân ở y)
   function figure(look, kit, x, y, t, facing) {
     if (!buf) { buf = document.createElement('canvas'); buf.width = 40; buf.height = 44; }
-    SFC.Sprites.drawAvatar(buf, look, kit, t, facing, null, true);   // flat: cảnh pixel 1x
+    SFC.Sprites.drawAvatar(buf, look, kit, t, facing);
     L.drawImage(buf, Math.round(x - 20), Math.round(y - 44));
   }
 

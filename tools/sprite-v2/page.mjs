@@ -1,4 +1,4 @@
-// Trang xem sprite 2x -> out/site/sprites.html (+ out/site/sheets/*.png). Đọc ảnh của player.mjs (chạy) và pilot.mjs (ra đòn); chạy 2 script đó trước.
+// Trang xem sprite v2 -> out/site/sprites.html (+ out/site/sheets/*.png). Đọc ảnh của player.mjs (chạy) và pilot.mjs (ra đòn); chạy 2 script đó trước.
 // Gọn: phần đang làm (nhóm 'review' trong pilot.mjs) có vòng lặp + khung chính; phần đã duyệt chỉ 1 hàng vòng lặp mỗi động tác.
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, rmSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -40,7 +40,7 @@ ${css}.flipn { animation-name: flipn; animation-iteration-count: infinite; }
   <div class="top">
     <div>
       <h1>Sprite <em>v2</em></h1>
-      <p class="lede">The player on the 2x grid, drawn by the new sprite inside the dev build with the game’s own timing. Loops play at game speed.</p>
+      <p class="lede">The player sprite, drawn inside the dev build with the game’s own timing. Loops play at game speed.</p>
     </div>
     <dl class="facts">
       <dt>in review</dt><dd>${REVIEW.short}</dd>

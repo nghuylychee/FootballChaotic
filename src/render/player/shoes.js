@@ -1,8 +1,9 @@
 /* PlayerSprite · shoes.js — Giày (slot shoes, 20 món; kicks = giày trắng mặc định, không qua đây) cho mọi tư thế chân.
  * Chân nào cũng tô bằng bảng màu O (tất) · G (giày) · g (đế) · J (da ống chân) nên giày chỉ cần thay 4 màu đó là có ở đứng, chạy, đá, sút, đánh đầu,
- * đổ người, bị đá bay, ăn mừng. Màu có thể là "đối tượng vẽ" { base, paint } (base.js fill()): tô từng px mịn trong ô theo mẫu (dây giày, sọc, rằn ri,
- * chấm sáng), chọn màu theo chân phải / trái của cầu thủ (giày lệch màu, cầu vồng). Đế (g) ghi lại chỗ đã tô -> cuối draw() vẽ đồ dưới đế / quanh giày
+ * đổ người, bị đá bay, ăn mừng. Màu có thể là "đối tượng vẽ" { base, paint } (base.js fill()): tô từng ô game theo mẫu (sọc, rằn ri, vân gỗ),
+ * chọn màu theo chân phải / trái của cầu thủ (giày lệch màu, cầu vồng). Đế (g) ghi lại chỗ đã tô -> cuối draw() vẽ đồ dưới đế / quanh giày
  * (bánh xe, đinh, đế gỗ, phản lực, lửa, quầng sáng, lấp lánh, hơi lạnh) đúng chỗ bàn chân ở mọi tư thế.
+ * Chỉ px game (user 2026-11-04 bỏ nửa px): giày chỉ 2 - 3 ô mỗi hàng nên mẫu trong ô (dây giày, chấm sáng, mép sẫm) của bản nửa px bỏ đi, mỗi hàng 1 màu.
  * Nạp theo thứ tự trong scripts/manifest.js (classic script, không module): mỗi file gắn hàm vào SFC.PlayerSprite.
  */
 window.SFC = window.SFC || {};
@@ -13,16 +14,16 @@ window.SFC = window.SFC || {};
   // trạng thái của lần draw() đang chạy (đồng bộ, 1 người 1 lúc): gốc X, chân phải ở cột trái màn hình?, anim, các chữ nhật đế đã tô
   let C = null;
   function shoeBegin(X, o, rightOnL) { C = { X, rightOnL, anim: o.anim || 0, soles: [], st: STYLES[o.shoes] || null }; }
-  const right = (x) => (x < C.X) === C.rightOnL;   // px mịn x thuộc chân phải của cầu thủ
+  const right = (x) => (x < C.X) === C.rightOnL;   // cột x thuộc chân phải của cầu thủ
   const hash = (x, y) => (((x * 73856093) ^ (y * 19349663)) >>> 0);
-  // đối tượng vẽ: fn(i, j, x, y) -> màu của px mịn (i, j = vị trí trong ô 2 x 2 của lưới thế giới; ô px mịn lẻ thì theo chẵn / lẻ của x, y), null = base
+  // đối tượng vẽ: fn(cx, cy, x) -> màu của ô game (cx, cy = toạ độ ô, x = cột của ô), null = base
   function pat(base, fn) {
     return {
       base,
       paint(ctx, x, y, w, h) {
         for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
-          const ax = x + i, ay = y + j, li = w === 1 ? ax & 1 : i, lj = h === 1 ? ay & 1 : j;
-          ctx.fillStyle = fn(li, lj, ax, ay) || base; ctx.fillRect(ax, ay, 1, 1);
+          const ax = x + i, ay = y + j;
+          ctx.fillStyle = fn(ax, ay, ax) || base; ctx.fillRect(ax, ay, 1, 1);
         }
       },
     };
@@ -34,102 +35,105 @@ window.SFC = window.SFC || {};
   }
   const RAINBOW = ['#ff3d5a', '#ff8a3f', '#ffe14f', '#6bff4f', '#3ff6ff', '#9d7bff'];
   const add = (ctx, f) => { ctx.globalCompositeOperation = 'lighter'; f(); ctx.globalCompositeOperation = 'source-over'; };
-  const dot = (ctx, x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+  // ô game: x, y = px game, w, h = số ô
+  const cell = (ctx, x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
 
   // mỗi kiểu: pal(o) -> { O, G, g, J } (màu hoặc đối tượng vẽ, thiếu = giữ mặc định) · addon(ctx, foot, k): vẽ quanh 1 bàn chân
-  // foot = { x0, x1, y0, y1 } (px mịn, khung đế đã tô; y1 = mép dưới đế, ngay dưới là hàng viền), flat = đế nằm ngang (bàn chân trên đất / ngang)
+  // foot = { x0, x1, y0, y1 } (px game, khung đế đã tô; y1 = mép dưới đế, ngay dưới là hàng viền 1 ô), flat = đế nằm ngang (bàn chân trên đất / ngang)
   const STYLES = {
-    // dép lê: lộ cổ chân + ngón chân, quai xanh vắt ngang mu (hàng trên của giày), ngón chân có khe tối, đế xanh
-    slides: { pal: (o) => ({ O: o.skin, G: pat(o.skin, (i, j) => (j === 0 ? '#3b82f6' : i === 1 ? shade(o.skin, 0.2) : null)), g: '#2d5bd1' }) },
-    // giày đỏ: chấm dây giày trắng, góc dưới tối, đế trắng viền xám
-    reds: { pal: () => ({ G: pat('#d7263d', (i, j) => (j === 0 && i === 0 ? '#ffffff' : j === 1 && i === 1 ? '#a51c30' : null)), g: pat('#f2f2f2', (i, j) => (j === 1 ? '#c9ced8' : null)) }) },
-    // giày vải xanh: dây trắng ở hàng trên, góc dưới tối, đế cao su trắng mép xám (đế sọc xanh trông như tất sọc)
-    canvas: { pal: () => ({ G: pat('#2f6fd1', (i, j) => (j === 0 && i === 1 ? '#ffffff' : j === 1 && i === 0 ? '#2459ab' : null)), g: pat('#ffffff', (i, j) => (j === 1 ? '#d5dae4' : null)) }) },
-    // ủng da nâu cao cổ: phủ cả ống chân, mép cổ ủng sáng, dây buộc kem ở cổ chân, đế sẫm
-    boots: { pal: () => ({ J: pat('#6b4423', (i, j) => (j === 0 ? '#8a5a30' : null)), O: pat('#6b4423', (i, j) => (j === 0 && i === 0 ? '#e8d3a0' : null)),
-      G: pat('#6b4423', (i, j) => (i === 0 && j === 0 ? '#8a5a30' : null)), g: '#2e1a0e' }) },
-    // chân trần: tất / giày thành da, khe ngón chân tối, lòng bàn chân hơi sẫm
-    barefoot: { pal: (o) => ({ O: o.skin, G: pat(o.skin, (i, j) => (j === 1 && i === 1 ? shade(o.skin, 0.28) : null)), g: shade(o.skin, 0.14) }) },
-    // ủng mưa vàng: phủ ống chân, viền cổ ủng sẫm ở mép trên (chấm sáng từng ô trông như bàn cờ), đế nâu vàng
-    rainboot: { pal: () => ({ J: pat('#ffd23f', (i, j) => (j === 0 ? '#e0a820' : null)), O: '#ffd23f', G: '#ffd23f', g: '#9a6a10' }) },
-    // tất ống cao sọc: kéo lên ống chân, sọc trắng / đỏ xen kẽ từng px (đứng không có hàng ống chân: cổ chân đỏ trên trắng dưới), giày đen đế xám
-    socks: { pal: () => ({ J: pat('#f0f0f0', (i, j) => (j === 1 ? '#d7263d' : null)), O: pat('#d7263d', (i, j) => (j === 1 ? '#f0f0f0' : null)),
-      G: pat('#1a1216', (i, j) => (j === 0 && i === 0 ? '#4a4f63' : null)), g: '#5a6075' }) },
-    // giày cổ cao đen: cổ giày đen phủ cổ chân (mép đệm xám), thân đen, dải cao su trắng ở mũi, đế cam (sẫm dưới). Chấm trắng nào cũng thành cặp mắt
-    hightop: { pal: () => ({ O: pat('#262a36', (i, j) => (j === 0 ? '#4a4f63' : null)), G: pat('#262a36', (i, j) => (j === 1 ? '#f2f2f2' : null)),
-      g: pat('#ff8a3f', (i, j) => (j === 1 ? '#d9601a' : null)) }) },
-    // guốc gỗ: thân gỗ vàng có vân sẫm, đế gỗ dày 2 hàng: đè lên hàng viền dưới đế, viền mực dời xuống 1 hàng (khối riêng dưới đế trông như 2 chiếc giày chồng nhau)
+    // dép lê: lộ cổ chân, quai xanh vắt ngang mu, đế xanh sẫm
+    slides: { pal: (o) => ({ O: o.skin, G: '#3b82f6', g: '#2d5bd1' }) },
+    // giày đỏ, đế trắng
+    reds: { pal: () => ({ G: '#d7263d', g: '#f2f2f2' }) },
+    // giày vải xanh, đế cao su trắng (đế sọc xanh trông như tất sọc)
+    canvas: { pal: () => ({ G: '#2f6fd1', g: '#ffffff' }) },
+    // ủng da nâu cao cổ: phủ cả ống chân, cổ chân sáng hơn (mép cổ ủng), đế sẫm
+    boots: { pal: () => ({ J: '#6b4423', O: '#8a5a30', G: '#6b4423', g: '#2e1a0e' }) },
+    // chân trần: tất / giày thành da, lòng bàn chân hơi sẫm
+    barefoot: { pal: (o) => ({ O: o.skin, G: o.skin, g: shade(o.skin, 0.14) }) },
+    // ủng mưa vàng: phủ ống chân, cổ ủng sẫm (chấm sáng từng ô trông như bàn cờ), đế nâu vàng
+    rainboot: { pal: () => ({ J: '#e0a820', O: '#ffd23f', G: '#ffd23f', g: '#9a6a10' }) },
+    // tất ống cao: kéo lên ống chân trắng, cổ chân đỏ (sọc từng hàng không được: đứng chỉ thấy 1 hàng tất, mà hàng theo toạ độ thì nháy khi chạy lên xuống),
+    // giày đen đế xám
+    socks: { pal: () => ({ J: '#f0f0f0', O: '#d7263d', G: '#1a1216', g: '#5a6075' }) },
+    // giày cổ cao đen: cổ giày xám đệm phủ cổ chân, thân đen, đế cam (chấm trắng nào cũng thành cặp mắt)
+    hightop: { pal: () => ({ O: '#4a4f63', G: '#262a36', g: '#ff8a3f' }) },
+    // guốc gỗ: thân gỗ vàng có vân sẫm, đế gỗ dày: thêm 1 hàng gỗ đè lên hàng viền dưới đế, viền mực dời xuống 1 hàng
+    // (khối riêng dưới đế trông như 2 chiếc giày chồng nhau)
     clogs: {
-      pal: () => ({ G: pat('#c7a26a', (i, j, x, y) => (hash(x, y) % 5 === 0 ? '#a8844e' : i === 0 && j === 0 ? '#e0c088' : null)), g: '#8a6a3a' }),
-      addon(ctx, f) { if (!f.flat) return; const w = f.x1 - f.x0; dot(ctx, f.x0, f.y1, w, 2, '#6e5230'); dot(ctx, f.x0 + 1, f.y1, w - 2, 1, '#8a6a3a'); dot(ctx, f.x0 - 1, f.y1 + 2, w + 2, 2, INK); },
-    },
-    // giày patin: thân trắng dây đỏ, đế đỏ, 2 bánh xe dưới đế (vành tối, trục xám chạy vòng theo anim)
-    rollers: {
-      pal: () => ({ G: pat('#e8ecf5', (i, j) => (j === 0 && i === 0 ? '#ff3d5a' : null)), g: '#ff3d5a' }),
+      pal: () => ({ G: pat('#c7a26a', (cx, cy) => (hash(cx, cy) % 3 === 0 ? '#a8844e' : null)), g: '#8a6a3a' }),
       addon(ctx, f) {
         if (!f.flat) return;
-        const spin = Math.floor(C.anim * 16) % 4, hub = [[0, 0], [1, 0], [1, 1], [0, 1]][spin];
-        for (const wx of [f.x0, f.x1 - 3]) { dot(ctx, wx, f.y1 + 1, 3, 3, INK); dot(ctx, wx + 1, f.y1 + 2, 1, 1, '#9aa3b5'); dot(ctx, wx + hub[0] * 2, f.y1 + 1 + hub[1] * 2, 1, 1, '#4a4f63'); }
+        const n = f.x1 - f.x0;
+        cell(ctx, f.x0, f.y1, n, 1, '#6e5230'); cell(ctx, f.x0 - 1, f.y1, 1, 1, INK); cell(ctx, f.x1, f.y1, 1, 1, INK); cell(ctx, f.x0, f.y1 + 1, n, 1, INK);
       },
     },
-    // giày đinh: xanh neon, vệt sẫm dưới thân, chấm sáng; đế đen + 3 đinh trắng dưới đế
+    // giày patin: thân trắng, đế đỏ, 2 bánh xe dưới đế (xám, nháy sẫm theo vòng quay)
+    rollers: {
+      pal: () => ({ G: '#e8ecf5', g: '#ff3d5a' }),
+      addon(ctx, f) {
+        if (!f.flat) return;
+        const spin = Math.floor(C.anim * 16) % 2;
+        [f.x0, f.x1 - 1].forEach((wx, i) => cell(ctx, wx, f.y1 + 1, 1, 1, (spin + i) % 2 ? '#4a4f63' : '#9aa3b5'));
+      },
+    },
+    // giày đinh: xanh neon, đế đen + đinh trắng dưới đế ở 2 đầu
     cleats: {
-      pal: () => ({ G: pat('#6bff4f', (i, j) => (j === 1 ? '#2fb81f' : i === 0 ? '#c8ffb8' : null)), g: '#1a1216' }),
-      addon(ctx, f) { if (!f.flat) return; for (const sx of [f.x0 + 1, Math.round((f.x0 + f.x1) / 2) - 1, f.x1 - 2]) dot(ctx, sx, f.y1 + 2, 1, 1, '#f4f4f4'); },
+      pal: () => ({ G: '#6bff4f', g: '#1a1216' }),
+      addon(ctx, f) { if (!f.flat) return; for (const sx of f.x1 - f.x0 > 2 ? [f.x0, f.x1 - 1] : [f.x0]) cell(ctx, sx, f.y1 + 1, 1, 1, '#f4f4f4'); },
     },
-    // giày neon: xanh neon mu sáng, đế tím, ánh xanh hắt xuống mặt sân dưới đế (phập phồng; quầng chữ nhật quanh giày trông như cái hộp)
+    // giày neon: xanh neon, đế tím, ánh xanh hắt xuống mặt sân dưới đế (phập phồng; quầng chữ nhật quanh giày trông như cái hộp)
     neonkick: {
-      pal: () => ({ G: pat('#3ff6ff', (i, j) => (j === 0 ? '#c8fdff' : null)), g: '#9d7bff' }),
-      addon(ctx, f) { const a = 0.35 + 0.15 * Math.sin(C.anim * 7), w = f.x1 - f.x0; add(ctx, () => { dot(ctx, f.x0 - 1, f.y1 + 2, w + 2, 1, `rgba(63,246,255,${a.toFixed(3)})`); dot(ctx, f.x0 + 1, f.y1 + 3, w - 2, 1, `rgba(63,246,255,${(a / 2).toFixed(3)})`); }); },
+      pal: () => ({ G: '#3ff6ff', g: '#9d7bff' }),
+      addon(ctx, f) { const a = 0.3 + 0.12 * Math.sin(C.anim * 7); add(ctx, () => cell(ctx, f.x0, f.y1 + 1, f.x1 - f.x0, 1, `rgba(63,246,255,${a.toFixed(3)})`)); },
     },
-    // giày rằn ri: 3 sắc xanh lá loang theo từng px, tất ô-liu, đế xám đen
-    camo: { pal: () => ({ G: pat('#4a5a2a', (i, j, x, y) => { const h = hash(x >> 1, y) % 7; return h < 2 ? '#2e3a1a' : h < 4 ? '#7a8a4a' : null; }), O: '#6b7a3a', g: '#262a36' }) },
-    // giày cầu vồng: đổi màu mỗi bước (8 màu / s), 2 chân lệch nhau 3 màu, chấm sáng trắng; đế trắng
-    rainbowkick: { pal: () => ({ G: pat(RAINBOW[0], (i, j, x) => (i === 0 && j === 0 ? '#ffffff' : RAINBOW[(Math.floor(C.anim * 8) + (right(x) ? 3 : 0)) % RAINBOW.length])), g: '#f2f2f2' }) },
-    // giày lệch màu: chân trái đỏ, chân phải xanh (theo chân của cầu thủ, quay lưng / nhìn trái vẫn đúng chân), dây trắng, đế trắng
-    mismatch: { pal: () => ({ G: pat('#d7263d', (i, j, x) => (j === 0 && i === 0 ? '#ffffff' : right(x) ? '#2f6fd1' : '#d7263d')), g: '#f2f2f2' }) },
-    // giày vàng: chấm sáng trên trái, góc dưới phải sẫm, đế vàng sẫm; lấp lánh: ngôi sao 4 cánh loé lên ở 1 chỗ trên giày rồi tắt
+    // giày rằn ri: 3 sắc xanh lá loang theo từng ô, tất ô-liu, đế xám đen
+    camo: { pal: () => ({ G: pat('#4a5a2a', (cx, cy) => { const h = hash(cx, cy) % 7; return h < 2 ? '#2e3a1a' : h < 4 ? '#7a8a4a' : null; }), O: '#6b7a3a', g: '#262a36' }) },
+    // giày cầu vồng: đổi màu mỗi bước (8 màu / s), 2 chân lệch nhau 3 màu; đế trắng
+    rainbowkick: { pal: () => ({ G: pat(RAINBOW[0], (cx, cy, x) => RAINBOW[(Math.floor(C.anim * 8) + (right(x) ? 3 : 0)) % RAINBOW.length]), g: '#f2f2f2' }) },
+    // giày lệch màu: chân trái đỏ, chân phải xanh (theo chân của cầu thủ, quay lưng / nhìn trái vẫn đúng chân), đế trắng
+    mismatch: { pal: () => ({ G: pat('#d7263d', (cx, cy, x) => (right(x) ? '#2f6fd1' : null)), g: '#f2f2f2' }) },
+    // giày vàng, đế vàng sẫm; lấp lánh: ngôi sao 4 cánh loé lên ở 1 chỗ trên giày rồi tắt
     goldboot: {
-      pal: () => ({ G: pat('#ffd23f', (i, j) => (i === 0 && j === 0 ? '#fff3a8' : i === 1 && j === 1 ? '#c9a020' : null)), g: '#a8800f' }),
+      pal: () => ({ G: '#ffd23f', g: '#a8800f' }),
       addon(ctx, f, k) {
         const t = (C.anim * 1.6 + k * 0.37) % 1;
         if (t > 0.22) return;
-        const n = t > 0.06 && t < 0.16 ? 2 : 1, sx = f.x0 + (hash(Math.floor(C.anim * 1.6 + k * 0.37), k) % Math.max(1, f.x1 - f.x0)), sy = f.y0 - 4;
-        add(ctx, () => { dot(ctx, sx, sy, 1, 1, '#ffffff'); for (let i = 1; i <= n; i++) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) dot(ctx, sx + dx * i, sy + dy * i, 1, 1, 'rgba(255,240,160,0.9)'); });
+        const n = f.x1 - f.x0, sx = f.x0 + hash(Math.floor(C.anim * 1.6 + k * 0.37), k) % Math.max(1, n), sy = f.y0 - 2;
+        add(ctx, () => { cell(ctx, sx, sy, 1, 1, '#ffffff'); if (t > 0.06 && t < 0.16) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) cell(ctx, sx + dx, sy + dy, 1, 1, 'rgba(255,240,160,0.9)'); });
       },
     },
-    // giày băng: xanh băng có mặt cắt chéo sáng, tất băng nhạt, đế xanh; hơi lạnh: 3 hạt trắng bốc lên toả ra rồi tan
+    // giày băng: xanh băng, tất băng nhạt, đế xanh; hơi lạnh: 3 hạt trắng bốc lên toả ra rồi tan
     iceboot: {
-      pal: () => ({ G: pat('#bdf4ff', (i, j) => (i === j ? '#ffffff' : null)), O: pat('#e8fbff', (i, j) => (i === 1 && j === 0 ? '#bdf4ff' : null)), g: '#7fe7ff' }),
+      pal: () => ({ G: '#bdf4ff', O: '#e8fbff', g: '#7fe7ff' }),
       addon(ctx, f, k) {
         add(ctx, () => {
           for (let p = 0; p < 3; p++) {
-            const t = (C.anim * 0.9 + p / 3 + k * 0.5) % 1, px = Math.round(f.x0 + ((p + 0.5) / 3) * (f.x1 - f.x0) + (p - 1) * t * 4), py = Math.round(f.y1 - t * 9);
-            dot(ctx, px, py, 1, 1, `rgba(230,250,255,${(0.8 * (1 - t)).toFixed(3)})`);
+            const t = (C.anim * 0.9 + p / 3 + k * 0.5) % 1;
+            const px = f.x0 + Math.round(((p + 0.5) / 3) * (f.x1 - f.x0) + (p - 1) * t * 2), py = f.y1 - Math.round(t * 4.5);
+            cell(ctx, px, py, 1, 1, `rgba(230,250,255,${(0.8 * (1 - t)).toFixed(3)})`);
           }
         });
       },
     },
-    // giày phản lực: thân kim loại (mép sáng, hàng dưới sẫm), đế sẫm; phản lực xanh dưới mỗi đế: lõi trắng, dài ngắn nhấp nháy
+    // giày phản lực: thân kim loại, đế sẫm; phản lực dưới giữa mỗi đế (đế lẻ ô: 1 cột, chẵn: 2 cột): lõi trắng, đuôi xanh, dài ngắn nhấp nháy
     rocket: {
-      pal: () => ({ G: pat('#9aa3b5', (i, j) => (j === 1 ? '#6b7385' : i === 0 ? '#d0d6e2' : null)), g: '#4a4f63' }),
+      pal: () => ({ G: '#9aa3b5', g: '#4a4f63' }),
       addon(ctx, f, k) {
         if (!f.flat) return;
-        const L = 3 + ((Math.floor(C.anim * 16) + k) % 3), cx = Math.round((f.x0 + f.x1) / 2) - 1;
+        const n = f.x1 - f.x0, w = n % 2 ? 1 : 2, x = f.x0 + (n - w) / 2, L = 2 + ((Math.floor(C.anim * 16) + k) % 2);
         add(ctx, () => {
-          for (let i = 0; i < L; i++) { const a = 1 - i / L; dot(ctx, cx - 1, f.y1 + 2 + i, 4, 1, `rgba(60,140,255,${(0.7 * a).toFixed(3)})`); dot(ctx, cx, f.y1 + 2 + i, 2, 1, i < L - 1 ? `rgba(220,245,255,${(0.95 * a).toFixed(3)})` : `rgba(120,200,255,${a.toFixed(3)})`); }
+          for (let i = 0; i < L; i++) cell(ctx, x, f.y1 + 1 + i, w, 1, i < L - 1 ? `rgba(220,245,255,${(0.95 * (1 - i / L)).toFixed(3)})` : 'rgba(60,140,255,0.6)');
         });
       },
     },
-    // giày lửa: cam, hàng dưới đỏ, chấm vàng; đế vàng; lửa bốc lên ở gót + 2 mép giày (vàng -> cam -> đỏ, cao thấp nhấp nháy)
+    // giày lửa: cam, đế vàng; lửa bốc lên ở gót + mũi giày (vàng -> cam, cao thấp nhấp nháy; đặc, cộng sáng lên giày cam thì gần như không thấy)
     flame: {
-      pal: () => ({ G: pat('#ff6a1f', (i, j) => (j === 1 ? '#d7261d' : i === 0 ? '#ffd23f' : null)), g: '#ffd23f' }),
+      pal: () => ({ G: '#ff6a1f', g: '#ffd23f' }),
       addon(ctx, f, k) {
-        add(ctx, () => {
-          [f.x0, Math.round((f.x0 + f.x1) / 2), f.x1 - 1].forEach((fx, q) => {
-            const h = 2 + ((Math.floor(C.anim * 14) + q * 2 + k) % 4);
-            for (let i = 0; i < h; i++) dot(ctx, fx, f.y0 - 1 - i - (q === 1 ? 2 : 0), 1, 1, i < h * 0.4 ? 'rgba(255,220,80,0.9)' : i < h * 0.75 ? 'rgba(255,120,30,0.8)' : 'rgba(215,38,29,0.6)');
-          });
+        [f.x0, f.x1 - 1].forEach((fx, q) => {
+          const h = 1 + ((Math.floor(C.anim * 14) + q * 2 + k) % 2);
+          for (let i = 0; i < h; i++) cell(ctx, fx, f.y0 - 1 - i, 1, 1, i === 0 ? '#ffd23f' : '#ff6a1f');
         });
       },
     },

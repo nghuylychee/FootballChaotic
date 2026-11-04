@@ -344,16 +344,14 @@ window.SFC = window.SFC || {};
     },
 
     // chân dung pixel: vẽ lại sprite cầu thủ (đầu + vai) vào canvas nhỏ
-    // (canvas gấp đôi độ phân giải cho sprite 2x, Sprites.hiRes; w, h = cỡ logic)
     drawPortrait(cv, p, game) {
-      const { w, h } = SFC.Sprites.hiRes(cv), ctx = cv.getContext('2d');
-      ctx.setTransform(2, 0, 0, 2, 0, 0);
+      const w = cv.width, h = cv.height, ctx = cv.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, w, h);
       SFC.Sprites.drawPlayer(ctx, {
         x: Math.round(w / 2), y: h + 6, vx: 0, vy: 0, facing: Math.PI / 2, anim: 0, flash: 0, state: 'normal',
         team: p.team, role: p.role, look: p.look,
       }, game);
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
     },
 
     /* ================= THÔNG BÁO ================= */

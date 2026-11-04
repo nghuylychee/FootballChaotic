@@ -1,4 +1,4 @@
-# tools/sprite-v2 — công cụ vẽ / duyệt sprite người chơi 2x (sprite đã vào game: `src/render/player/`)
+# tools/sprite-v2 — công cụ vẽ / duyệt Sprite v2 người chơi (đã vào game: `src/render/player/`)
 
 Thiết kế, quyết định của user, tình trạng từng phần: `docs/SPRITE_V2.md`. Luật vẽ: `docs/SPRITE_GUIDE.md`.
 
@@ -6,10 +6,10 @@ Thiết kế, quyết định của user, tình trạng từng phần: `docs/SPR
 
 | File | Việc |
 |---|---|
-| `src/render/player/` (trong game) | Sprite 2x (`SFC.PlayerSprite`), mỗi động tác 1 file, thứ tự nạp trong `scripts/manifest.js` (bảng file: `docs/SPRITE_V2.md` mục 4). API: `draw(ctx, X, Y, o)` ở px mịn, `drawPlayer(ctx, p, g, …)` (= `SFC.Sprites.drawPlayer`), `attackPose(p)` |
-| `cdp.mjs` | Mở game trong Chrome headless, chờ menu (game tự nạp sprite 2x); `save()` ghi ảnh + manifest; `PAGE_COMMON` = code dùng chung chạy trong trang. Cột "hôm nay" (`OLD = SFC.Sprites`) giờ cũng là sprite mới |
+| `src/render/player/` (trong game) | Sprite v2 (`SFC.PlayerSprite`), mỗi động tác 1 file, thứ tự nạp trong `scripts/manifest.js` (bảng file: `docs/SPRITE_V2.md` mục 4). API: `draw(ctx, X, Y, o)` ở px game, `drawPlayer(ctx, p, g, …)` (= `SFC.Sprites.drawPlayer`), `attackPose(p)` |
+| `cdp.mjs` | Mở game trong Chrome headless, chờ menu (game tự nạp sprite v2); `save()` ghi ảnh + manifest; `PAGE_COMMON` = code dùng chung chạy trong trang. Cột "hôm nay" (`OLD = SFC.Sprites`) giờ cũng là sprite mới |
 | `player.mjs` | Ảnh người chơi: trên sân (đứng, chạy), 6 hướng hôm nay / 2x, bảng chạy + chạy nước rút → `out/player/` |
-| `pilot.mjs` | Ra đòn bằng sprite 2x × 4 hướng, 60 khung = 1 s → `out/pilot/pilot.png`; thủ môn đổ người bay thật dọc vạch vôi ở bảng ô cao `out/pilot/dive.png`. Nhóm `review` (đang làm) / `done` (đã duyệt) |
+| `pilot.mjs` | Ra đòn bằng sprite v2 × 4 hướng, 60 khung = 1 s → `out/pilot/pilot.png`; thủ môn đổ người bay thật dọc vạch vôi ở bảng ô cao `out/pilot/dive.png`. Nhóm `review` (đang làm) / `done` (đã duyệt) |
 | `moves.mjs` | Mọi động tác khác (trạng thái, ra đòn, thủ môn, bị đá bay, ăn mừng) chạy bằng code game → `out/moves/` |
 | `page.mjs` | Trang xem gọn → `out/site/sprites.html`: động tác đang làm (vòng lặp + khung chính) + 1 hàng mỗi động tác đã duyệt (đọc `out/player` + `out/pilot`); nút tốc độ 1× / ¼× và zoom; ảnh có `?v=<băm>` để trình duyệt không dùng ảnh cũ |
 | `grid.mjs` | Ghép vùng cắt phóng to để soi khung hình |

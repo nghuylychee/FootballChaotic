@@ -93,7 +93,7 @@ const FILES = [
   ['src/game/tutorial.js', 'game itch'],
   ['src/render/sprites.js', 'game sandbox itch'],
   ['src/render/celebrate-draw.js', 'game sandbox itch'],     // ăn mừng bàn thắng: tư thế + đạo cụ
-  // sprite người chơi lưới 2x (SFC.PlayerSprite, Sprite v2: docs/SPRITE_V2.md, luật vẽ docs/SPRITE_GUIDE.md); thay drawPlayer của sprites.js
+  // sprite người chơi vẽ ở px game (SFC.PlayerSprite, Sprite v2: docs/SPRITE_V2.md, luật vẽ docs/SPRITE_GUIDE.md); thay drawPlayer của sprites.js
   ['src/render/player/base.js', 'game sandbox itch'],
   ['src/render/player/body.js', 'game sandbox itch'],
   ['src/render/player/run.js', 'game sandbox itch'],

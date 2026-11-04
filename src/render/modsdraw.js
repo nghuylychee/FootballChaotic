@@ -94,23 +94,21 @@ window.SFC = window.SFC || {};
     }
   }
 
-  // tượng đá của người q: vẽ sprite ra canvas phụ, khử hết màu (kể cả da, tóc) rồi phủ xám đá — trả về canvas 48x48 (độ phân giải gấp đôi cho
-  // sprite 2x: 96 x 96 px, vẽ ra với cỡ 48 x 48), chân ở (24, 42)
+  // tượng đá của người q: vẽ sprite ra canvas phụ, khử hết màu (kể cả da, tóc) rồi phủ xám đá — trả về canvas 48x48, chân ở (24, 42)
   // (mask = bản sprite gốc làm mặt nạ: khử màu tô cả vùng trong suốt nên phải cắt lại theo hình người bằng 1 lần drawImage)
   let stoneCv = null, maskCv = null;
   function stoneSprite(g, q) {
-    if (!stoneCv) for (const k of [0, 1]) { const cv = document.createElement('canvas'); cv.width = 96; cv.height = 96; if (k) maskCv = cv; else stoneCv = cv; }
+    if (!stoneCv) for (const k of [0, 1]) { const cv = document.createElement('canvas'); cv.width = 48; cv.height = 48; if (k) maskCv = cv; else stoneCv = cv; }
     const c = stoneCv.getContext('2d'), m = maskCv.getContext('2d');
     const pose = Object.assign({}, q, { x: 24, y: 42, state: 'normal', anim: 0, vx: 0, vy: 0, flash: 0, atkType: null, sizeMul: 1 });
     m.setTransform(1, 0, 0, 1, 0, 0);
-    m.clearRect(0, 0, 96, 96);
-    m.setTransform(2, 0, 0, 2, 0, 0);
+    m.clearRect(0, 0, 48, 48);
     SP().drawPlayer(m, pose, g, 0.999);
     c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
-    c.clearRect(0, 0, 96, 96);
+    c.clearRect(0, 0, 48, 48);
     c.drawImage(maskCv, 0, 0);
-    c.globalCompositeOperation = 'saturation'; c.fillStyle = '#808080'; c.fillRect(0, 0, 96, 96);   // khử màu
-    c.globalCompositeOperation = 'source-atop'; c.globalAlpha = 0.45; c.fillStyle = '#8a8f99'; c.fillRect(0, 0, 96, 96);   // ánh xám đá
+    c.globalCompositeOperation = 'saturation'; c.fillStyle = '#808080'; c.fillRect(0, 0, 48, 48);   // khử màu
+    c.globalCompositeOperation = 'source-atop'; c.globalAlpha = 0.45; c.fillStyle = '#8a8f99'; c.fillRect(0, 0, 48, 48);   // ánh xám đá
     c.globalCompositeOperation = 'destination-in'; c.globalAlpha = 1; c.drawImage(maskCv, 0, 0);   // cắt lại đúng hình người
     c.globalCompositeOperation = 'source-over';
     return stoneCv;

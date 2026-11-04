@@ -54,8 +54,8 @@ window.SFC = window.SFC || {};
   const VOLLEY = table(
     { hip: [-3, -3, 2], ang: [P / 2, 0.72 * P, 0.12 * P], arms: [[P / 2, P / 2], [P / 2, P / 2]] },
     { hip: [2, 2, 2], end: [[2, -4], [2, -5], [2, -4]], foot: [[0, 1, ['GG', 'gg']], [0, 1, ['gg', 'gg']], [0, 1, ['GGG', 'ggg']]], over: [false, false, true], arms: [[P / 2, P / 2], [P / 2, P / 2]] });
-  // nhịp từ player.gkRelease (bóng rời chân lúc w + s * 0.6, Actions.gkRelease) + dáng: cw khuỵu, lb ngả sau lúc lấy đà, lf lao tới (âm = ngả sau), hop bật
-  const STYLE = { gkPunt: { cw: 1, lb: 1, lf: -1, hop: 3, calm: true }, gkVolley: { lf: 1, calm: true } };
+  // nhịp từ player.gkRelease (bóng rời chân lúc w + s * 0.6, Actions.gkRelease) + dáng: cw khuỵu, lb ngả sau lúc lấy đà, lf lao tới (âm = ngả sau), hop bật (px)
+  const STYLE = { gkPunt: { cw: 0.5, lb: 0.5, lf: -0.5, hop: 1.5, calm: true }, gkVolley: { lf: 0.5, calm: true } };
   const relOf = (kt) => PL().gkRelease[kt === 'gkPunt' ? 'punt' : 'volley'];
   const timing = (kt) => Object.assign({}, relOf(kt), STYLE[kt]);
   // mốc nhịp: tung tới đỉnh · chạm bóng · hết tư thế
@@ -101,7 +101,7 @@ window.SFC = window.SFC || {};
     if (atk && atk.dive && (holding || atk.stage)) return { kind: 'dive', stage: atk.stage || null, ball: holding };
     return null;
   }
-  // hình học cho draw.js theo góc nhìn: { arms (tay gập), angles (tay thẳng), ball [x, y] (ô), ballBehind, drop (ô), lean (px mịn, màn hình),
+  // hình học cho draw.js theo góc nhìn: { arms (tay gập), angles (tay thẳng), ball [x, y] (ô), ballBehind, drop (ô), lean (px, màn hình; draw.js làm tròn: nửa px lên 1 px),
   // legs 'kneel' | 'wide', shadow 'long' }. m = nhìn trái
   function gkGeom(st, view, m) {
     const hk = holdKey(view), side = m ? -1 : 1, G = { ballBehind: view === 'back' || view === 'bdiag', far: Sprite.farArm(view) === 0 ? 0 : -1 };
@@ -134,13 +134,13 @@ window.SFC = window.SFC || {};
     if (st.ball) {
       // cầm bóng: nằm / quỳ / khuỵu vẫn ôm bóng (không chống tay được), bò 4 chân + nhổm lên = quỳ ôm bóng
       if (!s) return held(HOLD[hk], 0);
-      if (s === 'land' || s === 'lie') return Object.assign(held(HOLD[hk], s === 'land' ? 2 : 1), { lean: side * 2, shadow: 'long' });
+      if (s === 'land' || s === 'lie') return Object.assign(held(HOLD[hk], s === 'land' ? 2 : 1), { lean: side, shadow: 'long' });
       if (s === 'crouch') return held(HOLD[hk], 1);
       return Object.assign(held(HOLD[hk], 2), { legs: 'kneel' });
     }
-    if (s === 'land' || s === 'lie') return Object.assign(G, { drop: s === 'land' ? 2 : 1, lean: side * 2, shadow: 'long' });   // tay đổ người vươn qua đầu (draw.js)
-    if (s === 'fours') return Object.assign(G, { angles: [1.1, 0.8], legs: 'kneel', drop: 3, lean: side * 3 });
-    if (s === 'rise') return Object.assign(G, { angles: [1.35, 1.15], legs: 'kneel', drop: 2, lean: side });
+    if (s === 'land' || s === 'lie') return Object.assign(G, { drop: s === 'land' ? 2 : 1, lean: side, shadow: 'long' });   // tay đổ người vươn qua đầu (draw.js)
+    if (s === 'fours') return Object.assign(G, { angles: [1.1, 0.8], legs: 'kneel', drop: 3, lean: side * 1.5 });
+    if (s === 'rise') return Object.assign(G, { angles: [1.35, 1.15], legs: 'kneel', drop: 2, lean: side / 2 });
     if (s === 'kneel') return Object.assign(G, { arms: KNEEL_ARMS, legs: 'kneel', drop: 2 });
     return Object.assign(G, { drop: 1 });   // khuỵu: chân khuỵu theo atk.stage (keeper.js), tay đứng
   }
@@ -164,10 +164,10 @@ window.SFC = window.SFC || {};
     const G = i ? GLOVE.map((r) => r.split('').reverse().join('')) : GLOVE;
     drawCells(ctx, X, Y, blockCells(new Map(), hx + (i ? 0 : -1), hy - 1, G, { W: '#ffffff', H: hand }), mir);
   }
-  // bóng trên tay / trên không trước lúc chạm chân (như Sprites.drawBall, không bóng đổ), lưới mịn để nhấp theo thân nửa px · (bx, by) tâm theo ô
+  // bóng trên tay / trên không trước lúc chạm chân (như Sprites.drawBall, không bóng đổ) · (bx, by) tâm theo ô, làm tròn tới ô thế giới
   function heldBall(ctx, X, Y, mir, bx, by) {
-    const cx = mir ? X - 2 * Math.round(bx) : X + 2 * Math.round(bx), cy = Y + 2 * Math.round(by);
-    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + 2 * x, cy + 2 * y, 2 * w, 2 * h); };
+    const cx = mir ? X - Math.round(bx) : X + Math.round(bx), cy = Y + Math.round(by);
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + x, cy + y, w, h); };
     const disc = (r, c) => { const r2 = r * r + r / 2; for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r2 - dy * dy)); px(-w, dy, 2 * w + 1, 1, c); } };
     disc(4, '#140c16'); disc(3, '#f4f4f4');
     px(1, 1, 2, 2, '#c7c7d2'); px(2, 0, 1, 1, '#222'); px(-2, 0, 1, 1, '#222'); px(-1, -2, 1, 1, '#ffffff');
@@ -183,14 +183,14 @@ window.SFC = window.SFC || {};
     if (G.arms) G.arms.forEach((pts, i) => { if (mine(i)) bentArm(ctx, X, Y, mir, i, pts, dark, hand, 'limb'); });
     if (ballNow) heldBall(ctx, X, Y, mir, G.ball[0], G.ball[1]);
     if (G.arms) G.arms.forEach((pts, i) => { if (mine(i)) bentArm(ctx, X, Y, mir, i, pts, dark, hand, 'glove'); });
-    if (G.angles) G.angles.forEach((a, i) => { if (mine(i)) armAt(ctx, X, Y, mir, i, a, pal, hand, part === 'behind', false); });
+    if (G.angles) G.angles.forEach((a, i) => { if (mine(i)) armAt(ctx, X, Y, mir, i, a, pal, hand, part === 'behind'); });
   }
   // bóng đổ người nằm: elip đậm phủ cả thân (nằm dọc màn hình nhìn từ trên thì dài gần bằng đứng — dấu hiệu "nằm" là bóng đổ, không phải thân ngắn lại).
-  // Px mịn quanh chân (X, Y); bay xuống thì Renderer.diving lật cả người lẫn bóng đổ
+  // Px game quanh chân (X, Y); bay xuống thì Renderer.diving lật cả người lẫn bóng đổ
   function lieShadow(ctx, X, Y, side) {
-    const cx = X + 2 * side, cy = Y - 20, rx = 16, ry = 22;
+    const cx = X + side, cy = Y - 10, rx = 8, ry = 11;
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    for (let dy = -ry; dy <= ry; dy += 2) { const w = Math.round(rx * Math.sqrt(1 - (dy / ry) * (dy / ry))); ctx.fillRect(cx - w, cy + dy, 2 * w, 2); }
+    for (let dy = -ry; dy <= ry; dy++) { const w = Math.round(rx * Math.sqrt(1 - (dy / ry) * (dy / ry))); ctx.fillRect(cx - w, cy + dy, 2 * w, 1); }
   }
   // thủ môn đang cầm bóng trên tay (ôm / tung lên / đổ người bắt được): Renderer bỏ vẽ quả bóng thật, sprite vẽ thay
   const IN_HANDS = { gkHold: 1, gkPunt: 1, gkVolley: 1, diveU: 1, diveD: 1 };

@@ -1,4 +1,4 @@
-// Mở game trong Chrome headless qua DevTools protocol, chờ tới menu (game tự nạp sprite 2x src/render/player/*.js). Dùng chung cho các script vẽ bảng.
+// Mở game trong Chrome headless qua DevTools protocol, chờ tới menu (game tự nạp sprite v2 src/render/player/*.js). Dùng chung cho các script vẽ bảng.
 // Cần server game đang chạy: npm run serve (mặc định http://localhost:8080; đổi bằng biến môi trường SPRITE_URL). Chrome: biến CHROME
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
@@ -57,7 +57,7 @@ export function save(dir, res, merge = false) {
   writeFileSync(join(dir, 'manifest.json'), JSON.stringify(man, null, 1));
 }
 
-// đoạn code chạy trong trang, dùng chung: dữ liệu game + người mẫu + bảng ô (ctx scale x2: code game vẽ gấp đôi, sprite 2x vẽ ở lưới mịn)
+// đoạn code chạy trong trang, dùng chung: dữ liệu game + người mẫu + bảng ô (ctx scale x2: code game và sprite v2 vẽ ở px game, ảnh gấp đôi)
 export const PAGE_COMMON = `
   const PlayerSprite = SFC.PlayerSprite;
   const T = SFC_CONFIG.teams, PR = SFC_CONFIG.progression, GC = SFC_CONFIG.game, RN = GC.fx.run;
@@ -70,7 +70,7 @@ export const PAGE_COMMON = `
   const OLD = SFC.Sprites, NEW = Object.assign({}, OLD, { drawPlayer: PlayerSprite.drawPlayer });
   const BG = '#3d6b3f';
   const cv = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return [c, x]; };
-  // bảng cols x rows ô cw x ch (px mịn). cell(k, r) -> [today, fn(ctx, x, y), cx?]: today = sprite hiện tại vẽ 1x rồi phóng đôi; còn lại vẽ trên ctx scale x2
+  // bảng cols x rows ô cw x ch (px ảnh = nửa px game). cell(k, r) -> [today, fn(ctx, x, y), cx?]: today = sprite hiện tại vẽ 1x rồi phóng đôi; còn lại vẽ trên ctx scale x2
   function sheet(cols, rows, cw, ch, cell, base = 6) {
     const [c, x] = cv(cols * cw, rows * ch); x.fillStyle = BG; x.fillRect(0, 0, c.width, c.height);
     const [s, sx] = cv(cw / 2, ch / 2), [b, bx] = cv(cw, ch);

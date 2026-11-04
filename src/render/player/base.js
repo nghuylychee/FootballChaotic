@@ -1,7 +1,7 @@
-/* PlayerSprite · base.js — Nền: màu, đóng dấu bộ phận, chi trên lưới thế giới / lưới mịn, nội suy. Mọi file sau dùng chung qua PlayerSprite.
- * Toạ độ mịn: gốc (X, Y) = 2 x gốc thế giới. Cột mịn 0..1 = cột thế giới 0, nên trục đối xứng ở x = 0.5 (cột i <-> cột 1 - i).
- * Tư thế đứng và tư thế khoá ở lưới thế giới (bộ phận scale 2, mỗi ô = 2 x 2 px mịn), không thêm chi tiết, không bo góc.
- * Khung chuyển động giữa các tư thế khoá được dùng lưới mịn (fineLimb / drawFine).
+/* PlayerSprite · base.js — Nền: màu, đóng dấu bộ phận, chi trên lưới thế giới, nội suy. Mọi file sau dùng chung qua PlayerSprite.
+ * Toạ độ = px game: gốc (X, Y) = gốc thế giới, mỗi ô = 1 px game. Lật ngang quanh cột 0 (cột x <-> cột -x).
+ * Mọi khung (đứng, tư thế khoá, khung chuyển động) chỉ vẽ ở px game nguyên (user 2026-11-04 bỏ nửa px):
+ * độ lệch số thực phải qua snapPx trước khi cộng vào gốc vẽ.
  * Nạp theo thứ tự trong scripts/manifest.js (classic script, không module): mỗi file gắn hàm vào SFC.PlayerSprite.
  */
 window.SFC = window.SFC || {};
@@ -20,7 +20,7 @@ window.SFC = window.SFC || {};
   }
 
   /* ---------- vẽ ---------- */
-  // tô 1 chữ nhật px mịn: c = màu, hoặc đối tượng { base, paint(ctx, x, y, w, h) } tự tô theo mẫu từng px (giày, shoes.js)
+  // tô 1 chữ nhật px game: c = màu, hoặc đối tượng { base, paint(ctx, x, y, w, h) } tự tô theo mẫu từng px (giày, shoes.js)
   function fill(ctx, c, x, y, w, h) { if (c && typeof c === 'object') c.paint(ctx, x, y, w, h); else { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); } }
   const cache = new WeakMap();
   function cellsOf(part) {
@@ -32,15 +32,12 @@ window.SFC = window.SFC || {};
     }
     return c;
   }
-  // scale 2: mỗi ô = 2 x 2 px mịn · mir = lật ngang quanh trục (cột thế giới 0 / x mịn = 0.5)
+  // mỗi ô = 1 px game · mir = lật ngang quanh cột 0
   function stamp(ctx, X, Y, part, pal, mir = false) {
-    const k = part.scale || 1;
-    for (const [x, y, ch] of cellsOf(part)) {
-      fill(ctx, pal[ch] || ch, mir ? X + 1 - (x + 1) * k + 1 : X + x * k, Y + y * k, k, k);
-    }
+    for (const [x, y, ch] of cellsOf(part)) fill(ctx, pal[ch] || ch, mir ? X - x : X + x, Y + y, 1, 1);
   }
-  // ô thế giới (gốc mịn X, Y)
-  const cell = (ctx, X, Y, x, y, w, h, col) => { ctx.fillStyle = col; ctx.fillRect(X + x * 2, Y + y * 2, w * 2, h * 2); };
+  // ô thế giới (gốc X, Y)
+  const cell = (ctx, X, Y, x, y, w, h, col) => { ctx.fillStyle = col; ctx.fillRect(X + x, Y + y, w, h); };
 
   /* ---------- chi tự do (tay đấm, chân đá, tay ăn mừng...) trên lưới thế giới ---------- */
   // tô ô nào thì viền mực 1 ô theo 4 hướng quanh vùng đã tô -> góc ngoài tự bo như tay đứng (không ra khối chữ nhật)
@@ -62,49 +59,24 @@ window.SFC = window.SFC || {};
     rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] !== '.') cells.set(key(x + i, y + j), [x + i, y + j, pal[r[i]] || r[i]]); });
     return cells;
   }
-  // vẽ ô quanh gốc mịn (X, Y): viền rồi tô. mir = lật quanh cột 0 · inkMax = không viền dưới hàng này (nối liền vào áo)
+  // vẽ ô quanh gốc (X, Y): viền rồi tô. mir = lật quanh cột 0 · inkMax = không viền dưới hàng này (nối liền vào áo)
   function drawCells(ctx, X, Y, cells, mir = false, inkMax = Infinity) {
-    const cx = (x) => (mir ? X - 2 * x : X + 2 * x);
+    const cx = (x) => (mir ? X - x : X + x);
     ctx.fillStyle = INK;
     for (const [x, y] of cells.values()) for (const [dx, dy] of N4) {
       if (y + dy > inkMax || cells.has(key(x + dx, y + dy))) continue;
-      ctx.fillRect(cx(x + dx), Y + 2 * (y + dy), 2, 2);
+      ctx.fillRect(cx(x + dx), Y + y + dy, 1, 1);
     }
-    for (const [x, y, c] of cells.values()) fill(ctx, c, cx(x), Y + 2 * y, 2, 2);
+    for (const [x, y, c] of cells.values()) fill(ctx, c, cx(x), Y + y, 1, 1);
   }
-  // chữ nhật ô thế giới quanh gốc mịn (X, Y), có lật
-  function rectW(ctx, X, Y, mir, x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(mir ? X - 2 * (x + w - 1) : X + 2 * x, Y + 2 * y, 2 * w, 2 * h); }
+  // chữ nhật ô thế giới quanh gốc (X, Y), có lật
+  function rectW(ctx, X, Y, mir, x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(mir ? X - (x + w - 1) : X + x, Y + y, w, h); }
   // hình tròn px (như disc() của game) ở lưới thế giới
   function discW(ctx, X, Y, cx, cy, r, c) { for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy) + 0.35); rectW(ctx, X, Y, false, cx - w, cy + dy, w * 2 + 1, 1, c); } }
 
-  /* ---------- khung chuyển động (giữa các tư thế khoá) ở lưới mịn ---------- */
-  // tư thế khoá vẽ ở lưới thế giới; khung chuyển động được dùng lưới mịn cho tự nhiên: chi dày bằng chi thường (bút 4 x 4 px mịn)
-  // nhưng vị trí / góc bước từng px mịn -> chéo mượt; viền mực dày 2 px mịn, góc bo (khoảng cách Manhattan ≤ 2)
-  const RING = [];
-  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if ((dx || dy) && Math.abs(dx) + Math.abs(dy) <= 2) RING.push([dx, dy]);
-  function fineLimb(pts, col, cells = new Map()) {
-    for (let k = 1; k < pts.length; k++) {
-      const [x0, y0] = pts[k - 1], [x1, y1] = pts[k], n = Math.max(1, Math.abs(x1 - x0), Math.abs(y1 - y0));
-      for (let i = 0; i <= n; i++) {
-        const cx = Math.round(x0 + ((x1 - x0) * i) / n), cy = Math.round(y0 + ((y1 - y0) * i) / n), c = col(k, i, n);
-        for (let b = 0; b < 4; b++) for (let a = 0; a < 4; a++) cells.set(key(cx + a, cy + b), [cx + a, cy + b, c]);
-      }
-    }
-    return cells;
-  }
-  // khối theo bản đồ chữ, mỗi chữ = 2 x 2 px mịn (cùng cỡ ô thế giới), góc trên trái ở px mịn (x, y)
-  function fineBlock(cells, x, y, rows, pal) {
-    rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] !== '.') for (let b = 0; b < 2; b++) for (let a = 0; a < 2; a++) cells.set(key(x + 2 * i + a, y + 2 * j + b), [x + 2 * i + a, y + 2 * j + b, pal[r[i]] || r[i]]); });
-    return cells;
-  }
-  // vẽ ô px mịn quanh gốc (X, Y). Lật quanh cùng trục với ô thế giới (px mịn u <-> 1 - u)
-  function drawFine(ctx, X, Y, cells, mir = false) {
-    const px = (u) => (mir ? X + 1 - u : X + u), ink = new Set();
-    for (const [x, y] of cells.values()) for (const [dx, dy] of RING) { const kk = key(x + dx, y + dy); if (!cells.has(kk)) ink.add(kk); }
-    ctx.fillStyle = INK;
-    for (const kk of ink) { const [x, y] = kk.split(',').map(Number); ctx.fillRect(px(x), Y + y, 1, 1); }
-    for (const [x, y, c] of cells.values()) fill(ctx, c, px(x), Y + y, 1, 1);
-  }
+  /* ---------- độ lệch số thực -> px game ---------- */
+  // làm tròn tới px game, đối xứng quanh 0 (nửa px lên 1 px, cả 2 phía) để hình nhìn trái vẫn là hình nhìn phải lật lại
+  const snapPx = (v) => Math.sign(v) * Math.round(Math.abs(v));
 
   /* ---------- nội suy ---------- */
   const lerp = (a, b, k) => a + (b - a) * k;
@@ -112,5 +84,5 @@ window.SFC = window.SFC || {};
   const clamp01 = (k) => Math.max(0, Math.min(1, k));
   const easeIO = (k) => k * k * (3 - 2 * k);
 
-  Object.assign(Sprite, { INK, shade, fill, cellsOf, stamp, cell, N4, key, limbCells, blockCells, drawCells, rectW, discW, RING, fineLimb, fineBlock, drawFine, lerp, easeOut, clamp01, easeIO });
+  Object.assign(Sprite, { INK, shade, fill, cellsOf, stamp, cell, N4, key, limbCells, blockCells, drawCells, rectW, discW, snapPx, lerp, easeOut, clamp01, easeIO });
 })();

@@ -9,17 +9,17 @@ window.SFC = window.SFC || {};
   const { KLEN, armAt, blockCells, drawCells, limbCells } = Sprite;
   const P = Math.PI;
   // R1 sải dài: 4 khung 12 / s, chân với hết tầm trước / sau, tay thẳng vung rộng, thân nhấp lên ở khung lướt qua.
-  // Khung: [góc chân trái hình, góc chân phải hình, nhấp thân (px mịn, âm = lên), tay trái hình, tay phải hình] (hình nhìn phải; góc 0 trước, π/2 xuống, π sau)
+  // Khung: [góc chân trái hình, góc chân phải hình, nhấp thân (px, âm = lên), tay trái hình, tay phải hình] (hình nhìn phải; góc 0 trước, π/2 xuống, π sau)
   const SPRINT = [
     [0.82 * P, 0.36 * P, 0, [0.75], [P - 0.6]],
-    [0.22 * P, 0.56 * P, -2, [P / 2 - 0.2], [P / 2 + 0.2]],
+    [0.22 * P, 0.56 * P, -1, [P / 2 - 0.2], [P / 2 + 0.2]],
     [0.36 * P, 0.82 * P, 0, [P - 0.6], [0.75]],
-    [0.56 * P, 0.22 * P, -2, [P / 2 + 0.2], [P / 2 - 0.2]],
+    [0.56 * P, 0.22 * P, -1, [P / 2 + 0.2], [P / 2 - 0.2]],
   ];
-  // kiểu bước: khung, khung / s, thân ngả tới + đầu dẫn trước thân (px mịn) theo góc nhìn
+  // kiểu bước: khung, khung / s, thân ngả tới + đầu dẫn trước thân (px) theo góc nhìn
   const GAITS = {
-    sprint: { frames: SPRINT, fps: 12, lean: { side: 3, diag: 2, bdiag: 2 }, head: { side: 4, diag: 2, bdiag: 2 } },
-    heavy: { frames: Sprite.HEAVY, fps: 9, lean: { side: 2, diag: 1, bdiag: 1 }, head: { side: 2, diag: 1, bdiag: 1 } },
+    sprint: { frames: SPRINT, fps: 12, lean: { side: 1, diag: 1, bdiag: 1 }, head: { side: 2, diag: 1, bdiag: 1 } },
+    heavy: { frames: Sprite.HEAVY, fps: 9, lean: { side: 1, diag: 1, bdiag: 1 }, head: { side: 1, diag: 0, bdiag: 0 } },
   };
   // nhìn chéo (xuống / lên): tầm với ngang của chân / tay co lại (chạy chếch về phía / ra xa máy quay), 2 hông sát nhau hơn
   const DIAG_REACH = 0.6, HIPS = { side: [-3, 2], diag: [-3, 1], bdiag: [-3, 1] };
@@ -31,9 +31,9 @@ window.SFC = window.SFC || {};
     const col = (k, i, n) => (i / n < 0.22 ? pal.P : i / n < 0.42 ? pal.J : pal.O);
     drawCells(ctx, X, Y, blockCells(limbCells([[hx, -5], [ex, ey]], col), ex + foot[0], ey + foot[1], foot[2], pal), mir);
   }
-  // 2 chân (vẽ trước thân). Khung bay (nhấp ≤ -3) nhấc cả chân theo thân, còn lại chân chạm đất ở Y
+  // 2 chân (vẽ trước thân). Khung bay (nhấp ≤ -1.5) nhấc cả chân theo thân, còn lại chân chạm đất ở Y
   function gaitLegs(ctx, X, Y, fr, view, pal, mir) {
-    const [aL, aR, bob] = fr, Yl = bob <= -3 ? Y + bob : Y, [h0, h1] = HIPS[view], r = view === 'diag' || view === 'bdiag' ? DIAG_REACH : 1;
+    const [aL, aR, bob] = fr, Yl = bob <= -1.5 ? Y + bob : Y, [h0, h1] = HIPS[view], r = view === 'diag' || view === 'bdiag' ? DIAG_REACH : 1;
     gaitLeg(ctx, X, Yl, h0, aL, pal, mir, r);
     gaitLeg(ctx, X, Yl, h1, aR, pal, mir, r);
   }
@@ -45,7 +45,7 @@ window.SFC = window.SFC || {};
       const back = a > P / 2 || (diag && i === far);
       if (back !== behind) return;
       const ad = diag ? Math.atan2(Math.sin(a), Math.cos(a) * DIAG_REACH) : a;
-      armAt(ctx, X, Y, mir, i, ad, pal, hand, back, false);
+      armAt(ctx, X, Y, mir, i, ad, pal, hand, back);
     });
   }
   // vặn vai theo tay trái hình đang vung ra trước (+1) / ra sau (-1) · lai quần nhấc bên chân đang nhấc gối (hình nhìn phải)

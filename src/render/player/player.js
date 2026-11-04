@@ -5,8 +5,8 @@ window.SFC = window.SFC || {};
 
 (function () {
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
-  const { attackPose, draw, flyState, flyRot, flyShadow, flyShadowSpec, hitState } = Sprite;
-  /* ---------- thay SFC.Sprites.drawPlayer: renderer vẽ ở toạ độ 1x (có thể đã scale x2 / dịch / xoay), sprite vẽ ở lưới mịn = scale(0.5) ---------- */
+  const { attackPose, draw, flyState, flyRot, flyShadow, flyShadowSpec, hitState, snapPx } = Sprite;
+  /* ---------- thay SFC.Sprites.drawPlayer: renderer vẽ ở toạ độ thế giới (có thể đã phóng / dịch / xoay), sprite tính bằng px game ---------- */
   // đang xoay (bay người, ăn mừng lộn vòng): vẽ vào bộ đệm rồi xoay cả ảnh, lấy mẫu điểm gần nhất -> px vẫn sắc như Renderer.diving
   // (cả lúc phóng không tròn số, xem odd)
   let rotBuf = null;
@@ -77,23 +77,24 @@ window.SFC = window.SFC || {};
       shirt: tint || kit.shirt, shirtD: tint || kit.shirtDark, shorts: kc.shorts,
       sock: '#ecebe6', shoe: '#e8e8e8', sole: '#b9c2d0',
       moving: cp ? !!cp.run : gait === 'heavy' || st.moving, anim: p.anim || 0, gait, gaitT,
-      lean: !ghost && !cp && !atk && !gait && p.state === 'normal' && RN && RN.lean && Math.abs(p.vx || 0) > RN.sprint ? 2 * Math.sign(p.vx) * RN.lean : 0,
+      lean: !ghost && !cp && !atk && !gait && p.state === 'normal' && RN && RN.lean && Math.abs(p.vx || 0) > RN.sprint ? Math.sign(p.vx) * RN.lean : 0,
       atk, cp, gk, stun: p.state === 'stun', windup: p.state === 'windup', flash: p.flash > 0,
       glove: !ghost && p.keeper ? kc.glove : null, inj: !ghost && !cp && p.inj, noShadow: alpha < 1 || !!p.flyInner || sceneShadow(g),
       hit: ghost || p.flyInner ? null : hitState(p),   // bị đấm: giơ tay (hit.js); gọi mỗi khung để bắt lúc chuyển sang choáng
       // nhảy Ground Slam / Thiên Thạch (state slam): tay giơ theo độ cao, hết lúc chạm 5 px -> tiếp đất là tay vung xuống
       slam: !ghost && p.state === 'slam' ? Math.min(1, (p.airZ || 0) / 5) : 0,
     };
-    // lưới vẽ vị trí: Renderer.posGrid (mặc định nửa px, user 2026-11-03): sprite vẽ ở lưới mịn (2 x, 2 y) nên nửa px thế giới vẫn là 1 ô mịn trọn
-    const R = SFC.Renderer, x = R ? R.snap(p.x) : Math.round(p.x), y = R ? R.snap(p.y) : Math.round(p.y);
-    const jx = (atk && atk.jx) || 0;   // đứng lấy đà sút mạnh: người run (px mịn)
+    // gốc sprite luôn ở px game nguyên (user 2026-11-04 bỏ nửa px). Không vẽ ở toạ độ số thực: mép từng hàng ô bị pha màu -> sọc ngang + viền nhoè
+    // khi chạy (đã thử 2026-11-03)
+    const x = Math.round(p.x), y = Math.round(p.y);
+    const jx = snapPx((atk && atk.jx) || 0);   // đứng lấy đà sút mạnh: người run (nguyên ô)
     // bị đá bay (fly.js): pha theo dõi ở phía vẽ. Renderer.airborne truyền sẵn p.fly (nó vẽ bản sao của cầu thủ). Nằm / lăn dậy dưới đất:
     // tự xoay quanh giữa thân (bóng đổ vẽ riêng, không xoay)
     const fs = ghost ? null : p.fly !== undefined ? p.fly : p.state === 'stun' ? flyState(p) : null;
     o.fly = fs && fs.phase ? fs : null;
     if (o.fly && !p.flyInner && !(p.airZ > 0)) {
       const rot = flyRot(fs, p.anim || 0);
-      ctx.save(); ctx.globalAlpha = alpha; ctx.scale(0.5, 0.5); if (alpha >= 1 && !o.noShadow) flyShadow(ctx, 2 * x, 2 * y, flyShadowSpec(fs)); ctx.restore();
+      ctx.save(); ctx.globalAlpha = alpha; if (alpha >= 1 && !o.noShadow) flyShadow(ctx, x, y, flyShadowSpec(fs)); ctx.restore();
       ctx.save(); ctx.translate(x, y - 8); ctx.rotate(rot);
       drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, fly: fs, flyInner: true }), g, alpha, tint, ghost);
       ctx.restore(); ctx.globalAlpha = 1;
@@ -102,22 +103,21 @@ window.SFC = window.SFC || {};
     ctx.save();
     ctx.globalAlpha = alpha;
     const T = ctx.getTransform();
-    ctx.scale(0.5, 0.5);
-    // phóng không tròn số (khổng lồ sizeMul, camera zoom): px mịn không khớp px màn hình -> vẽ thẳng thì hở vạch giữa các ô. Cũng vẽ vào bộ đệm rồi phóng
-    // lấy mẫu điểm gần nhất (cả chiều dọc: backflip ép dọc theo góc lộn). Canvas 1x (bộ đệm cũ cỡ 1x, cảnh pixel): 1 px mịn < 1 px màn hình, vẽ thẳng
-    // thì nhoè nửa px -> cũng qua bộ đệm, thu về lưới game (thân / tư thế khoá nằm trên lưới game nên giữ nguyên, px mịn bị bỏ bớt)
-    const odd1 = (v) => { const f = Math.abs(v) / 2; return f < 1 - 1e-3 || Math.abs(f - Math.round(f)) > 1e-3; }, odd = odd1(T.a) || odd1(T.d);
+    // phóng không tròn số (khổng lồ sizeMul, camera zoom): 1 ô (px game = 1 đơn vị vẽ của sprite) không khớp px màn hình -> vẽ thẳng thì hở vạch giữa
+    // các ô. Vẽ vào bộ đệm rồi phóng lấy mẫu điểm gần nhất (cả chiều dọc: backflip ép dọc theo góc lộn). Mọi toạ độ của sprite nguyên nên 1 ô nguyên px
+    // màn hình (T.a nguyên) là vẽ thẳng được
+    const odd1 = (v) => { const f = Math.abs(v); return f < 1 - 1e-3 || Math.abs(f - Math.round(f)) > 1e-3; }, odd = odd1(T.a) || odd1(T.d);
     if (T.b || T.c || odd) {
-      const W = 128, H = 128, oy = 100;
+      const W = 64, H = 64, oy = 50;
       if (!rotBuf) { rotBuf = document.createElement('canvas'); rotBuf.width = W; rotBuf.height = H; }
       const bc = rotBuf.getContext('2d'); bc.clearRect(0, 0, W, H);
       draw(bc, W / 2 + jx, oy, o);
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(rotBuf, 2 * x - W / 2, 2 * y - oy);
-    } else draw(ctx, 2 * x + jx, 2 * y, o);
+      ctx.drawImage(rotBuf, x - W / 2, y - oy);
+    } else draw(ctx, x + jx, y, o);
     ctx.restore();
     ctx.globalAlpha = 1;
-    return y - (atk && atk.khop ? Math.round(atk.khop / 2) : 0) + ((cp && cp.drop) || 0) - 16;
+    return y - (atk && atk.khop ? Math.round(atk.khop) : 0) + ((cp && cp.drop) || 0) - 16;
   }
 
   // bóng dưới đất của cầu thủ lúc này, cho cảnh tự vẽ bóng (Village.shadows): cùng các trạng thái làm bóng sprite đổi.
@@ -140,8 +140,8 @@ window.SFC = window.SFC || {};
       // nằm sau khi đổ người: elip dài phủ cả thân (bay lên: lieShadow của gkball.js · bay xuống: Renderer.diving)
       if (atk.stage === 'land' || atk.stage === 'lie') return { lie: { dx: side, dy: flip > 0 ? -10 : -6, rx: 8, ry: 11 } };
     }
-    // sút / vô-lê / Hard attack / đánh đầu bật lên (khop px mịn): như bóng sprite ở draw.js
-    if (atk && atk.khop) return { k: atk.header ? Math.max(0.6, Math.round((1 - atk.khop / 60) * 10) / 10) : atk.khop >= 3 ? 0.85 : 1, z: atk.khop / 2 };
+    // sút / vô-lê / Hard attack / đánh đầu bật lên (khop px): như bóng sprite ở draw.js
+    if (atk && atk.khop) return { k: atk.header ? Math.max(0.6, Math.round((1 - atk.khop / 30) * 10) / 10) : atk.khop >= 1.5 ? 0.85 : 1, z: atk.khop };
     return { k: 1, z: 0 };
   }
 

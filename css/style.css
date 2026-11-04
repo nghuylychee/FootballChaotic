@@ -80,20 +80,23 @@
 html, body { width: 100%; height: 100%; background: #0a0b0e; overflow: clip; }
 body { font-family: var(--vt); color: var(--paper); -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
 
+/* main.js fit đặt left / top (góc trên trái đúng px thiết bị) + scale lấp màn hình */
 #stage {
-  position: absolute; left: 50%; top: 50%;
+  position: absolute; left: 0; top: 0;
   width: 640px; height: 360px;
-  transform-origin: center center;
+  transform-origin: 0 0;
   image-rendering: pixelated;
   overflow: clip;
 }
-/* canvas trận nằm ngoài #stage, cùng cỡ khung nhìn (main.js fit: 640 x 360 tới render.maxView theo tỉ lệ màn hình), cùng phép phóng, cùng tâm */
+/* canvas trận nằm ngoài #stage, cùng cỡ khung nhìn (main.js fit: 640 x 360 tới render.maxView theo tỉ lệ màn hình), cùng phép phóng, cùng góc */
 #game {
-  position: absolute; left: 50%; top: 50%;
+  position: absolute; left: 0; top: 0;
   display: block; width: 640px; height: 360px;
-  transform-origin: center center;
+  transform-origin: 0 0;
   image-rendering: pixelated; image-rendering: crisp-edges;
 }
+/* phóng không nguyên (main.js fit): phóng mượt cho mọi đường dày như nhau */
+#game.smooth { image-rendering: auto; }
 .hidden { display: none !important; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 

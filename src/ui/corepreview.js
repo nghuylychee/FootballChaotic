@@ -519,16 +519,16 @@ window.SFC = window.SFC || {};
       if (s.t >= (scn.len || 2.4)) this.reset();
     }
 
-    // Renderer vẽ canvas phụ gấp đôi (1280 x 720, sprite 2x) -> canvas xem trước cũng gấp đôi (Sprites.hiRes; w, h = cỡ logic), chép 1:1
+    // Renderer vẽ canvas phụ 640 x 360 -> chép 1:1 vùng quanh tâm camera
     draw(off, rend) {
-      const { w, h } = SFC.Sprites.hiRes(this.cv);
+      const w = this.cv.width, h = this.cv.height;
       const f = this.focusPt();
       this.cam.x += (f.x - this.cam.x) * 0.18;
       this.cam.y += (f.y - this.cam.y) * 0.18;
       rend.render(this.s.g);
       const sx = Math.round(U.clamp(this.cam.x - w / 2, 0, 640 - w)), sy = Math.round(U.clamp(this.cam.y - h / 2, 0, 360 - h));
       this.ctx.imageSmoothingEnabled = false;
-      this.ctx.drawImage(off, 2 * sx, 2 * sy, 2 * w, 2 * h, 0, 0, 2 * w, 2 * h);
+      this.ctx.drawImage(off, sx, sy, w, h, 0, 0, w, h);
     }
   }
 

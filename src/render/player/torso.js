@@ -7,10 +7,10 @@ window.SFC = window.SFC || {};
 (function () {
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
   const { SHIRT } = Sprite;
-  // bản đồ px mịn (scale 1) của thân, gốc như BODY.front (x -5, y -11 ô thế giới). Toạ độ màn hình (không lật theo hướng mặt, như thân đứng):
-  //  lean (px mịn): vai đi theo thân (draw đã dịch thân), hông kéo ngược về trên chân -> hàng dưới lệch -lean, hàng giữa lệch dần
+  // bộ phận lưới thế giới của thân, gốc như BODY.front (x -5, y -11). Toạ độ màn hình (không lật theo hướng mặt, như thân đứng):
+  //  lean (px, nguyên): vai đi theo thân (draw đã dịch thân), hông kéo ngược về trên chân -> hàng dưới lệch -lean, hàng giữa lệch dần theo ô
   //  twist -1 / 0 / 1: mép tối của áo đổi bên / dày ra, khe ống quần lệch ngược chiều (nhìn lên: chỉ khe quần)
-  //  hemL / hemR: lai quần bên đó nhấc lên 1 px mịn (đùi đang nhấc)
+  //  hemL / hemR: lai quần bên đó nhấc lên 1 ô (đùi đang nhấc); góc ngoài của lai nhấc bo như viền đáy thân đứng
   const cache = new Map();
   //  turn (chéo lên, thấy lưng): 1 = nhìn phải, -1 = nhìn trái -> cổ áo sau lệch 1 cột ngược hướng mặt như BODY.bdiag / bdiagL
   function torsoPart(back, lean = 0, twist = 0, hemL = false, hemR = false, turn = 0) {
@@ -22,21 +22,16 @@ window.SFC = window.SFC || {};
     if (!back && twist > 0) shirt = shirt.map(() => 'KTTTTTTTttK');
     if (!back && twist < 0) shirt = shirt.map(() => 'KtTTTTTTTTK');
     const slit = twist > 0 ? 'KPPPKPPPPPK' : twist < 0 ? 'KPPPPPKPPPK' : 'KPPPPKPPPPK';
-    const rows = ['KTKKKKKKKTK'].concat(shirt, ['KtttttttttK', 'KPPPPPPPPPK', slit, 'KKKKKKKKKKK']);
-    const fine = [];
-    rows.forEach((r) => { const d = r.split('').map((ch) => ch + ch).join(''); fine.push(d, d); });
-    const n = fine.length;
-    // lai quần: bên nhấc chân thì viền đáy dịch lên 1 px mịn (hàng n - 3 thành viền, hàng cuối trống)
-    fine.forEach((row, j) => {
-      const s = row.split('');
-      for (const [on, a, b] of [[hemL, 0, 11], [hemR, 11, 22]]) {
-        if (!on) continue;
-        for (let i = a; i < b; i++) { if (j === n - 3 && s[i] !== '.') s[i] = 'K'; if (j === n - 1) s[i] = '.'; }
-      }
-      fine[j] = s.join('');
-    });
-    const offs = fine.map((r, j) => Math.round((-lean * j) / (n - 1))), lo = Math.min(0, ...offs), hi = Math.max(0, ...offs);
-    part = { x: -10 + lo, y: -22, scale: 1, rows: fine.map((r, j) => '.'.repeat(offs[j] - lo) + r + '.'.repeat(hi - offs[j])) };
+    const rows = ['KTKKKKKKKTK'].concat(shirt, ['KtttttttttK', 'KPPPPPPPPPK', slit, '.KKKKKKKKK.']).map((r) => r.split(''));
+    const n = rows.length;
+    // lai quần nhấc: hàng khe quần (n - 2) thành viền, hàng đáy trống, ô ngoài cùng của hàng khe trống (góc bo). Nửa trái cột 0..5, nửa phải 5..10
+    for (const [on, a, b, edge] of [[hemL, 0, 6, 0], [hemR, 5, 11, 10]]) {
+      if (!on) continue;
+      for (let i = a; i < b; i++) { rows[n - 2][i] = 'K'; rows[n - 1][i] = '.'; }
+      rows[n - 2][edge] = '.';
+    }
+    const L = lean, offs = rows.map((r, j) => Math.round((-L * j) / (n - 1))), lo = Math.min(0, ...offs), hi = Math.max(0, ...offs);
+    part = { x: -5 + lo, y: -11, rows: rows.map((r, j) => '.'.repeat(offs[j] - lo) + r.join('') + '.'.repeat(hi - offs[j])) };
     cache.set(id, part);
     return part;
   }

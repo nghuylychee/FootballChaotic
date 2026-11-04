@@ -29,10 +29,10 @@ const res = await ev(`(() => {
 
   // nền = khung Village đủ lớp (cỏ, nhà, người, bóng đổ, bóng khung thành), lưới px game
   const [bg, bgx] = mk(V.W, V.H); V.draw(bgx, { t: 0.4 });
-  // canvas đủ khung x2; Renderer vẽ ở toạ độ màn 640 x 360 -> mọi setTransform dời thêm (OX2, OY2), ảnh nền vẽ lùi (-OX, -OY)
+  // canvas đủ khung x2; Renderer vẽ canvas 1x ở toạ độ màn 640 x 360 -> mọi setTransform phóng x2 và dời thêm (OX2, OY2), ảnh nền vẽ lùi (-OX, -OY)
   const [cv, ctx] = mk(W2, H2);
   const setT = ctx.setTransform.bind(ctx), draw = ctx.drawImage.bind(ctx);
-  ctx.setTransform = (a, b, c, d, e, f) => setT(a, b, c, d, e + OX2, f + OY2);
+  ctx.setTransform = (a, b, c, d, e, f) => setT(2 * a, 2 * b, 2 * c, 2 * d, 2 * e + OX2, 2 * f + OY2);
   ctx.resetTransform = () => ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.drawImage = (img, ...a) => ((img === bg || img === vig) && a.length === 2 ? draw(img, a[0] - V.OX, a[1] - V.OY) : draw(img, ...a));
   // lớp phủ toàn màn (trời tối, nháy sáng, viền đậm 4 cạnh) vẽ theo cỡ màn 640 x 360 -> dời ra mép khung như màn hình rộng hơn:
@@ -40,7 +40,7 @@ const res = await ev(`(() => {
   const fill = ctx.fillRect.bind(ctx);
   const span = (a, n, S, o, F) => (a === 0 && n === S ? [-o, F] : a === 0 ? [-o, n] : a + n === S ? [F - o - n, n] : [a, n]);
   ctx.fillRect = (x, y, w, h) => {
-    for (const [S1, S2, o1, o2, F1, F2] of [[640, 360, V.OX, V.OY, V.W, V.H], [1280, 720, OX2, OY2, W2, H2]]) {
+    for (const [S1, S2, o1, o2, F1, F2] of [[640, 360, V.OX, V.OY, V.W, V.H]]) {
       if (!((x === 0 && w === S1) || (y === 0 && h === S2))) continue;
       const [X, Wd] = span(x, w, S1, o1, F1), [Y, Hd] = span(y, h, S2, o2, F2);
       return fill(X, Y, Wd, Hd);

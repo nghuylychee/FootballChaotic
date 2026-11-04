@@ -18,22 +18,23 @@ window.SFC = window.SFC || {};
     return Sprite.shoePal ? Sprite.shoePal(o, pal) : pal;   // giày (shoes.js): thay O / G / g / J
   }
 
-  /* ---------- bộ phận: { x: cột trái, y: hàng trên, scale: 1 (mịn) | 2 (thế giới), rows } ---------- */
+  /* ---------- bộ phận: { x: cột trái, y: hàng trên, rows } theo ô thế giới (1 ô = 1 px game) ---------- */
   // chân như v2 leg(): viền · đầu gối · tất · giày · đế (chìa theo mũi giày) · viền đáy
-  const LEG_TR = { x: 0, y: -5, scale: 2, rows: ['KKKK.', 'KJJK.', 'KOOK.', 'KGGK.', 'KgggK', 'KKKKK'] };   // mũi phải, cột viền trái = x
-  const LEG_TL = { x: -1, y: -5, scale: 2, rows: ['.KKKK', '.KJJK', '.KOOK', '.KGGK', 'KgggK', 'KKKKK'] };  // mũi trái
-  const LEG_TN = { x: 0, y: -5, scale: 2, rows: ['KKKK', 'KJJK', 'KOOK', 'KGGK', 'KggK', 'KKKK'] };        // sau lưng: không mũi
+  // viền đáy bo 2 góc (gót, mũi): ô góc chỉ chạm màu giày ở góc chéo, để lại thì thành double (chữ L)
+  const LEG_TR = { x: 0, y: -5, rows: ['KKKK.', 'KJJK.', 'KOOK.', 'KGGK.', 'KgggK', '.KKK.'] };   // mũi phải, cột viền trái = x
+  const LEG_TL = { x: -1, y: -5, rows: ['.KKKK', '.KJJK', '.KOOK', '.KGGK', 'KgggK', '.KKK.'] };  // mũi trái
+  const LEG_TN = { x: 0, y: -5, rows: ['KKKK', 'KJJK', 'KOOK', 'KGGK', 'KggK', '.KK.'] };        // sau lưng: không mũi
   const at = (part, dx, dy = 0) => Object.assign({}, part, { x: part.x + dx, y: part.y + dy });
   // chạy: chân trụ trước (dài thêm 1 hàng da, bàn chân thấp hơn = gần máy quay hơn)
-  const PLANT_TR = { x: 0, y: -5, scale: 2, rows: ['KKKK.', 'KJJK.', 'KJJK.', 'KOOK.', 'KGGK.', 'KgggK', 'KKKKK'] };
-  const PLANT_TL = { x: -1, y: -5, scale: 2, rows: ['.KKKK', '.KJJK', '.KJJK', '.KOOK', '.KGGK', 'KgggK', 'KKKKK'] };
-  const PLANT_TN = { x: 0, y: -5, scale: 2, rows: ['KKKK', 'KJJK', 'KJJK', 'KOOK', 'KGGK', 'KggK', 'KKKK'] };
+  const PLANT_TR = { x: 0, y: -5, rows: ['KKKK.', 'KJJK.', 'KJJK.', 'KOOK.', 'KGGK.', 'KgggK', '.KKK.'] };
+  const PLANT_TL = { x: -1, y: -5, rows: ['.KKKK', '.KJJK', '.KJJK', '.KOOK', '.KGGK', 'KgggK', '.KKK.'] };
+  const PLANT_TN = { x: 0, y: -5, rows: ['KKKK', 'KJJK', 'KJJK', 'KOOK', 'KGGK', 'KggK', '.KK.'] };
   // nhấc gối ra trước: ngắn 1 hàng, mũi giày quay vào máy quay (không chìa ngang, không thấy đế)
-  const LIFT = { x: 0, y: -5, scale: 2, rows: ['KKKK', 'KJJK', 'KOOK', 'KGGK', 'KKKK'] };
+  const LIFT = { x: 0, y: -5, rows: ['KKKK', 'KJJK', 'KOOK', 'KGGK', '.KK.'] };
   // gót đá ra sau: ngắn 1 hàng như nhấc gối nhưng giày màu đế (thấy đế giày) · nhìn sau lưng: đế giày to hơn
-  const KICK_F = { x: 0, y: -5, scale: 2, rows: ['KKKK', 'KJJK', 'KOOK', 'KggK', 'KKKK'] };
-  const KICK_B = { x: 0, y: -5, scale: 2, rows: ['KKKK', 'KJJK', 'KggK', 'KggK', 'KKKK'] };
-  const LIFT_B = { x: 0, y: -5, scale: 2, rows: ['KKKK', 'KJJK', 'KOOK', 'KggK', 'KKKK'] };
+  const KICK_F = { x: 0, y: -5, rows: ['KKKK', 'KJJK', 'KOOK', 'KggK', '.KK.'] };
+  const KICK_B = { x: 0, y: -5, rows: ['KKKK', 'KJJK', 'KggK', 'KggK', '.KK.'] };
+  const LIFT_B = { x: 0, y: -5, rows: ['KKKK', 'KJJK', 'KOOK', 'KggK', '.KK.'] };
 
   // thân như v2 torso(): viền rộng 11, 2 vai, áo 3 hàng (mép phải tối; sau lưng hàng đầu tối = cổ áo sau), dải tối, quần 2 hàng (hàng cuối có khe ống quần).
   // Nhìn trước không còn vạch cổ áo mực giữa ngực dưới cổ (user 2026-11-01 bỏ)
@@ -46,7 +47,8 @@ window.SFC = window.SFC || {};
   // Tay + đầu bám theo đỉnh thân
   const BODY = (() => {
     const top = -11, arm = 3;   // đỉnh thân · số hàng da cẳng tay
-    const torso = (back) => ({ x: -5, y: top, scale: 2, rows: ['KTKKKKKKKTK'].concat(SHIRT(back), ['KtttttttttK', 'KPPPPPPPPPK', 'KPPPPKPPPPK', 'KKKKKKKKKKK']) });
+    // viền đáy quần bo 2 góc (ô góc chỉ chạm quần ở góc chéo = double)
+    const torso = (back) => ({ x: -5, y: top, rows: ['KTKKKKKKKTK'].concat(SHIRT(back), ['KtttttttttK', 'KPPPPPPPPPK', 'KPPPPKPPPPK', '.KKKKKKKKK.']) });
     return {
       TR: noKnee(LEG_TR), TL: noKnee(LEG_TL), TN: noKnee(LEG_TN),
       PTR: noKnee(PLANT_TR), PTL: noKnee(PLANT_TL), PTN: noKnee(PLANT_TN),
@@ -56,18 +58,19 @@ window.SFC = window.SFC || {};
       bdiag: Object.assign(torso(true), { rows: torso(true).rows.map((r, j) => (j === 1 ? 'KTtttttTTtK' : r)) }),
       bdiagL: Object.assign(torso(true), { rows: torso(true).rows.map((r, j) => (j === 1 ? 'KTTTttttttK' : r)) }),
       // tay gần như v2 armFull(): góc bo, 1 điểm tay áo, cẳng tay da 2 px (cột trong tối); cột phải là viền thân. Bàn tay chạm hàng quần cuối
-      arm: { x: -8, y: top + 1, scale: 2, rows: ['.KK', 'KKt'].concat(rep('KSs', arm), ['.KK']) },
+      // vai: viền chéo 1:1 từ thân xuống cẳng tay, các ô chỉ chạm góc (không double)
+      arm: { x: -8, y: top + 1, rows: ['..K', '.Kt'].concat(rep('KSs', arm), ['.KK']) },
       // chạy: tay vung ra sau -> bàn tay khuất sau thân, ngắn 1 hàng
-      armBack: { x: -8, y: top + 1, scale: 2, rows: ['.KK', 'KKt'].concat(rep('KSs', arm - 1), ['.KK']) },
+      armBack: { x: -8, y: top + 1, rows: ['..K', '.Kt'].concat(rep('KSs', arm - 1), ['.KK']) },
       // tay xa như v2 armBump(): cục da ló ra ngang hông
-      bump: { x: 6, y: top + 2, scale: 2, rows: ['K.'].concat(rep('sK', arm - 1), ['K.']) },
-      dy: (top + 13) * 2,   // (px mịn) đầu + mặt hạ xuống theo đỉnh thân (đầu khai báo cho thân cao 26)
+      bump: { x: 6, y: top + 2, rows: ['K.'].concat(rep('sK', arm - 1), ['K.']) },
+      dy: top + 13,   // đầu + mặt hạ xuống theo đỉnh thân (đầu khai báo cho thân cao 26)
     };
   })();
 
   // đầu A (lưới thế giới): rộng 15, cao 13, góc bo gần đầu tròn hiện tại
   const HEAD_A = {
-    front: { x: -7, y: -25, scale: 2, rows: [
+    front: { x: -7, y: -25, rows: [
       '....KKKKKKK....',
       '..KKHHHHHHHKK..',
       '.KHHHHHHHHHHHK.',
@@ -77,12 +80,12 @@ window.SFC = window.SFC || {};
       'KSSSSSSSSSSSSsK',
       'KSSSSSSSSSSSSsK',
       'KSSSSSSSSSSSSsK',
-      'KKSSSSSSSSSSsKK',
-      '.KKSSSSSSSSsKK.',
-      '..KKsssssssKK..',
+      '.KSSSSSSSSSSsK.',
+      '..KSSSSSSSSsK..',
+      '...KsssssssK...',
       '....KKKKKKK....',
     ] },
-    back: { x: -7, y: -25, scale: 2, rows: [
+    back: { x: -7, y: -25, rows: [
       '....KKKKKKK....',
       '..KKHHHHHHHKK..',
       '.KHHHHHHHHHHHK.',
@@ -92,14 +95,14 @@ window.SFC = window.SFC || {};
       'KHHHHHHHHHHHHHK',
       'KHHHHHHHHHHHHHK',
       'KHHHHHHHHHHHHHK',
-      'KKHHHHHHHHHHHKK',
-      '.KKSSSSSSSSSKK.',
-      '..KKsssssssKK..',
+      '.KHHHHHHHHHHHK.',
+      '..KSSSSSSSSSK..',
+      '...KsssssssK...',
       '....KKKKKKK....',
     ] },
     // chéo lên (bdiag, hình nhìn phải; nhìn trái = lật): sau gáy xoay theo người -> nút băng đô lệch 1 cột ngược hướng mặt,
     // bên hướng mặt lộ dải má + quai hàm 2 cột dưới chân tóc (tóc mai che hàng đầu dưới băng đô)
-    bdiag: { x: -7, y: -25, scale: 2, rows: [
+    bdiag: { x: -7, y: -25, rows: [
       '....KKKKKKK....',
       '..KKHHHHHHHKK..',
       '.KHHHHHHHHHHHK.',
@@ -109,9 +112,9 @@ window.SFC = window.SFC || {};
       'KHHHHHHHHHHHSsK',
       'KHHHHHHHHHHHSsK',
       'KHHHHHHHHHHHSsK',
-      'KKHHHHHHHHHHSKK',
-      '.KKSSSSSSSSsKK.',
-      '..KKsssssssKK..',
+      '.KHHHHHHHHHHSK.',
+      '..KSSSSSSSSsK..',
+      '...KsssssssK...',
       '....KKKKKKK....',
     ] },
   };
@@ -139,7 +142,7 @@ window.SFC = window.SFC || {};
     else cell(ctx, X, Y, -1 + ex, -15, 2, 1, kind === 'stun' ? INK : pal.M);
   }
 
-  // bóng như v2: elip mịn của game vẽ ở lưới thế giới rồi nhân đôi (giữ đúng mép px) · k = thu nhỏ khi nhảy
+  // bóng như v2: elip của game vẽ sẵn ở lưới thế giới (giữ đúng mép px) · k = thu nhỏ khi nhảy
   const shadowImgs = {};
   function shadow(ctx, X, Y, k = 1) {
     if (typeof document === 'undefined') return;
@@ -150,7 +153,7 @@ window.SFC = window.SFC || {};
       s.fillStyle = 'rgba(0,0,0,0.38)'; s.beginPath(); s.ellipse(10, 4, 7 * k, 2.5 * k, 0, 0, Math.PI * 2); s.fill();
     }
     const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(img, X - 20, Y + 2 - 8, 40, 16);
+    ctx.drawImage(img, X - 10, Y + 1 - 4, 20, 8);
     ctx.imageSmoothingEnabled = sm;
   }
 

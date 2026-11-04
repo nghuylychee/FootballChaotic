@@ -22,12 +22,12 @@ window.SFC = window.SFC || {};
     { hip: [-3, -2, 2], ang: [P / 2, 0.66 * P, 0.36 * P], arms: [[P - 1.3, 1.2], [P - 1.2, 1.0]] },
     { hip: [2, 2, 2], end: [[2, -4], [2, -5], [2, -3]], foot: [[0, 1, ['GG', 'gg']], [0, 1, ['gg', 'gg']], [0, 1, ['GGG', 'ggg']]], over: [false, false, true], arms: [[P - 1.3, 1.3], [P - 1.3, 1.1]] });
   Object.assign(KICKS, { pass: PASS, lob: LOB, push: PUSH });
-  // nhịp (giây, Sprite.kickTimeline): lấy đà w · vung s · giữ hết tầm f · về o · cw khuỵu, lb ngả sau lúc lấy đà, lf lao tới (âm = ngả sau), hop bật (px mịn).
+  // nhịp (giây, Sprite.kickTimeline): lấy đà w · vung s · giữ hết tầm f · về o · cw khuỵu, lb ngả sau lúc lấy đà, lf lao tới (âm = ngả sau), hop bật (px).
   // calm = không tia sáng chạm bóng. Bóng rời chân lúc thả phím nên game vẽ từ đầu cú vung; lấy đà chỉ hiện lúc đang giữ phím nạp lực chuyền
   const PASS_T = {
-    pass: { w: 0.08, s: 0.06, f: 0.1, o: 0.12, lf: 1, calm: true },
-    lob: { w: 0.1, s: 0.08, f: 0.14, o: 0.16, cw: 1, lb: 1, lf: -2, hop: 2, calm: true },
-    push: { w: 0.03, s: 0.04, f: 0.04, o: 0.05, lf: 1, calm: true },
+    pass: { w: 0.08, s: 0.06, f: 0.1, o: 0.12, lf: 0.5, calm: true },
+    lob: { w: 0.1, s: 0.08, f: 0.14, o: 0.16, cw: 0.5, lb: 0.5, lf: -1, hop: 1, calm: true },
+    push: { w: 0.03, s: 0.04, f: 0.04, o: 0.05, lf: 0.5, calm: true },
   };
 
   Object.assign(Sprite, { PASS, LOB, PUSH, PASS_T });

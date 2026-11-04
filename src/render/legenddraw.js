@@ -265,8 +265,9 @@ window.SFC = window.SFC || {};
         ctx.fillStyle = i % 2 ? s.color : '#ffffff'; ctx.fillRect(R ? E - x - w : Sc.x + x, yb + 5 + i * 7, w, 1);
       }
       ctx.globalAlpha = 1;
-      // chân dung pixel lớn (áo đội của người đeo / người ra chiêu), nhìn vào giữa màn hình
+      // chân dung pixel lớn (áo đội của người đeo / người ra chiêu), nhìn vào giữa màn hình. Gốc dời về px màn hình nguyên: dải trượt vào theo số thực
       ctx.translate(X(52), yb + hb + 34); ctx.scale(4, 4);
+      const T = ctx.getTransform(); ctx.setTransform(T.a, T.b, T.c, T.d, Math.round(T.e), Math.round(T.f));
       SP().drawPlayer(ctx, { x: 0, y: 0, vx: 0, vy: 0, facing: R ? Math.PI : 0, anim: 0.3, state: 'normal', flash: 0, team: s.team, role: s.role, look: s.look }, g, 0.999);
       ctx.restore();
       // chữ: nhãn · tên chính (to, màu dải) · tên phụ

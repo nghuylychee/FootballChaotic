@@ -117,39 +117,11 @@ window.SFC = window.SFC || {};
     }
   }
 
-  // canvas hiện trên trang (menu, thẻ, icon): gấp đôi độ phân giải để sprite 2x (src/render/player) hiện đủ px mịn, cỡ hiển thị giữ nguyên.
-  // Cỡ cũ = cỡ logic (w, h). CSS không đặt cỡ (cỡ hiển thị = cỡ canvas) thì ghim cỡ cũ bằng style. Người gọi đổi canvas.width -> tính lại
-  function hiRes(canvas) {
-    if (canvas.width !== canvas._hdW || canvas.height !== canvas._hdH) {
-      const w = canvas.width, h = canvas.height;
-      if (canvas.isConnected && !canvas.style.width && typeof getComputedStyle === 'function') {
-        const cs = getComputedStyle(canvas);
-        if (cs.width === w + 'px' && cs.height === h + 'px') { canvas.style.width = w + 'px'; canvas.style.height = h + 'px'; }
-      }
-      canvas.width = w * 2; canvas.height = h * 2;
-      canvas._hdW = canvas.width; canvas._hdH = canvas.height;
-    }
-    return { w: canvas.width / 2, h: canvas.height / 2 };
-  }
-  let flatBuf = null;
-
   // vẽ character đứng một mình (menu / shop / hồ sơ) — canvas nhỏ, CSS phóng to kiểu pixel
   // extra: ghi đè trạng thái vẽ (vd. { vx: 40 } = chạy, { atkType: 'shoot' | 'light', atkT } = tư thế ra đòn) — màn giới thiệu đội hình
-  // flat: canvas là bộ đệm 1x ghép vào cảnh pixel (KIT VAN, cảnh Story, phòng trưng bày): vẽ 2x ra bộ đệm riêng rồi thu về lưới game (lấy mẫu điểm gần nhất)
-  function drawAvatar(canvas, look, kit, t = 0, facing = Math.PI / 2, extra = null, flat = false) {
-    if (flat) {
-      const w = canvas.width, h = canvas.height;
-      flatBuf = flatBuf || document.createElement('canvas');
-      flatBuf.width = w; flatBuf.height = h;
-      drawAvatar(flatBuf, look, kit, t, facing, extra);
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, w, h);
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(flatBuf, 0, 0, w, h);
-      return;
-    }
-    const { w, h } = hiRes(canvas), ctx = canvas.getContext('2d');
-    ctx.setTransform(2, 0, 0, 2, 0, 0);
+  function drawAvatar(canvas, look, kit, t = 0, facing = Math.PI / 2, extra = null) {
+    const w = canvas.width, h = canvas.height, ctx = canvas.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const g = { teams: [{ cfg: { kit } }], previewLook: look };
     const x = w / 2, y = h - 4;
@@ -244,17 +216,9 @@ window.SFC = window.SFC || {};
   }
 
   /* ---------- bóng ---------- */
-  // lưới vẽ vị trí như cầu thủ (Renderer.posGrid, PlayerSprite.drawPlayer): canvas trận x2 -> nửa px thế giới = 1 px màn hình. Vẽ ở ô nguyên rồi
-  // dời cả canvas phần lẻ (px / disc cắt toạ độ về số nguyên). Canvas 1x (ảnh xem trước): giữ lưới px nguyên, nửa px sẽ nhoè
-  function drawBall(ctx, b, alpha = 1) {
-    const T = ctx.getTransform(), R = SFC.Renderer, fine = R && Math.abs(T.a) >= 2 && Math.abs(T.d) >= 2;
-    const snap = (v) => (fine ? R.snap(v) : Math.round(v));
-    const hx = snap(b.x), hby = snap(b.y - b.z - 3), ox = hx - Math.floor(hx), oy = hby - Math.floor(hby);
-    if (ox || oy) { ctx.save(); ctx.translate(ox, oy); }
-    drawBallAt(ctx, b, Math.floor(hx), snap(b.y) - oy, Math.floor(hby), alpha);
-    if (ox || oy) ctx.restore();
-  }
-  // (x, by) = tâm bóng ở ô nguyên, y = mặt đất (đã trừ phần dời dọc), canvas đã dời phần nửa px
+  // ở px game nguyên như cầu thủ (PlayerSprite.drawPlayer)
+  function drawBall(ctx, b, alpha = 1) { drawBallAt(ctx, b, Math.round(b.x), Math.round(b.y), Math.round(b.y - b.z - 3), alpha); }
+  // (x, by) = tâm bóng, y = mặt đất
   function drawBallAt(ctx, b, x, y, by, alpha) {
     const s = Math.max(1.2, 3.2 - b.z * 0.05);
     ctx.globalAlpha = alpha;
@@ -289,31 +253,31 @@ window.SFC = window.SFC || {};
   }
 
   // icon costume trên ô item (hộp gacha / túi đồ): vẽ character mặc món đó rồi phóng to vùng liên quan
-  // (tóc & mặt -> cái đầu, giày -> bàn chân nhìn chéo cho thấy mũi + đồ quanh đế, hiệu ứng -> cả người). Vùng cắt tính trên avatar 40x44 (cỡ logic;
-  // avatar và canvas icon đều gấp đôi độ phân giải, xem hiRes)
-  const ICON_CROP = { hair: [5, 6, 30, 30], face: [9, 13, 22, 22], shoes: [10, 36, 20, 8], fx: [4, 2, 32, 42] };
+  // (tóc & mặt -> cái đầu, giày -> bàn chân nhìn chéo cho thấy mũi + đồ quanh đế, hiệu ứng -> cả người). Vùng cắt tính trên avatar 40x44;
+  // phóng số nguyên lần (phóng lẻ thì px không đều)
+  const ICON_CROP = { hair: [5, 6, 30, 30], face: [10, 14, 20, 20], shoes: [10, 36, 20, 8], fx: [4, 2, 32, 42] };
   let iconBuf = null;
   function drawItemIcon(canvas, look, kit, slot) {
-    const { w: cw, h: ch } = hiRes(canvas), ctx = canvas.getContext('2d');
+    const cw = canvas.width, ch = canvas.height, ctx = canvas.getContext('2d');
     iconBuf = iconBuf || document.createElement('canvas');
     ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, cw, ch);
     if (slot === 'cel' && SFC.CelebrateDraw) {
       // động tác ăn mừng: character đứng đúng khoảnh khắc đặc trưng của động tác (CelebrateDraw.iconT), cả người
       iconBuf.width = 48; iconBuf.height = 52;
       drawAvatar(iconBuf, look, kit, 0.3, Math.PI / 2, { celId: look.cel, celT: SFC.CelebrateDraw.iconT(look.cel), icon: true });
-      ctx.drawImage(iconBuf, 2 * Math.round((cw - 48) / 2), 2 * (ch - 50));
+      ctx.drawImage(iconBuf, Math.round((cw - 48) / 2), ch - 50);
       return;
     }
     iconBuf.width = 40; iconBuf.height = 44;
     drawAvatar(iconBuf, look, kit, 0.3, slot === 'shoes' ? Math.PI / 4 : Math.PI / 2);
     const [sx, sy, sw, sh] = ICON_CROP[slot] || ICON_CROP.fx;
-    const k = Math.max(1, Math.floor(Math.min(cw / sw, ch / sh) * 2) / 2);
+    const k = Math.max(1, Math.floor(Math.min(cw / sw, ch / sh)));
     const w = sw * k, h = sh * k;
-    ctx.drawImage(iconBuf, 2 * sx, 2 * sy, 2 * sw, 2 * sh, 2 * Math.round((cw - w) / 2), 2 * Math.round((ch - h) / 2), 2 * w, 2 * h);
+    ctx.drawImage(iconBuf, sx, sy, sw, sh, Math.round((cw - w) / 2), Math.round((ch - h) / 2), w, h);
   }
 
-  // người chơi + hạt trang phục vẽ bằng sprite 2x (SFC.PlayerSprite, src/render/player, nạp sau file này; bản 1x cũ đã xoá 2026-11-01)
+  // người chơi + hạt trang phục vẽ bằng Sprite v2 (SFC.PlayerSprite, src/render/player, nạp sau file này; sprite cũ đã xoá 2026-11-01)
   const spritePlayer = (...a) => SFC.PlayerSprite.drawPlayer(...a), spriteFx = (...a) => SFC.PlayerSprite.drawFxParticle(...a);
-  SFC.Sprites = { OUT, px, disc, ellipse, ringPx, drawPlayer: spritePlayer, drawBall, drawAvatar, drawItemIcon, hiRes, FX, spawnFx, stepFx, drawFxParticle: spriteFx };
+  SFC.Sprites = { OUT, px, disc, ellipse, ringPx, drawPlayer: spritePlayer, drawBall, drawAvatar, drawItemIcon, FX, spawnFx, stepFx, drawFxParticle: spriteFx };
 })();

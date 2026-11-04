@@ -7,25 +7,25 @@ window.SFC = window.SFC || {};
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
   const { armAt, at, lerp, rectW, stamp } = Sprite;
   // Game (firstTime.header): bật nhảy trước khi chạm lead 0.22 s, cả cú nhảy pose 0.5 s, cao hop 14 px (chỉ vẽ). headerPose đặt tiến độ ≥ 42% lúc chạm
-  // (chưa kịp nhảy: bắt đầu từ 30%) -> chạm bóng ngay trước đỉnh nhảy (50%). attackPose trả hk = tiến độ 0..1 + khop (bật nhảy, px mịn).
-  // Tư thế khoá theo tiến độ [từ, tới] (giữ nguyên, lưới thế giới); giữa 2 tư thế khoá nội suy ở lưới mịn.
-  // c = khuỵu (px mịn) · bx = thân (px mịn, chỉ nhìn ngang / chéo) · hx / hy = đầu (px mịn; hx chỉ nhìn ngang / chéo) · legs = kiểu chân
+  // (chưa kịp nhảy: bắt đầu từ 30%) -> chạm bóng ngay trước đỉnh nhảy (50%). attackPose trả hk = tiến độ 0..1 + khop (bật nhảy, px).
+  // Tư thế khoá theo tiến độ [từ, tới] (giữ nguyên); giữa 2 tư thế khoá nội suy rồi làm tròn tới ô thế giới (draw.js snapPx: nửa px lên 1 px).
+  // c = khuỵu (px) · bx = thân (px, chỉ nhìn ngang / chéo) · hx / hy = đầu (px; hx chỉ nhìn ngang / chéo) · legs = kiểu chân
   // side / front = góc 2 tay [i 0, i 1] (0 trước, π/2 xuống, π sau; hình nhìn phải), front dùng cho cả nhìn lên
   const P = Math.PI;
   const KEYS = [
     { k: [0, 0], c: 0, bx: 0, hx: 0, hy: 0, legs: 'stand', side: [P / 2, P / 2], front: [P / 2, P / 2] },
     // lấy đà: khuỵu, 2 tay vung ra sau / xuống
-    { k: [0.08, 0.14], c: 2, bx: -1, hx: 0, hy: 0, legs: 'bend', side: [P - 0.6, 1.9], front: [P - 0.6, 0.6] },
+    { k: [0.08, 0.14], c: 1, bx: -0.5, hx: 0, hy: 0, legs: 'bend', side: [P - 0.6, 1.9], front: [P - 0.6, 0.6] },
     // bật lên: tay vung lên trước, gót co lên
     { k: [0.28, 0.28], c: 0, bx: 0, hx: 0, hy: 0, legs: 'tuck', side: [-1.1, -1.0], front: [P + 0.6, -0.6] },
     // đỉnh, trước khi chạm: thân + đầu ngả ra sau, tay giơ cao
-    { k: [0.38, 0.44], c: 0, bx: -1, hx: -1, hy: -1, legs: 'tuck', side: [-1.45, -1.3], front: [P + 1.1, -1.1] },
+    { k: [0.38, 0.44], c: 0, bx: -0.5, hx: -0.5, hy: -0.5, legs: 'tuck', side: [-1.45, -1.3], front: [P + 1.1, -1.1] },
     // gật: đầu lao tới / cúi xuống, thân theo, 2 tay giật xuống ra sau
-    { k: [0.5, 0.58], c: 0, bx: 1, hx: 2, hy: 1, legs: 'reach', side: [P - 0.5, 2.0], front: [P - 0.3, 0.3] },
+    { k: [0.5, 0.58], c: 0, bx: 0.5, hx: 1, hy: 0.5, legs: 'reach', side: [P - 0.5, 2.0], front: [P - 0.3, 0.3] },
     // rơi: tay dang xuống, chân duỗi đón đất
     { k: [0.78, 0.78], c: 0, bx: 0, hx: 0, hy: 0, legs: 'stand', side: [P - 0.9, 1.3], front: [P - 0.8, 0.8] },
     // tiếp đất: khuỵu
-    { k: [0.86, 0.92], c: 2, bx: 0, hx: 0, hy: 0, legs: 'bend', side: [P / 2 + 0.3, P / 2 - 0.3], front: [P - 1.2, 1.2] },
+    { k: [0.86, 0.92], c: 1, bx: 0, hx: 0, hy: 0, legs: 'bend', side: [P / 2 + 0.3, P / 2 - 0.3], front: [P - 1.2, 1.2] },
     { k: [1, 1], c: 0, bx: 0, hx: 0, hy: 0, legs: 'stand', side: [P / 2, P / 2], front: [P / 2, P / 2] },
   ];
   // tư thế lúc tiến độ k: số nội suy, kiểu chân lấy theo tư thế gần hơn, held = đang ở tư thế khoá
@@ -57,9 +57,9 @@ window.SFC = window.SFC || {};
   function headerArms(ctx, X, Y, mir, view, hp, pal, hand, behindOnly) {
     // nhìn chéo: tay xa (chéo xuống: bên phải hình · chéo lên: bên trái hình) nằm sau thân (vẽ trước thân, da tối)
     const far = Sprite.farArm(view);
-    if (far >= 0) { const near = 1 - far; if (behindOnly) armAt(ctx, X, Y, mir, far, hp.arms[far], pal, hand, true, !hp.held); else armAt(ctx, X, Y, mir, near, hp.arms[near], pal, hand, false, !hp.held); return; }
+    if (far >= 0) { const near = 1 - far; if (behindOnly) armAt(ctx, X, Y, mir, far, hp.arms[far], pal, hand, true); else armAt(ctx, X, Y, mir, near, hp.arms[near], pal, hand, false); return; }
     if (behindOnly) return;
-    armAt(ctx, X, Y, mir, 0, hp.arms[0], pal, hand, false, !hp.held); armAt(ctx, X, Y, mir, 1, hp.arms[1], pal, hand, false, !hp.held);
+    armAt(ctx, X, Y, mir, 0, hp.arms[0], pal, hand, false); armAt(ctx, X, Y, mir, 1, hp.arms[1], pal, hand, false);
   }
   // trúng bóng: tia sáng hình + ở trán (ngang: trước trán · xuống: giữa trán, phía máy quay · lên: trên đỉnh đầu). Toạ độ theo đầu (X, Y = gốc đầu)
   function headerImpact(ctx, X, Y, mir, view) {

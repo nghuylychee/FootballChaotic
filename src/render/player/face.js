@@ -17,17 +17,8 @@ window.SFC = window.SFC || {};
   const FACE = new Set([...HEAD.front].filter(([k, ch]) => +k.split(',')[1] >= -21 && ch !== 'K').map(([k]) => k));
 
   // 1 lớp: cells [[x, y, ký tự]] · clip 'in' = chỉ trong viền đầu, 'head' = cả viền, không có = không cắt · ink = viền mực 4 hướng (trừ lên da mặt)
-  // fine = ô là px mịn (nửa ô thế giới, user 2026-11-01: vẽ chi tiết tới từng px), cắt theo ô thế giới chứa nó, không tự viền
   function paint(ctx, X, Y, op, hp, back) {
     const head = HEAD[back ? 'back' : 'front'], keep = new Map();
-    if (op.fine) {
-      for (const [x, y, ch] of op.cells) {
-        const h = head.get(Math.floor(x / 2) + ',' + Math.floor(y / 2));
-        if ((op.clip === 'in' && (!h || h === 'K')) || (op.clip === 'head' && !h)) continue;
-        ctx.fillStyle = hp[ch] || ch; ctx.fillRect(X + x, Y + y, 1, 1);
-      }
-      return;
-    }
     for (const [x, y, ch] of op.cells) {
       const k = x + ',' + y, h = head.get(k);
       if ((op.clip === 'in' && (!h || h === 'K')) || (op.clip === 'head' && !h)) continue;
@@ -60,25 +51,26 @@ window.SFC = window.SFC || {};
   const ITEMS = {
     // băng cá nhân dán ngang sống mũi (kiểu anime thể thao): 2 đầu nâu sẫm, giữa gạc trắng phủ mũi (da sáng vẫn nổi); nhìn nghiêng ngắn lại
     bandaid: {
-      pal: { B: '#e9ad6a', b: '#cf8d4c', P: '#fdf3e1', p: '#e6d6bd', d: '#8f5426', o: '#b8783e' },
+      pal: { B: '#e9ad6a', b: '#cf8d4c', P: '#fdf3e1', p: '#e6d6bd' },
       draw: (c) => {
-        // px mịn (user: chi tiết tới từng px): băng chéo trên má, 12 cột x 4 hàng (viền nâu sẫm · thân băng có lỗ thoáng · gạc trắng giữa có chấm),
-        // 2 đầu bo tròn, cứ 4 cột nâng 1 px (dốc lên về phía tai). Nhìn xuống / chéo: má phải màn hình, cắt theo mép đầu (băng vòng qua má);
-        // nhìn ngang: má sau miệng (phía tai) = bản lật. Nhìn trái = bản lật của nhìn phải
-        const COLS = ['.dd.', 'dBbd', 'doBd', 'dBod', 'dPpd', 'dPPd', 'dpPd', 'dPpd', 'dBod', 'doBd', 'dBbd', '.dd.'];
-        const cells = [], e2 = 2 * c.ex, flip = (c.view === 'side') !== c.m;
-        COLS.forEach((col, i) => { for (let j = 0; j < 4; j++) if (col[j] !== '.') {
-          const x = e2 + 2 + i, y = -30 - Math.floor(i / 4) + j;
-          cells.push([flip ? 2 * e2 - 1 - x : x, y, col[j]]);
+        // băng chéo trên má, 6 cột x 2 hàng (2 đầu nâu sẫm · thân băng · gạc trắng giữa), nửa sau nâng 1 ô (dốc lên về phía tai). Nhìn xuống / chéo:
+        // má phải màn hình, cắt theo mép đầu (băng vòng qua má); nhìn ngang: má sau miệng (phía tai) = bản lật. Nhìn trái = bản lật của nhìn phải.
+        // Bản nửa px (viền, lỗ thoáng, chấm gạc) bỏ 2026-11-04 khi bỏ nửa px
+        const COLS = ['bb', 'BB', 'Pp', 'pP', 'BB', 'bb'];
+        const cells = [], flip = (c.view === 'side') !== c.m;
+        COLS.forEach((col, i) => { for (let j = 0; j < 2; j++) {
+          const x = c.ex + 1 + i, y = -15 - Math.floor(i / 3) + j;
+          cells.push([flip ? 2 * c.ex - 1 - x : x, y, col[j]]);
         } });
-        return [{ fine: true, clip: 'in', cells }];
+        return [{ clip: 'in', cells }];
       },
     },
-    // ria hải mã màu tóc (px mịn; user 2026-11-01 chọn trong 5 kiểu: ghi đông / chevron / bút chì / hải mã / móng ngựa — miệng nhỏ nên ria nào chừa miệng
-    // cũng trông lạ): khối rậm 16 px dưới mũi có viền mực, sợi sáng, che miệng, sợi rủ xuống tới cằm; há miệng thì khoang miệng lưỡi đỏ hiện dưới ria
+    // ria hải mã màu tóc (user 2026-11-01 chọn trong 5 kiểu: ghi đông / chevron / bút chì / hải mã / móng ngựa — miệng nhỏ nên ria nào chừa miệng
+    // cũng trông lạ): khối rậm 8 ô dưới mũi, che miệng, rủ xuống tới cằm, 2 đầu sẫm; há miệng thì khoang miệng lưỡi đỏ hiện dưới ria.
+    // Không viền mực, không sợi sáng (ở px game viền mực dính vào mắt, sợi sáng trông như răng)
     mustache: {
       pal: { r: '#c0304a' },
-      draw: (c) => moustache(c, -31, ['..KHHHK.', '.KHLHHHH', 'KHHHLHHH', 'KHhHHhHh', 'KhH.hH.h'], -27),
+      draw: (c) => moustache(c, -16, ['...H', 'hHHH', '.H.H']),
     },
     // má hồng: 2 vệt hồng tròn dưới mắt (giữa đậm), pha theo màu da
     blush: {
@@ -155,13 +147,13 @@ window.SFC = window.SFC || {};
     },
     // mũi hề: quả cầu đỏ chấm sáng, đáy sẫm, che miệng thường -> miệng dời xuống 1 hàng dưới quả mũi (ăn mừng: há miệng lưỡi đỏ)
     clown: {
-      pal: (c) => ({ R: '#ff2f3f', r: '#b8162a', V: '#ffe3e6', v: '#ff8a96', M: c.M, t: '#c0304a' }),
+      pal: (c) => ({ R: '#ff2f3f', r: '#b8162a', V: '#ffe3e6', M: c.M }),
       draw: (c) => {
-        // px mịn (user: chi tiết tới từng px): quả cầu 8 x 7 px giữa trục mặt, viền mực, chấm sáng trên trái + vệt sáng, mặt dưới phải sẫm;
-        // 2 hàng trên hẹp lọt giữa 2 mắt. Miệng cười chữ U rộng ôm dưới quả mũi (há miệng: khoang miệng lưỡi đỏ)
-        const e2 = 2 * c.ex, cells = rows(e2 - 4, -34, ['..KKKK..', '.KvVRRK.', 'KRVVRRrK', 'KRvRRRrK', 'KRRRRrrK', '.KrrrrK.', '..KKKK..']);
-        rows(e2 - 5, -29, c.mouth ? ['M........M', '.MKKKKKKM.', '..KttttK..', '...KKKK...'] : ['M........M', '.M......M.', '..MMMMMM..'], cells);
-        return [{ fine: true, clip: 'in', cells }];
+        // quả cầu 4 x 4 ô giữa trục mặt (4 x 3 trông như dấu cộng), chấm sáng trên trái, mặt dưới phải sẫm; hàng trên hẹp lọt giữa 2 mắt.
+        // Miệng cười chữ U ôm 2 bên quả mũi (há miệng: khoé miệng mực)
+        const cells = rows(c.ex - 2, -17, ['.VR.', 'RRRr', 'RRrr', '.rr.']), m = c.mouth ? 'K' : 'M';
+        rows(c.ex - 3, -15, [m + '....' + m, '.' + m + '..' + m + '.'], cells);
+        return [{ clip: 'in', cells }];
       },
     },
     // răng vàng: nụ cười nhe 1 hàng răng (1 chiếc vàng), cứ 1.8 s chiếc vàng loé sáng thành ngôi sao 4 cánh (to ra rồi nhỏ lại)
@@ -337,12 +329,12 @@ window.SFC = window.SFC || {};
       },
     },
   };
-  // ria (px mịn): half = nửa trái từ ngoài vào trục mặt, lật sang phải; y0 = hàng trên cùng. Ria che miệng, há miệng thì vẽ khoang miệng 4 x 2 ở openY
-  function moustache(c, y0, half, openY) {
-    const e2 = 2 * c.ex, w = half[0].length, cells = [];
-    half.forEach((r, j) => { for (let i = 0; i < w; i++) if (r[i] !== '.') cells.push([e2 - w + i, y0 + j, r[i]], [e2 + w - 1 - i, y0 + j, r[i]]); });
-    if (c.mouth) rows(e2 - 2, openY, ['KrrK', 'KKKK'], cells);
-    return [{ fine: true, clip: 'in', cells }];
+  // ria: half = nửa trái từ ngoài vào trục mặt, lật sang phải; y0 = hàng trên cùng. Ria che miệng, há miệng thì khoang miệng 4 x 1 đè hàng dưới của ria
+  function moustache(c, y0, half) {
+    const w = half[0].length, cells = [];
+    half.forEach((r, j) => { for (let i = 0; i < w; i++) if (r[i] !== '.') cells.push([c.ex - w + i, y0 + j, r[i]], [c.ex + w - 1 - i, y0 + j, r[i]]); });
+    if (c.mouth) rows(c.ex - 2, y0 + half.length - 1, ['KrrK'], cells);
+    return [{ clip: 'in', cells }];
   }
   // 2 dải khăn ninja từ nút (bx, by): mỗi dải 1 lớp có viền riêng (vẽ sau đè viền lên dải trước -> 2 dải tách nhau), uốn sóng theo anim, đầu dải sẫm.
   // dir = hướng bay ra (nhìn nghiêng: ra sau gáy, dải dưới rủ dần) · dir 0 = rủ xuống gáy, 2 dải xoè dần sang 2 bên
@@ -365,15 +357,14 @@ window.SFC = window.SFC || {};
   const CHEEK = Sprite.BDIAG_CHEEK;
   const onCheek = (x, y, s) => CHEEK.has(s * x + ',' + y);
   function turnOp(op, s) {
-    const k = op.fine ? 2 : 1, cell = (x, y) => (op.fine ? [Math.floor(x / 2), Math.floor(y / 2)] : [x, y]);
     const at = new Map(op.cells.map(([x, y, ch]) => [x + ',' + y, ch]));
-    const cells = op.cells.filter(([x, y]) => !onCheek(...cell(x, y), s)).map(([x, y, ch]) => [x, y, at.get((x + s * k) + ',' + y) || ch]);
+    const cells = op.cells.filter(([x, y]) => !onCheek(x, y, s)).map(([x, y, ch]) => [x, y, at.get((x + s) + ',' + y) || ch]);
     return Object.assign({}, op, { cells });
   }
   // dải má lấy từ bản nhìn phải rồi lật khi nhìn trái (nhìn trái = hình lật; bản nhìn ngang trái lệch mặt ít hơn nên cắt ra khác)
   const cheekOp = (op, mir) => Object.assign({}, op, { ink: false, cells: op.cells
-    .filter(([x, y]) => onCheek(...(op.fine ? [Math.floor(x / 2), Math.floor(y / 2)] : [x, y]), 1))
-    .map(([x, y, ch]) => (mir ? [op.fine ? 1 - x : -x, y, ch] : [x, y, ch])) });
+    .filter(([x, y]) => onCheek(x, y, 1))
+    .map(([x, y, ch]) => (mir ? [-x, y, ch] : [x, y, ch])) });
 
   // o: { back, bd (chéo lên), fx, fy (hướng mặt), anim, eyes (kiểu mắt như face()), mouth (há miệng), pal (bảng màu người), hair, skin }
   function drawFace(ctx, X, Y, id, o) {

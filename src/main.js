@@ -380,18 +380,31 @@
     return app.screen === 'game' && !!g && g.state !== 'draft' && g.state !== 'ended' && !SFC.Drill.active && !SFC.OnlineUI.overlay;
   }
 
-  // phóng đúng tỉ lệ cửa sổ (không làm tròn) sao cho khung 640 x 360 luôn vừa. Khung nhìn (px game) theo tỉ lệ cửa sổ, tối đa render.maxView:
-  // cửa sổ rộng / cao hơn 16:9 thấy thêm cảnh quanh sân thay vì viền đen, và #stage (menu, HUD) giãn theo nên UI bám mép màn hình thật.
-  // #stage và canvas trận cùng cỡ, cùng phép phóng, cùng tâm; sân 640 x 360 luôn ở giữa
+  // phóng lấp màn hình (khung 640 x 360 luôn vừa, cạnh còn lại thấy thêm cảnh tới render.maxView): cửa sổ rộng / cao hơn 16:9 thấy thêm cảnh quanh sân
+  // thay vì viền đen, #stage (menu, HUD) giãn theo nên UI bám mép màn hình thật. #stage và canvas trận cùng cỡ, cùng phép phóng, cùng góc trên trái;
+  // góc đặt đúng px thiết bị (căn giữa kiểu 50% + translate(-50%) có thể lệch nửa px).
+  // px đều nhau (user 2026-11-04): 1 px game = k px thiết bị (tính theo devicePixelRatio). k nguyên -> canvas phóng điểm gần nhất, sắc nét tuyệt đối.
+  // k lẻ (hầu hết cửa sổ) -> phóng điểm gần nhất thì có hàng / cột px dày hơn 1 px thiết bị (viền chỗ dày chỗ mỏng), nên "sharp bilinear":
+  // canvas hiện K = k làm tròn lên px / px game (Renderer.present: chép canvas trận 1x lên K lần), CSS phóng mượt xuống k -> mọi đường dày như nhau,
+  // chỉ mép pha 1 px thiết bị. Đã thử chỉ phóng nguyên + viền nền (2026-11-04): cửa sổ dưới 2x (laptop 1366 x 768 có thanh trình duyệt) thì game
+  // chỉ còn 1x giữa viền to -> bỏ, game phải lấp màn hình
   function fit() {
-    const R = C.render, s = Math.min(window.innerWidth / R.width, window.innerHeight / R.height);
+    const R = C.render, dpr = window.devicePixelRatio || 1, iw = window.innerWidth, ih = window.innerHeight;
+    const k0 = Math.min((iw * dpr) / R.width, (ih * dpr) / R.height), whole = Math.abs(k0 - Math.round(k0)) < 0.01, s = (whole ? Math.round(k0) : k0) / dpr;
     const even = (v, min, max) => Math.max(min, Math.min(max, 2 * Math.floor(v / 2)));
-    const w = even(window.innerWidth / s, R.width, R.maxView[0]), h = even(window.innerHeight / s, R.height, R.maxView[1]);
-    const stage = document.getElementById('stage'), t = `translate(-50%, -50%) scale(${s})`;
+    const w = even(iw / s, R.width, R.maxView[0]), h = even(ih / s, R.height, R.maxView[1]);
+    const left = Math.round(((iw - w * s) / 2) * dpr) / dpr, top = Math.round(((ih - h * s) / 2) * dpr) / dpr;
+    const stage = document.getElementById('stage'), game = document.getElementById('game');
     stage.style.width = w + 'px'; stage.style.height = h + 'px';
-    stage.style.transform = t;
-    document.getElementById('game').style.transform = t;
+    for (const el of [stage, game]) { el.style.left = left + 'px'; el.style.top = top + 'px'; el.style.transform = `scale(${s})`; }
+    game.classList.toggle('smooth', !whole);
     SFC.Renderer.setView(w, h);
+    SFC.Renderer.present(whole ? 0 : Math.ceil(k0));
+  }
+  // devicePixelRatio đổi mà không có resize (kéo cửa sổ sang màn hình khác tỉ lệ): media query theo tỉ lệ hiện tại, đổi thì fit lại rồi canh tỉ lệ mới
+  function watchDpr() {
+    const q = window.matchMedia && window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+    if (q && q.addEventListener) q.addEventListener('change', () => { fit(); watchDpr(); }, { once: true });
   }
 
   function boot() {
@@ -449,6 +462,7 @@
     }
     fit();
     window.addEventListener('resize', fit);
+    watchDpr();
 
     let last = performance.now(), acc = 0;
     function step(now, draw) {

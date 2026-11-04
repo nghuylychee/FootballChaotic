@@ -1,4 +1,4 @@
-// Động tác ra đòn của sprite 2x: mỗi động tác x hướng 1 hàng, tối đa 60 khung = 1 s như game -> out/pilot/
+// Động tác ra đòn của sprite v2: mỗi động tác x hướng 1 hàng, tối đa 60 khung = 1 s như game -> out/pilot/
 // Hàng: [id, tên, hướng, góc mặt, f(khung) -> tham số người, số khung, nhóm ('review' = đang làm, 'done' = đã duyệt)]
 import { join } from 'node:path';
 import { openGame, save, OUT, PAGE_COMMON } from './cdp.mjs';
@@ -28,7 +28,7 @@ const res = await ev(`(() => {
   const DLIST = [];
   for (const [d, dir] of [['diveU', 'up screen'], ['diveD', 'down screen']]) for (const [fdir, face] of [['facing right', DIRS.side], ['facing left', DIRS.sideL]])
     DLIST.push(['dive', 'Keeper dive', dir + ', ' + fdir, face, dive(d), DV0 + DVF + DVL + 15, 'done', d === 'diveU' ? -1 : 1]);
-  // như Renderer.diving của game nhưng bộ đệm gấp đôi (96 px mịn) cho sprite 2x: nâng theo cung, bóng đổ, vệt gió, nghiêng, ép dẹt, lật khi bay xuống
+  // như Renderer.diving của game nhưng bộ đệm gấp đôi (96 px ảnh = 48 px game) cho sprite v2: nâng theo cung, bóng đổ, vệt gió, nghiêng, ép dẹt, lật khi bay xuống
   const diving2 = (ctx, p, g) => {
     // biến hình lấy từ PlayerSprite.diveXform (cất người / chạm đất / đứng dậy chuyển dần); bóng đổ, vệt gió, bộ đệm như Renderer.diving
     const flip = p.atkType === 'diveU' ? 1 : -1, side = Math.cos(p.facing) >= 0 ? 1 : -1;
@@ -109,7 +109,7 @@ const res = await ev(`(() => {
     const fs = PlayerSprite.flyState(p), k = Math.max(0.35, 1 - p.airZ / 70);
     // nảy lúc đã nằm: bóng nằm trên đất (PlayerSprite.flyShadowSpec), không theo độ cao
     const lsh = PlayerSprite.flyShadowSpec(fs);
-    if (lsh) { ctx.save(); ctx.scale(0.5, 0.5); PlayerSprite.flyShadow(ctx, 2 * Math.round(p.x), 2 * Math.round(p.y), lsh); ctx.restore(); }
+    if (lsh) PlayerSprite.flyShadow(ctx, Math.round(p.x), Math.round(p.y), lsh);
     else OLD.ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, 6 * k, 2.5 * k, 'rgba(0,0,0,0.38)');
     const cy = p.y - p.airZ - 8, sp = Math.abs(p.kbx || 0);
     if (sp > 80 && fs.phase === 'tumble') { const nx = Math.sign(p.kbx); ctx.globalAlpha = Math.min(0.8, sp / 400); for (let i = 0; i < 3; i++) OLD.px(ctx, Math.round(p.x - nx * (12 + i * 3)), Math.round(cy + (i - 1) * 5), 6 - i, 1, '#ffffff'); ctx.globalAlpha = 1; }
