@@ -1011,31 +1011,41 @@ window.SFC = window.SFC || {};
       const fl = L.flaw && FLAW_TAGS()[L.flaw.kind];
       return fl ? `<span class="lg-flaw" title="${esc(L.flawDesc)}">${PX().ui('boom', 'sm')}${esc(fl)}</span>` : '';
     },
-    // dải LEGEND (màn trial + màn nhận): chân dung to trên hào quang màu LEGEND · danh hiệu · tên · chip COMBO · nhãn nhược điểm đỏ
-    // (câu đầy đủ ở tooltip; LEGEND không có nhược điểm cơ chế thì đánh đổi chỉ số nằm trong tooltip của tên)
+    // chip nghiêng chỉ số của LEGEND (UX màn hình 2026-11): kiểu chip GEAR nhưng chỉ mũi tên, không số ("PAS ▲" "PAC ▼"), tăng trước giảm sau.
+    // Ai nhận cũng nghiêng y như nhau nên đánh đổi nằm ở dải LEGEND, không chỉ ở thẻ đang trỏ · câu nhược điểm ở tooltip của nhóm chip
+    statChips(L, flaw) {
+      const A = SFC_CONFIG.progression.attrs, st = L.stats || {};
+      const ks = Object.keys(st).filter((s) => st[s] && A.list[s]).sort((a, b) => (st[b] > 0) - (st[a] > 0));
+      return ks.length ? `<span class="lg-stats" title="${esc(flaw ? '' : L.flawDesc)}">${ks.map((s) => `<span class="gr-chip lg-st ${st[s] > 0 ? 'up' : 'dn'}" style="--c:${A.list[s].color}"><i>${esc(A.list[s].short)}</i><u>${st[s] > 0 ? '▲' : '▼'}</u></span>`).join('')}</span>` : '';
+    },
+    // dải LEGEND (màn trial + màn nhận): chân dung to trên hào quang màu LEGEND · danh hiệu · tên · chip COMBO · chip chỉ số ▲▼ · nhãn nhược điểm đỏ
+    // (câu đầy đủ ở tooltip; LEGEND không có nhược điểm cơ chế thì câu đánh đổi chỉ số nằm trong tooltip của tên + nhóm chip chỉ số)
     hero(L) {
       const flaw = this.flawChip(L);
       const rays = Array.from({ length: 12 }, (_, i) => `<i style="transform:rotate(${i * 30}deg)"></i>`).join('');
       return `<div class="lg-hero"><div class="lg-port"><span class="lg-rays">${rays}</span>${this.face(SFC.LegendDraw.lookOf(L), false, true)}</div>
           <div class="lg-txt"><b>${esc(L.title)}</b><u title="${esc(flaw ? '' : L.flawDesc)}">${esc(L.name)}</u>
-            <div class="lg-row">${this.comboChip(L)}${flaw}</div></div></div>`;
+            <div class="lg-row">${this.comboChip(L)}${this.statChips(L, flaw)}${flaw}</div></div></div>`;
     },
     // số lần cần làm của LEGEND TRIAL (BADGE Training Bibs giảm mốc, như drills.js)
     trialGoal(L, R) {
       const ease = Math.min(0.8, RUN().bmax('drillEase', R) || 0);
       return ease ? Math.max(1, Math.ceil(L.trial.goal * (1 - ease))) : L.trial.goal;
     },
-    // giới thiệu LEGEND TRIAL: dải LEGEND + "n× COMBO" + đồng hồ + 1 dòng · START / SKIP · co-op: lượt của ai
+    // giới thiệu LEGEND TRIAL: dải LEGEND + ô nhiệm vụ "n× [phím] + [phím]" (keycap to cỡ chữ đồng hồ, tên combo 1 lần ngay dưới) + đồng hồ
+    // · câu mô tả combo · 1 dòng luật · START / SKIP · dòng mờ: hỏng không mất gì (UX màn hình 2026-11) · co-op: lượt của ai
     trialCard(R, T) {
       const rm = R.room, L = RUN().legend(rm.legend), K = SFC_CONFIG.legends.techniques[L.tech], goal = this.trialGoal(L, R);
       const pk = rm.player;
       const turn = !inRoom() ? '' : `<div class="rm-turn">${esc(pk === RUN().myKey() ? _t('Your turn!') : _t('{name} plays this one', { name: this.keyName(R, pk) }))}</div>`;
       const go = T.find((t) => t.k === 'drill'), skip = T.find((t) => t.k === 'skiptrial');
       return `<div class="rm-actcard rm-sheet lgx trial" style="--lc:${L.color}"><em class="lg-kicker">${esc(_t('LEGEND TRIAL'))}</em>${turn}${this.hero(L)}
-          <div class="tr-box"><div class="tr-goal"><b>${goal}×</b><em>${esc(K ? K.name : '')}</em></div><span class="tr-sep"></span>
+          <div class="tr-box"><div class="tr-goal"><div class="tr-do"><b>${goal}×</b>${K ? this.keyCaps(K) : ''}</div><em>${esc(K ? K.name : '')}</em></div><span class="tr-sep"></span>
             <div class="tr-time">${PX().ui('whistle', '')}${L.trial.time}s</div></div>
+          ${K ? `<div class="tr-desc">${esc(K.desc)}</div>` : ''}
           <div class="tr-line">${esc(_t('He lends you his combo. Pull it off {n} times and he signs.', { n: goal }))}</div>
-          <div class="rm-sheet-foot">${go ? this.btn(T, go, esc(_t('START'))) : ''}${skip ? this.btn(T, skip, esc(_t('SKIP'))) : ''}</div></div>`;
+          <div class="rm-sheet-foot">${go ? this.btn(T, go, esc(_t('START'))) : ''}${skip ? this.btn(T, skip, esc(_t('SKIP'))) : ''}</div>
+          <div class="tr-safe">${esc(_t('Fail? No harm done.'))}</div></div>`;
     },
     // LEGEND vừa qua trial xin vào đội: dải LEGEND + 3 thẻ cầu thủ (trỏ / chọn bằng phím = xem trước chỉ số ▲▼ + bóng LEGEND sau lưng;
     // bấm = hoạt cảnh nhận rồi mới vào đội, sign) · NO THANKS. Co-op: bỏ phiếu (dấu phiếu trên thẻ / nút), không diễn
@@ -1047,14 +1057,26 @@ window.SFC = window.SFC || {};
         return `<div class="lg-pick" data-ji="${t.i}">${this.squadCard(R, t.i, T, t, null, ghost)}${old ? `<u class="lg-old" title="${esc(old.name)}">${esc(_t('Replaces {name}', { name: old.title }))}</u>` : ''}${vote ? this.votes(R, 'join', String(t.i)) : ''}</div>`;
       }).join('');
       const no = T.find((t) => t.k === 'joinno');
+      // dòng mờ dưới câu hỏi (UX màn hình 2026-11): đồng đội AI cũng tự dùng combo (legends.ai), đưa cho AI không phí
       return `<div class="rm-actcard rm-sheet lgx join" style="--lc:${L.color}">${this.hero(L)}
-          <div class="sg-who">${esc(vote ? _t('Vote: who gets him?') : _t('Who gets him?'))}</div><div class="sq-row3 sg-row">${cards}</div>
+          <div class="sg-who">${esc(vote ? _t('Vote: who gets him?') : _t('Who gets him?'))}</div><div class="sg-note">${esc(_t('AI teammates use his combo on their own.'))}</div>
+          <div class="sq-row3 sg-row">${cards}</div>
           <div class="rm-sheet-foot">${no ? this.btn(T, no, esc(_t('NO THANKS')) + (vote ? this.votes(R, 'join', 'no') : '')) : ''}</div></div>`;
     },
-    // màn nhận LEGEND sau khi vẽ: thẻ đang trỏ / đang chọn bằng phím hiện chỉ số mới (▲▼) + OVR mới
+    // màn nhận LEGEND sau khi vẽ: thẻ đang trỏ / đang chọn bằng phím hiện chỉ số mới (▲▼) + OVR mới + LEGEND mới trong ô LEGEND
+    // (UX màn hình 2026-11, như ô GEAR mới ở màn GEAR: chip xem trước .pv đứng trước ô cũ, CSS hiện khi thẻ .peek; hoạt cảnh sign xoá cả 2)
     bindJoin(menu) {
-      const R = RUN().run, J = R && R.join, root = menu.el.querySelector('.rm-sheet.join');
-      if (!J || !root) return;
+      const R = RUN().run, J = R && R.join, root = menu.el.querySelector('.rm-sheet.join'), L = J && RUN().legend(J.id);
+      if (!J || !root || !L) return;
+      root.querySelectorAll('.lg-pick .sq-badges').forEach((foot) => {
+        const slot = foot.querySelector('.sq-leg');
+        if (!slot) return;
+        const pv = document.createElement('span');
+        pv.className = 'sq-leg pv'; pv.style.setProperty('--lc', L.color);
+        pv.innerHTML = `<canvas width="40" height="44"></canvas><b>${esc(L.title)}</b>`;
+        SFC.Sprites.drawAvatar(pv.firstChild, SFC.LegendDraw.lookOf(L), SFC_CONFIG.mainPath.playerTeam.kit, 0, Math.PI / 2);
+        foot.insertBefore(pv, slot);
+      });
       const show = (el, on) => {
         const i = +el.dataset.ji, card = el.querySelector('.sq-card');
         if (!card || card.classList.contains('got')) return;

@@ -1718,5 +1718,9 @@ SFC.I18n.add({
     'BUY': '買う',
     'HEAL': '治療',
     'One treatment per visit.': '治療は1回の来店につき1回だけ。',
+
+    /* ===== GOAT PATH: LEGEND TRIAL + nhận LEGEND (UX màn hình 2026-11; Claude — chưa duyệt) ===== */
+    'Fail? No harm done.': '失敗しても何も失わない。',
+    'AI teammates use his combo on their own.': 'AIの仲間も自分でこのコンボを使う。',
   },
 });

@@ -1,0 +1,18 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "pt-btn go  sel",
+  "txt": "START",
+  "x": 456,
+  "y": 555,
+  "w": 262,
+  "h": 62
+ },
+ "order": [
+  "drill",
+  "skiptrial"
+ ],
+ "id": "legend-trial",
+ "title": "LEGEND TRIAL · thẻ vào",
+ "moving_pct": 2.9
+}

@@ -3375,7 +3375,7 @@ button.sq-card.sel { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink)
 .lg-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .lg-txt > b { font-family: var(--px); font-size: 15px; font-weight: normal; color: var(--lc); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--ink); }
 .lg-txt > u { text-decoration: none; font-size: 16px; color: #e6dccb; }
-.lg-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.lg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 2px; max-width: 440px; }
 .lg-combo { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px 3px 5px; background: color-mix(in srgb, var(--lc) 22%, #14161c);
   border: 1px solid var(--lc); box-shadow: 2px 2px 0 var(--ink); }
 .lg-combo > b { font-family: var(--px); font-size: 8px; font-weight: normal; color: #fff; letter-spacing: 1px; text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; }
@@ -3383,18 +3383,37 @@ button.sq-card.sel { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink)
 .lg-keys kbd { font-family: var(--px); font-size: 6px; padding: 2px 3px 1px; color: #111; background: #e6dccb; border: 0; box-shadow: 0 2px 0 #8a8070, 0 0 0 1px var(--ink); }
 .lg-keys span { font-family: var(--vt); font-size: 12px; color: #c7ccd6; }
 .lg-flaw { display: inline-flex; align-items: center; gap: 3px; padding: 3px 5px 2px; font-family: var(--px); font-size: 6px; color: #ff8a98; background: #3a1018; border: 1px solid #ff5a6e; cursor: help; }
-/* màn LEGEND TRIAL: "n× COMBO" + đồng hồ + 1 dòng */
-.tr-box { display: flex; align-items: center; gap: 18px; margin-top: 4px; padding: 12px 18px; background: rgba(0, 0, 0, 0.35); border: 1px solid #2e3140; box-shadow: 2px 2px 0 var(--ink); }
-.tr-goal { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+/* chip nghiêng chỉ số (UX màn hình 2026-11): chip GEAR, chỉ mũi tên — tăng xanh, giảm đỏ */
+.lg-stats { display: inline-flex; gap: 4px; }
+.gr-chip.lg-st { align-items: center; padding: 3px 4px 2px; box-shadow: 2px 2px 0 var(--ink); }
+.lg-st u { width: 7px; height: 6px; margin-top: -1px; font-size: 0; background: currentColor; clip-path: polygon(50% 0, 100% 100%, 0 100%); }   /* mũi tên khối, chữ ▲▼ của font pixel quá nhỏ */
+.lg-st.up { color: #6bff4f; }
+.lg-st.dn { color: #ff5a6e; }
+.lg-st.dn u { clip-path: polygon(0 0, 100% 0, 50% 100%); }
+/* màn LEGEND TRIAL: ô nhiệm vụ "n× [phím] + [phím]" (keycap cỡ chữ đồng hồ, tên combo ngay dưới) + đồng hồ · mô tả combo · 1 dòng luật
+   · dòng mờ dưới START / SKIP (UX màn hình 2026-11) */
+.tr-box { display: flex; align-items: center; gap: 18px; margin-top: 4px; padding: 10px 18px; background: rgba(0, 0, 0, 0.35); border: 1px solid #2e3140; box-shadow: 2px 2px 0 var(--ink); }
+.tr-goal { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .tr-goal b { font-family: var(--px); font-size: 26px; font-weight: normal; color: var(--lc); text-shadow: 3px 3px 0 var(--ink); }
-.tr-goal em { font-style: normal; font-family: var(--px); font-size: 6px; color: var(--muted); letter-spacing: 1px; }
+.tr-goal em { font-style: normal; font-family: var(--px); font-size: 7px; color: #c7ccd6; letter-spacing: 1px; }
+.tr-do { display: flex; align-items: center; gap: 10px; }
+.tr-do .lg-keys { gap: 6px; }
+.tr-do .lg-keys kbd { font-size: 12px; padding: 5px 7px 4px; box-shadow: 0 3px 0 #8a8070, 0 0 0 2px var(--ink); }
+.tr-do .lg-keys span { font-size: 22px; color: #e6dccb; }
 .tr-sep { width: 1px; align-self: stretch; background: #2e3140; }
 .tr-time { display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: var(--px); font-size: 12px; color: #fff; }
 .tr-time .pxi { width: 22px; height: 22px; }
-.tr-line { font-size: 15px; color: #c7ccd6; }
+.tr-desc { font-size: 16px; color: #e6dccb; text-align: center; }
+.tr-line { font-size: 13px; color: #9aa3b5; }
+.tr-safe { font-size: 13px; color: var(--muted); }
 .rm-sheet.lgx .rm-sheet-foot { margin-top: 4px; }
-/* màn nhận LEGEND: 3 thẻ cầu thủ, trỏ = xem trước (▲▼ + bóng LEGEND sau lưng), bấm = hoạt cảnh (sign) */
+/* màn nhận LEGEND: 3 thẻ cầu thủ, trỏ = xem trước (▲▼ + bóng LEGEND sau lưng + LEGEND mới trong ô LEGEND), bấm = hoạt cảnh (sign) */
 .sg-who { font-family: var(--px); font-size: 7px; color: var(--gold); letter-spacing: 3px; }
+.sg-note { margin-top: -4px; font-size: 13px; color: var(--muted); }
+.sg-row .sq-name em { font-size: 7px; padding: 2px 3px 1px; }   /* nhãn YOU to bằng tên */
+.sq-leg.pv { display: none; animation: grBlink 0.6s steps(2) infinite; }
+.sq-card.peek .sq-leg.pv { display: flex; }
+.sq-card.peek .sq-leg.pv + .sq-leg { display: none; }
 .sg-row .sq-card { width: 160px; height: 168px; justify-content: space-between; padding: 6px 6px 7px; transition: opacity 0.25s; }
 .sg-row .sq-body { flex: 1; align-items: stretch; }
 .sg-row .sq-art { height: auto; position: relative; }

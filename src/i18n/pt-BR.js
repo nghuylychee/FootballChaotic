@@ -1777,5 +1777,9 @@ SFC.I18n.add({
     'BUY': 'COMPRAR',
     'HEAL': 'CURAR',
     'One treatment per visit.': 'Só um tratamento por visita.',
+
+    /* ===== GOAT PATH: LEGEND TRIAL + nhận LEGEND (UX màn hình 2026-11; Claude — chưa duyệt) ===== */
+    'Fail? No harm done.': 'Falhou? Não tem problema.',
+    'AI teammates use his combo on their own.': 'Seus companheiros IA usam o combo dele sozinhos.',
   },
 });

@@ -1,0 +1,20 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "sq-card sel peek",
+  "txt": "70\nFWD\nPAC\n61▼\nSHO\n70\nPAS\n82▲\nDRI\n71\nFIG\n70\nGK\n67\nLONG\nTHE A",
+  "x": 144,
+  "y": 304,
+  "w": 320,
+  "h": 336
+ },
+ "order": [
+  "joinwho:0",
+  "joinwho:2",
+  "joinwho:1",
+  "joinno"
+ ],
+ "id": "legend-join",
+ "title": "LEGEND · chọn người nhận",
+ "moving_pct": 5.1
+}
