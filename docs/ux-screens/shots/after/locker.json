@@ -1,0 +1,21 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "bd-card heal sel",
+  "txt": "StepoverSam\nTwisted Ankle\nPAC +12 ▲\nINJURY",
+  "x": 123,
+  "y": 194,
+  "w": 208,
+  "h": 252
+ },
+ "order": [
+  "heal:3",
+  "up:0",
+  "up:1",
+  "up:2",
+  "leave"
+ ],
+ "id": "locker",
+ "title": "LOCKER ROOM",
+ "moving_pct": 0.0
+}

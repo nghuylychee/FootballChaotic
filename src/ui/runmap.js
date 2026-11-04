@@ -450,20 +450,29 @@ window.SFC = window.SFC || {};
       for (const s of A.order) if (stats && stats[s]) out.push(`<i class="${stats[s] < 0 ? 'neg' : ''}" style="--c:${A.list[s].color}">${esc(A.list[s].short)} ${stats[s] > 0 ? '+' : ''}${stats[s]}</i>`);
       return out;
     },
-    // thẻ BADGE: b = { id, up } · price: giá (Shop) · t: mục chọn được (null = chỉ xem)
+    // thẻ BADGE (LOCKER ROOM, nhóm UPGRADE): b = { id, up } · t: mục chọn được (null = chỉ xem) · extra: { dis, votes }
+    // bản nâng cấp (b.up; UX màn hình 2026-11, phương án A): câu gốc (desc) mờ ở trên + câu ▲ (upDesc) vàng ở dưới -> so được bản + hơn
+    // bản đang có chỗ nào ngay trên thẻ ("may" thành "likely"). Độ hiếm = vạch màu đầu thẻ, không ghi chữ (nhóm đã có tiêu đề UPGRADE)
     card(T, t, b, extra = {}) {
-      const d = RUN().badge(b.id), rar = d.injury ? null : SFC_CONFIG.progression.rarities[d.rarity];
-      const col = d.injury ? '#ff5a6e' : rar.color, sel = t && T.indexOf(t) === this.sel;
-      const tag = extra.price != null ? `<u class="bd-price ${extra.poor ? 'poor' : ''}">$${extra.price}</u>` : extra.tag ? `<u class="bd-tag">${esc(extra.tag)}</u>` : '';
-      const who = extra.who != null ? `<u class="bd-who">${esc(RUN().memberName(extra.who))}</u>` : '';
-      // bản nâng cấp (b.up): câu upDesc vàng có ▲ = bản + hơn chỗ nào (UX review 2026-11-02), thay chip / mô tả gốc
-      const body = b.up && d.upDesc ? `<span class="bd-desc up">▲ ${esc(d.upDesc)}</span>`
-        : this.chips(b) ? `<span class="bd-fx">${this.chips(b)}</span>` : `<span class="bd-desc">${esc(d.desc)}</span>`;
-      return `<button class="bd-card ${d.injury ? 'inj' : ''} ${extra.dis ? 'dis' : ''} ${sel ? 'sel' : ''}" ${t ? `data-rt="${t.key}"` : ''} style="--rc:${col}">
+      const d = RUN().badge(b.id), rar = SFC_CONFIG.progression.rarities[d.rarity], sel = t && T.indexOf(t) === this.sel, fx = this.chips(b);
+      const body = b.up && d.upDesc ? `<span class="bd-desc old">${esc(d.desc)}</span><span class="bd-desc up">▲ ${esc(d.upDesc)}</span>`
+        : fx ? `<span class="bd-fx">${fx}</span>` : `<span class="bd-desc">${esc(d.desc)}</span>`;
+      return `<button class="bd-card ${extra.dis ? 'dis' : ''} ${sel ? 'sel' : ''}" ${t ? `data-rt="${t.key}"` : ''} style="--rc:${rar.color}">
           <span class="bd-ico">${this.badgeIcon(b.id)}</span>
           <b>${esc(d.name)}${b.up ? '+' : ''}</b>
-          ${body}
-          <em>${esc(d.injury ? _t('INJURY') : rar.label)}</em>${tag}${who}${extra.votes || ''}
+          ${body}${extra.votes || ''}
+        </button>`;
+    },
+    // thẻ HEAL (LOCKER ROOM; UX màn hình 2026-11, phương án A): mặt + tên người bị đau ở đầu thẻ, tên chấn thương, chip cái được sau khi chữa
+    // (đảo dấu chỉ số đang bị trừ: "SHO +12 ▲"). Trước đây thẻ chỉ nói bệnh (SHO -12) bằng icon chỉ số mượn, tên người lơ lửng dưới mép thẻ.
+    // Vạch đầu thẻ trung tính: màu vạch chỉ còn nghĩa độ hiếm (đỏ chấn thương cũ gần trùng đỏ LEGENDARY)
+    healCard(R, T, t, votes) {
+      const b = R.bag[t.i], d = RUN().badge(b.id), who = b.who || 0, s = R.squad[who] || {}, A = SFC_CONFIG.progression.attrs;
+      const gain = A.order.filter((k) => d.stats && d.stats[k] < 0).map((k) => `<i style="--c:${A.list[k].color}">${esc(A.list[k].short)} +${-d.stats[k]} ▲</i>`).join('');
+      return `<button class="bd-card heal ${T.indexOf(t) === this.sel ? 'sel' : ''}" data-rt="${t.key}">
+          <span class="bd-face">${this.face(RUN().memberLook(who, R), s.you && !R.mirror, true)}</span>
+          <b>${esc(RUN().memberName(who, R))}</b><span class="bd-inj">${esc(d.name)}</span>
+          ${gain ? `<span class="bd-fx">${gain}</span>` : ''}<em>${esc(_t('INJURY'))}</em>${votes || ''}
         </button>`;
     },
     /* ---------- ĐỘI HÌNH (user 2026-10-26) ---------- */
@@ -925,15 +934,18 @@ window.SFC = window.SFC || {};
     },
     restCard(R, T) {
       // co-op: bỏ phiếu (dấu phiếu trên thẻ)
-      const heal = T.filter((t) => t.k === 'heal').map((t) => this.card(T, t, R.bag[t.i], { tag: _t('HEAL'), who: R.bag[t.i].who || 0, votes: this.votes(R, 'rest', 'heal:' + t.i) })).join('');
-      const up = T.filter((t) => t.k === 'up').map((t) => this.card(T, t, Object.assign({}, R.bag[t.i], { up: true }), { tag: _t('UPGRADE'), votes: this.votes(R, 'rest', 'up:' + t.i) })).join('')
+      const heal = T.filter((t) => t.k === 'heal').map((t) => this.healCard(R, T, t, this.votes(R, 'rest', 'heal:' + t.i))).join('');
+      const up = T.filter((t) => t.k === 'up').map((t) => this.card(T, t, Object.assign({}, R.bag[t.i], { up: true }), { votes: this.votes(R, 'rest', 'up:' + t.i) })).join('')
         // GEAR của từng người: thẻ treo hiện số liệu sau nâng cấp + tên người đeo
         + T.filter((t) => t.k === 'gup').map((t) => {
           const [w, k] = t.id.split('.').map(Number), g = Object.assign({}, RUN().gearOf(w, R)[k], { up: true });
-          return this.gearBig(T, t, g, `<u class="bd-tag">${esc(_t('UPGRADE'))}</u><u class="bd-who">${esc(RUN().memberName(w, R))}</u>${this.votes(R, 'rest', 'gup:' + t.id)}`);
+          return this.gearBig(T, t, g, `<u class="bd-who">${esc(RUN().memberName(w, R))}</u>${this.votes(R, 'rest', 'gup:' + t.id)}`);
         }).join('');
-      // 1 hàng tự xuống dòng: thẻ chữa (nhãn HEAL) rồi thẻ nâng cấp (nhãn UPGRADE, hiện số liệu sau nâng cấp)
-      const body = heal || up ? `<div class="bd-row wrap">${heal}${up}</div>` : `<div class="bd-sub">${esc(_t('Nothing to do here. Catch your breath.'))}</div>`;
+      // 2 nhóm có tiêu đề (UX màn hình 2026-11, phương án A): HEAL bên trái · UPGRADE bên phải, vạch ngăn ở giữa (CSS .lk-col) — thay 4 nhãn
+      // góc vàng y nhau; nheo mắt vẫn tách được 2 loại lựa chọn. Mỗi nhóm tự xuống dòng
+      const col = (cls, title, cards) => (cards ? `<div class="lk-col ${cls}"><em>${esc(title)}</em><div class="bd-row wrap">${cards}</div></div>` : '');
+      const body = heal || up ? `<div class="lk-groups">${col('heal', _t('HEAL'), heal)}${col('up', _t('UPGRADE'), up)}</div>`
+        : `<div class="bd-sub">${esc(_t('Nothing to do here. Catch your breath.'))}</div>`;
       // Ice Bath: làm được 2 việc (left)
       const sub = (inRoom() ? _t('Vote for one') : _t('Pick one')) + (R.room.left > 1 ? ' · ' + _tn('{n} left', '{n} left', R.room.left) : '');
       return this.sheet('rest', _t('LOCKER ROOM'), sub, `<div class="bd-scroll">${body}</div>`,
