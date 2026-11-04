@@ -342,6 +342,7 @@ SFC.I18n.add({
     'Ultimate ×{n}': 'Suprema ×{n}',
     'MVP': 'CRAQUE',
     'WINNER': 'VENCEDOR',
+    'scoreboard|CORES': 'CORES',   // cột Core ở bảng tỉ số (Core của mọi người, khác 'CORES' = MEUS CORES của túi đồ)
     'GOALS': 'GOLS',
     'ASSISTS': 'ASSIST.',
     'SAVES': 'DEFESAS',

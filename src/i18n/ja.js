@@ -341,6 +341,7 @@ SFC.I18n.add({
     'Ultimate ×{n}': '必殺技 ×{n}',
     'MVP': 'MVP',
     'WINNER': 'WINNER',
+    'scoreboard|CORES': 'コア',
     'GOALS': 'ゴール',
     'ASSISTS': 'アシスト',
     'SAVES': 'セーブ',

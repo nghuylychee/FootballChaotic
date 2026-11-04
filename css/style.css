@@ -865,6 +865,12 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .rw-new { width: 100%; font-size: 12px; color: #7fe7ff; line-height: 1.1; }
 .rw-line b.g { display: inline-flex; align-items: center; gap: 2px; }
 .rw-line .coin { width: 5px; height: 5px; }
+/* tiền run (GOAT PATH): túi tiền + số vàng viền nâu như ô tiền trên map (.rm-cash); dòng đầu, nền vàng nhạt = thứ chính trong run */
+.rw-line.cash { margin: 0 -3px; padding: 1px 3px; background: linear-gradient(90deg, rgba(255,225,79,0.16), rgba(255,225,79,0.03)); box-shadow: inset 2px 0 0 var(--gold); }
+.rw-line b.c, .rw-total .rw-cash { display: inline-flex; align-items: center; gap: 2px; color: var(--gold); text-shadow: 1px 1px 0 #8a5a10; }
+.rw-line b.c .pxi { width: 9px; height: 9px; }
+.rw-total .rw-cash { gap: 3px; font-family: var(--px); font-size: 9px; }
+.rw-total .rw-cash b { font-weight: normal; }
 .tut-head .m-title { white-space: nowrap; }
 
 /* ---------- GACHA: shop hộp · dải quay kiểu CSGO · túi đồ (màu độ hiếm qua --rc) ---------- */
@@ -2687,6 +2693,8 @@ button.eq-row:hover b { color: var(--gold); }
 .ot-win { font-family: var(--px); font-size: 5px; color: var(--ink); background: var(--gold); padding: 2px 4px 1px; box-shadow: 1px 1px 0 var(--ink); }
 .ot-sub b { font-family: var(--px); font-size: 9px; font-weight: normal; text-shadow: 1px 1px 0 var(--ink); }
 .ot-score { font-family: var(--px); font-size: 8px; color: #fff; background: rgba(18,20,24,0.85); border: 1px solid var(--edge); padding: 2px 5px 1px; }
+/* trận có người chơi: chỉ còn tỉ số dưới VICTORY!, to gấp đôi (UX màn result, A) */
+.ot-score.big { font-size: 16px; margin-top: 3px; padding: 4px 9px 2px; box-shadow: 2px 2px 0 var(--ink); }
 
 .outro-foot { width: 100%; padding: 0 18px 6px; pointer-events: none; display: flex; align-items: center; gap: 8px; }
 .outro-bar { flex: 1; height: 2px; background: var(--gold); opacity: 0.7; transform-origin: left; animation: inTimer var(--dur, 3s) linear both; }
@@ -2777,7 +2785,7 @@ button.eq-row:hover b { color: var(--gold); }
 }
 .sb-team.winner { border-color: color-mix(in srgb, var(--c) 75%, var(--gold)); }
 .sb-thead {
-  display: grid; grid-template-columns: minmax(0, 1fr) 150px; align-items: center; height: 21px; padding: 0 6px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; height: 21px; padding: 0 6px;
   background: linear-gradient(90deg, color-mix(in srgb, var(--c) 42%, #0e1015) 0%, rgba(14,16,21,0.92) 65%);
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
@@ -2785,8 +2793,11 @@ button.eq-row:hover b { color: var(--gold); }
 .sb-swatch { width: 6px; height: 10px; background: var(--c); border: 1px solid var(--ink); flex: none; }
 .sb-tname { font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sb-mtag { font-size: 10px; color: #e6dccb; border: 1px solid var(--edge); background: rgba(0,0,0,0.35); padding: 0 3px; line-height: 1; white-space: nowrap; flex: none; }
-.sb-tscore { margin-left: auto; margin-right: 6px; font-family: var(--px); font-size: 9px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
-.sb-cols { display: grid; grid-template-columns: 36px 42px 36px 36px; text-align: right; font-family: var(--vt); font-size: 11px; color: var(--muted); letter-spacing: 0.3px; }
+/* tỉ số đội sát tên đội (LONG FC 1), không đứng trên cột Core như tiêu đề cột (UX màn result, A) */
+.sb-tscore { flex: none; margin: 0 2px 0 1px; font-family: var(--px); font-size: 9px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
+/* cột: CORES (rộng theo chữ, mép phải thẳng mép phải hàng icon Core: cùng padding-right với .sb-cores) + 4 cột số */
+.sb-cols { display: grid; grid-template-columns: auto 36px 42px 36px 36px; text-align: right; font-family: var(--vt); font-size: 11px; color: var(--muted); letter-spacing: 0.3px; }
+.sb-hcores { padding: 0 4px 0 8px; }
 
 .sb-rows { display: flex; flex-direction: column; }
 .sb-row {

@@ -96,15 +96,17 @@ window.SFC = window.SFC || {};
         : win === h ? _t('VICTORY!') : win >= 0 ? _t('DEFEAT...') : _t('DRAW');
       const resCls = drill != null ? (drill ? 'win' : 'lose') : h < 0 ? (wt ? 'win' : 'draw') : win === h ? 'win' : win >= 0 ? 'lose' : 'draw';
       const devBar = SFC_DEBUG && this._devEndMode ? this.devEndBar('outro') : '';
+      // trận có người chơi: VICTORY! / DEFEAT... / DRAW đã nói ai thắng -> bỏ WINNER + tên đội, chỉ còn tỉ số to ngay dưới (UX màn result, A).
+      // Trận AI đấu AI (h < 0): giữ WINNER + tên đội thắng
+      const sub = drill != null ? `<span class="ot-score">${SFC.Drills.shown(game.drill)}</span><b>${esc(this.drillUnit(game.drill))}</b>`
+        : h >= 0 ? `<span class="ot-score big">${t0.score} - ${t1.score}</span>`
+        : `${wt ? `<span class="ot-win">${esc(_t('WINNER'))}</span><b style="color:${wt.cfg.kit.shirt}">${esc(wt.cfg.name)}</b>` : `<b>${esc(_t('DRAW'))}</b>`}
+          <span class="ot-score">${t0.score} - ${t1.score}</span>`;
       this.el.end.innerHTML = `
         ${devBar}
         <div class="outro-top ${resCls}" style="--c:${wt ? wt.cfg.kit.shirt : '#fff'}">
           <div class="ot-res">${esc(resLabel)}</div>
-          <div class="ot-sub">
-            ${drill != null ? `<span class="ot-score">${SFC.Drills.shown(game.drill)}</span><b>${esc(this.drillUnit(game.drill))}</b>` : `
-            ${wt ? `<span class="ot-win">${esc(_t('WINNER'))}</span><b style="color:${wt.cfg.kit.shirt}">${esc(wt.cfg.name)}</b>` : `<b>${esc(_t('DRAW'))}</b>`}
-            <span class="ot-score">${t0.score} - ${t1.score}</span>`}
-          </div>
+          <div class="ot-sub">${sub}</div>
         </div>
         <div class="outro-foot"><div class="outro-bar" style="--dur:${dur}s"></div>${this.skipHint()}</div>`;
     },
@@ -169,11 +171,11 @@ window.SFC = window.SFC || {};
             <div class="sb-tleft">
               <i class="sb-swatch"></i>
               <b class="sb-tname">${esc(t.cfg.name)}</b>
-              ${isMine ? `<span class="sb-mtag">${esc(_t('YOUR TEAM'))}</span>` : ''}
               <b class="sb-tscore">${t.score}</b>
+              ${isMine ? `<span class="sb-mtag">${esc(_t('YOUR TEAM'))}</span>` : ''}
             </div>
             <div class="sb-cols">
-              ${ti === 0 ? `<span>${esc(_t('GOALS'))}</span><span>${esc(_t('ASSISTS'))}</span><span>${esc(_t('SAVES'))}</span><span>${esc(_t('SHOTS'))}</span>` : `<span></span><span></span><span></span><span></span>`}
+              ${ti === 0 ? `<span class="sb-hcores">${esc(SFC.tc('scoreboard', 'CORES'))}</span><span>${esc(_t('GOALS'))}</span><span>${esc(_t('ASSISTS'))}</span><span>${esc(_t('SAVES'))}</span><span>${esc(_t('SHOTS'))}</span>` : `<span></span><span></span><span></span><span></span><span></span>`}
             </div>
           </div>
           <div class="sb-rows">${rows}</div>
@@ -276,14 +278,27 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------- thưởng sau trận: cột trái (Xếp hạng Area + Thưởng & XP) ---------- */
+    // tiền run vừa nhận (GOAT PATH: Run.record / recordDrill -> r.run.cash), null = không có
+    runCash(r) { return r.run && Number.isFinite(r.run.cash) ? r.run.cash : null; },
+    // dòng thưởng để vẽ (rewardPanel) và đếm (playReward). Trong run, tiền run là thứ tiêu ngay ở KIT VAN -> dòng đầu, có cột số
+    // như XP / gold (UX màn result, A); dòng note "Run cash +$N" của Run bỏ đi. awardMatch không đổi: note vẫn là 0 XP / 0 gold
+    rewardLines(r) {
+      const n = this.runCash(r);
+      if (n == null) return r.lines;
+      const note = _t('Run cash +${n}', { n });
+      return [{ label: _t('Run cash'), cash: n }].concat(r.lines.filter((l) => !(l.note && l.label === note)));
+    },
     rewardPanel(r) {
-      const lines = r.lines.map((l, i) => `<div class="rw-line" data-rw="${i}"><span>${esc(l.label)}</span>${
-        l.mult || l.note ? '' : `<b class="x">+${l.xp} XP</b><b class="g"><i class="coin"></i>+${l.gold}</b>`}</div>`).join('');
+      const lines = this.rewardLines(r).map((l, i) => `<div class="rw-line ${l.cash != null ? 'cash' : ''}" data-rw="${i}"><span>${esc(l.label)}</span>${
+        l.cash != null ? `<b class="c">${PX().ui('shop', 'sm')}+${l.cash}</b>`
+          : l.mult || l.note ? '' : `<b class="x">+${l.xp} XP</b><b class="g"><i class="coin"></i>+${l.gold}</b>`}</div>`).join('');
+      // ô tổng: tiền run (chỉ trong run) · gold · XP
+      const cash = this.runCash(r) != null ? `<span class="rw-cash">${PX().ui('shop', 'sm')}<b id="rw-cash">+0</b></span>` : '';
       return `${r.path ? this.pathResult(r.path) : ''}
         <div class="build reward ${r.xp === 0 && r.gold === 0 && !r.levelGold ? 'no-tot' : ''}">
           <h4>${esc(_t('REWARDS'))}</h4>
           <div class="rw-lines">${lines}</div>
-          <div class="rw-total"><span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
+          <div class="rw-total">${cash}<span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
           <div class="lvrow"><span class="lv" id="rw-lv">${esc(_t('LV {n}', { n: r.before.level }))}</span><div class="xpbar"><i id="rw-bar"></i></div></div>
           <div class="rw-up" id="rw-up"></div>
         </div>`;
@@ -322,7 +337,7 @@ window.SFC = window.SFC || {};
       cancelAnimationFrame(this.rwRaf);
       const $$ = (id) => document.getElementById(id);
       const t0 = performance.now();
-      const nLines = r.lines.length;
+      const nLines = this.rewardLines(r).length, cash = this.runCash(r) || 0;
       const LINE = 0.24, COUNT = 1.0;
       const startCount = 0.25 + nLines * LINE;
       // âm báo lên / rớt Area ngay khi bảng hiện ra để người chơi không thể bỏ lỡ
@@ -344,6 +359,8 @@ window.SFC = window.SFC || {};
         const gold = $$('rw-gold'), xp = $$('rw-xp'), bar = $$('rw-bar'), lv = $$('rw-lv'), up = $$('rw-up');
         if (!gold) return; // đã rời màn kết quả
         gold.textContent = '+' + Math.round((r.gold + (k >= 1 ? r.levelGold : 0)) * e);
+        const cashEl = $$('rw-cash');
+        if (cashEl) cashEl.textContent = '+' + Math.round(cash * e);
         const elo = document.querySelector('[data-elo-to]');
         if (elo) elo.textContent = Math.round(+elo.dataset.eloFrom + (+elo.dataset.eloTo - +elo.dataset.eloFrom) * e);
         xp.textContent = '+' + Math.round(r.xp * e) + ' XP';

@@ -345,6 +345,7 @@ SFC.I18n.add({
     'Ultimate ×{n}': 'Suprema ×{n}',
     'MVP': 'MVP',
     'WINNER': 'VENCEDOR',
+    'scoreboard|CORES': 'CORES',
     'GOALS': 'GOLOS',
     'ASSISTS': 'ASSIST.',
     'SAVES': 'DEFESAS',
