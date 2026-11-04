@@ -1441,10 +1441,13 @@ button.eq-row:hover b { color: var(--gold); }
 
 /* ---------- INTRO: giới thiệu lực lượng 2 đội trước trận (src/ui/intro.js) ---------- */
 #intro { z-index: 20; }
+/* hàng: tiêu đề · đệm · tên đội · luật sân · thẻ · chỉ số · đệm · chân. 2 hàng đệm 1fr căn cả khối giữa theo chiều dọc; 2 bên dùng
+ * chung hàng (subgrid) nên thẻ 2 bên luôn ngang nhau dù chỉ 1 bên có khung luật sân.
+ * Nền đặc: HUD, thanh kỹ năng, sân và màn chọn Core (khách online có thể mở sẵn bên dưới) không lộ ra như lỗi vẽ */
 .intro {
   position: absolute; inset: 0; overflow: hidden;
-  display: grid; grid-template-columns: 1fr 148px 1fr; grid-template-rows: 40px 1fr 14px; gap: 0 8px; padding: 8px 14px 6px;
-  background: radial-gradient(ellipse at 50% 45%, rgba(18,20,24,0.8), rgba(10,11,14,0.96) 75%);
+  display: grid; grid-template-columns: 1fr 148px 1fr; grid-template-rows: 40px 1fr auto auto auto auto 1fr 14px; gap: 0 8px; padding: 8px 14px 6px;
+  background: radial-gradient(ellipse at 50% 45%, #15171c, #0a0b0e 75%);
 }
 #intro.out .intro { animation: inOut var(--out, 0.35s) steps(5) forwards; }
 .in-bg { position: absolute; top: 0; bottom: 0; width: 62%; pointer-events: none; }
@@ -1454,24 +1457,31 @@ button.eq-row:hover b { color: var(--gold); }
   clip-path: polygon(24% 0, 100% 0, 100% 100%, 0 100%); animation: inBgR 0.4s steps(6) both; }
 .in-bg::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0 1px, transparent 1px 3px); }
 
-.in-top { grid-column: 1 / -1; position: relative; text-align: center; animation: inDrop 0.3s steps(4) both; }
+.in-top { grid-column: 1 / -1; grid-row: 1; position: relative; text-align: center; animation: inDrop 0.3s steps(4) both; }
 .in-comp { display: block; font-size: 13px; color: var(--muted); letter-spacing: 2px; line-height: 1; }
 .in-title { display: block; font-family: var(--px); font-size: 14px; font-weight: normal; color: #fff; margin-top: 4px; text-shadow: 2px 2px 0 var(--ink), 3px 3px 0 #ff3d5a; }
 .intro.promo .in-title { color: var(--gold); text-shadow: 2px 2px 0 var(--ink), 3px 3px 0 #b3122e; animation: inShine 1s steps(2) infinite; }
-.intro.promo { background: radial-gradient(ellipse at 50% 45%, rgba(60,44,8,0.7), rgba(10,11,14,0.96) 75%); }
+.intro.promo { background: radial-gradient(ellipse at 50% 45%, #2c2108, #0a0b0e 75%); }
 
-.in-side { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 7px; min-width: 0; }
-.in-side.l { animation: inFromL 0.35s steps(5) var(--d) both; }
-.in-side.r { animation: inFromR 0.35s steps(5) var(--d) both; }
-.in-team { position: relative; display: flex; align-items: center; gap: 6px; }
+.in-side { position: relative; grid-row: 3 / 7; display: grid; grid-template-rows: subgrid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.in-side.l { grid-column: 1; animation: inFromL 0.35s steps(5) var(--d) both; }
+.in-side.r { grid-column: 3; animation: inFromR 0.35s steps(5) var(--d) both; }
+.in-team { grid-row: 1; margin-bottom: 7px; position: relative; display: flex; align-items: center; gap: 6px; }
 .in-side.r .in-team { flex-direction: row-reverse; text-align: right; }
 .in-crest { width: 28px; height: 32px; flex: none; padding: 2px; background: var(--a); clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%); }
 .in-crest span { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding-bottom: 5px;
   background: linear-gradient(180deg, var(--c), var(--k)); clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%);
   font-family: var(--px); font-size: 5px; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
 .in-tn { flex: 1; min-width: 0; line-height: 1; }
-.in-tn b { display: block; font-family: var(--px); font-size: 8px; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 1px 1px 0 var(--ink), 2px 2px 0 var(--c); }
-.in-tn span { display: block; font-size: 11px; color: var(--a); margin-top: 3px; letter-spacing: 0.5px; }
+/* tên đội cỡ MATCHDAY (14px); intro.js fitNames lùi cỡ chữ khi tên dài không vừa */
+.in-tn b { display: block; font-family: var(--px); font-size: 14px; font-weight: normal; line-height: 1.15; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 2px 2px 0 var(--ink); }
+.in-tn span { display: block; font-size: 12px; color: var(--a); margin-top: 2px; letter-spacing: 0.5px; }
+/* khung luật sân dưới tên đội chủ luật (thay khẩu hiệu): tên luật + 1 câu gợi ý, vạch màu áo bên trái */
+.in-rule { grid-row: 2; margin-bottom: 7px; padding: 5px 7px 6px; text-align: left; line-height: 1;
+  background: color-mix(in srgb, var(--c) 14%, #0d0e12); border: 1px solid #3b4252; border-left: 4px solid var(--c); box-shadow: 2px 2px 0 var(--ink); }
+.in-rule b { display: flex; align-items: center; gap: 5px; font-family: var(--px); font-size: 10px; font-weight: normal; line-height: 1.1; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
+.in-rule b .pxi { width: 12px; height: 12px; vertical-align: 0; }   /* icon 12x12 đúng 1 pixel game */
+.in-rule p { margin: 4px 0 0; font-size: 13px; color: #e6dccb; }
 .in-ovr { text-align: center; line-height: 1; padding: 2px 4px; background: rgba(0,0,0,0.45); border: 1px solid var(--a); }
 .in-ovr b { display: block; font-family: var(--px); font-size: 9px; font-weight: normal; color: #fff; }
 .in-ovr span { font-size: 10px; color: var(--a); }
@@ -1479,17 +1489,16 @@ button.eq-row:hover b { color: var(--gold); }
 .in-side.l .in-boss { left: 34px; }
 .in-side.r .in-boss { right: 34px; }
 
-.in-cards { display: flex; gap: 6px; }
-/* 3v3: mỗi bên 3 thẻ trong ~224px -> thẻ hẹp, nhân vật nhỏ lại, chữ gọn */
+.in-cards { grid-row: 3; display: flex; align-items: flex-end; gap: 6px; }
+/* 3v3: mỗi bên 3 thẻ trong ~224px -> thẻ hẹp, nhân vật nhỏ lại, chữ gọn. Thẻ cao vừa nội dung (~110), không chừa nửa dưới trống */
 .intro.n3 .in-cards { gap: 4px; }
-.intro.n3 .in-card { min-width: 0; height: 150px; padding: 3px 2px 2px; }
+.intro.n3 .in-card { min-width: 0; padding: 3px 2px 8px; }
 .intro.n3 .in-card canvas { width: 60px; height: 66px; margin-top: 14px; }
 .intro.n3 .in-name { font-size: 13px; }
-.intro.n3 .in-num { font-size: 9px; }
 .intro.n3 .in-ult i { max-width: 54px; font-size: 9px; }
 .in-side.r .in-cards { flex-direction: row-reverse; }
 .in-card {
-  position: relative; flex: 1; max-width: 110px; height: 160px; padding: 4px 3px 3px; text-align: center;
+  position: relative; flex: 1; max-width: 110px; padding: 4px 3px 8px; text-align: center;
   background: linear-gradient(180deg, color-mix(in srgb, var(--c) 40%, #121316) 0%, #121316 70%);
   border: 1px solid color-mix(in srgb, var(--a) 60%, var(--edge)); box-shadow: 2px 2px 0 var(--ink);
 }
@@ -1497,17 +1506,20 @@ button.eq-row:hover b { color: var(--gold); }
 .in-side.r .in-card { animation: inCardR 0.3s steps(5) var(--d) both; }
 .in-card canvas { display: block; width: 80px; height: 88px; margin: 8px auto 0; image-rendering: pixelated;
   background: radial-gradient(ellipse at 50% 92%, rgba(0,0,0,0.45), transparent 55%); }
-.in-num { position: absolute; left: 4px; top: 3px; font-family: var(--px); font-size: 11px; color: var(--a); text-shadow: 1px 1px 0 var(--ink); }
-.in-card em { position: absolute; right: 3px; top: 3px; font-style: normal; font-family: var(--px); font-size: 5px; color: var(--muted); padding: 1px 2px; border: 1px solid var(--edge); background: rgba(0,0,0,0.4); }
+/* đầu thẻ: vị trí FWD / MID / DEF bên trái (thay số áo) + nhãn YOU / MATE / P1 / ★Elo bên phải. Nhãn dịch dài (COMPAÑERO) không vừa
+ * 1 hàng thẻ hẹp thì xuống hàng 2, vẫn bám phải, đè lên khoảng trống trên đầu nhân vật thay vì che chữ vị trí */
+.in-head { position: absolute; left: 3px; right: 3px; top: 3px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2px 3px; line-height: 1; }
+.in-pos { padding-top: 1px; font-family: var(--px); font-size: 6px; font-weight: normal; line-height: 1; color: #e6dccb; text-shadow: 1px 1px 0 var(--ink); }
+.in-card.you .in-pos { color: var(--gold); }
+.in-card em { margin-left: auto; font-style: normal; font-family: var(--px); font-size: 5px; line-height: 1; color: var(--muted); padding: 1px 2px; border: 1px solid var(--edge); background: rgba(0,0,0,0.4); }
 .in-card em.you { color: var(--ink); background: var(--gold); border-color: var(--gold); }
 .in-card.you { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px rgba(255,225,79,0.5), 0 0 10px rgba(255,225,79,0.25); }
 .in-name { display: block; font-size: 16px; font-weight: normal; color: #fff; line-height: 1; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .in-ult { display: flex; align-items: center; justify-content: center; gap: 2px; margin-top: 3px; line-height: 1; }
 .in-ult i { font-style: normal; font-size: 10px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 84px; }
-.in-pos { display: block; font-family: var(--px); font-size: 5px; color: var(--a); margin-top: 3px; letter-spacing: 0.5px; }
 .in-side.boss .in-card { border-color: var(--gold); }
 
-.in-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+.in-stats { grid-row: 4; margin-top: 7px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
 .in-st { display: flex; align-items: center; gap: 3px; font-size: 12px; line-height: 1; color: var(--muted); animation: inFade 0.2s steps(3) var(--d) both; }
 .in-side.r .in-st { flex-direction: row-reverse; }
 .in-st span { width: 18px; }
@@ -1519,13 +1531,14 @@ button.eq-row:hover b { color: var(--gold); }
 .in-st.up em { color: #9dff3d; }
 .in-st.up i b { background: color-mix(in srgb, var(--c) 70%, #fff); }
 
-.in-mid { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; position: relative; }
-.in-vs { font-family: var(--px); font-size: 30px; color: #fff; text-shadow: 3px 3px 0 var(--ink), -2px 0 0 var(--c0), 2px 0 0 var(--c1); animation: inVs 0.45s steps(6) var(--d) both; }
+/* giữa: nằm ở hàng luật sân + hàng thẻ, đáy bằng đáy thẻ. Chữ VS (giống nhau mọi trận) nhỏ bằng nửa xưa, nhường chỗ cho tên đội */
+.in-mid { grid-column: 2; grid-row: 4 / 6; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 5px; position: relative; }
+.in-vs { font-family: var(--px); font-size: 16px; line-height: 1; color: #fff; text-shadow: 2px 2px 0 var(--ink), -1px 0 0 var(--c0), 1px 0 0 var(--c1); animation: inVs 0.45s steps(6) var(--d) both; }
 .in-pitch { line-height: 0; border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); animation: inFade 0.3s steps(3) var(--d) both; }
 .in-pitch canvas { display: block; width: 124px; height: 74px; image-rendering: pixelated; }
 .in-venue { font-size: 13px; color: #e6dccb; letter-spacing: 1px; text-align: center; animation: inFade 0.3s steps(3) var(--d) both; }
 
-.in-foot { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+.in-foot { grid-column: 1 / -1; grid-row: 8; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
 .in-foot { position: relative; }   /* nằm trên 2 dải màu áo (.in-bg, absolute + sọc tối) thay vì bị phủ mờ */
 /* gợi ý bấm qua (màn VS, Beat 1 sau còi, lúc đếm thưởng — ui/intro.js, ui/endscreen.js skipHint): nền tối chữ sáng, đọc được trên mọi màu áo */
 .skip-hint { flex: none; padding: 1px 6px 2px; font-size: 12px; line-height: 1; color: #e6dccb; white-space: nowrap; pointer-events: none;

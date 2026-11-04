@@ -1,7 +1,10 @@
 /* Intro — màn giới thiệu lực lượng 2 đội trước trận (kiểu truyền hình bóng đá). Số liệu: config/intro.config.js
- * Hai nửa màu áo trượt vào · huy hiệu + tên đội + OVR · thẻ cầu thủ (sprite chạy vào rồi tạo dáng, số áo, vị trí) ·
- * VS · sơ đồ đội hình trên sân mini · thanh so sánh chỉ số. Hết giờ / Enter -> trượt ra rồi gọi onDone.
+ * Hai nửa màu áo trượt vào · huy hiệu + tên đội + OVR · khung luật sân dưới tên đội chủ luật (thay khẩu hiệu) ·
+ * thẻ cầu thủ (sprite chạy vào rồi tạo dáng, vị trí FWD / MID / DEF ở góc) · VS · sơ đồ đội hình trên sân mini ·
+ * thanh so sánh chỉ số. Hết giờ / Enter -> trượt ra rồi gọi onDone.
  * Nhịp xuất hiện của DOM chạy bằng CSS animation-delay (--d); sprite + sơ đồ vẽ lại mỗi bước trong update().
+ * Review UX 2026-11 (docs/ux-screens, màn vs, phương án A): tên 2 đội to bằng MATCHDAY, chữ VS nhỏ lại, nền đặc (không lộ HUD /
+ * sân phía sau; chỉ là CSS nên không đụng gì tới online: host vẫn chờ introDone như cũ), thẻ thấp vừa nội dung, cả khối căn giữa.
  */
 window.SFC = window.SFC || {};
 
@@ -11,6 +14,8 @@ window.SFC = window.SFC || {};
   const CFG = () => SFC_CONFIG.intro;
   const clamp01 = (v) => Math.max(0, Math.min(1, v));
   const easeOut = (k) => 1 - (1 - k) * (1 - k);
+  // cỡ chữ tên đội (px, đơn vị 640x360): to bằng MATCHDAY, tên dài / bản dịch dài thì lùi từng bậc tới khi vừa ô (fitNames)
+  const NAME_PX = [14, 12, 10, 8];
 
   const Intro = {
     active: false,
@@ -28,6 +33,7 @@ window.SFC = window.SFC || {};
       this.g = game; this.onDone = onDone; this.t = 0; this.closing = -1; this.cues = {}; this.active = true;
       el.innerHTML = this.html(game);
       el.classList.remove('hidden', 'out');
+      this.fitNames(el);
       this.cards = [...el.querySelectorAll('canvas[data-pid]')].map((cv) => {
         cv.width = 40; cv.height = 44;
         const p = game.players.find((q) => q.id === +cv.dataset.pid);
@@ -53,6 +59,16 @@ window.SFC = window.SFC || {};
     },
 
     cue(key, at, fn) { if (!this.cues[key] && this.t >= at) { this.cues[key] = true; fn(); } },
+
+    // tên đội: thử từ cỡ to nhất, tràn ô (chữ bị cắt ...) thì lùi 1 bậc. Đo ngay sau khi gắn DOM (màn đã hiện, font đã tải lúc boot)
+    fitNames(el) {
+      el.querySelectorAll('.in-tn b').forEach((b) => {
+        for (const s of NAME_PX) {
+          b.style.fontSize = s + 'px';
+          if (b.scrollWidth <= b.clientWidth) break;
+        }
+      });
+    },
 
     close() {
       this.closing = this.t;
@@ -157,23 +173,25 @@ window.SFC = window.SFC || {};
         return `<div class="in-st ${v > ov + 0.001 ? 'up' : ''}" style="--d:${(I.statsAt + i * 0.05).toFixed(2)}s"><span>${label}</span><i><b style="--w:${w}%"></b></i><em>${Math.round(v * I.ovrScale)}</em></div>`;
       }).join('');
       const cards = list.map((p) => this.card(g, p, delay[p.id])).join('');
+      // luật sân (shared/systems/matchmods.js, g.mod: có cả ở trận gương của khách online) nằm dưới tên đội chủ luật, thay khẩu hiệu:
+      // tên + 1 câu gợi ý như dải "trận này" ở Pause (UI.pauseMatch), vạch màu áo đội đó. Trận không có luật: giữ khẩu hiệu
+      const M = g.mod, rule = M && M.cfg && M.team === t ? M.cfg : null;
       return `<div class="in-side ${t ? 'r' : 'l'} ${boss ? 'boss' : ''}" style="--c:${c.kit.shirt};--a:${c.kit.accent};--k:${c.kit.shirtDark};--d:${I.teamIn + 0.15}s">
         <div class="in-team">
           <div class="in-crest"><span>${esc(c.short)}</span></div>
-          <div class="in-tn"><b>${esc(c.name)}</b><span>${esc(c.tagline || '')}</span></div>
+          <div class="in-tn"><b>${esc(c.name)}</b>${rule ? '' : `<span>${esc(c.tagline || '')}</span>`}</div>
           ${hidden ? '' : `<div class="in-ovr"><b>${ovr}</b><span>${esc(SFC.t('OVR'))}</span></div>`}
           ${boss ? `<div class="in-boss">${PX().ui('crown', 'sm')} ${esc(SFC.t('BOSS'))}</div>` : ''}
         </div>
+        ${rule ? `<div class="in-rule"><b>${PX().ui('whistle', 'sm')}${esc(rule.name)}</b><p>${esc(rule.hint)}</p></div>` : ''}
         <div class="in-cards">${cards}</div>
         ${hidden ? '' : `<div class="in-stats">${stats}</div>`}
       </div>`;
     },
 
     card(g, p, d) {
-      const I = CFG();
       // online: character người khác gắn nhãn slot P1..P4 (cùng đội = xanh, đối thủ = đỏ), chỉ character của máy này là YOU
       const human = g.isHuman(p.team), ctl = human && p.isControlled, you = p === g.controlled;
-      const num = ctl ? I.youNumber : I.numbers[p.role] || 7;
       const pn = `P${(p.seat != null ? p.seat : p.team) + 1}`;
       const _t = SFC.t;
       // Main Path: người chơi khác (người thật trận xếp hạng / người chơi giả) hiện như nhau — nhãn Elo màu đồng đội / đối thủ
@@ -182,8 +200,11 @@ window.SFC = window.SFC || {};
         : p.mate ? `<em class="mate">${esc(_t('MATE'))}</em>` : human ? `<em>${esc(_t('AI'))}</em>` : '';
       // character / đồng đội có chỉ số riêng: OVR cá nhân
       const povr = (ctl || p.mate) && p.ovr && !SFC.Profile.statsHidden() ? `<b class="in-povr">${p.ovr}<span>${esc(_t('OVR'))}</span></b>` : '';
+      // góc trên thẻ: vị trí trong đội hình (thay số áo, không ai đoán ra; từ 2026-11-01 chỉ DEF giữ khung nên vị trí lại có nghĩa).
+      // Chữ FWD / MID / DEF để nguyên như Pause và bảng SQUAD. Cùng hàng với nhãn bên phải (.in-head: nhãn dịch dài thì xuống dòng).
+      // intro.numbers / youNumber trong config không còn dùng; file đó máy chủ cũng tải nên để xoá cùng lần tăng phiên bản máy chủ kế tiếp
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">
-        <div class="in-num">${num}</div>${tag}${povr}
+        <div class="in-head"><b class="in-pos">${esc(p.role || '')}</b>${tag}</div>${povr}
         <canvas data-pid="${p.id}" data-delay="${d}"></canvas>
         <b class="in-name">${esc(p.name)}</b>
       </div>`;
