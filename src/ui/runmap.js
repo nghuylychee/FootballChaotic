@@ -172,7 +172,8 @@ window.SFC = window.SFC || {};
         const go = [T('go', { main: true, dis: !this.pkReady() })];   // luôn hiện; mờ tới khi đủ người (UX run-12)
         return POS().map((r) => T('slot', { id: r })).concat(unpick, cands, go, inv, [T('cancel')]);
       }
-      if (!RUN().active()) return host ? [T('end', { main: true })] : [T('leaveroom')];
+      // hết run: CONTINUE (chọn sẵn) + từng ô Core mới (trỏ phím = hiện bảng mô tả) · khách co-op: LEAVE ROOM
+      if (!RUN().active()) return host ? [T('end', { main: true })].concat((R.newCores || []).map((id, i) => T('core', { i }))) : [T('leaveroom')];
       // GEAR (user 2026-10-30): chọn món -> chọn người đeo -> (người đó đủ ô) chọn món bỏ ra. Co-op: bỏ phiếu từng bước. Món mua ở Shop: không bỏ qua
       if (R.offer && R.offer.gear) {
         const O = R.offer, shop = O.kind === 'shop';
@@ -268,6 +269,7 @@ window.SFC = window.SFC || {};
       menu.bindAvatars();
       if (R.join) this.bindJoin(menu);
       if (T[0] && T[0].k === 'close') this.bindBag(menu, T);   // đang mở SQUAD
+      if (T[0] && T[0].k === 'end') this.bindEnd(menu, T);     // thẻ hết run
     },
     // thẻ che map: chuột và phím dùng chung 1 mục chọn (UX review 2026-11-02, như KIT VAN): rê chuột lên mục (data-rt) = dời this.sel tới đó,
     // chỉ chuyển class .sel (không vẽ lại; thẻ LEGEND xin vào đội: bindJoin tự đổi xem trước). Bắt mousemove (chuột thật di chuyển) chứ
@@ -1278,22 +1280,53 @@ window.SFC = window.SFC || {};
       return this.sheet('event evres', E.title, c.label, `<div class="ev-rows">${rows.join('')}</div>`, T[0] ? this.btn(T, T[0], esc(_t('CONTINUE'))) : '');
     },
     bagCard(R, T) { return this.squadSheet(R, T); },
-    // hết run: CHAMPIONS / RUN OVER + trận đã thắng, boss đã hạ, gold quy đổi (thẻ che map như thẻ mở act)
+    // hết run: CHAMPIONS / RUN OVER + trận đã thắng, boss đã hạ, gold quy đổi (thẻ che map như thẻ mở act).
+    // UX màn hình 2026-11 (phương án A): thua ai + tỉ số chung 1 dòng, to hơn 1 cỡ · dòng đi được tới đâu (act / tầng, NEW BEST khi vượt kỷ lục
+    // cũ — R.newBest, Run.advance) · dòng đếm ghi chữ cả 2 số · Core mới có tên + 1 dòng mô tả, bảng đầy đủ khi rê chuột / trỏ phím (coreTip)
     endCard(R, T) {
       const games = R.log.filter((x) => x.kind !== 'skill'), wins = games.filter((x) => x.my > x.op), last = games[games.length - 1];
       const bosses = wins.filter((x) => x.kind === 'boss').length;
       if (R.demoEnd) return this.demoCard(R, T);
       const line = R.won ? _t('You beat every act. You are the GOAT.')
         : R.forfeit ? _t('You forfeited the run.')
-        : last ? _t('Knocked out by {team}.', { team: (TEAMS()[last.team] || {}).name || '' }) : '';
-      const score = !R.won && !R.forfeit && last ? `<em class="rm-score">${last.my} - ${last.op}</em>` : '';
+        : last ? _t('Knocked out by {team}', { team: (TEAMS()[last.team] || {}).name || '' }) : '';
+      const score = !R.won && !R.forfeit && last ? ` <em class="rm-score">· ${last.my} - ${last.op}</em>` : '';
+      // vô địch: đã qua hết các act, khỏi dòng tới đâu. Khách co-op: kỷ lục là của máy giữ run -> không hiện NEW BEST
+      const at = this.reach(R), best = R.newBest && !R.mirror ? `<u class="rm-best">${esc(_t('NEW BEST'))}</u>` : '';
+      const reach = R.won ? '' : `<div class="rm-reach">${esc(_t('REACHED ACT {act} · FLOOR {floor}', at))}${best}</div>`;
       return `<div class="rm-actcard rm-end ${R.won ? 'champ' : 'out'}">
-          <b>${esc(R.won ? _t('CHAMPIONS') : _t('RUN OVER'))}</b><span>${esc(line)}</span>${score}
-          <div class="rm-tally"><span>${PX().ui('ball', 'sm')} ${esc(_tn('{n} win', '{n} wins', wins.length))}</span><span>${PX().ui('crown', 'sm')} ${bosses}</span></div>
+          <b>${esc(R.won ? _t('CHAMPIONS') : _t('RUN OVER'))}</b><span>${esc(line)}${score}</span>${reach}
+          <div class="rm-tally"><span>${PX().ui('ball', 'sm')} ${esc(_tn('{n} win', '{n} wins', wins.length))}</span><i>·</i><span>${PX().ui('crown', 'sm')} ${esc(_tn('{n} boss', '{n} bosses', bosses))}</span></div>
           ${this.bring(R)}
-          ${(R.newCores || []).length ? `<div class="rm-newcores"><em>${esc(_t('NEW CORES'))}</em>${R.newCores.map((id) => `<span class="rn-c"><i>${PX().core(id, 'x2')}</i><b>${esc(SFC_CONFIG.cores.list[id].name)}</b></span>`).join('')}</div>` : ''}
+          ${this.newCores(R, T)}
           ${this.endBtn(T)}
         </div>`;
+    },
+    // đi được tới đâu (thẻ hết run): act đang đá + tầng xa nhất đã tới = tầng của trận cuối (trận thua) hoặc tầng kế node đang đứng (bỏ run);
+    // đánh số từ 1 như tab GOAT PATH (FLOOR n, tầng boss = tầng cuối)
+    reach(R) {
+      const at = R.at && RUN().find(R.at), last = R.log[R.log.length - 1];
+      let f = at ? at.f + 1 : 0;
+      if (last && last.act === R.act && last.f != null) f = Math.max(f, last.f);
+      return { act: R.act + 1, floor: f + 1 };
+    },
+    // Core vừa mở (thẻ hết run): ô icon + tên + 1 dòng mô tả; bảng đầy đủ (UIHelpers.coreTip) khi rê chuột hoặc trỏ phím (mục 'core', bindEnd).
+    // Nhiều Core (> 4): chỉ icon + tên, mô tả ở bảng
+    newCores(R, T) {
+      const ids = R.newCores || [];   // id đã lọc lúc lưu / nhận (Run.sanitize); chỉ số i khớp mục 'core' của targets()
+      if (!ids.length) return '';
+      const tiles = ids.map((id, i) => {
+        const c = SFC_CONFIG.cores.list[id], t = T.find((x) => x.k === 'core' && x.i === i), sel = t && T.indexOf(t) === this.sel;
+        if (!c) return '';
+        return `<span class="rn-c ${sel ? 'sel' : ''}" ${t ? `data-rt="${t.key}"` : ''} data-tip="${esc(SFC.UIHelpers.coreTip(id))}">
+            <i>${PX().core(id, 'x2')}</i><span class="rn-t"><b>${esc(c.name)}</b><small>${esc(c.desc)}</small></span></span>`;
+      }).join('');
+      return `<div class="rm-newcores ${ids.length > 1 ? 'multi' : ''} ${ids.length > 4 ? 'many' : ''}"><em>${esc(_t('NEW CORES'))}</em><div class="rn-list">${tiles}</div></div>`;
+    },
+    // thẻ hết run: ô Core mới đang trỏ bằng phím -> hiện bảng mô tả ngay (như SQUAD, bindBag)
+    bindEnd(menu, T) {
+      const cur = T[this.sel];
+      if (cur && cur.k === 'core') SFC.Tip.showFor(menu.el.querySelector(`.rm-end [data-rt="${cur.key}"]`));
     },
     // bản DEMO: hạ boss act cuối được chơi
     demoCard(R, T) {
@@ -1469,7 +1502,7 @@ window.SFC = window.SFC || {};
         }
         case 'bag': this.bagOpen = true; break;
         case 'close': this.bagOpen = false; break;
-        case 'info': break;   // SQUAD: mục chỉ để xem (bảng mô tả hiện khi chọn)
+        case 'info': case 'core': break;   // SQUAD / ô Core mới ở thẻ hết run: mục chỉ để xem (bảng mô tả hiện khi chọn)
         case 'pick': { const id = RUN().pick(t.i); if (id) menu.setMsg(_t('BADGE: {name}', { name: B(id).name })); break; }
         // GEAR: chọn món · người đeo · món bỏ ra (người đeo đủ ô) · lùi 1 bước
         case 'gpick': RUN().pick(t.i); break;
@@ -1658,7 +1691,7 @@ window.SFC = window.SFC || {};
       if (!RUN().run && this.pick) return this.act(menu, f('undo') || f('cancel'));
       const out = f('skip') || f('leave') || f('joinno') || f('skiptrial') || (inRoom() ? f('gback') : null);
       if (out && T.length > 1) { if (T.indexOf(out) !== this.sel) { this.sel = T.indexOf(out); menu.render(); } return; }
-      const t = f('close') || f('gback') || out || (T.length === 1 && T[0].k !== 'drill' && T[0].k !== 'bag' ? T[0] : null);
+      const t = f('close') || f('gback') || out || f('end') || (T.length === 1 && T[0].k !== 'drill' && T[0].k !== 'bag' ? T[0] : null);
       if (t) return this.act(menu, t);
       // map (không còn nút BACK): về tab GOAT PATH · phòng co-op: ở lại (rời phòng bằng LEAVE ROOM)
       if (f('bag') && !inRoom()) { SFC.Audio.menu(); menu.go('run'); }

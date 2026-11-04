@@ -11,7 +11,8 @@
  *     room: { kind: 'shop', items: [{ id, price, sold }], healed } | { kind: 'rest', left } | { kind: 'skill', drill } |
  *           { kind: 'trial', legend, drill } | { kind: 'event', id } (đang đứng trong Shop / Locker Room (left: số việc còn làm được) /
  *           trước Skill game / trước LEGEND TRIAL / trong sự kiện ???),
- *     floors (số node đã qua cả run), metaGold (gold meta đã quy đổi lúc hết run, null = chưa) }
+ *     floors (số node đã qua cả run), metaGold (gold meta đã quy đổi lúc hết run, null = chưa),
+ *     newBest (run này đã vượt kỷ lục act / tầng xa nhất của các run trước: thẻ hết run hiện NEW BEST) }
  *   map = { floors: [[node]], boss: node } của act đang đá. node = { id 'f.c', f, c, kind, team?, elo?, next: [id], jx, jy }
  *   at = id node vừa xong (null = chưa vào node nào của act) · path = các node đã qua ở act này · log = các trận đã đá
  *   pending = id node đang đá dở (ghi lúc giao bóng): tắt game giữa trận -> lần chạy sau tính thua (settle), giống Main Path
@@ -216,7 +217,7 @@ window.SFC = window.SFC || {};
         spare: Array.isArray(raw.spare) ? raw.spare.filter((x) => T[x]) : [],
         map: m, at: id(raw.at), path: Array.isArray(raw.path) ? raw.path.filter(id) : [],
         log: Array.isArray(raw.log) ? raw.log.slice(-40).filter((x) => x && typeof x === 'object') : [],
-        pending: id(raw.pending), next: id(raw.next), over: !!raw.over, won: !!raw.won, forfeit: !!raw.forfeit, actNew: !!raw.actNew, demoEnd: !!raw.demoEnd,
+        pending: id(raw.pending), next: id(raw.next), over: !!raw.over, won: !!raw.won, forfeit: !!raw.forfeit, actNew: !!raw.actNew, demoEnd: !!raw.demoEnd, newBest: !!raw.newBest,
         started: Math.max(0, +raw.started || 0),
       };
     },
@@ -440,7 +441,8 @@ window.SFC = window.SFC || {};
       R.path.push(n.id);
       R.floors = (R.floors || 0) + 1;
       const st = this.stats();
-      if (R.act > st.bestAct || (R.act === st.bestAct && n.f > st.bestFloor)) { st.bestAct = R.act; st.bestFloor = n.f; }
+      // kỷ lục act / tầng xa nhất. Run này vượt kỷ lục cũ -> R.newBest (thẻ hết run: NEW BEST; run đầu tiên chưa có kỷ lục cũ để vượt)
+      if (R.act > st.bestAct || (R.act === st.bestAct && n.f > st.bestFloor)) { st.bestAct = R.act; st.bestFloor = n.f; if (st.plays > 1) R.newBest = true; }
     },
     // đội hình [bạn, đối thủ] của SKILL GAME / LEGEND TRIAL (trial riêng: legends.list[].trial.size)
     // bài cho node Skill game (user 2026-10-31: 2 Skill game liền nhau không trùng bài): bài chưa đá trong run này;
