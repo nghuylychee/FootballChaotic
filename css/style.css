@@ -2045,64 +2045,87 @@ button.eq-row:hover b { color: var(--gold); }
 .trait-row.t3 { box-shadow: inset 0 0 0 1px rgba(199,204,214,0.25); }
 .trait-row.t4 { box-shadow: inset 0 0 0 1px rgba(255,210,63,0.45); }
 
-/* ---------- Pause: build hiện tại ---------- */
-#pause { padding-top: 14px; }
-#pause .pause-title { margin-bottom: 14px; }
-/* mỗi người 1 hàng cao ROW (bạn + đồng đội), nút RESUME / FORFEIT giữa đáy màn */
-.pause-rows { display: flex; flex-direction: column; gap: 6px; }
-.pause-build { display: flex; gap: 10px; align-items: stretch; height: 74px; }
-#pause .pause-foot { position: absolute; left: 0; right: 0; bottom: 12px; justify-content: center; margin: 0; }
+/* ---------- Pause (matchui.js renderPause; review màn 2026-11, phương án A) ----------
+ * từ trên xuống: PAUSED · luật sân (to, rộng bằng bảng build) · mỗi người 1 hàng (bạn + đồng đội) · BADGE đội sát hàng nút.
+ * Nút RESUME / FORFEIT giữa đáy màn. Không vừa chỗ (luật dài + nhiều BADGE + dòng online) thì UI.fitPause thu gọn dần: fit1 hàng +
+ * lá Core thấp lại · fit2 BADGE chỉ còn icon (cuối file khối này) */
+#pause { padding-top: 6px; }
+#pause .pause-title { margin-bottom: 4px; }
+#pause .pause-note { margin: -2px 0 4px; }
+/* thân Pause: rộng theo bảng build (luật sân + dải BADGE không tự nới rộng: width 0 + min-width 100%), cao tới sát hàng nút
+ * -> dải BADGE (margin-top auto) dồn xuống đáy, ngay trên hàng nút */
+.pause-body { flex: 1 1 auto; min-height: 0; margin-bottom: 34px; display: flex; flex-direction: column; gap: 4px; }
+#pause .pause-foot { position: absolute; left: 0; right: 0; bottom: 8px; justify-content: center; margin: 0; }
 /* FORFEIT bấm lần 1 (UI.pauseAct): nút đỏ CONFIRM FORFEIT + dòng hậu quả ngay trên hàng nút */
 #pause .pause-items button.danger { color: #ff5a6e; border-color: #ff5a6e; background: none; }
 #pause .pause-items button.danger.sel { color: var(--ink); background: #ff5a6e; box-shadow: 2px 2px 0 var(--ink); }
-#pause .pause-warn { position: absolute; left: 0; right: 0; bottom: 42px; text-align: center; font-size: 13px; color: #ff5a6e; text-shadow: 1px 1px 0 var(--ink); }
-.pb-traits h4 u { text-decoration: none; color: var(--muted); margin-right: 3px; }
-.pb-traits { width: 190px; max-height: 74px; overflow: hidden; scrollbar-width: thin; scrollbar-color: #525a6b transparent; background: var(--panel); border: 1px solid var(--edge); padding: 5px 7px; display: flex; flex-direction: column; gap: 2px; }
-.pb-traits h4 { font-size: 13px; color: var(--gold); letter-spacing: 1px; font-weight: normal; margin-bottom: 2px; }
-.pb-traits em { font-size: 12px; color: var(--muted); }
-.pb-traits .trait-row { height: 15px; font-size: 13px; background: none; }
-.pb-tl { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 4px; }
-.pb-tl .tr-name { display: none; }   /* tên trường phái ở tooltip */
-.pb-traits .tr-hex { width: 15px; height: 15px; }
+#pause .pause-warn { position: absolute; left: 0; right: 0; bottom: 37px; text-align: center; font-size: 13px; line-height: 1; color: #ff5a6e; text-shadow: 1px 1px 0 var(--ink); }
+/* dòng cảnh báo nằm đúng chỗ dải BADGE -> ẩn dải đi cho tới khi hết hỏi (luật sân ở trên vẫn đọc được) */
+#pause:has(.pause-warn) .pause-bds { visibility: hidden; }
+/* luật sân của đối thủ: tên to màu áo đối thủ (--c) + gợi ý cỡ chữ thường; thứ cần đọc nhất -> đứng thứ 2 sau PAUSED */
+.pause-rule { width: 0; min-width: 100%; padding: 3px 8px 4px; background: color-mix(in srgb, var(--c) 16%, var(--panel)); border: 1px solid color-mix(in srgb, var(--c) 45%, var(--edge)); border-left: 4px solid var(--c); box-shadow: 2px 2px 0 var(--ink); }
+.pause-rule b { display: flex; align-items: center; gap: 5px; font-family: var(--px); font-size: 12px; font-weight: normal; line-height: 1; letter-spacing: 1px; color: var(--c); text-shadow: 1px 1px 0 var(--ink); }
+.pause-rule p { margin-top: 2px; font-size: 13px; line-height: 1; color: #e6dccb; }
+/* mỗi người 1 hàng: ô trái (vị trí + tên · trường phái · LEGEND) + lá Core */
+.pause-rows { display: flex; flex-direction: column; gap: 3px; }
+.pause-build { display: flex; gap: 10px; align-items: stretch; height: 74px; }
+.pb-traits { width: 190px; overflow: hidden; background: var(--panel); border: 1px solid var(--edge); padding: 3px 6px; display: flex; flex-direction: column; gap: 2px; }
+.pb-traits h4 { display: flex; gap: 4px; min-width: 0; font-size: 13px; line-height: 1; color: var(--gold); letter-spacing: 1px; font-weight: normal; white-space: nowrap; }
+.pb-traits h4 u { flex: none; text-decoration: none; color: var(--muted); }
+.pb-traits h4 span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pb-traits h4 i { flex: none; font-style: normal; }
+.pb-traits > em { font-size: 12px; line-height: 1; color: var(--muted); }
+.pb-traits:has(.pb-leg) > em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* có LEGEND: gợi ý 1 dòng, chừa chỗ */
+/* trường phái: 1 dòng (tối đa 4 trường phái = 4 Core), tên trường phái ở tooltip */
+.pb-tl { display: flex; gap: 3px; }
+.pb-tl .tr-name { display: none; }
+.pb-traits .trait-row { height: 13px; gap: 2px; padding: 0; font-size: 13px; background: none; }
+.pb-traits .tr-steps em { font-size: 9px; color: inherit; }
 .tr-bonus { display: flex; flex-direction: column; gap: 1px; margin: 1px 0 4px 18px; }
 .tr-bonus div { font-size: 11px; line-height: 1.05; color: #5f5563; display: flex; gap: 4px; }
 .tr-bonus div b { font-weight: normal; flex: none; width: 7px; }
 .tr-bonus div.on { color: #e6dccb; }
 .tr-bonus div.on b { color: var(--gold); }
-.pb-cards { display: flex; gap: 6px; }
-/* Pause · dải "trận này" (matchui.js pauseMatch): luật sân · LEGEND · BADGE đội, 1 hàng gọn giữa bảng build và hàng nút */
-.pause-match { display: flex; gap: 6px; margin-top: 4px; width: 100%; max-width: 538px; align-items: stretch; }
-.pm-box { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; padding: 3px 6px 4px; background: var(--panel); border: 1px solid var(--edge); }
-.pm-box h5 { display: flex; align-items: center; gap: 4px; margin: 0; font-family: var(--px); font-size: 6px; font-weight: normal; line-height: 1; letter-spacing: 1px; color: var(--muted); white-space: nowrap; }
-.pm-box > div { display: flex; align-items: center; gap: 4px; }
-.pm-rule { flex: 1 1 0; border-left: 2px solid var(--c); }
-.pm-rule p { margin: 0; font-size: 12px; line-height: 1; color: #c7ccd6; }
-.pm-rule p b { font-family: var(--px); font-size: 6px; font-weight: normal; letter-spacing: 1px; color: var(--c); text-shadow: 1px 1px 0 var(--ink); margin-right: 2px; white-space: nowrap; }
-.pm-rule p b .pxi { vertical-align: -2px; margin-right: 3px; }
-/* phòng online (thêm dòng "Online matches keep running"): bớt khoảng trên để dải không chạm hàng nút */
-#pause:has(.pause-match):has(.pause-note) .pause-title { margin-bottom: 6px; }
-#pause:has(.pause-match) .pause-note { margin: -4px 0 4px; }
-/* đang hỏi lại FORFEIT: dòng cảnh báo đỏ nằm đúng chỗ dải THIS MATCH -> ẩn dải đi cho tới khi hết hỏi */
-#pause:has(.pause-warn) .pause-match { visibility: hidden; }
-.pm-leg { flex: none; border-left: 2px solid var(--lc); }
-.pm-leg h5 { color: var(--lc); text-shadow: 1px 1px 0 var(--ink); }
-.pm-leg .lg-combo { gap: 4px; padding: 2px 5px 1px 3px; box-shadow: 1px 1px 0 var(--ink); }
-.pm-leg .lg-combo > b { font-size: 6px; }
-.pm-leg .lg-flaw { padding: 2px 4px 1px; font-size: 5px; }
-.pm-bds { flex: none; }
-.pm-bds > div { flex-wrap: wrap; gap: 2px; max-width: 120px; }
-.pm-bds .sq-b { width: 14px; height: 14px; }
+/* LEGEND của người trong hàng (matchui.js pauseLegend): tên màu LEGEND + nhược điểm · kỹ thuật + phím; nằm đáy ô trái, gờ màu LEGEND
+ * mảnh, chip nhạt hơn bản ở màn LEGEND (không to hơn luật sân: review màn 2026-11 thấy dải LEGEND đỏ cũ "ồn" quá). Chip kỹ thuật bỏ
+ * ngôi sao, tên kỹ thuật dài thì cắt (...) chứ không cắt phím */
+.pb-leg { margin-top: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding-left: 4px; border-left: 2px solid var(--lc); }
+.pb-leg > div { display: flex; align-items: center; gap: 5px; max-width: 100%; }
+.pb-leg > div > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: normal; line-height: 1; color: var(--lc); text-shadow: 1px 1px 0 var(--ink); }
+.pb-leg .lg-combo { max-width: 100%; height: 13px; gap: 3px; padding: 0 3px; line-height: 1; box-shadow: none;
+  background: color-mix(in srgb, var(--lc) 12%, #14161c); border-color: color-mix(in srgb, var(--lc) 50%, transparent); }
+.pb-leg .lg-combo > .pxi { display: none; }
+.pb-leg .lg-combo > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 6px; letter-spacing: 0; }
+.pb-leg .lg-keys { flex: none; }
+.pb-leg .lg-keys kbd { padding: 1px 2px 0; box-shadow: 0 1px 0 #8a8070, 0 0 0 1px var(--ink); }
+.pb-leg .lg-keys span { font-size: 11px; line-height: 1; }
+.pb-leg .lg-flaw { flex: none; height: 12px; padding: 0 3px; font-size: 5px; background: none; border-color: rgba(255, 90, 110, 0.5); }
+.pb-leg .lg-flaw .pxi { width: 9px; height: 9px; }
+.pb-cards { display: flex; gap: 6px; align-items: center; }
 .mcard { position: relative; width: 80px; height: 74px; display: flex; flex-direction: column; align-items: center; padding: 3px 3px 2px; background: #1a1c22;
   border: 2px solid var(--t); box-shadow: 3px 3px 0 var(--ink), 0 0 6px color-mix(in srgb, var(--t) 35%, transparent); }
 .mcard::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--t); }
 .mcard.ult { background: radial-gradient(circle at 50% 30%, #3a2710, #121316 70%); }
 .mc-art { position: relative; margin: 1px 0 3px; border: 1px solid var(--t); line-height: 0; box-shadow: 1px 1px 0 var(--ink); }
 .mc-art .card-emoji { left: -5px; top: -6px; }
-.mc-name { font-size: 13px; line-height: 1; color: #fff; text-align: center; text-shadow: 1px 1px 0 var(--ink); }
-.mcard.empty { border: 2px dashed #323742; box-shadow: none; align-items: center; justify-content: center;
-  background: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0 4px, transparent 4px 8px), #121316; }
+.mc-name { font-size: 13px; line-height: 0.95; color: #fff; text-align: center; text-shadow: 1px 1px 0 var(--ink); }
+/* lượt chưa chọn: vạch thấp phẳng + 1 chấm mờ (không viền đứt, không ???: trông như ô bấm được) */
+.mcard.empty { height: 16px; justify-content: center; border: 0; box-shadow: none; background: rgba(255, 255, 255, 0.035); }
 .mcard.empty::before { display: none; }
-.mcard.empty b { font-family: var(--px); font-size: 10px; font-weight: normal; color: #4a3f4c; letter-spacing: 2px; }
+.mcard.empty i { width: 3px; height: 3px; background: #3a404d; }
+/* BADGE của cả đội: icon + tên (mô tả ở tooltip), nhiều thì xuống dòng */
+.pause-bds { width: 0; min-width: 100%; margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; padding: 2px 8px; background: var(--panel); border: 1px solid var(--edge); }
+.pause-bds h5 { margin-right: -2px; font-family: var(--px); font-size: 6px; font-weight: normal; line-height: 1; letter-spacing: 1px; color: var(--muted); white-space: nowrap; }
+.pbd { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; line-height: 1; color: #e6dccb; white-space: nowrap; cursor: help; }
+.pbd .sq-b { width: 14px; height: 14px; }
+/* thu gọn (UI.fitPause): fit1 = hàng thấp lại, ảnh xem trước của lá Core cắt bớt 4px trên + dưới (tên Core vẫn đủ 2 dòng: tên dài /
+ * bản dịch dài không bị cắt) · fit2 = BADGE chỉ còn icon (tên + mô tả ở tooltip) */
+#pause.fit1 .pause-build { height: 66px; }
+#pause.fit1 .mcard:not(.empty) { height: 66px; }
+#pause.fit1 .mc-art .cpv { margin: -4px 0; clip-path: inset(4px 0); }
+#pause.fit2 .pause-bds { gap: 2px 4px; }
+#pause.fit2 .pause-bds h5 { margin-right: 2px; }
+#pause.fit2 .pbd { font-size: 0; gap: 0; }
 /* icon tài nguyên chèn trong chữ (mô tả Core, hiệu ứng Cộng hưởng) */
 .pxi.res-in { width: 12px; height: 12px; vertical-align: -2px; margin: 0 1px; }
 

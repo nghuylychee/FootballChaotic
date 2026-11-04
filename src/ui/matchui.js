@@ -25,6 +25,8 @@ window.SFC = window.SFC || {};
       this.hudCache = {};
       this.pauseItems = PAUSE_SINGLE;
       this.bindMouse();
+      // đổi cỡ cửa sổ lúc đang Pause: đo lại chỗ (main.js fit() đổi cỡ #stage trong cùng sự kiện -> đợi 1 khung)
+      window.addEventListener('resize', () => requestAnimationFrame(() => { if (this.current === 'pause') this.fitPause(); }));
     },
 
     show(name) {
@@ -53,57 +55,84 @@ window.SFC = window.SFC || {};
     get roomMatch() { return this.online && !this.ranked; },
 
     /* ================= PAUSE / MENU TRONG TRẬN ================= */
-    // Pause: build hiện tại — bên trái Cộng hưởng đạt mốc mấy (kèm hiệu ứng), bên phải các lá Core đang có (ô trống: ???)
+    // Pause (review màn 2026-11, phương án A): luật sân to ngay dưới PAUSED · mỗi người 1 hàng (vị trí + tên, trường phái, LEGEND của
+    // người đó bên trái; lá Core bên phải, lượt chưa chọn = vạch thấp 1 chấm) · BADGE đội (icon + tên) sát hàng nút.
+    // Trận không có luật / LEGEND / BADGE (xếp hạng, phòng riêng, tập) thì phần đó không vẽ, chỉ còn các hàng build
     renderPause() {
       this.forfeitArm = false;   // mở Pause: FORFEIT luôn về bước 1
       clearTimeout(this.forfeitTimer);
       const g = this.app.game, me = g ? g.humanTeam : -1;
       const items = this.pauseItems.map(([k, l], i) => `<button class="${i === this.pauseSel ? 'sel' : ''}" data-act="${k}">${esc(l)}</button>`).join('');
-      let build = '';
+      let body = '';
       if (g && me >= 0) {
         // mỗi người 1 hàng (bạn trước, rồi đồng đội — user 2026-11-01): trường phái bên trái, lá Core bên phải.
         // ô Core = số lượt chọn của trận; Tuyệt kỹ (nếu đã mở) là lá riêng viền vàng ở cuối, không chiếm ô Core
-        const row = (q, head) => {
+        const row = (q) => {
           const all = g.cores.coresOf(q), owned = all.filter((id) => CORES().list[id].role !== 'ult');
           const ult = all.find((id) => CORES().list[id].role === 'ult'), n = Math.max(SFC_CONFIG.game.match.maxUpgrades, owned.length);
           const slots = Array.from({ length: n }, (_, i) => miniCard(owned[i])).concat(ult ? [miniCard(ult)] : []);
           const hint = q === mp ? `<em>${esc(_t('Stack Cores of one school to unlock an Ultimate'))}</em>` : '';
-          // trường phái gọn (user 2026-11-01): icon + số Core + các mốc, 2 cột, không ghi Tuyệt kỹ từng mốc -> không cần thanh cuộn
+          // đầu hàng: vị trí + tên cho mọi người, hàng của bạn thêm "· YOUR BUILD" (vị trí của bạn cũng cần biết: chỉ DEF giữ khung)
+          const head = `${q.role ? `<u>${esc(q.role)}</u>` : ''}<span>${esc(q.name)}</span>${q === mp ? `<i>· ${esc(_t('YOUR BUILD'))}</i>` : ''}`;
+          // trường phái gọn (user 2026-11-01): icon + số Core + các mốc trên 1 dòng, không ghi Tuyệt kỹ từng mốc -> không cần thanh cuộn
           const tl = traitList(g, q);
-          return `<div class="pause-build"><div class="pb-traits"><h4>${head}</h4>${tl ? `<div class="pb-tl">${tl}</div>` : hint}</div><div class="pb-cards">${slots.join('')}</div></div>`;
+          return `<div class="pause-build"><div class="pb-traits"><h4>${head}</h4>${tl ? `<div class="pb-tl">${tl}</div>` : hint}${this.pauseLegend(q)}</div><div class="pb-cards">${slots.join('')}</div></div>`;
         };
         const mp = g.cores.seatOwner(g.me), mates = mp ? g.teams[mp.team].players.filter((q) => q !== mp) : [];
-        build = `<div class="pause-rows">${[row(mp, esc(_t('YOUR BUILD')))].concat(mates.map((q) => row(q, `<u>${esc(q.role)}</u> ${esc(q.name)}`))).join('')}</div>`;
+        if (mp) body = `${this.pauseRule(g)}<div class="pause-rows">${[mp].concat(mates).map(row).join('')}</div>${this.pauseBadges(g)}`;
       }
       // RESUME / FORFEIT: giữa đáy màn (user 2026-11-01)
       this.el.pause.innerHTML = `
         <div class="pause-title">${esc(this.online || this.ranked ? _t('MENU') : _t('PAUSED'))}</div>
         ${this.online || this.ranked ? `<div class="pause-note">${esc(_t('Online matches keep running'))}</div>` : ''}
-        ${build}
+        ${body ? `<div class="pause-body">${body}</div>` : ''}
         <div class="pause-items row-items pause-foot">${items}</div>`;
-      // dải "trận này" ngay dưới bảng build (pauseMatch)
-      const rows = this.el.pause.querySelector('.pause-rows'), extra = rows && this.pauseMatch(g);
-      if (extra) rows.insertAdjacentHTML('afterend', extra);
+      this.fitPause();
       SFC.CorePreview.scan(this.el.pause);
     },
+    // Pause phải vừa chỗ trên hàng nút: luật 2 dòng + nhiều BADGE (2 dòng) + dòng "Online matches keep running" có thể tràn ở màn
+    // 640x360 -> thu gọn dần (css #pause.fit1 / fit2) tới khi vừa. Màn cao hơn (cửa sổ không 16:9) thường không cần.
+    // renderPause chạy trước show('pause') -> tạm bỏ .hidden để đo (cùng 1 khung, không nháy)
+    fitPause() {
+      const el = this.el.pause, body = el.querySelector('.pause-body');
+      el.classList.remove('fit1', 'fit2');
+      if (!body) return;
+      const hid = el.classList.contains('hidden');
+      if (hid) el.classList.remove('hidden');
+      for (const c of ['fit1', 'fit2']) {
+        if (body.scrollHeight <= body.clientHeight + 1) break;
+        el.classList.add(c);
+      }
+      if (hid) el.classList.add('hidden');
+    },
 
-    // Pause · dải "trận này" (GOAT PATH / FOOTBALL STORY): luật sân của đối thủ (tên + gợi ý) · LEGEND của bạn (kỹ thuật + phím + nhược
-    // điểm) · BADGE của cả đội (icon, mô tả ở tooltip). Banner luật sân chỉ hiện 1 lần lúc bóng lăn và thanh kỹ năng không nhận chuột
-    // -> Pause là chỗ đọc lại. Không có gì thì không vẽ. Nằm riêng giữa bảng build và hàng nút, không đụng nút Pause
-    pauseMatch(g) {
-      const out = [], RU = SFC.RunUI, mod = g.opts.mod && SFC_CONFIG.stories.mods[g.opts.mod];
-      if (mod) {
-        const opp = g.teams[1 - g.humanTeam];
-        out.push(`<div class="pm-box pm-rule" style="--c:${opp.cfg.kit.shirt}"><p><b>${PX().ui('whistle', 'sm')}${esc(mod.name)}</b> ${esc(mod.hint)}</p></div>`);
-      }
-      const p = g.cores.seatOwner(g.me), L = p && p.legend && SFC.Run && SFC.Run.legend(p.legend);
-      if (L && RU) out.push(`<div class="pm-box pm-leg" style="--lc:${L.color}"><h5 title="${esc(L.title + ' · ' + L.flawDesc)}">${esc(L.name)}</h5><div>${RU.comboChip(L)}${RU.flawChip(L)}</div></div>`);
-      const bds = RU ? this.runBadges(g) : [], RAR = SFC_CONFIG.progression.rarities;
-      if (bds.length) {
-        const icons = bds.map((b) => `<span class="sq-b" style="--rc:${RAR[SFC.Run.badge(b.id).rarity].color}" data-tip="${esc(RU.badgeTip(b.id, b.up))}">${RU.badgeIcon(b.id, '')}</span>`).join('');
-        out.push(`<div class="pm-box pm-bds"><h5>${esc(_t('TEAM BADGES'))}</h5><div>${icons}</div></div>`);
-      }
-      return out.length ? `<div class="pause-match">${out.join('')}</div>` : '';
+    // Pause · luật sân của đối thủ (GOAT PATH / FOOTBALL STORY): tên to màu áo đối thủ + gợi ý cỡ chữ thường, rộng bằng bảng build, ngay
+    // dưới PAUSED — banner luật chỉ hiện 1 lần lúc bóng lăn, nên mở Pause thường là để đọc lại dòng này. Áo quá tối (đọc không ra trên nền
+    // tối) thì lấy màu điểm nhấn của bộ áo
+    pauseRule(g) {
+      const mod = g.opts.mod && SFC_CONFIG.stories.mods[g.opts.mod];
+      if (!mod) return '';
+      const kit = g.teams[1 - g.humanTeam].cfg.kit, n = parseInt(kit.shirt.slice(1, 7), 16);
+      const lum = ((n >> 16) & 255) * 0.3 + ((n >> 8) & 255) * 0.59 + (n & 255) * 0.11;
+      return `<div class="pause-rule" style="--c:${lum < 90 && kit.accent ? kit.accent : kit.shirt}"><b>${PX().ui('whistle')}${esc(mod.name)}</b><p>${esc(mod.hint)}</p></div>`;
+    },
+    // Pause · LEGEND của 1 người, nằm trong ô trái của hàng người đó (bạn hoặc đồng đội): tên (màu LEGEND) + nhược điểm · kỹ thuật + phím.
+    // Không có LEGEND (ngoài GOAT PATH, hoặc người đó chưa ký ai) -> rỗng. LEGEND TRIAL (p.lent: mượn kỹ thuật, không nhược điểm) -> không nhãn
+    pauseLegend(q) {
+      const RU = SFC.RunUI, L = q.legend && RU && SFC.Run && SFC.Run.legend(q.legend);
+      if (!L) return '';
+      return `<div class="pb-leg" style="--lc:${L.color}"><div><b title="${esc(L.title + (q.lent ? '' : ' · ' + L.flawDesc))}">${esc(L.name)}</b>${q.lent ? '' : RU.flawChip(L)}</div>${RU.comboChip(L)}</div>`;
+    },
+    // Pause · BADGE của cả đội: icon + tên (đọc được không cần chuột, tên có sẵn đã dịch), mô tả vẫn ở tooltip. Nằm sát trên hàng nút,
+    // đúng chỗ dòng cảnh báo FORFEIT -> lúc đang hỏi lại FORFEIT thì dải này ẩn đi (css)
+    pauseBadges(g) {
+      const RU = SFC.RunUI, bds = RU ? this.runBadges(g) : [], RAR = SFC_CONFIG.progression.rarities;
+      if (!bds.length) return '';
+      const list = bds.map((b) => {
+        const d = SFC.Run.badge(b.id);
+        return `<span class="pbd" style="--rc:${RAR[d.rarity].color}" data-tip="${esc(RU.badgeTip(b.id, b.up))}"><span class="sq-b">${RU.badgeIcon(b.id, '')}</span>${esc(d.name + (b.up ? '+' : ''))}</span>`;
+      }).join('');
+      return `<div class="pause-bds"><h5>${esc(_t('TEAM BADGES'))}</h5>${list}</div>`;
     },
 
     // đổi nút đang chọn mà không vẽ lại (giữ ảnh động của các lá Core)

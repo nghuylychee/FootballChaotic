@@ -59,9 +59,9 @@ window.SFC = window.SFC || {};
     }).join('');
   }
 
-  // lá Core nhỏ trên màn Pause (ô chưa có Core: mặt úp ???)
+  // lá Core nhỏ trên màn Pause (lượt chưa chọn: vạch thấp 1 chấm mờ — review màn 2026-11: ô ??? cỡ lá thật trông như nút bấm)
   function miniCard(id) {
-    if (!id) return '<div class="mcard empty"><b>???</b></div>';
+    if (!id) return '<div class="mcard empty"><i></i></div>';
     const c = CORES().list[id], r = RARITY(c.rarity);
     // gọn (user 2026-11-01): ảnh + tên, không có dòng mức sức mạnh / trường phái (xem ở tooltip)
     return `<div class="mcard ${c.role === 'ult' ? 'ult' : ''}" style="--t:${r.color}" data-tip="${esc(coreTip(id))}">
