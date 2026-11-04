@@ -170,6 +170,11 @@ table.sum { min-width: 640px; } table.sum td:first-child { color: var(--muted); 
 .lv.ok { color: var(--good); border-color: var(--good); } .lv.fix { color: var(--acc-ink); border-color: var(--acc-strong); } .lv.re { background: var(--bad); color: #fff; border-color: var(--bad); } .lv.off { color: var(--muted); border-style: dashed; }
 .cnt { font-variant-numeric: tabular-nums; white-space: nowrap; } .cnt b { color: var(--bad); } .cnt i { font-style: normal; color: var(--acc-ink); font-weight: 700; }
 .fbv { font-size: 13px; color: var(--muted); } .fbv.on { color: var(--fg); font-weight: 600; }
+.evs { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+.evs .box { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.evs .box p { margin: 0; }
+.evs .fmt { font-size: 13px; color: var(--muted); }
+.evs .fmt b { color: var(--fg); }
 .jr { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
 .steps { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: 13px; margin: 6px 0; }
 .steps span { padding: 2px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
@@ -251,6 +256,7 @@ footer.next ul { margin: 8px 0 0; padding-left: 1.2em; }
 
   <div id="screens" class="stack" style="gap:64px"></div>
 
+  <section class="stack" id="evscenes" aria-labelledby="ev-h"></section>
   <section class="stack" id="journeys" aria-labelledby="j-h"></section>
 
   <footer class="next stack read">
@@ -285,7 +291,7 @@ function screenHtml(S) {
       <dl class="gc"><dt class="g">Được</dt><dd>${esc(o.gain)}</dd><dt class="c">Mất</dt><dd>${esc(o.cost)}</dd></dl>
     </div>`).join('');
   return `<section class="screen" id="s-${esc(S.id)}" aria-labelledby="h-${esc(S.id)}">
-    <div class="sc-head"><div class="eyebrow">Màn ${S.order} / ${DATA.screens.length} · xét theo ${esc(S.lens)} · ${lvHtml(S.level)}${S.hidden ? ' <span class="lv off">đang tắt</span>' : ''}</div>${S.hidden ? `<p class="muted" style="font-size:13.5px">${esc(S.hidden)}. Soi để dành lúc bật lại.</p>` : ''}<h2 id="h-${esc(S.id)}">${esc(S.title)}</h2><div class="where">${esc(S.where)}</div>${S.done ? `<div class="done-box"><b>Đã sửa ${esc(S.done.at)} (nhánh ux/screens-2026-11, chưa vào main). Xem ảnh "Sau khi sửa" bên dưới.</b>${esc(S.done.text)}</div>` : ''}</div>
+    <div class="sc-head"><div class="eyebrow">Màn ${S.order} / ${DATA.screens.length} · xét theo ${esc(S.lens)} · ${lvHtml(S.level)}${S.hidden ? ' <span class="lv off">đang tắt</span>' : ''}</div>${S.hidden ? `<p class="muted" style="font-size:13.5px">${esc(S.hidden)}. Soi để dành lúc bật lại.</p>` : ''}<h2 id="h-${esc(S.id)}">${esc(S.title)}</h2><div class="where">${esc(S.where)}</div>${S.done ? `<div class="done-box"><b>${S.states.some((s) => s.after) ? `Đã sửa ${esc(S.done.at)} (nhánh ux/screens-2026-11, chưa vào main). Xem ảnh "Sau khi sửa" bên dưới.` : `Đã xử lý góp ý ${esc(S.done.at)}, chưa sửa code.`}</b>${esc(S.done.text)}</div>` : ''}</div>
     <div class="brief">
       <div><div class="px k">Mục tiêu</div><p>${esc(S.goal)}</p></div>
       <div><div class="px k">Tần suất</div><p>${esc(S.freq)}</p></div>
@@ -374,11 +380,33 @@ DATA.screens.forEach((S) => bindScreen(S, document.getElementById('s-' + S.id)))
 // tóm tắt đầu trang + chip đếm
 const nSev = (S, v) => S.findings.filter((f) => f.sev === v).length;
 document.getElementById('sumrows').innerHTML = DATA.screens.map((S) => `<tr><td>${S.order}</td><td><a href="#s-${esc(S.id)}">${esc(S.title)}</a>${S.hidden ? ' <span class="lv off" title="' + esc(S.hidden) + '">đang tắt</span>' : ''}</td><td>${lvHtml(S.level)}</td>
-  <td class="cnt"><b>${nSev(S, 'nặng')}</b> nặng · <i>${nSev(S, 'vừa')}</i> vừa · ${nSev(S, 'nhẹ')} nhẹ</td><td class="fbv" data-fbv="${esc(S.id)}">chưa có</td><td>${S.done ? `<span class="lv done">đã sửa</span>` : '<span class="muted">chưa</span>'}</td></tr>`).join('');
+  <td class="cnt"><b>${nSev(S, 'nặng')}</b> nặng · <i>${nSev(S, 'vừa')}</i> vừa · ${nSev(S, 'nhẹ')} nhẹ</td><td class="fbv" data-fbv="${esc(S.id)}">chưa có</td><td>${S.done ? (S.states.some((s) => s.after) ? `<span class="lv done">đã sửa</span>` : '<span class="lv fix">chờ m</span>') : '<span class="muted">chưa</span>'}</td></tr>`).join('');
 const all = DATA.screens.flatMap((S) => S.findings), byLv = (l) => DATA.screens.filter((S) => S.level === l).length;
 document.getElementById('sumchips').innerHTML = `<span class="chip acc">${DATA.screens.length} màn · ${all.length} vấn đề</span>
   <span class="chip">${all.filter((f) => f.sev === 'nặng').length} nặng</span><span class="chip">${byLv('tổ chức lại')} màn nên tổ chức lại</span>
-  <span class="chip">${byLv('chỉnh')} màn cần chỉnh</span><span class="chip">${byLv('ổn')} màn ổn</span><span class="chip">${DATA.screens.filter((S) => S.done).length} màn đã sửa code</span>`;
+  <span class="chip">${byLv('chỉnh')} màn cần chỉnh</span><span class="chip">${byLv('ổn')} màn ổn</span><span class="chip">${DATA.screens.filter((S) => S.done && S.states.some((s) => s.after)).length} màn đã sửa code</span>`;
+
+// sự kiện ???: cách diễn từng tình huống (owner 2026-11-05: liệt kê tình huống nào dùng cách nào rồi góp ý), mỗi sự kiện 1 ô góp ý (doc ev-<id>)
+if (DATA.eventScenes) {
+  const E = DATA.eventScenes, F = Object.fromEntries(E.formats.map((f) => [f.id, f]));
+  const fmtRow = (f) => `<tr><td><b>${esc(f.name)}</b></td><td>${esc(f.what)}</td><td>${esc(f.reuse)}</td><td>${esc(f.cost)}</td></tr>`;
+  const form = (id, title, opts) => `<form class="fb" data-fb="${esc(id)}" aria-label="Góp ý cho ${esc(title)}"><h3>Góp ý: ${esc(title)}</h3>
+      <div class="optrow" role="radiogroup">${opts.map(([v, l]) => `<label class="opt"><input type="radio" name="v" value="${esc(v)}"><span>${esc(l)}</span></label>`).join('')}</div>
+      <textarea name="note" placeholder="Chỉnh cảnh ra sao, đổi cách diễn khác..."></textarea>
+      <div class="fbrow"><button class="btn" type="submit">Lưu góp ý</button><span class="fbst" role="status"></span></div></form>`;
+  const ev = E.events.map((e) => `<div class="box"><h3>${esc(e.name)}</h3>
+      <p class="fmt">Đề xuất: <b>${esc((F[e.format] || {}).name || e.format)}</b> · thay thế: <b>${esc((F[e.alt] || {}).name || e.alt)}</b></p>
+      <p><b>Tình huống.</b> ${esc(e.situation)}</p><p><b>Lựa chọn trong game.</b> ${esc(e.choices)}</p>
+      <p><b>Cảnh.</b> ${esc(e.scene)}</p><p><b>Kết quả.</b> ${esc(e.result)}</p><p><b>Vì sao.</b> ${esc(e.why)}</p>
+      ${form('ev-' + e.id, e.name, [['main', 'Làm theo đề xuất'], ['alt', 'Dùng cách thay thế'], ['other', 'Ý khác (ghi bên dưới)']])}</div>`).join('');
+  document.getElementById('evscenes').innerHTML = `<h2 id="ev-h">${esc(E.title)}</h2><p class="read">${esc(E.intro)}</p>
+    <details class="rules"><summary>${E.rules.length} nguyên tắc chung cho mọi cảnh</summary><ul>${E.rules.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></details>
+    <div class="stack"><h3>${E.formats.length} khuôn cảnh</h3><div class="tbl"><table><thead><tr><th>Khuôn</th><th>Hình</th><th>Dùng lại</th><th>Công</th></tr></thead><tbody>${E.formats.map(fmtRow).join('')}</tbody></table></div></div>
+    <div class="evs">${ev}</div>
+    <div class="box"><h3>Thứ tự làm</h3><p>${esc(E.order)}</p></div>
+    <div class="box"><h3>Cần m chốt</h3><ol>${E.open.map((q) => `<li>${esc(q)}</li>`).join('')}</ol>
+      ${form('ev-open', 'Câu hỏi sự kiện ???', [['answered', 'Trả lời ở ghi chú']])}</div>`;
+}
 
 // đường đi: mỗi mục tiêu chính của người chơi = chuỗi màn / bước, bước thừa tô đỏ
 if (DATA.journeys) {
@@ -398,7 +426,8 @@ forms.forEach((f) => { f.querySelector('.btn').disabled = true; setSt(f, 'Đang 
   let db = null;
   try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
   if (!db) { forms.forEach((f) => setSt(f, 'Không lưu được ở chế độ xem này. Gửi góp ý cho Claude trong chat.', 'err')); return; }
-  const title = (id) => id === 'format' ? 'Mẫu báo cáo' : (DATA.screens.find((s) => s.id === id) || {}).title || id;
+  const evName = (id) => { const e = DATA.eventScenes && DATA.eventScenes.events.find((x) => 'ev-' + x.id === id); return e ? 'Sự kiện ' + e.name : id === 'ev-open' ? 'Câu hỏi sự kiện ???' : null; };
+  const title = (id) => id === 'format' ? 'Mẫu báo cáo' : evName(id) || (DATA.screens.find((s) => s.id === id) || {}).title || id;
   for (const f of forms) {
     const id = f.dataset.fb, btn = f.querySelector('.btn');
     try {

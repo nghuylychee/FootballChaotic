@@ -55,6 +55,7 @@ Db của artifact, collection `feedback`, doc id = id màn (`map`, ...) hoặc `
 | `A+tryB` | Làm A; dựng B thành bản bấm thử được (dev, vd `?runtest=map`) cho owner thử rồi hỏi lại. |
 | `keep` | Không sửa. Ghi vào Nhật ký. |
 | `other` / chỉ có `note` | Làm theo note, hoặc hỏi lại nếu không rõ. |
+| `ev-<id>`: `main` / `alt` | Sự kiện ??? (mục cuối báo cáo, `screens/event-scenes.json`): dựng cảnh theo cách diễn đề xuất / thay thế. `ev-open` = trả lời 9 câu hỏi chung, đọc trước khi dựng. |
 
 Xong thì thêm 1 dòng vào Nhật ký. Commit / merge / push chỉ khi owner bảo.
 
@@ -71,6 +72,7 @@ Xong thì thêm 1 dòng vào Nhật ký. Commit / merge / push chỉ khi owner b
 - 2026-11-05 — `vs` (A, agent, kiểm lại ảnh): khung luật sân (icon + tên + gợi ý, vạch màu áo) thay khẩu hiệu ở bên đội có luật, trận không luật giữ khẩu hiệu. Tên 2 đội 14px (tự nhỏ dần 12/10/8 khi dài), chữ VS 16px. Góc thẻ ghi FWD / MID / DEF thay số áo, chung 1 hàng với nhãn YOU / MATE. Thẻ thấp vừa nội dung, khối căn giữa dọc (subgrid giữ 2 hàng thẻ ngang nhau). Nền VS đặc (chỉ CSS, online không đổi). Không chữ mới. Còn: `intro.numbers` / `youNumber` trong config không dùng nữa, bỏ ở lần bump server sau; chữ luật sân chưa có bản dịch ở gói nào (có từ trước). Ảnh sau: `shots/after/vs.*`.
 - 2026-11-05 — `result` (A, agent, kiểm lại ảnh): nhịp 1 (trận có người chơi) bỏ WINNER + tên đội, tỉ số to gấp đôi ngay dưới VICTORY! (trận AI với AI giữ WINNER). Run cash thành dòng thưởng đầu có cột số (túi tiền + số vàng, dải vàng nhạt), ô tổng thêm tiền run cạnh gold / XP (chỉ trong run), đếm lên cùng nhau; chỉ đổi UI, Run.record / awardMatch giữ nguyên (dòng ghi chú vẫn 0 XP / 0 gold). Tỉ số đội đứng sát tên đội, cột Core có tiêu đề CORES (key ngữ cảnh `scoreboard|CORES`). Ảnh sau: `shots/after/result-*`.
 - 2026-11-05 — `draft` (other: "REROLL nằm dưới tiêu đề nên bỏ qua mất", agent, kiểm lại ảnh): REROLL thành nút thật ngay dưới góc phải hàng lá (tối viền vàng, phím trong kbd, số lượt còn lại), mờ khi hết lượt, ẩn khi tắt reroll; chữ REROLL ({n} left) bỏ số 3 viết cứng. Thêm phím pick4 / pick5 (Digit / Numpad 4-5) để số in trên lá nào cũng bấm được (#1). config/controls.config.js là file server đọc -> bump server 12.3.2 -> 12.3.3 (bản này gánh luôn phần config đổi từ đợt UX review 2026-11 chưa bump). Ảnh sau: `shots/after/draft.*`.
+- 2026-11-05 — `event` (other: "làm kỹ từng tình huống, mỗi sự kiện 1 cách diễn riêng (hợp đồng + chồng tiền, bài báo, cuộc gọi...), liệt kê ra rồi t góp ý"): chưa code. Agent viết `screens/event-scenes.json`, Claude đối chiếu config: 5 sự kiện trong run.events, mỗi cái 1 cách diễn đề xuất + 1 thay thế, 8 khuôn (4 cảnh ngoài trời chung 1 nền lề đường từ KIT VAN), 11 nguyên tắc (rủi ro luôn trông như rủi ro...), thứ tự làm, 9 câu hỏi. Hiện ở mục "Sự kiện ??? · cách diễn từng tình huống" cuối báo cáo, góp ý theo từng sự kiện (doc `ev-<id>`, câu hỏi chung `ev-open`: verdict main / alt / other). Lỗi thật tìm thấy: PARK PHYSIO mờ vì không ai đau mà báo "Not enough cash." (runmap.js act chỉ xét c.cost).
 <!-- mỗi lần xử lý góp ý: thêm 1 dòng ở đây (ngày · màn nào · phương án · đã làm gì) -->
 
 ## Chưa kiểm / còn hở

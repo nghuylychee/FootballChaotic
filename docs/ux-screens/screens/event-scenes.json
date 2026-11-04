@@ -1,0 +1,145 @@
+{
+  "id": "event-scenes",
+  "title": "Sự kiện ??? · cách diễn từng tình huống",
+  "intro": "M góp ý ở thẻ ???: sự kiện khá đặc biệt, làm kỹ từng tình huống, mỗi tình huống 1 cách diễn riêng cho vui (hợp đồng + chồng tiền, bài báo, cuộc gọi...), gần phương án B nhưng cá nhân hoá. Đây là 5 sự kiện đang có trong config/run.config.js (run.events), mỗi cái 1 cách diễn t đề xuất + 1 cách thay thế. Tổng 8 khuôn, nhưng chỉ 5 cảnh phải vẽ thật và 4 cảnh ngoài trời dùng chung 1 nền. Cơ chế giữ nguyên, chỉ đổi cách kể, và rủi ro (chấn thương, mất tiền) lúc nào cũng phải trông như rủi ro.",
+  "rules": [
+    "Rủi ro luôn trông như rủi ro. Chấn thương = dấu ✚ đỏ vẽ bằng icon pixel (không dùng ký tự ✚ của font pixel, font đó vẽ nó thành dấu +) + chữ INJURY? + hình người quấn băng. Mất tiền = xu rời khỏi ô tiền + số đỏ có dấu trừ. Không cái mất nào được dùng màu vàng / xanh hay dấu +.",
+    "Mỗi lựa chọn là 1 nút có giá / hệ quả ghi ngay trên nút (icon + chữ ngắn, đọc được không cần rê chuột), đặt trên chính đồ vật của cảnh: dòng ký tên, chồng xu, bàn trị liệu. Lựa chọn chưa làm được thì cả nút lẫn đồ vật đó mờ, bấm vào nói đúng lý do.",
+    "Chữ là DOM font pixel (dịch được). Canvas chỉ có hình và số tiền, như thẻ giá KIT VAN. Câu dẫn đang có (E.text) giữ làm dải chú thích trên cùng; ngoài vài nhãn ngắn thì không viết lời mới (xem open).",
+    "1 cảnh tĩnh + 2-3 chuyển động nhỏ lặp lại (nhún, khói, chớp) để không kéo mắt. Chuyển động lớn chỉ có lúc chọn và ở kết quả, dài tối đa khoảng 1,5 s, phím xác nhận / bấm chuột để tua.",
+    "Khung chung: hộp 640x360 cố định với canvas 320x180 như KIT VAN (màu cứng, viền mực, không gradient / glow), nền tô quanh hộp. Thanh trên (dải đội hình + tiền) vẫn hiện để thấy tiền, BADGE, chấn thương đổi ngay tại chỗ.",
+    "Kết quả diễn trên chính đồ vật (đóng dấu, xé túi, bóng chạm xà, băng bung ra) rồi bay về đúng chỗ của nó: BADGE vào hàng BADGE của đội (kiểu RunUI.fly), xu ra / vào ô tiền, chấn thương bay lên mặt người đó trên dải đội hình. Mỗi dòng kết quả 1 icon riêng (tiền = ui-coin, chặn được = ✓ xanh, vấn đề #4); dòng BADGE kèm câu công dụng (desc, vấn đề #5). Thẻ kết quả đứng tới CONTINUE như hiện nay.",
+    "Không đổi cơ chế. Chỉ hiện đúng thứ config cho biết trước: độ hiếm BADGE cố định (vendor rare, coach common) thì hiện bằng màu dây buộc / viền, còn BADGE nào thì giấu. Xác suất không hiện số, chỉ dấu ?.",
+    "Từ chối (Walk away, Say no, Pass, Keep going): nhân vật phản ứng 1 nhịp (nhún vai, vẫy tay) rồi về map, không có thẻ kết quả, như hiện nay.",
+    "Dùng chung để rẻ: 4 cảnh ngoài trời (vendor, bet, physio, fan) chung 1 nền lề đường dựng từ nền KIT VAN, mỗi sự kiện chỉ vẽ thêm đồ tiền cảnh + 1 nhân vật. Nhân vật vẽ bằng drawAvatar như tài xế KIT VAN, ngoại hình để trong config (vd events.<id>.look, chỉ là dữ liệu hình). Các cảnh 'giấy' (contract, newspaper, phiếu cược) chung 1 mặt bàn + tờ giấy.",
+    "Phím / tay cầm và co-op giữ như hiện nay: lựa chọn đầu làm được thì chọn sẵn, ←→ đi giữa các lựa chọn, chấm phiếu nằm trên nút, chữ không viết phím cứng.",
+    "Quiet stage, loud action (docs/art-direction/pillars.md): nền tối dịu, thứ sáng nhất là món được / mất và nút. Trang trí không được sáng hơn chúng (vấn đề #2: cái còi đang sáng nhất màn)."
+  ],
+  "formats": [
+    {
+      "id": "stall",
+      "name": "Sạp hàng rong",
+      "what": "Nền lề đường chung (trời chiều, phố xa, cột đèn, vỉa hè). Giữa khung: bàn gấp phủ vải dưới cây dù sọc, người bán đứng sau bàn, trên bàn vài món lặt vặt và 1 món chính treo thẻ giá bìa cát-tông. DOM: dải chú thích trên cùng (tiêu đề sự kiện + câu dẫn), bong bóng thoại của người bán cạnh đầu họ để nói món vừa mua / thiếu tiền (như tài xế KIT VAN), 2 nút ở góc dưới phải (chỗ nút LEAVE của KIT VAN), con trỏ bàn tay chỉ vào món mà nút đang chọn nói tới. Dùng ở: STREET VENDOR (chính).",
+      "reuse": "src/ui/kitvan.js: phần trời / phố / vỉa hè của paintStatic, tag() thẻ giá (sửa đồng xu để khỏi đọc thành +, vấn đề #1 của thẻ KIT VAN), patch() miếng vá BADGE, handCursor / drawHand / grab (tay với lên lấy món), KitVan.bubble + nhãn 'The whole team gets it'. Các hàm này đang nằm trong IIFE của kitvan.js, phải tách ra thành 1 bộ vẽ dùng chung trước.",
+      "cost": "vừa: vẽ mới bàn gấp, dù, túi giấy, người bán. Tay, thẻ giá, miếng vá, bong bóng có sẵn."
+    },
+    {
+      "id": "contract",
+      "name": "Giấy tờ trên bàn (giấy cam kết, hợp đồng, phiếu cược)",
+      "what": "Nhìn từ trên xuống mặt ghế băng gỗ ở mép sân. 1 tờ giấy chiếm giữa khung: dải màu trên đầu, kẹp giấy ở góc kẹp thứ bạn được (miếng vá BADGE hoặc chồng xu), 1 khung viền đỏ đậm cho điều khoản rủi ro, dòng ký tên có cây bút ở dưới. Người đưa giấy thò mặt và tay ở mép trên khung. DOM trên giấy: tiêu đề sự kiện, câu dẫn, nhãn được / mất. 2 nút nằm ngay trên giấy: dòng ký tên = đồng ý, nút đẩy giấy lại = từ chối. Kết quả = con dấu đóng lên giấy. Dùng ở: OLD COACH (chính), CROSSBAR CHALLENGE (thay thế: phiếu cược viết bút sáp của bọn nhóc).",
+      "reuse": "Kiểu tờ giấy dải đỏ + vòng dấu của cupItem 'notice' (src/ui/story-cup.js). Vòng phấn khoanh của map (RunUI.chalk + Audio.chalk) cho lúc ký. Miếng vá patch() của KIT VAN, mặt người bằng drawAvatar. Mặt bàn + tờ giấy dùng lại cho newspaper.",
+      "cost": "nhẹ: 1 mặt gỗ, 1 tờ giấy, bút, kẹp, con dấu; phần lớn là chữ DOM. Đổi 'loại giấy' (cam kết, phiếu cược, phiếu khám) chỉ là đổi màu giấy, dải đầu, kiểu dấu."
+    },
+    {
+      "id": "shot",
+      "name": "Cú sút thách đố + 2 chồng xu",
+      "what": "Nền lề đường chung thành sân đường phố: khung thành tự chế (2 cọc + xà) ở xa bên phải, cột cờ góc phía trước bên trái, character của bạn đứng cạnh quả bóng. Bọn nhóc ngồi trên bờ tường, 1 đứa ôm chồng xu to (tiền thắng); dưới chân bạn là chồng xu nhỏ (tiền cược); mỗi chồng 1 thẻ số. DOM: dải chú thích trên cùng, 2 nút góc dưới phải. Kết quả = 1 cú sút tự diễn có 2 kết cục, bấm để tua. Dùng ở: CROSSBAR CHALLENGE (chính).",
+      "reuse": "Nền + thẻ số của stall. Character bằng drawAvatar; bọn nhóc chung khuôn trẻ con với gift. Lúc bóng chạm xà: tiếng 'clang' + chữ WOODWORK đã có trong trận (shared/entities/ball.js checkWoodwork, chữ đã dịch). Lúc trượt: Audio.crowdOoh.",
+      "cost": "nặng: quả bóng bay theo đường cong, 2 kết cục (trúng xà: xà rung, chồng xu trượt về bạn; trượt: bóng vọt ra đường, bọn nhóc hốt xu) và phản ứng của bọn nhóc."
+    },
+    {
+      "id": "physio",
+      "name": "Bàn trị liệu ngoài công viên",
+      "what": "Nền lề đường chung thêm 1 cây to và mảng cỏ. Giữa khung: bàn gấp phủ khăn trắng, hộp cứu thương của KIT VAN đặt trên bàn, chuyên viên đứng cạnh (băng đô, khăn vắt vai), tấm bìa ghi giá dựng dưới chân bàn. Bên trái: hàng ghế nhựa, mỗi người đang đau ngồi 1 ghế, quấn băng đúng chỗ đau, dấu ✚ đỏ trên đầu như trong trận. DOM: dải chú thích, 2 nút góc dưới phải; trỏ vào 1 người = tên + công dụng chấn thương (SFC.Tip). Dùng ở: PARK PHYSIO (chính).",
+      "reuse": "Băng quấn theo chỗ đau có sẵn trong sprite cầu thủ (src/render/player/draw.js, o.inj), drawAvatar chỉ cần nhận thêm tham số đó. Dấu ✚ đỏ trên đầu (src/render/rundraw.js hurt). Ghế nhựa Npc.stool (src/render/art/npcs.js). Hộp cứu thương medkit() và thẻ giá của KIT VAN. Ngoại hình đồng đội RUN().memberLook.",
+      "cost": "vừa: vẽ mới bàn, cây, chuyên viên. Người quấn băng là sprite có sẵn."
+    },
+    {
+      "id": "gift",
+      "name": "Quà của fan + ảnh polaroid",
+      "what": "Nền lề đường chung. Character của bạn đứng giữa; 1 cậu nhóc mặc đúng áo đội bạn chạy từ mép phải vào, giơ hộp quà thắt nơ. Không bàn, không giá, 1 nút. Kết quả: hộp bung, miếng vá BADGE bay lên, đèn flash, 1 tấm polaroid (bạn + cậu nhóc + miếng vá) rơi xuống góc khung. Dùng ở: BIGGEST FAN (chính).",
+      "reuse": "Thẻ polaroid DOM ở bảng ghim TROPHY ROOM (.tr2-pol trong src/ui/trophies.js boardDom, ảnh là canvas drawAvatar). Icon ui-gift làm mẫu hộp quà. Cậu nhóc = drawAvatar với kit đội bạn (SFC_CONFIG.mainPath.playerTeam.kit). Miếng vá patch() của KIT VAN, tiếng Audio.reveal.",
+      "cost": "vừa: hộp quà 3 khung (đóng, rung, bung), cậu nhóc chạy vào, đèn flash."
+    },
+    {
+      "id": "tv",
+      "name": "Khung TV trực tiếp",
+      "what": "Bọc 1 cảnh khác trong khung TV: logo kênh góc trái trên, chấm đỏ LIVE nháy góc phải trên, dải chữ chạy dưới cùng, nhiễu sóng lúc cắt cảnh. 2 nút DOM nằm ngay trên dải chữ chạy. Dùng ở: STREET VENDOR (thay thế: kênh mua sắm trên TV), BIGGEST FAN (thay thế: đang phỏng vấn trực tiếp thì cậu nhóc chen vào khung hình).",
+      "reuse": "TELL.tv trong src/ui/story.js (logo kênh, LIVE, chữ chạy, nhiễu, dòng quét), đang dùng cho FOOTBALL STORY kiểu 'tv'. Cảnh bên trong lấy nguyên từ stall / gift.",
+      "cost": "nhẹ nếu cảnh bên trong đã có: chỉ cho lớp phủ bọc canvas 320x180 thay vì cảnh Story."
+    },
+    {
+      "id": "phone",
+      "name": "Màn hình điện thoại (cuộc gọi, tin nhắn)",
+      "what": "1 chiếc điện thoại pixel dựng giữa khung trên nền lề đường làm tối. Đầu tiên là cuộc gọi đến (ảnh người gọi + tên sự kiện, máy rung); nghe máy thì thành khung chat: mỗi câu 1 bong bóng DOM, ảnh trong chat là canvas nhỏ. 2 lựa chọn là 2 nút trả lời dưới khung chat, mỗi nút có dòng được / mất. Dùng ở: OLD COACH (thay thế).",
+      "reuse": "Bong bóng DOM kiểu bong bóng tài xế KIT VAN, ảnh người gọi = drawAvatar, nền chung làm tối.",
+      "cost": "nhẹ: 1 khung điện thoại + rung; nội dung toàn DOM."
+    },
+    {
+      "id": "newspaper",
+      "name": "Trang báo phường",
+      "what": "Tờ báo gấp đôi trên mặt bàn (cùng mặt bàn của contract): tên báo, 1 tiêu đề lớn, 1 ảnh pixel, cột chữ giả bằng gạch xám, 1 ô rao vặt viền đứt cắt ra được. Chọn = khoanh / xé ô rao vặt; kết quả = số báo hôm sau trượt đè lên với tiêu đề và ảnh mới. Dùng ở: PARK PHYSIO (thay thế).",
+      "reuse": "Mặt bàn + giấy + vòng khoanh của contract; ảnh lấy từ cảnh physio thu nhỏ.",
+      "cost": "nhẹ đến vừa: bố cục DOM + 2 ảnh nhỏ. Tên báo và tiêu đề là chuỗi mới phải dịch."
+    }
+  ],
+  "events": [
+    {
+      "id": "vendor",
+      "name": "STREET VENDOR",
+      "situation": "Người bán hàng rong ở lề đường vẫy gọi, mời mua bùa may mắn 'mới về hôm nay'. Ngoài đời: hàng rong bán vòng tay, móc khoá, khăn quàng ngay cổng sân.",
+      "choices": "Buy one: trả 30 → 1 BADGE hiếm (rare) ngẫu nhiên mà đội chưa có (hết BADGE rare thì bốc độ hiếm khác). Co-op: mọi người cùng trả, 1 người thiếu tiền là nút mờ, bấm vào báo Not enough cash. Walk away: không có gì, về map luôn.",
+      "format": "stall",
+      "alt": "tv",
+      "scene": "Dải chú thích trên cùng: STREET VENDOR + câu dẫn 'A vendor waves you over. \"Lucky charms! Fresh today!\"'. Người bán vẫy tay (2 khung lặp). Trên bàn vài lá bùa lặt vặt (trang trí, tối màu) và ở giữa 1 túi giấy gấp miệng có dấu ?, buộc dây màu RARE (xanh dương): người chơi biết là BADGE hiếm mà không biết là cái nào, đúng như cơ chế. Thẻ giá 30 treo trên túi. Nút góc dưới phải: Buy one (dòng: xu đỏ -$30 · miếng vá BADGE có dấu ?) và Walk away. Trỏ Buy one: bàn tay chỉ vào túi; trỏ Walk away: tay chỉ ra đường. Thiếu tiền: thẻ giá thành bìa xám số đỏ như KIT VAN, nút mờ, người bán nói Not enough cash. trong bong bóng.",
+      "result": "Bàn tay với lên giật túi (hoạt cảnh grab của KIT VAN), túi xé đôi, miếng vá BADGE thật nảy lên giữa khung. Bong bóng đổi sang tên + công dụng của BADGE + nhãn 'The whole team gets it'. Xu bay khỏi ô tiền (-30 đỏ), miếng vá bay vào hàng BADGE của đội. Thẻ kết quả: dòng -$30 (icon xu) + dòng BADGE (miếng vá, tên, desc). CONTINUE. Walk away: người bán nhún vai 1 nhịp rồi về map.",
+      "why": "Đây là 1 lần mua hàng, và game đã có cách diễn mua hàng mà người chơi hiểu ngay (KIT VAN). Dùng lại tay, thẻ giá, bong bóng là rẻ nhất. Túi giấy kín kể đúng chuyện 'mua mò': biết độ hiếm, không biết món. Thay thế tv: người bán thành MC kênh mua sắm, cùng hình người bán, khung TV có sẵn; vui hơn nhưng lệch câu dẫn (người bán vẫy gọi ngoài đường)."
+    },
+    {
+      "id": "coach",
+      "name": "OLD COACH",
+      "situation": "Một ông HLV về hưu ở sân phường mời bạn 1 buổi tập 'hành xác'. Ngoài đời: tập nặng thì lên tay, nhưng dễ dính chấn thương.",
+      "choices": "Train hard: 1 BADGE thường (common) ngẫu nhiên + 50% có 1 người ngẫu nhiên trong đội dính 1 chấn thương ngẫu nhiên (Twisted Ankle, Sore Wrist, Tight Hamstring, Stubbed Toe). Chấn thương không tự hết, chỉ chữa ở Shop hoặc PARK PHYSIO. Shin Guards chặn chấn thương đầu tiên mỗi act, kể cả Shin Guards vừa nhận từ chính buổi tập này, vì BADGE được trao trước khi tung chấn thương (đúng như ảnh event-result). Say no: không có gì, về map luôn.",
+      "format": "contract",
+      "alt": "phone",
+      "scene": "Nhìn từ trên xuống ghế băng gỗ ở mép sân. Mép trên khung: ông HLV cúi vào (mũ lưỡi trai cũ, còi đeo cổ), tay đẩy tờ giấy cam kết tới. Tờ giấy: dải đầu đỏ, tiêu đề OLD COACH, câu dẫn 'A retired coach offers you one brutal session.' Góc phải trên: kẹp giấy kẹp 1 miếng vá viền màu COMMON có dấu ? (thứ bạn được). Giữa giấy: khung viền đỏ đậm (điều khoản rủi ro) gồm dấu ✚ đỏ vẽ bằng icon + chữ INJURY? + mặt nhỏ của 3 người trong đội, mỗi mặt 1 dấu ? (1 trong 3 có thể bị). Nếu Shin Guards còn lượt chặn ở act này thì miếng vá Shin Guards đè lên khung đỏ kèm ✓ xanh (sẽ chặn được). Dưới cùng: dòng ký tên có cây bút = nút Train hard (dòng: BADGE · ✚ INJURY?), cạnh đó nút Say no (đẩy giấy lại). Trỏ Train hard: bút nhấc lên chờ ký; trỏ Say no: tờ giấy lùi về phía ông HLV. Cái còi không còn là thứ sáng nhất màn.",
+      "result": "Bút ký 1 nét (khoảng 0,4 s), còi thổi dài (Audio.whistle), khung rung 1 cái. Rồi lần lượt trên tờ giấy: (1) miếng vá bung khỏi kẹp, lật ra icon thật, tên + công dụng, bay vào hàng BADGE của đội. (2) Trúng chấn thương: con dấu đỏ đập xuống khung rủi ro, trong dấu là người bị đau quấn băng đúng chỗ (cổ chân, cổ tay, đùi hay ngón chân) + 'Injury: Twisted Ankle · LONG' + câu desc của chấn thương ('Every step hurts.'), rồi mặt người đó bay lên dải đội hình và nhận dấu ✚. Bị chặn: con dấu đập vào miếng vá Shin Guards rồi bật ra, dòng 'Shin Guards blocked an injury!' với icon ✓ xanh (không dùng lại icon bánh răng của BADGE, vấn đề #4). Không trúng: con dấu xanh 'Nobody got hurt.' (chuỗi mới; hiện nay trường hợp này im lặng nên người chơi không biết mình vừa thoát). CONTINUE.",
+      "why": "Sự kiện này xoay quanh 1 điều: được BADGE nhưng có thể mất 1 người. Giấy cam kết ngoài đời sinh ra để nói đúng chuyện đó (tự chịu rủi ro), và ký tên là hành động 'biết mà vẫn chơi'. Sửa thẳng vấn đề nặng #1 (rủi ro đọc thành +?). Đúng ví dụ hợp đồng của m, và rẻ nhất trong 5 cảnh vì phần lớn là chữ DOM trên giấy. Thay thế phone: ông HLV gọi điện, câu dẫn thành tin nhắn thoại, 2 nút trả lời; rẻ, nhưng rủi ro nằm lẫn trong khung chat nên kém rõ hơn khung đỏ trên giấy."
+    },
+    {
+      "id": "bet",
+      "name": "CROSSBAR CHALLENGE",
+      "situation": "Bọn nhóc trong xóm cá là bạn không sút trúng xà ngang từ góc sân. Ngoài đời: crossbar challenge, trò thách kinh điển của bóng đá đường phố và video bóng đá trên mạng.",
+      "choices": "Bet: trả 25, 50% thắng nhận 60 (lãi 35), thua là mất 25 (No luck.). Co-op: mọi người cùng trả, cùng nhận. Pass: không có gì, về map luôn. Kết quả là tung đồng xu, không phụ thuộc kỹ năng.",
+      "format": "shot",
+      "alt": "contract",
+      "scene": "Nền chung thành sân đường phố: khung thành tự chế ở xa bên phải, xà ngang lóe 1 nhịp mỗi vài giây (đích của thử thách). Góc trái phía trước: cột cờ góc, character của bạn cạnh quả bóng. Trên bờ tường: 3 đứa nhóc (chung khuôn với BIGGEST FAN, áo khác màu), đứa giữa ôm chồng xu to + thẻ số 60. Dưới chân bạn: chồng xu nhỏ + thẻ số 25. Câu dẫn 'Kids bet you cannot hit the crossbar from the corner.' ở dải chú thích trên cùng. Nút: Bet (dòng: xu đỏ -$25 · xu xanh +$60?) và Pass. Trỏ Bet: chồng xu của bạn nhích về phía chồng 60; trỏ Pass: character quay lưng. Thiếu tiền: chồng xu của bạn mờ, nút mờ + Not enough cash.",
+      "result": "Chồng xu của bạn trượt sang chồng của bọn nhóc, ô tiền -25. Cú sút tự diễn (khoảng 1,2 s, bấm để tua). Trúng xà: tiếng clang + chữ WOODWORK (có sẵn) + xà rung, bọn nhóc há hốc, cả chồng xu trượt về bạn, ô tiền +60 xanh. Trượt: bóng vọt qua xà ra đường, bọn nhóc ôm bụng cười, dòng No luck. với icon bóng bay qua xà (không dùng lại icon của sự kiện như hiện nay). Thẻ kết quả: -$25 rồi +$60 hoặc No luck. CONTINUE.",
+      "why": "Ngồi xem quả bóng bay là toàn bộ cái thú của 1 vụ cá cược. 2 chồng xu nói 'bỏ 25 ăn 60' bằng hình, không cần %. Đắt nhất trong 5 cảnh vì có hoạt cảnh. Thay thế contract: phiếu cược viết bút sáp của bọn nhóc (2 chồng xu vẽ tay, chỗ điểm chỉ), thắng thì đóng dấu, thua thì phiếu bị xé đôi; rẻ, không cần hoạt cảnh, dùng tạm được nếu muốn bật ??? sớm."
+    },
+    {
+      "id": "physio",
+      "name": "PARK PHYSIO",
+      "situation": "Một chuyên viên vật lý trị liệu kê bàn trong công viên, chữa luôn tại chỗ. Ngoài đời: physio ven sân xử lý chuột rút, bong gân cho dân đá phủi.",
+      "choices": "Get treated: trả 40 → chữa hết mọi chấn thương của cả đội. Chỉ chọn được khi đội có ít nhất 1 chấn thương (và đủ tiền; co-op: mọi người cùng trả). Keep going: không có gì, về map luôn. Shop chữa từng chấn thương 1 với giá 50, nên đội càng nhiều người đau thì vụ này càng hời.",
+      "format": "physio",
+      "alt": "newspaper",
+      "scene": "Nền chung + cây to, mảng cỏ. Bàn gấp phủ khăn trắng ở giữa, hộp cứu thương trên bàn, chuyên viên đứng cạnh, tấm bìa giá 40 dưới chân bàn. Câu dẫn 'A physio has set up a table in the park.' ở dải chú thích. Bên trái: hàng ghế nhựa, mỗi người đang đau ngồi 1 ghế, quấn băng đúng chỗ, dấu ✚ đỏ trên đầu. Nút: Get treated (dòng: xu đỏ -$40 · hộp cứu thương + mặt những người sẽ khỏi) và Keep going. Không ai đau: ghế trống, chuyên viên ngồi trên bàn đọc báo, Get treated mờ, bấm vào báo 'Nobody is hurt.' (chuỗi mới). Hiện code báo nhầm 'Not enough cash.' cho trường hợp này, vì lý do chỉ xét c.cost (src/ui/runmap.js act, nhánh t.k === 'choose' && t.dis).",
+      "result": "Xu bay khỏi ô tiền (-40). Từng người nhảy lên bàn (khoảng 0,3 s mỗi người): băng bung ra, dấu ✚ đỏ đổi thành ✓ xanh, đứng dậy vươn vai; dấu ✚ trên dải đội hình tắt theo. Thẻ kết quả: -$40 + 'All injuries healed.' kèm mặt những người vừa khỏi. CONTINUE.",
+      "why": "Giá trị của sự kiện nằm ở số người đang đau, mà con số đó không có ở đâu trên thẻ hiện nay. Hàng ghế cho thấy ngay '40 cho 3 người' hay 'chẳng ai cần chữa'. Thay thế newspaper: ô rao vặt PARK PHYSIO trên báo phường, xé phiếu là chữa; rẻ hơn, nhưng mất hàng người chờ, mà đó là thứ đáng xem nhất."
+    },
+    {
+      "id": "fan",
+      "name": "BIGGEST FAN",
+      "situation": "Một cậu nhóc mặc áo đội bạn chạy tới tặng quà. Ngoài đời: fan nhí tặng vòng tay, thư tay, xin chụp ảnh chung.",
+      "choices": "Thank you!: lựa chọn duy nhất → 1 BADGE ngẫu nhiên theo trọng số trận thường (common, rare hoặc epic, không bao giờ ra legendary). Không mất gì, không có nút từ chối.",
+      "format": "gift",
+      "alt": "tv",
+      "scene": "Nền chung, character của bạn đứng giữa. Cậu nhóc (áo đội bạn) chạy từ mép phải vào (0,6 s, 1 lần), dừng trước mặt bạn, giơ hộp quà thắt nơ, nhún nhảy chờ. Hộp quà có dấu ? và nhãn BADGE (không biết món, không biết độ hiếm, đúng cơ chế 'any', nên nơ màu trung tính). Câu dẫn 'A kid in your shirt runs up with a present.' ở dải chú thích. 1 nút Thank you! (dòng: miếng vá BADGE có dấu ?) ở góc dưới phải.",
+      "result": "Bạn nhận hộp, hộp rung 2 nhịp rồi bung, miếng vá BADGE bay lên (viền màu độ hiếm thật), bong bóng tên + công dụng + 'The whole team gets it'. Đèn flash: 1 tấm polaroid (bạn + cậu nhóc + miếng vá) rơi xuống góc khung, nằm đó tới CONTINUE. Miếng vá bay vào hàng BADGE của đội.",
+      "why": "Sự kiện duy nhất không có lựa chọn, nên cái thú phải nằm ở khoảnh khắc: mở quà, chụp ảnh với fan. Polaroid dùng lại khung ở TROPHY ROOM. Thay thế tv: bạn đang trả lời phỏng vấn trực tiếp thì cậu nhóc chen vào khung hình đưa quà, dùng lại khung TV của FOOTBALL STORY; vui, nhưng thêm 1 phóng viên phải vẽ."
+    }
+  ],
+  "order": "1) Khung chung trước, làm 1 lần cho cả 5: hộp 640x360 + canvas 320x180 + dải chú thích + nút có danh sách được / mất bằng icon (BADGE, -$, +$?, ✚ INJURY? vẽ bằng icon, hộp cứu thương) + bộ kết quả (BADGE bay vào hàng BADGE, xu ra / vào ô tiền, ✚ bay lên dải đội hình) + CONTINUE; tách tay / thẻ giá / miếng vá / bong bóng của kitvan.js ra thành bộ vẽ dùng chung. Chỉ riêng bước này, dù cảnh còn để icon cũ, đã sửa vấn đề #1 #4 #5 của thẻ ??? và lý do mờ sai của PARK PHYSIO. 2) OLD COACH (contract): rẻ nhất, là sự kiện có rủi ro thật, và dựng luôn bộ 'giấy trên bàn' cho phiếu cược / báo. 3) STREET VENDOR (stall): dựng nền lề đường chung. 4) PARK PHYSIO và BIGGEST FAN trên nền đó, chỉ thêm đồ tiền cảnh + 1 nhân vật mỗi cái. 5) CROSSBAR CHALLENGE (shot) cuối vì có hoạt cảnh; muốn bật ??? sớm thì dùng tạm phiếu cược (contract) rồi thay sau. Xong 1 tới 4 thì có thể đặt lại run.map.weights.event (trước là 20).",
+  "open": [
+    "Cỡ pixel: vẽ ở 320x180 như KIT VAN (ràng buộc của m: KIT VAN / TROPHY ROOM giữ 320x180, và dùng lại được code của nó), hay theo docs/art-direction (mọi cảnh menu về cùng cỡ pixel với trận, lưới 640x360)? Vẽ mới bây giờ ở 320x180 thì sau này đổi cỡ phải vẽ lại cả 5 cảnh.",
+    "Lời thoại: giữ câu dẫn làm dải chú thích (không thêm chuỗi), hay mỗi nhân vật thêm 1 câu nói ngắn của riêng họ (chuỗi mới, dịch 4 thứ tiếng + build lại font ja)? Cả 5 câu dẫn đều mở bằng lời kể ngôi thứ ba; chỉ STREET VENDOR có sẵn 1 câu nói trong ngoặc kép, nhưng tách nó ra khỏi câu dẫn cũng là 1 chuỗi mới.",
+    "Xác suất: giữ dấu ? (INJURY?, +$60?) hay thêm 1 hình cho 'năm ăn năm thua' (vd đồng xu 2 mặt)? Cả 2 sự kiện có may rủi đều là 50%. T nghiêng về giữ dấu ? vì m không muốn người chơi đọc số.",
+    "CROSSBAR CHALLENGE: giữ tung đồng xu (cú sút chỉ để diễn), hay cho người chơi sút thật 1 quả từ góc (1 Skill game ngắn, là cơ chế mới)? Nếu sút thật thì cảnh shot thành màn giới thiệu bài, như Skill game.",
+    "3 chuỗi mới: 'Nobody got hurt.' (OLD COACH thoát 50%), 'Nobody is hurt.' (lý do PARK PHYSIO mờ), tên báo + tiêu đề nếu chọn newspaper. Ok thêm không?",
+    "Co-op: thẻ kết quả hiện chỉ có ở máy giữ run, khách chỉ thấy 1 dòng báo (runmap.js sayEvent). Muốn mọi máy cùng xem kết quả thì bản run gửi khách phải mang theo kết quả sự kiện (shared/meta/run.js, có thể phải bump server). Làm cùng đợt này hay để sau?",
+    "STREET VENDOR khi đội đã có mọi BADGE: vẫn trừ 30 mà không được gì (Run.give trả null). Rất hiếm, nhưng có muốn cho nút mờ trong trường hợp đó không (đổi Run.canChoose)?",
+    "Chỉ có 5 sự kiện: bật lại ??? thì gặp lại sớm. Có muốn thêm sự kiện mới không? Các khuôn rẻ (contract, phone, newspaper, tv) dựng xong là chứa thêm được sự kiện mà không phải vẽ cảnh mới, vd 1 vụ hợp đồng tài trợ + chồng tiền đúng như ví dụ của m.",
+    "TREASURE (15% số lần vào ???, run.mystery) hiện là thẻ chọn 1 trong 3 BADGE có tiêu đề TREASURE. Có muốn nó cũng có cảnh riêng không, vd 1 túi đồ ai bỏ quên sau khung thành, dùng lại miếng vá của KIT VAN?"
+  ]
+}
