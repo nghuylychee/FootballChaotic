@@ -164,6 +164,9 @@ svg.wf { width: 100%; height: auto; display: block; border-radius: 4px; font-fam
 /* tóm tắt + đường đi */
 table.sum { min-width: 640px; } table.sum td:first-child { color: var(--muted); font-variant-numeric: tabular-nums; } table.sum a { color: var(--fg); font-weight: 700; }
 .lv { font-size: 12.5px; font-weight: 700; padding: 1px 9px; border-radius: 999px; white-space: nowrap; border: 1px solid var(--line); }
+.lv.done { background: var(--good); color: #fff; border-color: var(--good); }
+.done-box { margin: 10px 0 0; padding: 10px 14px; border-left: 4px solid var(--good); background: color-mix(in srgb, var(--good) 8%, transparent); font-size: 14px; }
+.done-box b { display: block; margin-bottom: 3px; }
 .lv.ok { color: var(--good); border-color: var(--good); } .lv.fix { color: var(--acc-ink); border-color: var(--acc-strong); } .lv.re { background: var(--bad); color: #fff; border-color: var(--bad); } .lv.off { color: var(--muted); border-style: dashed; }
 .cnt { font-variant-numeric: tabular-nums; white-space: nowrap; } .cnt b { color: var(--bad); } .cnt i { font-style: normal; color: var(--acc-ink); font-weight: 700; }
 .fbv { font-size: 13px; color: var(--muted); } .fbv.on { color: var(--fg); font-weight: 600; }
@@ -200,7 +203,7 @@ footer.next ul { margin: 8px 0 0; padding-left: 1.2em; }
 
   <section class="stack" aria-labelledby="sum-h">
     <h2 id="sum-h">Tóm tắt</h2>
-    <div class="tbl"><table class="sum"><thead><tr><th>#</th><th>Màn</th><th>Kết luận</th><th>Vấn đề</th><th>Góp ý của m</th></tr></thead><tbody id="sumrows"></tbody></table></div>
+    <div class="tbl"><table class="sum"><thead><tr><th>#</th><th>Màn</th><th>Kết luận</th><th>Vấn đề</th><th>Góp ý của m</th><th>Code</th></tr></thead><tbody id="sumrows"></tbody></table></div>
   </section>
 
   <section class="stack" aria-labelledby="m-h">
@@ -264,7 +267,8 @@ const needCls = (t) => /^cần ngay/.test(t) ? 'now' : /^không cần/.test(t) ?
 const LV = { 'ổn': 'ok', 'chỉnh': 'fix', 'tổ chức lại': 're' };
 const lvHtml = (l) => `<span class="lv ${LV[l] || ''}">${esc(l || '')}</span>`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const src = (st, m) => `shots/${st}${m === 'png' ? '' : '.' + m}.png`;
+const src = (st, m, after) => `shots/${after ? 'after/' : ''}${st}${m === 'png' ? '' : '.' + m}.png`;
+const WHEN = [['after', 'Sau khi sửa'], ['before', 'Trước']];
 
 function screenHtml(S) {
   const fds = S.findings.map((f) => `<div class="fd s-${esc(f.sev)}" tabindex="0" data-n="${f.n}">
@@ -281,7 +285,7 @@ function screenHtml(S) {
       <dl class="gc"><dt class="g">Được</dt><dd>${esc(o.gain)}</dd><dt class="c">Mất</dt><dd>${esc(o.cost)}</dd></dl>
     </div>`).join('');
   return `<section class="screen" id="s-${esc(S.id)}" aria-labelledby="h-${esc(S.id)}">
-    <div class="sc-head"><div class="eyebrow">Màn ${S.order} / ${DATA.screens.length} · xét theo ${esc(S.lens)} · ${lvHtml(S.level)}${S.hidden ? ' <span class="lv off">đang tắt</span>' : ''}</div>${S.hidden ? `<p class="muted" style="font-size:13.5px">${esc(S.hidden)}. Soi để dành lúc bật lại.</p>` : ''}<h2 id="h-${esc(S.id)}">${esc(S.title)}</h2><div class="where">${esc(S.where)}</div></div>
+    <div class="sc-head"><div class="eyebrow">Màn ${S.order} / ${DATA.screens.length} · xét theo ${esc(S.lens)} · ${lvHtml(S.level)}${S.hidden ? ' <span class="lv off">đang tắt</span>' : ''}</div>${S.hidden ? `<p class="muted" style="font-size:13.5px">${esc(S.hidden)}. Soi để dành lúc bật lại.</p>` : ''}<h2 id="h-${esc(S.id)}">${esc(S.title)}</h2><div class="where">${esc(S.where)}</div>${S.done ? `<div class="done-box"><b>Đã sửa ${esc(S.done.at)} (nhánh ux/screens-2026-11, chưa vào main). Xem ảnh "Sau khi sửa" bên dưới.</b>${esc(S.done.text)}</div>` : ''}</div>
     <div class="brief">
       <div><div class="px k">Mục tiêu</div><p>${esc(S.goal)}</p></div>
       <div><div class="px k">Tần suất</div><p>${esc(S.freq)}</p></div>
@@ -289,6 +293,7 @@ function screenHtml(S) {
     </div>
     <div class="viewer">
       <div class="vbar">
+        ${S.states.some((s) => s.after) ? `<div class="seg" data-role="when">${WHEN.map(([w, l], i) => `<button type="button" data-v="${w}" aria-pressed="${i === 0}">${l}</button>`).join('')}</div>` : ''}
         <div class="seg" data-role="state">${S.states.map((s, i) => `<button type="button" data-v="${esc(s.id)}" aria-pressed="${i === 0}">${esc(s.label)}</button>`).join('')}</div>
         <div class="seg" data-role="mode">${MODES.map(([m, l], i) => `<button type="button" data-v="${m}" aria-pressed="${i === 0}">${l}</button>`).join('')}</div>
         <label class="pinsw"><input type="checkbox" checked data-role="pins"> Số vấn đề</label>
@@ -317,13 +322,15 @@ function screenHtml(S) {
 }
 
 function bindScreen(S, el) {
-  const st = { state: S.states[0].id, mode: 'png', hot: null };
+  const st = { state: S.states[0].id, mode: 'png', hot: null, when: S.states.some((s) => s.after) ? 'after' : 'before' };
   const img = el.querySelector('.shot img'), shot = el.querySelector('.shot'), cap = el.querySelector('.cap');
   const draw = () => {
-    img.src = src(st.state, st.mode);
-    img.alt = `${S.title}: ${S.states.find((s) => s.id === st.state).label}, ${MODES.find((m) => m[0] === st.mode)[1]}`;
+    const s0 = S.states.find((s) => s.id === st.state), after = st.when === 'after' && s0.after;
+    img.src = src(st.state, st.mode, after);
+    img.alt = `${S.title}: ${s0.label}, ${MODES.find((m) => m[0] === st.mode)[1]}${after ? ', sau khi sửa' : ''}`;
     shot.querySelectorAll('.pin').forEach((p) => p.remove());
-    for (const f of S.findings) for (const p of f.pins) if (p.s === st.state) {
+    // số vấn đề chỉ ghim trên ảnh trước khi sửa (toạ độ theo ảnh cũ)
+    if (!after) for (const f of S.findings) for (const p of f.pins) if (p.s === st.state) {
       const d = document.createElement('span');
       d.className = 'pin' + (st.hot === f.n ? ' hot' : '');
       d.textContent = f.n; d.title = f.title;
@@ -332,7 +339,9 @@ function bindScreen(S, el) {
       shot.appendChild(d);
     }
     const s = S.states.find((x) => x.id === st.state);
-    cap.innerHTML = `<b>${esc(s.label)}:</b> ${esc(s.note)} ${esc(MODE_CAP[st.mode])}`;
+    cap.innerHTML = after ? `<b>${esc(s.label)}, sau khi sửa.</b> Cùng cách vào màn như ảnh trước; số liệu ngẫu nhiên (món, ứng viên...) có thể khác. ${esc(MODE_CAP[st.mode])}`
+      : `<b>${esc(s.label)}:</b> ${esc(s.note)}${st.when === 'after' ? ' (trạng thái này chưa có ảnh sau khi sửa)' : ''} ${esc(MODE_CAP[st.mode])}`;
+    el.querySelectorAll('.seg[data-role=when] button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === st.when));
     el.querySelectorAll('.seg[data-role=state] button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === st.state));
     el.querySelectorAll('.seg[data-role=mode] button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === st.mode));
     el.querySelectorAll('.fd').forEach((x) => x.classList.toggle('hot', +x.dataset.n === st.hot));
@@ -346,13 +355,15 @@ function bindScreen(S, el) {
   };
   el.querySelector('.seg[data-role=state]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { st.state = b.dataset.v; draw(); } });
   el.querySelector('.seg[data-role=mode]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { st.mode = b.dataset.v; draw(); } });
+  const segW = el.querySelector('.seg[data-role=when]');
+  if (segW) segW.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { st.when = b.dataset.v; draw(); } });
   el.querySelector('[data-role=pins]').addEventListener('change', (e) => shot.classList.toggle('nopins', !e.target.checked));
   el.querySelectorAll('.fd').forEach((x) => {
-    x.addEventListener('click', () => { focusFd(+x.dataset.n); shot.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+    x.addEventListener('click', () => { st.when = 'before'; focusFd(+x.dataset.n); shot.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
     x.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); x.click(); } });
   });
   // tải trước mọi ảnh để đổi chế độ không bị trống
-  for (const s of S.states) for (const [m] of MODES) { const i = new Image(); i.src = src(s.id, m); }
+  for (const s of S.states) for (const [m] of MODES) for (const a of s.after ? [false, true] : [false]) { const i = new Image(); i.src = src(s.id, m, a); }
   draw();
 }
 
@@ -363,11 +374,11 @@ DATA.screens.forEach((S) => bindScreen(S, document.getElementById('s-' + S.id)))
 // tóm tắt đầu trang + chip đếm
 const nSev = (S, v) => S.findings.filter((f) => f.sev === v).length;
 document.getElementById('sumrows').innerHTML = DATA.screens.map((S) => `<tr><td>${S.order}</td><td><a href="#s-${esc(S.id)}">${esc(S.title)}</a>${S.hidden ? ' <span class="lv off" title="' + esc(S.hidden) + '">đang tắt</span>' : ''}</td><td>${lvHtml(S.level)}</td>
-  <td class="cnt"><b>${nSev(S, 'nặng')}</b> nặng · <i>${nSev(S, 'vừa')}</i> vừa · ${nSev(S, 'nhẹ')} nhẹ</td><td class="fbv" data-fbv="${esc(S.id)}">chưa có</td></tr>`).join('');
+  <td class="cnt"><b>${nSev(S, 'nặng')}</b> nặng · <i>${nSev(S, 'vừa')}</i> vừa · ${nSev(S, 'nhẹ')} nhẹ</td><td class="fbv" data-fbv="${esc(S.id)}">chưa có</td><td>${S.done ? `<span class="lv done">đã sửa</span>` : '<span class="muted">chưa</span>'}</td></tr>`).join('');
 const all = DATA.screens.flatMap((S) => S.findings), byLv = (l) => DATA.screens.filter((S) => S.level === l).length;
 document.getElementById('sumchips').innerHTML = `<span class="chip acc">${DATA.screens.length} màn · ${all.length} vấn đề</span>
   <span class="chip">${all.filter((f) => f.sev === 'nặng').length} nặng</span><span class="chip">${byLv('tổ chức lại')} màn nên tổ chức lại</span>
-  <span class="chip">${byLv('chỉnh')} màn cần chỉnh</span><span class="chip">${byLv('ổn')} màn ổn</span><span class="chip">Chưa sửa code</span>`;
+  <span class="chip">${byLv('chỉnh')} màn cần chỉnh</span><span class="chip">${byLv('ổn')} màn ổn</span><span class="chip">${DATA.screens.filter((S) => S.done).length} màn đã sửa code</span>`;
 
 // đường đi: mỗi mục tiêu chính của người chơi = chuỗi màn / bước, bước thừa tô đỏ
 if (DATA.journeys) {
