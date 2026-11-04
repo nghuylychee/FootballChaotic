@@ -20,19 +20,6 @@ const res = await ev(`(async () => {
   const CEL_OLD = SFC.CelebrateDraw; new Function(celNew)(); const CEL_NEW = SFC.CelebrateDraw; SFC.CelebrateDraw = CEL_OLD;
   const R = SFC.Renderer;
   const withNew = (fn) => { const ks = SFC.Sprites, kc = SFC.CelebrateDraw; SFC.Sprites = NEW; SFC.CelebrateDraw = CEL_NEW; try { return fn(); } finally { SFC.Sprites = ks; SFC.CelebrateDraw = kc; } };
-  // thủ môn đổ người cho sprite v2: như Renderer.diving nhưng bộ đệm gấp đôi (96 px ảnh = 48 px game), vẽ lại về 48 đơn vị 1x
-  const diving2 = (ctx, p, g) => {
-    const PL = GC.player, flip = p.atkType === 'diveU' ? 1 : -1, side = Math.cos(p.facing) >= 0 ? 1 : -1, flying = p.state === 'dash';
-    const k = Math.min(1, (p.atkT || 0) / PL.gkDiveTime), lift = flying ? 3 + Math.sin(k * Math.PI) * 6 : 0;
-    const rot = side * (flying ? 0.22 : 0.1) * flip, sk = 1 - lift / 24;
-    OLD.ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, 5 * sk, 8 * sk, 'rgba(0,0,0,0.38)');
-    const cy = p.y - lift - 2, squash = flying ? 0.85 : 0.7;
-    if (flying) { ctx.globalAlpha = 0.7; for (let i = 0; i < 3; i++) OLD.px(ctx, Math.round(p.x - 3 + i * 3), Math.round(cy - flip * (12 + i * 2) * squash + flip * 22), 1, 4 + (i % 2) * 2, '#ffffff'); ctx.globalAlpha = 1; }
-    const N = 48, [buf, bc] = cv(N * 2, N * 2); bc.scale(2, 2);
-    PlayerSprite.drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: true }), g, 0.999);
-    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(Math.round(p.x), Math.round(cy)); ctx.rotate(rot); ctx.scale(1, flip * squash);
-    ctx.drawImage(buf, -N / 2, -N / 2, N, N); ctx.restore();
-  };
   const draw1 = (S, ctx, o) => S.drawPlayer(ctx, P(o), G(HOME), o.alpha || 1, o.tint || null, !!o.ghost);
   const sheetNew = (cols, rows, cw, ch, cell, base) => sheet(cols, rows, cw, ch, (k, r) => { const c = cell(k, r); return c && (c[0] ? c : [false, (x, cx, cy) => withNew(() => c[1](x, cx, cy)), c[2]]); }, base);
   const out = {};
@@ -68,7 +55,7 @@ const res = await ev(`(async () => {
   ];
   const drawAnim = (S, ctx, x, y, face, o) => {
     const p = P(Object.assign({ x, y, facing: face }, o));
-    if (o.dive) { p.atkType = o.dive; p.keeper = true; return S === OLD ? R.diving(ctx, p, G(HOME)) : diving2(ctx, p, G(HOME)); }
+    if (o.dive) { p.atkType = o.dive; p.keeper = true; return S.drawPlayer(ctx, p, G(HOME)); }   // đổ người vẽ thẳng như trong trận (keeper.js)
     if (o.air) { p.airZ = o.air; return R.airborne(ctx, p, G(HOME)); }
     S.drawPlayer(ctx, p, G(HOME));
   };

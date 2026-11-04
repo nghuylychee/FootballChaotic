@@ -66,17 +66,13 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
     }
 }
 
-// thủ môn đổ người (duyệt 2026-11-01): tư thế lúc bay + đứng dậy (gkball.js: tay / chân / bóng đổ theo giai đoạn) + số biến hình diveXform lúc bay
-// (Renderer.diving chỉ biến hình lúc bay; chạm đất rồi là tư thế thật)
+// thủ môn đổ người (duyệt 2026-11-04): cú nhảy bằng khung vẽ riêng (keeper.js) lúc bay / chạm đất / nằm / bò + đứng dậy (gkball.js)
 {
   const PL = SFC_CONFIG.game.player, F = PL.gkDiveTime, D = F + PL.gkDivePose;
   for (const d of ['diveU', 'diveD']) for (const [name, facing] of [['right', 0], ['left', Math.PI], ['down', Math.PI / 2], ['up', -Math.PI / 2]])
     for (let i = 0; i * (1 / 60) < D; i++) {
       const t = i / 60, p = { atkType: d, atkT: t, state: t < F ? 'dash' : 'normal' }, atk = Sprite.attackPose(p), gk = Sprite.gkState(p, atk, false);
       cases[`dive/${d}/${name}/${i}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, atk, gk, glove: '#ffd23f' }, LOOK)));
-      if (!atk.flying) continue;
-      const X = Sprite.diveXform(atk, d === 'diveU' ? 1 : -1, Math.cos(facing) >= 0 ? 1 : -1);
-      cases[`divex/${d}/${name}/${i}`] = crypto.createHash('sha1').update(JSON.stringify(X, (k, v) => (typeof v === 'number' ? +v.toFixed(4) : v))).digest('hex').slice(0, 16);
     }
 }
 

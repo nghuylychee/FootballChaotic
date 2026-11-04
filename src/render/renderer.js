@@ -227,7 +227,6 @@ window.SFC = window.SFC || {};
           SFC.VFX.under(ctx, g, p);
           if (p.legend && SFC.LegendDraw) SFC.LegendDraw.under(ctx, g, p);   // GOAT PATH: bóng mờ LEGEND sau lưng (khoảnh khắc LEGEND)
           if (s !== 1) { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(s, s); ctx.translate(-p.x, -p.y); }
-          const dive = p.atkType === 'diveU' || p.atkType === 'diveD';
           // drawPlayer tự đặt globalAlpha theo tham số alpha
           // ăn mừng bàn thắng + cuối trận (src/render/celebrate-draw.js): diễn khi 'goal' hoặc 'ended'
           const cel = p.celId && (g.state === 'goal' || g.state === 'ended') && !(p.airZ > 0);
@@ -238,7 +237,7 @@ window.SFC = window.SFC || {};
           if (shiver) { ctx.save(); ctx.translate(shiver, 0); }
           // GOAT PATH: kỹ thuật LEGEND đang diễn -> biến đổi quanh sprite (render/legenddraw.js)
           const lx = !swap && !cel && SFC.LegendDraw ? SFC.LegendDraw.begin(ctx, g, p) : false;
-          let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : dive ? this.diving(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.3 : faint(p));
+          let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.3 : faint(p));
           ctx.globalAlpha = 1;
           if (lx) { ctx.restore(); SFC.LegendDraw.after(ctx, g, p); }
           if (shiver) ctx.restore();
@@ -461,59 +460,6 @@ window.SFC = window.SFC || {};
       drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, keeper: false, fly: fs }), g, 0.999);
       ctx.restore();
       return Math.round(cy) - 8;
-    },
-
-    // thủ môn đổ người (Actions.dive): bay sang ngang dọc trục y (dọc vạch vôi), mặt vẫn nhìn về phía sân -> camera thấy
-    // sườn người: thân dọc theo hướng bay (đầu đi trước), 1 tay vươn qua đầu (drawPlayer, atk.dive), 2 chân khép.
-    // Bay xuống (về phía camera) = lật dọc hình bay lên. Lúc bay: nâng theo cung, nghiêng, ép dẹt, lật, bóng đổ, vệt gió (PlayerSprite.diveXform).
-    // Chạm đất rồi: tư thế đứng dậy thật trên lưới px (gkball.js, gkDivePose giây) vẽ thẳng như thường, không xoay / ép lẻ (px sắc khi gần như
-    // đứng yên); bay xuống mà còn nằm: lật đúng -1 quanh chỗ nằm. Thủ môn bắt được bóng: bản sao vẽ vào bộ đệm mang cờ gkHolding (ôm bóng)
-    diving(ctx, p, g) {
-      const { ellipse, drawPlayer, px } = SP(), Sprite = SFC.PlayerSprite;
-      const flip = p.atkType === 'diveU' ? 1 : -1;
-      const side = Math.cos(p.facing) >= 0 ? 1 : -1;
-      const atk = Sprite.attackPose(p), holding = g.ball.owner === p;
-      const N = 48, buf = this.diveBuf || (this.diveBuf = document.createElement('canvas'));
-      if (buf.width !== N) { buf.width = N; buf.height = N; }
-      const bc = buf.getContext('2d');
-      if (!atk.flying) {
-        if (flip > 0 || (atk.stage !== 'land' && atk.stage !== 'lie')) return drawPlayer(ctx, p, g);
-        // bay xuống, đang nằm (đầu về phía máy quay): vẽ đứng vào bộ đệm rồi lật đúng -1, toạ độ tròn · bóng đổ dài phủ cả thân
-        const ty = Math.round(p.y) - 9;
-        if (!Sprite.sceneShadow(g)) ellipse(ctx, Math.round(p.x) + side, ty + 3, 8, 11, 'rgba(0,0,0,0.4)');   // arena có bộ cảnh: bóng của cảnh
-        bc.setTransform(1, 0, 0, 1, 0, 0);
-        bc.clearRect(0, 0, N, N);
-        drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: g.inKeeperZone(p), gkHolding: holding }), g, 0.999);
-        ctx.save();
-        ctx.imageSmoothingEnabled = false;
-        ctx.translate(Math.round(p.x), ty);
-        ctx.scale(1, -1);
-        ctx.drawImage(buf, -N / 2, -N / 2, N, N);
-        ctx.restore();
-        return ty + 14;
-      }
-      const X = Sprite.diveXform(atk, flip, side);
-      if (!Sprite.sceneShadow(g)) ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, X.shadow[0], X.shadow[1], 'rgba(0,0,0,0.38)');   // arena có bộ cảnh: bóng của cảnh
-      const cy = p.y - X.lift - X.up, sq = Math.abs(X.sy);
-      // vệt gió sau gót chân lúc bay
-      if (X.streaks) {
-        ctx.globalAlpha = 0.7;
-        for (let i = 0; i < 3; i++) px(ctx, Math.round(p.x - 3 + i * 3), Math.round(cy - flip * (12 + i * 2) * sq + flip * 22), 1, 4 + (i % 2) * 2, '#ffffff');
-        ctx.globalAlpha = 1;
-      }
-      // vẽ thẳng đứng vào bộ đệm rồi xoay cả ảnh (lấy mẫu điểm gần nhất) -> pixel vẫn sắc, không nhoè như xoay từng ô vẽ
-      bc.setTransform(1, 0, 0, 1, 0, 0);
-      bc.clearRect(0, 0, N, N);
-      // vx = vy = 0: không nhún chân / vung tay như đang chạy
-      drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: g.inKeeperZone(p), gkHolding: holding }), g, 0.999);
-      ctx.save();
-      ctx.imageSmoothingEnabled = false;
-      ctx.translate(Math.round(p.x), Math.round(cy));
-      ctx.rotate(X.rot);
-      ctx.scale(1, X.sy);
-      ctx.drawImage(buf, -N / 2, -N / 2, N, N);
-      ctx.restore();
-      return Math.round(cy) - 14;
     },
 
     cosmetics(ctx, g) {

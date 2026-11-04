@@ -1,7 +1,7 @@
 /* PlayerSprite · gkball.js — Thủ môn cầm bóng + đứng dậy sau khi đổ người (đã duyệt 2026-11-01, bản nháp tools/sprite-v2/drafts/keeper.js):
  * bắt bóng kéo vào ngực rồi ôm (gkHold), tung bóng lên bằng tay rồi đá (gkPunt phát bóng bổng / gkVolley chuyền vô-lê), ôm bóng lúc đổ người
  * bắt được (thủ môn đang đổ người mà cầm bóng), và các tư thế đứng dậy sau khi đổ người — tư thế thật trên lưới px (không xoay / ép lẻ,
- * px sắc khi người gần như đứng yên; chỉ lúc bay mới xoay / ép như Renderer.diving).
+ * px sắc khi người gần như đứng yên). Lúc bay / chạm đất / nằm / bò là khung vẽ riêng của keeper.js.
  * Nạp theo thứ tự trong scripts/manifest.js (classic script, không module).
  */
 window.SFC = window.SFC || {};
@@ -102,7 +102,7 @@ window.SFC = window.SFC || {};
     return null;
   }
   // hình học cho draw.js theo góc nhìn: { arms (tay gập), angles (tay thẳng), ball [x, y] (ô), ballBehind, drop (ô), lean (px, màn hình; draw.js làm tròn: nửa px lên 1 px),
-  // legs 'kneel' | 'wide', shadow 'long' }. m = nhìn trái
+  // legs 'kneel' | 'wide' }. m = nhìn trái
   function gkGeom(st, view, m) {
     const hk = holdKey(view), side = m ? -1 : 1, G = { ballBehind: view === 'back' || view === 'bdiag', far: Sprite.farArm(view) === 0 ? 0 : -1 };
     const held = (pose, drop) => Object.assign(G, { arms: pose.arms, ball: pose.ball, drop: drop || 0 });
@@ -129,17 +129,10 @@ window.SFC = window.SFC || {};
       // chéo lên: bóng còn đè lên thân (mới rời ngực) thì vẫn nằm sau thân như lúc ôm, ra khỏi mép thân thì vẽ trên cùng
       return Object.assign(G, { ball: b, arms: t < 0.02 ? HOLD[hk].arms : null, ballBehind: view === 'bdiag' && b[0] < 9 });
     }
-    // đổ người: stage null = đang bay mà cầm bóng (Renderer.diving vẽ vào bộ đệm rồi xoay / ép) · còn lại = đứng dậy
+    // đổ người, đứng dậy: bay / chạm đất / nằm / bò (cầm bóng: cả nhổm) là khung vẽ riêng của keeper.js (draw.js bỏ qua gk), còn lại ở đây.
+    // Cầm bóng: quỳ + khuỵu = 1 khung quỳ ôm bóng quay về phía sân (user 2026-11-04: đứng dậy chỉ 2 khung), rồi đứng ôm bóng (gkHold)
     const s = st.stage;
-    if (st.ball) {
-      // cầm bóng: nằm / quỳ / khuỵu vẫn ôm bóng (không chống tay được), bò 4 chân + nhổm lên = quỳ ôm bóng
-      if (!s) return held(HOLD[hk], 0);
-      if (s === 'land' || s === 'lie') return Object.assign(held(HOLD[hk], s === 'land' ? 2 : 1), { lean: side, shadow: 'long' });
-      if (s === 'crouch') return held(HOLD[hk], 1);
-      return Object.assign(held(HOLD[hk], 2), { legs: 'kneel' });
-    }
-    if (s === 'land' || s === 'lie') return Object.assign(G, { drop: s === 'land' ? 2 : 1, lean: side, shadow: 'long' });   // tay đổ người vươn qua đầu (draw.js)
-    if (s === 'fours') return Object.assign(G, { angles: [1.1, 0.8], legs: 'kneel', drop: 3, lean: side * 1.5 });
+    if (st.ball) return Object.assign(held(HOLD[hk], 2), { legs: 'kneel' });
     if (s === 'rise') return Object.assign(G, { angles: [1.35, 1.15], legs: 'kneel', drop: 2, lean: side / 2 });
     if (s === 'kneel') return Object.assign(G, { arms: KNEEL_ARMS, legs: 'kneel', drop: 2 });
     return Object.assign(G, { drop: 1 });   // khuỵu: chân khuỵu theo atk.stage (keeper.js), tay đứng
@@ -186,7 +179,7 @@ window.SFC = window.SFC || {};
     if (G.angles) G.angles.forEach((a, i) => { if (mine(i)) armAt(ctx, X, Y, mir, i, a, pal, hand, part === 'behind'); });
   }
   // bóng đổ người nằm: elip đậm phủ cả thân (nằm dọc màn hình nhìn từ trên thì dài gần bằng đứng — dấu hiệu "nằm" là bóng đổ, không phải thân ngắn lại).
-  // Px game quanh chân (X, Y); bay xuống thì Renderer.diving lật cả người lẫn bóng đổ
+  // Px game quanh chân (X, Y)
   function lieShadow(ctx, X, Y, side) {
     const cx = X + side, cy = Y - 10, rx = 8, ry = 11;
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
@@ -196,5 +189,5 @@ window.SFC = window.SFC || {};
   const IN_HANDS = { gkHold: 1, gkPunt: 1, gkVolley: 1, diveU: 1, diveD: 1 };
   const ballInHands = (g) => !!(g.ball && g.ball.owner && IN_HANDS[g.ball.owner.atkType]);
 
-  Object.assign(Sprite, { GK_HOLD: HOLD, GK_REACH: REACH, gkTiming: timing, gkState, gkGeom, getUpStage, gkDraw, lieShadow, ballInHands });
+  Object.assign(Sprite, { GK_HOLD: HOLD, GK_REACH: REACH, gkTiming: timing, gkState, gkGeom, getUpStage, gkDraw, lieShadow, ballInHands, heldBall });
 })();

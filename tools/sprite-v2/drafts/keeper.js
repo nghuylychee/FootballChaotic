@@ -158,111 +158,6 @@
     return { o: { atk }, ball: flyBall };
   }
 
-  // G3 đổ người bắt bóng (như Renderer.diving: vẽ đứng thẳng vào bộ đệm 48 x 48 px game, chân ở tâm + 10, rồi nâng / xoay / ép theo diveXform).
-  // Bay lên (up) hoặc xuống dist px; giữa cú bay (catchAt) bóng tới ngực -> 2 tay ôm bóng vào ngực (tay vươn qua đầu ngắn quá, không giữ bóng
-  // trên đầu được), nằm ôm bóng, đứng dậy vẫn ôm, rồi đứng ôm bóng thở nhẹ. Bóng bay tới từ phía mặt
-  const DIVE_CATCH = { start: 0.3, dist: 28, catchAt: 0.6, speed: 300, end: 1.45 };
-  // vẽ 1 người qua biến hình đổ người X (như Renderer.diving): bóng đổ theo X, người đứng thẳng vào bộ đệm 48 x 48 px game (chân ở tâm + 10)
-  // rồi nâng / xoay / ép · st như figure
-  let dbuf = null;
-  function drawXf(c, x, y, X, face, base, st) {
-    SFC.Sprites.ellipse(c, Math.round(x), Math.round(y) + 1, X.shadow[0], X.shadow[1], 'rgba(0,0,0,0.38)');
-    if (!dbuf) { dbuf = document.createElement('canvas'); dbuf.width = dbuf.height = 96; }
-    const bc = dbuf.getContext('2d');
-    bc.setTransform(2, 0, 0, 2, 0, 0); bc.clearRect(0, 0, 48, 48); bc.imageSmoothingEnabled = false;
-    figure(bc, 24, 34, face, base, Object.assign({}, st, { o: Object.assign({}, st.o, { noShadow: true }) }));
-    c.save(); c.imageSmoothingEnabled = false;
-    c.translate(Math.round(x), Math.round(y - X.lift - X.up)); c.rotate(X.rot); c.scale(1, X.sy);
-    c.drawImage(dbuf, -24, -24, 48, 48);
-    c.restore();
-  }
-  function diveCatch(c, x, y0, face, base, t, up) {
-    const PL = SFC_CONFIG.game.player, D = DIVE_CATCH, fly = Math.max(PL.gkDiveMin, D.dist / PL.gkDiveSpeed), lie = fly + PL.gkDivePose;
-    const side = Math.cos(face) >= 0 ? 1 : -1, flip = up ? 1 : -1, m = side < 0, H = HOLD.side;
-    const at = (r) => S.attackPose({ atkType: up ? 'diveU' : 'diveD', atkT: r, state: r < fly ? 'dash' : 'normal', poseEnd: lie, diveT: fly });
-    const yAt = (r) => y0 + (up ? -1 : 1) * D.dist * clamp01(r / fly);
-    // điểm trong bộ đệm (px game) -> ô, theo biến hình X và chân ở (x, y)
-    const toCell = (X, y, bx, by) => {
-      const cy = y - X.lift - X.up, dx = bx - 24, dy = (by - 24) * X.sy, cs = Math.cos(X.rot), sn = Math.sin(X.rot);
-      return [x + dx * cs - dy * sn, cy + dx * sn + dy * cs];
-    };
-    const ballBuf = [24 + (m ? -H.ball[0] : H.ball[0]), 34 + H.ball[1]];
-    const r = t - D.start, rc = fly * D.catchAt;
-    // bóng bay tới chỗ ngực lúc chạm (tính theo biến hình lúc đó), tới lúc chạm thì vào tay
-    if (r < rc) {
-      const yc = yAt(rc), [bx, by] = toCell(S.diveXform(at(rc), flip, side), yc, ballBuf[0], ballBuf[1]), d = (rc - r) * D.speed;
-      if (r < 0) figure(c, x, y0, face, base, { natural: true });
-      SFC.Sprites.drawBall(c, { x: bx + side * d, y: yc, z: yc - by - 3, roll: t * 40, fx: {} });
-      if (r < 0) return;
-    }
-    if (r >= lie) return figure(c, x, yAt(r), face, base, holdState('side', t, false));   // đứng dậy xong: ôm bóng
-    const atk = at(r), X = S.diveXform(atk, flip, side), caught = r >= rc;
-    // đã ôm bóng: tay ôm thay tay vươn (dk = 0 tắt tay đổ người + đầu rụt; vòng cung / chân vẫn theo cú bay thật)
-    drawXf(c, x, yAt(r), X, face, base, caught ? { o: { atk: Object.assign({}, atk, { dk: 0 }) }, pose: H, ball: { x: H.ball[0], y: H.ball[1] } }
-      : { natural: true, o: { atk } });
-  }
-
-  // D tốc độ đổ người: cùng quãng dist, 3 cách bay. today = đều gkDiveSpeed (như game) · ease = tốc độ hình parabol 4u(1 - u) (chậm lúc bật,
-  // nhanh nhất giữa cú bay, chậm lại lúc chạm đất; vị trí theo smoothstep) cùng thời gian bay · easeSlow = parabol, đỉnh tốc độ = gkDiveSpeed
-  // (không bao giờ nhanh hơn hôm nay) -> bay lâu gấp 1.5. 2 vạch trắng = chỗ cất người / chỗ đáp
-  const DIVE_SPEED = { start: 0.25, dist: 34, end: 1.05 };
-  function diveSpeed(c, x, y0, face, base, t, mode) {
-    const PL = SFC_CONFIG.game.player, D = DIVE_SPEED, side = Math.cos(face) >= 0 ? 1 : -1;
-    const today = Math.max(PL.gkDiveMin, D.dist / PL.gkDiveSpeed), fly = mode === 'easeSlow' ? today * 1.5 : today, lie = fly + PL.gkDivePose;
-    const pos = (u) => (mode === 'today' ? u : u * u * (3 - 2 * u));
-    const r = t - D.start, y = y0 - D.dist * pos(clamp01(r / fly));
-    c.fillStyle = 'rgba(255,255,255,0.55)'; c.fillRect(Math.round(x) - 16, y0, 6, 1); c.fillRect(Math.round(x) - 16, y0 - D.dist, 6, 1);
-    if (r < 0 || r >= lie) return figure(c, x, y, face, base, { natural: true });
-    const atk = S.attackPose({ atkType: 'diveU', atkT: r, state: r < fly ? 'dash' : 'normal', poseEnd: lie, diveT: fly });
-    drawXf(c, x, y, S.diveXform(atk, 1, side), face, base, { natural: true, o: { atk } });
-  }
-
-  // D2 đứng dậy sau khi đổ người (bay theo tốc độ parabol đã chọn, vẫn nâng / xoay / ép như game lúc bay). Chạm đất xong là tư thế thật trên lưới px
-  // (không xoay, không ép lẻ -> px sắc khi người gần như đứng yên):
-  // land đập người xuống (thân hạ 2 ô) rồi nảy lên 1 ô · lie nằm: tư thế đổ người (2 tay vươn cạnh đầu, chân khép, mắt nhìn lên) hạ 1 ô, ngả 1 ô
-  // về phía mặt, bóng đổ đậm phủ cả thân (nằm dọc màn hình nhìn từ trên thì dài gần bằng đứng: dấu hiệu "nằm" là bóng, không phải thân ngắn lại;
-  // hạ thân nhiều thì chân khuất hết, trông như lún xuống đất) · fours bò 4 chân: quỳ 2 gối, thân thấp
-  // + chúi tới, 2 găng chống đất phía trước · rise thân nhổm lên, găng rời đất · kneel quỳ thẳng, 2 găng trên đùi · crouch khuỵu gối, tay buông · đứng.
-  // Bay xuống (về phía máy quay): nằm = đúng tư thế đó lật ngược (lật đúng -1, không xoay: px vẫn sắc), từ lúc bò là đứng chiều như thường
-  const GETUP = { start: 0.3, dist: 30, land: 0.06, lie: 0.16, fours: 0.07, rise: 0.07, kneel: 0.14, crouch: 0.1, end: 1.5 };   // chạm đất -> đứng 0.6 s
-  // lật ngược đúng (ty = chỗ trục lật, px game): vẽ thẳng vào bộ đệm rồi chép với scale(1, -1), toạ độ tròn
-  function drawFlip(c, x, ty, face, base, st) {
-    if (!dbuf) { dbuf = document.createElement('canvas'); dbuf.width = dbuf.height = 96; }
-    const bc = dbuf.getContext('2d');
-    bc.setTransform(2, 0, 0, 2, 0, 0); bc.clearRect(0, 0, 48, 48); bc.imageSmoothingEnabled = false;
-    figure(bc, 24, 34, face, base, st);
-    c.save(); c.imageSmoothingEnabled = false;
-    c.translate(Math.round(x), Math.round(ty)); c.scale(1, -1);
-    c.drawImage(dbuf, -24, -24, 48, 48);
-    c.restore();
-  }
-  function diveGetUp(c, x, y0, face, base, t, up) {
-    const PL = SFC_CONFIG.game.player, G = GETUP, side = Math.cos(face) >= 0 ? 1 : -1, flip = up ? 1 : -1;
-    const fly = Math.max(PL.gkDiveMin, G.dist / PL.gkDiveSpeed), r = t - G.start;
-    const y = y0 + (up ? -1 : 1) * G.dist * (u => u * u * (3 - 2 * u))(clamp01(r / fly));
-    if (r < 0) return figure(c, x, y, face, base, { natural: true });
-    if (r < fly) {
-      const atk = S.attackPose({ atkType: up ? 'diveU' : 'diveD', atkT: r, state: 'dash', poseEnd: fly + 1, diveT: fly });
-      return drawXf(c, x, y, S.diveXform(atk, flip, side), face, base, { natural: true, o: { atk } });
-    }
-    let q = r - fly;
-    if (q < G.land + G.lie) {
-      // nằm (bóng đổ dài theo thân; bay xuống thì thân nằm 2 phía chỗ chạm đất, đầu về phía máy quay)
-      const st = { cp: { drop: q < G.land / 2 ? 2 : 1 }, o: { atk: { dive: true, flying: false, dk: 1, stage: 'lie' }, lean: side, noShadow: true } };
-      SFC.Sprites.ellipse(c, Math.round(x + side), Math.round(up ? y - 10 : y - 6), 8, 11, 'rgba(0,0,0,0.4)');
-      return up ? figure(c, x, y, face, base, st) : drawFlip(c, x, y - 9, face, base, st);
-    }
-    q -= G.land + G.lie;
-    if (q < G.fours) return figure(c, x, y, face, base, { legs: 'kneel', drop: 3, angles: [1.1, 0.8], o: { lean: side * 1.5 } });
-    if ((q -= G.fours) < G.rise) return figure(c, x, y, face, base, { legs: 'kneel', drop: 2, angles: [1.35, 1.15], o: { lean: side / 2 } });
-    if ((q -= G.rise) < G.kneel) return figure(c, x, y, face, base, { legs: 'kneel', drop: 2, pose: KNEEL_ARMS });
-    // khuỵu: chân dạng khuỵu (dg 0.85 -> 'bend'), thân hạ 1 ô, tay đứng có găng
-    if ((q -= G.kneel) < G.crouch) return figure(c, x, y, face, base, { cp: { drop: 1 }, o: { atk: { dive: true, flying: false, dk: 0, stage: 'crouch' } } });
-    return figure(c, x, y, face, base, { natural: true });
-  }
-  // quỳ: 2 khuỷu sát sườn, 2 găng đặt lên đùi (ngay trên 2 đầu gối) · găng đè lên mép thân
-  const KNEEL_ARMS = { arms: [[[-7, -9], [-7, -6], [-5, -4]], [[6, -9], [6, -6], [4, -4]]] };
-
   // B · đỡ bóng tại chỗ (sút thẳng vào người, không đổ người): ngay trước lúc bóng tới dang rộng 2 tay (hình chữ V) + 2 chân, khuỵu nhẹ, rồi
   // save = bắt bóng kéo vào ngực + ôm (như G1) · parry = bóng dội ra phía trước-lên, giữ tư thế dang tay một chút rồi hạ tay về đứng ·
   // miss = bóng bay thẳng qua người (khuất sau thân) vào lưới, giữ tư thế dang tay rồi về đứng.
@@ -285,5 +180,5 @@
     return st;
   }
 
-  S.KEEPER = { HOLD, REACH, RELEASE, CATCH, DIVE_CATCH, DIVE_SPEED, GETUP, BLOCK, figure, holdState, catchState, releaseState, diveCatch, diveSpeed, diveGetUp, blockState, view };
+  S.KEEPER = { HOLD, REACH, RELEASE, CATCH, BLOCK, figure, holdState, catchState, releaseState, blockState, view };
 })();

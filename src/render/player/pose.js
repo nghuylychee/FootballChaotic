@@ -98,12 +98,16 @@ window.SFC = window.SFC || {};
     // thủ môn đổ người (keeper.js): dk = tiến độ bay · dh = độ cao vòng cung (bay ngắn thì thấp) · ds cất người (0..1)
     if (p.atkType === 'diveU' || p.atkType === 'diveD') {
       // bay p.diveT giây, đứng dậy tới p.poseEnd (Player đặt cả hai; máy khách online không có -> coi như bay hết gkDiveTime)
-      const PL = SFC_CONFIG.game.player, D = Sprite.DIVE, flying = p.state === 'dash', fly = p.diveT || PL.gkDiveTime;
-      if (flying) return { dive: true, flying, dk: clamp01(t / fly), dh: fly / PL.gkDiveTime, ds: clamp01(t / D.takeoff) };
+      // toward = bay xuống màn hình (về phía máy quay): nhìn chéo xuống · bay lên: chéo lên (keeper.js diveFacing) · khop = độ cao cú nhảy (px)
+      const PL = SFC_CONFIG.game.player, D = Sprite.DIVE, flying = p.state === 'dash', fly = p.diveT || PL.gkDiveTime, toward = p.atkType === 'diveD';
+      if (flying) {
+        const a = { dive: true, flying, toward, dk: clamp01(t / fly), dh: fly / PL.gkDiveTime, ds: clamp01(t / D.takeoff) };
+        return Object.assign(a, { khop: Sprite.diveLift(a) });
+      }
       // chạm đất rồi: tư thế đứng dậy thật trên lưới px (gkball.js, stage). nằm: tay vẫn vươn qua đầu (dk 1), chân khép · khuỵu: chân dạng khuỵu,
       // tay đứng · bò / nhổm / quỳ: chân quỳ + tay riêng (gkGeom). Chân / khuỵu theo stage (keeper.js diveLegPose / diveCrouch)
       const end = p.poseEnd != null ? p.poseEnd : PL.gkDiveTime + PL.gkDivePose, stage = Sprite.getUpStage(end - t);
-      return { dive: true, flying: false, stage, dk: stage === 'land' || stage === 'lie' ? 1 : 0, dh: 1, ds: 1 };
+      return { dive: true, flying: false, toward, stage, dk: stage === 'land' || stage === 'lie' ? 1 : 0, dh: 1, ds: 1 };
     }
     // thủ môn ôm bóng / đỡ bóng tại chỗ (gkball.js): tay (+ bóng) vẽ riêng theo atkT (gkGeom); ôm bóng thì chân như thường (đứng / chạy)
     if (p.atkType === 'gkHold') return { gkHold: true };

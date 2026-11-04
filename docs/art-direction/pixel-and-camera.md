@@ -2,9 +2,9 @@
 
 ## One pixel size
 
-- The match canvas is 1280×720; art draws on a 640×360 grid scaled ×2. One pixel of that grid is a **game pixel**.
+- The match canvas is 1x: one canvas pixel is one **game pixel** (the 640×360 view, up to 880×512 on wide screens). Scaling to the screen happens only at the end.
 - **Everything on screen shows the same pixel size:** arenas, props, crowd, players, menu scenes, cut scenes.
-- The one exception is fast action: player motion frames, smears and VFX may use the half pixel (the 1280×720 grid). Scenery never does.
+- There is no half pixel: player motion frames, smears and VFX draw on the same grid as scenery.
 - Getting "closer" in a scene means more detail, never bigger pixels.
 - Art is never smoothly rotated or scaled. Rotation (airborne players) and zoom (the goal camera) use nearest-pixel sampling.
 

@@ -1185,14 +1185,13 @@ window.SFC = window.SFC || {};
       if (Math.abs(dy) < 3) return;
       p.diveKick = g.ball.kickN;
       p.state = 'dash';
-      p.trailLeft = 0; // đổ người: chỉ 1 bóng mờ
+      p.trailLeft = 0; // đổ người là 1 cú nhảy (render/player/keeper.js), không bóng mờ như lướt
       // bay đúng quãng dy: xa thì gkDiveSpeed (tối đa gkDiveTime, không bay quá đà), gần thì chậm lại cho đủ gkDiveMin giây (không giật cục).
       // diveT = thời gian bay: vòng cung bay khớp lúc chạm đất (render/player/pose.js; máy khách online không có -> coi như gkDiveTime)
       p.stateT = p.diveT = U.clamp(Math.abs(dy) / P.gkDiveSpeed, P.gkDiveMin, P.gkDiveTime);
       p.dashX = 0; p.dashY = Math.sign(dy) * Math.min(P.gkDiveSpeed, Math.abs(dy) / p.stateT);
       // anim bay người: diveU / diveD = bay lên / xuống màn hình (vẽ ở Renderer.diving, đồng bộ online qua atkType)
       this.startAttack(p, dy < 0 ? 'diveU' : 'diveD');
-      g.effects.afterimage(p);
     },
 
     /* ---------- ĐỌC CÚ SÚT: giữ W trong vòng cấm nhà, thả đúng lúc đối phương sút ---------- */

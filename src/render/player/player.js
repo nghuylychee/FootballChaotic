@@ -7,7 +7,7 @@ window.SFC = window.SFC || {};
   const Sprite = (SFC.PlayerSprite = SFC.PlayerSprite || {});
   const { attackPose, draw, flyState, flyRot, flyShadow, flyShadowSpec, hitState, snapPx } = Sprite;
   /* ---------- thay SFC.Sprites.drawPlayer: renderer vẽ ở toạ độ thế giới (có thể đã phóng / dịch / xoay), sprite tính bằng px game ---------- */
-  // đang xoay (bay người, ăn mừng lộn vòng): vẽ vào bộ đệm rồi xoay cả ảnh, lấy mẫu điểm gần nhất -> px vẫn sắc như Renderer.diving
+  // đang xoay (bị đá bay, ăn mừng lộn vòng): vẽ vào bộ đệm rồi xoay cả ảnh, lấy mẫu điểm gần nhất -> px vẫn sắc
   // (cả lúc phóng không tròn số, xem odd)
   let rotBuf = null;
   // màu đội ra màu vẽ (B12, duyệt 2026-11-01): băng đô trùng màu tóc / găng thủ môn trùng màu da -> lấy màu áo (áo cũng trùng thì màu phụ sẫm đi);
@@ -57,10 +57,10 @@ window.SFC = window.SFC || {};
     const kit = g.teams[p.team].cfg.kit, look = p.look || {}, kc = kitColors(kit, look);
     const cp = (!ghost && p.celPose) || null;
     let atk = !ghost && (p.atkType || p.passMode) ? attackPose(p) : null;
-    // thủ môn cầm bóng / đứng dậy sau khi đổ người (gkball.js). Đổ người mà cầm bóng (bắt được giữa cú bay): tay ôm bóng thay tay vươn
-    // (dk 0 tắt tay đổ người + đầu rụt), chân / vòng cung vẫn theo cú bay thật. gkHolding: bản sao vẽ vào bộ đệm (Renderer.diving) mang theo cờ
-    const gk = ghost ? null : Sprite.gkState(p, atk, !!(p.gkHolding || (g && g.ball && g.ball.owner === p)));
-    if (gk && gk.kind === 'dive' && gk.ball) atk = Object.assign({}, atk, { dk: 0 });
+    // thủ môn cầm bóng / đứng dậy sau khi đổ người (gkball.js). Đổ người mà cầm bóng (bắt được giữa cú bay): atk.hold -> khung đổ người
+    // vẽ tư thế ôm bóng (keeper.js), cú nhảy vẫn theo cú bay thật
+    const gk = ghost ? null : Sprite.gkState(p, atk, !!(g && g.ball && g.ball.owner === p));
+    if (gk && gk.kind === 'dive' && gk.ball) atk = Object.assign({}, atk, { hold: true });
     const RN = SFC_CONFIG.game.fx.run;
     // bước riêng khi nhìn ngang / chéo (sprint.js): bước nặng đuổi bóng lúc lấy đà sút mạnh (attackPose trả gait) · chạy nước rút (sprintGait)
     let gait = null, gaitT = 0;
@@ -134,14 +134,13 @@ window.SFC = window.SFC || {};
     }
     if (p.airZ > 0) return { k: Math.max(0.35, 1 - p.airZ / 70), z: p.airZ };   // bị hất tung / tự nhảy (Renderer.airborne)
     const atk = p.atkType || p.passMode ? attackPose(p) : null;
-    if (atk && atk.dive) {
-      const flip = p.atkType === 'diveU' ? 1 : -1, side = Math.cos(p.facing) >= 0 ? 1 : -1;
-      if (atk.flying) { const X = Sprite.diveXform(atk, flip, side); return { rx: X.shadow[0], ry: X.shadow[1], z: X.lift + X.up }; }
-      // nằm sau khi đổ người: elip dài phủ cả thân (bay lên: lieShadow của gkball.js · bay xuống: Renderer.diving)
-      if (atk.stage === 'land' || atk.stage === 'lie') return { lie: { dx: side, dy: flip > 0 ? -10 : -6, rx: 8, ry: 11 } };
-    }
-    // sút / vô-lê / Hard attack / đánh đầu bật lên (khop px): như bóng sprite ở draw.js
-    if (atk && atk.khop) return { k: atk.header ? Math.max(0.6, Math.round((1 - atk.khop / 30) * 10) / 10) : atk.khop >= 1.5 ? 0.85 : 1, z: atk.khop };
+    // nằm sau khi đổ người (khung keeper.js): bay lên = elip dài phủ cả thân như lieShadow của gkball.js · bay xuống = elip rộng dưới đầu.
+    // Đang bay: khop như cú nhảy (dưới)
+    const df = atk && atk.dive ? Sprite.diveFrameOf(atk) : null;
+    if (df && df.shadow === 'long') return { lie: { dx: Math.cos(p.facing) < 0 ? -1 : 1, dy: -10, rx: 8, ry: 11 } };
+    if (df && df.shadow === 'wide') return { k: 1.3, z: 0 };
+    // sút / vô-lê / Hard attack / đánh đầu / đổ người bật lên (khop px): như bóng sprite ở draw.js
+    if (atk && atk.khop) return { k: atk.header || atk.dive ? Math.max(0.6, Math.round((1 - atk.khop / 30) * 10) / 10) : atk.khop >= 1.5 ? 0.85 : 1, z: atk.khop };
     return { k: 1, z: 0 };
   }
 

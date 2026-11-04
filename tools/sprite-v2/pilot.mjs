@@ -28,19 +28,6 @@ const res = await ev(`(() => {
   const DLIST = [];
   for (const [d, dir] of [['diveU', 'up screen'], ['diveD', 'down screen']]) for (const [fdir, face] of [['facing right', DIRS.side], ['facing left', DIRS.sideL]])
     DLIST.push(['dive', 'Keeper dive', dir + ', ' + fdir, face, dive(d), DV0 + DVF + DVL + 15, 'done', d === 'diveU' ? -1 : 1]);
-  // như Renderer.diving của game nhưng bộ đệm gấp đôi (96 px ảnh = 48 px game) cho sprite v2: nâng theo cung, bóng đổ, vệt gió, nghiêng, ép dẹt, lật khi bay xuống
-  const diving2 = (ctx, p, g) => {
-    // biến hình lấy từ PlayerSprite.diveXform (cất người / chạm đất / đứng dậy chuyển dần); bóng đổ, vệt gió, bộ đệm như Renderer.diving
-    const flip = p.atkType === 'diveU' ? 1 : -1, side = Math.cos(p.facing) >= 0 ? 1 : -1;
-    const X = PlayerSprite.diveXform(PlayerSprite.attackPose(p), flip, side), sk = 1 - X.lift / 24;
-    OLD.ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, X.shadow[0], X.shadow[1], 'rgba(0,0,0,0.38)');
-    const cy = p.y - X.lift - X.up, sq = Math.abs(X.sy);
-    if (X.streaks) { ctx.globalAlpha = 0.7; for (let i = 0; i < 3; i++) OLD.px(ctx, Math.round(p.x - 3 + i * 3), Math.round(cy - flip * (12 + i * 2) * sq + flip * 22), 1, 4 + (i % 2) * 2, '#ffffff'); ctx.globalAlpha = 1; }
-    const N = 48, [buf, bc] = cv(N * 2, N * 2); bc.scale(2, 2);
-    PlayerSprite.drawPlayer(bc, Object.assign({}, p, { x: N / 2, y: N / 2 + 10, vx: 0, vy: 0, keeper: true }), g, 0.999);
-    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(Math.round(p.x), Math.round(cy)); ctx.rotate(X.rot); ctx.scale(1, X.sy);
-    ctx.drawImage(buf, -N / 2, -N / 2, N, N); ctx.restore();
-  };
   for (const [id, name, fn, n, group] of [['header', 'Header', header, SHOT0 + 36, 'done'], ['shoot', 'Shoot', shoot, 24, 'done'], ['volley', 'Volley', volley, 30, 'done'], ['punch', 'Punch', punch, N, 'done'], ['hard', 'Hard kick', hard, N, 'done']])
     for (const [dir, face] of D4) LIST.push([id, name, dir, face, fn, n, group]);
   // bóng 5 x 5 (px thế giới): đứng ở mũi giày tới lúc chạm, rồi bay theo hướng mặt; vô-lê: bóng ngang hông
@@ -77,12 +64,13 @@ const res = await ev(`(() => {
       // y = đáy ô (base 0): bay lên bắt đầu gần đáy, bay xuống bắt đầu gần đỉnh (hình lật, đầu đi trước xuống dưới)
       const y0 = dy < 0 ? y - 14 : y - 86, yy = Math.round(y0 + d);
       c.fillStyle = 'rgba(255,255,255,0.55)'; c.fillRect(x - side * 9, 0, 1, DCH);   // vạch vôi sau lưng thủ môn
-      if (o.dive) diving2(c, P(Object.assign({ x, y: yy, facing: face, keeper: true, atkType: o.dive }, o)), G(HOME));
-      else NEW.drawPlayer(c, P(Object.assign({ x, y: yy, facing: face, keeper: true }), o), G(HOME));
+      // đổ người vẽ thẳng như trong trận (drawPlayer: cú nhảy, keeper.js)
+      NEW.drawPlayer(c, P(Object.assign({ x, y: yy, facing: face, keeper: true }, o.dive ? { atkType: o.dive } : {}, o)), G(HOME));
       // bóng: từ phía sân bay tới chỗ găng lúc hết cú bay, rồi nằm trong găng lúc nằm
-      // chỗ găng lúc hết cú bay (đo trên ảnh): bay lên 5 px trên chân, bay xuống 2 px dưới
-      const ey = Math.round(y0 + dy * DIST + (dy < 0 ? -5 : 2)), ex = x + side * 2, bt = Math.min(1, Math.max(0, (k - DV0 + 4) / (DVF + 4)));
-      if (k >= DV0 - 4 && k < DV0 + DVF + DVL - Math.round(PlayerSprite.DIVE.getup * 60)) {   // ẩn khi bắt đầu đứng dậy
+      // chỗ găng lúc hết cú bay: bay lên cạnh đầu (14 px trên chân), bay xuống trước ngực (8 px trên chân)
+      const ey = Math.round(y0 + dy * DIST + (dy < 0 ? -14 : -8)), ex = x + side * 2, bt = Math.min(1, Math.max(0, (k - DV0 + 4) / (DVF + 4)));
+      const GU = PL.gkGetUp;
+      if (k >= DV0 - 4 && k < DV0 + DVF + Math.round((GU.land + GU.lie) * 60)) {   // ẩn khi bắt đầu đứng dậy
         const bx = Math.round(ex + side * 40 * (1 - bt)), by = Math.round(ey - (1 - bt) * 4);
         BALL.forEach((rr, j) => { for (let i = 0; i < 5; i++) if (rr[i] !== '.') { c.fillStyle = BC[rr[i]]; c.fillRect(bx - 2 + i, by - 2 + j, 1, 1); } });
       }

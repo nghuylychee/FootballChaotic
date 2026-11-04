@@ -23,39 +23,15 @@ const res = await ev(`(() => {
     K.figure(c, x, FY, face, base(t, st.moving ? { moving: true } : {}), st);
     c.restore();
   }) });
-  // đổ người bắt bóng: 2 người cùng nhìn phải, trái bay lên (chân từ y 58), phải bay xuống phía máy quay (chân từ y 30)
-  const diveRow = { n: Math.round(K.DIVE_CATCH.end * FPS), label: 'diving up the screen, then diving toward the camera', draw: (c, k) => [[28, 0, true, 58], [HALF + 28, HALF, false, 30]].forEach(([x, x0, up, y0]) => {
-    const t = k / FPS;
-    c.save(); c.beginPath(); c.rect(x0, 0, HALF, CH / 2); c.clip();
-    K.diveCatch(c, x, y0, DIRS.side, base(t), t, up);
-    c.restore();
-  }) };
-  // tốc độ đổ người: 3 người nhìn phải bay lên cùng quãng, mỗi người 1/3 ô
-  const speedRow = { n: Math.round(K.DIVE_SPEED.end * FPS), label: 'today, eased in the same time, eased and never faster than today', draw: (c, k) => ['today', 'ease', 'easeSlow'].forEach((mode, i) => {
-    const t = k / FPS, w = CW / 6, x0 = i * w;
-    c.save(); c.beginPath(); c.rect(x0, 0, w, CH / 2); c.clip();
-    K.diveSpeed(c, x0 + w / 2 + 4, 60, DIRS.side, base(t), t, mode);
-    c.restore();
-  }) };
-  // đứng dậy sau khi đổ người: trái bay lên, phải bay xuống phía máy quay
-  const getupRow = { n: Math.round(K.GETUP.end * FPS), label: 'diving up the screen, then diving toward the camera', draw: (c, k) => [[28, 0, true, 58], [HALF + 28, HALF, false, 28]].forEach(([x, x0, up, y0]) => {
-    const t = k / FPS;
-    c.save(); c.beginPath(); c.rect(x0, 0, HALF, CH / 2); c.clip();
-    K.diveGetUp(c, x, y0, DIRS.side, base(t), t, up);
-    c.restore();
-  }) };
   const HOLD = 0.4;
   const ROWS = [
     ['hold', 'G1 · Catch and hold', 'Arms come forward to meet the ball, then pull it into the chest while the knees give a little. He then holds it in both gloves and breathes.', row(K.CATCH.end, (f, t) => K.catchState(f, t))],
-    ['hold', 'G3 · Dive and catch', 'Left: diving up the screen. Right: diving toward the camera. Mid-flight the ball meets his chest and both gloves wrap it, he lands on his side clutching it, then gets up still holding it.', diveRow],
     ['hold', 'G2 · Walking with the ball', 'The ball stays in both gloves while he moves: legs run as today, arms stay locked around the ball.', row(1, (f, t) => Object.assign(K.holdState(K.view(f), t, true), { moving: true }))],
     ['release', 'K1 · Flick and punt (clearance)', 'His left glove flicks the ball up, the right leg cocks back while it drops, then a big swing sends it high. He leans back and hops.', row(HOLD + 0.95, (f, t) => K.releaseState('gkPunt', f, t, HOLD))],
     ['release', 'K2 · Flick and volley (pass)', 'A smaller flick, a short swing at knee height, and the ball goes out flat and fast. No hop.', row(HOLD + 0.75, (f, t) => K.releaseState('gkVolley', f, t, HOLD))],
     ['block', 'B1 · Block, then save', 'A shot straight at him: just before it arrives he spreads both arms up in a V and plants his legs wide, then gathers the ball into his chest and holds it, as in G1.', row(K.BLOCK.end, (f, t) => K.blockState(f, t, 'save'))],
     ['block', 'B2 · Block, then parry', 'Same block. The ball bounces back out off him, forward and up. He holds the spread for a moment, then lowers his arms.', row(K.BLOCK.end, (f, t) => K.blockState(f, t, 'parry'))],
     ['block', 'B3 · Block, then miss', 'Same block. The ball goes straight past him into the goal, passing behind his body. He holds the spread, then recovers.', row(K.BLOCK.end, (f, t) => K.blockState(f, t, 'miss'))],
-    ['speed', 'D · Dive speed', 'The same 34 px dive three ways; white ticks mark takeoff and landing. Left: today, a constant 250 px/s for 0.14 s. Middle (picked): slow at takeoff, fastest halfway, slow at landing, in the same 0.14 s (peaks at 375 px/s). Right: the same curve, never faster than today, so the dive takes 0.20 s.', speedRow],
-    ['speed', 'D2 · Getting up', 'Flies with the picked speed curve. From landing on, every step is a real pose on the pixel grid, with no squash or tilt: slams down and bounces, lies with arms still over his head, gets onto all fours with both gloves planted, pushes up, kneels upright with the gloves on his thighs, crouches, stands. 0.60 s from landing to standing (today 0.22 s, a squash fading back). Left: diving up the screen. Right: diving toward the camera.', getupRow],
   ];
   const N = Math.max(...ROWS.map((r) => r[3].n));
   const img = sheet(N, ROWS.length, CW, CH, (k, r) => (k < ROWS[r][3].n ? [false, (c) => ROWS[r][3].draw(c, k), 0] : null), 0);
@@ -68,7 +44,6 @@ const SEC = {
   hold: ['Holding the ball', 'From the save until he lets go. Today he keeps the ball at his feet like an outfield player.'],
   release: ['Releasing the ball', 'Both start from the hold: the left glove flicks the ball up and the right foot strikes it on the drop. The kick plays the same whether he passes or clears.'],
   block: ['Blocking a straight shot (new)', 'For shots that come straight at him he no longer dives. In the game today a straight save already plays G1, and a straight parry or miss plays nothing special; these rows would fill that gap.'],
-  speed: ['Diving', 'Dive speed changes gameplay as well as the look: how fast the keeper travels during a dive. Getting up is only the look; he can already move again as soon as he lands.'],
 };
 const Z = 3, N = Math.max(...res.rows.map((r) => r.n));
 let body = '';
