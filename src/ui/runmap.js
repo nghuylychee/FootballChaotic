@@ -27,9 +27,9 @@ window.SFC = window.SFC || {};
   const PX = () => SFC.PixelIcon;
   const TEAMS = () => SFC_CONFIG.teams.list;
   const CFG = () => SFC_CONFIG.run;
-  // kích thước map (px trong khung 640x360): khoảng cách cột / tầng, lề
-  // sa bàn chiến thuật (user 2026-10-25): sân dọc, khung thành nhà dưới cùng (tầng 0), boss đứng trong khung thành đối thủ trên cùng
-  const MAP_W = 576, ROW_H = 66, PAD_X = 44, PAD_Y = 50;
+  // lề map (px trong khung 640x360). Sa bàn chiến thuật nằm ngang (UX màn hình, owner 2026-11-05, phương án B; trước đó sân dọc, user 2026-10-25):
+  // khung thành nhà bên trái (chỗ xuất phát), boss đứng trong khung thành đối thủ bên phải, cả act trong 1 khung không cuộn
+  const MAP_PL = 58, MAP_PR = 38, MAP_PY = 26;
   const TEAM_SLOTS = 10;   // màn SQUAD: hàng BADGE của đội tối thiểu ngần này ô (thiếu = ô trống)
   const STRIP_BADGES = 6;  // dải đội hình trên map: hiện tối đa ngần này icon BADGE của đội, dư thì "+n"
   // mép phấn sần (vòng khoanh node): nhiễu nhỏ dời nét đi vài px
@@ -54,7 +54,8 @@ window.SFC = window.SFC || {};
     pages: ['runmap'],
     sel: 0,            // page 'runmap': mục đang chọn (node chọn được trước, rồi tới nút)
     quitArm: false,    // FORFEIT: bấm 2 lần
-    key: null,         // trạng thái đã vẽ (đổi -> cuộn map về chỗ đang đứng)
+    key: null,         // trạng thái đã vẽ (đổi -> chọn lại mục đầu)
+    mapDim: { w: 616, h: 286 },   // cỡ khung map đã dùng để dàn node (bindMap đo khung thật, khác thì vẽ lại)
     scroll: null,      // vị trí cuộn map giữ qua các lần vẽ lại
     bagOpen: false,    // đang xem SQUAD
     pick: null,        // màn BUILD YOUR SQUAD trước run: { me: vị trí của bạn, cands: [m], mates: { vị trí: chỉ số trong cands }, order: [vị trí theo thứ tự chọn] }
@@ -149,7 +150,7 @@ window.SFC = window.SFC || {};
       menu.msg = '';
       menu.go('runmap');
     },
-    reset() { this.sel = 0; this.quitArm = false; this.key = null; this.scroll = null; this.bagOpen = false; this.pick = null; this.drawing = false; },
+    reset() { this.sel = 0; this.quitArm = false; this.key = null; this.bagOpen = false; this.pick = null; this.drawing = false; },
 
     /* ================= page 'runmap' ================= */
     // mục chọn được. Thứ tự che: hết run > thưởng chọn BADGE > phòng (Shop / Locker Room / Skill game / sự kiện) > thẻ mở act > túi đồ > map.
@@ -239,10 +240,8 @@ window.SFC = window.SFC || {};
       const gs = R.offer && R.offer.gear ? [R.offer.sel, R.offer.who].join('.') : '';   // bước chọn GEAR đổi -> chọn lại mục đầu
       const key = [R.act, R.at, R.over, R.won, R.actNew, !!R.offer, R.room && R.room.kind, this.bagOpen, !!R.join, gs].join(':');
       if (this.key !== key) {
-        // trạng thái đổi (vừa xong 1 node / act mới / mở phòng / hết run): chọn mục đầu, cuộn về chỗ đang đứng
-        const mapChanged = !this.key || this.key.split(':').slice(0, 2).join(':') !== key.split(':').slice(0, 2).join(':');
+        // trạng thái đổi (vừa xong 1 node / act mới / mở phòng / hết run): chọn mục đầu
         this.key = key; this.sel = this.firstSel(T); this.quitArm = false;
-        if (mapChanged) this.scroll = null;
       }
       const A = RUN().act(R.act);
       // dải đội hình luôn hiện (kể cả khi nút không chọn được vì đang có thẻ che): bấm = mở SQUAD
@@ -316,26 +315,27 @@ window.SFC = window.SFC || {};
       return '';
     },
 
-    // map: vạch sân + đường nét đứt (SVG) + node (nút). Toạ độ: mỗi tầng dàn đều node theo thứ tự cột trên cả bề ngang
-    // (user 2026-10-25: không dồn 1 bên; giữ thứ tự cột nên đường đi vẫn không cắt nhau), lệch nhẹ jx / jy; tầng f từ dưới lên, boss giữa trên cùng
+    // map: vạch sân + đường nét đứt (SVG) + node (nút). Map ngang (phương án B): tầng f = 1 cột từ trái sang phải, boss giữa mép phải.
+    // Node trong 1 tầng dàn đều từ trên xuống theo thứ tự cột của map (user 2026-10-25: không dồn 1 bên; giữ thứ tự nên đường đi không cắt
+    // nhau), lệch nhẹ jx / jy. Toạ độ theo cỡ khung map thật (this.mapDim)
     pos(n) {
-      const F = CFG().map.floors;
-      if (n.kind === 'boss') return { x: MAP_W / 2, y: PAD_Y };
-      const fl = RUN().run.map.floors[n.f], k = fl.length, i = fl.indexOf(n), slot = (MAP_W - PAD_X * 2) / k;
-      return { x: Math.round(PAD_X + slot * (i + 0.5) + n.jx * 0.3 * Math.min(slot, 140)), y: Math.round(PAD_Y + (F - n.f + n.jy * 0.6) * ROW_H) };
+      const F = CFG().map.floors, { w, h } = this.mapDim, colW = (w - MAP_PL - MAP_PR) / F;
+      if (n.kind === 'boss') return { x: w - MAP_PR, y: Math.round(h / 2) };
+      const fl = RUN().run.map.floors[n.f], k = fl.length, i = fl.indexOf(n), slot = (h - MAP_PY * 2) / k;
+      return { x: Math.round(MAP_PL + (n.f + n.jy * 0.4) * colW), y: Math.round(MAP_PY + slot * (i + 0.5) + n.jx * 0.3 * Math.min(slot, 70)) };
     },
-    // vạch phấn của sân: biên, giữa sân, vòng tròn giữa, vòng cấm + khung thành 2 đầu
+    // vạch phấn của sân ngang: biên, giữa sân, vòng tròn giữa, vòng cấm + khung thành 2 đầu (trái = nhà, phải = boss)
     pitch(w, h) {
-      const m = 14, bw = w * 0.56, gw = w * 0.26, pd = 92, gd = 34, goal = 88;
-      const end = (top) => {
-        const y = top ? m : h - m, d = top ? 1 : -1;
-        return `<path d="M${(w - bw) / 2} ${y} v${d * pd} h${bw} v${-d * pd}"/><path d="M${(w - gw) / 2} ${y} v${d * gd} h${gw} v${-d * gd}"/>
-          <circle cx="${w / 2}" cy="${y + d * (pd - 22)}" r="2" class="dot"/>
-          <path d="M${w / 2 - 34} ${y + d * pd} A 40 40 0 0 ${top ? 0 : 1} ${w / 2 + 34} ${y + d * pd}"/>
-          <rect class="goal" x="${(w - goal) / 2}" y="${top ? y - 10 : y}" width="${goal}" height="10"/>`;
+      const m = 10, bh = h * 0.56, gh = h * 0.26, pd = 70, gd = 26, goal = 64;
+      const end = (left) => {
+        const x = left ? m : w - m, d = left ? 1 : -1;
+        return `<path d="M${x} ${(h - bh) / 2} h${d * pd} v${bh} h${-d * pd}"/><path d="M${x} ${(h - gh) / 2} h${d * gd} v${gh} h${-d * gd}"/>
+          <circle cx="${x + d * (pd - 18)}" cy="${h / 2}" r="2" class="dot"/>
+          <path d="M${x + d * pd} ${h / 2 - 30} A 36 36 0 0 ${left ? 1 : 0} ${x + d * pd} ${h / 2 + 30}"/>
+          <rect class="goal" x="${left ? x - 8 : x}" y="${(h - goal) / 2}" width="8" height="${goal}"/>`;
       };
       return `<g class="rm-pitch"><rect x="${m}" y="${m}" width="${w - m * 2}" height="${h - m * 2}"/>
-          <line x1="${m}" y1="${h / 2}" x2="${w - m}" y2="${h / 2}"/><circle cx="${w / 2}" cy="${h / 2}" r="52"/><circle cx="${w / 2}" cy="${h / 2}" r="2" class="dot"/>
+          <line x1="${w / 2}" y1="${m}" x2="${w / 2}" y2="${h - m}"/><circle cx="${w / 2}" cy="${h / 2}" r="${Math.round(h * 0.15)}"/><circle cx="${w / 2}" cy="${h / 2}" r="2" class="dot"/>
           ${end(true)}${end(false)}</g>`;
     },
     // KHOANH PHẤN (user 2026-10-29): chọn node = 1 vòng phấn tay vẽ quanh node rồi mới đi. Nét: hơi méo, xoắn ra 1 chút để điểm cuối
@@ -355,7 +355,7 @@ window.SFC = window.SFC || {};
     },
     // 2 nét chồng nhau (nét chính + nét mảnh lệch) = vệt phấn không đều; filter #rmChalk làm sần mép (khai báo trong svg của map)
     chalkRing(n, seed, cls = '') {
-      const p = this.pos(n), r = (n.kind === 'boss' ? 25 : 17) + 11;
+      const p = this.pos(n), r = (n.kind === 'boss' ? 20 : 14) + 9;
       return `<g class="rm-ring ${cls}"><path pathLength="1" d="${this.chalkPath(p.x, p.y, r, seed)}"/><path pathLength="1" class="thin" d="${this.chalkPath(p.x + 1.5, p.y - 1, r - 2, seed)}"/></g>`;
     },
     chalk(menu, id, done) {
@@ -378,41 +378,48 @@ window.SFC = window.SFC || {};
       }).join('');
       return `<div class="rm-legend">${items}</div>`;
     },
+    // trạng thái node (UX màn hình, owner 2026-11-05) mang bằng độ sáng, nheo mắt / ảnh xám vẫn đọc được: avail = sáng nhất, viền vàng dày,
+    // đường từ chỗ bạn tới vàng liền · fut = còn tới được, giảm sáng một nửa · dead = không còn đường tới (tầng đã qua, nhánh bỏ lại) -> chìm hẳn
+    // · done = đã đi: nền tối viền xám + dấu ✓ phấn (không dùng màu act: act 1 / 3 vàng gần trùng màu node đi được) · at = đang đứng
     mapHtml(R, T) {
-      const M = R.map, F = CFG().map.floors;
-      const all = M.floors.flat().concat([M.boss]);
+      const M = R.map, { w: width, h: height } = this.mapDim;
+      const all = M.floors.flat().concat([M.boss]), byId = new Map(all.map((n) => [n.id, n]));
       const avail = new Set(T.filter((t) => t.k === 'node').map((t) => t.id)), done = new Set(R.path);
-      const width = MAP_W, height = PAD_Y * 2 + F * ROW_H;
+      const reach = new Set(), todo = !RUN().active() ? [] : R.at ? byId.get(R.at).next.slice() : M.floors[0].map((n) => n.id);
+      while (todo.length) { const id = todo.pop(); if (!reach.has(id) && byId.has(id)) { reach.add(id); todo.push(...byId.get(id).next); } }
+      const state = (n) => (n.id === R.at ? 'at' : done.has(n.id) ? 'done' : avail.has(n.id) ? 'avail' : reach.has(n.id) ? 'fut' : 'dead');
+      const line = (a, b, cls) => `<line class="${cls}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;
+      // dấu BẠN: mặt nhân vật của bạn (đứng yên) + YOU dưới node đang đứng; chưa đi node nào: trong khung thành nhà bên trái
+      const atN = R.at && byId.get(R.at), home = { x: 24, y: Math.round(height / 2) }, yp = atN ? this.pos(atN) : home;
       const lines = [];
       for (const n of all) for (const id of n.next) {
-        const m = id === 'boss' ? M.boss : all.find((x) => x.id === id), a = this.pos(n), b = this.pos(m);
-        const cls = done.has(n.id) && done.has(m.id) ? 'done' : n.id === R.at && avail.has(m.id) ? 'next' : '';
-        lines.push(`<line class="${cls}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`);
+        const m = byId.get(id), sa = state(n), sb = state(m);
+        const cls = done.has(n.id) && done.has(m.id) ? 'done' : n.id === R.at && sb === 'avail' ? 'next' : (sa === 'at' || sa === 'avail' || sa === 'fut') && sb !== 'dead' ? '' : 'dead';
+        lines.push(line(this.pos(n), this.pos(m), cls));
       }
-      const atF = R.at ? RUN().find(R.at).f : -1;
+      if (!atN) M.floors[0].forEach((n) => { if (avail.has(n.id)) lines.push(line(home, this.pos(n), 'next')); });
       const sel = T[this.sel];
       const last = R.log[R.log.length - 1];
       // ??? đã vào: icon theo thứ đã gặp (sự kiện / rương / Skill game / Shop)
       const GOT = { event: 'unknown', treasure: 'gift', skill: 'cone', shop: 'shop' };
       // trận: chỉ hiện loại node, đối thủ biết khi vào trận (boss đã lộ ở thẻ mở act)
       const nodes = all.map((n) => {
-        const N = RUN().node(n.kind), p = this.pos(n), boss = n.kind === 'boss';
-        const st = n.id === R.at ? 'at' : done.has(n.id) ? 'done' : avail.has(n.id) ? 'avail' : n.f <= atF ? 'past' : '';
+        const N = RUN().node(n.kind), p = this.pos(n), boss = n.kind === 'boss', st = state(n);
         const lost = R.over && !R.forfeit && last && last.act === R.act && last.node === n.id && last.kind !== 'skill';
-        // LEGEND TRIAL: chân dung LEGEND đang chờ (màu LEGEND) + sao
+        // LEGEND TRIAL: viền cam như bảng chú thích; màu riêng của LEGEND chỉ còn ở nền chân dung bên trong (--lc)
         const L = n.kind === 'legend' && RUN().legend(n.legend);
         const icon = boss ? `<canvas data-team="${n.team}" data-idx="2"></canvas>` : L ? this.face(SFC.LegendDraw.lookOf(L), false) : PX().ui(n.got ? GOT[n.got] : N.icon, 'x2');
         const tag = boss ? `<i class="rm-crown">${PX().ui('crown', 'sm')}</i>` : L ? `<i class="rm-crown">${PX().ui('star', 'sm')}</i>` : '';
-        // node đi được: nhãn tên loại node, chỉ hiện khi đang chọn (UX user-02: + mũi tên nhún trên đầu, vòng sáng nhấp nháy)
+        // node đi được: nhãn tên loại node phía trên, chỉ hiện khi đang chọn (không đè chỗ bạn đứng ở cột trước)
         const name = st === 'avail' ? `<em class="rm-tip">${esc(N.name)}</em>` : '';
         return `<button class="rm-node k-${n.kind} ${st} ${lost ? 'lost' : ''} ${sel && sel.id === n.id ? 'sel' : ''}" ${L ? `title="${esc(L.name + ' · ' + L.title + ' · ' + L.role)}"` : ''}
-            data-rn="${n.id}" style="left:${p.x}px;top:${p.y}px;--nc:${L ? L.color : N.color}">${icon}${tag}${this.votes(R, 'node', n.id)}${name}</button>`;
+            data-rn="${n.id}" style="left:${p.x}px;top:${p.y}px;--nc:${N.color}${L ? `;--lc:${L.color}` : ''}">${icon}${tag}${st === 'done' ? '<i class="rm-tick"></i>' : ''}${this.votes(R, 'node', n.id)}${name}</button>`;
       }).join('');
-      // dấu ▲ (kèm vương miện boss) / ▼ dính mép trên / dưới khung map, hiện khi phía đó còn khuất (bindMap bật lớp more-up / more-dn), bấm = cuộn
-      return `<div class="rm-more up"><i data-mapscroll="-1"><b></b>${PX().ui('crown', 'sm')}</i></div>
-        <div class="rm-inner" style="width:${width}px;height:${height}px">
-          <svg class="rm-lines" width="${width}" height="${height}">${CHALK_DEFS}${this.pitch(width, height)}${lines.join('')}${R.at ? this.chalkRing(RUN().find(R.at), R.at) : ''}</svg>${nodes}
-        </div><div class="rm-more dn"><i data-mapscroll="1"><b></b></i></div>`;
+      const me = RUN().seatOf(RUN().myKey(), R), face = me >= 0 ? this.face(RUN().memberLook(me, R), false, true) : this.face(null, true);
+      const you = `<span class="rm-you ${atN ? '' : 'home'} ${atN && atN.kind === 'boss' ? 'boss' : ''}" style="left:${yp.x}px;top:${yp.y}px">${face}<b>${esc(_t('YOU'))}</b></span>`;
+      return `<div class="rm-inner" style="width:${width}px;height:${height}px">
+          <svg class="rm-lines" width="${width}" height="${height}">${CHALK_DEFS}${this.pitch(width, height)}${lines.join('')}${atN ? this.chalkRing(atN, R.at) : ''}</svg>${nodes}${you}
+        </div>`;
     },
 
     /* ---------- BADGE: thẻ + chip hiệu lực (icon + số, không câu dài — ui-image-first) ---------- */
@@ -1328,28 +1335,28 @@ window.SFC = window.SFC || {};
       app.screen = 'menu';
       if (SFC.Menu.page === 'runmap') SFC.Menu.render();
     },
-    // sau khi vẽ: giữ / đặt vị trí cuộn (cuộn bằng lăn chuột, không hiện thanh cuộn)
+    // sau khi vẽ: map ngang không cuộn (phương án B) -> đo khung map thật; khác cỡ đã dùng để dàn node thì vẽ lại map cho khớp
+    // (lần đầu vào, đổi cỡ cửa sổ: ResizeObserver vẽ lại cả màn)
     bindMap(menu) {
-      const box = menu.el.querySelector('.rm-map');
-      if (!box) return;
-      if (this.scroll != null) box.scrollTop = this.scroll;
-      else box.scrollTop = this.homeScroll(box);
-      // đang cuộn mượt bằng phím (mapStep) mà màn bị vẽ lại: cuộn tiếp tới đích
-      if (this.mapGoal != null && performance.now() - this.mapGoalT < 500) box.scrollTo({ top: this.mapGoal, behavior: 'smooth' });
-      // dấu ▲ / ▼ ở mép khung map khi phía trên / dưới còn bị khuất (UX run-02)
-      const more = () => {
-        box.classList.toggle('more-up', box.scrollTop > 6);
-        box.classList.toggle('more-dn', box.scrollTop < box.scrollHeight - box.clientHeight - 6);
-      };
-      more();
-      box.addEventListener('scroll', () => { this.scroll = box.scrollTop; more(); });
+      const box = menu.el.querySelector('.rm-map'), R = RUN().run;
+      if (!box || !R) return;
+      const off = () => Math.abs(box.clientWidth - this.mapDim.w) > 1 || Math.abs(box.clientHeight - this.mapDim.h) > 1;
+      if (box.clientWidth > 0 && box.clientHeight > 0 && off()) {
+        this.mapDim = { w: box.clientWidth, h: box.clientHeight };
+        box.innerHTML = this.mapHtml(R, this.targets());
+      }
+      if (this.mapObs) this.mapObs.disconnect();
+      if (window.ResizeObserver) {
+        this.mapObs = new ResizeObserver(() => { if (box.isConnected && menu.page === 'runmap' && box.clientWidth > 0 && off()) menu.render(); });
+        this.mapObs.observe(box);
+      }
       // rê chuột lên node đi được = dời đúng mục đang chọn (UX user-02: chuột và phím chung 1 dấu chọn, không có dấu hover riêng).
       // Chỉ tính khi chuột thật sự dời (vẽ lại màn dưới con trỏ đứng yên cũng bắn sự kiện chuột -> phím không đi được)
       box.querySelectorAll('.rm-node.avail').forEach((el) => el.addEventListener('mousemove', (e) => {
         if (SFC.UIHelpers.realMove(e)) this.hoverNode(menu, el.dataset.rn);
       }));
     },
-    // đổi dấu chọn tại chỗ (không vẽ lại cả màn: giữ canvas mặt cầu thủ + vị trí cuộn)
+    // đổi dấu chọn tại chỗ (không vẽ lại cả màn: giữ canvas mặt cầu thủ)
     hoverNode(menu, id) {
       const T = this.targets(), i = T.findIndex((t) => t.k === 'node' && t.id === id);
       if (i < 0 || i === this.sel || this.drawing) return;
@@ -1358,48 +1365,8 @@ window.SFC = window.SFC || {};
       const el = menu.el.querySelector(`.rm-node[data-rn="${id}"]`);
       if (el) el.classList.add('sel');
     },
-    // vị trí cuộn mặc định: node đang đứng (chưa đi node nào: tầng đầu) ở khoảng 70% chiều cao khung
-    homeScroll(box) {
-      const R = RUN().run, n = R.at ? RUN().find(R.at) : R.map.floors[0][0];
-      return Math.max(0, Math.min(box.scrollHeight - box.clientHeight, this.pos(n).y - box.clientHeight * 0.7));
-    },
-    // ↑ / ↓ trên hàng node (UX run-02: trước đây chỉ lăn chuột mới xem được đường tới boss): ↑ cuộn map lên 1 tầng tới đỉnh.
-    // ↓ cuộn ngược về khi node đang chọn còn khuất dưới khung; về tới nơi thì ↓ xuống dải đội hình như cũ. true = đã cuộn
-    mapStep(menu, dir) {
-      const box = menu.el.querySelector('.rm-map'), el = box && box.querySelector('.rm-node.sel');
-      if (!box) return false;
-      const h = box.clientHeight, max = box.scrollHeight - h, now = performance.now();
-      const base = this.mapGoal != null && now - this.mapGoalT < 500 ? this.mapGoal : box.scrollTop;   // bấm liên tục: tính từ đích đang cuộn tới
-      let top;
-      if (dir < 0) {
-        if (base <= 0) return false;
-        top = Math.max(0, base - ROW_H);
-      } else {
-        if (!el) return false;
-        const want = Math.min(max, Math.max(0, el.offsetTop - h * 0.6));   // chỗ reveal() đặt node đang chọn
-        if (el.offsetTop <= base + h - 40 || base >= want) return false;
-        top = Math.min(want, base + ROW_H);
-      }
-      this.mapGoal = top; this.mapGoalT = now;
-      box.scrollTo({ top, behavior: 'smooth' });
-      return true;
-    },
-    // bấm dấu ▲ = cuộn lên đỉnh (boss) · ▼ = về chỗ đang đứng (đã ở đó: xuống đáy)
-    mapJump(menu, dir) {
-      const box = menu.el.querySelector('.rm-map');
-      if (!box) return;
-      const home = this.homeScroll(box), top = dir < 0 ? 0 : home > box.scrollTop + 4 ? home : box.scrollHeight - box.clientHeight;
-      this.mapGoal = top; this.mapGoalT = performance.now();
-      SFC.Audio.menu();
-      box.scrollTo({ top, behavior: 'smooth' });
-    },
-    // phím: giữ mục đang chọn trong khung nhìn (node trên map / thẻ trong khung cuộn)
+    // phím: giữ thẻ đang chọn trong khung cuộn (map không cuộn nữa)
     reveal(menu) {
-      const box = menu.el.querySelector('.rm-map'), el = box && box.querySelector('.rm-node.sel');
-      if (el) {
-        const y = el.offsetTop, h = box.clientHeight;
-        if (y < box.scrollTop + 40 || y > box.scrollTop + h - 40) { box.scrollTop = Math.max(0, y - h * 0.6); this.scroll = box.scrollTop; }
-      }
       const card = menu.el.querySelector('.bd-scroll .sel');
       if (card) card.scrollIntoView({ block: 'nearest' });
     },
@@ -1559,22 +1526,20 @@ window.SFC = window.SFC || {};
       const T = this.targets(), n = T.length;
       if (!n || this.drawing) return;
       const nNode = T.filter((t) => t.k === 'node').length, onNode = this.sel < nNode;
-      // cần phải tay cầm: cuộn map (UX run-02)
-      const box = nNode && menu.el.querySelector('.rm-map'), ry = SFC.Pad ? SFC.Pad.rstickY : 0;
-      if (box && ry) { box.scrollTop += ry * 6; this.mapGoal = null; }
       for (const d of ['left', 'right', 'up', 'down']) {
         if (!input.wasPressed(d)) continue;
         if (this.sel < 0) { this.sel = 0; SFC.Audio.menu(); return menu.render(); }   // chưa chọn gì (firstSel): mũi tên đầu tiên vào nút đầu
         if (nNode) {
-          // map: ←→ đi trong hàng (node / nút) · ↑ / ↓ trên hàng node: cuộn map (mapStep), hết cuộn thì ↓ xuống nút · ↑ ở nút: về node
-          if ((d === 'up' || d === 'down') && onNode && this.mapStep(menu, d === 'up' ? -1 : 1)) return SFC.Audio.menu();
-          if (d === 'left' || d === 'right') {
-            const lo = onNode ? 0 : nNode, len = onNode ? nNode : n - nNode;
-            if (len > 0) this.sel = lo + ((this.sel - lo + (d === 'left' ? len - 1 : 1)) % len);
-            this.mapGoal = null;
-          } else if (d === 'up' && onNode) return;   // đã ở đỉnh map
-          else if (d === 'down' && onNode && n > nNode) this.sel = nNode;
-          else if (d === 'up' && !onNode) this.sel = 0;
+          // map ngang (phương án B): node đi được luôn nằm chung 1 cột -> ↑ / ↓ đi giữa chúng theo thứ tự trên -> dưới, ↑ ở node trên cùng
+          // lên thanh trên (dải đội hình / nút phòng), ←→ cũng đi vòng giữa các node (không có phím chết) · ở thanh trên: ←→ đi giữa các nút, ↓ về node
+          const ord = T.slice(0, nNode).map((t, i) => i).sort((a, b) => this.pos(RUN().find(T[a].id)).y - this.pos(RUN().find(T[b].id)).y), k = ord.indexOf(this.sel);
+          if (onNode) {
+            if (d === 'up' && k === 0) { if (n === nNode) return; this.sel = nNode; }
+            else if (d === 'up' || d === 'down') { const j = k + (d === 'up' ? -1 : 1); if (j >= nNode) return; this.sel = ord[j]; }
+            else this.sel = ord[(k + (d === 'left' ? nNode - 1 : 1)) % nNode];
+          } else if (d === 'down') this.sel = ord[0];
+          else if (d === 'left' || d === 'right') { const len = n - nNode; this.sel = nNode + ((this.sel - nNode + (d === 'left' ? len - 1 : 1)) % len); }
+          else return;
         } else if (!R0() || T[0].k === 'close') {
           // chưa có run (BUILD YOUR SQUAD / khách chờ host) · SQUAD (CLOSE ↔ BADGE / GEAR / LEGEND): ←↑↓→ đi theo vị trí trên màn hình
           const rect = (t) => SFC.UIHelpers.navRect(menu.el.querySelector(`[data-rt="${t.key}"]`)), cur = rect(T[this.sel]);
@@ -1623,8 +1588,6 @@ window.SFC = window.SFC || {};
     },
     click(menu, e) {
       const T = this.targets();
-      const ms = e.target.closest('[data-mapscroll]');   // dấu ▲ / ▼ ở mép khung map
-      if (ms) { this.mapJump(menu, +ms.dataset.mapscroll); return true; }
       const nb = e.target.closest('[data-rn]');
       if (nb) {
         const i = T.findIndex((t) => t.k === 'node' && t.id === nb.dataset.rn);

@@ -3014,65 +3014,63 @@ button.eq-row:hover b { color: var(--gold); }
 .rm-head u i.done { background: var(--c); opacity: 0.45; }
 .rm-head b { font-family: var(--px); font-size: 11px; font-weight: normal; color: var(--ac); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--ink); }
 .rm-acts { display: flex; gap: 8px; align-items: center; }
-/* map rộng hết màn, cuộn dọc bằng lăn chuột / phím, không hiện thanh cuộn (user 2026-10-25)
-   sa bàn chiến thuật: mặt cỏ sọc (cuộn theo nội dung), khung nhôm, vạch phấn, node như nam châm */
-.rm-map { position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
-  background: repeating-linear-gradient(180deg, #24603a 0 33px, #1f5734 33px 66px); background-attachment: local;
+/* map rộng hết màn, sân nằm ngang cả act trong 1 khung, không cuộn (UX màn hình, owner 2026-11-05, phương án B)
+   sa bàn chiến thuật: mặt cỏ sọc dọc như sân trong trận, khung nhôm, vạch phấn, node như nam châm */
+.rm-map { position: relative; flex: 1; min-height: 0; overflow: hidden;
+  background: repeating-linear-gradient(90deg, #24603a 0 38px, #1f5734 38px 76px);
   border: 4px solid #aeb5c2; border-top-color: #d5dae3; border-left-color: #c3c9d4; border-bottom-color: #7d8494; border-right-color: #8e95a4;
   box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.45), 3px 3px 0 var(--ink); }
-.rm-map::-webkit-scrollbar { display: none; }
 /* chú thích loại node dưới map: icon trong ô viền màu node + tên */
 .rm-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; padding: 1px 0 2px; }
 .rm-lg { display: inline-flex; align-items: center; gap: 3px; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: #c7ccd6; }
 .rm-lg i { display: flex; align-items: center; justify-content: center; width: 13px; height: 13px; border: 1px solid var(--nc); background: #1a1c22; border-radius: 50%; }
 .rm-lg .pxi { width: 9px; height: 9px; vertical-align: 0; }
 .rm-inner { position: relative; margin: 0 auto; }
-/* dấu còn map phía trên / dưới (UX run-02): dính mép khung map (sticky, cao 0 nên không đổi bố cục), bấm = cuộn */
-.rm-more { position: sticky; z-index: 4; height: 0; display: none; }
-.rm-more.up { top: 0; }
-.rm-more.dn { bottom: 0; }
-.rm-map.more-up .rm-more.up, .rm-map.more-dn .rm-more.dn { display: block; }
-.rm-more i { position: absolute; left: 0; right: 0; width: max-content; margin: 0 auto; display: flex; align-items: center; gap: 3px; padding: 2px 6px;
-  background: #121316; border: 1px solid var(--gold); box-shadow: 1px 1px 0 var(--ink); cursor: pointer; animation: rdBob 0.8s steps(2) infinite; }
-.rm-more.up i { top: 3px; }
-.rm-more.dn i { bottom: 3px; }
-.rm-more b { width: 0; height: 0; border: 5px solid transparent; }
-.rm-more.up b { border-top: 0; border-bottom: 6px solid var(--gold); }
-.rm-more.dn b { border-bottom: 0; border-top: 6px solid var(--gold); }
-.rm-map { isolation: isolate; }   /* lớp xếp riêng: dấu ▲ / ▼ và node đang chọn không nổi lên trên thẻ che map */
-.rm-page:has(.rm-actcard) .rm-map .rm-more { display: none; }   /* thẻ che map đang mở: không hiện dấu ▲ / ▼ */
+.rm-map { isolation: isolate; }   /* lớp xếp riêng: node đang chọn không nổi lên trên thẻ che map */
 .rm-lines { position: absolute; left: 0; top: 0; pointer-events: none; }
-.rm-pitch * { fill: none; stroke: rgba(255, 255, 255, 0.28); stroke-width: 2; }
-.rm-pitch .dot { fill: rgba(255, 255, 255, 0.35); stroke: none; }
-.rm-pitch .goal { fill: rgba(255, 255, 255, 0.08); stroke: rgba(255, 255, 255, 0.4); }
-.rm-lines > line { stroke: rgba(255, 255, 255, 0.55); stroke-width: 2; stroke-dasharray: 5 5; stroke-linecap: round; }
-.rm-lines > line.done { stroke: var(--ac); stroke-width: 3; stroke-dasharray: none; }
-.rm-lines > line.next { stroke: var(--gold); stroke-width: 3; }
-.rm-node { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; padding: 0; display: flex; align-items: center; justify-content: center;
+.rm-pitch * { fill: none; stroke: rgba(255, 255, 255, 0.16); stroke-width: 2; }   /* vạch sân mờ hơn đường đi */
+.rm-pitch .dot { fill: rgba(255, 255, 255, 0.2); stroke: none; }
+.rm-pitch .goal { fill: rgba(255, 255, 255, 0.06); stroke: rgba(255, 255, 255, 0.3); }
+/* đường đi (UX màn hình 2026-11-05): còn đi được = nét đứt sáng hơn vạch sân · đã đi = phấn trắng liền · từ chỗ bạn tới node đi được = vàng liền
+   · không còn đường tới = gần như mất */
+.rm-lines > line { stroke: rgba(255, 255, 255, 0.6); stroke-width: 2; stroke-dasharray: 5 5; stroke-linecap: round; }
+.rm-lines > line.done { stroke: rgba(255, 255, 255, 0.75); stroke-width: 3; stroke-dasharray: none; }
+.rm-lines > line.next { stroke: var(--gold); stroke-width: 3; stroke-dasharray: none; }
+.rm-lines > line.dead { stroke: rgba(255, 255, 255, 0.1); stroke-width: 1.5; }
+.rm-node { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; padding: 0; display: flex; align-items: center; justify-content: center;
   background: radial-gradient(circle at 35% 30%, #3a404d, #14161c 70%); border: 2px solid color-mix(in srgb, var(--nc) 55%, #14161c);
   border-radius: 50%; box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.5); cursor: default; }
-.rm-node .pxi { filter: grayscale(0.4) brightness(0.85); }
-.rm-node.k-boss { width: 50px; height: 50px; margin: -25px 0 0 -25px; border-color: var(--nc); background: #2a2010; }
-.rm-node.k-boss canvas { width: 36px; height: 40px; image-rendering: pixelated; margin-top: 2px; }
+.rm-node .pxi { width: 20px; height: 20px; filter: grayscale(0.4) brightness(0.85); }
+.rm-node.k-boss { width: 40px; height: 40px; margin: -20px 0 0 -20px; border-color: var(--nc); background: #2a2010; }
+.rm-node.k-boss canvas { width: 30px; height: 33px; image-rendering: pixelated; margin-top: 2px; }
 .rm-crown { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); }
-.rm-node.past { opacity: 0.45; }
-.rm-node.done { background: #232833; border-color: var(--ac); }
-.rm-node.done .pxi { filter: none; opacity: 0.7; }
-.rm-node.at { border-color: #fff; background: #2a3040; box-shadow: 0 0 0 2px var(--ac), 1px 1px 0 var(--ink); }
+.rm-crown .pxi { width: 11px; height: 11px; }
+/* trạng thái mang bằng độ sáng (còn nguyên khi nheo mắt / ảnh xám): còn tới được = tối một nửa · hết đường tới = chìm hẳn */
+.rm-node.fut { filter: brightness(0.55) saturate(0.7); }
+.rm-node.dead { opacity: 0.22; filter: grayscale(1); }
+.rm-node.done { background: #1b1e25; border-color: #6a7080; }
+.rm-node.done .pxi, .rm-node.done canvas { filter: grayscale(0.7); opacity: 0.55; }
+/* dấu ✓ phấn trên node đã đi */
+.rm-tick { position: absolute; right: -3px; top: -4px; width: 5px; height: 10px; border: solid rgba(255, 255, 255, 0.9); border-width: 0 3px 3px 0; transform: rotate(40deg); }
+.rm-node.at { border-color: #fff; background: #2a3040; box-shadow: 1px 1px 0 var(--ink); }
 .rm-node.at .pxi { filter: none; }
-/* node đi được = vòng vàng đứng yên · node đang chọn (phím hoặc rê chuột, UX user-02) = to hơn, vòng trắng + vàng nhấp nháy,
-   mũi tên nhún trên đầu, nhãn tên loại node bên dưới */
-.rm-node.avail { border-color: var(--gold); cursor: pointer; }
+/* node đi được: nền sáng, viền vàng dày · node đang chọn (phím hoặc rê chuột, UX user-02) = to hơn, vòng trắng + vàng nhấp nháy,
+   nhãn tên loại node phía trên (không đè dấu BẠN ở cột trước) */
+.rm-node.avail { border: 3px solid var(--gold); background: radial-gradient(circle at 35% 30%, #6a6f80, #2a2d36 70%); cursor: pointer; box-shadow: 0 0 0 1px var(--ink), 2px 3px 0 rgba(0, 0, 0, 0.5); }
 .rm-node.avail .pxi { filter: none; }
-.rm-node.sel { z-index: 2; transform: scale(1.18); background: #3a3310; border-color: #fff; box-shadow: 0 0 0 2px var(--gold), 0 0 0 3px var(--ink), 2px 3px 0 rgba(0, 0, 0, 0.5); animation: rmSel 0.8s steps(2) infinite; }
+.rm-node.sel { z-index: 2; transform: scale(1.2); background: #3a3310; border-color: #fff; box-shadow: 0 0 0 2px var(--gold), 0 0 0 3px var(--ink), 2px 3px 0 rgba(0, 0, 0, 0.5); animation: rmSel 0.8s steps(2) infinite; }
 @keyframes rmSel { 50% { border-color: var(--gold); box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--ink), 2px 3px 0 rgba(0, 0, 0, 0.5); } }
-.rm-node.sel::before, .rm-node.sel::after { content: ""; position: absolute; left: 50%; border-style: solid; border-color: transparent; border-bottom: 0; animation: rdBob 0.6s steps(2) infinite; pointer-events: none; }
-.rm-node.sel::before { bottom: calc(100% + 9px); margin-left: -7px; border-width: 8px 7px 0; border-top-color: var(--ink); }
-.rm-node.sel::after { bottom: calc(100% + 11px); margin-left: -5px; border-width: 5px 5px 0; border-top-color: var(--gold); }
-.rm-tip { display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; font-style: normal; font-family: var(--px);
+.rm-tip { display: none; position: absolute; bottom: calc(100% + 11px); left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; font-style: normal; font-family: var(--px);
   font-size: 6px; letter-spacing: 1px; line-height: 1; color: var(--ink); background: var(--gold); padding: 3px 4px 2px; border: 1px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); }
+.rm-tip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -3px; border: 3px solid transparent; border-top-color: var(--ink); }
 .rm-node.sel .rm-tip { display: block; }
-.rm-node.lost { border-color: #ff5a6e; background: #3a1018; opacity: 1; }
+.rm-node.lost { border-color: #ff5a6e; background: #3a1018; opacity: 1; filter: none; }
+/* dấu BẠN: mặt nhân vật đứng yên + YOU ngay dưới node đang đứng (chưa đi node nào: trong khung thành nhà bên trái) */
+.rm-you { position: absolute; z-index: 1; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, 15px); pointer-events: none; }
+.rm-you.boss { transform: translate(-50%, 21px); }
+.rm-you.home { transform: translate(-50%, -50%); }
+.rm-you canvas { width: 22px; height: 24px; image-rendering: pixelated; margin: -4px 0 -3px; }
+.rm-you b { font-family: var(--px); font-size: 5px; font-weight: normal; letter-spacing: 1px; line-height: 1; color: var(--ink); background: #fff; padding: 2px 2px 1px; box-shadow: 1px 1px 0 var(--ink); }
 /* khoanh phấn (user 2026-10-29): vòng cố định quanh node đang đứng · vòng vẽ dần khi vừa chọn node (svg phủ trên node) */
 .rm-ring path { fill: none; stroke: rgba(255, 255, 255, 0.88); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; filter: url(#rmChalk); }
 .rm-ring path.thin { stroke: rgba(255, 255, 255, 0.45); stroke-width: 1.6; }
@@ -3325,9 +3323,9 @@ button.sq-card.sel { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink)
 .lg-stamp .lg-combo { box-shadow: 3px 3px 0 var(--ink), 0 0 12px color-mix(in srgb, var(--lc) 70%, transparent); }
 .lg-stamp > em { font-style: normal; font-family: var(--px); font-size: 6px; color: #111; background: var(--lc); padding: 2px 4px 1px; letter-spacing: 2px; }
 @keyframes lgStamp { from { transform: translate(-50%, -50%) rotate(-6deg) scale(2.6); opacity: 0; } to { transform: translate(-50%, -50%) rotate(-6deg) scale(1); opacity: 1; } }
-.rm-node.k-legend { border-color: var(--nc); background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--nc) 35%, #3a404d), #14161c 70%); overflow: visible; }
-.rm-node.k-legend canvas { width: 24px; height: 26px; image-rendering: pixelated; margin-top: 3px; }
-.rm-node.k-legend.past canvas, .rm-node.k-legend.done canvas { filter: grayscale(0.6); }
+.rm-node.k-legend { border-color: var(--nc); background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--lc, var(--nc)) 35%, #3a404d), #14161c 70%); overflow: visible; }
+.rm-node.k-legend.avail { border-color: var(--gold); }
+.rm-node.k-legend canvas { width: 20px; height: 22px; image-rendering: pixelated; margin-top: 3px; }
 .bd-who { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); text-decoration: none; font-family: var(--px); font-size: 5px; padding: 2px 4px; white-space: nowrap;
   color: #fff; background: #2a3040; border: 1px solid var(--edge); }
 .pk-page { gap: 8px; }
