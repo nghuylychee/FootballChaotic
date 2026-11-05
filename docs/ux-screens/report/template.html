@@ -177,6 +177,7 @@ table.sum { min-width: 640px; } table.sum td:first-child { color: var(--muted); 
 .evpic { display: flex; flex-direction: column; gap: 6px; }
 .evpic img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; image-rendering: pixelated; border-radius: 4px; border: 1px solid var(--line); background: #120c16; }
 .evpic .seg { flex-wrap: wrap; }
+.cxpic img { aspect-ratio: 16 / 9; max-width: 900px; }
 .evs .fmt b { color: var(--fg); }
 .jr { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
 .steps { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: 13px; margin: 6px 0; }
@@ -259,6 +260,7 @@ footer.next ul { margin: 8px 0 0; padding-left: 1.2em; }
 
   <div id="screens" class="stack" style="gap:64px"></div>
 
+  <section class="stack" id="crosscut" aria-labelledby="cx-h"></section>
   <section class="stack" id="evscenes" aria-labelledby="ev-h"></section>
   <section class="stack" id="journeys" aria-labelledby="j-h"></section>
 
@@ -389,6 +391,35 @@ document.getElementById('sumchips').innerHTML = `<span class="chip acc">${DATA.s
   <span class="chip">${all.filter((f) => f.sev === 'nặng').length} nặng</span><span class="chip">${byLv('tổ chức lại')} màn nên tổ chức lại</span>
   <span class="chip">${byLv('chỉnh')} màn cần chỉnh</span><span class="chip">${byLv('ổn')} màn ổn</span><span class="chip">${DATA.screens.filter((S) => S.done && S.states.some((s) => s.after)).length} màn đã sửa code</span>`;
 
+// vấn đề chung nhiều màn (crosscut.json): mô tả + ảnh trước / sau theo từng màn + ô góp ý (doc id = id vấn đề)
+if (DATA.crosscut && DATA.crosscut.items.length) {
+  const C = DATA.crosscut.items;
+  document.getElementById('crosscut').innerHTML = `<h2 id="cx-h">Vấn đề chung nhiều màn</h2>` + C.map((it) => `<div class="box stack cx" data-cx="${esc(it.id)}">
+      <h3>${esc(it.title)}</h3><p class="muted" style="font-size:13.5px">${esc(it.from)}</p>
+      <p><b>Vấn đề.</b> ${esc(it.problem)}</p>
+      <div><b>Đã thử (đã sửa code, nhánh ux/screens-2026-11).</b><ul>${it.fix.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
+      ${it.alt ? `<p class="muted" style="font-size:13.5px">${esc(it.alt)}</p>` : ''}
+      <div class="evpic cxpic"><img src="${esc(it.shots[0].after)}" alt="${esc(it.shots[0].label)}, sau khi sửa" decoding="async">
+        <div class="seg" data-role="cxwhen"><button type="button" data-v="after" aria-pressed="true">Sau khi sửa</button><button type="button" data-v="before" aria-pressed="false">Trước</button></div>
+        <div class="seg" data-role="cxshot">${it.shots.map((x, i) => `<button type="button" data-i="${i}" aria-pressed="${i === 0}">${esc(x.label)}</button>`).join('')}</div></div>
+      <form class="fb" data-fb="${esc(it.id)}" aria-label="Góp ý cho ${esc(it.title)}"><h3>Góp ý</h3>
+        <div class="optrow" role="radiogroup"><label class="opt"><input type="radio" name="v" value="all"><span>Ổn, làm cho cả game</span></label>
+        <label class="opt"><input type="radio" name="v" value="run"><span>Ổn, chỉ giữ ở GOAT PATH</span></label>
+        <label class="opt"><input type="radio" name="v" value="other"><span>Ý khác (ghi bên dưới)</span></label></div>
+        <textarea name="note" placeholder="Con trỏ to / nhỏ, chỗ nào chưa ổn..."></textarea>
+        <div class="fbrow"><button class="btn" type="submit">Lưu góp ý</button><span class="fbst" role="status"></span></div></form></div>`).join('');
+  document.querySelectorAll('.cx').forEach((el) => {
+    const it = C.find((x) => x.id === el.dataset.cx), st = { i: 0, w: 'after' }, img = el.querySelector('img');
+    const draw = () => {
+      img.src = it.shots[st.i][st.w]; img.alt = `${it.shots[st.i].label}, ${st.w === 'after' ? 'sau khi sửa' : 'trước'}`;
+      el.querySelectorAll('[data-role=cxwhen] button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === st.w));
+      el.querySelectorAll('[data-role=cxshot] button').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.i === st.i));
+    };
+    el.querySelector('[data-role=cxwhen]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { st.w = b.dataset.v; draw(); } });
+    el.querySelector('[data-role=cxshot]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { st.i = +b.dataset.i; draw(); } });
+  });
+}
+
 // sự kiện ???: cách diễn từng tình huống (owner 2026-11-05: liệt kê tình huống nào dùng cách nào rồi góp ý), mỗi sự kiện 1 ô góp ý (doc ev-<id>)
 if (DATA.eventScenes) {
   const E = DATA.eventScenes, F = Object.fromEntries(E.formats.map((f) => [f.id, f]));
@@ -440,7 +471,8 @@ forms.forEach((f) => { f.querySelector('.btn').disabled = true; setSt(f, 'Đang 
   try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
   if (!db) { forms.forEach((f) => setSt(f, 'Không lưu được ở chế độ xem này. Gửi góp ý cho Claude trong chat.', 'err')); return; }
   const evName = (id) => { const e = DATA.eventScenes && DATA.eventScenes.events.find((x) => 'ev-' + x.id === id); return e ? 'Sự kiện ' + e.name : id === 'ev-open' ? 'Câu hỏi sự kiện ???' : null; };
-  const title = (id) => id === 'format' ? 'Mẫu báo cáo' : evName(id) || (DATA.screens.find((s) => s.id === id) || {}).title || id;
+  const cxName = (id) => { const c = DATA.crosscut && DATA.crosscut.items.find((x) => x.id === id); return c ? c.title : null; };
+  const title = (id) => id === 'format' ? 'Mẫu báo cáo' : evName(id) || cxName(id) || (DATA.screens.find((s) => s.id === id) || {}).title || id;
   for (const f of forms) {
     const id = f.dataset.fb, btn = f.querySelector('.btn');
     try {

@@ -12,7 +12,7 @@ MODES = ['', '.squint', '.gray', '.motion']
 
 screens = []
 for p in glob.glob(os.path.join(ROOT, 'screens', '*.json')):
-    if p.endswith('journeys.json') or p.endswith('event-scenes.json'):   # 2 mục riêng, không phải màn
+    if p.endswith('journeys.json') or p.endswith('event-scenes.json') or p.endswith('crosscut.json'):   # mục riêng, không phải màn
         continue
     S = json.load(open(p, encoding='utf-8'))
     for o in S.get('options', []):
@@ -45,6 +45,16 @@ J = os.path.join(ROOT, 'screens', 'journeys.json')
 D = {'screens': screens}
 if os.path.exists(J):
     D['journeys'] = json.load(open(J, encoding='utf-8'))
+# vấn đề chung nhiều màn (owner góp ý chéo màn, vd chọn 1 trong N): ảnh trước / sau ở shots/x-*/
+CX = os.path.join(ROOT, 'screens', 'crosscut.json')
+if os.path.exists(CX):
+    D['crosscut'] = json.load(open(CX, encoding='utf-8'))
+    for it in D['crosscut']['items']:
+        for sh in it.get('shots', []):
+            for k in ('before', 'after'):
+                os.makedirs(os.path.join(OUT, os.path.dirname(sh[k])), exist_ok=True)
+                shutil.copyfile(os.path.join(ROOT, sh[k]), os.path.join(OUT, sh[k]))
+                files[sh[k]] = sh[k]
 EV = os.path.join(ROOT, 'screens', 'event-scenes.json')   # sự kiện ???: cách diễn từng tình huống (owner 2026-11-05), góp ý theo từng sự kiện
 if os.path.exists(EV):
     D['eventScenes'] = json.load(open(EV, encoding='utf-8'))

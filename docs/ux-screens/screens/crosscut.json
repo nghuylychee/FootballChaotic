@@ -1,0 +1,23 @@
+{
+  "items": [
+    {
+      "id": "x-choice",
+      "title": "Chọn 1 trong N: không biết đang chọn cái nào",
+      "from": "Owner 2026-11-05: nhìn vào 2 cái nút thì không biết đó là chọn 1 trong 2; game khác hay dùng 1 tam giác ở đầu trái nút.",
+      "problem": "Game đang dùng 4 kiểu \"đang chọn\" khác nhau: viền vàng (nút lựa chọn sự kiện), tô vàng cả nút (Pause), viền trắng quanh nút vàng (START của LEGEND TRIAL), vạch vàng bên trái thẻ (HOST / JOIN). Màu vàng lại vừa nghĩa là \"nút chính\" vừa nghĩa là \"đang chọn\": ở thẻ LEGEND TRIAL, chuyển chọn sang SKIP thì START vẫn vàng đặc còn SKIP viền vàng, 2 thứ cùng vàng. Nút lựa chọn sự kiện thì trông như 2 nút riêng, 1 cái được gợi ý, chứ không như 2 câu trả lời của 1 câu hỏi.",
+      "fix": [
+        "Con trỏ ▶ pixel vàng viền mực, nhún 2px, ở bên trái mục đang chọn. Dùng chung cho mọi chỗ chọn 1 trong N của luồng GOAT PATH: lựa chọn sự kiện ???, chân các thẻ che map (START / SKIP, BACK...), Pause (RESUME / FORFEIT), bảng HOST / JOIN. Chuột rê tới đâu con trỏ theo tới đó (rê chuột = chọn).",
+        "Nút chính vẫn tô vàng, nhưng \"đang ở đây\" chỉ do con trỏ nói. Hàng nút ngang giãn khe ra cho con trỏ.",
+        "Lựa chọn sự kiện thành 1 hộp chọn xếp dọc, các dòng cùng 1 kiểu (không còn nút viền riêng), dòng đang chọn: con trỏ ▶ + chữ vàng + nền dòng sáng nhẹ. Đọc như hộp chọn câu trả lời của game nhập vai.",
+        "Chưa làm: các màn ngoài luồng GOAT PATH (SHOP, SETTINGS, trang chủ...), hộp hỏi QUIT ở trang chủ. Nếu m thấy ổn thì t đưa con trỏ này thành kiểu chung cho cả game."
+      ],
+      "alt": "Cách khác đã cân nhắc: chấm tròn kiểu radio (○ / ●) trước mỗi lựa chọn. Rõ là \"chọn 1\" nhưng trông như form web, lệch chất game pixel; và vẫn cần 1 dấu cho mục đang trỏ khi đi bằng phím. Con trỏ ▶ làm được cả 2 việc.",
+      "shots": [
+        { "label": "Sự kiện (đang chọn Say no)", "before": "shots/x-choice/event-before.png", "after": "shots/x-choice/event-after.png" },
+        { "label": "LEGEND TRIAL (đang chọn SKIP)", "before": "shots/x-choice/trial-before.png", "after": "shots/x-choice/trial-after.png" },
+        { "label": "Pause (đang chọn FORFEIT)", "before": "shots/x-choice/pause-before.png", "after": "shots/x-choice/pause-after.png" },
+        { "label": "HOST / JOIN (đang chọn JOIN)", "before": "shots/x-choice/friends-before.png", "after": "shots/x-choice/friends-after.png" }
+      ]
+    }
+  ]
+}
