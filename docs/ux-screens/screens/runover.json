@@ -1,0 +1,91 @@
+{
+  "id": "runover",
+  "order": 16,
+  "title": "RUN OVER",
+  "where": "Thua / bỏ / vô địch › thẻ che map (trang runmap) · src/ui/runmap.js (endCard, bring, roadSpan, endBtn) · shared/meta/run.js (finish: metaGold, roadGain, newCores) · css/style.css .rm-end, .rm-tally, .rm-bring, .rb-chip, .rm-newcores",
+  "goal": "Khép run: vì sao hết, đi được bao xa, mang về gì, còn bao xa tới Core kế. Rồi về tab để chơi run mới.",
+  "freq": "Mỗi run 1 lần (thua, bỏ hoặc vô địch), ở lại vài giây. Là lúc người chơi quyết định có chơi run nữa không.",
+  "lens": "người mới",
+  "level": "chỉnh",
+  "questions": [
+    "Vì sao hết run? Thua ai, mấy bàn?",
+    "Mình đi được bao xa, có hơn lần trước không?",
+    "Mang về được gì?",
+    "Còn bao xa tới Core kế? Core mới làm gì?",
+    "Bấm gì để chơi lại?"
+  ],
+  "states": [
+    { "id": "runover", "label": "RUN OVER", "note": "Dựng bằng ?runtest: thua Pigeon Gang 1-2, 0 trận thắng, GOLD +48, CORE ROAD +45, mở Thunder Kick. Số 999 trên thanh trên và map phía sau là số thử. CONTINUE chọn sẵn." }
+  ],
+  "keep": [
+    "RUN OVER đỏ hạng 1, CONTINUE hạng 2, khung CORE ROAD hạng 3 khi nheo mắt: đúng thứ tự đọc. CONTINUE chọn sẵn, Enter về tab.",
+    "Phần mang về có nhãn chữ (GOLD, CORE ROAD), thanh tiến độ và \"Next Core in 15 ★\" (run-11). Khung vàng CORE ROAD đứng trên GOLD là đúng ý: Core mới là phần thưởng chính.",
+    "NEW CORES chữ xanh lá + icon to: phần thưởng lớn nhất vẫn rõ khi nheo mắt.",
+    "Thẻ ngắn, 1 nút, không bắt đọc gì thêm.",
+    "Mắt mới không biết Core là gì vì chỉ xem ảnh. Người chơi thật đã chọn Core trong từng trận, nên đó không phải vấn đề của màn này."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "thông tin",
+      "title": "Không nói đi được tới đâu, cũng không nói có phải kỷ lục",
+      "body": "Thẻ chỉ đếm trận thắng và boss (.rm-tally: 0 wins · vương miện 0). Tới act mấy, tầng mấy thì không có, dù đó là con số người chơi roguelite nhìn đầu tiên và là thứ quyết định phần thưởng: gold = tầng đã qua x 6 + boss x 60, CORE ROAD = tầng x 15 + boss x 60 (run.config.js meta, coreRoad). Code có sẵn R.floors, Run.floor() và kỷ lục bestAct / bestFloor nhưng không đưa lên. Vương miện 0 cũng không có chữ đi kèm như \"0 wins\".",
+      "evidence": ["ảnh gốc", "code: runmap.js endCard (.rm-tally), run.js advance / finish (metaGold, roadGain), stats bestAct / bestFloor"],
+      "pins": [ { "s": "runover", "x": 770, "y": 263 } ]
+    },
+    {
+      "n": 2, "sev": "vừa", "kind": "thông tin",
+      "title": "Core mới chỉ có icon + tên, không biết nó làm gì",
+      "body": "Mở được Core là phần thưởng lớn nhất của một run thua, và là lý do để chơi run nữa. Ô NEW CORES chỉ có icon + tên (.rm-newcores), không mô tả, không tooltip, dù UIHelpers.coreTip(id) đã có và mô tả Core chỉ 1 dòng ngắn (\"Long charge: a lightning ball pierces and stuns a defender.\"). Mắt mới: \"I guess Thunder Kick is a new skill\", \"The Thunder Kick tile looks like I could click it to inspect it.\"",
+      "evidence": ["mắt mới", "code: runmap.js endCard (.rn-c), helpers.js coreTip"],
+      "pins": [ { "s": "runover", "x": 792, "y": 460 } ]
+    },
+    {
+      "n": 3, "sev": "nhẹ", "kind": "thứ bậc",
+      "title": "Thua ai, tỉ số mấy thì mất khi nheo mắt",
+      "body": "Dòng \"Knocked out by Pigeon Gang.\" (15px chữ kem) và tỉ số \"1 - 2\" (10px pixel, dòng riêng) mờ hẳn khi nheo mắt, trong khi 2 chip phần thưởng còn rõ. Mắt mới: \"who beat me and by how much gets lost\". Gộp thành 1 dòng (tên đội + tỉ số) và to hơn 1 cỡ là đủ.",
+      "evidence": ["nheo mắt", "mắt mới", "code: css .rm-end > span, .rm-score"],
+      "pins": [ { "s": "runover", "x": 840, "y": 190 } ]
+    },
+    {
+      "n": 4, "sev": "nhẹ", "kind": "nền",
+      "title": "Tiền run và map phía sau vẫn đọc được qua lớp che",
+      "body": "Lớp che rgba(7,5,10,0.86) (.rm-actcard) để lộ map và thanh trên: số tiền run (999 ở ảnh thử, chơi thật thì vài chục $) đứng gần GOLD +48. Mắt mới: \"I can't tell whether '999' at the top right and 'GOLD +48' are the same currency, or whether I lost the 999\" và \"The map nodes behind the overlay are visible enough to look clickable.\" Tiền run mất khi hết run, GOLD là tiền ngoài run. Ẩn thanh trên khi thẻ hết run đang mở là hết nhầm.",
+      "evidence": ["mắt mới", "ảnh xám", "code: css .rm-actcard"],
+      "pins": [ { "s": "runover", "x": 1074, "y": 69 }, { "s": "runover", "x": 352, "y": 110 } ]
+    }
+  ],
+  "inventory": [
+    ["RUN OVER", "Hết run chưa", "cần ngay", "1", "Đúng."],
+    ["Thua ai + tỉ số", "Vì sao hết", "cần ngay", "mất khi nheo mắt", "#3."],
+    ["0 wins · vương miện 0", "Đi được bao xa", "cần ngay", "thấp", "Thiếu act / tầng và kỷ lục (#1)."],
+    ["GOLD +48", "Mang về gì", "cần ngay", "vừa", "Đúng mức."],
+    ["CORE ROAD + thanh + Next Core", "Còn bao xa tới Core kế", "cần ngay", "3", "Đúng (run-11)."],
+    ["NEW CORES + ô Core", "Mở được gì mới", "cần khi có", "3", "Thiếu mô tả (#2)."],
+    ["CONTINUE", "Bấm gì tiếp", "cần ngay", "2", "Đúng, chọn sẵn."],
+    ["Thanh trên (SQUAD, tiền run) phía sau", "—", "không cần ở đây", "thấp", "Gây nhầm 2 loại tiền (#4)."],
+    ["Map + bảng chú thích phía sau", "— (bối cảnh)", "trang trí", "thấp", "Trông như còn bấm được (#4)."]
+  ],
+  "fresh": [
+    "\"RUN OVER\" in red, then CONTINUE, then the Core Road box with the lightning icon.",
+    "I guess Thunder Kick is a new skill.",
+    "I can't tell whether \"999\" at the top right and \"GOLD +48\" are the same currency, or whether I lost the 999.",
+    "The Thunder Kick tile looks like I could click it to inspect it.",
+    "The headline and the button are the right things to stand out, but who beat me and by how much gets lost."
+  ],
+  "verdict": "Thứ bậc đúng, phần mang về đã rõ (run-11). Thiếu 2 thứ làm người chơi muốn chơi tiếp: đi được tới đâu so với lần trước, và Core mới làm gì.",
+  "wireNote": "Wireframe vẽ thẻ RUN OVER như ảnh runover, khung 640x360. Khung nét đứt trên cùng là chỗ thanh trên cũ, đã ẩn.",
+  "options": [
+    {
+      "id": "A", "name": "Thêm dòng đi được tới đâu + mô tả Core mới, ẩn thanh trên", "wire": "runover.wire-a.svg",
+      "notes": [
+        "Dòng 2 gộp đội thắng và tỉ số, to hơn 1 cỡ: \"Knocked out by Pigeon Gang · 1 - 2\".",
+        "Dòng mới ngay dưới: \"REACHED ACT 1 · FLOOR 4\", kèm dấu NEW BEST khi vượt kỷ lục cũ. Dòng đếm ghi chữ cho cả 2 số: \"0 wins · 0 bosses\".",
+        "Ô Core mới có tên + 1 dòng mô tả (desc của Core) bên cạnh. Rê chuột hay trỏ phím vào ô thì hiện Tip đầy đủ (UIHelpers.coreTip).",
+        "Ẩn thanh trên (SQUAD + tiền run) khi thẻ hết run đang mở. Lớp che đậm hơn để map lùi hẳn."
+      ],
+      "gain": "Trả lời thêm \"tới đâu\" và \"Core mới làm gì\", 2 câu khiến người ta bấm chơi lại. Phần lớn là endCard + CSS. R.floors, Run.floor() và coreTip có sẵn.",
+      "cost": "Kỷ lục cũ phải chụp lại lúc bắt đầu run (thêm R.prevBest trong Run.start), vì Run.advance ghi đè stats.bestAct / bestFloor ngay trong run. Vài chữ mới phải dịch + build font ja. Thẻ cao thêm 1 dòng, vẫn vừa khung map."
+    }
+  ],
+  "pick": "A. Chỉ có 1 cách hợp lý: thêm thông tin vào thẻ đang có, không cần đổi bố cục."
+}

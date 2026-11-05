@@ -1,0 +1,93 @@
+{
+  "id": "locker",
+  "order": 13,
+  "title": "LOCKER ROOM",
+  "where": "map › node LOCKER ROOM (đang ẩn: run.map.weights.rest = 0) · trang runmap, phòng rest · src/ui/runmap.js restCard / card / badgeIcon · shared/meta/run.js upgradable / upgradableGear / heal / upgrade · config/run.config.js badges[].up / upDesc",
+  "goal": "Làm 1 việc miễn phí: chữa 1 chấn thương, hoặc nâng cấp 1 BADGE / GEAR.",
+  "freq": "Hiện là 0: m ẩn LOCKER ROOM từ 2026-10-30 (\"thừa, rối\"), chỉ vào được bằng ?runtest. Nếu bật lại thì gặp ít (trước đây vài lần mỗi run). Xét theo người mới.",
+  "lens": "người mới",
+  "level": "chỉnh",
+  "hidden": "LOCKER ROOM đang tắt trong run thật (run.map.weights.rest = 0, 2026-10-30)",
+  "wireNote": "vẽ trên đúng 4 thẻ ở ảnh locker (1 chấn thương, 3 BADGE nâng cấp được)",
+  "questions": [
+    "Được làm mấy việc?",
+    "Chữa thì ai khỏi, khỏi cái gì?",
+    "Nâng cấp thì mạnh hơn bản đang có chỗ nào?",
+    "Việc nào đáng hơn?",
+    "Bỏ đi có mất gì không?"
+  ],
+  "states": [
+    { "id": "locker", "label": "1 chấn thương + 3 BADGE nâng cấp được", "note": "Run thử có VAR Monitor, Scouting Report, Referee's Watch và Stubbed Toe của LONG (chấn thương ép bằng test). Đang chọn sẵn thẻ HEAL." }
+  ],
+  "keep": [
+    "\"Pick one\" ngay dưới tiêu đề: mắt mới hiểu đúng là chỉ được 1 việc.",
+    "Thẻ UPGRADE có câu ▲ nói bản + làm được gì (run-05). Scouting Report+ đọc tự đủ: \"One more card and a free reroll\".",
+    "LEAVE nhỏ, không tô vàng: đúng, bỏ lượt là lựa chọn phụ.",
+    "Thẻ HEAL được chọn sẵn: chữa thường là lựa chọn an toàn."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "thông tin thiếu",
+      "title": "Thẻ HEAL nói bệnh, không nói chữa xong được gì",
+      "body": "Thẻ chữa hiện chip đỏ SHO -12, chữ INJURY ở chỗ độ hiếm, và icon là icon chỉ số SHOOTING (cái bia), vì chấn thương không có icon riêng (runmap.js badgeIcon lấy icon của chỉ số bị trừ nhiều nhất). Người bị đau chỉ là 1 nhãn tên lơ lửng dưới mép thẻ, không có mặt. Mắt mới: \"The heal card shows the problem (SHO -12), not the cure\", và đọc LONG thành \"lâu dài\". LONG là tên hồ sơ thử, nhưng tên nào đứng 1 mình không có mặt cũng khó biết là người.",
+      "evidence": ["ảnh gốc", "code: runmap.js card() / badgeIcon()", "mắt mới"],
+      "pins": [ { "s": "locker", "x": 170, "y": 250 }, { "s": "locker", "x": 230, "y": 392 } ]
+    },
+    {
+      "n": 2, "sev": "vừa", "kind": "thứ bậc",
+      "title": "HEAL và UPGRADE trông như nhau khi nheo mắt",
+      "body": "4 nhãn góc cùng màu vàng, 4 thẻ cùng khung. Vạch màu đầu thẻ là độ hiếm, mà đỏ của LEGENDARY (#eb4b4b) gần trùng đỏ chấn thương (#ff5a6e): VAR Monitor+ và thẻ HEAL cùng vạch đỏ. Mắt mới: \"HEAL and UPGRADE look identical\". 2 loại lựa chọn nằm lẫn trong 1 hàng tự xuống dòng (restCard: heal rồi up rồi gup), nhiều thẻ thì xuống hàng là lẫn.",
+      "evidence": ["nheo mắt", "xám", "code: progression.config.js rarities / runmap.js restCard", "mắt mới"],
+      "pins": [ { "s": "locker", "x": 470, "y": 130 } ]
+    },
+    {
+      "n": 3, "sev": "nhẹ", "kind": "thông tin thiếu",
+      "title": "Thẻ UPGRADE chỉ nói bản mới, muốn so phải nhớ bản đang có",
+      "body": "Câu ▲ thay hẳn câu gốc (card(): b.up && d.upDesc). \"likely gets ruled out\", \"Even more time\", \"even faster\" đều so với bản gốc mà thẻ không hiện. Mắt mới: \"“may” becomes “likely”? “even more” than what?\". Dấu ▲ vàng đứng đầu câu vàng trông như biển cảnh báo.",
+      "evidence": ["mắt mới", "code: runmap.js card()"],
+      "pins": [ { "s": "locker", "x": 528, "y": 392 } ]
+    },
+    {
+      "n": 4, "sev": "nhẹ", "kind": "nền",
+      "title": "Nền thẻ trong mờ, LEAVE đè lên bảng chú thích",
+      "body": "Nền thẻ là --panel (đen 90%), nên node map hiện mờ sau chip SHO -12 và sau icon thẻ HEAL. LEAVE nằm đúng hàng bảng chú thích dưới map, che chữ GAME của SKILL GAME, trông như 1 mục của bảng.",
+      "evidence": ["ảnh gốc", "code: css/style.css --panel / .bd-card"],
+      "pins": [ { "s": "locker", "x": 640, "y": 702 } ]
+    }
+  ],
+  "inventory": [
+    ["Tiêu đề LOCKER ROOM", "Đây là đâu", "1 lần", "1", "Đúng."],
+    ["\"Pick one\"", "Được làm mấy việc", "cần ngay", "thấp (chữ 7px)", "Mắt mới vẫn hiểu, giữ."],
+    ["Thẻ HEAL", "Chữa ai, khỏi gì", "cần ngay", "2 (viền chọn)", "Nói bệnh, không nói cái được, không có mặt người (#1)."],
+    ["Thẻ UPGRADE", "Mạnh hơn chỗ nào", "cần ngay", "2 (chữ vàng)", "Chỉ nói bản mới (#3)."],
+    ["Nhãn HEAL / UPGRADE", "Thẻ loại gì", "cần ngay", "2 (4 nhãn vàng y nhau)", "#2"],
+    ["Vạch màu đầu thẻ", "Độ hiếm / chấn thương", "đôi khi", "3", "Đỏ LEGENDARY gần trùng đỏ chấn thương (#2)."],
+    ["Nhãn tên người", "Ai bị đau", "cần ngay", "thấp", "Không có mặt, dễ đọc sai (#1)."],
+    ["Chữ độ hiếm", "Độ hiếm", "không cần ở đây", "thấp", "Vạch màu đã nói, có thể bỏ trên thẻ UPGRADE để lấy chỗ."],
+    ["LEAVE", "Bỏ lượt", "cần khi không muốn gì", "thấp", "Đúng mức, nhưng đè bảng chú thích (#4)."],
+    ["Map + dải đội hình mờ phía sau", "—", "không cần ở đây", "thấp", "Dấu ✚ trên dải đội hình là thứ duy nhất động trên màn, rất nhẹ."]
+  ],
+  "fresh": [
+    "The heal card shows the problem (SHO -12), not the cure.",
+    "\"INJURY / LONG\": is LONG the player's name or \"long-lasting\"? It reads like a duration.",
+    "The upgrade cards don't say what changes from my current version (\"may\" becomes \"likely\"? \"even more\" than what?).",
+    "The yellow ▲ reads like a warning sign.",
+    "Blurred: the yellow tabs dominate, and HEAL and UPGRADE look identical.",
+    "The LONG pill sticks out over the card edge onto a map node."
+  ],
+  "verdict": "Màn đang ẩn trong run thật. Sau run-05 thẻ UPGRADE đã nói được gì; còn hở là thẻ HEAL nói bệnh thay vì nói cái được, và 2 loại thẻ trông như nhau. Chỉ đáng sửa khi m bật lại LOCKER ROOM.",
+  "options": [
+    {
+      "id": "A", "name": "Tách 2 nhóm, thẻ chữa nói cái được", "wire": "locker.wire-a.svg",
+      "notes": [
+        "Thẻ HEAL: mặt + tên người bị đau ở đầu thẻ (thay icon chỉ số đang mượn làm icon chấn thương), chip \"SHO +12 ▲\" = cái được sau khi chữa (đảo dấu chip đang có). Bỏ nhãn tên lơ lửng dưới mép thẻ.",
+        "2 nhóm có tiêu đề: HEAL bên trái, UPGRADE bên phải, vạch ngăn ở giữa. Bỏ 4 nhãn góc vàng vì tiêu đề nhóm đã nói. Vạch màu đầu thẻ chỉ còn nghĩa độ hiếm.",
+        "Thẻ UPGRADE: câu gốc (desc) mờ ở trên, câu ▲ (upDesc) vàng ở dưới, đọc ra ngay \"may\" thành \"likely\". Bỏ chữ độ hiếm trên thẻ UPGRADE để lấy chỗ.",
+        "Nền thẻ đặc, không thấy node map xuyên qua. LEAVE đứng trên bảng chú thích, không đè chữ."
+      ],
+      "gain": "Trả lời \"chữa thì được gì\" và \"nâng cấp hơn bao nhiêu\" ngay trên thẻ. 2 loại lựa chọn tách hẳn khi nheo mắt. Không thêm chuỗi mới (HEAL, UPGRADE, desc, upDesc đều có).",
+      "cost": "Màn đang ẩn: chỉ đáng làm nếu m bật lại LOCKER ROOM (đặt lại run.map.weights.rest). Đụng runmap.js restCard + card (mặt người, chip đảo dấu, dòng desc cũ) và CSS .bd-card / .bd-row (2 nhóm). Thẻ cao thêm khoảng 20px nên khi có nhiều GEAR nâng cấp được thì phải cuộn sớm hơn."
+    }
+  ],
+  "pick": "Bây giờ không làm gì: màn không xuất hiện trong run thật. Nếu m bật lại LOCKER ROOM thì làm A cùng lúc. Ghi thêm: từ khi ẩn màn này, badges[].up / upDesc và gear.up không còn chỗ dùng (RUN_DESIGN 2026-10-30)."
+}

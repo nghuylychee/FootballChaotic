@@ -1,0 +1,18 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "pt-btn   sel",
+  "txt": "Train hard \nBADGE\n✚?",
+  "x": 422,
+  "y": 422,
+  "w": 305,
+  "h": 44
+ },
+ "order": [
+  "choose:0",
+  "choose:1"
+ ],
+ "id": "event",
+ "title": "Sự kiện ???",
+ "moving_pct": 0.1
+}

@@ -1,0 +1,120 @@
+{
+  "id": "kitvan",
+  "order": 12,
+  "title": "KIT VAN",
+  "where": "map › node SHOP (tầng sát boss luôn là SHOP) · trang runmap, phòng shop · src/ui/kitvan.js (KitVan.html, frame, tag, patch / gearTag, medkit, bubble) · src/ui/runmap.js shopCard · shared/meta/run.js openShop / buy / heal",
+  "goal": "Tiêu tiền của run: mua BADGE (cả đội) hoặc GEAR (1 người đeo), chữa 1 chấn thương. Ở tầng sát boss đây là chỗ chuẩn bị cuối cùng trước trận boss. Từ khi LOCKER ROOM và ??? bị ẩn, đây cũng là chỗ duy nhất chữa chấn thương.",
+  "freq": "Mỗi act ít nhất 1 lần (tầng sát boss luôn là SHOP, run.map.last), thêm 0–1 lần giữa act: khoảng 3–5 lần mỗi run. Hàng mỗi lần một khác nên lần nào cũng phải đọc lại. Xét theo người mới.",
+  "lens": "người mới",
+  "level": "chỉnh",
+  "wireNote": "vẽ trên đúng hàng ở ảnh kitvan (5 món, 1 hộp cứu thương cho Stubbed Toe của LONG)",
+  "questions": [
+    "Bán những gì, món nào cho cả đội, món nào cho 1 người?",
+    "Món này giá bao nhiêu, mình đủ tiền không?",
+    "Có ai đang đau không, chữa người đó hết bao nhiêu?",
+    "Bấm vào là mua luôn à?",
+    "Xong thì đi đâu?"
+  ],
+  "states": [
+    { "id": "kitvan", "label": "KIT VAN", "note": "Act 1. 5 món trên móc (3 BADGE, 2 GEAR, đôi tất HOT nửa giá), 1 hộp cứu thương cho Stubbed Toe của LONG. Đang chọn sẵn món đầu (Shirt Sponsor). Tiền 999 là số test nên không món nào xám." }
+  ],
+  "keep": [
+    "Cảnh pixel làm đúng việc chính: bong bóng tài xế là khối sáng nhất sau bảng hiệu, và nó trả lời câu \"món đang chọn là gì\". Giữ cách kể này (mockup duyệt 2026-10-29).",
+    "Tem trên bong bóng THE WHOLE TEAM GETS IT / ONE PLAYER WEARS IT (run-04) cộng hình miếng vá tròn / thẻ treo góc vát: mắt mới tự đoán ra BADGE và GEAR khác nhau chỉ nhờ hình.",
+    "Mua = bàn tay với lên lấy món, tài xế nói \"Good choice!\": phản hồi rõ, không cần hộp xác nhận.",
+    "Món đầu được chọn sẵn nên bong bóng có nội dung ngay lúc vào. Mũi tên đi theo vị trí trên màn hình. Esc chỉ đưa tới LEAVE (run-01).",
+    "Xe nhún 1 pixel và khói: cả thân xe động cùng nhịp nên không kéo mắt về chỗ nào. Chỉ sticker HOT nháy, đúng thứ shop muốn được nhìn."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "đọc sai",
+      "title": "Thẻ giá đọc thành \"+70\"",
+      "body": "Đồng xu trên thẻ giá là đĩa bán kính 1 pixel, vẽ ra đúng hình dấu + 3x3 (kitvan.js tag(): disc(x + 5, y + 4, 1)). Phóng to ảnh thì thẻ nào cũng ghi \"+70\", \"+40\", \"+50\", trông như tiền được cộng thêm. Mắt mới hỏi thẳng \"are they a cost or a gain?\". Trong shop người ta vẫn đoán ra nhờ ngữ cảnh, nhưng giá là con số quyết định mua hay không.",
+      "evidence": ["ảnh gốc (phóng to)", "code: kitvan.js tag()", "mắt mới"],
+      "pins": [ { "s": "kitvan", "x": 310, "y": 330 } ]
+    },
+    {
+      "n": 2, "sev": "vừa", "kind": "trạng thái",
+      "title": "Dùng phím / tay cầm: món đang chọn chỉ có viền 1 pixel, lời giải thích ở tận góc kia",
+      "body": "Món đang chọn chỉ đổi viền mực sang vàng và nhích lên 1 pixel (kitvan.js patch / gearTag với lit, frame: lift). Nheo mắt thì không biết món nào đang được chọn. Dùng chuột thì con trỏ bàn tay chỉ thẳng vào món nên không sao. Dùng phím hay tay cầm thì không có con trỏ, chỉ còn viền đó, trong khi bong bóng giải thích nằm ở góc phải trên. Mắt mới: \"only the faint yellow outline links them\".",
+      "evidence": ["nheo mắt", "code: kitvan.js patch() / frame()", "mắt mới"],
+      "pins": [ { "s": "kitvan", "x": 112, "y": 240 } ]
+    },
+    {
+      "n": 3, "sev": "vừa", "kind": "thông tin thiếu",
+      "title": "Hộp cứu thương không nói chữa ai, và chỉ chữa được 1 lần mỗi lần ghé",
+      "body": "Hộp nằm trên quầy, thẻ giá 50 treo dưới mép quầy, cách hộp một tấm quầy. Tên người được chữa chỉ có trong bong bóng khi trỏ vào. Có 2 người đau thì quầy có 2 hộp, mua 1 hộp là hộp kia biến mất không lời nào (runmap.js targets(): rm.healed ? [] ...). KIT VAN giờ là chỗ chữa duy nhất, lại hay là chặng cuối trước boss, nên mua nhầm hộp là mang người đau vào trận boss.",
+      "evidence": ["ảnh gốc", "code: runmap.js targets() / shopCard", "mắt mới"],
+      "pins": [ { "s": "kitvan", "x": 255, "y": 398 }, { "s": "kitvan", "x": 262, "y": 482 } ]
+    },
+    {
+      "n": 4, "sev": "vừa", "kind": "thứ bậc",
+      "title": "Hàng hoá chìm, LEAVE tô vàng như nút chính",
+      "body": "Nheo mắt: thân xe, bảng hiệu, bong bóng và LEAVE đứng đầu. 5 món thành 5 đốm xanh giống nhau, giá biến mất. LEAVE là nút vàng to (targets(): T('leave', { main: true }) → .pt-btn.go), sáng ngang bảng hiệu, trong khi ở shop thứ chính là món hàng. Mắt mới: \"LEAVE is as loud as the title, which is wrong for a shop.\"",
+      "evidence": ["nheo mắt", "xám", "code: runmap.js targets()", "mắt mới"],
+      "pins": [ { "s": "kitvan", "x": 560, "y": 245 }, { "s": "kitvan", "x": 962, "y": 662 } ]
+    },
+    {
+      "n": 5, "sev": "nhẹ", "kind": "thông tin thiếu",
+      "title": "Bong bóng không có giá, không nói bấm là mua",
+      "body": "Bong bóng có tên, công dụng, tem cả đội / 1 người. Giá thì phải nhìn xuống thẻ dưới món. Không chữ nào nói bấm là mua: mắt mới không chắc \"whether one click buys right away\" và đi tìm nút BUY. Bấm là mua ngay, không hoàn lại được.",
+      "evidence": ["mắt mới", "code: runmap.js shopCard (say)"],
+      "pins": [ { "s": "kitvan", "x": 1110, "y": 192 } ]
+    },
+    {
+      "n": 6, "sev": "nhẹ", "kind": "mã hoá màu",
+      "title": "HOT giảm bao nhiêu chỉ có trong bong bóng",
+      "body": "Món HOT có sticker và thẻ giá đỏ chữ trắng. Giảm nửa giá chỉ được nói khi trỏ vào món (\"Half price today!\"). Đỏ cũng là màu của thiếu tiền (số đỏ trên thẻ xám), nên mắt mới hỏi \"Is HOT a discount or just “popular”?\" và nhắc \"Red usually means “can't afford”.\"",
+      "evidence": ["mắt mới", "code: kitvan.js tag() / hotSticker()"],
+      "pins": [ { "s": "kitvan", "x": 866, "y": 332 } ]
+    }
+  ],
+  "inventory": [
+    ["5 món trên móc", "Bán gì, cho cả đội hay 1 người", "cần ngay", "4 (5 đốm xanh giống nhau)", "Hình miếng vá / thẻ treo đã đủ để phân biệt BADGE / GEAR (#4)."],
+    ["Viền món đang chọn", "Đang trỏ món nào", "cần ngay (phím / tay cầm)", "mất khi nheo mắt", "#2"],
+    ["Bong bóng tài xế + tem", "Món này là gì, cho ai", "cần ngay", "1–2", "Thiếu giá và cách mua (#5)."],
+    ["Thẻ giá", "Bao nhiêu, đủ tiền không", "cần ngay", "mất khi nheo mắt", "Đọc thành +70 (#1). Thẻ xám khi thiếu tiền (run-04) giữ."],
+    ["Sticker HOT", "Món nào rẻ", "đôi khi", "3 (nháy)", "Giảm bao nhiêu chỉ có trong bong bóng (#6)."],
+    ["Hộp cứu thương + giá", "Chữa ai, bao nhiêu", "cần khi có người đau", "5", "#3"],
+    ["Tiền góc phải trên", "Còn bao nhiêu", "cần ngay", "6 (rất mờ)", "Đúng mức: thẻ giá xám khi thiếu tiền đã gánh phần lớn."],
+    ["LEAVE", "Đi tiếp", "cần khi xong", "2–3 (vàng như nút chính)", "#4"],
+    ["Bảng hiệu KIT VAN", "Đây là đâu", "1 lần", "1–2", "Nhận diện, giữ."],
+    ["Xe, tài xế, phố, đường, khói", "— (không khí)", "trang trí", "thân xe là khối lớn nhất", "Đúng luật pixel art của m, không đụng."]
+  ],
+  "fresh": [
+    "The price tags read like \"+70\" (the coin icon looks like a plus), so are they a cost or a gain?",
+    "Does the 50 under the counter belong to the first-aid kit, and whom does it heal?",
+    "The bubble sits far from the selected money bag, and only the faint yellow outline links them.",
+    "There's no visible BUY button.",
+    "The items become same-looking blue blobs and the prices vanish.",
+    "LEAVE is as loud as the title, which is wrong for a shop."
+  ],
+  "verdict": "Cảnh pixel làm đúng việc chính: bong bóng tài xế trả lời \"món đang chọn là gì, cho ai\". Chỗ hở là các tín hiệu nhỏ đọc sai hoặc quá mờ (giá thành +70, viền chọn 1 pixel, hộp cứu thương không nói chữa ai), sửa được ngay trong khung pixel.",
+  "options": [
+    {
+      "id": "A", "name": "Giữ cảnh, sửa tín hiệu trong pixel art", "wire": "kitvan.wire-a.svg",
+      "notes": [
+        "Thẻ giá: đồng xu thành đĩa tròn 5x5 pixel thay dấu + 3x3, số giữ nguyên. Thẻ HOT: giá cũ nhỏ có gạch ngang đứng cạnh giá mới.",
+        "Món đang chọn: viền vàng 2 pixel, nhấc khỏi móc vài pixel. Khi đang dùng phím / tay cầm, bàn tay pixel (đúng con trỏ chuột hiện có) vẽ trên canvas chỉ vào món đó.",
+        "Bong bóng thêm giá và nút BUY (nhãn phím lấy từ Input.label('confirm')) ở dòng tiêu đề. Thiếu tiền thì giá xám số đỏ như thẻ. Mọi thứ về món đang chọn nằm ở 1 chỗ.",
+        "Hộp cứu thương: thẻ giá treo ngay cạnh hộp trên quầy, thêm thẻ tên nhỏ (mặt + tên) của người sẽ khỏi. Chữa xong 1 người thì hộp còn lại hiện SOLD thay vì biến mất, tài xế nói chỉ chữa 1 lần mỗi lần ghé.",
+        "LEAVE thành nút thường (viền, không tô vàng), vẫn ở góc phải dưới. Co-op vẫn là DONE.",
+        "Món nổi hơn: nền miếng vá / thẻ treo pha màu độ hiếm đậm hơn, bảng gỗ tối đi 1 bậc. Không đổi bố cục xe."
+      ],
+      "gain": "Sửa #1–#6 mà không đổi bố cục m đã duyệt. Phần lớn ở kitvan.js (tag, patch / gearTag, medkit, frame vẽ bàn tay, bubble) và runmap.js shopCard (thêm giá vào say, kit đã chữa thành SOLD) + targets() (leave bỏ main).",
+      "cost": "Vẫn phải trỏ từng món mới biết tên: 5 món + hộp cứu thương là 6 lần trỏ mỗi lần ghé. 2 chuỗi mới (BUY, câu \"chỉ chữa 1 lần\"). Bàn tay khi dùng phím cần cờ \"đang dùng phím\" cho KIT VAN: RunUI.kb hiện chỉ được chuột xoá trong bindHover, mà bindHover chỉ gắn vào .rm-actcard, không gắn vào .kv-page."
+    },
+    {
+      "id": "B", "name": "Thêm bảng phấn menu trên hông xe", "wire": "kitvan.wire-b.svg",
+      "notes": [
+        "Hông xe dưới quầy (khoảng trống giữa 2 bánh) thành bảng phấn đen: 6 dòng 2 cột, mỗi dòng có dấu cho ai (tròn = cả đội, góc vát = 1 người), tên, giá. Khung bảng vẽ pixel, chữ là DOM như bong bóng.",
+        "Dòng của hộp cứu thương ghi tên chấn thương và người sẽ khỏi (\"Stubbed Toe · LONG\", ghép từ chuỗi đang có).",
+        "Dòng đang chọn sáng cùng lúc với món trên móc. Trỏ chuột vào dòng nào cũng là chọn món đó. Bong bóng tài xế chỉ còn lo công dụng.",
+        "Gồm sửa 1, 2, 5 của A (đồng xu, món đang chọn, LEAVE thường). Thẻ giá trên móc giữ để còn ngắm."
+      ],
+      "gain": "Trả lời \"bán gì, giá bao nhiêu, cho ai\" trong 1 lần nhìn, không phải trỏ từng món. Người mới so 5 món dễ hơn. Vẫn là cảnh pixel: xe bán đồ ngoài đời cũng có bảng menu.",
+      "cost": "Thêm chữ vào cảnh m muốn giữ là tranh. Giá hiện 2 chỗ (móc + bảng). Phải vẽ lại thân xe dưới quầy trong paintStatic, thêm khối DOM + vùng bấm cho 6 dòng trong KitVan.html / bind, đồng bộ chọn 2 chiều. Tên dài (Captain's Armband, bản tiếng Bồ / Tây Ban Nha) phải co chữ hoặc cắt."
+    }
+  ],
+  "pick": "Làm A. KIT VAN chỉ có 5 món + hộp cứu thương, trỏ qua vài lần là xong; cái hỏng thật là các tín hiệu đọc sai. Cân B chỉ khi m thấy người chơi mới bỏ qua món vì ngại trỏ từng cái."
+}

@@ -33,11 +33,13 @@ SFC_CONFIG.controls = {
     pick1:   ['Digit1', 'Numpad1'],
     pick2:   ['Digit2', 'Numpad2'],
     pick3:   ['Digit3', 'Numpad3'],
+    pick4:   ['Digit4', 'Numpad4'],    // lá 4 / 5 ở màn chọn Core (GOAT PATH BADGE Scouting Report: thêm lá) — số in trên lá nào cũng bấm được
+    pick5:   ['Digit5', 'Numpad5'],
     mute:    ['KeyM', 'Pad.Back'],
     restart: ['KeyR', 'Pad.Y'],     // túi đồ: phân rã toàn bộ đồ trùng (giữ 1)
     dismantle: ['KeyX', 'Delete', 'Pad.X'], // túi đồ / mở hộp: phân rã món đang chọn
     ultimate: ['Space', 'Pad.LT'],   // trong trận: TUYỆT KỸ (khi thanh năng lượng đầy)
-    reroll:  ['KeyR', 'Pad.Y'],     // màn DRILL: đổi cả 3 drill · màn chọn Core: đổi cả 3 lá (khi cores.draft.rerollsPerRound > 0)
+    reroll:  ['KeyR', 'Pad.Y'],     // màn DRILL: đổi cả 3 drill · màn chọn Core: đổi mọi lá đang chia (khi cores.draft.rerollsPerRound > 0)
 
     // phím menu riêng: đổi phím trong trận không làm đổi điều hướng menu
     tabPrev: ['KeyQ', 'Pad.LB'],    // đổi tab sang trái (PLAY, cửa hàng, đội)

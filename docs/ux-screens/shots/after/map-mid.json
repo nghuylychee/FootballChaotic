@@ -1,0 +1,19 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "rm-node k-skill avail  sel",
+  "txt": "SKILL GAME",
+  "x": 554,
+  "y": 336,
+  "w": 67,
+  "h": 67
+ },
+ "order": [
+  "node:3.2",
+  "node:3.1",
+  "bag"
+ ],
+ "id": "map-mid",
+ "title": "Map GOAT PATH · giữa act",
+ "moving_pct": 0.4
+}

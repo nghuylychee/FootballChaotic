@@ -1,0 +1,15 @@
+{
+ "page": "home",
+ "sel": {
+  "cls": "sel",
+  "txt": "RESUME",
+  "x": 392,
+  "y": 660,
+  "w": 149,
+  "h": 44
+ },
+ "order": [],
+ "id": "pause",
+ "title": "Pause",
+ "moving_pct": 1.4
+}

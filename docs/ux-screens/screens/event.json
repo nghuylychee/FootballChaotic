@@ -1,0 +1,111 @@
+{
+  "id": "event",
+  "order": 14,
+  "title": "Sự kiện ???",
+  "where": "map › node ??? (đang ẩn: run.map.weights.event = 0) › sự kiện · trang runmap, phòng event · src/ui/runmap.js eventCard / eventResult / sayEvent / evOn · shared/meta/run.js canChoose / choose · config/run.config.js events / mystery",
+  "goal": "Đọc 1 tình huống nhỏ, chọn 1 trong 2 lựa chọn có được / mất (BADGE, tiền, rủi ro chấn thương), rồi xem kết quả.",
+  "freq": "Hiện là 0: m ẩn ??? từ 2026-11-01 (\"sự kiện chỉ là chữ, tạm chưa cần\"). Nếu bật lại với trọng số cũ (20): khoảng 1 node ??? mỗi act trên đường đi, 55% trong đó ra sự kiện. Chỉ có 5 sự kiện nên gặp lại sớm, nhưng mỗi lần chỉ 1 quyết định. Xét theo người mới.",
+  "lens": "người mới",
+  "level": "tổ chức lại",
+  "hidden": "??? đang tắt trong run thật (run.map.weights.event = 0, 2026-11-01)",
+  "wireNote": "vẽ trên đúng sự kiện OLD COACH ở 2 ảnh (lựa chọn + kết quả)",
+  "questions": [
+    "Chuyện gì đang xảy ra?",
+    "Mỗi lựa chọn được gì, mất gì?",
+    "Rủi ro lớn cỡ nào?",
+    "Từ chối có mất gì không?",
+    "Sau khi chọn: rốt cuộc được / mất gì, cái mới nhận làm gì?"
+  ],
+  "states": [
+    { "id": "event", "label": "Lựa chọn", "note": "OLD COACH, tiền 100 (test). Train hard: 1 BADGE thường + 50% chấn thương. Đang chọn sẵn Train hard." },
+    { "id": "event-result", "label": "Kết quả", "note": "Đã chọn Train hard: nhận Shin Guards, rồi chính Shin Guards chặn cú chấn thương. Bấm CONTINUE mới về map." }
+  ],
+  "keep": [
+    "Chip được / mất trên nút (run-06): tiền trả đỏ, BADGE vàng bo tròn, tiền có thể thắng xanh. Liếc là biết lựa chọn nào có giá.",
+    "Lựa chọn không làm được không còn được chọn sẵn, bấm vào thì nói đúng lý do (run-06).",
+    "Thẻ kết quả đứng lại tới khi bấm CONTINUE. Nheo mắt thì CONTINUE đứng đầu, đúng cho 1 màn xác nhận.",
+    "Câu dẫn 1 dòng, 2 lựa chọn: không bắt đọc dài."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "nặng", "kind": "đọc sai",
+      "title": "Rủi ro chấn thương hiện thành \"+?\", đọc như phần thưởng",
+      "body": "Chip chấn thương là ký tự ✚ trong font pixel, mà font này vẽ ✚ thành dấu + (run-06 đã ghi ở limits). Trên nút Train hard nó thành \"+?\" trên nền hồng: dấu + nói \"được thêm\", chỉ màu hồng gợi điều xấu. Chữ \"An injury\" chỉ nằm trong title, phải rê chuột mới thấy; dùng phím thì không bao giờ thấy. Mắt mới đoán \"a hidden downside\" và chỉ biết là chấn thương sau khi chọn. Chấn thương không tự hết, nên đây là cái giá lớn nhất của sự kiện.",
+      "evidence": ["ảnh gốc (phóng to)", "xám", "code: runmap.js eventCard (.ev-c, font var(--px))", "mắt mới"],
+      "pins": [ { "s": "event", "x": 688, "y": 492 } ]
+    },
+    {
+      "n": 2, "sev": "vừa", "kind": "nền",
+      "title": "Không có khung: map xuyên qua chữ, icon trang trí sáng nhất màn",
+      "body": "Thẻ sự kiện chỉ có lớp che đen 86% (.rm-actcard), không có khung riêng như thẻ chọn BADGE. Node Matchday hiện sau chữ COACH, cái còi đè lên node SHOP; ở màn kết quả chữ \"Train hard\" đè lên 1 node. Nheo mắt thì cái còi trắng là thứ sáng nhất, sáng hơn cả 2 nút. Cái còi còn là icon của BADGE Referee's Watch.",
+      "evidence": ["ảnh gốc", "nheo mắt", "code: css/style.css .rm-actcard / .rm-sheet.event", "mắt mới"],
+      "pins": [ { "s": "event", "x": 835, "y": 287 }, { "s": "event", "x": 275, "y": 398 }, { "s": "event-result", "x": 775, "y": 265 } ]
+    },
+    {
+      "n": 3, "sev": "vừa", "kind": "đường đi",
+      "title": "Sự kiện chỉ là 1 dòng chữ và 1 icon UI",
+      "body": "Không có nhân vật, không có cảnh: \"ông HLV già\" là 1 câu và 1 cái còi. Đây đúng là lý do m ẩn ??? (config/run.config.js, ghi chú 2026-11-01: \"sự kiện chỉ là chữ\"). Sửa chip hay thêm khung không đổi được chuyện này; muốn bật lại thì cách trình bày phải đổi.",
+      "evidence": ["ảnh gốc", "code: config/run.config.js map.weights (ghi chú 2026-11-01)"],
+      "pins": [ { "s": "event", "x": 1012, "y": 356 } ]
+    },
+    {
+      "n": 4, "sev": "nhẹ", "kind": "mã hoá",
+      "title": "Kết quả: 2 dòng cùng icon bánh răng, đọc thành 2 phần thưởng",
+      "body": "Dòng \"blocked\" dùng lại icon của BADGE Shin Guards (eventResult: badgeIcon('shin')), mà icon đó là bánh răng ui-gear. 2 dòng cùng icon nên mắt mới đọc thành 2 phần thưởng, và bánh răng làm nó nghĩ tới GEAR.",
+      "evidence": ["ảnh gốc", "code: runmap.js eventResult / run.config.js badges.shin.icon", "mắt mới"],
+      "pins": [ { "s": "event-result", "x": 330, "y": 366 } ]
+    },
+    {
+      "n": 5, "sev": "nhẹ", "kind": "thông tin thiếu",
+      "title": "Kết quả không nói BADGE vừa nhận làm gì",
+      "body": "Dòng chỉ ghi \"BADGE: Shin Guards\". Muốn biết nó làm gì phải mở SQUAD rồi trỏ vào icon. Mắt mới: \"It's unclear what Shin Guards does from now on\", và không biết nó đã dùng hết chưa. Câu desc đang có (\"Blocks the first injury of each act.\") trả lời được cả 2.",
+      "evidence": ["mắt mới", "code: runmap.js eventResult"],
+      "pins": [ { "s": "event-result", "x": 775, "y": 331 } ]
+    }
+  ],
+  "inventory": [
+    ["Tiêu đề (OLD COACH)", "Chuyện gì", "cần ngay", "2", "Đúng."],
+    ["Icon sự kiện (cái còi)", "—", "trang trí", "1 (sáng nhất)", "Icon UI dùng chung, không phải nhân vật (#2, #3)."],
+    ["Câu dẫn", "Chuyện gì", "cần ngay", "3", "1 dòng, đủ."],
+    ["Nút Train hard + chip", "Được gì, mất gì", "cần ngay", "2", "Chip chấn thương thành \"+?\" (#1)."],
+    ["Nút Say no", "Từ chối", "cần ngay", "thấp", "Mờ nhưng đọc được; mắt mới thấy chấp nhận được."],
+    ["Map mờ phía sau", "—", "không cần ở đây", "node xuyên qua chữ", "#2"],
+    ["Bảng chú thích dưới map", "—", "không cần ở đây", "thấp", "Mắt mới nói nó giành mắt; ảnh mờ không thấy vậy."],
+    ["Dòng kết quả (thẻ kết quả)", "Được / mất gì", "cần ngay", "2", "Cùng 1 icon bánh răng (#4), không nói BADGE làm gì (#5)."],
+    ["CONTINUE (thẻ kết quả)", "Về map", "cần ngay", "1", "Đúng."]
+  ],
+  "fresh": [
+    "\"+?\" is pink/red, which suggests a hidden downside.",
+    "\"Brutal\" hints at injury, but nothing says so.",
+    "There's no panel: the text floats right on the map, with nodes showing through the title and the icon.",
+    "Blurred: the decorative icon is the brightest thing.",
+    "So the \"+?\" was an injury risk, and I only learn that now.",
+    "Both lines use the same cog-like icon, so at first it reads as two rewards."
+  ],
+  "verdict": "Màn đang ẩn. Sau run-06 khung được / mất đã có, nhưng rủi ro chính (chấn thương) lại đọc thành \"+?\". Lý do m ẩn ??? là \"chỉ là chữ\", nên nếu bật lại thì nên đổi cách trình bày (B); vá chip (A) thì chưa đủ.",
+  "options": [
+    {
+      "id": "A", "name": "Giữ thẻ chữ, thêm khung, sửa chip và kết quả", "wire": "event.wire-a.svg",
+      "notes": [
+        "Chip chấn thương: dấu ✚ đỏ vẽ bằng icon (như dấu trên dải đội hình), không dùng ký tự trong font pixel, kèm chữ INJURY? (chuỗi INJURY đã có). Không phải rê chuột mới biết.",
+        "Khung đặc sau tiêu đề, icon, câu dẫn và nút: node map không còn xuyên qua chữ.",
+        "Thẻ kết quả: dòng \"blocked\" dùng icon ui-check xanh, không dùng lại icon của BADGE.",
+        "Dòng BADGE nhận được có thêm câu công dụng nhỏ bên dưới (desc đã có)."
+      ],
+      "gain": "Rẻ: runmap.js eventCard / eventResult + vài dòng CSS (.rm-sheet.event, .ev-c). Không thêm chuỗi mới. Người chơi biết trước Train hard có thể làm đau 1 người; kết quả không còn đọc thành 2 phần thưởng.",
+      "cost": "Sự kiện vẫn chỉ là chữ và 1 icon UI, đúng lý do m ẩn nó (2026-11-01). A không làm nó đáng bật lại."
+    },
+    {
+      "id": "B", "name": "Sự kiện thành cảnh có người nói", "wire": "event.wire-b.svg",
+      "notes": [
+        "Bên trái: nhân vật của sự kiện (ông HLV, người bán dạo, bọn nhóc, chuyên viên trị liệu, fan nhí) vẽ bằng drawAvatar như tài xế KIT VAN, đứng trong 1 cảnh pixel nhỏ.",
+        "Bong bóng thoại: tên sự kiện + câu dẫn đang có (E.text) do nhân vật nói. Không cần viết lời mới.",
+        "Bên phải: mỗi lựa chọn 1 thẻ, mỗi được / mất 1 dòng icon + chữ: BADGE (miếng vá vàng), INJURY? (✚ đỏ), tiền trả, tiền có thể thắng. Lựa chọn không làm được: thẻ xám + lý do.",
+        "Chọn xong: 2 thẻ đổi thành các dòng kết quả (gồm sửa 3, 4 của A), CONTINUE như hiện nay."
+      ],
+      "gain": "Sửa đúng chỗ m chê (\"chỉ là chữ\"): có người, có cảnh, cùng kiểu với tài xế KIT VAN. Được / mất đọc như danh sách, không còn là chip 6px trong nút. Gồm luôn sửa 1, 3, 4 của A.",
+      "cost": "Thêm ngoại hình cho 5 nhân vật (config run.events), cảnh nền (vẽ mới hoặc dùng lại nền theo act), viết lại eventCard / eventResult thành bố cục 2 cột, CSS mới. Co-op: khách vẫn chỉ thấy dòng báo như giới hạn của run-06."
+    }
+  ],
+  "pick": "Bây giờ không làm gì vì ??? đang ẩn. Khi m muốn bật lại thì làm B, vì A chỉ vá chữ mà lý do ẩn là \"chỉ là chữ\". Nếu chỉ bật lại tạm để thử cân bằng thì A là đủ."
+}

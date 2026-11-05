@@ -1,0 +1,18 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "pt-btn   sel",
+  "txt": "Buy one\n-$30\nBADGE",
+  "x": 810,
+  "y": 564,
+  "w": 438,
+  "h": 64
+ },
+ "order": [
+  "choose:0",
+  "choose:1"
+ ],
+ "id": "ev-vendor",
+ "title": "STREET VENDOR",
+ "moving_pct": 0.2
+}

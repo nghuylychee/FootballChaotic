@@ -1,0 +1,99 @@
+{
+  "id": "tab",
+  "order": 2,
+  "title": "PLAY › tab GOAT PATH",
+  "where": "Trang chủ › PLAY › tab GOAT PATH · trang run · src/ui/runmap.js (tabItems, renderTab, forfeit) · src/ui/menu.js playTabs · css/style.css .pt-*, .rt-*",
+  "goal": "Vào run: bắt đầu run mới hoặc chơi tiếp run đang dở. Việc phụ: chơi chung với bạn (HOST / JOIN), xem kỷ lục, bỏ run.",
+  "freq": "Mỗi lần chơi GOAT PATH đều đi qua (đường continue: trang chủ → tab → map, 2 phím). Người đã quen chỉ bấm Enter. Người mới đọc kỹ 1–2 lần đầu, ngay sau thẻ GOAT PATH cuối PROLOGUE.",
+  "lens": "người đã quen",
+  "level": "chỉnh",
+  "questions": [
+    "Bấm gì để chơi (tiếp)?",
+    "Run của mình đang tới đâu?",
+    "Run dài bao nhiêu, cuối đường là gì?",
+    "Chơi với bạn bằng cách nào, run của mình có mất không?",
+    "Mình đã chơi bao nhiêu run, giỏi tới đâu?"
+  ],
+  "states": [
+    { "id": "tab-new", "label": "Chưa có run", "note": "Save đã có 1 run chơi xong, nên số 1 RUNS là thật. START RUN chọn sẵn. Nhân vật đứng ở vạch xuất phát bên trái." },
+    { "id": "tab-run", "label": "Đang có run", "note": "Run vừa bắt đầu ở act 1, chưa đi node nào. CONTINUE chọn sẵn. Có thêm YOU ARE HERE, dòng ACT 1 · THE BLOCK · FLOOR 1 và FORFEIT RUN." }
+  ],
+  "keep": [
+    "Nút chính (START RUN / CONTINUE) đứng hạng 1 ở cả 3 phép thử và được chọn sẵn. Mắt mới đoán đúng việc của màn ở cả 2 trạng thái.",
+    "Con đường 3 act (user-06) đọc đúng: mắt mới tả được \"3 acts leading to a trophy\", đoán đúng boss có vương miện và ??? là boss chưa gặp.",
+    "Hai trạng thái khác nhau rõ: mắt mới tự kể đủ các thứ đổi (CONTINUE, YOU ARE HERE, đoạn đường vàng, FORFEIT RUN).",
+    "FORFEIT RUN nhỏ, mờ khi nheo mắt, và phải bấm 2 lần (lần 1 thành CONFIRM FORFEIT + dòng đỏ \"Forfeit this run? It counts as a loss.\"). Mắt mới lo bấm nhầm vì không biết có bước hỏi lại. Code đã chặn.",
+    "Luật thua 1 trận là hết run đã nằm ở thẻ GOAT PATH cuối PROLOGUE (ftue.config.js pathCard), ngay trước lần đầu tới tab này. Không cần nhắc lại ở đây.",
+    "Hàng JOIN · START RUN · HOST theo quyết định 2026-10-27 của m (docs/RUN_DESIGN.md, Co-op)."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "chữ",
+      "title": "HOST / JOIN không nói là chơi chung, cũng không nói run của mình ra sao",
+      "body": "2 nút chỉ có 1 chữ, không icon, không dòng phụ, không tooltip (renderTab, btn). Mắt mới hỏi ở cả 2 ảnh: \"co-op or versus? Join what?\" và \"does joining someone throw my run away? Does hosting bring my run along?\". Code trả lời được cả 2: HOST mở phòng mang theo run đang có (createRoom({ run: true }), run nằm ở máy người tạo phòng); JOIN chỉ xem bản sao run của bạn (Run.mirror), run của mình để nguyên. Màn không nói câu nào trong số đó. Chơi với bạn là lý do lớn để quay lại game (user-05), nên nút vào co-op cần tự giải thích. Tab FOOTBALL STORY cũ thì gọi đúng việc này là PLAY WITH FRIENDS.",
+      "evidence": ["mắt mới (cả 2 ảnh)", "code: runmap.js tabItems, renderTab", "docs/RUN_DESIGN.md Co-op"],
+      "pins": [ { "s": "tab-new", "x": 300, "y": 522 }, { "s": "tab-new", "x": 982, "y": 522 }, { "s": "tab-run", "x": 964, "y": 508 } ]
+    },
+    {
+      "n": 2, "sev": "nhẹ", "kind": "chữ",
+      "title": "\"1 RUNS\" sai số nhiều, 3 icon kỷ lục không có nhãn",
+      "body": "renderTab dùng _t('{n} RUNS') thay vì SFC.tn, nên 1 run vẫn ghi RUNS. Mắt mới vấp ngay (\"the grammar is off\"). Cúp (run vô địch) và vương miện (boss đã hạ) không có chữ, không tooltip, nên mắt mới \"don't know how trophy and crown differ\". Dòng này là thông tin phụ và đang mờ đúng mức khi nheo mắt. Chỉ cần đọc được khi rê chuột.",
+      "evidence": ["mắt mới", "code: runmap.js renderTab (.rt-sum)"],
+      "pins": [ { "s": "tab-new", "x": 790, "y": 97 }, { "s": "tab-run", "x": 790, "y": 97 } ]
+    },
+    {
+      "n": 3, "sev": "nhẹ", "kind": "thông tin",
+      "title": "FLOOR 1 không nói act có mấy tầng, dòng này lặp lại tên act",
+      "body": "Dòng ACT 1 · THE BLOCK · FLOOR 1 (.rt-where) lặp tên act đã có ngay dưới ảnh và nhãn YOU ARE HERE. Thứ mới duy nhất là FLOOR 1, mà không có tổng: mỗi act 7 tầng + boss (run.config.js map.floors). Mắt mới: \"how many floors are in an act? Nothing shows progress inside an act (floor 1 of ?)\". Khi nheo mắt dòng này biến mất.",
+      "evidence": ["mắt mới", "nheo mắt", "code: runmap.js renderTab (.rt-where), Run.floor"],
+      "pins": [ { "s": "tab-run", "x": 868, "y": 480 } ]
+    }
+  ],
+  "inventory": [
+    ["START RUN / CONTINUE", "Bấm gì để chơi", "cần ngay", "1", "Đúng hạng, chọn sẵn."],
+    ["Thanh tab GOAT PATH · PRIVATE MATCH", "Đang ở chế độ nào, đổi chế độ", "đôi khi", "vừa (viền vàng tab đang mở)", "Đúng mức (user-05)."],
+    ["Ảnh act 1 + tên act", "Run đang ở act nào", "cần khi có run", "2", "Đúng."],
+    ["YOU ARE HERE", "Mình đang ở đâu", "cần khi có run", "2–3, nhấp nháy", "Đúng chỗ. Mang luôn được số tầng (#3)."],
+    ["Act 2 / 3 mờ + boss ???", "Phía trước còn gì", "đôi khi", "thấp", "Đúng mức, không lộ boss chưa gặp."],
+    ["Cúp cuối đường", "Đích là gì", "cần (người mới)", "3", "Đúng."],
+    ["Dòng ACT · FLOOR", "Tới tầng nào trong act", "cần khi có run", "mất khi nheo mắt", "Lặp tên act, thiếu tổng số tầng (#3)."],
+    ["JOIN / HOST", "Chơi với bạn", "cần khi muốn co-op", "thấp", "Không nói là co-op, không nói run ra sao (#1)."],
+    ["FORFEIT RUN", "Bỏ run", "đôi khi", "thấp", "Đúng mức, có bước hỏi lại."],
+    ["Dòng kỷ lục (RUNS · cúp · vương miện)", "Đã chơi bao nhiêu, giỏi tới đâu", "đôi khi", "thấp", "Sai số nhiều, icon không nhãn (#2)."],
+    ["BACK", "Về trang chủ", "đôi khi", "thấp", "Đúng mức."]
+  ],
+  "fresh": [
+    "START RUN first, then the Act 1 picture (the only one in colour), then the tabs.",
+    "\"1 RUNS · trophy 0 · crown 0\": the grammar is off [...] I don't know how trophy and crown differ.",
+    "JOIN / HOST are small and unexplained: co-op or versus? Join what?",
+    "\"FLOOR\" is a new word: how many floors are in an act? Nothing shows progress inside an act (floor 1 of ?).",
+    "JOIN / HOST during a run is unclear: does joining someone throw my run away? Does hosting bring my run along?",
+    "FORFEIT RUN sits right under CONTINUE, which makes a misclick easy, and I can't tell what I lose."
+  ],
+  "verdict": "Thứ bậc đúng, nút chính rõ. Chỉ cần chỉnh chữ: cho HOST / JOIN tự giải thích, sửa số nhiều, gắn số tầng vào chỗ đang đứng.",
+  "wireNote": "Wireframe vẽ trạng thái tab-run (đang có run) trên khung 640x360 của game. Ảnh act chỉ là ô giữ chỗ.",
+  "options": [
+    {
+      "id": "A", "name": "Giữ hàng JOIN · CONTINUE · HOST, thêm dòng chú thích theo nút đang trỏ", "wire": "tab.wire-a.svg",
+      "notes": [
+        "Một dòng chú thích ngay trên hàng nút, đổi theo nút đang trỏ (phím hay rê chuột đều là 1 mục chọn). HOST: \"Friends join your run with a code.\" JOIN: \"Type a friend's code. Your own run is kept.\" START RUN: \"3 acts. Lose a match and the run is over.\" CONTINUE: \"Back to the map.\" Dòng này nằm đúng chỗ dòng ACT · FLOOR cũ.",
+        "HOST / JOIN mang icon 2 người như tab PRIVATE MATCH, nên nhìn lướt (chưa trỏ) cũng biết là chơi với người khác.",
+        "Số tầng vào nhãn YOU ARE HERE: \"YOU ARE HERE · FLOOR 1/8\". Bỏ dòng ACT 1 · THE BLOCK · FLOOR 1 vì tên act đã nằm dưới ảnh.",
+        "Dòng kỷ lục: \"1 RUN\" / \"2 RUNS\" bằng SFC.tn. Rê chuột lên hiện Tip \"Runs · GOAT cups · Bosses beaten\"."
+      ],
+      "gain": "Rẻ: renderTab (.rt-where thành dòng chú thích theo menu.sel, nhãn .rt-here thêm tầng, .rt-sum dùng tn + title) và vài chữ mới. Trả lời đủ 3 câu mắt mới hỏi mà giữ nguyên bố cục m chốt 2026-10-27.",
+      "cost": "5–6 chữ mới phải dịch (es, pt-BR, pt-PT, ja) và build lại font ja. Dòng chú thích phải giữ chiều cao cố định để hàng nút không nhảy khi di phím. Ai chỉ nhìn mà không trỏ vào HOST / JOIN thì chỉ có icon 2 người để đoán."
+    },
+    {
+      "id": "B", "name": "Gộp JOIN / HOST thành 1 nút PLAY WITH FRIENDS", "wire": "tab.wire-b.svg",
+      "notes": [
+        "Hàng nút còn CONTINUE (to, giữa) + PLAY WITH FRIENDS (icon 2 người), cùng tên với nút ở tab FOOTBALL STORY.",
+        "Bấm PLAY WITH FRIENDS thì hàng nút đổi thành bảng 2 lựa chọn có chữ phụ: HOST \"Friends join your run\" · JOIN \"Type a code · your run is kept\", Esc / BACK về lại. Chỗ này đúng chỗ ô gõ mã của JOIN bây giờ.",
+        "Số tầng vào YOU ARE HERE và dòng kỷ lục sửa như A."
+      ],
+      "gain": "Màn còn 1 nút chính + 1 nút phụ có tên nói rõ việc. Chữ giải thích luôn hiện đúng lúc người chơi đã chọn chơi với bạn, không phụ thuộc trỏ chuột.",
+      "cost": "Đổi quyết định 2026-10-27 của m (hàng JOIN · START RUN · HOST). Thêm 1 phím để vào phòng. Viết thêm 1 trạng thái bảng co-op trong tabItems / renderTab (giống joining) và nhánh Esc trong Menu.back."
+    }
+  ],
+  "pick": "A. Bố cục m đã chốt vẫn đúng, chỉ thiếu chữ. B đáng làm nếu m thấy người chơi hay tìm co-op mà không thấy."
+}

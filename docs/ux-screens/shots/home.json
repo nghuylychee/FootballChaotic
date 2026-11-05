@@ -1,0 +1,15 @@
+{
+ "page": "home",
+ "sel": {
+  "cls": "hn-tab play sel ",
+  "txt": "PLAY\nGOAT PATH · PRIVATE MATCH",
+  "x": 430,
+  "y": 596,
+  "w": 420,
+  "h": 124
+ },
+ "order": [],
+ "id": "home",
+ "title": "Trang chủ",
+ "moving_pct": 30.1
+}

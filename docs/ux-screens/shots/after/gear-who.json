@@ -1,0 +1,23 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "sq-card sel  ",
+  "txt": "73\nDEF\nPAC\n71\nSHO\n69\nPAS\n74\nDRI\n82▲\nFIG\n70\nGK\n69\nROOKIE",
+  "x": 822,
+  "y": 204,
+  "w": 332,
+  "h": 336
+ },
+ "order": [
+  "wear:0",
+  "wear:2",
+  "wear:1",
+  "gswitch:0",
+  "gswitch:1",
+  "gswitch:2",
+  "gback"
+ ],
+ "id": "gear-who",
+ "title": "GEAR: chọn người đeo",
+ "moving_pct": 1.8
+}

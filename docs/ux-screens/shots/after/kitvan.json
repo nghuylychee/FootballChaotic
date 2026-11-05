@@ -1,0 +1,16 @@
+{
+ "page": "runmap",
+ "sel": null,
+ "order": [
+  "buy:0",
+  "buy:1",
+  "buy:2",
+  "buy:3",
+  "buy:4",
+  "heal:0",
+  "leave"
+ ],
+ "id": "kitvan",
+ "title": "KIT VAN",
+ "moving_pct": 15.9
+}

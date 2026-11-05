@@ -1,0 +1,119 @@
+{
+  "id": "legend",
+  "order": 15,
+  "title": "LEGEND TRIAL + nhận LEGEND",
+  "where": "Map › node LEGEND TRIAL › thẻ giới thiệu (START / SKIP) · thắng bài thử › thẻ \"Who gets him?\" (trang runmap) · src/ui/runmap.js (trialCard, trialGoal, hero, keyCaps, comboChip, flawChip, joinCard, bindJoin, sign) · config/legends.config.js · shared/systems/legends.js · css/style.css .lg-*, .tr-*, .sg-*",
+  "goal": "Thẻ trial: biết LEGEND này dạy combo gì, phải làm gì để qua, rồi quyết định đá hay bỏ. Thẻ nhận: chọn ai trong đội mang LEGEND (combo + nghiêng chỉ số + nhược điểm), hoặc từ chối.",
+  "freq": "Hiếm: node LEGEND TRIAL khoảng 0–1 mỗi act và phải tự chọn đường qua đó, nên mỗi run thấy thẻ trial 1–3 lần, thẻ nhận ít hơn. Mỗi lần là 1 LEGEND với 1 combo khác: xét theo người mới.",
+  "lens": "người mới",
+  "level": "chỉnh",
+  "questions": [
+    "LEGEND này cho đội cái gì: combo nào, mạnh lên ở đâu, yếu đi ở đâu?",
+    "Phải làm gì để qua: combo nào, bấm phím gì, mấy lần, bao lâu?",
+    "Hỏng hay bỏ qua thì mất gì?",
+    "Ai nên nhận: mình (tự bấm combo) hay đồng đội AI?",
+    "Người nhận đổi chỉ số thế nào, có thay LEGEND cũ không?"
+  ],
+  "states": [
+    { "id": "legend-trial", "label": "Thẻ giới thiệu trial", "note": "THE ARCHITECT (Andrea Pirlow): combo LOFTED THROUGH, làm 3 lần trong 40 s. START đang chọn." },
+    { "id": "legend-join", "label": "Who gets him?", "note": "Vừa qua trial. Đang chọn LONG (FWD, bạn): xem trước PAC 61▼, PAS 82▲. Pirlow không có nhược điểm cơ chế nên không có nhãn đỏ. Thẻ của bạn thiếu nhãn YOU vì run thử chạy ở chế độ mirror (Run.mirrorOn); run thật có nhãn." }
+  ],
+  "keep": [
+    "Dải LEGEND dùng chung 2 màn (chân dung, danh hiệu, chip COMBO): sang màn nhận vẫn nhận ra ngay là ông vừa thử.",
+    "\"3×\" to + đồng hồ \"40s\" chung 1 ô: số lần và thời gian đọc trong 1 lần nhìn, nheo mắt vẫn còn.",
+    "START vàng to, chọn sẵn, là khối sáng nhất khi nheo mắt; SKIP nhỏ bên cạnh. Đúng cho màn mời thử.",
+    "Phím lấy từ Input.techKeys qua keyCaps (theo phím đã đổi, tay cầm ra nút tay cầm), không viết phím cứng.",
+    "Thẻ nhận không ghi vị trí sở trường của LEGEND, khớp quyết định cho gắn lệch vị trí (2026-10-28). Nhãn \"Replaces …\" hiện khi người nhận đã có LEGEND: đúng chỗ cần.",
+    "Hào quang xoay chậm (24 s một vòng) là thứ động duy nhất: màn hiếm, có không khí mà không giật mắt."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "thứ bậc",
+      "title": "Combo là chính theo mockup, nhưng phím là chữ nhỏ nhất thẻ",
+      "body": "Mockup legend-ui (2026-10-30) chốt \"bớt chữ, combo là chính\". Trên thẻ trial, keycap Q / W cỡ 6px (.lg-keys kbd), tên combo trong chip 8px, tên combo dưới \"3×\" 6px màu mờ (.tr-goal em). Danh hiệu THE ARCHITECT 15px và chân dung có hào quang to hơn hẳn. Nheo mắt: còn START, số 3 và hào quang, keycap và chữ LOFTED THROUGH mất. Mắt mới: \"The keycaps are tiny compared with how much they matter.\" Tên combo còn bị in 2 lần (chip + dưới 3×).",
+      "evidence": ["nheo mắt", "mắt mới", "code: css .lg-keys kbd / .tr-goal em, runmap.js trialCard / comboChip"],
+      "pins": [ { "s": "legend-trial", "x": 970, "y": 285 }, { "s": "legend-trial", "x": 405, "y": 455 } ]
+    },
+    {
+      "n": 2, "sev": "vừa", "kind": "thông tin",
+      "title": "Đánh đổi chỉ số chỉ thấy khi trỏ từng thẻ, bằng số nhỏ",
+      "body": "Dải LEGEND chỉ có combo. LEGEND không có nhược điểm cơ chế (như Pirlow: PAS +10, PAC −10) thì câu nhược điểm nằm trong tooltip của tên (hero: title của dòng tên), bàn phím và tay cầm không bao giờ thấy. Trên thẻ cầu thủ, xem trước chỉ hiện ở thẻ đang trỏ (bindJoin), bằng số 7px với ▲ / ▼ 5px. Nheo mắt: \"The stat previews (the actual decision info) completely disappear.\" Mắt mới thấy PAC 61▼ / PAS 82▲ nhưng là \"a trade-off that is never explained in words\", và muốn so thì \"I'd hover over each card to compare\". Ai nhận cũng bị nghiêng y như nhau, nên đây là thông tin của LEGEND và nên nằm ở dải LEGEND.",
+      "evidence": ["nheo mắt", "mắt mới", "code: runmap.js hero / bindJoin, legends.config.js pirlow.stats"],
+      "pins": [ { "s": "legend-join", "x": 238, "y": 352 }, { "s": "legend-join", "x": 745, "y": 141 } ]
+    },
+    {
+      "n": 3, "sev": "vừa", "kind": "thông tin",
+      "title": "Không nói đồng đội AI cũng tự dùng combo",
+      "body": "Chọn người nhận là chọn \"mình tự bấm combo\" hay \"để đồng đội AI dùng\". Từ 2026-10-30, đồng đội AI có LEGEND biết dùng đúng kỹ thuật đó trong tình huống hợp (legends.ai, shared/systems/ai.js), nhưng thẻ không nói. Mắt mới: \"Does only that player get the Q+W combo? Will AI mates use it? Which card is me?\" Ai nghĩ đưa cho AI là phí combo sẽ luôn tự nhận, và LEGEND không bao giờ được dàn ra cả đội. Trong run thật, nhãn YOU chỉ là chữ 5px cạnh tên (.sq-name em), còn viền trên vàng 2px của thẻ bạn (.sq-card.you) lại trùng màu viền đang chọn.",
+      "evidence": ["mắt mới", "code: legends.config.js ai, runmap.js squadCard (who), css .sq-name em / .sq-card.you"],
+      "pins": [ { "s": "legend-join", "x": 368, "y": 551 }, { "s": "legend-join", "x": 732, "y": 551 } ]
+    },
+    {
+      "n": 4, "sev": "nhẹ", "kind": "thông tin",
+      "title": "Không nói trước là hỏng trial không mất gì",
+      "body": "Luật là hỏng không mất gì (trialDone: \"Trial failed. No harm done.\"), nhưng câu đó chỉ hiện sau khi đá. SKIP thì qua node, không được gì (skipTrial). Thẻ trial không nói cả 2. Mắt mới: \"What happens if I fail, or if I SKIP: is he gone forever?\" Người ngại rủi ro (Skill game hỏng thì chấn thương) dễ bấm SKIP. Thẻ Skill game có hẳn ô FAIL ghi hậu quả (drillCard: \"An injury\"), thẻ trial thì không.",
+      "evidence": ["mắt mới", "code: run.js trialDone / skipTrial, runmap.js drillCard"],
+      "pins": [ { "s": "legend-trial", "x": 862, "y": 588 } ]
+    },
+    {
+      "n": 5, "sev": "nhẹ", "kind": "thông tin",
+      "title": "Combo làm gì chỉ có trong tooltip",
+      "body": "Câu mô tả kỹ thuật (\"A through ball that sails over every head.\") nằm ở title của chip COMBO (comboChip), chỉ hiện khi rê chuột; bàn phím, tay cầm không có cách xem. Mắt mới không biết Q+W là bấm cùng lúc, lần lượt hay giữ, và làm thế nào thì được tính (\"What counts as success: a completed pass, an assist?\"). Câu mô tả đã có sẵn, đã dịch (legends.techniques[].desc).",
+      "evidence": ["mắt mới", "code: runmap.js comboChip"],
+      "pins": [ { "s": "legend-trial", "x": 715, "y": 328 } ]
+    },
+    {
+      "n": 6, "sev": "nhẹ", "kind": "trạng thái",
+      "title": "Xem trước không lấp ô LEGEND, khác màn GEAR",
+      "body": "Ở màn GEAR, xem trước đặt món mới vào ô trống kế tiếp. Ở màn nhận LEGEND, trỏ thẻ chỉ đổi số và hiện bóng LEGEND mờ 35% sau nhân vật; ô LEGEND (bóng đen nét đứt) vẫn trống. Mắt mới tới màn thứ hai mới đoán ra ô đó: \"I now guess the dashed silhouette slot is the legend slot.\"",
+      "evidence": ["ảnh gốc", "mắt mới", "code: runmap.js bindJoin / legendSlot"],
+      "pins": [ { "s": "legend-join", "x": 190, "y": 588 } ]
+    }
+  ],
+  "inventory": [
+    ["Nhãn LEGEND TRIAL", "Đây là gì", "cần (người mới)", "thấp", "Đúng mức."],
+    ["Chân dung + hào quang", "Ai đây", "cần", "1 (cùng START)", "Giữ, màn hiếm."],
+    ["Danh hiệu + tên", "Ai đây", "cần", "2", "To hơn combo (#1)."],
+    ["Chip COMBO + keycap", "Học được gì, bấm gì", "cần ngay", "thấp, keycap mất khi nheo mắt", "#1."],
+    ["\"3×\" + tên combo nhỏ", "Phải làm mấy lần", "cần ngay", "2", "Tên combo lặp lại, 6px (#1)."],
+    ["Đồng hồ 40s", "Bao lâu", "cần ngay", "vừa", "Đúng."],
+    ["Dòng \"He lends you his combo…\"", "Luật trial", "cần (người mới)", "thấp", "Đúng mức."],
+    ["Hậu quả hỏng / bỏ qua", "Rủi ro", "cần khi phân vân", "không có", "#4."],
+    ["Mô tả combo", "Combo làm gì", "cần khi chưa biết combo", "chỉ có tooltip", "#5."],
+    ["START / SKIP", "Làm gì tiếp", "cần ngay", "1 / thấp", "Đúng."],
+    ["Dải LEGEND (thẻ nhận)", "Ông này cho gì", "cần ngay", "1", "Thiếu đánh đổi chỉ số (#2)."],
+    ["\"Who gets him?\"", "Phải làm gì", "cần", "thấp", "Đúng mức."],
+    ["Hình nhân vật to", "Ai là ai", "cần ngay", "2", "Giữ."],
+    ["Xem trước ▲▼ (thẻ đang trỏ)", "Người nhận đổi thế nào", "cần ngay", "mất khi nheo mắt", "#2."],
+    ["Nhãn YOU", "Thẻ nào là mình", "cần ngay", "rất thấp (5px)", "#3. Ảnh test thiếu nhãn này."],
+    ["Icon trường phái góc thẻ", "Core đồng đội hay ra", "đôi khi", "thấp", "Không chữ."],
+    ["Ô LEGEND + ô GEAR", "Đã có LEGEND / GEAR chưa", "đôi khi", "thấp", "Ô LEGEND không đổi khi xem trước (#6)."],
+    ["NO THANKS", "Từ chối được không", "đôi khi", "thấp", "Đúng mức; cần khi đánh đổi không hợp hoặc phải thay LEGEND cũ."]
+  ],
+  "fresh": [
+    "The keycaps are tiny compared with how much they matter.",
+    "The key combo and the words \"lofted through\" vanish, and that's the one thing I need to remember.",
+    "What happens if I fail, or if I SKIP: is he gone forever?",
+    "The preview on LONG (PAC 61▼ red, PAS 82▲) shows a trade-off that is never explained in words.",
+    "Does only that player get the Q+W combo? Will AI mates use it? Which card is me?",
+    "The stat previews (the actual decision info) completely disappear."
+  ],
+  "verdict": "Bố cục 2 màn đúng ý mockup; chỗ lệch là thứ chính (phím combo, đánh đổi chỉ số, AI có dùng không) đang nhỏ hoặc nằm trong tooltip. Chỉnh trong bố cục hiện có, 1 phương án.",
+  "wireNote": "Vẽ 2 thẻ cạnh nhau, thu nhỏ một nửa: trái thẻ trial, phải thẻ nhận (đang trỏ LONG).",
+  "options": [
+    {
+      "id": "A", "name": "Giữ bố cục, đẩy phím combo và đánh đổi lên", "wire": "legend.wire-a.svg",
+      "notes": [
+        "Thẻ trial: ô nhiệm vụ thành \"3× [Q] + [W]\", keycap to khoảng 3 lần (cỡ chữ \"40s\"), tên combo 1 lần ngay dưới. Chip COMBO trong dải LEGEND giữ để nhận mặt.",
+        "Dưới ô nhiệm vụ: câu mô tả combo (legends.techniques[].desc, đã dịch), thay cho tên combo lặp lại.",
+        "Dưới START / SKIP, 1 dòng mờ: hỏng thì không mất gì.",
+        "Dải LEGEND (cả 2 màn): sau chip COMBO thêm chip chỉ số kiểu chip GEAR, chỉ mũi tên không số: \"PAS ▲\" \"PAC ▼\". Tên chỉ số lấy attrs short (đã dịch).",
+        "Thẻ nhận: trỏ thẻ nào thì ô LEGEND của thẻ đó hiện LEGEND mới, như ô GEAR mới ở màn GEAR.",
+        "Nhãn YOU to bằng cỡ tên. Dưới \"Who gets him?\" 1 dòng mờ: đồng đội AI tự dùng combo."
+      ],
+      "gain": "Rẻ: CSS (.lg-keys, .tr-goal, .sq-name em) + vài dòng runmap.js (trialCard dựng keycap to, hero thêm chip chỉ số từ L.stats, bindJoin lấp ô LEGEND). Không đổi bố cục mockup legend-ui, sửa #1–#6.",
+      "cost": "Chữ mới: dòng \"đồng đội AI tự dùng combo\" và dòng \"hỏng không mất gì\" (5 gói ngôn ngữ + build lại font ja). Chip chỉ số thêm 1 thứ vào dải LEGEND m chốt \"bớt chữ\" 2026-10-30 (chỉ mũi tên, không số). LEGEND có nhược điểm cơ chế sẽ có 3–4 chip trên 1 hàng, cần kiểm không tràn."
+    }
+  ],
+  "pick": "A. Bố cục mockup m duyệt vẫn đúng; chỉ cần phím combo và đánh đổi chỉ số đứng đúng hạng, và nói 1 câu về đồng đội AI. Không thấy cách tổ chức khác tốt hơn hẳn cho 2 màn hiếm này."
+}

@@ -1,0 +1,75 @@
+{
+  "id": "badge",
+  "order": 11,
+  "title": "Thưởng BADGE",
+  "where": "Thắng Elite / Boss, node Treasure, Skill game hạng VÀNG › thẻ che trên map (trang runmap) · src/ui/runmap.js (offerCard, teamBar, fly, badgeTip) · config/run.config.js badges · css/style.css .pb-*, .sq-team",
+  "goal": "Chọn 1 trong 3 BADGE cho cả đội. Mỗi BADGE là 1 luật riêng (bốc Core, luật trận, tiền / Shop / chấn thương), nên việc chính là đọc 3 luật và chọn cái hợp lối chơi.",
+  "freq": "Khoảng 2 lần mỗi act (Boss + Elite / Skill game / Treasure), cả run khoảng 6 lần. Mỗi lần là 3 luật bốc từ 12 BADGE, không trùng cái đã có, nên gần như lần nào cũng gặp BADGE mới đọc: xét theo người mới đọc thẻ.",
+  "lens": "người mới",
+  "level": "chỉnh",
+  "questions": [
+    "Mỗi BADGE đổi luật gì cho đội?",
+    "Cái nào hợp lối chơi, hợp đội hiện tại?",
+    "Đội đã có những BADGE nào?",
+    "Enter / bấm sẽ lấy thẻ nào?",
+    "Bỏ qua có mất gì không?"
+  ],
+  "states": [
+    { "id": "badge", "label": "PICK A BADGE", "note": "3 BADGE bốc theo tỉ lệ thưởng Boss: Kit Bag (sử thi, đang chọn), VAR Monitor (huyền thoại), Pre-Season Camp (sử thi). Đội chưa có BADGE nào. OVR dải SQUAD 70 / 70 / 71 khác ảnh GEAR (71 / 71 / 71) vì là 2 run thử khác nhau." }
+  ],
+  "keep": [
+    "Phụ đề \"The whole team gets it\" + miếng vá tròn + hàng TEAM BADGES bên dưới: 3 tín hiệu cùng nói \"của cả đội\". Mắt mới đọc đúng ngay: \"Pick one passive bonus for the whole team.\"",
+    "Thẻ nào cũng có 1 câu luật ngắn, chữ 13px đọc được, không số (đúng luật mô tả). 3 thẻ cân nhau về lượng chữ.",
+    "BADGE vừa chọn bay vào ô trống đầu tiên của hàng đội (fly): nói luôn \"nó đi đâu\" mà không cần chữ.",
+    "Không ghi chữ độ hiếm, màu viền là đủ (quyết định 2026-10-29). Mắt mới có hỏi \"Is the red vs purple frame a rarity?\" nhưng không cần biết để chọn.",
+    "Mắt mới hỏi VAR \"how likely?\". Mô tả không số là luật đã chốt; câu \"may get ruled out\" đã đủ để chọn."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "thứ bậc",
+      "title": "Thẻ đang chọn yếu hơn thẻ hiếm",
+      "body": "Cùng kiểu thẻ với GEAR (.pb-card): độ hiếm tô nền cả thẻ, mép trên 2px và chỉ khâu miếng vá. Thẻ đang chọn chỉ thêm viền vàng 1px + bóng 1px và nhích lên 2px, mép trên vẫn giữ màu độ hiếm (.pb-card.sel border-top-color: var(--rc)). Nheo mắt: nền đỏ của VAR Monitor (huyền thoại) là khối nổi nhất, Kit Bag đang chọn chỉ còn 1 viền vàng mờ. Mắt mới đọc theo thứ tự: \"The title, then the red VAR Monitor card, then the Kit Bag icon with its yellow outline.\" Thẻ hiếm hút mắt là được, nhưng thẻ Enter sẽ lấy phải rõ hơn nó.",
+      "evidence": ["nheo mắt", "mắt mới", "code: css .pb-card / .pb-card.sel"],
+      "pins": [ { "s": "badge", "x": 92, "y": 175 }, { "s": "badge", "x": 790, "y": 178 } ]
+    },
+    {
+      "n": 2, "sev": "nhẹ", "kind": "chồng lấn",
+      "title": "Map xuyên qua lớp che, tiêu đề đè dải SQUAD",
+      "body": "Lớp che chỉ tối 86% (.rm-actcard), nên dải SQUAD, tiền và bảng chú thích map vẫn hiện mờ phía sau. Chữ \"P\" của PICK A BADGE đè lên số OVR thứ ba của dải SQUAD; SKIP đè lên chữ GAME của SKILL GAME trong bảng chú thích. Những thứ phía sau đều đang khoá, chỉ thêm nhiễu. Cùng nguyên nhân với GEAR #8.",
+      "evidence": ["ảnh gốc", "code: css .rm-actcard"],
+      "pins": [ { "s": "badge", "x": 395, "y": 128 }, { "s": "badge", "x": 560, "y": 692 } ]
+    }
+  ],
+  "inventory": [
+    ["PICK A BADGE + \"The whole team gets it\"", "Màn gì, cho ai", "cần (người mới)", "1", "Đúng, phụ đề là chỗ phân biệt với GEAR."],
+    ["Miếng vá + icon", "BADGE nào (nhận mặt)", "cần ngay", "2", "Nheo mắt thì Kit Bag và VAR thành 2 khối xanh giống nhau; ảnh gốc vẫn phân biệt được."],
+    ["Tên", "BADGE nào", "cần ngay", "thấp", "Đúng mức."],
+    ["Câu luật", "Đổi luật gì", "cần ngay", "thấp (chữ)", "Đọc được, đúng mức cho chữ."],
+    ["Màu độ hiếm (nền, mép trên, chỉ khâu)", "Quý cỡ nào", "đôi khi", "cao nhất ở thẻ huyền thoại", "Át thẻ đang chọn (#1)."],
+    ["Viền thẻ đang chọn", "Enter lấy thẻ nào", "cần ngay", "thấp", "#1."],
+    ["Hàng TEAM BADGES (10 ô nét đứt)", "Đội đã có gì, BADGE đi đâu", "cần khi đã có vài BADGE", "thấp", "Đúng mức. Rê chuột xem từng cái."],
+    ["SKIP", "Bỏ qua được không", "đôi khi", "thấp", "Đúng mức."],
+    ["Map, dải SQUAD, bảng chú thích phía sau", "—", "không cần ở đây", "thấp", "Bị đè (#2)."]
+  ],
+  "fresh": [
+    "Pick one passive bonus for the whole team. The empty TEAM BADGES row below collects them (10 slots).",
+    "The title, then the red VAR Monitor card, then the Kit Bag icon with its yellow outline.",
+    "Kit Bag, because it's the only one I fully understand: one more GEAR slot each.",
+    "\"May get ruled out\": how likely?",
+    "Blurred: the Kit Bag and VAR Monitor icons become identical blue blobs. The descriptions and the TEAM BADGES row vanish, leaving only the red tint and the yellow outline."
+  ],
+  "verdict": "Màn làm đúng việc: 3 luật đọc được, cả đội rõ ràng, BADGE bay vào hàng đội. Chỉ cần thẻ đang chọn rõ hơn màu độ hiếm (cùng sửa với GEAR).",
+  "options": [
+    {
+      "id": "A", "name": "Thẻ đang chọn rõ hơn, độ hiếm gọn lại", "wire": "badge.wire-a.svg",
+      "notes": [
+        "Thẻ đang chọn: khung vàng 2px đủ 4 cạnh (cả mép trên), nhích lên 4px. Dùng chung với thẻ GEAR.",
+        "Độ hiếm chỉ còn ở chỉ khâu miếng vá + 1 vạch mảnh mép trên, bỏ nền pha màu cả thẻ. Vẫn không ghi chữ độ hiếm (quyết định 2026-10-29).",
+        "Có thẻ che thì ẩn dải SQUAD, tiền và bảng chú thích map phía sau."
+      ],
+      "gain": "Rẻ: chỉ CSS (.pb-card, .pb-card.sel, .rm-actcard hoặc ẩn .rm-bar / .rm-legend khi có thẻ che). Một lần sửa ăn cả GEAR #4, #8.",
+      "cost": "Thẻ huyền thoại bớt \"loá\" lúc vừa hiện, cảm giác trúng đồ hiếm giảm một chút. Muốn giữ thì để lại nền pha màu nhưng hạ xuống khoảng 6%."
+    }
+  ],
+  "pick": "A. Bố cục và nội dung đã đúng; chỉ cần thẻ Enter sẽ lấy đứng trên màu độ hiếm."
+}

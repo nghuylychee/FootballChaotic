@@ -1,0 +1,17 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "pt-btn   sel",
+  "txt": "Thank you!\nBADGE",
+  "x": 860,
+  "y": 628,
+  "w": 388,
+  "h": 64
+ },
+ "order": [
+  "choose:0"
+ ],
+ "id": "ev-fan",
+ "title": "BIGGEST FAN",
+ "moving_pct": 1.0
+}

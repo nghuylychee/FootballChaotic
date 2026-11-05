@@ -47,8 +47,10 @@ window.SFC = window.SFC || {};
         </div>`;
       }).join('');
       const left = (d.rerolls && d.rerolls[me]) || 0;
-      // cores.draft.rerollsPerRound = 0: tạm bỏ đổi bài -> không có nút REROLL
-      const reroll = picked || d.noReroll || !SFC_CONFIG.cores.draft.rerollsPerRound ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd> ${esc(_tn('REROLL 3 ({n} left)', 'REROLL 3 ({n} left)', left))}</button>`;
+      // cores.draft.rerollsPerRound = 0: tạm bỏ đổi bài -> không có nút REROLL.
+      // Nút thật ngay dưới góc phải hàng lá (UX màn draft, owner: nằm dưới tiêu đề thì đọc lướt bỏ qua): mắt đọc hết lá là tới đây.
+      // Đổi bài = đổi mọi lá đang chia (3, 4 khi có Scouting Report) -> chữ không ghi số lá
+      const reroll = picked || d.noReroll || !SFC_CONFIG.cores.draft.rerollsPerRound ? '' : `<button class="draft-reroll ${left ? '' : 'off'}" data-act="reroll"><kbd>${esc(keyLabel('reroll'))}</kbd><span>${esc(_tn('REROLL ({n} left)', 'REROLL ({n} left)', left))}</span></button>`;
       // bàn phím: không cần chú thích (bỏ dòng "Pick 1 Core..."); tay cầm không có phím số -> gợi ý nút ngắn
       const sub = picked ? esc(game.seats.length > 2 || game.humans.length < 2 ? _t('Picked · waiting for other players...') : _t('Picked · waiting for opponent...')) : SFC.Input.device === 'pad' ? `←→ + ${esc(keyLabel('confirm'))}` : '';
       this.el.draft.classList.toggle('waiting', picked);
@@ -81,8 +83,8 @@ window.SFC = window.SFC || {};
       this.el.draft.innerHTML = `
         <div class="draft-title">${title}</div>
         ${clock}
-        <div class="draft-sub">${sub}${reroll}</div>
-        <div class="cards n${opts.length}">${cards}</div>
+        <div class="draft-sub">${sub}</div>
+        <div class="draft-deck"><div class="cards n${opts.length}">${cards}</div>${reroll}</div>
         ${d.note ? `<div class="draft-note">${esc(d.note).replace(/\*(.+?)\*/g, '<b>$1</b>')}</div>` : ''}
         <div class="draft-build">
           <div class="draft-build-row">
@@ -120,10 +122,10 @@ window.SFC = window.SFC || {};
     draftInput(input, game) {
       // đang diễn mở Tuyệt kỹ (RecipeFx): Enter / Esc bỏ qua
       if (SFC.RecipeFx.active) { if (input.wasPressed('confirm') || input.wasPressed('back')) SFC.RecipeFx.skip(); return; }
+      // phím số pick1..pick5 = lá 1..5 (số in trên lá, 4 / 5 khi có BADGE Scouting Report) -> chỉ số lá, -1 = không bấm
+      const numKey = () => { for (let k = 5; k >= 1; k--) if (input.wasPressed('pick' + k)) return k - 1; return -1; };
       if (this.draftAnimActive || this.draftMorphActive) {
-        if (input.wasPressed('confirm') || input.wasPressed('back') || input.wasPressed('pick1') || input.wasPressed('pick2') || input.wasPressed('pick3')) {
-          this.skipDraftAnim();
-        }
+        if (input.wasPressed('confirm') || input.wasPressed('back') || numKey() >= 0) this.skipDraftAnim();
         return;
       }
       // màn chọn vừa hiện: lá còn đang chia, chưa nhận phím (draftLocked)
@@ -137,10 +139,7 @@ window.SFC = window.SFC || {};
       if (input.wasPressed('left')) { sel = (sel + n - 1) % n; changed = true; }
       if (input.wasPressed('right')) { sel = (sel + 1) % n; changed = true; }
       if (changed) { SFC.Audio.menu(); this.setDraftSel(sel); }
-      let pick = -1;
-      if (input.wasPressed('pick1')) pick = 0;
-      if (input.wasPressed('pick2')) pick = 1;
-      if (input.wasPressed('pick3')) pick = 2;
+      let pick = numKey();
       if (input.wasPressed('confirm')) pick = this.draftSel;
       if (pick >= 0 && pick < n) this.pick(game, pick);
       else if (input.wasPressed('reroll') && SFC_CONFIG.cores.draft.rerollsPerRound) this.doAct('reroll');

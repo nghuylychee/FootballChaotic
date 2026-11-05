@@ -1,0 +1,20 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "gr-card sel",
+  "txt": "Grip Socks\nDRI\n+4",
+  "x": 124,
+  "y": 138,
+  "w": 328,
+  "h": 312
+ },
+ "order": [
+  "gpick:0",
+  "gpick:1",
+  "gpick:2",
+  "skip"
+ ],
+ "id": "gear-pick",
+ "title": "Thưởng: chọn GEAR",
+ "moving_pct": 0.0
+}

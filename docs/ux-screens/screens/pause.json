@@ -1,0 +1,111 @@
+{
+  "id": "pause",
+  "order": 8,
+  "title": "Pause",
+  "where": "Trong trận › Esc / P › #pause · src/ui/matchui.js (renderPause, pauseMatch, pauseInput) · src/ui/helpers.js (traitList, miniCard) · css/style.css .pause-* / .pb-* / .pm-* / .mcard",
+  "goal": "Dừng trận để đọc lại: luật sân, LEGEND, BADGE, build của đội; rồi quay lại trận (hoặc bỏ run).",
+  "freq": "Thỉnh thoảng: khi quên luật / phím LEGEND, khi cần nghỉ. Mỗi lần mở là để đọc lại thứ đã lướt qua, nên xét theo người chưa nhớ.",
+  "lens": "người mới",
+  "level": "chỉnh",
+  "questions": [
+    "Luật sân này là gì, xử lý sao?",
+    "Kỹ thuật LEGEND của mình bấm gì, nhược điểm là gì?",
+    "Mình đang có Core gì, gần Ultimate chưa?",
+    "BADGE của đội làm gì?",
+    "Quay lại trận (hoặc bỏ run) ở đâu?"
+  ],
+  "states": [
+    { "id": "pause", "label": "Pause ở giây thứ 5", "note": "Mỗi người mới có 1 Core (lượt đầu). Cả 3 cùng Maestro là do random cố định khi chụp; code cho phép trùng (mỗi cầu thủ AI tự bốc, pool chỉ loại Core của chính người đó: cores.js pool / aiPick), nên không tính là vấn đề." }
+  ],
+  "keep": [
+    "RESUME vàng là thứ nổi thứ 2 (sau chữ PAUSED) ở cả 3 phép thử, được chọn sẵn: đúng câu hỏi cuối.",
+    "FORFEIT (RUN OVER) đọc rõ là nguy hiểm và có bước hỏi lại (match-02). Mắt mới: \"FORFEIT (RUN OVER) clearly reads as dangerous, which is good.\"",
+    "Dải luật sân / LEGEND / BADGE (match-08) có mặt đúng chỗ cần đọc lại. Mắt mới gọi dòng luật là \"the most useful line here\".",
+    "Mỗi người 1 hàng, bạn đứng đầu (quyết định 2026-11-01)."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "vừa", "kind": "thứ bậc",
+      "title": "Thứ cần đọc nhất (luật sân) nhỏ nhất màn, 3 hàng build chiếm gần hết màn",
+      "body": "3 hàng build mỗi hàng cao 74 (.pause-build). Đầu trận mỗi hàng chỉ có 1 lá + 3 ô ???, ô trường phái bên trái chỉ 1 dòng, còn lại trống. Dải \"trận này\" ở đáy cao khoảng 32, chữ luật cỡ 12 (.pm-rule p). Nheo mắt: còn PAUSED, RESUME, 3 lá Maestro sáng, thanh LEGEND đỏ, BADGE xanh; mọi chữ, kể cả dòng luật, biến mất.",
+      "evidence": ["nheo mắt", "code: css/style.css .pause-build / .pm-rule p", "mắt mới"],
+      "pins": [ { "s": "pause", "x": 530, "y": 600 }, { "s": "pause", "x": 300, "y": 195 } ]
+    },
+    {
+      "n": 2, "sev": "vừa", "kind": "nhận diện",
+      "title": "LEGEND nằm tách khỏi hàng của bạn, không nói là của ai",
+      "body": "Ô LEGEND (Sergio Ramen) đứng ở dải đáy cạnh luật sân của đối thủ, chỉ có tên LEGEND. Nó là của bạn (pauseMatch lấy seatOwner(me)), trong khi hàng YOUR BUILD ngay trên còn trống mà không ghi gì. Đồng đội có LEGEND thì Pause không hiện. Màu ô (Ramen #ff3d5a) là thứ nổi thứ 3 khi nheo mắt. Mắt mới: \"Who is 'Sergio Ramen'? He isn't on my team.\", \"The red bar is louder than it deserves.\"",
+      "evidence": ["code: src/ui/matchui.js pauseMatch", "nheo mắt", "mắt mới"],
+      "pins": [ { "s": "pause", "x": 735, "y": 563 } ]
+    },
+    {
+      "n": 3, "sev": "nhẹ", "kind": "thiếu thông tin",
+      "title": "Hàng của bạn không ghi vị trí",
+      "body": "Đồng đội có DEF / MID trước tên, hàng của bạn chỉ ghi YOUR BUILD (renderPause: row(mp, 'YOUR BUILD')). Từ 2026-11-01 chỉ DEF giữ khung, nên vị trí đáng biết. Mắt mới: \"My row says YOUR BUILD while my mates show DEF / MID: what's my position?\"",
+      "evidence": ["code: src/ui/matchui.js renderPause", "mắt mới"],
+      "pins": [ { "s": "pause", "x": 275, "y": 117 } ]
+    },
+    {
+      "n": 4, "sev": "nhẹ", "kind": "phím / chuột",
+      "title": "BADGE chỉ là icon, mô tả chỉ đọc được bằng rê chuột",
+      "body": "TEAM BADGES là 3 icon, mô tả nằm ở tooltip (data-tip). Phím / tay cầm trong Pause chỉ đi giữa RESUME và FORFEIT (pauseInput), nên người chơi tay cầm không đọc được BADGE nào ở đây. Map đã sửa chuyện này cho dải đội hình (run-09, Tip.showFor), Pause thì chưa. Mắt mới: \"three icons with no text. I can't tell what they do\", \"Nothing hints that I can hover cards or badges for details.\"",
+      "evidence": ["code: src/ui/matchui.js pauseMatch / pauseInput", "mắt mới"],
+      "pins": [ { "s": "pause", "x": 1140, "y": 612 } ]
+    },
+    {
+      "n": 5, "sev": "nhẹ", "kind": "trạng thái",
+      "title": "9 ô ??? viền đứt to bằng lá thật, trông như nút bấm",
+      "body": "Mỗi hàng 3 ô trống cỡ lá thật (80x74), viền đứt, chữ ??? (miniCard). Đầu trận 9 / 12 ô là ô trống, chiếm phần lớn nửa phải màn. Mắt mới: \"The '???' boxes look like slots I could click: can I?\"",
+      "evidence": ["ảnh gốc", "code: src/ui/helpers.js miniCard", "mắt mới"],
+      "pins": [ { "s": "pause", "x": 840, "y": 246 } ]
+    }
+  ],
+  "inventory": [
+    ["PAUSED", "Đang dừng", "cần ngay", "1", "Giữ."],
+    ["RESUME (chọn sẵn)", "Quay lại", "cần ngay", "2", "Giữ."],
+    ["FORFEIT (RUN OVER)", "Bỏ run", "đôi khi", "thấp", "Giữ (match-02)."],
+    ["Hàng build: lá Core có ảnh + tên", "Mình có Core gì", "đôi khi", "3 (lá sáng)", "Đúng mức; chiếm chỗ quá nhiều đầu trận (#1)."],
+    ["Ô ??? (lượt chưa chọn)", "Còn mấy lượt", "đôi khi", "vừa (viền đứt)", "To quá, trông như nút (#5)."],
+    ["Trường phái + mốc 3›4", "Gần Ultimate chưa", "đôi khi", "thấp", "Đúng mức."],
+    ["Vị trí từng người", "Ai giữ khung", "đôi khi", "thấp; của bạn không có", "#3."],
+    ["Luật sân (tên + gợi ý)", "Luật này là gì", "cần ngay (lý do mở Pause)", "mất khi nheo mắt", "Quá nhỏ (#1)."],
+    ["LEGEND: tên, phím, nhược điểm", "Kỹ thuật bấm gì", "cần khi quên", "3 (đỏ)", "Không gắn với người (#2)."],
+    ["TEAM BADGES (icon)", "BADGE làm gì", "đôi khi", "vừa (xanh)", "Thiếu tên, chỉ đọc bằng chuột (#4)."],
+    ["HUD mờ sau chữ PAUSED", "—", "không cần ở đây", "thấp", "Mắt mới thấy PAUSED đè chữ tỉ số mờ; nhẹ, không xử lý riêng."]
+  ],
+  "fresh": [
+    "\"PLASTIC STOOLS: walk into a stool to pick it up, attack to throw it\" is the most useful line here, and I'd never have known it from the match.",
+    "Who is \"Sergio Ramen\"? He isn't on my team.",
+    "My row says \"YOUR BUILD\" while my mates show DEF / MID: what's my position?",
+    "TEAM BADGES: three icons with no text. I can't tell what they do.",
+    "The \"???\" boxes look like slots I could click: can I?",
+    "RESUME being prominent is right. The red bar is louder than it deserves."
+  ],
+  "verdict": "Có đủ thứ cần đọc lại, nhưng xếp ngược: build chiếm gần hết màn, luật sân và LEGEND bị dồn xuống dải nhỏ ở đáy. Chỉnh trong bố cục hiện tại (A) là đủ.",
+  "wireNote": "Wireframe vẽ đúng Pause trong ảnh (giây 5, mỗi người 1 Core), đơn vị 640x360.",
+  "options": [
+    {
+      "id": "A", "name": "Giữ bố cục hàng, dồn chữ cần đọc vào chỗ trống", "wire": "pause.wire-a.svg",
+      "notes": [
+        "Luật sân lên đầu, ngay dưới PAUSED, rộng cả màn: tên luật to (màu áo đối thủ) + gợi ý cỡ chữ thường.",
+        "LEGEND về đúng hàng của người đeo, trong ô trái đang trống: tên + phím + nhược điểm. Đồng đội có LEGEND cũng hiện ở hàng của họ.",
+        "Đầu mỗi hàng ghi vị trí + tên, kể cả hàng của bạn (FWD LONG · YOUR BUILD).",
+        "Ô Core chưa chọn: thấp, phẳng, không viền đứt, chỉ 1 chấm mờ. Lá đã có giữ cỡ cũ.",
+        "BADGE: icon + tên (VAR Monitor, Scouting Report...) ở chỗ dải đáy cũ; mô tả vẫn ở tooltip."
+      ],
+      "gain": "Rẻ: renderPause / pauseMatch + CSS. Thứ hạng khi nheo mắt thành PAUSED, luật sân, RESUME, rồi build. Trả lời được \"LEGEND này của ai\", vị trí của bạn, và tên BADGE mà không cần chuột. Tên BADGE đã có sẵn, đã dịch (run.badges name).",
+      "cost": "Dời dải match-08 (luật lên đầu, LEGEND vào hàng); ô trái mỗi hàng chật hơn (190: tên, trường phái, LEGEND 2 dòng). Lấy p.legend của từng người cho hàng đồng đội. Màn có hỏi lại FORFEIT đang ẩn dải match-08 (zz-integration): kiểm lại chỗ dòng cảnh báo."
+    },
+    {
+      "id": "B", "name": "Hai vùng: THIS MATCH ở trên, build gọn ở dưới", "wire": "pause.wire-b.svg",
+      "notes": [
+        "Trên: khung THIS MATCH chiếm nửa màn. Trái: luật sân (tên to + gợi ý). Phải: LEGEND của bạn (chân dung, kỹ thuật + phím, nhược điểm), dưới đó danh sách BADGE có tên + 1 dòng mô tả.",
+        "Dưới: mỗi người 1 dòng mỏng: vị trí · tên · chip + tên Core · chấm lượt còn lại · trường phái. Không còn lá có ảnh xem trước.",
+        "RESUME / FORFEIT giữ ở đáy giữa."
+      ],
+      "gain": "Pause thành màn đọc lại trận này: mọi chữ cần đọc to và đọc được bằng phím, không cần rê chuột. Build vẫn đủ để biết ai có Core gì.",
+      "cost": "Đổi quyết định 2026-11-01 của m (Pause mỗi người 1 hàng lá nhỏ có ảnh + tên). Mất ảnh xem trước Core trong Pause. Viết lại renderPause + CSS."
+    }
+  ],
+  "pick": "A. Giữ bố cục m duyệt 2026-11-01 mà vẫn đưa luật sân lên hạng 2 và gắn LEGEND đúng người. B chỉ khi m thấy Pause nên là chỗ đọc luật hơn là chỗ xem build."
+}

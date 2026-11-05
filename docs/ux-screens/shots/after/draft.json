@@ -1,0 +1,15 @@
+{
+ "page": "home",
+ "sel": {
+  "cls": "card  sel ",
+  "txt": "1\n TIKI-TAKA\nMaestro\nFaster passes; the receiver gets a spee",
+  "x": 80,
+  "y": 130,
+  "w": 268,
+  "h": 392
+ },
+ "order": [],
+ "id": "draft",
+ "title": "Chọn Core đầu trận",
+ "moving_pct": 6.8
+}

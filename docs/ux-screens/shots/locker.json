@@ -1,0 +1,21 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "bd-card inj  sel",
+  "txt": "Stubbed Toe\nSHO -12\nINJURY\nHEAL\nLONG",
+  "x": 200,
+  "y": 154,
+  "w": 208,
+  "h": 208
+ },
+ "order": [
+  "heal:3",
+  "up:0",
+  "up:1",
+  "up:2",
+  "leave"
+ ],
+ "id": "locker",
+ "title": "LOCKER ROOM",
+ "moving_pct": 0.0
+}

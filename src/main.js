@@ -4,6 +4,18 @@
   const Input = SFC.Input;
   const STEP = 1 / 60;
 
+  // độ khác màu 2 áo: ΔE (CIE76) trong không gian Lab — gần với mắt thấy hơn khoảng cách RGB (kem vs be gần nhau dù RGB lệch khá xa)
+  function lab(hex) {
+    const n = parseInt(hex.slice(1, 7), 16), lin = (v) => (v /= 255) <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map(lin), f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    const x = f((r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047), y = f(r * 0.2126 + g * 0.7152 + b * 0.0722), z = f((r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883);
+    return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+  }
+  const kitDist = (a, b) => { const A = lab(a), B = lab(b); return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]); };
+  // áo nhà của CLB người chơi trùng tông áo đối thủ khi ΔE dưới ngưỡng này (kem #f3ead7: The Uncles be 23, Taichi trắng 9, School Ghosts 15;
+  // đội gần nhất không trùng là xám Iron Harbor 41)
+  const KIT_CLASH = 30;
+
   const app = {
     screen: 'menu',     // menu | game | pause | intro | story (cut scene PROLOGUE)
     mode: 'single',     // single | online
@@ -113,6 +125,17 @@
       if (SFC_DEBUG && SFC.RunTest) SFC.RunTest.onMatch(this);   // phòng test GOAT PATH: phím tắt trong trận (src/ui/runtest.js)
     },
 
+    // áo 2 đội cùng tông (UX màn hình 2026-11: đội bạn kem vs The Uncles be, chỉ còn vòng chân phân biệt) -> đội bạn mặc áo sân khách
+    // (mainPath.playerTeam.awayKit). Chỉ khi đội 0 đang mặc áo nhà của CLB người chơi (GOAT PATH, FOOTBALL STORY, co-op với đội bot) và áo
+    // sân khách khác áo đối thủ hơn. Đổi trên bản sao cfg của trận này, không đụng config. Mọi máy (host, khách co-op) tự tính y hệt từ
+    // cùng dữ liệu đội trong beginMatch -> cùng màu áo, không gửi thêm gì; màn VS / HUD / kết quả đọc game.teams[t].cfg.kit nên theo luôn
+    awayIfClash(game) {
+      const P = SFC_CONFIG.mainPath.playerTeam, t0 = game && game.teams[0], t1 = game && game.teams[1];
+      if (!t0 || !t1 || t0.cfg.kit.shirt !== P.kit.shirt) return;
+      const op = t1.cfg.kit.shirt, d = kitDist(P.kit.shirt, op);
+      if (d < KIT_CLASH && kitDist(P.awayKit.shirt, op) > d) t0.cfg = Object.assign({}, t0.cfg, { kit: P.awayKit });
+    },
+
     // bỏ trận Main Path giữa chừng (Pause > FORFEIT, rời trận xếp hạng online): tính là thua
     forfeit() {
       const g = this.game, mp = g && g.opts.mainPath;
@@ -184,6 +207,7 @@
       SFC.Platform.gameplay(true);
       SFC.Input.textHandler = null;
       SFC.UI.hudCache = {};
+      this.awayIfClash(this.game);   // trước màn VS / HUD: áo trùng tông với đối thủ -> áo sân khách
       // Main Path: không cho đá lại trận đang thua — chỉ tiếp tục hoặc bỏ trận (tính thua)
       // dịch lúc vào trận (đổi ngôn ngữ chỉ làm được ở menu)
       const _t = SFC.t;

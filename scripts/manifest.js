@@ -157,6 +157,12 @@ const FILES = [
   ['src/ui/road.js', 'game'],
   ['src/ui/cup.js', 'game'],                               // FOOTBALL STORY: tab PLAY + màn cup
   ['src/ui/kitvan.js', 'game'],                            // GOAT PATH: Shop = KIT VAN (xe bán đồ pixel art, canvas 320x180)
+  ['src/ui/evscene.js', 'game'],                           // GOAT PATH: sự kiện ??? kể bằng cảnh pixel (khung chung, canvas 320x180)
+  ['src/ui/evscenes/vendor.js', 'game'],                   // cảnh STREET VENDOR (sạp hàng rong)
+  ['src/ui/evscenes/coach.js', 'game'],                    // cảnh OLD COACH (giấy cam kết)
+  ['src/ui/evscenes/bet.js', 'game'],                      // cảnh CROSSBAR CHALLENGE (cú sút + 2 chồng xu)
+  ['src/ui/evscenes/physio.js', 'game'],                   // cảnh PARK PHYSIO (bàn trị liệu)
+  ['src/ui/evscenes/fan.js', 'game'],                      // cảnh BIGGEST FAN (quà + polaroid)
   ['src/ui/runmap.js', 'game'],                            // GOAT PATH: tab PLAY + màn map
   ['src/ui/intro.js', 'game'],
   ['src/ui/drill.js', 'game'],

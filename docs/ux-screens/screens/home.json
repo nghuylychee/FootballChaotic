@@ -1,0 +1,64 @@
+{
+  "id": "home",
+  "order": 1,
+  "title": "Trang chủ",
+  "where": "Mở game › trang chủ · src/ui/menu.js (items 'home', renderHome, homeInput, runSub) · css/style.css .hm-*, .hn-* · trận demo phía sau: src/main.js newDemo",
+  "goal": "Vào chơi nhanh nhất (PLAY). Việc phụ: thấy có quà chờ nhận, đổi nhân vật, mua đồ, cài đặt.",
+  "freq": "Mỗi lần mở game và mỗi lần thoát ra từ chế độ chơi. Gặp nhiều nhưng ở rất ngắn: người đã quen chỉ bấm Enter. Người mới gặp nó ngay sau PROLOGUE.",
+  "lens": "người đã quen",
+  "level": "ổn",
+  "questions": [
+    "Chơi ở đâu?",
+    "Còn run đang dở không, đang ở act mấy?",
+    "Có quà hay thứ mới chờ mình không?",
+    "Đổi nhân vật, mua đồ ở đâu?",
+    "Cài đặt ở đâu?"
+  ],
+  "states": [
+    { "id": "home", "label": "Trang chủ", "note": "Chưa có run đang dở. PLAY chọn sẵn. 7 thành tích chờ nhận thưởng (số trên nút cúp). Trận demo 2 đội bot của Area hiện tại chạy phía sau." }
+  ],
+  "keep": [
+    "PLAY đứng hạng 1 ở cả 3 phép thử: khối vàng to nhất, nằm giữa đáy, chọn sẵn, Enter là vào. Mắt mới: \"PLAY being the most visible thing is right.\"",
+    "Khối vàng đi theo mục đang chọn (user-01): sang CHARACTER thì PLAY về khối tối viền vàng, không còn giả làm con trỏ.",
+    "Dòng phụ dưới mỗi nút kể nội dung bên trong. Mắt mới đọc dòng dưới PLAY rồi đoán đúng là bấm vào sẽ chọn chế độ.",
+    "Số trên nút cúp + nhịp nhún là lời gọi thật (thành tích chờ nhận). Nó đứng hạng 3 khi nheo mắt, sau PLAY và logo, đúng mức.",
+    "Trận demo phía sau chỉ là không khí: lớp tối gradient (#menu.home) làm nó lùi hẳn khi nheo mắt. Máy quay theo bóng nên 30% ảnh có chuyển động, nhưng menu đứng yên và không bị giành mắt.",
+    "3 nút đáy theo thiết kế của m (CHARACTER · PLAY · SHOP), SETTINGS và TROPHY ROOM ở góc phải trên."
+  ],
+  "findings": [
+    {
+      "n": 1, "sev": "nhẹ", "kind": "cỡ chữ",
+      "title": "Dòng phụ dưới PLAY nhỏ nhất màn, mà lại báo run đang dở",
+      "body": "Dòng GOAT PATH · PRIVATE MATCH dùng font pixel 5px (.hn-tab.play .hn-sub), tức 10px trên ảnh 1280. Khi có run, dòng này thành \"GOAT PATH ACT 2 · PRIVATE MATCH\" (Menu.runSub): đây là tin duy nhất trên trang chủ nói còn run dở. Mắt mới đọc được nhưng thấy khó (\"hard to read\"). user-05 đã ghi đúng giới hạn này (\"chữ phụ dưới PLAY vẫn là cỡ nhỏ như cũ\"). Cách sửa rẻ là lên 6–7px, tab PLAY rộng 210 nên còn chỗ.",
+      "evidence": ["ảnh gốc", "mắt mới", "code: css .hn-tab.play .hn-sub, menu.js runSub", "docs/ux-review/issues/user-05.json (limits)"],
+      "pins": [ { "s": "home", "x": 812, "y": 676 } ]
+    },
+    {
+      "n": 2, "sev": "nhẹ", "kind": "tín hiệu",
+      "title": "Ô vuông xám dưới CHARACTER / SHOP lúc nào cũng hiện, trông như chấm phân trang",
+      "body": ".hn-pip là chấm báo: có hộp miễn phí hay thẻ drill thì chuyển vàng và nhấp nháy (.hn-tab.hot). Lúc không có gì nó vẫn hiện màu xám (--edge), nên mắt mới đọc thành chấm phân trang (\"The small squares under them look like page dots\"). Chấm báo chỉ có nghĩa khi lúc có lúc không, nên ẩn nó khi không hot.",
+      "evidence": ["mắt mới", "ảnh gốc", "code: css .hn-pip, .hn-tab.hot .hn-pip"],
+      "pins": [ { "s": "home", "x": 296, "y": 704 }, { "s": "home", "x": 1072, "y": 704 } ]
+    }
+  ],
+  "inventory": [
+    ["PLAY (khối vàng)", "Chơi ở đâu", "cần ngay", "1", "Đúng hạng, chọn sẵn."],
+    ["Dòng phụ dưới PLAY", "Trong PLAY có gì, run đang ở act mấy", "cần khi có run", "thấp", "Chữ 5px (#1)."],
+    ["Logo", "Game gì", "trang trí", "2", "Chấp nhận được ở trang chủ."],
+    ["Nút cúp + số", "Có quà chờ nhận", "cần khi có số", "3", "Đúng mức."],
+    ["Bánh răng SETTINGS", "Cài đặt ở đâu", "đôi khi", "thấp", "Đúng mức."],
+    ["CHARACTER / SHOP + dòng phụ", "Đổi đồ, mua hộp", "đôi khi", "thấp (vệt xám)", "Đúng mức. Lúc hot dòng phụ chuyển vàng."],
+    ["Chấm dưới CHARACTER / SHOP", "Có gì mới", "cần khi hot", "thấp", "Lúc không hot vẫn hiện (#2)."],
+    ["Trận demo phía sau", "— (không khí)", "trang trí", "lùi khi nheo mắt", "Động nhiều nhưng không giành mắt."]
+  ],
+  "fresh": [
+    "First the pink \"CHAOS\" logo, then the big yellow PLAY button, then the little players on the pitch, which look like a live game.",
+    "PLAY. I expect a mode choice, because the subtitle lists \"GOAT PATH · PRIVATE MATCH\".",
+    "The subtitle under PLAY (dark yellow on yellow) is hard to read.",
+    "The small squares under them look like page dots.",
+    "PLAY being the most visible thing is right. The trophy competes with it a little."
+  ],
+  "verdict": "Ổn. Thứ bậc đúng, từ trang chủ tới chơi chỉ 1 phím. 2 chỉnh nhỏ bằng CSS (chữ phụ PLAY to hơn, ẩn chấm báo lúc không có gì), không cần phương án.",
+  "options": [],
+  "pick": "Giữ bố cục. Nếu m muốn thì t sửa 2 chỗ CSS của #1 và #2 cùng đợt với màn khác."
+}

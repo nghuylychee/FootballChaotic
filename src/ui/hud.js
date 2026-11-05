@@ -150,6 +150,12 @@ window.SFC = window.SFC || {};
       const R = game.opts.run && SFC.Run && SFC.Run.run;
       return R ? R.bag.filter((b) => { const d = SFC.Run.badge(b.id); return d && !d.injury; }) : [];
     },
+    // phím của kỹ thuật LEGEND dưới ô LEGEND: từng {action} của tổ hợp (techniques[].keys / pad như Input.techKeys) thành 1 keycap theo
+    // phím đang gán, nối bằng +. Bỏ chữ đi kèm (hold, tap, on a high ball...): ô nhỏ, câu đầy đủ ở tooltip + Pause
+    legKeys(K) {
+      const src = SFC.Input.device === 'pad' && K.pad ? K.pad : K.keys;
+      return (String(src).match(/\{\w+\}/g) || []).map((tk) => `<kbd>${esc(SFC.Input.label(tk.slice(1, -1)))}</kbd>`).join('<i>+</i>');
+    },
     updateBar(game) {
       const el = this.el.abar, p = game.controlled;
       el.classList.toggle('hidden', !p || this.current === 'menu' || this.current === 'end');
@@ -176,9 +182,12 @@ window.SFC = window.SFC || {};
         }).join('')}</div>` : '';
         const M = SFC_CONFIG.legends && SFC_CONFIG.legends.moment, F = (L && L.flaw) || {};
         const TQ = L && L.tech && SFC_CONFIG.legends.techniques[L.tech];
+        // ô LEGEND (UX màn hình 2026-11): khung trung tính như 3 ô ra đòn, màu LEGEND chỉ ở vạch trong đáy ô; dưới ô = phím của kỹ thuật
+        // (chỉ các phím, chữ hold / tap... ở tooltip + Pause) — như 3 ô ra đòn có phím, ô LEGEND không còn trông như chân dung đối thủ
         const legHtml = L ? `<div class="ab-leg" style="--lc:${L.color}" title="${esc(L.name + ' · ' + L.title + (TQ ? ' · ' + TQ.name + ' (' + SFC.Input.techKeys(TQ) + ')' : '') + ' · ' + L.flawDesc)}">
-            <canvas width="18" height="18"></canvas><div class="sw"></div><i class="lg-fill"></i><b></b>
-            ${M.enabled ? `<span class="lg-pips">${'<u></u>'.repeat(M.max)}</span>` : ''}${F.kind === 'red' ? `<span class="lg-fouls">${'<u></u>'.repeat(F.hits)}</span>` : ''}</div>` : '';
+            <div class="lg-box"><canvas width="16" height="16"></canvas><i class="lg-stripe"></i><div class="sw"></div><i class="lg-fill"></i><b></b>
+            ${M.enabled ? `<span class="lg-pips">${'<u></u>'.repeat(M.max)}</span>` : ''}</div>${TQ ? `<span class="lg-key">${this.legKeys(TQ)}</span>` : ''}
+            ${F.kind === 'red' ? `<span class="lg-fouls">${'<u></u>'.repeat(F.hits)}</span>` : ''}</div>` : '';
         el.innerHTML = `${bdHtml}
           <div class="ab-por"><canvas width="22" height="22"></canvas><div class="ab-name">${esc(p.name)}</div>${game.lockedPlayer(p.team) ? '' : `<kbd>${esc(keyLabel('switch'))}</kbd>`}</div>
           <div class="ab-mid">
