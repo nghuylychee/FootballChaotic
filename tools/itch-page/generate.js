@@ -1,11 +1,12 @@
 /* Ảnh cho trang itch.io — vẽ bằng chính code render của game (sprites / background / renderer), phóng to pixel bằng số nguyên.
- * Chạy: env -u ELECTRON_RUN_AS_NODE npx electron tools/art-export/run.js tools/itch-page/generate.html tools/itch-page/out
- * Ra: banner.png (960x240) · cover.png (630x500) · bg-tile.png · logo.png · h-*.png (tiêu đề mục) · shot-*.png (1280x720)
+ * Chạy: npm run serve (cổng 8080) rồi node tools/itch-page/export.mjs -> ghi vào tools/itch-page/out
+ * Ra: banner.png (960x240) · cover.png (630x500) · logo.png · h-*.png (tiêu đề mục).
+ * Ảnh chụp trong game (shot-*.png): tools/itch-page/capture.mjs
  * Xem trước cả trang: tools/itch-page/mock.html
  */
 function run() {
   const S = SFC.Sprites, L = SFC_CONFIG.teams.list, P = SFC_CONFIG.progression, C = SFC_CONFIG.game.combat;
-  const INK = '#140c16', GOLD = '#ffcf3f', RED = '#ff3d5a', PAPER = '#f3ead7';
+  const INK = '#121316', GOLD = '#ffcf3f', RED = '#ff3d5a', PAPER = '#f3ead7';
   const PX = '"Press Start 2P"', VT = '"VT323"';
   const files = {};
 
@@ -99,7 +100,7 @@ function run() {
 
   /* ---------- banner 960x240 (vẽ 480x120, phóng x2) ---------- */
   {
-    const full = scene('street', (x) => {
+    const full = scene('village', (x) => {
       player(x, 1, 520, 122, Math.PI, LOOK.rival2, POSE.run);
       player(x, 0, 338, 128, 0, LOOK.mate, POSE.run);
       player(x, 0, 420, 134, 0, LOOK.hero, POSE.dropkick);
@@ -110,17 +111,17 @@ function run() {
     });
     const b = crop(full, 80, 20, 480, 120), x = b.getContext('2d');
     const grad = x.createLinearGradient(0, 0, 250, 0);
-    grad.addColorStop(0, 'rgba(10,6,12,0.94)'); grad.addColorStop(0.55, 'rgba(10,6,12,0.75)'); grad.addColorStop(1, 'rgba(10,6,12,0)');
+    grad.addColorStop(0, 'rgba(10,11,14,0.94)'); grad.addColorStop(0.55, 'rgba(10,11,14,0.75)'); grad.addColorStop(1, 'rgba(10,11,14,0)');
     x.fillStyle = grad; x.fillRect(0, 0, 250, 120);
     text(x, 'STREET FOOTBALL', 16, 30, 8, '#ffffff', { shadows: [[1, 1, INK]] });
     text(x, 'CHAOS', 15, 42, 24, RED, { shadows: [[1, 1, INK], [2, 2, GOLD]] });
-    text(x, 'FOOTBALL, BUT WITH PUNCHES.', 16, 78, 8, PAPER, { shadows: [[1, 1, INK]] });
+    text(x, 'A CHAOTIC FOOTBALL ROGUELITE.', 16, 78, 8, PAPER, { shadows: [[1, 1, INK]] });
     save('banner.png', upscale(b, 2));
   }
 
   /* ---------- cover 630x500 (vẽ 210x167, phóng x3, cắt 1 hàng) ---------- */
   {
-    const full = scene('street', (x) => {
+    const full = scene('village', (x) => {
       player(x, 1, 279, 140, Math.PI, LOOK.rival2, POSE.stun);
       player(x, 0, 262, 140, 0, LOOK.mate, POSE.punch);
       player(x, 0, 300, 160, 0, LOOK.hero, POSE.dropkick);
@@ -133,9 +134,9 @@ function run() {
     const b = crop(full, 215, 20, 210, 167), x = b.getContext('2d');
     // dải tối trên (logo) + dưới (tagline)
     const top = x.createLinearGradient(0, 0, 0, 60);
-    top.addColorStop(0, 'rgba(10,6,12,0.92)'); top.addColorStop(0.75, 'rgba(10,6,12,0.7)'); top.addColorStop(1, 'rgba(10,6,12,0)');
+    top.addColorStop(0, 'rgba(10,11,14,0.92)'); top.addColorStop(0.75, 'rgba(10,11,14,0.7)'); top.addColorStop(1, 'rgba(10,11,14,0)');
     x.fillStyle = top; x.fillRect(0, 0, 210, 60);
-    x.fillStyle = 'rgba(10,6,12,0.88)'; x.fillRect(0, 150, 210, 17);
+    x.fillStyle = 'rgba(10,11,14,0.88)'; x.fillRect(0, 150, 210, 17);
     x.fillStyle = RED; x.fillRect(0, 150, 210, 1);
     text(x, 'STREET FOOTBALL', 105, 8, 8, '#ffffff', { align: 'center', shadows: [[1, 1, INK]] });
     text(x, 'CHAOS', 104, 19, 24, RED, { align: 'center', shadows: [[1, 1, INK], [2, 2, GOLD]] });
@@ -151,87 +152,18 @@ function run() {
     save('logo.png', upscale(b, 3));
   }
 
-  /* ---------- nền trang: gạch tối, lặp liền mạch ---------- */
-  {
-    const W = SFC_CONFIG.arenas.street.wall, cols = W.colors;
-    const b = canvas(48, 24), x = b.getContext('2d'), rnd = SFC.U.seeded(41);
-    x.fillStyle = W.mortar; x.fillRect(0, 0, 48, 24);
-    for (let row = 0; row < 4; row++) {
-      const off = row % 2 ? 6 : 0;
-      for (let i = -1; i < 4; i++) {
-        const k = ((i % 4) + 4) % 4, bx = i * 12 + off, by = row * 6;
-        x.fillStyle = cols[(k + row * 3) % cols.length];
-        x.fillRect(bx, by, 11, 5);
-        x.fillStyle = 'rgba(255,255,255,0.07)'; x.fillRect(bx, by, 11, 1);
-      }
-    }
-    for (let i = 0; i < 14; i++) { x.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.06)'; x.fillRect(Math.floor(rnd() * 48), Math.floor(rnd() * 24), 1, 1); }
-    x.fillStyle = 'rgba(8,5,10,0.62)'; x.fillRect(0, 0, 48, 24);
-    save('bg-tile.png', upscale(b, 3));
-  }
-
   /* ---------- tiêu đề mục (ảnh, vì phần mô tả itch không dùng được font riêng) ---------- */
-  const HEADERS = { features: 'FEATURES', controls: 'CONTROLS', cores: 'CORE UPGRADES', online: 'PLAY ONLINE' };
+  const HEADERS = { brawl: 'BRAWL FOR THE BALL', powers: 'STACK YOUR POWERS', route: 'PLAN YOUR ROUTE', legends: 'SIGN THE LEGENDS', controls: 'CONTROLS', fullgame: 'FULL GAME' };
   for (const [id, label] of Object.entries(HEADERS)) {
     const b = canvas(300, 16), x = b.getContext('2d');
     x.fillStyle = INK; x.fillRect(0, 4, 7, 7);
     x.fillStyle = RED; x.fillRect(0, 4, 6, 6);
     text(x, label, 11, 3, 8, '#ffffff', { shadows: [[1, 1, INK]] });
-    x.fillStyle = '#3b2a36'; x.fillRect(0, 14, 300, 1);
+    x.fillStyle = '#323742'; x.fillRect(0, 14, 300, 1);
     save(`h-${id}.png`, upscale(b, 2));
   }
 
-  /* ---------- ảnh chụp trận thật (AI vs AI, có Core) 1280x720 ---------- */
-  // mỗi sân 1 ảnh: chạy trận, chấm điểm "độ hành động" từng bước, giữ khung hình điểm cao nhất
-  SFC.Renderer.init(document.getElementById('game'));
-  const SHOTS = [
-    { arena: 'street', home: 'street_kings', away: 'neon_strikers', cores: [['fire_shot', 'street_fighter', 'fist_storm', 'hundred_fists'], ['light_cycle', 'speed_demon', 'burst_start', 'sonic_boom']] },
-    { arena: 'cyber', home: 'cyber_united', away: 'underground_fc', cores: [['thunder_kick', 'eagle_eye', 'sniper_foot', 'meteor_strike'], ['wall_slam', 'flying_kick', 'ground_slam', 'moon_stomp']] },
-    { arena: 'stadium', home: 'neon_strikers', away: 'street_kings', cores: [['shadow_clone', 'phantom_step', 'fake_run', 'clone_army'], ['iron_body', 'giant_fist', 'bulldozer', 'titan']] },
-    { arena: 'market', home: 'underground_fc', away: 'cyber_united', cores: [['bomb_ball', 'chaos_ball', 'black_hole', 'warp_walls'], ['maestro', 'one_touch', 'symphony', 'endless_tiki']] },
-    { arena: 'village', home: 'street_kings', away: 'cyber_united', cores: [['uppercut', 'iron_fist', 'one_two', 'hundred_fists'], ['heavy_boot', 'juggle', 'scissor_kick', 'moon_stomp']] },
-  ];
-  const score = (g) => {
-    // phủ màu toàn màn hình (tints) / impact frame đen trắng / chớp trắng (flashA): ảnh bị bạc màu -> bỏ
-    const O = g.effects.O || {};
-    if ((O.tints && O.tints.length) || O.impact > 0 || g.effects.flashA > 0.02) return -1;
-    let s = 0;
-    for (const p of g.players) {
-      if (p.airZ > 3) s += 3;
-      if (p.state === 'stun') s += 1;
-      if (p.atkType === 'hard' || p.atkType === 'light') s += 1.5;
-    }
-    const fx = g.ball.fx || {};
-    if (fx.fire || fx.thunder || fx.meteor || g.ball.skin) s += 2;
-    s += Math.min(5, g.effects.particles.length / 12);
-    // 1–2 chữ comic / chữ nổi thì đẹp; nhiều hơn là chồng lên nhau, khó đọc
-    const callouts = g.effects.texts.length + ((g.effects.V && g.effects.V.comics) || []).length;
-    s += callouts === 0 ? 0 : callouts <= 2 ? 3 : 3 - (callouts - 2) * 2.5;
-    if (g.state === 'goal') s += 2;
-    return s;
-  };
-  const shotInfo = [];
-  SHOTS.forEach((def, i) => {
-    const g = new SFC.Game({ home: def.home, away: def.away, difficulty: 'hard', humanTeam: -1, silent: true, arena: def.arena });
-    def.cores.forEach((list, team) => list.forEach((id) => g.cores.add(team, id)));
-    let best = -1, bestUrl = null;
-    for (let step = 0; step < 60 * 75 && g.state !== 'ended'; step++) {
-      if (step % 480 === 0) for (const p of g.players) p.res.ult = 1;   // AI tự tung Tuyệt kỹ khi đầy
-      g.update(1 / 60, null);
-      g.events.length = 0;
-      if (step < 180 || g.state !== 'play' && g.state !== 'goal') continue;
-      const s = score(g);
-      if (s > best) {
-        best = s;
-        SFC.Renderer.render(g);
-        bestUrl = upscale(SFC.Renderer.canvas, 2);
-      }
-    }
-    save(`shot-${i + 1}-${def.arena}.png`, bestUrl);
-    shotInfo.push({ file: `shot-${i + 1}-${def.arena}.png`, score: +best.toFixed(1) });
-  });
-
-  files['manifest.json'] = JSON.stringify({ generated: new Date().toISOString(), shots: shotInfo, files: Object.keys(files).sort() }, null, 1);
+  files['manifest.json'] = JSON.stringify({ generated: new Date().toISOString(), files: Object.keys(files).sort() }, null, 1);
   window.__files = files;
   window.__done = true;
 }

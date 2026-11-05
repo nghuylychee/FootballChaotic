@@ -5,12 +5,12 @@
   <title>itch.io description</title>
   <!-- Phần mô tả trang itch.io (Edit game > Details > Description, ô này nhận HTML).
        Copy đoạn giữa itch:start / itch:end (chỉ thẻ thường, không style riêng) rồi dán vào.
-       Ảnh: tải logo.png + h-*.png (out/) lên itch trước, thay src="out/..." bằng link ảnh itch trả về.
+       Ảnh: tải logo.png, h-*.png, ultimate.gif, brawl.gif (out/) lên itch trước, thay src="out/..." bằng link ảnh itch trả về.
        mock.html nhúng file này qua iframe. -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" />
   <style>
     @font-face { font-family: 'VT323'; src: url(../../assets/fonts/VT323-latin.woff2) format('woff2'); }
-    :root { --page: #140c16; --text: #f3ead7; --link: #ffe14f; --muted: #9aa3b5; }
+    :root { --page: #1a1c22; --text: #f3ead7; --link: #ffe14f; --muted: #9aa3b5; }
     body { margin: 0; padding: 0 2px 8px; background: var(--page); color: var(--text); font: 15px/1.55 "Rubik", system-ui, sans-serif; }
     a { color: var(--link); }
     img { image-rendering: pixelated; display: block; max-width: 100%; }
@@ -23,44 +23,47 @@
     td { padding: 3px 14px 3px 0; vertical-align: top; }
     td:first-child { color: var(--link); white-space: nowrap; font-family: 'VT323', monospace; font-size: 18px; }
     .lead { font-size: 17px; }
+    .gif { margin: 14px 0 4px; width: 600px; image-rendering: auto; }
   </style>
 </head>
 <body>
 <!-- ===== itch:start — copy from here (img src: replace out/... with the itch.io image URLs) ===== -->
   <img src="out/logo.png" alt="Street Football Chaos" width="336">
-  <p class="lead"><b>3v3 street football with no referee.</b> To win the ball back, you punch whoever has it.</p>
+  <p class="lead"><b>Street Football Chaos is a football roguelite:</b> start with a scrappy street squad, draft a new power with every goal, and become the GOATs of street football. Every run brings a new map, a new squad and a new build.</p>
 
-  <img class="h" width="600" src="out/h-features.png" alt="Features">
-  <ul>
-    <li><b>Your tackle is a punch.</b> Punch the ball carrier to knock the ball loose, or dropkick them into the wall.</li>
-    <li><b>No referee.</b> No fouls, no cards, no whistle. Every loose ball turns into a brawl.</li>
-    <li><b>Power up your team after every goal.</b> Pick one of three Cores, upgrades that last the rest of the match: faster sprints, harder shots, heavier punches. 53 Cores in all, 7 of them ultimates.</li>
-    <li><b>Main Path campaign:</b> climb 10 areas, from a village pitch to the World Stage.</li>
-    <li><b>Dress your player:</b> 80 costume pieces (hats, faces, shoes, trail effects), unlocked with gold you earn in matches.</li>
-    <li><b>Level up your player:</b> every level, pick one of three stat boosts: pace, shooting, passing, dribbling, fighting or goalkeeping.</li>
-    <li><b>Online 1v1</b> with a room code.</li>
-  </ul>
+  <img class="h" width="600" src="out/h-brawl.png" alt="Brawl for the ball">
+  <p>Punch the ball off the carrier, dropkick the opponent, and turn every loose ball into a brawl. Matches are fast 3v3 chaos, and every team you meet brings its own house rule to make it messier!</p>
+  <img class="gif" width="600" src="out/brawl.gif" alt="A punch knocks the ball loose, then a dropkick">
 
-  <img class="h" width="600" src="out/h-cores.png" alt="Core upgrades">
-  <p>After every goal, both teams pick one of three Cores. Stack two, three or four of the same archetype to unlock bonuses. Hold two of one style and that style's ultimate can show up in your picks.</p>
+  <img class="h" width="600" src="out/h-powers.png" alt="Stack your powers">
+  <p><b>Cores</b> are powers that bend the match your way. Shooting, passing, punching, speed: each Core powers up one part of your game, so every pick decides how you beat the other team, and one good pick can turn around a match you were losing.</p>
+  <p>Pick three Cores of the same kind and you unlock their <b>Ultimate</b>, a super move only that build can pull off. 37 Ultimates to discover!</p>
+  <img class="gif" width="600" src="out/ultimate.gif" alt="Meteor Shot, an Ultimate, scoring from the halfway line">
+
+  <img class="h" width="600" src="out/h-route.png" alt="Plan your route">
+  <p>Choose your way across the map: matches, tougher Elite teams, skill games, a shop and surprise events, with a boss waiting at the end. Lose once and the run is over, so pick your fights.</p>
+
+  <img class="h" width="600" src="out/h-legends.png" alt="Sign the legends">
+  <p>Pull off a legend's signature move in his trial and that parody football star joins your squad, flaw and all. Kit your players out with gear, and collect badges that bend the rules for the whole team, like a one-goal head start or a VAR check on the goals you concede.</p>
 
   <img class="h" width="600" src="out/h-controls.png" alt="Controls">
+  <p>The game works with keyboard and gamepad (Xbox and PlayStation controllers).</p>
   <table>
     <tr><td>Arrow keys</td><td>Move</td></tr>
     <tr><td>E (hold)</td><td>Sprint</td></tr>
-    <tr><td>S</td><td>Quick pass</td></tr>
+    <tr><td>S</td><td>Pass</td></tr>
     <tr><td>W</td><td>Through ball</td></tr>
     <tr><td>A</td><td>Lob pass · <i>defending:</i> dropkick</td></tr>
     <tr><td>D</td><td>Shoot (hold to charge) · <i>defending:</i> punch</td></tr>
-    <tr><td>Z</td><td>Skill move / dash</td></tr>
-    <tr><td>X</td><td>Ultimate (when full)</td></tr>
+    <tr><td>Q</td><td>Skill move / dash</td></tr>
+    <tr><td>Space</td><td>Ultimate (when full)</td></tr>
     <tr><td>1 2 3</td><td>Pick a Core</td></tr>
     <tr><td>Esc</td><td>Pause</td></tr>
   </table>
-  <p>Gamepads work too. Click the game first so it gets your key presses.</p>
 
-  <img class="h" width="600" src="out/h-online.png" alt="Play online">
-  <p>Create a room, send the 7-letter code to a friend, and play 1v1.</p>
+  <img class="h" width="600" src="out/h-fullgame.png" alt="Full game">
+  <p>The demo has the first act: 6 teams, 1 boss, skill games, legend trials and the shop.</p>
+  <p>The full game is coming soon to Steam. It adds two more acts, NIGHT CITY and THE LEGENDS, plus online co-op and versus for 2 to 4 players.</p>
 
 <!-- ===== itch:end ===== -->
 
