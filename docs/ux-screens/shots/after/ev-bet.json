@@ -1,0 +1,18 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "pt-btn   sel",
+  "txt": "Bet\n-$25\n+$60?",
+  "x": 890,
+  "y": 564,
+  "w": 358,
+  "h": 64
+ },
+ "order": [
+  "choose:0",
+  "choose:1"
+ ],
+ "id": "ev-bet",
+ "title": "CROSSBAR CHALLENGE",
+ "moving_pct": 1.2
+}

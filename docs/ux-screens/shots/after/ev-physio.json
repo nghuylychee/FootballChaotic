@@ -1,0 +1,18 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "pt-btn   sel",
+  "txt": "Get treated\n-$40\nHEAL",
+  "x": 748,
+  "y": 564,
+  "w": 500,
+  "h": 64
+ },
+ "order": [
+  "choose:0",
+  "choose:1"
+ ],
+ "id": "ev-physio",
+ "title": "PARK PHYSIO",
+ "moving_pct": 0.2
+}

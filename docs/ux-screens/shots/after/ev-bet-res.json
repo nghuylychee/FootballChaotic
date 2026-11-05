@@ -1,0 +1,17 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "pt-btn go  sel",
+  "txt": "CONTINUE",
+  "x": 868,
+  "y": 606,
+  "w": 352,
+  "h": 62
+ },
+ "order": [
+  "evok"
+ ],
+ "id": "ev-bet-res",
+ "title": "CROSSBAR CHALLENGE · kết quả",
+ "moving_pct": 0.0
+}
