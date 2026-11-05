@@ -141,5 +141,16 @@
     "STREET VENDOR khi đội đã có mọi BADGE: vẫn trừ 30 mà không được gì (Run.give trả null). Rất hiếm, nhưng có muốn cho nút mờ trong trường hợp đó không (đổi Run.canChoose)?",
     "Chỉ có 5 sự kiện: bật lại ??? thì gặp lại sớm. Có muốn thêm sự kiện mới không? Các khuôn rẻ (contract, phone, newspaper, tv) dựng xong là chứa thêm được sự kiện mà không phải vẽ cảnh mới, vd 1 vụ hợp đồng tài trợ + chồng tiền đúng như ví dụ của m.",
     "TREASURE (15% số lần vào ???, run.mystery) hiện là thẻ chọn 1 trong 3 BADGE có tiêu đề TREASURE. Có muốn nó cũng có cảnh riêng không, vd 1 túi đồ ai bỏ quên sau khung thành, dùng lại miếng vá của KIT VAN?"
+  ],
+  "decided": [
+    "2026-11-05, owner: 5 sự kiện đều làm theo cách diễn đề xuất (đã vẽ). Câu hỏi nào chỉ đụng hình ảnh thì Claude tự quyết, mục tiêu game đẹp, chất lượng; câu đụng cân bằng / số liệu / cơ chế thì giữ nguyên, chờ owner.",
+    "Cỡ pixel: giữ 320x180 như KIT VAN (5 cảnh đã vẽ ở cỡ này, dùng chung bộ vẽ).",
+    "Lời thoại: giữ câu dẫn làm dải chú thích, không thêm câu riêng cho từng nhân vật (hình đã kể đủ, khỏi 5 chuỗi mới x 4 thứ tiếng).",
+    "Xác suất: giữ dấu ? (INJURY?, +$60?), không hiện số hay hình 50/50 — đúng luật người chơi không đọc số.",
+    "Chuỗi mới: 'Nobody got hurt.' và 'Nobody is hurt.' đã thêm (4 gói). Không dùng khuôn báo nên không có tên báo.",
+    "Thẻ kết quả che cảnh (agent báo): thu gọn 300 -> 250 px, icon / chữ nhỏ 1 cỡ.",
+    "Tua hoạt cảnh: bấm CONTINUE / phím xác nhận lúc hoạt cảnh kết quả còn chạy = tua tới khung cuối, bấm lần nữa mới về map (EvScene.busy / skip).",
+    "TREASURE có cảnh riêng: để đợt sau (cảnh mới).",
+    "Chưa quyết (cơ chế / cân bằng / nội dung, chờ owner): CROSSBAR tung đồng xu hay sút thật; STREET VENDOR vẫn trừ 30 khi đội đã có mọi BADGE; thêm sự kiện mới; khách co-op xem cảnh kết quả (cần đổi shared/meta/run.js + bump server)."
   ]
 }

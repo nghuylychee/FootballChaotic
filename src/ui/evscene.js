@@ -12,6 +12,7 @@
  *   dom(s): HTML thêm vào cảnh (tuỳ chọn, vd thẻ tên), toạ độ px trong khung 640x360 */
 (function () {
   const LW = 320, LH = 180, O = '#120c16';
+  const SKIP_AT = 2;   // giây: mọi hoạt cảnh kết quả đứng yên trước mốc này (tua = nhảy qua mốc)
   const hsh = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
   const scenes = {};
   let cv = null, L = null, bg = null, raf = 0, last = 0, T = 0, id = null, visit = null, stateFn = null, buf = null, phase = null, phaseAt = 0;
@@ -135,6 +136,9 @@
           ${o.res ? `<div class="ev-res"><b>${esc(o.res.head)}</b><div class="ev-rows">${o.res.rows}</div>${o.res.foot}</div>` : `<div class="ev-pick ch">${o.choose}</div>`}
         </div></div>`;
     },
+    // hoạt cảnh kết quả còn chạy (cảnh nào cũng đứng yên trước SKIP_AT giây) · tua: dời mốc pha về trước để cảnh vẽ ngay khung cuối
+    busy() { return !!cv && cv.isConnected && phase === 'result' && T - phaseAt < SKIP_AT; },
+    skip() { phaseAt = T - SKIP_AT; },
     // sau khi vẽ DOM: vẽ nền 1 lần (đổi sự kiện / lần mở mới) rồi chạy vòng vẽ; state() đọc trạng thái mới nhất từ RunUI mỗi khung
     bind(root, eid, state, key) {
       const el = root.querySelector('.ev-page canvas.ev-lo');

@@ -3851,10 +3851,14 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .ev-cross::before { left: 3px; top: 0; width: 2px; height: 8px; }
 .ev-cross::after { left: 0; top: 3px; width: 8px; height: 2px; }
 /* thẻ kết quả: mỗi dòng 1 icon riêng · mất = đỏ, được / thoát = xanh · dòng BADGE kèm công dụng */
-.ev-res { position: absolute; right: 16px; bottom: 14px; z-index: 2; width: 300px; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: rgba(18, 12, 22, 0.92); border: 2px solid var(--gold); box-shadow: 3px 3px 0 #000; }
+.ev-res { position: absolute; right: 16px; bottom: 14px; z-index: 2; width: 250px; display: flex; flex-direction: column; gap: 5px; padding: 8px 10px; background: rgba(18, 12, 22, 0.92); border: 2px solid var(--gold); box-shadow: 3px 3px 0 #000; }
+/* gọn lại (thẻ cũ che gần nửa dưới phải cảnh): icon nhỏ, chữ nhỏ 1 cỡ */
+.ev-res .ev-row .ev-ico { width: 22px; }
+.ev-res .ev-row .ev-ico .pxi.x2 { width: 20px; height: 20px; }
+.ev-res .pt-btn.go { padding: 6px 18px 5px; font-size: 10px; }
 .ev-res > b { font-family: var(--px); font-size: 9px; font-weight: normal; letter-spacing: 2px; color: var(--gold); }
 .ev-res .ev-rows { gap: 5px; margin: 0; }
-.ev-res .ev-row b { font-family: inherit; font-size: 14px; line-height: 1.1; color: #e6dccb; }
+.ev-res .ev-row b { font-family: inherit; font-size: 13px; line-height: 1.1; color: #e6dccb; }
 .ev-res .ev-row b small { display: block; font-size: 12px; color: var(--muted); }
 .ev-res .ev-row.bad b { color: #ff8a98; }
 .ev-res .ev-row.good b { color: #9dff7a; }

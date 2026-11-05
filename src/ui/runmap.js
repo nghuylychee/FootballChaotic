@@ -1709,7 +1709,8 @@ window.SFC = window.SFC || {};
           this.sayEvent(menu, res, id, t.i);
           break;
         }
-        case 'evok': this.ev = null; break;
+        // thẻ kết quả sự kiện có cảnh pixel: bấm lúc hoạt cảnh còn chạy = tua tới cảnh cuối, bấm lần nữa mới đi tiếp
+        case 'evok': if (SFC.EvScene && SFC.EvScene.busy()) { SFC.EvScene.skip(); return; } this.ev = null; break;
         case 'node': {
           const r = RUN().enter(t.id);
           if (!r) return;
