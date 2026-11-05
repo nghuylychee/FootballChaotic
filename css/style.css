@@ -130,7 +130,6 @@ kbd {
 .m-items { display: flex; flex-direction: column; gap: 1px; }
 .mi { display: block; width: 100%; text-align: left; position: relative; padding: 2px 6px 2px 14px; border-left: 2px solid transparent; }
 .mi.sel { border-left-color: var(--gold); background: linear-gradient(90deg, rgba(255,225,79,0.12), rgba(255,225,79,0)); }
-.mi.sel::before { content: "▶"; position: absolute; left: 3px; top: 50%; transform: translateY(-50%); font-size: 7px; color: var(--gold); animation: pulse 0.8s steps(2) infinite; }
 .mi-label { display: block; font-size: 21px; line-height: 1; letter-spacing: 1px; color: #fff; }
 .mi-sub { display: block; font-size: 12px; line-height: 1.1; color: var(--muted); }
 .mi.sel .mi-label { color: var(--gold); }
@@ -652,13 +651,15 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .pt-side-btns { display: flex; gap: 4px; }
 /* CON TRỎ CHỌN ▶ (owner 2026-11-05: nhìn 2 nút cạnh nhau không biết là chọn 1 trong 2, cũng không chắc đang chọn cái nào — game đang dùng 4 kiểu
    "đang chọn" khác nhau, và vàng vừa là "nút chính" vừa là "đang chọn"): tam giác pixel vàng viền mực bên trái mục đang chọn, nhún 2px.
-   Dùng cho mọi chỗ chọn 1 trong N của luồng GOAT PATH (sự kiện ???, chân thẻ che map, Pause, HOST / JOIN). Nút chính vẫn tô vàng; chỉ con trỏ
-   mới nói "đang ở đây". Hàng nút ngang cần khe >= 18px để con trỏ của nút sau không đè nút trước */
-.ch > .sel, .rm-sheet-foot > .pt-btn.sel, #pause .pause-foot > button.sel, .rt-picks > .rt-pick.sel { position: relative; overflow: visible; }
-.ch > .sel::before, .rm-sheet-foot > .pt-btn.sel::before, #pause .pause-foot > button.sel::before, .rt-picks > .rt-pick.sel::before {
+   Cả game (owner 2026-11-05: "làm cho cả game"): mọi nút hành động (.pt-btn), nút Pause / hộp QUIT / màn kết quả (.pause-items), danh sách menu
+   (.mi, trước đây là ký tự ▶ của font), hàng danh sách (.pt-mrow, .fr-row), lựa chọn sự kiện ???, HOST / JOIN. Nút chính vẫn tô vàng; chỉ con
+   trỏ mới nói "đang ở đây". Hàng nút ngang cần khe >= 18px để con trỏ của nút sau không đè nút trước. Thẻ / ô / tab giữ khung chọn riêng */
+.ch > .sel, .pt-btn.sel:not(.room-leave), .pause-items button.sel, .rt-picks > .rt-pick.sel { position: relative; overflow: visible; }
+.ch > .sel::before, .pt-btn.sel::before, .pause-items button.sel::before, .rt-picks > .rt-pick.sel::before, .mi.sel::before, .pt-mrow.sel::before, .fr-row.sel::before {
   content: ""; position: absolute; left: -14px; top: 50%; width: 9px; height: 16px; margin-top: -8px; pointer-events: none; background-size: 9px 16px !important;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='11' shape-rendering='crispEdges'%3E%3Cpath fill='%23121316' d='M0 1h1v9H0zM1 1h1v1H1zM1 9h1v1H1zM2 2h1v1H2zM2 8h1v1H2zM3 3h1v1H3zM3 7h1v1H3zM4 4h1v1H4zM4 6h1v1H4zM5 5h1v1H5z'/%3E%3Cpath fill='%23ffe14f' d='M1 2h1v7H1zM2 3h1v5H2zM3 4h1v3H3zM4 5h1v1H4z'/%3E%3C/svg%3E") no-repeat; image-rendering: pixelated; animation: chBob 0.6s steps(2) infinite; }
 @keyframes chBob { 50% { transform: translateX(2px); } }
+.mi.sel::before { left: 3px; }   /* danh sách menu: con trỏ nằm trong lề trái của dòng (trước đây là ký tự ▶ của font) */
 .pt-btn { font-size: 13px; color: #e6dccb; letter-spacing: 1px; padding: 4px 8px 3px; background: var(--panel); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; line-height: 1; }
 .pt-btn.sel, .pt-btn:hover { color: var(--gold); border-color: var(--gold); }
 .pt-btn.go { font-family: var(--px); font-size: 12px; letter-spacing: 3px; color: var(--ink); padding: 8px 26px 7px; background: var(--gold); border: 2px solid var(--ink);
@@ -744,7 +745,8 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .pt-pop { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; background: rgba(10, 11, 14,0.55); }
 .pt-popbox { width: 190px; display: flex; flex-direction: column; gap: 2px; padding: 6px; background: rgba(14,16,20,0.97); border: 1px solid var(--gold); box-shadow: 3px 3px 0 var(--ink); }
 .pt-poptitle { font-family: var(--px); font-size: 7px; color: #fff; letter-spacing: 2px; text-align: center; padding: 2px 0 5px; text-shadow: 1px 1px 0 var(--ink); }
-.pt-mrow { display: flex; align-items: center; gap: 6px; padding: 2px 6px; border-left: 2px solid transparent; cursor: pointer; line-height: 1; }
+.pt-mrow { position: relative; display: flex; align-items: center; gap: 6px; padding: 2px 6px 2px 14px; border-left: 2px solid transparent; cursor: pointer; line-height: 1; }
+.pt-mrow.sel::before, .fr-row.sel::before { left: 2px; }
 .pt-mrow:hover { background: rgba(255,255,255,0.04); }
 .pt-mrow.sel { border-left-color: var(--gold); background: rgba(255,225,79,0.1); }
 .pt-mrow canvas.avatar { width: 20px; height: 22px; flex: none; }
@@ -783,7 +785,7 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .fr-head { font-family: var(--px); font-size: 5px; color: var(--muted); padding: 5px 6px 3px; letter-spacing: 1px; }
 .fr-head em { font-style: normal; color: #6bff4f; margin-left: 3px; }
 .fr-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
-.fr-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 2px 6px; border-left: 2px solid transparent; cursor: pointer; position: relative; }
+.fr-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 2px 6px 2px 14px; border-left: 2px solid transparent; cursor: pointer; position: relative; }
 .fr-row:hover { background: rgba(255,255,255,0.04); }
 .fr-row.sel { border-left-color: var(--gold); background: rgba(255,225,79,0.08); }
 .fr-row .fr-info { flex: 1; }
