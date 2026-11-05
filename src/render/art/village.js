@@ -352,7 +352,7 @@ window.SFC = window.SFC || {};
     prop(286, (c) => P.tray(c, 856, 290, { r: 10, content: 'chili', seed: 2 }), FLAT);
     person(808, 296, v('farmerW', { top: '#6a7a8a' }), { face: 'left', pose: 'rake' });
     npc(284, (c) => N.hen(c, 760, 284, { t, pose: 'peck', seed: 4, face: 'right' }));
-    prop(336, (c) => P.scoreboard(c, 744, 338, { text: '2-1' }));
+    prop(336, (c) => P.scoreboard(c, 744, 338, { text: '3K', glass: true }));   // bảng giá trà đá (không ghi tỉ số: dễ nhầm với tỉ số trận)
     prop(358, (c) => P.cooler(c, 734, 362));
     person(742, 392, v('youth', { top: '#5a8a5a', topStyle: 'shirt' }), { face: 'left', pose: 'hips' });
     prop(340, (c) => P.haystack(c, 862, 344, { r: 13, seed: 6 }));

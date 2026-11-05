@@ -116,8 +116,16 @@ window.SFC = window.SFC || {};
     return stoneCv;
   }
 
-  // ghế nhựa đỏ kiểu quán trà đá (chân tại x, y)
-  function stool(ctx, x, y, col) {
+  // màu ghế nằm yên trên sân (UX màn hình 2026-11): tối đi 40% + bớt 35% độ rực -> đỏ trầm, tối hơn vòng chân đối thủ (ctrlColors.opp).
+  // Ghế nằm yên không được nổi hơn cầu thủ / bóng khi nheo mắt; ghế đang cầm / đang bay giữ đỏ tươi vì lúc đó mới nguy hiểm
+  function rest(hex) {
+    const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => v * 0.6);
+    const g = c[0] * 0.299 + c[1] * 0.587 + c[2] * 0.114;
+    return '#' + c.map((v) => Math.round(v + (g - v) * 0.35).toString(16).padStart(2, '0')).join('');
+  }
+  // ghế nhựa đỏ kiểu quán trà đá (chân tại x, y) · still: ghế nằm yên (màu trầm, không chấm sáng)
+  function stool(ctx, x, y, col, still) {
+    if (still) col = rest(col);
     const { px, ellipse, OUT } = SP(), dk = dark(col, 0.35);
     // viền tối
     px(ctx, x - 6, y - 9, 3, 10, OUT); px(ctx, x + 3, y - 9, 3, 10, OUT); px(ctx, x - 2, y - 8, 4, 8, OUT);
@@ -126,7 +134,7 @@ window.SFC = window.SFC || {};
     px(ctx, x - 5, y - 8, 1, 8, dk); px(ctx, x + 4, y - 8, 1, 8, dk); px(ctx, x - 1, y - 7, 2, 6, dk);
     px(ctx, x - 5, y - 4, 10, 1, dk);
     ellipse(ctx, x, y - 10, 7, 2.5, col);
-    px(ctx, x - 4, y - 11, 4, 1, '#ffffff');
+    if (!still) px(ctx, x - 4, y - 11, 4, 1, '#ffffff');
     ellipse(ctx, x, y - 10, 2, 0.8, dk);
   }
 
@@ -343,9 +351,9 @@ window.SFC = window.SFC || {};
     draw(ctx, g, o, c, k, el, fade, part) {
       const { px, ellipse } = SP(), t = g.time, x = Math.round(c.x), y = Math.round(c.y), f = g.field;
       switch (o.kind) {
-        case 'stool':
+        case 'stool':   // ghế nằm yên: màu trầm (rest). Đang cầm (stoolheld) / đang bay (stoolthrow, stoolfly): đỏ tươi
           ellipse(ctx, x, y + 1, 7, 2.5, 'rgba(0,0,0,0.3)');
-          stool(ctx, x, y, o.color);
+          stool(ctx, x, y, o.color, true);
           break;
         /* ---- Story 2–4 ---- */
         case 'flock': {   // đàn bồ câu bay ngang (vỗ cánh), bóng đổ dưới sân

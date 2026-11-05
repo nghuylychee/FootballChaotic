@@ -460,15 +460,20 @@ window.SFC = window.SFC || {};
     for (let i = -5; i <= 5; i += 2) K.line(c, x + i, y - 1, x + i / 2, y - 10, 'rgba(60,60,60,0.55)');
     px(c, x - 1, y - 12, 2, 2, '#c84a3a');
   };
-  // bảng phấn ghi tỉ số trên giá (chữ số phấn 3 x 5)
-  const DIG = { 0: ['111', '101', '101', '101', '111'], 1: ['010', '110', '010', '010', '111'], 2: ['111', '001', '111', '100', '111'], 3: ['111', '001', '011', '001', '111'], '-': ['000', '000', '111', '000', '000'] };
+  // bảng phấn trên giá (chữ số phấn 3 x 5): tỉ số, hoặc bảng giá trà đá (o.glass: cốc trà đá vẽ phấn trước chữ "3K" — UX màn hình 2026-11:
+  // tỉ số giả cạnh sân bị đọc nhầm thành tỉ số trận)
+  const DIG = { 0: ['111', '101', '101', '101', '111'], 1: ['010', '110', '010', '010', '111'], 2: ['111', '001', '111', '100', '111'], 3: ['111', '001', '011', '001', '111'], '-': ['000', '000', '111', '000', '000'],
+    K: ['101', '101', '110', '101', '101'] };
+  // cốc trà đá phấn 5 x 6 (đáy ngang chân chữ số): w = viền phấn trắng · a = nước trà (phấn cam) · s = ống hút
+  const GLASS = ['....s', 'w..sw', 'waaaw', 'waaaw', 'waaaw', '.www.'], GLASS_C = { w: '#e8ecdc', a: '#d8a050', s: '#e8ecdc' };
   P.scoreboard = function (c, x, y, o = {}) {
     const W = R('#8a6a42');
     K.shadow(c, x + 2, y, 9, 2);
     K.line(c, x - 7, y, x - 4, y - 18, W.d); K.line(c, x + 7, y, x + 4, y - 18, W.d); K.line(c, x + 1, y, x, y - 10, W.o);
     px(c, x - 10, y - 20, 20, 13, W.o); px(c, x - 9, y - 19, 18, 11, '#2e4a3a'); px(c, x - 9, y - 19, 18, 1, '#3e5a4a');
-    const txt = String(o.text || '2-1');
-    let cx2 = x - Math.round((txt.length * 4 - 1) / 2);
+    const txt = String(o.text || '2-1'), gw = o.glass ? 7 : 0;   // cốc rộng 5 + cách chữ 2
+    let cx2 = x - Math.round((gw + txt.length * 4 - 1) / 2);
+    if (o.glass) { GLASS.forEach((row, j) => [...row].forEach((ch, i) => { if (GLASS_C[ch]) dot(c, cx2 + i, y - 18 + j, GLASS_C[ch]); })); cx2 += gw; }
     for (const ch of txt) { const g = DIG[ch]; if (g) for (let j = 0; j < 5; j++) for (let i = 0; i < 3; i++) if (g[j][i] === '1') dot(c, cx2 + i, y - 17 + j, '#e8ecdc'); cx2 += 4; }
     px(c, x - 7, y - 10, 4, 1, 'rgba(232,236,220,0.5)');   // vạch đếm
     px(c, x + 5, y - 9, 3, 1, '#f0f0e0');   // viên phấn

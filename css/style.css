@@ -419,30 +419,38 @@ kbd { font-family: var(--vt); font-size: 11px; padding: 0 3px; }
 .ab-bd.spent { opacity: 0.35; filter: grayscale(1); }
 .ab-bd.hit { animation: abBdHit 0.6s steps(3); }
 @keyframes abBdHit { 0%, 60% { box-shadow: inset 0 0 0 6px rgba(255, 255, 255, 0.85); } 100% { box-shadow: inset 0 0 0 1px var(--ink); } }
-.ab-leg { position: relative; width: 20px; height: 24px; box-sizing: border-box; margin-left: 2px; overflow: visible;
-  background: #1a1c22; border: 1px solid color-mix(in srgb, var(--lc) 60%, #3b4252); box-shadow: inset 0 0 0 1px var(--ink); }
-.ab-leg canvas { position: absolute; left: 0; top: 0; width: 18px; height: 18px; image-rendering: pixelated; }
-.ab-leg .sw { position: absolute; left: 0; top: 0; width: 18px; height: 18px; --p: 0;
+/* ô LEGEND (UX màn hình 2026-11): ô 18px khung trung tính như 3 ô ra đòn, màu LEGEND chỉ ở vạch trong đáy ô (lg-stripe);
+   dưới ô = phím của kỹ thuật (lg-key, keycap như ô ra đòn, nối bằng +). Cột cao 24px như lưới Core, phím dài thì ô rộng theo */
+.ab-leg { position: relative; display: flex; flex-direction: column; align-items: center; min-width: 18px; height: 24px; margin-left: 2px; }
+.ab-leg .lg-box { position: relative; flex: none; width: 18px; height: 18px;
+  background: #1c2230; border: 1px solid #5a6a86; box-shadow: inset 0 0 0 1px var(--ink); }
+.ab-leg canvas { position: absolute; left: 0; top: 0; width: 16px; height: 16px; image-rendering: pixelated; }
+.ab-leg .lg-stripe { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--lc); }
+.ab-leg .sw { position: absolute; inset: 0; --p: 0;
   background: conic-gradient(transparent calc((1 - var(--p)) * 360deg), rgba(10, 11, 14, 0.8) 0); }
-.ab-leg b { position: absolute; left: 0; top: 0; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+.ab-leg b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-family: var(--px); font-size: 5px; font-weight: normal; color: #fff; text-shadow: 1px 1px 0 var(--ink); }
-.ab-leg .lg-fill { position: absolute; left: 1px; right: 1px; bottom: 5px; height: 1px; transform-origin: left; transform: scaleX(var(--f, 0)); background: var(--lc); }
+.ab-leg .lg-fill { position: absolute; left: 1px; right: 1px; bottom: 3px; height: 1px; transform-origin: left; transform: scaleX(var(--f, 0)); background: var(--lc); }
 .ab-leg .lg-pips { position: absolute; left: 0; right: 0; bottom: 1px; display: flex; justify-content: center; gap: 2px; }
 .ab-leg .lg-pips u { width: 3px; height: 3px; background: var(--lc); box-shadow: 0 0 0 1px var(--ink); }
 .ab-leg .lg-pips u.used { background: #3b4252; }
+.ab-leg .lg-key { display: flex; align-items: center; gap: 1px; margin-top: -1px; font-family: var(--px); font-size: 5px; line-height: 1; color: #9aa3b5; }
+.ab-leg .lg-key i { font-style: normal; }
+#abar .lg-key kbd { position: static; padding: 0 1px; }
 .ab-leg .lg-fouls { position: absolute; left: 50%; top: -5px; transform: translateX(-50%); display: flex; gap: 1px; }
 .ab-leg .lg-fouls u { width: 3px; height: 4px; background: #2a1418; box-shadow: 0 0 0 1px var(--ink); }
 .ab-leg .lg-fouls u.on { background: #ff3d5a; }
-.ab-leg.on { border-color: var(--lc); box-shadow: inset 0 0 0 1px var(--ink), 0 0 5px var(--lc); animation: pulse 0.6s steps(2) infinite; }
+.ab-leg.on .lg-box { border-color: var(--lc); box-shadow: inset 0 0 0 1px var(--ink), 0 0 5px var(--lc); animation: pulse 0.6s steps(2) infinite; }
 .ab-leg.cd canvas { filter: grayscale(0.7); }
 .ab-leg.out canvas { filter: grayscale(1) brightness(0.6); }
-.ab-leg.red { border-color: #ff3d5a; }
+.ab-leg.red .lg-box { border-color: #ff3d5a; }
 .ab-leg.red canvas { filter: grayscale(1) brightness(0.5); }
 .ab-leg.red b { color: #ff3d5a; font-size: 9px; }
-.ab-leg.ready { animation: abReady 0.35s steps(3); }
-/* vừa ra kỹ thuật LEGEND: ô phóng to + loé trắng + tia toả kiểu anime, tên kỹ thuật bay lên trên thanh */
-.ab-leg.tech { animation: abLegTech 0.7s steps(7); z-index: 3; }
-.ab-leg.tech::before { content: ''; position: absolute; left: 50%; top: 45%; width: 64px; height: 64px; margin: -32px 0 0 -32px; pointer-events: none;
+.ab-leg.ready .lg-box { animation: abReady 0.35s steps(3); }
+/* vừa ra kỹ thuật LEGEND: ô phóng to + loé trắng + tia toả kiểu anime (quanh ô, phím đứng yên), tên kỹ thuật bay lên trên thanh */
+.ab-leg.tech { z-index: 3; }
+.ab-leg.tech .lg-box { animation: abLegTech 0.7s steps(7); }
+.ab-leg.tech::before { content: ''; position: absolute; left: 50%; top: 9px; width: 64px; height: 64px; margin: -32px 0 0 -32px; pointer-events: none;
   background: repeating-conic-gradient(from 0deg, var(--lc) 0 8deg, transparent 8deg 30deg);
   -webkit-mask: radial-gradient(circle, transparent 28%, #000 30%, transparent 70%); mask: radial-gradient(circle, transparent 28%, #000 30%, transparent 70%);
   animation: abLegRays 0.7s steps(7) forwards; }
