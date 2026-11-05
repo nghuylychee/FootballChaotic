@@ -125,11 +125,14 @@ window.SFC = window.SFC || {};
   }
   // thẻ giá bìa cát-tông treo dây: đồng xu + số · HOT = thẻ đỏ, giá cũ nhỏ gạch ngang đứng trước giá mới (o.was) · đã bán = chữ SOLD đỏ
   // · không đủ tiền (poor, UX review 2026-11-02) = bìa xám tối, số đỏ, xu xám (món trên móc giữ nguyên màu để vẫn ngắm được)
-  // · o.loose: thẻ dựng trên quầy cạnh hộp cứu thương (không dây treo, không lỗ xỏ dây)
+  // · o.loose: thẻ dựng trên quầy cạnh hộp cứu thương (không dây treo, không lỗ xỏ dây), cx = mép trái
+  // · thẻ treo: cx = tâm món đồ phía trên -> thẻ căn giữa dưới món (owner 2026-11-05: thẻ rộng ra mà vẫn neo mép trái nên lệch hẳn sang phải),
+  //   dây buộc vào lỗ xỏ ở góc trái thẻ
   function tag(cx, y, o) {
     const sold = o.sold, dim = o.poor && !sold, hot = o.hot && !sold, label = sold ? 'SOLD' : String(o.price);
-    const was = hot && o.was ? String(o.was) : '', ww = was ? textW(was) + 3 : 0, x = cx - 2, w = sold ? textW(label) + 6 : 12 + ww + textW(label);
-    if (!o.loose) P(cx, y - 4, 1, 4, '#e8dcc4');
+    const was = hot && o.was ? String(o.was) : '', ww = was ? textW(was) + 3 : 0, w = sold ? textW(label) + 6 : 12 + ww + textW(label);
+    const x = o.loose ? cx - 2 : cx - Math.floor(w / 2);
+    if (!o.loose) P(x + 2, y - 4, 1, 4, '#e8dcc4');
     P(x, y, w, 9, '#3a2410'); P(x + 1, y + 1, w - 2, 7, dim ? '#5a5060' : hot ? '#ff3d5a' : '#d8b27a'); P(x + 1, y + 7, w - 2, 1, dim ? '#3e3646' : hot ? '#b8202e' : '#a8824a');
     if (!o.loose) P(x + 2, y + 2, 1, 1, '#3a2410');
     if (sold) return text(label, x + 4, y + 2, '#c8202e');
@@ -346,7 +349,7 @@ window.SFC = window.SFC || {};
       const onHook = !s.sold || (reaching && hand.item.kind === 'item' && hand.item.i === i);
       const lit = S.hover === s.key && !s.sold, lift = (lit ? -3 : 0) + dy;
       if (onHook) { patch(s, x - 10, 51 + lift, lit); if (s.hot) hotSticker(x + 3, 47 + lift); }
-      tag(x + 4, 79 + dy, { price: s.price, was: s.was, hot: s.hot, sold: s.sold && !onHook, poor: s.poor });
+      tag(x, 79 + dy, { price: s.price, was: s.was, hot: s.hot, sold: s.sold && !onHook, poor: s.poor });
       if (s.key && S.hover === s.key) point = { x: x + 5, y: 66 + lift };
     });
     // hộp cứu thương trên quầy + thẻ giá dựng ngay bên phải (UX màn hình 2026-11: trước đây thẻ treo dưới mép quầy, cách hộp 1 tấm quầy)
