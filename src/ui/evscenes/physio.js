@@ -231,9 +231,7 @@
       if (lf < 0.55) { const v = lf / 0.55; k.P(Math.round(230 + v * 20 + Math.sin(v * 9) * 4), Math.round(86 + v * 44), 2, 1, '#3e6440'); }
     },
     // trỏ chuột vào 1 người đang đau = tên + chấn thương + công dụng (SFC.Tip); toạ độ px của khung 640x360
-    // (RunUI.evScene không truyền state cho EvScene.html nên s ở đây chỉ có t -> tự đọc trạng thái từ RunUI.evState)
     dom(s) {
-      if (!s.team && SFC.RunUI && SFC.RunUI.evState) s = SFC.RunUI.evState();
       if (!s || s.phase !== 'choose') return '';
       const H = SFC.UIHelpers, B = (id) => SFC.Run.badge(id) || {};
       return hurtOf(s).map((m, j) => {
