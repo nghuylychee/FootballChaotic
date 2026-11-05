@@ -1,0 +1,18 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "pt-btn   sel",
+  "txt": "Train hard\nBADGE\nINJURY?",
+  "x": 712,
+  "y": 564,
+  "w": 536,
+  "h": 64
+ },
+ "order": [
+  "choose:0",
+  "choose:1"
+ ],
+ "id": "ev-coach",
+ "title": "OLD COACH",
+ "moving_pct": 1.7
+}
