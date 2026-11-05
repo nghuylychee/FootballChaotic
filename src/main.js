@@ -445,8 +445,8 @@
     SFC.Menu.init(app);
     SFC.UI.show('menu');
     // máy chủ trận (gói miễn phí ngủ khi không ai dùng, dậy mất ~1 phút): đánh thức ngay lúc mở game,
-    // tới lúc người chơi bấm tìm trận / tạo phòng thì đã dậy
-    SFC.Session.prepare();
+    // tới lúc người chơi bấm tìm trận / tạo phòng thì đã dậy. Bản DEMO khoá mạng (Platform.privateMatch): không đánh thức
+    if (SFC.Platform.privateMatch) SFC.Session.prepare();
     if (forfeited) SFC.Menu.setMsg(app.forfeitText(forfeited), true);
     // nền tảng (SDK đã init): nghe lời mời + báo phòng · mở game bằng lời mời -> OnlineUI.inviteCode có ngay · chơi cùng nhóm ngay
     SFC.Session.watchInvites();

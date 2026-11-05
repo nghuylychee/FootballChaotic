@@ -170,14 +170,16 @@ window.SFC = window.SFC || {};
     // ảnh sân của từng act (tab 'run')
     bind(menu) {
       menu.setTextMode(this.joining ? 'join' : null);
-      menu.el.querySelectorAll('canvas[data-ract]').forEach((cv) => {
-        const a = RUN().act(+cv.dataset.ract), R = RUN().run;
-        if (!a || !SFC_CONFIG.arenas[a.arena]) return;
-        const img = SFC.Background.thumb(a.arena, SFC_CONFIG.mainPath.playerTeam.id, R ? R.bosses[+cv.dataset.ract] : a.boss[0]);
-        const ctx = cv.getContext('2d');
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(img, 20, 22, 600, 224, 0, 0, cv.width, cv.height);
-      });
+      menu.el.querySelectorAll('canvas[data-ract]').forEach((cv) => this.actThumb(cv));
+    },
+    // vẽ ảnh sân act data-ract lên canvas (tab 'run', màn WISHLIST của bản DEMO)
+    actThumb(cv) {
+      const a = RUN().act(+cv.dataset.ract), R = RUN().run;
+      if (!a || !SFC_CONFIG.arenas[a.arena]) return;
+      const img = SFC.Background.thumb(a.arena, SFC_CONFIG.mainPath.playerTeam.id, R ? R.bosses[+cv.dataset.ract] : a.boss[0]);
+      const ctx = cv.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 20, 22, 600, 224, 0, 0, cv.width, cv.height);
     },
     // FORFEIT RUN (bấm 2 lần): hết run, về màn kết thúc
     forfeit(menu) {

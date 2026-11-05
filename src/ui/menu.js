@@ -145,13 +145,10 @@ window.SFC = window.SFC || {};
 
     // stay = dòng thông báo trạng thái (đang tạo phòng, đang chờ...): không tự ẩn sau msgHide giây
     go(page, msg = '', err = false, stay = false) {
-      // bản DEMO: PRIVATE MATCH khoá (trừ nền tảng mở sẵn: Platform.privateMatch) -> màn WISHLIST. Đã tới Area bị khoá: lần đầu mở Main Path mỗi lần chạy game cũng ra màn WISHLIST.
-      // CrazyGames: link cửa hàng chỉ được ở menu chính / lúc hết demo -> ONLINE chỉ báo khoá, không tự mở WISHLIST ở Main Path
+      // bản DEMO: PRIVATE MATCH khoá (trừ nền tảng mở sẵn: Platform.privateMatch) -> tab PRIVATE MATCH chỉ báo không có trong bản demo.
+      // Đã tới Area bị khoá: lần đầu mở Main Path mỗi lần chạy game ra màn WISHLIST (CrazyGames: link cửa hàng chỉ ở menu chính / lúc hết demo -> không)
       const promo = SFC.Platform.autoWishlist;
-      if (!SFC.Platform.privateMatch && ['online', 'join', 'lobby'].includes(page)) {
-        if (!promo) { this.setMsg(_t('PRIVATE MATCH is in the full game.'), true); return; }
-        page = 'wishlist';
-      }
+      if (!SFC.Platform.privateMatch && (page === 'join' || page === 'lobby')) page = 'online';
       if (promo && page === 'path' && MPATH().demoOver() && !this.wishSeen) page = 'wishlist';
       if (page === 'party' && SFC_CONFIG.mainPath.tab === false) page = 'run';   // RANKED đang ẩn (mainPath.tab)
       if (page === 'wishlist') this.wishSeen = MPATH().demoOver();
@@ -175,7 +172,7 @@ window.SFC = window.SFC || {};
       if (page === 'join' && !msg) this.code = '';
       // máy chủ riêng có thể đang ngủ: đánh thức lúc mở game (main.js); mở PRIVATE MATCH đánh thức thêm lần nữa (tối đa 1 lần / phút)
       // phòng khi người chơi ngồi ở menu quá lâu và máy chủ đã ngủ lại
-      if (page === 'online') Session().prepare();
+      if (page === 'online' && SFC.Platform.privateMatch) Session().prepare();   // bản DEMO khoá mạng: không đánh thức
       if (page === 'name') this.nameBuf = PF().data.name;
       if (page === 'path') this.pathView = MPATH().state.area;   // mở Main Path: xem Area đang đá
       if (page !== 'party' && SFC.Social.chatWith) SFC.Social.chatWith = null;
@@ -264,8 +261,8 @@ window.SFC = window.SFC || {};
             // rung màn hình + nháy trắng: OFF = tắt hết (meta/settings.js screenFx)
             { kind: 'pick', label: _t('SCREEN SHAKE & FLASH'), value: ST().screenFx ? SFC.tc('switch', 'ON') : SFC.tc('switch', 'OFF'), change: () => ST().toggleScreenFx(),
               tip: _t('SCREEN SHAKE & FLASH — OFF: no screen shake, no white flash') },
-            // ping + dung lượng mạng góc trên phải khi ở phòng online (src/ui/online.js)
-            { kind: 'pick', label: _t('NETWORK STATS'), value: ST().netStats ? SFC.tc('switch', 'ON') : SFC.tc('switch', 'OFF'), change: () => ST().toggleNetStats() },
+            // ping + dung lượng mạng góc trên phải khi ở phòng online (src/ui/online.js) · bản DEMO khoá mạng: ẩn
+            ...(SFC.Platform.privateMatch ? [{ kind: 'pick', label: _t('NETWORK STATS'), value: ST().netStats ? SFC.tc('switch', 'ON') : SFC.tc('switch', 'OFF'), change: () => ST().toggleNetStats() }] : []),
           ];
         case 'name':
           return [{ kind: 'btn', label: _t('CONFIRM'), main: true, act: () => this.submitName() }];
@@ -377,6 +374,7 @@ window.SFC = window.SFC || {};
         // PRIVATE MATCH (tab thứ 3 màn PLAY, vẽ ở renderPrivate): 2 ô CREATE / JOIN
         // + CONNECTION (chỉ khi có máy chủ riêng): AUTO = máy chủ riêng trước · DIRECT = máy này làm host. Chữ không nhắc cách kết nối
         case 'online':
+          if (!SFC.Platform.privateMatch) return [];   // bản DEMO: chỉ báo không có trong bản demo (renderPrivate)
           return [
             { kind: 'btn', label: _t('CREATE ROOM'), act: () => Session().createRoom({ direct: ST().roomDirect }) },
             { kind: 'btn', label: _t('JOIN ROOM'), act: () => { this.joinFrom = 'online'; this.go('join'); } },
@@ -389,10 +387,9 @@ window.SFC = window.SFC || {};
           // bản DEMO: hết Area đá được / bấm ONLINE (khung bên phải: wishlistPanel)
           return [
             STEAM_SOON()
-              ? { kind: 'btn', label: _t('COMING SOON TO STEAM'), sub: _t('Steam page not live yet'), main: true, act: () => this.setMsg(_t('The Steam page is coming soon!')) }
-              : { kind: 'btn', label: _t('WISHLIST ON STEAM'), sub: _t('Opens the Steam page'), main: true, act: () => this.openSteam() },
-            { kind: 'btn', label: _t('MAIN PATH'), sub: _t('See your progress'), act: () => this.go('path') },
-            { kind: 'btn', label: _t('BACK'), sub: _t('Main menu'), act: () => this.go('home') },
+              ? { kind: 'btn', label: _t('COMING SOON TO STEAM'), main: true, act: () => this.setMsg(_t('The Steam page is coming soon!')) }
+              : { kind: 'btn', label: _t('WISHLIST ON STEAM'), main: true, act: () => this.openSteam() },
+            { kind: 'btn', label: _t('BACK'), act: () => this.go('home') },
           ];
         case 'lobby': {
           const O = Session();
@@ -794,7 +791,7 @@ window.SFC = window.SFC || {};
     startSearch() {
       const M = SFC_CONFIG.mainPath.matchmaking;
       if (this.page !== 'party') this.go('party');
-      const online = !SFC.Social.party.length;
+      const online = !SFC.Social.party.length && SFC.Platform.privateMatch;   // bản DEMO khoá mạng: chỉ người chơi giả
       // vị trí của character trong trận xếp hạng: ngẫu nhiên mỗi trận (đồng đội — AI / người bạn — đá vị trí còn lại)
       const role = SFC.U.pick(SFC_CONFIG.game.roles);
       this.search = { t: 0, wait: M.searchTime[0] + Math.random() * (M.searchTime[1] - M.searchTime[0]), lobby: null, hold: 0, online, role };
@@ -868,23 +865,20 @@ window.SFC = window.SFC || {};
     },
 
     /* ---------------- bản DEMO (itch.io) ---------------- */
-    // màn WISHLIST: khoe Area kế tiếp + phần còn lại của bản đầy đủ (số Area, Core, online)
+    // màn WISHLIST (hết bản DEMO): khoe act GOAT PATH kế tiếp + phần còn lại của bản đầy đủ (act, đội mới, online). Ít chữ: nút bên trái đã nói COMING SOON / WISHLIST
     wishlistPanel() {
-      const MP = MPATH(), D = SFC_CONFIG.demo, next = MP.area(D.areas), over = MP.demoOver();
-      const rest = MP.areas().slice(D.areas);
-      const coresLeft = rest.reduce((n, a) => n + (a.road || []).reduce((m, ids) => m + ids.length, 0), 0);
-      return `<div class="path wish" style="--ac:${next.color}">
-        <div class="ph"><span class="ph-num">${esc(over ? _t('DEMO COMPLETE') : _t('FULL GAME ONLY'))}</span><span class="ph-state">${esc(STEAM_SOON() ? _t('COMING SOON') : _t('ON STEAM'))}</span></div>
-        <div class="wl-head">${esc(over ? _t('THANKS FOR PLAYING!') : _t('ONLINE IS LOCKED'))}</div>
-        <div class="ph-sub">${esc(over ? _t('You reached {n}. The road goes on in the full game.', { n: '{stars}' }) : _t('Online versus & co-op come with the full game.')).replace('{stars}', PX().elo(MP.state.elo))}</div>
-        <div class="pa"><canvas data-arena="${D.areas}" data-tease="1" width="300" height="112"></canvas>
-          <div class="wl-next"><span>${esc(_t('NEXT · AREA {n}', { n: D.areas + 1 }))}</span><b>${PX().area(next.id)} ${esc(next.name)}</b></div></div>
+      const n = (SFC_CONFIG.demo && SFC_CONFIG.demo.runActs) || 1, rest = SFC.Run.acts().slice(n), next = rest[0];
+      const crews = new Set(rest.flatMap((a) => a.teams.concat(a.elite || [], a.boss))).size;
+      return `<div class="path wish" style="--ac:${next ? next.color : '#ffd23f'}">
+        <div class="ph"><span class="ph-num">${esc(_t('DEMO COMPLETE'))}</span></div>
+        <div class="wl-head">${esc(_t('THANKS FOR PLAYING!'))}</div>
+        ${next ? `<div class="pa"><canvas data-ract="${n}" width="300" height="112"></canvas>
+          <div class="wl-next"><span>${esc(_t('ACT {n}', { n: n + 1 }))}</span><b>${esc(next.name)}</b></div></div>` : ''}
         <ul class="wl-list">
-          <li>${PX().ui('crown', 'sm')}<span>${_tn('<b>{n} more Area</b> up to the World Stage', '<b>{n} more Areas</b> up to the World Stage', rest.length)}</span></li>
-          <li>${PX().ui('card', 'sm')}<span>${_tn('<b>{n} more Core</b> to unlock', '<b>{n} more Cores</b> to unlock', coresLeft)}</span></li>
+          ${rest.length ? `<li>${PX().ui('crown', 'sm')}<span>${_tn('<b>{n} more act</b> on the GOAT PATH', '<b>{n} more acts</b> on the GOAT PATH', rest.length)}</span></li>` : ''}
+          ${crews ? `<li>${PX().ui('ball', 'sm')}<span>${_tn('<b>{n} new crew</b> to beat', '<b>{n} new crews</b> to beat', crews)}</span></li>` : ''}
           <li>${PX().ui('fist', 'sm')}<span>${_t('<b>Online</b> versus & co-op · 2-4 players')}</span></li>
         </ul>
-        <div class="wl-cta">${esc(STEAM_SOON() ? _t('The full game is coming soon to Steam') : _t('Wishlist now so Steam tells you the day it launches'))}</div>
       </div>`;
     },
 
@@ -994,7 +988,10 @@ window.SFC = window.SFC || {};
       const btn = (i) => (i < 0 ? '' : `<button class="pt-btn ${items[i].main ? 'go' : ''} ${items[i].disabled ? 'dis' : ''} ${sel(i)}" data-i="${i}">${esc(items[i].label)}</button>`);
       const hint = (s) => `<div class="pt-hint">${esc(s)}</div>`;
       let sub = `<span class="pt-area">${esc(_t('Play with friends · no ELO'))}</span>`, body;
-      if (this.page === 'online') {
+      if (this.page === 'online' && !SFC.Platform.privateMatch) {
+        sub = '';
+        body = `<div class="pt-slots pt-joinbox"><div class="pt-jtitle">${PX().ui('lock')} ${esc(_t('Not Available'))}</div><div class="pt-note">${esc(_t('Private matches will be available in the full game.'))}</div></div>`;
+      } else if (this.page === 'online') {
         const tiles = items.map((it, i) => (it.kind !== 'btn' ? '' : `<button class="pt-tile ${sel(i)}" data-i="${i}"><b>${i ? '#' : '+'}</b>
             <span class="pt-tlabel">${esc(it.label)}</span></button>`)).join('');
         // CONNECTION ◀▶ dưới 2 ô (cùng kiểu dòng PITCH trong phòng chờ) + 1 dòng gợi ý
@@ -1427,6 +1424,7 @@ window.SFC = window.SFC || {};
     // gắn canvas character: look = hồ sơ hiện tại, hoặc bản "mặc thử" trong Shop (data-try)
     bindAvatars() {
       this.el.querySelectorAll('canvas[data-arena]').forEach((cv) => this.drawArena(cv));
+      if (this.page === 'wishlist') this.el.querySelectorAll('canvas[data-ract]').forEach((cv) => SFC.RunUI.actThumb(cv));
       // cầu thủ đội đối thủ (Main Path): costume + áo của đội đó
       const teamAvatars = [...this.el.querySelectorAll('canvas[data-team]')].map((cv) => {
         cv.width = 40; cv.height = 44;
@@ -1509,13 +1507,14 @@ window.SFC = window.SFC || {};
         if (input.wasPressed('right')) { this.tutPage = wrap(this.tutPage + 1, n); SFC.Audio.menu(); this.render(); }
         return;
       }
-      const items = this.items();
-      if (!items.length) return;
-      // màn PLAY: Q / E (LB / RB) đổi tab RANKED · PRIVATE MATCH (đang gõ mã phòng / chat: phím đi vào ô chữ, không tới đây)
+      // màn PLAY: Q / E (LB / RB) đổi tab RANKED · PRIVATE MATCH (đang gõ mã phòng / chat: phím đi vào ô chữ, không tới đây).
+      // Trước khi xét danh sách mục: tab PRIVATE MATCH của bản DEMO không có mục nào
       if (PLAY_PAGES.includes(this.page) && !SFC.Social.chatWith) {
         if (input.wasPressed('tabPrev')) return this.playTab(-1);
         if (input.wasPressed('tabNext')) return this.playTab(1);
       }
+      const items = this.items();
+      if (!items.length) return;
       if (PLAY_PAGES.includes(this.page)) return this.playInput(input, items);
       // SỔ TUYỆT KỸ: bảng ô -> ←↑↓→ đi theo vị trí trên màn hình
       if (this.page === 'ults') {
