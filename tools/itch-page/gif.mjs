@@ -8,6 +8,7 @@
 // Chỉ chụp khung có "máy quay" bám theo hành động (cả sân thì quá nhỏ) -> GIF 768x432 (ZOOM).
 // Ẩn chữ thông báo giữa màn (GOAL!...). Chọn đối thủ áo khác màu hẳn đội mình (khỏi trông như 1 đội), không chọn đội bồ câu (rải đầy sân).
 // Cần server: npm run serve hoặc bản demo đã build; địa chỉ: biến SPRITE_URL. Chrome: biến CHROME. Cần ffmpeg trong PATH.
+// GIF 64 màu (nhìn không khác 128 màu, nhẹ hơn ~25%): itch nên giữ mỗi GIF dưới 3 MB.
 // Chạy: node tools/itch-page/gif.mjs <file.gif> [meteor|brawl]
 import { writeFileSync, mkdirSync, mkdtempSync, rmSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -186,7 +187,7 @@ close();
 if (!ok) { console.error('không có lần nào đạt'); process.exit(1); }
 mkdirSync(dirname(out), { recursive: true });
 execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', '30', '-i', join(dir, 'f%04d.png'),
-  '-vf', 'split[a][b];[a]palettegen=max_colors=128:stats_mode=full[p];[b][p]paletteuse=dither=none', '-loop', '0', out]);
+  '-vf', 'split[a][b];[a]palettegen=max_colors=64:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle', '-loop', '0', out]);
 rmSync(dir, { recursive: true, force: true });
 console.log(`gif -> ${out}`);
 if (errors.length) console.log('lỗi trong trang:', errors);

@@ -3,7 +3,7 @@
  *   store   steam | itch | crazygames -> config/build.config.js SFC_STORE (luật cửa hàng: config/platform.config.js rules)
  *   demo    SFC_DEMO (config/demo.config.js)
  *   steamworks  desktop: đóng gói steamworks.js (chỉ bản Steam; không có thì preload không nạp Steam -> PeerJS như web)
- *   zip     desktop: nén thư mục game ra dist/street-football-chaos-<tên>-<version>.zip (web luôn nén)
+ *   zip     desktop: nén thư mục game ra dist/street-football-chaos-<tên>[-demo]-<version>.zip (web luôn nén)
  * Lúc chạy, game tự biết target (SFC.Target: có window.SFC_DESKTOP hay không) và cửa hàng (SFC_STORE ghi lúc đóng gói).
  * Dùng: node scripts/build.js <tên> (npm run build:<tên>) · strip-debug.js đọc SFC_BUILD để ghi cờ cho bản desktop.
  * Ghép cửa hàng với target không có trong STORES = lỗi (vd. crazygames desktop).

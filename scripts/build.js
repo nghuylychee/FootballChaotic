@@ -1,6 +1,6 @@
 /* Đóng gói 1 bản trong ma trận scripts/targets.js: node scripts/build.js <tên>  (npm run build:steam | build:itch-web | ...)
  *  - web: chép các file game chạy cần vào dist/<tên>, xoá code dev (strip-debug.js, ghi SFC_STORE / SFC_DEMO), nén ra
- *    dist/street-football-chaos-<tên>-<version>.zip (index.html ở gốc zip). Không chép: electron/, node_modules/, src/dev/,
+ *    dist/street-football-chaos-<tên>[-demo]-<version>.zip (bản DEMO có -demo) (index.html ở gốc zip). Không chép: electron/, node_modules/, src/dev/,
  *    sandbox.html, tools/, brag-output/, steam_appid.txt
  *  - desktop: electron-builder (Windows, thư mục) ra dist/<tên>; afterPack = strip-debug.js đọc env SFC_BUILD. Không có
  *    steamworks: bỏ steamworks.js khỏi gói rồi kiểm không còn sót. zip: đổi win-unpacked thành thư mục "Street Football Chaos" rồi nén
@@ -60,7 +60,7 @@ async function desktop(T, OUT) {
 (async () => {
   const T = targets.get(process.argv[2]);
   const OUT = path.join(ROOT, 'dist', T.name);
-  const ZIP = path.join(ROOT, 'dist', `street-football-chaos-${T.name}-${pkg.version}.zip`);
+  const ZIP = path.join(ROOT, 'dist', `street-football-chaos-${T.name}${T.demo ? '-demo' : ''}-${pkg.version}.zip`);
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.rmSync(ZIP, { force: true });
   const out = T.target === 'web' ? await web(T, OUT) : await desktop(T, OUT);

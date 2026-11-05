@@ -1,0 +1,39 @@
+itch.io > Edit game > Devlog > Create new post
+Title: Version 1.1.0
+Type: Major update. Attach the new builds: street-football-chaos-itch-web-demo-1.1.0.zip, street-football-chaos-itch-desktop-demo-1.1.0.zip.
+Formatted version: open devlog-1.1.0.html in a browser, copy the post and paste it into the editor (headings, bold and lists carry over). Replace each [ add ... here ] line with that GIF using the image button.
+----------------------------------------------------------------------
+
+Hi everyone, and thank you for playing the demo! Version 1.1.0 is now available. Here is what's new.
+
+[image: brawl.gif]
+
+NEW MODE: GOAT PATH
+
+• A roguelite run across a map of matches, Elite teams, skill games and a shop, ending in a boss fight.
+• One loss ends the run.
+• Recruit legends and collect gear and badges along the way.
+• Act 1 is playable in the demo.
+
+ULTIMATES, REWORKED
+
+Your Ultimate now depends on the Cores you pick during the match. Stack one kind, awaken it, or mix two for a hybrid.
+
+[image: ultimate.gif]
+
+LOOK AND FEEL
+
+• New animations for passing, sprinting, shooting and goalkeeping.
+• Redrawn pitches and shadows, and support for wide screens.
+• Goal celebrations and a trophy room.
+
+ALSO
+
+• You can now rebind every key.
+• The game is now available in Portuguese (Brazil and Portugal), Spanish and Japanese.
+
+COMING NEXT
+
+The full game is coming soon to Steam, with two more acts and online play.
+
+Thanks again for your support. If you have feedback or run into a bug, please let us know in the comments!
