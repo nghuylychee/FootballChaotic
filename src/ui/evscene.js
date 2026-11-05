@@ -132,7 +132,7 @@
           <canvas class="ev-lo" width="${LW}" height="${LH}"></canvas>${sc.dom ? sc.dom(s) : ''}
           <div class="ev-cap"><b>${esc(o.title)}</b><p>${esc(o.text)}</p></div>
           <div class="ev-cash">${o.cash || ''}</div>
-          ${o.res ? `<div class="ev-res"><b>${esc(o.res.head)}</b><div class="ev-rows">${o.res.rows}</div>${o.res.foot}</div>` : `<div class="ev-pick">${o.choose}</div>`}
+          ${o.res ? `<div class="ev-res"><b>${esc(o.res.head)}</b><div class="ev-rows">${o.res.rows}</div>${o.res.foot}</div>` : `<div class="ev-pick ch">${o.choose}</div>`}
         </div></div>`;
     },
     // sau khi vẽ DOM: vẽ nền 1 lần (đổi sự kiện / lần mở mới) rồi chạy vòng vẽ; state() đọc trạng thái mới nhất từ RunUI mỗi khung
