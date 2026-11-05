@@ -1776,6 +1776,9 @@ SFC.I18n.add({
     /* ===== GOAT PATH: KIT VAN (UX màn hình 2026-11: giá + nút mua trên bong bóng, hộp cứu thương SOLD; Claude — chưa duyệt) ===== */
     'BUY': 'COMPRAR',
     'HEAL': 'CURAR',
+    'INJURY?': 'LESÃO?',
+    'Nobody got hurt.': 'Ninguém se machucou.',
+    'Nobody is hurt.': 'Ninguém está machucado.',
     'One treatment per visit.': 'Só um tratamento por visita.',
 
     /* ===== GOAT PATH: LEGEND TRIAL + nhận LEGEND (UX màn hình 2026-11; Claude — chưa duyệt) ===== */

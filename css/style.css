@@ -3781,5 +3781,52 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .pk-keys { display: flex; justify-content: center; gap: 16px; font-size: 11px; color: var(--muted); }
 .pk-keys span { display: flex; align-items: center; gap: 4px; }
 
+/* ---------- GOAT PATH · sự kiện ??? kể bằng cảnh pixel (src/ui/evscene.js, UX màn hình 2026-11, docs/ux-screens/screens/event-scenes.json) ----------
+   khung 640x360 giữa #stage như KIT VAN: canvas 320x180 phóng x2 + chữ DOM · dải chú thích trên trái · tiền trên phải · nút lựa chọn dưới phải
+   (mỗi nút: nhãn + chip được / mất, rủi ro đỏ) · thẻ kết quả thay chỗ nút sau khi chọn */
+.ev-wrap { background: none; }
+.ev-page { position: absolute; left: calc((100% - 640px) / 2); top: calc((100% - 360px) / 2 - 3px); width: 640px; height: 360px; z-index: 3;
+  overflow: hidden; background: #120c16; box-shadow: 0 0 0 100vmax #120c16; }
+.ev-lo { position: absolute; left: 0; top: 0; width: 640px; height: 360px; image-rendering: pixelated; }
+.ev-cap { position: absolute; left: 14px; top: 12px; z-index: 2; max-width: 420px; padding: 6px 10px 7px; background: rgba(18, 12, 22, 0.88); border: 2px solid #3a2a44; box-shadow: 2px 2px 0 #000; }
+.ev-cap b { display: block; font-family: var(--px); font-size: 10px; font-weight: normal; letter-spacing: 2px; color: var(--gold); text-shadow: 2px 2px 0 var(--ink); }
+.ev-cap p { margin: 4px 0 0; font-size: 14px; line-height: 1.15; color: #e6dccb; }
+.ev-cash { position: absolute; right: 16px; top: 12px; z-index: 2; }
+.ev-pick { position: absolute; right: 16px; bottom: 14px; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.ev-pick .pt-btn { display: flex; align-items: center; gap: 8px; font-family: var(--px); font-size: 9px; letter-spacing: 1px; padding: 7px 12px 6px; color: #e6dccb; background: #1a1420; border: 2px solid #8a8094; }
+.ev-pick .pt-btn.sel, .ev-pick .pt-btn:hover { color: var(--gold); border-color: var(--gold); }
+.ev-pick .pt-btn.dis { opacity: 0.5; }
+.ev-pick em { display: flex; gap: 4px; font-style: normal; }
+.ev-x { display: inline-flex; align-items: center; gap: 3px; font-style: normal; font-family: var(--px); font-size: 7px; letter-spacing: 0; line-height: 1; padding: 2px 4px 1px; border: 1px solid; background: #120c16; }
+.ev-x.neg { color: #ff8a98; border-color: #ff5a6e; }
+.ev-x.pos, .ev-x.heal { color: #9dff7a; border-color: #6bff4f; }
+.ev-x.badge { color: #fff; border-color: var(--rc); }
+.ev-x .pxi { width: 10px; height: 10px; vertical-align: 0; }
+/* dấu ✚ vẽ bằng CSS (font pixel vẽ ký tự ✚ thành dấu +) */
+.ev-cross { position: relative; width: 8px; height: 8px; flex: none; color: #ff3d5a; }
+.ev-x.heal .ev-cross { color: #6bff4f; }
+.ev-cross::before, .ev-cross::after { content: ""; position: absolute; background: currentColor; }
+.ev-cross::before { left: 3px; top: 0; width: 2px; height: 8px; }
+.ev-cross::after { left: 0; top: 3px; width: 8px; height: 2px; }
+/* thẻ kết quả: mỗi dòng 1 icon riêng · mất = đỏ, được / thoát = xanh · dòng BADGE kèm công dụng */
+.ev-res { position: absolute; right: 16px; bottom: 14px; z-index: 2; width: 300px; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: rgba(18, 12, 22, 0.92); border: 2px solid var(--gold); box-shadow: 3px 3px 0 #000; }
+.ev-res > b { font-family: var(--px); font-size: 9px; font-weight: normal; letter-spacing: 2px; color: var(--gold); }
+.ev-res .ev-rows { gap: 5px; margin: 0; }
+.ev-res .ev-row b { font-family: inherit; font-size: 14px; line-height: 1.1; color: #e6dccb; }
+.ev-res .ev-row b small { display: block; font-size: 12px; color: var(--muted); }
+.ev-res .ev-row.bad b { color: #ff8a98; }
+.ev-res .ev-row.good b { color: #9dff7a; }
+.ev-res .pt-btn { align-self: flex-end; }
+/* từng cảnh (src/ui/evscenes/<id>.js): CSS riêng nếu cần, ngay dưới dòng tên cảnh của mình */
+/* cảnh vendor */
+
+/* cảnh coach */
+
+/* cảnh bet */
+
+/* cảnh physio */
+
+/* cảnh fan */
+
 /* Đang dùng tay cầm: ẩn con trỏ chuột (kể cả con trỏ bàn tay của KIT VAN); di chuột là hiện lại (Input.poll / mousemove) */
 html.pad-cursor, html.pad-cursor * { cursor: none !important; }

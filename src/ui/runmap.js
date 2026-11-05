@@ -267,6 +267,8 @@ window.SFC = window.SFC || {};
       this.bindMap(menu);
       const idx = new Map(T.map((t, i) => [t.key, i]));   // khoá mục -> chỉ số, dựng 1 lần mỗi lần vẽ (rê chuột không tính lại targets())
       this.bindHover(menu, idx);
+      const evp = menu.el.querySelector('.ev-page');   // sự kiện ??? có cảnh pixel: chạy vòng vẽ, mỗi lần ghé node là 1 lần mở mới
+      if (evp) SFC.EvScene.bind(menu.el, evp.dataset.ev, () => this.evState(), R.act + ':' + R.at + ':' + R.nonce);
       if (R.room && R.room.kind === 'shop') SFC.KitVan.bind(menu.el, (key) => { const i = idx.get(key); if (i != null) this.sel = i; }, () => { this.kb = false; });
       menu.bindAvatars();
       if (R.join) this.bindJoin(menu);
@@ -1303,6 +1305,7 @@ window.SFC = window.SFC || {};
     // gợi ý được / mất (UX review 2026-11-02): chip màu cứng — trả tiền đỏ · có thể thắng tiền xanh + ? · BADGE vàng bo tròn (như miếng vá)
     // · có thể chấn thương ✚ đỏ + ? (cùng dấu chấn thương ở dải đội hình) · chữa hết ✚ xanh
     eventCard(R, T) {
+      if (SFC.EvScene && SFC.EvScene.has(R.room.id)) return this.evScene(R, T, null);
       const E = CFG().events[R.room.id];
       const btns = T.map((t) => {
         const c = E.choices[t.i];
@@ -1317,6 +1320,7 @@ window.SFC = window.SFC || {};
     // Kết quả chỉ máy giữ run biết (this.ev, sayEvent); hết hiệu lực khi rời node / run khác
     evOn(R) { const v = this.ev; return !!v && !!R && !R.room && !R.offer && !R.join && v.at === R.at && v.nonce === R.nonce && RUN().active(); },
     eventResult(R, T) {
+      if (SFC.EvScene && SFC.EvScene.has(this.ev.id)) return this.evScene(R, T, this.ev);
       const v = this.ev, E = CFG().events[v.id], c = E.choices[v.i], B = (id) => RUN().badge(id);
       const row = (ico, html, cls = '') => `<div class="ev-row ${cls}"><span class="ev-ico">${ico}</span><b>${html}</b></div>`;
       const rows = c.cost ? [row(PX().ui('shop', 'x2'), `<i class="ev-c neg">-$${c.cost}</i>`)] : [];
@@ -1329,6 +1333,46 @@ window.SFC = window.SFC || {};
         else if (x.kind === 'lost') rows.push(row(PX().ui(E.icon, 'x2'), esc(_t('No luck.')), 'bad'));
       }
       return this.sheet('event evres', E.title, c.label, `<div class="ev-rows">${rows.join('')}</div>`, T[0] ? this.btn(T, T[0], esc(_t('CONTINUE'))) : '');
+    },
+    // sự kiện ??? có cảnh pixel riêng (SFC.EvScene, UX màn hình 2026-11, docs/ux-screens/screens/event-scenes.json): nút lựa chọn = nhãn + chip
+    // cái được / mất (rủi ro đỏ có dấu ✚ vẽ bằng CSS — font pixel vẽ ✚ thành dấu +) · v = kết quả (this.ev) -> thẻ kết quả, mỗi dòng 1 icon riêng,
+    // dòng BADGE kèm công dụng, buổi tập không ai đau cũng nói ra (trước đây im lặng)
+    evScene(R, T, v) {
+      const id = v ? v.id : R.room.id, E = CFG().events[id], P = RUN().pl(RUN().myKey(), R) || R, B = (b) => RUN().badge(b);
+      const coin = PX().ui('coin', 'sm'), cross = '<i class="ev-cross"></i>', RAR = SFC_CONFIG.progression.rarities;
+      const chips = (c) => [c.cost ? `<i class="ev-x neg">${coin}-$${c.cost}</i>` : '',
+        c.badge ? `<i class="ev-x badge" style="--rc:${RAR[c.badge] ? RAR[c.badge].color : '#9aa3b5'}">${PX().ui('unknown', 'sm')}BADGE</i>` : '',
+        c.injury ? `<i class="ev-x neg">${cross}${esc(_t('INJURY?'))}</i>` : '',
+        c.win ? `<i class="ev-x pos">${coin}+$${c.win.cash}?</i>` : '',
+        c.healAll ? `<i class="ev-x heal">${cross}${esc(_t('HEAL'))}</i>` : ''].join('');
+      const o = { id, title: E.title, text: E.text, cash: this.cash(P.cash) };
+      if (!v) {
+        o.choose = T.map((t) => { const c = E.choices[t.i]; return this.btn(T, t, `<span>${esc(c.label)}</span>${chips(c) ? `<em>${chips(c)}</em>` : ''}${this.votes(R, 'choose', String(t.i))}`, t.dis ? 'dis' : ''); }).join('');
+        return SFC.EvScene.html(o);
+      }
+      const c = E.choices[v.i], row = (ico, html, cls = '') => `<div class="ev-row ${cls}"><span class="ev-ico">${ico}</span><b>${html}</b></div>`;
+      const rows = c.cost ? [row(PX().ui('coin', 'x2'), `-$${c.cost}`, 'bad')] : [];
+      for (const x of v.res) {
+        if (x.kind === 'badge') rows.push(row(this.badgeIcon(x.id), `${esc(B(x.id).name)}<small>${esc(B(x.id).desc || '')}</small>`));
+        else if (x.kind === 'cash') rows.push(row(PX().ui('coin', 'x2'), `+$${x.n}`, 'good'));
+        else if (x.kind === 'injury') rows.push(row(this.badgeIcon(x.id), esc(_t('Injury: {name} · {who}', { name: B(x.id).name, who: RUN().memberName(x.who) })), 'bad'));
+        else if (x.kind === 'blocked') rows.push(row(PX().ui('check', 'x2'), esc(_t('Shin Guards blocked an injury!')), 'good'));
+        else if (x.kind === 'heal') rows.push(row(PX().ui('check', 'x2'), esc(_t('All injuries healed.')), 'good'));
+        else if (x.kind === 'lost') rows.push(row(PX().ui('ball', 'x2'), esc(_t('No luck.')), 'bad'));
+      }
+      if (c.injury && !v.res.some((x) => x.kind === 'injury' || x.kind === 'blocked')) rows.push(row(PX().ui('check', 'x2'), esc(_t('Nobody got hurt.')), 'good'));
+      o.res = { head: c.label, rows: rows.join(''), foot: T[0] ? this.btn(T, T[0], esc(_t('CONTINUE'))) : '' };
+      return SFC.EvScene.html(o);
+    },
+    // trạng thái cho cảnh sự kiện (EvScene đọc mỗi khung): lựa chọn đang trỏ / đã bấm, kết quả, đội (ngoại hình + chấn thương), tiền
+    evState() {
+      const R = RUN().run;
+      if (!R) return {};
+      const T = this.targets(), cur = T[this.sel], v = this.evOn(R) ? this.ev : null, id = v ? v.id : R.room && R.room.id;
+      const P = RUN().pl(RUN().myKey(), R) || R, me = RUN().seatOf(RUN().myKey(), R);
+      return { phase: v ? 'result' : 'choose', hover: !v && cur && cur.k === 'choose' ? cur.i : -1, pick: v ? v.i : -1, res: v ? v.res : [],
+        E: CFG().events[id], cash: P.cash, can: T.filter((t) => t.k === 'choose' && !t.dis).map((t) => t.i),
+        team: BYPOS(R).map((i) => ({ i, look: RUN().memberLook(i, R), name: RUN().memberName(i, R), inj: RUN().injuryIds(i, R), you: i === me })) };
     },
     bagCard(R, T) { return this.squadSheet(R, T); },
     // hết run: CHAMPIONS / RUN OVER + trận đã thắng, boss đã hạ, gold quy đổi (thẻ che map như thẻ mở act).
@@ -1540,7 +1584,8 @@ window.SFC = window.SFC || {};
       // ??? lựa chọn chưa làm được: nói lý do (thiếu tiền), không gửi phiếu
       if (t.k === 'choose' && t.dis) {
         const c = R.room && R.room.kind === 'event' && CFG().events[R.room.id].choices[t.i];
-        return menu.setMsg(c && c.cost ? _t('Not enough cash.') : _t('You cannot do that right now.'), true);
+        // PARK PHYSIO mờ vì không ai đau: nói đúng lý do (trước đây báo nhầm thiếu tiền vì lựa chọn có giá)
+        return menu.setMsg(c && c.healAll && !RUN().injuries().length ? _t('Nobody is hurt.') : c && c.cost ? _t('Not enough cash.') : _t('You cannot do that right now.'), true);
       }
       if (inRoom() && this.coopAct(menu, t)) return menu.render();
       switch (t.k) {

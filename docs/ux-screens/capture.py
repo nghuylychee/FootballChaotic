@@ -111,7 +111,9 @@ def gear_who(pg, h):
     h.key('Enter', wait=1500)      # lấy món đầu -> chọn người đeo
 
 
-EVENT_JS = ("(([id, cash]) => { SFC.RunTest.card('map'); const R = SFC.Run.run, n = R.map.floors[0][0]; R.at = n.id; R.path = [n.id]; R.cash = cash;"
+# hurt = số chấn thương rải sẵn cho đội (PARK PHYSIO cần người đau mới có gì để chữa)
+EVENT_JS = ("(([id, cash, hurt]) => { SFC.RunTest.card('map'); const R = SFC.Run.run, n = R.map.floors[0][0]; R.at = n.id; R.path = [n.id]; R.cash = cash;"
+            " for (let i = 0; i < (hurt || 0); i++) { R.guard = { act: R.act, n: 99 }; SFC.Run.injure(R); }"
             " R.room = { kind: 'event', id }; SFC.RunUI.reset(); SFC.Menu.render(); })")
 
 
@@ -124,6 +126,17 @@ def event(pg, h):
 def event_result(pg, h):
     event(pg, h)
     h.key('Enter', wait=2600)      # lựa chọn đầu
+
+
+# cảnh pixel từng sự kiện ??? (src/ui/evscenes/<id>.js): lúc chọn + sau khi bấm lựa chọn đầu
+def ev_scene(eid, cash=100, hurt=0, pick=False):
+    def f(pg, h):
+        h.wait(400)
+        h.js(EVENT_JS + f"(['{eid}', {cash}, {hurt}])")
+        h.wait(1800)
+        if pick:
+            h.key('Enter', wait=2600)
+    return f
 
 
 RUNOVER_JS = ("SFC.RunTest.card('map'); const R = SFC.Run.run; R.offer = null; R.over = true; R.log.push({ act: 0, node: '0.0', kind: 'match', team: 'pigeon_gang', my: 1, op: 2 });"
@@ -190,6 +203,17 @@ SCREENS = {
     'locker': dict(title='LOCKER ROOM', setup=card('rest'), query='?runtest&badges=var,report,watch', init=SEED),
     'event': dict(title='Sự kiện ???', setup=event, **RT),
     'event-result': dict(title='Sự kiện ??? · kết quả', setup=event_result, **RT),
+    # cảnh pixel từng sự kiện ??? (UX màn hình 2026-11, event-scenes.json): chưa nằm trong báo cáo dưới dạng màn, ảnh hiện ở mục sự kiện
+    'ev-vendor': dict(title='STREET VENDOR', setup=ev_scene('vendor'), **RT),
+    'ev-vendor-res': dict(title='STREET VENDOR · kết quả', setup=ev_scene('vendor', pick=True), **RT),
+    'ev-coach': dict(title='OLD COACH', setup=ev_scene('coach'), **RT),
+    'ev-coach-res': dict(title='OLD COACH · kết quả', setup=ev_scene('coach', pick=True), **RT),
+    'ev-bet': dict(title='CROSSBAR CHALLENGE', setup=ev_scene('bet'), **RT),
+    'ev-bet-res': dict(title='CROSSBAR CHALLENGE · kết quả', setup=ev_scene('bet', pick=True), **RT),
+    'ev-physio': dict(title='PARK PHYSIO', setup=ev_scene('physio', hurt=2), **RT),
+    'ev-physio-res': dict(title='PARK PHYSIO · kết quả', setup=ev_scene('physio', hurt=2, pick=True), **RT),
+    'ev-fan': dict(title='BIGGEST FAN', setup=ev_scene('fan'), **RT),
+    'ev-fan-res': dict(title='BIGGEST FAN · kết quả', setup=ev_scene('fan', pick=True), **RT),
     'legend-trial': dict(title='LEGEND TRIAL · thẻ vào', query='?runtest=trialcard.pirlow', init=SEED, setup=lambda pg, h: h.wait(1800)),
     'legend-join': dict(title='LEGEND · chọn người nhận', query='?runtest=join.pirlow', init=SEED, setup=lambda pg, h: h.wait(1800)),
     'vs': dict(title='Màn VS', setup=vs, **MT),
