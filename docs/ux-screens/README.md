@@ -1,6 +1,6 @@
 # UX TẦNG MÀN HÌNH 2026-11 — mục tiêu · thông tin · thứ bậc · đường đi
 
-> Trạng thái: **ĐỦ 16 MÀN, chờ owner chọn phương án từng màn trên báo cáo.** Owner đã duyệt khuôn (feedback `format` = ok, 2026-11-04). Chưa sửa code game.
+> Trạng thái: **ĐÃ MERGE VÀO MAIN 2026-11-05.** 16 màn sửa theo lựa chọn của owner, 5 cảnh sự kiện ??? vẽ theo cách diễn đề xuất (sự kiện vẫn tắt trong run thật), con trỏ chọn ▶ cho cả game. Server 12.3.5 (chưa deploy). Còn chờ owner: các câu cơ chế / cân bằng của sự kiện (`decided` trong `screens/event-scenes.json`).
 > Báo cáo + góp ý: https://claude.ai/artifact/Ew4ngTmZSgxZd74FsHAg2N (artifact private của owner, db `feedback`)
 > Nhánh: `ux/screens-2026-11`. Chat gốc tóm lại trong `CHAT.md`.
 
@@ -88,6 +88,7 @@ Xong thì thêm 1 dòng vào Nhật ký. Commit / merge / push chỉ khi owner b
 - 2026-11-05 — vấn đề chung `x-choice` (owner: "nhìn 2 nút không biết là chọn 1 trong 2; game khác dùng tam giác đầu trái nút"): game có 4 kiểu "đang chọn" khác nhau và vàng vừa là nút chính vừa là đang chọn. Thêm con trỏ ▶ pixel (CSS, 9x16) bên trái mục đang chọn ở lựa chọn sự kiện, chân thẻ che map, Pause, HOST / JOIN; lựa chọn sự kiện thành hộp chọn xếp dọc. Ảnh trước / sau: `shots/x-choice/`, mục "Vấn đề chung nhiều màn" trong báo cáo (góp ý doc `x-choice`).
 - 2026-11-05 — owner: 5 sự kiện `ev-*` = làm theo đề xuất (đã vẽ, không đổi). `ev-open`: câu đụng hình ảnh Claude tự quyết -> ghi ở `decided` trong `screens/event-scenes.json` (giữ 320x180, giữ câu dẫn, giữ dấu ?, thẻ kết quả gọn 250 px, bấm xác nhận lúc hoạt cảnh chạy = tua tới khung cuối); câu đụng cơ chế / cân bằng để nguyên chờ owner.
 - 2026-11-05 — owner: `x-choice` = làm cho cả game. Con trỏ ▶ pixel ở mọi nút hành động (.pt-btn), nút Pause / QUIT / kết quả trận (.pause-items), danh sách menu (.mi, thay ký tự ▶ cũ), hàng danh sách (.pt-mrow, .fr-row); thẻ / ô / tab giữ khung chọn riêng. Kiểm bằng ảnh: SETTINGS, CHARACTER, tab PLAY, PRIVATE MATCH, map, KIT VAN, Pause trận thường, màn kết quả.
+- 2026-11-05 — Owner: "áp dụng rồi merge với main, push, chốt phần này". Gộp origin/main (3 commit hình nhân vật, server 12.3.4) + nhánh `ux/screens-2026-11`; xung đột duy nhất `server/package.json` -> 12.3.5 (dấu vân tay bản gộp). Kiểm: i18n-check, manifest --check, server-stamp --check, `npm run server:test` OK, chụp lại HUD / cảnh sự kiện / map / đội hình / Pause trên bản gộp. Push main.
 <!-- mỗi lần xử lý góp ý: thêm 1 dòng ở đây (ngày · màn nào · phương án · đã làm gì) -->
 
 ## Chưa kiểm / còn hở
