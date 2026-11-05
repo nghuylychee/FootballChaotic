@@ -3845,6 +3845,17 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 .ev-res .pt-btn { align-self: flex-end; }
 /* từng cảnh (src/ui/evscenes/<id>.js): CSS riêng nếu cần, ngay dưới dòng tên cảnh của mình */
 /* cảnh vendor */
+/* bong bóng người bán (thiếu tiền): khung pixel như bong bóng tài xế KIT VAN, đuôi bậc thang chỉ xuống trái về đầu người bán */
+.evv-say { position: absolute; left: 330px; top: 128px; z-index: 2; padding: 5px 8px 4px; font-size: 15px; line-height: 1; white-space: nowrap; color: #222; background: #fff;
+  box-shadow: 0 0 0 2px #111, 4px 4px 0 #111; pointer-events: none; }
+.evv-say::before, .evv-say::after { content: ''; position: absolute; background: #fff; box-shadow: 2px 0 0 #111, -2px 0 0 #111, 0 2px 0 #111; }
+.evv-say::before { left: 6px; bottom: -6px; width: 10px; height: 4px; }
+.evv-say::after { left: 4px; bottom: -10px; width: 4px; height: 4px; }
+/* tem 'cả đội nhận' (như tem BADGE dán trên mép bong bóng KIT VAN) dán ở mép trên miếng vá vừa mua: hiện khi miếng vá nảy xong (--d = chờ bao lâu) */
+.evv-kind { position: absolute; left: 224px; top: 88px; z-index: 2; transform: translateX(-50%); padding: 2px 6px 1px; font-style: normal; font-family: var(--px); font-size: 6px;
+  letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; color: #111; background: #ffe14f; border: 1px solid #111; border-radius: 6px; box-shadow: 1px 1px 0 #111;
+  pointer-events: none; animation: evv-in 0.01s steps(1) var(--d, 0s) both; }
+@keyframes evv-in { from { visibility: hidden; } to { visibility: visible; } }
 
 /* cảnh coach */
 
@@ -3853,6 +3864,11 @@ button.pk-slot.sel, button.pk-slot:hover { border-style: solid; border-color: va
 /* cảnh physio */
 
 /* cảnh fan */
+/* tem 'cả đội nhận' dán ở mép trên miếng vá cậu nhóc tặng (như tem BADGE trên bong bóng KIT VAN): hiện khi miếng vá nảy xong (--d = chờ bao lâu) */
+.evf-kind { position: absolute; left: 252px; top: 82px; z-index: 2; transform: translateX(-50%); padding: 2px 6px 1px; font-style: normal; font-family: var(--px); font-size: 6px;
+  letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; color: #111; background: #ffe14f; border: 1px solid #111; border-radius: 6px; box-shadow: 1px 1px 0 #111;
+  pointer-events: none; animation: evf-in 0.01s steps(1) var(--d, 0s) both; }
+@keyframes evf-in { from { visibility: hidden; } to { visibility: visible; } }
 
 /* Đang dùng tay cầm: ẩn con trỏ chuột (kể cả con trỏ bàn tay của KIT VAN); di chuột là hiện lại (Input.poll / mousemove) */
 html.pad-cursor, html.pad-cursor * { cursor: none !important; }
