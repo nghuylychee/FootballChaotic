@@ -429,10 +429,8 @@
     },
     // bong bóng người bán (thiếu tiền) · tem 'cả đội nhận' ở mép trên miếng vá, hiện khi miếng vá nảy xong: chờ phần còn lại của hoạt cảnh
     // (EvScene.state().tp = giây từ lúc vào pha kết quả; RunUI vẽ lại giữa chừng thì tem không chờ lại từ đầu)
-    // (RunUI.evScene chưa đưa o.state cho EvScene.html nên s ở đây chỉ có t: tự hỏi RunUI.evState)
     dom(s) {
       const esc = SFC.UIHelpers.esc;
-      if (!s.phase && SFC.RunUI.evState) s = Object.assign({}, s, SFC.RunUI.evState());
       if (s.phase === 'result') {
         if (!s.res.some((x) => x.kind === 'badge')) return '';
         const d = Math.max(0, TM.land - (SFC.EvScene.state().tp || 0));

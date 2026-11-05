@@ -62,10 +62,11 @@
       look(o) { return SFC.Profile.lookOf(Object.assign({}, SFC_CONFIG.progression.defaultLook, o)); },
       // áo đội của người chơi (cậu fan mặc đúng áo này)
       kitHome() { return SFC_CONFIG.mainPath.playerTeam.kit; },
-      // nhân vật pixel 1x (khung 40x44, chân ở đáy khung): x, y = góc trên trái khung · o: { kit, facing (rad, PI/2 = nhìn ra), t (nhịp thở / chạy) }
+      // nhân vật pixel 1x (khung 40x44, chân ở đáy khung): x, y = góc trên trái khung · o: { kit, facing (rad, PI/2 = nhìn ra), t (nhịp thở / chạy),
+      //   extra (tham số thêm của drawAvatar, vd { inj } = băng quấn đúng chỗ chấn thương) }
       avatar(lk, x, y, o = {}) {
         buf = buf || Object.assign(document.createElement('canvas'), { width: 40, height: 44 });
-        SFC.Sprites.drawAvatar(buf, lk, o.kit || k.kitHome(), o.t != null ? o.t : T, o.facing != null ? o.facing : Math.PI / 2, null, true);
+        SFC.Sprites.drawAvatar(buf, lk, o.kit || k.kitHome(), o.t != null ? o.t : T, o.facing != null ? o.facing : Math.PI / 2, o.extra || null, true);
         X.drawImage(buf, Math.round(x), Math.round(y));
       },
       // nền lề đường chung (4 cảnh ngoài trời: hàng rong, cá cược, physio, fan) — cùng bảng màu chiều tà với KIT VAN: trời sọc dither, mặt trời

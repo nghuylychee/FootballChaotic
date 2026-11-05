@@ -1382,7 +1382,7 @@ window.SFC = window.SFC || {};
         c.injury ? `<i class="ev-x neg">${cross}${esc(_t('INJURY?'))}</i>` : '',
         c.win ? `<i class="ev-x pos">${coin}+$${c.win.cash}?</i>` : '',
         c.healAll ? `<i class="ev-x heal">${cross}${esc(_t('HEAL'))}</i>` : ''].join('');
-      const o = { id, title: E.title, text: E.text, cash: this.cash(P.cash) };
+      const o = { id, title: E.title, text: E.text, cash: this.cash(P.cash), state: () => this.evState() };   // dom(s) của cảnh nhận đủ trạng thái
       if (!v) {
         o.choose = T.map((t) => { const c = E.choices[t.i]; return this.btn(T, t, `<span>${esc(c.label)}</span>${chips(c) ? `<em>${chips(c)}</em>` : ''}${this.votes(R, 'choose', String(t.i))}`, t.dis ? 'dis' : ''); }).join('');
         return SFC.EvScene.html(o);

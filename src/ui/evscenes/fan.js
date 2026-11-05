@@ -322,9 +322,8 @@
     paint(k) { k.street({ lamp: 30, sun: false }); bike(k); },
     draw(k, s) { scene(k, s); },
     // tem 'cả đội nhận' dán ở mép trên miếng vá, hiện khi miếng vá nảy xong (chờ phần còn lại của hoạt cảnh; RunUI vẽ lại giữa chừng thì
-    // không chờ lại từ đầu) · RunUI.evScene chưa đưa o.state cho EvScene.html nên s ở đây chỉ có t: tự hỏi RunUI.evState
+    // không chờ lại từ đầu)
     dom(s) {
-      if (!s.phase && SFC.RunUI.evState) s = Object.assign({}, s, SFC.RunUI.evState());
       if (s.phase !== 'result' || !(s.res || []).some((x) => x.kind === 'badge')) return '';
       const d = Math.max(0, TM.big + 0.45 - (SFC.EvScene.state().tp || 0));
       return `<em class="evf-kind" style="--d:${d.toFixed(2)}s">${SFC.UIHelpers.esc(SFC.t('The whole team gets it'))}</em>`;
