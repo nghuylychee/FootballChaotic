@@ -163,6 +163,7 @@ window.SFC = window.SFC || {};
         this.resetArmed = false;   // RESET DATA: rời trang SETTINGS là huỷ xác nhận
         this.quitAsk = false;
         if (page === 'party' && !PLAY_PAGES.includes(this.page)) this.friendsOpen = false;   // từ ngoài vào RANKED: khung bạn bè đóng, bấm FRIENDS mới mở
+        if (this.page === 'run') RU().friends = false;   // rời tab GOAT PATH (đổi tab, BACK...): bảng PLAY WITH FRIENDS đóng
         this.selMemo[this.page] = this.sel;
         this.sel = this.selMemo[page] || 0;
       }
@@ -494,7 +495,8 @@ window.SFC = window.SFC || {};
       if (RD().pages.includes(this.page)) return RD().back(this);
       if (CU().pages.includes(this.page)) return CU().back(this);
       if (RU().pages.includes(this.page)) return RU().back(this);
-      if (this.page === 'run' && RU().joining) return RU().stopJoin(this);   // tab GOAT PATH: Esc thôi gõ mã phòng
+      if (this.page === 'run' && RU().joining) return RU().stopJoin(this);   // tab GOAT PATH: Esc thôi gõ mã phòng (về bảng PLAY WITH FRIENDS)
+      if (this.page === 'run' && RU().friends) return RU().closeFriends(this);   // bảng PLAY WITH FRIENDS: Esc / BACK về hàng nút
       if (this.page === 'story' || this.page === 'run') return this.go('home');
       // ULT BOOK mở từ album của TROPHY ROOM (TrophyUI.openPage): Esc quay về đó
       if (this.page === 'ults' && this.ultsBack) { const b = this.ultsBack; this.ultsBack = null; return this.go(b); }
@@ -1676,7 +1678,9 @@ window.SFC = window.SFC || {};
     // Chỉ ở các trang Menu tự vẽ mục (data-i = chỉ số trong items()); trang của module riêng (SHOP, TROPHY ROOM...) tự lo chuột.
     // Nút ◀▶ (data-d) cùng data-i với dòng của nó -> rê lên nút cũng là chọn dòng đó
     hoverSel(e) {
-      if (!HOVER_PAGES.includes(this.page) || this.quitAsk || this.matePop || !SFC.UIHelpers.realMove(e)) return;
+      // tab GOAT PATH chưa bật, trừ bảng PLAY WITH FRIENDS (chỉ 2 ô HOST / JOIN: rê chuột = chọn, không có 2 ô cùng sáng)
+      const hover = HOVER_PAGES.includes(this.page) || (this.page === 'run' && RU().friends);
+      if (!hover || this.quitAsk || this.matePop || !SFC.UIHelpers.realMove(e)) return;
       const el = e.target.closest('[data-i]');
       if (!el) return;
       const i = +el.dataset.i;

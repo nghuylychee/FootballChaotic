@@ -10,7 +10,7 @@
  *                 Node LEGEND TRIAL hiện sẵn chân dung LEGEND đang chờ (user 2026-10-28: biết trước để chọn đường).
  *                 Thanh trên có dải đội hình (mặt + OVR + dấu chấn thương của 3 người) = nút mở SQUAD.
  *                 Chưa có run + this.pick: màn chọn 2 đồng đội (BUILD YOUR SQUAD) trước khi START RUN (user 2026-10-26).
- * Co-op (phòng GOAT PATH online, docs/RUN_DESIGN.md "Co-op"): PLAY WITH FRIENDS / JOIN ở tab. Run là của máy host; khách xem bản sao
+ * Co-op (phòng GOAT PATH online, docs/RUN_DESIGN.md "Co-op"): PLAY WITH FRIENDS ở tab -> HOST / JOIN. Run là của máy host; khách xem bản sao
  *                 (Run.mirror) và gửi thao tác (Session.runAction -> host RunUI.apply). Node / sự kiện / Locker Room / thưởng BADGE / nhận LEGEND
  *                 = bỏ phiếu (dấu phiếu trên node / nút / thẻ).
  *                 Ví / Shop riêng từng người (BADGE mua về túi chung), Skill game / LEGEND TRIAL 1 người (xoay vòng). Thanh trên thêm mã phòng + LEAVE ROOM.
@@ -63,14 +63,22 @@ window.SFC = window.SFC || {};
     drawing: false,    // map: đang khoanh phấn node vừa chọn (khoá thao tác tới khi vẽ xong)
     roomRun: false,    // đang / vừa ở phòng GOAT PATH co-op (nhớ lại lúc phòng đóng — OnlineUI)
     joining: false,    // tab 'run': đang gõ mã phòng để vào phòng bạn bè (JOIN ngay trên tab, không sang PRIVATE MATCH)
+    friends: false,    // tab 'run': bảng PLAY WITH FRIENDS đang mở (HOST / JOIN thay cho hàng nút)
 
     /* ================= page 'run' (tab PLAY) ================= */
     tabItems(menu) {
       const R = RUN().run, live = RUN().active(), items = [];
-      // JOIN: ô mã phòng thay cho hàng nút (gõ mã, Enter = CONNECT, Esc / CANCEL = thôi)
+      // JOIN: ô mã phòng thay cho hàng nút (gõ mã, Enter = CONNECT, Esc / CANCEL = về bảng PLAY WITH FRIENDS)
       if (this.joining) {
         items.push({ kind: 'btn', main: true, label: _t('CONNECT'), act: () => menu.submitCode() });
         items.push({ kind: 'btn', cancel: true, label: _t('CANCEL'), act: () => this.stopJoin(menu) });
+        return items;
+      }
+      // bảng PLAY WITH FRIENDS (UX màn hình 2026-11, owner chọn phương án B): 2 lựa chọn có chữ phụ nói run của mình ra sao.
+      // HOST = mở phòng với run đang có (hoặc run mới) · JOIN = gõ mã phòng của bạn bè (run của mình để nguyên). Esc / BACK = về hàng nút
+      if (this.friends) {
+        items.push({ kind: 'btn', coop: true, label: _t('HOST'), sub: _t('Friends join your run'), act: () => { this.reset(); this.roomRun = true; ON().createRoom({ run: true }); } });
+        items.push({ kind: 'btn', joinRoom: true, label: _t('JOIN'), sub: _t('Type a code · your run is kept'), act: () => this.startJoin(menu) });
         return items;
       }
       items.push({ kind: 'btn', main: true, label: R ? _t('CONTINUE') : _t('START RUN'), act: () => {
@@ -78,27 +86,29 @@ window.SFC = window.SFC || {};
         menu.go('runmap');
       } });
       if (live) items.push({ kind: 'btn', forfeit: true, label: this.quitArm ? _t('CONFIRM FORFEIT') : _t('FORFEIT RUN'), act: () => this.forfeit(menu) });
-      // co-op online (khoá như PRIVATE MATCH: Platform.privateMatch): mở phòng với run đang có (hoặc run mới) · vào phòng của bạn bè bằng mã
-      if (SFC.Platform.privateMatch) {
-        items.push({ kind: 'btn', coop: true, label: _t('HOST'), act: () => { this.reset(); this.roomRun = true; ON().createRoom({ run: true }); } });
-        items.push({ kind: 'btn', joinRoom: true, label: _t('JOIN'), act: () => this.startJoin(menu) });
-      }
+      // co-op online (khoá như PRIVATE MATCH: Platform.privateMatch): 1 nút PLAY WITH FRIENDS (cùng tên với tab FOOTBALL STORY) mở bảng HOST / JOIN.
+      // Bỏ hàng JOIN · START RUN · HOST của 2026-10-27 (owner đổi 2026-11-05: 2 nút 1 chữ không nói là chơi chung, không nói run ra sao)
+      if (SFC.Platform.privateMatch) items.push({ kind: 'btn', friends: true, label: _t('PLAY WITH FRIENDS'), act: () => this.openFriends(menu) });
       return items;
     },
     renderTab(menu, items) {
       const R = RUN().run, st = RUN().stats();
-      const sub = `<span class="pt-area rt-sum">${PX().ui('ball', 'sm')} ${esc(_t('{n} RUNS', { n: st.plays }))} · ${PX().ui('trophy', 'sm')} ${st.wins} · ${PX().ui('crown', 'sm')} ${st.bosses}</span>`;
+      // kỷ lục: số run · run vô địch (cúp) · boss đã hạ (vương miện); tooltip gọi tên 3 số, cùng tên với bảng kỷ lục ở TROPHY ROOM
+      const recs = [_t('GOAT PATH'), _t('Runs'), _t('GOAT runs'), _t('Bosses beaten')].join(' · ');
+      const sub = `<span class="pt-area rt-sum" title="${esc(recs)}">${PX().ui('ball', 'sm')} ${esc(_tn('{n} RUN', '{n} RUNS', st.plays))} · ${PX().ui('trophy', 'sm')} ${st.wins} · ${PX().ui('crown', 'sm')} ${st.bosses}</span>`;
       // 3 act = 1 con đường (UX 2026-11-02: 3 thẻ act to bằng nhau trông như phải chọn 1 trong 3): vạch xuất phát -> act 1 -> 2 -> 3 -> cúp,
       // nối bằng vạch nét đứt (đoạn đã đi: vàng). Không phải nút: không khung / bóng nút, act phía trước mờ (boss chưa gặp: bóng đen),
       // act đã qua có dấu ✔. Nhân vật của bạn đứng ở act đang đá (YOU ARE HERE) · chưa có run: ở vạch xuất phát · vô địch: cạnh cúp
       const reach = R ? Math.max(R.act, st.bestAct) : st.bestAct, nAct = RUN().acts().length;
       const at = R ? (R.won ? nAct : R.act) : -1;   // act đang đứng (-1 = vạch xuất phát, nAct = cúp)
+      // tầng sắp đá / số tầng của act (tầng thường + boss) nằm luôn trong nhãn YOU ARE HERE (UX màn hình 2026-11: bỏ dòng ACT · FLOOR riêng)
+      const nFloor = CFG().map.floors + 1, floorTxt = _t('FLOOR {n}/{max}', { n: Math.min(nFloor, RUN().floor() + 2), max: nFloor });
       const me = '<canvas class="rt-me" data-avatar="1"></canvas>', link = (on) => `<i class="rt-link ${on ? 'on' : ''}"></i>`;
       const acts = RUN().acts().map((a, i) => {
         const boss = R ? R.bosses[i] : a.boss[0], seen = i <= reach || st.wins > 0;
         const lock = SFC_DEMO && i >= ((SFC_CONFIG.demo && SFC_CONFIG.demo.runActs) || 1);
         const cls = lock ? 'lock ahead' : i < at ? 'done' : i === at || (at < 0 && i === 0) ? 'on' : 'ahead';
-        const here = i === at && RUN().active() ? `<span class="rt-here">${me}<em>${esc(_t('YOU ARE HERE'))}</em></span>` : '';
+        const here = i === at && RUN().active() ? `<span class="rt-here">${me}<em>${esc(_t('YOU ARE HERE'))} · ${esc(floorTxt)}</em></span>` : '';
         return link(at >= i) + `<div class="rt-stop ${cls}" style="--ac:${a.color}">${here}
             <span class="rt-pic"><canvas data-ract="${i}" width="180" height="84"></canvas>${i < at ? `<i class="rt-ok">${PX().ui('check', 'sm')}</i>` : lock ? `<i class="rt-ok">${PX().ui('lock', 'sm')}</i>` : ''}</span>
             <span class="rt-n">${esc(_t('ACT {n}', { n: i + 1 }))}</span>
@@ -107,29 +117,56 @@ window.SFC = window.SFC || {};
           </div>`;
       }).join('') + link(at >= nAct);
       const road = `<div class="rt-road"><span class="rt-end">${at < 0 ? me : ''}</span>${acts}<span class="rt-end goal">${R && R.won ? me : ''}${PX().ui('trophy', 'x2')}</span></div>`;
-      const btn = (f) => {
+      const btn = (f, cls = '', ico = '') => {
         const i = items.findIndex(f);
         if (i < 0) return '';
         const it = items[i];
-        return `<button class="pt-btn ${it.main ? 'go' : ''} ${it.forfeit && this.quitArm ? 'danger' : ''} ${menu.sel === i ? 'sel' : ''}" data-i="${i}">${esc(it.label)}</button>`;
+        return `<button class="pt-btn ${cls} ${it.main ? 'go' : ''} ${it.forfeit && this.quitArm ? 'danger' : ''} ${menu.sel === i ? 'sel' : ''}" data-i="${i}">${ico}${esc(it.label)}</button>`;
       };
-      const where = R && RUN().active() ? `<div class="rt-where">${esc(_t('ACT {n}', { n: R.act + 1 }))} · ${esc(RUN().act(R.act).name)} · ${esc(_t('FLOOR {n}', { n: RUN().floor() + 2 }))}</div>` : '';
+      // 1 lựa chọn của bảng PLAY WITH FRIENDS: tên + chữ phụ
+      const pick = (f) => {
+        const i = items.findIndex(f);
+        return i < 0 ? '' : `<button class="rt-pick ${menu.sel === i ? 'sel' : ''}" data-i="${i}"><b>${esc(items[i].label)}</b><span>${esc(items[i].sub)}</span></button>`;
+      };
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
-      // nút chính START RUN / CONTINUE ngay dưới con đường (to, chọn sẵn) · FORFEIT RUN nhỏ bên dưới
+      // nút chính START RUN / CONTINUE ngay dưới con đường (to, chọn sẵn, giữa màn) + PLAY WITH FRIENDS bên phải · FORFEIT RUN nhỏ bên dưới.
+      // Bảng PLAY WITH FRIENDS / ô gõ mã JOIN thế chỗ hàng nút (BACK của bảng = data-back, cùng đường với Esc: Menu.back)
+      let bottom;
+      if (this.joining) {
+        bottom = `<div class="pt-joinbox rt-join"><div class="pt-jtitle">${esc(_t('JOIN ROOM'))}</div>${menu.renderCode()}</div>${msg}
+            <div class="pt-acts rt-go">${btn((x) => x.cancel) + btn((x) => x.main)}</div>`;
+      } else if (this.friends) {
+        bottom = `<div class="rt-friends"><div class="rt-fhead">${PX().ui('people', 'sm')}<span>${esc(_t('PLAY WITH FRIENDS'))}</span>
+            <button class="rt-fback" data-back="1"><kbd>${esc(SFC.Input.key('back', 'Esc'))}</kbd>${esc(_t('BACK'))}</button></div>
+            <div class="rt-picks">${pick((x) => x.coop)}${pick((x) => x.joinRoom)}</div></div>${msg}`;
+      } else {
+        bottom = `${msg}<div class="pt-acts rt-go rt-row">${btn((x) => x.main)}${btn((x) => x.friends, 'rt-fr', PX().ui('people', 'sm'))}</div>
+            ${items.some((x) => x.forfeit) ? `<div class="pt-acts">${btn((x) => x.forfeit)}</div>` : ''}`;
+      }
       return `<div class="pt-main pt-run">
           ${menu.playTabs('run', sub)}
           ${road}
-          ${where}
-          <div class="rt-bottom">${this.joining ? `<div class="pt-joinbox rt-join"><div class="pt-jtitle">${esc(_t('JOIN ROOM'))}</div>${menu.renderCode()}</div>` : ''}${msg}
-            <div class="pt-acts rt-go">${this.joining ? btn((x) => x.cancel) + btn((x) => x.main)
-              : btn((x) => x.joinRoom) + btn((x) => x.main) + btn((x) => x.coop)}</div>
-            ${!this.joining && items.some((x) => x.forfeit) ? `<div class="pt-acts">${btn((x) => x.forfeit)}</div>` : ''}</div>
+          <div class="rt-bottom">${bottom}</div>
         </div>
         <button class="pt-back" data-back="1">◀ ${esc(_t('BACK'))}</button>`;
     },
-    // JOIN trên tab: bật / tắt ô gõ mã phòng (Menu.setTextMode 'join' = cùng ô mã của PRIVATE MATCH, Menu.submitCode)
-    startJoin(menu) { this.joining = true; menu.joinFrom = 'run'; menu.code = ''; menu.msg = ''; menu.sel = 0; menu.render(); },
-    stopJoin(menu) { this.joining = false; menu.code = ''; menu.msg = ''; menu.setTextMode(null); menu.sel = 0; menu.render(); },
+    // PLAY WITH FRIENDS: mở / đóng bảng HOST / JOIN (đóng = trỏ lại nút PLAY WITH FRIENDS). Mở bảng = huỷ FORFEIT đang chờ bấm lần 2
+    openFriends(menu) { this.friends = true; this.quitArm = false; menu.msg = ''; menu.sel = 0; menu.render(); },
+    closeFriends(menu) {
+      this.friends = false;
+      menu.msg = '';
+      menu.sel = Math.max(0, this.tabItems(menu).findIndex((x) => x.friends));
+      menu.render();
+    },
+    // JOIN trên tab: bật / tắt ô gõ mã phòng (Menu.setTextMode 'join' = cùng ô mã của PRIVATE MATCH, Menu.submitCode).
+    // Thôi gõ mã = lùi 1 bước về bảng PLAY WITH FRIENDS (trỏ JOIN)
+    startJoin(menu) { this.friends = false; this.joining = true; menu.joinFrom = 'run'; menu.code = ''; menu.msg = ''; menu.sel = 0; menu.render(); },
+    stopJoin(menu) {
+      this.joining = false; this.friends = true;
+      menu.code = ''; menu.msg = ''; menu.setTextMode(null);
+      menu.sel = Math.max(0, this.tabItems(menu).findIndex((x) => x.joinRoom));
+      menu.render();
+    },
     // ảnh sân của từng act (tab 'run')
     bind(menu) {
       menu.setTextMode(this.joining ? 'join' : null);
@@ -150,7 +187,7 @@ window.SFC = window.SFC || {};
       menu.msg = '';
       menu.go('runmap');
     },
-    reset() { this.sel = 0; this.quitArm = false; this.key = null; this.bagOpen = false; this.pick = null; this.drawing = false; },
+    reset() { this.sel = 0; this.quitArm = false; this.key = null; this.bagOpen = false; this.pick = null; this.drawing = false; this.friends = false; },
 
     /* ================= page 'runmap' ================= */
     // mục chọn được. Thứ tự che: hết run > thưởng chọn BADGE > phòng (Shop / Locker Room / Skill game / sự kiện) > thẻ mở act > túi đồ > map.
