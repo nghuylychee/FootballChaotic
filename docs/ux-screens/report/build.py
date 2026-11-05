@@ -50,7 +50,9 @@ if os.path.exists(EV):
     D['eventScenes'] = json.load(open(EV, encoding='utf-8'))
     # ảnh cảnh đã vẽ (shots/after/ev-<id>.png lúc chọn, ev-<id>-res.png kết quả, ev-<id>-<gì đó>.png các trạng thái khác) -> hiện trong thẻ sự kiện
     LBL = {'': 'Lúc chọn', 'res': 'Kết quả', 'hurt': 'Bị đau', 'blocked': 'Shin Guards chặn', 'nobody': 'Không ai đau', 'lose': 'Thua',
-           'win': 'Thắng', 'poor': 'Thiếu tiền', 'empty': 'Không ai đau', 'hover': 'Đang trỏ', 'walk': 'Trỏ nút từ chối'}
+           'win': 'Thắng', 'poor': 'Thiếu tiền', 'empty': 'Không ai đau', 'none': 'Không ai đau', 'hover': 'Đang trỏ', 'walk': 'Trỏ nút từ chối',
+           'shin': 'Có Shin Guards', 'sayno': 'Trỏ Say no', 'away': 'Trỏ Walk away', 'pass': 'Trỏ Pass', 'tip': 'Rê chuột lên người đau',
+           'in': 'Cậu nhóc chạy vào (từng khung)', 'res-anim': 'Hoạt cảnh kết quả (từng khung)', 'win-anim': 'Thắng (từng khung)', 'lose-anim': 'Thua (từng khung)'}
     for e in D['eventScenes']['events']:
         shots = []
         for f in sorted(glob.glob(os.path.join(ROOT, 'shots', 'after', 'ev-' + e['id'] + '*.png'))):
