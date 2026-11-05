@@ -333,6 +333,50 @@ window.SFC = window.SFC || {};
     for (let j = 0; j < rows.length; j++) for (let i = 0; i < rows[j].length; i++) if (rows[j][i] !== '.') px(ctx, x0 + i - 1, y0 + j - 1, 3, 3, OUT);
     for (let j = 0; j < rows.length; j++) for (let i = 0; i < rows[j].length; i++) { const c = colors[rows[j][i]]; if (c) px(ctx, x0 + i, y0 + j, 1, 1, c); }
   }
+  // vẽ bản đồ ký tự đã có sẵn viền (K) — mỗi ký tự 1 px, gộp các ô cùng màu liền nhau trên 1 hàng thành 1 lần tô
+  function bitmap(ctx, rows, x0, y0, pal) {
+    for (let j = 0; j < rows.length; j++) {
+      const r = rows[j];
+      for (let i = 0; i < r.length;) {
+        const ch = r[i]; let n = 1;
+        while (r[i + n] === ch) n++;
+        if (ch !== '.') { ctx.fillStyle = pal[ch]; ctx.fillRect(x0 + i, y0 + j, n, 1); }
+        i += n;
+      }
+    }
+  }
+  // bitmap prop Tuyệt kỹ: 3 tông mỗi chất liệu như sprite cầu thủ (tối · nền · sáng), nguồn sáng trên trái
+  const ART_PAL = {
+    K: '#140c16',
+    b: '#a81f3b', c: '#e3304e', d: '#ff6b80',   // đỏ
+    g: '#24318c', h: '#3f5ae6', i: '#7f98ff',   // xanh
+    l: '#4a4f5c', m: '#727a8c', n: '#aab2c2',   // thép
+  };
+  // Mega Magnet: nam châm chữ U ngược (26 x 26), nửa đỏ / nửa xanh, 2 đầu cực bạc ở đáy
+  const MAGNET = [
+    '.......KKKdddhhhKKK.......', '......KdddddchhhhhgK......', '....KKddddddchhhhhhgKK....', '...KdddddcccchhhhhhgggK...',
+    '...KddddcbbbbgggghhhggK...', '..KdddcbbbbbbggggggggggK..', '.KdddcbbbbbbbgggggggggggK.', '.KdddcbbbbbKKKKgggggggggK.',
+    'KdddcbbbbKK....KKggghggggK', 'KddccbbbbK......KgghhggggK', 'KdccbbbbK........KghhhgggK', 'KcccbbbbK........KhhhhgggK',
+    'KcccbbbbK........KhhhhgggK', 'KcccbbbbK........KhhhhgggK', 'KcccbbbbK........KhhhhgggK', 'KcccbbbbK........KhhhhgggK',
+    'KcccbbbbK........KhhhhgggK', 'KcccbbbbK........KhhhhgggK', 'KcccbbbbK........KhhhhgggK', 'KcccbbbbK........KhhhhgggK',
+    'KcccbbbbK........KhhhhgggK', 'KcccbbbbK........KhhhhgggK', 'KlllllllK........KlllllllK', 'KmmmllllK........KmmmmlllK',
+    'KmmmllllK........KmmmmlllK', '.KKKKKKK..........KKKKKKK.',
+  ];
+  // Iron Hammer: đầu búa tạ sắt rèn, thắt giữa loe về 2 mặt đập. Đầu búa luôn vuông góc với cán:
+  // H nằm ngang (26 x 16) khi cán dựng đứng · V dựng đứng (16 x 28, thấy mặt đập trên) khi cán nằm ngang
+  const HAMMER_H = [
+    '.K......................K.', 'KnKKK................KKKnK', 'KnmmmKKKKKKKKKKKKKKKKmmmnK', 'KnmmmmmmmmmmmmmmmmmmmmmmnK',
+    'KnmmmmmmmmmmmmmmmmmmmmmmnK', 'KnmmmmmmmmmmmmmmmmmmmmmmnK', 'KmllllllllmmmmmmllllllllmK', 'KmllllllllllllllllllllllmK',
+    'KmllllllllllllllllllllllmK', 'KmllllllllllllllllllllllmK', 'KllllllllllllllllllllllllK', 'KllllllllllllllllllllllllK',
+    'KllllllllllllllllllllllllK', 'KllllKKKKKKKKKKKKKKKKllllK', 'KlKKK................KKKlK', '.K......................K.',
+  ];
+  const HAMMER_V = [
+    '....KKKKKKKKK...', '..KKnnnnnmmmmKK.', '.KnnnnnnnmmmmmmK', 'KnnnnnmmmmlllllK', '.KmmmmllllllllK.', '.KmmmmllllllllK.',
+    '.KmmmmllllllllK.', '..KmmmlllllllK..', '..KmmmlllllllK..', '..KmmmlllllllK..', '..KmmmlllllllK..', '..KmmmlllllllK..',
+    '..KmmmmllllllK..', '..KmmmmllllllK..', '..KmmmmllllllK..', '..KmmmmllllllK..', '..KmmmmllllllK..', '..KmmmmllllllK..',
+    '..KmmmlllllllK..', '..KmmmlllllllK..', '..KmmmlllllllK..', '..KmmmlllllllK..', '..KmmmlllllllK..', '.KmmmmllllllllK.',
+    '.KmmmmllllllllK.', '.KmmmmllllllllK.', 'KnnnnnmmmmlllllK', '.KKKKKKKKKKKKKK.',
+  ];
 
   function drawProp(ctx, g, o, part) {
     const { px, disc, ellipse, OUT } = SP(), t = g.time;
@@ -616,14 +660,11 @@ window.SFC = window.SFC || {};
           const sk = Math.min(1, (el - spin) / 0.1);
           hx = x + ux * 24 * sk; hy = y - 34 * (1 - sk) + uy * 24 * sk * 0.6 - 4;
         }
-        ctx.strokeStyle = OUT; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(hx, hy); ctx.stroke();
-        ctx.strokeStyle = '#a8683a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(hx, hy); ctx.stroke();
-        const hw = 22, hh = 14;
-        px(ctx, Math.round(hx - hw / 2) - 1, Math.round(hy - hh / 2) - 1, hw + 2, hh + 2, OUT);
-        px(ctx, Math.round(hx - hw / 2), Math.round(hy - hh / 2), hw, hh, '#8b93a3');
-        px(ctx, Math.round(hx - hw / 2), Math.round(hy - hh / 2), hw, 3, '#e8ecf5');
-        px(ctx, Math.round(hx - hw / 2), Math.round(hy + hh / 2) - 2, hw, 2, '#4a4f5c');
-        px(ctx, Math.round(hx - 2), Math.round(hy - hh / 2), 4, hh, '#ffd23f');   // đai vàng giữa búa
+        // cán gỗ: nét 2 ô viền mực như tay chân sprite · đầu búa vuông góc với cán (cán nằm ngang -> đầu dựng đứng)
+        const PS = SFC.PlayerSprite, bx = Math.round(hx), by = Math.round(hy);
+        PS.drawCells(ctx, 0, 0, PS.limbCells([[x - 1, y - 11], [bx - 1, by - 1]], () => '#a8683a'));
+        const head = Math.abs(bx - x) >= Math.abs(by - (y - 10)) ? HAMMER_V : HAMMER_H;
+        bitmap(ctx, head, bx - (head[0].length >> 1), by - (head.length >> 1), ART_PAL);
         break;
       }
       case 'quake': {   // Iron Hammer: địa chấn chạy thẳng — vết nứt răng cưa + đá trồi lên ở đầu sóng rồi lún xuống
@@ -931,12 +972,7 @@ window.SFC = window.SFC || {};
       case 'bigmagnet': {   // Mega Magnet: nam châm chữ U khổng lồ hạ từ trên trời xuống
         const z = Math.round(Math.max(0, 1 - el / Math.max(0.01, o.a)) * 160) + 34, my = y - z;
         ellipse(ctx, x, y + 1, 16, 6, `rgba(0,0,0,${0.15 + 0.25 * Math.min(1, el / o.a)})`);
-        for (const sd of [-1, 1]) {
-          px(ctx, x + sd * 9 - 4, my - 16, 9, 20, OUT);
-          px(ctx, x + sd * 9 - 3, my - 15, 7, 14, sd < 0 ? '#ff3d5a' : '#4b69ff');
-          px(ctx, x + sd * 9 - 3, my - 1, 7, 4, '#e8ecf5');   // đầu cực bạc
-        }
-        px(ctx, x - 13, my - 22, 27, 8, OUT); px(ctx, x - 12, my - 21, 25, 6, '#a8203a');
+        bitmap(ctx, MAGNET, x - 13, my - 23, ART_PAL);   // đáy 2 đầu cực ở my + 2
         if (el >= o.a) {   // đang hút: tia từ trường chạy xuống
           ctx.globalAlpha = fade * 0.5;
           for (let i = 0; i < 4; i++) { const yy = my + ((t * 90 + i * 9) % 34); px(ctx, x - 12 + i * 8, Math.round(yy), 2, 3, i % 2 ? '#ff3d5a' : '#4b69ff'); }
