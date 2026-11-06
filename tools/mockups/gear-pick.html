@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GEAR · 5 phương án</title>
+<!-- MOCKUP (2026-11-06; owner chọn B, đã làm vào game: src/ui/runmap.js gearCard, css .gearx — docs/ux-gear/README.md): màn thưởng GEAR (chọn 1 trong 3 món -> ai đeo -> đủ ô thì bỏ 1 món) bị rối.
+     Review lại bằng nheo mắt / trắng đen / bản đồ mắt (saliency) / thứ tự anim / kiểm kê thông tin + 5 phương án A–E.
+     Ghi chép + số đo + mắt mới + game tham khảo: docs/ux-gear/README.md. Trang tĩnh, nạp script game từ index.html (trừ main.js)
+     để vẽ đúng nhân vật / icon / chỉ số thật; không gọi Profile.save, không đụng save. Mở qua npm run serve:
+     http://localhost:8080/tools/mockups/gear-pick.html  (?opt=B&st=who&view=gray để mở thẳng 1 khung) -->
+<link rel="stylesheet" href="../../css/style.css" />
+<style>
+  html, body { margin: 0; height: auto; overflow: auto; background: #07080b; color: #c7ccd6; font-family: var(--vt); }
+  body { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 0 80px; }
+  .head, .doc, .tl { width: min(1280px, calc(100vw - 24px)); font-size: 20px; line-height: 1.15; }
+  /* chữ ngoài khung là tiếng Việt: VT323 (Press Start 2P không có dấu) */
+  .head h1 { font-family: var(--vt); font-size: 34px; line-height: 1; color: #fff; letter-spacing: 1px; margin: 0 0 6px; font-weight: normal; }
+  .head p { margin: 0 0 4px; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; width: min(1280px, calc(100vw - 24px)); }
+  .tabs button { font-family: var(--vt); font-size: 19px; line-height: 1; padding: 5px 10px 4px; background: #1a1c22; color: #9aa3b5; border: 2px solid #2e3140; cursor: pointer; }
+  .tabs button:hover { color: #fff; }
+  .tabs button.on { color: #111; background: #ffe14f; border-color: #ffe14f; }
+  .tabs > span { width: 110px; align-self: center; font-size: 18px; color: #5a6070; }
+  .tabs .play { margin-left: auto; color: #ffe14f; border-color: #6b5a12; }
+  .wrap { position: relative; width: 1280px; height: 720px; overflow: hidden; box-shadow: 0 0 0 2px #2e3140; }
+  /* cách xem: nheo mắt = Gaussian ~12px trên khung 1280x720 · trắng đen = bỏ màu · bản đồ mắt = saliency tính sẵn (docs/ux-gear) */
+  .wrap[data-view="squint"] .stage { filter: blur(6px); }
+  .wrap[data-view="gray"] .stage { filter: grayscale(1); }
+  .wrap[data-view="both"] .stage { filter: grayscale(1) blur(6px); }
+  .wrap .sal { display: none; position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; image-rendering: auto; }
+  .wrap[data-view="sal"] .sal { display: block; }
+  .stage { position: absolute; left: 0; top: 0; width: 640px; height: 360px; transform: scale(2); transform-origin: 0 0; overflow: hidden; user-select: none;
+    background: #0b0c10; }
+  .stage canvas { image-rendering: pixelated; }
+  .stage img.shot { position: absolute; inset: 0; width: 640px; height: 360px; }
+  .tl { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 18px; color: #8a92a3; }
+  .tl b { color: #ffe14f; font-weight: normal; }
+  .tl .what { width: 100%; color: #c7ccd6; font-size: 20px; }
+  .doc h2 { font-size: 30px; line-height: 1; color: var(--gold); letter-spacing: 1px; margin: 28px 0 8px; font-weight: normal; }
+  .doc h3 { font-size: 23px; color: #fff; margin: 14px 0 6px; font-weight: normal; }
+  .doc table { border-collapse: collapse; width: 100%; margin-bottom: 6px; }
+  .doc td, .doc th { border: 1px solid #2a2e38; padding: 4px 8px; text-align: left; vertical-align: top; font-weight: normal; }
+  .doc th { color: var(--gold); }
+  .doc td:first-child { color: #fff; }
+  .doc p { margin: 0 0 8px; }
+  .doc li { margin-bottom: 4px; }
+  .doc ul, .doc ol { margin: 0 0 8px; padding-left: 24px; }
+  .doc b { color: #fff; font-weight: normal; }
+  .doc .bad { color: #ff8a8a; } .doc .ok { color: #8fe07a; }
+  .doc .num td { text-align: right; } .doc .num td:first-child { text-align: left; }
+  .doc .pick { border: 2px solid #ffe14f; padding: 10px 14px; margin-top: 8px; }
+  .doc img.inl { width: 100%; max-width: 1280px; display: block; border: 1px solid #2a2e38; margin: 4px 0 10px; }
+  .doc .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .doc .two figure { margin: 0; } .doc .two figcaption { font-size: 17px; color: #8a92a3; }
+  .doc .two img { width: 100%; display: block; border: 1px solid #2a2e38; }
+
+  /* ================= khối dùng chung trong khung (đơn vị = pixel game, khung 640x360) ================= */
+  .gp { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; color: #e6e9ef; font-family: var(--vt); }
+  /* map phía sau: luật chung #6 — lớp che đặc, chỉ còn vệt sân mờ */
+  .gp-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 45%, #171b24, #0a0b0f 80%); }
+  .gp-bg::after { content: ''; position: absolute; inset: 22px 30px; border: 1px solid rgba(255, 255, 255, 0.025); }
+  .gp > *:not(.gp-bg) { position: relative; }
+  .gp b, .gp em, .gp i, .gp u { font-weight: normal; font-style: normal; text-decoration: none; }
+  /* chữ tiêu đề / bước */
+  .gp-steps { display: flex; align-items: center; gap: 7px; font-family: var(--px); font-size: 7px; letter-spacing: 1px; color: #5a6070; margin-top: 12px; height: 12px; }
+  .gp-steps span { display: flex; align-items: center; gap: 5px; }
+  .gp-steps i { display: flex; align-items: center; justify-content: center; width: 11px; height: 11px; font-size: 6px; color: #121316; background: #5a6070; }
+  .gp-steps .cur { color: #fff; } .gp-steps .cur i { background: var(--gold); }
+  .gp-steps .done { color: #8a92a3; }
+  .gp-steps u { font-size: 6px; }
+  .gp-title { font-family: var(--px); font-size: 8px; letter-spacing: 2px; color: #fff; margin-top: 12px; }
+  .gp-sub { font-size: 12px; color: #7d8494; margin-top: 3px; height: 12px; }
+  .gp-label { font-family: var(--px); font-size: 6px; letter-spacing: 2px; color: #6b7282; display: flex; align-items: center; gap: 8px; }
+  .gp-label::before, .gp-label::after { content: ''; width: 60px; height: 1px; background: #2c303b; }
+  /* thẻ treo GEAR: góc vát + lỗ xỏ dây. Độ hiếm = chỉ viền thẻ treo (luật chung #2), nền trung tính */
+  .gp-tag { position: relative; flex: none; display: flex; align-items: center; justify-content: center; width: 34px; height: 40px;
+    background: #20232c; clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%, 0 9px); box-shadow: inset 0 0 0 2px var(--rc); }
+  .gp-tag::before { content: ''; position: absolute; left: 50%; top: 3px; width: 4px; height: 4px; margin-left: -2px; background: #0b0c10; box-shadow: 0 0 0 1px var(--rc); }
+  .gp-tag > i { display: flex; margin-top: 5px; }
+  .gp-tag.l { width: 52px; height: 60px; clip-path: polygon(13px 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 0 100%, 0 13px); }
+  .gp-tag.l::before { top: 5px; width: 6px; height: 6px; margin-left: -3px; }
+  .gp-tag.l > i { margin-top: 7px; }
+  .gp-tag.l .pxi { width: 42px; height: 42px; } .gp-tag .pxi { width: 24px; height: 24px; }
+  .gp-tag.s { width: 18px; height: 21px; clip-path: polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 0 100%, 0 5px); box-shadow: inset 0 0 0 1px var(--rc); }
+  .gp-tag.s::before { display: none; } .gp-tag.s > i { margin-top: 2px; } .gp-tag.s .pxi { width: 12px; height: 12px; }
+  /* chip hiệu lực: nhãn màu chỉ số / trường phái, số trắng, viền trung tính (vàng chỉ dành cho "đang chọn") */
+  .gp-chip { display: inline-flex; align-items: center; gap: 3px; font-family: var(--px); font-size: 7px; color: #fff; padding: 2px 4px 1px; background: #0f1116; border: 1px solid #3a3f4c; white-space: nowrap; }
+  .gp-chip i { color: var(--c); }
+  .gp-chip .pxi { width: 9px; height: 9px; vertical-align: 0; }
+  .gp-chip.big { font-size: 9px; padding: 3px 6px 2px; }
+  /* 1 dòng "món này làm gì cho người này" */
+  .gp-line { display: flex; align-items: center; gap: 3px; font-family: var(--px); font-size: 7px; color: #c7ccd6; white-space: nowrap; height: 10px; }
+  .gp-line i { color: var(--c); }
+  .gp-line s { text-decoration: none; color: #6b7282; font-size: 6px; }
+  .gp-line b { color: #fff; }
+  .gp-line .star { color: #fff; font-size: 7px; margin-left: 1px; }
+  .gp-line.big { font-size: 9px; height: 12px; } .gp-line.big s { font-size: 8px; }
+  .gp-line .pxi { width: 9px; height: 9px; vertical-align: 0; }
+  .gp-line.muted { color: #5f6676; } .gp-line.muted i { color: #5f6676; }
+  .gp-tagx { font-family: var(--px); font-size: 6px; letter-spacing: 1px; color: #8a92a3; padding: 2px 3px 1px; border: 1px solid #3a3f4c; background: #12141a; white-space: nowrap; }
+  .gp-tagx.full { color: #c7ccd6; }
+  /* ô GEAR dưới thẻ người: 3 ô, có đồ = icon, trống = nét đứt, ô mới = món đang trỏ mờ */
+  .gp-slots { display: flex; gap: 2px; }
+  .gp-slots > span { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; background: #15171d; border: 1px solid #2f3440; }
+  .gp-slots > span.mt { border-style: dashed; border-color: #343946; background: transparent; }
+  .gp-slots > span.new { border-color: #c7ccd6; opacity: 0.75; }
+  .gp-slots > span.out { opacity: 0.35; }
+  .gp-slots .pxi { width: 10px; height: 10px; vertical-align: 0; }
+  .gp-pips { display: flex; gap: 2px; } .gp-pips i { width: 4px; height: 4px; background: #9aa3b5; } .gp-pips i.e { background: transparent; box-shadow: inset 0 0 0 1px #4a505e; }
+  .gp-pips i.n { background: #fff; animation: gpBlink 0.8s steps(2) infinite; }
+  @keyframes gpBlink { 50% { opacity: 0.25; } }
+  /* nhân vật: canvas 40x44, CSS phóng */
+  .gp-fig { position: relative; display: block; width: 66px; height: 78px; overflow: hidden; flex: none; }
+  .gp-fig canvas { position: absolute; left: -27px; top: -52px; width: 120px; height: 132px; }
+  .gp-fig.x2 { width: 44px; height: 52px; } .gp-fig.x2 canvas { left: -18px; top: -35px; width: 80px; height: 88px; }
+  .gp-head { position: relative; display: block; width: 24px; height: 22px; overflow: hidden; flex: none; background: #1d2029; }
+  .gp-head canvas { position: absolute; left: -28px; top: -37px; width: 80px; height: 88px; }
+  .gp-you { font-family: var(--px); font-size: 5px; color: #121316; background: #c7ccd6; padding: 1px 2px 0; }
+  .gp-role { font-family: var(--px); font-size: 6px; color: #8a92a3; }
+  .gp-name { font-family: var(--px); font-size: 7px; color: #fff; white-space: nowrap; }
+  /* dòng phím + nút */
+  .gp-foot { position: absolute !important; left: 0; right: 0; bottom: 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .gp-keys { display: flex; gap: 12px; font-size: 12px; color: #8a92a3; } .gp-keys span { display: flex; align-items: center; gap: 3px; }
+  .gp-keys kbd { font-size: 6px; }
+  .gp .pt-btn { font-family: var(--px); font-size: 7px; letter-spacing: 2px; padding: 5px 12px 4px; }
+  /* đang chọn: luật chung #3 — nền sáng hơn + khung vàng 2px đủ 4 cạnh + nhích lên (sống được khi bỏ màu) */
+  .gp .sel { outline: 2px solid var(--gold); outline-offset: 0; background-color: #2b303c !important; transform: translateY(-3px); z-index: 2; }
+  /* đã chốt / đang mở nhưng mục chọn nằm chỗ khác: viền trắng xám (luật chung #4: mỗi lúc chỉ 1 khung vàng) */
+  .gp .held { outline: 2px solid #c7ccd6; outline-offset: 0; background-color: #262a34 !important; z-index: 1; }
+  .gp .dim { opacity: 0.4; }
+  .gp .off { opacity: 0.38; filter: grayscale(1); }
+
+  /* ---------- hiện ra lần lượt (nút PHÁT LẠI ANIM): mỗi phần tử .ga có --d = lúc bắt đầu ---------- */
+  .anim .ga { animation: gpIn 0.24s steps(4) var(--d, 0s) both; }
+  .anim .ga.fade { animation-name: gpFade; }
+  .anim .ga.drop { animation: gpDrop 0.3s steps(5) var(--d, 0s) both; }
+  .anim .ga.grow { animation: gpGrow 0.26s steps(4) var(--d, 0s) both; }
+  .anim .ga.shrink { animation: gpShrink 0.26s steps(4) var(--d, 0s) both; }
+  @keyframes gpIn { from { opacity: 0; transform: translateY(6px) scale(0.96); } }
+  @keyframes gpFade { from { opacity: 0; } }
+  @keyframes gpDrop { from { opacity: 0; transform: translateY(-24px); } }
+  @keyframes gpGrow { from { opacity: 0; transform: scale(0.6); } }
+  @keyframes gpShrink { from { transform: translateY(70px) scale(2.4); } }
+
+  /* ================= A · GỌT ================= */
+  .a-grow { display: flex; gap: 10px; margin-top: 10px; }
+  .a-g { width: 190px; height: 64px; display: flex; align-items: center; gap: 8px; padding: 0 8px; box-sizing: border-box; background: #191c24; border: 1px solid #2c303b; text-align: left; }
+  .a-g .t { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 0; }
+  .a-g b { font-family: var(--px); font-size: 7px; color: #fff; white-space: nowrap; }
+  .a-g p { margin: 0; font-size: 11px; line-height: 1; color: #aab1bf; }
+  .a-mid { margin: 17px 0 7px; }
+  .a-team { display: flex; gap: 14px; }
+  .a-p { width: 132px; height: 142px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 6px 6px; background: #14161c; border: 1px solid #262a33; }
+  .a-p .nm { display: flex; align-items: center; gap: 4px; }
+  .a-p .gp-fig { margin: 2px 0 0; }
+  .a-p.has { opacity: 0.45; }
+  .a-swap { display: flex; flex-direction: column; gap: 5px; margin-top: 12px; width: 400px; }
+  .a-in { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border: 1px dashed #4a505e; }
+  .a-in em { font-family: var(--px); font-size: 6px; color: #8fe07a; letter-spacing: 1px; width: 30px; }
+  .a-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: #171a21; border: 1px solid #2c303b; height: 30px; }
+  .a-row em { font-family: var(--px); font-size: 6px; color: #ff8a8a; letter-spacing: 1px; width: 30px; }
+  .a-row b, .a-in b { font-family: var(--px); font-size: 7px; color: #fff; width: 104px; white-space: nowrap; }
+  .a-row .loss { margin-left: auto; display: flex; gap: 8px; }
+
+  /* ================= B · TO NHỎ THEO BƯỚC ================= */
+  .b-cards { display: flex; gap: 14px; margin-top: 12px; }
+  .b-c { width: 168px; height: 168px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 10px 8px; background: #191c24; border: 1px solid #2c303b; }
+  .b-c b { font-family: var(--px); font-size: 8px; color: #fff; text-align: center; }
+  .b-c p { margin: 0; font-size: 12px; line-height: 1; color: #aab1bf; text-align: center; }
+  .b-strip { display: flex; gap: 0; margin-top: 14px; background: #121419; border: 1px solid #23262f; }
+  .b-strip > em { font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: #5f6676; writing-mode: vertical-rl; transform: rotate(180deg); padding: 4px 3px; border-right: 1px solid #23262f; text-align: center; }
+  .b-m { width: 168px; height: 40px; box-sizing: border-box; display: grid; grid-template-columns: 24px 1fr; grid-template-rows: 1fr 1fr; column-gap: 6px; row-gap: 2px; align-items: center; padding: 4px 8px; }
+  .b-m + .b-m { border-left: 1px solid #1f2229; }
+  .b-m .gp-head { grid-row: span 2; }
+  .b-m .top { display: flex; align-items: center; gap: 4px; }
+  .b-m .top .gp-pips { margin-left: auto; }
+  .b-m.has { opacity: 0.45; }
+  .b-m .gp-tagx { justify-self: start; }
+  .b-hero { display: flex; align-items: center; gap: 7px; margin-top: 8px; padding: 3px 9px 3px 4px; background: #262a34; border: 2px solid #c7ccd6; }
+  .b-hero b { font-family: var(--px); font-size: 7px; color: #fff; }
+  .b-team { display: flex; gap: 12px; margin-top: 12px; align-items: flex-start; }
+  .b-p { width: 164px; height: 196px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 6px 8px; background: #14161c; border: 1px solid #262a33; }
+  .b-p .nm { display: flex; align-items: center; gap: 4px; }
+  .b-p .gp-fig { margin: 4px 0 2px; }
+  .b-p.has { opacity: 0.4; }
+  .b-p .drop { width: 100%; display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+  .b-p .drop > div { display: flex; align-items: center; gap: 5px; height: 20px; padding: 0 4px; background: #191c24; border: 1px solid #2c303b; }
+  .b-p .drop > div.cur { outline: 2px solid var(--gold); background: #2b303c; }
+  .b-p.big { width: 206px; }
+  .b-p .drop b { font-family: var(--px); font-size: 6px; color: #fff; white-space: nowrap; }
+  .b-p .drop .gp-line { margin-left: auto; font-size: 6px; }
+  .b-p .q { font-family: var(--px); font-size: 6px; color: #c7ccd6; letter-spacing: 1px; }
+
+  /* ================= C · 1 LẦN BẤM (bảng món × người) ================= */
+  .c-grid { display: grid; grid-template-columns: 118px repeat(3, 148px); grid-template-rows: 78px repeat(3, 50px); gap: 4px; margin-top: 10px; }
+  .c-corner { display: flex; align-items: flex-end; justify-content: flex-start; padding: 0 0 4px 2px; }
+  .c-g { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: #191c24; border: 1px solid #2c303b; padding: 4px; }
+  .c-g .r1 { display: flex; align-items: center; gap: 6px; }
+  .c-g b { font-family: var(--px); font-size: 7px; color: #fff; white-space: nowrap; }
+  .c-g p { margin: 0; font-size: 11px; line-height: 1; color: #aab1bf; text-align: center; }
+  .c-g.col { border-color: #6b7282; }
+  .c-r { display: grid; grid-template-columns: 24px 1fr; grid-template-rows: auto auto; column-gap: 6px; row-gap: 4px; align-items: center; padding: 0 6px; background: #121419; border: 1px solid #22252d; }
+  .c-r .gp-head { grid-row: span 2; }
+  .c-r .top { display: flex; align-items: center; gap: 4px; }
+  .c-r.row { border-color: #6b7282; }
+  .c-x { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: #15171d; border: 1px solid #23262f; cursor: pointer; }
+  .c-x.has { background: transparent; border-style: dashed; }
+  .c-x.fit { background: #191c24; }
+  .c-pop { position: absolute !important; z-index: 5; width: 210px; display: flex; flex-direction: column; gap: 3px; padding: 6px; background: #0f1116; border: 2px solid #c7ccd6; box-shadow: 3px 3px 0 #000; }
+  .c-pop > em { font-family: var(--px); font-size: 6px; line-height: 1.4; letter-spacing: 1px; color: #c7ccd6; margin-bottom: 2px; }
+  .c-pop > div { display: flex; align-items: center; gap: 5px; height: 22px; padding: 0 4px; background: #191c24; border: 1px solid #2c303b; }
+  .c-pop > div.cur { outline: 2px solid var(--gold); background: #2b303c; }
+  .c-pop b { font-family: var(--px); font-size: 6px; color: #fff; white-space: nowrap; }
+  .c-pop .gp-line { margin-left: auto; font-size: 6px; }
+
+  /* ================= D · TÚI ĐỒ, ĐEO SAU ================= */
+  .d-fits { display: flex; align-items: center; gap: 3px; margin-top: auto; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: #7d8494; }
+  .d-bagline { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: #7d8494; }
+  .d-bag { display: flex; align-items: center; gap: 4px; padding: 2px 6px 2px 3px; border: 1px solid #3a3f4c; background: #12141a; font-family: var(--px); font-size: 6px; color: #c7ccd6; }
+  .d-bag .pxi { width: 14px; height: 14px; vertical-align: 0; }
+  .d-bar { position: absolute !important; left: 16px; right: 16px; top: 8px; height: 26px; display: flex; align-items: center; gap: 8px; }
+  .d-bar .strip { display: flex; align-items: center; gap: 6px; padding: 2px 8px; border: 1px solid #3a3f4c; background: #12141a; height: 20px; }
+  .d-bar .new { font-family: var(--px); font-size: 6px; color: #121316; background: var(--gold); padding: 2px 3px 1px; animation: gpBlink 0.8s steps(2) infinite; }
+  .d-sheet { display: flex; flex-direction: column; align-items: center; margin-top: 38px; }
+  .d-team { display: flex; gap: 10px; margin-top: 8px; }
+  .d-p { width: 186px; height: 172px; box-sizing: border-box; display: grid; grid-template-columns: 44px 1fr 44px; grid-template-rows: auto 1fr auto auto; padding: 5px 6px 6px; gap: 2px; background: #14161c; border: 1px solid #262a33; }
+  .d-p .hd { grid-column: 1 / -1; display: flex; align-items: center; gap: 4px; }
+  .d-p .col { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; }
+  .d-p .col > span { font-family: var(--px); font-size: 6px; color: #5f6676; display: flex; justify-content: space-between; }
+  .d-p .col > span.hit { color: #fff; } .d-p .col > span.hit i { color: var(--c); }
+  .d-p .col > span b { color: inherit; }
+  .d-p .gp-fig { justify-self: center; margin-top: 4px; }
+  .d-p .ln { grid-column: 1 / -1; display: flex; justify-content: center; }
+  .d-p .sl { grid-column: 1 / -1; display: flex; justify-content: center; }
+  .d-p.has { opacity: 0.45; }
+  .d-p .dq { grid-column: 1 / -1; font-family: var(--px); font-size: 6px; color: #c7ccd6; letter-spacing: 1px; text-align: center; margin-top: 6px; }
+  .d-p .ddrop { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+  .d-p .ddrop > div { display: flex; align-items: center; gap: 4px; height: 20px; padding: 0 4px; background: #191c24; border: 1px solid #2c303b; }
+  .d-p .ddrop > div.cur { outline: 2px solid var(--gold); background: #2b303c; }
+  .d-p .ddrop b { font-family: var(--px); font-size: 6px; color: #fff; white-space: nowrap; }
+  .d-p .ddrop .gp-line { margin-left: auto; font-size: 6px; }
+  .d-tray { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 4px 10px 4px 6px; border: 1px solid #3a3f4c; background: #101217; }
+  .d-tray > em { font-family: var(--px); font-size: 6px; letter-spacing: 1px; color: #8a92a3; }
+  .d-tray > span { display: flex; align-items: center; gap: 5px; padding: 2px 6px 2px 2px; border: 1px solid #2c303b; }
+  .d-tray > span.cur { outline: 2px solid var(--gold); background: #2b303c; }
+  .d-tray > span.e { width: 22px; height: 24px; border-style: dashed; padding: 0; }
+  .d-tray b { font-family: var(--px); font-size: 6px; color: #fff; }
+
+  /* ================= E · PHÒNG THAY ĐỒ (cảnh, bản thật vẽ canvas 320x180 như KIT VAN) ================= */
+  .e-room { position: absolute !important; inset: 0; background: #1a1c23; overflow: hidden; }
+  .e-room::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 236px;
+    background: repeating-linear-gradient(0deg, transparent 0 15px, #20232b 15px 16px), repeating-linear-gradient(90deg, transparent 0 31px, #20232b 31px 32px), #1c1f27; }
+  .e-room::after { content: ''; position: absolute; left: 0; right: 0; top: 236px; bottom: 0; background: repeating-linear-gradient(90deg, #2a2420 0 40px, #262019 40px 80px); border-top: 2px solid #3a322b; }
+  .e-lk { position: absolute !important; top: 18px; width: 120px; height: 216px; background: #39414f; box-shadow: inset 0 0 0 2px #2a303b, inset 0 -2px 0 #222730, 3px 0 0 #15171c; }
+  .e-lk::before { content: ''; position: absolute; left: 8px; right: 8px; top: 30px; height: 2px; background: #2a303b; box-shadow: 0 4px 0 #2a303b, 0 8px 0 #2a303b; }
+  .e-lk.lamp { background: #4a5466; }
+  .e-lk.lamp::after { content: ''; position: absolute; left: 50%; top: -18px; width: 60px; height: 18px; margin-left: -30px; background: linear-gradient(180deg, rgba(255, 238, 170, 0.0), rgba(255, 238, 170, 0.18)); }
+  .e-plate { position: absolute !important; left: 50%; top: 6px; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 2px 5px 1px; background: #d9d2bf; color: #121316; font-family: var(--px); font-size: 6px; white-space: nowrap; box-shadow: 1px 1px 0 #000; }
+  .e-plate em { color: #5a5446; }
+  .e-plate .pst { padding-left: 4px; border-left: 1px solid #8a8270; }
+  .e-hooks { position: absolute !important; left: 10px; right: 10px; top: 50px; display: flex; justify-content: space-between; }
+  .e-hook { position: relative; width: 30px; height: 46px; display: flex; justify-content: center; }
+  .e-hook::before { content: ''; position: absolute; top: 0; left: 50%; width: 6px; height: 4px; margin-left: -3px; background: #8b93a3; box-shadow: 0 1px 0 #000; }
+  .e-hook .gp-tag { margin-top: 6px; }
+  .e-hook.free .gp-tag { opacity: 0.6; outline: 1px dashed #c7ccd6; }
+  .e-hook.lift .gp-tag { transform: translateY(-5px) rotate(-8deg); outline: 2px solid var(--gold); }
+  .e-stk { position: absolute !important; right: 6px; top: 22px; display: flex; gap: 2px; }
+  .e-stk i { display: flex; width: 12px; height: 12px; align-items: center; justify-content: center; background: #d9d2bf; transform: rotate(-6deg); }
+  .e-stk i + i { transform: rotate(5deg); }
+  .e-stk i.hit { box-shadow: 0 0 0 2px var(--gold); }
+  .e-stk .pxi { width: 10px; height: 10px; }
+  .e-man { position: absolute !important; bottom: 136px; }
+  .e-bench { position: absolute !important; left: 170px; width: 300px; top: 268px; height: 10px; background: #6b4a2f; box-shadow: 0 2px 0 #3d2a1a, inset 0 2px 0 #87603f; }
+  .e-bench::before, .e-bench::after { content: ''; position: absolute; top: 10px; width: 6px; height: 16px; background: #3d2a1a; }
+  .e-bench::before { left: 14px; } .e-bench::after { right: 14px; }
+  .e-off { position: absolute !important; top: 226px; display: flex; flex-direction: column; align-items: center; }
+  .e-off.cur .gp-tag { outline: 2px solid var(--gold); transform: translateY(-4px); }
+  .e-off.gone { opacity: 0.3; }
+  .e-hand { position: absolute !important; width: 22px; height: 26px; z-index: 6; }
+  .e-hand > i { position: absolute; left: 0; top: 0; width: 2px; height: 2px; }
+  .e-bub { position: absolute !important; left: 112px; right: 112px; bottom: 6px; min-height: 52px; box-sizing: border-box; padding: 6px 10px 6px 46px; background: #f3ead7; color: #121316; box-shadow: 0 0 0 2px #121316, 3px 3px 0 #000; }
+  .e-bub .who { position: absolute; left: 6px; top: 6px; width: 32px; height: 32px; background: #c9bea4; overflow: hidden; }
+  .e-bub .who { display: flex; align-items: center; justify-content: center; }
+  .e-bub .who .pxi { width: 28px; height: 28px; }
+  .e-bub b { font-family: var(--px); font-size: 7px; color: #121316; }
+  .e-bub p { margin: 3px 0 0; font-size: 13px; line-height: 1; color: #2a2620; }
+  .e-bub .gp-chip { background: #fff; border-color: #8a8270; color: #121316; }
+  .e-bub .gp-line { color: #2a2620; } .e-bub .gp-line b { color: #121316; } .e-bub .gp-line s { color: #6b6455; }
+  .e-bub .keys { display: flex; gap: 10px; margin-top: 4px; font-size: 12px; color: #5a5446; }
+  .e-bub kbd { font-size: 6px; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>Màn GEAR · review lại + 5 phương án</h1>
+    <p>Owner thấy màn chọn GEAR rối. Mình chụp lại màn hiện tại trên main (bản phương án B đã làm 05/11), soi bằng nheo mắt, trắng đen, bản đồ mắt (saliency), thứ tự anim, đếm thông tin, cho 1 "mắt mới" chỉ xem ảnh làm test 5 giây, tra 15 game có màn tương tự, rồi dựng 5 phương án.</p>
+    <p><b>Owner chọn B (2026-11-06), đã làm vào game.</b> Ảnh game sau khi sửa: docs/ux-gear/shots/after/.</p>
+    <p>Bấm <b>PHƯƠNG ÁN</b> / <b>TRẠNG THÁI</b> / <b>CÁCH XEM</b> trên khung để so. <b>▶ PHÁT LẠI ANIM</b> diễn thứ tự hiện ra của phương án đang xem. Phân tích ở dưới khung.</p>
+  </div>
+  <div class="tabs" id="tOpt"><span>PHƯƠNG ÁN</span>
+    <button data-opt="now">HIỆN TẠI</button>
+    <button data-opt="A">A · GỌT</button>
+    <button data-opt="B">B · TO NHỎ THEO BƯỚC</button>
+    <button data-opt="C">C · 1 LẦN BẤM</button>
+    <button data-opt="D">D · TÚI ĐỒ, ĐEO SAU</button>
+    <button data-opt="E">E · PHÒNG THAY ĐỒ</button>
+  </div>
+  <div class="tabs" id="tSt"><span>TRẠNG THÁI</span>
+    <button data-st="pick">1 · CHỌN MÓN</button>
+    <button data-st="who">2 · CHỌN NGƯỜI</button>
+    <button data-st="full">3 · NGƯỜI ĐỦ Ô</button>
+    <button data-st="school">4 · MÓN TRƯỜNG PHÁI</button>
+  </div>
+  <div class="tabs" id="tView"><span>CÁCH XEM</span>
+    <button data-view="">GỐC</button>
+    <button data-view="squint">NHEO MẮT</button>
+    <button data-view="gray">TRẮNG ĐEN</button>
+    <button data-view="both">NHEO + TRẮNG ĐEN</button>
+    <button data-view="sal">BẢN ĐỒ MẮT</button>
+    <button class="play" id="play">▶ PHÁT LẠI ANIM</button>
+  </div>
+  <div class="wrap" id="wrap"><div class="stage" id="scr"></div><img class="sal" id="sal" alt="" /></div>
+  <div class="tl" id="tl"></div>
+
+  <div class="doc" id="doc">
+    <h2>TÓM TẮT</h2>
+    <p>Màn rối vì <b>3 chuyện cùng lúc</b>: (1) thứ đang phải chọn lại nhỏ nhất màn: ở bước 1 (chọn món) 3 thẻ cầu thủ chiếm diện tích gấp <b>3,2 lần</b> 3 món, và nheo mắt thì nổi nhất là nhân vật + ô đỏ báo lỗi chứ không phải món; (2) mỗi thẻ cầu thủ chở khoảng 15 thứ (OVR, 6 chỉ số 6 màu có vạch, icon trường phái, ô LEGEND, 3 ô GEAR...) trong khi món đang trỏ chỉ đụng <b>1 chỉ số</b>: màn có <b>25 con số và 13 màu</b>, màn BADGE cùng loại có 0 số và 2 màu; (3) món và cầu thủ cùng bề ngang, xếp thẳng hàng, khe giữa 2 hàng (14 px) hẹp hơn khe giữa 2 cột (16 px), nên mắt đọc thành <b>3 cặp "món này của người này"</b>. Mắt mới tự nói đúng câu đó mà không được gợi ý, và đọc nhầm "Already wearing one." là nói về Keeper Gloves.</p>
+    <p>Chọn: <b>B · TO NHỎ THEO BƯỚC</b> (bước nào thì thứ đó to, thẻ cầu thủ chỉ còn 1 dòng "món này làm gì cho người này", bỏ hẳn bước 3 riêng). <b>A</b> nếu muốn sửa nhanh trên bản đang có. <b>C</b> nếu ưu tiên tốc độ (1 lần bấm). Lý do ở mục CHỌN cuối trang.</p>
+
+    <h2>ĐÃ SOI BẰNG GÌ</h2>
+    <table>
+      <tr><th>Kỹ thuật</th><th>Hỏi gì</th><th>Ở đâu</th></tr>
+      <tr><td>Nheo mắt (Gaussian 12px)</td><td>Còn lại khối nào? Khối đó có phải việc chính không?</td><td>CÁCH XEM › NHEO MẮT</td></tr>
+      <tr><td>Trắng đen</td><td>Bỏ màu thì "đang chọn" còn phân biệt được không? Thứ bậc có dựa hết vào màu không?</td><td>CÁCH XEM › TRẮNG ĐEN</td></tr>
+      <tr><td>Bản đồ mắt (saliency, spectral residual trên L, a, b)</td><td>Máy đoán mắt rơi vào đâu trước. Không thay người thật nhưng không bị "biết trước" như mình.</td><td>CÁCH XEM › BẢN ĐỒ MẮT</td></tr>
+      <tr><td>Gestalt: gần nhau / cùng hàng / giống nhau</td><td>Mắt gom thứ gì với thứ gì? Có gom sai không?</td><td>đo khe hàng / cột trên DOM</td></tr>
+      <tr><td>Tỉ lệ diện tích theo việc</td><td>Bao nhiêu % màn dành cho thứ đang phải chọn?</td><td>đo trên DOM</td></tr>
+      <tr><td>Kiểm kê thông tin theo quyết định</td><td>Mỗi thứ trên màn trả lời câu hỏi nào? Câu đó có cần ở bước này không? Bỏ / dời / để tooltip.</td><td>bảng KIỂM KÊ</td></tr>
+      <tr><td>Đếm "mực": chữ, số, khung, màu, họ màu</td><td>So với màn cùng loại trong game (BADGE, nhận LEGEND).</td><td>bảng SỐ ĐO</td></tr>
+      <tr><td>Ngữ nghĩa màu</td><td>Mỗi màu đang mang mấy nghĩa?</td><td>vấn đề #4</td></tr>
+      <tr><td>Thứ tự anim + khoá phím</td><td>Mắt được dẫn theo thứ tự nào? Bấm Enter liên tay từ màn kết quả thì chuyện gì xảy ra?</td><td>▶ PHÁT LẠI ANIM + dòng thời gian dưới khung</td></tr>
+      <tr><td>Độ ổn định bố cục giữa các bước</td><td>Qua bước sau, thứ gì nhảy chỗ?</td><td>so ảnh bước 1 / 2 / 3</td></tr>
+      <tr><td>Đếm thao tác (Hick, số lần bấm)</td><td>Màn gặp ~12 lần mỗi run: ca thường tốn mấy lần bấm?</td><td>bảng SO SÁNH</td></tr>
+      <tr><td>Mắt mới (test 5 giây)</td><td>1 agent chỉ xem ảnh, không đọc code: màn để làm gì, mắt rơi đâu, gom gì với gì, xoá nửa màn thì xoá gì.</td><td>docs/ux-gear/fresh.md</td></tr>
+      <tr><td>Tra game khác</td><td>15 game có "nhận đồ → chọn ai dùng": làm lúc nào, hiện gì, đầy ô thì sao.</td><td>mục GAME KHÁC</td></tr>
+    </table>
+
+    <h2>SỐ ĐO (màn hiện tại so với 2 màn cùng loại)</h2>
+    <table class="num" id="mTable">
+      <tr><th>Màn</th><th>Mẩu chữ</th><th>Con số</th><th>Khung</th><th>Màu chữ / viền</th><th>Họ màu</th><th>Mật độ cạnh</th><th>Điểm nổi nhất (bản đồ mắt)</th></tr>
+      <tr><td>GEAR · bước 1</td><td class="bad">69</td><td class="bad">25</td><td>20</td><td class="bad">13</td><td class="bad">7</td><td>5,1%</td><td>icon Keeper Gloves (món không chọn) → icon Tactics Board → ô số 1 → mới tới Grip Socks đang chọn</td></tr>
+      <tr><td>GEAR · bước 2</td><td>71</td><td>25</td><td>21</td><td>14</td><td>7</td><td>5,2%</td><td>số OVR 72 xanh (làm tròn trung bình 6 chỉ số) — còn DRI 77▲ (cái thật sự đổi) gần như không nổi</td></tr>
+      <tr><td>GEAR · bước 3 (bỏ món)</td><td>15</td><td>4</td><td>9</td><td>5</td><td>5</td><td>3,0%</td><td>3 icon món đang đeo, đều nhau</td></tr>
+      <tr><td>BADGE (cùng kiểu chọn 1 trong 3)</td><td class="ok">10</td><td class="ok">0</td><td>14</td><td class="ok">2</td><td>5</td><td>3,3%</td><td>tiêu đề, rồi miếng vá</td></tr>
+      <tr><td>LEGEND "Who gets him?"</td><td>61</td><td>21</td><td>14</td><td>11</td><td>6</td><td>5,0%</td><td>chân dung LEGEND, thẻ cầu thủ</td></tr>
+    </table>
+    <p>Họ màu = số dải màu bão hoà (12 dải 30°) có mặt trên màn; các màn UI khác của run có 2–5 (Pause 2, kết quả 3, map 4, BADGE 5), GEAR 7 ngang KIT VAN (cảnh pixel art). Mật độ cạnh (Canny) không cao bất thường: GEAR rối vì <b>nhiều loại tín hiệu</b> (số, màu, khung, icon) chứ không phải vì nhiều nét.</p>
+    <div class="two">
+      <figure><img src="gear-pick/sal/now-pick.jpg" alt="" /><figcaption>Bản đồ mắt · bước 1: 2 món không chọn sáng nhất, món đang chọn đứng thứ 4.</figcaption></figure>
+      <figure><img src="gear-pick/sal/now-who.jpg" alt="" /><figcaption>Bản đồ mắt · bước 2: số OVR 72 hút mắt nhất, DRI 77▲ không nổi.</figcaption></figure>
+    </div>
+
+    <h2>12 VẤN ĐỀ</h2>
+    <table>
+      <tr><th>#</th><th>Thấy gì</th><th>Lộ ra nhờ</th></tr>
+      <tr><td>1</td><td><b>Thứ đang chọn nhỏ nhất màn.</b> Bước 1 là chọn món, nhưng 3 thẻ cầu thủ chiếm 334.656 px² so với 103.584 px² của 3 món (gấp 3,2). Mắt mới: "nhìn qua tưởng màn chọn nhân vật / màn đội hình".</td><td>diện tích · mắt mới</td></tr>
+      <tr><td>2</td><td><b>Đọc thành 3 cột ghép đôi.</b> Món rộng bằng thẻ cầu thủ, đặt thẳng trên đầu, khe hàng 14 px &lt; khe cột 16 px. Mắt mới: "Grip Socks + LONG, Tactics Board + StepoverSam, Keeper Gloves + ROOKIE". Đúng thứ owner lo hôm 05/11 ("chưa hiểu là chọn cho 1 trong 3"), giờ do bố cục gây ra.</td><td>Gestalt · mắt mới</td></tr>
+      <tr><td>3</td><td><b>Thông tin không phục vụ quyết định.</b> Grip Socks chỉ đụng DRI, nhưng màn hiện 18 chỉ số + 3 OVR + 6 icon trường phái + 3 ô LEGEND. 25 con số; quyết định cần 3 (DRI của 3 người). Mắt mới muốn xoá đầu tiên: "6 chỉ số trên thẻ cầu thủ".</td><td>kiểm kê · mắt mới</td></tr>
+      <tr><td>4</td><td><b>Màu mang nhiều nghĩa.</b> Vàng = đang chọn, bước đang làm, số OVR, chỉ số PAS, trường phái TIKI-TAKA, icon trường phái trùng. Xanh lá = "cao hơn nền nhờ đồ" và "OVR sắp lên". Đỏ = lỗi, chỉ số FIG, chấn thương. 7 họ màu, cao nhất trong các màn UI.</td><td>trắng đen · đếm màu</td></tr>
+      <tr><td>5</td><td><b>Món đang chọn yếu hơn món hiếm.</b> Bản đồ mắt: icon Keeper Gloves (sử thi, tím) và Tactics Board sáng nhất; Grip Socks đang chọn đứng thứ 4. Nheo mắt: khung vàng gần như mất. Độ hiếm tô cả nền thẻ treo nên át "đang chọn".</td><td>bản đồ mắt · nheo</td></tr>
+      <tr><td>6</td><td><b>Lời báo âm thanh to nhất màn.</b> "Already wearing one." đỏ kiểu lỗi, hiện ngay bước 1 (chưa chọn ai), là khối nổi thứ 2 khi nheo, che 2 chỉ số, và bị đọc nhầm sang món khác (#2).</td><td>nheo · mắt mới</td></tr>
+      <tr><td>7</td><td><b>Xem trước ở chỗ không quan trọng.</b> Bước 2 nổi nhất là OVR 71→72 (trung bình 6 chỉ số làm tròn: món +4 thì có người lên 1, có người đứng yên; +9 thì lên 1 hoặc 2). DRI 71→77▲ cỡ 7px. Mỗi lúc chỉ xem trước 1 người, muốn so ai được nhiều nhất phải đi qua từng thẻ.</td><td>bản đồ mắt · mắt mới</td></tr>
+      <tr><td>8</td><td><b>Bước bỏ món là 1 màn khác hẳn,</b> không có so sánh: không thấy bỏ Power Boots thì SHO 81 → 75, không có dòng phím, và chọn sẵn món đầu tiên (ở ảnh là Power Boots, món mạnh nhất): Enter ngay là bỏ nó.</td><td>đường đi · mắt mới</td></tr>
+      <tr><td>9</td><td><b>Bố cục nhảy giữa các bước:</b> bước 1 → 2 cả khối lên 28 px (bỏ dòng phụ đề), bước 3 bố cục mới hoàn toàn. 3 bước = 3 bố cục.</td><td>so ảnh</td></tr>
+      <tr><td>10</td><td><b>Nhiễu lặt vặt:</b> map xuyên qua lớp che (thấy chữ YOU, vòng node), icon trường phái đè số DRI, mô tả bị cắt "…keeping it under punches,…", món đang chọn nhích lên 3 px làm lệch hàng tên, "One player wears it" lặp ý "Who wears it?".</td><td>mắt mới</td></tr>
+      <tr><td>11</td><td><b>Không có thứ tự hiện ra, Enter nhận ngay.</b> Mọi thứ hiện cùng lúc nên không có gì dẫn mắt; bấm liên tay từ màn kết quả = lấy món 1 cho người đầu (đợt review motion 06/11 xếp High).</td><td>anim</td></tr>
+      <tr><td>12</td><td><b>GEAR trường phái khó đọc:</b> "TIKI-TAKA ▲" (mắt mới không hiểu ▲), người hợp món chỉ được báo bằng icon nốt nhạc 12 px sáng lên ở góc thẻ, không chữ. Nhân vật của bạn không có trường phái nên thẻ của bạn không nói gì.</td><td>mắt mới · code</td></tr>
+    </table>
+
+    <h2>KIỂM KÊ THÔNG TIN (theo quyết định)</h2>
+    <p>Màn có đúng 3 quyết định: <b>món nào</b> · <b>ai đeo</b> · (đủ ô) <b>bỏ món nào</b>. Mọi thứ trên màn phải trả lời 1 trong 3 câu, không thì đi chỗ khác.</p>
+    <table>
+      <tr><th>Thông tin</th><th>Trả lời câu nào</th><th>Đề xuất</th></tr>
+      <tr><td>Thẻ treo + tên món + chip hiệu lực</td><td>món nào</td><td class="ok">giữ, to nhất ở bước chọn món</td></tr>
+      <tr><td>1 dòng "món này làm gì" (không cắt "…")</td><td>món nào</td><td class="ok">giữ; GEAR chỉ số dùng vế đầu của mô tả chỉ số ("Speed with the ball.")</td></tr>
+      <tr><td>Độ hiếm</td><td>món nào (phụ: số cộng đã nói độ mạnh)</td><td>chỉ còn ở viền thẻ treo, nền thẻ trung tính</td></tr>
+      <tr><td>Mặt / tên / vị trí cầu thủ</td><td>ai đeo</td><td class="ok">giữ</td></tr>
+      <tr><td><b>Đúng 1 chỉ số món đụng tới</b>, trước → sau, ★ nếu là chỉ số chính của vị trí</td><td>ai đeo</td><td class="ok">giữ, làm to; ★ dùng lại luật của BUILD YOUR SQUAD</td></tr>
+      <tr><td>Trường phái của người (GEAR trường phái)</td><td>ai đeo</td><td>chỉ hiện khi đang trỏ GEAR trường phái, thành chữ: "♫ TIKI-TAKA ✓" / "—"</td></tr>
+      <tr><td>Ô GEAR còn trống / đủ / đã có món này</td><td>ai đeo + có phải bỏ món không</td><td>3 chấm ●●○ hoặc 3 ô nhỏ; "FULL" xám; "HAS ONE" xám (không đỏ, không phải lỗi)</td></tr>
+      <tr><td>Món đang đeo + hiệu lực của nó</td><td>bỏ món nào</td><td>chỉ hiện khi chọn người đủ ô, kèm "mất gì / được gì"</td></tr>
+      <tr><td class="bad">5 chỉ số còn lại + vạch</td><td>—</td><td>bỏ khỏi màn này (còn ở SQUAD)</td></tr>
+      <tr><td class="bad">OVR</td><td>— (làm tròn, đánh lừa)</td><td>bỏ khỏi màn này</td></tr>
+      <tr><td class="bad">Ô LEGEND</td><td>—</td><td>bỏ khỏi màn này</td></tr>
+      <tr><td class="bad">Số xanh "cao hơn nền"</td><td>—</td><td>bỏ (đã gộp trong số trước → sau)</td></tr>
+      <tr><td class="bad">Phụ đề "One player wears it"</td><td>lặp "Who wears it?"</td><td>bỏ</td></tr>
+      <tr><td class="bad">Map phía sau</td><td>—</td><td>lớp che đặc 0,95 (như RUN OVER)</td></tr>
+    </table>
+
+    <h2>GAME KHÁC LÀM SAO</h2>
+    <div id="refs"><p>Agent tra web 15 game có "nhận đồ → chọn ai dùng" (nguồn từng dòng: <b>docs/ux-gear/refs.md</b>; dòng nào không kiểm được thì không đưa vào đây).</p>
+    <table>
+      <tr><th>Game</th><th>Gán lúc nào</th><th>Lúc chọn thấy gì</th><th>Hết ô / không đeo được</th><th>Mình học được gì</th></tr>
+      <tr><td>PokeRogue</td><td>ngay: chọn món → màn đội → Apply</td><td>thanh HP của từng con đổi thành nhãn <b>Able / Not able / Learned</b></td><td>đủ chồng: chọn rồi mới báo "has too many"</td><td>nhãn đủ điều kiện nằm sẵn trên từng người, thay chỗ thông tin không cần lúc đó → HAS ONE / FULL của mình</td></tr>
+      <tr><td>Monster Train 2</td><td>ngay: mua nâng cấp → chọn lá đơn vị</td><td>lá đơn vị sau khi nâng cấp (chỉ số mới)</td><td>2 ô mỗi đơn vị, vĩnh viễn</td><td>trước → sau hiện ngay trên đối tượng, không trên thẻ món</td></tr>
+      <tr><td>Mario Strikers: Battle League</td><td>người trước: nhân vật → ô → món</td><td>+/− chỉ số hiện ngay trên nhân vật</td><td>1 món mỗi ô, món có cả + lẫn −</td><td>game bóng đá cùng thể loại cũng chỉ cho xem cái đổi</td></tr>
+      <tr><td>Slay the Spire 2</td><td>trên màn thưởng</td><td>—</td><td>đầy ô thuốc: bấm 1 lọ đang có để vứt, hoặc bỏ thưởng</td><td>đổi ngay tại chỗ, không màn riêng</td></tr>
+      <tr><td>Hades / Hades II</td><td>trên màn chọn</td><td>—</td><td>boon mới thay boon cùng ô; đổi thì lên 1 bậc hiếm</td><td>việc đổi tự nó là phần thưởng (không chỉ "mất")</td></tr>
+      <tr><td>Teamfight Tactics</td><td>lúc nào cũng được: khay đồ, kéo lên tướng</td><td>kéo lên tướng đã có đồ thì hiện món ghép ra</td><td>tối đa 3 món</td><td>khay đồ = "túi" (phương án D)</td></tr>
+      <tr><td>Darkest Dungeon 1 / 2</td><td>sau, từ túi đồ</td><td>bảng nhân vật</td><td>DD1: ô đầy thì đổi chỗ, món cũ về túi · DD2: túi đầy phải vứt</td><td>đổi không mất đồ thì khỏi cần so kỹ</td></tr>
+      <tr><td>Into the Breach</td><td>sau, đồ nằm trong kho tới khi lắp</td><td>màn lắp mech</td><td>món chưa lắp không làm gì</td><td>người chơi <b>quên lắp</b>, xin game nhắc → rủi ro của D</td></tr>
+      <tr><td>Wildfrost</td><td>sau, bùa nằm trong túi</td><td>(chưa kiểm)</td><td>tối đa 3, vĩnh viễn</td><td>như D</td></tr>
+      <tr><td>FTL · Fire Emblem</td><td>—</td><td>—</td><td>đầy thì vào kho chung (cargo / convoy), không ép bỏ</td><td>kho tràn thay cho bước "bỏ món nào"</td></tr>
+      <tr><td>EA FC Ultimate Team</td><td>người trước: đội → cầu thủ → áp vật phẩm (~6 bước)</td><td>sau khi áp mới thấy</td><td>1 kiểu một lúc</td><td>người trước hợp màn quản lý đội, không hợp màn thưởng</td></tr>
+      <tr><td>Super Auto Pets · Brotato</td><td>ngay</td><td>—</td><td>vài món không chọn ai (ngẫu nhiên / cả đội), Brotato chỉ 1 nhân vật</td><td>nhanh nhất nhưng không có "ai đeo": không hợp GEAR (đồ của 1 người)</td></tr>
+    </table>
+    <h3>Có nên làm theo không</h3>
+    <ul>
+      <li><b>Nên theo:</b> món trước → người sau ngay trên màn thưởng (PokeRogue, Monster Train 2: đúng chỗ màn của mình đang đứng) · nhãn đủ điều kiện sẵn trên từng người (PokeRogue) · trước → sau trên người, chỉ cái đổi (Monster Train 2, Mario Strikers) · bỏ món ngay tại chỗ (Slay the Spire 2). Cả 4 đã nằm trong 12 luật chung.</li>
+      <li><b>Cân nhắc:</b> cất túi, đeo sau (TFT, Darkest Dungeon, Into the Breach, Wildfrost). Màn thưởng nhẹ nhất, đổi đồ không mất, nhưng thêm 1 hệ thống và người chơi quên đeo (Into the Breach). Đó là phương án D.</li>
+      <li><b>Không theo:</b> người trước (EA FC, ~6 bước) cho màn gặp 12 lần mỗi run; bỏ hẳn bước chọn người (Super Auto Pets) vì GEAR là đồ của 1 người (owner chốt 2026-10-30).</li>
+      <li><b>Chưa thấy ai làm:</b> bảng món × người (C) và phòng thay đồ có tủ / móc (E). Không có tiền lệ thì phải thử với người thật kỹ hơn.</li>
+    </ul></div>
+
+    <h2>LUẬT CHUNG CHO 5 PHƯƠNG ÁN</h2>
+    <ol>
+      <li><b>Bước nào thì thứ đó to nhất.</b> Chọn món: món to, đội nhỏ. Chọn người: người to, món thành 1 chip.</li>
+      <li><b>Thẻ cầu thủ ở màn này chỉ nói 3 thứ:</b> ai (mặt, tên, vị trí) · món này làm gì cho người đó (1 dòng, trước → sau) · còn ô không. Bỏ OVR, 5 chỉ số còn lại, ô LEGEND, số xanh.</li>
+      <li><b>"Đang chọn" sống qua trắng đen:</b> nền sáng hơn + khung vàng 2 px đủ 4 cạnh + nhích lên, cả hàng thẳng (không lệch tên). Độ hiếm chỉ ở viền thẻ treo.</li>
+      <li><b>Vàng chỉ cho việc đang làm.</b> Chip hiệu lực viền trung tính, nhãn màu chỉ số, số trắng. Bỏ xanh lá ở màn này.</li>
+      <li><b>Trạng thái âm thì im:</b> "HAS ONE" / "FULL" chữ xám nhỏ, không hộp đỏ, không che số.</li>
+      <li><b>Lớp che đặc,</b> không thấy map phía sau.</li>
+      <li><b>Không cắt chữ "…".</b> Mỗi món có 1 dòng viết cho màn này.</li>
+      <li><b>Thứ tự hiện:</b> món → đội → nút, tổng ≤ 0,5 s (màn gặp ~12 lần mỗi run); Enter nhận từ 0,5 s (luật của đợt review motion).</li>
+      <li><b>Bỏ món luôn có "mất gì / được gì"</b> trên cùng 1 dòng, và chọn sẵn món mất ít nhất (không phải món đầu).</li>
+      <li><b>Chọn sẵn người hợp nhất:</b> còn ô + ★ (chỉ số chính của vị trí, hoặc có trường phái của món).</li>
+      <li><b>Bố cục không nhảy</b> giữa các bước (chừa sẵn chỗ).</li>
+      <li><b>GEAR trường phái nói bằng chữ:</b> "♫ TIKI-TAKA ✓" ở người có trường phái đó, bỏ ký hiệu ▲.</li>
+    </ol>
+
+    <div id="opts">
+    <h2>A · GỌT (giữ 2 hàng, bỏ bớt)</h2>
+    <table>
+      <tr><th>Ý chính</th><td>Giữ bố cục 2 hàng owner chọn hôm 05/11, chỉ áp 12 luật chung. Thẻ người còn: vị trí + tên + nhân vật + <b>1 dòng "DRI 71 → 77 ★"</b> + 3 ô. Hàng món rộng hơn hàng người (190 so với 132) và có nhãn ở giữa (YOUR SQUAD / GIVE GRIP SOCKS TO) nên hết đọc thành 3 cột. Bước bỏ món vẫn là màn riêng nhưng có dòng IN (được gì) và mỗi dòng OUT ghi mất gì, chọn sẵn món mất ít nhất.</td></tr>
+      <tr><th>Bỏ / dời</th><td>OVR, 5 chỉ số + vạch, số xanh, ô LEGEND, icon trường phái (thành chữ khi trỏ GEAR trường phái), phụ đề "One player wears it", hộp đỏ "Already wearing one." (thành HAS ONE xám), map phía sau.</td></tr>
+      <tr><th>Thứ tự anim</th><td>thanh bước 0 → 3 món 0,10–0,35 → nhãn 0,22 → 3 người mờ dần 0,25–0,45 → nút 0,40 → Enter từ 0,50 s.</td></tr>
+      <tr><th>Bản đồ mắt</th><td>Bước 1: 3 icon món + 2 nhân vật nóng gần ngang nhau; icon Keeper Gloves (viền tím) vẫn sáng hơn món đang chọn. Bước 2: nhân vật + dòng DRI của người đang chọn nóng nhất (đúng).</td></tr>
+      <tr><th>Được</th><td>Rẻ nhất, không đổi luồng, không đổi Run, co-op như cũ. Sửa #2–#7, #10–#12. Thẻ người gọn làm ở đây dùng lại nguyên cho B.</td></tr>
+      <tr><th>Mất</th><td>#1 chỉ đỡ một phần: lúc chọn món, đội vẫn chiếm nửa màn. Vẫn 3 bố cục (bước bỏ món riêng, #9).</td></tr>
+      <tr><th>Công</th><td><b>S</b>. runmap.js (gearCard, squadCard thêm chế độ gọn, bước bỏ món), style.css. Không bump server.</td></tr>
+    </table>
+<h2>B · TO NHỎ THEO BƯỚC (đề xuất)</h2>
+    <table>
+      <tr><th>Ý chính</th><td><b>Bước 1 = màn BADGE</b>: 3 thẻ món to (cùng khuôn người chơi đã quen) + <b>dải SQUAD 1 hàng</b> bên dưới: mặt nhỏ, vị trí, tên, ●●○, và 1 dòng món đang trỏ làm gì cho từng người (DRI 71 → 77, ★, FULL, HAS ONE, ♫ TIKI-TAKA ✓). <b>Bước 2</b>: món đã chọn thu nhỏ bay lên thành chip, dải SQUAD lớn lên thành 3 thẻ người (nhân vật to + dòng trước → sau to). <b>Người đủ ô</b>: trỏ vào thì 3 món đang đeo mở ra ngay trong thẻ, mỗi dòng ghi mất gì (cái được ghi 1 lần ở trên), chọn sẵn món mất ít nhất. Không còn màn bước 3.</td></tr>
+      <tr><th>Bỏ / dời</th><td>Như A, cộng thêm bỏ màn bước 3 (gộp vào thẻ). Bố cục bước 2 dùng chung cho LEGEND "Who gets him?" (màn đó đang giống hệt bước 2 cũ).</td></tr>
+      <tr><th>Thứ tự anim</th><td>Bước 1: thanh bước 0 → 3 thẻ lật lên 0,10 / 0,16 / 0,22 → dải SQUAD 0,34 → SKIP 0,42 → Enter 0,50 s. Sang bước 2: món đã chọn thu thành chip (0–0,26), 2 món kia rơi ra, 3 người lớn lên từ chỗ dải SQUAD (0,18–0,48), Enter 0,50 s. Hiệu ứng này nối 2 bước nên không thấy như nhảy màn.</td></tr>
+      <tr><th>Bản đồ mắt</th><td>Bước 1: 3 món là 3 điểm nóng nhất, dải SQUAD yếu (đúng: bối cảnh). Bước 2: nhân vật + dòng DRI của người đang chọn nóng nhất, chip món ở trên.</td></tr>
+      <tr><th>Được</th><td>Sửa tận gốc #1 và #2: mỗi bước 1 thứ to, 2 hàng khác hẳn hình dạng nên không ghép cột. Vẫn 2 bước rõ ràng (đúng nỗi lo của owner 05/11: biết đang chọn món hay chọn người, chọn cho 1 trong 3). Bước 1 giống BADGE, bước 2 giống LEGEND: học 1 lần. Bỏ bước 3, hết 3 bố cục (#8, #9).</td></tr>
+      <tr><th>Mất</th><td>2 bố cục + hiệu ứng chuyển phải làm. Dải SQUAD ở bước 1 nhỏ (mặt 24 px, 1 dòng). Thẻ người đủ ô khi mở phải rộng hơn (206 so với 164). Vẫn 2 lần bấm (3 khi đủ ô).</td></tr>
+      <tr><th>Công</th><td><b>M</b>. runmap.js: gearCard 2 bố cục, squadCard chế độ gọn, targets bước 2 có danh sách bỏ món trong thẻ (vẫn dùng O.who / Run.swapGear, Run không đổi), style.css + anim. Không bump server. Co-op bỏ phiếu như cũ (pick → wear → swap).</td></tr>
+    </table>
+<h2>C · 1 LẦN BẤM (bảng món × người)</h2>
+    <table>
+      <tr><th>Ý chính</th><td>Bỏ khái niệm bước. Bảng 3×3: cột = món (đầu cột là thẻ món), hàng = người (đầu hàng: mặt, tên, vị trí, ●●○), <b>mỗi ô = "món này cho người này"</b>: DRI 71 → 77, ★, HAS ONE, ⇄ FULL, ♫ TIKI-TAKA ✓. Chọn 1 ô là xong. Ô FULL: bảng nhỏ bỏ món bật ngay trên ô.</td></tr>
+      <tr><th>Thứ tự anim</th><td>tiêu đề 0 → 3 cột món 0,10–0,22 → 3 hàng người 0,20–0,28 → ô theo từng hàng 0,28–0,40 → phím 0,42 → Enter 0,50 s.</td></tr>
+      <tr><th>Bản đồ mắt</th><td>Icon món + mặt người nóng; các ô (chỗ ra quyết định) là chữ nhỏ trên nền tối nên yếu nhất. Ô đang chọn chỉ sống nhờ khung vàng.</td></tr>
+      <tr><th>Được</th><td>Nhanh nhất: 1 lần bấm (chuột 1 click) cho ca thường. So được mọi tổ hợp cùng lúc (ai được nhiều nhất với món nào) mà không đi qua từng thẻ. Hết chuyện "đang ở bước nào".</td></tr>
+      <tr><th>Mất</th><td>9 ô giống nhau: trông như bảng tính, ít "game". Nhân vật chỉ còn mặt nhỏ, đi ngược luật "thẻ cầu thủ hình là chính" (2026-10-29). Đi 2 chiều bằng phím / tay cầm. Co-op bỏ phiếu 9 ô dễ phiếu lẻ, nên phải giữ 2 bước khi co-op (2 bố cục). Không game nào trong 15 game làm kiểu này.</td></tr>
+      <tr><th>Công</th><td><b>M</b>. Bố cục mới + targets 2 chiều; chơi đơn: UI gọi Run.pick rồi Run.wearGear liền nhau (Run không đổi). Co-op: giữ bố cục cũ, hoặc thêm phiếu "ô" (shared/meta/run.js → bump server).</td></tr>
+    </table>
+<h2>D · TÚI ĐỒ, ĐEO SAU</h2>
+    <table>
+      <tr><th>Ý chính</th><td><b>Màn thưởng chỉ còn chọn món</b>, y như BADGE (3 thẻ + SKIP), mỗi thẻ thêm dòng "★ FITS" + mặt người hợp. Món vào <b>KIT BAG</b>. Dải SQUAD trên map nháy "1 GEAR"; mở SQUAD (màn đã có) thì có khay KIT BAG bên dưới: chọn món trong túi → thẻ người hiện trước → sau → Enter = đeo. Ô đầy: tháo 1 món, món đó về túi (không mất). Chuyển đồ giữa người lúc nào cũng được.</td></tr>
+      <tr><th>Thứ tự anim</th><td>màn thưởng như BADGE (3 thẻ 0,10–0,22, SKIP 0,42, Enter 0,50 s), chọn xong món bay vào túi trên dải SQUAD (0,6 s). SQUAD: khay KIT BAG trượt lên 0,25 s.</td></tr>
+      <tr><th>Bản đồ mắt</th><td>Màn thưởng: 3 món + mặt FITS. SQUAD: nhân vật + chữ "1 GEAR" nháy trên dải (đúng: việc còn treo).</td></tr>
+      <tr><th>Được</th><td>Màn thưởng nhẹ nhất (23 chữ, 2 số), bấm 1 lần. Quyết định ai đeo làm với đủ thông tin, lúc rảnh. Đổi đồ không mất, hết bước "mất gì" căng thẳng. Mở thêm chiến thuật: chuyển đồ trước trận boss.</td></tr>
+      <tr><th>Mất</th><td>Đổi luật run: thêm túi (giới hạn bao nhiêu? đầy thì sao?), món trong túi không có tác dụng, <b>rủi ro quên đeo</b> (Into the Breach) nên phải nhắc trước trận hoặc tự đeo cho người hợp. KIT VAN mua GEAR cũng vào túi, Locker Room nâng cấp món trong túi, co-op ai được đeo / bỏ phiếu ở map, save cũ phải chuyển. Tổng số lần bấm cao hơn (1 + mở SQUAD + chọn + đeo).</td></tr>
+      <tr><th>Công</th><td><b>L</b>. shared/meta/run.js (túi, đeo / tháo / chuyển, sanitize) → bump server; runmap.js màn thưởng + SQUAD chế độ đeo + nhắc; co-op; chữ mới. Owner phải chốt cơ chế trước khi vẽ kỹ.</td></tr>
+    </table>
+<h2>E · PHÒNG THAY ĐỒ (cảnh pixel)</h2>
+    <table>
+      <tr><th>Ý chính</th><td>Màn thành 1 cảnh pixel như KIT VAN / TROPHY ROOM: <b>3 tủ đồ, 1 người 1 tủ</b> (bảng tên + chỉ số món đang trỏ, sticker trường phái trên cửa), <b>3 móc = 3 ô</b>, món đang đeo treo trên móc; 3 món mới nằm trên ghế băng. Bàn tay cầm món, treo vào tủ; tủ hết móc thì tháo 1 món xuống. HLV nói trong bong bóng (tên, hiệu lực, trước → sau, mất gì). Phác bằng khối CSS; bản thật vẽ canvas 320x180.</td></tr>
+      <tr><th>Thứ tự anim</th><td>phòng + tủ 0–0,15 → người đứng trước tủ 0,10 → ghế băng 0,25 → 3 món rơi xuống ghế 0,30 / 0,36 / 0,42 → bong bóng 0,45 → bàn tay 0,60 → Enter 0,70 s (chậm hơn vì là cảnh; bấm sớm = hiện đủ).</td></tr>
+      <tr><th>Bản đồ mắt</th><td>3 nhân vật + 3 món trên ghế + sticker trường phái; bong bóng nền giấy sáng.</td></tr>
+      <tr><th>Được</th><td>"1 người 1 tủ, 3 móc" tự nói luật mà không cần chữ (đồ của 1 người, hết móc phải tháo). Ít chữ nhất (20 chữ, 4 số). Sticker trên tủ giải quyết GEAR trường phái (#12) tự nhiên. Hợp phong cách KIT VAN / TROPHY ROOM, có hồn.</td></tr>
+      <tr><th>Mất</th><td>Đắt nhất (vẽ canvas, bàn tay, anim treo / tháo, bấm chuột trên canvas, phím). Chậm hơn ở màn gặp 12 lần mỗi run. Chữ trên bảng tên nhỏ. So sánh chỉ 1 người 1 lúc (trong bong bóng). Không có tiền lệ ở 15 game.</td></tr>
+      <tr><th>Công</th><td><b>L</b>. File mới kiểu kitvan.js (canvas + bàn tay) + logic như B. Không bump server.</td></tr>
+    </table>
+    </div>
+
+    <h2>SO SÁNH</h2>
+    <table class="num" id="cmp">
+      <tr><th>Phương án</th><th>Chữ (bước 1)</th><th>Số (bước 1)</th><th>Màu chữ / viền</th><th>% điểm ảnh màu đậm</th><th>Bố cục</th><th>Lần bấm: thường / đủ ô</th><th>To nhất ở bước chọn món</th><th>Công</th><th>Bump server</th><th>Co-op</th></tr>
+      <tr><td>Hiện tại</td><td class="bad">69</td><td class="bad">25</td><td class="bad">13</td><td>3,7</td><td>3</td><td>2 / 3</td><td class="bad">đội (gấp 3,2 món)</td><td>—</td><td>—</td><td>bỏ phiếu 3 bước</td></tr>
+      <tr><td>A · Gọt</td><td>39</td><td>8</td><td>4</td><td>2,5</td><td>3</td><td>2 / 3</td><td>đội ≈ món</td><td>S</td><td>không</td><td>như cũ</td></tr>
+      <tr><td>B · To nhỏ theo bước</td><td>37</td><td>7</td><td>4</td><td>3,2</td><td>2</td><td>2 / 3</td><td class="ok">món</td><td>M</td><td>không</td><td>như cũ</td></tr>
+      <tr><td>C · 1 lần bấm</td><td>55</td><td>12</td><td>4</td><td>2,5</td><td>1 (+ bảng nhỏ)</td><td class="ok">1 / 2</td><td>bảng đều nhau</td><td>M</td><td>không (đơn)</td><td>khó: giữ 2 bước khi co-op</td></tr>
+      <tr><td>D · Túi đồ</td><td class="ok">23</td><td class="ok">2</td><td>4</td><td>3,3</td><td>1 + SQUAD</td><td>1 (+3 lúc đeo)</td><td class="ok">món</td><td>L</td><td class="bad">có</td><td>phải thiết kế lại</td></tr>
+      <tr><td>E · Phòng thay đồ</td><td class="ok">20</td><td>4</td><td>2</td><td>2,1</td><td>1 cảnh</td><td>2 / 3 (+ anim)</td><td>người + món</td><td>L</td><td>không</td><td>như B</td></tr>
+    </table>
+    <p>Đo trên ảnh 1280x720 cùng cách với màn hiện tại (5 phương án đo trên mockup). "Màu chữ / viền" = số màu bão hoà khác nhau dùng cho chữ và viền. Lần bấm = số lần xác nhận khi mục chọn sẵn đúng ý, chưa tính phím di chuyển. Họ màu gần như không đổi (6–7) vì màu chỉ số / trường phái / độ hiếm là dữ liệu; cái giảm là số chỗ dùng màu.</p>
+
+    <h2>CHỌN</h2>
+    <div class="pick" id="pickTxt">
+      <p><b>B · TO NHỎ THEO BƯỚC.</b> Đây là phương án duy nhất sửa cả 2 gốc rễ (#1 thứ đang chọn nhỏ nhất, #2 đọc thành cột) mà không đổi luật run: bước nào thì thứ đó to, 2 hàng khác hẳn hình dạng nên không thể ghép đôi. Nó giữ 2 bước rõ ràng mà owner muốn hôm 05/11, bỏ màn bước 3, và dùng lại 2 khuôn người chơi đã gặp (BADGE ở bước 1, LEGEND "Who gets him?" ở bước 2). Không bump server, co-op không đổi.</p>
+      <p><b>Làm theo thứ tự:</b> làm phần của A trước (thẻ người gọn, 1 dòng trước → sau, HAS ONE / FULL xám, lớp che đặc, khoá Enter 0,5 s): ra ngay, và toàn bộ dùng lại cho B. Sau đó đổi bước 1 sang thẻ to + dải SQUAD, gộp bước bỏ món vào thẻ, rồi mới làm hiệu ứng chuyển.</p>
+      <p><b>Khi nào chọn cái khác:</b> <b>C</b> nếu owner coi tốc độ là số 1 (1 lần bấm, so được mọi tổ hợp), chấp nhận màn trông như bảng và co-op giữ bố cục cũ. <b>D</b> nếu owner muốn thêm chiều "quản lý đồ" (chuyển đồ trước trận boss): khi đó màn thưởng là màn nhẹ nhất, nhưng phải chốt cơ chế túi trước. <b>E</b> là hướng làm đẹp lâu dài: có thể dựng sau B, dùng chung logic.</p>
+      <p>Chỉnh thêm cho mọi phương án (chưa vẽ): ở bước chọn món, làm tối nhẹ icon 2 món không trỏ. Bản đồ mắt cho thấy viền tím / xanh của món hiếm vẫn hút mắt hơn món đang chọn ở cả 5 phương án.</p>
+    </div>
+
+    <h2>CHƯA KIỂM</h2>
+    <ul>
+      <li>Mockup vẽ lại bằng HTML trên khung 640x360, không phải code game; số đo của 5 phương án lấy từ mockup (cùng cách đo với ảnh game thật nên so được, nhưng không chính xác tuyệt đối).</li>
+      <li>Co-op (bỏ phiếu từng bước, nhãn PLAYER của bạn bè) chưa vẽ ở phương án nào; cột "Co-op" ở bảng so sánh là suy từ code.</li>
+      <li>"Mắt mới" là model chỉ xem ảnh, không phải người chơi thật; 1 lần, chỉ trên màn hiện tại.</li>
+      <li>E (phòng thay đồ) chỉ là phác bằng khối CSS; bản thật phải vẽ pixel art trên canvas như KIT VAN.</li>
+      <li>D đổi luật run (GEAR nằm trong túi khi chưa đeo) nên cần owner chốt cơ chế trước khi vẽ kỹ.</li>
+    </ul>
+  </div>
+
+<script>
+  function fit() {
+    const k = Math.min(2, (innerWidth - 24) / 640), w = document.getElementById('wrap');
+    w.style.width = 640 * k + 'px'; w.style.height = 360 * k + 'px';
+    document.getElementById('scr').style.transform = `scale(${k})`;
+  }
+  addEventListener('resize', fit); fit();
+  // nạp script game theo đúng thứ tự trong index.html (trừ main.js: không khởi động game)
+  (async function () {
+    const html = await (await fetch('../../index.html', { cache: 'reload' })).text();
+    const srcs = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]).filter((s) => !/main\.js$/.test(s));
+    for (const s of srcs) await new Promise((ok) => { const el = document.createElement('script'); el.src = '../../' + s; el.onload = ok; el.onerror = ok; document.head.appendChild(el); });
+    boot();
+  })();
+
+  function boot() {
+    try { SFC.I18n.init(); } catch (e) { /* bỏ qua */ }
+    try { SFC.Profile.load(); } catch (e) { /* bỏ qua */ }
+    try { SFC.Input.init(SFC_CONFIG.controls.bindings); } catch (e) { /* bỏ qua */ }
+    // random cố định: đồng đội (mặt / tóc) giống nhau mỗi lần mở, ảnh đo được so lại được
+    let seed = 20261106; const rnd = Math.random; Math.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    const C = SFC_CONFIG, RUN = SFC.Run, PX = SFC.PixelIcon, A = C.progression.attrs, AR = C.cores.archetypes, GL = C.run.gear.list, RAR = C.progression.rarities;
+    const cands = RUN.candidates();
+    Math.random = rnd;
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const KIT = C.mainPath.playerTeam.kit;
+    const KEY = {};   // 2 chỉ số chính của vị trí (như BUILD YOUR SQUAD): 2 số cao nhất của run.squad.base
+    for (const r of ['FWD', 'MID', 'DEF']) KEY[r] = Object.keys(C.run.squad.base[r]).sort((a, b) => C.run.squad.base[r][b] - C.run.squad.base[r][a]).slice(0, 2);
+    const meLook = SFC.Profile.avatar ? SFC.Profile.avatar().look : SFC.Profile.lookOf(C.progression.defaultLook);
+    // đội cố định cho mockup (giống ảnh chụp game): bạn = FWD đeo 1 món · MID đủ 3 ô · DEF đã có Grip Socks
+    const SQ = [
+      { role: 'FWD', you: true, name: 'LONG', look: meLook, base: RUN.baseOf({}), sch: [], gear: [{ id: 'spikes', r: 'common' }] },
+      { role: 'MID', name: 'StepoverSam', look: RUN.mateLook(cands[0]), base: RUN.baseOf({ m: cands[0] }), sch: ['striker', 'playmaker'],
+        gear: [{ id: 'boots', r: 'rare' }, { id: 'band', r: 'common' }, { id: 'wraps', r: 'common' }] },
+      { role: 'DEF', name: 'ROOKIE', look: RUN.mateLook(cands[1]), base: RUN.baseOf({ m: cands[1] }), sch: ['playmaker', 'brawler'], gear: [{ id: 'socks', r: 'common' }] },
+    ];
+    const OFFER = [{ id: 'socks', r: 'rare' }, { id: 'board', r: 'rare' }, { id: 'gloves', r: 'epic' }];
+    const SLOTS = C.run.gear.slots;
+    const amt = (g) => (GL[g.id].stat ? C.run.gear.amount[g.r] || 0 : 0);
+    const rat = (i, gear) => { const r = Object.assign({}, SQ[i].base); for (const g of gear || SQ[i].gear) if (GL[g.id].stat) r[GL[g.id].stat] += amt(g); return r; };
+    const stateOf = (i, g) => (SQ[i].gear.some((x) => x.id === g.id) ? 'has' : SQ[i].gear.length >= SLOTS ? 'full' : 'free');
+    const fits = (i, g) => (GL[g.id].stat ? KEY[SQ[i].role].includes(GL[g.id].stat) : SQ[i].sch.includes(GL[g.id].school));
+    const firstClause = (s) => { const k = s.search(/[,.]/); return k > 0 ? s.slice(0, k) + '.' : s; };
+    const descOf = (g) => GL[g.id].desc || firstClause(A.list[GL[g.id].stat].desc);
+    const shortDesc = (g) => (GL[g.id].school ? 'Their ' + AR[GL[g.id].school].label + ' Cores: more often, harder.' : firstClause(A.list[GL[g.id].stat].desc));
+
+    /* ---------- vẽ nhân vật: canvas 40x44 vẽ lại mỗi khung (đứng thở) ---------- */
+    let T = 0;
+    const scr = document.getElementById('scr');
+    (function loop() {
+      T += 1 / 60;
+      scr.querySelectorAll('canvas[data-lk]').forEach((cv) => {
+        if (!cv._lk) { cv.width = 40; cv.height = 44; cv._lk = JSON.parse(cv.dataset.lk); cv._o = +(cv.dataset.o || 0); }
+        SFC.Sprites.drawAvatar(cv, cv._lk, KIT, T + cv._o, Math.PI / 2);
+      });
+      requestAnimationFrame(loop);
+    })();
+    const cv = (i, o) => `<canvas data-lk='${JSON.stringify(SQ[i].look).replace(/'/g, '&#39;')}' data-o="${o == null ? i * 0.37 : o}"></canvas>`;
+    const fig = (i, cls = '') => `<span class="gp-fig ${cls}">${cv(i)}</span>`;
+    const head = (i) => `<span class="gp-head">${cv(i)}</span>`;
+
+    /* ---------- mảnh dùng chung ---------- */
+    const rv = (d, kind = '') => `ga ${kind}" data-d="${d}`;   // dùng: class="x ${rv(0.1)}" · lúc bắt đầu ghi vào data-d, render() chép sang --d (phần tử có style riêng không bị đè)
+    const tag = (g, size = '') => `<span class="gp-tag ${size}" style="--rc:${RAR[g.r].color}"><i>${PX.html(GL[g.id].icon, '', size === 'l' ? 'x3' : size === 's' ? '' : 'x2')}</i></span>`;
+    const chip = (g, big) => {
+      const d = GL[g.id];
+      if (d.stat) return `<span class="gp-chip ${big ? 'big' : ''}"><i style="--c:${A.list[d.stat].color}">${A.list[d.stat].short}</i>+${amt(g)}</span>`;
+      return `<span class="gp-chip ${big ? 'big' : ''}" style="--c:${AR[d.school].color}">${PX.arch(d.school, '')}<i>${AR[d.school].label}</i></span>`;
+    };
+    // 1 dòng "món g làm gì cho người i": GEAR chỉ số = "DRI 71 → 77 ★" · GEAR trường phái = "♫ TIKI-TAKA ✓" / "no TIKI-TAKA" · đã có = HAS ONE
+    const line = (i, g, o = {}) => {
+      const d = GL[g.id], st = stateOf(i, g);
+      if (st === 'has' && !o.ignoreHas) return `<span class="gp-tagx">HAS ONE</span>`;
+      if (d.school) {
+        const ok = SQ[i].sch.includes(d.school);
+        return ok ? `<span class="gp-line ${o.big ? 'big' : ''}" style="--c:${AR[d.school].color}">${PX.arch(d.school, '')}<i>${AR[d.school].label}</i><b>✓</b></span>`
+          : `<span class="gp-line muted ${o.big ? 'big' : ''}">no ${AR[d.school].label}</span>`;
+      }
+      const s = d.stat, a = rat(i)[s], b = a + amt(g), star = fits(i, g) ? '<span class="star">★</span>' : '';
+      if (o.noArrow) return `<span class="gp-line ${o.big ? 'big' : ''}" style="--c:${A.list[s].color}"><i>${A.list[s].short}</i><b>${a}</b>${star}</span>`;
+      return `<span class="gp-line ${o.big ? 'big' : ''}" style="--c:${A.list[s].color}"><i>${A.list[s].short}</i>${a}<s>→</s><b>${b}</b>${star}</span>`;
+    };
+    // bỏ món k của người i để đeo g: các chỉ số đổi ("SHO 81 → 75 · DRI 70 → 76")
+    const loss = (i, k, g) => {
+      const before = rat(i), gear = SQ[i].gear.slice(); gear[k] = g; const after = rat(i, gear), d = GL[g.id];
+      const out = A.order.filter((s) => after[s] !== before[s] && !(s === d.stat && after[s] - before[s] === amt(g)))
+        .map((s) => `<i style="color:${A.list[s].color}">${A.list[s].short}</i>${before[s]}<s>→</s><b>${after[s]}</b>`);
+      const old = GL[SQ[i].gear[k].id];
+      if (old.school) out.unshift(`<i style="color:${AR[old.school].color}">${AR[old.school].label}</i><s>off</s>`);
+      return out.join('<s> · </s>') || '<s>nothing lost</s>';
+    };
+    // món mất ít nhất khi bỏ (luật chung #9): số cộng nhỏ nhất, GEAR trường phái tính là 8
+    const cheapest = (i) => SQ[i].gear.map((x, k) => [k, GL[x.id].stat ? amt(x) : 8]).sort((a, b) => a[1] - b[1])[0][0];
+    const slots = (i, ghost, out) => {
+      const L = SQ[i].gear.map((x) => `<span class="${out ? 'out' : ''}" style="--rc:${RAR[x.r].color}">${PX.html(GL[x.id].icon, '', '')}</span>`);
+      while (L.length < SLOTS) { if (ghost) { L.push(`<span class="new">${PX.html(GL[ghost.id].icon, '', '')}</span>`); ghost = null; } else L.push('<span class="mt"></span>'); }
+      return `<span class="gp-slots">${L.join('')}</span>`;
+    };
+    const pips = (i, ghost) => { const n = SQ[i].gear.length; return `<span class="gp-pips">${Array.from({ length: SLOTS }, (x, k) => `<i class="${k < n ? '' : ghost && k === n ? 'n' : 'e'}"></i>`).join('')}</span>`; };
+    const you = (i) => (SQ[i].you ? '<b class="gp-you">YOU</b>' : '');
+    const steps = (n) => `<div class="gp-steps ${rv(0, 'fade')}"><span class="${n === 1 ? 'cur' : 'done'}"><i>1</i>PICK GEAR</span><u>▶</u><span class="${n === 2 ? 'cur' : ''}"><i>2</i>WHO WEARS IT?</span></div>`;
+    const keys = (list, d = 0.4) => `<div class="gp-keys ${rv(d, 'fade')}">${list.map(([k, w]) => `<span>${k ? `<kbd>${k}</kbd>` : ''}${w}</span>`).join('')}</div>`;
+    const btn = (label, sel, d = 0.4) => `<button class="pt-btn ${sel ? 'sel' : ''} ${rv(d, 'fade')}">${label}</button>`;
+    const bg = '<div class="gp-bg"></div>';
+
+    /* ================= A · GỌT: giữ 2 hàng, bỏ bớt, tách hàng ================= */
+    function renderA(st) {
+      const step2 = st === 'who' || st === 'full', gi = st === 'school' ? 1 : 0, g = OFFER[gi];
+      if (st === 'full') {
+        const i = 1, k0 = cheapest(i);
+        return `<div class="gp">${bg}<div class="gp-title ${rv(0, 'fade')}">SWAP ON ${esc(SQ[i].name)}</div><div class="gp-sub ${rv(0.05, 'fade')}">No free slot. The one you drop is gone.</div>
+          <div class="a-swap">
+            <div class="a-in ${rv(0.1)}"><em>IN</em>${tag(g, 's')}<b>${GL[g.id].name}</b>${line(i, g, { ignoreHas: true })}</div>
+            ${SQ[i].gear.map((x, k) => `<div class="a-row ${k === k0 ? 'sel' : ''} ${rv(0.16 + k * 0.05)}"><em>OUT</em>${tag(x, 's')}<b>${GL[x.id].name}</b><span class="loss gp-line">${loss(i, k, g)}</span></div>`).join('')}
+          </div>
+          <div class="gp-foot">${btn('BACK', false)}${keys([['', '↑↓ select'], ['Enter', 'SWAP'], ['Esc', 'BACK']])}</div></div>`;
+      }
+      const sel = step2 ? 0 : -1;
+      const gears = OFFER.map((x, k) => `<div class="a-g ${k === gi ? (step2 ? 'held' : 'sel') : ''} ${step2 && k !== gi ? 'dim' : ''} ${rv(0.1 + k * 0.04)}">${tag(x)}<span class="t"><b>${GL[x.id].name}</b>${chip(x)}<p>${esc(shortDesc(x))}</p></span></div>`).join('');
+      const team = SQ.map((p, i) => {
+        const s = stateOf(i, g);
+        return `<div class="a-p ${s === 'has' ? 'has' : ''} ${i === sel ? 'sel' : ''} ${rv(0.25 + i * 0.03, 'fade')}">
+            <span class="nm"><span class="gp-role">${p.role}</span><b class="gp-name">${esc(p.name)}</b>${you(i)}</span>${fig(i)}
+            ${line(i, g, { big: step2 && i === sel })}${s === 'full' ? '<span class="gp-tagx full">FULL · SWAP</span>' : slots(i, s === 'free' ? g : null)}</div>`;
+      }).join('');
+      return `<div class="gp">${bg}${steps(step2 ? 2 : 1)}<div class="a-grow">${gears}</div>
+          <div class="gp-label a-mid ${rv(0.22, 'fade')}">${step2 ? 'GIVE ' + esc(GL[g.id].name.toUpperCase()) + ' TO' : 'YOUR SQUAD'}</div><div class="a-team">${team}</div>
+          <div class="gp-foot">${btn(step2 ? 'BACK' : 'SKIP', false)}${keys(step2 ? [['', '←→ select'], ['Enter', 'EQUIP'], ['Esc', 'BACK']] : [['', '←→ select'], ['Enter', 'PICK']])}</div></div>`;
+    }
+
+    /* ================= B · TO NHỎ THEO BƯỚC: món to + dải đội nhỏ → món thành chip + người to, bỏ món ngay trong thẻ ================= */
+    function renderB(st) {
+      const gi = st === 'school' ? 1 : 0, g = OFFER[gi];
+      if (st === 'pick' || st === 'school') {
+        const cards = OFFER.map((x, k) => `<div class="b-c ${k === gi ? 'sel' : ''} ${rv(0.1 + k * 0.06)}">${tag(x, 'l')}<b>${GL[x.id].name}</b>${chip(x, true)}<p>${esc(shortDesc(x))}</p></div>`).join('');
+        const strip = SQ.map((p, i) => {
+          const s = stateOf(i, g);
+          return `<div class="b-m ${s === 'has' ? 'has' : ''}">${head(i)}<span class="top"><span class="gp-role">${p.role}</span><b class="gp-name">${esc(p.name)}</b>${you(i)}${s === 'free' ? pips(i, true) : ''}</span>
+              ${s === 'full' ? `<span class="top">${line(i, g, { noArrow: true })}<span class="gp-tagx full" style="margin-left:auto">FULL</span></span>` : line(i, g)}</div>`;
+        }).join('');
+        return `<div class="gp">${bg}${steps(1)}<div class="b-cards">${cards}</div><div class="b-strip ${rv(0.34, 'fade')}"><em>SQUAD</em>${strip}</div>
+            <div class="gp-foot">${btn('SKIP', false, 0.42)}${keys([['', '←→ select'], ['Enter', 'PICK']], 0.42)}</div></div>`;
+      }
+      const sel = st === 'full' ? 1 : 0;
+      const team = SQ.map((p, i) => {
+        const s = stateOf(i, g), on = i === sel, open = on && s === 'full';
+        const k0 = open ? cheapest(i) : -1;
+        const bottom = open
+          ? `${line(i, g, { big: true })}<span class="q">DROP ONE</span><div class="drop">${SQ[i].gear.map((x, k) => `<div class="${k === k0 ? 'cur' : ''}">${tag(x, 's')}<b>${GL[x.id].name}</b><span class="gp-line">${loss(i, k, g)}</span></div>`).join('')}</div>`
+          : `${line(i, g, { big: true })}${s === 'full' ? '<span class="gp-tagx full">FULL · DROP ONE</span>' : s === 'has' ? '' : slots(i, s === 'free' ? g : null)}`;
+        return `<div class="b-p ${s === 'has' ? 'has' : ''} ${on ? (open ? 'held' : 'sel') : ''} ${open ? 'big' : ''} ${rv(0.18 + i * 0.04, 'grow')}"><span class="nm"><span class="gp-role">${p.role}</span><b class="gp-name">${esc(p.name)}</b>${you(i)}</span>
+            ${fig(i, open ? 'x2' : '')}${bottom}</div>`;
+      }).join('');
+      return `<div class="gp">${bg}${steps(2)}<div class="b-hero ${rv(0, 'shrink')}">${tag(g, 's')}<b>${GL[g.id].name}</b>${chip(g)}</div><div class="b-team">${team}</div>
+          <div class="gp-foot">${btn('BACK', false, 0.45)}${keys(st === 'full' ? [['', '↑↓ drop which'], ['Enter', 'SWAP'], ['Esc', 'BACK']] : [['', '←→ select'], ['Enter', 'EQUIP'], ['Esc', 'BACK']], 0.45)}</div></div>`;
+    }
+
+    /* ================= C · 1 LẦN BẤM: bảng 3 món × 3 người, mỗi ô = "món này cho người này" ================= */
+    function renderC(st) {
+      const cur = st === 'pick' ? [0, 0] : st === 'who' ? [2, 2] : st === 'full' ? [0, 1] : [1, 2];   // [món, người]
+      let h = `<div class="c-corner ${rv(0.1, 'fade')}"><span class="gp-role">WHO ↓ · GEAR →</span></div>`;
+      h += OFFER.map((x, k) => `<div class="c-g ${k === cur[0] ? 'col' : ''} ${rv(0.1 + k * 0.04)}"><span class="r1">${tag(x)}<span style="display:flex;flex-direction:column;gap:4px;align-items:flex-start"><b>${GL[x.id].name}</b>${chip(x)}</span></span><p>${esc(shortDesc(x))}</p></div>`).join('');
+      SQ.forEach((p, i) => {
+        h += `<div class="c-r ${i === cur[1] ? 'row' : ''} ${rv(0.2 + i * 0.04, 'fade')}">${head(i)}<span class="top"><span class="gp-role">${p.role}</span>${you(i)}${pips(i)}</span><b class="gp-name">${esc(p.name)}</b></div>`;
+        h += OFFER.map((x, k) => {
+          const s = stateOf(i, x), on = k === cur[0] && i === cur[1];
+          const body = s === 'has' ? '<span class="gp-tagx">HAS ONE</span>' : line(i, x) + (s === 'full' ? '<span class="gp-tagx full">⇄ FULL</span>' : '');
+          return `<div class="c-x ${s === 'has' ? 'has' : ''} ${fits(i, x) && s !== 'has' ? 'fit' : ''} ${on ? (st === 'full' ? 'held' : 'sel') : ''} ${rv(0.28 + i * 0.04, 'fade')}">${body}</div>`;
+        }).join('');
+      });
+      let pop = '';
+      if (st === 'full') {
+        const i = 1, g = OFFER[0], k0 = cheapest(i);
+        pop = `<div class="c-pop" style="left:146px;top:236px"><em>${esc(SQ[i].name)} IS FULL · DROP ONE</em>${SQ[i].gear.map((x, k) => `<div class="${k === k0 ? 'cur' : ''}">${tag(x, 's')}<b>${GL[x.id].name}</b><span class="gp-line">${loss(i, k, g)}</span></div>`).join('')}</div>`;
+      }
+      return `<div class="gp">${bg}<div class="gp-title ${rv(0, 'fade')}">GEAR · PICK ONE, GIVE IT TO ONE PLAYER</div><div class="c-grid">${h}</div>${pop}
+          <div class="gp-foot">${btn('SKIP', false, 0.42)}${keys(st === 'full' ? [['', '↑↓ drop which'], ['Enter', 'SWAP'], ['Esc', 'BACK']] : [['', '←↑↓→ select'], ['Enter', 'EQUIP']], 0.42)}</div></div>`;
+    }
+
+    /* ================= D · TÚI ĐỒ: thưởng = chọn món (như BADGE), đeo sau ở SQUAD ================= */
+    function renderD(st) {
+      const gi = st === 'school' ? 1 : 0, g = OFFER[gi];
+      if (st === 'pick' || st === 'school') {
+        const cards = OFFER.map((x, k) => {
+          const who = SQ.map((p, i) => i).filter((i) => fits(i, x) && stateOf(i, x) !== 'has');
+          return `<div class="b-c ${k === gi ? 'sel' : ''} ${rv(0.1 + k * 0.06)}">${tag(x, 'l')}<b>${GL[x.id].name}</b>${chip(x, true)}<p>${esc(shortDesc(x))}</p>
+              <span class="d-fits">${who.length ? '<em style="font-family:var(--vt);font-size:12px;color:#fff">★</em>FITS ' + who.map((i) => head(i)).join('') : ''}</span></div>`;
+        }).join('');
+        return `<div class="gp">${bg}<div class="gp-title ${rv(0, 'fade')}">PICK GEAR</div><div class="gp-sub ${rv(0.05, 'fade')}">It goes in your KIT BAG. Put it on anyone from SQUAD.</div>
+            <div class="b-cards">${cards}</div>
+            <div class="gp-foot">${btn('SKIP', false, 0.42)}${keys([['', '←→ select'], ['Enter', 'TAKE']], 0.42)}</div></div>`;
+      }
+      // SQUAD mở từ map: túi có 1 món chưa đeo
+      const sel = st === 'full' ? 1 : 0;
+      const team = SQ.map((p, i) => {
+        const s = stateOf(i, g), on = i === sel, open = on && s === 'full', r = rat(i), d = GL[g.id];
+        const col = (list) => `<span class="col">${list.map((k) => `<span class="${k === d.stat ? 'hit' : ''}"><i style="--c:${A.list[k].color}">${A.list[k].short}</i><b>${r[k]}</b></span>`).join('')}</span>`;
+        const k0 = open ? cheapest(i) : -1;
+        return `<div class="d-p ${s === 'has' ? 'has' : ''} ${on ? (open ? 'held' : 'sel') : ''} ${rv(0.1 + i * 0.04)}"><span class="hd"><span class="gp-role">${p.role}</span><b class="gp-name">${esc(p.name)}</b>${you(i)}</span>
+            ${open ? `<span class="ln" style="margin-top:6px">${line(i, g, { big: true })}</span><span class="dq">DROP ONE · GOES BACK TO BAG</span>
+                <span class="ddrop">${SQ[i].gear.map((x, k) => `<div class="${k === k0 ? 'cur' : ''}">${tag(x, 's')}<b>${GL[x.id].name}</b><span class="gp-line">${loss(i, k, g)}</span></div>`).join('')}</span></div>`
+              : `${col(A.order.slice(0, 3))}${fig(i)}${col(A.order.slice(3))}
+            <span class="ln">${line(i, g, { big: on })}</span><span class="sl">${s === 'has' ? '' : slots(i, s === 'free' ? g : null)}</span></div>`}`;
+      }).join('');
+      const strip = SQ.map((p, i) => head(i)).join('');
+      return `<div class="gp">${bg}<div class="d-bar ${rv(0, 'fade')}"><span class="strip">${strip}${PX.ui('kitbag', '')}<span class="new">1 GEAR</span></span></div>
+          <div class="d-sheet"><div class="gp-title ${rv(0.05, 'fade')}" style="margin-top:0">SQUAD</div><div class="d-team">${team}</div>
+          <div class="d-tray ${rv(0.25)}">${PX.ui('kitbag', '')}<em>KIT BAG</em><span class="held">${tag(g, 's')}<b>${GL[g.id].name}</b>${chip(g)}</span><span class="e"></span><span class="e"></span></div></div>
+          <div class="gp-foot">${keys(st === 'full' ? [['', '↑↓ drop which'], ['Enter', 'SWAP'], ['Esc', 'BACK']] : [['', '←→ who'], ['Enter', 'PUT ON'], ['Esc', 'CLOSE']], 0.3)}</div></div>`;
+    }
+
+    /* ================= E · PHÒNG THAY ĐỒ: 3 tủ đồ (1 người 1 tủ, 3 móc = 3 ô), món mới nằm trên ghế băng, bàn tay cầm món treo vào tủ ================= */
+    const HAND = ['..XX......', '.XWWX.....', '.XWWX.....', '.XWWXXXX..', '.XWWXWWXXX', 'XXWWXWWXWX', 'XWWWWWWWWX', 'XWWWWWWWWX', '.XWWWWWWX.', '..XWWWWX..', '..XXXXXX..'];
+    const hand = (x, y) => `<span class="e-hand" style="left:${x}px;top:${y}px">${HAND.flatMap((row, r) => [...row].map((c, k) => (c === '.' ? '' : `<i style="left:${k * 2}px;top:${r * 2}px;background:${c === 'X' ? '#121316' : '#f1c9a0'}"></i>`))).join('')}</span>`;
+    function renderE(st) {
+      const gi = st === 'school' ? 1 : 0, g = OFFER[gi], step2 = st === 'who' || st === 'full', tgt = st === 'full' ? 1 : 0;
+      const LX = [70, 260, 450];
+      const lockers = SQ.map((p, i) => {
+        const s = stateOf(i, g), lit = step2 && i === tgt, k0 = st === 'full' && i === tgt ? cheapest(i) : -1;
+        const d = GL[g.id], plate = d.stat ? `<span class="pst"><i style="color:${A.list[d.stat].color}">${A.list[d.stat].short}</i> ${rat(i)[d.stat]}</span>` : '';
+        const hooks = Array.from({ length: SLOTS }, (x, k) => {
+          const w = p.gear[k];
+          if (w) return `<span class="e-hook ${k === k0 ? 'lift' : ''}">${tag(w, 's')}</span>`;
+          if (lit && k === p.gear.length) return `<span class="e-hook free">${tag(g, 's')}</span>`;
+          return '<span class="e-hook"></span>';
+        }).join('');
+        const stk = p.sch.length ? `<span class="e-stk">${p.sch.map((t) => `<i class="${d.school === t ? 'hit' : ''}">${PX.arch(t, '')}</i>`).join('')}</span>` : '';
+        return `<div class="e-lk ${lit ? 'lamp' : ''} ${rv(0.05 + i * 0.03, 'fade')}" style="left:${LX[i]}px"><span class="e-plate">${p.role === 'FWD' && p.you ? '' : ''}<em>${p.role}</em>${esc(p.name)}${plate}</span>${stk}<span class="e-hooks">${hooks}</span></div>
+            <div class="e-man ${rv(0.1, 'fade')}" style="left:${LX[i] + 20}px">${fig(i)}</div>`;
+      }).join('');
+      const OX = [218, 302, 386];
+      const offs = OFFER.map((x, k) => `<div class="e-off ${k === gi && !step2 ? 'cur' : ''} ${step2 && k === gi ? 'gone' : ''} ${rv(0.3 + k * 0.06, 'drop')}" style="left:${OX[k]}px">${tag(x)}</div>`).join('');
+      let say;
+      if (st === 'full') say = `<b>${esc(SQ[1].name)}: no free hook.</b><p>Take one off for ${GL[g.id].name}?</p><span class="gp-line">${loss(1, cheapest(1), g)}</span>`;
+      else if (step2) say = `<b>${GL[g.id].name} on ${esc(SQ[tgt].name)}?</b> ${line(tgt, g)}<p>${esc(shortDesc(g))}</p>`;
+      else say = `<b>${GL[g.id].name}</b> ${chip(g)}<p>${esc(descOf(g))}</p>`;
+      const hk = st === 'full' ? [['', '←→ hook'], ['Enter', 'TAKE OFF'], ['Esc', 'BACK']] : step2 ? [['', '←→ locker'], ['Enter', 'HANG IT'], ['Esc', 'BACK']] : [['', '←→ select'], ['Enter', 'TAKE'], ['', 'SKIP: leave it']];
+      const hx = st === 'full' ? LX[1] + 10 + cheapest(1) * 40 : step2 ? LX[tgt] + 64 : OX[gi] + 8, hy = st === 'full' ? 100 : step2 ? 92 : 256;
+      return `<div class="gp"><div class="e-room"></div>${lockers}<div class="e-bench ${rv(0.25, 'fade')}"></div>${offs}
+          <div class="e-bub ${rv(0.45)}"><span class="who">${PX.ui('whistle', 'x2')}</span>${say}<div class="keys">${hk.map(([k, w]) => `<span>${k ? `<kbd>${k}</kbd>` : ''}${w}</span>`).join('')}</div></div>
+          <span class="${rv(0.6, 'fade')}" style="position:absolute;inset:0;pointer-events:none">${hand(hx, hy)}</span></div>`;
+    }
+
+    /* ---------- dòng thời gian anim + 1 câu mô tả của từng phương án ---------- */
+    const TL = {
+      now: { all: [['0', 'mọi thứ hiện cùng lúc, Enter nhận ngay']] },
+      A: { s1: [['0', 'lớp che + thanh bước'], ['0,10–0,35', '3 món (lệch 0,04)'], ['0,22', 'nhãn YOUR SQUAD'], ['0,25–0,45', '3 thẻ người (mờ dần)'], ['0,40', 'nút + dòng phím'], ['0,50', 'Enter nhận']],
+        s3: [['0', 'tiêu đề'], ['0,10', 'món vào'], ['0,16–0,36', '3 món đang đeo'], ['0,50', 'Enter nhận']] },
+      B: { s1: [['0', 'lớp che + thanh bước'], ['0,10 / 0,16 / 0,22', '3 thẻ món lật lên'], ['0,34', 'dải SQUAD mờ dần'], ['0,42', 'SKIP + dòng phím'], ['0,50', 'Enter nhận']],
+        s2: [['0–0,26', 'món đã chọn thu nhỏ bay lên thành chip (2 món kia rơi ra)'], ['0,18–0,48', '3 người lớn lên từ chỗ dải SQUAD'], ['0,45', 'BACK + phím'], ['0,50', 'Enter nhận']] },
+      C: { all: [['0', 'tiêu đề'], ['0,10–0,22', '3 cột món'], ['0,20–0,28', '3 hàng người'], ['0,28–0,40', 'ô bảng theo từng hàng'], ['0,42', 'phím'], ['0,50', 'Enter nhận']] },
+      D: { s1: [['0', 'tiêu đề'], ['0,10 / 0,16 / 0,22', '3 thẻ (giống BADGE)'], ['0,42', 'SKIP'], ['0,50', 'Enter nhận'], ['sau', 'món bay vào túi trên dải SQUAD (0,6 s), map hiện "1 GEAR"']],
+        s2: [['0', 'SQUAD mở như bình thường'], ['0,25', 'khay KIT BAG trượt lên']] },
+      E: { all: [['0–0,15', 'phòng + tủ'], ['0,10', 'người đứng trước tủ'], ['0,25', 'ghế băng'], ['0,30 / 0,36 / 0,42', '3 món rơi xuống ghế'], ['0,45', 'bong bóng HLV'], ['0,60', 'bàn tay'], ['0,70', 'Enter nhận (chậm hơn: cảnh)']] },
+    };
+    const WHAT = {
+      now: 'Bản đang có trên main (ảnh chụp game thật, run thử). Bước 4 = trỏ Tactics Board ở bước 1.',
+      A: 'Giữ 2 hàng như bản đang có, áp 12 luật chung: thẻ người chỉ còn mặt + tên + 1 dòng chỉ số + ô; hàng món rộng hơn hàng người và có nhãn ở giữa nên hết đọc thành cột. Bước bỏ món vẫn tách riêng nhưng có mất / được.',
+      B: 'Bước 1 giống màn BADGE (3 thẻ món to) + dải SQUAD 1 dòng nói ngay món đang trỏ làm gì cho từng người. Bước 2 món thu thành chip, người to ra. Người đủ ô: bỏ món ngay trong thẻ người đó (không còn bước 3 riêng).',
+      C: 'Gộp 2 bước thành 1 bảng: cột = món, hàng = người, mỗi ô = "món này cho người này" (trước → sau, ★ hợp, HAS ONE, FULL). Chọn 1 ô = xong. Người đủ ô: bảng nhỏ bỏ món bật ngay trên ô.',
+      D: 'Màn thưởng chỉ còn chọn món (y hệt BADGE, thêm dòng ★ FITS + mặt người hợp). Món vào KIT BAG; đeo / đổi món ở SQUAD trên map lúc nào cũng được. Bỏ món = trả về túi, không mất.',
+      E: 'Cảnh pixel như KIT VAN: mỗi người 1 tủ đồ, 3 móc = 3 ô, món mới nằm trên ghế băng. Bàn tay cầm món, treo vào tủ; tủ đầy thì tháo 1 món xuống. HLV giải thích trong bong bóng. (Phác bằng khối CSS.)',
+    };
+    function timeline(opt, st) {
+      const t = TL[opt], list = t.all || (st === 'pick' || st === 'school' ? t.s1 : (opt === 'A' && st === 'full' ? t.s3 : t.s2 || t.s1));
+      return `<span class="what">${WHAT[opt]}</span>` + list.map(([a, b]) => `<span><b>${a}${/^[0-9]/.test(a) && a !== '0' ? ' s' : a === '0' ? ' s' : ''}</b> ${b}</span>`).join('<span>›</span>');
+    }
+
+    /* ---------- trạng thái + vẽ ---------- */
+    const q = new URLSearchParams(location.search);
+    const S = { opt: q.get('opt') || 'B', st: q.get('st') || 'pick', view: q.get('view') || '', anim: true };
+    const R = { A: renderA, B: renderB, C: renderC, D: renderD, E: renderE };
+    // đổi cách xem không vẽ lại khung (không chạy lại anim)
+    function paintView() {
+      document.getElementById('wrap').dataset.view = S.view;
+      document.querySelectorAll('#tView button[data-view]').forEach((b) => b.classList.toggle('on', b.dataset.view === S.view));
+    }
+    function render() {
+      paintView();
+      scr.classList.toggle('anim', S.anim);
+      scr.innerHTML = S.opt === 'now' ? `<img class="shot" src="gear-pick/now-${S.st}.png" alt="" />` : R[S.opt](S.st);
+      scr.querySelectorAll('[data-d]').forEach((el) => el.style.setProperty('--d', el.dataset.d + 's'));
+      const sal = document.getElementById('sal');
+      sal.src = `gear-pick/sal/${S.opt}-${S.st}.jpg`;
+      document.getElementById('tl').innerHTML = timeline(S.opt, S.st);
+      document.querySelectorAll('#tOpt button').forEach((b) => b.classList.toggle('on', b.dataset.opt === S.opt));
+      document.querySelectorAll('#tSt button').forEach((b) => b.classList.toggle('on', b.dataset.st === S.st));
+    }
+    const replay = () => { S.anim = false; render(); requestAnimationFrame(() => { S.anim = true; render(); }); };
+    document.querySelectorAll('#tOpt button').forEach((b) => b.addEventListener('click', () => { S.opt = b.dataset.opt; replay(); }));
+    document.querySelectorAll('#tSt button').forEach((b) => b.addEventListener('click', () => { S.st = b.dataset.st; replay(); }));
+    document.querySelectorAll('#tView button[data-view]').forEach((b) => b.addEventListener('click', () => { S.view = b.dataset.view; paintView(); }));
+    document.getElementById('play').addEventListener('click', replay);
+    // cho script chụp / đo: GP.set({ opt, st, view, anim })
+    window.GP = { set(o) { Object.assign(S, o); render(); }, S };
+    render();
+  }
+</script>
+</body>
+</html>
