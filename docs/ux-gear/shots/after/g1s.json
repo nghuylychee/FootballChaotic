@@ -1,0 +1,20 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "gx-card g1 sel",
+  "txt": "Tactics Board\nTIKI-TAKA\n\nTIKI-TAKA Cores come more often and",
+  "x": 472,
+  "y": 108,
+  "w": 336,
+  "h": 316
+ },
+ "order": [
+  "gpick:0",
+  "gpick:1",
+  "gpick:2",
+  "skip"
+ ],
+ "id": "g1s",
+ "title": "GEAR · bước 1 · trỏ món 2 (trường phái)",
+ "moving_pct": 0.0
+}

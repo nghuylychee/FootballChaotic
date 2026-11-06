@@ -1,0 +1,23 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "sq-card sel  ",
+  "txt": "72\nFWD\nPAC\n75\nSHO\n70\nPAS\n72\nDRI\n77▲\nFIG\n70\nGK\n67\nLONG",
+  "x": 126,
+  "y": 204,
+  "w": 332,
+  "h": 336
+ },
+ "order": [
+  "wear:0",
+  "wear:2",
+  "wear:1",
+  "gswitch:0",
+  "gswitch:1",
+  "gswitch:2",
+  "gback"
+ ],
+ "id": "g2",
+ "title": "GEAR · bước 2 · chọn người (chọn sẵn)",
+ "moving_pct": 1.8
+}

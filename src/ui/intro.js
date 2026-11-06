@@ -49,7 +49,7 @@ window.SFC = window.SFC || {};
       const I = CFG();
       this.t += dt;
       this.cue('vs', I.vsAt, () => SFC.Audio.hit());
-      this.cards.forEach((c, i) => this.cue('c' + i, c.delay, () => SFC.Audio.menu()));
+      this.cards.forEach((c) => this.cue('c' + c.delay, c.delay, () => SFC.Audio.menu()));   // thẻ hiện cùng lúc (cardGap 0): 1 tiếng
       this.cue('stats', I.statsAt, () => SFC.Audio.upgrade());
       if (this.closing < 0) {
         const skip = this.t > I.skipAfter && (input.wasPressed('confirm') || input.wasPressed('pause') || input.wasPressed('back'));
@@ -141,7 +141,7 @@ window.SFC = window.SFC || {};
         ${this.side(g, 0, lists[0], delay, false)}
         <div class="in-mid">
           <div class="in-vs" style="--d:${I.vsAt}s">${esc(_t('VS'))}</div>
-          <div class="in-pitch" style="--d:${I.pitchAt - 0.2}s"><canvas width="124" height="74"></canvas></div>
+          <div class="in-pitch" style="--d:${I.pitchAt}s"><canvas width="124" height="74"></canvas></div>
           <div class="in-venue" style="--d:${I.pitchAt}s">${venueIcon}${esc(venue)}</div>
         </div>
         ${this.side(g, 1, lists[1], delay, boss)}
@@ -170,13 +170,13 @@ window.SFC = window.SFC || {};
       const stats = I.stats.map(([key, label], i) => {
         const v = cs[key] || 1, ov = os[key] || 1;
         const w = Math.round(clamp01((v - I.statMin) / (I.statMax - I.statMin)) * 100);
-        return `<div class="in-st ${v > ov + 0.001 ? 'up' : ''}" style="--d:${(I.statsAt + i * 0.05).toFixed(2)}s"><span>${label}</span><i><b style="--w:${w}%"></b></i><em>${Math.round(v * I.ovrScale)}</em></div>`;
+        return `<div class="in-st ${v > ov + 0.001 ? 'up' : ''}" style="--d:${(I.statsAt + i * I.statGap).toFixed(2)}s"><span>${label}</span><i><b style="--w:${w}%"></b></i><em>${Math.round(v * I.ovrScale)}</em></div>`;
       }).join('');
       const cards = list.map((p) => this.card(g, p, delay[p.id])).join('');
       // luật sân (shared/systems/matchmods.js, g.mod: có cả ở trận gương của khách online) nằm dưới tên đội chủ luật, thay khẩu hiệu:
       // tên + 1 câu gợi ý như dải "trận này" ở Pause (UI.pauseMatch), vạch màu áo đội đó. Trận không có luật: giữ khẩu hiệu
       const M = g.mod, rule = M && M.cfg && M.team === t ? M.cfg : null;
-      return `<div class="in-side ${t ? 'r' : 'l'} ${boss ? 'boss' : ''}" style="--c:${c.kit.shirt};--a:${c.kit.accent};--k:${c.kit.shirtDark};--d:${I.teamIn + 0.15}s">
+      return `<div class="in-side ${t ? 'r' : 'l'} ${boss ? 'boss' : ''}" style="--c:${c.kit.shirt};--a:${c.kit.accent};--k:${c.kit.shirtDark};--d:${I.teamIn}s">
         <div class="in-team">
           <div class="in-crest"><span>${esc(c.short)}</span></div>
           <div class="in-tn"><b>${esc(c.name)}</b>${rule ? '' : `<span>${esc(c.tagline || '')}</span>`}</div>
@@ -249,7 +249,7 @@ window.SFC = window.SFC || {};
       // chấm cầu thủ chạy từ mép sân vào vị trí đội hình (đội 0 tấn công sang phải)
       const F = SFC_CONFIG.game.formation;
       g.players.forEach((p, i) => {
-        const fm = F[p.role], k = easeOut(clamp01((this.t - I.pitchAt - i * 0.12) / 0.6));
+        const fm = F[p.role], k = easeOut(clamp01((this.t - I.pitchAt - i * I.dotGap) / I.dotTime));
         if (k <= 0) return;
         const tx = p.team === 0 ? fm.x : 1 - fm.x, ty = p.team === 0 ? fm.y : 1 - fm.y;
         const sx = p.team === 0 ? -0.08 : 1.08;

@@ -280,7 +280,16 @@ Mockup đã duyệt: `tools/mockups/gear.html`. BADGE = đồ của cả đội 
 - **GEAR chỉ số** (6 món, 1 chỉ số mỗi món): Running Spikes PAC · Power Boots SHO · Play Wristband PAS · Grip Socks DRI · Hand Wraps FIG · Keeper Gloves GK. Độ hiếm bốc theo `rarityWeights.gear`: THƯỜNG +4 · HIẾM +6 · SỬ THI +9 · HUYỀN THOẠI +12 (`gear.amount`); nâng cấp ở Locker Room + `gear.up`. Chỉ số tính trong `Run.ratingsOf`.
 - **GEAR trường phái** (8 món, BADGE đội cũ chuyển sang): Core hệ đó ra thường hơn (`bias`) + mạnh hơn (`power`) **chỉ cho người đeo** — `Run.gearCore(i)` → `gearBoost` / `gearBias` trên spec avatar / đồng đội / ghế co-op → `p.gearBoost` / `p.gearBias` (`CoreSystem.rating` / `weight`). Không ra món trường phái mà đội đã có người đeo.
 - **Ô:** mỗi người `gear.slots` = 3 ô (+ BADGE Kit Bag). Đủ ô thì đổi 1 món ra.
-- **Hiển thị:** chân thẻ cầu thủ (SQUAD, thẻ LEGEND, màn chọn người đeo): ô LEGEND + ô GEAR (viền độ hiếm, vạch đáy = màu chỉ số / trường phái, tooltip tên + hiệu lực) · dải đội hình trên thanh map: 1 vạch dưới OVR mỗi ô GEAR.
+- **Hiển thị:** chân thẻ cầu thủ (SQUAD, thẻ LEGEND): ô LEGEND + ô GEAR (viền độ hiếm, vạch đáy = màu chỉ số / trường phái, tooltip tên + hiệu lực) · dải đội hình trên thanh map: 1 vạch dưới OVR mỗi ô GEAR.
+- **Màn thưởng GEAR** (owner 2026-11-06, phương án B của review `docs/ux-gear/README.md`; thay bản "1 màn 2 hàng" 2026-11-05 bị rối): bước nào thì thứ đó to.
+  **Bước 1** = 3 thẻ món to (khuôn thẻ BADGE: thẻ treo, tên, chip, 1 dòng công dụng — GEAR chỉ số dùng vế đầu mô tả chỉ số) + **dải SQUAD** 1 hàng
+  (mặt, vị trí, tên, 1 dòng món đang trỏ làm gì cho người đó: `DRI 71 → 77 ★` / `♫ TIKI-TAKA ✓` / HAS ONE / FULL, chấm ô). **Bước 2** = chip món
+  đã chọn (bay lên từ chỗ thẻ) + 3 thẻ người gọn (mặt to, 1 dòng trước → sau, ô GEAR). Người đủ ô: Enter = các món đang đeo mở ngay trong thẻ đó,
+  mỗi dòng ghi cái mất (SHO 81 → 75), không còn màn "Swap out which one?" riêng. Thẻ người ở màn này không có OVR / 6 chỉ số / ô LEGEND.
+  ★ = chỉ số của món là 1 trong 2 chỉ số chính của vị trí (`pkKeys`, như BUILD YOUR SQUAD); GEAR trường phái: người hay ra Core trường phái đó.
+  Chọn sẵn: người còn ô hợp nhất (★), không có thì người còn ô đầu tiên · món bỏ ra mất ít nhất (`gearCheap`). Vàng chỉ cho mục đang chọn (chip món
+  đã chọn / thẻ đang mở viền trắng xám), trạng thái âm chữ xám nhỏ, lớp che đặc. Hiện ra ≤ 0,5 s mỗi bước, khoá nút tới lúc đó (`motion.run.gear` /
+  `gearwho` / `gearswap`, CSS `.rm-in.gearx`). Avatar ở màn này đứng yên quay mặt ra trước (`data-face`).
 - **Co-op:** bỏ phiếu từng bước như LEGEND (`vote` kind `pick` → `wear` → `swap`, `back` = lùi). Bản sao khách mang `squad[i].gear` + `offer.gear / sel / who`.
 - **Run lưu từ trước:** BADGE trường phái trong túi đội tự thành GEAR của character (còn ô thì đeo).
 

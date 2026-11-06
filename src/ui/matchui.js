@@ -38,8 +38,7 @@ window.SFC = window.SFC || {};
         clearTimeout(this.outroTimer);
         clearTimeout(this.sbTimer);
         this.outroActive = false;
-        this.rwFocus = false;
-        this.el.end.classList.remove('outro', 'rw-focus', 'sb-shown');
+        this.el.end.classList.remove('outro', 'b2-in');
       }
       if (name === 'draft' && this.current !== 'draft') this.draftArm();   // màn chọn hiện ra (cả lúc quay lại từ Pause): chặn phím chốc lát
       ['menu', 'draft', 'pause', 'end'].forEach((k) => this.el[k].classList.toggle('hidden', k !== name));
@@ -248,11 +247,8 @@ window.SFC = window.SFC || {};
           this.finishOutro();
           return;
         }
-        if (this.rwFocus && e.target.closest('#end')) {
-          if (this.rwRaf) this.rwSkip = true;
-          else if (!this.pendingReveal && !this.drillAfter) this.revealScoreboard();
-          return;
-        }
+        // nhịp 2 vừa hiện: click trong motion.results.grace đầu bị bỏ qua (như phím Enter)
+        if (e.target.closest('#end') && !this.outroActive && !this.endReady()) return;
         const btn = e.target.closest('[data-act],[data-pick]');
         if (!btn) return;
         if (btn.dataset.act && btn.closest('#pause')) return this.pauseAct(btn.dataset.act);   // FORFEIT bấm 2 lần

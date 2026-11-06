@@ -185,11 +185,15 @@ window.SFC = window.SFC || {};
       const t0 = game.teams[0], t1 = game.teams[1];
       const devBar = SFC_DEBUG && this._devEndMode ? this.devEndBar(this._devEndMode) : '';
       clearTimeout(this.sbTimer);
-      this.rwSkip = false;
       this.rwDone = !game.reward;
-      this.rwFocus = !!game.reward;
-      this.el.end.classList.remove('outro', 'sb-shown');
-      this.el.end.classList.toggle('rw-focus', this.rwFocus);
+      // nhịp 2 hiện trong 1 nhịp (motion review 2026-11-06, phương án A): bố cục cuối đứng yên từ đầu, khung thưởng / bảng tỉ số / nút
+      // bật cùng nhịp (CSS #end.b2-in); nút nhận phím từ motion.results.grace (bấm liên tay qua nhịp 1 không trúng luôn CONTINUE).
+      // Bỏ class sau khi xong để ẩn / hiện lại #end không chạy lại
+      this.endAt = performance.now();
+      this.el.end.classList.remove('outro', 'b2-in');
+      void this.el.end.offsetWidth;
+      this.el.end.classList.add('b2-in');
+      this.sbTimer = setTimeout(() => this.el.end.classList.remove('b2-in'), 600);
       // GOAT PATH SKILL GAME / LEGEND TRIAL: không phải trận -> thay tỉ số bằng thanh 3 mốc + số đếm như HUD trong bài,
       // bỏ bảng tỉ số (toàn 0), khung thưởng đứng giữa
       const D = game.drill;
@@ -205,8 +209,7 @@ window.SFC = window.SFC || {};
           ${game.reward ? `<div class="end-left">${this.rewardPanel(game.reward)}</div>` : ''}
           ${D ? '' : `<div class="sb-wrap">${orderedTeams.map((t, i) => teamBlock(t, i)).join('')}</div>`}
         </div>
-        <div class="end-act">${note}<div class="pause-items row-items" id="end-items"></div></div>
-        ${game.reward ? this.skipHint('rw-skip') : ''}`;
+        <div class="end-act">${note}<div class="pause-items row-items" id="end-items"></div></div>`;
       this.el.end.querySelectorAll('canvas.sb-por[data-pid]').forEach((cv) => {
         const p = game.players.find((q) => q.id === +cv.dataset.pid);
         if (p) this.drawPortrait(cv, p, game);
@@ -220,17 +223,8 @@ window.SFC = window.SFC || {};
       if (game.reward) this.playReward(game.reward);
     },
 
-    // xong toàn bộ diễn tiến độ ở giữa màn hình (và đóng xong mở thẻ / drill nếu có) -> trượt cột tiến độ sang trái + hiện bảng tỉ số bên phải
-    revealScoreboard() {
-      clearTimeout(this.sbTimer);
-      if (!this.rwFocus) return;
-      if (this.pendingReveal || SFC.Reveal.active || this.drillAfter || SFC.Drill.active) return;
-      this.rwFocus = false;
-      this.el.end.classList.remove('rw-focus');
-      this.el.end.classList.add('sb-shown');
-      if (SFC.Audio && SFC.Audio.whoosh && this.el.end.querySelector('.sb-wrap')) SFC.Audio.whoosh();   // Skill game: không có bảng trượt ra
-      this.showEndItems();
-    },
+    // nút kết quả đã nhận phím / click chưa (motion.results.grace sau khi nhịp 2 hiện)
+    endReady() { return performance.now() - (this.endAt || 0) >= SFC_CONFIG.motion.results.grace * 1000; },
 
     openReveal() {
       const list = this.pendingReveal;
@@ -240,7 +234,6 @@ window.SFC = window.SFC || {};
         SFC.Reveal.open(list, () => {
           this.renderEndItems();
           this.autoDrill();
-          if (!this.drillAfter && !SFC.Drill.active) this.sbTimer = setTimeout(() => this.revealScoreboard(), 220);
         });
       }
     },
@@ -254,7 +247,6 @@ window.SFC = window.SFC || {};
       setTimeout(() => {
         const g = this.app.game;
         if (this.current === 'end' && g && g.state === 'ended' && !SFC.Drill.active && !SFC.Reveal.active) this.openDrill(notice);
-        else this.revealScoreboard();
       }, 400);
     },
 
@@ -288,6 +280,17 @@ window.SFC = window.SFC || {};
       const note = _t('Run cash +${n}', { n });
       return [{ label: _t('Run cash'), cash: n }].concat(r.lines.filter((l) => !(l.note && l.label === note)));
     },
+    // dòng báo dưới thưởng (Core mở được / thẻ drill / chạm trần level): vẽ sẵn từ đầu nhưng ẩn (.pending), đếm xong mới hiện -> nút
+    // không bị đẩy xuống lúc đang bấm (motion review 2026-11-06)
+    drillGained(r) { return SFC.Profile.statsHidden() ? 0 : r.levelUps.length * SFC_CONFIG.progression.attrs.drills.perLevel; },   // hệ chỉ số ẩn: không báo thẻ drill
+    rwNewLine(r) {
+      if (r.eligible.length) return `<div class="rw-new pending">${esc(_t('Unlocked: {list}', { list: r.eligible.join(', ') }))}</div>`;
+      const gained = this.drillGained(r), where = this.roomMatch ? ' · ' + _t('open in INVENTORY') : '';
+      // lên level: thẻ drill vừa nhận · chạm trần level theo Main Path: XP vẫn tích, lên hạng là lên level
+      if (gained > 0) return `<div class="rw-new pts pending">${esc(_tn('★ +{n} DRILL CARD', '★ +{n} DRILL CARDS', gained) + where)}</div>`;
+      if (r.capped) return `<div class="rw-new pending">${esc(_t('LV CAP · win RANKED matches to raise it (XP is saved)'))}</div>`;
+      return '';
+    },
     rewardPanel(r) {
       const lines = this.rewardLines(r).map((l, i) => `<div class="rw-line ${l.cash != null ? 'cash' : ''}" data-rw="${i}"><span>${esc(l.label)}</span>${
         l.cash != null ? `<b class="c">${PX().ui('shop', 'sm')}+${l.cash}</b>`
@@ -300,7 +303,7 @@ window.SFC = window.SFC || {};
           <div class="rw-lines">${lines}</div>
           <div class="rw-total">${cash}<span class="gold"><i class="coin"></i><b id="rw-gold">+0</b></span><b id="rw-xp" class="x">+0 XP</b></div>
           <div class="lvrow"><span class="lv" id="rw-lv">${esc(_t('LV {n}', { n: r.before.level }))}</span><div class="xpbar"><i id="rw-bar"></i></div></div>
-          <div class="rw-up" id="rw-up"></div>
+          <div class="rw-up" id="rw-up"><span class="rw-lvup" id="rw-lvup"></span>${this.rwNewLine(r)}</div>
         </div>`;
     },
 
@@ -337,23 +340,20 @@ window.SFC = window.SFC || {};
       cancelAnimationFrame(this.rwRaf);
       const $$ = (id) => document.getElementById(id);
       const t0 = performance.now();
-      const nLines = this.rewardLines(r).length, cash = this.runCash(r) || 0;
-      const LINE = 0.24, COUNT = 1.0;
-      const startCount = 0.25 + nLines * LINE;
+      const cash = this.runCash(r) || 0;
+      // số đếm từ motion.results.count[0] trong count[1] giây (dòng thưởng hiện sẵn cùng khung, không còn hiện lần lượt)
+      const [startCount, COUNT] = SFC_CONFIG.motion.results.count;
       // âm báo lên / rớt Area ngay khi bảng hiện ra để người chơi không thể bỏ lỡ
       if (r.path && r.path.event === 'down' && SFC.Audio && SFC.Audio.buzz) SFC.Audio.buzz();
       else if (r.path && r.path.event === 'up' && SFC.Audio && SFC.Audio.upgrade) SFC.Audio.upgrade();
+      else SFC.Audio.menu();
       // quãng XP phải chạy: tính theo "level thập phân" để thanh chạy qua từng level
       const need = (lv) => SFC.Profile.xpToNext(lv);
       const from = r.before.level + (r.before.need === Infinity ? 0 : r.before.xp / r.before.need);
       const to = r.after.level + (r.after.need === Infinity ? 0 : r.after.xp / r.after.need);
       let shownLv = r.before.level;
       const step = (now) => {
-        const t = this.rwSkip ? 999 : (now - t0) / 1000;
-        for (let i = 0; i < nLines; i++) {
-          const el = document.querySelector(`[data-rw="${i}"]`);
-          if (el && t > 0.25 + i * LINE && !el.classList.contains('in')) { el.classList.add('in'); if (!this.rwSkip) SFC.Audio.menu(); }
-        }
+        const t = (now - t0) / 1000;
         const k = Math.max(0, Math.min(1, (t - startCount) / COUNT));
         const e = 1 - (1 - k) * (1 - k);
         const gold = $$('rw-gold'), xp = $$('rw-xp'), bar = $$('rw-bar'), lv = $$('rw-lv'), up = $$('rw-up');
@@ -370,7 +370,7 @@ window.SFC = window.SFC || {};
         if (level > shownLv) {
           shownLv = level;
           lv.textContent = _t('LV {n}', { n: level });
-          up.innerHTML = `<b class="lvup">${esc(_t('LEVEL UP! LV {n}', { n: level }))}</b><span class="gold"><i class="coin"></i>+${SFC_CONFIG.progression.levelUpGold}</span>`;
+          $$('rw-lvup').innerHTML = `<b class="lvup">${esc(_t('LEVEL UP! LV {n}', { n: level }))}</b><span class="gold"><i class="coin"></i>+${SFC_CONFIG.progression.levelUpGold}</span>`;
           up.classList.remove('pop'); void up.offsetWidth; up.classList.add('pop');
           SFC.Audio.upgrade();
         }
@@ -379,20 +379,12 @@ window.SFC = window.SFC || {};
           if (this.pendingReveal && !this.revealTimer) this.revealTimer = setTimeout(() => { this.revealTimer = null; this.openReveal(); }, 450);
           if (!up.dataset.done) {
             up.dataset.done = 1;
-            if (r.eligible.length) up.insertAdjacentHTML('beforeend', `<div class="rw-new">${esc(_t('Unlocked: {list}', { list: r.eligible.join(', ') }))}</div>`);
-            // lên level: thẻ drill vừa nhận (chỉ khi không có dòng Unlocked, giữ khung thưởng tối đa 2 dòng)
-            const gained = SFC.Profile.statsHidden() ? 0 : r.levelUps.length * SFC_CONFIG.progression.attrs.drills.perLevel;   // hệ chỉ số ẩn: không báo thẻ drill
-            const where = this.roomMatch ? ' · ' + _t('open in INVENTORY') : '';
-            if (!r.eligible.length && gained > 0) up.insertAdjacentHTML('beforeend', `<div class="rw-new pts">${esc(_tn('★ +{n} DRILL CARD', '★ +{n} DRILL CARDS', gained) + where)}</div>`);
-            // chạm trần level theo Main Path: XP vẫn tích, lên hạng là lên level
-            else if (!r.eligible.length && r.capped) up.insertAdjacentHTML('beforeend', `<div class="rw-new">${esc(_t('LV CAP · win RANKED matches to raise it (XP is saved)'))}</div>`);
-            this.showEndItems();   // dòng thưởng vừa thêm có thể đẩy nút xuống
+            const pend = up.querySelector('.rw-new.pending');
+            if (pend) pend.classList.remove('pending');
             // chơi đơn: vừa lên level -> tự mở màn LEVEL UP của DRILL (online tự xử lý phím -> chỉ tích thẻ, mở ở INVENTORY)
+            const gained = this.drillGained(r);
             this.drillAfter = !this.roomMatch && gained > 0 ? { earned: gained, from: r.before.level, to: r.after.level } : null;
             this.autoDrill();
-            if (!this.pendingReveal && !this.drillAfter) {
-              this.sbTimer = setTimeout(() => this.revealScoreboard(), this.rwSkip ? 60 : 420);
-            }
           }
           return;
         }
@@ -410,26 +402,20 @@ window.SFC = window.SFC || {};
         }
         return;
       }
+      // nhịp 2 vừa hiện: chưa nhận Enter (motion.results.grace) — bấm liên tay qua nhịp 1 không trúng luôn CONTINUE / mở thẻ
+      const ready = this.endReady();
       // còn thẻ chưa mở: Enter mở luôn thay vì sang trận kế
-      if (this.pendingReveal) { if (input.wasPressed('confirm')) this.openReveal(); return; }
+      if (this.pendingReveal) { if (ready && input.wasPressed('confirm')) this.openReveal(); return; }
       if (SFC_DEBUG && this._devBackup && (input.wasPressed('back') || input.wasPressed('pause'))) {
         SFC.Audio.menu();
         return this.devEndTest('back');
-      }
-      // đang diễn tiến độ ở giữa màn hình: bấm xác nhận để tua nhanh & trượt sang hiện bảng tỉ số
-      if (this.rwFocus) {
-        if (input.wasPressed('confirm') || input.wasPressed('shoot') || input.wasPressed('pass')) {
-          if (!this.rwDone) this.rwSkip = true;
-          else this.revealScoreboard();
-        }
-        return;
       }
       if (this.roomMatch && input.wasPressed('back')) { this.doAct('leaveroom'); return; }
       const n = this.endItems().length;
       if (!n) return;   // khách trong phòng: không có nút nào chọn sẵn, chờ chủ phòng
       if (input.wasPressed('left') || input.wasPressed('up')) { this.endSel = (this.endSel + n - 1) % n; this.renderEndItems(); }
       if (input.wasPressed('right') || input.wasPressed('down')) { this.endSel = (this.endSel + 1) % n; this.renderEndItems(); }
-      if (input.wasPressed('confirm')) this.doAct(this.endItems()[this.endSel][0]);
+      if (ready && input.wasPressed('confirm')) this.doAct(this.endItems()[this.endSel][0]);
     },
 
     doAct(act) {
@@ -452,10 +438,7 @@ window.SFC = window.SFC || {};
     // màn DRILL trên màn kết quả; notice = { earned, from, to } -> bắt đầu ở màn LEVEL UP (OPEN NOW / LATER).
     // Đóng (mở hết / LATER) -> vẽ lại nút kết quả + trượt tiến độ sang trái hiện bảng tỉ số
     openDrill(notice) {
-      SFC.Drill.open(() => {
-        this.renderEndItems();
-        this.sbTimer = setTimeout(() => this.revealScoreboard(), 200);
-      }, { notice });
+      SFC.Drill.open(() => this.renderEndItems(), { notice });
     },
   });
 })();

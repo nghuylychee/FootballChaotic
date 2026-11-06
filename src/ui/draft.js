@@ -9,7 +9,8 @@ window.SFC = window.SFC || {};
 
   Object.assign(SFC.UI, {
     /* ================= DRAFT ================= */
-    renderDraft(game) {
+    // flip = lượt mới / đổi bài: lá lật vào (CSS .cards.flip). Vẽ lại vì đổi tay cầm thì không lật
+    renderDraft(game, flip = false) {
       const d = game.draft;
       if (!d) return;
       const me = game.me, team = game.humanTeam;   // lượt chọn khóa theo slot người chơi (co-op: 2 slot cùng đội)
@@ -84,7 +85,7 @@ window.SFC = window.SFC || {};
         <div class="draft-title">${title}</div>
         ${clock}
         <div class="draft-sub">${sub}</div>
-        <div class="draft-deck"><div class="cards n${opts.length}">${cards}</div>${reroll}</div>
+        <div class="draft-deck"><div class="cards n${opts.length} ${flip ? 'flip' : ''}">${cards}</div>${reroll}</div>
         ${d.note ? `<div class="draft-note">${esc(d.note).replace(/\*(.+?)\*/g, '<b>$1</b>')}</div>` : ''}
         <div class="draft-build">
           <div class="draft-build-row">
@@ -101,6 +102,9 @@ window.SFC = window.SFC || {};
           ${traits ? `<div class="draft-traits-row">${traits}</div>` : ''}
         </div>`;
       SFC.CorePreview.scan(this.el.draft);
+      // lật xong thì gỡ .flip: ẩn / hiện lại #draft (Pause) không lật lại
+      clearTimeout(this.draftFlipT);
+      if (flip) this.draftFlipT = setTimeout(() => { const el = this.el.draft.querySelector('.cards.flip'); if (el) el.classList.remove('flip'); }, 350);
       this.draftClock = this.el.draft.querySelector('.draft-clock');
       this.draftClockK = -1;
       this.draftClockView(game);
@@ -193,33 +197,36 @@ window.SFC = window.SFC || {};
       // 3. Âm thanh chọn
       SFC.Audio.pick();
 
+      // nhịp: config/motion.config.js draft (motion review 2026-11-06, phương án A: cả chuỗi 0.85s, trước đây 1.53s)
+      const M = SFC_CONFIG.motion.draft;
+      // ô đích đầy (chạy hết, hoặc bấm bỏ qua: skipDraftAnim tới thẳng trạng thái cuối)
+      this.draftFill = () => {
+        if (!targetSlot || targetSlot.classList.contains('filled')) return;
+        cardEl.style.visibility = 'hidden';
+        targetSlot.classList.remove('empty', 'target');
+        targetSlot.classList.add('filled');
+        targetSlot.style.setProperty('--c', ARCH(c.tags[0]).color);
+        targetSlot.innerHTML = PX().core(id, 'sm');
+      };
       if (targetSlot) {
-        // Chờ 200ms để thấy rõ lá bài được chọn phóng to trước khi chính lá bài đó thu nhỏ bay vào ô build (không clone)
+        // lá vừa chọn nhấc lên một chút rồi chính lá đó thu nhỏ bay vào ô build (không clone)
         this.draftAnimTimerFly = setTimeout(() => {
           cardEl.classList.add('flying-card');
-
-          // Chạm ô đích sau 420ms: ô loé sáng, nổ hiệu ứng và chuyển sang Core mới
+          // chạm ô đích: ô loé sáng và hiện Core mới
           this.draftAnimTimer = setTimeout(() => {
-            cardEl.style.visibility = 'hidden';
-            targetSlot.classList.remove('empty', 'target');
-            targetSlot.classList.add('filled', 'impact');
-            targetSlot.style.setProperty('--c', ARCH(c.tags[0]).color);
-            targetSlot.innerHTML = PX().core(id, 'sm');
+            this.draftFill();
+            targetSlot.classList.add('impact');
             SFC.Audio.upgrade();
-
-            // Gỡ class impact ngay khi hiệu ứng loé sáng 350ms hoàn tất
-            this.draftImpactTimer = setTimeout(() => {
-              targetSlot.classList.remove('impact');
-            }, 350);
-          }, 420);
-        }, 200);
+            this.draftImpactTimer = setTimeout(() => targetSlot.classList.remove('impact'), 250);
+          }, (M.slot - M.fly) * 1000);
+        }, M.fly * 1000);
       }
 
-      // 4. Chờ bay vào đích (200 + 420) + loé sáng ô hoàn tất (350) + nghỉ ngơi (180) = 1150ms rồi mới kết thúc để morph
+      // 4. xong -> commit + khối build bay xuống thanh kỹ năng
       this.draftAnimTimerEnd = setTimeout(() => {
         this.draftAnimActive = false;
         onDone();
-      }, 1150);
+      }, M.end * 1000);
     },
 
     skipDraftAnim() {
@@ -229,6 +236,10 @@ window.SFC = window.SFC || {};
         clearTimeout(this.draftAnimTimer);
         clearTimeout(this.draftImpactTimer);
         clearTimeout(this.draftAnimTimerEnd);
+        // bấm 1 lần = trạng thái cuối (motion review 2026-11-06): ô đầy luôn, khối build không bay (morph bắt đầu ở tick sau, khi lượt
+        // chọn được ghi nhận -> draftSkipMorph cho morphDraftToAbar biết mà bỏ qua)
+        if (this.draftFill) this.draftFill();
+        this.draftSkipMorph = performance.now();
         const card = this.el.draft.querySelector('.card.picked-hero, .card.flying-card');
         if (card) {
           card.classList.remove('flying-card');
@@ -341,6 +352,10 @@ window.SFC = window.SFC || {};
 
       const abarItems = abar.querySelector('.ab-items');
       if (!abarItems) return onDone();
+      // vừa bấm bỏ anim chọn lá: không bay nữa, đóng luôn
+      const skip = this.draftSkipMorph && performance.now() - this.draftSkipMorph < 1000;
+      this.draftSkipMorph = 0;
+      if (skip) return onDone();
 
       const getStageBox = (el) => {
         const sRect = stage.getBoundingClientRect(), eRect = el.getBoundingClientRect();
@@ -397,7 +412,7 @@ window.SFC = window.SFC || {};
 
       this.draftMorphActive = true;
       this.draftMorphDone = finish;
-      this.draftMorphTimer = setTimeout(finish, 380);
+      this.draftMorphTimer = setTimeout(finish, SFC_CONFIG.motion.draft.morph * 1000);
     },
 
     // vừa mở lượt chọn / màn chọn vừa hiện lại (UI.show): phím chọn, đổi bài và click lá chưa có tác dụng trong
@@ -414,13 +429,13 @@ window.SFC = window.SFC || {};
         this.el.draft.classList.remove('draft-fade-out');
         const draftSquare = this.el.draft.querySelector('.draft-square');
         if (draftSquare) draftSquare.style.visibility = '';
-        this.renderDraft(game);
+        this.renderDraft(game, true);
         if (!overlay) this.show('draft');
       }
       // người khác chọn / đổi bài: không vẽ lại màn chọn của mình (vẽ lại = lá bài lật lại từ đầu).
       // Chỉ lượt của chính mình: đổi bài -> vẽ 3 lá mới · bị chọn hộ khi hết giờ -> đóng màn chọn như tự chọn
       if (e.type === 'draftWait' && game.draft && e.seat == game.me && this.current === 'draft' && !this.draftAnimActive && !this.draftMorphActive) {
-        if (!game.draft.picked[game.me]) this.renderDraft(game);
+        if (!game.draft.picked[game.me]) this.renderDraft(game, true);   // đổi bài: lá mới lật vào
         else this.closeDraft(game);
       }
       if (e.type === 'corePicked') {

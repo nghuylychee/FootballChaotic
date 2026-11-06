@@ -1,0 +1,20 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "gx-p sel  ",
+  "txt": "FWD\nLONG\nDRI\n71\n→\n77",
+  "x": 124,
+  "y": 204,
+  "w": 328,
+  "h": 352
+ },
+ "order": [
+  "wear:0",
+  "wear:2",
+  "wear:1",
+  "gback"
+ ],
+ "id": "g2",
+ "title": "GEAR · bước 2 · chọn người (chọn sẵn)",
+ "moving_pct": 0.1
+}

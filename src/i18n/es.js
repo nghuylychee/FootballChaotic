@@ -207,6 +207,9 @@ SFC.I18n.add({
     'KEEPS GOAL': 'CUIDA EL ARCO',
     'NEED {pos}': 'FALTA {pos}',
     'SWAP': 'CAMBIAR',
+    'HAS ONE': 'YA TIENE',
+    'DROP ONE': 'QUITA UNO',
+    'gear|FULL': 'LLENO',
     /* BUILD YOUR SQUAD sân ngang (owner 2026-11-06; Claude — chưa duyệt) */
     'PICK YOUR {pos}': 'ELIGE TU {pos}',
     'REPLACE {name}': 'REEMPLAZAR A {name}',

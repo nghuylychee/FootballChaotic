@@ -12,8 +12,10 @@ window.SFC = window.SFC || {};
   const _t = SFC.t;
   const CORES = () => SFC_CONFIG.cores;
   const PX = () => SFC.PixelIcon;
-  const DUR = 2.9;      // giây diễn (tự xong)
-  const STEP = 0.16;    // giây giữa 2 lá rơi vào ô công thức
+  // nhịp: config/motion.config.js recipe (motion review 2026-11-06, phương án A cho mọi bản DISCOVERED / EVOLVED / UNLOCKED): tiêu đề hiện
+  // trước, lá công thức rơi vào ô cùng 1 nhịp, lá Tuyệt kỹ lật ở flip, tự đóng ở close. Trước đây tiêu đề ở 1.08s, tự đóng 2.9s
+  const SLOTS_AT = 0.25;   // lá rơi vào ô công thức (CSS .rfx-slots i, 0.2s)
+  const M = () => SFC_CONFIG.motion.recipe;
 
   const RecipeFx = {
     active: false,
@@ -35,14 +37,13 @@ window.SFC = window.SFC || {};
       const evolved = !hybrid && rc.lv > 1;
       const need = hybrid ? C.ults.hybridTier || 2 : C.ults.tiers[rc.lv - 1];
       // nhóm lá theo trường phái của công thức (lai: 2 nhóm)
-      let k = 0;
       const groups = def.tags.map((tag) => {
         const a = C.archetypes[tag] || { label: tag, color: '#e6dccb' };
         const ids = this.cardsFor(game, mp, pick, tag, need);
-        const slots = ids.map((id) => `<i class="${id === pick ? 'new' : ''}" style="--d:${(0.15 + STEP * k++).toFixed(2)}s">${PX().core(id, 'x2')}</i>`).join('');
+        const slots = ids.map((id) => `<i class="${id === pick ? 'new' : ''}" style="--d:${SLOTS_AT}s">${PX().core(id, 'x2')}</i>`).join('');
         return `<div class="rfx-group" style="--c:${a.color}"><div class="rfx-school">${PX().arch(tag, 'sm')} ${esc(a.label)} <b>×${need}</b></div><div class="rfx-slots">${slots}</div></div>`;
       });
-      const tRev = 0.25 + STEP * k + 0.35;   // lúc lá Tuyệt kỹ lật ra
+      const tRev = M().flip;   // lúc lá Tuyệt kỹ lật ra
       // nâng cấp: luôn "EVOLVED" (thấy rõ là Tuyệt kỹ cũ mạnh lên) · lần đầu đạt công thức: "DISCOVERED"
       const title = evolved ? _t('ULTIMATE EVOLVED!') : fresh ? _t('NEW ULTIMATE DISCOVERED!') : _t('ULTIMATE UNLOCKED');
       const keyHint = `<kbd>${esc(SFC.Input.label('ultimate'))}</kbd>`;   // phím đang gán, không phải chữ X viết sẵn
@@ -69,9 +70,9 @@ window.SFC = window.SFC || {};
       this.shown = key;
       // âm thanh theo nhịp: tách từng lá rơi vào ô, lật lá Tuyệt kỹ
       this.timers = [];
-      for (let i = 0; i < k; i++) this.timers.push(setTimeout(() => SFC.Audio.menu(), (0.15 + STEP * i) * 1000));
+      this.timers.push(setTimeout(() => SFC.Audio.menu(), SLOTS_AT * 1000));
       this.timers.push(setTimeout(() => SFC.Audio.upgrade(), tRev * 1000));
-      this.timers.push(setTimeout(() => this.finish(), (tRev + DUR - 1.1) * 1000));
+      this.timers.push(setTimeout(() => this.finish(), M().close * 1000));
     },
 
     skip() { if (this.active) this.finish(); },

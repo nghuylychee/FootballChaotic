@@ -159,6 +159,7 @@ window.SFC = window.SFC || {};
         this.matePop = null;   // vào phòng: chọn sẵn START (chủ phòng) / ô của mình khi có danh sách phòng (render)
         this.resetArmed = false;   // RESET DATA: rời trang SETTINGS là huỷ xác nhận
         this.quitAsk = false;
+        if (page === 'home') this.homePopSel = -1;   // vào trang chủ: tab đang chọn bật lên 1 lần
         if (page === 'party' && !PLAY_PAGES.includes(this.page)) this.friendsOpen = false;   // từ ngoài vào RANKED: khung bạn bè đóng, bấm FRIENDS mới mở
         if (this.page === 'run') RU().friends = false;   // rời tab GOAT PATH (đổi tab, BACK...): bảng PLAY WITH FRIENDS đóng
         this.selMemo[this.page] = this.sel;
@@ -1252,7 +1253,11 @@ window.SFC = window.SFC || {};
     renderHome(items) {
       const nav = items.map((it, i) => Object.assign({ i }, it)).filter((it) => it.nav != null).sort((a, b) => a.nav - b.nav);
       const gi = items.findIndex((it) => it.gear), ai = items.findIndex((it) => it.ach), ready = SFC.Achievements.claimable().length;
-      const tab = (it) => `<button class="hn-tab ${it.label === _t('PLAY') ? 'play' : ''} ${it.i === this.sel ? 'sel' : ''} ${it.hot ? 'hot' : ''}" data-i="${it.i}">
+      // khối tab đang chọn chỉ bật lên (hnPop, class .pop) khi mục chọn thật sự đổi / vừa mở trang chủ — vẽ lại vì tin nhắn tự ẩn, đổi tay
+      // cầm, hỏi thoát... thì không (motion review 2026-11-06)
+      const pop = this.homePopSel !== this.sel;
+      this.homePopSel = this.sel;
+      const tab = (it) => `<button class="hn-tab ${it.label === _t('PLAY') ? 'play' : ''} ${it.i === this.sel ? 'sel' : ''} ${it.i === this.sel && pop ? 'pop' : ''} ${it.hot ? 'hot' : ''}" data-i="${it.i}">
           <span class="hn-label">${esc(it.label)}</span><span class="hn-sub">${it.subHtml || esc(it.sub || '')}</span><i class="hn-pip"></i></button>`;
       const msg = this.msg ? `<div class="m-msg ${this.msgErr ? 'err' : ''}">${esc(this.msg)}</div>` : '';
       return `<div class="hm-top">
@@ -1688,6 +1693,7 @@ window.SFC = window.SFC || {};
       if (i === this.sel || i < 0 || !this.items()[i]) return;
       this.sel = i;
       this.el.querySelectorAll('[data-i]:not([data-d])').forEach((x) => x.classList.toggle('sel', +x.dataset.i === i));
+      if (this.page === 'home') { this.el.querySelectorAll('.hn-tab').forEach((x) => x.classList.toggle('pop', +x.dataset.i === i)); this.homePopSel = i; }
       // ULT BOOK (lá đang chọn) · STATS (chỉ số đang chọn): bảng phải tả mục đang chọn -> vẽ lại riêng bảng đó (+ ảnh động)
       const right = (this.page === 'ults' || this.page === 'attrs') && this.el.querySelector('.m-right');
       if (right) { right.innerHTML = this.renderRight(); SFC.CorePreview.scan(right); }
