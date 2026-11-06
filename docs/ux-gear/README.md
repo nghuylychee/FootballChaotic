@@ -1,7 +1,7 @@
 # MÀN GEAR 2026-11-06 — review lại (rối) + 5 phương án
 
 > Trạng thái: **OWNER CHỌN B (2026-11-06), ĐÃ LÀM VÀO GAME** trên nhánh `ux/gear-2026-11` (tách từ `ux/motion-2026-11` để dùng chung
-> `config/motion.config.js`; worktree `G:\FootballChaotic-gear`). Đã commit + push (`e8ffb96` review, `cb4e6d5` code), chưa merge vào main.
+> `config/motion.config.js`; worktree `G:\FootballChaotic-gear`). Đã merge vào main 2026-11-06 (`2582c40`, kéo theo nhánh motion).
 > Trang review + mockup: `tools/mockups/gear-pick.html` (mở qua `npm run serve` → http://localhost:8080/tools/mockups/gear-pick.html;
 > `?opt=B&st=who&view=gray` mở thẳng 1 khung). Review làm trên `main` @ `60f9741`. Ảnh sau khi sửa: `shots/after/`.
 
@@ -95,4 +95,5 @@ Cần Python + Playwright + Chrome + Pillow + numpy + opencv-python. `cap.py` d�
   thì dải SQUAD đổi sang GK, món mua ở KIT VAN vào thẳng bước 2 và Esc không bỏ được, khung anim 0,1 / 0,25 / 0,6 s. `i18n-check` không lỗi.
   Số đo bước 1: chữ 69 → 36 · con số 25 → 8 · khung 20 → 11 · màu chữ / viền 13 → 4 · họ màu 7 → 5; diện tích 3 món gấp 4,1 lần dải đội
   (trước: đội gấp 3,2 lần món). Bước 2: 71 / 25 / 14 → 31 / 7 / 2. Chưa kiểm: co-op (bỏ phiếu từng bước giữ như cũ, chưa mở phòng thật).
+- 2026-11-06 — Owner: "commit push" rồi "merge vào main đi". Commit `e8ffb96` + `cb4e6d5` + `243f05f`, merge `2582c40` vào main (kéo theo 2 commit nhánh motion). Trước khi merge: i18n-check, manifest --check, server-stamp --check, `npm run server:test` OK.
 <!-- mỗi lần xử lý: thêm 1 dòng (ngày · owner chọn gì · đã làm gì) -->

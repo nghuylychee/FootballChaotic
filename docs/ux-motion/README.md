@@ -1,7 +1,7 @@
 # MOTION REVIEW 2026-11-06 — staggered reveal (màn nào nên hiện lần lượt, màn nào đang làm sai)
 
 > Trạng thái: **ĐÃ ÁP DỤNG PHƯƠNG ÁN A (owner 2026-11-06) cho mọi màn, trừ màn chọn GEAR (owner: để nguyên).** Nhánh `ux/motion-2026-11`
-> (đã push, chưa merge vào main). Xem "Áp dụng" bên dưới. Preview Before / đề xuất của cả 16 màn (High / Medium / Low) trên 1 trang: `preview/index.html`
+> (đã merge vào main 2026-11-06, cùng nhánh GEAR `ux/gear-2026-11`). Xem "Áp dụng" bên dưới. Preview Before / đề xuất của cả 16 màn (High / Medium / Low) trên 1 trang: `preview/index.html`
 > (mở thẳng từ đĩa hoặc qua `npm run serve` → http://localhost:8080/docs/ux-motion/preview/index.html). Bản đăng: https://claude.ai/artifact/XyEHHNPdM4v3bofQfpH6Cb
 > (artifact private của owner). Làm trên `main` @ `99781ef`.
 
