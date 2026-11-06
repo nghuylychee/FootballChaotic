@@ -30,6 +30,11 @@ window.SFC = window.SFC || {};
   // lề map (px trong khung 640x360). Sa bàn chiến thuật nằm ngang (UX màn hình, owner 2026-11-05, phương án B; trước đó sân dọc, user 2026-10-25):
   // khung thành nhà bên trái (chỗ xuất phát), boss đứng trong khung thành đối thủ bên phải, cả act trong 1 khung không cuộn
   const MAP_PL = 58, MAP_PR = 38, MAP_PY = 26;
+  // BUILD YOUR SQUAD (sân ngang, owner 2026-11-06): chân cầu thủ theo game.formation (MID lệch trên, DEF giữa, FWD lệch dưới) — DEF: px từ mép
+  // khung thành (đứng trong vòng cấm), MID / FWD: % bề ngang · y: % bề cao. PK_FACE: hướng quay về phía đối thủ (nghiêng xuống phải)
+  // · PK_BH_MAX: tiêu đề băng ghế dịch theo ô đang chờ tối đa ngần này px (không tràn sang bảng chỉ số)
+  const PK_SPOT = { DEF: { px: 74, y: 64.8 }, MID: { x: 28.65, y: 39.6 }, FWD: { x: 36.5, y: 86 } };   // FWD lùi xuống / sang trái: không đứng dưới START RUN giữa sân
+  const PK_FACE = Math.PI / 4, PK_BH_MAX = 200;
   const TEAM_SLOTS = 10;   // màn SQUAD: hàng BADGE của đội tối thiểu ngần này ô (thiếu = ô trống)
   const STRIP_BADGES = 6;  // dải đội hình trên map: hiện tối đa ngần này icon BADGE của đội, dư thì "+n"
   // mép phấn sần (vòng khoanh node): nhiễu nhỏ dời nét đi vài px
@@ -55,10 +60,12 @@ window.SFC = window.SFC || {};
     sel: 0,            // page 'runmap': mục đang chọn (node chọn được trước, rồi tới nút)
     quitArm: false,    // FORFEIT: bấm 2 lần
     key: null,         // trạng thái đã vẽ (đổi -> chọn lại mục đầu)
-    mapDim: { w: 616, h: 286 },   // cỡ khung map đã dùng để dàn node (bindMap đo khung thật, khác thì vẽ lại)
+    mapDim: { w: 616, h: 286 },
+    pkDim: { w: 616, h: 196 },    // cỡ trong khung sân của BUILD YOUR SQUAD đã dùng để vẽ vạch sân (bindPitch đo khung thật, khác thì vẽ lại)   // cỡ khung map đã dùng để dàn node (bindMap đo khung thật, khác thì vẽ lại)
     scroll: null,      // vị trí cuộn map giữ qua các lần vẽ lại
     bagOpen: false,    // đang xem SQUAD
-    pick: null,        // màn BUILD YOUR SQUAD trước run: { me: vị trí của bạn, cands: [m], mates: { vị trí: chỉ số trong cands }, order: [vị trí theo thứ tự chọn] }
+    pick: null,        // màn BUILD YOUR SQUAD trước run: { me: vị trí của bạn, cands: [m], mates: { vị trí: chỉ số trong cands }, order: [vị trí theo thứ tự chọn],
+                       //   target: ô người chơi chọn để nhận người (null = ô trống kế tiếp), move: đang đổi chỗ của bạn, prev: ứng viên trỏ gần nhất, enter: ô vừa có người vào }
     leaveArm: false,   // LEAVE ROOM (co-op): bấm 2 lần
     drawing: false,    // map: đang khoanh phấn node vừa chọn (khoá thao tác tới khi vẽ xong)
     roomRun: false,    // đang / vừa ở phòng GOAT PATH co-op (nhớ lại lúc phòng đóng — OnlineUI)
@@ -203,13 +210,10 @@ window.SFC = window.SFC || {};
         if (room && !host) return POS().map((r) => T('slot', { id: r })).concat(benchOn() ? [T('bench')] : [], inv, [T('leaveroom')]);
         const P = this.pick;
         if (!P) return [];
-        // 3 ô vị trí (bấm = nhảy sang ô đó; ✕ = bỏ đồng đội AI ở ô đó để chọn lại) · ứng viên lấp ô trống kế tiếp (đủ ô vẫn hiện, mờ)
-        // · START RUN giữa dưới (chưa đủ ô: mờ + các vị trí còn thiếu)
-        const used = Object.values(P.mates);
-        const unpick = POS().filter((r) => P.mates[r] != null).map((r) => T('unpick', { id: r }));
-        const cands = P.cands.map((m, i) => T('cand', { i })).filter((t) => !used.includes(t.i));
-        const go = [T('go', { main: true, dis: !this.pkReady() })];   // luôn hiện; mờ tới khi đủ người (UX run-12)
-        return POS().map((r) => T('slot', { id: r })).concat(unpick, cands, go, inv, [T('cancel')]);
+        // 3 ô trên sân (bấm dấu + / đồng đội = ô đó nhận người · bấm mình = đổi chỗ) · 6 ứng viên trên băng ghế (người đã ra sân vẫn nằm yên chỗ cũ,
+        // chọn = chuyển sang ô đang nhận) · START RUN giữa sân, luôn hiện, mờ tới khi đủ người (UX run-12)
+        const go = [T('go', { main: true, dis: !this.pkReady() })];
+        return POS().map((r) => T('slot', { id: r })).concat(P.cands.map((m, i) => T('cand', { i })), go, inv, [T('cancel')]);
       }
       // hết run: CONTINUE (chọn sẵn) + từng ô Core mới (trỏ phím = hiện bảng mô tả) · khách co-op: LEAVE ROOM
       if (!RUN().active()) return host ? [T('end', { main: true })].concat((R.newCores || []).map((id, i) => T('core', { i }))) : [T('leaveroom')];
@@ -563,14 +567,14 @@ window.SFC = window.SFC || {};
       const AR = SFC_CONFIG.cores.archetypes;
       return tags.length ? `<span class="sq-sch">${tags.map((t) => `<i class="${t === hit ? 'hit' : ''}" style="--c:${AR[t].color}" title="${esc(AR[t].label)}">${PX().arch(t, '')}</i>`).join('')}</span>` : '';
     },
-    // thẻ cầu thủ dùng chung (SQUAD · thẻ LEGEND xin vào đội · BUILD YOUR SQUAD; user 2026-10-29: hình cầu thủ là chính):
+    // thẻ cầu thủ dùng chung (SQUAD · thẻ LEGEND xin vào đội; user 2026-10-29: hình cầu thủ là chính — BUILD YOUR SQUAD là sân ngang từ 2026-11-06):
     // OVR + vị trí góc trái · trường phái Core góc phải · hình to giữa (nền đèn sân, màu LEGEND nếu có) · chỉ số nhỏ 2 bên · tên + nhãn
     // · hàng dưới (LEGEND / chấn thương). o: { tag (button|div), attrs, cls, role, ovr, ovrCls, face, fin, ref, next, name, who, schools, glow, foot, hurt,
     //   behind (vẽ sau nhân vật: bóng LEGEND ở màn nhận) }
     pcard(o) {
       const [left, right] = this.statCols(o.fin, o.ref, o.next);
       return `<${o.tag || 'div'} class="sq-card ${o.cls || ''} ${o.glow ? 'leg' : ''}" ${o.glow ? `style="--lc:${o.glow}"` : ''} ${o.attrs || ''}>
-          <div class="sq-head"><span class="sq-ovr ${o.ovrCls || ''}">${o.ovr}</span><em>${esc(o.role)}</em>${o.roleSub ? `<u class="sq-rsub">${esc(o.roleSub)}</u>` : ''}</div>
+          <div class="sq-head"><span class="sq-ovr ${o.ovrCls || ''}">${o.ovr}</span><em>${esc(o.role)}</em></div>
           ${this.schoolIcons(o.schools || [], o.hit)}${o.hurt ? `<i class="rs-x">✚</i>` : ''}
           <div class="sq-body">${left}<div class="sq-art">${o.behind || ''}${o.face}</div>${right}</div>
           <div class="sq-name"><b>${esc(o.name)}</b>${o.who ? `<em>${esc(o.who)}</em>` : ''}</div>
@@ -700,11 +704,13 @@ window.SFC = window.SFC || {};
       const L = Object.values(SFC_CONFIG.legends.list)[0];
       return `<span class="sq-leg none" title="${esc(_t('No legend yet'))}">${this.face(SFC.LegendDraw.lookOf(L), false)}</span>`;
     },
-    /* ---------- màn BUILD YOUR SQUAD (user 2026-10-26): 3 ô vị trí, bấm ô = character của bạn nhảy sang (đồng đội AI ở ô đó đổi chỗ
-     * với bạn), ứng viên lấp ô trống kế tiếp. Phòng co-op: ô có bạn bè đứng thì không nhảy vào được; vị trí của host = ô host đứng trong
-     * phòng (Room.seatHost), ô của bạn bè vẫn cần 1 đồng đội AI dự phòng (không chọn thì lấy ngẫu nhiên lúc START RUN). ---------- */
-    // fresh: lần vẽ đầu chọn sẵn ứng viên đầu tiên (UX run-12: trước đây chọn sẵn thẻ của bạn, bấm Enter không có gì xảy ra)
-    newPick() { this.pick = { me: 'FWD', cands: RUN().candidates(), mates: {}, order: [], fresh: true }; },
+    /* ---------- màn BUILD YOUR SQUAD (user 2026-10-26) · sân ngang (owner 2026-11-06, phương án A của tools/mockups/squad-pitch.html):
+     * đội mình bên trái (bạn + dấu + ở ô trống), boss act 1 bên phải. Ô nhận người (pkTarget) = ô trống kế tiếp, hoặc ô người chơi chọn (bấm dấu +;
+     * bấm đồng đội = thay người); băng ghế dưới sân lấp ô đó, ứng viên đang trỏ đứng mờ sẵn ở ô. Bấm nhân vật của mình = đổi chỗ (pick.move).
+     * Thứ bậc (review nheo mắt + trắng đen): vàng chỉ cho việc đang làm (ô nhận người → vạch phấn → tiêu đề băng ghế → người đang trỏ; START RUN
+     * khi hết việc), người đang trỏ đảo màu, đối thủ tối khi đang chọn. Phòng co-op: ô có bạn bè đứng thì không nhảy / chọn vào được; vị trí của
+     * host = ô host đứng trong phòng (Room.seatHost), ô của bạn bè vẫn cần 1 đồng đội AI dự phòng (lấy ngẫu nhiên lúc START RUN). ---------- */
+    newPick() { this.pick = { me: 'FWD', cands: RUN().candidates(), mates: {}, order: [], fresh: true, target: null, move: false }; },
     // vị trí của máy này: phòng co-op = ô đang đứng trong phòng
     pkMe() {
       const O = ON(), m = inRoom() && O.mine;
@@ -721,112 +727,236 @@ window.SFC = window.SFC || {};
       const P = this.pick, me = this.pkMe();
       return POS().find((r) => r !== me && !this.pkHuman(r) && P.mates[r] == null) || null;
     },
-    pkReady() { return !!this.pick && !this.pkNext() && !(inRoom() && ON().benched.length); },   // còn người trên ghế dự bị: chờ
-    // ứng viên đang xem trước ở ô trống kế tiếp (UX màn hình, owner 2026-11-05): ứng viên trỏ gần nhất (phím / rê chuột), còn trên băng ghế
-    pkPrev() {
+    // ô đang nhận người: ô người chơi chọn (bấm dấu + / đồng đội) nếu còn hợp lệ, không thì ô trống kế tiếp · đang đổi chỗ: không ô nào
+    pkTarget() {
       const P = this.pick;
-      return P && this.pkNext() && P.prev != null && !Object.values(P.mates).includes(P.prev) ? P.prev : null;
+      if (!P || P.move) return null;
+      return P.target && P.target !== this.pkMe() && !this.pkHuman(P.target) ? P.target : this.pkNext();
     },
-    // chọn sẵn ứng viên đứng sau ứng viên thứ i trên băng ghế (không còn thì ứng viên đầu); đủ người thì renderPick chuyển sang START RUN
-    pkFocus(i) {
-      const T = this.targets(), j = T.findIndex((x) => x.k === 'cand' && x.i > i);
-      this.sel = j >= 0 ? j : Math.max(0, T.findIndex((x) => x.k === 'cand'));
+    pkReady() { return !!this.pick && !this.pkNext() && !(inRoom() && ON().benched.length); },   // còn người trên ghế dự bị: chờ
+    // ứng viên đang xem trước ở ô nhận người: ứng viên trỏ gần nhất (phím / rê chuột), chưa đứng chính ô đó
+    pkPrev() {
+      const P = this.pick, r = this.pkTarget();
+      return r && P.prev != null && P.mates[r] !== P.prev ? P.prev : null;
+    },
+    // ô ứng viên i đang đứng (null = trên băng ghế)
+    pkAt(i) { return POS().find((r) => this.pick.mates[r] === i) || null; },
+    // 2 chỉ số chính của vị trí role = 2 số cao nhất của nền vị trí đó (run.squad.base) — đánh ★ ở bảng chỉ số
+    pkKeys(role) {
+      const b = CFG().squad.base[role] || {};
+      return Object.keys(b).sort((x, y) => b[y] - b[x]).slice(0, 2);
+    },
+    // chọn sẵn cho ô role: người chưa ra sân hợp vị trí đó (vị trí sở trường; ưu tiên người đứng sau ứng viên after trên băng ghế), không có thì
+    // người chưa ra sân kế tiếp · role null (hết ô chờ): START RUN
+    pkFocus(role, after = -1) {
+      const T = this.targets(), P = this.pick;
+      if (!role) { this.sel = Math.max(0, T.findIndex((t) => t.k === 'go')); return; }
+      const free = P.cands.map((m, i) => i).filter((i) => !this.pkAt(i)), order = free.filter((i) => i > after).concat(free.filter((i) => i <= after));
+      const fit = order.find((i) => RUN().natural(P.cands[i]) === role), i = fit != null ? fit : order.length ? order[0] : 0;
+      this.sel = Math.max(0, T.findIndex((t) => t.k === 'cand' && t.i === i));
+    },
+    // xếp ứng viên i vào ô role (đang đứng ô khác thì ô đó trống ra, người cũ của role về băng ghế) rồi chọn sẵn cho ô kế tiếp
+    pkPlace(i, role) {
+      const P = this.pick, from = this.pkAt(i);
+      if (from) { delete P.mates[from]; P.order = P.order.filter((r) => r !== from); }
+      P.mates[role] = i; P.order = P.order.filter((r) => r !== role).concat([role]);
+      P.target = null; P.enter = role;   // enter: người vừa vào chạy vào sân (lần vẽ kế)
+      this.pkFocus(this.pkTarget(), i);
     },
     // nhảy sang ô role: đồng đội AI đang ở đó đổi sang ô cũ của mình
     pkMove(menu, role) {
       const P = this.pick, me = this.pkMe();
+      P.move = false;
       if (role === me) return;
       if (this.pkHuman(role)) return menu.setMsg(_t('A friend is playing there.'), true);
       if (P.mates[role] != null) { P.mates[me] = P.mates[role]; P.order = P.order.map((r) => (r === role ? me : r)); }
       delete P.mates[role];
-      P.me = role;
+      P.me = role; P.target = null; P.enter = null;
       if (inRoom()) ON().seatHost(role);
     },
-    // BUILD YOUR SQUAD (user 2026-10-29: bố cục như SQUAD + kéo thả): 3 ô vị trí = thẻ cầu thủ cỡ SQUAD (ô trống: viền nét đứt + bóng đen)
-    // · dưới là băng ghế ứng viên. Kéo ứng viên lên ô = xếp vào (người đang ở ô đó về băng ghế) · kéo thẻ của bạn sang ô khác = đổi chỗ ·
-    // kéo đồng đội giữa 2 ô = đổi chỗ · kéo đồng đội xuống băng ghế = bỏ ra. Bấm / phím vẫn dùng được như cũ (bấm ứng viên = lấp ô trống kế
-    // tiếp, bấm ô = bạn nhảy sang). Chỉ số là của chính người đó, xếp ô nào cũng không đổi (Run.baseOf)
+    // chân cầu thủ trên sân (left / top trong khung): DEF đứng trong vòng cấm (px từ mép khung thành, vòng cấm của pitch() rộng cố định),
+    // MID / FWD theo phần trăm bề ngang, y theo phần trăm bề cao · đối thủ đối xứng qua giữa sân
+    pkPos(role, opp) {
+      const s = PK_SPOT[role];
+      return `left:${s.px != null ? (opp ? `calc(100% - ${s.px}px)` : s.px + 'px') : (opp ? 100 - s.x : s.x) + '%'};top:${s.y}%`;
+    },
+    // x (px) của ô role tính từ mép ngoài khung sân (gồm viền 4px): tiêu đề băng ghế đứng ngay dưới ô đang chờ
+    pkX(role) { const s = PK_SPOT[role]; return 4 + Math.round(s.px != null ? s.px : (s.x / 100) * this.pkDim.w); },
+    // đội boss act 1 ở nửa sân bên kia: act 1 chỉ có 1 boss thì biết chắc trước run · nhiều boss (chưa bốc): bóng đen + ???
+    pkBoss() { const b = CFG().acts[0].boss; return { id: b[0], known: b.length === 1 }; },
+    // vòng phấn trong khung 70x70, chân cầu thủ ở (35, 52): ô trống = vòng tròn quanh dấu + · ô có người = vòng dẹt dưới chân
+    pkRing(role, flat, cls) {
+      const x = 35, y = flat ? 51 : 34, r = flat ? 22 : / gold/.test(' ' + cls) ? 18 : 13, seed = role + (flat ? 'g' : 'p');
+      const tf = flat ? `transform="translate(${x} ${y}) scale(1 0.42) translate(${-x} ${-y})"` : '';
+      return `<svg class="pk-ring ${cls}" width="70" height="70"><g ${tf}><path pathLength="1" d="${this.chalkPath(x, y, r, seed)}"/>`
+        + `<path pathLength="1" class="thin" d="${this.chalkPath(x + 1.5, y - 1, r - 2, seed)}"/></g></svg>`;
+    },
+    // người trên sân: hình x2 quay cố định về phía đối thủ (data-face) — bạn = Profile, đồng đội / bạn bè = ngoại hình đã chép
+    pkFig(look, you, cls = '') {
+      return you ? `<canvas class="${cls}" data-avatar="1" data-face="${PK_FACE}"></canvas>` : `<canvas class="${cls}" data-mmlook="${esc(JSON.stringify(look))}" data-face="${PK_FACE}"></canvas>`;
+    },
+    // 3 ô của đội mình trên sân. tgt = ô nhận người · prev = ứng viên đang xem trước ở ô đó
+    pkSpots(T, me, tgt, prev) {
+      const P = this.pick, ovr = (r) => this.pkOvr(r);
+      return POS().map((role) => {
+        const t = T.find((x) => x.k === 'slot' && x.id === role), h = this.pkHuman(role), ci = P.mates[role], isMe = role === me;
+        const isT = role === tgt, ghost = isT && prev != null, sel = T.indexOf(t) === this.sel, empty = !isMe && !h && ci == null && !ghost;
+        const mv = P.move && !isMe && !h, lift = P.move && isMe, leave = prev != null && ci === prev && !isT;   // leave: người đang xem trước sẽ rời ô này
+        // vòng phấn: ô nhận người = vàng (thứ vàng duy nhất trên sân) · ô trống khác = phấn mờ nhỏ · đang trỏ = trắng · đổi chỗ = xanh
+        const ring = empty ? this.pkRing(role, false, isT ? 'gold blink' : sel ? '' : `faint ${this.pkNag ? 'nag' : ''}`)
+          : isT || sel || mv || lift ? this.pkRing(role, true, isT ? 'gold' : mv ? 'blue blink' : '') : '';
+        let fig, plate;
+        if (ghost) {
+          const m = P.cands[prev], under = isMe ? this.pkFig(null, true, 'under') : ci != null ? this.pkFig(RUN().mateLook(P.cands[ci]), false, 'under') : '';
+          fig = under + this.pkFig(RUN().mateLook(m), false, 'who');
+          plate = `<em>${esc(role)}</em><b>${ovr(RUN().baseOf({ m }))}</b>${esc(m.name)}`;
+        } else if (isMe) {
+          fig = this.pkFig(null, true, 'who');
+          plate = `<em>${esc(role)}</em><b>${ovr(RUN().baseOf({}))}</b>${esc(SFC.Profile.data.name || 'PLAYER')}<u>${esc(_t('YOU'))}</u>`;
+        } else if (h) {
+          fig = this.pkFig(h.pf.look, false, 'who');
+          plate = `<em>${esc(role)}</em>${esc(h.pf.name)}<u>${esc(_t('PLAYER'))}</u>`;
+        } else if (ci != null) {
+          const m = P.cands[ci];
+          fig = this.pkFig(RUN().mateLook(m), false, 'who');
+          plate = `<em>${esc(role)}</em><b>${ovr(RUN().baseOf({ m }))}</b>${esc(m.name)}`;
+        } else {
+          fig = '<span class="pk-plus">+</span>';
+          plate = `<em>${esc(role)}</em>${isT ? `<u>${esc(_t('PICK'))}</u>` : ''}`;
+        }
+        // dưới bảng tên: găng tay KEEPS GOAL (chỉ DEF giữ goal, Game.canKeep) · ⇄ MOVE HERE (đang đổi chỗ của bạn)
+        const tags = (role === 'DEF' ? `<s>${PX().html('gear-gloves', '', '')}${esc(_t('KEEPS GOAL'))}</s>` : '') + (mv ? `<i>⇄ ${esc(_t('MOVE HERE'))}</i>` : '');
+        const drag = !ghost && !h && (isMe || ci != null) ? `draggable="true" data-drag="slot:${role}"` : '';
+        const cls = `${sel ? 'sel' : ''} ${isT ? 'tgt' : ''} ${ghost ? 'ghost' : ''} ${empty ? 'empty' : ''} ${h ? 'lock' : ''} ${P.enter === role ? 'in' : ''} ${lift ? 'lift' : ''} ${leave ? 'leave' : ''}`;
+        return `<div class="pk-spot ${cls}" style="${this.pkPos(role)}">${ring}${empty ? '' : '<i class="pk-sh"></i>'}${fig}<span class="pk-plate">${plate}</span>
+            ${tags ? `<span class="pk-tags">${tags}</span>` : ''}<i class="pk-hit" data-rt="${t.key}" data-drop="${role}" ${drag}></i></div>`;
+      }).join('');
+    },
+    pkOvr(r) { const v = Object.values(r); return Math.round(v.reduce((a, b) => a + b, 0) / v.length); },
+    // bảng bên phải băng ghế: người đang trỏ (ứng viên / người trên sân / bạn khi đổi chỗ) với ★ 2 chỉ số chính của ô · ô trống đang trỏ = ô đó cần gì
+    // · trỏ nút (START RUN / BACK) = tóm tắt đội
+    pkInfo(cur, me, tgt) {
+      const P = this.pick, A = SFC_CONFIG.progression.attrs, AR = SFC_CONFIG.cores.archetypes, ovr = (r) => this.pkOvr(r);
+      const slot = cur && cur.k === 'slot' ? cur.id : null;
+      const keyLine = (role) => `<div class="pk-kl">★ ${esc(_t('KEY STATS FOR {pos}', { pos: role }))}</div>`;
+      const stats = (r, role) => {
+        const keys = this.pkKeys(role);
+        return keyLine(role) + `<div class="pk-keys2">${keys.map((s) => `<span class="pk-k" style="--c:${A.list[s].color}" title="${esc(A.list[s].label)}"><i>${esc(A.list[s].short)}</i><b>${r[s]}</b>`
+          + `<u><s style="width:${Math.max(0, Math.min(100, (r[s] / A.max) * 100)).toFixed(1)}%"></s></u></span>`).join('')}</div>`
+          + `<div class="pk-oth">${A.order.filter((s) => !keys.includes(s)).map((s) => `<span title="${esc(A.list[s].label)}"><i>${esc(A.list[s].short)}</i>${r[s]}</span>`).join('')}</div>`;
+      };
+      const head = (o, name, tags) => `<div class="pk-ih"><span class="o">${o}</span><b>${esc(name)}</b>${tags}</div>`;
+      const myName = SFC.Profile.data.name || 'PLAYER';
+      if (P.move || slot === me) {
+        // bạn (đổi chỗ: ★ theo ô đang trỏ, người ở ô đó sang ô cũ của bạn)
+        const to = P.move && slot && slot !== me && !this.pkHuman(slot) ? slot : me, other = P.mates[to], r = RUN().baseOf({});
+        const foot = !P.move ? `⇄ ${esc(_t('SWAP SPOT'))}` : to === me ? esc(_t('Pick a spot on the pitch')) : other != null ? `⇄ ${esc(_t('{name} goes to {pos}', { name: P.cands[other].name, pos: me }))}` : '';
+        return `<div class="pk-info">${head(ovr(r), myName, `<u>${esc(_t('YOU'))}</u><em class="fit">${esc(to)}</em>`)}${stats(r, to)}<div class="pk-foot">${foot}</div></div>`;
+      }
+      const ci = cur && cur.k === 'cand' ? cur.i : slot && P.mates[slot] != null ? P.mates[slot] : null;
+      if (ci != null) {
+        // ứng viên: ★ theo ô đang nhận người (trỏ trên sân: theo ô đó) · vị trí sở trường trắng = hợp ô, cam = lệch (lệch vẫn được)
+        const m = P.cands[ci], nat = RUN().natural(m), role = (slot || tgt || nat), sch = RUN().schoolsOf(m);
+        return `<div class="pk-info">${head(ovr(RUN().baseOf({ m })), m.name, `<em class="${nat === role ? 'fit' : 'off'}">${esc(nat)}</em>`)}${stats(RUN().baseOf({ m }), role)}
+            <div class="pk-sch">${sch.map((s) => `<span style="--c:${AR[s].color}">${PX().arch(s, '')}${esc(AR[s].label)}</span>`).join('')}</div></div>`;
+      }
+      const h = slot && this.pkHuman(slot);
+      if (h) return `<div class="pk-info">${head(ovr(RUN().baseOf({})), h.pf.name, `<u>${esc(_t('PLAYER'))}</u><em class="fit">${esc(slot)}</em>`)}${stats(RUN().baseOf({}), slot)}<div class="pk-foot">${esc(_t('A friend is playing there.'))}</div></div>`;
+      if (slot) {
+        const keys = this.pkKeys(slot).map((s) => A.list[s].short).join(' + ');
+        return `<div class="pk-info"><div class="pk-what"><b>${esc(slot)}${slot === 'DEF' ? ' · ' + esc(_t('KEEPS GOAL')) : ''}</b><span>★ ${esc(_t('KEY STATS FOR {pos}', { pos: slot }))}: <i>${esc(keys)}</i></span></div></div>`;
+      }
+      // tóm tắt đội: ai đá đâu (ô trống: dấu +)
+      const row = (role) => {
+        const ci2 = P.mates[role], h2 = this.pkHuman(role), m = ci2 != null ? P.cands[ci2] : null;
+        const fc = role === me ? `<canvas data-avatar="1" data-face="${Math.PI / 2}"></canvas>` : h2 ? this.face(h2.pf.look, false, true) : m ? this.face(RUN().mateLook(m), false, true) : '';
+        const o = role === me || h2 ? ovr(RUN().baseOf({})) : m ? ovr(RUN().baseOf({ m })) : '';
+        const name = role === me ? myName : h2 ? h2.pf.name : m ? m.name : '';
+        return `<span class="pk-mini ${fc ? '' : 'none'}"><span class="pk-mface">${fc || '+'}</span><em>${esc(role)}</em><b>${o}</b><i>${esc(name)}</i>${role === me ? `<u>${esc(_t('YOU'))}</u>` : ''}</span>`;
+      };
+      return `<div class="pk-info"><div class="pk-ih"><b>${esc(_t('YOUR SQUAD'))}</b></div><div class="pk-minis">${POS().map(row).join('')}</div></div>`;
+    },
+    // BUILD YOUR SQUAD: thanh trên (tiêu đề nhỏ + phòng / BACK) · sân ngang (đội mình + dấu +, boss act 1, START RUN giữa sân) · băng ghế 6 ứng viên
+    // + bảng chỉ số · dòng phím. Bấm / phím / kéo thả làm cùng 1 việc (kéo ứng viên lên ô = xếp vào · kéo mình / đồng đội giữa 2 ô = đổi chỗ ·
+    // kéo đồng đội xuống băng ghế = bỏ ra). Chỉ số là của chính người đó, xếp ô nào cũng không đổi (Run.baseOf)
     renderPick(menu) {
-      const P = this.pick, T = this.targets(), me = this.pkMe(), next = this.pkNext(), room = inRoom(), ready = this.pkReady();
-      // chọn sẵn (UX run-12): mới vào = ứng viên đầu tiên · vừa đủ người = START RUN
-      const iGo = T.findIndex((t) => t.k === 'go'), iCand = T.findIndex((t) => t.k === 'cand');
-      if (P.fresh || (ready && P.ready === false)) this.sel = ready || iCand < 0 ? iGo : iCand;
+      const P = this.pick, T = this.targets(), me = this.pkMe(), room = inRoom(), ready = this.pkReady();
+      // chọn sẵn (UX run-12): mới vào = người hợp ô trống đầu tiên · vừa đủ người = START RUN
+      if (P.fresh) this.pkFocus(this.pkTarget());
+      else if (ready && P.ready === false) this.sel = Math.max(0, T.findIndex((t) => t.k === 'go'));
       P.fresh = false; P.ready = ready;
       this.sel = Math.max(0, Math.min(T.length - 1, this.sel));
-      const cur = T[this.sel];
+      const cur = T[this.sel], tgt = this.pkTarget();
       if (cur && cur.k === 'cand') P.prev = cur.i;
-      const prev = this.pkPrev(), AR = SFC_CONFIG.cores.archetypes;
-      const ovr = (r) => { const v = Object.values(r); return Math.round(v.reduce((a, b) => a + b, 0) / v.length); };
-      const keeps = (role) => (role === 'DEF' ? _t('KEEPS GOAL') : '');   // chỉ DEF giữ goal (Game.canKeep)
+      const prev = this.pkPrev(), nag = this.pkNag ? 'nag' : '';
       const kbd = (a, kb) => `<kbd>${esc(SFC.Input.key(a, kb))}</kbd>`;
       const label = (t) => esc(t.k === 'invite' ? _t('INVITE') : room ? (this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')) : _t('BACK'));
       const btns = T.filter((t) => ['invite', 'cancel'].includes(t.k)).map((t) => this.btn(T, t, label(t), t.k === 'cancel' && this.leaveArm ? 'danger' : '')).join('');
-      const go = T.find((t) => t.k === 'go'), unpick = (role) => T.find((t) => t.k === 'unpick' && t.id === role);
-      const sil = this.face(SFC.LegendDraw.lookOf(Object.values(SFC_CONFIG.legends.list)[0]), false);
-      const slots = T.filter((t) => t.k === 'slot').map((t) => {
-        const role = t.id, h = this.pkHuman(role), ci = P.mates[role], m = ci != null ? P.cands[ci] : null, sel = T.indexOf(t) === this.sel ? 'sel' : '';
-        const drop = `data-rt="${t.key}" data-drop="${role}"`, drag = `draggable="true" data-drag="slot:${role}"`;
-        const card = (o) => this.pcard(Object.assign({ tag: 'div', role, cls: `pk-card ${sel}` }, o));
-        if (role === me) {
-          const r = RUN().baseOf({});
-          return card({ attrs: `${drop} ${drag}`, cls: `pk-card you ${sel}`, ovr: ovr(r), face: this.face(null, true), fin: r, ref: r, name: SFC.Profile.data.name || 'PLAYER', who: _t('YOU'),
-            roleSub: keeps(role), extra: `<u class="pk-swap">⇄ ${esc(_t('SWAP'))}</u>` });   // kéo thẻ / chọn ô khác = đổi vị trí của bạn
-        }
-        if (h) { const r = RUN().baseOf({}); return card({ attrs: drop, cls: `pk-card lock ${sel}`, ovr: ovr(r), face: this.face(h.pf.look, false), fin: r, ref: r, name: h.pf.name, who: _t('PLAYER'), roleSub: keeps(role) }); }
-        if (m) {
-          const r = RUN().baseOf({ m }), x = unpick(role);
-          return card({ attrs: `${drop} ${drag}`, ovr: ovr(r), face: this.face(RUN().mateLook(m), false), fin: r, ref: r, name: m.name, schools: RUN().schoolsOf(m), roleSub: keeps(role),
-            extra: x ? `<i class="pk-x ${T.indexOf(x) === this.sel ? 'sel' : ''}" data-rt="${x.key}">✕ ${esc(_t('BENCH'))}</i>` : '' });
-        }
-        // ô trống kế tiếp + đang trỏ 1 ứng viên (owner 2026-11-05, phương án B): thẻ đầy đủ của người đó ngay tại ô, viền nét đứt — đủ 6 chỉ số
-        // (có GK), tên 2 trường phái Core, chip vị trí sở trường (lệch ô: màu cảnh báo). Bấm ô / Enter = xếp người này vào
-        if (role === next && prev != null) {
-          const pm = P.cands[prev], r = RUN().baseOf({ m: pm }), nat = RUN().natural(pm), sch = RUN().schoolsOf(pm);
-          const key = cur && (cur.k === 'cand' || cur === t) ? kbd('confirm', 'Enter') : '';
-          return card({ attrs: drop, cls: `pk-card pk-prev ${nat === role ? '' : 'off'} ${sel}`, ovr: ovr(r), face: this.face(RUN().mateLook(pm), false), fin: r, ref: r,
-            name: pm.name, who: nat, schools: sch, roleSub: keeps(role), foot: sch.length ? `<span class="pk-schn">${esc(sch.map((s) => AR[s].label).join(' · '))}</span>` : '',
-            extra: `<u class="pk-wait">${key}${esc(_t('PICK'))}</u>` });
-        }
-        // ô trống kế tiếp: viền nét đứt vàng nhấp nháy + nhãn PICK (đang chờ chọn người từ băng ghế)
-        const wait = role === next ? `<u class="pk-wait">${esc(_t('PICK'))}</u>` : '';
-        const sub = keeps(role) ? `<u class="sq-rsub">${esc(keeps(role))}</u>` : '';
-        return `<div class="sq-card pk-card pk-empty ${role === next ? 'next' : ''} ${sel}" ${drop}><div class="sq-head"><em>${esc(role)}</em>${sub}</div><span class="pk-sil">${sil}</span>${wait}</div>`;
-      }).join('');
-      // băng ghế (phương án B): chỉ mặt + tên + OVR + chip vị trí sở trường (vàng = hợp ô đang chờ); chỉ số / trường phái nằm ở thẻ xem trước.
-      // Đủ người vẫn sáng: kéo ứng viên lên ô vẫn thay được người
-      const cands = T.filter((t) => t.k === 'cand').map((t) => {
-        const m = P.cands[t.i], r = RUN().baseOf({ m }), nat = RUN().natural(m);
-        return `<div class="pk-bc ${T.indexOf(t) === this.sel ? 'sel' : ''}" data-rt="${t.key}" draggable="true" data-drag="cand:${t.i}">
-            <span class="pk-cf">${this.face(RUN().mateLook(m), false)}</span>
-            <span class="pk-ci"><b>${esc(m.name)}</b><span class="pk-co"><span class="sq-ovr">${ovr(r)}</span><em class="${nat === next ? 'fit' : ''}">${esc(nat)}</em></span></span></div>`;
-      }).join('');
-      const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
-      // dòng hướng dẫn cạnh START RUN (UX run-12): còn ô trống = chọn ai cho vị trí nào · còn người trên ghế dự bị (co-op) = chờ họ.
-      // Chưa đủ: START RUN chỉ còn viền + chữ tối, ghi vị trí còn thiếu bằng chữ (NEED DEF)
-      const miss = POS().filter((r) => r !== me && !this.pkHuman(r) && P.mates[r] == null);
-      const hint = next ? _t('Pick your {pos} from the bench', { pos: next }) : !ready ? _t('Everyone on the BENCH must take a position first.') : '';
-      const nag = this.pkNag ? 'nag' : '';   // vừa bấm START RUN khi chưa đủ: dòng hướng dẫn rung đỏ 1 lần
-      this.pkNag = false;
+      // đội bạn: không bấm được, không vòng / khung chọn, tối + bớt màu khi còn việc (đủ người thì sáng lên: "đội mình vs boss")
+      const B = this.pkBoss(), team = SFC_CONFIG.teams.list[B.id], lit = ready && !tgt && !P.move;
+      const opp = SFC_CONFIG.game.roles.map((role, idx) => `<div class="pk-spot pk-opp" style="${this.pkPos(role, true)}"><i class="pk-sh"></i>`
+        + `<canvas data-team="${esc(B.id)}" data-idx="${idx}" data-face="${Math.PI - PK_FACE}" ${B.known ? '' : 'data-sil="1"'}></canvas>`
+        + `<span class="pk-plate"><em>${esc(role)}</em>${B.known ? esc((team.players || [])[idx] || '') : '???'}</span></div>`).join('');
+      const boss = `<div class="pk-boss" style="--bc:${team.kit.accent}">${PX().ui('crown', '')}<span><i>${esc(_t('ACT {n} BOSS', { n: 1 }))}</i><b>${B.known ? esc(team.name) : '???'}</b></span></div>`;
+      // vạch phấn vàng từ bảng tên ô nhận người xuống mép dưới sân, nối với tiêu đề băng ghế ngay dưới
+      const link = tgt ? `<i class="pk-link" style="left:${this.pkX(tgt) - 5}px;top:calc(${PK_SPOT[tgt].y}% + ${tgt === 'DEF' ? 30 : 17}px)"></i>` : '';
+      // START RUN = giao bóng giữa sân: chưa đủ = viền mờ + vị trí còn thiếu · đủ nhưng đang thay / đổi chỗ = viền trắng (phụ) · hết việc = vàng nhấp nháy
+      const go = T.find((t) => t.k === 'go'), miss = POS().filter((r) => r !== me && !this.pkHuman(r) && P.mates[r] == null);
       const goHtml = esc(_t('START RUN')) + (miss.length ? `<em class="pk-miss">${esc(_t('NEED {pos}', { pos: miss.join(' · ') }))}</em>` : '');
-      // dòng phím dưới băng ghế (owner 2026-11-05: không biết bấm phím nào để chọn): ←↑↓→ · phím xác nhận + việc nó làm với mục đang chọn · phím lùi
+      const goBtn = go ? this.btn(T, go, goHtml, `pk-go ${!ready ? 'dis' : tgt || P.move ? 'sec' : 'ready'}`) : '';
+      const cobench = benchOn() ? `<div class="pk-cobench">${SFC.UIHelpers.coopBench(ON().benched, null, '', false, true)}</div>` : '';
+      const { w, h } = this.pkDim;
+      const pitch = `<div class="pk-pitch ${lit ? 'lit' : ''}"><svg class="pk-lines" width="${w}" height="${h}">${CHALK_DEFS}${this.pitch(w, h)}</svg><div class="pk-dim"></div>
+          ${boss}${opp}${link}${this.pkSpots(T, me, tgt, prev)}${cobench}${goBtn}</div>`;
+      // băng ghế: mặt + tên + OVR + vị trí sở trường (trắng = hợp ô đang chờ). Người đã ra sân nằm yên chỗ cũ, mờ + nhãn vị trí
+      const tiles = T.filter((t) => t.k === 'cand').map((t) => {
+        const m = P.cands[t.i], at = this.pkAt(t.i), nat = RUN().natural(m);
+        return `<div class="pk-bt ${T.indexOf(t) === this.sel ? 'sel' : ''} ${at ? 'in' : ''}" data-rt="${t.key}" draggable="true" data-drag="cand:${t.i}">
+            ${at ? `<span class="pk-at">${esc(at)}</span>` : ''}<span class="pk-bf">${this.face(RUN().mateLook(m), false, true)}</span><b>${esc(m.name)}</b>
+            <span class="pk-bo"><span class="o">${this.pkOvr(RUN().baseOf({ m }))}</span><em class="${tgt && nat === tgt ? 'fit' : ''}">${esc(nat)}</em></span></div>`;
+      }).join('');
+      // tiêu đề băng ghế: đứng ngay dưới ô nhận người (vạch phấn nối xuống) · đổi chỗ / đủ người / còn người trên ghế dự bị co-op: chữ xám bên trái
+      const hx = tgt ? Math.max(0, Math.min(this.pkX(tgt) - 8, PK_BH_MAX)) : 0, curM = tgt && P.mates[tgt];
+      const bh = P.move ? `<div class="pk-bh calm">${esc(_t('MOVE YOURSELF'))}<em>${esc(_t('Pick a spot on the pitch'))}</em></div>`
+        : tgt ? `<div class="pk-bh ${nag}" style="margin-left:${hx}px;--lx:${this.pkX(tgt) - hx - 1}px">${curM != null ? esc(_t('REPLACE {name}', { name: P.cands[curM].name })) : esc(_t('PICK YOUR {pos}', { pos: tgt }))}</div>`
+        : !ready ? `<div class="pk-bh calm ${nag}">${esc(_t('Everyone on the BENCH must take a position first.'))}</div>`
+        : `<div class="pk-bh calm">${esc(_t('BENCH'))}<em>${esc(_t('Select a player on the pitch to change'))}</em></div>`;
+      this.pkNag = false;
+      // dòng phím (owner 2026-11-05: không biết bấm phím nào): ←↑↓→ · phím xác nhận + việc nó làm với mục đang chọn · phím lùi. Có dòng báo thì thế chỗ
       const cancel = T.find((t) => t.k === 'cancel');
-      const does = !cur ? '' : cur.k === 'cand' ? (next ? _t('PICK') : '') : cur.k === 'unpick' ? _t('BENCH')
-        : cur.k === 'slot' ? (cur.id === next && prev != null ? _t('PICK') : cur.id !== me && !this.pkHuman(cur.id) ? _t('MOVE HERE') : '')
+      const does = !cur ? '' : cur.k === 'cand' ? (tgt && P.mates[tgt] !== cur.i ? _t('PICK') : '')
+        : cur.k === 'slot' ? (this.pkHuman(cur.id) ? '' : P.move ? (cur.id === me ? _t('CANCEL') : _t('MOVE HERE')) : cur.id === me ? _t('SWAP SPOT')
+          : cur.id === tgt && prev != null ? _t('PICK') : P.mates[cur.id] != null ? _t('REPLACE {name}', { name: P.cands[P.mates[cur.id]].name }) : _t('PICK'))
         : cur.k === 'go' ? (cur.dis ? '' : _t('START RUN')) : cur.k === 'invite' ? _t('INVITE') : '';
-      const keys = `<div class="pk-keys"><span>${esc(_t('←↑↓→ select'))}</span>${does ? `<span>${kbd('confirm', 'Enter')}${esc(does)}</span>` : ''}${cancel ? `<span>${kbd('back', 'Esc')}${label(cancel)}</span>` : ''}</div>`;
-      menu.el.innerHTML = `<div class="rm-page pk-page ${room ? 'coop' : ''}">
+      const esc2 = P.move ? esc(_t('CANCEL')) : cancel ? label(cancel) : '';
+      const keys = `<div class="pk-keys"><span>${esc(_t('←↑↓→ select'))}</span>${does ? `<span>${kbd('confirm', 'Enter')}${esc(does)}</span>` : ''}${esc2 ? `<span>${kbd('back', 'Esc')}${esc2}</span>` : ''}</div>`;
+      const msg = menu.msg ? `<div class="m-msg pk-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
+      menu.el.innerHTML = `<div class="rm-page pk-page ${room ? 'coop' : ''} ${P.move ? 'moving' : ''}">
           <div class="pk-top"><b>${esc(_t('BUILD YOUR SQUAD'))}</b><div class="rm-acts">${this.roomChip()}${btns}</div></div>
-          <div class="sq-row3 pk-slots">${slots}</div>
-          ${benchOn() ? `<div class="pk-cobench">${SFC.UIHelpers.coopBench(ON().benched, null, '', false, true)}</div>` : ''}
-          <div class="pk-mid">${hint ? `<span class="pk-hint pk-todo ${nag}">${esc(hint)}</span>` : ''}${go ? this.btn(T, go, goHtml, go.dis ? 'dis' : '') : ''}</div>
-          <div class="pk-bench" data-drop="bench">${cands}</div>${keys}${msg}
+          ${pitch}
+          <div class="pk-dug"><div class="pk-bench" data-drop="bench">${bh}<div class="pk-tiles">${tiles}</div></div>${this.pkInfo(cur, me, tgt)}</div>
+          ${msg || keys}
         </div>`;
+      P.enter = null;
       this.bindDrag(menu);
       this.bindPickHover(menu, T);
       menu.bindAvatars();
+      this.bindPitch(menu);
     },
-    // rê chuột lên ứng viên = chọn ứng viên đó như phím -> ô đang chờ hiện thẻ xem trước của họ. Chỉ băng ghế: rê lên ô / nút không dời mục chọn,
-    // nên đưa chuột từ băng ghế lên thẻ xem trước để bấm vẫn giữ đúng người. mousemove thật (realMove): vẽ lại dưới con trỏ đứng yên không giật
+    // sân giãn theo khung (#stage 640x360 → 880x512): đo khung thật, khác cỡ đã vẽ vạch sân thì vẽ lại (như bindMap)
+    bindPitch(menu) {
+      const box = menu.el.querySelector('.pk-pitch');
+      if (!box) return;
+      const off = () => Math.abs(box.clientWidth - this.pkDim.w) > 1 || Math.abs(box.clientHeight - this.pkDim.h) > 1;
+      if (box.clientWidth > 0 && box.clientHeight > 0 && off()) { this.pkDim = { w: box.clientWidth, h: box.clientHeight }; menu.render(); return; }
+      if (this.pkObs) this.pkObs.disconnect();
+      if (window.ResizeObserver) {
+        this.pkObs = new ResizeObserver(() => { if (box.isConnected && menu.page === 'runmap' && box.clientWidth > 0 && off()) menu.render(); });
+        this.pkObs.observe(box);
+      }
+    },
+    // rê chuột lên ứng viên = chọn ứng viên đó như phím -> ô đang chờ hiện người đó đứng mờ. Chỉ băng ghế: rê lên sân / nút không dời mục chọn,
+    // nên đưa chuột từ băng ghế lên ô đang chờ để bấm vẫn giữ đúng người. mousemove thật (realMove): vẽ lại dưới con trỏ đứng yên không giật
     bindPickHover(menu, T) {
       const bench = menu.el.querySelector('.pk-bench');
       if (!bench) return;
@@ -863,23 +993,21 @@ window.SFC = window.SFC || {};
       });
     },
     pkDrop(menu, src, dst) {
-      const P = this.pick, me = this.pkMe(), set = (role, ci) => { P.mates[role] = ci; P.order = P.order.filter((r) => r !== role).concat([role]); };
-      const drop = (role) => { delete P.mates[role]; P.order = P.order.filter((r) => r !== role); };
+      const P = this.pick, me = this.pkMe(), drop = (role) => { delete P.mates[role]; P.order = P.order.filter((r) => r !== role); };
       if (!P) return;
-      menu.msg = '';
+      menu.msg = ''; P.move = false;
       if (src.startsWith('cand:')) {
         if (dst === 'bench') return;
         if (dst === me) return menu.setMsg(_t('That is your spot. Drag yourself somewhere else first.'), true);
         if (this.pkHuman(dst)) return menu.setMsg(_t('A friend is playing there.'), true);
-        set(dst, +src.slice(5));
-        this.pkFocus(+src.slice(5));
+        this.pkPlace(+src.slice(5), dst);
       } else {
         const from = src.slice(5);
         if (dst === from) return;
-        if (dst === 'bench') { if (from === me) return; drop(from); }
+        if (dst === 'bench') { if (from === me) return; drop(from); P.target = null; this.pkFocus(this.pkTarget()); }
         else if (from === me || dst === me) this.pkMove(menu, from === me ? dst : from);   // bạn đổi chỗ với đồng đội / sang ô trống
         else if (this.pkHuman(dst)) return menu.setMsg(_t('A friend is playing there.'), true);
-        else { const a = P.mates[from], b = P.mates[dst]; drop(from); drop(dst); set(dst, a); if (b != null) set(from, b); }
+        else { const a = P.mates[from], b = P.mates[dst]; drop(from); drop(dst); P.mates[dst] = a; P.order.push(dst); if (b != null) { P.mates[from] = b; P.order.push(from); } }
       }
       SFC.Audio.menu();
       menu.render();
@@ -1610,10 +1738,10 @@ window.SFC = window.SFC || {};
         this.drawing = true;
         return this.chalk(menu, t.id, () => { this.drawing = false; if (menu.page === 'runmap') this.act(menu, Object.assign({}, t, { drawn: true })); });
       }
-      // START RUN khi chưa đủ người (UX run-12): dòng hướng dẫn rung đỏ, chọn sẵn ứng viên đầu tiên
+      // START RUN khi chưa đủ người (UX run-12): tiêu đề băng ghế rung đỏ, chọn sẵn người hợp ô đang chờ
       if (t.k === 'go' && t.dis) {
-        const ic = this.targets().findIndex((x) => x.k === 'cand');
-        if (this.pkNext() && ic >= 0) this.sel = ic;
+        this.pick.target = null; this.pick.move = false;
+        this.pkFocus(this.pkTarget());
         this.pkNag = true; SFC.Audio.menu();
         return menu.render();
       }
@@ -1661,23 +1789,26 @@ window.SFC = window.SFC || {};
           break;
         }
         case 'skiptrial': RUN().skipTrial(); break;
+        // ô trên sân: đang đổi chỗ = sang ô này · ô của mình = bắt đầu đổi chỗ · ô đang xem trước 1 ứng viên = xếp người đó vào
+        // · dấu + / đồng đội = ô này nhận người, xuống băng ghế chọn sẵn người hợp ô
         case 'slot': {
-          // ô đang xem trước 1 ứng viên (phương án B): bấm ô = xếp người đó vào, như bấm ứng viên
-          const pv = t.id === this.pkNext() ? this.pkPrev() : null;
-          if (pv == null) { this.pkMove(menu, t.id); break; }
-          this.pick.mates[t.id] = pv; this.pick.order.push(t.id);
-          this.pkFocus(pv);
+          const P = this.pick, me = this.pkMe();
+          if (P.move) { this.pkMove(menu, t.id); break; }
+          if (t.id === me) { P.move = true; this.sel = Math.max(0, this.targets().findIndex((x) => x.k === 'slot' && x.id !== me && !this.pkHuman(x.id))); break; }
+          if (this.pkHuman(t.id)) { menu.setMsg(_t('A friend is playing there.'), true); return; }
+          const pv = t.id === this.pkTarget() ? this.pkPrev() : null;
+          if (pv != null) { this.pkPlace(pv, t.id); break; }
+          P.target = t.id;
+          this.pkFocus(t.id, P.mates[t.id] != null ? P.mates[t.id] : -1);
           break;
         }
+        // ứng viên: vào ô đang nhận người (đứng ô khác thì chuyển sang) · không còn ô nào chờ: chọn 1 ô trên sân trước
         case 'cand': {
-          const r = this.pkNext();
-          if (!r) { menu.setMsg(_t('Remove a teammate to pick again.'), true); return; }
-          this.pick.mates[r] = t.i; this.pick.order.push(r);
-          this.pkFocus(t.i);   // UX run-12: chọn tiếp ứng viên kế bên (không rơi vào nút ✕ / ô vị trí)
+          const r = this.pkTarget();
+          if (!r) { menu.setMsg(_t('Select a spot on the pitch first.'), true); return; }
+          if (this.pick.mates[r] !== t.i) this.pkPlace(t.i, r);
           break;
         }
-        // bỏ đồng đội AI ở ô này (ô trống lại, chọn người khác)
-        case 'unpick': delete this.pick.mates[t.id]; this.pick.order = this.pick.order.filter((r) => r !== t.id); this.pkFocus(-1); break;
         case 'cancel': this.pick = null; return menu.go('run');
         case 'go': {
           const P = this.pick, mates = {};
@@ -1767,6 +1898,7 @@ window.SFC = window.SFC || {};
           else {
             const rs = T.map((t, i) => (i === this.sel ? null : rect(t)));
             let best = SFC.UIHelpers.navPick(rs, cur, d);
+            if (best < 0 && !R0() && d === 'up') best = T.findIndex((t) => t.k === 'cancel');   // BUILD YOUR SQUAD: hết đường lên (START RUN giữa sân) -> BACK
             // SQUAD: hàng BADGE ↔ ô GEAR / LEGEND lệch xa sang bên (ngoài góc của navPick) -> lấy mục gần nhất phía đó, không bị kẹt
             if (best < 0 && T[0].k === 'close') {
               let bd = Infinity;
@@ -1825,6 +1957,7 @@ window.SFC = window.SFC || {};
     // · map = về tab GOAT PATH
     back(menu) {
       const T = this.targets(), f = (k) => T.find((t) => t.k === k);
+      if (!RUN().run && this.pick && this.pick.move) { this.pick.move = false; SFC.Audio.menu(); return menu.render(); }   // đang đổi chỗ: Esc = thôi
       if (!RUN().run && this.pick) return this.act(menu, f('undo') || f('cancel'));
       const out = f('skip') || f('leave') || f('joinno') || f('skiptrial') || (inRoom() ? f('gback') : null);
       if (out && T.length > 1) { if (T.indexOf(out) !== this.sel) { this.sel = T.indexOf(out); menu.render(); } return; }

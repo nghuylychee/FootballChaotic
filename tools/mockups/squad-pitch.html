@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Squad trên sân</title>
+<!-- MOCKUP (2026-11-06, chờ owner duyệt): BUILD YOUR SQUAD dạng sân ngang — đội mình bên trái (bạn + 2 dấu +), boss act 1 bên phải.
+     v1 + 3 phương án A / B / C sau review nheo mắt + trắng đen (nút CÁCH XEM trên khung).
+     Owner chọn A (2026-11-06), đã làm vào game: src/ui/runmap.js renderPick + css .pk-* (docs/RUN_DESIGN.md mục cuối).
+     Trang tĩnh, nạp script game từ index.html (trừ main.js) để vẽ đúng nhân vật / ứng viên / chỉ số thật (Run.candidates, Run.baseOf...).
+     Không đụng code game, không vào bản build. Mở qua npm run serve: http://localhost:8080/tools/mockups/squad-pitch.html -->
+<link rel="stylesheet" href="../../css/style.css" />
+<style>
+  html, body { margin: 0; height: auto; overflow: auto; background: #07080b; color: #c7ccd6; font-family: var(--vt); }
+  body { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 0 60px; }
+  .head, .doc { width: min(1280px, calc(100vw - 24px)); font-size: 20px; line-height: 1.1; }
+  /* chữ ngoài khung là tiếng Việt: VT323 (Press Start 2P không có dấu) */
+  .head h1 { font-family: var(--vt); font-size: 32px; line-height: 1; color: #fff; letter-spacing: 1px; margin: 0 0 6px; font-weight: normal; }
+  .head p { margin: 0; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tabs button { font-family: var(--vt); font-size: 19px; line-height: 1; padding: 5px 10px 4px; background: #1a1c22; color: #9aa3b5; border: 2px solid #2e3140; cursor: pointer; }
+  .tabs button:hover { color: #fff; }
+  .tabs button.on { color: #111; background: #ffe14f; border-color: #ffe14f; }
+  .tabs > span { width: 96px; align-self: center; font-family: var(--vt); font-size: 18px; color: #5a6070; }
+  /* cách xem: nheo mắt = Gaussian ~12px trên khung 1280x720 · trắng đen = bỏ màu */
+  .wrap[data-view="squint"] .stage { filter: blur(6px); }
+  .wrap[data-view="gray"] .stage { filter: grayscale(1); }
+  .wrap[data-view="both"] .stage { filter: grayscale(1) blur(6px); }
+  .wrap { position: relative; width: 1280px; height: 720px; overflow: hidden; box-shadow: 0 0 0 2px #2e3140; }
+  .stage { position: absolute; left: 0; top: 0; width: 640px; height: 360px; transform: scale(2); transform-origin: 0 0; overflow: hidden;
+    background: radial-gradient(ellipse 70% 60% at 50% 40%, #1a2130, #0b0d12 75%); user-select: none; }
+  .stage canvas { image-rendering: pixelated; }
+  .doc h2 { font-family: var(--vt); font-size: 28px; line-height: 1; color: var(--gold); letter-spacing: 1px; margin: 24px 0 8px; font-weight: normal; }
+  .doc table { border-collapse: collapse; width: 100%; }
+  .doc td, .doc th { border: 1px solid #2a2e38; padding: 4px 8px; text-align: left; vertical-align: top; font-weight: normal; }
+  .doc th { color: var(--gold); white-space: nowrap; }
+  .doc td:first-child { color: #fff; }
+  .doc p { margin: 0 0 8px; }
+  .doc li { margin-bottom: 4px; }
+  .doc ul { margin: 0; padding-left: 22px; }
+  .doc b { color: #fff; font-weight: normal; }
+
+  /* ================= MÀN BUILD YOUR SQUAD · SÂN ================= */
+  .sp-top { position: absolute; left: 16px; right: 16px; top: 5px; height: 22px; display: flex; align-items: center; justify-content: center; }
+  .sp-top > b { font-family: var(--px); font-size: 14px; font-weight: normal; color: var(--gold); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--ink); }
+  .sp-top > .pt-btn { position: absolute; right: 0; top: 0; }
+
+  /* sân: cùng kiểu sa bàn với map của run (sọc dọc, khung nhôm, vạch phấn) — 2 màn liền nhau nhìn như 1 */
+  .sp-pitch { position: absolute; left: 16px; top: 31px; width: 608px; height: 190px; box-sizing: border-box; overflow: hidden; isolation: isolate;
+    background: repeating-linear-gradient(90deg, #24603a 0 38px, #1f5734 38px 76px);
+    border: 4px solid #aeb5c2; border-top-color: #d5dae3; border-left-color: #c3c9d4; border-bottom-color: #7d8494; border-right-color: #8e95a4;
+    box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.45), 3px 3px 0 var(--ink); }
+  .sp-pitch > svg { position: absolute; left: 0; top: 0; pointer-events: none; }
+  /* nửa sân đối thủ tối hơn: bối cảnh, không phải việc cần làm */
+  .sp-dim { position: absolute; left: 300px; top: 0; right: 0; bottom: 0; background: rgba(3, 6, 10, 0.34); pointer-events: none; }
+
+  /* 1 vị trí = mốc ở chân cầu thủ (width/height 0) */
+  .sp-spot { position: absolute; width: 0; height: 0; }
+  .sp-spot canvas { position: absolute; left: -40px; top: -80px; width: 80px; height: 88px; pointer-events: none; }
+  .sp-spot .sh { position: absolute; left: -13px; top: -4px; width: 26px; height: 7px; border-radius: 50%; background: rgba(0, 0, 0, 0.38); }
+  .sp-hit { position: absolute; left: -24px; top: -64px; width: 48px; height: 68px; cursor: pointer; }
+  .sp-spot.you .sp-hit, .sp-spot.mate .sp-hit { cursor: grab; }
+  .sp-spot.ghost canvas.who { opacity: 0.55; }
+  .sp-spot canvas.under { opacity: 0.18; }
+  .sp-spot.in canvas.who { animation: spIn 0.45s steps(6) both; }
+  @keyframes spIn { from { transform: translateY(46px); opacity: 0; } 30% { opacity: 1; } }
+  /* bảng tên dưới chân: vị trí · OVR · tên (· YOU) */
+  .sp-plate { position: absolute; left: 0; top: 5px; transform: translateX(-50%); display: flex; align-items: center; gap: 3px; white-space: nowrap; pointer-events: none;
+    padding: 2px 4px 1px; background: rgba(10, 12, 16, 0.84); border: 1px solid #2c313c; font-family: var(--px); font-size: 5px; line-height: 1; color: #fff; }
+  .sp-plate em { font-style: normal; color: var(--muted); letter-spacing: 1px; }
+  .sp-plate b { font-weight: normal; font-size: 7px; color: var(--gold); }
+  .sp-plate u { text-decoration: none; color: var(--ink); background: var(--gold); padding: 1px 2px 0; }
+  /* dòng nhãn dưới bảng tên: KEEPS GOAL (ô DEF) · ⇄ MOVE HERE */
+  .sp-tags { position: absolute; left: 0; top: 18px; transform: translateX(-50%); display: flex; gap: 3px; white-space: nowrap; pointer-events: none;
+    font-family: var(--px); font-size: 5px; letter-spacing: 1px; line-height: 1; }
+  .sp-tags s { text-decoration: none; display: inline-flex; align-items: center; gap: 2px; color: #8fc8ff; padding: 1px 3px 1px 2px; background: rgba(10, 12, 16, 0.84); }
+  .sp-tags s .pxi { width: 8px; height: 8px; }
+  .sp-tags .mv { font-style: normal; color: var(--ink); background: #8fc8ff; padding: 2px 3px 1px; animation: pulse 0.8s steps(2) infinite; }
+  /* đang đổi chỗ: nhân vật của bạn nhấc lên, nhún */
+  .sp-spot.lift canvas.who { animation: spLift 0.5s steps(2) infinite; }
+  @keyframes spLift { 0%, 100% { transform: translateY(-4px); } 50% { transform: translateY(-7px); } }
+  .sp-spot.lift .sp-plate { border-color: #8fc8ff; }
+  .sp-spot.in .sp-plate { animation: spPlate 0.6s steps(3) both; }
+  @keyframes spPlate { 0%, 70% { opacity: 0; } }
+  .sp-spot.ghost .sp-plate { border-style: dashed; border-color: var(--gold); }
+  .sp-spot.sel .sp-plate, .sp-spot.tgt .sp-plate { border-color: var(--gold); }
+  /* ô trống: dấu + phấn trong vòng phấn trên cỏ */
+  .sp-plus { position: absolute; left: -15px; top: -42px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; pointer-events: none;
+    font-family: var(--px); font-size: 18px; line-height: 1; color: rgba(255, 255, 255, 0.82); }
+  .sp-spot.tgt .sp-plus { color: var(--gold); animation: pulse 0.8s steps(2) infinite; }
+  .sp-spot.ghost .sp-plus { display: none; }
+  .sp-pick { text-decoration: none; color: var(--ink) !important; background: var(--gold); padding: 1px 2px 0; }
+  /* vòng phấn: dưới chân (chọn / ô đang chờ) — lớp dưới cầu thủ */
+  .sp-ground path { fill: none; stroke: rgba(255, 255, 255, 0.85); stroke-width: 3; stroke-linecap: round; filter: url(#rmChalk); }
+  .sp-ground path.thin { stroke: rgba(255, 255, 255, 0.4); stroke-width: 1.4; }
+  .sp-ground .gold path { stroke: rgba(255, 225, 79, 0.95); }
+  .sp-ground .gold path.thin { stroke: rgba(255, 225, 79, 0.5); }
+  .sp-ground .soft path { stroke: rgba(255, 255, 255, 0.45); stroke-width: 2; }
+  .sp-ground .soft path.thin { stroke: rgba(255, 255, 255, 0.2); }
+  .sp-ground .blink { animation: pulse 0.8s steps(2) infinite; }
+  .sp-ground .nag path { stroke: #ff5a6e; }
+  .sp-ground .draw path { stroke-dasharray: 1 1; stroke-dashoffset: 1; animation: rmChalk 0.4s cubic-bezier(0.4, 0.1, 0.5, 1) forwards; }
+  /* đối thủ */
+  .sp-opp .sp-plate { background: rgba(10, 12, 16, 0.7); color: #c7ccd6; }
+  .sp-opp canvas { filter: brightness(0.85); }
+  .sp-boss { position: absolute; right: 8px; top: 5px; display: flex; align-items: center; gap: 5px; pointer-events: none; padding: 3px 6px 2px 4px;
+    background: rgba(10, 12, 16, 0.78); border: 1px solid #5a4a1a; border-left: 3px solid var(--bc); }
+  .sp-boss .pxi { width: 14px; height: 14px; }
+  .sp-boss span { display: flex; flex-direction: column; gap: 2px; }
+  .sp-boss i { font-style: normal; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: #ffb02e; }
+  .sp-boss b { font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; letter-spacing: 1px; }
+  /* START RUN = giao bóng: giữa sân, trên vòng tròn giữa */
+  .sp-go { position: absolute; left: 300px; top: 91px; transform: translate(-50%, -50%); white-space: nowrap; }
+  .sp-go.pt-btn.go { padding: 7px 14px 6px; font-size: 10px; letter-spacing: 2px; }
+  .sp-go.pt-btn.go.dis { filter: none; color: rgba(255, 255, 255, 0.45); background: rgba(6, 10, 8, 0.55); border: 2px solid rgba(255, 255, 255, 0.22); box-shadow: none; outline: none; }
+  .sp-go.dis.sel { border-color: rgba(255, 225, 79, 0.7); color: rgba(255, 225, 79, 0.8); }
+  .sp-go .pk-miss { display: block; margin: 4px 0 0; font-size: 5px; letter-spacing: 1px; text-align: center; }
+  .sp-go.ready { animation: spGo 1s steps(2) infinite; }
+  @keyframes spGo { 50% { background: #fff07a; } }
+  .sp-go.kick { animation: rwPop 0.45s steps(4); }
+
+  /* ================= BĂNG GHẾ + BẢNG CHỈ SỐ ================= */
+  .sp-dug { position: absolute; left: 16px; right: 16px; top: 227px; height: 108px; display: flex; gap: 8px; }
+  .sp-bench { width: 378px; flex: none; display: flex; flex-direction: column; gap: 3px; }
+  .sp-bh { height: 12px; display: flex; align-items: center; gap: 6px; font-family: var(--px); font-size: 7px; letter-spacing: 1px; color: var(--gold); white-space: nowrap; }
+  .sp-bh::before { content: "▼"; font-size: 6px; }
+  .sp-bh.calm { color: var(--muted); }
+  .sp-bh.calm::before { content: ""; }
+  .sp-bh.nag { color: #ff5a6e; animation: pkNag 0.12s steps(2) 3; }
+  .sp-bh em { font-style: normal; font-size: 5px; color: var(--muted); }
+  .sp-tiles { flex: 1; display: flex; gap: 6px; padding: 4px 0 0; }
+  .sp-bt { position: relative; width: 58px; flex: none; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 2px 4px; cursor: grab; overflow: hidden;
+    background: linear-gradient(180deg, #232733, #171a21 70%); border: 1px solid var(--edge); box-shadow: 2px 2px 0 var(--ink); }
+  .sp-bt .face { width: 54px; height: 48px; position: relative; overflow: hidden; flex: none; }
+  .sp-bt .face canvas { position: absolute; left: -13px; top: -12px; width: 80px; height: 88px; pointer-events: none; }
+  .sp-bt > b { max-width: 54px; font-family: var(--px); font-size: 5px; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sp-bt .row { display: flex; align-items: baseline; gap: 4px; }
+  .sp-bt .row .sq-ovr { font-size: 7px; }
+  .sp-bt .row em { font-style: normal; font-family: var(--px); font-size: 5px; color: var(--muted); padding: 1px 2px 0; border: 1px solid #3a4050; }
+  .sp-bt .row em.fit { color: var(--ink); background: var(--gold); border-color: var(--gold); }
+  .sp-bt.sel, .sp-bt:hover { border-color: var(--gold); box-shadow: 2px 2px 0 var(--ink), 0 0 0 1px var(--gold); }
+  .sp-bt.sel { transform: translateY(-2px); }
+  .sp-bt.in { opacity: 0.5; }
+  .sp-bt.in.sel, .sp-bt.in:hover { opacity: 0.85; }
+  .sp-bt .tag { position: absolute; left: 2px; top: 2px; font-family: var(--px); font-size: 5px; color: var(--ink); background: #c7ccd6; padding: 1px 2px 0; }
+  .sp-bt.drag { opacity: 0.3; }
+  /* bảng chỉ số của người đang trỏ */
+  .sp-info { flex: 1; min-width: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 5px 7px 6px; background: var(--panel); border: 1px solid var(--edge);
+    border-top: 2px solid var(--ic, var(--edge)); box-shadow: 2px 2px 0 var(--ink); }
+  .sp-ih { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+  .sp-ih .sq-ovr { font-size: 12px; }
+  .sp-ih b { flex: 1; min-width: 0; font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 1px 1px 0 var(--ink); }
+  .sp-ih em { flex: none; font-style: normal; font-family: var(--px); font-size: 5px; color: var(--muted); padding: 1px 2px 0; border: 1px solid #3a4050; }
+  .sp-ih em.fit { color: var(--ink); background: var(--gold); border-color: var(--gold); }
+  .sp-ih em.off { color: var(--ink); background: #ff9f43; border-color: #ff9f43; }
+  .sp-ih u { flex: none; text-decoration: none; font-family: var(--px); font-size: 5px; color: var(--ink); background: var(--gold); padding: 1px 2px 0; }
+  .sp-sch { display: flex; gap: 8px; min-height: 11px; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: #c7ccd6; white-space: nowrap; }
+  .sp-sch span { display: inline-flex; align-items: center; gap: 3px; color: var(--c); }
+  .sp-sch .pxi { width: 10px; height: 10px; }
+  .sp-sch.none { color: var(--muted); }
+  .sp-sts { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, auto); grid-auto-flow: column; gap: 3px 12px; }   /* như thẻ cầu thủ: nửa đầu attrs.order cột trái */
+  .sp-st { display: grid; grid-template-columns: 18px 14px 1fr 8px; align-items: center; gap: 3px; }
+  .sp-st i { font-style: normal; font-size: 10px; line-height: 1; color: var(--c); }
+  .sp-st b { font-family: var(--px); font-size: 6px; font-weight: normal; color: #fff; text-align: right; }
+  .sp-st u { height: 3px; background: #0f1116; display: block; }
+  .sp-st u s { display: block; height: 100%; background: var(--c); opacity: 0.8; text-decoration: none; }
+  .sp-st .k { font-style: normal; font-size: 8px; line-height: 1; color: transparent; }
+  .sp-st.key .k { color: var(--gold); }
+  .sp-st.key b { color: var(--gold); }
+  .sp-foot { margin-top: auto; font-family: var(--px); font-size: 5px; line-height: 1.5; letter-spacing: 1px; color: var(--muted); }
+  .sp-page.moving .sp-tiles { opacity: 0.4; }   /* đang đổi chỗ của bạn: băng ghế không dùng tới */
+  .sp-foot .k { color: var(--gold); }
+  .sp-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+  .sp-empty b { font-family: var(--px); font-size: 9px; font-weight: normal; color: #fff; letter-spacing: 2px; }
+  .sp-empty span { font-size: 12px; line-height: 1; color: var(--muted); }
+  .sp-empty span i { font-style: normal; color: var(--gold); }
+
+  /* đủ người: 3 dòng ai đá đâu */
+  .sp-minis { display: flex; flex-direction: column; gap: 3px; }
+  .sp-mini { display: grid; grid-template-columns: 24px 22px 16px auto auto; align-items: center; gap: 4px; justify-content: start; font-family: var(--px); font-size: 5px; color: #fff; }
+  .sp-mini .face { position: relative; width: 24px; height: 20px; overflow: hidden; background: #14161c; border: 1px solid var(--edge); }
+  .sp-mini .face canvas { position: absolute; left: -28px; top: -38px; width: 80px; height: 88px; }
+  .sp-mini em { font-style: normal; color: var(--muted); letter-spacing: 1px; }
+  .sp-mini b { font-weight: normal; font-size: 7px; color: var(--gold); }
+  .sp-mini i { font-style: normal; font-size: 6px; white-space: nowrap; }
+  .sp-mini u { text-decoration: none; color: var(--ink); background: var(--gold); padding: 1px 2px 0; }
+  .sp-ready .sp-ih b { color: var(--gold); letter-spacing: 1px; }
+  .sp-keys { position: absolute; left: 0; right: 0; bottom: 6px; }
+  .sp-toast { position: absolute; left: 50%; top: 140px; transform: translateX(-50%); font-family: var(--px); font-size: 10px; letter-spacing: 2px; color: var(--ink); background: var(--gold);
+    padding: 6px 10px 5px; border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); animation: rwPop 0.45s steps(4); pointer-events: none; }
+  .sp-page.dragging .sp-hit { outline: 1px dashed rgba(255, 225, 79, 0.5); }
+  .sp-page.dragging .sp-tiles { outline: 1px dashed rgba(255, 225, 79, 0.35); outline-offset: 2px; }
+  .sp-page .over { outline: 2px solid var(--gold) !important; }
+
+  /* ================= A / B / C: chung (review nheo mắt + trắng đen) ================= */
+  .n-top { position: absolute; left: 16px; right: 16px; top: 4px; height: 22px; display: flex; align-items: center; gap: 8px; }
+  .n-top > b { font-family: var(--px); font-size: 7px; font-weight: normal; letter-spacing: 2px; color: var(--muted); }   /* tiêu đề: đọc 1 lần, nhỏ + xám */
+  .n-top > b.blue, .b-title > b.blue { color: #8fc8ff; }
+  .n-top > .r { margin-left: auto; display: flex; align-items: center; gap: 22px; }
+  /* đối thủ = bối cảnh: tối + bớt màu khi đang chọn · đủ người (lit) thì sáng lên: "đội mình vs boss" */
+  .n-pitch .sp-dim { background: rgba(3, 6, 10, 0.52); transition: background 0.3s; }
+  .n-pitch .n-opp canvas { filter: grayscale(0.7) brightness(0.5); }
+  .n-pitch .n-opp .sp-plate { opacity: 0.45; }
+  .n-pitch .n-opp .sh { opacity: 0.4; }
+  .n-pitch.lit .sp-dim { background: rgba(3, 6, 10, 0.12); }
+  .n-pitch.lit .n-opp canvas { filter: none; }
+  .n-pitch.lit .n-opp .sp-plate { opacity: 1; }
+  .n-boss { padding: 2px 5px 1px 3px; border-color: #3a3424; }
+  .n-boss .pxi { width: 10px; height: 10px; }
+  .n-boss b { font-size: 6px; }
+  .n-pitch:not(.lit) .n-boss { opacity: 0.7; }
+  /* bảng tên trung tính: OVR trắng, YOU viền trắng (vàng để dành cho việc đang làm) */
+  .n-spot .sp-plate b { color: #fff; }
+  .n-spot .sp-plate u { color: #fff; background: none; box-shadow: inset 0 0 0 1px #fff; padding: 1px 2px 0; }
+  /* ô đang chờ: bảng tên đảo màu vàng (sáng nhất sân cả khi trắng đen) · bóng mờ đậm hơn */
+  .n-spot.tgt .sp-plate { color: var(--ink); background: var(--gold); border-color: var(--ink); }
+  .n-spot.tgt .sp-plate em, .n-spot.tgt .sp-plate b { color: var(--ink); }
+  .n-spot.tgt .sp-plate u { color: var(--gold); background: var(--ink); box-shadow: none; }
+  .n-spot.tgt.empty .sp-plus { color: var(--gold); font-size: 20px; }
+  .n-spot.ghost canvas.who { opacity: 0.85; }
+  .n-spot.ghost .sp-plate { border-style: solid; }
+  /* ô trống chưa tới lượt: phấn mờ nhỏ, không nhấp nháy */
+  .n-spot.empty:not(.tgt) .sp-plus { color: rgba(255, 255, 255, 0.35); font-size: 12px; }
+  .n-spot.empty:not(.tgt) .sp-plate { opacity: 0.55; }
+  .n-spot.sel:not(.tgt) .sp-plate { border-color: #fff; box-shadow: 0 0 0 1px #fff; }
+  .sp-ground .faint path { stroke: rgba(255, 255, 255, 0.3); stroke-width: 2; }
+  .sp-ground .faint path.thin { stroke: rgba(255, 255, 255, 0.12); }
+  .sp-ground .blue path { stroke: #8fc8ff; }
+  .sp-ground .blue path.thin { stroke: rgba(143, 200, 255, 0.5); }
+  .n-link { stroke: var(--gold); stroke-width: 2; stroke-dasharray: 3 3; }
+  /* START RUN phụ (đủ người nhưng đang chọn / thay / đổi chỗ): viền trắng, không tô */
+  .pt-btn.go.sec { color: rgba(255, 255, 255, 0.75); background: rgba(6, 10, 8, 0.55); border: 2px solid rgba(255, 255, 255, 0.4); box-shadow: none; }
+  .pt-btn.go.sec.sel { border-color: var(--gold); color: var(--gold); outline: none; }
+  .pt-btn.go.dis { filter: none; color: rgba(255, 255, 255, 0.4); background: rgba(6, 10, 8, 0.5); border: 2px solid rgba(255, 255, 255, 0.18); box-shadow: none; outline: none; }
+  .pt-btn.go.dis.sel { border-color: rgba(255, 225, 79, 0.7); color: rgba(255, 225, 79, 0.8); }
+  .pt-btn.go.ready { animation: spGo 1s steps(2) infinite; }
+  .stage:not(.v-v1) .sp-mini b { color: #fff; }   /* A / B / C: vàng để dành cho việc đang làm */
+  .stage:not(.v-v1) .sp-mini u { color: #fff; background: none; box-shadow: inset 0 0 0 1px #fff; }
+  .sp-mini.none .face { display: flex; align-items: center; justify-content: center; font-family: var(--px); font-size: 8px; color: #5a6070; }
+  .sp-mini.none i, .sp-mini.none b { color: #5a6070; }
+
+  /* ================= A · giữ bố cục, sửa thứ bậc ================= */
+  .a-dug .sp-bench { gap: 0; }
+  .a-bh { position: relative; align-self: flex-start; height: 13px; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    font-family: var(--px); font-size: 7px; letter-spacing: 1px; color: var(--ink); background: var(--gold); padding: 2px 5px 1px; }
+  .a-bh::before { content: ""; position: absolute; left: 7px; top: -8px; height: 7px; border-left: 2px dashed var(--gold); }   /* nối tiếp vạch phấn từ ô đang chờ */
+  .a-bh.calm { color: var(--muted); background: none; padding-left: 0; }
+  .a-bh.calm::before { display: none; }
+  .a-bh em { font-style: normal; font-size: 5px; opacity: 0.75; }
+  .a-bh.nag { background: #ff5a6e; animation: pkNag 0.12s steps(2) 3; }
+  .a-tiles { flex: 1; display: flex; gap: 6px; padding-top: 7px; }
+  .a-bt { position: relative; width: 58px; flex: none; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 2px 4px; cursor: grab; overflow: hidden;
+    background: #14161b; border: 1px solid #262a33; }
+  .a-bt .face { width: 54px; height: 48px; position: relative; overflow: hidden; flex: none; }
+  .a-bt .face canvas { position: absolute; left: -13px; top: -12px; width: 80px; height: 88px; pointer-events: none; }
+  .a-bt > b { max-width: 54px; font-family: var(--px); font-size: 5px; font-weight: normal; color: #c7ccd6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .a-bt .row { display: flex; align-items: baseline; gap: 4px; }
+  .a-bt .row .o { font-family: var(--px); font-size: 7px; color: #fff; }
+  .a-bt .row em { font-style: normal; font-family: var(--px); font-size: 5px; color: #6b7280; padding: 1px 2px 0; border: 1px solid #343944; }
+  .a-bt .row em.fit { color: #fff; border-color: #fff; }   /* hợp ô: viền trắng (không vàng) */
+  .a-bt:hover:not(.sel) { border-color: #6a7080; }
+  /* đang trỏ: nền giấy sáng + khung vàng 2px + nhích 4px — sáng nhất băng ghế cả khi trắng đen */
+  .a-bt.sel { background: #e6dccb; border: 2px solid var(--gold); transform: translateY(-4px); box-shadow: 2px 2px 0 var(--ink); }
+  .a-bt.sel > b, .a-bt.sel .row .o { color: var(--ink); }
+  .a-bt.sel .row em { color: var(--ink); border-color: var(--ink); }
+  .a-bt.sel .row em.fit { color: #e6dccb; background: var(--ink); }
+  .a-bt.in { opacity: 0.4; }
+  .a-bt.in.sel { opacity: 1; }
+  .a-bt .tag { position: absolute; left: 2px; top: 2px; font-family: var(--px); font-size: 5px; color: var(--ink); background: #c7ccd6; padding: 1px 2px 0; }
+  .a-info { flex: 1; min-width: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 5px; padding: 6px 8px 6px; background: #14161b; border: 1px solid #262a33; }
+  .a-ih { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+  .a-ih .o { font-family: var(--px); font-size: 12px; color: #fff; }
+  .a-ih b { flex: 1; min-width: 0; font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .a-ih em, .c-por em, .b-row em { flex: none; font-style: normal; font-family: var(--px); font-size: 5px; color: #6b7280; padding: 1px 2px 0; border: 1px solid #343944; }
+  .a-ih em.fit, .c-por em.fit, .b-row em.fit { color: #fff; border-color: #fff; }
+  .a-ih em.off { color: #ff9f43; border-color: #ff9f43; }
+  .a-ih u { flex: none; text-decoration: none; font-family: var(--px); font-size: 5px; color: #fff; box-shadow: inset 0 0 0 1px #fff; padding: 1px 2px 0; }
+  .a-kl { font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: var(--muted); }
+  .a-keys { display: flex; gap: 14px; }
+  .a-k { flex: 1; display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 2px 6px; }
+  .a-k i { font-style: normal; font-size: 13px; line-height: 1; color: var(--c); }
+  .a-k b { justify-self: end; font-family: var(--px); font-size: 11px; font-weight: normal; color: #fff; }
+  .a-k u { grid-column: span 2; display: block; height: 3px; background: #0f1116; }
+  .a-k u s { display: block; height: 100%; background: var(--c); text-decoration: none; }
+  .a-oth { display: flex; gap: 9px; font-family: var(--px); font-size: 5px; color: #6b7280; }
+  .a-oth span { display: inline-flex; align-items: baseline; gap: 3px; }
+  .a-oth i { font-style: normal; font-family: var(--vt); font-size: 10px; }
+  .a-sch { margin-top: auto; display: flex; gap: 8px; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+  .a-sch span, .c-sub span { display: inline-flex; align-items: center; gap: 3px; }
+  .a-sch .pxi, .c-sub .pxi { width: 9px; height: 9px; }
+
+  /* ================= B · bảng so sánh dưới sân ================= */
+  .b-tray { position: absolute; left: 16px; right: 16px; top: 205px; height: 131px; box-sizing: border-box; padding: 4px 6px 4px; background: #14161b; border: 1px solid #2a2f3a; }
+  .b-tray.pick { border-color: var(--gold); }
+  .b-tail { position: absolute; top: -8px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 7px solid var(--gold); }
+  .b-title { display: flex; align-items: center; gap: 8px; height: 17px; margin-bottom: 1px; }
+  .b-title > b { font-family: var(--px); font-size: 8px; font-weight: normal; letter-spacing: 1px; color: var(--ink); background: var(--gold); padding: 2px 5px 1px; white-space: nowrap; }
+  .b-title > b.blue { color: var(--ink); background: #8fc8ff; }
+  .b-title > b.nag { background: #ff5a6e; animation: pkNag 0.12s steps(2) 3; }
+  .b-title .hint, .b-you .hint, .b-sq .hint { font-family: var(--px); font-size: 5px; color: var(--muted); letter-spacing: 1px; white-space: nowrap; }
+  .b-title .pt-btn { margin-left: auto; }
+  .b-gosm.pt-btn.go { font-size: 7px; letter-spacing: 1px; padding: 3px 8px 2px; }
+  .b-gosm .pk-miss, .c-gosm .pk-miss { display: inline; margin-left: 6px; font-size: 5px; }
+  .b-row { display: grid; grid-template-columns: 6px 22px 96px 26px 20px 54px 54px 1fr 124px; align-items: center; column-gap: 6px; height: 16px; padding: 0 4px;
+    font-family: var(--px); font-size: 6px; color: #c7ccd6; cursor: pointer; }
+  .b-row + .b-row { border-top: 1px solid #1d2028; }
+  .b-head { height: 10px; font-size: 5px; letter-spacing: 1px; color: #5a6070; cursor: default; }
+  .b-head .k { color: var(--c); }
+  .b-row .face { position: relative; width: 22px; height: 15px; overflow: hidden; }
+  .b-row .face canvas { position: absolute; left: -29px; top: -34px; width: 80px; height: 88px; }
+  .b-row > b { min-width: 0; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .b-row > b u { text-decoration: none; margin-left: 4px; font-size: 5px; color: var(--ink); background: #c7ccd6; padding: 1px 2px 0; }
+  .b-row .o { font-size: 7px; color: #fff; }
+  .b-row .k { display: flex; align-items: center; gap: 4px; }
+  .b-row .k b { width: 22px; font-size: 8px; font-weight: normal; color: #9aa3b5; text-align: right; }
+  .b-row .k u { flex: 1; height: 3px; background: #0f1116; }
+  .b-row .k u s { display: block; height: 100%; background: var(--c); text-decoration: none; opacity: 0.7; }
+  .b-row .k.best b { color: #fff; }
+  .b-row .k.best b::after { content: "▲"; font-size: 5px; margin-left: 1px; vertical-align: 2px; }
+  .b-row .oth { display: flex; gap: 7px; font-size: 5px; color: #5a6070; white-space: nowrap; overflow: hidden; }
+  .b-row .oth i { font-style: normal; font-family: var(--vt); font-size: 9px; margin-right: 2px; }
+  .b-row .sch { display: flex; gap: 6px; font-size: 5px; letter-spacing: 1px; color: #9aa3b5; white-space: nowrap; overflow: hidden; }
+  .b-row .sch span { display: inline-flex; align-items: center; gap: 2px; }
+  .b-row.sel .sch { color: var(--ink); }
+  .b-row .sch .pxi { width: 9px; height: 9px; }
+  .b-row:not(.b-head):not(.sel):hover { background: #1d2028; }
+  /* dòng đang trỏ: đảo màu (nền giấy, chữ mực) — sáng nhất màn khi đang chọn, cả khi trắng đen */
+  .b-row.sel { background: #e6dccb; color: var(--ink); }
+  .b-row.sel > b, .b-row.sel .o, .b-row.sel .k b { color: var(--ink); }
+  .b-row.sel .oth { color: #5a5f6a; }
+  .b-row.sel em { color: var(--ink); border-color: var(--ink); }
+  .b-row.sel em.fit { color: #e6dccb; background: var(--ink); }
+  .b-row.sel .cur { width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 5px solid var(--ink); }
+  .b-row.in { opacity: 0.4; }
+  .b-row.in.sel { opacity: 1; }
+  .b-you { display: flex; align-items: center; gap: 16px; height: 40px; padding: 0 6px; background: #1d2028; }
+  .b-ks { display: flex; gap: 16px; }
+  .b-ks .a-k { flex: none; width: 74px; gap: 2px 6px; }
+  .b-ks .a-k i { white-space: nowrap; }
+  .b-ready { display: flex; align-items: center; gap: 16px; height: 100%; padding: 0 10px 0 14px; }
+  .b-go { flex: 1; display: flex; justify-content: center; }
+  .b-sq { display: flex; flex-direction: column; gap: 7px; }
+  .b-sq > b { font-family: var(--px); font-size: 7px; font-weight: normal; letter-spacing: 2px; color: var(--muted); }
+  .b-minis { display: flex; flex-direction: column; gap: 4px; }
+  .b-go .pt-btn.go { font-size: 14px; letter-spacing: 3px; padding: 14px 30px 13px; white-space: nowrap; }
+
+  /* ================= C · từng bước ================= */
+  .c-q { display: flex; align-items: center; gap: 8px; }
+  .c-q i { font-style: normal; font-family: var(--px); font-size: 7px; color: var(--ink); background: var(--gold); padding: 2px 4px 1px; }
+  .c-q b { font-family: var(--px); font-size: 11px; font-weight: normal; letter-spacing: 2px; color: #fff; text-shadow: 2px 2px 0 var(--ink); }
+  .c-q s { text-decoration: none; display: inline-flex; align-items: center; gap: 2px; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: #8fc8ff; }
+  .c-q s .pxi { width: 8px; height: 8px; }
+  .c-gosm.pt-btn.go { font-size: 7px; letter-spacing: 1px; padding: 3px 8px 2px; }
+  .c-strip .sp-plate { top: 3px; padding: 1px 3px 0; }
+  .c-strip .n-boss { top: auto; bottom: 3px; }
+  .c-strip .sp-spot canvas.who, .c-strip .n-opp canvas { }
+  .c-cards { position: absolute; left: 16px; right: 16px; top: 133px; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 97px; gap: 6px 7px; }
+  .c-card { position: relative; display: flex; gap: 6px; box-sizing: border-box; padding: 5px 6px 5px 4px; overflow: hidden; cursor: grab; background: #14161b; border: 1px solid #262a33; }
+  .c-por { position: relative; width: 52px; height: 85px; flex: none; overflow: hidden; background: #1b1e26; }
+  .c-por canvas { position: absolute; left: -14px; top: -4px; width: 80px; height: 88px; pointer-events: none; }
+  .c-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .c-h { display: flex; align-items: baseline; gap: 4px; }
+  .c-h b { flex: 1; min-width: 0; font-family: var(--px); font-size: 7px; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .c-h .o { font-family: var(--px); font-size: 12px; color: #fff; }
+  .c-sub { display: flex; align-items: center; gap: 6px; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+  .c-sts { margin-top: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+  .c-st { display: flex; align-items: baseline; justify-content: space-between; padding: 2px 3px 1px; }
+  .c-st i { font-style: normal; font-size: 10px; line-height: 1; color: #5a6070; }
+  .c-st b { font-family: var(--px); font-size: 6px; font-weight: normal; color: #6b7280; }
+  .c-st.key { background: #232733; box-shadow: inset 0 -2px 0 var(--c); }   /* 2 chỉ số chính của ô đang chờ: sáng, to */
+  .c-st.key i { color: var(--c); }
+  .c-st.key b { color: #fff; font-size: 8px; }
+  .c-card:hover:not(.sel) { border-color: #6a7080; }
+  /* thẻ đang trỏ: nền sáng hơn + khung vàng 2px + nhích lên */
+  .c-card.sel { background: #2a303c; border: 2px solid var(--gold); padding: 4px 5px 4px 3px; transform: translateY(-3px); box-shadow: 2px 3px 0 var(--ink); }
+  .c-card.sel .c-por { background: #e6dccb; }
+  .c-card.in { opacity: 0.4; }
+  .c-card.in.sel { opacity: 1; }
+  .c-card .tag { position: absolute; left: 6px; top: 7px; z-index: 1; font-family: var(--px); font-size: 5px; color: var(--ink); background: #c7ccd6; padding: 1px 2px 0; }
+  .c-gobig.pt-btn.go { position: absolute; left: 50%; top: 295px; transform: translateX(-50%); font-size: 13px; letter-spacing: 3px; padding: 7px 34px 6px; }
+  .c-por em { position: absolute; left: 3px; bottom: 3px; z-index: 1; background: #14161b; }
+  .c-card.sel .c-por em { background: #e6dccb; color: var(--ink); border-color: var(--ink); }
+  .c-card.sel .c-por em.fit { background: var(--ink); color: #e6dccb; }
+  .c-gobig.pt-btn.go.kick { animation: none; }
+  .c-hint { position: absolute; left: 0; right: 0; top: 331px; text-align: center; font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: #5a6070; }
+  .c-show .sp-keys, .c-pick .sp-keys { bottom: 3px; }
+  .c-show .sp-keys { bottom: 1px; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>BUILD YOUR SQUAD · SÂN NGANG · v1 + 3 PHƯƠNG ÁN</h1>
+    <p>Bấm được thật: chuột, phím (←↑↓→ / Enter / Esc) và kéo thả. Ứng viên, chỉ số, trường phái, ngoại hình lấy từ code game (Run.candidates / baseOf / natural / schoolsOf); đội bên phải là boss act 1 thật (Block Wardens). Đổi phương án thì trạng thái giữ nguyên, nên so được cùng 1 khoảnh khắc. Review và từng phương án ở dưới khung.</p>
+  </div>
+  <div class="tabs"><span>PHƯƠNG ÁN</span>
+    <button data-v="v1">v1 · BẢN TRƯỚC</button>
+    <button data-v="A">A · SỬA THỨ BẬC</button>
+    <button data-v="B">B · BẢNG SO SÁNH</button>
+    <button data-v="C">C · TỪNG BƯỚC</button>
+  </div>
+  <div class="tabs"><span>TRẠNG THÁI</span>
+    <button data-st="fresh">1 · VỪA VÀO</button>
+    <button data-st="one">2 · CÓ MID, CHỜ DEF</button>
+    <button data-st="ready">3 · ĐỦ NGƯỜI</button>
+    <button data-st="move">4 · ĐỔI CHỖ CỦA BẠN</button>
+    <button data-st="replace">5 · THAY 1 ĐỒNG ĐỘI</button>
+  </div>
+  <div class="tabs"><span>CÁCH XEM</span>
+    <button data-view="">GỐC</button>
+    <button data-view="squint">NHEO MẮT</button>
+    <button data-view="gray">TRẮNG ĐEN</button>
+    <button data-view="both">NHEO + TRẮNG ĐEN</button>
+  </div>
+  <div class="wrap" id="wrap"><div class="stage" id="scr"></div></div>
+  <div class="doc" id="doc">
+    <h2>REVIEW v1 · NHEO MẮT + TRẮNG ĐEN</h2>
+    <p>Cách làm: 5 trạng thái, mỗi cái xem 3 kiểu: gốc · nheo mắt (Gaussian 12px trên 1280x720) · trắng đen (bỏ màu), và nheo + trắng đen. Bấm <b>CÁCH XEM</b> trên khung để tự xem lại ở mọi phương án. Nheo mắt cho biết mắt rơi vào đâu trước; trắng đen cho biết trạng thái có sống được khi chỉ còn độ sáng không.</p>
+    <table>
+      <tr><th>#</th><th>Thấy gì</th><th>Lộ ra nhờ</th></tr>
+      <tr><td>1</td><td><b>Ô đang chờ không phải thứ nổi nhất.</b> Vừa vào, ô cần chọn là MID (bóng mờ ROOKIE + vòng vàng), nhưng dấu + phấn trắng của DEF nổi hơn: vàng bỏ màu thành xám ngang trắng, bóng mờ 55% thì tối. Mắt rơi vào ô chưa tới lượt.</td><td>nheo + trắng đen</td></tr>
+      <tr><td>2</td><td><b>Vàng gánh 4 nghĩa cùng lúc:</b> ô đang chờ, mục đang trỏ, người hợp ô (chip), và trang trí (tiêu đề, số OVR, nhãn YOU). Khoảng 8 chỗ vàng một lúc; bỏ màu thì "đang chọn" và "trang trí" như nhau.</td><td>trắng đen</td></tr>
+      <tr><td>3</td><td><b>Thẻ đang trỏ trên băng ghế không nổi:</b> chỉ khác viền 1px và nhích 2px. 6 thẻ thành 6 khối như nhau; thẻ nổi nhất là thẻ có tóc / mũ sáng màu, tức là ngẫu nhiên.</td><td>nheo</td></tr>
+      <tr><td>4</td><td><b>Đội bạn nổi ngang đội mình:</b> áo navy tối trên cỏ tương phản mạnh hơn áo trắng của mình, lớp tối 34% không đủ. Bối cảnh giành mắt với việc chính.</td><td>trắng đen</td></tr>
+      <tr><td>5</td><td><b>Bảng chỉ số thành vệt cầu vồng:</b> 6 vạch màu nổi hơn tên + OVR, 2 dấu ★ mất hẳn.</td><td>nheo</td></tr>
+      <tr><td>6</td><td><b>Tiêu đề BUILD YOUR SQUAD là khối nổi thứ 2 cả màn</b>, trong khi chỉ cần đọc 1 lần.</td><td>nheo</td></tr>
+      <tr><td>7</td><td><b>Đang thay người mà START RUN sáng nhất màn.</b> Việc đang làm ở băng ghế, nút đi tiếp lại hút mắt.</td><td>nheo (trạng thái 5)</td></tr>
+      <tr><td>8</td><td><b>Chia chỗ ngược với việc:</b> sân chiếm ~53% chiều cao nhưng chỉ có 6 hình người; chỗ ra quyết định (băng ghế + bảng chỉ số) chỉ ~30%. Đội bạn chiếm 1/4 màn chỉ để làm bối cảnh.</td><td>bố cục</td></tr>
+      <tr><td>9</td><td><b>1 lần chọn, mắt đi 3 chỗ:</b> thẻ băng ghế (trái dưới) → bóng mờ trên sân (trái trên) → bảng chỉ số (phải dưới). Ngoài dòng chữ nhỏ, không có gì nối dấu + với băng ghế.</td><td>tương tác</td></tr>
+      <tr><td>10</td><td><b>2 khái niệm trông giống nhau:</b> "ô đang nhận người" và "mục đang trỏ" cùng vàng. Muốn biết Enter làm gì phải đọc dòng phím.</td><td>tương tác</td></tr>
+      <tr><td>11</td><td><b>Bấm được và không bấm được trông như nhau:</b> người bên mình và bên kia cùng là hình + bảng tên.</td><td>tương tác</td></tr>
+      <tr><td>12</td><td>Từ START RUN bấm ↑ không đi đâu (không có gì "phía trên" theo navPick). Đã sửa chung cho A / B / C: hết đường lên thì lên BACK.</td><td>tương tác</td></tr>
+    </table>
+
+    <h2>LUẬT CHUNG CHO 3 PHƯƠNG ÁN</h2>
+    <ul>
+      <li><b>1 màu nhấn.</b> Vàng chỉ dành cho chuỗi việc đang làm: ô đang chờ → người đang trỏ → START RUN khi hết việc. OVR, YOU, chip hợp ô chuyển sang trắng / xám.</li>
+      <li><b>Mục đang trỏ phải sống qua trắng đen:</b> đổi độ sáng (nền giấy, chữ mực), khung dày hơn, nhích lên; không chỉ đổi màu viền.</li>
+      <li><b>Đối thủ là bối cảnh:</b> tối + bớt màu khi đang chọn, bảng tên mờ. Đủ người thì sáng lên: khoảnh khắc "đội mình vs boss".</li>
+      <li><b>Ô trống chưa tới lượt:</b> phấn mờ nhỏ, không nhấp nháy.</li>
+      <li><b>Chỉ số:</b> 2 chỉ số chính của ô to + sáng, 4 cái còn lại nhỏ + xám, bỏ vạch cầu vồng.</li>
+      <li><b>START RUN chỉ là khối chính khi không còn việc gì khác.</b> Đang chọn / thay / đổi chỗ thì lùi xuống viền mờ.</li>
+      <li><b>Tiêu đề nhỏ, xám, góc trái</b> (C thay tiêu đề bằng câu hỏi của bước).</li>
+    </ul>
+
+    <h2>A · GIỮ BỐ CỤC v1, SỬA THỨ BẬC</h2>
+    <table>
+      <tr><th>Ý chính</th><td>Không đổi chỗ thứ gì, chỉ áp luật chung. Thêm 1 <b>vạch phấn vàng</b> từ bảng tên ô đang chờ xuống thẳng tiêu đề băng ghế (PICK YOUR MID đứng ngay dưới ô MID), nên dấu + và băng ghế nối nhau. Thẻ đang trỏ đảo màu (nền giấy). Bảng chỉ số chỉ còn 2 số to + 4 số nhỏ.</td></tr>
+      <tr><th>Nheo mắt còn</th><td>Đang chọn: 1. thẻ đang trỏ · 2. nhãn PICK YOUR MID · 3. bảng tên vàng ở ô MID. Đủ người: START RUN. Thay người: thẻ đang trỏ, START RUN chìm xuống.</td></tr>
+      <tr><th>Được</th><td>Rẻ nhất: chỉ CSS + vài dòng trong renderPick, không đổi luồng. Sửa được #1–#7, #12.</td></tr>
+      <tr><th>Mất</th><td>Mắt vẫn đi 3 chỗ (#9), chỉ có vạch nối đỡ. So 6 người vẫn phải trỏ từng người một. Chia chỗ vẫn ngược (#8).</td></tr>
+    </table>
+
+    <h2>B · BẢNG SO SÁNH DƯỚI SÂN, 2 CHẾ ĐỘ</h2>
+    <table>
+      <tr><th>Ý chính</th><td><b>Còn ô trống:</b> khay dưới sân là bảng 6 dòng: mặt, tên, vị trí, OVR, <b>2 cột ★ của ô đang chờ</b> (có vạch, số cao nhất mỗi cột có ▲), 4 chỉ số còn lại nhỏ, tên 2 trường phái Core. So sánh = nhìn dọc 1 cột (GK của 6 người cùng lúc). Dòng đang trỏ đảo màu cả bề ngang. Mũi khay chỉ lên đúng ô đang chờ trên sân. START RUN nhỏ, mờ ở góc khay.<br><b>Đủ người:</b> bảng gập lại thành YOUR SQUAD (3 dòng) + START RUN to: khối chính duy nhất. Đối thủ sáng lên.</td></tr>
+      <tr><th>Nheo mắt còn</th><td>Đang chọn: 1. dải sáng của dòng đang trỏ · 2. nhãn PICK YOUR MID · 3. bảng tên ô MID. Đủ người: START RUN, rồi tới sân.</td></tr>
+      <tr><th>Được</th><td>1 chỗ ra quyết định (sửa #9), đủ thông tin cho cả 6 người cùng lúc, không phải trỏ từng người. Mỗi chế độ chỉ có 1 khối chính (#7, #10). Sân vẫn to suốt màn, giữ đúng ý sân ngang + dấu +. Tên trường phái hiện thẳng (vấn đề #5 cũ của đợt UX trước).</td></tr>
+      <tr><th>Mất</th><td>Bảng số trông "sổ sách" hơn thẻ, mặt người nhỏ (chỉ còn khuôn mặt). Sân thấp hơn v1 khoảng 22px. Chế độ đổi chỗ để trống nửa dưới khay. Thêm tiêu đề cột phải dịch (NAME, OTHER STATS, CORES).</td></tr>
+    </table>
+
+    <h2>C · TỪNG BƯỚC: CÂU HỎI → 6 THẺ → RA SÂN</h2>
+    <table>
+      <tr><th>Ý chính</th><td><b>Mỗi lúc 1 câu hỏi to</b>: "1/2 WHO PLAYS MID?" (thay người: "WHO REPLACES ROOKIE?"). Sân thành dải ngang phía trên (đủ 2 đội, ô đang chờ sáng, bóng mờ người đang trỏ đứng sẵn), dưới là <b>6 thẻ đủ chỉ số</b>, 2 chỉ số ★ của ô sáng + to, vị trí sở trường trên ảnh. Chọn xong ô cuối thì sân phóng to cả màn, 2 đội đứng đối mặt, START RUN to dưới sân. Đổi chỗ / thay người làm trên sân to; chọn đồng đội = quay lại bước chọn.</td></tr>
+      <tr><th>Nheo mắt còn</th><td>Đang chọn: 1. ảnh thẻ đang trỏ (nền giấy) · 2. câu hỏi · 3. ô đang chờ trên dải sân. Đủ người: START RUN, rồi 2 đội.</td></tr>
+      <tr><th>Được</th><td>Rõ nhất "đang chọn gì, cho ai" (đúng nỗi lo của owner ở màn GEAR). Mỗi màn 1 việc, 1 khối chính. Thẻ to dễ so hơn dòng bảng, vẫn thấy cả người. Màn sân to cuối cùng là khoảnh khắc ra sân, nối thẳng sang map.</td></tr>
+      <tr><th>Mất</th><td>Lúc chọn, sân chỉ là dải nhỏ: ý "sân là chính" chỉ còn ở bước cuối. 2 bố cục phải code + 1 hiệu ứng chuyển (không có thì như nhảy màn). Đổi chỗ chỉ làm được ở màn sân to. Việc nhiều nhất trong 3 phương án.</td></tr>
+    </table>
+
+    <h2>CHỌN</h2>
+    <p><b>B.</b> Giữ sân làm trung tâm suốt màn (ý gốc), sửa được cả thứ bậc lẫn tương tác: 1 chỗ ra quyết định, so cả 6 người bằng 1 cột số, và mỗi chế độ chỉ 1 khối chính. <b>C</b> nếu muốn cảm giác "game" hơn và chấp nhận sân nhỏ lại lúc chọn. <b>A</b> nếu chỉ muốn sửa nhanh trên v1.</p>
+    <p>Chung cho cả 3: co-op chưa vẽ (bạn bè đứng ô của họ với nhãn PLAYER, ghế dự bị co-op); chữ mới phải dịch (PICK YOUR {pos}, REPLACE {name}, ACT {n} BOSS, KEY FOR {pos}, MOVE YOURSELF, YOUR SQUAD...; C thêm WHO PLAYS {pos}? / WHO REPLACES {name}?).</p>
+  </div>
+
+<script>
+  function fit() {
+    const k = Math.min(2, (innerWidth - 24) / 640), w = document.getElementById('wrap');
+    w.style.width = 640 * k + 'px'; w.style.height = 360 * k + 'px';
+    document.getElementById('scr').style.transform = `scale(${k})`;
+  }
+  addEventListener('resize', fit); fit();
+  // nạp script game theo đúng thứ tự trong index.html (trừ main.js: không khởi động game)
+  (async function () {
+    const html = await (await fetch('../../index.html', { cache: 'reload' })).text();
+    const srcs = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]).filter((s) => !/main\.js$/.test(s));
+    for (const s of srcs) await new Promise((ok) => { const el = document.createElement('script'); el.src = '../../' + s; el.onload = ok; el.onerror = ok; document.head.appendChild(el); });
+    boot();
+  })();
+
+  function boot() {
+    try { SFC.I18n.init(); } catch (e) { /* bỏ qua */ }
+    try { SFC.Profile.load(); } catch (e) { /* bỏ qua */ }
+    try { SFC.Input.init(SFC_CONFIG.controls.bindings); } catch (e) { /* bỏ qua */ }
+    const C = SFC_CONFIG, RUN = SFC.Run, PX = SFC.PixelIcon, A = C.progression.attrs, AR = C.cores.archetypes, U = SFC.UIHelpers;
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const KIT = C.mainPath.playerTeam.kit;
+    const BOSS_ID = C.run.acts[0].boss[0], BOSS = C.teams.list[BOSS_ID];
+    const ROLES = ['FWD', 'MID', 'DEF'];   // thứ tự lấp ô trống (như pkNext)
+    const W = 600, H = 182;               // trong khung sân
+    // vị trí chân cầu thủ: thứ tự trên / dưới theo game.formation (MID trên, DEF giữa, FWD dưới), giãn cho vừa khung · DEF đứng trong vòng cấm
+    const SPOT = { DEF: { x: 74, y: 118 }, MID: { x: 172, y: 72 }, FWD: { x: 232, y: 150 } };
+    const oppSpot = (r) => ({ x: W - SPOT[r].x, y: SPOT[r].y });
+    // 2 chỉ số chính của từng vị trí: 2 số cao nhất của nền vị trí đó (run.squad.base)
+    const KEY = {};
+    for (const r of ROLES) KEY[r] = Object.keys(C.run.squad.base[r]).sort((a, b) => C.run.squad.base[r][b] - C.run.squad.base[r][a]).slice(0, 2);
+    const ovr = (r) => { const v = Object.values(r); return Math.round(v.reduce((a, b) => a + b, 0) / v.length); };
+    const kbd = (a, kb) => `<kbd>${esc(SFC.Input.key ? SFC.Input.key(a, kb) : kb)}</kbd>`;
+
+    const me = { name: (SFC.Profile.data && SFC.Profile.data.name) || 'PLAYER', look: SFC.Profile.avatar ? SFC.Profile.avatar().look : SFC.Profile.lookOf(C.progression.defaultLook), r: RUN.baseOf({}) };
+    const S = {
+      cands: RUN.candidates().map((m) => ({ m, r: RUN.baseOf({ m }), nat: RUN.natural(m), sch: RUN.schoolsOf(m), look: RUN.mateLook(m) })),
+      spots: { FWD: 'you', MID: null, DEF: null },   // 'you' | chỉ số ứng viên | null
+      target: 'MID',                                  // ô nhận người khi chọn trên băng ghế
+      focus: 'cand:0', move: false, enter: null, nag: false, kick: false, prev: 0, draw: null,
+      v: 'B',                                         // phương án đang xem: v1 | A | B | C
+    };
+    const youAt = () => ROLES.find((r) => S.spots[r] === 'you');
+    const nextEmpty = () => ROLES.find((r) => S.spots[r] == null) || null;
+    const where = (i) => ROLES.find((r) => S.spots[r] === i) || null;
+    const ready = () => !nextEmpty();
+    // ứng viên chọn sẵn cho ô role: người chưa ra sân hợp vị trí đó (sau after trước), không có thì người chưa ra sân kế tiếp
+    const firstFit = (role, after) => {
+      const free = S.cands.map((c, k) => k).filter((k) => !where(k)), order = free.filter((k) => k > after).concat(free.filter((k) => k <= after));
+      const j = order.find((k) => S.cands[k].nat === role);
+      return j != null ? j : order.length ? order[0] : 0;
+    };
+
+    /* ---------- vẽ nhân vật: mỗi canvas 40x44 vẽ lại mỗi khung (đứng thở), CSS phóng x2 ---------- */
+    let T = 0;
+    const scr = document.getElementById('scr');
+    function drawAll() {
+      scr.querySelectorAll('canvas[data-lk]').forEach((cv) => {
+        if (!cv._lk) { cv.width = 40; cv.height = 44; cv._lk = JSON.parse(cv.dataset.lk); cv._kit = cv.dataset.kit === 'boss' ? BOSS.kit : KIT; cv._f = +cv.dataset.f; cv._o = +(cv.dataset.o || 0); }
+        const run = cv.dataset.run && S.enter && performance.now() - S.enter.t0 < 450;
+        SFC.Sprites.drawAvatar(cv, cv._lk, cv._kit, T + cv._o, run ? -Math.PI / 2 : cv._f, run ? { vx: 0, vy: -90 } : null);
+      });
+    }
+    (function loop() { T += 1 / 60; drawAll(); requestAnimationFrame(loop); })();
+    const avatar = (look, facing, cls = '', kit = '', o = 0, run = false) =>
+      `<canvas class="${cls}" data-lk='${JSON.stringify(look).replace(/'/g, '&#39;')}' data-f="${facing}" data-o="${o}" ${kit ? `data-kit="${kit}"` : ''} ${run ? 'data-run="1"' : ''}></canvas>`;
+
+    /* ---------- vòng phấn (dùng chalkPath của map) ---------- */
+    const DEFS = '<defs><filter id="rmChalk" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3" result="n"/>'
+      + '<feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter></defs>';
+    const RU = SFC.RunUI;
+    // ô trống: vòng tròn quanh dấu + · ô có người: vòng dẹt dưới chân (như vòng điều khiển trong trận)
+    const ring = (x, y, r, flat, seed, cls) => {
+      const tf = flat ? `transform="translate(${x} ${y}) scale(1 0.42) translate(${-x} ${-y})"` : '';
+      return `<g class="${cls}" ${tf}><path pathLength="1" d="${RU.chalkPath(x, y, r, seed)}"/><path pathLength="1" class="thin" d="${RU.chalkPath(x + 1.5, y - 1, r - 2, seed)}"/></g>`;
+    };
+
+    /* ---------- v1 (bản trước, để so) ---------- */
+    function renderV1() {
+      const next = nextEmpty(), you = youAt(), tgt = S.target, focus = S.focus;
+      const fc = focus.startsWith('cand:') ? +focus.slice(5) : null;
+      const fs = focus.startsWith('spot:') ? focus.slice(5) : null;
+      // người đang xem trước ở ô đang chờ: ứng viên đang trỏ (chưa đứng chính ô đó)
+      const prev = !S.move && tgt && fc != null && S.spots[tgt] !== fc ? fc : null;
+
+      // vòng phấn dưới chân / quanh dấu +
+      let ground = '';
+      for (const r of ROLES) {
+        const p = SPOT[r], v = S.spots[r], isT = r === tgt && !S.move, isF = fs === r, mv = S.move && r !== you, lift = S.move && r === you;
+        const cls = (S.nag && v == null ? 'nag ' : '') + (isT || mv ? 'gold ' : isF || lift ? '' : 'soft ') + ((isT && v == null && prev == null) || mv ? 'blink ' : '') + (S.draw === r ? 'draw' : '');
+        if (v == null && prev == null || (v == null && !isT)) ground += ring(p.x, p.y - 20, 19, false, 'p' + r, cls);
+        else if (isT || isF || mv || lift) ground += ring(p.x, p.y - 1, 22, true, 'g' + r, cls);
+      }
+      // đội mình
+      const spots = ROLES.map((r) => {
+        const p = SPOT[r], v = S.spots[r], isT = r === tgt && !S.move, ghost = isT && prev != null;
+        // dưới bảng tên: găng tay KEEPS GOAL (ô DEF) · ⇄ MOVE HERE (đang đổi chỗ của bạn)
+        const tags = (r === 'DEF' ? `<s>${PX.html('gear-gloves', '', '')}KEEPS GOAL</s>` : '') + (S.move && r !== you ? `<i class="mv">⇄ MOVE HERE</i>` : '');
+        const moveTag = tags ? `<span class="sp-tags">${tags}</span>` : '';
+        const cls = `sp-spot ${fs === r ? 'sel' : ''} ${isT ? 'tgt' : ''} ${ghost ? 'ghost' : ''} ${S.enter && S.enter.role === r ? 'in' : ''} ${S.move && r === you ? 'lift' : ''}`;
+        const drag = v != null && !ghost ? `draggable="true" data-drag="spot:${r}"` : '';
+        const hit = `<i class="sp-hit" data-k="spot:${r}" data-drop="${r}" ${drag}></i>`;
+        if (ghost) {
+          const c = S.cands[prev], under = v === 'you' ? avatar(me.look, Math.PI / 4, 'under') : v != null ? avatar(S.cands[v].look, Math.PI / 4, 'under') : '';
+          return `<div class="${cls} ${v == null ? 'empty' : ''}" style="left:${p.x}px;top:${p.y}px"><i class="sh"></i>${under}${avatar(c.look, Math.PI / 4, 'who', '', 0.3)}
+              <span class="sp-plate"><em>${r}</em><b>${ovr(c.r)}</b>${esc(c.m.name)}</span>${moveTag}${hit}</div>`;
+        }
+        if (v == null) {
+          const pick = isT ? `<u class="sp-pick">PICK</u>` : '';
+          return `<div class="${cls} empty" style="left:${p.x}px;top:${p.y}px"><span class="sp-plus">+</span>
+              <span class="sp-plate"><em>${r}</em>${pick}</span>${moveTag}${hit}</div>`;
+        }
+        if (v === 'you') {
+          return `<div class="${cls} you" style="left:${p.x}px;top:${p.y}px"><i class="sh"></i>${avatar(me.look, Math.PI / 4, 'who')}
+              <span class="sp-plate"><em>${r}</em><b>${ovr(me.r)}</b>${esc(me.name)}<u>YOU</u></span>${moveTag}${hit}</div>`;
+        }
+        const c = S.cands[v];
+        return `<div class="${cls} mate" style="left:${p.x}px;top:${p.y}px"><i class="sh"></i>${avatar(c.look, Math.PI / 4, 'who', '', v * 0.37, S.enter && S.enter.role === r)}
+            <span class="sp-plate"><em>${r}</em><b>${ovr(c.r)}</b>${esc(c.m.name)}</span>${moveTag}${hit}</div>`;
+      }).join('');
+      // đội bạn (boss act 1): đứng đối xứng, quay sang trái, không bấm được
+      const opp = C.game.roles.map((r, idx) => {
+        const p = oppSpot(r), look = SFC.Profile.lookOf(Object.assign({}, C.progression.defaultLook, SFC.MainPath.teamLook(BOSS_ID, idx)));
+        return `<div class="sp-spot sp-opp" style="left:${p.x}px;top:${p.y}px"><i class="sh"></i>${avatar(look, Math.PI * 3 / 4, '', 'boss', idx * 0.5)}
+            <span class="sp-plate"><em>${r}</em>${esc(BOSS.players[idx])}</span></div>`;
+      }).join('');
+      const miss = ROLES.filter((r) => S.spots[r] == null);
+      const go = `<button class="pt-btn go sp-go ${ready() ? 'ready' : 'dis'} ${focus === 'go' ? 'sel' : ''} ${S.kick ? 'kick' : ''}" data-k="go">START RUN${miss.length ? `<em class="pk-miss">NEED ${miss.join(' · ')}</em>` : ''}</button>`;
+      const pitch = `<div class="sp-pitch"><svg width="${W}" height="${H}">${DEFS}${RU.pitch(W, H)}</svg><div class="sp-dim"></div>
+          <svg class="sp-ground" width="${W}" height="${H}">${ground}</svg>
+          <div class="sp-boss" style="--bc:${BOSS.kit.accent}">${PX.ui('crown', '')}<span><i>ACT 1 BOSS</i><b>${esc(BOSS.name.toUpperCase())}</b></span></div>
+          ${opp}${spots}${go}</div>`;
+
+      // băng ghế
+      const tiles = S.cands.map((c, i) => {
+        const at = where(i), fit = tgt && !S.move && c.nat === tgt;
+        return `<div class="sp-bt ${focus === 'cand:' + i ? 'sel' : ''} ${at ? 'in' : ''}" data-k="cand:${i}" draggable="true" data-drag="cand:${i}">
+            ${at ? `<span class="tag">${at}</span>` : ''}<span class="face">${avatar(c.look, Math.PI / 2, '', '', i * 0.37)}</span>
+            <b>${esc(c.m.name)}</b><span class="row"><span class="sq-ovr">${ovr(c.r)}</span><em class="${fit ? 'fit' : ''}">${c.nat}</em></span></div>`;
+      }).join('');
+      const cur = tgt && S.spots[tgt];
+      const bh = S.move ? `<div class="sp-bh">MOVE YOURSELF<em>pick a spot on the pitch</em></div>`
+        : tgt && cur != null && cur !== 'you' ? `<div class="sp-bh">REPLACE ${esc(S.cands[cur].m.name)}<em>${tgt}</em></div>`
+        : tgt ? `<div class="sp-bh ${S.nag ? 'nag' : ''}">PICK YOUR ${tgt}</div>`
+        : `<div class="sp-bh calm">BENCH<em>select a player on the pitch to change</em></div>`;
+
+      // bảng chỉ số: người đang trỏ (ứng viên / người trên sân) · ô trống đang trỏ = việc của ô đó
+      const keyRole = S.move ? null : fs || tgt;
+      const mini = (look, role, o, name, tag) => `<span class="sp-mini"><span class="face">${avatar(look, Math.PI / 2, '', '', 0)}</span><em>${role}</em><b>${o}</b><i>${esc(name)}</i>${tag || ''}</span>`;
+      const statBox = (r, role) => `<div class="sp-sts">${A.order.map((s) => {
+          const key = role && KEY[role].includes(s);
+          return `<div class="sp-st ${key ? 'key' : ''}" style="--c:${A.list[s].color}" title="${esc(A.list[s].label)}"><i>${esc(A.list[s].short)}</i><b>${r[s]}</b>
+            <u><s style="width:${Math.min(100, (r[s] / A.max) * 100).toFixed(1)}%"></s></u><em class="k">★</em></div>`;
+        }).join('')}</div>`;
+      const sch = (list) => list.length ? `<div class="sp-sch">${list.map((t) => `<span style="--c:${AR[t].color}">${PX.arch(t, '')}${esc(AR[t].label)}</span>`).join('')}</div>`
+        : `<div class="sp-sch none">ANY CORE</div>`;
+      const keyNote = (role) => role ? `<div class="sp-foot"><span class="k">★</span> KEY STATS FOR ${role}${role === 'DEF' ? ' · KEEPS GOAL' : ''}</div>` : '';
+      let info;
+      const showC = fc != null ? fc : fs && typeof S.spots[fs] === 'number' ? S.spots[fs] : null;
+      if (S.move) {
+        // đang đổi chỗ của bạn: chỉ số của bạn + ★ của ô đang trỏ, người ở ô đó sang ô cũ của bạn
+        const to = fs && fs !== you ? fs : you, other = S.spots[to], oName = other == null ? 'EMPTY SPOT' : other === 'you' ? '' : S.cands[other].m.name;
+        info = `<div class="sp-info" style="--ic:#8fc8ff"><div class="sp-ih"><span class="sq-ovr">${ovr(me.r)}</span><b>${esc(me.name)}</b><u>YOU</u><em class="fit">${to}</em></div>
+            ${statBox(me.r, to)}<div class="sp-foot">${to === you ? 'PICK A SPOT ON THE PITCH' : `<span class="k">⇄</span> ${esc(oName)} GOES TO ${you}${to === 'DEF' ? '<br><span class="k">★</span> YOU KEEP GOAL' : ''}`}</div></div>`;
+      } else if (showC != null) {
+        const c = S.cands[showC], role = fc != null ? keyRole : fs;
+        const chip = role ? (c.nat === role ? 'fit' : 'off') : '';
+        info = `<div class="sp-info" style="--ic:${chip === 'fit' ? 'var(--gold)' : chip === 'off' ? '#ff9f43' : 'var(--edge)'}">
+            <div class="sp-ih"><span class="sq-ovr">${ovr(c.r)}</span><b>${esc(c.m.name)}</b><em class="${chip}">${c.nat}</em></div>
+            ${sch(c.sch)}${statBox(c.r, role)}${keyNote(role)}</div>`;
+      } else if (fs && S.spots[fs] === 'you') {
+        info = `<div class="sp-info" style="--ic:var(--gold)"><div class="sp-ih"><span class="sq-ovr">${ovr(me.r)}</span><b>${esc(me.name)}</b><u>YOU</u><em>${fs}</em></div>
+            ${statBox(me.r, fs)}<div class="sp-foot">${S.move ? 'PICK A SPOT · ' : ''}<span class="k">⇄</span> ${S.move ? 'ESC: STAY' : 'ENTER OR DRAG: SWAP SPOT'}</div></div>`;
+      } else if (fs) {
+        info = `<div class="sp-info"><div class="sp-empty"><b>${fs}${fs === 'DEF' ? ' · KEEPS GOAL' : ''}</b>
+            <span>Key stats: <i>${KEY[fs].map((s) => A.list[s].short).join(' + ')}</i></span><span>Pick someone from the bench</span></div></div>`;
+      } else {
+        // đủ người: tóm tắt đội (ai đá đâu) — xác nhận lần cuối trước START RUN
+        const rows = ROLES.map((r) => { const v = S.spots[r]; return v === 'you' ? mini(me.look, r, ovr(me.r), me.name, '<u>YOU</u>') : mini(S.cands[v].look, r, ovr(S.cands[v].r), S.cands[v].m.name); }).join('');
+        info = `<div class="sp-info sp-ready" style="--ic:var(--gold)"><div class="sp-ih"><b>YOUR SQUAD</b><em class="fit">READY</em></div><div class="sp-minis">${rows}</div>
+            <div class="sp-foot">PLAYS THE WHOLE RUN</div></div>`;
+      }
+
+      // dòng phím: phím xác nhận + việc nó làm với mục đang chọn
+      const does = fc != null ? (tgt && !S.move ? (S.spots[tgt] === fc ? '' : 'PICK') : '')
+        : fs ? (S.move ? (fs === you ? 'STAY' : 'MOVE HERE') : S.spots[fs] === 'you' ? 'SWAP SPOT' : S.spots[fs] == null ? 'PICK FOR ' + fs : 'REPLACE')
+        : focus === 'go' ? (ready() ? 'START RUN' : '') : focus === 'back' ? 'BACK' : '';
+      const keys = `<div class="pk-keys sp-keys"><span>←↑↓→ select</span>${does ? `<span>${kbd('confirm', 'Enter')}${esc(does)}</span>` : ''}<span>${kbd('back', 'Esc')}${S.move ? 'CANCEL' : 'BACK'}</span></div>`;
+
+      return `<div class="sp-page ${S.move ? 'moving' : ''}">
+          <div class="sp-top"><b>BUILD YOUR SQUAD</b><button class="pt-btn ${focus === 'back' ? 'sel' : ''}" data-k="back">BACK</button></div>
+          ${pitch}
+          <div class="sp-dug"><div class="sp-bench" data-drop="bench">${bh}<div class="sp-tiles">${tiles}</div></div>${info}</div>
+          ${keys}${S.toast ? `<div class="sp-toast">${S.toast}</div>` : ''}
+        </div>`;
+    }
+
+    /* ================= A / B / C (review nheo mắt + trắng đen 2026-11-06) — luật chung:
+     * vàng chỉ cho chuỗi "việc đang làm" (ô đang chờ → người đang trỏ → START RUN khi hết việc) · đang trỏ = đổi độ sáng + khung dày + nhích lên
+     * (sống qua trắng đen) · đối thủ tối + bớt màu khi đang chọn, sáng lên khi đủ người · ô trống chưa tới lượt = phấn mờ, không nhấp nháy ·
+     * chỉ số: 2 chỉ số chính to, 4 cái còn lại nhỏ xám · START RUN chỉ là khối chính khi không còn việc gì khác · tiêu đề nhỏ xám ================= */
+    function view() {
+      const tgt = S.move ? null : S.target, focus = S.focus;
+      const fc = focus.startsWith('cand:') ? +focus.slice(5) : null, fs = focus.startsWith('spot:') ? focus.slice(5) : null;
+      return { tgt, focus, fc, fs, prev: tgt && fc != null && S.spots[tgt] !== fc ? fc : null, you: youAt(), keyRole: S.move ? null : fs || tgt };
+    }
+    const toast = () => (S.toast ? `<div class="sp-toast">${S.toast}</div>` : '');
+    const backBtn = () => `<button class="pt-btn ${S.focus === 'back' ? 'sel' : ''}" data-k="back">BACK</button>`;
+    // START RUN: chưa đủ = viền mờ + NEED · đủ nhưng đang chọn / thay / đổi chỗ = viền trắng (phụ) · hết việc = vàng nhấp nháy (chính)
+    const goBtn = (cls) => {
+      const V = view(), miss = ROLES.filter((r) => S.spots[r] == null), st = !ready() ? 'dis' : V.tgt || S.move ? 'sec' : 'ready';
+      return `<button class="pt-btn go ${cls} ${st} ${V.focus === 'go' ? 'sel' : ''} ${S.kick ? 'kick' : ''}" data-k="go">START RUN${miss.length ? `<em class="pk-miss">NEED ${miss.join(' · ')}</em>` : ''}</button>`;
+    };
+    // dòng phím: phím xác nhận + việc nó làm với mục đang chọn
+    function keysLine() {
+      const V = view(), f = V.focus;
+      const does = V.fc != null ? (V.tgt && S.spots[V.tgt] !== V.fc ? 'PICK' : '')
+        : V.fs ? (S.move ? (V.fs === V.you ? 'STAY' : 'MOVE HERE') : S.spots[V.fs] === 'you' ? 'SWAP SPOT' : S.spots[V.fs] == null ? 'PICK FOR ' + V.fs : 'REPLACE')
+        : f === 'go' ? (ready() ? 'START RUN' : '') : f === 'back' ? 'BACK' : '';
+      return `<div class="pk-keys sp-keys"><span>←↑↓→ select</span>${does ? `<span>${kbd('confirm', 'Enter')}${esc(does)}</span>` : ''}<span>${kbd('back', 'Esc')}${S.move ? 'CANCEL' : 'BACK'}</span></div>`;
+    }
+    const schoolLine = (list, cls) => (list.length ? list.map((t) => `<span style="--c:${AR[t].color}">${PX.arch(t, '')}${esc(AR[t].label)}</span>`).join('') : '<span>ANY CORE</span>');
+    const mini = (look, role, o, name, tag) => `<span class="sp-mini"><span class="face">${avatar(look, Math.PI / 2, '', '', 0)}</span><em>${role}</em><b>${o}</b><i>${esc(name)}</i>${tag || ''}</span>`;
+    const squadMinis = () => ROLES.map((r) => {
+      const v = S.spots[r];
+      return v === 'you' ? mini(me.look, r, ovr(me.r), me.name, '<u>YOU</u>') : v == null ? `<span class="sp-mini none"><span class="face">+</span><em>${r}</em><b>–</b><i>EMPTY</i></span>`
+        : mini(S.cands[v].look, r, ovr(S.cands[v].r), S.cands[v].m.name);
+    }).join('');
+    // người đang được xem: ứng viên đang trỏ / người trên sân đang trỏ / bạn (đang đổi chỗ)
+    function shown(V) {
+      if (S.move || (V.fs && S.spots[V.fs] === 'you')) return { you: true, r: me.r, name: me.name, nat: V.you, sch: [] };
+      const i = V.fc != null ? V.fc : V.fs && typeof S.spots[V.fs] === 'number' ? S.spots[V.fs] : null;
+      return i == null ? null : Object.assign({ i }, S.cands[i], { name: S.cands[i].m.name });
+    }
+
+    // sân của A / B / C. P = vị trí chân {DEF, MID, FWD} · w, h = trong khung · o: { top, lit (đối thủ sáng), tags: 'role' = chỉ ghi vị trí (dải sân của C),
+    //   link (A: vạch phấn nối ô đang chờ xuống băng ghế), go (nút START RUN giữa sân), cls }
+    function pitch2(P, w, h, o) {
+      const V = view(), role = o.tags === 'role';
+      let ground = '';
+      const spots = ROLES.map((r) => {
+        const p = P[r], v = S.spots[r], isT = r === V.tgt, ghost = isT && V.prev != null, sel = V.fs === r;
+        const mv = S.move && r !== V.you, lift = S.move && r === V.you, empty = v == null && !ghost;
+        // ô đang chờ = vòng vàng nhấp nháy (thứ vàng duy nhất trên sân) · ô trống khác = phấn mờ nhỏ · đang trỏ = phấn trắng · đổi chỗ = xanh
+        if (empty) ground += ring(p.x, p.y - 18, isT ? 18 : 13, false, 'p' + r, isT ? `gold blink ${S.draw === r ? 'draw' : ''}` : sel ? '' : `faint ${S.nag ? 'nag' : ''}`);
+        else if (isT || sel || mv || lift) ground += ring(p.x, p.y - 1, 22, true, 'g' + r, isT ? `gold ${S.draw === r ? 'draw' : ''}` : mv ? 'blue blink' : '');
+        const tags = (!role && r === 'DEF' ? `<s>${PX.html('gear-gloves', '', '')}KEEPS GOAL</s>` : '') + (mv ? `<i class="mv">⇄ MOVE HERE</i>` : '');
+        const drag = v != null && !ghost ? `draggable="true" data-drag="spot:${r}"` : '';
+        let fig, plate;
+        if (ghost) {
+          const c = S.cands[V.prev], under = v === 'you' ? avatar(me.look, Math.PI / 4, 'under') : v != null ? avatar(S.cands[v].look, Math.PI / 4, 'under') : '';
+          fig = under + avatar(c.look, Math.PI / 4, 'who', '', 0.3);
+          plate = role ? `<em>${r}</em>` : `<em>${r}</em><b>${ovr(c.r)}</b>${esc(c.m.name)}`;
+        } else if (v == null) {
+          fig = '<span class="sp-plus">+</span>';
+          plate = `<em>${r}</em>${isT ? '<u>PICK</u>' : ''}`;
+        } else if (v === 'you') {
+          fig = avatar(me.look, Math.PI / 4, 'who');
+          plate = role ? `<em>${r}</em><u>YOU</u>` : `<em>${r}</em><b>${ovr(me.r)}</b>${esc(me.name)}<u>YOU</u>`;
+        } else {
+          const c = S.cands[v];
+          fig = avatar(c.look, Math.PI / 4, 'who', '', v * 0.37, S.enter && S.enter.role === r);
+          plate = role ? `<em>${r}</em>` : `<em>${r}</em><b>${ovr(c.r)}</b>${esc(c.m.name)}`;
+        }
+        const cls = `sp-spot n-spot ${sel ? 'sel' : ''} ${isT ? 'tgt' : ''} ${ghost ? 'ghost' : ''} ${empty ? 'empty' : ''} ${S.enter && S.enter.role === r ? 'in' : ''} ${lift ? 'lift' : ''}`;
+        return `<div class="${cls}" style="left:${p.x}px;top:${p.y}px">${empty ? '' : '<i class="sh"></i>'}${fig}<span class="sp-plate">${plate}</span>
+            ${tags ? `<span class="sp-tags">${tags}</span>` : ''}<i class="sp-hit" data-k="spot:${r}" data-drop="${r}" ${drag}></i></div>`;
+      }).join('');
+      // đối thủ: không bấm được, không có vòng / khung chọn
+      const opps = C.game.roles.map((r, idx) => {
+        const p = { x: w - P[r].x, y: P[r].y }, look = SFC.Profile.lookOf(Object.assign({}, C.progression.defaultLook, SFC.MainPath.teamLook(BOSS_ID, idx)));
+        return `<div class="sp-spot n-opp" style="left:${p.x}px;top:${p.y}px"><i class="sh"></i>${avatar(look, Math.PI * 3 / 4, '', 'boss', idx * 0.5)}
+            ${role ? '' : `<span class="sp-plate"><em>${r}</em>${esc(BOSS.players[idx])}</span>`}</div>`;
+      }).join('');
+      // A: vạch phấn vàng từ bảng tên ô đang chờ xuống mép dưới sân (tiêu đề băng ghế đứng ngay dưới)
+      const link = o.link && V.tgt ? `<line class="n-link" x1="${P[V.tgt].x}" y1="${P[V.tgt].y + (V.tgt === 'DEF' ? 28 : 16)}" x2="${P[V.tgt].x}" y2="${h}"/>` : '';
+      return `<div class="sp-pitch n-pitch ${o.lit ? 'lit' : ''} ${o.cls || ''}" style="top:${o.top}px;width:${w + 8}px;height:${h + 8}px">
+          <svg width="${w}" height="${h}">${DEFS}${RU.pitch(w, h)}</svg><div class="sp-dim" style="left:${w / 2}px"></div>
+          <svg class="sp-ground" width="${w}" height="${h}">${ground}${link}</svg>
+          <div class="sp-boss n-boss" style="--bc:${BOSS.kit.accent}">${PX.ui('crown', '')}<span><i>ACT 1 BOSS</i><b>${esc(BOSS.name.toUpperCase())}</b></span></div>
+          ${opps}${spots}${o.go || ''}</div>`;
+    }
+
+    /* ---------- A · giữ bố cục v1, sửa thứ bậc ---------- */
+    function renderA() {
+      const V = view(), P = SPOT, cur = V.tgt && S.spots[V.tgt];
+      const tiles = S.cands.map((c, i) => {
+        const at = where(i), fit = V.tgt && c.nat === V.tgt;
+        return `<div class="a-bt ${V.focus === 'cand:' + i ? 'sel' : ''} ${at ? 'in' : ''}" data-k="cand:${i}" data-hov="1" draggable="true" data-drag="cand:${i}">
+            ${at ? `<span class="tag">${at}</span>` : ''}<span class="face">${avatar(c.look, Math.PI / 2, '', '', i * 0.37)}</span>
+            <b>${esc(c.m.name)}</b><span class="row"><span class="o">${ovr(c.r)}</span><em class="${fit ? 'fit' : ''}">${c.nat}</em></span></div>`;
+      }).join('');
+      // tiêu đề băng ghế đứng ngay dưới ô đang chờ (nối bằng vạch phấn)
+      const hx = V.tgt ? Math.max(0, P[V.tgt].x + 4 - 8) : 0;
+      const bh = S.move ? '<div class="a-bh calm">MOVE YOURSELF<em>pick a spot on the pitch</em></div>'
+        : V.tgt ? `<div class="a-bh ${S.nag ? 'nag' : ''}" style="margin-left:${hx}px">${typeof cur === 'number' ? `REPLACE ${esc(S.cands[cur].m.name)}` : `PICK YOUR ${V.tgt}`}</div>`
+        : '<div class="a-bh calm">BENCH<em>select a player on the pitch to change</em></div>';
+      const p = shown(V);
+      let info;
+      if (p) {
+        const role = p.you ? (V.fs && V.fs !== V.you ? V.fs : V.you) : V.keyRole || p.nat, keys = KEY[role], chip = p.you ? '' : p.nat === role ? 'fit' : 'off';
+        info = `<div class="a-info"><div class="a-ih"><span class="o">${ovr(p.r)}</span><b>${esc(p.name)}</b>${p.you ? '<u>YOU</u>' : ''}<em class="${chip}">${p.nat}</em></div>
+            <div class="a-kl">★ KEY FOR ${role}${role === 'DEF' ? ' · KEEPS GOAL' : ''}</div>
+            <div class="a-keys">${keys.map((s) => `<span class="a-k" style="--c:${A.list[s].color}"><i>${esc(A.list[s].short)}</i><b>${p.r[s]}</b><u><s style="width:${Math.min(100, (p.r[s] / A.max) * 100).toFixed(1)}%"></s></u></span>`).join('')}</div>
+            <div class="a-oth">${A.order.filter((s) => !keys.includes(s)).map((s) => `<span><i>${esc(A.list[s].short)}</i>${p.r[s]}</span>`).join('')}</div>
+            ${p.you ? `<div class="a-sch">${S.move && V.fs && V.fs !== V.you ? `⇄ ${S.spots[V.fs] == null ? 'EMPTY SPOT' : esc(S.cands[S.spots[V.fs]].m.name)} GOES TO ${V.you}` : 'ENTER OR DRAG: SWAP SPOT'}</div>` : `<div class="a-sch">${schoolLine(p.sch)}</div>`}</div>`;
+      } else if (V.fs) {
+        info = `<div class="a-info"><div class="sp-empty"><b>${V.fs}</b><span>Key stats: <i>${KEY[V.fs].map((s) => A.list[s].short).join(' + ')}</i></span></div></div>`;
+      } else {
+        info = `<div class="a-info"><div class="a-ih"><b>YOUR SQUAD</b></div><div class="sp-minis">${squadMinis()}</div></div>`;
+      }
+      return `<div class="sp-page ${S.move ? 'moving' : ''}">
+          <div class="n-top"><b>BUILD YOUR SQUAD</b><span class="r">${backBtn()}</span></div>
+          ${pitch2(P, 600, 182, { top: 31, lit: !V.tgt && !S.move && ready(), link: true, go: goBtn('sp-go') })}
+          <div class="sp-dug a-dug"><div class="sp-bench" data-drop="bench">${bh}<div class="a-tiles">${tiles}</div></div>${info}</div>
+          ${keysLine()}${toast()}</div>`;
+    }
+
+    /* ---------- B · bảng so sánh dưới sân, 2 chế độ (còn ô trống: bảng · đủ người: START RUN) ---------- */
+    const SPOT_B = { DEF: { x: 74, y: 104 }, MID: { x: 172, y: 64 }, FWD: { x: 232, y: 138 } };
+    function renderB() {
+      const V = view(), cur = V.tgt && S.spots[V.tgt];
+      let tray, tail = '';
+      if (V.tgt) {
+        const keys = KEY[V.tgt], oth = A.order.filter((s) => !keys.includes(s));
+        const best = keys.map((s) => Math.max(...S.cands.filter((c, i) => !where(i) || S.spots[V.tgt] === i).map((c) => c.r[s])));
+        const head = `<div class="b-row b-head"><span></span><span></span><span>NAME</span><span>POS</span><span>OVR</span>
+            ${keys.map((s) => `<span class="k" style="--c:${A.list[s].color}">★ ${esc(A.list[s].short)}</span>`).join('')}<span>OTHER STATS</span><span>CORES</span></div>`;
+        const rows = S.cands.map((c, i) => {
+          const at = where(i), fit = c.nat === V.tgt;
+          return `<div class="b-row ${V.focus === 'cand:' + i ? 'sel' : ''} ${at ? 'in' : ''}" data-k="cand:${i}" data-hov="1" draggable="true" data-drag="cand:${i}">
+              <span class="cur"></span><span class="face">${avatar(c.look, Math.PI / 2, '', '', 0)}</span><b>${esc(c.m.name)}${at ? `<u>${at}</u>` : ''}</b>
+              <em class="${fit ? 'fit' : ''}">${c.nat}</em><span class="o">${ovr(c.r)}</span>
+              ${keys.map((s, k) => `<span class="k ${c.r[s] === best[k] ? 'best' : ''}" style="--c:${A.list[s].color}"><b>${c.r[s]}</b><u><s style="width:${Math.min(100, (c.r[s] / A.max) * 100).toFixed(1)}%"></s></u></span>`).join('')}
+              <span class="oth">${oth.map((s) => `<span><i>${esc(A.list[s].short)}</i>${c.r[s]}</span>`).join('')}</span><span class="sch">${schoolLine(c.sch)}</span></div>`;
+        }).join('');
+        tray = `<div class="b-title"><b class="${S.nag ? 'nag' : ''}">${typeof cur === 'number' ? `REPLACE ${esc(S.cands[cur].m.name)}` : `PICK YOUR ${V.tgt}`}</b>
+            <span class="hint">★ = KEY STATS FOR ${V.tgt}${V.tgt === 'DEF' ? ' · KEEPS GOAL' : ''} · ▲ = BEST</span>${goBtn('b-gosm')}</div>${head}${rows}`;
+        tail = `<i class="b-tail" style="left:${SPOT_B[V.tgt].x + 4 - 6}px"></i>`;
+      } else if (S.move) {
+        const to = V.fs && V.fs !== V.you ? V.fs : V.you, keys = KEY[to];
+        tray = `<div class="b-title"><b class="blue">MOVE YOURSELF</b><span class="hint">PICK A SPOT ON THE PITCH · ESC: STAY</span></div>
+            <div class="b-you"><span class="sp-mini"><span class="face">${avatar(me.look, Math.PI / 2, '', '', 0)}</span><em>${to}</em><b>${ovr(me.r)}</b><i>${esc(me.name)}</i><u>YOU</u></span>
+            <span class="b-ks">${keys.map((s) => `<span class="a-k" style="--c:${A.list[s].color}"><i>★ ${esc(A.list[s].short)}</i><b>${me.r[s]}</b></span>`).join('')}</span>
+            <span class="hint">${to === V.you ? '' : `⇄ ${S.spots[to] == null ? 'EMPTY SPOT' : esc(S.cands[S.spots[to]].m.name)} GOES TO ${V.you}${to === 'DEF' ? ' · YOU KEEP GOAL' : ''}`}</span></div>`;
+      } else {
+        tray = `<div class="b-ready"><div class="b-sq"><b>YOUR SQUAD</b><div class="b-minis">${squadMinis()}</div><span class="hint">SELECT A PLAYER ON THE PITCH TO CHANGE</span></div>
+            <div class="b-go">${goBtn('b-gobig')}</div></div>`;
+      }
+      return `<div class="sp-page ${S.move ? 'moving' : ''}">
+          <div class="n-top"><b>BUILD YOUR SQUAD</b><span class="r">${backBtn()}</span></div>
+          ${pitch2(SPOT_B, 600, 160, { top: 27, lit: !V.tgt && !S.move && ready() })}
+          <div class="b-tray ${V.tgt ? 'pick' : ''}" data-drop="bench">${tail}${tray}</div>${keysLine()}${toast()}</div>`;
+    }
+
+    /* ---------- C · từng bước: 1 câu hỏi → 6 thẻ → ra sân ---------- */
+    const SPOT_CS = { DEF: { x: 64, y: 68 }, MID: { x: 156, y: 54 }, FWD: { x: 236, y: 76 } };   // dải sân lúc chọn (cao 90)
+    const SPOT_CB = { DEF: { x: 78, y: 166 }, MID: { x: 176, y: 100 }, FWD: { x: 240, y: 214 } };  // sân to lúc đủ người (cao 254)
+    function renderC() {
+      const V = view();
+      if (V.tgt) {
+        const cur = S.spots[V.tgt], n = ROLES.filter((r) => typeof S.spots[r] === 'number').length, keys = KEY[V.tgt];
+        const q = typeof cur === 'number' ? `<b>WHO REPLACES ${esc(S.cands[cur].m.name)}?</b>` : `<i>${n + 1}/2</i><b>WHO PLAYS ${V.tgt}?</b>`;
+        const cards = S.cands.map((c, i) => {
+          const at = where(i), fit = c.nat === V.tgt;
+          const st = A.order.map((s) => `<span class="c-st ${keys.includes(s) ? 'key' : ''}" style="--c:${A.list[s].color}"><i>${esc(A.list[s].short)}</i><b>${c.r[s]}</b></span>`).join('');
+          return `<div class="c-card ${V.focus === 'cand:' + i ? 'sel' : ''} ${at ? 'in' : ''}" data-k="cand:${i}" data-hov="1" draggable="true" data-drag="cand:${i}">
+              <span class="c-por">${avatar(c.look, Math.PI / 2, '', '', i * 0.37)}<em class="${fit ? 'fit' : ''}">${c.nat}</em></span>
+              <div class="c-txt"><div class="c-h"><b>${esc(c.m.name)}</b><span class="o">${ovr(c.r)}</span></div>
+                <div class="c-sub">${schoolLine(c.sch)}</div><div class="c-sts">${st}</div></div>
+              ${at ? `<span class="tag">IN · ${at}</span>` : ''}</div>`;
+        }).join('');
+        return `<div class="sp-page c-pick">
+            <div class="n-top"><span class="c-q">${q}${V.tgt === 'DEF' ? `<s>${PX.html('gear-gloves', '', '')}KEEPS GOAL</s>` : ''}</span><span class="r">${goBtn('c-gosm')}${backBtn()}</span></div>
+            ${pitch2(SPOT_CS, 600, 90, { top: 28, tags: 'role', cls: 'c-strip' })}
+            <div class="c-cards" data-drop="bench">${cards}</div>${keysLine()}${toast()}</div>`;
+      }
+      // đủ người (hoặc đang đổi chỗ): sân to cả 2 đội đối mặt + START RUN to dưới sân
+      return `<div class="sp-page c-show ${S.move ? 'moving' : ''}">
+          <div class="n-top">${S.move ? '<b class="blue">MOVE YOURSELF · PICK A SPOT</b>' : '<b>YOUR SQUAD</b>'}<span class="r">${backBtn()}</span></div>
+          ${pitch2(SPOT_CB, 600, 254, { top: 26, lit: !S.move, cls: 'c-big' })}
+          ${goBtn('c-gobig')}<div class="c-hint">SELECT A PLAYER TO CHANGE · DRAG TO SWAP SPOTS</div>${keysLine()}${toast()}</div>`;
+    }
+
+    const RENDER = { v1: renderV1, A: renderA, B: renderB, C: renderC };
+    function render() {
+      scr.className = 'stage v-' + S.v;
+      scr.innerHTML = RENDER[S.v]();
+      drawAll();
+      S.nag = false; S.kick = false; S.draw = null;
+      if (S.enter && performance.now() - S.enter.t0 > 700) S.enter = null;
+    }
+
+    /* ---------- việc ---------- */
+    // xếp ứng viên i vào ô role (đang ở ô khác thì ô đó trống ra; người cũ của role về băng ghế, hoặc bạn đổi chỗ nếu là bạn)
+    function place(i, role) {
+      if (S.spots[role] === 'you') return;
+      const from = where(i);
+      if (from) S.spots[from] = null;
+      S.spots[role] = i;
+      S.enter = { role, t0: performance.now() };
+      S.target = nextEmpty();
+      if (S.target) {
+        S.draw = S.target;
+        // vẫn đứng trên băng ghế: chọn sẵn người hợp ô kế tiếp (vị trí sở trường), không có thì ứng viên kế tiếp chưa ra sân
+        S.focus = 'cand:' + firstFit(S.target, i);
+      } else S.focus = 'go';
+      setTimeout(render, 720);
+    }
+    function moveYou(role) {
+      const you = youAt();
+      if (role === you) { S.move = false; return; }
+      S.spots[you] = S.spots[role]; S.spots[role] = 'you'; S.move = false;
+      S.target = nextEmpty(); S.draw = role;
+      S.focus = 'spot:' + role;
+    }
+    function act(k) {
+      S.toast = '';
+      if (k === 'back') { if (S.move) { S.move = false; return render(); } S.toast = '← GOAT PATH TAB'; return render(); }
+      if (k === 'go') {
+        if (!ready()) { S.nag = true; S.target = nextEmpty(); return render(); }
+        S.kick = true; S.toast = 'KICK OFF! → ACT 1'; return render();
+      }
+      if (k.startsWith('cand:')) {
+        const i = +k.slice(5);
+        if (S.move || !S.target) { S.focus = k; return render(); }
+        place(i, S.target);
+        return render();
+      }
+      const role = k.slice(5);
+      if (S.move) { moveYou(role); return render(); }
+      if (S.spots[role] === 'you') { S.move = true; S.focus = 'spot:' + ROLES.find((r) => r !== role); return render(); }
+      // ô trống / đồng đội: thành ô đang chờ, xuống băng ghế chọn người
+      S.target = role; S.draw = role;
+      S.focus = 'cand:' + firstFit(role, -1);
+      render();
+    }
+
+    /* ---------- chuột: bấm · rê lên băng ghế = trỏ (xem trước) · kéo thả ---------- */
+    scr.addEventListener('click', (e) => { const el = e.target.closest('[data-k]'); if (el) act(el.dataset.k); });
+    scr.addEventListener('mouseover', (e) => {
+      const el = e.target.closest('.sp-bt[data-k], [data-hov]');
+      if (el && S.focus !== el.dataset.k && !S.dragging) { S.focus = el.dataset.k; render(); }
+    });
+    let dragSrc = null;
+    scr.addEventListener('dragstart', (e) => {
+      const el = e.target.closest('[data-drag]');
+      if (!el) return;
+      dragSrc = el.dataset.drag; S.dragging = true;
+      try { e.dataTransfer.setData('text/plain', dragSrc); e.dataTransfer.effectAllowed = 'move'; } catch (err) { /* bỏ qua */ }
+      el.classList.add('drag'); scr.querySelector('.sp-page').classList.add('dragging');
+    });
+    scr.addEventListener('dragend', () => { dragSrc = null; S.dragging = false; render(); });
+    scr.addEventListener('dragover', (e) => {
+      const el = e.target.closest('[data-drop]');
+      if (!el || !dragSrc) return;
+      e.preventDefault();
+      scr.querySelectorAll('.over').forEach((x) => x !== el && x.classList.remove('over'));
+      el.classList.add('over');
+    });
+    scr.addEventListener('drop', (e) => {
+      const el = e.target.closest('[data-drop]');
+      if (!el || !dragSrc) return;
+      e.preventDefault();
+      const src = dragSrc, dst = el.dataset.drop;
+      dragSrc = null; S.dragging = false;
+      if (src.startsWith('cand:')) { if (dst !== 'bench' && S.spots[dst] !== 'you') place(+src.slice(5), dst); }
+      else {
+        const from = src.slice(5);
+        if (dst === 'bench') { if (S.spots[from] !== 'you') { S.spots[from] = null; S.target = nextEmpty(); } }
+        else if (dst !== from) {
+          if (S.spots[from] === 'you') moveYou(dst);
+          else if (S.spots[dst] === 'you') { S.move = false; moveYou(from); }
+          else { const t = S.spots[dst]; S.spots[dst] = S.spots[from]; S.spots[from] = t; }
+        }
+      }
+      render();
+    });
+
+    /* ---------- phím: ←↑↓→ theo vị trí thật trên màn (navPick như BUILD YOUR SQUAD hiện tại) ---------- */
+    addEventListener('keydown', (e) => {
+      const dirs = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
+      if (dirs[e.key]) {
+        e.preventDefault();
+        const els = [...scr.querySelectorAll('[data-k]')], cur = els.find((x) => x.dataset.k === S.focus);
+        let j = cur ? U.navPick(els.map((x) => (x === cur ? null : U.navRect(x))), U.navRect(cur), dirs[e.key]) : 0;
+        if (j < 0 && dirs[e.key] === 'up') j = els.findIndex((x) => x.dataset.k === 'back');   // hết đường lên (vd từ START RUN): lên BACK, không đứng yên
+        if (j >= 0) { S.focus = els[j].dataset.k; S.toast = ''; render(); }
+      } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(S.focus); }
+      else if (e.key === 'Escape' || e.key === 'Backspace') { e.preventDefault(); act('back'); }
+    });
+
+    /* ---------- trạng thái dựng sẵn (nút trên khung) ---------- */
+    const STATES = {
+      fresh() { Object.assign(S, { spots: { FWD: 'you', MID: null, DEF: null }, target: 'MID', move: false, enter: null, toast: '' }); S.focus = 'cand:' + firstFit('MID', -1); },
+      one() { STATES.fresh(); S.spots.MID = firstFit('MID', -1); Object.assign(S, { target: 'DEF' }); S.focus = 'cand:' + firstFit('DEF', S.spots.MID); },
+      ready() { STATES.one(); S.spots.DEF = firstFit('DEF', S.spots.MID); Object.assign(S, { target: null, focus: 'go' }); },
+      move() { STATES.ready(); Object.assign(S, { move: true, focus: 'spot:DEF' }); },
+      replace() { STATES.ready(); const a = S.spots.MID, b = S.spots.DEF; Object.assign(S, { target: 'MID', draw: 'MID' }); S.focus = 'cand:' + S.cands.findIndex((c, k) => k !== a && k !== b); },
+    };
+    // nút trên khung: phương án (data-v) · trạng thái dựng sẵn (data-st) · cách xem (data-view: nheo mắt / trắng đen, CSS filter trên cả khung)
+    const tabs = () => document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on',
+      b.dataset.v === S.v || (b.dataset.view != null && b.dataset.view === (document.getElementById('wrap').dataset.view || ''))));
+    document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
+      if (b.dataset.v) S.v = b.dataset.v;
+      if (b.dataset.st) STATES[b.dataset.st]();
+      if (b.dataset.view != null) document.getElementById('wrap').dataset.view = b.dataset.view;
+      render(); tabs();
+    }));
+    window.MK = { S, render, state: (k) => { STATES[k](); render(); }, v: (k) => { S.v = k; render(); tabs(); }, view: (k) => { document.getElementById('wrap').dataset.view = k; tabs(); } };
+    tabs();
+    STATES.fresh();
+    render();
+  }
+</script>
+</body>
+</html>

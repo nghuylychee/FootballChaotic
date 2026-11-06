@@ -1423,13 +1423,15 @@ window.SFC = window.SFC || {};
 
     // gắn canvas character: look = hồ sơ hiện tại, hoặc bản "mặc thử" trong Shop (data-try)
     bindAvatars() {
+      // data-face: hướng quay cố định (rad, 0 = sang phải; vd người đứng trên sân ở BUILD YOUR SQUAD) — không có thì xoay người khoe đồ
+      const faceOf = (cv) => (cv.dataset.face != null ? +cv.dataset.face : null);
       this.el.querySelectorAll('canvas[data-arena]').forEach((cv) => this.drawArena(cv));
       if (this.page === 'wishlist') this.el.querySelectorAll('canvas[data-ract]').forEach((cv) => SFC.RunUI.actThumb(cv));
       // cầu thủ đội đối thủ (Main Path): costume + áo của đội đó
       const teamAvatars = [...this.el.querySelectorAll('canvas[data-team]')].map((cv) => {
         cv.width = 40; cv.height = 44;
         const id = cv.dataset.team;
-        return { cv, look: MPATH().teamLook(id, +cv.dataset.idx || 0), kit: TEAMS().list[id].kit, big: false, sil: !!cv.dataset.sil };
+        return { cv, look: MPATH().teamLook(id, +cv.dataset.idx || 0), kit: TEAMS().list[id].kit, big: false, sil: !!cv.dataset.sil, face: faceOf(cv) };
       });
       // đồng đội / ứng viên scout (ui/team.js): mặc áo đội riêng của người chơi
       const mateAvatars = [...this.el.querySelectorAll('canvas[data-mate]')].map((cv) => {
@@ -1442,7 +1444,7 @@ window.SFC = window.SFC || {};
         cv.width = 40; cv.height = 44;
         let look = null;
         try { look = JSON.parse(cv.dataset.mmlook); } catch (e) { /* bỏ qua */ }
-        return { cv, look, kit: cv.dataset.mmaway === '1' ? P.awayKit : P.kit, big: false, still: cv.dataset.still === '1' };   // still: luôn quay mặt ra trước
+        return { cv, look, kit: cv.dataset.mmaway === '1' ? P.awayKit : P.kit, big: false, still: cv.dataset.still === '1', face: faceOf(cv) };   // still: luôn quay mặt ra trước
       }).filter((a) => a.look);
       this.avatars = teamAvatars.concat(mateAvatars, mmAvatars, [...this.el.querySelectorAll('canvas[data-avatar]')].map((cv) => {
         const big = cv.classList.contains('big');
@@ -1453,7 +1455,7 @@ window.SFC = window.SFC || {};
         const cel = tryOn && PROG().items[tryOn].slot === 'cel' ? tryOn : null;
         cv.width = cel ? 64 : 40; cv.height = cel ? 64 : 44;
         cv.classList.toggle('cel', !!cel);
-        return { cv, look: PF().lookOf(look), big, cel };
+        return { cv, look: PF().lookOf(look), big, cel, face: faceOf(cv) };
       }));
       this.animate(0);
     },
@@ -1476,7 +1478,7 @@ window.SFC = window.SFC || {};
       for (const a of this.avatars) {
         if (!a.cv.isConnected) continue;
         const cel = a.cel ? { celId: a.cel, celT: this.animT % (SFC_CONFIG.game.match.goalCelebration + 0.4) } : null;
-        SFC.Sprites.drawAvatar(a.cv, a.look, a.kit || kit, this.animT, a.still ? Math.PI / 2 : facing, cel);
+        SFC.Sprites.drawAvatar(a.cv, a.look, a.kit || kit, this.animT, a.face != null ? a.face : a.still ? Math.PI / 2 : facing, cel);
         if (a.sil) silhouette(a.cv);   // Area chưa mở: đội đối thủ chỉ hiện bóng đen
       }
     },
