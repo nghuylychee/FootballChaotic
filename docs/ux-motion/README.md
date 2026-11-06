@@ -119,7 +119,7 @@ bump máy chủ). Độ dài / độ trễ từng phần tử ở `css/style.css
 | HUD | khoá vẽ lại không còn số giây; đồng hồ + dòng "Next Core in" sửa chữ tại chỗ | `hud.js` `updateHud` |
 | Tab trang chủ | `hnPop` chỉ khi mục chọn đổi / vừa vào trang chủ (`.pop`, `homePopSel`) | `menu.js`, CSS `.hn-tab.sel.pop` |
 | Toast | vào 0,15 s (`toastIn`, fill backwards để chiều ra vẫn chạy) | CSS `.toast` |
-| Chọn GEAR | **không đổi** | — |
+| Chọn GEAR | **không đổi** ở đợt này; làm lại cả màn ở review GEAR 2026-11-06 (`docs/ux-gear`, phương án B): mỗi bước ≤ 0,5 s, khoá nút tới lúc đó (`motion.run.gear` / `gearwho` / `gearswap`, CSS `.rm-in.gearx`), nhánh `ux/gear-2026-11` | `runmap.js` `gearCard` |
 
 Kiểm tra: `node --check` các file sửa, `manifest --check`, `i18n-check` (không thêm chữ), `npm run server:test` OK; Chrome headless chạy game thật
 (`?runtest=join.pirlow`, `?runtest=map`, `?runtest=match`, SHOP): tab trang chủ, mở hộp (bấm lúc hiện không mua, sau khoá mới mua), LEGEND (bấm 0,2 s =

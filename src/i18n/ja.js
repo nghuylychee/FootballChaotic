@@ -208,6 +208,9 @@ SFC.I18n.add({
     'KEEPS GOAL': 'ゴールを守る',
     'NEED {pos}': '{pos}が必要',
     'SWAP': '入れ替え',
+    'HAS ONE': '装備済み',
+    'DROP ONE': '1つ外す',
+    'gear|FULL': '空きなし',
     /* BUILD YOUR SQUAD sân ngang (owner 2026-11-06; Claude — chưa duyệt) */
     'PICK YOUR {pos}': '{pos}を選ぼう',
     'REPLACE {name}': '{name}と交代',

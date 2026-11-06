@@ -208,6 +208,9 @@ SFC.I18n.add({
     'KEEPS GOAL': 'FICA NO GOL',
     'NEED {pos}': 'FALTA {pos}',
     'SWAP': 'TROCAR',
+    'HAS ONE': 'JÁ TEM',
+    'DROP ONE': 'TIRE UM',
+    'gear|FULL': 'CHEIO',
     /* BUILD YOUR SQUAD sân ngang (owner 2026-11-06; Claude — chưa duyệt) */
     'PICK YOUR {pos}': 'ESCOLHA SEU {pos}',
     'REPLACE {name}': 'SUBSTITUIR {name}',

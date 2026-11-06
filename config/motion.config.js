@@ -14,8 +14,13 @@ SFC_CONFIG.motion = {
   // màn kết quả nhịp 2 (endscreen.js): bố cục cuối đứng yên, số đếm từ count[0] trong count[1] giây, nút nhận phím từ grace
   results: { count: [0.1, 0.35], grace: 0.5 },
 
-  // thẻ che map GOAT PATH (runmap.js): dur = lúc hiện đủ (CSS .rm-in), cta = lúc nút nhận phím. Màn chọn GEAR không có (owner: để nguyên)
+  // thẻ che map GOAT PATH (runmap.js): dur = lúc hiện đủ (CSS .rm-in), cta = lúc nút nhận phím
   run: {
+    // màn GEAR (review GEAR 2026-11-06, phương án B; vào nhiều + cảm xúc cao: pop ≤ 0.5s): chọn món · ai đeo (chip món bay lên, người lớn lên)
+    // · mở món bỏ ra trong thẻ người đủ ô
+    gear: { dur: 0.5, cta: 0.5 },
+    gearwho: { dur: 0.5, cta: 0.5 },
+    gearswap: { dur: 0.3, cta: 0.3 },
     end: { dur: 2.3, cta: 2.4, gold: [1.25, 0.6] },   // RUN OVER / CHAMPIONS; gold = [bắt đầu, độ dài] đếm số GOLD mang về
     offer: { dur: 1.5, cta: 1.5 },                     // chọn BADGE
     join: { dur: 0.95, cta: 1.0 },                     // LEGEND "Who gets him?"

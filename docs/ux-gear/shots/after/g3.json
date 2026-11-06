@@ -1,0 +1,20 @@
+{
+ "page": "runmap",
+ "sel": {
+  "cls": "gx-row sel",
+  "txt": "Play Wristband\nPAS\n73\n→\n69",
+  "x": 440,
+  "y": 468,
+  "w": 400,
+  "h": 44
+ },
+ "order": [
+  "swap:0",
+  "swap:1",
+  "swap:2",
+  "gback"
+ ],
+ "id": "g3",
+ "title": "GEAR · bước 3 · bỏ món ra",
+ "moving_pct": 0.0
+}
