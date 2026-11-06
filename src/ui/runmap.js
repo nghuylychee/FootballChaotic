@@ -290,6 +290,9 @@ window.SFC = window.SFC || {};
       if (this.key !== key) {
         // trạng thái đổi (vừa xong 1 node / act mới / mở phòng / hết run): chọn mục đầu
         this.key = key; this.sel = this.firstSel(T); this.quitArm = false;
+        // thẻ che vừa mở: stagger vào + khoá nút tới lúc hiện đủ (motion review 2026-11-06, phương án A; màn GEAR để nguyên)
+        const kind = this.enterKind(R), M = SFC_CONFIG.motion.run[kind];
+        this.enter = M ? { kind, t0: performance.now(), dur: M.dur, cta: M.cta } : null;
       }
       const A = RUN().act(R.act);
       // dải đội hình luôn hiện (kể cả khi nút không chọn được vì đang có thẻ che): bấm = mở SQUAD
@@ -302,6 +305,10 @@ window.SFC = window.SFC || {};
       // dòng báo (UX review 2026-11-02): thẻ che có chân thẻ -> nằm ngay trên hàng nút của thẻ (không che BACK / SKIP); map -> trên bảng chú thích (CSS)
       const FT = '<div class="rm-sheet-foot">', foot = over.lastIndexOf(FT) + FT.length;
       if (msg && foot >= FT.length) { over = over.slice(0, foot) + msg + over.slice(foot); msg = ''; }
+      // đang stagger vào: class .rm-in (CSS) + --in0 = -số giây đã chạy -> vẽ lại giữa chừng (phím, đo lại khung map) thì chạy tiếp,
+      // không bắt đầu lại; hết dur thì vẽ thường (trạng thái cuối)
+      const E = this.enter, inT = E ? (performance.now() - E.t0) / 1000 : 0, staging = E && inT < E.dur;
+      if (staging) { over = over.replace('class="rm-actcard', 'class="rm-actcard rm-in'); menu.el.style.setProperty('--in0', (-inT).toFixed(3) + 's'); }
       menu.el.innerHTML = `<div class="rm-page ${inRoom() ? 'coop' : ''}" style="--ac:${A.color}">
           <div class="rm-bar">${strip}<div class="rm-acts">${room}${this.cash(P.cash)}</div></div>
           <div class="rm-map">${this.mapHtml(R, T)}</div>
@@ -317,6 +324,40 @@ window.SFC = window.SFC || {};
       if (R.join) this.bindJoin(menu);
       if (T[0] && T[0].k === 'close') this.bindBag(menu, T);   // đang mở SQUAD
       if (T[0] && T[0].k === 'end') this.bindEnd(menu, T);     // thẻ hết run
+      if (staging && E.kind === 'end') this.countGold(menu, R);
+    },
+    /* ---------- thẻ che stagger vào (motion review 2026-11-06, phương án A; config/motion.config.js run, CSS .rm-in) ---------- */
+    // loại thẻ che đang hiện (cùng thứ tự với overlay); null = không stagger (màn GEAR, Shop, Skill game, ??? ... giữ nguyên)
+    enterKind(R) {
+      if (!RUN().active()) return 'end';
+      if (R.offer) return R.offer.gear ? null : 'offer';
+      if (R.join) return 'join';
+      if (R.room || this.evOn(R)) return null;
+      return R.actNew ? 'act' : null;
+    },
+    // còn trong lúc khoá nút (chưa tới motion.run[kind].cta)
+    entering() { const E = this.enter; return !!E && (performance.now() - E.t0) / 1000 < E.cta; },
+    // bấm / click / Esc lúc đang stagger: hiện đủ ngay (không bấm nút), nút khoá thêm motion.lock
+    skipEnter(menu) {
+      const E = this.enter, now = performance.now();
+      if ((now - E.t0) / 1000 >= E.dur) return;   // đã hiện đủ, đang chờ khoá: bỏ qua phím
+      E.t0 = now - E.dur * 1000;
+      E.cta = E.dur + SFC_CONFIG.motion.lock;
+      menu.render();
+    },
+    // thẻ hết run: GOLD mang về đếm lên theo nhịp stagger (motion.run.end.gold)
+    countGold(menu, R) {
+      const b = menu.el.querySelector('.rm-bring .rb-chip:not(.road) b');
+      if (!b || !R.metaGold) return;
+      cancelAnimationFrame(this.goldRaf);
+      const [at, dur] = SFC_CONFIG.motion.run.end.gold, E = this.enter;
+      const step = () => {
+        if (!b.isConnected || this.enter !== E) return;
+        const k = Math.max(0, Math.min(1, ((performance.now() - E.t0) / 1000 - at) / dur));
+        b.textContent = '+' + Math.round(R.metaGold * (1 - (1 - k) * (1 - k)));
+        if (k < 1) this.goldRaf = requestAnimationFrame(step);
+      };
+      step();
     },
     // thẻ che map: chuột và phím dùng chung 1 mục chọn (UX review 2026-11-02, như KIT VAN): rê chuột lên mục (data-rt) = dời this.sel tới đó,
     // chỉ chuyển class .sel (không vẽ lại; thẻ LEGEND xin vào đội: bindJoin tự đổi xem trước). Bắt mousemove (chuột thật di chuyển) chứ
@@ -421,7 +462,11 @@ window.SFC = window.SFC || {};
       const dust = [0, 1, 2, 3, 4].map((i) => `<rect class="dust" x="${p.x + 20 + i * 3 - 6}" y="${p.y - 24 + (i % 2) * 3}" width="2" height="2" style="animation-delay:${dur + i * 0.03}s"/>`).join('');
       box.insertAdjacentHTML('beforeend', `<svg class="rm-chalk" width="${box.offsetWidth}" height="${box.offsetHeight}">${this.chalkRing(n, id + ':' + Date.now(), 'draw')}${dust}</svg>`);
       SFC.Audio.chalk(dur);
-      setTimeout(done, (dur + 0.25) * 1000);
+      // Enter lần 2 / click = vào node ngay (motion review 2026-11-06, phương án A); Esc vẫn về tab GOAT PATH như cũ (fxEsc tắt)
+      const go = () => { clearTimeout(timer); this.fxSkip = null; done(); };
+      const timer = setTimeout(go, (dur + 0.25) * 1000);
+      this.fxSkip = go;
+      this.fxEsc = false;
     },
     // bảng chú thích dưới map (user 2026-10-30): icon + tên từng loại node có trên map của act này (theo thứ tự run.nodes; boss cuối)
     legendBar(R) {
@@ -1272,13 +1317,14 @@ window.SFC = window.SFC || {};
       card.querySelectorAll('.sq-col')[1].outerHTML = r;
     },
     // chỉ số trên thẻ đổi lần lượt base -> next (số chạy + nháy + bật +n / -n), bắt đầu sau t0 ms, mỗi chỉ số cách step ms.
-    // Hẹn giờ thường (tab ẩn vẫn chạy hết). Trả về số chỉ số đổi (nhận LEGEND, đeo GEAR)
-    tickStats(root, card, base, next, ref, t0, step) {
+    // Hẹn giờ thường (tab ẩn vẫn chạy hết). Trả về số chỉ số đổi (nhận LEGEND, đeo GEAR). timers (tuỳ chọn): gom id hẹn giờ để bỏ qua giữa chừng (ký LEGEND)
+    tickStats(root, card, base, next, ref, t0, step, timers) {
       const A = SFC_CONFIG.progression.attrs, k = root.getBoundingClientRect().width / root.offsetWidth || 1, rs = root.getBoundingClientRect();
       const changed = A.order.filter((s) => next[s] !== base[s]), cur = Object.assign({}, base);
-      changed.forEach((s, j) => setTimeout(() => {
+      const later = (fn, ms) => { const id = setTimeout(fn, ms); if (timers) timers.push(id); };
+      changed.forEach((s, j) => later(() => {
         const from = cur[s], to = next[s], steps = 6;
-        for (let q = 1; q <= steps; q++) setTimeout(() => {
+        for (let q = 1; q <= steps; q++) later(() => {
           cur[s] = Math.round(from + ((to - from) * q) / steps);
           this.setCols(card, cur, ref, null);
           const cell = [...card.querySelectorAll('.sq-st')].find((x) => x.querySelector('i').textContent === A.list[s].short);
@@ -1289,7 +1335,7 @@ window.SFC = window.SFC || {};
           d.textContent = (to > from ? '+' : '') + (to - from);
           d.style.left = (r.right - rs.left) / k - 6 + 'px'; d.style.top = (r.top - rs.top) / k - 6 + 'px';
           root.appendChild(d);
-          setTimeout(() => d.remove(), 950);
+          later(() => d.remove(), 950);
           SFC.Audio.menu();
         }, q * 45);
       }, t0 + j * step));
@@ -1429,6 +1475,8 @@ window.SFC = window.SFC || {};
       card.classList.add('got');
       const ov = card.querySelector('.sq-ovr');
       ov.textContent = o0; ov.classList.remove('pre', 'dn');
+      // hẹn giờ của cả hoạt cảnh gom lại: bấm bỏ qua (fxSkip) thì huỷ hết và tới thẳng trạng thái cuối
+      const timers = [], later = (fn, ms) => timers.push(setTimeout(fn, ms));
       // chân dung bay (canvas vẽ 1 khung, quay mặt ra trước)
       const port = root.querySelector('.lg-port canvas'), dst = card.querySelector('.sq-art');
       if (port && dst && port.animate) {
@@ -1442,14 +1490,15 @@ window.SFC = window.SFC || {};
         f.animate([{ transform: 'translate(0, 0) scale(1)', opacity: 1 },
           { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 30}px) scale(1.1)`, opacity: 1, offset: 0.45 },
           { transform: `translate(${dx}px, ${dy}px) scale(0.7)`, opacity: 0 }], { duration: 650, easing: 'cubic-bezier(.45, 0, .6, 1)', fill: 'forwards' });
-        setTimeout(() => f.remove(), 700);
+        later(() => f.remove(), 700);
       }
       SFC.Audio.pick();
       // từng chỉ số đổi, lần lượt
-      const T0 = 700, STEP = 380, changed = this.tickStats(root, card, base, next, ref, T0, STEP);
+      const T0 = 700, STEP = 380, changed = this.tickStats(root, card, base, next, ref, T0, STEP, timers);
       // OVR + chip COMBO đóng dấu + chip LEGEND dưới thẻ
       const tEnd = T0 + changed * STEP + 250;
-      setTimeout(() => {
+      const stamp = () => {
+        if (card.querySelector('.lg-stamp')) return;
         ov.textContent = o1;
         ov.classList.toggle('pre', o1 > o0); ov.classList.toggle('dn', o1 < o0);
         const st = document.createElement('div');
@@ -1466,8 +1515,22 @@ window.SFC = window.SFC || {};
           foot.prepend(chip);
         }
         SFC.Audio.upgrade();
-      }, tEnd);
-      setTimeout(done, tEnd + 1100);
+      };
+      const finish = () => { this.fxSkip = null; this.fxEsc = false; done(); };
+      later(stamp, tEnd);
+      later(finish, tEnd + 1100);
+      // Enter / Esc / click lúc đang diễn: tới trạng thái cuối ngay (chỉ số mới, OVR mới + NEW COMBO), giữ motion.run.signHold giây rồi về map
+      // (motion review 2026-11-06, phương án A; trước đây 2.0–3.2s khoá cứng)
+      this.fxEsc = true;
+      this.fxSkip = () => {
+        this.fxSkip = null;
+        timers.forEach(clearTimeout);
+        root.querySelectorAll('.lg-fly, .lg-dpop').forEach((x) => x.remove());
+        card.querySelectorAll('.sq-st.tick').forEach((x) => x.classList.remove('tick'));
+        this.setCols(card, next, ref, null);
+        stamp();
+        setTimeout(finish, SFC_CONFIG.motion.run.signHold * 1000);
+      };
     },
     // gợi ý được / mất (UX review 2026-11-02): chip màu cứng — trả tiền đỏ · có thể thắng tiền xanh + ? · BADGE vàng bo tròn (như miếng vá)
     // · có thể chấn thương ✚ đỏ + ? (cùng dấu chấn thương ở dải đội hình) · chữa hết ✚ xanh
@@ -1627,7 +1690,7 @@ window.SFC = window.SFC || {};
     // thẻ mở act: tên act + boss cuối act
     actCard(R, T) {
       const A = RUN().act(R.act), boss = TEAMS()[R.bosses[R.act]];
-      return `<div class="rm-actcard" style="--ac:${A.color}">
+      return `<div class="rm-actcard act" style="--ac:${A.color}">
           <span>${esc(_t('ACT {n}', { n: R.act + 1 }))}</span><b>${esc(A.name)}</b>
           <div class="rm-actboss"><canvas data-team="${R.bosses[R.act]}" data-idx="2"></canvas><em>${PX().ui('crown', 'sm')} ${esc(boss.name)}</em></div>
           ${T[0] ? this.btn(T, T[0], esc(_t('LET\'S GO'))) : ''}
@@ -1874,8 +1937,11 @@ window.SFC = window.SFC || {};
       if (say.length) menu.setMsg(say.join(' · '), res.some((x) => x.kind === 'injury' || x.kind === 'lost'));
     },
     input(menu, input) {
+      // đang diễn có thể bỏ qua (ký LEGEND, khoanh phấn): Enter = tới cuối ngay · thẻ che đang stagger vào: Enter = hiện đủ (motion review 2026-11-06)
+      if (this.drawing) { if (this.fxSkip && input.wasPressed('confirm')) this.fxSkip(); return; }
+      if (this.entering()) { if (input.wasPressed('confirm')) this.skipEnter(menu); return; }
       const T = this.targets(), n = T.length;
-      if (!n || this.drawing) return;
+      if (!n) return;
       const nNode = T.filter((t) => t.k === 'node').length, onNode = this.sel < nNode;
       for (const d of ['left', 'right', 'up', 'down']) {
         if (!input.wasPressed(d)) continue;
@@ -1939,6 +2005,8 @@ window.SFC = window.SFC || {};
       if (input.wasPressed('confirm') && T[this.sel]) this.act(menu, T[this.sel]);
     },
     click(menu, e) {
+      if (this.drawing) { if (this.fxSkip) this.fxSkip(); return true; }
+      if (this.entering()) { this.skipEnter(menu); return true; }
       const T = this.targets();
       const nb = e.target.closest('[data-rn]');
       if (nb) {
@@ -1956,6 +2024,9 @@ window.SFC = window.SFC || {};
     // SKIP / LEAVE / NO THANKS (UX review 2026-11-02: Esc không bao giờ tự bỏ thưởng, phải Enter / bấm nút đó) · thẻ khác = nút chính
     // · map = về tab GOAT PATH
     back(menu) {
+      // Esc lúc ký LEGEND: tới trạng thái cuối (trước đây vẽ lại giữa chừng làm vỡ hình) · thẻ che đang stagger vào: hiện đủ
+      if (this.drawing && this.fxSkip && this.fxEsc) return this.fxSkip();
+      if (this.entering()) return this.skipEnter(menu);
       const T = this.targets(), f = (k) => T.find((t) => t.k === k);
       if (!RUN().run && this.pick && this.pick.move) { this.pick.move = false; SFC.Audio.menu(); return menu.render(); }   // đang đổi chỗ: Esc = thôi
       if (!RUN().run && this.pick) return this.act(menu, f('undo') || f('cancel'));

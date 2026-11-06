@@ -24,6 +24,7 @@ window.SFC = window.SFC || {};
     updateHud(game) {
       if (!game) return;
       this.draftWaitView(game);
+      if (this.pendingBanner) this.kickoffBanner();   // banner đầu trận đang chờ lượt chọn Core đầu trận xong
       const c = this.hudCache;
       const t0 = game.teams[0], t1 = game.teams[1];
       const training = !!(game.opts && game.opts.training);
@@ -34,8 +35,8 @@ window.SFC = window.SFC || {};
       const cores = game.players.map((p) => game.cores.coresOf(p).join()).join('|');
       // lượt chọn Core: đang chờ bàn thắng / còn bao lâu tới lượt kế
       const pend = game.draftPending(), next = game.draftNextIn();
-      const coreLine = pend > 0 ? `<div class="hud-core on">${esc(_t('✦ CORE +{n} · waiting for a goal', { n: pend }))}</div>`
-        : next != null ? `<div class="hud-core">${esc(_t('✦ Next Core in {time}', { time: SFC.U.fmtTime(next) }))}</div>` : '';
+      const coreText = pend > 0 ? _t('✦ CORE +{n} · waiting for a goal', { n: pend }) : next != null ? _t('✦ Next Core in {time}', { time: SFC.U.fmtTime(next) }) : '';
+      const coreLine = coreText ? `<div class="hud-core ${pend > 0 ? 'on' : ''}">${esc(coreText)}</div>` : '';
       // Main Path: Area + Elo lúc vào trận
       const mp = game.opts && game.opts.mainPath;
       const cupO = game.opts && game.opts.cup, cupS = cupO && SFC.Cup.get(cupO.id);
@@ -45,7 +46,10 @@ window.SFC = window.SFC || {};
         : !mp ? '' : `<div class="hud-path">${esc(SFC.MainPath.area(mp.area).name)} · ${PX().elo(mp.elo)}</div>`;
       // GOAT PATH SKILL GAME: thanh tiến độ 3 mốc thay cho tỉ số
       const D = game.drill, drillBox = D ? this.drillBox(game, D, time) : '';
-      const key = [t0.score, t1.score, dream ? 'dream' : time, phase, cores, coreLine, pathLine, drillBox].join('#');
+      // khoá vẽ lại không có số giây: đồng hồ + dòng "Next Core in" sửa chữ tại chỗ bên dưới. Trước đây HUD vẽ lại mỗi giây làm các
+      // nhấp nháy vô hạn (.hud-core.on 0.8s, ô Tuyệt kỹ đầy 0.6s) chạy lại từ đầu mỗi giây -> giật (motion review 2026-11-06)
+      const hot = game.finalPush || game.golden;
+      const key = [t0.score, t1.score, dream ? 'dream' : game.golden ? 'golden' : '', hot ? 'hot' : '', phase, cores, pend > 0 ? 'on' + pend : next != null ? 'next' : '', pathLine, drillBox].join('#');
       if (c.key !== key) {
         c.key = key;
         // nhãn người chơi theo slot: P1..P4 (co-op: 2 nhãn cùng 1 đội); người ở máy này tô vàng, cùng đội xanh, đối thủ đỏ
@@ -70,7 +74,14 @@ window.SFC = window.SFC || {};
           </div>`;
         c.ultBars = [0, 1].map((t) => this.el.hud.querySelector(`.hud-ult[data-t="${t}"]`));
         c.ultVals = [-1, -1];
+        c.timeEl = training || drillBox ? null : this.el.hud.querySelector('.hud-time');
+        c.coreEl = this.el.hud.querySelector('.hud-core');
+        c.time = dream ? _t('DREAM') : time;
+        c.core = coreText;
       }
+      const tText = dream ? _t('DREAM') : time;
+      if (c.timeEl && c.time !== tText) { c.time = tText; c.timeEl.textContent = tText; }
+      if (c.coreEl && c.core !== coreText) { c.core = coreText; c.coreEl.textContent = coreText; }
       // năng lượng Tuyệt kỹ 2 đội (cập nhật mỗi khung)
       for (let t = 0; t < 2; t++) {
         const el = c.ultBars && c.ultBars[t], v = Math.round(game.cores.teamUlt(t) * 100);
@@ -364,14 +375,29 @@ window.SFC = window.SFC || {};
     },
 
     /* ================= THÔNG BÁO ================= */
+    // vào motion.banner.in + giữ dur + ra motion.banner.out (motion review 2026-11-06: trước đây 1 keyframe 2.2s bị gỡ ở dur -> tắt cụt khi dur < 2.2s)
     banner(text, sub, color, dur = 1.8) {
-      const el = this.el.banner;
+      const el = this.el.banner, M = SFC_CONFIG.motion.banner;
       el.innerHTML = `<div class="b-main" style="color:${color || '#fff'}">${esc(text)}</div>${sub ? `<div class="b-sub">${esc(sub)}</div>` : ''}`;
-      el.classList.remove('show');
+      el.classList.remove('show', 'out');
       void el.offsetWidth;
       el.classList.add('show');
       clearTimeout(this._bt);
-      this._bt = setTimeout(() => el.classList.remove('show'), dur * 1000);
+      clearTimeout(this._bo);
+      this._bt = setTimeout(() => {
+        el.classList.add('out');
+        this._bo = setTimeout(() => el.classList.remove('show', 'out'), M.out * 1000);
+      }, (M.in + dur) * 1000);
+    },
+
+    // banner đầu trận (main.js kickoff): lượt chọn Core đầu trận mở cùng lúc thì chờ chọn xong mới hiện (trước đây #draft che mất).
+    // fn = hàm hiện banner; gọi không có fn (updateHud mỗi khung) = thử hiện banner đang chờ
+    kickoffBanner(fn) {
+      if (fn) this.pendingBanner = fn;
+      const g = this.app.game, f = this.pendingBanner;
+      if (!f || (g && g.state === 'draft' && g.draft && g.draft.pre) || this.draftMorphActive) return;
+      this.pendingBanner = null;
+      f();
     },
 
     ultUnlocked(game, e) {
@@ -397,7 +423,10 @@ window.SFC = window.SFC || {};
 
     clearToasts() {
       this.el.toasts.innerHTML = '';
-      this.el.banner.classList.remove('show');
+      clearTimeout(this._bt);
+      clearTimeout(this._bo);
+      this.el.banner.classList.remove('show', 'out');
+      this.pendingBanner = null;
     },
   });
 })();

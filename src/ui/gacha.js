@@ -217,10 +217,13 @@ window.SFC = window.SFC || {};
     /* ---------- MỞ HỘP: dải quay + kết quả ---------- */
     pageOpen() {
       const o = this.opening, b = PROG().boxes[o.boxId];
-      const cards = o.reel.map((x) => `<div class="rcard" style="--rc:${RAR(x.rarity).color}">${iconHtml(entry(x.kind, x.id))}</div>`).join('');
-      const reveal = o.done ? this.revealHtml(o) : `<div class="reveal wait"><span>${_t('Spinning...')}</span><button class="g-btn" data-ract="skip"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('skip')}</button></div>`;
+      const cards = o.reel.map((x, i) => `<div class="rcard ${i === PROG().reelWinIndex ? 'win' : ''}" style="--rc:${RAR(x.rarity).color}">${iconHtml(entry(x.kind, x.id))}</div>`).join('');
+      // kết quả hiện lần lượt trong motion.box.reveal giây sau khi dải dừng (CSS .rv-in); --in0 = -số giây đã chạy -> vẽ lại giữa chừng chạy tiếp
+      const inT = o.done ? (performance.now() - o.revealAt) / 1000 : 0, rvIn = o.done && inT < SFC_CONFIG.motion.box.reveal;
+      if (rvIn) SFC.Menu.el.style.setProperty('--in0', (-inT).toFixed(3) + 's');
+      const reveal = o.done ? this.revealHtml(o, rvIn) : `<div class="reveal wait"><span>${_t('Spinning...')}</span><button class="g-btn" data-ract="skip"><kbd>${K('confirm', 'Enter')}</kbd> ${_t('skip')}</button></div>`;
       return `${this.header(_t('OPEN BOX'), `<div class="open-box">${boxArt(b.color)}<span>${esc(b.name)}</span></div>`)}
-        <div class="reel-wrap ${o.done ? 'done' : ''}" style="--rc:${RAR(o.win.rarity).color}">
+        <div class="reel-wrap ${o.done ? 'done' : ''} ${rvIn ? 'rv-in' : ''}" style="--rc:${RAR(o.win.rarity).color}">
           <div class="reel"><div class="reel-strip" style="transform:translateX(${-(o.done ? o.dist : o.pos)}px)">${cards}</div></div>
           <i class="reel-mark"></i>
         </div>
@@ -228,7 +231,7 @@ window.SFC = window.SFC || {};
         <!--msg--><div class="m-hint">${o.done ? _t('{ok} open another · {equip} equip · {dismantle} dismantle · {back} back to Shop', { ok: K('confirm', 'Enter'), equip: K('equip', 'E'), dismantle: K('dismantle', 'X'), back: K('back', 'Esc') }) : _t('{ok} skip', { ok: K('confirm', 'Enter') })}</div>`;
     },
 
-    revealHtml(o) {
+    revealHtml(o, rvIn) {
       const w = o.win, r = RAR(w.rarity), b = PROG().boxes[o.boxId];
       const e = entry(w.kind, w.id);
       const isCore = w.kind === 'core';
@@ -257,7 +260,7 @@ window.SFC = window.SFC || {};
         e.count > 0 && !o.dismantled ? btn('dismantle', K('dismantle', 'X'), _t('DISMANTLE +{n}', { n: PF().dismantleValue(w.kind, w.id) })) : '',
         o.dismantled ? `<span class="rv-act ok">${_t('Dismantled {gold}', { gold: coin('+' + o.dismantled) })}</span>` : '',
       ].join('');
-      return `<div class="reveal r-${w.rarity}" style="--rc:${r.color}">
+      return `<div class="reveal r-${w.rarity} ${rvIn ? 'rv-in' : ''}" style="--rc:${r.color}">
         <div class="rv-art">${art}</div>
         <div class="rv-info">
           <div class="rv-rar">${r.label}</div>
@@ -282,6 +285,11 @@ window.SFC = window.SFC || {};
       if (idx !== o.lastIdx) { o.lastIdx = idx; SFC.Audio.tick(); }
       if (k >= 1) {
         o.done = true;
+        // motion review 2026-11-06 (phương án A): kết quả hiện lần lượt, OPEN ANOTHER khoá tới motion.box.cta (trước đây nhận Enter ngay lúc dừng:
+        // Enter để tua rồi Enter tiếp là mua hộp mới). Đã bấm tua lúc quay: hiện đủ luôn, khoá motion.lock
+        const B = SFC_CONFIG.motion.box, now = performance.now();
+        o.revealAt = o.skipped ? now - B.reveal * 1000 : now;
+        o.ctaAt = now + (o.skipped ? SFC_CONFIG.motion.lock : B.cta) * 1000;
         SFC.Audio.reveal(Math.max(0, rank(o.win.rarity)));
         menu.render();
       }
@@ -512,7 +520,13 @@ window.SFC = window.SFC || {};
     openAct(menu, act) {
       const o = this.opening;
       if (!o) return;
-      if (!o.done) { if (act === 'skip') o.t0 = performance.now() - o.dur * 1000; return; }
+      if (!o.done) { if (act === 'skip') { o.skipped = true; o.t0 = performance.now() - o.dur * 1000; } return; }
+      // kết quả đang hiện lần lượt: bấm = hiện đủ (không mua tiếp) · vừa hiện đủ: OPEN ANOTHER còn khoá (motion.box.cta / motion.lock)
+      if (act === 'again' || act === 'skip') {
+        const now = performance.now(), B = SFC_CONFIG.motion.box;
+        if (now - o.revealAt < B.reveal * 1000) { o.revealAt = now - B.reveal * 1000; o.ctaAt = now + SFC_CONFIG.motion.lock * 1000; return menu.render(); }
+        if (act === 'skip' || now < o.ctaAt) return;
+      }
       if (act === 'back' || (act === 'again' && this.openBack === 'ach' && !PF().freeBoxes(o.boxId))) return this.back(menu);
       if (act === 'again') return this.openBox(menu, o.boxId);
       if (act === 'equip' && o.win.kind === 'item') { this.equipEntry(menu, entry('item', o.win.id)); menu.render(); }

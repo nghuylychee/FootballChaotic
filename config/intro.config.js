@@ -16,13 +16,17 @@ SFC_CONFIG.intro = {
   skipAfter: 0.35,        // chặn bấm nhầm: chưa cho bỏ qua trong khoảng đầu
   outro: 0.35,            // thời gian trượt ra khi đóng
 
-  // nhịp xuất hiện
-  teamIn: 0.25,           // 2 nửa màu áo trượt vào
-  vsAt: 0.75,             // chữ VS đập xuống
-  cardsAt: 0.9,           // thẻ cầu thủ đầu tiên hiện
-  cardGap: 0.22,          // khoảng cách giữa các thẻ (xen kẽ trái / phải)
-  statsAt: 1.8,           // thanh chỉ số chạy
-  pitchAt: 1.3,           // sơ đồ đội hình: chấm cầu thủ chạy vào vị trí
+  // nhịp xuất hiện (motion review 2026-11-06, phương án A: chiếu trước mọi trận -> hiện đủ trong 0.5s, 1 nhịp; trước đây 11 nhịp lẻ tới 2.55s).
+  // Độ dài từng phần ở css/style.css (.in-*); docs/ux-motion/README.md
+  teamIn: 0.05,           // 2 đội (tên, luật sân, thẻ cầu thủ) trượt vào
+  vsAt: 0.15,             // chữ VS đập xuống
+  cardsAt: 0.05,          // sprite trên thẻ bắt đầu chạy vào (thẻ hiện cùng đội)
+  cardGap: 0,             // khoảng cách giữa các thẻ (0 = cùng lúc)
+  statsAt: 0.2,           // thanh chỉ số chạy
+  statGap: 0,             // khoảng cách giữa các hàng chỉ số
+  pitchAt: 0.2,           // sơ đồ đội hình + tên sân hiện, chấm cầu thủ chạy vào vị trí
+  dotGap: 0,              // khoảng cách giữa các chấm cầu thủ
+  dotTime: 0.3,           // mỗi chấm chạy bao lâu
 
   // animation sprite trên thẻ cầu thủ
   runIn: 0.55,            // chạy vào (chạy tại chỗ, nhìn vào giữa) rồi quay mặt ra

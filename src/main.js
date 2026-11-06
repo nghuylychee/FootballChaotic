@@ -226,28 +226,31 @@
       const L = SFC_CONFIG.teams.list, mp = opts.mainPath;
       const kickoff = () => {
         if (opts.resume) return;   // kết nối lại giữa trận (net/session.js): trận đang đá dở
-        const vsAway = _t('vs {team}', { team: L[opts.away].name });
-        const vs = opts.training && opts.teamSize && !opts.teamSize[1]
-          ? _t('{team} · no opponent', { team: L[opts.home].name })
-          : _t('{home} vs {away}', { home: L[opts.home].name, away: L[opts.away].name });
-        if (opts.tutorial) SFC.UI.banner(_t('THE DREAM'), _t('PROLOGUE'), '#b9a8ff', 2);
-        else if (mp) SFC.UI.banner(_t('KICK OFF'), `${SFC.MainPath.area(mp.area).name} · ${vsAway}`, '#ffe14f', 1.6);
-        else if (opts.cup) {
-          const st = SFC.Cup.get(opts.cup.id);
-          SFC.UI.banner(SFC.Cup.roundName(opts.cup.round), `${st ? st.name : ''} · ${vsAway}`, st ? st.color : '#ffe14f', 1.8);
-        }
-        else if (opts.drill) {
-          // LEGEND TRIAL: tên kỹ thuật cho mượn + số lần cần làm (màu LEGEND) + tổ hợp phím (theo phím đang gán, Input.techKeys)
-          const D = SFC_CONFIG.run.drills[opts.drill], LG = opts.trial && SFC.Run.legend(opts.trial), K = LG && SFC_CONFIG.legends.techniques[LG.tech];
-          if (K) SFC.UI.banner(K.name, _t('Pull it off {n} times', { n: this.game && this.game.drill ? SFC.Drills.top(this.game.drill) : LG.trial.goal }) + ' · ' + SFC.Input.techKeys(K), LG.color, 2.4);
-          else SFC.UI.banner(D.name, D.desc, '#6bff4f', 2.4);
-        }
-        else if (opts.run) {
-          const A = SFC.Run.act(opts.run.act) || {}, N = SFC.Run.node(opts.run.kind) || {};
-          SFC.UI.banner(N.name || _t('KICK OFF'), `${A.name || ''} · ${vsAway}`, opts.run.kind === 'match' ? A.color : N.color, 1.8);
-        }
-        else SFC.UI.banner(opts.training ? _t('TRAINING') : _t('KICK OFF'), vs, '#ffe14f', 1.4);
-        SFC.Audio.upgrade();
+        // lượt chọn Core đầu trận mở cùng lúc: banner chờ chọn xong mới hiện (UI.kickoffBanner, motion review 2026-11-06)
+        SFC.UI.kickoffBanner(() => {
+          const vsAway = _t('vs {team}', { team: L[opts.away].name });
+          const vs = opts.training && opts.teamSize && !opts.teamSize[1]
+            ? _t('{team} · no opponent', { team: L[opts.home].name })
+            : _t('{home} vs {away}', { home: L[opts.home].name, away: L[opts.away].name });
+          if (opts.tutorial) SFC.UI.banner(_t('THE DREAM'), _t('PROLOGUE'), '#b9a8ff', 2);
+          else if (mp) SFC.UI.banner(_t('KICK OFF'), `${SFC.MainPath.area(mp.area).name} · ${vsAway}`, '#ffe14f', 1.6);
+          else if (opts.cup) {
+            const st = SFC.Cup.get(opts.cup.id);
+            SFC.UI.banner(SFC.Cup.roundName(opts.cup.round), `${st ? st.name : ''} · ${vsAway}`, st ? st.color : '#ffe14f', 1.8);
+          }
+          else if (opts.drill) {
+            // LEGEND TRIAL: tên kỹ thuật cho mượn + số lần cần làm (màu LEGEND) + tổ hợp phím (theo phím đang gán, Input.techKeys)
+            const D = SFC_CONFIG.run.drills[opts.drill], LG = opts.trial && SFC.Run.legend(opts.trial), K = LG && SFC_CONFIG.legends.techniques[LG.tech];
+            if (K) SFC.UI.banner(K.name, _t('Pull it off {n} times', { n: this.game && this.game.drill ? SFC.Drills.top(this.game.drill) : LG.trial.goal }) + ' · ' + SFC.Input.techKeys(K), LG.color, 2.4);
+            else SFC.UI.banner(D.name, D.desc, '#6bff4f', 2.4);
+          }
+          else if (opts.run) {
+            const A = SFC.Run.act(opts.run.act) || {}, N = SFC.Run.node(opts.run.kind) || {};
+            SFC.UI.banner(N.name || _t('KICK OFF'), `${A.name || ''} · ${vsAway}`, opts.run.kind === 'match' ? A.color : N.color, 1.8);
+          }
+          else SFC.UI.banner(opts.training ? _t('TRAINING') : _t('KICK OFF'), vs, '#ffe14f', 1.4);
+          SFC.Audio.upgrade();
+        });
       };
       // màn giới thiệu lực lượng 2 đội (config/intro.config.js): trận đứng yên tới khi xong, rồi mới chọn Core / giao bóng
       SFC.Intro.abort();

@@ -40,6 +40,7 @@ const FILES = [
   ['config/teammates.config.js', 'game sandbox itch server'],
   ['config/achievements.config.js', 'game'],
   ['config/intro.config.js', 'game itch server'],
+  ['config/motion.config.js', 'game'],                    // nhịp hiện + khoá phím các màn (docs/ux-motion), chỉ máy người chơi
   ['config/music.config.js', 'game itch server'],
   ['config/ftue.config.js', 'game itch server'],
   ['config/demo.config.js', 'game server'],
