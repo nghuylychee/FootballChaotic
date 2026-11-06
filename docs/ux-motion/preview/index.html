@@ -1,0 +1,46 @@
+<meta charset="utf-8">
+<title>SFC Motion Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600&family=Press+Start+2P&family=VT323&display=swap">
+<link rel="stylesheet" href="preview.css">
+
+<div class="mp-wrap">
+  <header class="mp-head">
+    <div class="mp-crumb">Street Football Chaos · review staggered reveal · 2026-11-06</div>
+    <h1>Motion review <small>· 16 màn, Before / đề xuất</small></h1>
+    <p class="mp-note">Mỗi mục đặt <b>Before</b> (chép đúng timing, easing, thứ tự và luật bấm từ code hiện tại) cạnh bản đề xuất, trong khung 640×360 của game.
+      Cuộn tới mục nào thì mục đó chạy lại từ đầu; ra khỏi màn hình thì dừng. <b>Bấm thử</b> (hoặc bấm vào khung) mô phỏng người chơi bấm Enter đúng lúc đó;
+      đèn trên mỗi cột nói lúc đó Enter sẽ làm gì. Tần suất ước từ config: 1 act ≈ 3–5 trận 150s + 3–5 node khác, khoảng 15–20 phút.</p>
+  </header>
+
+  <div class="mp-controls">
+    <button class="mp-btn main" id="mp-replay" type="button">↻ Replay mục đang xem</button>
+    <div class="mp-group" role="group" aria-label="Tốc độ"><span>Tốc độ</span>
+      <button class="mp-btn" type="button" data-speed="0.25">0.25x</button><button class="mp-btn" type="button" data-speed="0.5">0.5x</button><button class="mp-btn" type="button" data-speed="1">1x</button></div>
+    <button class="mp-btn" id="mp-loop" type="button" aria-pressed="true">Auto-loop</button>
+    <p class="mp-keys">Phím: <kbd>T</kbd> bấm thử ở mục đang xem · <kbd>R</kbd> replay mục đó · <kbd>L</kbd> auto-loop · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> tốc độ</p>
+    <nav class="mp-nav" id="mp-nav" aria-label="Nhảy tới màn"></nav>
+  </div>
+
+  <div class="mp-secs" id="mp-secs"></div>
+</div>
+
+<script src="preview.js"></script>
+<script src="screens/results.js"></script>
+<script src="screens/intro.js"></script>
+<script src="screens/gear.js"></script>
+<script src="screens/legend.js"></script>
+<script src="screens/runover.js"></script>
+<script src="screens/badge.js"></script>
+<script src="screens/box.js"></script>
+<script src="screens/act.js"></script>
+<script src="screens/ultimate.js"></script>
+<script src="screens/banner.js"></script>
+<script src="screens/draft.js"></script>
+<script src="screens/chalk.js"></script>
+<script src="screens/hud.js"></script>
+<script src="screens/home.js"></script>
+<script src="screens/toast.js"></script>
+<script src="screens/beat1.js"></script>
+<script>MP.mount();</script>
