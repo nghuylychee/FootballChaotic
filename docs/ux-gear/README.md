@@ -1,7 +1,7 @@
 # MÀN GEAR 2026-11-06 — review lại (rối) + 5 phương án
 
 > Trạng thái: **OWNER CHỌN B (2026-11-06), ĐÃ LÀM VÀO GAME** trên nhánh `ux/gear-2026-11` (tách từ `ux/motion-2026-11` để dùng chung
-> `config/motion.config.js`; worktree `G:\FootballChaotic-gear`). Chưa commit, chưa merge.
+> `config/motion.config.js`; worktree `G:\FootballChaotic-gear`). Đã commit + push (`e8ffb96` review, `cb4e6d5` code), chưa merge vào main.
 > Trang review + mockup: `tools/mockups/gear-pick.html` (mở qua `npm run serve` → http://localhost:8080/tools/mockups/gear-pick.html;
 > `?opt=B&st=who&view=gray` mở thẳng 1 khung). Review làm trên `main` @ `60f9741`. Ảnh sau khi sửa: `shots/after/`.
 
