@@ -53,7 +53,9 @@ async function match(nameA, nameB) {
   const { code } = await A.next((m) => m.t === 'room');
   B.send({ t: 'join', code, v: NET.protocol });
   await B.next((m) => m.t === 'room');
+  // A hello trước (chủ phòng = người hello đầu tiên; gửi sát nhau trên 2 kết nối thì máy chủ có thể nhận B trước -> begin của A bị bỏ qua)
   A.send({ t: 'hello', v: NET.protocol, pf: pf(nameA, 'FWD') });
+  await A.next((m) => m.t === 'lobby' && m.m.length === 1);
   B.send({ t: 'hello', v: NET.protocol, pf: pf(nameB, 'DEF') });
   await A.next((m) => m.t === 'lobby' && m.m.length === 2);
   A.send({ t: 'begin', area: 0 });

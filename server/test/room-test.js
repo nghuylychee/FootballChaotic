@@ -96,7 +96,10 @@ async function overWebSocket() {
     assert.strictEqual((await B.next((m) => m.t === 'err')).e, 'room-missing');
     B.send({ t: 'join', code: room.code, v: NET.protocol });
     const joined = await B.next((m) => m.t === 'room');
+    // người tạo phòng hello trước rồi mới tới B: chủ phòng = người hello đầu tiên, 2 kết nối riêng gửi sát nhau thì máy chủ có thể nhận
+    // B trước (CI chậm: test hỏng "creator owns the room" ngẫu nhiên)
     A.send({ t: 'hello', v: NET.protocol, pf: pf('ALICE', 'FWD') });
+    await A.next((m) => m.t === 'lobby' && m.m.length === 1);
     B.send({ t: 'hello', v: NET.protocol, pf: pf('BOB', 'DEF') });
     await B.next((m) => m.t === 'lobby' && m.m.length === 2);
     C.send({ t: 'join', code: room.code, v: NET.protocol });
