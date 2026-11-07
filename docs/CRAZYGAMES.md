@@ -9,13 +9,16 @@ Requirement pages: [technical](https://docs.crazygames.com/requirements/technica
 ## A. Required changes (done)
 
 1. **SDK.** The `crazygames` platform adapter (`src/platform/crazygames.js` behind `SFC.Platform`, `config/platform.config.js`) loads SDK v3 at boot (waits up to 6 s, plays without it on failure). `gameplayStart` on match begin / resume, `gameplayStop` on single-player pause and back to menu (ranked pause keeps playing).
-2. **Language.** A saved choice wins. Otherwise the SDK `systemInfo.locale`, if it maps to one of our packs, is used without the popup (not saved). No locale, unknown locale or SDK failure: language popup.
+2. **Language, default English.** A saved choice wins. Otherwise the SDK `systemInfo.locale`, if it maps to one of our packs, is used (not saved). No locale, unknown locale or SDK failure: English. The language popup never opens on CrazyGames (`rules.crazygames.langPopup = false`); players change language in SETTINGS.
 3. **Escape removed** (restricted key, exits fullscreen): `rules.crazygames.restrictedKeys` in `config/platform.config.js`, stripped by `Input.init`. Pause = P, back = Backspace / P; "Esc" hints show the remaining key.
-4. **Demo store links** only on the main menu / end of demo: Main Path doesn't pop WISHLIST. (PRIVATE MATCH is open on CrazyGames for now, see C; if the demo locks it again it shows "PRIVATE MATCH is in the full game." instead of WISHLIST.)
+4. **Demo store links** only on the main menu / end of demo (DEMO COMPLETE after the GOAT PATH act 1 boss): Main Path doesn't pop WISHLIST.
 5. **Fake Social hidden** (`rules.crazygames.fakeSocial = false`): no fake friends, invites, party or chat.
 6. **Name filter** (all stores, client side only): `config/namefilter.config.js`, `Profile.nameAllowed`. Typing a blocked name is refused; blocked names received from others show as `PLAYER`. The match server doesn't filter (no redeploy needed).
 7. **`-webkit-user-select: none`** etc. on `body` for Safari.
-8. **SETTINGS › PRIVACY NOTICE** (all stores): `config/privacy.config.js`, English only. Contact: team41.sfc@gmail.com. Update `updated` when the text changes. Risk: CrazyGames asks for a notice "for new players"; if review flags a settings-only entry, add a small link on the home screen or name step.
+8. **SETTINGS › PRIVACY NOTICE** (all stores): `config/privacy.config.js`, English only. Contact: team41.sfc@gmail.com. Update `updated` when the text changes. Risk: CrazyGames asks for a notice "for new players"; if review flags a settings-only entry, add a small link on the home screen.
+9. **Demo is offline, same as itch.io** (decided 2026-11-07): no ranked online, PRIVATE MATCH, Story / GOAT PATH co-op, invites or Instant Multiplayer. The PRIVATE MATCH tab says it comes with the full game. The SDK friends code (C) only runs in a full CrazyGames build.
+10. **No name step.** A logged-in player gets their CrazyGames username. A guest gets `PLAYER` + 4 digits (`rules.crazygames.guestName`), remembered as `Settings.guestName`; if that guest logs in later, the username replaces it. A name the player typed (first name or RENAME) is never replaced. A new player goes straight from loading to the PROLOGUE match.
+11. **Short PROLOGUE intro** (`rules.crazygames.shortIntro`, scenes `ftue.scenes.introShort`): CrazyGames' load time runs from Play Now to the first `gameplayStart`, which fires when the dream match kicks off, so the ~31 s intro would fail the 20 s check. The short one (I HAVE A GOAL → TO BE THE GOAT → in my dream) is ~9 s; measured on the build, first gameplay at 11.3 s locally and 16.6 s on a 5 Mbit/s, 80 ms connection. `gameplayStart` stays on the first playable moment (their docs: "first moment of real gameplay").
 
 ## B. Checks before submitting
 
@@ -23,7 +26,11 @@ Requirement pages: [technical](https://docs.crazygames.com/requirements/technica
 - [ ] **Desktop only** when submitting (no touch controls).
 - [ ] **Upload to the Developer Portal preview** (private, submit for review whenever ready) and confirm there: `index.html` at zip root, SDK loads, `gameplayStart` registers, language follows their locale, match server and PeerJS reachable inside their iframe.
 
-## C. Friends through the CrazyGames SDK (done, testing in the portal preview, not released)
+## C. Friends through the CrazyGames SDK (built for a full build; off in the demo)
+
+`Session.watchInvites` and Instant Multiplayer only run when `Platform.privateMatch` is on, so the demo never joins, creates or reports a room (`invite-test.js` 11). Tests 7–10 run as a full CrazyGames build.
+
+The demo build doesn't contain this code at all: the friends half of the adapter sits in `if (!SFC_DEMO)`, and `scripts/strip-debug.js` folds `SFC_DEMO` to a constant when packaging, so it is deleted. The packaged demo only calls `init`, `isUserAccountAvailable` / `getUser`, `systemInfo.locale` and `gameplayStart` / `gameplayStop`. The build fails if `updateRoom`, `leftRoom`, `inviteLink`, `addJoinRoomListener`, `inviteParams` or `isInstantMultiplayer` survive in a demo build.
 
 Requirements: [multiplayer](https://docs.crazygames.com/requirements/multiplayer/) (Online with Friends = Full implementation; we build it now to test). SDK: [game](https://docs.crazygames.com/sdk/game/), [user](https://docs.crazygames.com/sdk/user/). Code: `src/platform/crazygames.js` (adapter), `Session.presence` / `watchInvites`, `OnlineUI.invite` / `tryInvite`. Test: `server/test/invite-test.js` 7–10.
 
@@ -34,10 +41,10 @@ A party = a private room (PRIVATE MATCH or a Story co-op room); the owner presse
 | Share room + status | `updateRoom({ roomId: <room code>, isJoinable, inviteParams: { room: <code> } })`, sent when it changes (checked every `platform.presenceEvery` s). Joinable = in the lobby with a free seat (6, Story 3); not joinable mid-match; `leftRoom()` on leave. Ranked rooms are never reported |
 | Join without reload | `addJoinRoomListener` → Session `invite {code}` → leaves the current room / search, joins (after the match if one is running) |
 | Opened from an invite | `game.inviteParams.room` at boot → joins once the menus are ready |
-| Skip onboarding for joiners | Opened from an invite / instant: PROLOGUE skipped that time (still offered next launch). Logged-in players with no name get their CrazyGames username, so no name step; guests type a name (one screen) |
+| Skip onboarding for joiners | Opened from an invite / instant: PROLOGUE skipped that time (still offered next launch). No name step (A.10) |
 | Instant Multiplayer | `isInstantMultiplayer` → PRIVATE MATCH › CREATE ROOM as soon as the player is free in the menus |
 | Invite link (optional) | INVITE FRIENDS in the lobby copies `inviteLink({ room })` |
-| CrazyGames usernames | Only fills an empty name (a name the player chose is kept) |
+| CrazyGames usernames | Replaces an empty or generated guest name; a name the player typed is kept (A.10) |
 | Lobby size to submit | **6** (`net.maxPlayers`; Story co-op rooms hold 3) |
 
 Every SDK call logs `[cg] …` in the console, for checking in the preview.
@@ -52,8 +59,8 @@ Every SDK call logs `[cg] …` in the console, for checking in the preview.
 
 **Still open**
 1. Friends list (`user.listFriends`): skipped; it has no online status and the SDK can't invite one specific friend (the sidebar does that).
-2. Always show the CrazyGames username when logged in (Full launch wants it), instead of only filling an empty name?
-3. Demo scope: PRIVATE MATCH is open on CrazyGames (`platform.crazygames.privateMatch`) only to test invites.
+2. Always show the CrazyGames username when logged in (Full launch wants it), even over a name the player typed?
+3. The preview checklist above needs a full CrazyGames build (`SFC_DEMO = false`); there is no build row for it yet in `scripts/targets.js`.
 4. Ranked parties (server grouping + protocol bump): not started.
 5. Fake Social (`fakeSocial` off here) could get a Steam / CrazyGames backend later through the same platform adapters.
 
@@ -63,4 +70,4 @@ Every SDK call logs `[cg] …` in the console, for checking in the preview.
 
 ## Full launch (later)
 
-One click to gameplay for new players (skip language popup + name entry), `gameplayStop` everywhere / loading events, Data module for saves, CrazyGames avatar, ads. (Username and Instant Multiplayer: see C.)
+`gameplayStop` everywhere / loading events, Data module for saves, CrazyGames avatar, ads. (Username and Instant Multiplayer: see C.)

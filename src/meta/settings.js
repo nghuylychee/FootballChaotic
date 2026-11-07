@@ -51,6 +51,9 @@ window.SFC = window.SFC || {};
     roomDirect: false,   // PRIVATE MATCH › CONNECTION: false = AUTO (máy chủ riêng trước) · true = DIRECT (máy này làm host)
     fps: 0,              // FRAME RATE: 0 = không giới hạn (theo tần số màn hình) · 60 · 30. Chỉ giới hạn số lần vẽ, mô phỏng vẫn 60 Hz (main.js)
     binds: { kb: {}, pad: {} },   // ĐỔI PHÍM: { kb: { shoot: 'KeyJ' }, pad: { shoot: 'Pad.RB' } } — chỉ lưu phím khác mặc định (Input.applyBinds)
+    // tên game tự đặt cho khách (Platform.guestName, main.js). Hồ sơ còn đúng tên này = người chơi chưa tự chọn tên ->
+    // đăng nhập tài khoản nền tảng thì đổi sang tên tài khoản. Lưu ở đây (không ở hồ sơ) vì chỉ máy người chơi cần
+    guestName: null,
 
     load() {
       const raw = SFC.Storage.getJSON(KEY, {}) || {};
@@ -63,11 +66,13 @@ window.SFC = window.SFC || {};
       this.roomDirect = raw.roomDirect === true;
       this.fps = FPS.includes(raw.fps) ? raw.fps : 0;
       this.binds = cleanBinds(raw.binds);
+      this.guestName = typeof raw.guestName === 'string' ? raw.guestName : null;
       return this;
     },
     save() {
-      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats, screenFx: this.screenFx, roomDirect: this.roomDirect, fps: this.fps, binds: this.binds });
+      SFC.Storage.setJSON(KEY, { music: this.music, sfx: this.sfx, res: this.res, lang: this.lang, netStats: this.netStats, screenFx: this.screenFx, roomDirect: this.roomDirect, fps: this.fps, binds: this.binds, guestName: this.guestName });
     },
+    setGuestName(n) { this.guestName = n || null; this.save(); },
 
     /* ĐỔI PHÍM: gán code cho action trên thiết bị dev ('kb' | 'pad'). Phím đang thuộc action khác -> 2 action đổi phím cho nhau.
      * Trả về { ok, swap: action bị đổi | null } · { err: 'reserved', by: action giữ phím (pause / mute) } · { err: 'blocked' } */

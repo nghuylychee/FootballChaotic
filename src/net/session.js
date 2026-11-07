@@ -190,10 +190,11 @@ window.SFC = window.SFC || {};
     // -> Promise<'opened' | 'copied' | false>
     invite() { return this.canInvite ? SFC.Platform.invite(this.presence) : Promise.resolve(false); },
     // nghe lời mời đã nhận ở ngoài game + báo phòng đang ở cho nền tảng. Gọi lúc nạp online.js (Steam có ngay) và lúc boot
-    // sau Platform.ready() (SDK CrazyGames init xong); chỉ bật 1 lần. Mở game bằng lời mời -> sự kiện invite ngay
+    // sau Platform.ready() (SDK CrazyGames init xong); chỉ bật 1 lần. Mở game bằng lời mời -> sự kiện invite ngay.
+    // Bản DEMO khoá mạng (Platform.privateMatch tắt): không nghe lời mời, không báo phòng
     watchInvites() {
       const P = SFC.Platform;
-      if (this.invitesOn || !P || !P.live) return;
+      if (this.invitesOn || !P || !P.live || !P.privateMatch) return;
       this.invitesOn = true;
       P.onInvite((code) => this.emit('invite', { code }));
       setInterval(() => P.room(this.presence), SFC_CONFIG.platform.presenceEvery * 1000);

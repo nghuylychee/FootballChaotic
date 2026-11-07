@@ -12,6 +12,9 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
     fakeSocial: true,          // bạn bè / party / chat GIẢ (config/social.config.js)
     autoWishlist: true,        // được tự mở màn WISHLIST (bản DEMO: bấm PRIVATE MATCH khi khoá, hết Area ở Main Path)
     demoPrivateMatch: false,   // bản DEMO vẫn mở PRIVATE MATCH (bản đủ luôn mở)
+    langPopup: true,           // chưa chọn ngôn ngữ, nền tảng không báo ngôn ngữ có gói: popup chọn · false = vào thẳng English
+    guestName: false,          // người chơi mới chưa đăng nhập: true = tự đặt tên PLAYER + 4 số (đổi được sau), bỏ màn đặt tên
+    shortIntro: false,         // PROLOGUE: true = cut scene mở đầu ngắn (ftue.scenes.introShort) để vào trận mơ nhanh
   };
 
   SFC_CONFIG.platform = {
@@ -20,8 +23,10 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
       steam: BASE,
       itch: BASE,
       // Esc = thoát toàn màn hình · bạn bè giả trông như người thật -> tắt · link cửa hàng chỉ ở menu chính / hết demo ·
-      // PRIVATE MATCH mở để thử mời bạn bè qua CrazyGames (phạm vi demo chưa chốt)
-      crazygames: Object.assign({}, BASE, { restrictedKeys: ['Escape'], fakeSocial: false, autoWishlist: false, demoPrivateMatch: true }),
+      // bản DEMO khoá mạng như itch.io (mời bạn bè qua CrazyGames chỉ chạy ở bản đủ) ·
+      // người chơi mới vào thẳng trận: ngôn ngữ mặc định English, khách được tên tự đặt (đã đăng nhập: tên tài khoản), intro ngắn
+      // (CrazyGames đo thời gian từ Play Now tới gameplayStart đầu tiên, phải <= 20 s)
+      crazygames: Object.assign({}, BASE, { restrictedKeys: ['Escape'], fakeSocial: false, autoWishlist: false, langPopup: false, guestName: true, shortIntro: true }),
     },
     crazygames: {
       sdk: 'https://sdk.crazygames.com/crazygames-sdk-v3.js',

@@ -3,7 +3,9 @@
  *    Bản web: scripts/build.js truyền thẳng · afterPack (desktop): đọc env SFC_BUILD (build.js đặt; không đặt = bản steam)
  *  - file nào có SFC_DEBUG: chạy Terser với SFC_DEBUG = false -> nhánh `if (SFC_DEBUG)` / `SFC_DEBUG ? … : …` / `SFC_DEBUG && …` bị xoá,
  *    comment bị bỏ, tên biến giữ nguyên (không mangle), vẫn xuống dòng để lỗi còn đọc được
- *  - còn sót dấu vết cheat trong bất kỳ file nào -> báo lỗi, dừng build
+ *  - SFC_DEMO cũng thành hằng số theo bản build (file có SFC_DEMO qua Terser như trên): nhánh `if (!SFC_DEMO)` bị xoá khỏi bản DEMO
+ *    (vd. phần bạn bè của src/platform/crazygames.js -> bản demo không chứa lệnh SDK nó không dùng)
+ *  - còn sót dấu vết cheat trong bất kỳ file nào / lệnh SDK bạn bè trong bản DEMO -> báo lỗi, dừng build
  */
 const fs = require('fs');
 const path = require('path');
@@ -13,6 +15,8 @@ const targets = require('./targets');
 const DIRS = ['config', 'shared', 'src'];
 // sau khi xoá: file đã qua Terser (không còn comment) không được còn các chữ này. Mọi file khác chỉ kiểm SFC_DEBUG
 const MARKERS = ['SFC_DEBUG', 'GAMEPLAY TEST', 'Replay the intro', 'testArea', 'JUMP TO AREA', 'ULT TEST', 'STORY TEST', 'RUN TEST'];
+// bản DEMO: lệnh SDK CrazyGames của phần bạn bè không được còn trong file đã qua Terser
+const DEMO_MARKERS = ['updateRoom', 'leftRoom', 'inviteLink', 'addJoinRoomListener', 'inviteParams', 'isInstantMultiplayer'];
 
 function jsFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => {
@@ -28,11 +32,11 @@ async function strip(appDir, { store, demo = false } = {}) {
   const stripped = new Set();
   for (const file of files) {
     const src = fs.readFileSync(file, 'utf8');
-    if (!src.includes('SFC_DEBUG')) continue;
+    if (!src.includes('SFC_DEBUG') && !src.includes('SFC_DEMO')) continue;
     const out = await minify(src, {
       compress: {
         defaults: false,
-        global_defs: { SFC_DEBUG: false },
+        global_defs: { SFC_DEBUG: false, SFC_DEMO: !!demo },
         evaluate: true, conditionals: true, dead_code: true, booleans: true, side_effects: true,
       },
       mangle: false,
@@ -47,10 +51,11 @@ async function strip(appDir, { store, demo = false } = {}) {
 
   const left = files.flatMap((f) => {
     const src = fs.readFileSync(f, 'utf8');
-    return (stripped.has(f) ? MARKERS : ['SFC_DEBUG']).filter((m) => src.includes(m)).map((m) => `${path.relative(appDir, f)}: ${m}`);
+    const marks = stripped.has(f) ? MARKERS.concat(demo ? DEMO_MARKERS : []) : ['SFC_DEBUG'];
+    return marks.filter((m) => src.includes(m)).map((m) => `${path.relative(appDir, f)}: ${m}`);
   });
   if (left.length) throw new Error('strip-debug: code dev còn sót trong bản đóng gói:\n  ' + left.join('\n  '));
-  console.log(`  • strip-debug: ${stripped.size} file đã xoá nhánh SFC_DEBUG · ${store}${demo ? ' · DEMO' : ''}`);
+  console.log(`  • strip-debug: ${stripped.size} file đã xoá nhánh SFC_DEBUG / SFC_DEMO · ${store}${demo ? ' · DEMO' : ''}`);
 }
 
 // asar bật: afterPack chạy sau khi đã gói app.asar -> giải nén ra thư mục tạm, xoá code dev, gói lại.

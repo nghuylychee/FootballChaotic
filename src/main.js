@@ -292,8 +292,8 @@
     resume() {
       if (this.mode === 'online') SFC.OnlineUI.overlay = false;
       this.screen = 'game';
-      SFC.Platform.gameplay(true);
       const g = this.game;
+      SFC.Platform.gameplay(!(g && g.state === 'ended'));   // đóng menu ở màn kết quả: vẫn là nghỉ, không báo chơi lại
       // đang chọn Core mà mình đã chọn xong (chờ người khác): không mở lại màn chọn, chỉ chữ chờ giữa màn (UI.draftWaitView)
       const draftOpen = g && g.state === 'draft' && !(g.draft && g.draft.picked[g.me]);
       SFC.UI.show(draftOpen ? 'draft' : g && g.state === 'ended' ? 'end' : null);
@@ -444,7 +444,9 @@
   }
 
   function boot() {
-    const langChosen = SFC.I18n.init();   // ngôn ngữ đã chọn / đoán theo máy -> dịch config trước khi vẽ bất cứ gì
+    let langChosen = SFC.I18n.init();   // ngôn ngữ đã chọn / đoán theo máy -> dịch config trước khi vẽ bất cứ gì
+    // cửa hàng không cho popup (CrazyGames: vào thẳng trận) -> English, không lưu (lần sau vẫn theo ngôn ngữ cửa hàng báo)
+    if (!langChosen && !SFC.Platform.langPopup) { SFC.I18n.set('en'); langChosen = true; }
     SFC.Profile.load();
     const forfeited = SFC.MainPath.settle();   // lần trước tắt game giữa trận xếp hạng -> tính thua
     SFC.Run.settle();   // lần trước tắt game giữa trận GOAT PATH -> hết run (màn GOAT PATH hiện màn kết thúc)
@@ -462,11 +464,17 @@
     if (forfeited) SFC.Menu.setMsg(app.forfeitText(forfeited), true);
     // nền tảng (SDK đã init): nghe lời mời + báo phòng · mở game bằng lời mời -> OnlineUI.inviteCode có ngay · chơi cùng nhóm ngay
     SFC.Session.watchInvites();
-    SFC.OnlineUI.instant = SFC.Platform.instant;
+    SFC.OnlineUI.instant = SFC.Platform.privateMatch && SFC.Platform.instant;   // bản DEMO khoá mạng: không tự tạo phòng
     const start = () => {
-      // chưa có tên mà đã đăng nhập tài khoản nền tảng (CrazyGames): lấy tên tài khoản (bạn bè nhận ra nhau), bị lọc thì vẫn tự đặt
-      const acc = SFC.Platform.user();
-      if (!SFC.Profile.hasName && acc) SFC.Profile.setName(acc.name);
+      // đã đăng nhập tài khoản nền tảng (CrazyGames): tên tài khoản thay tên trống hoặc tên game tự đặt lúc còn là khách
+      // (Settings.guestName); tên người chơi tự gõ thì giữ. Tên tài khoản bị lọc: giữ như cũ
+      const PF = SFC.Profile, ST = SFC.Settings, acc = SFC.Platform.user();
+      const unchosen = !PF.hasName || (ST.guestName && PF.data.name === ST.guestName);
+      if (acc && unchosen && PF.setName(acc.name) === true) ST.setGuestName(null);
+      // khách (Platform.guestName): tự đặt PLAYER + 4 số, bỏ màn đặt tên -> vào PROLOGUE luôn; đổi tên được ở CHARACTER
+      if (!PF.hasName && SFC.Platform.guestName && PF.setName('PLAYER' + String(Math.floor(Math.random() * 10000)).padStart(4, '0')) === true) {
+        ST.setGuestName(PF.data.name);
+      }
       // lần đầu chơi: đặt tên cho character trước khi vào trang chủ -> PROLOGUE.
       // Đã đặt tên nhưng chưa xem xong PROLOGUE (tắt giữa chừng) -> xem lại từ đầu.
       // Mở game để vào phòng bạn bè / chơi cùng nhóm (OnlineUI.joining): bỏ qua PROLOGUE lần này, vào phòng luôn

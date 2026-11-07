@@ -195,10 +195,10 @@ function machine(steam, cg) {
 
   /* ================= CrazyGames ================= */
   // như boot (main.js): nạp xong -> SFC_STORE -> Platform.ready() -> watchInvites + tên tài khoản
-  const cgMachine = async (cg) => {
+  const cgMachine = async (cg, demo) => {
     const c = machine(null, cg);
     c.ctx.SFC_STORE = 'crazygames';
-    c.ctx.SFC_DEMO = true;   // bản CrazyGames là DEMO nhưng vẫn mở phòng riêng (platform.config.js)
+    c.ctx.SFC_DEMO = !!demo;   // bản đủ trên CrazyGames: phòng riêng mở, mời bạn bè qua SDK (bản DEMO khoá mạng: mục 11)
     c.copied = [];
     c.ctx.navigator.clipboard = { writeText: (t) => { c.copied.push(t); return Promise.resolve(); } };
     await c.SFC.Platform.ready();
@@ -213,7 +213,7 @@ function machine(steam, cg) {
   const cg = fakeCG(roomA);
   const c = await cgMachine(cg);
   assert.strictEqual(c.SFC.Platform.id, 'crazygames');
-  assert.strictEqual(c.SFC.Platform.privateMatch, true, 'demo keeps PRIVATE MATCH on CrazyGames');
+  assert.strictEqual(c.SFC.Platform.privateMatch, true, 'full CrazyGames build has PRIVATE MATCH');
   assert.strictEqual(c.SFC.Profile.data.name, 'CGFRIEND_01', 'CrazyGames username becomes the name');
   assert.strictEqual(c.SFC.OnlineUI.joining, true, 'opened from an invite: onboarding is skipped');
   await until(() => c.O.status === 'lobby' && c.O.code === roomA, 3000, 'launch invite joins the room');
@@ -271,6 +271,16 @@ function machine(steam, cg) {
   assert.strictEqual(cg2.calls.length, n2, 'no SDK calls on other platforms');
   assert.strictEqual(h.O.canInvite, false);
   console.log('10. CrazyGames host: OK (joinable lobby -> match -> lobby -> leftRoom; silent elsewhere)');
+
+  // 11. bản DEMO trên CrazyGames khoá mạng như itch.io: mở bằng lời mời vẫn không vào phòng, không báo phòng cho SDK
+  const cg3 = fakeCG(roomA);
+  const d = await cgMachine(cg3, true);
+  assert.strictEqual(d.SFC.Platform.privateMatch, false, 'CrazyGames demo has no PRIVATE MATCH');
+  assert.strictEqual(d.SFC.OnlineUI.joining, false, 'demo ignores the launch invite');
+  await sleep(1300);
+  assert.strictEqual(d.O.status, 'idle', 'demo does not join the invited room');
+  assert.strictEqual(cg3.rooms().length, 0, 'demo reports no room');
+  console.log('11. CrazyGames demo: OK (invites ignored, offline)');
   for (const t of [...c.log.msgs, ...h.log.msgs]) assert.ok(!bad.test(t), 'neutral text: ' + t);
   console.log('OK');
   process.exit(0);

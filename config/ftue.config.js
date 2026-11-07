@@ -43,7 +43,7 @@ SFC_CONFIG.ftue = {
   captionPace: 2,           // nhịp lời thoại: cảnh có caption dài ra + caption hiện muộn hơn bấy nhiêu lần (dur / at trong scenes là ở nhịp 1)
 
   /* ---------- CUT SCENE ----------
-   * Mỗi cảnh: art (hàm vẽ trong story.js) · dur (giây; 0 = chờ Enter) · lines: [{ at, text, style }]
+   * Mỗi cảnh: art (hàm vẽ trong story.js) · dur (giây; 0 = chờ Enter) · lines: [{ at, text, style }] · pace (tuỳ chọn: thay captionPace cho cảnh này)
    * style: caption (hộp chữ đáy) · shout (chữ to giữa màn, rung) · title (chữ vàng đập xuống) · sub (dòng nhỏ dưới title)
    *        aura (tên Tuyệt kỹ vàng rực kiểu cut-in)
    * {name} = tên character */
@@ -51,10 +51,18 @@ SFC_CONFIG.ftue = {
     intro: [
       { art: 'black', dur: 3.2, lines: [{ at: 0.3, text: 'Every kid on this block kicks a ball against a wall...', style: 'caption' }] },
       { art: 'alley', dur: 4.6, lines: [{ at: 0.4, text: 'Night after night. Rain or no rain.', style: 'caption' }, { at: 2.4, text: 'But me? I\'m not just kicking a ball.', style: 'caption' }] },
-      { art: 'eyes', dur: 3.0, lines: [{ at: 0.35, text: 'I HAVE A DREAM...', style: 'shout' }] },
+      { art: 'eyes', dur: 3.0, lines: [{ at: 0.35, text: 'I HAVE A GOAL...', style: 'shout' }] },
       { art: 'flash', dur: 0.35 },
       { art: 'stadium', dur: 5.4, lines: [{ at: 0.3, text: '...TO BE THE GOAT', style: 'title' }, { at: 1.3, text: 'OF STREET FOOTBALL', style: 'sub' }, { at: 3.0, text: '— {name}', style: 'sign' }] },
       { art: 'dive', dur: 2.6, lines: [{ at: 0.2, text: 'And tonight, in my dream... I already am.', style: 'caption' }] },
+    ],
+    // intro ngắn (~8 s) cho cửa hàng đo thời gian từ lúc bấm chơi tới lúc vào trận (Platform.shortIntro, CrazyGames: <= 20 s):
+    // chỉ giữ "I HAVE A GOAL... TO BE THE GOAT" + giấc mơ đêm nay dẫn vào trận mơ
+    introShort: [
+      { art: 'eyes', dur: 2.0, lines: [{ at: 0.25, text: 'I HAVE A GOAL...', style: 'shout' }] },
+      { art: 'flash', dur: 0.35 },
+      { art: 'stadium', dur: 3.6, lines: [{ at: 0.3, text: '...TO BE THE GOAT', style: 'title' }, { at: 1.0, text: 'OF STREET FOOTBALL', style: 'sub' }, { at: 2.0, text: '— {name}', style: 'sign' }] },
+      { art: 'dive', dur: 2.2, pace: 1, lines: [{ at: 0.2, text: 'And tonight, in my dream... I already am.', style: 'caption' }] },
     ],
     outro: [
       { art: 'fade', dur: 1.4, lines: [{ at: 0.2, text: '...', style: 'caption' }] },

@@ -23,7 +23,7 @@
  *   user()        -> { name } | null   tài khoản nền tảng (đã đăng nhập)
  *   instant                  mở game để vào chơi online cùng nhóm ngay (CrazyGames isInstantMultiplayer)
  *   luật (facade, từ platform.config.js rules[SFC_STORE]): restrictedKeys · fakeSocial · autoWishlist ·
- *   privateMatch (bản này mở PRIVATE MATCH: bản đủ luôn mở, bản DEMO theo demoPrivateMatch)
+ *   privateMatch (bản này mở PRIVATE MATCH: bản đủ luôn mở, bản DEMO theo demoPrivateMatch) · langPopup · guestName · shortIntro
  *   room(p)                  báo phòng đang ở. p = Session.presence: { code, joinable, net } | null (không ở phòng nào)
  *   inviteMode(p) -> 'dialog' | 'link' | null   mời bạn kiểu gì ở phòng p (dialog: bảng mời của nền tảng · link: chép link mời)
  *   invite(p)     -> Promise<'opened' | 'copied' | false>
@@ -83,6 +83,9 @@ window.SFC = window.SFC || {};
     get fakeSocial() { return this.rules.fakeSocial; },
     get autoWishlist() { return this.rules.autoWishlist; },
     get privateMatch() { return !SFC_DEMO || this.rules.demoPrivateMatch; },
+    get langPopup() { return this.rules.langPopup !== false; },
+    get guestName() { return !!this.rules.guestName; },
+    get shortIntro() { return !!this.rules.shortIntro; },
     room(p) { this.pick().room(p); },
     inviteMode(p) { return p ? this.pick().inviteMode(p) : null; },
     invite(p) { return p ? Promise.resolve(this.pick().invite(p)).catch(() => false) : Promise.resolve(false); },

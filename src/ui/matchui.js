@@ -220,6 +220,8 @@ window.SFC = window.SFC || {};
             this.toast(`<span class="dot" style="background:${t.cfg.kit.shirt}"></span>${_t('{player} gets {core}', { player: esc(t.cfg.short), core: other.map((pk) => coreChip(pk.id)).join('') })}`);
           }
         }
+        // hết trận = nghỉ (CrazyGames gameplayStop: "ending level"): màn kết quả, phần thưởng, cut scene sau trận mơ không tính là đang chơi
+        if (e.type === 'end') SFC.Platform.gameplay(false);
         if (e.type === 'end' && game.opts.tutorial) { SFC.Tutorial.onEnd(game); continue; }
         if (e.type === 'end') {
           // thưởng XP / gold: tính 1 lần cho người chơi tại máy này (chơi đơn + online)

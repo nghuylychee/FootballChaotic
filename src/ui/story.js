@@ -948,7 +948,10 @@ window.SFC = window.SFC || {};
 
     // nhịp lời thoại (ftue.config.js -> captionPace): cảnh có caption kéo dài + caption hiện muộn hơn theo hệ số;
     // chữ đập màn (shout / title / aura...) giữ đúng thời điểm để khớp hình
-    pace(sc) { return (sc.lines || []).some((l) => (l.style || 'caption') === 'caption') ? CFG().captionPace || 1 : 1; },
+    pace(sc) {
+      if (sc.pace) return sc.pace;   // cảnh tự đặt nhịp (vd. intro ngắn introShort)
+      return (sc.lines || []).some((l) => (l.style || 'caption') === 'caption') ? CFG().captionPace || 1 : 1;
+    },
     dur(sc) { return sc.dur * this.pace(sc); },
     at(sc, l) { return (l.style || 'caption') === 'caption' ? l.at * this.pace(sc) : l.at; },
 

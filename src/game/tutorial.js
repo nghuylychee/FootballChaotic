@@ -68,7 +68,8 @@ window.SFC = window.SFC || {};
       app.screen = 'story';
       SFC.UI.show(null);
       SFC.UI.el.hud.classList.add('hidden');
-      SFC.Story.play('intro', () => this.startMatch());
+      // cửa hàng đo thời gian bấm chơi -> vào trận (CrazyGames): intro ngắn
+      SFC.Story.play(SFC.Platform.shortIntro ? 'introShort' : 'intro', () => this.startMatch());
     },
 
     startMatch() {

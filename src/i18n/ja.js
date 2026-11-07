@@ -533,7 +533,7 @@ SFC.I18n.add({
     'Every kid on this block kicks a ball against a wall...': 'この町の子どもはみんな、壁に向かってボールを蹴ってる…',
     'Night after night. Rain or no rain.': '毎晩毎晩。雨の日だって。',
     'But me? I\'m not just kicking a ball.': 'でもオレは？ ただボールを蹴ってるんじゃない。',
-    'I HAVE A DREAM...': 'オレには夢がある…',
+    'I HAVE A GOAL...': 'オレには目標がある…',
     '...TO BE THE GOAT': '…GOATになること',
     'OF STREET FOOTBALL': 'ストリートサッカーの',
     '— {name}': '— {name}',

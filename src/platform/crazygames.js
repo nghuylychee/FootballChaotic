@@ -6,6 +6,8 @@
  *    mời / vào cùng. Bạn vào: game.addJoinRoomListener (game đang chạy) hoặc game.inviteParams (mở game bằng lời mời / link)
  *  - link mời: game.inviteLink({ room }) · vào chơi cùng nhóm ngay: game.isInstantMultiplayer
  * https://docs.crazygames.com/sdk/game/ · https://docs.crazygames.com/sdk/user/ · https://docs.crazygames.com/requirements/multiplayer/
+ * Bản DEMO (khoá mạng) chỉ gọi init / getUser / gameplayStart / gameplayStop: phần bạn bè (FRIENDS) nằm trong `if (!SFC_DEMO)`,
+ * scripts/strip-debug.js xoá hẳn khỏi bản đóng gói DEMO -> bản demo không chứa lệnh SDK nào nó không dùng.
  */
 window.SFC = window.SFC || {};
 
@@ -13,12 +15,10 @@ window.SFC = window.SFC || {};
   const CFG = () => SFC_CONFIG.platform.crazygames;
   const log = (...a) => console.info('[cg]', ...a);
 
-  SFC.Platform.add('crazygames', {
+  const adapter = {
     sdk: null,          // window.CrazyGames.SDK sau khi init xong
     playing: false,
     account: null,      // { name } tài khoản CrazyGames đang đăng nhập
-    reported: null,     // phòng đã báo lần cuối ('mã|0/1'), null = không ở phòng nào
-    launched: false,    // đã đọc lời mời lúc mở game
 
     get live() { return !!this.sdk; },
 
@@ -66,6 +66,14 @@ window.SFC = window.SFC || {};
     },
 
     user() { return this.account; },
+  };
+
+  // bạn bè qua SDK (chỉ bản đủ): báo phòng, nghe lời mời, link mời, chơi cùng nhóm ngay.
+  // Bản DEMO không có -> các hàm này lấy mặc định rỗng của platform.js (không ở phòng nào, không có lời mời)
+  if (!SFC_DEMO) Object.defineProperties(adapter, Object.getOwnPropertyDescriptors({
+    reported: null,     // phòng đã báo lần cuối ('mã|0/1'), null = không ở phòng nào
+    launched: false,    // đã đọc lời mời lúc mở game
+
     get instant() {
       try { return !!(this.sdk && this.sdk.game.isInstantMultiplayer); } catch (e) { return false; }
     },
@@ -110,5 +118,7 @@ window.SFC = window.SFC || {};
       if (params) log('inviteParams', JSON.stringify(params));
       return SFC.Platform.code(params && params.room);
     },
-  });
+  }));
+
+  SFC.Platform.add('crazygames', adapter);
 })();

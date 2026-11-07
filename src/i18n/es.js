@@ -536,7 +536,7 @@ SFC.I18n.add({
     'Every kid on this block kicks a ball against a wall...': 'Todos los niños de esta cuadra patean un balón contra la pared...',
     'Night after night. Rain or no rain.': 'Noche tras noche. Llueva o truene.',
     "But me? I'm not just kicking a ball.": '¿Pero yo? Yo no solo estoy pateando un balón.',
-    'I HAVE A DREAM...': 'TENGO UN SUEÑO...',
+    'I HAVE A GOAL...': 'TENGO UNA META...',
     '...TO BE THE GOAT': '...SER EL GOAT',
     'OF STREET FOOTBALL': 'DEL FÚTBOL CALLEJERO',
     '— {name}': '— {name}',
