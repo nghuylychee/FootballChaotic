@@ -89,7 +89,7 @@ window.SFC = window.SFC || {};
       if (!p.inj || !p.inj.length || g.state === 'ended') return;
       const { px, OUT } = SP(), blink = Math.sin(g.time * 5 + p.id) > -0.3;
       if (!blink) return;
-      const x = Math.round(p.x) + 8, y = Math.round(hy) - 9;
+      const x = Math.round(p.x) + SP().ph(8), y = Math.round(hy) - SP().ph(9);   // cạnh đầu người mới (render.playerScale)
       px(ctx, x - 2, y - 1, 5, 3, OUT); px(ctx, x - 1, y - 2, 3, 5, OUT);
       px(ctx, x - 1, y, 3, 1, '#ff3d5a'); px(ctx, x, y - 1, 1, 3, '#ff3d5a');
     },

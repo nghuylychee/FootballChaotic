@@ -20,6 +20,7 @@ window.SFC = window.SFC || {};
         owner: null, lastTouch: null, lastKickTeam: -1,
         passTarget: null, passPoint: null, sloppy: false, lob: false, kind: null, roll: 0, trailT: 0, skin: null,
         netSide: 0, shieldChecked: false, woodT: 0, read: null, freezeT: 0, missT: 0, cross: false, kickN: 0, endBounce: false,
+        touchIn: null, tg: 0, tv: 0, ta: null, touchK: 0,   // chạm bóng đầu tiên (pass.firstTouch, follow)
       });
       this.noPickup.clear();
       this.trail.length = 0;
@@ -73,6 +74,7 @@ window.SFC = window.SFC || {};
 
     kick(p, vx, vy, vz) {
       this.owner = null;
+      this.touchIn = null; this.tg = this.tv = this.touchK = 0;
       this.vx = vx; this.vy = vy; this.vz = vz || 0;
       this.z = Math.max(this.z, 0.5);
       this.lastTouch = p;
@@ -151,6 +153,7 @@ window.SFC = window.SFC || {};
       const k = (this.z > C.airDragMinZ ? C.airDrag : C.groundFriction) * this.frictionMult * this.shotFm() * this.passFm();
       this.vx = U.damp(this.vx, k, dt);
       this.vy = U.damp(this.vy, k, dt);
+      Ball.rollStop(this, dt);
       if (this.z === 0 && this.speed < 4) { this.vx = this.vy = 0; }
       this.roll += this.speed * dt;
 
@@ -202,13 +205,31 @@ window.SFC = window.SFC || {};
         // người cầm mới: khung chạm bóng bóng còn nằm chỗ chạm, đầu khung sau Game.step gọi follow(0) -> nhánh !dt dưới đây đặt bóng ngay trước mặt
         this.pushId = p.id; this.pushGap = 0; this.tapD = 0; this.drag = false; this.dribbleLag = 0;
         this.rx = this.x - p.x; this.ry = (this.y - p.y - 1) / 0.85;
+        // chạm bóng đầu tiên (pass.firstTouch, Game.gainPossession đặt touchIn): bóng tiếp tục trôi ra theo hướng chạm (ta), tg = khoảng xa thêm, tv = tốc độ trôi
+        const T = this.touchIn;
+        this.tg = 0; this.tv = T ? T.v : 0; this.ta = T ? T.a : null; this.touchIn = null;
+        // bóng chạm người ở gần hướng chạm: bắt đầu từ chỗ chạm (không giật vào chân rồi mới trôi ra)
+        if (T) {
+          const cd = Math.hypot(this.rx, this.ry), FT = SFC_CONFIG.game.pass.firstTouch;
+          if (cd > 1 && Math.abs(U.angleDiff(Math.atan2(this.ry, this.rx), T.a)) < 1) this.tg = U.clamp(cd - C.dribbleOffset, 0, FT.max);
+        }
       }
       this.pushGap += (want - this.pushGap) * (1 - Math.exp(-K.powerPushK * dt));
       const push = this.pushGap, base = (p.sprinting ? D.sprintOffset : C.dribbleOffset) + push;
       const spd = Math.hypot(p.vx, p.vy);
       let lag = 0;
+      // bóng trôi sau chạm đầu tiên: ra xa thêm tv px/s (hãm stop), luôn bị kéo về chân (settle), tối đa max
+      if (dt && (this.tg > 0 || this.tv > 0)) {
+        const FT = SFC_CONFIG.game.pass.firstTouch;
+        this.tg = U.clamp((this.tg + this.tv * dt) * Math.exp(-FT.settle * dt), 0, FT.max);
+        this.tv *= Math.exp(-FT.stop * dt);
+        if (this.tg < 0.3 && this.tv < 3) this.tg = this.tv = 0;
+      }
       if (!dt) {
-        this.rx = Math.cos(p.facing) * base; this.ry = Math.sin(p.facing) * base; this.drag = false;
+        // vừa nhận bóng có chạm đầu tiên: bóng ở hướng chạm (người đã quay theo), các lần follow(0) sau (Core dời người): trước mặt như cũ
+        const a = this.ta != null ? this.ta : p.facing;
+        this.ta = null;
+        this.rx = Math.cos(a) * base; this.ry = Math.sin(a) * base; this.drag = false;
       } else {
         const ra = Math.atan2(this.ry, this.rx), rl = Math.hypot(this.rx, this.ry);
         // hướng người đang muốn chạy (Player.moveNormal) — phản ứng nhanh hơn hướng mặt
@@ -234,7 +255,8 @@ window.SFC = window.SFC || {};
       const ph = (this.tapD % D.tapEvery) / D.tapEvery;
       const tap = p.sprinting && spd > 20 && !this.drag && !(push > 0.5)
         ? D.tapLead * U.clamp(spd / SFC_CONFIG.game.player.speed, 0, 1.5) * (1 - Math.min(1, lag / D.turnFull)) * (ph < D.tapRise ? ph / D.tapRise : 1 - (ph - D.tapRise) / (1 - D.tapRise)) : 0;
-      const rl = Math.hypot(this.rx, this.ry) || 1, k = 1 + tap / rl;
+      const rl = Math.hypot(this.rx, this.ry) || 1, k = 1 + (tap + (this.tg || 0)) / rl;
+      this.touchK = this.tg ? Math.min(1, this.tg / SFC_CONFIG.game.pass.firstTouch.max) : 0;   // Player.maxSpeed: bóng còn trôi xa -> chậm lại
       this.x = U.clamp(p.x + this.rx * k, f.x + this.r, f.x + f.w - this.r);
       this.y = U.clamp(p.y + this.ry * k * 0.85 + 1, f.y + this.r, f.y + f.h - this.r);
       this.z = 0;
@@ -329,6 +351,17 @@ window.SFC = window.SFC || {};
       this.shieldChecked = false;
     }
   }
+
+  // bóng lăn chậm sát đất (ball.rollStop): hãm đều thêm -> dừng dứt khoát thay vì lăn rề rề. o = bóng hoặc trạng thái mô phỏng {z, vx, vy}
+  // (Actions.flightStep dùng chung để đoán điểm đón khớp với bóng thật)
+  Ball.rollStop = function (o, dt) {
+    const R = SFC_CONFIG.game.ball.rollStop;
+    if (!R || !R.enabled || o.z > 0) return;
+    const v = Math.hypot(o.vx, o.vy);
+    if (v <= 0 || v >= R.below) return;
+    const k = Math.max(0, v - R.decel * dt) / v;
+    o.vx *= k; o.vy *= k;
+  };
 
   SFC.Ball = Ball;
 })();

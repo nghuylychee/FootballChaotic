@@ -13,8 +13,10 @@ window.SFC = window.SFC || {};
   const PI = Math.PI;
 
   /* ---------- kịch bản ---------- */
-  // toạ độ mốc (sân 56..584 x 80..326): A = giữa sân, G = khung thành bên phải (đội 0 tấn công sang phải)
-  const A = { x: 320, y: 203 }, G = { x: 584, y: 203 };
+  // toạ độ mốc: A = giữa sân (A.top = mép trên sân), G = khung thành bên phải (đội 0 tấn công sang phải).
+  // Số dưới đây là sân gốc (pitchScale 1: 56..584 x 80..326); mỗi lần dựng cảnh (Preview.reset) lấy lại theo sân thật — sân to (pitchScale)
+  // đổi vị trí sân, cảnh cạnh tường (Warp Walls...) mà dùng số cũ thì bóng / người ra ngoài khung cắt (khung trắng trơn)
+  const A = { x: 320, y: 203, top: 80 }, G = { x: 584, y: 203 };
 
   // sút: người vàng cầm bóng trước khung, người trông khung đứng giữa khung; nạp lực rồi sút vào góc
   const shot = (o = {}) => ({
@@ -208,7 +210,7 @@ window.SFC = window.SFC || {};
     }),
     wall_slam: kick({
       focus: (s) => s.o1,
-      init: (s) => { s.place(s.me, A.x, 80 + 48, -PI / 2); s.place(s.o1, A.x, 80 + 26, PI / 2); s.give(s.o1); },
+      init: (s) => { s.place(s.me, A.x, A.top + 48, -PI / 2); s.place(s.o1, A.x, A.top + 26, PI / 2); s.give(s.o1); },
       at: 9, more: [[0.25, (s) => { s.me.facing = -PI / 2; Act().hardAttack(s.g, s.me); }]],
     }),
     ground_slam: kick({ dist: 18, init: (s) => s.place(s.o2, A.x - 30, A.y + 22, PI) }),
@@ -427,7 +429,7 @@ window.SFC = window.SFC || {};
     /* 🎲 HỖN LOẠN */
     warp_walls: {
       len: 2.4, focus: (s) => s.g.ball,
-      init(s) { s.place(s.me, A.x - 40, 80 + 60, 0); s.give(s.me); },
+      init(s) { s.place(s.me, A.x - 40, A.top + 60, 0); s.give(s.me); },
       at: [[0.3, (s) => { const b = s.g.ball; b.kick(s.me, 70, -380, 0); b.kind = 'shot'; }]],
     },
     glitch_step: dash(),
@@ -466,6 +468,8 @@ window.SFC = window.SFC || {};
       const g = new SFC.Game({ home: 'street_kings', away: 'neon_strikers', difficulty: 'normal', humanTeam: 0, humans: [0, 1], silent: true, noDraft: true, noAI: true, teamSize: [2, 2], noUlts: true });
       g.preview = true;
       g.state = 'play'; g.stateT = 0;
+      const f = g.field;
+      A.x = f.x + f.w / 2; A.y = f.y + f.h / 2; A.top = f.y; G.x = f.x + f.w; G.y = A.y;
       const t0 = g.teams[0].players, t1 = g.teams[1].players;
       const s = this.s = {
         g, t: 0, me: t0[1], mate: t0[0], o1: t1[0], o2: t1[1], done: 0, shot: false, passed: false,
@@ -519,14 +523,14 @@ window.SFC = window.SFC || {};
       if (s.t >= (scn.len || 2.4)) this.reset();
     }
 
-    // Renderer vẽ canvas phụ 640 x 360 -> chép 1:1 vùng quanh tâm camera
+    // Renderer vẽ canvas phụ (render.width x height, sân to thì lớn hơn 640 x 360) -> chép 1:1 vùng quanh tâm camera
     draw(off, rend) {
       const w = this.cv.width, h = this.cv.height;
       const f = this.focusPt();
       this.cam.x += (f.x - this.cam.x) * 0.18;
       this.cam.y += (f.y - this.cam.y) * 0.18;
       rend.render(this.s.g);
-      const sx = Math.round(U.clamp(this.cam.x - w / 2, 0, 640 - w)), sy = Math.round(U.clamp(this.cam.y - h / 2, 0, 360 - h));
+      const sx = Math.round(U.clamp(this.cam.x - w / 2, 0, off.width - w)), sy = Math.round(U.clamp(this.cam.y - h / 2, 0, off.height - h));
       this.ctx.imageSmoothingEnabled = false;
       this.ctx.drawImage(off, sx, sy, w, h, 0, 0, w, h);
     }

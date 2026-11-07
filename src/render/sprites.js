@@ -37,6 +37,54 @@ window.SFC = window.SFC || {};
       ctx.fillRect(cx - Math.floor(w / 2), cy - Math.floor(R) + j, w, 1);
     }
   }
+  // bóng bẹp (fx.ball.squash): elip w x h px, cùng cách tô hàng như ballDisc
+  function ballOval(ctx, cx, cy, w, h, c) {
+    ctx.fillStyle = c;
+    cx |= 0; cy |= 0;
+    const A = w / 2, B = h / 2, odd = w % 2;
+    for (let j = 0; j < h; j++) {
+      const dy = (j + 0.5 - B) / B, hw = A * Math.sqrt(Math.max(0, 1 - dy * dy));
+      const rw = odd ? 2 * Math.round(hw - 0.5) + 1 : 2 * Math.round(hw);
+      ctx.fillRect(cx - Math.floor(rw / 2), cy - Math.floor(B) + j, rw, 1);
+    }
+  }
+  // bóng vừa bị đá đi / vừa vào chân (tốc độ đổi đột ngột, chỉ ở máy vẽ — khách online cũng thấy vì vx / vy có trong snapshot):
+  // trả về { ax: bẹt theo chiều ngang? } trong fx.ball.squash.time giây, không thì null. Trạng thái vẽ riêng (_sq*) trên chính quả bóng
+  function ballSquash(b) {
+    const S = (SFC_CONFIG.game.fx.ball || {}).squash;
+    if (!S || !S.time) return null;
+    const now = performance.now() / 1000, v = Math.hypot(b.vx || 0, b.vy || 0), dv = v - (b._sqV || 0);
+    if (Math.abs(dv) > S.delta && now - (b._sqT || 0) > S.time * 2) {
+      const vx = dv > 0 ? b.vx : b._sqVx || 0, vy = dv > 0 ? b.vy : b._sqVy || 0;
+      b._sqT = now; b._sqAx = Math.abs(vx) >= Math.abs(vy);
+    }
+    b._sqV = v; b._sqVx = b.vx; b._sqVy = b.vy;
+    return now - (b._sqT || 0) < S.time ? { ax: b._sqAx } : null;
+  }
+  // cỡ người (render.playerScale: Sprite v3 cao 31 thay 24 px). Đồ / VFX bám thân người viết theo người cũ:
+  // ph(v) = khoảng cách dọc / cỡ theo người mới (v px ở người cũ)
+  function pscale() { const R = SFC_CONFIG.game.render; return (R && R.playerScale) || 1; }
+  function ph(v) { return Math.round(v * pscale()); }
+  // vật thể vẽ thay / bọc cả người bằng code theo cỡ người cũ (King Kong, con gà, xe tải...): vẽ fn(c) vào đệm 1x quanh chân (x, y)
+  // rồi phóng playerScale lần lấy mẫu điểm gần nhất (px không đều như Sprite v2 phóng, tới khi vẽ lại bản to). op: cách chép lên (lighter...)
+  let scBuf = null;
+  function scaled(ctx, x, y, fn, op) {
+    const k = pscale();
+    if (k === 1) return fn(ctx);
+    if (!scBuf) { const cv = document.createElement('canvas'); cv.width = 192; cv.height = 192; scBuf = { cv, c: cv.getContext('2d'), ax: 96, ay: 140 }; }
+    const B = scBuf, c = B.c, rx = Math.round(x), ry = Math.round(y);
+    c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+    c.clearRect(0, 0, B.cv.width, B.cv.height);
+    c.setTransform(1, 0, 0, 1, B.ax - rx, B.ay - ry);
+    c.globalAlpha = ctx.globalAlpha; c.imageSmoothingEnabled = false;
+    const r = fn(c);
+    ctx.save();
+    ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = false;
+    if (op) ctx.globalCompositeOperation = op;
+    ctx.drawImage(B.cv, rx - B.ax * k, ry - B.ay * k, B.cv.width * k, B.cv.height * k);
+    ctx.restore();
+    return r;
+  }
   // cỡ bóng khi vẽ (fx.ball.size = đường kính lõi; không có thì theo ball.radius)
   function ballSize() {
     const C = SFC_CONFIG.game;
@@ -263,6 +311,15 @@ window.SFC = window.SFC || {};
       ballDisc(ctx, x, by, d + 6, fx.fire ? 'rgba(255,120,30,0.45)' : 'rgba(80,220,255,0.45)');
       ctx.globalCompositeOperation = 'source-over';
     }
+    // bóng bẹp lúc chạm chân (fx.ball.squash): dài thêm 2 px theo hướng bay, mỏng đi 2 px, không vẽ chấm lăn
+    const sq = !bare && d >= 5 ? ballSquash(b) : null;
+    if (sq) {
+      const w = sq.ax ? d + 2 : d - 2, h = sq.ax ? d - 2 : d + 2;
+      ballOval(ctx, x, by, w + 2, h + 2, OUT);
+      ballOval(ctx, x, by, w, h, fx.fire ? '#ffd9a0' : fx.thunder ? '#d8fbff' : '#f4f4f4');
+      ctx.globalAlpha = 1;
+      return;
+    }
     ballDisc(ctx, x, by, d + 2, OUT);
     ballDisc(ctx, x, by, d, fx.fire ? '#ffd9a0' : fx.thunder ? '#d8fbff' : '#f4f4f4');
     if (d % 2 === 0 && d >= 6) {
@@ -315,5 +372,5 @@ window.SFC = window.SFC || {};
 
   // người chơi + hạt trang phục vẽ bằng Sprite v2 (SFC.PlayerSprite, src/render/player, nạp sau file này; sprite cũ đã xoá 2026-11-01)
   const spritePlayer = (...a) => SFC.PlayerSprite.drawPlayer(...a), spriteFx = (...a) => SFC.PlayerSprite.drawFxParticle(...a);
-  SFC.Sprites = { OUT, px, disc, ellipse, ringPx, ballSize, drawPlayer: spritePlayer, drawBall, drawAvatar, drawItemIcon, FX, spawnFx, stepFx, drawFxParticle: spriteFx };
+  SFC.Sprites = { OUT, px, disc, ellipse, ringPx, ballSize, ph, pscale, scaled, drawPlayer: spritePlayer, drawBall, drawAvatar, drawItemIcon, FX, spawnFx, stepFx, drawFxParticle: spriteFx };
 })();

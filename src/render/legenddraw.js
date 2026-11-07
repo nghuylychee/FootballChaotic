@@ -16,6 +16,8 @@ window.SFC = window.SFC || {};
 
 (function () {
   const SP = () => SFC.Sprites;
+  // độ cao trên thân người theo người mới (render.playerScale, Sprite v3 cao 31 thay 24): PH(8) = 8 px ở người cũ
+  const PH = (v) => SFC.Sprites.ph(v);
   const LG = () => SFC_CONFIG.legends.list;
   const latin1 = (s) => /^[\x00-\xFF]*$/.test(s);
   const font = (s, px) => {
@@ -44,7 +46,7 @@ window.SFC = window.SFC || {};
       const a = anim(g, p);
       if (!a) return false;
       const k = a.id === 'engine' ? 0 : 1 - a.t / a.max, dir = Math.cos(p.facing || 0) >= 0 ? 1 : -1;
-      const cx = p.x, cy = p.y - 8 - (p.airZ || 0);
+      const cx = p.x, cy = p.y - PH(8) - (p.airZ || 0);
       ctx.save();
       ctx.translate(cx, cy);
       switch (a.id) {
@@ -57,29 +59,29 @@ window.SFC = window.SFC || {};
         }
         case 'knuckle': {   // đứng tấn dang chân, ưỡn ngực ngả ra sau, rồi vụt mu bàn chân thẳng tắp + bật nhẹ lên (bóng không xoáy)
           const w = k < 0.3 ? k / 0.3 : Math.max(0, 1 - (k - 0.3) / 0.7);
-          ctx.translate(0, -Math.sin(Math.min(1, k / 0.7) * Math.PI) * 4);
+          ctx.translate(0, -Math.sin(Math.min(1, k / 0.7) * Math.PI) * PH(4));
           ctx.rotate(dir * (k < 0.3 ? -0.2 * w : 0.14 * w));
           ctx.scale(1 + 0.06 * w, 1 + 0.1 * w);
           break;
         }
         case 'finesse': ctx.rotate(dir * ease(Math.min(1, k / 0.6)) * Math.PI * 2); break;                                   // xoay người 1 vòng như vũ công
-        case 'rainbow': ctx.translate(0, -Math.sin(k * Math.PI) * 9); ctx.rotate(-dir * 0.45 * Math.sin(k * Math.PI)); break;     // bật nhảy ngửa ra sau, gót hất bóng
+        case 'rainbow': ctx.translate(0, -Math.sin(k * Math.PI) * PH(9)); ctx.rotate(-dir * 0.45 * Math.sin(k * Math.PI)); break;     // bật nhảy ngửa ra sau, gót hất bóng
         case 'bicycle': {   // bay lên, lộn ngửa đầu chúc xuống lúc chạm bóng, rồi xoay tiếp cho tròn vòng khi rơi
-          ctx.translate(0, -Math.sin(k * Math.PI) * 22);
+          ctx.translate(0, -Math.sin(k * Math.PI) * PH(22));
           ctx.rotate(-dir * Math.PI * 2 * ease(k));
           break;
         }
         case 'engine': ctx.rotate(dir * 0.22); ctx.translate((g.time * 60) % 2 > 1 ? 1 : 0, 0); break;                              // chúi người lao như máy
-        case 'slide': ctx.translate(0, 6); ctx.rotate(dir * Math.PI / 2); break;                                                   // nằm xuống trượt
+        case 'slide': ctx.translate(0, PH(6)); ctx.rotate(dir * Math.PI / 2); break;                                                   // nằm xuống trượt
         case 'winded': {   // thở dốc: cúi gập người ra trước (chống gối), lưng phập phồng nhanh; đứng thẳng dần ở cuối
           const w = Math.min(1, a.t / 0.3, (a.max - a.t) / 0.12), s = Math.sin((a.max - a.t) * 10);
-          ctx.translate(dir * 2 * w, 3 * w + s * 0.6 * w);
+          ctx.translate(dir * 2 * w, PH(3) * w + s * 0.6 * w);
           ctx.rotate(dir * 0.32 * w);
           ctx.scale(1 + 0.05 * s * w, 1 - 0.06 * w - 0.05 * s * w);
           break;
         }
         case 'flip': ctx.rotate(dir * Math.PI * 2 * 3 * ease(k)); break;                                                           // bị xoạc: lộn đúng 3 vòng
-        case 'sweeper': ctx.translate(0, -Math.sin(k * Math.PI) * 10); ctx.rotate(dir * Math.PI * 2 * ease(k)); break;            // bật lên xoay 1 vòng
+        case 'sweeper': ctx.translate(0, -Math.sin(k * Math.PI) * PH(10)); ctx.rotate(dir * Math.PI * 2 * ease(k)); break;            // bật lên xoay 1 vòng
         case 'lobthrough': { const sc = 1 + 0.15 * Math.sin(k * Math.PI); ctx.scale(sc, sc); break; }                              // ưỡn người như nhạc trưởng
         case 'toepoke': ctx.translate(dir * 4 * Math.sin(k * Math.PI), 0); break;                                                  // chọc mũi giày tới trước
         case 'bruiser': ctx.rotate(dir * 0.4 * Math.sin(k * Math.PI)); ctx.scale(1 + 0.18 * Math.sin(k * Math.PI), 1); break;       // vai xô, chỏ giật ngang
@@ -98,10 +100,10 @@ window.SFC = window.SFC || {};
         // vệt quét của chân: vòng tròn sáng màu LEGEND quanh người khi xoay
         ctx.globalAlpha = 0.85 * (1 - k);
         ctx.strokeStyle = c; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(p.x, p.y - 8, 13, 0, Math.PI * 2 * Math.min(1, k / 0.6)); ctx.stroke();
+        ctx.beginPath(); ctx.arc(p.x, p.y - PH(8), PH(13), 0, Math.PI * 2 * Math.min(1, k / 0.6)); ctx.stroke();
       } else if (a.id === 'knuckle') {
         // vụt thẳng: tiếng "bụp" ở mu bàn chân (vòng nén khí dẹt) + tia thẳng phía trước (không cong, không xoáy) + 2 vạch tấn dưới chân
-        const bx = p.x + fx * 8, by = p.y - 3 + fy * 4;
+        const bx = p.x + fx * PH(8), by = p.y - PH(3) + fy * 4;
         ctx.globalAlpha = 0.9 * (1 - k); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.ellipse(bx, by, 3 + k * 12, 2 + k * 6, p.facing, 0, Math.PI * 2); ctx.stroke();
         ctx.strokeStyle = c; ctx.lineWidth = 1.5;
@@ -117,16 +119,16 @@ window.SFC = window.SFC || {};
         ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.ellipse(p.x, p.y + 1, 8 + k * 26, 3 + k * 9, 0, 0, Math.PI * 2); ctx.stroke();
         ctx.fillStyle = c;
-        for (let i = 0; i < 5; i++) { const an = p.facing + (i - 2) * 0.25; ctx.fillRect(p.x + Math.cos(an) * (10 + k * 30), p.y - 6 + Math.sin(an) * (6 + k * 16), 3, 2); }
+        for (let i = 0; i < 5; i++) { const an = p.facing + (i - 2) * 0.25; ctx.fillRect(p.x + Math.cos(an) * (10 + k * 30), p.y - PH(6) + Math.sin(an) * (6 + k * 16), 3, 2); }
       } else if (a.id === 'engine') {
         // tia tốc độ phía sau + khói động cơ phụt ra
         ctx.globalAlpha = 0.7; ctx.fillStyle = c;
-        for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(p.x - fx * (12 + i * 5) + (i - 1.5) * fy * 5), Math.round(p.y - 8 - fy * (12 + i * 5) - (i - 1.5) * fx * 4), 6 - i, 1);
+        for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(p.x - fx * (12 + i * 5) + (i - 1.5) * fy * 5), Math.round(p.y - PH(8) - fy * (12 + i * 5) - (i - 1.5) * fx * 4), 6 - i, 1);
         ctx.globalAlpha = 0.45; ctx.fillStyle = '#c7ccd6';
         for (let i = 0; i < 3; i++) { const ph = (t * 6 + i / 3) % 1; ctx.beginPath(); ctx.arc(p.x - fx * (6 + ph * 14), p.y - fy * (6 + ph * 14), 1.5 + ph * 3, 0, Math.PI * 2); ctx.fill(); }
       } else if (a.id === 'winded') {
         // hơi thở: cụm khói trắng phả ra trước mặt theo nhịp thở, bay lên to dần rồi tan · mồ hôi: giọt xanh văng khỏi đầu
-        const el = a.max - a.t, fade = Math.min(1, a.t / 0.3), mx = p.x + dir * 7, my = p.y - 13;
+        const el = a.max - a.t, fade = Math.min(1, a.t / 0.3), mx = p.x + dir * PH(7), my = p.y - PH(13);
         for (let i = 0; i < 2; i++) {
           const ph = (el / 0.45 + i * 0.5) % 1;
           ctx.globalAlpha = 0.75 * (1 - ph) * fade; ctx.fillStyle = '#ffffff';
@@ -138,7 +140,7 @@ window.SFC = window.SFC || {};
         for (const sd of [-1, 1]) {
           const ph = (el / 0.6 + (sd > 0 ? 0.5 : 0)) % 1;
           ctx.globalAlpha = 0.9 * (1 - ph) * fade;
-          ctx.fillRect(Math.round(p.x + sd * (4 + ph * 7)), Math.round(p.y - 22 - ph * 6 + ph * ph * 12), 1, 2);
+          ctx.fillRect(Math.round(p.x + sd * (4 + ph * 7)), Math.round(p.y - PH(22) - ph * 6 + ph * ph * 12), 1, 2);
         }
       } else if (a.id === 'slide') {
         // bụi cỏ tung sau lưng lúc trượt
@@ -147,11 +149,11 @@ window.SFC = window.SFC || {};
       } else if (a.id === 'bruiser') {
         // sóng va chạm hình cung 2 bên vai
         ctx.globalAlpha = 0.8 * (1 - k); ctx.strokeStyle = c; ctx.lineWidth = 2;
-        for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(p.x - fy * s * 6, p.y - 10 + fx * s * 3, 6 + k * 16, 0, Math.PI * 2); ctx.stroke(); }
+        for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(p.x - fy * s * PH(6), p.y - PH(10) + fx * s * 3, 6 + k * 16, 0, Math.PI * 2); ctx.stroke(); }
       } else if (a.id === 'sweeper' || a.id === 'lobthrough' || a.id === 'rainbow' || a.id === 'bicycle' || a.id === 'toepoke') {
         // vòng sáng màu LEGEND quanh người lúc ra kỹ thuật
         ctx.globalAlpha = 0.6 * (1 - k); ctx.strokeStyle = c; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(p.x, p.y - 10, 10 + k * 14, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(p.x, p.y - PH(10), PH(10) + k * 14, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.restore();
     },

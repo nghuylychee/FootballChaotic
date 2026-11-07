@@ -79,11 +79,12 @@ SFC_CONFIG.game = {
   field: {
     // ở pitchScale 1. Thử sân to: w x pitchScale, h x (1 + (pitchScale - 1) x 0,75), đặt giữa khung trận (cuối file)
     x: 56, y: 80, w: 528, h: 246,
-    goalWidth: 78,     // độ rộng khung thành (trục y)
-    goalDepth: 18,     // độ sâu lưới
-    goalHeight: 26,    // chiều cao xà ngang (trục z)
-    boxDepth: 66,      // vòng cấm: cầu thủ đứng trong vòng cấm nhà được cơ chế thủ môn
-    boxWidth: 140,
+    // khung thành + vòng cấm to thêm ~10% (user 2026-11-07): 78 / 18 / 26 / 66 / 140 -> 86 / 20 / 29 / 73 / 154. Không theo pitchScale
+    goalWidth: 86,     // độ rộng khung thành (trục y)
+    goalDepth: 20,     // độ sâu lưới
+    goalHeight: 29,    // chiều cao xà ngang (trục z)
+    boxDepth: 73,      // vòng cấm: cầu thủ đứng trong vòng cấm nhà được cơ chế thủ môn
+    boxWidth: 154,
     centerCircle: 34,
   },
 
@@ -260,6 +261,10 @@ SFC_CONFIG.game = {
     // (user 2026-10-30: cú sút vừa lực lăn sát đất mất hơn nửa tốc độ trước khi tới khung -> không có cảm giác PES / FIFA)
     shotFriction: 0.3,
     shotBounceKeep: 0.92,    // bóng sút nảy đất giữ lại chừng này tốc độ ngang (bóng thường: 0.78)
+    // BÓNG LĂN CÓ ĐỘ NẶNG (user 2026-11-07): ma sát hàm mũ làm bóng chậm cứ lăn rề rề mãi (100 px/s còn trôi ~95 px). Bóng sát đất chậm hơn below px/s
+    // chịu thêm hãm đều decel px/s² -> lăn chậm là dừng dứt khoát (~25 px). Đường chuyền có người nhận tới chân >= 120 px/s nên tính giờ chuyền không đổi.
+    // Ball.update + Actions.flightStep (đoán điểm đón). enabled false = như cũ
+    rollStop: { enabled: true, below: 110, decel: 170 },
   },
 
   // Chuyền bóng: giữ S/W/A để nạp thanh lực, thả để chuyền.
@@ -335,11 +340,23 @@ SFC_CONFIG.game = {
     freeThroughArrive: 80,    // chọc khe vào khoảng trống (không có người nhận): bóng vẫn còn lực khi qua điểm rơi
     lobTimeMin: 0.45,         // chuyền bổng: thời gian bay (s) theo khoảng cách
     lobTimeMax: 1.0,
+    // ĐỘ BỔNG THEO LỰC BẤM (user 2026-11-07: nhấn mạnh mà không bổng lắm): chuyền bổng / tạt cánh tới người nhận — thời gian bay (theo khoảng cách)
+    // x lobLoft[0] (chạm nhẹ) -> lobLoft[1] (đầy lực). Đỉnh bóng ~ thời gian bay² -> nhẹ ~0.56x, đầy ~1.8x. Bóng vẫn rơi đúng chỗ người nhận
+    // (giữ mạnh không còn làm bóng đi quá đà). AI (không có lực bấm): x 1
+    lobLoft: [0.75, 1.35],
     angleWeight: 2.6,         // độ ưu tiên hướng phím khi chọn người nhận
     distWeight: 1.2,          // độ ưu tiên khoảng cách theo lực
     switchMargin: 0.35,       // chống nhảy mục tiêu liên tục khi đang nạp lực
     receiveRangeBonus: 5,     // người nhận đích danh khống chế bóng dễ hơn (px)
     receiveAssist: true,      // người nhận tự chủ động chạy tới điểm đón bóng (người chơi bấm hướng mới thì được giành quyền)
+    // KHOÁ NGƯỜI NHẬN (user 2026-11-07: bóng tới mà người nhận chạy mất): đường chuyền chuẩn (không sloppy) tới mình -> người nhận LUÔN tự chạy đón,
+    // mũi tên không kéo người đi nữa mà thành hướng chạm bóng đầu tiên (firstTouch). Thoát: skill (lướt). false = như cũ (bấm hướng mới là tự chạy)
+    receiveLock: true,
+    // CHẠM BÓNG ĐẦU TIÊN CÓ QUÁN TÍNH (user 2026-11-07: bóng thiếu độ nặng; Game.gainPossession -> Ball.follow): bóng tới nhanh hơn minSpeed px/s
+    // không dừng chết ở chân mà trôi ra trước chân carry x (tốc độ − minSpeed) px/s (/ chỉ số dribble), hãm stop /s, rồi về chân settle /s;
+    // xa thêm tối đa max px (x render.playerScale, cuối file). Hướng trôi: mũi tên lúc đón (người chơi; quay người theo luôn) · không bấm: hướng mặt,
+    // trôi noArrow x (đỡ bóng dừng lại). Bóng còn trôi xa: người cầm chậm lại tới slow. Thủ môn bắt bóng của đối phương: không trôi
+    firstTouch: { enabled: true, minSpeed: 120, carry: 0.7, stop: 10, settle: 5, max: 12, slow: 0.4, noArrow: 0.6 },
     // CHUYỀN 1 CHẠM (user 2026-10-30, ban bật): đang đón đường chuyền mà bấm S / W / A -> nhận bóng là chuyền luôn
     // (thả phím trước khi bóng tới = chuyền ngay lúc chạm, lực lý tưởng; còn giữ = nạp tiếp như thường).
     // Đường chuyền ra trong window s sau khi nhận bóng = bóng 1 chạm: tỉ lệ bị cắt x intercept
@@ -409,10 +426,12 @@ SFC_CONFIG.game = {
     // lực nhỏ = bóng sệt (vz shotLiftMin). Từ loftFrom trở lên bóng vồng dần, tới đầy lực thì bóng qua vạch vôi
     // ở độ cao shotLoft x xà (field.goalHeight) dù đứng xa hay gần; quá đà nâng dần (bình phương) tới overLoft x xà ở mức tự sút
     // (quá đà ít: sát xà · quá đà hết cỡ: vọt xà)
+    // 2026-11-07 (user: nhấn mạnh mà không bổng lắm): bổng tăng đều theo lực từ sớm hơn — loftFrom 0.35 -> 0.15, loftPow 1.3 -> 0.5
+    // (độ cao ~ vz², nên mũ 0.5 cho đỉnh bóng tăng gần tuyến tính theo lực), shotLoft 0.8 -> 0.9 (đầy lực qua vạch vôi sát xà hơn)
     shotLiftMin: 10,
-    loftFrom: 0.35,
-    loftPow: 1.3,
-    shotLoft: 0.8,
+    loftFrom: 0.15,
+    loftPow: 0.5,
+    shotLoft: 0.9,
     overLoft: 1.45,
     shotLiftCap: 240,        // vz tối đa (sút sát khung / rất xa không vọt lên trời)
     shotSpread: 0.08,        // rad
@@ -757,7 +776,7 @@ SFC_CONFIG.game = {
   },
 
   fx: {
-    shakeGoal: 5, shakeHit: 2, shakeShot: 1.5,
+    shakeGoal: 5, shakeHit: 2, shakeShot: 2,   // shakeShot 1.5 -> 2 (2026-11-07: cú sút nặng hơn)
     // HITSTOP CỤC BỘ (giây): chỉ người ra đòn + người trúng đòn (sút: người sút + bóng) khựng lại, cả sân vẫn chạy.
     // Khác Game.hitStop (đứng hình cả trận, dành cho Tuyệt kỹ) -> 3v3 online đấm nhau liên tục không bị giật cả sân. 0 = tắt
     hitStop: {
@@ -765,6 +784,10 @@ SFC_CONFIG.game = {
       punch: 0.035,    // Light attack trúng người (~2 frame)
       shot: 0.05,      // sút mạnh: bóng "dính" chân một nhịp rồi mới bay
       shotMin: 0.9,    //   thanh lực từ mức này trở lên mới khựng
+      // ĐỘ NẶNG CÚ ĐÁ (user 2026-11-07: bóng chưa có độ nặng): cú sút dưới shotMin cũng khựng shotLow -> shot theo lực;
+      // chuyền khựng pass[0] -> pass[1] theo tốc độ bóng / pass.maxSpeed (1 frame ~ 0.017). 0 = tắt
+      shotLow: 0.025,
+      pass: [0.012, 0.03],
     },
     // bóng rất nhanh (px/s, cú sút mạnh): vẽ thêm vệt tốc độ sau bóng (chỉ hình ảnh, src/render/renderer.js -> ballTrail)
     speedLines: 420,
@@ -785,6 +808,9 @@ SFC_CONFIG.game = {
       // cỡ bóng khi VẼ = đường kính lõi (px, + viền mực 1 px mỗi bên), va chạm theo ball.radius. Lẻ hay chẵn đều được (chẵn: tâm giữa 2 px).
       // user 2026-11-07: 3 nhỏ quá, 5 vẫn hơi nhỏ, 6 -> 7 = cỡ gốc (9 px cả viền); người to lên thay (render.playerScale)
       size: 7,
+      // BÓNG BẸP lúc chạm chân (2026-11-07, chỉ hình, src/render/sprites.js): tốc độ bóng đổi đột ngột hơn delta px/s (đá đi / nhận bóng nhanh)
+      // -> time giây bóng bẹt theo hướng bay (dài thêm 2 px, mỏng đi 2 px). 0 = tắt
+      squash: { delta: 170, time: 0.06 },
     },
     // CẢM GIÁC CHẠY (chỉ hình ảnh / âm thanh ở máy vẽ, src/render/renderer.js -> runFeel; online khách cũng thấy)
     run: {
@@ -883,4 +909,5 @@ SFC_CONFIG.game = {
   const kp = R.playerScale || 1, B = G.ball, DR = B.dribble;
   B.dribbleOffset = r(B.dribbleOffset * kp); DR.sprintOffset = r(DR.sprintOffset * kp); DR.tapEvery = r(DR.tapEvery * kp);
   DR.tapLead = r(DR.tapLead * k);
+  P.firstTouch.max = r(P.firstTouch.max * kp);   // chạm bóng đầu tiên: bóng trôi xa chân theo cỡ người
 })();

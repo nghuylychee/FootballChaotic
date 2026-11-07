@@ -1,4 +1,7 @@
-/* Art scene · village.js — khung mẫu Village (ban ngày, ngoại ô) ở lưới px game 880 x 512 (= vùng 640 x 360 + 120 mỗi bên, 76 trên dưới).
+/* Art scene · village.js — khung mẫu Village (ban ngày, ngoại ô) ở lưới px game W x H = render.maxView (khung nhìn trận lớn nhất), sân trận ở giữa.
+ * Vẽ tay trên lưới gốc 880 x 512 (sân 528 x 246 ở 176, 156). Sân to (pitchScale, 2026-11-07): mọi toạ độ vẽ tay đi qua X() / Y():
+ * vật ngoài sân giữ khoảng cách tới mép sân gần nhất, vật trong bề ngang / bề dọc sân giãn theo sân; vật vẫn giữ cỡ px gốc (chỉ dời chỗ).
+ * Thứ bám sân (tường, vạch vôi, bóng khung thành) vẽ thẳng theo sân thật F.
  * 3 lớp tách riêng: background (trời, đường chân trời, ruộng, mặt đất, sân, vạch vôi) · props (tường sân, nhà, cây, đồ vật) · npcs (người, thú).
  * props + npcs là 1 danh sách vật có độ sâu y (chân vật): ghép thì xếp theo y nên người đứng sau rào vẫn bị rào che; xem riêng 1 lớp thì lọc theo L.
  * Village.draw(ctx, { bg, props, npcs, shadows, goals, grade, t }) vẽ lên ctx 880 x 512. Cầu thủ, bóng, khung thành là của game.
@@ -11,14 +14,22 @@ window.SFC = window.SFC || {};
   const Art = (SFC.Art = SFC.Art || {});
   const K = Art.Kit, N = Art.Npc, P = Art.Prop, { px, dot } = K;
 
-  const W = 880, H = 512, OX = 120, OY = 76;
-  const G = SFC_CONFIG.game.field;
-  // sân ở toạ độ khung 880 x 512
+  const RC = SFC_CONFIG.game.render, G = SFC_CONFIG.game.field;
+  // khung cảnh = khung nhìn trận lớn nhất, khung trận (render.width x height) ở giữa: Renderer vẽ khung này ở (-OX, -OY)
+  const W = RC.maxView[0], H = RC.maxView[1], OX = (W - RC.width) / 2, OY = (H - RC.height) / 2;
+  // sân ở toạ độ khung
   const F = { x: G.x + OX, y: G.y + OY, w: G.w, h: G.h };
   F.cx = F.x + F.w / 2; F.cy = F.y + F.h / 2;
   const WALL_TOP = F.y - 46, RIM = 16, BOT = F.y + F.h + 18;
-  const HORIZON = 58;
-  const POND = { x: 62, y: 424, rx: 50, ry: 19 };
+  // lưới vẽ tay gốc (khung 880 x 512, sân O): X / Y đổi toạ độ gốc -> khung thật, iX / iY ngược lại.
+  // Trái / phải (trên / dưới) sân: dời theo mép sân; trong bề ngang (dọc) sân: giãn theo tỉ lệ sân thật / sân gốc
+  const O = { x: 176, y: 156, w: 528, h: 246 };
+  const map1 = (v, o0, o1, n0, n1) => (v <= o0 ? v + n0 - o0 : v >= o1 ? v + n1 - o1 : n0 + ((v - o0) * (n1 - n0)) / (o1 - o0));
+  const X = (x) => Math.round(map1(x, O.x, O.x + O.w, F.x, F.x + F.w)), Y = (y) => Math.round(map1(y, O.y, O.y + O.h, F.y, F.y + F.h));
+  const iX = (x) => map1(x, F.x, F.x + F.w, O.x, O.x + O.w), iY = (y) => map1(y, F.y, F.y + F.h, O.y, O.y + O.h);
+  const DY = F.y - O.y;   // phần trên sân (trời, ruộng, nhà sau tường) chỉ dời xuống DY
+  const HORIZON = 58;     // lưới gốc (trời / ruộng vẽ trong translate(0, DY))
+  const POND = { x: 62, y: 424, rx: 50, ry: 19 };   // lưới gốc
 
   /* ---------- nhiễu cho kết cấu mặt đất ---------- */
   const hash = (x, y, s) => {
@@ -36,8 +47,10 @@ window.SFC = window.SFC || {};
   const ell = (x, y, cx, cy, rx, ry) => ((x - cx) * (x - cx)) / (rx * rx) + ((y - cy) * (y - cy)) / (ry * ry);
 
   // mặt đất đất trần (0..1): đường làng, lối vào nhà, sân phơi, gốc đa, mép tường bị dẫm
-  const LANE = (x) => 463 + Math.round(2 * Math.sin(x / 57) + Math.sin(x / 23));
-  function dirtAt(x, y) {
+  const LANE = (x) => 463 + Math.round(2 * Math.sin(x / 57) + Math.sin(x / 23));   // lưới gốc
+  // (x, y) toạ độ khung thật: mảng đất vẽ tay tính ở lưới gốc, mép tường bị dẫm tính theo sân thật
+  function dirtAt(X0, Y0) {
+    const x = iX(X0), y = iY(Y0);
     let d = 0;
     d = Math.max(d, 1 - sstep(7, 11, Math.abs(y - LANE(x))));
     const pathX = 70 + 7 * Math.sin(y / 31);
@@ -48,9 +61,9 @@ window.SFC = window.SFC || {};
     d = Math.max(d, 1 - sstep(0.6, 1.2, ell(x, y, 795, 285, 66, 34)));
     d = Math.max(d, 1 - sstep(0.5, 1.2, ell(x, y, 810, 222, 40, 14)));
     // mép ngoài tường sân bị dẫm mòn
-    const dx = x < F.x - RIM ? F.x - RIM - x : x > F.x + F.w + RIM ? x - (F.x + F.w + RIM) : 0, dy = y > BOT ? y - BOT : 0;
-    if (y > WALL_TOP && (dx || dy)) d = Math.max(d, 0.75 - Math.max(dx, dy) / 14);
-    if (y > BOT) d = Math.max(d, 1 - sstep(0.6, 1.1, ell(x, y, 440, 434, 250, 20)));
+    const dx = X0 < F.x - RIM ? F.x - RIM - X0 : X0 > F.x + F.w + RIM ? X0 - (F.x + F.w + RIM) : 0, dy = Y0 > BOT ? Y0 - BOT : 0;
+    if (Y0 > WALL_TOP && (dx || dy)) d = Math.max(d, 0.75 - Math.max(dx, dy) / 14);
+    if (Y0 > BOT) d = Math.max(d, 1 - sstep(0.6, 1.1, ell(x, y, 440, 434, 250, 20)));
     d = Math.max(d, 1 - sstep(0.4, 1.2, ell(x, y, 815, 400, 30, 9)) * 0.6);
     return d;
   }
@@ -72,9 +85,10 @@ window.SFC = window.SFC || {};
     const T = new Uint8Array(W * H);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x;
-      if (y < 98 + Math.round(4 * vnoise(x, 0, 21, 9))) continue;
-      const pe = ell(x, y, POND.x, POND.y, POND.rx, POND.ry) + (vnoise(x, y, 12, 5) - 0.5) * 0.2;
-      if (pe < 1) { T[i] = pe > 0.84 ? 8 : pe > 0.74 && y < POND.y ? 11 : pe < 0.42 ? 10 : 9; continue; }
+      const ox = iX(x), oy = iY(y);
+      if (oy < 98 + Math.round(4 * vnoise(x, 0, 21, 9))) continue;
+      const pe = ell(ox, oy, POND.x, POND.y, POND.rx, POND.ry) + (vnoise(x, y, 12, 5) - 0.5) * 0.2;
+      if (pe < 1) { T[i] = pe > 0.84 ? 8 : pe > 0.74 && oy < POND.y ? 11 : pe < 0.42 ? 10 : 9; continue; }
       if (x >= F.x && x < F.x + F.w && y >= F.y && y < F.y + F.h) {
         // 2 khung thành + giữa sân mòn tối hơn, vài mảng bụi sáng
         const worn = Math.exp(-ell(x, y, F.x + 22, F.cy, 36, 46)) + Math.exp(-ell(x, y, F.x + F.w - 22, F.cy, 36, 46)) + Math.exp(-ell(x, y, F.cx, F.cy, 60, 38)) * 0.5;
@@ -104,17 +118,19 @@ window.SFC = window.SFC || {};
   }
 
   /* ---------- trời, đường chân trời, ruộng ---------- */
+  // trời / thành phố xa / ruộng: vẽ trong translate(0, DY) (background), toạ độ y lưới gốc, x khung thật
   function sky(c, t) {
     const top = K.rgb('#86bfe2'), mid = K.rgb('#b6d8ea'), hor = K.rgb('#e8efe0');
+    px(c, 0, -DY, W, DY, K.hex(...top));   // phần trời phía trên lưới gốc
     for (let y = 0; y < HORIZON + 8; y++) {
       const k = y / (HORIZON + 8), a = k < 0.6 ? k / 0.6 : 1, b = k < 0.6 ? 0 : (k - 0.6) / 0.4;
       const col = k < 0.6 ? top.map((v, i) => v + (mid[i] - v) * a) : mid.map((v, i) => v + (hor[i] - v) * b);
       px(c, 0, y, W, 1, K.hex(...col));
     }
     // nắng ấm phía trên trái (mặt trời sau tường trên, lệch trái)
-    for (let r = 0; r < 6; r++) { c.save(); c.globalAlpha = 0.05; K.ellipse(c, 250, -30, 200 - r * 28, 70 - r * 10, '#fff4d0'); c.restore(); }
+    for (let r = 0; r < 6; r++) { c.save(); c.globalAlpha = 0.05; K.ellipse(c, X(250), -30, 200 - r * 28, 70 - r * 10, '#fff4d0'); c.restore(); }
     const drift = Math.round((t || 0) * 2);
-    for (const [cx, cy, w, s] of [[80, 16, 54, 1], [292, 9, 40, 2], [520, 22, 64, 3], [736, 12, 46, 4], [860, 30, 30, 5]]) cloud(c, cx + drift, cy, w, s);
+    for (const [cx, cy, w, s] of [[80, 16, 54, 1], [292, 9, 40, 2], [520, 22, 64, 3], [736, 12, 46, 4], [860, 30, 30, 5]]) cloud(c, X(cx) + drift, cy, w, s);
   }
   // mây tích: đáy phẳng, bụng xám xanh, đỉnh sáng
   function cloud(c, cx, cy, w, seed) {
@@ -129,6 +145,7 @@ window.SFC = window.SFC || {};
   // thành phố xa + sân vận động giữa: nhạt nhất màn hình (luật camera 4)
   function skyline(c) {
     const rnd = K.rng(404), base = HORIZON + 1;
+    c.save(); c.translate(X(450) - 450, 0);   // cụm thành phố giữ cỡ, đặt theo giữa sân
     const far = '#bccbd6', near = '#aebfcd', lit = '#c9d6df';
     for (let x = 300; x < 600; ) {
       const w = 5 + Math.floor(rnd() * 10), dc = Math.abs(x - 450) / 150, h = Math.round(6 + rnd() * 18 * (1 - dc * 0.6));
@@ -147,6 +164,7 @@ window.SFC = window.SFC || {};
     K.ellipse(c, sx, base - 9, 26, 3, lit); K.ellipse(c, sx, base - 9, 20, 2, '#a8bac8');
     for (let i = -24; i <= 24; i += 4) px(c, sx + i, base - 5, 1, 4, '#b4c4d0');
     for (const lx of [sx - 30, sx - 16, sx + 16, sx + 30]) { px(c, lx, base - 20, 1, 15, near); px(c, lx - 2, base - 22, 5, 2, lit); }
+    c.restore();
     // sương mờ chân trời
     c.save(); c.globalAlpha = 0.35; px(c, 0, base - 4, W, 5, '#e6eee6'); c.restore();
   }
@@ -156,13 +174,13 @@ window.SFC = window.SFC || {};
     // rặng cây xa (2 lớp, lớp xa nhạt hơn)
     for (const [y0, col, amp, s] of [[HORIZON, '#a9c0a2', 4, 1], [HORIZON + 4, '#93ae84', 5, 2]]) {
       for (let x = 0; x < W; x++) {
-        if (s === 1 && x > 300 && x < 600) continue;
+        if (s === 1 && Math.abs(x - X(450)) < 150) continue;
         const h = Math.round(amp * (0.5 + 0.5 * Math.sin(x / 7 + s) * Math.sin(x / 19 + s * 2)) + vnoise(x, s, 4, s) * 3);
         px(c, x, y0 - h, 1, h + 6, col);
       }
     }
     // mái nhà làng bên kia đồng
-    for (const rx of [40, 128, 690, 790, 850]) { px(c, rx, HORIZON + 4, 9, 3, '#c09a86'); px(c, rx + 1, HORIZON + 7, 7, 2, '#c8c0a8'); }
+    for (const rx0 of [40, 128, 690, 790, 850]) { const rx = X(rx0); px(c, rx, HORIZON + 4, 9, 3, '#c09a86'); px(c, rx + 1, HORIZON + 7, 7, 2, '#c8c0a8'); }
     // ruộng: các dải thửa, bờ ruộng sáng
     let y = HORIZON + 8;
     while (y < 104) {
@@ -218,15 +236,18 @@ window.SFC = window.SFC || {};
   function groundDetail(c) {
     const rnd = K.rng(707);
     // 2 vệt bánh xe liền trên đường làng + 2 vũng nước
-    for (let x = 0; x < W; x++) { const y = LANE(x); if (hash(x, 1, 3) < 0.94) { dot(c, x, y - 3, '#957a52'); dot(c, x, y + 3, '#957a52'); } }
-    K.ellipse(c, 560, LANE(560) + 1, 8, 2, '#8a7a5a'); K.ellipse(c, 560, LANE(560) + 1, 7, 1, '#8ab0b4'); px(c, 556, LANE(560), 4, 1, '#c0d8dc');
-    K.ellipse(c, 250, LANE(250) - 2, 5, 1, '#8a7a5a'); px(c, 248, LANE(250) - 2, 3, 1, '#a8c4c8');
+    const lane = (x) => Y(LANE(iX(x)));   // đường làng ở khung thật
+    for (let x = 0; x < W; x++) { const y = lane(x); if (hash(x, 1, 3) < 0.94) { dot(c, x, y - 3, '#957a52'); dot(c, x, y + 3, '#957a52'); } }
+    { const x = X(560); K.ellipse(c, x, lane(x) + 1, 8, 2, '#8a7a5a'); K.ellipse(c, x, lane(x) + 1, 7, 1, '#8ab0b4'); px(c, x - 4, lane(x), 4, 1, '#c0d8dc'); }
+    { const x = X(250); K.ellipse(c, x, lane(x) - 2, 5, 1, '#8a7a5a'); px(c, x - 2, lane(x) - 2, 3, 1, '#a8c4c8'); }
     // sân: vài viên sỏi 2 tông + vệt trượt chân, ít thôi (sân là nền yên tĩnh)
     for (let i = 0; i < 8; i++) { const x = F.x + 12 + rnd() * (F.w - 24), y = F.y + 12 + rnd() * (F.h - 24); px(c, x, y, 2, 1, '#a48a66'); px(c, x, y + 1, 2, 1, '#6e5436'); }
     for (let i = 0; i < 3; i++) { const x = F.x + 40 + rnd() * (F.w - 80), y = F.y + 20 + rnd() * (F.h - 40); px(c, x, y, 4 + Math.floor(rnd() * 4), 1, '#83643f'); }
     // sỏi trên đất ngoài sân
-    for (let i = 0; i < 200; i++) {
-      const x = Math.floor(rnd() * W), y = 100 + Math.floor(rnd() * (H - 100));
+    // số vật rải theo diện tích khung (lưới gốc 880 x 512)
+    const AREA = (W * H) / (880 * 512), Y100 = Y(100), Y104 = Y(104);
+    for (let i = 0; i < 200 * AREA; i++) {
+      const x = Math.floor(rnd() * W), y = Y100 + Math.floor(rnd() * (H - Y100));
       if (dirtAt(x, y) < 0.8 || (x > F.x - RIM - 2 && x < F.x + F.w + RIM + 2 && y > WALL_TOP && y < BOT + 3)) continue;
       if (rnd() < 0.25) { px(c, x, y, 2, 1, '#c4ae88'); px(c, x, y + 1, 2, 1, '#957a52'); }
     }
@@ -242,13 +263,13 @@ window.SFC = window.SFC || {};
       P.tuft(c, Math.round(x), Math.round(y), { kind: i % 3, color: '#6a7a46' });
     }
     // ngoài sân: khóm cỏ đi thành cụm 2–4, cụm hoa trắng / vàng 2–3 bông
-    const free = (x, y) => !(x > F.x - RIM - 4 && x < F.x + F.w + RIM + 4 && y > WALL_TOP - 4 && y < BOT + 6) && dirtAt(x, y) < 0.4 && ell(x, y, POND.x, POND.y, POND.rx + 4, POND.ry + 4) > 1 && y > 104;
-    for (let i = 0; i < 55; i++) {
-      const cx = Math.floor(rnd() * W), cy = 104 + Math.floor(rnd() * (H - 104)), n = 2 + Math.floor(rnd() * 3);
+    const free = (x, y) => !(x > F.x - RIM - 4 && x < F.x + F.w + RIM + 4 && y > WALL_TOP - 4 && y < BOT + 6) && dirtAt(x, y) < 0.4 && ell(iX(x), iY(y), POND.x, POND.y, POND.rx + 4, POND.ry + 4) > 1 && y > Y104;
+    for (let i = 0; i < 55 * AREA; i++) {
+      const cx = Math.floor(rnd() * W), cy = Y104 + Math.floor(rnd() * (H - Y104)), n = 2 + Math.floor(rnd() * 3);
       for (let j = 0; j < n; j++) { const x = cx + Math.round((rnd() - 0.5) * 12), y = cy + Math.round((rnd() - 0.5) * 6); if (free(x, y)) P.tuft(c, x, y, { kind: Math.floor(rnd() * 3) }); }
     }
-    for (let i = 0; i < 10; i++) {
-      const cx = Math.floor(rnd() * W), cy = 104 + Math.floor(rnd() * (H - 104)), col = K.pick(rnd, ['#f4f0e0', '#f4f0e0', '#f0d860', '#f0b8c0']);
+    for (let i = 0; i < 10 * AREA; i++) {
+      const cx = Math.floor(rnd() * W), cy = Y104 + Math.floor(rnd() * (H - Y104)), col = K.pick(rnd, ['#f4f0e0', '#f4f0e0', '#f0d860', '#f0b8c0']);
       for (let j = 0; j < 2 + Math.floor(rnd() * 2); j++) {
         const x = cx + Math.round((rnd() - 0.5) * 10), y = cy + Math.round((rnd() - 0.5) * 6);
         if (free(x, y)) K.art(c, x - 1, y - 1, ['.w.', 'wyw', '.w.'], { w: col, y: col === '#f0d860' ? '#c89030' : '#e8c040' });
@@ -261,34 +282,37 @@ window.SFC = window.SFC || {};
   const v = (s, o) => Object.assign({}, C[s], o || {});
   function items(t) {
     const L = [];
-    // o.flat: vật nằm sát đất (nia, bạt, viền tường, dây điện, chim bay) không đổ bóng dài
-    const prop = (y, d, o) => L.push(Object.assign({ L: 'props', y, d }, o));
-    const npc = (y, d, o) => L.push(Object.assign({ L: 'npcs', y, d }, o));
+    // o.flat: vật nằm sát đất (nia, bạt, viền tường, dây điện, chim bay) không đổ bóng dài.
+    // y (độ sâu) và mọi toạ độ vẽ tay dưới đây ở lưới gốc: prop / npc / person tự đổi độ sâu, hàm vẽ đổi toạ độ bằng X() / Y()
+    const prop = (y, d, o) => L.push(Object.assign({ L: 'props', y: Y(y), d }, o));
+    const npc = (y, d, o) => L.push(Object.assign({ L: 'npcs', y: Y(y), d }, o));
     const FLAT = { flat: true };
-    const person = (x, y, spec, o) => npc(y, (c) => N.person(c, x, y, spec, Object.assign({ t }, o)));
+    const person = (x, y, spec, o) => npc(y, (c) => N.person(c, X(x), Y(y), spec, Object.assign({ t }, o)));
+    // dải ngang lưới gốc x0..x1 -> khung thật (chạm mép khung gốc 0 / 880 thì kéo tới mép khung thật)
+    const span = (x0, x1) => { const a = x0 <= 0 ? 0 : X(x0), b = x1 >= 880 ? W : X(x1); return [a, b - a]; };
 
     /* --- sau tường trên: tre xa, nhà, sân trong, hàng xóm sau rào --- */
     for (const [x, y, n, h, s] of [[176, 102, 8, 50, 1], [372, 101, 9, 54, 3], [686, 102, 9, 56, 5], [28, 100, 8, 52, 7], [836, 100, 9, 54, 9]])
-      prop(y, (c) => P.bamboo(c, x, y, { n, h, seed: s, far: 0.32, t }));
+      prop(y, (c) => P.bamboo(c, X(x), Y(y), { n, h, seed: s, far: 0.32, t }));
     const poleTops = [];
-    prop(108, (c) => { poleTops[0] = P.powerPole(c, 170, 108, { h: 62 }); });
-    prop(108, (c) => { poleTops[1] = P.powerPole(c, 708, 108, { h: 62 }); });
-    prop(104, (c) => P.house(c, 204, 106, { w: 118, seed: 31, wall: '#dcc47e', roof: '#b25a3c', door: '#4a6a68', antenna: 96, calendar: true }));
-    prop(104, (c) => P.house(c, 566, 106, { w: 112, seed: 32, wall: '#d6cfa8', roof: '#a85a40', door: '#7a4a36', windows: 2, doorOff: -8 }));
-    prop(108, (c) => P.areca(c, 546, 108, { h: 66, bend: 3, t }));
-    prop(110, (c) => P.banana(c, 338, 110, { h: 18, seed: 12, size: 0.9 }));
-    prop(112, (c) => P.haystack(c, 356, 112, { r: 11, seed: 2 }));
-    prop(113, (c) => P.clothesline(c, 380, 116, 450, { t, items: ['#c8574a', '#e8e0d0', '#5a7ab0', '#d8b848'] }));
+    prop(108, (c) => { poleTops[0] = P.powerPole(c, X(170), Y(108), { h: 62 }); });
+    prop(108, (c) => { poleTops[1] = P.powerPole(c, X(708), Y(108), { h: 62 }); });
+    prop(104, (c) => P.house(c, X(204), Y(106), { w: 118, seed: 31, wall: '#dcc47e', roof: '#b25a3c', door: '#4a6a68', antenna: 96, calendar: true }));
+    prop(104, (c) => P.house(c, X(566), Y(106), { w: 112, seed: 32, wall: '#d6cfa8', roof: '#a85a40', door: '#7a4a36', windows: 2, doorOff: -8 }));
+    prop(108, (c) => P.areca(c, X(546), Y(108), { h: 66, bend: 3, t }));
+    prop(110, (c) => P.banana(c, X(338), Y(110), { h: 18, seed: 12, size: 0.9 }));
+    prop(112, (c) => P.haystack(c, X(356), Y(112), { r: 11, seed: 2 }));
+    prop(113, (c) => P.clothesline(c, X(380), Y(116), X(450), { t, items: ['#c8574a', '#e8e0d0', '#5a7ab0', '#d8b848'] }));
     // dây điện vắt qua trời
     prop(109, (c) => {
       const A = poleTops[0], B = poleTops[1];
       if (!A || !B) return;
       // 1 đường dây chính giữa 2 cột (mảnh, nhạt để không che chân trời) + dây ra 2 mép khung
       K.sag(c, A[1][0], A[1][1], B[0][0], B[0][1], 10, 'rgba(46,42,44,0.4)');
-      K.sag(c, 0, 64, A[0][0], A[0][1], 4, 'rgba(46,42,44,0.45)');
-      K.sag(c, B[1][0], B[1][1], 880, 70, 5, 'rgba(46,42,44,0.45)');
+      K.sag(c, 0, Y(64), A[0][0], A[0][1], 4, 'rgba(46,42,44,0.45)');
+      K.sag(c, B[1][0], B[1][1], W, Y(70), 5, 'rgba(46,42,44,0.45)');
     }, FLAT);
-    npc(120, (c) => N.hen(c, 640, 122, { t, pose: 'walk', face: 'left', color: '#c8a070' }));
+    npc(120, (c) => N.hen(c, X(640), Y(122), { t, pose: 'walk', face: 'left', color: '#c8a070' }));
     person(426, 120, v('grandma'), { face: 'front', pose: 'hold', item: 'cup' });
     // hàng xóm sát rào (chân bị chân tường che): tì rào, cổ vũ, đứng xem
     // người lớn đứng chân ở 146 (thân lộ trên chân tường 142), trẻ con đứng trên bậc đá nên cao hơn
@@ -300,17 +324,17 @@ window.SFC = window.SFC || {};
     person(644, 140, v('girl2'), { face: 'front', pose: 'point' });
     person(682, 146, v('teenG'), { face: 'front', pose: 'hold', item: 'phone' });
 
-    /* --- tường sân --- */
+    /* --- tường sân (theo sân thật F; độ sâu lưới gốc) --- */
     prop(156, (c) => P.topWall(c, F.x - RIM, F.y, F.w + 2 * RIM, 46, { seed: 21 }));
     prop(157, (c) => P.wallShadowTop(c, F.x, F.y, F.w, 7), FLAT);
-    prop(F.y + F.h, (c) => {
+    prop(O.y + O.h, (c) => {
       // viền 2 bên nhìn từ trên + bóng viền trái đổ vào sân, viền phải đổ ra ngoài
       P.lateriteTop(c, F.x - RIM, F.y, RIM, F.h + 4, { seed: 13 });
       P.lateriteTop(c, F.x + F.w, F.y, RIM, F.h + 4, { seed: 14 });
       for (let i = 0; i < 3; i++) { px(c, F.x + i, F.y + 7, 1, F.h - 7, `rgba(52,34,30,${(0.22 - i * 0.07).toFixed(2)})`); px(c, F.x + F.w + RIM + i, F.y + 2, 1, F.h + 18, `rgba(52,34,30,${(0.24 - i * 0.07).toFixed(2)})`); }
       px(c, F.x + F.w - 1, F.y, 1, F.h, 'rgba(52,34,30,0.18)');
     }, FLAT);
-    prop(BOT, (c) => {
+    prop(O.y + O.h + 18, (c) => {
       // tường dưới: mũ tường nhìn từ trên + mặt ngoài quay về camera + bóng chân tường
       P.lateriteTop(c, F.x - RIM, F.y + F.h, F.w + 2 * RIM, 5, { seed: 15 });
       P.lateriteFace(c, F.x - RIM, BOT, F.w + 2 * RIM, 14, { seed: 16 });
@@ -318,77 +342,87 @@ window.SFC = window.SFC || {};
       for (let i = 0; i < 3; i++) px(c, F.x + F.w + RIM + i, BOT - 14 + i, 1, 14, `rgba(52,34,30,${(0.24 - i * 0.07).toFixed(2)})`);
     });
     // gà trống đậu trên viền trái
-    npc(F.y + 140, (c) => N.rooster(c, F.x - 8, F.y + 140, { t, face: 'right' }));
+    npc(O.y + 140, (c) => N.rooster(c, F.x - 8, Y(O.y + 140), { t, face: 'right' }));
 
     /* --- lề trái: nhà, vườn rau, giếng, ao --- */
-    prop(98, (c) => P.bamboo(c, 140, 136, { n: 7, h: 46, seed: 12, t }));
-    prop(194, (c) => P.house(c, 8, 196, { w: 112, seed: 33, wall: '#e0c070', roof: '#b4603e', door: '#5a5a7a', windows: 1, doorOff: 14, pillars: [9, 117], bulb: true }));
-    prop(200, (c) => P.jar(c, 130, 200));
+    prop(98, (c) => P.bamboo(c, X(140), Y(136), { n: 7, h: 46, seed: 12, t }));
+    prop(194, (c) => P.house(c, X(8), Y(196), { w: 112, seed: 33, wall: '#e0c070', roof: '#b4603e', door: '#5a5a7a', windows: 1, doorOff: 14, pillars: [9, 117], bulb: true }));
+    prop(200, (c) => P.jar(c, X(130), Y(200)));
     person(36, 204, v('grandpa', { hat: null }), { face: 'front', pose: 'sit', seat: '#3a7ac0' });
-    prop(203, (c) => P.teaTable(c, 52, 204));
-    prop(232, (c) => P.clothesline(c, 82, 234, 146, { t }));
-    prop(236, (c) => P.haystack(c, 24, 238, { r: 13, seed: 4 }));
-    for (let i = 0; i < 3; i++) prop(258 + i * 10, (c) => P.vegBed(c, 8, 254 + i * 10, { w: 92, seed: 20 + i, leaf: i % 2 ? '#6aa848' : '#5a9a3e' }));
-    prop(292, (c) => P.trellis(c, 108, 292, { w: 40, h: 22, seed: 7 }));
+    prop(203, (c) => P.teaTable(c, X(52), Y(204)));
+    prop(232, (c) => P.clothesline(c, X(82), Y(234), X(146), { t }));
+    prop(236, (c) => P.haystack(c, X(24), Y(238), { r: 13, seed: 4 }));
+    for (let i = 0; i < 3; i++) prop(258 + i * 10, (c) => P.vegBed(c, X(8), Y(254 + i * 10), { w: 92, seed: 20 + i, leaf: i % 2 ? '#6aa848' : '#5a9a3e' }));
+    prop(292, (c) => P.trellis(c, X(108), Y(292), { w: 40, h: 22, seed: 7 }));
     person(46, 280, v('farmerW', { top: '#9a6a52' }), { face: 'front', pose: 'squat' });
-    prop(324, (c) => P.well(c, 132, 324));
+    prop(324, (c) => P.well(c, X(132), Y(324)));
     person(112, 326, v('vendor', { hat: null, hairStyle: 'bun', top: '#8a6a9a' }), { face: 'right', pose: 'hold' });
-    npc(306, (c) => N.hen(c, 58, 306, { t, pose: 'peck', seed: 2 }));
+    npc(306, (c) => N.hen(c, X(58), Y(306), { t, pose: 'peck', seed: 2 }));
     // góc chuồng gà + chuối sau vườn
-    prop(358, (c) => P.coop(c, 30, 360));
-    prop(332, (c) => P.banana(c, 12, 334, { h: 22, seed: 5, flower: true }));
+    prop(358, (c) => P.coop(c, X(30), Y(360)));
+    prop(332, (c) => P.banana(c, X(12), Y(334), { h: 22, seed: 5, flower: true }));
     // ao: cầu ao, bèo, sậy, vịt bơi, người giặt
-    prop(402, (c) => P.jetty(c, 88, 402, { len: 18 }), FLAT);
+    prop(402, (c) => P.jetty(c, X(88), Y(402), { len: 18 }), FLAT);
     person(96, 418, v('mother', { top: '#c8a8b8', topStyle: 'aobaba' }), { face: 'left', pose: 'squat' });
-    for (const [x, y, s] of [[20, 420, 1], [108, 432, 2]]) prop(y, (c) => P.reeds(c, x, y, { seed: s, n: 5 + s, t }));
-    for (const [x, y, s] of [[44, 418, 1], [76, 434, 2]]) prop(y - 6, (c) => P.hyacinth(c, x, y, { seed: s, flower: s !== 2 }), FLAT);
-    for (const [x, y, s, f, hd] of [[54, 424, 1, 'right', '#3c6a4a'], [68, 428, 2, 'right', null]]) npc(y, (c) => N.duck(c, x, y, { t, pose: 'swim', seed: s, face: f, head: hd }));
+    for (const [x, y, s] of [[20, 420, 1], [108, 432, 2]]) prop(y, (c) => P.reeds(c, X(x), Y(y), { seed: s, n: 5 + s, t }));
+    for (const [x, y, s] of [[44, 418, 1], [76, 434, 2]]) prop(y - 6, (c) => P.hyacinth(c, X(x), Y(y), { seed: s, flower: s !== 2 }), FLAT);
+    for (const [x, y, s, f, hd] of [[54, 424, 1, 'right', '#3c6a4a'], [68, 428, 2, 'right', null]]) npc(y, (c) => N.duck(c, X(x), Y(y), { t, pose: 'swim', seed: s, face: f, head: hd }));
 
     /* --- lề phải: đa + miếu, sân phơi, trâu, đồ đá bóng --- */
-    prop(214, (c) => P.banyan(c, 818, 216, { seed: 51, t }));
-    prop(224, (c) => P.shrine(c, 788, 226, { t }));
-    prop(258, (c) => P.tarp(c, 736, 258, { w: 58, h: 28 }), FLAT);
-    prop(270, (c) => P.tray(c, 830, 272, { r: 11, content: 'rice', seed: 1 }), FLAT);
-    prop(286, (c) => P.tray(c, 856, 290, { r: 10, content: 'chili', seed: 2 }), FLAT);
+    prop(214, (c) => P.banyan(c, X(818), Y(216), { seed: 51, t }));
+    prop(224, (c) => P.shrine(c, X(788), Y(226), { t }));
+    prop(258, (c) => P.tarp(c, X(736), Y(258), { w: 58, h: 28 }), FLAT);
+    prop(270, (c) => P.tray(c, X(830), Y(272), { r: 11, content: 'rice', seed: 1 }), FLAT);
+    prop(286, (c) => P.tray(c, X(856), Y(290), { r: 10, content: 'chili', seed: 2 }), FLAT);
     person(808, 296, v('farmerW', { top: '#6a7a8a' }), { face: 'left', pose: 'rake' });
-    npc(284, (c) => N.hen(c, 760, 284, { t, pose: 'peck', seed: 4, face: 'right' }));
-    prop(336, (c) => P.scoreboard(c, 744, 338, { text: '3K', glass: true }));   // bảng giá trà đá (không ghi tỉ số: dễ nhầm với tỉ số trận)
-    prop(358, (c) => P.cooler(c, 734, 362));
+    npc(284, (c) => N.hen(c, X(760), Y(284), { t, pose: 'peck', seed: 4, face: 'right' }));
+    prop(336, (c) => P.scoreboard(c, X(744), Y(338), { text: '3K', glass: true }));   // bảng giá trà đá (không ghi tỉ số: dễ nhầm với tỉ số trận)
+    prop(358, (c) => P.cooler(c, X(734), Y(362)));
     person(742, 392, v('youth', { top: '#5a8a5a', topStyle: 'shirt' }), { face: 'left', pose: 'hips' });
-    prop(340, (c) => P.haystack(c, 862, 344, { r: 13, seed: 6 }));
-    prop(318, (c) => P.bush(c, 874, 320, { r: 7, seed: 15 }));
-    prop(250, (c) => P.banana(c, 870, 256, { h: 20, seed: 13 }));
-    npc(398, (c) => N.buffalo(c, 822, 400, { t, pose: 'graze', face: 'left' }));
-    npc(399, (c) => N.person(c, 826, 392, v('boy2', { hat: 'non', hatColor: '#e8d7a4' }), { t, face: 'left', pose: 'sit' }));
+    prop(340, (c) => P.haystack(c, X(862), Y(344), { r: 13, seed: 6 }));
+    prop(318, (c) => P.bush(c, X(874), Y(320), { r: 7, seed: 15 }));
+    prop(250, (c) => P.banana(c, X(870), Y(256), { h: 20, seed: 13 }));
+    npc(398, (c) => N.buffalo(c, X(822), Y(400), { t, pose: 'graze', face: 'left' }));
+    npc(399, (c) => N.person(c, X(826), Y(392), v('boy2', { hat: 'non', hatColor: '#e8d7a4' }), { t, face: 'left', pose: 'sit' }));
 
     /* --- lề dưới: người xem ngồi quay lưng, đường làng, cận cảnh --- */
     const backRow = [[224, 'boy', 'sit', '#c8473c'], [268, 'grandma', 'sit', '#3a7ac0'], [300, 'girl', 'cheer'], [520, 'youth', 'stand'], [566, 'teenG', 'cheer'], [646, 'boy2', 'cheer'], [672, 'farmerW', 'cross']];
     for (const [x, who, pose, seat] of backRow) person(x, who === 'boy' || who === 'girl' || who === 'girl2' || who === 'boy2' ? 436 : 440, v(who), { face: 'back', pose, seat });
-    prop(442, (c) => P.flipflops(c, 340, 444), FLAT);
-    prop(446, (c) => P.scooter(c, 836, 452, { face: 'left', crate: true }));
+    prop(442, (c) => P.flipflops(c, X(340), Y(444)), FLAT);
+    prop(446, (c) => P.scooter(c, X(836), Y(452), { face: 'left', crate: true }));
     person(400, 468, v('farmer', { top: '#4a6a8a' }), { face: 'right', pose: 'ride' });
-    prop(467, (c) => P.bike(c, 403, 468, { face: 'right', basket: true, color: '#2a4a5a', t }));
+    prop(467, (c) => P.bike(c, X(400) + 3, Y(468), { face: 'right', basket: true, color: '#2a4a5a', t }));
     person(472, 470, v('vendor'), { face: 'left', pose: 'pole' });
-    for (let i = 0; i < 4; i++) npc(468 + (i & 1), (c) => N.duck(c, 590 + i * 10, 468 + (i & 1), { t: t + i * 0.13, pose: 'walk', face: 'left', color: i === 2 ? '#e8e4d8' : '#a88458', head: i === 0 ? '#3c6a4a' : null }));
+    for (let i = 0; i < 4; i++) npc(468 + (i & 1), (c) => N.duck(c, X(590) + i * 10, Y(468 + (i & 1)), { t: t + i * 0.13, pose: 'walk', face: 'left', color: i === 2 ? '#e8e4d8' : '#a88458', head: i === 0 ? '#3c6a4a' : null }));
     // hàng rào dâm bụt dọc mép dưới đường làng, có chỗ hở làm lối đi
-    for (const [x0, x1, s] of [[0, 120, 1], [150, 290, 2], [330, 470, 3], [610, 760, 4], [790, 880, 5]]) prop(484, (c) => P.hedge(c, x0, 484, x1 - x0, { seed: s }));
-    prop(486, (c) => P.bush(c, 300, 488, { r: 7, seed: 9 }));
-    prop(490, (c) => P.bush(c, 560, 494, { r: 9, seed: 10, flowers: '#e8e0b0' }));
-    prop(500, (c) => P.bush(c, 760, 500, { r: 8, seed: 11 }));
-    prop(508, (c) => P.banana(c, 14, 516, { h: 26, seed: 8 }));
-    prop(509, (c) => P.banana(c, 186, 520, { h: 22, seed: 9 }));
-    prop(512, (c) => P.areca(c, 866, 512, { h: 96, bend: -3, t }));
-    npc(30, (c) => { N.bird(c, 226, 24, { t }); N.bird(c, 236, 28, { t, seed: 0.3 }); }, FLAT);
-    for (const [x, y, s] of [[148, 96, 2], [776, 88, 3]]) npc(y, (c) => N.egret(c, x, y, { t, pose: 'feed', seed: s, face: s & 1 ? 'left' : 'right' }));
+    for (const [x0, x1, s] of [[0, 120, 1], [150, 290, 2], [330, 470, 3], [610, 760, 4], [790, 880, 5]]) prop(484, (c) => { const [hx, hw] = span(x0, x1); P.hedge(c, hx, Y(484), hw, { seed: s }); });
+    prop(486, (c) => P.bush(c, X(300), Y(488), { r: 7, seed: 9 }));
+    prop(490, (c) => P.bush(c, X(560), Y(494), { r: 9, seed: 10, flowers: '#e8e0b0' }));
+    prop(500, (c) => P.bush(c, X(760), Y(500), { r: 8, seed: 11 }));
+    prop(508, (c) => P.banana(c, X(14), Y(516), { h: 26, seed: 8 }));
+    prop(509, (c) => P.banana(c, X(186), Y(520), { h: 22, seed: 9 }));
+    prop(512, (c) => P.areca(c, X(866), Y(512), { h: 96, bend: -3, t }));
+    // khung thật rộng hơn lưới gốc (dải ngoài cùng 2 bên, dưới hàng rào): vài khóm cây cho khỏi trống
+    if (X(0) > 24) {
+      prop(300, (c) => P.banana(c, X(0) - 26, Y(300), { h: 24, seed: 21 }));
+      prop(420, (c) => P.bush(c, X(0) - 34, Y(420), { r: 9, seed: 22 }));
+      prop(330, (c) => P.banana(c, X(880) + 30, Y(330), { h: 22, seed: 23 }));
+      prop(440, (c) => P.haystack(c, X(880) + 26, Y(440), { r: 12, seed: 24 }));
+    }
+    if (H - Y(520) > 30) for (let i = 0; i * 120 < W; i++) prop(560 + (i % 3) * 8, (c) => P.bush(c, 40 + i * 120 + ((i * 37) % 50), Y(560 + (i % 3) * 8), { r: 7 + (i % 3), seed: 30 + i }));
+    npc(30, (c) => { N.bird(c, X(226), Y(24), { t }); N.bird(c, X(226) + 10, Y(28), { t, seed: 0.3 }); }, FLAT);
+    for (const [x, y, s] of [[148, 96, 2], [776, 88, 3]]) npc(y, (c) => N.egret(c, X(x), Y(y), { t, pose: 'feed', seed: s, face: s & 1 ? 'left' : 'right' }));
     person(86, 100, v('farmer'), { face: 'right', pose: 'bend' });
     return L;
   }
 
   let groundCv = null;
   function background(c, t) {
+    c.save(); c.translate(0, DY);
     sky(c, t);
     skyline(c);
     fields(c);
+    c.restore();
     if (!groundCv) groundCv = ground();
     c.drawImage(groundCv, 0, 0);
     groundDetail(c);
@@ -428,7 +462,7 @@ window.SFC = window.SFC || {};
     seg(at(lx + side * D, top, HB), at(lx + side * D, bot, HB));
   });
 
-  // khung đủ lớp 880 x 512 cho game, vẽ 1 lần (cảnh đứng yên ở t cố định). Renderer vẽ thẳng ảnh này ở (-OX, -OY) cho khung nhìn rộng
+  // khung đủ lớp W x H cho game, vẽ 1 lần (cảnh đứng yên ở t cố định). Renderer vẽ thẳng ảnh này ở (-OX, -OY) cho khung nhìn rộng
   let frameCv = null;
   Village.frame = () => {
     if (!frameCv) { const [fc, fx] = K.canvas(W, H); Village.draw(fx, { t: 0.4 }); frameCv = fc; }
@@ -450,7 +484,7 @@ window.SFC = window.SFC || {};
   // Người tàng hình không có bóng; người bị vật thể Tuyệt kỹ thay hình (VFX.hides: con gà, King Kong...) lấy bóng của vật thể đó.
   // Bóng cầu thủ đen như bóng sprite cũ (không màu tím của bóng cảnh) và bám sát chân (user 2026-11-03): tâm bóng ngả theo nắng từ độ cao lift
   // (thay vì giữa thân), bay / nhảy thì ngả thêm drift x độ cao
-  // Vẽ vào 1 lớp đệm 880 x 512 ở lưới px game rồi chép 1 lần lấy mẫu điểm gần nhất: camera zoom lẻ (goalCam, VFX.applyZoom) thì fillRect
+  // Vẽ vào 1 lớp đệm W x H ở lưới px game rồi chép 1 lần lấy mẫu điểm gần nhất: camera zoom lẻ (goalCam, VFX.applyZoom) thì fillRect
   // thẳng lên màn sẽ khử răng cưa mép bóng; chép ảnh thì px vẫn sắc như sprite / cảnh. Cả lớp phủ 1 độ mờ nên 2 bóng chồng nhau không đậm thêm
   const PSH = { color: '#000000', alpha: 0.38, lift: 6, drift: 0.6 };
   let shBuf = null;

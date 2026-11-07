@@ -13,6 +13,8 @@ window.SFC = window.SFC || {};
 
 (function () {
   const SP = () => SFC.Sprites;
+  // khoảng cách dọc / cỡ đồ bám thân người theo người mới (render.playerScale, Sprite v3): ph(30) = 30 px ở người cũ
+  const ph = (v) => SFC.Sprites.ph(v), PSC = () => SFC.Sprites.pscale();
   const W = 640, H = 360;
   // vùng màn hình theo toạ độ thế giới (Renderer.setView: khung nhìn trận rộng / cao hơn 640 x 360 thì x, y âm)
   const SCR = () => (SFC.Renderer && SFC.Renderer.screen) || { x: 0, y: 0, w: W, h: H };
@@ -205,8 +207,8 @@ window.SFC = window.SFC || {};
     const { px, disc, OUT } = SP();
     const k = 1 - a.t / a.max;
     const ext = k < 0.4 ? k / 0.4 : k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
-    const sx = p.x + (a.tx >= p.x ? 4 : -4), sy = p.y - 8 - (p.airZ || 0);
-    const ex = sx + (a.tx - sx) * ext, ey = sy + (a.ty - 8 - sy) * ext;
+    const sx = p.x + (a.tx >= p.x ? ph(4) : -ph(4)), sy = p.y - ph(8) - (p.airZ || 0);   // vai người mới (render.playerScale)
+    const ex = sx + (a.tx - sx) * ext, ey = sy + (a.ty - ph(8) - sy) * ext;
     const len = Math.hypot(ex - sx, ey - sy), nx = -(ey - sy) / (len || 1), ny = (ex - sx) / (len || 1);
     const wob = Math.sin(k * 40) * 2.5 * (1 - Math.abs(ext - 0.5) * 2 + 0.3);
     const n = Math.max(2, Math.ceil(len / 2)), z = a.size || 1, w = z > 1 ? 2 : 1;
@@ -264,7 +266,10 @@ window.SFC = window.SFC || {};
   const PROP_HIDE = { warp: 1, vault: 1, ape: 1, ride: 1, chicken: 1, fall: 1, petrify: 1, burn: 1, tied: 1, lassoswing: 1, inpot: 1, fused: 1 };
   const byId = (g, id) => g.players.find((q) => q.id === id) || null;
   // hồn đấu sĩ khổng lồ đỏ trong suốt (Hundred Fists): chân ở (x, y), quay mặt f (1 phải / -1 trái), busy = đang tung tràng nắm đấm
-  function standGhost(ctx, x, y, f, busy, color, fade, t) {
+  function standGhost(ctx0, x, y, f, busy, color, fade, t) {
+    SP().scaled(ctx0, x, y, (ctx) => standGhost1(ctx, x, y, f, busy, color, fade, t), 'lighter');   // cỡ theo người mới (render.playerScale)
+  }
+  function standGhost1(ctx, x, y, f, busy, color, fade, t) {
     const { px, disc } = SP(), bob = Math.round(Math.sin(t * 4) * 2);
     ctx.globalCompositeOperation = 'lighter';
     const sx = Math.round(x), sy = Math.round(y - 30 + bob);
@@ -530,7 +535,7 @@ window.SFC = window.SFC || {};
       case 'chrome': {   // Mega Titan: da thép bóng loáng (vệt sáng quét dọc người) + mắt phát sáng, vẽ đè lên sprite khổng lồ
         const q = byId(g, o.a);
         if (!q || q.airZ > 0) break;
-        const sc = q.sizeMul || 1, w = Math.round(10 * sc), h = Math.round(20 * sc), top = Math.round(y - h - 4 * sc), sw = (el * 1.3) % 1;
+        const sc = (q.sizeMul || 1) * PSC(), w = Math.round(10 * sc), h = Math.round(20 * sc), top = Math.round(y - h - 4 * sc), sw = (el * 1.3) % 1;
         ctx.globalCompositeOperation = 'lighter';
         ctx.globalAlpha = fade * 0.14; px(ctx, x - (w >> 1), top, w, h, o.color);
         ctx.globalAlpha = fade * 0.55; px(ctx, Math.round(x - (w >> 1) + sw * w), top, Math.max(1, Math.round(sc)), h, '#ffffff');
@@ -614,15 +619,15 @@ window.SFC = window.SFC || {};
         if (!q) break;
         SP().drawPlayer(ctx, Object.assign({}, q, { state: 'normal', anim: 0, vx: 0, vy: 0, flash: 0 }), g, 0.92, '#8a8f99');
         ctx.globalAlpha = fade * 0.55; ctx.fillStyle = '#6e737d';
-        ctx.fillRect(x - 5, y - 22, 10, 22);
+        ctx.fillRect(x - ph(5), y - ph(22), ph(10), ph(22));
         ctx.globalAlpha = fade;
         const r = rng(o.id * 7);
-        for (let i = 0; i < 4; i++) px(ctx, x - 4 + Math.round(r() * 8), y - 20 + Math.round(r() * 18), 1, 2 + Math.round(r() * 2), '#3c4048');
-        if (k < 0.2 && Math.floor(t * 20) % 2) px(ctx, x - 6, y - 24, 12, 1, '#ffffff');   // sắp vỡ
+        for (let i = 0; i < 4; i++) px(ctx, x - ph(4) + Math.round(r() * ph(8)), y - ph(20) + Math.round(r() * ph(18)), 1, 2 + Math.round(r() * 2), '#3c4048');
+        if (k < 0.2 && Math.floor(t * 20) % 2) px(ctx, x - ph(6), y - ph(24), ph(12), 1, '#ffffff');   // sắp vỡ
         break;
       }
       case 'hypno': {   // thôi miên: vòng xoắn ốc hồng quay trên đầu + sao
-        const hy = y - 30;
+        const hy = y - ph(30);
         for (let i = 0; i < 16; i++) {
           const a = t * 8 + i * 0.6, r = 1 + i * 0.4;
           px(ctx, Math.round(x + Math.cos(a) * r), Math.round(hy + Math.sin(a) * r * 0.6), 1, 1, i % 2 ? '#ffffff' : o.color);
@@ -648,22 +653,22 @@ window.SFC = window.SFC || {};
           ctx.setLineDash([]);
           // xoay nhanh dần, hết vòng cuối thì búa ở sau lưng (sẵn sàng quất qua đầu)
           const e = k2 * (0.6 + 0.4 * k2), ang = f + Math.PI + e * turns * Math.PI * 2, R = 22;
-          hx = x + Math.cos(ang) * R; hy = y - 9 + Math.sin(ang) * R * 0.5;
+          hx = x + Math.cos(ang) * R; hy = y - ph(9) + Math.sin(ang) * R * 0.5;
           // vệt gió tròn theo đuôi búa
           ctx.globalAlpha = fade * 0.6; ctx.strokeStyle = '#e8ecf5'; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.ellipse(x, y - 9, R, R * 0.5, 0, ang - 1.6, ang); ctx.stroke();
+          ctx.beginPath(); ctx.ellipse(x, y - ph(9), R, R * 0.5, 0, ang - 1.6, ang); ctx.stroke();
           ctx.globalAlpha = fade * 0.25; ctx.lineWidth = 4;
-          ctx.beginPath(); ctx.ellipse(x, y - 9, R, R * 0.5, 0, ang - 0.8, ang); ctx.stroke();
+          ctx.beginPath(); ctx.ellipse(x, y - ph(9), R, R * 0.5, 0, ang - 0.8, ang); ctx.stroke();
           ctx.globalAlpha = fade;
         } else {
           // nện: từ trên đầu đập xuống trước mặt (0.1s) rồi nằm trên đất
           const sk = Math.min(1, (el - spin) / 0.1);
-          hx = x + ux * 24 * sk; hy = y - 34 * (1 - sk) + uy * 24 * sk * 0.6 - 4;
+          hx = x + ux * 24 * sk; hy = y - ph(34) * (1 - sk) + uy * 24 * sk * 0.6 - 4;
         }
         // cán gỗ: nét 2 ô viền mực như tay chân sprite · đầu búa vuông góc với cán (cán nằm ngang -> đầu dựng đứng)
         const PS = SFC.PlayerSprite, bx = Math.round(hx), by = Math.round(hy);
-        PS.drawCells(ctx, 0, 0, PS.limbCells([[x - 1, y - 11], [bx - 1, by - 1]], () => '#a8683a'));
-        const head = Math.abs(bx - x) >= Math.abs(by - (y - 10)) ? HAMMER_V : HAMMER_H;
+        PS.drawCells(ctx, 0, 0, PS.limbCells([[x - 1, y - ph(11)], [bx - 1, by - 1]], () => '#a8683a'));
+        const head = Math.abs(bx - x) >= Math.abs(by - (y - ph(10))) ? HAMMER_V : HAMMER_H;
         bitmap(ctx, head, bx - (head[0].length >> 1), by - (head.length >> 1), ART_PAL);
         break;
       }
@@ -689,7 +694,7 @@ window.SFC = window.SFC || {};
         break;
       }
       case 'gate': {   // Phase Step: cổng dịch chuyển đứng (b = 0 cổng vào: hạt hút vào tâm · 1 cổng ra: hạt phun ra)
-        const open = Math.min(1, el * 14, k * 3), ry = 13 * open, rx = (4 + 5 * Math.abs(Math.sin(o.a))) * open, cy = y - 11;
+        const open = Math.min(1, el * 14, k * 3), ry = ph(13) * open, rx = (4 + 5 * Math.abs(Math.sin(o.a))) * open, cy = y - ph(11);
         if (ry < 1) break;
         ellipse(ctx, x, y + 1, rx + 3, 2, 'rgba(0,0,0,0.3)');
         ctx.globalCompositeOperation = 'lighter';
@@ -707,7 +712,7 @@ window.SFC = window.SFC || {};
         break;
       }
       case 'pips': {   // Phase Step: số lượt dịch chuyển còn lại trên đầu (+ phím lướt nhấp nháy cho người đang điều khiển)
-        const n = o.b, w = n * 8 - 2, hy = y - 38 + Math.round(Math.sin(t * 6));
+        const n = o.b, w = n * 8 - 2, hy = y - ph(38) + Math.round(Math.sin(t * 6));
         for (let i = 0; i < n; i++) {
           const cx = Math.round(x - w / 2 + i * 8 + 3);
           ellipse(ctx, cx, hy, 4, 5, OUT); ellipse(ctx, cx, hy, 3, 4, i % 2 ? '#3ff6ff' : o.color); ellipse(ctx, cx, hy, 1, 2, '#140820');
@@ -760,7 +765,7 @@ window.SFC = window.SFC || {};
         const m = byId(g, o.a), q = byId(g, o.b);
         if (!m || !q) break;
         const fly = o.color === '#9aa3b5', link = o.color === '#c7ccd6';
-        const hx = Math.round(m.x), hy = Math.round(m.y) - 34, tx0 = Math.round(q.x), ty0 = Math.round(q.y) - 26;
+        const hx = Math.round(m.x), hy = Math.round(m.y) - ph(34), tx0 = Math.round(q.x), ty0 = Math.round(q.y) - ph(26);
         // bay: đầu sợi chỉ tiến dần tới mục tiêu (có móc nhọn ở đầu)
         const k = fly ? Math.min(1, el / Math.max(0.05, o.max - 0.02)) : 1;
         const tx = Math.round(hx + (tx0 - hx) * k), ty = Math.round(hy + (ty0 - hy) * k);
@@ -783,7 +788,7 @@ window.SFC = window.SFC || {};
       case 'link': {   // Puppet Master: vòng tiến trình nối dây quanh chân đối thủ (b = giây cần giữ) — đầy là thành con rối
         const k2 = Math.min(1, el / o.b), r = 14;
         // thanh tiến trình trên đầu (đầy = thành con rối), nhấp nháy vàng khi sắp đầy
-        const bw = 20, bx = x - bw / 2, by = y - 40;
+        const bw = 20, bx = x - bw / 2, by = y - ph(40);
         px(ctx, bx - 1, by - 1, bw + 2, 5, OUT); px(ctx, bx, by, bw, 3, '#3a3f4c');
         px(ctx, bx, by, Math.round(bw * k2), 3, k2 > 0.75 && Math.floor(t * 12) % 2 ? '#ffe14f' : '#ffffff');
         ctx.strokeStyle = OUT; ctx.lineWidth = 4;
@@ -792,12 +797,13 @@ window.SFC = window.SFC || {};
         ctx.strokeStyle = k2 > 0.75 && Math.floor(t * 12) % 2 ? '#ffe14f' : '#ffffff';
         ctx.beginPath(); ctx.ellipse(x, y + 1, r, r * 0.5, 0, -Math.PI / 2, -Math.PI / 2 + k2 * Math.PI * 2); ctx.stroke();
         // mấy sợi chỉ nhỏ quấn quanh người (dày dần theo tiến trình)
-        for (let i = 0; i < Math.round(k2 * 4); i++) { const yy = y - 6 - i * 4; ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x, yy, 6, 2, 0, 0, Math.PI); ctx.stroke(); }
+        for (let i = 0; i < Math.round(k2 * 4); i++) { const yy = y - ph(6 + i * 4); ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x, yy, 6, 2, 0, 0, Math.PI); ctx.stroke(); }
         break;
       }
       case 'ape': {   // Rage: King Kong — gầm đấm ngực (b giây) rồi nhảy dậm tại chỗ theo nhịp config (sprite thật bị ẩn — hides)
         const q = byId(g, o.a);
         if (!q) break;
+        SP().scaled(ctx, x, y, (ctx) => {   // King Kong theo cỡ người mới (render.playerScale)
         const P = SFC_CONFIG.cores.list.rage.params, roar = o.b, FUR = o.color, DK = '#241812', SKN = '#8a6f5a';
         let hop = 0;
         if (el >= roar) for (let i = 0; i < P.stomps; i++) { const d = roar + P.gap * (i + 1) - el; if (d >= 0 && d < 0.45) hop = Math.sin((d / 0.45) * Math.PI) * 22; }
@@ -823,6 +829,7 @@ window.SFC = window.SFC || {};
           }
         }
         if (Math.random() < 0.4) px(ctx, x + Math.round((Math.random() - 0.5) * 22), by - 46 - Math.round(Math.random() * 8), 2, 2, '#ff3d5a');   // hơi giận bốc lên
+        });
         break;
       }
       case 'qring': {   // Rage: vòng địa chấn lan ra (elip dọc x0.6, khớp va chạm) — dải cam + vành nứt + đá trồi dọc vành
@@ -902,7 +909,7 @@ window.SFC = window.SFC || {};
         const hop = el < D ? Math.sin(Math.PI * el / D) * 5 : 0;
         const thud = el >= D && el < D + 0.07 ? 1 : 0;   // vừa đập lưng xuống: dẹp xuống 1px
         ctx.globalAlpha = 1;
-        ellipse(ctx, x, y + 1, 6 + 6 * k2, 2.5, 'rgba(0,0,0,0.38)');
+        ellipse(ctx, x, y + 1, ph(6 + 6 * k2), 2.5, 'rgba(0,0,0,0.38)');
         // bụi tung khi đang trượt trên sân
         const sp = Math.hypot(q.vx || 0, q.vy || 0);
         if (sp > 30 && k2 > 0.5) for (let i = 0; i < 3; i++) {
@@ -912,20 +919,21 @@ window.SFC = window.SFC || {};
         }
         ctx.globalAlpha = 1;
         ctx.save();
-        ctx.translate(x, Math.round(y - 8 + 5 * k2 - hop + thud));
+        ctx.translate(x, Math.round(y - ph(8) + ph(5) * k2 - hop + thud));   // xoay quanh giữa thân (người mới cao hơn: ph)
         ctx.rotate(-side * Math.PI / 2 * k2);
-        SP().drawPlayer(ctx, Object.assign({}, q, { x: 0, y: 8, vx: 0, vy: 0, state: 'normal', atkType: null, celPose: null, keeper: false }), g, 0.999);
+        SP().drawPlayer(ctx, Object.assign({}, q, { x: 0, y: ph(8), vx: 0, vy: 0, state: 'normal', atkType: null, celPose: null, keeper: false }), g, 0.999);
         ctx.restore();
         // nằm im: sao vàng quay quanh đầu (đầu ở phía ngược hướng trượt)
         if (k2 > 0.8) for (let i = 0; i < 3; i++) {
           const a2 = t * 7 + (i * Math.PI * 2) / 3;
-          px(ctx, Math.round(x - side * 14 + Math.cos(a2) * 6), Math.round(y - 9 + Math.sin(a2) * 2), 2, 2, i ? '#ffe14f' : '#ffffff');
+          px(ctx, Math.round(x - side * ph(14) + Math.cos(a2) * 6), Math.round(y - ph(9) + Math.sin(a2) * 2), 2, 2, i ? '#ffe14f' : '#ffffff');
         }
         break;
       }
       case 'chicken': {   // Chicken Ray: con gà thay người (sprite thật bị ẩn — hides), khăn màu áo đội, chạy lon ton
         const q = byId(g, o.a);
         if (!q) break;
+        SP().scaled(ctx, x, y, (ctx) => {   // con gà theo cỡ người mới (render.playerScale)
         const run = Math.hypot(q.vx || 0, q.vy || 0) > 12, st = run ? Math.floor(t * 14 + o.id) % 2 : 0, dir = Math.cos(q.facing) >= 0 ? 1 : -1;
         ellipse(ctx, x, y + 1, 7, 2.5, 'rgba(0,0,0,0.35)');
         px(ctx, x - 2, y - 4, 1, 4 - st, '#ff8a3f'); px(ctx, x + 1, y - 4, 1, 3 + st, '#ff8a3f');
@@ -939,25 +947,27 @@ window.SFC = window.SFC || {};
         px(ctx, hx + dir, y - 19, 1, 1, OUT);
         px(ctx, hx - 2, y - 14, 5, 1, g.teams[q.team].cfg.kit.shirt);                                                // khăn màu đội
         if (run && Math.random() < 0.15) px(ctx, x + Math.round((Math.random() - 0.5) * 12), y - 8 - Math.round(Math.random() * 8), 1, 1, '#ffffff');
+        });
         break;
       }
       case 'panic': {   // Panic Ball: hoảng sợ — "!!" run rẩy trên đầu, mặt tái xanh, mồ hôi rơi, vạch run hai bên
         const j = Math.floor(t * 30) % 2 ? 1 : -1;
-        ctx.globalAlpha = fade * 0.5; px(ctx, x - 4, y - 26, 9, 7, '#3f8cff'); ctx.globalAlpha = fade;
-        for (let i = 0; i < 4; i++) px(ctx, x - 4 + i * 2 + j, y - 27, 1, 4 + (i % 2) * 2, '#2a3a9a');   // vạch sốc tím xanh trên mặt (kiểu anime)
-        for (const sd of [-1, 1]) { px(ctx, x + sd * 9 + j, y - 20, 1, 5, '#7fe7ff'); px(ctx, x + sd * 11 + j, y - 17, 1, 3, '#7fe7ff'); }
+        ctx.globalAlpha = fade * 0.5; px(ctx, x - ph(4), y - ph(26), ph(9), ph(7), '#3f8cff'); ctx.globalAlpha = fade;
+        for (let i = 0; i < 4; i++) px(ctx, x - ph(4) + i * ph(2) + j, y - ph(27), 1, 4 + (i % 2) * 2, '#2a3a9a');   // vạch sốc tím xanh trên mặt (kiểu anime)
+        for (const sd of [-1, 1]) { px(ctx, x + sd * ph(9) + j, y - ph(20), 1, 5, '#7fe7ff'); px(ctx, x + sd * ph(11) + j, y - ph(17), 1, 3, '#7fe7ff'); }
         for (let i = 0; i < 3; i++) {
-          const ph = (t * 1.6 + i / 3) % 1;
-          ctx.globalAlpha = fade * (1 - ph);
-          px(ctx, x - 7 + i * 7, y - 30 + Math.round(ph * 14), 1, 2, '#bdf4ff');
+          const pp = (t * 1.6 + i / 3) % 1;
+          ctx.globalAlpha = fade * (1 - pp);
+          px(ctx, x - 7 + i * 7, y - ph(30) + Math.round(pp * 14), 1, 2, '#bdf4ff');
         }
         ctx.globalAlpha = fade;
-        outlinedText(ctx, '!!', x + j, y - 40, 22, Math.floor(t * 8) % 2 ? '#7fe7ff' : '#ffffff');
+        outlinedText(ctx, '!!', x + j, y - ph(40), 22, Math.floor(t * 8) % 2 ? '#7fe7ff' : '#ffffff');
         break;
       }
       case 'truck': {   // Monster Truck: xe tải bánh to, quay theo hướng người lái
         const q = byId(g, o.a);
         if (!q) break;
+        SP().scaled(ctx, x, y, (ctx) => {   // xe tải theo cỡ người mới (render.playerScale)
         const c = Math.cos(q.facing), sd = c >= 0 ? 1 : -1, bob = Math.round(Math.sin(t * 30) * 1);
         ellipse(ctx, x, y + 2, 16, 5, 'rgba(0,0,0,0.45)');
         for (const wx of [-9, 9]) { disc(ctx, x + wx, y - 2, 6, OUT); disc(ctx, x + wx, y - 2, 5, '#262a36'); disc(ctx, x + wx, y - 2, 2, '#9aa3b5'); }   // bánh to
@@ -967,6 +977,7 @@ window.SFC = window.SFC || {};
         px(ctx, x + sd * 5 - 2, y - 20 + bob, 5, 4, '#a8e6ff');                                                    // kính
         disc(ctx, x + sd * 1, y - 19 + bob, 2, q.look ? q.look.skin : '#f2c79a');                                  // đầu người lái
         px(ctx, x + sd * 14 - 1, y - 11 + bob, 2, 3, '#ffe14f');                                                   // đèn
+        });
         break;
       }
       case 'bigmagnet': {   // Mega Magnet: nam châm chữ U khổng lồ hạ từ trên trời xuống
@@ -1033,7 +1044,7 @@ window.SFC = window.SFC || {};
         ctx.lineWidth = 2; ctx.strokeStyle = o.color; ctx.stroke();
         ctx.globalAlpha = fade * 0.2; ctx.fillStyle = o.color; ctx.fill();
         ctx.globalAlpha = fade;
-        for (const sd of [-1, 1]) for (let i = 0; i < 7; i++) { px(ctx, x + sd * (7 - i * 2) - 1, y - 30 + i * 2 - 1, 4, 3, OUT); px(ctx, x + sd * (7 - i * 2), y - 30 + i * 2, 2, 1, i < 2 ? '#ffffff' : o.color); }
+        for (const sd of [-1, 1]) for (let i = 0; i < 7; i++) { px(ctx, x + sd * (7 - i * 2) - 1, y - ph(30) + i * 2 - 1, 4, 3, OUT); px(ctx, x + sd * (7 - i * 2), y - ph(30) + i * 2, 2, 1, i < 2 ? '#ffffff' : o.color); }
         break;
       }
       case 'magnet': {   // Magnet Ball: đường sức từ đỏ / xanh quanh bóng
@@ -1048,7 +1059,7 @@ window.SFC = window.SFC || {};
       }
       case 'tornado': {   // Hurricane Kick: lốc xoáy hình phễu xoay quanh người
         for (let i = 0; i < 10; i++) {
-          const hy = y - i * 4, r = 5 + i * 2, a = t * 18 + i * 0.7;
+          const hy = y - ph(i * 4), r = 5 + i * 2, a = t * 18 + i * 0.7;
           ctx.globalAlpha = fade * (0.85 - i * 0.05);
           ctx.strokeStyle = i % 2 ? '#ffffff' : o.color; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.ellipse(x + Math.sin(t * 6 + i) * 1.5, hy, r, r * 0.35, 0, 0, Math.PI * 2); ctx.stroke();
@@ -1062,20 +1073,20 @@ window.SFC = window.SFC || {};
         ctx.globalCompositeOperation = 'lighter';
         ctx.lineWidth = 1;
         for (let i = 0; i < 3; i++) {
-          let ax = x + (r() - 0.5) * 14, ay = y - 2 - r() * 22;
+          let ax = x + (r() - 0.5) * 14, ay = y - 2 - r() * ph(22);
           ctx.strokeStyle = i ? o.color : '#ffffff';
           ctx.beginPath(); ctx.moveTo(Math.round(ax), Math.round(ay));
           for (let j = 0; j < 4; j++) { ax += (r() - 0.5) * 10; ay += (r() - 0.5) * 9; ctx.lineTo(Math.round(ax), Math.round(ay)); }
           ctx.stroke();
         }
-        for (let i = 0; i < 4; i++) px(ctx, Math.round(x + (r() - 0.5) * 18), Math.round(y - r() * 26), 1, 1, '#ffffff');
+        for (let i = 0; i < 4; i++) px(ctx, Math.round(x + (r() - 0.5) * 18), Math.round(y - r() * ph(26)), 1, 1, '#ffffff');
         ctx.globalCompositeOperation = 'source-over';
         break;
       }
       case 'qtap': {   // QTE (SFC.CoreQTE): ô nút trên đầu (color = action, hiện phím theo máy đang xem) nảy nhẹ + thanh thời gian cạn dần
         const q = byId(g, o.a);
         if (!q) break;
-        const by = Math.round(y - 54 - o.b - (o.off ? 0 : Math.abs(Math.sin(t * 10)) * 2)), W = 30;   // b: nâng lên (đứng trên tảng đá)
+        const by = Math.round(y - ph(54) - o.b - (o.off ? 0 : Math.abs(Math.sin(t * 10)) * 2)), W = 30;   // b: nâng lên (đứng trên tảng đá)
         px(ctx, x - 9, by - 9, 19, 19, OUT); px(ctx, x - 8, by - 8, 17, 17, '#ffd23f'); px(ctx, x - 7, by - 7, 15, 15, '#2a2440');
         if (SFC.Input) outlinedText(ctx, SFC.Input.label(o.color), x + 0.5, by + 0.5, 12, '#ffffff');
         if (!o.off) {
@@ -1086,7 +1097,7 @@ window.SFC = window.SFC || {};
         break;
       }
       case 'tag': {   // Bullet Time: dấu ngắm đỏ dán trên người bị đánh dấu (vòng + 4 vạch xoay chậm); lúc mới dán to ra rồi thu về
-        const R = Math.round(7 * (1 + Math.max(0, 0.2 - el) * 4)), cy = y - 12;
+        const R = Math.round(7 * (1 + Math.max(0, 0.2 - el) * 4)), cy = y - ph(12);
         ctx.strokeStyle = OUT; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, cy, R, 0, Math.PI * 2); ctx.stroke();
         ctx.strokeStyle = o.color; ctx.lineWidth = 1; ctx.stroke();
         for (let i = 0; i < 4; i++) {
@@ -1099,7 +1110,7 @@ window.SFC = window.SFC || {};
       case 'laser': {   // Bullet Time: sniper trên khán đài (x, y) — tia laser đỏ bám người a; sắp bắn (k nhỏ) thì ống ngắm loé trắng
         const q = byId(g, o.a);
         if (!q) break;
-        const tx = Math.round(q.x), ty = Math.round(q.y - 10), hot = k < 0.3, d = Math.atan2(ty - y, tx - x);
+        const tx = Math.round(q.x), ty = Math.round(q.y - ph(10)), hot = k < 0.3, d = Math.atan2(ty - y, tx - x);
         ctx.globalAlpha = fade * (hot ? 0.9 : 0.5);
         line(ctx, x, y, tx, ty, 1, o.color);
         ctx.globalAlpha = fade;
@@ -1124,7 +1135,7 @@ window.SFC = window.SFC || {};
         const roll = o.b % 10 === 1, cur = Math.floor(o.b / 10) % 10, KS = SFC.CoreBehaviors.jack_in_box.TYPES;
         const deck = [];
         for (let c = Math.floor(o.b / 100), i = 0; i < 5; i++) { deck.unshift(c % 5); c = Math.floor(c / 5); }
-        const S = 9, bx = Math.round(x - (S * 5) / 2), by = Math.round(y - 48), spin = roll && el < SFC_CONFIG.cores.list.jack_in_box.params.roll;
+        const S = 9, bx = Math.round(x - (S * 5) / 2), by = Math.round(y - ph(48)), spin = roll && el < SFC_CONFIG.cores.list.jack_in_box.params.roll;
         for (let i = 0; i < 5; i++) {
           const cx = bx + i * S;
           px(ctx, cx, by, S - 1, S - 1, OUT);
@@ -1138,7 +1149,7 @@ window.SFC = window.SFC || {};
       }
       case 'dice': {   // Chaos Ball: quay loại bóng của pha này trên đầu (b = chỉ số trong chaos_ball.KINDS): các ô lướt qua rồi dừng, nảy nhẹ
         const KS = SFC.CoreBehaviors.chaos_ball.KINDS, spin = el < 0.9;
-        const by = Math.round(y - 46 - (spin ? 0 : Math.sin(Math.min(1, (el - 0.9) / 0.25) * Math.PI) * 3));
+        const by = Math.round(y - ph(46) - (spin ? 0 : Math.sin(Math.min(1, (el - 0.9) / 0.25) * Math.PI) * 3));
         px(ctx, x - 7, by - 7, 15, 15, OUT); px(ctx, x - 6, by - 6, 13, 13, spin ? '#2a2440' : '#3a1f4c');
         if (!spin) { px(ctx, x - 7, by - 7, 15, 1, o.color); px(ctx, x - 7, by + 7, 15, 1, o.color); px(ctx, x - 7, by - 7, 1, 15, o.color); px(ctx, x + 7, by - 7, 1, 15, o.color); }
         mini(ctx, x, by, KS[spin ? Math.floor(t * 16) % KS.length : o.b], 2);
@@ -1152,20 +1163,20 @@ window.SFC = window.SFC || {};
         break;
       }
       case 'portal': {   // Portal Kicks: cổng xoáy đứng
-        const open = Math.min(1, el * 5, k * 4), rx = 5 * open, ry = 10 * open;
+        const open = Math.min(1, el * 5, k * 4), rx = 5 * open, ry = ph(10) * open, py = y - ph(10);
         if (rx < 0.5) break;
         ctx.globalCompositeOperation = 'lighter';
         ctx.strokeStyle = o.color; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.ellipse(x, y - 10, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-        for (let i = 0; i < 8; i++) { const a = t * 9 + i * 0.8, r = 0.3 + (i % 3) * 0.3; px(ctx, Math.round(x + Math.cos(a) * rx * r), Math.round(y - 10 + Math.sin(a) * ry * r), 1, 1, i % 2 ? '#ffffff' : o.color); }
+        ctx.beginPath(); ctx.ellipse(x, py, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+        for (let i = 0; i < 8; i++) { const a = t * 9 + i * 0.8, r = 0.3 + (i % 3) * 0.3; px(ctx, Math.round(x + Math.cos(a) * rx * r), Math.round(py + Math.sin(a) * ry * r), 1, 1, i % 2 ? '#ffffff' : o.color); }
         ctx.globalCompositeOperation = 'source-over';
-        ellipse(ctx, x, y - 10, Math.max(0.5, rx - 2), Math.max(0.5, ry - 3), '#140820');
+        ellipse(ctx, x, py, Math.max(0.5, rx - 2), Math.max(0.5, ry - 3), '#140820');
         break;
       }
       case 'foot': {   // Portal Kicks: chân thò ra khỏi cổng
         const ext = Math.sin(Math.min(1, el / o.max) * Math.PI) * (o.b || 16), ux = Math.cos(o.a), uy = Math.sin(o.a);   // b: độ vươn
-        for (let i = 0; i < ext; i += 2) { px(ctx, Math.round(x + ux * i) - 2, Math.round(y - 8 + uy * i) - 2, 5, 5, OUT); px(ctx, Math.round(x + ux * i) - 1, Math.round(y - 8 + uy * i) - 1, 3, 3, o.color); }
-        const fx = Math.round(x + ux * ext), fy = Math.round(y - 8 + uy * ext);
+        for (let i = 0; i < ext; i += 2) { px(ctx, Math.round(x + ux * i) - 2, Math.round(y - ph(8) + uy * i) - 2, 5, 5, OUT); px(ctx, Math.round(x + ux * i) - 1, Math.round(y - ph(8) + uy * i) - 1, 3, 3, o.color); }
+        const fx = Math.round(x + ux * ext), fy = Math.round(y - ph(8) + uy * ext);
         px(ctx, fx - 3, fy - 3, 7, 6, OUT); px(ctx, fx - 2, fy - 2, 5, 4, '#ffffff'); px(ctx, fx - 2, fy + 1, 5, 1, '#c7ccd6');
         break;
       }
@@ -1342,11 +1353,11 @@ window.SFC = window.SFC || {};
       // AURA FARMING: lửa vàng bốc ngược sau lưng (cao hơn chỏm tóc), vầng sáng dưới chân
       if (p.auraFarmT > 0) {
         const fade = Math.min(1, p.auraFarmT * 2);
-        const col = (i) => Math.round(34 - (Math.abs(i) / 10) ** 2 * 22 + 4 * Math.sin(t * 22 + i * 1.9));
+        const col = (i) => ph(34 - (Math.abs(i) / 10) ** 2 * 22 + 4 * Math.sin(t * 22 + i * 1.9));
         // viền lửa cam (vẽ thường) cho nổi trên sân sáng, rồi lõi vàng cộng sáng
         ctx.globalAlpha = fade * 0.55;
         for (let i = -10; i <= 10; i++) { const h = col(i) + 2; px(ctx, x + i, y - h, 1, 3, '#ff9a1f'); }
-        px(ctx, x - 11, y - 14, 1, 12, '#ff9a1f'); px(ctx, x + 11, y - 14, 1, 12, '#ff9a1f');
+        px(ctx, x - 11, y - ph(14), 1, ph(12), '#ff9a1f'); px(ctx, x + 11, y - ph(14), 1, ph(12), '#ff9a1f');
         ctx.globalCompositeOperation = 'lighter';
         for (let i = -10; i <= 10; i++) {
           const h = col(i);
@@ -1392,16 +1403,16 @@ window.SFC = window.SFC || {};
       // hào quang: hạt sáng bay lên + thân phát sáng
       if (p.auraT > 0 && p.auraC) {
         ctx.globalAlpha = 0.18;
-        px(ctx, x - 6, y - 17, 12, 16, p.auraC);
+        px(ctx, x - ph(6), y - ph(17), ph(12), ph(16), p.auraC);
         ctx.globalAlpha = 1;
-        if (R() < 0.5) px(ctx, x - 6 + Math.round(R() * 12), y - 4 - Math.round(R() * 16), 1, 2, p.auraC);
+        if (R() < 0.5) px(ctx, x - 6 + Math.round(R() * 12), y - 4 - Math.round(R() * ph(16)), 1, 2, p.auraC);
       }
       // AURA FARMING: tàn lửa vàng bay lên + thỉnh thoảng tia điện quanh người
       if (p.auraFarmT > 0) {
-        if (R() < 0.7) px(ctx, x - 9 + Math.round(R() * 18), y - 4 - Math.round(R() * 30), 1, 2, R() < 0.5 ? '#ffe14f' : '#fff6b0');
+        if (R() < 0.7) px(ctx, x - 9 + Math.round(R() * 18), y - 4 - Math.round(R() * ph(30)), 1, 2, R() < 0.5 ? '#ffe14f' : '#fff6b0');
         if (R() < 0.12) {
           const sx = x + (R() < 0.5 ? -8 : 7);
-          let yy = y - 6 - Math.round(R() * 10);
+          let yy = y - ph(6) - Math.round(R() * ph(10));
           for (let k = 0; k < 4; k++) { const ny = yy - 2 - Math.round(R() * 3); px(ctx, sx + Math.round(R() * 2 - 1), ny, 1, yy - ny, '#cdf6ff'); yy = ny; }
         }
       }
@@ -1417,7 +1428,7 @@ window.SFC = window.SFC || {};
       // Nắm Đấm Khổng Lồ sẵn sàng: hai nắm tay bốc lửa
       if (p.fistRdy && C.has(p, 'giant_fist')) {
         for (const s of [-1, 1]) {
-          const hx = x + s * 6, hy2 = y - 7;
+          const hx = x + s * ph(6), hy2 = y - ph(7);
           disc(ctx, hx, hy2, 3 + (Math.sin(t * 14 + s) > 0 ? 1 : 0), 'rgba(255,50,40,0.6)');
           if (R() < 0.5) px(ctx, hx - 1 + Math.round(R() * 2), hy2 - 3 - Math.round(R() * 4), 1, 1, R() < 0.5 ? '#ffd23f' : '#ff6a1f');
         }
@@ -1425,7 +1436,7 @@ window.SFC = window.SFC || {};
       // Nắm Đấm Sắt sẵn sàng: hai nắm tay thép
       if (p.fistRdy && C.has(p, 'iron_fist') && !C.has(p, 'giant_fist')) {
         ctx.globalCompositeOperation = 'source-over';
-        for (const s of [-1, 1]) { px(ctx, x + s * 6 - 1, y - 8, 3, 3, '#140c16'); px(ctx, x + s * 6 - 1, y - 8, 2, 2, '#c7ccd6'); px(ctx, x + s * 6 - 1, y - 8, 1, 1, '#ffffff'); }
+        for (const s of [-1, 1]) { const fx = x + s * ph(6) - 1, fy = y - ph(8); px(ctx, fx, fy, 3, 3, '#140c16'); px(ctx, fx, fy, 2, 2, '#c7ccd6'); px(ctx, fx, fy, 1, 1, '#ffffff'); }
         ctx.globalCompositeOperation = 'lighter';
       }
       // Phá Âm Chướng: đang TOÉ ĐIỆN -> hình nón sóng âm trắng trước mặt
@@ -1435,7 +1446,7 @@ window.SFC = window.SFC || {};
           const r = 9 + ((k / 3 + ph) % 1) * 12;
           ctx.globalAlpha = 0.6 * (1 - ((k / 3 + ph) % 1));
           ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.arc(x, y - 7, r, a - 0.6, a + 0.6); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x, y - ph(7), r, a - 0.6, a + 0.6); ctx.stroke();
         }
         ctx.globalAlpha = 1;
       }
@@ -1567,7 +1578,7 @@ window.SFC = window.SFC || {};
       const br = 0.5 + 0.5 * Math.sin(t * 5);
       ctx.globalCompositeOperation = 'lighter';
       ctx.globalAlpha = 0.16 + 0.1 * br;
-      ellipse(ctx, x, y - 8, 9 + Math.round(br), 13 + Math.round(br), col);
+      ellipse(ctx, x, y - ph(8), ph(9) + Math.round(br), ph(13) + Math.round(br), col);
       ctx.globalAlpha = 0.35 + 0.2 * br;
       ellipse(ctx, x, y + 1, 9, 3, col);
       ctx.globalAlpha = 1;
@@ -1579,16 +1590,16 @@ window.SFC = window.SFC || {};
       }
       switch (tag) {
         case 'chaos': // tia màu cầu vồng nhiễu + ô vuông glitch
-          if (R() < 0.5) px(ctx, x - 7 + Math.round(R() * 14), y - 18 + Math.round(R() * 18), 2, 1, `hsl(${Math.floor(R() * 360)},100%,65%)`);
-          if (R() < 0.15) px(ctx, x - 6 + Math.round(R() * 8), y - 14 + Math.round(R() * 10), 3, 2, 'rgba(255,255,255,0.6)');
+          if (R() < 0.5) px(ctx, x - 7 + Math.round(R() * 14), y - ph(18) + Math.round(R() * ph(18)), 2, 1, `hsl(${Math.floor(R() * 360)},100%,65%)`);
+          if (R() < 0.15) px(ctx, x - 6 + Math.round(R() * 8), y - ph(14) + Math.round(R() * ph(10)), 3, 2, 'rgba(255,255,255,0.6)');
           break;
         case 'runner': // tia điện lách tách quanh người
-          if (R() < 0.5) { const a = R() * Math.PI * 2; px(ctx, x + Math.round(Math.cos(a) * 7), y - 6 + Math.round(Math.sin(a) * 7), 1, 2 + Math.round(R() * 2), '#7fe7ff'); }
+          if (R() < 0.5) { const a = R() * Math.PI * 2; px(ctx, x + Math.round(Math.cos(a) * 7), y - ph(6) + Math.round(Math.sin(a) * ph(7)), 1, 2 + Math.round(R() * 2), '#7fe7ff'); }
           if (R() < 0.3) px(ctx, x - 5 + Math.round(R() * 10), y - 1, 2, 1, '#ffffff');
           break;
         case 'playmaker': // 2 nốt nhạc bay quanh đầu
           for (let i = 0; i < 2; i++) {
-            const a = t * 3 + i * Math.PI, nx = x + Math.round(Math.cos(a) * 9), ny = y - 22 + Math.round(Math.sin(a) * 3);
+            const a = t * 3 + i * Math.PI, nx = x + Math.round(Math.cos(a) * 9), ny = y - ph(22) + Math.round(Math.sin(a) * 3);
             px(ctx, nx + 1, ny - 3, 1, 3, '#ffd23f'); px(ctx, nx, ny, 2, 1, '#ffd23f');
           }
           break;
@@ -1596,7 +1607,7 @@ window.SFC = window.SFC || {};
           for (let i = 0; i < 2; i++) if (R() < 0.7) px(ctx, x - 4 + Math.round(R() * 8), y - 2 - Math.round(R() * 4), 1, 2, R() < 0.5 ? '#ff6a1f' : '#ffd23f');
           break;
         case 'brawler': // hai nắm tay rực lửa đỏ
-          for (const s of [-1, 1]) disc(ctx, x + s * 6, y - 7, 2 + (Math.sin(t * 12 + s) > 0 ? 1 : 0), 'rgba(255,61,90,0.55)');
+          for (const s of [-1, 1]) disc(ctx, x + s * ph(6), y - ph(7), 2 + (Math.sin(t * 12 + s) > 0 ? 1 : 0), 'rgba(255,61,90,0.55)');
           break;
         case 'launcher': // bụi đá bắn lên dưới chân khi chạy
           if (moving && R() < 0.35) px(ctx, x - 4 + Math.round(R() * 8), y - Math.round(R() * 2), 2, 1, 'rgba(180,107,255,0.8)');
@@ -1607,8 +1618,8 @@ window.SFC = window.SFC || {};
           break;
         case 'iron': { // ánh kim loại chạy dọc người
           const k = (t * 1.5) % 1;
-          px(ctx, x - 5, y - 12, 10, 8, 'rgba(200,210,230,0.18)');
-          px(ctx, x - 5 + Math.round(k * 10), y - 12, 1, 8, 'rgba(255,255,255,0.45)');
+          px(ctx, x - ph(5), y - ph(12), ph(10), ph(8), 'rgba(200,210,230,0.18)');
+          px(ctx, x - ph(5) + Math.round(k * ph(10)), y - ph(12), 1, ph(8), 'rgba(255,255,255,0.45)');
           break;
         }
       }

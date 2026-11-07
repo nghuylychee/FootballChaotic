@@ -373,10 +373,10 @@ window.SFC = window.SFC || {};
 
   /* School Ghosts — MA TÀNG HÌNH (user 2026-10-21): mỗi lúc tối đa n con ma (không cầm bóng lúc biến) tàng hình + chạy nhanh x speed, tới khi bị lộ.
    * Cách làm lộ: ra đòn nặng trúng 1 con ma KHÔNG tàng hình -> cả đội ma hiện hình, cooldown giây sau mới tàng hình lại được.
-   * Tàng hình = prop 'veil' bám người (khách online nhận qua lệnh hiệu ứng), render đọc alpha(). Chuông trường reo thì 2 con ma đổi chỗ.
-   * Họ bị dẫn: chuông + hồi tàng hình nhanh hơn (trailing). Hook: Player.hit -> MatchMods.hitBy */
+   * Tàng hình = prop 'veil' bám người (khách online nhận qua lệnh hiệu ứng), render đọc alpha(). Đã bỏ chuông trường đổi chỗ 2 con ma (user 2026-11-07).
+   * Họ bị dẫn: hồi tàng hình nhanh hơn (trailing). Hook: Player.hit -> MatchMods.hitBy */
   K.ghosts = {
-    create(g, M, c) { M.bell = c.first; M.next = c.first; M.veil = {}; },
+    create(g, M, c) { M.next = c.first; M.veil = {}; },
     kickoff(g, M, c) {
       for (const id of Object.values(M.veil)) g.effects.propOff(id, 0.05);
       M.veil = {}; M.next = c.first;
@@ -413,23 +413,10 @@ window.SFC = window.SFC || {};
       this.reveal(g, M, c);
     },
     update(g, M, c, dt) {
-      const E = g.effects, f = g.field, trail = behind(g) ? c.trailing : 1;
+      const trail = behind(g) ? c.trailing : 1;
       const tp = g.teams[M.team].players, hidden = tp.filter((q) => M.veil[q.id]);
       for (const p of hidden) keepSpeed(p, c.speed);
       if (!hidden.length && (M.next -= dt * trail) <= 0) this.vanish(g, M, c);
-      // chuông trường: 2 con ma (không cầm bóng) đổi chỗ
-      if ((M.bell -= dt * trail) > 0) return;
-      M.bell = U.rand(c.bell[0], c.bell[1]);
-      const list = tp.filter((q) => !q.hasBall && q.state === 'normal' && grounded(q));
-      g.sfx('ult', 'mod.bell');
-      E.pop(f.cx, f.y - 6, 'RING RING!', 'info', '#e8ecf5');
-      if (list.length < 2) return;
-      const a = U.pick(list), q = U.pick(list.filter((x) => x !== a));
-      for (const p of [a, q]) { E.burst(p.x, p.y - 8, 6, '#9d7bff', 14, 70, 0.5); E.burst(p.x, p.y - 8, 6, '#e8ecf5', 8, 50, 0.4); }
-      [a.x, a.y, q.x, q.y] = [q.x, q.y, a.x, a.y];
-      a.vx = a.vy = q.vx = q.vy = 0;
-      for (const p of [a, q]) E.pop(p.x, p.y - 30, 'POOF!', 'status', '#9d7bff');
-      bark(g, 'mod', a);
     },
   };
 

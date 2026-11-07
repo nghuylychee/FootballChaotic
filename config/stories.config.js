@@ -60,10 +60,10 @@ SFC_CONFIG.stories = {
     },
     // School Ghosts (user 2026-10-21): sau first giây, n con ma (không cầm bóng) tàng hình (còn chút bóng hình độ đậm alpha) + chạy x speed, tới khi bị lộ.
     // Đội bạn ra đòn nặng trúng 1 con ma không tàng hình -> cả đội ma hiện hình, cooldown giây sau mới tàng hình lại.
-    // Chuông trường reo mỗi bell giây: 2 con ma (không cầm bóng) đổi chỗ cho nhau. Họ bị dẫn: chuông + hồi tàng hình nhanh hơn (trailing)
+    // Họ bị dẫn: hồi tàng hình nhanh hơn (trailing). Chuông trường đổi chỗ 2 con ma đã bỏ (user 2026-11-07)
     ghosts: {
       name: 'NOW YOU SEE THEM', hint: 'Two ghosts vanish and speed up. Heavy-hit a visible one to reveal them all',
-      n: 2, alpha: 0.1, speed: 1.3, first: 5, cooldown: 8, bell: [9, 13], trailing: 1.5,
+      n: 2, alpha: 0.1, speed: 1.3, first: 5, cooldown: 8, trailing: 1.5,
     },
     // Block Wardens (làm lại 2026-10-30, user): mỗi pha bóng (từ giao bóng tới khi có bàn) chỉ 1 Warden ngẫu nhiên uống whey rồi hoá khổng lồ
     // (to scale lần, power / tackle x power, speed x speed); mấy người kia như thường. Uống trong lúc chờ giao bóng: lắc bình shake giây,
@@ -282,7 +282,7 @@ SFC_CONFIG.stories = {
             kickoff: ['Booo...', 'Roll call!'],
             goal: ['Spooky!', 'Did you see that? No.'],
             conceded: ['Impossible!', 'You saw me?!'],
-            mod: ['RING RING!', 'Change classes!', "Now you don't!"],
+            mod: ["Now you don't!"],
           },
         },
         {

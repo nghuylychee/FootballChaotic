@@ -28,6 +28,7 @@ window.SFC = window.SFC || {};
     if (s.pp && (s.pp.x - s.x) * s.vx + (s.pp.y - s.y) * s.vy <= 0) { s.fm /= s.pf; s.pp = null; }
     const damp = Math.exp(-(s.z > B.airDragMinZ ? B.airDrag : B.groundFriction) * s.fm * dt);
     s.vx *= damp; s.vy *= damp;
+    SFC.Ball.rollStop(s, dt);   // bóng lăn chậm dừng dứt khoát như bóng thật (ball.rollStop)
     if (s.y < f.y + r || s.y > f.y + f.h - r) { s.vy = -s.vy * B.wallBounce; s.y = U.clamp(s.y, f.y + r, f.y + f.h - r); }
     if (s.x < f.x + r || s.x > f.x + f.w - r) { s.vx = -s.vx * B.wallBounce; s.x = U.clamp(s.x, f.x + r, f.x + f.w - r); }
     return landed;
@@ -215,14 +216,16 @@ window.SFC = window.SFC || {};
         // tạt cánh (firstTime.cross): bóng tới điểm đón ở độ cao ngang đầu (X.z) thay vì rơi xuống chân
         const X = this.crossFrom(g, p, target) ? G().firstTime.cross : null;
         const lead = X ? X.lead : P.receiverLead;
+        // độ bổng theo lực bấm (pass.lobLoft): lực càng mạnh bay càng lâu -> càng vồng cao, vẫn rơi đúng chỗ người nhận
+        const loft = power == null || !P.lobLoft ? 1 : U.lerp(P.lobLoft[0], P.lobLoft[1], U.clamp(power, 0, 1));
         let d = 1;
         for (let i = 0; i < 4; i++) {
           point = clampPt({ x: target.x + target.vx * lead * T, y: target.y + target.vy * lead * T });
           d = U.dist(b, point) || 1;
-          T = X ? U.lerp(X.timeMin, X.timeMax, idealOf(d)) : U.lerp(P.lobTimeMin, P.lobTimeMax, idealOf(d));
+          T = (X ? U.lerp(X.timeMin, X.timeMax, idealOf(d)) : U.lerp(P.lobTimeMin, P.lobTimeMax, idealOf(d))) * loft;
         }
         const ka = B.airDrag;
-        spd = ((ka * d) / (1 - Math.exp(-ka * T))) * powerFactor(idealOf(d));
+        spd = ((ka * d) / (1 - Math.exp(-ka * T))) * (P.lobLoft ? 1 : powerFactor(idealOf(d)));
         vz = X ? (X.z - 0.5 + (B.gravity * T * T) / 2) / T : (B.gravity * T) / 2;
         cross = !!X;
       } else {
@@ -514,7 +517,10 @@ window.SFC = window.SFC || {};
       }
       // người chuyền giờ do AI đá: băng lên nhận lại (ai.runs.giveGo)
       if (target && SFC.AI && !(g.isHuman(p.team) && p.isControlled)) SFC.AI.giveGo(g, p);
-      g.sfx('pass');
+      // độ nặng cú chuyền (fx.hitStop.pass): người chuyền + bóng khựng 1-2 frame theo lực, tiếng chạm bóng to theo lực
+      const pk = U.clamp(b.speed / (G().pass.maxSpeed || 1), 0, 1), HP = (G().fx.hitStop || {}).pass;
+      if (HP && !FT_POSES[p.atkType]) { const st = U.lerp(HP[0], HP[1], pk); if (st > 0) { p.freeze(st); b.freezeT = st; } }
+      g.sfx('pass', pk);
     },
 
     // Lực sút mặc định (0..1) theo khoảng cách tới khung thành — mốc trên thanh lực sút
@@ -737,7 +743,9 @@ window.SFC = window.SFC || {};
       g.sfx(ft && ft.kind === 'header' ? 'header' : 'kick', c);
       // sút mạnh: người sút + bóng khựng một nhịp (bóng "dính" chân) rồi mới bay; vô-lê / đánh đầu luôn khựng nhẹ
       const HS = G().fx.hitStop;
-      const stop = Math.max(HS && HS.shot > 0 && c >= HS.shotMin ? HS.shot : 0, ft && ft.kind !== 'ground' ? F.hitStop : 0);
+      // cú sút nhẹ hơn shotMin cũng khựng nhẹ (shotLow -> shot theo lực): cú đá nào cũng có độ nặng
+      const shotStop = !HS || !(HS.shot > 0) ? 0 : c >= HS.shotMin ? HS.shot : HS.shotLow ? U.lerp(HS.shotLow, HS.shot, U.clamp(c / HS.shotMin, 0, 1)) : 0;
+      const stop = Math.max(shotStop, ft && ft.kind !== 'ground' ? F.hitStop : 0);
       if (stop > 0) { p.freeze(stop); b.freezeT = stop; }
     },
 

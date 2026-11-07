@@ -359,7 +359,18 @@ window.SFC = window.SFC || {};
       const passer = b.kind === 'pass' && b.lastKickTeam === p.team && b.lastTouch && b.lastTouch !== p && b.lastTouch.team === p.team ? b.lastTouch : null;
       const lofted = passer && b.legTech === 'lobthrough';   // LEGEND TRIAL (Pirlow): chuyền vượt tuyến bổng tới chân đồng đội
       const prevTeam = this.lastPossessionTeam;
+      // CHẠM BÓNG ĐẦU TIÊN (pass.firstTouch): lấy tốc độ bóng tới trước khi setOwner xoá -> Ball.follow cho bóng trôi ra trước chân rồi mới về
+      const FT = this.cfg.pass.firstTouch, inSpd = b.speed;
+      const keeperCatch = this.inKeeperZone(p) && b.lastKickTeam >= 0 && b.lastKickTeam !== p.team;
       b.setOwner(p);
+      b.touchIn = null;
+      if (FT && FT.enabled && inSpd > FT.minSpeed && !keeperCatch) {
+        const arrow = p.touchDir != null ? p.touchDir : null;
+        if (arrow != null) p.facing = arrow;   // mũi tên lúc đón: quay người theo hướng chạm bóng
+        const v = (inSpd - FT.minSpeed) * FT.carry / Math.max(0.6, p.stats.dribble || 1) * (arrow != null ? 1 : FT.noArrow);
+        b.touchIn = { v, a: p.facing };
+      }
+      p.touchDir = null;
       SFC.Actions.disarm(p);   // đang chờ đá 1 chạm mà nhận bóng: thanh lực chờ không được thành lực sút khi đã cầm bóng
       p.keeperHold = 0;
       p.cancelPass();
@@ -397,7 +408,7 @@ window.SFC = window.SFC || {};
         else if (this.cfg.match.autoSwitchOnDefense && cur &&
                  U.dist(cur, p) > this.cfg.match.autoSwitchDistance) this.switchPlayer(t);
       }
-      this.sfx('touch');
+      this.sfx('touch', U.clamp((inSpd - 80) / 400, 0, 1));   // nhận bóng nhanh: tiếng đỡ bóng nặng hơn (Audio.touch)
     }
 
     /* ---------- luồng trận ---------- */

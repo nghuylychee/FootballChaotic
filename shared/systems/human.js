@@ -168,11 +168,16 @@ window.SFC = window.SFC || {};
       p.cancelPass();
 
       // Trạng thái nhận bóng: người nhận chủ động chạy tới điểm đón bóng.
-      // Mũi tên đang giữ lúc chuyền bị bỏ qua (receiveLock) cho tới khi thả ra; bấm hướng mới -> người chơi tự điều khiển.
+      // Mũi tên đang giữ lúc chuyền bị bỏ qua (receiveLock) cho tới khi thả ra. Đường chuyền chuẩn (pass.receiveLock): mũi tên mới = hướng chạm bóng,
+      // không kéo người đi · chuyền lỗi (sloppy) / receiveLock tắt: bấm hướng mới -> người chơi tự điều khiển.
       const receiving = b.passTarget === p && !b.owner;
       if (receiving) {
         if (g.receiveLock[team] && !mx && !my) g.receiveLock[team] = false;
-        const manual = !g.receiveLock[team] && (mx || my);
+        // khoá người nhận (pass.receiveLock): đường chuyền chuẩn -> mũi tên chỉ còn là hướng chạm bóng đầu tiên (pass.firstTouch), không kéo người đi
+        const locked = P.receiveLock && !b.sloppy;
+        const arrow = !g.receiveLock[team] && (mx || my);
+        p.touchDir = arrow ? Math.atan2(my, mx) : null;
+        const manual = arrow && !locked;
         // đang chờ đá 1 chạm: tự chạy tới điểm đón bóng, mũi tên chỉ còn là hướng sút
         if (p.ot) this.meetBall(g, p);
         // chuyền lỗi (S không nhắm): không tự chạy đón, mũi tên còn giữ từ lúc chuyền cũng không kéo người nhận đi
@@ -197,6 +202,7 @@ window.SFC = window.SFC || {};
       }
       g.receiveLock[team] = false;
       p.prePass = null;
+      p.touchDir = null;
 
       if (teamHas) {
         // đồng đội cầm bóng: S / W đòi bóng (sệt / chọc khe); D / A vẫn ra đòn (A không còn đòi bóng bổng)

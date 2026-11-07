@@ -61,6 +61,11 @@ window.SFC = window.SFC || {};
   }
 
   // to: tần số bộ lọc trượt tới (quét gió / tiếng rít) · attack: giây tăng âm lượng từ 0
+  // tiếng "thịch" trầm của da bóng (2026-11-07: cú đá / đỡ bóng có độ nặng) — lớp sine thấp chồng dưới tiếng mẫu, k = 0..1
+  function thump(k) {
+    k = Math.max(0, Math.min(1, k));
+    tone({ freq: 120 + k * 20, to: 42, dur: 0.07 + k * 0.06, type: 'sine', vol: 0.1 + k * 0.22 });
+  }
   function noise({ dur = 0.15, vol = 0.25, freq = 1200, q = 1, delay = 0, at = null, dest = null, type = 'bandpass', to = null, attack = 0 }) {
     if (!enabled()) return;
     const t = at != null ? at : ctx.currentTime + delay;
@@ -467,16 +472,23 @@ window.SFC = window.SFC || {};
     crowdBuffers() { return Object.assign({}, CB); },
     get muted() { return muted; },
 
-    touch()   { if (!sample('ballBounce')) tone({ freq: 220, to: 160, dur: 0.05, type: 'triangle', vol: 0.15 }); },
+    // k = độ mạnh bóng tới 0..1 (Game.gainPossession): thêm tiếng "thịch" trầm dưới tiếng chạm -> đỡ bóng nhanh nghe có độ nặng
+    touch(k = 0) {
+      if (!sample('ballBounce')) tone({ freq: 220, to: 160, dur: 0.05, type: 'triangle', vol: 0.15 });
+      if (k > 0.05) thump(k * 0.8);
+    },
     // bóng tự nảy trên mặt sân; p = độ mạnh cú nảy 0..1 (entities/ball.js)
     bounce(p = 1) { sample('ballBounce', p); },
-    pass()    {
-      if (sample('ballPass')) return;
-      noise({ dur: 0.06, vol: 0.25, freq: 900 }); tone({ freq: 330, to: 250, dur: 0.06, type: 'triangle', vol: 0.15 });
+    // k = lực chuyền 0..1 (Actions.passTo; khách online cũ không gửi = 0.5)
+    pass(k = 0.5) {
+      if (!sample('ballPass')) { noise({ dur: 0.06, vol: 0.25, freq: 900 }); tone({ freq: 330, to: 250, dur: 0.06, type: 'triangle', vol: 0.15 }); }
+      thump(0.25 + k * 0.45);
     },
-    kick(p)   {
-      if (sample(p < 1 / 3 ? 'kickWeak' : p < 2 / 3 ? 'kickMid' : 'kickStrong')) return;
-      noise({ dur: 0.12, vol: 0.35 + p * 0.2, freq: 600 }); tone({ freq: 160, to: 60, dur: 0.15, type: 'square', vol: 0.2 });
+    kick(p = 0.5) {
+      if (!sample(p < 1 / 3 ? 'kickWeak' : p < 2 / 3 ? 'kickMid' : 'kickStrong')) {
+        noise({ dur: 0.12, vol: 0.35 + p * 0.2, freq: 600 }); tone({ freq: 160, to: 60, dur: 0.15, type: 'square', vol: 0.2 });
+      }
+      thump(0.45 + Math.min(1, p) * 0.55);
     },
     wall()    { if (!sample('ballBounce')) tone({ freq: 120, to: 80, dur: 0.06, type: 'square', vol: 0.12 }); },
     // bóng chạm cột dọc / xà ngang: tiếng kim loại "keng" (các tần số lệch nhau ngân ngắn + tiếng gõ)

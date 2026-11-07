@@ -127,6 +127,7 @@ window.SFC = window.SFC || {};
       if (this.hasBall) {
         s *= C.player.dribbleSpeedMult * (0.85 + this.stats.dribble * cores.mod(this, 'dribble') * 0.15);   // Kiểm Soát Bóng
         s *= 1 - C.ball.dribble.turnSlow * (g.ball.dribbleLag || 0);   // bóng đang trễ hướng mặt / đang kéo bóng (Ball.follow)
+        if (C.pass.firstTouch) s *= 1 - C.pass.firstTouch.slow * (g.ball.touchK || 0);   // chạm bóng đầu tiên: bóng còn trôi xa chân (Ball.follow)
       }
       else s *= cores.mod(this.team, 'offBallSpeed', this);
       if (this.sprinting) s *= C.player.sprintMult;

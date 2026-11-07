@@ -13,7 +13,7 @@ window.SFC = window.SFC || {};
   function scene(g) {
     const T = theme(g);
     const A = T.scene && SFC.Art && SFC.Art[T.scene];
-    // bộ cảnh vẽ cho khung 640 x 360 (W - 2·OX): khung trận lớn hơn (thử sân to) thì tạm vẽ theo màu
+    // bộ cảnh dựng theo khung trận (W - 2·OX = render.width, xem village.js); bộ cảnh nào nhỏ hơn khung trận thì vẽ theo màu
     if (A && A.W - 2 * A.OX < SFC_CONFIG.game.render.width) return null;
     return A || null;
   }

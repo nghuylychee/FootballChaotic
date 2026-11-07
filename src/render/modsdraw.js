@@ -11,6 +11,8 @@ window.SFC = window.SFC || {};
 
 (function () {
   const SP = () => SFC.Sprites;
+  // đồ bám thân người theo người mới (render.playerScale, Sprite v3 cao 31 thay 24): PH(30) = 30 px ở người cũ · PSC = hệ số
+  const PH = (v) => SFC.Sprites.ph(v), PSC = () => SFC.Sprites.pscale();
   // làm tối màu '#rrggbb' theo hệ số k (0..1)
   function dark(hex, k) {
     const n = parseInt(hex.slice(1), 16), m = (v) => Math.round(v * (1 - k));
@@ -94,21 +96,21 @@ window.SFC = window.SFC || {};
     }
   }
 
-  // tượng đá của người q: vẽ sprite ra canvas phụ, khử hết màu (kể cả da, tóc) rồi phủ xám đá — trả về canvas 48x48, chân ở (24, 42)
+  // tượng đá của người q: vẽ sprite ra canvas phụ, khử hết màu (kể cả da, tóc) rồi phủ xám đá — trả về canvas 64x64, chân ở (32, 56)
   // (mask = bản sprite gốc làm mặt nạ: khử màu tô cả vùng trong suốt nên phải cắt lại theo hình người bằng 1 lần drawImage)
   let stoneCv = null, maskCv = null;
   function stoneSprite(g, q) {
-    if (!stoneCv) for (const k of [0, 1]) { const cv = document.createElement('canvas'); cv.width = 48; cv.height = 48; if (k) maskCv = cv; else stoneCv = cv; }
+    if (!stoneCv) for (const k of [0, 1]) { const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64; if (k) maskCv = cv; else stoneCv = cv; }
     const c = stoneCv.getContext('2d'), m = maskCv.getContext('2d');
-    const pose = Object.assign({}, q, { x: 24, y: 42, state: 'normal', anim: 0, vx: 0, vy: 0, flash: 0, atkType: null, sizeMul: 1 });
+    const pose = Object.assign({}, q, { x: 32, y: 56, state: 'normal', anim: 0, vx: 0, vy: 0, flash: 0, atkType: null, sizeMul: 1 });
     m.setTransform(1, 0, 0, 1, 0, 0);
-    m.clearRect(0, 0, 48, 48);
+    m.clearRect(0, 0, 64, 64);
     SP().drawPlayer(m, pose, g, 0.999);
     c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
-    c.clearRect(0, 0, 48, 48);
+    c.clearRect(0, 0, 64, 64);
     c.drawImage(maskCv, 0, 0);
-    c.globalCompositeOperation = 'saturation'; c.fillStyle = '#808080'; c.fillRect(0, 0, 48, 48);   // khử màu
-    c.globalCompositeOperation = 'source-atop'; c.globalAlpha = 0.45; c.fillStyle = '#8a8f99'; c.fillRect(0, 0, 48, 48);   // ánh xám đá
+    c.globalCompositeOperation = 'saturation'; c.fillStyle = '#808080'; c.fillRect(0, 0, 64, 64);   // khử màu
+    c.globalCompositeOperation = 'source-atop'; c.globalAlpha = 0.45; c.fillStyle = '#8a8f99'; c.fillRect(0, 0, 64, 64);   // ánh xám đá
     c.globalCompositeOperation = 'destination-in'; c.globalAlpha = 1; c.drawImage(maskCv, 0, 0);   // cắt lại đúng hình người
     c.globalCompositeOperation = 'source-over';
     return stoneCv;
@@ -404,11 +406,11 @@ window.SFC = window.SFC || {};
           const mid = k > 0.18 && k < 0.82;
           ctx.globalAlpha = fade * 0.3; ellipse(ctx, x, y + 1, 6 - 2 * arc, 2.5 - arc, '#000000'); ctx.globalAlpha = fade;
           // vệt gió sau lưng
-          for (let i = 0; i < 3; i++) px(ctx, x - sd * (8 + i * 3), y - lift - 14 + i * 4, 4 - i, 1, '#ffffff');
+          for (let i = 0; i < 3; i++) px(ctx, x - sd * (8 + i * 3), y - lift - PH(14) + i * 4, 4 - i, 1, '#ffffff');
           // tay chống (phía trước) duỗi xuống mép tường, tay kia giơ ra sau giữ thăng bằng
           const plant = mid ? [sd * 2, 7] : [sd * 3, 3], back = mid ? [-sd * 4, -6] : [-sd * 3, 2];
           ctx.save();
-          ctx.translate(x, y - lift - 10); ctx.rotate(sd * 0.5 * arc); ctx.translate(-x, -(y - 10));
+          ctx.translate(x, y - lift - PH(10)); ctx.rotate(sd * 0.5 * arc); ctx.translate(-x, -(y - PH(10)));
           SP().drawPlayer(ctx, Object.assign({}, q, { x, y, vx: 0, vy: 0, state: 'normal', atkType: null, charging: false, keeper: false,
             celPose: { arms: sd > 0 ? [back, plant] : [plant, back], legs: mid ? 'cross' : null, run: !mid } }), g, 0.999);
           ctx.restore();
@@ -464,19 +466,19 @@ window.SFC = window.SFC || {};
             celPose: { arms, eyes: 'closed', mouth: true } }), g, 0.999);
           // lửa trên người: đỉnh đầu, vai, chỗ vừa phủi
           ctx.globalCompositeOperation = 'lighter';
-          ctx.globalAlpha = 0.35 * heat; ellipse(ctx, x, y - 12, 9, 10, '#ff6a1f');
+          ctx.globalAlpha = 0.35 * heat; ellipse(ctx, x, y - PH(12), PH(9), PH(10), '#ff6a1f');
           ctx.globalCompositeOperation = 'source-over';
           ctx.globalAlpha = 1;
           for (const [dx, dy, n, sd] of [[0, -22, 9, 1], [-4, -16, 6, 2], [4, -15, 7, 3], [ph ? 3 : -3, -8, 4, 4], [-2, -3, 4, 5]]) {
-            flame(ctx, x + dx, y + dy - hop, Math.round(n * heat * (0.75 + 0.25 * Math.abs(Math.sin(t * 15 + sd)))), t, sd);
+            flame(ctx, x + PH(dx), y + PH(dy) - hop, Math.round(n * heat * (0.75 + 0.25 * Math.abs(Math.sin(t * 15 + sd)))), t, sd);
           }
           // tay vừa phủi: bụi lửa bắn ra
-          if (Math.floor(el * 9) !== Math.floor((el - 1 / 60) * 9)) for (let i = 0; i < 3; i++) px(ctx, x + (ph ? 6 : -6) + Math.round((Math.random() - 0.5) * 6), y - 10 - Math.round(Math.random() * 6), 1, 1, '#ffd23f');
+          if (Math.floor(el * 9) !== Math.floor((el - 1 / 60) * 9)) for (let i = 0; i < 3; i++) px(ctx, x + (ph ? 6 : -6) + Math.round((Math.random() - 0.5) * 6), y - PH(10) - Math.round(Math.random() * 6), 1, 1, '#ffd23f');
           // khói bốc lên
           for (let i = 0; i < 3; i++) {
             const p2 = (el * 1.4 + i / 3) % 1;
             ctx.globalAlpha = (1 - p2) * 0.6;
-            px(ctx, Math.round(x - 4 + i * 4 + Math.sin(t * 4 + i) * 2), Math.round(y - 28 - p2 * 16), 2, 2, '#9aa0a8');
+            px(ctx, Math.round(x - 4 + i * 4 + Math.sin(t * 4 + i) * 2), Math.round(y - PH(28) - p2 * 16), 2, 2, '#9aa0a8');
           }
           ctx.globalAlpha = 1;
           break;
@@ -489,7 +491,7 @@ window.SFC = window.SFC || {};
           const up = [sd, -6, sd * 2 + Math.round(Math.cos(sp) * 2), -13 + Math.round(Math.sin(sp))], bowl = [sd * 3, 1];
           if (v && (late || Math.floor(t * 8) % 2)) {
             ctx.globalAlpha = fade * 0.8; ctx.strokeStyle = late ? '#ffffff' : o.color; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.lineDashOffset = -t * 40;
-            ctx.beginPath(); ctx.moveTo(x, y - 8); ctx.lineTo(v.x, v.y - 6); ctx.stroke(); ctx.setLineDash([]);
+            ctx.beginPath(); ctx.moveTo(x, y - PH(8)); ctx.lineTo(v.x, v.y - PH(6)); ctx.stroke(); ctx.setLineDash([]);
             ctx.globalAlpha = fade; ctx.strokeStyle = '#ff6a3d'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.ellipse(Math.round(v.x), Math.round(v.y + 1), 11, 5, 0, 0, Math.PI * 2); ctx.stroke();
           }
@@ -497,10 +499,10 @@ window.SFC = window.SFC || {};
           SP().drawPlayer(ctx, Object.assign({}, q, { x, y, vx: 0, vy: 0, state: 'normal', atkType: null, keeper: false, charging: false,
             celPose: { arms: sd > 0 ? [bowl, up] : [up, bowl], legs: 'split', mouth: late } }), g, 0.999);
           // tô mì trên tay
-          const bx = x + (sd > 0 ? -5 : 5) + bowl[0], by2 = y - 6 + bowl[1];
+          const bx = x + PH((sd > 0 ? -5 : 5) + bowl[0]), by2 = y + PH(-6 + bowl[1]);
           px(ctx, bx - 4, by2 - 2, 9, 5, OUT); px(ctx, bx - 3, by2, 7, 2, '#d7263d'); px(ctx, bx - 3, by2 - 1, 7, 1, '#ffd86b');
           // vòng mì quay trên tay giơ cao, to dần
-          const hx = x + (sd > 0 ? 5 : -5) + up[2], hy = y - 8 + up[3], rr = 5 + 9 * Math.min(1, el / 0.6), cy = hy - 5;
+          const hx = x + PH((sd > 0 ? 5 : -5) + up[2]), hy = y + PH(-8 + up[3]), rr = 5 + 9 * Math.min(1, el / 0.6), cy = hy - 5;
           const ex = hx + Math.cos(sp) * rr, ey = cy + Math.sin(sp) * rr * 0.4;
           noodle(ctx, [[hx, hy], [(hx + ex) / 2 + 1, (hy + ey) / 2 - 1], [ex, ey]], late ? '#ffffff' : o.color, t);
           noodleRing(ctx, hx, cy, rr, rr * 0.4, late ? '#ffffff' : o.color, t);
@@ -533,19 +535,19 @@ window.SFC = window.SFC || {};
             celPose: { arms: [[1, 5], [-1, 5]], eyes: 'closed', mouth: Math.floor(t * 6) % 2 === 0 } }), g, 0.999);
           // 3 vòng mì dày quấn quanh thân (gợn sóng như sợi mì), 2 đầu sợi lòng thòng đung đưa
           for (let i = 0; i < 3; i++) {
-            const cy = -13 + i * 4;
-            px(ctx, -8, cy - 1, 16, 4, OUT);
-            for (let xx = -7; xx < 8; xx++) { const w = Math.round(Math.sin(xx * 0.9 + i * 2) * 0.6); px(ctx, xx, cy + w, 1, 2, o.color); if ((xx + i) % 4 === 0) px(ctx, xx, cy + w, 1, 1, '#fff3b0'); }
+            const cy = PH(-13 + i * 4), hw = PH(8);
+            px(ctx, -hw, cy - 1, hw * 2, 4, OUT);
+            for (let xx = 1 - hw; xx < hw; xx++) { const w = Math.round(Math.sin(xx * 0.9 + i * 2) * 0.6); px(ctx, xx, cy + w, 1, 2, o.color); if ((xx + i) % 4 === 0) px(ctx, xx, cy + w, 1, 1, '#fff3b0'); }
           }
-          noodle(ctx, [[7, -6], [9, -3 + Math.sin(t * 6)], [8, 1]], o.color, t);
-          noodle(ctx, [[-7, -9], [-10, -6 + Math.sin(t * 5 + 1)], [-9, -2]], o.color, t);
+          noodle(ctx, [[PH(7), PH(-6)], [PH(9), PH(-3) + Math.sin(t * 6)], [PH(8), 1]], o.color, t);
+          noodle(ctx, [[PH(-7), PH(-9)], [PH(-10), PH(-6) + Math.sin(t * 5 + 1)], [PH(-9), PH(-2)]], o.color, t);
           ctx.restore();
           // mồ hôi
           const sw = (t * 2) % 1;
-          ctx.globalAlpha = 1 - sw; px(ctx, x - sd * 8, Math.round(y - 22 + sw * 8), 1, 2, '#bdf4ff');
+          ctx.globalAlpha = 1 - sw; px(ctx, x - sd * PH(8), Math.round(y - PH(22) + sw * 8), 1, 2, '#bdf4ff');
           ctx.globalAlpha = 1;
           if (q === g.controlled) {
-            const on = Math.floor(t * 8) % 2, ay = y - 40;
+            const on = Math.floor(t * 8) % 2, ay = y - PH(40);
             for (const s2 of [-1, 1]) {   // tam giác chĩa ra 2 bên
               const ax = x + s2 * (on ? 13 : 11);
               for (let i = 0; i < 4; i++) { const h = (3 - i) * 2 + 1; px(ctx, ax + s2 * i - 1, ay - (3 - i) - 1, 3, h + 2, OUT); }
@@ -657,7 +659,7 @@ window.SFC = window.SFC || {};
         case 'carrot': case 'carrotheld': {   // củ cà rốt: nằm trên sân (nhảy nhẹ, vòng sáng cam) hoặc giơ trên đầu người cầm (a = id)
           if (o.off) break;
           const held = o.kind === 'carrotheld', q = held ? byId(g, o.a) : null, OUT = SP().OUT;
-          const cx = x, cy = held && q ? y - 34 * (q.sizeMul || 1) + Math.round(Math.sin(t * 8)) : y - 4 - Math.round(Math.abs(Math.sin(t * 4)) * 3);
+          const cx = x, cy = held && q ? y - PH(34) * (q.sizeMul || 1) + Math.round(Math.sin(t * 8)) : y - 4 - Math.round(Math.abs(Math.sin(t * 4)) * 3);
           ctx.globalAlpha = 1;
           if (!held) {
             ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.3 + 0.15 * Math.sin(t * 8); ellipse(ctx, x, y, 11, 5, '#ff8a3f');
@@ -687,7 +689,7 @@ window.SFC = window.SFC || {};
           for (let i = 0; i < 4; i++) {
             const ph = (t * 6 + i / 4) % 1, ox = -uy * (i - 1.5) * 4, oy = ux * (i - 1.5) * 3;
             ctx.globalAlpha = fade * (1 - ph) * 0.8;
-            px(ctx, Math.round(x - ux * (8 + ph * 14) + ox), Math.round(y - 8 - uy * (8 + ph * 14) + oy), Math.max(1, Math.round(Math.abs(ux) * 5)), Math.max(1, Math.round(Math.abs(uy) * 4)), o.color);
+            px(ctx, Math.round(x - ux * (8 + ph * 14) + ox), Math.round(y - PH(8) - uy * (8 + ph * 14) + oy), Math.max(1, Math.round(Math.abs(ux) * 5)), Math.max(1, Math.round(Math.abs(uy) * 4)), o.color);
           }
           break;
         }
@@ -785,8 +787,8 @@ window.SFC = window.SFC || {};
           const r = 18 - k3 * 8;
           ctx.strokeStyle = on ? o.color : '#ffffff'; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
-          chopsticks(ctx, H.x, H.y, x, Math.round(y - 40 * (q.sizeMul || 1) - 3 * Math.sin(t * 6)), 8, y);
-          if (on) { const hy = Math.round(y - 60); px(ctx, x - 1, hy, 3, 6, SP().OUT); px(ctx, x, hy + 1, 1, 4, '#ff3d5a'); px(ctx, x - 1, hy + 7, 3, 3, SP().OUT); px(ctx, x, hy + 8, 1, 1, '#ff3d5a'); }
+          chopsticks(ctx, H.x, H.y, x, Math.round(y - PH(40) * (q.sizeMul || 1) - 3 * Math.sin(t * 6)), 8, y);
+          if (on) { const hy = Math.round(y - PH(60)); px(ctx, x - 1, hy, 3, 6, SP().OUT); px(ctx, x, hy + 1, 1, 4, '#ff3d5a'); px(ctx, x - 1, hy + 7, 3, 3, SP().OUT); px(ctx, x, hy + 8, 1, 1, '#ff3d5a'); }
           break;
         }
         case 'chopstrike': {   // đũa dừng lại (a = tay): lock giây đứng yên trên chỗ gắp (vòng đỏ đặc nhấp nháy nhanh = SẮP CẮM), rồi strike giây cắm xuống + khép lại;
@@ -805,7 +807,7 @@ window.SFC = window.SFC || {};
           const q = byId(g, o.a);
           if (!q) break;
           const H = chopHand(g, o.b, x);
-          chopsticks(ctx, H.x, H.y, x, Math.round(y - (q.airZ || 0) - 10), 5, null);
+          chopsticks(ctx, H.x, H.y, x, Math.round(y - (q.airZ || 0) - PH(10)), 5, null);
           break;
         }
         case 'inpot':   // người đang ngồi trong nồi mì: không vẽ gì riêng (sprite bị ẩn — hides; prop 'mama' vẽ cái đầu ló lên mặt nước)
@@ -852,7 +854,7 @@ window.SFC = window.SFC || {};
           // + tia sáng toả quanh người đang phồng to (cỡ người: Player.sizeMul, mô phỏng ở matchmods.js K.giants)
           const q = byId(g, o.a);
           if (!q) break;
-          const C = MC('giants'), s = q.sizeMul || 1, sd = Math.cos(q.facing) >= 0 ? 1 : -1, head = y - 26 * s;
+          const C = MC('giants'), s = (q.sizeMul || 1) * PSC(), sd = Math.cos(q.facing) >= 0 ? 1 : -1, head = y - 26 * s;
           ctx.globalAlpha = 1;
           if (el < C.shake) {
             const j = Math.round(Math.sin(t * 60) * 2), hx = x + sd * 8 * s, cy = y - 8 * s + j;
@@ -931,7 +933,7 @@ window.SFC = window.SFC || {};
         case 'flung': {   // người bị lốc hất tung (a = id): vòng cát xoay quanh người đang lơ lửng + cột cát mờ nối xuống đất
           const q = byId(g, o.a);
           if (!q) break;
-          const cy = y - (q.airZ || 0) - 10;
+          const cy = y - (q.airZ || 0) - PH(10);
           ctx.globalAlpha = fade * 0.25;
           for (let hy = y; hy > cy; hy -= 4) px(ctx, Math.round(x + Math.sin(t * 9 + hy * 0.3) * 3) - 1, Math.round(hy), 3, 2, '#d9b77a');
           ctx.globalAlpha = fade * 0.85;
@@ -942,7 +944,7 @@ window.SFC = window.SFC || {};
           break;
         }
         case 'card': {   // thẻ phạt trên đầu (b = 0 vàng, 1 đỏ), giơ lên lắc nhẹ
-          const q = g.players.find((p2) => p2.id === o.a), hy = q ? q.y - 34 * (q.sizeMul || 1) : y - 34, wob = Math.floor(t * 8) % 2;
+          const q = g.players.find((p2) => p2.id === o.a), hy = q ? q.y - PH(34) * (q.sizeMul || 1) : y - PH(34), wob = Math.floor(t * 8) % 2;
           px(ctx, x - 3 + wob, hy - 9, 7, 10, SP().OUT); px(ctx, x - 2 + wob, hy - 8, 5, 8, o.color);
           px(ctx, x - 1 + wob, hy - 7, 1, 2, '#ffffff');
           break;
@@ -951,7 +953,7 @@ window.SFC = window.SFC || {};
                            // trên đầu thanh giáp = các ô khung phim (ô sáng = vạch còn), chữ 1976 nhỏ
           const q = byId(g, o.a);
           if (!q) break;
-          const s2 = q.sizeMul || 1, flick = 0.75 + 0.25 * Math.sin(t * 37) * Math.sin(t * 13);
+          const s2 = q.sizeMul || 1, b2 = s2 * PSC(), flick = 0.75 + 0.25 * Math.sin(t * 37) * Math.sin(t * 13);
           // hợp thể: bóng mờ màu sepia của 2 Legends đã nhập, chập chờn 2 bên người hắn
           const fz = g.effects.V.props.filter((r) => r.kind === 'fused' && r.t > 0).map((r) => byId(g, r.a)).filter(Boolean);
           // hợp thể + đang chạy: TIA CHỚP — 3 tia điện zig-zag kéo dài phía sau theo hướng chạy + tia điện nhỏ nháy quanh người (đổi hình mỗi 1/20 giây)
@@ -963,7 +965,7 @@ window.SFC = window.SFC || {};
               const pts = [], L2 = 34 + k * 10, oy = -8 - k * 9;
               for (let j = 0; j <= 6; j++) {
                 const d = (j / 6) * L2, w = j && j < 6 ? (rr(k * 10 + j) - 0.5) * 9 : 0;
-                pts.push([x - ux * d - uy * w, y + oy * s2 - uy * d * 0.6 + ux * w * 0.5]);
+                pts.push([x - ux * d - uy * w, y + oy * b2 - uy * d * 0.6 + ux * w * 0.5]);
               }
               for (const [lw, col] of [[4, 'rgba(127,231,255,0.45)'], [2, '#fff6a0'], [1, '#ffffff']]) {
                 ctx.strokeStyle = col; ctx.lineWidth = lw;
@@ -971,7 +973,7 @@ window.SFC = window.SFC || {};
               }
             }
             for (let k = 0; k < 2; k++) {
-              const a2 = rr(40 + k) * Math.PI * 2, r0 = 10 * s2, bx = x + Math.cos(a2) * r0, by = y - 14 * s2 + Math.sin(a2) * r0 * 0.8;
+              const a2 = rr(40 + k) * Math.PI * 2, r0 = 10 * b2, bx = x + Math.cos(a2) * r0, by = y - 14 * b2 + Math.sin(a2) * r0 * 0.8;
               ctx.strokeStyle = '#fff6a0'; ctx.lineWidth = 1;
               ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + (rr(50 + k) - 0.5) * 10, by + 4); ctx.lineTo(bx + (rr(60 + k) - 0.5) * 10, by + 8); ctx.stroke();
             }
@@ -986,14 +988,14 @@ window.SFC = window.SFC || {};
           });
           ctx.globalCompositeOperation = 'lighter';
           ctx.globalAlpha = fade * 0.4 * flick; ellipse(ctx, x, y + 1, 15 * s2, 6, o.color);
-          ctx.globalAlpha = fade * 0.18 * flick; ellipse(ctx, x, y - 12 * s2, 12 * s2, 17 * s2, o.color);
+          ctx.globalAlpha = fade * 0.18 * flick; ellipse(ctx, x, y - 12 * b2, 12 * b2, 17 * b2, o.color);
           ctx.globalCompositeOperation = 'source-over';
           ctx.globalAlpha = fade;
           for (let i = 0; i < 6; i++) {   // hạt phim + vết xước
-            const sx = Math.round(x + (((i * 37 + Math.floor(t * 24) * 13) % 31) - 15) * s2), sy = Math.round(y - 4 - ((i * 23 + Math.floor(t * 24) * 7) % 30) * s2);
+            const sx = Math.round(x + (((i * 37 + Math.floor(t * 24) * 13) % 31) - 15) * s2), sy = Math.round(y - 4 - ((i * 23 + Math.floor(t * 24) * 7) % 30) * b2);
             px(ctx, sx, sy, 1, i % 3 ? 1 : 4, i % 2 ? '#f3ead7' : '#5a3a1a');
           }
-          const hp = o.b, n = SFC_CONFIG.stories.mods.leo.hp, bw = 9, hx = x - Math.round((n * bw) / 2), hy = Math.round(y - 44 * s2);
+          const hp = o.b, n = SFC_CONFIG.stories.mods.leo.hp, bw = 9, hx = x - Math.round((n * bw) / 2), hy = Math.round(y - 44 * b2);
           px(ctx, hx - 2, hy - 2, n * bw + 3, 10, SP().OUT);
           for (let i = 0; i < n; i++) {
             const on = i < hp;
@@ -1021,13 +1023,13 @@ window.SFC = window.SFC || {};
         case 'fusetrail': {   // đang bị hút vào King Leo (a = người, b = King Leo): người toả sáng vàng, vệt vàng + hạt sáng chạy về phía King Leo
           const q = byId(g, o.a), L = byId(g, o.b);
           if (!q || !L) break;
-          const qy = y - (q.airZ || 0) - 10, ly = L.y - 14 * (L.sizeMul || 1);
+          const qy = y - (q.airZ || 0) - PH(10), ly = L.y - PH(14) * (L.sizeMul || 1);
           ctx.globalCompositeOperation = 'lighter';
           ctx.globalAlpha = fade * 0.5; ctx.strokeStyle = o.color; ctx.lineWidth = 5;
           ctx.beginPath(); ctx.moveTo(x, qy); ctx.lineTo(L.x, ly); ctx.stroke();
           ctx.globalAlpha = fade * 0.9; ctx.strokeStyle = '#fff6d0'; ctx.lineWidth = 1;
           ctx.beginPath(); ctx.moveTo(x, qy); ctx.lineTo(L.x, ly); ctx.stroke();
-          ctx.globalAlpha = fade * (0.4 + 0.2 * Math.sin(t * 30)); ellipse(ctx, x, qy, 10, 13, o.color);
+          ctx.globalAlpha = fade * (0.4 + 0.2 * Math.sin(t * 30)); ellipse(ctx, x, qy, PH(10), PH(13), o.color);
           ctx.globalCompositeOperation = 'source-over';
           ctx.globalAlpha = fade;
           for (let i = 0; i < 4; i++) {
@@ -1051,7 +1053,7 @@ window.SFC = window.SFC || {};
         }
         case 'stoolheld': {   // ghế giơ trên đầu người cầm (lật ngược, lắc theo bước chạy)
           const q = g.players.find((p) => p.id === o.a), s = q ? q.sizeMul || 1 : 1, bob = q && Math.hypot(q.vx, q.vy) > 20 ? Math.floor(t * 10) % 2 : 0;
-          ctx.save(); ctx.translate(x, y - 30 * s - bob); ctx.scale(1, -1); ctx.translate(-x, -y);
+          ctx.save(); ctx.translate(x, y - PH(30) * s - bob); ctx.scale(1, -1); ctx.translate(-x, -y);
           stool(ctx, x, y + 10, o.color);
           ctx.restore();
           break;
@@ -1096,7 +1098,7 @@ window.SFC = window.SFC || {};
         }
         case 'moped':
           if (el < o.b) break;   // còn đang cảnh báo: xe chưa vào sân
-          moped(ctx, x, y, o.color, o.a > o.y, t);
+          SP().scaled(ctx, x, y, (c) => moped(c, x, y, o.color, o.a > o.y, t));   // người lái cỡ người mới (render.playerScale)
           break;
         case 'vroom': {   // Moped Boys quá giang: quầng vàng dưới chân + vệt tốc độ kéo dài phía sau + khói xả, mờ dần lúc sắp hết
           const q = g.players.find((p) => p.id === o.a);
@@ -1104,7 +1106,7 @@ window.SFC = window.SFC || {};
           const sp = Math.hypot(q.vx, q.vy), run = sp > 20;
           const ux = run ? q.vx / sp : Math.cos(q.facing), uy = run ? q.vy / sp : Math.sin(q.facing);
           const end = Math.min(1, o.t * 2), blink = o.t < 0.6 && Math.floor(t * 14) % 2 ? 0.4 : 1;   // sắp hết: nhấp nháy
-          const s = q.sizeMul || 1;
+          const s = (q.sizeMul || 1) * PSC();   // thân người (khổng lồ x người mới)
           ctx.globalCompositeOperation = 'lighter';
           ctx.globalAlpha = fade * end * blink * (0.55 + 0.2 * Math.sin(t * 20)); ellipse(ctx, x, y + 1, 14, 6, o.color);
           ctx.globalAlpha = fade * end * blink * 0.22; ellipse(ctx, x, y - 12 * s, 10 * s, 14 * s, o.color);   // quầng vàng quanh người
@@ -1170,13 +1172,14 @@ window.SFC = window.SFC || {};
           const kk = Math.min(1, el / o.b), off = Math.floor(t * 30) % 6, blink = kk > 0.7 && Math.floor(t * 16) % 2;
           ctx.strokeStyle = o.color; ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.lineDashOffset = -off;
           ctx.globalAlpha = fade * 0.85;
-          for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(o.x + sd * 12, o.y); ctx.lineTo(x, y - 10); ctx.stroke(); }
+          const gy = y - PH(9);   // ngực người mới
+          for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(o.x + sd * 12, o.y); ctx.lineTo(x, gy - 1); ctx.stroke(); }
           ctx.setLineDash([]); ctx.lineDashOffset = 0;
           const r = Math.round(18 - 11 * kk);
           ctx.globalAlpha = fade * (blink ? 0.5 : 1); ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.ellipse(x, y - 9, r, r * 0.8, 0, 0, Math.PI * 2); ctx.stroke();
-          for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) px(ctx, Math.round(x + ax * (r + 2)) - (ay ? 0 : 1), Math.round(y - 9 + ay * (r * 0.8 + 2)) - (ax ? 0 : 1), ay ? 1 : 3, ay ? 3 : 1, o.color);
-          px(ctx, x, y - 10, 1, 1, '#ffffff');
+          ctx.beginPath(); ctx.ellipse(x, gy, r, r * 0.8, 0, 0, Math.PI * 2); ctx.stroke();
+          for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) px(ctx, Math.round(x + ax * (r + 2)) - (ay ? 0 : 1), Math.round(gy + ay * (r * 0.8 + 2)) - (ax ? 0 : 1), ay ? 1 : 3, ay ? 3 : 1, o.color);
+          px(ctx, x, gy - 1, 1, 1, '#ffffff');
           break;
         }
         case 'owlbolt': {   // đạn mắt cú: cầu sáng đỏ lõi trắng bay từ mắt cú đuổi theo người (b giây, vị trí = hàm thời gian -> máy khách vẽ giống)
@@ -1222,22 +1225,22 @@ window.SFC = window.SFC || {};
           const q = g.players.find((pp) => pp.id === o.a);
           if (!q) break;
           const s2 = q.sizeMul || 1, grow = Math.min(1, el / 0.3), end = o.t < 0.4;
-          const sh = end ? (Math.floor(t * 30) % 2 ? 1 : -1) : 0, H = Math.round(30 * s2), OUT = SP().OUT;
+          const sh = end ? (Math.floor(t * 30) % 2 ? 1 : -1) : 0, H = Math.round(PH(30) * s2), OUT = SP().OUT;
           // bệ đá dưới chân
           ellipse(ctx, x + sh, y + 1, 10, 4, OUT); ellipse(ctx, x + sh, y + 1, 9, 3, '#6e737d'); px(ctx, x - 6 + sh, y - 1, 12, 1, '#9aa0a8');
           const line = Math.round(y + 2 - (H + 2) * grow);
           if (grow < 1) {   // phần chưa hoá đá: sprite màu như thường
             ctx.save();
-            ctx.beginPath(); ctx.rect(x - 14, y - H - 12, 28, line - (y - H - 12)); ctx.clip();
+            ctx.beginPath(); ctx.rect(x - PH(14), y - H - 12, PH(28), line - (y - H - 12)); ctx.clip();
             SP().drawPlayer(ctx, Object.assign({}, q, { state: 'normal', vx: 0, vy: 0, atkType: null }), g, 0.999);
             ctx.restore();
           }
           ctx.save();
-          ctx.beginPath(); ctx.rect(x - 14, line, 28, y + 4 - line); ctx.clip();
+          ctx.beginPath(); ctx.rect(x - PH(14), line, PH(28), y + 4 - line); ctx.clip();
           ctx.translate(sh, 0);
           if (s2 !== 1) { ctx.translate(x, y); ctx.scale(s2, s2); ctx.translate(-x, -y); }
           ctx.globalAlpha = 1;
-          ctx.drawImage(stoneSprite(g, q), x - 24, y - 42, 48, 48);
+          ctx.drawImage(stoneSprite(g, q), x - 32, y - 56, 64, 64);
           ctx.restore();
           ctx.globalAlpha = fade;
           // vân đá + vết nứt trên tượng (chỉ phần đã hoá)
@@ -1415,17 +1418,17 @@ window.SFC = window.SFC || {};
           if (!q) break;
           const lv = o.b, cols = ['#ffe14f', '#ffb02e', '#ff7a1f', '#ff3d5a'], OUT = SP().OUT, blink = lv >= 4 && Math.floor(t * 10) % 2;
           ctx.globalCompositeOperation = 'lighter';
-          ctx.globalAlpha = fade * (0.12 + 0.08 * lv); ellipse(ctx, x, y - 10, 8 + lv, 12 + lv, cols[lv - 1]);
+          ctx.globalAlpha = fade * (0.12 + 0.08 * lv); ellipse(ctx, x, y - PH(10), PH(8) + lv, PH(12) + lv, cols[lv - 1]);
           ctx.globalCompositeOperation = 'source-over';
           ctx.globalAlpha = fade;
-          const bx = x - 13, by = Math.round(y - 47 - (q.airZ || 0));
+          const bx = x - 13, by = Math.round(y - PH(47) - (q.airZ || 0));
           px(ctx, bx - 1, by - 1, 28, 7, OUT);
           for (let i = 0; i < 4; i++) px(ctx, bx + i * 6 + 1, by, 5, 5, i < lv ? (blink ? '#ffffff' : cols[i]) : '#3a2a30');
           if (lv >= 3) for (const [dx, sd] of [[-4, 1], [0, 2], [4, 3]]) flame(ctx, x + dx, y - 6, Math.round((lv - 2) * 3 * (0.6 + 0.4 * Math.abs(Math.sin(t * 13 + sd)))), t, sd);   // lửa le lói dưới chân
           for (let i = 0; i < lv; i++) {   // hơi nóng lượn sóng bốc lên
             const p2 = (t * 1.2 + i / lv) % 1;
             ctx.globalAlpha = fade * (1 - p2) * 0.7;
-            px(ctx, Math.round(x - 6 + i * 4 + Math.sin(t * 9 + i * 2) * 2), Math.round(y - 30 - p2 * 12), 1, 2, cols[lv - 1]);
+            px(ctx, Math.round(x - 6 + i * 4 + Math.sin(t * 9 + i * 2) * 2), Math.round(y - PH(30) - p2 * 12), 1, 2, cols[lv - 1]);
           }
           ctx.globalAlpha = fade;
           break;
@@ -1459,7 +1462,7 @@ window.SFC = window.SFC || {};
           ctx.beginPath(); ctx.ellipse(x, y + 1, 11, 5, 0, 0, Math.PI * 2); ctx.stroke();
           ctx.strokeStyle = o.color; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.ellipse(x, y + 1, 11, 5, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * prog); ctx.stroke();
-          if (on) { px(ctx, x - 2, y - 44, 4, 8, '#140c16'); px(ctx, x - 1, y - 43, 2, 5, o.color); px(ctx, x - 2, y - 35, 4, 4, '#140c16'); px(ctx, x - 1, y - 34, 2, 2, o.color); }
+          if (on) { const ay = y - PH(44); px(ctx, x - 2, ay, 4, 8, '#140c16'); px(ctx, x - 1, ay + 1, 2, 5, o.color); px(ctx, x - 2, ay + 9, 4, 4, '#140c16'); px(ctx, x - 1, ay + 10, 2, 2, o.color); }
           break;
         }
       }

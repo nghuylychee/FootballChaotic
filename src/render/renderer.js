@@ -238,10 +238,10 @@ window.SFC = window.SFC || {};
           const cel = p.celId && (g.state === 'goal' || g.state === 'ended') && !(p.airZ > 0);
           // King Kong / đứng trên tảng đá / con gà: vật thể Tuyệt kỹ tự vẽ nhân vật (render/vfx.js), bỏ sprite thật
           const swap = SFC.VFX.hides(g, p);
-          // cỡ người (render.playerScale, sân to 2026-11-07): drawPlayer tự chọn Sprite v3 (cỡ thật) hoặc v2 phóng. Ăn mừng / vật thể thay hình
-          // không qua drawPlayer -> vẽ vào đệm 1x rồi phóng điểm gần nhất quanh bàn chân (px không đều) tới khi v3 có các tư thế này
-          // ăn mừng: Sprite v3 vẽ cả động tác ở cỡ thật (player3/celebrate.js) -> chỉ vật thể thay hình còn phải phóng
-          const PS = swap || (cel && !(SFC.PlayerSprite3 && SFC.PlayerSprite3.celDraw)) ? C.playerScale || 1 : 1, rx = Math.round(p.x), ry = Math.round(p.y);
+          // cỡ người (render.playerScale, sân to 2026-11-07): drawPlayer tự chọn Sprite v3 (cỡ thật) hoặc v2 phóng. Ăn mừng: Sprite v3 vẽ cả
+          // động tác ở cỡ thật (player3/celebrate.js); không có v3 thì vẽ vào đệm 1x rồi phóng điểm gần nhất quanh bàn chân.
+          // Vật thể thay hình (VFX.hides) tự vẽ ở vfx.js / modsdraw.js theo cỡ người mới (Sprites.scaled / ph), ở đây không vẽ gì
+          const PS = cel && !(SFC.PlayerSprite3 && SFC.PlayerSprite3.celDraw) ? C.playerScale || 1 : 1, rx = Math.round(p.x), ry = Math.round(p.y);
           const sc = PS !== 1 ? this.playerBuf(rx, ry) : ctx;
           SFC.PlayerSprite.bufScaled = PS !== 1;   // drawPlayer bên trong (ăn mừng) không phóng lần 2
           if (s !== 1) { sc.save(); sc.translate(p.x, p.y); sc.scale(s, s); sc.translate(-p.x, -p.y); }
@@ -251,7 +251,7 @@ window.SFC = window.SFC || {};
           if (shiver) { sc.save(); sc.translate(shiver, 0); }
           // GOAT PATH: kỹ thuật LEGEND đang diễn -> biến đổi quanh sprite (render/legenddraw.js)
           const lx = !swap && !cel && SFC.LegendDraw ? SFC.LegendDraw.begin(sc, g, p) : false;
-          let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(sc, p, g) : p.airZ > 0 ? this.airborne(sc, p, g) : drawPlayer(sc, p, g, ghost ? 0.3 : faint(p));
+          let hy = swap ? p.y - SP().ph(30) : cel ? SFC.CelebrateDraw.draw(sc, p, g) : p.airZ > 0 ? this.airborne(sc, p, g) : drawPlayer(sc, p, g, ghost ? 0.3 : faint(p));
           sc.globalAlpha = 1;
           if (lx) { sc.restore(); SFC.LegendDraw.after(sc, g, p); }
           if (shiver) sc.restore();
@@ -462,7 +462,7 @@ window.SFC = window.SFC || {};
         if (lsh) Sprite.flyShadow(ctx, Math.round(p.x), Math.round(p.y), lsh);
         else ellipse(ctx, Math.round(p.x), Math.round(p.y) + 1, 6 * k, 2.5 * k, 'rgba(0,0,0,0.38)');
       }
-      const cy = p.y - p.airZ - 8;
+      const mid = SP().ph(8), cy = p.y - p.airZ - mid;   // giữa thân người mới (render.playerScale)
       const sp = Math.hypot(p.kbx || 0, p.kby || 0);
       if (sp > 80 && (!fs || fs.phase === 'tumble')) {
         const n = U.norm(p.kbx, p.kby);
@@ -480,9 +480,9 @@ window.SFC = window.SFC || {};
       // Comet One-Two: móc xe đạp — lộn ngược ra sau (đầu chúc xuống lúc đá), xoay tiếp cho tròn vòng khi rơi
       else if (p.atkType === 'bicycle') ctx.rotate(-(Math.cos(p.facing) >= 0 ? 1 : -1) * Math.min(2, (p.atkT || 0) / 0.42) * Math.PI);
       // fly: drawPlayer vẽ bản sao này nên phải mang sẵn pha bay (không thì nó tự theo dõi trên bản sao)
-      drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, keeper: false, fly: fs }), g, 0.999);
+      drawPlayer(ctx, Object.assign({}, p, { x: 0, y: mid, keeper: false, fly: fs }), g, 0.999);
       ctx.restore();
-      return Math.round(cy) - 8;
+      return Math.round(cy) - mid;
     },
 
     cosmetics(ctx, g) {
