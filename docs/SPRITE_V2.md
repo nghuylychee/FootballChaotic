@@ -120,7 +120,7 @@ Classic script như game (không module): mỗi file là 1 IIFE, lấy hàm dùn
 | `power.js` | sút mạnh: bảng `POWER`, nhịp `POWER_T`, khung bước nặng `HEAVY` |
 | `torso.js` | thân chuyển động cho động tác mới (`torsoPart`, `kickTwist`) |
 | `sprint.js` | bước riêng khi nhìn ngang / chéo: chạy nước rút (`SPRINT`) + bước nặng (`GAITS`, `gaitLegs`, `gaitArms`) |
-| `fly.js` | bị đá bay: theo dõi lúc chạm đất ở phía vẽ (`flyState`), góc xoay (`flyRot`), tư thế lộn / nằm / dậy (`flyPose`, `flyArms`, `flyLegs`) |
+| `fly.js` | bị đá bay: theo dõi lúc chạm đất ở phía vẽ (`flyState`), góc xoay (`flyRot`), tư thế lộn / nằm (`flyPose`, `flyArms`, `flyLegs`), đứng dậy (`flyGetUp`) |
 | `hit.js` | bị đấm: theo dõi lúc bị đánh ở phía vẽ (`hitState`), tay văng ra rồi lắc tắt dần (`hitSwing`, `hitArms`) |
 | `celebrate.js` | ăn mừng: tay theo luật độ dài (`celArmSet`, `celArms`, chỉnh riêng `CEL`), chân quỳ, điểm neo đạo cụ (`celAnchors`), vẽ cả động tác (`celDraw`) |
 | `keeper.js` | thủ môn đổ người: cú nhảy bằng khung vẽ riêng (`DIVE_FRAMES`, `diveFrameOf`, `diveFrameDraw`, `diveFacing`, `diveLift`), chân khuỵu lúc đứng dậy (`diveLegs`) |
@@ -151,7 +151,7 @@ Classic script như game (không module): mỗi file là 1 IIFE, lấy hàm dùn
 | Sút, vô-lê | Duyệt 2026-11-01 (chạm bóng -> theo đà -> về; vô-lê giữ bật nhẹ lúc theo đà) |
 | Đánh đầu | Duyệt 2026-11-01 (khuỵu -> bật -> ngả sau -> gật -> rơi -> tiếp đất) |
 | Thủ môn đổ người | Duyệt 2026-11-01 (2 tay vươn lên, găng kẹp mặt, đầu rụt, chân khép; cất người / đứng dậy chuyển dần) |
-| Bị đá bay | Duyệt 2026-11-01 (lộn vòng tay chân văng -> nằm sõng soài -> lăn dậy -> đứng choáng) |
+| Bị đá bay | Duyệt 2026-11-01 (lộn vòng tay chân văng -> nằm sõng soài -> ngồi dậy, quỳ, khuỵu -> đứng choáng; đứng dậy làm lại 2026-11-07) |
 | Ăn mừng | Bản chuyển thẳng. Cần điểm tay mới trong `celebrate-draw.js`; `moves.mjs` vá tạm vai (±6, −1) và tâm đầu (−9) |
 | Tóc, mũ, phụ kiện mặt, giày khác mặc định, aura | Chưa làm |
 
@@ -207,10 +207,10 @@ Thứ tự đề xuất: A (động tác) và D1 (renderer) làm song song đư�
    - `diveArm` cũ trong `ported.js` đã xoá (user 2026-11-01). Trường `lift` / `sweep` của Hard attack trong `attackPose` cũng xoá; `leg` chỉ còn là cờ "đang đá".
 5. ~~**Bị đá bay**~~ Xong, duyệt 2026-11-01 (`player/fly.js`).
    - Game: Hard attack hất `launch` 190 px/s lên + `knockback` 380 px/s ngang, `airGravity` 620, `airDamp` 1.4 (dưới đất `knockbackDamp` 7), rơi nhanh hơn 140 px/s thì nảy 30%; bay ~0.6 s, cao ~29 px, trượt ~180 px. State `stun` suốt; choáng 1.6 s chỉ trôi khi đã chạm đất. `Renderer.airborne` hôm nay xoay nguyên hình đứng `dir * anim * 13` rồi về đứng thẳng ngay lúc chạm đất.
-   - Pha: lộn (đang bay: tay chân văng ra, mắt X, há miệng; vẫn xoay như game) · chạm đất (góc xoay về ±90° trong 0.08 s, đầu theo hướng bay; cú nảy nằm luôn) · nằm 0.4 s (tay chân dạng như sao biển) · dậy 0.2 s (xoay về 0 qua thế khuỵu) · đứng choáng như thường.
-   - Lúc chạm đất không có trong trạng thái trận -> `flyState` theo dõi ở phía vẽ (WeakMap theo cầu thủ; `p.anim` chạy ở mọi máy, `airZ` có trong snapshot) nên máy khách online thấy như máy chủ. `Renderer.airborne` vẽ bản sao cầu thủ nên phải truyền `fly: PlayerSprite.flyState(p)` vào bản sao và xoay theo `PlayerSprite.flyRot` (bản mẫu `airborne2` trong `pilot.mjs`); nằm / dậy dưới đất thì `drawPlayer` tự xoay.
-   - Chân lúc văng / nằm: 2 mũi giày chĩa ra 2 phía (user: không cùng 1 hướng); lúc dậy mũi theo hướng mặt.
-   - Bóng đổ lúc nằm (user: "nằm sâu hơn"): elip 30 x 12 px dưới giữa thân nằm (lệch 4 px về phía đầu, cao hơn chân 6 px), cả lúc nảy; lúc dậy thu về bóng đứng (`flyShadowSpec`, `flyShadow`; Renderer.airborne dùng khi đã chạm đất).
+   - Pha: lộn (đang bay: tay chân văng ra, mắt X, há miệng; vẫn xoay như game) · chạm đất (góc xoay về ±90° trong 0.08 s, đầu theo hướng bay; cú nảy nằm luôn) · nằm (tay chân dạng như sao biển; lúc chạm đất choáng còn dưới 0.42 + `FLY.minLie` 0.3 s thì không nằm, đứng choáng luôn: Sonic Boom, Freight Train, Bulldozer) tới khi choáng còn 0.42 s (user 2026-11-07; Hard attack: ~1.2 s) · dậy 0.42 s cuối của choáng, đứng hẳn đúng lúc hết choáng, không xoay (user 2026-11-07: xoay về 0 trông chỉ là xoay hình): ngồi bệt (chân ngồi của ăn mừng, tay sau chống đất, tay trước gác gối) 0.14 s -> nhổm 0.1 -> quỳ 0.1 -> khuỵu 0.08 (3 tư thế đứng dậy của thủ môn, `gkGeom`), nhìn theo hướng bay (`flyGetUp`, `FLY.getUp`). Choáng còn lại: máy chạy trận đọc `p.stateT`; khách online không có trường này trong snapshot nên đoán theo `combat.hard.stun` từ lúc chạm đất (Da Thép / LEGEND đổi độ dài choáng thì khách đứng dậy lệch) · đứng choáng như thường. Bò của thủ môn (`bFours`) đã thử: nhìn như vẫy tay.
+   - Lúc chạm đất không có trong trạng thái trận -> `flyState` theo dõi ở phía vẽ (WeakMap theo cầu thủ; `p.anim` chạy ở mọi máy, `airZ` có trong snapshot) nên máy khách online thấy như máy chủ. `Renderer.airborne` vẽ bản sao cầu thủ nên phải truyền `fly: PlayerSprite.flyState(p)` vào bản sao và xoay theo `PlayerSprite.flyRot` (bản mẫu `airborne2` trong `pilot.mjs`); nằm dưới đất thì `drawPlayer` tự xoay; lúc dậy `drawPlayer` thay `o` bằng tư thế của `flyGetUp`.
+   - Chân lúc văng / nằm: 2 mũi giày chĩa ra 2 phía (user: không cùng 1 hướng).
+   - Bóng đổ lúc nằm (user: "nằm sâu hơn"): elip 30 x 12 px dưới giữa thân nằm (lệch 4 px về phía đầu, cao hơn chân 6 px), cả lúc nảy; lúc dậy là bóng của tư thế (`flyShadowSpec`, `flyShadow`; Renderer.airborne dùng khi đã chạm đất).
    - Trang xem: bảng `fly` ô rộng, vật lý như game, 30 khung / s.
 6. ~~**Ăn mừng**~~ Xong, duyệt hết 2026-11-01 (`player/celebrate.js`, giữ trong `check.cjs`; levitate bản "kiểu Gojo" đã thử rồi bỏ, giữ bản xếp bằng). (20 động tác + `_win2` / `_lose` / `_draw`): điểm tay mới trong `celebrate-draw.js` theo luật độ dài; đạo cụ (điện thoại, tiền, pháo hoa…) bám tay / đầu / miệng mới; chân xếp bằng / ngồi / xoạc / quỳ.
    - Đang làm theo đợt 5 động tác (`player/celebrate.js`, bảng `cel` trong `pilot.mjs`: nhìn xuống như xem trước túi đồ, 3.2 s, 30 khung / s). Đợt 1: fistpump, airplane, kneeslide, skypoint, shush.

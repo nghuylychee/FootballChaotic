@@ -42,7 +42,7 @@ Sân to hơn (`pitchScale`) thì khung trận zoom out, nên người trên màn
 
 ## Đợt 5 (2026-11-07)
 
-- **Trạng thái** (`body.js`): bị đấm / nhảy Ground Slam giơ 2 tay (`liftArms`, nhịp `hitState` / `hitLift` của v2, vai nhô 3 ô), choáng (mắt gạch, đầu lắc, 3 sao quay trên đầu cao hơn), bị đá bay (tư thế `flyPose` của v2: chân văng / nằm / khuỵu, tay, há miệng; `drawPlayer` xoay quanh giữa thân mới, bóng nằm x `playerScale`), băng chấn thương GOAT PATH (cổ tay, đùi, cổ chân, ngón chân theo bên của cầu thủ).
+- **Trạng thái** (`body.js`): bị đấm / nhảy Ground Slam giơ 2 tay (`liftArms`, nhịp `hitState` / `hitLift` của v2, vai nhô 3 ô), choáng (mắt gạch, đầu lắc, 3 sao quay trên đầu cao hơn), bị đá bay (tư thế `flyPose` của v2: chân văng / nằm, tay, há miệng; đứng dậy = ngồi bệt + nhổm / quỳ / khuỵu của thủ môn, `flyGetUp`; `drawPlayer` xoay quanh giữa thân mới, bóng nằm x `playerScale`), băng chấn thương GOAT PATH (cổ tay, đùi, cổ chân, ngón chân theo bên của cầu thủ).
 - Mặt v3 có biểu cảm như v2: `stun` / `closed` / `happy` / `up` + há miệng.
 - Chữ popup (`VFX.pops`) nâng thêm 24 x (playerScale − 1) px; chân dung HUD 22 x 22 hạ đầu xuống (y = h + 9); ô icon đồ "mặt" cắt từ hàng 10.
 - **Ăn mừng** (`player3/celebrate.js`): tư thế v2 (`celPose`, `celArmSet`, `CEL_FX`) vẽ bằng v3: tay thẳng / gập (đường tay x 1,3, vai v3, nhô vai 3 ô, ngón trỏ 3 ô), chân quỳ / trượt gối chéo / ngồi bệt / xếp bằng / moonwalk / xoạc, hạ người / đầu x 1,3. `celDraw` riêng (CelebrateDraw.draw gọi khi có v3): hông cách chân 10 px, độ nhấc x 1,3, điểm neo đạo cụ (`celAnchors`: bàn tay, khuỷu, đầu, miệng) theo người mới; đạo cụ vẽ bằng code của game giữ cỡ cũ. Renderer không còn phóng ăn mừng (chỉ vật thể thay hình). Trang duyệt mục 7.

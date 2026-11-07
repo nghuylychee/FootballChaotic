@@ -89,9 +89,15 @@ window.SFC = window.SFC || {};
     const x = Math.round(p.x), y = Math.round(p.y);
     const jx = snapPx((atk && atk.jx) || 0);   // đứng lấy đà sút mạnh: người run (nguyên ô)
     // bị đá bay (fly.js): pha theo dõi ở phía vẽ. Renderer.airborne truyền sẵn p.fly (nó vẽ bản sao của cầu thủ). Nằm / lăn dậy dưới đất:
-    // tự xoay quanh giữa thân (bóng đổ vẽ riêng, không xoay)
-    const fs = ghost ? null : p.fly !== undefined ? p.fly : p.state === 'stun' ? flyState(p) : null;
+    // tự xoay quanh giữa thân (bóng đổ vẽ riêng, không xoay). Gọi flyState mỗi khung (cả lúc không choáng) để nó xoá lần bị đá bay trước khi hết choáng;
+    // chỉ gọi lúc choáng thì lần choáng sau (cả cú đấm thường, không bay) lấy lại lúc chạm đất cũ -> nằm ra đất
+    const fs = ghost ? null : p.fly !== undefined ? p.fly : flyState(p);
     o.fly = fs && fs.phase ? fs : null;
+    // đứng dậy sau khi nằm: không xoay, ngồi dậy rồi theo tư thế đứng dậy của thủ môn (fly.js flyGetUp), vẫn choáng (mắt gạch, sao)
+    if (o.fly && o.fly.phase === 'rise' && !(p.airZ > 0)) {
+      const u = Sprite.flyGetUp(fs);
+      Object.assign(o, { fly: null, facing: u.facing, cp: u.cp || null, atk: u.atk || null, gk: u.gk || null, moving: false });
+    }
     if (o.fly && !p.flyInner && !(p.airZ > 0)) {
       // người cao hơn (render.playerScale, Sprite v3): bóng nằm to theo, xoay quanh giữa thân mới (8 px -> 8 x k)
       const rot = flyRot(fs, p.anim || 0), K = (SFC_CONFIG.game.render && SFC_CONFIG.game.render.playerScale) || 1, cy = Math.round(8 * K);

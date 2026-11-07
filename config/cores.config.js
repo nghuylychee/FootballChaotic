@@ -492,7 +492,7 @@ SFC_CONFIG.cores = {
     moon_stomp: {
       name: 'Moon Stomp', icon: '🌙', tags: ['launcher'], role: 'ult', rarity: 'mythic',
       desc: 'Stomp the ground and everyone nearby floats helplessly.',
-      params: { telegraph: 0.55, radius: 80, float: 2, lift: 60, knock: 520, launch: 260, stun: 1.2, volley: 1.1 },
+      params: { telegraph: 0.55, radius: 80, float: 2, lift: 60, knock: 520, launch: 260, stun: 1.6, volley: 1.1 },
       // ★★ FULL MOON STOMP: vòng trăng đi theo người dùng suốt float giây, đối thủ / bóng lọt vào vòng cũng bị nhấc lên
       evolve: [{ radius: 80, float: 3.2, knock: 600, follow: 1 }],
       awaken: { name: 'Full Moon Stomp', desc: 'Your moon zone follows you, lifting everyone nearby.' },
@@ -530,9 +530,9 @@ SFC_CONFIG.cores = {
     titan: {
       name: 'Titan', icon: '🗿', tags: ['iron'], role: 'ult', rarity: 'mythic',
       desc: 'Grow giant: stun-proof, untackleable, bowling everyone over.',
-      params: { time: 5, scale: 2, knock: 360, launch: 220, stun: 1.0, shot: 1.35, slow: 0.85 },   // slow: chạy chậm hơn khi khổng lồ
+      params: { time: 5, scale: 2, knock: 360, launch: 220, stun: 1.6, shot: 1.35, slow: 0.85 },   // slow: chạy chậm hơn khi khổng lồ
       // ★★ MEGA TITAN: đòn mạnh = túm đối thủ trong tầm grab px (× cỡ khổng lồ × 0.75) rồi ném như bóng bowling (throw px/s), hồi grabCd giây
-      evolve: [{ time: 6, scale: 2.4, knock: 420, shot: 1.45, grab: 40, throw: 440, throwStun: 0.9, grabCd: 2 }],
+      evolve: [{ time: 6, scale: 2.4, knock: 420, shot: 1.45, grab: 40, throw: 440, throwStun: 1.4, grabCd: 2 }],
       awaken: { name: 'Mega Titan', desc: 'Grow giant, grab opponents and bowl them over.' },
       scale: { time: 'pow', knock: 'pow', launch: 'pow', stun: 'pow', shot: 'mul' },
     },
@@ -549,7 +549,7 @@ SFC_CONFIG.cores = {
     rising_dragon: {
       name: 'Rising Dragon', icon: '🐉', tags: ['brawler', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Uppercut them skyward, then dropkick them into the wall.',
-      params: { range: 150, rush: 520, launch: 330, delay: 0.42, knock: 460, stun: 1.6 },
+      params: { range: 150, rush: 520, launch: 330, delay: 0.42, knock: 460, stun: 1.8 },
       scale: { knock: 'pow', stun: 'pow' },
     },
     // 🏃 + 🦵 — Hurricane Kick: xoay thành lốc xoáy đi chậm (điều khiển được) time giây; ai chạm bị hút lên rồi văng sang bên,
@@ -557,7 +557,7 @@ SFC_CONFIG.cores = {
     hurricane_kick: {
       name: 'Hurricane Kick', icon: '🌪', tags: ['runner', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Spin into a tornado that swallows and spits out everyone.',
-      params: { time: 2, speed: 125, radius: 18, launch: 280, knock: 260, stun: 1.0, ballSpeed: 300 },
+      params: { time: 2, speed: 125, radius: 18, launch: 280, knock: 260, stun: 1.6, ballSpeed: 300 },
       scale: { time: 'pow', launch: 'pow', stun: 'pow' },
     },
     // 🌀 + 🎯 — Smoke Bomb (kiểu Akali, user chốt 2026-10-17): ném bom khói rộng radius px (hình elip, cao x squash) tồn tại time giây.
@@ -582,7 +582,7 @@ SFC_CONFIG.cores = {
     iron_hammer: {
       name: 'Iron Hammer', icon: '🔨', tags: ['brawler', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true, noBall: true,
       desc: 'Spin a giant hammer, then slam a launching quake.',
-      params: { spin: 0.95, turns: 2, length: 270, width: 22, speed: 560, knock: 90, launch: 400, stun: 1.5, ballUp: 320, ballSpeed: 140 },
+      params: { spin: 0.95, turns: 2, length: 270, width: 22, speed: 560, knock: 90, launch: 400, stun: 1.8, ballUp: 320, ballSpeed: 140 },
       scale: { length: 'pow', launch: 'pow', stun: 'pow' },
     },
     // 🏃 + 🌀 — Phase Step (user chốt 2026-10-17): time giây, có blinks lượt dịch chuyển (pip trên đầu, không hồi chiêu):
@@ -596,7 +596,7 @@ SFC_CONFIG.cores = {
     slingshot: {
       name: 'Slingshot', icon: '🪃', tags: ['brawler', 'playmaker'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
       desc: 'Stretch your arms and slingshot a teammate at the goal.',
-      params: { grab: 0.22, distance: 200, flight: 0.38, knock: 200, launch: 120, stun: 0.6 },
+      params: { grab: 0.22, distance: 200, flight: 0.38, knock: 200, launch: 120, stun: 1.4 },
       scale: { distance: 'pow', knock: 'pow', stun: 'pow' },
     },
     // 🏃 + 🎼 — Thunderstorm: gọi bolts tia sét, tia nào cũng nhắm 1 đối thủ (đón đầu đúng chỗ họ sẽ tới sau telegraph giây, lệch tối đa jitter px),
@@ -613,7 +613,7 @@ SFC_CONFIG.cores = {
     bullet_time: {
       name: 'Bullet Time', icon: '⚡', tags: ['runner', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Time slows; tag opponents and a sniper in the stands takes them out.',
-      params: { slow: 0.12, time: 2, speed: 260, touch: 16, aim: 0.55, gap: 0.3, bullet: 1600, hitR: 12, knock: 260, launch: 120, stun: 1.2 },
+      params: { slow: 0.12, time: 2, speed: 260, touch: 16, aim: 0.55, gap: 0.3, bullet: 1600, hitR: 12, knock: 260, launch: 120, stun: 1.5 },
       scale: { time: 'pow', stun: 'pow' },
     },
     // 🏃 + 🥊 — Rocket Punch: gồng windup giây (vạch thẳng ngang sân; bị đấm lúc gồng là huỷ), nắm đấm phóng ra như tên lửa bay speed px/s:
@@ -621,7 +621,7 @@ SFC_CONFIG.cores = {
     rocket_punch: {
       name: 'Rocket Punch', icon: '🚀', tags: ['runner', 'brawler'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Fire your fist like a rocket across the pitch.',
-      params: { windup: 0.4, speed: 520, width: 12, knock: 560, launch: 80, stun: 1.4, ballSpeed: 430 },
+      params: { windup: 0.4, speed: 520, width: 12, knock: 560, launch: 80, stun: 1.6, ballSpeed: 430 },
       scale: { knock: 'pow', stun: 'pow' },
     },
     // 🏃 + 🛡 — Monster Truck: gọi xe tải quái vật, người dùng lái (đi thẳng, rẽ theo phím với tốc độ rẽ turn) time giây, cán bẹp mọi đối thủ chạm phải.
@@ -629,7 +629,7 @@ SFC_CONFIG.cores = {
     monster_truck: {
       name: 'Monster Truck', icon: '🛻', tags: ['runner', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Summon a monster truck and run over everyone.',
-      params: { time: 2.6, speed: 210, turn: 2.6, radius: 13, knock: 320, launch: 160, stun: 1.1 },
+      params: { time: 2.6, speed: 210, turn: 2.6, radius: 13, knock: 320, launch: 160, stun: 1.5 },
       scale: { time: 'pow', knock: 'pow', stun: 'pow' },
     },
     // 🎼 + 🦵 — Mega Boomerang (user chốt 2026-10-17): ném boomerang khổng lồ bay xoắn ốc laps vòng khắp sân trong time giây
@@ -637,7 +637,7 @@ SFC_CONFIG.cores = {
     mega_boomerang: {
       name: 'Mega Boomerang', icon: '🪃', tags: ['playmaker', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Hurl a giant boomerang that sweeps everyone, friend or foe.',
-      params: { time: 6, laps: 3, spiral: 0.55, radius: 18, knock: 220, launch: 220, stun: 1.0, every: 0.7 },
+      params: { time: 6, laps: 3, spiral: 0.55, radius: 18, knock: 220, launch: 220, stun: 1.5, every: 0.7 },
       scale: { stun: 'pow' },
     },
     // 🎼 + 🌀 — Puppet Master (user chốt 2026-10-17): bắn dây fly giây tới tối đa targets đối thủ trong range px (né Z được) → nối dây link giây
@@ -655,7 +655,7 @@ SFC_CONFIG.cores = {
     rage: {
       name: 'Rage', icon: '🦍', tags: ['striker', 'brawler'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Go full ape: stomp out quake rings that hit everyone.',
-      params: { roar: 0.55, stomps: 3, gap: 0.8, radius: 190, speed: 220, width: 14, knock: 110, launch: 300, stun: 1.2 },
+      params: { roar: 0.55, stomps: 3, gap: 0.8, radius: 190, speed: 220, width: 14, knock: 110, launch: 300, stun: 1.6 },
       scale: { radius: 'pow', stun: 'pow' },
     },
     // 🎯 + 🦵 — Cannonball (đợt 4: bay vòng cung như đạn pháo): sút bổng cao tới apex px, rơi xuống trước khung land px; nổ (hố + hất tung
@@ -663,7 +663,7 @@ SFC_CONFIG.cores = {
     cannonball: {
       name: 'Cannonball', icon: '💣', tags: ['striker', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
       desc: 'Lob a bomb in a high arc that explodes on landing.',
-      params: { windup: 0.25, apex: 95, land: 80, bounce: 0.5, radius: 52, knock: 300, launch: 260, stun: 1.3 },
+      params: { windup: 0.25, apex: 95, land: 80, bounce: 0.5, radius: 52, knock: 300, launch: 260, stun: 1.6 },
       scale: { radius: 'pow', knock: 'pow', launch: 'pow', stun: 'pow' },
     },
     // 🎯 + 🛡 — Boulder Rider (id cũ boulder_shot; user chốt 2026-10-17): chỉ dùng khi KHÔNG cầm bóng (noBall). Gọi tảng đá (bán kính r0)
@@ -673,7 +673,7 @@ SFC_CONFIG.cores = {
     boulder_shot: {
       name: 'Boulder Rider', icon: '🪨', tags: ['striker', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true, noBall: true,
       desc: 'Hit the buttons to grow a boulder, then ride it over everyone.',
-      params: { r0: 5, press: 1.2, build: 6, misses: 3, fall: 1.5, aiHit: 0.6, time: 4, speed: 125, turn: 2.6, knock: 260, launch: 140, stun: 1.2 },
+      params: { r0: 5, press: 1.2, build: 6, misses: 3, fall: 1.5, aiHit: 0.6, time: 4, speed: 125, turn: 2.6, knock: 260, launch: 140, stun: 1.5 },
       scale: { time: 'pow', stun: 'pow' },
     },
     // 🥊 + 🌀 — Ghost Hands: vũng bóng tím hiện dưới chân tối đa targets đối thủ (báo trước telegraph giây), bàn tay ma trồi lên
@@ -692,7 +692,7 @@ SFC_CONFIG.cores = {
       // làm lại user 2026-11-01: lặn vào cổng, cổng mở sau lưng từng đối thủ (tối đa targets người trong range px, báo trước telegraph giây),
       // bạn chui ra sau lưng họ: QTE qte giây, bấm đúng nút hiện trên đầu -> cú đá (reach px). Đối thủ lướt Z để né, hoặc đấm trúng bạn
       // (đang đứng sau lưng) là ngắt cả chiêu. AI: trúng aiHit
-      params: { range: 260, targets: 3, telegraph: 0.55, qte: 0.9, behind: 16, reach: 30, knock: 320, launch: 200, stun: 1.0, aiHit: 0.75 },
+      params: { range: 260, targets: 3, telegraph: 0.55, qte: 0.9, behind: 16, reach: 30, knock: 320, launch: 200, stun: 1.5, aiHit: 0.75 },
       scale: { range: 'pow', knock: 'pow', stun: 'pow' },
     },
     // 🦵 + 🛡 — Earth Spike: vết nứt chạy thẳng ra trước (báo trước telegraph giây) -> hàng cột đá trồi lên hất tung người đứng trên;
@@ -700,7 +700,7 @@ SFC_CONFIG.cores = {
     earth_spike: {
       name: 'Earth Spike', icon: '🗻', tags: ['launcher', 'iron'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Three times: kick up a rock wall that launches opponents.',
-      params: { charges: 3, window: 8, telegraph: 0.4, pillars: 6, step: 18, start: 24, life: 3, radius: 8, launch: 260, knock: 120, stun: 1.0 },   // charges lần trong window giây (bấm X lại)
+      params: { charges: 3, window: 8, telegraph: 0.4, pillars: 6, step: 18, start: 24, life: 3, radius: 8, launch: 260, knock: 120, stun: 1.4 },   // charges lần trong window giây (bấm X lại)
       scale: { life: 'pow', launch: 'pow', stun: 'pow' },
     },
     // 🌀 + 🛡 — Medusa Gaze: mắt rắn loé sáng (báo trước telegraph giây), mọi đối thủ trong hình nón phía trước (range px, cone độ) hoá đá time giây:
@@ -741,13 +741,13 @@ SFC_CONFIG.cores = {
     jack_in_box: {
       name: 'Lucky Knuckles', icon: '🎰', tags: ['chaos', 'brawler'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Your next five punches each roll a different trick punch.',
-      params: { window: 10, roll: 0.7, spring: 64, chain: 80, radius: 34, knock: 330, launch: 140, upLaunch: 320, stun: 1.0, shock: 1.6 },
+      params: { window: 10, roll: 0.7, spring: 64, chain: 80, radius: 34, knock: 330, launch: 140, upLaunch: 320, stun: 1.4, shock: 1.6 },
       scale: { knock: 'pow', stun: 'pow', shock: 'pow' },
     },
     pinball_kick: {
       name: 'Pinball Kick', icon: '🕹', tags: ['chaos', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true,
       desc: 'Kick an opponent into a pinball that bowls others over.',
-      params: { range: 150, rush: 520, speed: 420, bounces: 6, time: 2.4, knock: 220, launch: 160, stun: 1.0 },   // bounces: nảy tường tối đa
+      params: { range: 150, rush: 520, speed: 420, bounces: 6, time: 2.4, knock: 220, launch: 160, stun: 1.4 },   // bounces: nảy tường tối đa
       scale: { speed: 'pow', knock: 'pow', stun: 'pow' },
     },
     // 🎲 + 🌀 — Panic Ghosts (id cũ panic_ball, làm lại user 2026-11-01): gọi ghosts hồn ma bay đuổi theo đối thủ (speed px/s, mỗi con 1 người)

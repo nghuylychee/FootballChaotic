@@ -80,12 +80,21 @@ for (const [type, D] of [['shoot', SFC_CONFIG.game.kick.poseTime], ['volley', SF
 {
   const num = (v) => crypto.createHash('sha1').update(JSON.stringify(v, (k, x) => (typeof x === 'number' ? +x.toFixed(4) : x))).digest('hex').slice(0, 16);
   for (const [name, facing] of [['right', 0], ['left', Math.PI], ['down', Math.PI / 2], ['up', -Math.PI / 2]])
-    for (const [phase, ks] of [['tumble', [0]], ['sprawl', [0, 0.1, 0.5, 1]], ['rise', [0, 0.25, 0.5, 0.75, 1]]])
+    for (const [phase, ks] of [['tumble', [0]], ['sprawl', [0, 0.1, 0.5, 1]]])
       for (const k of ks) for (const dir of [1, -1]) {
-        const fs = { phase, k, t: phase === 'sprawl' ? k * Sprite.FLY.sprawl : Sprite.FLY.sprawl + k * Sprite.FLY.rise, dir, rot0: 2.3 * dir };
+        const fs = { phase, t: k * 0.4, dir, rot0: 2.3 * dir };
         cases[`fly/${name}/${phase}/${k}/${dir}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ facing, stun: true, fly: fs, anim: 0.4 }, LOOK)));
         cases[`flyx/${name}/${phase}/${k}/${dir}`] = num([Sprite.flyRot(fs, 0.4), Sprite.flyShadowSpec(fs)]);
       }
+  // đứng dậy (duyệt 2026-11-07): ngồi dậy -> nhổm -> quỳ -> khuỵu, không xoay (flyGetUp, drawPlayer đổi o như thế này)
+  let e = 0;
+  for (const [stage, d] of Sprite.FLY.getUp) {
+    for (const dir of [1, -1]) {
+      const u = Sprite.flyGetUp({ phase: 'rise', r: e + d / 2, dir });
+      cases[`flyup/${stage}/${dir}`] = record((c) => Sprite.draw(c, 25, 40, Object.assign({ stun: true, anim: 0.4 }, LOOK, u)));
+    }
+    e += d;
+  }
 }
 
 // trạng thái (duyệt 2026-11-01): choáng (lắc đầu + sao), găng thủ môn, chấn thương, bóng mờ / mồi Chạy Giả (tô áo), đứng + 4 khung chạy, 6 hướng.

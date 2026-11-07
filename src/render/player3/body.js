@@ -362,10 +362,9 @@ window.SFC = window.SFC || {};
     } else if (cp && cp.legs === 'split') {
       A.splitLegs(ctx, X, Yf, pal);
     } else if (fp) {
-      // văng: 2 chân dạng, chân phải hình nhấc cao 1 hàng · nằm: dạng rộng · dậy: khuỵu, mũi theo hướng mặt (2 mũi chĩa 2 phía lúc trên không)
+      // văng: 2 chân dạng, chân phải hình nhấc cao 1 hàng · nằm: dạng rộng (2 mũi chĩa 2 phía)
       if (fp.legs === 'split') { stamp(ctx, X, Yf, at(LEG.L, -6), pal, m); stamp(ctx, X, Yf, at(LEG.R, 4, -1), pal, m); }
-      else if (fp.legs === 'wide') { stamp(ctx, X, Yf, at(LEG.L, -6), pal, m); stamp(ctx, X, Yf, at(LEG.R, 4), pal, m); }
-      else { stamp(ctx, X, Yf, at(leg, -7), pal); stamp(ctx, X, Yf, at(leg, 3), pal); }
+      else { stamp(ctx, X, Yf, at(LEG.L, -6), pal, m); stamp(ctx, X, Yf, at(LEG.R, 4), pal, m); }
     } else if (gk && gk.legs === 'kneel') {
       /* quỳ: vẽ theo thân đã hạ (dưới) */
     } else if (gk && gk.legs === 'wide') {
