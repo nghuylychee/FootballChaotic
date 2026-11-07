@@ -722,6 +722,9 @@ canvas.avatar.cel, canvas.avatar.big.cel { width: 128px; height: 128px; }   /* x
 .pt-card.ai { opacity: 0.8; }
 .pt-card.ai .pt-name { background: var(--muted); }
 .pt-card.ai:hover { opacity: 1; }
+/* người mất kết nối, phòng còn giữ chỗ (AI đá thay tới khi quay lại): phòng chờ PRIVATE MATCH / Story / GOAT PATH */
+.net-off { opacity: 0.55; }
+.net-off canvas.avatar { filter: grayscale(1); }
 .pt-join { display: none; font-style: normal; font-family: var(--px); font-size: 5px; color: var(--gold); text-shadow: 1px 1px 0 var(--ink); }
 /* 1 dòng chữ: BOT / AI · vị trí (ô trống), nhãn AI (đồng đội AI); khi chọn / rê chuột thì đổi thành việc sẽ làm (JOIN / CHANGE) — không hiện cả 2 */
 .pt-card.sel .pt-join, .pt-card:hover .pt-join { display: block; }

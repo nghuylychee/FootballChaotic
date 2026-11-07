@@ -121,16 +121,18 @@ async function overWebSocket() {
     A.ws.close();
     const drop = await B.next((m) => m.t === 'drop');
     assert.strictEqual(drop.o, joined.id, 'ownership moves to the next player');
-    // chủ phòng mới đưa cả phòng về phòng chờ
+    // chủ phòng mới đưa cả phòng về phòng chờ (A mất kết nối, không bye: phòng vẫn giữ chỗ chờ A vào lại, đánh dấu a = 1)
     B.send({ t: 'toLobby' });
-    const back = await C.next((m) => m.t === 'lobby' && m.m.length === 2);
+    const back = await C.next((m) => m.t === 'lobby' && m.m.length === 3 && m.m.some((x) => x.a === 1));
     assert.strictEqual(back.o, joined.id);
+    assert.strictEqual(back.m.filter((x) => x.a === 1).length, 1, 'the dropped creator is held as away');
     const health = await (await fetch(`http://localhost:${port}/healthz`)).json();
     assert.ok(health.ok && health.rooms === 1 && health.matches === 0);
     B.ws.close();
     C.ws.close();
   } finally {
-    proc.kill('SIGTERM');
+    // chờ máy chủ tắt hẳn (phòng còn giữ chỗ người mất kết nối -> lúc tắt còn ghi log "closed (shutdown)")
+    await new Promise((res) => { proc.once('exit', res); proc.kill('SIGTERM'); setTimeout(res, 3000); });
   }
 }
 

@@ -5,7 +5,8 @@
  *    co giữa trận: giữ lại, về phòng chờ mới gửi
  * 2. Phòng run: seat{r} đưa chủ phòng về vị trí trong run · ra của khách -> chuyển cho chủ phòng (kèm id + mã hồ sơ) · Skill game
  *    chạy được trên máy chủ (drills.js nạp ở máy chủ) · chỉ số / GEAR / chấn thương của ô đội hình qua lọc
- * 3. Chủ phòng mất kết nối giữa trận vẫn là chủ phòng, kết nối lại (id mới) vẫn là chủ phòng · chủ phòng rời = đóng phòng (hook close)
+ * 3. Chủ phòng mất kết nối giữa trận vẫn là chủ phòng, kết nối lại (id mới) vẫn là chủ phòng · mất kết nối ở phòng chờ: giữ phòng,
+ *    quá hạn = đóng phòng (hook close)
  * 4. SLALOM GATES / COIN RUSH của khách: máy chạy trận (me = -1) vẫn đếm cổng / xu cho người đang đá
  * 5. ghế dự bị: đổi vị trí khi phòng đủ 3 người · vào trận thì người trên ghế về ô trống
  */
@@ -131,7 +132,9 @@ function runRoom() {
   r.gone('a');
   assert.strictEqual(r.closed.length, 0, 'a guest leaving keeps the room');
   r.gone('L2');
-  assert.strictEqual(r.closed.length, 1, 'lead leaving closes the room');
+  assert.strictEqual(r.closed.length, 0, 'lead losing connection in the lobby: room held for a rejoin');
+  r.expire(Date.now() + (NET.reconnectGrace + 1) * 1000);
+  assert.strictEqual(r.closed.length, 1, 'lead never back -> room closes');
   console.log('3. lead away / back / leaving: OK');
 }
 

@@ -2,7 +2,7 @@
  *  1. Mất kết nối -> người khác nhận drop{away}; vào lại bằng tok -> start{resume} đúng slot, mọi người nhận back, snapshot chạy tiếp
  *  2. tok sai / hết hạn -> expired
  *  3. Quá hạn không quay lại -> rời hẳn (trận 2 người: về phòng chờ)
- *  4. Mọi kết nối cùng rớt: phòng vẫn giữ trong hạn, 1 người vào lại được
+ *  4. Mọi kết nối cùng rớt: phòng vẫn giữ trong hạn, 1 người vào lại được; người cuối mất kết nối ở phòng chờ: phòng giữ tới hết hạn rồi xoá
  *  5. bye (tự rời phòng) -> không giữ chỗ
  * node server/test/reconnect-test.js
  */
@@ -121,6 +121,8 @@ async function match() {
   assert.strictEqual(rooms.get(code).room.lobby.members.length, 1, 'the one who never came back is removed');
   await A2.close();
   await sleep(100);
+  assert.ok(rooms.has(code), 'last player dropped in the lobby: place still held');
+  await sleep(3300);
   assert.ok(!rooms.has(code), 'room deleted once empty and nobody is away');
   console.log('4. everyone dropped: OK (room held, one rejoins, other expires, room cleaned up)');
 

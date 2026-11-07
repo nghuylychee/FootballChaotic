@@ -23,6 +23,10 @@ window.SFC = window.SFC || {};
     waitingInfo: 'Waiting for room info...',
     joined: (name) => `${name} joined!`,
     left: (name) => `${name} left the room.`,
+    away: (name) => `${name} lost connection. AI plays for them until they're back.`,
+    back: (name) => `${name} is back!`,
+    reconnecting: 'Connection lost. Reconnecting...',
+    reconnected: 'Reconnected!',
   };
   // closed{reason} -> chữ báo (left = tự rời: không báo gì)
   const CANT_CONNECT = 'Could not connect to online play. Check your connection and try again.';
@@ -93,6 +97,7 @@ window.SFC = window.SFC || {};
 
     /* ================= MỜI BẠN BÈ ================= */
     inviteCode: null,    // lời mời đã nhận ở ngoài game, chờ lúc vào được (Session 'invite')
+    ticket: undefined,   // vé vào lại phòng cũ lúc mở game (Session.ticket(); undefined = chưa đọc, null = đã dùng / không có)
     instant: false,      // mở game để chơi cùng nhóm ngay (Platform.instant, CrazyGames): rảnh ở menu là tạo phòng riêng
     // đang trên đường vào phòng của bạn bè / tạo phòng cho nhóm: người chơi mới bỏ qua PROLOGUE lần này (main.js, menu.js submitName)
     get joining() { return !!this.inviteCode || this.instant; },
@@ -113,11 +118,24 @@ window.SFC = window.SFC || {};
     // lượt sau (Session đã idle, kết nối cũ đã đóng) mới vào. Không có lời mời mà đang instant: tạo phòng riêng cho nhóm
     tryInvite() {
       const code = this.inviteCode;
-      if ((!code && !this.instant) || !SFC.Menu) return;
+      if ((!code && !this.instant && this.ticket === null) || !SFC.Menu) return;
       const a = app(), M = Menu(), on = O();
       if (!a || !M.el) return;
       if (a.screen !== 'menu' || M.page === 'name' || !SFC.Profile.hasName || (SFC.LangPick && SFC.LangPick.active)) return;
       if (on.status === 'busy') return;
+      // tắt / văng game khi đang ở phòng: mở lại trong hạn -> tự vào lại đúng chỗ cũ (vé của Session, đọc 1 lần). Lời mời mới thắng
+      if (this.ticket === undefined) this.ticket = on.ticket();
+      const tk = this.ticket;
+      this.ticket = null;
+      if (tk && !code && !on.active && !M.search) {
+        this.instant = false;
+        M.joinFrom = tk.kind;
+        M.go('join');
+        M.code = tk.code;
+        on.joinRoom(tk.code, { tok: tk.tok });
+        return;
+      }
+      if (!code && !this.instant) return;
       if (!code) {
         if (on.active || M.search) { this.instant = false; return; }   // đã tự vào phòng / tìm trận: thôi
         this.instant = false;
@@ -241,6 +259,8 @@ window.SFC = window.SFC || {};
     // phòng Story: báo ở trang đang mở (phòng chờ / màn cup), không đổi trang · phòng run: màn map
     const page = O().story ? (Menu().page === 'cup' || Menu().page === 'slobby' ? Menu().page : storyPage()) : O().run ? 'runmap' : 'lobby';
     if (kind === 'joined') { if (app().screen === 'menu') Menu().go(page, TEXT.joined(name)); SFC.Audio.pick(); }
+    else if (kind === 'back') { if (app().screen === 'menu') Menu().setMsg(TEXT.back(name)); }
+    else if (kind === 'away') { if (app().screen === 'menu') Menu().setMsg(TEXT.away(name), true); }
     else if (app().screen === 'menu') Menu().go(page, TEXT.left(name), true);
   });
   // nhảy slot -> vị trí character theo slot (menu Main Path cũng nhớ vị trí này)
@@ -271,7 +291,12 @@ window.SFC = window.SFC || {};
   });
   on('toLobby', () => { OnlineUI.overlay = false; app().toMenu(O().story ? storyPage() : O().run ? 'runmap' : 'lobby'); });
   on('getReady', () => banner('GET READY', 'Waiting for other players...', GREY, 1.4));
-  on('reconnecting', () => banner('CONNECTION LOST', 'Reconnecting...', RED, 2));
+  // mất kết nối: trong trận = banner · ở menu (phòng chờ / map co-op) = dòng báo (đứng tới khi vào lại được)
+  on('reconnecting', () => {
+    if (app().screen === 'menu') Menu().setMsg(TEXT.reconnecting, true, true);
+    else banner('CONNECTION LOST', 'Reconnecting...', RED, 2);
+  });
+  on('reconnected', () => { if (app().screen === 'menu') Menu().setMsg(TEXT.reconnected); });
   on('player', ({ kind, name }) => {
     if (O().ranked) return;   // trận xếp hạng: như trận với người chơi giả, không báo ai rời / vào lại (AI đá thay)
     name = name || 'A PLAYER';
@@ -282,8 +307,15 @@ window.SFC = window.SFC || {};
   // chủ phòng đổi khi đang ở màn kết quả: hiện / ẩn nút BACK TO LOBBY
   on('owner', () => { const g = O().game; if (g && g.state === 'ended') SFC.UI.renderEndItems(); });
 
-  on('closed', ({ reason, from, ranked }) => {
+  on('closed', ({ reason, from, ranked, quiet }) => {
     OnlineUI.overlay = false;
+    // vé vào lại lúc mở game không dùng được (phòng đã đóng / quá hạn): im lặng về tab cũ
+    if (quiet) {
+      if (SFC.RunUI) { SFC.RunUI.roomRun = false; SFC.RunUI.joining = false; if (SFC.Run.mirrorOn) SFC.Run.leaveMirror(); }
+      if (SFC.CupUI && SFC.CupUI.roomStory) { SFC.CupUI.roomStory = null; SFC.Cup.abort(); SFC.CupUI.reset(); }
+      app().toMenu(Menu().joinFrom === 'run' ? 'run' : Menu().joinFrom === 'story' ? 'story' : 'home');
+      return;
+    }
     if (ranked) {
       // tự rời (NEXT MATCH / LOBBY / FORFEIT: nơi gọi tự chuyển trang) · đã hết trận: ở lại màn kết quả
       const g = app().game;

@@ -482,7 +482,8 @@ window.SFC = window.SFC || {};
         const i = items.indexOf(it), m = O.memberAt(it.slot), sel = i === this.lsel ? 'sel' : '';
         if (!m) return `<button class="sl-seat empty ${sel}" data-li="${i}"><span class="sl-role">${esc(it.role)}</span><b>+</b><em>${esc(_t('AI'))}</em><i>${esc(_t('MOVE HERE'))}</i></button>`;
         const you = m.id === meId, tag = you ? _t('YOU') : m.id === L.owner ? _t('HOST') : '';
-        return `<button class="sl-seat ${you ? 'you' : ''} ${sel}" data-li="${i}"><span class="sl-role">${esc(it.role)}</span>
+        const off = m.away ? ` net-off" title="${esc(_t("Lost connection · AI plays for them until they're back"))}` : '';   // mất kết nối: phòng giữ chỗ, AI đá thay
+        return `<button class="sl-seat ${you ? 'you' : ''} ${sel}${off}" data-li="${i}"><span class="sl-role">${esc(it.role)}</span>
           <canvas class="avatar big" data-mmlook="${esc(JSON.stringify(m.pf.look))}" data-mmaway="0"></canvas>
           <b>${esc(m.pf.name)}</b><em>${tag ? esc(tag) : esc(_t('LV {n}', { n: m.pf.level }))}</em></button>`;
       }).join('');

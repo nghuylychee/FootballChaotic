@@ -1805,5 +1805,7 @@ SFC.I18n.add({
     /* ===== GOAT PATH: LEGEND TRIAL + nhận LEGEND (UX màn hình 2026-11; Claude — chưa duyệt) ===== */
     'Fail? No harm done.': '¿Fallas? No pasa nada.',
     'AI teammates use his combo on their own.': 'Tus compañeros IA usan su combo por su cuenta.',
+    /* ===== Online: người mất kết nối ở phòng chờ (2026-11-07; Claude — chưa duyệt) ===== */
+    "Lost connection · AI plays for them until they're back": 'Sin conexión · La IA juega en su lugar hasta que vuelva',
   },
 });

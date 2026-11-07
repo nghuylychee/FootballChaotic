@@ -7,6 +7,8 @@
  *  4. Phòng co-op FOOTBALL STORY: máy chủ ping thấp -> phòng trên máy chủ, người tạo giữ cup (isLead), khách nhận bản sao, cut scene
  *     chờ cả phòng (csr), vào trận, về phòng chờ với vòng mới, người tạo rời = phòng đóng · ping cao hơn coopMaxPing -> tự làm host
  *  Cả 2: B rớt mạng giữa trận -> tự kết nối lại, lấy lại slot, A thấy RECONNECTED
+ *  Phòng máy chủ riêng: B rớt mạng ở phòng chờ -> phòng giữ chỗ, tự vào lại · B "văng game" (máy mới, vé vào lại trong Storage) ->
+ *     vào lại đúng chỗ ở phòng chờ và giữa trận (start{resume}), phòng không có thêm người
  *  Mọi thông báo / banner người chơi thấy không được lộ cách kết nối (máy chủ riêng / làm host / Steam / PeerJS)
  *  Mã online (shared/net/ + src/net/) không được gọi tới giao diện (Menu / UI / Audio / Intro / Input): UI sửa thoải mái không ảnh hưởng online
  *  Máy giả chạy đúng như game: main.js -> SFC.OnlineUI.tick / view (src/ui/online.js) -> SFC.Session
@@ -89,7 +91,11 @@ function machine(name, serverUrl, urls) {
   ctx.document = { addEventListener() {}, createElement: () => ({ getContext: () => null, style: {} }), getElementById: () => null, querySelector: () => null, body: {}, documentElement: { lang: 'en' } };
   ctx.addEventListener = () => {};
   const log = { pages: [], msgs: [], entered: 0, banners: [] };
-  ctx.SFC = { Audio: { pick() {} }, Pad: null, Storage: { getJSON: (k, d) => d, setJSON() {}, remove() {} } };
+  const disk = {};   // SFC.Storage giả của máy này (vé vào lại phòng: Session.saveTicket)
+  ctx.SFC = { Audio: { pick() {} }, Pad: null, Storage: {
+    get: (k) => (k in disk ? disk[k] : null), set: (k, v) => { disk[k] = String(v); }, remove: (k) => { delete disk[k]; },
+    getJSON: (k, d) => { try { return k in disk ? JSON.parse(disk[k]) : d; } catch (e) { return d; } }, setJSON: (k, v) => { disk[k] = JSON.stringify(v); },
+  } };
   for (const f of FILES) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
   const SFC = ctx.SFC;
   ctx.SFC_CONFIG.net.server.url = serverUrl;
@@ -203,6 +209,54 @@ async function serverRoom(url) {
   await dropAndRejoin(A, B, () => B.SFC.NetServer.ws.close());   // rớt WebSocket
   A.O.backToLobby();
   await until(() => A.O.status === 'lobby' && B.O.status === 'lobby', 5000, 'back to lobby');
+  // rớt mạng ở phòng chờ: phòng giữ chỗ (A thấy BOB mất kết nối), B tự vào lại cùng slot
+  const bSlot = B.O.mine.slot;
+  B.SFC.NetServer.ws.close();
+  await until(() => B.O.rejoining, 3000, 'B reconnecting from the lobby');
+  assert.strictEqual(B.O.status, 'lobby', 'lobby stays on screen while reconnecting');
+  await until(() => A.O.lobby.members.some((m) => m.away), 3000, 'A sees B away');
+  assert.ok(A.log.msgs.some((x) => /BOB lost connection/.test(x)), 'A told BOB lost connection');
+  await until(() => !B.O.rejoining && B.log.msgs.includes('Reconnected!'), 8000, 'B back in the lobby');
+  await until(() => A.O.lobby.members.length === 2 && !A.O.lobby.members.some((m) => m.away), 3000, 'A sees B back');
+  assert.strictEqual(B.O.mine.slot, bSlot, 'same slot after reconnecting in the lobby');
+  assert.ok(A.log.msgs.some((x) => /BOB is back/.test(x)), 'A told BOB is back');
+  // văng game ở phòng chờ: máy mới mở lại game, đọc vé (mã phòng + tok) -> vào lại đúng chỗ, không thành người thứ 3
+  const crash = (m) => { const t = m.SFC.Storage.getJSON('sfc_rejoin_v1', null); m.SFC.NetServer.on({}); m.SFC.NetServer.ws.close(); return t; };
+  await until(() => B.SFC.Storage.getJSON('sfc_rejoin_v1', null), 3000, 'B keeps a rejoin ticket');
+  const t1 = crash(B);
+  assert.ok(t1 && t1.code === A.O.code && t1.tok === B.O.tok, 'ticket = room code + token');
+  const B2 = machine('BOB', url);
+  B2.SFC.Storage.setJSON('sfc_rejoin_v1', t1);
+  const tk = B2.O.ticket();
+  assert.ok(tk && tk.code === t1.code && !B2.SFC.Storage.get('sfc_rejoin_v1'), 'ticket read once');
+  B2.O.joinRoom(tk.code, { tok: tk.tok });
+  await until(() => B2.O.status === 'lobby' && B2.O.mine && !B2.O.rejoining, 8000, 'B2 back in the room');
+  await until(() => A.O.lobby.members.length === 2 && !A.O.lobby.members.some((m) => m.away), 3000, 'room has 2 members');
+  assert.strictEqual(B2.O.mine.slot, bSlot, 'reopened game takes the old slot');
+  // văng game giữa trận: mở lại -> vào thẳng trận đang đá (start{resume}), đúng ghế
+  A.O.startMatch();
+  await until(() => A.O.status === 'playing' && B2.O.status === 'playing', 5000, 'match with the reopened game');
+  A.O.introDone(); B2.O.introDone();
+  const seat2 = B2.O.game.me;
+  await play(400, A, B2);
+  const t2 = crash(B2);
+  await until(() => A.O.game && A.O.game.seats[seat2].gone, 3000, 'AI took the seat');
+  const B3 = machine('BOB', url);
+  B3.SFC.Storage.setJSON('sfc_rejoin_v1', t2);
+  const tk3 = B3.O.ticket();
+  B3.O.joinRoom(tk3.code, { tok: tk3.tok });
+  await until(() => B3.log.entered === 1 && B3.O.status === 'playing', 8000, 'reopened game resumes the match');
+  assert.strictEqual(B3.O.game.me, seat2, 'same seat after reopening the game');
+  await play(600, A, B3);
+  assert.ok(!A.O.game.seats[seat2].gone, 'seat back under player control');
+  A.O.backToLobby();
+  await until(() => A.O.status === 'lobby' && B3.O.status === 'lobby', 5000, 'back to lobby after the resumed match');
+  B3.O.leave();
+  assert.ok(!B3.SFC.Storage.get('sfc_rejoin_v1'), 'leaving on purpose drops the ticket');
+  await until(() => A.O.lobby.members.length === 1, 3000, 'B3 left');
+  B.O.reset(); B2.O.reset();   // máy "văng" cũ: dừng hẳn
+  B.O.joinRoom(A.O.code);
+  await until(() => B.O.lobby.members.length === 2 && A.O.lobby.members.length === 2, 5000, 'B joins again');
   // phòng bị máy chủ đóng giữa trận (bye) -> về menu ngay, không thử kết nối lại
   A.O.startMatch();
   await until(() => A.O.status === 'playing' && B.O.status === 'playing', 5000, 'second match');
@@ -210,7 +264,7 @@ async function serverRoom(url) {
   B.O.guestData({ t: 'bye' });
   assert.ok(!B.O.rejoining && B.O.status === 'idle', 'room closed by the server: no reconnect attempt');
   A.O.leave();
-  console.log('server room: OK (7-char code, join, owner start, snapshots, drop + auto rejoin, back to lobby)');
+  console.log('server room: OK (7-char code, join, owner start, snapshots, drop + auto rejoin, back to lobby, lobby drop, reopen the game)');
 }
 
 // phòng co-op FOOTBALL STORY trên máy chủ riêng (ping thấp): người tạo phòng giữ cup (isLead), khách nhận bản sao, cut scene + csr,

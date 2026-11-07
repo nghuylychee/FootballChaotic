@@ -13,11 +13,12 @@
  * Sự kiện (Session.on(tên, fn(data))):
  *   busy {action: 'create'|'join', code?}   bắt đầu tạo / vào phòng      · waiting {action, code?}  vẫn đang chờ kết nối (huỷ được: cancel())
  *   lobby {entered?, pending?}              vào / phòng chờ đổi (pending: chưa nhận danh sách phòng)
- *   notice {kind: 'joined'|'left', name}    người khác vào / rời phòng chờ (máy làm host)
+ *   notice {kind: 'joined'|'left'|'away'|'back', name}  người khác vào / rời / mất kết nối / kết nối lại ở phòng chờ
  *   role {role}                             vị trí của mình đổi theo slot (game cập nhật lựa chọn, profile() trả vị trí mới)
  *   start {game, resume}                    vào trận (resume: kết nối lại giữa trận) · toLobby  hết trận, về phòng chờ
  *   player {kind: 'away'|'left'|'back', name}  người khác mất kết nối / rời trận / quay lại · owner  chủ phòng đổi
- *   reconnecting                            mình mất kết nối giữa trận, đang thử vào lại · getReady  xem xong giới thiệu, chờ người khác
+ *   reconnecting {lobby}                    mình mất kết nối (giữa trận / ở phòng chờ: lobby), đang thử vào lại · getReady  xem xong giới thiệu, chờ người khác
+ *   reconnected                             vào lại phòng chờ được (giữa trận: start{resume})
  *   closed {reason, from: 'create'|'join'|'room', ranked}  hết phiên online. reason: left · closed · lost · cancelled · not-found ·
  *                                           full · started · version · busy · expired · rejoin-failed · unsupported · in-use · connect
  *   cup {state}                             phòng FOOTBALL STORY: trạng thái cup của host vừa tới (khách; null = chưa / hết cup)
@@ -49,7 +50,9 @@
  *   host  -> khách: you{tok} (mã kết nối lại) · lobby{m:[{id,pf,slot}],o,g} (g = sân: chỉ số Area, -1 = ngẫu nhiên) · start{opts} · s{f,s,fx,sfx,ev} (snapshot) ·
  *                   drop{seat,o,away?} (1 người rời / mất kết nối) · back{seat,o} (người đó kết nối lại) ·
  *                   full · started · expired · version · bye
- *   Kết nối lại (net.reconnectGrace): mất kết nối giữa trận -> giữ trận, thử vào lại phòng mỗi 2 giây với tok (room.js)
+ *   Kết nối lại (net.reconnectGrace): mất kết nối (giữa trận / ở phòng chờ) -> giữ trận, thử vào lại phòng mỗi 2 giây với
+ *                   hello{tok, end?} (end = đã thấy hết trận) -> rj (vào lại được) rồi lobby / start{resume} (room.js).
+ *                   Mở lại game (tắt / văng game giữa chừng): vé vào lại (mã phòng + tok, khoá REJOIN_KEY) -> ticket() / joinRoom(code, {tok})
  *   pf = hồ sơ trận công khai — xem SFC.Profile.matchPublic(): tên, level, ngoại hình, Core đã mở,
  *        vị trí + chỉ số / OVR của character, đồng đội đang chọn (Mates.spec)
  *   id = 'host' | id khách (peer id / steamId / id máy chủ cấp) · o = id chủ phòng ·
@@ -68,6 +71,8 @@ window.SFC = window.SFC || {};
   const Slots = () => SFC.Room.Slots;
   const ROLES = () => SFC_CONFIG.game.roles;
   const clampInt = (v, a, b) => Math.max(a, Math.min(b, Math.round(+v) || 0));
+  const REJOIN_KEY = 'sfc_rejoin_v1';   // vé vào lại phòng sau khi mở lại game (saveTicket)
+  const TICKET_EVERY = 10;               // giây: nhịp cập nhật vé (lúc ở phòng / trong trận)
 
   const listeners = {};
 
@@ -156,9 +161,11 @@ window.SFC = window.SFC || {};
       this.use(NC().p2p()).host().then((c) => this.enterAsHost(c)).catch((e) => this.fail(e, 'create'));
     },
 
-    joinRoom(code) {
+    // opts.tok: vé vào lại (ticket(), mở lại game) -> hello kèm tok, lấy lại chỗ cũ (không vào được: closed{quiet})
+    joinRoom(code, opts0 = {}) {
       if (this.status === 'busy') return;
       this.status = 'busy';
+      if (typeof opts0.tok === 'string') { this.tok = opts0.tok; this.quiet = true; }
       this.emit('busy', { action: 'join', code });
       const server = NC().serverOn() && NC().isServerCode(code);
       const opts = server ? { wait: true, onWait: () => this.emit('waiting', { action: 'join', code }) } : {};
@@ -236,6 +243,8 @@ window.SFC = window.SFC || {};
     keepAlive() {
       clearInterval(this.ka);
       if (this.onServer && N().server.keepAlive > 0) this.ka = setInterval(() => { if (this.onServer && this.status !== 'idle') Net().send({ t: 'ka' }); }, N().server.keepAlive * 1000);
+      clearInterval(this.expT);
+      this.expT = setInterval(() => { if (!this.rejoining) this.saveTicket(); }, TICKET_EVERY * 1000);   // khách: vé vào lại còn mới
       this.pinger();
     },
 
@@ -281,6 +290,9 @@ window.SFC = window.SFC || {};
       this.lobby = this.room.lobby;
       this.status = 'lobby';
       this.pinger();
+      // người vắng mặt quá hạn kết nối lại ở phòng chờ (trong trận: clock gọi mỗi bước)
+      clearInterval(this.expT);
+      this.expT = setInterval(() => { if (this.room && this.status === 'lobby') this.room.expire(Date.now()); }, 1000);
       this.emit('lobby', { entered: true });
     },
 
@@ -292,7 +304,7 @@ window.SFC = window.SFC || {};
       this.lobby = { members: [], owner: null, ground: -1 };
       this.roleSent = null;
       this.status = 'lobby';
-      Net().send({ t: 'hello', v: N().protocol, pf: this.myPf() });
+      Net().send(Object.assign({ t: 'hello', v: N().protocol, pf: this.myPf() }, this.tok ? { tok: this.tok } : {}));
       this.emit('lobby', { entered: true, pending: true });
     },
 
@@ -305,8 +317,8 @@ window.SFC = window.SFC || {};
         pings: (p) => { this.pings = p; this.emit('pings'); },
         joined: (name) => this.emit('notice', { kind: 'joined', name }),
         left: (name) => this.emit('notice', { kind: 'left', name }),
-        dropped: (name, away) => this.emit('player', { kind: away ? 'away' : 'left', name }),
-        back: (name) => this.emit('player', { kind: 'back', name }),
+        dropped: (name, away) => (this.status === 'lobby' ? this.emit('notice', { kind: away ? 'away' : 'left', name }) : this.emit('player', { kind: away ? 'away' : 'left', name })),
+        back: (name) => (this.status === 'lobby' ? this.emit('notice', { kind: 'back', name }) : this.emit('player', { kind: 'back', name })),
         toLobby: () => { this.status = 'lobby'; this.game = null; this.emit('toLobby'); },
         start: (game) => { this.game = game; this.status = 'playing'; this.pings = {}; SFC.NetStats.matchStart(); this.emit('start', { game, resume: false }); },
         events: () => {},
@@ -320,10 +332,10 @@ window.SFC = window.SFC || {};
     // hết phiên vì lỗi / bị từ chối / huỷ. from: đang làm gì (create | join | room)
     fail(e, from = 'room') {
       if (this.status === 'searching') { this.solo(); return; }   // phòng xếp hạng từ chối trước khi vào trận
-      const ranked = this.ranked;
+      const ranked = this.ranked, quiet = this.quiet;
       Net().close();
       this.reset();
-      this.emit('closed', { reason: NC().kind(e), from, ranked });
+      this.emit('closed', { reason: NC().kind(e), from, ranked, quiet });
     },
 
     // rời phòng chủ động
@@ -338,6 +350,7 @@ window.SFC = window.SFC || {};
     },
 
     reset() {
+      if (this.code) this.dropTicket();   // hết phiên (rời / lỗi / không vào lại được): bỏ vé vào lại. Lúc nạp game (chưa có phòng): giữ vé
       this.role = null; this.status = 'idle'; this.code = null; this.game = null; this.ranked = false;
       this.story = null;           // phòng FOOTBALL STORY: id Story
       this.run = false;            // phòng GOAT PATH co-op
@@ -358,8 +371,33 @@ window.SFC = window.SFC || {};
       this.roomClosed = false;     // phòng đóng hẳn (bye) -> closed{reason: 'closed'} thay vì 'lost'
       clearInterval(this.ka);
       clearInterval(this.pingT);
+      clearInterval(this.expT);
       this.rejoining = null;       // đang kết nối lại: hạn chót (Date.now())
+      this.quiet = false;          // đang vào lại bằng vé lúc mở game: không vào được thì im lặng (closed{quiet})
       clearTimeout(this.retry);
+    },
+
+    /* ---------- vé vào lại sau khi mở lại game ---------- */
+    // khách phòng riêng / co-op (không phải máy giữ cup / run, không phải trận xếp hạng): lưu mã phòng + tok, cập nhật at định kỳ.
+    // Mở lại game trong net.reconnectGrace giây (+ 1 nhịp lưu) -> ticket() trả vé để vào lại đúng chỗ
+    saveTicket() {
+      const S = SFC.Storage;
+      if (!S || !this.tok || !this.code || this.isHost || this.isLead || this.ranked || N().reconnectGrace <= 0) return;
+      if (this.status !== 'lobby' && this.status !== 'playing') return;
+      try { S.setJSON(REJOIN_KEY, { code: this.code, tok: this.tok, kind: this.story ? 'story' : this.run ? 'run' : 'online', at: Date.now() }); } catch (e) { /* bỏ qua */ }
+    },
+    dropTicket() {
+      try { if (SFC.Storage && SFC.Storage.get(REJOIN_KEY) != null) SFC.Storage.remove(REJOIN_KEY); } catch (e) { /* bỏ qua */ }
+    },
+    // vé còn hạn (lấy 1 lần: đọc xong là xoá) -> { code, tok, kind } | null
+    ticket() {
+      const S = SFC.Storage;
+      if (!S || this.status !== 'idle') return null;
+      let t = null;
+      try { t = S.getJSON(REJOIN_KEY, null); } catch (e) { t = null; }
+      this.dropTicket();
+      const fresh = t && typeof t.code === 'string' && typeof t.tok === 'string' && Date.now() - (+t.at || 0) < (N().reconnectGrace + TICKET_EVERY) * 1000;
+      return fresh ? { code: t.code.slice(0, 12), tok: t.tok.slice(0, 64), kind: ['story', 'run'].includes(t.kind) ? t.kind : 'online' } : null;
     },
 
     handlers() {
@@ -377,8 +415,9 @@ window.SFC = window.SFC || {};
       if (this.status === 'searching') { this.solo(); return; }
       // trận xếp hạng đã hết (phòng đóng sau trận): không cần vào lại
       const over = this.ranked && this.game && this.game.state === 'ended';
-      // mất kết nối giữa trận: thử vào lại thay vì về menu
-      if (this.status === 'playing' && this.tok && N().reconnectGrace > 0 && !over) { this.reconnect(); return; }
+      // mất kết nối giữa trận / ở phòng chờ (phòng giữ chỗ, AI đá thay): thử vào lại thay vì về menu
+      const here = this.status === 'playing' || (this.status === 'lobby' && !this.ranked);
+      if (here && this.tok && N().reconnectGrace > 0 && !over && !this.roomClosed) { this.reconnect(); return; }
       const closed = this.roomClosed, ranked = this.ranked;
       Net().close();
       this.reset();
@@ -392,17 +431,29 @@ window.SFC = window.SFC || {};
       clearTimeout(this.retry);
       if (!this.rejoining) {
         this.rejoining = Date.now() + N().reconnectGrace * 1000;
-        this.emit('reconnecting');
+        this.emit('reconnecting', { lobby: this.status === 'lobby' });
       }
       const attempt = () => {
-        if (!this.rejoining || this.status !== 'playing') return;
+        if (!this.rejoining || (this.status !== 'playing' && this.status !== 'lobby')) return;
         if (Date.now() > this.rejoining) { this.fail({ type: 'rejoin-failed' }); return; }
         net.on(this.handlers());
         net.join(code)
-          .then(() => net.send({ t: 'hello', v: N().protocol, pf: this.myPf(), tok: this.tok }))
+          .then(() => net.send(this.rejoinHello()))
           .catch(() => { if (this.rejoining) this.retry = setTimeout(attempt, 2000); });
       };
       this.retry = setTimeout(attempt, 500);
+    },
+    // hello kết nối lại: end = máy này đã thấy hết trận (ở màn kết quả) -> phòng không dựng lại trận
+    rejoinHello() {
+      const end = this.status === 'playing' && this.game && this.game.state === 'ended';
+      return Object.assign({ t: 'hello', v: N().protocol, pf: this.myPf(), tok: this.tok }, end ? { end: 1 } : {});
+    },
+    // vào lại phòng được (rj / lobby / start{resume}): thôi thử
+    rejoined() {
+      if (!this.rejoining) return false;
+      this.rejoining = null;
+      clearTimeout(this.retry);
+      return true;
     },
 
     // hồ sơ của mình đổi (đồng đội / vị trí / chỉ số) -> báo phòng
@@ -442,7 +493,20 @@ window.SFC = window.SFC || {};
     guestData(m) {
       switch (m.t) {
         case 'lobby': {
+          if (this.rejoined() && this.status === 'lobby') this.emit('reconnected');
+          this.quiet = false;
+          const was = this.lobby.members;
           this.lobby.members = this.sanitizeMembers(m.m);
+          // ở phòng chờ: ai vừa mất kết nối / vừa quay lại (máy làm host tự báo qua hook Room)
+          if (this.status === 'lobby' && was.length) {
+            for (const x of this.lobby.members) {
+              // cùng kết nối, không thì cùng hồ sơ (kết nối lại = id mới)
+              const y = was.find((w) => w.id === x.id) || (x.pf.uid && was.find((w) => w.pf.uid === x.pf.uid && !this.lobby.members.some((z) => z !== x && z.id === w.id)));
+              if (x.id === Net().id) continue;
+              if (x.away && y && !y.away) this.emit('notice', { kind: 'away', name: x.pf.name });
+              else if (!x.away && y && y.away) this.emit('notice', { kind: 'back', name: x.pf.name });
+            }
+          }
           this.lobby.owner = typeof m.o === 'string' ? m.o : null;
           this.lobby.ground = clampInt(m.g == null ? -1 : m.g, -1, SFC.MainPath.areas().length - 1);
           // phòng FOOTBALL STORY: id Story + trạng thái cup của host (báo trước toLobby để màn cup vẽ đúng vòng mới)
@@ -469,7 +533,8 @@ window.SFC = window.SFC || {};
           this.emit('lobby');
           break;
         }
-        case 'you': if (typeof m.tok === 'string') this.tok = m.tok; break;
+        case 'you': if (typeof m.tok === 'string') { this.tok = m.tok; this.saveTicket(); } break;
+        case 'rj': this.quiet = false; if (this.status === 'lobby' && this.rejoined()) this.emit('reconnected'); else this.rejoined(); this.saveTicket(); break;
         case 'ping': if (typeof m.c === 'number') Net().send({ t: 'pong', c: m.c }); break;
         case 'pong': if (typeof m.c === 'number') SFC.NetStats.pong(performance.now() - m.c); break;
         case 'start': this.guestStart(m); break;
@@ -530,7 +595,9 @@ window.SFC = window.SFC || {};
         if (!x || typeof x.id !== 'string') continue;
         const slot = clampInt(x.slot, -1, this.nSlots - 1);
         if (out.some((o) => (slot >= 0 && o.slot === slot) || o.id === x.id)) continue;
-        out.push({ id: x.id, pf: SFC.Profile.sanitizePublic(x.pf) || SFC.Profile.sanitizePublic({}), slot });
+        const y = { id: x.id, pf: SFC.Profile.sanitizePublic(x.pf) || SFC.Profile.sanitizePublic({}), slot };
+        if (x.a === 1) y.away = 1;   // mất kết nối, phòng còn giữ chỗ (AI đá thay)
+        out.push(y);
       }
       return out;
     },
@@ -556,6 +623,9 @@ window.SFC = window.SFC || {};
 
     guestStart(m) {
       const o = m.opts || {}, roles = ROLES(), list = SFC_CONFIG.cores.list;
+      // kết nối lại giữa trận: phòng gửi kèm nội dung gói lobby (gói lobby giữa trận sẽ đưa khách về phòng chờ) — có cả loại phòng
+      // + trạng thái cup / bản sao run, để máy vừa mở lại game dựng đúng trận Story / run
+      if (o.resume && o.lobby && typeof o.lobby === 'object') this.resumeLobby(o.lobby);
       const seats = (Array.isArray(o.seats) ? o.seats.slice(0, N().maxPlayers) : []).map((s) => ({
         team: s && s.team === 1 ? 1 : 0,
         idx: clampInt(s && s.idx, 0, roles.length - 1),
@@ -616,16 +686,23 @@ window.SFC = window.SFC || {};
       this.sentDown = -1;
       this.status = 'playing';
       this.watching = watch;
-      // kết nối lại giữa trận: phòng gửi kèm danh sách phòng chờ (gói lobby giữa trận sẽ đưa khách về phòng chờ)
       const resume = !!o.resume;
-      if (resume && o.lobby) {
-        this.lobby.members = this.sanitizeMembers(o.lobby.m);
-        this.lobby.owner = typeof o.lobby.o === 'string' ? o.lobby.o : null;
-      }
-      this.rejoining = null;
-      clearTimeout(this.retry);
+      this.rejoined();
+      this.quiet = false;
+      this.saveTicket();
       if (!resume) { SFC.NetStats.matchStart(); this.pings = {}; }
       this.emit('start', { game: this.game, resume });
+    },
+
+    // nội dung gói lobby đi kèm start{resume}: danh sách phòng + loại phòng (k / rn) + trạng thái cup / bản sao run (khách)
+    resumeLobby(L) {
+      this.lobby.members = this.sanitizeMembers(L.m);
+      this.lobby.owner = typeof L.o === 'string' ? L.o : null;
+      if (typeof L.k === 'string') this.story = L.k.slice(0, 40);
+      if (L.rn === 1) this.run = true;
+      if (this.isLead) return;
+      if (this.story && 'c' in L) { this.cup = L.c && typeof L.c === 'object' ? L.c : null; this.emit('cup', { state: this.cup }); }
+      if (this.run && 'r' in L) { this.runState = L.r && typeof L.r === 'object' ? L.r : null; this.emit('run', { state: this.runState }); }
     },
 
     // độ khó AI đội bot (MainPath.aiProfile): chỉ giữ số hợp lệ
@@ -660,7 +737,7 @@ window.SFC = window.SFC || {};
       Net().send({ t: 'co', c: c || null });
     },
     // người trong phòng (id, ô, mã hồ sơ): đổi -> máy giữ phòng run gửi lại bản sao
-    memberSig() { return this.lobby.members.map((m) => `${m.id}:${m.slot}:${(m.pf && m.pf.uid) || ''}`).join(','); },
+    memberSig() { return this.lobby.members.map((m) => `${m.id}:${m.slot}:${(m.pf && m.pf.uid) || ''}:${m.away ? 1 : 0}`).join(','); },
     // máy giữ: trạng thái cup đổi (bắt đầu / thoát cup) -> gửi lại phòng chờ kèm trạng thái mới
     shareCup() {
       if (!this.isLead || this.status !== 'lobby') return;

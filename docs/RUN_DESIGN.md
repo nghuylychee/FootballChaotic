@@ -189,6 +189,11 @@ Chốt với user: **bỏ phiếu, chốt bằng bốc ngẫu nhiên theo số p
 - **Hết run**: gold meta + tiến trình CORE ROAD cộng cho từng máy (khách nhận khi bản sao báo hết run, 1 lần mỗi run).
 - Không tăng `net.protocol` (chỉ thêm trường / gói mới trong phòng người chơi làm host). Test: `server/test/run-coop-test.js`.
 
+
+### Mất kết nối (2026-11-07)
+- Người mất kết nối (không bấm rời phòng) được giữ chỗ `net.reconnectGrace` giây (60), ở map / bỏ phiếu / KIT VAN cũng như trong trận. Trong lúc vắng: ô đội hình của họ thành đồng đội AI (ví tiền giữ nguyên), phiếu của họ không được chờ, trận vào lúc đó vẫn có character của họ do AI đá.
+- Kết nối lại (tự thử mỗi 2 giây, hoặc mở lại game: vé vào lại) -> đúng ô cũ, đang đá thì vào thẳng trận đang đá.
+- Máy giữ run mất kết nối: phòng chờ máy giữ quay lại tới hết hạn, quá hạn mới đóng phòng. Mở lại game của máy giữ chưa vào lại được (run nằm ở máy đó).
 ## Kỹ thuật (đại khái)
 
 - `config/run.config.js`: act (vùng, pool đội, boss, Elo, người dẫn truyện, kiểu kể), luật sinh map, trọng số node, tiền, BADGE, sự kiện `?`, bài tập. Đối thủ (đội, `mod`, `signature`, `barks`) chuyển từ `stories.config.js`; `stories.mods` giữ nguyên chỗ hoặc dời theo.

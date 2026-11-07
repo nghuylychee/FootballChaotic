@@ -2339,7 +2339,8 @@ window.SFC = window.SFC || {};
         const m = O.memberAt(O.slotOf(0, t.id)), sel = T.indexOf(t) === this.sel ? 'sel' : '';
         const body = m ? `${this.face(m.pf.look, false)}<b>${esc(m.pf.name)}</b><u class="pk-tag ${t.id === me ? 'me' : ''}">${esc(t.id === me ? _t('YOU') : m.id === L.owner ? _t('HOST') : _t('PLAYER'))}</u>`
           : `<div class="pk-q">AI</div>`;
-        return `<button class="pk-slot ${m ? '' : 'empty'} ${t.id === me ? 'mine' : ''} ${sel}" data-rt="${t.key}"><em>${esc(t.id)}</em>${body}</button>`;
+        const off = m && m.away ? ` net-off" title="${esc(_t("Lost connection · AI plays for them until they're back"))}` : '';   // mất kết nối: phòng giữ chỗ, AI đá thay
+        return `<button class="pk-slot ${m ? '' : 'empty'} ${t.id === me ? 'mine' : ''} ${sel}${off}" data-rt="${t.key}"><em>${esc(t.id)}</em>${body}</button>`;
       }).join('');
       const btns = T.filter((t) => t.k !== 'slot' && t.k !== 'bench').map((t) => this.btn(T, t, esc(t.k === 'invite' ? _t('INVITE') : this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')), t.k === 'leaveroom' && this.leaveArm ? 'danger' : '')).join('');
       const host = L.members.find((x) => x.id === L.owner);

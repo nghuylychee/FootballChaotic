@@ -83,7 +83,9 @@ window.SFC = window.SFC || {};
     if (m) {
       const you = !!O.mine && m.id === O.mine.id;
       const tag = you ? _t('YOU') : m.id === L.owner ? _t('HOST') : `P${L.members.indexOf(m) + 1}`;
-      return `<div class="pt-card sm ${you ? 'you' : ''} ${sel}" ${at}>${art(m.pf.look)}<div class="pt-ready">${esc(tag)}</div>
+      // mất kết nối (phòng còn giữ chỗ): ô mờ + tooltip
+      const off = m.away ? ` net-off" title="${esc(_t("Lost connection · AI plays for them until they're back"))}` : '';
+      return `<div class="pt-card sm ${you ? 'you' : ''} ${sel}${off}" ${at}>${art(m.pf.look)}<div class="pt-ready">${esc(tag)}</div>
         <div class="pt-name">${esc(m.pf.name)}</div>${meta([_t('LV {n}', { n: m.pf.level }), !PF().statsHidden() && m.pf.ovr && _t('OVR {n}', { n: m.pf.ovr })])}${pos}</div>`;
     }
     // ô AI cùng đội với mình: Enter = bảng chọn đồng đội / đổi vị trí (Menu.slotAct); ô của đội khác: vào đội đó

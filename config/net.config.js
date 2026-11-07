@@ -48,7 +48,7 @@ SFC_CONFIG.net = {
   codeChars: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', // bỏ ký tự dễ nhầm (I, O, 0, 1)
   connectTimeout: 12,          // giây chờ kết nối trước khi báo lỗi
   sceneWait: 25,               // phòng FOOTBALL STORY: giây tối đa chủ phòng chờ cả phòng xem xong cut scene trước trận
-  reconnectGrace: 30,          // giây giữ slot cho người mất kết nối giữa trận (AI đá thay, vào lại được). 0 = tắt
+  reconnectGrace: 60,          // giây giữ slot cho người mất kết nối (giữa trận / ở phòng chờ: AI đá thay; tắt / văng game rồi mở lại cũng vào lại được). 0 = tắt
 
   // Phòng: slot = đội x vị trí (game.config.js -> roles). Người chơi tự nhảy qua lại giữa các slot trống.
   //  - 2 đội đều có người = VERSUS; slot trống của đội có đúng 1 người = đồng đội đang chọn của người đó (AI)
