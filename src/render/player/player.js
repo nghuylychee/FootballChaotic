@@ -98,7 +98,7 @@ window.SFC = window.SFC || {};
       ctx.save(); ctx.translate(x, y - 8); ctx.rotate(rot);
       drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, fly: fs, flyInner: true }), g, alpha, tint, ghost);
       ctx.restore(); ctx.globalAlpha = 1;
-      return y - 16;
+      return y - Math.round(16 * ((SFC_CONFIG.game.render && SFC_CONFIG.game.render.playerScale) || 1));
     }
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -107,17 +107,34 @@ window.SFC = window.SFC || {};
     // các ô. Vẽ vào bộ đệm rồi phóng lấy mẫu điểm gần nhất (cả chiều dọc: backflip ép dọc theo góc lộn). Mọi toạ độ của sprite nguyên nên 1 ô nguyên px
     // màn hình (T.a nguyên) là vẽ thẳng được
     const odd1 = (v) => { const f = Math.abs(v); return f < 1 - 1e-3 || Math.abs(f - Math.round(f)) > 1e-3; }, odd = odd1(T.a) || odd1(T.d);
+    // Sprite v3 (player3/, người cao 31 px cho sân to): trạng thái nào v3 vẽ được thì vẽ v3, còn lại v2 phóng render.playerScale (px không đều)
+    const S3 = SFC.PlayerSprite3, v3 = !!(S3 && S3.supports(o)), PS = (SFC_CONFIG.game.render && SFC_CONFIG.game.render.playerScale) || 1;
     if (T.b || T.c || odd) {
-      const W = 64, H = 64, oy = 50;
+      const W = 96, H = 96, oy = 72;
       if (!rotBuf) { rotBuf = document.createElement('canvas'); rotBuf.width = W; rotBuf.height = H; }
       const bc = rotBuf.getContext('2d'); bc.clearRect(0, 0, W, H);
-      draw(bc, W / 2 + jx, oy, o);
+      drawAny(bc, W / 2 + jx, oy, o, v3, PS);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(rotBuf, x - W / 2, y - oy);
-    } else draw(ctx, x + jx, y, o);
+    } else drawAny(ctx, x + jx, y, o, v3, PS);
     ctx.restore();
     ctx.globalAlpha = 1;
-    return y - (atk && atk.khop ? Math.round(atk.khop) : 0) + ((cp && cp.drop) || 0) - 16;
+    const k = v3 ? 1.3 : Sprite.bufScaled ? 1 : PS;
+    return y - Math.round(((atk && atk.khop) || 0) * k) + ((cp && cp.drop) || 0) - Math.round(16 * k);
+  }
+  // vẽ 1 người: v3 thẳng · v2 thẳng (PS 1) · v2 vào bộ đệm rồi phóng PS lần quanh bàn chân, lấy mẫu điểm gần nhất
+  let psBuf = null;
+  function drawAny(c, X, Y, o, v3, PS) {
+    if (v3) return SFC.PlayerSprite3.draw(c, X, Y, Object.assign({ eyes: 'A' }, o));
+    // renderer đang vẽ cả động tác vào đệm rồi tự phóng (ăn mừng, vật thể thay hình: Sprite.bufScaled) -> không phóng lần 2
+    if (PS === 1 || Sprite.bufScaled) return draw(c, X, Y, o);
+    const W = 96, H = 96, ax = 48, ay = 72;
+    if (!psBuf) { psBuf = document.createElement('canvas'); psBuf.width = W; psBuf.height = H; }
+    const bc = psBuf.getContext('2d'); bc.clearRect(0, 0, W, H); bc.globalAlpha = 1;
+    draw(bc, ax, ay, o);
+    const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false;
+    c.drawImage(psBuf, X - ax * PS, Y - ay * PS, W * PS, H * PS);
+    c.imageSmoothingEnabled = sm;
   }
 
   // bóng dưới đất của cầu thủ lúc này, cho cảnh tự vẽ bóng (Village.shadows): cùng các trạng thái làm bóng sprite đổi.

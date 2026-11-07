@@ -399,7 +399,7 @@ window.SFC = window.SFC || {};
       el.className = show ? '' : 'hidden';
       if (!show) return;
       const box = el.firstElementChild;
-      if (box) { box.style.left = Math.round(Math.max(60, Math.min(580, me.x))) + 'px'; box.style.top = Math.round(Math.max(60, me.y - 28)) + 'px'; }
+      if (box) { const q = SFC.Renderer.toStage(me.x, me.y), sw = document.getElementById('stage').offsetWidth; box.style.left = Math.round(Math.max(60, Math.min(sw - 60, q.x))) + 'px'; box.style.top = Math.round(Math.max(60, q.y - 28)) + 'px'; }
       // phím đang giữ: lún xuống
       if (input && input.isDown) el.querySelectorAll('kbd[data-a]').forEach((k) => {
         const a = k.dataset.a;
@@ -434,9 +434,9 @@ window.SFC = window.SFC || {};
         // vòng co lại theo nhịp gồng đòn của đối thủ
         const o = this.qte.o, W = SFC_CONFIG.game.combat.hard.windup;
         this.qteEl.style.setProperty('--k', o && o.state === 'windup' ? Math.max(0, Math.min(1, o.stateT / W)).toFixed(2) : 0);
-        // bám theo cầu thủ của bạn (sân vẽ 1:1 trong khung 640x360)
+        // bám theo cầu thủ của bạn (Renderer.toStage: toạ độ sân -> px #stage)
         const box = this.qteEl.firstElementChild, me = this.me;
-        if (box) { box.style.left = Math.round(Math.max(60, Math.min(580, me.x))) + 'px'; box.style.top = Math.round(Math.max(70, me.y - 40)) + 'px'; }
+        if (box) { const q = SFC.Renderer.toStage(me.x, me.y), sw = document.getElementById('stage').offsetWidth; box.style.left = Math.round(Math.max(60, Math.min(sw - 60, q.x))) + 'px'; box.style.top = Math.round(Math.max(70, q.y - 40)) + 'px'; }
       }
       el.classList.toggle('away', g.state === 'draft' || g.state === 'goal');
       // ô kỹ năng cần dùng nhấp nháy

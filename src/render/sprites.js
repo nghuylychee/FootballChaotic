@@ -25,6 +25,23 @@ window.SFC = window.SFC || {};
       ctx.fillRect(cx - w, cy + dy, w * 2 + 1, 1);
     }
   }
+  // bóng tròn pixel đường kính d (nguyên): d lẻ = tâm ở px (cx, cy), d chẵn = tâm ở góc giữa 4 px quanh (cx, cy). Hàng j rộng 2·round(√(R² − dy²))
+  // (chẵn) / 2·round(...) + 1 (lẻ) -> cạnh trên / dưới giống cạnh trái / phải
+  function ballDisc(ctx, cx, cy, d, c) {
+    ctx.fillStyle = c;
+    cx |= 0; cy |= 0;
+    const R = d / 2, odd = d % 2;
+    for (let j = 0; j < d; j++) {
+      const dy = j + 0.5 - R, h = Math.sqrt(Math.max(0, R * R - dy * dy));
+      const w = odd ? 2 * Math.round(h - 0.5) + 1 : 2 * Math.round(h);
+      ctx.fillRect(cx - Math.floor(w / 2), cy - Math.floor(R) + j, w, 1);
+    }
+  }
+  // cỡ bóng khi vẽ (fx.ball.size = đường kính lõi; không có thì theo ball.radius)
+  function ballSize() {
+    const C = SFC_CONFIG.game;
+    return (C.fx.ball && C.fx.ball.size) || C.ball.radius * 2 + 1;
+  }
   function ellipse(ctx, cx, cy, rx, ry, c) {
     ctx.fillStyle = c;
     ctx.beginPath();
@@ -217,12 +234,16 @@ window.SFC = window.SFC || {};
 
   /* ---------- bóng ---------- */
   // ở px game nguyên như cầu thủ (PlayerSprite.drawPlayer)
-  function drawBall(ctx, b, alpha = 1) { drawBallAt(ctx, b, Math.round(b.x), Math.round(b.y), Math.round(b.y - b.z - 3), alpha); }
+  // bóng: lõi bán kính ball.radius (2 = 5 x 5 px) + viền mực 1 px. bare = không vẽ bóng đổ (Renderer vẽ đè bóng lần 2 khi bị che)
+  function drawBall(ctx, b, alpha = 1, bare = false) {
+    const r = Math.ceil(ballSize() / 2);
+    drawBallAt(ctx, b, Math.round(b.x), Math.round(b.y), Math.round(b.y - b.z - r), alpha, bare);
+  }
   // (x, by) = tâm bóng, y = mặt đất
-  function drawBallAt(ctx, b, x, y, by, alpha) {
-    const s = Math.max(1.2, 3.2 - b.z * 0.05);
+  function drawBallAt(ctx, b, x, y, by, alpha, bare) {
+    const d = ballSize(), r = d / 2, k = Math.max(0.5, r / 3.5), s = Math.max(1.2, (3.2 - b.z * 0.05) * k);
     ctx.globalAlpha = alpha;
-    ellipse(ctx, x, y + 1, s + 0.5, s * 0.5 + 0.3, 'rgba(0,0,0,0.4)');
+    if (!bare) ellipse(ctx, x, y + 1, s + 0.5, s * 0.5 + 0.3, 'rgba(0,0,0,0.4)');
     const fx = b.fx || {};
     // VFX Kit BL: bóng đổi hình (lỗ đen, bom, cầu lửa, dưa hấu...)
     if (b.skin && drawBallSkin(ctx, b, x, by)) { ctx.globalAlpha = 1; return; }
@@ -239,16 +260,30 @@ window.SFC = window.SFC || {};
     }
     if (fx.fire || fx.thunder) {
       ctx.globalCompositeOperation = 'lighter';
-      roundDisc(ctx, x, by, 6, fx.fire ? 'rgba(255,120,30,0.45)' : 'rgba(80,220,255,0.45)');
+      ballDisc(ctx, x, by, d + 6, fx.fire ? 'rgba(255,120,30,0.45)' : 'rgba(80,220,255,0.45)');
       ctx.globalCompositeOperation = 'source-over';
     }
-    roundDisc(ctx, x, by, 4, OUT);
-    roundDisc(ctx, x, by, 3, fx.fire ? '#ffd9a0' : fx.thunder ? '#d8fbff' : '#f4f4f4');
-    px(ctx, x + 1, by + 1, 2, 2, '#c7c7d2');
-    const a = (b.roll || 0) * 0.3;
-    px(ctx, x + Math.round(Math.cos(a) * 1.6), by + Math.round(Math.sin(a) * 1.6), 1, 1, '#222');
-    px(ctx, x - Math.round(Math.cos(a) * 1.6), by - Math.round(Math.sin(a) * 1.6), 1, 1, '#222');
-    px(ctx, x - 1, by - 2, 1, 1, '#ffffff');
+    ballDisc(ctx, x, by, d + 2, OUT);
+    ballDisc(ctx, x, by, d, fx.fire ? '#ffd9a0' : fx.thunder ? '#d8fbff' : '#f4f4f4');
+    if (d % 2 === 0 && d >= 6) {
+      // lõi chẵn (tâm giữa 2 px, lõi từ x - d/2 tới x + d/2 - 1): bóng tối dưới phải, 2 chấm lăn quanh tâm, 1 chấm sáng trên trái
+      px(ctx, x, by + 1, 2, 1, '#c7c7d2'); px(ctx, x + 1, by, 1, 1, '#c7c7d2');
+      const a = (b.roll || 0) * 0.3, cx = Math.cos(a) * 1.5, cy = Math.sin(a) * 1.5;
+      px(ctx, Math.floor(x + cx), Math.floor(by + cy), 1, 1, '#222');
+      px(ctx, Math.floor(x - cx), Math.floor(by - cy), 1, 1, '#222');
+      px(ctx, x - 2, by - 2, 1, 1, '#ffffff');
+    } else if (r >= 3) {
+      px(ctx, x + 1, by + 1, 2, 2, '#c7c7d2');
+      const a = (b.roll || 0) * 0.3;
+      px(ctx, x + Math.round(Math.cos(a) * 1.6), by + Math.round(Math.sin(a) * 1.6), 1, 1, '#222');
+      px(ctx, x - Math.round(Math.cos(a) * 1.6), by - Math.round(Math.sin(a) * 1.6), 1, 1, '#222');
+      px(ctx, x - 1, by - 2, 1, 1, '#ffffff');
+    } else if (r >= 2) {
+      // bóng nhỏ: 1 góc tối dưới phải + 1 chấm lăn (đổi chỗ theo roll) -> vẫn thấy bóng đang lăn
+      px(ctx, x + 1, by + 1, 1, 1, '#c7c7d2');
+      const a = (b.roll || 0) * 0.3;
+      px(ctx, x + Math.round(Math.cos(a)), by + Math.round(Math.sin(a)), 1, 1, '#2a2a33');
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -279,5 +314,5 @@ window.SFC = window.SFC || {};
 
   // người chơi + hạt trang phục vẽ bằng Sprite v2 (SFC.PlayerSprite, src/render/player, nạp sau file này; sprite cũ đã xoá 2026-11-01)
   const spritePlayer = (...a) => SFC.PlayerSprite.drawPlayer(...a), spriteFx = (...a) => SFC.PlayerSprite.drawFxParticle(...a);
-  SFC.Sprites = { OUT, px, disc, ellipse, ringPx, drawPlayer: spritePlayer, drawBall, drawAvatar, drawItemIcon, FX, spawnFx, stepFx, drawFxParticle: spriteFx };
+  SFC.Sprites = { OUT, px, disc, ellipse, ringPx, ballSize, drawPlayer: spritePlayer, drawBall, drawAvatar, drawItemIcon, FX, spawnFx, stepFx, drawFxParticle: spriteFx };
 })();

@@ -416,17 +416,25 @@
   // chỉ mép pha 1 px thiết bị. Đã thử chỉ phóng nguyên + viền nền (2026-11-04): cửa sổ dưới 2x (laptop 1366 x 768 có thanh trình duyệt) thì game
   // chỉ còn 1x giữa viền to -> bỏ, game phải lấp màn hình
   function fit() {
-    const R = C.render, dpr = window.devicePixelRatio || 1, iw = window.innerWidth, ih = window.innerHeight;
-    const k0 = Math.min((iw * dpr) / R.width, (ih * dpr) / R.height), whole = Math.abs(k0 - Math.round(k0)) < 0.01, s = (whole ? Math.round(k0) : k0) / dpr;
+    // #stage theo khung ui (640 x 360); canvas trận theo khung trận (render.width x height, có thể lớn hơn = zoom out):
+    // cùng góc trên trái, cùng cỡ trên màn hình, canvas phóng ít hơn theo tỉ lệ Z = khung trận / khung ui
+    const R = C.render, U = R.ui || { width: R.width, height: R.height, maxView: R.maxView }, Z = R.width / U.width;
+    const dpr = window.devicePixelRatio || 1, iw = window.innerWidth, ih = window.innerHeight;
+    const k0 = Math.min((iw * dpr) / U.width, (ih * dpr) / U.height), whole = Math.abs(k0 - Math.round(k0)) < 0.01, s = (whole ? Math.round(k0) : k0) / dpr;
     const even = (v, min, max) => Math.max(min, Math.min(max, 2 * Math.floor(v / 2)));
-    const w = even(iw / s, R.width, R.maxView[0]), h = even(ih / s, R.height, R.maxView[1]);
+    const w = even(iw / s, U.width, U.maxView[0]), h = even(ih / s, U.height, U.maxView[1]);
     const left = Math.round(((iw - w * s) / 2) * dpr) / dpr, top = Math.round(((ih - h * s) / 2) * dpr) / dpr;
     const stage = document.getElementById('stage'), game = document.getElementById('game');
     stage.style.width = w + 'px'; stage.style.height = h + 'px';
-    for (const el of [stage, game]) { el.style.left = left + 'px'; el.style.top = top + 'px'; el.style.transform = `scale(${s})`; }
-    game.classList.toggle('smooth', !whole);
-    SFC.Renderer.setView(w, h);
-    SFC.Renderer.present(whole ? 0 : Math.ceil(k0));
+    // canvas trận: px thiết bị / px game = k0 / Z (nguyên -> phóng điểm gần nhất; lẻ -> sharp bilinear)
+    const kg = k0 / Z, gWhole = Math.abs(kg - Math.round(kg)) < 0.01, sg = (gWhole ? Math.round(kg) : kg) / dpr;
+    for (const el of [stage, game]) { el.style.left = left + 'px'; el.style.top = top + 'px'; }
+    stage.style.transform = `scale(${s})`;
+    game.style.transform = `scale(${sg})`;
+    game.classList.toggle('smooth', !gWhole);
+    SFC.Renderer.uiK = sg / s;
+    SFC.Renderer.setView(even(w * Z, R.width, R.maxView[0]), even(h * Z, R.height, R.maxView[1]));
+    SFC.Renderer.present(gWhole ? 0 : Math.ceil(kg));
   }
   // devicePixelRatio đổi mà không có resize (kéo cửa sổ sang màn hình khác tỉ lệ): media query theo tỉ lệ hiện tại, đổi thì fit lại rồi canh tỉ lệ mới
   function watchDpr() {

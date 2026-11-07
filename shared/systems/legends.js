@@ -82,7 +82,7 @@ window.SFC = window.SFC || {};
         fx.decal('crack', p.x, p.y + 2, 1.2, 2.5);
         fx.wave(p.x, p.y, 30, '#ffffff', 0.35, 3);
         g.hitStop(0.05);
-      } else if (id === 'bicycle') { g.hitStop(0.06); fx.speedLines(0.3, 320, 180, L.color); }
+      } else if (id === 'bicycle') { g.hitStop(0.06); fx.speedLines(0.3, g.field.x + g.field.w / 2, g.field.y + g.field.h / 2, L.color); }
       else if (id === 'sweeper') fx.wave(p.x, p.y, 26, L.color, 0.4, 2);
       else if (id === 'knuckle') { g.hitStop(0.04); fx.wave(p.x, p.y, 22, L.color, 0.3, 2); }   // vụt mu bàn chân: khựng 1 nhịp, sóng nhỏ
       g.sfx('legendTech');

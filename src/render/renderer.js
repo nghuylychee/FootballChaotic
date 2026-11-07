@@ -45,6 +45,13 @@ window.SFC = window.SFC || {};
     // màn hình phóng lẻ (main.js fit): vẽ trận vào canvas phụ 1x như thường, cuối render() chép sang canvas hiện K px thiết bị / px game
     // (K = số px làm tròn lên) bằng điểm gần nhất, CSS phóng mượt K -> số lẻ. Mọi px game thành khối K x K đều nhau, chỉ mép pha 1 px
     // ("sharp bilinear"). K = 0 (phóng nguyên): vẽ thẳng canvas hiện, CSS phóng điểm gần nhất, không chép
+    // toạ độ thế giới -> px #stage (UI DOM bám theo người trên sân). Canvas trận và #stage cùng góc trên trái;
+    // khung trận lớn hơn khung ui (zoom out) thì 1 px thế giới = uiK px stage (main.js fit đặt)
+    toStage(x, y) {
+      const S = this.screen, k = this.uiK || 1;
+      return { x: (x - S.x) * k, y: (y - S.y) * k };
+    },
+
     present(K) {
       K = K > 1 ? K : 0;
       if (K === this.outK) return;
@@ -213,6 +220,7 @@ window.SFC = window.SFC || {};
       for (const pr of SFC.VFX.props(g)) list.push({ y: pr.y, k: 'pr', o: pr.o, part: pr.part });   // vật thể Tuyệt kỹ (cột đá, đe, gương...)
       list.sort((a, b) => a.y - b.y);
       const marks = [];
+      let xray = null;   // bóng đã vẽ trong lượt y-sort -> vẽ đè lần 2 (mờ) sau mọi thứ, xem ballXray
       let hidden = null;   // người đang điều khiển đang tàng hình (chữ HIDDEN trên đầu + viền màn hình)
 
       for (const e of list) {
@@ -226,22 +234,33 @@ window.SFC = window.SFC || {};
           if (ghost && p === cp && !g.preview) hidden = p;
           SFC.VFX.under(ctx, g, p);
           if (p.legend && SFC.LegendDraw) SFC.LegendDraw.under(ctx, g, p);   // GOAT PATH: bóng mờ LEGEND sau lưng (khoảnh khắc LEGEND)
-          if (s !== 1) { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(s, s); ctx.translate(-p.x, -p.y); }
-          // drawPlayer tự đặt globalAlpha theo tham số alpha
           // ăn mừng bàn thắng + cuối trận (src/render/celebrate-draw.js): diễn khi 'goal' hoặc 'ended'
           const cel = p.celId && (g.state === 'goal' || g.state === 'ended') && !(p.airZ > 0);
           // King Kong / đứng trên tảng đá / con gà: vật thể Tuyệt kỹ tự vẽ nhân vật (render/vfx.js), bỏ sprite thật
           const swap = SFC.VFX.hides(g, p);
+          // cỡ người (render.playerScale, sân to 2026-11-07): drawPlayer tự chọn Sprite v3 (cỡ thật) hoặc v2 phóng. Ăn mừng / vật thể thay hình
+          // không qua drawPlayer -> vẽ vào đệm 1x rồi phóng điểm gần nhất quanh bàn chân (px không đều) tới khi v3 có các tư thế này
+          const PS = cel || swap ? C.playerScale || 1 : 1, rx = Math.round(p.x), ry = Math.round(p.y);
+          const sc = PS !== 1 ? this.playerBuf(rx, ry) : ctx;
+          SFC.PlayerSprite.bufScaled = PS !== 1;   // drawPlayer bên trong (ăn mừng) không phóng lần 2
+          if (s !== 1) { sc.save(); sc.translate(p.x, p.y); sc.scale(s, s); sc.translate(-p.x, -p.y); }
+          // drawPlayer tự đặt globalAlpha theo tham số alpha
           // hoảng sợ (Panic Ghosts) / giật điện (Stat.shock): run lẩy bẩy
           const shiver = SFC.VFX.has(g, p, 'panic') || SFC.VFX.has(g, p, 'shock') ? (Math.floor(t * 30) % 2 ? 1 : -1) : 0;
-          if (shiver) { ctx.save(); ctx.translate(shiver, 0); }
+          if (shiver) { sc.save(); sc.translate(shiver, 0); }
           // GOAT PATH: kỹ thuật LEGEND đang diễn -> biến đổi quanh sprite (render/legenddraw.js)
-          const lx = !swap && !cel && SFC.LegendDraw ? SFC.LegendDraw.begin(ctx, g, p) : false;
-          let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(ctx, p, g) : p.airZ > 0 ? this.airborne(ctx, p, g) : drawPlayer(ctx, p, g, ghost ? 0.3 : faint(p));
-          ctx.globalAlpha = 1;
-          if (lx) { ctx.restore(); SFC.LegendDraw.after(ctx, g, p); }
-          if (shiver) ctx.restore();
-          if (s !== 1) { ctx.restore(); hy = p.y + (hy - p.y) * s; }
+          const lx = !swap && !cel && SFC.LegendDraw ? SFC.LegendDraw.begin(sc, g, p) : false;
+          let hy = swap ? p.y - 30 : cel ? SFC.CelebrateDraw.draw(sc, p, g) : p.airZ > 0 ? this.airborne(sc, p, g) : drawPlayer(sc, p, g, ghost ? 0.3 : faint(p));
+          sc.globalAlpha = 1;
+          if (lx) { sc.restore(); SFC.LegendDraw.after(sc, g, p); }
+          if (shiver) sc.restore();
+          if (s !== 1) { sc.restore(); hy = p.y + (hy - p.y) * s; }
+          SFC.PlayerSprite.bufScaled = false;
+          if (PS !== 1) {
+            const B = this._pb;
+            ctx.drawImage(B.cv, rx - B.ax * PS, ry - B.ay * PS, B.cv.width * PS, B.cv.height * PS);
+            hy = ry + (hy - ry) * PS;
+          }
           SFC.VFX.form(ctx, g, p, swap || cel ? null : hy);
           SFC.VFX.arm(ctx, g, p);
           SFC.VFX.look(ctx, g, p, hy);
@@ -270,9 +289,11 @@ window.SFC = window.SFC || {};
           if (SFC.PlayerSprite.ballInHands(g)) continue;   // thủ môn ôm / tung bóng / đổ người bắt được: sprite thủ môn vẽ bóng trên tay
           const ghostBall = g.ball.owner && g.ball.owner.ghostT > 0;
           if (ghostBall) ctx.globalAlpha = 0.3;
-          this.ballTrail(ctx, g.ball);
+          this.ballTrail(ctx, g.ball, g);
+          this.ballRing(ctx, g.ball, t);
           SFC.VFX.ballFx(ctx, g.ball);
           drawBall(ctx, g.ball);
+          if (!ghostBall && !g.ball.owner) xray = g.ball;   // bóng trong chân người giữ: không hiện xuyên người đó
           if (ghostBall) ctx.globalAlpha = 1;
         } else if (e.k === 'd') {
           const d = e.o, a = 0.5 + 0.3 * Math.sin(t * 20);
@@ -327,6 +348,7 @@ window.SFC = window.SFC || {};
       ctx.textAlign = 'center';
       // VFX Kit: lỗ đen, luồng tia, tia sét, chiêu bay, chữ bật ra (Effects.pop)
       SFC.VFX.top(ctx, g);
+      if (xray) this.ballXray(ctx, xray);
       for (const m of marks) this.ctrlMark(ctx, m.p, m.hy, m.cc, t);
       if (hidden) this.hiddenMark(ctx, hidden, t);
       ctx.restore();
@@ -626,24 +648,100 @@ window.SFC = window.SFC || {};
       px(ctx, x - 1, y, 3, 1, col); px(ctx, x, y - 1, 1, 3, col);
     },
 
-    ballTrail(ctx, b) {
-      if (b.owner || b.speed < 200 || b.skin === 'ghost') return;   // Vanishing Ball: tàng hình, không để lại vệt
-      const { px } = SP();
-      const col = b.fx.fire ? '255,140,40' : b.fx.thunder ? '120,230,255' : '255,255,255';
-      b.trail.forEach((tp, i) => {
-        ctx.fillStyle = `rgba(${col},${0.35 - i * 0.045})`;
-        px(ctx, tp.x - 1, tp.y - tp.z - 4, 3, 3, ctx.fillStyle);
-      });
+    // vệt + dư ảnh bóng. Vệt vẽ theo VẬN TỐC hiện tại (không theo lịch sử): luôn dính vào bóng và đúng hướng bay, kể cả ngay sau khi dội tường /
+    // đổi hướng (bản theo lịch sử vị trí bị trễ và chỉ hướng cũ, user 2026-11-07). Dư ảnh lúc bóng trên không dùng lịch sử theo đồng hồ trận,
+    // cắt bỏ phần lịch sử lệch hướng bay hiện tại
+    ballTrail(ctx, b, g) {
+      const r = Math.ceil(SP().ballSize() / 2), by0 = b.y - b.z - r, sp = b.speed;
+      const T = SFC_CONFIG.game.fx.ball.trail;
+      const col = b.fx.fire ? '255,140,40' : b.fx.thunder ? '120,230,255' : (T.colors[b.kind] || '255,255,255');
+      if (b.owner || b.skin === 'ghost') { if (this._bh) this._bh.length = 0; return; }
+      this.ballGhosts(ctx, b, g);
+      // hướng bay trên màn hình: (vx, vy - vz) (bóng lên cao thì hình đi lên)
+      const svx = b.vx, svy = b.vy - (b.vz || 0), ss = Math.hypot(svx, svy);
+      if (sp >= T.minSpeed && ss > 1) {
+        const k = Math.min(1, (sp - T.minSpeed) / (T.full - T.minSpeed));
+        const len = Math.min(T.maxLen, ss * (T.time[0] + k * (T.time[1] - T.time[0])));
+        const ux = svx / ss, uy = svy / ss, a0 = T.alpha[0] + k * (T.alpha[1] - T.alpha[0]), thick = sp >= T.thick;
+        // vệt pixel từ mép sau bóng lùi về đuôi, nhạt dần; nửa đầu dày 2 px khi bóng nhanh. Gom theo độ mờ 4 bậc cho ít đổi fillStyle
+        const n = Math.round(len), start = r;
+        for (let i = start; i < start + n; i++) {
+          const u = (i - start) / n, w = thick && u < 0.5 ? 2 : 1;
+          ctx.fillStyle = `rgba(${col},${(a0 * (1 - Math.floor(u * 4) / 4)).toFixed(2)})`;
+          ctx.fillRect(Math.round(b.x - ux * i - w / 2), Math.round(by0 - uy * i - w / 2), w, w);
+        }
+      }
       // cú sút rất mạnh (fx.speedLines): 2 vệt tốc độ mảnh kéo dài sau bóng, lệch sang hai bên đường bóng
-      const sl = SFC_CONFIG.game.fx.speedLines, sp = b.speed;
+      const sl = SFC_CONFIG.game.fx.speedLines;
       if (!sl || sp < sl) return;
-      const k = Math.min(1, (sp - sl) / 120), ux = b.vx / sp, uy = b.vy / sp;
-      const len = 14 + Math.round(k * 12), by = b.y - b.z - 3;
-      ctx.fillStyle = `rgba(${col},${0.35 + k * 0.3})`;
+      const k2 = Math.min(1, (sp - sl) / 120), ux = b.vx / sp, uy = b.vy / sp;
+      const len = 14 + Math.round(k2 * 12), by = by0;
+      ctx.fillStyle = `rgba(${col},${0.35 + k2 * 0.3})`;
       for (const o of [-3, 3]) {
         const ox = -uy * o, oy = ux * o;
         for (let i = 4; i < len; i += 2) ctx.fillRect(Math.round(b.x + ox - ux * i), Math.round(by + oy - uy * i), 1, 1);
       }
+    },
+
+    // dư ảnh lúc bóng trên không (fx.ball.ghosts): lịch sử vị trí theo đồng hồ trận (g.time; dừng hình / pause thì đứng yên), giữ maxAge giây.
+    // Xoá khi có người giữ, bóng nhảy xa (giao bóng, Tuyệt kỹ), đồng hồ lùi (trận mới). Điểm cũ nằm lệch hướng bay hiện tại quá turn (cos) thì
+    // bỏ cùng mọi điểm cũ hơn -> sau khi dội / bị chạm, dư ảnh không chỉ về đường bay cũ
+    ballGhosts(ctx, b, g) {
+      const A = SFC_CONFIG.game.fx.ball.ghosts, H = this._bh || (this._bh = []), now = g.time;
+      const last = H[0];
+      if (last && (now < last.t || Math.abs(b.x - last.x) + Math.abs(b.y - last.y) + Math.abs(b.z - last.z) > 90)) H.length = 0;
+      if (!H.length || now - H[0].t >= 1 / 120) H.unshift({ x: b.x, y: b.y, z: b.z, t: now, roll: b.roll || 0 });
+      while (H.length && now - H[H.length - 1].t > A.maxAge) H.pop();
+      if (!A || b.z < A.minZ || b.skin || H.length < 2) return;
+      // cắt lịch sử lệch hướng (so trên mặt phẳng màn hình: x, y - z)
+      const svx = b.vx, svy = b.vy - (b.vz || 0), ss = Math.hypot(svx, svy);
+      let keep = H.length;
+      if (ss > 1) for (let i = 1; i < H.length; i++) {
+        const dx = b.x - H[i].x, dy = (b.y - b.z) - (H[i].y - H[i].z), d = Math.hypot(dx, dy);
+        if (d > 2 && (dx * svx + dy * svy) / (d * ss) < A.turn) { keep = i; break; }
+      }
+      for (let k = A.ages.length - 1; k >= 0; k--) {
+        const t = now - A.ages[k];
+        let p = null;
+        for (let i = 1; i < keep; i++) if (H[i].t <= t) { const q = H[i - 1], o = H[i], u = (t - o.t) / Math.max(1e-6, q.t - o.t);
+          p = { x: o.x + (q.x - o.x) * u, y: o.y + (q.y - o.y) * u, z: o.z + (q.z - o.z) * u, roll: o.roll }; break; }
+        if (!p || p.z < A.minZ * 0.5) continue;
+        SP().drawBall(ctx, { x: p.x, y: p.y, z: p.z, roll: p.roll, fx: {} }, A.alpha[k], true);
+      }
+    },
+
+    // đệm vẽ 1 người (render.playerScale): xoá rồi đặt gốc toạ độ để bàn chân (rx, ry) rơi vào điểm neo (ax, ay)
+    playerBuf(rx, ry) {
+      let B = this._pb;
+      if (!B) {
+        const cv = document.createElement('canvas');
+        cv.width = 128; cv.height = 128;
+        B = this._pb = { cv, ctx: cv.getContext('2d'), ax: 64, ay: 92 };
+        B.ctx.imageSmoothingEnabled = false;
+      }
+      B.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      B.ctx.clearRect(0, 0, B.cv.width, B.cv.height);
+      B.ctx.globalAlpha = 1;
+      B.ctx.setTransform(1, 0, 0, 1, B.ax - rx, B.ay - ry);
+      return B.ctx;
+    },
+
+    // vòng dưới đất quanh bóng lỏng (không ai giữ, sát đất, đang chậm): tìm bóng giữa đám đông
+    ballRing(ctx, b, t) {
+      const R = SFC_CONFIG.game.fx.ball.ring;
+      if (!R || b.owner || b.skin || b.z > SFC_CONFIG.game.ball.pickupHeight || b.speed > R.maxSpeed) return;
+      const rr = Math.round(R.r + R.pulse * Math.sin(t * R.rate * Math.PI * 2));
+      ctx.globalAlpha = R.alpha;
+      SP().ringPx(ctx, Math.round(b.x), Math.round(b.y) + 1, rr, `rgb(${R.color})`);
+      ctx.globalAlpha = 1;
+    },
+
+    // bóng vẽ đè lần 2 ở độ mờ fx.ball.xray, không bóng đổ: chỗ không bị che thì trùng màu (không đổi gì), bị người / VFX che thì hiện xuyên.
+    // Bóng đổi hình / lửa / sét (vẽ cộng sáng) thì bỏ qua: vẽ lần 2 sẽ sáng gắt hơn
+    ballXray(ctx, b) {
+      const a = SFC_CONFIG.game.fx.ball.xray;
+      if (!a || b.skin || b.fx.fire || b.fx.thunder) return;
+      SP().drawBall(ctx, b, a, true);
     },
 
     // khung thành: vẽ 1 lần vào canvas đệm (theo kích thước sân + bên), mỗi khung hình chỉ drawImage

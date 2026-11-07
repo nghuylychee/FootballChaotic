@@ -54,6 +54,29 @@ window.SFC = window.SFC || {};
     return nearest(g.teams[team].players, g.ownGoal(team), (o) => o !== ctl && o.state !== 'stun' && g.canKeep(o)).p;
   }
 
+  // ĐÁ LÙI đội máy giữ khung (ai.keeperStay): đội máy không cầm bóng -> người giữ khung luôn trông khung, chỉ lên khi đội mình cầm bóng.
+  // Không áp cho đội của người chơi (đồng đội AI có luật riêng), Skill game, đội chỉ còn 1 người (không ai khác áp sát)
+  function keeperStays(g, team) {
+    return !!A().keeperStay && !g.isHuman(team) && !g.drill && g.teams[team].players.length > 1;
+  }
+  // ĐÁ LÙI AI CỦA NGƯỜI CHƠI VỀ KHUNG KHI MẤT BÓNG (ai.keeperRecover, user 2026-11-07): đội người chơi không cầm bóng -> đồng đội AI giữ khung
+  // lập tức về trông khung ở mọi khoảng cách (như keeperStay của đội máy), chỉ rời khung tắc người cầm bóng khi người đó chưa có ai kèm
+  function keeperRecovers(g, team) {
+    const R = A().keeperRecover;
+    return !!(R && R.mates) && g.isHuman(team) && !g.drill && g.teams[team].players.length > 1;
+  }
+  // người cầm bóng c đã có đồng đội của p (kể cả người chơi) kèm sát (keeperRecover.marked px)
+  function carrierMarked(g, p, c) {
+    const R = A().keeperRecover;
+    return g.teams[p.team].players.some((o) => o !== p && o.state !== 'stun' && U.dist(o, c) < R.marked);
+  }
+
+  // NGƯỜI CẦM BÓNG ĐỨNG YÊN (ai.stillCarrier): đã đứng yên bao lâu (s, 0 = đang chạy). Theo dõi ở AI.update (g.aiStill)
+  function stillFor(g, c) {
+    const S = g.aiStill;
+    return S && c && S.id === c.id ? g.time - S.at : 0;
+  }
+
   // lối chơi ai.mate: đồng đội AI của người chơi ở vị trí thuộc mate.roles (mặc định ĐÁ CAO) -> cấu hình mate; còn lại null.
   // Đồng đội AI ĐÁ LÙI giữ lối chơi thủ: trông khung, kèm người, chuyền nhiều (như đội máy)
   function mateStyle(g, p) {
@@ -64,6 +87,7 @@ window.SFC = window.SFC || {};
   const AI = {
     update(dt, g) {
       this.watchBall(g);
+      this.watchStill(g);
       // vùng nguy hiểm của luật trận (FOOTBALL STORY / Elite, shared/systems/matchmods.js) — AI đội bị nhắm né (avoid)
       const hz = g.mod && SFC.MatchMods ? SFC.MatchMods.hazards(g) : null;
       for (const p of g.players) {
@@ -91,6 +115,18 @@ window.SFC = window.SFC || {};
         else this.loose(dt, g, p);
         if (hz && p.team !== hz.team) this.avoid(dt, g, p, hz.list);
       }
+    },
+
+    // người cầm bóng chạy chậm hơn stillCarrier.speed: ghi lúc bắt đầu đứng yên (g.aiStill = { id, at }); chạy lại / đổi người cầm -> xoá
+    watchStill(g) {
+      const S = A().stillCarrier, c = g.ball.owner;
+      if (!S || !c || Math.hypot(c.vx, c.vy) >= S.speed) { g.aiStill = null; return; }
+      if (!g.aiStill || g.aiStill.id !== c.id) g.aiStill = { id: c.id, at: g.time };
+    },
+    // người cầm bóng c đã đứng yên đủ lâu (ai.stillCarrier.time)
+    carrierStill(g, c) {
+      const S = A().stillCarrier;
+      return !!S && stillFor(g, c) >= S.time;
     },
 
     // NÉ LUẬT SÂN (ai.avoid): sửa p.intent vừa quyết xong. Khoảng cách có dấu tới vùng (âm = đang trong) + hướng ra ngoài (nx, ny)
@@ -497,28 +533,39 @@ window.SFC = window.SFC || {};
       // đội máy / đồng đội AI ĐÁ LÙI: đối phương cầm bóng đã tới gần -> người gần khung nhất trông khung, người còn lại áp sát
       // đồng đội AI ĐÁ CAO: luôn áp sát, chỉ về trông khung khi nguy hiểm rõ ràng (ai.mate)
       const danger = M ? this.mateDanger(g, p, c) : Math.abs(c.x - ownGoal.x) < (humanTeam ? cfg.mateKeeperCoverDist : cfg.keeperCoverDist);
-      const keeper = danger && !M ? keeperOf(g, p.team) : null;
+      // đội máy (ai.keeperStay) / đồng đội AI của người chơi (ai.keeperRecover): người giữ khung trông khung ở mọi khoảng cách khi đối phương cầm bóng
+      const rec = keeperRecovers(g, p.team), stay = keeperStays(g, p.team) || rec, KR = A().keeperRecover;
+      const keeper = (danger || stay) && !M ? keeperOf(g, p.team) : null;
+      // người cầm bóng đứng yên (ai.stillCarrier): đội máy thêm 1 người áp sát (người gần thứ 2, trừ người giữ khung)
+      const still = !humanTeam && this.carrierStill(g, c), SC = cfg.stillCarrier;
 
       let presser = null;
-      if (!humanTeam) presser = nearest(tm.players, c, (o) => o !== keeper).p;
+      if (!humanTeam) {
+        const order = tm.players.filter((o) => o !== keeper && o.state !== 'stun').sort((a, b) => U.dist(a, c) - U.dist(b, c));
+        presser = order[0] || nearest(tm.players, c, (o) => o !== keeper).p;
+        if (still && order[1] === p) presser = p;
+      }
       else if (M) { if (!danger) presser = p; }
+      // người giữ khung về khung khi mất bóng (keeperRecover): chỉ lao ra tắc khi người cầm bóng đã tới gần (engage px) mà chưa ai kèm
+      else if (rec && p === keeper) { if (U.dist(c, ownGoal) < KR.zone && U.dist(p, c) < KR.engage && !carrierMarked(g, p, c)) presser = p; }
       // đồng đội AI ĐÁ LÙI: lên áp sát khi bóng chưa tới gần khung nhà và người chơi ở xa người cầm bóng,
       // hoặc cùng người chơi kẹp người cầm bóng (helpPress)
       else if (ctl && this.helpPress(g, p, c, ctl, danger)) presser = p;
-      else if (!ctl || (!danger && U.dist(ctl, c) > cfg.keeperPressDist)) presser = nearest(tm.players, c, (o) => o.state !== 'stun' && o !== ctl).p;
+      else if (!ctl || (!danger && U.dist(ctl, c) > cfg.keeperPressDist)) presser = nearest(tm.players, c, (o) => o.state !== 'stun' && o !== ctl && !(rec && o === keeper)).p;
 
       // ÁP SÁT (ai.press): vừa mất bóng (phản pressing) hoặc người cầm bóng đi sát mình -> lao vào đánh, trừ người trông khung
       // đang trong vòng nguy hiểm. Không cả đội bu vào: chỉ khi ít hơn maxPressers đồng đội đang gần người cầm bóng hơn mình
       const PR = cfg.press, protectedGK = g.isProtected(c), pk = PR ? pressK(D, PR) : 0;
       const counter = !!PR && p.ai.cpUntil > g.time && p !== ctl;
-      if (PR && p !== presser && p !== ctl && !protectedGK && !(danger && p === keeper)) {
+      if (PR && p !== presser && p !== ctl && !protectedGK && p !== keeper) {
         const dc = U.dist(p, c);
         const closer = tm.players.filter((o) => o !== p && o.state !== 'stun' && U.dist(o, c) < dc).length;
         if ((counter || dc < PR.engage * pk) && closer < PR.maxPressers) presser = p;
       }
 
       // HẬU VỆ CUỐI (ai.lastMan): đồng đội AI phải 1 chọi 1 khi người chơi đã bị vượt qua -> tắc luôn thay vì chạy về khung
-      if (humanTeam && p !== ctl && p !== presser && (p === keeper || (M && danger)) && this.lastMan(g, p, c)) presser = p;
+      // người giữ khung (keeperRecover): người cầm bóng đã có đồng đội kèm thì không lao vào, cứ trông khung
+      if (humanTeam && p !== ctl && p !== presser && (p === keeper || (M && danger)) && !(rec && p === keeper && (carrierMarked(g, p, c) || U.dist(c, ownGoal) >= KR.zone)) && this.lastMan(g, p, c)) presser = p;
 
       if (p === presser) {
         let target = c;
@@ -536,24 +583,26 @@ window.SFC = window.SFC || {};
         if (beaten) moveTo(p, target.x + (target.vx || 0) * PR.chaseLead, target.y + (target.vy || 0) * PR.chaseLead, sprint, 1);
         else moveTo(p, target.x + gd.x * gap, target.y + gd.y * gap, sprint, 2);
         if (target !== c || p.ai.t > 0 || protectedGK) return;
-        p.ai.t = D.reaction * U.rand(0.8, 1.4) * (counter ? U.lerp(1, PR.counterReact, pk) : 1) * (p.ai.lastManAt === g.time ? 0.5 : 1);
+        p.ai.t = D.reaction * U.rand(0.8, 1.4) * (counter ? U.lerp(1, PR.counterReact, pk) : 1) * (p.ai.lastManAt === g.time ? 0.5 : 1) * (still ? SC.react : 1);
         const dc = U.dist(p, c);
         p.facing = Math.atan2(c.y - p.y, c.x - p.x);
         const style = tm.cfg.aiStyle || { light: 1, hard: 1 };
         // đồng đội AI của người chơi: tỉ lệ đấm riêng (ai.mate.lightChance), không theo aiStyle của đội
         // hậu vệ cuối (ai.lastMan): không còn ai chắn sau lưng -> tới tầm là ra đòn luôn
         const last = p.ai.lastManAt === g.time;
-        const lightP = last ? 1 : (humanTeam ? cfg.mate.lightChance * D.aggression : Math.min(0.9, 0.6 * D.aggression * style.light)) * (counter ? U.lerp(1, PR.counterPunch, pk) : 1);
+        let lightP = last ? 1 : (humanTeam ? cfg.mate.lightChance * D.aggression : Math.min(0.9, 0.6 * D.aggression * style.light)) * (counter ? U.lerp(1, PR.counterPunch, pk) : 1);
+        // người cầm bóng đứng yên: đấm ít nhất stillCarrier.lightChance (AI non tay cũng không đứng nhìn)
+        if (still) lightP = Math.max(lightP, SC.lightChance);
         // Tay Cao Su: đấm được từ xa
         const reach = Math.max(C.light.range, g.cores.lightReach(p) * 0.8);
         if (dc < reach + p.radius * 2 && Math.random() < lightP) Act().lightAttack(g, p);
-        else if (dc > cfg.hardDistMin && dc < cfg.hardDistMax && Math.random() < 0.1 * D.aggression * style.hard * g.cores.aiHardMult(p)) Act().hardAttack(g, p);
+        else if (dc > cfg.hardDistMin && dc < cfg.hardDistMax && Math.random() < 0.1 * D.aggression * style.hard * g.cores.aiHardMult(p) * (still ? SC.hardMult : 1)) Act().hardAttack(g, p);
         return;
       }
 
       // chỉ 1 người trông khung: người được chọn (keeperOf) — đồng đội AI lối chơi ai.mate tự xét (mateDanger: chưa ai đứng trong vòng cấm).
       // Người còn lại (3v3) đi kèm người bên dưới, không chạy về đứng chung khung thành
-      if (danger && (M ? g.canKeep(p) : p === keeper)) return this.goalkeeper(dt, g, p);
+      if ((danger || stay) && (M ? g.canKeep(p) : p === keeper)) return this.goalkeeper(dt, g, p);
 
       // kèm người: đứng giữa đối thủ được giao và khung thành. 3v3+: mỗi người kèm 1 đối thủ khác nhau — người kèm (không cầm quyền điều
       // khiển, không áp sát, không trông khung) xếp theo vị trí, đối thủ xếp theo độ nguy hiểm (gần khung nhà trước); thiếu đối thủ thì
@@ -823,7 +872,11 @@ window.SFC = window.SFC || {};
       const passToMate = b.passTarget && b.passTarget.team === p.team && b.passTarget.state !== 'stun';
 
       const ctl = mate ? g.ctrl[p.team] : null;
-      let chaser = nearest(tm.players, pred, (o) => o.state === 'normal' && o !== ctl);
+      // đội máy (ai.keeperStay): người giữ khung không đuổi bóng lỏng ngoài vòng cấm (trong vòng cấm: goalkeeper tự lao ra nếu tới trước)
+      // đồng đội AI của người chơi (ai.keeperRecover): như trên, vừa mất bóng thì người giữ khung về khung luôn, không đuổi bóng lỏng
+      const stay = keeperStays(g, p.team) || (!M && keeperRecovers(g, p.team)), gk = stay ? keeperOf(g, p.team) : null;
+      let chaser = nearest(tm.players, pred, (o) => o.state === 'normal' && o !== ctl && o !== gk);
+      if (!chaser.p) chaser = nearest(tm.players, pred, (o) => o.state === 'normal' && o !== ctl);
       if (ctl && U.dist(ctl, pred) < chaser.d) chaser = { p: null };
       if (p === chaser.p && !passToMate) {
         // người đuổi bóng chạy tới chỗ mình đoán (lệch err), còn việc ai đuổi thì cả đội vẫn chọn theo pred thật
@@ -840,7 +893,7 @@ window.SFC = window.SFC || {};
       const keeper = nearest(tm.players, g.ownGoal(p.team), (o) => o !== ctl && o !== chaser.p && o.state !== 'stun' && g.canKeep(o)).p;
       const cover = M
         ? U.dist(b, g.ownGoal(p.team)) < A().mate.dangerDist && !(ctl && g.inKeeperZone(ctl))
-        : (b.x - f.cx) * dir < 0 || b.vx * dir < -120;
+        : stay || (b.x - f.cx) * dir < 0 || b.vx * dir < -120;
       if (!passToMate && cover && (M ? g.canKeep(p) : p === keeper)) return this.goalkeeper(dt, g, p);
 
       const home = g.formationPos(p);

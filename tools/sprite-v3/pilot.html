@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprite v3 pilot</title>
+<style>
+  :root { --bg: #15121a; --panel: #1f1b26; --ink: #ece6f5; --dim: #9a91a8; --pitch: #3c4a3a; --accent: #ffe14f; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, sans-serif; }
+  main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; margin: 8px 0 4px; }
+  h2 { font-size: 16px; margin: 24px 0 6px; color: var(--accent); }
+  p { margin: 4px 0; color: var(--dim); max-width: 760px; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+  .bar button { background: var(--panel); color: var(--ink); border: 1px solid #3a3346; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .bar button.on { border-color: var(--accent); color: var(--accent); }
+  .wrap { overflow-x: auto; background: var(--panel); border-radius: 8px; padding: 8px; }
+  canvas { image-rendering: pixelated; display: block; }
+  .err { color: #ff6b6b; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sprite v3: bản thử cỡ người</h1>
+  <p><b>v2 1x</b> = sprite hiện tại (cao 24 px) · <b>v2 ×1.3</b> = cách phóng tạm đang chạy trong game (px không đều) · <b>v3</b> = vẽ lại cao 31 px, mắt A 4×4 (đã chọn).</p>
+  <div class="bar" id="zoomBar"></div>
+
+  <h2>1. Cỡ thật trên sân (mỗi px game = <span id="zl">2</span> px màn hình)</h2>
+  <p>Kèm quả bóng 9 px (cỡ gốc) để so tỉ lệ người / bóng.</p>
+  <div class="wrap"><canvas id="onPitch"></canvas></div>
+
+  <h2>2. Soi px (phóng 6 lần)</h2>
+  <p>3 kiểu da / tóc / áo. Thứ tự hướng: xuống · chéo xuống · ngang · chéo lên · lên.</p>
+  <div class="wrap" id="zoomed" style="display:grid;gap:8px"></div>
+  <h2>3. Chạy · chạy nước rút (đợt 1)</h2>
+  <p>Đang chạy theo nhịp game (12 khung / s). Nước rút chỉ khác khi nhìn ngang / chéo; nhìn xuống / lên là bước chạy thường (như v2).</p>
+  <div class="bar" id="speedBar"></div>
+  <div class="wrap"><canvas id="anim"></canvas></div>
+  <p>Khung khoá của v3: mỗi hàng 1 hướng, 4 khung chạy rồi 4 khung nước rút.</p>
+  <div class="wrap"><canvas id="frames"></canvas></div>
+  <h2>4. Ra đòn (đợt 2)</h2>
+  <p>Nhịp và góc tay chân lấy nguyên của v2 (đã duyệt), chỉ hình vẽ đổi theo người 31 px. Hàng trên v2, hàng dưới v3; tốc độ theo nút ở mục 3.</p>
+  <div class="bar" id="actBar"></div>
+  <div class="wrap"><canvas id="act"></canvas></div>
+  <p>8 khung đều nhau trong động tác (v3), mỗi hàng 1 hướng.</p>
+  <div class="wrap"><canvas id="actFrames"></canvas></div>
+  <h2>5. Thủ môn (đợt 3)</h2>
+  <p>Ôm bóng, đỡ tại chỗ, tung bóng đá, đổ người (bay, chạm đất, nằm, bò, đứng dậy), đổ người bắt được bóng. Hàng trên v2, hàng dưới v3.</p>
+  <div class="bar" id="gkBar"></div>
+  <div class="wrap"><canvas id="gk"></canvas></div>
+  <p>8 khung đều nhau trong động tác (v3), mỗi hàng 1 hướng.</p>
+  <div class="wrap"><canvas id="gkFrames"></canvas></div>
+  <h2>6. Tóc / mũ · mặt · giày (đợt 4)</h2>
+  <p>Mỗi hàng 1 món: trái v2 (5 hướng), phải v3 (5 hướng). v3 phóng bản đồ ô của v2 lên đầu / chân mới rồi vẽ lại viền 1 px. 4 kiểu tóc vẽ bằng code (beanie, bandana, bun, halo) chưa có.</p>
+  <div class="bar" id="lookBar"></div>
+  <div class="wrap"><canvas id="looks"></canvas></div>
+  <div class="err" id="err"></div>
+</main>
+
+<script src="../../config/game.config.js"></script>
+<script src="../../shared/engine/utils.js"></script>
+<script src="../../src/render/player/base.js"></script>
+<script src="../../src/render/player/body.js"></script>
+<script src="../../src/render/player/run.js"></script>
+<script src="../../src/render/player/punch.js"></script>
+<script src="../../src/render/player/kick.js"></script>
+<script src="../../src/render/player/shoot.js"></script>
+<script src="../../src/render/player/pass.js"></script>
+<script src="../../src/render/player/power.js"></script>
+<script src="../../src/render/player/torso.js"></script>
+<script src="../../src/render/player/sprint.js"></script>
+<script src="../../src/render/player/header.js"></script>
+<script src="../../src/render/player/keeper.js"></script>
+<script src="../../src/render/player/gkball.js"></script>
+<script src="../../src/render/player/fly.js"></script>
+<script src="../../src/render/player/hit.js"></script>
+<script src="../../src/render/player/celebrate.js"></script>
+<script src="../../src/render/player/hair.js"></script>
+<script src="../../src/render/player/face.js"></script>
+<script src="../../src/render/player/shoes.js"></script>
+<script src="../../src/render/player/fx.js"></script>
+<script src="../../src/render/player/ported.js"></script>
+<script src="../../src/render/player/pose.js"></script>
+<script src="../../src/render/player/draw.js"></script>
+<script src="../../src/render/player3/body.js"></script>
+<script src="../../src/render/player3/attack.js"></script>
+<script src="../../src/render/player3/keeper.js"></script>
+<script src="../../src/render/player3/look.js"></script>
+<script>
+(function () {
+  const errEl = document.getElementById('err');
+  window.addEventListener('error', (e) => { errEl.textContent += e.message + '\n'; });
+  const V2 = SFC.PlayerSprite, V3 = SFC.PlayerSprite3;
+  const DIRS = [['xuống', Math.PI / 2], ['chéo xuống', Math.PI / 4], ['ngang', 0], ['chéo lên', -Math.PI / 4], ['lên', -Math.PI / 2]];
+  const LOOKS = [
+    { skin: '#f2c6a0', hair: '#1a1216', shirt: '#e8344a', shirtD: '#a8213a', shorts: '#f4f4f4', sock: '#e8344a', shoe: '#1d1d24', sole: '#f4f4f4', band: '#ffffff' },
+    { skin: '#7a4a2c', hair: '#f2d16b', shirt: '#2f6bff', shirtD: '#1d45b0', shorts: '#14204a', sock: '#f4f4f4', shoe: '#ff8a1f', sole: '#3a2a1a', band: '#ffe14f' },
+    { skin: '#c68b5e', hair: '#5a3218', shirt: '#ffd23f', shirtD: '#c49a1c', shorts: '#2a2a33', sock: '#2a2a33', shoe: '#f4f4f4', sole: '#e8344a', band: '#2a2a33' },
+  ];
+  const COLS = [['v2 1x', 'v2'], ['v2 ×1.3', 'v2s'], ['v3', 'A']];
+  const PITCH = '#3c4a3a', LINE = 'rgba(255,255,255,0.35)';
+  let pitchZoom = 2;
+
+  // vẽ 1 người ở px game (ctx đã ở lưới 1x), chân tại (X, Y)
+  const buf = document.createElement('canvas'); buf.width = 64; buf.height = 64;
+  const bctx = buf.getContext('2d');
+  function person(ctx, kind, X, Y, look, facing, mv) {
+    const o = Object.assign({ facing, cut: 'classic' }, look);
+    if (mv) {   // mv = { t: giây, sprint }: v2 đọc moving / anim / gait / gaitT, v3 đọc moving / anim / sprint
+      Object.assign(o, { moving: true, anim: mv.t, sprint: mv.sprint });
+      if (mv.sprint) Object.assign(o, { gait: 'sprint', gaitT: mv.t });
+    }
+    if (kind === 'v2') V2.draw(ctx, X, Y, o);
+    else if (kind === 'v2s') {
+      bctx.clearRect(0, 0, 64, 64); V2.draw(bctx, 32, 48, o);
+      ctx.imageSmoothingEnabled = false;
+      const k = 1.3; ctx.drawImage(buf, Math.round(X - 32 * k), Math.round(Y - 48 * k), Math.round(64 * k), Math.round(64 * k));
+    } else V3.draw(ctx, X, Y, Object.assign(o, { eyes: kind }));
+  }
+  function ball(ctx, X, Y) {
+    const disc = (d, c) => { const R = d / 2; ctx.fillStyle = c; for (let j = 0; j < d; j++) { const dy = j + 0.5 - R, h = Math.sqrt(Math.max(0, R * R - dy * dy)); const w = 2 * Math.round(h - 0.5) + 1; ctx.fillRect(X - Math.floor(w / 2), Y - Math.floor(R) + j, w, 1); } };
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(X, Y + 5, 3.5, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+    disc(9, '#140c16'); disc(7, '#f4f4f4'); ctx.fillStyle = '#c7c7d2'; ctx.fillRect(X + 1, Y + 1, 2, 2); ctx.fillStyle = '#222'; ctx.fillRect(X - 1, Y - 1, 1, 1); ctx.fillRect(X + 1, Y - 2, 1, 1);
+  }
+  // vẽ vào canvas 1x rồi phóng nguyên lần sang canvas hiện
+  function render(cv, w, h, zoom, paint) {
+    const src = document.createElement('canvas'); src.width = w; src.height = h;
+    const s = src.getContext('2d'); s.imageSmoothingEnabled = false; paint(s);
+    cv.width = w * zoom; cv.height = h * zoom;
+    const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(src, 0, 0, w * zoom, h * zoom);
+  }
+  function label(ctx, text, x, y) { ctx.fillStyle = '#ffffff'; ctx.font = '6px monospace'; ctx.textAlign = 'center'; ctx.fillText(text, x, y); }
+
+  // 2 hàng x 2 nhóm: v2 1x · v2 ×1.3 / v3 A · v3 B, mỗi nhóm 5 hướng + 1 quả bóng
+  function drawPitch() {
+    const cellW = 30, gW = cellW * 5 + 24, rowH = 52, W = gW * 2 + 8, H = rowH * 2 + 8;
+    const pos = (gi) => [4 + (gi % 2) * gW, 4 + Math.floor(gi / 2) * rowH];
+    render(document.getElementById('onPitch'), W, H, pitchZoom, (c) => {
+      c.fillStyle = PITCH; c.fillRect(0, 0, W, H);
+      COLS.forEach(([, kind], gi) => {
+        const [gx, gy] = pos(gi);
+        c.fillStyle = LINE; c.fillRect(gx, gy + rowH - 6, gW - 6, 1);
+        DIRS.forEach(([, f], di) => person(c, kind, gx + 14 + di * cellW, gy + rowH - 10, LOOKS[0], f));
+        ball(c, gx + 14 + 5 * cellW - 8, gy + rowH - 14);
+      });
+    });
+    const ctx = document.getElementById('onPitch').getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+    COLS.forEach(([name], gi) => { const [gx, gy] = pos(gi); ctx.fillText(name, (gx + 2) * pitchZoom, (gy + 6) * pitchZoom + 6); });
+  }
+
+  // mỗi kiểu da / áo 1 bảng: hàng = v2 1x · v3 A · v3 B, cột = 5 hướng
+  function drawZoomed() {
+    const host = document.getElementById('zoomed'), Z = 6, cellW = 30, rowH = 38, KINDS = [['v2 1x', 'v2'], ['v3', 'A']];
+    host.innerHTML = '';
+    LOOKS.forEach((look) => {
+      const cv = document.createElement('canvas'), W = 18 + 5 * cellW, H = KINDS.length * rowH + 4;
+      host.appendChild(cv);
+      render(cv, W, H, Z, (c) => {
+        c.fillStyle = PITCH; c.fillRect(0, 0, W, H);
+        KINDS.forEach(([, kind], ki) => DIRS.forEach(([, f], di) => person(c, kind, 18 + cellW / 2 + di * cellW, (ki + 1) * rowH - 2, look, f)));
+      });
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.font = '13px system-ui'; ctx.textAlign = 'left';
+      KINDS.forEach(([name], ki) => ctx.fillText(name, 6, (ki * rowH + 8) * Z));
+    });
+  }
+
+  // chạy: hàng = v2 chạy · v3 chạy · v2 nước rút · v3 nước rút, cột = 5 hướng
+  let speed = 1, t0 = performance.now(), tAcc = 0, last = t0;
+  const ANIM = [['v2 chạy', 'v2', false], ['v3 chạy', 'A', false], ['v2 nước rút', 'v2', true], ['v3 nước rút', 'A', true]];
+  function drawAnim(now) {
+    tAcc += ((now - last) / 1000) * speed; last = now;
+    const cellW = 30, rowH = 40, W = 18 + 5 * cellW, H = ANIM.length * rowH + 4, Z = 4, cv = document.getElementById('anim');
+    render(cv, W, H, Z, (c) => {
+      c.fillStyle = PITCH; c.fillRect(0, 0, W, H);
+      ANIM.forEach(([, kind, sp], ri) => DIRS.forEach(([, f], di) => person(c, kind, 18 + cellW / 2 + di * cellW, (ri + 1) * rowH - 3, LOOKS[0], f, { t: tAcc, sprint: sp })));
+    });
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+    ANIM.forEach(([name], ri) => ctx.fillText(name, 6, (ri * rowH + 8) * Z));
+    requestAnimationFrame(drawAnim);
+  }
+  function drawFrames() {
+    const cellW = 28, rowH = 40, W = 8 + 8 * cellW + 10, H = DIRS.length * rowH + 4;
+    render(document.getElementById('frames'), W, H, 3, (c) => {
+      c.fillStyle = PITCH; c.fillRect(0, 0, W, H);
+      DIRS.forEach(([, f], di) => {
+        for (let k = 0; k < 8; k++) person(c, 'A', 8 + cellW / 2 + k * cellW + (k >= 4 ? 10 : 0), (di + 1) * rowH - 3, LOOKS[1], f, { t: (k % 4) / 12 + 0.001, sprint: k >= 4 });
+      });
+    });
+  }
+  // ra đòn: p giả cho attackPose của v2 (atkType, atkT, vx) · dur = độ dài 1 vòng (giây, quét tới khi hết tư thế) + nghỉ 0.35 s
+  const ACTS = [
+    ['Đấm', { atkType: 'light' }], ['Hard attack', { atkType: 'hard' }], ['Sút', { atkType: 'shoot' }], ['Vô-lê', { atkType: 'volley' }],
+    ['Chuyền sệt', { atkType: 'pass' }], ['Chuyền bổng', { atkType: 'lob' }], ['Sút mạnh: lấy đà đứng', { atkType: 'pw', fixed: 1.3 }],
+    ['Sút mạnh: vung', { atkType: 'power' }], ['Sút mạnh: chạy (đẩy bóng + bước nặng)', { atkType: 'pw', vx: 80, fixed: 1.6 }], ['Đánh đầu', { atkType: 'header' }],
+  ];
+  let actI = 0;
+  const poseAt = (A, t) => V2.attackPose({ atkType: A.atkType, atkT: t, vx: A.vx || 0, vy: 0 });
+  const busy = (a) => a && (a.leg != null || (a.fist != null && Math.abs(a.e) > 0.01) || (a.header && a.hk < 1) || a.gait);   // đấm: atk.fist có cả lúc đã về (e = 0)
+  function durOf(A) {
+    if (A.fixed) return A.fixed;
+    let t = 0.02;
+    while (t < 3 && busy(poseAt(A, t))) t += 0.01;
+    return t + 0.35;
+  }
+  function actPerson(c, kind, X, Y, A, t, facing) {
+    const atk = poseAt(A, t), o = Object.assign({ facing, cut: 'classic' }, LOOKS[0]);
+    if (kind === 'v2') {
+      if (atk.gait) Object.assign(o, { moving: true, anim: atk.gt, gait: atk.gait, gaitT: atk.gt });
+      else o.atk = atk;
+      if (atk.jx) X += Math.sign(atk.jx) * Math.round(Math.abs(atk.jx));
+      V2.draw(c, X, Y, o);
+    } else V3.draw(c, X, Y, Object.assign(o, { atk, eyes: 'A' }));
+  }
+  let actT = 0, actLast = performance.now();
+  function drawAct(now) {
+    actT += ((now - actLast) / 1000) * speed; actLast = now;
+    const A = ACTS[actI][1], D = durOf(A), t = actT % D, cellW = 36, rowH = 60, W = 18 + 5 * cellW, H = 2 * rowH + 4, Z = 4, cv = document.getElementById('act');
+    render(cv, W, H, Z, (c) => {
+      c.fillStyle = PITCH; c.fillRect(0, 0, W, H);
+      ['v2', 'A'].forEach((kind, ri) => DIRS.forEach(([, f], di) => actPerson(c, kind, 18 + cellW / 2 + di * cellW, (ri + 1) * rowH - 4, A, t, f)));
+    });
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+    ['v2', 'v3'].forEach((name, ri) => ctx.fillText(name, 6, (ri * rowH + 8) * Z));
+    requestAnimationFrame(drawAct);
+  }
+  function drawActFrames() {
+    const A = ACTS[actI][1], D = durOf(A) - 0.35, cellW = 34, rowH = 60, W = 8 + 8 * cellW, H = DIRS.length * rowH + 4;
+    render(document.getElementById('actFrames'), W, H, 3, (c) => {
+      c.fillStyle = PITCH; c.fillRect(0, 0, W, H);
+      DIRS.forEach(([, f], di) => { for (let k = 0; k < 8; k++) actPerson(c, 'A', 8 + cellW / 2 + k * cellW, (di + 1) * rowH - 4, A, 0.005 + (k / 7) * Math.max(0.01, D - 0.01), f); });
+    });
+  }
+  const abar = document.getElementById('actBar');
+  ACTS.forEach(([name], i) => {
+    const b = document.createElement('button'); b.textContent = name; if (i === actI) b.classList.add('on');
+    b.onclick = () => { actI = i; actT = 0; [...abar.children].forEach((x) => x.classList.toggle('on', x === b)); drawActFrames(); };
+    abar.appendChild(b);
+  });
+
+  // thủ môn: p giả như Player (đổ người: state dash lúc bay, diveT, poseEnd) + cầm bóng hay không (tung bóng: tới lúc chạm chân)
+  const PL = SFC_CONFIG.game.player, GLOVE = '#ffcf3f';
+  const GKS = [
+    ['Ôm bóng', { atkType: 'gkHold', hold: true, dur: 1.0 }],
+    ['Đỡ tại chỗ', { atkType: 'gkBlock', dur: PL.gkBlock.lead + PL.gkBlock.hold + PL.gkBlock.lower + 0.3 }],
+    ['Phát bóng bổng', { atkType: 'gkPunt', release: true }], ['Chuyền vô-lê', { atkType: 'gkVolley', release: true }],
+    ['Đổ người xuống', { atkType: 'diveD' }], ['Đổ người lên', { atkType: 'diveU' }],
+    ['Đổ người xuống, bắt được', { atkType: 'diveD', ball: true }], ['Đổ người lên, bắt được', { atkType: 'diveU', ball: true }],
+  ];
+  function gkDur(A) {
+    if (A.dur) return A.dur;
+    if (A.release) { const T = V2.gkTiming(A.atkType); return T.w + T.s + T.f + T.o + 0.3; }
+    return PL.gkDiveTime + PL.gkDivePose + 0.3;
+  }
+  function gkO(A, t, facing) {
+    const p = { atkType: A.atkType, atkT: t, vx: 0, vy: 0, state: 'normal' };
+    if (A.atkType.startsWith('dive')) { p.diveT = PL.gkDiveTime; p.poseEnd = PL.gkDiveTime + PL.gkDivePose; p.state = t < PL.gkDiveTime ? 'dash' : 'normal'; }
+    let atk = V2.attackPose(p), holding = !!(A.hold || A.ball);
+    if (A.release) { const T = V2.gkTiming(A.atkType); holding = t < T.w + T.s * 0.6; }
+    const gk = V2.gkState(p, atk, holding);
+    if (gk && gk.kind === 'dive' && gk.ball) atk = Object.assign({}, atk, { hold: true });
+    return Object.assign({ facing, cut: 'classic', glove: GLOVE, atk, gk }, LOOKS[2]);
+  }
+  const gkPerson = (c, kind, X, Y, A, t, f) => { const o = gkO(A, t, f); if (kind === 'v2') V2.draw(c, X, Y, o); else V3.draw(c, X, Y, Object.assign(o, { eyes: 'A' })); };
+  let gkI = 0, gkT = 0, gkLast = performance.now();
+  function drawGk(now) {
+    gkT += ((now - gkLast) / 1000) * speed; gkLast = now;
+    const A = GKS[gkI][1], t = gkT % gkDur(A), cellW = 40, rowH = 60, W = 18 + 5 * cellW, H = 2 * rowH + 4, Z = 4, cv = document.getElementById('gk');
+    render(cv, W, H, Z, (c) => {
+      c.fillStyle = PITCH; c.fillRect(0, 0, W, H);
+      ['v2', 'A'].forEach((kind, ri) => DIRS.forEach(([, f], di) => gkPerson(c, kind, 18 + cellW / 2 + di * cellW, (ri + 1) * rowH - 6, A, t, f)));
+    });
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+    ['v2', 'v3'].forEach((name, ri) => ctx.fillText(name, 6, (ri * rowH + 8) * Z));
+    requestAnimationFrame(drawGk);
+  }
+  function drawGkFrames() {
+    const A = GKS[gkI][1], D = gkDur(A) - 0.3, cellW = 38, rowH = 60, W = 8 + 8 * cellW, H = DIRS.length * rowH + 4;
+    render(document.getElementById('gkFrames'), W, H, 3, (c) => {
+      c.fillStyle = PITCH; c.fillRect(0, 0, W, H);
+      DIRS.forEach(([, f], di) => { for (let k = 0; k < 8; k++) gkPerson(c, 'A', 8 + cellW / 2 + k * cellW, (di + 1) * rowH - 6, A, 0.005 + (k / 7) * Math.max(0.01, D - 0.01), f); });
+    });
+  }
+  const gbar = document.getElementById('gkBar');
+  GKS.forEach(([name], i) => {
+    const b = document.createElement('button'); b.textContent = name; if (i === gkI) b.classList.add('on');
+    b.onclick = () => { gkI = i; gkT = 0; [...gbar.children].forEach((x) => x.classList.toggle('on', x === b)); drawGkFrames(); };
+    gbar.appendChild(b);
+  });
+
+  // đồ: hàng = 1 món, v2 5 hướng | v3 5 hướng. Tóc lửa / aura đổi theo anim -> vẽ lại mỗi khung
+  const LOOKSETS = {
+    'Tóc / mũ': () => Object.keys(V2.HAIR_STYLES).map((id) => [id, { cut: id }]),
+    'Mặt': () => Object.keys(V2.FACE_ITEMS).map((id) => [id, { face: id }]),
+    'Giày': () => Object.keys(V2.SHOE_STYLES).map((id) => [id, { shoes: id }]),
+  };
+  let lookSet = 'Tóc / mũ', lookT = 0, lookLast = performance.now();
+  function drawLooks(now) {
+    lookT += ((now - lookLast) / 1000) * speed; lookLast = now;
+    const list = LOOKSETS[lookSet](), cellW = 30, rowH = 44, W = 70 + 10 * cellW + 16, H = list.length * rowH + 6, Z = 3, cv = document.getElementById('looks');
+    render(cv, W, H, Z, (c) => {
+      c.fillStyle = PITCH; c.fillRect(0, 0, W, H);
+      list.forEach(([, extra], ri) => {
+        const look = Object.assign({}, LOOKS[ri % LOOKS.length], extra);
+        ['v2', 'A'].forEach((kind, gi) => DIRS.forEach(([, f], di) => {
+          const o = Object.assign({ facing: f, cut: 'classic', anim: lookT }, look), X = 70 + gi * (5 * cellW + 16) + cellW / 2 + di * cellW, Y = (ri + 1) * rowH - 4;
+          if (kind === 'v2') V2.draw(c, X, Y, o); else V3.draw(c, X, Y, Object.assign(o, { eyes: 'A' }));
+        }));
+      });
+    });
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.font = '13px system-ui'; ctx.textAlign = 'left';
+    list.forEach(([id], ri) => ctx.fillText(id, 6, (ri * rowH + 24) * Z));
+    requestAnimationFrame(drawLooks);
+  }
+  const lbar = document.getElementById('lookBar');
+  Object.keys(LOOKSETS).forEach((name) => {
+    const b = document.createElement('button'); b.textContent = name; if (name === lookSet) b.classList.add('on');
+    b.onclick = () => { lookSet = name; [...lbar.children].forEach((x) => x.classList.toggle('on', x === b)); };
+    lbar.appendChild(b);
+  });
+
+  const sbar = document.getElementById('speedBar');
+  [[1, '1×'], [0.25, '¼×'], [0, 'dừng']].forEach(([v, t]) => {
+    const b = document.createElement('button'); b.textContent = 'Tốc độ ' + t; if (v === speed) b.classList.add('on');
+    b.onclick = () => { speed = v; [...sbar.children].forEach((x) => x.classList.toggle('on', x === b)); };
+    sbar.appendChild(b);
+  });
+
+  const bar = document.getElementById('zoomBar');
+  [[2, 'Màn 1080p (2×)'], [3, '3×'], [1, '1×']].forEach(([z, t]) => {
+    const b = document.createElement('button'); b.textContent = 'Cỡ trên sân: ' + t; if (z === pitchZoom) b.classList.add('on');
+    b.onclick = () => { pitchZoom = z; document.getElementById('zl').textContent = z; [...bar.children].forEach((x) => x.classList.toggle('on', x === b)); drawPitch(); };
+    bar.appendChild(b);
+  });
+  try { drawPitch(); drawZoomed(); drawFrames(); requestAnimationFrame(drawAnim); drawActFrames(); requestAnimationFrame(drawAct); drawGkFrames(); requestAnimationFrame(drawGk); requestAnimationFrame(drawLooks); } catch (e) { errEl.textContent += e.stack; }
+})();
+</script>
+</body>
+</html>

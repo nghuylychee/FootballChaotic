@@ -977,6 +977,8 @@ window.SFC = window.SFC || {};
         if (o.hasBall) {
           let chance = L.stealChance * (p.stats.tackle / (o.stats.dribble * C.mod(o, 'dribble'))) * C.pmod(p, 'tackleChance');   // gồm Kiểm Soát Bóng của người bị đấm
           if (!p.isControlled) chance *= g.aiProfile(p.team).tackleMult;
+          // AI đấm người cầm bóng đang đứng yên (ai.stillCarrier): dễ rơi bóng hơn — đứng yên ôm bóng không còn an toàn
+          if (!p.isControlled && SFC.AI && SFC.AI.carrierStill(g, o)) chance *= G().ai.stillCarrier.stealMul;
           if (sure || upper) chance = 1;
           if (Math.random() >= chance) {
             // người cầm bóng trụ được: chỉ bị đẩy lùi

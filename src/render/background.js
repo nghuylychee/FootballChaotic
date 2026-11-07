@@ -12,7 +12,10 @@ window.SFC = window.SFC || {};
   // arena vẽ bằng bộ cảnh (src/render/art, arena.scene = tên cảnh trong SFC.Art): trả cảnh đó, không có thì null (vẽ theo màu như cũ)
   function scene(g) {
     const T = theme(g);
-    return (T.scene && SFC.Art && SFC.Art[T.scene]) || null;
+    const A = T.scene && SFC.Art && SFC.Art[T.scene];
+    // bộ cảnh vẽ cho khung 640 x 360 (W - 2·OX): khung trận lớn hơn (thử sân to) thì tạm vẽ theo màu
+    if (A && A.W - 2 * A.OX < SFC_CONFIG.game.render.width) return null;
+    return A || null;
   }
 
   function build(g) {

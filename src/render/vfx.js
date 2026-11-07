@@ -497,7 +497,7 @@ window.SFC = window.SFC || {};
       case 'skyfire': {   // Meteor Breaker: sao băng nhỏ rơi chéo phía trên màn hình khi trời tối đỏ
         ctx.globalCompositeOperation = 'lighter';
         for (let i = 0; i < 9; i++) {
-          const r = rng(o.id * 13 + i), ph = (el * (0.9 + r() * 0.6) + r()) % 1, sx = Math.round(r() * 640 - 60 + ph * 120), sy = Math.round(-10 + ph * 140);
+          const r = rng(o.id * 13 + i), ph = (el * (0.9 + r() * 0.6) + r()) % 1, sx = Math.round(SCR().x + r() * SCR().w - 60 + ph * 120), sy = Math.round(-10 + ph * 140);
           ctx.globalAlpha = fade * (1 - ph);
           for (let j = 0; j < 8; j++) px(ctx, sx - j * 2, sy - j * 2, 2, 2, j < 2 ? '#ffffff' : j < 5 ? '#ffd23f' : o.color);
         }
@@ -1901,7 +1901,7 @@ window.SFC = window.SFC || {};
         const k = 1 - c.t / c.max;
         const x = k < 0.15 ? -200 + (k / 0.15) * 520 : k < 0.8 ? 320 + (k - 0.15) * 40 : 346 + ((k - 0.8) / 0.2) * 520;
         ctx.save();
-        ctx.translate(x, 70); ctx.rotate(-0.12);
+        ctx.translate(x + SCR().x + SCR().w / 2 - 320, 70); ctx.rotate(-0.12);
         ctx.fillStyle = 'rgba(20,12,22,0.85)'; ctx.fillRect(-230, -22, 460, 44);
         ctx.fillStyle = c.color; ctx.fillRect(-230, -22, 460, 3); ctx.fillRect(-230, 19, 460, 3);
         const str = SFC.t(c.str);
