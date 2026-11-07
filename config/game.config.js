@@ -249,6 +249,9 @@ SFC_CONFIG.game = {
     pickupHeight: 15,
     selfPickupDelay: 0.3,
     looseNoPickup: 0.4,
+    // (s) thủ môn phất bóng lên trời từ tay (sút / phá / phất, Actions.gkRelease sky; chuyền từ tay vẫn bị cắt): đối phương không chạm được bóng
+    // tới khi bóng rơi chạm đất lần đầu, tối đa bấy nhiêu giây (bóng đá sệt từ tay không rời đất: hết theo giờ). Đồng đội nhận bình thường
+    puntSafe: 1.2,
     landingMarker: true,     // bóng bổng (cao hơn pickupHeight): vẽ vòng điểm rơi trên sân
     controlSpeed: 310,       // bóng nhanh hơn -> khó khống chế (đối phương)
     trailLength: 7,          // vệt bóng mô phỏng (Ball.trail); vệt vẽ trên sân: Renderer.ballTrail (lịch sử riêng, xem fx.ballTrail)

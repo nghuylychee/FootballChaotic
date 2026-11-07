@@ -779,6 +779,8 @@ window.SFC = window.SFC || {};
       const FT = C.firstTime;
       for (const p of this.players) {
         if (p.state === 'stun' || p.state === 'kick' || p.airZ > 4 || b.noPickup.has(p.id)) continue;
+        // bóng thủ môn tung lên đá: đối phương chưa chạm được tới khi bóng chạm đất — trừ thủ môn đối phương trong vòng cấm nhà (vẫn cứu cú sút từ tay)
+        if (b.puntSafe > 0 && p.team !== b.lastKickTeam && !this.inKeeperZone(p)) continue;
         if (passAlive && p !== pt && p.team === pt.team) continue;
         const gk = this.inKeeperZone(p);
         // Thủ Môn Khổng Lồ: tầm với theo kích thước

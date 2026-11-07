@@ -598,7 +598,7 @@ window.SFC = window.SFC || {};
       const b = g.ball, K = G().kick, f = g.field, F = G().firstTime;
       if (b.owner !== p || p.noActT > 0) return;
       const gl = g.attackGoal(p.team);
-      if (this.gkRelease(g, p, 'gkPunt', Math.atan2(gl.y - p.y, gl.x - p.x), () => this.shoot(g, p, charge, aimY, aim, ft))) return;
+      if (this.gkRelease(g, p, 'gkPunt', Math.atan2(gl.y - p.y, gl.x - p.x), () => this.shoot(g, p, charge, aimY, aim, ft), true)) return;
       const tm = g.teams[p.team];
       // One-Two: dứt điểm 1 chạm luôn đầy lực, không bị phạt sai số
       const volley = !!ft && g.cores.volleyCharge(p) > 0;
@@ -809,7 +809,7 @@ window.SFC = window.SFC || {};
     punt(g, p, tx, ty) {
       const b = g.ball, K = G().kick, B = G().ball;
       if (b.owner !== p || p.noActT > 0) return false;
-      if (this.gkRelease(g, p, 'gkPunt', Math.atan2(ty - p.y, tx - p.x), () => this.punt(g, p, tx, ty))) return true;
+      if (this.gkRelease(g, p, 'gkPunt', Math.atan2(ty - p.y, tx - p.x), () => this.punt(g, p, tx, ty), true)) return true;
       const e = U.rand(0, K.puntError), ea = U.rand(0, Math.PI * 2);
       tx += Math.cos(ea) * e; ty += Math.sin(ea) * e;
       const T = 2 * K.puntLift / B.gravity, k = B.airDrag;
@@ -831,7 +831,7 @@ window.SFC = window.SFC || {};
     clearance(g, p, dy) {
       const b = g.ball, K = G().kick;
       if (b.owner !== p || p.noActT > 0) return;
-      if (this.gkRelease(g, p, 'gkPunt', Math.atan2(U.clamp(dy || 0, -1, 1) * K.clearAngle, g.teams[p.team].dir), () => this.clearance(g, p, dy))) return;
+      if (this.gkRelease(g, p, 'gkPunt', Math.atan2(U.clamp(dy || 0, -1, 1) * K.clearAngle, g.teams[p.team].dir), () => this.clearance(g, p, dy), true)) return;
       const ang = Math.atan2(U.clamp(dy || 0, -1, 1) * K.clearAngle, g.teams[p.team].dir) + U.rand(-K.clearSpread, K.clearSpread);
       const spd = K.clearSpeed * p.stats.power;
       b.kick(p, Math.cos(ang) * spd, Math.sin(ang) * spd, K.clearLift);
@@ -867,7 +867,9 @@ window.SFC = window.SFC || {};
     // THỦ MÔN ÔM BÓNG (atkType gkHold): chuyền / sút / phát bóng không đá ngay mà tung bóng lên bằng tay rồi đá (player.gkRelease):
     // bóng rời chân sau w + s * 0.6 giây, thủ môn vẫn ôm bóng tới lúc đó. kind 'gkPunt' (sút, phá, phất, chuyền bổng) | 'gkVolley' (chuyền sệt /
     // chọc khe) · ang = hướng đá (quay mặt luôn) · go = lệnh đá thật, chạy lại lúc chạm bóng. Trả true = đã nhận lệnh (người gọi dừng)
-    gkRelease(g, p, kind, ang, go) {
+    // sky = phất bóng lên trời (sút / phá / phất, không phải đường chuyền có chủ đích): đối phương không chạm được tới khi bóng chạm đất
+    // (ball.puntSafe). Chuyền từ tay (passTo) vẫn bị cắt như đường chuyền thường
+    gkRelease(g, p, kind, ang, go, sky = false) {
       if (p.gkGo) return false;
       if (p.atkType === 'gkPunt' || p.atkType === 'gkVolley') return true;   // đang tung bóng: bỏ lệnh lặp lại (AI gọi mỗi bước)
       if (p.atkType !== 'gkHold' || g.ball.owner !== p) return false;
@@ -882,6 +884,9 @@ window.SFC = window.SFC || {};
         p.gkGo = true;
         try { go(); } finally { p.gkGo = false; }
         p.atkType = kind; p.atkT = t;   // chuyền / sút đặt tư thế của chúng: giữ tư thế đá của thủ môn
+        // phất bóng lên trời (sky): đối phương không chạm / chặn / làm bóng dội ngược được tới khi bóng chạm đất (ball.puntSafe, Game contact)
+        const b = g.ball;
+        if (sky && !b.owner && b.lastKickTeam === p.team) b.puntSafe = G().ball.puntSafe || 0;
       });
       return true;
     },
