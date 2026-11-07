@@ -2,7 +2,7 @@
  * Không vẽ tay lại từng món: lấy bản đồ ô của v2 (player/hair.js STYLES, player/face.js ITEMS, đã duyệt) rồi phóng lên lưới đầu v3 bằng
  * lấy mẫu điểm gần nhất (phóng lên nên ô nào của v2 cũng còn), viền mực vẽ lại 1 px quanh khối mới (không phóng viền: không dày mỏng như ảnh phóng).
  * Phụ kiện mặt neo theo khung mắt (mắt v2 3 x 3 lệch nửa ô -> mắt v3 4 x 4 giữa). 4 kiểu tóc v2 vẽ bằng code (beanie, bandana, bun, halo)
- * chưa có bản đồ ô -> chưa qua đây (supports trả false, vẽ v2 phóng).
+ * không có bản đồ ô: chụp ảnh đầu v2 có tóc vào đệm, lấy các ô khác đầu hói (bỏ viền) rồi phóng + vẽ lại viền như trên (captureCut).
  * Nạp sau body.js. Toạ độ: gốc đầu v3 = gốc thân (đầu hàng -30..-14); v2 tính theo gốc đầu v2 (hàng -25..-13).
  */
 window.SFC = window.SFC || {};
@@ -94,9 +94,51 @@ window.SFC = window.SFC || {};
     }
     for (const [x, y, c] of cells.values()) fill(ctx, c, cx(x), Y + y);
   }
-  // có vẽ được kiểu tóc này không (kiểu có bản đồ ô ở v2)
-  const hasHair = (cut) => !cut || cut === 'classic' || !!(V2.HAIR_STYLES && V2.HAIR_STYLES[cut]);
+  // 4 kiểu tóc v2 vẽ bằng code (hair.js cutDraw, không có bản đồ ô): chụp ảnh đầu v2 có tóc, lấy các ô khác đầu hói rồi phóng như trên
+  const CODE_CUTS = { beanie: 1, bandana: 1, bun: 1, halo: 1 };
+  // có vẽ được kiểu tóc này không
+  const hasHair = (cut) => !cut || cut === 'classic' || !!(V2.HAIR_STYLES && V2.HAIR_STYLES[cut]) || !!CODE_CUTS[cut];
+  let capBuf = null;
+  const capCache = new Map();
+  // ô tóc (toạ độ đầu v2) của kiểu vẽ bằng code: vẽ đầu hói + tóc v2 và đầu hói riêng vào đệm, ô nào khác nhau (trừ viền mực) là tóc
+  function captureCut(back, cut, o, fx, fy, bd) {
+    const key = [cut, back ? 1 : 0, bd ? 1 : 0, Math.sign(Math.round(fx * 2)), Math.round(fx * 2), o.hair, o.band, o.skin, cut === 'halo' ? Math.floor((o.anim || 0) * 8) % 16 : 0].join('|');
+    if (capCache.has(key)) return capCache.get(key);
+    const W = 64, H = 64, ax = 32, ay = 52;
+    if (!capBuf) { capBuf = document.createElement('canvas'); capBuf.width = W * 2; capBuf.height = H; }
+    const c = capBuf.getContext('2d'), pal = V2.palette(o);
+    c.clearRect(0, 0, W * 2, H);
+    V2.drawHead(c, ax, ay, back, cut, o, pal, fx, fy, bd);
+    stamp(c, ax + W, ay, V2.HAIR_BALD[bd ? 'bdiag' : back ? 'back' : 'front'], pal, bd && fx < 0);
+    const A = c.getImageData(0, 0, W, H).data, B = c.getImageData(W, 0, W, H).data, ink = [0x14, 0x0c, 0x16], cells = new Map();
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      if (!A[i + 3]) continue;
+      if (A[i] === B[i] && A[i + 1] === B[i + 1] && A[i + 2] === B[i + 2] && A[i + 3] === B[i + 3]) continue;
+      if (A[i] === ink[0] && A[i + 1] === ink[1] && A[i + 2] === ink[2]) continue;   // viền: vẽ lại 1 px quanh khối mới
+      cells.set((x - ax) + ',' + (y - ay), `rgba(${A[i]},${A[i + 1]},${A[i + 2]},${(A[i + 3] / 255).toFixed(3)})`);
+    }
+    if (capCache.size > 200) capCache.clear();
+    capCache.set(key, cells);
+    return cells;
+  }
+  function drawCodeCut(ctx, X, Y, back, cut, o, pal, fx, fy, bd) {
+    const src = captureCut(back, cut, o, fx, fy, bd);
+    stamp(ctx, X, Y, BALD[bd ? 'bdiag' : back ? 'back' : 'front'], pal, bd && fx < 0);
+    if (!src.size) return;
+    const xs = [], ys = [];
+    for (const k of src.keys()) { const [x, y] = k.split(',').map(Number); xs.push(x); ys.push(y); }
+    const [x0, x1] = dstX(Math.min(...xs), Math.max(...xs)), [y0, y1] = dstY(Math.min(...ys), Math.max(...ys)), out = new Map();
+    for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) { const col = src.get(srcX(tx, false) + ',' + srcY(ty)); if (col) out.set(tx + ',' + ty, col); }
+    ctx.fillStyle = INK;
+    for (const k of out.keys()) {
+      const [x, y] = k.split(',').map(Number);
+      for (const [dx, dy] of N4) { const n = (x + dx) + ',' + (y + dy); if (!out.has(n) && !(!back && FACE.has(n)) && !(bd && CHEEK.has(n))) ctx.fillRect(X + x + dx, Y + y + dy, 1, 1); }
+    }
+    for (const [k, col] of out) { const [x, y] = k.split(',').map(Number); ctx.fillStyle = col; ctx.fillRect(X + x, Y + y, 1, 1); }
+  }
   function drawHead(ctx, X, Y, back, cut, o, pal, fx, fy, bd) {
+    if (!V2.HAIR_STYLES[cut]) return drawCodeCut(ctx, X, Y, back, cut, o, pal, fx, fy, bd);
     const st = V2.HAIR_STYLES[cut], bald = BALD[bd ? 'bdiag' : back ? 'back' : 'front'];
     const side = !back && Math.abs(fx) > 0.5, v0 = back ? st.back : (side && st.side) || st.front, mir = bd ? fx < 0 : side && !!st.side && fx < 0;
     const raw = typeof v0 === 'function' ? v0(o.anim || 0) : v0;

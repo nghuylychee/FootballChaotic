@@ -240,7 +240,8 @@ window.SFC = window.SFC || {};
           const swap = SFC.VFX.hides(g, p);
           // cỡ người (render.playerScale, sân to 2026-11-07): drawPlayer tự chọn Sprite v3 (cỡ thật) hoặc v2 phóng. Ăn mừng / vật thể thay hình
           // không qua drawPlayer -> vẽ vào đệm 1x rồi phóng điểm gần nhất quanh bàn chân (px không đều) tới khi v3 có các tư thế này
-          const PS = cel || swap ? C.playerScale || 1 : 1, rx = Math.round(p.x), ry = Math.round(p.y);
+          // ăn mừng: Sprite v3 vẽ cả động tác ở cỡ thật (player3/celebrate.js) -> chỉ vật thể thay hình còn phải phóng
+          const PS = swap || (cel && !(SFC.PlayerSprite3 && SFC.PlayerSprite3.celDraw)) ? C.playerScale || 1 : 1, rx = Math.round(p.x), ry = Math.round(p.y);
           const sc = PS !== 1 ? this.playerBuf(rx, ry) : ctx;
           SFC.PlayerSprite.bufScaled = PS !== 1;   // drawPlayer bên trong (ăn mừng) không phóng lần 2
           if (s !== 1) { sc.save(); sc.translate(p.x, p.y); sc.scale(s, s); sc.translate(-p.x, -p.y); }

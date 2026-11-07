@@ -93,10 +93,12 @@ window.SFC = window.SFC || {};
     const fs = ghost ? null : p.fly !== undefined ? p.fly : p.state === 'stun' ? flyState(p) : null;
     o.fly = fs && fs.phase ? fs : null;
     if (o.fly && !p.flyInner && !(p.airZ > 0)) {
-      const rot = flyRot(fs, p.anim || 0);
-      ctx.save(); ctx.globalAlpha = alpha; if (alpha >= 1 && !o.noShadow) flyShadow(ctx, x, y, flyShadowSpec(fs)); ctx.restore();
-      ctx.save(); ctx.translate(x, y - 8); ctx.rotate(rot);
-      drawPlayer(ctx, Object.assign({}, p, { x: 0, y: 8, fly: fs, flyInner: true }), g, alpha, tint, ghost);
+      // người cao hơn (render.playerScale, Sprite v3): bóng nằm to theo, xoay quanh giữa thân mới (8 px -> 8 x k)
+      const rot = flyRot(fs, p.anim || 0), K = (SFC_CONFIG.game.render && SFC_CONFIG.game.render.playerScale) || 1, cy = Math.round(8 * K);
+      const sh = flyShadowSpec(fs), shK = sh && { dx: sh.dx * K, dy: sh.dy * K, rx: sh.rx * K, ry: sh.ry * K };
+      ctx.save(); ctx.globalAlpha = alpha; if (alpha >= 1 && !o.noShadow) flyShadow(ctx, x, y, shK); ctx.restore();
+      ctx.save(); ctx.translate(x, y - cy); ctx.rotate(rot);
+      drawPlayer(ctx, Object.assign({}, p, { x: 0, y: cy, fly: fs, flyInner: true }), g, alpha, tint, ghost);
       ctx.restore(); ctx.globalAlpha = 1;
       return y - Math.round(16 * ((SFC_CONFIG.game.render && SFC_CONFIG.game.render.playerScale) || 1));
     }

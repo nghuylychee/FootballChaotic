@@ -1797,7 +1797,9 @@ window.SFC = window.SFC || {};
         // gần mép sân: dời vào trong cho chữ không bị cắt (tên chiêu dài)
         const half = (ctx.measureText(str).width * scale) / 2 + s.lw;
         const S = SCR(), x = Math.round(Math.max(S.x + half, Math.min(S.x + S.w - half, c.x)));
-        ctx.translate(x, Math.round(c.y)); ctx.rotate(rot); ctx.scale(scale, scale);
+        // người cao hơn (render.playerScale, Sprite v3 cao 31 thay 24): chữ đặt ở p.y - 30 theo người cũ -> nâng thêm phần người cao ra
+        const lift = Math.round(24 * (((SFC_CONFIG.game.render && SFC_CONFIG.game.render.playerScale) || 1) - 1));
+        ctx.translate(x, Math.round(c.y) - lift); ctx.rotate(rot); ctx.scale(scale, scale);
         ctx.globalAlpha = Math.min(1, (c.t / c.max) * 3);
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
         if (s.bubble) {   // bong bóng thoại (câu nói của đối thủ): nền trắng, viền tối, gạch dưới màu áo đội, đuôi chỉ xuống người nói

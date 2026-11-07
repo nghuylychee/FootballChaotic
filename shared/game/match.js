@@ -808,6 +808,15 @@ window.SFC = window.SFC || {};
       const b = this.ball, C = this.cfg;
       const opp = b.lastKickTeam >= 0 && b.lastKickTeam !== p.team;
       if (opp) {
+        // ĐÁNH ĐẦU CẢN CÚ SÚT (AI, firstTime.ai.block): bóng tới ở độ cao đánh đầu -> phá ra (đánh đầu về phía trước) hoặc trượt
+        // (bóng bay qua đầu, không chạm lại ngay). Sút càng mạnh càng dễ trượt. Cú sút có hiệu ứng Core vẫn qua luật cũ (tryControl)
+        const BK = C.firstTime.ai.block;
+        if (p.ot.block && BK && b.kind === 'shot' && b.z >= C.firstTime.headerZ && !b.fx.thunder && !b.fx.scissor && !b.fx.fire && !b.fx.ghost) {
+          const win = U.clamp(BK.win - Math.max(0, b.speed - BK.freeSpeed) / BK.speedPenalty, BK.min, 0.95);
+          if (Math.random() < win) { this.effects.pop(p.x, p.y - 30, 'BLOCK!', 'good'); return SFC.Actions.firstTime(this, p); }
+          SFC.Actions.headerPose(p); SFC.Actions.disarm(p); b.noPickup.set(p.id, 0.5);
+          return;
+        }
         const plain = b.kind === 'pass' && !b.fx.ghost && !b.fx.thunder && !b.fx.scissor && !this.cores.passGuarded(b.lastKickTeam);
         if (!plain || (this.inKeeperZone(p) && b.lob)) { SFC.Actions.disarm(p); return this.tryControl(p); }
         if (b.speed >= C.pass.intercept.minSpeed && !this.intercepts(p)) return;

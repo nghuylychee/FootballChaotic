@@ -420,6 +420,7 @@
     // cùng góc trên trái, cùng cỡ trên màn hình, canvas phóng ít hơn theo tỉ lệ Z = khung trận / khung ui
     const R = C.render, U = R.ui || { width: R.width, height: R.height, maxView: R.maxView }, Z = R.width / U.width;
     const dpr = window.devicePixelRatio || 1, iw = window.innerWidth, ih = window.innerHeight;
+    if (!iw || !ih) return;   // cửa sổ / khung nhúng đang ẩn (0 px): chia cho 0 ra NaN -> vignette lỗi; resize sau sẽ fit lại
     const k0 = Math.min((iw * dpr) / U.width, (ih * dpr) / U.height), whole = Math.abs(k0 - Math.round(k0)) < 0.01, s = (whole ? Math.round(k0) : k0) / dpr;
     const even = (v, min, max) => Math.max(min, Math.min(max, 2 * Math.floor(v / 2)));
     const w = even(iw / s, U.width, U.maxView[0]), h = even(ih / s, U.height, U.maxView[1]);

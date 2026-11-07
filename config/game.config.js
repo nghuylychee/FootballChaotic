@@ -498,6 +498,10 @@ SFC_CONFIG.game = {
       headerChance: 0.85,  // quả tạt
       headerPassChance: 0.55,   // ĐÁNH ĐẦU CHUYỀN: đường chuyền bổng tới mình (ngoài tầm sút / không phải quả tạt) -> đánh đầu chuyền tiếp
       clearChance: 0.5,    // hậu vệ phá quả tạt của đối phương
+      // ĐÁNH ĐẦU CẢN CÚ SÚT (user 2026-11-07): cú sút của đối phương bay về khung nhà, tới chỗ cầu thủ AI (ngoài vòng cấm giữ khung) ở trên
+      // tầm khống chế -> chance: chạy vào đường bóng, bật nhảy đánh đầu. Chạm bóng ở độ cao đánh đầu: phá ra (lực charge) với xác suất
+      // win - (tốc độ bóng - freeSpeed) / speedPenalty (không dưới min), không thì trượt (bóng qua đầu). Hiệu ứng Core (sét, lửa...) vẫn như cũ
+      block: { chance: 0.8, win: 0.85, freeSpeed: 300, speedPenalty: 600, min: 0.35, charge: [0.5, 0.8] },
       crossChance: 0.45,   // mỗi lần ra quyết định khi đang ở cánh + có đồng đội trong vòng cấm
       wingChance: 0.6,     // cầm bóng ở cánh gần 1/3 cuối: tỉ lệ đi bóng dọc biên chờ tạt thay vì cắt vào giữa (quyết định 1 lần mỗi lần có bóng)
       charge: [0.5, 1],
@@ -632,6 +636,7 @@ SFC_CONFIG.game = {
     // bóng lỏng) thì đồng đội AI giữ khung (Game.canKeep) lập tức về trông khung ở mọi khoảng cách (mateKeeperCoverDist, keeperPressDist,
     // helpPress bỏ qua cho người này), không đuổi bóng lỏng ngoài vòng cấm. Chỉ lao ra tắc khi người cầm bóng đã vào vùng zone px quanh khung nhà,
     // cách mình dưới engage px (hoặc hậu vệ cuối, ai.lastMan) VÀ chưa có đồng đội nào (kể cả người chơi) đứng cách người cầm bóng dưới marked px
+    // marked dùng cho cả người giữ khung đội máy (AI.goalkeeper): người cầm bóng gần khung đã có đồng đội kèm thì đứng trên vạch, không bước ra
     keeperRecover: { mates: true, zone: 150, engage: 40, marked: 36 },
     // NGƯỜI CẦM BÓNG ĐỨNG YÊN (user 2026-11-07: bot không lấy được bóng của người chơi đứng yên — chỉ 1 bot áp sát, đấm thưa, đa số HOLD).
     // Người cầm bóng chạy chậm hơn speed px/s liên tục time s = đứng yên -> đội máy: thêm 1 người áp sát (vẫn trừ người giữ khung),

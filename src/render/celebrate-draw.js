@@ -514,7 +514,8 @@ window.SFC = window.SFC || {};
 
     // vẽ cầu thủ p đang ăn mừng (p.celId, p.celT). Trả về y của đầu (Renderer vẽ mũi tên / VFX theo đó).
     // Sprite v2: PlayerSprite.celDraw (src/render/player/celebrate.js) đọc POSES ở trên, đổi tay sang luật độ dài + điểm neo đạo cụ theo thân mới
-    draw(ctx, p, g) { return SFC.PlayerSprite.celDraw(ctx, p, g); },
+    // Sprite v3 (render/player3/celebrate.js): người cao 31 px + điểm neo đạo cụ theo người mới; không có thì v2
+    draw(ctx, p, g) { return SFC.PlayerSprite3 && SFC.PlayerSprite3.celDraw ? SFC.PlayerSprite3.celDraw(ctx, p, g) : SFC.PlayerSprite.celDraw(ctx, p, g); },
   };
 
   SFC.CelebrateDraw = CelebrateDraw;

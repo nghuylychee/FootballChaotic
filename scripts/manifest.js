@@ -123,6 +123,7 @@ const FILES = [
   ['src/render/player3/attack.js', 'game sandbox itch'],
   ['src/render/player3/keeper.js', 'game sandbox itch'],
   ['src/render/player3/look.js', 'game sandbox itch'],
+  ['src/render/player3/celebrate.js', 'game sandbox itch'],
   ['src/render/art/kit.js', 'game itch'],        // bộ cảnh vẽ bằng code: hàm vẽ chung (màu, hình, bóng đổ, chỉnh màu, viền tối)
   ['src/render/art/npcs.js', 'game itch'],       // người làng + thú
   ['src/render/art/props.js', 'game itch'],      // tường, nhà, cây, đồ vật

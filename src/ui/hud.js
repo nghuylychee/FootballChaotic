@@ -369,7 +369,7 @@ window.SFC = window.SFC || {};
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, w, h);
       SFC.Sprites.drawPlayer(ctx, {
-        x: Math.round(w / 2), y: h + 6, vx: 0, vy: 0, facing: Math.PI / 2, anim: 0, flash: 0, state: 'normal',
+        x: Math.round(w / 2), y: h + 9, vx: 0, vy: 0, facing: Math.PI / 2, anim: 0, flash: 0, state: 'normal',   // h + 9: đầu Sprite v3 (cao 17) vừa khung, thấy vai
         team: p.team, role: p.role, look: p.look,
       }, game);
     },

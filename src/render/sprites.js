@@ -290,7 +290,8 @@ window.SFC = window.SFC || {};
   // icon costume trên ô item (hộp gacha / túi đồ): vẽ character mặc món đó rồi phóng to vùng liên quan
   // (tóc & mặt -> cái đầu, giày -> bàn chân nhìn chéo cho thấy mũi + đồ quanh đế, hiệu ứng -> cả người). Vùng cắt tính trên avatar 40x44;
   // phóng số nguyên lần (phóng lẻ thì px không đều)
-  const ICON_CROP = { hair: [5, 6, 30, 30], face: [10, 14, 20, 20], shoes: [10, 36, 20, 8], fx: [4, 2, 32, 42] };
+  // Sprite v3 (đầu hàng 9..26 của avatar 40 x 44, mắt 18..21): mặt cắt từ hàng 10 (v2: 14)
+  const ICON_CROP = { hair: [5, 6, 30, 30], face: [10, 10, 20, 20], shoes: [10, 36, 20, 8], fx: [4, 2, 32, 42] };
   let iconBuf = null;
   function drawItemIcon(canvas, look, kit, slot) {
     const cw = canvas.width, ch = canvas.height, ctx = canvas.getContext('2d');

@@ -154,15 +154,27 @@ window.SFC = window.SFC || {};
   /* ---------- mặt: 2 kiểu mắt để chọn ---------- */
   // A: mắt 4 x 4 (user chọn 2026-11-07) · B: 3 x 4 (đã bỏ, giữ để so trên trang duyệt)
   const EYES = { A: { w: 4, h: 4, xs: [-5, 2] }, B: { w: 3, h: 4, xs: [-4, 2] } };
-  function face(ctx, X, Y, ex, pal, eyes) {
-    const E = EYES[eyes] || EYES.A, ey = -22;
+  // kind (như v2 face): null mắt mở · 'stun' / 'closed' gạch ngang · 'happy' ^ ^ · 'up' nhìn lên (thấp 1 hàng) · mouth = há miệng (lưỡi đỏ)
+  function face(ctx, X, Y, ex, pal, eyes, kind = null, mouth = false) {
+    const E = EYES[eyes] || EYES.A, ey = -22, r = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(X + x, Y + y, w, h); };
     for (const x0 of E.xs) {
       const x = x0 + ex;
-      ctx.fillStyle = INK; ctx.fillRect(X + x, Y + ey, E.w, E.h);
-      ctx.fillStyle = pal.W; ctx.fillRect(X + x, Y + ey, 1, 1);
+      if (kind === 'stun' || kind === 'closed') r(x, ey + 2, E.w, 1, INK);
+      else if (kind === 'happy') { r(x + 1, ey + 1, E.w - 2, 1, INK); r(x, ey + 2, 1, 1, INK); r(x + E.w - 1, ey + 2, 1, 1, INK); }
+      else if (kind === 'up') { r(x, ey, E.w, E.h - 1, INK); r(x + 1, ey, 1, 1, pal.W); }
+      else { r(x, ey, E.w, E.h, INK); r(x, ey, 1, 1, pal.W); }
     }
-    ctx.fillStyle = pal.s; ctx.fillRect(X + ex, Y - 18, 1, 1);                // mũi
-    ctx.fillStyle = pal.M; ctx.fillRect(X - 1 + ex, Y - 17, 3, 1);            // miệng
+    r(ex, -18, 1, 1, pal.s);                                                    // mũi
+    if (mouth) { r(-2 + ex, -17, 5, 2, INK); r(-1 + ex, -16, 3, 1, '#c0304a'); }
+    else r(-1 + ex, -17, 3, 1, kind === 'stun' ? INK : pal.M);
+  }
+  // giơ 2 tay (bị đấm / nhảy slam, như v2 hit.js liftArms): góc quanh vai theo L, vai nhô 3 ô lúc giơ hết. Nhìn chéo: tay xa sau thân (behindOnly)
+  function liftArms(ctx, X, Y, mir, view, L, pal, behindOnly) {
+    const UP = SFC.PlayerSprite.ARMS_UP, ang = (i) => (P / 2) + (UP[i] - P / 2) * L, far = view === 'diag' ? 1 : view === 'bdiag' ? 0 : -1;
+    Y += Math.round(-3 * L);
+    if (far >= 0) { const i = behindOnly ? far : 1 - far; armAt(ctx, X, Y, mir, i, ang(i), pal, behindOnly); return; }
+    if (behindOnly) return;
+    armAt(ctx, X, Y, mir, 0, ang(0), pal, false); armAt(ctx, X, Y, mir, 1, ang(1), pal, false);
   }
 
   // bóng dưới chân · k = thu nhỏ khi nhảy / nở ra khi nằm sấp
@@ -261,11 +273,9 @@ window.SFC = window.SFC || {};
     for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy) + 0.35); ctx.fillRect(X - w, Y + dy, w * 2 + 1, 1); }
   }
   const FLASH = new Proxy({}, { get: (t, k) => (k === 'K' ? 'rgba(0,0,0,0)' : 'rgba(255,255,255,0.6)') });
-  // v3 vẽ được o (của v2 player.js drawPlayer) không: chưa có ăn mừng / bị đánh / bị đá bay / choáng / nhảy slam / băng chấn thương,
-  // 4 kiểu tóc vẽ bằng code -> v2 phóng (đợt 5, docs/SPRITE_V3.md)
+  // v3 vẽ được o (của v2 player.js drawPlayer) không: mọi tư thế đã có; còn kiểu tóc / mặt lạ (không có ở v2) -> v2 phóng (docs/SPRITE_V3.md)
   const KICK_OK = { hard: 1, shoot: 1, volley: 1, bicycle: 1, pass: 1, lob: 1, push: 1, power: 1, gkPunt: 1, gkVolley: 1 };
   function supports(o) {
-    if (o.cp || o.fly || o.stun || o.hit != null || o.slam || (o.inj && o.inj.length)) return false;
     const L = SFC.PlayerSprite3;
     if (!L.hasHair(o.cut) || !L.hasFace(o.face)) return false;   // 4 kiểu tóc v2 vẽ bằng code (beanie, bandana, bun, halo): chưa có
     const a = o.atk;
@@ -299,7 +309,9 @@ window.SFC = window.SFC || {};
     if (gait === 'sprint') fr = SPRINT[f];
     else if (gait === 'heavy') { const h = A.HEAVY[Math.floor(gt * 9) % 4]; fr = [h[0], h[1], h[2], h[3][0], h[4][0]]; }
     const km = view === 'front' ? !m : m, pm = view === 'back' ? !m : m, om = bd ? !m : pm;
-    const [lx, ly] = pe != null ? A.punchLean(view, pe) : kickLeg ? [sideView ? snapPx(atk.kbx * 1.3) : 0, snapPx(atk.kc * 1.3)] : hp ? [snapPx(hp.bx), snapPx(hp.c)] : dv ? [0, V2.diveCrouch(atk)] : [0, 0];
+    const fp = o.fly ? V2.flyPose(o.fly) : null;
+    const cp = o.cp || null, celArms = !!(cp && (cp.arms || cp.ang));   // ăn mừng (celebrate.js): tư thế v2 celPose, celDraw vẽ cả động tác   // bị đá bay (v2 fly.js): tay / chân / khuỵu / há miệng theo pha; xoay cả hình ở drawPlayer
+    const [lx, ly] = fp ? [0, fp.c] : pe != null ? A.punchLean(view, pe) : kickLeg ? [sideView ? snapPx(atk.kbx * 1.3) : 0, snapPx(atk.kc * 1.3)] : hp ? [snapPx(hp.bx), snapPx(hp.c)] : dv ? [0, V2.diveCrouch(atk)] : [0, 0];
     const step = pe != null && pe > 0.5 && sideView, off = punchArm && A.offOn(pe, view);
     const khop = kickLeg || hp || dv ? snapPx((atk.khop || 0) * 1.3) : 0, Yf = Y - khop;
     if (!o.noShadow && df && df.shadow === 'long') A.lieShadow(ctx, X, Y, dfm ? -1 : 1);
@@ -314,8 +326,20 @@ window.SFC = window.SFC || {};
     // chân
     const leg = sd > 0 ? LEG.R : sd < 0 ? LEG.L : LEG.N;
     let plantLater = null;
+    const feet = {};   // 2 chân đứng / chạy (băng chấn thương): L = cột trái màn hình, R = cột phải · [bộ phận, X, Y]
     if (df) {
       A.diveFrameDraw(ctx, X, Yf, df, 'base', pal, hand, dfm, dfBall);   // khung đổ người: chân + tay + thân (trước đầu)
+    } else if (cp && (cp.legs === 'cross' || cp.legs === 'sit' || cp.legs === 'kneel')) {
+      /* xếp bằng / ngồi: vẽ sau thân · quỳ: vẽ theo thân đã hạ (dưới) */
+    } else if (cp && cp.legs === 'moon' && sideView) {
+      A.moonLegs(ctx, X, Yf, pal, cp.mw, m);
+    } else if (cp && cp.legs === 'split') {
+      A.splitLegs(ctx, X, Yf, pal);
+    } else if (fp) {
+      // văng: 2 chân dạng, chân phải hình nhấc cao 1 hàng · nằm: dạng rộng · dậy: khuỵu, mũi theo hướng mặt (2 mũi chĩa 2 phía lúc trên không)
+      if (fp.legs === 'split') { stamp(ctx, X, Yf, at(LEG.L, -6), pal, m); stamp(ctx, X, Yf, at(LEG.R, 4, -1), pal, m); }
+      else if (fp.legs === 'wide') { stamp(ctx, X, Yf, at(LEG.L, -6), pal, m); stamp(ctx, X, Yf, at(LEG.R, 4), pal, m); }
+      else { stamp(ctx, X, Yf, at(leg, -7), pal); stamp(ctx, X, Yf, at(leg, 3), pal); }
     } else if (gk && gk.legs === 'kneel') {
       /* quỳ: vẽ theo thân đã hạ (dưới) */
     } else if (gk && gk.legs === 'wide') {
@@ -337,19 +361,22 @@ window.SFC = window.SFC || {};
       gaitLeg(ctx, X, Yl, h1, fr[1], pal, m, r);
     } else if (f < 0) {
       // đứng (chân phải nhấc 1 px) · đấm duỗi quá nửa (nhìn ngang / chéo): chân trước bước tới, gót chân sau nhấc
-      stamp(ctx, X, Yf, step ? (m ? at(leg, -6) : at(KICK_F, -5)) : at(leg, -5), pal);
-      stamp(ctx, X, Yf, step ? (m ? at(KICK_F, 1) : at(leg, 3)) : at(leg, 1, -1), pal);
+      feet.L = [step ? (m ? at(leg, -6) : at(KICK_F, -5)) : at(leg, -5), X, Yf]; stamp(ctx, X, Yf, feet.L[0], pal);
+      feet.R = [step ? (m ? at(KICK_F, 1) : at(leg, 3)) : at(leg, 1, -1), X, Yf]; stamp(ctx, X, Yf, feet.R[0], pal);
     } else {
       const k = sd ? (diag || bd ? 0.5 : 1) : 0;
       const legs = [[RUN_L[f], -5], [RUN_R[f], 1]];
       legs.sort((a, b) => ('KL'.includes(b[0]) ? 1 : 0) - ('KL'.includes(a[0]) ? 1 : 0));   // chân nhấc / đá sau vẽ trước
       for (const [ph, L] of legs) {
         const [part, dx, dy] = runLeg(ph, sd, back && !bd, sd, k, bd);
-        stamp(ctx, X + snapPx(dx), Y + snapPx(dy), at(part, L), pal);
+        const pt = at(part, L);
+        stamp(ctx, X + snapPx(dx), Y + snapPx(dy), pt, pal);
+        feet[L === 1 ? 'R' : 'L'] = [pt, X + snapPx(dx), Y + snapPx(dy)];
       }
     }
     // thân: nước rút / bước nặng ngả tới, chạy nhấp, bước nặng (nhìn xuống / lên) hạ người lúc đặt chân, ra đòn lao / khuỵu
-    const lean = gait ? gs * (gait === 'heavy' ? 1 : LEAN[view]) : snapPx((o.lean || 0) + ((gk && gk.lean) || 0)), drop = snapPx((gk && gk.drop) || 0);
+    const lean = gait ? gs * (gait === 'heavy' ? 1 : LEAN[view]) : snapPx((o.lean || 0) + ((gk && gk.lean) || 0) + ((cp && cp.lean) || 0));
+    const drop = snapPx((gk && gk.drop) || (cp && cp.drop ? cp.drop * 1.3 : 0));
     const heavyDrop = heavy && !gait && f >= 0 && f % 2 === 0 ? 1 : 0;
     const Xb = X + lean + (m ? -lx : lx), Yb = Yf + (gait ? fr[2] : f < 0 ? 0 : BOB[f]) + heavyDrop + ly + drop;
     const kLeg = kickLeg && !A.kickRest(atk) ? A.legPose(view, atk.kp, atk.u, A.kickTable(atk)) : null, kArms = kickLeg && A.kickArmsOn(atk);
@@ -360,10 +387,14 @@ window.SFC = window.SFC || {};
     if (kArms && far >= 0) A.kickArm(ctx, Xb, Yb, m, view, atk, far, pal, true);
     if (punchArm && bd) A.punch(ctx, Xb, Yb, pm, view, pe, atk, pal);
     if (hp && !hp.rest) A.headerArms(ctx, Xb, Yb, m, view, hp, pal, true);
-    const runArms = f >= 0 && sideView && !gait && !gkArms && !df;
+    // giơ 2 tay: bị đấm (o.hit, v2 hit.js) · nhảy Ground Slam (o.slam = độ giơ theo độ cao)
+    const lift = !fp && !punchArm && !kickLeg && !hp && !dv && !celArms ? Math.max(V2.hitLift(o.hit), o.slam || 0) : 0, hitOn = lift > 0.04;
+    if (hitOn) liftArms(ctx, Xb, Yb, m, view, lift, pal, true);
+    const runArms = f >= 0 && sideView && !gait && !gkArms && !df && !hitOn && !fp && !celArms && !(cp && cp.ang);
     const aL = gait ? fr[3] : runArms ? ARM_A[(m ? ARM_R : ARM_L)[f]] : 0, aR = gait ? fr[4] : runArms ? ARM_A[(m ? ARM_L : ARM_R)[f]] : 0;
     if (gait || runArms) gaitArms(ctx, Xb, Yb, aL, aR, view, pal, m, true);
-    if (gk && gk.legs === 'kneel') A.kneelLegs(ctx, Xb, Yb, pal);
+    if (cp && cp.legs === 'kneel') A.celKneel(ctx, Xb, Yb, pal, view, m);   // quỳ: 2 đầu gối dưới quần (trượt gối chéo: thấy đế giày)
+    else if (gk && gk.legs === 'kneel') A.kneelLegs(ctx, Xb, Yb, pal);
     if (gk) A.gkDraw(ctx, Xb, Yb, m, gk, pal, hand, 'behind');   // nhìn lên / chéo lên: bóng đang ôm + tay xa nằm sau thân
     // thân: đứng = thân đóng dấu · nước rút / bước nặng / chuyền / sút mạnh = thân chuyển động (nghiêng, vặn vai, lai quần nhấc)
     let torso = null;
@@ -375,11 +406,17 @@ window.SFC = window.SFC || {};
     if (df) { /* khung đổ người đã vẽ thân */ }
     else if (torso) stamp(ctx, Xb, Yb, torso, pal);
     else stamp(ctx, Xb, Yb, bd ? BODY.bdiag : back ? BODY.back : BODY.front, pal, bd && m);
+    if (cp && cp.legs === 'sit') A.sitLegs(ctx, X, Yf, m, pal);
+    if (cp && cp.legs === 'cross') A.crossLegs(ctx, X, Yf + 2, pal);   // xếp bằng: 2 ống chân vắt trước quần, hạ 2 ô
     if (kLeg && kLeg.over) A.drawKickLeg(ctx, Xb, Yb, km, view, atk, kLeg, pal);   // chân đá vung qua trước thân
     // tay trước thân
     // găng thủ môn trên tay đóng dấu: 2 hàng da cuối của bàn tay (chấm sáng góc trên ngoài)
     const glove = (part, dy, mir) => { if (!o.glove) return; const r = part.y + part.rows.length - 3; rectW(ctx, Xb, Yb + dy, mir, -9, r, 3, 2, o.glove); rectW(ctx, Xb, Yb + dy, mir, -9, r, 1, 1, '#ffffff'); };
+    const wy = { L: 0, R: 0 };   // tay đóng dấu đang vung lên / xuống bao nhiêu (băng cổ tay bám theo)
     if (df) { /* khung đổ người: tay trong khung */ }
+    else if (fp) { armAt(ctx, Xb, Yb, m, 0, fp.arms[0], pal, false); armAt(ctx, Xb, Yb, m, 1, fp.arms[1], pal, false); }
+    else if (hitOn) { /* giơ tay: vẽ sau đầu (dưới) */ }
+    else if (celArms) { /* ăn mừng: tay vẽ quanh đầu (dưới) */ }
     else if (hp && !hp.rest) A.headerArms(ctx, Xb, Yb, m, view, hp, pal, false);
     else if (gait || runArms) gaitArms(ctx, Xb, Yb, aL, aR, view, pal, m, false);
     else if (gkArms) A.gkDraw(ctx, Xb, Yb, m, gk, pal, hand, 'front');   // thủ môn: tay gập ôm bóng / tay thẳng
@@ -395,21 +432,44 @@ window.SFC = window.SFC || {};
       // nhìn xuống / lên: 2 tay, chạy thì vung lên xuống 1 ô, tay vung ra sau ngắn lại
       const armOf = (ph) => (!ph ? [ARM, 0] : [ph === 'B' ? ARM_BACK : ARM, ARM_DY[ph]]);
       const [a, ady] = armOf(f < 0 ? null : ARM_L[f]), [b, bdy] = armOf(f < 0 ? null : ARM_R[f]);
-      if (!(punchArm && (pm || off))) { stamp(ctx, Xb, Yb + ady, a, pal, false); glove(a, ady, false); }
-      if (!(punchArm && (!pm || off))) { stamp(ctx, Xb, Yb + bdy, b, pal, true); glove(b, bdy, true); }
+      if (!(punchArm && (pm || off))) { stamp(ctx, Xb, Yb + ady, a, pal, false); glove(a, ady, false); wy.L = ady; }
+      if (!(punchArm && (!pm || off))) { stamp(ctx, Xb, Yb + bdy, b, pal, true); glove(b, bdy, true); wy.R = bdy; }
     }
     if (punchArm && !bd) A.punch(ctx, Xb, Yb, pm, view, pe, atk, pal);
     if (off && !A.offBehind(pe, view) && (view === 'diag' || view === 'back' || bd)) A.offArm(ctx, Xb, Yb, om, view, pe, pal);
+    // GOAT PATH: băng quấn đúng chỗ chấn thương, theo bên của cầu thủ (như v2 draw.js): cổ tay trái · cổ chân / ngón chân phải · đùi trái
+    if (o.inj && o.inj.length) {
+      const parts = SFC_CONFIG.run && SFC_CONFIG.run.badges, legsBusy = !!(fp || kickLeg || hp || df || gait), BA = V2.BANDAGE, BL = V2.BLOOD;
+      const rightOnL = back ? m : !m, foot = feet[rightOnL ? 'L' : 'R'], other = feet[rightOnL ? 'R' : 'L'];
+      for (const id of o.inj) {
+        const part = parts && parts[id] && parts[id].part;
+        if (part === 'wrist' && !(df || kArms || gait || runArms || gkArms || fp || hitOn || (hp && !hp.rest) || punchArm)) {
+          if (diag || bd) rectW(ctx, Xb, Yb, bd ? !m : m, 7, BUMP.y + BUMP.rows.length - 2, 1, 1, BA);
+          else { const wm = !pm, wY = Yb + (wm ? wy.R : wy.L); rectW(ctx, Xb, wY, wm, -10, -9, 4, 2, INK); rectW(ctx, Xb, wY, wm, -9, -9, 3, 1, BA); rectW(ctx, Xb, wY, wm, -8, -8, 1, 1, BL); }
+        }
+        if (legsBusy) continue;
+        if (part === 'thigh' && other) { const [lp, x0, y0] = other, c = lp.x + lp.rows[0].indexOf('K') + 1; rectW(ctx, x0, y0, false, c, lp.y + 1, 3, 1, BA); rectW(ctx, x0, y0, false, c + 1, lp.y + 1, 1, 1, BL); }
+        if (!foot) continue;
+        const [rp, rx, ry] = foot, so = rp.rows.findIndex((r) => r.includes('O')), sh = rp.rows.findIndex((r) => r.includes('G'));
+        if (part === 'ankle' && so >= 0) { const c = rp.x + rp.rows[so].indexOf('O'); rectW(ctx, rx, ry, false, c, rp.y + so, 3, 1, BA); rectW(ctx, rx, ry, false, c + 1, rp.y + so, 1, 1, BL); }
+        if (part === 'toe' && sh >= 0) { const c = rp.x + rp.rows[sh].indexOf('G'); rectW(ctx, rx, ry, false, c, rp.y + sh, 3, 1, BA); rectW(ctx, rx, ry, false, c + 1, rp.y + sh, 1, 1, BL); }
+      }
+    }
     // đầu: đấm = dẫn trước 1 px (nhìn xuống: cúi) · đá hết tầm = ngả sau 1 px · đánh đầu theo khoá · nước rút / bước nặng dẫn trước thân
     const hlx = punchArm && pe > 0.5 && sideView ? gs : kickLeg && sideView && atk.kp === 'go' && atk.u > 0.5 ? -gs : 0;
     const hly = punchArm && pe > 0.5 && view === 'front' ? 1 : 0, hhx = hp ? snapPx(hp.hx) : 0;
-    const Xh = Xb + hlx + gs * hhx + (gait ? gs * (gait === 'heavy' ? HEAVY_HEAD[view] : HEAD_LEAD[view]) : 0) + (df ? (dfm ? -df.head[0] : df.head[0]) : 0);
-    const Yh = Yb + hly + (hp ? snapPx(hp.hy) : 0) + (df ? df.head[1] : 0);
+    const hxo = o.stun && !fp ? Math.round(Math.sin((o.anim || 0) * 20)) : 0;   // choáng: lắc đầu
+    const Xh = Xb + hxo + hlx + gs * hhx + (gait ? gs * (gait === 'heavy' ? HEAVY_HEAD[view] : HEAD_LEAD[view]) : 0) + (df ? (dfm ? -df.head[0] : df.head[0]) : 0);
+    const Yh = Yb + hly + (hp ? snapPx(hp.hy) : 0) + (df ? df.head[1] : 0) + snapPx(((cp && cp.headDy) || 0) * 1.3);
+    if (celArms && cp.armsBehind) A.celArms(ctx, Xb, Yb, cp, pal);   // tay ra sau đầu (đội thua ôm đầu): vẽ trước đầu
     // tóc / mũ (look.js): classic = đầu đã duyệt, kiểu khác = đầu hói + kiểu tóc phóng từ v2
     if (o.cut && o.cut !== 'classic') A.drawHead(ctx, Xh, Yh, back, o.cut, o, pal, fx, V.fy, bd);
     else stamp(ctx, Xh, Yh, bd ? HEAD.bdiag : back ? HEAD.back : HEAD.front, pal, bd && m);
-    if (!back) face(ctx, Xh, Yh, Math.round(fx * 2), pal, o.eyes);
-    if (o.face && o.face !== 'none') A.drawFace(ctx, Xh, Yh, o.face, { back, bd, fx, fy: V.fy, anim: o.anim, eyes: o.eyes === 'A' ? null : o.eyes, pal, hair: o.hair, skin: o.skin });
+    const kind = o.stun ? 'stun' : (o.cp && o.cp.eyes) || null, mouth = !!((o.cp && o.cp.mouth) || (fp && fp.mouth));
+    if (!back) face(ctx, Xh, Yh, Math.round(fx * 2), pal, o.eyes, kind, mouth);
+    if (o.face && o.face !== 'none') A.drawFace(ctx, Xh, Yh, o.face, { back, bd, fx, fy: V.fy, anim: o.anim, eyes: kind, mouth, pal, hair: o.hair, skin: o.skin });
+    if (hitOn) liftArms(ctx, Xb, Yb, m, view, lift, pal, false);   // giơ 2 tay: vẽ sau đầu (bàn tay nằm trên viền đầu)
+    if (celArms && !cp.armsBehind) A.celArms(ctx, Xb, Yb, cp, pal);   // tay ăn mừng: vẽ sau đầu
     if (hp && hp.impact) A.headerImpact(ctx, Xh, Yh, m, view);
     if (df) A.diveFrameDraw(ctx, Xb, Yb, df, 'front', pal, hand, dfm, dfBall);   // khung đổ người: bóng, găng (sau đầu)
     if (gk) A.gkDraw(ctx, Xb, Yb, m, gk, pal, hand, 'last');   // bóng đang tung lên / rơi xuống chân: trên cùng
@@ -417,6 +477,11 @@ window.SFC = window.SFC || {};
     if (o.flash) { ctx.globalCompositeOperation = 'lighter'; stamp(ctx, Xh, Yh, bd ? HEAD.bdiag : back ? HEAD.back : HEAD.front, FLASH, bd && m); ctx.globalCompositeOperation = 'source-over'; }
     if (off && view === 'front' && !A.offBehind(pe, view)) A.offArm(ctx, Xb, Yb, m, view, pe, pal);   // nhìn xuống, lúc thu tay đấm: tay kia đưa ra trước
     if (V2.shoeEnd) V2.shoeEnd(ctx, o);   // đồ dưới đế / quanh giày (bánh xe, đinh, lửa, quầng sáng...)
+    // choáng: 3 ngôi sao (dấu + vàng, tâm trắng) quay quanh trên đầu
+    if (o.stun) for (let i = 0; i < 3; i++) {
+      const a = (o.anim || 0) * 6 + (i * P * 2) / 3, sx = hxo + Math.round(Math.cos(a) * 11), sy = -35 + Math.round(Math.sin(a) * 2);
+      rectW(ctx, Xb, Yh, false, sx - 1, sy, 3, 1, '#ffe14f'); rectW(ctx, Xb, Yh, false, sx, sy - 1, 1, 3, '#ffe14f'); rectW(ctx, Xb, Yh, false, sx, sy, 1, 1, '#ffffff');
+    }
   }
 
   SFC.PlayerSprite3 = { draw, supports, viewOf, HEIGHT: 31, HEAD, BODY, ARM, BUMP, LEG, EYES, PLANT, LIFT, KICK_F, KICK_B, LIFT_B, SPRINT,

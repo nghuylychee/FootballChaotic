@@ -54,11 +54,17 @@
   <p>Mỗi hàng 1 món: trái v2 (5 hướng), phải v3 (5 hướng). v3 phóng bản đồ ô của v2 lên đầu / chân mới rồi vẽ lại viền 1 px. 4 kiểu tóc vẽ bằng code (beanie, bandana, bun, halo) chưa có.</p>
   <div class="bar" id="lookBar"></div>
   <div class="wrap"><canvas id="looks"></canvas></div>
+  <h2>7. Ăn mừng (đợt 5)</h2>
+  <p>Mỗi ô: trái v2, phải v3, nhìn xuống, chạy lặp lại cả động tác. Đạo cụ vẽ bằng code của game (giữ cỡ cũ), neo theo tay / đầu của người mới.</p>
+  <div class="wrap"><canvas id="cels"></canvas></div>
   <div class="err" id="err"></div>
 </main>
 
 <script src="../../config/game.config.js"></script>
+<script src="../../config/run.config.js"></script>
+<script src="../../config/progression.config.js"></script>
 <script src="../../shared/engine/utils.js"></script>
+<script src="../../src/render/sprites.js"></script>
 <script src="../../src/render/player/base.js"></script>
 <script src="../../src/render/player/body.js"></script>
 <script src="../../src/render/player/run.js"></script>
@@ -82,10 +88,14 @@
 <script src="../../src/render/player/ported.js"></script>
 <script src="../../src/render/player/pose.js"></script>
 <script src="../../src/render/player/draw.js"></script>
+<script src="../../src/render/player/player.js"></script>
+<script src="../../shared/systems/celebrate.js"></script>
+<script src="../../src/render/celebrate-draw.js"></script>
 <script src="../../src/render/player3/body.js"></script>
 <script src="../../src/render/player3/attack.js"></script>
 <script src="../../src/render/player3/keeper.js"></script>
 <script src="../../src/render/player3/look.js"></script>
+<script src="../../src/render/player3/celebrate.js"></script>
 <script>
 (function () {
   const errEl = document.getElementById('err');
@@ -297,6 +307,13 @@
     'Tóc / mũ': () => Object.keys(V2.HAIR_STYLES).map((id) => [id, { cut: id }]),
     'Mặt': () => Object.keys(V2.FACE_ITEMS).map((id) => [id, { face: id }]),
     'Giày': () => Object.keys(V2.SHOE_STYLES).map((id) => [id, { shoes: id }]),
+    'Tóc vẽ bằng code': () => ['beanie', 'bandana', 'bun', 'halo'].map((id) => [id, { cut: id }]),
+    // trạng thái (đợt 5): bị đá bay chưa xoay (drawPlayer xoay cả hình trong trận)
+    'Trạng thái': () => [
+      ['bị đấm', { hit: 0.12 }], ['choáng', { stun: true }], ['nhảy slam', { slam: 1 }],
+      ['bay lộn', { fly: { phase: 'tumble', t: 0, dir: 1, rot0: 0, k: 0 } }], ['nằm', { fly: { phase: 'sprawl', t: 0.2, dir: 1, rot0: 0, k: 0.5 } }],
+      ['lăn dậy', { fly: { phase: 'rise', t: 0.5, dir: 1, rot0: 0, k: 0.5 } }], ['băng chấn thương', { inj: ['ankle', 'wrist', 'hamstring', 'toe'] }],
+    ],
   };
   let lookSet = 'Tóc / mũ', lookT = 0, lookLast = performance.now();
   function drawLooks(now) {
@@ -324,6 +341,31 @@
     lbar.appendChild(b);
   });
 
+  // ăn mừng: CelebrateDraw.draw của game (v3 nếu có) — p giả + g giả (đội có kit)
+  const CEL_IDS = Object.keys(SFC.CelebrateDraw.POSES).filter((id) => id[0] !== '_').concat(['_win2', '_lose']);
+  const KIT = { shirt: '#e8344a', shirtDark: '#a8213a', shorts: '#f4f4f4', accent: '#ffffff' };
+  const CG = { teams: [{ cfg: { kit: KIT } }] };
+  let celT = 0, celLast = performance.now();
+  function drawCels(now) {
+    celT += ((now - celLast) / 1000) * speed; celLast = now;
+    const per = 4, pairW = 120, rowH = 78, W = per * pairW + 8, H = Math.ceil(CEL_IDS.length / per) * rowH + 8, Z = 2, cv = document.getElementById('cels');
+    const D = (SFC_CONFIG.game.match && SFC_CONFIG.game.match.goalCelebration) || 3.2, t = celT % (D + 0.4);
+    render(cv, W, H, Z, (c) => {
+      c.fillStyle = PITCH; c.fillRect(0, 0, W, H);
+      CEL_IDS.forEach((id, i) => {
+        const gx = 4 + (i % per) * pairW, gy = Math.floor(i / per) * rowH;
+        [0, 1].forEach((k) => {
+          const p = { x: gx + 30 + k * 58, y: gy + rowH - 8, vx: 0, vy: 0, facing: Math.PI / 2, anim: t, celId: id, celT: t, flash: 0, state: 'normal', team: 0, look: Object.assign({ cut: 'classic' }, LOOKS[0]) };
+          if (k === 0) V2.celDraw(c, p, CG); else V3.celDraw(c, p, CG);
+        });
+      });
+    });
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+    CEL_IDS.forEach((id, i) => ctx.fillText(id, (4 + (i % per) * 120 + 2) * Z, (Math.floor(i / per) * 78 + 8) * Z));
+    requestAnimationFrame(drawCels);
+  }
+
   const sbar = document.getElementById('speedBar');
   [[1, '1×'], [0.25, '¼×'], [0, 'dừng']].forEach(([v, t]) => {
     const b = document.createElement('button'); b.textContent = 'Tốc độ ' + t; if (v === speed) b.classList.add('on');
@@ -337,7 +379,7 @@
     b.onclick = () => { pitchZoom = z; document.getElementById('zl').textContent = z; [...bar.children].forEach((x) => x.classList.toggle('on', x === b)); drawPitch(); };
     bar.appendChild(b);
   });
-  try { drawPitch(); drawZoomed(); drawFrames(); requestAnimationFrame(drawAnim); drawActFrames(); requestAnimationFrame(drawAct); drawGkFrames(); requestAnimationFrame(drawGk); requestAnimationFrame(drawLooks); } catch (e) { errEl.textContent += e.stack; }
+  try { drawPitch(); drawZoomed(); drawFrames(); requestAnimationFrame(drawAnim); drawActFrames(); requestAnimationFrame(drawAct); drawGkFrames(); requestAnimationFrame(drawGk); requestAnimationFrame(drawLooks); requestAnimationFrame(drawCels); } catch (e) { errEl.textContent += e.stack; }
 })();
 </script>
 </body>

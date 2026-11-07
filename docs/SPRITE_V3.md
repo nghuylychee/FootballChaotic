@@ -1,6 +1,6 @@
 # SPRITE v3 — người chơi to hơn cho sân to
 
-> Trạng thái (2026-11-07, branch `proto/big-pitch`): **trong game** từ đợt 2 (user: "đưa vào game"). Đứng, chạy, nước rút, ra đòn, thủ môn đã duyệt; tóc / mặt / giày (đợt 4) chờ duyệt. Chưa vào game: trong trận vẫn là Sprite v2 phóng tạm `render.playerScale` (px không đều).
+> Trạng thái (2026-11-07, branch `proto/big-pitch`): **trong game** từ đợt 2 (user: "đưa vào game"). Đứng, chạy, nước rút, ra đòn, thủ môn, tóc / mặt / giày đã duyệt; đợt 5 xong phần vẽ (còn nhân vật Tuyệt kỹ vẽ thay, chi tiết bám đầu / tay, dọn). Chưa vào game: trong trận vẫn là Sprite v2 phóng tạm `render.playerScale` (px không đều).
 > Trang duyệt: `npm run serve` rồi mở `http://localhost:8080/tools/sprite-v3/pilot.html` (nạp thẳng `src/render/player3/`).
 > Luật vẽ vẫn là `docs/SPRITE_GUIDE.md`, trừ luật "cỡ trong trận giữ nguyên" (đổi khi user duyệt bản thử).
 
@@ -32,13 +32,21 @@ Sân to hơn (`pitchScale`) thì khung trận zoom out, nên người trên màn
 - `src/render/player3/keeper.js`. Găng trên mọi tư thế (tay đóng dấu: 2 hàng cuối bàn tay; chi tự do: ô cuối = găng; nắm tay đấm), ôm / đón bóng, đỡ tại chỗ (chữ V, chân dạng), phát bóng bổng / chuyền vô-lê (tung bóng, góc tay theo thời gian), đổ người xuống / lên (khung riêng: cất người, bay, duỗi, chạm đất, nằm, bò, quỳ ôm bóng), đứng dậy (nhổm, quỳ, khuỵu), đổ người bắt được bóng.
 - Nhịp + tư thế lấy nguyên v2 (`gkGeom`, `gkState`, `getUpStage`, `DIVE_FRAMES`, bảng `gkPunt` / `gkVolley`). Toạ độ x 1,3; găng 4 × 4 (khung đổ người 6 × 6); thân / chân của khung đổ người vẽ lại theo thân v3 (10 hàng, chân cao hơn 1 hàng); thân ngả `LEAN` theo 10 hàng; bóng trên tay giữ cỡ quả bóng trận (9 px); bóng đổ nằm to theo người.
 
-## Đợt 4: tóc / mũ, phụ kiện mặt, giày, Golden Aura (chờ user duyệt)
+## Đợt 4: tóc / mũ, phụ kiện mặt, giày, Golden Aura (đã duyệt 2026-11-07)
 
 - **Không vẽ tay lại từng món** (24 kiểu tóc / mũ, 19 phụ kiện mặt, 20 đôi giày): `look.js` lấy bản đồ ô của v2 (`HAIR_STYLES`, `FACE_ITEMS`, đã duyệt) rồi phóng lên lưới đầu v3 bằng lấy mẫu điểm gần nhất (v2 x -7..7 = v3 -9..9, hàng -25..-13 = -30..-14). Phóng lên nên không ô nào mất; viền mực **vẽ lại 1 px** quanh khối mới (lớp `ink`), không phóng viền -> không dày mỏng như ảnh phóng. Lớp phẳng (tóc cạo lấm tấm) vẫn chỉ tô trong viền đầu, viền không đè lên mặt / dải má (`FACE`, `INSIDE`, `CHEEK` tính lại cho đầu v3).
 - Phụ kiện mặt neo theo khung mắt (mắt v2 3 × 3 lệch trái nửa ô -> mắt v3 4 × 4 giữa; mặt lệch theo hướng nhìn của từng bản). Hiệu ứng riêng của món (tia laser...) vẽ ở toạ độ v2 rồi phóng (px không đều, chỉ hiệu ứng). Chéo lên: chỉ lớp sau lưng (dây buộc), chưa có phần dải má.
 - Tóc lửa: quầng sáng đổi toạ độ / bán kính theo đầu v3.
 - **Giày**: chân v3 tô cùng chữ O / G / g / J nên dùng thẳng `shoePal` / `shoeBegin` / `shoeEnd` của v2 (mẫu tô theo ô, đồ dưới đế theo chỗ đế đã tô). Golden Aura: `drawAura` của v2.
-- Chưa có: 4 kiểu tóc v2 vẽ bằng code (beanie, bandana, bun, halo) -> vẽ v2 phóng. Nếu món nào phóng lên trông chưa đẹp thì vẽ tay riêng bản v3 cho món đó.
+- 4 kiểu tóc v2 vẽ bằng code (beanie, bandana, bun, halo; đợt 5): chụp ảnh đầu v2 có tóc vào đệm, ô nào khác đầu hói (trừ viền mực) là tóc, rồi phóng + vẽ lại viền như trên (`captureCut`, nhớ đệm theo kiểu / hướng / màu). Nếu món nào phóng lên trông chưa đẹp thì vẽ tay riêng bản v3 cho món đó.
+
+## Đợt 5 (2026-11-07)
+
+- **Trạng thái** (`body.js`): bị đấm / nhảy Ground Slam giơ 2 tay (`liftArms`, nhịp `hitState` / `hitLift` của v2, vai nhô 3 ô), choáng (mắt gạch, đầu lắc, 3 sao quay trên đầu cao hơn), bị đá bay (tư thế `flyPose` của v2: chân văng / nằm / khuỵu, tay, há miệng; `drawPlayer` xoay quanh giữa thân mới, bóng nằm x `playerScale`), băng chấn thương GOAT PATH (cổ tay, đùi, cổ chân, ngón chân theo bên của cầu thủ).
+- Mặt v3 có biểu cảm như v2: `stun` / `closed` / `happy` / `up` + há miệng.
+- Chữ popup (`VFX.pops`) nâng thêm 24 x (playerScale − 1) px; chân dung HUD 22 x 22 hạ đầu xuống (y = h + 9); ô icon đồ "mặt" cắt từ hàng 10.
+- **Ăn mừng** (`player3/celebrate.js`): tư thế v2 (`celPose`, `celArmSet`, `CEL_FX`) vẽ bằng v3: tay thẳng / gập (đường tay x 1,3, vai v3, nhô vai 3 ô, ngón trỏ 3 ô), chân quỳ / trượt gối chéo / ngồi bệt / xếp bằng / moonwalk / xoạc, hạ người / đầu x 1,3. `celDraw` riêng (CelebrateDraw.draw gọi khi có v3): hông cách chân 10 px, độ nhấc x 1,3, điểm neo đạo cụ (`celAnchors`: bàn tay, khuỷu, đầu, miệng) theo người mới; đạo cụ vẽ bằng code của game giữ cỡ cũ. Renderer không còn phóng ăn mừng (chỉ vật thể thay hình). Trang duyệt mục 7.
+- **Chưa làm:** nhân vật do VFX / Tuyệt kỹ vẽ thay (King Kong, con gà...: cỡ cũ), mắt phát sáng / VFX bám tay đầu theo người cũ, dọn (`playerScale` về 1, xoá v2, baseline `check.cjs`, luật cỡ trong `SPRITE_GUIDE.md`).
 
 ## Kế hoạch
 

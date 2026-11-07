@@ -699,8 +699,13 @@ window.SFC = window.SFC || {};
       p.ai.ftFor = b.kickN;
       const FA = F.ai, D = g.aiProfile(p.team), goal = g.attackGoal(p.team), dG = U.dist(p, goal);
       const opp = b.lastKickTeam >= 0 && b.lastKickTeam !== p.team;
-      let chance = 0, pass = null;
-      if (opp) { if (b.cross && !g.inKeeperZone(p)) chance = FA.clearChance; }
+      let chance = 0, pass = null, block = false;
+      if (opp) {
+        if (b.cross && !g.inKeeperZone(p)) chance = FA.clearChance;
+        // ĐÁNH ĐẦU CẢN CÚ SÚT (firstTime.ai.block, user 2026-11-07): cú sút của đối phương bay về khung nhà, tới chỗ mình ở trên tầm khống chế
+        // (cao quá đầu) -> chạy vào đường bóng, bật nhảy đánh đầu phá ra. Người giữ khung trong vòng cấm thì bắt như thường
+        else if (FA.block && b.kind === 'shot' && b.vx * g.teams[p.team].dir < 0 && !g.inKeeperZone(p) && Act().highBall(g, p)) { chance = FA.block.chance; block = true; }
+      }
       else if (b.passTarget === p && dG < FA.range) {
         if (b.cross) chance = FA.headerChance;
         else if (Act().laneClear(g, p, goal.x, goal.y, 12)) chance = FA.oneTouchChance;
@@ -713,6 +718,7 @@ window.SFC = window.SFC || {};
       if (!chance || Math.random() >= Math.min(0.95, chance * (0.6 + 0.4 * D.aggression))) return;
       if (!Act().armFirstTime(g, p, pass)) return;
       if (pass) { p.ot.aim = { x: g.teams[p.team].dir, y: 0 }; return; }   // chuyền về phía khung đối phương
+      if (block) { p.ot.block = true; p.ot.target = U.rand(FA.block.charge[0], FA.block.charge[1]); return; }   // phá về phía trước, không nhắm góc
       p.ot.target = U.rand(FA.charge[0], FA.charge[1]);
       const f = g.field, gk = nearest(g.teams[1 - p.team].players, goal, (o) => g.inKeeperZone(o)).p;
       p.ot.aimY = (gk && gk.y > f.cy ? -1 : 1) * U.rand(0.3, 0.9);
@@ -850,6 +856,8 @@ window.SFC = window.SFC || {};
         if (mate) p.intent.sprint = U.dist(p, ip) > 6 && (b.sloppy || !p.ai.recvWalk);
         return;
       }
+      // đang chờ đánh đầu cản cú sút (firstTime.ai.block): chạy tới chỗ đón bóng ngang đầu trên đường bay (Actions.receiveMove)
+      if (p.ot && p.ot.block) { Act().receiveMove(g, p); return; }
       // bóng vừa bật bất ngờ (ai.scramble): chưa kịp phản ứng thì giữ nguyên hướng chạy cũ; phản ứng rồi vẫn đoán lệch hướng bóng một lúc
       const S = A().scramble, w = g.aiBall;
       let err = 0;
@@ -943,8 +951,12 @@ window.SFC = window.SFC || {};
           if (U.dist(p, b) < oppNear + 10) { tx = b.x; ty = b.y; sprint = true; }
         }
       } else if (b.owner.team !== p.team && Math.abs(b.owner.x - own.x) < 100) {
-        tx = own.x + dir * 22;
-        ty = U.clamp(b.owner.y, f.gTop - 4, f.gBot + 4);
+        // người cầm bóng đã có đồng đội kèm (ai.keeperRecover.marked, user 2026-11-07): đứng trên vạch che góc, không bước ra
+        // (bước ra = bỏ trống khung, người kèm đã lo tranh bóng). Người cầm bóng áp sát tận nơi thì vẫn đấm
+        if (!(A().keeperRecover && carrierMarked(g, p, b.owner))) {
+          tx = own.x + dir * 22;
+          ty = U.clamp(b.owner.y, f.gTop - 4, f.gBot + 4);
+        }
         if (U.dist(p, b.owner) < 18 && p.ai.t <= 0) {
           p.ai.t = 0.5;
           p.facing = Math.atan2(b.owner.y - p.y, b.owner.x - p.x);
