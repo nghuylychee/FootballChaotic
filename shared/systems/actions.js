@@ -204,12 +204,13 @@ window.SFC = window.SFC || {};
         point = clampPt(this.throughMeet(g, target, human && Math.hypot(dx, dy) > 0.2 ? U.norm(dx, dy) : null).point);
         const d = U.dist(b, point) || 1;
         const tr = U.dist(target, point) / (PL.speed * target.stats.speed * PL.sprintMult * TH.runSpeed) + TH.react;
-        // bóng giữ tốc độ (ma sát k): đi d px trong tr s -> v0 = k.d / (1 - e^(-k.tr)); tốc độ khi tới điểm nhận = v0 - k.d
-        spd = Math.max((k * d) / (1 - Math.exp(-k * tr)), TH.minArrive * mult + k * d, P.minSpeed);
+        // ma sát chọc khe (pass.throughFriction, Ball.passFm): đi d px trong tr s -> v0 = k.d / (1 - e^(-k.tr)); tốc độ khi tới điểm nhận = v0 - k.d
+        const kt = B.groundFriction * (P.throughFriction != null ? P.throughFriction : P.friction || 1);
+        spd = Math.max((kt * d) / (1 - Math.exp(-kt * tr)) * (TH.boost || 1), TH.minArrive * mult + kt * d, P.minSpeed);
         // giữ lực vượt mốc: bóng nhanh hơn nhịp chạy -> tới trước, lăn tiếp vào sâu
         if (power != null && power > P.throughBase) spd *= 1 + TH.overSpeed * (power - P.throughBase) / (1 - P.throughBase);
         spd = Math.min(spd, P.maxSpeed * mult);
-        T = -Math.log(Math.max(0.02, 1 - (k * d) / spd)) / k;
+        T = -Math.log(Math.max(0.02, 1 - (kt * d) / spd)) / kt;
       } else if (mode === 'lob') {
         // tạt cánh (firstTime.cross): bóng tới điểm đón ở độ cao ngang đầu (X.z) thay vì rơi xuống chân
         const X = this.crossFrom(g, p, target) ? G().firstTime.cross : null;

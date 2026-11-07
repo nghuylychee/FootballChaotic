@@ -304,6 +304,9 @@ SFC_CONFIG.game = {
     // tới khi bóng đi qua điểm nhận (qua rồi mà chưa ai chạm: lăn chậm dần như thường). Chuyền vào khoảng trống / chuyền bổng không đổi.
     // Bóng gần như đi đều ở arriveSpeed (chọc khe: throughArriveSpeed) — nhanh hơn người chạy nước rút có buff (~200 px/s)
     friction: 0.15,
+    // CHỌC KHE có người nhận: ma sát riêng (x groundFriction) tới điểm nhận -> sút căng, chậm dần khi tới gần điểm nhận (vẫn đúng nhịp người chạy,
+    // Actions.passPlan tính lực theo ma sát này). Qua điểm nhận: lăn như bóng thường
+    throughFriction: 0.8,
     arriveSpeed: 250,         // tốc độ bóng khi tới chân người nhận — 150 -> 180 (2026-10-30) -> 170 (-5%) -> 250 (2026-11-01, kèm friction)
     minSpeed: 133,
     maxSpeed: 455,            // x pitchScale (cuối file) (chuyền dài tới chân còn đủ nhanh)
@@ -324,7 +327,8 @@ SFC_CONFIG.game = {
     //   minArrive: tốc độ bóng thấp nhất khi tới điểm nhận (x chỉ số pass) · overSpeed: giữ lực đầy -> bóng nhanh thêm ngần này
     //   movingMin: (px/s) người nhận chạy nhanh hơn mức này mới lấy hướng theo vận tốc · parallel: |sin góc| giữa 2 hướng dưới mức này = coi như song song
     through: { runMin: 24, runMax: 150, lead: 60,   // x pitchScale (cuối file)
-       runSpeed: 0.95, react: 0.15, minArrive: 120, overSpeed: 0.5, movingMin: 30, parallel: 0.15 },
+       runSpeed: 0.95, react: 0.15, minArrive: 120, overSpeed: 0.5, movingMin: 30, parallel: 0.15,
+       boost: 1.1 },   // boost: lực chọc khe x bấy nhiêu (bóng tới điểm nhận sớm hơn người chạy một chút)
     freeThroughArrive: 80,    // chọc khe vào khoảng trống (không có người nhận): bóng vẫn còn lực khi qua điểm rơi
     lobTimeMin: 0.45,         // chuyền bổng: thời gian bay (s) theo khoảng cách
     lobTimeMax: 1.0,

@@ -739,10 +739,19 @@ window.SFC = window.SFC || {};
 
     // bóng vẽ đè lần 2 ở độ mờ fx.ball.xray, không bóng đổ: chỗ không bị che thì trùng màu (không đổi gì), bị người / VFX che thì hiện xuyên.
     // Bóng đổi hình / lửa / sét (vẽ cộng sáng) thì bỏ qua: vẽ lần 2 sẽ sáng gắt hơn
+    // Vẽ đủ đậm vào đệm rồi dán cả hình ở độ mờ a: vẽ thẳng ở độ mờ a thì đĩa viền mực (vẽ trước lõi) lộ qua lõi trắng mờ -> bóng xám
     ballXray(ctx, b) {
       const a = SFC_CONFIG.game.fx.ball.xray;
       if (!a || b.skin || b.fx.fire || b.fx.thunder) return;
-      SP().drawBall(ctx, b, a, true);
+      const N = 16, h = N / 2, r = Math.ceil(SP().ballSize() / 2);
+      const buf = this._xray || (this._xray = document.createElement('canvas'));
+      if (buf.width !== N) { buf.width = N; buf.height = N; }
+      const bc = buf.getContext('2d');
+      bc.clearRect(0, 0, N, N);
+      SP().drawBall(bc, { x: h, y: h + r, z: 0, roll: b.roll, fx: b.fx }, 1, true);   // tâm bóng tại (h, h) của đệm
+      ctx.globalAlpha = a;
+      ctx.drawImage(buf, Math.round(b.x) - h, Math.round(b.y - b.z - r) - h);
+      ctx.globalAlpha = 1;
     },
 
     // khung thành: vẽ 1 lần vào canvas đệm (theo kích thước sân + bên), mỗi khung hình chỉ drawImage

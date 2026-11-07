@@ -236,20 +236,46 @@ window.SFC = window.SFC || {};
 
   /* ---------- chạy nước rút (nhìn ngang / chéo): chân, tay xoay quanh hông / vai như v2 sprint.js ---------- */
   const P = Math.PI;
+  // khung 2, 4: chân trụ thẳng đứng (0.5π, v2: 0.56π) -> giày nằm ngay dưới chân, mũi về hướng chạy, không bị chân nghiêng kéo ra sau
   const SPRINT = [
     [0.82 * P, 0.36 * P, 0, 0.75, P - 0.6],
-    [0.22 * P, 0.56 * P, -1, P / 2 - 0.2, P / 2 + 0.2],
+    [0.22 * P, 0.5 * P, -1, P / 2 - 0.2, P / 2 + 0.2],
     [0.36 * P, 0.82 * P, 0, P - 0.6, 0.75],
-    [0.56 * P, 0.22 * P, -1, P / 2 + 0.2, P / 2 - 0.2],
+    [0.5 * P, 0.22 * P, -1, P / 2 + 0.2, P / 2 - 0.2],
   ];
   const LEAN = { side: 1, diag: 1, bdiag: 1 }, HEAD_LEAD = { side: 2, diag: 1, bdiag: 1 };
   // chân dài KLEN từ hông (bút 3 x 3 neo góc trên trái), tay dài ALEN từ vai: cùng độ dài lúc đứng
   const KLEN = 4.2, ALEN = 3.5, HIP_Y = -6, HIPS = { side: [-4, 2], diag: [-4, 1], bdiag: [-4, 1] }, ARM_ROOT = [[-9, -12], [7, -12]], DIAG_REACH = 0.6;
-  function gaitLeg(ctx, X, Y, hx, a, pal, mir, reach) {
+  // sprint = chạy nước rút: chân nhấc ra trước cũng mang giày phẳng như chân đứng (gót sát mép sau, mũi nhô 1 ô về hướng chạy, đế dưới)
+  function gaitLeg(ctx, X, Y, hx, a, pal, mir, reach, sprint) {
     const ex = Math.round(hx + KLEN * Math.cos(a) * reach), ey = Math.round(HIP_Y + KLEN * Math.sin(a));
-    const foot = a < 0.25 * P ? [1, -1, ['GGG', 'GGg', 'GGg']] : a <= 0.6 * P ? [0, 1, ['GGGG', 'gggg']] : [-1, 0, ['gGG', 'gGG']];
+    const flat = [0, 1, ['GGGG', 'gggg']];
+    const foot = a < 0.25 * P ? (sprint ? flat : [1, -1, ['GGG', 'GGg', 'GGg']]) : a <= 0.6 * P ? flat : [-1, 0, ['gGG', 'gGG']];
     const col = (k, i, n) => (i / n < 0.22 ? pal.P : i / n < 0.42 ? pal.J : pal.O);
     drawCells(ctx, X, Y, blockCells(limbCells([[hx, HIP_Y], [ex, ey]], col), ex + foot[0], ey + foot[1], foot[2], pal), mir);
+  }
+  // chạy nước rút: chân có gối (đùi + cẳng chân, bút 3 x 3), góc [đùi, cẳng] theo khung, cùng thứ tự chân với SPRINT.
+  // 0 = trước, π/2 = thẳng xuống, π = ra sau. Gối nhấc: đùi ra trước, cẳng thả xuống · gót đá sau: đùi hơi sau, cẳng vung ra sau.
+  // Mũi giày luôn chĩa về hướng chạy: cẳng thả xuống = bàn phẳng · cẳng vung ra sau = gót nhấc, mũi ra trước, đế dưới.
+  // null = chân thẳng (gaitLeg, góc SPRINT): khung 2 cả 2 chân · khung 4 chân trụ (chân nhấc ra trước có gối, cẳng thả dưới gối)
+  const SPRINT_KNEE = [
+    [[0.62 * P, 0.95 * P], [0.3 * P, 0.45 * P]],
+    null,
+    [[0.3 * P, 0.45 * P], [0.62 * P, 0.95 * P]],
+    [null, [0.15 * P, 0.5 * P]],
+  ];
+  const THIGH = 2.1, SHIN = 2.1;
+  const SPRINT_DX = 1;   // chạy nước rút: chân dời về hướng chạy bấy nhiêu ô (mọi khung)
+  // far = chân xa máy quay: tối hơn 1 bậc (như tay sau thân pal.s / pal.t), chân gần vẽ đè lên
+  function kneeLeg(ctx, X, Y, hx, ta, sa, pal, mir, reach, far) {
+    if (far) pal = Object.assign({}, pal, { P: shade(pal.P, 0.25), J: pal.s, O: shade(pal.O, 0.25), G: shade(pal.G, 0.25), g: shade(pal.g, 0.25) });
+    const kx = hx + THIGH * Math.cos(ta) * reach, ky = HIP_Y + THIGH * Math.sin(ta);
+    const ex = Math.round(kx + SHIN * Math.cos(sa) * reach), ey = Math.round(ky + SHIN * Math.sin(sa));
+    // giày phủ hết đầu cẳng (bút 3 ô), như chân đứng LEG.R: bàn phẳng rộng 4, gót sát mép sau cẳng, mũi nhô 1 ô về hướng chạy ·
+    // cẳng vung ra sau: gót nhấc, mũi vẫn nhô ra trước, đế ở hàng dưới
+    const foot = sa > 0.7 * P ? [0, 1, ['GGG.', 'GGGG', '.ggg']] : [0, 1, ['GGGG', 'gggg']];
+    const col = (k, i, n) => (k === 1 ? (i / n < 0.5 ? pal.P : pal.J) : i / n < 0.25 ? pal.J : pal.O);
+    drawCells(ctx, X, Y, blockCells(limbCells([[hx, HIP_Y], [Math.round(kx), Math.round(ky)], [ex, ey]], col), ex + foot[0], ey + foot[1], foot[2], pal), mir);
   }
   // tay i (0 trái / 1 phải hình nhìn phải) góc a · behind = sau thân (da tối)
   function armAt(ctx, X, Y, mir, i, a, pal, behind) {
@@ -356,9 +382,24 @@ window.SFC = window.SFC || {};
         if (bd) plantLater = () => stamp(ctx, X, Yf, plant, pal, km); else stamp(ctx, X, Yf, plant, pal, km);
       }
     } else if (gait) {
-      const [h0, h1] = HIPS[view], r = diag || bd ? DIAG_REACH : 1, Yl = fr[2] <= -1.5 ? Y + fr[2] : Y;
-      gaitLeg(ctx, X, Yl, h0, fr[0], pal, m, r);
-      gaitLeg(ctx, X, Yl, h1, fr[1], pal, m, r);
+      // chạy nước rút: cả 2 chân dời SPRINT_DX ô về hướng chạy (lật theo hướng nhìn qua mir của drawCells)
+      const dx = gait === 'sprint' ? SPRINT_DX : 0, h0 = HIPS[view][0] + dx, h1 = HIPS[view][1] + dx;
+      const r = diag || bd ? DIAG_REACH : 1, Yl = fr[2] <= -1.5 ? Y + fr[2] : Y;
+      const K = gait === 'sprint' ? SPRINT_KNEE[f] : null;
+      if (K && K[0] && K[1]) {
+        // khung 1, 3: 2 chân có gối. Nhìn ngang 2 hông gần như trùng chỗ: chân 0 = chân xa (tối, hông lùi 2 ô, vẽ trước),
+        // chân 1 = chân gần (vẽ đè, viền mực riêng) -> lúc 2 chân lướt qua nhau chân gần che chân xa như thật
+        const hc = Math.round((h0 + h1) / 2);
+        kneeLeg(ctx, X, Yl, hc - 2, K[0][0], K[0][1], pal, m, r, true);
+        kneeLeg(ctx, X, Yl, hc, K[1][0], K[1][1], pal, m, r, false);
+      } else if (K) {
+        // khung 4: chân trụ thẳng (gaitLeg) + chân nhấc có gối, màu thường, mỗi chân ở hông của nó
+        [h0, h1].forEach((h, i) => (K[i] ? kneeLeg(ctx, X, Yl, h, K[i][0], K[i][1], pal, m, r, false) : gaitLeg(ctx, X, Yl, h, fr[i], pal, m, r, true)));
+      } else {
+        const sp = gait === 'sprint';
+        gaitLeg(ctx, X, Yl, h0, fr[0], pal, m, r, sp);
+        gaitLeg(ctx, X, Yl, h1, fr[1], pal, m, r, sp);
+      }
     } else if (f < 0) {
       // đứng (chân phải nhấc 1 px) · đấm duỗi quá nửa (nhìn ngang / chéo): chân trước bước tới, gót chân sau nhấc
       feet.L = [step ? (m ? at(leg, -6) : at(KICK_F, -5)) : at(leg, -5), X, Yf]; stamp(ctx, X, Yf, feet.L[0], pal);

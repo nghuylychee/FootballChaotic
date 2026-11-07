@@ -40,8 +40,13 @@ window.SFC = window.SFC || {};
 
     // cú sút giữ tốc độ (ball.shotFriction) tới khi dội vạch cuối sân / có người chạm (setOwner, deflect xoá kind)
     shotFm() { return this.kind === 'shot' && !this.endBounce ? SFC_CONFIG.game.ball.shotFriction || 1 : 1; }
-    // đường chuyền sệt / chọc khe có người nhận giữ tốc độ (pass.friction) tới khi bóng đi qua điểm nhận (passPoint) / có người chạm
-    passFm() { return this.keepPace && this.passPoint && this.kind === 'pass' ? SFC_CONFIG.game.pass.friction || 1 : 1; }
+    // đường chuyền sệt có người nhận giữ tốc độ (pass.friction) · chọc khe có người nhận: ma sát riêng (pass.throughFriction, sút căng rồi chậm dần)
+    // — tới khi bóng đi qua điểm nhận (passPoint) / có người chạm
+    passFm() {
+      if (!(this.keepPace && this.passPoint && this.kind === 'pass')) return 1;
+      const P = SFC_CONFIG.game.pass;
+      return (this.through && P.throughFriction != null ? P.throughFriction : P.friction) || 1;
+    }
 
     setOwner(p) {
       this.owner = p;
