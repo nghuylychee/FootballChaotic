@@ -49,7 +49,7 @@ window.SFC = window.SFC || {};
       const I = CFG();
       this.t += dt;
       this.cue('vs', I.vsAt, () => SFC.Audio.hit());
-      this.cards.forEach((c) => this.cue('c' + c.delay, c.delay, () => SFC.Audio.menu()));   // thẻ hiện cùng lúc (cardGap 0): 1 tiếng
+      this.cards.forEach((c) => this.cue('c' + c.delay, c.delay, () => SFC.Audio.menu()));   // mỗi thẻ 1 tiếng (cardGap 0 = cùng lúc: chỉ 1 tiếng)
       this.cue('stats', I.statsAt, () => SFC.Audio.upgrade());
       if (this.closing < 0) {
         const skip = this.t > I.skipAfter && (input.wasPressed('confirm') || input.wasPressed('pause') || input.wasPressed('back'));

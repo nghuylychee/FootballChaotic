@@ -132,3 +132,5 @@ mới hiện, màn kết quả bấm ở 0,2 s bị bỏ qua / ở 0,6 s nhận.
 - 2026-11-06 (vòng 2): owner chốt 4 mục cần xác nhận; LEGEND "Who gets him?" gộp với anim ký → High (cũng nhận Enter ngay); dựng thêm 10 màn Medium / Low;
   gộp tất cả về 1 trang (`screens/*.js`), bỏ 6 trang lẻ.
 - 2026-11-06 (vòng 3): owner chọn A hết, trừ màn GEAR để nguyên -> áp dụng trên nhánh `ux/motion-2026-11` (bảng "Áp dụng"), commit + push.
+- 2026-11-07: owner muốn lại anim lật / hiện **từng thẻ**: chọn Core lật lệch 0,02 / 0,10 / 0,18 / 0,26 s (0,38 s mỗi lá, vẫn không lật lại sau PAUSE);
+  intro trận thẻ cầu thủ hiện xen kẽ trái / phải (`cardsAt 0.3`, `cardGap 0.22`, CSS `inCardL/R`), phần còn lại của intro giữ phương án A.

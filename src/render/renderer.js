@@ -754,44 +754,78 @@ window.SFC = window.SFC || {};
       ctx.globalAlpha = 1;
     },
 
-    // khung thành: vẽ 1 lần vào canvas đệm (theo kích thước sân + bên), mỗi khung hình chỉ drawImage
+    // khung thành: vẽ 1 lần vào canvas đệm (theo kích thước sân + bên), mỗi khung hình chỉ drawImage.
+    // LƯỚI RUNG (user 2026-11-07): bóng vừa chui vào lưới -> vẽ lại lưới mỗi khung với độ phồng tắt dần quanh chỗ bóng chạm (netShake)
     goal(ctx, g, side) {
       const f = g.field, net = SFC.Background.theme(g).goalNet || '235,238,245';   // màu lưới theo sân ('r,g,b')
+      const w = this.netShake(g, side);
+      if (w) { const c = this.goalSprite(f, side, net, w, this._netCv || (this._netCv = document.createElement('canvas'))); ctx.drawImage(c.cv, c.x, c.y); return; }
       const key = [side, net, f.x, f.w, f.gTop, f.gBot, f.goalHeight, f.goalDepth].join(',');
       const c = (this._goals || (this._goals = {}))[key] || (this._goals[key] = this.goalSprite(f, side, net));
       ctx.drawImage(c.cv, c.x, c.y);
     },
 
+    // lưới rung: chỉ phía vẽ (đọc vị trí bóng -> khách online cũng thấy). Bóng chui qua vạch vào lòng khung (dưới xà) = 1 cú rung mới,
+    // biên độ theo tốc độ bóng lúc vào. Trả về hàm độ lệch (k cột lưới tính từ khung trước, y màn hình) -> [dx, dy] px, hoặc null khi lưới đứng yên.
+    // Nhịp trong config game.fx.netShake
+    netShake(g, side) {
+      const N = SFC_CONFIG.game.fx.netShake, b = g.ball, f = g.field;
+      if (!N) return null;
+      const S = this._shake || (this._shake = {}), lx = side < 0 ? f.x : f.x + f.w;
+      const inNet = (b.x - lx) * side > 0 && b.y > f.gTop && b.y < f.gBot && b.z < f.goalHeight && !b.owner;
+      const now = performance.now() / 1000, key = side < 0 ? 'l' : 'r';
+      const st = S[key] || (S[key] = { inNet: false, at: -9, v: 0 });
+      const v = Math.hypot(b.vx, b.vy, b.vz || 0);
+      // tốc độ lúc vào: lấy cả khung trước (lưới đã hãm bóng ngay khung đầu bóng nằm trong lưới)
+      if (inNet && !st.inNet) { st.at = now; st.y = b.y - b.z; st.amp = U.clamp(Math.max(v, st.v) * N.ampPerSpeed, N.amp[0], N.amp[1]); }
+      st.inNet = inNet; st.v = v;
+      const t = now - st.at;
+      if (t < 0 || t > N.time) return null;
+      const A = st.amp * Math.exp(-t / N.decay), ph = t * N.freq * Math.PI * 2, D = f.goalDepth, sig2 = 2 * N.spread * N.spread, y0 = st.y;
+      return (k, y) => {
+        const fall = Math.exp(-((y - y0) * (y - y0)) / sig2) * A;
+        // phồng ra sau (xa khung trước phồng nhiều hơn) + gợn sóng lan theo chiều sâu
+        return [side * fall * (k / D) * (0.6 + 0.4 * Math.sin(ph)), fall * 0.35 * Math.sin(ph - k * 0.45)];
+      };
+    },
+
     // lưới dốc xuống phía sau (khung sau thấp ~55% xà) -> mái lưới xiên + 2 lưới hông hình thang; mắt lưới hình thoi 4px;
     // lưới hông gần camera rõ nhất, mái nhạt hơn, hông xa mờ, lòng khung tối; khung trước viền mực + mép sáng phía sân / tối phía lưới;
-    // chân cột trên sân; bóng xà đổ lên sân ngay trước vạch cầu môn
-    goalSprite(f, side, net) {
+    // chân cột trên sân; bóng xà đổ lên sân ngay trước vạch cầu môn.
+    // w (lưới rung, netShake): độ lệch từng mắt lưới + mép sau; cv: canvas dùng lại (vẽ mỗi khung lúc rung)
+    goalSprite(f, side, net, w = null, cv = null) {
       const { px, OUT } = SP();
-      const H = f.goalHeight, D = f.goalDepth, HB = Math.round(H * 0.55);
+      const H = f.goalHeight, D = f.goalDepth, HB = Math.round(H * 0.55), PAD = 8;
       const lx = side < 0 ? f.x : f.x + f.w, bx = lx + side * D;
-      const ox = Math.min(lx, bx) - 7, oy = f.gTop - H - 2;
-      const cv = document.createElement('canvas');
-      cv.width = D + 15; cv.height = f.gBot - oy + 3;
+      const ox = Math.min(lx, bx) - 7 - PAD, oy = f.gTop - H - 2 - PAD;
+      cv = cv || document.createElement('canvas');
+      const cw = D + 15 + PAD * 2, ch = f.gBot - oy + 3 + PAD;
+      if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; }
       const ctx = cv.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, cw, ch);
       ctx.translate(-ox, -oy);
       const top = f.gTop, bot = f.gBot;
       const hAt = (k) => Math.round(H - ((H - HB) * k) / D);   // chiều cao lưới tại cột k (0 = khung trước, D = khung sau)
       const on = (y, k) => ((y + k) & 3) === 0 || ((y - k) & 3) === 0;
-      const dot = (X, y, c) => { ctx.fillStyle = c; ctx.fillRect(X, y, 1, 1); };
+      const dot = w
+        ? (X, y, c, k) => { const o = w(k, y); ctx.fillStyle = c; ctx.fillRect(X + Math.round(o[0]), y + Math.round(o[1]), 1, 1); }
+        : (X, y, c) => { ctx.fillStyle = c; ctx.fillRect(X, y, 1, 1); };
       px(ctx, side < 0 ? lx + 2 : lx - 6, top + 3, 4, bot - top, 'rgba(0,0,0,0.22)');
       for (let k = 1; k < D; k++) px(ctx, lx + side * k, top - hAt(k), 1, bot - top + hAt(k), 'rgba(0,0,0,0.3)');
       for (let k = 1; k < D; k++) {
         const X = lx + side * k, h = hAt(k);
-        for (let y = top - h; y <= top; y++) if (on(y, k)) dot(X, y, `rgba(${net},0.2)`);          // lưới hông xa
-        for (let y = top + 1; y < bot - h; y++) if (on(y, k)) dot(X, y, `rgba(${net},0.3)`);      // mái lưới
-        for (let y = bot - h; y <= bot; y++) if (on(y, k)) dot(X, y, `rgba(${net},0.62)`);        // lưới hông gần
+        for (let y = top - h; y <= top; y++) if (on(y, k)) dot(X, y, `rgba(${net},0.2)`, k);          // lưới hông xa
+        for (let y = top + 1; y < bot - h; y++) if (on(y, k)) dot(X, y, `rgba(${net},0.3)`, k);      // mái lưới
+        for (let y = bot - h; y <= bot; y++) if (on(y, k)) dot(X, y, `rgba(${net},0.62)`, k);        // lưới hông gần
       }
       // dây lưới sát mặt sân ở 2 hông
       px(ctx, Math.min(lx, bx), bot, D + 1, 1, `rgba(${net},0.8)`);
       px(ctx, Math.min(lx, bx), top, D + 1, 1, `rgba(${net},0.4)`);
-      // khung sau + 2 cột sau + 2 thanh chống xiên nối góc xà
+      // khung sau + 2 cột sau + 2 thanh chống xiên nối góc xà. Lưới rung: mép sau (dây lưới) phồng theo, từng điểm
       const back = `rgba(${net},0.85)`;
-      px(ctx, bx, top - HB, 1, bot - top + 1, back);
+      if (w) for (let y = top - HB; y <= bot; y++) dot(bx, y, back, D);
+      else px(ctx, bx, top - HB, 1, bot - top + 1, back);
       px(ctx, bx, top - HB, 1, HB + 1, back); px(ctx, bx, bot - HB, 1, HB + 1, back);
       for (let k = 0; k <= D; k++) { const X = lx + side * k, h = hAt(k); px(ctx, X, top - h, 1, 1, back); px(ctx, X, bot - h, 1, 1, back); }
       // chân cột

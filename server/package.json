@@ -1,6 +1,6 @@
 {
   "name": "street-football-chaos-server",
-  "version": "12.3.15",
+  "version": "12.3.16",
   "private": true,
   "description": "Dedicated match server for Street Football Chaos online rooms",
   "main": "index.js",
@@ -14,5 +14,5 @@
   "dependencies": {
     "ws": "8.22.1"
   },
-  "stamp": "8fd1868172ac6438"
+  "stamp": "f78ebaa4fed40afb"
 }

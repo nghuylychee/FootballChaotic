@@ -82,7 +82,7 @@ SFC_CONFIG.game = {
     // khung thành + vòng cấm to thêm ~10% (user 2026-11-07): 78 / 18 / 26 / 66 / 140 -> 86 / 20 / 29 / 73 / 154. Không theo pitchScale
     goalWidth: 86,     // độ rộng khung thành (trục y)
     goalDepth: 20,     // độ sâu lưới
-    goalHeight: 29,    // chiều cao xà ngang (trục z)
+    goalHeight: 38,    // chiều cao xà ngang (trục z). 29 -> 38 (user 2026-11-07: khung thành cao lên, gần tỉ lệ người 31 px). Sút / lốp tính theo xà nên tự cao theo
     boxDepth: 73,      // vòng cấm: cầu thủ đứng trong vòng cấm nhà được cơ chế thủ môn
     boxWidth: 154,
     centerCircle: 34,
@@ -151,7 +151,7 @@ SFC_CONFIG.game = {
     staminaMinToSprint: 12,
     // Cơ chế thủ môn — áp dụng cho cầu thủ đang đứng trong vòng cấm nhà
     gkReach: 9,
-    gkCatchHeight: 30,
+    gkCatchHeight: 39,        // (z) thủ môn với tới bóng cao bấy nhiêu = xà + 1 (field.goalHeight 38): đổi xà thì đổi số này theo, không thì bóng sát xà luôn vào
     gkSaveBase: 0.95,
     gkStretchPenalty: 0.6,    // phạt tỉ lệ bắt bóng khi phải vươn người (bóng góc)
     // 340 / 700 -> 380 / 1000 (2026-10-30): cú sút giờ giữ tốc độ tới khung (ball.shotFriction) + đầy lực 560 -> bóng tới thủ môn nhanh hơn nhiều
@@ -628,7 +628,9 @@ SFC_CONFIG.game = {
     // 3v3: chia vai khi đồng đội cầm bóng (vị trí thấp nhất CHỐT, cao nhất BĂNG lên, ở giữa dạt CÙNG cánh)
     // anchorBack: người CHỐT đứng sau bóng restDefenseDist x hệ số này khi bóng còn ở phần sân nhà (qua giữa sân: x1) ·
     // runnerAhead / wideAhead: người BĂNG / người DẠT đứng trước bóng supportAhead x hệ số này
-    support3: { anchorBack: 0.55, runnerAhead: 1.4, wideAhead: 0.4 },
+    // flex (user 2026-11-07): thủ môn đứng nhà (keeperHome) -> 3 người chỉ còn 1 người hỗ trợ, người đó tự chọn DẠT / BĂNG (AI.flexSupport):
+    // chấm điểm chỗ đứng 2 vai (như openSpot) mỗi every s, vai cũ giữ nếu vai kia hơn chưa tới keep điểm, runnerBias = điểm cộng cho BĂNG (âm = thích DẠT)
+    support3: { anchorBack: 0.55, runnerAhead: 1.4, wideAhead: 0.4, flex: { every: 1.5, keep: 6, runnerBias: 0 } },
     // ĐIỂM ĐỨNG HỖ TRỢ (user 2026-10-30: đồng đội đứng chết theo điểm cố định): quanh điểm theo vai trò ở trên thử dirs hướng x các
     // bán kính radius (px), chấm điểm = độ thoáng đường chuyền từ bóng (tối đa laneCap px) x lane + khoảng cách tới đối phương gần nhất
     // (tối đa spaceCap px) x space − độ lệch khỏi điểm vai trò x drift. Tính lại mỗi every s; chỗ cũ chỉ bị thay khi chỗ mới hơn keep điểm
@@ -644,8 +646,13 @@ SFC_CONFIG.game = {
       // người BĂNG: người cầm bóng quay mặt lên (cos góc >= faceCos) ở tiến độ progress -> chạy sau lưng hậu vệ cuối depth px
       // (không quá vạch cách khung goalGap px)
       behind: { chance: 0.45, time: 1.3, depth: 36, goalGap: 50, faceCos: 0.4, progress: [0.25, 0.85], cooldown: 2.0 },   // 0.3 -> 0.45 (2026-11-01)
-      // người DẠT: người cầm bóng ở giữa sân (cách trục giữa < mid x chiều ngang sân) đang quay mặt lên -> chạy chồng biên vượt lên ahead px
-      overlap: { chance: 0.3, time: 1.1, ahead: 100, mid: 0.2, faceCos: 0.4, cooldown: 2.5 },   // 0.2 -> 0.3 (2026-11-01)
+      // CHẠY CHỒNG BIÊN (người DẠT; user 2026-11-07: phải là đồng đội đã ra cánh rồi mới vòng ra mở góc để băng):
+      // người cầm bóng ở cánh (cách trục giữa > wing x chiều ngang sân), tiến độ trong progress, quay mặt lên (faceCos); người DẠT không đứng
+      // trước người đó quá level px và cách <= maxDist px -> chặng 1 vòng ra làn ngoài (cách người cầm bóng out px về phía biên; biên còn chưa tới
+      // minRoom px thì vòng vào trong) tới điểm sau lưng người cầm bóng back px, chặng 2 băng thẳng lên trước người đó ahead px. time = cả 2 chặng.
+      // hold: lúc chưa chạy, người DẠT đứng sau lưng người cầm bóng back px, vào trong inside px (góc chuyền về, chỗ xuất phát), không đứng chồng ở biên
+      overlap: { chance: 0.45, time: 1.7, wing: 0.22, progress: [0.25, 0.8], faceCos: 0.3, level: 10, maxDist: 150,
+        back: 18, out: 30, minRoom: 18, ahead: 110, cooldown: 2.5, hold: { back: 34, inside: 44 } },
       // MỞ ĐƯỜNG CHUYỀN (user 2026-11-01): người cầm bóng quay mặt về phía mình (cos góc >= faceCos, cách <= maxDist px) -> chạy nước rút
       // vào khoảng trống: thử các điểm cách dist px theo các góc angles (độ, 0 = thẳng lên khung đối phương), chọn điểm có đường chuyền
       // từ người cầm bóng thoáng nhất (lane, kẹp laneCap px) + xa đối phương (space, kẹp spaceCap) + tiến lên (fwd / px). goalGap: không
@@ -664,6 +671,18 @@ SFC_CONFIG.game = {
     // cách mình dưới engage px (hoặc hậu vệ cuối, ai.lastMan) VÀ chưa có đồng đội nào (kể cả người chơi) đứng cách người cầm bóng dưới marked px
     // marked dùng cho cả người giữ khung đội máy (AI.goalkeeper): người cầm bóng gần khung đã có đồng đội kèm thì đứng trên vạch, không bước ra
     keeperRecover: { mates: true, zone: 150, engage: 40, marked: 36 },
+    // THỦ MÔN AI LUÔN Ở KHUNG (user 2026-11-07): người giữ khung (Game.canKeep) do AI điều khiển — đội máy (keeperStay) và đồng đội AI của
+    // người chơi (keeperRecover.mates) — ưu tiên trông khung + cản phá, kể cả lúc đội mình cầm bóng tấn công (không lên CHỐT sau lưng bóng):
+    // home = true -> đội mình cầm bóng thì đứng trước vạch tối đa depth px (x pitchScale), dịch ngang theo bóng (track), không nhận chạy chỗ.
+    // rush: phần sân nhà không còn đồng đội nào khác đứng được (ra ngoài phần sân nhà / đang choáng) mà người cầm bóng đối phương đã vào
+    // phần sân nhà, cách khung nhà dưới dist px (x pitchScale) -> lao lên KICKDOWN (Hard attack) khi người đó trong tầm kick px
+    // (mỗi lần ra quyết định: xác suất kickChance, không thì đấm nhẹ khi sát người). null = tắt
+    // step (user 2026-11-07: DEF ở nhà quá nhiều lúc tấn công -> thiếu người phối hợp): đội mình cầm bóng thì người giữ khung (thay cho home)
+    // dâng lên làm CHỐT sau lưng bóng (restDefenseDist x support3.anchorBack như người CHỐT 3 người), là phương án chuyền về, nhưng không
+    // vượt quá maxX (tỉ lệ chiều dài sân tính từ vạch nhà; 0.5 = giữa sân) và không chạy chỗ. Mất bóng: keeperStay / keeperRecover kéo về khung.
+    // mates / bots: áp cho đồng đội AI của người chơi / đội máy. null = tắt (đứng nhà như home)
+    keeperHome: { home: true, depth: 40, track: 0.5, rush: { dist: 260, kick: [14, 46], kickChance: 0.85 },
+      step: { mates: true, bots: true, maxX: 0.45 } },
     // NGƯỜI CẦM BÓNG ĐỨNG YÊN (user 2026-11-07: bot không lấy được bóng của người chơi đứng yên — chỉ 1 bot áp sát, đấm thưa, đa số HOLD).
     // Người cầm bóng chạy chậm hơn speed px/s liên tục time s = đứng yên -> đội máy: thêm 1 người áp sát (vẫn trừ người giữ khung),
     // người áp sát phản ứng nhanh hơn (x react), đấm với tỉ lệ ít nhất lightChance, gồng Hard x hardMult; cú đấm của AI trúng người đứng yên
@@ -776,6 +795,9 @@ SFC_CONFIG.game = {
   },
 
   fx: {
+    // LƯỚI RUNG (user 2026-11-07, Renderer.netShake, chỉ phía vẽ): bóng chui vào lưới -> lưới phồng quanh chỗ chạm rồi rung tắt dần.
+    // biên độ (px) = tốc độ bóng x ampPerSpeed, kẹp trong amp · freq (Hz) rung · decay (s) tắt dần · time (s) tổng · spread (px) độ loang dọc lưới
+    netShake: { ampPerSpeed: 0.012, amp: [2, 6], freq: 7, decay: 0.32, time: 1.3, spread: 16 },
     shakeGoal: 5, shakeHit: 2, shakeShot: 2,   // shakeShot 1.5 -> 2 (2026-11-07: cú sút nặng hơn)
     // HITSTOP CỤC BỘ (giây): chỉ người ra đòn + người trúng đòn (sút: người sút + bóng) khựng lại, cả sân vẫn chạy.
     // Khác Game.hitStop (đứng hình cả trận, dành cho Tuyệt kỹ) -> 3v3 online đấm nhau liên tục không bị giật cả sân. 0 = tắt
@@ -898,8 +920,11 @@ SFC_CONFIG.game = {
   P.through.runMax = r(P.through.runMax * k); P.through.lead = r(P.through.lead * k);
   A.restDefenseDist = r(A.restDefenseDist * k); A.openSpot.radius = mul(A.openSpot.radius, k);
   A.runs.lane.maxDist = r(A.runs.lane.maxDist * k); A.runs.lane.dist = mul(A.runs.lane.dist, k);
+  { const O = A.runs.overlap; for (const key of ['level', 'maxDist', 'back', 'ahead']) O[key] = r(O[key] * k); O.hold.back = r(O.hold.back * k);
+    O.out = r(O.out * kw); O.minRoom = r(O.minRoom * kw); O.hold.inside = r(O.hold.inside * kw); }   // chạy chồng biên: dọc x k, ngang x kw
   A.keeperCoverDist = r(A.keeperCoverDist * k); A.mateKeeperCoverDist = r(A.mateKeeperCoverDist * k); A.keeperPressDist = r(A.keeperPressDist * k);
   A.gkPunt.dist = mul(A.gkPunt.dist, k);
+  if (A.keeperHome) { A.keeperHome.depth = r(A.keeperHome.depth * k); if (A.keeperHome.rush) A.keeperHome.rush.dist = r(A.keeperHome.rush.dist * k); }
   // theo chiều rộng sân
   G.firstTime.cross.wide = r(G.firstTime.cross.wide * kw);
   // THỂ LỰC (user 2026-11-07: sân rộng hơn -> nước rút lâu hơn, hồi nhanh hơn): tiêu hao / pitchScale (30 -> 21), hồi x kw (32 -> 42)

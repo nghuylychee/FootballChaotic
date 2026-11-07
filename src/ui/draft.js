@@ -102,9 +102,9 @@ window.SFC = window.SFC || {};
           ${traits ? `<div class="draft-traits-row">${traits}</div>` : ''}
         </div>`;
       SFC.CorePreview.scan(this.el.draft);
-      // lật xong thì gỡ .flip: ẩn / hiện lại #draft (Pause) không lật lại
+      // lá cuối lật xong (0.26s trễ + 0.38s, CSS .cards.flip) thì gỡ .flip: ẩn / hiện lại #draft (Pause) không lật lại
       clearTimeout(this.draftFlipT);
-      if (flip) this.draftFlipT = setTimeout(() => { const el = this.el.draft.querySelector('.cards.flip'); if (el) el.classList.remove('flip'); }, 350);
+      if (flip) this.draftFlipT = setTimeout(() => { const el = this.el.draft.querySelector('.cards.flip'); if (el) el.classList.remove('flip'); }, 700);
       this.draftClock = this.el.draft.querySelector('.draft-clock');
       this.draftClockK = -1;
       this.draftClockView(game);

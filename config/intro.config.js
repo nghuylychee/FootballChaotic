@@ -20,8 +20,8 @@ SFC_CONFIG.intro = {
   // Độ dài từng phần ở css/style.css (.in-*); docs/ux-motion/README.md
   teamIn: 0.05,           // 2 đội (tên, luật sân, thẻ cầu thủ) trượt vào
   vsAt: 0.15,             // chữ VS đập xuống
-  cardsAt: 0.05,          // sprite trên thẻ bắt đầu chạy vào (thẻ hiện cùng đội)
-  cardGap: 0,             // khoảng cách giữa các thẻ (0 = cùng lúc)
+  cardsAt: 0.3,           // thẻ cầu thủ đầu tiên hiện (owner 2026-11-07: thẻ lại hiện lần lượt từng thẻ)
+  cardGap: 0.22,          // khoảng cách giữa các thẻ (xen kẽ trái / phải; 0 = cùng lúc)
   statsAt: 0.2,           // thanh chỉ số chạy
   statGap: 0,             // khoảng cách giữa các hàng chỉ số
   pitchAt: 0.2,           // sơ đồ đội hình + tên sân hiện, chấm cầu thủ chạy vào vị trí

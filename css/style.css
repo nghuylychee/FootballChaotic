@@ -270,11 +270,15 @@ kbd {
   box-shadow: 4px 4px 0 var(--ink); padding: 7px 9px 6px; cursor: pointer; text-align: center;
   transition: transform 0.1s steps(2), border-color 0.1s, box-shadow 0.1s, opacity 0.25s, filter 0.25s;
 }
-/* lá lật cả cụm 1 nhịp 0.3s (motion review 2026-11-06, phương án A; trước đây lệch 0.02 / 0.10 / 0.18s). .flip chỉ có ở lượt mới / đổi bài
-   và bị gỡ khi lật xong (draft.js renderDraft) -> vẽ lại vì đổi tay cầm hay quay về từ Pause không lật lại */
+/* lá lật lần lượt từng lá (owner 2026-11-07: trả lại kiểu lệch 0.02 / 0.10 / 0.18 / 0.26s, bỏ kiểu lật cả cụm của motion review). .flip chỉ có ở
+   lượt mới / đổi bài và bị gỡ khi lá cuối lật xong (draft.js renderDraft) -> vẽ lại vì đổi tay cầm hay quay về từ Pause không lật lại */
 .cards.flip .card:not(.ult) {
-  animation: cardFlipIn 0.3s cubic-bezier(0.18, 0.85, 0.32, 1.1) both;
+  animation: cardFlipIn 0.38s cubic-bezier(0.18, 0.85, 0.32, 1.1) both;
 }
+.cards.flip .card:nth-child(1) { animation-delay: 0.02s; }
+.cards.flip .card:nth-child(2) { animation-delay: 0.10s; }
+.cards.flip .card:nth-child(3) { animation-delay: 0.18s; }
+.cards.flip .card:nth-child(4) { animation-delay: 0.26s; }
 
 @keyframes cardFlipIn {
   0% { opacity: 0; transform: rotateY(90deg); }
@@ -1559,6 +1563,9 @@ button.eq-row:hover b { color: var(--gold); }
   background: linear-gradient(180deg, color-mix(in srgb, var(--c) 40%, #121316) 0%, #121316 70%);
   border: 1px solid color-mix(in srgb, var(--a) 60%, var(--edge)); box-shadow: 2px 2px 0 var(--ink);
 }
+/* thẻ cầu thủ hiện lần lượt xen kẽ trái / phải theo --d (intro.cardsAt + cardGap; owner 2026-11-07 trả lại sau motion review) */
+.in-side.l .in-card { animation: inCardL 0.3s steps(5) var(--d) both; }
+.in-side.r .in-card { animation: inCardR 0.3s steps(5) var(--d) both; }
 .in-card canvas { display: block; width: 80px; height: 88px; margin: 8px auto 0; image-rendering: pixelated;
   background: radial-gradient(ellipse at 50% 92%, rgba(0,0,0,0.45), transparent 55%); }
 /* đầu thẻ: vị trí FWD / MID / DEF bên trái (thay số áo) + nhãn YOU / MATE / P1 / ★Elo bên phải. Nhãn dịch dài (COMPAÑERO) không vừa
@@ -1607,6 +1614,8 @@ button.eq-row:hover b { color: var(--gold); }
 @keyframes inFromR { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
 @keyframes inSideL { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: none; } }
 @keyframes inSideR { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+@keyframes inCardL { from { opacity: 0; transform: translateX(-24px) scale(0.9); } to { opacity: 1; transform: none; } }
+@keyframes inCardR { from { opacity: 0; transform: translateX(24px) scale(0.9); } to { opacity: 1; transform: none; } }
 @keyframes inDrop { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
 @keyframes inFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes inVs { 0% { opacity: 0; transform: scale(3) rotate(-10deg); } 55% { opacity: 1; transform: scale(0.85) rotate(2deg); } 80% { transform: scale(1.1); } 100% { opacity: 1; transform: none; } }
