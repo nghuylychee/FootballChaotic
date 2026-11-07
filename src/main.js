@@ -535,12 +535,21 @@
     // SETTINGS > FRAME RATE (Settings.fps): chỉ bỏ bớt lần vẽ — mô phỏng + đọc phím vẫn chạy mỗi lần rAF (60 Hz cố định).
     // Lần vẽ kế tiếp hẹn theo nhịp (cộng dồn) để màn 144 Hz vẫn trung bình đúng 60 / 30; dung sai 2 ms để màn 60 Hz không rớt còn 30
     let lastRaf = performance.now(), nextDraw = 0;
+    // lỗi trong 1 khung (thường là vẽ): ghi console 1 lần mỗi loại rồi chạy tiếp. Trước đây hẹn rAF sau step() -> 1 lỗi vẽ làm chết vòng rAF,
+    // đồng hồ Worker chạy mô phỏng tiếp mà không vẽ = hình đứng nhưng vẫn có tiếng (lỗi 2026-11-07: vfx.js ph che hàm ph())
+    const seenErr = new Set();
+    const safeStep = (now, draw) => {
+      try { step(now, draw); } catch (e) {
+        const key = String(e && e.stack ? e.stack.split('\n').slice(0, 2).join(' ') : e);
+        if (!seenErr.has(key)) { seenErr.add(key); console.error('[loop]', e); }
+      }
+    };
     function frame(now) {
       lastRaf = performance.now();
+      requestAnimationFrame(frame);   // hẹn khung sau trước khi chạy khung này: lỗi trong step không dừng được vòng vẽ
       const cap = SFC.Settings.fps, draw = !cap || now >= nextDraw - 2;
       if (draw && cap) nextDraw = Math.max(nextDraw + 1000 / cap, now);
-      step(now, draw);
-      requestAnimationFrame(frame);
+      safeStep(now, draw);
     }
     requestAnimationFrame(frame);
 
@@ -551,7 +560,7 @@
     const background = () => {
       const now = performance.now();
       const live = app.screen === 'menu' ? !!(SFC.Menu && SFC.Menu.search) : app.screen !== 'story';
-      if (live && now - lastRaf > 50) step(now, false);
+      if (live && now - lastRaf > 50) safeStep(now, false);
     };
     try {
       const src = 'setInterval(function(){postMessage(0)},16)';

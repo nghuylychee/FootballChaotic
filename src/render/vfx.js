@@ -1441,10 +1441,11 @@ window.SFC = window.SFC || {};
       }
       // Phá Âm Chướng: đang TOÉ ĐIỆN -> hình nón sóng âm trắng trước mặt
       if (C.has(p, 'sonic_boom') && p.surge && Math.hypot(p.vx || 0, p.vy || 0) > 90) {
-        const a = Math.atan2(p.vy, p.vx), ph = (g.time * 6) % 1;
+        // wv: nhịp sóng 0..1 (không đặt tên ph — trùng hàm ph() đổi px theo cỡ người -> lỗi vẽ làm đứng hình cả trận)
+        const a = Math.atan2(p.vy, p.vx), wv = (g.time * 6) % 1;
         for (let k = 0; k < 3; k++) {
-          const r = 9 + ((k / 3 + ph) % 1) * 12;
-          ctx.globalAlpha = 0.6 * (1 - ((k / 3 + ph) % 1));
+          const r = 9 + ((k / 3 + wv) % 1) * 12;
+          ctx.globalAlpha = 0.6 * (1 - ((k / 3 + wv) % 1));
           ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
           ctx.beginPath(); ctx.arc(x, y - ph(7), r, a - 0.6, a + 0.6); ctx.stroke();
         }
