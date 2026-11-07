@@ -586,7 +586,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'ults') SFC.CorePreview.scan(this.el);   // ảnh động của lá Tuyệt kỹ
     },
 
-    // phiên bản game ở góc dòng tiêu đề SETTINGS: <phiên bản>-<net.protocol> (vd. v1.1.0-5; bản dev: dev-5) — báo lỗi kèm số này
+    // phiên bản game ở góc dòng tiêu đề SETTINGS: <phiên bản>-<net.protocol>+<commit> (vd. v1.1.1-12+14d7135; bản dev: dev-12) — báo lỗi kèm số này
     versionTag() {
       if (!['settings', 'display', 'test'].includes(this.page) || !SFC.NetCommon) return '';
       const v = SFC.NetCommon.clientVersion();

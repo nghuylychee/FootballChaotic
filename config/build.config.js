@@ -8,7 +8,8 @@
  * SFC_DEMO = true: bản demo, khoá Area 3+ và PRIVATE MATCH (config/demo.config.js; PRIVATE MATCH tuỳ cửa hàng: Platform.privateMatch).
  *   Bản itch + crazygames bật; dev / steam: false.
  * SFC_VERSION_STRING: phiên bản game (semver, = "version" trong package.json). Bản dev: 'dev'; strip-debug.js ghi số thật khi đóng gói.
- * Phiên bản đầy đủ hiện / gửi đi = SFC_VERSION_STRING + '-' + net.protocol (vd. 1.1.0-5): xem NetCommon.clientVersion().
+ * SFC_COMMIT: mã commit ngắn của bản đóng gói (scripts/build.js; '-dirty' = đóng gói lúc còn thay đổi chưa commit). Bản dev: ''.
+ * Phiên bản đầy đủ hiện / gửi đi = SFC_VERSION_STRING + '-' + net.protocol [+ '+' + SFC_COMMIT] (vd. 1.1.1-12+14d7135): xem NetCommon.clientVersion().
  * Nạp trước mọi script khác.
  * ========================================================= */
 var SFC_DEBUG = true;
@@ -17,3 +18,4 @@ var SFC_STORE = 'none';
 if (typeof location !== 'undefined') SFC_STORE = new URLSearchParams(location.search).get('store') || SFC_STORE;
 var SFC_DEMO = false;
 var SFC_VERSION_STRING = 'dev';
+var SFC_COMMIT = '';

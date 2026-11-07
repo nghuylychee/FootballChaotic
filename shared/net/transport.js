@@ -38,8 +38,11 @@ window.SFC = window.SFC || {};
       return s;
     },
 
-    // phiên bản đầy đủ của game: <phiên bản game>-<net.protocol>, vd. 1.1.0-5 (bản dev: dev-5). Gửi kèm gói bắt tay với máy chủ
-    clientVersion() { return `${typeof SFC_VERSION_STRING === 'string' ? SFC_VERSION_STRING : 'dev'}-${N().protocol}`; },
+    // phiên bản đầy đủ của game: <phiên bản game>-<net.protocol>[+<commit>], vd. 1.1.1-12+14d7135 (bản dev: dev-12). Gửi kèm gói bắt tay với máy chủ
+    clientVersion() {
+      const c = typeof SFC_COMMIT === 'string' && SFC_COMMIT ? '+' + SFC_COMMIT : '';
+      return `${typeof SFC_VERSION_STRING === 'string' ? SFC_VERSION_STRING : 'dev'}-${N().protocol}${c}`;
+    },
 
     // mã phòng máy chủ riêng? (cùng độ dài với mọi mã, nhận ra bằng ký tự đầu)
     isServerCode(code) {

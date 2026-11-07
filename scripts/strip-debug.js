@@ -1,5 +1,5 @@
 /* afterPack (electron-builder): xoá code chỉ dùng khi dev khỏi bản đóng gói (không đụng file gốc), trong app.asar hoặc resources/app.
- *  - config/build.config.js -> `var SFC_DEBUG = false;` + SFC_STORE + SFC_DEMO theo bản build (scripts/targets.js).
+ *  - config/build.config.js -> `var SFC_DEBUG = false;` + SFC_STORE + SFC_DEMO theo bản build (scripts/targets.js) + SFC_COMMIT (build.js).
  *    Bản web: scripts/build.js truyền thẳng · afterPack (desktop): đọc env SFC_BUILD (build.js đặt; không đặt = bản steam)
  *  - file nào có SFC_DEBUG: chạy Terser với SFC_DEBUG = false -> nhánh `if (SFC_DEBUG)` / `SFC_DEBUG ? … : …` / `SFC_DEBUG && …` bị xoá,
  *    comment bị bỏ, tên biến giữ nguyên (không mangle), vẫn xuống dòng để lỗi còn đọc được
@@ -25,7 +25,7 @@ function jsFiles(dir) {
   });
 }
 
-async function strip(appDir, { store, demo = false } = {}) {
+async function strip(appDir, { store, demo = false, commit = '' } = {}) {
   if (!targets.STORES[store]) throw new Error(`strip-debug: cửa hàng không hợp lệ: ${store}`);
   const flagFile = path.join(appDir, 'config', 'build.config.js');
   const files = DIRS.flatMap((d) => jsFiles(path.join(appDir, d))).filter((f) => f !== flagFile);
@@ -47,7 +47,7 @@ async function strip(appDir, { store, demo = false } = {}) {
   }
   // phiên bản game = package.json của repo (bản dev ghi 'dev')
   const version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version;
-  fs.writeFileSync(flagFile, `var SFC_DEBUG = false;\nvar SFC_STORE = ${JSON.stringify(store)};\nvar SFC_DEMO = ${!!demo};\nvar SFC_VERSION_STRING = ${JSON.stringify(version)};\n`);
+  fs.writeFileSync(flagFile, `var SFC_DEBUG = false;\nvar SFC_STORE = ${JSON.stringify(store)};\nvar SFC_DEMO = ${!!demo};\nvar SFC_VERSION_STRING = ${JSON.stringify(version)};\nvar SFC_COMMIT = ${JSON.stringify(commit || '')};\n`);
 
   const left = files.flatMap((f) => {
     const src = fs.readFileSync(f, 'utf8');
@@ -64,7 +64,7 @@ exports.default = async (context) => {
   const res = path.join(context.appOutDir, 'resources');
   const asarFile = path.join(res, 'app.asar');
   const T = targets.get(process.env.SFC_BUILD || 'steam');   // scripts/build.js đặt env
-  const opts = { store: T.store, demo: T.demo };
+  const opts = { store: T.store, demo: T.demo, commit: process.env.SFC_COMMIT };   // build.js đặt SFC_COMMIT
   if (!fs.existsSync(asarFile)) return strip(path.join(res, 'app'), opts);
   const asar = require('@electron/asar');
   const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'sfc-asar-'));

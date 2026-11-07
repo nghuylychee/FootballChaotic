@@ -14,7 +14,7 @@
  * đầy = bỏ qua lần này) -> host() / queue() ở máy ping thấp nhất, join(mã) thử lần lượt các máy (phòng ở máy nào thì vào máy đó),
  * kết nối lại = đúng máy đang giữ phòng (home). queue() đang chờ một mình thì chuyển sang máy khác có người đang chờ (hopQueue).
  * Không máy nào trả lời đo ping (đang ngủ, hoặc máy chủ cũ chưa có CORS ở /healthz) -> như 1 máy: chờ máy đầu danh sách dậy.
- * Phiên bản: gói đầu kèm cv (NetCommon.clientVersion, vd. 1.1.0-5); máy chủ trả sv (phiên bản máy chủ, vd. 5.1.0) trong
+ * Phiên bản: gói đầu kèm cv (NetCommon.clientVersion, vd. 1.1.1-12+14d7135); máy chủ trả sv (phiên bản máy chủ, vd. 5.1.0) trong
  * room{code,id,sv} / err{e,sv} -> NetServer.serverVersion (chỉ để chẩn đoán, không hiện cho người chơi).
  * Nén trong game: trình duyệt có DecompressionStream('deflate-raw') thì gói đầu kèm z:1 -> gói chung của phòng tới dạng nhị phân
  * (1 luồng deflate-raw chung của phòng, bắt đầu từ 1 điểm FULL_FLUSH, mỗi gói = JSON + '\n'; xem server/index.js), gói gửi riêng

@@ -2,7 +2,7 @@
 
 Status of the CrazyGames release. We are in the **Basic Launch** period: only requirements marked Basic apply. Full-launch items are listed at the end for later.
 
-Build: `npm run build:crazygames` → `dist/street-football-chaos-crazygames-demo-<version>.zip` (DEMO, `SFC_STORE = 'crazygames'`). Try it from the repo with `index.html?store=crazygames`.
+Build: `npm run build:crazygames` → `dist/sfc-crazygames-demo-<version>-<protocol>-<commit>.zip` and the folder `dist/crazygames/` (the portal takes the folder, not a zip) (DEMO, `SFC_STORE = 'crazygames'`). Try it from the repo with `index.html?store=crazygames`.
 
 Requirement pages: [technical](https://docs.crazygames.com/requirements/technical/), [gameplay](https://docs.crazygames.com/requirements/gameplay/), [account integration](https://docs.crazygames.com/requirements/account-integration/), [multiplayer](https://docs.crazygames.com/requirements/multiplayer/), [quality](https://docs.crazygames.com/requirements/quality/).
 

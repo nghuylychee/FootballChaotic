@@ -1,10 +1,11 @@
 /* Đóng gói 1 bản trong ma trận scripts/targets.js: node scripts/build.js <tên>  (npm run build:steam | build:itch-web | ...)
  *  - web: chép các file game chạy cần vào dist/<tên>, xoá code dev (strip-debug.js, ghi SFC_STORE / SFC_DEMO), nén ra
- *    dist/street-football-chaos-<tên>[-demo]-<version>.zip (bản DEMO có -demo) (index.html ở gốc zip). Không chép: electron/, node_modules/, src/dev/,
+ *    dist/sfc-<tên>[-demo]-<version>-<protocol>-<commit>.zip (bản DEMO có -demo) (index.html ở gốc zip). Không chép: electron/, node_modules/, src/dev/,
  *    sandbox.html, tools/, brag-output/, steam_appid.txt
  *  - desktop: electron-builder (Windows, thư mục) ra dist/<tên>; afterPack = strip-debug.js đọc env SFC_BUILD. Không có
  *    steamworks: bỏ steamworks.js khỏi gói rồi kiểm không còn sót. zip: đổi win-unpacked thành thư mục "Street Football Chaos" rồi nén
- * version lấy từ package.json.
+ * version lấy từ package.json. commit = mã commit ngắn của git (thêm -dirty khi còn thay đổi chưa commit): vào tên zip và phiên bản trong game
+ * (SFC_COMMIT, strip-debug.js qua env SFC_COMMIT -> NetCommon.clientVersion, vd. 1.1.1-12+14d7135).
  */
 const fs = require('fs');
 const path = require('path');
@@ -17,6 +18,21 @@ const FOLDER = 'Street Football Chaos';
 const WEB_COPY = ['index.html', 'css', 'config', 'shared', 'src', 'assets', 'lib'];
 const WEB_SKIP = [path.join('src', 'dev')];
 
+// mã commit ngắn của HEAD (+ -dirty khi cây làm việc còn thay đổi chưa commit); không có git: 'nogit'
+function commit() {
+  try {
+    const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8' }).trim();
+    return git('rev-parse', '--short', 'HEAD') + (git('status', '--porcelain') ? '-dirty' : '');
+  } catch (e) { return 'nogit'; }
+}
+
+// net.protocol của bản game (config/net.config.js, cùng cách đọc với server-stamp.js)
+function protocol() {
+  const m = fs.readFileSync(path.join(ROOT, 'config', 'net.config.js'), 'utf8').match(/protocol:\s*(\d+)/);
+  if (!m) throw new Error('build: không đọc được net.protocol trong config/net.config.js');
+  return m[1];
+}
+
 // tar của Windows (bsdtar) nén được zip, đường dẫn trong zip dùng '/'
 function zip(file, cwd, entries) {
   if (process.platform === 'win32') execFileSync(path.join(process.env.SystemRoot, 'System32', 'tar.exe'), ['-a', '-c', '-f', file, ...entries], { cwd });
@@ -28,7 +44,7 @@ async function web(T, OUT) {
   for (const rel of WEB_COPY) {
     fs.cpSync(path.join(ROOT, rel), path.join(OUT, rel), { recursive: true, filter: (src) => !WEB_SKIP.includes(path.relative(ROOT, src)) });
   }
-  await strip(OUT, { store: T.store, demo: T.demo });
+  await strip(OUT, { store: T.store, demo: T.demo, commit: process.env.SFC_COMMIT });
   return { dir: OUT, entries: fs.readdirSync(OUT) };
 }
 
@@ -60,7 +76,9 @@ async function desktop(T, OUT) {
 (async () => {
   const T = targets.get(process.argv[2]);
   const OUT = path.join(ROOT, 'dist', T.name);
-  const ZIP = path.join(ROOT, 'dist', `street-football-chaos-${T.name}${T.demo ? '-demo' : ''}-${pkg.version}.zip`);
+  process.env.SFC_COMMIT = commit();   // strip-debug.js (web: truyền thẳng · desktop: afterPack đọc env)
+  // cùng các số với phiên bản trong game (<version>-<protocol>+<commit>), '+' đổi thành '-' cho tên file
+  const ZIP = path.join(ROOT, 'dist', `sfc-${T.name}${T.demo ? '-demo' : ''}-${pkg.version}-${protocol()}-${process.env.SFC_COMMIT}.zip`);
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.rmSync(ZIP, { force: true });
   const out = T.target === 'web' ? await web(T, OUT) : await desktop(T, OUT);
