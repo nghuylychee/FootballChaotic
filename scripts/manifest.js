@@ -24,11 +24,11 @@ const FILES = [
   { comment: 'Config (chỉnh cân bằng game tại đây)', gap: true },
   ['config/build.config.js', 'game sandbox itch server'],
   ['config/game.config.js', 'game sandbox itch server'],
-  ['config/controls.config.js', 'game sandbox itch server'],
+  ['config/controls.config.js', 'game sandbox itch'],      // máy chủ nhận phím dạng bitmask hành động, không cần bảng phím
   ['config/teams.config.js', 'game sandbox itch server'],
   ['config/cores.config.js', 'game sandbox itch server'],
   ['config/net.config.js', 'game sandbox itch server'],
-  ['config/tutorial.config.js', 'game itch server'],
+  ['config/tutorial.config.js', 'game itch'],
   ['config/progression.config.js', 'game sandbox itch server'],
   ['config/namefilter.config.js', 'game sandbox itch'],     // lọc tên ở máy người chơi; máy chủ không lọc
   ['config/arenas.config.js', 'game sandbox itch server'],
@@ -40,9 +40,10 @@ const FILES = [
   ['config/teammates.config.js', 'game sandbox itch server'],
   ['config/achievements.config.js', 'game'],
   ['config/intro.config.js', 'game itch server'],
+  ['config/view.config.js', 'game sandbox itch'],           // phần config chỉ để vẽ / âm thanh / nhịp intro (gộp vào game + intro): máy chủ không nạp -> sửa không phải tăng phiên bản máy chủ
   ['config/motion.config.js', 'game'],                    // nhịp hiện + khoá phím các màn (docs/ux-motion), chỉ máy người chơi
-  ['config/music.config.js', 'game itch server'],
-  ['config/ftue.config.js', 'game itch server'],
+  ['config/music.config.js', 'game itch'],
+  ['config/ftue.config.js', 'game itch'],
   ['config/demo.config.js', 'game server'],
   ['config/social.config.js', 'game'],
   ['config/platform.config.js', 'game'],

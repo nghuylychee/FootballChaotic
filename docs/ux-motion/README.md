@@ -99,7 +99,7 @@ Owner: "chọn A hết, trừ màn chọn GEAR để nguyên". NEW ULTIMATE: A v
 "A hết" đọc theo chữ = nhịp A cho mọi bản, kể cả UNLOCKED (hỏi lại owner nếu muốn bản UNLOCKED theo B: pop 0,45 s, tự đóng 1,2 s).
 
 Số JS (lúc CTA nhận phím, lúc hiện đủ, chuỗi hẹn giờ) ở **`config/motion.config.js`** (`SFC_CONFIG.motion`, chỉ client: manifest target `game`, không cần
-bump máy chủ). Độ dài / độ trễ từng phần tử ở `css/style.css` (chú thích "motion review"). Nhịp intro ở `config/intro.config.js` (máy chủ load ->
+bump máy chủ). Độ dài / độ trễ từng phần tử ở `css/style.css` (chú thích "motion review"). Nhịp intro nay ở `config/view.config.js` (khối `intro`, máy chủ không nạp; lúc review còn ở `config/intro.config.js`, máy chủ load ->
 đã `npm run server:bump`, 12.3.5 -> 12.3.6).
 
 | Màn | Đổi gì | Code |

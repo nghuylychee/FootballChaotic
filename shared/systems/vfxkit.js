@@ -115,7 +115,10 @@ window.SFC = window.SFC || {};
   // Chữ mới gần chữ đang có -> đẩy chữ cũ lên, không xoá
   let popSeq = 0;
   E.pop = function (x, y, str, kind = 'light', color = null) {
-    const P = SFC_CONFIG.game.fx.popups, KS = P.kinds, K = KS[kind] ? kind : 'light', list = this.V.pops;
+    // máy chủ trận riêng không nạp config/view.config.js (không có fx.popups): không giữ chữ — khách nhận lệnh pop qua sync.js rồi tự vẽ
+    const P = SFC_CONFIG.game.fx.popups;
+    if (!P) return;
+    const KS = P.kinds, K = KS[kind] ? kind : 'light', list = this.V.pops;
     str = String(str);
     if (P.hide && P.hide.includes(str)) return;   // chữ của sự kiện nhỏ đã tắt (popups.hide)
     if (P.hideKinds && P.hideKinds.includes(K) && !(P.keep && P.keep.includes(str))) return;   // cả loại chữ đã tắt (popups.hideKinds), trừ popups.keep
@@ -246,8 +249,8 @@ window.SFC = window.SFC || {};
     }
     for (const s of V.shots) { s.x += s.vx * dt; s.y += s.vy * dt; }
     for (const v of V.vortexes) if (v.follow === 'ball') { const b = this.g.ball; v.x = b.x; v.y = b.y - b.z; }
-    const PK = SFC_CONFIG.game.fx.popups.kinds;
-    for (const c of V.pops) c.y -= PK[c.kind].rise * dt;
+    const PP = SFC_CONFIG.game.fx.popups;
+    if (PP) for (const c of V.pops) c.y -= PP.kinds[c.kind].rise * dt;
     [V.waves, V.decals, V.arms, V.clones, V.shots, V.beams, V.vortexes, V.bolts, V.pops, V.shields, V.portals, V.netfires, V.dragons, V.props].forEach(tick);
   };
 

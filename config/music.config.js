@@ -18,7 +18,7 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.music = {
   enabled: true,
-  volume: 0.55,          // so với âm lượng tổng (game.config.js -> audio.volume)
+  volume: 0.55,          // so với âm lượng tổng (view.config.js -> audio.volume)
   fadeIn: 1.8,           // giây nhạc lên dần khi về menu
   fadeOut: 0.7,          // giây nhạc tắt dần khi vào trận
 

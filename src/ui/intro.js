@@ -1,4 +1,4 @@
-/* Intro — màn giới thiệu lực lượng 2 đội trước trận (kiểu truyền hình bóng đá). Số liệu: config/intro.config.js
+/* Intro — màn giới thiệu lực lượng 2 đội trước trận (kiểu truyền hình bóng đá). Số liệu: config/intro.config.js (máy chủ cũng đọc) + config/view.config.js (nhịp hiện, thẻ, chỉ số)
  * Hai nửa màu áo trượt vào · huy hiệu + tên đội + OVR · khung luật sân dưới tên đội chủ luật (thay khẩu hiệu) ·
  * thẻ cầu thủ (sprite chạy vào rồi tạo dáng, vị trí FWD / MID / DEF ở góc) · VS · sơ đồ đội hình trên sân mini ·
  * thanh so sánh chỉ số. Hết giờ / Enter -> trượt ra rồi gọi onDone.

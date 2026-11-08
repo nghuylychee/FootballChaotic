@@ -5,6 +5,7 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 global.window = global; global.SFC_CONFIG = {};
 require('../../config/game.config.js');
+require('../../config/view.config.js');   // fx.run, render.* chỉ để vẽ
 require('../../config/run.config.js');   // chỗ quấn băng chấn thương (run.badges[id].part)
 // ăn mừng: dữ liệu động tác của game (CelebrateDraw.POSES, lead() của Celebrate)
 global.SFC = {};

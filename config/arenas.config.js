@@ -25,7 +25,7 @@
  *              loại: tire · can · cone · crate · barrel · lantern · ac · bollard · holo · plant · hay · sack · chicken · hoop · bag ·
  *              firebarrel · camera · trophy · cannon · chest · anchor · rope · tile (quân domino khổng lồ) · teapot (ấm trà)
  *   crowd    : (tuỳ chọn) khán giả CHUYỂN ĐỘNG, vẽ mỗi khung hình (src/render/crowd.js):
- *              sound: độ ồn của tiếng khán giả 0..1 (config/game.config.js -> audio.crowd) ·
+ *              sound: độ ồn của tiếng khán giả 0..1 (config/view.config.js -> audio.crowd) ·
  *              regions: top (trên tường) · sides (2 bên) · bottom (hàng đầu, quay lưng) · rows: số hàng phía trên · density 0..1 ·
  *              span: full | field (hàng trên chỉ trải theo bề ngang sân) · colors: màu áo khán giả · teamColors: tỉ lệ fan mặc áo đội
  *              (nửa trái đội 0, nửa phải đội 1) · cheer: độ náo nhiệt (0..1) · flashes: flash máy ảnh / giây ·

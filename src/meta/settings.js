@@ -2,7 +2,7 @@
  * (tách khỏi hồ sơ người chơi như FXSettings -> RESET DATA không xoá). Chỉnh ở SETTINGS > SOUND & DISPLAY (ui/menu.js).
  *  - Âm lượng: 0..10 (x10%) -> SFC.Audio.setVolume, nhân với âm lượng trong config
  *  - Cỡ cửa sổ: chỉ khi target đổi được cỡ (SFC.Target.canResize: desktop). 'WxH' hoặc 'full'.
- *    Danh sách cỡ: game.config.js -> render.windowSizes, bỏ cỡ lớn hơn màn hình
+ *    Danh sách cỡ: view.config.js -> render.windowSizes, bỏ cỡ lớn hơn màn hình
  *  - NETWORK STATS: hiện ping + dung lượng gửi / nhận khi đang ở phòng online (src/ui/online.js)
  *  - SCREEN SHAKE & FLASH: ON = như cũ · OFF = tắt hết rung màn hình + nháy trắng (render/renderer.js)
  *  - FRAME RATE: giới hạn số khung hình vẽ mỗi giây (UNLIMITED / 60 / 30); mô phỏng + đọc phím vẫn 60 Hz

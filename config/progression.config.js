@@ -19,7 +19,7 @@ SFC_CONFIG.progression = {
   levelUpGold: 30,             // thưởng gold mỗi lần lên level
 
   // Chỉ số character + DRILL (docs/DRILL_DESIGN.md): mỗi level 1 drill = chọn 1 trong 3, cộng chỉ số vĩnh viễn.
-  // Rating hiển thị = hệ số x scale (cùng thang OVR của màn giới thiệu trước trận, intro.config.js -> ovrScale).
+  // Rating hiển thị = hệ số x scale (cùng thang OVR của màn giới thiệu trước trận, view.config.js -> intro.ovrScale).
   // Chỉ áp dụng ở Main Path + Luyện tập; online dùng chỉ số của đội như cũ.
   attrs: {
     // hidden: true = TẠM ẨN cả hệ chỉ số / OVR / DRILL (thử game thuần kỹ năng + Core, 2026-10-11): mọi người chơi (character,

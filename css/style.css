@@ -1524,7 +1524,7 @@ button.eq-row:hover b { color: var(--gold); }
 .intro.promo { background: radial-gradient(ellipse at 50% 45%, #2c2108, #0a0b0e 75%); }
 
 .in-side { position: relative; grid-row: 3 / 7; display: grid; grid-template-rows: subgrid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
-/* 2 đội vào cùng thẻ cầu thủ trong 1 nhịp (motion review 2026-11-06, phương án A; nhịp ở config/intro.config.js) */
+/* 2 đội vào cùng thẻ cầu thủ trong 1 nhịp (motion review 2026-11-06, phương án A; nhịp ở config/view.config.js -> intro) */
 .in-side.l { grid-column: 1; animation: inSideL 0.25s steps(4) var(--d) both; }
 .in-side.r { grid-column: 3; animation: inSideR 0.25s steps(4) var(--d) both; }
 .in-team { grid-row: 1; margin-bottom: 7px; position: relative; display: flex; align-items: center; gap: 6px; }

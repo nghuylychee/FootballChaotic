@@ -180,6 +180,7 @@ Mỗi lần giao bóng (đầu trận và sau bàn thắng): đội hình lệch
 ```
 config/                 ← MỌI THÔNG SỐ CÂN BẰNG (tách riêng)
   game.config.js        luật trận, vật lý, chỉ số, cơ chế trông khung, AI, độ khó
+  view.config.js        phần chỉ để vẽ / âm thanh / nhịp intro (máy chủ không nạp, sửa không phải bump máy chủ)
   controls.config.js    gán phím + bảng hướng dẫn
   teams.config.js       4 đội: màu áo, chỉ số, thiên hướng Core, phong cách AI
   cores.config.js       16 Core: mô tả, mods thụ động, params hành vi

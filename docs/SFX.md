@@ -184,7 +184,7 @@ Synth recipes in `src/engine/ultsfx.js`, played with `g.sfx('ult', 'mod.<event>'
 
 ## Crowd
 
-Crowd volume follows the arena's crowd level (`render/crowd.js`). The settings live under `audio.crowd` in `config/game.config.js`.
+Crowd volume follows the arena's crowd level (`render/crowd.js`). The settings live under `audio.crowd` in `config/view.config.js`.
 
 **Currently OFF (user, 2026-10-30):** the stadium bed, "ooh" and applause are disabled in `audio.crowd` (`bed: false`, `ooh: 0`, `applause: 0`; disabled sounds are not rendered), and Story scenes no longer play any crowd sound. Only the in-match goal roar remains. Real crowd recordings are the likely way back.
 
@@ -285,4 +285,4 @@ The jousting crowd for `crowdRoar` and `crowdOoh` sounds small. If it's too thin
 | `assets/sfx/hard_swing.wav` | Universal Sound FX v1.6, `WHOOSHES/Classic/WHOOSH_Wide_Fast_mono.wav` | Imphenzia | Same as above |
 | `assets/sfx/hard_hit.wav` | Universal Sound FX v1.6, `IMPACTS/Punch/IMPACT_Punch_08_mono.wav` | Imphenzia | Same as above |
 
-Files are listed in `config/game.config.js` under `audio.samples` and played by `sample()` in `src/engine/audio.js`.
+Files are listed in `config/view.config.js` under `audio.samples` and played by `sample()` in `src/engine/audio.js`.
