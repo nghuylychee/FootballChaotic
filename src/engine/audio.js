@@ -383,17 +383,25 @@ window.SFC = window.SFC || {};
 
     schedule() {
       if (!this.playing || !ctx) return;
-      const S = this.song, step = 60 / S.bpm / 4;
-      while (this.next < ctx.currentTime + 0.15) {
+      const S = this.song, step = 60 / S.bpm / 4, now = ctx.currentTime;
+      // hẹn giờ bị trình duyệt hãm khi tab ẩn (1 lần/giây, ẩn > 5 phút: 1 lần/phút) -> các bước đã lỡ nằm trong quá khứ.
+      // Trước đây lên lịch hết một lượt = hàng trăm nốt (30 s ẩn ≈ 500 nút âm thanh) kêu cùng lúc khi quay lại tab -> giật khung + rè.
+      // Bỏ qua chúng: chỉ đi tiếp vị trí bài như thể vẫn đang phát
+      while (this.next < now) { this.next += step; this.advance(S); }
+      while (this.next < now + 0.15) {
         const swing = this.pos.st % 2 ? step * (S.swing || 0) : 0;
         this.playStep(this.next + swing, step);
         this.next += step;
-        // sang bước / ô nhịp / đoạn kế tiếp
-        const sec = S.sections[S.order[this.pos.sec]];
-        if (++this.pos.st >= 16) {
-          this.pos.st = 0;
-          if (++this.pos.bar >= sec.chords.length) { this.pos.bar = 0; this.pos.sec = (this.pos.sec + 1) % S.order.length; }
-        }
+        this.advance(S);
+      }
+    },
+
+    // sang bước / ô nhịp / đoạn kế tiếp
+    advance(S) {
+      const sec = S.sections[S.order[this.pos.sec]];
+      if (++this.pos.st >= 16) {
+        this.pos.st = 0;
+        if (++this.pos.bar >= sec.chords.length) { this.pos.bar = 0; this.pos.sec = (this.pos.sec + 1) % S.order.length; }
       }
     },
 
