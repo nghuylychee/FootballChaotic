@@ -75,6 +75,35 @@ function run() {
   function launched(ctx, team, x, y, airZ, lk) {
     SFC.Renderer.airborne(ctx, { x, y, airZ, kbx: 320, kby: -40, state: 'stun', anim: 0.42, facing: Math.PI, team, look: lk, vx: 0, vy: 0, flash: 0 }, stub);
   }
+  // bị đá ngã nằm sõng soài: pha "sprawl" của PlayerSprite.flyState chỉ có sau khi đã bay rồi chạm đất -> cho cùng 1 cầu thủ bay, chạm đất, rồi vẽ.
+  // dir 1 = bị hất sang phải (đầu nằm về bên phải). Sao choáng của sprite xoay ngang theo thân (thành 1 cột cạnh đầu) -> vẽ 2 bản:
+  // bản không cờ choáng (không sao, mắt mở) làm nền, chép vùng mặt (mắt gạch choáng) từ bản có cờ choáng; sao đứng vẽ riêng (stunStars)
+  function lying(ctx, team, x, y, lk, dir = 1) {
+    const draw = (dazed) => {
+      const p = { x, y, vx: 0, vy: 0, facing: Math.PI, anim: 0, flash: 0, state: 'stun', stateT: 1.6, team, look: lk, airZ: 10, kbx: 320 * dir, kby: 0 };
+      SFC.PlayerSprite.flyState(p);
+      p.anim = 0.5; p.airZ = 0;
+      SFC.PlayerSprite.flyState(p);
+      p.anim = 0.8;
+      if (!dazed) { p.fly = SFC.PlayerSprite.flyState(p); p.state = 'normal'; }
+      const c = canvas(ctx.canvas.width, ctx.canvas.height);
+      S.drawPlayer(c.getContext('2d'), p, stub);
+      return c;
+    };
+    const fw = 24, fx = dir < 0 ? x - 21 : x - 3, fy = y - 26;   // vùng mặt: đầu nằm về phía dir, sao của sprite ở ngoài mép đầu
+    const plain = draw(false), dazed = draw(true), pc = plain.getContext('2d');
+    pc.clearRect(fx, fy, fw, 30);
+    pc.drawImage(dazed, fx, fy, fw, 30, fx, fy, fw, 30);
+    ctx.drawImage(plain, 0, 0);
+  }
+  // sao choáng như PlayerSprite3 (dấu + vàng, tâm trắng) quay quanh (cx, cy): khung nằm sõng soài không vẽ sao
+  function stunStars(ctx, cx, cy, phase = 0.4) {
+    const { px } = S;
+    for (let i = 0; i < 3; i++) {
+      const a = phase * 6 + (i * Math.PI * 2) / 3, sx = cx + Math.round(Math.cos(a) * 11), sy = cy + Math.round(Math.sin(a) * 2);
+      px(ctx, sx - 1, sy, 3, 1, '#ffe14f'); px(ctx, sx, sy - 1, 1, 3, '#ffe14f'); px(ctx, sx, sy, 1, 1, '#ffffff');
+    }
+  }
   function spark(ctx, x, y) {
     const { px } = S;
     px(ctx, x - 5, y, 11, 1, '#fff6a0'); px(ctx, x, y - 5, 1, 11, '#fff6a0');
@@ -87,6 +116,7 @@ function run() {
     mate: look({ cut: 'cap', face: 'none', shoes: 'reds', skin: skins[2] }),
     rival: look({ cut: 'afro', hair: '#3ff6ff', skin: skins[3], shoes: 'neonkick' }),
     rival2: look({ cut: 'spiky', hair: '#ff8a3f', face: 'visor', skin: skins[0] }),
+    ko: look({ cut: 'bowl', hair: '#f2d16b', skin: skins[4] }),
   };
 
   // cảnh hành động trên nền sân thật (toạ độ sân gốc 640x360)
@@ -119,29 +149,24 @@ function run() {
     save('banner.png', upscale(b, 2));
   }
 
-  /* ---------- cover 630x500 (vẽ 210x167, phóng x3, cắt 1 hàng) ---------- */
+  /* ---------- cover 630x500 (vẽ 126x100, phóng x5): cận cảnh 1 cú đấm POW! trên sân làng ----------
+   * Cận để người to ở cỡ ô duyệt game của itch (315x250); itch đã in tên + mô tả dưới ảnh nên không có dải chữ dưới */
   {
     const full = scene('village', (x) => {
-      player(x, 1, 279, 140, Math.PI, LOOK.rival2, POSE.stun);
-      player(x, 0, 262, 140, 0, LOOK.mate, POSE.punch);
-      player(x, 0, 300, 160, 0, LOOK.hero, POSE.dropkick);
-      S.drawBall(x, { x: 320, y: 163, z: 3, roll: 1, fx: { fire: {} }, skin: null });
-      launched(x, 1, 336, 156, 20, LOOK.rival);
-      spark(x, 324, 136);
-      comic(x, 'CRACK!', 350, 110, '#ffffff');
-      comic(x, 'POW!', 283, 112, '#ffe14f');
+      lying(x, 1, 421, 174, LOOK.ko, -1);
+      stunStars(x, 409, 146);
+      player(x, 1, 469, 170, Math.PI, LOOK.rival2, POSE.stun);
+      player(x, 0, 452, 170, 0, LOOK.mate, POSE.punch);
+      comic(x, 'POW!', 480, 128, '#ffe14f');
     });
-    const b = crop(full, 215, 20, 210, 167), x = b.getContext('2d');
-    // dải tối trên (logo) + dưới (tagline)
-    const top = x.createLinearGradient(0, 0, 0, 60);
-    top.addColorStop(0, 'rgba(10,11,14,0.92)'); top.addColorStop(0.75, 'rgba(10,11,14,0.7)'); top.addColorStop(1, 'rgba(10,11,14,0)');
-    x.fillStyle = top; x.fillRect(0, 0, 210, 60);
-    x.fillStyle = 'rgba(10,11,14,0.88)'; x.fillRect(0, 150, 210, 17);
-    x.fillStyle = RED; x.fillRect(0, 150, 210, 1);
-    text(x, 'STREET FOOTBALL', 105, 8, 8, '#ffffff', { align: 'center', shadows: [[1, 1, INK]] });
-    text(x, 'CHAOS', 104, 19, 24, RED, { align: 'center', shadows: [[1, 1, INK], [2, 2, GOLD]] });
-    text(x, 'PASS · PUNCH · DROPKICK · SCORE', 105, 152, 16, PAPER, { font: VT, align: 'center' });
-    save('cover.png', upscale(b, 3, 630, 500));
+    const b = crop(full, 386, 84, 126, 100), x = b.getContext('2d');
+    // dải tối sau logo
+    const top = x.createLinearGradient(0, 0, 0, 46);
+    top.addColorStop(0, 'rgba(10,11,14,0.92)'); top.addColorStop(0.7, 'rgba(10,11,14,0.65)'); top.addColorStop(1, 'rgba(10,11,14,0)');
+    x.fillStyle = top; x.fillRect(0, 0, 126, 46);
+    text(x, 'STREET FOOTBALL', 63, 4, 8, '#ffffff', { align: 'center', shadows: [[1, 1, INK]] });
+    text(x, 'CHAOS', 62, 14, 24, RED, { align: 'center', shadows: [[1, 1, INK], [2, 2, GOLD]] });
+    save('cover.png', upscale(b, 5));
   }
 
   /* ---------- logo trong suốt (đầu phần mô tả) ---------- */
