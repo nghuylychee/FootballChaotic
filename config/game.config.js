@@ -246,8 +246,12 @@ SFC_CONFIG.game = {
     },
     // tầm khống chế bóng lỏng tính từ mép người + bóng. 4 -> 6, 12 -> 15 (user 2026-10-31: lại gần bóng mà không bắt dính):
     // hình nhân vật cao ~30px nên bóng cách chân 13-15px trông như đã chạm người; bóng nảy ngang hông (z 12-15) cũng khống chế được
-    pickupRange: 7,          // thử sân to (2026-11-07): 6 -> 7 bù bóng nhỏ đi 1 px (tầm chạm thật giữ nguyên)
-    pickupHeight: 15,
+    pickupRange: 7,          // thử sân to (2026-11-07): 6 -> 7 bù bóng nhỏ đi 1 px (tầm chạm thật giữ nguyên) · x render.playerScale (cuối file)
+    pickupHeight: 15,        // x render.playerScale (cuối file): người Sprite v3 cao hơn -> ngang hông cao hơn
+    // HỖ TRỢ ĐUỔI BÓNG LỎNG (Human.chaseAssist, chỉ người chơi đang điều khiển; user 2026-11-08: chạy tới bóng nảy mà không bắt dính, chạy vượt qua bóng):
+    // bóng lỏng cách dưới range px, hướng đang bấm lệch khỏi chỗ chạm bóng không quá cone°, chạm được trong maxT s -> tự lái tới chỗ chạm,
+    // cách chỗ đó dưới ease px thì chậm dần
+    chaseAssist: { enabled: true, range: 30, cone: 60, maxT: 0.45, ease: 10 },
     selfPickupDelay: 0.3,
     looseNoPickup: 0.4,
     // (s) thủ môn phất bóng lên trời từ tay (sút / phá / phất, Actions.gkRelease sky; chuyền từ tay vẫn bị cắt): đối phương không chạm được bóng
@@ -375,6 +379,9 @@ SFC_CONFIG.game = {
       speedMin: 0.35,
       edgeMin: 0.35,          // bóng sượt mép tầm với: tỉ lệ x edgeMin (đi thẳng vào người: x1)
       minSpeed: 60,           // bóng chậm hơn mức này coi như bóng lỏng -> nhặt bình thường
+      // người chơi đang điều khiển: đường chuyền của đối phương chậm hơn mức này nhặt như bóng lỏng (Game.looseFor; user 2026-11-08).
+      // Đường chuyền đã nảy đất / lăn qua điểm nhận thì ai cũng nhặt như bóng lỏng (Ball.spent)
+      humanLoose: 180,
       failSlow: 0.8,          // trượt: bóng còn 80% tốc độ
       failDeflect: 0.25,      // trượt: bóng lệch ngẫu nhiên tối đa (rad, ~14°)
       retry: 0.4,             // trượt: giây người đó không chạm lại được bóng
@@ -898,7 +905,7 @@ SFC_CONFIG.game = {
 };
 
 // THỬ SÂN TO: áp pitchScale lên khung trận, sân và các số theo chiều dài sân (giá trị ở trên là gốc, pitchScale 1).
-// Số theo thân người (tầm chạm bóng, tầm đấm), theo khung thành (tầm sút) và Core giữ nguyên. Bỏ thử nghiệm: xoá khối này + pitchScale
+// Số theo khung thành (tầm sút), tầm đấm và Core giữ nguyên; khoảng cách bóng - chân và tầm khống chế bóng theo cỡ người (render.playerScale). Bỏ thử nghiệm: xoá khối này + pitchScale
 (function () {
   const G = SFC_CONFIG.game, k = G.pitchScale || 1;
   if (k === 1) return;
@@ -935,4 +942,6 @@ SFC_CONFIG.game = {
   B.dribbleOffset = r(B.dribbleOffset * kp); DR.sprintOffset = r(DR.sprintOffset * kp); DR.tapEvery = r(DR.tapEvery * kp);
   DR.tapLead = r(DR.tapLead * k);
   P.firstTouch.max = r(P.firstTouch.max * kp);   // chạm bóng đầu tiên: bóng trôi xa chân theo cỡ người
+  // tầm khống chế bóng theo cỡ người (user 2026-11-08: 7 -> 9 px, cao 15 -> 20 px — bóng ngang hông / sát chân người to mà không chạm được)
+  B.pickupRange = r(B.pickupRange * kp); B.pickupHeight = r(B.pickupHeight * kp);
 })();

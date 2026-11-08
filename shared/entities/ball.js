@@ -21,6 +21,7 @@ window.SFC = window.SFC || {};
         passTarget: null, passPoint: null, sloppy: false, lob: false, kind: null, roll: 0, trailT: 0, skin: null,
         netSide: 0, shieldChecked: false, woodT: 0, read: null, freezeT: 0, missT: 0, cross: false, kickN: 0, endBounce: false,
         touchIn: null, tg: 0, tv: 0, ta: null, touchK: 0,   // chạm bóng đầu tiên (pass.firstTouch, follow)
+        spent: false,   // đường chuyền đã nảy đất / lăn qua điểm nhận mà chưa ai chạm -> đối phương nhặt như bóng lỏng (Game.looseFor)
       });
       this.noPickup.clear();
       this.trail.length = 0;
@@ -69,6 +70,7 @@ window.SFC = window.SFC || {};
       this.through = false;
       this.puntSafe = 0;
       this.dribbleLag = 0;
+      this.spent = false;
       this.clearFx();
     }
 
@@ -94,7 +96,8 @@ window.SFC = window.SFC || {};
       this.endBounce = false; // đã dội vạch cuối sân (bounceSide) -> hết ma sát riêng của cú sút (ball.shotFriction)
       this.keepPace = false;  // đường chuyền giữ tốc độ (pass.friction) — passTo bật, bóng qua điểm nhận thì tắt
       this.through = false;   // chọc khe có người nhận (passTo): người nhận chạy thẳng tới điểm nhận
-      this.puntSafe = 0;      // (s) thủ môn phất bóng lên trời từ tay (Actions.gkRelease sky, không phải đường chuyền): đối phương không chạm được tới khi bóng rơi chạm đất (ball.puntSafe)
+      this.spent = false;     // đường chuyền thành bóng lỏng (nảy đất / qua điểm nhận) — Ball.update bật
+      this.puntSafe = 0;     // (s) thủ môn phất bóng lên trời từ tay (Actions.gkRelease sky, không phải đường chuyền): đối phương không chạm được tới khi bóng rơi chạm đất (ball.puntSafe)
       this.flightT = 0;       // (s) bóng đã bay bao lâu từ lần chạm cuối — thủ môn cần thời gian phản xạ (player.gkReflex, Game.tryControl)
       this.kickX = this.x; this.kickY = this.y;   // chỗ bóng rời chân — sút sát người thủ môn (Game.pointBlank)
       this.kickN++;           // số lần đá: AI quyết định dứt điểm 1 chạm 1 lần cho mỗi quả bóng · AI thủ môn đọc mỗi cú sút 1 lần (ai.keeper)
@@ -141,6 +144,7 @@ window.SFC = window.SFC || {};
         this.z = 0;
         if (this.vz < -50) {
           this.puntSafe = 0;   // bóng phát của thủ môn rơi chạm đất lần đầu: hết miễn chạm, ai cũng tranh được
+          if (this.kind === 'pass') this.spent = true;   // đường chuyền bổng đã nảy đất: thành bóng lỏng, đối phương không phải qua lượt cắt
           this.g.sfx('bounce', Math.min(1, -this.vz / 300));   // rơi càng mạnh tiếng càng to
           this.vz = -this.vz * C.bounce;
           const kb = this.shotFm() < 1 ? C.shotBounceKeep : 0.78;   // bóng sút nảy đất ít mất tốc độ hơn
@@ -149,7 +153,11 @@ window.SFC = window.SFC || {};
       }
 
       // bóng chuyền đã đi qua điểm nhận mà chưa ai chạm: hết giữ tốc độ, lăn chậm dần như bóng thường
-      if (this.keepPace && this.passPoint && (this.passPoint.x - this.x) * this.vx + (this.passPoint.y - this.y) * this.vy <= 0) this.keepPace = false;
+      // (cả đường chuyền vào khoảng trống: qua điểm nhận rồi là bóng lỏng — spent)
+      if (this.passPoint && (this.passPoint.x - this.x) * this.vx + (this.passPoint.y - this.y) * this.vy <= 0) {
+        this.keepPace = false;
+        if (this.kind === 'pass') this.spent = true;
+      }
       const k = (this.z > C.airDragMinZ ? C.airDrag : C.groundFriction) * this.frictionMult * this.shotFm() * this.passFm();
       this.vx = U.damp(this.vx, k, dt);
       this.vy = U.damp(this.vy, k, dt);

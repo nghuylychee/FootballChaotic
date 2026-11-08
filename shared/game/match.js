@@ -831,8 +831,8 @@ window.SFC = window.SFC || {};
           return;
         }
         const plain = b.kind === 'pass' && !b.fx.ghost && !b.fx.thunder && !b.fx.scissor && !this.cores.passGuarded(b.lastKickTeam);
-        if (!plain || (this.inKeeperZone(p) && b.lob)) { SFC.Actions.disarm(p); return this.tryControl(p); }
-        if (b.speed >= C.pass.intercept.minSpeed && !this.intercepts(p)) return;
+        if (!plain || (this.inKeeperZone(p) && b.lob && !this.looseFor(p))) { SFC.Actions.disarm(p); return this.tryControl(p); }
+        if (b.speed >= C.pass.intercept.minSpeed && !this.looseFor(p) && !this.intercepts(p)) return;
       }
       // NGƯỜI CHƠI còn giữ D lúc bóng sát đất chạm người (user 2026-10-31: thả D mới sút): khống chế bóng, thanh lực chờ nạp tiếp
       // thành lực sút thường (Human.update) — thả D là sút. Bóng bổng (vô-lê cao / đánh đầu) không khống chế được: vẫn đá luôn
@@ -851,13 +851,15 @@ window.SFC = window.SFC || {};
       const opp = b.lastKickTeam >= 0 && b.lastKickTeam !== p.team;
       const isGK = this.inKeeperZone(p);
       const dir = U.norm(b.vx, b.vy);
+      // đường chuyền của đối phương đã thành bóng lỏng với p (nảy đất / qua điểm nhận / người chơi gặp bóng chậm): nhặt như bóng thường
+      const loose = opp && b.kind === 'pass' && this.looseFor(p);
       // chuyền bổng (A) của đối phương tới thủ môn: bắt như cú sút (tỉ lệ bắt bóng của thủ môn), không phải lượt cắt đường chuyền
       // theo chỉ số tackle — không thì đứng gần khung bấm A lốp qua đầu thủ môn gần như luôn vào.
       // Chỉ khi cả thủ môn lẫn bóng đều trong vòng cấm nhà (ngoài vòng cấm: cắt đường chuyền như thường)
-      const lob = isGK && opp && b.kind === 'pass' && b.lob && this.inBox(p.team, b);
+      const lob = isGK && opp && b.kind === 'pass' && b.lob && !loose && this.inBox(p.team, b);
       // đoạt được đường chuyền / chặn được cú sút (ngoài vòng cấm nhà) của đối phương, bóng còn đủ nhanh
       // (bóng lăn chậm dưới intercept.aiDelayMinSpeed coi như bóng lỏng: nhặt bình thường)
-      const cut = opp && ((b.kind === 'pass' && !lob) || (b.kind === 'shot' && !isGK)) && spd >= C.pass.intercept.aiDelayMinSpeed;
+      const cut = opp && ((b.kind === 'pass' && !lob && !loose) || (b.kind === 'shot' && !isGK)) && spd >= C.pass.intercept.aiDelayMinSpeed;
 
       // bóng xuyên người: Lôi Cước (sét), Song Phi (gió)
       const pierceFx = b.fx.thunder || b.fx.scissor;
@@ -923,7 +925,7 @@ window.SFC = window.SFC || {};
         this.effects.pop(p.x, p.y - 30, 'SAVE!', 'good', '#9dff3d');
         this.sfx('save');
         if (SFC.Legends) SFC.Legends.aiSave(this, p);   // thủ môn AI đeo LEGEND SWEEPER SPIN: xoay người phát bóng (legends.ai)
-      } else if (opp && b.kind === 'pass' && spd > C.pass.intercept.minSpeed) {
+      } else if (opp && b.kind === 'pass' && !loose && spd > C.pass.intercept.minSpeed) {
         // Chạm Một / Đường Chuyền Xuyên Không: bóng xuyên qua như ma · Steel Formation: đường chuyền không bị cắt
         if (b.fx.ghost || this.cores.passGuarded(b.lastKickTeam)) {
           b.noPickup.set(p.id, 0.3);
@@ -951,6 +953,14 @@ window.SFC = window.SFC || {};
         // đoạt bóng luôn là đổi quyền kiểm soát -> Core Counter Attack hiện COUNTER! cùng chỗ: ưu tiên chữ đó
         if (!this.cores.has(p, 'counter_attack')) this.effects.pop(p.x, p.y - 30, 'INTERCEPT', 'info', '#9aa3b5');
       }
+    }
+
+    // Đường chuyền của đối phương coi như bóng lỏng với p (không qua lượt cắt): bóng đã nảy đất / lăn qua điểm nhận (Ball.spent),
+    // hoặc p là người chơi đang điều khiển và bóng chậm hơn pass.intercept.humanLoose
+    looseFor(p) {
+      const b = this.ball, H = this.cfg.pass.intercept.humanLoose;
+      if (b.spent) return true;
+      return H > 0 && b.speed < H && this.isHuman(p.team) && p.isControlled;
     }
 
     // Cắt đường chuyền (pass.intercept): 1 lần thử, tỉ lệ theo tốc độ bóng + độ lệch khỏi người.

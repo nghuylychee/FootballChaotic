@@ -232,8 +232,31 @@ window.SFC = window.SFC || {};
           else if (pressed('shoot')) use('shoot', Act.lightAttack(g, p));
           else if (pressed('lob')) use('lob', Act.hardAttack(g, p));
         } else buf.shoot = buf.lob = 0;   // đang thủ thế: không để cú đấm bấm lúc này bật ra sau khi thả W
+        if (!b.owner) this.chaseAssist(g, p);
       }
       if (pressed('skill')) use('skill', Act.skill(g, p, mx, my));
+    },
+
+    // HỖ TRỢ ĐUỔI BÓNG LỎNG (ball.chaseAssist, chỉ người chơi): đang đẩy hướng về phía bóng lỏng ở gần (lệch không quá cone°) mà chạm được
+    // trong maxT giây -> tự lái tới chỗ chạm bóng sớm nhất (Actions.interceptPoint: bóng nảy cao thì tới chỗ bóng rơi xuống tầm khống chế)
+    // thay vì chạy tiếp theo hướng cũ, gần tới thì chậm dần (ease px) để không chạy vượt qua bóng. Bẻ hướng ra ngoài cone -> thôi lái ngay
+    chaseAssist(g, p) {
+      const M = SFC_CONFIG.game.ball.chaseAssist, b = g.ball;
+      if (!M || !M.enabled || b.owner || p.ot || p.bracing || p.state !== 'normal' || p.panicT > 0) return;
+      const mx = p.intent.mx, my = p.intent.my, ml = Math.hypot(mx, my);
+      if (ml < 0.3 || b.freezeT > 0 || b.noPickup.has(p.id)) return;
+      // đường chuyền còn sống cho đồng đội khác: mình không chạm được bóng (Game.updatePossession)
+      const pt = b.passTarget;
+      if (pt && pt !== p && pt.team === p.team && pt.state !== 'stun' && b.speed > 40) return;
+      if (U.dist(p, b) > M.range) return;
+      const ip = SFC.Actions.interceptPoint(g, p, M.maxT);
+      if (ip.t >= M.maxT) return;
+      const dx = ip.x - p.x, dy = ip.y - p.y, d = Math.hypot(dx, dy);
+      if (d < 1) { p.intent.mx = p.intent.my = 0; return; }
+      if (Math.abs(U.angleDiff(Math.atan2(my, mx), Math.atan2(dy, dx))) > M.cone * Math.PI / 180) return;
+      const s = Math.min(ml, d / M.ease);
+      p.intent.mx = dx / d * s;
+      p.intent.my = dy / d * s;
     },
 
     // chờ đá 1 chạm: chạy tới điểm đón bóng (giữ nước rút nếu người chơi đang giữ phím chạy nhanh)
