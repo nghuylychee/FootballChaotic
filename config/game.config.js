@@ -7,11 +7,11 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.game = {
   // THỬ SÂN TO (proto/big-pitch, 2026-11-07): 1 núm chỉnh cỡ sân. 1 = sân gốc 528 x 246 trong khung 640 x 360.
-  // Lớn hơn = khung trận + sân + các khoảng cách / tốc độ theo sân nhân lên từ giá trị gốc (khối cuối file). User đang thử 1.2
+  // Lớn hơn = khung trận + sân + các khoảng cách / tốc độ theo sân nhân lên từ giá trị gốc (shared/engine/config.js). User đang thử 1.2
   pitchScale: 1.4,
 
   render: {
-    // khung nhìn trận (px game của canvas trận) ở pitchScale 1. Thử sân to (2026-11-07): width / height / maxView nhân pitchScale (cuối file)
+    // khung nhìn trận (px game của canvas trận) ở pitchScale 1. Thử sân to (2026-11-07): width / height / maxView nhân pitchScale (shared/engine/config.js)
     // = zoom out; sprite giữ cỡ px nhưng trên màn hình nhỏ đi. Menu / HUD (#stage) giữ khung riêng ui bên dưới -> px trận nhỏ hơn px menu (user đồng ý)
     width: 640,
     height: 360,
@@ -21,13 +21,13 @@ SFC_CONFIG.game = {
     // khung nhìn tối đa (px game): cửa sổ khác 16:9 thì hiện thêm cảnh quanh sân theo tỉ lệ cửa sổ (sân giữ cỡ, nằm giữa) và UI (#stage)
     // giãn ra mép màn hình; quá cỡ này thì viền đen. Cut scene, TROPHY ROOM, KIT VAN giữ khung 640 x 360 ở giữa.
     // Cảnh sân vẽ đủ cỡ này (docs/art-direction/pixel-and-camera.md)
-    maxView: [880, 512],   // x pitchScale (cuối file)
+    maxView: [880, 512],   // x pitchScale (shared/engine/config.js)
     // phần chỉ để vẽ (ui, vignette, pixelFont, ctrlColors, footRings, windowSizes...) + audio: config/view.config.js (máy chủ không nạp)
   },
 
   // Sân: hình chữ nhật trong "phòng" có tường bao quanh
   field: {
-    // ở pitchScale 1. Thử sân to: w x pitchScale, h x (1 + (pitchScale - 1) x 0,75), đặt giữa khung trận (cuối file)
+    // ở pitchScale 1. Thử sân to: w x pitchScale, h x (1 + (pitchScale - 1) x 0,75), đặt giữa khung trận (shared/engine/config.js)
     x: 56, y: 80, w: 528, h: 246,
     // khung thành + vòng cấm to thêm ~10% (user 2026-11-07): 78 / 18 / 26 / 66 / 140 -> 86 / 20 / 29 / 73 / 154. Không theo pitchScale
     goalWidth: 86,     // độ rộng khung thành (trục y)
@@ -88,7 +88,7 @@ SFC_CONFIG.game = {
   player: {
     radius: 6,
     // 2026-10-30 (user: nhịp trận chậm lại chút): 86 -> 80, accel 720 -> 650; chuyền minSpeed / maxSpeed / arriveSpeed -5%; sút giữ nguyên
-    speed: 80,               // x pitchScale (cuối file)
+    speed: 80,               // x pitchScale (shared/engine/config.js)
     sprintMult: 1.5,
     dribbleSpeedMult: 0.9,
     chargeMoveMult: 0.55,
@@ -96,8 +96,8 @@ SFC_CONFIG.game = {
     decel: 950,
     turnRate: 16,             // rad/s
     staminaMax: 100,
-    staminaDrain: 30,         // / pitchScale (cuối file)
-    staminaRegen: 32,         // x (cuối file) · (/s, nhân chỉ số STAMINA) hồi khi không chạy nước rút — user 2026-11-01: 20 -> 32, hồi nhanh hơn
+    staminaDrain: 30,         // / pitchScale (shared/engine/config.js)
+    staminaRegen: 32,         // x (shared/engine/config.js) · (/s, nhân chỉ số STAMINA) hồi khi không chạy nước rút — user 2026-11-01: 20 -> 32, hồi nhanh hơn
     staminaMinToSprint: 12,
     // Cơ chế thủ môn — áp dụng cho cầu thủ đang đứng trong vòng cấm nhà
     gkReach: 9,
@@ -174,11 +174,11 @@ SFC_CONFIG.game = {
     bounce: 0.5,
     wallBounce: 0.72,
     netDamp: 0.25,
-    dribbleOffset: 6,        // x render.playerScale (cuối file) · (px) bóng trước chân theo hướng mặt — 9 -> 6 (user 2026-11-03: bóng xa chân quá, nhìn xuống thì như tách khỏi chân)
+    dribbleOffset: 6,        // x render.playerScale (shared/engine/config.js) · (px) bóng trước chân theo hướng mặt — 9 -> 6 (user 2026-11-03: bóng xa chân quá, nhìn xuống thì như tách khỏi chân)
     // dẫn bóng (Ball.follow, user 2026-11-03: bóng quay theo hướng mặt như dính keo): bóng có vị trí riêng quanh chân, không dán vào hướng mặt
     dribble: {
       turnRate: 11,         // (rad/s) bóng xoay quanh chân chậm hơn người (player.turnRate) -> đổi hướng thì bóng trễ một nhịp (7 trễ quá: người quay lưng mà bóng còn trước mặt)
-      sprintOffset: 9,      // x render.playerScale (cuối file) · (px) chạy nước rút: bóng xa chân hơn dribbleOffset (user 2026-11-03: chạy thường / đổi hướng bóng sát chân, nước rút xa được)
+      sprintOffset: 9,      // x render.playerScale (shared/engine/config.js) · (px) chạy nước rút: bóng xa chân hơn dribbleOffset (user 2026-11-03: chạy thường / đổi hướng bóng sát chân, nước rút xa được)
       // đổi hướng (cả lúc chạy nước rút): bóng về khoảng cách chạy thường (dribbleOffset) rồi kéo vào sát chân, khoảng cách còn (1 - turnTuck) x —
       // đổi hướng bóng gọn trong chân. Kéo hết khi bóng trễ hướng mặt từ turnFull x 90° trở lên
       turnTuck: 0.3,
@@ -189,15 +189,15 @@ SFC_CONFIG.game = {
       dragSpeed: 110,       // (px/s) tốc độ bóng lúc kéo
       // chạy nước rút: chạy được tapEvery px thì chạm bóng 1 lần, bóng ra xa chân thêm tối đa tapLead px (x tốc độ / player.speed, tối đa 1,5) rồi lăn về;
       // đang đổi hướng thì nhỏ dần về 0. Chạy thường không chạm: bóng giữ sát chân (user 2026-11-03)
-      tapEvery: 30,         // x render.playerScale (cuối file)
-      tapLead: 3,           // x pitchScale (cuối file)
+      tapEvery: 30,         // x render.playerScale (shared/engine/config.js)
+      tapLead: 3,           // x pitchScale (shared/engine/config.js)
       tapRise: 0.2,         // phần đầu nhịp chạm: bóng ra xa, phần còn lại: người đuổi kịp bóng
       turnSlow: 0.35,       // bóng đang trễ hướng mặt / đang kéo: tốc độ người cầm bóng giảm tới chừng này (đổi hướng gắt mất đà)
     },
     // tầm khống chế bóng lỏng tính từ mép người + bóng. 4 -> 6, 12 -> 15 (user 2026-10-31: lại gần bóng mà không bắt dính):
     // hình nhân vật cao ~30px nên bóng cách chân 13-15px trông như đã chạm người; bóng nảy ngang hông (z 12-15) cũng khống chế được
-    pickupRange: 7,          // thử sân to (2026-11-07): 6 -> 7 bù bóng nhỏ đi 1 px (tầm chạm thật giữ nguyên) · x render.playerScale (cuối file)
-    pickupHeight: 15,        // x render.playerScale (cuối file): người Sprite v3 cao hơn -> ngang hông cao hơn
+    pickupRange: 7,          // thử sân to (2026-11-07): 6 -> 7 bù bóng nhỏ đi 1 px (tầm chạm thật giữ nguyên) · x render.playerScale (shared/engine/config.js)
+    pickupHeight: 15,        // x render.playerScale (shared/engine/config.js): người Sprite v3 cao hơn -> ngang hông cao hơn
     // HỖ TRỢ ĐUỔI BÓNG LỎNG (Human.chaseAssist, chỉ người chơi đang điều khiển; user 2026-11-08: chạy tới bóng nảy mà không bắt dính, chạy vượt qua bóng):
     // bóng lỏng cách dưới range px, hướng đang bấm lệch khỏi chỗ chạm bóng không quá cone°, chạm được trong maxT s -> tự lái tới chỗ chạm,
     // cách chỗ đó dưới ease px thì chậm dần
@@ -242,12 +242,12 @@ SFC_CONFIG.game = {
     // Lực mặc định = lực lý tưởng theo khoảng cách tới người nhận (chạm nhẹ là bóng tới chân).
     // Giữ phím vượt mức mặc định -> bóng căng hơn.
     minDist: 30,              // khoảng cách ứng với lực 0%  (px)
-    maxDist: 320,             // x pitchScale (cuối file). Khoảng cách ứng với lực 100% (px)
+    maxDist: 320,             // x pitchScale (shared/engine/config.js). Khoảng cách ứng với lực 100% (px)
     farTargetCharge: 0.35,    // giữ quá mức này -> ưu tiên đồng đội ở xa hơn khi chọn người nhận
     coneAngle: 35,            // (độ) nửa góc vùng quanh hướng mũi tên; có đồng đội trong vùng mới khóa làm người nhận,
                               //      không có ai -> bóng đi thẳng theo hướng mũi tên
     freeMinDist: 70,          // chuyền vào khoảng trống: quãng đường bóng lăn khi chạm nhẹ (px)
-    freeMaxDist: 300,         // x pitchScale (cuối file) · quãng đường khi đầy lực (px)
+    freeMaxDist: 300,         // x pitchScale (shared/engine/config.js) · quãng đường khi đầy lực (px)
     freeReceiverMaxTime: 1.6, // chuyền vào khoảng trống: đồng đội đón được bóng trong thời gian này -> thành người nhận
     aimAssist: 1.0,           // 1 = hướng bóng căn chuẩn vào người nhận; 0 = đi theo hướng phím
     // HỖ TRỢ CHUYỀN (user 2026-10-31), chỉ người chơi, mạnh dần theo PASSING (stats.pass acc[0] -> acc[1]):
@@ -271,12 +271,12 @@ SFC_CONFIG.game = {
     throughFriction: 0.8,
     arriveSpeed: 250,         // tốc độ bóng khi tới chân người nhận — 150 -> 180 (2026-10-30) -> 170 (-5%) -> 250 (2026-11-01, kèm friction)
     minSpeed: 133,
-    maxSpeed: 455,            // x pitchScale (cuối file) (chuyền dài tới chân còn đủ nhanh)
+    maxSpeed: 455,            // x pitchScale (shared/engine/config.js) (chuyền dài tới chân còn đủ nhanh)
     showTargetHint: false,    // true = hiện vòng/mũi tên trên người nhận khi nạp lực (debug)
     spread: 0.015,            // sai số hướng (rad), chia cho chỉ số pass
     receiverLead: 0.7,        // mức đón đầu theo vận tốc hiện tại của người nhận
     throughLeadMin: 24,       // chọc khe BỔNG (technique.lobThrough): lực thấp -> bóng vào khoảng trống gần
-    throughLeadMax: 95,      // x pitchScale (cuối file) · lực cao  -> bóng vào sâu
+    throughLeadMax: 95,      // x pitchScale (shared/engine/config.js) · lực cao  -> bóng vào sâu
     throughBase: 0.35,        // chọc khe: mốc lực mặc định (chạm nhẹ = canh đúng nhịp; giữ vượt mốc = bóng nhanh hơn, through.overSpeed)
     throughAim: 0.65,         // chọc khe BỔNG có bấm hướng: 1 = bóng đi đúng đường mũi tên, 0 = điểm rơi ngay trước người nhận
                               // (theo hướng mũi tên). Ở giữa: người nhận kéo điểm rơi lệch ngang khỏi đường mũi tên (1 - throughAim)
@@ -288,7 +288,7 @@ SFC_CONFIG.game = {
     //   runSpeed: tốc độ người nhận khi tính giờ (x tốc độ nước rút của họ) · react: (s) cộng thêm cho người nhận kịp tăng tốc
     //   minArrive: tốc độ bóng thấp nhất khi tới điểm nhận (x chỉ số pass) · overSpeed: giữ lực đầy -> bóng nhanh thêm ngần này
     //   movingMin: (px/s) người nhận chạy nhanh hơn mức này mới lấy hướng theo vận tốc · parallel: |sin góc| giữa 2 hướng dưới mức này = coi như song song
-    through: { runMin: 24, runMax: 150, lead: 60,   // x pitchScale (cuối file)
+    through: { runMin: 24, runMax: 150, lead: 60,   // x pitchScale (shared/engine/config.js)
        runSpeed: 0.95, react: 0.15, minArrive: 120, overSpeed: 0.5, movingMin: 30, parallel: 0.15,
        boost: 1.1 },   // boost: lực chọc khe x bấy nhiêu (bóng tới điểm nhận sớm hơn người chạy một chút)
     freeThroughArrive: 80,    // chọc khe vào khoảng trống (không có người nhận): bóng vẫn còn lực khi qua điểm rơi
@@ -308,7 +308,7 @@ SFC_CONFIG.game = {
     receiveLock: true,
     // CHẠM BÓNG ĐẦU TIÊN CÓ QUÁN TÍNH (user 2026-11-07: bóng thiếu độ nặng; Game.gainPossession -> Ball.follow): bóng tới nhanh hơn minSpeed px/s
     // không dừng chết ở chân mà trôi ra trước chân carry x (tốc độ − minSpeed) px/s (/ chỉ số dribble), hãm stop /s, rồi về chân settle /s;
-    // xa thêm tối đa max px (x render.playerScale, cuối file). Hướng trôi: mũi tên lúc đón (người chơi; quay người theo luôn) · không bấm: hướng mặt,
+    // xa thêm tối đa max px (x render.playerScale, shared/engine/config.js). Hướng trôi: mũi tên lúc đón (người chơi; quay người theo luôn) · không bấm: hướng mặt,
     // trôi noArrow x (đỡ bóng dừng lại). Bóng còn trôi xa: người cầm chậm lại tới slow. Thủ môn bắt bóng của đối phương: không trôi
     firstTouch: { enabled: true, minSpeed: 120, carry: 0.7, stop: 10, settle: 5, max: 12, slow: 0.4, noArrow: 0.6 },
     // CHUYỀN 1 CHẠM (user 2026-10-30, ban bật): đang đón đường chuyền mà bấm S / W / A -> nhận bóng là chuyền luôn
@@ -405,7 +405,7 @@ SFC_CONFIG.game = {
     overchargeSpread: 0.5,
     // Phá bóng: nhấn D khi cầm bóng ở phần sân nhà (kiểu FC Online) — bóng bổng, luôn đi về phía trước
     clearance: false,        // TẮT: D ở sân nhà vẫn là sút bình thường (bật = true để dùng lại phá bóng)
-    clearSpeed: 290,         // x pitchScale (cuối file) · px/s theo phương ngang (nhân chỉ số power)
+    clearSpeed: 290,         // x pitchScale (shared/engine/config.js) · px/s theo phương ngang (nhân chỉ số power)
     clearLift: 120,          // vz ban đầu -> bay ~0.57s, chạm đất ở ~155px, lăn tổng ~340px
     clearAngle: 0.8,         // ↑/↓ lệch góc phá bóng tối đa (~39°)
     clearSpread: 0.2,        // rad sai số ngẫu nhiên
@@ -466,7 +466,7 @@ SFC_CONFIG.game = {
     // ở độ cao ngang đầu (z) thay vì rơi xuống chân
     cross: {
       zone: 0.58,          // người tạt đã vượt mốc này (tỉ lệ sân, tính từ khung nhà)
-      wide: 50,            // x pitchScale (cuối file) · (px) cách trục giữa sân theo chiều ngang ít nhất chừng này (sân rộng 246, vòng cấm rộng 140)
+      wide: 50,            // x pitchScale (shared/engine/config.js) · (px) cách trục giữa sân theo chiều ngang ít nhất chừng này (sân rộng 246, vòng cấm rộng 140)
       boxDist: 150,        // (px) người nhận cách khung đối phương dưới mức này
       z: 20,               // (px) độ cao bóng khi tới điểm đón
       timeMin: 0.55, timeMax: 0.9,   // (s) thời gian bay theo quãng đường
@@ -580,8 +580,8 @@ SFC_CONFIG.game = {
     keeper: { reactBase: 0, reactMul: 0.15, errBase: 0.05, errMul: 0.25, stretchMove: 140 },
     supportAhead: 70,
     restDefenseFrom: 0.5,     // đồng đội cầm bóng vượt mốc này (tỉ lệ sân, 0.5 = giữa sân) -> người còn lại lùi chốt phía sau
-    restDefenseDist: 110,     // x pitchScale (cuối file) · đứng sau người cầm bóng bao xa (px)
-    markDistance: 26,        // x pitchScale (cuối file)
+    restDefenseDist: 110,     // x pitchScale (shared/engine/config.js) · đứng sau người cầm bóng bao xa (px)
+    markDistance: 26,        // x pitchScale (shared/engine/config.js)
     // 3v3: chia vai khi đồng đội cầm bóng (vị trí thấp nhất CHỐT, cao nhất BĂNG lên, ở giữa dạt CÙNG cánh)
     // anchorBack: người CHỐT đứng sau bóng restDefenseDist x hệ số này khi bóng còn ở phần sân nhà (qua giữa sân: x1) ·
     // runnerAhead / wideAhead: người BĂNG / người DẠT đứng trước bóng supportAhead x hệ số này
@@ -591,7 +591,7 @@ SFC_CONFIG.game = {
     // ĐIỂM ĐỨNG HỖ TRỢ (user 2026-10-30: đồng đội đứng chết theo điểm cố định): quanh điểm theo vai trò ở trên thử dirs hướng x các
     // bán kính radius (px), chấm điểm = độ thoáng đường chuyền từ bóng (tối đa laneCap px) x lane + khoảng cách tới đối phương gần nhất
     // (tối đa spaceCap px) x space − độ lệch khỏi điểm vai trò x drift. Tính lại mỗi every s; chỗ cũ chỉ bị thay khi chỗ mới hơn keep điểm
-    openSpot: { radius: [28, 52],   // x pitchScale (cuối file)
+    openSpot: { radius: [28, 52],   // x pitchScale (shared/engine/config.js)
       dirs: 8, every: 0.4, lane: 1.0, laneCap: 30, space: 0.4, spaceCap: 60, drift: 0.35, keep: 4 },
     // CHẠY CHỖ (user 2026-10-30): đồng đội AI chạy nước rút tới 1 điểm trong time s (p.ai.runT / runTo; đồng đội của người chơi có mũi tên
     // báo hiệu trên đầu). Mỗi người cân nhắc every s một lần, chance = tỉ lệ mỗi lần cân nhắc
@@ -617,7 +617,7 @@ SFC_CONFIG.game = {
       lane: { chance: 0.6, time: 1.0, faceCos: 0.6, maxDist: 220, dist: [60, 100], angles: [-75, -40, 0, 40, 75],
         lane: 1.0, laneCap: 36, space: 0.4, spaceCap: 60, fwd: 0.15, goalGap: 40, cooldown: 1.6 },
     },
-    keeperCoverDist: 420,     // x pitchScale (cuối file) · đội máy: người cầm bóng đối phương cách khung thành nhà dưới mức này -> người gần khung nhất lùi về trông khung
+    keeperCoverDist: 420,     // x pitchScale (shared/engine/config.js) · đội máy: người cầm bóng đối phương cách khung thành nhà dưới mức này -> người gần khung nhất lùi về trông khung
     // ĐÁ LÙI ĐỘI MÁY GIỮ KHUNG (user 2026-11-07: DEF bot hay bỏ khung lên kèm người, người chơi ở nhà gồng sút xa là vào):
     // true = đội máy không cầm bóng (đối phương giữ bóng / bóng lỏng) thì người giữ khung (Game.canKeep) luôn trông khung, mọi khoảng cách
     // (keeperCoverDist bỏ qua). Chỉ rời khung khi đội mình cầm bóng tấn công. Không áp cho đội 1 người, Skill game, đồng đội AI của người chơi
@@ -645,7 +645,7 @@ SFC_CONFIG.game = {
     // người áp sát phản ứng nhanh hơn (x react), đấm với tỉ lệ ít nhất lightChance, gồng Hard x hardMult; cú đấm của AI trúng người đứng yên
     // làm rơi bóng x stealMul (shared/systems/actions.js lightHit)
     stillCarrier: { speed: 30, time: 0.6, react: 0.6, lightChance: 0.85, hardMult: 2, stealMul: 1.6 },
-    mateKeeperCoverDist: 300, // x pitchScale (cuối file) · như trên, cho đồng đội AI ĐÁ LÙI của người chơi (sân rộng 528px: 420 -> trông khung ~64% thời gian phòng ngự, 220 -> ~17%)
+    mateKeeperCoverDist: 300, // x pitchScale (shared/engine/config.js) · như trên, cho đồng đội AI ĐÁ LÙI của người chơi (sân rộng 528px: 420 -> trông khung ~64% thời gian phòng ngự, 220 -> ~17%)
     // NÉ LUẬT SÂN (user 2026-10-31, AI.avoid; vùng từ MatchMods.hazards): AI đội bị luật nhắm nhìn trước look s theo hướng đang chạy, sắp bước
     // vào vùng (cách mép dưới margin px) thì trượt dọc mép vùng; đang đứng trong vùng thì chạy thẳng ra; vùng sắp trúng (hit) mà còn
     // đứng trong thì lướt ra với xác suất dash mỗi giây (lướt trúng lúc đòn tới = né, Actions.dodged)
@@ -654,11 +654,11 @@ SFC_CONFIG.game = {
     // không còn đồng đội nào (kể cả người chơi) đứng gần khung hơn người cầm bóng quá slack px -> lao vào tắc luôn, không chạy về khung.
     // Đã lao vào thì giữ tới keep x engage px (không đổi ý chạy về khung giữa chừng)
     lastMan: { engage: 110, keep: 1.5, slack: 4 },
-    keeperPressDist: 110,     // x pitchScale (cuối file) · đồng đội AI ĐÁ LÙI: chưa tới mateKeeperCoverDist mà người chơi cách người cầm bóng xa hơn mức này -> lên áp sát (không thì kèm người)
+    keeperPressDist: 110,     // x pitchScale (shared/engine/config.js) · đồng đội AI ĐÁ LÙI: chưa tới mateKeeperCoverDist mà người chơi cách người cầm bóng xa hơn mức này -> lên áp sát (không thì kèm người)
     // đồng đội AI ĐÁ LÙI cùng người chơi kẹp người cầm bóng (thay vì chỉ kèm người / trông khung):
     helpPress: {
-      near: 40,               // x pitchScale (cuối file) · (px) mình cách người cầm bóng dưới mức này và người chơi đang áp sát (ctlNear) -> cùng áp sát + đấm (kể cả gần khung nhà)
-      ctlNear: 45,            // x pitchScale (cuối file) · (px) người chơi cách người cầm bóng dưới mức này = đang áp sát
+      near: 40,               // x pitchScale (shared/engine/config.js) · (px) mình cách người cầm bóng dưới mức này và người chơi đang áp sát (ctlNear) -> cùng áp sát + đấm (kể cả gần khung nhà)
+      ctlNear: 45,            // x pitchScale (shared/engine/config.js) · (px) người chơi cách người cầm bóng dưới mức này = đang áp sát
       ownHalf: false,         // true = người cầm bóng đã vào phần sân nhà (chưa tới mateKeeperCoverDist) -> luôn lên áp sát
       beaten: 10,             // (px) bị phản công: người chơi đứng phía trên người cầm bóng (về hướng khung đối phương) quá mức này
                               //      = đã bị vượt qua -> lên áp sát người cầm bóng thay vì kèm người còn lại. null = tắt
@@ -682,7 +682,7 @@ SFC_CONFIG.game = {
       dangerChance: 0.85,     // người nhận gặp nguy (hoặc không có ai để chuyền)
       markDist: 30,           // (px) đối phương cách người nhận dưới mức này = gặp nguy
       ownHalfMarkDist: 55,    // (px) như trên khi người nhận còn ở phần sân nhà (mất bóng ở đó là bị phản công ngay)
-      dist: [180, 290],       // x pitchScale (cuối file) · (px) điểm rơi cách thủ môn theo hướng tấn công
+      dist: [180, 290],       // x pitchScale (shared/engine/config.js) · (px) điểm rơi cách thủ môn theo hướng tấn công
       edge: 30,               // (px) điểm rơi cách biên dọc tối thiểu
       tries: 12,              // số điểm rơi thử: chọn chỗ đồng đội tới trước đối phương rõ nhất
       noise: 30,              // (px) ngẫu nhiên cộng vào điểm số mỗi chỗ (không phất mãi một chỗ)
@@ -702,10 +702,10 @@ SFC_CONFIG.game = {
     press: {
       // PHẢN PRESSING: vừa mất bóng, cầu thủ AI của đội mất bóng cách người vừa có bóng dưới counterDist px -> lao vào đánh lấy lại
       // trong counterTime s (không lùi trông khung / kèm người), phản ứng nhanh hơn (x counterReact), tỉ lệ đấm x counterPunch
-      counterTime: 1.6, counterDist: 80, counterReact: 0.6, counterPunch: 1.4,   // counterDist x pitchScale (cuối file)
+      counterTime: 1.6, counterDist: 80, counterReact: 0.6, counterPunch: 1.4,   // counterDist x pitchScale (shared/engine/config.js)
       // người cầm bóng đi vào trong engage px của cầu thủ AI đang kèm người / lùi về -> lao vào đánh luôn
       // (chỉ khi ít hơn maxPressers đồng đội đang ở gần người cầm bóng hơn mình — không cả đội bu vào)
-      engage: 36, maxPressers: 2,   // engage x pitchScale (cuối file)
+      engage: 36, maxPressers: 2,   // engage x pitchScale (shared/engine/config.js)
       // người áp sát: chạy nước rút khi cách hơn sprintDist px hoặc người cầm bóng đang chạy nhanh hơn walkSpeed px/s
       // (trước đây chỉ chạy nước rút khi cách > 36px -> người cầm bóng chạy là bỏ lại)
       sprintDist: 12, walkSpeed: 60,
@@ -782,50 +782,3 @@ SFC_CONFIG.game = {
     // máy quay (camera): config/view.config.js
   },
 };
-
-// THỬ SÂN TO: áp pitchScale lên khung trận, sân và các số theo chiều dài sân (giá trị ở trên là gốc, pitchScale 1).
-// Số theo khung thành (tầm sút), tầm đấm và Core giữ nguyên; khoảng cách bóng - chân và tầm khống chế bóng theo cỡ người (render.playerScale). Bỏ thử nghiệm: xoá khối này + pitchScale
-(function () {
-  const G = SFC_CONFIG.game, k = G.pitchScale || 1;
-  if (k === 1) return;
-  const kw = 1 + (k - 1) * 0.75;              // chiều rộng sân to chậm hơn chiều dài (1,2 -> 1,15)
-  const even = (v) => 2 * Math.round(v / 2), r = Math.round, mul = (a, f) => a.map((v) => r(v * f));
-  const R = G.render, F = G.field, P = G.pass, A = G.ai;
-  // khung trận + sân: giữa khung theo chiều ngang. Chiều dọc: chỗ trống ngoài sân + tường trên (46) + viền dưới (18) chia cho trên / dưới
-  // đúng tỉ lệ sân gốc (34 : 16) -> chiều rộng sân to chậm hơn khung cũng không dồn hết phần thừa xuống dưới (dải đất trống, user 2026-11-07)
-  const W0 = R.width, H0 = R.height, above = F.y - 46, below = H0 - F.y - F.h - 18;
-  R.width = even(W0 * k); R.height = even(H0 * k); R.maxView = R.maxView.map((v) => even(v * k));
-  F.w = even(F.w * k); F.h = even(F.h * kw); F.x = r((R.width - F.w) / 2);
-  F.y = 46 + r((R.height - F.h - 46 - 18) * above / (above + below));
-  // tốc độ: tăng ít hơn sân (chạy x 1/4, chuyền x 0,7, phá bóng x 1/2 phần tăng) -> qua sân lâu hơn nhưng không lê thê
-  G.player.speed = r(G.player.speed * (1 + (k - 1) * 0.25));
-  P.maxSpeed = r(P.maxSpeed * (1 + (k - 1) * 0.7));
-  G.kick.clearSpeed = r(G.kick.clearSpeed * (1 + (k - 1) * 0.5));
-  // khoảng cách theo chiều dài sân
-  P.maxDist = r(P.maxDist * k); P.freeMaxDist = r(P.freeMaxDist * k); P.throughLeadMax = r(P.throughLeadMax * k);
-  P.through.runMax = r(P.through.runMax * k); P.through.lead = r(P.through.lead * k);
-  A.restDefenseDist = r(A.restDefenseDist * k); A.openSpot.radius = mul(A.openSpot.radius, k);
-  A.runs.lane.maxDist = r(A.runs.lane.maxDist * k); A.runs.lane.dist = mul(A.runs.lane.dist, k);
-  { const O = A.runs.overlap; for (const key of ['level', 'maxDist', 'back', 'ahead']) O[key] = r(O[key] * k); O.hold.back = r(O.hold.back * k);
-    O.out = r(O.out * kw); O.minRoom = r(O.minRoom * kw); O.hold.inside = r(O.hold.inside * kw); }   // chạy chồng biên: dọc x k, ngang x kw
-  A.keeperCoverDist = r(A.keeperCoverDist * k); A.mateKeeperCoverDist = r(A.mateKeeperCoverDist * k); A.keeperPressDist = r(A.keeperPressDist * k);
-  A.gkPunt.dist = mul(A.gkPunt.dist, k);
-  // ÁP SÁT theo cỡ sân (user 2026-11-08: sân to -> cầu thủ đứng thưa, bot hai đội ít lao vào đấm hơn ~20-35%): khoảng cách quyết định
-  // lao vào đánh người cầm bóng + khoảng kèm người x k. Tầm đấm / Hard attack (theo thân người) giữ nguyên
-  A.press.engage = r(A.press.engage * k); A.press.counterDist = r(A.press.counterDist * k);
-  A.helpPress.near = r(A.helpPress.near * k); A.helpPress.ctlNear = r(A.helpPress.ctlNear * k);
-  A.markDistance = r(A.markDistance * k);
-  if (A.keeperHome) { A.keeperHome.depth = r(A.keeperHome.depth * k); if (A.keeperHome.rush) A.keeperHome.rush.dist = r(A.keeperHome.rush.dist * k); }
-  // theo chiều rộng sân
-  G.firstTime.cross.wide = r(G.firstTime.cross.wide * kw);
-  // THỂ LỰC (user 2026-11-07: sân rộng hơn -> nước rút lâu hơn, hồi nhanh hơn): tiêu hao / pitchScale (30 -> 21), hồi x kw (32 -> 42)
-  G.player.staminaDrain = r(G.player.staminaDrain / k); G.player.staminaRegen = r(G.player.staminaRegen * kw);
-  // DẪN BÓNG (user 2026-11-07: người to + sân to -> bóng nảy ra xa chân hơn tương ứng): khoảng cách bóng - chân + nhịp chạm theo cỡ người
-  // (render.playerScale, 6 -> 8, nước rút 9 -> 12, chạm mỗi 30 -> 39 px), độ nảy ra mỗi nhịp chạm khi nước rút theo cỡ sân (3 -> 4)
-  const kp = R.playerScale || 1, B = G.ball, DR = B.dribble;
-  B.dribbleOffset = r(B.dribbleOffset * kp); DR.sprintOffset = r(DR.sprintOffset * kp); DR.tapEvery = r(DR.tapEvery * kp);
-  DR.tapLead = r(DR.tapLead * k);
-  P.firstTouch.max = r(P.firstTouch.max * kp);   // chạm bóng đầu tiên: bóng trôi xa chân theo cỡ người
-  // tầm khống chế bóng theo cỡ người (user 2026-11-08: 7 -> 9 px, cao 15 -> 20 px — bóng ngang hông / sát chân người to mà không chạm được)
-  B.pickupRange = r(B.pickupRange * kp); B.pickupHeight = r(B.pickupHeight * kp);
-})();

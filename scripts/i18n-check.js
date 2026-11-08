@@ -130,7 +130,9 @@ const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((x) => x[1]);
 const sandbox = { console, SFC: { I18n: {} } };
 sandbox.window = sandbox;
 vm.createContext(sandbox);
-for (const src of scripts.filter((x) => x.startsWith('config/')).concat('src/i18n/fields.js')) {
+// config + 2 file dựng SFC_CONFIG (gộp đội / luật trận / view vào đúng đường dẫn mà fields.js liệt kê)
+const ASSEMBLE = ['shared/engine/config.js', 'src/engine/config-client.js'];
+for (const src of scripts.filter((x) => x.startsWith('config/') || ASSEMBLE.includes(x)).concat('src/i18n/fields.js')) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, src), 'utf8'), sandbox, { filename: src });
 }
 const CONFIG = sandbox.SFC_CONFIG, FIELDS = sandbox.SFC.I18n.fields || [];

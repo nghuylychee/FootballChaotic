@@ -427,11 +427,4 @@ SFC_CONFIG.mainPath = {
     },
   },
 };
-
-// đội Main Path + đội riêng của người chơi dùng chung danh sách đội của trận (không thêm vào teams.order)
-(function () {
-  const MP = SFC_CONFIG.mainPath, list = SFC_CONFIG.teams.list;
-  Object.assign(list, MP.teams);
-  const P = MP.playerTeam;
-  list[P.id] = { name: P.nameFormat.replace('{name}', 'PLAYER'), short: P.short, tagline: P.tagline, desc: P.desc, kit: P.kit, stats: P.stats, coreWeights: P.coreWeights, aiStyle: P.aiStyle, players: P.players };
-})();
+// teams + playerTeam -> teams.list lúc nạp: shared/engine/config.js

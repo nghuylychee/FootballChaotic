@@ -40,7 +40,7 @@ def render_audio(pg, events, dur, path):
     pg.goto('http://127.0.0.1:8765/brag-output/tools/clip-pack/')
     pg.evaluate("""(dur) => { window.AudioContext = function () {
         const c = new OfflineAudioContext(2, Math.ceil(dur * 44100), 44100); c.resume = () => Promise.resolve(); window.__ctx = c; return c; }; }""", dur)
-    for s in ['config/game.config.js', 'config/view.config.js', 'config/music.config.js', 'src/engine/utils.js', 'src/engine/audio.js']:
+    for s in ['config/game.config.js', 'config/view.config.js', 'config/music.config.js', 'shared/engine/config.js', 'src/engine/config-client.js', 'src/engine/utils.js', 'src/engine/audio.js']:
         pg.add_script_tag(url=f'/{s}')
     pcm = base64.b64decode(pg.evaluate(AUDIO_JS, [events, dur, CROWD, GAIN]))
     with wave.open(path, 'wb') as w:

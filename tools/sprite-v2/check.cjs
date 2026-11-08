@@ -7,6 +7,8 @@ global.window = global; global.SFC_CONFIG = {};
 require('../../config/game.config.js');
 require('../../config/view.config.js');   // fx.run, render.* chỉ để vẽ
 require('../../config/run.config.js');   // chỗ quấn băng chấn thương (run.badges[id].part)
+require('../../shared/engine/config.js');      // dựng SFC_CONFIG: cỡ sân / cỡ người
+require('../../src/engine/config-client.js');  // gộp view.config.js (fx.run...) vào game
 // ăn mừng: dữ liệu động tác của game (CelebrateDraw.POSES, lead() của Celebrate)
 global.SFC = {};
 require('../../config/progression.config.js');

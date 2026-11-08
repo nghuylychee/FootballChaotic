@@ -11,31 +11,6 @@
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
-/* BÍ KÍP GIA TRUYỀN: ông nội ra sân làng, trao cuốn sổ bí kíp -> màn lật thẻ Tuyệt kỹ -> biến hình -> thử chiêu.
- * Cảnh có reveal: dừng cut scene, mở màn lật thẻ (src/ui/reveal.js) cho Core đó, đóng thẻ thì chạy tiếp.
- * GRANDPA: lời ông nội (caption) */
-const SFC_FTUE_HEIRLOOM_ON = false;   // bí kíp gia truyền (AURA FARMING) tạm ẩn 2026-10-13 -> ftue.heirloom.enabled
-const SFC_FTUE_HEIRLOOM = [
-  { art: 'grandpa', dur: 6.4, lines: [
-    { at: 0.6, text: 'GRANDPA: Up before the roosters again? Dreaming of being the GOAT, huh?', style: 'caption' },
-    { at: 3.6, text: 'GRANDPA: Heh. I had that same dream once. Come here, kid.', style: 'caption' },
-  ] },
-  { art: 'heirloom', dur: 10.5, lines: [
-    { at: 0.5, text: 'GRANDPA: This is our family secret. My old man taught it to me on this very mud.', style: 'caption' },
-    { at: 3.8, text: 'GRANDPA: Now it\'s yours, {name}. Take it with you on the road to your dream.', style: 'caption' },
-    { at: 7.1, text: 'GRANDPA: Every time you fight for that dream... use it, and let the whole street see you shine.', style: 'caption' },
-  ] },
-  { art: 'reveal', reveal: true, dur: 0 },   // màn lật thẻ Tuyệt kỹ heirloom.core
-  { art: 'transform', dur: 5.6, lines: [
-    { at: 0.2, text: 'GRANDPA: Breathe in... feel it rise... now LET IT OUT!', style: 'caption' },
-    { at: 2.05, text: 'AURA FARMING', style: 'aura' },
-  ] },
-  { art: 'auratest', dur: 6.2, lines: [
-    { at: 0.3, text: 'Faster legs. Sharper passes. Harder shots...', style: 'caption' },
-    { at: 3.4, text: 'GRANDPA: Ha! Not bad. The rest of the way... you earn on the Main Path.', style: 'caption' },
-  ] },
-];
-
 SFC_CONFIG.ftue = {
   enabled: true,
   skipHold: 0.8,            // cut scene: giữ Enter / Esc bấy nhiêu giây để bỏ qua
@@ -68,16 +43,38 @@ SFC_CONFIG.ftue = {
       { art: 'fade', dur: 1.4, lines: [{ at: 0.2, text: '...', style: 'caption' }] },
       { art: 'wake', dur: 3.4, lines: [{ at: 0.2, text: 'RRRRING!', style: 'shout' }, { at: 1.4, text: '...and then I woke up.', style: 'caption' }] },
       { art: 'village', dur: 5.0, lines: [{ at: 0.3, text: 'No powers. No crowd. Just a muddy field...', style: 'caption' }, { at: 2.6, text: '...and a dream. Every legend starts somewhere.', style: 'caption' }] },
-      ...(SFC_FTUE_HEIRLOOM_ON ? SFC_FTUE_HEIRLOOM : []),
       { art: 'path', dur: 0 },   // thẻ giới thiệu GOAT PATH, chờ Enter
     ],
-    // hồ sơ cũ (đã xong PROLOGUE trước khi có bí kíp): chỉ phát đoạn bí kíp, 1 lần
-    heirloom: [{ art: 'village', dur: 3.0, lines: [{ at: 0.3, text: 'Another morning on the muddy field...', style: 'caption' }] }, ...SFC_FTUE_HEIRLOOM],
+    // hồ sơ cũ (đã xong PROLOGUE trước khi có bí kíp): chỉ phát đoạn bí kíp, 1 lần (+ cảnh grandpa, ghép ở src/engine/config-client.js)
+    heirloom: [{ art: 'village', dur: 3.0, lines: [{ at: 0.3, text: 'Another morning on the muddy field...', style: 'caption' }] }],
+    /* BÍ KÍP GIA TRUYỀN: ông nội ra sân làng, trao cuốn sổ bí kíp -> màn lật thẻ Tuyệt kỹ -> biến hình -> thử chiêu.
+     * Cảnh có reveal: dừng cut scene, mở màn lật thẻ (src/ui/reveal.js) cho Core đó, đóng thẻ thì chạy tiếp.
+     * GRANDPA: lời ông nội (caption). src/engine/config-client.js ghép vào cuối heirloom, và vào outro (trước thẻ path) khi heirloom.enabled */
+    grandpa: [
+      { art: 'grandpa', dur: 6.4, lines: [
+        { at: 0.6, text: 'GRANDPA: Up before the roosters again? Dreaming of being the GOAT, huh?', style: 'caption' },
+        { at: 3.6, text: 'GRANDPA: Heh. I had that same dream once. Come here, kid.', style: 'caption' },
+      ] },
+      { art: 'heirloom', dur: 10.5, lines: [
+        { at: 0.5, text: 'GRANDPA: This is our family secret. My old man taught it to me on this very mud.', style: 'caption' },
+        { at: 3.8, text: 'GRANDPA: Now it\'s yours, {name}. Take it with you on the road to your dream.', style: 'caption' },
+        { at: 7.1, text: 'GRANDPA: Every time you fight for that dream... use it, and let the whole street see you shine.', style: 'caption' },
+      ] },
+      { art: 'reveal', reveal: true, dur: 0 },   // màn lật thẻ Tuyệt kỹ heirloom.core
+      { art: 'transform', dur: 5.6, lines: [
+        { at: 0.2, text: 'GRANDPA: Breathe in... feel it rise... now LET IT OUT!', style: 'caption' },
+        { at: 2.05, text: 'AURA FARMING', style: 'aura' },
+      ] },
+      { art: 'auratest', dur: 6.2, lines: [
+        { at: 0.3, text: 'Faster legs. Sharper passes. Harder shots...', style: 'caption' },
+        { at: 3.4, text: 'GRANDPA: Ha! Not bad. The rest of the way... you earn on the Main Path.', style: 'caption' },
+      ] },
+    ],
   },
 
   // Tuyệt kỹ khởi đầu ông nội trao (Core trong cores.config.js, có sẵn trong progression.starterCores).
-  // enabled (SFC_FTUE_HEIRLOOM_ON) = false: TẠM ẨN cùng AURA FARMING (2026-10-13, Tuyệt kỹ chỉ có khi đạt công thức) — outro bỏ cảnh bí kíp
-  heirloom: { enabled: SFC_FTUE_HEIRLOOM_ON, core: 'aura_farming', giver: 'Grandpa', band: "GRANDPA'S NOTEBOOK", stamp: 'FAMILY SECRET' },
+  // enabled = false: TẠM ẨN cùng AURA FARMING (2026-10-13, Tuyệt kỹ chỉ có khi đạt công thức) — outro bỏ cảnh bí kíp
+  heirloom: { enabled: false, core: 'aura_farming', giver: 'Grandpa', band: "GRANDPA'S NOTEBOOK", stamp: 'FAMILY SECRET' },
 
   // thẻ GOAT PATH (cảnh cuối outro, src/ui/story.js pathCard): dải act của run (run.config.js acts) + 3 dòng luật.
   // icon = tên icon pixel ui-* (render/pixelicons.js) · {act} trong foot = tên act đầu
@@ -93,7 +90,7 @@ SFC_CONFIG.ftue = {
 
   /* ---------- DREAM MATCH ---------- */
   match: {
-    arena: 'dream',               // sân (tạo bên dưới từ sân 'stadium')
+    arena: 'dream',               // sân (bản sao sân 'stadium', dựng ở src/engine/config-client.js)
     role: 'FWD',                  // character đá ĐÁ CAO
     // character trong mơ: chỉ số "GOAT" (thay chỉ số thật) · Core không scale theo chỉ số (noScale)
     stats: { speed: 1.12, power: 1.2, pass: 1.12, tackle: 1.2, dribble: 1.15, accuracy: 1.15 },
@@ -176,15 +173,4 @@ SFC_CONFIG.ftue = {
   draftNote: '*CORES* are superpowers. PICK 1 TO BE STRONGER!!!',   // *từ khoá* = tô vàng
   ultNote: 'Born from your {arch} build',
 };
-
-// đội + sân của trận mơ
-(function () {
-  const F = SFC_CONFIG.ftue, T = F.team;
-  SFC_CONFIG.teams.list[T.id] = T;
-  const base = SFC_CONFIG.arenas && SFC_CONFIG.arenas.stadium;
-  if (base && !SFC_CONFIG.arenas.dream) {
-    const a = JSON.parse(JSON.stringify(base));
-    if (a.backdrop) { a.backdrop.screen = 'THE DREAM'; a.backdrop.screenColor = '#b9a8ff'; }
-    SFC_CONFIG.arenas.dream = a;
-  }
-})();
+// đội trong mơ (team) -> teams.list, sân 'dream' = bản sao sân stadium: src/engine/config-client.js

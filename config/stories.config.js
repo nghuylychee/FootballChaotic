@@ -760,6 +760,4 @@ SFC_CONFIG.stories = {
     },
   },
 };
-
-// đội FOOTBALL STORY dùng chung danh sách đội của trận (không thêm vào teams.order)
-Object.assign(SFC_CONFIG.teams.list, SFC_CONFIG.stories.teams);
+// teams -> teams.list lúc nạp: shared/engine/config.js

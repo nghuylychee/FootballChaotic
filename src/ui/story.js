@@ -469,7 +469,7 @@ window.SFC = window.SFC || {};
       if (!dim && Story.cueOnce('morning', true)) SFC.Audio.pick();
     },
 
-    /* ---------- BÍ KÍP GIA TRUYỀN (ftue.config.js -> SFC_FTUE_HEIRLOOM) ---------- */
+    /* ---------- BÍ KÍP GIA TRUYỀN (ftue.config.js scenes.grandpa) ---------- */
     // ông nội chống gậy đi ra sân làng, nhân vật quay lại nhìn
     grandpa(t) {
       const gx = Math.min(52, -12 + t * 30), walking = gx < 52;

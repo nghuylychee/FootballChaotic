@@ -27,7 +27,7 @@
 | 8 | Số lần chọn Core | **4 lần / trận**, gồm lượt trước giao bóng (`game.match.maxUpgrades = 4` → lượt ở giây 0 · 30 · 60 · 90, lượt 2–4 vẫn chỉ mở sau bàn thắng) |
 | 9 | Mốc | **X3 = mở Tuyệt kỹ gốc · X4 = dạng nâng cấp** (1 dạng duy nhất — `ults.tiers = [3, 4]`). Từ 2026-10-25: X4 = **dạng thức tỉnh** có tên riêng + 1 nét mới, không hiện ★★ nữa (`docs/ULT_AWAKEN.md`). Thay cho X2 / X3 / X4 ở bảng dưới |
 | 10 | Tuyệt kỹ lai | Mở khi đạt **X2 + Y2** (`ults.hybridTier = 2`). Đủ 21 cặp (bảng ở mục Tuyệt kỹ lai bên dưới) |
-| 11 | Aura Farming | **Tạm ẩn**: không ai mang Tuyệt kỹ khởi đầu, ô X chỉ hiện khi đạt công thức (`ults.start = null`). Năng lượng vẫn nạp ngầm từ đầu trận. Cảnh ông nội trao bí kíp trong PROLOGUE cũng ẩn (`SFC_FTUE_HEIRLOOM_ON = false`) |
+| 11 | Aura Farming | **Tạm ẩn**: không ai mang Tuyệt kỹ khởi đầu, ô X chỉ hiện khi đạt công thức (`ults.start = null`). Năng lượng vẫn nạp ngầm từ đầu trận. Cảnh ông nội trao bí kíp trong PROLOGUE cũng ẩn (`ftue.heirloom.enabled: false`) |
 
 Giả lập 60 trận AI vs AI với luật mới: 58/60 trận đủ 4 lượt · Tuyệt kỹ trường phái đầu tiên ~giây 92 ·
 **41% cầu thủ hết trận vẫn cầm Aura Farming** (chưa đạt X3) · ~22% đạt bản nâng cấp X4 · Tuyệt kỹ trường phái được dùng ~0.5–1 lần / trận.

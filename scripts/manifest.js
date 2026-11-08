@@ -40,7 +40,7 @@ const FILES = [
   ['config/teammates.config.js', 'game sandbox itch server'],
   ['config/achievements.config.js', 'game'],
   ['config/intro.config.js', 'game itch server'],
-  ['config/view.config.js', 'game sandbox itch'],           // phần config chỉ để vẽ / âm thanh / nhịp intro (gộp vào game + intro): máy chủ không nạp -> sửa không phải tăng phiên bản máy chủ
+  ['config/view.config.js', 'game sandbox itch'],           // phần config chỉ để vẽ / âm thanh / nhịp intro (src/engine/config-client.js gộp vào game + intro): máy chủ không nạp -> sửa không phải tăng phiên bản máy chủ
   ['config/motion.config.js', 'game'],                    // nhịp hiện + khoá phím các màn (docs/ux-motion), chỉ máy người chơi
   ['config/music.config.js', 'game itch'],
   ['config/ftue.config.js', 'game itch'],
@@ -50,6 +50,8 @@ const FILES = [
   ['config/privacy.config.js', 'game'],
 
   { comment: 'Engine', gap: true },
+  ['shared/engine/config.js', 'game sandbox itch server'],     // dựng SFC_CONFIG: cỡ sân, gộp đội / luật trận giữa các file config (file config chỉ là dữ liệu)
+  ['src/engine/config-client.js', 'game sandbox itch'],        // dựng SFC_CONFIG phần chỉ máy người chơi: gộp view.config.js, trận mơ PROLOGUE
   ['shared/engine/utils.js', 'game sandbox itch server'],
   ['src/target/target.js', 'game sandbox itch'],            // web / desktop (Adapter): nơi lưu, cửa sổ, thoát, mở link
   ['src/engine/storage.js', 'game sandbox itch'],          // máy chủ: SFC.Storage giả (server/sim.js)

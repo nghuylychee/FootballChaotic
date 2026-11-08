@@ -1,71 +1,73 @@
 /* =========================================================
  * ELITES CONFIG — đội ELITE của GOAT PATH (docs/RUN_DESIGN.md mục "Đội Elite", user duyệt 2026-10-27).
  * Pool Elite riêng từng act: run.acts[i].elite (config/run.config.js). Matchday giữ các đội Story cũ.
- *   run.elites[đội]: dữ liệu đối thủ như 1 vòng Story (SFC.Run.opp): arena · signature (Core đặc trưng) · mod (luật trận) · barks (câu nói)
+ *   elites.opponents[đội] -> run.elites[đội]: dữ liệu đối thủ như 1 vòng Story (SFC.Run.opp): arena · signature (Core đặc trưng) · mod (luật trận) · barks (câu nói)
  *   elites.teams: đội (khuôn giống mainPath.teams) -> gộp vào teams.list
  *   elites.mods: số liệu luật trận (shared/systems/matchmods.js) -> gộp vào stories.mods (MatchMods đọc chung 1 chỗ)
+ * Gộp vào teams.list / stories.mods / run.elites lúc nạp: shared/engine/config.js.
  * Luật chỉ đánh vào đội bạn, không lấy / cấm Core (user 2026-10-19). Thời gian giây, khoảng cách px, tốc độ px/s.
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
 
-SFC_CONFIG.run.elites = {
-  rope_skippers: {
-    arena: 'school', signature: 'quick_feet', mod: 'jumprope',
-    barks: {
-      kickoff: ['Ready? Jump!', 'Keep the beat!'],
-      goal: ['Never missed a beat!', 'One, two, GOAL!'],
-      conceded: ['Off rhythm...', 'Again, from the top!'],
-      mod: ['JUMP!', 'Three, two, one!'],
-    },
-  },
-  wash_aunties: {
-    arena: 'village', signature: 'bulldozer', mod: 'hose',
-    barks: {
-      kickoff: ['Wash day, kids!', 'Out of the way!'],
-      goal: ['Squeaky clean!', 'Spotless!'],
-      conceded: ['My clean floor!', 'Now it is muddy!'],
-      mod: ['SPLASH!', 'Rinse and repeat!'],
-    },
-  },
-  tower_guards: {
-    arena: 'rooftop', signature: 'emp_trap', mod: 'searchlight',
-    barks: {
-      kickoff: ['Badge check!', 'Night shift starts now.'],
-      goal: ['Case closed.', 'Caught on camera!'],
-      conceded: ['Who let them in?', 'Call for backup!'],
-      mod: ['FREEZE!', 'Light on you!'],
-    },
-  },
-  neon_arcade: {
-    arena: 'cyber', signature: 'light_cycle', mod: 'neon',
-    barks: {
-      kickoff: ['Player two has joined!', 'Insert coin!'],
-      goal: ['HIGH SCORE!', 'Combo!'],
-      conceded: ['Lag!', 'That was a glitch!'],
-      mod: ['Follow the arrows!', 'LEVEL UP!'],
-    },
-  },
-  domino_club: {
-    arena: 'domino_hall', signature: 'wall_slam', mod: 'domino',
-    barks: {
-      kickoff: ['Your move, kid.', 'Sixty years of practice.'],
-      goal: ['Double six!', 'Domino!'],
-      conceded: ['Bad tile...', 'Shuffle again.'],
-      mod: ['CLICK CLACK!', 'Watch them fall!'],
-    },
-  },
-  taichi_masters: {
-    arena: 'village', signature: 'witch_time', mod: 'taichi',
-    barks: {
-      kickoff: ['Breathe in...', 'Slow is fast.'],
-      goal: ['Like water.', 'No hurry.'],
-      conceded: ['Hmm. Interesting.', 'Patience...'],
-      mod: ['Slooow down.', 'Be the river.'],
-    },
-  },
-};
-
 SFC_CONFIG.elites = {
+  /* dữ liệu đối thủ như 1 vòng Story (SFC.Run.opp) -> run.elites (shared/engine/config.js) */
+  opponents: {
+    rope_skippers: {
+      arena: 'school', signature: 'quick_feet', mod: 'jumprope',
+      barks: {
+        kickoff: ['Ready? Jump!', 'Keep the beat!'],
+        goal: ['Never missed a beat!', 'One, two, GOAL!'],
+        conceded: ['Off rhythm...', 'Again, from the top!'],
+        mod: ['JUMP!', 'Three, two, one!'],
+      },
+    },
+    wash_aunties: {
+      arena: 'village', signature: 'bulldozer', mod: 'hose',
+      barks: {
+        kickoff: ['Wash day, kids!', 'Out of the way!'],
+        goal: ['Squeaky clean!', 'Spotless!'],
+        conceded: ['My clean floor!', 'Now it is muddy!'],
+        mod: ['SPLASH!', 'Rinse and repeat!'],
+      },
+    },
+    tower_guards: {
+      arena: 'rooftop', signature: 'emp_trap', mod: 'searchlight',
+      barks: {
+        kickoff: ['Badge check!', 'Night shift starts now.'],
+        goal: ['Case closed.', 'Caught on camera!'],
+        conceded: ['Who let them in?', 'Call for backup!'],
+        mod: ['FREEZE!', 'Light on you!'],
+      },
+    },
+    neon_arcade: {
+      arena: 'cyber', signature: 'light_cycle', mod: 'neon',
+      barks: {
+        kickoff: ['Player two has joined!', 'Insert coin!'],
+        goal: ['HIGH SCORE!', 'Combo!'],
+        conceded: ['Lag!', 'That was a glitch!'],
+        mod: ['Follow the arrows!', 'LEVEL UP!'],
+      },
+    },
+    domino_club: {
+      arena: 'domino_hall', signature: 'wall_slam', mod: 'domino',
+      barks: {
+        kickoff: ['Your move, kid.', 'Sixty years of practice.'],
+        goal: ['Double six!', 'Domino!'],
+        conceded: ['Bad tile...', 'Shuffle again.'],
+        mod: ['CLICK CLACK!', 'Watch them fall!'],
+      },
+    },
+    taichi_masters: {
+      arena: 'village', signature: 'witch_time', mod: 'taichi',
+      barks: {
+        kickoff: ['Breathe in...', 'Slow is fast.'],
+        goal: ['Like water.', 'No hurry.'],
+        conceded: ['Hmm. Interesting.', 'Patience...'],
+        mod: ['Slooow down.', 'Be the river.'],
+      },
+    },
+  },
+
   /* đội Elite (gộp vào teams.list như đội Main Path / Story) */
   teams: {
     rope_skippers: {
@@ -170,7 +172,3 @@ SFC_CONFIG.elites = {
     },
   },
 };
-
-// đội Elite dùng chung danh sách đội của trận · luật trận dùng chung bảng stories.mods
-Object.assign(SFC_CONFIG.teams.list, SFC_CONFIG.elites.teams);
-Object.assign(SFC_CONFIG.stories.mods, SFC_CONFIG.elites.mods);

@@ -302,9 +302,4 @@ SFC_CONFIG.progression = {
   reelWinIndex: 40,            // ô trúng thưởng
   reelTime: 4.8,               // giây quay
 };
-
-// tắt gacha Core -> ẩn Hộp Core khỏi SHOP
-if (!SFC_CONFIG.progression.coreGacha) {
-  const PG = SFC_CONFIG.progression;
-  PG.boxOrder = PG.boxOrder.filter((id) => PG.boxes[id].kind !== 'core');
-}
+// coreGacha tắt -> Hộp Core bị bỏ khỏi boxOrder lúc nạp: shared/engine/config.js

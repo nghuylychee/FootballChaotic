@@ -22,7 +22,7 @@
  *   gameLanguage() -> string|null   ngôn ngữ người chơi đặt cho game trên nền tảng (Steam: 'brazilian'...; khớp với pack.steam)
  *   user()        -> { name } | null   tài khoản nền tảng (đã đăng nhập)
  *   instant                  mở game để vào chơi online cùng nhóm ngay (CrazyGames isInstantMultiplayer)
- *   luật (facade, từ platform.config.js rules[SFC_STORE]): restrictedKeys · fakeSocial · autoWishlist ·
+ *   luật (facade, từ platform.config.js rules.defaults + rules[SFC_STORE]): restrictedKeys · fakeSocial · autoWishlist ·
  *   privateMatch (bản này mở PRIVATE MATCH: bản đủ luôn mở, bản DEMO theo demoPrivateMatch) · langPopup · guestName · shortIntro
  *   room(p)                  báo phòng đang ở. p = Session.presence: { code, joinable, net } | null (không ở phòng nào)
  *   inviteMode(p) -> 'dialog' | 'link' | null   mời bạn kiểu gì ở phòng p (dialog: bảng mời của nền tảng · link: chép link mời)
@@ -78,7 +78,8 @@ window.SFC = window.SFC || {};
     get instant() { return !!this.pick().instant; },
 
     /* ---------- luật cửa hàng (platform.config.js rules, theo SFC_STORE) ---------- */
-    get rules() { return RULES()[SFC_STORE] || RULES().none; },
+    // = rules.defaults + khối riêng của cửa hàng (chỉ ghi chỗ khác; không có khối riêng = defaults)
+    get rules() { return Object.assign({}, RULES().defaults, RULES()[SFC_STORE]); },
     get restrictedKeys() { return this.rules.restrictedKeys; },
     get fakeSocial() { return this.rules.fakeSocial; },
     get autoWishlist() { return this.rules.autoWishlist; },
@@ -122,7 +123,7 @@ window.SFC = window.SFC || {};
     },
   };
 
-  // itch: không có SDK / bạn bè; khác bản chạy từ repo ở luật (rules.itch)
+  // itch: không có SDK / bạn bè; luật riêng thì thêm rules.itch (chưa có = rules.defaults)
   Platform.add('itch', {});
 
   SFC.Platform = Platform;
