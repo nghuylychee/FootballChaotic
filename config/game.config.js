@@ -581,7 +581,7 @@ SFC_CONFIG.game = {
     supportAhead: 70,
     restDefenseFrom: 0.5,     // đồng đội cầm bóng vượt mốc này (tỉ lệ sân, 0.5 = giữa sân) -> người còn lại lùi chốt phía sau
     restDefenseDist: 110,     // x pitchScale (cuối file) · đứng sau người cầm bóng bao xa (px)
-    markDistance: 26,
+    markDistance: 26,        // x pitchScale (cuối file)
     // 3v3: chia vai khi đồng đội cầm bóng (vị trí thấp nhất CHỐT, cao nhất BĂNG lên, ở giữa dạt CÙNG cánh)
     // anchorBack: người CHỐT đứng sau bóng restDefenseDist x hệ số này khi bóng còn ở phần sân nhà (qua giữa sân: x1) ·
     // runnerAhead / wideAhead: người BĂNG / người DẠT đứng trước bóng supportAhead x hệ số này
@@ -657,8 +657,8 @@ SFC_CONFIG.game = {
     keeperPressDist: 110,     // x pitchScale (cuối file) · đồng đội AI ĐÁ LÙI: chưa tới mateKeeperCoverDist mà người chơi cách người cầm bóng xa hơn mức này -> lên áp sát (không thì kèm người)
     // đồng đội AI ĐÁ LÙI cùng người chơi kẹp người cầm bóng (thay vì chỉ kèm người / trông khung):
     helpPress: {
-      near: 40,               // (px) mình cách người cầm bóng dưới mức này và người chơi đang áp sát (ctlNear) -> cùng áp sát + đấm (kể cả gần khung nhà)
-      ctlNear: 45,            // (px) người chơi cách người cầm bóng dưới mức này = đang áp sát
+      near: 40,               // x pitchScale (cuối file) · (px) mình cách người cầm bóng dưới mức này và người chơi đang áp sát (ctlNear) -> cùng áp sát + đấm (kể cả gần khung nhà)
+      ctlNear: 45,            // x pitchScale (cuối file) · (px) người chơi cách người cầm bóng dưới mức này = đang áp sát
       ownHalf: false,         // true = người cầm bóng đã vào phần sân nhà (chưa tới mateKeeperCoverDist) -> luôn lên áp sát
       beaten: 10,             // (px) bị phản công: người chơi đứng phía trên người cầm bóng (về hướng khung đối phương) quá mức này
                               //      = đã bị vượt qua -> lên áp sát người cầm bóng thay vì kèm người còn lại. null = tắt
@@ -702,10 +702,10 @@ SFC_CONFIG.game = {
     press: {
       // PHẢN PRESSING: vừa mất bóng, cầu thủ AI của đội mất bóng cách người vừa có bóng dưới counterDist px -> lao vào đánh lấy lại
       // trong counterTime s (không lùi trông khung / kèm người), phản ứng nhanh hơn (x counterReact), tỉ lệ đấm x counterPunch
-      counterTime: 1.6, counterDist: 80, counterReact: 0.6, counterPunch: 1.4,
+      counterTime: 1.6, counterDist: 80, counterReact: 0.6, counterPunch: 1.4,   // counterDist x pitchScale (cuối file)
       // người cầm bóng đi vào trong engage px của cầu thủ AI đang kèm người / lùi về -> lao vào đánh luôn
       // (chỉ khi ít hơn maxPressers đồng đội đang ở gần người cầm bóng hơn mình — không cả đội bu vào)
-      engage: 36, maxPressers: 2,
+      engage: 36, maxPressers: 2,   // engage x pitchScale (cuối file)
       // người áp sát: chạy nước rút khi cách hơn sprintDist px hoặc người cầm bóng đang chạy nhanh hơn walkSpeed px/s
       // (trước đây chỉ chạy nước rút khi cách > 36px -> người cầm bóng chạy là bỏ lại)
       sprintDist: 12, walkSpeed: 60,
@@ -810,6 +810,11 @@ SFC_CONFIG.game = {
     O.out = r(O.out * kw); O.minRoom = r(O.minRoom * kw); O.hold.inside = r(O.hold.inside * kw); }   // chạy chồng biên: dọc x k, ngang x kw
   A.keeperCoverDist = r(A.keeperCoverDist * k); A.mateKeeperCoverDist = r(A.mateKeeperCoverDist * k); A.keeperPressDist = r(A.keeperPressDist * k);
   A.gkPunt.dist = mul(A.gkPunt.dist, k);
+  // ÁP SÁT theo cỡ sân (user 2026-11-08: sân to -> cầu thủ đứng thưa, bot hai đội ít lao vào đấm hơn ~20-35%): khoảng cách quyết định
+  // lao vào đánh người cầm bóng + khoảng kèm người x k. Tầm đấm / Hard attack (theo thân người) giữ nguyên
+  A.press.engage = r(A.press.engage * k); A.press.counterDist = r(A.press.counterDist * k);
+  A.helpPress.near = r(A.helpPress.near * k); A.helpPress.ctlNear = r(A.helpPress.ctlNear * k);
+  A.markDistance = r(A.markDistance * k);
   if (A.keeperHome) { A.keeperHome.depth = r(A.keeperHome.depth * k); if (A.keeperHome.rush) A.keeperHome.rush.dist = r(A.keeperHome.rush.dist * k); }
   // theo chiều rộng sân
   G.firstTime.cross.wide = r(G.firstTime.cross.wide * kw);
