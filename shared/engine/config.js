@@ -59,6 +59,32 @@
   }
   if (C.game) scaleGame(C.game);
 
+  // NHỊP TRẬN (game.tempo, user 2026-11-09): nhân tốc độ chạy / chuyền / sút. Ngưỡng nào so với tốc độ bóng thì nhân cùng, để đổi nhịp không đổi cân bằng
+  // (tỉ lệ cắt bóng, thủ môn bắt bóng, độ trôi khi đón bóng). Chuyền bổng tính theo thời gian bay nên không đổi ở đây
+  function scaleTempo(G) {
+    const T = G.tempo;
+    if (!T) return;
+    const r = Math.round, run = T.run || 1, pass = T.pass || 1, shot = T.shot || 1;
+    const PL = G.player, B = G.ball, P = G.pass, K = G.kick, FT = G.firstTime, I = P.intercept;
+    PL.speed = r(PL.speed * run); PL.accel = r(PL.accel * run); PL.decel = r(PL.decel * run);
+    P.assist.close = r(P.assist.close * run);
+    P.arriveSpeed = r(P.arriveSpeed * pass); P.minSpeed = r(P.minSpeed * pass); P.maxSpeed = r(P.maxSpeed * pass);
+    P.through.minArrive = r(P.through.minArrive * pass); P.freeThroughArrive = r(P.freeThroughArrive * pass);
+    P.assist.ballSpeed = r(P.assist.ballSpeed * pass);
+    // chạm bóng đầu tiên: bóng tới nhanh hơn mà độ trôi khỏi chân giữ nguyên (tốc độ trôi = (tốc độ tới − minSpeed) x carry)
+    P.firstTouch.minSpeed = r(P.firstTouch.minSpeed * pass); P.firstTouch.carry /= pass;
+    I.slowSpeed = r(I.slowSpeed * pass); I.fastSpeed = r(I.fastSpeed * pass); I.block = r(I.block * pass); I.humanLoose = r(I.humanLoose * pass);
+    FT.fastFrom = r(FT.fastFrom * pass); FT.fastRange = r(FT.fastRange * pass);
+    K.shotMinSpeed = r(K.shotMinSpeed * shot); K.shotMaxSpeed = r(K.shotMaxSpeed * shot); K.shotTapSpeed = r(K.shotTapSpeed * shot);
+    FT.header.speedMin = r(FT.header.speedMin * shot); FT.header.speedMax = r(FT.header.speedMax * shot);
+    FT.ai.block.freeSpeed = r(FT.ai.block.freeSpeed * shot); FT.ai.block.speedPenalty = r(FT.ai.block.speedPenalty * shot);
+    B.controlSpeed = r(B.controlSpeed * shot);
+    // thủ môn: phạt theo tốc độ bóng + phản xạ theo thời gian bóng tới -> bóng nhanh hơn x shot thì cả hai dịch theo, cú sút cùng khoảng cách khó như cũ
+    PL.gkSpeedFree = r(PL.gkSpeedFree * shot); PL.gkSpeedPenalty = r(PL.gkSpeedPenalty * shot); PL.gkLungeMinSpeed = r(PL.gkLungeMinSpeed * shot);
+    PL.gkReflex.full /= shot; PL.gkReflex.none /= shot;
+  }
+  if (C.game) scaleTempo(C.game);
+
   // tắt gacha Core -> ẩn Hộp Core khỏi SHOP
   const PG = C.progression;
   if (PG && !PG.coreGacha) PG.boxOrder = PG.boxOrder.filter((id) => PG.boxes[id].kind !== 'core');

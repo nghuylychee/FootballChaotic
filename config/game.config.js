@@ -7,8 +7,12 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.game = {
   // THỬ SÂN TO (proto/big-pitch, 2026-11-07): 1 núm chỉnh cỡ sân. 1 = sân gốc 528 x 246 trong khung 640 x 360.
-  // Lớn hơn = khung trận + sân + các khoảng cách / tốc độ theo sân nhân lên từ giá trị gốc (shared/engine/config.js). User đang thử 1.2
-  pitchScale: 1.4,
+  // Lớn hơn = khung trận + sân + các khoảng cách / tốc độ theo sân nhân lên từ giá trị gốc (shared/engine/config.js). 1.4 -> 1.2 -> 1.3 (user 2026-11-09)
+  pitchScale: 1.3,
+  // NHỊP TRẬN (user 2026-11-09, mức B): sân to làm khung nhìn zoom out, chuyền / sút không tăng theo sân nên trên màn hình chậm hơn ~23%.
+  // 1 = như cũ. run: tốc độ chạy + gia tốc · pass: chuyền sệt tới chân · shot: lực sút. Các số đi kèm (ngưỡng cắt bóng, thủ môn, chạm bóng đầu tiên)
+  // tự nhân theo để cân bằng giữ nguyên (scaleTempo trong shared/engine/config.js)
+  tempo: { run: 1.14, pass: 1.2, shot: 1.2 },
 
   render: {
     // khung nhìn trận (px game của canvas trận) ở pitchScale 1. Thử sân to (2026-11-07): width / height / maxView nhân pitchScale (shared/engine/config.js)
@@ -238,7 +242,7 @@ SFC_CONFIG.game = {
       },                      // cả hai chia cho chỉ số pass
     },
 
-    chargeTime: 0.7,          // giây giữ phím để đầy thanh lực
+    chargeTime: 0.55,         // giây giữ phím để đầy thanh lực — 0.7 -> 0.55 (user 2026-11-09: tăng nhịp trận)
     // Lực mặc định = lực lý tưởng theo khoảng cách tới người nhận (chạm nhẹ là bóng tới chân).
     // Giữ phím vượt mức mặc định -> bóng căng hơn.
     minDist: 30,              // khoảng cách ứng với lực 0%  (px)
@@ -361,7 +365,7 @@ SFC_CONFIG.game = {
     powerPushK: 25,          // (1/s) bóng ra / về chỗ đó nhanh cỡ nào: 25 = ~0.12 s
     shotMinSpeed: 380,       // tốc độ bóng ứng với thanh lực 0% (300 -> 350, user 2026-10-25: cú sút nhẹ đi quá chậm · 380, 2026-10-30)
     shotMaxSpeed: 560,       // 460 -> 560 (2026-10-30): sút đầy lực phải là quả đại bác, nhanh hơn hẳn chuyền (pass.maxSpeed)
-    chargeTime: 0.8,         // giây để đầy lực
+    chargeTime: 0.65,        // giây để đầy lực — 0.8 -> 0.65 (user 2026-11-09: tăng nhịp trận)
     // Thanh lực bắt đầu từ mức nhỏ theo khoảng cách tới khung thành (gần -> shotBaseNear, xa -> shotBaseFar),
     // giữ D để nạp dần lên. Để 0 thì thanh luôn bắt đầu từ rỗng.
     shotBaseNear: 0.1,
@@ -377,8 +381,8 @@ SFC_CONFIG.game = {
     shotTapWindow: 0.25,     // (0..1 phần thanh đã giữ) 0 = chạm nhẹ, từ mức này trở lên = lực của thanh; 0 = tắt
     // Giữ quá lâu -> bóng bay cao, lệch. Thanh đầy (1) rồi còn overGrace mới tính là quá đà (đủ thời gian phản xạ thả phím);
     // tới maxOvercharge thì tự sút. Phần quá đà = charge − 1 − overGrace (0..0.25)
-    maxOvercharge: 1.45,
-    overGrace: 0.2,          // (phần thanh) ~0.16s ở chargeTime 0.8
+    maxOvercharge: 1.5,      // 1.45 -> 1.5 cùng overGrace (2026-11-09): chargeTime ngắn lại mà khoảng quá đà giữ nguyên 0..0.25
+    overGrace: 0.25,         // (phần thanh) ~0.16s ở chargeTime 0.65, giữ nguyên thời gian phản xạ thả phím
     // ĐỘ BỔNG theo khoảng cách (user 2026-10-30: gồng lâu bóng vẫn sà sát đất, không bay bổng như PES):
     // lực nhỏ = bóng sệt (vz shotLiftMin). Từ loftFrom trở lên bóng vồng dần, tới đầy lực thì bóng qua vạch vôi
     // ở độ cao shotLoft x xà (field.goalHeight) dù đứng xa hay gần; quá đà nâng dần (bình phương) tới overLoft x xà ở mức tự sút

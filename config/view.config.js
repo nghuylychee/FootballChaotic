@@ -84,6 +84,9 @@ SFC_CONFIG.view = {
         ring: { r: 5, pulse: 1, rate: 3, alpha: 0.55, maxSpeed: 200, color: '255,255,255' },
         // vẽ đè bóng lần 2 sau mọi người / VFX ở độ mờ này: bóng không bị che thì không đổi (cùng màu), bị che thì hiện xuyên
         xray: 0.6,
+        // bóng vừa vào chân: chỉ khi VẼ, bóng lướt từ chỗ chạm về chân trong time giây (Renderer.ballView; user 2026-11-09: bóng nhảy 1 khung).
+        // Lệch dưới minDist px: khỏi lướt · trên maxDist px: Core / giao bóng dời bóng đi xa, đặt thẳng
+        snap: { time: 0.08, minDist: 3, maxDist: 45 },
         // cỡ bóng khi VẼ = đường kính lõi (px, + viền mực 1 px mỗi bên), va chạm theo ball.radius. Lẻ hay chẵn đều được (chẵn: tâm giữa 2 px).
         // user 2026-11-07: 3 nhỏ quá, 5 vẫn hơi nhỏ, 6 -> 7 = cỡ gốc (9 px cả viền); người to lên thay (render.playerScale)
         size: 7,

@@ -286,14 +286,15 @@ window.SFC = window.SFC || {};
             }
           }
         } else if (e.k === 'b') {
+          const ballV = this.ballView(g);   // bóng vừa vào chân: lướt về chân (fx.ball.snap), chỉ khác g.ball lúc đang lướt
           if (g.ball.owner && unseen(g.ball.owner)) continue;
           if (SFC.PlayerSprite.ballInHands(g)) continue;   // thủ môn ôm / tung bóng / đổ người bắt được: sprite thủ môn vẽ bóng trên tay
           const ghostBall = g.ball.owner && g.ball.owner.ghostT > 0;
           if (ghostBall) ctx.globalAlpha = 0.3;
           this.ballTrail(ctx, g.ball, g);
           this.ballRing(ctx, g.ball, t);
-          SFC.VFX.ballFx(ctx, g.ball);
-          drawBall(ctx, g.ball);
+          SFC.VFX.ballFx(ctx, ballV);
+          drawBall(ctx, ballV);
           if (!ghostBall && !g.ball.owner) xray = g.ball;   // bóng trong chân người giữ: không hiện xuyên người đó
           if (ghostBall) ctx.globalAlpha = 1;
         } else if (e.k === 'd') {
@@ -647,6 +648,29 @@ window.SFC = window.SFC || {};
       ctx.globalAlpha = 1;
       px(ctx, x - 2, y - 1, 5, 3, OUT);
       px(ctx, x - 1, y, 3, 1, col); px(ctx, x, y - 1, 1, 3, col);
+    },
+
+    // LƯỚT BÓNG VỀ CHÂN (fx.ball.snap, user 2026-11-09): mô phỏng đặt bóng ngay trước mặt người vừa nhận (Game.step -> Ball.follow(0), để cú đá 1 chạm
+    // đá từ đúng chỗ), trên màn hình bóng nhảy tới 30 px trong 1 khung. Chỉ phần vẽ giữ độ lệch so với chỗ bóng ở khung trước rồi giảm dần về 0;
+    // vị trí thật không đổi. Máy khách online không có pushId nên không lướt (bóng ở đó đã nội suy giữa các snapshot). Đồng hồ trận: khựng / pause thì dừng theo
+    ballView(g) {
+      const b = g.ball, C = SFC_CONFIG.game.fx.ball.snap;
+      const S = this.snap && this.snap.g === g ? this.snap : (this.snap = { g, id: null, t0: -1, x: b.x, y: b.y, z: b.z });
+      const o = b.owner, placed = o && b.pushId === o.id;
+      if (placed && S.id !== o.id) {
+        const dx = S.x - b.x, dy = S.y - b.y, d = Math.hypot(dx, dy);
+        S.t0 = !o.keeperHold && d >= C.minDist && d <= C.maxDist ? g.time : -1;
+        S.dx = dx; S.dy = dy; S.dz = S.z;
+      }
+      if (!o) S.t0 = -1;   // bóng rời chân: thôi lướt
+      S.id = placed ? o.id : null;
+      S.x = b.x; S.y = b.y; S.z = b.z;
+      if (S.t0 < 0) return b;
+      const q = 1 - (g.time - S.t0) / C.time;
+      if (q <= 0) { S.t0 = -1; return b; }
+      const e = q * q, v = Object.create(b);   // nhanh lúc đầu, chậm dần khi tới chân
+      v.x = b.x + S.dx * e; v.y = b.y + S.dy * e; v.z = b.z + S.dz * e;
+      return v;
     },
 
     // vệt + dư ảnh bóng. Vệt vẽ theo VẬN TỐC hiện tại (không theo lịch sử): luôn dính vào bóng và đúng hướng bay, kể cả ngay sau khi dội tường /
