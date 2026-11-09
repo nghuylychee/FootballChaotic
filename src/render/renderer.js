@@ -499,6 +499,8 @@ window.SFC = window.SFC || {};
         if (!d || p.airZ > 0 || p.ghostT > 0) continue;   // tàng hình (Smoke Bomb): không để lại vệt trang phục
         // ma đang tàng hình (School Ghosts): vệt trang phục (Phantom = bóng người tím, Smoke...) cứ vài nhịp lại làm lộ người -> chớp chớp (user 2026-11-01)
         if (g.mod && SFC.MatchMods && SFC.MatchMods.alpha(g, p) < 0.6) continue;
+        // người đang bị vật thể thay hình (VFX.hides: con gà, King Kong...): vệt Phantom vẽ bóng người thật -> hình người nháy cạnh con gà (user 2026-11-09)
+        if (SFC.VFX.hides(g, p)) continue;
         const sp = Math.hypot(p.vx || 0, p.vy || 0);
         if (sp < 40) continue;
         p.cosAcc = (p.cosAcc || 0) + d.rate * dt * (sp > 110 ? 1.6 : 1);
