@@ -1,0 +1,15 @@
+{
+ "page": "road",
+ "sel": {
+  "cls": "rd-isl here reached sel high",
+  "txt": "1\nVILLAGE GREEN\n0–79",
+  "x": 136,
+  "y": 208,
+  "w": 300,
+  "h": 148
+ },
+ "order": [],
+ "id": "m-areamap",
+ "title": "AREA MAP",
+ "moving_pct": 4.1
+}

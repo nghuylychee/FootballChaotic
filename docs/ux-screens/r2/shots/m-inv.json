@@ -1,0 +1,15 @@
+{
+ "page": "inv",
+ "sel": {
+  "cls": "tab sel",
+  "txt": "COSTUMES",
+  "x": 244,
+  "y": 78,
+  "w": 122,
+  "h": 36
+ },
+ "order": [],
+ "id": "m-inv",
+ "title": "INVENTORY",
+ "moving_pct": 0.8
+}

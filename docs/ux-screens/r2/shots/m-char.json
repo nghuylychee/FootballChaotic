@@ -1,0 +1,15 @@
+{
+ "page": "char",
+ "sel": {
+  "cls": "mi btn sel     ",
+  "txt": "ULT BOOK\n0/44 discovered",
+  "x": 44,
+  "y": 132,
+  "w": 464,
+  "h": 76
+ },
+ "order": [],
+ "id": "m-char",
+ "title": "CHARACTER",
+ "moving_pct": 1.8
+}

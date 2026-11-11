@@ -1,0 +1,54 @@
+{
+ "id": "settings",
+ "order": 7,
+ "title": "SETTINGS",
+ "where": "Trang chủ › bánh răng (trang settings) · src/ui/menu.js case 'settings'",
+ "goal": "Chỉnh âm thanh / hiển thị, phím, ngôn ngữ; đọc privacy; xoá dữ liệu.",
+ "freq": "Hiếm. Xét theo người mới.",
+ "lens": "người mới",
+ "level": "ổn",
+ "questions": [
+  "Chỉnh âm lượng ở đâu?",
+  "Đổi phím ở đâu?",
+  "Đổi ngôn ngữ ở đâu?"
+ ],
+ "states": [
+  {
+   "id": "m-settings",
+   "label": "SETTINGS (bản dev)",
+   "note": "TEST là mục dev, bị xoá khi đóng gói."
+  }
+ ],
+ "keep": [
+  "Mỗi mục 1 tên + 1 dòng nói bên trong có gì. RESET DATA chữ phụ đỏ báo nguy hiểm.",
+  "Phiên bản góc phải trên."
+ ],
+ "findings": [],
+ "inventory": [
+  [
+   "SOUND & DISPLAY",
+   "Âm lượng?",
+   "cần khi chỉnh",
+   "hạng 1",
+   "chọn sẵn"
+  ],
+  [
+   "CONTROLS · LANGUAGE · PRIVACY",
+   "Phím / ngôn ngữ?",
+   "cần khi chỉnh",
+   "hạng 2",
+   ""
+  ],
+  [
+   "RESET DATA",
+   "Xoá?",
+   "hiếm",
+   "hạng 2",
+   "đỏ"
+  ]
+ ],
+ "fresh": [],
+ "verdict": "Ổn. Màn danh sách chữ hợp với nội dung là chữ.",
+ "options": [],
+ "pick": "Giữ."
+}

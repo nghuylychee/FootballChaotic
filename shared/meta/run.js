@@ -904,6 +904,8 @@ window.SFC = window.SFC || {};
     canChoose(c, R = this.run) {
       if (c.cost && this.keys(R).some((k) => this.pl(k, R).cash < c.cost)) return false;
       if (c.healAll && !this.injuries(R).length) return false;
+      // trả tiền lấy BADGE mà đội đã có mọi BADGE -> mờ (không trừ tiền mà không được gì; owner 2026-11-11)
+      if (c.cost && c.badge && !this.rollBadges(1, { any: 1 }, R).length) return false;
       return true;
     },
     // chọn lựa chọn i của sự kiện đang mở -> danh sách kết quả [{ kind: 'badge' | 'injury' | 'blocked' | 'cash' | 'heal' | 'lost', id?, who?, n? }]

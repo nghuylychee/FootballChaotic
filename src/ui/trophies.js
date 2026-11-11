@@ -3,12 +3,12 @@
  * không gradient / glow); chữ + số là DOM bằng font pixel của game. Nút cúp dưới SETTINGS ở trang chủ.
  *   view 'room'  : 3 góc — kệ cúp · bàn có album sticker · bảng ghim ảnh. ←→ đi giữa các góc (character đi theo), Enter mở góc
  *   view 'shelf' : cúp GOAT (phá đảo cả run) tầng trên + 3 cúp act (hạ boss act) tầng dưới; huy chương đồng / bạc / vàng theo số lần
- *                  (MEDALS); kệ nhỏ cúp FOOTBALL STORY cũ đã vô địch. ←→ / ↑↓ chọn cúp
+ *                  (MEDALS). ←→ / ↑↓ chọn cúp (2026-11-11: bỏ kệ cúp FOOTBALL STORY cũ, chế độ đó không còn lối vào từ menu)
  *   view 'album' : album sticker: LEGENDS · BADGES · GEAR · RIVALS (đội Elite / Boss đã hạ) · ULTIMATES (mở ULT BOOK) · ACHIEVEMENTS
  *                  (mở danh sách thành tích). ←→ / Q E đổi trang, Enter ở 2 trang cuối = mở trang đó
  *   view 'board' : polaroid 12 run gần nhất (đội hình + LEGEND, CHAMPIONS / KO, đường đi theo tầng) + bảng phấn kỷ lục (icon + số, tên ở tooltip)
  * Esc: view con -> phòng · phòng -> trang chủ. Số liệu: Profile.data.runs (SFC.Run: acts, seen, hist, best, wins, bosses, plays),
- * Profile.data.story (cúp Story cũ), ULT BOOK, SFC.Achievements. Menu gọi: open · render · input · click · back · tick
+ * ULT BOOK, SFC.Achievements. Menu gọi: open · render · input · click · back · tick
  */
 window.SFC = window.SFC || {};
 
@@ -117,7 +117,6 @@ window.SFC = window.SFC || {};
     try { return new Date(ms).toLocaleDateString(SFC.I18n.locale(), { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) { return new Date(ms).toDateString(); }
   };
   const clock = (s) => (s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '–');
-  const storyCups = () => (SFC.Cup ? SFC.Cup.list().filter((s) => !s.soon && SFC.Cup.rec(s.id).wins > 0) : []);
   // số thưởng ACHIEVEMENTS chờ nhận: cùng con số với nút cúp ở trang chủ, hiện lại ở mỗi bước tới nút CLAIM
   const claimable = () => SFC.Achievements.claimable().length;
   const dot = (n) => (n ? `<i class="tr2-new">${n}</i>` : '');
@@ -163,8 +162,7 @@ window.SFC = window.SFC || {};
       const cell = (c, i) => `<button class="tr2-cup ${i === this.cup ? 'on' : ''} ${c.n ? '' : 'none'}" data-tc="${i}" style="left:${c.x * 2}px;top:${c.py * 2 + 12}px">
           ${PX().ui(c.goat ? 'trophy' : 'crown', 'sm')}<b>${c.n}</b></button>`;
       const medals = (n) => MEDALS.map(([col, at]) => `<i class="${n >= at ? 'on' : ''}" style="--m:${col}" title="×${at}"></i>`).join('');
-      const old = storyCups().length ? `<div class="tr2-old" title="${esc(_t('FOOTBALL STORY'))}">${PX().ui('film', 'sm')}</div>` : '';
-      return `${cups.map(cell).join('')}${old}
+      return `${cups.map(cell).join('')}
         <div class="tr2-strip" style="--c:${sel.color}"><b>${esc(sel.name)}</b>
           <span title="${esc(sel.goat ? _t('GOAT runs') : _t('Bosses beaten'))}">${PX().ui(sel.goat ? 'trophy' : 'crown', 'sm')}${sel.n}</span>
           ${sel.first ? `<span title="${esc(_t('First'))}">${PX().ui('calendar', 'sm')}${esc(date(sel.first))}</span>` : ''}
@@ -290,9 +288,6 @@ window.SFC = window.SFC || {};
       const g = sprite(L, 'goat', 60, 60, 2, !stats().wins);
       if (stats().wins) sparkle(g, t, 1);
       [0, 1, 2].forEach((i) => { const b = sprite(L, 'act' + i, 26 + i * 34, 96, 2, !cups[i].n); if (cups[i].n) sparkle(b, t, i + 3); });
-      // kệ thấp: cúp FOOTBALL STORY cũ đã vô địch (nhỏ)
-      const old = storyCups();
-      if (old.length && SFC.Story && SFC.StoryCup) SFC.Story.paint(cv, (H) => old.slice(0, 4).forEach((s, i) => SFC.StoryCup.trophy(H, s.trophy, 24 + i * 24, 118, 0.32, t)));
       // ---- bàn + album (giữa) ----
       P(132, 104, 64, 4, O); P(133, 104, 62, 3, '#8a5a30'); P(133, 104, 62, 1, '#a8743e');
       P(136, 108, 4, 14, '#5a3820'); P(188, 108, 4, 14, '#5a3820');
@@ -338,12 +333,6 @@ window.SFC = window.SFC || {};
         plaque(c.x, c.py + 5, c.goat ? 40 : 32, c.color);
         if (i === this.cup) brackets(b.x0, b.y0, b.w, b.h + 10, t);
       });
-      // kệ nhỏ trên cùng bên phải: cúp FOOTBALL STORY cũ đã vô địch
-      const old = storyCups();
-      if (old.length && SFC.Story && SFC.StoryCup) {
-        plank(236, 44, 58);
-        SFC.Story.paint(cv, (H) => old.slice(0, 4).forEach((s, i) => SFC.StoryCup.trophy(H, s.trophy, 244 + i * 14, 44, 0.3, t)));
-      }
     },
     drawAlbum() {
       // mặt bàn gỗ + cuốn album mở (2 trang giấy, gáy giữa)

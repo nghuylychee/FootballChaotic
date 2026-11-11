@@ -226,6 +226,61 @@ SCREENS = {
 }
 
 
+# ---------- đợt 2 (2026-11-11): 9 màn ngoài luồng GOAT PATH, ảnh vào r2/shots (UX_OUT) ----------
+# người chơi đã chơi vài run: cúp act, album có vài sticker, bảng ghim 5 run, vài thành tích, Core Road 240
+VET_JS = r"""(() => {
+  const Run = SFC.Run, st = Run.stats(), now = Date.now(), D = 864e5, C = SFC_CONFIG;
+  Object.assign(st, { plays: 7, wins: 1, bosses: 5, bestAct: 2, bestFloor: 5, road: 240 });
+  st.acts = [{ n: 4, first: now - 12 * D }, { n: 1, first: now - 6 * D }, { n: 0, first: 0 }];
+  const pick = (o, n) => Object.keys(o).slice(0, n);
+  st.seen = { legend: {}, badge: {}, gear: {}, rival: {} };
+  pick(C.legends.list, 4).forEach((k) => (st.seen.legend[k] = 1));
+  Object.keys(C.run.badges).filter((k) => !C.run.badges[k].injury).slice(0, 7).forEach((k) => (st.seen.badge[k] = 1));
+  pick(C.run.gear.list || C.run.gear.items || {}, 6).forEach((k) => (st.seen.gear[k] = 1));
+  C.run.acts.slice(0, 2).forEach((a) => a.boss.slice(0, 1).concat((a.elite || []).slice(0, 2)).forEach((t) => (st.seen.rival[t] = 1)));
+  const L = pick(C.legends.list, 4), T = C.run.acts[0].teams;
+  st.hist = [0, 1, 2, 3, 4].map((i) => ({ d: now - i * 2 * D, won: i === 2, out: i === 2 ? 'won' : 'ko', act: i === 2 ? 2 : i % 2, f: 3 + i, by: i === 2 ? null : T[i % T.length],
+    my: 2, op: i === 2 ? 0 : 3, goals: 6 + i * 3, secs: 900 + i * 120, sq: [{ you: true, look: null, lg: L[i % 4] }, { you: false, look: null, lg: null }, { you: false, look: null, lg: i % 2 ? L[(i + 1) % 4] : null }] }));
+  st.best = { goals: 18, fast: 1980 };
+  Run.unlockRoad(false);
+  SFC.Profile.data.ach = (SFC.Profile.data.ach || []).concat((C.achievements.list || []).slice(0, 3).map((a) => a.id));
+  SFC.Profile.save();
+})()"""
+
+
+def page(name, js=None, wait=1500):
+    def f(pg, h):
+        h.js(VET_JS)
+        h.go(name, wait=wait)
+        if js:
+            h.js(js)
+            h.wait(900)
+    return f
+
+
+def trophy(view):
+    return page('trophy', f"SFC.TrophyUI.view = '{view}'; SFC.Menu.render()" if view != 'room' else None)
+
+
+R2 = dict(profile=RUN_MAP, init=SEED)
+SCREENS.update({
+    'm-shop': dict(title='SHOP', setup=page('shop'), **R2),
+    'm-char': dict(title='CHARACTER', setup=page('char'), **R2),
+    'm-look': dict(title='CHARACTER › APPEARANCE', setup=page('look'), **R2),
+    'm-inv': dict(title='INVENTORY', setup=page('inv'), **R2),
+    'm-ults': dict(title='ULT BOOK', setup=page('ults'), **R2),
+    'm-trophy-room': dict(title='TROPHY ROOM · phòng', setup=trophy('room'), **R2),
+    'm-trophy-shelf': dict(title='TROPHY ROOM · kệ cúp', setup=trophy('shelf'), **R2),
+    'm-trophy-album': dict(title='TROPHY ROOM · album', setup=trophy('album'), **R2),
+    'm-trophy-board': dict(title='TROPHY ROOM · bảng run', setup=trophy('board'), **R2),
+    'm-ach': dict(title='ACHIEVEMENTS', setup=page('ach'), **R2),
+    'm-settings': dict(title='SETTINGS', setup=page('settings'), **R2),
+    'm-ranked': dict(title='PLAY › RANKED', setup=page('party'), **R2),
+    'm-areamap': dict(title='AREA MAP', setup=page('road'), **R2),
+    'm-private': dict(title='PLAY › PRIVATE MATCH', setup=page('online'), **R2),
+})
+
+
 # ---------- xử lý ảnh ----------
 
 def squint(img):

@@ -182,7 +182,8 @@ window.SFC = window.SFC || {};
     }
   }
 
-  // vẽ character đứng một mình (menu / shop / hồ sơ) — canvas nhỏ, CSS phóng to kiểu pixel
+  // vẽ character đứng một mình (menu / shop / hồ sơ) — canvas nhỏ, CSS phóng to kiểu pixel. Luôn người cỡ cũ (Sprite v2 24 px, small: true;
+  // owner 2026-11-11: ngoài trận giữ cỡ cũ — khung 40 x 44 vừa mọi kiểu tóc / mũ, đứng cạnh NPC cỡ cũ ở KIT VAN / ??? / cut-scene)
   // extra: ghi đè trạng thái vẽ (vd. { vx: 40 } = chạy, { atkType: 'shoot' | 'light', atkT } = tư thế ra đòn) — màn giới thiệu đội hình
   function drawAvatar(canvas, look, kit, t = 0, facing = Math.PI / 2, extra = null) {
     const w = canvas.width, h = canvas.height, ctx = canvas.getContext('2d');
@@ -192,11 +193,11 @@ window.SFC = window.SFC || {};
     const x = w / 2, y = h - 4;
     // xem trước động tác ăn mừng (túi đồ / mở hộp): extra = { celId, celT }
     if (extra && extra.celId && SFC.CelebrateDraw) {
-      SFC.CelebrateDraw.draw(ctx, Object.assign({ x, y: h - 6, vx: 0, vy: 0, facing: Math.PI / 2, anim: t, flash: 0, state: 'normal', team: 0, look, preview: true }, extra), g);
+      SFC.CelebrateDraw.draw(ctx, Object.assign({ x, y: h - 6, vx: 0, vy: 0, facing: Math.PI / 2, anim: t, flash: 0, state: 'normal', team: 0, look, preview: true, small: true }, extra), g);
     } else {
       const behind = look.fx === 'shadow';
       if (behind) drawFxPreview(ctx, look.fx, x, y, t, g);
-      SFC.PlayerSprite.drawPlayer(ctx, Object.assign({ x, y, vx: 0, vy: 0, facing, anim: t, flash: 0, state: 'normal', team: 0, look }, extra), g);
+      SFC.PlayerSprite.drawPlayer(ctx, Object.assign({ x, y, vx: 0, vy: 0, facing, anim: t, flash: 0, state: 'normal', team: 0, look, small: true }, extra), g);
       if (!behind && look.fx && FX[look.fx]) drawFxPreview(ctx, look.fx, x, y, t, g);
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -347,8 +348,8 @@ window.SFC = window.SFC || {};
   // icon costume trên ô item (hộp gacha / túi đồ): vẽ character mặc món đó rồi phóng to vùng liên quan
   // (tóc & mặt -> cái đầu, giày -> bàn chân nhìn chéo cho thấy mũi + đồ quanh đế, hiệu ứng -> cả người). Vùng cắt tính trên avatar 40x44;
   // phóng số nguyên lần (phóng lẻ thì px không đều)
-  // Sprite v3 (đầu hàng 9..26 của avatar 40 x 44, mắt 18..21): mặt cắt từ hàng 10 (v2: 14)
-  const ICON_CROP = { hair: [5, 6, 30, 30], face: [10, 10, 20, 20], shoes: [10, 36, 20, 8], fx: [4, 2, 32, 42] };
+  // avatar ngoài trận là người cỡ cũ (v2): mặt cắt từ hàng 14
+  const ICON_CROP = { hair: [5, 6, 30, 30], face: [10, 14, 20, 20], shoes: [10, 36, 20, 8], fx: [4, 2, 32, 42] };
   let iconBuf = null;
   function drawItemIcon(canvas, look, kit, slot) {
     const cw = canvas.width, ch = canvas.height, ctx = canvas.getContext('2d');

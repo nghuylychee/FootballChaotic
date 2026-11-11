@@ -2557,7 +2557,6 @@ button.eq-row:hover b { color: var(--gold); }
 .tr2-cup b { font-family: var(--px); font-weight: normal; font-size: 7px; color: #fff; }
 .tr2-cup.none { opacity: 0.55; }
 .tr2-cup.on { border-color: var(--gold); }
-.tr2-old { position: absolute; right: 34px; top: 66px; z-index: 3; opacity: 0.7; }
 .tr2-strip { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 10px; padding: 4px 10px; white-space: nowrap;
   background: rgba(18,12,22,0.92); border: 1px solid #4a3a2a; border-left: 3px solid var(--c); box-shadow: 2px 2px 0 var(--ink); }
 .tr2-strip > b { font-family: var(--px); font-weight: normal; font-size: 8px; color: var(--c); }

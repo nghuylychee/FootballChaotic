@@ -3,7 +3,7 @@
  * (móc khoá, vòng hạt, khăn cổ động), giữa bàn 1 túi giấy gấp miệng có dấu ? hình miếng vá, buộc dây màu RARE (biết độ hiếm, không biết
  * món — đúng cơ chế) + thẻ giá bìa cát-tông treo ở nơ (như thẻ KIT VAN).
  * Trỏ Buy one: túi nhấc lên viền vàng, người bán nghiêng tới, bàn tay chỉ vào túi · trỏ Walk away: người bán nhún vai, bàn tay chỉ ra đường
- * · thiếu tiền: thẻ giá bìa xám số đỏ (như KIT VAN), người bán nhún vai + nói Not enough cash. (bong bóng DOM)
+ * · thiếu tiền: thẻ giá bìa xám số đỏ (như KIT VAN), người bán nhún vai + nói Not enough cash. (bong bóng DOM); đội đã có mọi BADGE: Sold out, mate.
  * · kết quả (~1,2 s rồi đứng yên): 3 xu bay khỏi ô tiền vào hộp thiếc của người bán, bàn tay của bạn (góc nhìn người chơi, như KIT VAN)
  *   với lên nắm túi, túi xé đôi, miếng vá BADGE thật nảy lên giữa sạp (miếng to 40x44) + tem 'The whole team gets it' (DOM) dán ở mép trên. */
 (function () {
@@ -415,7 +415,8 @@
         vendor(k, 'slow', t, false);
         return result(k, s);
       }
-      const poor = !(s.can || []).includes(0), buy = s.hover === 0, away = s.hover === 1;
+      // thẻ giá xám số đỏ chỉ khi thiếu tiền (hết BADGE để bán thì giá vẫn thường, người bán nói Sold out)
+      const poor = !(s.can || []).includes(0) && !(s.cash >= SFC_CONFIG.run.events.vendor.choices[0].cost), buy = s.hover === 0, away = s.hover === 1;
       vendor(k, poor || away ? 'shrug' : 'wave', t, buy && !poor);
       tin(k, 0);
       const lift = buy && !poor ? -2 : 0, by = BAG.y + lift;
@@ -436,7 +437,10 @@
         const d = Math.max(0, TM.land - (SFC.EvScene.state().tp || 0));
         return `<em class="evv-kind" style="--d:${d.toFixed(2)}s">${esc(SFC.t('The whole team gets it'))}</em>`;
       }
-      return !(s.can || []).includes(0) ? `<div class="evv-say">${esc(SFC.t('Not enough cash.'))}</div>` : '';
+      if ((s.can || []).includes(0)) return '';
+      // mờ vì đủ tiền mà đội đã có mọi BADGE (Run.canChoose, 2026-11-11) -> hết hàng; còn lại = thiếu tiền
+      const sold = s.cash != null && s.cash >= SFC_CONFIG.run.events.vendor.choices[0].cost;
+      return `<div class="evv-say">${esc(sold ? SFC.t('Sold out, mate.') : SFC.t('Not enough cash.'))}</div>`;
     },
   });
 })();

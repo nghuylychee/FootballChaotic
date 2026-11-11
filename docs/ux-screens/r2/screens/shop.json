@@ -1,0 +1,115 @@
+{
+ "id": "shop",
+ "order": 1,
+ "title": "SHOP",
+ "where": "Trang chủ › SHOP (trang shop) · src/ui/gacha.js (pageShop, boxArt) · config/progression.config.js boxes · css .box-list, .box-detail, .bd-pool",
+ "goal": "Chọn 1 hộp và mở bằng gold. Muốn biết hộp có gì, tỉ lệ ra sao thì xem bên phải.",
+ "freq": "Vài lần mỗi tuần chơi, mỗi khi gold đủ 100+. Người chơi quen màn này nhanh: xét theo người đã quen.",
+ "lens": "người đã quen",
+ "level": "ổn",
+ "questions": [
+  "Có những hộp nào, giá bao nhiêu?",
+  "Đủ gold mở không?",
+  "Hộp này ra gì, hiếm cỡ nào?",
+  "Bấm đâu để mở?"
+ ],
+ "states": [
+  {
+   "id": "m-shop",
+   "label": "SHOP · Street Box đang chọn",
+   "note": "Hồ sơ thử: LV 9, 640 gold, chưa mở hộp nào."
+  }
+ ],
+ "keep": [
+  "Danh sách hộp trái, chi tiết phải: 1 cột chọn, 1 cột đọc. Hộp đang chọn viền vàng + nền sáng, nheo mắt vẫn thấy.",
+  "Giá nằm ngay dưới tên hộp và trong nút OPEN BOX: câu \"đủ tiền không\" trả lời ở 2 chỗ mắt chắc chắn đi qua.",
+  "Tỉ lệ là 5 thanh màu độ hiếm + %: đọc lướt được, đúng ý màn này.",
+  "Bấm hộp bên trái chỉ chọn, mua bằng nút (gacha.js click, chú thích dòng 583): không mất gold vì double-click."
+ ],
+ "findings": [
+  {
+   "n": 1,
+   "sev": "nhẹ",
+   "kind": "thông tin ẩn",
+   "title": "Lưới món trong hộp bị cắt hàng cuối",
+   "body": "Hàng thứ 4 của lưới món chỉ lộ mép trên (.bd-pool overflow-y: auto). Đây là chỗ duy nhất báo còn món bên dưới; phím ↑↓ đang đổi hộp nên không cuộn được lưới bằng phím, chỉ lăn chuột. Ít người cần xem hết 40 món nên chỉ ghi nhận.",
+   "evidence": [
+    "ảnh gốc",
+    "code: css .bd-pool"
+   ],
+   "pins": [
+    {
+     "s": "m-shop",
+     "x": 840,
+     "y": 640
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "sev": "nhẹ",
+   "kind": "chữ",
+   "title": "Phím Enter in trong nút OPEN BOX",
+   "body": "Nút chính có <kbd>Enter</kbd> trước chữ (gacha.js pageShop, sd-act). Các màn mới đã bỏ tiền tố phím (quyết định không ghi phím trên màn menu mới). SHOP và ACHIEVEMENTS là 2 chỗ còn lại; sửa chung 1 lượt nếu m muốn.",
+   "evidence": [
+    "ảnh gốc",
+    "code: gacha.js sd-act"
+   ],
+   "pins": [
+    {
+     "s": "m-shop",
+     "x": 600,
+     "y": 300
+    }
+   ]
+  }
+ ],
+ "inventory": [
+  [
+   "Danh sách 3 hộp (hình + tên + loại + giá)",
+   "Có hộp nào, giá?",
+   "cần ngay",
+   "hạng 1",
+   ""
+  ],
+  [
+   "Tên + câu mô tả hộp",
+   "Hộp này ra gì?",
+   "cần ngay",
+   "hạng 2",
+   ""
+  ],
+  [
+   "Nút OPEN BOX · 100",
+   "Bấm đâu?",
+   "cần ngay",
+   "hạng 2",
+   "vàng đặc"
+  ],
+  [
+   "5 thanh tỉ lệ",
+   "Hiếm cỡ nào?",
+   "đôi khi",
+   "hạng 3",
+   ""
+  ],
+  [
+   "Lưới mọi món trong hộp",
+   "Ra được món nào?",
+   "đôi khi",
+   "hạng 3",
+   "cắt hàng cuối"
+  ],
+  [
+   "LV + XP + gold",
+   "Đủ tiền không?",
+   "cần ngay",
+   "hạng 3",
+   "thanh chung mọi màn menu"
+  ]
+ ],
+ "fresh": [],
+ "verdict": "Màn làm đúng việc. 2 chi tiết nhẹ, không cần phương án riêng.",
+ "options": [],
+ "pick": "Giữ. Nếu m muốn bỏ tiền tố phím thì làm chung với ACHIEVEMENTS."
+}

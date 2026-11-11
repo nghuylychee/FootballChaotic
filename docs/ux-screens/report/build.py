@@ -6,7 +6,10 @@ In ra map `files` để publish artifact (xem README.md).
 import os, re, json, glob, shutil
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+# UX_ROOT=r2: đợt 2 (2026-11-11) có screens / shots / report / README riêng trong docs/ux-screens/r2
+ROOT = os.path.join(os.path.dirname(HERE), os.environ['UX_ROOT']) if os.environ.get('UX_ROOT') else os.path.dirname(HERE)
+if os.environ.get('UX_ROOT'):
+    HERE = os.path.join(ROOT, 'report')
 OUT = os.path.join(HERE, 'out')
 MODES = ['', '.squint', '.gray', '.motion']
 

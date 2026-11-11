@@ -1,0 +1,15 @@
+{
+ "page": "run",
+ "sel": {
+  "cls": "pt-btn  go  sel",
+  "txt": "CONTINUE",
+  "x": 420,
+  "y": 498,
+  "w": 440,
+  "h": 80
+ },
+ "order": [],
+ "id": "m-ranked",
+ "title": "PLAY › RANKED",
+ "moving_pct": 8.5
+}

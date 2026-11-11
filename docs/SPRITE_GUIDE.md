@@ -8,8 +8,8 @@ Luật user đặt ra trong lúc làm Sprite v2 (2026-10-31 → 2026-11-01), gom
 
 Nhân vật là bộ mặt của game. Mọi thay đổi phải nhẹ tay, không làm lại từ đầu.
 
-- **Cỡ trong trận giữ nguyên.** Canvas trận 1x (1 px canvas = 1 px game, 2026-11-04); code sprite tính bằng px game, chỉ vẽ px game nguyên (mục 2).
-- **Cao 24 px game** như sprite cũ. Đầu A 15 × 13 tròn, mắt vuông 3 × 3. Thân B: áo 3 hàng ăn vào quần, không hàng đầu gối, tất ngắn ngay dưới quần, 2 chân sát nhau.
+- **2 cỡ người (2026-11-11).** Trong trận: Sprite v3 (`render/player3/`, cao 31 px, `docs/SPRITE_V3.md`), trạng thái v3 chưa vẽ thì v2 phóng `render.playerScale`. Ngoài trận (mọi avatar DOM qua `Sprites.drawAvatar`: menu, SHOP, túi đồ, VS, cut-scene, KIT VAN, ???, TROPHY ROOM): Sprite v2 cỡ cũ 24 px, không phóng (`small: true`, owner: ngoài trận giữ cỡ cũ). Đồ / hiệu ứng mới phải đẹp ở cả 2 cỡ. Canvas trận 1x (1 px canvas = 1 px game, 2026-11-04); code sprite tính bằng px game, chỉ vẽ px game nguyên (mục 2).
+- **v2 cao 24 px game** như sprite cũ. Đầu A 15 × 13 tròn, mắt vuông 3 × 3. Thân B: áo 3 hàng ăn vào quần, không hàng đầu gối, tất ngắn ngay dưới quần, 2 chân sát nhau.
 - **Viền mực 1 px game quanh cả người**, như viền đầu. Riêng chỗ tay áo nối thân thì không viền (liền màu tối).
 - **Thấy mặt / thấy lưng**: thấy mặt khi nhìn xuống, chéo xuống, ngang; thấy lưng khi nhìn lên và chéo lên. Mặt trượt ngang theo hướng nhìn. Chéo lên (`bdiag`, user 2026-11-03; trước đó chéo lên dùng hình sau lưng thẳng) là lưng xoay về 1 bên: nút băng đô và cổ áo sau lệch 1 cột ngược hướng mặt, bên hướng mặt lộ dải má 2 cột, tay gần bên hướng mặt + cục da tay xa bên kia (ngược chéo xuống). Không có hình nghiêng hẳn.
 - **Nhìn trái = lật hình nhìn phải.** Đừng "sửa" cho đúng tay chân (xem mục 3).

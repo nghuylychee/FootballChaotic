@@ -7,7 +7,7 @@ window.SFC_CONFIG = window.SFC_CONFIG || {};
 
 SFC_CONFIG.game = {
   // THỬ SÂN TO (proto/big-pitch, 2026-11-07): 1 núm chỉnh cỡ sân. 1 = sân gốc 528 x 246 trong khung 640 x 360.
-  // Lớn hơn = khung trận + sân + các khoảng cách / tốc độ theo sân nhân lên từ giá trị gốc (shared/engine/config.js). 1.4 -> 1.2 -> 1.3 (user 2026-11-09)
+  // Lớn hơn = khung trận + sân + các khoảng cách / tốc độ theo sân nhân lên từ giá trị gốc (shared/engine/config.js). 1.4 -> 1.2 -> 1.3 (user 2026-11-09) -> 1.4 (user 2026-11-11)
   pitchScale: 1.3,
   // NHỊP TRẬN (user 2026-11-09, mức B): sân to làm khung nhìn zoom out, chuyền / sút không tăng theo sân nên trên màn hình chậm hơn ~23%.
   // 1 = như cũ. run: tốc độ chạy + gia tốc · pass: chuyền sệt tới chân · shot: lực sút. Các số đi kèm (ngưỡng cắt bóng, thủ môn, chạm bóng đầu tiên)

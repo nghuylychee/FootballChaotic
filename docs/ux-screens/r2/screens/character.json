@@ -1,0 +1,178 @@
+{
+ "id": "character",
+ "order": 2,
+ "title": "CHARACTER + APPEARANCE",
+ "where": "Trang chủ › CHARACTER (trang char) › APPEARANCE (trang look) · src/ui/menu.js case 'char' / 'look', renderList · src/ui/gacha.js openSlot",
+ "goal": "Xem và đổi nhân vật của mình: tên, màu da / tóc, đồ đang mặc; đi tới ULT BOOK và túi đồ.",
+ "freq": "Ít: sau khi mở hộp có đồ mới, hoặc tò mò ULT BOOK. Xét theo người mới (gặp ít, mỗi lần phải tự tìm lại đường).",
+ "lens": "người mới",
+ "level": "chỉnh",
+ "questions": [
+  "Nhân vật của tôi trông thế nào?",
+  "Đổi đồ ở đâu?",
+  "Có đồ mới chưa mặc không?",
+  "ULT BOOK là gì, tôi có bao nhiêu?"
+ ],
+ "states": [
+  {
+   "id": "m-char",
+   "label": "CHARACTER",
+   "note": "Mục đầu (ULT BOOK) chọn sẵn."
+  },
+  {
+   "id": "m-look",
+   "label": "CHARACTER › APPEARANCE",
+   "note": "RENAME chọn sẵn."
+  }
+ ],
+ "keep": [
+  "Nhân vật to ở giữa phải, có quầng sáng: nheo mắt thấy ngay, đúng thứ màn này nói về.",
+  "Bảng đồ đang mặc (HAIR & HATS, FACE, SHOES, TRAIL FX, CELEBRATION) dưới nhân vật: trả lời \"đang mặc gì\" không cần mở túi.",
+  "Mục đang chọn: vạch vàng + ▶ + chữ vàng, giống các menu khác."
+ ],
+ "findings": [
+  {
+   "n": 1,
+   "sev": "vừa",
+   "kind": "đường đi",
+   "title": "2 đường vào cùng 1 túi đồ, tên khác nhau",
+   "body": "CHARACTER › INVENTORY và CHARACTER › APPEARANCE › COSTUMES đều mở trang inv (COSTUMES gọi Gacha.openSlot(..., 'all', 'look'), INVENTORY gọi go('inv')). Người chơi muốn đổi mũ phải đoán \"đồ\" nằm ở APPEARANCE hay INVENTORY. APPEARANCE lại chỉ còn tên + 2 màu, 1 mục dẫn đi chỗ khác.",
+   "evidence": [
+    "code: menu.js case 'look' (COSTUMES), case 'char' (INVENTORY)"
+   ],
+   "pins": [
+    {
+     "s": "m-look",
+     "x": 300,
+     "y": 330
+    },
+    {
+     "s": "m-char",
+     "x": 300,
+     "y": 320
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "sev": "vừa",
+   "kind": "hình ảnh",
+   "title": "Menu chỉ có chữ, nửa trái trống",
+   "body": "3 mục là chữ to + 1 dòng chữ phụ, không icon, không hình đồ. Nửa dưới trái trống (ảnh gốc). Luật menu của m là hình + số, chữ dài vào tooltip. Nheo mắt: 3 vệt chữ trắng giống nhau, chỉ phân biệt nhờ mục vàng.",
+   "evidence": [
+    "ảnh gốc",
+    "nheo mắt"
+   ],
+   "pins": [
+    {
+     "s": "m-char",
+     "x": 300,
+     "y": 520
+    }
+   ]
+  },
+  {
+   "n": 3,
+   "sev": "nhẹ",
+   "kind": "số sai nghĩa",
+   "title": "INVENTORY ghi \"0 items\" mà túi có 6 món",
+   "body": "nItems không đếm đồ mặc định, trong khi trang INVENTORY hiện 6 món mặc định (có nhãn E = đang mặc). Người mới thấy \"0 items\" rồi mở ra thấy 6.",
+   "evidence": [
+    "ảnh gốc m-char + m-inv",
+    "code: menu.js case 'char' nItems"
+   ],
+   "pins": [
+    {
+     "s": "m-char",
+     "x": 380,
+     "y": 348
+    }
+   ]
+  },
+  {
+   "n": 4,
+   "sev": "nhẹ",
+   "kind": "tương phản",
+   "title": "Ô màu tóc tối trên nền tối",
+   "body": "HAIR COLOR mặc định là màu gần đen, ô mẫu gần như biến mất trên nền panel (ảnh gốc, ảnh xám). SKIN COLOR thì rõ.",
+   "evidence": [
+    "ảnh gốc",
+    "ảnh xám"
+   ],
+   "pins": [
+    {
+     "s": "m-look",
+     "x": 430,
+     "y": 280
+    }
+   ]
+  }
+ ],
+ "inventory": [
+  [
+   "Nhân vật lớn + tên",
+   "Trông thế nào?",
+   "cần ngay",
+   "hạng 1",
+   ""
+  ],
+  [
+   "Bảng đồ đang mặc + W/D/L",
+   "Đang mặc gì?",
+   "đôi khi",
+   "hạng 2",
+   "W/D/L là số trận cũ, không ai hỏi ở đây"
+  ],
+  [
+   "ULT BOOK 0/44",
+   "Có bao nhiêu Ultimate?",
+   "đôi khi",
+   "hạng 2",
+   "cũng vào được từ TROPHY ROOM"
+  ],
+  [
+   "APPEARANCE (tên, da, tóc, COSTUMES)",
+   "Đổi ngoại hình?",
+   "cần khi đổi",
+   "hạng 3",
+   "COSTUMES trùng INVENTORY"
+  ],
+  [
+   "INVENTORY 0 items",
+   "Đồ của tôi?",
+   "cần khi có đồ mới",
+   "hạng 3",
+   "số đếm sai nghĩa"
+  ]
+ ],
+ "fresh": [],
+ "verdict": "Nhân vật nổi đúng chỗ, nhưng đường tới \"đổi đồ\" bị chia đôi và menu thuần chữ.",
+ "wireNote": "wireframe vẽ trên khung 640x360 của trang char",
+ "options": [
+  {
+   "id": "A",
+   "name": "Giữ danh sách, thêm hình + gộp đường đổi đồ",
+   "wire": "character.wire-a.svg",
+   "notes": [
+    "Mỗi mục có icon + số: ULT BOOK (sách, 0/44), LOOK (mặt nhân vật), WARDROBE (móc áo, số đồ kể cả mặc định, chấm vàng khi có đồ mới).",
+    "APPEARANCE + INVENTORY gộp thành 1 mục; RENAME / SKIN / HAIR thành 3 dòng đầu của trang túi đồ (tab LOOK).",
+    "Ô màu tóc có viền sáng 1px để màu tối vẫn thấy."
+   ],
+   "gain": "Còn 2 mục thay 3, không còn 2 đường cùng 1 chỗ; đúng luật hình + số. Sửa ít: menu.js case 'char' / 'look', gacha.js pageInv thêm khối LOOK.",
+   "cost": "Trang look biến mất, phím tắt / test nào gọi go('look') phải trỏ sang inv."
+  },
+  {
+   "id": "B",
+   "name": "Phòng thay đồ: bấm thẳng lên nhân vật",
+   "wire": "character.wire-b.svg",
+   "notes": [
+    "Nhân vật to giữa màn, 5 ô đồ (mũ, mặt, giày, hiệu ứng, ăn mừng) xếp quanh người như ô trang bị RPG.",
+    "Bấm 1 ô = mở túi đồ lọc đúng ô đó (openSlot đã có sẵn).",
+    "Tên + 2 ô màu dưới chân nhân vật; ULT BOOK thành nút nhỏ góc trên phải."
+   ],
+   "gain": "1 màn thay 3 (char, look, phần lớn inv). Nhìn là biết bấm vào đâu để đổi gì, không cần chữ.",
+   "cost": "Tổ chức lại màn: vẽ bố cục mới, đường phím 2 chiều quanh nhân vật, sửa menu.js + gacha.js. Lớn hơn A khoảng 3 lần."
+  }
+ ],
+ "pick": "A. Màn gặp ít, A sửa đúng 2 vấn đề vừa với ít code. B đẹp hơn nhưng đáng làm khi m muốn làm lại cả khu túi đồ."
+}

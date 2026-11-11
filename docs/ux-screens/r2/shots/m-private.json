@@ -1,0 +1,15 @@
+{
+ "page": "online",
+ "sel": {
+  "cls": "pt-tile sel",
+  "txt": "+\nCREATE ROOM",
+  "x": 324,
+  "y": 228,
+  "w": 300,
+  "h": 280
+ },
+ "order": [],
+ "id": "m-private",
+ "title": "PLAY › PRIVATE MATCH",
+ "moving_pct": 16.4
+}

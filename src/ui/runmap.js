@@ -1743,9 +1743,9 @@ window.SFC = window.SFC || {};
       const v = RUN().stats().road, sp = this.roadSpan(v);
       const pct = (x) => (sp.b == null ? 100 : Math.max(0, Math.min(100, ((x - sp.a) / (sp.b - sp.a)) * 100)));
       const p0 = pct(v - R.roadGain), p1 = pct(v);
-      const road = `<span class="rb-chip road" title="${esc(_t('Core Road progress'))}">${PX().ui('star', 'sm')}<em>${esc(_t('CORE ROAD'))}</em><b>+${R.roadGain}</b>
+      const road = `<span class="rb-chip road" title="${esc(_t('Core Road progress'))}">${PX().ui('road', 'sm')}<em>${esc(_t('CORE ROAD'))}</em><b>+${R.roadGain}</b>
           <u class="rb-bar"><s style="width:${p0.toFixed(1)}%"></s><s class="new" style="left:${p0.toFixed(1)}%;width:${(p1 - p0).toFixed(1)}%"></s></u>
-          ${sp.b != null ? `<small>${esc(_t('Next Core in {n}', { n: sp.b - v }))} ${PX().ui('star', 'sm')}</small>` : ''}</span>`;
+          ${sp.b != null ? `<small>${esc(_t('Next Core in {n}', { n: sp.b - v }))} ${PX().ui('road', 'sm')}</small>` : ''}</span>`;
       return `<div class="rm-bring">${gold}${road}</div>`;
     },
     // mốc CORE ROAD (mainPath areas[].road, nấc có Core) quanh tiến trình v: a = mốc đã qua gần nhất, b = mốc kế (null = đã mở hết)
@@ -1891,7 +1891,7 @@ window.SFC = window.SFC || {};
       if (t.k === 'choose' && t.dis) {
         const c = R.room && R.room.kind === 'event' && CFG().events[R.room.id].choices[t.i];
         // PARK PHYSIO mờ vì không ai đau: nói đúng lý do (trước đây báo nhầm thiếu tiền vì lựa chọn có giá)
-        return menu.setMsg(c && c.healAll && !RUN().injuries().length ? _t('Nobody is hurt.') : c && c.cost ? _t('Not enough cash.') : _t('You cannot do that right now.'), true);
+        return menu.setMsg(c && c.healAll && !RUN().injuries().length ? _t('Nobody is hurt.') : c && c.cost && c.badge && !RUN().rollBadges(1, { any: 1 }).length ? _t('You cannot do that right now.') : c && c.cost ? _t('Not enough cash.') : _t('You cannot do that right now.'), true);
       }
       if (inRoom() && this.coopAct(menu, t)) return menu.render();
       switch (t.k) {

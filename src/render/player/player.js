@@ -116,7 +116,9 @@ window.SFC = window.SFC || {};
     // màn hình (T.a nguyên) là vẽ thẳng được
     const odd1 = (v) => { const f = Math.abs(v); return f < 1 - 1e-3 || Math.abs(f - Math.round(f)) > 1e-3; }, odd = odd1(T.a) || odd1(T.d);
     // Sprite v3 (player3/, người cao 31 px cho sân to): trạng thái nào v3 vẽ được thì vẽ v3, còn lại v2 phóng render.playerScale (px không đều)
-    const S3 = SFC.PlayerSprite3, v3 = !!(S3 && S3.supports(o)), PS = (SFC_CONFIG.game.render && SFC_CONFIG.game.render.playerScale) || 1;
+    // p.small: người cỡ cũ (v2 24 px, không phóng) — avatar ngoài trận (Sprites.drawAvatar; owner 2026-11-11: ngoài trận giữ cỡ cũ, khung DOM 40 x 44
+    // và cảnh vẽ tay 320 x 180 đặt người cạnh NPC cỡ cũ)
+    const S3 = SFC.PlayerSprite3, v3 = !p.small && !!(S3 && S3.supports(o)), PS = p.small ? 1 : (SFC_CONFIG.game.render && SFC_CONFIG.game.render.playerScale) || 1;
     if (T.b || T.c || odd) {
       const W = 96, H = 96, oy = 72;
       if (!rotBuf) { rotBuf = document.createElement('canvas'); rotBuf.width = W; rotBuf.height = H; }
@@ -127,7 +129,7 @@ window.SFC = window.SFC || {};
     } else drawAny(ctx, x + jx, y, o, v3, PS);
     ctx.restore();
     ctx.globalAlpha = 1;
-    const k = v3 ? 1.3 : Sprite.bufScaled ? 1 : PS;
+    const k = v3 ? 1.3 : Sprite.bufScaled || p.small ? 1 : PS;
     return y - Math.round(((atk && atk.khop) || 0) * k) + ((cp && cp.drop) || 0) - Math.round(16 * k);
   }
   // vẽ 1 người: v3 thẳng · v2 thẳng (PS 1) · v2 vào bộ đệm rồi phóng PS lần quanh bàn chân, lấy mẫu điểm gần nhất

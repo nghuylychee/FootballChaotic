@@ -23,8 +23,8 @@ SFC_CONFIG.run = {
     // trọng số loại node ở các tầng giữa · minFloor: tầng sớm nhất (tính từ 0) · noRepeat: không đứng liền nhau trên 1 đường
     // legend: LEGEND TRIAL (config/legends.config.js) — node hiện sẵn LEGEND đang chờ (chân dung), thắng bài thử thách là chiêu mộ được
     // rest (LOCKER ROOM): 0 = ẩn (user 2026-10-30: thừa, rối) — code phòng vẫn giữ, đặt lại trọng số là có lại
-    // event (???): 0 = ẩn (user 2026-11-01: sự kiện chỉ là chữ, tạm chưa cần; trước 20) — run.mystery / run.events vẫn giữ
-    weights: { match: 40, event: 0, skill: 13, shop: 10, elite: 8, legend: 9, rest: 0 },
+    // event (???): bật lại 2026-11-11 (owner, sau khi 5 sự kiện có cảnh riêng ở src/ui/evscenes/; 2026-11-01 -> 11-10 ẩn = 0)
+    weights: { match: 40, event: 20, skill: 13, shop: 10, elite: 8, legend: 9, rest: 0 },
     minFloor: { elite: 2, rest: 2, legend: 1 },
     noRepeat: ['shop', 'rest', 'elite', 'legend'],
   },
@@ -105,32 +105,32 @@ SFC_CONFIG.run = {
   // nói rõ bản + hơn bản thường chỗ nào)
   badges: {
     // bốc Core: lượt chọn
-    report:   { name: 'Scouting Report', rarity: 'rare', icon: 'book',   draftCards: 1, up: { draftCards: 1, rerolls: 1 }, desc: 'Every Core pick shows one more card.',
+    report:   { name: 'Scouting Report', rarity: 'rare', icon: 'bd-report',   draftCards: 1, up: { draftCards: 1, rerolls: 1 }, desc: 'Every Core pick shows one more card.',
                 upDesc: 'One more card and a free reroll on every Core pick.' },
-    coin:     { name: "Referee's Coin",  rarity: 'common', icon: 'target', rerolls: 1, up: { rerolls: 2 }, desc: 'One more reroll on every Core pick.',
+    coin:     { name: "Referee's Coin",  rarity: 'common', icon: 'bd-coin', rerolls: 1, up: { rerolls: 2 }, desc: 'One more reroll on every Core pick.',
                 upDesc: 'Two more rerolls on every Core pick.' },
     // draftBonus: chọn Core sớm hơn 1 lượt (thêm 1 lượt trước giao bóng, bớt lượt cuối) — vẫn tối đa game.match.maxUpgrades Core (user 2026-10-30)
-    camp:     { name: 'Pre-Season Camp', rarity: 'epic', icon: 'calendar', draftBonus: 1, desc: 'Your second Core pick comes before kickoff.' },
+    camp:     { name: 'Pre-Season Camp', rarity: 'epic', icon: 'bd-camp', draftBonus: 1, desc: 'Your second Core pick comes before kickoff.' },
     // GEAR: thêm ô GEAR cho mọi người trong đội (run.gear.slots)
     kitbag:   { name: 'Kit Bag',        rarity: 'epic', icon: 'kitbag', gearSlots: 1, desc: 'Every player can wear one more GEAR.' },
     // trận
-    drink:    { name: 'Energy Drink',   rarity: 'epic', icon: 'boom', ultGain: 1.3, up: { ultGain: 1.5 }, desc: 'The whole team charges Ultimates faster.',
+    drink:    { name: 'Energy Drink',   rarity: 'epic', icon: 'bd-drink', ultGain: 1.3, up: { ultGain: 1.5 }, desc: 'The whole team charges Ultimates faster.',
                 upDesc: 'The whole team charges Ultimates even faster.' },
-    crowd:    { name: 'Home Crowd',     rarity: 'legendary', icon: 'people', score: [1, 0], desc: 'Every match starts one goal up.' },
-    var:      { name: 'VAR Monitor',    rarity: 'legendary', icon: 'tv', varCheck: { n: 1, chance: 0.5 }, up: { varCheck: { n: 1, chance: 0.8 } }, desc: 'The first goal you concede each match may get ruled out.',
+    crowd:    { name: 'Home Crowd',     rarity: 'legendary', icon: 'bd-crowd', score: [1, 0], desc: 'Every match starts one goal up.' },
+    var:      { name: 'VAR Monitor',    rarity: 'legendary', icon: 'bd-var', varCheck: { n: 1, chance: 0.5 }, up: { varCheck: { n: 1, chance: 0.8 } }, desc: 'The first goal you concede each match may get ruled out.',
                 upDesc: 'The first goal you concede likely gets ruled out.' },
-    watch:    { name: "Referee's Watch", rarity: 'rare', icon: 'whistle', addedTime: 20, up: { addedTime: 35 }, desc: 'Losing at the final whistle? Time gets added on.',
+    watch:    { name: "Referee's Watch", rarity: 'rare', icon: 'bd-watch', addedTime: 20, up: { addedTime: 35 }, desc: 'Losing at the final whistle? Time gets added on.',
                 upDesc: 'Losing at the final whistle? Even more time gets added on.' },
     // run: tiền / phòng / chấn thương / bài tập
-    sponsor:  { name: 'Shirt Sponsor',  rarity: 'rare', icon: 'shop', winCash: 12, up: { winCash: 20 }, desc: 'Every win pays extra cash.',
+    sponsor:  { name: 'Shirt Sponsor',  rarity: 'rare', icon: 'bd-sponsor', winCash: 12, up: { winCash: 20 }, desc: 'Every win pays extra cash.',
                 upDesc: 'Every win pays even more cash.' },
-    ticket:   { name: 'Season Ticket',  rarity: 'common', icon: 'card', shopOff: 0.2, up: { shopOff: 0.35 }, desc: 'Everything in the Shop costs less.',
+    ticket:   { name: 'Season Ticket',  rarity: 'common', icon: 'bd-ticket', shopOff: 0.2, up: { shopOff: 0.35 }, desc: 'Everything in the Shop costs less.',
                 upDesc: 'Everything in the Shop costs much less.' },
     // off: không bốc ra (Locker Room đang ẩn, 2026-10-30)
-    icebath:  { name: 'Ice Bath',       rarity: 'rare', icon: 'locker', restTwice: true, off: true, desc: 'The Locker Room lets you do two things.' },
-    shin:     { name: 'Shin Guards',    rarity: 'common', icon: 'gear', guard: 1, up: { guard: 2 }, desc: 'Blocks the first injury of each act.',
+    icebath:  { name: 'Ice Bath',       rarity: 'rare', icon: 'bd-icebath', restTwice: true, off: true, desc: 'The Locker Room lets you do two things.' },
+    shin:     { name: 'Shin Guards',    rarity: 'common', icon: 'bd-shin', guard: 1, up: { guard: 2 }, desc: 'Blocks the first injury of each act.',
                 upDesc: 'Blocks the first two injuries of each act.' },
-    bibs:     { name: 'Training Bibs',  rarity: 'common', icon: 'cone', drillEase: 0.2, up: { drillEase: 0.35 }, desc: 'Skill games and Legend trials get easier.',
+    bibs:     { name: 'Training Bibs',  rarity: 'common', icon: 'bd-bibs', drillEase: 0.2, up: { drillEase: 0.35 }, desc: 'Skill games and Legend trials get easier.',
                 upDesc: 'Skill games and Legend trials get much easier.' },
     // chấn thương
     ankle:    { name: 'Twisted Ankle',  injury: true, part: 'ankle', hurt: 'stumble', stats: { pace: -12 },              desc: 'Every step hurts.' },

@@ -1,0 +1,94 @@
+{
+ "id": "ultbook",
+ "order": 4,
+ "title": "ULT BOOK",
+ "where": "CHARACTER › ULT BOOK hoặc TROPHY ROOM › album › ULTIMATES (trang ults) · src/ui/menu.js case 'ults' · Profile.data.ultBook · css .ub-*",
+ "goal": "Xem Ultimate nào đã mở và biết cách mở cái còn thiếu (bảng 8x8 trường phái).",
+ "freq": "Ít, chủ yếu lúc vừa mở Ultimate đầu tiên hoặc tò mò. Xét theo người mới.",
+ "lens": "người mới",
+ "level": "chỉnh",
+ "questions": [
+  "Đây là cái gì?",
+  "Làm sao để mở 1 ô?",
+  "Tôi đã có bao nhiêu?",
+  "Ô này là Ultimate của trường phái nào?"
+ ],
+ "states": [
+  {
+   "id": "m-ults",
+   "label": "ULT BOOK · chưa mở gì (0/44)",
+   "note": "Ô đầu (Runner × Runner) chọn sẵn."
+  }
+ ],
+ "keep": [
+  "Bảng tam giác 8x8 + cột vương miện: hình dạng tự nói \"ghép 2 trường phái\", icon trường phái ở 2 trục.",
+  "Ô chưa mở là ? viền màu trường phái: không lộ tên (đúng quyết định Ultimate ẩn tới khi đạt công thức).",
+  "Câu hướng dẫn dùng icon phím Space thay chữ phím."
+ ],
+ "findings": [
+  {
+   "n": 1,
+   "sev": "vừa",
+   "kind": "thứ bậc",
+   "title": "Khối lớn nhất màn là ô ??? trống",
+   "body": "Lúc chưa mở gì, khung xem trước 300x340 sọc chéo + ??? là khối nổi nhất khi nheo mắt, mà nó không nói gì. Câu trả lời cho câu hỏi chính (\"làm sao mở?\") nằm ở chữ nhỏ bên phải: \"Stack Cores of one school...\". Người mới phải đọc 4 dòng chữ để hiểu luật mà chính bảng đã có đủ dữ liệu để vẽ.",
+   "evidence": [
+    "nheo mắt",
+    "ảnh gốc"
+   ],
+   "pins": [
+    {
+     "s": "m-ults",
+     "x": 700,
+     "y": 220
+    },
+    {
+     "s": "m-ults",
+     "x": 1180,
+     "y": 300
+    }
+   ]
+  }
+ ],
+ "inventory": [
+  [
+   "Bảng 8x8 + cột thức tỉnh",
+   "Đã có bao nhiêu, còn gì?",
+   "cần ngay",
+   "hạng 2",
+   ""
+  ],
+  [
+   "Khung xem trước",
+   "Ultimate này trông thế nào?",
+   "cần khi đã mở ô đó",
+   "hạng 1",
+   "trống khi chưa mở"
+  ],
+  [
+   "Câu luật + DISCOVERED 0/44",
+   "Làm sao mở?",
+   "cần ngay (người mới)",
+   "hạng 3",
+   "chữ nhỏ"
+  ]
+ ],
+ "fresh": [],
+ "verdict": "Bảng tốt, nhưng ô chưa mở để trống khung lớn nhất thay vì chỉ cách mở.",
+ "options": [
+  {
+   "id": "A",
+   "name": "Ô chưa mở: khung xem trước vẽ công thức bằng icon",
+   "wire": "ultbook.wire-a.svg",
+   "notes": [
+    "Ô đường chéo: 3 icon trường phái hàng đó + mũi tên → ??? (3 Core cùng trường phái).",
+    "Ô lai: 2 icon hàng + 2 icon cột → ???.",
+    "Cột vương miện: 4 icon → ??? có vương miện.",
+    "Tên Ultimate vẫn ??? (không lộ). Chữ luật bên phải rút còn 1 dòng."
+   ],
+   "gain": "Câu \"làm sao mở\" trả lời bằng hình, ngay ở khối to nhất. Đúng luật hình + số. Chỉ sửa phần vẽ khung xem trước của ô khoá (menu.js case 'ults').",
+   "cost": "Lộ công thức của từng ô. Công thức vốn suy ra được từ 2 trục của bảng, tên vẫn giấu, nên t nghĩ không đụng quyết định giấu Ultimate."
+  }
+ ],
+ "pick": "A."
+}

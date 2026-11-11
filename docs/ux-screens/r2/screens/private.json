@@ -1,0 +1,131 @@
+{
+ "id": "private",
+ "order": 8,
+ "title": "PLAY › PRIVATE MATCH",
+ "where": "PLAY › tab PRIVATE MATCH (trang online) · src/ui/menu.js renderPrivate (dòng ~993) · Settings.roomDirect",
+ "goal": "Tạo phòng hoặc vào phòng bằng mã để đá 1 trận với bạn bè.",
+ "freq": "Vài lần, khi có bạn chơi cùng. Xét theo người mới.",
+ "lens": "người mới",
+ "level": "chỉnh",
+ "questions": [
+  "Ở đây chơi gì với bạn?",
+  "Khác PLAY WITH FRIENDS của GOAT PATH thế nào?",
+  "Tạo hay vào phòng?"
+ ],
+ "states": [
+  {
+   "id": "m-private",
+   "label": "PRIVATE MATCH",
+   "note": "CREATE ROOM chọn sẵn, CONNECTION hiện vì có URL máy chủ."
+  }
+ ],
+ "keep": [
+  "2 thẻ to CREATE ROOM / JOIN ROOM với icon + và #: lựa chọn chính rõ ngay, nheo mắt thấy 2 khối.",
+  "CONNECTION dùng chữ trung tính (AUTO / Recommended for most players), không lộ mô hình phòng."
+ ],
+ "findings": [
+  {
+   "n": 1,
+   "sev": "vừa",
+   "kind": "chữ",
+   "title": "Dòng phụ nói \"no ELO\"",
+   "body": "\"Play with friends · no ELO\": chữ ELO trái luật hiện Elo bằng ★, không ghi chữ ELO; tab RANKED đang ẩn nên \"no ELO\" trả lời 1 câu không ai hỏi. Câu cần trả lời là \"ở đây chơi gì\": 1 trận lẻ, đấu nhau hoặc cùng đội đấu AI.",
+   "evidence": [
+    "ảnh gốc",
+    "code: menu.js renderPrivate sub"
+   ],
+   "pins": [
+    {
+     "s": "m-private",
+     "x": 820,
+     "y": 98
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "sev": "vừa",
+   "kind": "đường đi",
+   "title": "2 lối \"chơi với bạn\" trên PLAY, không nói khác nhau",
+   "body": "Tab GOAT PATH có PLAY WITH FRIENDS (co-op cả run), tab PRIVATE MATCH là 1 trận lẻ. Cả 2 đều \"với bạn\" và không chỗ nào nói 1 bên là run, 1 bên là 1 trận.",
+   "evidence": [
+    "ảnh gốc m-private + m-ranked (tab GOAT PATH)"
+   ],
+   "pins": [
+    {
+     "s": "m-private",
+     "x": 770,
+     "y": 50
+    }
+   ]
+  },
+  {
+   "n": 3,
+   "sev": "nhẹ",
+   "kind": "thông tin",
+   "title": "CONNECTION nằm ngay màn đầu",
+   "body": "Hàng AUTO / DIRECT là lựa chọn kỹ thuật, hầu hết người chơi không cần, nhưng chiếm cả dải dưới màn đầu.",
+   "evidence": [
+    "ảnh gốc"
+   ],
+   "pins": [
+    {
+     "s": "m-private",
+     "x": 900,
+     "y": 690
+    }
+   ]
+  }
+ ],
+ "inventory": [
+  [
+   "CREATE ROOM / JOIN ROOM",
+   "Tạo hay vào?",
+   "cần ngay",
+   "hạng 1",
+   ""
+  ],
+  [
+   "Dòng phụ dưới tab",
+   "Chơi gì?",
+   "cần ngay",
+   "hạng 3",
+   "đang nói no ELO"
+  ],
+  [
+   "CONNECTION AUTO",
+   "Kết nối kiểu gì?",
+   "hiếm",
+   "hạng 3",
+   ""
+  ]
+ ],
+ "fresh": [],
+ "verdict": "Lựa chọn chính rõ. Dòng phụ cần nói đúng thứ người chơi hỏi.",
+ "options": [
+  {
+   "id": "A",
+   "name": "Sửa dòng phụ, gợi ý 2 lối",
+   "wire": "private.wire-a.svg",
+   "notes": [
+    "Dòng phụ: \"One match with friends · versus or co-op vs AI\" (icon người + bóng).",
+    "Dòng phụ tab GOAT PATH khi trỏ PLAY WITH FRIENDS: \"Your whole run, together\".",
+    "CONNECTION giữ nguyên chỗ."
+   ],
+   "gain": "Trả lời đúng câu \"chơi gì\", không còn chữ ELO. Chỉ đổi chữ (menu.js renderPrivate, runmap.js friends).",
+   "cost": "2 chuỗi mới, dịch 4 gói."
+  },
+  {
+   "id": "B",
+   "name": "A + đưa CONNECTION vào bước tạo phòng",
+   "wire": "private.wire-b.svg",
+   "notes": [
+    "Như A.",
+    "CONNECTION thành 1 dòng nhỏ dưới thẻ CREATE ROOM (chỉ ảnh hưởng tạo phòng)."
+   ],
+   "gain": "Màn đầu chỉ còn 2 lựa chọn chính.",
+   "cost": "Đổi chỗ phím ↓ tới CONNECTION, sửa renderPrivate + input."
+  }
+ ],
+ "pick": "A. CONNECTION ít người thấy phiền, đổi chỗ không đáng công."
+}

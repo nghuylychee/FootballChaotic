@@ -1,7 +1,9 @@
 /* RoadUI — trang AREA MAP (tên cũ GOAT PATH, nay là tên chế độ run — docs/RUN_DESIGN.md): hành trình xếp hạng dạng bản đồ biển trình bày ngang (kiểu Trophy Road của Clash Royale).
  *   Mở từ màn PLAY › RANKED: bấm cụm "Area + thanh tiến độ" ở đầu màn (hoặc ↑ chọn rồi Enter).
  *   Mỗi Area = 1 đảo pixel (màu Area, sân thu nhỏ của Area ở giữa, cờ tên phía trên, Tuyệt kỹ + Core vào Area phía dưới).
- *   Đảo nối nhau bằng đường đi zigzag; mốc ⅓ / ⅔ của Core Road = cột mốc trên đường (★Elo + Core mở ở đó).
+ *   Đảo nối nhau bằng đường đi zigzag; mốc ⅓ / ⅔ của Core Road = cột mốc trên đường (mốc + Core mở ở đó).
+ *   Core Road mở theo tiến trình GOAT PATH (run.coreRoad.fromRuns, 2026-11-11): mốc ghi biển chỉ đường + điểm Core Road (PX.road), đã qua
+ *   = MainPath.roadLevel(); Elo (★) chỉ còn là khoảng Elo của Area + chỗ bạn đứng. fromRuns tắt: mốc ★Elo như cũ.
  *   Nhân vật của bạn đứng trên đường đúng chỗ Elo hiện tại; đoạn đã đi tô vàng. Thanh dưới: chi tiết đảo đang chọn.
  *   ←→ chọn đảo (camera trượt theo) · lăn chuột = cuộn ngang · bấm đảo để chọn.
  *   mainPath.roadSpoilers = false: Area chưa từng tới hiện ??? + bóng xám (mặc định true: hiện hết).
@@ -45,6 +47,10 @@ window.SFC = window.SFC || {};
       return { x: p.x + (q.x - p.x) * u, y: p.y + (q.y - p.y) * u };
     },
 
+    // nhãn 1 mốc Core Road + đã qua chưa (GOAT PATH: điểm Core Road của run · cũ: Elo cao nhất từng đạt)
+    mile(e) { return MP().roadFromRuns() ? PX().road(e) : PX().elo(e); },
+    passed(e) { return MP().roadLevel() >= e; },
+
     // 1 phần thưởng: Tuyệt kỹ (khung vàng) / Core (viền màu trường phái). Đã có: sáng + ✓ · chưa có: mờ · chưa lộ: bóng xám
     reward(id, show, big = false) {
       const c = CORES().list[id];
@@ -81,10 +87,10 @@ window.SFC = window.SFC || {};
       const show = this.seen(a), st = MP().state, n = Math.max(1, (A.road || []).length);
       return (A.road || []).map((ids, i) => {
         if (i === 0 || !ids.length) return '';
-        const e = MP().roadElo(a, i), p = this.along(a, i / n), done = st.peak >= e;
+        const e = MP().roadElo(a, i), p = this.along(a, i / n), done = this.passed(e);
         // 2 cột mốc so le: Core của mốc ⅓ phía trên đường, mốc ⅔ phía dưới (không chồng lên nhau)
-        return `<div class="rd-node ${done ? 'done' : ''} ${a > st.best ? 'ahead' : ''} ${i % 2 ? 'up' : 'dn'}" style="left:${p.x}px;top:${p.y}px">
-            <i class="rd-stone"></i><span class="rd-ne">${PX().elo(e)}</span><span class="rd-nl">${ids.map((id) => this.reward(id, show)).join('')}</span></div>`;
+        return `<div class="rd-node ${done ? 'done' : ''} ${a > st.best && !done ? 'ahead' : ''} ${i % 2 ? 'up' : 'dn'}" style="left:${p.x}px;top:${p.y}px">
+            <i class="rd-stone"></i><span class="rd-ne">${this.mile(e)}</span><span class="rd-nl">${ids.map((id) => this.reward(id, show)).join('')}</span></div>`;
       }).join('');
     },
 
@@ -109,7 +115,7 @@ window.SFC = window.SFC || {};
       const groups = (A.road || []).map((ids, i) => {
         const all = ids;
         if (!all.length) return '';
-        return `<span class="rd-ig ${st.peak >= MP().roadElo(a, i) ? 'done' : ''}">${PX().elo(MP().roadElo(a, i))} ${all.map((id) => `${this.reward(id, show)}<b class="${L[id] && L[id].role === 'ult' ? 'ult' : ''}">${name(id)}</b>`).join(' ')}</span>`;
+        return `<span class="rd-ig ${this.passed(MP().roadElo(a, i)) ? 'done' : ''}">${this.mile(MP().roadElo(a, i))} ${all.map((id) => `${this.reward(id, show)}<b class="${L[id] && L[id].role === 'ult' ? 'ult' : ''}">${name(id)}</b>`).join(' ')}</span>`;
       }).join('');
       const starter = a === 0 ? `<span class="rd-ig done">${PX().ui('star', 'sm')} ${esc(_t('{n} starter Cores', { n: SFC_CONFIG.progression.starterCores.filter((id) => L[id] && L[id].role !== 'ult').length }))}</span>` : '';
       return `<div class="rd-info" style="--ac:${show ? A.color : '#6a5f6e'}">
@@ -125,7 +131,8 @@ window.SFC = window.SFC || {};
       this.sel = Math.max(0, Math.min(this.sel, areas.length - 1));
       const old = menu.el.querySelector('.rd-view'), from = old ? old.scrollLeft : this.scroll;
       const normal = Object.keys(L).filter((id) => L[id].role !== 'ult');
-      const sum = `<div class="rd-sum">${PX().elo(st.elo)} <span>${esc(_t('CORES {n}/{total}', { n: PF().collection().length, total: normal.length }))}</span>
+      const road = MP().roadFromRuns() ? `<span title="${esc(_t('Core Road progress'))}">${PX().road(MP().roadLevel())}</span> ` : '';
+      const sum = `<div class="rd-sum">${PX().elo(st.elo)} ${road}<span>${esc(_t('CORES {n}/{total}', { n: PF().collection().length, total: normal.length }))}</span>
         <span>${esc(_t('ULT BOOK {n}/{total}', { n: PF().data.ultBook.length, total: PF().ultEntries().length }))}</span></div>`;
       const me = this.mePos(), W = PAD * 2 + (areas.length - 1) * STEP + STEP * 0.8;
       const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';

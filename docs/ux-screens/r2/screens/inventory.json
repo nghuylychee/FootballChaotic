@@ -1,0 +1,106 @@
+{
+ "id": "inventory",
+ "order": 3,
+ "title": "INVENTORY",
+ "where": "CHARACTER › INVENTORY (trang inv) · src/ui/gacha.js (pageInv, invEntries) · src/render/sprites.js drawItemIcon · css .inv-*",
+ "goal": "Xem đồ đang có, mặc món khác, phân rã đồ trùng lấy gold.",
+ "freq": "Sau mỗi lần mở hộp có đồ mới. Xét theo người đã quen.",
+ "lens": "người đã quen",
+ "level": "ổn",
+ "questions": [
+  "Có gì mới?",
+  "Món này trông thế nào khi mặc?",
+  "Đang mặc món nào?",
+  "Bỏ món trùng ở đâu?"
+ ],
+ "states": [
+  {
+   "id": "m-inv",
+   "label": "INVENTORY · COSTUMES",
+   "note": "Chỉ có 6 món mặc định (hồ sơ chưa mở hộp)."
+  }
+ ],
+ "keep": [
+  "Ô đang chọn viền vàng dày, nhãn E xanh cho món đang mặc: 2 trạng thái quan trọng nhất đọc được không cần chữ.",
+  "Bảng phải: nhân vật mặc thử món đang trỏ + tên + mô tả + EQUIPPED. Trả lời \"trông thế nào\" ngay.",
+  "Hàng lọc theo ô đồ là icon (mũ, mặt, giày, hiệu ứng, ăn mừng)."
+ ],
+ "findings": [
+  {
+   "n": 1,
+   "sev": "nhẹ",
+   "kind": "icon",
+   "title": "Ô giày và ô hiệu ứng gần như trống",
+   "body": "Icon cắt theo vùng (ICON_CROP): giày mặc định trắng nhỏ trên nền tối, nheo mắt chỉ còn 1 vệt đen; hiệu ứng \"None\" là người đứng trơn. Ô mặt cắt to cả đầu nên lệch cỡ với 5 ô kia. Không sai, chỉ lệch nhịp khi túi còn ít đồ.",
+   "evidence": [
+    "ảnh gốc",
+    "nheo mắt"
+   ],
+   "pins": [
+    {
+     "s": "m-inv",
+     "x": 400,
+     "y": 290
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "sev": "nhẹ",
+   "kind": "bố cục",
+   "title": "Túi ít đồ thì nửa trái trống",
+   "body": "Lưới 6 ô mỗi hàng chiếm 1 dải trên cùng; bảng chi tiết cao cả màn. Khi đã mở vài hộp thì lưới đầy dần, nên chỉ là cảm giác \"trống\" của người mới.",
+   "evidence": [
+    "ảnh gốc"
+   ],
+   "pins": [
+    {
+     "s": "m-inv",
+     "x": 360,
+     "y": 480
+    }
+   ]
+  }
+ ],
+ "inventory": [
+  [
+   "Lưới đồ + nhãn E",
+   "Có gì, đang mặc gì?",
+   "cần ngay",
+   "hạng 2",
+   ""
+  ],
+  [
+   "Nhân vật mặc thử",
+   "Trông thế nào?",
+   "cần ngay",
+   "hạng 1",
+   ""
+  ],
+  [
+   "Tên + mô tả + độ hiếm",
+   "Món gì?",
+   "cần ngay",
+   "hạng 2",
+   ""
+  ],
+  [
+   "Tab COSTUMES / CORES",
+   "Xem Core?",
+   "đôi khi",
+   "hạng 3",
+   ""
+  ],
+  [
+   "Hàng lọc ô đồ",
+   "Lọc",
+   "đôi khi",
+   "hạng 3",
+   ""
+  ]
+ ],
+ "fresh": [],
+ "verdict": "Ổn. 2 chi tiết nhẹ chỉ thấy khi túi gần trống.",
+ "options": [],
+ "pick": "Giữ."
+}

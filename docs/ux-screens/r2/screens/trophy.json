@@ -1,0 +1,158 @@
+{
+ "id": "trophy",
+ "order": 5,
+ "title": "TROPHY ROOM",
+ "where": "Trang chủ › nút cúp dưới SETTINGS (trang trophy) · src/ui/trophies.js (render, roomDom, shelfDom, albumDom, boardDom, drawRoom...) · Profile.data.runs",
+ "goal": "Ngắm thành tích GOAT PATH: cúp act, album sticker, các run gần nhất và kỷ lục.",
+ "freq": "Ít: sau 1 run đáng nhớ hoặc khi có thành tích chờ nhận (chấm vàng). Xét theo người đã chơi vài run.",
+ "lens": "người mới",
+ "level": "chỉnh",
+ "questions": [
+  "Tôi đã đạt được gì?",
+  "Còn thiếu gì?",
+  "Run gần nhất ra sao?",
+  "Có gì để nhận không?"
+ ],
+ "states": [
+  {
+   "id": "m-trophy-room",
+   "label": "Phòng (3 góc)",
+   "note": "Hồ sơ thử: 7 run, 1 lần vô địch, act 1 hạ boss 4 lần, act 2 1 lần, 5 run trên bảng (lịch sử chỉ tính từ 2026-10-31)."
+  },
+  {
+   "id": "m-trophy-shelf",
+   "label": "Kệ cúp",
+   "note": "Kệ cúp FOOTBALL STORY cũ đã gỡ (2026-11-11)."
+  },
+  {
+   "id": "m-trophy-album",
+   "label": "Album · LEGENDS",
+   "note": ""
+  },
+  {
+   "id": "m-trophy-board",
+   "label": "Bảng run + kỷ lục",
+   "note": ""
+  }
+ ],
+ "keep": [
+  "Phòng pixel art 3 góc rõ chức năng: kệ cúp, bàn album, bảng ghim. Nhãn dưới sàn có tên + 1 số.",
+  "Kệ cúp: cúp chưa đạt là bóng đen, đạt rồi có màu + lấp lánh; dải dưới cùng nói cách đạt.",
+  "Album: thẻ LEGEND có hình + tên, chưa có là bóng ???; mục lục phải có số x/y từng trang.",
+  "Chấm vàng 7 trên ALBUM / ACHIEVEMENTS: báo có thưởng chờ nhận ở đúng chỗ."
+ ],
+ "findings": [
+  {
+   "n": 1,
+   "sev": "vừa",
+   "kind": "số mâu thuẫn",
+   "title": "2 số \"runs\" khác nhau trên cùng 1 màn",
+   "body": "Góc phải trên: chip bóng = 7 (stats().plays, tooltip Runs). Sàn: RUNS 5 (độ dài hist, tối đa 12, chỉ tính từ 2026-10-31). Chip cúp = 1 (số lần vô địch) ngay cạnh nhãn TROPHIES 3/4. Cùng 1 màn có 2 cặp số gần nghĩa mà khác nhau, người chơi không biết tin số nào.",
+   "evidence": [
+    "ảnh gốc m-trophy-room",
+    "code: trophies.js render (tr2-chips), roomDom (lab)"
+   ],
+   "pins": [
+    {
+     "s": "m-trophy-room",
+     "x": 1090,
+     "y": 80
+    },
+    {
+     "s": "m-trophy-room",
+     "x": 1050,
+     "y": 470
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "sev": "nhẹ",
+   "kind": "icon",
+   "title": "Kỷ lục thời gian dùng icon lịch",
+   "body": "Bảng phấn: \"Fastest GOAT run\" 33:00 vẽ bằng icon lịch (rec(..., PX().ui('calendar'))). Lịch đọc là \"ngày\". Game vừa có icon đồng hồ bấm giờ (BADGE Referee's Watch, ui-bd-watch) dùng lại được.",
+   "evidence": [
+    "ảnh gốc m-trophy-board",
+    "code: trophies.js boardDom rec"
+   ],
+   "pins": [
+    {
+     "s": "m-trophy-board",
+     "x": 1100,
+     "y": 340
+    }
+   ]
+  },
+  {
+   "n": 3,
+   "sev": "nhẹ",
+   "kind": "icon",
+   "title": "2 chân dung cuối bảng kỷ lục không có nhãn",
+   "body": "2 ô cuối bảng phấn là 2 LEGEND, không chữ, không số (chỉ có tooltip). Đoán được là \"LEGEND hay dùng\" nhưng không chắc.",
+   "evidence": [
+    "ảnh gốc m-trophy-board"
+   ],
+   "pins": [
+    {
+     "s": "m-trophy-board",
+     "x": 1080,
+     "y": 640
+    }
+   ]
+  }
+ ],
+ "inventory": [
+  [
+   "Chip góc phải (cúp · bóng · album %)",
+   "Tóm tắt?",
+   "không cần ở phòng",
+   "hạng 3",
+   "trùng nhãn sàn, số khác"
+  ],
+  [
+   "Nhãn sàn TROPHIES / ALBUM / RUNS",
+   "Góc nào có gì?",
+   "cần ngay",
+   "hạng 2",
+   ""
+  ],
+  [
+   "Kệ cúp pixel",
+   "Đạt được gì?",
+   "cần ngay",
+   "hạng 1",
+   ""
+  ],
+  [
+   "Bảng ghim",
+   "Run gần nhất?",
+   "đôi khi",
+   "hạng 2",
+   ""
+  ],
+  [
+   "Bảng phấn kỷ lục",
+   "Kỷ lục?",
+   "đôi khi",
+   "hạng 2",
+   "icon lịch cho thời gian"
+  ]
+ ],
+ "fresh": [],
+ "verdict": "Phòng đẹp, đúng chức năng. Sửa số trùng nghĩa và 1 icon.",
+ "options": [
+  {
+   "id": "A",
+   "name": "1 bộ số cho cả màn",
+   "wire": "trophy.wire-a.svg",
+   "notes": [
+    "Chip góc phải đổi thành đúng 3 số của 3 góc: TROPHIES 3/4 · ALBUM 20% · RUNS (cùng 1 nguồn).",
+    "RUNS dùng stats().plays ở cả 2 chỗ (bảng ghim vẫn chỉ hiện 12 run gần nhất).",
+    "Kỷ lục thời gian dùng icon đồng hồ bấm giờ."
+   ],
+   "gain": "Không còn 2 số gần nghĩa. Sửa vài dòng trong trophies.js (render, roomDom, boardDom).",
+   "cost": "Không đáng kể."
+  }
+ ],
+ "pick": "A."
+}

@@ -397,7 +397,7 @@ window.SFC = window.SFC || {};
           if (e.locked) return `<span class="bad">${PX().ui('lock', 'sm')} ${esc(SFC.MainPath.unlockHint(e.id))}</span>`;
           // Tuyệt kỹ: không vào lượt chọn Core, mở theo công thức trong trận (CHARACTER > ULT BOOK)
           if (CORE_LIST()[e.id] && CORE_LIST()[e.id].role === 'ult') return _t('Ultimate · unlock it in a match by stacking Cores of one school');
-          return SFC.MainPath.coreSource(e.id).kind === 'starter' ? _t('Starter Core, always in your pool') : _t('Unlocked on the Main Path · in your Core draft pool');
+          return SFC.MainPath.coreSource(e.id).kind === 'starter' ? _t('Starter Core, always in your pool') : (SFC.MainPath.roadFromRuns() ? _t('Unlocked on the GOAT PATH · in your Core draft pool') : _t('Unlocked on the Main Path · in your Core draft pool'));
         };
         const status = !PROG().coreGacha ? pathStatus() : e.def ? _t('Starter Core, always in your pool') : ok ? _t('In your Core draft pool') : `<span class="bad">${_t('Requires LV {n}', { n: lv })}</span>`;
         const sug = suggest(e.id).map((k) => {

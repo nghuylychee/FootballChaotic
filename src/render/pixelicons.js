@@ -35,6 +35,21 @@ window.SFC = window.SFC || {};
     'ui-gear': ['.....ll.....', '..l.llll.l..', '.llllllllll.', '..lllEElll..', '.lllE..Elll.', 'llllE..Ellll', 'eeeeE..Eeeee', '.eeeE..Eeee.', '..eeeEEeee..', '.eeeeeeeeee.', '..e.eeee.e..', '.....ee.....'],
     // GOAT PATH: túi đồ (BADGE Kit Bag) · GEAR đồ cá nhân (config/run.config.js run.gear)
     'ui-kitbag': ['............', '....llll....', '...l....l...', '.bbbbbbbbbb.', 'bbwbbbbbbwbb', 'bbbbbbbbbbbb', 'bbbBBBBBBbbb', 'bbbbbbbbbbbb', 'bbbbbbbbbbbb', '.BBBBBBBBBB.', '............', '............'],
+    // cột mốc CORE ROAD (tiến trình GOAT PATH mở Core, run.coreRoad.fromRuns): biển chỉ đường, khác ★ của Elo
+    'ui-road': ['....yyyyyy..', '....yyyyyyy.', '....yYYYYyyy', '....yyyyyyy.', '....yyyyyy..', '.....nn.....', '.....nn.....', '.....nn.....', '.....nn.....', '.....nn.....', '...llllll...', '..eeeeeeee..'],
+    // icon riêng của từng BADGE (run.badges[].icon = 'bd-<id>', 2026-11-11: trước đó dùng lại icon giao diện)
+    'ui-bd-report': ['....llll....', '..nnleelnn..', '..nwwwwwwn..', '..nwkkkwwn..', '..nwwwwwwn..', '..nwkkkkwn..', '..nwwwwwwn..', '..nwkkwwwn..', '..nwwwrwrn..', '..nwwwwrwn..', '..nnnnnnnn..', '............'],
+    'ui-bd-coin': ['............', '....llll....', '..llwwwwll..', '.lwwllllwwl.', '.lwleeeelwl.', 'lwleewweelwl', 'lwleewweelwl', '.lwleeeelwl.', '.lwwllllwwl.', '..llwwwwll..', '....eeee....', '............'],
+    'ui-bd-camp': ['.....rrr....', '.....rr.....', '.....e......', '.....gg.....', '....gggg....', '...gggGgg...', '..gggGkGgg..', '.gggGkkkGgg.', 'gggGkkkkkGgg', 'GGGGGGGGGGGG', '............', '............'],
+    'ui-bd-drink': ['....llll....', '...leeeel...', '...cccccC...', '...cwcyyC...', '...cwyycC...', '...cyyyyC...', '...cwyycC...', '...cyyccC...', '...cccccC...', '...leeeel...', '....llll....', '............'],
+    'ui-bd-crowd': ['............', 'rrwwrrwwrrww', 'RRwwRRwwRRww', 's..........s', 's..ss..ss..s', 'ss.ss..ss.ss', 'bbbbbbbbbbbb', 'bbbbbbbbbbbb', 'BBBBBBBBBBBB', 'llllllllllll', 'eeeeeeeeeeee', '............'],
+    'ui-bd-var': ['............', 'eeeeeeeeeeee', 'eBBBBBBBBBBe', 'eBwwwwwwwwBe', 'eBwBBBBBBwBe', 'eBwBBwwBBwBe', 'eBwBBwwBBwBe', 'eBwBBBBBBwBe', 'eBwwwwwwwwBe', 'eBBBBBBBBBBe', 'eeeeerreeeee', '....EEEE....'],
+    'ui-bd-watch': ['....rrrr....', '.....ll.....', '...llllll.e.', '..lwwwwwwl..', '.lwwwkwwwwl.', '.lwwwkwwwwl.', '.lwwwkkkwwl.', '.lwwwwwwwwl.', '.lwwwwwwwwl.', '..lwwwwwwl..', '...llllll...', '............'],
+    'ui-bd-sponsor': ['..rr....rr..', '.rrrrwwrrrr.', 'rrrrrrrrrrrr', 'rrrrrrrrrrrr', 'RR.ryyyyr.RR', '...ryrryr...', '...ryyyyr...', '...rrrrrr...', '...rrrrrr...', '...RRRRRR...', '............', '............'],
+    'ui-bd-ticket': ['............', '............', 'yyyyyyyyyyyy', 'ykkkkkkyeyyy', 'yyyyyyyyyyyy', '.ykkkkyyeyy.', '.yyyyyyyyyy.', 'ykkkyyyyeyyy', 'yyyyyyyyyyyy', 'YYYYYYYYYYYY', '............', '............'],
+    'ui-bd-icebath': ['............', '............', '...aa..aa...', '..awa.awa...', 'eccacccaccce', 'elccccccccle', 'elllllllllle', '.elllllllle.', '..eeeeeeee..', '..e......e..', '............', '............'],
+    'ui-bd-shin': ['...gggggg...', '..gwgggggg..', '..gwgggggg..', '.egggggggge.', '..gggggggg..', '..gggGGggg..', '..ggGggGgg..', '..gggGGggg..', '.egggggggge.', '...gggggg...', '....GGGG....', '............'],
+    'ui-bd-bibs': ['..oo....oo..', '..oo....oo..', '.ooo....ooo.', '.oooo..oooo.', '.oooooooooo.', '.oowowowowo.', '.owowowowoo.', '.oowowowowo.', '.oooooooooo.', '.OOOOOOOOOO.', '............', '............'],
     'gear-spikes': ['............', '............', '.......cc...', '......cwcc..', '.....cccccc.', '..ccccwccccc', '.ccccccccccc', 'cccccccccccc', 'CCCCCCCCCCCC', '.l..l..l..l.', '.l..l..l..l.', '............'],
     'gear-boots':  ['............', '..oooo......', '..oooo......', '..oooo......', '..ooooo.....', '..oowoooo...', '..ooooowooo.', '..oooooooooo', '..OOOOOOOOOO', '...k..k..k..', '............', '............'],
     'gear-band':   ['............', '............', '...yyyyyy...', '..yYYYYYYy..', '.yYwwwwwwYy.', '.yY......Yy.', '.yY......Yy.', '.yYwwwwwwYy.', '..yYYYYYYy..', '...yyyyyy...', '............', '............'],
@@ -275,6 +290,8 @@ window.SFC = window.SFC || {};
     ui(name, extra) { return this.html('ui-' + name, '', extra); },
     // điểm xếp hạng (Elo) hiển thị bằng ngôi sao: ★ + số (chỗ chỉ có chữ thường dùng ký tự '★' + số: SFC.MainPath.stars)
     elo(n, extra = '') { return `<span class="elo ${extra}">${this.ui('star', 'sm')}<b>${n}</b></span>`; },
+    // tiến trình CORE ROAD (điểm run, run.coreRoad): biển chỉ đường + số — tách khỏi ★ Elo của Ranked
+    road(n, extra = '') { return `<span class="elo road ${extra}">${this.ui('road', 'sm')}<b>${n}</b></span>`; },
   };
 
   SFC.PixelIcon = PixelIcon;

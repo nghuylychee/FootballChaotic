@@ -762,10 +762,10 @@ window.SFC = window.SFC || {};
       const reward = locked
         ? `<div class="pu unk"><i>${PX().ui('unknown', 'x2')}</i><div><b>???</b><span>${esc(_t('Reach this Area to find out'))}</span></div></div>`
         : entry ? `<div class="pu ${got ? 'got' : ''}" title="${esc(SFC.CoreScale.plain(entry))}"><i>${PX().core(entry, 'x2')}</i><div><b>${esc(SFC_CONFIG.cores.list[entry].name)}</b>
-            <span>${esc(_t('CORE'))} · ${got ? `${PX().ui('check', 'sm')} ${esc(_t('UNLOCKED'))}` : esc(_t('first time you reach this Area'))}</span></div></div>`
+            <span>${esc(_t('CORE'))} · ${got ? `${PX().ui('check', 'sm')} ${esc(_t('UNLOCKED'))}` : MP.roadFromRuns() ? PX().road(MP.roadElo(v, 0)) : esc(_t('first time you reach this Area'))}</span></div></div>`
         : `<div class="pu none"><i>${PX().ui('star', 'x2')}</i><div><b>${esc(_t('STARTING AREA'))}</b><span>${esc(_t('Gold & XP after every match'))}</span></div></div>`;
-      // Core Road của Area: mỗi nấc = mốc Elo + Core mở ở đó (đã có: icon sáng · chưa có: bóng đen, không lộ tên)
-      const road = locked ? '' : `<div class="proad-cores"><b>${esc(_t('CORES'))}</b>${(A.road || []).map((ids, i) => (ids.length ? `<div class="prc"><span>${PX().elo(MP.roadElo(v, i))}</span>${ids.map((id) => {
+      // Core Road của Area: mỗi nấc = mốc (GOAT PATH: điểm Core Road, PX.road · cũ: Elo) + Core mở ở đó (đã có: icon sáng · chưa có: bóng đen, không lộ tên)
+      const road = locked ? '' : `<div class="proad-cores"><b>${esc(_t('CORES'))}</b>${(A.road || []).map((ids, i) => (ids.length ? `<div class="prc"><span>${MP.roadFromRuns() ? PX().road(MP.roadElo(v, i)) : PX().elo(MP.roadElo(v, i))}</span>${ids.map((id) => {
         const have = PF().coreUnlocked(id);
         return `<i class="${have ? 'got' : ''}" title="${have ? esc(SFC_CONFIG.cores.list[id].name) : '???'}">${PX().core(id, have ? '' : 'sil')}</i>`;
       }).join('')}</div>` : '')).join('') || `<em>${esc(_t('Starter Cores'))}</em>`}</div>`;

@@ -169,10 +169,6 @@ SFC_CONFIG.view = {
     poseEvery: 2.4,         // cứ mỗi bấy nhiêu giây tạo dáng 1 lần (FWD: vung chân sút, DEF: tung cú đấm)
     poseTime: 0.35,
 
-    // số áo theo vị trí (character của người chơi: youNumber)
-    numbers: { DEF: 4, FWD: 9 },
-    youNumber: 10,
-
     // chỉ số so sánh (key trong stats của đội) + nhãn
     stats: [['speed', 'SPD'], ['power', 'PWR'], ['pass', 'PAS'], ['tackle', 'PHY'], ['dribble', 'DRI'], ['accuracy', 'SHO']],
     // OVR = trung bình chỉ số x ovrScale (1.0 -> 80), giới hạn 1..99. Thanh chỉ số: statMin -> 0%, statMax -> 100%

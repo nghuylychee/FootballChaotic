@@ -1,0 +1,15 @@
+{
+ "page": "shop",
+ "sel": {
+  "cls": "boxrow sel ",
+  "txt": "?\nStreet Box\nCOSTUME ·\n100",
+  "x": 44,
+  "y": 128,
+  "w": 380,
+  "h": 90
+ },
+ "order": [],
+ "id": "m-shop",
+ "title": "SHOP",
+ "moving_pct": 0.0
+}

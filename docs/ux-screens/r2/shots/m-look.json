@@ -1,0 +1,15 @@
+{
+ "page": "look",
+ "sel": {
+  "cls": "mi btn sel     ",
+  "txt": "RENAME\nLONG",
+  "x": 44,
+  "y": 132,
+  "w": 464,
+  "h": 76
+ },
+ "order": [],
+ "id": "m-look",
+ "title": "CHARACTER › APPEARANCE",
+ "moving_pct": 2.5
+}

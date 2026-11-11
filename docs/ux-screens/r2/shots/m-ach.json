@@ -1,0 +1,15 @@
+{
+ "page": "ach",
+ "sel": {
+  "cls": "ac-row sel ready",
+  "txt": "First Blood\nWin a match\nCLAIM",
+  "x": 48,
+  "y": 132,
+  "w": 692,
+  "h": 100
+ },
+ "order": [],
+ "id": "m-ach",
+ "title": "ACHIEVEMENTS",
+ "moving_pct": 0.5
+}

@@ -1,0 +1,31 @@
+{
+ "id": "ranked",
+ "order": 9,
+ "title": "RANKED + AREA MAP",
+ "where": "PLAY › tab RANKED (trang party) › header Area (trang road) · src/ui/menu.js case 'party', src/ui/road.js",
+ "hidden": "Tab RANKED đang ẩn từ 2026-10-31 (mainPath.tab: false): PLAY chỉ còn GOAT PATH · PRIVATE MATCH, mọi lối vào trang party chuyển sang GOAT PATH",
+ "goal": "Tìm trận xếp hạng; AREA MAP xem các Area và mốc Core Road.",
+ "freq": "Đang không vào được.",
+ "lens": "người mới",
+ "level": "ổn",
+ "questions": [
+  "Elo của tôi ở đâu?",
+  "Core tiếp theo mở khi nào?"
+ ],
+ "states": [
+  {
+   "id": "m-areamap",
+   "label": "AREA MAP (mở bằng code)",
+   "note": "Mốc Core Road vẽ biển chỉ đường + điểm Core Road của run (sửa 2026-11-11), ★ chỉ còn là khoảng Elo của Area."
+  }
+ ],
+ "keep": [
+  "Mốc Core Road giờ tách khỏi ★ Elo: biển chỉ đường + số, đã qua có ✓."
+ ],
+ "findings": [],
+ "inventory": [],
+ "fresh": [],
+ "verdict": "Không soi vì không vào được. Bật lại RANKED thì soi riêng, nhất là việc Core mở theo GOAT PATH mà màn này vẫn là bản đồ Elo.",
+ "options": [],
+ "pick": "Để dành."
+}

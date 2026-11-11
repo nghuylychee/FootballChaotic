@@ -202,7 +202,6 @@ window.SFC = window.SFC || {};
       const povr = (ctl || p.mate) && p.ovr && !SFC.Profile.statsHidden() ? `<b class="in-povr">${p.ovr}<span>${esc(_t('OVR'))}</span></b>` : '';
       // góc trên thẻ: vị trí trong đội hình (thay số áo, không ai đoán ra; từ 2026-11-01 chỉ DEF giữ khung nên vị trí lại có nghĩa).
       // Chữ FWD / MID / DEF để nguyên như Pause và bảng SQUAD. Cùng hàng với nhãn bên phải (.in-head: nhãn dịch dài thì xuống dòng).
-      // intro.numbers / youNumber trong config không còn dùng; file đó máy chủ cũng tải nên để xoá cùng lần tăng phiên bản máy chủ kế tiếp
       return `<div class="in-card ${you ? 'you' : ''}" style="--d:${d}s">
         <div class="in-head"><b class="in-pos">${esc(p.role || '')}</b>${tag}</div>${povr}
         <canvas data-pid="${p.id}" data-delay="${d}"></canvas>

@@ -1,0 +1,15 @@
+{
+ "page": "settings",
+ "sel": {
+  "cls": "mi btn sel     ",
+  "txt": "SOUND & DISPLAY\nMusic · sound FX",
+  "x": 44,
+  "y": 132,
+  "w": 464,
+  "h": 76
+ },
+ "order": [],
+ "id": "m-settings",
+ "title": "SETTINGS",
+ "moving_pct": 2.3
+}

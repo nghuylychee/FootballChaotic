@@ -1,0 +1,507 @@
+<title>Soi màn ngoài trận</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&family=Silkscreen&display=swap">
+<style>
+/* Bố cục: 1 cột đọc ~70ch, ảnh màn và wireframe được nới rộng hết cột 1080px; mỗi màn = 1 khối dài đọc từ trên xuống
+   (mục tiêu -> ảnh 4 chế độ -> vấn đề -> kiểm kê -> mắt mới -> 2 phương án -> góp ý). Tối là mặc định như chính game. */
+:root {
+  --bg: #121519; --surface: #1a1e24; --raised: #222730; --line: #2e343e; --fg: #e8ebf0; --muted: #9aa3b1;
+  --acc: #ffe14f; --acc-ink: #ffe14f; --acc-strong: #ffd23f; --on-acc: #1b1a10; --legend: #ffb02e; --pin: #ff3e7f; --good: #6bdc8a; --bad: #ff6a7d;
+  --wf-bg: #171a1f; --wf-map: #22262d; --wf-edge: #3a404a; --wf-pitch: #2e333b; --wf-line: #6b7380; --wf-done: #8a929e; --wf-node: #333941;
+  --wf-hi: #eef0f4; --wf-ring: #5c6470; --wf-ink: #c9ced6; --wf-ink-hi: #1b1e23; --wf-dark: #191c21; --wf-text: #b9c0ca;
+  --f-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif; --f-px: "Silkscreen", "Courier New", monospace; --f-mono: "JetBrains Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f3f4f1; --surface: #ffffff; --raised: #f7f7f4; --line: #dcdfe3; --fg: #16191e; --muted: #5a6371;
+  --acc: #ffe14f; --acc-ink: #8a6a00; --acc-strong: #d9a400; --on-acc: #1b1a10; --legend: #d98200; --pin: #e0245e; --good: #1f8a4c; --bad: #c8283f;
+  --wf-bg: #e6e8eb; --wf-map: #f8f9fa; --wf-edge: #b9bfc8; --wf-pitch: #dde1e6; --wf-line: #7e8794; --wf-done: #7e8794; --wf-node: #dfe3e8;
+  --wf-hi: #ffffff; --wf-ring: #a3abb6; --wf-ink: #3b424c; --wf-ink-hi: #1b1e23; --wf-dark: #c6ccd4; --wf-text: #444c57; color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f3f4f1; --surface: #ffffff; --raised: #f7f7f4; --line: #dcdfe3; --fg: #16191e; --muted: #5a6371;
+  --acc: #ffe14f; --acc-ink: #8a6a00; --acc-strong: #d9a400; --on-acc: #1b1a10; --legend: #d98200; --pin: #e0245e; --good: #1f8a4c; --bad: #c8283f;
+  --wf-bg: #e6e8eb; --wf-map: #f8f9fa; --wf-edge: #b9bfc8; --wf-pitch: #dde1e6; --wf-line: #7e8794; --wf-done: #7e8794; --wf-node: #dfe3e8;
+  --wf-hi: #ffffff; --wf-ring: #a3abb6; --wf-ink: #3b424c; --wf-ink-hi: #1b1e23; --wf-dark: #c6ccd4; --wf-text: #444c57; color-scheme: light; }
+
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--f-body); }
+.page { max-width: 1080px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 48px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 26px; font-weight: 800; }
+h3 { font-size: 17px; font-weight: 700; }
+p { margin: 0; }
+.read { max-width: 70ch; }
+.eyebrow, .px { font-family: var(--f-px); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+code, .mono { font-family: var(--f-mono); font-size: 0.86em; }
+.muted { color: var(--muted); }
+.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* đầu trang */
+header.top { display: flex; flex-direction: column; gap: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.chip.acc { background: var(--acc); color: var(--on-acc); border-color: var(--acc); font-weight: 700; }
+
+/* cách soi */
+.method { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; min-width: 0; }
+.box h3 { margin-bottom: 8px; }
+ol.q { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 4px; }
+dl.modes { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
+dl.modes dt { font-family: var(--f-px); font-size: 12px; color: var(--acc-ink); padding-top: 3px; }
+dl.modes dd { margin: 0; }
+details.rules summary { cursor: pointer; font-weight: 700; }
+details.rules ul { margin: 10px 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
+
+/* khối 1 màn */
+section.screen { display: flex; flex-direction: column; gap: 28px; border-top: 3px solid var(--fg); padding-top: 22px; }
+.sc-head { display: flex; flex-direction: column; gap: 6px; }
+.where { color: var(--muted); font-family: var(--f-mono); font-size: 12.5px; overflow-wrap: anywhere; }
+.brief { display: grid; grid-template-columns: 1.1fr 1fr 1.2fr; gap: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.brief > div { padding: 16px 18px; min-width: 0; }
+.brief > div + div { border-left: 1px solid var(--line); }
+.brief .k { margin-bottom: 6px; }
+.brief ul { margin: 0; padding-left: 1.1em; }
+@media (max-width: 760px) { .brief { grid-template-columns: 1fr; } .brief > div + div { border-left: 0; border-top: 1px solid var(--line); } }
+
+/* ảnh 4 chế độ */
+.viewer { display: flex; flex-direction: column; gap: 10px; }
+.vbar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; flex-wrap: wrap; }
+.seg button { font: 500 13px/1 var(--f-body); color: var(--muted); background: var(--surface); border: 0; padding: 9px 13px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); font-weight: 700; }
+.seg button:focus-visible, .btn:focus-visible, .opt input:focus-visible + span, textarea:focus-visible, .fd:focus-visible { outline: 2px solid var(--acc-strong); outline-offset: 2px; }
+.pinsw { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+.shot { position: relative; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; background: #000; border-radius: 4px; overflow: hidden; }
+.shot img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.pin { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: var(--pin); color: #fff; font: 700 13px/26px var(--f-body); text-align: center; border: 2px solid #fff; box-shadow: 0 1px 0 2px rgba(0,0,0,.45); transition: transform .15s; cursor: pointer; }
+.pin.hot { transform: scale(1.35); z-index: 2; }
+.shot.nopins .pin { display: none; }
+.cap { font-size: 13.5px; color: var(--muted); }
+.cap b { color: var(--fg); font-weight: 600; }
+
+/* vấn đề */
+.fds { display: flex; flex-direction: column; gap: 10px; }
+.fd { display: grid; grid-template-columns: 34px 1fr; gap: 4px 14px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 6px; padding: 14px 16px; cursor: pointer; }
+.fd.s-nặng { border-left-color: var(--bad); }
+.fd.s-vừa { border-left-color: var(--acc-strong); }
+.fd.hot { background: var(--raised); border-color: var(--pin); border-left-color: var(--pin); }
+.fd .no { grid-row: span 3; width: 28px; height: 28px; border-radius: 50%; background: var(--pin); color: #fff; font: 700 14px/28px var(--f-body); text-align: center; }
+.fd .meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.fd .sev { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.fd.s-nặng .sev { color: var(--bad); } .fd.s-vừa .sev { color: var(--acc-ink); } .fd.s-nhẹ .sev { color: var(--muted); }
+.fd .kind { font-size: 12px; color: var(--muted); }
+.fd h3 { font-size: 16px; }
+.fd p { max-width: 75ch; }
+.fd .ev { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.fd .ev span { font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; }
+ul.keep { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; max-width: 80ch; }
+ul.keep li { padding-left: 1.6em; position: relative; }
+ul.keep li::before { content: "✓"; position: absolute; left: 0; color: var(--good); font-weight: 800; }
+
+/* kiểm kê */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; background: var(--surface); }
+tr:last-child td { border-bottom: 0; }
+td .need { font-size: 12.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid var(--line); }
+td .need.now { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+td .need.plan { border-color: var(--acc-strong); color: var(--acc-ink); }
+td .need.no { color: var(--muted); text-decoration: line-through; }
+
+/* mắt mới */
+.quotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+blockquote { margin: 0; padding: 12px 16px; border-left: 3px solid var(--muted); background: var(--surface); border-radius: 0 6px 6px 0; font-size: 14px; font-style: italic; }
+.verdict { font-size: 18px; font-weight: 700; max-width: 70ch; padding: 14px 18px; border: 2px solid var(--fg); border-radius: 6px; }
+
+/* 2 phương án */
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.opts > .opt-card:only-child { grid-column: 1 / -1; max-width: 640px; }
+@media (max-width: 860px) { .opts { grid-template-columns: 1fr; } }
+.opt-card { display: flex; flex-direction: column; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; min-width: 0; }
+.opt-card .tag { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 6px; background: var(--fg); color: var(--bg); font: 800 16px/1 var(--f-body); margin-right: 8px; vertical-align: middle; }
+.opt-card ol { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.opt-card ol li::marker { color: var(--pin); font-weight: 800; }
+.gc { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14px; }
+.gc dt { font-weight: 700; } .gc dt.g { color: var(--good); } .gc dt.c { color: var(--bad); }
+.gc dd { margin: 0; }
+.pick { max-width: 75ch; padding-left: 14px; border-left: 3px solid var(--acc-strong); }
+
+/* wireframe */
+svg.wf { width: 100%; height: auto; display: block; border-radius: 4px; font-family: var(--f-body); }
+.wf-bg { fill: var(--wf-bg); } .wf-map { fill: var(--wf-map); } .wf-frame { fill: none; stroke: var(--wf-edge); stroke-width: 2; }
+.wf-pitch line, .wf-pitch circle, .wf-pitch rect { fill: none; stroke: var(--wf-pitch); stroke-width: 1.2; } .wf-goal { fill: var(--wf-edge); }
+.wf-l { stroke: var(--wf-line); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.wf-l.past { opacity: 0.25; } .wf-l.done { stroke: var(--wf-done); stroke-width: 2.2; stroke-dasharray: none; } .wf-l.next { stroke: var(--acc-strong); stroke-width: 3; stroke-dasharray: none; }
+.wf-nc { fill: var(--wf-node); stroke: var(--wf-ring); stroke-width: 1.5; }
+.wf-ico { fill: none; stroke: var(--wf-ink); stroke-width: 1.4; stroke-linejoin: round; } .wf-icof { fill: var(--wf-ink); }
+.wf-g { fill: var(--wf-ink); font-weight: 800; text-anchor: middle; }
+.wf-n.future { opacity: 0.5; } .wf-n.past { opacity: 0.2; }
+.wf-n.leg .wf-nc, .wf-n.boss .wf-nc { stroke: var(--legend); stroke-width: 2; }
+.wf-n.avail .wf-nc { fill: var(--wf-hi); stroke: var(--acc-strong); stroke-width: 3; }
+.wf-n.avail .wf-ico { stroke: var(--wf-ink-hi); } .wf-n.avail .wf-icof, .wf-n.avail .wf-g { fill: var(--wf-ink-hi); }
+.wf-n.sel .wf-nc { stroke-width: 4; }
+.wf-n.done .wf-nc { fill: var(--wf-dark); stroke: var(--wf-ring); } .wf-n.done .wf-ico { opacity: 0.6; }
+.wf-n.at .wf-nc { stroke: var(--fg); stroke-width: 2; }
+.wf-tick { fill: none; stroke: var(--good); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.wf-lab rect { fill: var(--acc); } .wf-lab text { fill: var(--on-acc); font-size: 9px; font-weight: 800; text-anchor: middle; letter-spacing: 0.04em; }
+.wf-you rect { fill: var(--fg); } .wf-you circle { fill: var(--bg); } .wf-you text { fill: var(--bg); font-size: 8px; font-weight: 800; text-anchor: middle; }
+.wf-pin circle { fill: var(--pin); stroke: #fff; stroke-width: 1.4; } .wf-pin text { fill: #fff; font-size: 9px; font-weight: 800; text-anchor: middle; }
+.wf-bar rect { fill: var(--wf-map); stroke: var(--wf-edge); } .wf-bar .wf-bd { fill: none; stroke: var(--wf-line); }
+.wf-t { fill: var(--wf-text); font-size: 8.5px; font-weight: 600; letter-spacing: 0.03em; }
+.wf-chip rect { fill: var(--wf-bg); stroke: var(--wf-line); } .wf-chip text { fill: var(--wf-text); font-size: 7.5px; font-weight: 700; text-anchor: middle; }
+
+.wf-box { fill: var(--wf-node); stroke: var(--wf-ring); stroke-width: 1.2; } .wf-box.hi { fill: var(--wf-hi); stroke: var(--acc-strong); stroke-width: 2.5; }
+.wf-box.dim { opacity: 0.45; } .wf-box.acc { fill: var(--acc); stroke: none; } .wf-box.flat { fill: var(--wf-map); stroke: var(--wf-edge); } .wf-box.bad { stroke: var(--bad); stroke-width: 2; }
+.wf-ph { fill: var(--wf-pitch); } .wf-ln { fill: none; stroke: var(--wf-line); stroke-width: 1.2; } .wf-ln.dash { stroke-dasharray: 4 3; } .wf-ln.acc { stroke: var(--acc-strong); stroke-width: 2.5; }
+.wf-txt { fill: var(--wf-text); font-size: 9px; font-weight: 600; } .wf-txt.big { font-size: 15px; font-weight: 800; } .wf-txt.md { font-size: 11px; font-weight: 700; } .wf-txt.sm { font-size: 7px; }
+.wf-txt.c { text-anchor: middle; } .wf-txt.r { text-anchor: end; } .wf-txt.ink { fill: var(--wf-ink-hi); } .wf-txt.on-acc { fill: var(--on-acc); } .wf-txt.acc { fill: var(--acc-strong); } .wf-txt.mute { opacity: 0.6; }
+
+/* tóm tắt + đường đi */
+table.sum { min-width: 640px; } table.sum td:first-child { color: var(--muted); font-variant-numeric: tabular-nums; } table.sum a { color: var(--fg); font-weight: 700; }
+.lv { font-size: 12.5px; font-weight: 700; padding: 1px 9px; border-radius: 999px; white-space: nowrap; border: 1px solid var(--line); }
+.lv.done { background: var(--good); color: #fff; border-color: var(--good); }
+.done-box { margin: 10px 0 0; padding: 10px 14px; border-left: 4px solid var(--good); background: color-mix(in srgb, var(--good) 8%, transparent); font-size: 14px; }
+.done-box b { display: block; margin-bottom: 3px; }
+.lv.ok { color: var(--good); border-color: var(--good); } .lv.fix { color: var(--acc-ink); border-color: var(--acc-strong); } .lv.re { background: var(--bad); color: #fff; border-color: var(--bad); } .lv.off { color: var(--muted); border-style: dashed; }
+.cnt { font-variant-numeric: tabular-nums; white-space: nowrap; } .cnt b { color: var(--bad); } .cnt i { font-style: normal; color: var(--acc-ink); font-weight: 700; }
+.fbv { font-size: 13px; color: var(--muted); } .fbv.on { color: var(--fg); font-weight: 600; }
+.evs { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 14px; }
+.evs .box { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.evs .box p { margin: 0; }
+.evs .fmt { font-size: 13px; color: var(--muted); }
+.evpic { display: flex; flex-direction: column; gap: 6px; }
+.evpic img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; image-rendering: pixelated; border-radius: 4px; border: 1px solid var(--line); background: #120c16; }
+.evpic .seg { flex-wrap: wrap; }
+.cxpic img { aspect-ratio: 16 / 9; max-width: 900px; }
+.evs .fmt b { color: var(--fg); }
+.jr { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.steps { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: 13px; margin: 6px 0; }
+.steps span { padding: 2px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.steps span.x { border-color: var(--bad); color: var(--bad); }
+.steps em { color: var(--muted); font-style: normal; }
+
+/* góp ý */
+form.fb { display: flex; flex-direction: column; gap: 12px; background: var(--surface); border: 2px solid var(--acc-strong); border-radius: 6px; padding: 18px 20px; }
+.optrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt input { position: absolute; opacity: 0; pointer-events: none; }
+.opt span { display: inline-block; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; cursor: pointer; background: var(--bg); }
+.opt input:checked + span { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 700; }
+textarea { width: 100%; box-sizing: border-box; min-height: 70px; font: 14px/1.5 var(--f-body); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; resize: vertical; }
+.fbrow { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn { font: 700 14px/1 var(--f-body); padding: 11px 18px; border-radius: 6px; border: 0; background: var(--acc); color: var(--on-acc); cursor: pointer; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.fbst { font-size: 13px; color: var(--muted); }
+.fbst.ok { color: var(--good); } .fbst.err { color: var(--bad); }
+
+footer.next ul { margin: 8px 0 0; padding-left: 1.2em; }
+@media (prefers-reduced-motion: reduce) { .pin { transition: none; } }
+</style>
+
+<div class="page">
+  <header class="top">
+    <div class="eyebrow">Street Football Chaos · review UX tầng màn hình · 2026-11-04</div>
+    <h1>Soi màn ngoài trận</h1>
+    <p class="read">Đợt 2 của review tầng màn hình (2026-11-11), cùng cách soi với đợt 1 (luồng GOAT PATH, 16 màn, đã merge 2026-11-05): mỗi màn để làm gì, thông tin có cần không, thứ nào chính thứ nào phụ, có cách tổ chức khác tốt hơn không. Phạm vi: các màn ngoài trận còn lại: SHOP, CHARACTER + APPEARANCE, INVENTORY, ULT BOOK, TROPHY ROOM, ACHIEVEMENTS, SETTINGS, PRIVATE MATCH. RANKED + AREA MAP đang ẩn nên chỉ ghi chú. Đợt này không chạy bài "mắt mới". Mỗi màn có ô góp ý ở cuối khối; code chỉ sửa sau khi m chọn.</p>
+    <div class="chips" id="sumchips"></div>
+  </header>
+
+  <section class="stack" aria-labelledby="sum-h">
+    <h2 id="sum-h">Tóm tắt</h2>
+    <div class="tbl"><table class="sum"><thead><tr><th>#</th><th>Màn</th><th>Kết luận</th><th>Vấn đề</th><th>Góp ý của m</th><th>Code</th></tr></thead><tbody id="sumrows"></tbody></table></div>
+  </section>
+
+  <section class="stack" aria-labelledby="m-h">
+    <h2 id="m-h">Cách soi</h2>
+    <div class="method">
+      <div class="box">
+        <h3>5 câu hỏi cho mỗi màn, theo thứ tự</h3>
+        <ol class="q">
+          <li><b>Mục tiêu</b> của màn trong 1 câu, kèm <b>tần suất</b> gặp. Màn gặp 1 lần thì người chơi chịu đọc; màn gặp 24 lần mỗi run thì phải liếc là hiểu.</li>
+          <li><b>Câu hỏi trong đầu người chơi</b> lúc tới màn. Thứ nổi nhất phải là câu trả lời.</li>
+          <li><b>Kiểm kê</b> từng thứ trên màn: cần ngay, cần đôi khi, hay không cần ở đây. Phép thử: che nó đi thì quyết định có khó hơn không.</li>
+          <li><b>Thứ bậc</b>: hạng 1-2-3 nên là gì, và thực tế đang là gì.</li>
+          <li><b>Đường đi</b>: có cách tổ chức khác tới cùng mục tiêu không. Có vấn đề thì đưa 2 phương án và so được mất.</li>
+        </ol>
+      </div>
+      <div class="box">
+        <h3>4 ảnh cho mỗi trạng thái</h3>
+        <dl class="modes">
+          <dt>Gốc</dt><dd>Chụp 1280x720 từ bản main, không đụng chuột.</dd>
+          <dt>Nheo mắt</dt><dd>Làm mờ Gaussian 12px. Thứ còn thấy rõ là thứ mắt bắt đầu tiên.</dd>
+          <dt>Xám</dt><dd>Bỏ màu. Thứ bậc còn đứng được không nếu không có màu.</dd>
+          <dt>Chuyển động</dt><dd>14 khung trong khoảng 2,5 giây. Đỏ là chỗ đang động. Thứ động kéo mắt hơn mọi thứ đứng yên, ảnh tĩnh làm mờ không thấy được.</dd>
+        </dl>
+      </div>
+      <div class="box">
+        <h3>Mắt mới</h3>
+        <p>Đợt này không chạy bài test 5 giây bằng agent (đợt 1 có). Các màn ở đây gặp ít và đơn giản hơn, nên kết luận dựa trên 4 ảnh + đọc code. Nếu m nhờ được 1 người xem 5 giây thì vẫn tốt hơn.</p>
+      </div>
+      <div class="box">
+        <details class="rules">
+          <summary>Ràng buộc: các quyết định đã chốt, không đề xuất ngược lại</summary>
+          <ul>
+            <li>Map không lộ đối thủ trước trận, không có thanh cuộn (2026-10-25).</li>
+            <li>Bỏ tên act / chấm act trên thanh, bỏ nút BACK / FORFEIT RUN trên map (2026-10-29).</li>
+            <li>Có bảng chú thích loại node dưới map (2026-10-30).</li>
+            <li>Mô tả Core không có số. Use rule của Ultimate không hiện trên HUD.</li>
+            <li>Ranked không lộ ai là AI. Chữ trong game không viết phím cứng.</li>
+            <li>KIT VAN / TROPHY ROOM giữ pixel art 320x180: làm rõ chức năng, không biến thành menu phẳng.</li>
+            <li>38 vấn đề của review 2026-11-02 đã sửa, không mở lại.</li>
+            <li>Ultimate ẩn tên trong ULT BOOK tới khi đạt công thức. Elo hiện bằng ★, không ghi chữ ELO.</li>
+            <li>Ngoài trận avatar giữ người cỡ cũ (2026-11-11). Tab RANKED đang ẩn (2026-10-31).</li>
+            <li>16 màn GOAT PATH của đợt 1 đã sửa theo lựa chọn của m (2026-11-05), không mở lại ở đây.</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <div id="screens" class="stack" style="gap:64px"></div>
+
+  <section class="stack" id="crosscut" aria-labelledby="cx-h"></section>
+  <section class="stack" id="evscenes" aria-labelledby="ev-h"></section>
+  <section class="stack" id="journeys" aria-labelledby="j-h"></section>
+
+  <footer class="next stack read">
+    <h2>Tiếp theo</h2>
+    <p>M chọn phương án ở từng màn (hoặc "Giữ như cũ"). T đọc góp ý, sửa code theo phương án đã chọn trên nhánh riêng, kiểm trong game rồi chụp lại 4 ảnh sau khi sửa để so. RANKED + AREA MAP soi riêng khi bật lại tab RANKED.</p>
+  </footer>
+</div>
+
+<script>
+const DATA = /*DATA*/;
+const MODES = [['png', 'Gốc'], ['squint', 'Nheo mắt'], ['gray', 'Xám'], ['motion', 'Chuyển động']];
+const MODE_CAP = { png: 'Ảnh gốc.', squint: 'Làm mờ 12px: thứ còn đọc được là thứ mắt bắt đầu tiên.', gray: 'Bỏ màu: trạng thái nào chỉ mang bằng màu sẽ mất ở đây.', motion: 'Đỏ = chỗ đổi giữa các khung trong khoảng 2,5 giây.' };
+const needCls = (t) => /^cần ngay/.test(t) ? 'now' : /^không cần/.test(t) ? 'no' : /^cần/.test(t) ? 'plan' : '';
+const LV = { 'ổn': 'ok', 'chỉnh': 'fix', 'tổ chức lại': 're' };
+const lvHtml = (l) => `<span class="lv ${LV[l] || ''}">${esc(l || '')}</span>`;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const src = (st, m, after) => `shots/${after ? 'after/' : ''}${st}${m === 'png' ? '' : '.' + m}.png`;
+const WHEN = [['after', 'Sau khi sửa'], ['before', 'Trước']];
+
+function screenHtml(S) {
+  const fds = S.findings.map((f) => `<div class="fd s-${esc(f.sev)}" tabindex="0" data-n="${f.n}">
+      <span class="no">${f.n}</span>
+      <div class="meta"><span class="sev">${esc(f.sev)}</span><span class="kind">${esc(f.kind)}</span></div>
+      <h3>${esc(f.title)}</h3>
+      <div><p>${esc(f.body)}</p><div class="ev">${f.evidence.map((e) => `<span>${esc(e)}</span>`).join('')}</div></div>
+    </div>`).join('');
+  const inv = S.inventory.map((r) => `<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td><span class="need ${needCls(r[2])}">${esc(r[2])}</span></td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('');
+  const opts = S.options.map((o) => `<div class="opt-card">
+      <h3><span class="tag">${esc(o.id)}</span>${esc(o.name)}</h3>
+      ${o.wireSvg || ''}
+      <ol>${o.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ol>
+      <dl class="gc"><dt class="g">Được</dt><dd>${esc(o.gain)}</dd><dt class="c">Mất</dt><dd>${esc(o.cost)}</dd></dl>
+    </div>`).join('');
+  return `<section class="screen" id="s-${esc(S.id)}" aria-labelledby="h-${esc(S.id)}">
+    <div class="sc-head"><div class="eyebrow">Màn ${S.order} / ${DATA.screens.length} · xét theo ${esc(S.lens)} · ${lvHtml(S.level)}${S.hidden ? ' <span class="lv off">đang tắt</span>' : ''}</div>${S.hidden ? `<p class="muted" style="font-size:13.5px">${esc(S.hidden)}. Soi để dành lúc bật lại.</p>` : ''}<h2 id="h-${esc(S.id)}">${esc(S.title)}</h2><div class="where">${esc(S.where)}</div>${S.done ? `<div class="done-box"><b>${S.states.some((s) => s.after) ? `Đã sửa ${esc(S.done.at)} (nhánh ux/screens-r2-2026-11, chưa vào main). Xem ảnh "Sau khi sửa" bên dưới.` : `Đã xử lý góp ý ${esc(S.done.at)}, chưa sửa code.`}</b>${esc(S.done.text)}</div>` : ''}</div>
+    <div class="brief">
+      <div><div class="px k">Mục tiêu</div><p>${esc(S.goal)}</p></div>
+      <div><div class="px k">Tần suất</div><p>${esc(S.freq)}</p></div>
+      <div><div class="px k">Câu hỏi của người chơi</div><ul>${S.questions.map((q) => `<li>${esc(q)}</li>`).join('')}</ul></div>
+    </div>
+    <div class="viewer">
+      <div class="vbar">
+        ${S.states.some((s) => s.after) ? `<div class="seg" data-role="when">${WHEN.map(([w, l], i) => `<button type="button" data-v="${w}" aria-pressed="${i === 0}">${l}</button>`).join('')}</div>` : ''}
+        <div class="seg" data-role="state">${S.states.map((s, i) => `<button type="button" data-v="${esc(s.id)}" aria-pressed="${i === 0}">${esc(s.label)}</button>`).join('')}</div>
+        <div class="seg" data-role="mode">${MODES.map(([m, l], i) => `<button type="button" data-v="${m}" aria-pressed="${i === 0}">${l}</button>`).join('')}</div>
+        <label class="pinsw"><input type="checkbox" checked data-role="pins"> Số vấn đề</label>
+      </div>
+      <div class="shot"><img alt="" decoding="async"></div>
+      <p class="cap"></p>
+    </div>
+    <div class="stack"><h3>Vấn đề (bấm để xem chỗ trên ảnh)</h3><div class="fds">${fds}</div></div>
+    <div class="stack"><h3>Đang làm đúng, giữ</h3><ul class="keep">${S.keep.map((k) => `<li>${esc(k)}</li>`).join('')}</ul></div>
+    <div class="stack"><h3>Kiểm kê thông tin</h3><div class="tbl"><table><thead><tr><th>Phần tử</th><th>Trả lời câu hỏi</th><th>Mức cần</th><th>Đang nổi (nheo mắt)</th><th>Ghi chú</th></tr></thead><tbody>${inv}</tbody></table></div></div>
+    ${S.fresh.length ? `<div class="stack"><h3>Mắt mới nói (nguyên văn)</h3><div class="quotes">${S.fresh.map((q) => `<blockquote>${esc(q)}</blockquote>`).join('')}</div></div>` : ''}
+    <div class="stack"><h3>Kết luận</h3><p class="verdict">${esc(S.verdict)}</p></div>
+    ${S.options.length ? `<div class="stack"><h3>${S.options.length} phương án${S.wireNote ? ` (${esc(S.wireNote)})` : ''}; số đỏ trên hình khớp số trong danh sách</h3><div class="opts">${opts}</div>${S.pick ? `<p class="pick"><b>T chọn:</b> ${esc(S.pick)}</p>` : ''}</div>` : ''}
+    <form class="fb" data-fb="${esc(S.id)}" aria-label="Góp ý cho ${esc(S.title)}">
+      <h3>Góp ý cho ${esc(S.title)}</h3>
+      <div class="optrow" role="radiogroup" aria-label="Chọn phương án">
+        ${S.options.map((o) => `<label class="opt"><input type="radio" name="v" value="${esc(o.id)}"><span>Làm ${esc(o.id)}</span></label>`).join('')}
+        ${S.options.length > 1 ? `<label class="opt"><input type="radio" name="v" value="A+tryB"><span>Làm A, dựng thử B</span></label>` : ''}
+        <label class="opt"><input type="radio" name="v" value="keep"><span>${S.options.length ? 'Giữ như cũ' : 'Đồng ý, giữ như cũ'}</span></label>
+        <label class="opt"><input type="radio" name="v" value="other"><span>Ý khác (ghi bên dưới)</span></label>
+      </div>
+      <textarea name="note" id="fb-${esc(S.id)}-note" placeholder="Giữ / bỏ vấn đề nào, chỉnh phương án ra sao..."></textarea>
+      <div class="fbrow"><button class="btn" type="submit">Lưu góp ý</button><span class="fbst" role="status"></span></div>
+    </form>
+  </section>`;
+}
+
+function bindScreen(S, el) {
+  const st = { state: S.states[0].id, mode: 'png', hot: null, when: S.states.some((s) => s.after) ? 'after' : 'before' };
+  const img = el.querySelector('.shot img'), shot = el.querySelector('.shot'), cap = el.querySelector('.cap');
+  const draw = () => {
+    const s0 = S.states.find((s) => s.id === st.state), after = st.when === 'after' && s0.after;
+    img.src = src(st.state, st.mode, after);
+    img.alt = `${S.title}: ${s0.label}, ${MODES.find((m) => m[0] === st.mode)[1]}${after ? ', sau khi sửa' : ''}`;
+    shot.querySelectorAll('.pin').forEach((p) => p.remove());
+    // số vấn đề chỉ ghim trên ảnh trước khi sửa (toạ độ theo ảnh cũ)
+    if (!after) for (const f of S.findings) for (const p of f.pins) if (p.s === st.state) {
+      const d = document.createElement('span');
+      d.className = 'pin' + (st.hot === f.n ? ' hot' : '');
+      d.textContent = f.n; d.title = f.title;
+      d.style.left = (p.x / 12.8) + '%'; d.style.top = (p.y / 7.2) + '%';
+      d.addEventListener('click', () => focusFd(f.n, true));
+      shot.appendChild(d);
+    }
+    const s = S.states.find((x) => x.id === st.state);
+    cap.innerHTML = after ? `<b>${esc(s.label)}, sau khi sửa.</b> Cùng cách vào màn như ảnh trước; số liệu ngẫu nhiên (món, ứng viên...) có thể khác. ${esc(MODE_CAP[st.mode])}`
+      : `<b>${esc(s.label)}:</b> ${esc(s.note)}${st.when === 'after' ? ' (trạng thái này chưa có ảnh sau khi sửa)' : ''} ${esc(MODE_CAP[st.mode])}`;
+    el.querySelectorAll('.seg[data-role=when] button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === st.when));
+    el.querySelectorAll('.seg[data-role=state] button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === st.state));
+    el.querySelectorAll('.seg[data-role=mode] button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === st.mode));
+    el.querySelectorAll('.fd').forEach((x) => x.classList.toggle('hot', +x.dataset.n === st.hot));
+  };
+  const focusFd = (n, scroll) => {
+    st.hot = st.hot === n && !scroll ? null : n;
+    const f = S.findings.find((x) => x.n === n);
+    if (st.hot && f.pins.length && !f.pins.some((p) => p.s === st.state)) st.state = f.pins[0].s;
+    draw();
+    if (scroll) el.querySelector(`.fd[data-n="${n}"]`).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+  el.querySelector('.seg[data-role=state]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { st.state = b.dataset.v; draw(); } });
+  el.querySelector('.seg[data-role=mode]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { st.mode = b.dataset.v; draw(); } });
+  const segW = el.querySelector('.seg[data-role=when]');
+  if (segW) segW.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { st.when = b.dataset.v; draw(); } });
+  el.querySelector('[data-role=pins]').addEventListener('change', (e) => shot.classList.toggle('nopins', !e.target.checked));
+  el.querySelectorAll('.fd').forEach((x) => {
+    x.addEventListener('click', () => { st.when = 'before'; focusFd(+x.dataset.n); shot.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+    x.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); x.click(); } });
+  });
+  // tải trước mọi ảnh để đổi chế độ không bị trống
+  for (const s of S.states) for (const [m] of MODES) for (const a of s.after ? [false, true] : [false]) { const i = new Image(); i.src = src(s.id, m, a); }
+  draw();
+}
+
+const root = document.getElementById('screens');
+root.innerHTML = DATA.screens.map(screenHtml).join('');
+DATA.screens.forEach((S) => bindScreen(S, document.getElementById('s-' + S.id)));
+
+// tóm tắt đầu trang + chip đếm
+const nSev = (S, v) => S.findings.filter((f) => f.sev === v).length;
+document.getElementById('sumrows').innerHTML = DATA.screens.map((S) => `<tr><td>${S.order}</td><td><a href="#s-${esc(S.id)}">${esc(S.title)}</a>${S.hidden ? ' <span class="lv off" title="' + esc(S.hidden) + '">đang tắt</span>' : ''}</td><td>${lvHtml(S.level)}</td>
+  <td class="cnt"><b>${nSev(S, 'nặng')}</b> nặng · <i>${nSev(S, 'vừa')}</i> vừa · ${nSev(S, 'nhẹ')} nhẹ</td><td class="fbv" data-fbv="${esc(S.id)}">chưa có</td><td>${S.done ? (S.states.some((s) => s.after) ? `<span class="lv done">đã sửa</span>` : '<span class="lv fix">chờ m</span>') : '<span class="muted">chưa</span>'}</td></tr>`).join('');
+const all = DATA.screens.flatMap((S) => S.findings), byLv = (l) => DATA.screens.filter((S) => S.level === l).length;
+document.getElementById('sumchips').innerHTML = `<span class="chip acc">${DATA.screens.length} màn · ${all.length} vấn đề</span>
+  <span class="chip">${all.filter((f) => f.sev === 'nặng').length} nặng</span><span class="chip">${byLv('tổ chức lại')} màn nên tổ chức lại</span>
+  <span class="chip">${byLv('chỉnh')} màn cần chỉnh</span><span class="chip">${byLv('ổn')} màn ổn</span><span class="chip">${DATA.screens.filter((S) => S.done && S.states.some((s) => s.after)).length} màn đã sửa code</span>`;
+
+// vấn đề chung nhiều màn (crosscut.json): mô tả + ảnh trước / sau theo từng màn + ô góp ý (doc id = id vấn đề)
+if (DATA.crosscut && DATA.crosscut.items.length) {
+  const C = DATA.crosscut.items;
+  document.getElementById('crosscut').innerHTML = `<h2 id="cx-h">Vấn đề chung nhiều màn</h2>` + C.map((it) => `<div class="box stack cx" data-cx="${esc(it.id)}">
+      <h3>${esc(it.title)}</h3><p class="muted" style="font-size:13.5px">${esc(it.from)}</p>
+      <p><b>Vấn đề.</b> ${esc(it.problem)}</p>
+      <div><b>Đã thử (đã sửa code, nhánh ux/screens-2026-11).</b><ul>${it.fix.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
+      ${it.alt ? `<p class="muted" style="font-size:13.5px">${esc(it.alt)}</p>` : ''}
+      <div class="evpic cxpic"><img src="${esc(it.shots[0].after)}" alt="${esc(it.shots[0].label)}, sau khi sửa" decoding="async">
+        <div class="seg" data-role="cxwhen"><button type="button" data-v="after" aria-pressed="true">Sau khi sửa</button><button type="button" data-v="before" aria-pressed="false">Trước</button></div>
+        <div class="seg" data-role="cxshot">${it.shots.map((x, i) => `<button type="button" data-i="${i}" aria-pressed="${i === 0}">${esc(x.label)}</button>`).join('')}</div></div>
+      <form class="fb" data-fb="${esc(it.id)}" aria-label="Góp ý cho ${esc(it.title)}"><h3>Góp ý</h3>
+        <div class="optrow" role="radiogroup"><label class="opt"><input type="radio" name="v" value="all"><span>Ổn, làm cho cả game</span></label>
+        <label class="opt"><input type="radio" name="v" value="run"><span>Ổn, chỉ giữ ở GOAT PATH</span></label>
+        <label class="opt"><input type="radio" name="v" value="other"><span>Ý khác (ghi bên dưới)</span></label></div>
+        <textarea name="note" placeholder="Con trỏ to / nhỏ, chỗ nào chưa ổn..."></textarea>
+        <div class="fbrow"><button class="btn" type="submit">Lưu góp ý</button><span class="fbst" role="status"></span></div></form></div>`).join('');
+  document.querySelectorAll('.cx').forEach((el) => {
+    const it = C.find((x) => x.id === el.dataset.cx), st = { i: 0, w: 'after' }, img = el.querySelector('img');
+    const draw = () => {
+      img.src = it.shots[st.i][st.w]; img.alt = `${it.shots[st.i].label}, ${st.w === 'after' ? 'sau khi sửa' : 'trước'}`;
+      el.querySelectorAll('[data-role=cxwhen] button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === st.w));
+      el.querySelectorAll('[data-role=cxshot] button').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.i === st.i));
+    };
+    el.querySelector('[data-role=cxwhen]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { st.w = b.dataset.v; draw(); } });
+    el.querySelector('[data-role=cxshot]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { st.i = +b.dataset.i; draw(); } });
+  });
+}
+
+// sự kiện ???: cách diễn từng tình huống (owner 2026-11-05: liệt kê tình huống nào dùng cách nào rồi góp ý), mỗi sự kiện 1 ô góp ý (doc ev-<id>)
+if (DATA.eventScenes) {
+  const E = DATA.eventScenes, F = Object.fromEntries(E.formats.map((f) => [f.id, f]));
+  const fmtRow = (f) => `<tr><td><b>${esc(f.name)}</b></td><td>${esc(f.what)}</td><td>${esc(f.reuse)}</td><td>${esc(f.cost)}</td></tr>`;
+  const form = (id, title, opts) => `<form class="fb" data-fb="${esc(id)}" aria-label="Góp ý cho ${esc(title)}"><h3>Góp ý: ${esc(title)}</h3>
+      <div class="optrow" role="radiogroup">${opts.map(([v, l]) => `<label class="opt"><input type="radio" name="v" value="${esc(v)}"><span>${esc(l)}</span></label>`).join('')}</div>
+      <textarea name="note" placeholder="Chỉnh cảnh ra sao, đổi cách diễn khác..."></textarea>
+      <div class="fbrow"><button class="btn" type="submit">Lưu góp ý</button><span class="fbst" role="status"></span></div></form>`;
+  // ảnh cảnh đã vẽ trong game (nếu có): ảnh to + nút đổi trạng thái (lúc chọn / kết quả / các kết cục khác)
+  const pics = (e) => !e.shots || !e.shots.length ? '<p class="muted" style="font-size:13px">Chưa có ảnh cảnh.</p>'
+    : `<div class="evpic"><img src="${esc(e.shots[0].src)}" alt="${esc(e.name)}: ${esc(e.shots[0].label)}" decoding="async"><div class="seg">${e.shots.map((x, i) => `<button type="button" data-src="${esc(x.src)}" aria-pressed="${i === 0}">${esc(x.label)}</button>`).join('')}</div></div>`;
+  const ev = E.events.map((e) => `<div class="box"><h3>${esc(e.name)}</h3>${pics(e)}
+      <p class="fmt">Đề xuất: <b>${esc((F[e.format] || {}).name || e.format)}</b> · thay thế: <b>${esc((F[e.alt] || {}).name || e.alt)}</b></p>
+      <p><b>Tình huống.</b> ${esc(e.situation)}</p><p><b>Lựa chọn trong game.</b> ${esc(e.choices)}</p>
+      <p><b>Cảnh.</b> ${esc(e.scene)}</p><p><b>Kết quả.</b> ${esc(e.result)}</p><p><b>Vì sao.</b> ${esc(e.why)}</p>
+      ${form('ev-' + e.id, e.name, [['main', 'Làm theo đề xuất'], ['alt', 'Dùng cách thay thế'], ['other', 'Ý khác (ghi bên dưới)']])}</div>`).join('');
+  document.getElementById('evscenes').innerHTML = `<h2 id="ev-h">${esc(E.title)}</h2><p class="read">${esc(E.intro)}</p>
+    <details class="rules"><summary>${E.rules.length} nguyên tắc chung cho mọi cảnh</summary><ul>${E.rules.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></details>
+    <div class="stack"><h3>${E.formats.length} khuôn cảnh</h3><div class="tbl"><table><thead><tr><th>Khuôn</th><th>Hình</th><th>Dùng lại</th><th>Công</th></tr></thead><tbody>${E.formats.map(fmtRow).join('')}</tbody></table></div></div>
+    <div class="evs">${ev}</div>
+    <div class="box"><h3>Thứ tự làm</h3><p>${esc(E.order)}</p></div>
+    <div class="box"><h3>Cần m chốt</h3><ol>${E.open.map((q) => `<li>${esc(q)}</li>`).join('')}</ol>
+      ${form('ev-open', 'Câu hỏi sự kiện ???', [['answered', 'Trả lời ở ghi chú']])}</div>`;
+}
+
+document.querySelectorAll('.evpic').forEach((el) => el.querySelector('.seg').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  el.querySelector('img').src = b.dataset.src;
+  el.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+}));
+
+// đường đi: mỗi mục tiêu chính của người chơi = chuỗi màn / bước, bước thừa tô đỏ
+if (DATA.journeys) {
+  const J = DATA.journeys;
+  document.getElementById('journeys').innerHTML = `<h2 id="j-h">Đường đi: ${J.items.length} mục tiêu chính</h2><p class="read">${esc(J.intro)}</p>
+    <div class="jr">${J.items.map((j) => `<div class="box"><h3>${esc(j.title)}</h3><p class="muted" style="font-size:13px">${esc(j.count)}</p>
+      <div class="steps">${j.steps.map((st) => `<span class="${st.x ? 'x' : ''}">${esc(st.t)}</span>`).join('<em>→</em>')}</div><p style="font-size:14px">${esc(j.note)}</p></div>`).join('')}</div>`;
+}
+
+// góp ý: db của artifact, collection feedback, doc id = id màn (format = góp ý cho mẫu báo cáo)
+const forms = [...document.querySelectorAll('form.fb')];
+const VLABEL = { A: 'Làm A', B: 'Làm B', 'A+tryB': 'Làm A, dựng thử B', keep: 'Giữ như cũ', other: 'Ý khác' };
+const sumFb = (id, d) => { const c = document.querySelector(`[data-fbv="${CSS.escape(id)}"]`); if (c) { c.textContent = (VLABEL[d.verdict] || 'Chỉ có ghi chú') + (d.note ? ' · có ghi chú' : ''); c.classList.add('on'); } };
+const setSt = (f, txt, cls = '') => { const s = f.querySelector('.fbst'); s.textContent = txt; s.className = 'fbst ' + cls; };
+forms.forEach((f) => { f.querySelector('.btn').disabled = true; setSt(f, 'Đang kết nối chỗ lưu…'); f.addEventListener('submit', (e) => e.preventDefault()); });
+(async () => {
+  let db = null;
+  try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
+  if (!db) { forms.forEach((f) => setSt(f, 'Không lưu được ở chế độ xem này. Gửi góp ý cho Claude trong chat.', 'err')); return; }
+  const evName = (id) => { const e = DATA.eventScenes && DATA.eventScenes.events.find((x) => 'ev-' + x.id === id); return e ? 'Sự kiện ' + e.name : id === 'ev-open' ? 'Câu hỏi sự kiện ???' : null; };
+  const cxName = (id) => { const c = DATA.crosscut && DATA.crosscut.items.find((x) => x.id === id); return c ? c.title : null; };
+  const title = (id) => id === 'format' ? 'Mẫu báo cáo' : evName(id) || cxName(id) || (DATA.screens.find((s) => s.id === id) || {}).title || id;
+  for (const f of forms) {
+    const id = f.dataset.fb, btn = f.querySelector('.btn');
+    try {
+      const snap = await db.doc('feedback/' + id).get();
+      if (snap.exists) {
+        const d = snap.data();
+        const r = f.querySelector(`input[name=v][value="${CSS.escape(String(d.verdict || ''))}"]`);
+        if (r) r.checked = true;
+        f.querySelector('textarea').value = d.note || '';
+        setSt(f, 'Đã lưu ' + new Date(d.at).toLocaleString('vi-VN'), 'ok');
+        sumFb(id, d);
+      } else setSt(f, 'Chưa có góp ý.');
+      btn.disabled = false;
+    } catch (e) { setSt(f, 'Không đọc được góp ý đã lưu (' + (e && e.code || 'lỗi') + ').', 'err'); btn.disabled = false; }
+    f.addEventListener('submit', async () => {
+      const v = (f.querySelector('input[name=v]:checked') || {}).value || null, note = f.querySelector('textarea').value.trim();
+      if (!v && !note) { setSt(f, 'Chọn 1 lựa chọn hoặc ghi vài chữ trước đã.', 'err'); return; }
+      btn.disabled = true; setSt(f, 'Đang lưu…');
+      try {
+        const at = new Date().toISOString();
+        await db.doc('feedback/' + id).set({ verdict: v, note, title: title(id), at });
+        setSt(f, 'Đã lưu ' + new Date(at).toLocaleString('vi-VN'), 'ok');
+        sumFb(id, { verdict: v, note });
+      } catch (e) { setSt(f, e && e.code === 'invalid_argument' ? 'Tài khoản này chỉ xem, không lưu được.' : 'Lưu không được, thử lại sau.', 'err'); }
+      btn.disabled = false;
+    });
+  }
+})();
+</script>

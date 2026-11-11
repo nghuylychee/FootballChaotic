@@ -1,0 +1,116 @@
+{
+ "id": "achievements",
+ "order": 6,
+ "title": "ACHIEVEMENTS",
+ "where": "TROPHY ROOM › album › ACHIEVEMENTS (trang ach) · src/ui/achievements.js · config/achievements.config.js",
+ "goal": "Nhận thưởng thành tích đã đạt, xem thành tích còn thiếu.",
+ "freq": "Mỗi khi chấm vàng xuất hiện (vài lần mỗi tuần chơi). Xét theo người đã quen.",
+ "lens": "người đã quen",
+ "level": "chỉnh",
+ "questions": [
+  "Có gì để nhận?",
+  "Nhận hết thế nào?",
+  "Thưởng là gì?",
+  "Còn thiếu thành tích nào?"
+ ],
+ "states": [
+  {
+   "id": "m-ach",
+   "label": "7 thành tích chờ nhận",
+   "note": "3/40 đã nhận, 7 đạt nhưng chưa nhận."
+  }
+ ],
+ "keep": [
+  "Hàng chờ nhận nổi nhất (viền + nền vàng nhạt + chip CLAIM), bảng phải xem trước phần thưởng bằng hình.",
+  "Header có 3/40 + \"7 TO CLAIM\": trả lời ngay câu \"có gì để nhận\"."
+ ],
+ "findings": [
+  {
+   "n": 1,
+   "sev": "vừa",
+   "kind": "đường đi",
+   "title": "Nhận 7 thưởng = 7 lần bấm + 7 lần đổi hàng",
+   "body": "Mỗi thành tích phải chọn rồi bấm CLAIM REWARD riêng. Khi dồn nhiều (người chơi cũ lần đầu thấy màn, hoặc sau 1 run dài), cả danh sách thành 1 bức tường vàng: hàng nào cũng chip CLAIM + thanh đầy, nheo mắt không còn thứ bậc giữa các hàng.",
+   "evidence": [
+    "ảnh gốc",
+    "nheo mắt"
+   ],
+   "pins": [
+    {
+     "s": "m-ach",
+     "x": 640,
+     "y": 140
+    },
+    {
+     "s": "m-ach",
+     "x": 1170,
+     "y": 130
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "sev": "nhẹ",
+   "kind": "chữ",
+   "title": "Phím Enter in trong nút CLAIM REWARD",
+   "body": "Cùng kiểu với SHOP #2.",
+   "evidence": [
+    "ảnh gốc"
+   ],
+   "pins": [
+    {
+     "s": "m-ach",
+     "x": 880,
+     "y": 600
+    }
+   ]
+  }
+ ],
+ "inventory": [
+  [
+   "Danh sách thành tích",
+   "Còn gì?",
+   "cần ngay",
+   "hạng 1",
+   "toàn vàng khi nhiều thưởng"
+  ],
+  [
+   "Chip CLAIM từng hàng",
+   "Hàng nào nhận được?",
+   "cần ngay",
+   "hạng 1",
+   ""
+  ],
+  [
+   "Bảng xem trước thưởng",
+   "Thưởng là gì?",
+   "cần ngay",
+   "hạng 2",
+   ""
+  ],
+  [
+   "3/40 + 7 TO CLAIM",
+   "Tổng?",
+   "cần ngay",
+   "hạng 2",
+   "chưa bấm được"
+  ]
+ ],
+ "fresh": [],
+ "verdict": "Đọc tốt, nhưng nhận nhiều thưởng thì lặp tay.",
+ "options": [
+  {
+   "id": "A",
+   "name": "\"7 TO CLAIM\" thành nút CLAIM ALL",
+   "wire": "achievements.wire-a.svg",
+   "notes": [
+    "Chip vàng ở header bấm được khi có từ 2 thưởng: CLAIM ALL (7).",
+    "Nhận lần lượt có hoạt cảnh nhanh (mỗi thưởng bay vào túi / SHOP như bây giờ), cuối cùng 1 dòng tóm tắt bằng icon.",
+    "Nhận từng cái vẫn như cũ."
+   ],
+   "gain": "1 lần bấm thay 14. Sửa achievements.js (header + 1 hàm claimAll gọi lại claim từng cái).",
+   "cost": "Thêm 1 chuỗi chữ (CLAIM ALL), dịch 4 gói."
+  }
+ ],
+ "pick": "A."
+}
