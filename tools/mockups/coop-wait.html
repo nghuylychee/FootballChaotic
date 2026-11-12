@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Màn chờ co-op</title>
+<!-- MOCKUP (2026-11-12, chờ owner duyệt): màn chờ của khách trong phòng co-op GOAT PATH (RunUI.renderWait) làm lại theo sân ngang của
+     BUILD YOUR SQUAD (host đang thấy sân, khách thấy cùng sân ở chế độ chỉ xem). Nạp script game từ index.html (trừ main.js), dùng chính CSS .pk-*
+     của game. Mở qua npm run serve: http://localhost:8080/tools/mockups/coop-wait.html -->
+<link rel="stylesheet" href="../../css/style.css" />
+<style>
+  html, body { margin: 0; height: auto; overflow: auto; background: #07080b; color: #c7ccd6; font-family: var(--vt); }
+  body { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 0 60px; }
+  .head, .doc { width: min(1280px, calc(100vw - 24px)); font-size: 20px; line-height: 1.1; }
+  .head h1 { font-family: var(--vt); font-size: 32px; line-height: 1; color: #fff; margin: 0 0 6px; font-weight: normal; }
+  .head p { margin: 0; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tabs > span { width: 96px; align-self: center; font-size: 18px; color: #5a6070; }
+  .tabs button { font-family: var(--vt); font-size: 19px; line-height: 1; padding: 5px 10px 4px; background: #1a1c22; color: #9aa3b5; border: 2px solid #2e3140; cursor: pointer; }
+  .tabs button:hover { color: #fff; }
+  .tabs button.on { color: #111; background: #ffe14f; border-color: #ffe14f; }
+  .wrap { position: relative; width: 1280px; height: 720px; overflow: hidden; box-shadow: 0 0 0 2px #2e3140; }
+  .stage { position: absolute; left: 0; top: 0; width: 640px; height: 360px; transform: scale(2); transform-origin: 0 0; overflow: hidden;
+    background: radial-gradient(ellipse 70% 60% at 50% 40%, #1a2130, #0b0d12 75%); user-select: none; }
+  .wrap[data-view="squint"] .stage { filter: blur(6px); }
+  .wrap[data-view="gray"] .stage { filter: grayscale(1); }
+  .wrap[data-view="both"] .stage { filter: grayscale(1) blur(6px); }
+  .stage canvas { image-rendering: pixelated; }
+  /* khung giống #menu của game: rm-page lấp hết, chừa lề như trong game */
+  .mk-menu { position: absolute; inset: 22px 30px 14px; display: flex; flex-direction: column; }
+  .doc h2 { font-family: var(--vt); font-size: 28px; line-height: 1; color: var(--gold); margin: 22px 0 8px; font-weight: normal; }
+  .doc table { border-collapse: collapse; width: 100%; }
+  .doc td, .doc th { border: 1px solid #2a2e38; padding: 4px 8px; text-align: left; vertical-align: top; font-weight: normal; }
+  .doc th { color: var(--gold); white-space: nowrap; }
+  .doc b { color: #fff; font-weight: normal; }
+  .doc ul { margin: 0; padding-left: 22px; }
+
+  /* ---------- màn chờ khách (đề xuất): dùng lại sân của BUILD YOUR SQUAD, chỉ xem ---------- */
+  .wt-plate.pt-btn.go { cursor: default; animation: none; }
+  .wt-plate .dots i { font-style: normal; animation: wtDot 1.2s steps(1) infinite; }
+  .wt-plate .dots i:nth-child(2) { animation-delay: 0.4s; }
+  .wt-plate .dots i:nth-child(3) { animation-delay: 0.8s; }
+  @keyframes wtDot { 0% { opacity: 0; } 33%, 100% { opacity: 1; } }
+  .pk-spot.host .pk-plate u { background: #3ff6ff; }   /* HOST: cùng màu nhãn HOST của phòng */
+  .pk-spot.me:not(.tgt) .pk-plate { border-color: #e6dccb; }
+  .wt-left { flex: none; width: 378px; display: flex; flex-direction: column; gap: 6px; }
+  .wt-left .pk-bh { margin-bottom: 2px; }
+  .wt-how { font-family: var(--px); font-size: 5px; letter-spacing: 1px; line-height: 1.6; color: var(--muted); }
+  .wt-how b { color: #fff; font-weight: normal; }
+  .wt-left .co-bench { min-width: 0; width: 100%; justify-content: flex-start; }
+  .wt-left .co-bench.sel { border: 1px solid var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+  .pk-spot.bench-empty .pk-plus { color: rgba(255, 255, 255, 0.55); }
+  /* bản 2 (góp ý agent): nhãn đội 2 góc · ô trống FREE · HOST / YOU tách 2 dòng có nhãn · thẻ vị trí không số */
+  .pk-plate u.h { background: #3ff6ff; }
+  .pk-plate u.p { background: #9aa3b5; }
+  .pk-plate u.free { background: none; color: rgba(255, 255, 255, 0.65); border: 1px dashed rgba(255, 255, 255, 0.45); padding: 1px 2px 0; }
+  .wt-side { position: absolute; top: 5px; display: flex; flex-direction: column; gap: 2px; pointer-events: none; font-family: var(--px); letter-spacing: 1px; z-index: 1; }
+  .wt-side.l { left: 8px; } .wt-side.r { right: 8px; align-items: flex-end; }
+  .wt-side i { font-style: normal; font-size: 6px; color: #fff; }
+  .wt-side b { font-weight: normal; font-size: 5px; color: var(--muted); }
+  .wt-side.r i { color: #ff8a8a; }
+  .wt-sil canvas { filter: brightness(0) !important; opacity: 0.8; }
+  .wt-sil .pk-plate { opacity: 0.6; }
+  .wt-row { display: flex; gap: 6px; align-items: flex-start; font-family: var(--px); font-size: 5px; letter-spacing: 1px; line-height: 1.6; color: var(--muted); }
+  .wt-row b { color: #c7ccd6; font-weight: normal; }
+  .wt-row.you { color: #fff; }
+  .wt-row.you b { color: var(--gold); }
+  .wt-lab { flex: none; width: 26px; text-align: center; padding: 1px 0 0; color: var(--ink); background: #e6dccb; line-height: 1.5; }
+  .wt-row.host .wt-lab { background: #3ff6ff; }
+  .wt-rules { margin-top: auto; display: flex; flex-wrap: wrap; gap: 3px; font-family: var(--px); font-size: 5px; letter-spacing: 1px; }
+  .wt-rules span { color: #9aa3b5; border: 1px solid #2e3140; padding: 2px 3px 1px; }
+  .wt-card { gap: 5px; }
+  .wt-ch { display: flex; align-items: baseline; gap: 6px; font-family: var(--px); }
+  .wt-ch span { font-size: 6px; letter-spacing: 1px; color: var(--muted); }
+  .wt-ch em { font-style: normal; font-size: 11px; color: #fff; letter-spacing: 2px; }
+  .wt-desc { font-family: var(--px); font-size: 5px; letter-spacing: 1px; line-height: 1.6; color: #c7ccd6; }
+  .wt-kl { font-family: var(--px); font-size: 5px; letter-spacing: 1px; color: var(--gold); }
+  .wt-keys { display: flex; gap: 6px; }
+  .wt-keys span { font-family: var(--px); font-size: 6px; letter-spacing: 1px; color: var(--c); border: 1px solid var(--c); padding: 2px 4px 1px; }
+  .pk-boss.wt-bossb { top: auto; bottom: 5px; }   /* góc dưới phải: không đè đầu MID đối thủ */
+  .pk-boss i.wt-last { color: var(--muted); }
+  .wt-foot { margin-top: auto; white-space: normal; line-height: 1.6; }
+  /* bản 3: ít chữ, chỉ báo bằng hình */
+  .wt-left { justify-content: center; gap: 8px; }
+  .wt-row { align-items: center; font-size: 6px; }
+  .wt-row.you { font-size: 7px; }
+  .wt-row .dots i { font-style: normal; animation: wtDot 1.2s steps(1) infinite; }
+  .wt-row .dots i:nth-child(2) { animation-delay: 0.4s; }
+  .wt-row .dots i:nth-child(3) { animation-delay: 0.8s; }
+  .wt-card { flex: none; width: 150px; margin-left: auto; justify-content: center; gap: 8px; }
+  .wt-ch u { text-decoration: none; font-size: 6px; letter-spacing: 1px; padding: 1px 3px 0; color: var(--ink); background: #e6dccb; align-self: center; }
+  .wt-ch u.free { background: none; color: rgba(255, 255, 255, 0.7); border: 1px dashed rgba(255, 255, 255, 0.5); }
+  .wt-ch em { font-size: 14px; }
+  .wt-keys { flex-direction: column; align-items: flex-start; gap: 4px; }
+  /* ô FREE bấm được: vòng phấn mờ thở chậm (ô có người thì không) */
+  .pk-spot.empty .pk-ring.faint { animation: wtBreath 1.6s ease-in-out infinite; }
+  @keyframes wtBreath { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.8; } }
+  /* mất kết nối: xám + mờ như .net-off của game, nhãn OFFLINE viền đỏ nhạt */
+  .pk-spot.wt-off canvas { filter: grayscale(1) brightness(0.7); opacity: 0.6; }
+  .pk-spot.wt-off .pk-sh { opacity: 0.3; }
+  .pk-plate u.off, .pk-spot.host .pk-plate u.off { background: none; color: #ff8a8a; border: 1px solid #ff8a8a; padding: 1px 2px 0; }
+  /* bản 4 (polish): thẻ phải không khung, nối màu với vòng trên sân · ô FREE được trỏ / vào ô */
+  .wt-card { background: none; border: none; border-top: 2px solid #e6dccb; padding-top: 10px; justify-content: flex-start; }
+  .wt-card.is-free { border-top-color: #8fc8ff; }
+  .wt-ch u.free { color: #8fc8ff; border-color: #8fc8ff; font-size: 7px; }
+  .wt-keys span { display: inline-flex; align-items: center; border: none; padding: 0; gap: 4px; color: var(--c); }
+  .wt-keys span i { font-style: normal; color: var(--gold); }
+  .wt-keys .pxi { width: 9px; height: 9px; }
+  .pk-spot.empty .pk-ring.faint { transition: opacity 0.15s; }
+  .pk-spot.empty:hover .pk-ring.faint { animation: none; opacity: 1; }
+  .pk-spot.wt-foc .pk-ring { transform: scale(1.3); transform-origin: 35px 34px; }
+  .pk-spot.wt-foc .pk-ring path { stroke-width: 3.5; }
+  .pk-spot.wt-foc .pk-plus { color: #8fc8ff; font-size: 20px; }
+  .pk-spot.wt-foc .pk-plate { outline: 1px solid #8fc8ff; }
+  .pk-spot.wt-foc .pk-plate em { color: #fff; }
+  .pk-ring.wt-pop { animation: wtPop 0.5s steps(5) both; transform-origin: 35px 34px; }
+  @keyframes wtPop { from { transform: scale(0.6); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>MÀN CHỜ CO-OP (KHÁCH) · TRƯỚC / SAU</h1>
+    <p>Khách đã vào phòng GOAT PATH, host chưa bấm START RUN. SAU: khách thấy cùng sân ngang host đang chọn đội, ở chế độ chỉ xem. Bấm được thật: bấm ô trống (dấu +) = sang đá ô đó, bấm ghế dự bị = ngồi ra cho trống ô, phím ←↑↓→ / Enter cũng được. Ngoại hình, chỉ số, đội boss lấy từ code game.</p>
+  </div>
+  <div class="tabs"><span>BẢN</span>
+    <button data-v="old">TRƯỚC (đang có)</button>
+    <button data-v="new">SAU (đề xuất)</button>
+  </div>
+  <div class="tabs"><span>TRẠNG THÁI</span>
+    <button data-st="two">1 · 2 NGƯỜI (NHƯ ẢNH)</button>
+    <button data-st="full">2 · ĐỦ 3 NGƯỜI</button>
+    <button data-st="bench">3 · BẠN NGỒI GHẾ DỰ BỊ</button>
+    <button data-st="away">4 · BẠN BÈ MẤT KẾT NỐI</button>
+    <button data-st="haway">5 · HOST MẤT KẾT NỐI</button>
+  </div>
+  <div class="tabs"><span>ĐỐI THỦ</span>
+    <button data-opp="sil">BÓNG ĐEN ??? (đề xuất)</button>
+    <button data-opp="boss">BOSS ACT 1 + NHÃN TRẬN CUỐI</button>
+  </div>
+  <div class="tabs"><span>CÁCH XEM</span>
+    <button data-view="">GỐC</button>
+    <button data-view="squint">NHEO MẮT</button>
+    <button data-view="gray">TRẮNG ĐEN</button>
+    <button data-view="both">NHEO + TRẮNG ĐEN</button>
+  </div>
+  <div class="wrap" id="wrap"><div class="stage" id="scr"></div></div>
+  <div class="doc">
+    <h2>BẢN 4 (2026-11-12): POLISH NHỎ</h2>
+    <ul>
+      <li>Dòng YOU: đã có ô trên sân = <b>CLICK A FREE SPOT TO MOVE HERE</b> (tag ⇄ MOVE HERE, Enter MOVE HERE) · ngồi ghế dự bị = <b>CLICK A FREE SPOT TO JOIN</b> (tag + JOIN).</li>
+      <li>Thẻ phải: KEEPER / FIGHT không còn khung (khung làm chúng giống 2 nút để chọn), đổi thành ★ + tên chỉ số (màu riêng), cùng ★ "chỉ số chính" của màn host. Nhãn FREE xanh, to hơn. Thẻ bỏ nền hộp, chỉ còn vạch trên cùng màu với vòng của ô (xanh = ô FREE đang trỏ, sáng = ô của bạn) cho dính với sân.</li>
+      <li>Chọn ô: rê chuột qua ô FREE = vòng sáng hẳn lên · ô đang chọn (chuột hoặc phím) = vòng xanh to hơn, dấu + xanh, viền xanh quanh bảng tên · Enter / bấm = nhân vật chạy vào ô (như host xếp người) + vòng phấn bung ra.</li>
+      <li>Không thêm chữ, không đổi bố cục.</li>
+    </ul>
+    <h2>THEO MAIN (2026-11-12): MẤT KẾT NỐI</h2>
+    <ul>
+      <li>Main có commit 3032e8a (07/11): người mất kết nối giữ chỗ 60 giây, lobby tô xám họ (<code>.net-off</code> + tooltip "Lost connection · AI plays for them until they're back").</li>
+      <li>Mockup thêm 2 trạng thái: bạn bè mất kết nối (người xám, nhãn <b>OFFLINE</b> thay PLAYER) · host mất kết nối (host xám + OFFLINE, dòng HOST thành <b>LOST CONNECTION · WAITING...</b>; phòng chờ host tới hết hạn mới đóng).</li>
+    </ul>
+    <h2>BẢN 3 (2026-11-12): TỐI GIẢN THEO BRIEF "EXPLAIN THE NEXT ACTION"</h2>
+    <ul>
+      <li>Bỏ hàng luật co-op (ONE RUN TOGETHER / VOTES / RUN OVER), câu mô tả vị trí, "MATTERS MOST HERE", "Your stats are set...".</li>
+      <li>Dưới sân trái còn 2 dòng: <b>HOST</b> IS PICKING TEAMMATES... (ba chấm chạy, xám; phòng đủ người, không còn ô FREE: IS STARTING THE RUN...) · <b>YOU</b> CLICK A FREE SPOT TO JOIN (to hơn, trắng; đủ người: SIT ON THE BENCH TO SWAP).</li>
+      <li>Thẻ phải: nhãn YOU / FREE + vị trí chữ to + 2 chỉ số (màu riêng). Trỏ ô FREE = thẻ của ô đó.</li>
+      <li>Bỏ bảng PICKING... giữa sân (trùng dòng HOST) và dòng "MET ON THE MAP": sân chỉ còn người, ô, nhãn YOUR TEAM / OPPONENTS.</li>
+      <li>Ô FREE bấm được: vòng phấn mờ thở chậm + dấu +; trỏ vào = vòng xanh nhấp nháy + ⇄ PLAY HERE. Ô có người: bảng tên + nhãn YOU (sáng) / HOST (xanh) / PLAYER (xám).</li>
+      <li>Phím, chuột, ghế dự bị giữ nguyên.</li>
+    </ul>
+    <h2>BẢN 2 (2026-11-12): SỬA THEO GÓP Ý CỦA AGENT NHÌN MÀN HÌNH</h2>
+    <table>
+      <tr><th>Góp ý</th><th>Đã sửa</th></tr>
+      <tr><td>Không biết được bấm ngay hay phải chờ host ("Click a free spot" vs "WAITING FOR HUYNG3")</td><td>Tách 2 dòng có nhãn: <b>HOST</b> (xanh, chữ xám) = việc của host: chọn đồng đội AI cho ô FREE rồi bắt đầu run · <b>YOU</b> (chữ trắng) = việc bạn làm được ngay: bấm ô FREE để đá ở đó, đổi được tới lúc run bắt đầu. Đủ người: "ngồi BENCH để nhường ô"; đang ngồi BENCH: "bấm ô FREE".</td></tr>
+      <tr><td>"MID AI" là gì: AI đang chờ chọn hay ô trống?</td><td>Ô trống ghi <b>FREE</b> (khung nét đứt). Trỏ vào: <b>⇄ PLAY HERE</b> (thay MOVE HERE). Chữ AI chỉ còn trong dòng HOST: "picks AI teammates for FREE spots".</td></tr>
+      <tr><td>Nhân vật tối màu là ai? PATROL / GATEKEEPER là đồng đội hay đối thủ?</td><td>Nhãn 2 nửa sân: <b>YOUR TEAM</b> trái, <b>OPPONENTS</b> đỏ phải. Đối thủ mặc định thành <b>bóng đen + ???</b> ("MET ON THE MAP"): trận đầu chưa biết gặp ai, không hứa sai. Bản boss vẫn để ở nút ĐỐI THỦ, banner chuyển xuống góc dưới phải + dòng "LAST MATCH OF THE ACT".</td></tr>
+      <tr><td>DEF mà lại "KEEP GOAL": mình là thủ môn hay hậu vệ?</td><td>Thẻ vị trí bên phải nói thẳng: "Defends and keeps goal. Only the DEF catches shots."</td></tr>
+      <tr><td>FIG là gì, 70 PLAYER là gì, sao DEF có GK</td><td>Bỏ hết số (số cũ cũng sai: khách đá bằng chỉ số của đồng đội AI dự phòng của ô, chốt lúc START RUN). Thẻ vị trí chỉ còn: vị trí làm gì + <b>★ MATTERS MOST HERE</b> với tên chỉ số viết đủ (KEEPER, FIGHT, PASSING...) + "Your stats are set when the run starts." Bỏ số trên bảng tên.</td></tr>
+      <tr><td>Xong bước này thì vào trận bóng hay gì khác?</td><td>Hàng 3 thẻ luật co-op: ONE RUN TOGETHER · EVERYONE VOTES ON THE MAP · LOSE A MATCH = RUN OVER.</td></tr>
+      <tr><td>Vòng trắng dưới chân có phải "đang chọn"?</td><td>Giữ: đó là vòng điều khiển dưới chân bạn y như trong trận, kèm nhãn YOU. Ô đang trỏ luôn là vòng phấn xanh, không lẫn.</td></tr>
+    </table>
+    <p>Trỏ ô FREE thì thẻ bên phải đổi sang ô đó (FREE SPOT MID: làm gì, chỉ số nào quan trọng), để chọn ô trước khi bấm.</p>
+    <h2>VÌ SAO BẢN CŨ TRÔNG THÔ</h2>
+    <ul>
+      <li>Bố cục từ 2026-10-26, chưa từng qua đợt review nào: 3 hộp xám, nhân vật vẽ 1x bé tí, ô trống chỉ có chữ "AI" to.</li>
+      <li>Nheo mắt: khối nổi nhất là khung vàng quanh ô của HOST (không phải ô của mình), rồi tới câu "Waiting for..." vàng giữa màn. Ô của mình chỉ ngả vàng nhạt.</li>
+      <li>Lệch với host: cùng lúc host thấy sân ngang + boss act 1, khách thấy 3 cái hộp, không biết đội mình sắp gặp ai, mình đá vị trí nào thì cần gì.</li>
+      <li>Nửa dưới màn trống trơn.</li>
+    </ul>
+    <h2>ĐỀ XUẤT</h2>
+    <table>
+      <tr><th>Sân</th><td>Cùng sân với host (cùng CSS, cùng chỗ đứng). Host, bạn, bạn bè đứng đúng ô của mình, nhãn HOST (xanh như nhãn HOST của phòng) / YOU / PLAYER. Ô chưa có người: dấu + phấn mờ, nhãn <b>AI</b> (host sẽ chọn đồng đội AI cho ô đó). Boss act 1 bên phải, tối như bên host.</td></tr>
+      <tr><th>Giữa sân</th><td>Chỗ START RUN của host thành bảng mờ <b>PICKING...</b> + tên host (ba chấm chạy): đúng chỗ host sắp bấm giao bóng, nên khách biết đang chờ việc gì.</td></tr>
+      <tr><th>Đổi chỗ</th><td>Ô trống là thứ duy nhất bấm được trên sân: trỏ vào thì vòng phấn xanh + ⇄ MOVE HERE (giống chế độ đổi chỗ của host). Ô của bạn bè không trỏ được. Phòng đủ người: ghế dự bị ở dưới sân (như bây giờ).</td></tr>
+      <tr><th>Dưới sân</th><td>Trái: tiêu đề xám WAITING FOR HUYNG3 + 1 dòng nói làm được gì ở đây + ghế dự bị co-op. Phải: bảng chỉ số của chính bạn với ★ 2 chỉ số chính của ô bạn đang đứng (DEF: GK + FIG, giữ goal), giống bảng của host.</td></tr>
+      <tr><th>Thứ bậc</th><td>Không có việc chính để làm (đang chờ), nên không có gì vàng nhấp nháy: chỉ ô của bạn (viền sáng) và ô đang trỏ (vòng xanh) nổi lên.</td></tr>
+    </table>
+    <h2>GIỚI HẠN</h2>
+    <ul>
+      <li>Khách <b>không thấy host đang chọn đồng đội AI nào</b>: lựa chọn đó nằm trên máy host, chưa gửi qua phòng. Muốn thấy thì phải gửi thêm (vd trong <code>co</code> / lobby) = đụng giao thức phòng, phải bump + deploy server. Bản này giữ ô AI là dấu +.</li>
+      <li>Chữ mới: WAITING FOR {name}, PICKING, AI (nhãn), 2–3 dòng hướng dẫn ngắn. Còn lại dùng chữ đã có.</li>
+      <li>Code: thay renderWait, dùng lại pkSpots / pkInfo / CSS .pk-* của BUILD YOUR SQUAD. Không đụng server.</li>
+    </ul>
+  </div>
+
+<script>
+  function fit() {
+    const k = Math.min(2, (innerWidth - 24) / 640), w = document.getElementById('wrap');
+    w.style.width = 640 * k + 'px'; w.style.height = 360 * k + 'px';
+    document.getElementById('scr').style.transform = `scale(${k})`;
+  }
+  addEventListener('resize', fit); fit();
+  (async function () {
+    const html = await (await fetch('../../index.html', { cache: 'reload' })).text();
+    const srcs = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]).filter((s) => !/main\.js$/.test(s));
+    for (const s of srcs) await new Promise((ok) => { const el = document.createElement('script'); el.src = '../../' + s; el.onload = ok; el.onerror = ok; document.head.appendChild(el); });
+    boot();
+  })();
+
+  function boot() {
+    try { SFC.I18n.init(); } catch (e) { /* bỏ qua */ }
+    try { SFC.Profile.load(); } catch (e) { /* bỏ qua */ }
+    try { SFC.Input.init(SFC_CONFIG.controls.bindings); } catch (e) { /* bỏ qua */ }
+    const C = SFC_CONFIG, RUN = SFC.Run, RU = SFC.RunUI, PX = SFC.PixelIcon, A = C.progression.attrs, U = SFC.UIHelpers;
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const KIT = C.mainPath.playerTeam.kit, ROLES = ['FWD', 'MID', 'DEF'];
+    const SPOT = { DEF: { px: 74, y: 64.8 }, MID: { x: 28.65, y: 39.6 }, FWD: { x: 36.5, y: 86 } };   // như PK_SPOT trong runmap.js
+    const FACE = Math.PI / 4;
+    const pos = (r, opp) => { const s = SPOT[r]; return `left:${s.px != null ? (opp ? `calc(100% - ${s.px}px)` : s.px + 'px') : (opp ? 100 - s.x : s.x) + '%'};top:${s.y}%`; };
+    const look = (o) => SFC.Profile.lookOf(Object.assign({}, C.progression.defaultLook, o || {}));
+    const cands = RUN.candidates();
+    // người trong phòng: host + bạn (máy này) + 1 người bạn (trạng thái đủ người)
+    const P = {
+      host: { id: 'h', name: 'HUYNG3', look: RUN.mateLook(cands[1]) },
+      me: { id: 'me', name: (SFC.Profile.data && SFC.Profile.data.name) || 'PLAYER', look: SFC.Profile.avatar().look },
+      fr: { id: 'f', name: 'NAMKUN', look: RUN.mateLook(cands[3]) },
+    };
+    const S = { v: 'new', opp: 'sil', away: [], seats: { FWD: 'h', DEF: 'me' }, bench: [], focus: 'spot:MID' };
+    const who = (id) => (id === 'h' ? P.host : id === 'me' ? P.me : P.fr);
+    const myRole = () => ROLES.find((r) => S.seats[r] === 'me') || null;
+    let dim = { w: 572, h: 160 };
+
+    /* ---------- vẽ nhân vật ---------- */
+    let T = 0;
+    const scr = document.getElementById('scr');
+    function drawAll() {
+      scr.querySelectorAll('canvas[data-lk], canvas[data-mmlook]').forEach((cv) => {
+        if (!cv._lk) {
+          cv.width = 40; cv.height = 44;
+          cv._lk = JSON.parse(cv.dataset.lk || cv.dataset.mmlook);
+          cv._kit = cv.dataset.kit === 'boss' ? C.teams.list[C.run.acts[0].boss[0]].kit : KIT;
+          cv._f = cv.dataset.f != null ? +cv.dataset.f : null;
+        }
+        SFC.Sprites.drawAvatar(cv, cv._lk, cv._kit, T, cv._f != null ? cv._f : (cv.dataset.spin ? [Math.PI / 2, 0, -Math.PI / 2, Math.PI][Math.floor(T / 1.6) % 4] : Math.PI / 2));
+      });
+    }
+    (function loop() { T += 1 / 60; drawAll(); requestAnimationFrame(loop); })();
+    const fig = (lk, f, extra = '') => `<canvas data-lk='${JSON.stringify(lk).replace(/'/g, '&#39;')}' ${f != null ? `data-f="${f}"` : ''} ${extra}></canvas>`;
+    const ring = (role, flat, cls) => {
+      const x = 35, y = flat ? 51 : 34, r = flat ? 22 : 13, seed = role + (flat ? 'g' : 'p');
+      const tf = flat ? `transform="translate(${x} ${y}) scale(1 0.42) translate(${-x} ${-y})"` : '';
+      return `<svg class="pk-ring ${cls}" width="70" height="70"><g ${tf}><path pathLength="1" d="${RU.chalkPath(x, y, r, seed)}"/><path pathLength="1" class="thin" d="${RU.chalkPath(x + 1.5, y - 1, r - 2, seed)}"/></g></svg>`;
+    };
+    const DEFS = '<defs><filter id="rmChalk" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3" result="n"/>'
+      + '<feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter></defs>';
+    const ovr = (r) => { const v = Object.values(r); return Math.round(v.reduce((a, b) => a + b, 0) / v.length); };
+    const keysOf = (role) => { const b = C.run.squad.base[role]; return Object.keys(b).sort((x, y) => b[y] - b[x]).slice(0, 2); };
+
+    /* ---------- TRƯỚC: đúng HTML của RunUI.renderWait hiện tại ---------- */
+    function renderOld() {
+      const me = myRole();
+      const slots = ROLES.map((r) => {
+        const id = S.seats[r], m = id && who(id), sel = S.focus === 'spot:' + r ? 'sel' : '';
+        const body = m ? `${fig(m.look, null, 'data-spin="1"')}<b>${esc(m.name)}</b><u class="pk-tag ${r === me ? 'me' : ''}">${r === me ? 'YOU' : id === 'h' ? 'HOST' : 'PLAYER'}</u>` : '<div class="pk-q">AI</div>';
+        return `<button class="pk-slot ${m ? '' : 'empty'} ${r === me ? 'mine' : ''} ${sel}" data-k="spot:${r}"><em>${r}</em>${body}</button>`;
+      }).join('');
+      const full = ROLES.every((r) => S.seats[r]) || S.bench.length;
+      const bench = full ? `<div class="pk-cobench">${U.coopBench(S.bench.map((id) => ({ id, pf: { name: who(id).name, look: who(id).look } })), 'me', 'data-k="bench"', S.focus === 'bench')}</div>` : '';
+      return `<div class="rm-page pk-page coop">
+          <div class="rm-bar"><div class="rm-head"><b>GOAT PATH</b></div><div class="rm-acts"><span class="rm-room"><em>ROOM CODE</em><b>4R4KR75</b></span><button class="pt-btn ${S.focus === 'leave' ? 'sel' : ''}" data-k="leave">LEAVE ROOM</button></div></div>
+          <div class="pk-slots">${slots}</div>${bench}
+          <div class="pk-hint">Waiting for HUYNG3 to start the run...</div>
+          <div class="pk-sub">Click a position to play there</div></div>`;
+    }
+
+    /* ---------- SAU: sân ngang của BUILD YOUR SQUAD, chỉ xem (bản 2: sửa theo góp ý) ---------- */
+    // ô trống = FREE (không còn chữ AI dễ hiểu nhầm) · không số OVR trên bảng tên (khách chưa có chỉ số tới lúc START RUN)
+    // đối thủ: S.opp = 'sil' (bóng đen ???, chưa biết gặp ai) | 'boss' (boss act 1 + nhãn trận cuối act)
+    // bản 3 (brief tối giản): thẻ phải = nhãn nhỏ (YOU / FREE) + vị trí to + 2 chỉ số quan trọng, không câu giải thích
+    function spotCard(r, head) {
+      return `<div class="pk-info wt-card ${head === 'FREE' ? 'is-free' : ''}"><div class="wt-ch"><u class="${head === 'FREE' ? 'free' : ''}">${head}</u><em>${r}</em></div>
+          <div class="wt-keys">${keysOf(r).map((s) => `<span style="--c:${A.list[s].color}"><i>★</i>${esc(A.list[s].label)}</span>`).join('')}</div></div>`;
+    }
+    function renderNew() {
+      const me = myRole(), fs = S.focus.startsWith('spot:') ? S.focus.slice(5) : null, onBench = S.bench.includes('me');
+      const full = ROLES.every((r) => S.seats[r]) || S.bench.length;
+      const spots = ROLES.map((r) => {
+        const id = S.seats[r], m = id && who(id), mine = id === 'me', sel = fs === r && !id;
+        let body, plate, cls = '';
+        if (m) {
+          body = '<i class="pk-sh"></i>' + fig(m.look, FACE, 'class="who"');
+          const off = S.away.includes(id);   // mất kết nối: giữ chỗ, xám + nhãn OFFLINE (giống .net-off trong game)
+          plate = `<em>${r}</em>${esc(m.name)}<u class="${off ? 'off' : mine ? '' : id === 'h' ? 'h' : 'p'}">${off ? 'OFFLINE' : mine ? 'YOU' : id === 'h' ? 'HOST' : 'PLAYER'}</u>`;
+          cls = (mine ? 'me sel ' : '') + (id === 'h' ? 'host lock' : !mine ? 'lock' : '') + (off ? ' wt-off' : '');
+        } else {
+          body = ring(r, false, sel ? 'blue blink' : 'faint') + '<span class="pk-plus">+</span>';
+          plate = `<em>${r}</em><u class="free">FREE</u>`;
+          cls = 'empty ' + (onBench ? 'bench-empty' : '') + (sel ? ' wt-foc' : '');
+        }
+        const ground = mine ? ring(r, true, '') + (S.enter === r ? ring(r, false, 'blue wt-pop') : '') : '';
+        if (mine && S.enter === r) cls += ' in';
+        const tags = (r === 'DEF' ? `<s>${PX.html('gear-gloves', '', '')}KEEPS GOAL</s>` : '') + (sel ? `<i>${onBench ? '+ JOIN' : '⇄ MOVE HERE'}</i>` : '');
+        return `<div class="pk-spot ${cls}" style="${pos(r)}">${ground}${body}<span class="pk-plate">${plate}</span>${tags ? `<span class="pk-tags">${tags}</span>` : ''}
+            ${!id ? `<i class="pk-hit" data-k="spot:${r}"></i>` : ''}</div>`;
+      }).join('');
+      const bossId = C.run.acts[0].boss[0], team = C.teams.list[bossId], sil = S.opp === 'sil';
+      const opp = C.game.roles.map((r, idx) => `<div class="pk-spot pk-opp ${sil ? 'wt-sil' : ''}" style="${pos(r, true)}"><i class="pk-sh"></i>${fig(look(SFC.MainPath.teamLook(bossId, idx)), Math.PI - FACE, 'data-kit="boss"')}
+          <span class="pk-plate"><em>${r}</em>${sil ? '???' : esc(team.players[idx])}</span></div>`).join('');
+      // 2 nhãn đội ở 2 góc trên: ai là đội mình, ai là đối thủ (agent đọc nhầm đội boss thành đồng đội)
+      const mine = `<div class="wt-side l"><i>YOUR TEAM</i></div>`;
+      const them = sil ? `<div class="wt-side r"><i>OPPONENTS</i></div>`
+        : `<div class="pk-boss wt-bossb" style="--bc:${team.kit.accent}">${PX.ui('crown', '')}<span><i>ACT 1 BOSS</i><b>${esc(team.name)}</b><i class="wt-last">LAST MATCH OF THE ACT</i></span></div>`;
+      const wait = `<div class="pt-btn go pk-go dis wt-plate"><span>PICKING<span class="dots"><i>.</i><i>.</i><i>.</i></span></span><em class="pk-miss">HUYNG3 · HOST</em></div>`;
+      const pitch = `<div class="pk-pitch"><svg class="pk-lines" width="${dim.w}" height="${dim.h}">${DEFS}${RU.pitch(dim.w, dim.h)}</svg><div class="pk-dim"></div>${mine}${them}${opp}${spots}</div>`;
+      // dưới sân, trái: HOST làm gì (xám, không cần mình) · BẠN làm được gì ngay bây giờ (trắng, có nhãn) · luật co-op 1 dòng
+      const bench = full ? U.coopBench(S.bench.map((id) => ({ id, pf: { name: who(id).name, look: who(id).look } })), 'me', 'data-k="bench"', S.focus === 'bench') : '';
+      const can = full && !onBench ? 'SIT ON THE <b>BENCH</b> TO SWAP' : onBench ? 'CLICK A <b>FREE</b> SPOT TO JOIN' : 'CLICK A <b>FREE</b> SPOT TO MOVE HERE';
+      const go = onBench ? 'JOIN' : 'MOVE HERE';
+      const left = `<div class="wt-left">
+          <div class="wt-row host"><span class="wt-lab">HOST</span><span>${S.away.includes('h') ? 'LOST CONNECTION · WAITING' : ROLES.every((r) => S.seats[r]) ? 'IS STARTING THE RUN' : 'IS PICKING TEAMMATES'}<span class="dots"><i>.</i><i>.</i><i>.</i></span></span></div>
+          <div class="wt-row you"><span class="wt-lab">YOU</span><span>${can}</span></div>${bench}</div>`;
+      // phải: thẻ vị trí (vị trí làm gì + 2 chỉ số quan trọng, chữ đủ, không số) · trỏ ô trống = thẻ của ô đó
+      const info = fs && !S.seats[fs] ? spotCard(fs, 'FREE') : me ? spotCard(me, 'YOU')
+        : `<div class="pk-info"><div class="pk-what"><b>BENCH</b></div></div>`;
+      const keys = `<div class="pk-keys"><span>←↑↓→ select</span>${fs && !S.seats[fs] ? `<span><kbd>Enter</kbd>${onBench ? 'JOIN' : 'MOVE HERE'}</span>` : S.focus === 'bench' ? '<span><kbd>Enter</kbd>BENCH</span>' : ''}<span><kbd>Esc</kbd>LEAVE ROOM</span></div>`;
+      return `<div class="rm-page pk-page coop">
+          <div class="pk-top"><b>GOAT PATH · CO-OP</b><div class="rm-acts"><span class="rm-room"><em>ROOM CODE</em><b>4R4KR75</b></span><button class="pt-btn ${S.focus === 'leave' ? 'sel' : ''}" data-k="leave">LEAVE ROOM</button></div></div>
+          ${pitch}<div class="pk-dug">${left}${info}</div>${keys}</div>`;
+    }
+
+    function render() {
+      clearTimeout(render.t);
+      if (S.enter) render.t = setTimeout(() => { S.enter = null; }, 700);   // hiệu ứng vào ô chỉ chạy 1 lần
+      scr.innerHTML = `<div class="mk-menu">${S.v === 'old' ? renderOld() : renderNew()}</div>`;
+      drawAll();
+      const box = scr.querySelector('.pk-pitch');
+      if (box && (Math.abs(box.clientWidth - dim.w) > 1 || Math.abs(box.clientHeight - dim.h) > 1)) { dim = { w: box.clientWidth, h: box.clientHeight }; render(); }
+      document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.v === S.v || b.dataset.st === S.st || (b.dataset.opp && b.dataset.opp === S.opp)
+        || (b.dataset.view != null && b.dataset.view === (document.getElementById('wrap').dataset.view || ''))));
+    }
+    function act(k) {
+      if (k.startsWith('spot:')) {
+        const r = k.slice(5);
+        if (S.seats[r]) return;
+        const cur = myRole();
+        if (cur) delete S.seats[cur];
+        S.bench = S.bench.filter((x) => x !== 'me');
+        S.seats[r] = 'me';
+        S.enter = r; S.focus = 'spot:' + r;
+      } else if (k === 'bench') {
+        const cur = myRole();
+        if (cur) { delete S.seats[cur]; S.bench = S.bench.concat(['me']); S.focus = 'spot:' + cur; }
+      }
+      render();
+    }
+    scr.addEventListener('click', (e) => { const el = e.target.closest('[data-k]'); if (el) { S.focus = el.dataset.k; act(el.dataset.k); } });
+    scr.addEventListener('mouseover', (e) => { const el = e.target.closest('.pk-hit[data-k]'); if (el && S.focus !== el.dataset.k && !S.enter) { S.focus = el.dataset.k; render(); } });
+    addEventListener('keydown', (e) => {
+      const dirs = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
+      if (dirs[e.key]) {
+        e.preventDefault();
+        const els = [...scr.querySelectorAll('[data-k]')], cur = els.find((x) => x.dataset.k === S.focus) || els[0];
+        let j = cur ? U.navPick(els.map((x) => (x === cur ? null : U.navRect(x))), U.navRect(cur), dirs[e.key]) : 0;
+        if (j < 0 && dirs[e.key] === 'up') j = els.findIndex((x) => x.dataset.k === 'leave');
+        if (j >= 0) { S.focus = els[j].dataset.k; render(); }
+      } else if (e.key === 'Enter') { e.preventDefault(); act(S.focus); }
+    });
+    const STATES = {
+      two() { Object.assign(S, { st: 'two', away: [], seats: { FWD: 'h', DEF: 'me' }, bench: [], focus: 'spot:MID' }); },
+      full() { Object.assign(S, { st: 'full', away: [], seats: { FWD: 'h', MID: 'f', DEF: 'me' }, bench: [], focus: 'bench' }); },
+      away() { Object.assign(S, { st: 'away', seats: { FWD: 'h', MID: 'f', DEF: 'me' }, bench: [], away: ['f'], focus: 'bench' }); },
+      haway() { Object.assign(S, { st: 'haway', seats: { FWD: 'h', DEF: 'me' }, bench: [], away: ['h'], focus: 'spot:MID' }); },
+      bench() { Object.assign(S, { st: 'bench', away: [], seats: { FWD: 'h', MID: 'f' }, bench: ['me'], focus: 'spot:DEF' }); },
+    };
+    document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
+      if (b.dataset.v) S.v = b.dataset.v;
+      if (b.dataset.st) STATES[b.dataset.st]();
+      if (b.dataset.opp) S.opp = b.dataset.opp;
+      if (b.dataset.view != null) document.getElementById('wrap').dataset.view = b.dataset.view;
+      render();
+    }));
+    window.MK = { S, render, opp: (k) => { S.opp = k; render(); }, state: (k) => { STATES[k](); render(); }, v: (k) => { S.v = k; render(); }, view: (k) => { document.getElementById('wrap').dataset.view = k; render(); } };
+    STATES.two(); render();
+  }
+</script>
+</body>
+</html>
