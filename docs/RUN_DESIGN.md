@@ -400,5 +400,13 @@ Owner: "sân bóng nằm ngang, team mình bên trái, team bạn bên phải, t
 - **Đổi chỗ của bạn**: bấm nhân vật của mình (`pick.move`) → 2 ô kia hiện ⇄ MOVE HERE, bấm ô nào sang ô đó (Esc = thôi); kéo thả vẫn được. Bỏ nút ✕ BENCH (thay người gánh việc đó; kéo đồng đội xuống băng ghế vẫn bỏ ra được).
 - **START RUN** giữa sân (giao bóng): chưa đủ = viền mờ + NEED DEF · đủ nhưng đang thay / đổi chỗ = viền trắng · hết việc = vàng nhấp nháy, tự được chọn. Bấm khi chưa đủ: tiêu đề băng ghế rung đỏ, chọn sẵn người cho ô còn thiếu.
 - **Thứ bậc** (luật của review): vàng chỉ cho việc đang làm; OVR, YOU, chip hợp ô về trắng / xám; tiêu đề màn nhỏ xám góc trái.
-- Màn chờ của khách co-op (`renderWait`) giữ như cũ. Chữ mới (11) đã thêm vào 4 gói, chưa duyệt.
+- Chữ mới (11) đã thêm vào 4 gói, chưa duyệt.
+
+### Màn chờ của khách co-op (owner 2026-11-12)
+Mockup `tools/mockups/coop-wait.html` (4 vòng: góp ý của 1 agent nhìn ảnh, brief tối giản "explain the next action", trạng thái mất kết nối, polish). `RunUI.renderWait`:
+- Cùng sân ngang của BUILD YOUR SQUAD, chỉ xem. Nhãn YOUR TEAM / OPPONENTS 2 góc. Đối thủ = bóng đen + ??? (trận đầu chưa biết gặp ai; màn host vẫn hiện boss act 1).
+- Ô có người: bảng tên + nhãn YOU / HOST (xanh) / PLAYER (xám); mất kết nối = xám + OFFLINE + tooltip. Ô trống: dấu + và nhãn FREE, vòng phấn mờ thở chậm. Không số OVR (khách chơi bằng chỉ số đồng đội AI dự phòng của ô, chốt lúc START RUN).
+- Ô đang chọn (phím hoặc rê chuột): vòng xanh to + viền xanh bảng tên + ⇄ MOVE HERE (trên ghế dự bị: + JOIN). Vào ô mới: nhân vật chạy vào + vòng phấn bung (`wtAt` = ô lần vẽ trước). Mới vào màn: chọn sẵn ô FREE đầu tiên.
+- Dưới sân: HOST IS PICKING TEAMMATES... (đủ người: IS STARTING THE RUN; host mất kết nối: LOST CONNECTION · WAITING) · YOU CLICK A FREE SPOT TO MOVE HERE (ghế dự bị: TO JOIN; đủ người: SIT ON THE BENCH TO SWAP) + ghế dự bị. Phải: vị trí chữ to + ★ 2 chỉ số chính, vạch trên cùng màu vòng của ô. Không câu giải thích luật.
+- 8 chữ mới trong 4 gói, build lại font ja. Không đụng server / giao thức.
 

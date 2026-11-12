@@ -196,7 +196,7 @@ window.SFC = window.SFC || {};
       menu.msg = '';
       menu.go('runmap');
     },
-    reset() { this.sel = 0; this.quitArm = false; this.key = null; this.bagOpen = false; this.pick = null; this.drawing = false; this.friends = false; },
+    reset() { this.sel = 0; this.quitArm = false; this.key = null; this.bagOpen = false; this.pick = null; this.drawing = false; this.friends = false; this.wtAt = undefined; },
 
     /* ================= page 'runmap' ================= */
     // mục chọn được. Thứ tự che: hết run > thưởng chọn BADGE > phòng (Shop / Locker Room / Skill game / sự kiện) > thẻ mở act > túi đồ > map.
@@ -2330,28 +2330,78 @@ window.SFC = window.SFC || {};
       const t = T.find((x) => x.k === 'bench'), O = ON();
       return t ? `<div class="pk-cobench">${SFC.UIHelpers.coopBench(O.benched, O.mine && O.mine.id, `data-rt="${t.key}"`, T.indexOf(t) === this.sel)}</div>` : '';
     },
-    // khách: host chưa bắt đầu run -> mã phòng + 3 ô vị trí (bấm ô trống = đổi sang đó) + ghế dự bị (đổi vị trí khi phòng đủ người) + chờ host
+    // khách: host chưa bắt đầu run (review 2026-11-12, mockup tools/mockups/coop-wait.html bản 4) -> cùng sân ngang của BUILD YOUR SQUAD, chỉ xem:
+    // đội mình bên trái (host / bạn / bạn bè đứng đúng ô, ô trống = dấu + FREE bấm được), đối thủ bên phải là bóng đen ??? (chưa biết trận đầu
+    // gặp ai), dưới sân 2 dòng HOST (đang làm gì) / YOU (việc bấm được ngay) + ghế dự bị, phải = ô đang trỏ / ô của mình: vị trí + 2 chỉ số chính.
+    // Người mất kết nối: xám + OFFLINE (phòng giữ chỗ). Chuyển sang ô khác: nhân vật chạy vào ô + vòng phấn bung (wtAt = ô lần vẽ trước)
     renderWait(menu) {
       const T = this.targets(), O = ON(), L = O.lobby;
+      // mới vào màn: chọn sẵn ô FREE đầu tiên (việc bấm được duy nhất trên sân)
+      if (this.wtAt === undefined) { const f = T.findIndex((t) => t.k === 'slot' && !O.memberAt(O.slotOf(0, t.id))); if (f >= 0) this.sel = f; }
       this.sel = Math.max(0, Math.min(T.length - 1, this.sel));
-      const me = O.mine && O.mine.slot >= 0 ? O.slotRole(O.mine.slot) : null;   // trên ghế dự bị: không ô nào là của mình
-      const slots = T.filter((t) => t.k === 'slot').map((t) => {
-        const m = O.memberAt(O.slotOf(0, t.id)), sel = T.indexOf(t) === this.sel ? 'sel' : '';
-        const body = m ? `${this.face(m.pf.look, false)}<b>${esc(m.pf.name)}</b><u class="pk-tag ${t.id === me ? 'me' : ''}">${esc(t.id === me ? _t('YOU') : m.id === L.owner ? _t('HOST') : _t('PLAYER'))}</u>`
-          : `<div class="pk-q">AI</div>`;
-        const off = m && m.away ? ` net-off" title="${esc(_t("Lost connection · AI plays for them until they're back"))}` : '';   // mất kết nối: phòng giữ chỗ, AI đá thay
-        return `<button class="pk-slot ${m ? '' : 'empty'} ${t.id === me ? 'mine' : ''} ${sel}${off}" data-rt="${t.key}"><em>${esc(t.id)}</em>${body}</button>`;
+      const cur = T[this.sel], me = O.mine && O.mine.slot >= 0 ? O.slotRole(O.mine.slot) : null;   // trên ghế dự bị: không ô nào là của mình
+      const enter = me && this.wtAt !== undefined && this.wtAt !== me ? me : null;
+      this.wtAt = me;
+      const at = (r) => O.memberAt(O.slotOf(0, r)), full = POS().every((r) => at(r)), onBench = !me;
+      const host = L.members.find((x) => x.id === L.owner), A = SFC_CONFIG.progression.attrs;
+      const spots = T.filter((t) => t.k === 'slot').map((t) => {
+        const r = t.id, m = at(r), mine = r === me, sel = T.indexOf(t) === this.sel, off = m && m.away;
+        let body, plate, cls;
+        if (m) {
+          body = '<i class="pk-sh"></i>' + this.pkFig(m.pf.look, mine, 'who');
+          const tag = off ? `<u class="off">${esc(_t('OFFLINE'))}</u>` : `<u class="${mine ? '' : m.id === L.owner ? 'h' : 'p'}">${esc(mine ? _t('YOU') : m.id === L.owner ? _t('HOST') : _t('PLAYER'))}</u>`;
+          plate = `<em>${esc(r)}</em>${esc(mine ? SFC.Profile.data.name || 'PLAYER' : m.pf.name)}${tag}`;
+          cls = `${mine ? 'me' : 'lock'} ${off ? 'wt-off' : ''} ${enter === r ? 'in' : ''}`;
+        } else {
+          body = this.pkRing(r, false, sel ? 'blue blink' : 'faint') + '<span class="pk-plus">+</span>';
+          plate = `<em>${esc(r)}</em><u class="free">${esc(_t('FREE'))}</u>`;
+          cls = `empty ${sel ? 'wt-foc' : ''}`;
+        }
+        // vòng dẹt dưới chân: của bạn = trắng (như vòng điều khiển trong trận) · trỏ ô người khác = trắng mờ · vừa vào ô = vòng phấn xanh bung ra
+        const ground = (mine || (m && sel) ? this.pkRing(r, true, mine ? '' : 'faint') : '') + (enter === r ? this.pkRing(r, false, 'blue wt-pop') : '');
+        const tags = (r === 'DEF' ? `<s>${PX().html('gear-gloves', '', '')}${esc(_t('KEEPS GOAL'))}</s>` : '')
+          + (!m && sel ? `<i>${onBench ? '+ ' + esc(_t('JOIN')) : '⇄ ' + esc(_t('MOVE HERE'))}</i>` : '');
+        const tip = off ? ` title="${esc(_t("Lost connection · AI plays for them until they're back"))}"` : '';
+        return `<div class="pk-spot ${cls}" style="${this.pkPos(r)}"${tip}>${ground}${body}<span class="pk-plate">${plate}</span>
+            ${tags ? `<span class="pk-tags">${tags}</span>` : ''}<i class="pk-hit" data-rt="${t.key}"></i></div>`;
       }).join('');
+      const B = this.pkBoss();
+      const opp = SFC_CONFIG.game.roles.map((role, idx) => `<div class="pk-spot pk-opp" style="${this.pkPos(role, true)}"><i class="pk-sh"></i>`
+        + `<canvas data-team="${esc(B.id)}" data-idx="${idx}" data-face="${Math.PI - PK_FACE}" data-sil="1"></canvas><span class="pk-plate"><em>${esc(role)}</em>???</span></div>`).join('');
+      const sides = `<div class="wt-side l">${esc(_t('YOUR TEAM'))}</div><div class="wt-side r">${esc(_t('OPPONENTS'))}</div>`;
+      const { w, h } = this.pkDim;
+      const pitch = `<div class="pk-pitch wt-pitch"><svg class="pk-lines" width="${w}" height="${h}">${CHALK_DEFS}${this.pitch(w, h)}</svg><div class="pk-dim"></div>${sides}${opp}${spots}</div>`;
+      // dưới sân trái: HOST đang làm gì (xám, ba chấm chạy) · YOU bấm được gì ngay (trắng) · ghế dự bị khi phòng đủ người
+      const mark = (key, word) => esc(_t(key, { w: '\u0001' })).replace('\u0001', `<b>${esc(word)}</b>`);
+      const hostDo = host && host.away ? _t('LOST CONNECTION · WAITING') : full ? _t('IS STARTING THE RUN') : _t('IS PICKING TEAMMATES');
+      const youDo = full && !onBench ? mark('SIT ON THE {w} TO SWAP', _t('BENCH')) : mark(onBench ? 'CLICK A {w} SPOT TO JOIN' : 'CLICK A {w} SPOT TO MOVE HERE', _t('FREE'));
+      const left = `<div class="wt-left">
+          <div class="wt-row host"><span class="wt-lab">${esc(_t('HOST'))}</span><span>${esc(hostDo)}<span class="wt-dots"><i>.</i><i>.</i><i>.</i></span></span></div>
+          <div class="wt-row you"><span class="wt-lab">${esc(_t('YOU'))}</span><span>${youDo}</span></div>${this.benchBtn(T)}</div>`;
+      // phải: ô FREE đang trỏ / ô của bạn = vị trí chữ to + ★ 2 chỉ số chính (cùng ★ của màn host) · trên ghế dự bị: BENCH
+      const card = (r, free) => `<div class="pk-info wt-card ${free ? 'is-free' : ''}"><div class="wt-ch"><u class="${free ? 'free' : ''}">${esc(free ? _t('FREE') : _t('YOU'))}</u><em>${esc(r)}</em></div>
+          <div class="wt-keys">${this.pkKeys(r).map((k) => `<span style="--c:${A.list[k].color}"><i>★</i>${esc(A.list[k].label)}</span>`).join('')}</div></div>`;
+      const fs = cur && cur.k === 'slot' && !at(cur.id) ? cur.id : null;
+      const info = fs ? card(fs, true) : me ? card(me, false) : `<div class="pk-info wt-card"><div class="pk-what"><b>${esc(_t('BENCH'))}</b></div></div>`;
       const btns = T.filter((t) => t.k !== 'slot' && t.k !== 'bench').map((t) => this.btn(T, t, esc(t.k === 'invite' ? _t('INVITE') : this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')), t.k === 'leaveroom' && this.leaveArm ? 'danger' : '')).join('');
-      const host = L.members.find((x) => x.id === L.owner);
-      const msg = menu.msg ? `<div class="m-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
-      menu.el.innerHTML = `<div class="rm-page pk-page coop">
-          <div class="rm-bar"><div class="rm-head"><b>GOAT PATH</b></div><div class="rm-acts">${this.roomChip()}${btns}</div></div>
-          <div class="pk-slots">${slots}</div>${this.benchBtn(T)}
-          <div class="pk-hint">${esc(_t('Waiting for {name} to start the run...', { name: host ? host.pf.name : 'HOST' }))}</div>
-          <div class="pk-sub">${esc(_t('Click a position to play there'))}</div>${msg}
+      // dòng phím: ←↑↓→ · phím xác nhận + việc nó làm với mục đang chọn (Esc ở màn này không làm gì: không ghi)
+      const does = !cur ? '' : fs ? (onBench ? _t('JOIN') : _t('MOVE HERE')) : cur.k === 'bench' ? _t('BENCH') : cur.k === 'invite' ? _t('INVITE')
+        : cur.k === 'leaveroom' ? (this.leaveArm ? _t('CONFIRM LEAVE') : _t('LEAVE ROOM')) : '';
+      const keys = `<div class="pk-keys"><span>${esc(_t('←↑↓→ select'))}</span>${does ? `<span><kbd>${esc(SFC.Input.key('confirm', 'Enter'))}</kbd>${esc(does)}</span>` : ''}</div>`;
+      const msg = menu.msg ? `<div class="m-msg pk-msg ${menu.msgErr ? 'err' : ''}">${esc(menu.msg)}</div>` : '';
+      menu.el.innerHTML = `<div class="rm-page pk-page coop wt-page">
+          <div class="pk-top"><b>GOAT PATH</b><div class="rm-acts">${this.roomChip()}${btns}</div></div>
+          ${pitch}<div class="pk-dug">${left}${info}</div>${msg || keys}
         </div>`;
       menu.bindAvatars();
+      this.bindPitch(menu);
+      // rê chuột lên 1 ô trên sân = chọn ô đó như phím (vòng xanh + thẻ bên phải đổi theo). mousemove thật: vẽ lại dưới con trỏ đứng yên không giật
+      const box = menu.el.querySelector('.wt-pitch');
+      if (box) box.addEventListener('mousemove', (e) => {
+        if (!SFC.UIHelpers.realMove(e)) return;
+        const el = e.target.closest('[data-rt]'), i = el ? T.findIndex((t) => t.key === el.dataset.rt) : -1;
+        if (i >= 0 && i !== this.sel) { this.sel = i; menu.render(); }
+      });
     },
   });
   const clampI = (v) => Math.max(-1, Math.min(99, Math.floor(+v || 0)));
