@@ -2371,15 +2371,15 @@ window.SFC = window.SFC || {};
       const sides = `<div class="wt-side l">${esc(_t('YOUR TEAM'))}</div><div class="wt-side r">${esc(_t('OPPONENTS'))}</div>`;
       const { w, h } = this.pkDim;
       const pitch = `<div class="pk-pitch wt-pitch"><svg class="pk-lines" width="${w}" height="${h}">${CHALK_DEFS}${this.pitch(w, h)}</svg><div class="pk-dim"></div>${sides}${opp}${spots}</div>`;
-      // dưới sân trái: HOST đang làm gì (xám, ba chấm chạy) · YOU bấm được gì ngay (trắng) · ghế dự bị khi phòng đủ người
+      // dưới sân trái (thẳng mép trái sân): YOU bấm được gì ngay (to, trắng) · HOST đang làm gì (nhỏ, xám, ba chấm chạy) · ghế dự bị khi phòng đủ người
       const mark = (key, word) => esc(_t(key, { w: '\u0001' })).replace('\u0001', `<b>${esc(word)}</b>`);
       const hostDo = host && host.away ? _t('LOST CONNECTION · WAITING') : full ? _t('IS STARTING THE RUN') : _t('IS PICKING TEAMMATES');
       const youDo = full && !onBench ? mark('SIT ON THE {w} TO SWAP', _t('BENCH')) : mark(onBench ? 'CLICK A {w} SPOT TO JOIN' : 'CLICK A {w} SPOT TO MOVE HERE', _t('FREE'));
       const left = `<div class="wt-left">
-          <div class="wt-row host"><span class="wt-lab">${esc(_t('HOST'))}</span><span>${esc(hostDo)}<span class="wt-dots"><i>.</i><i>.</i><i>.</i></span></span></div>
-          <div class="wt-row you"><span class="wt-lab">${esc(_t('YOU'))}</span><span>${youDo}</span></div>${this.benchBtn(T)}</div>`;
-      // phải: ô FREE đang trỏ / ô của bạn = vị trí chữ to + ★ 2 chỉ số chính (cùng ★ của màn host) · trên ghế dự bị: BENCH
-      const card = (r, free) => `<div class="pk-info wt-card ${free ? 'is-free' : ''}"><div class="wt-ch"><u class="${free ? 'free' : ''}">${esc(free ? _t('FREE') : _t('YOU'))}</u><em>${esc(r)}</em></div>
+          <div class="wt-row you"><span class="wt-lab">${esc(_t('YOU'))}</span><span>${youDo}</span></div>
+          <div class="wt-row host"><span class="wt-lab">${esc(_t('HOST'))}</span><span>${esc(hostDo)}<span class="wt-dots"><i>.</i><i>.</i><i>.</i></span></span></div>${this.benchBtn(T)}</div>`;
+      // phải (thẳng mép phải sân): 1 hộp gọn = nhãn FREE / YOU + vị trí + ★ 2 chỉ số chính (cùng ★ của màn host) · trên ghế dự bị: BENCH
+      const card = (r, free) => `<div class="pk-info wt-card"><div class="wt-ch"><u class="${free ? 'free' : ''}">${esc(free ? _t('FREE') : _t('YOU'))}</u><em>${esc(r)}</em></div>
           <div class="wt-keys">${this.pkKeys(r).map((k) => `<span style="--c:${A.list[k].color}"><i>★</i>${esc(A.list[k].label)}</span>`).join('')}</div></div>`;
       const fs = cur && cur.k === 'slot' && !at(cur.id) ? cur.id : null;
       const info = fs ? card(fs, true) : me ? card(me, false) : `<div class="pk-info wt-card"><div class="pk-what"><b>${esc(_t('BENCH'))}</b></div></div>`;

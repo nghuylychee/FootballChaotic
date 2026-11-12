@@ -407,6 +407,6 @@ Mockup `tools/mockups/coop-wait.html` (4 vòng: góp ý của 1 agent nhìn ản
 - Cùng sân ngang của BUILD YOUR SQUAD, chỉ xem. Nhãn YOUR TEAM / OPPONENTS 2 góc. Đối thủ = bóng đen + ??? (trận đầu chưa biết gặp ai; màn host vẫn hiện boss act 1).
 - Ô có người: bảng tên + nhãn YOU / HOST (xanh) / PLAYER (xám); mất kết nối = xám + OFFLINE + tooltip. Ô trống: dấu + và nhãn FREE, vòng phấn mờ thở chậm. Không số OVR (khách chơi bằng chỉ số đồng đội AI dự phòng của ô, chốt lúc START RUN).
 - Ô đang chọn (phím hoặc rê chuột): vòng xanh to + viền xanh bảng tên + ⇄ MOVE HERE (trên ghế dự bị: + JOIN). Vào ô mới: nhân vật chạy vào + vòng phấn bung (`wtAt` = ô lần vẽ trước). Mới vào màn: chọn sẵn ô FREE đầu tiên.
-- Dưới sân: HOST IS PICKING TEAMMATES... (đủ người: IS STARTING THE RUN; host mất kết nối: LOST CONNECTION · WAITING) · YOU CLICK A FREE SPOT TO MOVE HERE (ghế dự bị: TO JOIN; đủ người: SIT ON THE BENCH TO SWAP) + ghế dự bị. Phải: vị trí chữ to + ★ 2 chỉ số chính, vạch trên cùng màu vòng của ô. Không câu giải thích luật.
+- Dưới sân = 1 hàng thẳng 2 mép sân, canh trên (polish bố cục cùng ngày). Trái: YOU CLICK A FREE SPOT TO MOVE HERE (to nhất; ghế dự bị: TO JOIN; đủ người: SIT ON THE BENCH TO SWAP), dưới nó HOST IS PICKING TEAMMATES... nhỏ xám (đủ người: IS STARTING THE RUN; host mất kết nối: LOST CONNECTION · WAITING), rồi ghế dự bị. Phải: 1 hộp tối viền pixel = nhãn FREE / YOU + vị trí + ★ 2 chỉ số chính. Không câu giải thích luật.
 - 8 chữ mới trong 4 gói, build lại font ja. Không đụng server / giao thức.
 

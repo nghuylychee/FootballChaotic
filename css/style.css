@@ -4050,27 +4050,31 @@ button.gx-p { cursor: pointer; }
 @keyframes wtPop { from { transform: scale(0.6); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
 .wt-page .pk-spot.wt-off canvas { filter: grayscale(1) brightness(0.7); opacity: 0.6; }
 .wt-page .pk-spot.wt-off .pk-sh { opacity: 0.3; }
-.wt-left { flex: none; width: 378px; max-width: 62%; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-.wt-left .pk-cobench { justify-content: flex-start; }
+/* khu dưới sân = 1 hàng thẳng 2 mép sân, canh trên: trái việc của bạn (to) + host (nhỏ) + ghế dự bị · phải hộp ô đang chọn */
+.wt-page .pk-dug { height: 96px; align-items: flex-start; gap: 12px; padding-top: 2px; }
+.wt-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; padding-top: 8px; }
+.wt-left .pk-cobench { justify-content: flex-start; margin-top: 3px; }
 .wt-left .co-bench { min-width: 0; width: 100%; justify-content: flex-start; }
-.wt-row { display: flex; gap: 6px; align-items: center; font-family: var(--px); font-size: 6px; letter-spacing: 1px; line-height: 1.6; color: var(--muted); }
+.wt-row { display: flex; gap: 6px; align-items: center; font-family: var(--px); letter-spacing: 1px; line-height: 1.6; }
 .wt-row b { font-weight: normal; color: var(--gold); }
-.wt-row.you { font-size: 7px; color: #fff; }
+.wt-row.you { font-size: 8px; color: #fff; }
+.wt-row.host { font-size: 5px; color: var(--muted); }
 .wt-lab { flex: none; width: 26px; text-align: center; padding: 1px 0 0; font-size: 5px; color: var(--ink); background: #e6dccb; line-height: 1.5; }
-.wt-row.host .wt-lab { background: #3ff6ff; }
+.wt-row.host .wt-lab { background: rgba(63, 246, 255, 0.7); }
 .wt-dots i { font-style: normal; animation: wtDot 1.2s steps(1) infinite; }
 .wt-dots i:nth-child(2) { animation-delay: 0.4s; }
 .wt-dots i:nth-child(3) { animation-delay: 0.8s; }
 @keyframes wtDot { 0% { opacity: 0; } 33%, 100% { opacity: 1; } }
-.pk-info.wt-card { flex: none; width: 150px; margin-left: auto; gap: 8px; justify-content: flex-start; background: none; border: none; border-top: 2px solid #e6dccb; padding-top: 10px; }
-.pk-info.wt-card.is-free { border-top-color: #8fc8ff; }
-.wt-ch { display: flex; align-items: baseline; gap: 6px; font-family: var(--px); }
-.wt-ch u { align-self: center; text-decoration: none; font-size: 6px; letter-spacing: 1px; padding: 1px 3px 0; color: var(--ink); background: #e6dccb; }
-.wt-ch u.free { font-size: 7px; color: #8fc8ff; background: none; border: 1px dashed #8fc8ff; }
-.wt-ch em { font-style: normal; font-size: 14px; letter-spacing: 2px; color: #fff; }
-.wt-keys { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.wt-keys span { display: inline-flex; align-items: center; gap: 4px; font-family: var(--px); font-size: 6px; letter-spacing: 1px; color: var(--c); }
+.pk-info.wt-card { flex: none; width: 168px; align-self: flex-start; gap: 6px; padding: 6px 8px 7px; background: #14161b; border: 2px solid #2a2f3a; }
+.wt-ch { display: flex; align-items: center; gap: 6px; font-family: var(--px); }
+.wt-ch u { text-decoration: none; font-size: 6px; letter-spacing: 1px; padding: 1px 3px 0; color: var(--ink); background: #e6dccb; }
+.wt-ch u.free { color: #8fc8ff; background: none; border: 1px dashed #8fc8ff; }
+.wt-ch em { font-style: normal; font-size: 12px; letter-spacing: 2px; color: #fff; }
+.wt-keys { display: flex; flex-wrap: wrap; gap: 3px 10px; }
+.wt-keys span { display: inline-flex; align-items: center; gap: 3px; font-family: var(--px); font-size: 6px; letter-spacing: 1px; color: var(--c); }
 .wt-keys span i { font-style: normal; color: var(--gold); }
+.wt-card .pk-what { align-items: flex-start; }
+.wt-card .pk-what b { font-size: 8px; }
 
 /* ---------- GOAT PATH · sự kiện ??? kể bằng cảnh pixel (src/ui/evscene.js, UX màn hình 2026-11, docs/ux-screens/screens/event-scenes.json) ----------
    khung 640x360 giữa #stage như KIT VAN: canvas 320x180 phóng x2 + chữ DOM · dải chú thích trên trái · tiền trên phải · nút lựa chọn dưới phải
