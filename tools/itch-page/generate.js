@@ -1,6 +1,7 @@
 /* Ảnh cho trang itch.io — vẽ bằng chính code render của game (sprites / background / renderer), phóng to pixel bằng số nguyên.
  * Chạy: npm run serve (cổng 8080) rồi node tools/itch-page/export.mjs -> ghi vào tools/itch-page/out
  * Ra: banner.png (960x240) · cover.png (630x500) · logo.png · h-*.png (tiêu đề mục).
+ *     cg-cover-*.png (cover CrazyGames) -> export.mjs ghi vào tools/crazygames-page/out.
  * Ảnh chụp trong game (shot-*.png): tools/itch-page/capture.mjs
  * Xem trước cả trang: tools/itch-page/mock.html
  */
@@ -155,6 +156,7 @@ function run() {
     const full = scene('village', (x) => {
       lying(x, 1, 421, 174, LOOK.ko, -1);
       stunStars(x, 409, 146);
+      S.drawBall(x, { x: 494, y: 173, z: 2, roll: 1, fx: {}, skin: null });
       player(x, 1, 469, 170, Math.PI, LOOK.rival2, POSE.stun);
       player(x, 0, 452, 170, 0, LOOK.mate, POSE.punch);
       comic(x, 'POW!', 480, 128, '#ffe14f');
@@ -167,6 +169,51 @@ function run() {
     text(x, 'STREET FOOTBALL', 63, 4, 8, '#ffffff', { align: 'center', shadows: [[1, 1, INK]] });
     text(x, 'CHAOS', 62, 14, 24, RED, { align: 'center', shadows: [[1, 1, INK], [2, 2, GOLD]] });
     save('cover.png', upscale(b, 5));
+  }
+
+  /* ---------- CrazyGames covers: 16:9 (1920x1080), 2:3 (800x1200), 1:1 (800x800) ----------
+   * Chừa góc trên-trái cho nhãn của CrazyGames (Show label zone) */
+  {
+    const full = scene('village', (x) => {
+      lying(x, 1, 355, 174, LOOK.ko, -1);
+      stunStars(x, 343, 146);
+      player(x, 0, 412, 168, 0, LOOK.hero, POSE.dropkick);
+      S.drawBall(x, { x: 434, y: 172, z: 3, roll: 2, fx: {}, skin: null });
+      launched(x, 1, 452, 168, 16, LOOK.rival);
+      spark(x, 437, 149);
+      comic(x, 'CRACK!', 472, 126, '#ffffff');
+      // cú đấm như ảnh cover itch: áo đỏ quay sang phải đấm thẳng vào áo hồng (quay mặt lại), áo đỏ vẽ sau -> nắm đấm đè lên người áo hồng
+      player(x, 1, 505, 174, Math.PI, LOOK.rival2, POSE.stun);
+      player(x, 0, 488, 174, 0, LOOK.mate, POSE.punch);
+    });
+
+    // 16:9 Landscape: 240x135 * 8 = 1920x1080 (logo top-right, chừa góc trên-trái)
+    const l = crop(full, 315, 62, 240, 135), lx = l.getContext('2d');
+    const lTop = lx.createLinearGradient(0, 0, 0, 52);
+    lTop.addColorStop(0, 'rgba(10,11,14,0.92)'); lTop.addColorStop(0.7, 'rgba(10,11,14,0.6)'); lTop.addColorStop(1, 'rgba(10,11,14,0)');
+    lx.fillStyle = lTop; lx.fillRect(0, 0, 240, 52);
+    text(lx, 'STREET FOOTBALL', 164, 6, 8, '#ffffff', { align: 'center', shadows: [[1, 1, INK]] });
+    text(lx, 'CHAOS', 163, 17, 24, RED, { align: 'center', shadows: [[1, 1, INK], [2, 2, GOLD]] });
+    save('cg-cover-16x9.png', upscale(l, 8));
+
+    // 2:3 Portrait: 160x240 * 5 = 800x1200 (logo dưới vùng nhãn trên-trái, không cắt nhân vật ở mép)
+    const p = crop(full, 376, 0, 160, 240), px = p.getContext('2d');   // y < 0 để lại dải trong suốt trên đầu ảnh
+    const pTop = px.createLinearGradient(0, 0, 0, 96);
+    pTop.addColorStop(0, 'rgba(10,11,14,0.92)'); pTop.addColorStop(0.75, 'rgba(10,11,14,0.65)'); pTop.addColorStop(1, 'rgba(10,11,14,0)');
+    px.fillStyle = pTop; px.fillRect(0, 0, 160, 96);
+    text(px, 'STREET FOOTBALL', 80, 36, 8, '#ffffff', { align: 'center', shadows: [[1, 1, INK]] });
+    text(px, 'CHAOS', 79, 47, 24, RED, { align: 'center', shadows: [[1, 1, INK], [2, 2, GOLD]] });
+    save('cg-cover-2x3.png', upscale(p, 5));
+
+    // 1:1 Square: 160x160 * 5 = 800x800 (logo dưới vùng nhãn trên-trái, không cắt nhân vật ở mép)
+    // nhãn ô vuông chiếm ~35% ngang x ~30% dọc (~56x48 trên 160x160) -> chữ bắt đầu từ y 50
+    const s = crop(full, 376, 22, 160, 160), sx = s.getContext('2d');
+    const sTop = sx.createLinearGradient(0, 0, 0, 98);
+    sTop.addColorStop(0, 'rgba(10,11,14,0.92)'); sTop.addColorStop(0.75, 'rgba(10,11,14,0.62)'); sTop.addColorStop(1, 'rgba(10,11,14,0)');
+    sx.fillStyle = sTop; sx.fillRect(0, 0, 160, 98);
+    text(sx, 'STREET FOOTBALL', 80, 50, 8, '#ffffff', { align: 'center', shadows: [[1, 1, INK]] });
+    text(sx, 'CHAOS', 79, 61, 24, RED, { align: 'center', shadows: [[1, 1, INK], [2, 2, GOLD]] });
+    save('cg-cover-1x1.png', upscale(s, 5));
   }
 
   /* ---------- logo trong suốt (đầu phần mô tả) ---------- */

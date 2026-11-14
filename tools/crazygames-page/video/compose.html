@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>compose</title></head>
+<body style="margin:0;background:#000">
+<canvas id="c"></canvas>
+<script>
+// compose.mjs gọi draw(o) cho từng khung: khung quay 1x phóng z lần (z nguyên, điểm gần nhất -> mọi px game vuông đều),
+// đặt lệch dx / dy (px video nguyên); cover phủ lên với độ trong coverA (khung mở đầu + mờ chuyển sang cảnh đầu)
+const IM = new Map();
+function load(src) {
+  if (!IM.has(src)) {
+    const im = new Image(); im.src = src;
+    IM.set(src, im.decode().then(() => im));
+    if (IM.size > 40) IM.delete(IM.keys().next().value);
+  }
+  return IM.get(src);
+}
+window.draw = async (o) => {
+  const c = document.getElementById('c');
+  if (c.width !== o.w || c.height !== o.h) { c.width = o.w; c.height = o.h; }
+  const x = c.getContext('2d');
+  x.globalAlpha = 1;
+  x.fillStyle = '#000'; x.fillRect(0, 0, o.w, o.h);
+  if (o.frame) {
+    const im = await load(o.frame);
+    x.imageSmoothingEnabled = false;
+    x.drawImage(im, o.dx, o.dy, im.width * o.z, im.height * o.z);
+  }
+  if (o.cover && o.coverA > 0) {
+    const im = await load(o.cover);
+    // cover dọc 800x1200 -> 1080x1620 (tỉ lệ lẻ 1,35): phóng mượt; cover ngang đúng cỡ
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.globalAlpha = o.coverA;
+    x.drawImage(im, 0, 0, o.w, o.h);
+    x.globalAlpha = 1;
+  }
+  return c.toDataURL('image/png');
+};
+window.ready = true;
+</script>
+</body>
+</html>
