@@ -1,0 +1,42 @@
+itch.io > Edit game > Devlog > Create new post
+Title: Version 1.1.2
+Type: Update. Attach the new builds: sfc-itch-web-demo-1.1.2-12-41769c9.zip, sfc-itch-desktop-demo-1.1.2-12-41769c9.zip.
+Formatted version: open devlog-1.1.2.html in a browser, copy the post and paste it into the editor (headings, bold and lists carry over). Replace the [ add ... here ] line with that GIF using the image button.
+----------------------------------------------------------------------
+
+Hi everyone! Version 1.1.2 of the demo is out. This one is all about how a match feels.
+
+[image: match-1.1.2.gif]
+
+BIGGER PITCH, FASTER MATCHES
+
+• The pitch is bigger, and players are drawn larger and in more detail.
+• Matches play faster: quicker runs, passes and shots.
+• Taller goals, and the net shakes where the ball hits it.
+• The ball now glides to your feet when you pick it up, and loose balls are easier to control.
+
+SMARTER AI
+
+• The AI keeper stays in goal and only rushes out when it has to.
+• Defenders step up behind the play when their team attacks.
+• Teammates make overlapping runs down the wing.
+• Opponents press harder, so expect more tackles.
+
+GOAT PATH
+
+• Build Your Squad is now laid out on a pitch: click or drag players into position.
+• The gear reward screen is redesigned and much easier to read.
+
+LOOK AND FEEL
+
+• New sprint animations.
+• Knocked-down players now get back up step by step.
+• Menus and reward screens appear faster, and you can skip their animations.
+
+FIXES
+
+• Fixed a bug that could freeze the game.
+• Fixed a frame rate drop.
+• Opponents no longer block the keeper's kick from his hands.
+
+Thanks for playing! If you have feedback or run into a bug, please let us know in the comments.
