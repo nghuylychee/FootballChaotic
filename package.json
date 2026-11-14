@@ -1,7 +1,7 @@
 {
   "name": "street-football-chaos",
   "productName": "Street Football Chaos",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
