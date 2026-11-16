@@ -573,7 +573,7 @@ SFC.I18n.add({
     'FAMILY SECRET': 'SEGREDO DE FAMÍLIA',
     'PICK YOUR ROUTE': 'ESCOLHE O TEU CAMINHO',
     'Matches, shops and surprises on a branching map': 'Jogos, lojas e surpresas num mapa cheio de caminhos',
-    'WIN = A NEW BADGE': 'VITÓRIA = BADGE NOVO',
+    'WIN = NEW GEAR': 'VITÓRIA = GEAR NOVO',
     'Lose a single match and the run is over': 'Perdes um jogo e a jornada acaba',
     'BEAT EVERY BOSS': 'VENCE TODOS OS CHEFES',
     'Every act ends with a boss. Beat them all to be the GOAT': 'Cada ato acaba com um chefe. Vence-os todos e torna-te o GOAT',
@@ -607,7 +607,7 @@ SFC.I18n.add({
     'GOAL': 'GOLO',
     'CONCEDE': 'GOLO SOFRIDO',
     '*CORES* are superpowers. PICK 1 TO BE STRONGER!!!': 'Os *CORES* são superpoderes. ESCOLHE 1 PARA FICARES MAIS FORTE!!!',
-    'Born from your {arch} build': 'Nascida da tua build de {arch}',
+    '*3 CORES* of one school = *ULTIMATE*': '*3 CORES* do mesmo arquétipo = *SUPREMA*',
 
     /* ===== config/cores.config.js: trường phái, tài nguyên, Cộng hưởng ===== */
     'archetype|SPEED': 'VELOCISTA',

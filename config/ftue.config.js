@@ -1,12 +1,13 @@
 /* =========================================================
  * FTUE CONFIG — hướng dẫn người chơi mới (PROLOGUE). Code: src/ui/story.js (cut scene) + src/game/tutorial.js (trận mơ).
  *
- * Luồng: đặt tên xong -> cut scene "intro" ("I have a dream...") -> DREAM MATCH (trận hướng dẫn có kịch bản:
- * di chuyển -> chuyền -> sút -> chọn Core -> đấm cướp bóng -> ghi bàn -> mở ULTIMATE -> dùng Ultimate -> đá tự do tới hết giờ)
+ * Luồng: đặt tên xong -> cut scene "intro" ("I have a dream...") -> DREAM MATCH (trận hướng dẫn 3v3 có kịch bản, bạn đá ĐÁ CAO,
+ * đồng đội AI ĐÁ LÙI giữ khung như trận thật: di chuyển -> chuyền -> sút -> chọn Core -> đấm cướp bóng -> né đòn -> ghi bàn
+ * -> chọn Core thứ 3 cùng trường phái = mở ULTIMATE đúng công thức thật -> tích năng lượng -> dùng Ultimate -> đá tự do tới hết giờ)
  * -> cut scene "outro" (tỉnh dậy ở VILLAGE GREEN -> ông nội trao BÍ KÍP GIA TRUYỀN = Tuyệt kỹ AURA FARMING (màn lật thẻ)
  *    -> cảnh biến hình + thử chiêu -> thẻ giới thiệu GOAT PATH) -> tab GOAT PATH (chế độ chính).
  * Hồ sơ cũ (đã xong PROLOGUE trước khi có bí kíp): lần mở game kế tiếp phát riêng cut scene "heirloom" 1 lần (Profile.data.tut.heirloom).
- * Core trong trận mơ chỉ là "mượn": hết mơ là mất, phải leo Main Path để mở khoá thật.
+ * Core trong trận mơ chỉ là "mượn": hết mơ là mất, mở khoá thật theo tiến trình GOAT PATH (Core Road). Tuyệt kỹ mở trong mơ không ghi vào ULT BOOK.
  * Hồ sơ lưu Profile.data.tut.done. SETTINGS > TEST > PROLOGUE: xem lại (chỉ bản dev).
  * ========================================================= */
 window.SFC_CONFIG = window.SFC_CONFIG || {};
@@ -82,7 +83,7 @@ SFC_CONFIG.ftue = {
     title: 'GOAT PATH',
     lines: [
       ['ball', 'PICK YOUR ROUTE', 'Matches, shops and surprises on a branching map'],
-      ['card', 'WIN = A NEW BADGE', 'Lose a single match and the run is over'],
+      ['kitbag', 'WIN = NEW GEAR', 'Lose a single match and the run is over'],
       ['crown', 'BEAT EVERY BOSS', 'Every act ends with a boss. Beat them all to be the GOAT'],
     ],
     foot: 'Your journey starts on {act}',
@@ -91,16 +92,24 @@ SFC_CONFIG.ftue = {
   /* ---------- DREAM MATCH ---------- */
   match: {
     arena: 'dream',               // sân (bản sao sân 'stadium', dựng ở src/engine/config-client.js)
-    role: 'FWD',                  // character đá ĐÁ CAO
+    role: 'FWD',                  // character đá ĐÁ CAO (đội đủ 3 vị trí như trận thật: ĐÁ LÙI AI giữ khung — chỉ DEF bắt bóng)
     // character trong mơ: chỉ số "GOAT" (thay chỉ số thật) · Core không scale theo chỉ số (noScale)
     stats: { speed: 1.12, power: 1.2, pass: 1.12, tackle: 1.2, dribble: 1.15, accuracy: 1.15 },
     ovr: 99,
-    mate: { name: 'ACE', cores: ['maestro'] },   // đồng đội: Core có sẵn
-    presetCores: ['fire_shot'],                   // Core có sẵn của character (bài SÚT = cú sút lửa)
-    // lượt chọn Core sau bàn đầu: 3 lá từ 3 trường phái -> trường phái chọn quyết định ULTIMATE ở lượt sau
-    draftCores: ['thunder_kick', 'fist_storm', 'shadow_clone'],
-    // trường phái -> Ultimate (thiếu thì lấy Ultimate đầu tiên cùng trường phái trong cores.config.js)
-    ultOf: { striker: 'meteor_strike', brawler: 'hundred_fists', trickster: 'clone_army' },
+    // đồng đội AI theo vị trí (roles trong game.config.js): tên + Core có sẵn. MID chuyền trả bóng ở các bài, DEF giữ khung
+    mates: { MID: { name: 'ACE', cores: ['maestro'] }, DEF: { name: 'WALL', cores: [] } },
+    // Core có sẵn của character: 1 lá mỗi trường phái của lượt chọn đầu (bài SÚT = cú sút lửa; đấm to hơn ở bài cướp bóng).
+    // Tổng Core trận mơ = 2 có sẵn + 2 lượt chọn = game.match.maxUpgrades (4), như trận thật — không bao giờ có Core thứ 5
+    presetCores: ['fire_shot', 'street_fighter'],
+    // lượt chọn Core sau bàn đầu: chỉ lá thuộc 2 trường phái có sẵn -> chọn lá nào cũng thành 2 Core cùng trường phái,
+    // trường phái chọn quyết định ULTIMATE ở lượt sau
+    draftCores: ['thunder_kick', 'fist_storm', 'counter_attack'],
+    // lượt chọn sau bàn thứ 2: 3 lá cùng trường phái vừa chọn -> lá nào cũng là Core thứ 3 = đạt công thức (cores.ults.tiers[0]),
+    // màn chọn hiện "→ ??? NEW ULTIMATE" + diễn RecipeFx như trận thật. Lá đã có thì bỏ, thiếu thì lấy thêm Core cùng trường phái
+    recipeCores: {
+      striker: ['energy_wave', 'banana_kick', 'black_hole'],
+      brawler: ['uppercut', 'giant_fist', 'rubber_arm'],
+    },
     finalSeconds: 45,             // sau khi dùng Ultimate: bật đồng hồ còn bấy nhiêu giây (<= 30s = FINAL PUSH)
     moveDistance: 110,            // bài DI CHUYỂN: chạy đủ bấy nhiêu px
     stepGap: 0.9,                 // xong 1 bài: hiện "NICE!" bấy nhiêu giây rồi mới sang bài kế
@@ -132,8 +141,9 @@ SFC_CONFIG.ftue = {
     kit: { shirt: '#3a3550', shirtDark: '#1d1a2c', shorts: '#12101c', accent: '#b9a8ff', hair: ['#12101c', '#2a2440'] },
     stats: { speed: 0.9, power: 0.9, pass: 0.88, tackle: 0.85, dribble: 0.88, accuracy: 0.85 },
     coreWeights: {}, aiStyle: { light: 0.8, hard: 0.6 },
-    players: ['SHADOW', 'ECHO'],
-    looks: [{ cut: 'beanie', face: 'ninja', shoes: 'kicks', fx: 'nofx', skin: 3 }, { cut: 'bandana', face: 'mask', shoes: 'kicks', fx: 'nofx', skin: 3 }],
+    players: ['SHADOW', 'ECHO', 'HAZE'],
+    looks: [{ cut: 'beanie', face: 'ninja', shoes: 'kicks', fx: 'nofx', skin: 3 }, { cut: 'bandana', face: 'mask', shoes: 'kicks', fx: 'nofx', skin: 3 },
+      { cut: 'cap', face: 'mask', shoes: 'kicks', fx: 'nofx', skin: 3 }],
   },
 
   /* ---------- các bài trong trận ----------
@@ -171,6 +181,6 @@ SFC_CONFIG.ftue = {
 
   // ghi chú trên màn chọn Core
   draftNote: '*CORES* are superpowers. PICK 1 TO BE STRONGER!!!',   // *từ khoá* = tô vàng
-  ultNote: 'Born from your {arch} build',
+  ultNote: '*3 CORES* of one school = *ULTIMATE*',   // lượt chọn thứ 2 (công thức Tuyệt kỹ)
 };
 // đội trong mơ (team) -> teams.list, sân 'dream' = bản sao sân stadium: src/engine/config-client.js

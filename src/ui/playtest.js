@@ -117,7 +117,8 @@ if (SFC_DEBUG) (function () {
           if (!p) break;
           const L = SFC_CONFIG.cores.list, own = g.cores.own[p.id] || [];
           const pool = Object.keys(L).filter((id) => L[id].role !== 'ult' && !own.includes(id));
-          if (pool.length) { const id = U.pick(pool); g.cores.add(p, id); SFC.UI.banner(L[id].name, 'GAMEPLAY TEST', '#6bff4f', 1); }
+          // đủ game.match.maxUpgrades Core thì CoreSystem.add từ chối (không có Core thứ 5)
+          if (pool.length) { const id = U.pick(pool); if (g.cores.add(p, id)) SFC.UI.banner(L[id].name, 'GAMEPLAY TEST', '#6bff4f', 1); }
           break;
         }
         case 'ball':

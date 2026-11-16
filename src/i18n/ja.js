@@ -566,7 +566,7 @@ SFC.I18n.add({
     'FAMILY SECRET': '一族の秘伝',
     'PICK YOUR ROUTE': 'ルートを選べ',
     'Matches, shops and surprises on a branching map': '試合、ショップ、サプライズが待つ分かれ道のマップ',
-    'WIN = A NEW BADGE': '勝てば新しいBADGE',
+    'WIN = NEW GEAR': '勝てば新しいGEAR',
     'Lose a single match and the run is over': '1試合でも負けたらそこで終わり',
     'BEAT EVERY BOSS': 'すべてのボスを倒せ',
     'Every act ends with a boss. Beat them all to be the GOAT': '各章の最後にボスが待つ。全員倒してGOATになれ',
@@ -600,7 +600,7 @@ SFC.I18n.add({
     'GOAL': 'ゴール',
     'CONCEDE': '失点',
     '*CORES* are superpowers. PICK 1 TO BE STRONGER!!!': '*コア*は超能力だ。1つ選んでパワーアップ！！！',
-    'Born from your {arch} build': '{arch}ビルドから誕生',
+    '*3 CORES* of one school = *ULTIMATE*': '同じタイプの*コア3つ* = *必殺技*',
 
     /* ===== config/cores.config.js: arquetipos, recursos, sinergias ===== */
     'archetype|SPEED': 'スピード',

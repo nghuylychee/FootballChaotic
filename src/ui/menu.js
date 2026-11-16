@@ -35,10 +35,6 @@ window.SFC = window.SFC || {};
   const KEY_LABELS = () => ({ speed: _t('run speed'), stamina: _t('stamina refill'), power: _t('shot power'), accuracy: _t('shot aim'), pass: _t('passing'),
     dribble: _t('dribbling'), tackle: _t('steal / intercept'), knock: _t('knockback'), keeper: _t('save chance') });
 
-  function helpTable(list) {
-    return list.map(([k, v]) => `<div class="hk"><kbd>${esc(k)}</kbd><span>${esc(v)}</span></div>`).join('');
-  }
-
   function teamCard(id, label, extra = '') {
     if (!id) return `<div class="team-card empty"><div class="tc-label">${esc(label)}</div><div class="tc-wait">${esc(_t('Waiting for player...'))}</div></div>`;
     const team = TEAMS().list[id], kit = team.kit, SL = STAT_LABELS();
@@ -118,7 +114,6 @@ window.SFC = window.SFC || {};
     msg: '',
     msgErr: false,
     code: '',
-    tutPage: 0,
     nameBuf: '',
     nameBack: 'home',   // đặt tên xong quay về trang nào
     avatars: [],        // canvas character đang hiện (vẽ lại mỗi khung hình để có chuyển động)
@@ -516,7 +511,7 @@ window.SFC = window.SFC || {};
       if (this.page === 'training') this.go('path');
       else if (this.page === 'storytest' || this.page === 'runtest') this.go('test');
       else if (['controls', 'display', 'test', 'privacy'].includes(this.page)) this.go('settings');
-      else if (['path', 'online', 'tutorial', 'char', 'settings', 'wishlist'].includes(this.page)) this.go('home');
+      else if (['path', 'online', 'char', 'settings', 'wishlist'].includes(this.page)) this.go('home');
       else if (this.page === 'join') this.go(this.joinFrom || 'online');   // vào từ tab FOOTBALL STORY › JOIN thì quay lại đó
     },
 
@@ -530,7 +525,7 @@ window.SFC = window.SFC || {};
         this.sel = start >= 0 ? start : Math.max(0, items.findIndex((x) => me && x.slot === me.slot));
       }
       if (this.sel >= items.length) this.sel = Math.max(0, items.length - 1);
-      this.el.classList.toggle('tut', this.page === 'tutorial' || this.page === 'controls' || this.page === 'privacy' || G().pages.includes(this.page) || TM().pages.includes(this.page) || AU().pages.includes(this.page) || TR().pages.includes(this.page) || RD().pages.includes(this.page) || CU().pages.includes(this.page) || RU().pages.includes(this.page));
+      this.el.classList.toggle('tut', this.page === 'controls' || this.page === 'privacy' || G().pages.includes(this.page) || TM().pages.includes(this.page) || AU().pages.includes(this.page) || TR().pages.includes(this.page) || RD().pages.includes(this.page) || CU().pages.includes(this.page) || RU().pages.includes(this.page));
       // class riêng của trang chủ / màn PLAY: bật / tắt cả 2 trước mọi nhánh return (sót class 'party' làm vỡ layout trang chủ)
       // PRIVATE MATCH dùng chung khung màn PLAY, không có khung bạn bè (bạn bè giả không vào phòng thật được)
       const play = PLAY_PAGES.includes(this.page);
@@ -546,7 +541,6 @@ window.SFC = window.SFC || {};
       if (this.page === 'story') { this.el.innerHTML = CU().renderStory(this, items); this.bindAvatars(); CU().bind(this); return; }
       if (this.page === 'run') { this.el.innerHTML = RU().renderTab(this, items); this.bindAvatars(); RU().bind(this); return; }
       if (play) { this.el.innerHTML = this.renderPrivate(items); this.bindAvatars(); return; }
-      if (this.page === 'tutorial') { this.el.innerHTML = this.renderTutorial(); this.bindAvatars(); return; }
       if (this.page === 'privacy') { this.el.innerHTML = this.renderPrivacy(); this.addBack(); return; }
       if (this.page === 'controls') { this.el.innerHTML = CV().render(); this.addBack(); return; }
       if (G().pages.includes(this.page)) { G().render(this); this.addBack(); this.bindAvatars(); return; }
@@ -679,40 +673,6 @@ window.SFC = window.SFC || {};
         <div class="tut-head"><div class="m-title">${esc(_t('PRIVACY NOTICE'))}</div><span class="m-ver">${esc(P.updated)}</span></div>
         <div class="tut-body priv-body">${P.lines.map(line).join('')}</div>
         <div class="m-hint">${_t('↑↓ scroll · {back} back', { back: K('back', 'Esc') })}</div>`;
-    },
-
-    renderTutorial() {
-      const pages = SFC_CONFIG.tutorial.pages;
-      const p = pages[this.tutPage];
-      const tabs = pages.map((pg, i) => `<button class="tab ${i === this.tutPage ? 'sel' : ''}" data-tab="${i}">${esc(pg.title)}</button>`).join('');
-      let body = '';
-      if (p.lines) {
-        // {action} = phím đang gán (người chơi đổi phím ở SETTINGS > CONTROLS thì chữ hướng dẫn đổi theo)
-        const keys = (l) => l.replace(/\{(\w+)\}/g, (m, a) => (SFC.Input.bindings[a] ? SFC.Input.label(a) : m));
-        body += p.lines.map((l) => (l[0] === '#' ? `<h4>${esc(keys(l.slice(1).trim()))}</h4>` : `<p>${esc(keys(l))}</p>`)).join('');
-      }
-      if (p.type === 'controls') {
-        const h = SFC.Input.helpSet();
-        body += `<div class="help">
-          <div class="help-col"><h4>ATTACK</h4>${helpTable(h.attack)}${h.advanced ? `<h4>ADVANCED</h4>${helpTable(h.advanced)}` : ''}</div>
-          <div class="help-col"><h4>DEFENSE</h4>${helpTable(h.defense)}<h4>TEAMMATE ON THE BALL</h4>${helpTable(h.teammateHasBall)}</div>
-          <div class="help-col"><h4>SYSTEM</h4>${helpTable(h.system)}</div>
-        </div>`;
-      }
-      if (p.type === 'cores') {
-        const C = SFC_CONFIG.cores;
-        const groups = Object.keys(C.archetypes).map((cat) => {
-          const c = C.archetypes[cat];
-          const list = Object.keys(C.list).filter((id) => C.list[id].tags[0] === cat)
-            .map((id) => `<div class="core-row" title="${esc(SFC.CoreScale.plain(id))}"><span class="chip" style="--c:${c.color}">${PX().core(id)}</span>${esc(C.list[id].name)}</div>`).join('');
-          return `<div class="core-group"><h4 style="color:${c.color}">${esc(c.label)}</h4>${list}</div>`;
-        }).join('');
-        body += `<div class="core-grid">${groups}</div>`;
-      }
-      return `
-        <div class="tut-head"><div class="m-title">HOW TO PLAY</div><div class="tabs">${tabs}</div></div>
-        <div class="tut-body">${body}</div>
-        <div class="m-hint">←→ change page · ${SFC.Input.key('back', 'Esc')} back</div>`;
     },
 
     // dòng phụ của nút SHOP: báo hộp miễn phí đang chờ mở (thưởng lên hạng Main Path)
@@ -1510,12 +1470,6 @@ window.SFC = window.SFC || {};
         if (body && step) body.scrollTop += step * 48;
         return;
       }
-      if (this.page === 'tutorial') {
-        const n = SFC_CONFIG.tutorial.pages.length;
-        if (input.wasPressed('left')) { this.tutPage = wrap(this.tutPage - 1, n); SFC.Audio.menu(); this.render(); }
-        if (input.wasPressed('right')) { this.tutPage = wrap(this.tutPage + 1, n); SFC.Audio.menu(); this.render(); }
-        return;
-      }
       // màn PLAY: Q / E (LB / RB) đổi tab RANKED · PRIVATE MATCH (đang gõ mã phòng / chat: phím đi vào ô chữ, không tới đây).
       // Trước khi xét danh sách mục: tab PRIVATE MATCH của bản DEMO không có mục nào
       if (PLAY_PAGES.includes(this.page) && !SFC.Social.chatWith) {
@@ -1739,8 +1693,6 @@ window.SFC = window.SFC || {};
         }
         const slot = this.page === 'lobby' && e.target.closest('[data-slot]');
         if (slot) { this.sel = Math.max(0, this.items().findIndex((x) => x.slot === +slot.dataset.slot)); return this.slotAct(+slot.dataset.slot); }
-        const tab = e.target.closest('[data-tab]');
-        if (tab) { this.tutPage = +tab.dataset.tab; SFC.Audio.menu(); this.render(); return; }
         // màn PLAY: tab RANKED / PRIVATE MATCH · BACK
         const ptab = PLAY_PAGES.includes(this.page) && e.target.closest('[data-ptab]');
         if (ptab) return this.playTabTo(PLAY_TABS().indexOf(ptab.dataset.ptab));

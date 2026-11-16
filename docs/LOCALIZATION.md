@@ -84,7 +84,6 @@ Bảng thuật ngữ được kiểm tự động: dòng nào có `Lint ✓` tro
 - SHOP / mở hộp / túi đồ (`gacha.js`, mô tả đồ), TEAM / scout (`team.js`, tên vùng scout) (2026-10-05)
 
 **Chưa dịch** (vẫn hiện tiếng Anh):
-- trang HOW TO PLAY (`menu.js` -> `renderTutorial`, `config/tutorial.config.js`): không còn nút nào mở trang này
 - trang TEST (chỉ bản dev, cố ý để tiếng Anh)
 - chữ vẽ trên sân (bảng quảng cáo, graffiti, màn hình sân vận động) và chữ trong hình cut scene (GOAT, FAMILY...): cố ý giữ như chữ trong tranh.
 

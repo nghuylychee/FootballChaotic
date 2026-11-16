@@ -28,7 +28,6 @@ const FILES = [
   ['config/teams.config.js', 'game sandbox itch server'],
   ['config/cores.config.js', 'game sandbox itch server'],
   ['config/net.config.js', 'game sandbox itch server'],
-  ['config/tutorial.config.js', 'game itch'],
   ['config/progression.config.js', 'game sandbox itch server'],
   ['config/namefilter.config.js', 'game sandbox itch'],     // lọc tên ở máy người chơi; máy chủ không lọc
   ['config/arenas.config.js', 'game sandbox itch server'],

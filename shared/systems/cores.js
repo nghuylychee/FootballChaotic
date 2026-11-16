@@ -384,10 +384,15 @@ window.SFC = window.SFC || {};
     }
     tagsOf(id) { const d = this.def(id); return (d && d.tags) || []; }
 
-    // thêm Core cho cầu thủ p (số đội: cho mọi cầu thủ trong đội — ảnh xem trước / sandbox)
+    // thêm Core cho cầu thủ p (số đội: cho mọi cầu thủ trong đội — ảnh xem trước / sandbox). Trả true = đã thêm
+    // Tối đa game.match.maxUpgrades Core thường mỗi cầu thủ (user 2026-11-16: không đường nào có Core thứ 5 — lượt chọn, PROLOGUE,
+    // phòng test). Tuyệt kỹ không tính. Không chặn: ảnh xem trước (g.preview) và sandbox (maxUpgrades = 0)
     add(p, id) {
-      if (!isP(p)) { for (const q of this.plist(p)) this.add(q, id); return; }
-      if (!this.def(id) || this.coresOf(p).includes(id)) return;
+      if (!isP(p)) { let any = false; for (const q of this.plist(p)) any = this.add(q, id) || any; return any; }
+      if (!this.def(id) || this.coresOf(p).includes(id)) return false;
+      const max = SFC_CONFIG.game.match.maxUpgrades;
+      if (this.def(id).role !== 'ult' && max > 0 && !this.g.preview
+        && this.coresOf(p).filter((c) => this.def(c).role !== 'ult').length >= max) return false;
       (this.own[p.id] || (this.own[p.id] = [])).push(id);
       const b = Behaviors[id];
       if (b && b.onAdd) b.onAdd(this, p.team, this.sp(id, p));
@@ -396,6 +401,7 @@ window.SFC = window.SFC || {};
         const r = this.bestRecipe(p, null, id);
         if (r) this.setUlt(p, r.id, r.lv);
       }
+      return true;
     }
 
     // bỏ Core (sandbox): x = cầu thủ hoặc số đội

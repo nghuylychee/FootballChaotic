@@ -1,9 +1,11 @@
 /* Tutorial — PROLOGUE cho người chơi mới (config/ftue.config.js).
  * begin(): cut scene "intro" -> DREAM MATCH -> cut scene "outro" (bí kíp gia truyền AURA FARMING + thẻ GOAT PATH) -> tab GOAT PATH.
  * Hồ sơ cũ đã xong PROLOGUE nhưng chưa nhận bí kíp: playHeirloom() phát riêng đoạn bí kíp 1 lần (main.js lúc mở game).
- * DREAM MATCH là trận thường (opts.tutorial) có kịch bản, chạy qua các bài theo thứ tự:
- *   move -> pass -> shoot -> (bàn thắng) chọn Core -> defend (đấm cướp bóng) -> attack (QTE: đối thủ lao vào đá, bấm Z né)
- *   -> (bàn thắng) mở ULTIMATE -> charge (tích năng lượng: show, don't tell) -> ult (dùng Ultimate) -> final (đá tự do tới hết giờ)
+ * DREAM MATCH là trận 3v3 thường (opts.tutorial) có kịch bản: bạn ĐÁ CAO, đồng đội AI TIỀN VỆ (chuyền trả bóng ở các bài) + ĐÁ LÙI
+ * (giữ khung như trận thật — chỉ DEF bắt bóng). Chạy qua các bài theo thứ tự:
+ *   move -> pass -> shoot -> (bàn thắng) chọn Core -> defend (đấm cướp bóng) -> attack (QTE: đối thủ lao vào đá, bấm skill né)
+ *   -> (bàn thắng) chọn Core thứ 3 cùng trường phái = đạt công thức ULTIMATE (màn chọn + RecipeFx như trận thật)
+ *   -> charge (tích năng lượng: show, don't tell) -> ult (dùng Ultimate) -> final (đá tự do tới hết giờ)
  * Không dừng trận để dạy: chỉ 1 hộp gợi ý nhỏ (#coach) + ô kỹ năng cần dùng nhấp nháy. Làm trước bài sau (vd. sút vào
  * luôn khi đang học di chuyển) thì nhảy cóc luôn. Đối thủ luôn đá bằng AI thật, mỗi bài chỉ đổi bộ chỉ số AI
  * (ftue.config.js -> match.aiSteps / aiProfiles: chậm, không ra đòn, không cướp được bóng lúc đang dạy). Kịch bản chỉ
@@ -73,24 +75,32 @@ window.SFC = window.SFC || {};
     },
 
     startMatch() {
-      // trận mơ giữ 2v2 (teamSize): mỗi đội chỉ có 2 vị trí cuối của roles (TIỀN VỆ + ĐÁ CAO), chỉ số slot tính trong 2 vị trí đó
-      const app = this.app, F = CFG().match, MP = SFC_CONFIG.mainPath, roles = SFC_CONFIG.game.roles.slice(-2);
+      // trận mơ 3v3 đủ vị trí như trận thật (roles: ĐÁ LÙI · TIỀN VỆ · ĐÁ CAO)
+      const app = this.app, F = CFG().match, MP = SFC_CONFIG.mainPath, roles = SFC_CONFIG.game.roles;
       const soloIdx = Math.max(0, roles.indexOf(F.role));
       const avatar = Object.assign(SFC.Profile.avatar(), { role: F.role, stats: Object.assign({}, F.stats), ovr: F.ovr });
       SFC_CONFIG.teams.list[MP.playerTeam.id].name = MP.playerTeam.nameFormat.replace('{name}', avatar.name);
       app.startMatch({
         home: MP.playerTeam.id, away: CFG().team.id, difficulty: 'normal', aiProfile: F.ai, mateDifficulty: MP.teammate,
         humanTeam: 0, solo: [soloIdx, null], avatars: [avatar, null], arena: F.arena,
-        tutorial: true, noDraft: true, noAiCores: true, noScale: true, teamSize: [2, 2],
+        tutorial: true, noDraft: true, noAiCores: true, noScale: true,
       });
       const g = this.g = app.game;
       this.me = g.controlled;
-      this.mate = g.teams[0].players.find((p) => p !== this.me);
-      if (this.mate) {
-        this.mate.name = F.mate.name;
-        F.mate.cores.forEach((id) => g.cores.add(this.mate, id));
+      // đồng đội AI: tên + Core theo vị trí (ftue.config.js match.mates). this.mate = TIỀN VỆ, người chuyền trả bóng ở bài CHUYỀN
+      this.mates = g.teams[0].players.filter((p) => p !== this.me);
+      for (const p of this.mates) {
+        const M = F.mates[p.role];
+        if (!M) continue;
+        p.name = M.name;
+        M.cores.forEach((id) => g.cores.add(p, id));
       }
+      this.mate = this.mates.find((p) => p.role === 'MID') || this.mates[0];
       F.presetCores.forEach((id) => g.cores.add(this.me, id));
+      // CoreSystem.recipesOn() tắt công thức Tuyệt kỹ khi opts.tutorial (shared/systems/cores.js). Trận mơ bật lại cho riêng ván này
+      // để lượt chọn thứ 2 dạy đúng luật thật: lá "→ ??? NEW ULTIMATE", RecipeFx, mở Tuyệt kỹ khi đủ 3 Core cùng trường phái.
+      // Ghi đè trên instance (không sửa shared/ -> không đổi máy chủ). ULT BOOK không ghi trong trận mơ (hud.js bỏ qua opts.tutorial)
+      g.cores.recipesOn = () => true;
       g.aiHook = (p, dt) => this.aiHook(g, p, dt);
       this.active = true;
       this.arch = null;
@@ -146,7 +156,7 @@ window.SFC = window.SFC || {};
           break;
         case 'pass':
           if (b.kind === 'pass' && b.lastTouch === me) this.passed = true;
-          if (this.mate && b.owner === this.mate && (this.passed || this.stepT > 0.1)) this.complete('shoot');
+          if (b.owner && this.mates.includes(b.owner) && (this.passed || this.stepT > 0.1)) this.complete('shoot');
           break;
         case 'draft1':
           if (g.state === 'kickoff') this.openDraft(CFG().match.draftCores, { title: SFC.t('CORE UPGRADE'), note: CFG().draftNote }, 'core');
@@ -155,10 +165,10 @@ window.SFC = window.SFC || {};
           if (b.owner === me) this.complete('attack');
           break;
         case 'attack':
-          this.updateQte(dt, g);
+          this.updateQte(dt, g, input);
           break;
         case 'draft2':
-          if (g.state === 'kickoff') this.openUltDraft();
+          if (g.state === 'kickoff') this.openRecipeDraft();
           break;
         case 'charge':
           this.updateCharge(g);
@@ -190,13 +200,17 @@ window.SFC = window.SFC || {};
         const c = SFC_CONFIG.cores.list[mine.id];
         this.arch = c.tags[0];
         this.set('defend');
-      } else if (this.step === 'ultpick') this.set('charge');
+      } else if (this.step === 'ultpick') {
+        // lá vừa chọn là Core thứ 3 cùng trường phái -> CoreSystem.add đã mở Tuyệt kỹ (setUlt)
+        this.ultId = this.g.cores.ultOf(this.me);
+        this.set('charge');
+      }
     },
 
     /* ---------------- QTE né đòn (bài GO SCORE) ---------------- */
     // rush: đối thủ lao vào -> windup: gồng Hard attack, trận chạy chậm, hiện phím né -> kết quả: né được = xong bài,
     // trúng đòn / không bấm = chờ hồi lại (trả bóng cho bạn) rồi lao vào lần nữa
-    updateQte(dt, g) {
+    updateQte(dt, g, input) {
       const q = this.qte, Q = CFG().qte, me = this.me, b = g.ball;
       if (!q || q.phase === 'done') return;
       if (q.phase === 'wait') {
@@ -209,8 +223,9 @@ window.SFC = window.SFC || {};
         if (!q.o || q.o.state === 'stun') q.o = this.rusher(g);
         return;
       }
-      // windup: bấm Z (đang lướt) -> miễn đòn chắc chắn, trận chạy lại bình thường cho cú lướt gọn
-      if (!q.dodging && me.state === 'dash') {
+      // windup: bấm skill -> miễn đòn chắc chắn, trận chạy lại bình thường cho cú lướt gọn. Đang cầm bóng thì cú lướt chỉ ra lúc NHẤC
+      // phím (human.js skillArm) -> tính là né ngay khi vừa nhấn, giữ phím cũng không bị đá trúng
+      if (!q.dodging && (me.state === 'dash' || me.skillArm)) {
         q.dodging = true;
         me.tackleImmune = Math.max(me.tackleImmune, Q.immune);
         g.slowT = 0;
@@ -309,15 +324,15 @@ window.SFC = window.SFC || {};
       this.renderCoach();
     },
 
-    // Ultimate theo trường phái của lá vừa chọn (bỏ qua điều kiện 2 Core cùng trường phái)
-    openUltDraft() {
-      const F = CFG().match, L = SFC_CONFIG.cores.list;
+    // lượt chọn thứ 2: 3 lá cùng trường phái của lá vừa chọn ở lượt đầu (match.recipeCores; thiếu thì lấy Core cùng trường phái khác)
+    // -> lá nào cũng là Core thứ 3 = đạt công thức. Màn chọn tự hiện "→ ??? NEW ULTIMATE" trên lá + diễn RecipeFx (recipesOn bật ở startMatch)
+    openRecipeDraft() {
+      const F = CFG().match, L = SFC_CONFIG.cores.list, g = this.g;
       const arch = this.arch || 'striker';
-      const id = F.ultOf[arch] || Object.keys(L).find((k) => L[k].role === 'ult' && L[k].tags.includes(arch)) || 'meteor_strike';
-      this.ultId = id;
-      const A = SFC_CONFIG.cores.archetypes[arch];
-      this.openDraft([id], { title: SFC.t('ULTIMATE UNLOCKED'), special: 'ult', note: CFG().ultNote.replace('{arch}', A ? A.label : arch) }, 'ultpick');
-      SFC.Audio.reveal(4);
+      const fresh = (id) => L[id] && L[id].role !== 'ult' && L[id].tags[0] === arch && !g.cores.has(this.me, id);
+      const ids = (F.recipeCores[arch] || []).filter(fresh);
+      for (const id in L) if (ids.length < 3 && fresh(id) && !ids.includes(id)) ids.push(id);
+      this.openDraft(ids.slice(0, 3), { title: SFC.t('CORE UPGRADE'), note: CFG().ultNote }, 'ultpick');
     },
 
     /* ---------------- AI theo bài ---------------- */
@@ -354,17 +369,17 @@ window.SFC = window.SFC || {};
         }
         return false;
       }
-      if (p === this.mate) {
-        // các bài dạy: có bóng là chuyền trả cho bạn (đứng 1 nhịp rồi chuyền)
+      if (this.mates.includes(p)) {
+        // các bài dạy: đồng đội nào có bóng cũng chuyền trả cho bạn (đứng 1 nhịp rồi chuyền)
         if ((EARLY.includes(s) || HOLD.includes(s) || ['defend', 'attack', 'charge', 'ult'].includes(s)) && b.owner === p) {
           this.mateT += dt;
           p.intent.mx = 0; p.intent.my = 0;
           if (this.mateT >= CFG().match.mateReturn && p.state === 'normal') { this.mateT = 0; SFC.Actions.passTo(g, p, me, 'ground'); }
           return true;
         }
-        this.mateT = 0;
-        // bài đấm cướp bóng / tích Ultimate: đồng đội đá lùi giữ khung (vẫn bắt bóng, phá bóng bình thường), nhường bạn lên tranh chấp
-        if ((s === 'defend' || s === 'charge') && b.owner && b.owner.team === 1) {
+        if (!this.mates.includes(b.owner)) this.mateT = 0;
+        // bài đấm cướp bóng / tích Ultimate: TIỀN VỆ lùi về vị trí, nhường bạn lên tranh chấp. ĐÁ LÙI để AI thật giữ khung
+        if (p === this.mate && (s === 'defend' || s === 'charge') && b.owner && b.owner.team === 1) {
           const home = g.formationPos(p);
           steer(p, home.x, home.y, 0.8);
           return true;

@@ -569,7 +569,7 @@ SFC.I18n.add({
     'FAMILY SECRET': 'SECRETO DE FAMILIA',
     'PICK YOUR ROUTE': 'ELIGE TU RUTA',
     'Matches, shops and surprises on a branching map': 'Partidos, tiendas y sorpresas en un mapa con varios caminos',
-    'WIN = A NEW BADGE': 'GANA = BADGE NUEVO',
+    'WIN = NEW GEAR': 'GANA = GEAR NUEVO',
     'Lose a single match and the run is over': 'Pierde un solo partido y se acabó el recorrido',
     'BEAT EVERY BOSS': 'VENCE A TODOS LOS JEFES',
     'Every act ends with a boss. Beat them all to be the GOAT': 'Cada acto termina con un jefe. Véncelos a todos y sé el GOAT',
@@ -603,7 +603,7 @@ SFC.I18n.add({
     'GOAL': 'GOL',
     'CONCEDE': 'GOL RECIBIDO',
     '*CORES* are superpowers. PICK 1 TO BE STRONGER!!!': 'Los *CORES* son superpoderes. ¡¡¡ELIGE 1 PARA SER MÁS FUERTE!!!',
-    'Born from your {arch} build': 'Nacida de tu build de {arch}',
+    '*3 CORES* of one school = *ULTIMATE*': '*3 CORES* del mismo arquetipo = *DEFINITIVA*',
 
     /* ===== config/cores.config.js: arquetipos, recursos, sinergias ===== */
     'archetype|SPEED': 'VELOCISTA',
