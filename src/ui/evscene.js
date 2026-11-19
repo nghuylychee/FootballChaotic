@@ -16,6 +16,13 @@
   const hsh = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
   const scenes = {};
   let cv = null, L = null, bg = null, raf = 0, last = 0, T = 0, id = null, visit = null, stateFn = null, buf = null, phase = null, phaseAt = 0;
+  // chỉ vẽ khi canvas đang thấy (tụt FPS 2026-11-19: trang bị ẩn mà không gỡ canvas thì vòng vẽ chạy mãi). IntersectionObserver báo
+  // thấy / khuất, không đọc layout mỗi khung; khuất -> dừng vòng vẽ, thấy lại -> chạy tiếp
+  let vis = true;
+  const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((ents) => {
+    for (const e of ents) if (e.target === cv) vis = e.isIntersecting;
+    if (vis && cv && cv.isConnected && !raf) { last = 0; raf = requestAnimationFrame(frame); }
+  }) : null;
   const ICON = {};
 
   // icon pixel 12x12 của PixelIcon + viền mực 1 pixel -> canvas 14x14 (như thẻ hàng KIT VAN)
@@ -105,7 +112,8 @@
   }
 
   function frame(now) {
-    if (!cv || !cv.isConnected) { raf = 0; cv = null; return; }
+    if (!cv || !cv.isConnected) { raf = 0; if (io && cv) io.unobserve(cv); cv = null; return; }
+    if (!vis) { raf = 0; return; }
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now; T += dt;
     const sc = scenes[id];
@@ -150,6 +158,7 @@
         const sc = scenes[eid];
         if (sc && sc.paint) sc.paint(kit(bg.getContext('2d')));
       }
+      if (io && cv !== el) { if (cv) io.unobserve(cv); vis = false; io.observe(el); }
       cv = el; L = cv.getContext('2d');
       if (!raf) { last = 0; raf = requestAnimationFrame(frame); }
     },

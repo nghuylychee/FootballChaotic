@@ -203,7 +203,7 @@ Hỗn loạn đủ 3 lá (X3) từ Area 3, đủ 4 lá (★★) từ Area 4. Tuy
 | HỖN LOẠN + TIKI | **Wild Card Pass** | Đường chuyền không cắt được (bóng hoá đồ vật), người nhận bốc 1 buff ngẫu nhiên |
 | HỖN LOẠN + SÁT THỦ | **Jackpot Shot** | Sút tối đa, bóng bốc 2 năng lực khác nhau: lửa · sét · cong · tên lửa · tách đôi · thủ môn hoa mắt |
 | HỖN LOẠN + ĐẤU SĨ | **Wild Haymaker** | Lao tới (né Z), cú đấm kết quả ngẫu nhiên: bay lên trời · văng vào tường · choáng xoay |
-| HỖN LOẠN + VÕ SĨ ĐÁ | **Pinball Kick** | Lao tới (né Z), đá đối thủ thành viên bi nảy tường 3 lần, ai bị chạm cũng văng |
+| HỖN LOẠN + VÕ SĨ ĐÁ | **Chaos Volley** (id `pinball_kick`, 2026-11-19, hướng Blue Lock; thay Pinball Kick → Devour 2026-11-18 → bỏ vì đầu trận đối thủ chưa có Tuyệt kỹ để nuốt) | Chỉ khi cầm bóng: đá bóng vọt thẳng lên trời, 2s sau bóng rơi xuống như thiên thạch (đuôi lửa) ở điểm ngẫu nhiên bên phần sân đối phương; vòng đích tím chỉ người dùng thấy (owner góp ý 2026-11-19). Tới kịp lúc bóng xuống thấp -> tự nhào lộn vô-lê hết lực vào góc xa người trông khung; không kịp -> bóng lỏng, ai tới trước được |
 | HỖN LOẠN + ẢO ẢNH | **Shell Game** | 3 phân thân hiện quanh bạn rồi cả 4 tráo chỗ; có bóng thì phân thân dắt bóng giả |
 | HỖN LOẠN + THÉP | **Iron Dice** | Hoá khối thép to lăn theo đường vạch trước, dừng lại tung xúc xắc: sóng chấn to theo số chấm |
 

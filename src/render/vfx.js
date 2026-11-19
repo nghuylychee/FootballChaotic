@@ -254,9 +254,9 @@ window.SFC = window.SFC || {};
   /* ---------- vật thể trên sân của Tuyệt kỹ (Effects.prop, docs/ULT_REDESIGN.md) ---------- */
   // FLOOR: nằm trên mặt sân, dưới cầu thủ · UPRIGHT: đứng trên sân, xếp chiều sâu cùng cầu thủ · TOP: vẽ trên cùng
   const PROP_FLOOR = { washpuddle: 1, neontile: 1, chizone: 1, lateaim: 1, zoomies: 1, vroom: 1, splatfall: 1, splat: 1, graffitiwarn: 1, seawave: 1, surf: 1, lane: 1, trail: 1, puddle: 1, peel: 1, mark: 1, gaze: 1, magic: 1, moon: 1, dot: 1, chain: 1, stance: 1, magnet: 1, quake: 1, qring: 1, target: 1, rubble: 1,
-    grid: 1, trail2: 1, cage: 1, staff: 1, harp: 1, harpz: 1, dashline: 1, moonf: 1 };   // ★★ thức tỉnh (docs/ULT_AWAKEN.md)
+    grid: 1, trail2: 1, cage: 1, staff: 1, harp: 1, harpz: 1, dashline: 1, moonf: 1, dropzone: 1 };   // ★★ thức tỉnh (docs/ULT_AWAKEN.md)
   const PROP_TOP = { rope: 1, hose: 1, chipalm: 1, zapline: 1, mama: 1, chopaim: 1, chopstrike: 1, chopcarry: 1, owl: 1, owleyes: 1, gazelock: 1, owlbolt: 1, owlbeam: 1, flock: 1, wind: 1, lassoswing: 1, lassofly: 1, tarot: 1, dark: 1, card: 1, spot: 1, alarm: 1, glove: 1, foot: 1, pips: 1, smoke: 1, boomer: 1, string: 1, mhand: 1, skyfire: 1, rebound: 1, fullmoon: 1, junkwarn: 1,
-    qtap: 1, laser: 1, tracer: 1, knuckles: 1, dice: 1 };   // 2026-11-01: QTE, Bullet Time sniper, Lucky Knuckles, Chaos Ball   // khói phủ lên người (đối thủ trong khói vẫn thấy mờ mờ)
+    qtap: 1, knuckles: 1, dice: 1, piece: 1, meteor: 1 };   // 2026-11-01: QTE, Lucky Knuckles, Chaos Ball · 2026-11-18: Gap Shot   // khói phủ lên người (đối thủ trong khói vẫn thấy mờ mờ)
   // vật thể bám theo cầu thủ (a = id cầu thủ)
   const PROP_FOLLOW = { whey: 1, heat: 1, vault: 1, gazelock: 1, petrify: 1, fall: 1, vroom: 1, veil: 1, card: 1, legend: 1, stoolheld: 1, alarm: 1, tornado: 1, hand: 1, stance: 1, hammer: 1, truck: 1, stone: 1, hypno: 1, magic: 1, pips: 1, ape: 1, ride: 1, chicken: 1, panic: 1, link: 1, burn: 1, tied: 1, lassoswing: 1, carrotheld: 1, zoomies: 1, surf: 1, flung: 1, chopaim: 1, chopcarry: 1, inpot: 1, fused: 1, fusetrail: 1, stand: 1, moonf: 1, chrome: 1,
     shock: 1, qtap: 1, tag: 1, warp: 1, knuckles: 1, dice: 1 };
@@ -322,6 +322,16 @@ window.SFC = window.SFC || {};
     thunder: ['..yy.', '.yy..', 'yyyy.', '..yy.', '.yy..'],   // sét
     split: ['ww...', 'ww...', '.....', '...ww', '...ww'],     // tách đôi
   };
+  // mảnh ghép 6x6 (Gap Shot): thân vuông 4x4 + mấu lồi trên và phải, s = cỡ px; viền mực trước, màu sau
+  const PIECE = ['..xx..', '.xxxx.', '.xxxxx', '.xxxxx', '.xxxx.', '......'];
+  function piece(ctx, cx, cy, s, color) {
+    const { px, OUT } = SP();
+    for (const [pad, col] of [[1, OUT], [0, color]]) {
+      for (let j = 0; j < 6; j++) for (let i = 0; i < 6; i++) {
+        if (PIECE[j][i] === 'x') px(ctx, Math.round(cx + (i - 3) * s) - pad, Math.round(cy + (j - 3) * s) - pad, s + pad * 2, s + pad * 2, col);
+      }
+    }
+  }
   function mini(ctx, cx, cy, kind, s = 1) {
     const { px } = SP(), m = MINI[kind];
     if (!m) return;
@@ -1107,27 +1117,52 @@ window.SFC = window.SFC || {};
         px(ctx, x, cy, 1, 1, o.color);
         break;
       }
-      case 'laser': {   // Bullet Time: sniper trên khán đài (x, y) — tia laser đỏ bám người a; sắp bắn (k nhỏ) thì ống ngắm loé trắng
-        const q = byId(g, o.a);
-        if (!q) break;
-        const tx = Math.round(q.x), ty = Math.round(q.y - ph(10)), hot = k < 0.3, d = Math.atan2(ty - y, tx - x);
-        ctx.globalAlpha = fade * (hot ? 0.9 : 0.5);
-        line(ctx, x, y, tx, ty, 1, o.color);
+      case 'piece': {   // Gap Shot: mảnh ghép vàng khớp vào khe trên vạch vôi — rơi vào to rồi thu về đúng cỡ, nhấp nháy, vòng sáng loang ra
+        const s2 = el < 0.15 ? Math.round(5 - el * 20) : 2, on = Math.floor(t * 12) % 2;
+        ctx.globalAlpha = fade * (1 - Math.min(1, el * 2.2)) * 0.8;
+        ctx.strokeStyle = o.color; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(x, y, 6 + el * 40, 3 + el * 20, 0, 0, Math.PI * 2); ctx.stroke();
         ctx.globalAlpha = fade;
-        disc(ctx, tx, ty, 2, o.color);
-        px(ctx, x - 3, y - 5, 7, 6, OUT); px(ctx, x - 2, y - 4, 5, 4, '#2a2440');   // người núp trên khán đài
-        line(ctx, x, y, Math.round(x + Math.cos(d) * 9), Math.round(y + Math.sin(d) * 9), 2, OUT);   // nòng súng
-        disc(ctx, x, y, 2, hot ? '#ffffff' : '#ff8a9a');
-        if (hot) { px(ctx, x - 6, y, 13, 1, '#ffffff'); px(ctx, x, y - 6, 1, 13, '#ffffff'); }
+        piece(ctx, x, y - 6, s2, on ? '#ffffff' : o.color);
         break;
       }
-      case 'tracer': {   // Bullet Time: viên đạn bay (x, y) -> (a, b), vệt sáng phía sau
-        const u = Math.min(1, el / Math.max(0.01, o.max - 0.08)), ux = o.a - o.x, uy = o.b - o.y, L = Math.hypot(ux, uy) || 1;
-        const hx = o.x + ux * u, hy = o.y + uy * u, tl = Math.min(22, L * u);
-        ctx.globalAlpha = fade * 0.6;
-        line(ctx, Math.round(hx - (ux / L) * tl), Math.round(hy - (uy / L) * tl), Math.round(hx), Math.round(hy), 2, o.color);
-        ctx.globalAlpha = fade;
-        px(ctx, Math.round(hx) - 1, Math.round(hy) - 1, 2, 2, '#ffffff');
+      case 'meteor': {   // Chaos Volley: đuôi lửa thiên thạch — đầu đi từ (x, y, cao height) tới (a, b, 0) trong o.max giây (mô phỏng cùng công thức),
+        // đuôi kéo ngược hướng bay trên màn hình (y màn hình = y − z), 3 lớp cam / vàng / trắng thon dần + quầng sáng ở đầu
+        const H = SFC_CONFIG.cores.list.pinball_kick.params.height, u = Math.min(1, el / o.max);
+        const hx = o.x + (o.a - o.x) * u, hy = o.y + (o.b - o.y) * u - H * (1 - u);
+        const vx = o.a - o.x, vy = o.b - o.y + H, vl = Math.hypot(vx, vy) || 1, ux = vx / vl, uy = vy / vl, L = 54;
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'lighter';
+        disc(ctx, Math.round(hx), Math.round(hy), 11, 'rgba(255,90,20,0.25)');
+        ctx.lineCap = 'round';
+        for (const [w, col, len] of [[9, 'rgba(255,90,20,0.45)', L], [5, 'rgba(255,200,60,0.7)', L * 0.7], [2, 'rgba(255,255,255,0.9)', L * 0.4]]) {
+          ctx.strokeStyle = col; ctx.lineWidth = w;
+          ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx - ux * len, hy - uy * len); ctx.stroke();
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        for (let i = 0; i < 4; i++) {   // tàn lửa bay ra hai bên đuôi
+          const d = 10 + ((t * 90 + i * 13) % 40), sd = Math.sin(t * 20 + i * 2) * 4;
+          px(ctx, Math.round(hx - ux * d - uy * sd), Math.round(hy - uy * d + ux * sd), 2, 2, i % 2 ? '#ffd23f' : '#ff6a1f');
+        }
+        break;
+      }
+      case 'dropzone': {   // Chaos Volley: vòng đích tím ở điểm bóng rơi — vòng ngoài co dần về vòng trong đúng lúc bóng chạm đất
+        // (o.max - late giây), 4 mũi chỉ vào tâm xoay chậm, tâm nhấp nháy. CHỈ người dùng thấy (o.a = id người dùng; owner 2026-11-19)
+        if (!g.preview && !(g.controlled && g.controlled.id === o.a)) break;
+        const late = SFC_CONFIG.cores.list.pinball_kick.params.late, land = Math.max(0.05, o.max - late), u = Math.min(1, el / land);
+        const on = Math.floor(t * 10) % 2, r0 = 8, r1 = Math.round(r0 + 22 * (1 - u));
+        ctx.globalAlpha = fade * 0.18; ctx.fillStyle = o.color;
+        ctx.beginPath(); ctx.ellipse(x, y, r0, r0 * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = fade; ctx.lineWidth = 1;
+        for (const [rr, col] of [[r0, '#ffffff'], [r1, o.color]]) {
+          ctx.strokeStyle = OUT; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y, rr, rr * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.stroke();
+        }
+        for (let i = 0; i < 4; i++) {
+          const a = t * 1.5 + (i * Math.PI) / 2, c = Math.cos(a), sn = Math.sin(a) * 0.45;
+          line(ctx, Math.round(x + c * (r1 + 5)), Math.round(y + sn * (r1 + 5)), Math.round(x + c * (r1 + 1)), Math.round(y + sn * (r1 + 1)), 1, o.color);
+        }
+        px(ctx, x - 1, y - 1, 2, 2, on ? '#ffffff' : o.color);
         break;
       }
       case 'warp': break;   // Portal Kicks: đang ở trong cổng — không vẽ gì (PROP_HIDE ẩn sprite)
@@ -1456,11 +1491,24 @@ window.SFC = window.SFC || {};
         const ready = (p.charge || 0) >= C.chargedThreshold(p.team);
         const fx = x + Math.round(Math.cos(p.facing) * 5);
         if (ready && C.has(p, 'fire_shot')) for (let i = 0; i < 2; i++) px(ctx, fx - 2 + Math.round(R() * 4), y - 1 - Math.round(R() * 5), 1, 2, R() < 0.5 ? '#ff6a1f' : '#ffd23f');
-        // Chưởng Sóng: quả cầu sáng tụ trước chân khi gần đầy lực
-        if (C.has(p, 'energy_wave') && (p.charge || 0) >= 0.6) {
-          const k = Math.min(1, ((p.charge || 0) - 0.6) / 0.3), ox = x + Math.round(Math.cos(p.facing) * 9);
-          disc(ctx, ox, y - 5, 2 + Math.round(k * 4), 'rgba(127,231,255,0.35)');
-          disc(ctx, ox, y - 5, 1 + Math.round(k * 2), '#dffbff');
+        // Zero Windup: đủ lực -> mũi giày loé sao trắng (sẵn sàng bật bóng không vung chân)
+        if (C.has(p, 'energy_wave') && (p.charge || 0) >= C.params('energy_wave').minCharge) {
+          const on = Math.floor(g.time * 12) % 2, ox = x + Math.round(Math.cos(p.facing) * 7), oy = y - 1;
+          px(ctx, ox - (on ? 2 : 1), oy, on ? 5 : 3, 1, '#ffffff');
+          px(ctx, ox, oy - (on ? 2 : 1), 1, on ? 5 : 3, '#ffffff');
+        }
+        // Gap Shot: vệt vàng chấm từ bóng tới khe trống (CoreSystem.gapLane) + mảnh ghép ở khung; đủ lực thì sáng hẳn + nhấp nháy.
+        // Ai cũng thấy (hậu vệ biết mà bịt khe)
+        const GS = C.has(p, 'black_hole') && p.hasBall && (p.charge || 0) >= C.params('black_hole').show && C.gapLane(p);
+        if (GS) {
+          const b = g.ball, ready = (p.charge || 0) >= C.params('black_hole').minCharge, on = Math.floor(g.time * 10) % 2;
+          ctx.globalAlpha = ready ? (on ? 0.95 : 0.7) : 0.4;
+          ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]); ctx.lineDashOffset = -g.time * 30;
+          ctx.beginPath(); ctx.moveTo(Math.round(b.x), Math.round(b.y - b.z)); ctx.lineTo(Math.round(GS.x), Math.round(GS.y)); ctx.stroke();
+          ctx.setLineDash([]); ctx.lineDashOffset = 0;
+          piece(ctx, Math.round(GS.x), Math.round(GS.y), ready ? 2 : 1, '#ffd23f');
+          ctx.globalAlpha = 1;
         }
         if (C.has(p, 'thunder_kick') && (p.charge || 0) >= 0.3) {
           const lit = (p.charge || 0) >= C.params('thunder_kick').minCharge;
@@ -1471,6 +1519,23 @@ window.SFC = window.SFC || {};
         }
       }
       ctx.globalCompositeOperation = 'source-over';
+      // Goal Sense: vòng sáng cyan ở chỗ bóng lỏng sẽ tranh được (CoreSystem.ballSpot) — chỉ người chơi tại máy này thấy (+ ảnh xem trước).
+      // Vòng co nhịp + 4 vạch chỉ vào tâm; đang chạy về đó (p.sense, chỉ có ở máy chạy mô phỏng) thì sáng hơn
+      if ((p === g.controlled || g.preview) && !p.hasBall && C.has(p, 'speed_demon')) {
+        const gs = C.ballSpot();
+        if (gs) {
+          const sx = Math.round(gs.x), sy = Math.round(gs.y), pu = (g.time * 3) % 1, rr = 9 - Math.round(pu * 3);
+          ctx.globalAlpha = p.sense ? 0.95 : 0.7;
+          ctx.strokeStyle = '#3ff6ff'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.ellipse(sx, sy, rr, Math.max(2, Math.round(rr * 0.45)), 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.globalAlpha *= 0.5;
+          ctx.beginPath(); ctx.ellipse(sx, sy, rr + 5, Math.round((rr + 5) * 0.45), 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.globalAlpha = p.sense ? 0.95 : 0.7;
+          for (const [ox, oy, w, h] of [[-15, 0, 3, 1], [13, 0, 3, 1], [0, -8, 1, 2], [0, 7, 1, 2]]) px(ctx, sx + ox, sy + oy, w, h, '#3ff6ff');
+          px(ctx, sx, sy, 1, 1, '#ffffff');
+          ctx.globalAlpha = 1;
+        }
+      }
       // Mắt Đại Bàng: đang nạp lực chuyền -> nét phấn (đường chấm + mũi tên + vòng điểm rơi) như bảng chiến thuật
       if (p.passMode && p.hasBall && C.has(p, 'eagle_eye')) {
         const b = g.ball, plan = SFC.Actions.passPlan(g, p, p.passLock, p.passMode, p.passCharge || 0, Math.cos(p.facing), Math.sin(p.facing), true);

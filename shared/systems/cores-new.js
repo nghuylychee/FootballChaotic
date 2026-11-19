@@ -375,50 +375,43 @@ window.SFC = window.SFC || {};
     },
 
     /* ================= 🎯 SÁT THỦ ================= */
+    // Zero Windup (thay Chưởng Sóng 2026-11-18): bóng bật khỏi chân không vung chân, thủ môn AI đọc trễ (ball.gkLate)
     energy_wave: {
       onChargedShot(sys, team, prm, pl, ball, held) {
         if (held < prm.minCharge) return;
-        const g = sys.g, E = g.effects, a = Math.atan2(ball.vy, ball.vx), d = { x: Math.cos(a), y: Math.sin(a) };
-        const x0 = pl.x + d.x * 8, y0 = pl.y + d.y * 8;
-        E.beam(x0, y0 - 6, a, prm.len, prm.width * 1.2, '#7fe7ff', 0.7);
-        E.pop(pl.x, pl.y - 30, 'WAVE BLAST!', 'move', '#7fe7ff');
-        E.shake(5, 0.5);
-        g.sfx('zap');
-        for (const o of g.teams[1 - team].players) {
-          const rx = o.x - x0, ry = o.y - y0, along = rx * d.x + ry * d.y, perp = rx * -d.y + ry * d.x;
-          if (along < 0 || along > prm.len || Math.abs(perp) > prm.width || g.isProtected(o)) continue;
-          const s = perp >= 0 ? 1 : -1;
-          // người trông khung chỉ bị đẩy, không choáng (tránh bàn thắng chắc chắn)
-          const gk = g.inKeeperZone(o);
-          o.hit({ stun: gk ? 0 : prm.stun, kbx: -d.y * s * prm.knock * (gk ? 0.4 : 1) + d.x * 60, kby: d.x * s * prm.knock * (gk ? 0.4 : 1) + d.y * 60, source: pl, type: 'slash' });
-          E.burst(o.x, o.y, 8, '#7fe7ff', 8, 80, 0.4);
-        }
+        const g = sys.g, E = g.effects, a = Math.atan2(ball.vy, ball.vx);
+        ball.gkMod += prm.gk;
+        ball.gkLate = (ball.gkLate || 0) + prm.late;
+        ball.skin = 'light';
+        Act().startAttack(pl, 'shoot');   // bỏ tư thế sút mạnh: chân chỉ giật nhẹ
+        E.afterimage(pl, 0.3);
+        E.beam(pl.x + Math.cos(a) * 6, pl.y + Math.sin(a) * 6 - 4, a, 46, 3, '#ffffff', 0.16);   // vệt chém trắng mảnh
+        E.burst(pl.x + Math.cos(a) * 6, pl.y, 4, '#ffffff', 6, 120, 0.18);
+        E.pop(pl.x, pl.y - 30, 'ZERO!', 'move', '#ff7a3d');
+        E.shake(2, 0.12);
+        g.sfx('whoosh');
       },
     },
+    // Gap Shot (thay Sút Lỗ Đen 2026-11-18): sút theo khe trống (CoreSystem.gapLane) -> bóng nắn thẳng vào khe, xuyên người, khó bắt
     black_hole: {
       onChargedShot(sys, team, prm, pl, ball, held) {
         if (held < prm.minCharge) return;
-        const g = sys.g, E = g.effects;
-        ball.skin = 'blackhole';
-        E.vortex(0, 0, prm.radius * 0.7, prm.time, 'ball');
-        E.pop(pl.x, pl.y - 30, 'VWOOM!', 'light', '#9d7bff');
-        E.shake(3, 0.5);
+        const lane = sys.gapLane(pl);
+        if (!lane) return;
+        const a = Math.atan2(ball.vy, ball.vx), want = Math.atan2(lane.y - ball.y, lane.x - ball.x);
+        if (Math.abs(U.angleDiff(a, want)) > prm.snap) return;
+        const g = sys.g, E = g.effects, spd = Math.hypot(ball.vx, ball.vy);
+        ball.vx = Math.cos(want) * spd; ball.vy = Math.sin(want) * spd;
+        ball.curve = 0; ball.knuckle = null;
+        ball.gkMod += prm.gk;
+        ball.skin = 'light';
+        for (const o of g.teams[1 - team].players) if (!g.inKeeperZone(o)) ball.noPickup.set(o.id, prm.pass);
+        E.beam(ball.x, ball.y - 4, want, Math.hypot(lane.x - ball.x, lane.y - ball.y), 4, '#ffd23f', 0.35);
+        E.prop(H.propId(g), 'piece', lane.x, lane.y, team, 0, 0.9, '#ffd23f');
+        E.pop(pl.x, pl.y - 30, 'GAP!', 'move', '#ff7a3d');
+        E.flash(0.2);
+        E.shake(3, 0.2);
         g.sfx('zap');
-        let T = prm.time;
-        sys.task((dt) => {
-          T -= dt;
-          const b = g.ball;
-          if (T <= 0 || b.owner || b.skin !== 'blackhole') return true;
-          for (const o of g.teams[1 - team].players) {
-            const dd = Math.hypot(o.x - b.x, o.y - b.y);
-            if (dd >= prm.radius || dd < 3 || o.airZ > 4) continue;
-            const k = (1 - dd / prm.radius) * prm.pull * dt;
-            o.kbx += ((b.x - o.x) / dd) * k; o.kby += ((b.y - o.y) / dd) * k;
-            // bị hút lệch nhưng không chạm được bóng (người trông khung vẫn được cứu thua)
-            if (!g.inKeeperZone(o)) b.noPickup.set(o.id, 0.15);
-          }
-          return false;
-        });
       },
     },
     meteor_strike: {

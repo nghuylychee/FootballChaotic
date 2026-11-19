@@ -182,7 +182,7 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 
 | ID | Tên | Độ hiếm | Vai trò | Cơ chế | Khoảnh khắc trên màn hình | Kit |
 |---|---|---|---|---|---|---|
-| `speed_demon` ♻️ | Quỷ Tốc Độ | THƯỜNG · có sẵn | TẠO | Nhận Đà gấp đôi; +12% tốc khi không giữ bóng. | Vệt tàn ảnh xanh sau lưng; mỗi Đà thêm một tia sét lách tách dưới chân; đầy Đà thì cả người viền xanh. | TR PT |
+| `speed_demon` 🔄 | **Goal Sense** (thay Quỷ Tốc Độ, 2026-11-18, hướng Blue Lock) | THƯỜNG · có sẵn | TẠO | Giữ: nhanh hơn khi không có bóng (×1.05) + toé điện sớm (×0.5). Thêm: bóng lỏng đang bay / lăn -> dự đoán chỗ bóng tranh được (thấp hơn 10px, chậm hơn 150px/s, tối đa 1.6s tới; `CoreSystem.ballSpot`); chạy về đó nhanh hơn ×1.12. AI có Core đuổi thẳng tới điểm đó, không bị bóng bật bất ngờ đánh lừa. | Vòng sáng cyan co nhịp ở điểm bóng sẽ tới (chỉ người chơi tại máy thấy), sáng hơn khi đang chạy về đó. | — |
 | `burst_start` 🆕 | Phóng Như Tên | HIẾM | TẠO | Bấm chạy: +2 Đà ngay, bứt tốc 0.3s. | Nổ vòng siêu âm trắng tại chỗ xuất phát, bụi tung, tia tốc độ quét qua người. | SW SL PT |
 | `sonic_boom` 🆕 | Phá Âm Chướng | SỬ THI | DÙNG | Cầm bóng ở Đà tối đa: lướt sát qua đối thủ (≤ 14px) hất họ văng sang bên + choáng ngắn, tiêu hết Đà (hồi 10s). | Hình nón sóng âm trắng trước mặt, chữ **BOOM** khi xuyên qua, nạn nhân xoay vòng bay sang bên. | SW CO SH |
 | `freight_train` 🆕 | Húc Xe Tải | SỬ THI | DÙNG | Va trực diện khi ≥ 5 Đà: húc đối thủ bay xa (hất tung), tiêu 5 Đà (hồi 15s). | Hit-stop lúc va, chữ **BAM!** to, nạn nhân lộn vòng như bị xe tông, vết trượt dài trên sân. | HS CO DC |
@@ -207,8 +207,8 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 | `banana_kick` ♻️ | Xoáy Rồng | HIẾM | TẠO (xoáy) | Cú sút cong về góc khung. | Bóng kéo vệt xoắn ốc xanh lá như rồng cuộn quanh đường bay. | BL TR |
 | `fire_shot` ♻️ | Hoả Cầu | HIẾM | TẠO (lửa) | Sút tụ lực → bóng lửa, vệt lửa trên sân gây choáng. | Bóng to gấp đôi thành quả cầu lửa; sân cháy theo đường bay; vào lưới thì lưới bốc cháy. | BL DC PT |
 | `thunder_kick` ♻️ | Lôi Cước | HUYỀN THOẠI | TẠO (sét) | Tụ lực lâu → bóng xuyên 1 người (giật choáng), khó bắt. | Chân tích điện trước khi sút; bóng xanh điện; tia sét giật lan sang người bị xuyên; màn hình loé trắng. | FL BL PT |
-| `energy_wave` 🆕 | Chưởng Sóng | SỬ THI | DÙNG | Sút đầy lực: một luồng năng lượng rộng bắn theo bóng, đẩy mọi đối thủ trong luồng dạt ra hai bên. | Gồng 0.2s có quả cầu sáng tụ trước chân, rồi luồng tia xanh trắng bắn ngang sân kèm rung màn hình. | BM SH CO |
-| `black_hole` 🆕 | Sút Lỗ Đen | HUYỀN THOẠI | DÙNG | Sút đầy lực: bóng thành lỗ đen, hút đối thủ gần đường bay và kéo thủ môn lệch khỏi vị trí. | Bóng đen vành tím xoáy; bụi bị hút vào thành xoắn ốc; người xung quanh trượt về phía bóng; âm thanh trầm rền. | BL PL PT |
+| `energy_wave` 🔄 | **Zero Windup** (thay Chưởng Sóng, 2026-11-18, hướng Blue Lock) | SỬ THI | DÙNG | Thanh lực nạp nhanh hơn (×0.6). Sút từ 60% lực: bóng bật khỏi chân không vung chân, thủ môn AI đọc trễ thêm 0.22s, tỉ lệ bắt bóng −12%. | Mũi giày loé sao trắng khi đủ lực; lúc sút: vệt chém trắng mảnh + tàn ảnh, chữ ZERO!. | — |
+| `black_hole` 🔄 | **Gap Shot** (thay Sút Lỗ Đen, 2026-11-18, hướng Blue Lock) | HUYỀN THOẠI | DÙNG | Tụ lực từ 30%: thấy khe trống nhất trong khung (`CoreSystem.gapLane`). Sút từ 70% lực theo khe (lệch ≤ 0.32 rad): bóng nắn thẳng vào khe, xuyên hậu vệ 0.6s, thủ môn −45%. | Vệt chấm vàng từ bóng tới khe + mảnh ghép ở khung (ai cũng thấy: hậu vệ bịt được); lúc sút: tia vàng, mảnh ghép khớp vào khung, chữ GAP!. | — |
 | `meteor_strike` 🆕 | **Cú Sút Sao Băng** | THẦN THOẠI | TUYỆT KỸ | Bật lên cao cùng bóng, 0.5s sau xoay người đá bóng cắm xuống khung với lực tối đa. Thủ môn bắt được vẫn bị hất văng. | Slow-mo ở đỉnh cú nhảy; tâm ngắm trên sân; bóng lao xuống kéo đuôi lửa như sao băng; impact frame lúc chạm lưới; lưới nổ tung. | SM IF BL CO SH |
 
 ### 🥊 ĐẤU SĨ — Nộ
@@ -248,7 +248,7 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 | `iron_body` ♻️ | Da Thép | THƯỜNG · có sẵn | TẠO | 1 Giáp chặn 1 đòn choáng, hồi sau 7s. | Có Giáp: người ánh bạc kim loại; chặn đòn: tia lửa + chữ **CLANG!** + khiên lục giác loé lên. | FL CO PT |
 | `bulldozer` 🆕 | Xe Ủi | SỬ THI | DÙNG | Có Giáp + cầm bóng: to 1.3× (chậm hơn 12%), đi xuyên, hất văng người va phải (mỗi lần tiêu 1 Giáp), không thể bị cướp (mất Giáp khi trúng đòn). | Nhân vật phình to, bước đi rung nhẹ, người va phải bay ra như ki bowling. | GI SH |
 | `giant_keeper` 🆕 | Thủ Môn Khổng Lồ | SỬ THI | DÙNG | Người trông khung có Giáp: phóng to 1.4× khi bóng tới gần khung (tầm bắt +40%). | Thủ môn phình to đột ngột kèm **POOF**, che kín khung thành. | GI CO |
-| `emp_trap` ♻️ | Mìn EMP | SỬ THI | TẠO | Mỗi lần ra đòn đặt mìn EMP; đối thủ dẫm phải giật choáng, mất bóng. | Mìn nhấp nháy xanh; nổ ra vòng điện + tia sét giật người. | SW PT FL |
+| `emp_trap` 🔄 | **Pass Reader** (thay Mìn EMP, 2026-11-18, hướng Blue Lock) | SỬ THI | TẠO | Đường chuyền sệt của đối thủ sắp qua trong 46px trước mặt (tới nơi ≤ 0.6s): lao 340px/s tới điểm cắt và chắc chắn đón bóng; cắt được: cả đội +15% tốc độ 2.5s. Hồi 6s. | Chữ READ! + vòng trắng, vạch chấm tới điểm cắt, tàn ảnh lúc lao; cắt được: CUT! + vệt tốc. | — |
 | `aegis_wall` ♻️ | Khiên Aegis | HUYỀN THOẠI | NỀN | Khiên chặn 1 cú sút vào lưới, hồi sau 60s. | Khiên lục giác năng lượng trên vạch vôi; chặn bóng thì vỡ vụn như kính + hit-stop. | HS PT SH |
 | `titan` 🆕 | **Hoá Khổng Lồ** | THẦN THOẠI | TUYỆT KỸ | 5s: to gấp 2, miễn choáng, va chạm hất văng mọi người, sút cực mạnh; vẫn chuyền / rê bóng bình thường. | Callout **KHỔNG LỒ!**; mỗi bước rung màn hình + vết chân nứt; người va phải bay tứ tung; quả bóng dưới chân nhỏ như hạt đậu. | GI SH DC CO |
 
@@ -285,9 +285,9 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 
 | Build | 4 Core | Cộng hưởng | Khoảnh khắc đáng quay clip |
 |---|---|---|---|
-| **Tia chớp** | Quỷ Tốc Độ · Phóng Như Tên · Húc Xe Tải · Tia Chớp Xuyên Sân | 🏃 IV | Bứt tốc nổ vòng siêu âm → húc bay hậu vệ → Tuyệt kỹ xuyên cả đội hình đối phương thành đường sét. |
+| **Tia chớp** | Goal Sense (thay Quỷ Tốc Độ) · Phóng Như Tên · Húc Xe Tải · Tia Chớp Xuyên Sân | 🏃 IV | Bứt tốc nổ vòng siêu âm → húc bay hậu vệ → Tuyệt kỹ xuyên cả đội hình đối phương thành đường sét. |
 | **Nhạc trưởng** | Nhạc Trưởng · Chạm Một · Bản Giao Hưởng · Tiki-taka Vô Tận | 🎼 IV | Sân ngả sepia, bóng vẽ ngôi sao vàng, cú sút kéo đuôi nốt nhạc. |
-| **Pháo thủ** | Hoả Cầu · Lôi Cước · Sút Lỗ Đen · Cú Sút Sao Băng | 🎯 IV | Lỗ đen hút cả hàng thủ; sao băng cắm xuống lưới nổ tung. |
+| **Pháo thủ** | Hoả Cầu · Lôi Cước · Gap Shot · Cú Sút Sao Băng | 🎯 IV | (Gap Shot thay Lỗ Đen 2026-11-18) Lỗ đen hút cả hàng thủ; sao băng cắm xuống lưới nổ tung. |
 | **Võ đường** | Võ Đường Phố · Bão Đấm · Long Quyền · Tâng Người | 🥊 III + 🦵 II | Mưa đấm dồn Nộ → Long Quyền hất lên trời → tâng người **5 HIT!**. |
 | **Động đất** | Giày Sắt · Dậm Đất · Đập Tường · Thiên Thạch Giáng | 🦵 IV | Dậm đất hất tung cả cụm → BONK tường nứt → thiên thạch rơi để lại hố. |
 | **Ninja** | Bộ Pháp Ninja · Thuấn Bộ · Ảnh Phân Thân · Đại Phân Thân | 🌀 IV | 5 người giống hệt, 4 quả bóng giả, thủ môn đổ sai hướng. |
@@ -333,7 +333,7 @@ Mỗi trường phái có đúng **1 Tuyệt kỹ** (độ hiếm THẦN THOẠI
 - Chiêu càng lớn càng có **báo trước dài hơn** và **hồi chiêu / năng lượng lâu hơn**; mọi Tuyệt kỹ né được bằng Z trong lúc báo trước.
 - Choáng dùng chung miễn nhiễm sau choáng (`hitImmune`) → không khoá choáng liên tục kể cả khi Bách Quyền + Tâng Người.
 - Trần chỉ số: tổng tăng tốc ≤ +45%, hồi chiêu tối thiểu 0.3s, tối đa 4 phân thân / bóng giả trên sân.
-- Phản đòn rõ ràng: Húc Xe Tải → né Z; Hoá Khổng Lồ → chuyền vòng qua (khổng lồ quay người chậm); Lỗ Đen → dạt ra xa đường bay; Đại Phân Thân → đánh trúng phân thân là nổ.
+- Phản đòn rõ ràng: Húc Xe Tải → né Z; Hoá Khổng Lồ → chuyền vòng qua (khổng lồ quay người chậm); Gap Shot → đứng vào vệt vàng để bịt khe; Đại Phân Thân → đánh trúng phân thân là nổ.
 - **Giả lập ép build** (AI đá 200 trận với build cố định vs đội không Core) để bắt build lệch; thêm đo "số khoảnh khắc / phút" để chắc trận nào cũng có highlight.
 
 ---

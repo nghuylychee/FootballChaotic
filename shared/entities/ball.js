@@ -35,6 +35,7 @@ window.SFC = window.SFC || {};
       this.homing = null;    // {x, y, strength}
       this.frictionMult = 1;
       this.gkMod = 0;        // trừ tỉ lệ bắt bóng của thủ môn (Giao Hưởng, Bóng Ma, Sao Băng...)
+      this.gkLate = 0;       // (s) thủ môn AI đọc cú sút trễ thêm (Zero Windup — ai.js keeper)
       this.knuckle = null;   // KNUCKLEBALL (LEGEND, Actions.shoot): { t, T, t1, t2, peak, g1, g3, sx, hx, sz, hz, ox, oz } — xem knuckleStep
     }
 

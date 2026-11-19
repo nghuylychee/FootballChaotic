@@ -970,10 +970,12 @@ window.SFC = window.SFC || {};
       }
       // đang chờ đánh đầu cản cú sút (firstTime.ai.block): chạy tới chỗ đón bóng ngang đầu trên đường bay (Actions.receiveMove)
       if (p.ot && p.ot.block) { Act().receiveMove(g, p); return; }
+      // Goal Sense (Core speed_demon): biết trước chỗ bóng lỏng sẽ tới -> không bị bóng bật bất ngờ đánh lừa, đuổi thẳng tới điểm đó
+      const gs = g.cores.senseSpot(p);
       // bóng vừa bật bất ngờ (ai.scramble): chưa kịp phản ứng thì giữ nguyên hướng chạy cũ; phản ứng rồi vẫn đoán lệch hướng bóng một lúc
       const S = A().scramble, w = g.aiBall;
       let err = 0;
-      if (S && w && w.n) {
+      if (S && w && w.n && !gs) {
         if (p.ai.scrN !== w.n) {
           const D = g.aiProfile(p.team);
           p.ai.scrN = w.n;
@@ -999,6 +1001,7 @@ window.SFC = window.SFC || {};
       if (!chaser.p) chaser = nearest(tm.players, pred, (o) => o.state === 'normal' && o !== ctl);
       if (ctl && U.dist(ctl, pred) < chaser.d) chaser = { p: null };
       if (p === chaser.p && !passToMate) {
+        if (gs) return moveTo(p, gs.x, gs.y, true, 1);
         // người đuổi bóng chạy tới chỗ mình đoán (lệch err), còn việc ai đuổi thì cả đội vẫn chọn theo pred thật
         if (!err) return moveTo(p, pred.x, pred.y, true, 1);
         const c = Math.cos(err), s = Math.sin(err);
@@ -1037,7 +1040,7 @@ window.SFC = window.SFC || {};
         let gr = p.ai.gkRead;
         if (!gr || gr.n !== b.kickN) {
           const err = K.errBase + (1 - prof.shotAccuracy) * K.errMul;
-          gr = p.ai.gkRead = { n: b.kickN, y0: p.y, at: g.time + K.reactBase + prof.reaction * K.reactMul, err: U.rand(-err, err) };   // y0: chỗ đứng lúc thấy cú sút (độ vươn, Game.tryControl)
+          gr = p.ai.gkRead = { n: b.kickN, y0: p.y, at: g.time + K.reactBase + prof.reaction * K.reactMul + (b.gkLate || 0), err: U.rand(-err, err) };   // y0: chỗ đứng lúc thấy cú sút (độ vươn, Game.tryControl)
         }
         if (g.time < gr.at) { tx = p.x; ty = p.y; }
         else if (b.fx.chip) { tx = p.x; ty = U.clamp(b.y + b.vy * Math.max(0, t), f.gTop, f.gBot); sprint = true; }   // bị lob: không kịp lùi về vạch, chỉ dịch ngang

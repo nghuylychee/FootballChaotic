@@ -932,11 +932,13 @@ window.SFC = window.SFC || {};
           if (b.fx.ghost) this.effects.burst(b.x, b.y, b.z, '#fff6c0', 4, 40, 0.3);
           return;
         }
-        if (!this.intercepts(p)) return;
+        // Pass Reader: đã đọc đúng đường chuyền này -> cắt chắc, bóng dính chân (không tung xúc xắc, không dội ra)
+        const read = this.cores.readsPass(p);
+        if (!read && !this.intercepts(p)) return;
         this.cores.steal(p);
         // bóng tới mạnh (pass.intercept.block): dội ra khỏi người thay vì dính chân (người cắt không chạm lại ngay, phải đuổi theo)
         const I = C.pass.intercept;
-        if (!isGK && spd >= I.block) { this.deflect(p, I.blockKeep); b.noPickup.set(p.id, I.blockRetry); this.sfx('touch'); return; }
+        if (!isGK && !read && spd >= I.block) { this.deflect(p, I.blockKeep); b.noPickup.set(p.id, I.blockRetry); this.sfx('touch'); return; }
       } else if (opp && spd > C.ball.controlSpeed) {
         if (Math.random() > 0.35 * p.stats.dribble) { this.deflect(p, 0.4); return; }
       }

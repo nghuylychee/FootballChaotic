@@ -1181,9 +1181,9 @@ window.SFC = window.SFC || {};
       },
     },
 
-    /* 🏃 TỐC ĐỘ + 🎯 SÁT THỦ — Bullet Time (làm lại user 2026-11-01): cả sân slow motion + đoạn nhạc giao hưởng, bạn chạy tự do time giây
-       (thời gian thật, lái theo phím; cầm bóng thì bóng theo chân). Chạm đối thủ = đánh dấu (vỗ tay + dấu ngắm đỏ trên người họ).
-       Hết giờ: sniper trên khán đài bắn lần lượt từng người bị đánh dấu — laser bám người aim giây, loé nòng, đạn bay tới chỗ họ đứng lúc bắn;
+    /* 🏃 TỐC ĐỘ + 🎯 SÁT THỦ — Ankle Breaker (id bullet_time; làm lại user 2026-11-01, bỏ sniper 2026-11-18): cả sân slow motion + đoạn nhạc
+       giao hưởng, bạn chạy tự do time giây (thời gian thật, lái theo phím; cầm bóng thì bóng theo chân). Chạm đối thủ = đánh dấu (vỗ tay +
+       dấu ngắm đỏ trên người họ). Hết giờ: lần lượt từng người bị đánh dấu — dấu siết lại báo trước aim giây rồi trượt chân ngã (rơi bóng);
        lướt Z đúng lúc là né. Thủ môn trong vòng cấm không bị đánh dấu */
     bullet_time: {
       aiUse(sys, team, prm) {
@@ -1215,7 +1215,7 @@ window.SFC = window.SFC || {};
           if (E.O && E.O.tints) for (const tn of E.O.tints) if (tn.color === TINT) tn.t = Math.min(tn.t, 0.15);
           H.unlock(pl);
           if (g.state !== 'play') { for (const m of marked) E.propOff(m.id, 0); return; }
-          marked.forEach((m, i) => g.later(prm.gap * i, () => this.snipe(sys, team, prm, pl, m)));
+          marked.forEach((m, i) => g.later(prm.gap * i, () => this.trip(sys, team, prm, pl, m)));
         };
         sys.task((dt) => {
           if (done) return true;
@@ -1241,7 +1241,7 @@ window.SFC = window.SFC || {};
             if (marked.some((m) => m.o === o) || !hittable(g, o) || g.inKeeperZone(o) || U.dist(o, pl) > prm.touch + o.radius) continue;
             const id = H.propId(g);
             marked.push({ o, id });
-            E.prop(id, 'tag', o.x, o.y, o.id, 0, prm.time + prm.gap * 3 + prm.aim + 1, '#ff3d5a');
+            E.prop(id, 'tag', o.x, o.y, o.id, 0, prm.time + prm.gap * 4 + prm.aim + 1, '#ff3d5a');
             Act().startAttack(pl, 'light');
             E.burst((o.x + pl.x) / 2, (o.y + pl.y) / 2 - 8, 6, '#ffffff', 8, 50, 0.15);
             E.ring(o.x, o.y, '#ff3d5a');
@@ -1250,39 +1250,26 @@ window.SFC = window.SFC || {};
           return false;
         }, finish);
       },
-      // sniper trên khán đài gần người đó (trên / dưới sân): laser bám người aim giây -> loé nòng, đạn bay tới chỗ họ đứng lúc bắn
-      snipe(sys, team, prm, pl, m) {
-        const g = sys.g, E = g.effects, f = g.field, o = m.o;
+      // dấu ngắm siết lại (vòng đỏ + tiếng tích tắc) aim giây -> người đó trượt chân ngã theo hướng đang chạy, rơi bóng; lướt Z kịp là né
+      trip(sys, team, prm, pl, m) {
+        const g = sys.g, E = g.effects, o = m.o;
         if (g.state !== 'play') { E.propOff(m.id, 0); return; }
-        const top = o.y < f.cy;
-        const sx = U.clamp(o.x + U.rand(-90, 90), f.x + 20, f.x + f.w - 20), sy = top ? f.y - 16 : f.y + f.h + 12;
-        E.prop(H.propId(g), 'laser', sx, sy, o.id, 0, prm.aim + 0.05, '#ff3d5a');
-        g.sfx('ult', 'bullet.aim');
+        E.ring(o.x, o.y - 12, '#ff3d5a');
+        g.sfx('ult', 'bullet.tick');
         g.later(prm.aim, () => {
           E.propOff(m.id, 0.1);
-          if (g.state !== 'play') return;
-          const at = { x: o.x, y: o.y }, tt = Math.hypot(at.x - sx, at.y - sy) / prm.bullet;
-          E.prop(H.propId(g), 'tracer', sx, sy, at.x, at.y, tt + 0.08, '#fff3b0');
-          E.burst(sx, sy, 2, '#fff3b0', 8, 70, 0.2);
-          g.sfx('ult', 'bullet.shot');
-          g.later(tt, () => {
-            if (g.state !== 'play') return;
-            if (!hittable(g, o) || U.dist(o, at) > prm.hitR + o.radius || Act().dodged(g, o)) {
-              E.decal('scorch', at.x, at.y, 0.5, 2);
-              E.burst(at.x, at.y, 1, '#c7ccd6', 8, 60, 0.3);
-              return;
-            }
-            const had = o.hasBall && !sys.unstealable(o), d = U.norm(o.x - sx, o.y - sy);
-            if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; }
-            if (!H.blast(o, o, prm.knock, prm.launch, prm.stun, pl, d)) return;
-            if (had) sys.steal(pl);
-            E.pop(o.x, o.y - 30, 'BANG!', 'heavy', '#ff3d5a');
-            E.burst(o.x, o.y - 8, 8, '#fff3b0', 14, 120, 0.4);
-            g.hitStop(0.05);
-            E.shake(4, 0.2);
-            g.sfx('hit');
-            g.sfx('ult', 'bullet.hit');
-          });
+          if (g.state !== 'play' || !hittable(g, o)) return;
+          if (Act().dodged(g, o)) return;
+          const mv = Math.hypot(o.vx, o.vy), d = mv > 20 ? U.norm(o.vx, o.vy) : { x: Math.cos(o.facing), y: Math.sin(o.facing) };
+          if (o.hasBall && !sys.unstealable(o)) g.looseBall(o, -d.x, -d.y, 40);   // bóng lăn lại phía sau người ngã
+          if (o.state === 'stun') { o.state = 'normal'; o.stateT = 0; }
+          if (!H.blast(o, o, prm.knock, prm.launch, prm.stun, pl, d)) return;
+          E.pop(o.x, o.y - 30, 'TRIP!', 'status', '#ff3d5a');
+          E.decal('crack', o.x, o.y, 0.6, 1.5);
+          E.burst(o.x, o.y, 2, '#ffffff', 8, 60, 0.3);
+          E.shake(3, 0.15);
+          g.hitStop(0.04);
+          g.sfx('ult', 'bullet.snap');
         });
       },
     },

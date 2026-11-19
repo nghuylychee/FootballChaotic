@@ -12,4 +12,6 @@ GEAR screen re-review of 2026-11-06 (the GEAR pick → who wears it → swap rew
 
 Screen-level UX review of 2026-11 (goal, information, hierarchy, squint test per screen of the GOAT PATH flow; report artifact with owner feedback; fixes, ??? event scenes and the game-wide choice cursor merged into main 2026-11-05) lives in docs/ux-screens/ (context + log + how to act on feedback: docs/ux-screens/README.md). Read it when the owner mentions that review, the screen report, its feedback, or the A/B options.
 
+Blue Lock review of 2026-11-18 (every Core + Ultimate scored for a Blue Lock marketing angle, Excel in docs/bluelock/; owner approved 6 changes, applied on main uncommitted: Gap Shot, Zero Windup, Pass Reader, Ankle Breaker, Chaos Volley (replaced Devour), Goal Sense, ids kept) lives in docs/bluelock/ (README.md there). Read it when the owner mentions Blue Lock or that review.
+
 Screen-level UX review round 2 of 2026-11-11 (the out-of-match screens: SHOP, CHARACTER, INVENTORY, ULT BOOK, TROPHY ROOM, ACHIEVEMENTS, SETTINGS, PRIVATE MATCH; RANKED hidden; report artifact with owner feedback, no code changed yet) lives in docs/ux-screens/r2/ (README.md there). Read it when the owner mentions round 2 of the screen review or its feedback.

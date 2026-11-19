@@ -37,7 +37,7 @@ Kiểm trùng (với 36 chiêu hiện tại):
 - Lồng sét ≠ Thunderstorm (sét rơi theo vòng cảnh báo), ≠ Iron Chain (xích nối người).
 - Dây đàn ≠ Iron Chain: dây nằm cố định trên sân theo đường bóng đã đi, chỉ khựng một lần cuối chuỗi.
 - Cú đập thứ hai ≠ Cannonball (Cannonball nổ khi chạm đất rồi tự nảy; ở đây người chơi phải tự bấm, chỉ khi bóng bị đỡ ra).
-- Combo dây chuyền ≠ Pinball Kick (Pinball: người dùng nảy như bi; ở đây đấm tại chỗ từng người).
+- Combo dây chuyền ≠ Pinball Kick (Pinball: người dùng nảy như bi; ở đây đấm tại chỗ từng người). Pinball Kick đã thành Chaos Volley (2026-11-19).
 - Trăng đi theo ≠ Mega Magnet (không hút, chỉ nhấc người trong vòng).
 - Phân thân ở lại: Clone Army vẫn là chiêu phân thân duy nhất của ẢO ẢNH, chỉ kéo dài vai trò.
 - Túm và ném ≠ Slingshot (Slingshot phóng đồng đội, có lợi; đây ném đối thủ làm bi bowling).

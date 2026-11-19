@@ -312,64 +312,117 @@ window.SFC = window.SFC || {};
 
 
 
-    /* 🎲 + 🦵 — Pinball Kick: lao tới (né Z) đá văng 1 đối thủ thành viên bi nảy tường, ai bị viên bi chạm vào cũng văng */
+    /* 🎲 + 🦵 — Chaos Volley (id pinball_kick, 2026-11-19; thay Devour): đá bóng vọt thẳng lên trời, ~2s sau bóng rơi xuống như thiên thạch ở
+       điểm ngẫu nhiên bên phần sân đối phương (vòng đích tím chỉ người dùng thấy). Tới kịp lúc bóng xuống thấp -> tự nhào lộn vô-lê hết lực
+       vào góc xa; không kịp thì bóng nảy lên thành bóng lỏng ai tới trước được. needsBall: chính mình cầm bóng, không giật bóng */
     pinball_kick: {
       aiUse(sys, team, prm) {
-        const g = sys.g, me = prm.owner;
-        if (me.state !== 'normal' || me.airZ > 0) return null;
-        const near = targetsNear(g, team, me, prm.range);
-        return near.length >= 2 || (near[0] && near[0].hasBall && U.dist(near[0], me) < prm.range * 0.7) ? me : null;
+        const g = sys.g, b = g.ball, me = prm.owner;
+        if (b.owner !== me || me.state !== 'normal' || me.airZ > 0) return null;
+        // bị ép sát hoặc còn xa khung: phóng bóng lên đánh cược
+        return targetsNear(g, team, me, 60).length || Math.abs(g.attackGoal(team).x - me.x) > 260 ? me : null;
+      },
+      // điểm rơi: ngẫu nhiên trong dải cách khung depth, ưu tiên điểm cách người dùng trong dist (không có thì điểm gần khoảng đó nhất)
+      spot(sys, team, prm, pl) {
+        const g = sys.g, f = g.field, goal = g.attackGoal(team), dir = g.teams[team].dir, mid = (prm.dist[0] + prm.dist[1]) / 2;
+        let best = null, bs = Infinity;
+        for (let i = 0; i < 16; i++) {
+          const x = goal.x - dir * U.rand(prm.depth[0], prm.depth[1]), y = U.rand(f.y + 24, f.y + f.h - 24), d = Math.hypot(x - pl.x, y - pl.y);
+          if (d >= prm.dist[0] && d <= prm.dist[1]) return { x, y, d };
+          const sc = Math.abs(d - mid);
+          if (sc < bs) { bs = sc; best = { x, y, d }; }
+        }
+        return best;
       },
       onUltimate(sys, team, prm, pl) {
-        const g = sys.g, o = targetsNear(g, team, pl, prm.range)[0];
-        if (!o) return;
-        H.rush(sys, pl, o, prm.rush, U.dist(pl, o) / prm.rush + 0.15, () => {
-          const E = g.effects, f = g.field;
-          if (o.hasBall && !sys.unstealable(o)) { g.looseBall(o, pl.x - o.x, pl.y - o.y, 40); sys.steal(pl); }
-          let d = U.norm(o.x - pl.x + U.rand(-0.3, 0.3), o.y - pl.y + U.rand(-0.6, 0.6));
-          o.hitImmune = 0;
-          o.hit({ stun: prm.stun + prm.time, kbx: 0, kby: 0, source: pl, type: 'hard' });
-          g.hitStop(0.08);
-          E.impactFrame();
-          E.pop(o.x, o.y - 30, 'BOING!', 'heavy', '#c63dff');
-          E.shake(6, 0.3);
-          g.sfx('hit');
-          g.sfx('ult', 'pinball.flip');
-          pl.state = 'recover'; pl.stateT = 0.3;
-          let T = 0, bounces = 0, k = 0;
-          const hit = new Set([o]);
-          // viên bi người: tự di chuyển theo d, nảy tường (tối đa bounces lần), chạm ai thì người đó văng
-          sys.task((dt) => {
-            if (g.state !== 'play') return true;
-            T += dt;
-            o.x += d.x * prm.speed * dt; o.y += d.y * prm.speed * dt;
-            o.vx = 0; o.vy = 0; o.kbx = 0; o.kby = 0;
-            const r = o.radius + 1;
-            let wall = false;
-            if (o.x < f.x + r || o.x > f.x + f.w - r) { d = { x: -d.x, y: d.y }; o.x = U.clamp(o.x, f.x + r, f.x + f.w - r); wall = true; }
-            if (o.y < f.y + r || o.y > f.y + f.h - r) { d = { x: d.x, y: -d.y }; o.y = U.clamp(o.y, f.y + r, f.y + f.h - r); wall = true; }
-            if (wall) {
-              bounces++;
-              E.decal(o.x <= f.x + r || o.x >= f.x + f.w - r ? 'crack' : 'wallcrack', o.x, o.y, 1.1, 4);
-              E.burst(o.x, o.y, 6, '#c63dff', 10, 100, 0.4);
-              E.pop(o.x, o.y - 30, 'BONK!', 'light', '#c63dff');
-              E.shake(3, 0.15);
-              g.sfx('ult', 'pinball.ding');
+        const g = sys.g, E = g.effects, b = g.ball;
+        if (b.owner !== pl) return;   // mất bóng trong lúc cut-in: xịt (không giật bóng)
+        const sp = this.spot(sys, team, prm, pl), dir = g.teams[team].dir;
+        sys.st(pl, 'pinball_kick').spot = sp;   // ảnh xem trước đọc để chạy tới
+        const T = prm.time, T1 = prm.rise, T2 = T - T1, x0 = b.x, y0 = b.y;
+        // điểm thiên thạch bắt đầu rơi: trên cao, lùi về phía sau (phía khung nhà) slant px -> rơi xiên tới điểm rơi
+        const sx = sp.x - dir * prm.slant, sy = sp.y - prm.slant * 0.3;
+        b.kick(pl, 0, 0, prm.riseSpeed);
+        b.kind = null;
+        b.fx.scripted = true;   // bóng chạy theo kịch bản: Goal Sense không dự đoán (CoreSystem.ballSpot)
+        const n = b.kickN;
+        for (const q of g.players) b.noPickup.set(q.id, q === pl ? T + prm.late : T - 0.05);   // trên không không ai chạm; người dùng chỉ vô-lê
+        Act().startAttack(pl, 'power');
+        E.beam(x0, y0 - 4, -Math.PI / 2, 140, 4, '#ffffff', 0.25);   // vệt trắng vút thẳng lên trời
+        E.burst(x0, y0, 4, '#c63dff', 14, 140, 0.4);
+        E.wave(x0, y0, 26, '#c63dff', 0.35, 2);
+        E.shake(4, 0.2);
+        const zid = H.propId(g);
+        E.prop(zid, 'dropzone', sp.x, sp.y, pl.id, 0, T + prm.late, '#c63dff');   // a = người dùng: chỉ máy của họ vẽ
+        g.sfx('ult', 'volley.launch');
+        const ai = !(g.isHuman(team) && pl.isControlled);
+        let t = 0, falling = false, landed = false, k = 0;
+        const end = () => { E.propOff(zid, 0.15); if (ai) unlock(pl); if (b.kickN === n) { delete b.fx.scripted; delete b.fx.meteor; if (b.skin === 'fireball') b.skin = null; } };
+        sys.task((dt) => {
+          t += dt;
+          if (g.state !== 'play' || b.owner || b.kickN !== n || t > T + prm.late) return true;
+          // AI cầm Core: tự chạy tới điểm rơi (người chơi tự lái)
+          if (ai && pl.state !== 'stun') {
+            hold(pl, 0.1);
+            const dd = U.dist(pl, sp);
+            if (dd > 2) {
+              const u = U.norm(sp.x - pl.x, sp.y - pl.y), st = Math.min(dd, prm.aiRun * dt);
+              pl.x += u.x * st; pl.y += u.y * st; pl.facing = Math.atan2(u.y, u.x); pl.vx = u.x * prm.aiRun; pl.vy = u.y * prm.aiRun;
+              pl.anim += dt * 1.6;
             }
-            if ((k += dt) >= 0.05) { k = 0; E.afterimage(o, 0.2); }
-            for (const q of g.teams[1 - team].players) {
-              if (hit.has(q) || U.dist(q, o) > q.radius + o.radius + 4 || g.isProtected(q) || q.state === 'meteor') continue;
-              hit.add(q);
-              if (Act().dodged(g, q)) continue;
-              if (q.hasBall && !sys.unstealable(q)) g.looseBall(q, d.x, d.y, 60);
-              H.blast(q, o, prm.knock, prm.launch, prm.stun, pl);
-              E.pop(q.x, q.y - 30, 'STRIKE!', 'light', '#ffe14f');
-              g.sfx('hit');
-              g.sfx('ult', 'pinball.ding');
+          }
+          if (t < T1) { b.x = x0; b.y = y0; b.vx = b.vy = 0; b.vz = prm.riseSpeed; return false; }   // vọt thẳng lên, ra khỏi màn hình
+          if (!falling) {
+            falling = true;
+            b.trail.length = 0;
+            b.skin = 'fireball'; b.fx.meteor = true;
+            E.prop(H.propId(g), 'meteor', sx, sy, sp.x, sp.y, T2, '#ff6a1f');   // đuôi lửa dài bám bóng (render/vfx.js, cùng công thức vị trí)
+            g.sfx('ult', 'volley.fall');
+          }
+          if (!landed) {
+            const u = Math.min(1, (t - T1) / T2);
+            b.vx = (sp.x - sx) / T2; b.vy = (sp.y - sy) / T2; b.vz = -prm.height / T2;
+            b.x = sx + (sp.x - sx) * u; b.y = sy + (sp.y - sy) * u; b.z = prm.height * (1 - u);
+            if ((k += dt) >= 0.04) { k = 0; E.burst(b.x, b.y, b.z, Math.random() < 0.5 ? '#ff6a1f' : '#ffd23f', 3, 40, 0.4); }
+            if (u >= 1) {
+              // chạm đất: hố + bụi lửa, bóng nảy lên thành bóng lỏng
+              landed = true;
+              b.z = 0; b.vx *= 0.2; b.vy *= 0.2; b.vz = prm.bounce;
+              delete b.fx.meteor; delete b.fx.scripted; b.skin = null;
+              E.decal('crack', sp.x, sp.y, 1, 3);
+              E.burst(sp.x, sp.y, 2, '#ff6a1f', 16, 120, 0.5);
+              E.wave(sp.x, sp.y, 30, '#ff6a1f', 0.4, 2);
+              E.shake(4, 0.2);
+              g.sfx('ult', 'volley.land');
             }
-            return T >= prm.time || bounces > prm.bounces;
-          }, () => { if (o.state === 'stun') o.stateT = Math.min(o.stateT, prm.stun); });
-        });
+          }
+          if (t < T - prm.window || b.z > prm.volleyZ || pl.state === 'stun' || pl.airZ > 4 || U.dist(pl, b) > prm.reach) return false;
+          this.volley(sys, team, prm, pl);
+          return true;
+        }, end);
+      },
+      // nhào lộn vô-lê: bóng bay hết lực vào góc khung xa người trông khung
+      volley(sys, team, prm, pl) {
+        const g = sys.g, E = g.effects, b = g.ball, f = g.field, goal = g.attackGoal(team);
+        const gk = g.teams[1 - team].players.find((o) => g.inKeeperZone(o));
+        const ty = gk ? (gk.y < f.cy ? f.gBot - 6 : f.gTop + 6) : (Math.random() < 0.5 ? f.gTop + 6 : f.gBot - 6);
+        const a = Math.atan2(ty - b.y, goal.x - b.x);
+        unlock(pl);
+        pl.facing = a;
+        b.kick(pl, Math.cos(a) * prm.power, Math.sin(a) * prm.power, 30);
+        b.kind = 'shot';
+        b.gkMod += prm.gk;
+        b.skin = 'light';
+        Act().startAttack(pl, 'volley');
+        pl.airZ = Math.max(pl.airZ, 1); pl.airVz = 150;   // bật người nhào lộn
+        E.impactFrame();
+        E.afterimage(pl, 0.4);
+        E.burst(b.x, b.y, b.z, '#c63dff', 16, 170, 0.5);
+        E.speedLines(0.3, pl.x, pl.y, '#e9c6ff');
+        E.pop(pl.x, pl.y - 30, 'VOLLEY!', 'huge', '#c63dff');
+        E.shake(6, 0.3);
+        g.hitStop(0.06);
+        g.sfx('ult', 'volley.strike');
       },
     },
 

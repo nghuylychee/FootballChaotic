@@ -56,7 +56,7 @@ SFC_CONFIG.achievements = {
     { id: 'completionist',group: 'cores', name: 'Completionist',      desc: 'Unlock every Core',            stat: 'cores', target: 'all', reward: { item: 'aura' } },
     { id: 'signature',    group: 'cores', name: 'Signature Move',     desc: 'Discover 3 Ultimates',          stat: 'ults', target: 3,   reward: { item: 'viking' } },
     { id: 'storm_chaser', group: 'cores', name: 'Storm Chaser',       desc: 'Unlock Light Cycle',           stat: 'core', core: 'light_cycle', target: 1, reward: { item: 'lightning' } },
-    { id: 'event_horizon',group: 'cores', name: 'Event Horizon',      desc: 'Unlock Black Hole Shot',       stat: 'core', core: 'black_hole', target: 1,     reward: { item: 'galaxy' } },
+    { id: 'event_horizon',group: 'cores', name: 'Final Piece',        desc: 'Unlock Gap Shot',              stat: 'core', core: 'black_hole', target: 1,     reward: { item: 'galaxy' } },
     /* ---------- FOOTBALL STORY ---------- */
     /* ---------- GOAT PATH (shared/meta/run.js, Profile.data.runs) ---------- */
     { id: 'path_first',   group: 'run', name: 'First Steps',        desc: 'Beat the boss of THE BLOCK',   stat: 'runAct', target: 1, reward: { box: 'street', n: 2 } },

@@ -114,7 +114,7 @@ window.SFC = window.SFC || {};
 
   // Tuyệt kỹ (bỏ cut-in: gọi thẳng hành vi)
   const ult = (o = {}) => ({
-    len: o.len || 3, cores: o.cores, focus: o.focus,
+    len: o.len || 3, cores: o.cores, opp: o.opp, focus: o.focus,
     init(s) {
       s.place(s.me, A.x - 40, A.y, 0);
       s.place(s.o1, A.x + 20, A.y + 4, PI);
@@ -128,7 +128,19 @@ window.SFC = window.SFC || {};
 
   const SCENES = {
     /* 🏃 TỐC ĐỘ */
-    speed_demon: run(),
+    // Goal Sense: bóng bật ra từ chân đối thủ -> vòng sáng ở chỗ bóng sẽ tới, chạy về đó nhanh hơn
+    speed_demon: {
+      len: 2.6, focus: (s) => { const gs = s.g.cores.ballSpot(); return gs ? s.mid(s.me, gs) : s.me; },
+      init(s) {
+        s.place(s.me, A.x - 40, A.y + 16, 0);
+        s.loose(A.x - 12, A.y - 16);
+      },
+      at: [[0.3, (s) => { const b = s.g.ball; b.kick(null, 70, 28, 210); b.kind = 'shot'; }]],   // bóng bật lên cao (như bị cản phá)
+      tick(s) {
+        const gs = s.g.cores.ballSpot(), t = gs || s.g.ball;
+        if (s.t > 0.4) { toward(s.me, t); s.me.intent.sprint = true; s.me.stamina = 100; }
+      },
+    },
     burst_start: run({ from: 0.35 }),
     sonic_boom: run({ ball: true, init: (s) => { s.me.previewSurge = true; s.place(s.o1, A.x - 10, A.y + 13, PI); } }),
     freight_train: run({ init: (s) => { s.me.previewSurge = true; s.place(s.o1, A.x - 10, A.y, PI); } }),
@@ -170,8 +182,10 @@ window.SFC = window.SFC || {};
     banana_kick: shot({ charge: 0.8, aimY: 0.1 }),
     fire_shot: shot(),
     thunder_kick: shot({ lane: true, aimY: 0.3 }),
-    energy_wave: shot({ lane: true, aimY: 0.3 }),
-    black_hole: shot({ lane: true, len: 3, aimY: 0.3, init: (s) => s.place(s.o2, G.x - 60, G.y + 24, PI) }),
+    // Zero Windup: nạp nhanh, sao trắng ở mũi giày rồi bật bóng không vung chân
+    energy_wave: shot({ at: 0.6, aimY: 0.6 }),
+    // Gap Shot: hậu vệ đứng chắn nửa dưới -> vệt vàng chỉ khe nửa trên, sút theo khe
+    black_hole: shot({ len: 3, at: 1.2, aimY: -0.6, init: (s) => { s.place(s.o2, G.x - 60, G.y + 20, PI); s.place(s.o1, G.x - 16, G.y + 8, PI); } }),
     meteor_strike: ult({ len: 3, init: (s) => { s.place(s.me, G.x - 150, G.y + 10, 0); s.place(s.o1, G.x - 16, G.y, PI); }, focus: (s) => (s.t > 0.8 ? s.g.ball : s.me) }),
     // quay loại bóng của pha này trên đầu (như lúc giao bóng) rồi sút
     chaos_ball: shot({ charge: 0.8, at: 1.4, len: 3, more: [[0.05, (s) => SFC.CoreBehaviors.chaos_ball.onKickoff(s.g.cores, 0, s.g.cores.sp('chaos_ball', s.me))]] }),
@@ -235,11 +249,17 @@ window.SFC = window.SFC || {};
     bulldozer: run({ ball: true, from: 0.1, init: (s) => { s.me.ballT = 1; s.place(s.o1, A.x - 20, A.y, PI); } }),
     giant_keeper: shot({ team: 1, aimY: 0.35, charge: 0.8 }),
     aegis_wall: shot({ team: 1 }),
-    emp_trap: punch({
-      at: 0.2, len: 2.6,
-      init: (s) => s.place(s.o1, A.x + 20, A.y, PI),
-      tick: (s) => { if (s.t > 0.35) { s.me.intent.my = -1; s.o1.intent.mx = -0.9; } },
-    }),
+    // Pass Reader: đối thủ chuyền sệt cắt ngang trước mặt -> mắt loé, lao ra đón bóng
+    emp_trap: {
+      len: 2.4, focus: (s) => s.me,
+      init(s) {
+        s.place(s.me, A.x, A.y - 6, 0);
+        s.place(s.o1, A.x - 70, A.y - 40, 0);
+        s.place(s.o2, A.x + 70, A.y + 40, PI);
+        s.give(s.o1);
+      },
+      at: [[0.35, (s) => Act().passTo(s.g, s.o1, s.o2, 'ground')]],
+    },
     aura_farming: ult({
       len: 3.4, at: 0.3,
       init: (s) => { s.place(s.o1, A.x + 30, A.y + 22, PI); s.place(s.o2, A.x + 70, A.y - 22, PI); },
@@ -255,7 +275,16 @@ window.SFC = window.SFC || {};
     rising_dragon: ult({ ball: false, len: 2.8, focus: (s) => s.o1 }),
     slingshot: ult({ len: 2.6, init: (s) => { s.place(s.mate, A.x - 30, A.y - 28, 0); s.place(s.o1, A.x + 40, A.y - 20, PI); }, focus: (s) => s.mate }),
     // 🎲 Hỗn loạn + 7 hệ
-    pinball_kick: ult({ ball: false, len: 3, init: (s) => { s.place(s.o1, A.x - 10, A.y, PI); s.place(s.o2, A.x + 60, A.y + 30, PI); }, focus: (s) => s.o1 }),
+    // Chaos Volley: phóng bóng lên trời, chạy tới vòng đích rồi nhào lộn vô-lê
+    pinball_kick: ult({
+      len: 3.4, at: 0.3,
+      init: (s) => { s.place(s.me, G.x - 300, G.y + 10, 0); s.place(s.o1, G.x - 16, G.y, PI); s.place(s.o2, G.x - 200, G.y - 70, PI); },
+      tick: (s) => {
+        const sp = s.g.cores.st(s.me, 'pinball_kick').spot;
+        if (sp && s.t > 0.4) { toward(s.me, sp); s.me.intent.sprint = true; s.me.stamina = 100; }
+      },
+      focus: (s) => (s.g.ball.kind === 'shot' ? s.g.ball : s.mid(s.me, s.g.ball)),
+    }),
 
     /* TUYỆT KỸ THIẾT KẾ LẠI (docs/ULT_REDESIGN.md, systems/cores-ult2.js) */
     light_cycle: ult({
@@ -305,12 +334,12 @@ window.SFC = window.SFC || {};
       focus: (s) => s.mid(s.me, s.o2),
     }),
     'chaos_roulette:2': ult({ ball: false, len: 4, init: (s) => { s.place(s.me, 140, A.y, 0); s.place(s.o1, 200, A.y - 10, PI); s.place(s.o2, 230, A.y + 20, PI); s.give(s.o1); }, focus: (s) => ({ x: 170, y: A.y }) }),
-    // slow motion: chạy chạm 2 đối thủ (dấu ngắm), hết giờ sniper trên khán đài bắn từng người
+    // Ankle Breaker: slow motion, chạy chạm 2 đối thủ (dấu ngắm), hết giờ từng người trượt chân ngã
     bullet_time: ult({
       ball: false, len: 4.4, at: 0.2,
       init: (s) => { s.place(s.o1, A.x + 40, A.y - 20, PI); s.place(s.o2, A.x + 100, A.y + 24, PI); },
       tick: (s) => toward(s.me, s.t < 1.1 ? s.o1 : s.t < 2 ? s.o2 : { x: A.x + 160, y: A.y }),
-      focus: (s) => (s.t < 2.3 ? s.me : s.mid(s.o1, s.o2)),
+      focus: (s) => (s.t < 2.3 ? s.me : s.t < 2.9 ? s.o1 : s.o2),   // người ngã trước, rồi người sau
     }),
     hurricane_kick: ult({
       ball: false, len: 3, init: (s) => { s.place(s.o1, A.x + 30, A.y + 6, PI); s.place(s.o2, A.x + 70, A.y - 10, PI); s.give(s.o1); },
@@ -543,6 +572,18 @@ window.SFC = window.SFC || {};
   /* ---------- vòng lặp chung ---------- */
   const live = [];
   let off = null, rend = null, raf = 0, last = 0, acc = 0, sharedBg = null, frame = 0;
+  // chỉ chạy ảnh đang THẤY trên màn hình (lỗi tụt FPS 2026-11-19: màn chọn Core chỉ bị ẩn bằng display:none sau khi chọn, 3 ảnh của nó
+  // vẫn nằm trong trang -> mô phỏng + vẽ 3 trận mini suốt phần còn lại của phiên, cả trong trận lẫn ở menu; màn nào ẩn mà không gỡ ảnh
+  // thì cộng dồn thêm). p.vis do IntersectionObserver báo (ẩn bằng display:none / cuộn khuất = không thấy), không đọc layout mỗi khung
+  const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((ents) => {
+    for (const e of ents) if (e.target._preview) e.target._preview.vis = e.isIntersecting;
+    start();
+  }) : null;
+  const shown = (p) => !io || p.vis;
+  function prune() {
+    for (let i = live.length - 1; i >= 0; i--) if (!live[i].cv.isConnected) { if (io) io.unobserve(live[i].cv); live.splice(i, 1); }
+  }
+  function start() { if (!raf && live.some(shown)) { last = 0; raf = requestAnimationFrame(loop); } }
 
   function ensureRenderer() {
     if (rend) return;
@@ -560,14 +601,15 @@ window.SFC = window.SFC || {};
 
   function loop(now) {
     raf = 0;
-    for (let i = live.length - 1; i >= 0; i--) if (!live[i].cv.isConnected) live.splice(i, 1);
-    if (!live.length) return;
+    prune();
+    const vis = live.filter(shown);
+    if (!vis.length) return;   // không ảnh nào đang thấy: dừng hẳn, IntersectionObserver / scan() chạy lại khi có ảnh hiện ra
     acc += Math.min(0.1, last ? (now - last) / 1000 : STEP);
     last = now;
     let n = 0;
-    while (acc >= STEP && n < 6) { for (const p of live) p.step(); acc -= STEP; n++; }
+    while (acc >= STEP && n < 6) { for (const p of vis) p.step(); acc -= STEP; n++; }
     // vẽ 30 khung / giây (mô phỏng vẫn 60 bước / giây) — nhẹ cho trận đang chạy phía sau
-    if ((frame++ & 1) === 0) for (const p of live) p.draw(off, rend);
+    if ((frame++ & 1) === 0) for (const p of vis) p.draw(off, rend);
     raf = requestAnimationFrame(loop);
   }
 
@@ -577,13 +619,14 @@ window.SFC = window.SFC || {};
     scan(root) {
       if (!root) return;
       ensureRenderer();
+      prune();   // ảnh đã gỡ khỏi trang (vòng lặp có thể đang dừng vì không ảnh nào thấy) -> bỏ luôn trận mini của nó
       root.querySelectorAll('canvas[data-preview]').forEach((cv) => {
         if (cv._preview) return;
         const id = cv.dataset.preview;
         if (!SFC_CONFIG.cores.list[id.split(':')[0]]) return;
-        try { cv._preview = new Preview(cv, id); live.push(cv._preview); } catch (e) { console.warn('CorePreview', id, e); }
+        try { cv._preview = new Preview(cv, id); cv._preview.vis = !io; live.push(cv._preview); if (io) io.observe(cv); } catch (e) { console.warn('CorePreview', id, e); }
       });
-      if (live.length && !raf) { last = 0; raf = requestAnimationFrame(loop); }
+      start();
     },
     // html canvas xem trước (w x h theo pixel của sân)
     html(id, w = 132, h = 58, cls = '') {

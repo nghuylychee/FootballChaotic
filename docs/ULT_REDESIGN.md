@@ -85,7 +85,7 @@ Hệ quả: đạt công thức mới không cho cảm giác "mở khoá thứ m
 |---|---|---|---|---|---|
 | + ẢO ẢNH | Crossfire Kicks | 🔁 **Portal Kicks** | Đá vào không trung: **cổng nhỏ mở cạnh tối đa 3 đối thủ** (0.5s báo trước), chân bạn thò ra từ cổng đá văng họ từ hướng bất ngờ. Bạn đứng yên tại chỗ suốt chiêu (kiểu Dhalsim) | Né Z khi thấy cổng mở · đấm bạn lúc đang đá là huỷ các cú còn lại | Kick into portals; your foot strikes opponents from anywhere. |
 | + THÉP | Iron Quake | 🔁 **Earth Spike** | Đá xuống đất: vết nứt chạy thẳng ra trước (báo trước) → **hàng cột đá trồi lên** hất tung ai đứng trên đó. Cột đá đứng lại ~3s **như tường thật**: chặn người, chặn bóng (của cả hai đội). Tạo địa hình | Vết nứt báo trước · cột cũng chặn đội bạn: dùng cột để che sút | Kick the ground: a rock wall erupts, launching opponents. |
-| + HỖN LOẠN | Pinball Kick | ✅ **Giữ** | Đá người thành bi pinball: chiêu "dùng người làm đạn" duy nhất | (hiện tại) | — |
+| + HỖN LOẠN | Pinball Kick → **Chaos Volley** (2026-11-19, qua Devour 2026-11-18; xem ULT_RECIPE.md) | ✅ **Giữ** | Đá người thành bi pinball: chiêu "dùng người làm đạn" duy nhất | (hiện tại) | — |
 
 ### ẢO ẢNH + / THÉP + / HỖN LOẠN +
 | Cặp | Hiện tại | Đề xuất | Cơ chế | Cách đỡ | desc |
@@ -107,7 +107,7 @@ Hệ quả: đạt công thức mới không cho cảm giác "mở khoá thứ m
 | THÉP | khổng lồ · mở đường · xích đội hình · tảng đá · nắm đấm khổng lồ · cột đá · gương phản xạ · đe sắt |
 | HỖN LOẠN | bánh xe toàn sân · tua băng · bóng nam châm · sút ngẫu nhiên · bẫy lò xo · người pinball · tráo chỗ · đe sắt |
 
-Sau khi đổi: chiêu "lao vào 1 người" còn 3 (Hundred Fists, Rising Dragon, Pinball Kick), mỗi chiêu một kết thúc khác hẳn nhau.
+Sau khi đổi: chiêu "lao vào 1 người" còn 3 (Hundred Fists, Rising Dragon, Pinball Kick), mỗi chiêu một kết thúc khác hẳn nhau. (2026-11-19: Pinball Kick thành Chaos Volley — phóng bóng lên trời rơi ngẫu nhiên rồi vô-lê, không lao vào người; còn 2.)
 Lướt đường thẳng còn 0. Phân thân còn 3 (Clone Army, Ghost Pass, Shell Game). Hệ số `gk` còn 1 (Meteor Shot, đã hạ).
 
 ## 6. Kỹ thuật + thứ tự làm
@@ -265,7 +265,7 @@ Bỏ skin bóng `boulder1..3` / `hide` và `noStealT` (chỉ bản Boulder trư�
 | **Endless Tiki-Taka** | Tự chuyền 4 nhịp | Mỗi nhịp là một **QTE** (`SFC.CoreQTE`, prop `qtap`: 1 nút ngẫu nhiên SÚT / CHUYỀN / CHUYỀN BỔNG / CHỌC KHE hiện trên đầu, không cần canh thời điểm): người cầm bóng bấm đúng nút trước khi hết giờ → người nhận tự băng lên rồi nhận đường chuyền thật (vẫn bị cắt được). Bấm sai nút / hết giờ = chuỗi dừng, giữ bóng. AI tự bấm (`aiHit`). Đang QTE thì phím chỉ dùng cho QTE (`p.qte` → `intent.qteKey`, `human.js`) |
 | **Smoke Bomb** | Bán kính 82 | 125 |
 | **Thunderstorm** | 9 tia, nửa đầu quanh đối thủ | 14 tia, **tia nào cũng nhắm 1 đối thủ** (xoay vòng, người cầm bóng trước), đón đầu đúng chỗ sau `telegraph` giây, lệch ≤ `jitter`. Trúng: **giật điện** (`Stat.shock`, prop `shock` + người run) |
-| **Bullet Time** | Quicksilver + cú sút | Slow motion + đoạn nhạc giao hưởng, **chạy tự do 2s chạm để đánh dấu** (dấu ngắm `tag`). Hết giờ: **sniper trên khán đài** bắn từng người bị đánh dấu (laser `laser` bám người 0.55s → đạn `tracer`), lướt Z đúng lúc là né. Dùng lúc nào cũng được |
+| **Bullet Time** → **Ankle Breaker** (2026-11-18: bỏ sniper, hướng Blue Lock; hết giờ dấu siết lại 0.45s báo trước rồi từng người trượt chân ngã, rơi bóng, né Z được) | Quicksilver + cú sút | Slow motion + đoạn nhạc giao hưởng, **chạy tự do 2s chạm để đánh dấu** (dấu ngắm `tag`). Hết giờ: **sniper trên khán đài** bắn từng người bị đánh dấu (laser `laser` bám người 0.55s → đạn `tracer`), lướt Z đúng lúc là né. Dùng lúc nào cũng được |
 | **Portal Kicks** | Chân thò ra từ cổng cạnh đối thủ | Lặn vào cổng, **chui ra sau lưng từng đối thủ** (≤ 3, báo trước 0.55s, ẩn sprite `warp`), bám sau lưng + **QTE bấm đúng nút** → cú đá. Đối thủ lướt Z để thoát, đấm trúng bạn là ngắt cả chiêu |
 | **Medusa Gaze** | Chỉ nón mắt | Thêm **lướt hoá đá**: 2.2s từ lúc ra chiêu, lướt Z chạm ai là hoá đá người đó (ra chiêu hồi lướt ngay) |
 | Jack-in-the-Box → **Lucky Knuckles** (id giữ `jack_in_box`) | Đặt hộp lò xo | Kiểu Sevika TFT: quay xổ 5 loại cú đấm (spring · upper · shock · boom · grab) thứ tự ngẫu nhiên (dải 5 ô `knuckles`), 5 Light Attack tiếp theo mỗi cú một loại (`Actions.lightHit` → `jack_in_box.punch`) |

@@ -32,6 +32,13 @@ window.SFC = window.SFC || {};
   const SEAT_Y = 46;
 
   let cv = null, L = null, raf = 0, last = 0, T = 0;
+  // chỉ vẽ khi canvas đang thấy (tụt FPS 2026-11-19: trang bị ẩn mà không gỡ canvas thì vòng vẽ chạy mãi). IntersectionObserver báo
+  // thấy / khuất, không đọc layout mỗi khung; khuất -> dừng vòng vẽ, thấy lại -> chạy tiếp
+  let vis = true;
+  const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((ents) => {
+    for (const e of ents) if (e.target === cv) vis = e.isIntersecting;
+    if (vis && cv && cv.isConnected && !raf) { last = 0; raf = requestAnimationFrame(frame); }
+  }) : null;
   // trạng thái vẽ (KitVan.html cập nhật mỗi lần RunUI vẽ lại): items [{ id, price, was, sold, hot, key }] · kits [{ key, sold, gone }]
   // · hover = key đang trỏ · kb = đang đi bằng phím / tay cầm (vẽ bàn tay chỉ lên canvas) · info: key -> { say, buy } cho bong bóng
   const S = { items: [], kits: [], kitPrice: 0, hover: null, talk: null, kb: false, info: {} };
@@ -322,7 +329,8 @@ window.SFC = window.SFC || {};
   /* ---------- vẽ mỗi khung ---------- */
   let buf = null, driverLook = null;
   function frame(now) {
-    if (!cv || !cv.isConnected) { raf = 0; cv = null; return; }
+    if (!cv || !cv.isConnected) { raf = 0; if (io && cv) io.unobserve(cv); cv = null; return; }
+    if (!vis) { raf = 0; return; }
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now; T += dt;
     stepHand(dt);
@@ -418,6 +426,7 @@ window.SFC = window.SFC || {};
       if (!el) return;
       if (!bg) { paintStatic(); buf = document.createElement('canvas'); buf.width = 40; buf.height = 44; }
       driverLook = SFC.Profile.lookOf(Object.assign({}, SFC_CONFIG.progression.defaultLook, DRIVER));
+      if (io && cv !== el) { if (cv) io.unobserve(cv); vis = false; io.observe(el); }
       cv = el; L = cv.getContext('2d');
       if (!raf) { last = 0; raf = requestAnimationFrame(frame); }
       const bub = root.querySelector('.kv-bubble');

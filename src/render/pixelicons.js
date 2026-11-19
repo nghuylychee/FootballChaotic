@@ -114,7 +114,7 @@ window.SFC = window.SFC || {};
     'core-banana_kick': ['..gggggg....', '.ggGGGGgg...', 'gg......gg..', 'gg...www.gg.', 'gg..wwkww...', 'gg..wkkkw...', 'gg..wwkww...', 'gg...www....', 'gg......g...', '.ggGGGGggg..', '..gggggggg..', '............'],
     'core-fire_shot': ['r......o....', '.r...oo.....', '..roooyo....', '..ooyyyyo...', '.ooyywwwyo..', '.oyywwkwwyo.', '.oyywkkkwyo.', '.oyywwkwwyo.', '..oyywwwyo..', '...ooyyyo...', '.....ooo....', '............'],
     'core-thunder_kick': { ref: 'res-momentum', map: { y: 'c' } },
-    'core-speed_demon': ['............', '.........ww.', '.......wwww.', '.....wwwwcw.', '...wwwwwcc..', '..wwwwwccc..', '.wwwwcccc...', 'wwwwcccc....', '.wwccc......', '..cc........', '............', '............'],
+    'core-speed_demon': ['....ww......', '...wkkw.....', '...wkkw.....', '....ww......', '.....c......', '......c.....', '.......c....', '..cccccccc..', '.c..wwww..c.', 'c..w....w..c', '.c..wwww..c.', '..cccccccc..'],   // Goal Sense: bóng rơi xuống vòng sáng
     'core-phantom_step': { ref: 'arch-trickster', map: { v: 'p' } },
     'core-fake_run': ['...nnnnnn...', '..nlllwwln..', '..nllllwln..', '..nlllllwn..', '..nlllllln..', '..nlllllln..', '..nlllllln..', '...nnnnnn...', '.....nn.....', '.....nn.....', '....nnnn....', '............'],
     'core-street_fighter': { ref: 'arch-brawler' },
@@ -122,7 +122,7 @@ window.SFC = window.SFC || {};
     'core-blade_runner': ['.....cccc...', '...cccc.....', '..ccc.......', '.cccw.......', '.ccw........', '.ccw........', '.cccw.......', '..ccc.......', '...cccc.....', '.....cccc...', '............', '............'],
     'core-aegis_wall': ['....cccc....', '..cc....cc..', '.c...cc...c.', 'c...cccc...c', 'c..cccccc..c', 'c..cccccc..c', 'c...cccc...c', '.c...cc...c.', '..cc....cc..', '....cccc....', '............', '............'],
     'core-counter_attack': ['............', '....b.......', '...bb.......', '..bbbbbbbb..', '.bbbbbbbbbb.', '..bb.....bb.', '...b.....bb.', '.........bb.', '.........bb.', '....bbbbbbb.', '....bbbbbb..', '............'],
-    'core-emp_trap': ['............', '.c.......c..', '..c.....c...', '...c.y.c....', '.....y......', '....EEE.....', '..EEEEEEE...', '.EEEcccEEE..', '.EEEcccEEE..', '..EEEEEEE...', '............', '............'],
+    'core-emp_trap': ['............', '....llll....', '..llwwwwll..', '.lwwwccwwwl.', 'lwwwckkcwwwl', '.lwwwccwwwl.', '..llwwwwll..', '....llll....', '............', 'e.e.e.e.eee.', '.........e..', '............'],
     'core-maestro': { ref: 'arch-playmaker' },
     'core-burst_start': ['............', '......o.....', '......oo....', '......ooo...', 'e.e.ooooooo.', '.eeeoooooooo', 'e.e.ooooooo.', '......ooo...', '......oo....', '......o.....', '............', '............'],
     'core-sonic_boom': ['....cccc....', '..cc....cc..', '.c..cccc..c.', '.c.c....c.c.', 'c.c..ww..c.c', 'c.c.wwww.c.c', 'c.c.wwww.c.c', 'c.c..ww..c.c', '.c.c....c.c.', '.c..cccc..c.', '..cc....cc..', '....cccc....'],
@@ -131,8 +131,8 @@ window.SFC = window.SFC || {};
     'core-one_touch': ['.....y......', '.....y......', '....yyy.....', '.yyyywyyyy..', '....yyy.....', '.....y....y.', '.....y...yyy', '..........y.', '..y.........', '.yyy........', '..y.........', '............'],
     'core-phantom_pass': ['............', '............', '............', '.VVV.vvv.www', 'VVVVvvvvwwkw', 'VVVVvvvvwkkk', 'VVVVvvvvwwkw', '.VVV.vvv.www', '............', '............', '............', '............'],
     'core-symphony': ['..........N.', '.........N..', '........k...', '.......k....', '....nnnk....', '...nnnnn....', '..nnkknn....', '..nnnnnn....', '.nnnkknn....', '.nnnnnn.....', '..nnnn......', '............'],
-    'core-energy_wave': ['............', '.....bbbb...', '....bccccb..', '...bcw....b.', '...bc.......', '..bcc...bb..', '..bccbbbcb..', '.bcccccccb..', 'bcccccccccb.', 'bbbbbbbbbbbb', '............', '............'],
-    'core-black_hole': ['....vvvv....', '..vvVVVVvv..', '.vVVkkkkVVv.', '.vVkkkkkkVv.', 'vVkkkkkkkkVv', 'vVkkkkkkkkVv', '.vVkkkkkkVv.', '.vVVkkkkVVv.', '..vvVVVVvv..', '....vvvv....', '............', '............'],
+    'core-energy_wave': ['............', '............', '............', '.......www..', '.ooo..wwkww.', 'ooooo.wkkkw.', '.ooo..wwkww.', '.......www..', '............', '............', '............', '............'],
+    'core-black_hole': ['............', '....yy......', '...yyyy.....', '.yyyyyyyyy..', '.yyyyyyyyy..', '.yyyyyyyyyy.', '.yyyyyyyyyyy', '.yyyyyyyyyy.', '.yyyyyyyyy..', '.YYYYYYYYY..', '............', '............'],
     'core-fist_storm': ['............', '...ssssss...', '..ssSsSsSs..', 'e.sssSsSsSs.', '..ssssssssS.', 'e.sssssssss.', '..sSSSSsss..', 'e..ssssss...', '...nn.......', '............', '............', '............'],
     'core-giant_fist': ['............', '...sSsSsSs..', '..ssSsSsSss.', '..ssSsSsSss.', '..sssssssss.', '..SSsssssss.', '...sssssss..', '...sssssss..', '....sssss...', '....rrrrr...', '....rrrrr...', '............'],
     'core-heavy_boot': ['............', '...eeee.....', '...eeee.....', '...eeee.....', '...eeee.....', '...eeeelll..', '...eeeeeeel.', '..eeeeeeeee.', '..EEEEEEEEE.', '............', '............', '............'],
@@ -165,7 +165,7 @@ window.SFC = window.SFC || {};
     'core-glitch_step': { ref: 'core-phantom_step', map: { p: 'm' } },
     'core-wild_card': { ref: 'ui-card', map: { v: 'm', b: 'r', y: 'w' } },
     'core-loaded_dice': { ref: 'arch-chaos', map: { m: 'w', w: 'k', M: 'l' } },
-    'core-pinball_kick': { ref: 'core-flying_kick', map: { r: 'm', w: 'l' } },
+    'core-pinball_kick': ['.....www....', '....wkkkw...', '..m.wkkkw.m.', '.m...www...m', 'm..........m', 'm...........', 'm........mmm', 'm.......m...', '.........mm.', '........m..m', '.........mm.', '............'],   // Chaos Volley
     'core-panic_ball': ['...cccccc...', '..cwwwwwwc..', '.cwkwwwwkwc.', '.cwrkwwkrwc.', '.cwwwwwwwwc.', '.cwkkkkkkwc.', '.cwkwkwkwwc.', '..cwwwwwwc..', '...cwwwwc...', '..c.c..c.c..', '............', '............'],
     /* Tuyệt kỹ thiết kế lại (docs/ULT_REDESIGN.md, 2026-10-15) */
     'core-light_cycle': ['............', '............', '.........ww.', '........wccw', '.ccccccccccw', '.c......wccw', '.c.......ww.', '.cccccc.....', '......c.....', '.cccccc.....', '............', '............'],
@@ -179,7 +179,7 @@ window.SFC = window.SFC || {};
     'core-ghost_hands': ['..v.v.v.....', '..v.v.v.v...', '..v.v.v.v...', '..vvvvvvv...', '.vvvvvvvv...', '.vvvvvvvv...', '..vvvvvvv...', '...vvvvv....', '...vvvvv....', '.VVVVVVVVV..', 'VVVVVVVVVVV.', '............'],
     'core-jack_in_box': ['....rrr.....', '...rrrrr....', '...rrwrr....', '....rrr.....', '.....l......', '....l.......', '.....l......', '.yyyyyyyyy..', '.rrryyyrrr..', '.rrryyyrrr..', '.yyyyyyyyy..', '.rrryyyrrr..'],
     'core-earth_spike': ['............', '............', '....n.......', '...nn...n...', '...nnn..nn..', '..nnSn.nnn..', '..nSnn.nSnn.', '.nnnnnnnnnn.', '.nNnnNnnNnn.', 'NNNNNNNNNNNN', '............', '............'],
-    'core-phase_step': { ref: 'core-speed_demon', map: { c: 'v' } },
+    'core-phase_step': ['............', '.........ww.', '.......wwww.', '.....wwwwvw.', '...wwwwwvv..', '..wwwwwvvv..', '.wwwwvvvv...', 'wwwwvvvv....', '.wwvvv......', '..vv........', '............', '............'],   // hình cũ của Speed Demon, đổi màu (trước 2026-11-18 là ref)
     'core-portal_kicks': { ref: 'core-warp_walls', map: { c: 'm' } },
     /* Tuyệt kỹ đợt 2 (2026-10-15) */
     'core-iron_hammer': ['............', '.EEEEEEEE...', '.EllllllE...', '.EyyyyyyE...', '.EllllllE...', '.EEEEEEEE...', '....nn......', '....nn......', '....nn......', '....nn......', '....NN......', '............'],

@@ -119,8 +119,8 @@ window.SFC = window.SFC || {};
     /* ---- 17. Thunderstorm: tiếng tít cảnh báo, sét nổ "đoàng" + sấm rền ---- */
     'storm.warn'() { T({ freq: 1200, dur: 0.06, type: 'sine', vol: 0.07 }); },
     'storm.bolt'() { N({ dur: 0.12, vol: 0.28, freq: 2000, type: 'highpass' }); N({ dur: 1.0, vol: 0.18, freq: 300, type: 'lowpass', delay: 0.05 }); T({ freq: 60, to: 30, dur: 0.5, type: 'sawtooth', vol: 0.08 }); },
-    /* ---- 18. Bullet Time: thế giới chậm lại "buuuum" + đoạn dây giao hưởng chạy dưới nền, vỗ đánh dấu "tách",
-       sniper: tiếng bíp ngắm, phát súng xé gió, trúng "chát" ---- */
+    /* ---- 18. Ankle Breaker (id bullet_time): thế giới chậm lại "buuuum" + đoạn dây giao hưởng chạy dưới nền, vỗ đánh dấu "tách",
+       hết giờ: dấu siết lại "tích" (2 nhịp đồng hồ), trượt chân ngã: "rắc" khô + người đổ "bịch" ---- */
     'bullet.slow'() { T({ freq: 520, to: 60, dur: 1.0, type: 'sine', vol: 0.13 }); T({ freq: 60, dur: 0.12, type: 'sine', vol: 0.25, delay: 0.15 }); T({ freq: 55, dur: 0.12, type: 'sine', vol: 0.22, delay: 0.4 }); N({ dur: 1.0, vol: 0.05, freq: 1500, to: 300, q: 0.6 }); },
     'bullet.symph'() {
       // kèn dây giao hưởng (giọng Rê thứ, chậm, trang nghiêm) dài ~ time giây: bè trầm giữ nốt + giai điệu đi xuống
@@ -129,9 +129,8 @@ window.SFC = window.SFC || {};
       seq([587, 523, 466, 440, 392, 440, 466, 440], t / 8, { type: 'triangle', dur: t / 8 + 0.08, vol: 0.09, attack: 0.04, vib: 5, vibDepth: 4 });
     },
     'bullet.tag'() { N({ dur: 0.04, vol: 0.16, freq: 3500, q: 2 }); T({ freq: 1760, dur: 0.05, type: 'square', vol: 0.06 }); },
-    'bullet.aim'() { T({ freq: 2093, dur: 0.05, type: 'sine', vol: 0.07 }); T({ freq: 2093, dur: 0.05, type: 'sine', vol: 0.07, delay: 0.25 }); },
-    'bullet.shot'() { N({ dur: 0.05, vol: 0.3, freq: 3000, type: 'highpass' }); N({ dur: 0.35, vol: 0.18, freq: 500, type: 'lowpass' }); T({ freq: 1800, to: 300, dur: 0.15, type: 'sawtooth', vol: 0.06 }); },
-    'bullet.hit'() { N({ dur: 0.06, vol: 0.25, freq: 1500, q: 1 }); T({ freq: 160, to: 60, dur: 0.15, type: 'square', vol: 0.1 }); },
+    'bullet.tick'() { T({ freq: 1320, dur: 0.03, type: 'square', vol: 0.06 }); T({ freq: 990, dur: 0.03, type: 'square', vol: 0.06, delay: 0.18 }); },
+    'bullet.snap'() { N({ dur: 0.035, vol: 0.28, freq: 2600, q: 3 }); N({ dur: 0.02, vol: 0.2, freq: 1800, q: 3, delay: 0.03 }); T({ freq: 110, to: 45, dur: 0.18, type: 'sine', vol: 0.22, delay: 0.06 }); N({ dur: 0.12, vol: 0.12, freq: 400, type: 'lowpass', delay: 0.06 }); },
     /* ---- 19. Rocket Punch: đánh lửa động cơ tên lửa rồi phụt đi ---- */
     'rocket.ignite'() { N({ dur: 0.45, vol: 0.26, freq: 500, type: 'lowpass', attack: 0.1 }); T({ freq: 200, to: 900, dur: 0.45, type: 'sawtooth', vol: 0.08 }); },
     'rocket.launch'() { N({ dur: 0.8, vol: 0.2, freq: 1200, to: 300, q: 0.6 }); T({ freq: 900, to: 400, dur: 0.6, type: 'sawtooth', vol: 0.04 }); },
@@ -192,9 +191,20 @@ window.SFC = window.SFC || {};
     'knuckle.shock'() { T({ freq: 120, dur: 0.3, type: 'sawtooth', vol: 0.14, vib: 60, vibDepth: 40 }); N({ dur: 0.08, vol: 0.18, freq: 4000, q: 2 }); },
     'knuckle.boom'() { boom(0.3, 0.5); N({ dur: 0.06, vol: 0.2, freq: 2500, type: 'highpass' }); },
     'knuckle.grab'() { T({ freq: 900, to: 300, dur: 0.18, type: 'sine', vol: 0.1, vib: 20, vibDepth: 40 }); N({ dur: 0.06, vol: 0.15, freq: 600 }); },
-    /* ---- 34. Pinball Kick: chuông nấm pinball "ding" + cần gạt "cạch" ---- */
-    'pinball.flip'() { N({ dur: 0.03, vol: 0.2, freq: 3000, q: 2 }); T({ freq: 300, dur: 0.03, type: 'square', vol: 0.08 }); },
-    'pinball.ding'() { T({ freq: 1568, dur: 0.14, type: 'square', vol: 0.11 }); T({ freq: 2093, dur: 0.12, type: 'square', vol: 0.08, delay: 0.02 }); },
+    /* ---- 34. Chaos Volley (id pinball_kick): đá bóng vọt thẳng trời "bụp" + tiếng huýt vút lên; thiên thạch rơi: tiếng gầm lửa trầm dần to
+       + lách tách suốt lúc rơi; chạm đất: "uỳnh" trầm; vô-lê: "đoàng" khô + bùng trầm + tiếng gió xé ---- */
+    'volley.launch'() {
+      N({ dur: 0.05, vol: 0.24, freq: 900, q: 1.2 }); T({ freq: 90, to: 50, dur: 0.15, type: 'sine', vol: 0.2 });
+      T({ freq: 700, to: 2200, dur: P('pinball_kick').rise || 0.45, type: 'sine', vol: 0.06, delay: 0.03 });
+    },
+    'volley.fall'() {
+      const p = P('pinball_kick'), d = (p.time || 2) - (p.rise || 0.45);
+      N({ dur: d, vol: 0.16, freq: 300, to: 1400, q: 0.6, attack: d * 0.8 });
+      T({ freq: 120, to: 60, dur: d, type: 'sawtooth', vol: 0.05, attack: d * 0.7 });
+      for (let i = 0; i < 8; i++) N({ dur: 0.02, vol: 0.06, freq: 2500 + i * 300, q: 3, delay: d * (0.3 + i * 0.08) });
+    },
+    'volley.land'() { boom(0.22, 0.35); N({ dur: 0.25, vol: 0.12, freq: 700, type: 'lowpass' }); },
+    'volley.strike'() { N({ dur: 0.04, vol: 0.32, freq: 3000, type: 'highpass' }); boom(0.26, 0.4); N({ dur: 0.45, vol: 0.14, freq: 2400, to: 500, q: 0.6, delay: 0.03 }); },
     /* ---- 35. Panic Ghosts (id panic_ball): theremin ma quái khi gọi ma, ma chạm ai: tiếng hét "aaa" tụt xuống, bị đấm tan: "phụt" ---- */
     'panic.spook'() { T({ freq: 700, to: 420, dur: 0.8, type: 'sine', vol: 0.08, vib: 8, vibDepth: 40 }); T({ freq: 466, to: 300, dur: 0.8, type: 'sine', vol: 0.04, vib: 7, vibDepth: 30, delay: 0.1 }); },
     'ghost.poof'() { N({ dur: 0.25, vol: 0.14, freq: 1800, to: 600, q: 0.8 }); T({ freq: 600, to: 1200, dur: 0.12, type: 'sine', vol: 0.06 }); },

@@ -203,13 +203,50 @@ window.SFC = window.SFC || {};
         } else E.pop(pl.x, pl.y - 30, 'COUNTER!', 'good', '#3ff6ff');
       },
     },
-    // Mìn EMP: mìn + nổ điện ở systems/effects.js
+    // Pass Reader (thay Mìn EMP 2026-11-18; Effects.mine cũ giữ lại, không còn ai đặt): đường chuyền sệt của đối thủ sắp đi qua trước mặt
+    // -> mắt loé + vạch chấm tới điểm cắt, lao tới đón bóng (chắc chắn cắt nếu tới kịp); cắt được thì cả đội tăng tốc
     emp_trap: {
-      onTackle(sys, team, p, pl) {
-        const st = sys.st(pl, 'emp_trap');
-        if ((st.cd || 0) > 0) return;
-        st.cd = p.cooldown;
-        sys.g.effects.mine(pl.x, pl.y, team, p, pl);
+      update(sys, team, prm) {
+        const g = sys.g, b = g.ball, pl = prm.owner, st = sys.st(pl, 'emp_trap');
+        if (st.go || st.cd > 0 || st.n === b.kickN || g.state !== 'play' || b.owner || b.kind !== 'pass' || b.lastKickTeam !== 1 - team) return;
+        if (b.z > prm.high || b.fx.ghost || sys.passGuarded(b.lastKickTeam)) return;
+        if (pl.state !== 'normal' || pl.airZ > 0 || pl.noActT > 0 || g.inKeeperZone(pl)) return;
+        const sp = Math.hypot(b.vx, b.vy);
+        if (sp < 60) return;
+        const ux = b.vx / sp, uy = b.vy / sp, rx = pl.x - b.x, ry = pl.y - b.y, along = rx * ux + ry * uy;
+        if (along < 10 || Math.abs(rx * -uy + ry * ux) > prm.reach || along / sp > prm.time) return;
+        st.n = b.kickN;   // mỗi đường chuyền xét 1 lần (không đọc được thì thôi, chờ đường sau)
+        const at = { x: b.x + ux * along, y: b.y + uy * along }, E = g.effects;
+        st.go = true; st.cd = prm.cooldown;
+        E.prop(SFC.CoreHelpers.propId(g), 'dashline', pl.x, pl.y, at.x, at.y, 0.3, '#c7ccd6');
+        E.pop(pl.x, pl.y - 30, 'READ!', 'good', '#c7ccd6');
+        E.ring(pl.x, pl.y - 12, '#ffffff');
+        g.sfx('whoosh');
+        let T = 0, k = 0;
+        pl.charging = false;
+        sys.task((dt) => {
+          T += dt;
+          if (g.state !== 'play' || pl.state === 'stun' || T > 0.45) return true;
+          // bóng tới chân (Game.tryControl cắt chắc nhờ readsPass) hoặc tới sát người: đón bóng nếu vẫn là đường chuyền của đối thủ
+          const got = b.owner === pl;
+          if (b.owner && !got) return true;   // người khác đã có bóng
+          if (got || (b.kind === 'pass' && b.lastKickTeam !== team && b.z <= prm.high && U.dist(pl, b) <= pl.radius + 8)) {
+            if (!got) { g.gainPossession(pl); sys.steal(pl); }
+            for (const q of g.teams[team].players) (sys.buffs[q.id] || (sys.buffs[q.id] = [])).push({ speed: prm.boost, t: prm.boostT });
+            E.speedLines(0.35, pl.x, pl.y, '#e8ecf4');
+            E.burst(pl.x, pl.y, 8, '#c7ccd6', 12, 90, 0.4);
+            E.pop(pl.x, pl.y - 30, 'CUT!', 'good', '#c7ccd6');
+            g.sfx('touch');
+            return true;
+          }
+          const d = U.dist(pl, at);
+          if (d < 2) return false;   // đứng chờ ở điểm cắt tới hết giờ
+          const n = U.norm(at.x - pl.x, at.y - pl.y), step = Math.min(d, prm.lunge * dt);
+          pl.x += n.x * step; pl.y += n.y * step;
+          pl.vx = n.x * prm.lunge; pl.vy = n.y * prm.lunge; pl.facing = Math.atan2(n.y, n.x);
+          if ((k += dt) >= 0.04) { k = 0; E.afterimage(pl, 0.2); }
+          return false;
+        }, () => { st.go = false; });
       },
     },
     // Nhạc Trưởng: bóng kéo dây đàn vàng; người nhận hào quang vàng + tăng tốc
@@ -459,6 +496,7 @@ window.SFC = window.SFC || {};
       switch (key) {
         case 'speed':
           if (p.surge) m *= DEF().surge.speed;
+          if (p.sense) m *= this.sp('speed_demon', p).speed;   // Goal Sense: đang chạy về điểm bóng lỏng sẽ tới
           if (p.titanT > 0) m *= this.sp('titan', p).slow || 1;   // Hoá Khổng Lồ: nặng nề, hậu vệ vẫn chạy kịp chắn
           if (p.bullT > 0) m *= this.params('bulldozer').slow;   // Xe Ủi: nặng nề
           break;
@@ -482,6 +520,55 @@ window.SFC = window.SFC || {};
       if (this.has(p, 'thunder_kick')) c = Math.max(c, this.params('thunder_kick').minCharge);
       for (const id of ['energy_wave', 'black_hole']) if (this.has(p, id)) c = Math.max(c, this.params(id).minCharge);
       return c ? Math.min(1, c + 0.03) : 0;
+    }
+    // Goal Sense: chỗ bóng lỏng sẽ tranh được -> { x, y } | null. Mô phỏng nhanh theo đúng vật lý Ball.update (trọng lực, nảy đất,
+    // ma sát sân / không khí, dội tường dọc biên), bỏ qua xoáy / người chắn; tới khung thành thì null. Dừng ở bước đầu tiên bóng
+    // thấp hơn reachZ và chậm hơn slow, tối đa ahead giây. Dùng chung cho mô phỏng và hình (cache theo trạng thái bóng)
+    ballSpot() {
+      const g = this.g, b = g.ball, k0 = this._spotK;
+      if (k0 && k0[0] === b.x && k0[1] === b.y && k0[2] === b.z && k0[3] === b.vx && k0[4] === g.state) return this._spot;
+      this._spotK = [b.x, b.y, b.z, b.vx, g.state];
+      this._spot = null;
+      if (g.state !== 'play' || b.owner || b.freezeT > 0 || (b.kind === 'pass' && !b.spent) || b.fx.scripted) return null;   // scripted: Chaos Volley
+      if (Math.hypot(b.vx, b.vy) < 60 && b.z < 4) return null;
+      const C = SFC_CONFIG.game.ball, prm = this.params('speed_demon'), f = g.field, r = b.r, dt = 1 / 30;
+      const fm = (b.frictionMult || 1) * b.shotFm() * b.passFm(), kb = b.shotFm() < 1 ? C.shotBounceKeep : 0.78;
+      let x = b.x, y = b.y, z = b.z, vx = b.vx, vy = b.vy, vz = b.vz;
+      for (let t = 0; t < prm.ahead; t += dt) {
+        x += vx * dt; y += vy * dt; vz -= C.gravity * dt; z += vz * dt;
+        if (z <= 0) { z = 0; if (vz < -50) { vz = -vz * C.bounce; vx *= kb; vy *= kb; } else vz = 0; }
+        const k = (z > C.airDragMinZ ? C.airDrag : C.groundFriction) * fm;
+        vx = U.damp(vx, k, dt); vy = U.damp(vy, k, dt);
+        if (y < f.y + r) { y = f.y + r; vy = Math.abs(vy) * C.wallBounce; } else if (y > f.y + f.h - r) { y = f.y + f.h - r; vy = -Math.abs(vy) * C.wallBounce; }
+        if (x < f.x + r || x > f.x + f.w - r) {
+          if (y > f.gTop && y < f.gBot && z < f.goalHeight) return null;   // vào khung: không còn bóng lỏng để tranh
+          x = U.clamp(x, f.x + r, f.x + f.w - r); vx = -vx * C.wallBounce;
+        }
+        if (z <= prm.reachZ && Math.hypot(vx, vy) <= prm.slow) break;
+      }
+      if (Math.hypot(x - b.x, y - b.y) < prm.minDist) return null;
+      return (this._spot = { x, y });
+    }
+    // Goal Sense của riêng p (không cầm bóng, có Core) -> điểm bóng lỏng sẽ tới | null
+    senseSpot(p) { return p && !p.hasBall && this.has(p, 'speed_demon') ? this.ballSpot() : null; }
+    // Gap Shot: khe trống nhất trong khung đối phương nhìn từ bóng -> { x, y, clear } (điểm trên vạch vôi, khoảng hở px) hoặc null.
+    // Thử samples điểm dọc khung (chừa cột dọc), mỗi đường tính khoảng cách nhỏ nhất tới đối thủ đứng chắn phía trước (kể cả người
+    // trông khung); chọn đường hở nhất, hẹp hơn minGap = bị bịt. Dùng chung cho mô phỏng (lúc sút) và hình (vệt vàng lúc tụ lực)
+    gapLane(p) {
+      const g = this.g, b = g.ball, f = g.field, prm = this.sp('black_hole', p), gx = g.attackGoal(p.team).x;
+      const top = f.gTop + 4, bot = f.gBot - 4, n = Math.max(2, prm.samples | 0);
+      let best = null;
+      for (let i = 0; i < n; i++) {
+        const ty = top + ((bot - top) * i) / (n - 1), dx = gx - b.x, dy = ty - b.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+        let clear = 999;
+        for (const o of g.teams[1 - p.team].players) {
+          const rx = o.x - b.x, ry = o.y - b.y, along = rx * ux + ry * uy;
+          if (along < 0 || along > L + 10) continue;
+          clear = Math.min(clear, Math.abs(ry * ux - rx * uy) - (o.radius || 6));
+        }
+        if (!best || clear > best.clear) best = { x: gx, y: ty, clear };
+      }
+      return best && best.clear >= prm.minGap ? best : null;
     }
     // có Core VÕ SĨ ĐÁ -> ra đòn Hard nhiều hơn; ẢO ẢNH -> lướt Z nhiều hơn
     aiHardMult(p) { return 1 + this.tagCount(p, 'launcher') * 0.8; }
@@ -512,6 +599,11 @@ window.SFC = window.SFC || {};
     }
     // Steel Formation (Tuyệt kỹ lai): đường chuyền của đội không bị cắt
     // Iron Chain: đường chuyền của đội không bị cắt khi xích còn nối
+    // Pass Reader: p đang lao cắt đúng đường chuyền đang bay (Game.tryControl: cắt chắc)
+    readsPass(p) {
+      const s = this.state['p' + p.id], st = s && s.emp_trap;
+      return !!(st && st.go && st.n === this.g.ball.kickN);
+    }
     passGuarded(team) { return team >= 0 && this.st(team, 'iron_chain').t > this.g.time; }
     // Nắm Đấm Sắt: nắm tay thép sẵn sàng -> người cầm bóng không trụ được (dùng ở onLightHit của iron_fist)
     ironFist(p) { return this.has(p, 'iron_fist') && !(this.st(p, 'iron_fist').cd > 0); }
@@ -856,6 +948,12 @@ window.SFC = window.SFC || {};
           g.sfx('block');
         }
       }
+      // Goal Sense: đang chạy về phía điểm bóng lỏng sẽ tới (lệch ≤ ~45°, còn xa hơn 6 px) -> pmod speed nhanh hơn
+      const gs = this.senseSpot(p);
+      if (gs) {
+        const dx = gs.x - p.x, dy = gs.y - p.y, d = Math.hypot(dx, dy), v = Math.hypot(p.vx, p.vy);
+        p.sense = d > 6 && v > 20 && (p.vx * dx + p.vy * dy) > 0.7 * v * d;
+      } else p.sense = false;
       p.fistRdy = (this.has(p, 'giant_fist') && !(this.st(p, 'giant_fist').cd > 0)) || this.ironFist(p);
     }
 

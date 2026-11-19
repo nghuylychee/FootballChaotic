@@ -181,11 +181,17 @@ SFC_CONFIG.cores = {
     },
 
     /* ---------- 🏃 TỐC ĐỘ · 🌀 ẢO ẢNH ---------- */
+    // GOAL SENSE (thay Quỷ Tốc Độ 2026-11-18, hướng Blue Lock: "bóng sẽ tới đây" của Isagi, owner chọn hướng B; giữ id speed_demon cho
+    // bộ khởi đầu / PROLOGUE): vẫn nhanh hơn khi không có bóng + toé điện sớm (mods). Bóng lỏng đang bay / lăn (sau cú sút, phá bóng,
+    // bóng bật ra; không tính đường chuyền chưa hỏng) -> dự đoán chỗ bóng xuống thấp hơn reachZ px và chậm hơn slow px/s, tối đa ahead giây
+    // tới (CoreSystem.ballSpot, cùng vật lý Ball.update); cách bóng ít nhất minDist px mới hiện. Vòng sáng ở đó (chỉ người chơi có Core thấy),
+    // chạy về phía nó (lệch không quá ~45°) nhanh hơn speed. AI có Core chạy thẳng tới điểm đó, không bị bóng bật bất ngờ đánh lừa (ai.scramble)
     speed_demon: {
-      name: 'Speed Demon', icon: '🪽', tags: ['runner'], role: 'gen', rarity: 'common',
-      desc: 'Quicker off the ball, and you crackle sooner.',
+      name: 'Goal Sense', icon: '✨', tags: ['runner'], role: 'gen', rarity: 'common',
+      desc: 'See where loose balls land, and race there faster.',
       mods: { offBallSpeed: 1.05, surgeTime: 0.5 },
-      scale: { 'm.offBallSpeed': 'mul', 'm.surgeTime': 'cd' },
+      params: { ahead: 1.6, reachZ: 10, slow: 150, minDist: 24, speed: 1.12 },
+      scale: { 'm.offBallSpeed': 'mul', 'm.surgeTime': 'cd', speed: 'mul' },
     },
     phantom_step: {
       name: 'Phantom Step', icon: '🌀', tags: ['trickster'], role: 'gen', rarity: 'rare',
@@ -233,11 +239,15 @@ SFC_CONFIG.cores = {
       params: { duration: 3.5, speedMult: 1.2, shotMult: 1.2, calloutCd: 15 },
       scale: { duration: 'pow', speedMult: 'mul', shotMult: 'mul' },
     },
+    // PASS READER (thay Mìn EMP 2026-11-18, hướng Blue Lock: hậu vệ đọc tình huống; giữ id emp_trap cho Core Road, chữ ký đội Elite):
+    // đối thủ chuyền sệt (bóng thấp hơn high px) mà đường bóng đi qua trong reach px trước mặt bạn và tới đó trong time giây ->
+    // mắt loé, lao lunge px/s tới điểm cắt (vạch chấm báo trước) rồi đón bóng. Cắt được: cả đội tăng tốc boost trong boostT giây.
+    // Mỗi đường chuyền xét 1 lần (ball.kickN), hồi chiêu cooldown giây. Người trông khung trong vòng cấm không dùng
     emp_trap: {
-      name: 'EMP Mine', icon: '📡', tags: ['iron'], role: 'gen', rarity: 'epic',
-      desc: 'Attacks drop EMP mines that stun and steal the ball.',
-      params: { cooldown: 2.5, max: 3, life: 14, radius: 9, arm: 0.5, stun: 1.0 },
-      scale: { stun: 'pow', radius: 'pow', cooldown: 'cd' },
+      name: 'Pass Reader', icon: '👁', tags: ['iron'], role: 'gen', rarity: 'epic',
+      desc: 'Read their next pass and lunge to cut it.',
+      params: { reach: 46, time: 0.6, high: 12, lunge: 340, cooldown: 6, boost: 1.15, boostT: 2.5 },
+      scale: { reach: 'pow', cooldown: 'cd', boostT: 'pow' },
     },
     maestro: {
       name: 'Maestro', icon: '🎼', tags: ['playmaker'], role: 'gen', rarity: 'common',
@@ -308,17 +318,26 @@ SFC_CONFIG.cores = {
     },
 
     /* ---------- 🎯 SÁT THỦ ---------- */
+    // ZERO WINDUP (thay Chưởng Sóng 2026-11-18, hướng Blue Lock: cú sút không lấy đà; giữ id energy_wave cho Core Road / PROLOGUE):
+    // thanh lực nạp nhanh hơn (mods chargeTime). Sút từ minCharge: bóng bật khỏi chân không vung chân (bỏ tư thế sút mạnh),
+    // thủ môn AI thấy cú sút trễ thêm late giây (ball.gkLate, ai.js keeper), tỉ lệ bắt bóng trừ gk. Hình: vệt chém trắng + tàn ảnh
     energy_wave: {
-      name: 'Energy Wave', icon: '🌊', tags: ['striker'], role: 'use', rarity: 'epic',
-      desc: 'Big charged shot fires a beam that shoves defenders aside.',
-      params: { minCharge: 0.8, len: 300, width: 18, knock: 300, stun: 0.8 },
-      scale: { knock: 'pow', stun: 'pow' },
+      name: 'Zero Windup', icon: '💨', tags: ['striker'], role: 'use', rarity: 'epic',
+      desc: 'Shots fire instantly with no backswing; keepers react late.',
+      mods: { chargeTime: 0.6 },
+      params: { minCharge: 0.6, late: 0.22, gk: 0.12 },
+      scale: { 'm.chargeTime': 'cd', late: 'pow', gk: 'pow' },
     },
+    // GAP SHOT (thay Sút Lỗ Đen 2026-11-18, hướng Blue Lock: "mảnh ghép cuối" — nhìn ra khe trống; giữ id black_hole cho Core Road,
+    // thành tích, chữ ký đội Story): tụ lực từ show -> vệt vàng từ bóng tới chỗ trống nhất trong khung (CoreSystem.gapLane: thử samples điểm
+    // dọc khung, chọn đường cách đối thủ xa nhất, kể cả người trông khung; ai cũng thấy nên hậu vệ bịt được). Khe hẹp hơn minGap px = không có.
+    // Sút từ minCharge lệch khe không quá snap rad -> bóng nắn thẳng vào khe, đối thủ ngoài vòng cấm không chạm được bóng pass giây,
+    // thủ môn trừ gk. Hình: mảnh ghép vàng khớp vào khung (prop 'piece')
     black_hole: {
-      name: 'Black Hole Shot', icon: '🕳', tags: ['striker'], role: 'use', rarity: 'legendary',
-      desc: 'Big charged shot turns the ball into a black hole.',
-      params: { minCharge: 0.8, radius: 64, pull: 1500, time: 1.4 },
-      scale: { radius: 'pow', pull: 'pow', time: 'pow' },
+      name: 'Gap Shot', icon: '🧩', tags: ['striker'], role: 'use', rarity: 'legendary',
+      desc: 'Charging reveals the gap; shoot through it to score.',
+      params: { show: 0.3, minCharge: 0.7, snap: 0.32, minGap: 10, samples: 9, gk: 0.45, pass: 0.6 },
+      scale: { gk: 'pow', snap: 'pow' },
     },
 
     /* ---------- 🥊 ĐẤU SĨ ---------- */
@@ -607,13 +626,14 @@ SFC_CONFIG.cores = {
       params: { bolts: 14, telegraph: 0.5, gap: 0.12, radius: 18, jitter: 4, stun: 1.0, knock: 120 },   // bolts: user 2026-11-01 9 -> 14
       scale: { radius: 'pow', stun: 'pow' },
     },
-    // 🏃 + 🎯 — Bullet Time (làm lại user 2026-11-01): cả sân chạy chậm còn slow (×) kèm đoạn nhạc giao hưởng, bạn chạy tự do speed px/s
-    // (thời gian thật) time giây, chạm đối thủ (touch px) để đánh dấu (dấu ngắm đỏ trên người họ). Hết giờ: từng người bị đánh dấu bị sniper
-    // trên khán đài bắn — tia laser bám người aim giây, loé sáng rồi đạn bay tới (bullet px/s); lướt Z đúng lúc là né. Trúng: văng knock + choáng stun
+    // 🏃 + 🎯 — Ankle Breaker (id cũ bullet_time; làm lại user 2026-11-01, bỏ sniper 2026-11-18 theo hướng Blue Lock: khoảnh khắc "thấy hết sân"):
+    // cả sân chạy chậm còn slow (×) kèm đoạn nhạc giao hưởng, bạn chạy tự do speed px/s (thời gian thật) time giây, chạm đối thủ (touch px)
+    // để đánh dấu (dấu ngắm đỏ trên người họ). Hết giờ: lần lượt (cách nhau gap giây) dấu trên từng người siết lại báo trước aim giây
+    // rồi người đó trượt chân ngã (knock nhẹ theo hướng đang chạy + choáng stun, rơi bóng); lướt Z đúng lúc là né
     bullet_time: {
-      name: 'Bullet Time', icon: '⚡', tags: ['runner', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'Time slows; tag opponents and a sniper in the stands takes them out.',
-      params: { slow: 0.12, time: 2, speed: 260, touch: 16, aim: 0.55, gap: 0.3, bullet: 1600, hitR: 12, knock: 260, launch: 120, stun: 1.5 },
+      name: 'Ankle Breaker', icon: '⏱', tags: ['runner', 'striker'], role: 'ult', rarity: 'mythic', hybrid: true,
+      desc: 'Time slows; touch defenders, then they all trip over.',
+      params: { slow: 0.12, time: 2, speed: 260, touch: 16, aim: 0.45, gap: 0.22, knock: 90, launch: 40, stun: 1.6 },
       scale: { time: 'pow', stun: 'pow' },
     },
     // 🏃 + 🥊 — Rocket Punch: gồng windup giây (vạch thẳng ngang sân; bị đấm lúc gồng là huỷ), nắm đấm phóng ra như tên lửa bay speed px/s:
@@ -744,11 +764,20 @@ SFC_CONFIG.cores = {
       params: { window: 10, roll: 0.7, spring: 64, chain: 80, radius: 34, knock: 330, launch: 140, upLaunch: 320, stun: 1.4, shock: 1.6 },
       scale: { knock: 'pow', stun: 'pow', shock: 'pow' },
     },
+    // 🎲 + 🦵 — Chaos Volley (thay Pinball Kick 2026-11-19, hướng Blue Lock: cú vô-lê nhào lộn từ mọi tư thế; giữ id pinball_kick cho sổ Tuyệt kỹ.
+    // Devour 2026-11-18 đã bỏ: đầu trận đối thủ chưa có Tuyệt kỹ để nuốt). needsBall. Owner góp ý 2026-11-19: đá bóng vọt THẲNG lên trời
+    // (rise giây, riseSpeed px/s, ra khỏi màn hình), rồi bóng rơi xuống như thiên thạch (da lửa + đuôi lửa) từ độ cao height, xiên slant px
+    // từ phía sau, chạm đất đúng time giây sau cú đá tại một điểm NGẪU NHIÊN bên phần sân đối phương (cách khung depth px, cách người dùng
+    // dist px). Vòng đích tím ở điểm rơi CHỈ người dùng thấy (đối thủ chỉ thấy thiên thạch). Cả lúc bay không ai chạm được bóng.
+    // Người dùng tới kịp (bóng thấp hơn volleyZ, trong reach px, từ window giây trước khi chạm đất tới late giây sau) -> tự nhào lộn vô-lê hết lực
+    // về góc khung xa người trông khung (power px/s, thủ môn trừ gk). Không kịp: bóng nảy lên bounce px/s thành bóng lỏng, ai tới trước được.
+    // Người chơi tự chạy tới (tự do); AI cầm Core thì tự chạy tới với tốc aiRun
     pinball_kick: {
-      name: 'Pinball Kick', icon: '🕹', tags: ['chaos', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true,
-      desc: 'Kick an opponent into a pinball that bowls others over.',
-      params: { range: 150, rush: 520, speed: 420, bounces: 6, time: 2.4, knock: 220, launch: 160, stun: 1.4 },   // bounces: nảy tường tối đa
-      scale: { speed: 'pow', knock: 'pow', stun: 'pow' },
+      name: 'Chaos Volley', icon: '🎲', tags: ['chaos', 'launcher'], role: 'ult', rarity: 'mythic', hybrid: true, needsBall: true,
+      desc: 'Launch the ball sky-high; reach the landing for a volley.',
+      params: { time: 2, rise: 0.45, riseSpeed: 900, height: 320, slant: 90, depth: [100, 240], dist: [80, 230], volleyZ: 26, reach: 22,
+        window: 0.25, late: 0.3, bounce: 110, power: 640, gk: 0.3, aiRun: 170 },
+      scale: { power: 'pow', gk: 'pow' },
     },
     // 🎲 + 🌀 — Panic Ghosts (id cũ panic_ball, làm lại user 2026-11-01): gọi ghosts hồn ma bay đuổi theo đối thủ (speed px/s, mỗi con 1 người)
     // trong life giây. Đối thủ đấm trúng ma (Light / Hard attack, tầm reach px) là ma tan; ma chạm người (touch px) thì người đó HOẢNG SỢ panic giây

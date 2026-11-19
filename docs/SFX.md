@@ -67,8 +67,8 @@ the `ult` sound is the part that tells you which Ultimate it is. Loudness was ch
 | `phase.blink` | Phase Step · each blink | Portal "vwomp" in and out + sparkle |
 | `sling.stretch` / `sling.release` | Slingshot | Rubber creak · boing twang |
 | `storm.warn` / `storm.bolt` | Thunderstorm · each warning circle / each strike | Tiny tick · thunder crack + rumble |
-| `bullet.slow` / `bullet.symph` | Bullet Time · slow-mo starts | Time slowing "bwoom" + heartbeat · slow string-orchestra phrase (D minor) under the slow-mo |
-| `bullet.tag` / `bullet.aim` / `bullet.shot` / `bullet.hit` | Bullet Time · tag an opponent / sniper laser / rifle shot / bullet hits | Snap · scope beeps · tearing rifle crack · thud |
+| `bullet.slow` / `bullet.symph` | Ankle Breaker (id `bullet_time`) · slow-mo starts | Time slowing "bwoom" + heartbeat · slow string-orchestra phrase (D minor) under the slow-mo |
+| `bullet.tag` / `bullet.tick` / `bullet.snap` | Ankle Breaker · tag an opponent / mark tightens (warning) / they trip | Snap · two clock ticks · dry crack + body thud |
 | `rocket.ignite` / `rocket.launch` / `rocket.boom` | Rocket Punch | Engine ignition · rocket jet · explosion |
 | `truck.horn` / `truck.engine` / `truck.crash` | Monster Truck · summon / drive (`params.time`) / knocked out | Two-tone horn · engine rumble · crash + debris |
 | `boomer.throw` / `boomer.catch` | Mega Boomerang · whole flight / catch | Whirring rotor · wooden clack |
@@ -86,7 +86,7 @@ the `ult` sound is the part that tells you which Ultimate it is. Loudness was ch
 | `wall.hand0..2` / `wall.arrive` | Magic Wall Pass · each magic hand / ball arrives | Chime rising per hand · "ta-da" |
 | `chicken.ray` / `chicken.bawk` | Chicken Ray · beam / each chicken | Wobbly ray · "bawk-bawk-BAWK" |
 | `knuckle.roll` / `knuckle.spring` · `upper` · `shock` · `boom` · `grab` | Lucky Knuckles (id `jack_in_box`) · slot roll / each trick punch | Slot-machine clatter + ting · spring boing · rising uppercut · zap · blast · grab whoosh |
-| `pinball.flip` / `pinball.ding` | Pinball Kick · launch / each bounce | Flipper clack · bumper bell |
+| `volley.launch` / `volley.fall` / `volley.land` / `volley.strike` | Chaos Volley (id `pinball_kick`) · ball kicked straight up / meteor falling / it hits the ground / the volley | Thump + whistle rising · fire roar swelling + crackles · low thud · dry crack + low boom + tearing wind |
 | `panic.spook` / `panic.boo` / `ghost.poof` | Panic Ghosts (id `panic_ball`) · ghosts summoned / someone panics / a ghost is punched away | Spooky theremin · falling scream · puff |
 | `chaos.roll` | Chaos Ball (Core) · ball type rolled at each kickoff | Dice clatter + stop |
 | `magnet.drop` / `magnet.hum` | Mega Magnet · falls / pulls | Falling whistle · magnetic hum |
